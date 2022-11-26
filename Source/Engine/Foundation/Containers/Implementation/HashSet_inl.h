@@ -1,0 +1,660 @@
+
+/// \brief Value used by containers for indices to indicate an invalid index.
+#ifndef xiiInvalidIndex
+#  define xiiInvalidIndex 0xFFFFFFFF
+#endif
+
+// ***** Const Iterator *****
+
+template <typename K, typename H>
+xiiHashSetBase<K, H>::ConstIterator::ConstIterator(const xiiHashSetBase<K, H>& hashSet) :
+  m_pHashSet(&hashSet)
+{
+}
+
+template <typename K, typename H>
+void xiiHashSetBase<K, H>::ConstIterator::SetToBegin()
+{
+  if (m_pHashSet->IsEmpty())
+  {
+    m_uiCurrentIndex = m_pHashSet->m_uiCapacity;
+    return;
+  }
+  while (!m_pHashSet->IsValidEntry(m_uiCurrentIndex))
+  {
+    ++m_uiCurrentIndex;
+  }
+}
+
+template <typename K, typename H>
+inline void xiiHashSetBase<K, H>::ConstIterator::SetToEnd()
+{
+  m_uiCurrentCount = m_pHashSet->m_uiCount;
+  m_uiCurrentIndex = m_pHashSet->m_uiCapacity;
+}
+
+template <typename K, typename H>
+XII_ALWAYS_INLINE bool xiiHashSetBase<K, H>::ConstIterator::IsValid() const
+{
+  return m_uiCurrentCount < m_pHashSet->m_uiCount;
+}
+
+template <typename K, typename H>
+XII_ALWAYS_INLINE bool xiiHashSetBase<K, H>::ConstIterator::operator==(const typename xiiHashSetBase<K, H>::ConstIterator& rhs) const
+{
+  return m_uiCurrentIndex == rhs.m_uiCurrentIndex && m_pHashSet->m_pEntries == rhs.m_pHashSet->m_pEntries;
+}
+
+template <typename K, typename H>
+XII_ALWAYS_INLINE bool xiiHashSetBase<K, H>::ConstIterator::operator!=(const typename xiiHashSetBase<K, H>::ConstIterator& rhs) const
+{
+  return !(*this == rhs);
+}
+
+template <typename K, typename H>
+XII_FORCE_INLINE const K& xiiHashSetBase<K, H>::ConstIterator::Key() const
+{
+  return m_pHashSet->m_pEntries[m_uiCurrentIndex];
+}
+
+template <typename K, typename H>
+void xiiHashSetBase<K, H>::ConstIterator::Next()
+{
+  ++m_uiCurrentCount;
+  if (m_uiCurrentCount == m_pHashSet->m_uiCount)
+  {
+    m_uiCurrentIndex = m_pHashSet->m_uiCapacity;
+    return;
+  }
+
+  do
+  {
+    ++m_uiCurrentIndex;
+  } while (!m_pHashSet->IsValidEntry(m_uiCurrentIndex));
+}
+
+template <typename K, typename H>
+XII_ALWAYS_INLINE void xiiHashSetBase<K, H>::ConstIterator::operator++()
+{
+  Next();
+}
+
+
+// ***** xiiHashSetBase *****
+
+template <typename K, typename H>
+xiiHashSetBase<K, H>::xiiHashSetBase(xiiAllocatorBase* pAllocator)
+{
+  m_pEntries    = nullptr;
+  m_pEntryFlags = nullptr;
+  m_uiCount     = 0;
+  m_uiCapacity  = 0;
+  m_pAllocator  = pAllocator;
+}
+
+template <typename K, typename H>
+xiiHashSetBase<K, H>::xiiHashSetBase(const xiiHashSetBase<K, H>& other, xiiAllocatorBase* pAllocator)
+{
+  m_pEntries    = nullptr;
+  m_pEntryFlags = nullptr;
+  m_uiCount     = 0;
+  m_uiCapacity  = 0;
+  m_pAllocator  = pAllocator;
+
+  *this = other;
+}
+
+template <typename K, typename H>
+xiiHashSetBase<K, H>::xiiHashSetBase(xiiHashSetBase<K, H>&& other, xiiAllocatorBase* pAllocator)
+{
+  m_pEntries    = nullptr;
+  m_pEntryFlags = nullptr;
+  m_uiCount     = 0;
+  m_uiCapacity  = 0;
+  m_pAllocator  = pAllocator;
+
+  *this = std::move(other);
+}
+
+template <typename K, typename H>
+xiiHashSetBase<K, H>::~xiiHashSetBase()
+{
+  Clear();
+  XII_DELETE_RAW_BUFFER(m_pAllocator, m_pEntries);
+  XII_DELETE_RAW_BUFFER(m_pAllocator, m_pEntryFlags);
+  m_uiCapacity = 0;
+}
+
+template <typename K, typename H>
+void xiiHashSetBase<K, H>::operator=(const xiiHashSetBase<K, H>& rhs)
+{
+  Clear();
+  Reserve(rhs.GetCount());
+
+  xiiUInt32 uiCopied = 0;
+  for (xiiUInt32 i = 0; uiCopied < rhs.GetCount(); ++i)
+  {
+    if (rhs.IsValidEntry(i))
+    {
+      Insert(rhs.m_pEntries[i]);
+      ++uiCopied;
+    }
+  }
+}
+
+template <typename K, typename H>
+void xiiHashSetBase<K, H>::operator=(xiiHashSetBase<K, H>&& rhs)
+{
+  // Clear any existing data (calls destructors if necessary)
+  Clear();
+
+  if (m_pAllocator != rhs.m_pAllocator)
+  {
+    Reserve(rhs.m_uiCapacity);
+
+    xiiUInt32 uiCopied = 0;
+    for (xiiUInt32 i = 0; uiCopied < rhs.GetCount(); ++i)
+    {
+      if (rhs.IsValidEntry(i))
+      {
+        Insert(std::move(rhs.m_pEntries[i]));
+        ++uiCopied;
+      }
+    }
+
+    rhs.Clear();
+  }
+  else
+  {
+    XII_DELETE_RAW_BUFFER(m_pAllocator, m_pEntries);
+    XII_DELETE_RAW_BUFFER(m_pAllocator, m_pEntryFlags);
+
+    // Move all data over.
+    m_pEntries    = rhs.m_pEntries;
+    m_pEntryFlags = rhs.m_pEntryFlags;
+    m_uiCount     = rhs.m_uiCount;
+    m_uiCapacity  = rhs.m_uiCapacity;
+
+    // Temp copy forgets all its state.
+    rhs.m_pEntries    = nullptr;
+    rhs.m_pEntryFlags = nullptr;
+    rhs.m_uiCount     = 0;
+    rhs.m_uiCapacity  = 0;
+  }
+}
+
+template <typename K, typename H>
+bool xiiHashSetBase<K, H>::operator==(const xiiHashSetBase<K, H>& rhs) const
+{
+  if (m_uiCount != rhs.m_uiCount)
+    return false;
+
+  xiiUInt32 uiCompared = 0;
+  for (xiiUInt32 i = 0; uiCompared < m_uiCount; ++i)
+  {
+    if (IsValidEntry(i))
+    {
+      if (!rhs.Contains(m_pEntries[i]))
+        return false;
+
+      ++uiCompared;
+    }
+  }
+
+  return true;
+}
+
+template <typename K, typename H>
+XII_ALWAYS_INLINE bool xiiHashSetBase<K, H>::operator!=(const xiiHashSetBase<K, H>& rhs) const
+{
+  return !(*this == rhs);
+}
+
+template <typename K, typename H>
+void xiiHashSetBase<K, H>::Reserve(xiiUInt32 uiCapacity)
+{
+  const xiiUInt64 uiCap64         = static_cast<xiiUInt64>(uiCapacity);
+  xiiUInt64       uiNewCapacity64 = uiCap64 + (uiCap64 * 2 / 3); // ensure a maximum load of 60%
+
+  uiNewCapacity64 = xiiMath::Min<xiiUInt64>(uiNewCapacity64, 0x80000000llu); // the largest power-of-two in 32 bit
+
+  xiiUInt32 uiNewCapacity32 = static_cast<xiiUInt32>(uiNewCapacity64 & 0xFFFFFFFF);
+  XII_ASSERT_DEBUG(uiCapacity <= uiNewCapacity32, "xiiHashSet/Map do not support more than 2 billion entries.");
+
+  if (m_uiCapacity >= uiNewCapacity32)
+    return;
+
+  uiNewCapacity32 = xiiMath::Max<xiiUInt32>(xiiMath::PowerOfTwo_Ceil(uiNewCapacity32), CAPACITY_ALIGNMENT);
+  SetCapacity(uiNewCapacity32);
+}
+
+template <typename K, typename H>
+void xiiHashSetBase<K, H>::Compact()
+{
+  if (IsEmpty())
+  {
+    // completely deallocate all data, if the table is empty.
+    XII_DELETE_RAW_BUFFER(m_pAllocator, m_pEntries);
+    XII_DELETE_RAW_BUFFER(m_pAllocator, m_pEntryFlags);
+    m_uiCapacity = 0;
+  }
+  else
+  {
+    const xiiUInt32 uiNewCapacity = (m_uiCount + (CAPACITY_ALIGNMENT - 1)) & ~(CAPACITY_ALIGNMENT - 1);
+    if (m_uiCapacity != uiNewCapacity)
+      SetCapacity(uiNewCapacity);
+  }
+}
+
+template <typename K, typename H>
+XII_ALWAYS_INLINE xiiUInt32 xiiHashSetBase<K, H>::GetCount() const
+{
+  return m_uiCount;
+}
+
+template <typename K, typename H>
+XII_ALWAYS_INLINE bool xiiHashSetBase<K, H>::IsEmpty() const
+{
+  return m_uiCount == 0;
+}
+
+template <typename K, typename H>
+void xiiHashSetBase<K, H>::Clear()
+{
+  for (xiiUInt32 i = 0; i < m_uiCapacity; ++i)
+  {
+    if (IsValidEntry(i))
+    {
+      xiiMemoryUtils::Destruct(&m_pEntries[i], 1);
+    }
+  }
+
+  xiiMemoryUtils::ZeroFill(m_pEntryFlags, GetFlagsCapacity());
+  m_uiCount = 0;
+}
+
+template <typename K, typename H>
+template <typename CompatibleKeyType>
+bool xiiHashSetBase<K, H>::Insert(CompatibleKeyType&& key)
+{
+  Reserve(m_uiCount + 1);
+
+  xiiUInt32 uiIndex        = H::Hash(key) & (m_uiCapacity - 1);
+  xiiUInt32 uiDeletedIndex = xiiInvalidIndex;
+
+  xiiUInt32 uiCounter = 0;
+  while (!IsFreeEntry(uiIndex) && uiCounter < m_uiCapacity)
+  {
+    if (IsDeletedEntry(uiIndex))
+    {
+      if (uiDeletedIndex == xiiInvalidIndex)
+        uiDeletedIndex = uiIndex;
+    }
+    else if (H::Equal(m_pEntries[uiIndex], key))
+    {
+      return true;
+    }
+    ++uiIndex;
+    if (uiIndex == m_uiCapacity)
+      uiIndex = 0;
+
+    ++uiCounter;
+  }
+
+  // new entry
+  uiIndex = uiDeletedIndex != xiiInvalidIndex ? uiDeletedIndex : uiIndex;
+
+  // Constructions might either be a move or a copy.
+  xiiMemoryUtils::CopyOrMoveConstruct(&m_pEntries[uiIndex], std::forward<CompatibleKeyType>(key));
+
+  MarkEntryAsValid(uiIndex);
+  ++m_uiCount;
+
+  return false;
+}
+
+template <typename K, typename H>
+template <typename CompatibleKeyType>
+bool xiiHashSetBase<K, H>::Remove(const CompatibleKeyType& key)
+{
+  xiiUInt32 uiIndex = FindEntry(key);
+  if (uiIndex != xiiInvalidIndex)
+  {
+    RemoveInternal(uiIndex);
+    return true;
+  }
+
+  return false;
+}
+
+template <typename K, typename H>
+typename xiiHashSetBase<K, H>::ConstIterator xiiHashSetBase<K, H>::Remove(const typename xiiHashSetBase<K, H>::ConstIterator& pos)
+{
+  ConstIterator it      = pos;
+  xiiUInt32     uiIndex = pos.m_uiCurrentIndex;
+  ++it;
+  --it.m_uiCurrentCount;
+  RemoveInternal(uiIndex);
+  return it;
+}
+
+template <typename K, typename H>
+void xiiHashSetBase<K, H>::RemoveInternal(xiiUInt32 uiIndex)
+{
+  xiiMemoryUtils::Destruct(&m_pEntries[uiIndex], 1);
+
+  xiiUInt32 uiNextIndex = uiIndex + 1;
+  if (uiNextIndex == m_uiCapacity)
+    uiNextIndex = 0;
+
+  // if the next entry is free we are at the end of a chain and
+  // can immediately mark this entry as free as well
+  if (IsFreeEntry(uiNextIndex))
+  {
+    MarkEntryAsFree(uiIndex);
+
+    // run backwards and free all deleted entries in this chain
+    xiiUInt32 uiPrevIndex = (uiIndex != 0) ? uiIndex : m_uiCapacity;
+    --uiPrevIndex;
+
+    while (IsDeletedEntry(uiPrevIndex))
+    {
+      MarkEntryAsFree(uiPrevIndex);
+
+      if (uiPrevIndex == 0)
+        uiPrevIndex = m_uiCapacity;
+      --uiPrevIndex;
+    }
+  }
+  else
+  {
+    MarkEntryAsDeleted(uiIndex);
+  }
+
+  --m_uiCount;
+}
+
+template <typename K, typename H>
+template <typename CompatibleKeyType>
+XII_FORCE_INLINE bool xiiHashSetBase<K, H>::Contains(const CompatibleKeyType& key) const
+{
+  return FindEntry(key) != xiiInvalidIndex;
+}
+
+template <typename K, typename H>
+bool xiiHashSetBase<K, H>::ContainsSet(const xiiHashSetBase<K, H>& operand) const
+{
+  for (const K& key : operand)
+  {
+    if (!Contains(key))
+      return false;
+  }
+
+  return true;
+}
+
+template <typename K, typename H>
+void xiiHashSetBase<K, H>::Union(const xiiHashSetBase<K, H>& operand)
+{
+  Reserve(GetCount() + operand.GetCount());
+  for (const auto& key : operand)
+  {
+    Insert(key);
+  }
+}
+
+template <typename K, typename H>
+void xiiHashSetBase<K, H>::Difference(const xiiHashSetBase<K, H>& operand)
+{
+  for (const auto& key : operand)
+  {
+    Remove(key);
+  }
+}
+
+template <typename K, typename H>
+void xiiHashSetBase<K, H>::Intersection(const xiiHashSetBase<K, H>& operand)
+{
+  for (auto it = GetIterator(); it.IsValid();)
+  {
+    if (!operand.Contains(it.Key()))
+      it = Remove(it);
+    else
+      ++it;
+  }
+}
+
+template <typename K, typename H>
+XII_FORCE_INLINE typename xiiHashSetBase<K, H>::ConstIterator xiiHashSetBase<K, H>::GetIterator() const
+{
+  ConstIterator iterator(*this);
+  iterator.SetToBegin();
+  return iterator;
+}
+
+template <typename K, typename H>
+XII_FORCE_INLINE typename xiiHashSetBase<K, H>::ConstIterator xiiHashSetBase<K, H>::GetEndIterator() const
+{
+  ConstIterator iterator(*this);
+  iterator.SetToEnd();
+  return iterator;
+}
+
+template <typename K, typename H>
+XII_ALWAYS_INLINE xiiAllocatorBase* xiiHashSetBase<K, H>::GetAllocator() const
+{
+  return m_pAllocator;
+}
+
+template <typename K, typename H>
+xiiUInt64 xiiHashSetBase<K, H>::GetHeapMemoryUsage() const
+{
+  return ((xiiUInt64)m_uiCapacity * sizeof(K)) + (sizeof(xiiUInt32) * (xiiUInt64)GetFlagsCapacity());
+}
+
+// private methods
+template <typename K, typename H>
+void xiiHashSetBase<K, H>::SetCapacity(xiiUInt32 uiCapacity)
+{
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(uiCapacity), "uiCapacity must be a power of two to avoid modulo during lookup.");
+  const xiiUInt32 uiOldCapacity = m_uiCapacity;
+  m_uiCapacity                  = uiCapacity;
+
+  K*         pOldEntries    = m_pEntries;
+  xiiUInt32* pOldEntryFlags = m_pEntryFlags;
+
+  m_pEntries    = XII_NEW_RAW_BUFFER(m_pAllocator, K, m_uiCapacity);
+  m_pEntryFlags = XII_NEW_RAW_BUFFER(m_pAllocator, xiiUInt32, GetFlagsCapacity());
+  xiiMemoryUtils::ZeroFill(m_pEntryFlags, GetFlagsCapacity());
+
+  m_uiCount = 0;
+  for (xiiUInt32 i = 0; i < uiOldCapacity; ++i)
+  {
+    if (GetFlags(pOldEntryFlags, i) == VALID_ENTRY)
+    {
+      XII_VERIFY(!Insert(std::move(pOldEntries[i])), "Implementation error");
+
+      xiiMemoryUtils::Destruct(&pOldEntries[i], 1);
+    }
+  }
+
+  XII_DELETE_RAW_BUFFER(m_pAllocator, pOldEntries);
+  XII_DELETE_RAW_BUFFER(m_pAllocator, pOldEntryFlags);
+}
+
+template <typename K, typename H>
+template <typename CompatibleKeyType>
+XII_FORCE_INLINE xiiUInt32 xiiHashSetBase<K, H>::FindEntry(const CompatibleKeyType& key) const
+{
+  return FindEntry(H::Hash(key), key);
+}
+
+template <typename K, typename H>
+template <typename CompatibleKeyType>
+inline xiiUInt32 xiiHashSetBase<K, H>::FindEntry(xiiUInt32 uiHash, const CompatibleKeyType& key) const
+{
+  if (m_uiCapacity > 0)
+  {
+    xiiUInt32 uiIndex   = uiHash & (m_uiCapacity - 1);
+    xiiUInt32 uiCounter = 0;
+    while (!IsFreeEntry(uiIndex) && uiCounter < m_uiCapacity)
+    {
+      if (IsValidEntry(uiIndex) && H::Equal(m_pEntries[uiIndex], key))
+        return uiIndex;
+
+      ++uiIndex;
+      if (uiIndex == m_uiCapacity)
+        uiIndex = 0;
+
+      ++uiCounter;
+    }
+  }
+  // not found
+  return xiiInvalidIndex;
+}
+
+#define XII_HASHSET_USE_BITFLAGS XII_ON
+
+template <typename K, typename H>
+XII_FORCE_INLINE xiiUInt32 xiiHashSetBase<K, H>::GetFlagsCapacity() const
+{
+#if XII_ENABLED(XII_HASHSET_USE_BITFLAGS)
+  return (m_uiCapacity + 15) / 16;
+#else
+  return m_uiCapacity;
+#endif
+}
+
+template <typename K, typename H>
+xiiUInt32 xiiHashSetBase<K, H>::GetFlags(xiiUInt32* pFlags, xiiUInt32 uiEntryIndex) const
+{
+#if XII_ENABLED(XII_HASHSET_USE_BITFLAGS)
+  const xiiUInt32 uiIndex    = uiEntryIndex / 16;
+  const xiiUInt32 uiSubIndex = (uiEntryIndex & 15) * 2;
+  return (pFlags[uiIndex] >> uiSubIndex) & FLAGS_MASK;
+#else
+  return pFlags[uiEntryIndex] & FLAGS_MASK;
+#endif
+}
+
+template <typename K, typename H>
+void xiiHashSetBase<K, H>::SetFlags(xiiUInt32 uiEntryIndex, xiiUInt32 uiFlags)
+{
+#if XII_ENABLED(XII_HASHSET_USE_BITFLAGS)
+  const xiiUInt32 uiIndex    = uiEntryIndex / 16;
+  const xiiUInt32 uiSubIndex = (uiEntryIndex & 15) * 2;
+  XII_ASSERT_DEV(uiIndex < GetFlagsCapacity(), "Out of bounds access");
+  m_pEntryFlags[uiIndex] &= ~(FLAGS_MASK << uiSubIndex);
+  m_pEntryFlags[uiIndex] |= (uiFlags << uiSubIndex);
+#else
+  XII_ASSERT_DEV(uiEntryIndex < GetFlagsCapacity(), "Out of bounds access");
+  m_pEntryFlags[uiEntryIndex] = uiFlags;
+#endif
+}
+
+template <typename K, typename H>
+XII_FORCE_INLINE bool xiiHashSetBase<K, H>::IsFreeEntry(xiiUInt32 uiEntryIndex) const
+{
+  return GetFlags(m_pEntryFlags, uiEntryIndex) == FREE_ENTRY;
+}
+
+template <typename K, typename H>
+XII_FORCE_INLINE bool xiiHashSetBase<K, H>::IsValidEntry(xiiUInt32 uiEntryIndex) const
+{
+  return GetFlags(m_pEntryFlags, uiEntryIndex) == VALID_ENTRY;
+}
+
+template <typename K, typename H>
+XII_FORCE_INLINE bool xiiHashSetBase<K, H>::IsDeletedEntry(xiiUInt32 uiEntryIndex) const
+{
+  return GetFlags(m_pEntryFlags, uiEntryIndex) == DELETED_ENTRY;
+}
+
+template <typename K, typename H>
+XII_FORCE_INLINE void xiiHashSetBase<K, H>::MarkEntryAsFree(xiiUInt32 uiEntryIndex)
+{
+  SetFlags(uiEntryIndex, FREE_ENTRY);
+}
+
+template <typename K, typename H>
+XII_FORCE_INLINE void xiiHashSetBase<K, H>::MarkEntryAsValid(xiiUInt32 uiEntryIndex)
+{
+  SetFlags(uiEntryIndex, VALID_ENTRY);
+}
+
+template <typename K, typename H>
+XII_FORCE_INLINE void xiiHashSetBase<K, H>::MarkEntryAsDeleted(xiiUInt32 uiEntryIndex)
+{
+  SetFlags(uiEntryIndex, DELETED_ENTRY);
+}
+
+
+template <typename K, typename H, typename A>
+xiiHashSet<K, H, A>::xiiHashSet() :
+  xiiHashSetBase<K, H>(A::GetAllocator())
+{
+}
+
+template <typename K, typename H, typename A>
+xiiHashSet<K, H, A>::xiiHashSet(xiiAllocatorBase* pAllocator) :
+  xiiHashSetBase<K, H>(pAllocator)
+{
+}
+
+template <typename K, typename H, typename A>
+xiiHashSet<K, H, A>::xiiHashSet(const xiiHashSet<K, H, A>& other) :
+  xiiHashSetBase<K, H>(other, A::GetAllocator())
+{
+}
+
+template <typename K, typename H, typename A>
+xiiHashSet<K, H, A>::xiiHashSet(const xiiHashSetBase<K, H>& other) :
+  xiiHashSetBase<K, H>(other, A::GetAllocator())
+{
+}
+
+template <typename K, typename H, typename A>
+xiiHashSet<K, H, A>::xiiHashSet(xiiHashSet<K, H, A>&& other) :
+  xiiHashSetBase<K, H>(std::move(other), other.GetAllocator())
+{
+}
+
+template <typename K, typename H, typename A>
+xiiHashSet<K, H, A>::xiiHashSet(xiiHashSetBase<K, H>&& other) :
+  xiiHashSetBase<K, H>(std::move(other), other.GetAllocator())
+{
+}
+
+template <typename K, typename H, typename A>
+void xiiHashSet<K, H, A>::operator=(const xiiHashSet<K, H, A>& rhs)
+{
+  xiiHashSetBase<K, H>::operator=(rhs);
+}
+
+template <typename K, typename H, typename A>
+void xiiHashSet<K, H, A>::operator=(const xiiHashSetBase<K, H>& rhs)
+{
+  xiiHashSetBase<K, H>::operator=(rhs);
+}
+
+template <typename K, typename H, typename A>
+void xiiHashSet<K, H, A>::operator=(xiiHashSet<K, H, A>&& rhs)
+{
+  xiiHashSetBase<K, H>::operator=(std::move(rhs));
+}
+
+template <typename K, typename H, typename A>
+void xiiHashSet<K, H, A>::operator=(xiiHashSetBase<K, H>&& rhs)
+{
+  xiiHashSetBase<K, H>::operator=(std::move(rhs));
+}
+
+template <typename KeyType, typename Hasher>
+void xiiHashSetBase<KeyType, Hasher>::Swap(xiiHashSetBase<KeyType, Hasher>& other)
+{
+  xiiMath::Swap(this->m_pEntries, other.m_pEntries);
+  xiiMath::Swap(this->m_pEntryFlags, other.m_pEntryFlags);
+  xiiMath::Swap(this->m_uiCount, other.m_uiCount);
+  xiiMath::Swap(this->m_uiCapacity, other.m_uiCapacity);
+  xiiMath::Swap(this->m_pAllocator, other.m_pAllocator);
+}

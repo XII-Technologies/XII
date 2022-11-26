@@ -1,0 +1,20 @@
+#pragma once
+
+#include <Foundation/Basics.h>
+#include <Foundation/Containers/DynamicArray.h>
+
+///\brief The compression method to be used
+enum class xiiCompressionMethod : xiiUInt16
+{
+  ZStd = 0 ///< Only available when ZStd support is enabled in the build (default)
+};
+
+/// \brief This namespace contains utilities which can be used to compress and decompress data.
+namespace xiiCompressionUtils
+{
+  ///\brief Compresses the given data using the compression method eMethod into the dynamic array given in out_Data.
+  XII_FOUNDATION_DLL xiiResult Compress(xiiArrayPtr<const xiiUInt8> pUncompressedData, xiiCompressionMethod eMethod, xiiDynamicArray<xiiUInt8>& out_Data);
+
+  ///\brief Decompresses the given data using the compression method eMethod into the dynamic array given in out_Data.
+  XII_FOUNDATION_DLL xiiResult Decompress(xiiArrayPtr<const xiiUInt8> pCompressedData, xiiCompressionMethod eMethod, xiiDynamicArray<xiiUInt8>& out_Data);
+} // namespace xiiCompressionUtils

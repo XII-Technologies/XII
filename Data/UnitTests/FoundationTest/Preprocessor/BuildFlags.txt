@@ -1,0 +1,43 @@
+#include "Includes\BlackMagic.txt"
+
+#define XII_ENUM_VALUE_TO_STRING(name) \
+  case name: return XII_STRINGIZE(name);
+#define XII_ENUM_TO_STRING(...) \
+  const char* ToString(xiiUInt32 value) \
+  { \
+    switch (value) \
+    { \
+      XII_EXPAND_ARGS(XII_ENUM_VALUE_TO_STRING, ##__VA_ARGS__) \
+      default: return nullptr; \
+    } \
+  }
+#define XII_DECLARE_FLAGS_OPERATORS(FlagsType) \
+  inline xiiBitflags<FlagsType> operator|(FlagsType::Enum lhs, FlagsType::Enum rhs)    \
+  {    \
+    return (xiiBitflags<FlagsType>(lhs) | xiiBitflags<FlagsType>(rhs));    \
+  } \
+  \
+  inline xiiBitflags<FlagsType> operator&(FlagsType::Enum lhs, FlagsType::Enum rhs)    \
+  {    \
+    return (xiiBitflags<FlagsType>(lhs) & xiiBitflags<FlagsType>(rhs));    \
+  }
+#define XII_DECLARE_FLAGS(InternalStorageType, BitflagsTypeName, ...)    \
+struct BitflagsTypeName    \
+  {    \
+    static const xiiUInt32 Count = XII_VA_NUM_ARGS(__VA_ARGS__);    \
+    typedef InternalStorageType StorageType; \
+    enum Enum    \
+    {    \
+      XII_EXPAND_ARGS_WITH_INDEX(XII_DECLARE_FLAGS_ENUM, ##__VA_ARGS__)    \
+    };    \
+    struct Bits    \
+    {    \
+      XII_EXPAND_ARGS(XII_DECLARE_FLAGS_BITS, ##__VA_ARGS__)    \
+    };    \
+    XII_ENUM_TO_STRING(__VA_ARGS__) \
+  };    \
+  XII_DECLARE_FLAGS_OPERATORS(BitflagsTypeName)
+#define XII_DECLARE_FLAGS_ENUM(name, n)    name = XII_BIT(n),
+#define XII_DECLARE_FLAGS_BITS(name)       StorageType name : 1;  
+
+XII_DECLARE_FLAGS(xiiUInt8, xiiImageConversionFlags, None, InPlace, Lossy);

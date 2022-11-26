@@ -1,0 +1,129 @@
+#pragma once
+
+#include <EditorFramework/EditorFrameworkDLL.h>
+#include <GuiFoundation/Action/BaseActions.h>
+#include <ToolsFoundation/Project/ToolsProject.h>
+
+///
+class XII_EDITORFRAMEWORK_DLL xiiProjectActions
+{
+public:
+  static void RegisterActions();
+  static void UnregisterActions();
+
+  static void MapActions(const char* szMapping);
+
+  static xiiActionDescriptorHandle s_hEditorMenu;
+
+  static xiiActionDescriptorHandle s_hDocumentCategory;
+  static xiiActionDescriptorHandle s_hCreateDocument;
+  static xiiActionDescriptorHandle s_hOpenDocument;
+  static xiiActionDescriptorHandle s_hRecentDocuments;
+
+  static xiiActionDescriptorHandle s_hProjectCategory;
+  static xiiActionDescriptorHandle s_hOpenDashboard;
+  static xiiActionDescriptorHandle s_hCreateProject;
+  static xiiActionDescriptorHandle s_hOpenProject;
+  static xiiActionDescriptorHandle s_hRecentProjects;
+  static xiiActionDescriptorHandle s_hCloseProject;
+
+  static xiiActionDescriptorHandle s_hDocsAndCommunity;
+
+  static xiiActionDescriptorHandle s_hSettingsCategory;
+  static xiiActionDescriptorHandle s_hEditorSettingsMenu;
+  static xiiActionDescriptorHandle s_hProjectSettingsMenu;
+  static xiiActionDescriptorHandle s_hShortcutEditor;
+  static xiiActionDescriptorHandle s_hDataDirectories;
+  static xiiActionDescriptorHandle s_hWindowConfig;
+  static xiiActionDescriptorHandle s_hInputConfig;
+  static xiiActionDescriptorHandle s_hPreferencesDlg;
+  static xiiActionDescriptorHandle s_hTagsDlg;
+  static xiiActionDescriptorHandle s_hAssetProfiles;
+  static xiiActionDescriptorHandle s_hExportProject;
+  static xiiActionDescriptorHandle s_hPluginSelection;
+
+  static xiiActionDescriptorHandle s_hToolsMenu;
+  static xiiActionDescriptorHandle s_hToolsCategory;
+  static xiiActionDescriptorHandle s_hReloadResources;
+  static xiiActionDescriptorHandle s_hReloadEngine;
+  static xiiActionDescriptorHandle s_hLaunchFileserve;
+  static xiiActionDescriptorHandle s_hLaunchInspector;
+  static xiiActionDescriptorHandle s_hSaveProfiling;
+  static xiiActionDescriptorHandle s_hOpenVsCode;
+  static xiiActionDescriptorHandle s_hImportAsset;
+
+  static xiiActionDescriptorHandle s_hSetupCppProject;
+};
+
+///
+class XII_EDITORFRAMEWORK_DLL xiiRecentDocumentsMenuAction : public xiiDynamicMenuAction
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRecentDocumentsMenuAction, xiiDynamicMenuAction);
+
+public:
+  xiiRecentDocumentsMenuAction(const xiiActionContext& context, const char* szName, const char* szIconPath) :
+    xiiDynamicMenuAction(context, szName, szIconPath)
+  {
+  }
+  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_Entries) override;
+  virtual void Execute(const xiiVariant& value) override;
+};
+
+///
+class XII_EDITORFRAMEWORK_DLL xiiRecentProjectsMenuAction : public xiiDynamicMenuAction
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRecentProjectsMenuAction, xiiDynamicMenuAction);
+
+public:
+  xiiRecentProjectsMenuAction(const xiiActionContext& context, const char* szName, const char* szIconPath) :
+    xiiDynamicMenuAction(context, szName, szIconPath)
+  {
+  }
+  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_Entries) override;
+  virtual void Execute(const xiiVariant& value) override;
+};
+
+///
+class XII_EDITORFRAMEWORK_DLL xiiProjectAction : public xiiButtonAction
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiProjectAction, xiiButtonAction);
+
+public:
+  enum class ButtonType
+  {
+    CreateDocument,
+    OpenDocument,
+    OpenDashboard,
+    CreateProject,
+    OpenProject,
+    CloseProject,
+    ReloadResources,
+    ReloadEngine,
+    LaunchFileserve,
+    LaunchInspector,
+    SaveProfiling,
+    OpenVsCode,
+    Shortcuts,
+    DataDirectories,
+    WindowConfig,
+    InputConfig,
+    PreferencesDialog,
+    TagsDialog,
+    ImportAsset,
+    AssetProfiles,
+    SetupCppProject,
+    ShowDocsAndCommunity,
+    ExportProject,
+    PluginSelection,
+  };
+
+  xiiProjectAction(const xiiActionContext& context, const char* szName, ButtonType button);
+  ~xiiProjectAction();
+
+  virtual void Execute(const xiiVariant& value) override;
+
+private:
+  void ProjectEventHandler(const xiiToolsProjectEvent& e);
+
+  ButtonType m_ButtonType;
+};

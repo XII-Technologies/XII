@@ -1,0 +1,320 @@
+#include <GuiFoundation/GuiFoundationPCH.h>
+
+#include <GuiFoundation/NodeEditor/Node.h>
+#include <GuiFoundation/NodeEditor/Pin.h>
+#include <QApplication>
+#include <QGraphicsDropShadowEffect>
+#include <QPainter>
+#include <ToolsFoundation/Document/Document.h>
+
+xiiQtNode::xiiQtNode()
+{
+  auto palette = QApplication::palette();
+
+  setFlag(QGraphicsItem::ItemIsMovable);
+  setFlag(QGraphicsItem::ItemIsSelectable);
+  setFlag(QGraphicsItem::ItemSendsGeometryChanges);
+
+  setBrush(palette.window());
+  QPen pen(palette.light().color(), 3, Qt::SolidLine);
+  setPen(pen);
+
+  m_pLabel = new QGraphicsTextItem(this);
+  m_pLabel->setDefaultTextColor(palette.buttonText().color());
+  QFont font = QApplication::font();
+  font.setBold(true);
+  m_pLabel->setFont(font);
+
+  m_HeaderColor = palette.alternateBase().color();
+}
+
+xiiQtNode::~xiiQtNode()
+{
+  EnableDropShadow(false);
+}
+
+void xiiQtNode::EnableDropShadow(bool enable)
+{
+  if (enable && m_pShadow == nullptr)
+  {
+    auto palette = QApplication::palette();
+
+    m_pShadow = new QGraphicsDropShadowEffect();
+    m_pShadow->setOffset(3, 3);
+    m_pShadow->setColor(palette.color(QPalette::Shadow));
+    m_pShadow->setBlurRadius(10);
+    setGraphicsEffect(m_pShadow);
+  }
+
+  if (!enable && m_pShadow != nullptr)
+  {
+    delete m_pShadow;
+    m_pShadow = nullptr;
+  }
+}
+
+void xiiQtNode::InitNode(const xiiDocumentNodeManager* pManager, const xiiDocumentObject* pObject)
+{
+  m_pManager = pManager;
+  m_pObject  = pObject;
+  CreatePins();
+  UpdateState();
+
+  UpdateGeometry();
+
+  if (const xiiColorAttribute* pColorAttr = pObject->GetType()->GetAttributeByType<xiiColorAttribute>())
+  {
+    m_HeaderColor = xiiToQtColor(pColorAttr->GetColor());
+  }
+
+  m_DirtyFlags.Add(xiiNodeFlags::UpdateTitle);
+}
+
+void xiiQtNode::UpdateGeometry()
+{
+  prepareGeometryChange();
+
+  auto labelRect = m_pLabel->boundingRect();
+
+  QFontMetrics fm(scene()->font());
+  const int    headerWidth = labelRect.width();
+  int          h           = labelRect.height() + 5;
+
+  int y = h;
+
+  // Align inputs
+  int maxInputWidth = 0;
+  for (xiiQtPin* pQtPin : m_Inputs)
+  {
+    auto rectPin = pQtPin->GetPinRect();
+    pQtPin->setPos(QPointF(-rectPin.x(), y - rectPin.y()));
+
+    maxInputWidth = xiiMath::Max(maxInputWidth, (int)rectPin.width());
+    y += rectPin.height();
+  }
+
+  int maxheight = y;
+  y             = h;
+
+  // Align outputs
+  int maxOutputWidth = 0;
+  for (xiiQtPin* pQtPin : m_Outputs)
+  {
+    auto rectPin = pQtPin->GetPinRect();
+    pQtPin->setPos(QPointF(-rectPin.x(), y - rectPin.y()));
+
+    maxOutputWidth = xiiMath::Max(maxOutputWidth, (int)rectPin.width());
+    y += rectPin.height();
+  }
+
+  int w = 0;
+
+  if (maxInputWidth == 0)
+    w = maxOutputWidth;
+  else if (maxOutputWidth == 0)
+    w = maxInputWidth;
+  else
+    w = xiiMath::Max(maxInputWidth, maxOutputWidth) * 2;
+
+  w += 10;
+  w = xiiMath::Max(w, headerWidth);
+
+
+  maxheight = xiiMath::Max(maxheight, y);
+
+  // Align outputs to the right
+  for (xiiUInt32 i = 0; i < m_Outputs.GetCount(); ++i)
+  {
+    auto rectPin = m_Outputs[i]->GetPinRect();
+    m_Outputs[i]->setX(w - rectPin.width());
+  }
+
+  m_HeaderRect = QRectF(-5, -5, w + 10, labelRect.height() + 10);
+
+  {
+    QPainterPath p;
+    p.addRoundedRect(-5, -5, w + 10, maxheight + 10, 5, 5);
+    setPath(p);
+  }
+}
+
+void xiiQtNode::UpdateState()
+{
+  auto& typeAccessor = m_pObject->GetTypeAccessor();
+
+  xiiVariant name = typeAccessor.GetValue("Name");
+  if (name.IsA<xiiString>() && name.Get<xiiString>().IsEmpty() == false)
+  {
+    m_pLabel->setPlainText(name.Get<xiiString>().GetData());
+  }
+  else
+  {
+    m_pLabel->setPlainText(typeAccessor.GetType()->GetTypeName());
+  }
+}
+
+void xiiQtNode::SetActive(bool active)
+{
+  if (m_bIsActive != active)
+  {
+    m_bIsActive = active;
+
+    for (auto pInputPin : m_Inputs)
+    {
+      pInputPin->SetActive(active);
+    }
+
+    for (auto pOutputPin : m_Outputs)
+    {
+      pOutputPin->SetActive(active);
+    }
+  }
+
+  update();
+}
+
+void xiiQtNode::CreatePins()
+{
+  auto inputs = m_pManager->GetInputPins(m_pObject);
+  for (auto& pPinTarget : inputs)
+  {
+    xiiQtPin* pQtPin = xiiQtNodeScene::GetPinFactory().CreateObject(pPinTarget->GetDynamicRTTI());
+    if (pQtPin == nullptr)
+    {
+      pQtPin = new xiiQtPin();
+    }
+    pQtPin->setParentItem(this);
+    m_Inputs.PushBack(pQtPin);
+
+    pQtPin->SetPin(*pPinTarget);
+  }
+
+  auto outputs = m_pManager->GetOutputPins(m_pObject);
+  for (auto& pPinSource : outputs)
+  {
+    xiiQtPin* pQtPin = xiiQtNodeScene::GetPinFactory().CreateObject(pPinSource->GetDynamicRTTI());
+    if (pQtPin == nullptr)
+    {
+      pQtPin = new xiiQtPin();
+    }
+
+    pQtPin->setParentItem(this);
+    m_Outputs.PushBack(pQtPin);
+
+    pQtPin->SetPin(*pPinSource);
+  }
+}
+
+xiiQtPin* xiiQtNode::GetInputPin(const xiiPin& pin)
+{
+  for (xiiQtPin* pQtPin : m_Inputs)
+  {
+    if (pQtPin->GetPin() == &pin)
+      return pQtPin;
+  }
+  return nullptr;
+}
+
+xiiQtPin* xiiQtNode::GetOutputPin(const xiiPin& pin)
+{
+  for (xiiQtPin* pQtPin : m_Outputs)
+  {
+    if (pQtPin->GetPin() == &pin)
+      return pQtPin;
+  }
+  return nullptr;
+}
+
+xiiBitflags<xiiNodeFlags> xiiQtNode::GetFlags() const
+{
+  return m_DirtyFlags;
+}
+
+void xiiQtNode::ResetFlags()
+{
+  m_DirtyFlags = xiiNodeFlags::UpdateTitle;
+}
+
+void xiiQtNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+  if (m_DirtyFlags.IsSet(xiiNodeFlags::UpdateTitle))
+  {
+    UpdateState();
+    UpdateGeometry();
+    m_DirtyFlags.Remove(xiiNodeFlags::UpdateTitle);
+  }
+
+  auto palette = QApplication::palette();
+
+  // Draw background
+  painter->setPen(QPen(Qt::NoPen));
+  painter->setBrush(brush());
+  painter->drawPath(path());
+
+  QColor headerColor = m_HeaderColor;
+  if (!m_bIsActive)
+    headerColor.setAlpha(50);
+
+  // Draw header
+  painter->setClipPath(path());
+  painter->setPen(QPen(Qt::NoPen));
+  painter->setBrush(headerColor);
+  painter->drawRect(m_HeaderRect);
+  painter->setClipping(false);
+
+  QColor labelColor;
+
+  // Draw outline
+  if (isSelected())
+  {
+    QPen p = pen();
+    p.setColor(palette.highlight().color());
+    painter->setPen(p);
+
+    labelColor = palette.highlightedText().color();
+  }
+  else
+  {
+    painter->setPen(pen());
+
+    labelColor = palette.buttonText().color();
+  }
+
+  // Label
+  if (!m_bIsActive)
+    labelColor = labelColor.darker(150);
+
+  const bool bBackgroundIsLight = m_HeaderColor.lightnessF() > 0.6f;
+  if (bBackgroundIsLight)
+  {
+    labelColor.setRed(255 - labelColor.red());
+    labelColor.setGreen(255 - labelColor.green());
+    labelColor.setBlue(255 - labelColor.blue());
+  }
+
+  m_pLabel->setDefaultTextColor(labelColor);
+
+  painter->setBrush(QBrush(Qt::NoBrush));
+  painter->drawPath(path());
+}
+
+QVariant xiiQtNode::itemChange(GraphicsItemChange change, const QVariant& value)
+{
+  if (!m_pObject)
+    return QGraphicsPathItem::itemChange(change, value);
+
+  xiiCommandHistory* pHistory = m_pManager->GetDocument()->GetCommandHistory();
+  switch (change)
+  {
+    case QGraphicsItem::ItemPositionHasChanged:
+    {
+      if (!pHistory->IsInUndoRedo() && !pHistory->IsInTransaction())
+        m_DirtyFlags.Add(xiiNodeFlags::Moved);
+    }
+    break;
+
+    default:
+      break;
+  }
+  return QGraphicsPathItem::itemChange(change, value);
+}

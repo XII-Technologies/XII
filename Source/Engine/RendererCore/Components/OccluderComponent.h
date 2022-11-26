@@ -1,0 +1,54 @@
+#pragma once
+
+#include <Core/World/Component.h>
+#include <Core/World/World.h>
+#include <RendererCore/Rasterizer/RasterizerObject.h>
+#include <RendererCore/RendererCoreDLL.h>
+
+struct xiiMsgTransformChanged;
+struct xiiMsgUpdateLocalBounds;
+struct xiiMsgExtractOccluderData;
+
+class XII_RENDERERCORE_DLL xiiOccluderComponentManager final : public xiiComponentManager<class xiiOccluderComponent, xiiBlockStorageType::FreeList>
+{
+public:
+  xiiOccluderComponentManager(xiiWorld* pWorld);
+};
+
+class XII_RENDERERCORE_DLL xiiOccluderComponent : public xiiComponent
+{
+  XII_DECLARE_COMPONENT_TYPE(xiiOccluderComponent, xiiComponent, xiiOccluderComponentManager);
+
+  //////////////////////////////////////////////////////////////////////////
+  // xiiComponent
+
+public:
+  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+
+protected:
+  virtual void OnActivated() override;
+  virtual void OnDeactivated() override;
+
+  //////////////////////////////////////////////////////////////////////////
+  // xiiBoxReflectionProbeComponent
+
+public:
+  xiiOccluderComponent();
+  ~xiiOccluderComponent();
+
+  const xiiVec3& GetExtents() const
+  {
+    return m_vExtents;
+  }
+
+  void SetExtents(const xiiVec3& extents);
+
+private:
+  xiiVec3 m_vExtents = xiiVec3(5.0f);
+
+  mutable xiiSharedPtr<const xiiRasterizerObject> m_pOccluderObject;
+
+  void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg);
+  void OnMsgExtractOccluderData(xiiMsgExtractOccluderData& msg) const;
+};

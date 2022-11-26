@@ -1,0 +1,518 @@
+#include <RendererVulkan/RendererVulkanPCH.h>
+
+#include <RendererFoundation/Device/Device.h>
+#include <RendererFoundation/Resources/RenderTargetView.h>
+#include <RendererFoundation/Resources/ResourceView.h>
+#include <RendererFoundation/Shader/ShaderUtils.h>
+#include <RendererVulkan/Pools/DescriptorSetPoolVulkan.h>
+#include <RendererVulkan/Resources/BufferVulkan.h>
+#include <RendererVulkan/Resources/RenderTargetViewVulkan.h>
+#include <RendererVulkan/Resources/ResourceViewVulkan.h>
+#include <RendererVulkan/Resources/TextureVulkan.h>
+#include <RendererVulkan/Resources/UnorderedAccessViewVulkan.h>
+#include <RendererVulkan/Shader/VertexDeclarationVulkan.h>
+#include <RendererVulkan/State/StateVulkan.h>
+#include <RendererVulkan/Utils/ConversionUtilsVulkan.h>
+#include <RendererVulkan/Utils/ImageCopyVulkan.h>
+#include <RendererVulkan/Utils/PipelineBarrierVulkan.h>
+
+template <>
+struct xiiHashHelper<xiiGALShaderHandle>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(xiiGALShaderHandle value)
+  {
+    return xiiHashHelper<xiiGALShaderHandle::IdType::StorageType>::Hash(value.GetInternalID().m_Data);
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(xiiGALShaderHandle a, xiiGALShaderHandle b)
+  {
+    return xiiHashHelper<xiiGALShaderHandle::IdType::StorageType>::Equal(a.GetInternalID().m_Data, b.GetInternalID().m_Data);
+  }
+};
+
+template <>
+struct xiiHashHelper<xiiImageCopyVulkan::RenderPassCacheKey>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiImageCopyVulkan::RenderPassCacheKey& value)
+  {
+    return xiiHashingUtils::CombineHashValues32(static_cast<uint32_t>(value.targetFormat), static_cast<uint32_t>(value.targetSamples));
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(const xiiImageCopyVulkan::RenderPassCacheKey& a, const xiiImageCopyVulkan::RenderPassCacheKey& b)
+  {
+    return a.targetFormat == b.targetFormat && a.targetSamples == b.targetSamples;
+  }
+};
+
+template <>
+struct xiiHashHelper<vk::Image>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(vk::Image value)
+  {
+    return xiiHashHelper<void*>::Hash((VkImage)value);
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(vk::Image a, vk::Image b)
+  {
+    return a == b;
+  }
+};
+
+template <>
+struct xiiHashHelper<xiiImageCopyVulkan::FramebufferCacheKey>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiImageCopyVulkan::FramebufferCacheKey& value)
+  {
+    xiiHashStreamWriter32 writer;
+    writer << (VkRenderPass)value.m_renderpass;
+    writer << (VkImageView)value.m_targetView;
+    writer << value.m_extends.x;
+    writer << value.m_extends.y;
+    writer << value.m_layerCount;
+    return writer.GetHashValue();
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(const xiiImageCopyVulkan::FramebufferCacheKey& a, const xiiImageCopyVulkan::FramebufferCacheKey& b)
+  {
+    return a.m_renderpass == b.m_renderpass && a.m_targetView == b.m_targetView && a.m_extends == b.m_extends && a.m_layerCount == b.m_layerCount;
+  }
+};
+
+template <>
+struct xiiHashHelper<xiiImageCopyVulkan::ImageViewCacheKey>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiImageCopyVulkan::ImageViewCacheKey& value)
+  {
+    xiiHashStreamWriter32 writer;
+    writer << (VkImage)value.m_image;
+    writer << static_cast<uint32_t>(value.m_subresourceLayers.aspectMask);
+    writer << value.m_subresourceLayers.baseArrayLayer;
+    writer << value.m_subresourceLayers.layerCount;
+    writer << value.m_subresourceLayers.mipLevel;
+    return writer.GetHashValue();
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(const xiiImageCopyVulkan::ImageViewCacheKey& a, const xiiImageCopyVulkan::ImageViewCacheKey& b)
+  {
+    return a.m_image == b.m_image && a.m_subresourceLayers == b.m_subresourceLayers;
+  }
+};
+
+template <>
+struct xiiHashHelper<xiiShaderUtils::xiiBuiltinShaderType>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiShaderUtils::xiiBuiltinShaderType& value)
+  {
+    xiiHashStreamWriter32 writer;
+    writer << xiiConversionUtilsVulkan::GetUnderlyingValue(value);
+    return writer.GetHashValue();
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(const xiiShaderUtils::xiiBuiltinShaderType& a, const xiiShaderUtils::xiiBuiltinShaderType& b)
+  {
+    return a == b;
+  }
+};
+
+xiiUniquePtr<xiiImageCopyVulkan::Cache> xiiImageCopyVulkan::s_cache;
+
+xiiImageCopyVulkan::Cache::Cache(xiiAllocatorBase* pAllocator) :
+  m_vertexDeclarations(pAllocator), m_renderPasses(pAllocator), m_sourceImageViews(pAllocator), m_imageToSourceImageViewCacheKey(pAllocator), m_targetImageViews(pAllocator), m_imageToTargetImageViewCacheKey(pAllocator), m_framebuffers(pAllocator), m_shaders(pAllocator)
+{
+}
+
+xiiImageCopyVulkan::Cache::~Cache() = default;
+
+xiiImageCopyVulkan::xiiImageCopyVulkan(xiiGALDeviceVulkan& GALDeviceVulkan) :
+  m_GALDeviceVulkan(GALDeviceVulkan)
+{
+}
+
+xiiImageCopyVulkan::~xiiImageCopyVulkan() = default;
+
+void xiiImageCopyVulkan::Initialize(xiiGALDeviceVulkan& GALDeviceVulkan)
+{
+  s_cache = XII_NEW(&GALDeviceVulkan.GetAllocator(), xiiImageCopyVulkan::Cache, &GALDeviceVulkan.GetAllocator());
+
+  s_cache->m_onBeforeImageDeletedSubscription = GALDeviceVulkan.OnBeforeImageDestroyed.AddEventHandler(xiiMakeDelegate(OnBeforeImageDestroyed));
+}
+
+void xiiImageCopyVulkan::DeInitialize(xiiGALDeviceVulkan& GALDeviceVulkan)
+{
+  GALDeviceVulkan.OnBeforeImageDestroyed.RemoveEventHandler(s_cache->m_onBeforeImageDeletedSubscription);
+  for (auto& kv : (s_cache->m_vertexDeclarations))
+  {
+    GALDeviceVulkan.DestroyVertexDeclaration(kv.Value());
+  }
+  for (auto& kv : (s_cache->m_renderPasses))
+  {
+    GALDeviceVulkan.GetVulkanDevice().destroyRenderPass(kv.Value());
+  }
+  for (auto& kv : (s_cache->m_sourceImageViews))
+  {
+    GALDeviceVulkan.GetVulkanDevice().destroyImageView(kv.Value());
+  }
+  for (auto& kv : (s_cache->m_targetImageViews))
+  {
+    GALDeviceVulkan.GetVulkanDevice().destroyImageView(kv.Value());
+  }
+  for (auto& kv : (s_cache->m_framebuffers))
+  {
+    GALDeviceVulkan.GetVulkanDevice().destroyFramebuffer(kv.Value());
+  }
+  s_cache->m_shaders.Clear();
+  s_cache = nullptr;
+}
+
+void xiiImageCopyVulkan::OnBeforeImageDestroyed(xiiGALDeviceVulkan::OnBeforeImageDestroyedData data)
+{
+  if (auto it = s_cache->m_imageToSourceImageViewCacheKey.Find(data.image); it.IsValid())
+  {
+    data.GALDeviceVulkan.GetVulkanDevice().destroyImageView(it.Value().m_imageView);
+
+    ImageViewCacheKey cacheKey{data.image, it.Value().m_subresourceLayers};
+
+    bool removed = s_cache->m_sourceImageViews.Remove(cacheKey);
+    XII_IGNORE_UNUSED(removed);
+    XII_ASSERT_DEV(removed, "m_imageToSourceImageViewCacheKey and m_sourceImageViews should always be in sync");
+    s_cache->m_imageToSourceImageViewCacheKey.Remove(it);
+  }
+  if (auto it = s_cache->m_imageToTargetImageViewCacheKey.Find(data.image); it.IsValid())
+  {
+    data.GALDeviceVulkan.GetVulkanDevice().destroyImageView(it.Value().m_imageView);
+
+    ImageViewCacheKey cacheKey{data.image, it.Value().m_subresourceLayers};
+
+    bool removed = s_cache->m_targetImageViews.Remove(cacheKey);
+    XII_IGNORE_UNUSED(removed);
+    XII_ASSERT_DEV(removed, "m_imageToTargetImageViewCacheKey and m_targetImageViews should always be in sync");
+    s_cache->m_imageToTargetImageViewCacheKey.Remove(it);
+  }
+}
+
+void xiiImageCopyVulkan::Init(const xiiGALTextureVulkan* pSource, const xiiGALTextureVulkan* pTarget, xiiShaderUtils::xiiBuiltinShaderType type)
+{
+  m_pSource = pSource;
+  m_pTarget = pTarget;
+  m_type    = type;
+
+  auto& targetDesc = m_pTarget->GetDescription();
+
+  vk::Image  targetImage  = m_pTarget->GetImage();
+  vk::Format targetFormat = m_pTarget->GetImageFormat();
+
+  bool bTargetIsDepth = xiiConversionUtilsVulkan::IsDepthFormat(targetFormat);
+  XII_ASSERT_DEV(bTargetIsDepth == false, "Writing to depth is not implemented");
+
+  // Render pass
+  {
+    RenderPassCacheKey cacheEntry = {};
+    cacheEntry.targetFormat       = targetFormat;
+    cacheEntry.targetSamples      = xiiConversionUtilsVulkan::GetSamples(targetDesc.m_SampleCount);
+
+    if (auto it = s_cache->m_renderPasses.Find(cacheEntry); it.IsValid())
+    {
+      m_renderPass = it.Value();
+    }
+    else
+    {
+      xiiHybridArray<vk::AttachmentDescription, 4> attachments;
+      xiiHybridArray<vk::AttachmentReference, 4>   colorAttachmentRefs;
+      vk::AttachmentDescription&                   vkAttachment = attachments.ExpandAndGetRef();
+      vkAttachment.format                                       = cacheEntry.targetFormat;
+      vkAttachment.samples                                      = cacheEntry.targetSamples;
+      vkAttachment.loadOp                                       = vk::AttachmentLoadOp::eLoad; //#TODO_VULKAN we could replace this with don't care if we knew that all copy commands render to the entire sub-resource.
+      vkAttachment.storeOp                                      = vk::AttachmentStoreOp::eStore;
+      vkAttachment.initialLayout                                = vk::ImageLayout::eColorAttachmentOptimal;
+      vkAttachment.finalLayout                                  = vk::ImageLayout::eColorAttachmentOptimal;
+
+      vk::AttachmentReference& colorAttachment = colorAttachmentRefs.ExpandAndGetRef();
+      colorAttachment.attachment               = 0;
+      colorAttachment.layout                   = vk::ImageLayout::eColorAttachmentOptimal;
+
+      vk::SubpassDescription subpass;
+      subpass.pipelineBindPoint       = vk::PipelineBindPoint::eGraphics;
+      subpass.colorAttachmentCount    = colorAttachmentRefs.GetCount();
+      subpass.pColorAttachments       = colorAttachmentRefs.GetData();
+      subpass.pDepthStencilAttachment = nullptr;
+
+      vk::SubpassDependency dependency;
+      dependency.dstSubpass = 0;
+      dependency.dstAccessMask |= vk::AccessFlagBits::eColorAttachmentWrite;
+
+      dependency.dstStageMask  = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+      dependency.srcSubpass    = VK_SUBPASS_EXTERNAL;
+      dependency.srcAccessMask = {};
+      dependency.srcStageMask  = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+
+      vk::RenderPassCreateInfo renderPassCreateInfo;
+      renderPassCreateInfo.attachmentCount = attachments.GetCount();
+      renderPassCreateInfo.pAttachments    = attachments.GetData();
+      renderPassCreateInfo.subpassCount    = 1;
+      renderPassCreateInfo.pSubpasses      = &subpass;
+      renderPassCreateInfo.dependencyCount = 1;
+      renderPassCreateInfo.pDependencies   = &dependency;
+
+      VK_ASSERT_DEV(m_GALDeviceVulkan.GetVulkanDevice().createRenderPass(&renderPassCreateInfo, nullptr, &m_renderPass));
+      s_cache->m_renderPasses.Insert(cacheEntry, m_renderPass);
+    }
+  }
+
+  // Pipeline
+  {
+
+    if (auto it = s_cache->m_shaders.Find(type); it.IsValid())
+    {
+      m_shader                                   = it.Value();
+      m_PipelineDesc.m_pCurrentRasterizerState   = static_cast<const xiiGALRasterizerStateVulkan*>(m_GALDeviceVulkan.GetRasterizerState(m_shader.m_hRasterizerState));
+      m_PipelineDesc.m_pCurrentBlendState        = static_cast<const xiiGALBlendStateVulkan*>(m_GALDeviceVulkan.GetBlendState(m_shader.m_hBlendState));
+      m_PipelineDesc.m_pCurrentDepthStencilState = static_cast<const xiiGALDepthStencilStateVulkan*>(m_GALDeviceVulkan.GetDepthStencilState(m_shader.m_hDepthStencilState));
+      m_PipelineDesc.m_pCurrentShader            = static_cast<const xiiGALShaderVulkan*>(m_GALDeviceVulkan.GetShader(m_shader.m_hActiveGALShader));
+
+      if (!m_PipelineDesc.m_pCurrentRasterizerState || !m_PipelineDesc.m_pCurrentBlendState || !m_PipelineDesc.m_pCurrentDepthStencilState || !m_PipelineDesc.m_pCurrentShader)
+      {
+        s_cache->m_shaders.Clear();
+        for (auto& kv : (s_cache->m_vertexDeclarations))
+        {
+          m_GALDeviceVulkan.DestroyVertexDeclaration(kv.Value());
+        }
+        s_cache->m_vertexDeclarations.Clear();
+      }
+    }
+
+    if (!m_PipelineDesc.m_pCurrentRasterizerState || !m_PipelineDesc.m_pCurrentBlendState || !m_PipelineDesc.m_pCurrentDepthStencilState || !m_PipelineDesc.m_pCurrentShader)
+    {
+      xiiShaderUtils::RequestBuiltinShader(type, m_shader);
+      s_cache->m_shaders.Insert(type, m_shader);
+
+      m_PipelineDesc.m_pCurrentRasterizerState   = static_cast<const xiiGALRasterizerStateVulkan*>(m_GALDeviceVulkan.GetRasterizerState(m_shader.m_hRasterizerState));
+      m_PipelineDesc.m_pCurrentBlendState        = static_cast<const xiiGALBlendStateVulkan*>(m_GALDeviceVulkan.GetBlendState(m_shader.m_hBlendState));
+      m_PipelineDesc.m_pCurrentDepthStencilState = static_cast<const xiiGALDepthStencilStateVulkan*>(m_GALDeviceVulkan.GetDepthStencilState(m_shader.m_hDepthStencilState));
+      m_PipelineDesc.m_pCurrentShader            = static_cast<const xiiGALShaderVulkan*>(m_GALDeviceVulkan.GetShader(m_shader.m_hActiveGALShader));
+
+      XII_ASSERT_DEV(m_PipelineDesc.m_pCurrentRasterizerState && m_PipelineDesc.m_pCurrentBlendState && m_PipelineDesc.m_pCurrentDepthStencilState && m_PipelineDesc.m_pCurrentShader, "");
+    }
+
+    m_PipelineDesc.m_renderPass        = m_renderPass;
+    m_PipelineDesc.m_topology          = xiiGALPrimitiveTopology::Triangles;
+    m_PipelineDesc.m_msaa              = targetDesc.m_SampleCount;
+    m_PipelineDesc.m_uiAttachmentCount = 1;
+
+
+    // Vertex declaration
+    {
+      if (auto it = s_cache->m_vertexDeclarations.Find(m_shader.m_hActiveGALShader); it.IsValid())
+      {
+        m_hVertexDecl = it.Value();
+      }
+      else
+      {
+        xiiGALVertexDeclarationCreationDescription desc;
+        desc.m_hShader = m_shader.m_hActiveGALShader;
+        m_hVertexDecl  = m_GALDeviceVulkan.CreateVertexDeclaration(desc);
+        s_cache->m_vertexDeclarations.Insert(m_shader.m_hActiveGALShader, m_hVertexDecl);
+      }
+      m_PipelineDesc.m_pCurrentVertexDecl = static_cast<const xiiGALVertexDeclarationVulkan*>(m_GALDeviceVulkan.GetVertexDeclaration(m_hVertexDecl));
+    }
+
+    const xiiGALShaderVulkan::DescriptorSetLayoutDesc& descriptorLayoutDesc = m_PipelineDesc.m_pCurrentShader->GetDescriptorSetLayout();
+    m_LayoutDesc.m_layout                                                   = xiiResourceCacheVulkan::RequestDescriptorSetLayout(descriptorLayoutDesc);
+    m_PipelineDesc.m_layout                                                 = xiiResourceCacheVulkan::RequestPipelineLayout(m_LayoutDesc);
+    m_pipeline                                                              = xiiResourceCacheVulkan::RequestGraphicsPipeline(m_PipelineDesc);
+  }
+}
+
+void xiiImageCopyVulkan::Copy(const xiiVec3U32& sourceOffset, const vk::ImageSubresourceLayers& sourceLayers, const xiiVec3U32& targetOffset, const vk::ImageSubresourceLayers& targetLayers, const xiiVec3U32& extends)
+{
+  XII_ASSERT_DEV(sourceOffset.IsZero(), "Offset not implemented yet.");
+  XII_ASSERT_DEV(targetOffset.IsZero(), "Offset not implemented yet.");
+  if (m_type == xiiShaderUtils::xiiBuiltinShaderType::CopyImage || m_type == xiiShaderUtils::xiiBuiltinShaderType::CopyImage)
+  {
+    XII_ASSERT_DEV(sourceLayers.layerCount == 1 && targetLayers.layerCount == 1, "If xiiBuiltinShaderType is not one of the array variants, layerCount must be 1.");
+  }
+
+  vk::CommandBuffer         commandBuffer   = m_GALDeviceVulkan.GetCurrentCommandBuffer();
+  xiiPipelineBarrierVulkan& pipelineBarrier = m_GALDeviceVulkan.GetCurrentPipelineBarrier();
+
+  // Barriers
+  {
+    const bool bSourceIsDepth = xiiConversionUtilsVulkan::IsDepthFormat(m_pSource->GetImageFormat());
+    pipelineBarrier.EnsureImageLayout(m_pSource, xiiConversionUtilsVulkan::GetSubresourceRange(sourceLayers), bSourceIsDepth ? vk::ImageLayout::eDepthStencilReadOnlyOptimal : vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits::eFragmentShader, vk::AccessFlagBits::eShaderRead);
+    pipelineBarrier.EnsureImageLayout(m_pTarget, xiiConversionUtilsVulkan::GetSubresourceRange(targetLayers), vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::AccessFlagBits::eColorAttachmentWrite);
+    pipelineBarrier.Flush();
+  }
+
+  RenderInternal(sourceOffset, sourceLayers, targetOffset, targetLayers, extends);
+}
+
+void xiiImageCopyVulkan::RenderInternal(const xiiVec3U32& sourceOffset, const vk::ImageSubresourceLayers& sourceLayers, const xiiVec3U32& targetOffset, const vk::ImageSubresourceLayers& targetLayers, const xiiVec3U32& extends)
+{
+  vk::CommandBuffer         commandBuffer   = m_GALDeviceVulkan.GetCurrentCommandBuffer();
+  xiiPipelineBarrierVulkan& pipelineBarrier = m_GALDeviceVulkan.GetCurrentPipelineBarrier();
+
+  auto& sourceDesc = m_pSource->GetDescription();
+  auto& targetDesc = m_pTarget->GetDescription();
+
+  const bool bSourceIsDepth = xiiGALResourceFormat::IsDepthFormat(sourceDesc.m_Format);
+
+  vk::Image  sourceImage  = m_pSource->GetImage();
+  vk::Format sourceFormat = m_pSource->GetImageFormat();
+
+  vk::Image  targetImage  = m_pTarget->GetImage();
+  vk::Format targetFormat = m_pTarget->GetImageFormat();
+
+  vk::ImageView   sourceView;
+  vk::ImageView   targetView;
+  vk::Framebuffer frameBuffer;
+
+  // Image Views
+  {
+    ImageViewCacheKey cacheKey   = {};
+    cacheKey.m_image             = sourceImage;
+    cacheKey.m_subresourceLayers = sourceLayers;
+
+    if (auto it = s_cache->m_sourceImageViews.Find(cacheKey); it.IsValid())
+    {
+      sourceView = it.Value();
+    }
+    else
+    {
+
+      vk::ImageViewCreateInfo viewCreateInfo;
+      viewCreateInfo.format           = sourceFormat;
+      viewCreateInfo.image            = sourceImage;
+      viewCreateInfo.subresourceRange = xiiConversionUtilsVulkan::GetSubresourceRange(sourceLayers);
+      viewCreateInfo.subresourceRange.aspectMask &= ~vk::ImageAspectFlagBits::eStencil;
+      viewCreateInfo.viewType = xiiConversionUtilsVulkan::GetImageViewType(sourceDesc.m_Type, true);
+      if (viewCreateInfo.viewType == vk::ImageViewType::eCube || viewCreateInfo.viewType == vk::ImageViewType::eCubeArray)
+      {
+        viewCreateInfo.viewType = vk::ImageViewType::e2DArray;
+      }
+      VK_ASSERT_DEV(m_GALDeviceVulkan.GetVulkanDevice().createImageView(&viewCreateInfo, nullptr, &sourceView));
+      m_GALDeviceVulkan.SetDebugName("ImageCopy-SRV", sourceView);
+      s_cache->m_sourceImageViews.Insert(cacheKey, sourceView);
+      s_cache->m_imageToSourceImageViewCacheKey.Insert(cacheKey.m_image, ImageViewCacheValue{cacheKey.m_subresourceLayers, sourceView});
+    }
+  }
+  {
+    ImageViewCacheKey cacheKey   = {};
+    cacheKey.m_image             = targetImage;
+    cacheKey.m_subresourceLayers = targetLayers;
+
+    if (auto it = s_cache->m_targetImageViews.Find(cacheKey); it.IsValid())
+    {
+      targetView = it.Value();
+    }
+    else
+    {
+
+      vk::ImageViewCreateInfo viewCreateInfo;
+      viewCreateInfo.format           = targetFormat;
+      viewCreateInfo.image            = targetImage;
+      viewCreateInfo.subresourceRange = xiiConversionUtilsVulkan::GetSubresourceRange(targetLayers);
+      viewCreateInfo.viewType         = xiiConversionUtilsVulkan::GetImageViewType(targetDesc.m_Type, true);
+      if (viewCreateInfo.viewType == vk::ImageViewType::eCube || viewCreateInfo.viewType == vk::ImageViewType::eCubeArray)
+      {
+        viewCreateInfo.viewType = vk::ImageViewType::e2DArray;
+      }
+      VK_ASSERT_DEV(m_GALDeviceVulkan.GetVulkanDevice().createImageView(&viewCreateInfo, nullptr, &targetView));
+      m_GALDeviceVulkan.SetDebugName("ImageCopy-RTV", targetView);
+      s_cache->m_targetImageViews.Insert(cacheKey, targetView);
+      s_cache->m_imageToTargetImageViewCacheKey.Insert(cacheKey.m_image, ImageViewCacheValue{cacheKey.m_subresourceLayers, targetView});
+    }
+  }
+
+  // Framebuffer
+  {
+    FramebufferCacheKey cacheEntry = {};
+    cacheEntry.m_renderpass        = m_renderPass;
+    cacheEntry.m_targetView        = targetView;
+    cacheEntry.m_extends           = extends;
+    cacheEntry.m_layerCount        = targetLayers.layerCount;
+
+    if (auto it = s_cache->m_framebuffers.Find(cacheEntry); it.IsValid())
+    {
+      frameBuffer = it.Value();
+    }
+    else
+    {
+      vk::FramebufferCreateInfo framebufferInfo;
+      framebufferInfo.renderPass      = m_renderPass;
+      framebufferInfo.attachmentCount = 1;
+      framebufferInfo.pAttachments    = &targetView;
+      framebufferInfo.width           = extends.x;
+      framebufferInfo.height          = extends.y;
+      framebufferInfo.layers          = targetLayers.layerCount;
+      VK_ASSERT_DEV(m_GALDeviceVulkan.GetVulkanDevice().createFramebuffer(&framebufferInfo, nullptr, &frameBuffer));
+
+      s_cache->m_framebuffers.Insert(cacheEntry, frameBuffer);
+    }
+  }
+
+  // Descriptor Set
+  vk::DescriptorSet descriptorSet = xiiDescriptorSetPoolVulkan::CreateDescriptorSet(m_LayoutDesc.m_layout);
+  {
+    xiiHybridArray<vk::WriteDescriptorSet, 16> descriptorWrites;
+
+    vk::DescriptorImageInfo sourceInfo;
+    sourceInfo.imageLayout = bSourceIsDepth ? vk::ImageLayout::eDepthStencilReadOnlyOptimal : vk::ImageLayout::eShaderReadOnlyOptimal;
+    sourceInfo.imageView   = sourceView;
+
+    xiiArrayPtr<const xiiGALShaderVulkan::BindingMapping> bindingMapping = m_PipelineDesc.m_pCurrentShader->GetBindingMapping();
+    const xiiUInt32                                       uiCount        = bindingMapping.GetCount();
+    for (xiiUInt32 i = 0; i < uiCount; i++)
+    {
+      const xiiGALShaderVulkan::BindingMapping& mapping = bindingMapping[i];
+      vk::WriteDescriptorSet&                   write   = descriptorWrites.ExpandAndGetRef();
+      write.dstArrayElement                             = 0;
+      write.descriptorType                              = mapping.m_descriptorType;
+      write.dstBinding                                  = mapping.m_uiTarget;
+      write.dstSet                                      = descriptorSet;
+      write.descriptorCount                             = 1;
+      switch (mapping.m_type)
+      {
+        case xiiGALShaderVulkan::BindingMapping::ConstantBuffer:
+        {
+          //#TODO_VULKAN constant buffer for offset in the shader to allow region copy
+          //const xiiGALBufferVulkan* pBuffer = m_pBoundConstantBuffers[mapping.m_uiSource];
+          //write.pBufferInfo = &pBuffer->GetBufferInfo();
+        }
+        break;
+        case xiiGALShaderVulkan::BindingMapping::ResourceView:
+        {
+          write.pImageInfo = &sourceInfo;
+        }
+      }
+    }
+    xiiDescriptorSetPoolVulkan::UpdateDescriptorSet(descriptorSet, descriptorWrites);
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_PipelineDesc.m_layout, 0, 1, &descriptorSet, 0, nullptr);
+  }
+
+  // Render
+  {
+    {
+      vk::RenderPassBeginInfo begin;
+      begin.renderPass  = m_PipelineDesc.m_renderPass;
+      begin.framebuffer = frameBuffer;
+      begin.renderArea.offset.setX(0).setY(0);
+      begin.renderArea.extent.setWidth(extends.x).setHeight(extends.y);
+      xiiHybridArray<vk::ClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_clearValues;
+      vk::ClearValue&                                                    colorClear = m_clearValues.ExpandAndGetRef();
+      xiiColor                                                           col        = xiiColor::Pink;
+      colorClear.color.setFloat32({col.r, col.g, col.b, col.a});
+      begin.clearValueCount = m_clearValues.GetCount();
+      begin.pClearValues    = m_clearValues.GetData();
+
+      commandBuffer.beginRenderPass(begin, vk::SubpassContents::eInline);
+    }
+
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipeline);
+    vk::Viewport viewport((float)targetOffset.x, (float)extends.y + (float)targetOffset.y, (float)extends.x, -(float)extends.y, 0, 1.0f);
+    commandBuffer.setViewport(0, 1, &viewport);
+    vk::Rect2D noScissor({int(viewport.x), int(viewport.y + viewport.height)}, {xiiUInt32(viewport.width), xiiUInt32(-viewport.height)});
+    commandBuffer.setScissor(0, 1, &noScissor);
+    commandBuffer.draw(3, targetLayers.layerCount, 0, 0);
+
+    commandBuffer.endRenderPass();
+  }
+}

@@ -1,0 +1,45 @@
+xii_cmake_init()
+
+
+
+# Get the name of this folder as the project name
+get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
+
+xii_create_target(LIBRARY ${PROJECT_NAME})
+
+if(MSVC)
+  target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+endif()
+
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
+  Foundation
+  Texture
+
+  PRIVATE
+  mikktspace
+)
+
+if (XII_3RDPARTY_LUA_SUPPORT)
+
+  target_link_libraries(${PROJECT_NAME}
+    PUBLIC
+    Lua
+  )
+
+endif()
+
+if (XII_3RDPARTY_DUKTAPE_SUPPORT)
+
+  target_link_libraries(${PROJECT_NAME}
+    PUBLIC
+    Duktape
+  )
+
+endif()
+
+if(XII_3RDPARTY_GLFW_SUPPORT)
+
+  target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
+
+endif()

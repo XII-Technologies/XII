@@ -1,0 +1,42 @@
+
+RunFormatValidation:
+  stage: Run Format Validation
+
+  image: ubuntu:latest
+
+  only:
+    - merge_requests
+
+  before_script:
+    # Install dependency
+    - apt-get update
+    - apt-get install -y libncurses5 git python3
+
+    # Configure git username and commit email
+    - git config --global user.email "${CI_GIT_USER_EMAIL}"
+    - git config --global user.name "${CI_GIT_USER_USERNAME}"
+
+  script:
+    # Validate Format
+    - chmod +x $CI_PROJECT_DIR/Source/BuildTools/FormatValidation/clang-format_linux_10.0.0
+    - python3 Utilities/ClangFormat/RunClangFormat.py $CI_PROJECT_DIR/Source/BuildSystem $CI_PROJECT_DIR/Source/BuildTools $CI_PROJECT_DIR/Source/Editor $CI_PROJECT_DIR/Source/EditorPlugins $CI_PROJECT_DIR/Source/Engine $CI_PROJECT_DIR/Source/EnginePlugins $CI_PROJECT_DIR/Source/Samples $CI_PROJECT_DIR/Source/Tools $CI_PROJECT_DIR/Source/UnitTests --clang-format-binary=$CI_PROJECT_DIR/Source/BuildTools/FormatValidation/clang-format_linux_10.0.0
+
+    # Push Changes to Merge Current CI Branch
+    -  |
+        if [[ -n $(git status --porcelain) ]]; then
+
+          git fetch
+          
+          git checkout $CI_COMMIT_REF_NAME
+          
+          git add *.h &&
+          git add *.inl &&
+          git add *.cpp &&
+
+          git commit -m "Apply Code Format Rules." &&
+
+          git push https://TheophilusE:$ACCESS_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git HEAD:$CI_COMMIT_REF_NAME -o ci.skip
+        fi
+    
+    # This job returns success no matter what, ass it only provides source code formatting.
+    - echo 0

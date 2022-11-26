@@ -1,0 +1,290 @@
+#include <TestFramework/TestFrameworkPCH.h>
+
+#include <TestFramework/Utilities/TestOrder.h>
+
+/// Operator to sort tests alphabetically
+inline bool SortTest_Operator(const xiiTestEntry& lhs, const xiiTestEntry& rhs)
+{
+  return strcmp(lhs.m_szTestName, rhs.m_szTestName) < 0;
+}
+
+/// Operator to sort sub-tests alphabetically
+inline bool SortSubTest_Operator(const xiiSubTestEntry& lhs, const xiiSubTestEntry& rhs)
+{
+  return strcmp(lhs.m_szSubTestName, rhs.m_szSubTestName) < 0;
+}
+
+/// Sorts all tests and subtests alphabetically
+void SortTestsAlphabetically(std::deque<xiiTestEntry>& inout_Tests)
+{
+  std::sort(inout_Tests.begin(), inout_Tests.end(), SortTest_Operator);
+
+  for (xiiUInt32 i = 0; i < inout_Tests.size(); ++i)
+    std::sort(inout_Tests[i].m_SubTests.begin(), inout_Tests[i].m_SubTests.end(), SortSubTest_Operator);
+}
+
+/// Writes the given test order to a simple config file
+void SaveTestOrder(const char* szFile, const std::deque<xiiTestEntry>& AllTests)
+{
+  FILE* pFile = fopen(szFile, "wb");
+  if (!pFile)
+    return;
+
+  char szTemp[256] = "";
+
+  // Test order
+  for (xiiUInt32 t = 0; t < AllTests.size(); ++t)
+  {
+    sprintf(szTemp, "%s = %s\n", AllTests[t].m_szTestName, AllTests[t].m_bEnableTest ? "on" : "off");
+    fwrite(szTemp, sizeof(char), strlen(szTemp), pFile);
+
+    for (xiiUInt32 st = 0; st < AllTests[t].m_SubTests.size(); ++st)
+    {
+      sprintf(szTemp, "  %s = %s\n", AllTests[t].m_SubTests[st].m_szSubTestName, AllTests[t].m_SubTests[st].m_bEnableTest ? "on" : "off");
+      fwrite(szTemp, sizeof(char), strlen(szTemp), pFile);
+    }
+  }
+
+  fclose(pFile);
+}
+
+/// Reads one line from a text file, strips away white-spaces. Returns true if the line originally started with a white-space (ie. was
+/// indented).
+inline bool ReadLine(FILE* pFile, char* pDest, xiiUInt32 uiBufferSize)
+{
+  xiiUInt32 iPos      = 0;
+  bool      bIndented = false;
+
+  while (iPos < (uiBufferSize - 1))
+  {
+    char c = '\0';
+    if (fread(&c, sizeof(char), 1, pFile) == 0)
+      break;
+
+    if ((c == ' ') || (c == '\t'))
+    {
+      if (iPos == 0)
+        bIndented = true;
+
+      continue;
+    }
+
+    if (c == '\r')
+      continue;
+
+    if (c == '\n')
+    {
+      if (iPos > 0)
+        break;
+
+      continue;
+    }
+
+    pDest[iPos] = c;
+    ++iPos;
+  }
+
+  pDest[iPos] = '\0';
+  return bIndented;
+}
+
+/// Removes all spaces, tabs and \r characters from a string. Modifies it in place.
+inline void StripWhitespaces(char* szString)
+{
+  xiiUInt32 uiWritePos = 0;
+  xiiUInt32 uiReadPos  = 0;
+
+  while (szString[uiReadPos] != '\0')
+  {
+    if ((szString[uiReadPos] != ' ') && (szString[uiReadPos] != '\t') && (szString[uiReadPos] != '\r'))
+    {
+      szString[uiWritePos] = szString[uiReadPos];
+      ++uiWritePos;
+    }
+
+    ++uiReadPos;
+  }
+
+  szString[uiWritePos] = '\0';
+}
+
+void LoadTestOrder(const char* szFile, std::deque<xiiTestEntry>& AllTests)
+{
+  FILE* pFile = fopen(szFile, "rb");
+  if (!pFile)
+  {
+    SortTestsAlphabetically(AllTests);
+    return;
+  }
+
+  // If we do load a test order file only tests enabled in the file should be enabled.
+  // Otherwise newly added tests would be enabled by default and carefully crafted
+  // test order files would start running other tests they were not meant to run.
+  for (xiiTestEntry& test : AllTests)
+  {
+    test.m_bEnableTest = false;
+    for (xiiSubTestEntry& subTest : test.m_SubTests)
+    {
+      subTest.m_bEnableTest = false;
+    }
+  }
+
+  xiiInt32 iLastMainTest = 0;
+
+  while (!feof(pFile))
+  {
+    char szTestName[256]  = "";
+    char szOtherName[256] = "";
+
+    const bool bIndented = ReadLine(pFile, szTestName, 256);
+    const bool bIsOff    = strstr(szTestName, "=off") != nullptr;
+
+    const char* pEnd = strstr(szTestName, "=");
+    if (pEnd)
+    {
+      xiiInt32 iPos    = (xiiInt32)(pEnd - szTestName);
+      szTestName[iPos] = '\0';
+    }
+
+    if (szTestName[0] != '\0')
+    {
+      if (!bIndented)
+      {
+        iLastMainTest = -1;
+
+        // Are we in the settings block?
+        if (strcmp("Settings", szTestName) == 0)
+        {
+          iLastMainTest = -1;
+        }
+        // Are we in a test block?
+        for (xiiUInt32 t = 0; t < AllTests.size(); ++t)
+        {
+          strcpy(szOtherName, AllTests[t].m_szTestName);
+          StripWhitespaces(szOtherName);
+
+          if (strcmp(szOtherName, szTestName) == 0)
+          {
+            iLastMainTest             = t;
+            AllTests[t].m_bEnableTest = !bIsOff;
+            break;
+          }
+        }
+      }
+      else
+      {
+        // We are in a test block
+        if (iLastMainTest >= 0)
+        {
+          for (xiiUInt32 t = 0; t < AllTests[iLastMainTest].m_SubTests.size(); ++t)
+          {
+            strcpy(szOtherName, AllTests[iLastMainTest].m_SubTests[t].m_szSubTestName);
+            StripWhitespaces(szOtherName);
+
+            if (strcmp(szOtherName, szTestName) == 0)
+            {
+              AllTests[iLastMainTest].m_SubTests[t].m_bEnableTest = !bIsOff;
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  fclose(pFile);
+  SortTestsAlphabetically(AllTests);
+}
+
+void SaveTestSettings(const char* szFile, TestSettings& testSettings)
+{
+  FILE* pFile = fopen(szFile, "wb");
+  if (!pFile)
+    return;
+
+  char szTemp[256] = "";
+
+  // Settings
+  sprintf(szTemp, "Settings\n");
+  fwrite(szTemp, sizeof(char), strlen(szTemp), pFile);
+  {
+    sprintf(szTemp, "  AssertOnTestFail = %s\n", testSettings.m_AssertOnTestFail != AssertOnTestFail::DoNotAssert ? "on" : "off");
+    fwrite(szTemp, sizeof(char), strlen(szTemp), pFile);
+    sprintf(szTemp, "  OpenHtmlOutputOnError = %s\n", testSettings.m_bOpenHtmlOutputOnError ? "on" : "off");
+    fwrite(szTemp, sizeof(char), strlen(szTemp), pFile);
+    sprintf(szTemp, "  KeepConsoleOpen = %s\n", testSettings.m_bKeepConsoleOpen ? "on" : "off");
+    fwrite(szTemp, sizeof(char), strlen(szTemp), pFile);
+    sprintf(szTemp, "  ShowMessageBox = %s\n", testSettings.m_bShowMessageBox ? "on" : "off");
+    fwrite(szTemp, sizeof(char), strlen(szTemp), pFile);
+    sprintf(szTemp, "  DisableSuccessfulTests = %s\n", testSettings.m_bAutoDisableSuccessfulTests ? "on" : "off");
+    fwrite(szTemp, sizeof(char), strlen(szTemp), pFile);
+  }
+
+  fclose(pFile);
+}
+
+void LoadTestSettings(const char* szFile, TestSettings& testSettings)
+{
+  FILE* pFile = fopen(szFile, "rb");
+  if (!pFile)
+  {
+    return;
+  }
+
+  bool bInSettings = false;
+
+  while (!feof(pFile))
+  {
+    char szTestName[256]  = "";
+    char szOtherName[256] = "";
+
+    const bool  bIndented = ReadLine(pFile, szTestName, 256);
+    const bool  bIsOff    = strstr(szTestName, "=off") != nullptr;
+    const char* pEnd      = strstr(szTestName, "=");
+    if (pEnd)
+    {
+      xiiInt32 iPos    = (xiiInt32)(pEnd - szTestName);
+      szTestName[iPos] = '\0';
+    }
+
+    if (szTestName[0] != '\0')
+    {
+      if (!bIndented)
+      {
+        // Are we in the settings block?
+        bInSettings = strcmp("Settings", szTestName) == 0;
+      }
+      else
+      {
+        // We are in the settings block
+        if (bInSettings)
+        {
+          if (strcmp("AssertOnTestFail", szTestName) == 0)
+          {
+            testSettings.m_AssertOnTestFail = bIsOff ? AssertOnTestFail::DoNotAssert : AssertOnTestFail::AssertIfDebuggerAttached;
+          }
+          else if (strcmp("OpenHtmlOutputOnError", szTestName) == 0)
+          {
+            testSettings.m_bOpenHtmlOutputOnError = !bIsOff;
+          }
+          else if (strcmp("KeepConsoleOpen", szTestName) == 0)
+          {
+            testSettings.m_bKeepConsoleOpen = !bIsOff;
+          }
+          else if (strcmp("ShowMessageBox", szTestName) == 0)
+          {
+            testSettings.m_bShowMessageBox = !bIsOff;
+          }
+          else if (strcmp("DisableSuccessfulTests", szTestName) == 0)
+          {
+            testSettings.m_bAutoDisableSuccessfulTests = !bIsOff;
+          }
+        }
+      }
+    }
+  }
+
+  fclose(pFile);
+}
+
+XII_STATICLINK_FILE(TestFramework, TestFramework_Utilities_TestOrder);

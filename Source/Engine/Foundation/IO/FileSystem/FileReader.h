@@ -1,0 +1,42 @@
+#pragma once
+
+#include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/IO/FileSystem/Implementation/FileReaderWriterBase.h>
+#include <Foundation/IO/Stream.h>
+
+/// \brief The default class to use to read data from a file, implements the xiiStreamReader interface.
+///
+/// This file reader buffers reads up to a certain amount of bytes (configurable).
+/// It closes the file automatically once it goes out of scope.
+class XII_FOUNDATION_DLL xiiFileReader : public xiiFileReaderBase
+{
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiFileReader);
+
+public:
+  /// \brief Constructor, does nothing.
+  xiiFileReader() :
+    m_uiBytesCached(0), m_uiCacheReadPosition(0), m_bEOF(true)
+  {
+  }
+
+  /// \brief Destructor, closes the file, if it is still open (RAII).
+  ~xiiFileReader() { Close(); }
+
+  /// \brief Opens the given file for reading. Returns XII_SUCCESS if the file could be opened. A cache is created to speed up small reads.
+  ///
+  /// You should typically not disable bAllowFileEvents, unless you need to prevent recursive file events,
+  /// which is only the case, if you are doing file accesses from within a File Event Handler.
+  xiiResult Open(const char* szFile, xiiUInt32 uiCacheSize = 1024 * 64, xiiFileShareMode::Enum FileShareMode = xiiFileShareMode::Default, bool bAllowFileEvents = true);
+
+  /// \brief Closes the file, if it is open.
+  void Close();
+
+  /// \brief Attempts to read the given number of bytes into the buffer. Returns the actual number of bytes read.
+  virtual xiiUInt64 ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead) override;
+
+private:
+  xiiUInt64                 m_uiBytesCached;
+  xiiUInt64                 m_uiCacheReadPosition;
+  xiiDynamicArray<xiiUInt8> m_Cache;
+  bool                      m_bEOF;
+};

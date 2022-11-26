@@ -1,0 +1,21 @@
+xii_cmake_init()
+
+
+
+xii_requires(XII_3RDPARTY_LUA_SUPPORT)
+
+# Get the name of this folder as the project name
+get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
+
+xii_create_target(LIBRARY ${PROJECT_NAME} NO_XII_PREFIX NO_WARNINGS_AS_ERRORS ALL_SYMBOLS_VISIBLE)
+
+target_compile_definitions(${PROJECT_NAME} PUBLIC BUILDSYSTEM_ENABLE_LUA_SUPPORT)
+
+# Tell lua to use posix compliant APIs in case we are on a posix platform.
+if(XII_CMAKE_PLATFORM_POSIX)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE LUA_USE_POSIX)
+endif()
+
+if(XII_CMAKE_COMPILER_MSVC)
+  target_compile_options(${PROJECT_NAME} PRIVATE /wd4701 /wd4702)
+endif()

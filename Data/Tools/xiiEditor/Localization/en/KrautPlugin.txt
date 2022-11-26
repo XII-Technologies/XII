@@ -1,0 +1,3 @@
+xiiKrautTreeComponent;Kraut Tree;;https://xiiengine.net/pages/docs/terrain/kraut-overview.html
+xiiKrautAssetMaterial;Material
+Kraut Tree;Kraut Tree

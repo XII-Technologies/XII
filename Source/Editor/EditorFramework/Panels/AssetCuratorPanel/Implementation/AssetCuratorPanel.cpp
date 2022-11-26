@@ -1,0 +1,220 @@
+#include <EditorFramework/EditorFrameworkPCH.h>
+
+#include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetProcessor.h>
+#include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/Panels/AssetCuratorPanel/AssetCuratorPanel.moc.h>
+#include <GuiFoundation/Models/LogModel.moc.h>
+
+xiiQtAssetCuratorFilter::xiiQtAssetCuratorFilter(QObject* pParent) :
+  xiiQtAssetFilter(pParent)
+{
+}
+
+void xiiQtAssetCuratorFilter::SetFilterTransitive(bool bFilterTransitive)
+{
+  m_bFilterTransitive = bFilterTransitive;
+}
+
+bool xiiQtAssetCuratorFilter::IsAssetFiltered(const xiiSubAsset* pInfo) const
+{
+  if (!pInfo->m_bMainAsset)
+    return true;
+
+  if (pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingDependency &&
+      pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingReference && pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::TransformError)
+  {
+    return true;
+  }
+
+  if (m_bFilterTransitive)
+  {
+    if (pInfo->m_pAssetInfo->m_TransformState == xiiAssetInfo::MissingReference)
+    {
+      for (auto& ref : pInfo->m_pAssetInfo->m_MissingReferences)
+      {
+        if (!xiiAssetCurator::GetSingleton()->FindSubAsset(ref).isValid())
+        {
+          return false;
+        }
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool xiiQtAssetCuratorFilter::Less(const xiiSubAsset* pInfoA, const xiiSubAsset* pInfoB) const
+{
+  // TODO: We can't sort on mutable data here as it destroys the set order, need to add a sorting model on top.
+  // if (pInfoA->m_pAssetInfo->m_TransformState != pInfoB->m_pAssetInfo->m_TransformState)
+  //  return pInfoA->m_pAssetInfo->m_TransformState < pInfoB->m_pAssetInfo->m_TransformState;
+
+  xiiStringView sSortA = pInfoA->GetName();
+  xiiStringView sSortB = pInfoB->GetName();
+
+  xiiInt32 iValue = xiiStringUtils::Compare_NoCase(sSortA.GetStartPointer(), sSortB.GetStartPointer(), sSortA.GetEndPointer(), sSortB.GetEndPointer());
+  if (iValue == 0)
+  {
+    return pInfoA->m_Data.m_Guid < pInfoB->m_Data.m_Guid;
+  }
+  return iValue < 0;
+}
+
+XII_IMPLEMENT_SINGLETON(xiiQtAssetCuratorPanel);
+
+xiiQtAssetCuratorPanel::xiiQtAssetCuratorPanel() :
+  xiiQtApplicationPanel("Panel.AssetCurator"), m_SingletonRegistrar(this)
+{
+  QWidget* pDummy = new QWidget();
+  setupUi(pDummy);
+  pDummy->setContentsMargins(0, 0, 0, 0);
+  pDummy->layout()->setContentsMargins(0, 0, 0, 0);
+
+  // using pDummy instead of 'this' breaks auto-connect for slots
+  setWidget(pDummy);
+  setIcon(xiiQtUiServices::GetCachedIconResource(":/EditorFramework/Icons/Asset16.png"));
+  setWindowTitle(QString::fromUtf8(xiiTranslate("Panel.AssetCurator")));
+
+  connect(ListAssets, &QTreeView::doubleClicked, this, &xiiQtAssetCuratorPanel::onListAssetsDoubleClicked);
+  connect(CheckIndirect, &QCheckBox::toggled, this, &xiiQtAssetCuratorPanel::onCheckIndirectToggled);
+
+  xiiAssetProcessor::GetSingleton()->AddLogWriter(xiiMakeDelegate(&xiiQtAssetCuratorPanel::LogWriter, this));
+
+  m_pFilter = new xiiQtAssetCuratorFilter(this);
+  m_pModel  = new xiiQtAssetBrowserModel(this, m_pFilter);
+  m_pModel->SetIconMode(false);
+
+  TransformLog->ShowControls(false);
+
+  ListAssets->setModel(m_pModel);
+  ListAssets->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
+  XII_VERIFY(
+    connect(ListAssets->selectionModel(), &QItemSelectionModel::selectionChanged, this, &xiiQtAssetCuratorPanel::OnAssetSelectionChanged) != nullptr,
+    "signal/slot connection failed");
+  XII_VERIFY(connect(m_pModel, &QAbstractItemModel::dataChanged, this,
+                     [this](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
+                       if (m_SelectedIndex.isValid() && topLeft.row() <= m_SelectedIndex.row() && m_SelectedIndex.row() <= bottomRight.row())
+                       {
+                         UpdateIssueInfo();
+                       }
+                     }),
+             "signal/slot connection failed");
+
+  XII_VERIFY(connect(m_pModel, &QAbstractItemModel::modelReset, this,
+                     [this]() {
+                       m_SelectedIndex = QPersistentModelIndex();
+                       UpdateIssueInfo();
+                     }),
+             "signal/slot connection failed");
+}
+
+xiiQtAssetCuratorPanel::~xiiQtAssetCuratorPanel()
+{
+  xiiAssetProcessor::GetSingleton()->RemoveLogWriter(xiiMakeDelegate(&xiiQtAssetCuratorPanel::LogWriter, this));
+}
+
+void xiiQtAssetCuratorPanel::OnAssetSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
+{
+  if (selected.isEmpty())
+    m_SelectedIndex = QModelIndex();
+  else
+    m_SelectedIndex = selected.indexes()[0];
+
+  UpdateIssueInfo();
+}
+
+void xiiQtAssetCuratorPanel::onListAssetsDoubleClicked(const QModelIndex& index)
+{
+  xiiUuid guid     = m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::SubAssetGuid).value<xiiUuid>();
+  QString sAbsPath = m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString();
+
+  xiiQtEditorApp::GetSingleton()->OpenDocumentQueued(sAbsPath.toUtf8().data());
+}
+
+void xiiQtAssetCuratorPanel::onCheckIndirectToggled(bool checked)
+{
+  m_pFilter->SetFilterTransitive(!checked);
+  m_pModel->resetModel();
+}
+
+void xiiQtAssetCuratorPanel::LogWriter(const xiiLoggingEventData& e)
+{
+  // Can be called from a different thread, but AddLogMsg is thread safe.
+  xiiLogEntry msg(e);
+  CuratorLog->GetLog()->AddLogMsg(msg);
+}
+
+void xiiQtAssetCuratorPanel::UpdateIssueInfo()
+{
+  if (!m_SelectedIndex.isValid())
+  {
+    TransformLog->GetLog()->Clear();
+    return;
+  }
+
+  xiiUuid assetGuid = m_pModel->data(m_SelectedIndex, xiiQtAssetBrowserModel::UserRoles::AssetGuid).value<xiiUuid>();
+  auto    pSubAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(assetGuid);
+  if (pSubAsset == nullptr)
+  {
+    TransformLog->GetLog()->Clear();
+    return;
+  }
+
+  TransformLog->GetLog()->Clear();
+
+  xiiAssetInfo* pAssetInfo = pSubAsset->m_pAssetInfo;
+
+  auto getNiceName = [](const xiiString& dep) -> xiiStringBuilder {
+    if (xiiConversionUtils::IsStringUuid(dep))
+    {
+      xiiUuid guid         = xiiConversionUtils::ConvertStringToUuid(dep);
+      auto    assetInfoDep = xiiAssetCurator::GetSingleton()->GetSubAsset(guid);
+      if (assetInfoDep)
+      {
+        return assetInfoDep->m_pAssetInfo->m_sDataDirParentRelativePath;
+      }
+
+      xiiUInt64 uiLow;
+      xiiUInt64 uiHigh;
+      guid.GetValues(uiLow, uiHigh);
+      xiiStringBuilder sTmp;
+      sTmp.Format("{} - u4{{},{}}", dep, uiLow, uiHigh);
+
+      return sTmp;
+    }
+
+    return dep;
+  };
+
+  xiiLogEntryDelegate logger(([this](xiiLogEntry& entry) -> void { TransformLog->GetLog()->AddLogMsg(std::move(entry)); }));
+  xiiStringBuilder    text;
+  if (pAssetInfo->m_TransformState == xiiAssetInfo::MissingDependency)
+  {
+    xiiLog::Error(&logger, "Missing Dependency:");
+    for (const xiiString& dep : pAssetInfo->m_MissingDependencies)
+    {
+      xiiStringBuilder sNiceName = getNiceName(dep);
+      xiiLog::Error(&logger, "{0}", sNiceName);
+    }
+  }
+  else if (pAssetInfo->m_TransformState == xiiAssetInfo::MissingReference)
+  {
+    xiiLog::Error(&logger, "Missing Reference:");
+    for (const xiiString& ref : pAssetInfo->m_MissingReferences)
+    {
+      xiiStringBuilder sNiceName = getNiceName(ref);
+      xiiLog::Error(&logger, "{0}", sNiceName);
+    }
+  }
+  else if (pAssetInfo->m_TransformState == xiiAssetInfo::TransformError)
+  {
+    xiiLog::Error(&logger, "Transform Error:");
+    for (const xiiLogEntry& logEntry : pAssetInfo->m_LogEntries)
+    {
+      TransformLog->GetLog()->AddLogMsg(logEntry);
+    }
+  }
+}

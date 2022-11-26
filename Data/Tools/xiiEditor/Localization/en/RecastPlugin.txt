@@ -1,0 +1,8 @@
+AI;AI
+xiiRcAgentComponent;Recast Agent
+xiiRcNavMeshComponent;Recast Navmesh;;https://xiiengine.net/pages/docs/ai/recast-navmesh-component.html
+NavMeshConfig;Navmesh Config
+xiiRcMarkPoiVisibleComponent;Recast Mark POI Visible
+xiiSoldierComponent;Soldier
+Menu.Recast;Recast
+NavMesh.Generate;Generate NavMesh

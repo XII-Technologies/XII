@@ -1,0 +1,29 @@
+#pragma once
+
+#include <RendererCore/Pipeline/Passes/ForwardRenderPass.h>
+
+/// \brief A forward render pass that renders all opaque objects into the color target.
+class XII_RENDERERCORE_DLL xiiOpaqueForwardRenderPass : public xiiForwardRenderPass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiOpaqueForwardRenderPass, xiiForwardRenderPass);
+
+public:
+  xiiOpaqueForwardRenderPass(const char* szName = "OpaqueForwardRenderPass");
+  ~xiiOpaqueForwardRenderPass();
+
+  virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
+
+protected:
+  virtual void SetupResources(xiiGALPass* pGALPass, const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
+  virtual void SetupPermutationVars(const xiiRenderViewContext& renderViewContext) override;
+
+  virtual void RenderObjects(const xiiRenderViewContext& renderViewContext) override;
+
+  xiiRenderPipelineNodeInputPin m_PinSSAO;
+  // xiiRenderPipelineNodeOutputPin m_PinNormal;
+  // xiiRenderPipelineNodeOutputPin m_PinSpecularColorRoughness;
+
+  bool m_bWriteDepth;
+
+  xiiTexture2DResourceHandle m_hWhiteTexture;
+};

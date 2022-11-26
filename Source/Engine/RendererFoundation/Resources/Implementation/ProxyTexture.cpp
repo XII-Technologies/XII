@@ -1,0 +1,41 @@
+#include <RendererFoundation/RendererFoundationPCH.h>
+
+#include <RendererFoundation/Resources/ProxyTexture.h>
+
+namespace
+{
+  xiiGALTextureCreationDescription MakeProxyDesc(const xiiGALTextureCreationDescription& parentDesc)
+  {
+    xiiGALTextureCreationDescription desc = parentDesc;
+    desc.m_Type                           = xiiGALTextureType::Texture2DProxy;
+    return desc;
+  }
+} // namespace
+
+xiiGALProxyTexture::xiiGALProxyTexture(const xiiGALTexture& parentTexture) :
+  xiiGALTexture(MakeProxyDesc(parentTexture.GetDescription())), m_pParentTexture(&parentTexture)
+{
+}
+
+xiiGALProxyTexture::~xiiGALProxyTexture() {}
+
+
+const xiiGALResourceBase* xiiGALProxyTexture::GetParentResource() const
+{
+  return m_pParentTexture;
+}
+
+xiiResult xiiGALProxyTexture::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<xiiGALSystemMemoryDescription> pInitialData)
+{
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALProxyTexture::DeInitPlatform(xiiGALDevice* pDevice)
+{
+  return XII_SUCCESS;
+}
+
+void xiiGALProxyTexture::SetDebugNamePlatform(const char* szName) const {}
+
+
+XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Resources_Implementation_ProxyTexture);

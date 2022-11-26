@@ -1,0 +1,45 @@
+#pragma once
+
+#include <GuiFoundation/Action/BaseActions.h>
+#include <GuiFoundation/GuiFoundationDLL.h>
+#include <ToolsFoundation/CommandHistory/CommandHistory.h>
+
+///
+class XII_GUIFOUNDATION_DLL xiiCommandHistoryActions
+{
+public:
+  static void RegisterActions();
+  static void UnregisterActions();
+
+  static void MapActions(const char* szMapping, const char* szPath);
+
+  static xiiActionDescriptorHandle s_hCommandHistoryCategory;
+  static xiiActionDescriptorHandle s_hUndo;
+  static xiiActionDescriptorHandle s_hRedo;
+};
+
+
+///
+class XII_GUIFOUNDATION_DLL xiiCommandHistoryAction : public xiiDynamicActionAndMenuAction
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiCommandHistoryAction, xiiDynamicActionAndMenuAction);
+
+public:
+  enum class ButtonType
+  {
+    Undo,
+    Redo,
+  };
+
+  xiiCommandHistoryAction(const xiiActionContext& context, const char* szName, ButtonType button);
+  ~xiiCommandHistoryAction();
+
+  virtual void Execute(const xiiVariant& value) override;
+  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_Entries) override;
+
+private:
+  void UpdateState();
+  void CommandHistoryEventHandler(const xiiCommandHistoryEvent& e);
+
+  ButtonType m_ButtonType;
+};

@@ -1,0 +1,27 @@
+#pragma once
+
+#include <Foundation/Communication/RemoteInterface.h>
+
+#ifdef BUILDSYSTEM_ENABLE_ENET_SUPPORT
+
+/// \brief An implementation for xiiRemoteInterface built on top of Enet
+class XII_FOUNDATION_DLL xiiRemoteInterfaceEnet : public xiiRemoteInterface
+{
+public:
+  ~xiiRemoteInterfaceEnet();
+
+  /// \brief Allocates a new instance with the given allocator
+  static xiiInternal::NewInstance<xiiRemoteInterfaceEnet> Make(xiiAllocatorBase* allocator = xiiFoundation::GetDefaultAllocator());
+
+  /// \brief The port through which the connection was started
+  xiiUInt16 GetPort() const { return m_uiPort; }
+
+private:
+  xiiRemoteInterfaceEnet();
+  friend class xiiRemoteInterfaceEnetImpl;
+
+protected:
+  xiiUInt16 m_uiPort = 0;
+};
+
+#endif

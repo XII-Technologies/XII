@@ -1,0 +1,257 @@
+#include <RendererCore/RendererCorePCH.h>
+
+#include <Core/Messages/SetColorMessage.h>
+#include <Core/WorldSerializer/WorldReader.h>
+#include <Core/WorldSerializer/WorldWriter.h>
+#include <RendererCore/Components/SpriteComponent.h>
+#include <RendererCore/Pipeline/ExtractedRenderData.h>
+#include <RendererCore/Pipeline/View.h>
+#include <RendererCore/Textures/Texture2DResource.h>
+
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiSpriteBlendMode, 1)
+  XII_ENUM_CONSTANTS(xiiSpriteBlendMode::Masked, xiiSpriteBlendMode::Transparent, xiiSpriteBlendMode::Additive)
+XII_END_STATIC_REFLECTED_ENUM;
+// clang-format on
+
+// static
+xiiTempHashedString xiiSpriteBlendMode::GetPermutationValue(Enum blendMode)
+{
+  switch (blendMode)
+  {
+    case xiiSpriteBlendMode::Masked:
+      return "BLEND_MODE_MASKED";
+    case xiiSpriteBlendMode::Transparent:
+      return "BLEND_MODE_TRANSPARENT";
+    case xiiSpriteBlendMode::Additive:
+      return "BLEND_MODE_ADDITIVE";
+  }
+
+  return "";
+}
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSpriteRenderData, 1, xiiRTTIDefaultAllocator<xiiSpriteRenderData>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+void xiiSpriteRenderData::FillBatchIdAndSortingKey()
+{
+  // ignore upper 32 bit of the resource ID hash
+  const xiiUInt32 uiTextureIDHash = static_cast<xiiUInt32>(m_hTexture.GetResourceIDHash());
+
+  // Generate batch id from mode and texture
+  xiiUInt32 data[] = {(xiiUInt32)m_BlendMode, uiTextureIDHash};
+  m_uiBatchId      = xiiHashingUtils::xxHash32(data, sizeof(data));
+
+  // Sort by mode and then by texture
+  m_uiSortingKey = (m_BlendMode << 30) | (uiTextureIDHash & 0x3FFFFFFF);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_COMPONENT_TYPE(xiiSpriteComponent, 3, xiiComponentMode::Static)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ACCESSOR_PROPERTY("Texture", GetTextureFile, SetTextureFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
+    XII_ENUM_MEMBER_PROPERTY("BlendMode", xiiSpriteBlendMode, m_BlendMode),
+    XII_ACCESSOR_PROPERTY("Color", GetColor, SetColor)->AddAttributes(new xiiExposeColorAlphaAttribute()),
+    XII_ACCESSOR_PROPERTY("Size", GetSize, SetSize)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiDefaultValueAttribute(1.0f), new xiiSuffixAttribute(" m")),
+    XII_ACCESSOR_PROPERTY("MaxScreenSize", GetMaxScreenSize, SetMaxScreenSize)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiDefaultValueAttribute(64.0f), new xiiSuffixAttribute(" px")),
+    XII_MEMBER_PROPERTY("AspectRatio", m_fAspectRatio)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiDefaultValueAttribute(1.0f)),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Rendering"),
+  }
+  XII_END_ATTRIBUTES;
+  XII_BEGIN_MESSAGEHANDLERS
+  {
+    XII_MESSAGE_HANDLER(xiiMsgExtractRenderData, OnMsgExtractRenderData),
+    XII_MESSAGE_HANDLER(xiiMsgSetColor, OnMsgSetColor),
+  }
+  XII_END_MESSAGEHANDLERS;
+}
+XII_END_COMPONENT_TYPE;
+// clang-format on
+
+xiiSpriteComponent::xiiSpriteComponent()  = default;
+xiiSpriteComponent::~xiiSpriteComponent() = default;
+
+xiiResult xiiSpriteComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+{
+  bounds = xiiBoundingSphere(xiiVec3::ZeroVector(), m_fSize * 0.5f);
+  return XII_SUCCESS;
+}
+
+void xiiSpriteComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const
+{
+  // Don't render in shadow views
+  if (msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow)
+    return;
+
+  if (!m_hTexture.IsValid())
+    return;
+
+  xiiSpriteRenderData* pRenderData = xiiCreateRenderDataForThisFrame<xiiSpriteRenderData>(GetOwner());
+  {
+    pRenderData->m_GlobalTransform = GetOwner()->GetGlobalTransform();
+    pRenderData->m_GlobalBounds    = GetOwner()->GetGlobalBounds();
+    pRenderData->m_hTexture        = m_hTexture;
+    pRenderData->m_fSize           = m_fSize;
+    pRenderData->m_fMaxScreenSize  = m_fMaxScreenSize;
+    pRenderData->m_fAspectRatio    = m_fAspectRatio;
+    pRenderData->m_BlendMode       = m_BlendMode;
+    pRenderData->m_color           = m_Color;
+    pRenderData->m_texCoordScale   = xiiVec2(1.0f);
+    pRenderData->m_texCoordOffset  = xiiVec2(0.0f);
+    pRenderData->m_uiUniqueID      = GetUniqueIdForRendering();
+
+    pRenderData->FillBatchIdAndSortingKey();
+  }
+
+  // Determine render data category.
+  xiiRenderData::Category category = xiiDefaultRenderDataCategories::LitTransparent;
+  if (m_BlendMode == xiiSpriteBlendMode::Masked)
+  {
+    category = xiiDefaultRenderDataCategories::LitMasked;
+  }
+
+  msg.AddRenderData(pRenderData, category, xiiRenderData::Caching::IfStatic);
+}
+
+void xiiSpriteComponent::SerializeComponent(xiiWorldWriter& stream) const
+{
+  SUPER::SerializeComponent(stream);
+  xiiStreamWriter& s = stream.GetStream();
+
+  s << m_hTexture;
+  s << m_fSize;
+  s << m_fMaxScreenSize;
+
+  // Version 3
+  s << m_Color; // HDR now
+  s << m_fAspectRatio;
+  s << m_BlendMode;
+}
+
+void xiiSpriteComponent::DeserializeComponent(xiiWorldReader& stream)
+{
+  SUPER::DeserializeComponent(stream);
+  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+
+  xiiStreamReader& s = stream.GetStream();
+
+  s >> m_hTexture;
+
+  if (uiVersion < 3)
+  {
+    xiiColorGammaUB color;
+    s >> color;
+    m_Color = color;
+  }
+
+  s >> m_fSize;
+  s >> m_fMaxScreenSize;
+
+  if (uiVersion >= 3)
+  {
+    s >> m_Color;
+    s >> m_fAspectRatio;
+    s >> m_BlendMode;
+  }
+}
+
+void xiiSpriteComponent::SetTexture(const xiiTexture2DResourceHandle& hTexture)
+{
+  m_hTexture = hTexture;
+}
+
+const xiiTexture2DResourceHandle& xiiSpriteComponent::GetTexture() const
+{
+  return m_hTexture;
+}
+
+void xiiSpriteComponent::SetTextureFile(const char* szFile)
+{
+  xiiTexture2DResourceHandle hTexture;
+
+  if (!xiiStringUtils::IsNullOrEmpty(szFile))
+  {
+    hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(szFile);
+  }
+
+  SetTexture(hTexture);
+}
+
+const char* xiiSpriteComponent::GetTextureFile() const
+{
+  if (!m_hTexture.IsValid())
+    return "";
+
+  return m_hTexture.GetResourceID();
+}
+
+void xiiSpriteComponent::SetColor(xiiColor color)
+{
+  m_Color = color;
+}
+
+xiiColor xiiSpriteComponent::GetColor() const
+{
+  return m_Color;
+}
+
+void xiiSpriteComponent::SetSize(float fSize)
+{
+  m_fSize = fSize;
+
+  TriggerLocalBoundsUpdate();
+}
+
+float xiiSpriteComponent::GetSize() const
+{
+  return m_fSize;
+}
+
+void xiiSpriteComponent::SetMaxScreenSize(float fSize)
+{
+  m_fMaxScreenSize = fSize;
+}
+
+float xiiSpriteComponent::GetMaxScreenSize() const
+{
+  return m_fMaxScreenSize;
+}
+
+void xiiSpriteComponent::OnMsgSetColor(xiiMsgSetColor& msg)
+{
+  msg.ModifyColor(m_Color);
+}
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+#include <Foundation/Serialization/GraphPatch.h>
+#include <Foundation/Serialization/AbstractObjectGraph.h>
+
+class xiiSpriteComponentPatch_1_2 : public xiiGraphPatch
+{
+public:
+  xiiSpriteComponentPatch_1_2() :
+    xiiGraphPatch("xiiSpriteComponent", 2)
+  {
+  }
+
+  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override { pNode->RenameProperty("Max Screen Size", "MaxScreenSize"); }
+};
+
+xiiSpriteComponentPatch_1_2 g_xiiSpriteComponentPatch_1_2;
+
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_Components_Implementation_SpriteComponent);

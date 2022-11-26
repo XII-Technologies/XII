@@ -1,0 +1,40 @@
+#include <RendererCore/RendererCorePCH.h>
+
+#include <RendererCore/BakedProbes/BakingInterface.h>
+
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiBakingSettings, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiBakingSettings>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("ProbeSpacing", m_vProbeSpacing)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3(4)), new xiiClampValueAttribute(xiiVec3(0.1f), xiiVariant())),
+    XII_MEMBER_PROPERTY("NumSamplesPerProbe", m_uiNumSamplesPerProbe)->AddAttributes(new xiiDefaultValueAttribute(128), new xiiClampValueAttribute(32, 1024)),
+    XII_MEMBER_PROPERTY("MaxRayDistance", m_fMaxRayDistance)->AddAttributes(new xiiDefaultValueAttribute(1000), new xiiClampValueAttribute(1, xiiVariant())),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+// clang-format on
+
+static xiiTypeVersion s_BakingSettingsVersion = 1;
+xiiResult             xiiBakingSettings::Serialize(xiiStreamWriter& stream) const
+{
+  stream.WriteVersion(s_BakingSettingsVersion);
+
+  stream << m_vProbeSpacing;
+  stream << m_uiNumSamplesPerProbe;
+  stream << m_fMaxRayDistance;
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiBakingSettings::Deserialize(xiiStreamReader& stream)
+{
+  const xiiTypeVersion version = stream.ReadVersion(s_BakingSettingsVersion);
+
+  stream >> m_vProbeSpacing;
+  stream >> m_uiNumSamplesPerProbe;
+  stream >> m_fMaxRayDistance;
+
+  return XII_SUCCESS;
+}

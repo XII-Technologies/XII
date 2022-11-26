@@ -1,0 +1,394 @@
+#pragma once
+
+template <class Container>
+XII_ALWAYS_INLINE xiiUInt32 xiiBitfield<Container>::GetBitInt(xiiUInt32 uiBitIndex) const
+{
+  return (uiBitIndex >> 5); // div 32
+}
+
+template <class Container>
+XII_ALWAYS_INLINE xiiUInt32 xiiBitfield<Container>::GetBitMask(xiiUInt32 uiBitIndex) const
+{
+  return 1 << (uiBitIndex & 0x1F); // modulo 32, shifted to bit position
+}
+
+template <class Container>
+XII_ALWAYS_INLINE xiiUInt32 xiiBitfield<Container>::GetCount() const
+{
+  return m_uiCount;
+}
+
+template <class Container>
+template <typename> // Second template needed so that the compiler only instantiates it when called. Needed to prevent errors with containers that do
+                    // not support this.
+void xiiBitfield<Container>::SetCountUninitialized(xiiUInt32 uiBitCount)
+{
+  const xiiUInt32 uiInts = (uiBitCount + 31) >> 5;
+  m_Container.SetCountUninitialized(uiInts);
+
+  m_uiCount = uiBitCount;
+}
+
+template <class Container>
+void xiiBitfield<Container>::SetCount(xiiUInt32 uiBitCount, bool bSetNew)
+{
+  if (m_uiCount == uiBitCount)
+    return;
+
+  const xiiUInt32 uiOldBits = m_uiCount;
+
+  SetCountUninitialized(uiBitCount);
+
+  // if there are new bits, initialize them
+  if (uiBitCount > uiOldBits)
+  {
+    if (bSetNew)
+      SetBitRange(uiOldBits, uiBitCount - uiOldBits);
+    else
+      ClearBitRange(uiOldBits, uiBitCount - uiOldBits);
+  }
+}
+
+template <class Container>
+XII_ALWAYS_INLINE bool xiiBitfield<Container>::IsEmpty() const
+{
+  return m_uiCount == 0;
+}
+
+template <class Container>
+bool xiiBitfield<Container>::IsAnyBitSet(xiiUInt32 uiFirstBit /*= 0*/, xiiUInt32 uiNumBits /*= 0xFFFFFFFF*/) const
+{
+  if (m_uiCount == 0 || uiNumBits == 0)
+    return false;
+
+  XII_ASSERT_DEBUG(uiFirstBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiFirstBit, m_uiCount);
+
+  const xiiUInt32 uiLastBit = xiiMath::Min<xiiUInt32>(uiFirstBit + uiNumBits, m_uiCount - 1);
+
+  const xiiUInt32 uiFirstInt = GetBitInt(uiFirstBit);
+  const xiiUInt32 uiLastInt  = GetBitInt(uiLastBit);
+
+  // all within the same int
+  if (uiFirstInt == uiLastInt)
+  {
+    for (xiiUInt32 i = uiFirstBit; i <= uiLastBit; ++i)
+    {
+      if (IsBitSet(i))
+        return true;
+    }
+  }
+  else
+  {
+    const xiiUInt32 uiNextIntBit = (uiFirstInt + 1) * 32;
+    const xiiUInt32 uiPrevIntBit = uiLastInt * 32;
+
+    // check the bits in the first int individually
+    for (xiiUInt32 i = uiFirstBit; i < uiNextIntBit; ++i)
+    {
+      if (IsBitSet(i))
+        return true;
+    }
+
+    // check the bits in the ints in between with one operation
+    for (xiiUInt32 i = uiFirstInt + 1; i < uiLastInt; ++i)
+    {
+      if ((m_Container[i] & 0xFFFFFFFF) != 0)
+        return true;
+    }
+
+    // check the bits in the last int individually
+    for (xiiUInt32 i = uiPrevIntBit; i <= uiLastBit; ++i)
+    {
+      if (IsBitSet(i))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+template <class Container>
+XII_ALWAYS_INLINE bool xiiBitfield<Container>::IsNoBitSet(xiiUInt32 uiFirstBit /*= 0*/, xiiUInt32 uiLastBit /*= 0xFFFFFFFF*/) const
+{
+  return !IsAnyBitSet(uiFirstBit, uiLastBit);
+}
+
+template <class Container>
+bool xiiBitfield<Container>::AreAllBitsSet(xiiUInt32 uiFirstBit /*= 0*/, xiiUInt32 uiNumBits /*= 0xFFFFFFFF*/) const
+{
+  if (m_uiCount == 0 || uiNumBits == 0)
+    return false;
+
+  XII_ASSERT_DEBUG(uiFirstBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiFirstBit, m_uiCount);
+
+  const xiiUInt32 uiLastBit = xiiMath::Min<xiiUInt32>(uiFirstBit + uiNumBits, m_uiCount - 1);
+
+  const xiiUInt32 uiFirstInt = GetBitInt(uiFirstBit);
+  const xiiUInt32 uiLastInt  = GetBitInt(uiLastBit);
+
+  // all within the same int
+  if (uiFirstInt == uiLastInt)
+  {
+    for (xiiUInt32 i = uiFirstBit; i <= uiLastBit; ++i)
+    {
+      if (!IsBitSet(i))
+        return false;
+    }
+  }
+  else
+  {
+    const xiiUInt32 uiNextIntBit = (uiFirstInt + 1) * 32;
+    const xiiUInt32 uiPrevIntBit = uiLastInt * 32;
+
+    // check the bits in the first int individually
+    for (xiiUInt32 i = uiFirstBit; i < uiNextIntBit; ++i)
+    {
+      if (!IsBitSet(i))
+        return false;
+    }
+
+    // check the bits in the ints in between with one operation
+    for (xiiUInt32 i = uiFirstInt + 1; i < uiLastInt; ++i)
+    {
+      if (m_Container[i] != 0xFFFFFFFF)
+        return false;
+    }
+
+    // check the bits in the last int individually
+    for (xiiUInt32 i = uiPrevIntBit; i <= uiLastBit; ++i)
+    {
+      if (!IsBitSet(i))
+        return false;
+    }
+  }
+
+  return true;
+}
+
+template <class Container>
+XII_ALWAYS_INLINE void xiiBitfield<Container>::Clear()
+{
+  m_uiCount = 0;
+  m_Container.Clear();
+}
+
+template <class Container>
+void xiiBitfield<Container>::SetBit(xiiUInt32 uiBit)
+{
+  XII_ASSERT_DEBUG(uiBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, m_uiCount);
+
+  m_Container[GetBitInt(uiBit)] |= GetBitMask(uiBit);
+}
+
+template <class Container>
+void xiiBitfield<Container>::ClearBit(xiiUInt32 uiBit)
+{
+  XII_ASSERT_DEBUG(uiBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, m_uiCount);
+
+  m_Container[GetBitInt(uiBit)] &= ~GetBitMask(uiBit);
+}
+
+template <class Container>
+bool xiiBitfield<Container>::IsBitSet(xiiUInt32 uiBit) const
+{
+  XII_ASSERT_DEBUG(uiBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, m_uiCount);
+
+  return (m_Container[GetBitInt(uiBit)] & GetBitMask(uiBit)) != 0;
+}
+
+template <class Container>
+void xiiBitfield<Container>::ClearAllBits()
+{
+  for (xiiUInt32 i = 0; i < m_Container.GetCount(); ++i)
+    m_Container[i] = 0;
+}
+
+template <class Container>
+void xiiBitfield<Container>::SetAllBits()
+{
+  for (xiiUInt32 i = 0; i < m_Container.GetCount(); ++i)
+    m_Container[i] = 0xFFFFFFFF;
+}
+
+template <class Container>
+void xiiBitfield<Container>::SetBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBits)
+{
+  if (m_uiCount == 0 || uiNumBits == 0)
+    return;
+
+  XII_ASSERT_DEBUG(uiFirstBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiFirstBit, m_uiCount);
+
+  const xiiUInt32 uiLastBit = uiFirstBit + uiNumBits - 1;
+
+  const xiiUInt32 uiFirstInt = GetBitInt(uiFirstBit);
+  const xiiUInt32 uiLastInt  = GetBitInt(uiLastBit);
+
+  // all within the same int
+  if (uiFirstInt == uiLastInt)
+  {
+    for (xiiUInt32 i = uiFirstBit; i <= uiLastBit; ++i)
+      SetBit(i);
+
+    return;
+  }
+
+  const xiiUInt32 uiNextIntBit = (uiFirstInt + 1) * 32;
+  const xiiUInt32 uiPrevIntBit = uiLastInt * 32;
+
+  // set the bits in the first int individually
+  for (xiiUInt32 i = uiFirstBit; i < uiNextIntBit; ++i)
+    SetBit(i);
+
+  // set the bits in the ints in between with one operation
+  for (xiiUInt32 i = uiFirstInt + 1; i < uiLastInt; ++i)
+    m_Container[i] = 0xFFFFFFFF;
+
+  // set the bits in the last int individually
+  for (xiiUInt32 i = uiPrevIntBit; i <= uiLastBit; ++i)
+    SetBit(i);
+}
+
+template <class Container>
+void xiiBitfield<Container>::ClearBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBits)
+{
+  if (m_uiCount == 0 || uiNumBits == 0)
+    return;
+
+  XII_ASSERT_DEBUG(uiFirstBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiFirstBit, m_uiCount);
+
+  const xiiUInt32 uiLastBit = uiFirstBit + uiNumBits - 1;
+
+  const xiiUInt32 uiFirstInt = GetBitInt(uiFirstBit);
+  const xiiUInt32 uiLastInt  = GetBitInt(uiLastBit);
+
+  // all within the same int
+  if (uiFirstInt == uiLastInt)
+  {
+    for (xiiUInt32 i = uiFirstBit; i <= uiLastBit; ++i)
+      ClearBit(i);
+
+    return;
+  }
+
+  const xiiUInt32 uiNextIntBit = (uiFirstInt + 1) * 32;
+  const xiiUInt32 uiPrevIntBit = uiLastInt * 32;
+
+  // set the bits in the first int individually
+  for (xiiUInt32 i = uiFirstBit; i < uiNextIntBit; ++i)
+    ClearBit(i);
+
+  // set the bits in the ints in between with one operation
+  for (xiiUInt32 i = uiFirstInt + 1; i < uiLastInt; ++i)
+    m_Container[i] = 0;
+
+  // set the bits in the last int individually
+  for (xiiUInt32 i = uiPrevIntBit; i <= uiLastBit; ++i)
+    ClearBit(i);
+}
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+XII_ALWAYS_INLINE xiiStaticBitfield<T>::xiiStaticBitfield()
+{
+  static_assert(std::is_unsigned<T>::value, "Storage type must be unsigned");
+}
+
+template <typename T>
+XII_ALWAYS_INLINE xiiStaticBitfield<T> xiiStaticBitfield<T>::FromMask(StorageType bits)
+{
+  return xiiStaticBitfield<T>(bits);
+}
+
+template <typename T>
+XII_ALWAYS_INLINE bool xiiStaticBitfield<T>::IsAnyBitSet() const
+{
+  return m_Storage != 0;
+}
+
+template <typename T>
+XII_ALWAYS_INLINE bool xiiStaticBitfield<T>::IsNoBitSet() const
+{
+  return m_Storage == 0;
+}
+
+template <typename T>
+bool xiiStaticBitfield<T>::AreAllBitsSet() const
+{
+  const T inv = ~m_Storage;
+  return inv == 0;
+}
+
+template <typename T>
+void xiiStaticBitfield<T>::ClearBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBits)
+{
+  XII_ASSERT_DEBUG(uiFirstBit < GetNumBits(), "Cannot access first bit {0}, the bitfield only has {1} bits.", uiFirstBit, GetNumBits());
+
+  for (xiiUInt32 i = 0; i < uiNumBits; ++i)
+  {
+    const xiiUInt32 uiBit = uiFirstBit + i;
+    m_Storage &= ~(static_cast<T>(1u) << uiBit);
+  }
+}
+
+template <typename T>
+void xiiStaticBitfield<T>::SetBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBits)
+{
+  XII_ASSERT_DEBUG(uiFirstBit < GetNumBits(), "Cannot access first bit {0}, the bitfield only has {1} bits.", uiFirstBit, GetNumBits());
+
+  for (xiiUInt32 i = 0; i < uiNumBits; ++i)
+  {
+    const xiiUInt32 uiBit = uiFirstBit + i;
+    m_Storage |= static_cast<T>(1u) << uiBit;
+  }
+}
+
+template <typename T>
+XII_ALWAYS_INLINE void xiiStaticBitfield<T>::SetAllBits()
+{
+  m_Storage = xiiMath::MaxValue<T>(); // possible because we assert that T is unsigned
+}
+
+template <typename T>
+XII_ALWAYS_INLINE void xiiStaticBitfield<T>::ClearAllBits()
+{
+  m_Storage = 0;
+}
+
+template <typename T>
+XII_ALWAYS_INLINE bool xiiStaticBitfield<T>::IsBitSet(xiiUInt32 uiBit) const
+{
+  XII_ASSERT_DEBUG(uiBit < GetNumBits(), "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, GetNumBits());
+
+  return (m_Storage & (static_cast<T>(1u) << uiBit)) != 0;
+}
+
+template <typename T>
+XII_ALWAYS_INLINE void xiiStaticBitfield<T>::ClearBit(xiiUInt32 uiBit)
+{
+  XII_ASSERT_DEBUG(uiBit < GetNumBits(), "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, GetNumBits());
+
+  m_Storage &= ~(static_cast<T>(1u) << uiBit);
+}
+
+template <typename T>
+XII_ALWAYS_INLINE void xiiStaticBitfield<T>::SetBit(xiiUInt32 uiBit)
+{
+  XII_ASSERT_DEBUG(uiBit < GetNumBits(), "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, GetNumBits());
+
+  m_Storage |= static_cast<T>(1u) << uiBit;
+}
+
+template <typename T>
+XII_ALWAYS_INLINE void xiiStaticBitfield<T>::SetValue(T value)
+{
+  m_Storage = value;
+}
+
+template <typename T>
+XII_ALWAYS_INLINE T xiiStaticBitfield<T>::GetValue() const
+{
+  return m_Storage;
+}

@@ -1,0 +1,527 @@
+#include <Texture/TexturePCH.h>
+
+#include <Foundation/IO/Stream.h>
+#include <Foundation/Profiling/Profiling.h>
+#include <Texture/Image/Formats/DdsFileFormat.h>
+#include <Texture/Image/Formats/ImageFormatMappings.h>
+#include <Texture/Image/Image.h>
+
+xiiDdsFileFormat g_ddsFormat;
+
+struct xiiDdsPixelFormat
+{
+  xiiUInt32 m_uiSize;
+  xiiUInt32 m_uiFlags;
+  xiiUInt32 m_uiFourCC;
+  xiiUInt32 m_uiRGBBitCount;
+  xiiUInt32 m_uiRBitMask;
+  xiiUInt32 m_uiGBitMask;
+  xiiUInt32 m_uiBBitMask;
+  xiiUInt32 m_uiABitMask;
+};
+
+struct xiiDdsHeader
+{
+  xiiUInt32         m_uiMagic;
+  xiiUInt32         m_uiSize;
+  xiiUInt32         m_uiFlags;
+  xiiUInt32         m_uiHeight;
+  xiiUInt32         m_uiWidth;
+  xiiUInt32         m_uiPitchOrLinearSize;
+  xiiUInt32         m_uiDepth;
+  xiiUInt32         m_uiMipMapCount;
+  xiiUInt32         m_uiReserved1[11];
+  xiiDdsPixelFormat m_ddspf;
+  xiiUInt32         m_uiCaps;
+  xiiUInt32         m_uiCaps2;
+  xiiUInt32         m_uiCaps3;
+  xiiUInt32         m_uiCaps4;
+  xiiUInt32         m_uiReserved2;
+};
+
+struct xiiDdsResourceDimension
+{
+  enum Enum
+  {
+    TEXTURE1D = 2,
+    TEXTURE2D = 3,
+    TEXTURE3D = 4,
+  };
+};
+
+struct xiiDdsResourceMiscFlags
+{
+  enum Enum
+  {
+    TEXTURECUBE = 0x4,
+  };
+};
+
+struct xiiDdsHeaderDxt10
+{
+  xiiUInt32 m_uiDxgiFormat;
+  xiiUInt32 m_uiResourceDimension;
+  xiiUInt32 m_uiMiscFlag;
+  xiiUInt32 m_uiArraySize;
+  xiiUInt32 m_uiMiscFlags2;
+};
+
+struct xiiDdsdFlags
+{
+  enum Enum
+  {
+    CAPS        = 0x000001,
+    HEIGHT      = 0x000002,
+    WIDTH       = 0x000004,
+    PITCH       = 0x000008,
+    PIXELFORMAT = 0x001000,
+    MIPMAPCOUNT = 0x020000,
+    LINEARSIZE  = 0x080000,
+    DEPTH       = 0x800000,
+  };
+};
+
+struct xiiDdpfFlags
+{
+  enum Enum
+  {
+    ALPHAPIXELS = 0x00001,
+    ALPHA       = 0x00002,
+    FOURCC      = 0x00004,
+    RGB         = 0x00040,
+    YUV         = 0x00200,
+    LUMINANCE   = 0x20000,
+  };
+};
+
+struct xiiDdsCaps
+{
+  enum Enum
+  {
+    COMPLEX = 0x000008,
+    MIPMAP  = 0x400000,
+    TEXTURE = 0x001000,
+  };
+};
+
+struct xiiDdsCaps2
+{
+  enum Enum
+  {
+    CUBEMAP            = 0x000200,
+    CUBEMAP_POSITIVEX  = 0x000400,
+    CUBEMAP_NEGATIVEX  = 0x000800,
+    CUBEMAP_POSITIVEY  = 0x001000,
+    CUBEMAP_NEGATIVEY  = 0x002000,
+    CUBEMAP_POSITIVXII = 0x004000,
+    CUBEMAP_NEGATIVXII = 0x008000,
+    VOLUME             = 0x200000,
+  };
+};
+
+static const xiiUInt32 xiiDdsMagic       = 0x20534444;
+static const xiiUInt32 xiiDdsDxt10FourCc = 0x30315844;
+
+static xiiResult ReadImageData(xiiStreamReader& stream, xiiImageHeader& imageHeader, xiiDdsHeader& ddsHeader)
+{
+  if (stream.ReadBytes(&ddsHeader, sizeof(xiiDdsHeader)) != sizeof(xiiDdsHeader))
+  {
+    xiiLog::Error("Failed to read file header.");
+    return XII_FAILURE;
+  }
+
+  if (ddsHeader.m_uiMagic != xiiDdsMagic)
+  {
+    xiiLog::Error("The file is not a recognized DDS file.");
+    return XII_FAILURE;
+  }
+
+  if (ddsHeader.m_uiSize != 124)
+  {
+    xiiLog::Error("The file header size {0} doesn't match the expected size of 124.", ddsHeader.m_uiSize);
+    return XII_FAILURE;
+  }
+
+  // Required in every .dds file. According to the spec, CAPS and PIXELFORMAT are also required, but D3DX outputs
+  // files not conforming to this.
+  if ((ddsHeader.m_uiFlags & xiiDdsdFlags::WIDTH) == 0 || (ddsHeader.m_uiFlags & xiiDdsdFlags::HEIGHT) == 0)
+  {
+    xiiLog::Error("The file header doesn't specify the mandatory WIDTH or HEIGHT flag.");
+    return XII_FAILURE;
+  }
+
+  if ((ddsHeader.m_uiCaps & xiiDdsCaps::TEXTURE) == 0)
+  {
+    xiiLog::Error("The file header doesn't specify the mandatory TEXTURE flag.");
+    return XII_FAILURE;
+  }
+
+  imageHeader.SetWidth(ddsHeader.m_uiWidth);
+  imageHeader.SetHeight(ddsHeader.m_uiHeight);
+
+  if (ddsHeader.m_ddspf.m_uiSize != 32)
+  {
+    xiiLog::Error("The pixel format size {0} doesn't match the expected value of 32.", ddsHeader.m_ddspf.m_uiSize);
+    return XII_FAILURE;
+  }
+
+  xiiDdsHeaderDxt10 headerDxt10;
+
+  xiiImageFormat::Enum format = xiiImageFormat::UNKNOWN;
+
+  // Data format specified in RGBA masks
+  if ((ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHAPIXELS) != 0 || (ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::RGB) != 0 ||
+      (ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHA) != 0)
+  {
+    format = xiiImageFormat::FromPixelMask(ddsHeader.m_ddspf.m_uiRBitMask, ddsHeader.m_ddspf.m_uiGBitMask, ddsHeader.m_ddspf.m_uiBBitMask,
+                                           ddsHeader.m_ddspf.m_uiABitMask, ddsHeader.m_ddspf.m_uiRGBBitCount);
+
+    if (format == xiiImageFormat::UNKNOWN)
+    {
+      xiiLog::Error("The pixel mask specified was not recognized (R: {0}, G: {1}, B: {2}, A: {3}, Bpp: {4}).",
+                    xiiArgU(ddsHeader.m_ddspf.m_uiRBitMask, 1, false, 16), xiiArgU(ddsHeader.m_ddspf.m_uiGBitMask, 1, false, 16),
+                    xiiArgU(ddsHeader.m_ddspf.m_uiBBitMask, 1, false, 16), xiiArgU(ddsHeader.m_ddspf.m_uiABitMask, 1, false, 16),
+                    ddsHeader.m_ddspf.m_uiRGBBitCount);
+      return XII_FAILURE;
+    }
+
+    // Verify that the format we found is correct
+    if (xiiImageFormat::GetBitsPerPixel(format) != ddsHeader.m_ddspf.m_uiRGBBitCount)
+    {
+      xiiLog::Error("The number of bits per pixel specified in the file ({0}) does not match the expected value of {1} for the format '{2}'.",
+                    ddsHeader.m_ddspf.m_uiRGBBitCount, xiiImageFormat::GetBitsPerPixel(format), xiiImageFormat::GetName(format));
+      return XII_FAILURE;
+    }
+  }
+  else if ((ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::FOURCC) != 0)
+  {
+    if (ddsHeader.m_ddspf.m_uiFourCC == xiiDdsDxt10FourCc)
+    {
+      if (stream.ReadBytes(&headerDxt10, sizeof(xiiDdsHeaderDxt10)) != sizeof(xiiDdsHeaderDxt10))
+      {
+        xiiLog::Error("Failed to read file header.");
+        return XII_FAILURE;
+      }
+
+      format = xiiImageFormatMappings::FromDxgiFormat(headerDxt10.m_uiDxgiFormat);
+
+      if (format == xiiImageFormat::UNKNOWN)
+      {
+        xiiLog::Error("The DXGI format {0} has no equivalent image format.", headerDxt10.m_uiDxgiFormat);
+        return XII_FAILURE;
+      }
+    }
+    else
+    {
+      format = xiiImageFormatMappings::FromFourCc(ddsHeader.m_ddspf.m_uiFourCC);
+
+      if (format == xiiImageFormat::UNKNOWN)
+      {
+        xiiLog::Error("The FourCC code '{0}{1}{2}{3}' was not recognized.", xiiArgC((char)(ddsHeader.m_ddspf.m_uiFourCC >> 0)),
+                      xiiArgC((char)(ddsHeader.m_ddspf.m_uiFourCC >> 8)), xiiArgC((char)(ddsHeader.m_ddspf.m_uiFourCC >> 16)),
+                      xiiArgC((char)(ddsHeader.m_ddspf.m_uiFourCC >> 24)));
+        return XII_FAILURE;
+      }
+    }
+  }
+  else
+  {
+    xiiLog::Error("The image format is neither specified as a pixel mask nor as a FourCC code.");
+    return XII_FAILURE;
+  }
+
+  imageHeader.SetImageFormat(format);
+
+  const bool bHasMipMaps = (ddsHeader.m_uiCaps & xiiDdsCaps::MIPMAP) != 0;
+  const bool bCubeMap    = (ddsHeader.m_uiCaps2 & xiiDdsCaps2::CUBEMAP) != 0;
+  const bool bVolume     = (ddsHeader.m_uiCaps2 & xiiDdsCaps2::VOLUME) != 0;
+
+
+  if (bHasMipMaps)
+  {
+    imageHeader.SetNumMipLevels(ddsHeader.m_uiMipMapCount);
+  }
+
+  // Cubemap and volume texture are mutually exclusive
+  if (bVolume && bCubeMap)
+  {
+    xiiLog::Error("The header specifies both the VOLUME and CUBEMAP flags.");
+    return XII_FAILURE;
+  }
+
+  if (bCubeMap)
+  {
+    imageHeader.SetNumFaces(6);
+  }
+  else if (bVolume)
+  {
+    imageHeader.SetDepth(ddsHeader.m_uiDepth);
+  }
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiDdsFileFormat::ReadImageHeader(xiiStreamReader& stream, xiiImageHeader& header, const char* szFileExtension) const
+{
+  XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImageHeader");
+
+  xiiDdsHeader ddsHeader;
+  return ReadImageData(stream, header, ddsHeader);
+}
+
+xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, const char* szFileExtension) const
+{
+  XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImage");
+
+  xiiImageHeader imageHeader;
+  xiiDdsHeader   ddsHeader;
+  XII_SUCCEED_OR_RETURN(ReadImageData(stream, imageHeader, ddsHeader));
+
+  image.ResetAndAlloc(imageHeader);
+
+  const bool bPitch = (ddsHeader.m_uiFlags & xiiDdsdFlags::PITCH) != 0;
+
+  // If pitch is specified, it must match the computed value
+  if (bPitch && image.GetRowPitch(0) != ddsHeader.m_uiPitchOrLinearSize)
+  {
+    xiiLog::Error("The row pitch specified in the header doesn't match the expected pitch.");
+    return XII_FAILURE;
+  }
+
+  xiiUInt64 uiDataSize = image.GetByteBlobPtr().GetCount();
+
+  if (stream.ReadBytes(image.GetByteBlobPtr().GetPtr(), uiDataSize) != uiDataSize)
+  {
+    xiiLog::Error("Failed to read image data.");
+    return XII_FAILURE;
+  }
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageView& image, const char* szFileExtension) const
+{
+  const xiiImageFormat::Enum format = image.GetImageFormat();
+  const xiiUInt32            uiBpp  = xiiImageFormat::GetBitsPerPixel(format);
+
+  const xiiUInt32 uiNumFaces        = image.GetNumFaces();
+  const xiiUInt32 uiNumMipLevels    = image.GetNumMipLevels();
+  const xiiUInt32 uiNumArrayIndices = image.GetNumArrayIndices();
+
+  const xiiUInt32 uiWidth  = image.GetWidth(0);
+  const xiiUInt32 uiHeight = image.GetHeight(0);
+  const xiiUInt32 uiDepth  = image.GetDepth(0);
+
+  bool bHasMipMaps = uiNumMipLevels > 1;
+  bool bVolume     = uiDepth > 1;
+  bool bCubeMap    = uiNumFaces > 1;
+  bool bArray      = uiNumArrayIndices > 1;
+
+  bool bDxt10 = false;
+
+  xiiDdsHeader      fileHeader;
+  xiiDdsHeaderDxt10 headerDxt10;
+
+  xiiMemoryUtils::ZeroFill(&fileHeader, 1);
+  xiiMemoryUtils::ZeroFill(&headerDxt10, 1);
+
+  fileHeader.m_uiMagic  = xiiDdsMagic;
+  fileHeader.m_uiSize   = 124;
+  fileHeader.m_uiWidth  = uiWidth;
+  fileHeader.m_uiHeight = uiHeight;
+
+  // Required in every .dds file.
+  fileHeader.m_uiFlags = xiiDdsdFlags::WIDTH | xiiDdsdFlags::HEIGHT | xiiDdsdFlags::CAPS | xiiDdsdFlags::PIXELFORMAT;
+
+  if (bHasMipMaps)
+  {
+    fileHeader.m_uiFlags |= xiiDdsdFlags::MIPMAPCOUNT;
+    fileHeader.m_uiMipMapCount = uiNumMipLevels;
+  }
+
+  if (bVolume)
+  {
+    // Volume and array are incompatible
+    if (bArray)
+    {
+      xiiLog::Error("The image is both an array and volume texture. This is not supported.");
+      return XII_FAILURE;
+    }
+
+    fileHeader.m_uiFlags |= xiiDdsdFlags::DEPTH;
+    fileHeader.m_uiDepth = uiDepth;
+  }
+
+  switch (xiiImageFormat::GetType(image.GetImageFormat()))
+  {
+    case xiiImageFormatType::LINEAR:
+      [[fallthrough]];
+    case xiiImageFormatType::PLANAR:
+      fileHeader.m_uiFlags |= xiiDdsdFlags::PITCH;
+      fileHeader.m_uiPitchOrLinearSize = static_cast<xiiUInt32>(image.GetRowPitch(0));
+      break;
+
+    case xiiImageFormatType::BLOCK_COMPRESSED:
+      fileHeader.m_uiFlags |= xiiDdsdFlags::LINEARSIZE;
+      fileHeader.m_uiPitchOrLinearSize = 0; /// \todo sub-image size
+      break;
+
+    default:
+      xiiLog::Error("Unknown image format type.");
+      return XII_FAILURE;
+  }
+
+  fileHeader.m_uiCaps = xiiDdsCaps::TEXTURE;
+
+  if (bCubeMap)
+  {
+    if (uiNumFaces != 6)
+    {
+      xiiLog::Error("The image is a cubemap, but has {0} faces instead of the expected 6.", uiNumFaces);
+      return XII_FAILURE;
+    }
+
+    if (bVolume)
+    {
+      xiiLog::Error("The image is both a cubemap and volume texture. This is not supported.");
+      return XII_FAILURE;
+    }
+
+    fileHeader.m_uiCaps |= xiiDdsCaps::COMPLEX;
+    fileHeader.m_uiCaps2 |= xiiDdsCaps2::CUBEMAP | xiiDdsCaps2::CUBEMAP_POSITIVEX | xiiDdsCaps2::CUBEMAP_NEGATIVEX | xiiDdsCaps2::CUBEMAP_POSITIVEY |
+      xiiDdsCaps2::CUBEMAP_NEGATIVEY | xiiDdsCaps2::CUBEMAP_POSITIVXII | xiiDdsCaps2::CUBEMAP_NEGATIVXII;
+  }
+
+  if (bArray)
+  {
+    fileHeader.m_uiCaps |= xiiDdsCaps::COMPLEX;
+
+    // Must be written as DXT10
+    bDxt10 = true;
+  }
+
+  if (bVolume)
+  {
+    fileHeader.m_uiCaps |= xiiDdsCaps::COMPLEX;
+    fileHeader.m_uiCaps2 |= xiiDdsCaps2::VOLUME;
+  }
+
+  if (bHasMipMaps)
+  {
+    fileHeader.m_uiCaps |= xiiDdsCaps::MIPMAP | xiiDdsCaps::COMPLEX;
+  }
+
+  fileHeader.m_ddspf.m_uiSize = 32;
+
+  xiiUInt32 uiRedMask   = xiiImageFormat::GetRedMask(format);
+  xiiUInt32 uiGreenMask = xiiImageFormat::GetGreenMask(format);
+  xiiUInt32 uiBlueMask  = xiiImageFormat::GetBlueMask(format);
+  xiiUInt32 uiAlphaMask = xiiImageFormat::GetAlphaMask(format);
+
+  xiiUInt32 uiFourCc     = xiiImageFormatMappings::ToFourCc(format);
+  xiiUInt32 uiDxgiFormat = xiiImageFormatMappings::ToDxgiFormat(format);
+
+  // When not required to use a DXT10 texture, try to write a legacy DDS by specifying FourCC or pixel masks
+  if (!bDxt10)
+  {
+    // The format has a known mask and we would also recognize it as the same when reading back in, since multiple formats may have the same pixel
+    // masks
+    if ((uiRedMask | uiGreenMask | uiBlueMask | uiAlphaMask) &&
+        format == xiiImageFormat::FromPixelMask(uiRedMask, uiGreenMask, uiBlueMask, uiAlphaMask, uiBpp))
+    {
+      fileHeader.m_ddspf.m_uiFlags       = xiiDdpfFlags::ALPHAPIXELS | xiiDdpfFlags::RGB;
+      fileHeader.m_ddspf.m_uiRBitMask    = uiRedMask;
+      fileHeader.m_ddspf.m_uiGBitMask    = uiGreenMask;
+      fileHeader.m_ddspf.m_uiBBitMask    = uiBlueMask;
+      fileHeader.m_ddspf.m_uiABitMask    = uiAlphaMask;
+      fileHeader.m_ddspf.m_uiRGBBitCount = xiiImageFormat::GetBitsPerPixel(format);
+    }
+    // The format has a known FourCC
+    else if (uiFourCc != 0)
+    {
+      fileHeader.m_ddspf.m_uiFlags  = xiiDdpfFlags::FOURCC;
+      fileHeader.m_ddspf.m_uiFourCC = uiFourCc;
+    }
+    else
+    {
+      // Fallback to DXT10 path
+      bDxt10 = true;
+    }
+  }
+
+  if (bDxt10)
+  {
+    // We must write a DXT10 file, but there is no matching DXGI_FORMAT - we could also try converting, but that is rarely intended when writing .dds
+    if (uiDxgiFormat == 0)
+    {
+      xiiLog::Error("The image needs to be written as a DXT10 file, but no matching DXGI format was found for '{0}'.", xiiImageFormat::GetName(format));
+      return XII_FAILURE;
+    }
+
+    fileHeader.m_ddspf.m_uiFlags  = xiiDdpfFlags::FOURCC;
+    fileHeader.m_ddspf.m_uiFourCC = xiiDdsDxt10FourCc;
+
+    headerDxt10.m_uiDxgiFormat = uiDxgiFormat;
+
+    if (bVolume)
+    {
+      headerDxt10.m_uiResourceDimension = xiiDdsResourceDimension::TEXTURE3D;
+    }
+    else if (uiHeight > 1)
+    {
+      headerDxt10.m_uiResourceDimension = xiiDdsResourceDimension::TEXTURE2D;
+    }
+    else
+    {
+      headerDxt10.m_uiResourceDimension = xiiDdsResourceDimension::TEXTURE1D;
+    }
+
+    if (bCubeMap)
+    {
+      headerDxt10.m_uiMiscFlag = xiiDdsResourceMiscFlags::TEXTURECUBE;
+    }
+
+    // NOT multiplied by number of cubemap faces
+    headerDxt10.m_uiArraySize = uiNumArrayIndices;
+
+    // Can be used to describe the alpha channel usage, but automatically makes it incompatible with the D3DX libraries if not 0.
+    headerDxt10.m_uiMiscFlags2 = 0;
+  }
+
+  if (stream.WriteBytes(&fileHeader, sizeof(fileHeader)) != XII_SUCCESS)
+  {
+    xiiLog::Error("Failed to write image header.");
+    return XII_FAILURE;
+  }
+
+  if (bDxt10)
+  {
+    if (stream.WriteBytes(&headerDxt10, sizeof(headerDxt10)) != XII_SUCCESS)
+    {
+      xiiLog::Error("Failed to write image DX10 header.");
+      return XII_FAILURE;
+    }
+  }
+
+  if (stream.WriteBytes(image.GetByteBlobPtr().GetPtr(), image.GetByteBlobPtr().GetCount()) != XII_SUCCESS)
+  {
+    xiiLog::Error("Failed to write image data.");
+    return XII_FAILURE;
+  }
+
+  return XII_SUCCESS;
+}
+
+bool xiiDdsFileFormat::CanReadFileType(const char* szExtension) const
+{
+  return xiiStringUtils::IsEqual_NoCase(szExtension, "dds");
+}
+
+bool xiiDdsFileFormat::CanWriteFileType(const char* szExtension) const
+{
+  return CanReadFileType(szExtension);
+}
+
+
+
+XII_STATICLINK_FILE(Texture, Texture_Image_Formats_DdsFileFormat);
