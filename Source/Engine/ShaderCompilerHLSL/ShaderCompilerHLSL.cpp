@@ -1,0 +1,398 @@
+#include <ShaderCompilerHLSL/ShaderCompilerHLSL.h>
+#include <d3dcompiler.h>
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShaderCompilerHLSL, 1, xiiRTTIDefaultAllocator<xiiShaderCompilerHLSL>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiResult CompileDXShader(const char* szFile, const char* szSource, bool bDebug, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
+{
+  out_ByteCode.Clear();
+
+  ID3DBlob* pResultBlob = nullptr;
+  ID3DBlob* pErrorBlob  = nullptr;
+
+  const char*      szCompileSource = szSource;
+  xiiStringBuilder sDebugSource;
+  UINT             flags1 = 0;
+  if (bDebug)
+  {
+    flags1 = D3DCOMPILE_DEBUG | D3DCOMPILE_PREFER_FLOW_CONTROL | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_ENABLE_STRICTNESS;
+    // In debug mode we need to remove '#line' as any shader debugger won't work with them.
+    sDebugSource = szSource;
+    sDebugSource.ReplaceAll("#line ", "//ine ");
+    szCompileSource = sDebugSource;
+  }
+
+  if (FAILED(D3DCompile(szCompileSource, strlen(szCompileSource), szFile, nullptr, nullptr, szEntryPoint, szProfile, flags1, 0, &pResultBlob, &pErrorBlob)))
+  {
+    if (bDebug)
+    {
+      // Try again with '#line' intact to get correct error messages with file and line info.
+      pErrorBlob->Release();
+      pErrorBlob = nullptr;
+      XII_VERIFY(FAILED(D3DCompile(szSource, strlen(szSource), szFile, nullptr, nullptr, szEntryPoint, szProfile, flags1, 0, &pResultBlob, &pErrorBlob)), "Debug compilation with commented out '#line' failed but original version did not.");
+    }
+
+    const char* szError = static_cast<const char*>(pErrorBlob->GetBufferPointer());
+
+    XII_LOG_BLOCK("Shader Compilation Failed", szFile);
+
+    xiiLog::Error("Could not compile shader '{0}' for profile '{1}'", szFile, szProfile);
+    xiiLog::Error("{0}", szError);
+
+    pErrorBlob->Release();
+    return XII_FAILURE;
+  }
+
+  if (pErrorBlob != nullptr)
+  {
+    const char* szError = static_cast<const char*>(pErrorBlob->GetBufferPointer());
+
+    XII_LOG_BLOCK("Shader Compilation Error Message", szFile);
+    xiiLog::Dev("{0}", szError);
+
+    pErrorBlob->Release();
+  }
+
+  if (pResultBlob != nullptr)
+  {
+    out_ByteCode.SetCountUninitialized((xiiUInt32)pResultBlob->GetBufferSize());
+    xiiMemoryUtils::Copy(out_ByteCode.GetData(), static_cast<xiiUInt8*>(pResultBlob->GetBufferPointer()), out_ByteCode.GetCount());
+    pResultBlob->Release();
+  }
+
+  return XII_SUCCESS;
+}
+
+void xiiShaderCompilerHLSL::ReflectShaderStage(xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage)
+{
+  ID3D11ShaderReflection* pReflector = nullptr;
+
+  auto byteCode = inout_Data.m_StageBinary[Stage].GetByteCode();
+  D3DReflect(byteCode.GetData(), byteCode.GetCount(), IID_ID3D11ShaderReflection, (void**)&pReflector);
+
+  D3D11_SHADER_DESC shaderDesc;
+  pReflector->GetDesc(&shaderDesc);
+
+  for (xiiUInt32 r = 0; r < shaderDesc.BoundResources; ++r)
+  {
+    D3D11_SHADER_INPUT_BIND_DESC shaderInputBindDesc;
+    pReflector->GetResourceBindingDesc(r, &shaderInputBindDesc);
+
+    // xiiLog::Info("Bound Resource: '{0}' at slot {1} (Count: {2}, Flags: {3})", sibd.Name, sibd.BindPoint, sibd.BindCount, sibd.uFlags);
+
+    xiiShaderResourceBinding shaderResourceBinding;
+    shaderResourceBinding.m_Type  = xiiShaderResourceType::Unknown;
+    shaderResourceBinding.m_iSlot = shaderInputBindDesc.BindPoint;
+    shaderResourceBinding.m_sName.Assign(shaderInputBindDesc.Name);
+
+    if (shaderInputBindDesc.Type == D3D_SIT_TEXTURE)
+    {
+      switch (shaderInputBindDesc.Dimension)
+      {
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1D:
+          shaderResourceBinding.m_Type = xiiShaderResourceType::Texture1D;
+          break;
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1DARRAY:
+          shaderResourceBinding.m_Type = xiiShaderResourceType::Texture1DArray;
+          break;
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2D:
+          shaderResourceBinding.m_Type = xiiShaderResourceType::Texture2D;
+          break;
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+          shaderResourceBinding.m_Type = xiiShaderResourceType::Texture2DArray;
+          break;
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DMS:
+          shaderResourceBinding.m_Type = xiiShaderResourceType::Texture2DMS;
+          break;
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
+          shaderResourceBinding.m_Type = xiiShaderResourceType::Texture2DMSArray;
+          break;
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE3D:
+          shaderResourceBinding.m_Type = xiiShaderResourceType::Texture3D;
+          break;
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURECUBE:
+          shaderResourceBinding.m_Type = xiiShaderResourceType::TextureCube;
+          break;
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURECUBEARRAY:
+          shaderResourceBinding.m_Type = xiiShaderResourceType::TextureCubeArray;
+          break;
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_BUFFER:
+          shaderResourceBinding.m_Type = xiiShaderResourceType::GenericBuffer;
+          break;
+
+        default:
+          XII_ASSERT_NOT_IMPLEMENTED;
+          break;
+      }
+    }
+
+    else if (shaderInputBindDesc.Type == D3D_SIT_UAV_RWTYPED)
+    {
+      switch (shaderInputBindDesc.Dimension)
+      {
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1D:
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1DARRAY:
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2D:
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_BUFFER:
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_BUFFEREX:
+          shaderResourceBinding.m_Type = xiiShaderResourceType::UAV;
+          break;
+
+        default:
+          XII_ASSERT_NOT_IMPLEMENTED;
+          break;
+      }
+    }
+
+    else if (shaderInputBindDesc.Type == D3D_SIT_UAV_RWSTRUCTURED)
+      shaderResourceBinding.m_Type = xiiShaderResourceType::UAV;
+
+    else if (shaderInputBindDesc.Type == D3D_SIT_UAV_RWBYTEADDRESS)
+      shaderResourceBinding.m_Type = xiiShaderResourceType::UAV;
+
+    else if (shaderInputBindDesc.Type == D3D_SIT_UAV_APPEND_STRUCTURED)
+      shaderResourceBinding.m_Type = xiiShaderResourceType::UAV;
+
+    else if (shaderInputBindDesc.Type == D3D_SIT_UAV_CONSUME_STRUCTURED)
+      shaderResourceBinding.m_Type = xiiShaderResourceType::UAV;
+
+    else if (shaderInputBindDesc.Type == D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER)
+      shaderResourceBinding.m_Type = xiiShaderResourceType::UAV;
+
+    else if (shaderInputBindDesc.Type == D3D_SIT_CBUFFER)
+    {
+      shaderResourceBinding.m_Type    = xiiShaderResourceType::ConstantBuffer;
+      shaderResourceBinding.m_pLayout = ReflectConstantBufferLayout(inout_Data.m_StageBinary[Stage], pReflector->GetConstantBufferByName(shaderInputBindDesc.Name));
+    }
+    else if (shaderInputBindDesc.Type == D3D_SIT_SAMPLER)
+    {
+      shaderResourceBinding.m_Type = xiiShaderResourceType::Sampler;
+      if (xiiStringUtils::EndsWith(shaderInputBindDesc.Name, "_AutoSampler"))
+      {
+        xiiStringBuilder sb = shaderInputBindDesc.Name;
+        sb.Shrink(0, xiiStringUtils::GetStringElementCount("_AutoSampler"));
+        shaderResourceBinding.m_sName.Assign(sb.GetData());
+      }
+    }
+    else
+    {
+      shaderResourceBinding.m_Type = xiiShaderResourceType::GenericBuffer;
+    }
+
+    if (shaderResourceBinding.m_Type != xiiShaderResourceType::Unknown)
+    {
+      inout_Data.m_StageBinary[Stage].AddShaderResourceBinding(shaderResourceBinding);
+    }
+  }
+
+  pReflector->Release();
+}
+
+xiiShaderConstantBufferLayout* xiiShaderCompilerHLSL::ReflectConstantBufferLayout(xiiShaderStageBinary& pStageBinary, ID3D11ShaderReflectionConstantBuffer* pConstantBufferReflection)
+{
+  D3D11_SHADER_BUFFER_DESC shaderBufferDesc;
+
+  if (FAILED(pConstantBufferReflection->GetDesc(&shaderBufferDesc)))
+  {
+    return nullptr;
+  }
+
+  XII_LOG_BLOCK("Constant Buffer Layout", shaderBufferDesc.Name);
+  xiiLog::Debug("Constant Buffer has {0} variables, Size is {1}", shaderBufferDesc.Variables, shaderBufferDesc.Size);
+
+  xiiShaderConstantBufferLayout* pLayout = pStageBinary.CreateConstantBufferLayout();
+
+  pLayout->m_uiTotalSize = shaderBufferDesc.Size;
+
+  for (xiiUInt32 var = 0; var < shaderBufferDesc.Variables; ++var)
+  {
+    ID3D11ShaderReflectionVariable* pVar = pConstantBufferReflection->GetVariableByIndex(var);
+
+    D3D11_SHADER_VARIABLE_DESC svd;
+    pVar->GetDesc(&svd);
+
+    XII_LOG_BLOCK("Constant", svd.Name);
+
+    D3D11_SHADER_TYPE_DESC std;
+    pVar->GetType()->GetDesc(&std);
+
+    xiiShaderConstantBufferLayout::Constant constant;
+    constant.m_uiArrayElements = static_cast<xiiUInt8>(xiiMath::Max(std.Elements, 1u));
+    constant.m_uiOffset        = static_cast<xiiUInt16>(svd.StartOffset);
+    constant.m_sName.Assign(svd.Name);
+
+    if (std.Class == D3D_SVC_SCALAR || std.Class == D3D_SVC_VECTOR)
+    {
+      switch (std.Type)
+      {
+        case D3D_SVT_FLOAT:
+          constant.m_Type = (xiiShaderConstantBufferLayout::Constant::Type::Enum)((xiiInt32)xiiShaderConstantBufferLayout::Constant::Type::Float1 + std.Columns - 1);
+          break;
+        case D3D_SVT_INT:
+          constant.m_Type = (xiiShaderConstantBufferLayout::Constant::Type::Enum)((xiiInt32)xiiShaderConstantBufferLayout::Constant::Type::Int1 + std.Columns - 1);
+          break;
+        case D3D_SVT_UINT:
+          constant.m_Type = (xiiShaderConstantBufferLayout::Constant::Type::Enum)((xiiInt32)xiiShaderConstantBufferLayout::Constant::Type::UInt1 + std.Columns - 1);
+          break;
+        case D3D_SVT_BOOL:
+          if (std.Columns == 1)
+          {
+            constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Bool;
+          }
+          break;
+
+        default:
+          break;
+      }
+    }
+    else if (std.Class == D3D_SVC_MATRIX_COLUMNS)
+    {
+      if (std.Type != D3D_SVT_FLOAT)
+      {
+        xiiLog::Error("Variable '{0}': Only float matrices are supported", svd.Name);
+        continue;
+      }
+
+      if (std.Columns == 3 && std.Rows == 3)
+      {
+        constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Mat3x3;
+      }
+      else if (std.Columns == 4 && std.Rows == 4)
+      {
+        constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Mat4x4;
+      }
+      else
+      {
+        xiiLog::Error("Variable '{0}': {1}x{2} matrices are not supported", svd.Name, std.Rows, std.Columns);
+        continue;
+      }
+    }
+    else if (std.Class == D3D_SVC_MATRIX_ROWS)
+    {
+      xiiLog::Error("Variable '{0}': Row-Major matrices are not supported", svd.Name);
+      continue;
+    }
+    else if (std.Class == D3D_SVC_STRUCT)
+    {
+      continue;
+    }
+
+    if (constant.m_Type == xiiShaderConstantBufferLayout::Constant::Type::Default)
+    {
+      xiiLog::Error("Variable '{0}': Variable type '{1}' is unknown / not supported", svd.Name, std.Class);
+      continue;
+    }
+
+    pLayout->m_Constants.PushBack(constant);
+  }
+
+  return pLayout;
+}
+
+const char* GetProfileName(const char* szPlatform, xiiGALShaderStage::Enum Stage)
+{
+  if (xiiStringUtils::IsEqual(szPlatform, "DX11_SM40_93"))
+  {
+    switch (Stage)
+    {
+      case xiiGALShaderStage::VertexShader:
+        return "vs_4_0_level_9_3";
+      case xiiGALShaderStage::PixelShader:
+        return "ps_4_0_level_9_3";
+      default:
+        break;
+    }
+  }
+
+  if (xiiStringUtils::IsEqual(szPlatform, "DX11_SM40"))
+  {
+    switch (Stage)
+    {
+      case xiiGALShaderStage::VertexShader:
+        return "vs_4_0";
+      case xiiGALShaderStage::GeometryShader:
+        return "gs_4_0";
+      case xiiGALShaderStage::PixelShader:
+        return "ps_4_0";
+      case xiiGALShaderStage::ComputeShader:
+        return "cs_4_0";
+      default:
+        break;
+    }
+  }
+
+  if (xiiStringUtils::IsEqual(szPlatform, "DX11_SM41"))
+  {
+    switch (Stage)
+    {
+      case xiiGALShaderStage::GeometryShader:
+        return "gs_4_0";
+      case xiiGALShaderStage::VertexShader:
+        return "vs_4_1";
+      case xiiGALShaderStage::PixelShader:
+        return "ps_4_1";
+      case xiiGALShaderStage::ComputeShader:
+        return "cs_4_1";
+      default:
+        break;
+    }
+  }
+
+  if (xiiStringUtils::IsEqual(szPlatform, "DX11_SM50"))
+  {
+    switch (Stage)
+    {
+      case xiiGALShaderStage::VertexShader:
+        return "vs_5_0";
+      case xiiGALShaderStage::HullShader:
+        return "hs_5_0";
+      case xiiGALShaderStage::DomainShader:
+        return "ds_5_0";
+      case xiiGALShaderStage::GeometryShader:
+        return "gs_5_0";
+      case xiiGALShaderStage::PixelShader:
+        return "ps_5_0";
+      case xiiGALShaderStage::ComputeShader:
+        return "cs_5_0";
+      default:
+        break;
+    }
+  }
+
+  XII_REPORT_FAILURE("Unknown Platform '{0}' or Stage {1}", szPlatform, Stage);
+  return "";
+}
+
+xiiResult xiiShaderCompilerHLSL::Compile(xiiShaderProgramData& inout_Data, xiiLogInterface* pLog)
+{
+  for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  {
+    // shader already compiled
+    if (!inout_Data.m_StageBinary[stage].GetByteCode().IsEmpty())
+    {
+      xiiLog::Debug("Shader for stage '{0}' is already compiled.", xiiGALShaderStage::Names[stage]);
+      continue;
+    }
+
+    const char*     szShaderSource = inout_Data.m_szShaderSource[stage];
+    const xiiUInt32 uiLength       = xiiStringUtils::GetStringElementCount(szShaderSource);
+
+    if (uiLength > 0 && xiiStringUtils::FindSubString(szShaderSource, "main") != nullptr)
+    {
+      if (CompileDXShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
+      {
+        ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage);
+      }
+      else
+      {
+        return XII_FAILURE;
+      }
+    }
+  }
+
+  return XII_SUCCESS;
+}

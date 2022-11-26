@@ -1,0 +1,358 @@
+#include <GameEngine/GameEnginePCH.h>
+
+#include <Core/WorldSerializer/WorldReader.h>
+#include <Core/WorldSerializer/WorldWriter.h>
+#include <GameEngine/Gameplay/BlackboardComponent.h>
+#include <GameEngine/StateMachine/StateMachineComponent.h>
+
+// clang-format off
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgStateMachineStateChanged);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgStateMachineStateChanged, 1, xiiRTTIDefaultAllocator<xiiMsgStateMachineStateChanged>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ACCESSOR_PROPERTY("OldStateName", GetOldStateName, SetOldStateName),
+    XII_ACCESSOR_PROPERTY("NewStateName", GetNewStateName, SetNewStateName),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+      new xiiAutoGenVisScriptMsgHandler()
+  }
+  XII_END_ATTRIBUTES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+//////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStateMachineState_SendMsg, 1, xiiRTTIDefaultAllocator<xiiStateMachineState_SendMsg>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("MessageDelay", m_MessageDelay),
+    XII_MEMBER_PROPERTY("SendMessageOnEnter", m_bSendMessageOnEnter)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("SendMessageOnExit", m_bSendMessageOnExit),
+    XII_MEMBER_PROPERTY("LogOnEnter", m_bLogOnEnter),
+    XII_MEMBER_PROPERTY("LogOnExit", m_bLogOnExit),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiStateMachineState_SendMsg::xiiStateMachineState_SendMsg(xiiStringView sName) :
+  xiiStateMachineState(sName)
+{
+}
+
+xiiStateMachineState_SendMsg::~xiiStateMachineState_SendMsg() = default;
+
+void xiiStateMachineState_SendMsg::OnEnter(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pFromState) const
+{
+  xiiHashedString sFromState = (pFromState != nullptr) ? pFromState->GetNameHashed() : xiiHashedString();
+
+  if (m_bSendMessageOnEnter)
+  {
+    if (auto pOwner = xiiDynamicCast<xiiStateMachineComponent*>(&instance.GetOwner()))
+    {
+      xiiMsgStateMachineStateChanged msg;
+      msg.m_sOldStateName = sFromState;
+      msg.m_sNewStateName = GetNameHashed();
+
+      pOwner->SendStateChangedMsg(msg, m_MessageDelay);
+    }
+  }
+
+  if (m_bLogOnEnter)
+  {
+    xiiLog::Info("State Machine: Entering '{}' State from '{}'", GetNameHashed(), sFromState);
+  }
+}
+
+void xiiStateMachineState_SendMsg::OnExit(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pToState) const
+{
+  xiiHashedString sToState = (pToState != nullptr) ? pToState->GetNameHashed() : xiiHashedString();
+
+  if (m_bSendMessageOnExit)
+  {
+    if (auto pOwner = xiiDynamicCast<xiiStateMachineComponent*>(&instance.GetOwner()))
+    {
+      xiiMsgStateMachineStateChanged msg;
+      msg.m_sOldStateName = GetNameHashed();
+      msg.m_sNewStateName = sToState;
+
+      pOwner->SendStateChangedMsg(msg, m_MessageDelay);
+    }
+  }
+
+  if (m_bLogOnExit)
+  {
+    xiiLog::Info("State Machine: Exiting '{}' State to '{}'", GetNameHashed(), sToState);
+  }
+}
+
+xiiResult xiiStateMachineState_SendMsg::Serialize(xiiStreamWriter& stream) const
+{
+  XII_SUCCEED_OR_RETURN(SUPER::Serialize(stream));
+
+  stream << m_MessageDelay;
+  stream << m_bSendMessageOnEnter;
+  stream << m_bSendMessageOnExit;
+  stream << m_bLogOnEnter;
+  stream << m_bLogOnExit;
+  return XII_SUCCESS;
+}
+
+xiiResult xiiStateMachineState_SendMsg::Deserialize(xiiStreamReader& stream)
+{
+  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(stream));
+
+  stream >> m_MessageDelay;
+  stream >> m_bSendMessageOnEnter;
+  stream >> m_bSendMessageOnExit;
+  stream >> m_bLogOnEnter;
+  stream >> m_bLogOnExit;
+  return XII_SUCCESS;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+xiiStateMachineComponentManager::xiiStateMachineComponentManager(xiiWorld* pWorld) :
+  xiiComponentManager<ComponentType, xiiBlockStorageType::Compact>(pWorld)
+{
+  xiiResourceManager::GetResourceEvents().AddEventHandler(xiiMakeDelegate(&xiiStateMachineComponentManager::ResourceEventHandler, this));
+}
+
+xiiStateMachineComponentManager::~xiiStateMachineComponentManager()
+{
+  xiiResourceManager::GetResourceEvents().RemoveEventHandler(xiiMakeDelegate(&xiiStateMachineComponentManager::ResourceEventHandler, this));
+}
+
+void xiiStateMachineComponentManager::Initialize()
+{
+  auto desc = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiStateMachineComponentManager::Update, this);
+
+  RegisterUpdateFunction(desc);
+}
+
+void xiiStateMachineComponentManager::Update(const xiiWorldModule::UpdateContext& context)
+{
+  // reload
+  {
+    for (auto hComponent : m_ComponentsToReload)
+    {
+      xiiStateMachineComponent* pComponent = nullptr;
+      if (TryGetComponent(hComponent, pComponent) && pComponent->IsActive())
+      {
+        pComponent->InstantiateStateMachine();
+      }
+    }
+    m_ComponentsToReload.Clear();
+  }
+
+  // update
+  if (GetWorld()->GetWorldSimulationEnabled())
+  {
+    for (auto it = this->m_ComponentStorage.GetIterator(context.m_uiFirstComponentIndex, context.m_uiComponentCount); it.IsValid(); ++it)
+    {
+      ComponentType* pComponent = it;
+      if (pComponent->IsActiveAndSimulating())
+      {
+        pComponent->Update();
+      }
+    }
+  }
+}
+
+void xiiStateMachineComponentManager::ResourceEventHandler(const xiiResourceEvent& e)
+{
+  if (e.m_Type == xiiResourceEvent::Type::ResourceContentUnloading && e.m_pResource->GetDynamicRTTI()->IsDerivedFrom<xiiStateMachineResource>())
+  {
+    xiiStateMachineResourceHandle hResource((xiiStateMachineResource*)(e.m_pResource));
+
+    for (auto it = GetComponents(); it.IsValid(); it.Next())
+    {
+      if (it->m_hResource == hResource)
+      {
+        m_ComponentsToReload.Insert(it->GetHandle());
+      }
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_COMPONENT_TYPE(xiiStateMachineComponent, 1, xiiComponentMode::Static)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ACCESSOR_PROPERTY("Resource", GetResourceFile, SetResourceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_StateMachine")),
+    XII_ACCESSOR_PROPERTY("InitialState", GetInitialState, SetInitialState),
+  }
+  XII_END_PROPERTIES;
+
+  XII_BEGIN_MESSAGESENDERS
+  {
+    XII_MESSAGE_SENDER(m_StateChangedSender)
+  }
+  XII_END_MESSAGESENDERS;
+
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_SCRIPT_FUNCTION_PROPERTY(SetState, In, "Name"),
+  }
+  XII_END_FUNCTIONS;
+
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Gameplay"),
+  }
+  XII_END_ATTRIBUTES;
+}
+
+XII_END_DYNAMIC_REFLECTED_TYPE
+// clang-format on
+
+xiiStateMachineComponent::xiiStateMachineComponent()                                 = default;
+xiiStateMachineComponent::xiiStateMachineComponent(xiiStateMachineComponent&& other) = default;
+xiiStateMachineComponent::~xiiStateMachineComponent()                                = default;
+xiiStateMachineComponent& xiiStateMachineComponent::operator=(xiiStateMachineComponent&& other) = default;
+
+void xiiStateMachineComponent::SerializeComponent(xiiWorldWriter& stream) const
+{
+  SUPER::SerializeComponent(stream);
+
+  xiiStreamWriter& s = stream.GetStream();
+
+  s << m_hResource;
+  s << m_sInitialState;
+}
+
+void xiiStateMachineComponent::DeserializeComponent(xiiWorldReader& stream)
+{
+  SUPER::DeserializeComponent(stream);
+  const xiiUInt32  uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  xiiStreamReader& s         = stream.GetStream();
+
+  s >> m_hResource;
+  s >> m_sInitialState;
+}
+
+void xiiStateMachineComponent::OnActivated()
+{
+  SUPER::OnActivated();
+
+  InstantiateStateMachine();
+}
+
+void xiiStateMachineComponent::OnDeactivated()
+{
+  SUPER::OnDeactivated();
+
+  m_pStateMachineInstance = nullptr;
+}
+
+void xiiStateMachineComponent::SetResource(const xiiStateMachineResourceHandle& hResource)
+{
+  if (m_hResource == hResource)
+    return;
+
+  m_hResource = hResource;
+
+  if (IsActiveAndInitialized())
+  {
+    InstantiateStateMachine();
+  }
+}
+
+void xiiStateMachineComponent::SetResourceFile(const char* szFile)
+{
+  xiiStateMachineResourceHandle hResource;
+
+  if (!xiiStringUtils::IsNullOrEmpty(szFile))
+  {
+    hResource = xiiResourceManager::LoadResource<xiiStateMachineResource>(szFile);
+    xiiResourceManager::PreloadResource(hResource);
+  }
+
+  SetResource(hResource);
+}
+
+const char* xiiStateMachineComponent::GetResourceFile() const
+{
+  if (!m_hResource.IsValid())
+    return "";
+
+  return m_hResource.GetResourceID();
+}
+
+void xiiStateMachineComponent::SetInitialState(const char* szName)
+{
+  xiiHashedString sInitialState;
+  sInitialState.Assign(szName);
+
+  if (m_sInitialState == sInitialState)
+    return;
+
+  m_sInitialState = sInitialState;
+
+  if (IsActiveAndInitialized())
+  {
+    InstantiateStateMachine();
+  }
+}
+
+bool xiiStateMachineComponent::SetState(xiiStringView sName)
+{
+  if (m_pStateMachineInstance != nullptr)
+  {
+    xiiHashedString sStateName;
+    sStateName.Assign(sName);
+
+    return m_pStateMachineInstance->SetState(sStateName).Succeeded();
+  }
+
+  return false;
+}
+
+void xiiStateMachineComponent::SendStateChangedMsg(xiiMsgStateMachineStateChanged& msg, xiiTime delay)
+{
+  if (delay > xiiTime::Zero())
+  {
+    m_StateChangedSender.PostEventMessage(msg, this, GetOwner(), delay, xiiObjectMsgQueueType::NextFrame);
+  }
+  else
+  {
+    m_StateChangedSender.SendEventMessage(msg, this, GetOwner());
+  }
+}
+
+void xiiStateMachineComponent::InstantiateStateMachine()
+{
+  m_pStateMachineInstance = nullptr;
+
+  if (m_hResource.IsValid() == false)
+    return;
+
+  xiiResourceLock<xiiStateMachineResource> pStateMachineResource(m_hResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (pStateMachineResource.GetAcquireResult() != xiiResourceAcquireResult::Final)
+  {
+    xiiLog::Error("Failed to load state machine '{}'", GetResourceFile());
+    return;
+  }
+
+  m_pStateMachineInstance = pStateMachineResource->CreateInstance(*this);
+  m_pStateMachineInstance->SetBlackboard(xiiBlackboardComponent::FindBlackboard(GetOwner()));
+  m_pStateMachineInstance->SetStateOrFallback(m_sInitialState).IgnoreResult();
+}
+
+void xiiStateMachineComponent::Update()
+{
+  if (m_pStateMachineInstance != nullptr)
+  {
+    m_pStateMachineInstance->Update(GetWorld()->GetClock().GetTimeDiff());
+  }
+}

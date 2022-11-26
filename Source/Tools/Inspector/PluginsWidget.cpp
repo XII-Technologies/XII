@@ -1,0 +1,121 @@
+#include <Inspector/InspectorPCH.h>
+
+#include <Foundation/Communication/Telemetry.h>
+#include <GuiFoundation/GuiFoundationDLL.h>
+#include <GuiFoundation/UIServices/UIServices.moc.h>
+#include <Inspector/MainWindow.moc.h>
+#include <Inspector/PluginsWidget.moc.h>
+
+xiiQtPluginsWidget* xiiQtPluginsWidget::s_pWidget = nullptr;
+
+xiiQtPluginsWidget::xiiQtPluginsWidget(QWidget* parent) :
+  ads::CDockWidget("Plugins Widget", parent)
+{
+  s_pWidget = this;
+
+  setupUi(this);
+  setWidget(TablePlugins);
+
+  ResetStats();
+}
+
+void xiiQtPluginsWidget::ResetStats()
+{
+  m_bUpdatePlugins = true;
+  m_Plugins.Clear();
+}
+
+
+void xiiQtPluginsWidget::UpdateStats()
+{
+  UpdatePlugins();
+}
+
+void xiiQtPluginsWidget::UpdatePlugins()
+{
+  if (!m_bUpdatePlugins)
+    return;
+
+  m_bUpdatePlugins = false;
+
+  xiiQtScopedUpdatesDisabled _1(TablePlugins);
+
+  TablePlugins->clear();
+
+  TablePlugins->setRowCount(m_Plugins.GetCount());
+
+  QStringList Headers;
+  Headers.append("");
+  Headers.append(" Plugin ");
+  Headers.append(" Reloadable ");
+  Headers.append(" Dependencies ");
+
+  TablePlugins->setColumnCount(Headers.size());
+
+  TablePlugins->setHorizontalHeaderLabels(Headers);
+
+  {
+    xiiStringBuilder sTemp;
+    xiiInt32         iRow = 0;
+
+    for (xiiMap<xiiString, PluginsData>::Iterator it = m_Plugins.GetIterator(); it.IsValid(); ++it)
+    {
+      QLabel* pIcon = new QLabel();
+      pIcon->setPixmap(xiiQtUiServices::GetCachedPixmapResource(":/Icons/Icons/Plugin.png"));
+      pIcon->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+      TablePlugins->setCellWidget(iRow, 0, pIcon);
+
+      sTemp.Format("  {0}  ", it.Key());
+      TablePlugins->setCellWidget(iRow, 1, new QLabel(sTemp.GetData()));
+
+      if (it.Value().m_bReloadable)
+        TablePlugins->setCellWidget(iRow, 2, new QLabel("<p><span style=\"font-weight:600; color:#00aa00;\">  Yes  </span></p>"));
+      else
+        TablePlugins->setCellWidget(iRow, 2, new QLabel("<p><span style=\"font-weight:600; color:#ffaa00;\">  No  </span></p>"));
+
+      ((QLabel*)TablePlugins->cellWidget(iRow, 2))->setAlignment(Qt::AlignHCenter);
+
+      TablePlugins->setCellWidget(iRow, 3, new QLabel(it.Value().m_sDependencies.GetData()));
+
+      ++iRow;
+    }
+  }
+
+  TablePlugins->resizeColumnsToContents();
+}
+
+void xiiQtPluginsWidget::ProcessTelemetry(void* pUnuseed)
+{
+  if (!s_pWidget)
+    return;
+
+  xiiTelemetryMessage Msg;
+
+  while (xiiTelemetry::RetrieveMessage('PLUG', Msg) == XII_SUCCESS)
+  {
+    switch (Msg.GetMessageID())
+    {
+      case ' CLR':
+      {
+        s_pWidget->m_Plugins.Clear();
+        s_pWidget->m_bUpdatePlugins = true;
+      }
+      break;
+
+      case 'DATA':
+      {
+        xiiString sName;
+
+        Msg.GetReader() >> sName;
+
+        PluginsData& pd = s_pWidget->m_Plugins[sName.GetData()];
+        Msg.GetReader() >> pd.m_bReloadable;
+
+        Msg.GetReader() >> pd.m_sDependencies;
+
+        s_pWidget->m_bUpdatePlugins = true;
+      }
+      break;
+    }
+  }
+}

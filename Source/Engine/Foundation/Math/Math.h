@@ -1,0 +1,362 @@
+#pragma once
+
+#include <Foundation/Basics.h>
+#include <Foundation/Math/Angle.h>
+#include <Foundation/Math/Constants.h>
+#include <Foundation/Math/Declarations.h>
+
+
+/// \brief This namespace provides common math-functionality as functions.
+///
+/// It is a namespace, instead of a static class, because that allows it to be extended
+/// at other locations, which is especially useful when adding custom types.
+namespace xiiMath
+{
+  /// \brief Returns whether the given value is NaN under this type.
+  template <typename Type>
+  constexpr static bool IsNaN(Type value)
+  {
+    return false;
+  }
+
+  /// \brief Returns whether the given value represents a finite value (i.e. not +/- Infinity and not NaN)
+  template <typename Type>
+  constexpr static bool IsFinite(Type value)
+  {
+    return true;
+  }
+
+  /// ***** Trigonometric Functions *****
+
+  /// \brief Takes an angle, returns its sine
+  float Sin(xiiAngle a); // [tested]
+
+  /// \brief Takes an angle, returns its cosine
+  float Cos(xiiAngle a); // [tested]
+
+  /// \brief Takes an angle, returns its tangent
+  float Tan(xiiAngle a); // [tested]
+
+  /// \brief Returns the arcus sinus of f
+  xiiAngle ASin(float f); // [tested]
+
+  /// \brief Returns the arcus cosinus of f
+  xiiAngle ACos(float f); // [tested]
+
+  /// \brief Returns the arcus tangent of f
+  xiiAngle ATan(float f); // [tested]
+
+  /// \brief Returns the atan2 of x and y
+  xiiAngle ATan2(float y, float x); // [tested]
+
+  /// \brief Returns e^f
+  float Exp(float f); // [tested]
+
+  /// \brief Returns the logarithmus naturalis of f
+  float Ln(float f); // [tested]
+
+  /// \brief Returns log (f), to the base 2
+  float Log2(float f); // [tested]
+
+  /// \brief Returns the integral logarithm to the base 2, that comes closest to the given integer.
+  xiiUInt32 Log2i(xiiUInt32 val); // [tested]
+
+  /// \brief Returns log (f), to the base 10
+  float Log10(float f); // [tested]
+
+  /// \brief Returns log (f), to the base fBase
+  float Log(float fBase, float f); // [tested]
+
+  /// \brief Returns 2^f
+  float Pow2(float f); // [tested]
+
+  /// \brief Returns base^exp
+  float Pow(float base, float exp); // [tested]
+
+  /// \brief Returns 2^f
+  constexpr xiiInt32 Pow2(xiiInt32 i); // [tested]
+
+  /// \brief Returns base^exp
+  xiiInt32 Pow(xiiInt32 base, xiiInt32 exp); // [tested]
+
+  /// \brief Returns f * f
+  template <typename T>
+  constexpr T Square(T f); // [tested]
+
+  /// \brief Returns the square root of f
+  float Sqrt(float f); // [tested]
+
+  /// \brief Returns the square root of f
+  double Sqrt(double f); // [tested]
+
+  /// \brief Returns the n-th root of f.
+  float Root(float f, float NthRoot); // [tested]
+
+  /// \brief Returns the sign of f (i.e: -1, 1 or 0)
+  template <typename T>
+  constexpr T Sign(T f); // [tested]
+
+  /// \brief Returns the absolute value of f
+  template <typename T>
+  constexpr T Abs(T f); // [tested]
+
+  /// \brief Returns the smaller value, f1 or f2
+  template <typename T>
+  constexpr T Min(T f1, T f2); // [tested]
+
+  /// \brief Returns the smaller value, f1 or f2 or ...
+  template <typename T, typename... ARGS>
+  constexpr T Min(T f1, T f2, ARGS... f); // [tested]
+
+  /// \brief Returns the greater value, f1 or f2
+  template <typename T>
+  constexpr T Max(T f1, T f2); // [tested]
+
+  /// \brief Returns the smaller value, f1 or f2 or ...
+  template <typename T, typename... ARGS>
+  constexpr T Min(T f1, T f2, ARGS... f); // [tested]
+
+  /// \brief Clamps "value" to the range [min; max]. Returns "value", if it is inside the range already
+  template <typename T>
+  constexpr T Clamp(T value, T min_val, T max_val); // [tested]
+
+  /// \brief Clamps "value" to the range [0; 1]. Returns "value", if it is inside the range already
+  template <typename T>
+  constexpr T Saturate(T value); // [tested]
+
+  /// \brief Returns the next smaller integer, closest to f. Also the SMALLER value, if f is negative.
+  float Floor(float f); // [tested]
+
+  /// \brief Returns the next higher integer, closest to f. Also the HIGHER value, if f is negative.
+  float Ceil(float f); // [tested]
+
+  /// \brief Returns a multiple of fMultiple that is smaller than f.
+  float RoundDown(float f, float fMultiple); // [tested]
+
+  /// \brief Returns a multiple of fMultiple that is smaller than f.
+  double RoundDown(double f, double fMultiple); // [tested]
+
+  /// \brief Returns a multiple of fMultiple that is larger than f.
+  float RoundUp(float f, float fMultiple); // [tested]
+
+  /// \brief Returns a multiple of fMultiple that is larger than f.
+  double RoundUp(double f, double fMultiple); // [tested]
+
+  /// \brief Returns the integer-part of f (removes the fraction).
+  template <typename Type>
+  Type Trunc(Type f); // [tested]
+
+  /// \brief Casts the float to an integer, removes the fractional part
+  ///
+  /// \sa Trunc, Round, Floor, Ceil
+  constexpr xiiInt32 FloatToInt(float value);
+
+  // There is a compiler bug in VS 2019 targeting 32-bit that causes an internal compiler error when casting double to long long.
+  // FloatToInt(double) is not available on these version of the MSVC compiler.
+#if XII_DISABLED(XII_PLATFORM_ARCH_X86) || (_MSC_VER <= 1916)
+  /// \brief Casts the float to an integer, removes the fractional part
+  ///
+  /// \sa Trunc, Round, Floor, Ceil
+  constexpr xiiInt64 FloatToInt(double value);
+#endif
+
+  /// \brief Rounds f to the next integer.
+  ///
+  /// If f is positive 0.5 is rounded UP (i.e. to 1), if f is negative, -0.5 is rounded DOWN (i.e. to -1).
+  float Round(float f); // [tested]
+
+  /// \brief Rounds f to the next integer.
+  ///
+  /// If f is positive 0.5 is rounded UP (i.e. to 1), if f is negative, -0.5 is rounded DOWN (i.e. to -1).
+  double Round(double f); // [tested]
+
+  /// \brief Rounds f to the closest value of multiple.
+  float RoundToMultiple(float f, float multiple);
+
+  /// \brief Rounds f to the closest value of multiple.
+  double RoundToMultiple(double f, double multiple);
+
+  /// \brief Returns the fraction-part of f.
+  template <typename Type>
+  Type Fraction(Type f); // [tested]
+
+  /// \brief Returns "value mod div" for floats. This also works with negative numbers, both for value and for div.
+  float Mod(float value, float div); // [tested]
+
+  /// \brief Returns "value mod div" for doubles. This also works with negative numbers, both for value and for div.
+  double Mod(double f, double div); // [tested]
+
+  /// \brief Returns 1 / f
+  template <typename Type>
+  constexpr Type Invert(Type f); // [tested]
+
+  /// \brief Returns a multiple of the given multiple that is larger than or equal to value.
+  constexpr xiiInt32 RoundUp(xiiInt32 value, xiiUInt16 multiple); // [tested]
+
+  /// \brief Returns a multiple of the given multiple that is smaller than or equal to value.
+  constexpr xiiInt32 RoundDown(xiiInt32 value, xiiUInt16 multiple); // [tested]
+
+  /// \brief Returns a multiple of the given multiple that is greater than or equal to value.
+  constexpr xiiUInt32 RoundUp(xiiUInt32 value, xiiUInt16 multiple); // [tested]
+
+  /// \brief Returns a multiple of the given multiple that is smaller than or equal to value.
+  constexpr xiiUInt32 RoundDown(xiiUInt32 value, xiiUInt16 multiple); // [tested]
+
+  /// \brief Returns true, if i is an odd number
+  constexpr bool IsOdd(xiiInt32 i); // [tested]
+
+  /// \brief Returns true, if i is an even number
+  constexpr bool IsEven(xiiInt32 i); // [tested]
+
+  /// \brief Returns the index of the least significant bit set
+  ///
+  /// Asserts that bitmask is not 0.
+  xiiUInt32 FirstBitLow(xiiUInt32 bitmask); // [tested]
+
+  /// \brief Returns the index of the least significant bit set
+  ///
+  /// Asserts that bitmask is not 0.
+  xiiUInt32 FirstBitLow(xiiUInt64 bitmask); // [tested]
+
+  /// \brief Returns the index of the most significant bit set
+  ///
+  /// Asserts that bitmask is not 0.
+  xiiUInt32 FirstBitHigh(xiiUInt32 bitmask); // [tested]
+
+  /// \brief Returns the index of the most significant bit set
+  ///
+  /// Asserts that bitmask is not 0.
+  xiiUInt32 FirstBitHigh(xiiUInt64 bitmask); // [tested]
+
+  /// Returns the number of zeros at the end (least significant part) of a bitmask.
+  ///
+  /// E.g.
+  /// 0b0111 -> 0
+  /// 0b0110 -> 1
+  /// 0b0100 -> 2
+  /// Returns 32 when the input is 0
+  xiiUInt32 CountTrailingZeros(xiiUInt32 bitmask); // [tested]
+
+  /// \brief 64 bit overload for CountTrailingZeros()
+  xiiUInt32 CountTrailingZeros(xiiUInt64 bitmask); // [tested]
+
+  /// Returns the number of zeros at the start (most significant part) of a bitmask.
+  ///
+  /// E.g.
+  /// 0b0111 -> 29
+  /// 0b0011 -> 30
+  /// 0b0001 -> 31
+  /// 0b0000 -> 32
+  /// Returns 32 when the input is 0
+  xiiUInt32 CountLeadingZeros(xiiUInt32 bitmask); // [tested]
+
+  /// \brief Returns the number of bits set
+  xiiUInt32 CountBits(xiiUInt32 value);
+
+  /// \brief Returns the number of bits set
+  xiiUInt32 CountBits(xiiUInt64 value);
+
+  /// \brief Swaps the values in the two variables f1 and f2
+  template <typename T>
+  void Swap(T& f1, T& f2); // [tested]
+
+  /// \brief Returns the linear interpolation of f1 and f2. factor is a value between 0 and 1.
+  template <typename T>
+  T Lerp(T f1, T f2, float factor); // [tested]
+
+  /// \brief Returns the linear interpolation of f1 and f2. factor is a value between 0 and 1.
+  template <typename T>
+  T Lerp(T f1, T f2, double factor); // [tested]
+
+  /// \brief Returns 0, if value < edge, and 1, if value >= edge.
+  template <typename T>
+  constexpr T Step(T value, T edge); // [tested]
+
+  /// \brief Returns 0, if value is <= edge1, 1 if value >= edge2 and the hermite interpolation in between
+  template <typename Type>
+  Type SmoothStep(Type value, Type edge1, Type edge2); // [tested]
+
+  /// \brief Returns true, if there exists some x with base^x == value
+  XII_FOUNDATION_DLL bool IsPowerOf(xiiInt32 value, xiiInt32 base); // [tested]
+
+  /// \brief Returns true, if there exists some x with 2^x == value
+  constexpr bool IsPowerOf2(xiiInt32 value); // [tested]
+
+  /// \brief Returns true, if there exists some x with 2^x == value
+  constexpr bool IsPowerOf2(xiiUInt32 value); // [tested]
+
+  /// \brief Returns the next power-of-two that is <= value
+  XII_FOUNDATION_DLL xiiUInt32 PowerOfTwo_Floor(xiiUInt32 value); // [tested]
+
+  /// \brief Returns the next power-of-two that is >= value
+  XII_FOUNDATION_DLL xiiUInt32 PowerOfTwo_Ceil(xiiUInt32 value); // [tested]
+
+  /// \brief Returns the greatest common divisor.
+  XII_FOUNDATION_DLL xiiUInt32 GreatestCommonDivisor(xiiUInt32 a, xiiUInt32 b); // [tested]
+
+  /// \brief Checks, whether fValue is in the range [fDesired - fMaxImprecision; fDesired + fMaxImprecision].
+  template <typename Type>
+  constexpr bool IsEqual(Type lhs, Type rhs, Type fEpsilon);
+
+  /// \brief Checks whether the value of the first parameter lies between the value of the second and third.
+  template <typename T>
+  constexpr bool IsInRange(T Value, T MinVal, T MaxVal); // [tested]
+
+  /// \brief Checks whether the given number is close to zero.
+  template <typename Type>
+  bool IsZero(Type f, Type fEpsilon); // [tested]
+
+  /// \brief Converts a color value from float [0;1] range to unsigned byte [0;255] range, with proper rounding
+  xiiUInt8 ColorFloatToByte(float value); // [tested]
+
+  /// \brief Converts a color value from float [0;1] range to unsigned short [0;65535] range, with proper rounding
+  xiiUInt16 ColorFloatToShort(float value); // [tested]
+
+  /// \brief Converts a color value from float [-1;1] range to signed byte [-127;127] range, with proper rounding
+  xiiInt8 ColorFloatToSignedByte(float value); // [tested]
+
+  /// \brief Converts a color value from float [-1;1] range to signed short [-32767;32767] range, with proper rounding
+  xiiInt16 ColorFloatToSignedShort(float value); // [tested]
+
+  /// \brief Converts a color value from unsigned byte [0;255] range to float [0;1] range, with proper rounding
+  constexpr float ColorByteToFloat(xiiUInt8 value); // [tested]
+
+  /// \brief Converts a color value from unsigned short [0;65535] range to float [0;1] range, with proper rounding
+  constexpr float ColorShortToFloat(xiiUInt16 value); // [tested]
+
+  /// \brief Converts a color value from signed byte [-128;127] range to float [-1;1] range, with proper rounding
+  constexpr float ColorSignedByteToFloat(xiiInt8 value); // [tested]
+
+  /// \brief Converts a color value from signed short [-32768;32767] range to float [0;1] range, with proper rounding
+  constexpr float ColorSignedShortToFloat(xiiInt16 value); // [tested]
+
+  /// \brief Evaluates the cubic spline defined by four control points at time \a t and returns the interpolated result.
+  /// Can be used with T as float, vec2, vec3 or vec4
+  template <typename T, typename T2>
+  T EvaluateBxiiierCurve(T2 t, const T& startPoint, const T& controlPoint1, const T& controlPoint2, const T& endPoint);
+
+  /// \brief out_Result = \a a * \a b. If an overflow happens, XII_FAILURE is returned.
+  XII_FOUNDATION_DLL xiiResult TryMultiply32(xiiUInt32& out_Result, xiiUInt32 a, xiiUInt32 b, xiiUInt32 c = 1, xiiUInt32 d = 1); // [tested]
+
+  /// \brief returns \a a * \a b. If an overflow happens, the program is terminated.
+  XII_FOUNDATION_DLL xiiUInt32 SafeMultiply32(xiiUInt32 a, xiiUInt32 b, xiiUInt32 c = 1, xiiUInt32 d = 1);
+
+  /// \brief out_Result = \a a * \a b. If an overflow happens, XII_FAILURE is returned.
+  XII_FOUNDATION_DLL xiiResult TryMultiply64(xiiUInt64& out_Result, xiiUInt64 a, xiiUInt64 b, xiiUInt64 c = 1, xiiUInt64 d = 1); // [tested]
+
+  /// \brief returns \a a * \a b. If an overflow happens, the program is terminated.
+  XII_FOUNDATION_DLL xiiUInt64 SafeMultiply64(xiiUInt64 a, xiiUInt64 b, xiiUInt64 c = 1, xiiUInt64 d = 1);
+
+  /// \brief Checks whether the given 64bit value actually fits into size_t, If it doesn't XII_FAILURE is returned.
+  xiiResult TryConvertToSizeT(size_t& out_Result, xiiUInt64 uiValue); // [tested]
+
+  /// \brief Checks whether the given 64bit value actually fits into size_t, If it doesn't the program is terminated.
+  XII_FOUNDATION_DLL size_t SafeConvertToSizeT(xiiUInt64 uiValue);
+
+} // namespace xiiMath
+
+#include <Foundation/Math/Implementation/MathDouble_inl.h>
+#include <Foundation/Math/Implementation/MathFixedPoint_inl.h>
+#include <Foundation/Math/Implementation/MathFloat_inl.h>
+#include <Foundation/Math/Implementation/MathInt32_inl.h>
+#include <Foundation/Math/Implementation/Math_inl.h>

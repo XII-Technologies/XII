@@ -1,0 +1,63 @@
+#include <Editor/EditorPCH.h>
+
+#include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <Foundation/Utilities/CommandLineOptions.h>
+
+class xiiEditorApplication : public xiiApplication
+{
+public:
+  typedef xiiApplication SUPER;
+
+  xiiEditorApplication() :
+    xiiApplication("xiiEditor")
+  {
+    EnableMemoryLeakReporting(true);
+
+    m_pEditorApp = new xiiQtEditorApp;
+  }
+
+  virtual xiiResult BeforeCoreSystemsStartup() override
+  {
+    xiiStartup::AddApplicationTag("tool");
+    xiiStartup::AddApplicationTag("editor");
+    xiiStartup::AddApplicationTag("editorapp");
+
+    xiiQtEditorApp::GetSingleton()->InitQt(GetArgumentCount(), (char**)GetArgumentsArray());
+
+    return XII_SUCCESS;
+  }
+
+  virtual void AfterCoreSystemsShutdown() override
+  {
+    xiiQtEditorApp::GetSingleton()->DeInitQt();
+
+    delete m_pEditorApp;
+    m_pEditorApp = nullptr;
+  }
+
+  virtual Execution Run() override
+  {
+    {
+      xiiStringBuilder cmdHelp;
+      if (xiiCommandLineOption::LogAvailableOptionsToBuffer(cmdHelp, xiiCommandLineOption::LogAvailableModes::IfHelpRequested, "_Editor;cvar"))
+      {
+        xiiQtUiServices::GetSingleton()->MessageBoxInformation(cmdHelp);
+        return xiiApplication::Execution::Quit;
+      }
+    }
+
+    xiiQtEditorApp::GetSingleton()->StartupEditor();
+    {
+      const xiiInt32 iReturnCode = xiiQtEditorApp::GetSingleton()->RunEditor();
+      SetReturnCode(iReturnCode);
+    }
+    xiiQtEditorApp::GetSingleton()->ShutdownEditor();
+
+    return xiiApplication::Execution::Quit;
+  }
+
+private:
+  xiiQtEditorApp* m_pEditorApp;
+};
+
+XII_APPLICATION_ENTRY_POINT(xiiEditorApplication);

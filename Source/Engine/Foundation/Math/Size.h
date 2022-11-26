@@ -1,0 +1,43 @@
+#pragma once
+
+#include <Foundation/Basics.h>
+
+/// \brief A simple size class templated on the type for width and height.
+///
+template <typename Type>
+class xiiSizeTemplate
+{
+public:
+  // Means this object can be copied using memcpy instead of copy construction.
+  XII_DECLARE_POD_TYPE();
+
+  // *** Data ***
+public:
+  Type width;
+  Type height;
+
+  // *** Constructors ***
+public:
+  /// \brief Default constructor does not initialize the data.
+  xiiSizeTemplate();
+
+  /// \brief Constructor to set all values.
+  xiiSizeTemplate(Type Width, Type Height);
+
+  // *** Common Functions ***
+public:
+  /// \brief Returns true if the area described by the size is non zero
+  bool HasNonZeroArea() const;
+};
+
+template <typename Type>
+bool operator==(const xiiSizeTemplate<Type>& v1, const xiiSizeTemplate<Type>& v2);
+
+template <typename Type>
+bool operator!=(const xiiSizeTemplate<Type>& v1, const xiiSizeTemplate<Type>& v2);
+
+#include <Foundation/Math/Implementation/Size_inl.h>
+
+typedef xiiSizeTemplate<xiiUInt32> xiiSizeU32;
+typedef xiiSizeTemplate<float>     xiiSizeFloat;
+typedef xiiSizeTemplate<double>    xiiSizeDouble;

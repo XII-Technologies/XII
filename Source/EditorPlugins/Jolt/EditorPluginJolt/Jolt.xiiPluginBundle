@@ -1,0 +1,15 @@
+// for a description of the options see:
+// Code/EditorPlugins/Assets/EditorPluginAssets/Assets.xiiPluginBundle
+
+PluginInfo
+{
+	string %DisplayName{"Jolt Physics"}
+	string %Description{"Adds support for 3D physics simulation via Jolt."}
+	string %EditorPlugins{"xiiEditorPluginJolt"}
+	string %EditorEnginePlugins{"xiiEnginePluginJolt"}
+	string %RuntimePlugins{"xiiJoltPlugin"}
+	string %PackageDependencies{}
+	string %RequiredPlugins{}
+	string %ExclusiveFeatures{"physics"}
+	string %EnabledInTemplates{"General3D"}
+}

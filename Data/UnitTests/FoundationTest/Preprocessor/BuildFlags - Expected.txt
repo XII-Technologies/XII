@@ -1,0 +1,6 @@
+Processing succeeded
+
+
+
+
+struct xiiImageConversionFlags      {        static const xiiUInt32 Count = 3;        typedef xiiUInt8 StorageType;     enum Enum        {          None = (1U << (0)), InPlace = (1U << (1)), Lossy = (1U << (2)),        };        struct Bits        {          StorageType None : 1; StorageType InPlace : 1; StorageType Lossy : 1;        };        const char* ToString(xiiUInt32 value)   {     switch (value)     {       case None: return "None"; case InPlace: return "InPlace"; case Lossy: return "Lossy";       default: return nullptr;     }   }   };      inline xiiBitflags<xiiImageConversionFlags> operator|(xiiImageConversionFlags::Enum lhs, xiiImageConversionFlags::Enum rhs)      {        return (xiiBitflags<xiiImageConversionFlags>(lhs) | xiiBitflags<xiiImageConversionFlags>(rhs));      }     inline xiiBitflags<xiiImageConversionFlags> operator&(xiiImageConversionFlags::Enum lhs, xiiImageConversionFlags::Enum rhs)      {        return (xiiBitflags<xiiImageConversionFlags>(lhs) & xiiBitflags<xiiImageConversionFlags>(rhs));      };

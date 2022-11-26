@@ -1,0 +1,26 @@
+#include <RendererFoundation/RendererFoundationPCH.h>
+
+XII_STATICLINK_LIBRARY(RendererFoundation)
+{
+  if (bReturn)
+    return;
+
+  XII_STATICLINK_REFERENCE(RendererFoundation_Basics);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Device_Implementation_Device);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Device_Implementation_DeviceCapabilities);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Device_Implementation_SwapChain);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Profiling_Implementation_Profiling);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Resources_Implementation_Buffer);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Resources_Implementation_ProxyTexture);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Resources_Implementation_Query);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Resources_Implementation_RenderTargetSetup);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Resources_Implementation_RenderTargetView);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Resources_Implementation_ResourceFormats);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Resources_Implementation_ResourceView);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Resources_Implementation_Texture);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Resources_Implementation_UnorderedAccessView);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Shader_Implementation_Shader);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Shader_Implementation_ShaderByteCode);
+  XII_STATICLINK_REFERENCE(RendererFoundation_Shader_Implementation_VertexDeclaration);
+  XII_STATICLINK_REFERENCE(RendererFoundation_State_Implementation_State);
+}

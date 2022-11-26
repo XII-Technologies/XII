@@ -1,0 +1,58 @@
+xiiJoltConvexCollisionMeshType::ConvexHull;Convex Hull
+xiiJoltConvexCollisionMeshType::Cylinder;Cylinder
+xiiJoltConvexCollisionMeshType::ConvexDecomposition;Convex Decomposition
+xiiJoltSurfaceResourceSlot;Surface
+xiiJoltDynamicActorComponent;Dynamic Actor (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/actors/jolt-dynamic-actor-component.html
+xiiJoltStaticActorComponent;Static Actor (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/actors/jolt-static-actor-component.html
+xiiJoltShapeConvexHullComponent;Convex Hull Shape (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/collision-shapes/jolt-convex-shape-component.html
+xiiJoltShapeBoxComponent;Box Shape (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/collision-shapes/jolt-box-shape-component.html
+xiiJoltShapeSphereComponent;Sphere Shape (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/collision-shapes/jolt-sphere-shape-component.html
+xiiJoltShapeCylinderComponent;Cylinder Shape (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/collision-shapes/jolt-cylinder-shape-component.html
+xiiJoltShapeCapsuleComponent;Capsule Shape (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/collision-shapes/jolt-capsule-shape-component.html
+xiiJoltTriggerComponent;Physics Trigger (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/actors/jolt-trigger-component.html
+xiiJoltVisColMeshComponent;Collision Mesh Visualizer (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/collision-shapes/jolt-collision-meshes.html
+xiiJoltSettingsComponent;Physics Settings (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/jolt-settings-component.html
+xiiJoltSteppingMode::Variable;Variable Stepping
+xiiJoltSteppingMode::Fixed;Fixed Stepping
+xiiJoltSteppingMode::SemiFixed;Semi-Fixed Stepping
+Jolt.Settings.Project;Jolt Project Settings...
+xiiJolt6DOFConstraintComponent;6DOF Constraint (Jolt)
+xiiJoltDistanceConstraintComponent;Distance Constraint (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/constraints/jolt-distance-constraint-component.html
+xiiJoltFixedConstraintComponent;Fixed Constraint (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/constraints/jolt-fixed-constraint-component.html
+xiiJoltSliderConstraintComponent;Slider Constraint (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/constraints/jolt-slider-constraint-component.html
+xiiJoltHingeConstraintComponent;Hinge Constraint (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/constraints/jolt-hinge-constraint-component.html
+xiiJoltPointConstraintComponent;Point Constraint (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/constraints/jolt-point-constraint-component.html
+xiiJoltConstraintLimitMode::NoLimit;No Limit
+xiiJoltConstraintLimitMode::HardLimit;Hard Limit
+xiiJoltConstraintDriveMode::NoDrive;No Drive
+xiiJoltConstraintDriveMode::DriveVelocity;Reach Velocity
+xiiJoltConstraintDriveMode::DrivePosition;Reach Position
+xiiJoltRopeComponent;Physical Rope (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/special/jolt-rope-component.html
+xiiJoltRagdollComponent;Ragdoll (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/ragdolls/jolt-ragdoll-component.html
+xiiJoltRagdollStart::BindPose;Bind Pose
+xiiJoltRagdollStart::WaitForPose;Wait for Pose
+xiiJoltRagdollStart::Wait;Wait
+xiiJoltAxis::X;X
+xiiJoltAxis::Y;Y
+xiiJoltAxis::Z;Z
+xiiOnJoltContact::SendReportMsg;Send Report Message
+xiiOnJoltContact::ImpactReactions;Impact Reactions
+xiiOnJoltContact::SlideReactions;Slide Reactions
+xiiOnJoltContact::RollXReactions;Roll X Reactions
+xiiOnJoltContact::RollYReactions;Roll Y Reactions
+xiiOnJoltContact::RollZReactions;Roll Z Reactions
+xiiJoltConeConstraintComponent;Cone Constraint (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/constraints/jolt-cone-constraint-component.html
+xiiJoltQueryShapeActorComponent;Query Shape (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/actors/jolt-queryshape-actor-component.html
+xiiJoltSwingTwistConstraintComponent;Swing Twist Constraint (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/constraints/jolt-swing-twist-constraint-component.html
+xiiJoltBoneColliderComponent;Bone Collider (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/ragdolls/jolt-bone-collider-component.html
+Jolt_Colmesh_Convex;Jolt Convex Collision Mesh;;https://xiiengine.net/pages/docs/physics/jolt/collision-shapes/jolt-collision-meshes.html
+Jolt_Colmesh_Triangle;Jolt Triangle Collision Mesh;;https://xiiengine.net/pages/docs/physics/jolt/collision-shapes/jolt-collision-meshes.html
+xiiJoltCharacterDebugFlags::VisShape;Visualize Shape
+xiiJoltCharacterDebugFlags::VisGroundContact;Visualize Ground Contact
+xiiJoltCharacterDebugFlags::VisCasts;Visualize Casts
+xiiJoltCharacterDebugFlags::PrintState;Print Stats
+xiiJoltCharacterDebugFlags::VisContacts;Visualize All Contacts
+xiiJoltCharacterDebugFlags::VisFootCheck;Visualize Foot Check
+xiiJoltCharacterControllerComponent;Character Controller (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/special/jolt-character-controller.html
+xiiJoltDefaultCharacterComponent;Default Character Controller (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/special/jolt-character-controller.html
+xiiJoltGrabObjectComponent;Grab Object (Jolt);;https://xiiengine.net/pages/docs/physics/jolt/special/jolt-grab-object-component.html

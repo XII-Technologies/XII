@@ -1,0 +1,103 @@
+#include <EditorEngineProcessFramework/EditorEngineProcessFrameworkPCH.h>
+
+#include <EditorEngineProcessFramework/Gizmos/GizmoComponent.h>
+#include <EditorEngineProcessFramework/Gizmos/GizmoRenderer.h>
+#include <EditorEngineProcessFramework/PickingRenderPass/PickingRenderPass.h>
+
+#include <RendererCore/Debug/DebugRenderer.h>
+#include <RendererCore/RenderContext/RenderContext.h>
+
+#include <RendererCore/../../../Data/Base/Shaders/Editor/GizmoConstants.h>
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGizmoRenderer, 1, xiiRTTIDefaultAllocator<xiiGizmoRenderer>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+float xiiGizmoRenderer::s_fGizmoScale = 1.0f;
+
+xiiGizmoRenderer::xiiGizmoRenderer()  = default;
+xiiGizmoRenderer::~xiiGizmoRenderer() = default;
+
+void xiiGizmoRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const
+{
+  types.PushBack(xiiGetStaticRTTI<xiiGizmoRenderData>());
+}
+
+void xiiGizmoRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const
+{
+  categories.PushBack(xiiDefaultRenderDataCategories::SimpleOpaque);
+  categories.PushBack(xiiDefaultRenderDataCategories::SimpleForeground);
+}
+
+void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+{
+  bool bOnlyPickable = false;
+
+  if (auto pPickingRenderPass = xiiDynamicCast<const xiiPickingRenderPass*>(pPass))
+  {
+    // gizmos only exist for 'selected' objects, so ignore all gizmo rendering, if we don't want to pick selected objects
+    if (!pPickingRenderPass->m_bPickSelected)
+      return;
+
+    bOnlyPickable = true;
+  }
+
+  const xiiGizmoRenderData* pRenderData = batch.GetFirstData<xiiGizmoRenderData>();
+
+  const xiiMeshResourceHandle&     hMesh          = pRenderData->m_hMesh;
+  const xiiMaterialResourceHandle& hMaterial      = pRenderData->m_hMaterial;
+  xiiUInt32                        uiSubMeshIndex = pRenderData->m_uiSubMeshIndex;
+
+  xiiResourceLock<xiiMeshResource> pMesh(hMesh, xiiResourceAcquireMode::AllowLoadingFallback);
+
+  // This can happen when the resource has been reloaded and now has fewer submeshes.
+  const auto& subMeshes = pMesh->GetSubMeshes();
+  if (subMeshes.GetCount() <= uiSubMeshIndex)
+  {
+    return;
+  }
+
+  const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiSubMeshIndex];
+
+  renderViewContext.m_pRenderContext->BindMeshBuffer(pMesh->GetMeshBuffer());
+  renderViewContext.m_pRenderContext->BindMaterial(hMaterial);
+
+  xiiConstantBufferStorage<xiiGizmoConstants>* pGizmoConstantBuffer;
+  xiiConstantBufferStorageHandle               hGizmoConstantBuffer = xiiRenderContext::CreateConstantBufferStorage(pGizmoConstantBuffer);
+  XII_SCOPE_EXIT(xiiRenderContext::DeleteConstantBufferStorage(hGizmoConstantBuffer));
+
+  renderViewContext.m_pRenderContext->BindConstantBuffer("xiiGizmoConstants", hGizmoConstantBuffer);
+
+  // since typically the fov is tied to the height, we orient the gizmo size on that
+  const float fGizmoScale = s_fGizmoScale * (128.0f / (float)renderViewContext.m_pViewData->m_ViewPortRect.height);
+
+  for (auto it = batch.GetIterator<xiiGizmoRenderData>(); it.IsValid(); ++it)
+  {
+    pRenderData = it;
+
+    if (bOnlyPickable && !pRenderData->m_bIsPickable)
+      continue;
+
+    XII_ASSERT_DEV(pRenderData->m_hMesh == hMesh, "Invalid batching (mesh)");
+    XII_ASSERT_DEV(pRenderData->m_hMaterial == hMaterial, "Invalid batching (material)");
+    XII_ASSERT_DEV(pRenderData->m_uiSubMeshIndex == uiSubMeshIndex, "Invalid batching (part)");
+
+    xiiGizmoConstants& cb  = pGizmoConstantBuffer->GetDataForWriting();
+    cb.ObjectToWorldMatrix = pRenderData->m_GlobalTransform.GetAsMat4();
+    cb.WorldToObjectMatrix = cb.ObjectToWorldMatrix;
+    cb.WorldToObjectMatrix.Invert(0.001f).IgnoreResult(); // this can fail, if scale is 0 (which happens), doesn't matter in those cases
+    cb.GizmoColor   = pRenderData->m_GizmoColor;
+    cb.GizmoScale   = fGizmoScale;
+    cb.GameObjectID = pRenderData->m_uiUniqueID;
+
+    if (renderViewContext.m_pRenderContext->DrawMeshBuffer(meshPart.m_uiPrimitiveCount, meshPart.m_uiFirstPrimitive).Failed())
+    {
+      // draw bounding box instead
+      if (pRenderData->m_GlobalBounds.IsValid())
+      {
+        xiiDebugRenderer::DrawLineBox(*renderViewContext.m_pViewDebugContext, pRenderData->m_GlobalBounds.GetBox(), xiiColor::Magenta);
+      }
+    }
+  }
+}

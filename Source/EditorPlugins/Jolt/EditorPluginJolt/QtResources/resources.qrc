@@ -1,0 +1,33 @@
+<RCC>
+  <qresource prefix="AssetIcons">
+    <file>Jolt_Collision_Mesh.png</file>
+    <file>Jolt_Collision_Mesh_Convex.png</file>
+  </qresource>
+  <qresource prefix="TypeIcons">
+    <file>xiiJoltShapeCapsuleComponent.png</file>
+    <file>xiiJoltShapeBoxComponent.png</file>
+    <file>xiiJoltShapeSphereComponent.png</file>
+    <file>xiiJoltStaticActorComponent.png</file>
+    <file>xiiJoltDynamicActorComponent.png</file>
+    <file>xiiJoltDistanceConstraintComponent.png</file>
+    <file>xiiJoltFixedConstraintComponent.png</file>
+    <file>xiiJoltCenterOfMassComponent.png</file>
+    <file>xiiJoltShapeConvexHullComponent.png</file>
+    <file>xiiJoltCharacterControllerComponent.png</file>
+    <file>xiiJoltSettingsComponent.png</file>
+    <file>xiiJoltTriggerComponent.png</file>
+	<file>xiiJoltVisColMeshComponent.png</file>
+	<file>xiiJolt6DOFConstraintComponent.png</file>
+	<file>xiiJoltHingeConstraintComponent.png</file>
+	<file>xiiJoltPointConstraintComponent.png</file>
+	<file>xiiJoltDefaultCharacterComponent.png</file>
+	<file>xiiJoltSliderConstraintComponent.png</file>
+	<file>xiiJoltBoneColliderComponent.png</file>
+	<file>xiiJoltRopeComponent.png</file>
+	<file>xiiJoltShapeCylinderComponent.png</file>
+	<file>xiiJoltRagdollComponent.png</file>
+	<file>xiiJoltSwingTwistConstraintComponent.png</file>
+	<file>xiiJoltConeConstraintComponent.png</file>
+  </qresource>  
+</RCC>
+

@@ -1,0 +1,150 @@
+#include <Core/CorePCH.h>
+
+#include <Core/World/EventMessageHandlerComponent.h>
+#include <Core/World/World.h>
+#include <Core/WorldSerializer/WorldReader.h>
+#include <Core/WorldSerializer/WorldWriter.h>
+
+namespace
+{
+  static xiiStaticArray<xiiDynamicArray<xiiComponentHandle>*, 64> s_GlobalEventHandlerPerWorld;
+
+  static void RegisterGlobalEventHandler(xiiComponent* pComponent)
+  {
+    const xiiUInt32 uiWorldIndex = pComponent->GetWorld()->GetIndex();
+    s_GlobalEventHandlerPerWorld.EnsureCount(uiWorldIndex + 1);
+
+    auto globalEventHandler = s_GlobalEventHandlerPerWorld[uiWorldIndex];
+    if (globalEventHandler == nullptr)
+    {
+      globalEventHandler = XII_NEW(xiiStaticAllocatorWrapper::GetAllocator(), xiiDynamicArray<xiiComponentHandle>);
+
+      s_GlobalEventHandlerPerWorld[uiWorldIndex] = globalEventHandler;
+    }
+
+    globalEventHandler->PushBack(pComponent->GetHandle());
+  }
+
+  static void DeregisterGlobalEventHandler(xiiComponent* pComponent)
+  {
+    xiiUInt32 uiWorldIndex       = pComponent->GetWorld()->GetIndex();
+    auto      globalEventHandler = s_GlobalEventHandlerPerWorld[uiWorldIndex];
+    XII_ASSERT_DEV(globalEventHandler != nullptr, "Implementation error.");
+
+    globalEventHandler->RemoveAndSwap(pComponent->GetHandle());
+  }
+} // namespace
+
+//////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiEventMessageHandlerComponent, 3)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ACCESSOR_PROPERTY("HandleGlobalEvents", GetGlobalEventHandlerMode, SetGlobalEventHandlerMode),
+    XII_ACCESSOR_PROPERTY("PassThroughUnhandledEvents", GetPassThroughUnhandledEvents, SetPassThroughUnhandledEvents),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_ABSTRACT_COMPONENT_TYPE;
+// clang-format on
+
+xiiEventMessageHandlerComponent::xiiEventMessageHandlerComponent()  = default;
+xiiEventMessageHandlerComponent::~xiiEventMessageHandlerComponent() = default;
+
+void xiiEventMessageHandlerComponent::SerializeComponent(xiiWorldWriter& stream) const
+{
+  SUPER::SerializeComponent(stream);
+  auto& s = stream.GetStream();
+
+  // version 2
+  s << m_bIsGlobalEventHandler;
+
+  // version 3
+  s << m_bPassThroughUnhandledEvents;
+}
+
+void xiiEventMessageHandlerComponent::DeserializeComponent(xiiWorldReader& stream)
+{
+  SUPER::DeserializeComponent(stream);
+  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = stream.GetStream();
+
+  if (uiVersion >= 2)
+  {
+    bool bGlobalEH;
+    s >> bGlobalEH;
+
+    SetGlobalEventHandlerMode(bGlobalEH);
+  }
+
+  if (uiVersion >= 3)
+  {
+    s >> m_bPassThroughUnhandledEvents;
+  }
+}
+
+void xiiEventMessageHandlerComponent::Deinitialize()
+{
+  SetGlobalEventHandlerMode(false);
+
+  SUPER::Deinitialize();
+}
+
+void xiiEventMessageHandlerComponent::SetDebugOutput(bool enable)
+{
+  m_bDebugOutput = enable;
+}
+
+bool xiiEventMessageHandlerComponent::GetDebugOutput() const
+{
+  return m_bDebugOutput;
+}
+
+void xiiEventMessageHandlerComponent::SetGlobalEventHandlerMode(bool enable)
+{
+  if (m_bIsGlobalEventHandler == enable)
+    return;
+
+  m_bIsGlobalEventHandler = enable;
+
+  if (enable)
+  {
+    RegisterGlobalEventHandler(this);
+  }
+  else
+  {
+    DeregisterGlobalEventHandler(this);
+  }
+}
+
+void xiiEventMessageHandlerComponent::SetPassThroughUnhandledEvents(bool bPassThrough)
+{
+  m_bPassThroughUnhandledEvents = bPassThrough;
+}
+
+bool xiiEventMessageHandlerComponent::HandlesEventMessage(const xiiEventMessage& msg) const
+{
+  return m_pMessageDispatchType->CanHandleMessage(msg.GetId());
+}
+
+// static
+xiiArrayPtr<xiiComponentHandle> xiiEventMessageHandlerComponent::GetAllGlobalEventHandler(const xiiWorld* pWorld)
+{
+  xiiUInt32 uiWorldIndex = pWorld->GetIndex();
+
+  if (uiWorldIndex < s_GlobalEventHandlerPerWorld.GetCount())
+  {
+    if (auto globalEventHandler = s_GlobalEventHandlerPerWorld[uiWorldIndex])
+    {
+      return globalEventHandler->GetArrayPtr();
+    }
+  }
+
+  return xiiArrayPtr<xiiComponentHandle>();
+}
+
+
+
+XII_STATICLINK_FILE(Core, Core_World_Implementation_EventMessageHandlerComponent);

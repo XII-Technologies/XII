@@ -1,0 +1,1697 @@
+#include <Texture/TexturePCH.h>
+
+#include <Texture/Image/ImageUtils.h>
+
+#include <Foundation/Profiling/Profiling.h>
+#include <Foundation/SimdMath/SimdVec4f.h>
+#include <Texture/Image/ImageConversion.h>
+#include <Texture/Image/ImageEnums.h>
+#include <Texture/Image/ImageFilter.h>
+
+template <typename TYPE>
+static void SetDiff(const xiiImageView& ImageA, const xiiImageView& ImageB, xiiImage& out_Difference, xiiUInt32 w, xiiUInt32 h, xiiUInt32 d, xiiUInt32 comp)
+{
+  const TYPE* pA = ImageA.GetPixelPointer<TYPE>(0, 0, 0, w, h, d);
+  const TYPE* pB = ImageB.GetPixelPointer<TYPE>(0, 0, 0, w, h, d);
+  TYPE*       pR = out_Difference.GetPixelPointer<TYPE>(0, 0, 0, w, h, d);
+
+  for (xiiUInt32 i = 0; i < comp; ++i)
+    pR[i] = pB[i] > pA[i] ? (pB[i] - pA[i]) : (pA[i] - pB[i]);
+}
+
+template <typename TYPE>
+static xiiUInt32 GetError(const xiiImageView& Difference, xiiUInt32 w, xiiUInt32 h, xiiUInt32 d, xiiUInt32 comp, xiiUInt32 pixel)
+{
+  const TYPE* pR = Difference.GetPixelPointer<TYPE>(0, 0, 0, w, h, d);
+
+  xiiUInt32 uiErrorSum = 0;
+
+  for (xiiUInt32 p = 0; p < pixel; ++p)
+  {
+    xiiUInt32 error = 0;
+
+    for (xiiUInt32 c = 0; c < comp; ++c)
+    {
+      error += *pR;
+      ++pR;
+    }
+
+    error /= comp;
+    uiErrorSum += error * error;
+  }
+
+  return uiErrorSum;
+}
+
+void xiiImageUtils::ComputeImageDifferenceABS(const xiiImageView& ImageA, const xiiImageView& ImageB, xiiImage& out_Difference)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::ComputeImageDifferenceABS");
+
+  XII_ASSERT_DEV(ImageA.GetWidth() == ImageB.GetWidth(), "Dimensions do not match");
+  XII_ASSERT_DEV(ImageA.GetHeight() == ImageB.GetHeight(), "Dimensions do not match");
+  XII_ASSERT_DEV(ImageA.GetDepth() == ImageB.GetDepth(), "Dimensions do not match");
+  XII_ASSERT_DEV(ImageA.GetImageFormat() == ImageB.GetImageFormat(), "Format does not match");
+
+  xiiImageHeader differenceHeader;
+
+  differenceHeader.SetWidth(ImageA.GetWidth());
+  differenceHeader.SetHeight(ImageA.GetHeight());
+  differenceHeader.SetDepth(ImageA.GetDepth());
+  differenceHeader.SetImageFormat(ImageA.GetImageFormat());
+  out_Difference.ResetAndAlloc(differenceHeader);
+
+  const xiiUInt32 uiSize2D = ImageA.GetHeight() * ImageA.GetWidth();
+
+  for (xiiUInt32 d = 0; d < ImageA.GetDepth(); ++d)
+  {
+    // for (xiiUInt32 h = 0; h < ImageA.GetHeight(); ++h)
+    {
+      // for (xiiUInt32 w = 0; w < ImageA.GetWidth(); ++w)
+      {
+        switch (ImageA.GetImageFormat())
+        {
+          case xiiImageFormat::R8G8B8A8_UNORM:
+          case xiiImageFormat::R8G8B8A8_UNORM_SRGB:
+          case xiiImageFormat::R8G8B8A8_UINT:
+          case xiiImageFormat::R8G8B8A8_SNORM:
+          case xiiImageFormat::R8G8B8A8_SINT:
+          case xiiImageFormat::B8G8R8A8_UNORM:
+          case xiiImageFormat::B8G8R8X8_UNORM:
+          case xiiImageFormat::B8G8R8A8_UNORM_SRGB:
+          case xiiImageFormat::B8G8R8X8_UNORM_SRGB:
+          {
+            SetDiff<xiiUInt8>(ImageA, ImageB, out_Difference, 0, 0, d, 4 * uiSize2D);
+          }
+          break;
+
+          case xiiImageFormat::B8G8R8_UNORM:
+          {
+            SetDiff<xiiUInt8>(ImageA, ImageB, out_Difference, 0, 0, d, 3 * uiSize2D);
+          }
+          break;
+
+          default:
+            XII_REPORT_FAILURE("The xiiImageFormat {0} is not implemented", (xiiUInt32)ImageA.GetImageFormat());
+            return;
+        }
+      }
+    }
+  }
+}
+
+xiiUInt32 xiiImageUtils::ComputeMeanSquareError(const xiiImageView& DifferenceImage, xiiUInt8 uiBlockSize, xiiUInt32 offsetx, xiiUInt32 offsety)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::ComputeMeanSquareError(detail)");
+
+  XII_ASSERT_DEV(uiBlockSize > 1, "Blocksize must be at least 2");
+
+  xiiUInt32 uiWidth  = xiiMath::Min(DifferenceImage.GetWidth(), offsetx + uiBlockSize) - offsetx;
+  xiiUInt32 uiHeight = xiiMath::Min(DifferenceImage.GetHeight(), offsety + uiBlockSize) - offsety;
+
+  if (uiWidth == 0 || uiHeight == 0)
+    return 0;
+
+  switch (DifferenceImage.GetImageFormat())
+  {
+      // Supported formats
+    case xiiImageFormat::R8G8B8A8_UNORM:
+    case xiiImageFormat::R8G8B8A8_UNORM_SRGB:
+    case xiiImageFormat::R8G8B8A8_UINT:
+    case xiiImageFormat::R8G8B8A8_SNORM:
+    case xiiImageFormat::R8G8B8A8_SINT:
+    case xiiImageFormat::B8G8R8A8_UNORM:
+    case xiiImageFormat::B8G8R8A8_UNORM_SRGB:
+    case xiiImageFormat::B8G8R8_UNORM:
+      break;
+
+    default:
+      XII_REPORT_FAILURE("The xiiImageFormat {0} is not implemented", (xiiUInt32)DifferenceImage.GetImageFormat());
+      return 0;
+  }
+
+
+  xiiUInt32 error = 0;
+
+  xiiUInt64 uiRowPitch      = DifferenceImage.GetRowPitch();
+  xiiUInt64 uiDepthPitch    = DifferenceImage.GetDepthPitch();
+  xiiUInt32 uiNumComponents = xiiImageFormat::GetNumChannels(DifferenceImage.GetImageFormat());
+
+  // Treat image as single-component format and scale the width instead
+  uiWidth *= uiNumComponents;
+
+  const xiiUInt32 uiSize2D      = uiWidth * uiHeight;
+  const xiiUInt8* pSlicePointer = DifferenceImage.GetPixelPointer<xiiUInt8>(0, 0, 0, offsetx, offsety);
+
+  for (xiiUInt32 d = 0; d < DifferenceImage.GetDepth(); ++d)
+  {
+    const xiiUInt8* pRowPointer = pSlicePointer;
+
+    for (xiiUInt32 y = 0; y < uiHeight; ++y)
+    {
+      const xiiUInt8* pPixelPointer = pRowPointer;
+      for (xiiUInt32 x = 0; x < uiWidth; ++x)
+      {
+        xiiUInt32 uiDiff = *pPixelPointer;
+        error += uiDiff * uiDiff;
+
+        pPixelPointer++;
+      }
+
+      pRowPointer += uiRowPitch;
+    }
+
+    pSlicePointer += uiDepthPitch;
+  }
+
+  error /= uiSize2D;
+  return error;
+}
+
+xiiUInt32 xiiImageUtils::ComputeMeanSquareError(const xiiImageView& DifferenceImage, xiiUInt8 uiBlockSize)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::ComputeMeanSquareError");
+
+  XII_ASSERT_DEV(uiBlockSize > 1, "Blocksize must be at least 2");
+
+  const xiiUInt32 uiHalfBlockSize = uiBlockSize / 2;
+
+  const xiiUInt32 uiBlocksX = (DifferenceImage.GetWidth() / uiHalfBlockSize) + 1;
+  const xiiUInt32 uiBlocksY = (DifferenceImage.GetHeight() / uiHalfBlockSize) + 1;
+
+  xiiUInt32 uiMaxError = 0;
+
+  for (xiiUInt32 by = 0; by < uiBlocksY; ++by)
+  {
+    for (xiiUInt32 bx = 0; bx < uiBlocksX; ++bx)
+    {
+      const xiiUInt32 uiBlockError = ComputeMeanSquareError(DifferenceImage, uiBlockSize, bx * uiHalfBlockSize, by * uiHalfBlockSize);
+
+      uiMaxError = xiiMath::Max(uiMaxError, uiBlockError);
+    }
+  }
+
+  return uiMaxError;
+}
+
+template <typename Func, typename ImageType>
+static void ApplyFunc(ImageType& image, Func func)
+{
+  xiiUInt32 uiWidth  = image.GetWidth();
+  xiiUInt32 uiHeight = image.GetHeight();
+  xiiUInt32 uiDepth  = image.GetDepth();
+
+  XII_ASSERT_DEV(uiWidth > 0 && uiHeight > 0 && uiDepth > 0, "The image passed to FindMinMax has illegal dimension {}x{}x{}.", uiWidth, uiHeight, uiDepth);
+
+  xiiUInt64 uiRowPitch    = image.GetRowPitch();
+  xiiUInt64 uiDepthPitch  = image.GetDepthPitch();
+  xiiUInt32 uiNumChannels = xiiImageFormat::GetNumChannels(image.GetImageFormat());
+
+  auto pSlicePointer = image.template GetPixelPointer<xiiUInt8>();
+
+  for (xiiUInt32 z = 0; z < image.GetDepth(); ++z)
+  {
+    auto pRowPointer = pSlicePointer;
+
+    for (xiiUInt32 y = 0; y < uiHeight; ++y)
+    {
+      auto pPixelPointer = pRowPointer;
+      for (xiiUInt32 x = 0; x < uiWidth; ++x)
+      {
+        for (xiiUInt32 c = 0; c < uiNumChannels; ++c)
+        {
+          func(pPixelPointer++, x, y, z, c);
+        }
+      }
+
+      pRowPointer += uiRowPitch;
+    }
+
+    pSlicePointer += uiDepthPitch;
+  }
+}
+
+static void FindMinMax(const xiiImageView& image, xiiUInt8& uiMinRgb, xiiUInt8& uiMaxRgb, xiiUInt8& uiMinAlpha, xiiUInt8& uiMaxAlpha)
+{
+  xiiImageFormat::Enum imageFormat = image.GetImageFormat();
+  XII_ASSERT_DEV(xiiImageFormat::GetBitsPerChannel(imageFormat, xiiImageFormatChannel::R) == 8 && xiiImageFormat::GetDataType(imageFormat) == xiiImageFormatDataType::UNORM, "Only 8bpp unorm formats are supported in FindMinMax");
+
+  uiMinRgb   = 255u;
+  uiMinAlpha = 255u;
+  uiMaxRgb   = 0u;
+  uiMaxAlpha = 0u;
+
+  auto minMax = [&](const xiiUInt8* pixel, xiiUInt32 /*x*/, xiiUInt32 /*y*/, xiiUInt32 /*z*/, xiiUInt32 c) {
+    xiiUInt8 val = *pixel;
+
+    if (c < 3)
+    {
+      uiMinRgb = xiiMath::Min(uiMinRgb, val);
+      uiMaxRgb = xiiMath::Max(uiMaxRgb, val);
+    }
+    else
+    {
+      uiMinAlpha = xiiMath::Min(uiMinAlpha, val);
+      uiMaxAlpha = xiiMath::Max(uiMaxAlpha, val);
+    }
+  };
+  ApplyFunc(image, minMax);
+}
+
+void xiiImageUtils::Normalize(xiiImage& image)
+{
+  xiiUInt8 uiMinRgb, uiMaxRgb, uiMinAlpha, uiMaxAlpha;
+  Normalize(image, uiMinRgb, uiMaxRgb, uiMinAlpha, uiMaxAlpha);
+}
+
+void xiiImageUtils::Normalize(xiiImage& image, xiiUInt8& uiMinRgb, xiiUInt8& uiMaxRgb, xiiUInt8& uiMinAlpha, xiiUInt8& uiMaxAlpha)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::Normalize");
+
+  xiiImageFormat::Enum imageFormat = image.GetImageFormat();
+
+  XII_ASSERT_DEV(xiiImageFormat::GetBitsPerChannel(imageFormat, xiiImageFormatChannel::R) == 8 && xiiImageFormat::GetDataType(imageFormat) == xiiImageFormatDataType::UNORM, "Only 8bpp unorm formats are supported in NormalizeImage");
+
+  bool ignoreAlpha = false;
+  if (imageFormat == xiiImageFormat::B8G8R8X8_UNORM || imageFormat == xiiImageFormat::B8G8R8X8_UNORM_SRGB)
+  {
+    ignoreAlpha = true;
+  }
+
+  FindMinMax(image, uiMinRgb, uiMaxRgb, uiMinAlpha, uiMaxAlpha);
+  xiiUInt8 uiRangeRgb   = uiMaxRgb - uiMinRgb;
+  xiiUInt8 uiRangeAlpha = uiMaxAlpha - uiMinAlpha;
+
+  auto normalize = [&](xiiUInt8* pixel, xiiUInt32 /*x*/, xiiUInt32 /*y*/, xiiUInt32 /*z*/, xiiUInt32 c) {
+    xiiUInt8 val = *pixel;
+    if (c < 3)
+    {
+      // color channels are uniform when min == max, in that case keep original value as scaling is not meaningful
+      if (uiRangeRgb != 0)
+      {
+        *pixel = static_cast<xiiUInt8>(255u * (static_cast<float>(val - uiMinRgb) / (uiRangeRgb)));
+      }
+    }
+    else
+    {
+      // alpha is uniform when minAlpha == maxAlpha, in that case keep original alpha as scaling is not meaningful
+      if (!ignoreAlpha && uiRangeAlpha != 0)
+      {
+        *pixel = static_cast<xiiUInt8>(255u * (static_cast<float>(val - uiMinAlpha) / (uiRangeAlpha)));
+      }
+    }
+  };
+  ApplyFunc(image, normalize);
+}
+
+void xiiImageUtils::ExtractAlphaChannel(const xiiImageView& inputImage, xiiImage& outputImage)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::ExtractAlphaChannel");
+
+  switch (xiiImageFormat::Enum imageFormat = inputImage.GetImageFormat())
+  {
+    case xiiImageFormat::R8G8B8A8_UNORM:
+    case xiiImageFormat::R8G8B8A8_UNORM_SRGB:
+    case xiiImageFormat::R8G8B8A8_UINT:
+    case xiiImageFormat::R8G8B8A8_SNORM:
+    case xiiImageFormat::R8G8B8A8_SINT:
+    case xiiImageFormat::B8G8R8A8_UNORM:
+    case xiiImageFormat::B8G8R8A8_UNORM_SRGB:
+      break;
+    default:
+      XII_REPORT_FAILURE("ExtractAlpha needs an image with 8bpp and 4 channel. The xiiImageFormat {} is not supported.", (xiiUInt32)imageFormat);
+      return;
+  }
+
+  xiiImageHeader outputHeader = inputImage.GetHeader();
+  outputHeader.SetImageFormat(xiiImageFormat::R8_UNORM);
+  outputImage.ResetAndAlloc(outputHeader);
+
+  const xiiUInt8* pInputSlice  = inputImage.GetPixelPointer<xiiUInt8>();
+  xiiUInt8*       pOutputSlice = outputImage.GetPixelPointer<xiiUInt8>();
+
+  xiiUInt64 uiInputRowPitch   = inputImage.GetRowPitch();
+  xiiUInt64 uiInputDepthPitch = inputImage.GetDepthPitch();
+
+  xiiUInt64 uiOutputRowPitch   = outputImage.GetRowPitch();
+  xiiUInt64 uiOutputDepthPitch = outputImage.GetDepthPitch();
+
+  for (xiiUInt32 d = 0; d < inputImage.GetDepth(); ++d)
+  {
+    const xiiUInt8* pInputRow  = pInputSlice;
+    xiiUInt8*       pOutputRow = pOutputSlice;
+
+    for (xiiUInt32 y = 0; y < inputImage.GetHeight(); ++y)
+    {
+      const xiiUInt8* pInputPixel  = pInputRow;
+      xiiUInt8*       pOutputPixel = pOutputRow;
+      for (xiiUInt32 x = 0; x < inputImage.GetWidth(); ++x)
+      {
+        *pOutputPixel = pInputPixel[3];
+
+        pInputPixel += 4;
+        ++pOutputPixel;
+      }
+
+      pInputRow += uiInputRowPitch;
+      pOutputRow += uiOutputRowPitch;
+    }
+
+    pInputSlice += uiInputDepthPitch;
+    pOutputSlice += uiOutputDepthPitch;
+  }
+}
+
+void xiiImageUtils::CropImage(const xiiImageView& input, const xiiVec2I32& offset, const xiiSizeU32& newsize, xiiImage& output)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::CropImage");
+
+  XII_ASSERT_DEV(offset.x >= 0, "Offset is invalid");
+  XII_ASSERT_DEV(offset.y >= 0, "Offset is invalid");
+  XII_ASSERT_DEV(offset.x < (xiiInt32)input.GetWidth(), "Offset is invalid");
+  XII_ASSERT_DEV(offset.y < (xiiInt32)input.GetHeight(), "Offset is invalid");
+
+  const xiiUInt32 uiNewWidth  = xiiMath::Min(offset.x + newsize.width, input.GetWidth()) - offset.x;
+  const xiiUInt32 uiNewHeight = xiiMath::Min(offset.y + newsize.height, input.GetHeight()) - offset.y;
+
+  xiiImageHeader outputHeader;
+  outputHeader.SetWidth(uiNewWidth);
+  outputHeader.SetHeight(uiNewHeight);
+  outputHeader.SetImageFormat(input.GetImageFormat());
+  output.ResetAndAlloc(outputHeader);
+
+  for (xiiUInt32 y = 0; y < uiNewHeight; ++y)
+  {
+    for (xiiUInt32 x = 0; x < uiNewWidth; ++x)
+    {
+      switch (input.GetImageFormat())
+      {
+        case xiiImageFormat::R8G8B8A8_UNORM:
+        case xiiImageFormat::R8G8B8A8_UNORM_SRGB:
+        case xiiImageFormat::R8G8B8A8_UINT:
+        case xiiImageFormat::R8G8B8A8_SNORM:
+        case xiiImageFormat::R8G8B8A8_SINT:
+        case xiiImageFormat::B8G8R8A8_UNORM:
+        case xiiImageFormat::B8G8R8X8_UNORM:
+        case xiiImageFormat::B8G8R8A8_UNORM_SRGB:
+        case xiiImageFormat::B8G8R8X8_UNORM_SRGB:
+          output.GetPixelPointer<xiiUInt32>(0, 0, 0, x, y)[0] = input.GetPixelPointer<xiiUInt32>(0, 0, 0, offset.x + x, offset.y + y)[0];
+          break;
+
+        case xiiImageFormat::B8G8R8_UNORM:
+          output.GetPixelPointer<xiiUInt8>(0, 0, 0, x, y)[0] = input.GetPixelPointer<xiiUInt8>(0, 0, 0, offset.x + x, offset.y + y)[0];
+          output.GetPixelPointer<xiiUInt8>(0, 0, 0, x, y)[1] = input.GetPixelPointer<xiiUInt8>(0, 0, 0, offset.x + x, offset.y + y)[1];
+          output.GetPixelPointer<xiiUInt8>(0, 0, 0, x, y)[2] = input.GetPixelPointer<xiiUInt8>(0, 0, 0, offset.x + x, offset.y + y)[2];
+          break;
+
+        default:
+          XII_REPORT_FAILURE("The xiiImageFormat {0} is not implemented", (xiiUInt32)input.GetImageFormat());
+          return;
+      }
+    }
+  }
+}
+
+namespace
+{
+  template <typename T>
+  void rotate180(T* start, T* end)
+  {
+    end = end - 1;
+    while (start < end)
+    {
+      xiiMath::Swap(*start, *end);
+      start++;
+      end--;
+    }
+  }
+} // namespace
+
+void xiiImageUtils::RotateSubImage180(xiiImage& image, xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::RotateSubImage180");
+
+  xiiUInt8* start = image.GetPixelPointer<xiiUInt8>(uiMipLevel, uiFace, uiArrayIndex);
+  xiiUInt8* end   = start + image.GetDepthPitch(uiMipLevel);
+
+  xiiUInt32 bytesPerPixel = xiiImageFormat::GetBitsPerPixel(image.GetImageFormat()) / 8;
+
+  switch (bytesPerPixel)
+  {
+    case 4:
+      rotate180<xiiUInt32>(reinterpret_cast<xiiUInt32*>(start), reinterpret_cast<xiiUInt32*>(end));
+      break;
+    case 12:
+      rotate180<xiiVec3>(reinterpret_cast<xiiVec3*>(start), reinterpret_cast<xiiVec3*>(end));
+      break;
+    case 16:
+      rotate180<xiiVec4>(reinterpret_cast<xiiVec4*>(start), reinterpret_cast<xiiVec4*>(end));
+      break;
+    default:
+      // fallback version
+      {
+        end -= bytesPerPixel;
+        while (start < end)
+        {
+          for (xiiUInt32 i = 0; i < bytesPerPixel; i++)
+          {
+            xiiMath::Swap(start[i], end[i]);
+          }
+          start += bytesPerPixel;
+          end -= bytesPerPixel;
+        }
+      }
+  }
+}
+
+xiiResult xiiImageUtils::Copy(const xiiImageView& srcImg, const xiiRectU32& srcRect, xiiImage& dstImg, const xiiVec3U32& dstOffset, xiiUInt32 uiDstMipLevel /*= 0*/, xiiUInt32 uiDstFace /*= 0*/, xiiUInt32 uiDstArrayIndex /*= 0*/)
+{
+  if (dstImg.GetImageFormat() != srcImg.GetImageFormat()) // Can only copy when the image formats are identical
+    return XII_FAILURE;
+
+  if (xiiImageFormat::IsCompressed(dstImg.GetImageFormat())) // Compressed formats are not supported
+    return XII_FAILURE;
+
+  XII_PROFILE_SCOPE("xiiImageUtils::Copy");
+
+  const xiiUInt64 uiDstRowPitch     = dstImg.GetRowPitch(uiDstMipLevel);
+  const xiiUInt64 uiSrcRowPitch     = srcImg.GetRowPitch(uiDstMipLevel);
+  const xiiUInt32 uiCopyBytesPerRow = xiiImageFormat::GetBitsPerPixel(srcImg.GetImageFormat()) * srcRect.width / 8;
+
+  xiiUInt8*       dstPtr = dstImg.GetPixelPointer<xiiUInt8>(uiDstMipLevel, uiDstFace, uiDstArrayIndex, dstOffset.x, dstOffset.y, dstOffset.z);
+  const xiiUInt8* srcPtr = srcImg.GetPixelPointer<xiiUInt8>(0, 0, 0, srcRect.x, srcRect.y);
+
+  for (xiiUInt32 y = 0; y < srcRect.height; y++)
+  {
+    xiiMemoryUtils::Copy(dstPtr, srcPtr, uiCopyBytesPerRow);
+
+    dstPtr += uiDstRowPitch;
+    srcPtr += uiSrcRowPitch;
+  }
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiImageUtils::ExtractLowerMipChain(const xiiImageView& srcImg, xiiImage& dstImg, xiiUInt32 uiNumMips)
+{
+  const xiiImageHeader& srcImgHeader = srcImg.GetHeader();
+
+  if (srcImgHeader.GetNumFaces() != 1 || srcImgHeader.GetNumArrayIndices() != 1)
+  {
+    // Lower mips aren't stored contiguously for array/cube textures and would require copying. This isn't implemented yet.
+    return XII_FAILURE;
+  }
+
+  XII_PROFILE_SCOPE("xiiImageUtils::ExtractLowerMipChain");
+
+  uiNumMips = xiiMath::Min(uiNumMips, srcImgHeader.GetNumMipLevels());
+
+  xiiUInt32 startMipLevel = srcImgHeader.GetNumMipLevels() - uiNumMips;
+
+  xiiImageFormat::Enum format = srcImgHeader.GetImageFormat();
+
+  if (xiiImageFormat::RequiresFirstLevelBlockAlignment(format))
+  {
+    // Some block compressed image formats require resolutions that are divisible by block size,
+    // therefore adjust startMipLevel accordingly
+    while (srcImgHeader.GetWidth(startMipLevel) % xiiImageFormat::GetBlockWidth(format) != 0 || srcImgHeader.GetHeight(startMipLevel) % xiiImageFormat::GetBlockHeight(format) != 0)
+    {
+      if (uiNumMips >= srcImgHeader.GetNumMipLevels())
+        return XII_FAILURE;
+
+      if (startMipLevel == 0)
+        return XII_FAILURE;
+
+      ++uiNumMips;
+      --startMipLevel;
+    }
+  }
+
+  xiiImageHeader dstImgHeader = srcImgHeader;
+  dstImgHeader.SetWidth(srcImgHeader.GetWidth(startMipLevel));
+  dstImgHeader.SetHeight(srcImgHeader.GetHeight(startMipLevel));
+  dstImgHeader.SetDepth(srcImgHeader.GetDepth(startMipLevel));
+  dstImgHeader.SetNumFaces(srcImgHeader.GetNumFaces());
+  dstImgHeader.SetNumArrayIndices(srcImgHeader.GetNumArrayIndices());
+  dstImgHeader.SetNumMipLevels(uiNumMips);
+
+  const xiiUInt8* pDataBegin = srcImg.GetPixelPointer<xiiUInt8>(startMipLevel);
+  const xiiUInt8* pDataEnd   = srcImg.GetByteBlobPtr().GetEndPtr();
+  const ptrdiff_t dataSize   = reinterpret_cast<ptrdiff_t>(pDataEnd) - reinterpret_cast<ptrdiff_t>(pDataBegin);
+
+  const xiiConstByteBlobPtr lowResData(pDataBegin, static_cast<xiiUInt64>(dataSize));
+
+  xiiImageView dataview;
+  dataview.ResetAndViewExternalStorage(dstImgHeader, lowResData);
+
+  dstImg.ResetAndCopy(dataview);
+
+  return XII_SUCCESS;
+}
+
+xiiUInt32 xiiImageUtils::GetSampleIndex(xiiUInt32 numTexels, xiiInt32 index, xiiImageAddressMode::Enum addressMode, bool& outUseBorderColor)
+{
+  outUseBorderColor = false;
+  if (xiiUInt32(index) >= numTexels)
+  {
+    switch (addressMode)
+    {
+      case xiiImageAddressMode::Repeat:
+        index %= numTexels;
+
+        if (index < 0)
+        {
+          index += numTexels;
+        }
+        return index;
+
+      case xiiImageAddressMode::Mirror:
+      {
+        if (index < 0)
+        {
+          index = -index - 1;
+        }
+        bool flip = (index / numTexels) & 1;
+        index %= numTexels;
+        if (flip)
+        {
+          index = numTexels - index - 1;
+        }
+        return index;
+      }
+
+      case xiiImageAddressMode::Clamp:
+        return xiiMath::Clamp<xiiInt32>(index, 0, numTexels - 1);
+
+      case xiiImageAddressMode::ClampBorder:
+        outUseBorderColor = true;
+        return 0;
+
+      default:
+        XII_ASSERT_NOT_IMPLEMENTED
+        return 0;
+    }
+  }
+  return index;
+}
+
+static xiiSimdVec4f LoadSample(const xiiSimdVec4f* source, xiiUInt32 numSourceElements, xiiUInt32 stride, xiiInt32 index, xiiImageAddressMode::Enum addressMode, const xiiSimdVec4f& borderColor)
+{
+  bool useBorderColor = false;
+  // result is in the range [-(w-1), (w-1)], bring it to [0, w - 1]
+  index = xiiImageUtils::GetSampleIndex(numSourceElements, index, addressMode, useBorderColor);
+  if (useBorderColor)
+  {
+    return borderColor;
+  }
+  return source[index * stride];
+}
+
+inline static void FilterLine(
+  xiiUInt32 numSourceElements,
+  const xiiSimdVec4f* __restrict sourceBegin,
+  xiiSimdVec4f* __restrict targetBegin,
+  xiiUInt32                    stride,
+  const xiiImageFilterWeights& weights,
+  xiiArrayPtr<const xiiInt32>  firstSampleIndices,
+  xiiImageAddressMode::Enum    addressMode,
+  const xiiSimdVec4f&          borderColor)
+{
+  // Convolve the image using the precomputed weights
+  const xiiUInt32 numWeights = weights.GetNumWeights();
+
+  // When the first source index for the output is between 0 and this value,
+  // we can fetch all numWeights inputs without taking addressMode into consideration,
+  // which makes the inner loop a lot faster.
+  const xiiInt32 trivialSourceIndicesEnd = static_cast<xiiInt32>(numSourceElements) - static_cast<xiiInt32>(numWeights);
+  const auto     weightsView             = weights.ViewWeights();
+  const float* __restrict nextWeightPtr  = weightsView.GetPtr();
+  XII_ASSERT_DEBUG((static_cast<xiiUInt32>(weightsView.GetCount()) % numWeights) == 0, "");
+  for (xiiInt32 firstSourceIdx : firstSampleIndices)
+  {
+    xiiSimdVec4f total(0.0f, 0.0f, 0.0f, 0.0f);
+
+    if (firstSourceIdx >= 0 && firstSourceIdx < trivialSourceIndicesEnd)
+    {
+      const auto* __restrict sourcePtr = sourceBegin + firstSourceIdx * stride;
+      for (xiiUInt32 weightIdx = 0; weightIdx < numWeights; ++weightIdx)
+      {
+        total = xiiSimdVec4f::MulAdd(*sourcePtr, xiiSimdVec4f(*nextWeightPtr++), total);
+        sourcePtr += stride;
+      }
+    }
+    else
+    {
+      // Very slow fallback case that respects the addressMode
+      // (not a lot of pixels are taking this path, so it's probably fine)
+      xiiInt32 sourceIdx = firstSourceIdx;
+      for (xiiUInt32 weightIdx = 0; weightIdx < numWeights; ++weightIdx)
+      {
+        total = xiiSimdVec4f::MulAdd(LoadSample(sourceBegin, numSourceElements, stride, sourceIdx, addressMode, borderColor), xiiSimdVec4f(*nextWeightPtr++), total);
+        sourceIdx++;
+      }
+    }
+    // It's ok to check this once per source index, see the assert above
+    // (number of weights in weightsView is divisible by numWeights)
+    if (nextWeightPtr == weightsView.GetEndPtr())
+    {
+      nextWeightPtr = weightsView.GetPtr();
+    }
+    *targetBegin = total;
+    targetBegin += stride;
+  }
+}
+
+static void DownScaleFastLine(xiiUInt32 pixelStride, const xiiUInt8* src, xiiUInt8* dest, xiiUInt32 lengthIn, xiiUInt32 strideIn, xiiUInt32 lengthOut, xiiUInt32 strideOut)
+{
+  const xiiUInt32 downScaleFactor = lengthIn / lengthOut;
+
+  const xiiUInt32 downScaleFactorLog2 = xiiMath::Log2i(static_cast<xiiUInt32>(downScaleFactor));
+  const xiiUInt32 roundOffset         = downScaleFactor / 2;
+
+  for (xiiUInt32 offset = 0; offset < lengthOut; ++offset)
+  {
+    for (xiiUInt32 channel = 0; channel < pixelStride; ++channel)
+    {
+      const xiiUInt32 destOffset = offset * strideOut + channel;
+
+      xiiUInt32 curChannel = roundOffset;
+      for (xiiUInt32 index = 0; index < downScaleFactor; ++index)
+      {
+        curChannel += static_cast<xiiUInt32>(src[channel + index * strideIn]);
+      }
+
+      curChannel       = curChannel >> downScaleFactorLog2;
+      dest[destOffset] = static_cast<xiiUInt8>(curChannel);
+    }
+
+    src += downScaleFactor * strideIn;
+  }
+}
+
+static void DownScaleFast(const xiiImageView& image, xiiImage& out_Result, xiiUInt32 width, xiiUInt32 height)
+{
+  xiiImageFormat::Enum format = image.GetImageFormat();
+
+  xiiUInt32 originalWidth    = image.GetWidth();
+  xiiUInt32 originalHeight   = image.GetHeight();
+  xiiUInt32 numArrayElements = image.GetNumArrayIndices();
+  xiiUInt32 numFaces         = image.GetNumFaces();
+
+  xiiUInt32 pixelStride = xiiImageFormat::GetBitsPerPixel(format) / 8;
+
+  xiiImageHeader intermediateHeader;
+  intermediateHeader.SetWidth(width);
+  intermediateHeader.SetHeight(originalHeight);
+  intermediateHeader.SetNumArrayIndices(numArrayElements);
+  intermediateHeader.SetNumFaces(numFaces);
+  intermediateHeader.SetImageFormat(format);
+
+  xiiImage intermediate;
+  intermediate.ResetAndAlloc(intermediateHeader);
+
+  for (xiiUInt32 arrayIndex = 0; arrayIndex < numArrayElements; arrayIndex++)
+  {
+    for (xiiUInt32 face = 0; face < numFaces; face++)
+    {
+      for (xiiUInt32 row = 0; row < originalHeight; row++)
+      {
+        DownScaleFastLine(pixelStride, image.GetPixelPointer<xiiUInt8>(0, face, arrayIndex, 0, row), intermediate.GetPixelPointer<xiiUInt8>(0, face, arrayIndex, 0, row), originalWidth, pixelStride, width, pixelStride);
+      }
+    }
+  }
+
+  // input and output images may be the same, so we can't access the original image below this point
+
+  xiiImageHeader outHeader;
+  outHeader.SetWidth(width);
+  outHeader.SetHeight(height);
+  outHeader.SetNumArrayIndices(numArrayElements);
+  outHeader.SetNumArrayIndices(numFaces);
+  outHeader.SetImageFormat(format);
+
+  out_Result.ResetAndAlloc(outHeader);
+
+  XII_ASSERT_DEBUG(intermediate.GetRowPitch() < xiiMath::MaxValue<xiiUInt32>(), "Row pitch exceeds xiiUInt32 max value.");
+  XII_ASSERT_DEBUG(out_Result.GetRowPitch() < xiiMath::MaxValue<xiiUInt32>(), "Row pitch exceeds xiiUInt32 max value.");
+
+  for (xiiUInt32 arrayIndex = 0; arrayIndex < numArrayElements; arrayIndex++)
+  {
+    for (xiiUInt32 face = 0; face < numFaces; face++)
+    {
+      for (xiiUInt32 col = 0; col < width; col++)
+      {
+        DownScaleFastLine(pixelStride, intermediate.GetPixelPointer<xiiUInt8>(0, face, arrayIndex, col), out_Result.GetPixelPointer<xiiUInt8>(0, face, arrayIndex, col), originalHeight, static_cast<xiiUInt32>(intermediate.GetRowPitch()), height, static_cast<xiiUInt32>(out_Result.GetRowPitch()));
+      }
+    }
+  }
+}
+
+static float EvaluateAverageCoverage(xiiBlobPtr<const xiiColor> colors, float alphaThreshold)
+{
+  XII_PROFILE_SCOPE("EvaluateAverageCoverage");
+
+  xiiUInt64 totalPixels = colors.GetCount();
+  xiiUInt64 count       = 0;
+  for (xiiUInt32 idx = 0; idx < totalPixels; ++idx)
+  {
+    count += colors[idx].a >= alphaThreshold;
+  }
+
+  return float(count) / float(totalPixels);
+}
+
+static void NormalizeCoverage(xiiBlobPtr<xiiColor> colors, float alphaThreshold, float targetCoverage)
+{
+  XII_PROFILE_SCOPE("NormalizeCoverage");
+
+  // Based on the idea in http://the-witness.net/news/2010/09/computing-alpha-mipmaps/. Note we're using a histogram
+  // to find the new alpha threshold here rather than bisecting.
+
+  // Generate histogram of alpha values
+  xiiUInt64 totalPixels         = colors.GetCount();
+  xiiUInt32 alphaHistogram[256] = {};
+  for (xiiUInt64 idx = 0; idx < totalPixels; ++idx)
+  {
+    alphaHistogram[xiiMath::ColorFloatToByte(colors[idx].a)]++;
+  }
+
+  // Find range of alpha thresholds so the number of covered pixels matches by summing up the histogram
+  xiiInt32 targetCount   = xiiInt32(targetCoverage * totalPixels);
+  xiiInt32 coverageCount = 0;
+  xiiInt32 maxThreshold  = 255;
+  for (; maxThreshold >= 0; maxThreshold--)
+  {
+    coverageCount += alphaHistogram[maxThreshold];
+
+    if (coverageCount >= targetCount)
+    {
+      break;
+    }
+  }
+
+  coverageCount         = targetCount;
+  xiiInt32 minThreshold = 0;
+  for (; minThreshold < 256; minThreshold++)
+  {
+    coverageCount -= alphaHistogram[maxThreshold];
+
+    if (coverageCount <= targetCount)
+    {
+      break;
+    }
+  }
+
+  xiiInt32 currentThreshold = xiiMath::ColorFloatToByte(alphaThreshold);
+
+  // Each of the alpha test thresholds in the range [minThreshold; maxThreshold] will result in the same coverage. Pick a new threshold
+  // close to the old one so we scale by the smallest necessary amount.
+  xiiInt32 newThreshold;
+  if (currentThreshold < minThreshold)
+  {
+    newThreshold = minThreshold;
+  }
+  else if (currentThreshold > maxThreshold)
+  {
+    newThreshold = maxThreshold;
+  }
+  else
+  {
+    // Avoid rescaling altogether if the current threshold already preserves coverage
+    return;
+  }
+
+  // Rescale alpha values
+  float alphaScale = alphaThreshold / (newThreshold / 255.0f);
+  for (xiiUInt64 idx = 0; idx < totalPixels; ++idx)
+  {
+    colors[idx].a *= alphaScale;
+  }
+}
+
+
+xiiResult xiiImageUtils::Scale(const xiiImageView& source, xiiImage& target, xiiUInt32 width, xiiUInt32 height, const xiiImageFilter* filter, xiiImageAddressMode::Enum addressModeU, xiiImageAddressMode::Enum addressModeV, const xiiColor& borderColor)
+{
+  return Scale3D(source, target, width, height, 1, filter, addressModeU, addressModeV, xiiImageAddressMode::Clamp, borderColor);
+}
+
+xiiResult xiiImageUtils::Scale3D(const xiiImageView& source, xiiImage& target, xiiUInt32 width, xiiUInt32 height, xiiUInt32 depth, const xiiImageFilter* filter /*= xii_NULL*/, xiiImageAddressMode::Enum addressModeU /*= xiiImageAddressMode::Clamp*/, xiiImageAddressMode::Enum addressModeV /*= xiiImageAddressMode::Clamp*/, xiiImageAddressMode::Enum addressModeW /*= xiiImageAddressMode::Clamp*/, const xiiColor& borderColor /*= xiiColors::Black*/)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::Scale3D");
+
+  if (width == 0 || height == 0 || depth == 0)
+  {
+    xiiImageHeader header;
+    header.SetImageFormat(source.GetImageFormat());
+    target.ResetAndAlloc(header);
+    return XII_SUCCESS;
+  }
+
+  const xiiImageFormat::Enum format = source.GetImageFormat();
+
+  const xiiUInt32 originalWidth    = source.GetWidth();
+  const xiiUInt32 originalHeight   = source.GetHeight();
+  const xiiUInt32 originalDepth    = source.GetDepth();
+  const xiiUInt32 numFaces         = source.GetNumFaces();
+  const xiiUInt32 numArrayElements = source.GetNumArrayIndices();
+
+  if (originalWidth == width && originalHeight == height && originalDepth == depth)
+  {
+    target.ResetAndCopy(source);
+    return XII_SUCCESS;
+  }
+
+  // Scaling down by an even factor?
+  const xiiUInt32 downScaleFactorX = originalWidth / width;
+  const xiiUInt32 downScaleFactorY = originalHeight / height;
+
+  if (filter == nullptr && (format == xiiImageFormat::R8G8B8A8_UNORM || format == xiiImageFormat::B8G8R8A8_UNORM || format == xiiImageFormat::B8G8R8_UNORM) && downScaleFactorX * width == originalWidth && downScaleFactorY * height == originalHeight && depth == 1 && originalDepth == 1 &&
+      xiiMath::IsPowerOf2(downScaleFactorX) && xiiMath::IsPowerOf2(downScaleFactorY))
+  {
+    DownScaleFast(source, target, width, height);
+    return XII_SUCCESS;
+  }
+
+  // Fallback to default filter
+  xiiImageFilterTriangle defaultFilter;
+  if (!filter)
+  {
+    filter = &defaultFilter;
+  }
+
+  const xiiImageView* stepSource;
+
+  // Manage scratch images for intermediate conversion or filtering
+  const xiiUInt32 maxNumScratchImages = 2;
+  xiiImage        scratch[maxNumScratchImages];
+  bool            scratchUsed[maxNumScratchImages] = {};
+  auto            allocateScratch                  = [&]() -> xiiImage& {
+    for (xiiUInt32 i = 0;; ++i)
+    {
+      XII_ASSERT_DEV(i < maxNumScratchImages, "Failed to allocate scratch image");
+      if (!scratchUsed[i])
+      {
+        scratchUsed[i] = true;
+        return scratch[i];
+      }
+    }
+  };
+  auto releaseScratch = [&](const xiiImageView& image) {
+    for (xiiUInt32 i = 0; i < maxNumScratchImages; ++i)
+    {
+      if (&scratch[i] == &image)
+      {
+        scratchUsed[i] = false;
+        return;
+      }
+    }
+  };
+
+  if (format == xiiImageFormat::R32G32B32A32_FLOAT)
+  {
+    stepSource = &source;
+  }
+  else
+  {
+    xiiImage& conversionScratch = allocateScratch();
+    if (xiiImageConversion::Convert(source, conversionScratch, xiiImageFormat::R32G32B32A32_FLOAT).Failed())
+    {
+      return XII_FAILURE;
+    }
+
+    stepSource = &conversionScratch;
+  };
+
+  xiiHybridArray<xiiInt32, 256> firstSampleIndices;
+  firstSampleIndices.Reserve(xiiMath::Max(width, height, depth));
+
+  if (width != originalWidth)
+  {
+    xiiImageFilterWeights weights(*filter, originalWidth, width);
+    firstSampleIndices.SetCountUninitialized(width);
+    for (xiiUInt32 x = 0; x < width; ++x)
+    {
+      firstSampleIndices[x] = weights.GetFirstSourceSampleIndex(x);
+    }
+
+    xiiImage* stepTarget;
+    if (height == originalHeight && depth == originalDepth && format == xiiImageFormat::R32G32B32A32_FLOAT)
+    {
+      stepTarget = &target;
+    }
+    else
+    {
+      stepTarget = &allocateScratch();
+    }
+
+    xiiImageHeader stepHeader = stepSource->GetHeader();
+    stepHeader.SetWidth(width);
+    stepTarget->ResetAndAlloc(stepHeader);
+
+    for (xiiUInt32 arrayIndex = 0; arrayIndex < numArrayElements; ++arrayIndex)
+    {
+      for (xiiUInt32 face = 0; face < numFaces; ++face)
+      {
+        for (xiiUInt32 z = 0; z < originalDepth; ++z)
+        {
+          for (xiiUInt32 y = 0; y < originalHeight; ++y)
+          {
+            const xiiSimdVec4f* filterSource = stepSource->GetPixelPointer<xiiSimdVec4f>(0, face, arrayIndex, 0, y, z);
+            xiiSimdVec4f*       filterTarget = stepTarget->GetPixelPointer<xiiSimdVec4f>(0, face, arrayIndex, 0, y, z);
+            FilterLine(originalWidth, filterSource, filterTarget, 1, weights, firstSampleIndices, addressModeU, xiiSimdVec4f(borderColor.r, borderColor.g, borderColor.b, borderColor.a));
+          }
+        }
+      }
+    }
+
+    releaseScratch(*stepSource);
+    stepSource = stepTarget;
+  }
+
+  if (height != originalHeight)
+  {
+    xiiImageFilterWeights weights(*filter, originalHeight, height);
+    firstSampleIndices.SetCount(height);
+    for (xiiUInt32 y = 0; y < height; ++y)
+    {
+      firstSampleIndices[y] = weights.GetFirstSourceSampleIndex(y);
+    }
+
+    xiiImage* stepTarget;
+    if (depth == originalDepth && format == xiiImageFormat::R32G32B32A32_FLOAT)
+    {
+      stepTarget = &target;
+    }
+    else
+    {
+      stepTarget = &allocateScratch();
+    }
+
+    xiiImageHeader stepHeader = stepSource->GetHeader();
+    stepHeader.SetHeight(height);
+    stepTarget->ResetAndAlloc(stepHeader);
+
+    for (xiiUInt32 arrayIndex = 0; arrayIndex < numArrayElements; ++arrayIndex)
+    {
+      for (xiiUInt32 face = 0; face < numFaces; ++face)
+      {
+        for (xiiUInt32 z = 0; z < originalDepth; ++z)
+        {
+          for (xiiUInt32 x = 0; x < width; ++x)
+          {
+            const xiiSimdVec4f* filterSource = stepSource->GetPixelPointer<xiiSimdVec4f>(0, face, arrayIndex, x, 0, z);
+            xiiSimdVec4f*       filterTarget = stepTarget->GetPixelPointer<xiiSimdVec4f>(0, face, arrayIndex, x, 0, z);
+            FilterLine(originalHeight, filterSource, filterTarget, width, weights, firstSampleIndices, addressModeV, xiiSimdVec4f(borderColor.r, borderColor.g, borderColor.b, borderColor.a));
+          }
+        }
+      }
+    }
+
+    releaseScratch(*stepSource);
+    stepSource = stepTarget;
+  }
+
+  if (depth != originalDepth)
+  {
+    xiiImageFilterWeights weights(*filter, originalDepth, depth);
+    firstSampleIndices.SetCount(depth);
+    for (xiiUInt32 z = 0; z < depth; ++z)
+    {
+      firstSampleIndices[z] = weights.GetFirstSourceSampleIndex(z);
+    }
+
+    xiiImage* stepTarget;
+    if (format == xiiImageFormat::R32G32B32A32_FLOAT)
+    {
+      stepTarget = &target;
+    }
+    else
+    {
+      stepTarget = &allocateScratch();
+    }
+
+    xiiImageHeader stepHeader = stepSource->GetHeader();
+    stepHeader.SetDepth(depth);
+    stepTarget->ResetAndAlloc(stepHeader);
+
+    for (xiiUInt32 arrayIndex = 0; arrayIndex < numArrayElements; ++arrayIndex)
+    {
+      for (xiiUInt32 face = 0; face < numFaces; ++face)
+      {
+        for (xiiUInt32 y = 0; y < height; ++y)
+        {
+          for (xiiUInt32 x = 0; x < width; ++x)
+          {
+            const xiiSimdVec4f* filterSource = stepSource->GetPixelPointer<xiiSimdVec4f>(0, face, arrayIndex, x, y, 0);
+            xiiSimdVec4f*       filterTarget = stepTarget->GetPixelPointer<xiiSimdVec4f>(0, face, arrayIndex, x, y, 0);
+            FilterLine(originalHeight, filterSource, filterTarget, width * height, weights, firstSampleIndices, addressModeW, xiiSimdVec4f(borderColor.r, borderColor.g, borderColor.b, borderColor.a));
+          }
+        }
+      }
+    }
+
+    releaseScratch(*stepSource);
+    stepSource = stepTarget;
+  }
+
+  // Convert back to original format - no-op if stepSource and target are the same
+  return xiiImageConversion::Convert(*stepSource, target, format);
+}
+
+void xiiImageUtils::GenerateMipMaps(const xiiImageView& source, xiiImage& target, const MipMapOptions& options)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::GenerateMipMaps");
+
+  xiiImageHeader header = source.GetHeader();
+  XII_ASSERT_DEV(header.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT, "The source image must be a RGBA 32-bit float format.");
+  XII_ASSERT_DEV(&source != &target, "Source and target must not be the same image.");
+
+  // Make a local copy to be able to tweak some of the options
+  xiiImageUtils::MipMapOptions mipMapOptions = options;
+
+  // alpha thresholds with extreme values are not supported at the moment
+  mipMapOptions.m_alphaThreshold = xiiMath::Clamp(mipMapOptions.m_alphaThreshold, 0.05f, 0.95f);
+
+  // Enforce CLAMP addressing mode for cubemaps
+  if (source.GetNumFaces() == 6)
+  {
+    mipMapOptions.m_addressModeU = xiiImageAddressMode::Clamp;
+    mipMapOptions.m_addressModeV = xiiImageAddressMode::Clamp;
+  }
+
+  xiiUInt32 numMipMaps = header.ComputeNumberOfMipMaps();
+  if (mipMapOptions.m_numMipMaps > 0 && mipMapOptions.m_numMipMaps < numMipMaps)
+  {
+    numMipMaps = mipMapOptions.m_numMipMaps;
+  }
+  header.SetNumMipLevels(numMipMaps);
+
+  target.ResetAndAlloc(header);
+
+  for (xiiUInt32 arrayIndex = 0; arrayIndex < source.GetNumArrayIndices(); arrayIndex++)
+  {
+    for (xiiUInt32 face = 0; face < source.GetNumFaces(); face++)
+    {
+      xiiImageHeader currentMipMapHeader = header;
+      currentMipMapHeader.SetNumMipLevels(1);
+      currentMipMapHeader.SetNumFaces(1);
+      currentMipMapHeader.SetNumArrayIndices(1);
+
+      auto sourceView = source.GetSubImageView(0, face, arrayIndex).GetByteBlobPtr();
+      auto targetView = target.GetSubImageView(0, face, arrayIndex).GetByteBlobPtr();
+
+      memcpy(targetView.GetPtr(), sourceView.GetPtr(), static_cast<size_t>(targetView.GetCount()));
+
+      float targetCoverage = 0.0f;
+      if (mipMapOptions.m_preserveCoverage)
+      {
+        targetCoverage = EvaluateAverageCoverage(source.GetSubImageView(0, face, arrayIndex).GetBlobPtr<xiiColor>(), mipMapOptions.m_alphaThreshold);
+      }
+
+      for (xiiUInt32 mipMapLevel = 0; mipMapLevel < numMipMaps - 1; mipMapLevel++)
+      {
+        xiiImageHeader nextMipMapHeader = currentMipMapHeader;
+        nextMipMapHeader.SetWidth(xiiMath::Max(1u, nextMipMapHeader.GetWidth() / 2));
+        nextMipMapHeader.SetHeight(xiiMath::Max(1u, nextMipMapHeader.GetHeight() / 2));
+        nextMipMapHeader.SetDepth(xiiMath::Max(1u, nextMipMapHeader.GetDepth() / 2));
+
+        auto     sourceData = target.GetSubImageView(mipMapLevel, face, arrayIndex).GetByteBlobPtr();
+        xiiImage currentMipMap;
+        currentMipMap.ResetAndUseExternalStorage(currentMipMapHeader, sourceData);
+
+        auto     dstData = target.GetSubImageView(mipMapLevel + 1, face, arrayIndex).GetByteBlobPtr();
+        xiiImage nextMipMap;
+        nextMipMap.ResetAndUseExternalStorage(nextMipMapHeader, dstData);
+
+        xiiImageUtils::Scale3D(currentMipMap, nextMipMap, nextMipMapHeader.GetWidth(), nextMipMapHeader.GetHeight(), nextMipMapHeader.GetDepth(), mipMapOptions.m_filter, mipMapOptions.m_addressModeU, mipMapOptions.m_addressModeV, mipMapOptions.m_addressModeW, mipMapOptions.m_borderColor)
+          .IgnoreResult();
+
+        if (mipMapOptions.m_preserveCoverage)
+        {
+          NormalizeCoverage(nextMipMap.GetBlobPtr<xiiColor>(), mipMapOptions.m_alphaThreshold, targetCoverage);
+        }
+
+        if (mipMapOptions.m_renormalizeNormals)
+        {
+          RenormalizeNormalMap(nextMipMap);
+        }
+
+        currentMipMapHeader = nextMipMapHeader;
+      }
+    }
+  }
+}
+
+void xiiImageUtils::ReconstructNormalZ(xiiImage& image)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::ReconstructNormalZ");
+
+  XII_ASSERT_DEV(image.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT, "This algorithm currently expects a RGBA 32 Float as input");
+
+  xiiSimdVec4f*       cur = image.GetBlobPtr<xiiSimdVec4f>().GetPtr();
+  xiiSimdVec4f* const end = image.GetBlobPtr<xiiSimdVec4f>().GetEndPtr();
+
+  xiiSimdFloat oneScalar = 1.0f;
+
+  xiiSimdVec4f two(2.0f);
+
+  xiiSimdVec4f minusOne(-1.0f);
+
+  xiiSimdVec4f half(0.5f);
+
+  for (; cur < end; cur++)
+  {
+    xiiSimdVec4f normal;
+    // unpack from [0,1] to [-1, 1]
+    normal = xiiSimdVec4f::MulAdd(*cur, two, minusOne);
+
+    // compute Z component
+    normal.SetZ((oneScalar - normal.Dot<2>(normal)).GetSqrt());
+
+    // pack back to [0,1]
+    *cur = xiiSimdVec4f::MulAdd(half, normal, half);
+  }
+}
+
+void xiiImageUtils::RenormalizeNormalMap(xiiImage& image)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::RenormalizeNormalMap");
+
+  XII_ASSERT_DEV(image.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT, "This algorithm currently expects a RGBA 32 Float as input");
+
+  xiiSimdVec4f*       start = image.GetBlobPtr<xiiSimdVec4f>().GetPtr();
+  xiiSimdVec4f* const end   = image.GetBlobPtr<xiiSimdVec4f>().GetEndPtr();
+
+  xiiSimdVec4f two(2.0f);
+
+  xiiSimdVec4f minusOne(-1.0f);
+
+  xiiSimdVec4f half(0.5f);
+
+  for (; start < end; start++)
+  {
+    xiiSimdVec4f normal;
+    normal = xiiSimdVec4f::MulAdd(*start, two, minusOne);
+    normal.Normalize<3>();
+    *start = xiiSimdVec4f::MulAdd(half, normal, half);
+  }
+}
+
+void xiiImageUtils::AdjustRoughness(xiiImage& roughnessMap, const xiiImageView& normalMap)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::AdjustRoughness");
+
+  XII_ASSERT_DEV(roughnessMap.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT, "This algorithm currently expects a RGBA 32 Float as input");
+  XII_ASSERT_DEV(normalMap.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT, "This algorithm currently expects a RGBA 32 Float as input");
+
+  XII_ASSERT_DEV(roughnessMap.GetWidth() >= normalMap.GetWidth() && roughnessMap.GetHeight() >= normalMap.GetHeight(), "The roughness map needs to be bigger or same size than the normal map.");
+
+  xiiImage                     filteredNormalMap;
+  xiiImageUtils::MipMapOptions options;
+
+  // Box filter normal map without re-normalization so we have the average normal length in each mip map.
+  if (roughnessMap.GetWidth() != normalMap.GetWidth() || roughnessMap.GetHeight() != normalMap.GetHeight())
+  {
+    xiiImage temp;
+    xiiImageUtils::Scale(normalMap, temp, roughnessMap.GetWidth(), roughnessMap.GetHeight()).IgnoreResult();
+    xiiImageUtils::RenormalizeNormalMap(temp);
+    xiiImageUtils::GenerateMipMaps(temp, filteredNormalMap, options);
+  }
+  else
+  {
+    xiiImageUtils::GenerateMipMaps(normalMap, filteredNormalMap, options);
+  }
+
+  XII_ASSERT_DEV(roughnessMap.GetNumMipLevels() == filteredNormalMap.GetNumMipLevels(), "Roughness and normal map must have the same number of mip maps");
+
+  xiiSimdVec4f two(2.0f);
+  xiiSimdVec4f minusOne(-1.0f);
+
+  xiiUInt32 numMipLevels = roughnessMap.GetNumMipLevels();
+  for (xiiUInt32 mipLevel = 1; mipLevel < numMipLevels; ++mipLevel)
+  {
+    xiiBlobPtr<xiiSimdVec4f> roughnessData = roughnessMap.GetSubImageView(mipLevel, 0, 0).GetBlobPtr<xiiSimdVec4f>();
+    xiiBlobPtr<xiiSimdVec4f> normalData    = filteredNormalMap.GetSubImageView(mipLevel, 0, 0).GetBlobPtr<xiiSimdVec4f>();
+
+    for (xiiUInt64 i = 0; i < roughnessData.GetCount(); ++i)
+    {
+      xiiSimdVec4f normal = xiiSimdVec4f::MulAdd(normalData[i], two, minusOne);
+
+      float avgNormalLength = normal.GetLength<3>();
+      if (avgNormalLength < 1.0f)
+      {
+        float avgNormalLengthSquare = avgNormalLength * avgNormalLength;
+        float kappa                 = (3.0f * avgNormalLength - avgNormalLength * avgNormalLengthSquare) / (1.0f - avgNormalLengthSquare);
+        float variance              = 1.0f / (2.0f * kappa);
+
+        float oldRoughness = roughnessData[i].GetComponent<0>();
+        float newRoughness = xiiMath::Sqrt(oldRoughness * oldRoughness + variance);
+
+        roughnessData[i].Set(newRoughness);
+      }
+    }
+  }
+}
+
+void xiiImageUtils::ChangeExposure(xiiImage& image, float bias)
+{
+  XII_ASSERT_DEV(image.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT, "This function expects an RGBA 32 float image as input");
+
+  if (bias == 0.0f)
+    return;
+
+  XII_PROFILE_SCOPE("xiiImageUtils::ChangeExposure");
+
+  const float multiplier = xiiMath::Pow2(bias);
+
+  for (xiiColor& col : image.GetBlobPtr<xiiColor>())
+  {
+    col = multiplier * col;
+  }
+}
+
+static xiiResult CopyImageRectToFace(xiiImage& dstImg, const xiiImageView& srcImg, xiiUInt32 offsetX, xiiUInt32 offsetY, xiiUInt32 faceIndex)
+{
+  xiiRectU32 r;
+  r.x      = offsetX;
+  r.y      = offsetY;
+  r.width  = dstImg.GetWidth();
+  r.height = r.width;
+
+  return xiiImageUtils::Copy(srcImg, r, dstImg, xiiVec3U32(0), 0, faceIndex);
+}
+
+xiiResult xiiImageUtils::CreateCubemapFromSingleFile(xiiImage& dstImg, const xiiImageView& srcImg)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::CreateCubemapFromSingleFile");
+
+  if (srcImg.GetNumFaces() == 6)
+  {
+    dstImg.ResetAndCopy(srcImg);
+    return XII_SUCCESS;
+  }
+  else if (srcImg.GetNumFaces() == 1)
+  {
+    if (srcImg.GetWidth() % 3 == 0 && srcImg.GetHeight() % 4 == 0 && srcImg.GetWidth() / 3 == srcImg.GetHeight() / 4)
+    {
+      // Vertical cube map layout
+      //     +---+
+      //     | Y+|
+      // +---+---+---+
+      // | X-| Z+| X+|
+      // +---+---+---+
+      //     | Y-|
+      //     +---+
+      //     | Z-|
+      //     +---+
+      const xiiUInt32 faceSize = srcImg.GetWidth() / 3;
+
+      xiiImageHeader imgHeader;
+      imgHeader.SetWidth(faceSize);
+      imgHeader.SetHeight(faceSize);
+      imgHeader.SetImageFormat(srcImg.GetImageFormat());
+      imgHeader.SetDepth(1);
+      imgHeader.SetNumFaces(6);
+      imgHeader.SetNumMipLevels(1);
+      imgHeader.SetNumArrayIndices(1);
+
+      dstImg.ResetAndAlloc(imgHeader);
+
+      // face order in dds files is: positive x, negative x, positive y, negative y, positive z, negative z
+
+      // Positive X face
+      XII_SUCCEED_OR_RETURN(CopyImageRectToFace(dstImg, srcImg, faceSize * 2, faceSize, 0));
+
+      // Negative X face
+      XII_SUCCEED_OR_RETURN(CopyImageRectToFace(dstImg, srcImg, 0, faceSize, 1));
+
+      // Positive Y face
+      XII_SUCCEED_OR_RETURN(CopyImageRectToFace(dstImg, srcImg, faceSize, 0, 2));
+
+      // Negative Y face
+      XII_SUCCEED_OR_RETURN(CopyImageRectToFace(dstImg, srcImg, faceSize, faceSize * 2, 3));
+
+      // Positive Z face
+      XII_SUCCEED_OR_RETURN(CopyImageRectToFace(dstImg, srcImg, faceSize, faceSize, 4));
+
+      // Negative Z face
+      XII_SUCCEED_OR_RETURN(CopyImageRectToFace(dstImg, srcImg, faceSize, faceSize * 3, 5));
+      xiiImageUtils::RotateSubImage180(dstImg, 0, 5);
+    }
+    else if (srcImg.GetWidth() % 4 == 0 && srcImg.GetHeight() % 3 == 0 && srcImg.GetWidth() / 4 == srcImg.GetHeight() / 3)
+    {
+      // Horizontal cube map layout
+      //     +---+
+      //     | Y+|
+      // +---+---+---+---+
+      // | X-| Z+| X+| Z-|
+      // +---+---+---+---+
+      //     | Y-|
+      //     +---+
+      const xiiUInt32 faceSize = srcImg.GetWidth() / 4;
+
+      xiiImageHeader imgHeader;
+      imgHeader.SetWidth(faceSize);
+      imgHeader.SetHeight(faceSize);
+      imgHeader.SetImageFormat(srcImg.GetImageFormat());
+      imgHeader.SetDepth(1);
+      imgHeader.SetNumFaces(6);
+      imgHeader.SetNumMipLevels(1);
+      imgHeader.SetNumArrayIndices(1);
+
+      dstImg.ResetAndAlloc(imgHeader);
+
+      // face order in dds files is: positive x, negative x, positive y, negative y, positive z, negative z
+
+      // Positive X face
+      XII_SUCCEED_OR_RETURN(CopyImageRectToFace(dstImg, srcImg, faceSize * 2, faceSize, 0));
+
+      // Negative X face
+      XII_SUCCEED_OR_RETURN(CopyImageRectToFace(dstImg, srcImg, 0, faceSize, 1));
+
+      // Positive Y face
+      XII_SUCCEED_OR_RETURN(CopyImageRectToFace(dstImg, srcImg, faceSize, 0, 2));
+
+      // Negative Y face
+      XII_SUCCEED_OR_RETURN(CopyImageRectToFace(dstImg, srcImg, faceSize, faceSize * 2, 3));
+
+      // Positive Z face
+      XII_SUCCEED_OR_RETURN(CopyImageRectToFace(dstImg, srcImg, faceSize, faceSize, 4));
+
+      // Negative Z face
+      XII_SUCCEED_OR_RETURN(CopyImageRectToFace(dstImg, srcImg, faceSize * 3, faceSize, 5));
+    }
+    else
+    {
+      // Spherical mapping
+      if (srcImg.GetWidth() % 4 != 0)
+      {
+        xiiLog::Error("Width of the input image should be a multiple of 4");
+        return XII_FAILURE;
+      }
+
+      const xiiUInt32 faceSize = srcImg.GetWidth() / 4;
+
+      xiiImageHeader imgHeader;
+      imgHeader.SetWidth(faceSize);
+      imgHeader.SetHeight(faceSize);
+      imgHeader.SetImageFormat(srcImg.GetImageFormat());
+      imgHeader.SetDepth(1);
+      imgHeader.SetNumFaces(6);
+      imgHeader.SetNumMipLevels(1);
+      imgHeader.SetNumArrayIndices(1);
+
+      dstImg.ResetAndAlloc(imgHeader);
+
+      // Corners of the UV space for the respective faces in model space
+      const xiiVec3 faceCorners[] = {
+        xiiVec3(0.5, 0.5, 0.5),   // X+
+        xiiVec3(-0.5, 0.5, -0.5), // X-
+        xiiVec3(-0.5, 0.5, -0.5), // Y+
+        xiiVec3(-0.5, -0.5, 0.5), // Y-
+        xiiVec3(-0.5, 0.5, 0.5),  // Z+
+        xiiVec3(0.5, 0.5, -0.5)   // Z-
+      };
+
+      // UV Axis of the respective faces in model space
+      const xiiVec3 faceAxis[] = {
+        xiiVec3(0, 0, -1), xiiVec3(0, -1, 0), // X+
+        xiiVec3(0, 0, 1), xiiVec3(0, -1, 0),  // X-
+        xiiVec3(1, 0, 0), xiiVec3(0, 0, 1),   // Y+
+        xiiVec3(1, 0, 0), xiiVec3(0, 0, -1),  // Y-
+        xiiVec3(1, 0, 0), xiiVec3(0, -1, 0),  // Z+
+        xiiVec3(-1, 0, 0), xiiVec3(0, -1, 0)  // Z-
+      };
+
+      const float fFaceSize  = (float)faceSize;
+      const float fHalfPixel = 0.5f / fFaceSize;
+      const float fPixel     = 1.0f / fFaceSize;
+
+      const float fHalfSrcWidth = srcImg.GetWidth() / 2.0f;
+      const float fSrcHeight    = (float)srcImg.GetHeight();
+
+      const xiiUInt32 srcWidthMinus1  = srcImg.GetWidth() - 1;
+      const xiiUInt32 srcHeightMinus1 = srcImg.GetHeight() - 1;
+
+      XII_ASSERT_DEBUG(srcImg.GetRowPitch() % sizeof(xiiColor) == 0, "Row pitch should be a multiple of sizeof(xiiColor)");
+      const xiiUInt64 srcRowPitch = srcImg.GetRowPitch() / sizeof(xiiColor);
+
+      XII_ASSERT_DEBUG(dstImg.GetRowPitch() % sizeof(xiiColor) == 0, "Row pitch should be a multiple of sizeof(xiiColor)");
+      const xiiUInt64 faceRowPitch = dstImg.GetRowPitch() / sizeof(xiiColor);
+
+      const xiiColor* srcData = srcImg.GetPixelPointer<xiiColor>();
+      const float     InvPi   = 1.0f / xiiMath::Pi<float>();
+
+      for (xiiUInt32 faceIndex = 0; faceIndex < 6; faceIndex++)
+      {
+        xiiColor* faceData = dstImg.GetPixelPointer<xiiColor>(0, faceIndex);
+        for (xiiUInt32 y = 0; y < faceSize; y++)
+        {
+          const float dstV = (float)y * fPixel + fHalfPixel;
+
+          for (xiiUInt32 x = 0; x < faceSize; x++)
+          {
+            const float   dstU          = (float)x * fPixel + fHalfPixel;
+            const xiiVec3 modelSpacePos = faceCorners[faceIndex] + dstU * faceAxis[faceIndex * 2] + dstV * faceAxis[faceIndex * 2 + 1];
+            const xiiVec3 modelSpaceDir = modelSpacePos.GetNormalized();
+
+            const float phi   = xiiMath::ATan2(modelSpaceDir.x, modelSpaceDir.z).GetRadian() + xiiMath::Pi<float>();
+            const float r     = xiiMath::Sqrt(modelSpaceDir.x * modelSpaceDir.x + modelSpaceDir.z * modelSpaceDir.z);
+            const float theta = xiiMath::ATan2(modelSpaceDir.y, r).GetRadian() + xiiMath::Pi<float>() * 0.5f;
+
+            XII_ASSERT_DEBUG(phi >= 0.0f && phi <= 2.0f * xiiMath::Pi<float>(), "");
+            XII_ASSERT_DEBUG(theta >= 0.0f && theta <= xiiMath::Pi<float>(), "");
+
+            const float srcU = phi * InvPi * fHalfSrcWidth;
+            const float srcV = (1.0f - theta * InvPi) * fSrcHeight;
+
+            xiiUInt32 x1 = (xiiUInt32)xiiMath::Floor(srcU);
+            xiiUInt32 x2 = x1 + 1;
+            xiiUInt32 y1 = (xiiUInt32)xiiMath::Floor(srcV);
+            xiiUInt32 y2 = y1 + 1;
+
+            const float fracX = srcU - x1;
+            const float fracY = srcV - y1;
+
+            x1 = xiiMath::Clamp(x1, 0u, srcWidthMinus1);
+            x2 = xiiMath::Clamp(x2, 0u, srcWidthMinus1);
+            y1 = xiiMath::Clamp(y1, 0u, srcHeightMinus1);
+            y2 = xiiMath::Clamp(y2, 0u, srcHeightMinus1);
+
+            xiiColor A = srcData[x1 + y1 * srcRowPitch];
+            xiiColor B = srcData[x2 + y1 * srcRowPitch];
+            xiiColor C = srcData[x1 + y2 * srcRowPitch];
+            xiiColor D = srcData[x2 + y2 * srcRowPitch];
+
+            xiiColor interpolated          = A * (1 - fracX) * (1 - fracY) + B * (fracX) * (1 - fracY) + C * (1 - fracX) * fracY + D * fracX * fracY;
+            faceData[x + y * faceRowPitch] = interpolated;
+          }
+        }
+      }
+    }
+
+    return XII_SUCCESS;
+  }
+
+  xiiLog::Error("Unexpected number of faces in cubemap input image.");
+  return XII_FAILURE;
+}
+
+xiiResult xiiImageUtils::CreateCubemapFrom6Files(xiiImage& dstImg, const xiiImageView* pSourceImages)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::CreateCubemapFrom6Files");
+
+  xiiImageHeader header = pSourceImages[0].GetHeader();
+  header.SetNumFaces(6);
+
+  if (header.GetWidth() != header.GetHeight())
+    return XII_FAILURE;
+
+  if (!xiiMath::IsPowerOf2(header.GetWidth()))
+    return XII_FAILURE;
+
+  dstImg.ResetAndAlloc(header);
+
+  for (xiiUInt32 i = 0; i < 6; ++i)
+  {
+    if (pSourceImages[i].GetImageFormat() != dstImg.GetImageFormat())
+      return XII_FAILURE;
+
+    if (pSourceImages[i].GetWidth() != dstImg.GetWidth())
+      return XII_FAILURE;
+
+    if (pSourceImages[i].GetHeight() != dstImg.GetHeight())
+      return XII_FAILURE;
+
+    XII_SUCCEED_OR_RETURN(CopyImageRectToFace(dstImg, pSourceImages[i], 0, 0, i));
+  }
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiImageUtils::CreateVolumeTextureFromSingleFile(xiiImage& dstImg, const xiiImageView& srcImg)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::CreateVolumeTextureFromSingleFile");
+
+  const xiiUInt32 uiWidthHeight = srcImg.GetHeight();
+  const xiiUInt32 uiDepth       = srcImg.GetWidth() / uiWidthHeight;
+
+  if (!xiiMath::IsPowerOf2(uiWidthHeight))
+    return XII_FAILURE;
+  if (!xiiMath::IsPowerOf2(uiDepth))
+    return XII_FAILURE;
+
+  xiiImageHeader header;
+  header.SetWidth(uiWidthHeight);
+  header.SetHeight(uiWidthHeight);
+  header.SetDepth(uiDepth);
+  header.SetImageFormat(srcImg.GetImageFormat());
+
+  dstImg.ResetAndAlloc(header);
+
+  const xiiImageView view = srcImg.GetSubImageView();
+
+  for (xiiUInt32 d = 0; d < uiDepth; ++d)
+  {
+    xiiRectU32 r;
+    r.x      = uiWidthHeight * d;
+    r.y      = 0;
+    r.width  = uiWidthHeight;
+    r.height = uiWidthHeight;
+
+    XII_SUCCEED_OR_RETURN(Copy(view, r, dstImg, xiiVec3U32(0, 0, d)));
+  }
+
+  return XII_SUCCESS;
+}
+
+xiiColor xiiImageUtils::NearestSample(const xiiImageView& image, xiiImageAddressMode::Enum addressMode, xiiVec2 uv)
+{
+  XII_ASSERT_DEBUG(image.GetDepth() == 1 && image.GetNumFaces() == 1 && image.GetNumArrayIndices() == 1, "Only 2d images are supported");
+  XII_ASSERT_DEBUG(image.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT, "Unsupported format");
+
+  return NearestSample(image.GetPixelPointer<xiiColor>(), image.GetWidth(), image.GetHeight(), addressMode, uv);
+}
+
+xiiColor xiiImageUtils::NearestSample(const xiiColor* pPixelPointer, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiImageAddressMode::Enum addressMode, xiiVec2 uv)
+{
+  const xiiInt32 w = uiWidth;
+  const xiiInt32 h = uiHeight;
+
+  uv                  = uv.CompMul(xiiVec2(static_cast<float>(w), static_cast<float>(h)));
+  const xiiInt32 intX = (xiiInt32)xiiMath::Floor(uv.x);
+  const xiiInt32 intY = (xiiInt32)xiiMath::Floor(uv.y);
+
+  xiiInt32 x = intX;
+  xiiInt32 y = intY;
+
+  if (addressMode == xiiImageAddressMode::Clamp)
+  {
+    x = xiiMath::Clamp(x, 0, w - 1);
+    y = xiiMath::Clamp(y, 0, h - 1);
+  }
+  else if (addressMode == xiiImageAddressMode::Repeat)
+  {
+    x = x % w;
+    x = x < 0 ? x + w : x;
+    y = y % h;
+    y = y < 0 ? y + h : y;
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+  }
+
+  return *(pPixelPointer + (y * w) + x);
+}
+
+xiiColor xiiImageUtils::BilinearSample(const xiiImageView& image, xiiImageAddressMode::Enum addressMode, xiiVec2 uv)
+{
+  XII_ASSERT_DEBUG(image.GetDepth() == 1 && image.GetNumFaces() == 1 && image.GetNumArrayIndices() == 1, "Only 2d images are supported");
+  XII_ASSERT_DEBUG(image.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT, "Unsupported format");
+
+  return BilinearSample(image.GetPixelPointer<xiiColor>(), image.GetWidth(), image.GetHeight(), addressMode, uv);
+}
+
+xiiColor xiiImageUtils::BilinearSample(const xiiColor* pData, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiImageAddressMode::Enum addressMode, xiiVec2 uv)
+{
+  xiiInt32 w = uiWidth;
+  xiiInt32 h = uiHeight;
+
+  uv                       = uv.CompMul(xiiVec2(static_cast<float>(w), static_cast<float>(h))) - xiiVec2(0.5f);
+  const float    floorX    = xiiMath::Floor(uv.x);
+  const float    floorY    = xiiMath::Floor(uv.y);
+  const float    fractionX = uv.x - floorX;
+  const float    fractionY = uv.y - floorY;
+  const xiiInt32 intX      = (xiiInt32)floorX;
+  const xiiInt32 intY      = (xiiInt32)floorY;
+
+  xiiColor c[4];
+  for (xiiUInt32 i = 0; i < 4; ++i)
+  {
+    xiiInt32 x = intX + (i % 2);
+    xiiInt32 y = intY + (i / 2);
+
+    if (addressMode == xiiImageAddressMode::Clamp)
+    {
+      x = xiiMath::Clamp(x, 0, w - 1);
+      y = xiiMath::Clamp(y, 0, h - 1);
+    }
+    else if (addressMode == xiiImageAddressMode::Repeat)
+    {
+      x = x % w;
+      x = x < 0 ? x + w : x;
+      y = y % h;
+      y = y < 0 ? y + h : y;
+    }
+    else
+    {
+      XII_ASSERT_NOT_IMPLEMENTED;
+    }
+
+    c[i] = *(pData + (y * w) + x);
+  }
+
+  const xiiColor cr0 = xiiMath::Lerp(c[0], c[1], fractionX);
+  const xiiColor cr1 = xiiMath::Lerp(c[2], c[3], fractionX);
+
+  return xiiMath::Lerp(cr0, cr1, fractionY);
+}
+
+xiiResult xiiImageUtils::CopyChannel(xiiImage& dstImg, xiiUInt8 uiDstChannelIdx, const xiiImage& srcImg, xiiUInt8 uiSrcChannelIdx)
+{
+  XII_PROFILE_SCOPE("xiiImageUtils::CopyChannel");
+
+  if (uiSrcChannelIdx >= 4 || uiDstChannelIdx >= 4)
+    return XII_FAILURE;
+
+  if (dstImg.GetImageFormat() != xiiImageFormat::R32G32B32A32_FLOAT)
+    return XII_FAILURE;
+
+  if (srcImg.GetImageFormat() != dstImg.GetImageFormat())
+    return XII_FAILURE;
+
+  if (srcImg.GetWidth() != dstImg.GetWidth())
+    return XII_FAILURE;
+
+  if (srcImg.GetHeight() != dstImg.GetHeight())
+    return XII_FAILURE;
+
+  const xiiUInt32 uiNumPixels = srcImg.GetWidth() * srcImg.GetHeight();
+  const float*    pSrcPixel   = srcImg.GetPixelPointer<float>();
+  float*          pDstPixel   = dstImg.GetPixelPointer<float>();
+
+  pSrcPixel += uiSrcChannelIdx;
+  pDstPixel += uiDstChannelIdx;
+
+  for (xiiUInt32 i = 0; i < uiNumPixels; ++i)
+  {
+    *pDstPixel = *pSrcPixel;
+
+    pSrcPixel += 4;
+    pDstPixel += 4;
+  }
+
+  return XII_SUCCESS;
+}
+
+XII_STATICLINK_FILE(Texture, Texture_Image_Implementation_ImageUtils);

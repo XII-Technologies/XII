@@ -1,0 +1,95 @@
+#pragma once
+
+#include <Foundation/Math/Color.h>
+#include <Foundation/Math/Math.h>
+
+/// \brief A 8bit per channel color storage format with undefined encoding. It is up to the user to reinterpret as a gamma or linear space
+/// color.
+///
+/// \see xiiColorLinearUB
+/// \see xiiColorGammaUB
+class XII_FOUNDATION_DLL xiiColorBaseUB
+{
+public:
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt8 r;
+  xiiUInt8 g;
+  xiiUInt8 b;
+  xiiUInt8 a;
+
+  /// \brief Default-constructed color is uninitialized (for speed)
+  xiiColorBaseUB() = default;
+
+  /// \brief Initializes the color with r, g, b, a
+  xiiColorBaseUB(xiiUInt8 r, xiiUInt8 g, xiiUInt8 b, xiiUInt8 a = 255);
+
+  /// \brief Conversion to const xiiUInt8*.
+  const xiiUInt8* GetData() const { return &r; }
+
+  /// \brief Conversion to xiiUInt8*
+  xiiUInt8* GetData() { return &r; }
+};
+
+XII_CHECK_AT_COMPILETIME(sizeof(xiiColorBaseUB) == 4);
+
+/// \brief A 8bit per channel unsigned normalized (values interpreted as 0-1) color storage format that represents colors in linear space.
+///
+/// For any calculations or conversions use xiiColor.
+/// \see xiiColor
+class XII_FOUNDATION_DLL xiiColorLinearUB : public xiiColorBaseUB
+{
+public:
+  XII_DECLARE_POD_TYPE();
+
+  /// \brief Default-constructed color is uninitialized (for speed)
+  xiiColorLinearUB() = default; // [tested]
+
+  /// \brief Initializes the color with r, g, b, a
+  xiiColorLinearUB(xiiUInt8 r, xiiUInt8 g, xiiUInt8 b, xiiUInt8 a = 255); // [tested]
+
+  /// \brief Initializes the color with xiiColor.
+  /// Assumes that the given color is normalized.
+  /// \see xiiColor::IsNormalized
+  xiiColorLinearUB(const xiiColor& color); // [tested]
+
+  /// \brief Initializes the color with xiiColor.
+  void operator=(const xiiColor& color); // [tested]
+
+  /// \brief Converts this color to xiiColor.
+  xiiColor ToLinearFloat() const; // [tested]
+};
+
+XII_CHECK_AT_COMPILETIME(sizeof(xiiColorLinearUB) == 4);
+
+/// \brief A 8bit per channel unsigned normalized (values interpreted as 0-1) color storage format that represents colors in gamma space.
+///
+/// For any calculations or conversions use xiiColor.
+/// \see xiiColor
+class XII_FOUNDATION_DLL xiiColorGammaUB : public xiiColorBaseUB
+{
+public:
+  XII_DECLARE_POD_TYPE();
+
+  /// \brief Default-constructed color is uninitialized (for speed)
+  xiiColorGammaUB() = default;
+
+  /// \brief Copies the color values. RGB are assumed to be in Gamma space.
+  xiiColorGammaUB(xiiUInt8 uiGammaRed, xiiUInt8 uiGammaGreen, xiiUInt8 uiGammaBlue, xiiUInt8 uiLinearAlpha = 255); // [tested]
+
+  /// \brief Initializes the color with xiiColor. Converts the linear space color to gamma space.
+  /// Assumes that the given color is normalized.
+  /// \see xiiColor::IsNormalized
+  xiiColorGammaUB(const xiiColor& color); // [tested]
+
+  /// \brief Initializes the color with xiiColor. Converts the linear space color to gamma space.
+  void operator=(const xiiColor& color); // [tested]
+
+  /// \brief Converts this color to xiiColor.
+  xiiColor ToLinearFloat() const;
+};
+
+XII_CHECK_AT_COMPILETIME(sizeof(xiiColorGammaUB) == 4);
+
+
+#include <Foundation/Math/Implementation/Color8UNorm_inl.h>

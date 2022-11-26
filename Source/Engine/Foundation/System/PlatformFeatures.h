@@ -1,0 +1,8 @@
+#pragma once
+
+#undef XII_SUPPORTS_GLFW
+#ifdef BUILDSYSTEM_ENABLE_GLFW_SUPPORT
+#  define XII_SUPPORTS_GLFW XII_ON
+#else
+#  define XII_SUPPORTS_GLFW XII_OFF
+#endif

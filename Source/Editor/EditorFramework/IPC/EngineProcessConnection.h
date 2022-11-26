@@ -1,0 +1,137 @@
+#pragma once
+
+#include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
+#include <EditorFramework/EditorFrameworkDLL.h>
+#include <EditorFramework/IPC/EditorProcessCommunicationChannel.h>
+#include <Foundation/Application/Config/PluginConfig.h>
+#include <Foundation/Communication/Event.h>
+#include <Foundation/Configuration/Singleton.h>
+#include <Foundation/Types/UniquePtr.h>
+#include <GuiFoundation/UIServices/UIServices.moc.h>
+
+class xiiEditorEngineConnection;
+class xiiDocument;
+class xiiDocumentObject;
+struct xiiDocumentObjectPropertyEvent;
+struct xiiDocumentObjectStructureEvent;
+class xiiQtEngineDocumentWindow;
+class xiiAssetDocument;
+
+class XII_EDITORFRAMEWORK_DLL xiiEditorEngineProcessConnection
+{
+  XII_DECLARE_SINGLETON(xiiEditorEngineProcessConnection);
+
+public:
+  xiiEditorEngineProcessConnection();
+  ~xiiEditorEngineProcessConnection();
+
+  /// \brief The given file system configuration will be used by the engine process to setup the runtime data directories.
+  ///        This only takes effect if the editor process is restarted.
+  void SetFileSystemConfig(const xiiApplicationFileSystemConfig& cfg) { m_FileSystemConfig = cfg; }
+
+  /// \brief The given plugin configuration will be used by the engine process to load runtime plugins.
+  ///        This only takes effect if the editor process is restarted.
+  void SetPluginConfig(const xiiApplicationPluginConfig& cfg) { m_PluginConfig = cfg; }
+
+  void      Update();
+  xiiResult RestartProcess();
+  void      ShutdownProcess();
+  bool      IsProcessCrashed() const { return m_bProcessCrashed; }
+
+  xiiEditorEngineConnection* CreateEngineConnection(xiiAssetDocument* pDocument);
+  void                       DestroyEngineConnection(xiiAssetDocument* pDocument);
+
+  void SendMessage(xiiProcessMessage* pMessage);
+
+  /// /brief Waits for a message of type pMessageType. If tTimeout is zero, the function will not timeout. If the timeout is valid
+  ///        and is it, XII_FAILURE is returned. If the message type matches and pCallback is valid, the function will be called
+  ///        and the return values decides whether the message is to be accepted and the waiting has ended.
+  xiiResult WaitForMessage(const xiiRTTI* pMessageType, xiiTime tTimeout, xiiProcessCommunicationChannel ::WaitForMessageCallback* pCallback = nullptr);
+  /// /brief Same as WaitForMessage but the message must be to a specific document. Therefore,
+  ///        pMessageType must be derived from xiiEditorEngineDocumentMsg and the function will only return if the received
+  ///        message matches both type, document and is accepted by pCallback.
+  xiiResult WaitForDocumentMessage(
+    const xiiUuid&                                          assetGuid,
+    const xiiRTTI*                                          pMessageType,
+    xiiTime                                                 tTimeout,
+    xiiProcessCommunicationChannel::WaitForMessageCallback* pCallback = nullptr);
+
+  void SetWaitForDebugger(bool bWait) { m_bProcessShouldWaitForDebugger = bWait; }
+  bool GetWaitForDebugger() const { return m_bProcessShouldWaitForDebugger; }
+
+  void        SetRenderer(const char* szRenderer) { m_sRenderer = szRenderer; }
+  const char* GetRenderer() const { return m_sRenderer; }
+
+  bool IsEngineSetup() const { return m_bClientIsConfigured; }
+
+  /// /brief Sends a message that the document has been opened or closed. Resends all document data.
+  ///
+  /// Calling this will always clear the existing document on the engine side and reset the state to the editor state.
+  void SendDocumentOpenMessage(const xiiAssetDocument* pDocument, bool bOpen);
+
+  void ActivateRemoteProcess(const xiiAssetDocument* pDocument, xiiUInt32 uiViewID);
+
+  xiiProcessCommunicationChannel& GetCommunicationChannel() { return m_IPC; }
+
+  struct Event
+  {
+    enum class Type
+    {
+      Invalid,
+      ProcessStarted,
+      ProcessCrashed,
+      ProcessShutdown,
+      ProcessMessage,
+      ProcessRestarted,
+    };
+
+    Event()
+    {
+      m_Type = Type::Invalid;
+      m_pMsg = nullptr;
+    }
+
+    Type                     m_Type;
+    const xiiProcessMessage* m_pMsg;
+  };
+
+  static xiiEvent<const Event&> s_Events;
+
+private:
+  void Initialize(const xiiRTTI* pFirstAllowedMessageType);
+  void HandleIPCEvent(const xiiProcessCommunicationChannel::Event& e);
+  void UIServicesTickEventHandler(const xiiQtUiServices::TickEvent& e);
+  bool ConnectToRemoteProcess();
+  void ShutdownRemoteProcess();
+
+  bool                   m_bProcessShouldWaitForDebugger;
+  bool                   m_bProcessShouldBeRunning;
+  bool                   m_bProcessCrashed;
+  bool                   m_bClientIsConfigured;
+  xiiEventSubscriptionID m_TickEventSubscriptionID = 0;
+  xiiUInt32              m_uiRedrawCountSent       = 0;
+  xiiUInt32              m_uiRedrawCountReceived   = 0;
+
+  xiiString                                                m_sRenderer;
+  xiiEditorProcessCommunicationChannel                     m_IPC;
+  xiiUniquePtr<xiiEditorProcessRemoteCommunicationChannel> m_pRemoteProcess;
+  xiiApplicationFileSystemConfig                           m_FileSystemConfig;
+  xiiApplicationPluginConfig                               m_PluginConfig;
+  xiiHashTable<xiiUuid, xiiAssetDocument*>                 m_DocumentByGuid;
+};
+
+class XII_EDITORFRAMEWORK_DLL xiiEditorEngineConnection
+{
+public:
+  void SendMessage(xiiEditorEngineDocumentMsg* pMessage);
+  void SendHighlightObjectMessage(xiiViewHighlightMsgToEngine* pMessage);
+
+  xiiDocument* GetDocument() const { return m_pDocument; }
+
+private:
+  friend class xiiEditorEngineProcessConnection;
+  xiiEditorEngineConnection(xiiDocument* pDocument) { m_pDocument = pDocument; }
+  ~xiiEditorEngineConnection() {}
+
+  xiiDocument* m_pDocument;
+};

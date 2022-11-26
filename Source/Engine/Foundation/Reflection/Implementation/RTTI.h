@@ -1,0 +1,304 @@
+#pragma once
+
+/// \file
+
+#include <Foundation/Basics.h>
+#include <Foundation/Configuration/Plugin.h>
+#include <Foundation/Reflection/Implementation/StaticRTTI.h>
+#include <Foundation/Utilities/EnumerableClass.h>
+
+
+// *****************************************
+// ***** Runtime Type Information Data *****
+
+struct xiiRTTIAllocator;
+class xiiAbstractProperty;
+class xiiAbstractFunctionProperty;
+class xiiAbstractMessageHandler;
+struct xiiMessageSenderInfo;
+class xiiPropertyAttribute;
+class xiiMessage;
+typedef xiiUInt16 xiiMessageId;
+
+/// \brief This enumerable class holds information about reflected types. Each instance represents one type that is known to the reflection
+/// system.
+///
+/// Instances of this class are typically created through the macros from the StaticRTTI.h header.
+/// Each instance represents one type. This class holds information about derivation hierarchies and exposed properties. You can thus find
+/// out whether a type is derived from some base class and what properties of which types are available. Properties can then be read and
+/// modified on instances of this type.
+class XII_FOUNDATION_DLL xiiRTTI : public xiiEnumerable<xiiRTTI>
+{
+  XII_DECLARE_ENUMERABLE_CLASS(xiiRTTI);
+
+public:
+  /// \brief The constructor requires all the information about the type that this object represents.
+  xiiRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)());
+
+
+  ~xiiRTTI();
+
+  /// \brief Can be called in debug builds to check that all reflected objects are correctly set up.
+  void VerifyCorrectness() const;
+
+  /// \brief Calls VerifyCorrectness() on all xiiRTTI objects.
+  static void VerifyCorrectnessForAllTypes();
+
+  /// \brief Returns the name of this type.
+  XII_ALWAYS_INLINE const char* GetTypeName() const { return m_szTypeName; } // [tested]
+
+  /// \brief Returns the hash of the name of this type.
+  XII_ALWAYS_INLINE xiiUInt64 GetTypeNameHash() const { return m_uiTypeNameHash; } // [tested]
+
+  /// \brief Returns the type that is the base class of this type. May be nullptr if this type has no base class.
+  XII_ALWAYS_INLINE const xiiRTTI* GetParentType() const { return m_pParentType; } // [tested]
+
+  /// \brief Returns the corresponding variant type for this type or Invalid if there is none.
+  XII_ALWAYS_INLINE xiiVariantType::Enum GetVariantType() const { return static_cast<xiiVariantType::Enum>(m_uiVariantType); }
+
+  /// \brief Returns true if this type is derived from the given type (or of the same type).
+  XII_ALWAYS_INLINE bool IsDerivedFrom(const xiiRTTI* pBaseType) const // [tested]
+  {
+    const xiiUInt32 thisGeneration = m_ParentHierarchy.GetCount();
+    const xiiUInt32 baseGeneration = pBaseType->m_ParentHierarchy.GetCount();
+    XII_ASSERT_DEBUG(thisGeneration > 0 && baseGeneration > 0, "SetupParentHierarchy() has not been called");
+    return thisGeneration >= baseGeneration && m_ParentHierarchy.GetData()[thisGeneration - baseGeneration] == pBaseType;
+  }
+
+  /// \brief Returns true if this type is derived from or identical to the given type.
+  template <typename BASE>
+  XII_ALWAYS_INLINE bool IsDerivedFrom() const // [tested]
+  {
+    return IsDerivedFrom(xiiGetStaticRTTI<BASE>());
+  }
+
+  /// \brief Returns the object through which instances of this type can be allocated.
+  XII_ALWAYS_INLINE xiiRTTIAllocator* GetAllocator() const { return m_pAllocator; } // [tested]
+
+  /// \brief Returns the array of properties that this type has. Does NOT include properties from base classes.
+  XII_ALWAYS_INLINE const xiiArrayPtr<xiiAbstractProperty*>& GetProperties() const { return m_Properties; } // [tested]
+
+  XII_ALWAYS_INLINE const xiiArrayPtr<xiiAbstractFunctionProperty*>& GetFunctions() const { return m_Functions; }
+
+  XII_ALWAYS_INLINE const xiiArrayPtr<xiiPropertyAttribute*>& GetAttributes() const { return m_Attributes; }
+
+  /// \brief Returns the first attribute that derives from the given type, or nullptr if nothing is found.
+  template <typename Type>
+  const Type* GetAttributeByType() const;
+
+  /// \brief Returns the list of properties that this type has, including derived properties from all base classes.
+  void GetAllProperties(xiiHybridArray<xiiAbstractProperty*, 32>& out_Properties) const; // [tested]
+
+  /// \brief Returns the size (in bytes) of an instance of this type.
+  XII_ALWAYS_INLINE xiiUInt32 GetTypeSize() const { return m_uiTypeSize; } // [tested]
+
+  /// \brief Returns the version number of this type.
+  XII_ALWAYS_INLINE xiiUInt32 GetTypeVersion() const { return m_uiTypeVersion; }
+
+  /// \brief Returns the type flags.
+  XII_ALWAYS_INLINE const xiiBitflags<xiiTypeFlags>& GetTypeFlags() const { return m_TypeFlags; } // [tested]
+
+  /// \brief Searches all xiiRTTI instances for the one with the given name, or nullptr if no such type exists.
+  static xiiRTTI* FindTypeByName(const char* szName); // [tested]
+
+  /// \brief Searches all xiiRTTI instances for the one with the given hashed name, or nullptr if no such type exists.
+  static xiiRTTI* FindTypeByNameHash(xiiUInt64 uiNameHash); // [tested]
+  static xiiRTTI* FindTypeByNameHash32(xiiUInt32 uiNameHash);
+
+  /// \brief Will iterate over all properties of this type and (optionally) the base types to search for a property with the given name.
+  xiiAbstractProperty* FindPropertyByName(const char* szName, bool bSearchBaseTypes = true) const; // [tested]
+
+  /// \brief Returns the name of the plugin which this type is declared in.
+  XII_ALWAYS_INLINE const char* GetPluginName() const { return m_szPluginName; } // [tested]
+
+  /// \brief Returns the array of message handlers that this type has.
+  XII_ALWAYS_INLINE const xiiArrayPtr<xiiAbstractMessageHandler*>& GetMessageHandlers() const { return m_MessageHandlers; }
+
+  /// \brief Dispatches the given message to the proper message handler, if there is one available. Returns true if so, false if no message
+  /// handler for this type exists.
+  bool DispatchMessage(void* pInstance, xiiMessage& msg) const;
+
+  /// \brief Dispatches the given message to the proper message handler, if there is one available. Returns true if so, false if no message
+  /// handler for this type exists.
+  bool DispatchMessage(const void* pInstance, xiiMessage& msg) const;
+
+  /// \brief Returns whether this type can handle the given message type.
+  template <typename MessageType>
+  XII_ALWAYS_INLINE bool CanHandleMessage() const
+  {
+    return CanHandleMessage(MessageType::GetTypeMsgId());
+  }
+
+  /// \brief Returns whether this type can handle the message type with the given id.
+  inline bool CanHandleMessage(xiiMessageId id) const
+  {
+    XII_ASSERT_DEBUG(m_bGatheredDynamicMessageHandlers, "Message handler table should have been gathered at this point.\n"
+                                                        "If this assert is triggered for a type loaded from a dynamic plugin,\n"
+                                                        "you may have forgotten to instantiate an xiiPlugin object inside your plugin DLL.");
+
+    const xiiUInt32 uiIndex = id - m_uiMsgIdOffset;
+    return uiIndex < m_DynamicMessageHandlers.GetCount() && m_DynamicMessageHandlers[uiIndex] != nullptr;
+  }
+
+  XII_ALWAYS_INLINE const xiiArrayPtr<xiiMessageSenderInfo>& GetMessageSender() const { return m_MessageSenders; }
+
+  /// \brief Writes all types derived from \a pBaseType to the provided array. Optionally sorts the array by type name to yield a stable result.
+  ///
+  /// Returns the provided array, such that the function can be used in a foreach loop right away.
+  static const xiiDynamicArray<const xiiRTTI*>& GetAllTypesDerivedFrom(
+    const xiiRTTI*                   pBaseType,
+    xiiDynamicArray<const xiiRTTI*>& out_DerivedTypes,
+    bool                             bSortByName);
+
+protected:
+  const char*                               m_szPluginName;
+  const char*                               m_szTypeName;
+  xiiArrayPtr<xiiAbstractProperty*>         m_Properties;
+  xiiArrayPtr<xiiAbstractFunctionProperty*> m_Functions;
+  xiiArrayPtr<xiiPropertyAttribute*>        m_Attributes;
+  void                                      UpdateType(const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags);
+  void                                      RegisterType();
+  void                                      UnregisterType();
+
+  void GatherDynamicMessageHandlers();
+  void SetupParentHierarchy();
+
+  const xiiRTTI*    m_pParentType;
+  xiiRTTIAllocator* m_pAllocator;
+
+  xiiUInt32                 m_uiVariantType;
+  xiiUInt32                 m_uiTypeSize;
+  xiiUInt32                 m_uiTypeVersion  = 0;
+  xiiUInt64                 m_uiTypeNameHash = 0;
+  xiiBitflags<xiiTypeFlags> m_TypeFlags;
+  xiiUInt32                 m_uiMsgIdOffset;
+
+  bool m_bGatheredDynamicMessageHandlers;
+  const xiiRTTI* (*m_VerifyParent)();
+
+  xiiArrayPtr<xiiAbstractMessageHandler*> m_MessageHandlers;
+  xiiDynamicArray<xiiAbstractMessageHandler*, xiiStaticAllocatorWrapper>
+    m_DynamicMessageHandlers; // do not track this data, it won't be deallocated before shutdown
+
+  xiiArrayPtr<xiiMessageSenderInfo> m_MessageSenders;
+  xiiHybridArray<const xiiRTTI*, 8> m_ParentHierarchy;
+
+private:
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Foundation, Reflection);
+
+  /// \brief Assigns the given plugin name to every xiiRTTI instance that has no plugin assigned yet.
+  static void AssignPlugin(const char* szPluginName);
+
+  static void SanityCheckType(xiiRTTI* pType);
+
+  /// \brief Handles events by xiiPlugin, to figure out which types were provided by which plugin
+  static void PluginEventHandler(const xiiPluginEvent& EventData);
+};
+
+
+// ***********************************
+// ***** Object Allocator Struct *****
+
+
+/// \brief The interface for an allocator that creates instances of reflected types.
+struct XII_FOUNDATION_DLL xiiRTTIAllocator
+{
+  /// \brief Returns whether the type that is represented by this allocator, can be dynamically allocated at runtime.
+  virtual bool CanAllocate() const { return true; } // [tested]
+
+  /// \brief Allocates one instance.
+  template <typename T>
+  xiiInternal::NewInstance<T> Allocate(xiiAllocatorBase* pAllocator = nullptr)
+  {
+    return AllocateInternal(pAllocator).Cast<T>();
+  }
+
+  /// \brief Clones the given instance.
+  template <typename T>
+  xiiInternal::NewInstance<T> Clone(const void* pObject, xiiAllocatorBase* pAllocator = nullptr)
+  {
+    return CloneInternal(pObject, pAllocator).Cast<T>();
+  }
+
+  /// \brief Deallocates the given instance.
+  virtual void Deallocate(void* pObject, xiiAllocatorBase* pAllocator = nullptr) = 0; // [tested]
+
+private:
+  virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocatorBase* pAllocator) = 0;
+  virtual xiiInternal::NewInstance<void> CloneInternal(const void* pObject, xiiAllocatorBase* pAllocator)
+  {
+    XII_REPORT_FAILURE("Cloning is not supported by this allocator.");
+    return xiiInternal::NewInstance<void>(nullptr, pAllocator);
+  }
+};
+
+/// \brief Dummy Allocator for types that should not be allocatable through the reflection system.
+struct XII_FOUNDATION_DLL xiiRTTINoAllocator : public xiiRTTIAllocator
+{
+  /// \brief Returns false, because this type of allocator is used for classes that shall not be allocated dynamically.
+  virtual bool CanAllocate() const override { return false; } // [tested]
+
+  /// \brief Will trigger an assert.
+  virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocatorBase* pAllocator) override // [tested]
+  {
+    XII_REPORT_FAILURE("This function should never be called.");
+    return xiiInternal::NewInstance<void>(nullptr, pAllocator);
+  }
+
+  /// \brief Will trigger an assert.
+  virtual void Deallocate(void* pObject, xiiAllocatorBase* pAllocator) override // [tested]
+  {
+    XII_REPORT_FAILURE("This function should never be called.");
+  }
+};
+
+/// \brief Default implementation of xiiRTTIAllocator that allocates instances via the given allocator.
+template <typename CLASS, typename AllocatorWrapper = xiiDefaultAllocatorWrapper>
+struct xiiRTTIDefaultAllocator : public xiiRTTIAllocator
+{
+  /// \brief Returns a new instance that was allocated with the given allocator.
+  virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocatorBase* pAllocator) override // [tested]
+  {
+    if (pAllocator == nullptr)
+    {
+      pAllocator = AllocatorWrapper::GetAllocator();
+    }
+
+    return XII_NEW(pAllocator, CLASS);
+  }
+
+  /// \brief Clones the given instance with the given allocator.
+  virtual xiiInternal::NewInstance<void> CloneInternal(const void* pObject, xiiAllocatorBase* pAllocator) override // [tested]
+  {
+    if (pAllocator == nullptr)
+    {
+      pAllocator = AllocatorWrapper::GetAllocator();
+    }
+
+    return CloneImpl(pObject, pAllocator, xiiTraitInt<std::is_copy_constructible<CLASS>::value>());
+  }
+
+  /// \brief Deletes the given instance with the given allocator.
+  virtual void Deallocate(void* pObject, xiiAllocatorBase* pAllocator) override // [tested]
+  {
+    if (pAllocator == nullptr)
+    {
+      pAllocator = AllocatorWrapper::GetAllocator();
+    }
+
+    CLASS* pPointer = static_cast<CLASS*>(pObject);
+    XII_DELETE(pAllocator, pPointer);
+  }
+
+private:
+  xiiInternal::NewInstance<void> CloneImpl(const void* pObject, xiiAllocatorBase* pAllocator, xiiTraitInt<0>)
+  {
+    XII_REPORT_FAILURE("Clone failed since the type is not copy constructible");
+    return xiiInternal::NewInstance<void>(nullptr, pAllocator);
+  }
+
+  xiiInternal::NewInstance<void> CloneImpl(const void* pObject, xiiAllocatorBase* pAllocator, xiiTraitInt<1>)
+  {
+    return XII_NEW(pAllocator, CLASS, *static_cast<const CLASS*>(pObject));
+  }
+};

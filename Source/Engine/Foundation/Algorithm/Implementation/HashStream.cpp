@@ -1,0 +1,63 @@
+#include <Foundation/FoundationPCH.h>
+
+#include <Foundation/Algorithm/HashStream.h>
+
+#define XXH_INLINE_ALL
+#include <Foundation/ThirdParty/xxHash/xxhash.h>
+
+xiiHashStreamWriter32::xiiHashStreamWriter32(xiiUInt32 seed)
+{
+  m_pState = XXH32_createState();
+  XII_VERIFY(XXH_OK == XXH32_reset((XXH32_state_t*)m_pState, seed), "");
+}
+
+xiiHashStreamWriter32::~xiiHashStreamWriter32()
+{
+  XXH32_freeState((XXH32_state_t*)m_pState);
+}
+
+xiiResult xiiHashStreamWriter32::WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite)
+{
+  if (uiBytesToWrite > std::numeric_limits<size_t>::max())
+    return XII_FAILURE;
+
+  if (XXH_OK == XXH32_update((XXH32_state_t*)m_pState, pWriteBuffer, static_cast<size_t>(uiBytesToWrite)))
+    return XII_SUCCESS;
+
+  return XII_FAILURE;
+}
+
+xiiUInt32 xiiHashStreamWriter32::GetHashValue() const
+{
+  return XXH32_digest((XXH32_state_t*)m_pState);
+}
+
+
+xiiHashStreamWriter64::xiiHashStreamWriter64(xiiUInt64 seed)
+{
+  m_pState = XXH64_createState();
+  XII_VERIFY(XXH_OK == XXH64_reset((XXH64_state_t*)m_pState, seed), "");
+}
+
+xiiHashStreamWriter64::~xiiHashStreamWriter64()
+{
+  XXH64_freeState((XXH64_state_t*)m_pState);
+}
+
+xiiResult xiiHashStreamWriter64::WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite)
+{
+  if (uiBytesToWrite > std::numeric_limits<size_t>::max())
+    return XII_FAILURE;
+
+  if (XXH_OK == XXH64_update((XXH64_state_t*)m_pState, pWriteBuffer, static_cast<size_t>(uiBytesToWrite)))
+    return XII_SUCCESS;
+
+  return XII_FAILURE;
+}
+
+xiiUInt64 xiiHashStreamWriter64::GetHashValue() const
+{
+  return XXH64_digest((XXH64_state_t*)m_pState);
+}
+
+XII_STATICLINK_FILE(Foundation, Foundation_Algorithm_Implementation_HashStream);

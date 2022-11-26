@@ -1,0 +1,165 @@
+#pragma once
+
+XII_ALWAYS_INLINE xiiInt32 xiiStringUtils::CompareChars(xiiUInt32 uiCharacter1, xiiUInt32 uiCharacter2)
+{
+  return (xiiInt32)uiCharacter1 - (xiiInt32)uiCharacter2;
+}
+
+inline xiiInt32 xiiStringUtils::CompareChars_NoCase(xiiUInt32 uiCharacter1, xiiUInt32 uiCharacter2)
+{
+  return (xiiInt32)ToUpperChar(uiCharacter1) - (xiiInt32)ToUpperChar(uiCharacter2);
+}
+
+inline xiiInt32 xiiStringUtils::CompareChars(const char* szUtf8Char1, const char* szUtf8Char2)
+{
+  return CompareChars(xiiUnicodeUtils::ConvertUtf8ToUtf32(szUtf8Char1), xiiUnicodeUtils::ConvertUtf8ToUtf32(szUtf8Char2));
+}
+
+inline xiiInt32 xiiStringUtils::CompareChars_NoCase(const char* szUtf8Char1, const char* szUtf8Char2)
+{
+  return CompareChars_NoCase(xiiUnicodeUtils::ConvertUtf8ToUtf32(szUtf8Char1), xiiUnicodeUtils::ConvertUtf8ToUtf32(szUtf8Char2));
+}
+
+template <typename T>
+XII_ALWAYS_INLINE constexpr bool xiiStringUtils::IsNullOrEmpty(const T* pString)
+{
+  return (pString == nullptr) || (pString[0] == '\0');
+}
+
+template <typename T>
+XII_ALWAYS_INLINE bool xiiStringUtils::IsNullOrEmpty(const T* pString, const T* pStringEnd)
+{
+  return (pString == nullptr) || (pString[0] == '\0') || pString == pStringEnd;
+}
+
+template <typename T>
+XII_ALWAYS_INLINE void xiiStringUtils::UpdateStringEnd(const T* szStringStart, const T*& szStringEnd)
+{
+  if (szStringEnd != xiiUnicodeUtils::GetMaxStringEnd<T>())
+    return;
+
+  szStringEnd = szStringStart + GetStringElementCount(szStringStart, xiiUnicodeUtils::GetMaxStringEnd<T>());
+}
+
+template <typename T>
+constexpr xiiUInt32 xiiStringUtils::GetStringElementCount(const T* pString)
+{
+  if (IsNullOrEmpty(pString))
+    return 0;
+
+  xiiUInt32 uiCount = 0;
+  while ((*pString != '\0'))
+  {
+    ++pString;
+    ++uiCount;
+  }
+
+  return uiCount;
+}
+
+template <typename T>
+xiiUInt32 xiiStringUtils::GetStringElementCount(const T* pString, const T* pStringEnd)
+{
+  if (IsNullOrEmpty(pString))
+    return 0;
+
+  if (pStringEnd != xiiUnicodeUtils::GetMaxStringEnd<T>())
+    return (xiiUInt32)(pStringEnd - pString);
+
+  xiiUInt32 uiCount = 0;
+  while ((*pString != '\0') && (pString < pStringEnd))
+  {
+    ++pString;
+    ++uiCount;
+  }
+
+  return uiCount;
+}
+
+inline xiiUInt32 xiiStringUtils::GetCharacterCount(const char* szUtf8, const char* pStringEnd)
+{
+  if (IsNullOrEmpty(szUtf8))
+    return 0;
+
+  xiiUInt32 uiCharacters = 0;
+
+  while ((*szUtf8 != '\0') && (szUtf8 < pStringEnd))
+  {
+    // skip all the Utf8 continuation bytes
+    if (!xiiUnicodeUtils::IsUtf8ContinuationByte(*szUtf8))
+      ++uiCharacters;
+
+    ++szUtf8;
+  }
+
+  return uiCharacters;
+}
+
+inline void xiiStringUtils::GetCharacterAndElementCount(
+  const char* szUtf8,
+  xiiUInt32&  uiCharacterCount,
+  xiiUInt32&  uiElementCount,
+  const char* pStringEnd)
+{
+  uiCharacterCount = 0;
+  uiElementCount   = 0;
+
+  if (IsNullOrEmpty(szUtf8))
+    return;
+
+  while (szUtf8 < pStringEnd)
+  {
+    char uiByte = *szUtf8;
+    if (uiByte == '\0')
+    {
+      break;
+    }
+
+    // skip all the Utf8 continuation bytes
+    if (!xiiUnicodeUtils::IsUtf8ContinuationByte(uiByte))
+      ++uiCharacterCount;
+
+    ++szUtf8;
+    ++uiElementCount;
+  }
+}
+
+XII_ALWAYS_INLINE bool xiiStringUtils::IsEqual(const char* pString1, const char* pString2, const char* pString1End, const char* pString2End)
+{
+  return xiiStringUtils::Compare(pString1, pString2, pString1End, pString2End) == 0;
+}
+
+XII_ALWAYS_INLINE bool xiiStringUtils::IsEqualN(
+  const char* pString1,
+  const char* pString2,
+  xiiUInt32   uiCharsToCompare,
+  const char* pString1End,
+  const char* pString2End)
+{
+  return xiiStringUtils::CompareN(pString1, pString2, uiCharsToCompare, pString1End, pString2End) == 0;
+}
+
+XII_ALWAYS_INLINE bool xiiStringUtils::IsEqual_NoCase(const char* pString1, const char* pString2, const char* pString1End, const char* pString2End)
+{
+  return xiiStringUtils::Compare_NoCase(pString1, pString2, pString1End, pString2End) == 0;
+}
+
+XII_ALWAYS_INLINE bool xiiStringUtils::IsEqualN_NoCase(
+  const char* pString1,
+  const char* pString2,
+  xiiUInt32   uiCharsToCompare,
+  const char* pString1End,
+  const char* pString2End)
+{
+  return xiiStringUtils::CompareN_NoCase(pString1, pString2, uiCharsToCompare, pString1End, pString2End) == 0;
+}
+
+XII_ALWAYS_INLINE bool xiiStringUtils::IsDecimalDigit(xiiUInt32 uiChar)
+{
+  return (uiChar >= '0' && uiChar <= '9');
+}
+
+XII_ALWAYS_INLINE bool xiiStringUtils::IsHexDigit(xiiUInt32 uiChar)
+{
+  return IsDecimalDigit(uiChar) || (uiChar >= 'A' && uiChar <= 'F') || (uiChar >= 'a' && uiChar <= 'f');
+}

@@ -1,0 +1,457 @@
+#pragma once
+
+#include <Core/Configuration/PlatformProfile.h>
+#include <EditorFramework/Assets/AssetDocumentInfo.h>
+#include <EditorFramework/Assets/AssetDocumentManager.h>
+#include <EditorFramework/Assets/Declarations.h>
+#include <EditorFramework/EditorFrameworkDLL.h>
+#include <Foundation/Algorithm/HashHelperString.h>
+#include <Foundation/Application/Config/FileSystemConfig.h>
+#include <Foundation/Configuration/Singleton.h>
+#include <Foundation/Containers/HashTable.h>
+#include <Foundation/IO/DirectoryWatcher.h>
+#include <Foundation/Logging/LogEntry.h>
+#include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Threading/AtomicInteger.h>
+#include <Foundation/Threading/DelegateTask.h>
+#include <Foundation/Threading/LockedObject.h>
+#include <Foundation/Threading/Mutex.h>
+#include <Foundation/Threading/TaskSystem.h>
+#include <Foundation/Time/Timestamp.h>
+#include <ToolsFoundation/Document/DocumentManager.h>
+#include <tuple>
+
+class xiiUpdateTask;
+class xiiTask;
+class xiiAssetDocumentManager;
+class xiiDirectoryWatcher;
+class xiiProcessTask;
+struct xiiFileStats;
+class xiiAssetProcessorLog;
+class xiiAssetWatcher;
+
+#if 0 // Define to enable extensive curator profile scopes
+#  define CURATOR_PROFILE(szName) XII_PROFILE_SCOPE(szName)
+
+#else
+#  define CURATOR_PROFILE(Name)
+
+#endif
+
+/// \brief Custom mutex that allows to profile the time in the curator lock.
+class xiiCuratorMutex : public xiiMutex
+{
+public:
+  void Lock()
+  {
+    CURATOR_PROFILE("xiiCuratorMutex");
+    xiiMutex::Lock();
+  }
+
+  void Unlock() { xiiMutex::Unlock(); }
+};
+
+struct XII_EDITORFRAMEWORK_DLL xiiAssetInfo
+{
+  xiiAssetInfo() = default;
+  void Update(xiiUniquePtr<xiiAssetInfo>& rhs);
+
+  xiiAssetDocumentManager* GetManager() { return static_cast<xiiAssetDocumentManager*>(m_pDocumentTypeDescriptor->m_pManager); }
+
+  enum TransformState : xiiUInt8
+  {
+    Unknown = 0,
+    UpToDate,
+    NeedsImport,
+    NeedsTransform,
+    NeedsThumbnail,
+    TransformError,
+    MissingDependency,
+    MissingReference,
+    COUNT,
+  };
+
+  xiiUInt8                     m_LastStateUpdate = 0; ///< Changes every time m_TransformState is modified. Used to detect stale computations done outside the lock.
+  xiiAssetExistanceState::Enum m_ExistanceState  = xiiAssetExistanceState::FileAdded;
+  TransformState               m_TransformState  = TransformState::Unknown;
+  xiiUInt64                    m_AssetHash       = 0; ///< Valid if m_TransformState != Unknown and asset not in Curator's m_TransformStateStale list.
+  xiiUInt64                    m_ThumbHash       = 0; ///< Valid if m_TransformState != Unknown and asset not in Curator's m_TransformStateStale list.
+
+  xiiDynamicArray<xiiLogEntry> m_LogEntries;
+
+  const xiiAssetDocumentTypeDescriptor* m_pDocumentTypeDescriptor = nullptr;
+  xiiString                             m_sAbsolutePath;
+  xiiString                             m_sDataDirParentRelativePath;
+  xiiStringView                         m_sDataDirRelativePath;
+
+  xiiUniquePtr<xiiAssetDocumentInfo> m_Info;
+
+  xiiSet<xiiString> m_MissingDependencies;
+  xiiSet<xiiString> m_MissingReferences;
+
+  xiiSet<xiiUuid> m_SubAssets; ///< Main asset uses the same GUID as this (see m_Info), but is NOT stored in m_SubAssets
+
+private:
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiAssetInfo);
+};
+
+/// \brief Information about an asset or sub-asset.
+struct XII_EDITORFRAMEWORK_DLL xiiSubAsset
+{
+  xiiStringView GetName() const;
+  void          GetSubAssetIdentifier(xiiStringBuilder& out_sPath) const;
+
+  xiiAssetExistanceState::Enum m_ExistanceState = xiiAssetExistanceState::FileAdded;
+  xiiAssetInfo*                m_pAssetInfo     = nullptr;
+  xiiTime                      m_LastAccess;
+  bool                         m_bMainAsset = true;
+
+  xiiSubAssetData m_Data;
+};
+
+/// \brief Information about a single file on disk. The file might be an asset or any other file (needed for dependencies).
+struct XII_EDITORFRAMEWORK_DLL xiiFileStatus
+{
+  enum class Status
+  {
+    Unknown,    ///< Since the file has been tagged as 'Unknown' it has not been encountered again on disk (yet)
+    FileLocked, ///< The file is probably an asset, but we could not read it
+    Valid       ///< The file exists on disk
+  };
+
+  xiiFileStatus()
+  {
+    m_uiHash = 0;
+    m_Status = Status::Unknown;
+  }
+
+  xiiTimestamp m_Timestamp;
+  xiiUInt64    m_uiHash;
+  xiiUuid      m_AssetGuid; ///< If the file is linked to an asset, the GUID is valid, otherwise not.
+  Status       m_Status;
+};
+XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiFileStatus);
+
+struct xiiAssetCuratorEvent
+{
+  enum class Type
+  {
+    AssetAdded,
+    AssetRemoved,
+    AssetUpdated,
+    AssetListReset,
+    ActivePlatformChanged,
+  };
+
+  xiiUuid            m_AssetGuid;
+  const xiiSubAsset* m_pInfo;
+  Type               m_Type;
+};
+
+class XII_EDITORFRAMEWORK_DLL xiiAssetCurator
+{
+  XII_DECLARE_SINGLETON(xiiAssetCurator);
+
+public:
+  xiiAssetCurator();
+  ~xiiAssetCurator();
+
+  /// \name Setup
+  ///@{
+
+  /// \brief Starts init task. Need to call WaitForInitialize to finish before loading docs.
+  void StartInitialize(const xiiApplicationFileSystemConfig& cfg);
+  /// \brief Waits for init task to finish.
+  void WaitForInitialize();
+  void Deinitialize();
+
+  void MainThreadTick(bool bTopLevel);
+
+  ///@}
+  /// \name Asset Platform Configurations
+  ///@{
+
+public:
+  /// \brief The main platform on which development happens. E.g. "PC".
+  ///
+  /// TODO: review this concept
+  const xiiPlatformProfile* GetDevelopmentAssetProfile() const;
+
+  /// \brief The currently active target platform for asset processing.
+  const xiiPlatformProfile* GetActiveAssetProfile() const;
+
+  /// \brief Returns the index of the currently active asset platform configuration
+  xiiUInt32 GetActiveAssetProfileIndex() const;
+
+  /// \brief Returns xiiInvalidIndex if no config with the given name exists. Name comparison is case insensitive.
+  xiiUInt32 FindAssetProfileByName(const char* szPlatform);
+
+  xiiUInt32 GetNumAssetProfiles() const;
+
+  /// \brief Always returns a valid config. E.g. even if xiiInvalidIndex is passed in, it will fall back to the default config (at index 0).
+  const xiiPlatformProfile* GetAssetProfile(xiiUInt32 index) const;
+
+  /// \brief Always returns a valid config. E.g. even if xiiInvalidIndex is passed in, it will fall back to the default config (at index 0).
+  xiiPlatformProfile* GetAssetProfile(xiiUInt32 index);
+
+  /// \brief Adds a new profile. The name should be set afterwards to a unique name.
+  xiiPlatformProfile* CreateAssetProfile();
+
+  /// \brief Deletes the given asset profile, if possible.
+  ///
+  /// The function fails when the given profile is the main profile (at index 0),
+  /// or it is the currently active profile.
+  xiiResult DeleteAssetProfile(xiiPlatformProfile* pProfile);
+
+  /// \brief Switches the currently active asset target platform.
+  ///
+  /// Broadcasts xiiAssetCuratorEvent::Type::ActivePlatformChanged on change.
+  void SetActiveAssetProfileByIndex(xiiUInt32 index, bool bForceReevaluation = false);
+
+  /// \brief Saves the current asset configurations. Returns failure if the output file could not be written to.
+  xiiResult SaveAssetProfiles();
+
+  void SaveRuntimeProfiles();
+
+private:
+  void      ClearAssetProfiles();
+  void      SetupDefaultAssetProfiles();
+  xiiResult LoadAssetProfiles();
+  void      ComputeAllDocumentManagerAssetProfileHashes();
+
+  xiiHybridArray<xiiPlatformProfile*, 8> m_AssetProfiles;
+
+  ///@}
+  /// \name High Level Functions
+  ///@{
+
+public:
+  xiiDateTime GetLastFullTransformDate() const;
+  void        StoreFullTransformDate();
+
+  /// \brief Transforms all assets and writes the lookup tables. If the given platform is empty, the active platform is used.
+  xiiStatus          TransformAllAssets(xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
+  void               ResaveAllAssets();
+  xiiTransformStatus TransformAsset(const xiiUuid& assetGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
+  xiiTransformStatus CreateThumbnail(const xiiUuid& assetGuid);
+
+  /// \brief Writes the asset lookup table for the given platform, or the currently active platform if nullptr is passed.
+  xiiResult WriteAssetTables(const xiiPlatformProfile* pAssetProfile = nullptr);
+
+  ///@}
+  /// \name Asset Access
+  ///@{
+  typedef xiiLockedObject<xiiMutex, const xiiSubAsset> xiiLockedSubAsset;
+
+  /// \brief Tries to find the asset information for an asset identified through a string.
+  ///
+  /// The string may be a stringyfied asset GUID or a relative or absolute path. The function will try all possibilities.
+  /// If no asset can be found, an empty/invalid xiiAssetInfo is returned.
+  /// If bExhaustiveSearch is set the function will go through all known assets and find the closest match.
+  const xiiLockedSubAsset FindSubAsset(const char* szPathOrGuid, bool bExhaustiveSearch = false) const;
+
+  /// \brief Same as GetAssteInfo, but wraps the return value into a xiiLockedSubAsset struct
+  const xiiLockedSubAsset GetSubAsset(const xiiUuid& assetGuid) const;
+
+  typedef xiiLockedObject<xiiMutex, const xiiHashTable<xiiUuid, xiiSubAsset>> xiiLockedSubAssetTable;
+
+  /// \brief Returns the table of all known assets in a locked structure
+  const xiiLockedSubAssetTable GetKnownSubAssets() const;
+
+  /// \brief Computes the combined hash for the asset and its dependencies. Returns 0 if anything went wrong.
+  xiiUInt64 GetAssetDependencyHash(xiiUuid assetGuid);
+
+  /// \brief Computes the combined hash for the asset and its references. Returns 0 if anything went wrong.
+  xiiUInt64 GetAssetReferenceHash(xiiUuid assetGuid);
+
+  void GenerateTransitiveHull(const xiiStringView assetOrPath, xiiSet<xiiString>* pDependencies, xiiSet<xiiString>* pReferences);
+
+  xiiAssetInfo::TransformState IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile* pAssetProfile, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce = false);
+  /// \brief Returns the number of assets in the system and how many are in what transform state
+  void GetAssetTransformStats(xiiUInt32& out_uiNumAssets, xiiHybridArray<xiiUInt32, xiiAssetInfo::TransformState::COUNT>& out_count);
+
+  /// \brief Iterates over all known data directories and returns the absolute path to the directory in which this asset is located
+  xiiString FindDataDirectoryForAsset(const char* szAbsoluteAssetPath) const;
+
+  /// \brief The curator gathers all folders in which assets have been found. This list can only grow over the lifetime of the application.
+  const xiiSet<xiiString>& GetAllAssetFolders() const { return m_AssetFolders; }
+
+  /// \brief Uses knowledge about all existing files on disk to find the best match for a file. Very slow.
+  ///
+  /// \param sFile
+  ///   File name (may include a path) to search for. Will be modified both on success and failure to give a 'reasonable' result.
+  xiiResult FindBestMatchForFile(xiiStringBuilder& sFile, xiiArrayPtr<xiiString> AllowedFileExtensions) const;
+
+  /// \brief Finds all uses, either as references or dependencies to a given asset.
+  ///
+  /// Technically this finds all references and dependencies to this asset but in practice there are no uses of transform dependencies between assets right now so the result is a list of references and can be referred to as such.
+  ///
+  /// \param assetGuid
+  ///   The asset to find use cases for.
+  /// \param uses
+  ///   List of assets that use 'assetGuid'.
+  /// \param transitive
+  ///   If set, will also find indirect uses of the asset.
+  void FindAllUses(xiiUuid assetGuid, xiiSet<xiiUuid>& uses, bool transitive) const;
+
+  ///@}
+  /// \name Manual and Automatic Change Notification
+  ///@{
+
+  /// \brief Allows to tell the system of a new or changed file, that might be of interest to the Curator.
+  void NotifyOfFileChange(const char* szAbsolutePath);
+
+  /// \brief Allows to tell the system to re-evaluate an assets status.
+  void NotifyOfAssetChange(const xiiUuid& assetGuid);
+  void UpdateAssetLastAccessTime(const xiiUuid& assetGuid);
+
+  /// \brief Checks file system for any changes. Call in case the file system watcher does not pick up certain changes.
+  void CheckFileSystem();
+
+  void NeedsReloadResources();
+
+  ///@}
+
+
+public:
+  xiiEvent<const xiiAssetCuratorEvent&> m_Events;
+
+private:
+  /// \name Processing
+  ///@{
+
+  xiiTransformStatus ProcessAsset(xiiAssetInfo* pAssetInfo, const xiiPlatformProfile* pAssetProfile, xiiBitflags<xiiTransformFlags> transformFlags);
+  xiiStatus          ResaveAsset(xiiAssetInfo* pAssetInfo);
+  /// \brief Returns the asset info for the asset with the given GUID or nullptr if no such asset exists.
+  xiiAssetInfo*       GetAssetInfo(const xiiUuid& assetGuid);
+  const xiiAssetInfo* GetAssetInfo(const xiiUuid& assetGuid) const;
+
+  xiiSubAsset* GetSubAssetInternal(const xiiUuid& assetGuid);
+
+  /// \brief Returns the asset info for the asset with the given (stringyfied) GUID or nullptr if no such asset exists.
+  xiiAssetInfo* GetAssetInfo(const xiiString& sAssetGuid);
+
+  /// \brief Handles removing files and then forwards to HandleSingleFile overload.
+  void HandleSingleFile(const xiiString& sAbsolutePath);
+  /// \brief Handles adding and updating files. FileStat must be valid.
+  void HandleSingleFile(const xiiString& sAbsolutePath, const xiiFileStats& FileStat);
+  /// \brief Writes the asset lookup table for the given platform, or the currently active platform if nullptr is passed.
+  xiiResult WriteAssetTable(const char* szDataDirectory, const xiiPlatformProfile* pAssetProfile = nullptr);
+  /// \brief Some assets are vital for the engine to run. Each data directory can contain a [DataDirName].xiiCollectionAsset
+  ///   that has all its references transformed before any other documents are loaded.
+  void ProcessAllCoreAssets();
+
+  ///@}
+  /// \name Update Task
+  ///@{
+
+  void RestartUpdateTask();
+  void ShutdownUpdateTask();
+
+  bool GetNextAssetToUpdate(xiiUuid& out_guid, xiiStringBuilder& out_sAbsPath);
+  void OnUpdateTaskFinished(const xiiSharedPtr<xiiTask>& pTask);
+  void RunNextUpdateTask();
+
+  ///@}
+  /// \name Asset Hashing and Status Updates (AssetUpdates.cpp)
+  ///@{
+
+  xiiAssetInfo::TransformState HashAsset(
+    xiiUInt64                            uiSettingsHash,
+    const xiiHybridArray<xiiString, 16>& assetTransformDependencies,
+    const xiiHybridArray<xiiString, 16>& runtimeDependencies,
+    xiiSet<xiiString>&                   missingDependencies,
+    xiiSet<xiiString>&                   missingReferences,
+    xiiUInt64&                           out_AssetHash,
+    xiiUInt64&                           out_ThumbHash,
+    bool                                 bForce);
+  bool AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce);
+
+  xiiResult EnsureAssetInfoUpdated(const xiiUuid& assetGuid);
+  xiiResult EnsureAssetInfoUpdated(const char* szAbsFilePath);
+  void      TrackDependencies(xiiAssetInfo* pAssetInfo);
+  void      UntrackDependencies(xiiAssetInfo* pAssetInfo);
+  void      UpdateTrackedFiles(const xiiUuid& assetGuid, const xiiSet<xiiString>& files, xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>>& inverseTracker, xiiSet<std::tuple<xiiUuid, xiiUuid>>& unresolved, bool bAdd);
+  void      UpdateUnresolvedTrackedFiles(xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>>& inverseTracker, xiiSet<std::tuple<xiiUuid, xiiUuid>>& unresolved);
+  xiiResult ReadAssetDocumentInfo(const char* szAbsFilePath, xiiFileStatus& stat, xiiUniquePtr<xiiAssetInfo>& assetInfo);
+  void      UpdateSubAssets(xiiAssetInfo& assetInfo);
+  /// \brief Computes the hash of the given file. Optionally passes the data stream through into another stream writer.
+  static xiiUInt64 HashFile(xiiStreamReader& InputStream, xiiStreamWriter* pPassThroughStream);
+
+  void                         RemoveAssetTransformState(const xiiUuid& assetGuid);
+  void                         InvalidateAssetTransformState(const xiiUuid& assetGuid);
+  xiiAssetInfo::TransformState UpdateAssetTransformState(xiiUuid assetGuid, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce);
+  void                         UpdateAssetTransformState(const xiiUuid& assetGuid, xiiAssetInfo::TransformState state);
+  void                         UpdateAssetTransformLog(const xiiUuid& assetGuid, xiiDynamicArray<xiiLogEntry>& logEntries);
+  void                         SetAssetExistanceState(xiiAssetInfo& assetInfo, xiiAssetExistanceState::Enum state);
+
+  ///@}
+  /// \name Check File System Helper
+  ///@{
+  void        SetAllAssetStatusUnknown();
+  void        RemoveStaleFileInfos();
+  static void BuildFileExtensionSet(xiiSet<xiiString>& AllExtensions);
+  void        IterateDataDirectory(const char* szDataDir, xiiSet<xiiString>* pFoundFiles = nullptr);
+  void        LoadCaches();
+  void        SaveCaches();
+
+  ///@}
+
+private:
+  friend class xiiUpdateTask;
+  friend class xiiAssetProcessor;
+  friend class xiiProcessTask;
+  friend class xiiAssetWatcher;
+  friend class xiiDirectoryUpdateTask;
+
+  mutable xiiCuratorMutex m_CuratorMutex; // Global lock
+  xiiTaskGroupID          m_InitializeCuratorTaskID;
+  bool                    m_bNeedToReloadResources = false;
+  xiiTime                 m_NextReloadResources;
+  xiiUInt32               m_uiActiveAssetProfile = 0;
+
+  // Actual data stored in the curator
+  xiiHashTable<xiiUuid, xiiAssetInfo*>                      m_KnownAssets;
+  xiiHashTable<xiiUuid, xiiSubAsset>                        m_KnownSubAssets;
+  xiiMap<xiiString, xiiFileStatus, xiiCompareString_NoCase> m_ReferencedFiles;
+  xiiSet<xiiString>                                         m_AssetFolders;
+
+  // Derived dependency lookup tables
+  xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>> m_InverseDependency;
+  xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>> m_InverseReferences;
+  xiiSet<std::tuple<xiiUuid, xiiUuid>>          m_UnresolvedDependencies; ///< If a dependency wasn't known yet when an asset info was loaded, it is put in here.
+  xiiSet<std::tuple<xiiUuid, xiiUuid>>          m_UnresolvedReferences;
+
+  // State caches
+  xiiHashSet<xiiUuid> m_TransformState[xiiAssetInfo::TransformState::COUNT];
+  xiiHashSet<xiiUuid> m_SubAssetChanged; ///< Flushed in main thread tick
+  xiiHashSet<xiiUuid> m_TransformStateStale;
+  xiiHashSet<xiiUuid> m_Updating;
+
+  // Serialized cache
+  mutable xiiCuratorMutex                               m_CachedAssetsMutex; ///< Only locks m_CachedAssets
+  xiiMap<xiiString, xiiUniquePtr<xiiAssetDocumentInfo>> m_CachedAssets;
+  xiiMap<xiiString, xiiFileStatus>                      m_CachedFiles;
+
+  // Immutable data after StartInitialize
+  xiiApplicationFileSystemConfig m_FileSystemConfig;
+  xiiSet<xiiString>              m_ValidAssetExtensions;
+  xiiUniquePtr<xiiAssetWatcher>  m_pWatcher;
+
+  // Update task
+  bool                        m_bRunUpdateTask = false;
+  xiiSharedPtr<xiiUpdateTask> m_pUpdateTask;
+  xiiTaskGroupID              m_UpdateTaskGroup;
+};
+
+class xiiUpdateTask final : public xiiTask
+{
+public:
+  xiiUpdateTask(xiiOnTaskFinishedCallback onTaskFinished);
+  ~xiiUpdateTask();
+
+private:
+  xiiStringBuilder m_sAssetPath;
+
+  virtual void Execute() override;
+};

@@ -1,0 +1,616 @@
+#pragma once
+
+XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f()
+{
+  XII_CHECK_SIMD_ALIGNMENT(this);
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+  // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
+  m_v = _mm_set1_ps(xiiMath::NaN<float>());
+#endif
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(float xyzw)
+{
+  XII_CHECK_SIMD_ALIGNMENT(this);
+
+  m_v = _mm_set1_ps(xyzw);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(const xiiSimdFloat& xyzw)
+{
+  XII_CHECK_SIMD_ALIGNMENT(this);
+
+  m_v = xyzw.m_v;
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(float x, float y, float z, float w)
+{
+  XII_CHECK_SIMD_ALIGNMENT(this);
+
+  m_v = _mm_setr_ps(x, y, z, w);
+}
+
+XII_ALWAYS_INLINE void xiiSimdVec4f::Set(float xyzw)
+{
+  m_v = _mm_set1_ps(xyzw);
+}
+
+XII_ALWAYS_INLINE void xiiSimdVec4f::Set(float x, float y, float z, float w)
+{
+  m_v = _mm_setr_ps(x, y, z, w);
+}
+
+XII_ALWAYS_INLINE void xiiSimdVec4f::SetX(const xiiSimdFloat& f)
+{
+  m_v = _mm_move_ss(m_v, f.m_v);
+}
+
+XII_ALWAYS_INLINE void xiiSimdVec4f::SetY(const xiiSimdFloat& f)
+{
+  m_v = _mm_shuffle_ps(_mm_unpacklo_ps(m_v, f.m_v), m_v, XII_TO_SHUFFLE(xiiSwizzle::XYZW));
+}
+
+XII_ALWAYS_INLINE void xiiSimdVec4f::SetZ(const xiiSimdFloat& f)
+{
+  m_v = _mm_shuffle_ps(m_v, _mm_unpackhi_ps(f.m_v, m_v), XII_TO_SHUFFLE(xiiSwizzle::XYZW));
+}
+
+XII_ALWAYS_INLINE void xiiSimdVec4f::SetW(const xiiSimdFloat& f)
+{
+  m_v = _mm_shuffle_ps(m_v, _mm_unpackhi_ps(m_v, f.m_v), XII_TO_SHUFFLE(xiiSwizzle::XYXY));
+}
+
+XII_ALWAYS_INLINE void xiiSimdVec4f::SetZero()
+{
+  m_v = _mm_setzero_ps();
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4f::Load<1>(const float* pFloat)
+{
+  m_v = _mm_load_ss(pFloat);
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4f::Load<2>(const float* pFloat)
+{
+  m_v = _mm_castpd_ps(_mm_load_sd(reinterpret_cast<const double*>(pFloat)));
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4f::Load<3>(const float* pFloat)
+{
+// There is a compiler bug in GCC where GCC will incorrectly optimize the alternative faster implementation.
+#if XII_ENABLED(XII_COMPILER_GCC)
+  m_v = _mm_set_ps(0.0f, pFloat[2], pFloat[1], pFloat[0]);
+#else
+  m_v = _mm_movelh_ps(_mm_castpd_ps(_mm_load_sd(reinterpret_cast<const double*>(pFloat))), _mm_load_ss(pFloat + 2));
+#endif
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4f::Load<4>(const float* pFloat)
+{
+  m_v = _mm_loadu_ps(pFloat);
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4f::Store<1>(float* pFloat) const
+{
+  _mm_store_ss(pFloat, m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4f::Store<2>(float* pFloat) const
+{
+  _mm_store_sd(reinterpret_cast<double*>(pFloat), _mm_castps_pd(m_v));
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4f::Store<3>(float* pFloat) const
+{
+  _mm_store_sd(reinterpret_cast<double*>(pFloat), _mm_castps_pd(m_v));
+  _mm_store_ss(pFloat + 2, _mm_movehl_ps(m_v, m_v));
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4f::Store<4>(float* pFloat) const
+{
+  _mm_storeu_ps(pFloat, m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathAcc::BITS_12>() const
+{
+  return _mm_rcp_ps(m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathAcc::BITS_23>() const
+{
+  __m128 x0 = _mm_rcp_ps(m_v);
+
+  // One Newton-Raphson iteration
+  __m128 x1 = _mm_mul_ps(x0, _mm_sub_ps(_mm_set1_ps(2.0f), _mm_mul_ps(m_v, x0)));
+
+  return x1;
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathAcc::FULL>() const
+{
+  return _mm_div_ps(_mm_set1_ps(1.0f), m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathAcc::BITS_12>() const
+{
+  return _mm_mul_ps(m_v, _mm_rsqrt_ps(m_v));
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathAcc::BITS_23>() const
+{
+  __m128 x0 = _mm_rsqrt_ps(m_v);
+
+  // One iteration of Newton-Raphson
+  __m128 x1 = _mm_mul_ps(_mm_mul_ps(_mm_set1_ps(0.5f), x0), _mm_sub_ps(_mm_set1_ps(3.0f), _mm_mul_ps(_mm_mul_ps(m_v, x0), x0)));
+
+  return _mm_mul_ps(m_v, x1);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathAcc::FULL>() const
+{
+  return _mm_sqrt_ps(m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathAcc::FULL>() const
+{
+  return _mm_div_ps(_mm_set1_ps(1.0f), _mm_sqrt_ps(m_v));
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathAcc::BITS_23>() const
+{
+  const __m128 x0 = _mm_rsqrt_ps(m_v);
+
+  // One iteration of Newton-Raphson
+  return _mm_mul_ps(_mm_mul_ps(_mm_set1_ps(0.5f), x0), _mm_sub_ps(_mm_set1_ps(3.0f), _mm_mul_ps(_mm_mul_ps(m_v, x0), x0)));
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathAcc::BITS_12>() const
+{
+  return _mm_rsqrt_ps(m_v);
+}
+
+template <int N, xiiMathAcc::Enum acc>
+void xiiSimdVec4f::NormalizeIfNotZero(const xiiSimdFloat& fEpsilon)
+{
+  xiiSimdFloat sqLength  = GetLengthSquared<N>();
+  __m128       isNotZero = _mm_cmpgt_ps(sqLength.m_v, fEpsilon.m_v);
+  m_v                    = _mm_mul_ps(m_v, sqLength.GetInvSqrt<acc>().m_v);
+  m_v                    = _mm_and_ps(isNotZero, m_v);
+}
+
+template <int N>
+XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero() const
+{
+  const int mask = XII_BIT(N) - 1;
+  return (_mm_movemask_ps(_mm_cmpeq_ps(m_v, _mm_setzero_ps())) & mask) == mask;
+}
+
+template <int N>
+XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero(const xiiSimdFloat& fEpsilon) const
+{
+  const int mask   = XII_BIT(N) - 1;
+  __m128    absVal = Abs().m_v;
+  return (_mm_movemask_ps(_mm_cmplt_ps(absVal, fEpsilon.m_v)) & mask) == mask;
+}
+
+template <int N>
+inline bool xiiSimdVec4f::IsNaN() const
+{
+  // NAN -> (exponent = all 1, mantissa = non-zero)
+
+  alignas(16) const xiiUInt32 s_exponentMask[4] = {0x7f800000, 0x7f800000, 0x7f800000, 0x7f800000};
+  alignas(16) const xiiUInt32 s_mantissaMask[4] = {0x7FFFFF, 0x7FFFFF, 0x7FFFFF, 0x7FFFFF};
+
+  __m128 exponentMask = _mm_load_ps(reinterpret_cast<const float*>(s_exponentMask));
+  __m128 mantissaMask = _mm_load_ps(reinterpret_cast<const float*>(s_mantissaMask));
+
+  __m128 exponentAll1 = _mm_cmpeq_ps(_mm_and_ps(m_v, exponentMask), exponentMask);
+  __m128 mantissaNon0 = _mm_cmpneq_ps(_mm_and_ps(m_v, mantissaMask), _mm_setzero_ps());
+
+  const int mask = XII_BIT(N) - 1;
+  return (_mm_movemask_ps(_mm_and_ps(exponentAll1, mantissaNon0)) & mask) != 0;
+}
+
+template <int N>
+XII_ALWAYS_INLINE bool xiiSimdVec4f::IsValid() const
+{
+  // Check the 8 exponent bits.
+  // NAN -> (exponent = all 1, mantissa = non-zero)
+  // INF -> (exponent = all 1, mantissa = zero)
+
+  alignas(16) const xiiUInt32 s_exponentMask[4] = {0x7f800000, 0x7f800000, 0x7f800000, 0x7f800000};
+
+  __m128 exponentMask = _mm_load_ps(reinterpret_cast<const float*>(s_exponentMask));
+
+  __m128 exponentNot1 = _mm_cmpneq_ps(_mm_and_ps(m_v, exponentMask), exponentMask);
+
+  const int mask = XII_BIT(N) - 1;
+  return (_mm_movemask_ps(exponentNot1) & mask) == mask;
+}
+
+template <int N>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::GetComponent() const
+{
+  return _mm_shuffle_ps(m_v, m_v, XII_SHUFFLE(N, N, N, N));
+}
+
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::x() const
+{
+  return GetComponent<0>();
+}
+
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::y() const
+{
+  return GetComponent<1>();
+}
+
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::z() const
+{
+  return GetComponent<2>();
+}
+
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::w() const
+{
+  return GetComponent<3>();
+}
+
+template <xiiSwizzle::Enum s>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Get() const
+{
+  return _mm_shuffle_ps(m_v, m_v, XII_TO_SHUFFLE(s));
+}
+
+template <xiiSwizzle::Enum s>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetCombined(const xiiSimdVec4f& other) const
+{
+  return _mm_shuffle_ps(m_v, other.m_v, XII_TO_SHUFFLE(s));
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::operator-() const
+{
+  return _mm_sub_ps(_mm_setzero_ps(), m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::operator+(const xiiSimdVec4f& v) const
+{
+  return _mm_add_ps(m_v, v.m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::operator-(const xiiSimdVec4f& v) const
+{
+  return _mm_sub_ps(m_v, v.m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::operator*(const xiiSimdFloat& f) const
+{
+  return _mm_mul_ps(m_v, f.m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::operator/(const xiiSimdFloat& f) const
+{
+  return _mm_div_ps(m_v, f.m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompMul(const xiiSimdVec4f& v) const
+{
+  return _mm_mul_ps(m_v, v.m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathAcc::FULL>(const xiiSimdVec4f& v) const
+{
+  return _mm_div_ps(m_v, v.m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathAcc::BITS_23>(const xiiSimdVec4f& v) const
+{
+  __m128 x0 = _mm_rcp_ps(v.m_v);
+
+  // One iteration of Newton-Raphson
+  __m128 x1 = _mm_mul_ps(x0, _mm_sub_ps(_mm_set1_ps(2.0f), _mm_mul_ps(v.m_v, x0)));
+
+  return _mm_mul_ps(m_v, x1);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathAcc::BITS_12>(const xiiSimdVec4f& v) const
+{
+  return _mm_mul_ps(m_v, _mm_rcp_ps(v.m_v));
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompMin(const xiiSimdVec4f& v) const
+{
+  return _mm_min_ps(m_v, v.m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompMax(const xiiSimdVec4f& v) const
+{
+  return _mm_max_ps(m_v, v.m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Abs() const
+{
+  return _mm_andnot_ps(_mm_set1_ps(-0.0f), m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Floor() const
+{
+#if XII_SSE_LEVEL >= XII_SSE_41
+  return _mm_round_ps(m_v, _MM_FROUND_FLOOR);
+#else
+  XII_ASSERT_NOT_IMPLEMENTED;
+#endif
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Ceil() const
+{
+#if XII_SSE_LEVEL >= XII_SSE_41
+  return _mm_round_ps(m_v, _MM_FROUND_CEIL);
+#else
+  XII_ASSERT_NOT_IMPLEMENTED;
+#endif
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::FlipSign(const xiiSimdVec4b& cmp) const
+{
+  return _mm_xor_ps(m_v, _mm_and_ps(cmp.m_v, _mm_set1_ps(-0.0f)));
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Select(const xiiSimdVec4b& cmp, const xiiSimdVec4f& ifTrue, const xiiSimdVec4f& ifFalse)
+{
+#if XII_SSE_LEVEL >= XII_SSE_41
+  return _mm_blendv_ps(ifFalse.m_v, ifTrue.m_v, cmp.m_v);
+#else
+  return _mm_or_ps(_mm_andnot_ps(cmp.m_v, ifFalse.m_v), _mm_and_ps(cmp.m_v, ifTrue.m_v));
+#endif
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f& xiiSimdVec4f::operator+=(const xiiSimdVec4f& v)
+{
+  m_v = _mm_add_ps(m_v, v.m_v);
+  return *this;
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f& xiiSimdVec4f::operator-=(const xiiSimdVec4f& v)
+{
+  m_v = _mm_sub_ps(m_v, v.m_v);
+  return *this;
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f& xiiSimdVec4f::operator*=(const xiiSimdFloat& f)
+{
+  m_v = _mm_mul_ps(m_v, f.m_v);
+  return *this;
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f& xiiSimdVec4f::operator/=(const xiiSimdFloat& f)
+{
+  m_v = _mm_div_ps(m_v, f.m_v);
+  return *this;
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4f::operator==(const xiiSimdVec4f& v) const
+{
+  return _mm_cmpeq_ps(m_v, v.m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4f::operator!=(const xiiSimdVec4f& v) const
+{
+  return _mm_cmpneq_ps(m_v, v.m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4f::operator<=(const xiiSimdVec4f& v) const
+{
+  return _mm_cmple_ps(m_v, v.m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4f::operator<(const xiiSimdVec4f& v) const
+{
+  return _mm_cmplt_ps(m_v, v.m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4f::operator>=(const xiiSimdVec4f& v) const
+{
+  return _mm_cmpge_ps(m_v, v.m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4f::operator>(const xiiSimdVec4f& v) const
+{
+  return _mm_cmpgt_ps(m_v, v.m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::HorizontalSum<2>() const
+{
+#if XII_SSE_LEVEL >= XII_SSE_31
+  __m128 a = _mm_hadd_ps(m_v, m_v);
+  return _mm_shuffle_ps(a, a, XII_TO_SHUFFLE(xiiSwizzle::XXXX));
+#else
+  return GetComponent<0>() + GetComponent<1>();
+#endif
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::HorizontalSum<3>() const
+{
+  return HorizontalSum<2>() + GetComponent<2>();
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::HorizontalSum<4>() const
+{
+#if XII_SSE_LEVEL >= XII_SSE_31
+  __m128 a = _mm_hadd_ps(m_v, m_v);
+  return _mm_hadd_ps(a, a);
+#else
+  return (GetComponent<0>() + GetComponent<1>()) + (GetComponent<2>() + GetComponent<3>());
+#endif
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::HorizontalMin<2>() const
+{
+  return _mm_min_ps(GetComponent<0>().m_v, GetComponent<1>().m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::HorizontalMin<3>() const
+{
+  return _mm_min_ps(_mm_min_ps(GetComponent<0>().m_v, GetComponent<1>().m_v), GetComponent<2>().m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::HorizontalMin<4>() const
+{
+  __m128 xyxyzwzw = _mm_min_ps(_mm_shuffle_ps(m_v, m_v, XII_TO_SHUFFLE(xiiSwizzle::ZWXY)), m_v);
+  __m128 zwzwxyxy = _mm_shuffle_ps(xyxyzwzw, xyxyzwzw, XII_TO_SHUFFLE(xiiSwizzle::YXWZ));
+  return _mm_min_ps(xyxyzwzw, zwzwxyxy);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::HorizontalMax<2>() const
+{
+  return _mm_max_ps(GetComponent<0>().m_v, GetComponent<1>().m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::HorizontalMax<3>() const
+{
+  return _mm_max_ps(_mm_max_ps(GetComponent<0>().m_v, GetComponent<1>().m_v), GetComponent<2>().m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::HorizontalMax<4>() const
+{
+  __m128 xyxyzwzw = _mm_max_ps(_mm_shuffle_ps(m_v, m_v, XII_TO_SHUFFLE(xiiSwizzle::ZWXY)), m_v);
+  __m128 zwzwxyxy = _mm_shuffle_ps(xyxyzwzw, xyxyzwzw, XII_TO_SHUFFLE(xiiSwizzle::YXWZ));
+  return _mm_max_ps(xyxyzwzw, zwzwxyxy);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::Dot<1>(const xiiSimdVec4f& v) const
+{
+#if XII_SSE_LEVEL >= XII_SSE_41
+  return _mm_dp_ps(m_v, v.m_v, 0x1f);
+#else
+  return CompMul(v).HorizontalSum<1>();
+#endif
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::Dot<2>(const xiiSimdVec4f& v) const
+{
+#if XII_SSE_LEVEL >= XII_SSE_41
+  return _mm_dp_ps(m_v, v.m_v, 0x3f);
+#else
+  return CompMul(v).HorizontalSum<2>();
+#endif
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::Dot<3>(const xiiSimdVec4f& v) const
+{
+#if XII_SSE_LEVEL >= XII_SSE_41
+  return _mm_dp_ps(m_v, v.m_v, 0x7f);
+#else
+  return CompMul(v).HorizontalSum<3>();
+#endif
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::Dot<4>(const xiiSimdVec4f& v) const
+{
+#if XII_SSE_LEVEL >= XII_SSE_41
+  return _mm_dp_ps(m_v, v.m_v, 0xff);
+#else
+  return CompMul(v).HorizontalSum<4>();
+#endif
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CrossRH(const xiiSimdVec4f& v) const
+{
+  __m128 a = _mm_mul_ps(m_v, _mm_shuffle_ps(v.m_v, v.m_v, XII_TO_SHUFFLE(xiiSwizzle::YZXW)));
+  __m128 b = _mm_mul_ps(v.m_v, _mm_shuffle_ps(m_v, m_v, XII_TO_SHUFFLE(xiiSwizzle::YZXW)));
+  __m128 c = _mm_sub_ps(a, b);
+
+  return _mm_shuffle_ps(c, c, XII_TO_SHUFFLE(xiiSwizzle::YZXW));
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetOrthogonalVector() const
+{
+  // See http://blog.selfshadow.com/2011/10/17/perp-vectors/ - this is Stark's first variant, SIMDified.
+  return CrossRH(_mm_and_ps(m_v, _mm_cmpeq_ps(m_v, HorizontalMin<3>().m_v)));
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::ZeroVector()
+{
+  return _mm_setzero_ps();
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulAdd(const xiiSimdVec4f& a, const xiiSimdVec4f& b, const xiiSimdVec4f& c)
+{
+#if XII_SSE_LEVEL >= XII_SSE_AVX2
+  return _mm_fmadd_ps(a.m_v, b.m_v, c.m_v);
+#else
+  return a.CompMul(b) + c;
+#endif
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulAdd(const xiiSimdVec4f& a, const xiiSimdFloat& b, const xiiSimdVec4f& c)
+{
+#if XII_SSE_LEVEL >= XII_SSE_AVX2
+  return _mm_fmadd_ps(a.m_v, b.m_v, c.m_v);
+#else
+  return a * b + c;
+#endif
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulSub(const xiiSimdVec4f& a, const xiiSimdVec4f& b, const xiiSimdVec4f& c)
+{
+#if XII_SSE_LEVEL >= XII_SSE_AVX2
+  return _mm_fmsub_ps(a.m_v, b.m_v, c.m_v);
+#else
+  return a.CompMul(b) - c;
+#endif
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulSub(const xiiSimdVec4f& a, const xiiSimdFloat& b, const xiiSimdVec4f& c)
+{
+#if XII_SSE_LEVEL >= XII_SSE_AVX2
+  return _mm_fmsub_ps(a.m_v, b.m_v, c.m_v);
+#else
+  return a * b - c;
+#endif
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CopySign(const xiiSimdVec4f& magnitude, const xiiSimdVec4f& sign)
+{
+  __m128 minusZero = _mm_set1_ps(-0.0f);
+  return _mm_or_ps(_mm_andnot_ps(minusZero, magnitude.m_v), _mm_and_ps(minusZero, sign.m_v));
+}

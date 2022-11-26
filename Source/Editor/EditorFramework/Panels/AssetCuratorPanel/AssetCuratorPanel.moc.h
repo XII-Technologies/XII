@@ -1,0 +1,52 @@
+#pragma once
+
+#include <EditorFramework/Assets/AssetBrowserModel.moc.h>
+#include <EditorFramework/EditorFrameworkDLL.h>
+#include <EditorFramework/ui_AssetCuratorPanel.h>
+#include <Foundation/Basics.h>
+#include <GuiFoundation/DockPanels/ApplicationPanel.moc.h>
+
+class xiiQtCuratorControl;
+struct xiiLoggingEventData;
+
+class XII_EDITORFRAMEWORK_DLL xiiQtAssetCuratorFilter : public xiiQtAssetFilter
+{
+  Q_OBJECT
+public:
+  explicit xiiQtAssetCuratorFilter(QObject* pParent);
+
+  void SetFilterTransitive(bool bFilterTransitive);
+
+public:
+  virtual bool IsAssetFiltered(const xiiSubAsset* pInfo) const override;
+  virtual bool Less(const xiiSubAsset* pInfoA, const xiiSubAsset* pInfoB) const override;
+
+  bool m_bFilterTransitive = true;
+};
+
+class XII_EDITORFRAMEWORK_DLL xiiQtAssetCuratorPanel : public xiiQtApplicationPanel, public Ui_AssetCuratorPanel
+{
+  Q_OBJECT
+
+  XII_DECLARE_SINGLETON(xiiQtAssetCuratorPanel);
+
+public:
+  xiiQtAssetCuratorPanel();
+  ~xiiQtAssetCuratorPanel();
+
+public Q_SLOTS:
+  void OnAssetSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
+
+private Q_SLOTS:
+  // note, because of the way we set up the widget, auto-connect doesn't work
+  void onListAssetsDoubleClicked(const QModelIndex& index);
+  void onCheckIndirectToggled(bool checked);
+
+private:
+  void LogWriter(const xiiLoggingEventData& e);
+  void UpdateIssueInfo();
+
+  xiiQtAssetBrowserModel*  m_pModel;
+  xiiQtAssetCuratorFilter* m_pFilter;
+  QPersistentModelIndex    m_SelectedIndex;
+};

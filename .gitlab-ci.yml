@@ -1,0 +1,14 @@
+---
+stages:
+  - Checkout XII Engine Repository
+  - Read SDK Version
+  - Echo SDK Version
+  - Resolve Dependencies
+  - Run Format Validation
+  - Run CMake
+  - Build Engine
+  - Generate Artifact
+  - Run Engine Tests
+
+include:
+  - local: .gitlab/CI/*.gitlab-ci.yml

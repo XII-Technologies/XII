@@ -1,0 +1,184 @@
+HeaderV2
+{
+o
+{
+	Uuid %id{u4{13621572428772333617,1444910283028215760}}
+	s %t{"xiiAssetDocumentInfo"}
+	u3 %v{2}
+	s %n{"Header"}
+	p
+	{
+		s %AssetType{"ColorGradient"}
+		VarArray %Dependencies{}
+		Uuid %DocumentID{u4{13621572428772333617,1444910283028215760}}
+		u4 %Hash{12729768742064961274}
+		VarArray %MetaInfo{}
+		VarArray %Outputs{}
+		VarArray %References{}
+	}
+}
+}
+Objects
+{
+o
+{
+	Uuid %id{u4{10998326705967900288,4699998352626940764}}
+	s %t{"xiiColorControlPoint"}
+	u3 %v{2}
+	p
+	{
+		u1 %Blue{255}
+		u1 %Green{255}
+		u1 %Red{255}
+		i4 %Tick{4800}
+	}
+}
+o
+{
+	Uuid %id{u4{13790301658960929159,4937105452087822498}}
+	s %t{"xiiColorGradientAssetData"}
+	u3 %v{2}
+	p
+	{
+		VarArray %AlphaCPs{}
+		VarArray %ColorCPs
+		{
+			Uuid{u4{9145372021303067580,5381883931942926682}}
+			Uuid{u4{10998326705967900288,4699998352626940764}}
+		}
+		VarArray %IntensityCPs{}
+	}
+}
+o
+{
+	Uuid %id{u4{9145372021303067580,5381883931942926682}}
+	s %t{"xiiColorControlPoint"}
+	u3 %v{2}
+	p
+	{
+		u1 %Blue{0}
+		u1 %Green{0}
+		u1 %Red{0}
+		i4 %Tick{0}
+	}
+}
+o
+{
+	Uuid %id{u4{18096612296587978288,6449934965513159559}}
+	s %t{"xiiDocumentRoot"}
+	u3 %v{1}
+	s %n{"ObjectTree"}
+	p
+	{
+		VarArray %Children
+		{
+			Uuid{u4{13790301658960929159,4937105452087822498}}
+		}
+	}
+}
+}
+Types
+{
+o
+{
+	Uuid %id{u4{9083836085341169600,305910007582073419}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"xiiEditorPluginAssets"}
+		VarArray %Properties{}
+		s %TypeName{"xiiAlphaControlPoint"}
+		u3 %TypeVersion{2}
+	}
+}
+o
+{
+	Uuid %id{u4{11494814606417980374,389175445999033773}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"xiiEditorPluginAssets"}
+		VarArray %Properties{}
+		s %TypeName{"xiiIntensityControlPoint"}
+		u3 %TypeVersion{2}
+	}
+}
+o
+{
+	Uuid %id{u4{8224268647907297484,2300230217040154700}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiDocumentRoot"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{12708453995482030977,4115787865304145168}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"xiiEditorPluginAssets"}
+		VarArray %Properties{}
+		s %TypeName{"xiiColorControlPoint"}
+		u3 %TypeVersion{2}
+	}
+}
+o
+{
+	Uuid %id{u4{11757360558073105519,15956676577570765383}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{""}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiReflectedClass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{10236299322142574248,16632249877562647922}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"xiiEditorPluginAssets"}
+		VarArray %Properties{}
+		s %TypeName{"xiiColorGradientAssetData"}
+		u3 %TypeVersion{2}
+	}
+}
+}

@@ -1,0 +1,183 @@
+#pragma once
+
+#include <Foundation/SimdMath/SimdFloat.h>
+#include <Foundation/SimdMath/SimdVec4b.h>
+
+/// \brief A 4-component SIMD vector class
+class XII_FOUNDATION_DLL xiiSimdVec4f
+{
+public:
+  XII_DECLARE_POD_TYPE();
+
+  xiiSimdVec4f(); // [tested]
+
+  explicit xiiSimdVec4f(float xyzw); // [tested]
+
+  explicit xiiSimdVec4f(const xiiSimdFloat& xyzw); // [tested]
+
+  xiiSimdVec4f(float x, float y, float z, float w = 1.0f); // [tested]
+
+  xiiSimdVec4f(xiiInternal::QuadFloat v); // [tested]
+
+  void Set(float xyzw); // [tested]
+
+  void Set(float x, float y, float z, float w); // [tested]
+
+  void SetX(const xiiSimdFloat& f); // [tested]
+  void SetY(const xiiSimdFloat& f); // [tested]
+  void SetZ(const xiiSimdFloat& f); // [tested]
+  void SetW(const xiiSimdFloat& f); // [tested]
+
+  void SetZero(); // [tested]
+
+  template <int N>
+  void Load(const float* pFloats); // [tested]
+
+  template <int N>
+  void Store(float* pFloats) const; // [tested]
+
+public:
+  template <xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  xiiSimdVec4f GetReciprocal() const; // [tested]
+
+  template <xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  xiiSimdVec4f GetSqrt() const; // [tested]
+
+  template <xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  xiiSimdVec4f GetInvSqrt() const; // [tested]
+
+  template <int N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  xiiSimdFloat GetLength() const; // [tested]
+
+  template <int N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  xiiSimdFloat GetInvLength() const; // [tested]
+
+  template <int N>
+  xiiSimdFloat GetLengthSquared() const; // [tested]
+
+  template <int N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  xiiSimdFloat GetLengthAndNormalize(); // [tested]
+
+  template <int N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  xiiSimdVec4f GetNormalized() const; // [tested]
+
+  template <int N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  void Normalize(); // [tested]
+
+  template <int N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  void NormalizeIfNotZero(const xiiSimdFloat& fEpsilon = xiiMath::SmallEpsilon<float>()); // [tested]
+
+  template <int N>
+  bool IsZero() const; // [tested]
+
+  template <int N>
+  bool IsZero(const xiiSimdFloat& fEpsilon) const; // [tested]
+
+  template <int N>
+  bool IsNormalized(const xiiSimdFloat& fEpsilon = xiiMath::HugeEpsilon<float>()) const; // [tested]
+
+  template <int N>
+  bool IsNaN() const; // [tested]
+
+  template <int N>
+  bool IsValid() const; // [tested]
+
+public:
+  template <int N>
+  xiiSimdFloat GetComponent() const; // [tested]
+
+  xiiSimdFloat GetComponent(int i) const; // [tested]
+
+  xiiSimdFloat x() const; // [tested]
+  xiiSimdFloat y() const; // [tested]
+  xiiSimdFloat z() const; // [tested]
+  xiiSimdFloat w() const; // [tested]
+
+  template <xiiSwizzle::Enum s>
+  xiiSimdVec4f Get() const; // [tested]
+
+  ///\brief x = this[s0], y = this[s1], z = other[s2], w = other[s3]
+  template <xiiSwizzle::Enum s>
+  xiiSimdVec4f GetCombined(const xiiSimdVec4f& other) const; // [tested]
+
+public:
+  xiiSimdVec4f operator-() const;                      // [tested]
+  xiiSimdVec4f operator+(const xiiSimdVec4f& v) const; // [tested]
+  xiiSimdVec4f operator-(const xiiSimdVec4f& v) const; // [tested]
+
+  xiiSimdVec4f operator*(const xiiSimdFloat& f) const; // [tested]
+  xiiSimdVec4f operator/(const xiiSimdFloat& f) const; // [tested]
+
+  xiiSimdVec4f CompMul(const xiiSimdVec4f& v) const; // [tested]
+
+  template <xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  xiiSimdVec4f CompDiv(const xiiSimdVec4f& v) const; // [tested]
+
+  xiiSimdVec4f CompMin(const xiiSimdVec4f& rhs) const; // [tested]
+  xiiSimdVec4f CompMax(const xiiSimdVec4f& rhs) const; // [tested]
+  xiiSimdVec4f Abs() const;                            // [tested]
+  xiiSimdVec4f Floor() const;                          // [tested]
+  xiiSimdVec4f Ceil() const;                           // [tested]
+
+  xiiSimdVec4f FlipSign(const xiiSimdVec4b& cmp) const; // [tested]
+
+  static xiiSimdVec4f Select(const xiiSimdVec4b& cmp, const xiiSimdVec4f& ifTrue, const xiiSimdVec4f& ifFalse); // [tested]
+
+  static xiiSimdVec4f Lerp(const xiiSimdVec4f& a, const xiiSimdVec4f& b, const xiiSimdVec4f& t);
+
+  xiiSimdVec4f& operator+=(const xiiSimdVec4f& v); // [tested]
+  xiiSimdVec4f& operator-=(const xiiSimdVec4f& v); // [tested]
+
+  xiiSimdVec4f& operator*=(const xiiSimdFloat& f); // [tested]
+  xiiSimdVec4f& operator/=(const xiiSimdFloat& f); // [tested]
+
+  xiiSimdVec4b IsEqual(const xiiSimdVec4f& rhs, const xiiSimdFloat& fEpsilon) const; // [tested]
+
+  xiiSimdVec4b operator==(const xiiSimdVec4f& v) const; // [tested]
+  xiiSimdVec4b operator!=(const xiiSimdVec4f& v) const; // [tested]
+  xiiSimdVec4b operator<=(const xiiSimdVec4f& v) const; // [tested]
+  xiiSimdVec4b operator<(const xiiSimdVec4f& v) const;  // [tested]
+  xiiSimdVec4b operator>=(const xiiSimdVec4f& v) const; // [tested]
+  xiiSimdVec4b operator>(const xiiSimdVec4f& v) const;  // [tested]
+
+  template <int N>
+  xiiSimdFloat HorizontalSum() const; // [tested]
+
+  template <int N>
+  xiiSimdFloat HorizontalMin() const; // [tested]
+
+  template <int N>
+  xiiSimdFloat HorizontalMax() const; // [tested]
+
+  template <int N>
+  xiiSimdFloat Dot(const xiiSimdVec4f& v) const; // [tested]
+
+  ///\brief 3D cross product, w is ignored.
+  xiiSimdVec4f CrossRH(const xiiSimdVec4f& v) const; // [tested]
+
+  ///\brief Generates an arbitrary vector such that Dot<3>(GetOrthogonalVector()) == 0
+  xiiSimdVec4f GetOrthogonalVector() const; // [tested]
+
+  static xiiSimdVec4f ZeroVector(); // [tested]
+
+  static xiiSimdVec4f MulAdd(const xiiSimdVec4f& a, const xiiSimdVec4f& b, const xiiSimdVec4f& c); // [tested]
+  static xiiSimdVec4f MulAdd(const xiiSimdVec4f& a, const xiiSimdFloat& b, const xiiSimdVec4f& c); // [tested]
+
+  static xiiSimdVec4f MulSub(const xiiSimdVec4f& a, const xiiSimdVec4f& b, const xiiSimdVec4f& c); // [tested]
+  static xiiSimdVec4f MulSub(const xiiSimdVec4f& a, const xiiSimdFloat& b, const xiiSimdVec4f& c); // [tested]
+
+  static xiiSimdVec4f CopySign(const xiiSimdVec4f& magnitude, const xiiSimdVec4f& sign); // [tested]
+
+public:
+  xiiInternal::QuadFloat m_v;
+};
+
+#include <Foundation/SimdMath/Implementation/SimdVec4f_inl.h>
+
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#  include <Foundation/SimdMath/Implementation/SSE/SSEVec4f_inl.h>
+#elif XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_FPU
+#  include <Foundation/SimdMath/Implementation/FPU/FPUVec4f_inl.h>
+#else
+#  error "Unknown SIMD implementation."
+#endif
