@@ -138,7 +138,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec4)
     {
       xiiMathTestType TypeNaN     = xiiMath::NaN<xiiMathTestType>();
       const xiiVec4T  nanArray[4] = {xiiVec4T(TypeNaN, 0.0f, 0.0f, 0.0f), xiiVec4T(0.0f, TypeNaN, 0.0f, 0.0f), xiiVec4T(0.0f, 0.0f, TypeNaN, 0.0f),
-                                    xiiVec4T(0.0f, 0.0f, 0.0f, TypeNaN)};
+                                     xiiVec4T(0.0f, 0.0f, 0.0f, TypeNaN)};
 
       // IsNaN
       for (int i = 0; i < 4; ++i)
@@ -303,5 +303,41 @@ XII_CREATE_SIMPLE_TEST(Math, Vec4)
 
     // Abs
     XII_TEST_VEC4(vOp1.Abs(), xiiVec4T(4.0, 0.2f, 7.0f, 0.0f), xiiMath::SmallEpsilon<xiiMathTestType>());
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Distance Squared (float)")
+  {
+    xiiVec4 v1(0.0f, -2.0f, 7.0f, 10.0f);
+    xiiVec4 v2(8.0f, 4.0f, 3.0f, -10.0f);
+
+    XII_TEST_FLOAT(v1.DistanceSquared(v2), 516.0f, 0.000001f);
+
+    v1.Set(12012.0f, 212121.0f, 1298129.0f, 100.0f);
+    v2.Set(-12121.0f, -2123.0f, -12891.0f, -100.0f);
+
+    XII_TEST_FLOAT(v1.DistanceSquared(v2), 1765256373625.0f, 0.000001f);
+
+    v1.Set(1000000.0f, 1000000.0f, 1000000.0f, 100.0f);
+    v2.Set(-1000000.0f, -1000000.0f, -1000000.0f, -100.0f);
+
+    XII_TEST_FLOAT(v1.DistanceSquared(v2), 12000000010000.0f, 0.000001f);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Distance Squared (double)")
+  {
+    xiiVec4d v1(0.0, -2.0, 7.0, 10.0);
+    xiiVec4d v2(8.0, 4.0, 3.0, -10.0);
+
+    XII_TEST_DOUBLE(v1.DistanceSquared(v2), 516.0, 0.000001);
+
+    v1.Set(12012.0, 212121.0, 1298129.0, 100.0);
+    v2.Set(-12121.0, -2123.0, -12891.0, -100.0);
+
+    XII_TEST_DOUBLE(v1.DistanceSquared(v2), 1765256373625.0, 0.000001);
+
+    v1.Set(1000000.0, 1000000.0, 1000000.0, 100.0);
+    v2.Set(-1000000.0, -1000000.0, -1000000.0, -100.0);
+
+    XII_TEST_DOUBLE(v1.DistanceSquared(v2), 12000000040000.0, 0.000001);
   }
 }

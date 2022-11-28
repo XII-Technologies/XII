@@ -727,7 +727,7 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(xiiMath::ColorSignedShortToFloat(32767), 1.0f, 0.000001f);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "EvaluateBxiiierCurve")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "EvaluateBezierCurve")
   {
     // Determined through the scientific method of manually comparing the result of the function with an online Bxiiier curve generator:
     // https://www.desmos.com/calculator/cahqdxeshd
@@ -737,7 +737,7 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     const float step = 1.0f / (XII_ARRAY_SIZE(res) - 1);
     for (int i = 0; i < XII_ARRAY_SIZE(res); ++i)
     {
-      const xiiVec2 r = xiiMath::EvaluateBxiiierCurve<xiiVec2>(step * i, xiiVec2(1, 5), xiiVec2(0, 3), xiiVec2(6, 3), xiiVec2(3, 1));
+      const xiiVec2 r = xiiMath::EvaluateBezierCurve<xiiVec2>(step * i, xiiVec2(1, 5), xiiVec2(0, 3), xiiVec2(6, 3), xiiVec2(3, 1));
       XII_TEST_VEC2(r, res[i], 0.002f);
     }
   }
@@ -895,5 +895,34 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_BOOL(xiiMath::TryConvertToSizeT(res, y).Succeeded());
     XII_TEST_BOOL(res == y);
 #endif
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Hypot (float)")
+  {
+    XII_TEST_FLOAT(1.414213562f, xiiMath::Hypot(1.0f, 1.0f), 0.000001f);
+    XII_TEST_FLOAT(2.236067977f, xiiMath::Hypot(2.0f, 1.0f), 0.000001f);
+    XII_TEST_FLOAT(5.0f, xiiMath::Hypot(4.0f, 3.0f), 0.000001f);
+    XII_TEST_FLOAT(11.40175425f, xiiMath::Hypot(9.0f, 7.0f), 0.000001f);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Hypot (double)")
+  {
+    XII_TEST_DOUBLE(1.414213562, xiiMath::Hypot(1.0, 1.0), 0.000001);
+    XII_TEST_DOUBLE(2.236067977, xiiMath::Hypot(2.0, 1.0), 0.000001);
+    XII_TEST_DOUBLE(5.0, xiiMath::Hypot(4.0, 3.0), 0.000001);
+    XII_TEST_DOUBLE(11.40175425, xiiMath::Hypot(9.0, 7.0), 0.000001);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "NormalizeToRange")
+  {
+    XII_TEST_FLOAT(0.5f, xiiMath::NormalizeToRange(5.0f, 0.0f, 10.0f), 0.000001f);
+    XII_TEST_FLOAT(0.0f, xiiMath::NormalizeToRange(0.0f, 0.0f, 10.0f), 0.000001f);
+    XII_TEST_FLOAT(1.0f, xiiMath::NormalizeToRange(10.0f, 0.0f, 10.0f), 0.000001f);
+    XII_TEST_FLOAT(0.3f, xiiMath::NormalizeToRange(3.0f, 0.0f, 10.0f), 0.000001f);
+
+    XII_TEST_DOUBLE(0.5, xiiMath::NormalizeToRange(5.0, 0.0, 10.0), 0.000001);
+    XII_TEST_DOUBLE(0.0, xiiMath::NormalizeToRange(0.0, 0.0, 10.0), 0.000001);
+    XII_TEST_DOUBLE(1.0, xiiMath::NormalizeToRange(10.0, 0.0, 10.0), 0.000001);
+    XII_TEST_DOUBLE(0.3, xiiMath::NormalizeToRange(3.0, 0.0, 10.0), 0.000001);
   }
 }

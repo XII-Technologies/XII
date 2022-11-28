@@ -42,6 +42,20 @@ namespace xiiMath
     return fFactor * fMultiple;
   }
 
+  XII_ALWAYS_INLINE double Sin(double a) { return sin(a); }
+
+  XII_ALWAYS_INLINE double Cos(double a) { return cos(a); }
+
+  XII_ALWAYS_INLINE double Tan(double a) { return tan(a); }
+
+  XII_ALWAYS_INLINE double ASin(double f) { return asin(f); }
+
+  XII_ALWAYS_INLINE double ACos(double f) { return acos(f); }
+
+  XII_ALWAYS_INLINE double ATan(double f) { return atan(f); }
+
+  XII_ALWAYS_INLINE double ATan2(double y, double x) { return atan2(y, x); }
+
   XII_ALWAYS_INLINE double RoundToMultiple(double f, double multiple) { return Round(f / multiple) * multiple; }
 
   XII_ALWAYS_INLINE double Exp(double f) { return exp(f); }
@@ -63,4 +77,9 @@ namespace xiiMath
   XII_ALWAYS_INLINE double Sqrt(double f) { return sqrt(f); }
 
   XII_ALWAYS_INLINE double Mod(double f, double div) { return fmod(f, div); }
+
+  XII_ALWAYS_INLINE double Hypot(double x, double y) { return sqrt(pow(x, 2.0) + pow(y, 2.0)); }
+
+  XII_ALWAYS_INLINE double NormalizeToRange(double value, double min, double max) { return (value - min) / (max - min); }
+
 } // namespace xiiMath

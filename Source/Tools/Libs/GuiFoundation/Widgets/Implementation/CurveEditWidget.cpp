@@ -1068,7 +1068,7 @@ void xiiQtCurveEditWidget::PaintSelectedTangentHandles(QPainter* painter) const
 
     if (bDrawLeft && tmLeft != xiiCurveTangentMode::Linear && tmLeft != xiiCurveTangentMode::Auto)
     {
-      if (tmLeft == xiiCurveTangentMode::Bxiiier)
+      if (tmLeft == xiiCurveTangentMode::Bezier)
       {
         const xiiVec2d leftHandlePos = cp.m_Position + xiiVec2d(cp.m_LeftTangent.x, cp.m_LeftTangent.y);
         const QPointF  ptPosLeft     = MapFromScene(QPointF(leftHandlePos.x, leftHandlePos.y));
@@ -1086,7 +1086,7 @@ void xiiQtCurveEditWidget::PaintSelectedTangentHandles(QPainter* painter) const
 
     if (bDrawRight && tmRight != xiiCurveTangentMode::Linear && tmRight != xiiCurveTangentMode::Auto)
     {
-      if (tmRight == xiiCurveTangentMode::Bxiiier)
+      if (tmRight == xiiCurveTangentMode::Bezier)
       {
         const xiiVec2d rightHandlePos = cp.m_Position + xiiVec2d(cp.m_RightTangent.x, cp.m_RightTangent.y);
         const QPointF  ptPosRight     = MapFromScene(QPointF(rightHandlePos.x, rightHandlePos.y));

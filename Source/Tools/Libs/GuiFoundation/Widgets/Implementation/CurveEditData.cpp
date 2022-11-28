@@ -6,7 +6,7 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiCurveTangentMode, 1)
-XII_ENUM_CONSTANTS(xiiCurveTangentMode::Bxiiier, xiiCurveTangentMode::FixedLength, xiiCurveTangentMode::Linear, xiiCurveTangentMode::Auto)
+XII_ENUM_CONSTANTS(xiiCurveTangentMode::Bezier, xiiCurveTangentMode::FixedLength, xiiCurveTangentMode::Linear, xiiCurveTangentMode::Auto)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCurveControlPointData, 5, xiiRTTIDefaultAllocator<xiiCurveControlPointData>)
@@ -194,8 +194,8 @@ public:
       xiiVec2 pt = pPoint->m_Value.Get<xiiVec2>();
       pNode->AddProperty("Time", (double)xiiMath::Max(0.0f, pt.x));
       pNode->AddProperty("Value", (double)pt.y);
-      pNode->AddProperty("LeftTangentMode", (xiiUInt32)xiiCurveTangentMode::Bxiiier);
-      pNode->AddProperty("RightTangentMode", (xiiUInt32)xiiCurveTangentMode::Bxiiier);
+      pNode->AddProperty("LeftTangentMode", (xiiUInt32)xiiCurveTangentMode::Bezier);
+      pNode->AddProperty("RightTangentMode", (xiiUInt32)xiiCurveTangentMode::Bezier);
     }
   }
 };

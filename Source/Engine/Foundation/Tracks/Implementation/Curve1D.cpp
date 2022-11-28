@@ -329,7 +329,7 @@ void xiiCurve1D::ApproximateCurve(
   double          fMaxErrorY,
   xiiInt32        iSubDivLeft)
 {
-  const xiiVec2d cubicCenter = xiiMath::EvaluateBxiiierCurve(0.5, p0, p1, p2, p3);
+  const xiiVec2d cubicCenter = xiiMath::EvaluateBezierCurve(0.5, p0, p1, p2, p3);
 
   ApproximateCurvePiece(p0, p1, p2, p3, 0.0f, p0, 0.5, cubicCenter, fMaxErrorX, fMaxErrorY, iSubDivLeft);
 
@@ -348,7 +348,7 @@ void xiiCurve1D::ApproximateCurvePiece(const xiiVec2d& p0, const xiiVec2d& p1, c
 
   const double tCenter = xiiMath::Lerp(tLeft, tRight, 0.5);
 
-  const xiiVec2d cubicCenter  = xiiMath::EvaluateBxiiierCurve(tCenter, p0, p1, p2, p3);
+  const xiiVec2d cubicCenter  = xiiMath::EvaluateBezierCurve(tCenter, p0, p1, p2, p3);
   const xiiVec2d linearCenter = xiiMath::Lerp(pLeft, pRight, 0.5);
 
   // check whether the linear interpolation between pLeft and pRight would already result in a good enough approximation

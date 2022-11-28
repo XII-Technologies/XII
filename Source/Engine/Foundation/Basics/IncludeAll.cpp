@@ -89,7 +89,7 @@
 #include <Foundation/Math/Color16f.h>
 #include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Math/Constants.h>
-#include <Foundation/Math/CurveFunctions.h>
+#include <Foundation/Math/Easing.h>
 #include <Foundation/Math/Declarations.h>
 #include <Foundation/Math/FixedPoint.h>
 #include <Foundation/Math/Float16.h>

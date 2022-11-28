@@ -116,6 +116,13 @@ public:
   /// \brief Checks that all components are finite numbers.
   bool IsValid() const; // [tested]
 
+  /// \brief Returns the distance between two 3D Vectors.
+  Type Distance(const xiiVec4Template<Type>& point) const; // [tested]
+
+  /// \brief Returns the squared distance between two 3D Vectors. Faster, since no square-root is taken. Useful, if one only wants to compare the distance of two
+  /// vectors regardless of the magnitude.
+  Type DistanceSquared(const xiiVec4Template<Type>& point) const; // [tested]
+
 
   // *** Operators ***
 public:
