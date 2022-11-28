@@ -15,7 +15,7 @@ struct XII_FOUNDATION_DLL xiiCurveTangentMode
 
   enum Enum
   {
-    Bxiiier,
+    Bezier,
     FixedLength,
     Linear,
     // Constant,

@@ -71,6 +71,14 @@ XII_FORCE_INLINE Type xiiVec3Template<Type>::GetLengthSquared() const
 }
 
 template <typename Type>
+XII_FORCE_INLINE Type xiiVec3Template<Type>::GetLengthSquared2D() const
+{
+  XII_NAN_ASSERT(this);
+
+  return (x * x + y * y);
+}
+
+template <typename Type>
 XII_FORCE_INLINE Type xiiVec3Template<Type>::GetLengthAndNormalize()
 {
   const Type fLength = GetLength();
@@ -160,6 +168,21 @@ bool xiiVec3Template<Type>::IsValid() const
     return false;
 
   return true;
+}
+
+template <typename Type>
+XII_ALWAYS_INLINE Type xiiVec3Template<Type>::Distance(const xiiVec3Template<Type>& point) const
+{
+  return (xiiMath::Sqrt(DistanceSquared(point)));
+}
+
+template <typename Type>
+XII_ALWAYS_INLINE Type xiiVec3Template<Type>::DistanceSquared(const xiiVec3Template<Type>& point) const
+{
+  XII_NAN_ASSERT(&point);
+  XII_NAN_ASSERT(this);
+
+  return (xiiMath::Square(point.x - x) + xiiMath::Square(point.y - y) + xiiMath::Square(point.z - z));
 }
 
 template <typename Type>

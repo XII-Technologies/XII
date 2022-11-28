@@ -93,6 +93,10 @@ public:
   /// vectors.
   Type GetLengthSquared() const; // [tested]
 
+  /// \brief Returns the squared length in the XY plane. Faster, since no square-root is taken. Useful, if one only wants to compare the lengths of two
+  /// vectors.
+  Type GetLengthSquared2D() const; // [untest]
+
   /// \brief Normalizes this vector and returns its previous length in one operation. More efficient than calling GetLength and then
   /// Normalize.
   Type GetLengthAndNormalize(); // [tested]
@@ -123,6 +127,13 @@ public:
 
   /// \brief Checks that all components are finite numbers.
   bool IsValid() const; // [tested]
+
+  /// \brief Returns the distance between two 3D Vectors.
+  Type Distance(const xiiVec3Template<Type>& point) const; // [tested]
+
+  /// \brief Returns the squared distance between two 3D Vectors. Faster, since no square-root is taken. Useful, if one only wants to compare the distance of two
+  /// vectors regardless of the magnitude.
+  Type DistanceSquared(const xiiVec3Template<Type>& point) const; // [tested]
 
 
   // *** Operators ***

@@ -394,7 +394,7 @@ namespace xiiMath
   }
 
   template <typename T, typename T2>
-  T EvaluateBxiiierCurve(T2 t, const T& startPoint, const T& controlPoint1, const T& controlPoint2, const T& endPoint)
+  T EvaluateBezierCurve(T2 t, const T& startPoint, const T& controlPoint1, const T& controlPoint2, const T& endPoint)
   {
     const T2 mt = 1 - t;
 

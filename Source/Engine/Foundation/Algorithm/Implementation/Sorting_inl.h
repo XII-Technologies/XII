@@ -36,6 +36,78 @@ void xiiSorting::InsertionSort(xiiArrayPtr<T>& arrayPtr, const Comparer& compare
 }
 
 template <typename Container, typename Comparer>
+void xiiSorting::BubbleSort(Container& container, const Comparer& comparer)
+{
+  if (container.IsEmpty())
+    return;
+
+  BubbleSort(container, 0, container.GetCount() - 1, comparer);
+}
+
+template <typename T, typename Comparer>
+void xiiSorting::BubbleSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer)
+{
+  if (arrayPtr.IsEmpty())
+    return;
+
+  BubbleSort(arrayPtr, 0, arrayPtr.GetCount() - 1, comparer);
+}
+
+template <typename Container, typename Comparer>
+void xiiSorting::SelectionSort(Container& container, const Comparer& comparer)
+{
+  if (container.IsEmpty())
+    return;
+
+  SelectionSort(container, 0, container.GetCount() - 1, comparer);
+}
+
+template <typename T, typename Comparer>
+void xiiSorting::SelectionSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer)
+{
+  if (arrayPtr.IsEmpty())
+    return;
+
+  SelectionSort(arrayPtr, 0, arrayPtr.GetCount() - 1, comparer);
+}
+
+template <typename Container, typename Comparer>
+void xiiSorting::SelectionSortStable(Container& container, const Comparer& comparer)
+{
+  if (container.IsEmpty())
+    return;
+
+  SelectionSortStable(container, 0, container.GetCount() - 1, comparer);
+}
+
+template <typename T, typename Comparer>
+void xiiSorting::SelectionSortStable(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer)
+{
+  if (arrayPtr.IsEmpty())
+    return;
+
+  SelectionSortStable(arrayPtr, 0, arrayPtr.GetCount() - 1, comparer);
+}
+
+template <typename Container, typename Comparer>
+void xiiSorting::MergeSort(Container& container, const Comparer& comparer)
+{
+  if (container.IsEmpty())
+    return;
+
+  MergeSort(container, 0, container.GetCount() - 1, comparer);
+}
+
+template <typename T, typename Comparer>
+void xiiSorting::MergeSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer)
+{
+  if (arrayPtr.IsEmpty())
+    return;
+
+  MergeSort(arrayPtr, 0, arrayPtr.GetCount() - 1, comparer);
+}
+
+template <typename Container, typename Comparer>
 void xiiSorting::QuickSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
   if (uiStartIndex < uiEndIndex)
@@ -273,4 +345,320 @@ void xiiSorting::InsertionSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex,
       ptr[uiHoleIndex] = std::move(valueToInsert);
     }
   }
+}
+
+template <typename Container, typename Comparer>
+void xiiSorting::BubbleSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+{
+  bool sorted = false;
+
+  while (!sorted)
+  {
+    sorted = true;
+
+    for (xiiUInt32 i = uiStartIndex + 1; i <= uiEndIndex; ++i)
+    {
+      xiiUInt32 uiHoleIndex = i;
+      if (DoCompare(comparer, container[uiHoleIndex], container[uiHoleIndex - 1]))
+      {
+        xiiMath::Swap(container[uiHoleIndex], container[uiHoleIndex - 1]);
+        sorted = false;
+      }
+    }
+  }
+}
+
+template <typename T, typename Comparer>
+void xiiSorting::BubbleSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+{
+  T*   ptr    = arrayPtr.GetPtr();
+  bool sorted = false;
+
+  while (!sorted)
+  {
+    sorted = true;
+
+    for (xiiUInt32 i = uiStartIndex + 1; i <= uiEndIndex; ++i)
+    {
+      xiiUInt32 uiHoleIndex = i;
+      if (DoCompare(comparer, ptr[uiHoleIndex], ptr[uiHoleIndex - 1]))
+      {
+        xiiMath::Swap(ptr[uiHoleIndex], ptr[uiHoleIndex - 1]);
+        sorted = false;
+      }
+    }
+  }
+}
+
+template <typename Container, typename Comparer>
+void xiiSorting::SelectionSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+{
+  for (xiiUInt32 i = uiStartIndex; i <= uiEndIndex; ++i)
+  {
+    xiiUInt32 uiMinIndex  = i;
+    xiiUInt32 uiHoleIndex = i;
+
+    // Find Minimum
+    for (xiiUInt32 j = i + 1; j <= uiEndIndex; ++j)
+    {
+      // If Container at j is less than the current minimum, set Container current index (j) as the new minimum.
+      xiiUInt32 uiHoleIndexMin = j;
+      if (DoCompare(comparer, container[uiHoleIndexMin], container[uiMinIndex]))
+      {
+        uiMinIndex = j;
+      }
+    }
+
+    xiiMath::Swap(container[uiHoleIndex], container[uiMinIndex]);
+  }
+}
+
+template <typename T, typename Comparer>
+void xiiSorting::SelectionSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+{
+  T* ptr = arrayPtr.GetPtr();
+
+  for (xiiUInt32 i = uiStartIndex; i <= uiEndIndex; ++i)
+  {
+    xiiUInt32 uiMinIndex  = i;
+    xiiUInt32 uiHoleIndex = i;
+
+    // Find Minimum
+    for (xiiUInt32 j = i + 1; j <= uiEndIndex; ++j)
+    {
+      // If Container at j is less than the current minimum, set Container current index (j) as the new minimum.
+      xiiUInt32 uiHoleIndexMin = j;
+      if (DoCompare(comparer, ptr[uiHoleIndexMin], ptr[uiMinIndex]))
+      {
+        uiMinIndex = j;
+      }
+    }
+
+    xiiMath::Swap(ptr[uiHoleIndex], ptr[uiMinIndex]);
+  }
+}
+
+template <typename Container, typename Comparer>
+void xiiSorting::SelectionSortStable(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+{
+  for (xiiUInt32 i = uiStartIndex; i <= uiEndIndex; ++i)
+  {
+    xiiUInt32 uiMinIndex  = i;
+    xiiUInt32 uiHoleIndex = i;
+
+    // Find Minimum
+    for (xiiUInt32 j = i + 1; j <= uiEndIndex; ++j)
+    {
+      // If Container at j is less than the current minimum, set Container current index (j) as the new minimum.
+      xiiUInt32 uiHoleIndexMin = j;
+      if (DoCompare(comparer, container[uiHoleIndexMin], container[uiMinIndex]))
+      {
+        uiMinIndex = j;
+      }
+    }
+
+    // In a stable selection sort, loop through all remaining elements and swap in to preserve order.
+    // This essentially 'shifts' the minimum farthest to the left of the container (to the current 'i').
+    auto valueStorage = container[uiMinIndex];
+    while (uiMinIndex > i)
+    {
+      container[uiMinIndex] = container[uiMinIndex - 1];
+      --uiMinIndex;
+    }
+    container[i] = valueStorage;
+  }
+}
+
+template <typename T, typename Comparer>
+void xiiSorting::SelectionSortStable(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+{
+  T* ptr = arrayPtr.GetPtr();
+
+  for (xiiUInt32 i = uiStartIndex; i <= uiEndIndex; ++i)
+  {
+    xiiUInt32 uiMinIndex  = i;
+    xiiUInt32 uiHoleIndex = i;
+
+    // Find Minimum
+    for (xiiUInt32 j = i + 1; j <= uiEndIndex; ++j)
+    {
+      // If Container at j is less than the current minimum, set Container current index (j) as the new minimum.
+      xiiUInt32 uiHoleIndexMin = j;
+      if (DoCompare(comparer, ptr[uiHoleIndexMin], ptr[uiMinIndex]))
+      {
+        uiMinIndex = j;
+      }
+    }
+
+    // In a stable selection sort, loop through all remaining elements and swap in to preserve order.
+    // This essentially 'shifts' the minimum farthest to the left of the container (to the current 'i').
+    auto valueStorage = ptr[uiMinIndex];
+    while (uiMinIndex > i)
+    {
+      ptr[uiMinIndex] = ptr[uiMinIndex - 1];
+      --uiMinIndex;
+    }
+    ptr[i] = valueStorage;
+  }
+}
+
+template <typename Container, typename Comparer>
+void xiiSorting::MergeSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+{
+  if (uiStartIndex >= uiEndIndex)
+    return;
+
+  // The same as uiStartIndex + (uiEndIndex - uiStartIndex) / 2.
+  xiiUInt32 uiMiddleIndex = (uiStartIndex + uiEndIndex) >> 1;
+
+  MergeSort(container, uiStartIndex, uiMiddleIndex, comparer);
+  MergeSort(container, uiMiddleIndex + 1, uiEndIndex, comparer);
+  Merge(container, uiStartIndex, uiMiddleIndex, uiEndIndex, comparer);
+}
+
+template <typename T, typename Comparer>
+void xiiSorting::MergeSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+{
+  if (uiStartIndex >= uiEndIndex)
+    return;
+
+  // The same as uiStartIndex + (uiEndIndex - uiStartIndex) / 2.
+  xiiUInt32 uiMiddleIndex = (uiStartIndex + uiEndIndex) >> 1;
+
+  // Sort first and second halves and merge the result.
+  MergeSort(arrayPtr, uiStartIndex, uiMiddleIndex, comparer);
+  MergeSort(arrayPtr, uiMiddleIndex + 1, uiEndIndex, comparer);
+  Merge(arrayPtr, uiStartIndex, uiMiddleIndex, uiEndIndex, comparer);
+}
+
+template <typename Container, typename Comparer>
+void xiiSorting::Merge(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiMiddleIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+{
+  xiiUInt32 i{}, j{}, k{};
+  xiiUInt32 uiRightSideSize = uiEndIndex - uiMiddleIndex;
+  xiiUInt32 uiLeftSideSize  = uiMiddleIndex - uiStartIndex + 1;
+
+  // Create temporary arrays to store container data.
+  auto leftSideContainer  = new std::remove_reference_t<decltype(container[0])>[uiLeftSideSize];
+  auto rightSideContainer = new std::remove_reference_t<decltype(container[0])>[uiRightSideSize];
+
+  // Copy left side data.
+  for (i = 0; i < uiLeftSideSize; ++i)
+  {
+    leftSideContainer[i] = container[uiStartIndex + i];
+  }
+
+  // Copy right side data.
+  for (j = 0; j < uiRightSideSize; ++j)
+  {
+    rightSideContainer[j] = container[uiMiddleIndex + 1 + j];
+  }
+
+  // Merge and sort the temporary arrays into the container.
+  i = 0;            // Initial index of the left side array.
+  j = 0;            // Initial index of the right side array.
+  k = uiStartIndex; // Initial index tracking which part of the container has been merged.
+
+  while (i < uiLeftSideSize && j < uiRightSideSize)
+  {
+    if (DoCompare(comparer, leftSideContainer[i], rightSideContainer[j]))
+    {
+      container[k] = leftSideContainer[i];
+      ++i;
+    }
+    else
+    {
+      container[k] = rightSideContainer[j];
+      ++j;
+    }
+
+    ++k;
+  }
+
+  // Copy the remaining elements of the left side array if any.
+  while (i < uiLeftSideSize)
+  {
+    container[k] = leftSideContainer[i];
+    ++i;
+    ++k;
+  }
+
+  // Copy the remaining elements of the right side array if any.
+  while (j < uiRightSideSize)
+  {
+    container[k] = rightSideContainer[j];
+    ++j;
+    ++k;
+  }
+
+  // Free heap allocated temporary arrays.
+  delete[] leftSideContainer, rightSideContainer;
+}
+
+template <typename T, typename Comparer>
+void xiiSorting::Merge(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiMiddleIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+{
+  T* ptr = arrayPtr.GetPtr();
+
+  xiiUInt32 i{}, j{}, k{};
+  xiiUInt32 uiRightSideSize = uiEndIndex - uiMiddleIndex;
+  xiiUInt32 uiLeftSideSize  = uiMiddleIndex - uiStartIndex + 1;
+
+  // Create temporary arrays to store container data.
+  T* leftSideContainer  = new T[uiLeftSideSize];
+  T* rightSideContainer = new T[uiRightSideSize];
+
+  // Copy left side data.
+  for (i = 0; i < uiLeftSideSize; ++i)
+  {
+    T value              = ptr[uiStartIndex + i];
+    leftSideContainer[i] = value;
+  }
+
+  // Copy right side data.
+  for (j = 0; j < uiRightSideSize; ++j)
+  {
+    T value               = ptr[uiMiddleIndex + 1 + j];
+    rightSideContainer[j] = value;
+  }
+
+  // Merge and sort the temporary arrays into the container.
+  i = 0;            // Initial index of the left side array.
+  j = 0;            // Initial index of the right side array.
+  k = uiStartIndex; // Initial index tracking which part of the container has been merged.
+
+  while (i < uiLeftSideSize && j < uiRightSideSize)
+  {
+    if (DoCompare(comparer, leftSideContainer[i], rightSideContainer[j]))
+    {
+      ptr[k] = leftSideContainer[i];
+      ++i;
+    }
+    else
+    {
+      ptr[k] = rightSideContainer[j];
+      ++j;
+    }
+
+    ++k;
+  }
+
+  // Copy the remaining elements of the left side array if any.
+  while (i < uiLeftSideSize)
+  {
+    ptr[k] = leftSideContainer[i];
+    ++i;
+    ++k;
+  }
+
+  // Copy the remaining elements of the right side array if any.
+  while (j < uiRightSideSize)
+  {
+    ptr[k] = rightSideContainer[j];
+    ++j;
+    ++k;
+  }
+
+  // Free heap allocated temporary arrays.
+  delete[] leftSideContainer, rightSideContainer;
 }

@@ -333,7 +333,7 @@ namespace xiiMath
   /// \brief Evaluates the cubic spline defined by four control points at time \a t and returns the interpolated result.
   /// Can be used with T as float, vec2, vec3 or vec4
   template <typename T, typename T2>
-  T EvaluateBxiiierCurve(T2 t, const T& startPoint, const T& controlPoint1, const T& controlPoint2, const T& endPoint);
+  T EvaluateBezierCurve(T2 t, const T& startPoint, const T& controlPoint1, const T& controlPoint2, const T& endPoint);
 
   /// \brief out_Result = \a a * \a b. If an overflow happens, XII_FAILURE is returned.
   XII_FOUNDATION_DLL xiiResult TryMultiply32(xiiUInt32& out_Result, xiiUInt32 a, xiiUInt32 b, xiiUInt32 c = 1, xiiUInt32 d = 1); // [tested]
@@ -352,6 +352,18 @@ namespace xiiMath
 
   /// \brief Checks whether the given 64bit value actually fits into size_t, If it doesn't the program is terminated.
   XII_FOUNDATION_DLL size_t SafeConvertToSizeT(xiiUInt64 uiValue);
+
+  /// \brief Returns the hypotenuse of a given x and y term.
+  float Hypot(float x, float y);
+
+  /// \brief Returns the hypotenuse of a given x and y term.
+  double Hypot(double x, double y);
+
+  /// \brief Calculates a value between 0 and 1, given the precondition that the value is between the min and the max. 0 means value = min and 1 means value = max.
+  float NormalizeToRange(float value, float min, float max);
+
+  /// \brief Calculates a value between 0 and 1, given the precondition that the value is between the min and the max. 0 means value = min and 1 means value = max.
+  double NormalizeToRange(double value, double min, double max);
 
 } // namespace xiiMath
 

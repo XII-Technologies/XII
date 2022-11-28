@@ -237,6 +237,21 @@ inline bool xiiVec4Template<Type>::IsValid() const
 }
 
 template <typename Type>
+XII_ALWAYS_INLINE Type xiiVec4Template<Type>::Distance(const xiiVec4Template<Type>& point) const
+{
+  return (xiiMath::Sqrt(DistanceSquared(point)));
+}
+
+template <typename Type>
+XII_ALWAYS_INLINE Type xiiVec4Template<Type>::DistanceSquared(const xiiVec4Template<Type>& point) const
+{
+  XII_NAN_ASSERT(&point);
+  XII_NAN_ASSERT(this);
+
+  return (xiiMath::Square(point.x - x) + xiiMath::Square(point.y - y) + xiiMath::Square(point.z - z)) + xiiMath::Square(point.w - w);
+}
+
+template <typename Type>
 XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec4Template<Type>::operator-() const
 {
   XII_NAN_ASSERT(this);

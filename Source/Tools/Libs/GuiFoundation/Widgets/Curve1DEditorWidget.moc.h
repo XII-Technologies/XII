@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Foundation/Math/CurveFunctions.h>
+#include <Foundation/Math/Easing.h>
 #include <Foundation/Tracks/Curve1D.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <GuiFoundation/ui_Curve1DEditorWidget.h>
@@ -62,7 +62,7 @@ private Q_SLOTS:
   void onFlattenTangents();
   void onSelectionChanged();
   void onMoveCurve(xiiInt32 iCurve, double moveY);
-  void onGenerateCurve(xiiMath::xiiCurveFunction function, bool inverse);
+  void onGenerateCurve(xiiMath::xiiEasingFunctions function, bool inverse);
   void onSaveAsPreset();
   void onLoadPreset();
 

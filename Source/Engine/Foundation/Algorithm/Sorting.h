@@ -27,6 +27,42 @@ public:
   template <typename T, typename Comparer>
   static void InsertionSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer = Comparer()); // [tested]
 
+
+  /// \brief Sorts the elements in container using bubble sort (stable and in-place).
+  template <typename Container, typename Comparer>
+  static void BubbleSort(Container& container, const Comparer& comparer = Comparer()); // [tested]
+
+  /// \brief Sorts the elements in the array using bubble sort (stable and in-place).
+  template <typename T, typename Comparer>
+  static void BubbleSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer = Comparer()); // [tested]
+
+
+  /// \brief Sorts the elements in container using selection sort (unstable and in-place).
+  template <typename Container, typename Comparer>
+  static void SelectionSort(Container& container, const Comparer& comparer = Comparer()); // [tested]
+
+  /// \brief Sorts the elements in the array using selection sort (unstable and in-place).
+  template <typename T, typename Comparer>
+  static void SelectionSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer = Comparer()); // [tested]
+
+
+  /// \brief Sorts the elements in container using selection sort (stable and in-place).
+  template <typename Container, typename Comparer>
+  static void SelectionSortStable(Container& container, const Comparer& comparer = Comparer()); // [tested]
+
+  /// \brief Sorts the elements in the array using selection sort (stable and in-place).
+  template <typename T, typename Comparer>
+  static void SelectionSortStable(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer = Comparer()); // [tested]
+
+
+  /// \brief Sorts the elements in container using merge sort (stable and not in-place).
+  template <typename Container, typename Comparer>
+  static void MergeSort(Container& container, const Comparer& comparer = Comparer()); // [untested]
+
+  /// \brief Sorts the elements in the array using merge sort (stable and not in-place).
+  template <typename T, typename Comparer>
+  static void MergeSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer = Comparer()); // [untested]
+
 private:
   enum
   {
@@ -72,6 +108,41 @@ private:
 
   template <typename T, typename Comparer>
   static void InsertionSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+
+
+  template <typename Container, typename Comparer>
+  static void BubbleSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+
+  template <typename T, typename Comparer>
+  static void BubbleSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+
+
+  template <typename Container, typename Comparer>
+  static void SelectionSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+
+  template <typename T, typename Comparer>
+  static void SelectionSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+
+
+  template <typename Container, typename Comparer>
+  static void SelectionSortStable(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+
+  template <typename T, typename Comparer>
+  static void SelectionSortStable(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+
+
+  template <typename Container, typename Comparer>
+  static void MergeSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+
+  template <typename T, typename Comparer>
+  static void MergeSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+
+
+  template <typename Container, typename Comparer>
+  static void Merge(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiMiddleIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+
+  template <typename T, typename Comparer>
+  static void Merge(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiMiddleIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 };
 
 #include <Foundation/Algorithm/Implementation/Sorting_inl.h>

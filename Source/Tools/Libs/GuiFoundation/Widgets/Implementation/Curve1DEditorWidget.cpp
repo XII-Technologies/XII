@@ -8,10 +8,12 @@
 #include <Foundation/Math/Math.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <GuiFoundation/Widgets/Curve1DEditorWidget.moc.h>
+
 #include <QGraphicsItem>
 #include <QGraphicsSceneEvent>
 #include <QMenu>
 #include <QPainterPath>
+
 #include <ToolsFoundation/Project/ToolsProject.h>
 
 xiiDynamicArray<xiiString> xiiQtCurve1DEditorWidget::s_CurvePresets;
@@ -562,17 +564,17 @@ void xiiQtCurve1DEditorWidget::onContextMenu(QPoint pos, QPointF scenePos)
       QMenu* cmBT = cmSel->addMenu("Both Tangents");
 
       cmLT->addAction("Auto", this, [this]() { SetTangentMode(xiiCurveTangentMode::Auto, true, false); });
-      cmLT->addAction("Bxiiier", this, [this]() { SetTangentMode(xiiCurveTangentMode::Bxiiier, true, false); });
+      cmLT->addAction("Bezier", this, [this]() { SetTangentMode(xiiCurveTangentMode::Bezier, true, false); });
       cmLT->addAction("Fixed Length", this, [this]() { SetTangentMode(xiiCurveTangentMode::FixedLength, true, false); });
       cmLT->addAction("Linear", this, [this]() { SetTangentMode(xiiCurveTangentMode::Linear, true, false); });
 
       cmRT->addAction("Auto", this, [this]() { SetTangentMode(xiiCurveTangentMode::Auto, false, true); });
-      cmRT->addAction("Bxiiier", this, [this]() { SetTangentMode(xiiCurveTangentMode::Bxiiier, false, true); });
+      cmRT->addAction("Bezier", this, [this]() { SetTangentMode(xiiCurveTangentMode::Bezier, false, true); });
       cmRT->addAction("Fixed Length", this, [this]() { SetTangentMode(xiiCurveTangentMode::FixedLength, false, true); });
       cmRT->addAction("Linear", this, [this]() { SetTangentMode(xiiCurveTangentMode::Linear, false, true); });
 
       cmBT->addAction("Auto", this, [this]() { SetTangentMode(xiiCurveTangentMode::Auto, true, true); });
-      cmBT->addAction("Bxiiier", this, [this]() { SetTangentMode(xiiCurveTangentMode::Bxiiier, true, true); });
+      cmBT->addAction("Bezier", this, [this]() { SetTangentMode(xiiCurveTangentMode::Bezier, true, true); });
       cmBT->addAction("Fixed Length", this, [this]() { SetTangentMode(xiiCurveTangentMode::FixedLength, true, true); });
       cmBT->addAction("Linear", this, [this]() { SetTangentMode(xiiCurveTangentMode::Linear, true, true); });
     }
@@ -588,7 +590,8 @@ void xiiQtCurve1DEditorWidget::onContextMenu(QPoint pos, QPointF scenePos)
       cm->addAction("Loop: Adjust First Point", this, [this]() { MakeRepeatable(false); });
       cm->addAction("Clear Curve", this, [this]() { ClearAllPoints(); });
 
-      cm->addAction("Frame Curve\tCtrl+F", this, [this]() { FrameCurve(); });
+      cm->addAction(
+        "Frame Curve\tCtrl+F", this, [this]() { FrameCurve(); });
     }
   }
 
@@ -605,114 +608,124 @@ void xiiQtCurve1DEditorWidget::onContextMenu(QPoint pos, QPointF scenePos)
   }
 
   {
-    QMenu* curveMenu = presentsMenu->addMenu("0 -> 1 (slow)");
+    QMenu* cm = presentsMenu->addMenu("Constants");
 
-    // clang-format off
-    curveMenu->addAction("Linear", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::Linear, false); });
-    curveMenu->addAction("Sine", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInSine, false); });
-    curveMenu->addAction("Quad", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInQuad, false); });
-    curveMenu->addAction("Cubic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInCubic, false); });
-    curveMenu->addAction("Quartic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInQuartic, false); });
-    curveMenu->addAction("Quintic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInQuintic, false); });
-    curveMenu->addAction("Exponential", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInExpo, false); });
-    curveMenu->addAction("Overshoot", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInBack, false); });
-    curveMenu->addAction("Elastic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInElastic, false); });
-    curveMenu->addAction("Bounce", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInBounce, false); });
-    // clang-format on
+    cm->addAction("Constant Zero", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::ConstantZero, false); });
+    cm->addAction("Constant Quarter", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::ConstantQuarter, false); });
+    cm->addAction("Constant Half", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::ConstantHalf, false); });
+    cm->addAction("Constant Three Fourths", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::ConstantThreeFourths, false); });
+    cm->addAction("Constant One", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::ConstantOne, false); });
+  }
+
+  /// Direct
+
+  {
+    QMenu* curveMenu = presentsMenu->addMenu("Ease In");
+
+    curveMenu->addAction("Linear", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InLinear, false); });
+    curveMenu->addAction("Sine", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InSine, false); });
+    curveMenu->addAction("Quadratic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InQuad, false); });
+    curveMenu->addAction("Cubic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InCubic, false); });
+    curveMenu->addAction("Quartic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InQuartic, false); });
+    curveMenu->addAction("Quintic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InQuintic, false); });
+    curveMenu->addAction("Exponential", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InExpo, false); });
+    curveMenu->addAction("Circ", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InCirc, false); });
+    curveMenu->addAction("Back", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InBack, false); });
+    curveMenu->addAction("Elastic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InElastic, false); });
+    curveMenu->addAction("Bounce", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InBounce, false); });
   }
 
   {
-    QMenu* curveMenu = presentsMenu->addMenu("0 -> 1 (fast)");
+    QMenu* curveMenu = presentsMenu->addMenu("Ease Out");
 
-    // clang-format off
-    curveMenu->addAction("Linear", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::Linear, false); });
-    curveMenu->addAction("Sine", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutSine, false); });
-    curveMenu->addAction("Quad", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutQuad, false); });
-    curveMenu->addAction("Cubic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutCubic, false); });
-    curveMenu->addAction("Quartic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutQuartic, false); });
-    curveMenu->addAction("Quintic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutQuintic, false); });
-    curveMenu->addAction("Exponential", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutExpo, false); });
-    curveMenu->addAction("Overshoot", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutBack, false); });
-    curveMenu->addAction("Elastic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutElastic, false); });
-    curveMenu->addAction("Bounce", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutBounce, false); });
-    // clang-format on
+    curveMenu->addAction("Linear", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutLinear, false); });
+    curveMenu->addAction("Sine", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutSine, false); });
+    curveMenu->addAction("Quadratic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutQuad, false); });
+    curveMenu->addAction("Cubic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutCubic, false); });
+    curveMenu->addAction("Quartic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutQuartic, false); });
+    curveMenu->addAction("Quintic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutQuintic, false); });
+    curveMenu->addAction("Exponential", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutExpo, false); });
+    curveMenu->addAction("Circ", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutCirc, false); });
+    curveMenu->addAction("Back", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutBack, false); });
+    curveMenu->addAction("Elastic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutElastic, false); });
+    curveMenu->addAction("Bounce", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutBounce, false); });
   }
 
   {
-    QMenu* curveMenu = presentsMenu->addMenu("0 -> 1 (s/f/s)");
+    QMenu* curveMenu = presentsMenu->addMenu("Ease In Out");
 
-    // clang-format off
-    curveMenu->addAction("Sine", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutSine, false); });
-    curveMenu->addAction("Quad", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutQuad, false); });
-    curveMenu->addAction("Cubic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutCubic, false); });
-    curveMenu->addAction("Quartic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutQuartic, false); });
-    curveMenu->addAction("Quintic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutQuintic, false); });
-    curveMenu->addAction("Exponential", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutExpo, false); });
-    curveMenu->addAction("Overshoot", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutBack, false); });
-    curveMenu->addAction("Elastic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutElastic, false); });
-    curveMenu->addAction("Bounce", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutBounce, false); });
-    // clang-format on
+    curveMenu->addAction("Linear", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutLinear, false); });
+    curveMenu->addAction("Sine", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutSine, false); });
+    curveMenu->addAction("Quadratic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutQuad, false); });
+    curveMenu->addAction("Cubic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutCubic, false); });
+    curveMenu->addAction("Quartic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutQuartic, false); });
+    curveMenu->addAction("Quintic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutQuintic, false); });
+    curveMenu->addAction("Exponential", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutExpo, false); });
+    curveMenu->addAction("Circ", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutCirc, false); });
+    curveMenu->addAction("Back", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutBack, false); });
+    curveMenu->addAction("Elastic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutElastic, false); });
+    curveMenu->addAction("Bounce", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutBounce, false); });
+  }
+
+  /// Inverse
+
+  {
+    QMenu* curveMenu = presentsMenu->addMenu("Ease In Inverse");
+
+    curveMenu->addAction("Linear", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InLinear, false); });
+    curveMenu->addAction("Sine", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InSine, false); });
+    curveMenu->addAction("Quadratic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InQuad, false); });
+    curveMenu->addAction("Cubic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InCubic, false); });
+    curveMenu->addAction("Quartic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InQuartic, false); });
+    curveMenu->addAction("Quintic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InQuintic, false); });
+    curveMenu->addAction("Exponential", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InExpo, false); });
+    curveMenu->addAction("Circ", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InCirc, false); });
+    curveMenu->addAction("Back", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InBack, false); });
+    curveMenu->addAction("Elastic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InElastic, false); });
+    curveMenu->addAction("Bounce", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InBounce, false); });
   }
 
   {
-    QMenu* curveMenu = presentsMenu->addMenu("1 -> 0 (slow)");
+    QMenu* curveMenu = presentsMenu->addMenu("Ease Out Inverse");
 
-    // clang-format off
-    curveMenu->addAction("Linear", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::Linear, true); });
-    curveMenu->addAction("Sine", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInSine, true); });
-    curveMenu->addAction("Quad", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInQuad, true); });
-    curveMenu->addAction("Cubic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInCubic, true); });
-    curveMenu->addAction("Quartic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInQuartic, true); });
-    curveMenu->addAction("Quintic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInQuintic, true); });
-    curveMenu->addAction("Exponential", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInExpo, true); });
-    curveMenu->addAction("Overshoot", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInBack, true); });
-    curveMenu->addAction("Elastic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInElastic, true); });
-    curveMenu->addAction("Bounce", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInBounce, true); });
-    // clang-format on
+    curveMenu->addAction("Linear", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutLinear, false); });
+    curveMenu->addAction("Sine", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutSine, false); });
+    curveMenu->addAction("Quadratic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutQuad, false); });
+    curveMenu->addAction("Cubic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutCubic, false); });
+    curveMenu->addAction("Quartic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutQuartic, false); });
+    curveMenu->addAction("Quintic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutQuintic, false); });
+    curveMenu->addAction("Exponential", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutExpo, false); });
+    curveMenu->addAction("Circ", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutCirc, false); });
+    curveMenu->addAction("Back", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutBack, false); });
+    curveMenu->addAction("Elastic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutElastic, false); });
+    curveMenu->addAction("Bounce", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::OutBounce, false); });
   }
 
   {
-    QMenu* curveMenu = presentsMenu->addMenu("1 -> 0 (fast)");
+    QMenu* curveMenu = presentsMenu->addMenu("Ease In Out Inverse");
 
-    // clang-format off
-    curveMenu->addAction("Linear", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::Linear, true); });
-    curveMenu->addAction("Sine", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutSine, true); });
-    curveMenu->addAction("Quad", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutQuad, true); });
-    curveMenu->addAction("Cubic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutCubic, true); });
-    curveMenu->addAction("Quartic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutQuartic, true); });
-    curveMenu->addAction("Quintic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutQuintic, true); });
-    curveMenu->addAction("Exponential", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutExpo, true); });
-    curveMenu->addAction("Overshoot", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutBack, true); });
-    curveMenu->addAction("Elastic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutElastic, true); });
-    curveMenu->addAction("Bounce", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseOutBounce, true); });
-    // clang-format on
+    curveMenu->addAction("Linear", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutLinear, false); });
+    curveMenu->addAction("Sine", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutSine, false); });
+    curveMenu->addAction("Quadratic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutQuad, false); });
+    curveMenu->addAction("Cubic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutCubic, false); });
+    curveMenu->addAction("Quartic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutQuartic, false); });
+    curveMenu->addAction("Quintic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutQuintic, false); });
+    curveMenu->addAction("Exponential", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutExpo, false); });
+    curveMenu->addAction("Circ", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutCirc, false); });
+    curveMenu->addAction("Back", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutBack, false); });
+    curveMenu->addAction("Elastic", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutElastic, false); });
+    curveMenu->addAction("Bounce", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::InOutBounce, false); });
   }
 
-  {
-    QMenu* curveMenu = presentsMenu->addMenu("1 -> 0 (s/f/s)");
-
-    // clang-format off
-    curveMenu->addAction("Sine", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutSine, true); });
-    curveMenu->addAction("Quad", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutQuad, true); });
-    curveMenu->addAction("Cubic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutCubic, true); });
-    curveMenu->addAction("Quartic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutQuartic, true); });
-    curveMenu->addAction("Quintic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutQuintic, true); });
-    curveMenu->addAction("Exponential", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutExpo, true); });
-    curveMenu->addAction("Overshoot", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutBack, true); });
-    curveMenu->addAction("Elastic", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutElastic, true); });
-    curveMenu->addAction("Bounce", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::EaseInOutBounce, true); });
-    // clang-format on
-  }
+  /// Other
 
   {
-    QMenu* curveMenu = presentsMenu->addMenu("0 -> 1 -> 0");
+    QMenu* curveMenu = presentsMenu->addMenu("Ease In Hold Out");
 
-    // clang-format off
-    curveMenu->addAction("Conical", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::Conical, false); });
-    curveMenu->addAction("Fade In / Fade Out", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::FadeInFadeOut, false); });
-    curveMenu->addAction("Fade In / Hold / Fade Out", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::FadeInHoldFadeOut, false); });
-    curveMenu->addAction("Bell", this, [this]() { onGenerateCurve(xiiMath::xiiCurveFunction::Bell, false); });
-    // clang-format on
+    curveMenu->addAction("Conical", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::Conical, false); });
+    curveMenu->addAction("Fade In / Fade Out", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::FadeInFadeOut, false); });
+    curveMenu->addAction("Fade In / Hold / Fade Out", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::FadeInHoldFadeOut, false); });
+    curveMenu->addAction("Bell", this, [this]() { onGenerateCurve(xiiMath::xiiEasingFunctions::Bell, false); });
   }
 
   // Show all available presets from disk in a hierarchical menu structure
@@ -915,12 +928,14 @@ void xiiQtCurve1DEditorWidget::onMoveCurve(xiiInt32 iCurve, double moveY)
   Q_EMIT EndCpChangesEvent();
 }
 
-void xiiQtCurve1DEditorWidget::onGenerateCurve(xiiMath::xiiCurveFunction function, bool inverse)
+void xiiQtCurve1DEditorWidget::onGenerateCurve(xiiMath::xiiEasingFunctions function, bool inverse)
 {
   Q_EMIT BeginCpChangesEvent("Generate Curve");
 
   // Delete all existing control points
   ClearAllPoints();
+
+#if 1
 
   xiiCurve1D cmp;
 
@@ -942,7 +957,7 @@ void xiiQtCurve1DEditorWidget::onGenerateCurve(xiiMath::xiiCurveFunction functio
     const double x = i * invFps;
 
     samples[i].m_fPos          = x;
-    samples[i].m_fCorrectValue = GetCurveValue(function, x, inverse);
+    samples[i].m_fCorrectValue = xiiMath::GetEasingValue<double>(function, x, inverse);
   }
 
   auto AddPt = [&](xiiUInt32 idx) {
@@ -957,17 +972,17 @@ void xiiQtCurve1DEditorWidget::onGenerateCurve(xiiMath::xiiCurveFunction functio
   AddPt(0);
   AddPt(samples.GetCount() - 1);
 
-  // only add points that are necessary to reach the target curve within a certain error threshold
-  // we find the point that has the highest error (along Y) and insert that
-  // then we check all points again and find the next worst point, until no point violates the error threshold anymore
-  // this loop is O(n*n), but apparently no problem for the 30 samples that we currently use
-  // this loop is O(n*n), but apparently no problem for the 30 samples that we currently use
+  // Only add points that are necessary to reach the target curve within a certain error threshold
+  // We find the point that has the highest error (along Y) and insert that
+  // Then we check all points again and find the next worst point, until no point violates the error threshold anymore
+  // This loop is O(n*n), but apparently no problem for the 30 samples that we currently use
+  // This loop is O(n*n), but apparently no problem for the 30 samples that we currently use
   while (true)
   {
     cmp.SortControlPoints();
     cmp.CreateLinearApproximation();
 
-    double    fMaxError     = 0.03; // this is the error threshold
+    double    fMaxError     = 0.01; // This is the error threshold
     xiiUInt32 uiMaxErrorIdx = 0xffffffff;
 
     for (xiiUInt32 idx = 0; idx < samples.GetCount(); ++idx)
@@ -991,6 +1006,18 @@ void xiiQtCurve1DEditorWidget::onGenerateCurve(xiiMath::xiiCurveFunction functio
 
     AddPt(uiMaxErrorIdx);
   }
+
+#else
+
+  const double fps = m_Curves.m_uiFramesPerSecond;
+
+  for (xiiUInt32 i = 0; i <= m_Curves.m_uiFramesPerSecond; i += 2)
+  {
+    const double x = i / fps;
+    InsertCpAt(x, xiiMath::GetEasingValue<double>(easingFunction, x, inverse), xiiVec2d::ZeroVector());
+  }
+
+#endif
 
   Q_EMIT EndCpChangesEvent();
 }

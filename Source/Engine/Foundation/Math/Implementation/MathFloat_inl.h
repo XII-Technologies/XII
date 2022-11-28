@@ -80,4 +80,9 @@ namespace xiiMath
   XII_ALWAYS_INLINE float Sqrt(float f) { return sqrtf(f); }
 
   XII_ALWAYS_INLINE float Mod(float f, float div) { return fmodf(f, div); }
+
+  XII_ALWAYS_INLINE float Hypot(float x, float y) { return sqrtf(powf(x, 2.0f) + powf(y, 2.0f)); }
+
+  XII_ALWAYS_INLINE float NormalizeToRange(float value, float min, float max) { return (value - min) / (max - min); }
+
 } // namespace xiiMath
