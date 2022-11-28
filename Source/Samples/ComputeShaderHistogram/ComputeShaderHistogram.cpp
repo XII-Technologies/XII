@@ -14,8 +14,8 @@
 #include <RendererFoundation/Device/SwapChain.h>
 #include <RendererFoundation/Resources/Texture.h>
 
-static xiiUInt32 g_uiWindowWidth            = 1920;
-static xiiUInt32 g_uiWindowHeight           = 1080;
+static xiiUInt32 g_uiWindowWidth            = 960;
+static xiiUInt32 g_uiWindowHeight           = 540;
 static xiiUInt32 g_uiComputeThreadGroupSize = 32;
 
 xiiComputeShaderHistogramApp::xiiComputeShaderHistogramApp() :
