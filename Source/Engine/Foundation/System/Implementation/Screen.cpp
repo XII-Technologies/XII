@@ -3,8 +3,8 @@
 #include <Foundation/System/PlatformFeatures.h>
 #include <Foundation/System/Screen.h>
 
-#if XII_ENABLED(XII_SUPPORTS_GLFW)
-#  include <Foundation/System/Implementation/glfw/Screen_glfw.inl>
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+#  include <Foundation/System/Implementation/SDL/Screen_SDL.inl>
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <Foundation/System/Implementation/Win/Screen_win32.inl>
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)

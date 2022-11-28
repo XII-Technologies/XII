@@ -5,6 +5,7 @@
 #include <Core/Input/InputManager.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/System/Window.h>
+#include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
@@ -22,8 +23,8 @@
 #include <RendererFoundation/Device/SwapChain.h>
 #include <RendererFoundation/Resources/RenderTargetSetup.h>
 
-static xiiUInt32 g_uiWindowWidth  = 640;
-static xiiUInt32 g_uiWindowHeight = 480;
+static xiiUInt32 g_uiWindowWidth  = 960;
+static xiiUInt32 g_uiWindowHeight = 540;
 static bool      g_bWindowResized = false;
 
 class xiiShaderExplorerWindow : public xiiWindow
@@ -73,6 +74,9 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
 
   // update all input state
   xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
+
+  // make sure telemetry is sent out regularly
+  xiiTelemetry::PerFrameUpdate();
 
   // mouse look
   if (xiiInputManager::GetInputActionState("Main", "Look") == xiiKeyState::Down)

@@ -23,6 +23,6 @@ void xiiControllerInput::SetDevice(xiiInputDeviceController* pDevice)
   g_pInputDeviceController = pDevice;
 }
 
-#if XII_ENABLED(XII_SUPPORTS_GLFW)
-#  include <Core/System/Implementation/glfw/ControllerInput_glfw.inl>
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+#  include <Core\System\Implementation\SDL\ControllerInput_SDL.inl>
 #endif

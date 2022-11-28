@@ -8,9 +8,9 @@
 #include <Foundation/IO/OpenDdlWriter.h>
 #include <Foundation/System/Screen.h>
 
-#if XII_ENABLED(XII_SUPPORTS_GLFW)
-#  include <Core/System/Implementation/glfw/InputDevice_glfw.inl>
-#  include <Core/System/Implementation/glfw/Window_glfw.inl>
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+#  include <Core/System/Implementation/SDL/InputDevice_SDL.inl>
+#  include <Core/System/Implementation/SDL/Window_SDL.inl>
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <Core/System/Implementation/Win/InputDevice_win32.inl>
 #  include <Core/System/Implementation/Win/Window_win32.inl>
@@ -40,7 +40,7 @@ xiiResult xiiWindowCreationDesc::AdjustWindowSizeAndPosition()
 
   const xiiScreenInfo* pScreen = nullptr;
 
-  // this means 'pick the primary screen'
+  // This means 'pick the primary screen'
   if (iShowOnMonitor < 0)
   {
     pScreen = &screens[0];
@@ -68,7 +68,7 @@ xiiResult xiiWindowCreationDesc::AdjustWindowSizeAndPosition()
   }
   else
   {
-    // clamp the resolution to the native resolution ?
+    // Clamp the resolution to the native resolution ?
     // m_ClientAreaSize.width = xiiMath::Min<xiiUInt32>(m_ClientAreaSize.width, pScreen->m_iResolutionX);
     // m_ClientAreaSize.height= xiiMath::Min<xiiUInt32>(m_ClientAreaSize.height,pScreen->m_iResolutionY);
   }

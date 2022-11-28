@@ -49,8 +49,8 @@ public:
   bool m_bCloseRequested;
 };
 
-static xiiUInt32 g_uiWindowWidth  = 1280;
-static xiiUInt32 g_uiWindowHeight = 720;
+static xiiUInt32 g_uiWindowWidth  = 960;
+static xiiUInt32 g_uiWindowHeight = 540;
 
 class CustomTextureResourceLoader : public xiiTextureResourceLoader
 {
@@ -164,6 +164,7 @@ public:
       xiiWindowCreationDesc WindowCreationDesc;
       WindowCreationDesc.m_Resolution.width  = g_uiWindowWidth;
       WindowCreationDesc.m_Resolution.height = g_uiWindowHeight;
+      WindowCreationDesc.m_Title             = "Texture Sample";
       m_pWindow                              = XII_DEFAULT_NEW(TextureSampleWindow);
       m_pWindow->Initialize(WindowCreationDesc).IgnoreResult();
     }
@@ -264,6 +265,9 @@ public:
 
     // make sure time goes on
     xiiClock::GetGlobalClock()->Update();
+
+    // update all input state
+    xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
 
     if (xiiInputManager::GetInputActionState("Main", "MouseDown") == xiiKeyState::Down)
     {

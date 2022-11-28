@@ -13,8 +13,8 @@ class xiiOpenDdlReader;
 class xiiOpenDdlReaderElement;
 
 // Include the proper Input implementation to use
-#if XII_ENABLED(XII_SUPPORTS_GLFW)
-#  include <Core/System/Implementation/glfw/InputDevice_glfw.h>
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+#  include <Core/System/Implementation/SDL/InputDevice_SDL.h>
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <Core/System/Implementation/Win/InputDevice_win32.h>
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
@@ -25,20 +25,20 @@ class xiiOpenDdlReaderElement;
 
 // Currently the following scenarios are possible
 // - Windows native implementation, using HWND
-// - GLFW on windows, using GLFWWindow* internally and HWND to pass windows around
-// - GLFW / XCB on linux. Runtime uses GLFWWindow*. Editor uses xcb-window. Tagged union is passed around as window handle.
+// - SDL on windows, using SDLWindow* internally and HWND to pass windows around
+// - SDL / XCB on linux. Runtime uses SDL_Window*. Editor uses xcb-window. Tagged union is passed around as window handle.
 
-#if XII_ENABLED(XII_SUPPORTS_GLFW)
+#if XII_ENABLED(XII_SUPPORTS_SDL)
 
 extern "C"
 {
-  typedef struct GLFWwindow GLFWwindow;
+  typedef struct SDL_Window SDL_Window;
 }
 
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #    include <Foundation/Basics/Platform/Win/MinWindows.h>
 using xiiWindowHandle         = xiiMinWindows::HWND;
-using xiiWindowInternalHandle = GLFWwindow*;
+using xiiWindowInternalHandle = SDL_Window*;
 #    define INVALID_WINDOW_HANDLE_VALUE          (xiiWindowHandle)(0)
 #    define INVALID_INTERNAL_WINDOW_HANDLE_VALUE nullptr
 #  elif XII_ENABLED(XII_PLATFORM_LINUX)
@@ -59,14 +59,14 @@ struct xiiWindowHandle
   enum class Type
   {
     Invalid = 0,
-    GLFW    = 1, // Used by the runtime
-    XCB     = 2  // Used by the editor
+    SDL     = 1, // Used by the Runtime
+    XCB     = 2  // Used by the Editor
   };
 
   Type type;
   union
   {
-    GLFWwindow*        glfwWindow;
+    SDL_Window*        sdlWindow;
     xiiXcbWindowHandle xcbWindow;
   };
 
@@ -75,9 +75,9 @@ struct xiiWindowHandle
     if (type != rhs.type)
       return false;
 
-    if (type == Type::GLFW)
+    if (type == Type::SDL)
     {
-      return glfwWindow == rhs.glfwWindow;
+      return sdlWindow == rhs.sdlWindow;
     }
     else
     {
@@ -89,11 +89,12 @@ struct xiiWindowHandle
 
 using xiiWindowInternalHandle = xiiWindowHandle;
 #    define INVALID_WINDOW_HANDLE_VALUE \
-      xiiWindowHandle {}
+      xiiWindowHandle                   \
+      {}
 #  else
-using xiiWindowHandle         = GLFWwindow*;
-using xiiWindowInternalHandle = GLFWwindow*;
-#    define INVALID_WINDOW_HANDLE_VALUE (GLFWwindow*)(0)
+using xiiWindowHandle         = SDL_Window*;
+using xiiWindowInternalHandle = SDL_Window*;
+#    define INVALID_WINDOW_HANDLE_VALUE (SDL_Window*)(0)
 #  endif
 
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
@@ -189,7 +190,7 @@ struct XII_CORE_DLL xiiWindowCreationDesc
 
 
   /// The window title to be displayed.
-  xiiString m_Title = "xiiEngine";
+  xiiString m_Title = "XII Engine";
 
   /// Defines how the window size is determined.
   xiiEnum<xiiWindowMode> m_WindowMode;
@@ -354,18 +355,6 @@ private:
   xiiUniquePtr<xiiStandardInputDevice> m_pInputDevice;
 
   mutable xiiWindowInternalHandle m_hWindowHandle = xiiWindowInternalHandle();
-
-#if XII_ENABLED(XII_SUPPORTS_GLFW)
-  static void SizeCallback(GLFWwindow* window, int width, int height);
-  static void PositionCallback(GLFWwindow* window, int xpos, int ypos);
-  static void CloseCallback(GLFWwindow* window);
-  static void FocusCallback(GLFWwindow* window, int focused);
-  static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-  static void CharacterCallback(GLFWwindow* window, unsigned int codepoint);
-  static void CursorPositionCallback(GLFWwindow* window, double xpos, double ypos);
-  static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
-  static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-#endif
 
   /// increased every time an xiiWindow is created, to be able to get a free window index easily
   static xiiUInt8    s_uiNextUnusedWindowNumber;

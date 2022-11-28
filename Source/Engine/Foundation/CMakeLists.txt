@@ -59,13 +59,9 @@ if (XII_3RDPARTY_ZSTD_SUPPORT)
 endif()
 
 
-if(XII_3RDPARTY_GLFW_SUPPORT)
+if (XII_3RDPARTY_SDL_SUPPORT)
 
-  target_compile_definitions(${PROJECT_NAME} PUBLIC BUILDSYSTEM_ENABLE_GLFW_SUPPORT)
-  target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC BUILDSYSTEM_ENABLE_SDL_SUPPORT)
+  target_link_libraries(${PROJECT_NAME} PRIVATE SDL2)
 
 endif()
-
-
-
-

@@ -1,7 +1,5 @@
 xii_cmake_init()
 
-
-
 # Get the name of this folder as the project name
 get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
@@ -38,8 +36,8 @@ if (XII_3RDPARTY_DUKTAPE_SUPPORT)
 
 endif()
 
-if(XII_3RDPARTY_GLFW_SUPPORT)
+if (XII_3RDPARTY_SDL_SUPPORT)
 
-  target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
+  target_link_libraries(${PROJECT_NAME} PRIVATE SDL2)
 
 endif()
