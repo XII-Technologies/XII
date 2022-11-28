@@ -259,7 +259,22 @@ void xiiGameApplication::RenderFps()
   {
     if (const xiiView* pView = xiiRenderWorld::GetViewByUsageHint(xiiCameraUsageHint::MainView, xiiCameraUsageHint::EditorView))
     {
-      xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugRenderer::ScreenPlacement::BottomLeft, "FPS", xiiFmt("{0} fps, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)));
+      if (uiFPS >= 60)
+      {
+        xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugRenderer::ScreenPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Green);
+      }
+      else if (uiFPS >= 30)
+      {
+        xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugRenderer::ScreenPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::LightGreen);
+      }
+      else if (uiFPS >= 15)
+      {
+        xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugRenderer::ScreenPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Yellow);
+      }
+      else
+      {
+        xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugRenderer::ScreenPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Red);
+      }
     }
   }
 }
@@ -288,7 +303,7 @@ void xiiGameApplication::RenderConsole()
   const xiiInt32 iTextLeft   = (xiiInt32)(fBorderWidth);
 
   {
-    xiiColor backgroundColor(0.3f, 0.3f, 0.3f, 0.7f);
+    xiiColor backgroundColor(0.0f, 0.0f, 0.0f, 0.7f);
     xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(0.0f, 0.0f, fViewWidth, fConsoleHeight), 0.0f, backgroundColor);
 
     xiiColor foregroundColor(0.0f, 0.0f, 0.0f, 0.8f);
