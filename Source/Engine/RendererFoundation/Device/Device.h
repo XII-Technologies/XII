@@ -57,14 +57,14 @@ public:
 
   // Helper functions for buffers (for common, simple use cases)
 
-  xiiGALBufferHandle CreateVertexBuffer(xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, xiiArrayPtr<const xiiUInt8> pInitialData = xiiArrayPtr<const xiiUInt8>(), bool bDataIsMutable = false);
-  xiiGALBufferHandle CreateIndexBuffer(xiiGALIndexType::Enum IndexType, xiiUInt32 uiIndexCount, xiiArrayPtr<const xiiUInt8> pInitialData = xiiArrayPtr<const xiiUInt8>(), bool bDataIsMutable = false);
-  xiiGALBufferHandle CreateConstantBuffer(xiiUInt32 uiBufferSize);
+  xiiGALBufferHandle CreateVertexBuffer(xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, const char* szName, xiiArrayPtr<const xiiUInt8> pInitialData = xiiArrayPtr<const xiiUInt8>(), bool bDataIsMutable = false);
+  xiiGALBufferHandle CreateIndexBuffer(xiiGALIndexType::Enum IndexType, xiiUInt32 uiIndexCount, const char* szName, xiiArrayPtr<const xiiUInt8> pInitialData = xiiArrayPtr<const xiiUInt8>(), bool bDataIsMutable = false);
+  xiiGALBufferHandle CreateConstantBuffer(xiiUInt32 uiBufferSize, const char* szName);
 
   xiiGALTextureHandle CreateTexture(const xiiGALTextureCreationDescription& Description, xiiArrayPtr<xiiGALSystemMemoryDescription> pInitialData = xiiArrayPtr<xiiGALSystemMemoryDescription>());
   void                DestroyTexture(xiiGALTextureHandle hTexture);
 
-  xiiGALTextureHandle CreateProxyTexture(xiiGALTextureHandle hParentTexture, xiiUInt32 uiSlice);
+  xiiGALTextureHandle CreateProxyTexture(xiiGALTextureHandle hParentTexture, xiiUInt32 uiSlice, const char* szName);
   void                DestroyProxyTexture(xiiGALTextureHandle hProxyTexture);
 
   // Resource views

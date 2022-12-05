@@ -1,0 +1,21 @@
+#include <RendererDiligent/RendererDiligentPCH.h>
+
+XII_STATICLINK_LIBRARY(RendererDiligent)
+{
+  if (bReturn)
+    return;
+
+  XII_STATICLINK_REFERENCE(RendererDiligent_Context_Implementation_ContextDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_Device_Implementation_DeviceDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_Device_Implementation_SwapChainDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_Resources_Implementation_BufferDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_Resources_Implementation_FenceDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_Resources_Implementation_QueryDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_Resources_Implementation_RenderTargetViewDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_Resources_Implementation_ResourceViewDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_Resources_Implementation_TextureDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_Resources_Implementation_UnorderedAccessViewDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_Shader_Implementation_ShaderDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_Shader_Implementation_VertexDeclarationDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_State_Implementation_StateDiligent);
+}

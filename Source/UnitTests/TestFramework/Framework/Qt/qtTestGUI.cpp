@@ -578,7 +578,7 @@ void xiiQtTestGUI::SetDarkTheme()
   // return;
   QPalette palette;
 
-#if 0
+#  if 0
 
   palette.setColor(QPalette::WindowText, QColor(200, 200, 200, 255));
   palette.setColor(QPalette::Button, QColor(100, 100, 100, 255));
@@ -609,7 +609,7 @@ void xiiQtTestGUI::SetDarkTheme()
   palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(128, 128, 128, 255));
   palette.setColor(QPalette::Disabled, QPalette::Highlight, QColor(86, 117, 148, 255));
 
-#else
+#  else
 
   palette.setColor(QPalette::WindowText, QColor(200, 200, 200, 255));
   palette.setColor(QPalette::Button, QColor(100, 100, 100, 255));
@@ -641,7 +641,7 @@ void xiiQtTestGUI::SetDarkTheme()
   palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(128, 128, 128, 255));
   palette.setColor(QPalette::Disabled, QPalette::Highlight, QColor(86, 117, 148, 255));
 
-#endif
+#  endif
 
   QApplication::setPalette(palette);
 }

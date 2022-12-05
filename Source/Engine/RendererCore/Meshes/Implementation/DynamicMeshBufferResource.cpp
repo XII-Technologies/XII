@@ -122,40 +122,36 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  m_hVertexBuffer = pDevice->CreateVertexBuffer(sizeof(xiiDynamicMeshVertex), m_Descriptor.m_uiMaxVertices /* no initial data -> mutable */);
-
   xiiStringBuilder sName;
   sName.Format("{0} - Dynamic Vertex Buffer", GetResourceDescription());
-  pDevice->GetBuffer(m_hVertexBuffer)->SetDebugName(sName);
+  m_hVertexBuffer = pDevice->CreateVertexBuffer(sizeof(xiiDynamicMeshVertex), m_Descriptor.m_uiMaxVertices /* no initial data -> mutable */, sName);
 
   const xiiUInt32 uiMaxIndices = xiiGALPrimitiveTopology::VerticesPerPrimitive(m_Descriptor.m_Topology) * m_Descriptor.m_uiMaxPrimitives;
 
   if (m_Descriptor.m_bColorStream)
   {
     m_ColorData.SetCountUninitialized(uiMaxIndices);
-    m_hColorBuffer = pDevice->CreateVertexBuffer(sizeof(xiiColorLinearUB), m_Descriptor.m_uiMaxVertices /* no initial data -> mutable */);
 
     sName.Format("{0} - Dynamic Color Buffer", GetResourceDescription());
-    pDevice->GetBuffer(m_hColorBuffer)->SetDebugName(sName);
+
+    m_hColorBuffer = pDevice->CreateVertexBuffer(sizeof(xiiColorLinearUB), m_Descriptor.m_uiMaxVertices /* no initial data -> mutable */, sName);
   }
 
   if (m_Descriptor.m_IndexType == xiiGALIndexType::UInt)
   {
     m_Index32Data.SetCountUninitialized(uiMaxIndices);
 
-    m_hIndexBuffer = pDevice->CreateIndexBuffer(xiiGALIndexType::UInt, uiMaxIndices /* no initial data -> mutable */);
-
     sName.Format("{0} - Dynamic Index32 Buffer", GetResourceDescription());
-    pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
+
+    m_hIndexBuffer = pDevice->CreateIndexBuffer(xiiGALIndexType::UInt, uiMaxIndices /* no initial data -> mutable */, sName);
   }
   else if (m_Descriptor.m_IndexType == xiiGALIndexType::UShort)
   {
     m_Index16Data.SetCountUninitialized(uiMaxIndices);
 
-    m_hIndexBuffer = pDevice->CreateIndexBuffer(xiiGALIndexType::UShort, uiMaxIndices /* no initial data -> mutable */);
-
     sName.Format("{0} - Dynamic Index16 Buffer", GetResourceDescription());
-    pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
+
+    m_hIndexBuffer = pDevice->CreateIndexBuffer(xiiGALIndexType::UShort, uiMaxIndices /* no initial data -> mutable */, sName);
   }
 
   // we only know the memory usage here, so we write it back to the internal variable directly and then read it in UpdateMemoryUsage() again

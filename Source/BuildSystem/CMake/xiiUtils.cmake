@@ -188,6 +188,10 @@ function(xii_set_common_target_definitions TARGET_NAME)
 	string(TOUPPER ${TARGET_NAME} PROJECT_NAME_UPPER)
 	target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_BUILDING_${PROJECT_NAME_UPPER}_LIB)
 
+	if(XII_BUILD_DILIGENT)
+		target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_DILIGENT_SUPPORT)
+	endif()
+
 	if(XII_BUILD_EXPERIMENTAL_VULKAN)
 		target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_VULKAN_SUPPORT)
 	endif()
@@ -309,6 +313,7 @@ endfunction()
 function(xii_glob_source_files ROOT_DIR RESULT_ALL_SOURCES)
 	file(GLOB_RECURSE RELEVANT_FILES 
 		"${ROOT_DIR}/*.cpp" 
+		"${ROOT_DIR}/*.cxx" 
 		"${ROOT_DIR}/*.cc" 
 		"${ROOT_DIR}/*.h" 
 		"${ROOT_DIR}/*.hpp" 
@@ -480,7 +485,7 @@ endfunction()
 # The build filter is intended to only build a subset of xiiEngine.
 # The build filters are configured through cmake files in the 'BuildFilters' directory.
 function(xii_build_filter_init)
-	file(GLOB_RECURSE FILTER_FILES "${CMAKE_SOURCE_DIR}/${XII_SUBMODULE_PREFIX_PATH}/Code/BuildSystem/CMake/BuildFilters/*.BuildFilter")
+	file(GLOB_RECURSE FILTER_FILES "${CMAKE_SOURCE_DIR}/${XII_SUBMODULE_PREFIX_PATH}/Source/BuildSystem/CMake/BuildFilters/*.BuildFilter")
 
 	get_property(XII_BUILD_FILTER_NAMES GLOBAL PROPERTY XII_BUILD_FILTER_NAMES)
 

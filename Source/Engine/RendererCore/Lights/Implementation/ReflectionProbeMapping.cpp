@@ -26,9 +26,9 @@ xiiReflectionProbeMapping::xiiReflectionProbeMapping(xiiUInt32 uiAtlasSize) :
   desc.m_bAllowUAV                   = true;
   desc.m_ResourceAccess.m_bReadBack  = true;
   desc.m_ResourceAccess.m_bImmutable = false;
+  desc.m_szName                      = "Reflection Specular Texture";
 
   m_hReflectionSpecularTexture = pDevice->CreateTexture(desc);
-  pDevice->GetTexture(m_hReflectionSpecularTexture)->SetDebugName("Reflection Specular Texture");
 }
 
 xiiReflectionProbeMapping::~xiiReflectionProbeMapping()

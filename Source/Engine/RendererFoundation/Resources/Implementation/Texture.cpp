@@ -5,6 +5,9 @@
 xiiGALTexture::xiiGALTexture(const xiiGALTextureCreationDescription& Description) :
   xiiGALResource(Description)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  m_sDebugName.Assign(Description.m_szName);
+#endif
 }
 
 xiiGALTexture::~xiiGALTexture() {}

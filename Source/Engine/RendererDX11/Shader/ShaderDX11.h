@@ -15,8 +15,6 @@ struct ID3D11ComputeShader;
 class XII_RENDERERDX11_DLL xiiGALShaderDX11 : public xiiGALShader
 {
 public:
-  void SetDebugName(const char* szName) const override;
-
   XII_ALWAYS_INLINE ID3D11VertexShader* GetDXVertexShader() const;
 
   XII_ALWAYS_INLINE ID3D11HullShader* GetDXHullShader() const;

@@ -24,8 +24,6 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<const xiiUInt8> pInitialData) override;
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  virtual void SetDebugNamePlatform(const char* szName) const override;
-
   ID3D11Buffer* m_pDXBuffer;
 
   DXGI_FORMAT m_IndexFormat; // Only applicable for index buffers

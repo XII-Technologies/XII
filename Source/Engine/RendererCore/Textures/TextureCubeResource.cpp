@@ -203,10 +203,10 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTextureCubeResource, xiiTextureCubeResource
   m_Format           = descriptor.m_DescGAL.m_Format;
   m_uiWidthAndHeight = descriptor.m_DescGAL.m_uiWidth;
 
+  descriptor.m_DescGAL.m_szName = GetResourceDescription();
+
   m_hGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, descriptor.m_InitialContent);
   XII_ASSERT_DEV(!m_hGALTexture[m_uiLoadedTextures].IsInvalidated(), "Texture Data could not be uploaded to the GPU");
-
-  pDevice->GetTexture(m_hGALTexture[m_uiLoadedTextures])->SetDebugName(GetResourceDescription());
 
   if (!m_hSamplerState.IsInvalidated())
   {

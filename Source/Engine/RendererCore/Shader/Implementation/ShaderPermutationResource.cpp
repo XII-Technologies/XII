@@ -104,6 +104,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
   }
 
   xiiGALShaderCreationDescription ShaderDesc;
+  ShaderDesc.m_szName = GetResourceID();
 
   // iterate over all shader stages, add them to the descriptor
   for (xiiUInt32 stage = xiiGALShaderStage::VertexShader; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
@@ -139,8 +140,6 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
     xiiLog::Error("Shader Permutation '{0}': Shader program creation failed", GetResourceID());
     return res;
   }
-
-  pDevice->GetShader(m_hShader)->SetDebugName(GetResourceID());
 
   m_PermutationVars = PermutationBinary.m_PermutationVars;
 

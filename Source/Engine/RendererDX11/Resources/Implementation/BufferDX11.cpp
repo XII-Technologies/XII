@@ -99,6 +99,13 @@ xiiResult xiiGALBufferDX11::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<cons
 
   if (SUCCEEDED(pDXDevice->GetDXDevice()->CreateBuffer(&BufferDesc, pInitialData.IsEmpty() ? nullptr : &DXInitialData, &m_pDXBuffer)))
   {
+    xiiUInt32 uiLength = xiiStringUtils::GetStringElementCount(m_Description.m_szName);
+
+    if (m_pDXBuffer != nullptr)
+    {
+      m_pDXBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, m_Description.m_szName);
+    }
+
     return XII_SUCCESS;
   }
   else
@@ -115,14 +122,5 @@ xiiResult xiiGALBufferDX11::DeInitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-void xiiGALBufferDX11::SetDebugNamePlatform(const char* szName) const
-{
-  xiiUInt32 uiLength = xiiStringUtils::GetStringElementCount(szName);
-
-  if (m_pDXBuffer != nullptr)
-  {
-    m_pDXBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, szName);
-  }
-}
 
 XII_STATICLINK_FILE(RendererDX11, RendererDX11_Resources_Implementation_BufferDX11);

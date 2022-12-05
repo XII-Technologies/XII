@@ -104,6 +104,15 @@ xiiResult xiiGALTextureDX11::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<xii
       }
       else
       {
+        {
+          xiiUInt32 uiLength = xiiStringUtils::GetStringElementCount(m_Description.m_szName);
+
+          if (m_pDXTexture != nullptr)
+          {
+            m_pDXTexture->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, m_Description.m_szName);
+          }
+        }
+
         if (!m_Description.m_ResourceAccess.IsImmutable() || m_Description.m_ResourceAccess.m_bReadBack)
           return CreateStagingTexture(pDXDevice);
 
@@ -175,6 +184,15 @@ xiiResult xiiGALTextureDX11::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<xii
       }
       else
       {
+        {
+          xiiUInt32 uiLength = xiiStringUtils::GetStringElementCount(m_Description.m_szName);
+
+          if (m_pDXTexture != nullptr)
+          {
+            m_pDXTexture->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, m_Description.m_szName);
+          }
+        }
+
         if (!m_Description.m_ResourceAccess.IsImmutable() || m_Description.m_ResourceAccess.m_bReadBack)
           return CreateStagingTexture(pDXDevice);
 
@@ -197,16 +215,6 @@ xiiResult xiiGALTextureDX11::DeInitPlatform(xiiGALDevice* pDevice)
   XII_GAL_DX11_RELEASE(m_pDXTexture);
   XII_GAL_DX11_RELEASE(m_pDXStagingTexture);
   return XII_SUCCESS;
-}
-
-void xiiGALTextureDX11::SetDebugNamePlatform(const char* szName) const
-{
-  xiiUInt32 uiLength = xiiStringUtils::GetStringElementCount(szName);
-
-  if (m_pDXTexture != nullptr)
-  {
-    m_pDXTexture->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, szName);
-  }
 }
 
 xiiResult xiiGALTextureDX11::CreateStagingTexture(xiiGALDeviceDX11* pDevice)

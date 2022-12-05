@@ -12,41 +12,6 @@ xiiGALShaderDX11::xiiGALShaderDX11(const xiiGALShaderCreationDescription& Descri
 
 xiiGALShaderDX11::~xiiGALShaderDX11() {}
 
-void xiiGALShaderDX11::SetDebugName(const char* szName) const
-{
-  xiiUInt32 uiLength = xiiStringUtils::GetStringElementCount(szName);
-
-  if (m_pVertexShader != nullptr)
-  {
-    m_pVertexShader->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, szName);
-  }
-
-  if (m_pHullShader != nullptr)
-  {
-    m_pHullShader->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, szName);
-  }
-
-  if (m_pDomainShader != nullptr)
-  {
-    m_pDomainShader->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, szName);
-  }
-
-  if (m_pGeometryShader != nullptr)
-  {
-    m_pGeometryShader->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, szName);
-  }
-
-  if (m_pPixelShader != nullptr)
-  {
-    m_pPixelShader->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, szName);
-  }
-
-  if (m_pComputeShader != nullptr)
-  {
-    m_pComputeShader->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, szName);
-  }
-}
-
 xiiResult xiiGALShaderDX11::InitPlatform(xiiGALDevice* pDevice)
 {
   xiiGALDeviceDX11* pDXDevice    = static_cast<xiiGALDeviceDX11*>(pDevice);
@@ -112,6 +77,39 @@ xiiResult xiiGALShaderDX11::InitPlatform(xiiGALDevice* pDevice)
     }
   }
 
+  {
+    xiiUInt32 uiLength = xiiStringUtils::GetStringElementCount(m_Description.m_szName);
+
+    if (m_pVertexShader != nullptr)
+    {
+      m_pVertexShader->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, m_Description.m_szName);
+    }
+
+    if (m_pHullShader != nullptr)
+    {
+      m_pHullShader->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, m_Description.m_szName);
+    }
+
+    if (m_pDomainShader != nullptr)
+    {
+      m_pDomainShader->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, m_Description.m_szName);
+    }
+
+    if (m_pGeometryShader != nullptr)
+    {
+      m_pGeometryShader->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, m_Description.m_szName);
+    }
+
+    if (m_pPixelShader != nullptr)
+    {
+      m_pPixelShader->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, m_Description.m_szName);
+    }
+
+    if (m_pComputeShader != nullptr)
+    {
+      m_pComputeShader->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, m_Description.m_szName);
+    }
+  }
 
   return XII_SUCCESS;
 }

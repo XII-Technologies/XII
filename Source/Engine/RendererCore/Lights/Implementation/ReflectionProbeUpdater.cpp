@@ -35,18 +35,16 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
     desc.m_bAllowDynamicMipGeneration  = true;
     desc.m_ResourceAccess.m_bReadBack  = true;
     desc.m_ResourceAccess.m_bImmutable = false;
+    desc.m_szName                      = "Reflection Cubemap";
 
     m_hCubemap = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
-    pDevice->GetTexture(m_hCubemap)->SetDebugName("Reflection Cubemap");
   }
 
   xiiStringBuilder sName;
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hCubemapProxies); ++i)
   {
-    m_hCubemapProxies[i] = xiiGALDevice::GetDefaultDevice()->CreateProxyTexture(m_hCubemap, i);
-
     sName.Format("Reflection Cubemap Proxy {}", i);
-    pDevice->GetTexture(m_hCubemapProxies[i])->SetDebugName(sName);
+    m_hCubemapProxies[i] = xiiGALDevice::GetDefaultDevice()->CreateProxyTexture(m_hCubemap, i, sName);
   }
 }
 

@@ -10,7 +10,7 @@ xiiConstantBufferStorageBase::xiiConstantBufferStorageBase(xiiUInt32 uiSizeInByt
   m_Data = xiiMakeArrayPtr(static_cast<xiiUInt8*>(xiiFoundation::GetAlignedAllocator()->Allocate(uiSizeInBytes, 16)), uiSizeInBytes);
   xiiMemoryUtils::ZeroFill(m_Data.GetPtr(), m_Data.GetCount());
 
-  m_hGALConstantBuffer = xiiGALDevice::GetDefaultDevice()->CreateConstantBuffer(uiSizeInBytes);
+  m_hGALConstantBuffer = xiiGALDevice::GetDefaultDevice()->CreateConstantBuffer(uiSizeInBytes, "Constant Buffer Storage");
 }
 
 xiiConstantBufferStorageBase::~xiiConstantBufferStorageBase()
