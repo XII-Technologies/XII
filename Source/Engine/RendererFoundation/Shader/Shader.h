@@ -6,8 +6,6 @@
 class XII_RENDERERFOUNDATION_DLL xiiGALShader : public xiiGALObject<xiiGALShaderCreationDescription>
 {
 public:
-  virtual void SetDebugName(const char* szName) const = 0;
-
 protected:
   friend class xiiGALDevice;
 

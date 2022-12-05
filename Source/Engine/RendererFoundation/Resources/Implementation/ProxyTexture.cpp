@@ -4,16 +4,17 @@
 
 namespace
 {
-  xiiGALTextureCreationDescription MakeProxyDesc(const xiiGALTextureCreationDescription& parentDesc)
+  xiiGALTextureCreationDescription MakeProxyDesc(const xiiGALTextureCreationDescription& parentDesc, const char* szName)
   {
     xiiGALTextureCreationDescription desc = parentDesc;
     desc.m_Type                           = xiiGALTextureType::Texture2DProxy;
+    desc.m_szName                         = szName;
     return desc;
   }
 } // namespace
 
-xiiGALProxyTexture::xiiGALProxyTexture(const xiiGALTexture& parentTexture) :
-  xiiGALTexture(MakeProxyDesc(parentTexture.GetDescription())), m_pParentTexture(&parentTexture)
+xiiGALProxyTexture::xiiGALProxyTexture(const xiiGALTexture& parentTexture, const char* szName) :
+  xiiGALTexture(MakeProxyDesc(parentTexture.GetDescription(), szName)), m_pParentTexture(&parentTexture)
 {
 }
 
@@ -34,8 +35,6 @@ xiiResult xiiGALProxyTexture::DeInitPlatform(xiiGALDevice* pDevice)
 {
   return XII_SUCCESS;
 }
-
-void xiiGALProxyTexture::SetDebugNamePlatform(const char* szName) const {}
 
 
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Resources_Implementation_ProxyTexture);

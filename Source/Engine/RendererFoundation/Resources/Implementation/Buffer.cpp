@@ -5,6 +5,9 @@
 xiiGALBuffer::xiiGALBuffer(const xiiGALBufferCreationDescription& Description) :
   xiiGALResource(Description)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  m_sDebugName.Assign(Description.m_szName);
+#endif
 }
 
 xiiGALBuffer::~xiiGALBuffer() {}

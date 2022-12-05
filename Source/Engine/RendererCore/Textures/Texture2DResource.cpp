@@ -253,10 +253,10 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture2DResource, xiiTexture2DResourceDesc
   m_uiWidth  = descriptor.m_DescGAL.m_uiWidth;
   m_uiHeight = descriptor.m_DescGAL.m_uiHeight;
 
+  descriptor.m_DescGAL.m_szName = GetResourceDescription();
+
   m_hGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, descriptor.m_InitialContent);
   XII_ASSERT_DEV(!m_hGALTexture[m_uiLoadedTextures].IsInvalidated(), "Texture Data could not be uploaded to the GPU");
-
-  pDevice->GetTexture(m_hGALTexture[m_uiLoadedTextures])->SetDebugName(GetResourceDescription());
 
   if (!m_hSamplerState.IsInvalidated())
   {
@@ -323,11 +323,10 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderToTexture2DResource, xiiRenderToTextu
 
   xiiGALTextureCreationDescription descGAL;
   descGAL.SetAsRenderTarget(m_uiWidth, m_uiHeight, m_Format, descriptor.m_SampleCount);
+  descGAL.m_szName = GetResourceDescription();
 
   m_hGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descGAL, descriptor.m_InitialContent);
   XII_ASSERT_DEV(!m_hGALTexture[m_uiLoadedTextures].IsInvalidated(), "Texture data could not be uploaded to the GPU");
-
-  pDevice->GetTexture(m_hGALTexture[m_uiLoadedTextures])->SetDebugName(GetResourceDescription());
 
   if (!m_hSamplerState.IsInvalidated())
   {

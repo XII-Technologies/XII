@@ -572,35 +572,38 @@ void xiiGALDevice::DestroyBuffer(xiiGALBufferHandle hBuffer)
 }
 
 // Helper functions for buffers (for common, simple use cases)
-xiiGALBufferHandle xiiGALDevice::CreateVertexBuffer(xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, xiiArrayPtr<const xiiUInt8> pInitialData, bool bDataIsMutable /*= false */)
+xiiGALBufferHandle xiiGALDevice::CreateVertexBuffer(xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, const char* szName, xiiArrayPtr<const xiiUInt8> pInitialData, bool bDataIsMutable /*= false */)
 {
   xiiGALBufferCreationDescription desc;
   desc.m_uiStructSize                = uiVertexSize;
   desc.m_uiTotalSize                 = uiVertexSize * uiVertexCount;
   desc.m_BufferType                  = xiiGALBufferType::VertexBuffer;
   desc.m_ResourceAccess.m_bImmutable = !pInitialData.IsEmpty() && !bDataIsMutable;
+  desc.m_szName                      = szName;
 
   return CreateBuffer(desc, pInitialData);
 }
 
-xiiGALBufferHandle xiiGALDevice::CreateIndexBuffer(xiiGALIndexType::Enum IndexType, xiiUInt32 uiIndexCount, xiiArrayPtr<const xiiUInt8> pInitialData, bool bDataIsMutable /*= false*/)
+xiiGALBufferHandle xiiGALDevice::CreateIndexBuffer(xiiGALIndexType::Enum IndexType, xiiUInt32 uiIndexCount, const char* szName, xiiArrayPtr<const xiiUInt8> pInitialData, bool bDataIsMutable /*= false*/)
 {
   xiiGALBufferCreationDescription desc;
   desc.m_uiStructSize                = xiiGALIndexType::GetSize(IndexType);
   desc.m_uiTotalSize                 = desc.m_uiStructSize * uiIndexCount;
   desc.m_BufferType                  = xiiGALBufferType::IndexBuffer;
   desc.m_ResourceAccess.m_bImmutable = !bDataIsMutable && !pInitialData.IsEmpty();
+  desc.m_szName                      = szName;
 
   return CreateBuffer(desc, pInitialData);
 }
 
-xiiGALBufferHandle xiiGALDevice::CreateConstantBuffer(xiiUInt32 uiBufferSize)
+xiiGALBufferHandle xiiGALDevice::CreateConstantBuffer(xiiUInt32 uiBufferSize, const char* szName)
 {
   xiiGALBufferCreationDescription desc;
   desc.m_uiStructSize                = 0;
   desc.m_uiTotalSize                 = uiBufferSize;
   desc.m_BufferType                  = xiiGALBufferType::ConstantBuffer;
   desc.m_ResourceAccess.m_bImmutable = false;
+  desc.m_szName                      = szName;
 
   return CreateBuffer(desc);
 }
@@ -677,7 +680,7 @@ void xiiGALDevice::DestroyTexture(xiiGALTextureHandle hTexture)
   }
 }
 
-xiiGALTextureHandle xiiGALDevice::CreateProxyTexture(xiiGALTextureHandle hParentTexture, xiiUInt32 uiSlice)
+xiiGALTextureHandle xiiGALDevice::CreateProxyTexture(xiiGALTextureHandle hParentTexture, xiiUInt32 uiSlice, const char* szName)
 {
   XII_GALDEVICE_LOCK_AND_CHECK();
 
@@ -699,7 +702,7 @@ xiiGALTextureHandle xiiGALDevice::CreateProxyTexture(xiiGALTextureHandle hParent
   XII_ASSERT_DEV(parentDesc.m_Type == xiiGALTextureType::TextureCube || parentDesc.m_uiArraySize > 1,
                  "Proxy textures can only be created for cubemaps or array textures.");
 
-  xiiGALProxyTexture* pProxyTexture = XII_NEW(&m_Allocator, xiiGALProxyTexture, *pParentTexture);
+  xiiGALProxyTexture* pProxyTexture = XII_NEW(&m_Allocator, xiiGALProxyTexture, *pParentTexture, szName);
   xiiGALTextureHandle hProxyTexture(m_Textures.Insert(pProxyTexture));
 
   const auto& desc = pProxyTexture->GetDescription();

@@ -69,6 +69,10 @@ struct xiiGALWindowSwapChainCreationDescription : public xiiHashableStruct<xiiGA
 
   bool m_bDoubleBuffered   = true;
   bool m_bAllowScreenshots = false;
+
+  // Sets the primary swapchain.
+  // Note that rending backends optionally use this specification.
+  bool m_bIsPrimarySwapchain = false;
 };
 
 struct xiiGALSwapChainCreationDescription : public xiiHashableStruct<xiiGALSwapChainCreationDescription>
@@ -87,6 +91,8 @@ struct xiiGALShaderCreationDescription : public xiiHashableStruct<xiiGALShaderCr
   ~xiiGALShaderCreationDescription();
 
   bool HasByteCodeForStage(xiiGALShaderStage::Enum Stage) const;
+
+  const char* m_szName = nullptr;
 
   xiiScopedRefPointer<xiiGALShaderByteCode> m_ByteCodes[xiiGALShaderStage::ENUM_COUNT];
 };
@@ -258,6 +264,8 @@ struct xiiGALBufferType
 
 struct xiiGALBufferCreationDescription : public xiiHashableStruct<xiiGALBufferCreationDescription>
 {
+  const char* m_szName = nullptr;
+
   xiiUInt32 m_uiStructSize = 0;
   xiiUInt32 m_uiTotalSize  = 0;
 
@@ -280,6 +288,8 @@ struct xiiGALTextureCreationDescription : public xiiHashableStruct<xiiGALTexture
     xiiUInt32                   uiHeight,
     xiiGALResourceFormat::Enum  format,
     xiiGALMSAASampleCount::Enum sampleCount = xiiGALMSAASampleCount::None);
+
+  const char* m_szName = nullptr;
 
   xiiUInt32 m_uiWidth  = 0;
   xiiUInt32 m_uiHeight = 0;
@@ -338,6 +348,8 @@ struct xiiGALRenderTargetViewCreationDescription : public xiiHashableStruct<xiiG
   xiiUInt32 m_uiSliceCount = 1;
 
   bool m_bReadOnly = false; ///< Can be used for depth stencil views to create read only views (e.g. for soft particles using the native depth buffer)
+
+  void* m_pExisitingNativeObject = nullptr; ///< Can be used to encapsulate existing native textures in objects usable by the GAL
 };
 
 struct xiiGALUnorderedAccessViewCreationDescription : public xiiHashableStruct<xiiGALUnorderedAccessViewCreationDescription>
@@ -381,6 +393,8 @@ struct xiiGALQueryType
 struct xiiGALQueryCreationDescription : public xiiHashableStruct<xiiGALQueryCreationDescription>
 {
   xiiEnum<xiiGALQueryType> m_type = xiiGALQueryType::NumSamplesPassed;
+
+  const char* m_szName = nullptr;
 
   /// In case this query is used for occlusion culling (type AnySamplesPassed), this determines whether drawing should be done if the query
   /// status is still unknown.

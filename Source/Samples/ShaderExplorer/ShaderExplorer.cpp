@@ -235,7 +235,10 @@ void xiiShaderExplorerApp::AfterCoreSystemsStartup()
 
   xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 
-#ifdef BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+#ifdef BUILDSYSTEM_ENABLE_DILIGENT_SUPPORT
+  constexpr const char* szDefaultRenderer = "Diligent";
+  xiiGraphicsDevice::Default              = xiiGraphicsDevice::D3D11;
+#elif BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
   constexpr const char* szDefaultRenderer = "Vulkan";
 #else
   constexpr const char* szDefaultRenderer = "DX11";

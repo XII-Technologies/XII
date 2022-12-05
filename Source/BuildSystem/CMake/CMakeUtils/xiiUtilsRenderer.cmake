@@ -37,4 +37,47 @@ function(xii_add_renderers TARGET_NAME)
 			ShaderCompilerHLSL
 		)
 	endif()
+	
+	if (XII_BUILD_DILIGENT)
+
+        target_link_libraries(${TARGET_NAME}
+			PRIVATE
+			RendererDiligent
+		)
+
+		if(GL_SUPPORTED OR GLES_SUPPORTED)
+			xii_link_target_diligent_opengl(${TARGET_NAME})
+		endif()
+	
+		if(D3D11_SUPPORTED)
+			xii_link_target_diligent_dx11(${TARGET_NAME})
+
+		    add_dependencies(${TARGET_NAME}
+			    ShaderCompilerHLSL
+		    )
+		endif()
+
+		if(D3D12_SUPPORTED)
+			xii_link_target_diligent_dx12(${TARGET_NAME})
+
+		    add_dependencies(${TARGET_NAME}
+			    # ShaderCompilerDXC
+                ShaderCompilerHLSL
+		    )
+		endif()
+
+		if(VULKAN_SUPPORTED)
+			xii_link_target_diligent_vulkan(${TARGET_NAME})
+
+		    # add_dependencies(${TARGET_NAME}
+			#     ShaderCompilerDXC
+		    # )
+		endif()
+		
+		if(METAL_SUPPORTED)
+			xii_link_target_diligent_metal(${TARGET_NAME})
+		endif()
+		
+	endif()
+	
 endfunction()

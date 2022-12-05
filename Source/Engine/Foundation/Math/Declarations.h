@@ -121,6 +121,24 @@ struct xiiHandedness
   XII_FOUNDATION_DLL static Enum Default /*= xiiHandedness::LeftHanded*/;
 };
 
+/// \brief Enumeration that describes which underlying graphics device implementation to use.
+struct xiiGraphicsDevice
+{
+  enum Enum
+  {
+    Undefined = 0,
+
+    D3D11,
+    D3D12,
+    Metal,
+    OpenGL,
+    Vulkan,
+  };
+
+  /// \brief Holds the default graphics device to use.
+  XII_FOUNDATION_DLL static Enum Default /*= xiiGraphicsDevice::Undefined*/;
+};
+
 // forward declarations
 template <typename Type>
 class xiiVec2Template;

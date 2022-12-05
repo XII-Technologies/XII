@@ -23,8 +23,6 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<xiiGALSystemMemoryDescription> pInitialData) override;
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  virtual void SetDebugNamePlatform(const char* szName) const override;
-
   xiiResult CreateStagingTexture(xiiGALDeviceDX11* pDevice);
 
   ID3D11Resource* m_pDXTexture;

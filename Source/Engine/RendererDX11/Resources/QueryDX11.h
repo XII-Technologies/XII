@@ -19,8 +19,6 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  virtual void SetDebugNamePlatform(const char* szName) const override;
-
   ID3D11Query* m_pDXQuery;
 };
 

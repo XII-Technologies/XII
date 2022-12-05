@@ -36,6 +36,13 @@ xiiResult xiiGALQueryDX11::InitPlatform(xiiGALDevice* pDevice)
 
   if (SUCCEEDED(pDXDevice->GetDXDevice()->CreateQuery(&desc, &m_pDXQuery)))
   {
+    xiiUInt32 uiLength = xiiStringUtils::GetStringElementCount(m_Description.m_szName);
+
+    if (m_pDXQuery != nullptr)
+    {
+      m_pDXQuery->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, m_Description.m_szName);
+    }
+
     return XII_SUCCESS;
   }
   else
@@ -51,14 +58,5 @@ xiiResult xiiGALQueryDX11::DeInitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-void xiiGALQueryDX11::SetDebugNamePlatform(const char* szName) const
-{
-  xiiUInt32 uiLength = xiiStringUtils::GetStringElementCount(szName);
-
-  if (m_pDXQuery != nullptr)
-  {
-    m_pDXQuery->SetPrivateData(WKPDID_D3DDebugObjectName, uiLength, szName);
-  }
-}
 
 XII_STATICLINK_FILE(RendererDX11, RendererDX11_Resources_Implementation_QueryDX11);

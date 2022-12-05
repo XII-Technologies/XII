@@ -8,15 +8,6 @@
 class XII_RENDERERFOUNDATION_DLL xiiGALResourceBase : public xiiRefCounted
 {
 public:
-  void SetDebugName(const char* szName) const
-  {
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    m_sDebugName.Assign(szName);
-#endif
-
-    SetDebugNamePlatform(szName);
-  }
-
   virtual const xiiGALResourceBase* GetParentResource() const { return this; }
 
 protected:
@@ -31,8 +22,6 @@ protected:
     XII_ASSERT_DEV(m_RenderTargetViews.IsEmpty(), "Dangling render target views");
     XII_ASSERT_DEV(m_UnorderedAccessViews.IsEmpty(), "Dangling unordered access views");
   }
-
-  virtual void SetDebugNamePlatform(const char* szName) const = 0;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   mutable xiiHashedString m_sDebugName;

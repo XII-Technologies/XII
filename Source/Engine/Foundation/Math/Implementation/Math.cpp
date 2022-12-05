@@ -12,6 +12,8 @@ xiiClipSpaceYMode::Enum      xiiClipSpaceYMode::RenderToTextureDefault = xiiClip
 
 xiiHandedness::Enum xiiHandedness::Default = xiiHandedness::LeftHanded;
 
+xiiGraphicsDevice::Enum xiiGraphicsDevice::Default = xiiGraphicsDevice::Undefined;
+
 bool xiiMath::IsPowerOf(xiiInt32 value, xiiInt32 base)
 {
   if (value == 1)

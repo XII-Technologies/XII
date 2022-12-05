@@ -310,12 +310,9 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
     desc.m_bAllowUAV                   = true;
     desc.m_ResourceAccess.m_bReadBack  = true;
     desc.m_ResourceAccess.m_bImmutable = false;
+    desc.m_szName                      = "Reflection Fallback Specular Texture";
 
     m_hFallbackReflectionSpecularTexture = pDevice->CreateTexture(desc);
-    if (!m_hFallbackReflectionSpecularTexture.IsInvalidated())
-    {
-      pDevice->GetTexture(m_hFallbackReflectionSpecularTexture)->SetDebugName("Reflection Fallback Specular Texture");
-    }
   }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -410,9 +407,9 @@ void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
     desc.m_Type                = xiiGALTextureType::Texture2D;
     desc.m_bCreateRenderTarget = true;
     desc.m_bAllowUAV           = true;
+    desc.m_szName              = "Sky Irradiance Texture";
 
     m_hSkyIrradianceTexture = pDevice->CreateTexture(desc);
-    pDevice->GetTexture(m_hSkyIrradianceTexture)->SetDebugName("Sky Irradiance Texture");
   }
 }
 
