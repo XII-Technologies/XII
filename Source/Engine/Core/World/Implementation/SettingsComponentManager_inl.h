@@ -19,7 +19,7 @@ XII_ALWAYS_INLINE ComponentType* xiiSettingsComponentManager<ComponentType>::Get
 {
   for (const auto& pComponent : m_Components)
   {
-    // retrieve the first component that is active
+    // Retrieve the first component that is active.
     if (pComponent->IsActive())
       return pComponent.Borrow();
   }
@@ -32,7 +32,7 @@ XII_ALWAYS_INLINE const ComponentType* xiiSettingsComponentManager<ComponentType
 {
   for (const auto& pComponent : m_Components)
   {
-    // retrieve the first component that is active
+    // Retrieve the first component that is active.
     if (pComponent->IsActive())
       return pComponent.Borrow();
   }

@@ -39,11 +39,23 @@ namespace xiiOpenDdlUtils
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToVec2(const xiiOpenDdlReaderElement* pElement, xiiVec2& out_result); // [tested]
 
+  /// \brief Converts the data that \a pElement points to to an xiiVec2d.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 2 doubles.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToVec2d(const xiiOpenDdlReaderElement* pElement, xiiVec2d& out_result); // [tested]
+
   /// \brief Converts the data that \a pElement points to to an xiiVec3.
   ///
   /// \a pElement maybe be a primitives list of exactly 3 floats.
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToVec3(const xiiOpenDdlReaderElement* pElement, xiiVec3& out_result); // [tested]
+
+  /// \brief Converts the data that \a pElement points to to an xiiVec3d.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 3 doubles.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToVec3d(const xiiOpenDdlReaderElement* pElement, xiiVec3d& out_result); // [tested]
 
   /// \brief Converts the data that \a pElement points to to an xiiVec4.
   ///
@@ -51,11 +63,23 @@ namespace xiiOpenDdlUtils
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToVec4(const xiiOpenDdlReaderElement* pElement, xiiVec4& out_result); // [tested]
 
+  /// \brief Converts the data that \a pElement points to to an xiiVec4d.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 4 doubles.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToVec4d(const xiiOpenDdlReaderElement* pElement, xiiVec4d& out_result); // [tested]
+
   /// \brief Converts the data that \a pElement points to to an xiiVec2I32.
   ///
   /// \a pElement maybe be a primitives list of exactly 2 int32.
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToVec2I(const xiiOpenDdlReaderElement* pElement, xiiVec2I32& out_result); // [tested]
+
+  /// \brief Converts the data that \a pElement points to to an xiiVec2I64.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 2 int64.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToVec2I64(const xiiOpenDdlReaderElement* pElement, xiiVec2I64& out_result); // [tested]
 
   /// \brief Converts the data that \a pElement points to to an xiiVec3I32.
   ///
@@ -63,11 +87,23 @@ namespace xiiOpenDdlUtils
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToVec3I(const xiiOpenDdlReaderElement* pElement, xiiVec3I32& out_result); // [tested]
 
+  /// \brief Converts the data that \a pElement points to to an xiiVec3I64.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 3 int64.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToVec3I64(const xiiOpenDdlReaderElement* pElement, xiiVec3I64& out_result); // [tested]
+
   /// \brief Converts the data that \a pElement points to to an xiiVec4I32.
   ///
   /// \a pElement maybe be a primitives list of exactly 4 int32.
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToVec4I(const xiiOpenDdlReaderElement* pElement, xiiVec4I32& out_result); // [tested]
+
+  /// \brief Converts the data that \a pElement points to to an xiiVec4I64.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 4 int64.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToVec4I64(const xiiOpenDdlReaderElement* pElement, xiiVec4I64& out_result); // [tested]
 
   /// \brief Converts the data that \a pElement points to to an xiiVec2U32.
   ///
@@ -75,17 +111,35 @@ namespace xiiOpenDdlUtils
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToVec2U(const xiiOpenDdlReaderElement* pElement, xiiVec2U32& out_result); // [tested]
 
+  /// \brief Converts the data that \a pElement points to to an xiiVec2U64.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 2 uint64.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToVec2U64(const xiiOpenDdlReaderElement* pElement, xiiVec2U64& out_result); // [tested]
+
   /// \brief Converts the data that \a pElement points to to an xiiVec3U32.
   ///
   /// \a pElement maybe be a primitives list of exactly 3 uint32.
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToVec3U(const xiiOpenDdlReaderElement* pElement, xiiVec3U32& out_result); // [tested]
 
+  /// \brief Converts the data that \a pElement points to to an xiiVec3U64.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 3 uint64.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToVec3U64(const xiiOpenDdlReaderElement* pElement, xiiVec3U64& out_result); // [tested]
+
   /// \brief Converts the data that \a pElement points to to an xiiVec4U32.
   ///
   /// \a pElement maybe be a primitives list of exactly 4 uint32.
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToVec4U(const xiiOpenDdlReaderElement* pElement, xiiVec4U32& out_result); // [tested]
+
+  /// \brief Converts the data that \a pElement points to to an xiiVec4U64.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 4 uint64.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToVec4U64(const xiiOpenDdlReaderElement* pElement, xiiVec4U64& out_result); // [tested]
 
   /// \brief Converts the data that \a pElement points to to an xiiMat3.
   ///
@@ -94,12 +148,26 @@ namespace xiiOpenDdlUtils
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToMat3(const xiiOpenDdlReaderElement* pElement, xiiMat3& out_result); // [tested]
 
+  /// \brief Converts the data that \a pElement points to to an xiiMat3d.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 9 doubles.
+  /// The elements are expected to be in column-major format. See xiiMatrixLayout::ColumnMajor.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToMat3d(const xiiOpenDdlReaderElement* pElement, xiiMat3d& out_result); // [tested]
+
   /// \brief Converts the data that \a pElement points to to an xiiMat4.
   ///
   /// \a pElement maybe be a primitives list of exactly 16 floats.
   /// The elements are expected to be in column-major format. See xiiMatrixLayout::ColumnMajor.
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToMat4(const xiiOpenDdlReaderElement* pElement, xiiMat4& out_result); // [tested]
+
+  /// \brief Converts the data that \a pElement points to to an xiiMat4d.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 16 doubles.
+  /// The elements are expected to be in column-major format. See xiiMatrixLayout::ColumnMajor.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToMat4d(const xiiOpenDdlReaderElement* pElement, xiiMat4d& out_result); // [tested]
 
   /// \brief Converts the data that \a pElement points to to an xiiTransform.
   ///
@@ -109,11 +177,25 @@ namespace xiiOpenDdlUtils
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToTransform(const xiiOpenDdlReaderElement* pElement, xiiTransform& out_result); // [tested]
 
+  /// \brief Converts the data that \a pElement points to to an xiiTransformd.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 12 doubles.
+  /// The first 9 elements are expected to be a mat3 in column-major format. See xiiMatrixLayout::ColumnMajor.
+  /// The last 3 elements are the position vector.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToTransformd(const xiiOpenDdlReaderElement* pElement, xiiTransformd& out_result); // [tested]
+
   /// \brief Converts the data that \a pElement points to to an xiiQuat.
   ///
   /// \a pElement maybe be a primitives list of exactly 4 floats.
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToQuat(const xiiOpenDdlReaderElement* pElement, xiiQuat& out_result); // [tested]
+
+  /// \brief Converts the data that \a pElement points to to an xiiQuatd.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 4 doubles.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToQuatd(const xiiOpenDdlReaderElement* pElement, xiiQuatd& out_result); // [tested]
 
   /// \brief Converts the data that \a pElement points to to an xiiUuid.
   ///
@@ -159,59 +241,116 @@ namespace xiiOpenDdlUtils
   /// \brief Writes an xiiVec2 to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreVec2(xiiOpenDdlWriter& writer, const xiiVec2& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
 
+  /// \brief Writes an xiiVec2d to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreVec2d(xiiOpenDdlWriter& writer, const xiiVec2d& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+
   /// \brief Writes an xiiVec3 to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreVec3(xiiOpenDdlWriter& writer, const xiiVec3& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+
+  /// \brief Writes an xiiVec3d to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreVec3d(xiiOpenDdlWriter& writer, const xiiVec3d& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec4 to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreVec4(xiiOpenDdlWriter& writer, const xiiVec4& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
 
-  /// \brief Writes an xiiVec2 to DDL such that the type can be reconstructed.
+  /// \brief Writes an xiiVec4d to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreVec4d(xiiOpenDdlWriter& writer, const xiiVec4d& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+
+  /// \brief Writes an xiiVec2I32 to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreVec2I(
     xiiOpenDdlWriter& writer,
     const xiiVec2I32& value,
     const char*       szName      = nullptr,
     bool              bGlobalName = false); // [tested]
 
-  /// \brief Writes an xiiVec3 to DDL such that the type can be reconstructed.
+  /// \brief Writes an xiiVec2I64 to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreVec2I64(
+    xiiOpenDdlWriter& writer,
+    const xiiVec2I64& value,
+    const char*       szName      = nullptr,
+    bool              bGlobalName = false); // [tested]
+
+  /// \brief Writes an xiiVec3I32 to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreVec3I(
     xiiOpenDdlWriter& writer,
     const xiiVec3I32& value,
     const char*       szName      = nullptr,
     bool              bGlobalName = false); // [tested]
 
-  /// \brief Writes an xiiVec4 to DDL such that the type can be reconstructed.
+  /// \brief Writes an xiiVec3I64 to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreVec3I64(
+    xiiOpenDdlWriter& writer,
+    const xiiVec3I64& value,
+    const char*       szName      = nullptr,
+    bool              bGlobalName = false); // [tested]
+
+  /// \brief Writes an xiiVec4I32 to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreVec4I(
     xiiOpenDdlWriter& writer,
     const xiiVec4I32& value,
     const char*       szName      = nullptr,
     bool              bGlobalName = false); // [tested]
 
-  /// \brief Writes an xiiVec2 to DDL such that the type can be reconstructed.
+  /// \brief Writes an xiiVec4I64 to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreVec4I64(
+    xiiOpenDdlWriter& writer,
+    const xiiVec4I64& value,
+    const char*       szName      = nullptr,
+    bool              bGlobalName = false); // [tested]
+
+  /// \brief Writes an xiiVec2U32 to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreVec2U(
     xiiOpenDdlWriter& writer,
     const xiiVec2U32& value,
     const char*       szName      = nullptr,
     bool              bGlobalName = false); // [tested]
 
-  /// \brief Writes an xiiVec3 to DDL such that the type can be reconstructed.
+  /// \brief Writes an xiiVec2U64 to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreVec2U64(
+    xiiOpenDdlWriter& writer,
+    const xiiVec2U64& value,
+    const char*       szName      = nullptr,
+    bool              bGlobalName = false); // [tested]
+
+  /// \brief Writes an xiiVec3U32 to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreVec3U(
     xiiOpenDdlWriter& writer,
     const xiiVec3U32& value,
     const char*       szName      = nullptr,
     bool              bGlobalName = false); // [tested]
 
-  /// \brief Writes an xiiVec4 to DDL such that the type can be reconstructed.
+  /// \brief Writes an xiiVec3U64 to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreVec3U64(
+    xiiOpenDdlWriter& writer,
+    const xiiVec3U64& value,
+    const char*       szName      = nullptr,
+    bool              bGlobalName = false); // [tested]
+
+  /// \brief Writes an xiiVec4U32 to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreVec4U(
     xiiOpenDdlWriter& writer,
     const xiiVec4U32& value,
     const char*       szName      = nullptr,
     bool              bGlobalName = false); // [tested]
 
+  /// \brief Writes an xiiVec4U64 to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreVec4U64(
+    xiiOpenDdlWriter& writer,
+    const xiiVec4U64& value,
+    const char*       szName      = nullptr,
+    bool              bGlobalName = false); // [tested]
+
   /// \brief Writes an xiiMat3 to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreMat3(xiiOpenDdlWriter& writer, const xiiMat3& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
 
+  /// \brief Writes an xiiMat3d to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreMat3d(xiiOpenDdlWriter& writer, const xiiMat3d& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+
   /// \brief Writes an xiiMat4 to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreMat4(xiiOpenDdlWriter& writer, const xiiMat4& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+
+  /// \brief Writes an xiiMat4d to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreMat4d(xiiOpenDdlWriter& writer, const xiiMat4d& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiTransform to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreTransform(
@@ -220,8 +359,18 @@ namespace xiiOpenDdlUtils
     const char*         szName      = nullptr,
     bool                bGlobalName = false); // [tested]
 
+  /// \brief Writes an xiiTransformd to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreTransformd(
+    xiiOpenDdlWriter&    writer,
+    const xiiTransformd& value,
+    const char*          szName      = nullptr,
+    bool                 bGlobalName = false); // [tested]
+
   /// \brief Writes an xiiQuat to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreQuat(xiiOpenDdlWriter& writer, const xiiQuat& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+
+  /// \brief Writes an xiiQuatd to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreQuatd(xiiOpenDdlWriter& writer, const xiiQuatd& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiUuid to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreUuid(xiiOpenDdlWriter& writer, const xiiUuid& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
@@ -279,4 +428,5 @@ namespace xiiOpenDdlUtils
 
   /// \brief Writes a primitives list with a single value and an optional name.
   XII_FOUNDATION_DLL void StoreUInt64(xiiOpenDdlWriter& writer, xiiUInt64 value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+
 } // namespace xiiOpenDdlUtils

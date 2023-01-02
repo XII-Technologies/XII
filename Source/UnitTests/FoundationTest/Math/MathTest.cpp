@@ -168,6 +168,10 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(1.0f, xiiMath::Exp(0.0f), 0.000001f);
     XII_TEST_FLOAT(2.7182818284f, xiiMath::Exp(1.0f), 0.000001f);
     XII_TEST_FLOAT(7.3890560989f, xiiMath::Exp(2.0f), 0.000001f);
+
+    XII_TEST_DOUBLE(1.0, xiiMath::Exp(0.0), 0.000001);
+    XII_TEST_DOUBLE(2.7182818284, xiiMath::Exp(1.0), 0.000001);
+    XII_TEST_DOUBLE(7.3890560989, xiiMath::Exp(2.0), 0.000001);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Ln")
@@ -175,6 +179,10 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(0.0f, xiiMath::Ln(1.0f), 0.000001f);
     XII_TEST_FLOAT(1.0f, xiiMath::Ln(2.7182818284f), 0.000001f);
     XII_TEST_FLOAT(2.0f, xiiMath::Ln(7.3890560989f), 0.000001f);
+
+    XII_TEST_DOUBLE(0.0, xiiMath::Ln(1.0), 0.000001);
+    XII_TEST_DOUBLE(1.0, xiiMath::Ln(2.7182818284), 0.000001);
+    XII_TEST_DOUBLE(2.0, xiiMath::Ln(7.3890560989), 0.000001);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log2")
@@ -182,6 +190,10 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(0.0f, xiiMath::Log2(1.0f), 0.000001f);
     XII_TEST_FLOAT(1.0f, xiiMath::Log2(2.0f), 0.000001f);
     XII_TEST_FLOAT(2.0f, xiiMath::Log2(4.0f), 0.000001f);
+
+    XII_TEST_DOUBLE(0.0, xiiMath::Log2(1.0), 0.000001);
+    XII_TEST_DOUBLE(1.0, xiiMath::Log2(2.0), 0.000001);
+    XII_TEST_DOUBLE(2.0, xiiMath::Log2(4.0), 0.000001);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log2i")
@@ -200,6 +212,10 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(0.0f, xiiMath::Log10(1.0f), 0.000001f);
     XII_TEST_FLOAT(1.0f, xiiMath::Log10(10.0f), 0.000001f);
     XII_TEST_FLOAT(2.0f, xiiMath::Log10(100.0f), 0.000001f);
+
+    XII_TEST_DOUBLE(0.0, xiiMath::Log10(1.0), 0.000001);
+    XII_TEST_DOUBLE(1.0, xiiMath::Log10(10.0), 0.000001);
+    XII_TEST_DOUBLE(2.0, xiiMath::Log10(100.0), 0.000001);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log")
@@ -215,6 +231,18 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(0.0f, xiiMath::Log(10.0f, 1.0f), 0.000001f);
     XII_TEST_FLOAT(1.0f, xiiMath::Log(10.0f, 10.0f), 0.000001f);
     XII_TEST_FLOAT(2.0f, xiiMath::Log(10.0f, 100.0f), 0.000001f);
+
+    XII_TEST_DOUBLE(0.0, xiiMath::Log(2.7182818284, 1.0), 0.000001);
+    XII_TEST_DOUBLE(1.0, xiiMath::Log(2.7182818284, 2.7182818284), 0.000001);
+    XII_TEST_DOUBLE(2.0, xiiMath::Log(2.7182818284, 7.3890560989), 0.000001);
+
+    XII_TEST_DOUBLE(0.0, xiiMath::Log(2.0, 1.0), 0.000001);
+    XII_TEST_DOUBLE(1.0, xiiMath::Log(2.0, 2.0), 0.000001);
+    XII_TEST_DOUBLE(2.0, xiiMath::Log(2.0, 4.0), 0.000001);
+
+    XII_TEST_DOUBLE(0.0, xiiMath::Log(10.0, 1.0), 0.000001);
+    XII_TEST_DOUBLE(1.0, xiiMath::Log(10.0, 10.0), 0.000001);
+    XII_TEST_DOUBLE(2.0, xiiMath::Log(10.0, 100.0), 0.000001);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pow2")
@@ -222,6 +250,10 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(1.0f, xiiMath::Pow2(0.0f), 0.000001f);
     XII_TEST_FLOAT(2.0f, xiiMath::Pow2(1.0f), 0.000001f);
     XII_TEST_FLOAT(4.0f, xiiMath::Pow2(2.0f), 0.000001f);
+
+    XII_TEST_DOUBLE(1.0, xiiMath::Pow2(0.0), 0.000001);
+    XII_TEST_DOUBLE(2.0, xiiMath::Pow2(1.0), 0.000001);
+    XII_TEST_DOUBLE(4.0, xiiMath::Pow2(2.0), 0.000001);
 
     XII_TEST_BOOL(xiiMath::Pow2(0) == 1);
     XII_TEST_BOOL(xiiMath::Pow2(1) == 2);
@@ -234,6 +266,10 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(3.0f, xiiMath::Pow(3.0f, 1.0f), 0.000001f);
     XII_TEST_FLOAT(9.0f, xiiMath::Pow(3.0f, 2.0f), 0.000001f);
 
+    XII_TEST_DOUBLE(1.0, xiiMath::Pow(3.0, 0.0), 0.000001);
+    XII_TEST_DOUBLE(3.0, xiiMath::Pow(3.0, 1.0), 0.000001);
+    XII_TEST_DOUBLE(9.0, xiiMath::Pow(3.0, 2.0), 0.000001);
+
     XII_TEST_BOOL(xiiMath::Pow(3, 0) == 1);
     XII_TEST_BOOL(xiiMath::Pow(3, 1) == 3);
     XII_TEST_BOOL(xiiMath::Pow(3, 2) == 9);
@@ -245,6 +281,11 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(1.0f, xiiMath::Square(1.0f), 0.000001f);
     XII_TEST_FLOAT(4.0f, xiiMath::Square(2.0f), 0.000001f);
     XII_TEST_FLOAT(4.0f, xiiMath::Square(-2.0f), 0.000001f);
+
+    XII_TEST_DOUBLE(0.0, xiiMath::Square(0.0), 0.000001);
+    XII_TEST_DOUBLE(1.0, xiiMath::Square(1.0), 0.000001);
+    XII_TEST_DOUBLE(4.0, xiiMath::Square(2.0), 0.000001);
+    XII_TEST_DOUBLE(4.0, xiiMath::Square(-2.0), 0.000001);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Sqrt (float)")

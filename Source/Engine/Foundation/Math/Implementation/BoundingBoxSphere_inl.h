@@ -103,8 +103,8 @@ void xiiBoundingBoxSphereTemplate<Type>::ExpandToInclude(const xiiBoundingBoxSph
 
   xiiBoundingBoxSphereTemplate<Type> result(box);
 
-  const float fSphereRadiusA = (m_vCenter - result.m_vCenter).GetLength() + m_fSphereRadius;
-  const float fSphereRadiusB = (rhs.m_vCenter - result.m_vCenter).GetLength() + rhs.m_fSphereRadius;
+  const Type fSphereRadiusA = (m_vCenter - result.m_vCenter).GetLength() + m_fSphereRadius;
+  const Type fSphereRadiusB = (rhs.m_vCenter - result.m_vCenter).GetLength() + rhs.m_fSphereRadius;
 
   m_vCenter         = result.m_vCenter;
   m_fSphereRadius   = xiiMath::Min(result.m_fSphereRadius, xiiMath::Max(fSphereRadiusA, fSphereRadiusB));
@@ -124,7 +124,7 @@ void xiiBoundingBoxSphereTemplate<Type>::Transform(const xiiMat4Template<Type>& 
     mAbsRotation.m_fElementsCM[i] = xiiMath::Abs(mAbsRotation.m_fElementsCM[i]);
   }
 
-  m_vBoxHalfExtends = mAbsRotation.TransformDirection(m_vBoxHalfExtends).CompMin(xiiVec3(m_fSphereRadius));
+  m_vBoxHalfExtends = mAbsRotation.TransformDirection(m_vBoxHalfExtends).CompMin(xiiVec3Template<Type>(m_fSphereRadius));
 }
 
 template <typename Type>

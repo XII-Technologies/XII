@@ -5,6 +5,7 @@
 #include <Foundation/Basics/AllDefinesOff.h>
 
 #include <Foundation/Basics/Platform/DetectArchitecture.h>
+
 #include <Foundation/Basics/Platform/DetectPlatform.h>
 
 #include <Foundation/UserConfig.h>
@@ -68,6 +69,7 @@
 #include <Foundation/Memory/AllocatorBase.h>
 
 #include <Foundation/Configuration/StaticSubSystem.h>
+
 #include <Foundation/Strings/FormatString.h>
 
 class XII_FOUNDATION_DLL xiiFoundation

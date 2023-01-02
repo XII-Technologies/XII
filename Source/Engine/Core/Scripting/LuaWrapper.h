@@ -118,6 +118,9 @@ public:
   float GetFloatVariable(const char* szName, float fDefault = 0.0f) const; // [tested]
 
   /// Returns the Value of the Variable with the given name, or the default-value, if it does not exist.
+  double GetDoubleVariable(const char* szName, double fDefault = 0.0) const; // [tested]
+
+  /// Returns the Value of the Variable with the given name, or the default-value, if it does not exist.
   const char* GetStringVariable(const char* szName, const char* szDefault = "") const; // [tested]
 
   /// @}
@@ -136,6 +139,9 @@ public:
 
   /// Sets the Variable with the given name (in scope) with the given value.
   void SetVariable(const char* szName, float fValue) const; // [tested]
+
+  /// Sets the Variable with the given name (in scope) with the given value.
+  void SetVariable(const char* szName, double fValue) const; // [tested]
 
   /// Sets the Variable with the given name (in scope) with the given value.
   void SetVariable(const char* szName, const char* szValue) const; // [tested]
@@ -199,6 +205,10 @@ public:
 
   /// Pushes a parameter on the stack to be passed to the next function called.
   /// Do this after PrepareFunctionCall() and before CallPreparedFunction().
+  void PushParameter(double fParam); // [tested]
+
+  /// Pushes a parameter on the stack to be passed to the next function called.
+  /// Do this after PrepareFunctionCall() and before CallPreparedFunction().
   void PushParameter(const char* szParam); // [tested]
 
   /// Pushes a parameter on the stack to be passed to the next function called.
@@ -230,6 +240,9 @@ public:
   bool IsParameterFloat(xiiUInt32 iParameter) const; // [tested]
 
   /// Checks the nth Parameter passed to a C-Function for its type.
+  bool IsParameterDouble(xiiUInt32 iParameter) const; // [tested]
+
+  /// Checks the nth Parameter passed to a C-Function for its type.
   bool IsParameterTable(xiiUInt32 iParameter) const; // [tested]
 
   /// Checks the nth Parameter passed to a C-Function for its type.
@@ -248,6 +261,9 @@ public:
   float GetFloatParameter(xiiUInt32 iParameter) const; // [tested]
 
   /// Returns the Value of the nth Parameter.
+  double GetDoubleParameter(xiiUInt32 iParameter) const; // [tested]
+
+  /// Returns the Value of the nth Parameter.
   const char* GetStringParameter(xiiUInt32 iParameter) const; // [tested]
 
   /// @}
@@ -263,6 +279,9 @@ public:
 
   /// Pushes a value as a return value for a called C-Function
   void PushReturnValue(float fParam); // [tested]
+
+  /// Pushes a value as a return value for a called C-Function
+  void PushReturnValue(double fParam); // [tested]
 
   /// Pushes a value as a return value for a called C-Function
   void PushReturnValue(const char* szParam); // [tested]
@@ -284,6 +303,9 @@ public:
   bool IsReturnValueFloat(xiiUInt32 iReturnValue) const; // [tested]
 
   /// Checks the nth return-value passed to a C-Function for its type.
+  bool IsReturnValueDouble(xiiUInt32 iReturnValue) const; // [tested]
+
+  /// Checks the nth return-value passed to a C-Function for its type.
   bool IsReturnValueString(xiiUInt32 iReturnValue) const; // [tested]
 
   /// Checks the nth return-value passed to a C-Function for its type.
@@ -298,6 +320,9 @@ public:
 
   /// Returns the value of the nth return-value.
   float GetFloatReturnValue(xiiUInt32 iReturnValue) const; // [tested]
+
+  /// Returns the value of the nth return-value.
+  double GetDoubleReturnValue(xiiUInt32 iReturnValue) const; // [tested]
 
   /// Returns the value of the nth return-value.
   const char* GetStringReturnValue(xiiUInt32 iReturnValue) const; // [tested]

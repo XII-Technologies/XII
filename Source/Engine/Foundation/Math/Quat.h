@@ -58,7 +58,7 @@ public:
   void SetElements(Type X, Type Y, Type Z, Type W); // [tested]
 
   /// \brief Creates a quaternion from a rotation-axis and an angle.
-  void SetFromAxisAndAngle(const xiiVec3Template<Type>& vRotationAxis, xiiAngle angle); // [tested]
+  void SetFromAxisAndAngle(const xiiVec3Template<Type>& vRotationAxis, xiiAngleTemplate<Type> angle); // [tested]
 
   /// \brief Creates a quaternion, that rotates through the shortest arc from "vDirFrom" to "vDirTo".
   void SetShortestRotation(const xiiVec3Template<Type>& vDirFrom, const xiiVec3Template<Type>& vDirTo); // [tested]
@@ -88,7 +88,7 @@ public:
   void Normalize(); // [tested]
 
   /// \brief Returns the rotation-axis and angle, that this quaternion rotates around.
-  xiiResult GetRotationAxisAndAngle(xiiVec3Template<Type>& vAxis, xiiAngle& angle, Type fEpsilon = xiiMath::DefaultEpsilon<Type>()) const; // [tested]
+  xiiResult GetRotationAxisAndAngle(xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type>& angle, Type fEpsilon = xiiMath::DefaultEpsilon<Type>()) const; // [tested]
 
   /// \brief Returns the Quaternion as a matrix.
   const xiiMat3Template<Type> GetAsMat3() const; // [tested]
@@ -122,10 +122,10 @@ public:
   // *** Euler Angle Conversions ***
 public:
   /// \brief Converts the quaternion to Euler angles
-  void GetAsEulerAngles(xiiAngle& out_x, xiiAngle& out_y, xiiAngle& out_z) const;
+  void GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiAngleTemplate<Type>& out_y, xiiAngleTemplate<Type>& out_z) const;
 
   /// \brief Sets the quaternion from Euler angles
-  void SetFromEulerAngles(const xiiAngle& x, const xiiAngle& y, const xiiAngle& z);
+  void SetFromEulerAngles(const xiiAngleTemplate<Type>& x, const xiiAngleTemplate<Type>& y, const xiiAngleTemplate<Type>& z);
 };
 
 /// \brief Rotates v by q

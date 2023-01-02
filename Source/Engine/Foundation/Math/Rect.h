@@ -103,9 +103,14 @@ public:
 
 #include <Foundation/Math/Implementation/Rect_inl.h>
 
-using xiiRectU32    = xiiRectTemplate<xiiUInt32>;
-using xiiRectU16    = xiiRectTemplate<xiiUInt16>;
-using xiiRectI32    = xiiRectTemplate<xiiInt32>;
-using xiiRectI16    = xiiRectTemplate<xiiInt16>;
+using xiiRectU64 = xiiRectTemplate<xiiUInt64>;
+using xiiRectU32 = xiiRectTemplate<xiiUInt32>;
+using xiiRectU16 = xiiRectTemplate<xiiUInt16>;
+
+using xiiRectI64 = xiiRectTemplate<xiiInt64>;
+using xiiRectI32 = xiiRectTemplate<xiiInt32>;
+using xiiRectI16 = xiiRectTemplate<xiiInt16>;
+
 using xiiRectFloat  = xiiRectTemplate<float>;
 using xiiRectDouble = xiiRectTemplate<double>;
+using xiiRectReal   = xiiRectTemplate<xiiReal>;

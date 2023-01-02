@@ -27,6 +27,7 @@ private Q_SLOTS:
   void UpdateUI();
   void BoolChanged(const char* szCVar, bool newValue);
   void FloatChanged(const char* szCVar, float newValue);
+  void DoubleChanged(const char* szCVar, double newValue);
   void IntChanged(const char* szCVar, int newValue);
   void StringChanged(const char* szCVar, const char* newValue);
 

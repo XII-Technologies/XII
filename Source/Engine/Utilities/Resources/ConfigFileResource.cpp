@@ -75,6 +75,15 @@ float xiiConfigFileResource::GetFloat(xiiTempHashedString szName, float fallback
   return fallback;
 }
 
+double xiiConfigFileResource::GetDouble(xiiTempHashedString szName, double fallback) const
+{
+  auto it = m_DoubleData.Find(szName);
+  if (it.IsValid())
+    return it.Value();
+
+  return fallback;
+}
+
 float xiiConfigFileResource::GetFloat(xiiTempHashedString szName) const
 {
   auto it = m_FloatData.Find(szName);
@@ -82,6 +91,16 @@ float xiiConfigFileResource::GetFloat(xiiTempHashedString szName) const
     return it.Value();
 
   xiiLog::Error("{}: 'float' config variable (name hash = {}) doesn't exist.", this->GetResourceDescription(), szName.GetHash());
+  return 0;
+}
+
+double xiiConfigFileResource::GetDouble(xiiTempHashedString szName) const
+{
+  auto it = m_DoubleData.Find(szName);
+  if (it.IsValid())
+    return it.Value();
+
+  xiiLog::Error("{}: 'double' config variable (name hash = {}) doesn't exist.", this->GetResourceDescription(), szName.GetHash());
   return 0;
 }
 
@@ -127,6 +146,7 @@ xiiResourceLoadDesc xiiConfigFileResource::UnloadData(Unload WhatToUnload)
 {
   m_IntData.Clear();
   m_FloatData.Clear();
+  m_DoubleData.Clear();
   m_StringData.Clear();
   m_BoolData.Clear();
 
@@ -153,6 +173,7 @@ xiiResourceLoadDesc xiiConfigFileResource::UpdateContent(xiiStreamReader* Stream
   m_RequiredFiles.ReadDependencyFile(*Stream).IgnoreResult();
   Stream->ReadHashTable(m_IntData).IgnoreResult();
   Stream->ReadHashTable(m_FloatData).IgnoreResult();
+  Stream->ReadHashTable(m_DoubleData).IgnoreResult();
   Stream->ReadHashTable(m_StringData).IgnoreResult();
   Stream->ReadHashTable(m_BoolData).IgnoreResult();
 
@@ -185,6 +206,7 @@ xiiResourceLoadData xiiConfigFileResourceLoader::OpenDataStream(const xiiResourc
 
   xiiMap<xiiString, xiiInt32>  intData;
   xiiMap<xiiString, float>     floatData;
+  xiiMap<xiiString, double>    doubleData;
   xiiMap<xiiString, xiiString> stringData;
   xiiMap<xiiString, bool>      boolData;
 
@@ -277,6 +299,26 @@ xiiResourceLoadData xiiConfigFileResourceLoader::OpenDataStream(const xiiResourc
             xiiLog::Error("Failed to parse 'float' in config file: '{}'", tmp);
           }
         }
+        else if (line.StartsWith("double "))
+        {
+          key.SetSubString_FromTo(line.GetData() + 7, szAssign);
+          key.Trim(" ");
+
+          if (bOverride && !doubleData.Contains(key))
+            xiiLog::Error("Config 'double' key '{}' is marked override, but doesn't exist yet. Remove 'override' keyword.", key);
+          if (!bOverride && doubleData.Contains(key))
+            xiiLog::Error("Config 'double' key '{}' is not marked override, but exist already. Use 'override double' instead.", key);
+
+          double val;
+          if (xiiConversionUtils::StringToFloat(value, val).Succeeded())
+          {
+            doubleData[key] = val;
+          }
+          else
+          {
+            xiiLog::Error("Failed to parse 'double' in config file: '{}'", tmp);
+          }
+        }
         else if (line.StartsWith("bool "))
         {
           key.SetSubString_FromTo(line.GetData() + 5, szAssign);
@@ -349,6 +391,7 @@ xiiResourceLoadData xiiConfigFileResourceLoader::OpenDataStream(const xiiResourc
   pData->m_RequiredFiles.WriteDependencyFile(writer).IgnoreResult();
   writer.WriteMap(intData).IgnoreResult();
   writer.WriteMap(floatData).IgnoreResult();
+  writer.WriteMap(doubleData).IgnoreResult();
   writer.WriteMap(stringData).IgnoreResult();
   writer.WriteMap(boolData).IgnoreResult();
 

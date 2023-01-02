@@ -40,9 +40,9 @@ XII_ALWAYS_INLINE void xiiQuatTemplate<Type>::SetIdentity()
 }
 
 template <typename Type>
-void xiiQuatTemplate<Type>::SetFromAxisAndAngle(const xiiVec3Template<Type>& vRotationAxis, xiiAngle angle)
+void xiiQuatTemplate<Type>::SetFromAxisAndAngle(const xiiVec3Template<Type>& vRotationAxis, xiiAngleTemplate<Type> angle)
 {
-  const xiiAngle halfAngle = angle * 0.5f;
+  const xiiAngleTemplate<Type> halfAngle = angle * (Type)0.5;
 
   v = static_cast<Type>(xiiMath::Sin(halfAngle)) * vRotationAxis;
   w = xiiMath::Cos(halfAngle);
@@ -62,12 +62,12 @@ void xiiQuatTemplate<Type>::Normalize()
 }
 
 template <typename Type>
-xiiResult xiiQuatTemplate<Type>::GetRotationAxisAndAngle(xiiVec3Template<Type>& vAxis, xiiAngle& angle, Type fEpsilon) const
+xiiResult xiiQuatTemplate<Type>::GetRotationAxisAndAngle(xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type>& angle, Type fEpsilon) const
 {
   XII_NAN_ASSERT(this);
 
-  const xiiAngle acos = xiiMath::ACos(static_cast<float>(w));
-  const float    d    = xiiMath::Sin(acos);
+  const xiiAngleTemplate<Type> acos = xiiMath::ACos(static_cast<Type>(w));
+  const Type                   d    = xiiMath::Sin(acos);
 
   if (d < fEpsilon)
   {
@@ -78,7 +78,7 @@ xiiResult xiiQuatTemplate<Type>::GetRotationAxisAndAngle(xiiVec3Template<Type>& 
     vAxis = (v / static_cast<Type>(d));
   }
 
-  angle = acos * 2;
+  angle = acos * 2.0f;
 
   return XII_SUCCESS;
 }
@@ -429,7 +429,7 @@ XII_ALWAYS_INLINE bool operator!=(const xiiQuatTemplate<Type>& q1, const xiiQuat
 }
 
 template <typename Type>
-void xiiQuatTemplate<Type>::GetAsEulerAngles(xiiAngle& out_x, xiiAngle& out_y, xiiAngle& out_z) const
+void xiiQuatTemplate<Type>::GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiAngleTemplate<Type>& out_y, xiiAngleTemplate<Type>& out_z) const
 {
   /// \test This is new
 
@@ -441,23 +441,23 @@ void xiiQuatTemplate<Type>::GetAsEulerAngles(xiiAngle& out_x, xiiAngle& out_y, x
   // roll (x-axis rotation)
   const double sinr = 2.0 * (w * v.x + v.y * v.z);
   const double cosr = 1.0 - 2.0 * (v.x * v.x + v.y * v.y);
-  roll              = xiiMath::ATan2((float)sinr, (float)cosr);
+  roll              = xiiMath::ATan2((Type)sinr, (Type)cosr);
 
   // pitch (y-axis rotation)
   const double sinp = 2.0 * (w * v.y - v.z * v.x);
   if (xiiMath::Abs(sinp) >= 1.0)
-    pitch = xiiAngle::Radian(copysign(xiiMath::Pi<float>() / 2.0f, (float)sinp)); // use 90 degrees if out of range
+    pitch = xiiAngle::Radian(copysign(xiiMath::Pi<Type>() / 2.0, (Type)sinp)); // use 90 degrees if out of range
   else
-    pitch = xiiMath::ASin((float)sinp);
+    pitch = xiiMath::ASin((Type)sinp);
 
   // yaw (z-axis rotation)
   const double siny = 2.0 * (w * v.z + v.x * v.y);
   const double cosy = 1.0 - 2.0 * (v.y * v.y + v.z * v.z);
-  yaw               = xiiMath::ATan2((float)siny, (float)cosy);
+  yaw               = xiiMath::ATan2((Type)siny, (Type)cosy);
 }
 
 template <typename Type>
-void xiiQuatTemplate<Type>::SetFromEulerAngles(const xiiAngle& x, const xiiAngle& y, const xiiAngle& z)
+void xiiQuatTemplate<Type>::SetFromEulerAngles(const xiiAngleTemplate<Type>& x, const xiiAngleTemplate<Type>& y, const xiiAngleTemplate<Type>& z)
 {
   /// \test This is new
 
@@ -466,15 +466,15 @@ void xiiQuatTemplate<Type>::SetFromEulerAngles(const xiiAngle& x, const xiiAngle
   const auto&  yaw   = z;
   const auto&  pitch = y;
   const auto&  roll  = x;
-  const double cy    = xiiMath::Cos(yaw * 0.5);
-  const double sy    = xiiMath::Sin(yaw * 0.5);
-  const double cr    = xiiMath::Cos(roll * 0.5);
-  const double sr    = xiiMath::Sin(roll * 0.5);
-  const double cp    = xiiMath::Cos(pitch * 0.5);
-  const double sp    = xiiMath::Sin(pitch * 0.5);
+  const double cy    = xiiMath::Cos(yaw * (Type)0.5);
+  const double sy    = xiiMath::Sin(yaw * (Type)0.5);
+  const double cr    = xiiMath::Cos(roll * (Type)0.5);
+  const double sr    = xiiMath::Sin(roll * (Type)0.5);
+  const double cp    = xiiMath::Cos(pitch * (Type)0.5);
+  const double sp    = xiiMath::Sin(pitch * (Type)0.5);
 
-  w   = (float)(cy * cr * cp + sy * sr * sp);
-  v.x = (float)(cy * sr * cp - sy * cr * sp);
-  v.y = (float)(cy * cr * sp + sy * sr * cp);
-  v.z = (float)(sy * cr * cp - cy * sr * sp);
+  w   = (Type)(cy * cr * cp + sy * sr * sp);
+  v.x = (Type)(cy * sr * cp - sy * cr * sp);
+  v.y = (Type)(cy * cr * sp + sy * sr * cp);
+  v.z = (Type)(sy * cr * cp - cy * sr * sp);
 }

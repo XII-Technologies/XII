@@ -13,8 +13,3 @@ Plugin
 	string %Path{"xiiTypeScriptPlugin"}
 	bool %LoadCopy{false}
 }
-Plugin
-{
-	string %Path{"xiiXBoxControllerPlugin"}
-	bool %LoadCopy{false}
-}

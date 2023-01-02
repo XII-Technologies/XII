@@ -181,7 +181,20 @@ xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiVariant& arg)
   return xiiStringView(tmp);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiAngle& arg)
+xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiAngleTemplate<float>& arg)
+{
+  xiiUInt32 writepos = 0;
+  xiiStringUtils::OutputFormattedFloat(tmp, uiLength - 2, writepos, arg.GetDegree(), 1, false, 1, false);
+
+  // Utf-8 representation of the degree sign
+  tmp[writepos + 0] = (char)0xC2;
+  tmp[writepos + 1] = (char)0xB0;
+  tmp[writepos + 2] = '\0';
+
+  return xiiStringView(tmp, tmp + writepos + 2);
+}
+
+xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiAngleTemplate<double>& arg)
 {
   xiiUInt32 writepos = 0;
   xiiStringUtils::OutputFormattedFloat(tmp, uiLength - 2, writepos, arg.GetDegree(), 1, false, 1, false);

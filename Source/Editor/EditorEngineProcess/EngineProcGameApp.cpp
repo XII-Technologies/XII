@@ -354,6 +354,10 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       {
         *static_cast<xiiCVarFloat*>(pCVar) = pMsg3->m_NewValue.ConvertTo<float>();
       }
+      else if (pCVar->GetType() == xiiCVarType::Double && pMsg3->m_NewValue.CanConvertTo<double>())
+      {
+        *static_cast<xiiCVarDouble*>(pCVar) = pMsg3->m_NewValue.ConvertTo<double>();
+      }
       else if (pCVar->GetType() == xiiCVarType::Bool && pMsg3->m_NewValue.CanConvertTo<bool>())
       {
         *static_cast<xiiCVarBool*>(pCVar) = pMsg3->m_NewValue.ConvertTo<bool>();
@@ -634,6 +638,9 @@ void xiiEngineProcessGameApplication::TransmitCVar(const xiiCVar* pCVar)
     case xiiCVarType::Float:
       msg.m_Value = ((xiiCVarFloat*)pCVar)->GetValue();
       break;
+    case xiiCVarType::Double:
+      msg.m_Value = ((xiiCVarDouble*)pCVar)->GetValue();
+      break;
     case xiiCVarType::Bool:
       msg.m_Value = ((xiiCVarBool*)pCVar)->GetValue();
       break;
@@ -641,7 +648,7 @@ void xiiEngineProcessGameApplication::TransmitCVar(const xiiCVar* pCVar)
       msg.m_Value = ((xiiCVarString*)pCVar)->GetValue();
       break;
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   m_IPC.SendMessage(&msg);

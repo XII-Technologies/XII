@@ -189,7 +189,6 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
 
     case xiiSurfaceInteractionAlignment::IncidentDirection:
       vDir = -vIncomingDirection;
-      ;
       break;
 
     case xiiSurfaceInteractionAlignment::ReflectedDirection:

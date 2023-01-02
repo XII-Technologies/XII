@@ -75,6 +75,9 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
   xiiCommandLineUtils::GetGlobalInstance()->InjectCustomArgument("-test1_Float2");
   xiiCommandLineUtils::GetGlobalInstance()->InjectCustomArgument("102.2");
 
+  xiiCommandLineUtils::GetGlobalInstance()->InjectCustomArgument("-test1_Double2");
+  xiiCommandLineUtils::GetGlobalInstance()->InjectCustomArgument("102.22");
+
   xiiCommandLineUtils::GetGlobalInstance()->InjectCustomArgument("-test1_Bool2");
   xiiCommandLineUtils::GetGlobalInstance()->InjectCustomArgument("false");
 
@@ -88,11 +91,13 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
   {
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Int") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Float") == nullptr);
+    XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Double") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Bool") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_String") == nullptr);
 
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Int") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Float") == nullptr);
+    XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Double") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Bool") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_String") == nullptr);
   }
@@ -105,16 +110,19 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
 
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Int") != nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Float") != nullptr);
+    XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Double") != nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Bool") != nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_String") != nullptr);
 
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Int2") != nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Float2") != nullptr);
+    XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Double2") != nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Bool2") != nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_String2") != nullptr);
 
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Int") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Float") == nullptr);
+    XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Double") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Bool") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_String") == nullptr);
 
@@ -127,11 +135,13 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
   {
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Int") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Float") == nullptr);
+    XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Double") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Bool") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_String") == nullptr);
 
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Int") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Float") == nullptr);
+    XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Double") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Bool") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_String") == nullptr);
   }
@@ -146,11 +156,13 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
 
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Int") != nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Float") != nullptr);
+    XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Double") != nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Bool") != nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_String") != nullptr);
 
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Int") != nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Float") != nullptr);
+    XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Double") != nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Bool") != nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_String") != nullptr);
 
@@ -163,11 +175,13 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
   {
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Int") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Float") == nullptr);
+    XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Double") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Bool") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_String") == nullptr);
 
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Int") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Float") == nullptr);
+    XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Double") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_Bool") == nullptr);
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test2_String") == nullptr);
   }
@@ -231,6 +245,35 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
         XII_TEST_INT(iChangedRestart, 1);
       }
 
+      xiiCVarDouble* pDouble = (xiiCVarDouble*)xiiCVar::FindCVarByName("test1_Double");
+      CHECK_CVAR(pDouble, 12.12, 12.12, 12.12, 12.12);
+
+      if (pDouble)
+      {
+        XII_TEST_BOOL(pDouble->GetType() == xiiCVarType::Double);
+        XII_TEST_BOOL(xiiStringUtils::IsEqual(pDouble->GetName(), "test1_Double"));
+        XII_TEST_BOOL(xiiStringUtils::IsEqual(pDouble->GetDescription(), "Desc: test1_Double"));
+
+        pDouble->m_CVarEvents.AddEventHandler(ChangedCVar);
+
+        *pDouble = 12.11;
+        CHECK_CVAR(pDouble, 12.12, 12.12, 12.12, 12.11);
+
+        XII_TEST_INT(iChangedValue, 2);
+        XII_TEST_INT(iChangedRestart, 2);
+
+        // no change
+        *pDouble = 12.11;
+        XII_TEST_INT(iChangedValue, 2);
+        XII_TEST_INT(iChangedRestart, 2);
+
+        pDouble->SetToRestartValue();
+        CHECK_CVAR(pDouble, 12.11, 12.12, 12.12, 12.11);
+
+        XII_TEST_INT(iChangedValue, 3);
+        XII_TEST_INT(iChangedRestart, 2);
+      }
+
       xiiCVarBool* pBool = (xiiCVarBool*)xiiCVar::FindCVarByName("test1_Bool");
       CHECK_CVAR(pBool, false, false, false, false);
 
@@ -269,8 +312,8 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
 
         *pInt = 23;
         CHECK_CVAR(pInt, 23, 22, 22, 23);
-        XII_TEST_INT(iChangedValue, 3);
-        XII_TEST_INT(iChangedRestart, 1);
+        XII_TEST_INT(iChangedValue, 4);
+        XII_TEST_INT(iChangedRestart, 2);
       }
 
       xiiCVarFloat* pFloat = (xiiCVarFloat*)xiiCVar::FindCVarByName("test2_Float");
@@ -280,6 +323,15 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
       {
         *pFloat = 2.3f;
         CHECK_CVAR(pFloat, 2.3f, 2.2f, 2.2f, 2.3f);
+      }
+
+      xiiCVarDouble* pDouble = (xiiCVarDouble*)xiiCVar::FindCVarByName("test2_Double");
+      CHECK_CVAR(pDouble, 22.22, 22.22, 22.22, 22.22);
+
+      if (pDouble)
+      {
+        *pDouble = 22.11;
+        CHECK_CVAR(pDouble, 22.11, 22.22, 22.22, 22.11);
       }
 
       xiiCVarBool* pBool = (xiiCVarBool*)xiiCVar::FindCVarByName("test2_Bool");
@@ -319,6 +371,9 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
       xiiCVarFloat* pFloat = (xiiCVarFloat*)xiiCVar::FindCVarByName("test1_Float");
       CHECK_CVAR(pFloat, 1.2f, 1.1f, 1.2f, 1.2f);
 
+      xiiCVarDouble* pDouble = (xiiCVarDouble*)xiiCVar::FindCVarByName("test1_Double");
+      CHECK_CVAR(pDouble, 12.11, 12.12, 12.11, 12.11);
+
       xiiCVarBool* pBool = (xiiCVarBool*)xiiCVar::FindCVarByName("test1_Bool");
       CHECK_CVAR(pBool, false, false, false, false);
 
@@ -334,6 +389,9 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
       xiiCVarFloat* pFloat = (xiiCVarFloat*)xiiCVar::FindCVarByName("test1_Float2");
       CHECK_CVAR(pFloat, 102.2f, 2.1f, 102.2f, 102.2f);
 
+      xiiCVarDouble* pDouble = (xiiCVarDouble*)xiiCVar::FindCVarByName("test1_Double2");
+      CHECK_CVAR(pDouble, 102.22, 122.122, 102.22, 102.22);
+
       xiiCVarBool* pBool = (xiiCVarBool*)xiiCVar::FindCVarByName("test1_Bool2");
       CHECK_CVAR(pBool, false, true, false, false);
 
@@ -348,6 +406,9 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
 
       xiiCVarFloat* pFloat = (xiiCVarFloat*)xiiCVar::FindCVarByName("test2_Float");
       CHECK_CVAR(pFloat, 2.2f, 2.2f, 2.2f, 2.2f);
+
+      xiiCVarDouble* pDouble = (xiiCVarDouble*)xiiCVar::FindCVarByName("test2_Double");
+      CHECK_CVAR(pDouble, 22.22, 22.22, 22.22, 22.22);
 
       xiiCVarBool* pBool = (xiiCVarBool*)xiiCVar::FindCVarByName("test2_Bool");
       CHECK_CVAR(pBool, false, true, false, false);

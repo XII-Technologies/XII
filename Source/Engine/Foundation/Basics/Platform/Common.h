@@ -4,7 +4,7 @@
 #define XII_MSVC_WARNING_NUMBER 4985
 #include <Foundation/Basics/Compiler/MSVC/DisableWarning_MSVC.h>
 
-// include std header
+// Include std header
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -15,11 +15,11 @@
 
 #include <Foundation/Basics/Compiler/MSVC/RestoreWarning_MSVC.h>
 
-// redefine NULL to nullptr
+// Redefine NULL to nullptr
 #undef NULL
 #define NULL nullptr
 
-// include c++11 specific header
+// Include c++11 specific header
 #include <type_traits>
 #include <utility>
 

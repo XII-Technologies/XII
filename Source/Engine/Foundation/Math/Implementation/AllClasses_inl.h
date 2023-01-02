@@ -185,7 +185,7 @@ Type xiiPlaneTemplate<Type>::GetMaximumDistanceTo(const xiiBoundingBoxTemplate<T
 }
 
 template <typename Type>
-void xiiMat3Template<Type>::SetRotationMatrix(const xiiVec3Template<Type>& vAxis, xiiAngle angle)
+void xiiMat3Template<Type>::SetRotationMatrix(const xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type> angle)
 {
   XII_ASSERT_DEBUG(vAxis.IsNormalized(0.1f), "vAxis must be normalized.");
 
@@ -252,7 +252,7 @@ xiiResult xiiMat3Template<Type>::Invert(Type fEpsilon)
 }
 
 template <typename Type>
-void xiiMat4Template<Type>::SetRotationMatrix(const xiiVec3Template<Type>& vAxis, xiiAngle angle)
+void xiiMat4Template<Type>::SetRotationMatrix(const xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type> angle)
 {
   XII_ASSERT_DEBUG(vAxis.IsNormalized(), "vAxis must be normalized.");
 

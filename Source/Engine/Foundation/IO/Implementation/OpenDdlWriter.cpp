@@ -198,6 +198,7 @@ xiiOpenDdlWriter::xiiOpenDdlWriter()
   XII_CHECK_AT_COMPILETIME((int)xiiOpenDdlWriter::State::PrimitivesUInt32 == (int)xiiOpenDdlPrimitiveType::UInt32);
   XII_CHECK_AT_COMPILETIME((int)xiiOpenDdlWriter::State::PrimitivesUInt64 == (int)xiiOpenDdlPrimitiveType::UInt64);
   XII_CHECK_AT_COMPILETIME((int)xiiOpenDdlWriter::State::PrimitivesFloat == (int)xiiOpenDdlPrimitiveType::Float);
+  XII_CHECK_AT_COMPILETIME((int)xiiOpenDdlWriter::State::PrimitivesDouble == (int)xiiOpenDdlPrimitiveType::Double);
   XII_CHECK_AT_COMPILETIME((int)xiiOpenDdlWriter::State::PrimitivesString == (int)xiiOpenDdlPrimitiveType::String);
 
   m_bCompactMode       = false;

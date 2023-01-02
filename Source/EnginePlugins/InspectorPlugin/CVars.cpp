@@ -15,6 +15,7 @@ static void TelemetryMessage(void* pPassThrough)
       xiiUInt8  uiType;
 
       float     fValue;
+      double    dValue;
       xiiInt32  iValue;
       bool      bValue;
       xiiString sValue;
@@ -24,6 +25,9 @@ static void TelemetryMessage(void* pPassThrough)
 
       switch (uiType)
       {
+        case xiiCVarType::Double:
+          Msg.GetReader() >> dValue;
+          break;
         case xiiCVarType::Float:
           Msg.GetReader() >> fValue;
           break;
@@ -46,6 +50,9 @@ static void TelemetryMessage(void* pPassThrough)
         {
           switch (uiType)
           {
+            case xiiCVarType::Double:
+              *((xiiCVarDouble*)pCVar) = dValue;
+              break;
             case xiiCVarType::Float:
               *((xiiCVarFloat*)pCVar) = fValue;
               break;
@@ -79,6 +86,12 @@ static void SendCVarTelemetry(xiiCVar* pCVar)
 
   switch (pCVar->GetType())
   {
+    case xiiCVarType::Double:
+    {
+      const double val = ((xiiCVarDouble*)pCVar)->GetValue();
+      msg.GetWriter() << val;
+    }
+    break;
     case xiiCVarType::Float:
     {
       const float val = ((xiiCVarFloat*)pCVar)->GetValue();

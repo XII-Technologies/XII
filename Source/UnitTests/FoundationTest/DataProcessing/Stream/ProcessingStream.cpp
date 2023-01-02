@@ -35,13 +35,38 @@ protected:
 
   virtual void Process(xiiUInt64 uiNumElements) override
   {
-    xiiProcessingStreamIterator<float> streamIterator(m_pStream, uiNumElements, 0);
+    xiiProcessingStream::DataType Type = m_pStream->GetDataType();
 
-    while (!streamIterator.HasReachedEnd())
+    switch (Type)
     {
-      streamIterator.Current() += 1.0f;
+      case xiiProcessingStream::DataType::Float:
+      {
+        xiiProcessingStreamIterator<float> streamIterator(m_pStream, uiNumElements, 0);
 
-      streamIterator.Advance();
+        while (!streamIterator.HasReachedEnd())
+        {
+          streamIterator.Current() += 1.0f;
+
+          streamIterator.Advance();
+        }
+      }
+      break;
+
+      case xiiProcessingStream::DataType::Double:
+      {
+        xiiProcessingStreamIterator<double> streamIterator(m_pStream, uiNumElements, 0);
+
+        while (!streamIterator.HasReachedEnd())
+        {
+          streamIterator.Current() += 1.0;
+
+          streamIterator.Advance();
+        }
+      }
+      break;
+
+      default:
+        break;
     }
   }
 
@@ -57,18 +82,28 @@ XII_CREATE_SIMPLE_TEST(DataProcessing, ProcessingStream)
   xiiProcessingStreamGroup Group;
   xiiProcessingStream*     pStream1 = Group.AddStream("Stream1", xiiProcessingStream::DataType::Float);
   xiiProcessingStream*     pStream2 = Group.AddStream("Stream2", xiiProcessingStream::DataType::Float3);
+  xiiProcessingStream*     pStream3 = Group.AddStream("Stream3", xiiProcessingStream::DataType::Double);
+  xiiProcessingStream*     pStream4 = Group.AddStream("Stream4", xiiProcessingStream::DataType::Double3);
 
   XII_TEST_BOOL(pStream1 != nullptr);
   XII_TEST_BOOL(pStream2 != nullptr);
+  XII_TEST_BOOL(pStream3 != nullptr);
+  XII_TEST_BOOL(pStream4 != nullptr);
 
   xiiProcessingStreamSpawnerZeroInitialized* pSpawner1 = XII_DEFAULT_NEW(xiiProcessingStreamSpawnerZeroInitialized);
   xiiProcessingStreamSpawnerZeroInitialized* pSpawner2 = XII_DEFAULT_NEW(xiiProcessingStreamSpawnerZeroInitialized);
+  xiiProcessingStreamSpawnerZeroInitialized* pSpawner3 = XII_DEFAULT_NEW(xiiProcessingStreamSpawnerZeroInitialized);
+  xiiProcessingStreamSpawnerZeroInitialized* pSpawner4 = XII_DEFAULT_NEW(xiiProcessingStreamSpawnerZeroInitialized);
 
   pSpawner1->SetStreamName(pStream1->GetName());
   pSpawner2->SetStreamName(pStream2->GetName());
+  pSpawner3->SetStreamName(pStream3->GetName());
+  pSpawner4->SetStreamName(pStream4->GetName());
 
   Group.AddProcessor(pSpawner1);
   Group.AddProcessor(pSpawner2);
+  Group.AddProcessor(pSpawner3);
+  Group.AddProcessor(pSpawner4);
 
   Group.SetSize(128);
 
@@ -118,15 +153,57 @@ XII_CREATE_SIMPLE_TEST(DataProcessing, ProcessingStream)
     XII_TEST_INT(iElementsVisited, 10);
   }
 
-  XII_TEST_INT(Group.GetHighestNumActiveElements(), 10);
+  Group.InitializeElements(3);
+
+  Group.Process();
+
+  {
+    xiiProcessingStreamIterator<double> stream3Iterator(pStream3, 3, 0);
+
+    int iElementsVisited = 0;
+    while (!stream3Iterator.HasReachedEnd())
+    {
+      XII_TEST_DOUBLE(stream3Iterator.Current(), 0.0, 0.0);
+
+      stream3Iterator.Advance();
+      iElementsVisited++;
+    }
+
+    XII_TEST_INT(iElementsVisited, 3);
+  }
+
+  Group.InitializeElements(7);
+
+  Group.Process();
+
+  {
+    xiiProcessingStreamIterator<xiiVec3d> stream4Iterator(pStream4, Group.GetNumActiveElements(), 0);
+
+    int iElementsVisited = 0;
+    while (!stream4Iterator.HasReachedEnd())
+    {
+      XII_TEST_DOUBLE(stream4Iterator.Current().x, 0.0, 0.0);
+      XII_TEST_DOUBLE(stream4Iterator.Current().y, 0.0, 0.0);
+      XII_TEST_DOUBLE(stream4Iterator.Current().z, 0.0, 0.0);
+
+      stream4Iterator.Advance();
+      iElementsVisited++;
+    }
+
+    XII_TEST_INT(iElementsVisited, 20);
+  }
+
+  XII_TEST_INT(Group.GetHighestNumActiveElements(), 20);
 
   Group.RemoveElement(5);
+  Group.RemoveElement(7);
+  Group.RemoveElement(3);
   Group.RemoveElement(7);
 
   Group.Process();
 
-  XII_TEST_INT(Group.GetHighestNumActiveElements(), 10);
-  XII_TEST_INT(Group.GetNumActiveElements(), 8);
+  XII_TEST_INT(Group.GetHighestNumActiveElements(), 20);
+  XII_TEST_INT(Group.GetNumActiveElements(), 17);
 
   AddOneStreamProcessor* pProcessor1 = XII_DEFAULT_NEW(AddOneStreamProcessor);
   pProcessor1->SetStreamName(pStream1->GetName());
@@ -154,6 +231,35 @@ XII_CREATE_SIMPLE_TEST(DataProcessing, ProcessingStream)
       XII_TEST_FLOAT(stream1Iterator.Current(), 2.0f, 0.001f);
 
       stream1Iterator.Advance();
+    }
+  }
+
+  AddOneStreamProcessor* pProcessor3 = XII_DEFAULT_NEW(AddOneStreamProcessor);
+  pProcessor3->SetStreamName(pStream3->GetName());
+
+  Group.AddProcessor(pProcessor3);
+
+  Group.Process();
+
+  {
+    xiiProcessingStreamIterator<double> stream3Iterator(pStream3, Group.GetNumActiveElements(), 0);
+    while (!stream3Iterator.HasReachedEnd())
+    {
+      XII_TEST_DOUBLE(stream3Iterator.Current(), 1.0, 0.001);
+
+      stream3Iterator.Advance();
+    }
+  }
+
+  Group.Process();
+
+  {
+    xiiProcessingStreamIterator<double> stream3Iterator(pStream3, Group.GetNumActiveElements(), 0);
+    while (!stream3Iterator.HasReachedEnd())
+    {
+      XII_TEST_DOUBLE(stream3Iterator.Current(), 2.0, 0.001);
+
+      stream3Iterator.Advance();
     }
   }
 }

@@ -21,7 +21,7 @@
 /// is not met, even in release builds, then use XII_ASSERT_RELEASE. This should not be used in frequently executed code,
 /// as it is not stripped from non-development builds by default.
 ///
-/// If you need to squexiie the last bit of performance out of your code, XII_ASSERT_RELEASE can be disabled, by defining
+/// If you need to squeeze the last bit of performance out of your code, XII_ASSERT_RELEASE can be disabled, by defining
 /// XII_DISABLE_RELEASE_ASSERTS.
 /// Please be aware that XII_ASSERT_RELEASE works like the other asserts, i.e. once it is deactivated, the code in the condition
 /// is not executed anymore.

@@ -4,6 +4,27 @@
 
 namespace xiiMath
 {
+  template <typename Type>
+  XII_ALWAYS_INLINE Type Sin(xiiAngleTemplate<Type> a) { return (Type)sin(a.GetRadian()); }
+
+  template <typename Type>
+  XII_ALWAYS_INLINE Type Cos(xiiAngleTemplate<Type> a) { return (Type)cos(a.GetRadian()); }
+
+  template <typename Type>
+  XII_ALWAYS_INLINE Type Tan(xiiAngleTemplate<Type> a) { return (Type)tan(a.GetRadian()); }
+
+  template <typename Type>
+  XII_ALWAYS_INLINE xiiAngleTemplate<Type> ASin(Type f) { return xiiAngleTemplate<Type>::Radian((Type)asin(f)); }
+
+  template <typename Type>
+  XII_ALWAYS_INLINE xiiAngleTemplate<Type> ACos(Type f) { return xiiAngleTemplate<Type>::Radian((Type)acos(f)); }
+
+  template <typename Type>
+  XII_ALWAYS_INLINE xiiAngleTemplate<Type> ATan(Type f) { return xiiAngleTemplate<Type>::Radian((Type)atan(f)); }
+
+  template <typename Type>
+  XII_ALWAYS_INLINE xiiAngleTemplate<Type> ATan2(Type y, Type x) { return xiiAngleTemplate<Type>::Radian((Type)atan2(y, x)); }
+
   template <typename T>
   constexpr XII_ALWAYS_INLINE T Square(T f)
   {
@@ -407,10 +428,11 @@ namespace xiiMath
   }
 } // namespace xiiMath
 
-constexpr XII_FORCE_INLINE xiiAngle xiiAngle::AngleBetween(xiiAngle a, xiiAngle b)
+template <typename Type>
+constexpr XII_FORCE_INLINE xiiAngleTemplate<Type> xiiAngleTemplate<Type>::AngleBetween(xiiAngleTemplate a, xiiAngleTemplate b)
 {
-  // taken from http://gamedev.stackexchange.com/questions/4467/comparing-angles-and-working-out-the-difference
-  return xiiAngle(Pi<float>() - xiiMath::Abs(xiiMath::Abs(a.GetRadian() - b.GetRadian()) - Pi<float>()));
+  // Derived from http://gamedev.stackexchange.com/questions/4467/comparing-angles-and-working-out-the-difference
+  return xiiAngleTemplate<Type>(xiiAngleTemplate<Type>::Pi() - xiiMath::Abs(xiiMath::Abs(a.GetRadian() - b.GetRadian()) - xiiAngleTemplate<Type>::Pi()));
 }
 
 constexpr XII_FORCE_INLINE xiiInt32 xiiMath::FloatToInt(float value)

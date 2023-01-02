@@ -18,7 +18,25 @@ struct XII_CORE_DLL xiiMsgSetFloatParameter : public xiiMessage
   XII_DECLARE_MESSAGE_TYPE(xiiMsgSetFloatParameter, xiiMessage);
 
   xiiString m_sParameterName;
-  float     m_fValue = 0;
+  float     m_fValue = 0.0f;
+};
+
+/// \brief Basic message to set some generic parameter to a double value.
+struct XII_CORE_DLL xiiMsgSetDoubleParameter : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgSetDoubleParameter, xiiMessage);
+
+  xiiString m_sParameterName;
+  double    m_fValue = 0.0;
+};
+
+/// \brief Basic message to set some generic parameter to a xiiReal value.
+struct XII_CORE_DLL xiiMsgSetRealParameter : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgSetRealParameter, xiiMessage);
+
+  xiiString m_sParameterName;
+  xiiReal   m_fValue = static_cast<xiiReal>(0.0);
 };
 
 /// \brief For use in scripts to signal a custom event that some game event has occurred.

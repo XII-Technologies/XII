@@ -1,7 +1,5 @@
 xii_cmake_init()
 
-
-
 xii_requires_editor()
 
 xii_requires_windows()

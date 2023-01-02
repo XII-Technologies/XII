@@ -194,6 +194,16 @@ XII_CREATE_SIMPLE_TEST(IO, StandardJSONWriter)
     js.AddVariableVec2("var1", xiiVec2(1, 2));
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec2d")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec2d\", \"$v\" : \"(1.00000000, 2.00000000)\", \"$b\" : \"0x000000000000F03F0000000000000040\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec2d("var1", xiiVec2d(1, 2));
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec3")
   {
     StreamComparer sc("\"var1\" : { \"$t\" : \"vec3\", \"$v\" : \"(1.0000, 2.0000, 3.0000)\", \"$b\" : \"0x0000803F0000004000004040\" }");
@@ -202,6 +212,16 @@ XII_CREATE_SIMPLE_TEST(IO, StandardJSONWriter)
     js.SetOutputStream(&sc);
 
     js.AddVariableVec3("var1", xiiVec3(1, 2, 3));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec3d")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec3d\", \"$v\" : \"(1.00000000, 2.00000000, 3.00000000)\", \"$b\" : \"0x000000000000F03F00000000000000400000000000000840\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec3d("var1", xiiVec3d(1, 2, 3));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec4")
@@ -213,6 +233,17 @@ XII_CREATE_SIMPLE_TEST(IO, StandardJSONWriter)
     js.SetOutputStream(&sc);
 
     js.AddVariableVec4("var1", xiiVec4(1, 2, 3, 4));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec4d")
+  {
+    StreamComparer sc(
+      "\"var1\" : { \"$t\" : \"vec4d\", \"$v\" : \"(1.00000000, 2.00000000, 3.00000000, 4.00000000)\", \"$b\" : \"0x000000000000F03F000000000000004000000000000008400000000000001040\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec4d("var1", xiiVec4d(1, 2, 3, 4));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec2I32")
@@ -245,6 +276,96 @@ XII_CREATE_SIMPLE_TEST(IO, StandardJSONWriter)
     js.AddVariableVec4I32("var1", xiiVec4I32(1, 2, 3, 4));
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec2I64")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec2i64\", \"$v\" : \"(1, 2)\", \"$b\" : \"0x01000000000000000200000000000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec2I64("var1", xiiVec2I64(1, 2));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec3I64")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec3i64\", \"$v\" : \"(1, 2, 3)\", \"$b\" : \"0x010000000000000002000000000000000300000000000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec3I64("var1", xiiVec3I64(1, 2, 3));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec4I64")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec4i64\", \"$v\" : \"(1, 2, 3, 4)\", \"$b\" : \"0x0100000000000000020000000000000003000000000000000400000000000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec4I64("var1", xiiVec4I64(1, 2, 3, 4));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec2U32")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec2u\", \"$v\" : \"(1, 2)\", \"$b\" : \"0x0100000002000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec2U32("var1", xiiVec2U32(1, 2));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec3U32")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec3u\", \"$v\" : \"(1, 2, 3)\", \"$b\" : \"0x010000000200000003000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec3U32("var1", xiiVec3U32(1, 2, 3));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec4U32")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec4u\", \"$v\" : \"(1, 2, 3, 4)\", \"$b\" : \"0x01000000020000000300000004000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec4U32("var1", xiiVec4U32(1, 2, 3, 4));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec2U64")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec2u64\", \"$v\" : \"(1, 2)\", \"$b\" : \"0x01000000000000000200000000000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec2U64("var1", xiiVec2U64(1, 2));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec3U64")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec3u64\", \"$v\" : \"(1, 2, 3)\", \"$b\" : \"0x010000000000000002000000000000000300000000000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec3U64("var1", xiiVec3U64(1, 2, 3));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec4U64")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec4u64\", \"$v\" : \"(1, 2, 3, 4)\", \"$b\" : \"0x0100000000000000020000000000000003000000000000000400000000000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec4U64("var1", xiiVec4U64(1, 2, 3, 4));
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableDataBuffer")
   {
     StreamComparer sc("\"var1\" : { \"$t\" : \"data\", \"$b\" : \"0xFF00DA\" }");
@@ -269,6 +390,16 @@ XII_CREATE_SIMPLE_TEST(IO, StandardJSONWriter)
     js.AddVariableQuat("var1", xiiQuat(1, 2, 3, 4));
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableQuatd")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"quatd\", \"$b\" : \"0x000000000000F03F000000000000004000000000000008400000000000001040\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableQuatd("var1", xiiQuatd(1, 2, 3, 4));
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableMat3")
   {
     StreamComparer sc("\"var1\" : { \"$t\" : \"mat3\", \"$b\" : \"0x0000803F000080400000E040000000400000A04000000041000040400000C04000001041\" }");
@@ -277,6 +408,16 @@ XII_CREATE_SIMPLE_TEST(IO, StandardJSONWriter)
     js.SetOutputStream(&sc);
 
     js.AddVariableMat3("var1", xiiMat3(1, 2, 3, 4, 5, 6, 7, 8, 9));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableMat3d")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"mat3d\", \"$b\" : \"0x000000000000F03F00000000000010400000000000001C40000000000000004000000000000014400000000000002040000000000000084000000000000018400000000000002240\" }", false);
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableMat3d("var1", xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableMat4")
@@ -289,6 +430,39 @@ XII_CREATE_SIMPLE_TEST(IO, StandardJSONWriter)
     js.SetOutputStream(&sc);
 
     js.AddVariableMat4("var1", xiiMat4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableMat4d")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"mat4d\", \"$b\" : "
+                      "\"0x000000000000F03F000000000000144000000000000022400000000000002A400000000000000040000000000000184000000000000024400000000000002C4000000000000008400000000000001C4000000000000026400000000000002E400000000000001040000000000000204000000000000028400000000000003040\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableMat4d("var1", xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableTransform")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"transform\", \"$b\" : "
+                      "\"0x0000803F0000004000004040000080400000A0400000C0400000E040000000410000104100002041\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableTransform("var1", xiiTransform(xiiVec3(1, 2, 3), xiiQuat(4, 5, 6, 7), xiiVec3(8, 9, 10)));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableTransformd")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"transformd\", \"$b\" : "
+                      "\"0x000000000000F03F000000000000004000000000000008400000000000001040000000000000144000000000000018400000000000001C40000000000000204000000000000022400000000000002440\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableTransformd("var1", xiiTransformd(xiiVec3d(1, 2, 3), xiiQuatd(4, 5, 6, 7), xiiVec3d(8, 9, 10)));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVariant")

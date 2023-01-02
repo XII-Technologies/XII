@@ -107,6 +107,44 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 //////////////////////////////////////////////////////////////////////////
 
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgSetDoubleParameter);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgSetDoubleParameter, 1, xiiRTTIDefaultAllocator<xiiMsgSetDoubleParameter>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Name", m_sParameterName),
+    XII_MEMBER_PROPERTY("Value", m_fValue),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiAutoGenVisScriptMsgSender(),
+  }
+  XII_END_ATTRIBUTES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+//////////////////////////////////////////////////////////////////////////
+
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgSetRealParameter);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgSetRealParameter, 1, xiiRTTIDefaultAllocator<xiiMsgSetRealParameter>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Name", m_sParameterName),
+    XII_MEMBER_PROPERTY("Value", m_fValue),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiAutoGenVisScriptMsgSender(),
+  }
+  XII_END_ATTRIBUTES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+//////////////////////////////////////////////////////////////////////////
+
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgGenericEvent);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgGenericEvent, 1, xiiRTTIDefaultAllocator<xiiMsgGenericEvent>)
 {

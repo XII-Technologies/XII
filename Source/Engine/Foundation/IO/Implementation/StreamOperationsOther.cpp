@@ -313,6 +313,19 @@ void operator>>(xiiStreamReader& Stream, xiiVarianceTypeFloat& Value)
   Stream >> Value.m_Value;
 }
 
+// xiiVarianceTypeDouble
+
+void operator<<(xiiStreamWriter& Stream, const xiiVarianceTypeDouble& Value)
+{
+  Stream << Value.m_fVariance;
+  Stream << Value.m_Value;
+}
+void operator>>(xiiStreamReader& Stream, xiiVarianceTypeDouble& Value)
+{
+  Stream >> Value.m_fVariance;
+  Stream >> Value.m_Value;
+}
+
 // xiiVarianceTypeTime
 
 void operator<<(xiiStreamWriter& Stream, const xiiVarianceTypeTime& Value)

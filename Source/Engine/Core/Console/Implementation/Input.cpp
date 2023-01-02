@@ -8,8 +8,10 @@ bool xiiQuakeConsole::ProcessInputCharacter(xiiUInt32 uiChar)
   switch (uiChar)
   {
     case 27: // Escape
+    {
       ClearInputLine();
       return false;
+    }
 
     case '\b': // backspace
     {
@@ -18,21 +20,25 @@ bool xiiQuakeConsole::ProcessInputCharacter(xiiUInt32 uiChar)
         RemoveCharacter(m_iCaretPosition - 1);
         MoveCaret(-1);
       }
-    }
       return false;
+    }
 
     case '\t':
+    {
       if (AutoComplete(m_sInputLine))
       {
         MoveCaret(500);
       }
       return false;
+    }
 
     case 13: // Enter
+    {
       AddToInputHistory(m_sInputLine);
       ExecuteCommand(m_sInputLine);
       ClearInputLine();
       return false;
+    }
   }
 
   return true;

@@ -246,6 +246,7 @@ XII_CREATE_SIMPLE_TEST(Scripting, DuktapeWrapper)
 
     XII_TEST_BOOL(duk.HasProperty("f"));
     XII_TEST_FLOAT(duk.GetFloatProperty("f", 0), 4.2f, 0.01f);
+    XII_TEST_DOUBLE(duk.GetNumberProperty("f", 0), 4.2, 0.01);
 
     XII_TEST_BOOL(duk.HasProperty("b"));
     XII_TEST_BOOL(duk.GetBoolProperty("b", false));

@@ -85,18 +85,31 @@ public:
   xiiVariant(const double& value);
   xiiVariant(const xiiColor& value);
   xiiVariant(const xiiVec2& value);
+  xiiVariant(const xiiVec2d& value);
   xiiVariant(const xiiVec3& value);
+  xiiVariant(const xiiVec3d& value);
   xiiVariant(const xiiVec4& value);
+  xiiVariant(const xiiVec4d& value);
   xiiVariant(const xiiVec2I32& value);
+  xiiVariant(const xiiVec2I64& value);
   xiiVariant(const xiiVec3I32& value);
+  xiiVariant(const xiiVec3I64& value);
   xiiVariant(const xiiVec4I32& value);
+  xiiVariant(const xiiVec4I64& value);
   xiiVariant(const xiiVec2U32& value);
+  xiiVariant(const xiiVec2U64& value);
   xiiVariant(const xiiVec3U32& value);
+  xiiVariant(const xiiVec3U64& value);
   xiiVariant(const xiiVec4U32& value);
+  xiiVariant(const xiiVec4U64& value);
   xiiVariant(const xiiQuat& value);
+  xiiVariant(const xiiQuatd& value);
   xiiVariant(const xiiMat3& value);
+  xiiVariant(const xiiMat3d& value);
   xiiVariant(const xiiMat4& value);
+  xiiVariant(const xiiMat4d& value);
   xiiVariant(const xiiTransform& value);
+  xiiVariant(const xiiTransformd& value);
   xiiVariant(const char* value);
   xiiVariant(const xiiString& value);
   xiiVariant(const xiiUntrackedString& value);
@@ -345,6 +358,7 @@ private:
   union Data
   {
     float         f[4];
+    double        d[4];
     SharedData*   shared;
     InlinedStruct inlined;
   } m_Data;
@@ -384,6 +398,10 @@ private:
   static bool IsVector2Static(xiiUInt32 type);
   static bool IsVector3Static(xiiUInt32 type);
   static bool IsVector4Static(xiiUInt32 type);
+  static bool IsQuatStatic(xiiUInt32 type);
+  static bool IsMat3Static(xiiUInt32 type);
+  static bool IsMat4Static(xiiUInt32 type);
+  static bool IsTransformStatic(xiiUInt32 type);
 
   // Needed to prevent including xiiRTTI in xiiVariant.h
   static bool        IsDerivedFrom(const xiiRTTI* pType1, const xiiRTTI* pType2);

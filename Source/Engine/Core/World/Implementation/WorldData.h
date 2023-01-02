@@ -141,15 +141,15 @@ namespace xiiInternal
 
     void UpdateGlobalTransforms(float fInvDeltaSeconds);
 
-    // game object lookups
+    // Game object lookups
     xiiHashTable<xiiUInt64, xiiGameObjectId, xiiHashHelper<xiiUInt64>, xiiLocalAllocatorWrapper> m_GlobalKeyToIdTable;
     xiiHashTable<xiiUInt64, xiiHashedString, xiiHashHelper<xiiUInt64>, xiiLocalAllocatorWrapper> m_IdToGlobalKeyTable;
 
-    // modules
+    // Modules
     xiiDynamicArray<xiiWorldModule*, xiiLocalAllocatorWrapper> m_Modules;
     xiiDynamicArray<xiiWorldModule*, xiiLocalAllocatorWrapper> m_ModulesToStartSimulation;
 
-    // component management
+    // Component Management
     xiiSet<xiiComponent*, xiiCompareHelper<xiiComponent*>, xiiLocalAllocatorWrapper> m_DeadComponents;
 
     struct InitBatch

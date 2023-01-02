@@ -36,6 +36,11 @@ void xiiStateMap::StoreVec3(const xiiTempHashedString& name, const xiiVec3& valu
   m_Vec3s[name] = value;
 }
 
+void xiiStateMap::StoreVec3d(const xiiTempHashedString& name, const xiiVec3d& value)
+{
+  m_Vec3ds[name] = value;
+}
+
 void xiiStateMap::StoreColor(const xiiTempHashedString& name, const xiiColor& value)
 {
   m_Colors[name] = value;
@@ -73,6 +78,14 @@ void xiiStateMap::RetrieveDouble(const xiiTempHashedString& name, double& out_Va
 void xiiStateMap::RetrieveVec3(const xiiTempHashedString& name, xiiVec3& out_Value, xiiVec3 defaultValue /*= xiiVec3(0)*/)
 {
   if (!m_Vec3s.TryGetValue(name, out_Value))
+  {
+    out_Value = defaultValue;
+  }
+}
+
+void xiiStateMap::RetrieveVec3d(const xiiTempHashedString& name, xiiVec3d& out_Value, xiiVec3d defaultValue /*= xiiVec3d(0)*/)
+{
+  if (!m_Vec3ds.TryGetValue(name, out_Value))
   {
     out_Value = defaultValue;
   }

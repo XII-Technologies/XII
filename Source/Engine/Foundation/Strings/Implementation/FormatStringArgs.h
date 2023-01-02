@@ -5,7 +5,8 @@
 
 class xiiStringBuilder;
 class xiiVariant;
-class xiiAngle;
+template <typename Type>
+class xiiAngleTemplate;
 class xiiRational;
 struct xiiTime;
 
@@ -174,7 +175,8 @@ XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLengt
 XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgP& arg);
 XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, xiiResult arg);
 XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiVariant& arg);
-XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiAngle& arg);
+XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiAngleTemplate<float>& arg);
+XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiAngleTemplate<double>& arg);
 XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiRational& arg);
 XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgHumanReadable& arg);
 XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiTime& arg);

@@ -5,9 +5,9 @@
 #include <Foundation/Types/VariantTypeRegistry.h>
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
-XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == 24);
+XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == constexpr(40));
 #else
-XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == 20);
+XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == constexpr(20));
 #endif
 
 /// constructors
@@ -17,12 +17,27 @@ xiiVariant::xiiVariant(const xiiMat3& value)
   InitShared(value);
 }
 
+xiiVariant::xiiVariant(const xiiMat3d& value)
+{
+  InitShared(value);
+}
+
 xiiVariant::xiiVariant(const xiiMat4& value)
 {
   InitShared(value);
 }
 
+xiiVariant::xiiVariant(const xiiMat4d& value)
+{
+  InitShared(value);
+}
+
 xiiVariant::xiiVariant(const xiiTransform& value)
+{
+  InitShared(value);
+}
+
+xiiVariant::xiiVariant(const xiiTransformd& value)
 {
   InitShared(value);
 }
@@ -121,12 +136,77 @@ struct ComputeHashFunc
   }
 };
 
+
+template <>
+XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec2I64>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+{
+  return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec2I64), uiSeed);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec3I64>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+{
+  return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec3I64), uiSeed);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec4I64>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+{
+  return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec4I64), uiSeed);
+}
+
+
+template <>
+XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec2U64>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+{
+  return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec2U64), uiSeed);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec3U64>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+{
+  return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec3U64), uiSeed);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec4U64>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+{
+  return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec4U64), uiSeed);
+}
+
+
+template <>
+XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec2d>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+{
+  return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec2d), uiSeed);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec3d>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+{
+  return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec3d), uiSeed);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec4d>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+{
+  return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec4d), uiSeed);
+}
+
+
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiString>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
   xiiString* pString = (xiiString*)pData;
 
   return xiiHashingUtils::xxHash64(pString->GetData(), pString->GetElementCount(), uiSeed);
+}
+
+
+template <>
+XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiQuatd>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+{
+  return xiiHashingUtils::xxHash64(pData, sizeof(xiiQuatd), uiSeed);
 }
 
 template <>
@@ -136,10 +216,23 @@ XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiMat3>(const xiiVarian
 }
 
 template <>
+XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiMat3d>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+{
+  return xiiHashingUtils::xxHash64(pData, sizeof(xiiMat3d), uiSeed);
+}
+
+template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiMat4>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiMat4), uiSeed);
 }
+
+template <>
+XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiMat4d>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+{
+  return xiiHashingUtils::xxHash64(pData, sizeof(xiiMat4d), uiSeed);
+}
+
 
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiTransform>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
@@ -148,12 +241,20 @@ XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiTransform>(const xiiV
 }
 
 template <>
+XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiTransformd>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+{
+  return xiiHashingUtils::xxHash64(pData, sizeof(xiiTransformd), uiSeed);
+}
+
+
+template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiDataBuffer>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
   xiiDataBuffer* pDataBuffer = (xiiDataBuffer*)pData;
 
   return xiiHashingUtils::xxHash64(pDataBuffer->GetData(), pDataBuffer->GetCount(), uiSeed);
 }
+
 
 template <>
 XII_FORCE_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVariantArray>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
@@ -172,6 +273,7 @@ XII_FORCE_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVariantDictionary>(con
   XII_ASSERT_NOT_IMPLEMENTED;
   return 0;
 }
+
 
 template <>
 XII_FORCE_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiTypedPointer>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
@@ -194,6 +296,7 @@ XII_FORCE_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiTypedObject>(const xii
 
   return xiiHashingUtils::xxHash64(&uiHash32, sizeof(xiiUInt32), uiSeed);
 }
+
 
 struct CompareFunc
 {
@@ -435,6 +538,18 @@ bool xiiVariant::CanConvertTo(Type::Enum type) const
     return true;
 
   if (IsVector4Static(type) && (IsVector4Static(m_uiType)))
+    return true;
+
+  if (IsQuatStatic(type) && (IsQuatStatic(m_uiType)))
+    return true;
+
+  if (IsMat3Static(type) && (IsMat3Static(m_uiType)))
+    return true;
+
+  if (IsMat4Static(type) && (IsMat4Static(m_uiType)))
+    return true;
+
+  if (IsTransformStatic(type) && (IsTransformStatic(m_uiType)))
     return true;
 
   if (type == Type::String && m_uiType < Type::LastStandardType && m_uiType != Type::DataBuffer)

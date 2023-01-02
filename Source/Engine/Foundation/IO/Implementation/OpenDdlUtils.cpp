@@ -198,6 +198,35 @@ xiiResult xiiOpenDdlUtils::ConvertToVec2(const xiiOpenDdlReaderElement* pElement
   return XII_FAILURE;
 }
 
+xiiResult xiiOpenDdlUtils::ConvertToVec2d(const xiiOpenDdlReaderElement* pElement, xiiVec2d& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 2)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Double)
+  {
+    const double* pValues = pElement->GetPrimitivesDouble();
+
+    out_result.Set(pValues[0], pValues[1]);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
 xiiResult xiiOpenDdlUtils::ConvertToVec3(const xiiOpenDdlReaderElement* pElement, xiiVec3& out_result)
 {
   if (pElement == nullptr)
@@ -218,6 +247,35 @@ xiiResult xiiOpenDdlUtils::ConvertToVec3(const xiiOpenDdlReaderElement* pElement
   if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Float)
   {
     const float* pValues = pElement->GetPrimitivesFloat();
+
+    out_result.Set(pValues[0], pValues[1], pValues[2]);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
+xiiResult xiiOpenDdlUtils::ConvertToVec3d(const xiiOpenDdlReaderElement* pElement, xiiVec3d& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 3)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Double)
+  {
+    const double* pValues = pElement->GetPrimitivesDouble();
 
     out_result.Set(pValues[0], pValues[1], pValues[2]);
 
@@ -256,6 +314,35 @@ xiiResult xiiOpenDdlUtils::ConvertToVec4(const xiiOpenDdlReaderElement* pElement
   return XII_FAILURE;
 }
 
+xiiResult xiiOpenDdlUtils::ConvertToVec4d(const xiiOpenDdlReaderElement* pElement, xiiVec4d& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 4)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Double)
+  {
+    const double* pValues = pElement->GetPrimitivesDouble();
+
+    out_result.Set(pValues[0], pValues[1], pValues[2], pValues[3]);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
 xiiResult xiiOpenDdlUtils::ConvertToVec2I(const xiiOpenDdlReaderElement* pElement, xiiVec2I32& out_result)
 {
   if (pElement == nullptr)
@@ -276,6 +363,35 @@ xiiResult xiiOpenDdlUtils::ConvertToVec2I(const xiiOpenDdlReaderElement* pElemen
   if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Int32)
   {
     const xiiInt32* pValues = pElement->GetPrimitivesInt32();
+
+    out_result.Set(pValues[0], pValues[1]);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
+xiiResult xiiOpenDdlUtils::ConvertToVec2I64(const xiiOpenDdlReaderElement* pElement, xiiVec2I64& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 2)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Int64)
+  {
+    const xiiInt64* pValues = pElement->GetPrimitivesInt64();
 
     out_result.Set(pValues[0], pValues[1]);
 
@@ -314,6 +430,35 @@ xiiResult xiiOpenDdlUtils::ConvertToVec3I(const xiiOpenDdlReaderElement* pElemen
   return XII_FAILURE;
 }
 
+xiiResult xiiOpenDdlUtils::ConvertToVec3I64(const xiiOpenDdlReaderElement* pElement, xiiVec3I64& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 3)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Int64)
+  {
+    const xiiInt64* pValues = pElement->GetPrimitivesInt64();
+
+    out_result.Set(pValues[0], pValues[1], pValues[2]);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
 xiiResult xiiOpenDdlUtils::ConvertToVec4I(const xiiOpenDdlReaderElement* pElement, xiiVec4I32& out_result)
 {
   if (pElement == nullptr)
@@ -343,6 +488,34 @@ xiiResult xiiOpenDdlUtils::ConvertToVec4I(const xiiOpenDdlReaderElement* pElemen
   return XII_FAILURE;
 }
 
+xiiResult xiiOpenDdlUtils::ConvertToVec4I64(const xiiOpenDdlReaderElement* pElement, xiiVec4I64& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 4)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Int64)
+  {
+    const xiiInt64* pValues = pElement->GetPrimitivesInt64();
+
+    out_result.Set(pValues[0], pValues[1], pValues[2], pValues[3]);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
 
 xiiResult xiiOpenDdlUtils::ConvertToVec2U(const xiiOpenDdlReaderElement* pElement, xiiVec2U32& out_result)
 {
@@ -364,6 +537,35 @@ xiiResult xiiOpenDdlUtils::ConvertToVec2U(const xiiOpenDdlReaderElement* pElemen
   if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::UInt32)
   {
     const xiiUInt32* pValues = pElement->GetPrimitivesUInt32();
+
+    out_result.Set(pValues[0], pValues[1]);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
+xiiResult xiiOpenDdlUtils::ConvertToVec2U64(const xiiOpenDdlReaderElement* pElement, xiiVec2U64& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 2)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::UInt64)
+  {
+    const xiiUInt64* pValues = pElement->GetPrimitivesUInt64();
 
     out_result.Set(pValues[0], pValues[1]);
 
@@ -402,6 +604,35 @@ xiiResult xiiOpenDdlUtils::ConvertToVec3U(const xiiOpenDdlReaderElement* pElemen
   return XII_FAILURE;
 }
 
+xiiResult xiiOpenDdlUtils::ConvertToVec3U64(const xiiOpenDdlReaderElement* pElement, xiiVec3U64& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 3)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::UInt64)
+  {
+    const xiiUInt64* pValues = pElement->GetPrimitivesUInt64();
+
+    out_result.Set(pValues[0], pValues[1], pValues[2]);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
 xiiResult xiiOpenDdlUtils::ConvertToVec4U(const xiiOpenDdlReaderElement* pElement, xiiVec4U32& out_result)
 {
   if (pElement == nullptr)
@@ -431,7 +662,34 @@ xiiResult xiiOpenDdlUtils::ConvertToVec4U(const xiiOpenDdlReaderElement* pElemen
   return XII_FAILURE;
 }
 
+xiiResult xiiOpenDdlUtils::ConvertToVec4U64(const xiiOpenDdlReaderElement* pElement, xiiVec4U64& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
 
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 4)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::UInt64)
+  {
+    const xiiUInt64* pValues = pElement->GetPrimitivesUInt64();
+
+    out_result.Set(pValues[0], pValues[1], pValues[2], pValues[3]);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
 
 xiiResult xiiOpenDdlUtils::ConvertToMat3(const xiiOpenDdlReaderElement* pElement, xiiMat3& out_result)
 {
@@ -453,6 +711,35 @@ xiiResult xiiOpenDdlUtils::ConvertToMat3(const xiiOpenDdlReaderElement* pElement
   if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Float)
   {
     const float* pValues = pElement->GetPrimitivesFloat();
+
+    out_result.SetFromArray(pValues, xiiMatrixLayout::ColumnMajor);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
+xiiResult xiiOpenDdlUtils::ConvertToMat3d(const xiiOpenDdlReaderElement* pElement, xiiMat3d& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 9)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Double)
+  {
+    const double* pValues = pElement->GetPrimitivesDouble();
 
     out_result.SetFromArray(pValues, xiiMatrixLayout::ColumnMajor);
 
@@ -491,6 +778,34 @@ xiiResult xiiOpenDdlUtils::ConvertToMat4(const xiiOpenDdlReaderElement* pElement
   return XII_FAILURE;
 }
 
+xiiResult xiiOpenDdlUtils::ConvertToMat4d(const xiiOpenDdlReaderElement* pElement, xiiMat4d& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 16)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Double)
+  {
+    const double* pValues = pElement->GetPrimitivesDouble();
+
+    out_result.SetFromArray(pValues, xiiMatrixLayout::ColumnMajor);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
 
 xiiResult xiiOpenDdlUtils::ConvertToTransform(const xiiOpenDdlReaderElement* pElement, xiiTransform& out_result)
 {
@@ -530,6 +845,44 @@ xiiResult xiiOpenDdlUtils::ConvertToTransform(const xiiOpenDdlReaderElement* pEl
   return XII_FAILURE;
 }
 
+xiiResult xiiOpenDdlUtils::ConvertToTransformd(const xiiOpenDdlReaderElement* pElement, xiiTransformd& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 10)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Double)
+  {
+    const double* pValues = pElement->GetPrimitivesDouble();
+
+    out_result.m_vPosition.x   = pValues[0];
+    out_result.m_vPosition.y   = pValues[1];
+    out_result.m_vPosition.z   = pValues[2];
+    out_result.m_qRotation.v.x = pValues[3];
+    out_result.m_qRotation.v.y = pValues[4];
+    out_result.m_qRotation.v.z = pValues[5];
+    out_result.m_qRotation.w   = pValues[6];
+    out_result.m_vScale.x      = pValues[7];
+    out_result.m_vScale.y      = pValues[8];
+    out_result.m_vScale.z      = pValues[9];
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
 xiiResult xiiOpenDdlUtils::ConvertToQuat(const xiiOpenDdlReaderElement* pElement, xiiQuat& out_result)
 {
   if (pElement == nullptr)
@@ -550,6 +903,35 @@ xiiResult xiiOpenDdlUtils::ConvertToQuat(const xiiOpenDdlReaderElement* pElement
   if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Float)
   {
     const float* pValues = pElement->GetPrimitivesFloat();
+
+    out_result.SetElements(pValues[0], pValues[1], pValues[2], pValues[3]);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
+xiiResult xiiOpenDdlUtils::ConvertToQuatd(const xiiOpenDdlReaderElement* pElement, xiiQuatd& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 4)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Double)
+  {
+    const double* pValues = pElement->GetPrimitivesDouble();
 
     out_result.SetElements(pValues[0], pValues[1], pValues[2], pValues[3]);
 
@@ -730,10 +1112,30 @@ xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElem
       return XII_SUCCESS;
     }
 
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Vec2d"))
+    {
+      xiiVec2d value;
+      if (ConvertToVec2d(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
     if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Vec3"))
     {
       xiiVec3 value;
       if (ConvertToVec3(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Vec3d"))
+    {
+      xiiVec3d value;
+      if (ConvertToVec3d(pElement, value).Failed())
         return XII_FAILURE;
 
       out_result = value;
@@ -750,10 +1152,30 @@ xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElem
       return XII_SUCCESS;
     }
 
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Vec4d"))
+    {
+      xiiVec4d value;
+      if (ConvertToVec4d(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
     if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Vec2i"))
     {
       xiiVec2I32 value;
       if (ConvertToVec2I(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Vec2i64"))
+    {
+      xiiVec2I64 value;
+      if (ConvertToVec2I64(pElement, value).Failed())
         return XII_FAILURE;
 
       out_result = value;
@@ -770,10 +1192,30 @@ xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElem
       return XII_SUCCESS;
     }
 
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Vec3i64"))
+    {
+      xiiVec3I64 value;
+      if (ConvertToVec3I64(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
     if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Vec4i"))
     {
       xiiVec4I32 value;
       if (ConvertToVec4I(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Vec4i64"))
+    {
+      xiiVec4I64 value;
+      if (ConvertToVec4I64(pElement, value).Failed())
         return XII_FAILURE;
 
       out_result = value;
@@ -790,10 +1232,30 @@ xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElem
       return XII_SUCCESS;
     }
 
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Vec2u64"))
+    {
+      xiiVec2U64 value;
+      if (ConvertToVec2U64(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
     if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Vec3u"))
     {
       xiiVec3U32 value;
       if (ConvertToVec3U(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Vec3u64"))
+    {
+      xiiVec3U64 value;
+      if (ConvertToVec3U64(pElement, value).Failed())
         return XII_FAILURE;
 
       out_result = value;
@@ -810,10 +1272,30 @@ xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElem
       return XII_SUCCESS;
     }
 
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Vec4u64"))
+    {
+      xiiVec4U64 value;
+      if (ConvertToVec4U64(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
     if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Mat3"))
     {
       xiiMat3 value;
       if (ConvertToMat3(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Mat3d"))
+    {
+      xiiMat3d value;
+      if (ConvertToMat3d(pElement, value).Failed())
         return XII_FAILURE;
 
       out_result = value;
@@ -830,6 +1312,16 @@ xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElem
       return XII_SUCCESS;
     }
 
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Mat4d"))
+    {
+      xiiMat4d value;
+      if (ConvertToMat4d(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
     if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Transform"))
     {
       xiiTransform value;
@@ -840,10 +1332,30 @@ xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElem
       return XII_SUCCESS;
     }
 
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Transformd"))
+    {
+      xiiTransformd value;
+      if (ConvertToTransformd(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
     if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Quat"))
     {
       xiiQuat value;
       if (ConvertToQuat(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Quatd"))
+    {
+      xiiQuatd value;
+      if (ConvertToQuatd(pElement, value).Failed())
         return XII_FAILURE;
 
       out_result = value;
@@ -963,7 +1475,7 @@ xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElem
         return XII_SUCCESS;
 
       case xiiOpenDdlPrimitiveType::String:
-        out_result = xiiString(pElement->GetPrimitivesString()[0]); // make sure this isn't stored as a string view by copying to to an xiiString first
+        out_result = xiiString(pElement->GetPrimitivesString()[0]); // make sure this isn't stored as a string view by copying to to a xiiString first
         return XII_SUCCESS;
 
       default:
@@ -1025,12 +1537,34 @@ void xiiOpenDdlUtils::StoreVec2(xiiOpenDdlWriter& writer, const xiiVec2& value, 
   writer.EndObject();
 }
 
+void xiiOpenDdlUtils::StoreVec2d(xiiOpenDdlWriter& writer, const xiiVec2d& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  writer.BeginObject("Vec2d", szName, bGlobalName, true);
+  {
+    writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Double);
+    writer.WriteDouble(value.GetData(), 2);
+    writer.EndPrimitiveList();
+  }
+  writer.EndObject();
+}
+
 void xiiOpenDdlUtils::StoreVec3(xiiOpenDdlWriter& writer, const xiiVec3& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
 {
   writer.BeginObject("Vec3", szName, bGlobalName, true);
   {
     writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Float);
     writer.WriteFloat(value.GetData(), 3);
+    writer.EndPrimitiveList();
+  }
+  writer.EndObject();
+}
+
+void xiiOpenDdlUtils::StoreVec3d(xiiOpenDdlWriter& writer, const xiiVec3d& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  writer.BeginObject("Vec3d", szName, bGlobalName, true);
+  {
+    writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Double);
+    writer.WriteDouble(value.GetData(), 3);
     writer.EndPrimitiveList();
   }
   writer.EndObject();
@@ -1047,12 +1581,34 @@ void xiiOpenDdlUtils::StoreVec4(xiiOpenDdlWriter& writer, const xiiVec4& value, 
   writer.EndObject();
 }
 
+void xiiOpenDdlUtils::StoreVec4d(xiiOpenDdlWriter& writer, const xiiVec4d& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  writer.BeginObject("Vec4d", szName, bGlobalName, true);
+  {
+    writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Double);
+    writer.WriteDouble(value.GetData(), 4);
+    writer.EndPrimitiveList();
+  }
+  writer.EndObject();
+}
+
 void xiiOpenDdlUtils::StoreVec2I(xiiOpenDdlWriter& writer, const xiiVec2I32& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
 {
   writer.BeginObject("Vec2i", szName, bGlobalName, true);
   {
     writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Int32);
     writer.WriteInt32(value.GetData(), 2);
+    writer.EndPrimitiveList();
+  }
+  writer.EndObject();
+}
+
+void xiiOpenDdlUtils::StoreVec2I64(xiiOpenDdlWriter& writer, const xiiVec2I64& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  writer.BeginObject("Vec2i64", szName, bGlobalName, true);
+  {
+    writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Int64);
+    writer.WriteInt64(value.GetData(), 2);
     writer.EndPrimitiveList();
   }
   writer.EndObject();
@@ -1069,12 +1625,34 @@ void xiiOpenDdlUtils::StoreVec3I(xiiOpenDdlWriter& writer, const xiiVec3I32& val
   writer.EndObject();
 }
 
+void xiiOpenDdlUtils::StoreVec3I64(xiiOpenDdlWriter& writer, const xiiVec3I64& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  writer.BeginObject("Vec3i64", szName, bGlobalName, true);
+  {
+    writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Int64);
+    writer.WriteInt64(value.GetData(), 3);
+    writer.EndPrimitiveList();
+  }
+  writer.EndObject();
+}
+
 void xiiOpenDdlUtils::StoreVec4I(xiiOpenDdlWriter& writer, const xiiVec4I32& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
 {
   writer.BeginObject("Vec4i", szName, bGlobalName, true);
   {
     writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Int32);
     writer.WriteInt32(value.GetData(), 4);
+    writer.EndPrimitiveList();
+  }
+  writer.EndObject();
+}
+
+void xiiOpenDdlUtils::StoreVec4I64(xiiOpenDdlWriter& writer, const xiiVec4I64& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  writer.BeginObject("Vec4i64", szName, bGlobalName, true);
+  {
+    writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Int64);
+    writer.WriteInt64(value.GetData(), 4);
     writer.EndPrimitiveList();
   }
   writer.EndObject();
@@ -1091,12 +1669,34 @@ void xiiOpenDdlUtils::StoreVec2U(xiiOpenDdlWriter& writer, const xiiVec2U32& val
   writer.EndObject();
 }
 
+void xiiOpenDdlUtils::StoreVec2U64(xiiOpenDdlWriter& writer, const xiiVec2U64& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  writer.BeginObject("Vec2u64", szName, bGlobalName, true);
+  {
+    writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::UInt64);
+    writer.WriteUInt64(value.GetData(), 2);
+    writer.EndPrimitiveList();
+  }
+  writer.EndObject();
+}
+
 void xiiOpenDdlUtils::StoreVec3U(xiiOpenDdlWriter& writer, const xiiVec3U32& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
 {
   writer.BeginObject("Vec3u", szName, bGlobalName, true);
   {
     writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::UInt32);
     writer.WriteUInt32(value.GetData(), 3);
+    writer.EndPrimitiveList();
+  }
+  writer.EndObject();
+}
+
+void xiiOpenDdlUtils::StoreVec3U64(xiiOpenDdlWriter& writer, const xiiVec3U64& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  writer.BeginObject("Vec3u64", szName, bGlobalName, true);
+  {
+    writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::UInt64);
+    writer.WriteUInt64(value.GetData(), 3);
     writer.EndPrimitiveList();
   }
   writer.EndObject();
@@ -1113,6 +1713,16 @@ void xiiOpenDdlUtils::StoreVec4U(xiiOpenDdlWriter& writer, const xiiVec4U32& val
   writer.EndObject();
 }
 
+void xiiOpenDdlUtils::StoreVec4U64(xiiOpenDdlWriter& writer, const xiiVec4U64& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  writer.BeginObject("Vec4u64", szName, bGlobalName, true);
+  {
+    writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::UInt64);
+    writer.WriteUInt64(value.GetData(), 4);
+    writer.EndPrimitiveList();
+  }
+  writer.EndObject();
+}
 
 void xiiOpenDdlUtils::StoreMat3(xiiOpenDdlWriter& writer, const xiiMat3& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
 {
@@ -1128,6 +1738,20 @@ void xiiOpenDdlUtils::StoreMat3(xiiOpenDdlWriter& writer, const xiiMat3& value, 
   writer.EndObject();
 }
 
+void xiiOpenDdlUtils::StoreMat3d(xiiOpenDdlWriter& writer, const xiiMat3d& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  writer.BeginObject("Mat3d", szName, bGlobalName, true);
+  {
+    writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Double);
+
+    double f[9];
+    value.GetAsArray(f, xiiMatrixLayout::ColumnMajor);
+    writer.WriteDouble(f, 9);
+    writer.EndPrimitiveList();
+  }
+  writer.EndObject();
+}
+
 void xiiOpenDdlUtils::StoreMat4(xiiOpenDdlWriter& writer, const xiiMat4& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
 {
   writer.BeginObject("Mat4", szName, bGlobalName, true);
@@ -1137,6 +1761,20 @@ void xiiOpenDdlUtils::StoreMat4(xiiOpenDdlWriter& writer, const xiiMat4& value, 
     float f[16];
     value.GetAsArray(f, xiiMatrixLayout::ColumnMajor);
     writer.WriteFloat(f, 16);
+    writer.EndPrimitiveList();
+  }
+  writer.EndObject();
+}
+
+void xiiOpenDdlUtils::StoreMat4d(xiiOpenDdlWriter& writer, const xiiMat4d& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  writer.BeginObject("Mat4d", szName, bGlobalName, true);
+  {
+    writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Double);
+
+    double f[16];
+    value.GetAsArray(f, xiiMatrixLayout::ColumnMajor);
+    writer.WriteDouble(f, 16);
     writer.EndPrimitiveList();
   }
   writer.EndObject();
@@ -1169,12 +1807,50 @@ void xiiOpenDdlUtils::StoreTransform(xiiOpenDdlWriter& writer, const xiiTransfor
   writer.EndObject();
 }
 
+void xiiOpenDdlUtils::StoreTransformd(xiiOpenDdlWriter& writer, const xiiTransformd& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  writer.BeginObject("Transformd", szName, bGlobalName, true);
+  {
+    writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Double);
+
+    double f[10];
+
+    f[0] = value.m_vPosition.x;
+    f[1] = value.m_vPosition.y;
+    f[2] = value.m_vPosition.z;
+
+    f[3] = value.m_qRotation.v.x;
+    f[4] = value.m_qRotation.v.y;
+    f[5] = value.m_qRotation.v.z;
+    f[6] = value.m_qRotation.w;
+
+    f[7] = value.m_vScale.x;
+    f[8] = value.m_vScale.y;
+    f[9] = value.m_vScale.z;
+
+    writer.WriteDouble(f, 10);
+    writer.EndPrimitiveList();
+  }
+  writer.EndObject();
+}
+
 void xiiOpenDdlUtils::StoreQuat(xiiOpenDdlWriter& writer, const xiiQuat& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
 {
   writer.BeginObject("Quat", szName, bGlobalName, true);
   {
     writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Float);
     writer.WriteFloat(value.v.GetData(), 4);
+    writer.EndPrimitiveList();
+  }
+  writer.EndObject();
+}
+
+void xiiOpenDdlUtils::StoreQuatd(xiiOpenDdlWriter& writer, const xiiQuatd& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  writer.BeginObject("Quatd", szName, bGlobalName, true);
+  {
+    writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Double);
+    writer.WriteDouble(value.v.GetData(), 4);
     writer.EndPrimitiveList();
   }
   writer.EndObject();
@@ -1216,69 +1892,47 @@ void xiiOpenDdlUtils::StoreVariant(xiiOpenDdlWriter& writer, const xiiVariant& v
       return; // store anything ?
 
     case xiiVariant::Type::Bool:
-    {
       StoreBool(writer, value.Get<bool>(), szName, bGlobalName);
-    }
       return;
 
     case xiiVariant::Type::Int8:
-    {
       StoreInt8(writer, value.Get<xiiInt8>(), szName, bGlobalName);
-    }
       return;
 
     case xiiVariant::Type::UInt8:
-    {
       StoreUInt8(writer, value.Get<xiiUInt8>(), szName, bGlobalName);
-    }
       return;
 
     case xiiVariant::Type::Int16:
-    {
       StoreInt16(writer, value.Get<xiiInt16>(), szName, bGlobalName);
-    }
       return;
 
     case xiiVariant::Type::UInt16:
-    {
       StoreUInt16(writer, value.Get<xiiUInt16>(), szName, bGlobalName);
-    }
       return;
 
     case xiiVariant::Type::Int32:
-    {
       StoreInt32(writer, value.Get<xiiInt32>(), szName, bGlobalName);
-    }
       return;
 
     case xiiVariant::Type::UInt32:
-    {
       StoreUInt32(writer, value.Get<xiiUInt32>(), szName, bGlobalName);
-    }
       return;
 
     case xiiVariant::Type::Int64:
-    {
       StoreInt64(writer, value.Get<xiiInt64>(), szName, bGlobalName);
-    }
       return;
 
     case xiiVariant::Type::UInt64:
-    {
       StoreUInt64(writer, value.Get<xiiUInt64>(), szName, bGlobalName);
-    }
       return;
 
     case xiiVariant::Type::Float:
-    {
       StoreFloat(writer, value.Get<float>(), szName, bGlobalName);
-    }
       return;
 
     case xiiVariant::Type::Double:
-    {
       StoreDouble(writer, value.Get<double>(), szName, bGlobalName);
-    }
       return;
 
     case xiiVariant::Type::String:
@@ -1303,52 +1957,104 @@ void xiiOpenDdlUtils::StoreVariant(xiiOpenDdlWriter& writer, const xiiVariant& v
       StoreVec2(writer, value.Get<xiiVec2>(), szName, bGlobalName);
       return;
 
+    case xiiVariant::Type::Vector2d:
+      StoreVec2d(writer, value.Get<xiiVec2d>(), szName, bGlobalName);
+      return;
+
     case xiiVariant::Type::Vector3:
       StoreVec3(writer, value.Get<xiiVec3>(), szName, bGlobalName);
+      return;
+
+    case xiiVariant::Type::Vector3d:
+      StoreVec3d(writer, value.Get<xiiVec3d>(), szName, bGlobalName);
       return;
 
     case xiiVariant::Type::Vector4:
       StoreVec4(writer, value.Get<xiiVec4>(), szName, bGlobalName);
       return;
 
+    case xiiVariant::Type::Vector4d:
+      StoreVec4d(writer, value.Get<xiiVec4d>(), szName, bGlobalName);
+      return;
+
     case xiiVariant::Type::Vector2I:
       StoreVec2I(writer, value.Get<xiiVec2I32>(), szName, bGlobalName);
+      return;
+
+    case xiiVariant::Type::Vector2I64:
+      StoreVec2I64(writer, value.Get<xiiVec2I64>(), szName, bGlobalName);
       return;
 
     case xiiVariant::Type::Vector3I:
       StoreVec3I(writer, value.Get<xiiVec3I32>(), szName, bGlobalName);
       return;
 
+    case xiiVariant::Type::Vector3I64:
+      StoreVec3I64(writer, value.Get<xiiVec3I64>(), szName, bGlobalName);
+      return;
+
     case xiiVariant::Type::Vector4I:
       StoreVec4I(writer, value.Get<xiiVec4I32>(), szName, bGlobalName);
+      return;
+
+    case xiiVariant::Type::Vector4I64:
+      StoreVec4I64(writer, value.Get<xiiVec4I64>(), szName, bGlobalName);
       return;
 
     case xiiVariant::Type::Vector2U:
       StoreVec2U(writer, value.Get<xiiVec2U32>(), szName, bGlobalName);
       return;
 
+    case xiiVariant::Type::Vector2U64:
+      StoreVec2U64(writer, value.Get<xiiVec2U64>(), szName, bGlobalName);
+      return;
+
     case xiiVariant::Type::Vector3U:
       StoreVec3U(writer, value.Get<xiiVec3U32>(), szName, bGlobalName);
+      return;
+
+    case xiiVariant::Type::Vector3U64:
+      StoreVec3U64(writer, value.Get<xiiVec3U64>(), szName, bGlobalName);
       return;
 
     case xiiVariant::Type::Vector4U:
       StoreVec4U(writer, value.Get<xiiVec4U32>(), szName, bGlobalName);
       return;
 
+    case xiiVariant::Type::Vector4U64:
+      StoreVec4U64(writer, value.Get<xiiVec4U64>(), szName, bGlobalName);
+      return;
+
     case xiiVariant::Type::Quaternion:
       StoreQuat(writer, value.Get<xiiQuat>(), szName, bGlobalName);
+      return;
+
+    case xiiVariant::Type::Quaterniond:
+      StoreQuatd(writer, value.Get<xiiQuatd>(), szName, bGlobalName);
       return;
 
     case xiiVariant::Type::Matrix3:
       StoreMat3(writer, value.Get<xiiMat3>(), szName, bGlobalName);
       return;
 
+    case xiiVariant::Type::Matrix3d:
+      StoreMat3d(writer, value.Get<xiiMat3d>(), szName, bGlobalName);
+      return;
+
     case xiiVariant::Type::Matrix4:
       StoreMat4(writer, value.Get<xiiMat4>(), szName, bGlobalName);
       return;
 
+    case xiiVariant::Type::Matrix4d:
+      StoreMat4d(writer, value.Get<xiiMat4d>(), szName, bGlobalName);
+      return;
+
     case xiiVariant::Type::Transform:
       StoreTransform(writer, value.Get<xiiTransform>(), szName, bGlobalName);
+      return;
+
+    case xiiVariant::Type::Transformd:
+      StoreTransformd(writer, value.Get<xiiTransformd>(), szName, bGlobalName);
       return;
 
     case xiiVariant::Type::Time:

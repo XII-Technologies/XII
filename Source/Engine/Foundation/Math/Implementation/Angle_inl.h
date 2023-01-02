@@ -1,149 +1,194 @@
 #pragma once
 
 template <typename Type>
-constexpr XII_ALWAYS_INLINE Type xiiAngle::Pi()
+inline constexpr Type xiiAngleTemplate<Type>::Pi()
 {
   return static_cast<Type>(3.1415926535897932384626433832795);
 }
 
 template <typename Type>
-constexpr XII_ALWAYS_INLINE Type xiiAngle::DegToRadMultiplier()
+constexpr XII_ALWAYS_INLINE Type xiiAngleTemplate<Type>::DegToRadMultiplier()
 {
-  return Pi<Type>() / (Type)180;
+  return xiiAngleTemplate<Type>::Pi() / (Type)180;
 }
 
 template <typename Type>
-constexpr XII_ALWAYS_INLINE Type xiiAngle::RadToDegMultiplier()
+constexpr XII_ALWAYS_INLINE Type xiiAngleTemplate<Type>::RadToDegMultiplier()
 {
-  return ((Type)180) / Pi<Type>();
+  return ((Type)180) / Pi();
 }
 
 template <typename Type>
-constexpr Type xiiAngle::DegToRad(Type f)
+constexpr Type xiiAngleTemplate<Type>::DegToRad(Type f)
 {
-  return f * DegToRadMultiplier<Type>();
+  return f * DegToRadMultiplier();
 }
 
 template <typename Type>
-constexpr Type xiiAngle::RadToDeg(Type f)
+constexpr Type xiiAngleTemplate<Type>::RadToDeg(Type f)
 {
-  return f * RadToDegMultiplier<Type>();
+  return f * RadToDegMultiplier();
 }
 
-constexpr inline xiiAngle xiiAngle::Degree(float fDegree)
+template <typename Type>
+constexpr inline xiiAngleTemplate<Type> xiiAngleTemplate<Type>::Degree(Type fDegree)
 {
-  return xiiAngle(DegToRad(fDegree));
+  return xiiAngleTemplate<Type>(DegToRad(fDegree));
 }
 
-constexpr XII_ALWAYS_INLINE xiiAngle xiiAngle::Radian(float fRadian)
+template <typename Type>
+constexpr XII_ALWAYS_INLINE xiiAngleTemplate<Type> xiiAngleTemplate<Type>::Radian(Type fRadian)
 {
-  return xiiAngle(fRadian);
+  return xiiAngleTemplate(fRadian);
 }
 
-constexpr inline float xiiAngle::GetDegree() const
+template <typename Type>
+constexpr inline Type xiiAngleTemplate<Type>::GetDegree() const
 {
   return RadToDeg(m_fRadian);
 }
 
-constexpr XII_ALWAYS_INLINE float xiiAngle::GetRadian() const
+template <typename Type>
+constexpr XII_ALWAYS_INLINE Type xiiAngleTemplate<Type>::GetRadian() const
 {
   return m_fRadian;
 }
 
-inline xiiAngle xiiAngle::GetNormalizedRange() const
+template <typename Type>
+void xiiAngleTemplate<Type>::NormalizeRange()
 {
-  xiiAngle out(m_fRadian);
+  const Type fTwoPi = static_cast<Type>(2.0) * xiiAngleTemplate<Type>::Pi();
+
+  const Type fTwoPiTen = static_cast<Type>(10.0) * xiiAngleTemplate<Type>::Pi();
+
+  if (m_fRadian > fTwoPiTen || m_fRadian < -fTwoPiTen)
+  {
+    m_fRadian = sizeof(m_fRadian > 4) ? fmod(m_fRadian, fTwoPi) : fmodf(m_fRadian, fTwoPi);
+  }
+
+  while (m_fRadian >= fTwoPi)
+  {
+    m_fRadian -= fTwoPi;
+  }
+
+  while (m_fRadian < static_cast<Type>(0.0))
+  {
+    m_fRadian += fTwoPi;
+  }
+}
+
+template <typename Type>
+inline xiiAngleTemplate<Type> xiiAngleTemplate<Type>::GetNormalizedRange() const
+{
+  xiiAngleTemplate<Type> out(m_fRadian);
   out.NormalizeRange();
   return out;
 }
 
-inline bool xiiAngle::IsEqualSimple(xiiAngle rhs, xiiAngle epsilon) const
+template <typename Type>
+inline bool xiiAngleTemplate<Type>::IsEqualSimple(xiiAngleTemplate rhs, xiiAngleTemplate epsilon) const
 {
-  const xiiAngle diff = AngleBetween(*this, rhs);
+  const xiiAngleTemplate<Type> diff = AngleBetween(*this, rhs);
 
   return ((diff.m_fRadian >= -epsilon.m_fRadian) && (diff.m_fRadian <= epsilon.m_fRadian));
 }
 
-inline bool xiiAngle::IsEqualNormalized(xiiAngle rhs, xiiAngle epsilon) const
+template <typename Type>
+inline bool xiiAngleTemplate<Type>::IsEqualNormalized(xiiAngleTemplate<Type> rhs, xiiAngleTemplate<Type> epsilon) const
 {
-  // equality between normalized angles
-  const xiiAngle aNorm = GetNormalizedRange();
-  const xiiAngle bNorm = rhs.GetNormalizedRange();
+  // Equality between normalized angles
+  const xiiAngleTemplate<Type> aNorm = GetNormalizedRange();
+  const xiiAngleTemplate<Type> bNorm = rhs.GetNormalizedRange();
 
   return aNorm.IsEqualSimple(bNorm, epsilon);
 }
 
-constexpr XII_ALWAYS_INLINE xiiAngle xiiAngle::operator-() const
+template <typename Type>
+constexpr XII_ALWAYS_INLINE xiiAngleTemplate<Type> xiiAngleTemplate<Type>::operator-() const
 {
-  return xiiAngle(-m_fRadian);
+  return xiiAngleTemplate<Type>(-m_fRadian);
 }
 
-XII_ALWAYS_INLINE void xiiAngle::operator+=(xiiAngle r)
+template <typename Type>
+XII_ALWAYS_INLINE void xiiAngleTemplate<Type>::operator+=(xiiAngleTemplate r)
 {
   m_fRadian += r.m_fRadian;
 }
 
-XII_ALWAYS_INLINE void xiiAngle::operator-=(xiiAngle r)
+template <typename Type>
+XII_ALWAYS_INLINE void xiiAngleTemplate<Type>::operator-=(xiiAngleTemplate r)
 {
   m_fRadian -= r.m_fRadian;
 }
 
-constexpr inline xiiAngle xiiAngle::operator+(xiiAngle r) const
+template <typename Type>
+constexpr inline xiiAngleTemplate<Type> xiiAngleTemplate<Type>::operator+(xiiAngleTemplate r) const
 {
-  return xiiAngle(m_fRadian + r.m_fRadian);
+  return xiiAngleTemplate<Type>(m_fRadian + r.m_fRadian);
 }
 
-constexpr inline xiiAngle xiiAngle::operator-(xiiAngle r) const
+template <typename Type>
+constexpr inline xiiAngleTemplate<Type> xiiAngleTemplate<Type>::operator-(xiiAngleTemplate r) const
 {
-  return xiiAngle(m_fRadian - r.m_fRadian);
+  return xiiAngleTemplate<Type>(m_fRadian - r.m_fRadian);
 }
 
-constexpr XII_ALWAYS_INLINE bool xiiAngle::operator==(const xiiAngle& r) const
+template <typename Type>
+constexpr XII_ALWAYS_INLINE bool xiiAngleTemplate<Type>::operator==(const xiiAngleTemplate& r) const
 {
   return m_fRadian == r.m_fRadian;
 }
 
-constexpr XII_ALWAYS_INLINE bool xiiAngle::operator!=(const xiiAngle& r) const
+template <typename Type>
+constexpr XII_ALWAYS_INLINE bool xiiAngleTemplate<Type>::operator!=(const xiiAngleTemplate& r) const
 {
   return m_fRadian != r.m_fRadian;
 }
 
-constexpr XII_ALWAYS_INLINE bool xiiAngle::operator<(const xiiAngle& r) const
+template <typename Type>
+constexpr XII_ALWAYS_INLINE bool xiiAngleTemplate<Type>::operator<(const xiiAngleTemplate& r) const
 {
   return m_fRadian < r.m_fRadian;
 }
 
-constexpr XII_ALWAYS_INLINE bool xiiAngle::operator>(const xiiAngle& r) const
+template <typename Type>
+constexpr XII_ALWAYS_INLINE bool xiiAngleTemplate<Type>::operator>(const xiiAngleTemplate& r) const
 {
   return m_fRadian > r.m_fRadian;
 }
 
-constexpr XII_ALWAYS_INLINE bool xiiAngle::operator<=(const xiiAngle& r) const
+template <typename Type>
+constexpr XII_ALWAYS_INLINE bool xiiAngleTemplate<Type>::operator<=(const xiiAngleTemplate& r) const
 {
   return m_fRadian <= r.m_fRadian;
 }
 
-constexpr XII_ALWAYS_INLINE bool xiiAngle::operator>=(const xiiAngle& r) const
+template <typename Type>
+constexpr XII_ALWAYS_INLINE bool xiiAngleTemplate<Type>::operator>=(const xiiAngleTemplate& r) const
 {
   return m_fRadian >= r.m_fRadian;
 }
 
-constexpr inline xiiAngle operator*(xiiAngle a, float f)
+template <typename Type>
+constexpr inline xiiAngleTemplate<Type> operator*(xiiAngleTemplate<Type> a, Type f)
 {
-  return xiiAngle::Radian(a.GetRadian() * f);
+  return xiiAngleTemplate<Type>::Radian(a.GetRadian() * f);
 }
 
-constexpr inline xiiAngle operator*(float f, xiiAngle a)
+template <typename Type>
+constexpr inline xiiAngleTemplate<Type> operator*(Type f, xiiAngleTemplate<Type> a)
 {
-  return xiiAngle::Radian(a.GetRadian() * f);
+  return xiiAngleTemplate<Type>::Radian(a.GetRadian() * f);
 }
 
-constexpr inline xiiAngle operator/(xiiAngle a, float f)
+template <typename Type>
+constexpr inline xiiAngleTemplate<Type> operator/(xiiAngleTemplate<Type> a, Type f)
 {
-  return xiiAngle::Radian(a.GetRadian() / f);
+  return xiiAngleTemplate<Type>::Radian(a.GetRadian() / f);
 }
 
-constexpr inline float operator/(xiiAngle a, xiiAngle b)
+template <typename Type>
+constexpr inline Type operator/(xiiAngleTemplate<Type> a, xiiAngleTemplate<Type> b)
 {
   return a.GetRadian() / b.GetRadian();
 }

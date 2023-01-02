@@ -110,10 +110,24 @@ void xiiJSONWriter::AddVariableVec2(const char* szName, const xiiVec2& value)
   EndVariable();
 }
 
+void xiiJSONWriter::AddVariableVec2d(const char* szName, const xiiVec2d& value)
+{
+  BeginVariable(szName);
+  WriteVec2d(value);
+  EndVariable();
+}
+
 void xiiJSONWriter::AddVariableVec3(const char* szName, const xiiVec3& value)
 {
   BeginVariable(szName);
   WriteVec3(value);
+  EndVariable();
+}
+
+void xiiJSONWriter::AddVariableVec3d(const char* szName, const xiiVec3d& value)
+{
+  BeginVariable(szName);
+  WriteVec3d(value);
   EndVariable();
 }
 
@@ -124,10 +138,24 @@ void xiiJSONWriter::AddVariableVec4(const char* szName, const xiiVec4& value)
   EndVariable();
 }
 
+void xiiJSONWriter::AddVariableVec4d(const char* szName, const xiiVec4d& value)
+{
+  BeginVariable(szName);
+  WriteVec4d(value);
+  EndVariable();
+}
+
 void xiiJSONWriter::AddVariableVec2I32(const char* szName, const xiiVec2I32& value)
 {
   BeginVariable(szName);
   WriteVec2I32(value);
+  EndVariable();
+}
+
+void xiiJSONWriter::AddVariableVec2I64(const char* szName, const xiiVec2I64& value)
+{
+  BeginVariable(szName);
+  WriteVec2I64(value);
   EndVariable();
 }
 
@@ -138,10 +166,66 @@ void xiiJSONWriter::AddVariableVec3I32(const char* szName, const xiiVec3I32& val
   EndVariable();
 }
 
+void xiiJSONWriter::AddVariableVec3I64(const char* szName, const xiiVec3I64& value)
+{
+  BeginVariable(szName);
+  WriteVec3I64(value);
+  EndVariable();
+}
+
 void xiiJSONWriter::AddVariableVec4I32(const char* szName, const xiiVec4I32& value)
 {
   BeginVariable(szName);
   WriteVec4I32(value);
+  EndVariable();
+}
+
+void xiiJSONWriter::AddVariableVec4I64(const char* szName, const xiiVec4I64& value)
+{
+  BeginVariable(szName);
+  WriteVec4I64(value);
+  EndVariable();
+}
+
+void xiiJSONWriter::AddVariableVec2U32(const char* szName, const xiiVec2U32& value)
+{
+  BeginVariable(szName);
+  WriteVec2U32(value);
+  EndVariable();
+}
+
+void xiiJSONWriter::AddVariableVec2U64(const char* szName, const xiiVec2U64& value)
+{
+  BeginVariable(szName);
+  WriteVec2U64(value);
+  EndVariable();
+}
+
+void xiiJSONWriter::AddVariableVec3U32(const char* szName, const xiiVec3U32& value)
+{
+  BeginVariable(szName);
+  WriteVec3U32(value);
+  EndVariable();
+}
+
+void xiiJSONWriter::AddVariableVec3U64(const char* szName, const xiiVec3U64& value)
+{
+  BeginVariable(szName);
+  WriteVec3U64(value);
+  EndVariable();
+}
+
+void xiiJSONWriter::AddVariableVec4U32(const char* szName, const xiiVec4U32& value)
+{
+  BeginVariable(szName);
+  WriteVec4U32(value);
+  EndVariable();
+}
+
+void xiiJSONWriter::AddVariableVec4U64(const char* szName, const xiiVec4U64& value)
+{
+  BeginVariable(szName);
+  WriteVec4U64(value);
   EndVariable();
 }
 
@@ -152,6 +236,13 @@ void xiiJSONWriter::AddVariableQuat(const char* szName, const xiiQuat& value)
   EndVariable();
 }
 
+void xiiJSONWriter::AddVariableQuatd(const char* szName, const xiiQuatd& value)
+{
+  BeginVariable(szName);
+  WriteQuatd(value);
+  EndVariable();
+}
+
 void xiiJSONWriter::AddVariableMat3(const char* szName, const xiiMat3& value)
 {
   BeginVariable(szName);
@@ -159,10 +250,38 @@ void xiiJSONWriter::AddVariableMat3(const char* szName, const xiiMat3& value)
   EndVariable();
 }
 
+void xiiJSONWriter::AddVariableMat3d(const char* szName, const xiiMat3d& value)
+{
+  BeginVariable(szName);
+  WriteMat3d(value);
+  EndVariable();
+}
+
 void xiiJSONWriter::AddVariableMat4(const char* szName, const xiiMat4& value)
 {
   BeginVariable(szName);
   WriteMat4(value);
+  EndVariable();
+}
+
+void xiiJSONWriter::AddVariableMat4d(const char* szName, const xiiMat4d& value)
+{
+  BeginVariable(szName);
+  WriteMat4d(value);
+  EndVariable();
+}
+
+void xiiJSONWriter::AddVariableTransform(const char* szName, const xiiTransform& value)
+{
+  BeginVariable(szName);
+  WriteTransform(value);
+  EndVariable();
+}
+
+void xiiJSONWriter::AddVariableTransformd(const char* szName, const xiiTransformd& value)
+{
+  BeginVariable(szName);
+  WriteTransformd(value);
   EndVariable();
 }
 
@@ -195,9 +314,19 @@ void xiiJSONWriter::WriteVec2(const xiiVec2& value)
   XII_REPORT_FAILURE("The complex data type xiiVec2 is not supported by this JSON writer.");
 }
 
+void xiiJSONWriter::WriteVec2d(const xiiVec2d& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiVec2d is not supported by this JSON writer.");
+}
+
 void xiiJSONWriter::WriteVec3(const xiiVec3& value)
 {
   XII_REPORT_FAILURE("The complex data type xiiVec3 is not supported by this JSON writer.");
+}
+
+void xiiJSONWriter::WriteVec3d(const xiiVec3d& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiVec3d is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec4(const xiiVec4& value)
@@ -205,9 +334,19 @@ void xiiJSONWriter::WriteVec4(const xiiVec4& value)
   XII_REPORT_FAILURE("The complex data type xiiVec4 is not supported by this JSON writer.");
 }
 
+void xiiJSONWriter::WriteVec4d(const xiiVec4d& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiVec4d is not supported by this JSON writer.");
+}
+
 void xiiJSONWriter::WriteVec2I32(const xiiVec2I32& value)
 {
   XII_REPORT_FAILURE("The complex data type xiiVec2I32 is not supported by this JSON writer.");
+}
+
+void xiiJSONWriter::WriteVec2I64(const xiiVec2I64& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiVec2I64 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec3I32(const xiiVec3I32& value)
@@ -215,9 +354,49 @@ void xiiJSONWriter::WriteVec3I32(const xiiVec3I32& value)
   XII_REPORT_FAILURE("The complex data type xiiVec3I32 is not supported by this JSON writer.");
 }
 
+void xiiJSONWriter::WriteVec3I64(const xiiVec3I64& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiVec3I64 is not supported by this JSON writer.");
+}
+
 void xiiJSONWriter::WriteVec4I32(const xiiVec4I32& value)
 {
   XII_REPORT_FAILURE("The complex data type xiiVec4I32 is not supported by this JSON writer.");
+}
+
+void xiiJSONWriter::WriteVec4I64(const xiiVec4I64& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiVec4I64 is not supported by this JSON writer.");
+}
+
+void xiiJSONWriter::WriteVec2U32(const xiiVec2U32& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiVec2U32 is not supported by this JSON writer.");
+}
+
+void xiiJSONWriter::WriteVec2U64(const xiiVec2U64& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiVec2U64 is not supported by this JSON writer.");
+}
+
+void xiiJSONWriter::WriteVec3U32(const xiiVec3U32& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiVec3U32 is not supported by this JSON writer.");
+}
+
+void xiiJSONWriter::WriteVec3U64(const xiiVec3U64& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiVec3U64 is not supported by this JSON writer.");
+}
+
+void xiiJSONWriter::WriteVec4U32(const xiiVec4U32& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiVec4U32 is not supported by this JSON writer.");
+}
+
+void xiiJSONWriter::WriteVec4U64(const xiiVec4U64& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiVec4U64 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteQuat(const xiiQuat& value)
@@ -225,14 +404,39 @@ void xiiJSONWriter::WriteQuat(const xiiQuat& value)
   XII_REPORT_FAILURE("The complex data type xiiQuat is not supported by this JSON writer.");
 }
 
+void xiiJSONWriter::WriteQuatd(const xiiQuatd& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiQuatd is not supported by this JSON writer.");
+}
+
 void xiiJSONWriter::WriteMat3(const xiiMat3& value)
 {
   XII_REPORT_FAILURE("The complex data type xiiMat3 is not supported by this JSON writer.");
 }
 
+void xiiJSONWriter::WriteMat3d(const xiiMat3d& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiMat3d is not supported by this JSON writer.");
+}
+
 void xiiJSONWriter::WriteMat4(const xiiMat4& value)
 {
   XII_REPORT_FAILURE("The complex data type xiiMat4 is not supported by this JSON writer.");
+}
+
+void xiiJSONWriter::WriteMat4d(const xiiMat4d& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiMat4d is not supported by this JSON writer.");
+}
+
+void xiiJSONWriter::WriteTransform(const xiiTransform& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiTransform is not supported by this JSON writer.");
+}
+
+void xiiJSONWriter::WriteTransformd(const xiiTransformd& value)
+{
+  XII_REPORT_FAILURE("The complex data type xiiTransformd is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteDataBuffer(const xiiDataBuffer& value)
@@ -290,29 +494,80 @@ void xiiJSONWriter::WriteVariant(const xiiVariant& value)
     case xiiVariant::Type::Vector2:
       WriteVec2(value.Get<xiiVec2>());
       return;
+    case xiiVariant::Type::Vector2d:
+      WriteVec2d(value.Get<xiiVec2d>());
+      return;
     case xiiVariant::Type::Vector3:
       WriteVec3(value.Get<xiiVec3>());
+      return;
+    case xiiVariant::Type::Vector3d:
+      WriteVec3d(value.Get<xiiVec3d>());
       return;
     case xiiVariant::Type::Vector4:
       WriteVec4(value.Get<xiiVec4>());
       return;
+    case xiiVariant::Type::Vector4d:
+      WriteVec4d(value.Get<xiiVec4d>());
+      return;
     case xiiVariant::Type::Vector2I:
       WriteVec2I32(value.Get<xiiVec2I32>());
+      return;
+    case xiiVariant::Type::Vector2I64:
+      WriteVec2I64(value.Get<xiiVec2I64>());
       return;
     case xiiVariant::Type::Vector3I:
       WriteVec3I32(value.Get<xiiVec3I32>());
       return;
+    case xiiVariant::Type::Vector3I64:
+      WriteVec3I64(value.Get<xiiVec3I64>());
+      return;
     case xiiVariant::Type::Vector4I:
       WriteVec4I32(value.Get<xiiVec4I32>());
+      return;
+    case xiiVariant::Type::Vector4I64:
+      WriteVec4I64(value.Get<xiiVec4I64>());
+      return;
+    case xiiVariant::Type::Vector2U:
+      WriteVec2U32(value.Get<xiiVec2U32>());
+      return;
+    case xiiVariant::Type::Vector2U64:
+      WriteVec2U64(value.Get<xiiVec2U64>());
+      return;
+    case xiiVariant::Type::Vector3U:
+      WriteVec3U32(value.Get<xiiVec3U32>());
+      return;
+    case xiiVariant::Type::Vector3U64:
+      WriteVec3U64(value.Get<xiiVec3U64>());
+      return;
+    case xiiVariant::Type::Vector4U:
+      WriteVec4U32(value.Get<xiiVec4U32>());
+      return;
+    case xiiVariant::Type::Vector4U64:
+      WriteVec4U64(value.Get<xiiVec4U64>());
       return;
     case xiiVariant::Type::Quaternion:
       WriteQuat(value.Get<xiiQuat>());
       return;
+    case xiiVariant::Type::Quaterniond:
+      WriteQuatd(value.Get<xiiQuatd>());
+      return;
     case xiiVariant::Type::Matrix3:
       WriteMat3(value.Get<xiiMat3>());
       return;
+    case xiiVariant::Type::Matrix3d:
+      WriteMat3d(value.Get<xiiMat3d>());
+      return;
     case xiiVariant::Type::Matrix4:
       WriteMat4(value.Get<xiiMat4>());
+      return;
+    case xiiVariant::Type::Matrix4d:
+      WriteMat4d(value.Get<xiiMat4d>());
+      return;
+    case xiiVariant::Type::Transform:
+      WriteTransform(value.Get<xiiTransform>());
+      return;
+    case xiiVariant::Type::Transformd:
+      WriteTransformd(value.Get<xiiTransformd>());
       return;
     case xiiVariant::Type::String:
       WriteString(value.Get<xiiString>().GetData());

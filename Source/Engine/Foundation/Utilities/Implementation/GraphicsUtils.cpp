@@ -311,7 +311,7 @@ xiiMat4 xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle fie
 {
   // Taking the minimum allows the function to be used to create
   // inverse z matrices (fNearZ > fFarZ) as well.
-  const float ym = xiiMath::Min(fNearZ, fFarZ) * xiiMath::Tan(fieldOfViewY * 0.5);
+  const float ym = xiiMath::Min(fNearZ, fFarZ) * xiiMath::Tan(fieldOfViewY * 0.5f);
   const float xm = ym * fAspectRatioWidthDivHeight;
 
   return CreatePerspectiveProjectionMatrix(-xm, xm, -ym, ym, fNearZ, fFarZ, DepthRange, yRange, handedness);

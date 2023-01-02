@@ -217,28 +217,6 @@ size_t xiiMath::SafeConvertToSizeT(xiiUInt64 uiValue)
 }
 #endif
 
-void xiiAngle::NormalizeRange()
-{
-  const float fTwoPi = 2.0f * Pi<float>();
-
-  const float fTwoPiTen = 10.0f * Pi<float>();
-
-  if (m_fRadian > fTwoPiTen || m_fRadian < -fTwoPiTen)
-  {
-    m_fRadian = xiiMath::Mod(m_fRadian, fTwoPi);
-  }
-
-  while (m_fRadian >= fTwoPi)
-  {
-    m_fRadian -= fTwoPi;
-  }
-
-  while (m_fRadian < 0.0f)
-  {
-    m_fRadian += fTwoPi;
-  }
-}
-
 xiiVec3 xiiBasisAxis::GetBasisVector(Enum basisAxis)
 {
   switch (basisAxis)
@@ -277,6 +255,22 @@ xiiMat3 xiiBasisAxis::CalculateTransformationMatrix(Enum forwardDir, Enum rightD
   return mResult;
 }
 
+xiiMat3d xiiBasisAxis::CalculateTransformationMatrix(Enum forwardDir, Enum rightDir, Enum upDir, double fUniformScale /*= 1.0f*/, double fScaleX /*= 1.0*/, double fScaleY /*= 1.0*/, double fScaleZ /*= 1.0*/)
+{
+  xiiVec3  mTemp;
+  xiiMat3d mResult;
+
+  mTemp = xiiBasisAxis::GetBasisVector(forwardDir);
+  mResult.SetRow(0, xiiVec3d(mTemp.x, mTemp.y, mTemp.z) * fUniformScale * fScaleX);
+
+  mTemp = xiiBasisAxis::GetBasisVector(rightDir);
+  mResult.SetRow(1, xiiVec3d(mTemp.x, mTemp.y, mTemp.z) * fUniformScale * fScaleY);
+
+  mTemp = xiiBasisAxis::GetBasisVector(upDir);
+  mResult.SetRow(2, xiiVec3d(mTemp.x, mTemp.y, mTemp.z) * fUniformScale * fScaleZ);
+
+  return mResult;
+}
 
 xiiQuat xiiBasisAxis::GetBasisRotation_PosX(Enum axis)
 {

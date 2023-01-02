@@ -43,6 +43,7 @@ static xiiString ToShaderString(const xiiVariant& value)
     }
     break;
 
+    case xiiVariantType::Double:
     case xiiVariantType::Float:
     case xiiVariantType::Int32:
     case xiiVariantType::Bool:

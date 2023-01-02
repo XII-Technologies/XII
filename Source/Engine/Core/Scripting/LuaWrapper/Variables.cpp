@@ -99,6 +99,26 @@ float xiiLuaWrapper::GetFloatVariable(const char* szName, float Default) const
   return ret;
 }
 
+double xiiLuaWrapper::GetDoubleVariable(const char* szName, double Default) const
+{
+  if (m_States.m_iOpenTables == 0)
+    lua_getglobal(m_pState, szName);
+  else
+  {
+    lua_pushstring(m_pState, szName);
+    lua_gettable(m_pState, -2);
+  }
+
+  double ret = Default;
+
+  if (lua_isnumber(m_pState, -1) != 0)
+    ret = lua_tonumber(m_pState, -1);
+
+  lua_pop(m_pState, 1);
+
+  return ret;
+}
+
 const char* xiiLuaWrapper::GetStringVariable(const char* szName, const char* Default) const
 {
   if (m_States.m_iOpenTables == 0)

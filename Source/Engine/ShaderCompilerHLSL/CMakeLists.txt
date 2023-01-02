@@ -1,6 +1,5 @@
 xii_cmake_init()
 
-
 xii_requires_d3d()
 
 # Get the name of this folder as the project name

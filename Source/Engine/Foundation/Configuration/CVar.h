@@ -15,6 +15,7 @@ struct xiiCVarType
   {
     Int,    ///< Can cast the xiiCVar* to xiiCVarInt*
     Float,  ///< Can cast the xiiCVar* to xiiCVarFloat*
+    Double, ///< Can cast the xiiCVar* to xiiCVarDouble*
     Bool,   ///< Can cast the xiiCVar* to xiiCVarBool*
     String, ///< Can cast the xiiCVar* to xiiCVarString*
     ENUM_COUNT
@@ -247,6 +248,9 @@ private:
 
 /// \brief A CVar that stores a float value.
 typedef xiiTypedCVar<float, xiiCVarType::Float> xiiCVarFloat;
+
+/// \brief A CVar that stores a double value.
+typedef xiiTypedCVar<double, xiiCVarType::Double> xiiCVarDouble;
 
 /// \brief A CVar that stores a bool value.
 typedef xiiTypedCVar<bool, xiiCVarType::Bool> xiiCVarBool;

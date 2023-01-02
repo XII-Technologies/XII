@@ -461,10 +461,9 @@ namespace xiiMath
       case Bell:
         return EaseBell<Type>(input);
 
-      case ENUM_COUNT:
       default:
         XII_REPORT_FAILURE("Easing function not implemented");
-        return 0;
+        return static_cast<Type>(0);
     }
   }
 

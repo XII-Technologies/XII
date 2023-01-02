@@ -81,6 +81,9 @@ void xiiQtCVarWidget::UpdateCVarUI(const xiiMap<xiiString, xiiCVarWidgetData>& c
       case xiiCVarType::Float:
         item->m_Value = it.Value().m_fValue;
         break;
+      case xiiCVarType::Double:
+        item->m_Value = it.Value().m_dValue;
+        break;
       case xiiCVarType::Int:
         item->m_Value = it.Value().m_iValue;
         break;
@@ -258,6 +261,10 @@ bool xiiQtCVarModel::setData(const QModelIndex& index, const QVariant& value, in
         e->m_Value = value.toFloat();
         m_pOwner->onFloatChanged(e->m_sFullName, value.toFloat());
         break;
+      case xiiVariantType::Double:
+        e->m_Value = value.toDouble();
+        m_pOwner->onDoubleChanged(e->m_sFullName, value.toDouble());
+        break;
       case xiiVariantType::String:
         e->m_Value = value.toString().toUtf8().data();
         m_pOwner->onStringChanged(e->m_sFullName, value.toString().toUtf8().data());
@@ -330,6 +337,8 @@ QVariant xiiQtCVarModel::data(const QModelIndex& index, int role) const
       case xiiVariantType::Int32:
         return e->m_Value.Get<xiiInt32>();
       case xiiVariantType::Float:
+        return e->m_Value.ConvertTo<double>();
+      case xiiVariantType::Double:
         return e->m_Value.ConvertTo<double>();
       case xiiVariantType::String:
         return e->m_Value.Get<xiiString>().GetData();
@@ -496,7 +505,16 @@ QWidget* xiiQtCVarItemDelegate::createEditor(QWidget* parent, const QStyleOption
   {
     QLineEdit* ret = new QLineEdit(parent);
     auto       val = new QDoubleValidator(ret);
-    val->setDecimals(3);
+    val->setDecimals(4);
+    ret->setValidator(val);
+    return ret;
+  }
+
+  if (e->m_Value.IsA<double>())
+  {
+    QLineEdit* ret = new QLineEdit(parent);
+    auto       val = new QDoubleValidator(ret);
+    val->setDecimals(8);
     ret->setValidator(val);
     return ret;
   }

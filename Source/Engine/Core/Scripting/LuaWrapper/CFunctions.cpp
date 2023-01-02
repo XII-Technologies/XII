@@ -98,6 +98,11 @@ bool xiiLuaWrapper::IsReturnValueFloat(xiiUInt32 iReturnValue) const
   return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1) == LUA_TNUMBER);
 }
 
+bool xiiLuaWrapper::IsReturnValueDouble(xiiUInt32 iReturnValue) const
+{
+  return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1) == LUA_TNUMBER);
+}
+
 bool xiiLuaWrapper::IsReturnValueString(xiiUInt32 iReturnValue) const
 {
   return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1) == LUA_TSTRING);
@@ -121,6 +126,11 @@ bool xiiLuaWrapper::GetBoolReturnValue(xiiUInt32 iReturnValue) const
 float xiiLuaWrapper::GetFloatReturnValue(xiiUInt32 iReturnValue) const
 {
   return ((float)(lua_tonumber(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1)));
+}
+
+double xiiLuaWrapper::GetDoubleReturnValue(xiiUInt32 iReturnValue) const
+{
+  return (lua_tonumber(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1));
 }
 
 const char* xiiLuaWrapper::GetStringReturnValue(xiiUInt32 iReturnValue) const

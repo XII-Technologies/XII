@@ -16,8 +16,9 @@ public:
     if (m_bOnlyWriteResult)
     {
       xiiOSFile f;
-      f.Open("C:\\Code\\JSON.txt", xiiFileOpenMode::Write).IgnoreResult();
+      f.Open("C:\\Code\\JSON.txt", xiiFileOpenMode::Append).IgnoreResult();
       f.Write(m_sResult.GetData(), m_sResult.GetElementCount()).IgnoreResult();
+      f.Write("\n", 1).IgnoreResult();
       f.Close();
     }
     else
