@@ -125,12 +125,12 @@ FileStats GetFileStats(const char* szFile)
   // in between a Utf8 sequence and then xiiStringBuilder will complain about invalid Utf8 strings.
   xiiStringBuilder sContent = (const char*)&FileContent[0];
 
-  // count the number of lines
+  // Count the number of lines
   {
     xiiDynamicArray<xiiString> Lines;
-    sContent.ReplaceAll("\r", ""); // remove carriage return
+    sContent.ReplaceAll("\r", ""); // Remove carriage return
 
-    // splits the string at occurrence of '\n' and adds each line to the 'Lines' container
+    // Splits the string at occurrence of '\n' and adds each line to the 'Lines' container
     sContent.Split(true, Lines, "\n");
 
     xiiStringBuilder sLine;
@@ -156,7 +156,7 @@ FileStats GetFileStats(const char* szFile)
 
           if (bIsInWord != bNewWord)
           {
-            // count every whole word as one word and everything in between as another word
+            // Count every whole word as one word and everything in between as another word
             ++s.m_uiWords;
             bIsInWord = bNewWord;
           }
@@ -192,17 +192,17 @@ public:
   {
     auto pCmd = xiiCommandLineUtils::GetGlobalInstance();
 
-    // pass the absolute path to the directory that should be scanned as the first parameter to this application
+    // Pass the absolute path to the directory that should be scanned as the first parameter to this application
     if (pCmd->GetParameterCount() > 1)
       m_sSearchDir = xiiCommandLineUtils::GetGlobalInstance()->GetParameter(1);
 
     if (m_sSearchDir.IsEmpty())
     {
-      xiiStringBuilder sXIICode = xiiFileSystem::GetSdkRootDirectory();
-      sXIICode.AppendPath("Code");
-      sXIICode.MakeCleanPath();
+      xiiStringBuilder sXIISource = xiiFileSystem::GetSdkRootDirectory();
+      sXIISource.AppendPath("Source");
+      sXIISource.MakeCleanPath();
 
-      m_sSearchDir = sXIICode;
+      m_sSearchDir = sXIISource;
     }
 
     xiiLog::Info("Search-dir: {}", m_sSearchDir);
@@ -214,10 +214,10 @@ public:
     xiiFileSystem::AddDataDirectory("", "", ":", xiiFileSystem::AllowWrites).IgnoreResult();
 
 
-    // now we can set up the logging system (we could do it earlier, but the HTML writer needs access to the file system)
+    // Now we can set up the logging system (we could do it earlier, but the HTML writer needs access to the file system)
 
     xiiStringBuilder sLogPath = m_sSearchDir;
-    sLogPath.PathParentDirectory(); // go one folder up
+    sLogPath.PathParentDirectory(); // Go one folder up
     sLogPath.AppendPath("CodeStatistics.htm");
 
     // The console log writer will pass all log messages to the standard console window
@@ -231,7 +231,7 @@ public:
 
   virtual void BeforeCoreSystemsShutdown() override
   {
-    // close the HTML log, from now on no more log messages are written to the file
+    // Close the HTML log, from now on no more log messages are written to the file
     g_HtmlLog.EndLog();
   }
 
@@ -243,7 +243,7 @@ public:
     xiiUInt32                    uiFiles       = 0;
     xiiMap<xiiString, FileStats> FileTypeStatistics;
 
-    // get a directory iterator for the search directory
+    // Get a directory iterator for the search directory
     xiiFileSystemIterator it;
     it.StartSearch(m_sSearchDir);
 
@@ -251,14 +251,14 @@ public:
     {
       xiiStringBuilder b, sExt;
 
-      // while there are additional files / folders
+      // While there are additional files / folders
       for (; it.IsValid(); it.Next())
       {
-        // build the absolute path to the current file
+        // Build the absolute path to the current file
         b = it.GetCurrentPath();
         b.AppendPath(it.GetStats().m_sName.GetData());
 
-        // log some info
+        // Log some info
         xiiLog::Info("{0}: {1}", it.GetStats().m_bIsDirectory ? "Directory" : "File", b);
 
         if (it.GetStats().m_bIsDirectory)
@@ -267,14 +267,14 @@ public:
         }
         else
         {
-          // file extensions are always converted to lower-case actually
+          // File extensions are always converted to lower-case actually
           sExt = b.GetFileExtension();
 
           if (sExt.IsEqual_NoCase("cpp") || sExt.IsEqual_NoCase("h") || sExt.IsEqual_NoCase("hpp") || sExt.IsEqual_NoCase("inl"))
           {
             ++uiFiles;
 
-            // get additional stats and add them to the overall stats
+            // Get additional stats and add them to the overall stats
             FileStats& TypeStats = FileTypeStatistics[sExt.GetData()];
             ++TypeStats.m_uiFileCount;
 
@@ -283,12 +283,12 @@ public:
         }
       }
 
-      // now output some statistics
+      // Now output some statistics
       xiiLog::Info("Directories: {0}, Files: {1}, Avg. Files per Dir: {2}", uiDirectories, uiFiles, xiiArgF(uiFiles / (float)uiDirectories, 1));
 
       FileStats AllTypes;
 
-      // iterate over all elements in the amp
+      // Iterate over all elements in the amp
       xiiMap<xiiString, FileStats>::Iterator MapIt = FileTypeStatistics.GetIterator();
       while (MapIt.IsValid())
       {
@@ -313,6 +313,7 @@ public:
     return xiiApplication::Execution::Quit;
   }
 };
+
 
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiLineCountApp);

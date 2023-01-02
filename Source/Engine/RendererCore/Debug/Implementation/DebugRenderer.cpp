@@ -1102,8 +1102,8 @@ void xiiDebugRenderer::DrawLimitCone(const xiiDebugRendererContext& context, xii
   {
     float scale = 1.0f;
 
-    const float tanQSwingZ = xiiMath::Tan(halfAngle1 / 4);
-    const float tanQSwingY = xiiMath::Tan(halfAngle2 / 4);
+    const float tanQSwingZ = xiiMath::Tan(halfAngle1 / 4.0f);
+    const float tanQSwingY = xiiMath::Tan(halfAngle2 / 4.0f);
 
     xiiVec3 prev(0);
     for (xiiUInt32 i = 0; i <= NUM_LINES; i++)
@@ -1154,7 +1154,7 @@ void xiiDebugRenderer::DrawCylinder(const xiiDebugRendererContext& context, floa
   xiiHybridArray<Line, NUM_SEGMENTS * 3>         lines;
   xiiHybridArray<Triangle, NUM_SEGMENTS * 2 * 2> tris;
 
-  const xiiAngle step  = xiiAngle::Degree(360) / NUM_SEGMENTS;
+  const xiiAngle step  = xiiAngle::Degree(360) / (float)NUM_SEGMENTS;
   xiiAngle       angle = {};
 
   xiiVec3 vCurCircle(0, 1 /*xiiMath::Cos(angle)*/, 0 /*xiiMath::Sin(angle)*/);
