@@ -57,11 +57,19 @@ XII_FOUNDATION_DLL void operator>>(xiiStreamReader& Stream, xiiTimestamp& Value)
 
 struct xiiVarianceTypeFloat;
 
-/// \brief Operator to serialize xiiTimestamp objects.
+/// \brief Operator to serialize xiiVarianceTypeFloat objects.
 XII_FOUNDATION_DLL void operator<<(xiiStreamWriter& Stream, const xiiVarianceTypeFloat& Value);
 
-/// \brief Operator to serialize xiiTimestamp objects.
+/// \brief Operator to serialize xiiVarianceTypeFloat objects.
 XII_FOUNDATION_DLL void operator>>(xiiStreamReader& Stream, xiiVarianceTypeFloat& Value);
+
+struct xiiVarianceTypeDouble;
+
+/// \brief Operator to serialize xiiVarianceTypeDouble objects.
+XII_FOUNDATION_DLL void operator<<(xiiStreamWriter& Stream, const xiiVarianceTypeDouble& Value);
+
+/// \brief Operator to serialize xiiVarianceTypeDouble objects.
+XII_FOUNDATION_DLL void operator>>(xiiStreamReader& Stream, xiiVarianceTypeDouble& Value);
 
 struct xiiVarianceTypeTime;
 

@@ -29,34 +29,50 @@ namespace xiiMath
   /// ***** Trigonometric Functions *****
 
   /// \brief Takes an angle, returns its sine
-  float Sin(xiiAngle a); // [tested]
+  template <typename Type>
+  Type Sin(xiiAngleTemplate<Type> a); // [tested]
 
   /// \brief Takes an angle, returns its cosine
-  float Cos(xiiAngle a); // [tested]
+  template <typename Type>
+  Type Cos(xiiAngleTemplate<Type> a); // [tested]
 
   /// \brief Takes an angle, returns its tangent
-  float Tan(xiiAngle a); // [tested]
+  template <typename Type>
+  Type Tan(xiiAngleTemplate<Type> a); // [tested]
 
   /// \brief Returns the arcus sinus of f
-  xiiAngle ASin(float f); // [tested]
+  template <typename Type>
+  xiiAngleTemplate<Type> ASin(Type f); // [tested]
 
   /// \brief Returns the arcus cosinus of f
-  xiiAngle ACos(float f); // [tested]
+  template <typename Type>
+  xiiAngleTemplate<Type> ACos(Type f); // [tested]
 
   /// \brief Returns the arcus tangent of f
-  xiiAngle ATan(float f); // [tested]
+  template <typename Type>
+  xiiAngleTemplate<Type> ATan(Type f); // [tested]
 
   /// \brief Returns the atan2 of x and y
-  xiiAngle ATan2(float y, float x); // [tested]
+  template <typename Type>
+  xiiAngleTemplate<Type> ATan2(Type y, Type x); // [tested]
 
   /// \brief Returns e^f
   float Exp(float f); // [tested]
 
+  /// \brief Returns e^f
+  double Exp(double f); // [tested]
+
   /// \brief Returns the logarithmus naturalis of f
   float Ln(float f); // [tested]
 
+  /// \brief Returns the logarithmus naturalis of f
+  double Ln(double f); // [tested]
+
   /// \brief Returns log (f), to the base 2
   float Log2(float f); // [tested]
+
+  /// \brief Returns log (f), to the base 2
+  double Log2(double f); // [tested]
 
   /// \brief Returns the integral logarithm to the base 2, that comes closest to the given integer.
   xiiUInt32 Log2i(xiiUInt32 val); // [tested]
@@ -64,14 +80,26 @@ namespace xiiMath
   /// \brief Returns log (f), to the base 10
   float Log10(float f); // [tested]
 
+  /// \brief Returns log (f), to the base 10
+  double Log10(double f); // [tested]
+
   /// \brief Returns log (f), to the base fBase
   float Log(float fBase, float f); // [tested]
+
+  /// \brief Returns log (f), to the base fBase
+  double Log(double fBase, double f); // [tested]
 
   /// \brief Returns 2^f
   float Pow2(float f); // [tested]
 
+  /// \brief Returns 2^f
+  double Pow2(double f); // [tested]
+
   /// \brief Returns base^exp
   float Pow(float base, float exp); // [tested]
+
+  /// \brief Returns base^exp
+  double Pow(double base, double exp); // [tested]
 
   /// \brief Returns 2^f
   constexpr xiiInt32 Pow2(xiiInt32 i); // [tested]
@@ -127,8 +155,14 @@ namespace xiiMath
   /// \brief Returns the next smaller integer, closest to f. Also the SMALLER value, if f is negative.
   float Floor(float f); // [tested]
 
+  /// \brief Returns the next smaller integer, closest to f. Also the SMALLER value, if f is negative.
+  double Floor(double f); // [tested]
+
   /// \brief Returns the next higher integer, closest to f. Also the HIGHER value, if f is negative.
   float Ceil(float f); // [tested]
+
+  /// \brief Returns the next higher integer, closest to f. Also the HIGHER value, if f is negative.
+  double Ceil(double f); // [tested]
 
   /// \brief Returns a multiple of fMultiple that is smaller than f.
   float RoundDown(float f, float fMultiple); // [tested]

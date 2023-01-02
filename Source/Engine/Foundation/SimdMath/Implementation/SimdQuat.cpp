@@ -54,7 +54,7 @@ void xiiSimdQuat::SetSlerp(const xiiSimdQuat& qFrom, const xiiSimdQuat& qTo, con
 
   if (cosTheta < qdelta)
   {
-    xiiAngle theta = xiiMath::ACos(cosTheta);
+    xiiAngle theta = xiiMath::ACos((float)cosTheta);
 
     // use sqrtInv(1+c^2) instead of 1.0/sin(theta)
     const xiiSimdFloat iSinTheta = (one - (cosTheta * cosTheta)).GetInvSqrt();

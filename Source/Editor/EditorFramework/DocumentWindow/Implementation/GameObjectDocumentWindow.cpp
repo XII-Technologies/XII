@@ -190,8 +190,8 @@ void xiiQtGameObjectDocumentWindow::HandleFocusOnSelection(const xiiQuerySelecti
 
       const float fRadius = bbox.GetBoundingSphere().m_fRadius * 1.5f;
 
-      const float dist1    = fRadius / xiiMath::Sin(fovX * 0.75);
-      const float dist2    = fRadius / xiiMath::Sin(fovY * 0.75);
+      const float dist1    = fRadius / xiiMath::Sin(fovX * 0.75f);
+      const float dist2    = fRadius / xiiMath::Sin(fovY * 0.75f);
       const float distBest = xiiMath::Max(dist1, dist2);
 
       vNewCameraPosition = vPivotPoint - vNewCameraDirection * xiiMath::Max(fMinDistance, distBest);

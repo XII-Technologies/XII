@@ -21,6 +21,11 @@ public:
     Float3, // 3x float, e.g. xiiVec3
     Float4, // 4x float, e.g. xiiVec4
 
+    Double,  // double
+    Double2, // 2x double, e.g. xiiVec2d
+    Double3, // 3x double, e.g. xiiVec3d
+    Double4, // 4x double, e.g. xiiVec4d
+
     Byte,
     Byte2,
     Byte3,

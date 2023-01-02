@@ -37,7 +37,7 @@ XII_ALWAYS_INLINE void xiiSimdQuat::Normalize()
 inline xiiResult xiiSimdQuat::GetRotationAxisAndAngle(xiiSimdVec4f& vAxis, xiiSimdFloat& angle, const xiiSimdFloat& fEpsilon) const
 {
   ///\todo optimize
-  const xiiAngle acos = xiiMath::ACos(m_v.w());
+  const xiiAngle acos = xiiMath::ACos((float)m_v.w());
   const float    d    = xiiMath::Sin(acos);
 
   if (d < fEpsilon)
@@ -49,7 +49,7 @@ inline xiiResult xiiSimdQuat::GetRotationAxisAndAngle(xiiSimdVec4f& vAxis, xiiSi
     vAxis = m_v / d;
   }
 
-  angle = acos * 2;
+  angle = acos * 2.0f;
 
   return XII_SUCCESS;
 }

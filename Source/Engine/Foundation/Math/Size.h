@@ -41,3 +41,4 @@ bool operator!=(const xiiSizeTemplate<Type>& v1, const xiiSizeTemplate<Type>& v2
 typedef xiiSizeTemplate<xiiUInt32> xiiSizeU32;
 typedef xiiSizeTemplate<float>     xiiSizeFloat;
 typedef xiiSizeTemplate<double>    xiiSizeDouble;
+typedef xiiSizeTemplate<xiiReal>   xiiSizeReal;

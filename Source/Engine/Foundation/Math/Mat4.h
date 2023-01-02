@@ -88,16 +88,16 @@ public:
   void SetScalingMatrix(const xiiVec3Template<Type>& vScale); // [tested]
 
   /// \brief Sets this matrix to be a rotation matrix around the X-axis.
-  void SetRotationMatrixX(xiiAngle angle); // [tested]
+  void SetRotationMatrixX(xiiAngleTemplate<Type> angle); // [tested]
 
   /// \brief Sets this matrix to be a rotation matrix around the Y-axis.
-  void SetRotationMatrixY(xiiAngle angle); // [tested]
+  void SetRotationMatrixY(xiiAngleTemplate<Type> angle); // [tested]
 
   /// \brief Sets this matrix to be a rotation matrix around the Z-axis.
-  void SetRotationMatrixZ(xiiAngle angle); // [tested]
+  void SetRotationMatrixZ(xiiAngleTemplate<Type> angle); // [tested]
 
   /// \brief Sets this matrix to be a rotation matrix around the given axis.
-  void SetRotationMatrix(const xiiVec3Template<Type>& vAxis, xiiAngle angle); // [tested]
+  void SetRotationMatrix(const xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type> angle); // [tested]
 
   // *** Common Matrix Operations ***
 public:

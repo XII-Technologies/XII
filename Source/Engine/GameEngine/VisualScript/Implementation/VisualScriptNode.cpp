@@ -84,6 +84,7 @@ void xiiVisualScriptDataPinType::EnforceSupportedType(xiiVariant& var)
     case xiiVariantType::Int64:
     case xiiVariantType::UInt64:
     case xiiVariantType::Float:
+    case xiiVariantType::Double:
     {
       const double value = var.ConvertTo<double>();
       var                = value;

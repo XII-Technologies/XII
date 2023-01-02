@@ -85,6 +85,11 @@ static xiiUInt16 s_TypeSize[] = {
   12, // Float3,
   16, // Float4,
 
+  8,  // Double,
+  16, // Double2,
+  24, // Double3,
+  32, // Double4,
+
   1, // Byte,
   2, // Byte2,
   3, // Byte3,
@@ -118,6 +123,11 @@ static xiiStringView s_TypeName[] = {
   "Float2"_xiisv, // Float2,
   "Float3"_xiisv, // Float3,
   "Float4"_xiisv, // Float4,
+
+  "Double"_xiisv,  // Double,
+  "Double2"_xiisv, // Double2,
+  "Double3"_xiisv, // Double3,
+  "Double4"_xiisv, // Double4,
 
   "Byte"_xiisv,  // Byte,
   "Byte2"_xiisv, // Byte2,

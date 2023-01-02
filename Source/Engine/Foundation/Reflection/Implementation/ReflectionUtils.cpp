@@ -642,16 +642,25 @@ xiiUInt32 xiiReflectionUtils::GetComponentCount(xiiVariantType::Enum type)
   switch (type)
   {
     case xiiVariant::Type::Vector2:
+    case xiiVariant::Type::Vector2d:
     case xiiVariant::Type::Vector2I:
+    case xiiVariant::Type::Vector2I64:
     case xiiVariant::Type::Vector2U:
+    case xiiVariant::Type::Vector2U64:
       return 2;
     case xiiVariant::Type::Vector3:
+    case xiiVariant::Type::Vector3d:
     case xiiVariant::Type::Vector3I:
+    case xiiVariant::Type::Vector3I64:
     case xiiVariant::Type::Vector3U:
+    case xiiVariant::Type::Vector3U64:
       return 3;
     case xiiVariant::Type::Vector4:
+    case xiiVariant::Type::Vector4d:
     case xiiVariant::Type::Vector4I:
+    case xiiVariant::Type::Vector4I64:
     case xiiVariant::Type::Vector4U:
+    case xiiVariant::Type::Vector4U64:
       return 4;
     default:
       XII_REPORT_FAILURE("Not a vector type: '{0}'", type);
@@ -1481,30 +1490,56 @@ xiiVariant xiiReflectionUtils::GetDefaultVariantFromType(xiiVariant::Type::Enum 
       return xiiVariant(xiiColorGammaUB(255, 255, 255));
     case xiiVariant::Type::Vector2:
       return xiiVariant(xiiVec2(0.0f, 0.0f));
+    case xiiVariant::Type::Vector2d:
+      return xiiVariant(xiiVec2d(0.0, 0.0));
     case xiiVariant::Type::Vector3:
       return xiiVariant(xiiVec3(0.0f, 0.0f, 0.0f));
+    case xiiVariant::Type::Vector3d:
+      return xiiVariant(xiiVec3d(0.0, 0.0, 0.0));
     case xiiVariant::Type::Vector4:
       return xiiVariant(xiiVec4(0.0f, 0.0f, 0.0f, 0.0f));
+    case xiiVariant::Type::Vector4d:
+      return xiiVariant(xiiVec4d(0.0, 0.0, 0.0, 0.0));
     case xiiVariant::Type::Vector2I:
       return xiiVariant(xiiVec2I32(0, 0));
+    case xiiVariant::Type::Vector2I64:
+      return xiiVariant(xiiVec2I64(0, 0));
     case xiiVariant::Type::Vector3I:
       return xiiVariant(xiiVec3I32(0, 0, 0));
+    case xiiVariant::Type::Vector3I64:
+      return xiiVariant(xiiVec3I64(0, 0, 0));
     case xiiVariant::Type::Vector4I:
       return xiiVariant(xiiVec4I32(0, 0, 0, 0));
+    case xiiVariant::Type::Vector4I64:
+      return xiiVariant(xiiVec4I64(0, 0, 0, 0));
     case xiiVariant::Type::Vector2U:
       return xiiVariant(xiiVec2U32(0, 0));
+    case xiiVariant::Type::Vector2U64:
+      return xiiVariant(xiiVec2U64(0, 0));
     case xiiVariant::Type::Vector3U:
       return xiiVariant(xiiVec3U32(0, 0, 0));
+    case xiiVariant::Type::Vector3U64:
+      return xiiVariant(xiiVec3U64(0, 0, 0));
     case xiiVariant::Type::Vector4U:
       return xiiVariant(xiiVec4U32(0, 0, 0, 0));
+    case xiiVariant::Type::Vector4U64:
+      return xiiVariant(xiiVec4U64(0, 0, 0, 0));
     case xiiVariant::Type::Quaternion:
       return xiiVariant(xiiQuat(0.0f, 0.0f, 0.0f, 1.0f));
+    case xiiVariant::Type::Quaterniond:
+      return xiiVariant(xiiQuatd(0.0, 0.0, 0.0, 1.0));
     case xiiVariant::Type::Matrix3:
       return xiiVariant(xiiMat3::IdentityMatrix());
+    case xiiVariant::Type::Matrix3d:
+      return xiiVariant(xiiMat3d::IdentityMatrix());
     case xiiVariant::Type::Matrix4:
       return xiiVariant(xiiMat4::IdentityMatrix());
+    case xiiVariant::Type::Matrix4d:
+      return xiiVariant(xiiMat4d::IdentityMatrix());
     case xiiVariant::Type::Transform:
       return xiiVariant(xiiTransform::IdentityTransform());
+    case xiiVariant::Type::Transformd:
+      return xiiVariant(xiiTransformd::IdentityTransform());
     case xiiVariant::Type::String:
       return xiiVariant(xiiString());
     case xiiVariant::Type::StringView:

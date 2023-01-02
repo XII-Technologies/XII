@@ -27,6 +27,11 @@ inline bool xiiLuaWrapper::IsParameterFloat(xiiUInt32 iParameter) const
   return (lua_type(m_pState, iParameter + s_iParamOffset) == LUA_TNUMBER);
 }
 
+inline bool xiiLuaWrapper::IsParameterDouble(xiiUInt32 iParameter) const
+{
+  return (lua_type(m_pState, iParameter + s_iParamOffset) == LUA_TNUMBER);
+}
+
 inline bool xiiLuaWrapper::IsParameterInt(xiiUInt32 iParameter) const
 {
   return (lua_type(m_pState, iParameter + s_iParamOffset) == LUA_TNUMBER);
@@ -65,6 +70,12 @@ inline void xiiLuaWrapper::PushParameter(float fParameter)
   m_States.m_iParametersPushed++;
 }
 
+inline void xiiLuaWrapper::PushParameter(double fParameter)
+{
+  lua_pushnumber(m_pState, fParameter);
+  m_States.m_iParametersPushed++;
+}
+
 inline void xiiLuaWrapper::PushParameter(const char* szParameter)
 {
   lua_pushstring(m_pState, szParameter);
@@ -96,6 +107,12 @@ inline void xiiLuaWrapper::PushReturnValue(bool bParameter)
 }
 
 inline void xiiLuaWrapper::PushReturnValue(float fParameter)
+{
+  lua_pushnumber(m_pState, fParameter);
+  m_States.m_iParametersPushed++;
+}
+
+inline void xiiLuaWrapper::PushReturnValue(double fParameter)
 {
   lua_pushnumber(m_pState, fParameter);
   m_States.m_iParametersPushed++;
@@ -140,6 +157,16 @@ inline void xiiLuaWrapper::SetVariable(const char* szName, xiiInt32 iValue) cons
 }
 
 inline void xiiLuaWrapper::SetVariable(const char* szName, float fValue) const
+{
+  lua_pushnumber(m_pState, fValue);
+
+  if (m_States.m_iOpenTables == 0)
+    lua_setglobal(m_pState, szName);
+  else
+    lua_setfield(m_pState, -2, szName);
+}
+
+inline void xiiLuaWrapper::SetVariable(const char* szName, double fValue) const
 {
   lua_pushnumber(m_pState, fValue);
 
@@ -205,6 +232,11 @@ inline bool xiiLuaWrapper::GetBoolParameter(xiiUInt32 iParameter) const
 inline float xiiLuaWrapper::GetFloatParameter(xiiUInt32 iParameter) const
 {
   return ((float)(lua_tonumber(m_pState, iParameter + s_iParamOffset)));
+}
+
+inline double xiiLuaWrapper::GetDoubleParameter(xiiUInt32 iParameter) const
+{
+  return (lua_tonumber(m_pState, iParameter + s_iParamOffset));
 }
 
 inline const char* xiiLuaWrapper::GetStringParameter(xiiUInt32 iParameter) const

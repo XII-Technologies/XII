@@ -209,6 +209,12 @@ void xiiCVar::SaveCVars()
             sTemp.Format("{0} = {1}\n", pCVar->GetName(), pFloat->GetValue(xiiCVarValue::Restart));
           }
           break;
+          case xiiCVarType::Double:
+          {
+            xiiCVarDouble* pDouble = (xiiCVarDouble*)pCVar;
+            sTemp.Format("{0} = {1}\n", pCVar->GetName(), pDouble->GetValue(xiiCVarValue::Restart));
+          }
+          break;
           case xiiCVarType::String:
           {
             xiiCVarString* pString = (xiiCVarString*)pCVar;
@@ -412,6 +418,17 @@ void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue)
                 }
               }
               break;
+              case xiiCVarType::Double:
+              {
+                double Value = 0.0;
+                if (xiiConversionUtils::StringToFloat(sVarValue, Value).Succeeded())
+                {
+                  xiiCVarDouble* pTyped                  = (xiiCVarDouble*)pCVar;
+                  pTyped->m_Values[xiiCVarValue::Stored] = Value;
+                  *pTyped                                = Value;
+                }
+              }
+              break;
               case xiiCVarType::String:
               {
                 const char* Value = sVarValue.GetData();
@@ -492,6 +509,16 @@ void xiiCVar::LoadCVarsFromCommandLine(bool bOnlyNewOnes /*= true*/, bool bSetAs
 
           pTyped->m_Values[xiiCVarValue::Stored] = static_cast<float>(Value);
           *pTyped                                = static_cast<float>(Value);
+        }
+        break;
+        case xiiCVarType::Double:
+        {
+          xiiCVarDouble* pTyped = (xiiCVarDouble*)pCVar;
+          double         Value  = pTyped->m_Values[xiiCVarValue::Stored];
+          Value                 = xiiCommandLineUtils::GetGlobalInstance()->GetFloatOption(sTemp, Value);
+
+          pTyped->m_Values[xiiCVarValue::Stored] = Value;
+          *pTyped                                = Value;
         }
         break;
         case xiiCVarType::String:

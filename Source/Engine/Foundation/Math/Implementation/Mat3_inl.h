@@ -105,7 +105,7 @@ void xiiMat3Template<Type>::SetScalingMatrix(const xiiVec3Template<Type>& s)
 }
 
 template <typename Type>
-void xiiMat3Template<Type>::SetRotationMatrixX(xiiAngle angle)
+void xiiMat3Template<Type>::SetRotationMatrixX(xiiAngleTemplate<Type> angle)
 {
   const Type fSin = xiiMath::Sin(angle);
   const Type fCos = xiiMath::Cos(angle);
@@ -114,7 +114,7 @@ void xiiMat3Template<Type>::SetRotationMatrixX(xiiAngle angle)
 }
 
 template <typename Type>
-void xiiMat3Template<Type>::SetRotationMatrixY(xiiAngle angle)
+void xiiMat3Template<Type>::SetRotationMatrixY(xiiAngleTemplate<Type> angle)
 {
   const Type fSin = xiiMath::Sin(angle);
   const Type fCos = xiiMath::Cos(angle);
@@ -124,7 +124,7 @@ void xiiMat3Template<Type>::SetRotationMatrixY(xiiAngle angle)
 }
 
 template <typename Type>
-void xiiMat3Template<Type>::SetRotationMatrixZ(xiiAngle angle)
+void xiiMat3Template<Type>::SetRotationMatrixZ(xiiAngleTemplate<Type> angle)
 {
   const Type fSin = xiiMath::Sin(angle);
   const Type fCos = xiiMath::Cos(angle);

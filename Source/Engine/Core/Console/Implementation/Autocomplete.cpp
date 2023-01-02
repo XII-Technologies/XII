@@ -83,7 +83,14 @@ const xiiString xiiQuakeConsole::GetValueAsString(xiiCVar* pCVar)
     case xiiCVarType::Float:
     {
       xiiCVarFloat* pFloat = static_cast<xiiCVarFloat*>(pCVar);
-      s.Format("{0}", xiiArgF(pFloat->GetValue(), 3));
+      s.Format("{0}", xiiArgF(pFloat->GetValue(), 4));
+    }
+    break;
+
+    case xiiCVarType::Double:
+    {
+      xiiCVarDouble* pFloat = static_cast<xiiCVarDouble*>(pCVar);
+      s.Format("{0}", xiiArgF(pFloat->GetValue(), 8));
     }
     break;
 

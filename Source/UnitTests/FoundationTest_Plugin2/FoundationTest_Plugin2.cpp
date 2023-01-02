@@ -24,6 +24,7 @@ XII_PLUGIN_ON_UNLOADED()
 
 xiiCVarInt    CVar_TestInt("test2_Int", 22, xiiCVarFlags::None, "Desc: test2_Int");
 xiiCVarFloat  CVar_TestFloat("test2_Float", 2.2f, xiiCVarFlags::Default, "Desc: test2_Float");
+xiiCVarDouble CVar_TestDouble("test2_Double", 22.22, xiiCVarFlags::Default, "Desc: test2_Double");
 xiiCVarBool   CVar_TestBool("test2_Bool", true, xiiCVarFlags::Save, "Desc: test2_Bool");
 xiiCVarString CVar_TestString("test2_String", "test2", xiiCVarFlags::RequiresRestart, "Desc: test2_String");
 
@@ -48,6 +49,7 @@ void OnLoadPlugin()
     // check that all CVars from plugin1 are available (ie. plugin1 is already loaded)
     *pCVarDep = *pCVarDep && (xiiCVar::FindCVarByName("test1_Int") != nullptr);
     *pCVarDep = *pCVarDep && (xiiCVar::FindCVarByName("test1_Float") != nullptr);
+    *pCVarDep = *pCVarDep && (xiiCVar::FindCVarByName("test1_Double") != nullptr);
     *pCVarDep = *pCVarDep && (xiiCVar::FindCVarByName("test1_Bool") != nullptr);
     *pCVarDep = *pCVarDep && (xiiCVar::FindCVarByName("test1_String") != nullptr);
   }
@@ -74,6 +76,7 @@ void OnUnloadPlugin()
     // check that all CVars from plugin1 are STILL available (ie. plugin1 is not yet unloaded)
     *pCVarDep = *pCVarDep && (xiiCVar::FindCVarByName("test1_Int") != nullptr);
     *pCVarDep = *pCVarDep && (xiiCVar::FindCVarByName("test1_Float") != nullptr);
+    *pCVarDep = *pCVarDep && (xiiCVar::FindCVarByName("test1_Double") != nullptr);
     *pCVarDep = *pCVarDep && (xiiCVar::FindCVarByName("test1_Bool") != nullptr);
     *pCVarDep = *pCVarDep && (xiiCVar::FindCVarByName("test1_String") != nullptr);
   }

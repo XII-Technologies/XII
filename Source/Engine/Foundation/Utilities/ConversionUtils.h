@@ -222,32 +222,80 @@ namespace xiiConversionUtils
   /// \brief Converts a vec2 to a string
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2& value, xiiStringBuilder& out_Result); // [tested]
 
+  /// \brief Converts a vec2d to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2d& value, xiiStringBuilder& out_Result); // [tested]
+
   /// \brief Converts a vec3 to a string
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3& value, xiiStringBuilder& out_Result); // [tested]
+
+  /// \brief Converts a vec3d to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3d& value, xiiStringBuilder& out_Result); // [tested]
 
   /// \brief Converts a vec4 to a string
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4& value, xiiStringBuilder& out_Result); // [tested]
 
+  /// \brief Converts a vec4d to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4d& value, xiiStringBuilder& out_Result); // [tested]
+
   /// \brief Converts a vec2I32 to a string
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2I32& value, xiiStringBuilder& out_Result); // [tested]
+
+  /// \brief Converts a vec2I64 to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2I64& value, xiiStringBuilder& out_Result); // [tested]
 
   /// \brief Converts a vec3I32 to a string
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3I32& value, xiiStringBuilder& out_Result); // [tested]
 
+  /// \brief Converts a vec3I64 to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3I64& value, xiiStringBuilder& out_Result); // [tested]
+
   /// \brief Converts a vec4I32 to a string
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4I32& value, xiiStringBuilder& out_Result); // [tested]
+
+  /// \brief Converts a vec4I64 to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4I64& value, xiiStringBuilder& out_Result); // [tested]
+
+  /// \brief Converts a vec2U32 to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2U32& value, xiiStringBuilder& out_Result); // [tested]
+
+  /// \brief Converts a vec2U64 to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2U64& value, xiiStringBuilder& out_Result); // [tested]
+
+  /// \brief Converts a vec3U32 to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3U32& value, xiiStringBuilder& out_Result); // [tested]
+
+  /// \brief Converts a vec3U64 to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3U64& value, xiiStringBuilder& out_Result); // [tested]
+
+  /// \brief Converts a vec4U32 to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4U32& value, xiiStringBuilder& out_Result); // [tested]
+
+  /// \brief Converts a vec4U64 to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4U64& value, xiiStringBuilder& out_Result); // [tested]
 
   /// \brief Converts a quat to a string
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiQuat& value, xiiStringBuilder& out_Result); // [tested]
 
+  /// \brief Converts a quatd to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiQuatd& value, xiiStringBuilder& out_Result); // [tested]
+
   /// \brief Converts a mat3 to a string
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat3& value, xiiStringBuilder& out_Result); // [tested]
+
+  /// \brief Converts a mat3d to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat3d& value, xiiStringBuilder& out_Result); // [tested]
 
   /// \brief Converts a mat4 to a string
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat4& value, xiiStringBuilder& out_Result); // [tested]
 
+  /// \brief Converts a mat4d to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat4d& value, xiiStringBuilder& out_Result); // [tested]
+
   /// \brief Converts a transform to a string
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiTransform& value, xiiStringBuilder& out_Result); // [tested]
+
+  /// \brief Converts a transformd to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiTransformd& value, xiiStringBuilder& out_Result); // [tested]
 
   /// \brief Converts a Uuid to a string
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiUuid& value, xiiStringBuilder& out_Result); // [tested]

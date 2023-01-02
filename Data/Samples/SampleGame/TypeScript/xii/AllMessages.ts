@@ -236,6 +236,14 @@ export class MsgSetColor extends Message
   Mode: Enum.SetColorMode = 0;
 }
 
+export class MsgSetDoubleParameter extends Message
+{
+  public static GetTypeNameHash(): number { return 3543954005; }
+  constructor() { super(); this.TypeNameHash = 3543954005; }
+  Name: string;
+  Value: number = 0;
+}
+
 export class MsgSetFloatParameter extends Message
 {
   public static GetTypeNameHash(): number { return 1798132902; }
@@ -257,6 +265,14 @@ export class MsgSetPlaying extends Message
   public static GetTypeNameHash(): number { return 3682949865; }
   constructor() { super(); this.TypeNameHash = 3682949865; }
   Play: boolean = true;
+}
+
+export class MsgSetRealParameter extends Message
+{
+  public static GetTypeNameHash(): number { return 4118799405; }
+  constructor() { super(); this.TypeNameHash = 4118799405; }
+  Name: string;
+  Value: number = 0;
 }
 
 export class MsgSetText extends Message

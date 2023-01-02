@@ -68,52 +68,104 @@ auto xiiVariant::DispatchTo(Functor& functor, Type::Enum type, Args&&... args)
       CALL_FUNCTOR(functor, xiiVec2);
       break;
 
+    case Type::Vector2d:
+      CALL_FUNCTOR(functor, xiiVec2d);
+      break;
+
     case Type::Vector3:
       CALL_FUNCTOR(functor, xiiVec3);
+      break;
+
+    case Type::Vector3d:
+      CALL_FUNCTOR(functor, xiiVec3d);
       break;
 
     case Type::Vector4:
       CALL_FUNCTOR(functor, xiiVec4);
       break;
 
+    case Type::Vector4d:
+      CALL_FUNCTOR(functor, xiiVec4d);
+      break;
+
     case Type::Vector2I:
       CALL_FUNCTOR(functor, xiiVec2I32);
+      break;
+
+    case Type::Vector2I64:
+      CALL_FUNCTOR(functor, xiiVec2I64);
       break;
 
     case Type::Vector3I:
       CALL_FUNCTOR(functor, xiiVec3I32);
       break;
 
+    case Type::Vector3I64:
+      CALL_FUNCTOR(functor, xiiVec3I64);
+      break;
+
     case Type::Vector4I:
       CALL_FUNCTOR(functor, xiiVec4I32);
+      break;
+
+    case Type::Vector4I64:
+      CALL_FUNCTOR(functor, xiiVec4I64);
       break;
 
     case Type::Vector2U:
       CALL_FUNCTOR(functor, xiiVec2U32);
       break;
 
+    case Type::Vector2U64:
+      CALL_FUNCTOR(functor, xiiVec2U64);
+      break;
+
     case Type::Vector3U:
       CALL_FUNCTOR(functor, xiiVec3U32);
+      break;
+
+    case Type::Vector3U64:
+      CALL_FUNCTOR(functor, xiiVec3U64);
       break;
 
     case Type::Vector4U:
       CALL_FUNCTOR(functor, xiiVec4U32);
       break;
 
+    case Type::Vector4U64:
+      CALL_FUNCTOR(functor, xiiVec4U64);
+      break;
+
     case Type::Quaternion:
       CALL_FUNCTOR(functor, xiiQuat);
+      break;
+
+    case Type::Quaterniond:
+      CALL_FUNCTOR(functor, xiiQuatd);
       break;
 
     case Type::Matrix3:
       CALL_FUNCTOR(functor, xiiMat3);
       break;
 
+    case Type::Matrix3d:
+      CALL_FUNCTOR(functor, xiiMat3d);
+      break;
+
     case Type::Matrix4:
       CALL_FUNCTOR(functor, xiiMat4);
       break;
 
+    case Type::Matrix4d:
+      CALL_FUNCTOR(functor, xiiMat4d);
+      break;
+
     case Type::Transform:
       CALL_FUNCTOR(functor, xiiTransform);
+      break;
+
+    case Type::Transformd:
+      CALL_FUNCTOR(functor, xiiTransformd);
       break;
 
     case Type::String:
@@ -394,7 +446,7 @@ class xiiVariantHelper
       XII_REPORT_FAILURE("Conversion to xiiColorGammaUB failed");
   }
 
-  template <typename T, typename V1, typename V2>
+  template <typename T, typename V1, typename V2, typename V3, typename V4, typename V5>
   static void ToVec2X(const xiiVariant& value, T& result, bool& bSuccessful)
   {
     bSuccessful = true;
@@ -409,6 +461,21 @@ class xiiVariantHelper
       const V2& v = value.Get<V2>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y));
     }
+    else if (value.IsA<V3>())
+    {
+      const V3& v = value.Get<V3>();
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y));
+    }
+    else if (value.IsA<V4>())
+    {
+      const V4& v = value.Get<V4>();
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y));
+    }
+    else if (value.IsA<V5>())
+    {
+      const V5& v = value.Get<V5>();
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y));
+    }
     else
     {
       XII_REPORT_FAILURE("Conversion to xiiVec2X failed");
@@ -416,13 +483,19 @@ class xiiVariantHelper
     }
   }
 
-  static void To(const xiiVariant& value, xiiVec2& result, bool& bSuccessful) { ToVec2X<xiiVec2, xiiVec2I32, xiiVec2U32>(value, result, bSuccessful); }
+  static void To(const xiiVariant& value, xiiVec2& result, bool& bSuccessful) { ToVec2X<xiiVec2, xiiVec2I32, xiiVec2U32, xiiVec2d, xiiVec2I64, xiiVec2U64>(value, result, bSuccessful); }
 
-  static void To(const xiiVariant& value, xiiVec2I32& result, bool& bSuccessful) { ToVec2X<xiiVec2I32, xiiVec2, xiiVec2U32>(value, result, bSuccessful); }
+  static void To(const xiiVariant& value, xiiVec2I32& result, bool& bSuccessful) { ToVec2X<xiiVec2I32, xiiVec2, xiiVec2U32, xiiVec2d, xiiVec2I64, xiiVec2U64>(value, result, bSuccessful); }
 
-  static void To(const xiiVariant& value, xiiVec2U32& result, bool& bSuccessful) { ToVec2X<xiiVec2U32, xiiVec2I32, xiiVec2>(value, result, bSuccessful); }
+  static void To(const xiiVariant& value, xiiVec2U32& result, bool& bSuccessful) { ToVec2X<xiiVec2U32, xiiVec2I32, xiiVec2, xiiVec2d, xiiVec2I64, xiiVec2U64>(value, result, bSuccessful); }
 
-  template <typename T, typename V1, typename V2>
+  static void To(const xiiVariant& value, xiiVec2d& result, bool& bSuccessful) { ToVec2X<xiiVec2d, xiiVec2I64, xiiVec2U64, xiiVec2, xiiVec2I32, xiiVec2U32>(value, result, bSuccessful); }
+
+  static void To(const xiiVariant& value, xiiVec2I64& result, bool& bSuccessful) { ToVec2X<xiiVec2I64, xiiVec2d, xiiVec2U64, xiiVec2, xiiVec2I32, xiiVec2U32>(value, result, bSuccessful); }
+
+  static void To(const xiiVariant& value, xiiVec2U64& result, bool& bSuccessful) { ToVec2X<xiiVec2U64, xiiVec2I64, xiiVec2d, xiiVec2, xiiVec2I32, xiiVec2U32>(value, result, bSuccessful); }
+
+  template <typename T, typename V1, typename V2, typename V3, typename V4, typename V5>
   static void ToVec3X(const xiiVariant& value, T& result, bool& bSuccessful)
   {
     bSuccessful = true;
@@ -439,6 +512,24 @@ class xiiVariantHelper
       result =
         T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
     }
+    else if (value.IsA<V3>())
+    {
+      const V3& v = value.Get<V3>();
+      result =
+        T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
+    }
+    else if (value.IsA<V4>())
+    {
+      const V4& v = value.Get<V4>();
+      result =
+        T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
+    }
+    else if (value.IsA<V5>())
+    {
+      const V5& v = value.Get<V5>();
+      result =
+        T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
+    }
     else
     {
       XII_REPORT_FAILURE("Conversion to xiiVec3X failed");
@@ -446,13 +537,19 @@ class xiiVariantHelper
     }
   }
 
-  static void To(const xiiVariant& value, xiiVec3& result, bool& bSuccessful) { ToVec3X<xiiVec3, xiiVec3I32, xiiVec3U32>(value, result, bSuccessful); }
+  static void To(const xiiVariant& value, xiiVec3& result, bool& bSuccessful) { ToVec3X<xiiVec3, xiiVec3I32, xiiVec3U32, xiiVec3d, xiiVec3I64, xiiVec3U64>(value, result, bSuccessful); }
 
-  static void To(const xiiVariant& value, xiiVec3I32& result, bool& bSuccessful) { ToVec3X<xiiVec3I32, xiiVec3, xiiVec3U32>(value, result, bSuccessful); }
+  static void To(const xiiVariant& value, xiiVec3I32& result, bool& bSuccessful) { ToVec3X<xiiVec3I32, xiiVec3, xiiVec3U32, xiiVec3d, xiiVec3I64, xiiVec3U64>(value, result, bSuccessful); }
 
-  static void To(const xiiVariant& value, xiiVec3U32& result, bool& bSuccessful) { ToVec3X<xiiVec3U32, xiiVec3I32, xiiVec3>(value, result, bSuccessful); }
+  static void To(const xiiVariant& value, xiiVec3U32& result, bool& bSuccessful) { ToVec3X<xiiVec3U32, xiiVec3I32, xiiVec3, xiiVec3d, xiiVec3I64, xiiVec3U64>(value, result, bSuccessful); }
 
-  template <typename T, typename V1, typename V2>
+  static void To(const xiiVariant& value, xiiVec3d& result, bool& bSuccessful) { ToVec3X<xiiVec3d, xiiVec3I64, xiiVec3U64, xiiVec3, xiiVec3I32, xiiVec3U32>(value, result, bSuccessful); }
+
+  static void To(const xiiVariant& value, xiiVec3I64& result, bool& bSuccessful) { ToVec3X<xiiVec3I64, xiiVec3d, xiiVec3U64, xiiVec3, xiiVec3I32, xiiVec3U32>(value, result, bSuccessful); }
+
+  static void To(const xiiVariant& value, xiiVec3U64& result, bool& bSuccessful) { ToVec3X<xiiVec3U64, xiiVec3I64, xiiVec3d, xiiVec3, xiiVec3I32, xiiVec3U32>(value, result, bSuccessful); }
+
+  template <typename T, typename V1, typename V2, typename V3, typename V4, typename V5>
   static void ToVec4X(const xiiVariant& value, T& result, bool& bSuccessful)
   {
     bSuccessful = true;
@@ -469,6 +566,24 @@ class xiiVariantHelper
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
                  static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
+    else if (value.IsA<V3>())
+    {
+      const V3& v = value.Get<V3>();
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
+                 static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
+    }
+    else if (value.IsA<V4>())
+    {
+      const V4& v = value.Get<V4>();
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
+                 static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
+    }
+    else if (value.IsA<V5>())
+    {
+      const V5& v = value.Get<V5>();
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
+                 static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
+    }
     else
     {
       XII_REPORT_FAILURE("Conversion to xiiVec4X failed");
@@ -476,11 +591,111 @@ class xiiVariantHelper
     }
   }
 
-  static void To(const xiiVariant& value, xiiVec4& result, bool& bSuccessful) { ToVec4X<xiiVec4, xiiVec4I32, xiiVec4U32>(value, result, bSuccessful); }
+  static void To(const xiiVariant& value, xiiVec4& result, bool& bSuccessful) { ToVec4X<xiiVec4, xiiVec4I32, xiiVec4U32, xiiVec4d, xiiVec4I64, xiiVec4U64>(value, result, bSuccessful); }
 
-  static void To(const xiiVariant& value, xiiVec4I32& result, bool& bSuccessful) { ToVec4X<xiiVec4I32, xiiVec4, xiiVec4U32>(value, result, bSuccessful); }
+  static void To(const xiiVariant& value, xiiVec4I32& result, bool& bSuccessful) { ToVec4X<xiiVec4I32, xiiVec4, xiiVec4U32, xiiVec4d, xiiVec4I64, xiiVec4U64>(value, result, bSuccessful); }
 
-  static void To(const xiiVariant& value, xiiVec4U32& result, bool& bSuccessful) { ToVec4X<xiiVec4U32, xiiVec4I32, xiiVec4>(value, result, bSuccessful); }
+  static void To(const xiiVariant& value, xiiVec4U32& result, bool& bSuccessful) { ToVec4X<xiiVec4U32, xiiVec4I32, xiiVec4, xiiVec4d, xiiVec4I64, xiiVec4U64>(value, result, bSuccessful); }
+
+  static void To(const xiiVariant& value, xiiVec4d& result, bool& bSuccessful) { ToVec4X<xiiVec4d, xiiVec4I64, xiiVec4U64, xiiVec4, xiiVec4I32, xiiVec4U32>(value, result, bSuccessful); }
+
+  static void To(const xiiVariant& value, xiiVec4I64& result, bool& bSuccessful) { ToVec4X<xiiVec4I64, xiiVec4d, xiiVec4U64, xiiVec4, xiiVec4I32, xiiVec4U32>(value, result, bSuccessful); }
+
+  static void To(const xiiVariant& value, xiiVec4U64& result, bool& bSuccessful) { ToVec4X<xiiVec4U64, xiiVec4I64, xiiVec4d, xiiVec4, xiiVec4I32, xiiVec4U32>(value, result, bSuccessful); }
+
+  template <typename T, typename V1>
+  static void ToQuatX(const xiiVariant& value, T& result, bool& bSuccessful)
+  {
+    bSuccessful = true;
+
+    if (value.IsA<V1>())
+    {
+      const V1& v = value.Get<V1>();
+      result      = T(static_cast<typename T::ComponentType>(v.v.x), static_cast<typename T::ComponentType>(v.v.y),
+                 static_cast<typename T::ComponentType>(v.v.z), static_cast<typename T::ComponentType>(v.w));
+    }
+    else
+    {
+      XII_REPORT_FAILURE("Conversion to xiiQuatX failed");
+      bSuccessful = false;
+    }
+  }
+
+  static void To(const xiiVariant& value, xiiQuat& result, bool& bSuccessful) { ToQuatX<xiiQuat, xiiQuatd>(value, result, bSuccessful); }
+
+  static void To(const xiiVariant& value, xiiQuatd& result, bool& bSuccessful) { ToQuatX<xiiQuatd, xiiQuat>(value, result, bSuccessful); }
+
+  template <typename T, typename V1>
+  static void ToMat3X(const xiiVariant& value, T& result, bool& bSuccessful)
+  {
+    bSuccessful = true;
+
+    if (value.IsA<V1>())
+    {
+      const V1& v = value.Get<V1>();
+      result      = T(static_cast<typename T::ComponentType>(v.Element(0, 0)), static_cast<typename T::ComponentType>(v.Element(1, 0)), static_cast<typename T::ComponentType>(v.Element(2, 0)),
+                 static_cast<typename T::ComponentType>(v.Element(0, 1)), static_cast<typename T::ComponentType>(v.Element(1, 1)), static_cast<typename T::ComponentType>(v.Element(2, 1)),
+                 static_cast<typename T::ComponentType>(v.Element(0, 2)), static_cast<typename T::ComponentType>(v.Element(1, 2)), static_cast<typename T::ComponentType>(v.Element(2, 2)));
+    }
+    else
+    {
+      XII_REPORT_FAILURE("Conversion to xiiMat3X failed");
+      bSuccessful = false;
+    }
+  }
+
+  static void To(const xiiVariant& value, xiiMat3& result, bool& bSuccessful) { ToMat3X<xiiMat3, xiiMat3d>(value, result, bSuccessful); }
+
+  static void To(const xiiVariant& value, xiiMat3d& result, bool& bSuccessful) { ToMat3X<xiiMat3d, xiiMat3>(value, result, bSuccessful); }
+
+  template <typename T, typename V1>
+  static void ToMat4X(const xiiVariant& value, T& result, bool& bSuccessful)
+  {
+    bSuccessful = true;
+
+    if (value.IsA<V1>())
+    {
+      const V1& v = value.Get<V1>();
+      result      = T(static_cast<typename T::ComponentType>(v.Element(0, 0)), static_cast<typename T::ComponentType>(v.Element(1, 0)), static_cast<typename T::ComponentType>(v.Element(2, 0)), static_cast<typename T::ComponentType>(v.Element(3, 0)),
+                 static_cast<typename T::ComponentType>(v.Element(0, 1)), static_cast<typename T::ComponentType>(v.Element(1, 1)), static_cast<typename T::ComponentType>(v.Element(2, 1)), static_cast<typename T::ComponentType>(v.Element(3, 1)),
+                 static_cast<typename T::ComponentType>(v.Element(0, 2)), static_cast<typename T::ComponentType>(v.Element(1, 2)), static_cast<typename T::ComponentType>(v.Element(2, 2)), static_cast<typename T::ComponentType>(v.Element(3, 2)),
+                 static_cast<typename T::ComponentType>(v.Element(0, 3)), static_cast<typename T::ComponentType>(v.Element(1, 3)), static_cast<typename T::ComponentType>(v.Element(2, 3)), static_cast<typename T::ComponentType>(v.Element(3, 3)));
+    }
+    else
+    {
+      XII_REPORT_FAILURE("Conversion to xiiMat4X failed");
+      bSuccessful = false;
+    }
+  }
+
+  static void To(const xiiVariant& value, xiiMat4& result, bool& bSuccessful) { ToMat4X<xiiMat4, xiiMat4d>(value, result, bSuccessful); }
+
+  static void To(const xiiVariant& value, xiiMat4d& result, bool& bSuccessful) { ToMat4X<xiiMat4d, xiiMat4>(value, result, bSuccessful); }
+
+  template <typename T, typename V1>
+  static void ToTransformX(const xiiVariant& value, T& result, bool& bSuccessful)
+  {
+    bSuccessful = true;
+
+    if (value.IsA<V1>())
+    {
+      const V1&                                        v         = value.Get<V1>();
+      const xiiVec3Template<typename T::ComponentType> vPosition = xiiVec3Template<typename T::ComponentType>(static_cast<typename T::ComponentType>(v.m_vPosition.x), static_cast<typename T::ComponentType>(v.m_vPosition.y), static_cast<typename T::ComponentType>(v.m_vPosition.z));
+      const xiiQuatTemplate<typename T::ComponentType> qRotation = xiiQuatTemplate<typename T::ComponentType>(static_cast<typename T::ComponentType>(v.m_qRotation.v.x), static_cast<typename T::ComponentType>(v.m_qRotation.v.y),
+                                                                                                              static_cast<typename T::ComponentType>(v.m_qRotation.v.z), static_cast<typename T::ComponentType>(v.m_qRotation.w));
+      const xiiVec3Template<typename T::ComponentType> vScale    = xiiVec3Template<typename T::ComponentType>(static_cast<typename T::ComponentType>(v.m_vScale.x), static_cast<typename T::ComponentType>(v.m_vScale.y), static_cast<typename T::ComponentType>(v.m_vScale.z));
+      result                                                     = T(vPosition, qRotation, vScale);
+    }
+    else
+    {
+      XII_REPORT_FAILURE("Conversion to xiiTransformX failed");
+      bSuccessful = false;
+    }
+  }
+
+  static void To(const xiiVariant& value, xiiTransform& result, bool& bSuccessful) { ToTransformX<xiiTransform, xiiTransformd>(value, result, bSuccessful); }
+
+  static void To(const xiiVariant& value, xiiTransformd& result, bool& bSuccessful) { ToTransformX<xiiTransformd, xiiTransform>(value, result, bSuccessful); }
 
   template <typename T>
   static void To(const xiiVariant& value, T& result, bool& bSuccessful)

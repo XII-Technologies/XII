@@ -220,7 +220,7 @@ struct xiiSpatialSystem_RegularGrid::Cell
   xiiDynamicArray<xiiSimdVec4f>      m_BoundingBoxHalfExtents;
   xiiDynamicArray<xiiTagSet>         m_TagSets;
   xiiDynamicArray<xiiGameObject*>    m_ObjectPointers;
-  mutable xiiDynamicArray<xiiUInt64> m_LastVisibleFrames; // multi-threaded access is ok, since all threads will set the same value
+  mutable xiiDynamicArray<xiiUInt64> m_LastVisibleFrames; // Multi-threaded access is ok, since all threads will set the same value.
   xiiDynamicArray<xiiUInt32>         m_DataIndices;
 };
 

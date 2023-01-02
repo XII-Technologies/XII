@@ -30,9 +30,13 @@ template <typename Type>
 class xiiTransformTemplate
 {
 public:
+  // Means this object can be copied using memcpy instead of copy construction.
   XII_DECLARE_POD_TYPE();
 
+  using ComponentType = Type;
+
   // *** Data ***
+public:
   xiiVec3Template<Type> m_vPosition;
   xiiQuatTemplate<Type> m_qRotation;
   xiiVec3Template<Type> m_vScale;

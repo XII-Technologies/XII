@@ -1,6 +1,4 @@
 
-
-
 /// \cond
 
 template <>
@@ -201,6 +199,20 @@ struct xiiVariantTypeDeduction<xiiVec2>
 };
 
 template <>
+struct xiiVariantTypeDeduction<xiiVec2d>
+{
+  enum
+  {
+    value               = xiiVariantType::Vector2d,
+    forceSharing        = false,
+    hasReflectedMembers = true,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiVec2d;
+};
+
+template <>
 struct xiiVariantTypeDeduction<xiiVec3>
 {
   enum
@@ -212,6 +224,20 @@ struct xiiVariantTypeDeduction<xiiVec3>
   };
 
   using StorageType = xiiVec3;
+};
+
+template <>
+struct xiiVariantTypeDeduction<xiiVec3d>
+{
+  enum
+  {
+    value               = xiiVariantType::Vector3d,
+    forceSharing        = false,
+    hasReflectedMembers = true,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiVec3d;
 };
 
 template <>
@@ -229,6 +255,20 @@ struct xiiVariantTypeDeduction<xiiVec4>
 };
 
 template <>
+struct xiiVariantTypeDeduction<xiiVec4d>
+{
+  enum
+  {
+    value               = xiiVariantType::Vector4d,
+    forceSharing        = false,
+    hasReflectedMembers = true,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiVec4d;
+};
+
+template <>
 struct xiiVariantTypeDeduction<xiiVec2I32>
 {
   enum
@@ -240,6 +280,20 @@ struct xiiVariantTypeDeduction<xiiVec2I32>
   };
 
   using StorageType = xiiVec2I32;
+};
+
+template <>
+struct xiiVariantTypeDeduction<xiiVec2I64>
+{
+  enum
+  {
+    value               = xiiVariantType::Vector2I64,
+    forceSharing        = false,
+    hasReflectedMembers = true,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiVec2I64;
 };
 
 template <>
@@ -257,6 +311,20 @@ struct xiiVariantTypeDeduction<xiiVec3I32>
 };
 
 template <>
+struct xiiVariantTypeDeduction<xiiVec3I64>
+{
+  enum
+  {
+    value               = xiiVariantType::Vector3I64,
+    forceSharing        = false,
+    hasReflectedMembers = true,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiVec3I64;
+};
+
+template <>
 struct xiiVariantTypeDeduction<xiiVec4I32>
 {
   enum
@@ -268,6 +336,20 @@ struct xiiVariantTypeDeduction<xiiVec4I32>
   };
 
   using StorageType = xiiVec4I32;
+};
+
+template <>
+struct xiiVariantTypeDeduction<xiiVec4I64>
+{
+  enum
+  {
+    value               = xiiVariantType::Vector4I64,
+    forceSharing        = false,
+    hasReflectedMembers = true,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiVec4I64;
 };
 
 template <>
@@ -285,6 +367,20 @@ struct xiiVariantTypeDeduction<xiiVec2U32>
 };
 
 template <>
+struct xiiVariantTypeDeduction<xiiVec2U64>
+{
+  enum
+  {
+    value               = xiiVariantType::Vector2U64,
+    forceSharing        = false,
+    hasReflectedMembers = true,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiVec2U64;
+};
+
+template <>
 struct xiiVariantTypeDeduction<xiiVec3U32>
 {
   enum
@@ -296,6 +392,20 @@ struct xiiVariantTypeDeduction<xiiVec3U32>
   };
 
   using StorageType = xiiVec3U32;
+};
+
+template <>
+struct xiiVariantTypeDeduction<xiiVec3U64>
+{
+  enum
+  {
+    value               = xiiVariantType::Vector3U64,
+    forceSharing        = false,
+    hasReflectedMembers = true,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiVec3U64;
 };
 
 template <>
@@ -313,6 +423,20 @@ struct xiiVariantTypeDeduction<xiiVec4U32>
 };
 
 template <>
+struct xiiVariantTypeDeduction<xiiVec4U64>
+{
+  enum
+  {
+    value               = xiiVariantType::Vector4U64,
+    forceSharing        = false,
+    hasReflectedMembers = true,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiVec4U64;
+};
+
+template <>
 struct xiiVariantTypeDeduction<xiiQuat>
 {
   enum
@@ -324,6 +448,20 @@ struct xiiVariantTypeDeduction<xiiQuat>
   };
 
   using StorageType = xiiQuat;
+};
+
+template <>
+struct xiiVariantTypeDeduction<xiiQuatd>
+{
+  enum
+  {
+    value               = xiiVariantType::Quaterniond,
+    forceSharing        = false,
+    hasReflectedMembers = true,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiQuatd;
 };
 
 template <>
@@ -341,6 +479,20 @@ struct xiiVariantTypeDeduction<xiiMat3>
 };
 
 template <>
+struct xiiVariantTypeDeduction<xiiMat3d>
+{
+  enum
+  {
+    value               = xiiVariantType::Matrix3d,
+    forceSharing        = false,
+    hasReflectedMembers = false,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiMat3d;
+};
+
+template <>
 struct xiiVariantTypeDeduction<xiiMat4>
 {
   enum
@@ -355,6 +507,20 @@ struct xiiVariantTypeDeduction<xiiMat4>
 };
 
 template <>
+struct xiiVariantTypeDeduction<xiiMat4d>
+{
+  enum
+  {
+    value               = xiiVariantType::Matrix4d,
+    forceSharing        = false,
+    hasReflectedMembers = false,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiMat4d;
+};
+
+template <>
 struct xiiVariantTypeDeduction<xiiTransform>
 {
   enum
@@ -366,6 +532,20 @@ struct xiiVariantTypeDeduction<xiiTransform>
   };
 
   using StorageType = xiiTransform;
+};
+
+template <>
+struct xiiVariantTypeDeduction<xiiTransformd>
+{
+  enum
+  {
+    value               = xiiVariantType::Transformd,
+    forceSharing        = false,
+    hasReflectedMembers = false,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiTransformd;
 };
 
 template <>

@@ -143,84 +143,107 @@ struct xiiGraphicsDevice
 template <typename Type>
 class xiiVec2Template;
 
-using xiiVec2    = xiiVec2Template<float>;
-using xiiVec2d   = xiiVec2Template<double>;
-using xiiVec2I32 = xiiVec2Template<xiiInt32>;
-using xiiVec2U32 = xiiVec2Template<xiiUInt32>;
+using xiiVec2     = xiiVec2Template<float>;
+using xiiVec2d    = xiiVec2Template<double>;
+using xiiVec2Real = xiiVec2Template<xiiReal>;
+using xiiVec2I32  = xiiVec2Template<xiiInt32>;
+using xiiVec2I64  = xiiVec2Template<xiiInt64>;
+using xiiVec2U32  = xiiVec2Template<xiiUInt32>;
+using xiiVec2U64  = xiiVec2Template<xiiUInt64>;
 
 template <typename Type>
 class xiiVec3Template;
 
-using xiiVec3    = xiiVec3Template<float>;
-using xiiVec3d   = xiiVec3Template<double>;
-using xiiVec3I32 = xiiVec3Template<xiiInt32>;
-using xiiVec3U32 = xiiVec3Template<xiiUInt32>;
+using xiiVec3     = xiiVec3Template<float>;
+using xiiVec3d    = xiiVec3Template<double>;
+using xiiVec3Real = xiiVec3Template<xiiReal>;
+using xiiVec3I32  = xiiVec3Template<xiiInt32>;
+using xiiVec3I64  = xiiVec3Template<xiiInt64>;
+using xiiVec3U32  = xiiVec3Template<xiiUInt32>;
+using xiiVec3U64  = xiiVec3Template<xiiUInt64>;
 
 template <typename Type>
 class xiiVec4Template;
 
-using xiiVec4    = xiiVec4Template<float>;
-using xiiVec4d   = xiiVec4Template<double>;
-using xiiVec4I32 = xiiVec4Template<xiiInt32>;
-using xiiVec4I16 = xiiVec4Template<xiiInt16>;
-using xiiVec4I8  = xiiVec4Template<xiiInt8>;
-using xiiVec4U32 = xiiVec4Template<xiiUInt32>;
-using xiiVec4U16 = xiiVec4Template<xiiUInt16>;
-using xiiVec4U8  = xiiVec4Template<xiiUInt8>;
+using xiiVec4     = xiiVec4Template<float>;
+using xiiVec4d    = xiiVec4Template<double>;
+using xiiVec4Real = xiiVec4Template<xiiReal>;
+using xiiVec4I64  = xiiVec4Template<xiiInt64>;
+using xiiVec4I32  = xiiVec4Template<xiiInt32>;
+using xiiVec4I16  = xiiVec4Template<xiiInt16>;
+using xiiVec4I8   = xiiVec4Template<xiiInt8>;
+using xiiVec4U64  = xiiVec4Template<xiiUInt64>;
+using xiiVec4U32  = xiiVec4Template<xiiUInt32>;
+using xiiVec4U16  = xiiVec4Template<xiiUInt16>;
+using xiiVec4U8   = xiiVec4Template<xiiUInt8>;
 
 template <typename Type>
 class xiiMat3Template;
 
-using xiiMat3  = xiiMat3Template<float>;
-using xiiMat3d = xiiMat3Template<double>;
+using xiiMat3     = xiiMat3Template<float>;
+using xiiMat3d    = xiiMat3Template<double>;
+using xiiMat3Real = xiiMat3Template<xiiReal>;
 
 template <typename Type>
 class xiiMat4Template;
 
-using xiiMat4  = xiiMat4Template<float>;
-using xiiMat4d = xiiMat4Template<double>;
+using xiiMat4     = xiiMat4Template<float>;
+using xiiMat4d    = xiiMat4Template<double>;
+using xiiMat4Real = xiiMat4Template<xiiReal>;
 
 template <typename Type>
 struct xiiPlaneTemplate;
 
-using xiiPlane  = xiiPlaneTemplate<float>;
-using xiiPlaned = xiiPlaneTemplate<double>;
+using xiiPlane     = xiiPlaneTemplate<float>;
+using xiiPlaned    = xiiPlaneTemplate<double>;
+using xiiPlaneReal = xiiPlaneTemplate<xiiReal>;
 
 template <typename Type>
 class xiiQuatTemplate;
 
-using xiiQuat  = xiiQuatTemplate<float>;
-using xiiQuatd = xiiQuatTemplate<double>;
+using xiiQuat     = xiiQuatTemplate<float>;
+using xiiQuatd    = xiiQuatTemplate<double>;
+using xiiQuatReal = xiiQuatTemplate<xiiReal>;
 
 template <typename Type>
 class xiiBoundingBoxTemplate;
 
-using xiiBoundingBox    = xiiBoundingBoxTemplate<float>;
-using xiiBoundingBoxd   = xiiBoundingBoxTemplate<double>;
-using xiiBoundingBoxu32 = xiiBoundingBoxTemplate<xiiUInt32>;
+using xiiBoundingBox     = xiiBoundingBoxTemplate<float>;
+using xiiBoundingBoxd    = xiiBoundingBoxTemplate<double>;
+using xiiBoundingBoxReal = xiiBoundingBoxTemplate<xiiReal>;
+using xiiBoundingBoxu32  = xiiBoundingBoxTemplate<xiiUInt32>;
+using xiiBoundingBoxu64  = xiiBoundingBoxTemplate<xiiUInt64>;
 
 template <typename Type>
 class xiiBoundingBoxSphereTemplate;
 
-using xiiBoundingBoxSphere  = xiiBoundingBoxSphereTemplate<float>;
-using xiiBoundingBoxSphered = xiiBoundingBoxSphereTemplate<double>;
+using xiiBoundingBoxSphere     = xiiBoundingBoxSphereTemplate<float>;
+using xiiBoundingBoxSphered    = xiiBoundingBoxSphereTemplate<double>;
+using xiiBoundingBoxSphereReal = xiiBoundingBoxSphereTemplate<xiiReal>;
 
 template <typename Type>
 class xiiBoundingSphereTemplate;
 
-using xiiBoundingSphere  = xiiBoundingSphereTemplate<float>;
-using xiiBoundingSphered = xiiBoundingSphereTemplate<double>;
+using xiiBoundingSphere     = xiiBoundingSphereTemplate<float>;
+using xiiBoundingSphered    = xiiBoundingSphereTemplate<double>;
+using xiiBoundingSphereReal = xiiBoundingSphereTemplate<xiiReal>;
 
 template <xiiUInt8 DecimalBits>
 class xiiFixedPoint;
 
-class xiiAngle;
+template <typename Type>
+class xiiAngleTemplate;
+
+using xiiAngle     = xiiAngleTemplate<float>;
+using xiiAngled    = xiiAngleTemplate<double>;
+using xiiAngleReal = xiiAngleTemplate<xiiReal>;
 
 template <typename Type>
 class xiiTransformTemplate;
 
-using xiiTransform  = xiiTransformTemplate<float>;
-using xiiTransformd = xiiTransformTemplate<double>;
+using xiiTransform     = xiiTransformTemplate<float>;
+using xiiTransformd    = xiiTransformTemplate<double>;
+using xiiTransformReal = xiiTransformTemplate<xiiReal>;
 
 class xiiColor;
 class xiiColorLinearUB;
@@ -252,6 +275,9 @@ struct XII_FOUNDATION_DLL xiiBasisAxis
 
   /// \brief Computes a matrix representing the transformation. 'Forward' represents the X axis, 'Right' the Y axis and 'Up' the Z axis.
   static xiiMat3 CalculateTransformationMatrix(xiiBasisAxis::Enum forwardDir, xiiBasisAxis::Enum rightDir, xiiBasisAxis::Enum upDir, float fUniformScale = 1.0f, float fScaleX = 1.0f, float fScaleY = 1.0f, float fScaleZ = 1.0f);
+
+  /// \brief Computes a matrix representing the transformation. 'Forward' represents the X axis, 'Right' the Y axis and 'Up' the Z axis.
+  static xiiMat3d CalculateTransformationMatrix(xiiBasisAxis::Enum forwardDir, xiiBasisAxis::Enum rightDir, xiiBasisAxis::Enum upDir, double fUniformScale = 1.0, double fScaleX = 1.0, double fScaleY = 1.0, double fScaleZ = 1.0);
 
   /// \brief Returns a quaternion that rotates from 'identity' to 'axis'
   static xiiQuat GetBasisRotation(xiiBasisAxis::Enum identity, xiiBasisAxis::Enum axis);

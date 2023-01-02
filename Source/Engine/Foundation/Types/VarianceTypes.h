@@ -45,6 +45,24 @@ XII_DECLARE_VARIANCE_HASH_HELPER(xiiVarianceTypeFloat);
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiVarianceTypeFloat);
 XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiVarianceTypeFloat);
 
+struct XII_FOUNDATION_DLL xiiVarianceTypeDouble : public xiiVarianceTypeBase
+{
+  XII_DECLARE_POD_TYPE();
+  bool operator==(const xiiVarianceTypeDouble& rhs) const
+  {
+    return m_fVariance == rhs.m_fVariance && m_Value == rhs.m_Value;
+  }
+  bool operator!=(const xiiVarianceTypeDouble& rhs) const
+  {
+    return !(*this == rhs);
+  }
+  double m_Value = 0;
+};
+
+XII_DECLARE_VARIANCE_HASH_HELPER(xiiVarianceTypeDouble);
+XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiVarianceTypeDouble);
+XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiVarianceTypeDouble);
+
 struct XII_FOUNDATION_DLL xiiVarianceTypeTime : public xiiVarianceTypeBase
 {
   XII_DECLARE_POD_TYPE();

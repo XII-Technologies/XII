@@ -85,7 +85,17 @@ XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec2& value)
   InitInplace(value);
 }
 
+XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec2d& value)
+{
+  InitInplace(value);
+}
+
 XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec3& value)
+{
+  InitInplace(value);
+}
+
+XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec3d& value)
 {
   InitInplace(value);
 }
@@ -95,7 +105,17 @@ XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec4& value)
   InitInplace(value);
 }
 
+XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec4d& value)
+{
+  InitInplace(value);
+}
+
 XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec2I32& value)
+{
+  InitInplace(value);
+}
+
+XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec2I64& value)
 {
   InitInplace(value);
 }
@@ -105,7 +125,17 @@ XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec3I32& value)
   InitInplace(value);
 }
 
+XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec3I64& value)
+{
+  InitInplace(value);
+}
+
 XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec4I32& value)
+{
+  InitInplace(value);
+}
+
+XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec4I64& value)
 {
   InitInplace(value);
 }
@@ -115,7 +145,17 @@ XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec2U32& value)
   InitInplace(value);
 }
 
+XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec2U64& value)
+{
+  InitInplace(value);
+}
+
 XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec3U32& value)
+{
+  InitInplace(value);
+}
+
+XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec3U64& value)
 {
   InitInplace(value);
 }
@@ -125,7 +165,17 @@ XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec4U32& value)
   InitInplace(value);
 }
 
+XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVec4U64& value)
+{
+  InitInplace(value);
+}
+
 XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiQuat& value)
+{
+  InitInplace(value);
+}
+
+XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiQuatd& value)
 {
   InitInplace(value);
 }
@@ -549,17 +599,37 @@ XII_ALWAYS_INLINE bool xiiVariant::IsStringStatic(xiiUInt32 type)
 
 XII_ALWAYS_INLINE bool xiiVariant::IsVector2Static(xiiUInt32 type)
 {
-  return type == Type::Vector2 || type == Type::Vector2I || type == Type::Vector2U;
+  return type == Type::Vector2 || type == Type::Vector2d || type == Type::Vector2I || type == Type::Vector2I64 || type == Type::Vector2U || type == Type::Vector2U64;
 }
 
 XII_ALWAYS_INLINE bool xiiVariant::IsVector3Static(xiiUInt32 type)
 {
-  return type == Type::Vector3 || type == Type::Vector3I || type == Type::Vector3U;
+  return type == Type::Vector3 || type == Type::Vector3d || type == Type::Vector3I || type == Type::Vector3I64 || type == Type::Vector3U || type == Type::Vector3U64;
 }
 
 XII_ALWAYS_INLINE bool xiiVariant::IsVector4Static(xiiUInt32 type)
 {
-  return type == Type::Vector4 || type == Type::Vector4I || type == Type::Vector4U;
+  return type == Type::Vector4 || type == Type::Vector4d || type == Type::Vector4I || type == Type::Vector4I64 || type == Type::Vector4U || type == Type::Vector4U64;
+}
+
+XII_ALWAYS_INLINE bool xiiVariant::IsQuatStatic(xiiUInt32 type)
+{
+  return type == Type::Quaternion || type == Type::Quaterniond;
+}
+
+XII_ALWAYS_INLINE bool xiiVariant::IsMat3Static(xiiUInt32 type)
+{
+  return type == Type::Matrix3 || type == Type::Matrix3d;
+}
+
+XII_ALWAYS_INLINE bool xiiVariant::IsMat4Static(xiiUInt32 type)
+{
+  return type == Type::Matrix4 || type == Type::Matrix4d;
+}
+
+XII_ALWAYS_INLINE bool xiiVariant::IsTransformStatic(xiiUInt32 type)
+{
+  return type == Type::Transform || type == Type::Transformd;
 }
 
 template <typename T>

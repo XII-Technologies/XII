@@ -105,15 +105,28 @@ inline void TestNumberCanConvertTo(const xiiVariant& v)
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Double));
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Color) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2) == false);
-  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3) == false);
-  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2d) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2I) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2I64) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2U) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2U64) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3I) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3I64) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3U) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3U64) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4I) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4I64) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4U) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4U64) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Quaternion) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix3) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix3d) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix4) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix4d) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Transform) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Transformd) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::String));
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::StringView) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::DataBuffer) == false);
@@ -198,7 +211,7 @@ inline void TestCanOnlyConvertToID(const xiiVariant& v, xiiVariant::Type::Enum t
   }
 }
 
-inline void TestCanOnlyConvertToStringAndID(const xiiVariant& v, xiiVariant::Type::Enum type, xiiVariant::Type::Enum type2 = xiiVariant::Type::Invalid, xiiVariant::Type::Enum type3 = xiiVariant::Type::Invalid)
+inline void TestCanOnlyConvertToStringAndID(const xiiVariant& v, xiiVariant::Type::Enum type, xiiVariant::Type::Enum type2 = xiiVariant::Type::Invalid, xiiVariant::Type::Enum type3 = xiiVariant::Type::Invalid, xiiVariant::Type::Enum type4 = xiiVariant::Type::Invalid, xiiVariant::Type::Enum type5 = xiiVariant::Type::Invalid, xiiVariant::Type::Enum type6 = xiiVariant::Type::Invalid)
 {
   if (type2 == xiiVariant::Type::Invalid)
     type2 = type;
@@ -212,7 +225,7 @@ inline void TestCanOnlyConvertToStringAndID(const xiiVariant& v, xiiVariant::Typ
     {
       XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::String));
     }
-    else if (iType == type || iType == type2 || iType == type3)
+    else if (iType == type || iType == type2 || iType == type3 || iType == type4 || iType == type5 || iType == type6)
     {
       XII_TEST_BOOL(v.CanConvertTo(type));
     }
@@ -444,6 +457,34 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.IsFloatingPoint() == false);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec2d")
+  {
+    xiiVariant v(xiiVec2d(1, 2));
+    TestVariant<xiiVec2d>(v, xiiVariantType::Vector2d);
+
+    XII_TEST_BOOL(v.Get<xiiVec2d>() == xiiVec2d(1, 2));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiVec2d(1, 2)));
+    XII_TEST_BOOL(v != xiiVariant(xiiVec2d(1, 1)));
+
+    XII_TEST_BOOL(v == xiiVec2d(1, 2));
+    XII_TEST_BOOL(v != xiiVec2d(1, 4));
+
+    v = xiiVec2d(5, 8);
+    XII_TEST_BOOL(v == xiiVec2d(5, 8));
+
+    v = xiiVariant(xiiVec2d(7, 9));
+    XII_TEST_BOOL(v == xiiVec2d(7, 9));
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec3")
   {
     xiiVariant v(xiiVec3(1, 2, 3));
@@ -462,6 +503,36 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     v = xiiVariant(xiiVec3(7, 9, 8));
     XII_TEST_BOOL(v == xiiVec3(7, 9, 8));
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v[2] == 8);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+    XII_TEST_BOOL(v["z"] == 8);
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec3d")
+  {
+    xiiVariant v(xiiVec3d(1, 2, 3));
+    TestVariant<xiiVec3d>(v, xiiVariantType::Vector3d);
+
+    XII_TEST_BOOL(v.Get<xiiVec3d>() == xiiVec3d(1, 2, 3));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiVec3d(1, 2, 3)));
+    XII_TEST_BOOL(v != xiiVariant(xiiVec3d(1, 1, 3)));
+
+    XII_TEST_BOOL(v == xiiVec3d(1, 2, 3));
+    XII_TEST_BOOL(v != xiiVec3d(1, 4, 3));
+
+    v = xiiVec3d(5, 8, 9);
+    XII_TEST_BOOL(v == xiiVec3d(5, 8, 9));
+
+    v = xiiVariant(xiiVec3d(7, 9, 8));
+    XII_TEST_BOOL(v == xiiVec3d(7, 9, 8));
     XII_TEST_BOOL(v[0] == 7);
     XII_TEST_BOOL(v[1] == 9);
     XII_TEST_BOOL(v[2] == 8);
@@ -506,6 +577,38 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.IsFloatingPoint() == false);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec4d")
+  {
+    xiiVariant v(xiiVec4d(1, 2, 3, 4));
+    TestVariant<xiiVec4d>(v, xiiVariantType::Vector4d);
+
+    XII_TEST_BOOL(v.Get<xiiVec4d>() == xiiVec4d(1, 2, 3, 4));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiVec4d(1, 2, 3, 4)));
+    XII_TEST_BOOL(v != xiiVariant(xiiVec4d(1, 1, 3, 4)));
+
+    XII_TEST_BOOL(v == xiiVec4d(1, 2, 3, 4));
+    XII_TEST_BOOL(v != xiiVec4d(1, 4, 3, 4));
+
+    v = xiiVec4d(5, 8, 9, 3);
+    XII_TEST_BOOL(v == xiiVec4d(5, 8, 9, 3));
+
+    v = xiiVariant(xiiVec4d(7, 9, 8, 4));
+    XII_TEST_BOOL(v == xiiVec4d(7, 9, 8, 4));
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v[2] == 8);
+    XII_TEST_BOOL(v[3] == 4);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+    XII_TEST_BOOL(v["z"] == 8);
+    XII_TEST_BOOL(v["w"] == 4);
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec2I32")
   {
     xiiVariant v(xiiVec2I32(1, 2));
@@ -524,6 +627,90 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     v = xiiVariant(xiiVec2I32(7, 9));
     XII_TEST_BOOL(v == xiiVec2I32(7, 9));
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec2I64")
+  {
+    xiiVariant v(xiiVec2I64(1, 2));
+    TestVariant<xiiVec2I64>(v, xiiVariantType::Vector2I64);
+
+    XII_TEST_BOOL(v.Get<xiiVec2I64>() == xiiVec2I64(1, 2));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiVec2I64(1, 2)));
+    XII_TEST_BOOL(v != xiiVariant(xiiVec2I64(1, 1)));
+
+    XII_TEST_BOOL(v == xiiVec2I64(1, 2));
+    XII_TEST_BOOL(v != xiiVec2I64(1, 4));
+
+    v = xiiVec2I64(5, 8);
+    XII_TEST_BOOL(v == xiiVec2I64(5, 8));
+
+    v = xiiVariant(xiiVec2I64(7, 9));
+    XII_TEST_BOOL(v == xiiVec2I64(7, 9));
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec2U32")
+  {
+    xiiVariant v(xiiVec2U32(1, 2));
+    TestVariant<xiiVec2U32>(v, xiiVariantType::Vector2U);
+
+    XII_TEST_BOOL(v.Get<xiiVec2U32>() == xiiVec2U32(1, 2));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiVec2U32(1, 2)));
+    XII_TEST_BOOL(v != xiiVariant(xiiVec2U32(1, 1)));
+
+    XII_TEST_BOOL(v == xiiVec2U32(1, 2));
+    XII_TEST_BOOL(v != xiiVec2U32(1, 4));
+
+    v = xiiVec2U32(5, 8);
+    XII_TEST_BOOL(v == xiiVec2U32(5, 8));
+
+    v = xiiVariant(xiiVec2U32(7, 9));
+    XII_TEST_BOOL(v == xiiVec2U32(7, 9));
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec2U64")
+  {
+    xiiVariant v(xiiVec2U64(1, 2));
+    TestVariant<xiiVec2U64>(v, xiiVariantType::Vector2U64);
+
+    XII_TEST_BOOL(v.Get<xiiVec2U64>() == xiiVec2U64(1, 2));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiVec2U64(1, 2)));
+    XII_TEST_BOOL(v != xiiVariant(xiiVec2U64(1, 1)));
+
+    XII_TEST_BOOL(v == xiiVec2U64(1, 2));
+    XII_TEST_BOOL(v != xiiVec2U64(1, 4));
+
+    v = xiiVec2U64(5, 8);
+    XII_TEST_BOOL(v == xiiVec2U64(5, 8));
+
+    v = xiiVariant(xiiVec2U64(7, 9));
+    XII_TEST_BOOL(v == xiiVec2U64(7, 9));
     XII_TEST_BOOL(v[0] == 7);
     XII_TEST_BOOL(v[1] == 9);
     XII_TEST_BOOL(v["x"] == 7);
@@ -564,6 +751,96 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.IsFloatingPoint() == false);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec3I64")
+  {
+    xiiVariant v(xiiVec3I64(1, 2, 3));
+    TestVariant<xiiVec3I64>(v, xiiVariantType::Vector3I64);
+
+    XII_TEST_BOOL(v.Get<xiiVec3I64>() == xiiVec3I64(1, 2, 3));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiVec3I64(1, 2, 3)));
+    XII_TEST_BOOL(v != xiiVariant(xiiVec3I64(1, 1, 3)));
+
+    XII_TEST_BOOL(v == xiiVec3I64(1, 2, 3));
+    XII_TEST_BOOL(v != xiiVec3I64(1, 4, 3));
+
+    v = xiiVec3I64(5, 8, 9);
+    XII_TEST_BOOL(v == xiiVec3I64(5, 8, 9));
+
+    v = xiiVariant(xiiVec3I64(7, 9, 8));
+    XII_TEST_BOOL(v == xiiVec3I64(7, 9, 8));
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v[2] == 8);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+    XII_TEST_BOOL(v["z"] == 8);
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec3U32")
+  {
+    xiiVariant v(xiiVec3U32(1, 2, 3));
+    TestVariant<xiiVec3U32>(v, xiiVariantType::Vector3U);
+
+    XII_TEST_BOOL(v.Get<xiiVec3U32>() == xiiVec3U32(1, 2, 3));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiVec3U32(1, 2, 3)));
+    XII_TEST_BOOL(v != xiiVariant(xiiVec3U32(1, 1, 3)));
+
+    XII_TEST_BOOL(v == xiiVec3U32(1, 2, 3));
+    XII_TEST_BOOL(v != xiiVec3U32(1, 4, 3));
+
+    v = xiiVec3U32(5, 8, 9);
+    XII_TEST_BOOL(v == xiiVec3U32(5, 8, 9));
+
+    v = xiiVariant(xiiVec3U32(7, 9, 8));
+    XII_TEST_BOOL(v == xiiVec3U32(7, 9, 8));
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v[2] == 8);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+    XII_TEST_BOOL(v["z"] == 8);
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec3U64")
+  {
+    xiiVariant v(xiiVec3U64(1, 2, 3));
+    TestVariant<xiiVec3U64>(v, xiiVariantType::Vector3U64);
+
+    XII_TEST_BOOL(v.Get<xiiVec3U64>() == xiiVec3U64(1, 2, 3));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiVec3U64(1, 2, 3)));
+    XII_TEST_BOOL(v != xiiVariant(xiiVec3U64(1, 1, 3)));
+
+    XII_TEST_BOOL(v == xiiVec3U64(1, 2, 3));
+    XII_TEST_BOOL(v != xiiVec3U64(1, 4, 3));
+
+    v = xiiVec3U64(5, 8, 9);
+    XII_TEST_BOOL(v == xiiVec3U64(5, 8, 9));
+
+    v = xiiVariant(xiiVec3U64(7, 9, 8));
+    XII_TEST_BOOL(v == xiiVec3U64(7, 9, 8));
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v[2] == 8);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+    XII_TEST_BOOL(v["z"] == 8);
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec4I32")
   {
     xiiVariant v(xiiVec4I32(1, 2, 3, 4));
@@ -582,6 +859,102 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     v = xiiVariant(xiiVec4I32(7, 9, 8, 4));
     XII_TEST_BOOL(v == xiiVec4I32(7, 9, 8, 4));
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v[2] == 8);
+    XII_TEST_BOOL(v[3] == 4);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+    XII_TEST_BOOL(v["z"] == 8);
+    XII_TEST_BOOL(v["w"] == 4);
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec4I64")
+  {
+    xiiVariant v(xiiVec4I64(1, 2, 3, 4));
+    TestVariant<xiiVec4I64>(v, xiiVariantType::Vector4I64);
+
+    XII_TEST_BOOL(v.Get<xiiVec4I64>() == xiiVec4I64(1, 2, 3, 4));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiVec4I64(1, 2, 3, 4)));
+    XII_TEST_BOOL(v != xiiVariant(xiiVec4I64(1, 1, 3, 4)));
+
+    XII_TEST_BOOL(v == xiiVec4I64(1, 2, 3, 4));
+    XII_TEST_BOOL(v != xiiVec4I64(1, 4, 3, 4));
+
+    v = xiiVec4I64(5, 8, 9, 3);
+    XII_TEST_BOOL(v == xiiVec4I64(5, 8, 9, 3));
+
+    v = xiiVariant(xiiVec4I64(7, 9, 8, 4));
+    XII_TEST_BOOL(v == xiiVec4I64(7, 9, 8, 4));
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v[2] == 8);
+    XII_TEST_BOOL(v[3] == 4);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+    XII_TEST_BOOL(v["z"] == 8);
+    XII_TEST_BOOL(v["w"] == 4);
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec4U32")
+  {
+    xiiVariant v(xiiVec4U32(1, 2, 3, 4));
+    TestVariant<xiiVec4U32>(v, xiiVariantType::Vector4U);
+
+    XII_TEST_BOOL(v.Get<xiiVec4U32>() == xiiVec4U32(1, 2, 3, 4));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiVec4U32(1, 2, 3, 4)));
+    XII_TEST_BOOL(v != xiiVariant(xiiVec4U32(1, 1, 3, 4)));
+
+    XII_TEST_BOOL(v == xiiVec4U32(1, 2, 3, 4));
+    XII_TEST_BOOL(v != xiiVec4U32(1, 4, 3, 4));
+
+    v = xiiVec4U32(5, 8, 9, 3);
+    XII_TEST_BOOL(v == xiiVec4U32(5, 8, 9, 3));
+
+    v = xiiVariant(xiiVec4U32(7, 9, 8, 4));
+    XII_TEST_BOOL(v == xiiVec4U32(7, 9, 8, 4));
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v[2] == 8);
+    XII_TEST_BOOL(v[3] == 4);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+    XII_TEST_BOOL(v["z"] == 8);
+    XII_TEST_BOOL(v["w"] == 4);
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVec4U64")
+  {
+    xiiVariant v(xiiVec4U64(1, 2, 3, 4));
+    TestVariant<xiiVec4U64>(v, xiiVariantType::Vector4U64);
+
+    XII_TEST_BOOL(v.Get<xiiVec4U64>() == xiiVec4U64(1, 2, 3, 4));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiVec4U64(1, 2, 3, 4)));
+    XII_TEST_BOOL(v != xiiVariant(xiiVec4U64(1, 1, 3, 4)));
+
+    XII_TEST_BOOL(v == xiiVec4U64(1, 2, 3, 4));
+    XII_TEST_BOOL(v != xiiVec4U64(1, 4, 3, 4));
+
+    v = xiiVec4U64(5, 8, 9, 3);
+    XII_TEST_BOOL(v == xiiVec4U64(5, 8, 9, 3));
+
+    v = xiiVariant(xiiVec4U64(7, 9, 8, 4));
+    XII_TEST_BOOL(v == xiiVec4U64(7, 9, 8, 4));
     XII_TEST_BOOL(v[0] == 7);
     XII_TEST_BOOL(v[1] == 9);
     XII_TEST_BOOL(v[2] == 8);
@@ -633,6 +1006,43 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(ptr.m_pType == xiiGetStaticRTTI<xiiQuat>());
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiQuatd")
+  {
+    xiiVariant v(xiiQuatd(1, 2, 3, 4));
+    TestVariant<xiiQuatd>(v, xiiVariantType::Quaterniond);
+
+    XII_TEST_BOOL(v.Get<xiiQuatd>() == xiiQuatd(1, 2, 3, 4));
+
+    XII_TEST_BOOL(v == xiiQuatd(1, 2, 3, 4));
+    XII_TEST_BOOL(v != xiiQuatd(1, 2, 3, 5));
+
+    XII_TEST_BOOL(v == xiiQuatd(1, 2, 3, 4));
+    XII_TEST_BOOL(v != xiiQuatd(1, 4, 3, 4));
+
+    v = xiiQuatd(5, 8, 9, 3);
+    XII_TEST_BOOL(v == xiiQuatd(5, 8, 9, 3));
+
+    v = xiiVariant(xiiQuatd(7, 9, 8, 4));
+    XII_TEST_BOOL(v == xiiQuatd(7, 9, 8, 4));
+    XII_TEST_BOOL(v[0][0] == 7);
+    XII_TEST_BOOL(v[0][1] == 9);
+    XII_TEST_BOOL(v[0][2] == 8);
+    XII_TEST_BOOL(v[1] == 4);
+    XII_TEST_BOOL(v["v"]["x"] == 7);
+    XII_TEST_BOOL(v["v"]["y"] == 9);
+    XII_TEST_BOOL(v["v"]["z"] == 8);
+    XII_TEST_BOOL(v["w"] == 4);
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+
+    xiiTypedPointer ptr = v.GetWriteAccess();
+    XII_TEST_BOOL(ptr.m_pObject == &v.Get<xiiQuatd>());
+    XII_TEST_BOOL(ptr.m_pObject == &v.GetWritable<xiiQuatd>());
+    XII_TEST_BOOL(ptr.m_pType == xiiGetStaticRTTI<xiiQuatd>());
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiMat3")
   {
     xiiVariant v(xiiMat3(1, 2, 3, 4, 5, 6, 7, 8, 9));
@@ -651,6 +1061,30 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     v = xiiVariant(xiiMat3(5, 8, 9, 3, 1, 2, 3, 4, 4));
     XII_TEST_BOOL(v == xiiMat3(5, 8, 9, 3, 1, 2, 3, 4, 4));
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiMat3d")
+  {
+    xiiVariant v(xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    TestVariant<xiiMat3d>(v, xiiVariantType::Matrix3d);
+
+    XII_TEST_BOOL(v.Get<xiiMat3d>() == xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9)));
+    XII_TEST_BOOL(v != xiiVariant(xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 8)));
+
+    XII_TEST_BOOL(v == xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    XII_TEST_BOOL(v != xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 8));
+
+    v = xiiMat3d(5, 8, 9, 3, 1, 2, 3, 4, 5);
+    XII_TEST_BOOL(v == xiiMat3d(5, 8, 9, 3, 1, 2, 3, 4, 5));
+
+    v = xiiVariant(xiiMat3d(5, 8, 9, 3, 1, 2, 3, 4, 4));
+    XII_TEST_BOOL(v == xiiMat3d(5, 8, 9, 3, 1, 2, 3, 4, 4));
 
     XII_TEST_BOOL(v.IsNumber() == false);
     XII_TEST_BOOL(!v.IsString());
@@ -681,6 +1115,30 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.IsFloatingPoint() == false);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiMat4d")
+  {
+    xiiVariant v(xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+    TestVariant<xiiMat4d>(v, xiiVariantType::Matrix4d);
+
+    XII_TEST_BOOL(v.Get<xiiMat4d>() == xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)));
+    XII_TEST_BOOL(v != xiiVariant(xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15)));
+
+    XII_TEST_BOOL(v == xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+    XII_TEST_BOOL(v != xiiMat4d(1, 2, 3, 4, 5, 6, 2, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+
+    v = xiiMat4d(5, 8, 9, 3, 1, 2, 3, 4, 5, 3, 7, 3, 6, 8, 6, 8);
+    XII_TEST_BOOL(v == xiiMat4d(5, 8, 9, 3, 1, 2, 3, 4, 5, 3, 7, 3, 6, 8, 6, 8));
+
+    v = xiiVariant(xiiMat4d(5, 8, 9, 3, 1, 2, 1, 4, 5, 3, 7, 3, 6, 8, 6, 8));
+    XII_TEST_BOOL(v == xiiMat4d(5, 8, 9, 3, 1, 2, 1, 4, 5, 3, 7, 3, 6, 8, 6, 8));
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiTransform")
   {
     xiiVariant v(xiiTransform(xiiVec3(1, 2, 3), xiiQuat(4, 5, 6, 7), xiiVec3(8, 9, 10)));
@@ -693,6 +1151,24 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     v = xiiTransform(xiiVec3(5, 8, 9), xiiQuat(3, 1, 2, 3), xiiVec3(4, 5, 3));
     XII_TEST_BOOL(v == xiiTransform(xiiVec3(5, 8, 9), xiiQuat(3, 1, 2, 3), xiiVec3(4, 5, 3)));
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiTransformd")
+  {
+    xiiVariant v(xiiTransformd(xiiVec3d(1, 2, 3), xiiQuatd(4, 5, 6, 7), xiiVec3d(8, 9, 10)));
+    TestVariant<xiiTransformd>(v, xiiVariantType::Transformd);
+
+    XII_TEST_BOOL(v.Get<xiiTransformd>() == xiiTransformd(xiiVec3d(1, 2, 3), xiiQuatd(4, 5, 6, 7), xiiVec3d(8, 9, 10)));
+
+    XII_TEST_BOOL(v == xiiTransformd(xiiVec3d(1, 2, 3), xiiQuatd(4, 5, 6, 7), xiiVec3d(8, 9, 10)));
+    XII_TEST_BOOL(v != xiiTransformd(xiiVec3d(1, 2, 3), xiiQuatd(4, 5, 6, 7), xiiVec3d(8, 9, 11)));
+
+    v = xiiTransformd(xiiVec3d(5, 8, 9), xiiQuatd(3, 1, 2, 3), xiiVec3d(4, 5, 3));
+    XII_TEST_BOOL(v == xiiTransformd(xiiVec3d(5, 8, 9), xiiQuatd(3, 1, 2, 3), xiiVec3d(4, 5, 3)));
 
     XII_TEST_BOOL(v.IsNumber() == false);
     XII_TEST_BOOL(!v.IsString());
@@ -1112,6 +1588,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Quaternion) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix3) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix4) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Transform) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Transformd) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::String));
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::StringView) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::DataBuffer) == false);
@@ -1251,16 +1729,45 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     xiiVec2    vec(3.0f, 4.0f);
     xiiVariant v(vec);
 
-    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector2, xiiVariant::Type::Vector2I, xiiVariant::Type::Vector2U);
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector2, xiiVariant::Type::Vector2I, xiiVariant::Type::Vector2U, xiiVariant::Type::Vector2d, xiiVariant::Type::Vector2I64, xiiVariant::Type::Vector2U64);
 
     XII_TEST_BOOL(v.ConvertTo<xiiVec2>() == vec);
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2d>() == xiiVec2d(3.0, 4.0));
     XII_TEST_BOOL(v.ConvertTo<xiiVec2I32>() == xiiVec2I32(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiVec2U32>() == xiiVec2U32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2I64>() == xiiVec2I64(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2U64>() == xiiVec2U64(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4 }");
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2).Get<xiiVec2>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I).Get<xiiVec2I32>() == xiiVec2I32(3, 4));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U).Get<xiiVec2U32>() == xiiVec2U32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I64).Get<xiiVec2I64>() == xiiVec2I64(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U64).Get<xiiVec2U64>() == xiiVec2U64(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4 }");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec2d)")
+  {
+    xiiVec2d   vec(3.0, 4.0);
+    xiiVariant v(vec);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector2d, xiiVariant::Type::Vector2I, xiiVariant::Type::Vector2U, xiiVariant::Type::Vector2, xiiVariant::Type::Vector2I64, xiiVariant::Type::Vector2U64);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2d>() == vec);
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2>() == xiiVec2(3.0f, 4.0f));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2I32>() == xiiVec2I32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2U32>() == xiiVec2U32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2I64>() == xiiVec2I64(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2U64>() == xiiVec2U64(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4 }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2d).Get<xiiVec2d>() == vec);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2).Get<xiiVec2>() == xiiVec2(3.0f, 4.0f));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I).Get<xiiVec2I32>() == xiiVec2I32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U).Get<xiiVec2U32>() == xiiVec2U32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I64).Get<xiiVec2I64>() == xiiVec2I64(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U64).Get<xiiVec2U64>() == xiiVec2U64(3, 4));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4 }");
   }
 
@@ -1269,34 +1776,94 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     xiiVec3    vec(3.0f, 4.0f, 6.0f);
     xiiVariant v(vec);
 
-    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector3, xiiVariant::Type::Vector3I, xiiVariant::Type::Vector3U);
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector3, xiiVariant::Type::Vector3I, xiiVariant::Type::Vector3U, xiiVariant::Type::Vector3d, xiiVariant::Type::Vector3I64, xiiVariant::Type::Vector3U64);
 
     XII_TEST_BOOL(v.ConvertTo<xiiVec3>() == vec);
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3d>() == xiiVec3d(3.0, 4.0, 6.0));
     XII_TEST_BOOL(v.ConvertTo<xiiVec3I32>() == xiiVec3I32(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=6 }");
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3).Get<xiiVec3>() == vec);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3d).Get<xiiVec3d>() == xiiVec3d(3.0, 4.0, 6.0));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I).Get<xiiVec3I32>() == xiiVec3I32(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U).Get<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I64).Get<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U64).Get<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=6 }");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec3d)")
+  {
+    xiiVec3d   vec(3.0, 4.0, 6.0);
+    xiiVariant v(vec);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector3d, xiiVariant::Type::Vector3I, xiiVariant::Type::Vector3U, xiiVariant::Type::Vector3, xiiVariant::Type::Vector3I64, xiiVariant::Type::Vector3U64);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3d>() == vec);
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3>() == xiiVec3(3.0f, 4.0f, 6.0f));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3I32>() == xiiVec3I32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=6 }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3d).Get<xiiVec3d>() == vec);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3).Get<xiiVec3>() == xiiVec3(3.0f, 4.0f, 6.0f));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I).Get<xiiVec3I32>() == xiiVec3I32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U).Get<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I64).Get<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U64).Get<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=6 }");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec4)")
   {
-    xiiVec4    vec(3.0f, 4.0f, 3, 56);
+    xiiVec4    vec(3.0f, 4.0f, 3.0f, 56.0f);
     xiiVariant v(vec);
 
-    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector4, xiiVariant::Type::Vector4I, xiiVariant::Type::Vector4U);
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector4, xiiVariant::Type::Vector4I, xiiVariant::Type::Vector4U, xiiVariant::Type::Vector4d, xiiVariant::Type::Vector4I64, xiiVariant::Type::Vector4U64);
 
     XII_TEST_BOOL(v.ConvertTo<xiiVec4>() == vec);
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4d>() == xiiVec4d(3.0, 4.0, 3.0, 56.0));
     XII_TEST_BOOL(v.ConvertTo<xiiVec4I32>() == xiiVec4I32(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4).Get<xiiVec4>() == vec);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4d).Get<xiiVec4d>() == xiiVec4d(3.0, 4.0, 3.0, 56.0));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I).Get<xiiVec4I32>() == xiiVec4I32(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U).Get<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I64).Get<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U64).Get<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec4d)")
+  {
+    xiiVec4d   vec(3.0, 4.0, 3.0, 56.0);
+    xiiVariant v(vec);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector4d, xiiVariant::Type::Vector4I, xiiVariant::Type::Vector4U, xiiVariant::Type::Vector4, xiiVariant::Type::Vector4I64, xiiVariant::Type::Vector4U64);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4d>() == vec);
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4>() == xiiVec4(3.0f, 4.0f, 3.0f, 56.0f));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4I32>() == xiiVec4I32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4d).Get<xiiVec4d>() == vec);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4).Get<xiiVec4>() == xiiVec4(3.0f, 4.0f, 3.0f, 56.0f));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I).Get<xiiVec4I32>() == xiiVec4I32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U).Get<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I64).Get<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U64).Get<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
   }
 
@@ -1305,16 +1872,21 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     xiiVec2I32 vec(3, 4);
     xiiVariant v(vec);
 
-    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector2I, xiiVariant::Type::Vector2U, xiiVariant::Type::Vector2);
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector2I, xiiVariant::Type::Vector2U, xiiVariant::Type::Vector2, xiiVariant::Type::Vector2d, xiiVariant::Type::Vector2I64, xiiVariant::Type::Vector2U64);
 
     XII_TEST_BOOL(v.ConvertTo<xiiVec2I32>() == vec);
     XII_TEST_BOOL(v.ConvertTo<xiiVec2>() == xiiVec2(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiVec2U32>() == xiiVec2U32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2I64>() == xiiVec2I64(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2U64>() == xiiVec2U64(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4 }");
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I).Get<xiiVec2I32>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2).Get<xiiVec2>() == xiiVec2(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2d).Get<xiiVec2d>() == xiiVec2d(3.0, 4.0));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U).Get<xiiVec2U32>() == xiiVec2U32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I64).Get<xiiVec2I64>() == xiiVec2I64(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U64).Get<xiiVec2U64>() == xiiVec2U64(3, 4));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4 }");
   }
 
@@ -1323,16 +1895,22 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     xiiVec3I32 vec(3, 4, 6);
     xiiVariant v(vec);
 
-    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector3I, xiiVariant::Type::Vector3U, xiiVariant::Type::Vector3);
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector3I, xiiVariant::Type::Vector3U, xiiVariant::Type::Vector3, xiiVariant::Type::Vector3d, xiiVariant::Type::Vector3I64, xiiVariant::Type::Vector3U64);
 
     XII_TEST_BOOL(v.ConvertTo<xiiVec3I32>() == vec);
     XII_TEST_BOOL(v.ConvertTo<xiiVec3>() == xiiVec3(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3d>() == xiiVec3d(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=6 }");
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I).Get<xiiVec3I32>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3).Get<xiiVec3>() == xiiVec3(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3d).Get<xiiVec3d>() == xiiVec3d(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U).Get<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I64).Get<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U64).Get<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=6 }");
   }
 
@@ -1341,29 +1919,196 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     xiiVec4I32 vec(3, 4, 3, 56);
     xiiVariant v(vec);
 
-    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector4I, xiiVariant::Type::Vector4U, xiiVariant::Type::Vector4);
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector4I, xiiVariant::Type::Vector4U, xiiVariant::Type::Vector4, xiiVariant::Type::Vector4d, xiiVariant::Type::Vector4I64, xiiVariant::Type::Vector4U64);
 
     XII_TEST_BOOL(v.ConvertTo<xiiVec4I32>() == vec);
     XII_TEST_BOOL(v.ConvertTo<xiiVec4>() == xiiVec4(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4d>() == xiiVec4d(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I).Get<xiiVec4I32>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4).Get<xiiVec4>() == xiiVec4(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4d).Get<xiiVec4d>() == xiiVec4d(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U).Get<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I64).Get<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U64).Get<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec2I64)")
+  {
+    xiiVec2I64 vec(3, 4);
+    xiiVariant v(vec);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector2I64, xiiVariant::Type::Vector2U, xiiVariant::Type::Vector2, xiiVariant::Type::Vector2d, xiiVariant::Type::Vector2I, xiiVariant::Type::Vector2U64);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2I64>() == vec);
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2>() == xiiVec2(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2I32>() == xiiVec2I32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2U32>() == xiiVec2U32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2U64>() == xiiVec2U64(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4 }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I64).Get<xiiVec2I64>() == vec);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2).Get<xiiVec2>() == xiiVec2(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2d).Get<xiiVec2d>() == xiiVec2d(3.0, 4.0));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I).Get<xiiVec2I32>() == xiiVec2I32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U).Get<xiiVec2U32>() == xiiVec2U32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U64).Get<xiiVec2U64>() == xiiVec2U64(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4 }");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec3I64)")
+  {
+    xiiVec3I64 vec(3, 4, 6);
+    xiiVariant v(vec);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector3I64, xiiVariant::Type::Vector3U, xiiVariant::Type::Vector3, xiiVariant::Type::Vector3d, xiiVariant::Type::Vector3I, xiiVariant::Type::Vector3U64);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3I64>() == vec);
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3>() == xiiVec3(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3d>() == xiiVec3d(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3I32>() == xiiVec3I32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=6 }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I64).Get<xiiVec3I64>() == vec);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3).Get<xiiVec3>() == xiiVec3(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3d).Get<xiiVec3d>() == xiiVec3d(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I).Get<xiiVec3I32>() == xiiVec3I32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U).Get<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U64).Get<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=6 }");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec4I64)")
+  {
+    xiiVec4I64 vec(3, 4, 3, 56);
+    xiiVariant v(vec);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector4I64, xiiVariant::Type::Vector4U, xiiVariant::Type::Vector4, xiiVariant::Type::Vector4d, xiiVariant::Type::Vector4I, xiiVariant::Type::Vector4U64);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4I64>() == vec);
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4>() == xiiVec4(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4d>() == xiiVec4d(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4I32>() == xiiVec4I32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I64).Get<xiiVec4I64>() == vec);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4).Get<xiiVec4>() == xiiVec4(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4d).Get<xiiVec4d>() == xiiVec4d(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I).Get<xiiVec4I32>() == xiiVec4I32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U).Get<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U64).Get<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec2U64)")
+  {
+    xiiVec2U64 vec(3, 4);
+    xiiVariant v(vec);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector2U64, xiiVariant::Type::Vector2U, xiiVariant::Type::Vector2, xiiVariant::Type::Vector2d, xiiVariant::Type::Vector2I, xiiVariant::Type::Vector2I64);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2U64>() == vec);
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2>() == xiiVec2(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2I32>() == xiiVec2I32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2U32>() == xiiVec2U32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec2I64>() == xiiVec2I64(3, 4));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4 }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U64).Get<xiiVec2U64>() == vec);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2).Get<xiiVec2>() == xiiVec2(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2d).Get<xiiVec2d>() == xiiVec2d(3.0, 4.0));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I).Get<xiiVec2I32>() == xiiVec2I32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U).Get<xiiVec2U32>() == xiiVec2U32(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I64).Get<xiiVec2I64>() == xiiVec2I64(3, 4));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4 }");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec3U64)")
+  {
+    xiiVec3U64 vec(3, 4, 6);
+    xiiVariant v(vec);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector3U64, xiiVariant::Type::Vector3U, xiiVariant::Type::Vector3, xiiVariant::Type::Vector3d, xiiVariant::Type::Vector3I, xiiVariant::Type::Vector3I64);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3U64>() == vec);
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3>() == xiiVec3(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3d>() == xiiVec3d(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3I32>() == xiiVec3I32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=6 }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U64).Get<xiiVec3U64>() == vec);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3).Get<xiiVec3>() == xiiVec3(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3d).Get<xiiVec3d>() == xiiVec3d(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I).Get<xiiVec3I32>() == xiiVec3I32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U).Get<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I64).Get<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=6 }");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec4U64)")
+  {
+    xiiVec4U64 vec(3, 4, 3, 56);
+    xiiVariant v(vec);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Vector4U64, xiiVariant::Type::Vector4U, xiiVariant::Type::Vector4, xiiVariant::Type::Vector4d, xiiVariant::Type::Vector4I, xiiVariant::Type::Vector4I64);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4U64>() == vec);
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4>() == xiiVec4(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4d>() == xiiVec4d(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4I32>() == xiiVec4I32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U64).Get<xiiVec4U64>() == vec);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4).Get<xiiVec4>() == xiiVec4(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4d).Get<xiiVec4d>() == xiiVec4d(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I).Get<xiiVec4I32>() == xiiVec4I32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U).Get<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I64).Get<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiQuat)")
   {
-    xiiQuat    q(3.0f, 4.0f, 3, 56);
+    xiiQuat    q(3.0f, 4.0f, 3.0f, 56.0f);
     xiiVariant v(q);
 
-    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Quaternion);
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Quaternion, xiiVariant::Type::Quaterniond);
 
     XII_TEST_BOOL(v.ConvertTo<xiiQuat>() == q);
+    XII_TEST_BOOL(v.ConvertTo<xiiQuatd>() == xiiQuatd(3.0, 4.0, 3.0, 56.0));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Quaternion).Get<xiiQuat>() == q);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Quaterniond).Get<xiiQuatd>() == xiiQuatd(3.0, 4.0, 3.0, 56.0));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiQuatd)")
+  {
+    xiiQuatd   q(3.0, 4.0, 3.0, 56.0);
+    xiiVariant v(q);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Quaterniond, xiiVariant::Type::Quaternion);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiQuatd>() == q);
+    XII_TEST_BOOL(v.ConvertTo<xiiQuat>() == xiiQuat(3.0f, 4.0f, 3.0f, 56.0f));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Quaterniond).Get<xiiQuatd>() == q);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Quaternion).Get<xiiQuat>() == xiiQuat(3.0f, 4.0f, 3.0f, 56.0f));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
   }
 
@@ -1372,12 +2117,31 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     xiiMat3    m(1, 2, 3, 4, 5, 6, 7, 8, 9);
     xiiVariant v(m);
 
-    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Matrix3);
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Matrix3, xiiVariant::Type::Matrix3d);
 
     XII_TEST_BOOL(v.ConvertTo<xiiMat3>() == m);
+    XII_TEST_BOOL(v.ConvertTo<xiiMat3d>() == xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }");
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix3).Get<xiiMat3>() == m);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix3d).Get<xiiMat3d>() == xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    XII_TEST_BOOL(
+      v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiMat3d)")
+  {
+    xiiMat3d   m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiVariant v(m);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Matrix3d, xiiVariant::Type::Matrix3);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiMat3d>() == m);
+    XII_TEST_BOOL(v.ConvertTo<xiiMat3>() == xiiMat3(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix3d).Get<xiiMat3d>() == m);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix3).Get<xiiMat3>() == xiiMat3(1, 2, 3, 4, 5, 6, 7, 8, 9));
     XII_TEST_BOOL(
       v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }");
   }
@@ -1387,16 +2151,69 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     xiiMat4    m(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6);
     xiiVariant v(m);
 
-    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Matrix4);
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Matrix4, xiiVariant::Type::Matrix4d);
 
     XII_TEST_BOOL(v.ConvertTo<xiiMat4>() == m);
+    XII_TEST_BOOL(v.ConvertTo<xiiMat4d>() == xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, "
                                               "c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }");
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix4).Get<xiiMat4>() == m);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix4d).Get<xiiMat4d>() == xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, "
                                                                             "c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, "
                                                                             "c4r4=6 }");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiMat4d)")
+  {
+    xiiMat4d   m(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6);
+    xiiVariant v(m);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Matrix4d, xiiVariant::Type::Matrix4);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiMat4d>() == m);
+    XII_TEST_BOOL(v.ConvertTo<xiiMat4>() == xiiMat4(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, "
+                                              "c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix4d).Get<xiiMat4d>() == m);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix4).Get<xiiMat4>() == xiiMat4(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, "
+                                                                            "c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, "
+                                                                            "c4r4=6 }");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiTransform)")
+  {
+    xiiTransform t(xiiVec3(1, 2, 3), xiiQuat(4, 5, 6, 7), xiiVec3(8, 9, 10));
+    xiiVariant   v(t);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Transform, xiiVariant::Type::Transformd);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiTransform>() == t);
+    XII_TEST_BOOL(v.ConvertTo<xiiTransformd>() == xiiTransformd(xiiVec3d(1, 2, 3), xiiQuatd(4, 5, 6, 7), xiiVec3d(8, 9, 10)));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ position={ x=1, y=2, z=3 }, rotation={ x=4, y=5, z=6, w=7 }, scale={ x=8, y=9, z=10 } }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Transform).Get<xiiTransform>() == t);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Transformd).Get<xiiTransformd>() == xiiTransformd(xiiVec3d(1, 2, 3), xiiQuatd(4, 5, 6, 7), xiiVec3d(8, 9, 10)));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ position={ x=1, y=2, z=3 }, rotation={ x=4, y=5, z=6, w=7 }, scale={ x=8, y=9, z=10 } }");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiTransformd)")
+  {
+    xiiTransformd t(xiiVec3d(1, 2, 3), xiiQuatd(4, 5, 6, 7), xiiVec3d(8, 9, 10));
+    xiiVariant    v(t);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Transformd, xiiVariant::Type::Transform);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiTransformd>() == t);
+    XII_TEST_BOOL(v.ConvertTo<xiiTransform>() == xiiTransform(xiiVec3(1, 2, 3), xiiQuat(4, 5, 6, 7), xiiVec3(8, 9, 10)));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ position={ x=1, y=2, z=3 }, rotation={ x=4, y=5, z=6, w=7 }, scale={ x=8, y=9, z=10 } }");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Transformd).Get<xiiTransformd>() == t);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Transform).Get<xiiTransform>() == xiiTransform(xiiVec3(1, 2, 3), xiiQuat(4, 5, 6, 7), xiiVec3(8, 9, 10)));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ position={ x=1, y=2, z=3 }, rotation={ x=4, y=5, z=6, w=7 }, scale={ x=8, y=9, z=10 } }");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiString)")
@@ -1417,14 +2234,31 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Double));
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Color) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2d) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3d) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4d) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2I) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2I64) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3I) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3I64) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4I) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4I64) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2U) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2U64) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3U) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3U64) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4U) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4U64) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Quaternion) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Quaterniond) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix3) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix3d) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix4) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix4d) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Transform) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Transformd) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::String));
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::StringView) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::DataBuffer) == false);

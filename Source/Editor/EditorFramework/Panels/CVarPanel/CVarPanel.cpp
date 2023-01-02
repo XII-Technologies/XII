@@ -43,6 +43,7 @@ xiiQtCVarPanel::xiiQtCVarPanel() :
 
   connect(m_pCVarWidget, &xiiQtCVarWidget::onBoolChanged, this, &xiiQtCVarPanel::BoolChanged);
   connect(m_pCVarWidget, &xiiQtCVarWidget::onFloatChanged, this, &xiiQtCVarPanel::FloatChanged);
+  connect(m_pCVarWidget, &xiiQtCVarWidget::onDoubleChanged, this, &xiiQtCVarPanel::DoubleChanged);
   connect(m_pCVarWidget, &xiiQtCVarWidget::onIntChanged, this, &xiiQtCVarPanel::IntChanged);
   connect(m_pCVarWidget, &xiiQtCVarWidget::onStringChanged, this, &xiiQtCVarPanel::StringChanged);
 
@@ -92,6 +93,10 @@ void xiiQtCVarPanel::EngineProcessMsgHandler(const xiiEditorEngineProcessConnect
 
         switch (pMsg->m_Value.GetType())
         {
+          case xiiVariantType::Double:
+            cvar.m_uiType = xiiCVarType::Double;
+            cvar.m_dValue = pMsg->m_Value.ConvertTo<double>();
+            break;
           case xiiVariantType::Float:
             cvar.m_uiType = xiiCVarType::Float;
             cvar.m_fValue = pMsg->m_Value.ConvertTo<float>();
@@ -167,6 +172,14 @@ void xiiQtCVarPanel::BoolChanged(const char* szCVar, bool newValue)
 }
 
 void xiiQtCVarPanel::FloatChanged(const char* szCVar, float newValue)
+{
+  xiiChangeCVarMsgToEngine msg;
+  msg.m_sCVarName = szCVar;
+  msg.m_NewValue  = newValue;
+  xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
+}
+
+void xiiQtCVarPanel::DoubleChanged(const char* szCVar, double newValue)
 {
   xiiChangeCVarMsgToEngine msg;
   msg.m_sCVarName = szCVar;

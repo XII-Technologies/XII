@@ -22,6 +22,7 @@ public:
   void StoreInteger(const xiiTempHashedString& name, xiiInt64 value);
   void StoreDouble(const xiiTempHashedString& name, double value);
   void StoreVec3(const xiiTempHashedString& name, const xiiVec3& value);
+  void StoreVec3d(const xiiTempHashedString& name, const xiiVec3d& value);
   void StoreColor(const xiiTempHashedString& name, const xiiColor& value);
   void StoreString(const xiiTempHashedString& name, const xiiString& value);
 
@@ -29,6 +30,7 @@ public:
   void RetrieveInteger(const xiiTempHashedString& name, xiiInt64& out_Value, xiiInt64 defaultValue = 0);
   void RetrieveDouble(const xiiTempHashedString& name, double& out_Value, double defaultValue = 0);
   void RetrieveVec3(const xiiTempHashedString& name, xiiVec3& out_Value, xiiVec3 defaultValue = xiiVec3(0));
+  void RetrieveVec3d(const xiiTempHashedString& name, xiiVec3d& out_Value, xiiVec3d defaultValue = xiiVec3d(0));
   void RetrieveColor(const xiiTempHashedString& name, xiiColor& out_Value, xiiColor defaultValue = xiiColor::White);
   void RetrieveString(const xiiTempHashedString& name, xiiString& out_Value, const char* defaultValue = nullptr);
 
@@ -37,6 +39,7 @@ private:
   xiiHashTable<xiiTempHashedString, xiiInt64>  m_Integers;
   xiiHashTable<xiiTempHashedString, double>    m_Doubles;
   xiiHashTable<xiiTempHashedString, xiiVec3>   m_Vec3s;
+  xiiHashTable<xiiTempHashedString, xiiVec3d>  m_Vec3ds;
   xiiHashTable<xiiTempHashedString, xiiColor>  m_Colors;
   xiiHashTable<xiiTempHashedString, xiiString> m_Strings;
 };

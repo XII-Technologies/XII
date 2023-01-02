@@ -47,20 +47,6 @@ namespace xiiMath
     return fFactor * fMultiple;
   }
 
-  XII_ALWAYS_INLINE float Sin(xiiAngle a) { return sinf(a.GetRadian()); }
-
-  XII_ALWAYS_INLINE float Cos(xiiAngle a) { return cosf(a.GetRadian()); }
-
-  XII_ALWAYS_INLINE float Tan(xiiAngle a) { return tanf(a.GetRadian()); }
-
-  XII_ALWAYS_INLINE xiiAngle ASin(float f) { return xiiAngle::Radian(asinf(f)); }
-
-  XII_ALWAYS_INLINE xiiAngle ACos(float f) { return xiiAngle::Radian(acosf(f)); }
-
-  XII_ALWAYS_INLINE xiiAngle ATan(float f) { return xiiAngle::Radian(atanf(f)); }
-
-  XII_ALWAYS_INLINE xiiAngle ATan2(float y, float x) { return xiiAngle::Radian(atan2f(y, x)); }
-
   XII_ALWAYS_INLINE float Exp(float f) { return expf(f); }
 
   XII_ALWAYS_INLINE float Ln(float f) { return logf(f); }

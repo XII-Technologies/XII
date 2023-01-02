@@ -206,27 +206,27 @@ XII_DEFINE_AS_POD_TYPE(long);
 template <typename T>
 struct xiiTypeTraits
 {
-  /// \brief removes const qualifier
+  /// \brief Removes const qualifier
   using NonConstType = typename std::remove_const<T>::type;
 
-  /// \brief removes reference
+  /// \brief Removes reference
   using NonReferenceType = typename std::remove_reference<T>::type;
 
-  /// \brief removes pointer
+  /// \brief Removes pointer
   using NonPointerType = typename std::remove_pointer<T>::type;
 
-  /// \brief removes reference and const qualifier
+  /// \brief Removes reference and const qualifier
   using NonConstReferenceType = typename std::remove_const<typename std::remove_reference<T>::type>::type;
 
-  /// \brief removes reference and pointer qualifier
+  /// \brief Removes reference and pointer qualifier
   using NonReferencePointerType = typename std::remove_pointer<typename std::remove_reference<T>::type>::type;
 
-  /// \brief removes reference, const and pointer qualifier
+  /// \brief Removes reference, const and pointer qualifier
   /// Note that this removes the const and reference of the type pointed too, not of the pointer.
   using NonConstReferencePointerType = typename std::remove_const<typename std::remove_reference<typename std::remove_pointer<T>::type>::type>::type;
 };
 
-/// generates a template named 'checkerName' which checks for the existence of a member function with
+/// Generates a template named 'checkerName' which checks for the existence of a member function with
 /// the name 'functionName' and the signature 'Signature'
 #define XII_MAKE_MEMBERFUNCTION_CHECKER(functionName, checkerName)                \
   template <typename T, typename Signature>                                       \

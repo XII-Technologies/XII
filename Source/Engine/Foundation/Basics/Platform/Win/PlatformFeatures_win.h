@@ -72,7 +72,7 @@
 #  define XII_SUPPORTS_PROCESSES XII_ON
 #endif
 
-// SIMD support
+/// SIMD support
 #undef XII_SIMD_IMPLEMENTATION
 
 #if XII_ENABLED(XII_PLATFORM_ARCH_X86)
@@ -83,13 +83,13 @@
 #  error "Unknown architecture."
 #endif
 
-// Writing crashdumps is only supported on windows desktop
+/// Writing crashdumps is only supported on windows desktop
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  undef XII_SUPPORTS_CRASH_DUMPS
 #  define XII_SUPPORTS_CRASH_DUMPS XII_ON
 #endif
 
-// support for writing to files with very long paths is not implemented for UWP
+/// Support for writing to files with very long paths is not implemented for UWP
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  undef XII_SUPPORTS_LONG_PATHS
 #  define XII_SUPPORTS_LONG_PATHS XII_ON

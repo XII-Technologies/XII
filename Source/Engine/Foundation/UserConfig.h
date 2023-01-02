@@ -20,7 +20,7 @@
 #  undef XII_COMPILE_FOR_DEVELOPMENT
 #  define XII_COMPILE_FOR_DEVELOPMENT XII_OFF
 
-// Performance profiling features
+// Performance profiling features.
 #  undef XII_USE_PROFILING
 #  define XII_USE_PROFILING XII_OFF
 
@@ -38,7 +38,7 @@
 #  undef XII_COMPILE_FOR_DEVELOPMENT
 #  define XII_COMPILE_FOR_DEVELOPMENT XII_ON
 
-// Performance profiling features
+// Performance profiling features.
 #  undef XII_USE_PROFILING
 #  define XII_USE_PROFILING XII_ON
 
@@ -54,3 +54,7 @@
 
 /// Whether game objects compute and store their velocity since the last frame (increases object size)
 #define XII_GAMEOBJECT_VELOCITY XII_ON
+
+/// Whether to use double precision mode for large coordinates support.
+#undef XII_DOUBLE_PRECISION
+#define XII_DOUBLE_PRECISION XII_ON

@@ -93,6 +93,7 @@ struct XII_GUIFOUNDATION_DLL xiiCVarWidgetData
   // 'union' over the different possible CVar types
   bool      m_bValue = false;
   float     m_fValue = 0.0f;
+  double    m_dValue = 0.0;
   xiiInt32  m_iValue = 0;
   xiiString m_sValue;
 };
@@ -122,6 +123,7 @@ public:
 Q_SIGNALS:
   void onBoolChanged(const char* szCVar, bool newValue);
   void onFloatChanged(const char* szCVar, float newValue);
+  void onDoubleChanged(const char* szCVar, double newValue);
   void onIntChanged(const char* szCVar, int newValue);
   void onStringChanged(const char* szCVar, const char* newValue);
 

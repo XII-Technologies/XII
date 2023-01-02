@@ -59,6 +59,9 @@ public:
   /// \brief Returns the 'float' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
   float GetFloat(xiiTempHashedString szName) const;
 
+  /// \brief Returns the 'double' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
+  double GetDouble(xiiTempHashedString szName) const;
+
   /// \brief Returns the 'bool' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
   bool GetBool(xiiTempHashedString szName) const;
 
@@ -70,6 +73,9 @@ public:
 
   /// \brief Returns the 'float' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
   float GetFloat(xiiTempHashedString szName, float fallback) const;
+
+  /// \brief Returns the 'double' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
+  double GetDouble(xiiTempHashedString szName, double fallback) const;
 
   /// \brief Returns the 'bool' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
   bool GetBool(xiiTempHashedString szName, bool fallback) const;
@@ -87,6 +93,7 @@ private:
 
   xiiHashTable<xiiHashedString, xiiInt32>  m_IntData;
   xiiHashTable<xiiHashedString, float>     m_FloatData;
+  xiiHashTable<xiiHashedString, double>    m_DoubleData;
   xiiHashTable<xiiHashedString, xiiString> m_StringData;
   xiiHashTable<xiiHashedString, bool>      m_BoolData;
 

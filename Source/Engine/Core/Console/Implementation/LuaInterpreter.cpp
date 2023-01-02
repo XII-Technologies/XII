@@ -56,8 +56,10 @@ static int LUAFUNC_ConsoleFunc(lua_State* state)
         m_Params[p] = s.GetIntParameter(p);
         break;
       case xiiVariant::Type::Float:
-      case xiiVariant::Type::Double:
         m_Params[p] = s.GetFloatParameter(p);
+        break;
+      case xiiVariant::Type::Double:
+        m_Params[p] = s.GetDoubleParameter(p);
         break;
       case xiiVariant::Type::String:
         m_Params[p] = s.GetStringParameter(p);
@@ -258,6 +260,12 @@ static int LUAFUNC_ReadCVAR(lua_State* state)
       s.PushReturnValue(pVar->GetValue());
     }
     break;
+    case xiiCVarType::Double:
+    {
+      xiiCVarDouble* pVar = (xiiCVarDouble*)pCVar;
+      s.PushReturnValue(pVar->GetValue());
+    }
+    break;
     case xiiCVarType::String:
     {
       xiiCVarString* pVar = (xiiCVarString*)pCVar;
@@ -307,6 +315,12 @@ static int LUAFUNC_WriteCVAR(lua_State* state)
     {
       xiiCVarFloat* pVar = (xiiCVarFloat*)pCVar;
       *pVar              = s.GetFloatParameter(1);
+    }
+    break;
+    case xiiCVarType::Double:
+    {
+      xiiCVarDouble* pVar = (xiiCVarDouble*)pCVar;
+      *pVar               = s.GetDoubleParameter(1);
     }
     break;
     case xiiCVarType::String:

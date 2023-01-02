@@ -8,11 +8,15 @@ using xiiUInt32 = unsigned int;
 using xiiUInt64 = unsigned long long;
 
 using xiiInt8  = signed char;
-using xiiInt16 = short;
-using xiiInt32 = int;
+using xiiInt16 = signed short;
+using xiiInt32 = signed int;
 using xiiInt64 = long long;
 
-// no float-types, since those are well portable
+#if XII_ENABLED(XII_DOUBLE_PRECISION)
+using xiiReal = double;
+#else
+using xiiReal = float;
+#endif
 
 // Do some compile-time checks on the types
 XII_CHECK_AT_COMPILETIME(sizeof(bool) == 1);
@@ -22,11 +26,11 @@ XII_CHECK_AT_COMPILETIME(sizeof(double) == 8);
 XII_CHECK_AT_COMPILETIME(sizeof(xiiInt8) == 1);
 XII_CHECK_AT_COMPILETIME(sizeof(xiiInt16) == 2);
 XII_CHECK_AT_COMPILETIME(sizeof(xiiInt32) == 4);
-XII_CHECK_AT_COMPILETIME(sizeof(xiiInt64) == 8); // must be defined in the specific compiler header
+XII_CHECK_AT_COMPILETIME(sizeof(xiiInt64) == 8); // Must be defined in the specific compiler header
 XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt8) == 1);
 XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt16) == 2);
 XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt32) == 4);
-XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt64) == 8); // must be defined in the specific compiler header
+XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt64) == 8); // Must be defined in the specific compiler header
 XII_CHECK_AT_COMPILETIME(sizeof(long long int) == 8);
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)

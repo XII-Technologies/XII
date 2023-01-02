@@ -245,14 +245,19 @@ static int __CPP_Debug_ReadCVar(duk_context* pDuk)
       return duk.ReturnNumber(pVar->GetValue());
     }
 
+    case xiiCVarType::Double:
+    {
+      xiiCVarDouble* pVar = static_cast<xiiCVarDouble*>(pCVar);
+      return duk.ReturnNumber(pVar->GetValue());
+    }
+
     case xiiCVarType::String:
     {
       xiiCVarString* pVar = static_cast<xiiCVarString*>(pCVar);
       return duk.ReturnString(pVar->GetValue());
     }
 
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   return duk.ReturnUndefined();
@@ -295,6 +300,13 @@ static int __CPP_Debug_WriteCVar(duk_context* pDuk)
       break;
     }
 
+    case xiiCVarType::Double:
+    {
+      xiiCVarDouble* pVar = static_cast<xiiCVarDouble*>(pCVar);
+      *pVar               = duk.GetNumberValue(1, pVar->GetValue());
+      break;
+    }
+
     case xiiCVarType::String:
     {
       xiiCVarString* pVar = static_cast<xiiCVarString*>(pCVar);
@@ -329,6 +341,9 @@ static int __CPP_Debug_RegisterCVar(duk_context* pDuk)
   {
     case xiiCVarType::Int:
       pCVar = XII_DEFAULT_NEW(xiiCVarInt, szVarName, duk.GetIntValue(2), xiiCVarFlags::Default, szDesc);
+      break;
+    case xiiCVarType::Double:
+      pCVar = XII_DEFAULT_NEW(xiiCVarDouble, szVarName, duk.GetNumberValue(2), xiiCVarFlags::Default, szDesc);
       break;
     case xiiCVarType::Float:
       pCVar = XII_DEFAULT_NEW(xiiCVarFloat, szVarName, duk.GetFloatValue(2), xiiCVarFlags::Default, szDesc);

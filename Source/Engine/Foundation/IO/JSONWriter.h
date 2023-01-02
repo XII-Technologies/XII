@@ -85,29 +85,80 @@ public:
   /// \brief Shorthand for "BeginVariable(szName); WriteVec2(value); EndVariable(); "
   void AddVariableVec2(const char* szName, const xiiVec2& value); // [tested]
 
+  /// \brief Shorthand for "BeginVariable(szName); WriteVec2d(value); EndVariable(); "
+  void AddVariableVec2d(const char* szName, const xiiVec2d& value); // [tested]
+
   /// \brief Shorthand for "BeginVariable(szName); WriteVec3(value); EndVariable(); "
   void AddVariableVec3(const char* szName, const xiiVec3& value); // [tested]
+
+  /// \brief Shorthand for "BeginVariable(szName); WriteVec3d(value); EndVariable(); "
+  void AddVariableVec3d(const char* szName, const xiiVec3d& value); // [tested]
 
   /// \brief Shorthand for "BeginVariable(szName); WriteVec4(value); EndVariable(); "
   void AddVariableVec4(const char* szName, const xiiVec4& value); // [tested]
 
+  /// \brief Shorthand for "BeginVariable(szName); WriteVec4d(value); EndVariable(); "
+  void AddVariableVec4d(const char* szName, const xiiVec4d& value); // [tested]
+
   /// \brief Shorthand for "BeginVariable(szName); WriteVec2I32(value); EndVariable(); "
   void AddVariableVec2I32(const char* szName, const xiiVec2I32& value); // [tested]
+
+  /// \brief Shorthand for "BeginVariable(szName); WriteVec2I64(value); EndVariable(); "
+  void AddVariableVec2I64(const char* szName, const xiiVec2I64& value); // [tested]
 
   /// \brief Shorthand for "BeginVariable(szName); WriteVec3I32(value); EndVariable(); "
   void AddVariableVec3I32(const char* szName, const xiiVec3I32& value); // [tested]
 
+  /// \brief Shorthand for "BeginVariable(szName); WriteVec3I64(value); EndVariable(); "
+  void AddVariableVec3I64(const char* szName, const xiiVec3I64& value); // [tested]
+
   /// \brief Shorthand for "BeginVariable(szName); WriteVec4I32(value); EndVariable(); "
   void AddVariableVec4I32(const char* szName, const xiiVec4I32& value); // [tested]
+
+  /// \brief Shorthand for "BeginVariable(szName); WriteVec4I64(value); EndVariable(); "
+  void AddVariableVec4I64(const char* szName, const xiiVec4I64& value); // [tested]
+
+  /// \brief Shorthand for "BeginVariable(szName); WriteVec2U32(value); EndVariable(); "
+  void AddVariableVec2U32(const char* szName, const xiiVec2U32& value); // [tested]
+
+  /// \brief Shorthand for "BeginVariable(szName); WriteVec2U64(value); EndVariable(); "
+  void AddVariableVec2U64(const char* szName, const xiiVec2U64& value); // [tested]
+
+  /// \brief Shorthand for "BeginVariable(szName); WriteVec3U32(value); EndVariable(); "
+  void AddVariableVec3U32(const char* szName, const xiiVec3U32& value); // [tested]
+
+  /// \brief Shorthand for "BeginVariable(szName); WriteVec3U64(value); EndVariable(); "
+  void AddVariableVec3U64(const char* szName, const xiiVec3U64& value); // [tested]
+
+  /// \brief Shorthand for "BeginVariable(szName); WriteVec4U32(value); EndVariable(); "
+  void AddVariableVec4U32(const char* szName, const xiiVec4U32& value); // [tested]
+
+  /// \brief Shorthand for "BeginVariable(szName); WriteVec4U64(value); EndVariable(); "
+  void AddVariableVec4U64(const char* szName, const xiiVec4U64& value); // [tested]
 
   /// \brief Shorthand for "BeginVariable(szName); WriteQuat(value); EndVariable(); "
   void AddVariableQuat(const char* szName, const xiiQuat& value); // [tested]
 
+  /// \brief Shorthand for "BeginVariable(szName); WriteQuatd(value); EndVariable(); "
+  void AddVariableQuatd(const char* szName, const xiiQuatd& value); // [tested]
+
   /// \brief Shorthand for "BeginVariable(szName); WriteMat3(value); EndVariable(); "
   void AddVariableMat3(const char* szName, const xiiMat3& value); // [tested]
 
+  /// \brief Shorthand for "BeginVariable(szName); WriteMat3d(value); EndVariable(); "
+  void AddVariableMat3d(const char* szName, const xiiMat3d& value); // [tested]
+
   /// \brief Shorthand for "BeginVariable(szName); WriteMat4(value); EndVariable(); "
   void AddVariableMat4(const char* szName, const xiiMat4& value); // [tested]
+
+  /// \brief Shorthand for "BeginVariable(szName); WriteMat4d(value); EndVariable(); "
+  void AddVariableMat4d(const char* szName, const xiiMat4d& value); // [tested]
+
+  /// \brief Shorthand for "BeginVariable(szName); WriteTransform(value); EndVariable(); "
+  void AddVariableTransform(const char* szName, const xiiTransform& value); // [tested]
+
+  /// \brief Shorthand for "BeginVariable(szName); WriteTransformd(value); EndVariable(); "
+  void AddVariableTransformd(const char* szName, const xiiTransformd& value); // [tested]
 
   /// \brief Shorthand for "BeginVariable(szName); WriteDataBuffer(value); EndVariable(); "
   void AddVariableDataBuffer(const char* szName, const xiiDataBuffer& value); // [tested]
@@ -161,45 +212,130 @@ public:
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec2(const xiiVec2& value) = 0;
 
+  /// \brief Writes an xiiVec2d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteVec2d(const xiiVec2d& value) = 0;
+
   /// \brief Writes an xiiVec3 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec3(const xiiVec3& value) = 0;
+
+  /// \brief Writes an xiiVec3d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteVec3d(const xiiVec3d& value) = 0;
 
   /// \brief Writes an xiiVec4 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec4(const xiiVec4& value) = 0;
 
+  /// \brief Writes an xiiVec4d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteVec4d(const xiiVec4d& value) = 0;
+
   /// \brief Writes an xiiVec2I32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec2I32(const xiiVec2I32& value) = 0;
+
+  /// \brief Writes an xiiVec2I64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteVec2I64(const xiiVec2I64& value) = 0;
 
   /// \brief Writes an xiiVec3I32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec3I32(const xiiVec3I32& value) = 0;
 
+  /// \brief Writes an xiiVec3I64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteVec3I64(const xiiVec3I64& value) = 0;
+
   /// \brief Writes an xiiVec4I32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec4I32(const xiiVec4I32& value) = 0;
+
+  /// \brief Writes an xiiVec4I64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteVec4I64(const xiiVec4I64& value) = 0;
+
+  /// \brief Writes an xiiVec2U32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteVec2U32(const xiiVec2U32& value) = 0;
+
+  /// \brief Writes an xiiVec2U64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteVec2U64(const xiiVec2U64& value) = 0;
+
+  /// \brief Writes an xiiVec3U32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteVec3U32(const xiiVec3U32& value) = 0;
+
+  /// \brief Writes an xiiVec3U64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteVec3U64(const xiiVec3U64& value) = 0;
+
+  /// \brief Writes an xiiVec4U32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteVec4U32(const xiiVec4U32& value) = 0;
+
+  /// \brief Writes an xiiVec4U64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteVec4U64(const xiiVec4U64& value) = 0;
 
   /// \brief Writes an xiiQuat to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteQuat(const xiiQuat& value) = 0;
 
+  /// \brief Writes an xiiQuatd to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteQuatd(const xiiQuatd& value) = 0;
+
   /// \brief Writes an xiiMat3 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteMat3(const xiiMat3& value) = 0;
 
+  /// \brief Writes an xiiMat3d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteMat3d(const xiiMat3d& value) = 0;
+
   /// \brief Writes an xiiMat4 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteMat4(const xiiMat4& value) = 0;
+
+  /// \brief Writes an xiiMat4d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteMat4d(const xiiMat4d& value) = 0;
+
+  /// \brief Writes an xiiTransform to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteTransform(const xiiTransform& value) = 0;
+
+  /// \brief Writes an xiiTransformd to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteTransformd(const xiiTransformd& value) = 0;
 
   /// \brief Writes an xiiUuid to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
@@ -332,28 +468,79 @@ public:
   virtual void WriteVec2(const xiiVec2& value) override; // [tested]
 
   /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteVec2d(const xiiVec2d& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
   virtual void WriteVec3(const xiiVec3& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteVec3d(const xiiVec3d& value) override; // [tested]
 
   /// \brief Outputs the value via WriteBinaryData().
   virtual void WriteVec4(const xiiVec4& value) override; // [tested]
 
   /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteVec4d(const xiiVec4d& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
   virtual void WriteVec2I32(const xiiVec2I32& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteVec2I64(const xiiVec2I64& value) override; // [tested]
 
   /// \brief Outputs the value via WriteBinaryData().
   virtual void WriteVec3I32(const xiiVec3I32& value) override; // [tested]
 
   /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteVec3I64(const xiiVec3I64& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
   virtual void WriteVec4I32(const xiiVec4I32& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteVec4I64(const xiiVec4I64& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteVec2U32(const xiiVec2U32& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteVec2U64(const xiiVec2U64& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteVec3U32(const xiiVec3U32& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteVec3U64(const xiiVec3U64& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteVec4U32(const xiiVec4U32& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteVec4U64(const xiiVec4U64& value) override; // [tested]
 
   /// \brief Outputs the value via WriteBinaryData().
   virtual void WriteQuat(const xiiQuat& value) override; // [tested]
 
   /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteQuatd(const xiiQuatd& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
   virtual void WriteMat3(const xiiMat3& value) override; // [tested]
 
   /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteMat3d(const xiiMat3d& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
   virtual void WriteMat4(const xiiMat4& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteMat4d(const xiiMat4d& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteTransform(const xiiTransform& value) override; // [tested]
+
+  /// \brief Outputs the value via WriteBinaryData().
+  virtual void WriteTransformd(const xiiTransformd& value) override; // [tested]
 
   /// \brief Outputs the value via WriteBinaryData().
   virtual void WriteUuid(const xiiUuid& value) override; // [tested]

@@ -242,6 +242,16 @@ namespace JSONReaderTestDetail
       }
       break;
 
+      case xiiVariant::Type::Vector2d:
+      {
+        xiiStringBuilder sTemp;
+        sTemp.Format("vec2d ({0}, {1})", xiiArgF(var.Get<xiiVec2d>().x, 8), xiiArgF(var.Get<xiiVec2d>().y, 8));
+        // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
+        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
+        Compare.PopFront();
+      }
+      break;
+
       case xiiVariant::Type::Vector3:
       {
         xiiStringBuilder sTemp;
@@ -252,10 +262,30 @@ namespace JSONReaderTestDetail
       }
       break;
 
+      case xiiVariant::Type::Vector3d:
+      {
+        xiiStringBuilder sTemp;
+        sTemp.Format("vec3d ({0}, {1}, {2})", xiiArgF(var.Get<xiiVec3d>().x, 8), xiiArgF(var.Get<xiiVec3d>().y, 8), xiiArgF(var.Get<xiiVec3d>().z, 8));
+        // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
+        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
+        Compare.PopFront();
+      }
+      break;
+
       case xiiVariant::Type::Vector4:
       {
         xiiStringBuilder sTemp;
         sTemp.Format("vec4 ({0}, {1}, {2}, {3})", xiiArgF(var.Get<xiiVec4>().x, 4), xiiArgF(var.Get<xiiVec4>().y, 4), xiiArgF(var.Get<xiiVec4>().z, 4), xiiArgF(var.Get<xiiVec4>().w, 4));
+        // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
+        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
+        Compare.PopFront();
+      }
+      break;
+
+      case xiiVariant::Type::Vector4d:
+      {
+        xiiStringBuilder sTemp;
+        sTemp.Format("vec4d ({0}, {1}, {2}, {3})", xiiArgF(var.Get<xiiVec4d>().x, 8), xiiArgF(var.Get<xiiVec4d>().y, 8), xiiArgF(var.Get<xiiVec4d>().z, 8), xiiArgF(var.Get<xiiVec4d>().w, 8));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
         XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
         Compare.PopFront();
@@ -286,6 +316,36 @@ namespace JSONReaderTestDetail
       {
         xiiStringBuilder sTemp;
         sTemp.Format("vec4i ({0}, {1}, {2}, {3})", var.Get<xiiVec4I32>().x, var.Get<xiiVec4I32>().y, var.Get<xiiVec4I32>().z, var.Get<xiiVec4I32>().w);
+        // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
+        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
+        Compare.PopFront();
+      }
+      break;
+
+      case xiiVariant::Type::Vector2I64:
+      {
+        xiiStringBuilder sTemp;
+        sTemp.Format("vec2i64 ({0}, {1})", var.Get<xiiVec2I64>().x, var.Get<xiiVec2I64>().y);
+        // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
+        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
+        Compare.PopFront();
+      }
+      break;
+
+      case xiiVariant::Type::Vector3I64:
+      {
+        xiiStringBuilder sTemp;
+        sTemp.Format("vec3i64 ({0}, {1}, {2})", var.Get<xiiVec3I64>().x, var.Get<xiiVec3I64>().y, var.Get<xiiVec3I64>().z);
+        // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
+        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
+        Compare.PopFront();
+      }
+      break;
+
+      case xiiVariant::Type::Vector4I64:
+      {
+        xiiStringBuilder sTemp;
+        sTemp.Format("vec4i64 ({0}, {1}, {2}, {3})", var.Get<xiiVec4I64>().x, var.Get<xiiVec4I64>().y, var.Get<xiiVec4I64>().z, var.Get<xiiVec4I64>().w);
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
         XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
         Compare.PopFront();
@@ -324,12 +384,34 @@ namespace JSONReaderTestDetail
       }
       break;
 
+      case xiiVariant::Type::Quaterniond:
+      {
+        xiiStringBuilder sTemp;
+        sTemp.Format("quatd ({0}, {1}, {2}, {3})", xiiArgF(var.Get<xiiQuatd>().v.x, 8), xiiArgF(var.Get<xiiQuatd>().v.y, 8), xiiArgF(var.Get<xiiQuatd>().v.z, 8), xiiArgF(var.Get<xiiQuatd>().w, 8));
+        // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
+        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
+        Compare.PopFront();
+      }
+      break;
+
       case xiiVariant::Type::Matrix3:
       {
         xiiMat3 m = var.Get<xiiMat3>();
 
         xiiStringBuilder sTemp;
         sTemp.Format("mat3 ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})", xiiArgF(m.m_fElementsCM[0], 4), xiiArgF(m.m_fElementsCM[1], 4), xiiArgF(m.m_fElementsCM[2], 4), xiiArgF(m.m_fElementsCM[3], 4), xiiArgF(m.m_fElementsCM[4], 4), xiiArgF(m.m_fElementsCM[5], 4), xiiArgF(m.m_fElementsCM[6], 4), xiiArgF(m.m_fElementsCM[7], 4), xiiArgF(m.m_fElementsCM[8], 4));
+        // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
+        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
+        Compare.PopFront();
+      }
+      break;
+
+      case xiiVariant::Type::Matrix3d:
+      {
+        xiiMat3d m = var.Get<xiiMat3d>();
+
+        xiiStringBuilder sTemp;
+        sTemp.Format("mat3d ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})", xiiArgF(m.m_fElementsCM[0], 8), xiiArgF(m.m_fElementsCM[1], 8), xiiArgF(m.m_fElementsCM[2], 8), xiiArgF(m.m_fElementsCM[3], 8), xiiArgF(m.m_fElementsCM[4], 8), xiiArgF(m.m_fElementsCM[5], 8), xiiArgF(m.m_fElementsCM[6], 8), xiiArgF(m.m_fElementsCM[7], 8), xiiArgF(m.m_fElementsCM[8], 8));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
         XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
         Compare.PopFront();
@@ -345,6 +427,30 @@ namespace JSONReaderTestDetail
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
         XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
         Compare.PopFront();
+      }
+      break;
+
+      case xiiVariant::Type::Matrix4d:
+      {
+        xiiMat4d m = var.Get<xiiMat4d>();
+
+        xiiStringBuilder sTemp;
+        sTemp.Printf("mat4d (%.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f)", m.m_fElementsCM[0], m.m_fElementsCM[1], m.m_fElementsCM[2], m.m_fElementsCM[3], m.m_fElementsCM[4], m.m_fElementsCM[5], m.m_fElementsCM[6], m.m_fElementsCM[7], m.m_fElementsCM[8], m.m_fElementsCM[9], m.m_fElementsCM[10], m.m_fElementsCM[11], m.m_fElementsCM[12], m.m_fElementsCM[13], m.m_fElementsCM[14], m.m_fElementsCM[15]);
+        // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
+        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
+        Compare.PopFront();
+      }
+      break;
+
+      case xiiVariant::Type::Transform:
+      {
+        XII_ASSERT_NOT_IMPLEMENTED;
+      }
+      break;
+
+      case xiiVariant::Type::Transformd:
+      {
+        XII_ASSERT_NOT_IMPLEMENTED;
       }
       break;
 

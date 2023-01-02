@@ -124,8 +124,8 @@ xiiEditorInput xiiConeAngleGizmo::DoMouseMoveEvent(QMouseEvent* e)
   const xiiAngle aSpeed = xiiAngle::Degree(1.0f);
 
   {
-    m_Angle += vDiff.x * aSpeed;
-    m_Angle -= vDiff.y * aSpeed;
+    m_Angle += (float)vDiff.x * aSpeed;
+    m_Angle -= (float)vDiff.y * aSpeed;
 
     m_Angle = xiiMath::Clamp(m_Angle, xiiAngle(), xiiAngle::Degree(179.0f));
 

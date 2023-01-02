@@ -176,8 +176,8 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
 
               {
                 const float    fMinDepth = xiiMath::Min(depthRange.fNear, depthRange.fFar);
-                const xiiAngle right     = xiiAngle::Degree((float)angle) / 2;
-                const xiiAngle top       = xiiAngle::Degree((float)angle) / 2;
+                const xiiAngle right     = xiiAngle::Degree((float)angle) / 2.0f;
+                const xiiAngle top       = xiiAngle::Degree((float)angle) / 2.0f;
                 const float    fLeft     = xiiMath::Tan(-right) * fMinDepth;
                 const float    fRight    = xiiMath::Tan(right) * fMinDepth * 0.8f;
                 const float    fBottom   = xiiMath::Tan(-top) * fMinDepth;
