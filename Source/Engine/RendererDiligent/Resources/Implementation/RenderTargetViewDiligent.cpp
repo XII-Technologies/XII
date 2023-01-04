@@ -34,7 +34,6 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
   if (m_Description.m_OverrideViewFormat != xiiGALResourceFormat::Invalid)
     viewFormat = m_Description.m_OverrideViewFormat;
 
-
   xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
   Diligent::TEXTURE_FORMAT ViewFormat = Diligent::TEX_FORMAT_UNKNOWN;
@@ -57,6 +56,8 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
   if (m_Description.m_pExisitingNativeObject)
   {
+    m_bIsNativeObjectWrapper = true;
+
     if (bIsDepthFormat)
     {
       m_pDepthStencilView = static_cast<Diligent::ITextureView*>(m_Description.m_pExisitingNativeObject);
@@ -65,6 +66,7 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     {
       m_pRenderTargetView = static_cast<Diligent::ITextureView*>(m_Description.m_pExisitingNativeObject);
     }
+
     return XII_SUCCESS;
   }
 
@@ -174,7 +176,10 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALRenderTargetViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_RELEASE(m_pRenderTargetView);
+  // Only release native texture if it isn't a native texture object wrapper
+  if (!m_bIsNativeObjectWrapper)
+    XII_GAL_DILIGENT_RELEASE(m_pRenderTargetView);
+
   XII_GAL_DILIGENT_RELEASE(m_pDepthStencilView);
   XII_GAL_DILIGENT_RELEASE(m_pUnorderedAccessView);
 

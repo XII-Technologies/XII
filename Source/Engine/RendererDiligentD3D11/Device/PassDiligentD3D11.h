@@ -8,16 +8,16 @@ struct xiiGALCommandEncoderRenderState;
 class xiiGALRenderCommandEncoder;
 class xiiGALComputeCommandEncoder;
 
-class xiiGALCommandEncoderImplDiligent;
+class xiiGALCommandEncoderImplDiligentD3D11;
 
-class xiiGALPassDiligent : public xiiGALPass
+class xiiGALPassDiligentD3D11 : public xiiGALPass
 {
 protected:
-  friend class xiiGALDeviceDiligent;
+  friend class xiiGALDeviceDiligentD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALPassDiligent(xiiGALDevice& device);
-  virtual ~xiiGALPassDiligent();
+  xiiGALPassDiligentD3D11(xiiGALDevice& device);
+  virtual ~xiiGALPassDiligentD3D11();
 
   virtual xiiGALRenderCommandEncoder* BeginRenderingPlatform(const xiiGALRenderingSetup& renderingSetup, const char* szName) override;
   virtual void                        EndRenderingPlatform(xiiGALRenderCommandEncoder* pCommandEncoder) override;
@@ -29,8 +29,8 @@ protected:
   void EndPass();
 
 private:
-  xiiUniquePtr<xiiGALCommandEncoderRenderState>  m_pCommandEncoderState;
-  xiiUniquePtr<xiiGALCommandEncoderImplDiligent> m_pCommandEncoderImpl;
+  xiiUniquePtr<xiiGALCommandEncoderRenderState>       m_pCommandEncoderState;
+  xiiUniquePtr<xiiGALCommandEncoderImplDiligentD3D11> m_pCommandEncoderImpl;
 
   xiiUniquePtr<xiiGALRenderCommandEncoder>  m_pRenderCommandEncoder;
   xiiUniquePtr<xiiGALComputeCommandEncoder> m_pComputeCommandEncoder;

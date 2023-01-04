@@ -4,7 +4,6 @@
 #include <Foundation/Configuration/Startup.h>
 #include <RendererDiligent/CommandEncoder/CommandEncoderImplDiligent.h>
 #include <RendererDiligent/Device/DeviceDiligent.h>
-#include <RendererDiligent/Device/PassDiligent.h>
 #include <RendererDiligent/Device/SwapChainDiligent.h>
 #include <RendererDiligent/Resources/BufferDiligent.h>
 #include <RendererDiligent/Resources/QueryDiligent.h>
@@ -43,27 +42,6 @@
 #if METAL_SUPPORTED
 #  include <Graphics/GraphicsEngineMetal/interface/EngineFactoryMtl.h>
 #endif
-
-xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
-{
-  return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
-}
-
-// clang-format off
-XII_BEGIN_SUBSYSTEM_DECLARATION(RendererDiligent, DeviceFactory)
-
-ON_CORESYSTEMS_STARTUP
-{
-  xiiGALDeviceFactory::RegisterCreatorFunc("Diligent", &CreateDiligentDevice, "DX11_SM50", "xiiShaderCompilerHLSL");
-}
-
-ON_CORESYSTEMS_SHUTDOWN
-{
-  xiiGALDeviceFactory::UnregisterCreatorFunc("Diligent");
-}
-
-XII_END_SUBSYSTEM_DECLARATION;
-// clang-format on
 
 xiiGALDeviceDiligent::xiiGALDeviceDiligent(const xiiGALDeviceCreationDescription& Description) :
   xiiGALDevice(Description)
@@ -351,26 +329,14 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
   for (xiiUInt32 i = 0; i < ppContexts.GetCount(); ++i)
     m_pDeviceContexts[i].Attach(ppContexts[i]);
 
-  // Create default pass
-  m_pDefaultPass = XII_NEW(&m_Allocator, xiiGALPassDiligent, *this);
-
   // Fill lookup table
   FillFormatLookupTable();
-
-  xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
-  xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
-
-  m_SyncTimeDiff.SetZero();
-
-  xiiGALWindowSwapChain::SetFactoryMethod([this](const xiiGALWindowSwapChainCreationDescription& desc) -> xiiGALSwapChainHandle { return CreateSwapChain([this, &desc](xiiAllocatorBase* pAllocator) -> xiiGALSwapChain* { return XII_NEW(pAllocator, xiiGALSwapChainDiligent, desc); }); });
 
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 {
-  xiiGALWindowSwapChain::SetFactoryMethod({});
-
   for (xiiUInt32 type = 0; type < TempResourceType::ENUM_COUNT; ++type)
   {
     for (auto it = m_FreeTempResources[type].GetIterator(); it.IsValid(); ++it)
@@ -404,52 +370,33 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALDeviceDiligent::FlushDeadObjects()
+{
+  DestroyDeadObjects();
+}
+
 // Pipeline & Pass functions
 
 void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapChain* pSwapChain)
 {
-#if XII_ENABLED(XII_USE_PROFILING)
-  m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), szName);
-#endif
-
-  if (pSwapChain)
-  {
-    pSwapChain->AcquireNextRenderTarget(this);
-  }
+  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiGALDeviceDiligent::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
 {
-  if (pSwapChain)
-  {
-    pSwapChain->PresentRenderTarget(this);
-  }
-
-#if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pPipelineTimingScope);
-#endif
+  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 xiiGALPass* xiiGALDeviceDiligent::BeginPassPlatform(const char* szName)
 {
-#if XII_ENABLED(XII_USE_PROFILING)
-  m_pPassTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), szName);
-#endif
+  XII_ASSERT_NOT_IMPLEMENTED;
 
-  m_pDefaultPass->BeginPass(szName);
-
-  return m_pDefaultPass.Borrow();
+  return nullptr;
 }
 
 void xiiGALDeviceDiligent::EndPassPlatform(xiiGALPass* pPass)
 {
-  XII_ASSERT_DEV(m_pDefaultPass.Borrow() == pPass, "Invalid pass");
-
-#if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pPassTimingScope);
-#endif
-
-  m_pDefaultPass->EndPass();
+  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 // State creation functions
@@ -729,25 +676,12 @@ xiiResult xiiGALDeviceDiligent::GetTimestampResultPlatform(xiiGALTimestampHandle
 
 void xiiGALDeviceDiligent::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 {
-  auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
-
-  xiiStringBuilder sb;
-  sb.Format("Frame {}", uiRenderFrame);
-
-#if XII_ENABLED(XII_USE_PROFILING)
-  m_pFrameTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), sb);
-#endif
+  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiGALDeviceDiligent::EndFramePlatform()
 {
-  auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
-
-#if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pFrameTimingScope);
-#endif
-
-  FreeTempResources(GetImmediateContext()->GetFrameNumber());
+  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
@@ -1166,5 +1100,6 @@ void xiiGALDeviceDiligent::WaitForFencePlatform(Diligent::IDeviceContext* pConte
     break;
   }
 }
+
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Device_Implementation_DeviceDiligent);

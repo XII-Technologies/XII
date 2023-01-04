@@ -29,6 +29,8 @@ protected:
   Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pDepthStencilView;
 
   Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pUnorderedAccessView;
+
+  bool m_bIsNativeObjectWrapper = false;
 };
 
 #include <RendererDiligent/Resources/Implementation/RenderTargetViewDiligent_inl.h>

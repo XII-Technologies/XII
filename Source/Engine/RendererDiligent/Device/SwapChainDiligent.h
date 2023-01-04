@@ -5,7 +5,9 @@
 #include <RendererFoundation/Descriptors/Descriptors.h>
 #include <RendererFoundation/Device/SwapChain.h>
 
-class xiiGALSwapChainDiligent : public xiiGALWindowSwapChain
+class xiiGALDeviceDiligent;
+
+class XII_RENDERERDILIGENT_DLL xiiGALSwapChainDiligent : public xiiGALWindowSwapChain
 {
 public:
   virtual void      AcquireNextRenderTarget(xiiGALDevice* pDevice) override;
@@ -25,16 +27,17 @@ protected:
 
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
-  xiiResult         CreateBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent);
+
+  xiiResult CreateBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent);
+  void      DestroyBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent);
 
   xiiGALDeviceDiligent* m_pDeviceDiligent = nullptr;
 
   Diligent::RefCntAutoPtr<Diligent::ISwapChain> m_pSwapChain;
 
-  xiiEnum<xiiGALPresentMode> m_CurrentPresentMode;
+  xiiGALTextureHandle m_hBackbufferTexture;
 
-  xiiGALTextureHandle          m_hBackbufferTexture;
-  xiiGALRenderTargetViewHandle m_hBackbufferTextureView;
+  xiiEnum<xiiGALPresentMode> m_CurrentPresentMode;
 };
 
 #include <RendererDiligent/Device/Implementation/SwapChainDiligent_inl.h>

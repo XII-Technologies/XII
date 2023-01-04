@@ -32,23 +32,6 @@
 
 void xiiGALSwapChainDiligent::AcquireNextRenderTarget(xiiGALDevice* pDevice)
 {
-  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
-
-  m_hBackbufferTexture.Invalidate();
-  m_hBackbufferTextureView.Invalidate();
-
-  if (CreateBackBufferInternal(pDeviceDiligent) != XII_SUCCESS)
-  {
-    xiiLog::Error("Failed to get internal backbuffer textures");
-  }
-
-  Diligent::ITextureView* pRTV = m_pSwapChain->GetCurrentBackBufferRTV();
-  Diligent::ITextureView* pDSV = m_pSwapChain->GetDepthBufferDSV();
-  pDeviceDiligent->GetImmediateContext()->SetRenderTargets(1, &pRTV, pDSV, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-
-  const float Zero[4] = {0, 0, 0, 0};
-  pDeviceDiligent->GetImmediateContext()->ClearRenderTarget(pRTV, &Zero[0], Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-  pDeviceDiligent->GetImmediateContext()->ClearDepthStencil(pDSV, Diligent::CLEAR_DEPTH_FLAG, 1.f, 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 void xiiGALSwapChainDiligent::PresentRenderTarget(xiiGALDevice* pDevice)
@@ -64,10 +47,10 @@ xiiResult xiiGALSwapChainDiligent::UpdateSwapChain(xiiGALDevice* pDevice, xiiEnu
 
   m_CurrentPresentMode = newPresentMode;
 
-  m_pSwapChain->Resize(m_WindowDesc.m_pWindow->GetClientAreaSize().width, m_WindowDesc.m_pWindow->GetClientAreaSize().height);
+  // Need to flush dead objects or ResizeBuffers will fail as the backbuffer is still referenced.
+  pDeviceDiligent->FlushDeadObjects();
 
-  m_hBackbufferTexture.Invalidate();
-  m_hBackbufferTextureView.Invalidate();
+  m_pSwapChain->Resize(m_WindowDesc.m_pWindow->GetClientAreaSize().width, m_WindowDesc.m_pWindow->GetClientAreaSize().height);
 
   return CreateBackBufferInternal(pDeviceDiligent);
 }
@@ -211,8 +194,8 @@ xiiResult xiiGALSwapChainDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent)
 {
-  Diligent::ITexture* pRTV = m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture();
-  Diligent::ITexture* pDSV = m_pSwapChain->GetDepthBufferDSV()->GetTexture();
+  Diligent::ITextureView* pRTV = m_pSwapChain->GetCurrentBackBufferRTV();
+  Diligent::ITextureView* pDSV = m_pSwapChain->GetDepthBufferDSV();
 
   if (pRTV == nullptr || pDSV == nullptr)
   {
@@ -222,39 +205,38 @@ xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent
     return XII_FAILURE;
   }
 
-  const Diligent::TextureDesc& rtvDesc = pRTV->GetDesc();
+  const Diligent::TextureDesc& rtvDesc = pRTV->GetTexture()->GetDesc();
 
   xiiGALTextureCreationDescription TexDesc;
-  TexDesc.m_Type                        = xiiGALTextureType ::Texture2D;
-  TexDesc.m_szName                      = rtvDesc.Name;
-  TexDesc.m_uiWidth                     = rtvDesc.Width;
-  TexDesc.m_uiHeight                    = rtvDesc.Height;
-  TexDesc.m_SampleCount                 = xiiDiligentUtils::ToGALMSAASampleCount(rtvDesc.SampleCount);
-  TexDesc.m_uiDepth                     = rtvDesc.Depth;
-  TexDesc.m_pExisitingNativeObject      = pRTV;
-  TexDesc.m_bAllowShaderResourceView    = false;
-  TexDesc.m_bCreateRenderTarget         = false;
-  TexDesc.m_ResourceAccess.m_bImmutable = true;
-  TexDesc.m_ResourceAccess.m_bReadBack  = false;
-  TexDesc.m_Format                      = xiiGALResourceFormat::RGBAUByteNormalizedsRGB;
+  TexDesc.m_Type                         = xiiGALTextureType ::Texture2D;
+  TexDesc.m_szName                       = rtvDesc.Name;
+  TexDesc.m_uiWidth                      = rtvDesc.Width;
+  TexDesc.m_uiHeight                     = rtvDesc.Height;
+  TexDesc.m_SampleCount                  = xiiDiligentUtils::ToGALMSAASampleCount(rtvDesc.SampleCount);
+  TexDesc.m_uiDepth                      = rtvDesc.Depth;
+  TexDesc.m_pExisitingNativeObject       = pRTV->GetTexture();
+  TexDesc.m_bAllowShaderResourceView     = false;
+  TexDesc.m_bCreateRenderTarget          = true;
+  TexDesc.m_ResourceAccess.m_bImmutable  = true;
+  TexDesc.m_ResourceAccess.m_bReadBack   = false;
+  TexDesc.m_Format                       = xiiGALResourceFormat::RGBAUByteNormalizedsRGB;
+  TexDesc.m_pExisitingNativeObjectRTView = m_pSwapChain->GetCurrentBackBufferRTV();
 
-  xiiGALSystemMemoryDescription temp[1];
-  m_hBackbufferTexture = pDeviceDiligent->CreateTexture(TexDesc, xiiArrayPtr<xiiGALSystemMemoryDescription>(temp));
+  m_hBackbufferTexture = pDeviceDiligent->CreateTexture(TexDesc);
 
   XII_ASSERT_RELEASE(!m_hBackbufferTexture.IsInvalidated(), "Couldn't create native backbuffer texture object!");
   m_RenderTargets.m_hRTs[0] = m_hBackbufferTexture;
 
-  xiiGALRenderTargetViewCreationDescription RTViewDesc;
-  RTViewDesc.m_bReadOnly              = true;
-  RTViewDesc.m_hTexture               = m_hBackbufferTexture;
-  RTViewDesc.m_uiSliceCount           = rtvDesc.GetArraySize();
-  RTViewDesc.m_pExisitingNativeObject = m_pSwapChain->GetCurrentBackBufferRTV();
-
-  m_hBackbufferTextureView = pDeviceDiligent->CreateRenderTargetView(RTViewDesc);
-
-  XII_ASSERT_RELEASE(!m_hBackbufferTexture.IsInvalidated(), "Couldn't create native backbuffer texture object!");
-
   return XII_SUCCESS;
+}
+
+void xiiGALSwapChainDiligent::DestroyBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent)
+{
+  pDeviceDiligent->DestroyTexture(m_hBackbufferTexture);
+
+  m_hBackbufferTexture.Invalidate();
+
+  m_RenderTargets.m_hRTs[0].Invalidate();
 }
 
 xiiResult xiiGALSwapChainDiligent::DeInitPlatform(xiiGALDevice* pDevice)
@@ -263,9 +245,6 @@ xiiResult xiiGALSwapChainDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 
   if (!m_hBackbufferTexture.IsInvalidated())
     m_hBackbufferTexture.Invalidate();
-
-  if (!m_hBackbufferTextureView.IsInvalidated())
-    m_hBackbufferTextureView.Invalidate();
 
   // Full screen swap chains must be switched to windowed mode before destruction.
   // See: https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Destroying

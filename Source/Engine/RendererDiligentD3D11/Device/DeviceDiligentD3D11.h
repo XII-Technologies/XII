@@ -3,31 +3,21 @@
 
 #include <Foundation/Types/Bitflags.h>
 #include <Foundation/Types/UniquePtr.h>
-#include <RendererDiligent/RendererDiligentDLL.h>
+#include <RendererDiligent/Device/DeviceDiligent.h>
+#include <RendererDiligentD3D11/RendererDiligentD3D11DLL.h>
 #include <RendererFoundation/Device/Device.h>
 
-typedef xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, (Diligent::TEXTURE_FORMAT)0> xiiGALFormatLookupEntryDiligent;
-typedef xiiGALFormatLookupTable<xiiGALFormatLookupEntryDiligent>                       xiiGALFormatLookupTableDiligent;
+class xiiGALPassDiligentD3D11;
 
 /// \brief The Diligent device implementation of the graphics abstraction layer.
-class XII_RENDERERDILIGENT_DLL xiiGALDeviceDiligent : public xiiGALDevice
+class XII_RENDERERDILIGENTD3D11_DLL xiiGALDeviceDiligentD3D11 : public xiiGALDeviceDiligent
 {
-protected:
-  xiiGALDeviceDiligent(const xiiGALDeviceCreationDescription& Description);
+private:
+  friend xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description);
+  xiiGALDeviceDiligentD3D11(const xiiGALDeviceCreationDescription& Description);
 
 public:
-  virtual ~xiiGALDeviceDiligent();
-
-public:
-  Diligent::RefCntAutoPtr<Diligent::IRenderDevice>&  GetDevice();
-  Diligent::RefCntAutoPtr<Diligent::IDeviceContext>& GetImmediateContext();
-  Diligent::RefCntAutoPtr<Diligent::IEngineFactory>& GetFactory();
-
-  const xiiGALFormatLookupTableDiligent& GetFormatLookupTable() const;
-  const Diligent::RENDER_DEVICE_TYPE&    GetDeviceType() const;
-  const xiiInt32                         GetValidationLevel() const;
-
-  void FlushDeadObjects();
+  virtual ~xiiGALDeviceDiligentD3D11();
 
   // These functions need to be implemented by a render API abstraction
 protected:
@@ -107,62 +97,10 @@ protected:
   /// \endcond
 
 protected:
-  friend class xiiGALCommandEncoderImplDiligent;
+  friend class xiiGALCommandEncoderImplDiligentD3D11;
 
-  Diligent::IBuffer*  FindTempBuffer(xiiUInt32 uiSize);
-  Diligent::ITexture* FindTempTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiGALResourceFormat::Enum format);
-  void                FreeTempResources(xiiUInt64 uiFrame);
-
-  struct TempResourceType
-  {
-    enum Enum
-    {
-      Buffer,
-      Texture,
-
-      ENUM_COUNT
-    };
-  };
-
-  void FillFormatLookupTable();
-
-  bool IsFenceReachedPlatform(Diligent::IDeviceContext* pContext, Diligent::IQuery* pFence);
-
-  void WaitForFencePlatform(Diligent::IDeviceContext* pContext, Diligent::IQuery* pFence);
-
-  Diligent::RENDER_DEVICE_TYPE                                       m_DeviceType = Diligent::RENDER_DEVICE_TYPE_D3D11;
-  Diligent::RefCntAutoPtr<Diligent::IEngineFactory>                  m_pEngineFactory;
-  Diligent::RefCntAutoPtr<Diligent::IRenderDevice>                   m_pDevice;
-  xiiDynamicArray<Diligent::RefCntAutoPtr<Diligent::IDeviceContext>> m_pDeviceContexts;
-  xiiUInt32                                                          m_NumImmediateContexts = 0;
-  Diligent::GraphicsAdapterInfo                                      m_AdapterAttribs;
-  xiiDynamicArray<Diligent::DisplayModeAttribs>                      m_DisplayModes;
-
-  xiiInt32               m_ValidationLevel = -1;
-  xiiUInt32              m_AdapterId       = Diligent::DEFAULT_ADAPTER_ID;
-  Diligent::ADAPTER_TYPE m_AdapterType     = Diligent::ADAPTER_TYPE_UNKNOWN;
-  xiiString              m_AdapterDetailsString;
-
-  xiiGALFormatLookupTableDiligent m_FormatLookupTable;
-
-  struct UsedTempResource
-  {
-    XII_DECLARE_POD_TYPE();
-
-    Diligent::IDeviceObject* m_pResource;
-    xiiUInt64                m_uiFrame;
-    xiiUInt32                m_uiHash;
-  };
-
-  xiiMap<xiiUInt32, xiiDynamicArray<Diligent::IDeviceObject*>, xiiCompareHelper<xiiUInt32>, xiiLocalAllocatorWrapper> m_FreeTempResources[TempResourceType::ENUM_COUNT];
-  xiiDeque<UsedTempResource, xiiLocalAllocatorWrapper>                                                                m_UsedTempResources[TempResourceType::ENUM_COUNT];
-
-  struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
-  struct GPUTimingScope* m_pPipelineTimingScope = nullptr;
-  struct GPUTimingScope* m_pPassTimingScope     = nullptr;
-
-  xiiTime m_SyncTimeDiff;
-  bool    m_bSyncTimeNeeded = true;
+  xiiUniquePtr<xiiGALPassDiligentD3D11> m_pDefaultPass;
 };
 
-#include <RendererDiligent/Device/Implementation/DeviceDiligent_inl.h>
+
+#include <RendererDiligentD3D11/Device/Implementation/DeviceDiligentD3D11_inl.h>

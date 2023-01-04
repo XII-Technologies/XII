@@ -33,7 +33,6 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     return XII_FAILURE;
   }
 
-
   xiiGALResourceFormat::Enum ViewFormat = m_Description.m_OverrideViewFormat;
 
   if (pTexture)
