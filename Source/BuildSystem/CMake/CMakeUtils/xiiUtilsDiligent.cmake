@@ -41,7 +41,12 @@ function(xii_link_target_diligent_dx11 TARGET_NAME)
 	xii_link_target_diligent(${TARGET_NAME})
 
 	if(D3D11_SUPPORTED)
-		target_link_libraries(${TARGET_NAME} PRIVATE Diligent-GraphicsEngineD3D11-shared)
+		target_link_libraries(${TARGET_NAME}
+			PRIVATE
+			Diligent-GraphicsEngineD3D11-shared
+			RendererDiligent
+			RendererDiligentD3D11
+		)
 		
 		list(APPEND ENGINE_DLLS Diligent-GraphicsEngineD3D11-shared)
 	endif()

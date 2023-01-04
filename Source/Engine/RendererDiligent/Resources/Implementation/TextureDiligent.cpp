@@ -212,14 +212,17 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
 xiiResult xiiGALTextureDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_RELEASE(m_pTexture);
+  // Only release native texture if it isn't a native texture object wrapper
+  if (m_pExisitingNativeObject == nullptr)
+    XII_GAL_DILIGENT_RELEASE(m_pTexture);
+
   XII_GAL_DILIGENT_RELEASE(m_pStagingTexture);
+
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALTextureDiligent::CreateStagingTexture(xiiGALDeviceDiligent* pDevice)
 {
-
   switch (m_Description.m_Type)
   {
     case xiiGALTextureType::Texture2D:

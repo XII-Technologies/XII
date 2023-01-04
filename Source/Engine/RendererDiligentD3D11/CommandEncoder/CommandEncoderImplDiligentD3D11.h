@@ -2,17 +2,20 @@
 #pragma once
 
 #include <Foundation/Types/Bitflags.h>
-#include <RendererDiligent/RendererDiligentDLL.h>
-#include <RendererFoundation/CommandEncoder/CommandEncoderPlatformInterface.h>
+#include <RendererDiligent/CommandEncoder/CommandEncoderImplDiligent.h>
+#include <RendererDiligentD3D11/RendererDiligentD3D11DLL.h>
 #include <RendererFoundation/Resources/RenderTargetSetup.h>
 
-class xiiGALDeviceDiligent;
+class xiiGALDeviceDiligentD3D11;
 
-class XII_RENDERERDILIGENT_DLL xiiGALCommandEncoderImplDiligent : public xiiGALCommandEncoderCommonPlatformInterface, public xiiGALCommandEncoderRenderPlatformInterface, public xiiGALCommandEncoderComputePlatformInterface
+class XII_RENDERERDILIGENTD3D11_DLL xiiGALCommandEncoderImplDiligentD3D11 : public xiiGALCommandEncoderImplDiligent
 {
 public:
-  xiiGALCommandEncoderImplDiligent(xiiGALDeviceDiligent& deviceDiligent);
-  ~xiiGALCommandEncoderImplDiligent();
+  xiiGALCommandEncoderImplDiligentD3D11(xiiGALDeviceDiligentD3D11& deviceDiligent);
+  ~xiiGALCommandEncoderImplDiligentD3D11();
+
+  void Reset();
+  void MarkDirty();
 
   // xiiGALCommandEncoderCommonPlatformInterface
   // State setting functions
@@ -111,14 +114,60 @@ public:
   virtual void DispatchIndirectPlatform(const xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override;
 
 protected:
-  virtual void FlushDeferredStateChanges();
+  virtual void FlushDeferredStateChanges() override;
 
 private:
-  friend class xiiGALPassDiligent;
-  friend class xiiGALSwapchainDiligent;
+  friend class xiiGALPassDiligentD3D11;
 
-  xiiGALDeviceDiligent& m_GALDeviceDiligent;
-  xiiGALCommandEncoder* m_pOwner = nullptr;
+  xiiGALDeviceDiligentD3D11& m_GALDeviceDiligent;
+  xiiGALCommandEncoder*      m_pOwner = nullptr;
 
   Diligent::RefCntAutoPtr<Diligent::IDeviceContext>& m_pContext;
+
+  // Graphics pipeline state creation
+  Diligent::GraphicsPipelineStateCreateInfo                 m_PipelineStateDesc;
+  Diligent::RefCntAutoPtr<Diligent::IPipelineState>         m_pPipelineState;
+  Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> m_pShaderResourceBinding;
+
+  // Compute pipeline state creation
+  Diligent::ComputePipelineStateCreateInfo m_PipelineStateComputeDesc;
+
+  // Cache flags
+  bool m_bPipelineStateModified    = true;
+  bool m_bViewportModified         = true;
+  bool m_bIndexBufferModified      = false;
+  bool m_bDescriptorsModified      = false;
+  bool m_bComputePipelineRequested = false;
+
+  Diligent::Viewport m_Viewport;
+  Diligent::Rect     m_ScissorRect;
+  bool               m_bScissorEnabled = false;
+
+  // Bound objects for deferred state flushes
+  Diligent::RefCntAutoPtr<Diligent::IBuffer> m_pIndexBuffer;
+
+  Diligent::IBuffer*    m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiHybridArray<Diligent::IDeviceObject*, 16> m_pBoundShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
+  xiiGAL::ModifiedRange                        m_BoundShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiHybridArray<Diligent::IDeviceObject*, 16> m_pBoundUnoderedAccessViews;
+  xiiGAL::ModifiedRange                        m_pBoundUnoderedAccessViewsRange;
+
+  Diligent::ISampler*   m_pBoundSamplerStates[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundSamplerStatesRange[xiiGALShaderStage::ENUM_COUNT];
+
+  Diligent::IShader* m_pBoundShaders[xiiGALShaderStage::ENUM_COUNT] = {};
+
+  xiiGALRenderTargetSetup m_RenderTargetSetup;
+  Diligent::ITextureView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
+  xiiUInt32               m_uiBoundRenderTargetCount                            = 0;
+  Diligent::ITextureView* m_pBoundDepthStencilTarget                            = nullptr;
+
+  Diligent::IBuffer*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundVertexBuffersRange;
+
+  xiiUInt64 m_VertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiUInt64 m_VertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 };

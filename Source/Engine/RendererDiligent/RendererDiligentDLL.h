@@ -15,6 +15,7 @@
 #endif
 
 
+
 #include <Common/interface/RefCntAutoPtr.hpp>
 
 #include <Graphics/GraphicsEngine/interface/DeviceContext.h>
@@ -27,6 +28,5 @@
     if ((diligentObject) != nullptr)             \
     {                                            \
       (diligentObject)->Release();               \
-      (diligentObject) = nullptr;                \
     }                                            \
   } while (0)

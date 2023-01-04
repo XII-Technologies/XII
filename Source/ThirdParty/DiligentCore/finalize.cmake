@@ -77,4 +77,10 @@ if (TARGET GenericCodeGen)
     endif()
 endif()
 
+if (TARGET Vulkan-Headers)
+    if(COMMAND custom_post_configure_target)
+        custom_post_configure_target(Vulkan-Headers)
+    endif()
+endif()
+
 endif()

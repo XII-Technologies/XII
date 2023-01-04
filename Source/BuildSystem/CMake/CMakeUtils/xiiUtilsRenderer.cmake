@@ -39,12 +39,7 @@ function(xii_add_renderers TARGET_NAME)
 	endif()
 	
 	if (XII_BUILD_DILIGENT)
-
-        target_link_libraries(${TARGET_NAME}
-			PRIVATE
-			RendererDiligent
-		)
-
+	
 		if(GL_SUPPORTED OR GLES_SUPPORTED)
 			xii_link_target_diligent_opengl(${TARGET_NAME})
 		endif()

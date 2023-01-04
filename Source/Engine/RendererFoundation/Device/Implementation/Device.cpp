@@ -652,11 +652,26 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
     if (desc.m_bCreateRenderTarget)
     {
       xiiGALRenderTargetViewCreationDescription rtDesc;
-      rtDesc.m_hTexture     = hTexture;
-      rtDesc.m_uiFirstSlice = 0;
-      rtDesc.m_uiSliceCount = desc.m_uiArraySize;
 
-      pTexture->m_hDefaultRenderTargetView = CreateRenderTargetView(rtDesc);
+      if (desc.m_pExisitingNativeObjectRTView != nullptr)
+      {
+        rtDesc.m_hTexture     = hTexture;
+        rtDesc.m_uiFirstSlice = 0;
+        rtDesc.m_uiSliceCount = desc.m_uiArraySize;
+
+        pTexture->m_hDefaultRenderTargetView = CreateRenderTargetView(rtDesc);
+      }
+      else
+      {
+        // Enforce readonly on native objects as we may not have complete ownership on the object.
+        rtDesc.m_bReadOnly              = true;
+        rtDesc.m_hTexture               = hTexture;
+        rtDesc.m_uiFirstSlice           = 0;
+        rtDesc.m_uiSliceCount           = desc.m_uiArraySize;
+        rtDesc.m_pExisitingNativeObject = desc.m_pExisitingNativeObjectRTView;
+
+        pTexture->m_hDefaultRenderTargetView = CreateRenderTargetView(rtDesc);
+      }
     }
 
     return hTexture;

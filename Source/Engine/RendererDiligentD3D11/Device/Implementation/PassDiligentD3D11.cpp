@@ -1,17 +1,17 @@
-#include <RendererDiligent/RendererDiligentPCH.h>
+#include <RendererDiligentD3D11/RendererDiligentD3D11PCH.h>
 
-#include <RendererDiligent/CommandEncoder/CommandEncoderImplDiligent.h>
-#include <RendererDiligent/Device/DeviceDiligent.h>
-#include <RendererDiligent/Device/PassDiligent.h>
+#include <RendererDiligentD3D11/CommandEncoder/CommandEncoderImplDiligentD3D11.h>
+#include <RendererDiligentD3D11/Device/DeviceDiligentD3D11.h>
+#include <RendererDiligentD3D11/Device/PassDiligentD3D11.h>
 #include <RendererFoundation/CommandEncoder/CommandEncoderState.h>
 #include <RendererFoundation/CommandEncoder/ComputeCommandEncoder.h>
 #include <RendererFoundation/CommandEncoder/RenderCommandEncoder.h>
 
-xiiGALPassDiligent::xiiGALPassDiligent(xiiGALDevice& device) :
+xiiGALPassDiligentD3D11::xiiGALPassDiligentD3D11(xiiGALDevice& device) :
   xiiGALPass(device)
 {
   m_pCommandEncoderState = XII_DEFAULT_NEW(xiiGALCommandEncoderRenderState);
-  m_pCommandEncoderImpl  = XII_DEFAULT_NEW(xiiGALCommandEncoderImplDiligent, static_cast<xiiGALDeviceDiligent&>(device));
+  m_pCommandEncoderImpl  = XII_DEFAULT_NEW(xiiGALCommandEncoderImplDiligentD3D11, static_cast<xiiGALDeviceDiligentD3D11&>(device));
 
   m_pRenderCommandEncoder  = XII_DEFAULT_NEW(xiiGALRenderCommandEncoder, device, *m_pCommandEncoderState, *m_pCommandEncoderImpl, *m_pCommandEncoderImpl);
   m_pComputeCommandEncoder = XII_DEFAULT_NEW(xiiGALComputeCommandEncoder, device, *m_pCommandEncoderState, *m_pCommandEncoderImpl, *m_pCommandEncoderImpl);
@@ -19,35 +19,35 @@ xiiGALPassDiligent::xiiGALPassDiligent(xiiGALDevice& device) :
   m_pCommandEncoderImpl->m_pOwner = m_pRenderCommandEncoder.Borrow();
 }
 
-xiiGALPassDiligent::~xiiGALPassDiligent() = default;
+xiiGALPassDiligentD3D11::~xiiGALPassDiligentD3D11() = default;
 
-xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderingPlatform(const xiiGALRenderingSetup& renderingSetup, const char* szName)
+xiiGALRenderCommandEncoder* xiiGALPassDiligentD3D11::BeginRenderingPlatform(const xiiGALRenderingSetup& renderingSetup, const char* szName)
 {
   m_pCommandEncoderImpl->BeginRendering(renderingSetup);
 
   return m_pRenderCommandEncoder.Borrow();
 }
 
-void xiiGALPassDiligent::EndRenderingPlatform(xiiGALRenderCommandEncoder* pCommandEncoder)
+void xiiGALPassDiligentD3D11::EndRenderingPlatform(xiiGALRenderCommandEncoder* pCommandEncoder)
 {
   XII_ASSERT_DEV(m_pRenderCommandEncoder.Borrow() == pCommandEncoder, "Invalid command encoder");
 }
 
-xiiGALComputeCommandEncoder* xiiGALPassDiligent::BeginComputePlatform(const char* szName)
+xiiGALComputeCommandEncoder* xiiGALPassDiligentD3D11::BeginComputePlatform(const char* szName)
 {
   m_pCommandEncoderImpl->BeginCompute();
   return m_pComputeCommandEncoder.Borrow();
 }
 
-void xiiGALPassDiligent::EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder)
+void xiiGALPassDiligentD3D11::EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder)
 {
   XII_ASSERT_DEV(m_pComputeCommandEncoder.Borrow() == pCommandEncoder, "Invalid command encoder");
 }
 
-void xiiGALPassDiligent::BeginPass(const char* szName)
+void xiiGALPassDiligentD3D11::BeginPass(const char* szName)
 {
 }
 
-void xiiGALPassDiligent::EndPass()
+void xiiGALPassDiligentD3D11::EndPass()
 {
 }
