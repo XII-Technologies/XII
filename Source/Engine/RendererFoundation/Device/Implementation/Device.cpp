@@ -653,7 +653,7 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
     {
       xiiGALRenderTargetViewCreationDescription rtDesc;
 
-      if (desc.m_pExisitingNativeObjectRTView != nullptr)
+      if (desc.m_pExisitingNativeObjectRTView == nullptr)
       {
         rtDesc.m_hTexture     = hTexture;
         rtDesc.m_uiFirstSlice = 0;
