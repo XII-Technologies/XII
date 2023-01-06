@@ -57,4 +57,4 @@
 
 /// Whether to use double precision mode for large coordinates support.
 #undef XII_DOUBLE_PRECISION
-#define XII_DOUBLE_PRECISION XII_ON
+#define XII_DOUBLE_PRECISION XII_OFF

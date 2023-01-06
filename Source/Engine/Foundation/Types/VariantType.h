@@ -41,31 +41,18 @@ struct xiiVariantType
     Double,      ///< The variant stores a double.
     Color,       ///< The variant stores an xiiColor.
     Vector2,     ///< The variant stores an xiiVec2.
-    Vector2d,    ///< The variant stores an xiiVec2d.
     Vector3,     ///< The variant stores an xiiVec3.
-    Vector3d,    ///< The variant stores an xiiVec3d.
     Vector4,     ///< The variant stores an xiiVec4.
-    Vector4d,    ///< The variant stores an xiiVec4d.
     Vector2I,    ///< The variant stores an xiiVec2I32.
-    Vector2I64,  ///< The variant stores an xiiVec2I64.
     Vector3I,    ///< The variant stores an xiiVec3I32.
-    Vector3I64,  ///< The variant stores an xiiVec3I64.
     Vector4I,    ///< The variant stores an xiiVec4I32.
-    Vector4I64,  ///< The variant stores an xiiVec4I64.
     Vector2U,    ///< The variant stores an xiiVec2U32.
-    Vector2U64,  ///< The variant stores an xiiVec2U64.
     Vector3U,    ///< The variant stores an xiiVec3U32.
-    Vector3U64,  ///< The variant stores an xiiVec3U64.
     Vector4U,    ///< The variant stores an xiiVec4U32.
-    Vector4U64,  ///< The variant stores an xiiVec4U64.
     Quaternion,  ///< The variant stores an xiiQuat.
-    Quaterniond, ///< The variant stores an xiiQuatd.
     Matrix3,     ///< The variant stores an xiiMat3. A heap allocation is required to store this data type.
-    Matrix3d,    ///< The variant stores an xiiMat3d. A heap allocation is required to store this data type.
     Matrix4,     ///< The variant stores an xiiMat4. A heap allocation is required to store this data type.
-    Matrix4d,    ///< The variant stores an xiiMat4d. A heap allocation is required to store this data type.
     Transform,   ///< The variant stores an xiiTransform. A heap allocation is required to store this data type.
-    Transformd,  ///< The variant stores an xiiTransformd. A heap allocation is required to store this data type.
     String,      ///< The variant stores a string. A heap allocation is required to store this data type.
     StringView,  ///< The variant stores an xiiStringView.
     DataBuffer,  ///< The variant stores an xiiDataBuffer, a typedef to DynamicArray<xiiUInt8>. A heap allocation is required to store this data type.
@@ -73,6 +60,19 @@ struct xiiVariantType
     Uuid,        ///< The variant stores an xiiUuid value.
     Angle,       ///< The variant stores an xiiAngle value.
     ColorGamma,  ///< The variant stores an xiiColorGammaUB value.
+    Vector2d,    ///< The variant stores an xiiVec2d.
+    Vector3d,    ///< The variant stores an xiiVec3d. A heap allocation is required to store this data type.
+    Vector4d,    ///< The variant stores an xiiVec4d. A heap allocation is required to store this data type.
+    Vector2I64,  ///< The variant stores an xiiVec2I64.
+    Vector3I64,  ///< The variant stores an xiiVec3I64. A heap allocation is required to store this data type.
+    Vector4I64,  ///< The variant stores an xiiVec4I64. A heap allocation is required to store this data type.
+    Vector2U64,  ///< The variant stores an xiiVec2U64.
+    Vector3U64,  ///< The variant stores an xiiVec3U64. A heap allocation is required to store this data type.
+    Vector4U64,  ///< The variant stores an xiiVec4U64. A heap allocation is required to store this data type.
+    Quaterniond, ///< The variant stores an xiiQuatd. A heap allocation is required to store this data type.
+    Matrix3d,    ///< The variant stores an xiiMat3d. A heap allocation is required to store this data type.
+    Matrix4d,    ///< The variant stores an xiiMat4d. A heap allocation is required to store this data type.
+    Transformd,  ///< The variant stores an xiiTransformd. A heap allocation is required to store this data type.
     LastStandardType,
     /// *** Types that are flagged as 'StandardTypes' (see DetermineTypeFlags) ***
 

@@ -2,18 +2,18 @@
 
 #include <Core/Input/Declarations.h>
 #include <Core/World/Declarations.h>
-#include <CppProjectPlugin/CppProjectPluginDLL.h>
+#include <SourceTemplatePlugin/SourceTemplatePluginDLL.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameState/FallbackGameState.h>
 #include <GameEngine/GameState/GameState.h>
 
-class CppProjectGameState : public xiiFallbackGameState
+class SourceTemplateGameState : public xiiFallbackGameState
 {
-  XII_ADD_DYNAMIC_REFLECTION(CppProjectGameState, xiiFallbackGameState);
+  XII_ADD_DYNAMIC_REFLECTION(SourceTemplateGameState, xiiFallbackGameState);
 
 public:
-  CppProjectGameState();
-  ~CppProjectGameState();
+  SourceTemplateGameState();
+  ~SourceTemplateGameState();
 
   virtual xiiGameStatePriority DeterminePriority(xiiWorld* pWorld) const override;
 
@@ -29,6 +29,4 @@ private:
   virtual void OnDeactivation() override;
   virtual void BeforeWorldUpdate() override;
   virtual void AfterWorldUpdate() override;
-
-  xiiDeque<xiiGameObjectHandle> m_SpawnedObjects;
 };

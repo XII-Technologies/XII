@@ -405,10 +405,9 @@ void xiiQtEditorApp::SetupNewProject()
 {
   xiiToolsProject::GetSingleton()->CreateSubFolder("Editor");
   xiiToolsProject::GetSingleton()->CreateSubFolder("RuntimeConfigs");
-  xiiToolsProject::GetSingleton()->CreateSubFolder("Scenes");
-  xiiToolsProject::GetSingleton()->CreateSubFolder("Prefabs");
+  xiiToolsProject::GetSingleton()->CreateSubFolder("Content");
 
-  // write the default window config
+  // Write the default window config
   {
     xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
     sPath.AppendPath("Window.ddl");
@@ -418,7 +417,7 @@ void xiiQtEditorApp::SetupNewProject()
     desc.SaveToDDL(sPath).IgnoreResult();
   }
 
-  // write a stub input mapping
+  // Write a stub input mapping
   {
     xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
     sPath.AppendPath("InputConfig.ddl");

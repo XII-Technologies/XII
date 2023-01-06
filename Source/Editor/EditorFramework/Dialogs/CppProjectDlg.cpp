@@ -62,7 +62,7 @@ xiiResult xiiQtCppProjectDlg::GenerateSolution()
   const xiiStringBuilder sTargetDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
 
   xiiStringBuilder sSourceDir = xiiApplicationServices::GetSingleton()->GetApplicationDataFolder();
-  sSourceDir.AppendPath("CppProject");
+  sSourceDir.AppendPath("SourceTemplate");
 
   xiiDynamicArray<xiiFileStats> items;
   xiiOSFile::GatherAllItemsInFolder(items, sSourceDir, xiiFileSystemIteratorFlags::ReportFilesRecursive);
@@ -75,7 +75,7 @@ xiiResult xiiQtCppProjectDlg::GenerateSolution()
 
   xiiHybridArray<FileToCopy, 32> filesCopied;
 
-  // gather files
+  // Gather files
   {
     progress.BeginNextStep("Gathering source files");
 
@@ -87,14 +87,14 @@ xiiResult xiiQtCppProjectDlg::GenerateSolution()
       dstPath = srcPath;
       dstPath.MakeRelativeTo(sSourceDir).IgnoreResult();
 
-      dstPath.ReplaceAll("CppProject", sProjectName);
+      dstPath.ReplaceAll("SourceTemplate", sProjectName);
       dstPath.Prepend(sTargetDir, "/");
       dstPath.MakeCleanPath();
 
-      // don't copy files over that already exist (and may have edits)
+      // Do not copy files over that already exist (and may have edits)
       if (xiiOSFile::ExistsFile(dstPath))
       {
-        // if any file already exists, don't copy non-existing (user might have deleted unwanted sample files)
+        // If any file already exists, don't copy non-existing (user might have deleted unwanted sample files)
         filesCopied.Clear();
         break;
       }
@@ -138,8 +138,8 @@ xiiResult xiiQtCppProjectDlg::GenerateSolution()
         content.ReadAll(file);
       }
 
-      content.ReplaceAll("CppProject", sProjectName);
-      content.ReplaceAll("CPPPROJECT", sProjectNameUpper);
+      content.ReplaceAll("SourceTemplate", sProjectName);
+      content.ReplaceAll("SOURCE_TEMPLATE", sProjectNameUpper);
 
       {
         xiiFileWriter file;
@@ -153,9 +153,10 @@ xiiResult xiiQtCppProjectDlg::GenerateSolution()
       }
     }
   }
-  // run CMake
+
+  // Invoke CMake
   {
-    progress.BeginNextStep("Running CMake");
+    progress.BeginNextStep("Invoking CMake");
 
     const xiiString sSdkDir       = xiiFileSystem::GetSdkRootDirectory();
     const xiiString sBuildDir     = GetBuildDir();
@@ -288,7 +289,7 @@ void xiiQtCppProjectDlg::UpdateUI()
 xiiString xiiQtCppProjectDlg::GetTargetDir() const
 {
   xiiStringBuilder sTargetDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-  sTargetDir.AppendPath("CppSource");
+  sTargetDir.AppendPath("Source");
 
   return sTargetDir;
 }
@@ -296,7 +297,7 @@ xiiString xiiQtCppProjectDlg::GetTargetDir() const
 xiiString xiiQtCppProjectDlg::GetBuildDir() const
 {
   xiiStringBuilder sBuildDir;
-  sBuildDir.Format("{}/Build/{}", GetTargetDir(), GetGeneratorFolder());
+  sBuildDir.Format("{}/Build/{}", xiiToolsProject::GetSingleton()->GetProjectDirectory(), GetGeneratorFolder());
 
   return sBuildDir;
 }

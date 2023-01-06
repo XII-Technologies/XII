@@ -19,7 +19,7 @@ xiiApplicationServices::xiiApplicationServices() :
 xiiString xiiApplicationServices::GetApplicationUserDataFolder() const
 {
   xiiStringBuilder path = xiiOSFile::GetUserDataFolder();
-  path.AppendPath("xiiEngine Project", xiiApplication::GetApplicationInstance()->GetApplicationName());
+  path.AppendPath("XII", xiiApplication::GetApplicationInstance()->GetApplicationName());
   path.MakeCleanPath();
 
   return path;

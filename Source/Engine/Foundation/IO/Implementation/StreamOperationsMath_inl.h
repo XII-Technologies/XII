@@ -381,31 +381,33 @@ xiiResult DeserializeArray(xiiStreamReader& stream, xiiColorGammaUB* pArray, xii
 }
 
 
-// xiiAngle
-inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiAngle& Value)
+// xiiAngleTemplate
+template <typename Type>
+inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiAngleTemplate<Type>& Value)
 {
   stream << Value.GetRadian();
   return stream;
 }
 
-inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiAngle& Value)
+template <typename Type>
+inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiAngleTemplate<Type>& Value)
 {
-  float fRadian;
+  Type fRadian;
   stream >> fRadian;
   Value.SetRadian(fRadian);
   return stream;
 }
 
 template <typename Type>
-xiiResult SerializeArray(xiiStreamWriter& stream, const xiiAngle* pArray, xiiUInt64 uiCount)
+xiiResult SerializeArray(xiiStreamWriter& stream, const xiiAngleTemplate<Type>* pArray, xiiUInt64 uiCount)
 {
-  return stream.WriteBytes(pArray, sizeof(xiiAngle) * uiCount);
+  return stream.WriteBytes(pArray, sizeof(xiiAngleTemplate<Type>) * uiCount);
 }
 
 template <typename Type>
-xiiResult DeserializeArray(xiiStreamReader& stream, xiiAngle* pArray, xiiUInt64 uiCount)
+xiiResult DeserializeArray(xiiStreamReader& stream, xiiAngleTemplate<Type>* pArray, xiiUInt64 uiCount)
 {
-  const xiiUInt64 uiNumBytes = sizeof(xiiAngle) * uiCount;
+  const xiiUInt64 uiNumBytes = sizeof(xiiAngleTemplate<Type>) * uiCount;
   if (stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
     return XII_SUCCESS;
 

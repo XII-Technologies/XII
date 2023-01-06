@@ -27,8 +27,8 @@ int main(int argc, const char** argv)
   char**        argv           = nullptr;
   QApplication* pQtApplication = new QApplication(argc, const_cast<char**>(argv));
   pQtApplication->setApplicationName("xiiFileserve");
-  pQtApplication->setOrganizationDomain("www.xiiEngine.net");
-  pQtApplication->setOrganizationName("xiiEngine Project");
+  pQtApplication->setOrganizationDomain("www.xiiengine.com");
+  pQtApplication->setOrganizationName("XII");
   pQtApplication->setApplicationVersion("1.0.0");
 
   xiiRun_Startup(pApp).IgnoreResult();
