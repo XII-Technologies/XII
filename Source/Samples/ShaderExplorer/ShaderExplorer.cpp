@@ -223,9 +223,9 @@ void xiiShaderExplorerApp::AfterCoreSystemsStartup()
   XII_VERIFY(m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded(), "Failed to watch project directory");
 
   xiiFileSystem::AddDataDirectory("", "", ":", xiiFileSystem::AllowWrites).IgnoreResult();
-  xiiFileSystem::AddDataDirectory(">appdir/", "AppBin", "bin", xiiFileSystem::AllowWrites).IgnoreResult();                                    // writing to the binary directory
-  xiiFileSystem::AddDataDirectory(">appdir/", "ShaderCache", "shadercache", xiiFileSystem::AllowWrites).IgnoreResult();                       // for shader files
-  xiiFileSystem::AddDataDirectory(">user/xiiEngine Project/ShaderExplorer", "AppData", "appdata", xiiFileSystem::AllowWrites).IgnoreResult(); // app user data
+  xiiFileSystem::AddDataDirectory(">appdir/", "AppBin", "bin", xiiFileSystem::AllowWrites).IgnoreResult();                               // writing to the binary directory
+  xiiFileSystem::AddDataDirectory(">appdir/", "ShaderCache", "shadercache", xiiFileSystem::AllowWrites).IgnoreResult();                  // for shader files
+  xiiFileSystem::AddDataDirectory(">user/XII/Projects/ShaderExplorer", "AppData", "appdata", xiiFileSystem::AllowWrites).IgnoreResult(); // app user data
 
   xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").IgnoreResult();
   xiiFileSystem::AddDataDirectory(">project/", "Project", "project", xiiFileSystem::AllowWrites).IgnoreResult();

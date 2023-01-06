@@ -83,7 +83,7 @@ void xiiQtExportAndRunDlg::on_AddToolButton_clicked()
   appDir.MakeCleanPath();
   static QString sLastPath = appDir.GetData();
 
-  const QString sFile = QFileDialog::getOpenFileName(this, "Select Program", sLastPath, "Applicaation (*.exe)", nullptr, QFileDialog::Option::DontResolveSymlinks);
+  const QString sFile = QFileDialog::getOpenFileName(this, "Select Program", sLastPath, "Application (*.exe)", nullptr, QFileDialog::Option::DontResolveSymlinks);
 
   if (sFile.isEmpty())
     return;

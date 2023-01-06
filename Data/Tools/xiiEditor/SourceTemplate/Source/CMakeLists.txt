@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project (CppProject VERSION 1.0 LANGUAGES C CXX)
+project (SourceTemplate VERSION 1.0 LANGUAGES C CXX)
 
 if(PROJECT_IS_TOP_LEVEL)
 
@@ -8,7 +8,7 @@ if(PROJECT_IS_TOP_LEVEL)
 
 	message(STATUS "XII_SDK_DIR is set to '${XII_SDK_DIR}'")
 
-	# fix output directory
+	# Set output directory to the engine binary location
 	set (XII_OUTPUT_DIRECTORY_LIB "${XII_SDK_DIR}/Output/Lib" CACHE PATH "Where to store the compiled .lib files." FORCE)
 	set (XII_OUTPUT_DIRECTORY_DLL "${XII_SDK_DIR}/Output/Bin" CACHE PATH "Where to store the compiled .dll files." FORCE)
 
@@ -27,5 +27,5 @@ if(PROJECT_IS_TOP_LEVEL)
 
 endif()
 
-# include all projects in the sub-folders
+# Include all projects in the sub-folders
 xii_add_all_subdirs()

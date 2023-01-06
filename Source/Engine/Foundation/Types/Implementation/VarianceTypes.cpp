@@ -12,7 +12,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVarianceTypeBase, xiiNoBase, 1, xiiRTTINoAllo
   {
     XII_MEMBER_PROPERTY("Variance", m_fVariance)
   }
-    XII_END_PROPERTIES;
+  XII_END_PROPERTIES;
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
@@ -22,7 +22,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVarianceTypeFloat, xiiVarianceTypeBase, 1, xi
   {
     XII_MEMBER_PROPERTY("Value", m_Value)
   }
-    XII_END_PROPERTIES;
+  XII_END_PROPERTIES;
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
@@ -32,7 +32,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVarianceTypeDouble, xiiVarianceTypeBase, 1, x
   {
     XII_MEMBER_PROPERTY("Value", m_Value)
   }
-    XII_END_PROPERTIES;
+  XII_END_PROPERTIES;
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
@@ -42,7 +42,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVarianceTypeTime, xiiVarianceTypeBase, 1, xii
   {
     XII_MEMBER_PROPERTY("Value", m_Value)
   }
-    XII_END_PROPERTIES;
+  XII_END_PROPERTIES;
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
@@ -52,7 +52,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVarianceTypeAngle, xiiVarianceTypeBase, 1, xi
   {
     XII_MEMBER_PROPERTY("Value", m_Value)
   }
-    XII_END_PROPERTIES;
+  XII_END_PROPERTIES;
 }
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on

@@ -534,7 +534,7 @@ xiiString xiiEngineProcessGameApplication::FindProjectDirectory() const
 void xiiEngineProcessGameApplication::Init_FileSystem_ConfigureDataDirs()
 {
   xiiStringBuilder sAppDir   = ">sdk/Data/Tools/EditorEngineProcess";
-  xiiStringBuilder sUserData = ">user/xiiEngine Project/EditorEngineProcess";
+  xiiStringBuilder sUserData = ">user/XII/Engine/EditorEngineProcess";
 
   // make sure these directories exist
   xiiFileSystem::CreateDirectoryStructure(sAppDir).IgnoreResult();

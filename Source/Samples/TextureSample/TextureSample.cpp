@@ -96,7 +96,7 @@ public:
     xiiFileSystem::AddDataDirectory("", "", ":", xiiFileSystem::AllowWrites).IgnoreResult();
     xiiFileSystem::AddDataDirectory(">appdir/", "AppBin", "bin", xiiFileSystem::AllowWrites).IgnoreResult();              // writing to the binary directory
     xiiFileSystem::AddDataDirectory(">appdir/", "ShaderCache", "shadercache", xiiFileSystem::AllowWrites).IgnoreResult(); // for shader files
-    xiiFileSystem::AddDataDirectory(">user/xiiEngine Project/TextureSample", "AppData", "appdata",
+    xiiFileSystem::AddDataDirectory(">user/XII/Projects/TextureSample", "AppData", "appdata",
                                     xiiFileSystem::AllowWrites)
       .IgnoreResult(); // app user data
 
