@@ -21,6 +21,7 @@ public:
 private Q_SLOTS:
   void BoolChanged(const char* szCVar, bool newValue);
   void FloatChanged(const char* szCVar, float newValue);
+  void DoubleChanged(const char* szCVar, double newValue);
   void IntChanged(const char* szCVar, int newValue);
   void StringChanged(const char* szCVar, const char* newValue);
 
@@ -32,7 +33,6 @@ public:
 
 private:
   // void UpdateCVarsTable(bool bRecreate);
-
 
   void SendCVarUpdateToServer(const char* szName, const xiiCVarWidgetData& cvd);
   void SyncAllCVarsToServer();

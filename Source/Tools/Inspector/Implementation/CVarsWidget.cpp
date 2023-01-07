@@ -41,6 +41,7 @@ xiiQtCVarsWidget::xiiQtCVarsWidget(QWidget* parent) :
 
   connect(CVarWidget, &xiiQtCVarWidget::onBoolChanged, this, &xiiQtCVarsWidget::BoolChanged);
   connect(CVarWidget, &xiiQtCVarWidget::onFloatChanged, this, &xiiQtCVarsWidget::FloatChanged);
+  connect(CVarWidget, &xiiQtCVarWidget::onDoubleChanged, this, &xiiQtCVarsWidget::DoubleChanged);
   connect(CVarWidget, &xiiQtCVarWidget::onIntChanged, this, &xiiQtCVarsWidget::IntChanged);
   connect(CVarWidget, &xiiQtCVarWidget::onStringChanged, this, &xiiQtCVarsWidget::StringChanged);
 
@@ -83,6 +84,7 @@ void xiiQtCVarsWidget::ProcessTelemetry(void* pUnuseed)
         {
           it.Value().m_bValue = var.Value().m_bValue;
           it.Value().m_fValue = var.Value().m_fValue;
+          it.Value().m_dValue = var.Value().m_dValue;
           it.Value().m_sValue = var.Value().m_sValue;
           it.Value().m_iValue = var.Value().m_iValue;
         }
@@ -112,6 +114,8 @@ void xiiQtCVarsWidget::ProcessTelemetry(void* pUnuseed)
         case xiiCVarType::Float:
           msg.GetReader() >> sd.m_fValue;
           break;
+        case xiiCVarType::Double:
+          msg.GetReader() >> sd.m_dValue;
         case xiiCVarType::Int:
           msg.GetReader() >> sd.m_iValue;
           break;
@@ -174,6 +178,10 @@ void xiiQtCVarsWidget::SendCVarUpdateToServer(const char* szName, const xiiCVarW
       Msg.GetWriter() << cvd.m_fValue;
       break;
 
+    case xiiCVarType::Double:
+      Msg.GetWriter() << cvd.m_dValue;
+      break;
+
     case xiiCVarType::Int:
       Msg.GetWriter() << cvd.m_iValue;
       break;
@@ -197,6 +205,13 @@ void xiiQtCVarsWidget::FloatChanged(const char* szCVar, float newValue)
 {
   auto& cvarData    = m_CVars[szCVar];
   cvarData.m_fValue = newValue;
+  SendCVarUpdateToServer(szCVar, cvarData);
+}
+
+void xiiQtCVarsWidget::DoubleChanged(const char* szCVar, double newValue)
+{
+  auto& cvarData    = m_CVars[szCVar];
+  cvarData.m_dValue = newValue;
   SendCVarUpdateToServer(szCVar, cvarData);
 }
 
