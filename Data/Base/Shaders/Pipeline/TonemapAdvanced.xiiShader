@@ -1,0 +1,230 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+CAMERA_MODE
+
+[RENDERSTATE]
+
+DepthTest = false
+DepthWrite = false
+CullMode = CullMode_None
+
+[VERTEXSHADER]
+
+#include <Shaders/Pipeline/FullscreenTriangleVertexShader.h>
+
+[GEOMETRYSHADER]
+
+#include <Shaders/Pipeline/FullscreenTriangleStereoGeometryShader.h>
+
+[PIXELSHADER]
+
+#include <Shaders/Pipeline/FullscreenTriangleInterpolator.h>
+#include <Shaders/Common/Common.h>
+#include <Shaders/Common/GlobalConstants.h>
+#include "TonemapConstants.h"
+
+#ifndef RGB_TO_LUMINANCE
+#   define RGB_TO_LUMINANCE float3(0.212671, 0.715160, 0.072169)
+#endif
+
+Texture2D VignettingTexture;
+Texture2D NoiseTexture;
+
+Texture2DArray SceneColorTexture;
+Texture2DArray BloomTexture;
+
+float3 ScreenSpaceDither( float2 texCoords )
+{
+  float t = frac( GlobalTime );
+  texCoords = (texCoords + t) * (ViewportSize.xy / 256.0);
+
+  // Map to -0.5..1.5 bit range for an 8bit output target
+  return NoiseTexture.SampleLevel(PointSampler, texCoords, 0.0).rgb * (2.0 / 255.0) - (0.5 / 255.0);
+}
+
+float3 Uncharted2Tonemap(float3 x)
+{
+    // http://www.gdcvault.com/play/1012459/Uncharted_2__HDR_Lighting
+    // http://filmicgames.com/archives/75 - the coefficients are from here
+    float A = 0.15; // Shoulder Strength
+    float B = 0.50; // Linear Strength
+    float C = 0.10; // Linear Angle
+    float D = 0.20; // Toe Strength
+    float E = 0.02; // Toe Numerator
+    float F = 0.30; // Toe Denominator
+    return ((x * (A * x + C * B) + D * E) / ( x * (A * x + B) + D * F)) - E / F; // E/F = Toe Angle
+}
+
+float3 AcesTonemap(float3 x)
+{
+    // Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
+    const float A = 2.51;
+    const float B = 0.03;
+    const float C = 2.43;
+    const float D = 0.59;
+    const float E = 0.14;
+    return clamp((x * (A * x + B)) / (x * (C * x + D) + E), 0.0, 1.0);
+}
+
+float3 LottesTonemap(float3 x)
+{
+    // Lottes 2016, "Advanced Techniques and Optimization of HDR Color Pipelines"
+    const float3 A = float3(1.6, 1.6, 1.6);
+    const float3 D = float3(0.977, 0.977, 0.977);
+    const float3 HdrMax = float3(8.0, 8.0, 8.0);
+    const float3 MidIn = float3(0.18, 0.18, 0.18);
+    const float3 MidOut = float3(0.267, 0.267, 0.267);
+
+    const float3 B = (-pow(MidIn, A) + pow(HdrMax, A) * MidOut) / ((pow(HdrMax, A * D) - pow(MidIn, A * D)) * MidOut);
+
+    const float3 C = (pow(HdrMax, A * D) * pow(MidIn, A) - pow(HdrMax, A) * pow(MidIn, A * D) * MidOut) / ((pow(HdrMax, A * D) - pow(MidIn, A * D)) * MidOut);
+
+    return pow(x, A) / (pow(x, A * D) * B + C);
+}
+
+float3 UchimuraTonemap(float3 x, float P, float a, float m, float l, float c, float b)
+{
+    float l0 = ((P - m) * l) / a;
+    float L0 = m - m / a;
+    float L1 = m + (1.0 - m) / a;
+    float S0 = m + l0;
+    float S1 = m + a * l0;
+    float C2 = (a * P) / (P - S1);
+    float CP = -C2 / P;
+
+    float3 w0 = float3(1.0 - smoothstep(0.0, m, x));
+    float3 w2 = float3(step(m + l0, x));
+    float3 w1 = float3(1.0 - w0 - w2);
+
+    float3 T = float3(m * pow(x / m, float3(c, c, c)) + b);
+    float3 S = float3(P - (P - S1) * exp(CP * (x - S0)));
+    float3 L = float3(m + a * (x - m));
+
+    return T * w0 + L * w1 + S * w2;
+}
+
+float3 UchimuraTonemap(float3 x)
+{
+  const float P = 1.0;  // max display brightness
+  const float a = 1.0;  // contrast
+  const float m = 0.22; // linear section start
+  const float l = 0.4;  // linear section length
+  const float c = 1.33; // black
+  const float b = 0.0;  // pedestal
+
+  return UchimuraTonemap(x, P, a, m, l, c, b);
+}
+
+float3 ToneMap(in float3 f3Color, float fAveLogLum)
+{
+    // const float middleGray = 1.03 - 2 / (2 + log10(fAveLogLum + 1));
+    float middleGray = MiddleGray;
+
+    // Compute scale factor such that average luminance maps to middle gray
+    float fLumScale = middleGray / fAveLogLum;
+
+    f3Color = max(f3Color, float3(0.0, 0.0, 0.0));
+    float fInitialPixelLum = max(dot(RGB_TO_LUMINANCE, f3Color), 1e-10);
+    float fScaledPixelLum = fInitialPixelLum * fLumScale;
+    float3 f3ScaledColor = f3Color * fLumScale;
+
+    float whitePoint = WhitePoint;
+
+    if (ToneMappingMode == TONE_MAPPING_MODE_EXP)
+    {
+        float  fToneMappedLum = 1.0 - exp( -fScaledPixelLum );
+        return fToneMappedLum * pow(f3Color / fInitialPixelLum, LuminanceSaturation * float3(1.0, 1.0, 1.0));
+    }
+    else if (ToneMappingMode == TONE_MAPPING_MODE_REINHARD || ToneMappingMode == TONE_MAPPING_MODE_REINHARD_MOD)
+    {
+        // http://www.cs.utah.edu/~reinhard/cdrom/tonemap.pdf
+        // http://imdoingitwrong.wordpress.com/2010/08/19/why-reinhard-desaturates-my-blacks-3/
+        // http://content.gpwiki.org/index.php/D3DBook:High-Dynamic_Range_Rendering
+
+        float  L_xy = fScaledPixelLum;
+        float  fToneMappedLum = 0;
+
+        if (ToneMappingMode == TONE_MAPPING_MODE_REINHARD)
+        {
+            fToneMappedLum = L_xy / (1.0 + L_xy);
+        }
+        else
+        {
+            fToneMappedLum = L_xy * (1.0 + L_xy / (whitePoint * whitePoint)) / (1.0 + L_xy);
+        }
+
+        return fToneMappedLum * pow(f3Color / fInitialPixelLum, LuminanceSaturation * float3(1.0, 1.0, 1.0));
+    }
+    else if (ToneMappingMode == TONE_MAPPING_MODE_UNCHARTED2)
+    {
+        // http://filmicgames.com/archives/75
+        float ExposureBias = 2.0;
+        float3 curr = Uncharted2Tonemap(ExposureBias * f3ScaledColor);
+        float3 whiteScale = float3(1.0, 1.0, 1.0) / Uncharted2Tonemap(float3(whitePoint, whitePoint, whitePoint));
+        return curr * whiteScale;
+    }
+    else if (ToneMappingMode == TONE_MAPPING_FILMIC_ALU)
+    {
+        // http://www.gdcvault.com/play/1012459/Uncharted_2__HDR_Lighting
+        float3 f3ToneMappedColor = max(f3ScaledColor - float3(0.004, 0.004, 0.004), float3(0.0, 0.0, 0.0));
+        f3ToneMappedColor = (f3ToneMappedColor * (6.2 * f3ToneMappedColor + float3(0.5, 0.5, 0.5))) / 
+                            (f3ToneMappedColor * (6.2 * f3ToneMappedColor + float3(1.7, 1.7, 1.7))+ float3(0.06, 0.06, 0.06));
+        // Result has 1/2.2 gamma baked in
+        return pow(f3ToneMappedColor, float3(2.2, 2.2, 2.2));
+    }
+    else if (ToneMappingMode == TONE_MAPPING_LOGARITHMIC)
+    {
+        // http://www.mpi-inf.mpg.de/resources/tmo/logmap/logmap.pdf
+        float fToneMappedLum = log10(1.0 + fScaledPixelLum) / log10(1.0 + whitePoint);
+	    return fToneMappedLum * pow(f3Color / fInitialPixelLum, LuminanceSaturation * float3(1.0, 1.0, 1.0));
+    }
+    else if (ToneMappingMode == TONE_MAPPING_ADAPTIVE_LOG)
+    {
+        // http://www.mpi-inf.mpg.de/resources/tmo/logmap/logmap.pdf
+        float Bias = 0.85;
+        float fToneMappedLum = 
+            1.0 / log10(1.0 + whitePoint) *
+            log(1.0 + fScaledPixelLum) / log( 2.0 + 8.0 * pow( fScaledPixelLum / whitePoint, log(Bias) / log(0.5)) );
+	    return fToneMappedLum * pow(f3Color / fInitialPixelLum, LuminanceSaturation * float3(1.0, 1.0, 1.0));
+    }
+    else if (ToneMappingMode == TONE_MAPPING_LOTTES)
+    {
+        return LottesTonemap(f3Color);
+    }
+    else if (ToneMappingMode == TONE_MAPPING_UCHIMURA)
+    {
+        return UchimuraTonemap(f3Color);
+    }
+    else if (ToneMappingMode == TONE_MAPPING_UNREAL)
+    {
+        // Unreal 3, Documentation: "Color Grading"
+        // Adapted to be close to Tonemap_ACES, with similar range
+        // Gamma 2.2 correction is baked in, don't use with sRGB conversion!
+
+        return f3Color / ((f3Color + float3(0.155, 0.155, 0.155)) * float3(1.019, 1.019, 1.019));
+    }
+    else if (ToneMappingMode == TONE_MAPPING_ACES)
+    {
+        return AcesTonemap(f3Color);
+    }
+
+    return f3Color;
+}
+
+float4 main(PS_IN Input) : SV_Target
+{
+#if CAMERA_MODE == CAMERA_MODE_STEREO
+  s_ActiveCameraEyeIndex = Input.RenderTargetArrayIndex;
+#endif
+
+  float4 sceneColor = SceneColorTexture.Load(int4(Input.Position.xy, s_ActiveCameraEyeIndex, 0));
+  sceneColor.rgb *= Exposure;
+
+  // Tonemapping
+  float3 color = ToneMap(sceneColor.rgb, AverageLogLum);
+
+  return float4(color, sceneColor.a);
+}

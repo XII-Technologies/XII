@@ -71,11 +71,14 @@ bool xiiTonemapPass::GetRenderTargetDescriptions(const xiiView& view, const xiiA
     if (const xiiGALTexture* pTexture = pDevice->GetTexture(renderTargets.m_hRTs[0]))
     {
       const xiiGALTextureCreationDescription& desc = pTexture->GetDescription();
-      // if (desc.m_uiWidth != pColorInput->m_uiWidth || desc.m_uiHeight != pColorInput->m_uiHeight)
-      //{
-      //  xiiLog::Error("Render target sizes don't match");
-      //  return false;
-      //}
+
+#if 0
+      if (desc.m_uiWidth != pColorInput->m_uiWidth || desc.m_uiHeight != pColorInput->m_uiHeight)
+      {
+        xiiLog::Error("Render target sizes don't match");
+        return false;
+      }
+#endif
 
       outputs[m_PinOutput.m_uiOutputIndex].SetAsRenderTarget(pColorInput->m_uiWidth, pColorInput->m_uiHeight, desc.m_Format);
       outputs[m_PinOutput.m_uiOutputIndex].m_uiArraySize = pColorInput->m_uiArraySize;

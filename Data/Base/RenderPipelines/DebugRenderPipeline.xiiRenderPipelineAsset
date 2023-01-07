@@ -86,7 +86,7 @@ o
 		b %Active{1}
 		Uuid %Input{u4{15979557900930756743,15301544558070750362}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x12534943,0x563B15C4}}
+		Vec2 %Node::Pos{f{0x852EA743,0x1D5CD9C3}}
 		Uuid %Output{u4{16194502608287932435,11774659519477416323}}
 	}
 }
@@ -102,7 +102,7 @@ o
 		Uuid %DepthStencil{u4{14123438881861949690,12337044987432749122}}
 		s %Message{""}
 		s %Name{"SimplePass"}
-		Vec2 %Node::Pos{f{0x00007BC3,0x004017C4}}
+		Vec2 %Node::Pos{f{0x6FEC2BC3,0x975CD9C3}}
 	}
 }
 o
@@ -136,7 +136,7 @@ o
 		Uuid %Color7{u4{1882383531854882164,2868685346905570095}}
 		Uuid %DepthStencil{u4{880926667688341349,11367579072065247955}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x428FD143,0x05CB1BC4}}
+		Vec2 %Node::Pos{f{0x491F0444,0x1912D9C3}}
 	}
 }
 o
@@ -163,7 +163,7 @@ o
 		Uuid %Color{u4{10595549824126491381,4370258425242549633}}
 		Uuid %DepthStencil{u4{1247854000474290526,11883575433841546478}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0xB9F446C4,0x2CFD15C4}}
+		Vec2 %Node::Pos{f{0x50D136C4,0xF8EE00C4}}
 		s %ShadingQuality{"xiiForwardRenderShadingQuality::Normal"}
 	}
 }
@@ -219,7 +219,7 @@ o
 		Vec2 %MarqueePickPos0{f{0,0}}
 		Vec2 %MarqueePickPos1{f{0,0}}
 		s %Name{"EditorPickingPass"}
-		Vec2 %Node::Pos{f{0x5A369DC3,0x3157B7C3}}
+		Vec2 %Node::Pos{f{0xE6B2A9C3,0x1AE262C4}}
 		b %PickSelected{0}
 		b %PickTransparent{0}
 		Vec2 %PickingPosition{f{0,0}}
@@ -251,7 +251,7 @@ o
 		s %Format{"xiiGALResourceFormat::D24S8"}
 		s %MSAA_Mode{"xiiGALMSAASampleCount::FourSamples"}
 		s %Name{"DepthStencil"}
-		Vec2 %Node::Pos{f{0x6A81ECC4,0x0731DFC3}}
+		Vec2 %Node::Pos{f{0x48A4EAC4,0x296FF6C3}}
 		Uuid %Output{u4{12435465676689222153,5086440773997006539}}
 	}
 }
@@ -295,7 +295,7 @@ o
 		s %Format{"xiiGALResourceFormat::RGBAUByteNormalizedsRGB"}
 		s %MSAA_Mode{"xiiGALMSAASampleCount::FourSamples"}
 		s %Name{"ColorSource"}
-		Vec2 %Node::Pos{f{0xA89E9EC4,0x320B1BC4}}
+		Vec2 %Node::Pos{f{0x26CE8FC4,0xB8C90BC4}}
 		Uuid %Output{u4{16295825073444485828,4971536062717786227}}
 	}
 }
@@ -375,7 +375,7 @@ o
 		Uuid %Color{u4{2284003576583065243,12497344949940094184}}
 		Uuid %DepthStencil{u4{1016260233301000877,2746538673464075022}}
 		s %Name{"EditorRenderPass"}
-		Vec2 %Node::Pos{f{0x29FD84C4,0xD2CA15C4}}
+		Vec2 %Node::Pos{f{0x768276C4,0xC5CF00C4}}
 		Uuid %SSAO{u4{1687059502135556263,9115484863453342950}}
 		s %ShadingQuality{"xiiForwardRenderShadingQuality::Normal"}
 		b %WriteDepth{1}
@@ -390,7 +390,7 @@ o
 	{
 		b %Active{1}
 		s %Name{"EditorGridExtractor"}
-		Vec2 %Node::Pos{f{0x8B82B7C2,0x10216AC4}}
+		Vec2 %Node::Pos{f{0x60238CC2,0xA8D765C4}}
 		Uuid %SceneContext{u4{0,0}}
 	}
 }
@@ -406,7 +406,7 @@ o
 		Uuid %DepthStencil{u4{1994856511405970754,6089640682213672007}}
 		Color %HighlightColor{f{0xB2B1313F,0x8887073F,0xD9D8D83D,0x0000803F}}
 		s %Name{"EditorSelectionPass"}
-		Vec2 %Node::Pos{f{0xC1A204C2,0x11FA16C4}}
+		Vec2 %Node::Pos{f{0x2D80A942,0xD451D9C3}}
 		f %OverlayOpacity{0}
 	}
 }
@@ -493,7 +493,7 @@ o
 		Uuid %Color{u4{311524437466510679,11785173779620026207}}
 		Uuid %DepthStencil{u4{11520475379869260063,14353781294673675876}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0xCABE09C4,0x033B06C4}}
+		Vec2 %Node::Pos{f{0xFD19E6C3,0x056AD9C3}}
 		Uuid %ResolvedDepth{u4{9495999238453666896,10626838854587317545}}
 		s %ShadingQuality{"xiiForwardRenderShadingQuality::Normal"}
 	}
@@ -540,7 +540,7 @@ o
 		f %MaxScreenSpaceRadius{0x0000803F}
 		f %MipLevelScale{0x00002041}
 		s %Name{"AOPass"}
-		Vec2 %Node::Pos{f{0x46959DC4,0x4732EBC3}}
+		Vec2 %Node::Pos{f{0xAF6499C4,0x5169CFC3}}
 		Uuid %Output{u4{13836367698555260666,5575662801616087061}}
 		f %PositionBias{0x0000A040}
 		f %Radius{0x0000803F}
@@ -582,7 +582,7 @@ o
 		b %Active{1}
 		Uuid %DepthStencil{u4{15807519551064411215,77247858918918714}}
 		s %Name{"DepthPrePass"}
-		Vec2 %Node::Pos{f{0x6908D3C4,0x79FCF9C3}}
+		Vec2 %Node::Pos{f{0x403DD5C4,0x9EF3F5C3}}
 	}
 }
 o
@@ -621,7 +621,7 @@ o
 		b %Active{1}
 		f %MaxScreenSize{0x00008042}
 		s %Name{"EditorShapeIconsExtractor"}
-		Vec2 %Node::Pos{f{0xD143A4C2,0xBEB075C4}}
+		Vec2 %Node::Pos{f{0x682094C2,0x418E74C4}}
 		Uuid %SceneContext{u4{0,0}}
 		f %Size{0x0000803F}
 	}
