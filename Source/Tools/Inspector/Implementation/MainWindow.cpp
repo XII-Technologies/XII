@@ -255,8 +255,6 @@ void xiiQtMainWindow::UpdateNetwork()
 
   if (bResetStats)
   {
-
-
     xiiQtMainWidget::s_pWidget->ResetStats();
     xiiQtLogDockWidget::s_pWidget->ResetStats();
     xiiQtMemoryWidget::s_pWidget->ResetStats();
