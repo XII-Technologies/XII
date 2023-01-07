@@ -38,7 +38,7 @@ o
 		Uuid %Color{u4{18241360021062401927,4752358320042460014}}
 		Uuid %DepthStencil{u4{455014938938216958,12850513387508348541}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x5DEF4AC4,0x64AE7EC3}}
+		Vec2 %Node::Pos{f{0x536655C4,0x91675EC3}}
 		s %ShadingQuality{"xiiForwardRenderShadingQuality::Normal"}
 	}
 }
@@ -53,7 +53,7 @@ o
 		Uuid %Color{u4{11977712982347566452,6081215919335485415}}
 		Uuid %DepthStencil{u4{16401994120477672676,14789054799330290876}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x26AE0EC4,0x36A965C3}}
+		Vec2 %Node::Pos{f{0x876209C4,0xD31A5FC3}}
 		Uuid %ResolvedDepth{u4{15118319717855427782,7566771301105821867}}
 		s %ShadingQuality{"xiiForwardRenderShadingQuality::Normal"}
 	}
@@ -71,7 +71,7 @@ o
 		s %Format{"xiiGALResourceFormat::RGBAHalf"}
 		s %MSAA_Mode{"xiiGALMSAASampleCount::FourSamples"}
 		s %Name{"ColorSource"}
-		Vec2 %Node::Pos{f{0xD15AC4C4,0xBE8896C3}}
+		Vec2 %Node::Pos{f{0x4ED5A8C4,0x82D88EC3}}
 		Uuid %Output{u4{17090548153543632830,13319031493794220399}}
 	}
 }
@@ -144,7 +144,7 @@ o
 		b %Active{1}
 		Uuid %Input{u4{6567754251935710555,6384056395474818542}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0xD6A85FC3,0xB89C65C3}}
+		Vec2 %Node::Pos{f{0xE0B362C3,0x487F5DC3}}
 		Uuid %Output{u4{13425322970022544255,8561719646073643126}}
 	}
 }
@@ -197,7 +197,7 @@ o
 		b %Active{1}
 		Uuid %Input{u4{4430619014450742974,14017138917057919658}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x856D87C4,0xA444A2C2}}
+		Vec2 %Node::Pos{f{0x270790C4,0x62717AC2}}
 		Uuid %Output{u4{920053572201142377,10962662567231694552}}
 	}
 }
@@ -290,7 +290,7 @@ o
 		s %Format{"xiiGALResourceFormat::D24S8"}
 		s %MSAA_Mode{"xiiGALMSAASampleCount::FourSamples"}
 		s %Name{"DepthStencil"}
-		Vec2 %Node::Pos{f{0x2D2DE2C4,0xB9ED2EC3}}
+		Vec2 %Node::Pos{f{0x5E87DFC4,0x0E2548C3}}
 		Uuid %Output{u4{11878451819111558318,16597073390835690512}}
 	}
 }
@@ -305,7 +305,7 @@ o
 		Uuid %Color{u4{17962340730079701224,9157045855951112511}}
 		Uuid %DepthStencil{u4{9389264645623741941,13785171155961945529}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x750089C4,0xC0EB7FC3}}
+		Vec2 %Node::Pos{f{0x6E4B95C4,0x80A05DC3}}
 		Uuid %SSAO{u4{3819605327869598113,11524678961001285143}}
 		s %ShadingQuality{"xiiForwardRenderShadingQuality::Normal"}
 		b %WriteDepth{0}
@@ -342,7 +342,7 @@ o
 		Uuid %Color7{u4{11365942564643252996,13832720594857860551}}
 		Uuid %DepthStencil{u4{6635593403476848306,18315690400253723086}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x73F59741,0x0DB666C3}}
+		Vec2 %Node::Pos{f{0xC24DB041,0x938D5BC3}}
 	}
 }
 o
