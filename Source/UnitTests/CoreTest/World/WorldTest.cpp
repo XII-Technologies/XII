@@ -120,9 +120,27 @@ namespace
     {
     }
 
-    virtual void GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_CoordinateSystem) const override
+    virtual void GetCoordinateSystemFloat(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_CoordinateSystem) const override
     {
       const xiiMat3 mTmp = xiiGraphicsUtils::CreateLookAtViewMatrix(-vGlobalPosition, xiiVec3(0, 0, 1), xiiHandedness::LeftHanded);
+
+      out_CoordinateSystem.m_vRightDir   = mTmp.GetRow(0);
+      out_CoordinateSystem.m_vUpDir      = mTmp.GetRow(1);
+      out_CoordinateSystem.m_vForwardDir = mTmp.GetRow(2);
+    }
+
+    virtual void GetCoordinateSystemDouble(const xiiVec3d& vGlobalPosition, xiiCoordinateSystemDouble& out_CoordinateSystem) const override
+    {
+      const xiiMat3d mTmp = xiiGraphicsUtils::CreateLookAtViewMatrix(-vGlobalPosition, xiiVec3d(0, 0, 1), xiiHandedness::LeftHanded);
+
+      out_CoordinateSystem.m_vRightDir   = mTmp.GetRow(0);
+      out_CoordinateSystem.m_vUpDir      = mTmp.GetRow(1);
+      out_CoordinateSystem.m_vForwardDir = mTmp.GetRow(2);
+    }
+
+    virtual void GetCoordinateSystemReal(const xiiVec3Real& vGlobalPosition, xiiCoordinateSystemReal& out_CoordinateSystem) const override
+    {
+      const xiiMat3Real mTmp = xiiGraphicsUtils::CreateLookAtViewMatrix(-vGlobalPosition, xiiVec3Real(0, 0, 1), xiiHandedness::LeftHanded);
 
       out_CoordinateSystem.m_vRightDir   = mTmp.GetRow(0);
       out_CoordinateSystem.m_vUpDir      = mTmp.GetRow(1);

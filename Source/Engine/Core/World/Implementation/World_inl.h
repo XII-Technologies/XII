@@ -415,7 +415,7 @@ XII_FORCE_INLINE const xiiSpatialSystem* xiiWorld::GetSpatialSystem() const
 
 XII_ALWAYS_INLINE void xiiWorld::GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_CoordinateSystem) const
 {
-  m_Data.m_pCoordinateSystemProvider->GetCoordinateSystem(vGlobalPosition, out_CoordinateSystem);
+  m_Data.m_pCoordinateSystemProvider->GetCoordinateSystemFloat(vGlobalPosition, out_CoordinateSystem);
 }
 
 XII_ALWAYS_INLINE xiiCoordinateSystemProvider& xiiWorld::GetCoordinateSystemProvider()
