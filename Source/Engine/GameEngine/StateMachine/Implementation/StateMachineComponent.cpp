@@ -208,7 +208,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiStateMachineComponent, 1, xiiComponentMode::Static)
 
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("Gameplay"),
+    new xiiCategoryAttribute("Gameplay/Logic"),
   }
   XII_END_ATTRIBUTES;
 }

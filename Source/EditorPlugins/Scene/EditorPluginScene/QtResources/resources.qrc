@@ -83,7 +83,8 @@
     <file>xiiSensorCylinderComponent.svg</file>
     <file>xiiSensorSphereComponent.svg</file>
     <file>xiiStateMachineComponent.svg</file>
-	<file>xiiOccluderComponent.png</file>
+	  <file>xiiOccluderComponent.png</file>
+    <file>xiiForwardEventsToGameStateComponent.png</file>
   </qresource>
   <qresource prefix="GroupIcons">
     <file>Size.png</file>
