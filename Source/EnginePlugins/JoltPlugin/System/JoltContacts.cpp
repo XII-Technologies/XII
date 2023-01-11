@@ -17,6 +17,23 @@ xiiCVarBool cvar_PhysicsReactionsVisDiscardedImpacts("Jolt.Reactions.VisDiscarde
 xiiCVarBool cvar_PhysicsReactionsVisSlides("Jolt.Reactions.VisSlides", false, xiiCVarFlags::Default, "Visualize active slide reactions.");
 xiiCVarBool cvar_PhysicsReactionsVisRolls("Jolt.Reactions.VisRolls", false, xiiCVarFlags::Default, "Visualize active roll reactions.");
 
+void xiiJoltContactListener::RemoveTrigger(const xiiJoltTriggerComponent* pTrigger)
+{
+  XII_LOCK(m_TriggerMutex);
+
+  for (auto it = m_Trigs.GetIterator(); it.IsValid();)
+  {
+    if (it.Value().m_pTrigger == pTrigger)
+    {
+      it = m_Trigs.Remove(it);
+    }
+    else
+    {
+      ++it;
+    }
+  }
+}
+
 void xiiJoltContactListener::OnContactAdded(const JPH::Body& inBody0, const JPH::Body& inBody1, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
 {
   const xiiUInt64 uiBody0id = inBody0.GetID().GetIndexAndSequenceNumber();

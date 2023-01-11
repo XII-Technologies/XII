@@ -77,6 +77,8 @@ public:
   xiiMutex                      m_TriggerMutex;
   xiiMap<xiiUInt64, TriggerObj> m_Trigs;
 
+  void RemoveTrigger(const xiiJoltTriggerComponent* pTrigger);
+
   virtual void OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override;
   virtual void OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override;
 
