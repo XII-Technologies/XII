@@ -85,6 +85,7 @@
     <file>xiiStateMachineComponent.svg</file>
 	  <file>xiiOccluderComponent.png</file>
     <file>xiiForwardEventsToGameStateComponent.png</file>
+    <file>xiiCommentComponent.png</file>
   </qresource>
   <qresource prefix="GroupIcons">
     <file>Size.png</file>

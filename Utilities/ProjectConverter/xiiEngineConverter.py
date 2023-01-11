@@ -121,7 +121,8 @@ class Static:
 
         [".jpg", ".jpg"],
         [".png", ".png"],
-        [".svg", ".svg"]
+        [".svg", ".svg"],
+        [".dds", ".dds"]
     ]
 
     xiiEnginePath: pathlib.Path = None
