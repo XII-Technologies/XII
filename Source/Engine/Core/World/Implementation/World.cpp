@@ -105,9 +105,11 @@ void xiiWorld::Clear()
     }
   }
 
-  // make sure all dead objects and components are cleared right now
+  // Make sure all dead objects and components are cleared right now
   DeleteDeadObjects();
   DeleteDeadComponents();
+
+  xiiEventMessageHandlerComponent::ClearGlobalEventHandlersForWorld(this);
 }
 
 void xiiWorld::SetCoordinateSystemProvider(const xiiSharedPtr<xiiCoordinateSystemProvider>& pProvider)

@@ -145,6 +145,16 @@ xiiArrayPtr<xiiComponentHandle> xiiEventMessageHandlerComponent::GetAllGlobalEve
   return xiiArrayPtr<xiiComponentHandle>();
 }
 
+void xiiEventMessageHandlerComponent::ClearGlobalEventHandlersForWorld(const xiiWorld* pWorld)
+{
+  xiiUInt32 uiWorldIndex = pWorld->GetIndex();
+
+  if (uiWorldIndex < s_GlobalEventHandlerPerWorld.GetCount())
+  {
+    s_GlobalEventHandlerPerWorld[uiWorldIndex]->Clear();
+  }
+}
+
 
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_EventMessageHandlerComponent);

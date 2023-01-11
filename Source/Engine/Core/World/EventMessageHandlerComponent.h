@@ -57,6 +57,8 @@ public:
   /// \brief Returns all global event handler for the given world.
   static xiiArrayPtr<xiiComponentHandle> GetAllGlobalEventHandler(const xiiWorld* pWorld);
 
+  static void ClearGlobalEventHandlersForWorld(const xiiWorld* pWorld);
+
 private:
   bool m_bDebugOutput                = false;
   bool m_bIsGlobalEventHandler       = false;
