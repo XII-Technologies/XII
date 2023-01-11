@@ -5,14 +5,19 @@
 #include <Core/World/Declarations.h>
 #include <Foundation/Types/RefCounted.h>
 
-struct XII_CORE_DLL xiiCoordinateSystem
+template <typename Type>
+struct xiiCoordinateSystemTemplate
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiVec3 m_vForwardDir;
-  xiiVec3 m_vRightDir;
-  xiiVec3 m_vUpDir;
+  xiiVec3Template<Type> m_vForwardDir;
+  xiiVec3Template<Type> m_vRightDir;
+  xiiVec3Template<Type> m_vUpDir;
 };
+
+using xiiCoordinateSystem       = xiiCoordinateSystemTemplate<float>;
+using xiiCoordinateSystemDouble = xiiCoordinateSystemTemplate<double>;
+using xiiCoordinateSystemReal   = xiiCoordinateSystemTemplate<xiiReal>;
 
 class XII_CORE_DLL xiiCoordinateSystemProvider : public xiiRefCounted
 {
@@ -24,7 +29,9 @@ public:
 
   virtual ~xiiCoordinateSystemProvider() {}
 
-  virtual void GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_CoordinateSystem) const = 0;
+  virtual void GetCoordinateSystemFloat(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_CoordinateSystem) const         = 0;
+  virtual void GetCoordinateSystemDouble(const xiiVec3d& vGlobalPosition, xiiCoordinateSystemDouble& out_CoordinateSystem) const = 0;
+  virtual void GetCoordinateSystemReal(const xiiVec3Real& vGlobalPosition, xiiCoordinateSystemReal& out_CoordinateSystem) const  = 0;
 
 protected:
   friend class xiiWorld;

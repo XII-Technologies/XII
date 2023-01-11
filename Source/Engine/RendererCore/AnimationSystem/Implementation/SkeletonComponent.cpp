@@ -256,7 +256,7 @@ void xiiSkeletonComponent::BuildSkeletonVisualization(xiiMsgAnimationPoseUpdated
   bones.SetCount(msg.m_pSkeleton->GetJointCount());
   m_LinesSkeleton.Reserve(m_LinesSkeleton.GetCount() + msg.m_pSkeleton->GetJointCount());
 
-  const xiiVec3 vBoneDir = xiiBasisAxis::GetBasisVector(msg.m_pSkeleton->m_BoneDirection);
+  const xiiVec3 vBoneDir = xiiBasisAxis::GetBasisVectorFloat(msg.m_pSkeleton->m_BoneDirection);
 
   auto renderBone = [&](int currentBone, int parentBone) {
     if (parentBone == ozz::animation::Skeleton::kNoParent)

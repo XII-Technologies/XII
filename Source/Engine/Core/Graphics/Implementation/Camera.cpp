@@ -12,11 +12,25 @@ public:
   {
   }
 
-  virtual void GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_CoordinateSystem) const override
+  virtual void GetCoordinateSystemFloat(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_CoordinateSystem) const override
   {
-    out_CoordinateSystem.m_vForwardDir = xiiBasisAxis::GetBasisVector(m_ForwardAxis);
-    out_CoordinateSystem.m_vRightDir   = xiiBasisAxis::GetBasisVector(m_RightAxis);
-    out_CoordinateSystem.m_vUpDir      = xiiBasisAxis::GetBasisVector(m_UpAxis);
+    out_CoordinateSystem.m_vForwardDir = xiiBasisAxis::GetBasisVectorFloat(m_ForwardAxis);
+    out_CoordinateSystem.m_vRightDir   = xiiBasisAxis::GetBasisVectorFloat(m_RightAxis);
+    out_CoordinateSystem.m_vUpDir      = xiiBasisAxis::GetBasisVectorFloat(m_UpAxis);
+  }
+
+  virtual void GetCoordinateSystemDouble(const xiiVec3d& vGlobalPosition, xiiCoordinateSystemDouble& out_CoordinateSystem) const override
+  {
+    out_CoordinateSystem.m_vForwardDir = xiiBasisAxis::GetBasisVectorDouble(m_ForwardAxis);
+    out_CoordinateSystem.m_vRightDir   = xiiBasisAxis::GetBasisVectorDouble(m_RightAxis);
+    out_CoordinateSystem.m_vUpDir      = xiiBasisAxis::GetBasisVectorDouble(m_UpAxis);
+  }
+
+  virtual void GetCoordinateSystemReal(const xiiVec3Real& vGlobalPosition, xiiCoordinateSystemReal& out_CoordinateSystem) const override
+  {
+    out_CoordinateSystem.m_vForwardDir = xiiBasisAxis::GetBasisVectorReal(m_ForwardAxis);
+    out_CoordinateSystem.m_vRightDir   = xiiBasisAxis::GetBasisVectorReal(m_RightAxis);
+    out_CoordinateSystem.m_vUpDir      = xiiBasisAxis::GetBasisVectorReal(m_UpAxis);
   }
 
   xiiBasisAxis::Enum m_ForwardAxis = xiiBasisAxis::PositiveX;
@@ -123,7 +137,7 @@ xiiVec3 xiiCamera::MapExternalToInternal(const xiiVec3& v) const
   if (m_pCoordinateSystem)
   {
     xiiCoordinateSystem system;
-    m_pCoordinateSystem->GetCoordinateSystem(m_vCameraPosition[0], system);
+    m_pCoordinateSystem->GetCoordinateSystemFloat(m_vCameraPosition[0], system);
 
     xiiMat3 m;
     m.SetRow(0, system.m_vForwardDir);
@@ -141,7 +155,7 @@ xiiVec3 xiiCamera::MapInternalToExternal(const xiiVec3& v) const
   if (m_pCoordinateSystem)
   {
     xiiCoordinateSystem system;
-    m_pCoordinateSystem->GetCoordinateSystem(m_vCameraPosition[0], system);
+    m_pCoordinateSystem->GetCoordinateSystemFloat(m_vCameraPosition[0], system);
 
     xiiMat3 m;
     m.SetColumn(0, system.m_vForwardDir);

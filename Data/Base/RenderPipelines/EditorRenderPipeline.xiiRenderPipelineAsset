@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{5189305147899033520,5264929536831011917}}
-		u4 %Hash{7552418906654959037}
+		u4 %Hash{11067382921900749217}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %References
@@ -330,19 +330,6 @@ o
 }
 o
 {
-	Uuid %id{u4{9059223421352694698,5124026773967368986}}
-	s %t{"DocumentNodeManager_DefaultConnection"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Connection::Source{u4{150329125500045468,5149639443521869275}}
-		s %Connection::SourcePin{"Output"}
-		Uuid %Connection::Target{u4{13104320872804311201,4767145777032331907}}
-		s %Connection::TargetPin{"Input"}
-	}
-}
-o
-{
 	Uuid %id{u4{12025421613094468508,5132296434815839289}}
 	s %t{"xiiSimpleRenderPass"}
 	u3 %v{1}
@@ -525,6 +512,19 @@ o
 		s %Name{""}
 		Vec2 %Node::Pos{f{0x3DC7B744,0xFE6EC0C2}}
 		Uuid %Output{u4{9648075072256611633,12146613130991592161}}
+	}
+}
+o
+{
+	Uuid %id{u4{13868768975024301711,5325332059619978714}}
+	s %t{"DocumentNodeManager_DefaultConnection"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Connection::Source{u4{150329125500045468,5149639443521869275}}
+		s %Connection::SourcePin{"Output"}
+		Uuid %Connection::Target{u4{13104320872804311201,4767145777032331907}}
+		s %Connection::TargetPin{"Input"}
 	}
 }
 o
@@ -848,8 +848,8 @@ o
 			Uuid{u4{14158916982781269897,5166489920795777660}}
 			Uuid{u4{14761260171370226848,4614374089066522459}}
 			Uuid{u4{150329125500045468,5149639443521869275}}
-			Uuid{u4{9059223421352694698,5124026773967368986}}
 			Uuid{u4{13409126510310617266,4829257709026331137}}
+			Uuid{u4{13868768975024301711,5325332059619978714}}
 		}
 	}
 }

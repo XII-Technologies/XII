@@ -28,6 +28,32 @@ xiiResult xiiGraphicsUtils::ConvertWorldPosToScreenPos(const xiiMat4& ModelViewP
   return XII_SUCCESS;
 }
 
+xiiResult xiiGraphicsUtils::ConvertWorldPosToScreenPos(const xiiMat4d& ModelViewProjection, const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, const xiiVec3d& vPoint, xiiVec3d& out_vScreenPos, xiiClipSpaceDepthRange::Enum DepthRange)
+{
+  const xiiVec4d vToProject = vPoint.GetAsVec4(1.0);
+
+  xiiVec4d vClipSpace = ModelViewProjection * vToProject;
+
+  if (vClipSpace.w == 0.0)
+    return XII_FAILURE;
+
+  xiiVec3d vProjected = vClipSpace.GetAsVec3() / vClipSpace.w;
+  if (vClipSpace.w < 0.0)
+    vProjected.z = -vProjected.z;
+
+  out_vScreenPos.x = uiViewportX + uiViewportWidth * ((vProjected.x * 0.5) + 0.5);
+  out_vScreenPos.y = uiViewportY + uiViewportHeight * ((vProjected.y * 0.5) + 0.5);
+
+  // normalize the output z value to always be in [0; 1] range
+  // That means when the projection matrix spits out values between -1 and +1, rescale those values
+  if (DepthRange == xiiClipSpaceDepthRange::MinusOneToOne)
+    out_vScreenPos.z = vProjected.z * 0.5 + 0.5;
+  else
+    out_vScreenPos.z = vProjected.z;
+
+  return XII_SUCCESS;
+}
+
 xiiResult xiiGraphicsUtils::ConvertScreenPosToWorldPos(
   const xiiMat4&               InverseModelViewProjection,
   const xiiUInt32              uiViewportX,
@@ -78,35 +104,43 @@ xiiResult xiiGraphicsUtils::ConvertScreenPosToWorldPos(
   return XII_SUCCESS;
 }
 
-xiiResult xiiGraphicsUtils::ConvertScreenPosToWorldPos(const xiiMat4d& InverseModelViewProjection, const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, const xiiVec3& vScreenPos, xiiVec3& out_vPoint, xiiVec3* out_vDirection /*= nullptr*/, xiiClipSpaceDepthRange::Enum DepthRange /*= xiiClipSpaceDepthRange::Default*/)
+xiiResult xiiGraphicsUtils::ConvertScreenPosToWorldPos(
+  const xiiMat4d&              InverseModelViewProjection,
+  const xiiUInt32              uiViewportX,
+  const xiiUInt32              uiViewportY,
+  const xiiUInt32              uiViewportWidth,
+  const xiiUInt32              uiViewportHeight,
+  const xiiVec3d&              vScreenPos,
+  xiiVec3d&                    out_vPoint,
+  xiiVec3d*                    out_vDirection,
+  xiiClipSpaceDepthRange::Enum DepthRange)
 {
-  xiiVec3 vClipSpace = vScreenPos;
+  xiiVec3d vClipSpace = vScreenPos;
 
   // From window coordinates to [0; 1] range
   vClipSpace.x = (vClipSpace.x - uiViewportX) / uiViewportWidth;
   vClipSpace.y = (vClipSpace.y - uiViewportY) / uiViewportHeight;
 
   // Map to range [-1; 1]
-  vClipSpace.x = vClipSpace.x * 2.0f - 1.0f;
-  vClipSpace.y = vClipSpace.y * 2.0f - 1.0f;
+  vClipSpace.x = vClipSpace.x * 2.0 - 1.0;
+  vClipSpace.y = vClipSpace.y * 2.0 - 1.0;
 
   // The OpenGL matrix expects the z values to be between -1 and +1, so rescale the incoming value to that range
   if (DepthRange == xiiClipSpaceDepthRange::MinusOneToOne)
-    vClipSpace.z = vClipSpace.z * 2.0f - 1.0f;
+    vClipSpace.z = vClipSpace.z * 2.0 - 1.0;
 
-  xiiVec4d vToUnProject = xiiVec4d(vClipSpace.x, vClipSpace.y, vClipSpace.z, 1.0);
+  xiiVec4d vToUnProject = vClipSpace.GetAsVec4(1.0);
 
   xiiVec4d vWorldSpacePoint = InverseModelViewProjection * vToUnProject;
 
   if (vWorldSpacePoint.w == 0.0)
     return XII_FAILURE;
 
-  xiiVec3d outTemp = vWorldSpacePoint.GetAsVec3() / vWorldSpacePoint.w;
-  out_vPoint.Set((float)outTemp.x, (float)outTemp.y, (float)outTemp.z);
+  out_vPoint = vWorldSpacePoint.GetAsVec3() / vWorldSpacePoint.w;
 
   if (out_vDirection != nullptr)
   {
-    vToUnProject.z += 0.1f; // a point that is a bit further away
+    vToUnProject.z += 0.1; // a point that is a bit further away
 
     const xiiVec4d vWorldSpacePoint2 = InverseModelViewProjection * vToUnProject;
 
@@ -114,8 +148,7 @@ xiiResult xiiGraphicsUtils::ConvertScreenPosToWorldPos(const xiiMat4d& InverseMo
 
     const xiiVec3d vPoint2 = vWorldSpacePoint2.GetAsVec3() / vWorldSpacePoint2.w;
 
-    xiiVec3d outDir = (vPoint2 - outTemp).GetNormalized();
-    out_vDirection->Set((float)outDir.x, (float)outDir.y, (float)outDir.z);
+    *out_vDirection = (vPoint2 - out_vPoint).GetNormalized();
   }
 
   return XII_SUCCESS;
@@ -126,6 +159,11 @@ bool xiiGraphicsUtils::IsTriangleFlipRequired(const xiiMat3& mTransformation)
   return (mTransformation.GetColumn(0).CrossRH(mTransformation.GetColumn(1)).Dot(mTransformation.GetColumn(2)) < 0.0f);
 }
 
+bool xiiGraphicsUtils::IsTriangleFlipRequired(const xiiMat3d& mTransformation)
+{
+  return (mTransformation.GetColumn(0).CrossRH(mTransformation.GetColumn(1)).Dot(mTransformation.GetColumn(2)) < 0.0);
+}
+
 void xiiGraphicsUtils::ConvertProjectionMatrixDepthRange(xiiMat4& inout_Matrix, xiiClipSpaceDepthRange::Enum SrcDepthRange, xiiClipSpaceDepthRange::Enum DstDepthRange)
 {
   // exclude identity transformations
@@ -134,6 +172,34 @@ void xiiGraphicsUtils::ConvertProjectionMatrixDepthRange(xiiMat4& inout_Matrix, 
 
   xiiVec4 row2 = inout_Matrix.GetRow(2);
   xiiVec4 row3 = inout_Matrix.GetRow(3);
+
+  // only need to check SrcDepthRange, the rest is the logical conclusion from being not equal
+  if (SrcDepthRange == xiiClipSpaceDepthRange::MinusOneToOne /*&& DstDepthRange == xiiClipSpaceDepthRange::ZeroToOne*/)
+  {
+    // map z => (z + w)/2
+    row2 += row3;
+    row2 *= 0.5f;
+  }
+  else // if (SrcDepthRange == xiiClipSpaceDepthRange::ZeroToOne && DstDepthRange == xiiClipSpaceDepthRange::MinusOneToOne)
+  {
+    // map z => 2z - w
+    row2 += row2;
+    row2 -= row3;
+  }
+
+
+  inout_Matrix.SetRow(2, row2);
+  inout_Matrix.SetRow(3, row3);
+}
+
+void xiiGraphicsUtils::ConvertProjectionMatrixDepthRange(xiiMat4d& inout_Matrix, xiiClipSpaceDepthRange::Enum SrcDepthRange, xiiClipSpaceDepthRange::Enum DstDepthRange)
+{
+  // exclude identity transformations
+  if (SrcDepthRange == DstDepthRange)
+    return;
+
+  xiiVec4d row2 = inout_Matrix.GetRow(2);
+  xiiVec4d row3 = inout_Matrix.GetRow(3);
 
   // only need to check SrcDepthRange, the rest is the logical conclusion from being not equal
   if (SrcDepthRange == xiiClipSpaceDepthRange::MinusOneToOne /*&& DstDepthRange == xiiClipSpaceDepthRange::ZeroToOne*/)
@@ -170,6 +236,25 @@ void xiiGraphicsUtils::ExtractPerspectiveMatrixFieldOfView(const xiiMat4& Projec
   out_fFovY = xiiAngle::Radian(xiiMath::Pi<float>()) - xiiMath::ACos(topPlane.Dot(bottomPlane));
 }
 
+void xiiGraphicsUtils::ExtractPerspectiveMatrixFieldOfView(const xiiMat4d& ProjectionMatrix, xiiAngle& out_fFovX, xiiAngle& out_fFovY)
+{
+
+  const xiiVec3d row0 = ProjectionMatrix.GetRow(0).GetAsVec3();
+  const xiiVec3d row1 = ProjectionMatrix.GetRow(1).GetAsVec3();
+  const xiiVec3d row3 = ProjectionMatrix.GetRow(3).GetAsVec3();
+
+  const xiiVec3d leftPlane   = (row3 + row0).GetNormalized();
+  const xiiVec3d rightPlane  = (row3 - row0).GetNormalized();
+  const xiiVec3d bottomPlane = (row3 + row1).GetNormalized();
+  const xiiVec3d topPlane    = (row3 - row1).GetNormalized();
+
+  xiiAngled fovX = xiiAngled::Radian(xiiMath::Pi<double>()) - xiiMath::ACos<double>(leftPlane.Dot(rightPlane));
+  xiiAngled fovY = xiiAngled::Radian(xiiMath::Pi<double>()) - xiiMath::ACos<double>(topPlane.Dot(bottomPlane));
+
+  out_fFovX = xiiAngle::Radian((float)fovX.GetRadian());
+  out_fFovY = xiiAngle::Radian((float)fovY.GetRadian());
+}
+
 void xiiGraphicsUtils::ExtractPerspectiveMatrixFieldOfView(const xiiMat4& ProjectionMatrix, xiiAngle& out_fFovLeft, xiiAngle& out_fFovRight, xiiAngle& out_fFovBottom, xiiAngle& out_fFovTop, xiiClipSpaceYMode::Enum yRange)
 {
   const xiiVec3 row0 = ProjectionMatrix.GetRow(0).GetAsVec3();
@@ -190,7 +275,47 @@ void xiiGraphicsUtils::ExtractPerspectiveMatrixFieldOfView(const xiiMat4& Projec
     xiiMath::Swap(out_fFovBottom, out_fFovTop);
 }
 
+void xiiGraphicsUtils::ExtractPerspectiveMatrixFieldOfView(const xiiMat4d& ProjectionMatrix, xiiAngle& out_fFovLeft, xiiAngle& out_fFovRight, xiiAngle& out_fFovBottom, xiiAngle& out_fFovTop, xiiClipSpaceYMode::Enum yRange)
+{
+  const xiiVec3d row0 = ProjectionMatrix.GetRow(0).GetAsVec3();
+  const xiiVec3d row1 = ProjectionMatrix.GetRow(1).GetAsVec3();
+  const xiiVec3d row3 = ProjectionMatrix.GetRow(3).GetAsVec3();
+
+  const xiiVec3d leftPlane   = (row3 + row0).GetNormalized();
+  const xiiVec3d rightPlane  = (row3 - row0).GetNormalized();
+  const xiiVec3d bottomPlane = (row3 + row1).GetNormalized();
+  const xiiVec3d topPlane    = (row3 - row1).GetNormalized();
+
+  out_fFovLeft   = -xiiMath::ACos<float>((float)leftPlane.Dot(xiiVec3d(1.0, 0, 0)));
+  out_fFovRight  = xiiAngle::Radian(xiiMath::Pi<float>()) - xiiMath::ACos<float>((float)rightPlane.Dot(xiiVec3d(1.0, 0, 0)));
+  out_fFovBottom = -xiiMath::ACos<float>((float)bottomPlane.Dot(xiiVec3d(0, 1.0, 0)));
+  out_fFovTop    = xiiAngle::Radian(xiiMath::Pi<float>()) - xiiMath::ACos<float>((float)topPlane.Dot(xiiVec3d(0, 1.0, 0)));
+
+  if (yRange == xiiClipSpaceYMode::Flipped)
+    xiiMath::Swap(out_fFovBottom, out_fFovTop);
+}
+
 xiiResult xiiGraphicsUtils::ExtractPerspectiveMatrixFieldOfView(const xiiMat4& ProjectionMatrix, float& out_fLeft, float& out_fRight, float& out_fBottom, float& out_fTop, xiiClipSpaceDepthRange::Enum DepthRange, xiiClipSpaceYMode::Enum yRange)
+{
+  float fNear, fFar;
+  XII_SUCCEED_OR_RETURN(ExtractNearAndFarClipPlaneDistances(fNear, fFar, ProjectionMatrix, DepthRange));
+  // Compensate for inverse-Z.
+  const float fMinDepth = xiiMath::Min(fNear, fFar);
+
+  xiiAngle fFovLeft;
+  xiiAngle fFovRight;
+  xiiAngle fFovBottom;
+  xiiAngle fFovTop;
+  ExtractPerspectiveMatrixFieldOfView(ProjectionMatrix, fFovLeft, fFovRight, fFovBottom, fFovTop, yRange);
+
+  out_fLeft   = xiiMath::Tan(fFovLeft) * fMinDepth;
+  out_fRight  = xiiMath::Tan(fFovRight) * fMinDepth;
+  out_fBottom = xiiMath::Tan(fFovBottom) * fMinDepth;
+  out_fTop    = xiiMath::Tan(fFovTop) * fMinDepth;
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGraphicsUtils::ExtractPerspectiveMatrixFieldOfView(const xiiMat4d& ProjectionMatrix, float& out_fLeft, float& out_fRight, float& out_fBottom, float& out_fTop, xiiClipSpaceDepthRange::Enum DepthRange, xiiClipSpaceYMode::Enum yRange)
 {
   float fNear, fFar;
   XII_SUCCEED_OR_RETURN(ExtractNearAndFarClipPlaneDistances(fNear, fFar, ProjectionMatrix, DepthRange));
@@ -250,6 +375,46 @@ xiiResult xiiGraphicsUtils::ExtractNearAndFarClipPlaneDistances(float& out_fNear
   return XII_SUCCESS;
 }
 
+xiiResult xiiGraphicsUtils::ExtractNearAndFarClipPlaneDistances(float& out_fNear, float& out_fFar, const xiiMat4d& ProjectionMatrix, xiiClipSpaceDepthRange::Enum DepthRange)
+{
+  const xiiVec4d row2 = ProjectionMatrix.GetRow(2);
+  const xiiVec4d row3 = ProjectionMatrix.GetRow(3);
+
+  xiiVec4d nearPlane = row2;
+
+  if (DepthRange == xiiClipSpaceDepthRange::MinusOneToOne)
+  {
+    nearPlane += row3;
+  }
+
+  const xiiVec4d farPlane = row3 - row2;
+
+  const double nearLength = nearPlane.GetAsVec3().GetLength();
+  const double farLength  = farPlane.GetAsVec3().GetLength();
+
+  const double nearW = xiiMath::Abs(nearPlane.w);
+  const double farW  = xiiMath::Abs(farPlane.w);
+
+  if ((nearLength < xiiMath::SmallEpsilon<double>() && farLength < xiiMath::SmallEpsilon<double>()) ||
+      nearW < xiiMath::SmallEpsilon<double>() || farW < xiiMath::SmallEpsilon<double>())
+  {
+    return XII_FAILURE;
+  }
+
+  const double fNear = nearW / nearLength;
+  const double fFar  = farW / farLength;
+
+  if (xiiMath::IsEqual(fNear, fFar, xiiMath::SmallEpsilon<double>()))
+  {
+    return XII_FAILURE;
+  }
+
+  out_fNear = (float)fNear;
+  out_fFar  = (float)fFar;
+
+  return XII_SUCCESS;
+}
+
 xiiPlane xiiGraphicsUtils::ComputeInterpolatedFrustumPlane(FrustumPlaneInterpolation direction, float fLerpFactor, const xiiMat4& ProjectionMatrix, xiiClipSpaceDepthRange::Enum DepthRange)
 {
   xiiVec4     rowA;
@@ -289,12 +454,59 @@ xiiPlane xiiGraphicsUtils::ComputeInterpolatedFrustumPlane(FrustumPlaneInterpola
   return res;
 }
 
+xiiPlaned xiiGraphicsUtils::ComputeInterpolatedFrustumPlane(FrustumPlaneInterpolation direction, float fLerpFactor, const xiiMat4d& ProjectionMatrix, xiiClipSpaceDepthRange::Enum DepthRange)
+{
+  xiiVec4d    rowA;
+  xiiVec4d    rowB            = ProjectionMatrix.GetRow(3);
+  const float factorMinus1to1 = (fLerpFactor - 0.5f) * 2.0f; // bring into [-1; +1] range
+
+  switch (direction)
+  {
+    case FrustumPlaneInterpolation::LeftToRight:
+    {
+      rowA = ProjectionMatrix.GetRow(0);
+      rowB *= factorMinus1to1;
+      break;
+    }
+
+    case FrustumPlaneInterpolation::BottomToTop:
+    {
+      rowA = ProjectionMatrix.GetRow(1);
+      rowB *= factorMinus1to1;
+      break;
+    }
+
+    case FrustumPlaneInterpolation::NearToFar:
+      rowA = ProjectionMatrix.GetRow(2);
+
+      if (DepthRange == xiiClipSpaceDepthRange::ZeroToOne)
+        rowB *= fLerpFactor; // [0; 1] range
+      else
+        rowB *= factorMinus1to1;
+      break;
+  }
+
+  xiiPlaned res;
+  res.m_vNormal      = rowA.GetAsVec3() - rowB.GetAsVec3();
+  res.m_fNegDistance = (rowA.w - rowB.w) / res.m_vNormal.GetLengthAndNormalize();
+
+  return res;
+}
+
 xiiMat4 xiiGraphicsUtils::CreatePerspectiveProjectionMatrix(float fViewWidth, float fViewHeight, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum DepthRange, xiiClipSpaceYMode::Enum yRange, xiiHandedness::Enum handedness)
 {
   const float vw = fViewWidth * 0.5f;
   const float vh = fViewHeight * 0.5f;
 
   return CreatePerspectiveProjectionMatrix(-vw, vw, -vh, vh, fNearZ, fFarZ, DepthRange, yRange, handedness);
+}
+
+xiiMat4d xiiGraphicsUtils::CreatePerspectiveProjectionMatrixDouble(float fViewWidth, float fViewHeight, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum DepthRange, xiiClipSpaceYMode::Enum yRange, xiiHandedness::Enum handedness)
+{
+  const float vw = fViewWidth * 0.5f;
+  const float vh = fViewHeight * 0.5f;
+
+  return CreatePerspectiveProjectionMatrixDouble(-vw, vw, -vh, vh, fNearZ, fFarZ, DepthRange, yRange, handedness);
 }
 
 xiiMat4 xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle fieldOfViewX, float fAspectRatioWidthDivHeight, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum DepthRange, xiiClipSpaceYMode::Enum yRange, xiiHandedness::Enum handedness)
@@ -307,6 +519,16 @@ xiiMat4 xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle fie
   return CreatePerspectiveProjectionMatrix(-xm, xm, -ym, ym, fNearZ, fFarZ, DepthRange, yRange, handedness);
 }
 
+xiiMat4d xiiGraphicsUtils::CreatePerspectiveProjectionMatrixDoubleFromFovX(xiiAngle fieldOfViewX, float fAspectRatioWidthDivHeight, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum DepthRange, xiiClipSpaceYMode::Enum yRange, xiiHandedness::Enum handedness)
+{
+  // Taking the minimum allows the function to be used to create
+  // inverse z matrices (fNearZ > fFarZ) as well.
+  const float xm = xiiMath::Min(fNearZ, fFarZ) * xiiMath::Tan(fieldOfViewX * 0.5f);
+  const float ym = xm / fAspectRatioWidthDivHeight;
+
+  return CreatePerspectiveProjectionMatrixDouble(-xm, xm, -ym, ym, fNearZ, fFarZ, DepthRange, yRange, handedness);
+}
+
 xiiMat4 xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle fieldOfViewY, float fAspectRatioWidthDivHeight, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum DepthRange, xiiClipSpaceYMode::Enum yRange, xiiHandedness::Enum handedness)
 {
   // Taking the minimum allows the function to be used to create
@@ -317,9 +539,24 @@ xiiMat4 xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle fie
   return CreatePerspectiveProjectionMatrix(-xm, xm, -ym, ym, fNearZ, fFarZ, DepthRange, yRange, handedness);
 }
 
+xiiMat4d xiiGraphicsUtils::CreatePerspectiveProjectionMatrixDoubleFromFovY(xiiAngle fieldOfViewY, float fAspectRatioWidthDivHeight, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum DepthRange, xiiClipSpaceYMode::Enum yRange, xiiHandedness::Enum handedness)
+{
+  // Taking the minimum allows the function to be used to create
+  // inverse z matrices (fNearZ > fFarZ) as well.
+  const float ym = xiiMath::Min(fNearZ, fFarZ) * xiiMath::Tan(fieldOfViewY * 0.5f);
+  const float xm = ym * fAspectRatioWidthDivHeight;
+
+  return CreatePerspectiveProjectionMatrixDouble(-xm, xm, -ym, ym, fNearZ, fFarZ, DepthRange, yRange, handedness);
+}
+
 xiiMat4 xiiGraphicsUtils::CreateOrthographicProjectionMatrix(float fViewWidth, float fViewHeight, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum depthRange, xiiClipSpaceYMode::Enum yRange, xiiHandedness::Enum handedness)
 {
   return CreateOrthographicProjectionMatrix(-fViewWidth * 0.5f, fViewWidth * 0.5f, -fViewHeight * 0.5f, fViewHeight * 0.5f, fNearZ, fFarZ, depthRange, yRange, handedness);
+}
+
+xiiMat4d xiiGraphicsUtils::CreateOrthographicProjectionMatrixDouble(float fViewWidth, float fViewHeight, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum depthRange, xiiClipSpaceYMode::Enum yRange, xiiHandedness::Enum handedness)
+{
+  return CreateOrthographicProjectionMatrixDouble(-fViewWidth * 0.5f, fViewWidth * 0.5f, -fViewHeight * 0.5f, fViewHeight * 0.5f, fNearZ, fFarZ, depthRange, yRange, handedness);
 }
 
 xiiMat4 xiiGraphicsUtils::CreateOrthographicProjectionMatrix(float fLeft, float fRight, float fBottom, float fTop, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum DepthRange, xiiClipSpaceYMode::Enum yRange, xiiHandedness::Enum handedness)
@@ -358,6 +595,53 @@ xiiMat4 xiiGraphicsUtils::CreateOrthographicProjectionMatrix(float fLeft, float 
     // The Right-Handed Direct3D Way: https://docs.microsoft.com/windows/win32/direct3d9/d3dxmatrixorthooffcenterrh
 
     res.Element(2, 2) = -1.0f * fOneDivFarMinusNear;
+    res.Element(3, 2) = -fNearZ * fOneDivFarMinusNear;
+  }
+
+  if (handedness == xiiHandedness::LeftHanded)
+  {
+    res.SetColumn(2, -res.GetColumn(2));
+  }
+
+  return res;
+}
+
+xiiMat4d xiiGraphicsUtils::CreateOrthographicProjectionMatrixDouble(float fLeft, float fRight, float fBottom, float fTop, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum DepthRange, xiiClipSpaceYMode::Enum yRange, xiiHandedness::Enum handedness)
+{
+  XII_ASSERT_DEBUG(xiiMath::IsFinite(fNearZ) && xiiMath::IsFinite(fFarZ), "Infinite plane values are not supported for orthographic projections!");
+
+  xiiMat4d res;
+  res.SetIdentity();
+
+  if (yRange == xiiClipSpaceYMode::Flipped)
+  {
+    xiiMath::Swap(fBottom, fTop);
+  }
+
+  const double fOneDivFarMinusNear   = 1.0 / (fFarZ - fNearZ);
+  const double fOneDivRightMinusLeft = 1.0 / (fRight - fLeft);
+  const double fOneDivTopMinusBottom = 1.0 / (fTop - fBottom);
+
+  res.Element(0, 0) = 2.0 / (fRight - fLeft);
+
+  res.Element(1, 1) = 2.0 / (fTop - fBottom);
+
+  res.Element(3, 0) = -(fLeft + fRight) * fOneDivRightMinusLeft;
+  res.Element(3, 1) = -(fTop + fBottom) * fOneDivTopMinusBottom;
+
+
+  if (DepthRange == xiiClipSpaceDepthRange::MinusOneToOne)
+  {
+    // The OpenGL Way: http://wiki.delphigl.com/index.php/glFrustum
+    res.Element(2, 2) = -2.0 * fOneDivFarMinusNear;
+    res.Element(3, 2) = -(fFarZ + fNearZ) * fOneDivFarMinusNear;
+  }
+  else
+  {
+    // The Left-Handed Direct3D Way: https://docs.microsoft.com/windows/win32/direct3d9/d3dxmatrixorthooffcenterlh
+    // The Right-Handed Direct3D Way: https://docs.microsoft.com/windows/win32/direct3d9/d3dxmatrixorthooffcenterrh
+
+    res.Element(2, 2) = -1.0 * fOneDivFarMinusNear;
     res.Element(3, 2) = -fNearZ * fOneDivFarMinusNear;
   }
 
@@ -463,6 +747,100 @@ xiiMat4 xiiGraphicsUtils::CreatePerspectiveProjectionMatrix(float fLeft, float f
   return res;
 }
 
+xiiMat4d xiiGraphicsUtils::CreatePerspectiveProjectionMatrixDouble(float fLeft, float fRight, float fBottom, float fTop, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum DepthRange, xiiClipSpaceYMode::Enum yRange, xiiHandedness::Enum handedness)
+{
+  XII_ASSERT_DEBUG(xiiMath::IsFinite(fNearZ) || xiiMath::IsFinite(fFarZ), "fNearZ and fFarZ cannot both be infinite at the same time!");
+
+  xiiMat4d res;
+  res.SetZero();
+
+  if (yRange == xiiClipSpaceYMode::Flipped)
+  {
+    xiiMath::Swap(fBottom, fTop);
+  }
+
+  // Taking the minimum of the two plane values allows
+  // this function to also be used to create inverse-z
+  // matrices by specifying values of fNearZ > fFarZ.
+  // Otherwise the x and y scaling values will be wrong
+  // in the final matrix.
+  const double fMinPlane             = xiiMath::Min(fNearZ, fFarZ);
+  const double fTwoNearZ             = fMinPlane + fMinPlane;
+  const double fOneDivRightMinusLeft = 1.0 / (fRight - fLeft);
+  const double fOneDivTopMinusBottom = 1.0 / (fTop - fBottom);
+
+  res.Element(0, 0) = fTwoNearZ * fOneDivRightMinusLeft;
+
+  res.Element(1, 1) = fTwoNearZ * fOneDivTopMinusBottom;
+
+  res.Element(2, 0) = (fLeft + fRight) * fOneDivRightMinusLeft;
+  res.Element(2, 1) = (fTop + fBottom) * fOneDivTopMinusBottom;
+  res.Element(2, 3) = -1.0f;
+
+  // If either fNearZ or fFarZ is infinite, one can derive the resulting z-transformation by using limit math
+  // and letting the respective variable approach infinity in the original expressions for P(2, 2) and P(3, 2).
+  // The result is that a couple of terms from the original fraction get reduced to 0 by being divided by infinity,
+  // which fortunately yields 1) finite and 2) much simpler expressions for P(2, 2) and P(3, 2).
+  if (DepthRange == xiiClipSpaceDepthRange::MinusOneToOne)
+  {
+    // The OpenGL Way: http://wiki.delphigl.com/index.php/glFrustum
+    // Algebraically reordering the z-row fractions from the above source in a way so infinite fNearZ or fFarZ will zero out
+    // instead of producing NaNs due to inf/inf divisions will yield these generalized formulas which could be used instead
+    // of the branching below. Insert infinity for either fNearZ or fFarZ to see that these will yield exactly these simplifications:
+    //res.Element(2, 2) = 1.f / (fNearZ / fFarZ - 1.f) + 1.f / (1.f - fFarZ / fNearZ);
+    //res.Element(3, 2) = 2.f / (1.f / fFarZ - 1.f / fNearZ);
+    if (!xiiMath::IsFinite(fNearZ))
+    {
+      res.Element(2, 2) = 1.f;
+      res.Element(3, 2) = 2.f * fFarZ;
+    }
+    else if (!xiiMath::IsFinite(fFarZ))
+    {
+      res.Element(2, 2) = -1.f;
+      res.Element(3, 2) = -2.f * fNearZ;
+    }
+    else
+    {
+      const double fOneDivNearMinusFar = 1.0 / (fNearZ - fFarZ);
+      res.Element(2, 2)                = (fFarZ + fNearZ) * fOneDivNearMinusFar;
+      res.Element(3, 2)                = 2 * fFarZ * fNearZ * fOneDivNearMinusFar;
+    }
+  }
+  else
+  {
+    // The Left-Handed Direct3D Way: https://docs.microsoft.com/windows/win32/direct3d9/d3dxmatrixperspectiveoffcenterlh
+    // The Right-Handed Direct3D Way: https://docs.microsoft.com/windows/win32/direct3d9/d3dxmatrixperspectiveoffcenterrh
+    // Algebraically reordering the z-row fractions from the above source in a way so infinite fNearZ or fFarZ will zero out
+    // instead of producing NaNs due to inf/inf divisions will yield these generalized formulas which could be used instead
+    // of the branching below. Insert infinity for either fNearZ or fFarZ to see that these will yield exactly these simplifications:
+    //res.Element(2, 2) = 1.f / (fNearZ / fFarZ - 1.f);
+    //res.Element(3, 2) = 1.f / (1.f / fFarZ - 1.f / fNearZ);
+    if (!xiiMath::IsFinite(fNearZ))
+    {
+      res.Element(2, 2) = 0.0;
+      res.Element(3, 2) = fFarZ;
+    }
+    else if (!xiiMath::IsFinite(fFarZ))
+    {
+      res.Element(2, 2) = -1.0;
+      res.Element(3, 2) = -fNearZ;
+    }
+    else
+    {
+      const double fOneDivNearMinusFar = 1.0 / (fNearZ - fFarZ);
+      res.Element(2, 2)                = fFarZ * fOneDivNearMinusFar;
+      res.Element(3, 2)                = fFarZ * fNearZ * fOneDivNearMinusFar;
+    }
+  }
+
+  if (handedness == xiiHandedness::LeftHanded)
+  {
+    res.SetColumn(2, -res.GetColumn(2));
+  }
+
+  return res;
+}
+
 xiiMat3 xiiGraphicsUtils::CreateLookAtViewMatrix(const xiiVec3& vTarget, const xiiVec3& vUpDir, xiiHandedness::Enum handedness)
 {
   XII_ASSERT_DEBUG(!vTarget.IsZero(), "The target must not be at the origin.");
@@ -483,6 +861,34 @@ xiiMat3 xiiGraphicsUtils::CreateLookAtViewMatrix(const xiiVec3& vTarget, const x
   const xiiVec3 zaxis = (handedness == xiiHandedness::RightHanded) ? -vLookDir : vLookDir;
   const xiiVec3 xaxis = vNormalizedUpDir.CrossRH(zaxis).GetNormalized();
   const xiiVec3 yaxis = zaxis.CrossRH(xaxis);
+
+  res.SetRow(0, xaxis);
+  res.SetRow(1, yaxis);
+  res.SetRow(2, zaxis);
+
+  return res;
+}
+
+xiiMat3d xiiGraphicsUtils::CreateLookAtViewMatrix(const xiiVec3d& vTarget, const xiiVec3d& vUpDir, xiiHandedness::Enum handedness)
+{
+  XII_ASSERT_DEBUG(!vTarget.IsZero(), "The target must not be at the origin.");
+
+  xiiVec3d vLookDir = vTarget;
+  vLookDir.NormalizeIfNotZero(xiiVec3d::UnitXAxis()).IgnoreResult();
+
+  xiiVec3d vNormalizedUpDir = vUpDir.GetNormalized();
+
+  if (xiiMath::Abs(vLookDir.Dot(vNormalizedUpDir)) > 0.99999999) // less than 1 degree difference -> problem
+  {
+    // use some arbitrary other orthogonal vector as UP
+    vNormalizedUpDir = vLookDir.GetOrthogonalVector();
+  }
+
+  xiiMat3d res;
+
+  const xiiVec3d zaxis = (handedness == xiiHandedness::RightHanded) ? -vLookDir : vLookDir;
+  const xiiVec3d xaxis = vNormalizedUpDir.CrossRH(zaxis).GetNormalized();
+  const xiiVec3d yaxis = zaxis.CrossRH(xaxis);
 
   res.SetRow(0, xaxis);
   res.SetRow(1, yaxis);
@@ -519,6 +925,34 @@ xiiMat3 xiiGraphicsUtils::CreateInverseLookAtViewMatrix(const xiiVec3& vTarget, 
   return res;
 }
 
+xiiMat3d xiiGraphicsUtils::CreateInverseLookAtViewMatrix(const xiiVec3d& vTarget, const xiiVec3d& vUpDir, xiiHandedness::Enum handedness)
+{
+  XII_ASSERT_DEBUG(!vTarget.IsZero(), "The target must not be at the origin.");
+
+  xiiVec3d vLookDir = vTarget;
+  vLookDir.NormalizeIfNotZero(xiiVec3d::UnitXAxis()).IgnoreResult();
+
+  xiiVec3d vNormalizedUpDir = vUpDir.GetNormalized();
+
+  if (xiiMath::Abs(vLookDir.Dot(vNormalizedUpDir)) > 0.99999999) // less than 1 degree difference -> problem
+  {
+    // use some arbitrary other orthogonal vector as UP
+    vNormalizedUpDir = vLookDir.GetOrthogonalVector();
+  }
+
+  xiiMat3d res;
+
+  const xiiVec3d zaxis = (handedness == xiiHandedness::RightHanded) ? -vLookDir : vLookDir;
+  const xiiVec3d xaxis = vNormalizedUpDir.CrossRH(zaxis).GetNormalized();
+  const xiiVec3d yaxis = zaxis.CrossRH(xaxis);
+
+  res.SetColumn(0, xaxis);
+  res.SetColumn(1, yaxis);
+  res.SetColumn(2, zaxis);
+
+  return res;
+}
+
 xiiMat4 xiiGraphicsUtils::CreateLookAtViewMatrix(const xiiVec3& vEyePos, const xiiVec3& vLookAtPos, const xiiVec3& vUpDir, xiiHandedness::Enum handedness)
 {
   const xiiMat3 rotation = CreateLookAtViewMatrix(vLookAtPos - vEyePos, vUpDir, handedness);
@@ -530,6 +964,17 @@ xiiMat4 xiiGraphicsUtils::CreateLookAtViewMatrix(const xiiVec3& vEyePos, const x
   return res;
 }
 
+xiiMat4d xiiGraphicsUtils::CreateLookAtViewMatrix(const xiiVec3d& vEyePos, const xiiVec3d& vLookAtPos, const xiiVec3d& vUpDir, xiiHandedness::Enum handedness)
+{
+  const xiiMat3d rotation = CreateLookAtViewMatrix(vLookAtPos - vEyePos, vUpDir, handedness);
+
+  xiiMat4d res;
+  res.SetRotationalPart(rotation);
+  res.SetTranslationVector(rotation * -vEyePos);
+  res.SetRow(3, xiiVec4d(0, 0, 0, 1));
+  return res;
+}
+
 xiiMat4 xiiGraphicsUtils::CreateInverseLookAtViewMatrix(const xiiVec3& vEyePos, const xiiVec3& vLookAtPos, const xiiVec3& vUpDir, xiiHandedness::Enum handedness)
 {
   const xiiMat3 rotation = CreateInverseLookAtViewMatrix(vLookAtPos - vEyePos, vUpDir, handedness);
@@ -538,6 +983,17 @@ xiiMat4 xiiGraphicsUtils::CreateInverseLookAtViewMatrix(const xiiVec3& vEyePos, 
   res.SetRotationalPart(rotation);
   res.SetTranslationVector(vEyePos);
   res.SetRow(3, xiiVec4(0, 0, 0, 1));
+  return res;
+}
+
+xiiMat4d xiiGraphicsUtils::CreateInverseLookAtViewMatrix(const xiiVec3d& vEyePos, const xiiVec3d& vLookAtPos, const xiiVec3d& vUpDir, xiiHandedness::Enum handedness)
+{
+  const xiiMat3d rotation = CreateInverseLookAtViewMatrix(vLookAtPos - vEyePos, vUpDir, handedness);
+
+  xiiMat4d res;
+  res.SetRotationalPart(rotation);
+  res.SetTranslationVector(vEyePos);
+  res.SetRow(3, xiiVec4d(0, 0, 0, 1));
   return res;
 }
 
@@ -565,6 +1021,34 @@ xiiMat4 xiiGraphicsUtils::CreateViewMatrix(const xiiVec3& vPosition, const xiiVe
   res.SetRow(1, yaxis.GetAsVec4(0));
   res.SetRow(2, zaxis.GetAsVec4(0));
   res.SetTranslationVector(xiiVec3(-xaxis.Dot(vPosition), -yaxis.Dot(vPosition), -zaxis.Dot(vPosition)));
+
+  return res;
+}
+
+xiiMat4d xiiGraphicsUtils::CreateViewMatrix(const xiiVec3d& vPosition, const xiiVec3d& vForwardDir, const xiiVec3d& vRightDir, const xiiVec3d& vUpDir, xiiHandedness::Enum handedness)
+{
+  xiiMat4d res;
+  res.SetIdentity();
+
+  xiiVec3d xaxis, yaxis, zaxis;
+
+  if (handedness == xiiHandedness::LeftHanded)
+  {
+    xaxis = vRightDir;
+    yaxis = vUpDir;
+    zaxis = vForwardDir;
+  }
+  else
+  {
+    xaxis = vRightDir;
+    yaxis = vUpDir;
+    zaxis = -vForwardDir;
+  }
+
+  res.SetRow(0, xaxis.GetAsVec4(0));
+  res.SetRow(1, yaxis.GetAsVec4(0));
+  res.SetRow(2, zaxis.GetAsVec4(0));
+  res.SetTranslationVector(xiiVec3d(-xaxis.Dot(vPosition), -yaxis.Dot(vPosition), -zaxis.Dot(vPosition)));
 
   return res;
 }
@@ -597,9 +1081,57 @@ xiiMat4 xiiGraphicsUtils::CreateInverseViewMatrix(const xiiVec3& vPosition, cons
   return res;
 }
 
+xiiMat4d xiiGraphicsUtils::CreateInverseViewMatrix(const xiiVec3d& vPosition, const xiiVec3d& vForwardDir, const xiiVec3d& vRightDir, const xiiVec3d& vUpDir, xiiHandedness::Enum handedness)
+{
+  xiiMat4d res;
+  res.SetIdentity();
+
+  xiiVec3d xaxis, yaxis, zaxis;
+
+  if (handedness == xiiHandedness::LeftHanded)
+  {
+    xaxis = vRightDir;
+    yaxis = vUpDir;
+    zaxis = vForwardDir;
+  }
+  else
+  {
+    xaxis = vRightDir;
+    yaxis = vUpDir;
+    zaxis = -vForwardDir;
+  }
+
+  res.SetColumn(0, xaxis.GetAsVec4(0));
+  res.SetColumn(1, yaxis.GetAsVec4(0));
+  res.SetColumn(2, zaxis.GetAsVec4(0));
+  res.SetTranslationVector(vPosition);
+
+  return res;
+}
+
 void xiiGraphicsUtils::DecomposeViewMatrix(xiiVec3& vPosition, xiiVec3& vForwardDir, xiiVec3& vRightDir, xiiVec3& vUpDir, const xiiMat4& viewMatrix, xiiHandedness::Enum handedness)
 {
   const xiiMat3 rotation = viewMatrix.GetRotationalPart();
+
+  if (handedness == xiiHandedness::LeftHanded)
+  {
+    vRightDir   = rotation.GetRow(0);
+    vUpDir      = rotation.GetRow(1);
+    vForwardDir = rotation.GetRow(2);
+  }
+  else
+  {
+    vRightDir   = rotation.GetRow(0);
+    vUpDir      = rotation.GetRow(1);
+    vForwardDir = -rotation.GetRow(2);
+  }
+
+  vPosition = rotation.GetTranspose() * -viewMatrix.GetTranslationVector();
+}
+
+void xiiGraphicsUtils::DecomposeViewMatrix(xiiVec3d& vPosition, xiiVec3d& vForwardDir, xiiVec3d& vRightDir, xiiVec3d& vUpDir, const xiiMat4d& viewMatrix, xiiHandedness::Enum handedness)
+{
+  const xiiMat3d rotation = viewMatrix.GetRotationalPart();
 
   if (handedness == xiiHandedness::LeftHanded)
   {
@@ -646,6 +1178,35 @@ xiiResult xiiGraphicsUtils::ComputeBarycentricCoordinates(xiiVec3& out_vCoordina
   return XII_SUCCESS;
 }
 
+xiiResult xiiGraphicsUtils::ComputeBarycentricCoordinates(xiiVec3d& out_vCoordinates, const xiiVec3d& a, const xiiVec3d& b, const xiiVec3d& c, const xiiVec3d& p)
+{
+  // implementation copied from https://gamedev.stackexchange.com/a/49370
+
+  const xiiVec3d v0 = b - a;
+  const xiiVec3d v1 = c - a;
+  const xiiVec3d v2 = p - a;
+
+  const double d00   = v0.Dot(v0);
+  const double d01   = v0.Dot(v1);
+  const double d11   = v1.Dot(v1);
+  const double d20   = v2.Dot(v0);
+  const double d21   = v2.Dot(v1);
+  const double denom = d00 * d11 - d01 * d01;
+
+  if (xiiMath::IsZero(denom, xiiMath::SmallEpsilon<double>()))
+    return XII_FAILURE;
+
+  const double invDenom = 1.0 / denom;
+
+  const double v = (d11 * d20 - d01 * d21) * invDenom;
+  const double w = (d00 * d21 - d01 * d20) * invDenom;
+  const double u = 1.0f - v - w;
+
+  out_vCoordinates.Set(u, v, w);
+
+  return XII_SUCCESS;
+}
+
 xiiResult xiiGraphicsUtils::ComputeBarycentricCoordinates(xiiVec3& out_vCoordinates, const xiiVec2& a, const xiiVec2& b, const xiiVec2& c, const xiiVec2& p)
 {
   // implementation copied from https://gamedev.stackexchange.com/a/63203
@@ -668,5 +1229,30 @@ xiiResult xiiGraphicsUtils::ComputeBarycentricCoordinates(xiiVec3& out_vCoordina
 
   return XII_SUCCESS;
 }
+
+xiiResult xiiGraphicsUtils::ComputeBarycentricCoordinates(xiiVec3d& out_vCoordinates, const xiiVec2d& a, const xiiVec2d& b, const xiiVec2d& c, const xiiVec2d& p)
+{
+  // implementation copied from https://gamedev.stackexchange.com/a/63203
+
+  const xiiVec2d v0 = b - a;
+  const xiiVec2d v1 = c - a;
+  const xiiVec2d v2 = p - a;
+
+  const double denom = v0.x * v1.y - v1.x * v0.y;
+
+  if (xiiMath::IsZero(denom, xiiMath::SmallEpsilon<double>()))
+    return XII_FAILURE;
+
+  const double invDenom = 1.0f / denom;
+  const double v        = (v2.x * v1.y - v1.x * v2.y) * invDenom;
+  const double w        = (v0.x * v2.y - v2.x * v0.y) * invDenom;
+  const double u        = 1.0f - v - w;
+
+  out_vCoordinates.Set(u, v, w);
+
+  return XII_SUCCESS;
+}
+
+
 
 XII_STATICLINK_FILE(Foundation, Foundation_Utilities_Implementation_GraphicsUtils);

@@ -15,11 +15,25 @@ namespace xiiInternal
     {
     }
 
-    virtual void GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_CoordinateSystem) const override
+    virtual void GetCoordinateSystemFloat(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_CoordinateSystem) const override
     {
       out_CoordinateSystem.m_vForwardDir = xiiVec3(1.0f, 0.0f, 0.0f);
       out_CoordinateSystem.m_vRightDir   = xiiVec3(0.0f, 1.0f, 0.0f);
       out_CoordinateSystem.m_vUpDir      = xiiVec3(0.0f, 0.0f, 1.0f);
+    }
+
+    virtual void GetCoordinateSystemDouble(const xiiVec3d& vGlobalPosition, xiiCoordinateSystemDouble& out_CoordinateSystem) const override
+    {
+      out_CoordinateSystem.m_vForwardDir = xiiVec3d(1.0, 0.0, 0.0);
+      out_CoordinateSystem.m_vRightDir   = xiiVec3d(0.0, 1.0, 0.0);
+      out_CoordinateSystem.m_vUpDir      = xiiVec3d(0.0, 0.0, 1.0);
+    }
+
+    virtual void GetCoordinateSystemReal(const xiiVec3Real& vGlobalPosition, xiiCoordinateSystemReal& out_CoordinateSystem) const override
+    {
+      out_CoordinateSystem.m_vForwardDir = xiiVec3Real(xiiReal(1), xiiReal(0), xiiReal(0));
+      out_CoordinateSystem.m_vRightDir   = xiiVec3Real(xiiReal(0), xiiReal(1), xiiReal(0));
+      out_CoordinateSystem.m_vUpDir      = xiiVec3Real(xiiReal(0), xiiReal(0), xiiReal(1));
     }
   };
 
