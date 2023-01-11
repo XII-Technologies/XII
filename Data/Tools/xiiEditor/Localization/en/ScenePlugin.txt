@@ -433,3 +433,4 @@ xiiPhysicsShapeType::Ragdoll;Ragdoll
 xiiPhysicsShapeType::Rope;Rope
 xiiStateMachineComponent;State Machine;;https://xiiengine.net/pages/docs/ai/state-machine-component.html
 xiiOccluderComponent;Occluder Component;;https://xiiengine.net/pages/docs/graphics/occluder-component.html
+xiiForwardEventsToGameStateComponent;Forward Events To GameState
