@@ -7,7 +7,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiShapeIconComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiHiddenAttribute() // don't show in UI
+    new xiiCategoryAttribute("Editing Utilities"),
   }
   XII_END_ATTRIBUTES;
 }

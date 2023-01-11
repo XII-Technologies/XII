@@ -22,6 +22,8 @@ public:
   ~xiiShapeIconComponent();
 };
 
+//////////////////////////////////////////////////////////////////////////
+
 class XII_ENGINEPLUGINSCENE_DLL xiiSceneExportModifier_RemoveShapeIconComponents : public xiiSceneExportModifier
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneExportModifier_RemoveShapeIconComponents, xiiSceneExportModifier);
