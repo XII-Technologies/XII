@@ -11,7 +11,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-// unset common macros
+// Unset common macros
 #ifdef min
 #  undef min
 #endif

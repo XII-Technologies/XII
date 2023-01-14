@@ -196,17 +196,31 @@ xiiResult xiiWindow::Initialize()
 
   if (m_CreationDescription.m_Position != xiiVec2I32(0x80000000, 0x80000000))
   {
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    SDL_SetWindowPosition(m_hWindowHandle, m_CreationDescription.m_Position.x, m_CreationDescription.m_Position.y);
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
     SDL_SetWindowPosition(m_hWindowHandle.sdlWindow, m_CreationDescription.m_Position.x, m_CreationDescription.m_Position.y);
+#else
+#  error Platform implementation not available
+#endif
   }
 
   if (m_CreationDescription.m_bSetForegroundOnInit)
+  {
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    SDL_RaiseWindow(m_hWindowHandle);
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
     SDL_RaiseWindow(m_hWindowHandle.sdlWindow);
+#else
+#  error Platform implementation not available
+#endif
+  }
 
 #if XII_ENABLED(XII_PLATFORM_LINUX)
   XII_ASSERT_DEV(m_hWindowHandle.type == xiiWindowHandle::Type::SDL, "Not a SDL handle");
   m_pInputDevice = XII_DEFAULT_NEW(xiiStandardInputDevice, m_CreationDescription.m_uiWindowNumber, m_hWindowHandle.sdlWindow);
 #else
-  m_pInputDevice  = XII_DEFAULT_NEW(xiiStandardInputDevice, m_CreationDescription.m_uiWindowNumber, m_hWindowHandle);
+  m_pInputDevice = XII_DEFAULT_NEW(xiiStandardInputDevice, m_CreationDescription.m_uiWindowNumber, m_hWindowHandle);
 #endif
 
   m_pInputDevice->SetClipMouseCursor(m_CreationDescription.m_bClipMouseCursor ? xiiMouseCursorClipMode::ClipToWindowImmediate : xiiMouseCursorClipMode::NoClip);
@@ -324,12 +338,24 @@ xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
 {
   SDL_SysWMinfo wmInfo;
   SDL_VERSION(&wmInfo.version);
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  xiiInt32 iReturnCode = SDL_GetWindowWMInfo(m_hWindowHandle, &wmInfo);
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
   xiiInt32 iReturnCode = SDL_GetWindowWMInfo(m_hWindowHandle.sdlWindow, &wmInfo);
+#else
+#  error Platform implementation not available
+#endif
 
   if (iReturnCode == SDL_TRUE)
   {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
     return xiiMinWindows::FromNative<HWND>(wmInfo.info.win.window);
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+    xiiWindowHandle hWindowHandle;
+    hWindowHandle.type      = xiiWindowHandle::Type::XCB;
+    hWindowHandle.x11Window = wmInfo.info.x11.window;
+    return hWindowHandle;
 #else
     return m_hWindowHandle;
 #endif

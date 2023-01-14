@@ -24,10 +24,10 @@ struct xiiTexConvCompressionMode
 {
   enum Enum
   {
-    // note: order of enum values matters
-    None   = 0, // uncompressed
-    Medium = 1, // compressed with high quality, if possible
-    High   = 2, // strongest compression, if possible
+    // Note: order of enum values matters
+    None   = 0, // Uncompressed
+    Medium = 1, // Compressed with high quality, if possible
+    High   = 2, // Strongest compression, if possible
 
     Default = Medium,
   };
