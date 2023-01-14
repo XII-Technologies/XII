@@ -46,6 +46,7 @@ using xiiWindowInternalHandle = SDL_Window*;
 extern "C"
 {
   typedef struct xcb_connection_t xcb_connection_t;
+  typedef struct Window           Window;
 }
 
 struct xiiXcbWindowHandle
@@ -68,6 +69,7 @@ struct xiiWindowHandle
   {
     SDL_Window*        sdlWindow;
     xiiXcbWindowHandle xcbWindow;
+    Window             x11Window;
   };
 
   bool operator==(xiiWindowHandle& rhs)
