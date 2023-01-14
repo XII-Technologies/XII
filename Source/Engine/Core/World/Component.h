@@ -217,7 +217,7 @@ private:
   bool IsInitializing() const;
   bool IsSimulationStarted() const;
 
-  // updates the component's active state depending on the owner object's active state
+  // Updates the component's active state depending on the owner object's active state.
   void UpdateActiveState(bool bOwnerActive);
 
   bool SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg);

@@ -7,6 +7,6 @@ struct XII_CORE_DLL xiiMsgTransformChanged : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgTransformChanged, xiiMessage);
 
-  xiiTransform m_OldGlobalTransform;
-  xiiTransform m_NewGlobalTransform;
+  xiiTransformReal m_OldGlobalTransform;
+  xiiTransformReal m_NewGlobalTransform;
 };

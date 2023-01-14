@@ -61,7 +61,7 @@ public:
 
 protected:
   /// \cond
-  // internal methods
+  // Internal methods.
   friend class xiiWorld;
   friend class xiiInternal::WorldData;
 
