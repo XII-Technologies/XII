@@ -196,11 +196,11 @@ xiiResult xiiWindow::Initialize()
 
   if (m_CreationDescription.m_Position != xiiVec2I32(0x80000000, 0x80000000))
   {
-    SDL_SetWindowPosition(m_hWindowHandle, m_CreationDescription.m_Position.x, m_CreationDescription.m_Position.y);
+    SDL_SetWindowPosition(m_hWindowHandle.sdlWindow, m_CreationDescription.m_Position.x, m_CreationDescription.m_Position.y);
   }
 
   if (m_CreationDescription.m_bSetForegroundOnInit)
-    SDL_RaiseWindow(m_hWindowHandle);
+    SDL_RaiseWindow(m_hWindowHandle.sdlWindow);
 
 #if XII_ENABLED(XII_PLATFORM_LINUX)
   XII_ASSERT_DEV(m_hWindowHandle.type == xiiWindowHandle::Type::SDL, "Not a SDL handle");
@@ -269,7 +269,11 @@ void xiiWindow::ProcessWindowMessages()
   SDL_Event event;
   while (SDL_PollEvent(&event))
   {
-    if (event.type == SDL_WINDOWEVENT)
+    if (event.type == SDL_QUIT)
+    {
+      OnClickClose();
+    }
+    else if (event.type == SDL_WINDOWEVENT)
     {
       switch (event.window.event)
       {
@@ -299,7 +303,6 @@ void xiiWindow::ProcessWindowMessages()
         break;
 
         case SDL_WINDOWEVENT_CLOSE:
-        case SDL_QUIT:
         {
           OnClickClose();
         }
@@ -321,7 +324,7 @@ xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
 {
   SDL_SysWMinfo wmInfo;
   SDL_VERSION(&wmInfo.version);
-  xiiInt32 iReturnCode = SDL_GetWindowWMInfo(m_hWindowHandle, &wmInfo);
+  xiiInt32 iReturnCode = SDL_GetWindowWMInfo(m_hWindowHandle.sdlWindow, &wmInfo);
 
   if (iReturnCode == SDL_TRUE)
   {

@@ -24,5 +24,5 @@ void xiiControllerInput::SetDevice(xiiInputDeviceController* pDevice)
 }
 
 #if XII_ENABLED(XII_SUPPORTS_SDL)
-#  include <Core\System\Implementation\SDL\ControllerInput_SDL.inl>
+#  include <Core/System/Implementation/SDL/ControllerInput_SDL.inl>
 #endif

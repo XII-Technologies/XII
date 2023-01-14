@@ -1,6 +1,6 @@
 <RCC>
   <qresource prefix="GuiFoundation">
-    <file>XII-logo.svg</file>
+    <file>XII-Logo.svg</file>
     <file>Icons/Add16.png</file>
     <file>Icons/No16.png</file>
     <file>Icons/CVar.png</file>
