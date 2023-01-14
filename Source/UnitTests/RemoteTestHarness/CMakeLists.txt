@@ -1,3 +1,6 @@
+# Disabled
+return()
+
 xii_cmake_init()
 
 
