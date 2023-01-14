@@ -16,7 +16,13 @@
 
 class xiiWorld;
 class xiiSpatialSystem;
-class xiiCoordinateSystemProvider;
+
+template <typename Type>
+class xiiCoordinateSystemProviderTemplate;
+
+using xiiCoordinateSystemProvider       = xiiCoordinateSystemProviderTemplate<xiiReal>;
+using xiiCoordinateSystemProviderDouble = xiiCoordinateSystemProviderTemplate<double>;
+using xiiCoordinateSystemProviderFloat  = xiiCoordinateSystemProviderTemplate<float>;
 
 namespace xiiInternal
 {

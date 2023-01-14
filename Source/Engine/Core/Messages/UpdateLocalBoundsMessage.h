@@ -9,7 +9,7 @@ struct XII_CORE_DLL xiiMsgUpdateLocalBounds : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgUpdateLocalBounds, xiiMessage);
 
-  XII_ALWAYS_INLINE void AddBounds(const xiiBoundingBoxSphere& bounds, xiiSpatialData::Category category)
+  XII_ALWAYS_INLINE void AddBounds(const xiiBoundingBoxSphereReal& bounds, xiiSpatialData::Category category)
   {
     m_ResultingLocalBounds.ExpandToInclude(bounds);
     m_uiSpatialDataCategoryBitmask |= category.GetBitmask();
@@ -26,7 +26,7 @@ struct XII_CORE_DLL xiiMsgUpdateLocalBounds : public xiiMessage
 private:
   friend class xiiGameObject;
 
-  xiiBoundingBoxSphere m_ResultingLocalBounds;
-  xiiUInt32            m_uiSpatialDataCategoryBitmask = 0;
-  bool                 m_bAlwaysVisible               = false;
+  xiiBoundingBoxSphereReal m_ResultingLocalBounds;
+  xiiUInt32                m_uiSpatialDataCategoryBitmask = 0;
+  bool                     m_bAlwaysVisible               = false;
 };

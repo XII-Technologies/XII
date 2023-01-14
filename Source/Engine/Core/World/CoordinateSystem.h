@@ -15,23 +15,22 @@ struct xiiCoordinateSystemTemplate
   xiiVec3Template<Type> m_vUpDir;
 };
 
-using xiiCoordinateSystem       = xiiCoordinateSystemTemplate<float>;
+using xiiCoordinateSystem       = xiiCoordinateSystemTemplate<xiiReal>;
 using xiiCoordinateSystemDouble = xiiCoordinateSystemTemplate<double>;
-using xiiCoordinateSystemReal   = xiiCoordinateSystemTemplate<xiiReal>;
+using xiiCoordinateSystemFloat  = xiiCoordinateSystemTemplate<float>;
 
-class XII_CORE_DLL xiiCoordinateSystemProvider : public xiiRefCounted
+template <typename Type>
+class xiiCoordinateSystemProviderTemplate : public xiiRefCounted
 {
 public:
-  xiiCoordinateSystemProvider(const xiiWorld* pOwnerWorld) :
+  xiiCoordinateSystemProviderTemplate(const xiiWorld* pOwnerWorld) :
     m_pOwnerWorld(pOwnerWorld)
   {
   }
 
-  virtual ~xiiCoordinateSystemProvider() {}
+  virtual ~xiiCoordinateSystemProviderTemplate() {}
 
-  virtual void GetCoordinateSystemFloat(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_CoordinateSystem) const         = 0;
-  virtual void GetCoordinateSystemDouble(const xiiVec3d& vGlobalPosition, xiiCoordinateSystemDouble& out_CoordinateSystem) const = 0;
-  virtual void GetCoordinateSystemReal(const xiiVec3Real& vGlobalPosition, xiiCoordinateSystemReal& out_CoordinateSystem) const  = 0;
+  virtual void GetCoordinateSystem(const xiiVec3Template<Type>& vGlobalPosition, xiiCoordinateSystemTemplate<Type>& out_CoordinateSystem) const = 0;
 
 protected:
   friend class xiiWorld;
@@ -46,32 +45,46 @@ protected:
 /// the two systems in both directions.
 /// Currently, only uniformly scaled orthogonal coordinate systems are supported.
 /// They can however be right handed or left handed.
-class XII_CORE_DLL xiiCoordinateSystemConversion
+template <typename Type>
+class xiiCoordinateSystemConversionTemplate
 {
 public:
   /// \brief Creates a new conversion that until set up, does identity conversions.
-  xiiCoordinateSystemConversion(); // [tested]
+  xiiCoordinateSystemConversionTemplate(); // [tested]
 
   /// \brief Set up the source and target coordinate systems.
-  void SetConversion(const xiiCoordinateSystem& source, const xiiCoordinateSystem& target); // [tested]
+  void SetConversion(const xiiCoordinateSystemTemplate<Type>& source, const xiiCoordinateSystemTemplate<Type>& target); // [tested]
+
   /// \brief Returns the equivalent point in the target coordinate system.
-  xiiVec3 ConvertSourcePosition(const xiiVec3& vPos) const; // [tested]
+  xiiVec3Template<Type> ConvertSourcePosition(const xiiVec3Template<Type>& vPos) const; // [tested]
+
   /// \brief Returns the equivalent rotation in the target coordinate system.
-  xiiQuat ConvertSourceRotation(const xiiQuat& vOrientation) const; // [tested]
+  xiiQuatTemplate<Type> ConvertSourceRotation(const xiiQuatTemplate<Type>& vOrientation) const; // [tested]
+
   /// \brief Returns the equivalent length in the target coordinate system.
-  float ConvertSourceLength(float fLength) const; // [tested]
+  Type ConvertSourceLength(Type fLength) const; // [tested]
 
   /// \brief Returns the equivalent point in the source coordinate system.
-  xiiVec3 ConvertTargetPosition(const xiiVec3& vPos) const; // [tested]
+  xiiVec3Template<Type> ConvertTargetPosition(const xiiVec3Template<Type>& vPos) const; // [tested]
+
   /// \brief Returns the equivalent rotation in the source coordinate system.
-  xiiQuat ConvertTargetRotation(const xiiQuat& vOrientation) const; // [tested]
+  xiiQuatTemplate<Type> ConvertTargetRotation(const xiiQuatTemplate<Type>& vOrientation) const; // [tested]
+
   /// \brief Returns the equivalent length in the source coordinate system.
-  float ConvertTargetLength(float fLength) const; // [tested]
+  Type ConvertTargetLength(Type fLength) const; // [tested]
 
 private:
-  xiiMat3 m_mSourceToTarget;
-  xiiMat3 m_mTargetToSource;
-  float   m_fWindingSwap         = 1.0f;
-  float   m_fSourceToTargetScale = 1.0f;
-  float   m_fTargetToSourceScale = 1.0f;
+  xiiMat3Template<Type> m_mSourceToTarget;
+  xiiMat3Template<Type> m_mTargetToSource;
+
+  Type m_fWindingSwap         = static_cast<Type>(1);
+  Type m_fSourceToTargetScale = static_cast<Type>(1);
+  Type m_fTargetToSourceScale = static_cast<Type>(1);
 };
+
+using xiiCoordinateSystemConversion        = xiiCoordinateSystemConversionTemplate<xiiReal>;
+using xiiCoordinateSusstemConversionFloat  = xiiCoordinateSystemConversionTemplate<float>;
+using xiiCoordinateSusstemConversionDouble = xiiCoordinateSystemConversionTemplate<double>;
+
+
+#include <Core/World/Implementation/CoordinateSystem_inl.h>

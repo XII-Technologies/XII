@@ -65,7 +65,6 @@ XII_STATICLINK_LIBRARY(Core)
   XII_STATICLINK_REFERENCE(Core_WorldSerializer_Implementation_WorldWriter);
   XII_STATICLINK_REFERENCE(Core_World_Implementation_Component);
   XII_STATICLINK_REFERENCE(Core_World_Implementation_ComponentManager);
-  XII_STATICLINK_REFERENCE(Core_World_Implementation_CoordinateSystem);
   XII_STATICLINK_REFERENCE(Core_World_Implementation_Declarations);
   XII_STATICLINK_REFERENCE(Core_World_Implementation_EventMessageHandlerComponent);
   XII_STATICLINK_REFERENCE(Core_World_Implementation_GameObject);

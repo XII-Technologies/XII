@@ -13,7 +13,7 @@ struct XII_CORE_DLL xiiMsgCollision : public xiiMessage
   xiiComponentHandle m_hComponentA;
   xiiComponentHandle m_hComponentB;
 
-  xiiVec3 m_vPosition; ///< The collision position in world space.
-  xiiVec3 m_vNormal;   ///< The collision normal on the surface of object B.
-  xiiVec3 m_vImpulse;  ///< The collision impulse applied from object A to object B.
+  xiiVec3Real m_vPosition; ///< The collision position in world space.
+  xiiVec3Real m_vNormal;   ///< The collision normal on the surface of object B.
+  xiiVec3Real m_vImpulse;  ///< The collision impulse applied from object A to object B.
 };
