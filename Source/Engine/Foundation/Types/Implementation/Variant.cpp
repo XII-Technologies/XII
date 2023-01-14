@@ -5,9 +5,9 @@
 #include <Foundation/Types/VariantTypeRegistry.h>
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
-XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == constexpr(40));
+XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == 40);
 #else
-XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == constexpr(20));
+XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == 20);
 #endif
 
 /// constructors

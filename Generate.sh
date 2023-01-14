@@ -65,6 +65,7 @@ Issue=$(cat /etc/issue)
 
 UbuntuPattern="Ubuntu ([0-9][0-9])"
 MintPattern="Linux Mint ([0-9][0-9])"
+KaliPattern="Kali GNU/Linux Rolling"
 
 if [[ $Issue =~ $UbuntuPattern ]]; then
   Distribution="Ubuntu"
@@ -72,10 +73,19 @@ if [[ $Issue =~ $UbuntuPattern ]]; then
 elif [[ $Issue =~ $MintPattern ]]; then
   Distribution="Mint"
   Version=${BASH_REMATCH[1]}
+elif [[ $Issue =~ $KaliPattern ]]; then
+  Distribution="Kali"
+  
+  LsbRelease=$(lsb_release -r)
+  # VersionPattern="(^Release:+\s+[0-9]+.+[0-9])"
+  VersionPattern="([0-9]+)"
+  if [[ $LsbRelease =~ $VersionPattern ]]; then
+    Version=${BASH_REMATCH[0]}
+  fi
 fi
 
-if [ "$Distribution" = "Ubuntu" -a "$Version" = "22" ] || [ "$Distribution" = "Mint" -a "$Version" = "21" ] ; then
-  packages=(cmake build-essential ninja-build qt6-base-dev libqt6svg6-dev qt6-base-private-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev uuid-dev mold libfreetype-dev libtinfo5)
+if [ "$Distribution" = "Ubuntu" -a "$Version" = "22" ] || [ "$Distribution" = "Mint" -a "$Version" = "21" ] || [ "$Distribution" = "Kali" -a "$Version" = "2022" ] ; then
+  packages=(cmake build-essential ninja-build qt6-base-abi qt6-base-dev libqt6svg6-dev qt6-base-private-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev uuid-dev mold libfreetype-dev libtinfo5)
 
   if [ "$UseClang" = true ]; then
     packages+=(clang-14 libstdc++-12-dev)
@@ -91,6 +101,7 @@ else
   >&2 echo "Currently supported are:"
   >&2 echo "  * Ubuntu 22"
   >&2 echo "  * Linux Mint 21"
+  >&2 echo "  * Kali GNU/Linux Rolling"
   exit 1
 fi
 
@@ -108,6 +119,6 @@ fi
 
 if [ "$RunCMake" = true ]; then
   BuildDir="build-${BuildType}-${CompilerShort}"
-  cmake -B $BuildDir -S . -G Ninja -DCMAKE_CXX_COMPILER=$cxx_compiler -DCMAKE_C_COMPILER=$c_compiler -D_EXPERIMENTAL_EDITOR_ON_LINUX=ON -DXII_BUILD_EXPERIMENTAL_VULKAN=ON -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+  cmake -B $BuildDir -S . -G Ninja -DCMAKE_CXX_COMPILER=$cxx_compiler -DCMAKE_C_COMPILER=$c_compiler -DXII_EXPERIMENTAL_EDITOR_ON_LINUX=OFF -DXII_BUILD_EXPERIMENTAL_VULKAN=OFF -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
   echo -e "\nRun 'ninja -C ${BuildDir}' to build"
 fi
