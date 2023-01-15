@@ -595,5 +595,5 @@ xiiString xiiQtDocumentWindow::GetWindowIcon() const
   if (GetDocument() != nullptr)
     return GetDocument()->GetDocumentTypeDescriptor()->m_sIcon;
 
-  return ":/GuiFoundation/XII-logo.svg";
+  return ":/GuiFoundation/XII-Logo.svg";
 }

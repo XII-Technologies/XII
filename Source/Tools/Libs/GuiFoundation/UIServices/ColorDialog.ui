@@ -21,7 +21,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="../QtResources/resources.qrc">
-    <normaloff>:/GuiFoundation/XII-logo.svg</normaloff>:/GuiFoundation/XII-logo.svg</iconset>
+    <normaloff>:/GuiFoundation/XII-Logo.svg</normaloff>:/GuiFoundation/XII-Logo.svg</iconset>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_6">
    <item>

@@ -27,7 +27,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="../../../Tools/Libs/GuiFoundation/QtResources/resources.qrc">
-    <normaloff>:/GuiFoundation/XII-logo.svg</normaloff>:/GuiFoundation/XII-logo.svg</iconset>
+    <normaloff>:/GuiFoundation/XII-Logo.svg</normaloff>:/GuiFoundation/XII-Logo.svg</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>

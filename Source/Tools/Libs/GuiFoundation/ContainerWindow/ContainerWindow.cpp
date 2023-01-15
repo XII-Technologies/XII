@@ -61,7 +61,7 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   s_pContainerWindow = this;
 
   setObjectName("xiiEditor");
-  setWindowIcon(QIcon(QStringLiteral(":/GuiFoundation/XII-logo.svg")));
+  setWindowIcon(QIcon(QStringLiteral(":/GuiFoundation/XII-Logo.svg")));
 
   xiiQtDocumentWindow::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtContainerWindow::DocumentWindowEventHandler, this));
   xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtContainerWindow::ProjectEventHandler, this));
