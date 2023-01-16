@@ -227,16 +227,15 @@ public:
   /// \brief Queues the message for the given phase. The message is send to the receiverComponent after the given delay in the corresponding phase.
   void PostMessage(const xiiComponentHandle& receiverComponent, const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
 
-  /// \brief Finds the closest (parent) object, starting at pSearchObject, which has an xiiEventMessageHandlerComponent and returns all
-  /// xiiEventMessageHandlerComponents owned by that object and that handle messages of the given type.
+  /// \brief Finds the closest (parent) object, starting at pSearchObject, which has an xiiComponent that handles the given message and returns all
+  /// matching components owned by that object. If a xiiEventMessageHandlerComponent is found the search is stopped even if it doesn't handle the given message.
   ///
-  /// If any such parent object exists, the search is stopped there, even if that component does not handle messages of the given type.
   /// If no such parent object exists, it searches for all xiiEventMessageHandlerComponent instances that are set to 'handle global events'
   /// that handle messages of the given type.
-  void FindEventMsgHandlers(const xiiEventMessage& msg, xiiGameObject* pSearchObject, xiiDynamicArray<xiiComponent*>& out_components);
+  void FindEventMsgHandlers(const xiiMessage& msg, xiiGameObject* pSearchObject, xiiDynamicArray<xiiComponent*>& out_components);
 
   /// \copydoc xiiWorld::FindEventMsgHandlers()
-  void FindEventMsgHandlers(const xiiEventMessage& msg, const xiiGameObject* pSearchObject, xiiDynamicArray<const xiiComponent*>& out_components) const;
+  void FindEventMsgHandlers(const xiiMessage& msg, const xiiGameObject* pSearchObject, xiiDynamicArray<const xiiComponent*>& out_components) const;
 
   ///@}
 
@@ -368,7 +367,7 @@ private:
   void ProcessQueuedMessages(xiiObjectMsgQueueType::Enum queueType);
 
   template <typename World, typename GameObject, typename Component>
-  static void FindEventMsgHandlers(World& world, const xiiEventMessage& msg, GameObject pSearchObject, xiiDynamicArray<Component>& out_components);
+  static void FindEventMsgHandlers(World& world, const xiiMessage& msg, GameObject pSearchObject, xiiDynamicArray<Component>& out_components);
 
   void RegisterUpdateFunction(const xiiWorldModule::UpdateFunctionDesc& desc);
   void DeregisterUpdateFunction(const xiiWorldModule::UpdateFunctionDesc& desc);

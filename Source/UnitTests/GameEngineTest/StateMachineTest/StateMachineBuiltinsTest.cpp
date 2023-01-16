@@ -230,7 +230,7 @@ void xiiGameEngineTestStateMachine::RunBuiltinsTest()
     }
 
     {
-      xiiSharedPtr<xiiBlackboard> pBlackboard = XII_DEFAULT_NEW(xiiBlackboard);
+      xiiSharedPtr<xiiBlackboard> pBlackboard = xiiBlackboard::Create();
       pBlackboard->RegisterEntry(sTestVal, 2);
       pBlackboard->RegisterEntry(sTestVal2, 0);
 
@@ -350,7 +350,7 @@ void xiiGameEngineTestStateMachine::RunBuiltinsTest()
     }
 
     {
-      xiiSharedPtr<xiiBlackboard> pBlackboard = XII_DEFAULT_NEW(xiiBlackboard);
+      xiiSharedPtr<xiiBlackboard> pBlackboard = xiiBlackboard::Create();
       pBlackboard->RegisterEntry(sTestVal, 2);
 
       xiiStateMachineInstance sm(fakeOwner, pDesc);

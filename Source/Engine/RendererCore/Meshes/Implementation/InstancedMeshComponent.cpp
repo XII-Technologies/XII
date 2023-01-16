@@ -92,7 +92,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 void xiiInstancedMeshRenderData::FillBatchIdAndSortingKey()
 {
-  FillBatchIdAndSortingKeyInternal(m_uiUniqueID);
+  FillBatchIdAndSortingKeyInternal(m_pExplicitInstanceData->m_hInstanceDataBuffer.GetInternalID().m_Data);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////

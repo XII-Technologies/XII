@@ -50,10 +50,6 @@ public:
   void SetPassThroughUnhandledEvents(bool bPassThrough);                               // [ property ]
   bool GetPassThroughUnhandledEvents() const { return m_bPassThroughUnhandledEvents; } // [ property ]
 
-  /// \brief Returns whether the given EventMessage is handled by this component.
-  ///   If it is handled the sender will cache this component as receiver, if not the sender will not send this message anymore.
-  virtual bool HandlesEventMessage(const xiiEventMessage& msg) const;
-
   /// \brief Returns all global event handler for the given world.
   static xiiArrayPtr<xiiComponentHandle> GetAllGlobalEventHandler(const xiiWorld* pWorld);
 

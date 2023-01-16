@@ -21,7 +21,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief A state machine state implementation that sends a xiiMsgStateMachineStateChanged on state enter or exit to the owner of the
+/// \brief A state machine state that sends a xiiMsgStateMachineStateChanged on state enter or exit to the owner of the
 /// state machine instance. Currently only works for xiiStateMachineComponent.
 ///
 /// Optionally it can also log a message on state enter or exit.
@@ -45,6 +45,42 @@ public:
   bool m_bSendMessageOnExit  = false;
   bool m_bLogOnEnter         = false;
   bool m_bLogOnExit          = false;
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+/// \brief A state machine state that sets the enabled flag on a game object and disables all other objects in the same group.
+///
+/// This state allows to easily switch the representation of a game object.
+/// For instance you may have two objects states: normal and burning
+/// You can basically just build two objects, one in the normal state, and one with all the effects needed for the fire.
+/// Then you group both objects under a shared parent (e.g. with name 'visuals'), give both of them a name ('normal', 'burning') and disable one of them.
+///
+/// When the state machine transitions from the normal state to the burning state, you can then use this type of state
+/// to say that from the 'visuals' group you want to activate the 'burning' object and deactivate all other objects in the same group.
+///
+/// Because the state activates one object and deactivates all others, you can have many different visuals and switch between them.
+/// You can also only activate an object and keep the rest in the group as they are (e.g. to enable more and more effects).
+/// If you only give a group path, but no object name, you can also use it to just disable all objects in a group.
+/// If multiple objects in the same group have the same name, they will all get activated simultaneously.
+///
+/// Make sure that essential other objects (like the physics representation or other scripts) are located on other objects, that don't get deactivated.
+class xiiStateMachineState_SwitchObject : public xiiStateMachineState
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiStateMachineState_SwitchObject, xiiStateMachineState);
+
+public:
+  xiiStateMachineState_SwitchObject(xiiStringView sName = xiiStringView());
+  ~xiiStateMachineState_SwitchObject();
+
+  virtual void OnEnter(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pFromState) const override;
+
+  virtual xiiResult Serialize(xiiStreamWriter& stream) const override;
+  virtual xiiResult Deserialize(xiiStreamReader& stream) override;
+
+  xiiString m_sGroupPath;
+  xiiString m_sObjectToEnable;
+  bool      m_bDeactivateOthers = true;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -111,6 +147,9 @@ public:
   /// \brief Sets the current state with the given name.
   bool SetState(xiiStringView sName); // [ scriptable ]
 
+  void        SetBlackboardName(const char* szName);                  // [ property ]
+  const char* GetBlackboardName() const { return m_sBlackboardName; } // [ property ]
+
 private:
   friend class xiiStateMachineState_SendMsg;
   void SendStateChangedMsg(xiiMsgStateMachineStateChanged& msg, xiiTime delay);
@@ -119,6 +158,7 @@ private:
 
   xiiStateMachineResourceHandle m_hResource;
   xiiHashedString               m_sInitialState;
+  xiiHashedString               m_sBlackboardName;
 
   xiiUniquePtr<xiiStateMachineInstance> m_pStateMachineInstance;
 

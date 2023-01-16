@@ -328,20 +328,18 @@ void xiiQuatTemplate<Type>::SetShortestRotation(const xiiVec3Template<Type>& vDi
   const Type fDot = v0.Dot(v1);
 
   // if both vectors are identical -> no rotation needed
-  if (xiiMath::IsEqual(fDot, (Type)1, (Type)0.0001))
+  if (xiiMath::IsEqual(fDot, (Type)1, xiiMath::SmallEpsilon<Type>()))
   {
     SetIdentity();
     return;
   }
-  else
-    // if both vectors are opposing
-    if (xiiMath::IsEqual(fDot, (Type)-1, (Type)0.0001))
+  else if (xiiMath::IsEqual(fDot, (Type)-1, xiiMath::SmallEpsilon<Type>())) // If both vectors are opposing
   {
     // find an axis, that is not identical and not opposing, xiiVec3Template::Cross-product to find perpendicular vector, rotate around that
     if (xiiMath::Abs(v0.Dot(xiiVec3Template<Type>(1, 0, 0))) < (Type)0.8)
-      SetFromAxisAndAngle(v0.CrossRH(xiiVec3Template<Type>(1, 0, 0)).GetNormalized(), xiiAngle::Radian(xiiMath::Pi<float>()));
+      SetFromAxisAndAngle(v0.CrossRH(xiiVec3Template<Type>(1, 0, 0)).GetNormalized(), xiiAngleTemplate<Type>::Radian(xiiMath::Pi<Type>()));
     else
-      SetFromAxisAndAngle(v0.CrossRH(xiiVec3Template<Type>(0, 1, 0)).GetNormalized(), xiiAngle::Radian(xiiMath::Pi<float>()));
+      SetFromAxisAndAngle(v0.CrossRH(xiiVec3Template<Type>(0, 1, 0)).GetNormalized(), xiiAngleTemplate<Type>::Radian(xiiMath::Pi<Type>()));
 
     return;
   }
@@ -381,11 +379,11 @@ void xiiQuatTemplate<Type>::SetSlerp(const xiiQuatTemplate<Type>& qFrom, const x
 
   if (cosTheta < qdelta)
   {
-    xiiAngle theta = xiiMath::ACos((float)cosTheta);
+    xiiAngleTemplate<Type> theta = xiiMath::ACos(cosTheta);
 
-    // use sqrtInv(1+c^2) instead of 1.0/sin(theta)
-    const Type     iSinTheta = (Type)1 / xiiMath::Sqrt(one - (cosTheta * cosTheta));
-    const xiiAngle tTheta    = static_cast<float>(t) * theta;
+    // Use sqrtInv(1+c^2) instead of 1.0/sin(theta)
+    const Type                   iSinTheta = (Type)1 / xiiMath::Sqrt(one - (cosTheta * cosTheta));
+    const xiiAngleTemplate<Type> tTheta    = t * theta;
 
     Type s0 = xiiMath::Sin(theta - tTheta);
     Type s1 = xiiMath::Sin(tTheta);

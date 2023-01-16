@@ -120,8 +120,6 @@ void SampleGameState::BeforeWorldUpdate()
 #endif
 }
 
-
-
 xiiGameStatePriority SampleGameState::DeterminePriority(xiiWorld* pWorld) const
 {
   return xiiGameStatePriority::Default;

@@ -38,7 +38,7 @@ xiiTestFramework* xiiTestSetup::InitTestFramework(const char* szTestName, const 
   std::string sTestFolder = std::string(xiiOSFile::GetUserDataFolder());
   if (*sTestFolder.rbegin() != '/')
     sTestFolder.append("/");
-  sTestFolder.append("xiiEngine Tests/");
+  sTestFolder.append("XII/UnitTests/");
   sTestFolder.append(szTestName);
 
   std::string sTestDataSubFolder = "Data/UnitTests/";

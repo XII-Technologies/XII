@@ -302,6 +302,18 @@ xiiResult xiiJoltConstraintComponent::FindParentBody(xiiUInt32& out_uiJoltBodyID
       }
       return XII_SUCCESS;
     }
+    else
+    {
+      if (GetUserFlag(0) == true)
+      {
+        xiiTransform globalFrame = m_LocalFrameA;
+
+        // m_localFrameA is already valid
+        // assume it was in global space and move it into local space of the found parent
+        m_LocalFrameA.SetLocalTransform(pRbComp->GetOwner()->GetGlobalTransform(), globalFrame);
+        m_LocalFrameA.m_vPosition = m_LocalFrameA.m_vPosition.CompMul(pObject->GetGlobalScaling());
+      }
+    }
   }
 
   pRbComp->EnsureSimulationStarted();

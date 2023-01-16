@@ -154,7 +154,7 @@ xiiResult xiiJoltActorComponent::CreateShape(JPH::BodyCreationSettings* pSetting
         pShape             = pScaledShape;
       }
 
-      opt.AddShape(xiiJoltConversionUtils::ToVec3(shape.m_Transform.m_vPosition), xiiJoltConversionUtils::ToQuat(shape.m_Transform.m_qRotation), pShape);
+      opt.AddShape(xiiJoltConversionUtils::ToVec3(shape.m_Transform.m_vPosition), xiiJoltConversionUtils::ToQuat(shape.m_Transform.m_qRotation).Normalized(), pShape);
     }
 
     auto res = opt.Create();

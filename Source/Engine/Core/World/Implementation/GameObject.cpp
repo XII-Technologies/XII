@@ -897,16 +897,31 @@ void xiiGameObject::PostMessageRecursive(const xiiMessage& msg, xiiTime delay, x
   GetWorld()->PostMessageRecursive(GetHandle(), msg, delay, queueType);
 }
 
-void xiiGameObject::SendEventMessage(xiiEventMessage& msg, const xiiComponent* pSenderComponent)
+void xiiGameObject::SendEventMessage(xiiMessage& msg, const xiiComponent* pSenderComponent)
 {
+  if (auto pEventMsg = xiiDynamicCast<xiiEventMessage*>(&msg))
+  {
+    pEventMsg->FillFromSenderComponent(pSenderComponent);
+  }
+
   xiiHybridArray<xiiComponent*, 4> eventMsgHandlers;
   GetWorld()->FindEventMsgHandlers(msg, this, eventMsgHandlers);
 
-  if (eventMsgHandlers.IsEmpty() == false && pSenderComponent != nullptr)
+  for (auto pEventMsgHandler : eventMsgHandlers)
   {
-    msg.m_hSenderComponent = pSenderComponent->GetHandle();
-    msg.m_hSenderObject    = pSenderComponent->GetOwner()->GetHandle();
+    pEventMsgHandler->SendMessage(msg);
   }
+}
+
+void xiiGameObject::SendEventMessage(xiiMessage& msg, const xiiComponent* pSenderComponent) const
+{
+  if (auto pEventMsg = xiiDynamicCast<xiiEventMessage*>(&msg))
+  {
+    pEventMsg->FillFromSenderComponent(pSenderComponent);
+  }
+
+  xiiHybridArray<const xiiComponent*, 4> eventMsgHandlers;
+  GetWorld()->FindEventMsgHandlers(msg, this, eventMsgHandlers);
 
   for (auto pEventMsgHandler : eventMsgHandlers)
   {
@@ -914,33 +929,15 @@ void xiiGameObject::SendEventMessage(xiiEventMessage& msg, const xiiComponent* p
   }
 }
 
-void xiiGameObject::SendEventMessage(xiiEventMessage& msg, const xiiComponent* pSenderComponent) const
+void xiiGameObject::PostEventMessage(xiiMessage& msg, const xiiComponent* pSenderComponent, xiiTime delay, xiiObjectMsgQueueType::Enum queueType) const
 {
+  if (auto pEventMsg = xiiDynamicCast<xiiEventMessage*>(&msg))
+  {
+    pEventMsg->FillFromSenderComponent(pSenderComponent);
+  }
+
   xiiHybridArray<const xiiComponent*, 4> eventMsgHandlers;
   GetWorld()->FindEventMsgHandlers(msg, this, eventMsgHandlers);
-
-  if (eventMsgHandlers.IsEmpty() == false && pSenderComponent != nullptr)
-  {
-    msg.m_hSenderComponent = pSenderComponent->GetHandle();
-    msg.m_hSenderObject    = pSenderComponent->GetOwner()->GetHandle();
-  }
-
-  for (auto pEventMsgHandler : eventMsgHandlers)
-  {
-    pEventMsgHandler->SendMessage(msg);
-  }
-}
-
-void xiiGameObject::PostEventMessage(xiiEventMessage& msg, const xiiComponent* pSenderComponent, xiiTime delay, xiiObjectMsgQueueType::Enum queueType) const
-{
-  xiiHybridArray<const xiiComponent*, 4> eventMsgHandlers;
-  GetWorld()->FindEventMsgHandlers(msg, this, eventMsgHandlers);
-
-  if (eventMsgHandlers.IsEmpty() == false && pSenderComponent != nullptr)
-  {
-    msg.m_hSenderComponent = pSenderComponent->GetHandle();
-    msg.m_hSenderObject    = pSenderComponent->GetOwner()->GetHandle();
-  }
 
   for (auto pEventMsgHandler : eventMsgHandlers)
   {
@@ -1104,5 +1101,7 @@ void xiiGameObject::TransformationData::RecreateSpatialData(xiiSpatialSystem& sp
     m_hSpatialData = spatialSystem.CreateSpatialData(m_globalBounds, m_pObject, m_uiSpatialDataCategoryBitmask, m_pObject->m_Tags);
   }
 }
+
+
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_GameObject);

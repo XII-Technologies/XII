@@ -14,7 +14,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 void xiiSkinnedMeshRenderData::FillBatchIdAndSortingKey()
 {
-  FillBatchIdAndSortingKeyInternal(m_uiUniqueID);
+  FillBatchIdAndSortingKeyInternal(m_hSkinningTransforms.GetInternalID().m_Data);
 }
 
 xiiSkinningState::xiiSkinningState() = default;

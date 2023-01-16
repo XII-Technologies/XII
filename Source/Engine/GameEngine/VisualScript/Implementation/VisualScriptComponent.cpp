@@ -212,11 +212,11 @@ void xiiVisualScriptComponent::SetScript(const xiiVisualScriptResourceHandle& hR
   }
 }
 
-bool xiiVisualScriptComponent::HandlesEventMessage(const xiiEventMessage& msg) const
+bool xiiVisualScriptComponent::HandlesMessage(const xiiMessage& msg) const
 {
   if (m_pScriptInstance)
   {
-    return m_pScriptInstance->HandlesEventMessage(msg);
+    return m_pScriptInstance->HandlesMessage(msg);
   }
 
   return false;

@@ -105,7 +105,7 @@ void xiiWorld::Clear()
     }
   }
 
-  // Make sure all dead objects and components are cleared right now
+  // make sure all dead objects and components are cleared right now
   DeleteDeadObjects();
   DeleteDeadComponents();
 
@@ -413,12 +413,12 @@ void xiiWorld::PostMessage(const xiiComponentHandle& receiverComponent, const xi
   }
 }
 
-void xiiWorld::FindEventMsgHandlers(const xiiEventMessage& msg, xiiGameObject* pSearchObject, xiiDynamicArray<xiiComponent*>& out_components)
+void xiiWorld::FindEventMsgHandlers(const xiiMessage& msg, xiiGameObject* pSearchObject, xiiDynamicArray<xiiComponent*>& out_components)
 {
   FindEventMsgHandlers(*this, msg, pSearchObject, out_components);
 }
 
-void xiiWorld::FindEventMsgHandlers(const xiiEventMessage& msg, const xiiGameObject* pSearchObject, xiiDynamicArray<const xiiComponent*>& out_components) const
+void xiiWorld::FindEventMsgHandlers(const xiiMessage& msg, const xiiGameObject* pSearchObject, xiiDynamicArray<const xiiComponent*>& out_components) const
 {
   FindEventMsgHandlers(*this, msg, pSearchObject, out_components);
 }
@@ -874,67 +874,63 @@ void xiiWorld::ProcessQueuedMessages(xiiObjectMsgQueueType::Enum queueType)
 
 // static
 template <typename World, typename GameObject, typename Component>
-void xiiWorld::FindEventMsgHandlers(World& world, const xiiEventMessage& msg, GameObject pSearchObject, xiiDynamicArray<Component>& out_components)
+void xiiWorld::FindEventMsgHandlers(World& world, const xiiMessage& msg, GameObject pSearchObject, xiiDynamicArray<Component>& out_components)
 {
   using EventMessageHandlerComponentType = typename std::conditional<std::is_const<World>::value, const xiiEventMessageHandlerComponent*, xiiEventMessageHandlerComponent*>::type;
 
   out_components.Clear();
 
-  // walk the graph upwards until an object is found with an xiiEventMessageHandlerComponent that handles this type of message
+  // walk the graph upwards until an object is found with at least one xiiComponent that handles this type of message
   {
     auto pCurrentObject = pSearchObject;
 
     while (pCurrentObject != nullptr)
     {
-      xiiHybridArray<EventMessageHandlerComponentType, 4> eventMessageHandlerComponents;
-      pCurrentObject->TryGetComponentsOfBaseType(eventMessageHandlerComponents);
-
-      if (eventMessageHandlerComponents.IsEmpty() == false)
+      bool bContinueSearch = true;
+      for (auto pComponent : pCurrentObject->GetComponents())
       {
-        bool bContinueSearch = true;
-
-        for (auto pEventMessageHandlerComponent : eventMessageHandlerComponents)
+        if constexpr (std::is_const<World>::value == false)
         {
-          if constexpr (std::is_const<World>::value == false)
-          {
-            pEventMessageHandlerComponent->EnsureInitialized();
-          }
+          pComponent->EnsureInitialized();
+        }
 
-          if (pEventMessageHandlerComponent->HandlesEventMessage(msg))
+        if (pComponent->HandlesMessage(msg))
+        {
+          out_components.PushBack(pComponent);
+          bContinueSearch = false;
+        }
+        else
+        {
+          if constexpr (std::is_const<World>::value)
           {
-            out_components.PushBack(pEventMessageHandlerComponent);
-            bContinueSearch = false;
-          }
-          else
-          {
-            if constexpr (std::is_const<World>::value)
+            if (pComponent->IsInitialized() == false)
             {
-              if (pEventMessageHandlerComponent->IsInitialized() == false)
-              {
-                xiiLog::Warning("Potential event message handler component of type '{}' was not initialized (yet) and thus might have reported "
-                                "an incorrect result in HandlesEventMessage(). "
-                                "To allow this component to be automatically initialized at this point in time call the non-const variant of SendEventMessage.",
-                                pEventMessageHandlerComponent->GetDynamicRTTI()->GetTypeName());
-              }
+              xiiLog::Warning("Component of type '{}' was not initialized (yet) and thus might have reported an incorrect result in HandlesMessage(). "
+                              "To allow this component to be automatically initialized at this point in time call the non-const variant of SendEventMessage.",
+                              pComponent->GetDynamicRTTI()->GetTypeName());
             }
+          }
 
-            // only continue to search on parent objects if all event handlers on the current object have the "pass through unhandled events" flag set.
+          // only continue to search on parent objects if all event handlers on the current object have the "pass through unhandled events" flag set.
+          if (auto pEventMessageHandlerComponent = xiiDynamicCast<EventMessageHandlerComponentType>(pComponent))
+          {
             bContinueSearch &= pEventMessageHandlerComponent->GetPassThroughUnhandledEvents();
           }
         }
+      }
 
-        if (!bContinueSearch)
-        {
-          // stop searching as we found at least one xiiEventMessageHandlerComponent or one doesn't have the "pass through" flag set.
-          return;
-        }
+      if (!bContinueSearch)
+      {
+        // stop searching as we found at least one xiiEventMessageHandlerComponent or one doesn't have the "pass through" flag set.
+        return;
       }
 
       pCurrentObject = pCurrentObject->GetParent();
     }
   }
 
-  // if no such object is found, check all objects that are registered as 'global event handlers'
+  // if no components have been found, check all event handler components that are registered as 'global event handlers'
+  if (out_components.IsEmpty())
   {
     auto globalEventMessageHandler = xiiEventMessageHandlerComponent::GetAllGlobalEventHandler(&world);
     for (auto hEventMessageHandlerComponent : globalEventMessageHandler)
@@ -942,7 +938,7 @@ void xiiWorld::FindEventMsgHandlers(World& world, const xiiEventMessage& msg, Ga
       EventMessageHandlerComponentType pEventMessageHandlerComponent = nullptr;
       if (world.TryGetComponent(hEventMessageHandlerComponent, pEventMessageHandlerComponent))
       {
-        if (pEventMessageHandlerComponent->HandlesEventMessage(msg))
+        if (pEventMessageHandlerComponent->HandlesMessage(msg))
         {
           out_components.PushBack(pEventMessageHandlerComponent);
         }
@@ -1410,5 +1406,7 @@ void xiiWorld::SetMaxInitializationTimePerFrame(xiiTime maxInitTime)
 
   m_Data.m_MaxInitializationTimePerFrame = maxInitTime;
 }
+
+
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_World);

@@ -277,7 +277,7 @@ void xiiJoltDynamicActorComponent::OnSimulationStarted()
   pUserData->Init(this);
 
   bodyCfg.mPosition                     = xiiJoltConversionUtils::ToVec3(trans.m_Position);
-  bodyCfg.mRotation                     = xiiJoltConversionUtils::ToQuat(trans.m_Rotation);
+  bodyCfg.mRotation                     = xiiJoltConversionUtils::ToQuat(trans.m_Rotation).Normalized();
   bodyCfg.mMotionType                   = m_bKinematic ? JPH::EMotionType::Kinematic : JPH::EMotionType::Dynamic;
   bodyCfg.mObjectLayer                  = xiiJoltCollisionFiltering::ConstructObjectLayer(m_uiCollisionLayer, xiiJoltBroadphaseLayer::Dynamic);
   bodyCfg.mMotionQuality                = m_bCCD ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete;

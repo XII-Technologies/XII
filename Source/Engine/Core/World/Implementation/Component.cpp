@@ -171,6 +171,11 @@ void xiiComponent::PostMessage(const xiiMessage& msg, xiiTime delay, xiiObjectMs
   GetWorld()->PostMessage(GetHandle(), msg, delay, queueType);
 }
 
+bool xiiComponent::HandlesMessage(const xiiMessage& msg) const
+{
+  return m_pMessageDispatchType->CanHandleMessage(msg.GetId());
+}
+
 void xiiComponent::Initialize() {}
 
 void xiiComponent::Deinitialize()

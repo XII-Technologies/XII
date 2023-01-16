@@ -106,7 +106,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE
 // clang-format on
 
 xiiBlackboardComponent::xiiBlackboardComponent() :
-  m_pBoard(XII_DEFAULT_NEW(xiiBlackboard))
+  m_pBoard(xiiBlackboard::Create())
 {
 }
 
@@ -115,17 +115,29 @@ xiiBlackboardComponent::~xiiBlackboardComponent()                              =
 xiiBlackboardComponent& xiiBlackboardComponent::operator=(xiiBlackboardComponent&& other) = default;
 
 // static
-xiiSharedPtr<xiiBlackboard> xiiBlackboardComponent::FindBlackboard(xiiGameObject* pObject)
+xiiSharedPtr<xiiBlackboard> xiiBlackboardComponent::FindBlackboard(xiiGameObject* pObject, xiiStringView sBlackboardName /*= xiiStringView()*/)
 {
+  xiiTempHashedString sBlackboardNameHashed(sBlackboardName);
+
   xiiBlackboardComponent* pBlackboardComponent = nullptr;
-  while (pObject != nullptr && !pObject->TryGetComponentOfBaseType(pBlackboardComponent))
+  while (pObject != nullptr)
   {
+    if (pObject->TryGetComponentOfBaseType(pBlackboardComponent))
+    {
+      if (sBlackboardName.IsEmpty() || pBlackboardComponent->GetBoard()->GetNameHashed() == sBlackboardNameHashed)
+      {
+        return pBlackboardComponent->GetBoard();
+      }
+    }
+
     pObject = pObject->GetParent();
   }
 
-  if (pBlackboardComponent != nullptr)
+  if (sBlackboardName.IsEmpty() == false)
   {
-    return pBlackboardComponent->GetBoard();
+    xiiHashedString sHashedBlackboardName;
+    sHashedBlackboardName.Assign(sBlackboardName);
+    return xiiBlackboard::GetOrCreateGlobal(sHashedBlackboardName);
   }
 
   return nullptr;

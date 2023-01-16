@@ -18,6 +18,7 @@
 #include <RendererCore/Debug/DebugRenderer.h>
 #include <RendererCore/Lights/DirectionalLightComponent.h>
 #include <RendererCore/Lights/Implementation/ShadowPool.h>
+#include <RendererCore/Lights/SkyLightComponent.h>
 #include <RendererCore/Utils/WorldGeoExtractionUtil.h>
 
 // clang-format off
@@ -566,9 +567,8 @@ void xiiSceneContext::OnDeinitialize()
   m_Selection.Clear();
   m_SelectionWithChildren.Clear();
   m_SelectionWithChildrenSet.Clear();
-  m_hAmbientLight[0].Invalidate();
-  m_hAmbientLight[1].Invalidate();
-  m_hAmbientLight[2].Invalidate();
+  m_hSkyLight.Invalidate();
+  m_hDirectionalLight.Invalidate();
   m_LayerTag = xiiTag();
   for (xiiLayerContext* pLayer : m_Layers)
   {
@@ -808,7 +808,7 @@ bool xiiSceneContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
     m_pWorld->Update();
   }
 
-  //#TODO layers
+  // #TODO layers
   xiiSceneExportModifier::ApplyAllModifiers(*m_pWorld, GetDocumentGuid());
 
   xiiDeferredFileWriter file;
@@ -826,13 +826,14 @@ bool xiiSceneContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
       file.WriteBytes(szSceneTag, sizeof(char) * 16).IgnoreResult();
     }
 
-    const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
-
+    const xiiTag& tagEditor               = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
+    const xiiTag& tagNoExport             = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Exclude From Export");
     const xiiTag& tagEditorPrefabInstance = xiiTagRegistry::GetGlobalRegistry().RegisterTag("EditorPrefabInstance");
 
     xiiTagSet tags;
     tags.Set(tagEditor);
     tags.Set(tagEditorPrefabInstance);
+    tags.Set(tagNoExport);
 
     xiiWorldWriter ww;
     ww.WriteWorld(file, *m_pWorld, &tags);
@@ -854,6 +855,9 @@ void xiiSceneContext::ExportExposedParameters(const xiiWorldWriter& ww, xiiDefer
     const xiiRTTI* pComponenType = nullptr;
 
     xiiRttiConverterObject obj = m_Context.GetObjectByGUID(esp.m_Object);
+
+    if (obj.m_pType == nullptr)
+      continue;
 
     if (obj.m_pType->IsDerivedFrom<xiiGameObject>())
     {
@@ -1018,26 +1022,40 @@ bool xiiSceneContext::UpdateThumbnailViewContext(xiiEngineProcessViewContext* pT
 
 void xiiSceneContext::AddAmbientLight(bool bSetEditorTag)
 {
-  if (!m_hAmbientLight[0].IsInvalidated())
+  if (!m_hSkyLight.IsInvalidated() || !m_hDirectionalLight.IsInvalidated())
     return;
 
   XII_LOCK(GetWorld()->GetWriteMarker());
 
-  const xiiColorGammaUB ambient[3]   = {xiiColor::White, xiiColor::White, xiiColor::White};
-  const float           intensity[3] = {10, 5, 3};
+  xiiSkyLightComponentManager* pSkyMan = GetWorld()->GetComponentManager<xiiSkyLightComponentManager>();
+  if (pSkyMan == nullptr || pSkyMan->GetSingletonComponent() == nullptr)
+  {
+    // only create a skylight, if there is none yet
 
-  for (xiiUInt32 i = 0; i < 3; ++i)
+    xiiGameObjectDesc obj;
+    obj.m_sName.Assign("Sky Light");
+
+    if (bSetEditorTag)
+    {
+      const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
+      obj.m_Tags.Set(tagEditor); // to prevent it from being exported
+    }
+
+    xiiGameObject* pObj;
+    m_hSkyLight = GetWorld()->CreateObject(obj, pObj);
+
+
+    xiiSkyLightComponent* pSkyLight = nullptr;
+    xiiSkyLightComponent::CreateComponent(pObj, pSkyLight);
+    pSkyLight->SetCubeMapFile("{ 0b202e08-a64f-465d-b38e-15b81d161822 }");
+    pSkyLight->SetReflectionProbeMode(xiiReflectionProbeMode::Static);
+  }
+
   {
     xiiGameObjectDesc obj;
     obj.m_sName.Assign("Ambient Light");
 
-    /// \todo These settings are crap, but I don't care atm
-    if (i == 0)
-      obj.m_LocalRotation.SetFromAxisAndAngle(xiiVec3(0.0f, 1.0f, 0.0f), xiiAngle::Degree(60.0f));
-    if (i == 1)
-      obj.m_LocalRotation.SetFromAxisAndAngle(xiiVec3(1.0f, 0.0f, 0.0f), xiiAngle::Degree(30.0f));
-    if (i == 2)
-      obj.m_LocalRotation.SetFromAxisAndAngle(xiiVec3(0.0f, 1.0f, 0.0f), xiiAngle::Degree(220.0f));
+    obj.m_LocalRotation.SetFromEulerAngles(xiiAngle::Degree(-14.510815f), xiiAngle::Degree(43.07951f), xiiAngle::Degree(93.223808f));
 
     if (bSetEditorTag)
     {
@@ -1046,32 +1064,30 @@ void xiiSceneContext::AddAmbientLight(bool bSetEditorTag)
     }
 
     xiiGameObject* pLight;
-    m_hAmbientLight[i] = GetWorld()->CreateObject(obj, pLight);
+    m_hDirectionalLight = GetWorld()->CreateObject(obj, pLight);
 
     xiiDirectionalLightComponent* pDirLight = nullptr;
     xiiDirectionalLightComponent::CreateComponent(pLight, pDirLight);
-    pDirLight->SetLightColor(ambient[i]);
-    pDirLight->SetIntensity(intensity[i]);
-
-    if (i == 0)
-    {
-      pDirLight->SetCastShadows(true);
-    }
+    pDirLight->SetIntensity(10.0f);
   }
 }
 
 void xiiSceneContext::RemoveAmbientLight()
 {
-  if (m_hAmbientLight[0].IsInvalidated())
-    return;
-
   XII_LOCK(GetWorld()->GetWriteMarker());
 
-  for (xiiUInt32 i = 0; i < 3; ++i)
+  if (!m_hSkyLight.IsInvalidated())
   {
     // make sure to remove the object RIGHT NOW, otherwise it may still exist during scene export (without the "Editor" tag)
-    GetWorld()->DeleteObjectNow(m_hAmbientLight[i]);
-    m_hAmbientLight[i].Invalidate();
+    GetWorld()->DeleteObjectNow(m_hSkyLight);
+    m_hSkyLight.Invalidate();
+  }
+
+  if (!m_hDirectionalLight.IsInvalidated())
+  {
+    // make sure to remove the object RIGHT NOW, otherwise it may still exist during scene export (without the "Editor" tag)
+    GetWorld()->DeleteObjectNow(m_hDirectionalLight);
+    m_hDirectionalLight.Invalidate();
   }
 }
 

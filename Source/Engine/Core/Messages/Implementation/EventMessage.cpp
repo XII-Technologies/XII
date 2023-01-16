@@ -14,14 +14,35 @@ XII_CHECK_AT_COMPILETIME(sizeof(xiiEventMessageSender<xiiEventMessage>) == 16);
 
 namespace xiiInternal
 {
-  void EventMessageSenderHelper::SendEventMessage(xiiComponent* pSenderComponent, xiiArrayPtr<xiiComponentHandle> receivers, xiiEventMessage& msg)
+  template <typename World, typename GameObject>
+  static void UpdateCachedReceivers(const xiiMessage& msg, World& world, GameObject pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_CachedReceivers)
+  {
+    if (inout_CachedReceivers.GetUserData<xiiUInt32>() == 0)
+    {
+      using ComponentType = typename std::conditional<std::is_const<World>::value, const xiiComponent*, xiiComponent*>::type;
+
+      xiiHybridArray<ComponentType, 4> eventMsgHandlers;
+      world.FindEventMsgHandlers(msg, pSearchObject, eventMsgHandlers);
+
+      for (auto pEventMsgHandler : eventMsgHandlers)
+      {
+        inout_CachedReceivers.PushBack(pEventMsgHandler->GetHandle());
+      }
+
+      inout_CachedReceivers.GetUserData<xiiUInt32>() = 1;
+    }
+  }
+
+  void EventMessageSenderHelper::SendEventMessage(xiiMessage& msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_CachedReceivers)
   {
     xiiWorld* pWorld = pSenderComponent->GetWorld();
+    UpdateCachedReceivers(msg, *pWorld, pSearchObject, inout_CachedReceivers);
+
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
     bool bHandlerFound = false;
 #endif
 
-    for (auto hReceiver : receivers)
+    for (auto hReceiver : inout_CachedReceivers)
     {
       xiiComponent* pReceiverComponent = nullptr;
       if (pWorld->TryGetComponent(hReceiver, pReceiverComponent))
@@ -41,14 +62,16 @@ namespace xiiInternal
 #endif
   }
 
-  void EventMessageSenderHelper::SendEventMessage(const xiiComponent* pSenderComponent, xiiArrayPtr<xiiComponentHandle> receivers, xiiEventMessage& msg)
+  void EventMessageSenderHelper::SendEventMessage(xiiMessage& msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_CachedReceivers)
   {
     const xiiWorld* pWorld = pSenderComponent->GetWorld();
+    UpdateCachedReceivers(msg, *pWorld, pSearchObject, inout_CachedReceivers);
+
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
     bool bHandlerFound = false;
 #endif
 
-    for (auto hReceiver : receivers)
+    for (auto hReceiver : inout_CachedReceivers)
     {
       const xiiComponent* pReceiverComponent = nullptr;
       if (pWorld->TryGetComponent(hReceiver, pReceiverComponent))
@@ -68,12 +91,14 @@ namespace xiiInternal
 #endif
   }
 
-  void EventMessageSenderHelper::PostEventMessage(const xiiComponent* pSenderComponent, xiiArrayPtr<xiiComponentHandle> receivers, const xiiEventMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType)
+  void EventMessageSenderHelper::PostEventMessage(const xiiMessage& msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_CachedReceivers, xiiTime delay, xiiObjectMsgQueueType::Enum queueType)
   {
-    if (!receivers.IsEmpty())
+    const xiiWorld* pWorld = pSenderComponent->GetWorld();
+    UpdateCachedReceivers(msg, *pWorld, pSearchObject, inout_CachedReceivers);
+
+    if (!inout_CachedReceivers.IsEmpty())
     {
-      const xiiWorld* pWorld = pSenderComponent->GetWorld();
-      for (auto hReceiver : receivers)
+      for (auto hReceiver : inout_CachedReceivers)
       {
         pWorld->PostMessage(hReceiver, msg, delay, queueType);
       }
@@ -85,8 +110,7 @@ namespace xiiInternal
     }
 #endif
   }
+
 } // namespace xiiInternal
-
-
 
 XII_STATICLINK_FILE(Core, Core_Messages_Implementation_EventMessage);

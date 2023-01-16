@@ -69,8 +69,8 @@ public:
   static void                             RegisterDataPinAssignFunction(xiiVisualScriptDataPinType::Enum sourceType, xiiVisualScriptDataPinType::Enum dstType, xiiVisualScriptDataPinAssignFunc func);
   static xiiVisualScriptDataPinAssignFunc FindDataPinAssignFunction(xiiVisualScriptDataPinType::Enum sourceType, xiiVisualScriptDataPinType::Enum dstType);
 
-  /// \brief Returns whether this script has a node that handles this type of event message.
-  bool HandlesEventMessage(const xiiEventMessage& msg) const;
+  /// \brief Returns whether this script has a node that handles this type of message.
+  bool HandlesMessage(const xiiMessage& msg) const;
 
 private:
   friend class xiiVisualScriptNode;
