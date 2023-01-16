@@ -1,6 +1,7 @@
 #include <Core/CorePCH.h>
 
 #include <Core/Utils/Blackboard.h>
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/Stream.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Reflection/Reflection.h>
@@ -14,11 +15,63 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 
 //////////////////////////////////////////////////////////////////////////
 
+// clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(Core, Blackboard)
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    XII_LOCK(xiiBlackboard::s_GlobalBlackboardsMutex);
+    xiiBlackboard::s_GlobalBlackboards.Clear();
+  }
+
+XII_END_SUBSYSTEM_DECLARATION;
+// clang-format on
+
+// static
+xiiMutex                                                   xiiBlackboard::s_GlobalBlackboardsMutex;
+xiiHashTable<xiiHashedString, xiiSharedPtr<xiiBlackboard>> xiiBlackboard::s_GlobalBlackboards;
+
+// static
+xiiSharedPtr<xiiBlackboard> xiiBlackboard::Create(xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
+{
+  return XII_NEW(pAllocator, xiiBlackboard);
+}
+
+// static
+xiiSharedPtr<xiiBlackboard> xiiBlackboard::GetOrCreateGlobal(const xiiHashedString& sBlackboardName, xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
+{
+  XII_LOCK(s_GlobalBlackboardsMutex);
+
+  auto it = s_GlobalBlackboards.Find(sBlackboardName);
+
+  if (it.IsValid())
+  {
+    return it.Value();
+  }
+
+  xiiSharedPtr<xiiBlackboard> pShrd = XII_NEW(pAllocator, xiiBlackboard);
+  pShrd->m_sName                    = sBlackboardName;
+  s_GlobalBlackboards.Insert(sBlackboardName, pShrd);
+
+  return pShrd;
+}
+
+// static
+xiiSharedPtr<xiiBlackboard> xiiBlackboard::FindGlobal(const xiiTempHashedString& sBlackboardName)
+{
+  XII_LOCK(s_GlobalBlackboardsMutex);
+
+  xiiSharedPtr<xiiBlackboard> pBlackboard;
+  s_GlobalBlackboards.TryGetValue(sBlackboardName, pBlackboard);
+  return pBlackboard;
+}
+
 xiiBlackboard::xiiBlackboard()  = default;
 xiiBlackboard::~xiiBlackboard() = default;
 
 void xiiBlackboard::SetName(const char* szName)
 {
+  XII_LOCK(s_GlobalBlackboardsMutex);
   m_sName.Assign(szName);
 }
 

@@ -249,7 +249,7 @@ void xiiGameApplicationBase::DeactivateGameState()
   m_pGameState = nullptr;
 }
 
-xiiGameStateBase* xiiGameApplicationBase::GetActiveGameStateLinkedToWorld(xiiWorld* pWorld) const
+xiiGameStateBase* xiiGameApplicationBase::GetActiveGameStateLinkedToWorld(const xiiWorld* pWorld) const
 {
   if (m_pWorldLinkedWithGameState == pWorld)
     return m_pGameState.Borrow();

@@ -17,7 +17,7 @@ XII_END_COMPONENT_TYPE
 xiiForwardEventsToGameStateComponent::xiiForwardEventsToGameStateComponent()  = default;
 xiiForwardEventsToGameStateComponent::~xiiForwardEventsToGameStateComponent() = default;
 
-bool xiiForwardEventsToGameStateComponent::HandlesEventMessage(const xiiEventMessage& msg) const
+bool xiiForwardEventsToGameStateComponent::HandlesMessage(const xiiMessage& msg) const
 {
   // Check whether there is any active game state
   // If so, test whether it would handle this type of message

@@ -3,7 +3,7 @@
 #include <Core/CoreDLL.h>
 #include <Foundation/Communication/Event.h>
 #include <Foundation/Strings/HashedString.h>
-#include <Foundation/Types/RefCounted.h>
+#include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/Variant.h>
 
 class xiiStreamReader;
@@ -64,12 +64,42 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiBlackboardEntryFlags);
 /// and then NPCs might use that information to make decisions.
 class XII_CORE_DLL xiiBlackboard : public xiiRefCounted
 {
-public:
+private:
   xiiBlackboard();
+
+public:
   ~xiiBlackboard();
 
-  void        SetName(const char* szName);
-  const char* GetName() const { return m_sName; }
+  /// \brief Factory method to create a new blackboard.
+  ///
+  /// Since blackboards use shared ownership we need to make sure that blackboards are created in xiiCore.dll.
+  /// Some compilers (MSVC) create local v-tables which can become stale if a blackboard was registered as global but the DLL
+  /// which created the blackboard is already unloaded.
+  ///
+  /// See https://groups.google.com/g/microsoft.public.vc.language/c/atSh_2VSc2w/m/EgJ3r_7OzVUJ?pli=1
+  static xiiSharedPtr<xiiBlackboard> Create(xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+
+  /// \brief Factory method to get access to a globally registered blackboard.
+  ///
+  /// If a blackboard with that name was already created globally before, its reference is returned.
+  /// Otherwise it will be created and permanently registered under that name.
+  /// Global blackboards cannot be removed. Although you can change their name via "SetName()",
+  /// the name under which they are registered globally will not change.
+  ///
+  /// If at some point you want to "remove" a global blackboard, instead call UnregisterAllEntries() to
+  /// clear all its values.
+  static xiiSharedPtr<xiiBlackboard> GetOrCreateGlobal(const xiiHashedString& sBlackboardName, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+
+  /// \brief Finds a global blackboard with the given name.
+  static xiiSharedPtr<xiiBlackboard> FindGlobal(const xiiTempHashedString& sBlackboardName);
+
+  /// \brief Changes the name of the blackboard.
+  ///
+  /// \note For global blackboards this has no effect under which name they are found. A global blackboard continues to
+  /// be found by the name under which it was originally registered.
+  void                   SetName(const char* szName);
+  const char*            GetName() const { return m_sName; }
+  const xiiHashedString& GetNameHashed() const { return m_sName; }
 
   struct Entry
   {
@@ -150,6 +180,10 @@ private:
   xiiUInt32                            m_uiBlackboardChangeCounter      = 0;
   xiiUInt32                            m_uiBlackboardEntryChangeCounter = 0;
   xiiHashTable<xiiHashedString, Entry> m_Entries;
+
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Core, Blackboard);
+  static xiiMutex                                                   s_GlobalBlackboardsMutex;
+  static xiiHashTable<xiiHashedString, xiiSharedPtr<xiiBlackboard>> s_GlobalBlackboards;
 };
 
 //////////////////////////////////////////////////////////////////////////

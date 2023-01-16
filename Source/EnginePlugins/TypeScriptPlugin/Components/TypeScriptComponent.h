@@ -59,16 +59,11 @@ protected:
   virtual void OnDeactivated() override;
   virtual void OnSimulationStarted() override;
 
+  virtual bool HandlesMessage(const xiiMessage& msg) const override;
   virtual bool OnUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg) override;
   virtual bool OnUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg) const override;
 
   bool HandleUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg);
-
-  //////////////////////////////////////////////////////////////////////////
-  // xiiEventMessageHandlerComponent
-
-protected:
-  virtual bool HandlesEventMessage(const xiiEventMessage& msg) const override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiTypeScriptComponent

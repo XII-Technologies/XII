@@ -289,7 +289,8 @@ Visual Script;Visual Script
 StateMachine;State Machine
 xiiStateMachineNode;New State
 xiiStateMachineNodeAny;New Any State
-xiiStateMachineState_SendMsg;Send Message State
+xiiStateMachineState_SendMsg;Send Message
+xiiStateMachineState_SwitchObject;Switch Object
 xiiStateMachineState_NestedStateMachine;Nested State Machine
 xiiStateMachineState_Compound;Compound State
 xiiStateMachineTransition_BlackboardConditions;Blackboard Conditions

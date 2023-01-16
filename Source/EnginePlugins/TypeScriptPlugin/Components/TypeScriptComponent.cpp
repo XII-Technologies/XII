@@ -98,6 +98,13 @@ void xiiTypeScriptComponent::DeserializeComponent(xiiWorldReader& stream)
   }
 }
 
+bool xiiTypeScriptComponent::HandlesMessage(const xiiMessage& msg) const
+{
+  xiiTypeScriptBinding& binding = static_cast<const xiiTypeScriptComponentManager*>(GetOwningManager())->GetTsBinding();
+
+  return binding.HasMessageHandler(m_ComponentTypeInfo, msg.GetDynamicRTTI());
+}
+
 bool xiiTypeScriptComponent::OnUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg)
 {
   return HandleUnhandledMessage(msg, bWasPostedMsg);
@@ -116,13 +123,6 @@ bool xiiTypeScriptComponent::HandleUnhandledMessage(xiiMessage& msg, bool bWasPo
   xiiTypeScriptBinding& binding = static_cast<xiiTypeScriptComponentManager*>(GetOwningManager())->GetTsBinding();
 
   return binding.DeliverMessage(m_ComponentTypeInfo, this, msg, bWasPostedMsg == false);
-}
-
-bool xiiTypeScriptComponent::HandlesEventMessage(const xiiEventMessage& msg) const
-{
-  xiiTypeScriptBinding& binding = static_cast<const xiiTypeScriptComponentManager*>(GetOwningManager())->GetTsBinding();
-
-  return binding.HasMessageHandler(m_ComponentTypeInfo, msg.GetDynamicRTTI());
 }
 
 void xiiTypeScriptComponent::BroadcastEventMsg(xiiEventMessage& msg)

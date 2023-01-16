@@ -119,6 +119,70 @@ xiiResult xiiStateMachineState_SendMsg::Deserialize(xiiStreamReader& stream)
 
 //////////////////////////////////////////////////////////////////////////
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStateMachineState_SwitchObject, 1, xiiRTTIDefaultAllocator<xiiStateMachineState_SwitchObject>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("PathToGroup", m_sGroupPath),
+    XII_MEMBER_PROPERTY("ObjectToEnable", m_sObjectToEnable),
+    XII_MEMBER_PROPERTY("DeactivateOthers", m_bDeactivateOthers)->AddAttributes(new xiiDefaultValueAttribute(true)),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiStateMachineState_SwitchObject::xiiStateMachineState_SwitchObject(xiiStringView sName) :
+  xiiStateMachineState(sName)
+{
+}
+
+xiiStateMachineState_SwitchObject::~xiiStateMachineState_SwitchObject() = default;
+
+void xiiStateMachineState_SwitchObject::OnEnter(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pFromState) const
+{
+  if (auto pOwner = xiiDynamicCast<xiiStateMachineComponent*>(&instance.GetOwner()))
+  {
+    if (xiiGameObject* pOwnerGO = pOwner->GetOwner()->FindChildByPath(m_sGroupPath))
+    {
+      for (auto it = pOwnerGO->GetChildren(); it.IsValid(); ++it)
+      {
+        if (it->GetName() == m_sObjectToEnable)
+        {
+          it->SetActiveFlag(true);
+        }
+        else if (m_bDeactivateOthers)
+        {
+          it->SetActiveFlag(false);
+        }
+      }
+    }
+  }
+}
+
+xiiResult xiiStateMachineState_SwitchObject::Serialize(xiiStreamWriter& stream) const
+{
+  XII_SUCCEED_OR_RETURN(SUPER::Serialize(stream));
+
+  stream << m_sGroupPath;
+  stream << m_sObjectToEnable;
+  stream << m_bDeactivateOthers;
+  return XII_SUCCESS;
+}
+
+xiiResult xiiStateMachineState_SwitchObject::Deserialize(xiiStreamReader& stream)
+{
+  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(stream));
+
+  stream >> m_sGroupPath;
+  stream >> m_sObjectToEnable;
+  stream >> m_bDeactivateOthers;
+  return XII_SUCCESS;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 xiiStateMachineComponentManager::xiiStateMachineComponentManager(xiiWorld* pWorld) :
   xiiComponentManager<ComponentType, xiiBlockStorageType::Compact>(pWorld)
 {
@@ -185,12 +249,13 @@ void xiiStateMachineComponentManager::ResourceEventHandler(const xiiResourceEven
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiStateMachineComponent, 1, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiStateMachineComponent, 2, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("Resource", GetResourceFile, SetResourceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_StateMachine")),
     XII_ACCESSOR_PROPERTY("InitialState", GetInitialState, SetInitialState),
+    XII_ACCESSOR_PROPERTY("BlackboardName", GetBlackboardName, SetBlackboardName),
   }
   XII_END_PROPERTIES;
 
@@ -229,6 +294,7 @@ void xiiStateMachineComponent::SerializeComponent(xiiWorldWriter& stream) const
 
   s << m_hResource;
   s << m_sInitialState;
+  s << m_sBlackboardName;
 }
 
 void xiiStateMachineComponent::DeserializeComponent(xiiWorldReader& stream)
@@ -239,6 +305,11 @@ void xiiStateMachineComponent::DeserializeComponent(xiiWorldReader& stream)
 
   s >> m_hResource;
   s >> m_sInitialState;
+
+  if (uiVersion >= 2)
+  {
+    s >> m_sBlackboardName;
+  }
 }
 
 void xiiStateMachineComponent::OnActivated()
@@ -305,6 +376,22 @@ void xiiStateMachineComponent::SetInitialState(const char* szName)
   }
 }
 
+void xiiStateMachineComponent::SetBlackboardName(const char* szName)
+{
+  xiiHashedString sBlackboardName;
+  sBlackboardName.Assign(szName);
+
+  if (m_sBlackboardName == sBlackboardName)
+    return;
+
+  m_sBlackboardName = sBlackboardName;
+
+  if (IsActiveAndInitialized())
+  {
+    InstantiateStateMachine();
+  }
+}
+
 bool xiiStateMachineComponent::SetState(xiiStringView sName)
 {
   if (m_pStateMachineInstance != nullptr)
@@ -317,6 +404,7 @@ bool xiiStateMachineComponent::SetState(xiiStringView sName)
 
   return false;
 }
+
 
 void xiiStateMachineComponent::SendStateChangedMsg(xiiMsgStateMachineStateChanged& msg, xiiTime delay)
 {
@@ -345,7 +433,7 @@ void xiiStateMachineComponent::InstantiateStateMachine()
   }
 
   m_pStateMachineInstance = pStateMachineResource->CreateInstance(*this);
-  m_pStateMachineInstance->SetBlackboard(xiiBlackboardComponent::FindBlackboard(GetOwner()));
+  m_pStateMachineInstance->SetBlackboard(xiiBlackboardComponent::FindBlackboard(GetOwner(), m_sBlackboardName.GetView()));
   m_pStateMachineInstance->SetStateOrFallback(m_sInitialState).IgnoreResult();
 }
 

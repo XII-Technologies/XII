@@ -456,7 +456,7 @@ Override xiiVisualScriptNode::IsManuallyStepped() for type '{}' if necessary.",
   }
 }
 
-bool xiiVisualScriptInstance::HandlesEventMessage(const xiiEventMessage& msg) const
+bool xiiVisualScriptInstance::HandlesMessage(const xiiMessage& msg) const
 {
   if (m_pMessageHandlers == nullptr)
     return false;

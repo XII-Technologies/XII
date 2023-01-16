@@ -12,6 +12,29 @@
 #include <RendererCore/Debug/DebugRenderer.h>
 
 // clang-format off
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgObjectGrabbed);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgObjectGrabbed, 1, xiiRTTIDefaultAllocator<xiiMsgObjectGrabbed>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("GrabbedBy", m_hGrabbedBy),
+    XII_MEMBER_PROPERTY("GotGrabbed", m_bGotGrabbed),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgReleaseObjectGrab);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgReleaseObjectGrab, 1, xiiRTTIDefaultAllocator<xiiMsgReleaseObjectGrab>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("GrabbedObjectToRelease", m_hGrabbedObjectToRelease),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_COMPONENT_TYPE(xiiJoltGrabObjectComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
@@ -34,6 +57,11 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltGrabObjectComponent, 1, xiiComponentMode::Static
     XII_SCRIPT_FUNCTION_PROPERTY(BreakObjectGrab),
   }
   XII_END_FUNCTIONS;
+  XII_BEGIN_MESSAGEHANDLERS
+  {
+    XII_MESSAGE_HANDLER(xiiMsgReleaseObjectGrab, OnMsgReleaseObjectGrab),
+  }
+  XII_END_MESSAGEHANDLERS;
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Physics/Jolt/Constraints"),
@@ -97,23 +125,22 @@ bool xiiJoltGrabObjectComponent::FindNearbyObject(xiiGameObject*& out_pObject, x
   if (!pPhysicsModule->Raycast(hit, pOwner->GetGlobalPosition(), pOwner->GetGlobalDirForwards().GetNormalized(), m_fMaxGrabPointDistance * 5.0f, queryParam))
     return false;
 
+  if (hit.m_fDistance > m_fMaxGrabPointDistance)
+    return false;
+
   const xiiGameObject* pActorObj = nullptr;
   if (!GetWorld()->TryGetObject(hit.m_hActorObject, pActorObj))
     return false;
 
   const xiiJoltDynamicActorComponent* pActorComp = nullptr;
-  if (pActorObj->TryGetComponentOfBaseType(pActorComp) && !pActorComp->GetKinematic())
-  {
-    if (DetermineGrabPoint(pActorComp, out_LocalGrabPoint).Failed())
-      return false;
-  }
-  else
-  {
-    if (hit.m_fDistance > m_fMaxGrabPointDistance)
-      return false;
+  if (!pActorObj->TryGetComponentOfBaseType(pActorComp))
+    return false;
 
-    out_LocalGrabPoint = xiiTransform::IdentityTransform();
-  }
+  if (pActorComp->GetKinematic())
+    return false;
+
+  if (DetermineGrabPoint(pActorComp, out_LocalGrabPoint).Failed())
+    return false;
 
   out_pObject = const_cast<xiiGameObject*>(pActorObj);
   return true;
@@ -157,6 +184,11 @@ bool xiiJoltGrabObjectComponent::GrabObject(xiiGameObject* pObjectToGrab, const 
   m_hGrabbedActor    = pActorToGrab->GetHandle();
 
   CreateJoint(pAttachToActor, pActorToGrab);
+
+  xiiMsgObjectGrabbed msg;
+  msg.m_bGotGrabbed = true;
+  msg.m_hGrabbedBy  = GetOwner()->GetHandle();
+  pActorToGrab->GetOwner()->SendMessage(msg);
 
   m_LastValidTime = curTime;
 
@@ -228,15 +260,22 @@ void xiiJoltGrabObjectComponent::ReleaseGrabbedObject()
   if (GetWorld()->TryGetComponent(m_hGrabbedActor, pGrabbedActor))
   {
     JPH::BodyLockWrite bodyLock(pModule->GetJoltSystem()->GetBodyLockInterface(), JPH::BodyID(pGrabbedActor->GetJoltBodyID()));
-
-    bodyLock.GetBody().GetMotionProperties()->SetInverseMass(m_fGrabbedActorMass);
-    // TODO: this needs to be set as well : bodyLock.GetBody().GetMotionProperties()->SetInverseInertia(m_fGrabbedActorMass);
-    bodyLock.GetBody().GetMotionProperties()->SetGravityFactor(m_fGrabbedActorGravity);
-
-    if (pModule->GetJoltSystem()->GetBodyInterfaceNoLock().IsAdded(JPH::BodyID(pGrabbedActor->GetJoltBodyID())))
+    if (bodyLock.Succeeded())
     {
-      pModule->GetJoltSystem()->GetBodyInterfaceNoLock().ActivateBody(JPH::BodyID(pGrabbedActor->GetJoltBodyID()));
+      bodyLock.GetBody().GetMotionProperties()->SetInverseMass(m_fGrabbedActorMass);
+      // TODO: this needs to be set as well : bodyLock.GetBody().GetMotionProperties()->SetInverseInertia(m_fGrabbedActorMass);
+      bodyLock.GetBody().GetMotionProperties()->SetGravityFactor(m_fGrabbedActorGravity);
+
+      if (pModule->GetJoltSystem()->GetBodyInterfaceNoLock().IsAdded(JPH::BodyID(pGrabbedActor->GetJoltBodyID())))
+      {
+        pModule->GetJoltSystem()->GetBodyInterfaceNoLock().ActivateBody(JPH::BodyID(pGrabbedActor->GetJoltBodyID()));
+      }
     }
+
+    xiiMsgObjectGrabbed msg;
+    msg.m_bGotGrabbed = false;
+    msg.m_hGrabbedBy  = GetOwner()->GetHandle();
+    pGrabbedActor->GetOwner()->SendMessage(msg);
   }
 
   xiiJoltCharacterControllerComponent* pController;
@@ -293,7 +332,14 @@ xiiResult xiiJoltGrabObjectComponent::DetermineGrabPoint(const xiiComponent* pAc
   }
   else
   {
-    const auto&   box = pActorComp->GetOwner()->GetLocalBounds().GetBox();
+    xiiBoundingBoxSphere bounds = pActorComp->GetOwner()->GetLocalBounds();
+
+    if (!bounds.IsValid())
+    {
+      bounds = xiiBoundingSphere(xiiVec3::ZeroVector(), 0.1f);
+    }
+
+    const auto&   box = bounds.GetBox();
     const xiiVec3 ext = box.GetExtents().CompMul(pActorComp->GetOwner()->GetGlobalScaling());
 
     if (ext.x <= m_fAllowGrabAnyObjectWithSize && ext.y <= m_fAllowGrabAnyObjectWithSize && ext.z <= m_fAllowGrabAnyObjectWithSize)
@@ -469,6 +515,21 @@ bool xiiJoltGrabObjectComponent::IsCharacterStandingOnObject(xiiGameObjectHandle
   }
 
   return false;
+}
+
+void xiiJoltGrabObjectComponent::OnMsgReleaseObjectGrab(xiiMsgReleaseObjectGrab& msg)
+{
+  if (!msg.m_hGrabbedObjectToRelease.IsInvalidated() && !m_hGrabbedActor.IsInvalidated())
+  {
+    xiiComponent* pComponent;
+    if (GetOwner()->GetWorld()->TryGetComponent(m_hGrabbedActor, pComponent))
+    {
+      if (pComponent->GetOwner()->GetHandle() == msg.m_hGrabbedObjectToRelease)
+      {
+        DropGrabbedObject();
+      }
+    }
+  }
 }
 
 void xiiJoltGrabObjectComponent::OnSimulationStarted()

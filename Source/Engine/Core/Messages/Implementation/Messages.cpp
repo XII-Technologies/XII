@@ -32,7 +32,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgComponentInternalTrigger, 1, xiiRTTIDefau
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Message", GetMessage, SetMessage)
+    XII_ACCESSOR_PROPERTY("Message", GetMessage, SetMessage),
+    XII_MEMBER_PROPERTY("Payload", m_iPayload),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES

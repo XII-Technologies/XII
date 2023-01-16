@@ -253,8 +253,7 @@ void xiiReflectionProbeMapping::MapProbe(xiiReflectionProbeId id, xiiInt32 iRefl
 {
   ProbeDataInternal& probeData = m_RegisteredProbes[id.m_InstanceIndex];
 
-  probeData.m_uiReflectionIndex = iReflectionIndex;
-  XII_ASSERT_DEBUG(m_MappedCubes[probeData.m_uiReflectionIndex].IsInvalidated(), "A probe is already mapped on this index.");
+  probeData.m_uiReflectionIndex                = iReflectionIndex;
   m_MappedCubes[probeData.m_uiReflectionIndex] = id;
   m_ActiveProbes.PushBack({id, 0.0f});
 

@@ -67,8 +67,13 @@ public:
 
   xiiBlackboardComponent& operator=(xiiBlackboardComponent&& other);
 
-  /// \brief Try to find a xiiBlackboardComponent on pSearchObject or its parents and returns its blackboard
-  static xiiSharedPtr<xiiBlackboard> FindBlackboard(xiiGameObject* pSearchObject);
+  /// \brief Try to find a xiiBlackboardComponent on pSearchObject or its parents with the given name and returns its blackboard.
+  ///
+  /// The blackboard name is only checked if the given name is not empty. If no matching blackboard component is found,
+  /// the function will try to find a global blackboard with the given name.
+  ///
+  /// \sa xiiBlackboard::FindGlobal()
+  static xiiSharedPtr<xiiBlackboard> FindBlackboard(xiiGameObject* pSearchObject, xiiStringView sBlackboardName = xiiStringView());
 
   /// \brief Returns the blackboard owned by this component
   const xiiSharedPtr<xiiBlackboard>& GetBoard();

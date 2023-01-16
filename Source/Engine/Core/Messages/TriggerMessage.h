@@ -29,6 +29,8 @@ struct XII_CORE_DLL xiiMsgComponentInternalTrigger : public xiiMessage
   /// Identifies what the message should trigger.
   xiiHashedString m_sMessage;
 
+  xiiInt32 m_iPayload = 0;
+
 private:
   const char* GetMessage() const { return m_sMessage; }
   void        SetMessage(const char* szMessage) { m_sMessage.Assign(szMessage); }

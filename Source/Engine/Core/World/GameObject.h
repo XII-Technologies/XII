@@ -11,8 +11,6 @@
 #include <Core/World/ComponentManager.h>
 #include <Core/World/GameObjectDesc.h>
 
-struct xiiEventMessage;
-
 // Avoid conflicts with windows.h
 #ifdef SendMessage
 #  undef SendMessage
@@ -415,16 +413,16 @@ public:
   ///        A projectile component sending a 'take damage event' to the hit object, would pass through itself (the projectile)
   ///        such that the handling code can detect which object was responsible for the damage (and using the xiiGameObject's team-ID,
   ///        it can detect which player fired the projectile).
-  void SendEventMessage(xiiEventMessage& msg, const xiiComponent* senderComponent);
+  void SendEventMessage(xiiMessage& msg, const xiiComponent* senderComponent);
 
   /// \copydoc xiiGameObject::SendEventMessage()
-  void SendEventMessage(xiiEventMessage& msg, const xiiComponent* senderComponent) const;
+  void SendEventMessage(xiiMessage& msg, const xiiComponent* senderComponent) const;
 
   /// \copydoc xiiGameObject::SendEventMessage()
   ///
   /// \param queueType In which update phase to deliver the message.
   /// \param delay An optional delay before delivering the message.
-  void PostEventMessage(xiiEventMessage& msg, const xiiComponent* pSenderComponent, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
+  void PostEventMessage(xiiMessage& msg, const xiiComponent* pSenderComponent, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
 
 
   /// \brief Returns the tag set associated with this object.

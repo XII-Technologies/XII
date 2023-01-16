@@ -10,15 +10,24 @@ struct XII_CORE_DLL xiiEventMessage : public xiiMessage
 
   xiiGameObjectHandle m_hSenderObject;
   xiiComponentHandle  m_hSenderComponent;
+
+  XII_ALWAYS_INLINE void FillFromSenderComponent(const xiiComponent* pSenderComponent)
+  {
+    if (pSenderComponent != nullptr)
+    {
+      m_hSenderComponent = pSenderComponent->GetHandle();
+      m_hSenderObject    = pSenderComponent->GetOwner()->GetHandle();
+    }
+  }
 };
 
 namespace xiiInternal
 {
   struct XII_CORE_DLL EventMessageSenderHelper
   {
-    static void SendEventMessage(xiiComponent* pSenderComponent, xiiArrayPtr<xiiComponentHandle> receivers, xiiEventMessage& msg);
-    static void SendEventMessage(const xiiComponent* pSenderComponent, xiiArrayPtr<xiiComponentHandle> receivers, xiiEventMessage& msg);
-    static void PostEventMessage(const xiiComponent* pSenderComponent, xiiArrayPtr<xiiComponentHandle> receivers, const xiiEventMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame);
+    static void SendEventMessage(xiiMessage& msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_CachedReceivers);
+    static void SendEventMessage(xiiMessage& msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_CachedReceivers);
+    static void PostEventMessage(const xiiMessage& msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_CachedReceivers, xiiTime delay, xiiObjectMsgQueueType::Enum queueType);
   };
 } // namespace xiiInternal
 
@@ -31,30 +40,38 @@ class xiiEventMessageSender : public xiiMessageSenderBase<EventMessageType>
 public:
   XII_ALWAYS_INLINE void SendEventMessage(EventMessageType& msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject)
   {
-    UpdateMessageAndCachedReceivers(msg, pSenderComponent, pSearchObject);
-
-    xiiInternal::EventMessageSenderHelper::SendEventMessage(pSenderComponent, m_CachedReceivers, msg);
+    if constexpr (XII_IS_DERIVED_FROM_STATIC(xiiEventMessage, EventMessageType))
+    {
+      msg.FillFromSenderComponent(pSenderComponent);
+    }
+    xiiInternal::EventMessageSenderHelper::SendEventMessage(msg, pSenderComponent, pSearchObject, m_CachedReceivers);
   }
 
   XII_ALWAYS_INLINE void SendEventMessage(EventMessageType& msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject) const
   {
-    UpdateMessageAndCachedReceivers(msg, pSenderComponent, pSearchObject);
-
-    xiiInternal::EventMessageSenderHelper::SendEventMessage(pSenderComponent, m_CachedReceivers, msg);
+    if constexpr (XII_IS_DERIVED_FROM_STATIC(xiiEventMessage, EventMessageType))
+    {
+      msg.FillFromSenderComponent(pSenderComponent);
+    }
+    xiiInternal::EventMessageSenderHelper::SendEventMessage(msg, pSenderComponent, pSearchObject, m_CachedReceivers);
   }
 
-  XII_ALWAYS_INLINE void PostEventMessage(EventMessageType& msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject, xiiTime delay, xiiObjectMsgQueueType::Enum queueType)
+  XII_ALWAYS_INLINE void PostEventMessage(EventMessageType& msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame)
   {
-    UpdateMessageAndCachedReceivers(msg, pSenderComponent, pSearchObject);
-
-    xiiInternal::EventMessageSenderHelper::PostEventMessage(pSenderComponent, m_CachedReceivers, msg, delay, queueType);
+    if constexpr (XII_IS_DERIVED_FROM_STATIC(xiiEventMessage, EventMessageType))
+    {
+      msg.FillFromSenderComponent(pSenderComponent);
+    }
+    xiiInternal::EventMessageSenderHelper::PostEventMessage(msg, pSenderComponent, pSearchObject, m_CachedReceivers, delay, queueType);
   }
 
-  XII_ALWAYS_INLINE void PostEventMessage(EventMessageType& msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiTime delay, xiiObjectMsgQueueType::Enum queueType) const
+  XII_ALWAYS_INLINE void PostEventMessage(EventMessageType& msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const
   {
-    UpdateMessageAndCachedReceivers(msg, pSenderComponent, pSearchObject);
-
-    xiiInternal::EventMessageSenderHelper::PostEventMessage(pSenderComponent, m_CachedReceivers, msg, delay, queueType);
+    if constexpr (XII_IS_DERIVED_FROM_STATIC(xiiEventMessage, EventMessageType))
+    {
+      msg.FillFromSenderComponent(pSenderComponent);
+    }
+    xiiInternal::EventMessageSenderHelper::PostEventMessage(msg, pSenderComponent, pSearchObject, m_CachedReceivers, delay, queueType);
   }
 
   XII_ALWAYS_INLINE void Invalidate()
@@ -64,43 +81,5 @@ public:
   }
 
 private:
-  void UpdateMessageAndCachedReceivers(xiiEventMessage& msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject)
-  {
-    msg.m_hSenderObject    = pSenderComponent->GetOwner() != nullptr ? pSenderComponent->GetOwner()->GetHandle() : xiiGameObjectHandle();
-    msg.m_hSenderComponent = pSenderComponent->GetHandle();
-
-    if (m_CachedReceivers.GetUserData<xiiUInt32>() == 0)
-    {
-      xiiHybridArray<xiiComponent*, 4> eventMsgHandlers;
-      pSenderComponent->GetWorld()->FindEventMsgHandlers(msg, pSearchObject, eventMsgHandlers);
-
-      for (auto pEventMsgHandler : eventMsgHandlers)
-      {
-        m_CachedReceivers.PushBack(pEventMsgHandler->GetHandle());
-      }
-
-      m_CachedReceivers.GetUserData<xiiUInt32>() = 1;
-    }
-  }
-
-  void UpdateMessageAndCachedReceivers(xiiEventMessage& msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject) const
-  {
-    msg.m_hSenderObject    = pSenderComponent->GetOwner() != nullptr ? pSenderComponent->GetOwner()->GetHandle() : xiiGameObjectHandle();
-    msg.m_hSenderComponent = pSenderComponent->GetHandle();
-
-    if (m_CachedReceivers.GetUserData<xiiUInt32>() == 0)
-    {
-      xiiHybridArray<const xiiComponent*, 4> eventMsgHandlers;
-      pSenderComponent->GetWorld()->FindEventMsgHandlers(msg, pSearchObject, eventMsgHandlers);
-
-      for (auto pEventMsgHandler : eventMsgHandlers)
-      {
-        m_CachedReceivers.PushBack(pEventMsgHandler->GetHandle());
-      }
-
-      m_CachedReceivers.GetUserData<xiiUInt32>() = 1;
-    }
-  }
-
   mutable xiiSmallArray<xiiComponentHandle, 1> m_CachedReceivers;
 };

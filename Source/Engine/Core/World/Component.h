@@ -120,6 +120,9 @@ public:
   /// \brief Queues the message for the given phase. The message is processed after the given delay in the corresponding phase.
   void PostMessage(const xiiMessage& msg, xiiTime delay = xiiTime::Zero(), xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
 
+  /// \brief Returns whether the given Message is handled by this component.
+  virtual bool HandlesMessage(const xiiMessage& msg) const;
+
   /// Be careful to check which flags may already be in use by base classes.
   void SetUserFlag(xiiUInt8 flagIndex, bool set);
 

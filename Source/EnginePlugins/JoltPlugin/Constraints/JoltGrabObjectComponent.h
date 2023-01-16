@@ -1,11 +1,29 @@
 #pragma once
 
+#include <Foundation/Communication/Message.h>
 #include <JoltPlugin/Actors/JoltDynamicActorComponent.h>
 
 namespace JPH
 {
   class SixDOFConstraint;
 }
+
+/// \brief Sent by components such as xiiJoltGrabObjectComponent to indicate that the object has been grabbed or released.
+class XII_JOLTPLUGIN_DLL xiiMsgObjectGrabbed : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgObjectGrabbed, xiiMessage);
+
+  xiiGameObjectHandle m_hGrabbedBy;
+  bool                m_bGotGrabbed = true;
+};
+
+/// \brief Send this to components such as xiiJoltGrabObjectComponent to demand that m_hGrabbedObjectToRelease should no longer be grabbed.
+class XII_JOLTPLUGIN_DLL xiiMsgReleaseObjectGrab : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgReleaseObjectGrab, xiiMessage);
+
+  xiiGameObjectHandle m_hGrabbedObjectToRelease;
+};
 
 using xiiJoltGrabObjectComponentManager = xiiComponentManagerSimple<class xiiJoltGrabObjectComponent, xiiComponentUpdateType::WhenSimulating, xiiBlockStorageType::Compact>;
 
@@ -97,6 +115,8 @@ protected:
   void                          CreateJoint(xiiJoltDynamicActorComponent* pParent, xiiJoltDynamicActorComponent* pChild);
   void                          DetectDistanceViolation(xiiJoltDynamicActorComponent* pGrabbedActor);
   bool                          IsCharacterStandingOnObject(xiiGameObjectHandle hActorToGrab) const;
+
+  void OnMsgReleaseObjectGrab(xiiMsgReleaseObjectGrab& msg); // [ message handler ]
 
   xiiComponentHandle m_hGrabbedActor;
   float              m_fGrabbedActorGravity = 1.0f;

@@ -30,7 +30,7 @@ public:
   ~xiiForwardEventsToGameStateComponent();
 
 protected:
-  virtual bool HandlesEventMessage(const xiiEventMessage& msg) const override;
+  virtual bool HandlesMessage(const xiiMessage& msg) const override;
   virtual bool OnUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg) override;
   virtual bool OnUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg) const override;
 

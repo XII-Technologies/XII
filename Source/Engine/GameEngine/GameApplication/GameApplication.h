@@ -64,8 +64,11 @@ public:
   /// Alternatively, xiiGameApplication::FindProjectDirectory() must be overwritten.
   virtual xiiString FindProjectDirectory() const override;
 
-  /// \brief Used at runtime (by the editor) to reload input maps. Forwards to Init_ConfigureInput()
+  /// \brief Used at runtime (by the Editor) to reload input maps. Forwards to Init_ConfigureInput().
   void ReinitializeInputConfig();
+
+  /// \brief Returns the project path that was given to the constructor (or modified by an overridden implementation).
+  xiiStringView GetAppProjectPath() const { return m_sAppProjectPath; }
 
 protected:
   virtual void Init_ConfigureInput() override;

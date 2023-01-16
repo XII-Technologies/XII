@@ -120,7 +120,8 @@ private:
   xiiDeque<xiiGameObjectHandle>            m_Selection;
   xiiDeque<xiiGameObjectHandle>            m_SelectionWithChildren;
   xiiSet<xiiGameObjectHandle>              m_SelectionWithChildrenSet;
-  xiiGameObjectHandle                      m_hAmbientLight[3];
+  xiiGameObjectHandle                      m_hSkyLight;
+  xiiGameObjectHandle                      m_hDirectionalLight;
   xiiDynamicArray<xiiExposedSceneProperty> m_ExposedSceneProperties;
 
   xiiPushObjectStateMsgToEditor m_PushObjectStateMsg;

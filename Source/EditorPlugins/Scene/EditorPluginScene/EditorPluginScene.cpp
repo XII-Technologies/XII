@@ -96,6 +96,7 @@ void OnLoadPlugin()
 
   // Add built in tags
   {
+    xiiToolsTagRegistry::AddTag(xiiToolsTag("Default", "Exclude From Export", true));
     xiiToolsTagRegistry::AddTag(xiiToolsTag("Default", "CastShadow", true));
     xiiToolsTagRegistry::AddTag(xiiToolsTag("Default", "SkyLight", true));
   }
@@ -232,6 +233,6 @@ void xiiSkyLightComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEven
   auto& props = *e.m_pPropertyStates;
 
   props["CubeMap"].m_Visibility = bIsStatic ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-  //props["RenderTargetOffset"].m_Visibility = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-  //props["RenderTargetSize"].m_Visibility = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+  // props["RenderTargetOffset"].m_Visibility = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+  // props["RenderTargetSize"].m_Visibility = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
 }

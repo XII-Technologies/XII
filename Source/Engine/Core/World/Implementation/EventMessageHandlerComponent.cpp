@@ -124,11 +124,6 @@ void xiiEventMessageHandlerComponent::SetPassThroughUnhandledEvents(bool bPassTh
   m_bPassThroughUnhandledEvents = bPassThrough;
 }
 
-bool xiiEventMessageHandlerComponent::HandlesEventMessage(const xiiEventMessage& msg) const
-{
-  return m_pMessageDispatchType->CanHandleMessage(msg.GetId());
-}
-
 // static
 xiiArrayPtr<xiiComponentHandle> xiiEventMessageHandlerComponent::GetAllGlobalEventHandler(const xiiWorld* pWorld)
 {
