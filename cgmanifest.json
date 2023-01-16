@@ -3,13 +3,13 @@
         {
             "component": {
                 "type": "git",
-                "git": {
-                    "name": "ezEngine",
-                    "repositoryUrl": "https://github.com/ezEngine/ezEngine",
-                    "commitHash": "b0073763c8ee6a2385876301a76d4250617d0284"
-                }
+              "git": {
+                "name": "XII-Engine",
+                "repositoryUrl": "https://gitlab.com/xii1/XII-Engine",
+                "commitHash": "78a62cf77bc45efb2ed52e45ca9bbf14c40291b8"
+              }
             },
-            "license": "MIT"
+            "license": "Copyright (c) 2022-2023 Theophilus Eriata. All Rights Reserved."
         }
     ],
     "version": 1
