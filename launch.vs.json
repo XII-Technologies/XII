@@ -6,7 +6,7 @@
       "type": "cppdbg",
       "name": "> FoundationTest",
       "project": "CMakeLists.txt",
-      "projectTarget": "libFoundationTest.so (Code\\UnitTests\\FoundationTest\\libFoundationTest.so)",
+      "projectTarget": "libFoundationTest.so (Source\\UnitTests\\FoundationTest\\libFoundationTest.so)",
       "cwd": "${workspaceRoot}",
       "MIMode": "gdb",
       "program": "debugtemp/app_process32",
@@ -17,7 +17,7 @@
       "miDebuggerPath": "${workspaceRoot}\\Data\\Tools\\Precompiled\\GdbProxy.exe",
       "setupCommands": [
         {
-          "text": "shell powershell -NoLogo -NoProfile -File \"${workspaceRoot}\\Utilities\\DbgAndroid.ps1\" -PrepareOnly -PackageName \"com.xiiengine.FoundationTest\" -detectArch \"${cmake.name}\" -originalSoDir \"${cmake.buildRoot}\\Code\\UnitTests\\FoundationTest\" -debugTemp \"${workspaceRoot}\\debugtemp\" -apk \"${cmake.buildRoot}\\Code\\UnitTests\\FoundationTest\\FoundationTest.apk\" -MessageBoxOnError",
+          "text": "shell powershell -NoLogo -NoProfile -File \"${workspaceRoot}\\Utilities\\DbgAndroid.ps1\" -PrepareOnly -PackageName \"com.xiiengine.FoundationTest\" -detectArch \"${cmake.name}\" -originalSoDir \"${cmake.buildRoot}\\Source\\UnitTests\\FoundationTest\" -debugTemp \"${workspaceRoot}\\debugtemp\" -apk \"${cmake.buildRoot}\\Source\\UnitTests\\FoundationTest\\FoundationTest.apk\" -MessageBoxOnError",
           "ignoreFailures": false
         },
         {
@@ -36,7 +36,7 @@
       "type": "cppdbg",
       "name": "> FoundationTest (Don't deploy)",
       "project": "CMakeLists.txt",
-      "projectTarget": "libFoundationTest.so (Code\\UnitTests\\FoundationTest\\libFoundationTest.so)",
+      "projectTarget": "libFoundationTest.so (Source\\UnitTests\\FoundationTest\\libFoundationTest.so)",
       "cwd": "${workspaceRoot}",
       "MIMode": "gdb",
       "program": "debugtemp/app_process32",
@@ -47,7 +47,7 @@
       "miDebuggerPath": "${workspaceRoot}\\Data\\Tools\\Precompiled\\GdbProxy.exe",
       "setupCommands": [
         {
-          "text": "shell powershell -NoLogo -NoProfile -File \"${workspaceRoot}\\Utilities\\DbgAndroid.ps1\" -PrepareOnly -PackageName \"com.xiiengine.FoundationTest\" -detectArch \"${cmake.name}\" -originalSoDir \"${cmake.buildRoot}\\Code\\UnitTests\\FoundationTest\" -debugTemp \"${workspaceRoot}\\debugtemp\" -MessageBoxOnError",
+          "text": "shell powershell -NoLogo -NoProfile -File \"${workspaceRoot}\\Utilities\\DbgAndroid.ps1\" -PrepareOnly -PackageName \"com.xiiengine.FoundationTest\" -detectArch \"${cmake.name}\" -originalSoDir \"${cmake.buildRoot}\\Source\\UnitTests\\FoundationTest\" -debugTemp \"${workspaceRoot}\\debugtemp\" -MessageBoxOnError",
           "ignoreFailures": false
         },
         {
