@@ -845,14 +845,14 @@ bool xiiGameObject::SendMessageRecursiveInternal(xiiMessage& msg, bool bWasPoste
   }
 
   // should only be evaluated at the top function call
-  //#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+  // #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   //  if (!bSentToAny && msg.GetDebugMessageRouting())
   //  {
   //    xiiLog::Warning("xiiGameObject::SendMessageRecursive: None of the target object's components had a handler for messages of type {0}.",
   //    msg.GetId());
   //  }
-  //#endif
-  //#
+  // #endif
+  // #
   return bSentToAny;
 }
 
@@ -876,14 +876,14 @@ bool xiiGameObject::SendMessageRecursiveInternal(xiiMessage& msg, bool bWasPoste
   }
 
   // should only be evaluated at the top function call
-  //#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+  // #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   //  if (!bSentToAny && msg.GetDebugMessageRouting())
   //  {
   //    xiiLog::Warning("xiiGameObject::SendMessageRecursive(const): None of the target object's components had a handler for messages of type
   //    {0}.", msg.GetId());
   //  }
-  //#endif
-  //#
+  // #endif
+  // #
   return bSentToAny;
 }
 
@@ -906,6 +906,16 @@ void xiiGameObject::SendEventMessage(xiiMessage& msg, const xiiComponent* pSende
 
   xiiHybridArray<xiiComponent*, 4> eventMsgHandlers;
   GetWorld()->FindEventMsgHandlers(msg, this, eventMsgHandlers);
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+  if (msg.GetDebugMessageRouting())
+  {
+    if (eventMsgHandlers.IsEmpty())
+    {
+      xiiLog::Warning("xiiGameObject::SendEventMessage: None of the target object's components had a handler for messages of type {0}.", msg.GetId());
+    }
+  }
+#endif
 
   for (auto pEventMsgHandler : eventMsgHandlers)
   {
@@ -1101,7 +1111,5 @@ void xiiGameObject::TransformationData::RecreateSpatialData(xiiSpatialSystem& sp
     m_hSpatialData = spatialSystem.CreateSpatialData(m_globalBounds, m_pObject, m_uiSpatialDataCategoryBitmask, m_pObject->m_Tags);
   }
 }
-
-
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_GameObject);
