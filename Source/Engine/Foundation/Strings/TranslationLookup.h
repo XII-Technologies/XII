@@ -35,7 +35,12 @@ public:
   /// \brief Will call Reload() on all currently active translators
   static void ReloadAllTranslators();
 
+  static void HighlightUntranslated(bool bHighlight);
+
+  static bool GetHighlightUntranslated() { return s_bHighlightUntranslated; }
+
 private:
+  static bool                              s_bHighlightUntranslated;
   static xiiHybridArray<xiiTranslator*, 4> s_AllTranslators;
 };
 
@@ -67,8 +72,8 @@ protected:
   xiiMap<xiiUInt64, xiiString> m_Translations[(int)xiiTranslationUsage::ENUM_COUNT];
 };
 
-/// \brief Outputs a 'Missing Translation' warning the first time a string translation is requested. Otherwise returns the input string as
-/// the translation.
+/// \brief Outputs a 'Missing Translation' warning the first time a string translation is requested.
+/// Otherwise always returns nullptr, allowing the next translator to take over.
 class XII_FOUNDATION_DLL xiiTranslatorLogMissing : public xiiTranslatorStorage
 {
 public:
@@ -78,8 +83,7 @@ public:
   virtual const char* Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override;
 };
 
-/// \brief Loads translations from files. Each translator can have different search paths, but the files to be loaded are the same for all
-/// of them
+/// \brief Loads translations from files. Each translator can have different search paths, but the files to be loaded are the same for all of them.
 class XII_FOUNDATION_DLL xiiTranslatorFromFiles : public xiiTranslatorStorage
 {
 public:
@@ -90,12 +94,21 @@ public:
   /// This function depends on xiiFileSystemIterator to be available.
   void AddTranslationFilesFromFolder(const char* szFolder);
 
+  virtual const char* Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override;
+
   virtual void Reload() override;
 
 private:
   void LoadTranslationFile(const char* szFullPath);
 
   xiiHybridArray<xiiString, 4> m_Folders;
+};
+
+/// \brief Returns the same string that is passed into it, but strips off class names and separates the text at CamelCase boundaries.
+class XII_FOUNDATION_DLL xiiTranslatorMakeMoreReadable : public xiiTranslatorStorage
+{
+public:
+  virtual const char* Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override;
 };
 
 /// \brief Handles looking up translations for strings.
@@ -115,9 +128,6 @@ public:
   static void Clear();
 
 private:
-  static void ReloadTranslations();
-  static void LoadTranslationFile(const char* szFileName);
-
   static xiiHybridArray<xiiUniquePtr<xiiTranslator>, 16> s_Translators;
 };
 

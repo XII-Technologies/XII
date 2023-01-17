@@ -287,7 +287,9 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   pTranslatorEn->AddTranslationFilesFromFolder(":app/Localization/en");
   // pTranslatorDe->LoadTranslationFilesFromFolder(":app/Localization/de");
 
-  xiiTranslationLookup::AddTranslator(XII_DEFAULT_NEW(xiiTranslatorLogMissing));
+  xiiTranslationLookup::AddTranslator(XII_DEFAULT_NEW(xiiTranslatorMakeMoreReadable));
+  // xiiTranslationLookup::AddTranslator(XII_DEFAULT_NEW(xiiTranslatorLogMissing));
+
   xiiTranslationLookup::AddTranslator(std::move(pTranslatorEn));
   // xiiTranslationLookup::AddTranslator(std::move(pTranslatorDe));
 

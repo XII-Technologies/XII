@@ -1,3 +1,15 @@
-xiiKrautTreeComponent;Kraut Tree;;https://xiiengine.net/pages/docs/terrain/kraut-overview.html
-xiiKrautAssetMaterial;Material
+# Asset Types
+
 Kraut Tree;Kraut Tree
+
+# Component Types
+
+xiiKrautTreeComponent;Kraut Tree;;https://xiiengine.net/pages/docs/terrain/kraut-overview.html
+
+# Enums
+
+xiiKrautAssetMaterial;Material
+
+# Properties
+
+xiiKrautTreeAssetProperties::LodDistanceScale;LOD Distance Scale

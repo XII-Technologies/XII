@@ -1,0 +1,78 @@
+# Asset Types
+
+RenderPipeline;Render Pipeline
+
+# Enums
+
+xiiGALResourceFormat::RGBAFloat;RGBA Float
+xiiGALResourceFormat::RGBAUInt;RGBA UInt
+xiiGALResourceFormat::RGBAInt;RGBA Int
+xiiGALResourceFormat::RGBFloat;RGB Float
+xiiGALResourceFormat::RGBUInt;RGB UInt
+xiiGALResourceFormat::RGBInt;RGB Int
+xiiGALResourceFormat::B5G6R5UNormalized;B5G6R5 UNormalized
+xiiGALResourceFormat::BGRAUByteNormalized;BGRA UByte Normalized
+xiiGALResourceFormat::BGRAUByteNormalizedsRGB;BGRA UByte Normalized sRGB
+xiiGALResourceFormat::RGBAHalf;RGBA Half
+xiiGALResourceFormat::RGBAUShort;RGBA UShort
+xiiGALResourceFormat::RGBAUShortNormalized;RGBA UShort Normalized
+xiiGALResourceFormat::RGBAShort;RGBA Short
+xiiGALResourceFormat::RGBAShortNormalized;RGBA Short Normalized
+xiiGALResourceFormat::RGFloat;RG Float
+xiiGALResourceFormat::RGUInt;RG UInt
+xiiGALResourceFormat::RGInt;RG Int
+xiiGALResourceFormat::RGB10A2UInt;RGB10A2 UInt
+xiiGALResourceFormat::RGB10A2UIntNormalized;RGB10A2 UInt Normalized
+xiiGALResourceFormat::RG11B10Float;RG11B10 Float
+xiiGALResourceFormat::RGBAUByteNormalized;RGBA UByte Normalized
+xiiGALResourceFormat::RGBAUByteNormalizedsRGB;RGBA UByte Normalized sRGB
+xiiGALResourceFormat::RGBAUByte;RGBA UByte
+xiiGALResourceFormat::RGBAByteNormalized;RGBA Byte Normalized
+xiiGALResourceFormat::RGBAByte;RGBA Byte
+xiiGALResourceFormat::RGHalf;RG Half
+xiiGALResourceFormat::RGUShort;RG UShort
+xiiGALResourceFormat::RGUShortNormalized;RG UShort Normalized
+xiiGALResourceFormat::RGShort;RG Short
+xiiGALResourceFormat::RGShortNormalized;RG Short Normalized
+xiiGALResourceFormat::RGUByte;RG UByte
+xiiGALResourceFormat::RGUByteNormalized;RG UByte Normalized
+xiiGALResourceFormat::RGByte;RG Byte
+xiiGALResourceFormat::RGByteNormalized;RG Byte Normalized
+xiiGALResourceFormat::DFloat;Depth Float
+xiiGALResourceFormat::RFloat;R Float
+xiiGALResourceFormat::RUInt;R UInt
+xiiGALResourceFormat::RInt;R Int
+xiiGALResourceFormat::RHalf;R Half
+xiiGALResourceFormat::RUShort;R UShort
+xiiGALResourceFormat::RUShortNormalized;RU Short Normalized
+xiiGALResourceFormat::RShort;R Short
+xiiGALResourceFormat::RShortNormalized;R Short Normalized
+xiiGALResourceFormat::RUByte;R UByte
+xiiGALResourceFormat::RUByteNormalized;R UByte Normalized
+xiiGALResourceFormat::RByte;R Byte
+xiiGALResourceFormat::RByteNormalized;R Byte Normalized
+xiiGALResourceFormat::AUByteNormalized;A UByte Normalized
+xiiGALResourceFormat::D16;Depth 16
+xiiGALResourceFormat::D24S8;Depth 24 Stencil 8
+xiiGALResourceFormat::BC1;BC1
+xiiGALResourceFormat::BC1sRGB;BC1 sRGB
+xiiGALResourceFormat::BC2;BC2
+xiiGALResourceFormat::BC2sRGB;BC2 sRGB
+xiiGALResourceFormat::BC3;BC3
+xiiGALResourceFormat::BC3sRGB;BC3 sRGB
+xiiGALResourceFormat::BC4UNormalized;BC4 UNormalized
+xiiGALResourceFormat::BC4Normalized;BC4 Normalized
+xiiGALResourceFormat::BC5UNormalized;BC5 UNormalized
+xiiGALResourceFormat::BC5Normalized;BC5 Normalized
+xiiGALResourceFormat::BC6UFloat;BC6 UFloat
+xiiGALResourceFormat::BC6Float;BC6 Float
+xiiGALResourceFormat::BC7UNormalized;BC7 UNormalized
+xiiGALResourceFormat::BC7UNormalizedsRGB;BC7 UNormalized sRGB
+
+xiiGALMSAASampleCount::TwoSamples;2 Samples
+xiiGALMSAASampleCount::FourSamples;4 Samples
+xiiGALMSAASampleCount::EightSamples;8 Samples
+
+xiiLSAODepthCompareFunction::NormalAndSampleDistance;Normal And Sample-Distance
+
+xiiImguiExtractor;ImGUI Extractor
