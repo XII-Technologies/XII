@@ -5,6 +5,11 @@
           android:versionCode="1"
           android:versionName="1.0">
 
+  <!-- Always set the max sdk to the latest version of Android. The target sdk may be changed at will.-->
+  <uses-sdk android:minSdkVersion="23"
+            android:targetSdkVersion="23"
+            android:maxSdkVersion="33" />
+
   <!-- This .apk has no Java code itself, so set hasCode to false.-->
   <application
       android:debuggable="true"

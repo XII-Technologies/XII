@@ -43,7 +43,7 @@ public:
 };
 
 xiiSampleWindowApp::xiiSampleWindowApp() :
-  xiiApplication("Shader Explorer")
+  xiiApplication("Sample Window")
 {
 }
 
@@ -142,7 +142,9 @@ void xiiSampleWindowApp::AfterCoreSystemsStartup()
   xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
   xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
+#if XII_DISABLED(XII_PLATFORM_ANDROID)
   xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
+#endif
 
   // Register Input
   {
@@ -246,4 +248,4 @@ void xiiSampleWindowApp::BeforeHighLevelSystemsShutdown()
   XII_DEFAULT_DELETE(m_pWindow);
 }
 
-XII_CONSOLEAPP_ENTRY_POINT(xiiSampleWindowApp);
+XII_APPLICATION_ENTRY_POINT(xiiSampleWindowApp);

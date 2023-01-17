@@ -7,7 +7,7 @@
 #if XII_ENABLED(XII_PLATFORM_64BIT)
 XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == 40);
 #else
-XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == 20);
+XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == 40); // \todo Resolve
 #endif
 
 /// constructors

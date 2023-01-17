@@ -1,6 +1,13 @@
 {
   "version": "0.2.1",
   "defaults": {},
+  "environments": [
+    {
+      "ANDROID_NDK_HOME": "PATH_TO_ANDROID_NDK_HOME_HERE",
+      "ANDROID_HOME": "PATH_TO_ANDROID_HOME_HERE",
+      "JAVA_HOME": "PATH_TO_JAVA_HOME_HERE"
+    }
+  ],
   "configurations": [
     {
       "type": "cppdbg",
@@ -17,7 +24,7 @@
       "miDebuggerPath": "${workspaceRoot}\\Data\\Tools\\Precompiled\\GdbProxy.exe",
       "setupCommands": [
         {
-          "text": "shell powershell -NoLogo -NoProfile -File \"${workspaceRoot}\\Utilities\\DbgAndroid.ps1\" -PrepareOnly -PackageName \"com.xiiengine.FoundationTest\" -detectArch \"${cmake.name}\" -originalSoDir \"${cmake.buildRoot}\\Source\\UnitTests\\FoundationTest\" -debugTemp \"${workspaceRoot}\\debugtemp\" -apk \"${cmake.buildRoot}\\Source\\UnitTests\\FoundationTest\\FoundationTest.apk\" -MessageBoxOnError",
+          "text": "shell powershell -ExecutionPolicy Bypass -NoLogo -NoProfile -File \"${workspaceRoot}\\Utilities\\DbgAndroid.ps1\" -PrepareOnly -PackageName \"com.xiiengine.FoundationTest\" -detectArch \"${cmake.name}\" -originalSoDir \"${cmake.buildRoot}\\Source\\UnitTests\\FoundationTest\" -debugTemp \"${workspaceRoot}\\debugtemp\" -apk \"${cmake.buildRoot}\\Source\\UnitTests\\FoundationTest\\FoundationTest.apk\" -MessageBoxOnError",
           "ignoreFailures": false
         },
         {
@@ -47,7 +54,7 @@
       "miDebuggerPath": "${workspaceRoot}\\Data\\Tools\\Precompiled\\GdbProxy.exe",
       "setupCommands": [
         {
-          "text": "shell powershell -NoLogo -NoProfile -File \"${workspaceRoot}\\Utilities\\DbgAndroid.ps1\" -PrepareOnly -PackageName \"com.xiiengine.FoundationTest\" -detectArch \"${cmake.name}\" -originalSoDir \"${cmake.buildRoot}\\Source\\UnitTests\\FoundationTest\" -debugTemp \"${workspaceRoot}\\debugtemp\" -MessageBoxOnError",
+          "text": "shell powershell -ExecutionPolicy Bypass -NoLogo -NoProfile -File \"${workspaceRoot}\\Utilities\\DbgAndroid.ps1\" -PrepareOnly -PackageName \"com.xiiengine.FoundationTest\" -detectArch \"${cmake.name}\" -originalSoDir \"${cmake.buildRoot}\\Source\\UnitTests\\FoundationTest\" -debugTemp \"${workspaceRoot}\\debugtemp\" -MessageBoxOnError",
           "ignoreFailures": false
         },
         {

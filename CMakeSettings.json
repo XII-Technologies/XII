@@ -1,4 +1,11 @@
 {
+  "environments": [
+    {
+      "ANDROID_NDK_HOME": "PATH_TO_ANDROID_NDK_HOME_HERE",
+      "ANDROID_HOME": "PATH_TO_ANDROID_HOME_HERE",
+      "JAVA_HOME": "PATH_TO_JAVA_HOME_HERE"
+    }
+  ],
   "configurations": [
     {
       "name": "Android-arm-Debug",
@@ -15,15 +22,18 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23"
+          "value": "23",
+          "type": "STRING"
         },
         {
           "name": "XII_ENABLE_QT_SUPPORT",
-          "value": "0"
+          "value": "0",
+          "type": "STRING"
         },
         {
           "name": "XII_BUILD_SAMPLES",
-          "value": "1"
+          "value": "1",
+          "type": "STRING"
         }
       ],
       "buildCommandArgs": "-v",
@@ -45,15 +55,18 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23"
+          "value": "23",
+          "type": "STRING"
         },
         {
           "name": "XII_ENABLE_QT_SUPPORT",
-          "value": "0"
+          "value": "0",
+          "type": "STRING"
         },
         {
           "name": "XII_BUILD_SAMPLES",
-          "value": "1"
+          "value": "1",
+          "type": "STRING"
         }
       ],
       "buildCommandArgs": "-v",
@@ -75,15 +88,18 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23"
+          "value": "23",
+          "type": "STRING"
         },
         {
           "name": "XII_ENABLE_QT_SUPPORT",
-          "value": "0"
+          "value": "0",
+          "type": "STRING"
         },
         {
           "name": "XII_BUILD_SAMPLES",
-          "value": "1"
+          "value": "1",
+          "type": "STRING"
         }
       ],
       "buildCommandArgs": "-v",
@@ -105,19 +121,23 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23"
+          "value": "23",
+          "type": "STRING"
         },
         {
           "name": "ANDROID_ABI",
-          "value": "arm64-v8a"
+          "value": "arm64-v8a",
+          "type": "STRING"
         },
         {
           "name": "XII_ENABLE_QT_SUPPORT",
-          "value": "0"
+          "value": "0",
+          "type": "STRING"
         },
         {
           "name": "XII_BUILD_SAMPLES",
-          "value": "1"
+          "value": "1",
+          "type": "STRING"
         }
       ],
       "buildCommandArgs": "-v",
@@ -139,19 +159,23 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23"
+          "value": "23",
+          "type": "STRING"
         },
         {
           "name": "ANDROID_ABI",
-          "value": "arm64-v8a"
+          "value": "arm64-v8a",
+          "type": "STRING"
         },
         {
           "name": "XII_ENABLE_QT_SUPPORT",
-          "value": "0"
+          "value": "0",
+          "type": "STRING"
         },
         {
           "name": "XII_BUILD_SAMPLES",
-          "value": "1"
+          "value": "1",
+          "type": "STRING"
         }
       ],
       "buildCommandArgs": "-v",
@@ -173,19 +197,23 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23"
+          "value": "23",
+          "type": "STRING"
         },
         {
           "name": "ANDROID_ABI",
-          "value": "arm64-v8a"
+          "value": "arm64-v8a",
+          "type": "STRING"
         },
         {
           "name": "XII_ENABLE_QT_SUPPORT",
-          "value": "0"
+          "value": "0",
+          "type": "STRING"
         },
         {
           "name": "XII_BUILD_SAMPLES",
-          "value": "1"
+          "value": "1",
+          "type": "STRING"
         }
       ],
       "buildCommandArgs": "-v",
@@ -207,19 +235,23 @@
         },
         {
           "name": "ANDROID_ABI",
-          "value": "x86"
+          "value": "x86",
+          "type": "STRING"
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23"
+          "value": "23",
+          "type": "STRING"
         },
         {
           "name": "XII_ENABLE_QT_SUPPORT",
-          "value": "0"
+          "value": "0",
+          "type": "STRING"
         },
         {
           "name": "XII_BUILD_SAMPLES",
-          "value": "1"
+          "value": "1",
+          "type": "STRING"
         }
       ],
       "buildCommandArgs": "-v",
@@ -241,19 +273,23 @@
         },
         {
           "name": "ANDROID_ABI",
-          "value": "x86"
+          "value": "x86",
+          "type": "STRING"
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23"
+          "value": "23",
+          "type": "STRING"
         },
         {
           "name": "XII_ENABLE_QT_SUPPORT",
-          "value": "0"
+          "value": "0",
+          "type": "STRING"
         },
         {
           "name": "XII_BUILD_SAMPLES",
-          "value": "1"
+          "value": "1",
+          "type": "STRING"
         }
       ],
       "buildCommandArgs": "-v",
@@ -275,24 +311,142 @@
         },
         {
           "name": "ANDROID_ABI",
-          "value": "x86"
+          "value": "x86",
+          "type": "STRING"
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23"
+          "value": "23",
+          "type": "STRING"
         },
         {
           "name": "XII_ENABLE_QT_SUPPORT",
-          "value": "0"
+          "value": "0",
+          "type": "STRING"
         },
         {
           "name": "XII_BUILD_SAMPLES",
-          "value": "1"
+          "value": "1",
+          "type": "STRING"
         }
       ],
       "buildCommandArgs": "-v",
       "ctestCommandArgs": "",
       "intelliSenseMode": "android-clang-x86"
+    },
+    {
+      "name": "Android-x86_64-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "vsdev" ],
+      "buildRoot": "${workspaceRoot}\\build\\${name}",
+      "installRoot": "${workspaceRoot}\\install\\${name}",
+      "variables": [
+        {
+          "name": "CMAKE_TOOLCHAIN_FILE",
+          "value": "${env.ANDROID_NDK_HOME}\\build\\cmake\\android.toolchain.cmake",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "ANDROID_ABI",
+          "value": "x86_64",
+          "type": "STRING"
+        },
+        {
+          "name": "ANDROID_PLATFORM",
+          "value": "23",
+          "type": "STRING"
+        },
+        {
+          "name": "XII_ENABLE_QT_SUPPORT",
+          "value": "0",
+          "type": "STRING"
+        },
+        {
+          "name": "XII_BUILD_SAMPLES",
+          "value": "1",
+          "type": "STRING"
+        }
+      ],
+      "buildCommandArgs": "-v",
+      "ctestCommandArgs": "",
+      "intelliSenseMode": "android-clang-x64"
+    },
+    {
+      "name": "Android-x86_64-Dev",
+      "generator": "Ninja",
+      "configurationType": "Dev",
+      "inheritEnvironments": [ "vsdev" ],
+      "buildRoot": "${workspaceRoot}\\build\\${name}",
+      "installRoot": "${workspaceRoot}\\install\\${name}",
+      "variables": [
+        {
+          "name": "CMAKE_TOOLCHAIN_FILE",
+          "value": "${env.ANDROID_NDK_HOME}\\build\\cmake\\android.toolchain.cmake",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "ANDROID_ABI",
+          "value": "x86_64",
+          "type": "STRING"
+        },
+        {
+          "name": "ANDROID_PLATFORM",
+          "value": "23",
+          "type": "STRING"
+        },
+        {
+          "name": "XII_ENABLE_QT_SUPPORT",
+          "value": "0",
+          "type": "STRING"
+        },
+        {
+          "name": "XII_BUILD_SAMPLES",
+          "value": "1",
+          "type": "STRING"
+        }
+      ],
+      "buildCommandArgs": "-v",
+      "ctestCommandArgs": "",
+      "intelliSenseMode": "android-clang-x64"
+    },
+    {
+      "name": "Android-x86_64-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "inheritEnvironments": [ "vsdev" ],
+      "buildRoot": "${workspaceRoot}\\build\\${name}",
+      "installRoot": "${workspaceRoot}\\install\\${name}",
+      "variables": [
+        {
+          "name": "CMAKE_TOOLCHAIN_FILE",
+          "value": "${env.ANDROID_NDK_HOME}\\build\\cmake\\android.toolchain.cmake",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "ANDROID_ABI",
+          "value": "x86_64",
+          "type": "STRING"
+        },
+        {
+          "name": "ANDROID_PLATFORM",
+          "value": "23",
+          "type": "STRING"
+        },
+        {
+          "name": "XII_ENABLE_QT_SUPPORT",
+          "value": "0",
+          "type": "STRING"
+        },
+        {
+          "name": "XII_BUILD_SAMPLES",
+          "value": "1",
+          "type": "STRING"
+        }
+      ],
+      "buildCommandArgs": "-v",
+      "ctestCommandArgs": "",
+      "intelliSenseMode": "android-clang-x64"
     }
   ]
 }

@@ -3605,7 +3605,7 @@ if(TARGET sdl-build-options)
 
   set_property(GLOBAL APPEND PROPERTY "EXPORT_PROJECTS" sdl-build-options)
   
-  xii_set_project_ide_folder(sdl-build-options "Code/ThirdParty/SDL")
+  xii_set_project_ide_folder(sdl-build-options "Source/ThirdParty/SDL")
   
   xii_set_target_output_dirs(sdl-build-options ${XII_OUTPUT_DIRECTORY_LIB} ${XII_OUTPUT_DIRECTORY_DLL})
     
@@ -3615,7 +3615,7 @@ if(TARGET SDL2main)
 
   set_property(GLOBAL APPEND PROPERTY "EXPORT_PROJECTS" SDL2main)
   
-  xii_set_project_ide_folder(SDL2main "Code/ThirdParty/SDL")
+  xii_set_project_ide_folder(SDL2main "Source/ThirdParty/SDL")
   
   xii_set_target_output_dirs(SDL2main ${XII_OUTPUT_DIRECTORY_LIB} ${XII_OUTPUT_DIRECTORY_DLL})
     
@@ -3625,7 +3625,7 @@ if(TARGET SDL2)
 
   set_property(GLOBAL APPEND PROPERTY "EXPORT_PROJECTS" SDL2)
   
-  xii_set_project_ide_folder(SDL2 "Code/ThirdParty/SDL")
+  xii_set_project_ide_folder(SDL2 "Source/ThirdParty/SDL")
   
   xii_set_target_output_dirs(SDL2 ${XII_OUTPUT_DIRECTORY_LIB} ${XII_OUTPUT_DIRECTORY_DLL})
     
@@ -3635,7 +3635,7 @@ if(TARGET SDL2-static)
 
   set_property(GLOBAL APPEND PROPERTY "EXPORT_PROJECTS" SDL2-static)
   
-  xii_set_project_ide_folder(SDL2-static "Code/ThirdParty/SDL")
+  xii_set_project_ide_folder(SDL2-static "Source/ThirdParty/SDL")
   
   xii_set_target_output_dirs(SDL2-static ${XII_OUTPUT_DIRECTORY_LIB} ${XII_OUTPUT_DIRECTORY_DLL})
   
@@ -3643,7 +3643,7 @@ endif()
 
 if(TARGET sdl_headers_copy)
     
-  xii_set_project_ide_folder(sdl_headers_copy "Code/ThirdParty/SDL")
+  xii_set_project_ide_folder(sdl_headers_copy "Source/ThirdParty/SDL")
       
 endif()
 
