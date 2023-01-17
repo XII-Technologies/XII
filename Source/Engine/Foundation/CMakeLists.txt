@@ -62,6 +62,11 @@ endif()
 if (XII_3RDPARTY_SDL_SUPPORT)
 
   target_compile_definitions(${PROJECT_NAME} PUBLIC BUILDSYSTEM_ENABLE_SDL_SUPPORT)
-  target_link_libraries(${PROJECT_NAME} PRIVATE SDL2)
+
+  if(XII_COMPILE_ENGINE_AS_DLL)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL2)
+  else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL2-static)
+  endif()
 
 endif()

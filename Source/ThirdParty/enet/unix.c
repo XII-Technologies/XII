@@ -55,9 +55,11 @@
 
 // BEGIN XII-SPECIFIC BUGFIX
 // see https://github.com/lsalzman/enet/issues/90
+#ifndef __ANDROID__ // Disable this on Android builds as the ndk types.h defines this.
 #ifndef HAS_SOCKLEN_T
 #ifndef __socklen_t_defined
 typedef int socklen_t;
+#endif
 #endif
 #endif
 // END XII-SPECIFIC BUGFIX

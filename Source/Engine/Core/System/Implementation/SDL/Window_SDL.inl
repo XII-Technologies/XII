@@ -19,6 +19,8 @@
 #include <SDL/include/SDL.h>
 #include <SDL/include/SDL_syswm.h>
 
+#define SDL_MAIN_HANDLED
+
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(Core, Window)
 
@@ -200,6 +202,8 @@ xiiResult xiiWindow::Initialize()
     SDL_SetWindowPosition(m_hWindowHandle, m_CreationDescription.m_Position.x, m_CreationDescription.m_Position.y);
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
     SDL_SetWindowPosition(m_hWindowHandle.sdlWindow, m_CreationDescription.m_Position.x, m_CreationDescription.m_Position.y);
+#elif XII_ENABLED(XII_PLATFORM_ANDROID)
+    SDL_SetWindowPosition(m_hWindowHandle, m_CreationDescription.m_Position.x, m_CreationDescription.m_Position.y);
 #else
 #  error Platform implementation not available
 #endif
@@ -211,6 +215,8 @@ xiiResult xiiWindow::Initialize()
     SDL_RaiseWindow(m_hWindowHandle);
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
     SDL_RaiseWindow(m_hWindowHandle.sdlWindow);
+#elif XII_ENABLED(XII_PLATFORM_ANDROID)
+    SDL_RaiseWindow(m_hWindowHandle);
 #else
 #  error Platform implementation not available
 #endif
@@ -343,6 +349,8 @@ xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
   xiiInt32 iReturnCode = SDL_GetWindowWMInfo(m_hWindowHandle, &wmInfo);
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
   xiiInt32 iReturnCode = SDL_GetWindowWMInfo(m_hWindowHandle.sdlWindow, &wmInfo);
+#elif XII_ENABLED(XII_PLATFORM_ANDROID)
+  xiiInt32 iReturnCode = SDL_GetWindowWMInfo(m_hWindowHandle, &wmInfo);
 #else
 #  error Platform implementation not available
 #endif
@@ -356,8 +364,10 @@ xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
     hWindowHandle.type      = xiiWindowHandle::Type::XCB;
     hWindowHandle.x11Window = wmInfo.info.x11.window;
     return hWindowHandle;
+#elif XII_ENABLED(XII_PLATFORM_ANDROID)
+    return wmInfo.info.android.window;
 #else
-    return m_hWindowHandle;
+#  error Platform implementation not available
 #endif
   }
   else

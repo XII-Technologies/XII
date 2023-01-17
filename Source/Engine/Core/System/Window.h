@@ -93,6 +93,18 @@ using xiiWindowInternalHandle = xiiWindowHandle;
 #    define INVALID_WINDOW_HANDLE_VALUE \
       xiiWindowHandle                   \
       {}
+
+#  elif XII_ENABLED(XII_PLATFORM_ANDROID)
+
+extern "C"
+{
+  typedef struct ANativeWindow ANativeWindow;
+}
+
+using xiiWindowHandle         = ANativeWindow*;
+using xiiWindowInternalHandle = SDL_Window*;
+#    define INVALID_WINDOW_HANDLE_VALUE          nullptr
+#    define INVALID_INTERNAL_WINDOW_HANDLE_VALUE nullptr
 #  else
 using xiiWindowHandle         = SDL_Window*;
 using xiiWindowInternalHandle = SDL_Window*;
