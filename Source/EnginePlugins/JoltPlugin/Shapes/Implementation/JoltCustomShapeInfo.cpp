@@ -61,9 +61,19 @@ JPH::Vec3 xiiJoltCustomShapeInfo::GetSurfaceNormal(const SubShapeID& inSubShapeI
   return mInnerShape->GetSurfaceNormal(inSubShapeID, inLocalSurfacePosition);
 }
 
-void xiiJoltCustomShapeInfo::GetSubmergedVolume(Mat44Arg inCenterOfMassTransform, Vec3Arg inScale, const Plane& inSurface, float& outTotalVolume, float& outSubmergedVolume, Vec3& outCenterOfBuoyancy) const
+void xiiJoltCustomShapeInfo::GetSubmergedVolume(Mat44Arg inCenterOfMassTransform, Vec3Arg inScale, const Plane& inSurface, float& outTotalVolume, float& outSubmergedVolume, Vec3& outCenterOfBuoyancy
+#ifdef JPH_DEBUG_RENDERER // Not using JPH_IF_DEBUG_RENDERER for Doxygen
+                                                ,
+                                                JPH::RVec3Arg inBaseOffset
+#endif
+) const
 {
-  mInnerShape->GetSubmergedVolume(inCenterOfMassTransform, inScale, inSurface, outTotalVolume, outSubmergedVolume, outCenterOfBuoyancy);
+  mInnerShape->GetSubmergedVolume(inCenterOfMassTransform, inScale, inSurface, outTotalVolume, outSubmergedVolume, outCenterOfBuoyancy
+#ifdef JPH_DEBUG_RENDERER // Not using JPH_IF_DEBUG_RENDERER for Doxygen
+                                  ,
+                                  inBaseOffset
+#endif
+  );
 }
 
 void xiiJoltCustomShapeInfo::Draw(DebugRenderer* inRenderer, Mat44Arg inCenterOfMassTransform, Vec3Arg inScale, ColorArg inColor, bool inUseMaterialColors, bool inDrawWireframe) const

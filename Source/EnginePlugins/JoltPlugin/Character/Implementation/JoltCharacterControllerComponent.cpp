@@ -158,7 +158,7 @@ xiiResult xiiJoltCharacterControllerComponent::TryChangeShape(JPH::Shape* pNewSh
 
   xiiJoltWorldModule* pModule = GetWorld()->GetModule<xiiJoltWorldModule>();
 
-  if (m_pCharacter->SetShape(pNewShape, 0.01f, broadphaseFilter, objectFilter, m_BodyFilter, *pModule->GetTempAllocator()))
+  if (m_pCharacter->SetShape(pNewShape, 0.01f, broadphaseFilter, objectFilter, m_BodyFilter, {}, *pModule->GetTempAllocator()))
   {
     RemovePresenceBody();
     CreatePresenceBody();
@@ -184,7 +184,7 @@ void xiiJoltCharacterControllerComponent::RawMoveWithVelocity(const xiiVec3& vVe
   updateSettings.mWalkStairsStepUp     = fMaxStairStepUp > 0 ? JPH::Vec3(0, 0, fMaxStairStepUp) : JPH::Vec3::sZero();
 
   // Update the character position
-  m_pCharacter->ExtendedUpdate(GetUpdateTimeDelta(), xiiJoltConversionUtils::ToVec3(pModule->GetCharacterGravity()), updateSettings, broadphaseFilter, objectFilter, m_BodyFilter, *pModule->GetTempAllocator());
+  m_pCharacter->ExtendedUpdate(GetUpdateTimeDelta(), xiiJoltConversionUtils::ToVec3(pModule->GetCharacterGravity()), updateSettings, broadphaseFilter, objectFilter, m_BodyFilter, {}, *pModule->GetTempAllocator());
 
   GetOwner()->SetGlobalPosition(xiiJoltConversionUtils::ToSimdVec3(m_pCharacter->GetPosition()));
 }
@@ -281,7 +281,7 @@ void xiiJoltCharacterControllerComponent::TeleportToPosition(const xiiVec3& vGlo
 
   xiiJoltWorldModule* pModule = GetWorld()->GetModule<xiiJoltWorldModule>();
 
-  m_pCharacter->RefreshContacts(broadphaseFilter, objectFilter, m_BodyFilter, *pModule->GetTempAllocator());
+  m_pCharacter->RefreshContacts(broadphaseFilter, objectFilter, m_BodyFilter, {}, *pModule->GetTempAllocator());
 }
 
 bool xiiJoltCharacterControllerComponent::StickToGround(float fMaxDist)
@@ -294,7 +294,7 @@ bool xiiJoltCharacterControllerComponent::StickToGround(float fMaxDist)
 
   xiiJoltWorldModule* pModule = GetWorld()->GetModule<xiiJoltWorldModule>();
 
-  return m_pCharacter->StickToFloor(JPH::Vec3(0, 0, -fMaxDist), broadphaseFilter, objectFilter, m_BodyFilter, *pModule->GetTempAllocator());
+  return m_pCharacter->StickToFloor(JPH::Vec3(0, 0, -fMaxDist), broadphaseFilter, objectFilter, m_BodyFilter, {}, *pModule->GetTempAllocator());
 }
 
 void xiiJoltCharacterControllerComponent::CollectCastContacts(xiiDynamicArray<ContactPoint>& out_Contacts, const JPH::Shape* pShape, const xiiVec3& vQueryPosition, const xiiQuat& qQueryRotation, const xiiVec3& vSweepDir) const
@@ -333,10 +333,10 @@ void xiiJoltCharacterControllerComponent::CollectCastContacts(xiiDynamicArray<Co
 
   const JPH::Mat44 trans = JPH::Mat44::sRotationTranslation(xiiJoltConversionUtils::ToQuat(qQueryRotation), xiiJoltConversionUtils::ToVec3(vQueryPosition));
 
-  JPH::ShapeCast castOpt(pShape, JPH::Vec3::sReplicate(1.0f), trans, xiiJoltConversionUtils::ToVec3(vSweepDir));
+  JPH::RShapeCast castOpt(pShape, JPH::Vec3::sReplicate(1.0f), trans, xiiJoltConversionUtils::ToVec3(vSweepDir));
 
   JPH::ShapeCastSettings settings;
-  pJoltSystem->GetNarrowPhaseQuery().CastShape(castOpt, settings, collector, broadphaseFilter, objectFilter, m_BodyFilter);
+  pJoltSystem->GetNarrowPhaseQuery().CastShape(castOpt, settings, JPH::RVec3::sZero(), collector, broadphaseFilter, objectFilter, m_BodyFilter);
 }
 
 void xiiJoltCharacterControllerComponent::CollectContacts(xiiDynamicArray<ContactPoint>& out_Contacts, const JPH::Shape* pShape, const xiiVec3& vQueryPosition, const xiiQuat& qQueryRotation, float fCollisionTolerance) const
@@ -378,7 +378,7 @@ void xiiJoltCharacterControllerComponent::CollectContacts(xiiDynamicArray<Contac
   settings.mCollisionTolerance = fCollisionTolerance;
   settings.mBackFaceMode       = JPH::EBackFaceMode::CollideWithBackFaces;
 
-  pJoltSystem->GetNarrowPhaseQuery().CollideShape(pShape, JPH::Vec3::sReplicate(1.0f), trans, settings, collector, broadphaseFilter, objectFilter, m_BodyFilter);
+  pJoltSystem->GetNarrowPhaseQuery().CollideShape(pShape, JPH::Vec3::sReplicate(1.0f), trans, settings, JPH::RVec3::sZero(), collector, broadphaseFilter, objectFilter, m_BodyFilter);
 }
 
 xiiVec3 xiiJoltCharacterControllerComponent::GetContactVelocityAndPushAway(const ContactPoint& contact, float fPushForce)

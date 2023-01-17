@@ -8,19 +8,6 @@ namespace xiiJoltCollisionFiltering
 {
   xiiCollisionFilterConfig s_CollisionFilterConfig;
 
-  bool BroadphaseFilter(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2)
-  {
-    const xiiUInt32 uiMask1 = XII_BIT(inLayer1 >> 8);
-    const xiiUInt32 uiMask2 = GetBroadphaseCollisionMask(static_cast<xiiJoltBroadphaseLayer>((xiiUInt8)inLayer2));
-
-    return (uiMask1 & uiMask2) != 0;
-  }
-
-  bool ObjectLayerFilter(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2)
-  {
-    return s_CollisionFilterConfig.IsCollisionEnabled(static_cast<xiiUInt32>(inObject1) & 0xFF, static_cast<xiiUInt32>(inObject2) & 0xFF);
-  };
-
   JPH::ObjectLayer ConstructObjectLayer(xiiUInt8 uiCollisionGroup, xiiJoltBroadphaseLayer broadphase)
   {
     return static_cast<JPH::ObjectLayer>(static_cast<xiiUInt16>(broadphase) << 8 | static_cast<xiiUInt16>(uiCollisionGroup));
@@ -140,4 +127,17 @@ static_assert(xiiPhysicsShapeType::Count == xiiJoltBroadphaseLayer::ENUM_COUNT);
 bool xiiJoltObjectLayerFilter::ShouldCollide(JPH::ObjectLayer inLayer) const
 {
   return xiiJoltCollisionFiltering::s_CollisionFilterConfig.IsCollisionEnabled(m_uiCollisionLayer, static_cast<xiiUInt32>(inLayer) & 0xFF);
+}
+
+bool xiiJoltObjectVsBroadPhaseLayerFilter::ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const
+{
+  const xiiUInt32 uiMask1 = XII_BIT(inLayer1 >> 8);
+  const xiiUInt32 uiMask2 = xiiJoltCollisionFiltering::GetBroadphaseCollisionMask(static_cast<xiiJoltBroadphaseLayer>((xiiUInt8)inLayer2));
+
+  return (uiMask1 & uiMask2) != 0;
+}
+
+bool xiiJoltObjectLayerPairFilter::ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const
+{
+  return xiiJoltCollisionFiltering::s_CollisionFilterConfig.IsCollisionEnabled(static_cast<xiiUInt32>(inObject1) & 0xFF, static_cast<xiiUInt32>(inObject2) & 0xFF);
 }

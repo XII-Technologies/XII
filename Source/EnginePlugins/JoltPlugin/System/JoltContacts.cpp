@@ -94,13 +94,13 @@ void xiiJoltContactListener::OnContact(const JPH::Body& inBody0, const JPH::Body
 
       const float fImpactSqr = (inBody0.GetLinearVelocity() - inBody1.GetLinearVelocity()).LengthSq();
 
-      for (xiiUInt32 uiContactPointIndex = 0; uiContactPointIndex < inManifold.mWorldSpaceContactPointsOn1.size(); ++uiContactPointIndex)
+      for (xiiUInt32 uiContactPointIndex = 0; uiContactPointIndex < inManifold.mRelativeContactPointsOn1.size(); ++uiContactPointIndex)
       {
-        vAvgPos += xiiJoltConversionUtils::ToVec3(inManifold.mWorldSpaceContactPointsOn1[uiContactPointIndex]);
+        vAvgPos += xiiJoltConversionUtils::ToVec3(inManifold.GetWorldSpaceContactPointOn1(uiContactPointIndex));
         vAvgPos -= vAvgNormal * inManifold.mPenetrationDepth;
       }
 
-      vAvgPos /= (float)inManifold.mWorldSpaceContactPointsOn1.size();
+      vAvgPos /= (float)inManifold.mRelativeContactPointsOn1.size();
 
       if (bPersistent)
       {
@@ -593,7 +593,7 @@ void xiiJoltContactEvents::OnContact_SlideReaction(const JPH::Body& inBody0, con
 
 void xiiJoltContactEvents::OnContact_SlideAndRollReaction(const JPH::Body& inBody0, const JPH::Body& inBody1, const JPH::ContactManifold& inManifold, xiiBitflags<xiiOnJoltContact> onContact0, xiiBitflags<xiiOnJoltContact> onContact1, const xiiVec3& vAvgPos, const xiiVec3& vAvgNormal, xiiBitflags<xiiOnJoltContact> CombinedContactFlags)
 {
-  if (inManifold.mWorldSpaceContactPointsOn1.size() >= 2 && CombinedContactFlags.IsAnySet(xiiOnJoltContact::SlideReactions))
+  if (inManifold.mRelativeContactPointsOn1.size() >= 2 && CombinedContactFlags.IsAnySet(xiiOnJoltContact::SlideReactions))
   {
     OnContact_SlideReaction(inBody0, inBody1, inManifold, onContact0, onContact1, vAvgPos, vAvgNormal);
   }
