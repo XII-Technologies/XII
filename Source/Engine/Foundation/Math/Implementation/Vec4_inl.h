@@ -25,7 +25,7 @@ XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec2Template<Type>::GetAsVec4(Ty
 template <typename Type>
 XII_FORCE_INLINE const xiiVec2Template<Type> xiiVec3Template<Type>::GetAsVec2() const
 {
-  // don't assert here, as the 3rd and 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes
+  // Do not assert here, as the 3rd and 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes
   // XII_NAN_ASSERT(this);
 
   return xiiVec2Template<Type>(x, y);
@@ -42,7 +42,7 @@ XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec3Template<Type>::GetAsVec4(Ty
 template <typename Type>
 XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec3Template<Type>::GetAsPositionVec4() const
 {
-  // don't assert here, as the 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes
+  // Do not assert here, as the 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes
   // XII_NAN_ASSERT(this);
 
   return xiiVec4Template<Type>(x, y, z, 1);
@@ -51,7 +51,7 @@ XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec3Template<Type>::GetAsPositio
 template <typename Type>
 XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec3Template<Type>::GetAsDirectionVec4() const
 {
-  // don't assert here, as the 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes
+  // Do not assert here, as the 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes
   // XII_NAN_ASSERT(this);
 
   return xiiVec4Template<Type>(x, y, z, 0);
@@ -87,7 +87,7 @@ XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type V) :
 template <typename Type>
 XII_FORCE_INLINE const xiiVec2Template<Type> xiiVec4Template<Type>::GetAsVec2() const
 {
-  // don't assert here, as the 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes
+  // Do not assert here, as the 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes
   // XII_NAN_ASSERT(this);
 
   return xiiVec2Template<Type>(x, y);
@@ -96,7 +96,7 @@ XII_FORCE_INLINE const xiiVec2Template<Type> xiiVec4Template<Type>::GetAsVec2() 
 template <typename Type>
 XII_FORCE_INLINE const xiiVec3Template<Type> xiiVec4Template<Type>::GetAsVec3() const
 {
-  // don't assert here, as the 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes
+  // Do not assert here, as the 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes
   // XII_NAN_ASSERT(this);
 
   return xiiVec3Template<Type>(x, y, z);

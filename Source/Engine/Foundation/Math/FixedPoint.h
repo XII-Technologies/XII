@@ -108,12 +108,14 @@ float ToFloat(xiiFixedPoint<DecimalBits> f)
 }
 
 // Additional operators:
-// xiiFixedPoint operator+ (xiiFixedPoint, xiiFixedPoint); // [tested]
-// xiiFixedPoint operator- (xiiFixedPoint, xiiFixedPoint); // [tested]
-// xiiFixedPoint operator* (xiiFixedPoint, xiiFixedPoint); // [tested]
-// xiiFixedPoint operator/ (xiiFixedPoint, xiiFixedPoint); // [tested]
-// xiiFixedPoint operator* (int, xiiFixedPoint); // [tested]
-// xiiFixedPoint operator* (xiiFixedPoint, int); // [tested]
-// xiiFixedPoint operator/ (xiiFixedPoint, int); // [tested]
+#if 0
+xiiFixedPoint operator+ (xiiFixedPoint, xiiFixedPoint); // [tested]
+xiiFixedPoint operator- (xiiFixedPoint, xiiFixedPoint); // [tested]
+xiiFixedPoint operator* (xiiFixedPoint, xiiFixedPoint); // [tested]
+xiiFixedPoint operator/ (xiiFixedPoint, xiiFixedPoint); // [tested]
+xiiFixedPoint operator* (int, xiiFixedPoint); // [tested]
+xiiFixedPoint operator* (xiiFixedPoint, int); // [tested]
+xiiFixedPoint operator/ (xiiFixedPoint, int); // [tested]
+#endif
 
 #include <Foundation/Math/Implementation/FixedPoint_inl.h>

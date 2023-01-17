@@ -140,7 +140,7 @@ bool xiiQuatTemplate<Type>::IsNaN() const
 template <typename Type>
 bool xiiQuatTemplate<Type>::IsEqualRotation(const xiiQuatTemplate<Type>& qOther, Type fEpsilon) const
 {
-  if (v.IsEqual(qOther.v, (Type)0.00001) && xiiMath::IsEqual(w, qOther.w, (Type)0.00001))
+  if (v.IsEqual(qOther.v, xiiMath::DefaultEpsilon<Type>()) && xiiMath::IsEqual(w, qOther.w, xiiMath::DefaultEpsilon<Type>()))
   {
     return true;
   }

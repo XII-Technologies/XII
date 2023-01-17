@@ -164,7 +164,7 @@ xiiColor xiiColorScheme::s_Colors[Count][10] = {
 
 // We could use a lower brightness here for our dark UI but the colors looks much nicer at higher brightness so we just apply a scale factor instead.
 static constexpr xiiUInt8 DarkUIBrightness                      = 3;
-static constexpr xiiUInt8 DarkUIGrayBrightness                  = 4; // gray is too dark at UIBrightness
+static constexpr xiiUInt8 DarkUIGrayBrightness                  = 4; // Gray is too dark at UIBrightness
 static constexpr float    DarkUISaturation                      = 0.95f;
 static constexpr xiiColor DarkUIFactor                          = xiiColor(0.5f, 0.5f, 0.5f, 1.0f);
 xiiColor                  xiiColorScheme::s_DarkUIColors[Count] = {
@@ -184,7 +184,7 @@ xiiColor                  xiiColorScheme::s_DarkUIColors[Count] = {
 };
 
 static constexpr xiiUInt8 LightUIBrightness                      = 4;
-static constexpr xiiUInt8 LightUIGrayBrightness                  = 5; // gray is too dark at UIBrightness
+static constexpr xiiUInt8 LightUIGrayBrightness                  = 5; // Gray is too dark at UIBrightness
 static constexpr float    LightUISaturation                      = 1.0f;
 xiiColor                  xiiColorScheme::s_LightUIColors[Count] = {
   GetColor(xiiColorScheme::Red, LightUIBrightness, LightUISaturation),

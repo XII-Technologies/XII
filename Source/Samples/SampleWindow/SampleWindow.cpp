@@ -248,4 +248,4 @@ void xiiSampleWindowApp::BeforeHighLevelSystemsShutdown()
   XII_DEFAULT_DELETE(m_pWindow);
 }
 
-XII_APPLICATION_ENTRY_POINT(xiiSampleWindowApp);
+XII_CONSOLEAPP_ENTRY_POINT(xiiSampleWindowApp);

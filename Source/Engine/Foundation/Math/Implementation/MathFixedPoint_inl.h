@@ -2,20 +2,36 @@
 
 #include <Foundation/Math/FixedPoint.h>
 
-/*
+#if 0
+
 namespace xiiMath
 {
-#define FIXEDPOINT_OVERLOADS(Bits)                                                                                                       \
-  template <>                                                                                                                            \
-  XII_ALWAYS_INLINE xiiFixedPoint<Bits> BasicType<xiiFixedPoint<Bits>>::MaxValue() { return (xiiFixedPoint<Bits>)((1 << (31 - Bits)) - 1); } \
-  template <>                                                                                                                            \
-  XII_ALWAYS_INLINE xiiFixedPoint<Bits> BasicType<xiiFixedPoint<Bits>>::SmallEpsilon() { return (xiiFixedPoint<Bits>)0.0001; }               \
-  template <>                                                                                                                            \
-  XII_ALWAYS_INLINE xiiFixedPoint<Bits> BasicType<xiiFixedPoint<Bits>>::DefaultEpsilon() { return (xiiFixedPoint<Bits>)0.001; }              \
-  template <>                                                                                                                            \
-  XII_ALWAYS_INLINE xiiFixedPoint<Bits> BasicType<xiiFixedPoint<Bits>>::LargeEpsilon() { return (xiiFixedPoint<Bits>)0.01; }                 \
-  template <>                                                                                                                            \
-  XII_ALWAYS_INLINE xiiFixedPoint<Bits> BasicType<xiiFixedPoint<Bits>>::HugeEpsilon() { return (xiiFixedPoint<Bits>)0.1; }
+#  define FIXEDPOINT_OVERLOADS(Bits)                                                       \
+    template <>                                                                            \
+    XII_ALWAYS_INLINE xiiFixedPoint<Bits> BasicType<xiiFixedPoint<Bits>>::MaxValue()       \
+    {                                                                                      \
+      return (xiiFixedPoint<Bits>)((1 << (31 - Bits)) - 1);                                \
+    }                                                                                      \
+    template <>                                                                            \
+    XII_ALWAYS_INLINE xiiFixedPoint<Bits> BasicType<xiiFixedPoint<Bits>>::SmallEpsilon()   \
+    {                                                                                      \
+      return (xiiFixedPoint<Bits>)0.0001;                                                  \
+    }                                                                                      \
+    template <>                                                                            \
+    XII_ALWAYS_INLINE xiiFixedPoint<Bits> BasicType<xiiFixedPoint<Bits>>::DefaultEpsilon() \
+    {                                                                                      \
+      return (xiiFixedPoint<Bits>)0.001;                                                   \
+    }                                                                                      \
+    template <>                                                                            \
+    XII_ALWAYS_INLINE xiiFixedPoint<Bits> BasicType<xiiFixedPoint<Bits>>::LargeEpsilon()   \
+    {                                                                                      \
+      return (xiiFixedPoint<Bits>)0.01;                                                    \
+    }                                                                                      \
+    template <>                                                                            \
+    XII_ALWAYS_INLINE xiiFixedPoint<Bits> BasicType<xiiFixedPoint<Bits>>::HugeEpsilon()    \
+    {                                                                                      \
+      return (xiiFixedPoint<Bits>)0.1;                                                     \
+    }
 
   FIXEDPOINT_OVERLOADS(1);
   FIXEDPOINT_OVERLOADS(2);
@@ -153,19 +169,22 @@ namespace xiiMath
   xiiFixedPoint<DecimalBits> Sqrt(xiiFixedPoint<DecimalBits> a)
   {
     return (xiiFixedPoint<DecimalBits>)sqrt(a.ToDouble());
-    //if (a <= xiiFixedPoint<DecimalBits>(0))
-    //  return xiiFixedPoint<DecimalBits>(0);
 
-    //xiiFixedPoint<DecimalBits> x = a / 2;
+#  if 0
+    if (a <= xiiFixedPoint<DecimalBits>(0))
+      return xiiFixedPoint<DecimalBits>(0);
 
-    //for (xiiUInt32 i = 0; i < 8; ++i)
-    //{
-    //  xiiFixedPoint<DecimalBits> ax = a / x;
-    //  xiiFixedPoint<DecimalBits> xpax = x + ax;
-    //  x = xpax / 2;
-    //}
+    xiiFixedPoint<DecimalBits> x = a / 2;
 
-    //return x;
+    for (xiiUInt32 i = 0; i < 8; ++i)
+    {
+      xiiFixedPoint<DecimalBits> ax = a / x;
+      xiiFixedPoint<DecimalBits> xpax = x + ax;
+      x = xpax / 2;
+    }
+
+    return x;
+#  endif
   }
 
   template <xiiUInt8 DecimalBits>
@@ -176,4 +195,5 @@ namespace xiiMath
     return (xiiFixedPoint<DecimalBits>)fmod(f.ToDouble(), div);
   }
 }
-*/
+
+#endif
