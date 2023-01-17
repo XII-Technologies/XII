@@ -1,3 +1,13 @@
+# Asset Types
+
+Particle Effect;Particle Effect
+
+# Component Types
+
+xiiParticleComponent;Particle;;https://xiiengine.net/pages/docs/effects/particle-effects/particle-effect-component.html
+
+# UI
+
 PFX.Restart;Restart
 PFX.AutoRestart;Loop
 PFX.Pause;Pause
@@ -13,74 +23,44 @@ PFX.Speed.4;400%
 PFX.Speed.5;500%
 PFX.Speed.10;1000%
 PFX.Render.Visualizers;Render Visualizers
-Particle Systems;Particle Systems
-xiiParticleSystemDescriptor;Particle System
-Emitters;Emitters
-Initializers;Initializers
-Behaviors;Behaviors
-ParticleSystems;Particle Systems
-xiiParticleTypeTrailFactory;Trail
+
+# Enums
+
+xiiParticleTypeRenderMode::BlendedForeground;Blended (Foreground)
+xiiParticleTypeRenderMode::BlendedBackground;Blended (Background)
+
+xiiEffectInvisibleUpdateRate::Max20fps;Max 20 FPS
+xiiEffectInvisibleUpdateRate::Max10fps;Max 10 FPS
+xiiEffectInvisibleUpdateRate::Max5fps;Max 5 FPS
+
+xiiParticleTextureAtlasType::RandomYAnimatedX;Random Row, Animated Column
+
 xiiParticleBehaviorFactory_ColorGradient;Color Gradient
 xiiParticleBehaviorFactory_Velocity;Velocity
 xiiParticleBehaviorFactory_Gravity;Gravity
 xiiParticleBehaviorFactory_Raycast;Raycast
 xiiParticleBehaviorFactory_FadeOut;Fade Out
+xiiParticleBehaviorFactory_PullAlong;Pull Along
+xiiParticleBehaviorFactory_SizeCurve;Size Curve
+xiiParticleBehaviorFactory_Flies;Flies
+xiiParticleBehaviorFactory_Bounds;Bounds
+
 xiiParticleEmitterFactory_Continuous;Continuous
 xiiParticleEmitterFactory_OnEvent;On Event
 xiiParticleEmitterFactory_Burst;Burst
 xiiParticleEmitterFactory_Distance;Distance
-xiiParticleTypeMeshFactory;Mesh
-xiiParticleInitializerFactory_VelocityCone;Velocity Cone
-xiiParticleComponent;Particle;;https://xiiengine.net/pages/docs/effects/particle-effects/particle-effect-component.html
+
 xiiParticleInitializerFactory_BoxPosition;Box Position
 xiiParticleInitializerFactory_CylinderPosition;Cylinder Position
 xiiParticleInitializerFactory_RandomColor;Random Color
 xiiParticleInitializerFactory_RandomSize;Random Size
 xiiParticleInitializerFactory_RandomRotationSpeed;Rotation Speed
 xiiParticleInitializerFactory_SpherePosition;Sphere Position
-xiiParticleBehaviorFactory_PullAlong;Pull Along
-xiiParticleBehaviorFactory_SizeCurve;Size Curve
-xiiParticleTypeQuadFactory;Quad
-xiiParticleTypeLightFactory;Light
-xiiParticleTypeEffectFactory;Effect
-xiiParticleTypePointFactory;Point
-Types;Renderers
-xiiParticleRaycastHitReaction::Bounce;Bounce
-xiiParticleRaycastHitReaction::Die;Die
-xiiParticleRaycastHitReaction::Stop;Stop
-xiiParticleTypeRenderMode::Additive;Additive
-xiiParticleTypeRenderMode::Blended;Blended
-xiiParticleTypeRenderMode::BlendedForeground;Blended (Foreground)
-xiiParticleTypeRenderMode::BlendedBackground;Blended (Background)
-xiiParticleTypeRenderMode::Opaque;Opaque
-xiiParticleTypeRenderMode::Distortion;Distortion
-xiiParticleTypeRenderMode::BlendAdd;Blend Add
-xiiEffectInvisibleUpdateRate::FullUpdate;Full Update
-xiiEffectInvisibleUpdateRate::Max20fps;Max 20 FPS
-xiiEffectInvisibleUpdateRate::Max10fps;Max 10 FPS
-xiiEffectInvisibleUpdateRate::Max5fps;Max 5 FPS
-xiiEffectInvisibleUpdateRate::Pause;Pause
-xiiEffectInvisibleUpdateRate::Discard;Discard
-FloatParameters;Number Parameters
-ColorParameters;Color Parameters
-xiiParticleTextureAtlasType::None;None
-xiiParticleTextureAtlasType::RandomVariations;Random Variations
-xiiParticleTextureAtlasType::FlipbookAnimation;Flipbook Animation
-xiiParticleTextureAtlasType::RandomYAnimatedX;Random Row, Animated Column
-TextureAtlas;Texture Atlas
-xiiParticleColorGradientMode::Age;Age
-xiiParticleColorGradientMode::Speed;Speed
-ColorGradientMode;Color From
-GradientMaxSpeed;Max Speed
-EventReactions;Event Reactions
+xiiParticleInitializerFactory_VelocityCone;Velocity Cone
+
 xiiParticleEventReactionFactory_Effect;Effect Reaction
 xiiParticleEventReactionFactory_Prefab;Prefab Reaction
-xiiParticleBehaviorFactory_Flies;Flies
-LifeTime;Life
-Orientation;Orientation
-Texture;Texture
-RenderMode;Render Mode
-xiiQuadParticleOrientation::Billboard;Billboard
+
 xiiQuadParticleOrientation::Rotating_OrthoEmitterDir;Rotating: Ortho Emitter Dir
 xiiQuadParticleOrientation::Rotating_EmitterDir;Rotating: Emitter Dir
 xiiQuadParticleOrientation::Fixed_EmitterDir;Fixed: Emitter Dir
@@ -88,7 +68,17 @@ xiiQuadParticleOrientation::Fixed_RandomDir;Fixed: Random Dir
 xiiQuadParticleOrientation::Fixed_WorldUp;Fixed: World Up
 xiiQuadParticleOrientation::FixedAxis_EmitterDir;Axis: Emitter Dir
 xiiQuadParticleOrientation::FixedAxis_ParticleDir;Axis: Particle Dir
-xiiParticleBehaviorFactory_Bounds;Bounds
-xiiParticleOutOfBoundsMode::Teleport;Teleport
-xiiParticleOutOfBoundsMode::Die;Die
-Particle Effect;Particle Effect
+
+xiiParticleTypeTrailFactory;Trail
+xiiParticleTypeMeshFactory;Mesh
+xiiParticleTypeQuadFactory;Quad
+xiiParticleTypeLightFactory;Light
+xiiParticleTypeEffectFactory;Effect
+xiiParticleTypePointFactory;Point
+
+# Properties
+
+xiiParticleEffectDescriptor::PreSimulateDuration;Pre-Simulate Duration
+xiiParticleEffectDescriptor::SimulateInLocalSpace;Simulate In Local-Space
+
+xiiParticleBehaviorFactory_Bounds::OutOfBoundsMode;Out-Of-Bounds Mode

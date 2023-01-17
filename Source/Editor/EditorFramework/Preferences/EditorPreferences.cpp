@@ -27,6 +27,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorPreferencesUser, 1, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("ExpandSceneTreeOnSelection", m_bExpandSceneTreeOnSelection)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("AssetFilterCombobox", m_bAssetFilterCombobox)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("ClearEditorLogsOnPlay", m_bClearEditorLogsOnPlay)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_ACCESSOR_PROPERTY("HighlightUntranslatedUI", GetHighlightUntranslatedUI, SetHighlightUntranslatedUI),
 
     // START GROUP Engine View Light Settings
     XII_MEMBER_PROPERTY("SkyBox", m_bSkyBox)->AddAttributes(new xiiDefaultValueAttribute(true), new xiiGroupAttribute("Engine View Light Settings")),
@@ -83,6 +84,13 @@ void xiiEditorPreferencesUser::SetShowInDevelopmentFeatures(bool b)
   m_bShowInDevelopmentFeatures = b;
 
   xiiQtAddSubElementButton::s_bShowInDevelopmentFeatures = b;
+}
+
+void xiiEditorPreferencesUser::SetHighlightUntranslatedUI(bool b)
+{
+  m_bHighlightUntranslatedUI = b;
+
+  xiiTranslator::HighlightUntranslated(m_bHighlightUntranslatedUI);
 }
 
 void xiiEditorPreferencesUser::SetGizmoSize(float f)

@@ -6,6 +6,7 @@
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Strings/TranslationLookup.h>
 
+bool                              xiiTranslator::s_bHighlightUntranslated = false;
 xiiHybridArray<xiiTranslator*, 4> xiiTranslator::s_AllTranslators;
 
 xiiTranslator::xiiTranslator()
@@ -30,6 +31,16 @@ void xiiTranslator::ReloadAllTranslators()
   {
     pTranslator->Reload();
   }
+}
+
+void xiiTranslator::HighlightUntranslated(bool bHighlight)
+{
+  if (s_bHighlightUntranslated == bHighlight)
+    return;
+
+  s_bHighlightUntranslated = bHighlight;
+
+  ReloadAllTranslators();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -96,6 +107,11 @@ void xiiTranslatorFromFiles::AddTranslationFilesFromFolder(const char* szFolder)
 #endif
 }
 
+const char* xiiTranslatorFromFiles::Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
+{
+  return xiiTranslatorStorage::Translate(szString, uiStringHash, usage);
+}
+
 void xiiTranslatorFromFiles::Reload()
 {
   xiiTranslatorStorage::Reload();
@@ -133,7 +149,7 @@ void xiiTranslatorFromFiles::LoadTranslationFile(const char* szFullPath)
     sLine = line;
     sLine.Trim(" \t\r\n");
 
-    if (sLine.IsEmpty())
+    if (sLine.IsEmpty() || sLine.StartsWith("#"))
       continue;
 
     entries.Clear();
@@ -160,6 +176,12 @@ void xiiTranslatorFromFiles::LoadTranslationFile(const char* szFullPath)
     sValue.Trim(" \t\r\n");
     sTooltip.Trim(" \t\r\n");
     sHelpUrl.Trim(" \t\r\n");
+
+    if (GetHighlightUntranslated())
+    {
+      sValue.Prepend("# ");
+      sValue.Append(" (@", sKey, ")");
+    }
 
     StoreTranslation(sValue, xiiHashingUtils::StringHash(sKey), xiiTranslationUsage::Default);
     StoreTranslation(sTooltip, xiiHashingUtils::StringHash(sKey), xiiTranslationUsage::Tooltip);
@@ -202,23 +224,109 @@ bool xiiTranslatorLogMissing::s_bActive = true;
 
 const char* xiiTranslatorLogMissing::Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
 {
+  if (!xiiTranslatorLogMissing::s_bActive && !GetHighlightUntranslated())
+    return nullptr;
+
+  if (usage != xiiTranslationUsage::Default)
+    return nullptr;
+
+  const char* szResult = xiiTranslatorStorage::Translate(szString, uiStringHash, usage);
+
+  if (szResult == nullptr)
+  {
+    xiiLog::Warning("Missing translation: {0};", szString);
+
+    StoreTranslation(szString, uiStringHash, usage);
+  }
+
+  return nullptr;
+}
+
+const char* xiiTranslatorMakeMoreReadable::Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
+{
   const char* szResult = xiiTranslatorStorage::Translate(szString, uiStringHash, usage);
 
   if (szResult != nullptr)
     return szResult;
 
-  if (usage != xiiTranslationUsage::Default)
-    return "";
 
-  if (xiiTranslatorLogMissing::s_bActive)
+  xiiStringBuilder result;
+  xiiStringBuilder tmp = szString;
+  tmp.Trim(" _-");
+  tmp.TrimWordStart("xii");
+  tmp.TrimWordEnd("Component");
+
+  auto IsUpper = [](xiiUInt32 c) {
+    return c == xiiStringUtils::ToUpperChar(c);
+  };
+  auto IsNumber = [](xiiUInt32 c) {
+    return c >= '0' && c <= '9';
+  };
+
+  xiiUInt32 uiPrev = ' ';
+  xiiUInt32 uiCur  = ' ';
+  xiiUInt32 uiNext = ' ';
+
+  bool bContinue = true;
+
+  for (auto it = tmp.GetIteratorFront(); bContinue; ++it)
   {
-    xiiLog::Warning("Missing Translation for '{0}'", szString);
+    uiPrev = uiCur;
+    uiCur  = uiNext;
+
+    if (it.IsValid())
+    {
+      uiNext = it.GetCharacter();
+    }
+    else
+    {
+      uiNext    = ' ';
+      bContinue = false;
+    }
+
+    if (uiCur == '_')
+      uiCur = ' ';
+
+    if (uiCur == ':')
+    {
+      result.Clear();
+      continue;
+    }
+
+    if (!IsNumber(uiPrev) && IsNumber(uiCur))
+    {
+      result.Append(" ");
+      result.Append(uiCur);
+      continue;
+    }
+
+    if (IsUpper(uiPrev) && IsUpper(uiCur) && !IsUpper(uiNext))
+    {
+      result.Append(" ");
+      result.Append(uiCur);
+      continue;
+    }
+
+    if (!IsUpper(uiCur) && IsUpper(uiNext))
+    {
+      result.Append(uiCur);
+      result.Append(" ");
+      continue;
+    }
+
+    result.Append(uiCur);
   }
 
-  StoreTranslation(szString, uiStringHash, usage);
-  return szString;
+  result.Trim(" ");
+
+  if (GetHighlightUntranslated())
+  {
+    result.Append(" (@", szString, ")");
+  }
+
+  StoreTranslation(result, uiStringHash, usage);
+
+  return xiiTranslatorStorage::Translate(szString, uiStringHash, usage);
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_TranslationLookup);

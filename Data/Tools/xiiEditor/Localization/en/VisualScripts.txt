@@ -1,0 +1,17 @@
+# Asset Types
+
+Visual Script;Visual Script
+
+# Component Types
+
+xiiVisualScriptComponent;Visual Script;;https://xiiengine.net/pages/docs/custom-code/visual-script/visual-script-overview.html
+
+# UI
+
+VisScript.PickDebugTarget;Pick Debug Target...
+
+# Properties
+
+xiiVisualScriptParameterNumber;Number Variable
+xiiVisualScriptParameterBool;Bool Variable
+xiiVisualScriptParameterString;String Variable

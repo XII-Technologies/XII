@@ -1,52 +1,30 @@
-ProcGen.DumpAST;Dump AST
-ProcGen.DumpDisassembly;Dump Disassembly
-Objects;Objects
-ProcGen;Procedural Generation
+# Asset Types
+
+ProcGen Graph;ProcGen Graph
+
+# Component Types
+
 xiiProcPlacementComponent;Procedural Placement;;http://xiiengine.net/pages/docs/terrain/procedural/procgen-placement-component.html
-xiiProcGenBoxExtents;Box Extents
-BoxExtents;Extents
 xiiProcVertexColorComponent;Procedural Vertex Color;;http://xiiengine.net/pages/docs/terrain/procedural/procgen-vertex-color-component.html
 xiiProcVolumeSphereComponent;Procedural Volume Sphere;;http://xiiengine.net/pages/docs/terrain/procedural/procgen-volume-sphere-component.html
 xiiProcVolumeBoxComponent;Procedural Volume Box;;http://xiiengine.net/pages/docs/terrain/procedural/procgen-volume-box-component.html
 xiiProcVolumeImageComponent;Procedural Volume Image;;http://xiiengine.net/pages/docs/terrain/procedural/procgen-volume-image-component.html
-xiiProcGenBlendMode::Add;Add
-xiiProcGenBlendMode::Subtract;Subtract
-xiiProcGenBlendMode::Multiply;Multiply
-xiiProcGenBlendMode::Divide;Divide
-xiiProcGenBlendMode::Max;Max
-xiiProcGenBlendMode::Min;Min
-xiiProcGenBlendMode::Set;Set
-OutputDescs;Output Descriptions
-xiiProcVertexColorOutputDesc;Output Description
-Mapping;Mapping
+
+# Enums
+
 xiiProcVertexColorChannelMapping;Vertex Color Channel Mapping
-xiiProcVertexColorChannelMapping::R;R
-xiiProcVertexColorChannelMapping::G;G
-xiiProcVertexColorChannelMapping::B;B
-xiiProcVertexColorChannelMapping::A;A
-xiiProcVertexColorChannelMapping::Black;Black
-xiiProcVertexColorChannelMapping::White;White
-xiiProcPlacementMode::Raycast;Raycast
-xiiProcPlacementMode::Fixed;Fixed
+
 xiiProcVolumeImageMode::ChannelR;Red Channel
 xiiProcVolumeImageMode::ChannelG;Green Channel
 xiiProcVolumeImageMode::ChannelB;Blue Channel
 xiiProcVolumeImageMode::ChannelA;Alpha Channel
-xiiProcVolumeImageMode::ReferenceColor;Reference Color
-xiiProcGenBinaryOperator::Add;Add
-xiiProcGenBinaryOperator::Subtract;Subtract
-xiiProcGenBinaryOperator::Multiply;Multiply
-xiiProcGenBinaryOperator::Divide;Divide
-xiiProcGenBinaryOperator::Max;Max
-xiiProcGenBinaryOperator::Min;Min
-PlacementOutput;Placement Output
-VertexColorOutput;Vertex Color Output
-Random;Random
-PerlinNoise;Perlin Noise
-Blend;Blend
-Height;Height
-Slope;Slope
-MeshVertexColor;Mesh Vertex Color
-ApplyVolumes;Apply Volumes
-Operator;Operator
-ProcGen Graph;ProcGen Graph
+
+# UI
+
+ProcGen.DumpAST;Dump AST
+ProcGen.DumpDisassembly;Dump Disassembly
+
+# Nodes
+
+xiiProcGen_ApplyVolumes::ImageVolumeMode;Mode
+xiiProcGen_ApplyVolumes::RefColor;Reference Color

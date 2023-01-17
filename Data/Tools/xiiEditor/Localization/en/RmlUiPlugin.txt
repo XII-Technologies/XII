@@ -1,4 +1,10 @@
-xiiRmlUiCanvas2DComponent;RmlUi Canvas 2D;;https://xiiengine.net/pages/docs/ui/rmlui-canvas2d-component.html
-xiiRmlUiScaleMode::Fixed;Fixed
-xiiRmlUiScaleMode::WithScreenSize;With Screen Size
+# Asset Types
+
 RmlUi;Rml UI
+
+# Component Types
+
+xiiRmlUiCanvas2DComponent;RmlUi Canvas 2D;;https://xiiengine.net/pages/docs/ui/rmlui-canvas2d-component.html
+
+# Properties
+

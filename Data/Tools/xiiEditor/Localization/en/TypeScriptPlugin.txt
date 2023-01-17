@@ -1,10 +1,21 @@
+# Asset Types
+
+TypeScript;TypeScript
+
+# Component Types
+
+xiiTypeScriptComponent;TypeScript Component;;https://xiiengine.net/pages/docs/custom-code/typescript/ts-component.html
+
+# UI
+
 TypeScript.Edit;Edit Script;Edit Script - Creates the script file if necessary
-StringParameters;String Variables
-Vec3Parameters;Vec3 Variables
+
+# Properties
+
 xiiTypeScriptParameterBool;Boolean
 xiiTypeScriptParameterColor;Color
 xiiTypeScriptParameterNumber;Number
 xiiTypeScriptParameterString;String
 xiiTypeScriptParameterVec3;Vec3
-xiiTypeScriptComponent;TypeScript Component;;https://xiiengine.net/pages/docs/custom-code/typescript/ts-component.html
-TypeScript;TypeScript
+
+xiiTypeScriptAssetProperties::Vec3Parameters;Vec3 Parameters

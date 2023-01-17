@@ -1,0 +1,24 @@
+# Asset Types
+
+Decal;Decal
+
+# Component Types
+
+xiiDecalComponent;Decal;;https://xiiengine.net/pages/docs/effects/decals.html
+
+# UI
+
+DecalImport.All;Decal
+
+# Properties
+
+xiiDecalMode::BaseColor;Base Color
+xiiDecalMode::BaseColorNormal;Base Color, Normal
+xiiDecalMode::BaseColorORM;Base Color, ORM
+xiiDecalMode::BaseColorNormalORM;Base Color, Normal, ORM
+xiiDecalMode::BaseColorEmissive;BaseColor, Emissive
+
+xiiDecalAssetProperties::BaseColor;Base Color Texture
+xiiDecalAssetProperties::Emissive;Emissive Texture
+xiiDecalAssetProperties::Normal;Normal Map
+xiiDecalAssetProperties::ORM;ORM Texture

@@ -73,6 +73,12 @@ void xiiQtPropertyWidget::SetSelection(const xiiHybridArray<xiiPropertySelection
   m_Items = items;
 }
 
+const char* xiiQtPropertyWidget::GetLabel(xiiStringBuilder& tmp) const
+{
+  tmp.Set(m_pType->GetTypeName(), "::", m_pProp->GetPropertyName());
+  return tmp;
+}
+
 void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
 {
   m.setToolTipsVisible(true);
@@ -1382,7 +1388,9 @@ void xiiQtPropertyContainerWidget::Clear()
 
 void xiiQtPropertyContainerWidget::OnInit()
 {
-  m_pGroup->SetTitle(xiiTranslate(m_pProp->GetPropertyName()));
+  xiiStringBuilder fullname(m_pType->GetTypeName(), "::", m_pProp->GetPropertyName());
+
+  m_pGroup->SetTitle(xiiTranslate(fullname));
 
   const xiiContainerAttribute* pArrayAttr = m_pProp->GetAttributeByType<xiiContainerAttribute>();
   if (!pArrayAttr || pArrayAttr->CanAdd())
