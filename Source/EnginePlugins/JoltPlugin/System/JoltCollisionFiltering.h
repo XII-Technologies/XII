@@ -38,10 +38,6 @@ namespace xiiJoltCollisionFiltering
   /// \brief Returns the (hard-coded) collision mask that determines which other broad-phases to collide with.
   XII_JOLTPLUGIN_DLL xiiUInt32 GetBroadphaseCollisionMask(xiiJoltBroadphaseLayer broadphase);
 
-  XII_JOLTPLUGIN_DLL bool ObjectLayerFilter(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2);
-
-  XII_JOLTPLUGIN_DLL bool BroadphaseFilter(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2);
-
 }; // namespace xiiJoltCollisionFiltering
 
 
@@ -84,6 +80,22 @@ public:
   }
 
   virtual bool ShouldCollide(JPH::ObjectLayer inLayer) const override;
+};
+
+class xiiJoltObjectVsBroadPhaseLayerFilter final : public JPH::ObjectVsBroadPhaseLayerFilter
+{
+public:
+  xiiJoltObjectVsBroadPhaseLayerFilter() = default;
+
+  virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override;
+};
+
+class xiiJoltObjectLayerPairFilter final : public JPH::ObjectLayerPairFilter
+{
+public:
+  xiiJoltObjectLayerPairFilter() = default;
+
+  virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::ObjectLayer inLayer2) const override;
 };
 
 class xiiJoltBodyFilter final : public JPH::BodyFilter

@@ -124,7 +124,9 @@ private:
   std::unique_ptr<JPH::PhysicsSystem> m_pSystem;
   std::unique_ptr<JPH::TempAllocator> m_pTempAllocator;
 
-  xiiJoltObjectToBroadphaseLayer m_ObjectToBroadphase;
+  xiiJoltObjectToBroadphaseLayer       m_ObjectToBroadphase;
+  xiiJoltObjectVsBroadPhaseLayerFilter m_ObjectVsBroadphaseFilter;
+  xiiJoltObjectLayerPairFilter         m_ObjectLayerPairFilter;
 
   void*                                     m_pContactListener    = nullptr;
   void*                                     m_pActivationListener = nullptr;

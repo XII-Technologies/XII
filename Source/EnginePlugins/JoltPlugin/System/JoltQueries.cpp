@@ -63,7 +63,7 @@ bool xiiJoltWorldModule::Raycast(xiiPhysicsCastResult& out_Result, const xiiVec3
 
   const JPH::NarrowPhaseQuery& query = m_pSystem->GetNarrowPhaseQuery();
 
-  JPH::RayCast ray;
+  JPH::RRayCast ray;
   ray.mOrigin    = xiiJoltConversionUtils::ToVec3(vStart);
   ray.mDirection = xiiJoltConversionUtils::ToVec3(vDir * fDistance);
 
@@ -119,7 +119,7 @@ bool xiiJoltWorldModule::RaycastAll(xiiPhysicsCastResultArray& out_Results, cons
 
   const JPH::NarrowPhaseQuery& query = m_pSystem->GetNarrowPhaseQuery();
 
-  JPH::RayCast ray;
+  JPH::RRayCast ray;
   ray.mOrigin    = xiiJoltConversionUtils::ToVec3(vStart);
   ray.mDirection = xiiJoltConversionUtils::ToVec3(vDir * fDistance);
 
@@ -223,12 +223,12 @@ bool xiiJoltWorldModule::SweepTest(xiiPhysicsCastResult& out_Result, const JPH::
   xiiJoltBodyFilter            bodyFilter(params.m_uiIgnoreObjectFilterID);
   xiiJoltObjectLayerFilter     objectFilter(params.m_uiCollisionLayer);
 
-  JPH::ShapeCast cast(&shape, JPH::Vec3(1, 1, 1), transform, xiiJoltConversionUtils::ToVec3(vDir * fDistance));
+  JPH::RShapeCast cast(&shape, JPH::Vec3(1, 1, 1), transform, xiiJoltConversionUtils::ToVec3(vDir * fDistance));
 
   xiiJoltShapeCastCollector collector;
   collector.m_bAnyHit = collection == xiiPhysicsHitCollection::Any;
 
-  query.CastShape(cast, {}, collector, broadphaseFilter, objectFilter, bodyFilter);
+  query.CastShape(cast, {}, JPH::RVec3::sZero(), collector, broadphaseFilter, objectFilter, bodyFilter);
 
   if (!collector.m_bFoundAny)
     return false;
@@ -309,7 +309,7 @@ bool xiiJoltWorldModule::OverlapTest(const JPH::Shape& shape, const JPH::Mat44& 
   xiiJoltObjectLayerFilter     objectFilter(params.m_uiCollisionLayer);
 
   xiiJoltShapeCollectorAny collector;
-  query.CollideShape(&shape, JPH::Vec3(1, 1, 1), transform, {}, collector, broadphaseFilter, objectFilter, bodyFilter);
+  query.CollideShape(&shape, JPH::Vec3(1, 1, 1), transform, {}, JPH::RVec3::sZero(), collector, broadphaseFilter, objectFilter, bodyFilter);
 
   return collector.m_bFoundAny;
 }
@@ -329,7 +329,7 @@ void xiiJoltWorldModule::QueryShapesInSphere(xiiPhysicsOverlapResultArray& out_R
   xiiJoltBodyFilter            bodyFilter(params.m_uiIgnoreObjectFilterID);
 
   xiiJoltShapeCollectorAll collector;
-  query.CollideShape(&shape, JPH::Vec3(1, 1, 1), JPH::Mat44::sTranslation(xiiJoltConversionUtils::ToVec3(vPosition)), {}, collector, broadphaseFilter, objectFilter, bodyFilter);
+  query.CollideShape(&shape, JPH::RVec3(1, 1, 1), JPH::Mat44::sTranslation(xiiJoltConversionUtils::ToVec3(vPosition)), {}, JPH::RVec3::sZero(), collector, broadphaseFilter, objectFilter, bodyFilter);
 
   out_Results.m_Results.SetCount(collector.m_Results.GetCount());
 

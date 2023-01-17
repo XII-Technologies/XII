@@ -27,7 +27,7 @@ xiiJoltDebugRenderer::xiiJoltDebugRenderer()
   Initialize();
 }
 
-void xiiJoltDebugRenderer::DrawLine(const JPH::Float3& inFrom, const JPH::Float3& inTo, JPH::ColorArg inColor)
+void xiiJoltDebugRenderer::DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor)
 {
   auto& l        = m_Lines.ExpandAndGetRef();
   l.m_start      = xiiJoltConversionUtils::ToVec3(inFrom);
