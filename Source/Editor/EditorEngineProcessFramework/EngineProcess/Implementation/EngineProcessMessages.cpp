@@ -81,6 +81,17 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSaveProfilingResponseToEditor, 1, xiiRTTIDef
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiReloadResourceMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiReloadResourceMsgToEngine>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Type", m_sResourceType),
+    XII_MEMBER_PROPERTY("ID", m_sResourceID),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiResourceUpdateMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiResourceUpdateMsgToEngine>)
 {
   XII_BEGIN_PROPERTIES

@@ -169,6 +169,7 @@ void xiiQtCuratorControl::AssetCuratorEvents(const xiiAssetCuratorEvent& e)
       break;
   }
 }
+
 void xiiQtCuratorControl::AssetProcessorEvents(const xiiAssetProcessorEvent& e)
 {
   switch (e.m_Type)

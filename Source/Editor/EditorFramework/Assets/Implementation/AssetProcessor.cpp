@@ -72,10 +72,10 @@ xiiAssetProcessor::xiiAssetProcessor() :
 
 xiiAssetProcessor::~xiiAssetProcessor()
 {
-  if (m_Thread)
+  if (m_pThread)
   {
-    m_Thread->Join();
-    m_Thread.Clear();
+    m_pThread->Join();
+    m_pThread.Clear();
   }
   XII_ASSERT_DEV(m_ProcessTaskState == ProcessTaskState::Stopped, "Call StopProcessTask first before destroying the xiiAssetProcessor.");
 }
@@ -89,10 +89,10 @@ void xiiAssetProcessor::StartProcessTask()
   }
 
   // Join old thread.
-  if (m_Thread)
+  if (m_pThread)
   {
-    m_Thread->Join();
-    m_Thread.Clear();
+    m_pThread->Join();
+    m_pThread.Clear();
   }
 
   m_ProcessTaskState = ProcessTaskState::Running;
@@ -106,8 +106,8 @@ void xiiAssetProcessor::StartProcessTask()
     m_ProcessTasks[idx].m_uiProcessorID = idx;
   }
 
-  m_Thread = XII_DEFAULT_NEW(xiiProcessThread);
-  m_Thread->Start();
+  m_pThread = XII_DEFAULT_NEW(xiiProcessThread);
+  m_pThread->Start();
 
   {
     xiiAssetProcessorEvent e;
@@ -144,9 +144,9 @@ void xiiAssetProcessor::StopProcessTask(bool bForce)
 
   if (bForce)
   {
-    m_bForceStop = true;
-    m_Thread->Join();
-    m_Thread.Clear();
+    m_ForceStop = true;
+    m_pThread->Join();
+    m_pThread.Clear();
     XII_ASSERT_DEV(m_ProcessTaskState == ProcessTaskState::Stopped, "Process task shoul have set the state to stopped.");
   }
 }
@@ -187,7 +187,7 @@ void xiiAssetProcessor::Run()
     {
       if (m_ProcessRunning[i])
       {
-        if (m_bForceStop)
+        if (m_ForceStop)
           m_ProcessTasks[i].ShutdownProcess();
 
         m_ProcessRunning[i] = !m_ProcessTasks[i].FinishExecute();
@@ -205,7 +205,7 @@ void xiiAssetProcessor::Run()
   m_ProcessRunning.Clear();
   m_ProcessTasks.Clear();
   m_ProcessTaskState = ProcessTaskState::Stopped;
-  m_bForceStop       = false;
+  m_ForceStop        = false;
   {
     xiiAssetProcessorEvent e;
     e.m_Type = xiiAssetProcessorEvent::Type::ProcessTaskStateChanged;
@@ -473,7 +473,7 @@ bool xiiProcessTask::FinishExecute()
   if (m_Status.Succeeded())
   {
     xiiAssetCurator::GetSingleton()->NotifyOfAssetChange(m_AssetGuid);
-    xiiAssetCurator::GetSingleton()->NeedsReloadResources();
+    xiiAssetCurator::GetSingleton()->NeedsReloadResources(m_AssetGuid);
   }
   else
   {

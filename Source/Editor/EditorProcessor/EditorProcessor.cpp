@@ -150,30 +150,33 @@ public:
     DWORD dwMode = SetErrorMode(SEM_NOGPFAULTERRORBOX);
     SetErrorMode(dwMode | SEM_NOGPFAULTERRORBOX);
 #endif
-    const xiiString sOutputDir = opt_OutputDir.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-    xiiQtEditorApp::GetSingleton()->StartupEditor(xiiQtEditorApp::StartupFlags::Headless, sOutputDir);
+    const xiiString                                 sTransformProfile = opt_Transform.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    const bool                                      bResave           = opt_Resave.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    const bool                                      bBackgroundMode   = sTransformProfile.IsEmpty() && !bResave;
+    const xiiString                                 sOutputDir        = opt_OutputDir.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+    const xiiBitflags<xiiQtEditorApp::StartupFlags> startupFlags      = bBackgroundMode ? xiiQtEditorApp::StartupFlags::Headless | xiiQtEditorApp::StartupFlags::Background : xiiQtEditorApp::StartupFlags::Headless;
+    xiiQtEditorApp::GetSingleton()->StartupEditor(startupFlags, sOutputDir);
     xiiQtUiServices::SetHeadless(true);
 
     const xiiStringBuilder sProject = opt_Project.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
-    if (!xiiStringUtils::IsNullOrEmpty(opt_Transform.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified)))
+    if (!sTransformProfile.IsEmpty())
     {
       xiiQtEditorApp::GetSingleton()->OpenProject(sProject).IgnoreResult();
 
       bool bTransform = true;
 
-      xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this, &bTransform]() {
+      xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this, &bTransform, &sTransformProfile]() {
         if (!bTransform)
           return;
 
         bTransform = false;
 
-        const char* szPlatform = opt_Transform.GetOptionValue(xiiCommandLineOption::LogMode::Never);
-        const xiiUInt32 uiPlatform = xiiAssetCurator::GetSingleton()->FindAssetProfileByName(szPlatform);
+        const xiiUInt32 uiPlatform = xiiAssetCurator::GetSingleton()->FindAssetProfileByName(sTransformProfile);
 
         if (uiPlatform == xiiInvalidIndex)
         {
-          xiiLog::Error("Asset platform config '{0}' is unknown", szPlatform);
+          xiiLog::Error("Asset platform config '{0}' is unknown", sTransformProfile);
         }
         else
         {

@@ -279,6 +279,16 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     SendProjectReadyMessage();
     return;
   }
+  else if (const auto* pMsg1 = xiiDynamicCast<const xiiReloadResourceMsgToEngine*>(e.m_pMessage))
+  {
+    XII_PROFILE_SCOPE("ReloadResource");
+
+    const xiiRTTI* pType = xiiResourceManager::FindResourceForAssetType(pMsg1->m_sResourceType);
+    if (auto hResource = xiiResourceManager::GetExistingResourceByType(pType, pMsg1->m_sResourceID); hResource.IsValid())
+    {
+      xiiResourceManager::ReloadResource(pType, hResource, false);
+    }
+  }
   else if (const auto* pMsg1 = xiiDynamicCast<const xiiSimpleConfigMsgToEngine*>(e.m_pMessage))
   {
     if (pMsg1->m_sWhatToDo == "ChangeActivePlatform")

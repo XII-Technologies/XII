@@ -100,6 +100,20 @@ xiiResourceManager::GetOrCreateResource(const char* szResourceID, DescriptorType
   return hResource;
 }
 
+XII_FORCE_INLINE xiiResource* xiiResourceManager::BeginAcquireResourcePointer(const xiiRTTI* pType, const xiiTypelessResourceHandle& hResource)
+{
+  XII_ASSERT_DEV(hResource.IsValid(), "Cannot acquire a resource through an invalid handle!");
+
+  xiiResource* pResource = (xiiResource*)hResource.m_pResource;
+
+  XII_ASSERT_DEBUG(pResource->GetDynamicRTTI()->IsDerivedFrom(pType),
+                   "The requested resource does not have the same type ('{0}') as the resource handle ('{1}').", pResource->GetDynamicRTTI()->GetTypeName(),
+                   pType->GetTypeName());
+
+  // pResource->m_iLockCount.Increment();
+  return pResource;
+}
+
 template <typename ResourceType>
 ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHandle<ResourceType>& hResource, xiiResourceAcquireMode mode, const xiiTypedResourceHandle<ResourceType>& hFallbackResource, xiiResourceAcquireResult* out_AcquireResult /*= nullptr*/)
 {
@@ -222,6 +236,12 @@ void xiiResourceManager::EndAcquireResource(ResourceType* pResource)
   // pResource->m_iLockCount.Decrement();
 }
 
+XII_FORCE_INLINE void xiiResourceManager::EndAcquireResourcePointer(xiiResource* pResource)
+{
+  // XII_ASSERT_DEV(pResource->m_iLockCount > 0, "The resource lock counter is incorrect: {0}", (xiiInt32)pResource->m_iLockCount);
+  // pResource->m_iLockCount.Decrement();
+}
+
 template <typename ResourceType>
 xiiLockedObject<xiiMutex, xiiDynamicArray<xiiResource*>> xiiResourceManager::GetAllResourcesOfType()
 {
@@ -266,6 +286,17 @@ bool xiiResourceManager::ReloadResource(const xiiTypedResourceHandle<ResourceTyp
   bool res = ReloadResource(pResource, bForce);
 
   EndAcquireResource(pResource);
+
+  return res;
+}
+
+XII_FORCE_INLINE bool xiiResourceManager::ReloadResource(const xiiRTTI* pType, const xiiTypelessResourceHandle& hResource, bool bForce)
+{
+  xiiResource* pResource = BeginAcquireResourcePointer(pType, hResource);
+
+  bool res = ReloadResource(pResource, bForce);
+
+  EndAcquireResourcePointer(pResource);
 
   return res;
 }

@@ -421,5 +421,6 @@ void xiiQtEditorApp::ReloadEngineResources()
 {
   xiiSimpleConfigMsgToEngine msg;
   msg.m_sWhatToDo = "ReloadResources";
+  msg.m_sPayload  = "ReloadAllResources";
   xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
 }

@@ -366,6 +366,8 @@ xiiUInt32 xiiResourceManager::ReloadResourcesOfType(const xiiRTTI* pType, bool b
 
 xiiUInt32 xiiResourceManager::ReloadAllResources(bool bForce)
 {
+  XII_PROFILE_SCOPE("ReloadAllResources");
+
   XII_LOCK(s_ResourceMutex);
   XII_LOG_BLOCK("xiiResourceManager::ReloadAllResources");
 

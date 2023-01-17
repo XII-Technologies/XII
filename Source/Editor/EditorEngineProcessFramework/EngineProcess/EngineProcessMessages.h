@@ -80,6 +80,15 @@ public:
   xiiString m_sProfilingFile;
 };
 
+class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiReloadResourceMsgToEngine : public xiiEditorEngineMsg
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiReloadResourceMsgToEngine, xiiEditorEngineMsg);
+
+public:
+  xiiString m_sResourceType;
+  xiiString m_sResourceID;
+};
+
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiResourceUpdateMsgToEngine : public xiiEditorEngineMsg
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiResourceUpdateMsgToEngine, xiiEditorEngineMsg);

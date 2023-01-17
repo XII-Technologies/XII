@@ -3,6 +3,7 @@
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorFramework/Assets/AssetProcessor.h>
+#include <EditorFramework/Assets/AssetTableWriter.h>
 #include <EditorFramework/Assets/AssetWatcher.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Configuration/SubSystem.h>
@@ -77,7 +78,8 @@ inline xiiStreamReader& operator>>(xiiStreamReader& Stream, xiiFileStatus& uiVal
 
 void xiiAssetInfo::Update(xiiUniquePtr<xiiAssetInfo>& rhs)
 {
-  m_ExistanceState             = rhs->m_ExistanceState;
+  // Don't update the existance state, it is handled via xiiAssetCurator::SetAssetExistanceState
+  //m_ExistanceState = rhs->m_ExistanceState;
   m_TransformState             = rhs->m_TransformState;
   m_pDocumentTypeDescriptor    = rhs->m_pDocumentTypeDescriptor;
   m_sAbsolutePath              = std::move(rhs->m_sAbsolutePath);
@@ -147,7 +149,8 @@ void xiiAssetCurator::StartInitialize(const xiiApplicationFileSystemConfig& cfg)
   m_bRunUpdateTask   = true;
   m_FileSystemConfig = cfg;
 
-  m_pWatcher = XII_DEFAULT_NEW(xiiAssetWatcher, m_FileSystemConfig);
+  m_pWatcher          = XII_DEFAULT_NEW(xiiAssetWatcher, m_FileSystemConfig);
+  m_pAssetTableWriter = XII_DEFAULT_NEW(xiiAssetTableWriter, m_FileSystemConfig);
 
   xiiSharedPtr<xiiDelegateTask<void>> pInitTask = XII_DEFAULT_NEW(xiiDelegateTask<void>, "AssetCuratorUpdateCache", [this]() {
     XII_LOCK(m_CuratorMutex);
@@ -209,7 +212,8 @@ void xiiAssetCurator::Deinitialize()
 
   ShutdownUpdateTask();
   xiiAssetProcessor::GetSingleton()->StopProcessTask(true);
-  m_pWatcher = nullptr;
+  m_pWatcher          = nullptr;
+  m_pAssetTableWriter = nullptr;
 
   SaveCaches();
 
@@ -319,15 +323,8 @@ void xiiAssetCurator::MainThreadTick(bool bTopLevel)
     UpdateAssetTransformState(assetToImport, xiiAssetInfo::TransformState::Unknown);
   }
 
-  // TODO: Probably needs to be done in headless as well to make proper thumbnails
-  if (!xiiQtEditorApp::GetSingleton()->IsInHeadlessMode())
-  {
-    if (bTopLevel && m_bNeedToReloadResources && xiiTime::Now() > m_NextReloadResources)
-    {
-      m_bNeedToReloadResources = false;
-      WriteAssetTables().IgnoreResult();
-    }
-  }
+  if (bTopLevel && m_pAssetTableWriter)
+    m_pAssetTableWriter->MainThreadTick();
 
   bReentry = false;
 }
@@ -532,38 +529,17 @@ xiiTransformStatus xiiAssetCurator::CreateThumbnail(const xiiUuid& assetGuid)
   return ProcessAsset(pInfo, nullptr, xiiTransformFlags::None);
 }
 
-xiiResult xiiAssetCurator::WriteAssetTables(const xiiPlatformProfile* pAssetProfile /* = nullptr*/)
+xiiResult xiiAssetCurator::WriteAssetTables(const xiiPlatformProfile* pAssetProfile, bool bForce)
 {
   CURATOR_PROFILE("WriteAssetTables");
   XII_LOG_BLOCK("xiiAssetCurator::WriteAssetTables");
 
-  // TODO: figure out a way to early out this function, if nothing can have changed
-
-  xiiResult res = XII_SUCCESS;
-
-  xiiStringBuilder sd;
-
-  for (const auto& dd : m_FileSystemConfig.m_DataDirs)
+  if (pAssetProfile == nullptr)
   {
-    XII_SUCCEED_OR_RETURN(xiiFileSystem::ResolveSpecialDirectory(dd.m_sDataDirSpecialPath, sd));
-    sd.Append("/");
-
-    if (WriteAssetTable(sd, pAssetProfile).Failed())
-      res = XII_FAILURE;
+    pAssetProfile = GetActiveAssetProfile();
   }
 
-  if (pAssetProfile == nullptr || pAssetProfile == GetActiveAssetProfile())
-  {
-    xiiSimpleConfigMsgToEngine msg;
-    msg.m_sWhatToDo = "ReloadAssetLUT";
-    msg.m_sPayload  = GetActiveAssetProfile()->GetConfigName();
-    xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
-
-    msg.m_sWhatToDo = "ReloadResources";
-    xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
-  }
-
-  return res;
+  return m_pAssetTableWriter->WriteAssetTables(pAssetProfile, bForce);
 }
 
 
@@ -754,6 +730,11 @@ const xiiAssetCurator::xiiLockedSubAsset xiiAssetCurator::GetSubAsset(const xiiU
 const xiiAssetCurator::xiiLockedSubAssetTable xiiAssetCurator::GetKnownSubAssets() const
 {
   return xiiLockedSubAssetTable(m_CuratorMutex, &m_KnownSubAssets);
+}
+
+const xiiAssetCurator::xiiLockedAssetTable xiiAssetCurator::GetKnownAssets() const
+{
+  return xiiLockedAssetTable(m_CuratorMutex, &m_KnownAssets);
 }
 
 xiiUInt64 xiiAssetCurator::GetAssetDependencyHash(xiiUuid assetGuid)
@@ -1179,13 +1160,12 @@ void xiiAssetCurator::CheckFileSystem()
   xiiLog::Debug("Asset Curator Refresh Time: {0} ms", xiiArgF(sw.GetRunningTotal().GetMilliseconds(), 3));
 }
 
-void xiiAssetCurator::NeedsReloadResources()
+void xiiAssetCurator::NeedsReloadResources(const xiiUuid& assetGuid)
 {
-  if (m_bNeedToReloadResources)
-    return;
-
-  m_bNeedToReloadResources = true;
-  m_NextReloadResources    = xiiTime::Now() + xiiTime::Seconds(1.5);
+  if (m_pAssetTableWriter)
+  {
+    m_pAssetTableWriter->NeedsReloadResource(assetGuid);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1296,6 +1276,10 @@ xiiTransformStatus xiiAssetCurator::ProcessAsset(xiiAssetInfo* pAssetInfo, const
   if (state == xiiAssetInfo::TransformState::NeedsTransform || (state == xiiAssetInfo::TransformState::NeedsThumbnail && assetFlags.IsSet(xiiAssetDocumentFlags::AutoThumbnailOnTransform)) || (transformFlags.IsSet(xiiTransformFlags::TriggeredManually) && state == xiiAssetInfo::TransformState::NeedsImport))
   {
     ret = pAsset->TransformAsset(transformFlags, pAssetProfile);
+    if (ret.Succeeded())
+    {
+      m_pAssetTableWriter->NeedsReloadResource(pAsset->GetGuid());
+    }
   }
 
   if (state == xiiAssetInfo::TransformState::MissingReference)
@@ -1518,94 +1502,6 @@ void xiiAssetCurator::HandleSingleFile(const xiiString& sAbsolutePath, const xii
 
   // This will update the timestamp for assets.
   EnsureAssetInfoUpdated(sAbsolutePath).IgnoreResult();
-}
-
-xiiResult xiiAssetCurator::WriteAssetTable(const char* szDataDirectory, const xiiPlatformProfile* pAssetProfile0 /*= nullptr*/)
-{
-  const xiiPlatformProfile* pAssetProfile = pAssetProfile0;
-
-  if (pAssetProfile == nullptr)
-  {
-    pAssetProfile = GetActiveAssetProfile();
-  }
-
-  xiiStringBuilder sDataDir = szDataDirectory;
-  sDataDir.MakeCleanPath();
-
-  xiiStringBuilder sFinalPath(sDataDir, "/AssetCache/", pAssetProfile->GetConfigName(), ".xiiAidlt");
-  sFinalPath.MakeCleanPath();
-
-  xiiStringBuilder sTemp, sTemp2;
-  xiiString        sResourcePath;
-
-  xiiMap<xiiString, xiiString> GuidToPath;
-
-  {
-    for (auto& man : xiiAssetDocumentManager::GetAllDocumentManagers())
-    {
-      if (!man->GetDynamicRTTI()->IsDerivedFrom<xiiAssetDocumentManager>())
-        continue;
-
-      xiiAssetDocumentManager* pManager = static_cast<xiiAssetDocumentManager*>(man);
-
-      // allow to add fully custom entries
-      pManager->AddEntriesToAssetTable(sDataDir, pAssetProfile, GuidToPath);
-    }
-  }
-
-  // TODO: Iterate over m_KnownSubAssets instead
-  for (auto it = m_KnownAssets.GetIterator(); it.IsValid(); ++it)
-  {
-    sTemp = it.Value()->m_sAbsolutePath;
-
-    // ignore all assets that are not located in this data directory
-    if (!sTemp.IsPathBelowFolder(sDataDir))
-      continue;
-
-    xiiAssetDocumentManager* pManager = it.Value()->GetManager();
-
-    auto WriteEntry = [this, &sDataDir, &pAssetProfile, &GuidToPath, pManager, &sTemp, &sTemp2](const xiiUuid& guid) {
-      xiiSubAsset* pSub   = GetSubAssetInternal(guid);
-      xiiString    sEntry = pManager->GetAssetTableEntry(pSub, sDataDir, pAssetProfile);
-
-      // it is valid to write no asset table entry, if no redirection is required
-      // this is used by decal assets for instance
-      if (!sEntry.IsEmpty())
-      {
-        xiiConversionUtils::ToString(guid, sTemp2);
-
-        GuidToPath[sTemp2] = sEntry;
-      }
-    };
-
-    WriteEntry(it.Key());
-    for (const xiiUuid& subGuid : it.Value()->m_SubAssets)
-    {
-      WriteEntry(subGuid);
-    }
-  }
-
-  xiiDeferredFileWriter file;
-  file.SetOutput(sFinalPath);
-
-  for (auto it = GuidToPath.GetIterator(); it.IsValid(); ++it)
-  {
-    const xiiString& guid = it.Key();
-    const xiiString& path = it.Value();
-
-    file.WriteBytes(guid.GetData(), guid.GetElementCount()).IgnoreResult();
-    file.WriteBytes(";", 1).IgnoreResult();
-    file.WriteBytes(path.GetData(), path.GetElementCount()).IgnoreResult();
-    file.WriteBytes("\n", 1).IgnoreResult();
-  }
-
-  if (file.Close().Failed())
-  {
-    xiiLog::Error("Failed to open asset lookup table file ('{0}')", sFinalPath);
-    return XII_FAILURE;
-  }
-
-  return XII_SUCCESS;
 }
 
 void xiiAssetCurator::ProcessAllCoreAssets()
