@@ -12,7 +12,7 @@ xiiFloat16::xiiFloat16(float f)
 
 void xiiFloat16::operator=(float f)
 {
-  // source: http://www.ogre3d.org/docs/api/html/OgreBitwise_8h_source.html
+  // Source: http://www.ogre3d.org/docs/api/html/OgreBitwise_8h_source.html
 
   const xiiUInt32 i = *reinterpret_cast<xiiUInt32*>(&f);
 

@@ -230,7 +230,7 @@ namespace xiiMath
   XII_FORCE_INLINE T Lerp(T f1, T f2, float factor)
   {
     // value is not included in format string, to prevent requirement on FormatString.h, to break #include cycles
-    XII_ASSERT_DEBUG((factor >= -0.00001f) && (factor <= 1.0f + 0.00001f), "lerp: factor is not in the range [0; 1]");
+    XII_ASSERT_DEBUG((factor >= -0.00001f) && (factor <= 1.0f + 0.00001f), "lerp: factor is not in the range [0, 1]");
 
     return (T)(f1 + (factor * (f2 - f1)));
   }
@@ -239,7 +239,7 @@ namespace xiiMath
   XII_FORCE_INLINE T Lerp(T f1, T f2, double factor)
   {
     // value is not included in format string, to prevent requirement on FormatString.h, to break #include cycles
-    XII_ASSERT_DEBUG((factor >= -0.00001) && (factor <= 1.0 + 0.00001), "lerp: factor is not in the range [0; 1]");
+    XII_ASSERT_DEBUG((factor >= -0.00001) && (factor <= 1.0 + 0.00001), "lerp: factor is not in the range [0, 1]");
 
     return (T)(f1 + (factor * (f2 - f1)));
   }

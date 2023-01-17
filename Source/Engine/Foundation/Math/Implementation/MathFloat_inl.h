@@ -4,6 +4,27 @@
 
 namespace xiiMath
 {
+  template <>
+  XII_ALWAYS_INLINE float Sin(xiiAngleTemplate<float> a) { return sinf(a.GetRadian()); }
+
+  template <>
+  XII_ALWAYS_INLINE float Cos(xiiAngleTemplate<float> a) { return cosf(a.GetRadian()); }
+
+  template <>
+  XII_ALWAYS_INLINE float Tan(xiiAngleTemplate<float> a) { return tanf(a.GetRadian()); }
+
+  template <>
+  XII_ALWAYS_INLINE xiiAngleTemplate<float> ASin(float f) { return xiiAngleTemplate<float>::Radian(asinf(f)); }
+
+  template <>
+  XII_ALWAYS_INLINE xiiAngleTemplate<float> ACos(float f) { return xiiAngleTemplate<float>::Radian(acosf(f)); }
+
+  template <>
+  XII_ALWAYS_INLINE xiiAngleTemplate<float> ATan(float f) { return xiiAngleTemplate<float>::Radian(atanf(f)); }
+
+  template <>
+  XII_ALWAYS_INLINE xiiAngleTemplate<float> ATan2(float y, float x) { return xiiAngleTemplate<float>::Radian(atan2f(y, x)); }
+
   XII_ALWAYS_INLINE bool IsFinite(float value)
   {
     // Check the 8 exponent bits.
