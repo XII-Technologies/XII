@@ -122,6 +122,16 @@ XII_ALWAYS_INLINE void xiiGameObject::DisableChildChangesNotifications()
   m_Flags.Remove(xiiObjectFlags::ChildChangesNotifications);
 }
 
+XII_ALWAYS_INLINE void xiiGameObject::EnableParentChangesNotifications()
+{
+  m_Flags.Add(xiiObjectFlags::ParentChangesNotifications);
+}
+
+XII_ALWAYS_INLINE void xiiGameObject::DisableParentChangesNotifications()
+{
+  m_Flags.Remove(xiiObjectFlags::ParentChangesNotifications);
+}
+
 XII_ALWAYS_INLINE void xiiGameObject::AddChildren(const xiiArrayPtr<const xiiGameObjectHandle>& children, xiiGameObject::TransformPreservation preserve)
 {
   for (xiiUInt32 i = 0; i < children.GetCount(); ++i)

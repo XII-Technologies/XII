@@ -71,6 +71,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 //////////////////////////////////////////////////////////////////////////
 
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgParentChanged);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgParentChanged, 1, xiiRTTIDefaultAllocator<xiiMsgParentChanged>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+//////////////////////////////////////////////////////////////////////////
+
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgChildrenChanged);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgChildrenChanged, 1, xiiRTTIDefaultAllocator<xiiMsgChildrenChanged>)
 XII_END_DYNAMIC_REFLECTED_TYPE;

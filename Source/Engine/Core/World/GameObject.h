@@ -144,10 +144,13 @@ public:
   void        SetGlobalKey(const xiiHashedString& sGlobalKey);
   const char* GetGlobalKey() const;
 
-  /// \brief Enables or disabled notification message when children are added or removed. The notification message is sent to this object and all its
-  /// parent objects.
+  /// \brief Enables or disabled notification message 'xiiMsgChildrenChanged' when children are added or removed. The message is sent to this object and all its parent objects.
   void EnableChildChangesNotifications();
   void DisableChildChangesNotifications();
+
+  /// \brief Enables or disabled notification message 'xiiMsgParentChanged' when the parent changes. The message is sent to this object only.
+  void EnableParentChangesNotifications();
+  void DisableParentChangesNotifications();
 
   /// \brief Defines during re-parenting what transform is going to be preserved.
   enum class TransformPreservation
@@ -301,7 +304,7 @@ public:
   /// \brief Updates the global transform immediately. Usually this done during the world update after the "Post-async" phase.
   void UpdateGlobalTransform();
 
-  /// \brief Enables or disabled notification message when this object is static and its transform changes.
+  /// \brief Enables or disabled notification message 'xiiMsgTransformChanged' when this object is static and its transform changes.
   /// The notification message is sent to this object and thus also to all its components.
   void EnableStaticTransformChangesNotifications();
   void DisableStaticTransformChangesNotifications();
@@ -327,8 +330,7 @@ public:
   /// \brief Returns a handle to the internal spatial data.
   xiiSpatialDataHandle GetSpatialData() const;
 
-  /// \brief Enables or disabled notification message when components are added or removed. The notification message is sent to this object and all
-  /// its parent objects.
+  /// \brief Enables or disabled notification message 'xiiMsgComponentsChanged' when components are added or removed. The message is sent to this object and all its parent objects.
   void EnableComponentChangesNotifications();
   void DisableComponentChangesNotifications();
 
