@@ -29,6 +29,7 @@ class xiiProcessTask;
 struct xiiFileStats;
 class xiiAssetProcessorLog;
 class xiiAssetWatcher;
+class xiiAssetTableWriter;
 
 #if 0 // Define to enable extensive curator profile scopes
 #  define CURATOR_PROFILE(szName) XII_PROFILE_SCOPE(szName)
@@ -236,7 +237,7 @@ public:
   xiiTransformStatus CreateThumbnail(const xiiUuid& assetGuid);
 
   /// \brief Writes the asset lookup table for the given platform, or the currently active platform if nullptr is passed.
-  xiiResult WriteAssetTables(const xiiPlatformProfile* pAssetProfile = nullptr);
+  xiiResult WriteAssetTables(const xiiPlatformProfile* pAssetProfile = nullptr, bool bForce = false);
 
   ///@}
   /// \name Asset Access
@@ -253,10 +254,15 @@ public:
   /// \brief Same as GetAssteInfo, but wraps the return value into a xiiLockedSubAsset struct
   const xiiLockedSubAsset GetSubAsset(const xiiUuid& assetGuid) const;
 
-  typedef xiiLockedObject<xiiMutex, const xiiHashTable<xiiUuid, xiiSubAsset>> xiiLockedSubAssetTable;
+  using xiiLockedSubAssetTable = xiiLockedObject<xiiMutex, const xiiHashTable<xiiUuid, xiiSubAsset>>;
 
   /// \brief Returns the table of all known assets in a locked structure
   const xiiLockedSubAssetTable GetKnownSubAssets() const;
+
+  using xiiLockedAssetTable = xiiLockedObject<xiiMutex, const xiiHashTable<xiiUuid, xiiAssetInfo*>>;
+
+  /// \brief Returns the table of all known assets in a locked structure
+  const xiiLockedAssetTable GetKnownAssets() const;
 
   /// \brief Computes the combined hash for the asset and its dependencies. Returns 0 if anything went wrong.
   xiiUInt64 GetAssetDependencyHash(xiiUuid assetGuid);
@@ -308,7 +314,7 @@ public:
   /// \brief Checks file system for any changes. Call in case the file system watcher does not pick up certain changes.
   void CheckFileSystem();
 
-  void NeedsReloadResources();
+  void NeedsReloadResources(const xiiUuid& assetGuid);
 
   ///@}
 
@@ -335,8 +341,6 @@ private:
   void HandleSingleFile(const xiiString& sAbsolutePath);
   /// \brief Handles adding and updating files. FileStat must be valid.
   void HandleSingleFile(const xiiString& sAbsolutePath, const xiiFileStats& FileStat);
-  /// \brief Writes the asset lookup table for the given platform, or the currently active platform if nullptr is passed.
-  xiiResult WriteAssetTable(const char* szDataDirectory, const xiiPlatformProfile* pAssetProfile = nullptr);
   /// \brief Some assets are vital for the engine to run. Each data directory can contain a [DataDirName].xiiCollectionAsset
   ///   that has all its references transformed before any other documents are loaded.
   void ProcessAllCoreAssets();
@@ -406,9 +410,8 @@ private:
 
   mutable xiiCuratorMutex m_CuratorMutex; // Global lock
   xiiTaskGroupID          m_InitializeCuratorTaskID;
-  bool                    m_bNeedToReloadResources = false;
-  xiiTime                 m_NextReloadResources;
-  xiiUInt32               m_uiActiveAssetProfile = 0;
+
+  xiiUInt32 m_uiActiveAssetProfile = 0;
 
   // Actual data stored in the curator
   xiiHashTable<xiiUuid, xiiAssetInfo*>                      m_KnownAssets;
@@ -434,9 +437,10 @@ private:
   xiiMap<xiiString, xiiFileStatus>                      m_CachedFiles;
 
   // Immutable data after StartInitialize
-  xiiApplicationFileSystemConfig m_FileSystemConfig;
-  xiiSet<xiiString>              m_ValidAssetExtensions;
-  xiiUniquePtr<xiiAssetWatcher>  m_pWatcher;
+  xiiApplicationFileSystemConfig    m_FileSystemConfig;
+  xiiSet<xiiString>                 m_ValidAssetExtensions;
+  xiiUniquePtr<xiiAssetWatcher>     m_pWatcher;
+  xiiUniquePtr<xiiAssetTableWriter> m_pAssetTableWriter;
 
   // Update task
   bool                        m_bRunUpdateTask = false;

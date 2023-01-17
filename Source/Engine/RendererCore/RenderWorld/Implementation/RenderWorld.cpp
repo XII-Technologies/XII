@@ -278,6 +278,8 @@ void xiiRenderWorld::CacheRenderData(const xiiView& view, const xiiGameObjectHan
 
 void xiiRenderWorld::DeleteAllCachedRenderData()
 {
+  XII_PROFILE_SCOPE("DeleteAllCachedRenderData");
+
   XII_ASSERT_DEV(!s_bInExtract, "Cannot delete cached render data during extraction");
 
   {

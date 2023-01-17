@@ -521,6 +521,7 @@ void xiiProjectAction::Execute(const xiiVariant& value)
 
       xiiSimpleConfigMsgToEngine msg;
       msg.m_sWhatToDo = "ReloadResources";
+      msg.m_sPayload  = "ReloadAllResources";
       xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
 
       xiiEditorAppEvent e;

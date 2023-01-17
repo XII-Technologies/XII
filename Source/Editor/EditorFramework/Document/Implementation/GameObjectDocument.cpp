@@ -303,11 +303,22 @@ void xiiGameObjectDocument::DetermineNodeName(const xiiDocumentObject* pObject, 
     {
       // search for string properties that also have an asset browser property -> they reference an asset, so this is most likely the most
       // relevant property
-      if (pProperty->GetCategory() == xiiPropertyCategory::Member &&
-          (pProperty->GetSpecificType() == xiiGetStaticRTTI<const char*>() || pProperty->GetSpecificType() == xiiGetStaticRTTI<xiiString>()) &&
-          pProperty->GetAttributeByType<xiiAssetBrowserAttribute>() != nullptr)
+      if (
+        (pProperty->GetSpecificType() == xiiGetStaticRTTI<const char*>() || pProperty->GetSpecificType() == xiiGetStaticRTTI<xiiString>()) && pProperty->GetAttributeByType<xiiAssetBrowserAttribute>() != nullptr)
       {
-        xiiStringBuilder sValue = pChild->GetTypeAccessor().GetValue(pProperty->GetPropertyName()).ConvertTo<xiiString>();
+        xiiStringBuilder sValue;
+        if (pProperty->GetCategory() == xiiPropertyCategory::Member)
+        {
+          sValue = pChild->GetTypeAccessor().GetValue(pProperty->GetPropertyName()).ConvertTo<xiiString>();
+        }
+        else if (pProperty->GetCategory() == xiiPropertyCategory::Array)
+        {
+          const xiiInt32 iCount = pChild->GetTypeAccessor().GetCount(pProperty->GetPropertyName());
+          if (iCount > 0)
+          {
+            sValue = pChild->GetTypeAccessor().GetValue(pProperty->GetPropertyName(), 0).ConvertTo<xiiString>();
+          }
+        }
 
         // if the property is a full asset guid reference, convert it to a file name
         if (xiiConversionUtils::IsStringUuid(sValue))
