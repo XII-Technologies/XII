@@ -32,6 +32,7 @@ private:
 private:
   void OnFocusLost();
 
+  static bool                  s_bMainWindowUsed;
   xiiUInt32                    m_uiWindowNumber = 0;
   SDL_Window*                  m_pWindow        = nullptr;
   xiiMouseCursorClipMode::Enum m_ClipCursorMode = xiiMouseCursorClipMode::NoClip;

@@ -3,10 +3,16 @@
 
 #include <SDL/include/SDL.h>
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#endif
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStandardInputDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+
+bool xiiStandardInputDevice::s_bMainWindowUsed = false;
 
 namespace
 {
@@ -246,11 +252,25 @@ namespace
 xiiStandardInputDevice::xiiStandardInputDevice(xiiUInt32 uiWindowNumber, SDL_Window* windowHandle) :
   m_uiWindowNumber(uiWindowNumber), m_pWindow(windowHandle)
 {
+  m_uiWindowNumber = uiWindowNumber;
+
+  if (uiWindowNumber == 0)
+  {
+    XII_ASSERT_RELEASE(!s_bMainWindowUsed, "You cannot have two devices of Type xiiStandardInputDevice with the window number zero.");
+    xiiStandardInputDevice::s_bMainWindowUsed = true;
+  }
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  m_DoubleClickTime = xiiTime::Milliseconds(GetDoubleClickTime());
+#endif
 }
 
 xiiStandardInputDevice::~xiiStandardInputDevice()
 {
   SetShowMouseCursor(true);
+
+  if (m_uiWindowNumber == 0)
+    xiiStandardInputDevice::s_bMainWindowUsed = false;
 }
 
 void xiiStandardInputDevice::WindowMessage(void* message)
@@ -500,7 +520,16 @@ xiiMouseCursorClipMode::Enum xiiStandardInputDevice::GetClipMouseCursor() const
   return m_ClipCursorMode;
 }
 
-void xiiStandardInputDevice::InitializeDevice() {}
+void xiiStandardInputDevice::InitializeDevice()
+{
+  if (m_uiWindowNumber == 0)
+  {
+  }
+  else
+  {
+    xiiLog::Info("Window {0} does not need to initialize Mouse or Keyboard.", m_uiWindowNumber);
+  }
+}
 
 void xiiStandardInputDevice::ResetInputSlotValues()
 {
