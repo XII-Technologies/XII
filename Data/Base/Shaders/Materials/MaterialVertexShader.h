@@ -58,7 +58,7 @@ VS_OUT FillVertexData(VS_IN Input)
 
   xiiPerInstanceData data = GetInstanceData();
 
-  float4x4 objectToWorld = TransformToMatrix(data.ObjectToWorld);
+  float4x4 objectToWorld       = TransformToMatrix(data.ObjectToWorld);
   float3x3 objectToWorldNormal = TransformToRotation(data.ObjectToWorldNormal);
 
   float3 objectPosition = Input.Position;
@@ -102,10 +102,10 @@ VS_OUT FillVertexData(VS_IN Input)
   tangent = SkinDirection(tangent, Input.BoneWeights, Input.BoneIndices);
 #  endif
 
-  float handednessCorrection = Input.Tangent.w * 2.0 - 1.0;
-  float3 bitangent = cross(normal, tangent) * handednessCorrection;
+  float  handednessCorrection = Input.Tangent.w * 2.0 - 1.0;
+  float3 bitangent            = cross(normal, tangent) * handednessCorrection;
 
-  Output.Tangent = normalize(mul(objectToWorldNormal, tangent));
+  Output.Tangent   = normalize(mul(objectToWorldNormal, tangent));
   Output.BiTangent = normalize(mul(objectToWorldNormal, bitangent));
 #endif
 

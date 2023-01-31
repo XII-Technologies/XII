@@ -12,13 +12,13 @@
 #endif
 
 static float2 QuadTexCoords[6] =
-{
-  float2(0.0, 0.0),
-  float2(1.0, 0.0),
-  float2(1.0, 1.0),
-  float2(0.0, 0.0),
-  float2(1.0, 1.0),
-  float2(0.0, 1.0),
+  {
+    float2(0.0, 0.0),
+    float2(1.0, 0.0),
+    float2(1.0, 1.0),
+    float2(0.0, 0.0),
+    float2(1.0, 1.0),
+    float2(0.0, 1.0),
 };
 
 uint CalcQuadParticleDataIndex(uint VertexID)
@@ -39,9 +39,9 @@ float4 CalcQuadOutputPositionWithTangents(uint vertexIndex, float3 inPosition, f
   float4 tangentZ = float4(inTangentZ, 0);
 
   float4 offsetRight = tangentX * (QuadTexCoords[vertexIndex].x - 0.5) * inSize;
-  float4 offsetUp = tangentZ * (QuadTexCoords[vertexIndex].y - 0.5) * -inSize;
+  float4 offsetUp    = tangentZ * (QuadTexCoords[vertexIndex].y - 0.5) * -inSize;
 
-  float4 worldPosition = mul(ObjectToWorldMatrix, position + offsetRight + offsetUp);
+  float4 worldPosition  = mul(ObjectToWorldMatrix, position + offsetRight + offsetUp);
   float4 screenPosition = mul(GetWorldToScreenMatrix(), worldPosition);
 
   return screenPosition;
@@ -53,14 +53,14 @@ float4 CalcQuadOutputPositionWithAlignedAxis(uint vertexIndex, float3 inPosition
 
   float4 position = float4(inPosition, 1);
 
-  float4 axisDir = float4(normalize(inTangentX), 0);
+  float4 axisDir  = float4(normalize(inTangentX), 0);
   float4 orthoDir = float4(normalize(cross(inTangentX, GetCameraDirForwards())), 0);
 
   float4 offsetRight = orthoDir * (QuadTexCoords[vertexIndex].x - 0.5) * inSize;
   //float4 offsetUp = axisDir * (0.5 - (QuadTexCoords[vertexIndex].y - 0.5)) * inSize * stretch;
   float4 offsetUp = axisDir * (1.0 - QuadTexCoords[vertexIndex].y) * inSize * stretch;
 
-  float4 worldPosition = mul(ObjectToWorldMatrix, position + offsetRight + offsetUp);
+  float4 worldPosition  = mul(ObjectToWorldMatrix, position + offsetRight + offsetUp);
   float4 screenPosition = mul(GetWorldToScreenMatrix(), worldPosition);
 
   return screenPosition;
@@ -82,17 +82,17 @@ float4 CalcQuadOutputPositionAsBillboard(uint vertexIndex, float3 centerPosition
   float3x3 rotation = CreateRotationMatrixY(rotationOffset + rotationSpeed * TotalEffectLifeTime);
 
   float3 offsetRight = GetCameraDirRight() * (QuadTexCoords[vertexIndex].x - 0.5) * inSize;
-  float3 offsetUp = GetCameraDirUp() * (QuadTexCoords[vertexIndex].y - 0.5) * -inSize;
+  float3 offsetUp    = GetCameraDirUp() * (QuadTexCoords[vertexIndex].y - 0.5) * -inSize;
 
   float3 offsetRightCS = mul(GetWorldToCameraMatrix(), float4(offsetRight, 0)).xzy;
-  float3 offsetUpCS = mul(GetWorldToCameraMatrix(), float4(offsetUp, 0)).xzy;
+  float3 offsetUpCS    = mul(GetWorldToCameraMatrix(), float4(offsetUp, 0)).xzy;
 
   offsetRightCS = mul(rotation, offsetRightCS);
-  offsetUpCS = mul(rotation, offsetUpCS);
+  offsetUpCS    = mul(rotation, offsetUpCS);
 
-  float4 worldPosition = mul(ObjectToWorldMatrix, position);
+  float4 worldPosition  = mul(ObjectToWorldMatrix, position);
   float4 cameraPosition = mul(GetWorldToCameraMatrix(), worldPosition);
-  cameraPosition.xzy = cameraPosition.xzy + offsetRightCS + offsetUpCS;
+  cameraPosition.xzy    = cameraPosition.xzy + offsetRightCS + offsetUpCS;
   float4 screenPosition = mul(GetCameraToScreenMatrix(), cameraPosition);
 
   return screenPosition;
@@ -102,10 +102,10 @@ float4 ComputeTextureAtlasRect(uint numVarsX, uint numVarsY, float varLerp, floa
 {
   if (numVarsX > 1 || numVarsY > 1)
   {
-    uint numVars = numVarsX * numVarsY;
-    uint idxVar = (uint)(numVars * varLerp);
-    uint varY = idxVar / numVarsX;
-    uint varX = (idxVar - (varY * numVarsX));
+    uint numVars             = numVarsX * numVarsY;
+    uint idxVar              = (uint)(numVars * varLerp);
+    uint varY                = idxVar / numVarsX;
+    uint varX                = (idxVar - (varY * numVarsX));
     texCoordOffsetAndSize.zw = texCoordOffsetAndSize.zw / float2(numVarsX, numVarsY);
     texCoordOffsetAndSize.xy = texCoordOffsetAndSize.xy + texCoordOffsetAndSize.zw * float2(varX, varY);
   }
@@ -129,4 +129,3 @@ float2 ComputeAtlasTexCoordRandomAnimated(float2 baseTexCoord, uint numVarsX, ui
 
   return texCoordOffsetAndSize.xy + baseTexCoord * texCoordOffsetAndSize.zw;
 }
-

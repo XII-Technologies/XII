@@ -7,6 +7,7 @@
 #endif
 
 #include "Platforms.h"
+
 #include "ConstantBufferMacros.h"
 
 #define LIGHT_TYPE_POINT 0
@@ -179,4 +180,4 @@ struct xiiPerClusterData
   StructuredBuffer<uint> clusterItemBuffer;
 #endif
 
-  // clang-format on
+// clang-format on

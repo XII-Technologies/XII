@@ -12,12 +12,12 @@ struct xiiMaterialData
   float3 specularColor;
   float3 emissiveColor;
   float4 refractionColor;
-  float roughness;
-  float perceptualRoughness;
-  float occlusion;
-  float opacity;
+  float  roughness;
+  float  perceptualRoughness;
+  float  occlusion;
+  float  opacity;
 
   float3 subsurfaceColor;
-  float subsurfaceScatterPower;
-  float subsurfaceShadowFalloff;
+  float  subsurfaceScatterPower;
+  float  subsurfaceShadowFalloff;
 };

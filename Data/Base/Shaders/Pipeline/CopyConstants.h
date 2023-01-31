@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../Common/ConstantBufferMacros.h"
 #include "../Common/Platforms.h"
+
+#include "../Common/ConstantBufferMacros.h"
 
 CONSTANT_BUFFER(xiiCopyConstants, 3)
 {

@@ -14,7 +14,7 @@ float4 RGBA8ToFloat4(uint x)
 {
   float4 result;
   result.r = x & 0xFF;
-  result.g = (x >> 8)  & 0xFF;
+  result.g = (x >> 8) & 0xFF;
   result.b = (x >> 16) & 0xFF;
   result.a = (x >> 24) & 0xFF;
 
@@ -31,7 +31,7 @@ float3 RGB8ToFloat3(uint x)
 {
   float3 result;
   result.r = x & 0xFF;
-  result.g = (x >> 8)  & 0xFF;
+  result.g = (x >> 8) & 0xFF;
   result.b = (x >> 16) & 0xFF;
 
   return result / 255.0;
@@ -84,7 +84,7 @@ float3 CubeMapDirection(float3 inDirection)
 float3 DecodeNormalTexture(float4 normalTex)
 {
   float2 xy = normalTex.xy * 2.0f - 1.0f;
-  float z = sqrt(max(1.0f - dot(xy, xy), 0.0));
+  float  z  = sqrt(max(1.0f - dot(xy, xy), 0.0));
   return float3(xy, z);
 }
 
@@ -96,9 +96,9 @@ float InterleavedGradientNoise(float2 screenSpacePosition)
 
 float3 NormalizeAndGetLength(float3 v, out float len)
 {
-  float squaredLen = dot(v, v);
+  float squaredLen    = dot(v, v);
   float reciprocalLen = rsqrt(squaredLen);
-  len = squaredLen * reciprocalLen;
+  len                 = squaredLen * reciprocalLen;
   return v * reciprocalLen;
 }
 
@@ -130,4 +130,3 @@ float3 Colorize(float3 baseColor, float3 color, float mask)
 {
   return baseColor * lerp(1, 2 * color, mask);
 }
-

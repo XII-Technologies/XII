@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ParticleSystemConstants.h"
 #include "BaseParticleShaderData.h"
+#include "ParticleSystemConstants.h"
 
 struct XII_SHADER_STRUCT xiiBillboardQuadParticleShaderData
 {
@@ -19,4 +19,3 @@ StructuredBuffer<xiiBillboardQuadParticleShaderData> particleBillboardQuadData;
 XII_CHECK_AT_COMPILETIME(sizeof(xiiBillboardQuadParticleShaderData) == 16);
 
 #endif
-

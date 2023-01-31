@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ParticleSystemConstants.h"
 #include "BaseParticleShaderData.h"
+#include "ParticleSystemConstants.h"
 
 struct XII_SHADER_STRUCT xiiTrailParticleShaderData
 {
@@ -34,23 +34,22 @@ struct XII_SHADER_STRUCT xiiTrailParticlePointsData64
 
 StructuredBuffer<xiiTrailParticleShaderData> particleTrailData;
 
-#if PARTICLE_TRAIL_POINTS == PARTICLE_TRAIL_POINTS_COUNT8
-  StructuredBuffer<xiiTrailParticlePointsData8> particlePointsData;
-#endif
+#  if PARTICLE_TRAIL_POINTS == PARTICLE_TRAIL_POINTS_COUNT8
+StructuredBuffer<xiiTrailParticlePointsData8> particlePointsData;
+#  endif
 
-#if PARTICLE_TRAIL_POINTS == PARTICLE_TRAIL_POINTS_COUNT16
-  StructuredBuffer<xiiTrailParticlePointsData16> particlePointsData;
-#endif
+#  if PARTICLE_TRAIL_POINTS == PARTICLE_TRAIL_POINTS_COUNT16
+StructuredBuffer<xiiTrailParticlePointsData16> particlePointsData;
+#  endif
 
-#if PARTICLE_TRAIL_POINTS == PARTICLE_TRAIL_POINTS_COUNT32
-  StructuredBuffer<xiiTrailParticlePointsData32> particlePointsData;
-#endif
+#  if PARTICLE_TRAIL_POINTS == PARTICLE_TRAIL_POINTS_COUNT32
+StructuredBuffer<xiiTrailParticlePointsData32> particlePointsData;
+#  endif
 
-#if PARTICLE_TRAIL_POINTS == PARTICLE_TRAIL_POINTS_COUNT64
-  StructuredBuffer<xiiTrailParticlePointsData64> particlePointsData;
-#endif
+#  if PARTICLE_TRAIL_POINTS == PARTICLE_TRAIL_POINTS_COUNT64
+StructuredBuffer<xiiTrailParticlePointsData64> particlePointsData;
+#  endif
 
 #else // C++
 
 #endif
-
