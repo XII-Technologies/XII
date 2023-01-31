@@ -24,4 +24,3 @@ StructuredBuffer<xiiTangentQuadParticleShaderData> particleTangentQuadData;
 XII_CHECK_AT_COMPILETIME(sizeof(xiiTangentQuadParticleShaderData) == 48);
 
 #endif
-

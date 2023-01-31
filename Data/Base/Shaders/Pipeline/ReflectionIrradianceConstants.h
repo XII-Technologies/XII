@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Common/Platforms.h"
+
 #include "../Common/ConstantBufferMacros.h"
 
 CONSTANT_BUFFER(xiiReflectionIrradianceConstants, 3)
@@ -10,4 +11,3 @@ CONSTANT_BUFFER(xiiReflectionIrradianceConstants, 3)
   FLOAT1(Saturation);
   UINT1(OutputIndex);
 };
-

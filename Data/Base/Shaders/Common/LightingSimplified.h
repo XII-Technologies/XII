@@ -1,16 +1,16 @@
 #pragma once
 
 #if SHADING_QUALITY != SHADING_QUALITY_SIMPLIFIED
-#error "Functions in LightDataSimplified.h are only for SIMPLIFIED shading quality. Include LightData.h instead."
+#  error "Functions in LightDataSimplified.h are only for SIMPLIFIED shading quality. Include LightData.h instead."
 #endif
 
-#include <Shaders/Common/GlobalConstants.h>
-#include <Shaders/Common/LightDataSimplified.h>
 #include <Shaders/Common/AmbientCubeBasis.h>
 #include <Shaders/Common/BRDF.h>
+#include <Shaders/Common/GlobalConstants.h>
+#include <Shaders/Common/LightDataSimplified.h>
 
 TextureCubeArray ReflectionSpecularTexture;
-Texture2D SkyIrradianceTexture;
+Texture2D        SkyIrradianceTexture;
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -35,6 +35,6 @@ AccumulatedLight CalculateLightingSimplified(xiiMaterialData matData)
   // sky light in ambient cube basis
   float3 skyLight = EvaluateAmbientCube(SkyIrradianceTexture, SkyIrradianceIndex, matData.worldNormal).rgb;
   totalLight.diffuseLight += matData.diffuseColor * skyLight * occlusion;
-  
+
   return totalLight;
 }
