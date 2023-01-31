@@ -83,4 +83,10 @@ if (TARGET Vulkan-Headers)
     endif()
 endif()
 
+if (TARGET Diligent-ArchiverInterface)
+    if(COMMAND custom_post_configure_target)
+        custom_post_configure_target(Diligent-ArchiverInterface)
+    endif()
+endif()
+
 endif()
