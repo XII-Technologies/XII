@@ -32,6 +32,7 @@
 #include "Align.hpp"
 #include "BasicMath.hpp"
 #include "Cast.hpp"
+#include "StringTools.hpp"
 
 namespace Diligent
 {
@@ -1336,6 +1337,111 @@ String GetPipelineResourceFlagsString(PIPELINE_RESOURCE_FLAGS Flags, bool GetFul
         }
     }
     return Str;
+}
+
+const char* GetShaderCodeVariableClassString(SHADER_CODE_VARIABLE_CLASS Class)
+{
+    static_assert(SHADER_CODE_VARIABLE_CLASS_COUNT == 6, "Did you add a new variable class? Please update the switch below.");
+    switch (Class)
+    {
+        // clang-format off
+        case SHADER_CODE_VARIABLE_CLASS_UNKNOWN:        return "unknown";
+        case SHADER_CODE_VARIABLE_CLASS_SCALAR:         return "scalar";
+        case SHADER_CODE_VARIABLE_CLASS_VECTOR:         return "vector";
+        case SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS:    return "matrix-rows";
+        case SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS: return "matrix-columns";
+        case SHADER_CODE_VARIABLE_CLASS_STRUCT:         return "struct";
+        // clang-format on
+        default: UNEXPECTED("Unknown/unsupported variable class"); return "UNKNOWN";
+    }
+}
+
+const char* GetShaderCodeBasicTypeString(SHADER_CODE_BASIC_TYPE Type)
+{
+    static_assert(SHADER_CODE_BASIC_TYPE_COUNT == 21, "Did you add a new type? Please update the switch below.");
+    switch (Type)
+    {
+        // clang-format off
+        case SHADER_CODE_BASIC_TYPE_UNKNOWN:    return "unknown";
+        case SHADER_CODE_BASIC_TYPE_VOID:       return "void";
+        case SHADER_CODE_BASIC_TYPE_BOOL:       return "bool";
+        case SHADER_CODE_BASIC_TYPE_INT:        return "int";
+        case SHADER_CODE_BASIC_TYPE_INT8:       return "int8";
+        case SHADER_CODE_BASIC_TYPE_INT16:      return "int16";
+        case SHADER_CODE_BASIC_TYPE_INT64:      return "int64";
+        case SHADER_CODE_BASIC_TYPE_UINT:       return "uint";
+        case SHADER_CODE_BASIC_TYPE_UINT8:      return "uint8";
+        case SHADER_CODE_BASIC_TYPE_UINT16:     return "uint16";
+        case SHADER_CODE_BASIC_TYPE_UINT64:     return "uint64";
+        case SHADER_CODE_BASIC_TYPE_FLOAT:      return "float";
+        case SHADER_CODE_BASIC_TYPE_FLOAT16:    return "float16";
+        case SHADER_CODE_BASIC_TYPE_DOUBLE:     return "double";
+        case SHADER_CODE_BASIC_TYPE_MIN8FLOAT:  return "min8float";
+        case SHADER_CODE_BASIC_TYPE_MIN10FLOAT: return "min10float";
+        case SHADER_CODE_BASIC_TYPE_MIN16FLOAT: return "min16float";
+        case SHADER_CODE_BASIC_TYPE_MIN12INT:   return "min12int";
+        case SHADER_CODE_BASIC_TYPE_MIN16INT:   return "min16int";
+        case SHADER_CODE_BASIC_TYPE_MIN16UINT:  return "min16uint";
+        case SHADER_CODE_BASIC_TYPE_STRING:     return "string";
+        // clang-format on
+        default: UNEXPECTED("Unknown/unsupported variable class"); return "UNKNOWN";
+    }
+}
+
+static void PrintShaderCodeVariables(std::stringstream& ss, size_t LevelIdent, size_t IdentShift, const ShaderCodeVariableDesc* pVars, Uint32 NumVars)
+{
+    if (pVars == nullptr || NumVars == 0)
+        return;
+
+    int MaxNameLen      = 0;
+    int MaxTypeLen      = 0;
+    int MaxArraySizeLen = 0;
+    int MaxOffsetLen    = 0;
+    int MaxClassLen     = 0;
+    int MaxBasicTypeLen = 0;
+    for (Uint32 i = 0; i < NumVars; ++i)
+    {
+        const auto& Var = pVars[i];
+        if (Var.Name != nullptr)
+            MaxNameLen = std::max(MaxNameLen, static_cast<int>(strlen(Var.Name)));
+        if (Var.TypeName != nullptr)
+            MaxTypeLen = std::max(MaxTypeLen, static_cast<int>(strlen(Var.TypeName)));
+        MaxArraySizeLen = std::max(MaxArraySizeLen, static_cast<int>(GetPrintWidth(Var.ArraySize)));
+        MaxOffsetLen    = std::max(MaxOffsetLen, static_cast<int>(GetPrintWidth(Var.Offset)));
+        MaxClassLen     = std::max(MaxClassLen, static_cast<int>(strlen(GetShaderCodeVariableClassString(Var.Class))));
+        MaxBasicTypeLen = std::max(MaxBasicTypeLen, static_cast<int>(strlen(GetShaderCodeBasicTypeString(Var.BasicType))));
+    }
+
+    for (Uint32 i = 0; i < NumVars; ++i)
+    {
+        const auto& Var = pVars[i];
+        ss << std::setw(static_cast<int>(LevelIdent) + MaxNameLen) << (Var.Name ? Var.Name : "?")
+           << ": " << std::setw(MaxTypeLen) << (Var.TypeName ? Var.TypeName : "")
+           << ' ' << std::setw(MaxClassLen) << GetShaderCodeVariableClassString(Var.Class)
+           << ' ' << std::setw(MaxBasicTypeLen) << GetShaderCodeBasicTypeString(Var.BasicType)
+           << ' ' << Uint32{Var.NumRows} << 'x' << Uint32{Var.NumColumns} << " [" << std::setw(MaxArraySizeLen) << Var.ArraySize << ']'
+           << " offset: " << std::setw(MaxOffsetLen) << Var.Offset << std::endl;
+
+        PrintShaderCodeVariables(ss, LevelIdent + MaxNameLen + IdentShift, IdentShift, Var.pMembers, Var.NumMembers);
+    }
+}
+
+/// Returns the string containing the shader buffer description.
+String GetShaderCodeBufferDescString(const ShaderCodeBufferDesc& Desc, size_t GlobalIdent, size_t MemberIdent)
+{
+    std::stringstream ss;
+    ss << std::setw(static_cast<int>(GlobalIdent)) << ' ' << "Size: " << Desc.Size << std::endl
+       << std::setw(static_cast<int>(GlobalIdent)) << ' ' << "Vars: " << Desc.NumVariables << std::endl;
+    PrintShaderCodeVariables(ss, GlobalIdent + MemberIdent, MemberIdent, Desc.pVariables, Desc.NumVariables);
+
+    return ss.str();
+}
+
+String GetShaderCodeVariableDescString(const ShaderCodeVariableDesc& Desc, size_t GlobalIdent, size_t MemberIdent)
+{
+    std::stringstream ss;
+    PrintShaderCodeVariables(ss, GlobalIdent, MemberIdent, &Desc, 1);
+    return ss.str();
 }
 
 PIPELINE_RESOURCE_FLAGS GetValidPipelineResourceFlags(SHADER_RESOURCE_TYPE ResourceType)

@@ -227,6 +227,7 @@ ShaderVkImpl::ShaderVkImpl(IReferenceCounters*     pRefCounters,
                 m_Desc,
                 m_Desc.UseCombinedTextureSamplers ? m_Desc.CombinedSamplerSuffix : nullptr,
                 LoadShaderInputs,
+                ShaderCI.LoadConstantBufferReflection,
                 m_EntryPoint //
             };
         VERIFY_EXPR(ShaderCI.ByteCode != nullptr || m_EntryPoint == ShaderCI.EntryPoint);
@@ -287,6 +288,19 @@ void ShaderVkImpl::GetResourceDesc(Uint32 Index, ShaderResourceDesc& ResourceDes
         const auto& SPIRVResource = m_pShaderResources->GetResource(Index);
         ResourceDesc              = SPIRVResource.GetResourceDesc();
     }
+}
+
+const ShaderCodeBufferDesc* ShaderVkImpl::GetConstantBufferDesc(Uint32 Index) const
+{
+    auto ResCount = GetResourceCount();
+    if (Index >= ResCount)
+    {
+        UNEXPECTED("Resource index (", Index, ") is out of range");
+        return nullptr;
+    }
+
+    // Uniform buffers always go first in the list of resources
+    return m_pShaderResources->GetUniformBufferDesc(Index);
 }
 
 } // namespace Diligent
