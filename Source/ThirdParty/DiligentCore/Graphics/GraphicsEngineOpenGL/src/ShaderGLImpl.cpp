@@ -186,11 +186,15 @@ ShaderGLImpl::ShaderGLImpl(IReferenceCounters*     pRefCounters,
         auto& GLState = pImmediateCtx->GetContextState();
 
         auto pResources = std::make_unique<ShaderResourcesGL>();
-        pResources->LoadUniforms(m_Desc.ShaderType,
-                                 m_SourceLanguage == SHADER_SOURCE_LANGUAGE_HLSL ?
-                                     PIPELINE_RESOURCE_FLAG_NONE :            // Reflect samplers as separate for consistency with other backends
-                                     PIPELINE_RESOURCE_FLAG_COMBINED_SAMPLER, // Reflect samplers as combined
-                                 Program, GLState);
+
+        pResources->LoadUniforms({m_Desc.ShaderType,
+                                  m_SourceLanguage == SHADER_SOURCE_LANGUAGE_HLSL ?
+                                      PIPELINE_RESOURCE_FLAG_NONE :            // Reflect samplers as separate for consistency with other backends
+                                      PIPELINE_RESOURCE_FLAG_COMBINED_SAMPLER, // Reflect samplers as combined
+                                  Program,
+                                  GLState,
+                                  ShaderCI.LoadConstantBufferReflection,
+                                  m_SourceLanguage});
         m_pShaderResources.reset(pResources.release());
     }
 }
@@ -285,6 +289,27 @@ void ShaderGLImpl::GetResourceDesc(Uint32 Index, ShaderResourceDesc& ResourceDes
     else
     {
         LOG_WARNING_MESSAGE("Shader resource queries are not available when separate shader objects are unsupported");
+    }
+}
+
+
+const ShaderCodeBufferDesc* ShaderGLImpl::GetConstantBufferDesc(Uint32 Index) const
+{
+    if (m_pDevice->GetFeatures().SeparablePrograms)
+    {
+        if (Index >= GetResourceCount())
+        {
+            UNEXPECTED("Constant buffer index (", Index, ") is out of range");
+            return nullptr;
+        }
+
+        // Uniform buffers always go first in the list of resources
+        return m_pShaderResources->GetUniformBufferDesc(Index);
+    }
+    else
+    {
+        LOG_WARNING_MESSAGE("Shader resource queries are not available when separate shader objects are unsupported");
+        return nullptr;
     }
 }
 
