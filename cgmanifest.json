@@ -1,16 +1,16 @@
 {
-    "Registrations": [
-        {
-            "component": {
-                "type": "git",
-              "git": {
-                "name": "XII-Engine",
-                "repositoryUrl": "https://gitlab.com/xii1/XII-Engine",
-                "commitHash": "78a62cf77bc45efb2ed52e45ca9bbf14c40291b8"
-              }
-            },
-            "license": "Copyright (c) 2022-2023 Theophilus Eriata. All Rights Reserved."
+  "License": "Copyright (c) 2022-2023 Theophilus Eriata. All Rights Reserved.",
+  "Registrations": [
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "name": "XII-Engine",
+          "repositoryUrl": "https://gitlab.com/xii1/XII-Engine",
+          "commitHash": "06b589011f6ea8f872f3cf317661ff9870154f29"
         }
-    ],
-    "version": 1
+      }
+    }
+  ],
+  "version": 1
 }

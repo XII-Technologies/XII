@@ -35,7 +35,7 @@ if(NOT XII_SUBMODULE_MODE)
 	set(XII_SOLUTION_NAME ${DETECTED_NAME} CACHE STRING "The name of the solution")
 	project(${XII_SOLUTION_NAME}
 		VERSION 1.0
-		DESCRIPTION "Copyright (c) 2022 Theophilus Eriata. All Rights Reserved."
+		DESCRIPTION "Copyright (c) 2022-2023 Theophilus Eriata. All Rights Reserved."
 		HOMEPAGE_URL "https://gitlab.com/xii1/XII-Engine"
 		LANGUAGES ${XII_LANGUAGES})
 endif()

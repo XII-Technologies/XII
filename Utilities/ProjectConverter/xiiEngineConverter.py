@@ -588,7 +588,7 @@ def main():
     startTime = time.perf_counter()
 
     Log.Info("XII Project Converter")
-    Log.Info("Copyright (c) 2022 Theophilus Eriata. All Rights Reserved\n")
+    Log.Info("Copyright (c) 2022-2023 Theophilus Eriata. All Rights Reserved\n")
     Log.Info("Please that all project files are backed up before using this tool.\n")
 
     Log.Debug("Number of arguments: {}".format(len(sys.argv)))
