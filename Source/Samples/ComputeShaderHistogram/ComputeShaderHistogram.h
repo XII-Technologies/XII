@@ -38,8 +38,7 @@ private:
   xiiGALUnorderedAccessViewHandle m_hHistogramUAV;
   xiiGALResourceViewHandle        m_hHistogramSRV;
 
-  xiiGALSwapChainHandle        m_hSwapChain;
-  xiiGALRenderTargetViewHandle m_hBackbufferRTV;
+  xiiGALSwapChainHandle m_hSwapChain;
 
   xiiShaderResourceHandle m_hScreenShader;
   xiiShaderResourceHandle m_hHistogramDisplayShader;
@@ -49,5 +48,7 @@ private:
 
   xiiUniquePtr<xiiDirectoryWatcher> m_pDirectoryWatcher;
 
-  bool m_bStuffChanged;
+  xiiWindowBase* m_pWindow;
+
+  bool m_bDirectoryModified;
 };

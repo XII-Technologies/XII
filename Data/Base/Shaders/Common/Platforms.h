@@ -6,6 +6,7 @@
 #define PLATFORM_DX11   XII_OFF
 #define PLATFORM_VULKAN XII_OFF
 #define PLATFORM_D3D12  XII_OFF
+#define PLATFORM_D3D11  XII_OFF
 
 #if defined(DX11_SM40_93) || defined(DX11_SM40) || defined(DX11_SM41) || defined(DX11_SM50)
 
@@ -33,6 +34,32 @@ float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint Num
 }
 #endif
 
+#if defined(D3D_SM40_93) || defined(D3D_SM40) || defined(D3D_SM41) || defined(D3D_SM50)
+
+#  undef PLATFORM_SHADER
+#  define PLATFORM_SHADER XII_ON
+
+#  undef PLATFORM_D3D11
+#  define PLATFORM_D3D11 XII_ON
+
+float xiiEvaluateAttributeAtSample(float Attribute, uint SampleIndex, uint NumMsaaSamples)
+{
+  return EvaluateAttributeAtSample(Attribute, SampleIndex);
+}
+float2 xiiEvaluateAttributeAtSample(float2 Attribute, uint SampleIndex, uint NumMsaaSamples)
+{
+  return EvaluateAttributeAtSample(Attribute, SampleIndex);
+}
+float3 xiiEvaluateAttributeAtSample(float3 Attribute, uint SampleIndex, uint NumMsaaSamples)
+{
+  return EvaluateAttributeAtSample(Attribute, SampleIndex);
+}
+float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint NumMsaaSamples)
+{
+  return EvaluateAttributeAtSample(Attribute, SampleIndex);
+}
+#endif
+
 #if defined(VULKAN)
 
 #  undef PLATFORM_SHADER
@@ -40,7 +67,6 @@ float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint Num
 
 #  undef PLATFORM_VULKAN
 #  define PLATFORM_VULKAN XII_ON
-
 
 // GetRenderTargetSamplePosition does not have an equivalent function in Vulkan so these values are hard-coded.
 // https://learn.microsoft.com/windows/win32/api/d3d11/ne-d3d11-d3d11_standard_multisample_quality_levels
@@ -111,7 +137,7 @@ float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint Num
 
 #endif
 
-#if defined(D3D_SM60) || defined(D3D_SM61) || defined(D3D_SM61) || defined(D3D_SM63) || defined(D3D_SM64) || defined(D3D_SM65) || defined(D3D_SM66)
+#if defined(D3D_SM51) || defined(D3D_SM60) || defined(D3D_SM61) || defined(D3D_SM61) || defined(D3D_SM63) || defined(D3D_SM64) || defined(D3D_SM65) || defined(D3D_SM66)
 
 #  undef PLATFORM_SHADER
 #  define PLATFORM_SHADER XII_ON

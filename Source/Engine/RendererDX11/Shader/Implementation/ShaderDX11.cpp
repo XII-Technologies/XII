@@ -19,8 +19,13 @@ xiiResult xiiGALShaderDX11::InitPlatform(xiiGALDevice* pDevice)
 
   if (m_Description.HasByteCodeForStage(xiiGALShaderStage::VertexShader))
   {
-    if (FAILED(pD3D11Device->CreateVertexShader(m_Description.m_ByteCodes[xiiGALShaderStage::VertexShader]->GetByteCode(),
-                                                m_Description.m_ByteCodes[xiiGALShaderStage::VertexShader]->GetSize(), nullptr, &m_pVertexShader)))
+    xiiArrayPtr<const xiiUInt8> metaData(reinterpret_cast<const xiiUInt8*>(m_Description.m_ByteCodes[xiiGALShaderStage::VertexShader]->GetByteCode()), m_Description.m_ByteCodes[xiiGALShaderStage::VertexShader]->GetSize());
+
+    // Only the vertex shader stores vertexInputAttributes, so passing in the array into other shaders is just a no op.
+    xiiShaderMetaData::Read(metaData, m_pByteCodes[xiiGALShaderStage::VertexShader], m_DescriptorSets[xiiGALShaderStage::VertexShader], m_VertexInputAttributes);
+
+    if (FAILED(pD3D11Device->CreateVertexShader(reinterpret_cast<const void*>(m_pByteCodes[xiiGALShaderStage::VertexShader].GetPtr()),
+                                                m_pByteCodes[xiiGALShaderStage::VertexShader].GetCount(), nullptr, &m_pVertexShader)))
     {
       xiiLog::Error("Couldn't create native vertex shader from bytecode!");
       return XII_FAILURE;
@@ -29,8 +34,13 @@ xiiResult xiiGALShaderDX11::InitPlatform(xiiGALDevice* pDevice)
 
   if (m_Description.HasByteCodeForStage(xiiGALShaderStage::HullShader))
   {
-    if (FAILED(pD3D11Device->CreateHullShader(m_Description.m_ByteCodes[xiiGALShaderStage::HullShader]->GetByteCode(),
-                                              m_Description.m_ByteCodes[xiiGALShaderStage::HullShader]->GetSize(), nullptr, &m_pHullShader)))
+    xiiArrayPtr<const xiiUInt8> metaData(reinterpret_cast<const xiiUInt8*>(m_Description.m_ByteCodes[xiiGALShaderStage::HullShader]->GetByteCode()), m_Description.m_ByteCodes[xiiGALShaderStage::HullShader]->GetSize());
+
+    // Only the vertex shader stores vertexInputAttributes, so passing in the array into other shaders is just a no op.
+    xiiShaderMetaData::Read(metaData, m_pByteCodes[xiiGALShaderStage::HullShader], m_DescriptorSets[xiiGALShaderStage::HullShader], m_VertexInputAttributes);
+
+    if (FAILED(pD3D11Device->CreateHullShader(reinterpret_cast<const void*>(m_pByteCodes[xiiGALShaderStage::HullShader].GetPtr()),
+                                              m_pByteCodes[xiiGALShaderStage::HullShader].GetCount(), nullptr, &m_pHullShader)))
     {
       xiiLog::Error("Couldn't create native hull shader from bytecode!");
       return XII_FAILURE;
@@ -39,8 +49,13 @@ xiiResult xiiGALShaderDX11::InitPlatform(xiiGALDevice* pDevice)
 
   if (m_Description.HasByteCodeForStage(xiiGALShaderStage::DomainShader))
   {
-    if (FAILED(pD3D11Device->CreateDomainShader(m_Description.m_ByteCodes[xiiGALShaderStage::DomainShader]->GetByteCode(),
-                                                m_Description.m_ByteCodes[xiiGALShaderStage::DomainShader]->GetSize(), nullptr, &m_pDomainShader)))
+    xiiArrayPtr<const xiiUInt8> metaData(reinterpret_cast<const xiiUInt8*>(m_Description.m_ByteCodes[xiiGALShaderStage::DomainShader]->GetByteCode()), m_Description.m_ByteCodes[xiiGALShaderStage::VertexShader]->GetSize());
+
+    // Only the vertex shader stores vertexInputAttributes, so passing in the array into other shaders is just a no op.
+    xiiShaderMetaData::Read(metaData, m_pByteCodes[xiiGALShaderStage::DomainShader], m_DescriptorSets[xiiGALShaderStage::DomainShader], m_VertexInputAttributes);
+
+    if (FAILED(pD3D11Device->CreateDomainShader(reinterpret_cast<const void*>(m_pByteCodes[xiiGALShaderStage::DomainShader].GetPtr()),
+                                                m_pByteCodes[xiiGALShaderStage::DomainShader].GetCount(), nullptr, &m_pDomainShader)))
     {
       xiiLog::Error("Couldn't create native domain shader from bytecode!");
       return XII_FAILURE;
@@ -49,8 +64,13 @@ xiiResult xiiGALShaderDX11::InitPlatform(xiiGALDevice* pDevice)
 
   if (m_Description.HasByteCodeForStage(xiiGALShaderStage::GeometryShader))
   {
-    if (FAILED(pD3D11Device->CreateGeometryShader(m_Description.m_ByteCodes[xiiGALShaderStage::GeometryShader]->GetByteCode(),
-                                                  m_Description.m_ByteCodes[xiiGALShaderStage::GeometryShader]->GetSize(), nullptr, &m_pGeometryShader)))
+    xiiArrayPtr<const xiiUInt8> metaData(reinterpret_cast<const xiiUInt8*>(m_Description.m_ByteCodes[xiiGALShaderStage::GeometryShader]->GetByteCode()), m_Description.m_ByteCodes[xiiGALShaderStage::GeometryShader]->GetSize());
+
+    // Only the vertex shader stores vertexInputAttributes, so passing in the array into other shaders is just a no op.
+    xiiShaderMetaData::Read(metaData, m_pByteCodes[xiiGALShaderStage::GeometryShader], m_DescriptorSets[xiiGALShaderStage::GeometryShader], m_VertexInputAttributes);
+
+    if (FAILED(pD3D11Device->CreateGeometryShader(reinterpret_cast<const void*>(m_pByteCodes[xiiGALShaderStage::GeometryShader].GetPtr()),
+                                                  m_pByteCodes[xiiGALShaderStage::GeometryShader].GetCount(), nullptr, &m_pGeometryShader)))
     {
       xiiLog::Error("Couldn't create native geometry shader from bytecode!");
       return XII_FAILURE;
@@ -59,8 +79,13 @@ xiiResult xiiGALShaderDX11::InitPlatform(xiiGALDevice* pDevice)
 
   if (m_Description.HasByteCodeForStage(xiiGALShaderStage::PixelShader))
   {
-    if (FAILED(pD3D11Device->CreatePixelShader(m_Description.m_ByteCodes[xiiGALShaderStage::PixelShader]->GetByteCode(),
-                                               m_Description.m_ByteCodes[xiiGALShaderStage::PixelShader]->GetSize(), nullptr, &m_pPixelShader)))
+    xiiArrayPtr<const xiiUInt8> metaData(reinterpret_cast<const xiiUInt8*>(m_Description.m_ByteCodes[xiiGALShaderStage::PixelShader]->GetByteCode()), m_Description.m_ByteCodes[xiiGALShaderStage::PixelShader]->GetSize());
+
+    // Only the vertex shader stores vertexInputAttributes, so passing in the array into other shaders is just a no op.
+    xiiShaderMetaData::Read(metaData, m_pByteCodes[xiiGALShaderStage::PixelShader], m_DescriptorSets[xiiGALShaderStage::PixelShader], m_VertexInputAttributes);
+
+    if (FAILED(pD3D11Device->CreatePixelShader(reinterpret_cast<const void*>(m_pByteCodes[xiiGALShaderStage::PixelShader].GetPtr()),
+                                               m_pByteCodes[xiiGALShaderStage::PixelShader].GetCount(), nullptr, &m_pPixelShader)))
     {
       xiiLog::Error("Couldn't create native pixel shader from bytecode!");
       return XII_FAILURE;
@@ -69,8 +94,13 @@ xiiResult xiiGALShaderDX11::InitPlatform(xiiGALDevice* pDevice)
 
   if (m_Description.HasByteCodeForStage(xiiGALShaderStage::ComputeShader))
   {
-    if (FAILED(pD3D11Device->CreateComputeShader(m_Description.m_ByteCodes[xiiGALShaderStage::ComputeShader]->GetByteCode(),
-                                                 m_Description.m_ByteCodes[xiiGALShaderStage::ComputeShader]->GetSize(), nullptr, &m_pComputeShader)))
+    xiiArrayPtr<const xiiUInt8> metaData(reinterpret_cast<const xiiUInt8*>(m_Description.m_ByteCodes[xiiGALShaderStage::ComputeShader]->GetByteCode()), m_Description.m_ByteCodes[xiiGALShaderStage::ComputeShader]->GetSize());
+
+    // Only the vertex shader stores vertexInputAttributes, so passing in the array into other shaders is just a no op.
+    xiiShaderMetaData::Read(metaData, m_pByteCodes[xiiGALShaderStage::ComputeShader], m_DescriptorSets[xiiGALShaderStage::ComputeShader], m_VertexInputAttributes);
+
+    if (FAILED(pD3D11Device->CreateComputeShader(reinterpret_cast<const void*>(m_pByteCodes[xiiGALShaderStage::ComputeShader].GetPtr()),
+                                                 m_pByteCodes[xiiGALShaderStage::ComputeShader].GetCount(), nullptr, &m_pComputeShader)))
     {
       xiiLog::Error("Couldn't create native compute shader from bytecode!");
       return XII_FAILURE;

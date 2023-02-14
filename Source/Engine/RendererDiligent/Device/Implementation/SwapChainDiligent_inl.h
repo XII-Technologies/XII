@@ -1,5 +1,5 @@
 
-Diligent::RefCntAutoPtr<Diligent::ISwapChain>& xiiGALSwapChainDiligent::GetSwapChain()
+Diligent::ISwapChain* xiiGALSwapChainDiligent::GetSwapChain()
 {
-  return m_pSwapChain;
+  return m_pSwapChain.RawPtr();
 }

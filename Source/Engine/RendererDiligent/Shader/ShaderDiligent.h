@@ -5,21 +5,26 @@
 #include <RendererFoundation/RendererFoundationDLL.h>
 #include <RendererFoundation/Shader/Shader.h>
 
+#include <ShaderCompiler/ShaderMetadata.h>
+
 class XII_RENDERERDILIGENT_DLL xiiGALShaderDiligent : public xiiGALShader
 {
 public:
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::IShader>& GetVertexShader();
+  XII_ALWAYS_INLINE Diligent::IShader* GetVertexShader();
 
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::IShader>& GetHullShader();
+  XII_ALWAYS_INLINE Diligent::IShader* GetHullShader();
 
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::IShader>& GetDomainShader();
+  XII_ALWAYS_INLINE Diligent::IShader* GetDomainShader();
 
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::IShader>& GetGeometryShader();
+  XII_ALWAYS_INLINE Diligent::IShader* GetGeometryShader();
 
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::IShader>& GetPixelShader();
+  XII_ALWAYS_INLINE Diligent::IShader* GetPixelShader();
 
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::IShader>& GetComputeShader();
+  XII_ALWAYS_INLINE Diligent::IShader* GetComputeShader();
 
+  XII_ALWAYS_INLINE xiiDynamicArray<xiiShaderDescriptorSetLayout>& GetDescriptorSets(xiiGALShaderStage::Enum stage);
+
+  XII_ALWAYS_INLINE xiiHybridArray<xiiShaderVertexInputAttribute, 8>& GetVertexInputAttributes();
 
 protected:
   friend class xiiGALDeviceDiligent;
@@ -33,12 +38,11 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::RefCntAutoPtr<Diligent::IShader> m_pVertexShader;
-  Diligent::RefCntAutoPtr<Diligent::IShader> m_pHullShader;
-  Diligent::RefCntAutoPtr<Diligent::IShader> m_pDomainShader;
-  Diligent::RefCntAutoPtr<Diligent::IShader> m_pGeometryShader;
-  Diligent::RefCntAutoPtr<Diligent::IShader> m_pPixelShader;
-  Diligent::RefCntAutoPtr<Diligent::IShader> m_pComputeShader;
+  Diligent::RefCntAutoPtr<Diligent::IShader> m_pShaderStages[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiDynamicArray<xiiShaderDescriptorSetLayout> m_DescriptorSets[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiHybridArray<xiiShaderVertexInputAttribute, 8> m_VertexInputAttributes;
 };
 
 #include <RendererDiligent/Shader/Implementation/ShaderDiligent_inl.h>

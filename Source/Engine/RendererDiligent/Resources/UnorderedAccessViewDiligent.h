@@ -6,7 +6,11 @@
 class xiiGALUnorderedAccessViewDiligent : public xiiGALUnorderedAccessView
 {
 public:
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::IDeviceObject>& GetResourceView();
+  XII_ALWAYS_INLINE Diligent::IDeviceObject* GetResourceView();
+
+  XII_ALWAYS_INLINE Diligent::ITextureView* GetTextureView();
+
+  XII_ALWAYS_INLINE Diligent::IBufferView* GetBufferView();
 
 protected:
   friend class xiiGALDeviceDiligent;
@@ -20,7 +24,9 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::RefCntAutoPtr<Diligent::IDeviceObject> m_pUnorderedAccessView;
+  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pUnorderedAccessTextureView;
+
+  Diligent::RefCntAutoPtr<Diligent::IBufferView> m_pUnorderedAccessBufferView;
 };
 
 #include <RendererDiligent/Resources/Implementation/UnorderedAccessViewDiligent_inl.h>

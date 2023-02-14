@@ -213,27 +213,27 @@ public:
 public:
   // Constant buffer storage handling
   template <typename T>
-  XII_ALWAYS_INLINE static xiiConstantBufferStorageHandle CreateConstantBufferStorage()
+  XII_ALWAYS_INLINE static xiiConstantBufferStorageHandle CreateConstantBufferStorage(const char* szName)
   {
-    return CreateConstantBufferStorage(sizeof(T));
+    return CreateConstantBufferStorage(sizeof(T), szName);
   }
 
   template <typename T>
-  XII_FORCE_INLINE static xiiConstantBufferStorageHandle CreateConstantBufferStorage(xiiConstantBufferStorage<T>*& out_pStorage)
+  XII_FORCE_INLINE static xiiConstantBufferStorageHandle CreateConstantBufferStorage(xiiConstantBufferStorage<T>*& out_pStorage, const char* szName)
   {
     xiiConstantBufferStorageBase*  pStorage;
-    xiiConstantBufferStorageHandle hStorage = CreateConstantBufferStorage(sizeof(T), pStorage);
+    xiiConstantBufferStorageHandle hStorage = CreateConstantBufferStorage(sizeof(T), pStorage, szName);
     out_pStorage                            = static_cast<xiiConstantBufferStorage<T>*>(pStorage);
     return hStorage;
   }
 
-  XII_FORCE_INLINE static xiiConstantBufferStorageHandle CreateConstantBufferStorage(xiiUInt32 uiSizeInBytes)
+  XII_FORCE_INLINE static xiiConstantBufferStorageHandle CreateConstantBufferStorage(xiiUInt32 uiSizeInBytes, const char* szName)
   {
     xiiConstantBufferStorageBase* pStorage;
-    return CreateConstantBufferStorage(uiSizeInBytes, pStorage);
+    return CreateConstantBufferStorage(uiSizeInBytes, pStorage, szName);
   }
 
-  static xiiConstantBufferStorageHandle CreateConstantBufferStorage(xiiUInt32 uiSizeInBytes, xiiConstantBufferStorageBase*& out_pStorage);
+  static xiiConstantBufferStorageHandle CreateConstantBufferStorage(xiiUInt32 uiSizeInBytes, xiiConstantBufferStorageBase*& out_pStorage, const char* szName);
   static void                           DeleteConstantBufferStorage(xiiConstantBufferStorageHandle hStorage);
 
   template <typename T>

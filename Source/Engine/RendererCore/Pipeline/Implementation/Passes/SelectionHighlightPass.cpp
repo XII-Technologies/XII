@@ -35,7 +35,7 @@ xiiSelectionHighlightPass::xiiSelectionHighlightPass(const char* szName) :
   m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/SelectionHighlight.xiiShader");
   XII_ASSERT_DEV(m_hShader.IsValid(), "Could not load selection highlight shader!");
 
-  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiSelectionHighlightConstants>();
+  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiSelectionHighlightConstants>(XII_STRINGIZE(xiiSelectionHighlightConstants));
 }
 
 xiiSelectionHighlightPass::~xiiSelectionHighlightPass()

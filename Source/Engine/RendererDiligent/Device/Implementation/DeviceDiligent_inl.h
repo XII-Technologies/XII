@@ -1,18 +1,17 @@
 
-
-XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::IRenderDevice>& xiiGALDeviceDiligent::GetDevice()
+XII_ALWAYS_INLINE Diligent::IRenderDevice* xiiGALDeviceDiligent::GetDevice()
 {
-  return m_pDevice;
+  return m_pDevice.RawPtr();
 }
 
-XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::IEngineFactory>& xiiGALDeviceDiligent::GetFactory()
+XII_ALWAYS_INLINE Diligent::IEngineFactory* xiiGALDeviceDiligent::GetFactory()
 {
-  return m_pEngineFactory;
+  return m_pEngineFactory.RawPtr();
 }
 
-XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::IDeviceContext>& xiiGALDeviceDiligent::GetImmediateContext()
+XII_ALWAYS_INLINE Diligent::IDeviceContext* xiiGALDeviceDiligent::GetImmediateContext()
 {
-  return m_pDeviceContexts[0];
+  return m_pDeviceContexts[0].RawPtr();
 }
 
 XII_ALWAYS_INLINE const xiiGALFormatLookupTableDiligent& xiiGALDeviceDiligent::GetFormatLookupTable() const
@@ -27,5 +26,5 @@ XII_ALWAYS_INLINE const Diligent::RENDER_DEVICE_TYPE& xiiGALDeviceDiligent::GetD
 
 XII_ALWAYS_INLINE const xiiInt32 xiiGALDeviceDiligent::GetValidationLevel() const
 {
-  return m_ValidationLevel;
+  return m_iValidationLevel;
 }

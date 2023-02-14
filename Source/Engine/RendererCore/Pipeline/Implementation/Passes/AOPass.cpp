@@ -46,8 +46,8 @@ xiiAOPass::xiiAOPass() :
   m_hBlurShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/SSAOBlur.xiiShader");
   XII_ASSERT_DEV(m_hBlurShader.IsValid(), "Could not load SSAO shader!");
 
-  m_hDownscaleConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiDownscaleDepthConstants>();
-  m_hSSAOConstantBuffer      = xiiRenderContext::CreateConstantBufferStorage<xiiSSAOConstants>();
+  m_hDownscaleConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiDownscaleDepthConstants>(XII_STRINGIZE(xiiDownscaleDepthConstants));
+  m_hSSAOConstantBuffer      = xiiRenderContext::CreateConstantBufferStorage<xiiSSAOConstants>(XII_STRINGIZE(xiiSSAOConstants));
 }
 
 xiiAOPass::~xiiAOPass()

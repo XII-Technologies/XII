@@ -4,6 +4,7 @@
 #include <RendererDX11/RendererDX11DLL.h>
 #include <RendererFoundation/RendererFoundationDLL.h>
 #include <RendererFoundation/Shader/Shader.h>
+#include <ShaderCompiler/ShaderMetadata.h>
 
 struct ID3D11VertexShader;
 struct ID3D11HullShader;
@@ -27,6 +28,11 @@ public:
 
   XII_ALWAYS_INLINE ID3D11ComputeShader* GetDXComputeShader() const;
 
+  XII_ALWAYS_INLINE const xiiDynamicArray<xiiShaderDescriptorSetLayout>& GetDescriptorSets(xiiGALShaderStage::Enum stage) const;
+
+  XII_ALWAYS_INLINE const xiiHybridArray<xiiShaderVertexInputAttribute, 8>& GetVertexInputAttributes() const;
+
+  XII_ALWAYS_INLINE const xiiArrayPtr<const xiiUInt8> GetByteCode(xiiGALShaderStage::Enum stage) const;
 
 protected:
   friend class xiiGALDeviceDX11;
@@ -46,6 +52,12 @@ protected:
   ID3D11GeometryShader* m_pGeometryShader;
   ID3D11PixelShader*    m_pPixelShader;
   ID3D11ComputeShader*  m_pComputeShader;
+
+  xiiDynamicArray<xiiShaderDescriptorSetLayout> m_DescriptorSets[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiHybridArray<xiiShaderVertexInputAttribute, 8> m_VertexInputAttributes;
+
+  xiiArrayPtr<const xiiUInt8> m_pByteCodes[xiiGALShaderStage::ENUM_COUNT] = {};
 };
 
 #include <RendererDX11/Shader/Implementation/ShaderDX11_inl.h>

@@ -61,7 +61,7 @@ xiiTonemapAdvancedPass::xiiTonemapAdvancedPass() :
   m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/TonemapAdvanced.xiiShader");
   XII_ASSERT_DEV(m_hShader.IsValid(), "Could not load tonemap shader!");
 
-  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiAdvancedTonemapConstants>();
+  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiAdvancedTonemapConstants>(XII_STRINGIZE(xiiTonemapAdvancedPass));
 }
 
 xiiTonemapAdvancedPass::~xiiTonemapAdvancedPass()

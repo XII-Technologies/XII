@@ -6,11 +6,11 @@
 class xiiGALRenderTargetViewDiligent : public xiiGALRenderTargetView
 {
 public:
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::ITextureView>& GetRenderTargetView();
+  XII_ALWAYS_INLINE Diligent::ITextureView* GetRenderTargetView();
 
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::ITextureView>& GetDepthStencilView();
+  XII_ALWAYS_INLINE Diligent::ITextureView* GetDepthStencilView();
 
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::ITextureView>& GetUnorderedAccessView();
+  XII_ALWAYS_INLINE Diligent::ITextureView* GetUnorderedAccessView();
 
 protected:
   friend class xiiGALDeviceDiligent;
@@ -29,8 +29,6 @@ protected:
   Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pDepthStencilView;
 
   Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pUnorderedAccessView;
-
-  bool m_bIsNativeObjectWrapper = false;
 };
 
 #include <RendererDiligent/Resources/Implementation/RenderTargetViewDiligent_inl.h>

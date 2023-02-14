@@ -1,5 +1,5 @@
 
-Diligent::RefCntAutoPtr<Diligent::IQuery>& xiiGALQueryDiligent::GetQuery()
+XII_ALWAYS_INLINE Diligent::IQuery* xiiGALQueryDiligent::GetQuery()
 {
-  return m_pQuery;
+  return m_pQuery.RawPtr();
 }

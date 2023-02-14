@@ -33,11 +33,11 @@ xiiReflectionFilterPass::xiiReflectionFilterPass() :
   xiiRenderPipelinePass("ReflectionFilterPass"), m_fIntensity(1.0f), m_fSaturation(1.0f), m_uiIrradianceOutputIndex(0)
 {
   {
-    m_hFilteredSpecularConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiReflectionFilteredSpecularConstants>();
+    m_hFilteredSpecularConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiReflectionFilteredSpecularConstants>(XII_STRINGIZE(xiiReflectionFilteredSpecularConstants));
     m_hFilteredSpecularShader         = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/ReflectionFilteredSpecular.xiiShader");
     XII_ASSERT_DEV(m_hFilteredSpecularShader.IsValid(), "Could not load ReflectionFilteredSpecular shader!");
 
-    m_hIrradianceConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiReflectionIrradianceConstants>();
+    m_hIrradianceConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiReflectionIrradianceConstants>(XII_STRINGIZE(xiiReflectionIrradianceConstants));
     m_hIrradianceShader         = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/ReflectionIrradiance.xiiShader");
     XII_ASSERT_DEV(m_hIrradianceShader.IsValid(), "Could not load ReflectionIrradiance shader!");
   }

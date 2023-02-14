@@ -56,18 +56,17 @@ xiiResult xiiGALVertexDeclarationDX11::InitPlatform(xiiGALDevice* pDevice)
 
     DXDesc.InputSlot            = Current.m_uiVertexBufferSlot;
     DXDesc.InputSlotClass       = Current.m_bInstanceData ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
-    DXDesc.InstanceDataStepRate = Current.m_bInstanceData ? 1 : 0; /// \todo Expose step rate?
+    DXDesc.InstanceDataStepRate = Current.m_bInstanceData ? Current.m_uiStepRate : 0;
     DXDesc.SemanticIndex        = GALSemanticToIndexDX11[Current.m_eSemantic];
     DXDesc.SemanticName         = GALSemanticToDX11[Current.m_eSemantic];
 
     DXInputElementDescs.PushBack(DXDesc);
   }
 
-
-  const xiiScopedRefPointer<xiiGALShaderByteCode>& pByteCode = pShader->GetDescription().m_ByteCodes[xiiGALShaderStage::VertexShader];
-
+  const xiiGALShaderDX11* pDXShader = static_cast<const xiiGALShaderDX11*>(pShader);
   if (FAILED(pDXDevice->GetDXDevice()->CreateInputLayout(
-        &DXInputElementDescs[0], DXInputElementDescs.GetCount(), pByteCode->GetByteCode(), pByteCode->GetSize(), &m_pDXInputLayout)))
+        &DXInputElementDescs[0], DXInputElementDescs.GetCount(), reinterpret_cast<const void*>(pDXShader->GetByteCode(xiiGALShaderStage::VertexShader).GetPtr()),
+        pDXShader->GetByteCode(xiiGALShaderStage::VertexShader).GetCount(), &m_pDXInputLayout)))
   {
     return XII_FAILURE;
   }

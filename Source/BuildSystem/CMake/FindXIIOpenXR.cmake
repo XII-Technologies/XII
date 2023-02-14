@@ -1,6 +1,6 @@
-# find the folder into which the OpenXR loader has been installed
+# Find the folder into which the OpenXR loader has been installed
 
-# early out, if this target has been created before
+# Early out, if this target has been created before
 if(TARGET xiiOpenXR::Loader)
 	return()
 endif()

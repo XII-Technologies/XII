@@ -10,7 +10,7 @@ protected:
   friend class xiiRenderContext;
   friend class xiiMemoryUtils;
 
-  xiiConstantBufferStorageBase(xiiUInt32 uiSizeInBytes);
+  xiiConstantBufferStorageBase(xiiUInt32 uiSizeInBytes, const char* szName);
   ~xiiConstantBufferStorageBase();
 
 public:

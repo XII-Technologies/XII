@@ -37,7 +37,7 @@ void xiiShaderStateResourceDescriptor::Save(xiiStreamWriter& stream) const
       stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_DestBlendAlpha;
       stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlend;
       stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlendAlpha;
-      stream << m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_uiWriteMask;
+      stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_ColorWriteMask;
     }
   }
 
@@ -104,7 +104,8 @@ void xiiShaderStateResourceDescriptor::Load(xiiStreamReader& stream)
       m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlend = (xiiGALBlend::Enum)uiTemp;
       stream >> uiTemp;
       m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlendAlpha = (xiiGALBlend::Enum)uiTemp;
-      stream >> m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_uiWriteMask;
+      stream >> uiTemp;
+      m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_ColorWriteMask = (xiiGALColorWriteMask::Enum)uiTemp;
     }
   }
 
@@ -404,7 +405,7 @@ xiiResult xiiShaderStateResourceDescriptor::Load(const char* szSource)
         VariableValues, StateValuesBlend, InsertNumber("SourceBlend{0}", i, s), m_BlendDesc.m_RenderTargetBlendDescriptions[0].m_SourceBlend);
       m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_SourceBlendAlpha = (xiiGALBlend::Enum)GetEnumStateVariable(VariableValues, StateValuesBlend,
                                                                                                                   InsertNumber("SourceBlendAlpha{0}", i, s), m_BlendDesc.m_RenderTargetBlendDescriptions[0].m_SourceBlendAlpha);
-      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_uiWriteMask      = static_cast<xiiUInt8>(GetIntStateVariable(VariableValues, InsertNumber("WriteMask{0}", i, s), m_BlendDesc.m_RenderTargetBlendDescriptions[0].m_uiWriteMask));
+      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_ColorWriteMask   = (xiiGALColorWriteMask::Enum)GetIntStateVariable(VariableValues, InsertNumber("WriteMask{0}", i, s), m_BlendDesc.m_RenderTargetBlendDescriptions[0].m_ColorWriteMask);
     }
   }
 

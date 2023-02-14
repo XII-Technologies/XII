@@ -107,14 +107,19 @@ public:
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
+    xiiTelemetry::SetServerName(GetApplicationName());
     xiiTelemetry::CreateServer();
     xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 
-
-#ifdef BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
-    constexpr const char* szDefaultRenderer = "Vulkan";
+#if BUILDSYSTEM_ENABLE_DILIGENT_SUPPORT
+    constexpr const char* szDefaultRenderer = "Diligent";
+    xiiGraphicsDevice::Default              = xiiGraphicsDevice::D3D12;
 #else
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
     constexpr const char* szDefaultRenderer = "DX11";
+#  else
+#    error Renderer not implemented on platform
+#  endif
 #endif
 
     const char* szRendererName   = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
@@ -181,7 +186,7 @@ public:
       xiiGALDevice::SetDefaultDevice(m_pDevice);
     }
 
-    // now that we have a window and device, tell the engine to initialize the rendering infrastructure
+    // Now that we have a window and device, tell the engine to initialize the rendering infrastructure
     xiiStartup::StartupHighLevelSystems();
 
     // Create a Swapchain
@@ -201,14 +206,11 @@ public:
       texDesc.m_bCreateRenderTarget = true;
 
       m_hDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
-
-      m_hBBRTV = m_pDevice->GetDefaultRenderTargetView(pPrimarySwapChain->GetBackBufferTexture());
-      m_hBBDSV = m_pDevice->GetDefaultRenderTargetView(m_hDepthStencilTexture);
     }
 
     // Setup Shaders and Materials
     {
-      // the shader (referenced by the material) also defines the render pipeline state, such as backface-culling and depth-testing
+      // The shader (referenced by the material) also defines the render pipeline state, such as backface-culling and depth-testing
 
       m_hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("Materials/Texture.xiiMaterial");
 
@@ -224,20 +226,20 @@ public:
       xiiResourceManager::SetResourceTypeLoadingFallback<xiiTexture2DResource>(hFallback);
       xiiResourceManager::SetResourceTypeMissingFallback<xiiTexture2DResource>(hMissing);
 
-      // redirect all texture load operations through our custom loader, so that we can duplicate the single source texture
+      // Redirect all texture load operations through our custom loader, so that we can duplicate the single source texture
       // that we have as often as we like (to waste memory)
       xiiResourceManager::SetResourceTypeLoader<xiiTexture2DResource>(&m_TextureResourceLoader);
     }
 
     // Setup constant buffer that this sample uses
     {
-      m_hSampleConstants = xiiRenderContext::CreateConstantBufferStorage(m_pSampleConstantBuffer);
+      m_hSampleConstants = xiiRenderContext::CreateConstantBufferStorage(m_pSampleConstantBuffer, XII_STRINGIZE(xiiTextureSampleConstants));
     }
 
     // Pre-allocate all textures
     {
-      // we only do this to be able to see the unloaded resources in the xiiInspector
-      // this does NOT preload the resources
+      // We only do this to be able to see the unloaded resources in the xiiInspector
+      // This does NOT preload the resources
 
       xiiStringBuilder sResourceName;
       for (xiiInt32 y = -g_iMaxHalfExtent; y < g_iMaxHalfExtent; ++y)
@@ -296,10 +298,15 @@ public:
       m_pDevice->BeginFrame();
 
       m_pDevice->BeginPipeline("TextureSample", m_hSwapChain);
-      xiiGALPass* pGALPass = m_pDevice->BeginPass("xiiTextureSampleMainPass");
+
+      // Must always retrieve the current swapchain render target
+      xiiGALPass*                  pGALPass          = m_pDevice->BeginPass("xiiTextureSampleMainPass");
+      const xiiGALSwapChain*       pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
+      xiiGALRenderTargetViewHandle hBBRTV            = m_pDevice->GetDefaultRenderTargetView(pPrimarySwapChain->GetRenderTargets().m_hRTs[0]);
+      xiiGALRenderTargetViewHandle hBBDSV            = m_pDevice->GetDefaultRenderTargetView(m_hDepthStencilTexture);
 
       xiiGALRenderingSetup renderingSetup;
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, m_hBBRTV).SetDepthStencilTarget(m_hBBDSV);
+      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hBBRTV).SetDepthStencilTarget(hBBDSV);
       renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
       renderingSetup.m_bClearDepth             = true;
 
@@ -401,6 +408,8 @@ public:
     // finally destroy the window
     m_pWindow->Destroy().IgnoreResult();
     XII_DEFAULT_DELETE(m_pWindow);
+
+    xiiTelemetry::CloseConnection();
   }
 
   void CreateSquareMesh()
@@ -458,10 +467,8 @@ private:
   TextureSampleWindow* m_pWindow;
   xiiGALDevice*        m_pDevice;
 
-  xiiGALSwapChainHandle        m_hSwapChain;
-  xiiGALRenderTargetViewHandle m_hBBRTV;
-  xiiGALRenderTargetViewHandle m_hBBDSV;
-  xiiGALTextureHandle          m_hDepthStencilTexture;
+  xiiGALSwapChainHandle m_hSwapChain;
+  xiiGALTextureHandle   m_hDepthStencilTexture;
 
   xiiMaterialResourceHandle   m_hMaterial;
   xiiMeshBufferResourceHandle m_hQuadMeshBuffer;

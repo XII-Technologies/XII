@@ -2,14 +2,14 @@
 
 #include <Foundation/Strings/StringConversion.h>
 
-inline xiiStringBuilder::xiiStringBuilder(xiiAllocatorBase* pAllocator) :
+XII_FORCE_INLINE xiiStringBuilder::xiiStringBuilder(xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
   m_uiCharacterCount = 0;
   AppendTerminator();
 }
 
-inline xiiStringBuilder::xiiStringBuilder(const xiiStringBuilder& rhs) :
+XII_FORCE_INLINE xiiStringBuilder::xiiStringBuilder(const xiiStringBuilder& rhs) :
   m_Data(rhs.GetAllocator())
 {
   m_uiCharacterCount = 0;
@@ -18,7 +18,7 @@ inline xiiStringBuilder::xiiStringBuilder(const xiiStringBuilder& rhs) :
   *this = rhs;
 }
 
-inline xiiStringBuilder::xiiStringBuilder(xiiStringBuilder&& rhs) noexcept
+XII_FORCE_INLINE xiiStringBuilder::xiiStringBuilder(xiiStringBuilder&& rhs) noexcept
   :
   m_Data(rhs.GetAllocator())
 {
@@ -28,7 +28,7 @@ inline xiiStringBuilder::xiiStringBuilder(xiiStringBuilder&& rhs) noexcept
   *this = std::move(rhs);
 }
 
-inline xiiStringBuilder::xiiStringBuilder(const char* szUTF8, xiiAllocatorBase* pAllocator) :
+XII_FORCE_INLINE xiiStringBuilder::xiiStringBuilder(const char* szUTF8, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
   m_uiCharacterCount = 0;
@@ -37,7 +37,7 @@ inline xiiStringBuilder::xiiStringBuilder(const char* szUTF8, xiiAllocatorBase* 
   *this = szUTF8;
 }
 
-inline xiiStringBuilder::xiiStringBuilder(const wchar_t* szWChar, xiiAllocatorBase* pAllocator) :
+XII_FORCE_INLINE xiiStringBuilder::xiiStringBuilder(const wchar_t* szWChar, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
   m_uiCharacterCount = 0;
@@ -46,7 +46,7 @@ inline xiiStringBuilder::xiiStringBuilder(const wchar_t* szWChar, xiiAllocatorBa
   *this = szWChar;
 }
 
-inline xiiStringBuilder::xiiStringBuilder(xiiStringView rhs, xiiAllocatorBase* pAllocator) :
+XII_FORCE_INLINE xiiStringBuilder::xiiStringBuilder(xiiStringView rhs, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
   m_uiCharacterCount = 0;
@@ -101,7 +101,7 @@ XII_FORCE_INLINE void xiiStringBuilder::Clear()
   m_Data[0] = '\0';
 }
 
-inline void xiiStringBuilder::Append(xiiUInt32 uiChar)
+XII_FORCE_INLINE void xiiStringBuilder::Append(xiiUInt32 uiChar)
 {
   char  szChar[6] = {0, 0, 0, 0, 0, 0};
   char* pChar     = &szChar[0];
@@ -119,7 +119,7 @@ inline void xiiStringBuilder::Append(xiiUInt32 uiChar)
   ++m_uiCharacterCount;
 }
 
-inline void xiiStringBuilder::Prepend(xiiUInt32 uiChar)
+XII_FORCE_INLINE void xiiStringBuilder::Prepend(xiiUInt32 uiChar)
 {
   char  szChar[6] = {0, 0, 0, 0, 0, 0};
   char* pChar     = &szChar[0];
@@ -128,7 +128,7 @@ inline void xiiStringBuilder::Prepend(xiiUInt32 uiChar)
   Prepend(szChar);
 }
 
-inline void xiiStringBuilder::Append(
+XII_FORCE_INLINE void xiiStringBuilder::Append(
   const wchar_t* pData1,
   const wchar_t* pData2,
   const wchar_t* pData3,
@@ -148,7 +148,7 @@ inline void xiiStringBuilder::Append(
   Append(s1.GetView(), s2.GetView(), s3.GetView(), s4.GetView(), s5.GetView(), s6.GetView());
 }
 
-inline void xiiStringBuilder::Prepend(
+XII_FORCE_INLINE void xiiStringBuilder::Prepend(
   const wchar_t* pData1,
   const wchar_t* pData2,
   const wchar_t* pData3,
@@ -175,14 +175,14 @@ XII_ALWAYS_INLINE const char* xiiStringBuilder::GetData() const
   return &m_Data[0];
 }
 
-inline void xiiStringBuilder::AppendTerminator()
+XII_FORCE_INLINE void xiiStringBuilder::AppendTerminator()
 {
   // make sure the string terminates with a zero.
   if (m_Data.IsEmpty() || (m_Data.PeekBack() != '\0'))
     m_Data.PushBack('\0');
 }
 
-inline void xiiStringBuilder::ToUpper()
+XII_FORCE_INLINE void xiiStringBuilder::ToUpper()
 {
   const xiiUInt32 uiNewStringLength = xiiStringUtils::ToUpperString(&m_Data[0]);
 
@@ -190,7 +190,7 @@ inline void xiiStringBuilder::ToUpper()
   m_Data.SetCountUninitialized(uiNewStringLength + 1);
 }
 
-inline void xiiStringBuilder::ToLower()
+XII_FORCE_INLINE void xiiStringBuilder::ToLower()
 {
   const xiiUInt32 uiNewStringLength = xiiStringUtils::ToLowerString(&m_Data[0]);
 
@@ -198,7 +198,7 @@ inline void xiiStringBuilder::ToLower()
   m_Data.SetCountUninitialized(uiNewStringLength + 1);
 }
 
-inline void xiiStringBuilder::ChangeCharacter(iterator& it, xiiUInt32 uiCharacter)
+XII_FORCE_INLINE void xiiStringBuilder::ChangeCharacter(iterator& it, xiiUInt32 uiCharacter)
 {
   XII_ASSERT_DEV(it.IsValid(), "The given character iterator does not point to a valid character.");
   XII_ASSERT_DEV(it.GetData() >= GetData() && it.GetData() < GetData() + GetElementCount(),

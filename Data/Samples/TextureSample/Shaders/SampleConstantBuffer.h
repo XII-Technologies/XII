@@ -7,5 +7,3 @@ CONSTANT_BUFFER(xiiTextureSampleConstants, 2)
   MAT4(ModelMatrix);
   MAT4(ViewProjectionMatrix);
 };
-
-

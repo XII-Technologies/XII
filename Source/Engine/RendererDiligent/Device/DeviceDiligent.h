@@ -6,26 +6,38 @@
 #include <RendererDiligent/RendererDiligentDLL.h>
 #include <RendererFoundation/Device/Device.h>
 
+namespace Diligent
+{
+  class ScopedQueryHelper;
+  class DurationQueryHelper;
+} // namespace Diligent
+
+struct xiiDiligentMemoryAllocator;
+class xiiGALPassDiligent;
+
 typedef xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, (Diligent::TEXTURE_FORMAT)0> xiiGALFormatLookupEntryDiligent;
 typedef xiiGALFormatLookupTable<xiiGALFormatLookupEntryDiligent>                       xiiGALFormatLookupTableDiligent;
 
 /// \brief The Diligent device implementation of the graphics abstraction layer.
 class XII_RENDERERDILIGENT_DLL xiiGALDeviceDiligent : public xiiGALDevice
 {
-protected:
+private:
+  friend xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description);
   xiiGALDeviceDiligent(const xiiGALDeviceCreationDescription& Description);
 
 public:
   virtual ~xiiGALDeviceDiligent();
 
 public:
-  Diligent::RefCntAutoPtr<Diligent::IRenderDevice>&  GetDevice();
-  Diligent::RefCntAutoPtr<Diligent::IDeviceContext>& GetImmediateContext();
-  Diligent::RefCntAutoPtr<Diligent::IEngineFactory>& GetFactory();
+  Diligent::IRenderDevice*  GetDevice();
+  Diligent::IDeviceContext* GetImmediateContext();
+  Diligent::IEngineFactory* GetFactory();
 
   const xiiGALFormatLookupTableDiligent& GetFormatLookupTable() const;
   const Diligent::RENDER_DEVICE_TYPE&    GetDeviceType() const;
   const xiiInt32                         GetValidationLevel() const;
+
+  void ReportLiveGpuObjects();
 
   void FlushDeadObjects();
 
@@ -109,21 +121,6 @@ protected:
 protected:
   friend class xiiGALCommandEncoderImplDiligent;
 
-  Diligent::IBuffer*  FindTempBuffer(xiiUInt32 uiSize);
-  Diligent::ITexture* FindTempTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiGALResourceFormat::Enum format);
-  void                FreeTempResources(xiiUInt64 uiFrame);
-
-  struct TempResourceType
-  {
-    enum Enum
-    {
-      Buffer,
-      Texture,
-
-      ENUM_COUNT
-    };
-  };
-
   void FillFormatLookupTable();
 
   bool IsFenceReachedPlatform(Diligent::IDeviceContext* pContext, Diligent::IQuery* pFence);
@@ -134,32 +131,36 @@ protected:
   Diligent::RefCntAutoPtr<Diligent::IEngineFactory>                  m_pEngineFactory;
   Diligent::RefCntAutoPtr<Diligent::IRenderDevice>                   m_pDevice;
   xiiDynamicArray<Diligent::RefCntAutoPtr<Diligent::IDeviceContext>> m_pDeviceContexts;
-  xiiUInt32                                                          m_NumImmediateContexts = 0;
+  xiiUInt32                                                          m_uiNumImmediateContexts = 0;
   Diligent::GraphicsAdapterInfo                                      m_AdapterAttribs;
   xiiDynamicArray<Diligent::DisplayModeAttribs>                      m_DisplayModes;
 
-  xiiInt32               m_ValidationLevel = -1;
-  xiiUInt32              m_AdapterId       = Diligent::DEFAULT_ADAPTER_ID;
-  Diligent::ADAPTER_TYPE m_AdapterType     = Diligent::ADAPTER_TYPE_UNKNOWN;
-  xiiString              m_AdapterDetailsString;
+  xiiInt32               m_iValidationLevel = -1;
+  xiiUInt32              m_uiAdapterId      = Diligent::DEFAULT_ADAPTER_ID;
+  Diligent::ADAPTER_TYPE m_AdapterType      = Diligent::ADAPTER_TYPE_UNKNOWN;
+  xiiString              m_sAdapterDetailsString;
 
   xiiGALFormatLookupTableDiligent m_FormatLookupTable;
 
-  struct UsedTempResource
-  {
-    XII_DECLARE_POD_TYPE();
+  std::unique_ptr<xiiDiligentMemoryAllocator> m_pMemoryAllocator;
 
-    Diligent::IDeviceObject* m_pResource;
-    xiiUInt64                m_uiFrame;
-    xiiUInt32                m_uiHash;
-  };
+  xiiUniquePtr<xiiGALPassDiligent> m_pDefaultPass;
 
-  xiiMap<xiiUInt32, xiiDynamicArray<Diligent::IDeviceObject*>, xiiCompareHelper<xiiUInt32>, xiiLocalAllocatorWrapper> m_FreeTempResources[TempResourceType::ENUM_COUNT];
-  xiiDeque<UsedTempResource, xiiLocalAllocatorWrapper>                                                                m_UsedTempResources[TempResourceType::ENUM_COUNT];
+  xiiUniquePtr<Diligent::ScopedQueryHelper>   m_pPipelineStatsQuery;
+  xiiUniquePtr<Diligent::ScopedQueryHelper>   m_pOcclusionQuery;
+  xiiUniquePtr<Diligent::ScopedQueryHelper>   m_pDurationQuery;
+  xiiUniquePtr<Diligent::DurationQueryHelper> m_pDurationFromTimestamps;
 
+  Diligent::QueryDataPipelineStatistics m_PipelineStatsData;
+  Diligent::QueryDataOcclusion          m_OcclusionData;
+  Diligent::QueryDataDuration           m_DurationData;
+  double                                m_DurationFromTimestamps = 0;
+
+#if XII_ENABLED(XII_USE_PROFILING)
   struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
   struct GPUTimingScope* m_pPipelineTimingScope = nullptr;
   struct GPUTimingScope* m_pPassTimingScope     = nullptr;
+#endif
 
   xiiTime m_SyncTimeDiff;
   bool    m_bSyncTimeNeeded = true;

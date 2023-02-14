@@ -17,17 +17,17 @@ xiiResult xiiGALQueryDX11::InitPlatform(xiiGALDevice* pDevice)
   xiiGALDeviceDX11* pDXDevice = static_cast<xiiGALDeviceDX11*>(pDevice);
 
   D3D11_QUERY_DESC desc;
-  if (m_Description.m_type == xiiGALQueryType::AnySamplesPassed)
+  if (m_Description.m_Type == xiiGALQueryType::BinaryOcclusion)
     desc.MiscFlags = m_Description.m_bDrawIfUnknown ? D3D11_QUERY_MISC_PREDICATEHINT : 0;
   else
     desc.MiscFlags = 0;
 
-  switch (m_Description.m_type)
+  switch (m_Description.m_Type)
   {
-    case xiiGALQueryType::NumSamplesPassed:
+    case xiiGALQueryType::Occlusion:
       desc.Query = D3D11_QUERY_OCCLUSION;
       break;
-    case xiiGALQueryType::AnySamplesPassed:
+    case xiiGALQueryType::BinaryOcclusion:
       desc.Query = D3D11_QUERY_OCCLUSION_PREDICATE;
       break;
     default:

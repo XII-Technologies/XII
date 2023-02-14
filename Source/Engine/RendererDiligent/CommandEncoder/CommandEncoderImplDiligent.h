@@ -7,6 +7,10 @@
 #include <RendererFoundation/Resources/RenderTargetSetup.h>
 
 class xiiGALDeviceDiligent;
+class xiiGALBufferDiligent;
+class xiiGALShaderDiligent;
+class xiiGALResourceViewDiligent;
+class xiiGALUnorderedAccessViewDiligent;
 
 class XII_RENDERERDILIGENT_DLL xiiGALCommandEncoderImplDiligent : public xiiGALCommandEncoderCommonPlatformInterface, public xiiGALCommandEncoderRenderPlatformInterface, public xiiGALCommandEncoderComputePlatformInterface
 {
@@ -70,7 +74,7 @@ public:
 
   // xiiGALCommandEncoderRenderPlatformInterface
   void BeginRendering(const xiiGALRenderingSetup& renderingSetup);
-  void BeginCompute();
+  void EndRendering();
 
   // Draw functions
 
@@ -107,8 +111,14 @@ public:
   // xiiGALCommandEncoderComputePlatformInterface
   // Dispatch
 
+  void BeginCompute();
+  void EndCompute();
+
   virtual void DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) override;
   virtual void DispatchIndirectPlatform(const xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override;
+
+  void MarkDirty();
+  void Reset();
 
 protected:
   virtual void FlushDeferredStateChanges();
@@ -120,5 +130,58 @@ private:
   xiiGALDeviceDiligent& m_GALDeviceDiligent;
   xiiGALCommandEncoder* m_pOwner = nullptr;
 
-  Diligent::RefCntAutoPtr<Diligent::IDeviceContext>& m_pContext;
+  Diligent::IDeviceContext* m_pContext;
+
+  // Graphics pipeline state creation
+  Diligent::GraphicsPipelineStateCreateInfo                 m_PipelineStateDesc;
+  Diligent::RefCntAutoPtr<Diligent::IPipelineState>         m_pPipelineStateGraphics;
+  Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> m_pShaderResourceBindingGraphics;
+
+  // Compute pipeline state creation
+  Diligent::ComputePipelineStateCreateInfo                  m_PipelineStateComputeDesc;
+  Diligent::RefCntAutoPtr<Diligent::IPipelineState>         m_pPipelineStateCompute;
+  Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> m_pShaderResourceBindingCompute;
+
+  // Pipeline State
+
+  // Cache flags
+  bool m_bPipelineStateModified    = true;
+  bool m_bViewportModified         = true;
+  bool m_bIndexBufferModified      = false;
+  bool m_bDescriptorsModified      = false;
+  bool m_bComputePipelineRequested = false;
+
+  Diligent::Viewport m_Viewport;
+  Diligent::Rect     m_ScissorRect;
+  bool               m_bScissorEnabled = false;
+
+  // Bound objects for deferred state flushes
+  Diligent::IBuffer*   m_pIndexBuffer      = nullptr;
+  Diligent::VALUE_TYPE m_IndexBufferFormat = Diligent::VT_UNDEFINED;
+
+  xiiGALBufferDiligent* m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiHybridArray<xiiGALResourceViewDiligent*, 16> m_pBoundShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
+  xiiGAL::ModifiedRange                           m_BoundShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiHybridArray<xiiGALUnorderedAccessViewDiligent*, 16> m_pBoundUnoderedAccessViews;
+  xiiGAL::ModifiedRange                                  m_pBoundUnoderedAccessViewsRange;
+
+  Diligent::ISampler*   m_pBoundSamplerStates[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundSamplerStatesRange[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiGALShaderDiligent* m_pCurrentShader                               = nullptr;
+  Diligent::IShader*    m_pBoundShaders[xiiGALShaderStage::ENUM_COUNT] = {};
+
+  xiiGALRenderTargetSetup m_RenderTargetSetup;
+  Diligent::ITextureView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
+  xiiUInt32               m_uiBoundRenderTargetCount                            = 0;
+  Diligent::ITextureView* m_pBoundDepthStencilTarget                            = nullptr;
+
+  Diligent::IBuffer*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundVertexBuffersRange;
+
+  xiiUInt64 m_VertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiUInt64 m_VertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 };

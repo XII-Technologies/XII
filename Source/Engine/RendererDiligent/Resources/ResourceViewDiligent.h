@@ -6,7 +6,11 @@
 class xiiGALResourceViewDiligent : public xiiGALResourceView
 {
 public:
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::IDeviceObject>& GetResourceView();
+  XII_ALWAYS_INLINE Diligent::IDeviceObject* GetResourceView();
+
+  XII_ALWAYS_INLINE Diligent::ITextureView* GetTextureView();
+
+  XII_ALWAYS_INLINE Diligent::IBufferView* GetBufferView();
 
 protected:
   friend class xiiGALDeviceDiligent;
@@ -20,7 +24,9 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::RefCntAutoPtr<Diligent::IDeviceObject> m_pResourceView;
+  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pTextureView;
+
+  Diligent::RefCntAutoPtr<Diligent::IBufferView> m_pBufferView;
 };
 
 #include <RendererDiligent/Resources/Implementation/ResourceViewDiligent_inl.h>

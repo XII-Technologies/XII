@@ -5,7 +5,7 @@
 #include <RendererDiligent/Resources/BufferDiligent.h>
 
 xiiGALBufferDiligent::xiiGALBufferDiligent(const xiiGALBufferCreationDescription& Description) :
-  xiiGALBuffer(Description), m_pBuffer(nullptr), m_IndexFormat(Diligent::TEX_FORMAT_UNKNOWN)
+  xiiGALBuffer(Description), m_pBuffer(nullptr), m_IndexFormat(Diligent::VT_UNDEFINED)
 {
 }
 
@@ -26,7 +26,7 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
 
     case xiiGALBufferType::IndexBuffer:
       BufferDesc.BindFlags = Diligent::BIND_INDEX_BUFFER;
-      m_IndexFormat        = m_Description.m_uiStructSize == 2 ? Diligent::TEX_FORMAT_R16_UINT : Diligent::TEX_FORMAT_R32_UINT;
+      m_IndexFormat        = m_Description.m_uiStructSize == 2 ? Diligent::VT_UINT16 : Diligent::VT_UINT32;
       break;
 
     case xiiGALBufferType::VertexBuffer:
@@ -78,7 +78,8 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
   {
     if (m_Description.m_ResourceAccess.IsImmutable())
     {
-      BufferDesc.Usage = Diligent::USAGE_IMMUTABLE;
+      BufferDesc.Usage          = Diligent::USAGE_IMMUTABLE;
+      BufferDesc.CPUAccessFlags = Diligent::CPU_ACCESS_NONE;
     }
     else
     {
@@ -94,10 +95,9 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
     }
   }
 
-  Diligent::BufferData InitialData;
-  InitialData.pData    = pInitialData.GetPtr();
-  InitialData.DataSize = pInitialData.GetCount();
-  pDeviceDiligent->GetDevice()->CreateBuffer(BufferDesc, pInitialData.IsEmpty() ? nullptr : &InitialData, &m_pBuffer);
+  m_InitialData.pData    = pInitialData.GetPtr();
+  m_InitialData.DataSize = pInitialData.GetCount();
+  pDeviceDiligent->GetDevice()->CreateBuffer(BufferDesc, pInitialData.IsEmpty() ? nullptr : &m_InitialData, &m_pBuffer);
 
   if (m_pBuffer == nullptr)
   {
@@ -110,10 +110,9 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
 
 xiiResult xiiGALBufferDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_RELEASE(m_pBuffer);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pBuffer);
 
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Resources_Implementation_BufferDiligent);

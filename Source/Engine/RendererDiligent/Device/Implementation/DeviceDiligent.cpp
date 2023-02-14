@@ -2,8 +2,13 @@
 
 #include <Core/System/Window.h>
 #include <Foundation/Configuration/Startup.h>
+#include <RendererFoundation/CommandEncoder/RenderCommandEncoder.h>
+#include <RendererFoundation/Device/DeviceFactory.h>
+#include <RendererFoundation/Profiling/Profiling.h>
+
 #include <RendererDiligent/CommandEncoder/CommandEncoderImplDiligent.h>
 #include <RendererDiligent/Device/DeviceDiligent.h>
+#include <RendererDiligent/Device/PassDiligent.h>
 #include <RendererDiligent/Device/SwapChainDiligent.h>
 #include <RendererDiligent/Resources/BufferDiligent.h>
 #include <RendererDiligent/Resources/QueryDiligent.h>
@@ -15,9 +20,9 @@
 #include <RendererDiligent/Shader/VertexDeclarationDiligent.h>
 #include <RendererDiligent/State/StateDiligent.h>
 #include <RendererDiligent/Utilities/DiligentConversions.h>
-#include <RendererFoundation/CommandEncoder/RenderCommandEncoder.h>
-#include <RendererFoundation/Device/DeviceFactory.h>
-#include <RendererFoundation/Profiling/Profiling.h>
+
+#include <Graphics/GraphicsTools/interface/DurationQueryHelper.hpp>
+#include <Graphics/GraphicsTools/interface/ScopedQueryHelper.hpp>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
@@ -43,8 +48,76 @@
 #  include <Graphics/GraphicsEngineMetal/interface/EngineFactoryMtl.h>
 #endif
 
+struct xiiDiligentMemoryAllocator : public Diligent::IMemoryAllocator
+{
+public:
+  xiiDiligentMemoryAllocator(const char* szName) :
+    m_ProxyAlloc(szName, xiiFoundation::GetDefaultAllocator())
+  {
+  }
+
+  /// Allocates block of memory
+  virtual void* Allocate(size_t Size, const Diligent::Char* dbgDescription, const char* dbgFileName, const Diligent::Int32 dbgLineNumber) override
+  {
+    return m_ProxyAlloc.Allocate(Size, 8u);
+  }
+
+  /// Releases memory
+  virtual void Free(void* Ptr) override
+  {
+    m_ProxyAlloc.Deallocate(Ptr);
+  }
+
+  xiiProxyAllocator m_ProxyAlloc;
+};
+
+void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity,
+                    const Diligent::Char*                 Message,
+                    const Diligent::Char*                 Function,
+                    const Diligent::Char*                 File,
+                    int                                   Line)
+{
+  // Format Diligent string as it is in printf format
+  switch (Severity)
+  {
+    case Diligent::DEBUG_MESSAGE_SEVERITY_INFO:
+      xiiLog::Info("{}", Message);
+      break;
+    case Diligent::DEBUG_MESSAGE_SEVERITY_WARNING:
+      xiiLog::Warning("{}", Message);
+      break;
+    case Diligent::DEBUG_MESSAGE_SEVERITY_ERROR:
+      xiiLog::SeriousWarning("{}", Message);
+      break;
+    case Diligent::DEBUG_MESSAGE_SEVERITY_FATAL_ERROR:
+      xiiLog::Error("{}", Message);
+      break;
+  }
+}
+
+xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
+{
+  return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
+}
+
+// clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(RendererDiligent, DeviceFactory)
+
+ON_CORESYSTEMS_STARTUP
+{
+  xiiGALDeviceFactory::RegisterCreatorFunc("Diligent", &CreateDiligentDevice, "D3D_SM60", "xiiShaderCompiler");
+}
+
+ON_CORESYSTEMS_SHUTDOWN
+{
+  xiiGALDeviceFactory::UnregisterCreatorFunc("Diligent");
+}
+
+XII_END_SUBSYSTEM_DECLARATION;
+// clang-format on
+
 xiiGALDeviceDiligent::xiiGALDeviceDiligent(const xiiGALDeviceCreationDescription& Description) :
-  xiiGALDevice(Description)
+  xiiGALDevice(Description), m_pDevice(nullptr), m_pEngineFactory(nullptr)
 {
 }
 
@@ -56,7 +129,19 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
 {
   using namespace Diligent;
 
+  XII_LOG_BLOCK("xiiGALDeviceDiligent::InitPlatform");
+
   m_DeviceType = xiiDiligentUtils::GetDiligentRenderDeviceType();
+
+  m_pMemoryAllocator = std::make_unique<xiiDiligentMemoryAllocator>("Diligent Engine Memory Allocator");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+  m_iValidationLevel = 2;
+#elif XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  m_iValidationLevel = 1;
+#else
+  m_iValidationLevel = 0;
+#endif
 
   xiiUInt32 NumImmediateContexts = 0;
 
@@ -69,9 +154,9 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
     if (NumAdapters > 0)
       pFactory->EnumerateAdapters(GraphicsAPIVersion, NumAdapters, Adapters.GetData());
     else
-      LOG_ERROR_AND_THROW("Failed to find compatible hardware adapters");
+      XII_ASSERT_DEV(false, "Failed to find compatible hardware adapters");
 
-    auto AdapterId = m_AdapterId;
+    auto AdapterId = m_uiAdapterId;
     if (AdapterId != Diligent::DEFAULT_ADAPTER_ID)
     {
       if (AdapterId < Adapters.GetCount())
@@ -80,7 +165,7 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       }
       else
       {
-        LOG_ERROR_MESSAGE("Adapter ID (", AdapterId, ") is invalid. Only ", Adapters.GetCount(), " compatible ", (Adapters.GetCount() == 1 ? "adapter" : "adapters"), " present in the system");
+        xiiLog::Info("Adapter ID ('{0}') is invalid. Only {1} compatible {2} present in the system.", AdapterId, Adapters.GetCount(), (Adapters.GetCount() == 1 ? "adapter" : "adapters"));
         AdapterId = Diligent::DEFAULT_ADAPTER_ID;
       }
     }
@@ -95,8 +180,9 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
           break;
         }
       }
+
       if (AdapterId == Diligent::DEFAULT_ADAPTER_ID)
-        LOG_WARNING_MESSAGE("Unable to find the requested adapter type. Using default adapter.");
+        xiiLog::Warning("Unable to find the requested adapter type. Using default adapter.");
     }
 
     if (AdapterId == Diligent::DEFAULT_ADAPTER_ID)
@@ -134,7 +220,7 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
     if (AdapterId != Diligent::DEFAULT_ADAPTER_ID)
     {
       AdapterAttribs = Adapters[AdapterId];
-      LOG_INFO_MESSAGE("Using adapter ", AdapterId, ": '", AdapterAttribs.Description, "'");
+      xiiLog::Info("Using Adapter {0}: '{1}'", AdapterId, AdapterAttribs.Description);
     }
 
     return AdapterId;
@@ -156,15 +242,26 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       auto* pFactoryD3D11 = GetEngineFactoryD3D11();
       m_pEngineFactory    = pFactoryD3D11;
 
+      // Register custom message callback
+      m_pEngineFactory->SetMessageCallback(XIILogDiligent);
+
       Diligent::EngineD3D11CreateInfo EngineCI;
       EngineCI.GraphicsAPIVersion = {11, 0};
+      EngineCI.pRawMemAllocator   = m_pMemoryAllocator.get();
+      EngineCI.EnableValidation   = m_Description.m_bDebugDevice;
+
+      EngineCI.Features.OcclusionQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.BinaryOcclusionQueries    = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
 
 #  ifdef DILIGENT_DEBUG
       EngineCI.SetValidationLevel(VALIDATION_LEVEL_2);
 #  endif
 
-      if (m_ValidationLevel >= 0)
-        EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_ValidationLevel));
+      if (m_iValidationLevel >= 0)
+        EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
 
       EngineCI.AdapterId = FindAdapter(pFactoryD3D11, EngineCI.GraphicsAPIVersion, m_AdapterAttribs);
 
@@ -181,11 +278,8 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       ppContexts.SetCount(size_t{NumImmediateContexts} + size_t{EngineCI.NumDeferredContexts});
       pFactoryD3D11->CreateDeviceAndContextsD3D11(EngineCI, &m_pDevice, ppContexts.GetData());
 
-      if (!m_pDevice)
-      {
-        LOG_ERROR_AND_THROW("Unable to initialize Diligent Engine in Direct3D11 mode. The API may not be available, "
-                            "or required features may not be supported by this GPU/driver/OS version.");
-      }
+      XII_ASSERT_DEV(m_pDevice != nullptr, "Unable to initialize Diligent Engine in Direct3D11 mode. The API may not be available, "
+                                           "or required features may not be supported by this GPU/driver/OS version.");
     }
     break;
 #endif
@@ -199,16 +293,23 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
 #  endif
 
       auto* pFactoryD3D12 = GetEngineFactoryD3D12();
-      if (!pFactoryD3D12->LoadD3D12())
-      {
-        LOG_ERROR_AND_THROW("Failed to load Direct3D12");
-      }
+      XII_ASSERT_DEV(pFactoryD3D12->LoadD3D12() == Diligent::True, "Failed to load Direct3D12");
       m_pEngineFactory = pFactoryD3D12;
 
+      // Register custom message callback
+      m_pEngineFactory->SetMessageCallback(XIILogDiligent);
+
       Diligent::EngineD3D12CreateInfo EngineCI;
-      EngineCI.GraphicsAPIVersion = {11, 0};
-      if (m_ValidationLevel >= 0)
-        EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_ValidationLevel));
+      EngineCI.GraphicsAPIVersion                 = {11, 0};
+      EngineCI.pRawMemAllocator                   = m_pMemoryAllocator.get();
+      EngineCI.EnableValidation                   = m_Description.m_bDebugDevice;
+      EngineCI.Features.OcclusionQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.BinaryOcclusionQueries    = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      if (m_iValidationLevel >= 0)
+        EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
 
       try
       {
@@ -217,8 +318,9 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       catch (...)
       {
 #  if D3D11_SUPPORTED
-        LOG_ERROR_MESSAGE("Failed to find Direct3D12-compatible hardware adapters. Attempting to initialize the engine in Direct3D11 mode.");
-        m_DeviceType = Diligent::RENDER_DEVICE_TYPE_D3D11;
+        xiiLog::Error("Failed to find Direct3D12-compatible hardware adapters. Attempting to initialize the engine in Direct3D11 mode.");
+        xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D11;
+        m_DeviceType               = Diligent::RENDER_DEVICE_TYPE_D3D11;
         goto CreateDeviceD3D11;
 #  else
         throw;
@@ -237,11 +339,9 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       NumImmediateContexts = xiiMath::Max(1u, EngineCI.NumImmediateContexts);
       ppContexts.SetCount(NumImmediateContexts + EngineCI.NumDeferredContexts);
       pFactoryD3D12->CreateDeviceAndContextsD3D12(EngineCI, &m_pDevice, ppContexts.GetData());
-      if (!m_pDevice)
-      {
-        LOG_ERROR_AND_THROW("Unable to initialize Diligent Engine in Direct3D12 mode. The API may not be available, "
-                            "or required features may not be supported by this GPU/driver/OS version.");
-      }
+
+      XII_ASSERT_DEV(m_pDevice != nullptr, "Unable to initialize Diligent Engine in Direct3D12 mode. The API may not be available, "
+                                           "or required features may not be supported by this GPU/driver/OS version.");
     }
     break;
 #endif
@@ -254,6 +354,13 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       // Load the dll and import GetEngineFactoryOpenGL() function
       auto GetEngineFactoryOpenGL = Diligent::LoadGraphicsEngineOpenGL();
 #  endif
+
+      auto* pFactoryGL = GetEngineFactoryOpenGL();
+      XII_ASSERT_DEV(pFactoryGL != nullptr, "Failed To Load OpenGL");
+      m_pEngineFactory = pFactoryGL;
+
+      // Register custom message callback
+      m_pEngineFactory->SetMessageCallback(XIILogDiligent);
 
       NumImmediateContexts = 1; // + EngineCI.NumImmediateContexts which is zero
       ppContexts.SetCount(NumImmediateContexts);
@@ -269,9 +376,24 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       auto GetEngineFactoryVk = Diligent::LoadGraphicsEngineVk();
 #  endif
 
+      auto* pFactoryVk = GetEngineFactoryVk();
+      XII_ASSERT_DEV(pFactoryVk != nullptr, "Failed to load Vulkan");
+      m_pEngineFactory = pFactoryVk;
+
+      // Register custom message callback
+      m_pEngineFactory->SetMessageCallback(XIILogDiligent);
+
       Diligent::EngineVkCreateInfo EngineCI;
-      if (m_ValidationLevel >= 0)
-        EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_ValidationLevel));
+      EngineCI.pRawMemAllocator                   = m_pMemoryAllocator.get();
+      EngineCI.EnableValidation                   = m_Description.m_bDebugDevice;
+      EngineCI.Features.OcclusionQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.BinaryOcclusionQueries    = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+
+      if (m_iValidationLevel >= 0)
+        EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
 
       const char* const ppIgnoreDebugMessages[] = //
         {
@@ -282,19 +404,14 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       EngineCI.ppIgnoreDebugMessageNames = ppIgnoreDebugMessages;
       EngineCI.IgnoreDebugMessageCount   = _countof(ppIgnoreDebugMessages);
 
-      auto* pFactoryVk = GetEngineFactoryVk();
-      m_pEngineFactory = pFactoryVk;
-
       EngineCI.AdapterId = FindAdapter(pFactoryVk, EngineCI.GraphicsAPIVersion, m_AdapterAttribs);
 
       NumImmediateContexts = xiiMath::Max(1u, EngineCI.NumImmediateContexts);
       ppContexts.SetCount(NumImmediateContexts + EngineCI.NumDeferredContexts);
       pFactoryVk->CreateDeviceAndContextsVk(EngineCI, &m_pDevice, ppContexts.GetData());
-      if (!m_pDevice)
-      {
-        LOG_ERROR_AND_THROW("Unable to initialize Diligent Engine in Vulkan mode. The API may not be available, "
-                            "or required features may not be supported by this GPU/driver/OS version.");
-      }
+
+      XII_ASSERT_DEV(m_pDevice != nullptr, "Unable to initialize Diligent Engine in Vulkan mode. The API may not be available, "
+                                           "or required features may not be supported by this GPU/driver/OS version.");
     }
     break;
 #endif
@@ -303,8 +420,14 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
     case Diligent::RENDER_DEVICE_TYPE_METAL:
     {
       Diligent::EngineMtlCreateInfo EngineCI;
-      if (m_ValidationLevel >= 0)
-        EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_ValidationLevel));
+      EngineCI.Features.OcclusionQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.BinaryOcclusionQueries    = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+
+      if (m_iValidationLevel >= 0)
+        EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
 
       auto* pFactoryMtl = GetEngineFactoryMtl();
       m_pEngineFactory  = pFactoryMtl;
@@ -312,11 +435,9 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       NumImmediateContexts = xiiMath::Max(1u, EngineCI.NumImmediateContexts);
       ppContexts.resize(NumImmediateContexts + EngineCI.NumDeferredContexts);
       pFactoryMtl->CreateDeviceAndContextsMtl(EngineCI, &m_pDevice, ppContexts.GetData());
-      if (!m_pDevice)
-      {
-        LOG_ERROR_AND_THROW("Unable to initialize Diligent Engine in Metal mode. The API may not be available, "
-                            "or required features may not be supported by this GPU/driver/OS version.");
-      }
+
+      XII_ASSERT_DEV(m_pDevice != nullptr, "Unable to initialize Diligent Engine in Metal mode. The API may not be available, "
+                                           "or required features may not be supported by this GPU/driver/OS version.");
     }
     break;
 #endif
@@ -324,50 +445,99 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  m_NumImmediateContexts = NumImmediateContexts;
+  m_uiNumImmediateContexts = NumImmediateContexts;
   m_pDeviceContexts.SetCount(ppContexts.GetCount());
   for (xiiUInt32 i = 0; i < ppContexts.GetCount(); ++i)
     m_pDeviceContexts[i].Attach(ppContexts[i]);
 
+  // Create default pass
+  m_pDefaultPass = XII_NEW(&m_Allocator, xiiGALPassDiligent, *this);
+
   // Fill lookup table
   FillFormatLookupTable();
+
+  xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
+  xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
+
+  // Check query support
+  const auto& Features = m_pDevice->GetDeviceInfo().Features;
+  if (Features.PipelineStatisticsQueries)
+  {
+    Diligent::QueryDesc queryDesc;
+    queryDesc.Name        = "Pipeline statistics query";
+    queryDesc.Type        = QUERY_TYPE_PIPELINE_STATISTICS;
+    m_pPipelineStatsQuery = XII_NEW(&m_Allocator, ScopedQueryHelper, m_pDevice, queryDesc, 2);
+  }
+
+  if (Features.OcclusionQueries)
+  {
+    Diligent::QueryDesc queryDesc;
+    queryDesc.Name    = "Occlusion query";
+    queryDesc.Type    = QUERY_TYPE_OCCLUSION;
+    m_pOcclusionQuery = XII_NEW(&m_Allocator, ScopedQueryHelper, m_pDevice, queryDesc, 2);
+  }
+
+  if (Features.DurationQueries)
+  {
+    Diligent::QueryDesc queryDesc;
+    queryDesc.Name   = "Duration query";
+    queryDesc.Type   = QUERY_TYPE_DURATION;
+    m_pDurationQuery = XII_NEW(&m_Allocator, ScopedQueryHelper, m_pDevice, queryDesc, 2);
+  }
+
+  if (Features.TimestampQueries)
+  {
+    m_pDurationFromTimestamps = XII_NEW(&m_Allocator, DurationQueryHelper, m_pDevice, 2);
+  }
+
+  m_SyncTimeDiff.SetZero();
+
+  xiiGALWindowSwapChain::SetFactoryMethod([this](const xiiGALWindowSwapChainCreationDescription& desc) -> xiiGALSwapChainHandle { return CreateSwapChain([this, &desc](xiiAllocatorBase* pAllocator) -> xiiGALSwapChain* { return XII_NEW(pAllocator, xiiGALSwapChainDiligent, desc); }); });
 
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 {
-  for (xiiUInt32 type = 0; type < TempResourceType::ENUM_COUNT; ++type)
-  {
-    for (auto it = m_FreeTempResources[type].GetIterator(); it.IsValid(); ++it)
-    {
-      xiiDynamicArray<Diligent::IDeviceObject*>& resources = it.Value();
-      for (auto pResource : resources)
-      {
-        XII_GAL_DILIGENT_RELEASE(pResource);
-      }
-    }
-    m_FreeTempResources[type].Clear();
+  xiiGALWindowSwapChain::SetFactoryMethod({});
 
-    for (auto& tempResource : m_UsedTempResources[type])
-    {
-      XII_GAL_DILIGENT_RELEASE(tempResource.m_pResource);
-    }
-    m_UsedTempResources[type].Clear();
-  }
+  m_pPipelineStatsQuery.Clear();
+  m_pOcclusionQuery.Clear();
+  m_pDurationQuery.Clear();
+  m_pDurationFromTimestamps.Clear();
 
   if (!m_pDeviceContexts.IsEmpty())
   {
-    for (xiiUInt32 q = 0; q < m_NumImmediateContexts; ++q)
+    for (xiiUInt32 q = 0; q < m_uiNumImmediateContexts; ++q)
+    {
       m_pDeviceContexts[q]->Flush();
+
+      XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDeviceContexts[q]);
+    }
 
     m_pDeviceContexts.Clear();
   }
-  m_NumImmediateContexts = 0;
 
-  XII_GAL_DILIGENT_RELEASE(m_pDevice);
+  m_uiNumImmediateContexts = 0;
+
+  m_pDefaultPass = nullptr;
+
+  m_pDevice->ReleaseStaleResources(true);
+
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDevice);
+
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pEngineFactory);
+
+  m_pMemoryAllocator.reset();
+
+  ReportLiveGpuObjects();
 
   return XII_SUCCESS;
+}
+
+void xiiGALDeviceDiligent::ReportLiveGpuObjects()
+{
+  // Implement detailed live GPU Object information
 }
 
 void xiiGALDeviceDiligent::FlushDeadObjects()
@@ -379,24 +549,85 @@ void xiiGALDeviceDiligent::FlushDeadObjects()
 
 void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapChain* pSwapChain)
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  XII_PROFILE_SCOPE("BeginPipelinePlatform");
+
+  if (pSwapChain)
+  {
+    pSwapChain->AcquireNextRenderTarget(this);
+  }
+
+  // Begin supported queries
+  {
+    if (m_pPipelineStatsQuery)
+      m_pPipelineStatsQuery->Begin(GetImmediateContext());
+
+    if (m_pOcclusionQuery)
+      m_pOcclusionQuery->Begin(GetImmediateContext());
+
+    if (m_pDurationFromTimestamps)
+      m_pDurationFromTimestamps->Begin(GetImmediateContext());
+
+    if (m_pDurationQuery)
+      m_pDurationQuery->Begin(GetImmediateContext());
+  }
+
+#if XII_ENABLED(XII_USE_PROFILING)
+  m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), szName);
+#endif
 }
 
 void xiiGALDeviceDiligent::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  XII_PROFILE_SCOPE("EndPipelinePlatform");
+
+  // End queries
+  {
+    if (m_pDurationFromTimestamps)
+      m_pDurationFromTimestamps->End(GetImmediateContext(), m_DurationFromTimestamps);
+
+    // Note that recording the query itself may take measurable amount of time, so
+    // if m_pDurationFromTimestamps and m_pDurationQuery queries are nested, the results
+    // may noticeably differ.
+    if (m_pDurationQuery)
+      m_pDurationQuery->End(GetImmediateContext(), &m_DurationData, sizeof(m_DurationData));
+
+    if (m_pOcclusionQuery)
+      m_pOcclusionQuery->End(GetImmediateContext(), &m_OcclusionData, sizeof(m_OcclusionData));
+
+    if (m_pPipelineStatsQuery)
+      m_pPipelineStatsQuery->End(GetImmediateContext(), &m_PipelineStatsData, sizeof(m_PipelineStatsData));
+  }
+
+#if XII_ENABLED(XII_USE_PROFILING)
+  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pPipelineTimingScope);
+#endif
+
+  if (pSwapChain)
+  {
+    pSwapChain->PresentRenderTarget(this);
+  }
+
+  // Render context is reset on every end pipeline so it will re-submit all state change for the next render pass. Thus it is safe at this point to do a full reset.
+  // Technically don't have to reset here, MarkDirty would also be fine but we do need to do a Reset at the end of the frame as pointers held by the xiiGALCommandEncoderImplVulkan may not be valid in the next frame.
+  m_pDefaultPass->Reset();
 }
 
 xiiGALPass* xiiGALDeviceDiligent::BeginPassPlatform(const char* szName)
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+#if XII_ENABLED(XII_USE_PROFILING)
+  m_pPassTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), szName);
+#endif
 
-  return nullptr;
+  return m_pDefaultPass.Borrow();
 }
 
 void xiiGALDeviceDiligent::EndPassPlatform(xiiGALPass* pPass)
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  XII_ASSERT_DEV(m_pDefaultPass.Borrow() == pPass, "Invalid pass");
+
+#if XII_ENABLED(XII_USE_PROFILING)
+  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pPassTimingScope);
+#endif
 }
 
 // State creation functions
@@ -660,13 +891,21 @@ void xiiGALDeviceDiligent::DestroyVertexDeclarationPlatform(xiiGALVertexDeclarat
 
 xiiGALTimestampHandle xiiGALDeviceDiligent::GetTimestampPlatform()
 {
-  // TODO
-  return {0, 0};
+  return {(xiiUInt64)-1, GetImmediateContext()->GetFrameNumber()};
 }
 
 xiiResult xiiGALDeviceDiligent::GetTimestampResultPlatform(xiiGALTimestampHandle hTimestamp, xiiTime& result)
 {
-  return XII_FAILURE;
+  if (m_DurationData.Frequency == 0)
+  {
+    result.SetZero();
+  }
+  else
+  {
+    result = xiiTime::Seconds(m_DurationFromTimestamps * m_DurationData.Frequency) + m_SyncTimeDiff;
+  }
+
+  return XII_SUCCESS;
 }
 
 // Swap chain functions
@@ -676,12 +915,22 @@ xiiResult xiiGALDeviceDiligent::GetTimestampResultPlatform(xiiGALTimestampHandle
 
 void xiiGALDeviceDiligent::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
+
+#if XII_ENABLED(XII_USE_PROFILING)
+  xiiStringBuilder sb;
+  sb.Format("Frame {}", uiRenderFrame);
+  m_pFrameTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), sb);
+#endif
 }
 
 void xiiGALDeviceDiligent::EndFramePlatform()
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
+
+#if XII_ENABLED(XII_USE_PROFILING)
+  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pFrameTimingScope);
+#endif
 }
 
 void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
@@ -697,13 +946,13 @@ void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
 
   const Diligent::RenderDeviceInfo& deviceInfo = GetDevice()->GetDeviceInfo();
   {
-    m_Capabilities.m_bMultithreadedResourceCreation = deviceInfo.Features.MultithreadedResourceCreation;
+    m_Capabilities.m_bMultithreadedResourceCreation = deviceInfo.Features.MultithreadedResourceCreation == Diligent::DEVICE_FEATURE_STATE_ENABLED;
     m_Capabilities.m_bB5G6R5Textures                = true; // TODO How to check?
     m_Capabilities.m_bNoOverwriteBufferUpdate       = true; // TODO How to check?
 
     m_Capabilities.m_bShaderStageSupported[xiiGALShaderStage::VertexShader]   = true;
-    m_Capabilities.m_bShaderStageSupported[xiiGALShaderStage::HullShader]     = adapterInfo.Features.Tessellation == Diligent::DEVICE_FEATURE_STATE_ENABLED;
-    m_Capabilities.m_bShaderStageSupported[xiiGALShaderStage::DomainShader]   = adapterInfo.Features.Tessellation == Diligent::DEVICE_FEATURE_STATE_ENABLED;
+    m_Capabilities.m_bShaderStageSupported[xiiGALShaderStage::HullShader]     = true;
+    m_Capabilities.m_bShaderStageSupported[xiiGALShaderStage::DomainShader]   = true;
     m_Capabilities.m_bShaderStageSupported[xiiGALShaderStage::GeometryShader] = adapterInfo.Features.GeometryShaders == Diligent::DEVICE_FEATURE_STATE_ENABLED;
     m_Capabilities.m_bShaderStageSupported[xiiGALShaderStage::PixelShader]    = true;
     m_Capabilities.m_bShaderStageSupported[xiiGALShaderStage::ComputeShader]  = adapterInfo.Features.ComputeShaders == Diligent::DEVICE_FEATURE_STATE_ENABLED;
@@ -718,156 +967,20 @@ void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
     m_Capabilities.m_uiMaxTextureDimension   = static_cast<xiiUInt16>(adapterInfo.Texture.MaxTexture1DDimension);
     m_Capabilities.m_uiMaxCubemapDimension   = static_cast<xiiUInt16>(adapterInfo.Texture.MaxTextureCubeDimension);
     m_Capabilities.m_uiMax3DTextureDimension = static_cast<xiiUInt16>(adapterInfo.Texture.MaxTexture3DDimension);
-    m_Capabilities.m_uiMaxRendertargets      = 8; // See XII_GAL_MAX_RENDERTARGET_COUNT
+    m_Capabilities.m_uiMaxRendertargets      = Diligent::MAX_RENDER_TARGETS;
     m_Capabilities.m_bAlphaToCoverage        = true;
 
-    // m_Capabilities.m_uiUAVCount                          = ;
-    // m_Capabilities.m_uiMaxAnisotropy                     = ;
-    // m_Capabilities.m_bVertexShaderRenderTargetArrayIndex = ;
+    m_Capabilities.m_uiUAVCount                          = 8;
+    m_Capabilities.m_uiMaxAnisotropy                     = 16;
+    m_Capabilities.m_bVertexShaderRenderTargetArrayIndex = false; // TODO How to check?
   }
 }
 
 void xiiGALDeviceDiligent::WaitIdlePlatform()
 {
+  DestroyDeadObjects();
+
   m_pDevice->IdleGPU();
-}
-
-Diligent::IBuffer* xiiGALDeviceDiligent::FindTempBuffer(xiiUInt32 uiSize)
-{
-  const xiiUInt32 uiExpGrowthLimit = 16 * 1024 * 1024;
-
-  uiSize = xiiMath::Max(uiSize, 256U);
-  if (uiSize < uiExpGrowthLimit)
-  {
-    uiSize = xiiMath::PowerOfTwo_Ceil(uiSize);
-  }
-  else
-  {
-    uiSize = xiiMemoryUtils::AlignSize(uiSize, uiExpGrowthLimit);
-  }
-
-  Diligent::IBuffer* pBuffer = nullptr;
-  auto               it      = m_FreeTempResources[TempResourceType::Buffer].Find(uiSize);
-  if (it.IsValid())
-  {
-    xiiDynamicArray<Diligent::IDeviceObject*>& resources = it.Value();
-    if (!resources.IsEmpty())
-    {
-      pBuffer = static_cast<Diligent::IBuffer*>(resources[0]);
-      resources.RemoveAtAndSwap(0);
-    }
-  }
-
-  if (pBuffer == nullptr)
-  {
-    Diligent::BufferDesc bufferDesc;
-    bufferDesc.Size              = uiSize;
-    bufferDesc.Usage             = Diligent::USAGE_STAGING;
-    bufferDesc.BindFlags         = Diligent::BIND_NONE;
-    bufferDesc.CPUAccessFlags    = Diligent::CPU_ACCESS_WRITE;
-    bufferDesc.MiscFlags         = Diligent::MISC_BUFFER_FLAG_NONE;
-    bufferDesc.ElementByteStride = 0;
-
-    Diligent::IBuffer* pBufferNew = nullptr;
-    GetDevice()->CreateBuffer(bufferDesc, nullptr, &pBufferNew);
-
-    if (pBufferNew == nullptr)
-    {
-      return nullptr;
-    }
-
-    pBuffer = pBufferNew;
-  }
-
-  auto& tempResource       = m_UsedTempResources[TempResourceType::Buffer].ExpandAndGetRef();
-  tempResource.m_pResource = pBuffer;
-  tempResource.m_uiFrame   = GetImmediateContext()->GetFrameNumber();
-  tempResource.m_uiHash    = uiSize;
-
-  return pBuffer;
-}
-
-Diligent::ITexture* xiiGALDeviceDiligent::FindTempTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiGALResourceFormat::Enum format)
-{
-  xiiUInt32 data[] = {uiWidth, uiHeight, uiDepth, (xiiUInt32)format};
-  xiiUInt32 uiHash = xiiHashingUtils::xxHash32(data, sizeof(data));
-
-  Diligent::ITexture* pTexture = nullptr;
-  auto                it       = m_FreeTempResources[TempResourceType::Texture].Find(uiHash);
-  if (it.IsValid())
-  {
-    xiiDynamicArray<Diligent::IDeviceObject*>& resources = it.Value();
-    if (!resources.IsEmpty())
-    {
-      pTexture = static_cast<Diligent::ITexture*>(resources[0]);
-      resources.RemoveAtAndSwap(0);
-    }
-  }
-
-  if (pTexture == nullptr)
-  {
-    if (uiDepth == 1)
-    {
-      Diligent::TextureDesc textureDesc;
-      textureDesc.Width          = uiWidth;
-      textureDesc.Height         = uiHeight;
-      textureDesc.MipLevels      = 1;
-      textureDesc.ArraySize      = 1;
-      textureDesc.Format         = GetFormatLookupTable().GetFormatInfo(format).m_eStorage;
-      textureDesc.SampleCount    = 1;
-      textureDesc.Usage          = Diligent::USAGE_STAGING;
-      textureDesc.BindFlags      = Diligent::BIND_NONE;
-      textureDesc.CPUAccessFlags = Diligent::CPU_ACCESS_NONE;
-      textureDesc.MiscFlags      = Diligent::MISC_TEXTURE_FLAG_NONE;
-
-      Diligent::ITexture* pTextureNew = nullptr;
-      m_pDevice->CreateTexture(textureDesc, nullptr, &pTextureNew);
-      if (pTextureNew == nullptr)
-      {
-        return nullptr;
-      }
-
-      pTexture = pTextureNew;
-    }
-    else
-    {
-      XII_ASSERT_NOT_IMPLEMENTED;
-      return nullptr;
-    }
-  }
-
-  auto& tempResource       = m_UsedTempResources[TempResourceType::Texture].ExpandAndGetRef();
-  tempResource.m_pResource = pTexture;
-  tempResource.m_uiFrame   = GetImmediateContext()->GetFrameNumber();
-  tempResource.m_uiHash    = uiHash;
-
-  return pTexture;
-}
-
-void xiiGALDeviceDiligent::FreeTempResources(xiiUInt64 uiFrame)
-{
-  for (xiiUInt32 type = 0; type < TempResourceType::ENUM_COUNT; ++type)
-  {
-    while (!m_UsedTempResources[type].IsEmpty())
-    {
-      auto& usedTempResource = m_UsedTempResources[type].PeekFront();
-      if (usedTempResource.m_uiFrame == uiFrame)
-      {
-        auto it = m_FreeTempResources[type].Find(usedTempResource.m_uiHash);
-        if (!it.IsValid())
-        {
-          it = m_FreeTempResources[type].Insert(usedTempResource.m_uiHash, xiiDynamicArray<Diligent::IDeviceObject*>(&m_Allocator));
-        }
-
-        it.Value().PushBack(usedTempResource.m_pResource);
-        m_UsedTempResources[type].PopFront();
-      }
-      else
-      {
-        break;
-      }
-    }
-  }
 }
 
 void xiiGALDeviceDiligent::FillFormatLookupTable()
@@ -887,7 +1000,6 @@ void xiiGALDeviceDiligent::FillFormatLookupTable()
 
   m_FormatLookupTable.SetFormatInfo(xiiGALResourceFormat::RGBInt, xiiGALFormatLookupEntryDiligent(Diligent::TEX_FORMAT_RGB32_TYPELESS).RT(Diligent::TEX_FORMAT_RGB32_SINT).VA(Diligent::TEX_FORMAT_RGB32_SINT).RV(Diligent::TEX_FORMAT_RGB32_SINT));
 
-  // Supported with DX 11.1
   m_FormatLookupTable.SetFormatInfo(xiiGALResourceFormat::B5G6R5UNormalized, xiiGALFormatLookupEntryDiligent(Diligent::TEX_FORMAT_B5G6R5_UNORM).RT(Diligent::TEX_FORMAT_B5G6R5_UNORM).VA(Diligent::TEX_FORMAT_B5G6R5_UNORM).RV(Diligent::TEX_FORMAT_B5G6R5_UNORM));
 
   m_FormatLookupTable.SetFormatInfo(xiiGALResourceFormat::BGRAUByteNormalized, xiiGALFormatLookupEntryDiligent(Diligent::TEX_FORMAT_BGRA8_TYPELESS).RT(Diligent::TEX_FORMAT_BGRA8_UNORM).VA(Diligent::TEX_FORMAT_BGRA8_UNORM).RV(Diligent::TEX_FORMAT_BGRA8_UNORM));

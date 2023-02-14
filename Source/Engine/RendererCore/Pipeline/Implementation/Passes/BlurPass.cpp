@@ -31,7 +31,7 @@ xiiBlurPass::xiiBlurPass() :
   }
 
   {
-    m_hBlurCB = xiiRenderContext::CreateConstantBufferStorage<xiiBlurConstants>();
+    m_hBlurCB = xiiRenderContext::CreateConstantBufferStorage<xiiBlurConstants>(XII_STRINGIZE(xiiBlurConstants));
   }
 }
 

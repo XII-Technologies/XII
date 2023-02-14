@@ -21,10 +21,5 @@ target_link_libraries(${PROJECT_NAME}
   PUBLIC
   Foundation
   RendererFoundation
+  ShaderCompiler
 )
-
-if(XII_3RDPARTY_GLFW_SUPPORT)
-
-  target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
-
-endif()

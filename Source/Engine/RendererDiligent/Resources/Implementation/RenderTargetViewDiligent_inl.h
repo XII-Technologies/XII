@@ -1,15 +1,15 @@
 
-XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::ITextureView>& xiiGALRenderTargetViewDiligent::GetRenderTargetView()
+XII_ALWAYS_INLINE Diligent::ITextureView* xiiGALRenderTargetViewDiligent::GetRenderTargetView()
 {
-  return m_pRenderTargetView;
+  return m_pRenderTargetView.RawPtr();
 }
 
-XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::ITextureView>& xiiGALRenderTargetViewDiligent::GetDepthStencilView()
+XII_ALWAYS_INLINE Diligent::ITextureView* xiiGALRenderTargetViewDiligent::GetDepthStencilView()
 {
-  return m_pDepthStencilView;
+  return m_pDepthStencilView.RawPtr();
 }
 
-XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::ITextureView>& xiiGALRenderTargetViewDiligent::GetUnorderedAccessView()
+XII_ALWAYS_INLINE Diligent::ITextureView* xiiGALRenderTargetViewDiligent::GetUnorderedAccessView()
 {
-  return m_pUnorderedAccessView;
+  return m_pUnorderedAccessView.RawPtr();
 }

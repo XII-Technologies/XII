@@ -70,7 +70,7 @@ xiiWindowOutputTargetXR::xiiWindowOutputTargetXR(xiiXRInterface* pXrInterface, x
     // Create companion resources.
     m_hCompanionShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/VRCompanionView.xiiShader");
     XII_ASSERT_DEV(m_hCompanionShader.IsValid(), "Could not load VR companion view shader!");
-    m_hCompanionConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiVRCompanionViewConstants>();
+    m_hCompanionConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiVRCompanionViewConstants>(XII_STRINGIZE(xiiVRCompanionViewConstants));
   }
 }
 

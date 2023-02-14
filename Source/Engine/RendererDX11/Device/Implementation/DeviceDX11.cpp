@@ -38,7 +38,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(RendererDX11, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
-  xiiGALDeviceFactory::RegisterCreatorFunc("DX11", &CreateDX11Device, "DX11_SM50", "xiiShaderCompilerHLSL");
+  xiiGALDeviceFactory::RegisterCreatorFunc("DX11", &CreateDX11Device, "D3D_SM50", "xiiShaderCompiler");
 }
 
 ON_CORESYSTEMS_SHUTDOWN

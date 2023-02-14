@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <RendererDiligent/RendererDiligentDLL.h>
 #include <RendererFoundation/State/State.h>
 
 class XII_RENDERERDILIGENT_DLL xiiGALBlendStateDiligent : public xiiGALBlendState
@@ -20,7 +21,7 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::BlendStateDesc m_BlendState{};
+  Diligent::BlendStateDesc m_BlendState = {};
 };
 
 class XII_RENDERERDILIGENT_DLL xiiGALDepthStencilStateDiligent : public xiiGALDepthStencilState
@@ -40,7 +41,7 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::DepthStencilStateDesc m_DepthStencilState{};
+  Diligent::DepthStencilStateDesc m_DepthStencilState = {};
 };
 
 class XII_RENDERERDILIGENT_DLL xiiGALRasterizerStateDiligent : public xiiGALRasterizerState
@@ -60,13 +61,13 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::RasterizerStateDesc m_RasterizerState{};
+  Diligent::RasterizerStateDesc m_RasterizerState = {};
 };
 
 class XII_RENDERERDILIGENT_DLL xiiGALSamplerStateDiligent : public xiiGALSamplerState
 {
 public:
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::ISampler>& GetSamplerState();
+  XII_ALWAYS_INLINE Diligent::ISampler* GetSamplerState();
 
 protected:
   friend class xiiGALDeviceDiligent;
@@ -82,6 +83,5 @@ protected:
 
   Diligent::RefCntAutoPtr<Diligent::ISampler> m_pSamplerState;
 };
-
 
 #include <RendererDiligent/State/Implementation/StateDiligent_inl.h>

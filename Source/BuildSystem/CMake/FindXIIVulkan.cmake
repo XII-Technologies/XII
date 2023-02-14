@@ -1,6 +1,6 @@
-# find the folder into which the Vulkan SDK has been installed
+# Find the folder into which the Vulkan SDK has been installed
 
-# early out, if this target has been created before
+# Early out, if this target has been created before
 if((TARGET XIIVulkan::Loader) AND(TARGET XIIVulkan::DXC))
 	return()
 endif()

@@ -117,7 +117,7 @@ xiiResult xiiGraphicsTest::SetupRenderer()
     }
   }
 
-  m_hObjectTransformCB = xiiRenderContext::CreateConstantBufferStorage<ObjectCB>();
+  m_hObjectTransformCB = xiiRenderContext::CreateConstantBufferStorage<ObjectCB>(XII_STRINGIZE(ObjectCB));
   m_hShader            = xiiResourceManager::LoadResource<xiiShaderResource>("RendererTest/Shaders/Default.xiiShader");
 
   xiiStartup::StartupHighLevelSystems();
