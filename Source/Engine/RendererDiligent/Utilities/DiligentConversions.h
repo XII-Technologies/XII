@@ -2,62 +2,23 @@
 
 #include <RendererDiligent/RendererDiligentDLL.h>
 
-namespace xiiDiligentUtils
+class XII_RENDERERDILIGENT_DLL xiiDiligentUtils
 {
-  XII_ALWAYS_INLINE xiiEnum<xiiGALMSAASampleCount> ToGALMSAASampleCount(xiiUInt32 uiSampleCount)
-  {
-    xiiEnum<xiiGALMSAASampleCount> result;
-    switch (uiSampleCount)
-    {
-      case 1:
-        result = xiiGALMSAASampleCount::None;
-        break;
-      case 2:
-        result = xiiGALMSAASampleCount::TwoSamples;
-        break;
-      case 4:
-        result = xiiGALMSAASampleCount::FourSamples;
-        break;
-      case 8:
-        result = xiiGALMSAASampleCount::EightSamples;
-        break;
+public:
+  static Diligent::RENDER_DEVICE_TYPE GetDiligentRenderDeviceType();
 
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
+  static xiiEnum<xiiGALMSAASampleCount> ToGALMSAASampleCount(xiiUInt32 uiSampleCount);
+  static xiiUInt32                      ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount);
 
-    return result;
-  }
+  static Diligent::BLEND_FACTOR    ToDiligentBlendFactor(xiiGALBlend::Enum e);
+  static Diligent::BLEND_OPERATION ToDiligentBlendOperation(xiiGALBlendOp::Enum e);
+  static Diligent::FILTER_TYPE     ToDiligentFilter(xiiGALTextureFilterMode::Enum e);
 
-  XII_ALWAYS_INLINE xiiUInt32 ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount)
-  {
-    return static_cast<xiiUInt32>(sampleCount.GetValue());
-  }
+  static Diligent::SHADER_TYPE GALToDiligentShaderStage(xiiGALShaderStage::Enum e);
+  static Diligent::VALUE_TYPE  GALToDiligentFormat(Diligent::TEXTURE_FORMAT format);
+  static xiiInt32              GALToDiligentNumComponent(Diligent::TEXTURE_FORMAT format);
 
-  XII_ALWAYS_INLINE Diligent::RENDER_DEVICE_TYPE GetDiligentRenderDeviceType()
-  {
-    switch (xiiGraphicsDevice::Default)
-    {
-      case xiiGraphicsDevice::Undefined:
-        return Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
+  static Diligent::COLOR_MASK ToDiligentColorWriteMask(xiiGALColorWriteMask::Enum mask);
+};
 
-      case xiiGraphicsDevice::D3D11:
-        return Diligent::RENDER_DEVICE_TYPE_D3D11;
-
-      case xiiGraphicsDevice::D3D12:
-        return Diligent::RENDER_DEVICE_TYPE_D3D12;
-
-      case xiiGraphicsDevice::OpenGL:
-        return Diligent::RENDER_DEVICE_TYPE_GL;
-
-      case xiiGraphicsDevice::Vulkan:
-        return Diligent::RENDER_DEVICE_TYPE_VULKAN;
-
-      case xiiGraphicsDevice::Metal:
-        return Diligent::RENDER_DEVICE_TYPE_METAL;
-
-      default:
-        XII_ASSERT_NOT_IMPLEMENTED;
-        return Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
-    }
-  }
-} // namespace xiiDiligentUtils
+#include <RendererDiligent/Utilities/Implementation/DiligentConversions_inl.h>

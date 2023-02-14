@@ -11,7 +11,7 @@ bool IsArrayView(const xiiGALTextureCreationDescription& texDesc, const xiiGALRe
 }
 
 xiiGALResourceViewDiligent::xiiGALResourceViewDiligent(xiiGALResourceBase* pResource, const xiiGALResourceViewCreationDescription& Description) :
-  xiiGALResourceView(pResource, Description), m_pResourceView(nullptr)
+  xiiGALResourceView(pResource, Description), m_pTextureView(nullptr), m_pBufferView(nullptr)
 {
 }
 
@@ -54,7 +54,6 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
   xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
-
   Diligent::TEXTURE_FORMAT ViewFormatDiligent = Diligent::TEX_FORMAT_UNKNOWN;
   if (xiiGALResourceFormat::IsDepthFormat(ViewFormat))
   {
@@ -67,21 +66,23 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
   if (ViewFormatDiligent == Diligent::TEX_FORMAT_UNKNOWN)
   {
-    xiiLog::Error("Couldn't get valid DXGI format for resource view! ({0})", ViewFormat);
+    xiiLog::Error("Couldn't get valid format for resource view! ({0})", ViewFormat);
     return XII_FAILURE;
   }
 
   if (pTexture)
   {
-    xiiGALResourceBase*                          pRes             = const_cast<xiiGALResourceBase*>(pTexture->GetParentResource());
-    Diligent::RefCntAutoPtr<Diligent::ITexture>& pTextureDiligent = static_cast<xiiGALTextureDiligent*>(pRes)->GetTexture();
-    const xiiGALTextureCreationDescription&      texDesc          = pTexture->GetDescription();
+    xiiGALTexture*         pRes                = const_cast<xiiGALTexture*>(pTexture);
+    xiiGALTextureDiligent* pGALTextureDiligent = static_cast<xiiGALTextureDiligent*>(pRes);
+    Diligent::ITexture*    pTextureDiligent    = pGALTextureDiligent->GetTexture();
+
+    const xiiGALTextureCreationDescription& texDesc = pTexture->GetDescription();
 
     const bool bIsArrayView = IsArrayView(texDesc, m_Description);
 
-    Diligent::RefCntAutoPtr<Diligent::ITextureView> pTexView;
-    Diligent::TextureViewDesc                       SRVDesc;
+    Diligent::TextureViewDesc SRVDesc;
     SRVDesc.ViewType = Diligent::TEXTURE_VIEW_SHADER_RESOURCE;
+    SRVDesc.Format   = ViewFormatDiligent;
 
     switch (texDesc.m_Type)
     {
@@ -90,33 +91,17 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
       {
         if (!bIsArrayView)
         {
-          if (texDesc.m_SampleCount == xiiGALMSAASampleCount::None)
-          {
-            SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D;
-            SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
-            SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
-          }
-          else
-          {
-            SRVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_2D;
-          }
+          SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D;
+          SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
+          SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
         }
         else
         {
-          if (texDesc.m_SampleCount == xiiGALMSAASampleCount::None)
-          {
-            SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
-            SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
-            SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
-            SRVDesc.NumArraySlices  = m_Description.m_uiArraySize;
-            SRVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
-          }
-          else
-          {
-            SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
-            SRVDesc.NumArraySlices  = m_Description.m_uiArraySize;
-            SRVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
-          }
+          SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+          SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
+          SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
+          SRVDesc.NumArraySlices  = m_Description.m_uiArraySize;
+          SRVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
         }
       }
       break;
@@ -148,28 +133,27 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
       }
       break;
 
-      default:
-        XII_ASSERT_NOT_IMPLEMENTED;
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+
         return XII_FAILURE;
     }
 
-    pTextureDiligent->CreateView(SRVDesc, &pTexView);
+    pTextureDiligent->CreateView(SRVDesc, &m_pTextureView);
 
-    if (!pTexView)
+    if (m_pTextureView == nullptr)
     {
-      xiiLog::Error("Failed to create texture view.");
       return XII_FAILURE;
     }
-
-    m_pResourceView = pTexView;
   }
   else if (pBuffer)
   {
-    xiiGALResourceBase*                         pRes            = const_cast<xiiGALResourceBase*>(pTexture->GetParentResource());
-    Diligent::RefCntAutoPtr<Diligent::IBuffer>& pBufferDiligent = static_cast<xiiGALBufferDiligent*>(pRes)->GetBuffer();
+    // TODO: Get current format is normalized.
 
-    Diligent::RefCntAutoPtr<Diligent::IBufferView> pBufferView;
-    Diligent::BufferViewDesc                       SRVDesc;
+    xiiGALBuffer*         pRes               = const_cast<xiiGALBuffer*>(pBuffer);
+    xiiGALBufferDiligent* pGALBufferDiligent = static_cast<xiiGALBufferDiligent*>(pRes);
+    Diligent::IBuffer*    pBufferDiligent    = pGALBufferDiligent->GetBuffer();
+
+    Diligent::BufferViewDesc SRVDesc;
     SRVDesc.ViewType = Diligent::BUFFER_VIEW_SHADER_RESOURCE;
 
     if (pBuffer->GetDescription().m_bUseAsStructuredBuffer)
@@ -178,15 +162,12 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     SRVDesc.ByteOffset = m_Description.m_uiFirstElement;
     SRVDesc.ByteWidth  = m_Description.m_uiNumElements;
 
-    pBufferDiligent->CreateView(SRVDesc, &pBufferView);
+    pBufferDiligent->CreateView(SRVDesc, &m_pBufferView);
 
-    if (!pBufferView)
+    if (m_pBufferView == nullptr)
     {
-      xiiLog::Error("Failed to create buffer view.");
       return XII_FAILURE;
     }
-
-    m_pResourceView = pBufferView;
   }
 
   return XII_SUCCESS;
@@ -194,10 +175,10 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALResourceViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_RELEASE(m_pResourceView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pBufferView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pTextureView);
+
   return XII_SUCCESS;
 }
-
-
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Resources_Implementation_ResourceViewDiligent);

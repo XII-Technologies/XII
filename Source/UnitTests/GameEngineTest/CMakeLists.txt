@@ -1,7 +1,5 @@
 xii_cmake_init()
 
-
-
 xii_requires_d3d()
 
 # Get the name of this folder as the project name
@@ -39,12 +37,10 @@ if (XII_CMAKE_PLATFORM_WINDOWS_UWP)
   endif()
 endif()
 
-
 xii_link_target_dx11(${PROJECT_NAME})
 
 xii_ci_add_test(${PROJECT_NAME} NEEDS_HW_ACCESS)
 
 add_dependencies(${PROJECT_NAME}
-  ShaderCompilerHLSL
+  ShaderCompiler
 )
-

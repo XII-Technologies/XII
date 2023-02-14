@@ -45,6 +45,7 @@ public:
     xiiStreamReader&                       stream,
     xiiHybridArray<xiiHashedString, 16>&   out_PermVars,
     xiiHybridArray<xiiPermutationVar, 16>& out_FixedPermVars);
+
   static void ParsePermutationSection(
     xiiStringView                          sPermutationSection,
     xiiHybridArray<xiiHashedString, 16>&   out_PermVars,

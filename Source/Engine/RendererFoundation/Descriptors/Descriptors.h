@@ -16,6 +16,7 @@ class xiiWindowBase;
 struct XII_RENDERERFOUNDATION_DLL xiiShaderResourceType
 {
   typedef xiiUInt8 StorageType;
+
   enum Enum : xiiUInt8
   {
     Unknown = 0,
@@ -107,8 +108,8 @@ struct xiiGALRenderTargetBlendDescription : public xiiHashableStruct<xiiGALRende
   xiiGALBlend::Enum   m_DestBlendAlpha   = xiiGALBlend::One;
   xiiGALBlendOp::Enum m_BlendOpAlpha     = xiiGALBlendOp::Add;
 
-  xiiUInt8 m_uiWriteMask = 0xFF;   ///< Enables writes to color channels. Bit1 = Red Channel, Bit2 = Green Channel, Bit3 = Blue Channel, Bit4 = Alpha
-                                   ///< Channel, Bit 5-8 are unused
+  xiiGALColorWriteMask::Enum m_ColorWriteMask = xiiGALColorWriteMask::Default;
+
   bool m_bBlendingEnabled = false; ///< If enabled, the color will be blended into the render target. Otherwise it will overwrite the render target.
                                    ///< Set m_uiWriteMask to 0 to disable all writes to the render target.
 };
@@ -229,6 +230,7 @@ struct xiiGALVertexAttribute
   xiiUInt16                           m_uiOffset           = 0;
   xiiUInt8                            m_uiVertexBufferSlot = 0;
   bool                                m_bInstanceData      = false;
+  xiiUInt32                           m_uiStepRate         = 1;
 };
 
 struct XII_RENDERERFOUNDATION_DLL xiiGALVertexDeclarationCreationDescription : public xiiHashableStruct<xiiGALVertexDeclarationCreationDescription>
@@ -312,8 +314,7 @@ struct xiiGALTextureCreationDescription : public xiiHashableStruct<xiiGALTexture
 
   xiiGALResourceAccess m_ResourceAccess;
 
-  void* m_pExisitingNativeObject       = nullptr; ///< Can be used to encapsulate existing native textures in objects usable by the GAL
-  void* m_pExisitingNativeObjectRTView = nullptr; ///< Can be used to encapsulate existing native texture views in objects usable by the GAL
+  void* m_pExisitingNativeObject = nullptr; ///< Can be used to encapsulate existing native textures in objects usable by the GAL
 };
 
 struct xiiGALResourceViewCreationDescription : public xiiHashableStruct<xiiGALResourceViewCreationDescription>
@@ -349,8 +350,6 @@ struct xiiGALRenderTargetViewCreationDescription : public xiiHashableStruct<xiiG
   xiiUInt32 m_uiSliceCount = 1;
 
   bool m_bReadOnly = false; ///< Can be used for depth stencil views to create read only views (e.g. for soft particles using the native depth buffer)
-
-  void* m_pExisitingNativeObject = nullptr; ///< Can be used to encapsulate existing native textures in objects usable by the GAL
 };
 
 struct xiiGALUnorderedAccessViewCreationDescription : public xiiHashableStruct<xiiGALUnorderedAccessViewCreationDescription>
@@ -380,11 +379,17 @@ struct xiiGALQueryType
   enum Enum
   {
     /// Number of samples that passed the depth and stencil test between begin and end (on a context).
-    NumSamplesPassed,
-    /// Boolean version of NumSamplesPassed.
-    AnySamplesPassed,
+    Occlusion,
+    /// Acts like Occlusion. Returns true if at least one sample passed.
+    BinaryOcclusion,
+    /// Requests the GPU timestamp, similar to an EndQuery call.
+    Timestamp,
+    /// Gets the pipeline statistics such as the number of pixel shader invocations.
+    PipelineStatistics,
+    /// Gets the number of high-frequency counter ticks between BeginQuery and EndQuery calls.
+    Duration,
 
-    Default = NumSamplesPassed
+    Default = Occlusion
 
     // Note:
     // GALFence provides an implementation of "event queries".
@@ -393,7 +398,7 @@ struct xiiGALQueryType
 
 struct xiiGALQueryCreationDescription : public xiiHashableStruct<xiiGALQueryCreationDescription>
 {
-  xiiEnum<xiiGALQueryType> m_type = xiiGALQueryType::NumSamplesPassed;
+  xiiEnum<xiiGALQueryType> m_Type = xiiGALQueryType::Occlusion;
 
   const char* m_szName = nullptr;
 

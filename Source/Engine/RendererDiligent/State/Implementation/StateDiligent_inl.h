@@ -14,7 +14,7 @@ XII_ALWAYS_INLINE const Diligent::RasterizerStateDesc* xiiGALRasterizerStateDili
   return &m_RasterizerState;
 }
 
-XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::ISampler>& xiiGALSamplerStateDiligent::GetSamplerState()
+XII_ALWAYS_INLINE Diligent::ISampler* xiiGALSamplerStateDiligent::GetSamplerState()
 {
-  return m_pSamplerState;
+  return m_pSamplerState.RawPtr();
 }

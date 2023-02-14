@@ -156,8 +156,8 @@ xiiResult xiiRendererTestPipelineStates::InitializeSubTest(xiiInt32 iIdentifier)
 
     m_hSphereMesh = xiiResourceManager::CreateResource<xiiMeshBufferResource>("UnitTest-SphereMesh", std::move(desc), "SphereMesh");
   }
-  m_hTestColorsConstantBuffer    = xiiRenderContext::CreateConstantBufferStorage<xiiTestColors>();
-  m_hTestPositionsConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiTestPositions>();
+  m_hTestColorsConstantBuffer    = xiiRenderContext::CreateConstantBufferStorage<xiiTestColors>(XII_STRINGIZE(xiiTestColors));
+  m_hTestPositionsConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiTestPositions>(XII_STRINGIZE(xiiTestPositions));
 
   {
     xiiGALBufferCreationDescription desc;

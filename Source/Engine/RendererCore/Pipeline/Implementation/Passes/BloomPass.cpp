@@ -37,7 +37,7 @@ xiiBloomPass::xiiBloomPass() :
   }
 
   {
-    m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiBloomConstants>();
+    m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiBloomConstants>(XII_STRINGIZE(xiiBloomConstants));
   }
 }
 

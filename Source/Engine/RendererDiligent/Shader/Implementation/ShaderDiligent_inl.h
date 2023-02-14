@@ -1,30 +1,40 @@
 
-Diligent::RefCntAutoPtr<Diligent::IShader>& xiiGALShaderDiligent::GetVertexShader()
+XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetVertexShader()
 {
-  return m_pVertexShader;
+  return m_pShaderStages[xiiGALShaderStage::VertexShader].RawPtr();
 }
 
-Diligent::RefCntAutoPtr<Diligent::IShader>& xiiGALShaderDiligent::GetHullShader()
+XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetHullShader()
 {
-  return m_pHullShader;
+  return m_pShaderStages[xiiGALShaderStage::HullShader].RawPtr();
 }
 
-Diligent::RefCntAutoPtr<Diligent::IShader>& xiiGALShaderDiligent::GetDomainShader()
+XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetDomainShader()
 {
-  return m_pDomainShader;
+  return m_pShaderStages[xiiGALShaderStage::DomainShader].RawPtr();
 }
 
-Diligent::RefCntAutoPtr<Diligent::IShader>& xiiGALShaderDiligent::GetGeometryShader()
+XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetGeometryShader()
 {
-  return m_pGeometryShader;
+  return m_pShaderStages[xiiGALShaderStage::GeometryShader].RawPtr();
 }
 
-Diligent::RefCntAutoPtr<Diligent::IShader>& xiiGALShaderDiligent::GetPixelShader()
+XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetPixelShader()
 {
-  return m_pPixelShader;
+  return m_pShaderStages[xiiGALShaderStage::PixelShader].RawPtr();
 }
 
-Diligent::RefCntAutoPtr<Diligent::IShader>& xiiGALShaderDiligent::GetComputeShader()
+XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetComputeShader()
 {
-  return m_pComputeShader;
+  return m_pShaderStages[xiiGALShaderStage::ComputeShader].RawPtr();
+}
+
+XII_ALWAYS_INLINE xiiDynamicArray<xiiShaderDescriptorSetLayout>& xiiGALShaderDiligent::GetDescriptorSets(xiiGALShaderStage::Enum stage)
+{
+  return m_DescriptorSets[stage];
+}
+
+XII_ALWAYS_INLINE xiiHybridArray<xiiShaderVertexInputAttribute, 8>& xiiGALShaderDiligent::GetVertexInputAttributes()
+{
+  return m_VertexInputAttributes;
 }

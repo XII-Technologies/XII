@@ -5,7 +5,7 @@
 class xiiGALQueryDiligent : public xiiGALQuery
 {
 public:
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::IQuery>& GetQuery();
+  XII_ALWAYS_INLINE Diligent::IQuery* GetQuery();
 
 protected:
   friend class xiiGALDeviceDiligent;

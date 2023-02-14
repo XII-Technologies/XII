@@ -18,6 +18,8 @@ xiiGALRenderTargetViewDiligent::~xiiGALRenderTargetViewDiligent() {}
 
 xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 {
+  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+
   const xiiGALTexture* pTexture = nullptr;
   if (!m_Description.m_hTexture.IsInvalidated())
     pTexture = pDevice->GetTexture(m_Description.m_hTexture);
@@ -30,15 +32,17 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
   const xiiGALTextureCreationDescription& texDesc    = pTexture->GetDescription();
   xiiGALResourceFormat::Enum              viewFormat = texDesc.m_Format;
+  Diligent::TEXTURE_FORMAT                ViewFormat = Diligent::TEX_FORMAT_UNKNOWN;
+
+  xiiGALResourceBase* pRes             = const_cast<xiiGALResourceBase*>(pTexture->GetParentResource());
+  Diligent::ITexture* pTextureDiligent = static_cast<xiiGALTextureDiligent*>(pRes)->GetTexture();
+  const bool          bIsArrayView     = IsArrayView(texDesc, m_Description);
 
   if (m_Description.m_OverrideViewFormat != xiiGALResourceFormat::Invalid)
     viewFormat = m_Description.m_OverrideViewFormat;
 
-  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
-
-  Diligent::TEXTURE_FORMAT ViewFormat = Diligent::TEX_FORMAT_UNKNOWN;
-
   const bool bIsDepthFormat = xiiGALResourceFormat::IsDepthFormat(viewFormat);
+
   if (bIsDepthFormat)
   {
     ViewFormat = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eDepthStencilType;
@@ -50,29 +54,9 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
   if (ViewFormat == Diligent::TEX_FORMAT_UNKNOWN)
   {
-    xiiLog::Error("Couldn't get Diligent format for view!");
+    xiiLog::Error("Couldn't get format for view!");
     return XII_FAILURE;
   }
-
-  if (m_Description.m_pExisitingNativeObject)
-  {
-    m_bIsNativeObjectWrapper = true;
-
-    if (bIsDepthFormat)
-    {
-      m_pDepthStencilView = static_cast<Diligent::ITextureView*>(m_Description.m_pExisitingNativeObject);
-    }
-    else
-    {
-      m_pRenderTargetView = static_cast<Diligent::ITextureView*>(m_Description.m_pExisitingNativeObject);
-    }
-
-    return XII_SUCCESS;
-  }
-
-  xiiGALResourceBase*                          pRes             = const_cast<xiiGALResourceBase*>(pTexture->GetParentResource());
-  Diligent::RefCntAutoPtr<Diligent::ITexture>& pTextureDiligent = static_cast<xiiGALTextureDiligent*>(pRes)->GetTexture();
-  const bool                                   bIsArrayView     = IsArrayView(texDesc, m_Description);
 
   if (bIsDepthFormat)
   {
@@ -110,15 +94,13 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     }
 
     DSViewDesc.Flags = Diligent::TEXTURE_VIEW_FLAG_NONE;
-    // if (m_Description.m_bReadOnly)
-    // DSViewDesc.Flags |= (D3D11_DSV_READ_ONLY_DEPTH | D3D11_DSV_READ_ONLY_STENCIL);
 
     xiiGALTexture* pTex = const_cast<xiiGALTexture*>(pDevice->GetTexture(m_Description.m_hTexture));
     static_cast<xiiGALTextureDiligent*>(pTex)->GetTexture()->CreateView(DSViewDesc, &m_pDepthStencilView);
 
     if (m_pDepthStencilView == nullptr)
     {
-      xiiLog::Error("Couldn't create depth stencil view!");
+      xiiLog::Error("Failed to create depth stencil view!");
       return XII_FAILURE;
     }
     else
@@ -166,7 +148,7 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
     if (m_pRenderTargetView == nullptr)
     {
-      xiiLog::Error("Couldn't create rendertarget view!");
+      xiiLog::Error("Failed to create rendertarget view!");
       return XII_FAILURE;
     }
 
@@ -176,16 +158,11 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALRenderTargetViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  // Only release native texture if it isn't a native texture object wrapper
-  if (!m_bIsNativeObjectWrapper)
-    XII_GAL_DILIGENT_RELEASE(m_pRenderTargetView);
-
-  XII_GAL_DILIGENT_RELEASE(m_pDepthStencilView);
-  XII_GAL_DILIGENT_RELEASE(m_pUnorderedAccessView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pRenderTargetView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDepthStencilView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pUnorderedAccessView);
 
   return XII_SUCCESS;
 }
-
-
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Resources_Implementation_RenderTargetViewDiligent);

@@ -18,15 +18,26 @@
 
 #include <Common/interface/RefCntAutoPtr.hpp>
 
+#include <Graphics/GraphicsAccessories/interface/GraphicsAccessories.hpp>
 #include <Graphics/GraphicsEngine/interface/DeviceContext.h>
 #include <Graphics/GraphicsEngine/interface/RenderDevice.h>
 #include <Graphics/GraphicsEngine/interface/SwapChain.h>
 
-#define XII_GAL_DILIGENT_RELEASE(diligentObject) \
-  do                                             \
-  {                                              \
-    if ((diligentObject) != nullptr)             \
-    {                                            \
-      (diligentObject)->Release();               \
-    }                                            \
+#define XII_GAL_DILIGENT_WRAPPED_RELEASE(wrappedDiligentObject) \
+  do                                                            \
+  {                                                             \
+    if ((wrappedDiligentObject) != nullptr)                     \
+    {                                                           \
+      (wrappedDiligentObject).Release();                        \
+    }                                                           \
+  } while (0)
+
+#define XII_GAL_DILIGENT_UNWRAPPED_RELEASE(unwrappedDiligentObject) \
+  do                                                                \
+  {                                                                 \
+    if ((unwrappedDiligentObject) != nullptr)                       \
+    {                                                               \
+      (unwrappedDiligentObject)->Release();                         \
+      (unwrappedDiligentObject) = nullptr;                          \
+    }                                                               \
   } while (0)

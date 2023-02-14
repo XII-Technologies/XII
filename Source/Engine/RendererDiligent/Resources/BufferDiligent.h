@@ -6,9 +6,9 @@
 class XII_RENDERERDILIGENT_DLL xiiGALBufferDiligent : public xiiGALBuffer
 {
 public:
-  Diligent::RefCntAutoPtr<Diligent::IBuffer>& GetBuffer();
+  Diligent::IBuffer* GetBuffer();
 
-  Diligent::TEXTURE_FORMAT GetIndexFormat() const;
+  Diligent::VALUE_TYPE GetIndexFormat() const;
 
 protected:
   friend class xiiGALDeviceDiligent;
@@ -23,7 +23,9 @@ protected:
 
   Diligent::RefCntAutoPtr<Diligent::IBuffer> m_pBuffer;
 
-  Diligent::TEXTURE_FORMAT m_IndexFormat; // Only applicable for Index Buffers
+  Diligent::BufferData m_InitialData;
+
+  Diligent::VALUE_TYPE m_IndexFormat; // Only applicable for Index Buffers
 };
 
 #include <RendererDiligent/Resources/Implementation/BufferDiligent_inl.h>

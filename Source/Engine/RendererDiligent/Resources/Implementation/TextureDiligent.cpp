@@ -10,8 +10,6 @@ xiiGALTextureDiligent::xiiGALTextureDiligent(const xiiGALTextureCreationDescript
 
 xiiGALTextureDiligent::~xiiGALTextureDiligent() {}
 
-XII_DEFINE_AS_POD_TYPE(Diligent::TextureSubResData);
-
 xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<xiiGALSystemMemoryDescription> pInitialData)
 {
   xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
@@ -19,7 +17,6 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
   if (m_pExisitingNativeObject != nullptr)
   {
     /// \todo Validation if interface of corresponding texture object exists
-    m_pTexture = static_cast<Diligent::ITexture*>(m_pExisitingNativeObject);
     if (!m_Description.m_ResourceAccess.IsImmutable() || m_Description.m_ResourceAccess.m_bReadBack)
     {
       xiiResult result = CreateStagingTexture(pDeviceDiligent);
@@ -31,7 +28,6 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
     }
     return XII_SUCCESS;
   }
-
 
   switch (m_Description.m_Type)
   {
@@ -81,28 +77,26 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
       Tex2DDesc.SampleCount = m_Description.m_SampleCount;
 
-      xiiHybridArray<Diligent::TextureSubResData, 16> InitialData;
       if (!pInitialData.IsEmpty())
       {
         xiiUInt32 uiInitialDataCount = (m_Description.m_uiMipLevelCount * Tex2DDesc.ArraySize);
         XII_ASSERT_DEV(pInitialData.GetCount() == uiInitialDataCount, "The array of initial data values is not equal to the amount of mip levels!");
 
-        InitialData.SetCountUninitialized(uiInitialDataCount);
+        m_InitialData.SetCount(uiInitialDataCount);
 
         for (xiiUInt32 i = 0; i < uiInitialDataCount; i++)
         {
-          InitialData[i].pData       = pInitialData[i].m_pData;
-          InitialData[i].Stride      = pInitialData[i].m_uiRowPitch;
-          InitialData[i].DepthStride = pInitialData[i].m_uiSlicePitch;
+          m_InitialData[i].pData       = pInitialData[i].m_pData;
+          m_InitialData[i].Stride      = pInitialData[i].m_uiRowPitch;
+          m_InitialData[i].DepthStride = pInitialData[i].m_uiSlicePitch;
         }
       }
 
       if (!pInitialData.IsEmpty())
       {
-        Diligent::TextureData Data;
-        Data.pSubResources   = &InitialData[0];
-        Data.NumSubresources = pInitialData.GetCount();
-        pDeviceDiligent->GetDevice()->CreateTexture(Tex2DDesc, &Data, &m_pTexture);
+        m_TextureData.pSubResources   = m_InitialData.GetData();
+        m_TextureData.NumSubresources = m_InitialData.GetCount();
+        pDeviceDiligent->GetDevice()->CreateTexture(Tex2DDesc, &m_TextureData, &m_pTexture);
       }
       else
       {
@@ -167,26 +161,24 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
         Tex3DDesc.Type = Diligent::RESOURCE_DIM_TEX_3D;
 
 
-      xiiHybridArray<Diligent::TextureSubResData, 16> InitialData;
       if (!pInitialData.IsEmpty())
       {
         const xiiUInt32 uiInitialDataCount = m_Description.m_uiMipLevelCount;
         XII_ASSERT_DEV(pInitialData.GetCount() == uiInitialDataCount, "The array of initial data values is not equal to the amount of mip levels!");
 
-        InitialData.SetCountUninitialized(uiInitialDataCount);
+        m_InitialData.SetCount(uiInitialDataCount);
 
         for (xiiUInt32 i = 0; i < uiInitialDataCount; i++)
         {
-          InitialData[i].pData       = pInitialData[i].m_pData;
-          InitialData[i].Stride      = pInitialData[i].m_uiRowPitch;
-          InitialData[i].DepthStride = pInitialData[i].m_uiSlicePitch;
+          m_InitialData[i].pData       = pInitialData[i].m_pData;
+          m_InitialData[i].Stride      = pInitialData[i].m_uiRowPitch;
+          m_InitialData[i].DepthStride = pInitialData[i].m_uiSlicePitch;
         }
       }
 
-      Diligent::TextureData Data;
-      Data.pSubResources   = &InitialData[0];
-      Data.NumSubresources = pInitialData.GetCount();
-      pDeviceDiligent->GetDevice()->CreateTexture(Tex3DDesc, pInitialData.IsEmpty() ? nullptr : &Data, &m_pTexture);
+      m_TextureData.pSubResources   = m_InitialData.GetData();
+      m_TextureData.NumSubresources = m_InitialData.GetCount();
+      pDeviceDiligent->GetDevice()->CreateTexture(Tex3DDesc, pInitialData.IsEmpty() ? nullptr : &m_TextureData, &m_pTexture);
 
       if (m_pTexture == nullptr)
       {
@@ -202,8 +194,8 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
     }
     break;
 
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+
       return XII_FAILURE;
   }
 
@@ -212,11 +204,8 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
 xiiResult xiiGALTextureDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  // Only release native texture if it isn't a native texture object wrapper
-  if (m_pExisitingNativeObject == nullptr)
-    XII_GAL_DILIGENT_RELEASE(m_pTexture);
-
-  XII_GAL_DILIGENT_RELEASE(m_pStagingTexture);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pTexture);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pStagingTexture);
 
   return XII_SUCCESS;
 }
@@ -231,33 +220,29 @@ xiiResult xiiGALTextureDiligent::CreateStagingTexture(xiiGALDeviceDiligent* pDev
       Diligent::TextureDesc Desc = m_pTexture->GetDesc();
       Desc.BindFlags             = Diligent::BIND_NONE;
       Desc.CPUAccessFlags        = Diligent::CPU_ACCESS_NONE;
-      // Need to remove this flag on the staging resource or texture readback no longer works.
-      Desc.MiscFlags &= ~Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS;
-      Desc.Usage       = Diligent::USAGE_STAGING;
-      Desc.SampleCount = 1; // We need to disable MSAA for the readback texture, the conversion needs to happen during readback!
+      Desc.Usage                 = Diligent::USAGE_STAGING;
+      Desc.SampleCount           = 1; // Disable MSAA for the readback texture, the conversion needs to happen during readback!
 
       if (m_Description.m_ResourceAccess.m_bReadBack)
-        Desc.CPUAccessFlags |= Diligent::CPU_ACCESS_READ;
+        Desc.CPUAccessFlags = Diligent::CPU_ACCESS_READ;
+
       if (!m_Description.m_ResourceAccess.IsImmutable())
-        Desc.CPUAccessFlags |= Diligent::CPU_ACCESS_WRITE;
+        Desc.CPUAccessFlags = Diligent::CPU_ACCESS_WRITE;
 
       pDevice->GetDevice()->CreateTexture(Desc, nullptr, &m_pStagingTexture);
 
       if (m_pStagingTexture == nullptr)
       {
-        xiiLog::Error("Couldn't create staging resource for data upload and/or read back!");
+        xiiLog::Error("Failed to create staging resource for data upload and/or read back!");
         return XII_FAILURE;
       }
     }
     break;
 
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   return XII_SUCCESS;
 }
-
-
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Resources_Implementation_TextureDiligent);

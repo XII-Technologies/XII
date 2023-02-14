@@ -28,3 +28,18 @@ ID3D11ComputeShader* xiiGALShaderDX11::GetDXComputeShader() const
 {
   return m_pComputeShader;
 }
+
+const xiiDynamicArray<xiiShaderDescriptorSetLayout>& xiiGALShaderDX11::GetDescriptorSets(xiiGALShaderStage::Enum stage) const
+{
+  return m_DescriptorSets[stage];
+}
+
+const xiiHybridArray<xiiShaderVertexInputAttribute, 8>& xiiGALShaderDX11::GetVertexInputAttributes() const
+{
+  return m_VertexInputAttributes;
+}
+
+const xiiArrayPtr<const xiiUInt8> xiiGALShaderDX11::GetByteCode(xiiGALShaderStage::Enum stage) const
+{
+  return m_pByteCodes[stage];
+}

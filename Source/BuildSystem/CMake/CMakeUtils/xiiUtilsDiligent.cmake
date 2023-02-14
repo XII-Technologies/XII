@@ -1,25 +1,22 @@
-######################################
-### Diligent Engine support
-######################################
+# #####################################
+# ## Diligent Engine support
+# #####################################
 
-set (XII_BUILD_DILIGENT OFF CACHE BOOL "Whether to enable experimental / work-in-progress Diligent Renderer code")
+set (XII_BUILD_DILIGENT OFF CACHE BOOL "Enable experimental diligent renderer")
 
-######################################
-### xii_requires_diligent()
-######################################
+# #####################################
+# ## xii_requires_diligent()
+# #####################################
 
 macro(xii_requires_diligent)
-
 	xii_requires(XII_BUILD_DILIGENT)
-
 endmacro()
 
-######################################
-### xii_link_target_diligent(<target>)
-######################################
+# #####################################
+# ## xii_link_target_diligent(<target>)
+# #####################################
 
 function(xii_link_target_diligent TARGET_NAME)
-
 	target_link_libraries(${TARGET_NAME}
         PRIVATE
         Diligent-BuildSettings
@@ -30,22 +27,18 @@ function(xii_link_target_diligent TARGET_NAME)
 	target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/ThirdParty/DiligentCore/)
 
     target_compile_definitions(${TARGET_NAME} PRIVATE ENGINE_DLL=1)
-
 endfunction()
 
-######################################
-### xii_link_target_diligent_dx11(<target>)
-######################################
+# #####################################
+# ## xii_link_target_diligent_dx11(<target>)
+# #####################################
 function(xii_link_target_diligent_dx11 TARGET_NAME)
-
 	xii_link_target_diligent(${TARGET_NAME})
 
 	if(D3D11_SUPPORTED)
 		target_link_libraries(${TARGET_NAME}
 			PRIVATE
 			Diligent-GraphicsEngineD3D11-shared
-			RendererDiligent
-			RendererDiligentD3D11
 		)
 		
 		list(APPEND ENGINE_DLLS Diligent-GraphicsEngineD3D11-shared)
@@ -76,20 +69,20 @@ function(xii_link_target_diligent_dx11 TARGET_NAME)
 					${DLL}
 					"\"$<TARGET_FILE_DIR:${TARGET_NAME}>\"")
 		endforeach(DLL)
-		
 	endif()
-
 endfunction()
 
-######################################
-### xii_link_target_diligent_dx12(<target>)
-######################################
+# #####################################
+# ## xii_link_target_diligent_dx12(<target>)
+# #####################################
 function(xii_link_target_diligent_dx12 TARGET_NAME)
-
 	xii_link_target_diligent(${TARGET_NAME})
 
 	if(D3D12_SUPPORTED)
-		target_link_libraries(${TARGET_NAME} PRIVATE Diligent-GraphicsEngineD3D12-shared)
+		target_link_libraries(${TARGET_NAME}
+            PRIVATE
+            Diligent-GraphicsEngineD3D12-shared
+        )
 		
 		list(APPEND ENGINE_DLLS Diligent-GraphicsEngineD3D12-shared)
 	endif()
@@ -136,20 +129,20 @@ function(xii_link_target_diligent_dx12 TARGET_NAME)
 					${DILIGENT_PIX_EVENT_RUNTIME_DLL_PATH}
 					"\"$<TARGET_FILE_DIR:${TARGET_NAME}>\"")
 		endif()
-
 	endif()
-	
 endfunction()
 
-######################################
-### xii_link_target_diligent_vulkan(<target>)
-######################################
+# #####################################
+# ## xii_link_target_diligent_vulkan(<target>)
+# #####################################
 function(xii_link_target_diligent_vulkan TARGET_NAME)
-
 	xii_link_target_diligent(${TARGET_NAME})
 
 	if(VULKAN_SUPPORTED)
-		target_link_libraries(${TARGET_NAME} PRIVATE Diligent-GraphicsEngineVk-shared)
+		target_link_libraries(${TARGET_NAME}
+            PRIVATE
+            Diligent-GraphicsEngineVk-shared
+        )
 		
 		list(APPEND ENGINE_DLLS Diligent-GraphicsEngineVk-shared)
 	endif()
@@ -168,18 +161,19 @@ function(xii_link_target_diligent_vulkan TARGET_NAME)
 			endif()
 		endif()
 	endif()
-
 endfunction()
 
-######################################
-### xii_link_target_diligent_metal(<target>)
-######################################
+# #####################################
+# ## xii_link_target_diligent_metal(<target>)
+# #####################################
 function(xii_link_target_diligent_metal TARGET_NAME)
-
 	xii_link_target_diligent(${TARGET_NAME})
 
 	if(METAL_SUPPORTED)
-		target_link_libraries(${TARGET_NAME} PRIVATE Diligent-GraphicsEngineMetal-shared)
+		target_link_libraries(${TARGET_NAME}
+            PRIVATE
+            Diligent-GraphicsEngineMetal-shared
+        )
 		
 		list(APPEND ENGINE_DLLS Diligent-GraphicsEngineMetal-shared)
 	endif()
@@ -194,18 +188,19 @@ function(xii_link_target_diligent_metal TARGET_NAME)
 				"\"$<TARGET_FILE:${DLL}>\""
 				"\"$<TARGET_FILE_DIR:${TARGET_NAME}>\"")
 	endforeach(DLL)
-
 endfunction()
 
-######################################
-### xii_link_target_diligent_opengl(<target>)
-######################################
+# #####################################
+# ## xii_link_target_diligent_opengl(<target>)
+# #####################################
 function(xii_link_target_diligent_opengl TARGET_NAME)
-
 	xii_link_target_diligent(${TARGET_NAME})
 
 	if(GL_SUPPORTED)
-		target_link_libraries(${TARGET_NAME} PRIVATE Diligent-GraphicsEngineOpenGL-shared)
+		target_link_libraries(${TARGET_NAME}
+            PRIVATE
+            Diligent-GraphicsEngineOpenGL-shared
+        )
 		
 		list(APPEND ENGINE_DLLS Diligent-GraphicsEngineOpenGL-shared)
 	endif()
@@ -220,5 +215,4 @@ function(xii_link_target_diligent_opengl TARGET_NAME)
 				"\"$<TARGET_FILE:${DLL}>\""
 				"\"$<TARGET_FILE_DIR:${TARGET_NAME}>\"")
 	endforeach(DLL)
-
 endfunction()

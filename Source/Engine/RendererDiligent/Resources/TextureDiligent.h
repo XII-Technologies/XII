@@ -5,9 +5,11 @@
 class xiiGALTextureDiligent : public xiiGALTexture
 {
 public:
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::ITexture>& GetTexture();
+  XII_ALWAYS_INLINE Diligent::ITexture* GetTexture();
 
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::ITexture>& GetStagingTexture();
+  XII_ALWAYS_INLINE Diligent::ITexture* GetStagingTexture();
+
+  XII_ALWAYS_INLINE bool IsNativeWrapperObject();
 
 protected:
   friend class xiiGALDeviceDiligent;
@@ -25,6 +27,10 @@ protected:
   Diligent::RefCntAutoPtr<Diligent::ITexture> m_pTexture;
 
   Diligent::RefCntAutoPtr<Diligent::ITexture> m_pStagingTexture;
+
+  Diligent::TextureData m_TextureData = {};
+
+  xiiHybridArray<Diligent::TextureSubResData, 16> m_InitialData;
 
   void* m_pExisitingNativeObject = nullptr;
 };

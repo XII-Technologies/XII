@@ -104,7 +104,7 @@ xiiRenderContext::xiiRenderContext()
   m_DefaultTextureFilter       = xiiTextureFilterSetting::FixedAnisotropic4x;
   m_bAllowAsyncShaderLoading   = false;
 
-  m_hGlobalConstantBufferStorage = CreateConstantBufferStorage<xiiGlobalConstants>();
+  m_hGlobalConstantBufferStorage = CreateConstantBufferStorage<xiiGlobalConstants>(XII_STRINGIZE(xiiGlobalConstants));
 
   ResetContextState();
 }
@@ -765,7 +765,7 @@ const xiiGlobalConstants& xiiRenderContext::ReadGlobalConstants() const
 }
 
 // static
-xiiConstantBufferStorageHandle xiiRenderContext::CreateConstantBufferStorage(xiiUInt32 uiSizeInBytes, xiiConstantBufferStorageBase*& out_pStorage)
+xiiConstantBufferStorageHandle xiiRenderContext::CreateConstantBufferStorage(xiiUInt32 uiSizeInBytes, xiiConstantBufferStorageBase*& out_pStorage, const char* szName)
 {
   XII_ASSERT_DEV(xiiMemoryUtils::IsSizeAligned(uiSizeInBytes, 16u), "Storage struct for constant buffer is not aligned to 16 bytes");
 
@@ -786,7 +786,7 @@ xiiConstantBufferStorageHandle xiiRenderContext::CreateConstantBufferStorage(xii
 
   if (pStorage == nullptr)
   {
-    pStorage = XII_DEFAULT_NEW(xiiConstantBufferStorageBase, uiSizeInBytes);
+    pStorage = XII_DEFAULT_NEW(xiiConstantBufferStorageBase, uiSizeInBytes, szName);
   }
 
   out_pStorage = pStorage;

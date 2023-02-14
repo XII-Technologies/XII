@@ -26,7 +26,7 @@ xiiRmlUiRenderer::xiiRmlUiRenderer()
 
   // constant buffer storage
   {
-    m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiRmlUiConstants>();
+    m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiRmlUiConstants>(XII_STRINGIZE(xiiRmlUiConstants));
   }
 
   // quad index buffer

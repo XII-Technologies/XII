@@ -97,6 +97,22 @@ private:
   static const xiiUInt8 s_Size[xiiGALIndexType::ENUM_COUNT];
 };
 
+/// \brief Defines the writable components of a render target.
+struct XII_RENDERERFOUNDATION_DLL xiiGALColorWriteMask
+{
+  typedef xiiUInt8 StorageType;
+
+  enum Enum
+  {
+    None  = 0u,       ///< Do not write to any components.
+    Red   = 1u << 0u, ///< Write to the red component.
+    Green = 1u << 1u, ///< Write to the green component.
+    Blue  = 1u << 2u, ///< Write to the blue component.
+    Alpha = 1u << 3u, ///< Write to the alpha component.
+
+    Default = (((Red | Green) | Blue) | Alpha)
+  };
+};
 
 struct XII_RENDERERFOUNDATION_DLL xiiGALShaderStage
 {

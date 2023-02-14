@@ -27,10 +27,14 @@
 #include <RendererFoundation/Device/Device.h>
 #include <RendererFoundation/Device/DeviceFactory.h>
 
-#ifdef BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
-constexpr const char* szDefaultRenderer = "Vulkan";
+#if BUILDSYSTEM_ENABLE_DILIGENT_SUPPORT
+constexpr const char* szDefaultRenderer = "Diligent";
 #else
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
 constexpr const char* szDefaultRenderer = "DX11";
+#  else
+#    error Renderer not implemented on platform
+#  endif
 #endif
 
 xiiCommandLineOptionString opt_Renderer("app", "-renderer", "The renderer implementation to use.", szDefaultRenderer);

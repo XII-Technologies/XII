@@ -64,7 +64,7 @@ void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext
   renderViewContext.m_pRenderContext->BindMaterial(hMaterial);
 
   xiiConstantBufferStorage<xiiGizmoConstants>* pGizmoConstantBuffer;
-  xiiConstantBufferStorageHandle               hGizmoConstantBuffer = xiiRenderContext::CreateConstantBufferStorage(pGizmoConstantBuffer);
+  xiiConstantBufferStorageHandle               hGizmoConstantBuffer = xiiRenderContext::CreateConstantBufferStorage(pGizmoConstantBuffer, XII_STRINGIZE(xiiGizmoConstants));
   XII_SCOPE_EXIT(xiiRenderContext::DeleteConstantBufferStorage(hGizmoConstantBuffer));
 
   renderViewContext.m_pRenderContext->BindConstantBuffer("xiiGizmoConstants", hGizmoConstantBuffer);

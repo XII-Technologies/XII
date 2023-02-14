@@ -897,7 +897,7 @@ void xiiMaterialResource::UpdateConstantBuffer(xiiShaderPermutationResource* pSh
 
   if (m_hConstantBufferStorage.IsInvalidated())
   {
-    m_hConstantBufferStorage = xiiRenderContext::CreateConstantBufferStorage(pLayout->m_uiTotalSize);
+    m_hConstantBufferStorage = xiiRenderContext::CreateConstantBufferStorage(pLayout->m_uiTotalSize, XII_STRINGIZE(xiiShaderConstantBufferLayout));
   }
 
   xiiConstantBufferStorageBase* pStorage = nullptr;
@@ -907,7 +907,7 @@ void xiiMaterialResource::UpdateConstantBuffer(xiiShaderPermutationResource* pSh
     if (data.GetCount() != pLayout->m_uiTotalSize)
     {
       xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBufferStorage);
-      m_hConstantBufferStorage = xiiRenderContext::CreateConstantBufferStorage(pLayout->m_uiTotalSize);
+      m_hConstantBufferStorage = xiiRenderContext::CreateConstantBufferStorage(pLayout->m_uiTotalSize, XII_STRINGIZE(xiiShaderConstantBufferLayout));
 
       XII_VERIFY(xiiRenderContext::TryGetConstantBufferStorage(m_hConstantBufferStorage, pStorage), "");
     }

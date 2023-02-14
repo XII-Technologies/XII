@@ -71,7 +71,7 @@ xiiLSAOPass::xiiLSAOPass() :
   }
 
   {
-    m_hLineSweepCB          = xiiRenderContext::CreateConstantBufferStorage<xiiLSAOConstants>();
+    m_hLineSweepCB          = xiiRenderContext::CreateConstantBufferStorage<xiiLSAOConstants>(XII_STRINGIZE(xiiLSAOConstants));
     xiiLSAOConstants* cb    = xiiRenderContext::GetConstantBufferData<xiiLSAOConstants>(m_hLineSweepCB);
     cb->DepthCutoffDistance = 8.0f;
     cb->OcclusionFalloff    = 0.25f;

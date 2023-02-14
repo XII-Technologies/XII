@@ -78,7 +78,6 @@ struct XII_RENDERERCORE_DLL xiiShaderResourceBinding
 {
   XII_DECLARE_MEM_RELOCATABLE_TYPE();
 
-
   xiiShaderResourceBinding();
   ~xiiShaderResourceBinding();
 

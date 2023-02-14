@@ -12,7 +12,7 @@ xiiInstanceData::xiiInstanceData(xiiUInt32 uiMaxInstanceCount /*= 1024*/) :
 {
   CreateBuffer(uiMaxInstanceCount);
 
-  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiObjectConstants>();
+  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiObjectConstants>(XII_STRINGIZE(xiiObjectConstants));
 }
 
 xiiInstanceData::~xiiInstanceData()

@@ -14,7 +14,7 @@ public:
   virtual void      PresentRenderTarget(xiiGALDevice* pDevice) override;
   virtual xiiResult UpdateSwapChain(xiiGALDevice* pDevice, xiiEnum<xiiGALPresentMode> newPresentMode) override;
 
-  XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::ISwapChain>& GetSwapChain();
+  XII_ALWAYS_INLINE Diligent::ISwapChain* GetSwapChain();
 
 protected:
   friend class xiiGALDeviceDiligent;
@@ -34,6 +34,8 @@ protected:
   xiiGALDeviceDiligent* m_pDeviceDiligent = nullptr;
 
   Diligent::RefCntAutoPtr<Diligent::ISwapChain> m_pSwapChain;
+
+  Diligent::ITextureView* m_pCurrentBackbufferRTV;
 
   xiiGALTextureHandle m_hBackbufferTexture;
 

@@ -12,7 +12,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiParticleRenderer::TempSystemCB::TempSystemCB(xiiRenderContext* pRenderContext)
 {
   // TODO This pattern looks like it is inefficient. Should it use the GPU pool instead somehow?
-  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage(m_pConstants);
+  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage(m_pConstants, XII_STRINGIZE(xiiParticleSystemConstants));
 
   pRenderContext->BindConstantBuffer("xiiParticleSystemConstants", m_hConstantBuffer);
 }

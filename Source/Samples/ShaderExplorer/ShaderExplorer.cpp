@@ -52,7 +52,7 @@ public:
 };
 
 xiiShaderExplorerApp::xiiShaderExplorerApp() :
-  xiiApplication("Shader Explorer")
+  xiiApplication("Shader Explorer"), m_bStuffChanged(false)
 {
 }
 
@@ -144,7 +144,6 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
     m_pCamera->MoveLocally(cameraMotion.y, cameraMotion.x, 0.0f);
   }
 
-
   m_bStuffChanged = false;
   m_pDirectoryWatcher->EnumerateChanges(xiiMakeDelegate(&xiiShaderExplorerApp::OnFileChanged, this));
   if (m_bStuffChanged)
@@ -159,6 +158,7 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
 
     m_pDevice->BeginPipeline("ShaderExplorer", m_hSwapChain);
 
+    // Must always retrieve the current swapchain render target
     xiiGALPass*                  pGALPass          = m_pDevice->BeginPass("xiiShaderExplorerMainPass");
     const xiiGALSwapChain*       pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
     xiiGALRenderTargetViewHandle hBBRTV            = m_pDevice->GetDefaultRenderTargetView(pPrimarySwapChain->GetRenderTargets().m_hRTs[0]);
@@ -235,15 +235,15 @@ void xiiShaderExplorerApp::AfterCoreSystemsStartup()
 
   xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 
-#ifdef BUILDSYSTEM_ENABLE_DILIGENT_SUPPORT
-#  if D3D11_SUPPORTED
-  constexpr const char* szDefaultRenderer = "DiligentD3D11";
-#  endif
-  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D11;
-#elif BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
-  constexpr const char* szDefaultRenderer = "Vulkan";
+#if BUILDSYSTEM_ENABLE_DILIGENT_SUPPORT
+  constexpr const char* szDefaultRenderer = "Diligent";
+  xiiGraphicsDevice::Default              = xiiGraphicsDevice::D3D12;
 #else
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
   constexpr const char* szDefaultRenderer = "DX11";
+#  else
+#    error Renderer not implemented on platform
+#  endif
 #endif
 
   const char* szRendererName   = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
@@ -412,7 +412,7 @@ void xiiShaderExplorerApp::UpdateSwapChain()
     m_pDevice->UpdateSwapChain(m_hSwapChain, xiiGALPresentMode::VSync).IgnoreResult();
   }
 
-  if (!m_hSwapChain.IsInvalidated())
+  if (!m_hSwapChain.IsInvalidated() && !m_hDepthStencilTexture.IsInvalidated())
   {
     m_pDevice->DestroyTexture(m_hDepthStencilTexture);
     m_hDepthStencilTexture.Invalidate();

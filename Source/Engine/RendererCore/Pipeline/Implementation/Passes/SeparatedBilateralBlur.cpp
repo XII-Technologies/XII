@@ -37,7 +37,7 @@ xiiSeparatedBilateralBlurPass::xiiSeparatedBilateralBlurPass() :
   }
 
   {
-    m_hBilateralBlurCB = xiiRenderContext::CreateConstantBufferStorage<xiiBilateralBlurConstants>();
+    m_hBilateralBlurCB = xiiRenderContext::CreateConstantBufferStorage<xiiBilateralBlurConstants>(XII_STRINGIZE(xiiBilateralBlurConstants));
   }
 }
 

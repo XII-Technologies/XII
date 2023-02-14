@@ -1,4 +1,4 @@
-inline bool xiiShaderResourceType::IsArray(xiiShaderResourceType::Enum format)
+XII_FORCE_INLINE bool xiiShaderResourceType::IsArray(xiiShaderResourceType::Enum format)
 {
   switch (format)
   {
@@ -12,12 +12,12 @@ inline bool xiiShaderResourceType::IsArray(xiiShaderResourceType::Enum format)
   }
 }
 
-inline xiiGALShaderCreationDescription::xiiGALShaderCreationDescription() :
+XII_FORCE_INLINE xiiGALShaderCreationDescription::xiiGALShaderCreationDescription() :
   xiiHashableStruct()
 {
 }
 
-inline xiiGALShaderCreationDescription::~xiiGALShaderCreationDescription()
+XII_FORCE_INLINE xiiGALShaderCreationDescription::~xiiGALShaderCreationDescription()
 {
   for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
   {
@@ -31,12 +31,12 @@ inline xiiGALShaderCreationDescription::~xiiGALShaderCreationDescription()
   }
 }
 
-inline bool xiiGALShaderCreationDescription::HasByteCodeForStage(xiiGALShaderStage::Enum Stage) const
+XII_FORCE_INLINE bool xiiGALShaderCreationDescription::HasByteCodeForStage(xiiGALShaderStage::Enum Stage) const
 {
   return m_ByteCodes[Stage] != nullptr && m_ByteCodes[Stage]->IsValid();
 }
 
-inline void xiiGALTextureCreationDescription::SetAsRenderTarget(
+XII_FORCE_INLINE void xiiGALTextureCreationDescription::SetAsRenderTarget(
   xiiUInt32                   uiWidth,
   xiiUInt32                   uiHeight,
   xiiGALResourceFormat::Enum  format,

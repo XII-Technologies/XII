@@ -13,7 +13,7 @@ XII_DEFINE_AS_POD_TYPE(xiiSimplifiedDataConstants);
 xiiSimplifiedDataGPU::xiiSimplifiedDataGPU()
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-  m_hConstantBuffer     = xiiRenderContext::CreateConstantBufferStorage<xiiSimplifiedDataConstants>();
+  m_hConstantBuffer     = xiiRenderContext::CreateConstantBufferStorage<xiiSimplifiedDataConstants>(XII_STRINGIZE(xiiSimplifiedDataConstants));
 }
 
 xiiSimplifiedDataGPU::~xiiSimplifiedDataGPU()

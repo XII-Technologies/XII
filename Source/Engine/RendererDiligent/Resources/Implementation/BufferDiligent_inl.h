@@ -1,10 +1,10 @@
 
-XII_ALWAYS_INLINE Diligent::RefCntAutoPtr<Diligent::IBuffer>& xiiGALBufferDiligent::GetBuffer()
+XII_ALWAYS_INLINE Diligent::IBuffer* xiiGALBufferDiligent::GetBuffer()
 {
-  return m_pBuffer;
+  return m_pBuffer.RawPtr();
 }
 
-XII_ALWAYS_INLINE Diligent::TEXTURE_FORMAT xiiGALBufferDiligent::GetIndexFormat() const
+XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiGALBufferDiligent::GetIndexFormat() const
 {
   return m_IndexFormat;
 }

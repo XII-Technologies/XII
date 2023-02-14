@@ -83,6 +83,14 @@ static D3D11_BLEND ToD3DBlend(xiiGALBlend::Enum e)
   return D3D11_BLEND_ONE;
 }
 
+xiiUInt8 ToD3DWriteMask(xiiGALColorWriteMask::Enum mask)
+{
+  return ((mask & xiiGALColorWriteMask::Red) ? D3D11_COLOR_WRITE_ENABLE_RED : 0) |
+    ((mask & xiiGALColorWriteMask::Green) ? D3D11_COLOR_WRITE_ENABLE_GREEN : 0) |
+    ((mask & xiiGALColorWriteMask::Blue) ? D3D11_COLOR_WRITE_ENABLE_BLUE : 0) |
+    ((mask & xiiGALColorWriteMask::Alpha) ? D3D11_COLOR_WRITE_ENABLE_ALPHA : 0);
+}
+
 xiiResult xiiGALBlendStateDX11::InitPlatform(xiiGALDevice* pDevice)
 {
   D3D11_BLEND_DESC DXDesc;
@@ -98,8 +106,7 @@ xiiResult xiiGALBlendStateDX11::InitPlatform(xiiGALDevice* pDevice)
     DXDesc.RenderTarget[i].DestBlendAlpha        = ToD3DBlend(m_Description.m_RenderTargetBlendDescriptions[i].m_DestBlendAlpha);
     DXDesc.RenderTarget[i].SrcBlend              = ToD3DBlend(m_Description.m_RenderTargetBlendDescriptions[i].m_SourceBlend);
     DXDesc.RenderTarget[i].SrcBlendAlpha         = ToD3DBlend(m_Description.m_RenderTargetBlendDescriptions[i].m_SourceBlendAlpha);
-    DXDesc.RenderTarget[i].RenderTargetWriteMask = m_Description.m_RenderTargetBlendDescriptions[i].m_uiWriteMask &
-      0x0F; // D3D11: RenderTargetWriteMask can only have the least significant 4 bits set.
+    DXDesc.RenderTarget[i].RenderTargetWriteMask = ToD3DWriteMask(m_Description.m_RenderTargetBlendDescriptions[i].m_ColorWriteMask);
   }
 
   if (FAILED(static_cast<xiiGALDeviceDX11*>(pDevice)->GetDXDevice()->CreateBlendState(&DXDesc, &m_pDXBlendState)))

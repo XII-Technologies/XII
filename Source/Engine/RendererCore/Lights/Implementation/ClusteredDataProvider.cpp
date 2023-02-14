@@ -66,7 +66,7 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
     }
   }
 
-  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiClusteredDataConstants>();
+  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiClusteredDataConstants>(XII_STRINGIZE(xiiClusteredDataConstants));
 
   {
     xiiGALSamplerStateCreationDescription desc;
