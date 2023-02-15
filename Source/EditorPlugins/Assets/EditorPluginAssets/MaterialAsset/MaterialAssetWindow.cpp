@@ -333,8 +333,14 @@ void xiiQtMaterialAssetDocumentWindow::SelectionEventHandler(const xiiSelectionM
 {
   if (GetDocument()->GetSelectionManager()->IsSelectionEmpty())
   {
-    // delayed execution
-    QTimer::singleShot(1, [this]() { GetDocument()->GetSelectionManager()->SetSelection(GetMaterialDocument()->GetPropertyObject()); });
+    // Delayed execution
+    QTimer::singleShot(1, [this]() {
+      // Check again if the selection is empty. This could have changed due to the delayed execution.
+      if (GetDocument()->GetSelectionManager()->IsSelectionEmpty())
+      {
+        GetDocument()->GetSelectionManager()->SetSelection(GetMaterialDocument()->GetPropertyObject());
+      }
+    });
   }
 }
 

@@ -24,7 +24,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneExportModifier_RemoveShapeIconComponent
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiSceneExportModifier_RemoveShapeIconComponents::ModifyWorld(xiiWorld& world, const xiiUuid& documentGuid)
+void xiiSceneExportModifier_RemoveShapeIconComponents::ModifyWorld(xiiWorld& world, const xiiUuid& documentGuid, bool bForExport)
 {
   XII_LOCK(world.GetWriteMarker());
 

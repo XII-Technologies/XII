@@ -29,5 +29,5 @@ class XII_ENGINEPLUGINSCENE_DLL xiiSceneExportModifier_RemoveShapeIconComponents
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneExportModifier_RemoveShapeIconComponents, xiiSceneExportModifier);
 
 public:
-  virtual void ModifyWorld(xiiWorld& world, const xiiUuid& documentGuid) override;
+  virtual void ModifyWorld(xiiWorld& world, const xiiUuid& documentGuid, bool bForExport) override;
 };

@@ -10,7 +10,7 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneExportModifier_JoltStaticMeshConversion, 1, xiiRTTIDefaultAllocator<xiiSceneExportModifier_JoltStaticMeshConversion>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-void xiiSceneExportModifier_JoltStaticMeshConversion::ModifyWorld(xiiWorld& world, const xiiUuid& documentGuid)
+void xiiSceneExportModifier_JoltStaticMeshConversion::ModifyWorld(xiiWorld& world, const xiiUuid& documentGuid, bool bForExport)
 {
   XII_LOCK(world.GetWriteMarker());
 
