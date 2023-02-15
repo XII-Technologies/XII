@@ -150,3 +150,6 @@ void xiiControllerInputAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const 
   xiiInputManager::GetInputSlotState(xiiInputSlot_Controller0_PadDown, &fValue1);
   m_PadDown.SetTriggered(graph, fValue1 > 0);
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_AnimNodes_ControllerInputAnimNode);

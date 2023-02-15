@@ -61,3 +61,6 @@ void xiiGALDeviceFactory::UnregisterCreatorFunc(const char* szRendererName)
 {
   XII_VERIFY(s_CreatorFuncs.Remove(szRendererName), "Creator func not registered");
 }
+
+
+XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Device_Implementation_DeviceFactory);

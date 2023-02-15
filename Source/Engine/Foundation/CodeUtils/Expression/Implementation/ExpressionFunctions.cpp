@@ -70,3 +70,6 @@ void xiiDefaultExpressionFunctions::PerlinNoise(xiiExpression::Inputs inputs, xi
     ++pOutput;
   }
 }
+
+
+XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Expression_Implementation_ExpressionFunctions);

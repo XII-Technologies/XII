@@ -226,3 +226,6 @@ void xiiAnimGraphModelPoseOutputPin::SetPose(xiiAnimGraph& graph, xiiAnimGraphPi
     graph.m_ModelPoseInputPinStates[idx] = pPose->m_uiOwnIndex;
   }
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_Implementation_AnimGraphPins);

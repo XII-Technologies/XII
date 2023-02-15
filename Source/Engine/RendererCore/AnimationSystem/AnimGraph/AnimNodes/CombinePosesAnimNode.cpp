@@ -186,3 +186,6 @@ void xiiCombinePosesAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const xii
 
   m_LocalPosePin.SetPose(graph, pPinData);
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_AnimNodes_CombinePosesAnimNode);

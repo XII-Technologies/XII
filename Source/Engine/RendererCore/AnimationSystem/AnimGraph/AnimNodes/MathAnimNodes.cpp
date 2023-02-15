@@ -106,3 +106,6 @@ void xiiMathExpressionAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const x
   float result = m_mExpression.Evaluate(inputs);
   m_ResultPin.SetNumber(graph, result);
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_AnimNodes_MathAnimNodes);

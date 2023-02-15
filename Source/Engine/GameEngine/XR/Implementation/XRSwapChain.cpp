@@ -32,3 +32,6 @@ xiiGALSwapChainHandle xiiGALXRSwapChain::Create(xiiXRInterface* pXrInterface)
   XII_ASSERT_DEV(s_Factory.IsValid(), "No factory method assigned for xiiGALXRSwapChain.");
   return s_Factory(pXrInterface);
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_XR_Implementation_XRSwapChain);

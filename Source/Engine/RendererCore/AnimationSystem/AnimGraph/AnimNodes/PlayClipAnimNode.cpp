@@ -223,3 +223,6 @@ void xiiPlayClipAnimNode::Clips_Remove(xiiUInt32 uiIndex)
 {
   m_Clips.RemoveAtAndCopy(uiIndex);
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_AnimNodes_PlayClipAnimNode);

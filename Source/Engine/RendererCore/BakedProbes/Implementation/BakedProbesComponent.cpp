@@ -469,3 +469,6 @@ void xiiBakedProbesComponent::OnObjectCreated(const xiiAbstractObjectNode& node)
 
   m_sProbeTreeResourcePrefix.Assign(sPrefix);
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_BakedProbes_Implementation_BakedProbesComponent);

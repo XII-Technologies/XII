@@ -290,3 +290,6 @@ public:
 };
 
 xiiSurfaceResourceDescriptorPatch_1_2 g_xiiSurfaceResourceDescriptorPatch_1_2;
+
+
+XII_STATICLINK_FILE(Core, Core_Physics_Implementation_SurfaceResourceDescriptor);

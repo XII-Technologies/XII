@@ -65,3 +65,6 @@ void xiiEventAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const xiiSkeleto
     pTarget->SendEventMessage(msg, nullptr);
   }
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_AnimNodes_EventAnimNode);

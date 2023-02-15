@@ -179,3 +179,6 @@ void xiiBoneWeightsAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const xiiS
     m_InverseWeightsPin.SetWeights(graph, pPinData);
   }
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_AnimNodes_BoneWeightsAnimNode);

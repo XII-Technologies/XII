@@ -678,3 +678,6 @@ xiiResult xiiVisualScriptNode_FunctionCall::ConvertArgumentToRequiredType(xiiVar
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_VisualScript_Nodes_Implementation_VisualScriptBasicNodes);

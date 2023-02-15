@@ -75,3 +75,6 @@ namespace xiiStateMachineInternal
   }
 
 } // namespace xiiStateMachineInternal
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_StateMachine_Implementation_StateMachineInstanceData);

@@ -597,3 +597,6 @@ void xiiCommandLineOptionEnum::GetEnumKeysAndValues(xiiDynamicArray<EnumKeyValue
     eVal++;
   }
 }
+
+
+XII_STATICLINK_FILE(Foundation, Foundation_Utilities_Implementation_CommandLineOptions);

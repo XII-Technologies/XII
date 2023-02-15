@@ -222,3 +222,6 @@ void xiiRasterizerViewPool::ReturnRasterizerView(xiiRasterizerView* pView)
 
   XII_ASSERT_NOT_IMPLEMENTED;
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_Rasterizer_Implementation_RasterizerView);

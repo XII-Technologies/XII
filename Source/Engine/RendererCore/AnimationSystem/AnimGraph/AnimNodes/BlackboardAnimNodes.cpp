@@ -302,3 +302,6 @@ void xiiGetBlackboardNumberAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, co
 
   m_NumberPin.SetNumber(graph, fValue);
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_AnimNodes_BlackboardAnimNodes);

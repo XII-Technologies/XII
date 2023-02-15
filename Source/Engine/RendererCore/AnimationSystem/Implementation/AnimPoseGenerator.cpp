@@ -492,3 +492,6 @@ xiiArrayPtr<xiiMat4> xiiAnimPoseGenerator::AcquireModelPoseTransforms(xiiAnimPos
 
   return m_UsedModelTransforms[id];
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_Implementation_AnimPoseGenerator);

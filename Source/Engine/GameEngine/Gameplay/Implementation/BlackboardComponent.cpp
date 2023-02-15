@@ -353,3 +353,6 @@ void xiiBlackboardComponent::OnEntryChanged(const xiiBlackboard::EntryEvent& e)
 
   m_EntryChangedSender.SendEventMessage(msg, this, GetOwner());
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_Gameplay_Implementation_BlackboardComponent);

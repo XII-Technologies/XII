@@ -70,3 +70,6 @@ xiiGALPass::xiiGALPass(xiiGALDevice& device) :
 }
 
 xiiGALPass::~xiiGALPass() = default;
+
+
+XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Device_Implementation_Pass);

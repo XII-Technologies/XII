@@ -16,3 +16,6 @@ void xiiStreamUtils::ReadAllAndAppend(xiiStreamReader& stream, xiiDynamicArray<x
     destination.PushBackRange(xiiArrayPtr<xiiUInt8>(temp, uiRead));
   }
 }
+
+
+XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_StreamUtils);

@@ -342,3 +342,6 @@ bool xiiSurfaceResource::IsBasedOn(const xiiSurfaceResourceHandle hThisOrBaseSur
 
   return IsBasedOn(pThisOrBaseSurface.GetPointer());
 }
+
+
+XII_STATICLINK_FILE(Core, Core_Physics_Implementation_SurfaceResource);

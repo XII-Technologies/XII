@@ -221,4 +221,4 @@ void* xiiVisualScriptNode_HasName::GetInputPinDataPointer(xiiUInt8 uiPin)
 
 
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_VisualScript_Nodes_VisualScriptObjectNodes);
+XII_STATICLINK_FILE(GameEngine, GameEngine_VisualScript_Nodes_Implementation_VisualScriptObjectNodes);

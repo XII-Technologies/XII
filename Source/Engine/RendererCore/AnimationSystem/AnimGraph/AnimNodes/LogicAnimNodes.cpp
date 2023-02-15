@@ -255,3 +255,6 @@ void xiiCompareNumberAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const xi
     m_ActivePin.SetTriggered(graph, false);
   }
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_AnimNodes_LogicAnimNodes);

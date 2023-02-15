@@ -187,3 +187,6 @@ xiiVisualScriptDataPinAssignFunc xiiVisualScriptInstance::FindDataPinAssignFunct
 
   return s_DataPinAssignFunctions.GetValueOrDefault(key, nullptr);
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_VisualScript_Implementation_VisualScriptInstanceAssignFunctions);

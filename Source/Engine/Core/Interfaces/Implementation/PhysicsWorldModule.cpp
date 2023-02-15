@@ -60,4 +60,4 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 
-XII_STATICLINK_FILE(Core, Core_Interfaces_PhysicsWorldModule);
+XII_STATICLINK_FILE(Core, Core_Interfaces_Implementation_PhysicsWorldModule);

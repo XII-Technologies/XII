@@ -12,4 +12,5 @@ XII_STATICLINK_LIBRARY(Utilities)
   XII_STATICLINK_REFERENCE(Utilities_FileFormats_Implementation_OBJLoader);
   XII_STATICLINK_REFERENCE(Utilities_GridAlgorithms_Implementation_Rasterization);
   XII_STATICLINK_REFERENCE(Utilities_PathFinding_Implementation_GridNavmesh);
+  XII_STATICLINK_REFERENCE(Utilities_Resources_ConfigFileResource);
 }

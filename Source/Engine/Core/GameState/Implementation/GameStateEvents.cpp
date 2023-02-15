@@ -57,3 +57,6 @@ void xiiForwardEventsToGameStateComponent::Initialize()
 
   EnableUnhandledMessageHandler(true);
 }
+
+
+XII_STATICLINK_FILE(Core, Core_GameState_Implementation_GameStateEvents);

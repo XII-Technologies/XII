@@ -82,4 +82,4 @@ void xiiVisualScriptNode_MathExpression::SetExpression(const char* e)
 
 
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_VisualScript_Nodes_VisualScriptMathExpressionNode);
+XII_STATICLINK_FILE(GameEngine, GameEngine_VisualScript_Nodes_Implementation_VisualScriptMathExpressionNode);
