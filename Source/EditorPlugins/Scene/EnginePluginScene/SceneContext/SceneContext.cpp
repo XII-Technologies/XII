@@ -466,7 +466,7 @@ void xiiSceneContext::OnSimulationEnabled()
 {
   xiiLog::Info("World Simulation enabled");
 
-  xiiSceneExportModifier::ApplyAllModifiers(*m_pWorld, GetDocumentGuid());
+  xiiSceneExportModifier::ApplyAllModifiers(*m_pWorld, GetDocumentGuid(), false);
 
   xiiResourceManager::ReloadAllResources(false);
 
@@ -634,7 +634,7 @@ void xiiSceneContext::OnPlayTheGameModeStarted(const xiiTransform* pStartPositio
 
   xiiLog::Info("Starting Play-the-Game mode");
 
-  xiiSceneExportModifier::ApplyAllModifiers(*m_pWorld, GetDocumentGuid());
+  xiiSceneExportModifier::ApplyAllModifiers(*m_pWorld, GetDocumentGuid(), false);
 
   xiiResourceManager::ReloadAllResources(false);
 
@@ -809,12 +809,12 @@ bool xiiSceneContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
   }
 
   // #TODO layers
-  xiiSceneExportModifier::ApplyAllModifiers(*m_pWorld, GetDocumentGuid());
+  xiiSceneExportModifier::ApplyAllModifiers(*m_pWorld, GetDocumentGuid(), true);
 
   xiiDeferredFileWriter file;
   file.SetOutput(pMsg->m_sOutputFile);
 
-  // export
+  // Export
   {
     // File Header
     {

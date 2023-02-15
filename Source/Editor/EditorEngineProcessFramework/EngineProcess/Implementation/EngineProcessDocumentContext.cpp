@@ -819,13 +819,17 @@ xiiGameObjectHandle xiiEngineProcessDocumentContext::ResolveStringToGameObjectHa
     XII_ASSERT_DEV(xiiStringUtils::IsNullOrEmpty(szTargetGuid), "Expected GUID references");
   }
 
+  if (xiiStringUtils::IsNullOrEmpty(szComponentProperty))
+  {
+    return m_Context.m_GameObjectMap.GetHandle(newTargetGuid);
+  }
 
-  // overview for the steps below:
+  // Overview for the steps below:
   //
-  // check if m_GoRef_ReferencesTo[srcComponentGuid] already maps from [szComponentProperty] to something -> update (remove if pData is empty/invalid)
+  // Check if m_GoRef_ReferencesTo[srcComponentGuid] already maps from [szComponentProperty] to something -> update (remove if pData is empty/invalid)
   // otherwise add reference
   //
-  // if already mapped to something, remove reference from m_GoRef_ReferencedBy
+  // If already mapped to something, remove reference from m_GoRef_ReferencedBy
   // then add new reference to m_GoRef_ReferencedBy
 
 

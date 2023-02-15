@@ -13,7 +13,9 @@ public:
   static void CreateModifiers(xiiHybridArray<xiiSceneExportModifier*, 8>& modifiers);
   static void DestroyModifiers(xiiHybridArray<xiiSceneExportModifier*, 8>& modifiers);
 
-  static void ApplyAllModifiers(xiiWorld& world, const xiiUuid& documentGuid);
+  static void ApplyAllModifiers(xiiWorld& world, const xiiUuid& documentGuid, bool bForExport);
 
-  virtual void ModifyWorld(xiiWorld& world, const xiiUuid& documentGuid) = 0;
+  virtual void ModifyWorld(xiiWorld& world, const xiiUuid& documentGuid, bool bForExport) = 0;
+
+  static void CleanUpWorld(xiiWorld& world);
 };
