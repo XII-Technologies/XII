@@ -38,3 +38,6 @@ xiiResult xiiBakingSettings::Deserialize(xiiStreamReader& stream)
 
   return XII_SUCCESS;
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_BakedProbes_Implementation_BakingInterface);

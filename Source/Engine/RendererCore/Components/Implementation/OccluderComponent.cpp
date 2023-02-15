@@ -102,3 +102,6 @@ void xiiOccluderComponent::OnDeactivated()
 {
   m_pOccluderObject.Clear();
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_Components_Implementation_OccluderComponent);

@@ -87,3 +87,6 @@ void xiiModelPoseOutputAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const 
 
   graph.SetRootMotion(rootMotion, rootRotationX, rootRotationY, rootRotationZ);
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_AnimNodes_ModelPoseOutputAnimNode);

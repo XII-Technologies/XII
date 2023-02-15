@@ -75,3 +75,6 @@ void xiiLocalToModelPoseAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const
 
   m_ModelPosePin.SetPose(graph, pModelTransform);
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_AnimNodes_LocalToModelPoseAnimNode);

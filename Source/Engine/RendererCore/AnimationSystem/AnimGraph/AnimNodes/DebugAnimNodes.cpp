@@ -69,3 +69,6 @@ void xiiLogAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const xiiSkeletonR
 
   xiiLog::Dev(m_sText, m_Input0.IsTriggered(graph), m_Input1.IsTriggered(graph), m_Input2.GetNumber(graph), m_Input3.GetNumber(graph));
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_AnimNodes_DebugAnimNodes);

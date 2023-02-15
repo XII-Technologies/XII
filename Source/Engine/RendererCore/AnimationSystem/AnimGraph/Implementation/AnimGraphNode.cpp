@@ -327,3 +327,6 @@ xiiResult xiiAnimState::Deserialize(xiiStreamReader& stream)
 
   return XII_SUCCESS;
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_Implementation_AnimGraphNode);

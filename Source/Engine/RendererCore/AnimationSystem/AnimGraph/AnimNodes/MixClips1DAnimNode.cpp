@@ -281,3 +281,6 @@ void xiiMixClips1DAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const xiiSk
     m_LocalPosePin.SetPose(graph, pOutputTransform);
   }
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_AnimNodes_MixClips1DAnimNode);

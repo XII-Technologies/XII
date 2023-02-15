@@ -45,3 +45,6 @@ void xiiBakingUtils::DecompressSkyVisibility(xiiCompressedSkyVisibility compress
     uiOffset += s_BitsPerDir[i];
   }
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_BakedProbes_Implementation_BakingUtils);

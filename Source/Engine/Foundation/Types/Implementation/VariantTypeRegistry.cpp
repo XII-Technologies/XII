@@ -80,3 +80,6 @@ XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiVariantTypeInfo);
 xiiVariantTypeInfo::xiiVariantTypeInfo()
 {
 }
+
+
+XII_STATICLINK_FILE(Foundation, Foundation_Types_Implementation_VariantTypeRegistry);

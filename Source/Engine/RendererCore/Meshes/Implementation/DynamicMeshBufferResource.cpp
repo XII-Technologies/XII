@@ -219,3 +219,6 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandEncoder* pGALCom
     }
   }
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_Meshes_Implementation_DynamicMeshBufferResource);

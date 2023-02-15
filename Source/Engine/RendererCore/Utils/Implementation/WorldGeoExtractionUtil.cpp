@@ -195,4 +195,4 @@ void xiiMsgExtractGeometry::AddBox(const xiiTransform& transform, xiiVec3 vExten
   meshObject.m_hMeshResource = hBoxMesh;
 }
 
-XII_STATICLINK_FILE(Core, Core_Utils_Implementation_WorldGeoExtractionUtil);
+XII_STATICLINK_FILE(RendererCore, RendererCore_Utils_Implementation_WorldGeoExtractionUtil);

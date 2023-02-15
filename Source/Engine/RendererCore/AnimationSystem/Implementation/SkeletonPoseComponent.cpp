@@ -374,3 +374,6 @@ void xiiSkeletonPoseComponentManager::Initialize()
 
   RegisterUpdateFunction(desc);
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_Implementation_SkeletonPoseComponent);

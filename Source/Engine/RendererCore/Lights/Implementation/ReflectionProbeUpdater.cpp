@@ -461,3 +461,6 @@ void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& ste
     xiiRenderWorld::AddViewToRender(pReflectionView->m_hView);
   }
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_Lights_Implementation_ReflectionProbeUpdater);

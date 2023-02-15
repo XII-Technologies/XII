@@ -176,3 +176,6 @@ void xiiRopeSimulator::UpdateNodePositions(const xiiSimdFloat tDiffSqr)
     m_Nodes.PeekBack().m_vPreviousPosition = m_Nodes.PeekBack().m_vPosition;
   }
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_Physics_Implementation_RopeSimulator);

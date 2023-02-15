@@ -443,3 +443,6 @@ bool xiiStateMachineTransition_Compound::GetInstanceDataDesc(xiiStateMachineInst
 {
   return m_Compound.GetInstanceDataDesc(m_SubTransitions.GetArrayPtr(), out_desc);
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_StateMachine_Implementation_StateMachineBuiltins);

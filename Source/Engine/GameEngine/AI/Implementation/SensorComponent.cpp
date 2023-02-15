@@ -679,3 +679,6 @@ void xiiSensorWorldModule::DebugDrawSensors(const xiiWorldModule::UpdateContext&
     xiiDebugRenderer::DrawLines(pWorld, lines, xiiColor::White);
   }
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_AI_Implementation_SensorComponent);

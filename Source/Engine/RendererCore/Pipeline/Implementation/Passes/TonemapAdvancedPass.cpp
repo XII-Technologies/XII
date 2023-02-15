@@ -149,4 +149,4 @@ void xiiTonemapAdvancedPass::Execute(const xiiRenderViewContext& renderViewConte
 
 
 
-XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_Passes_TonemapPass);
+XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_Passes_TonemapAdvancedPass);

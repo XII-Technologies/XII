@@ -76,3 +76,6 @@ xiiUuid xiiApplyNativePropertyChangesContext::GenerateObjectGuid(const xiiUuid& 
   guid.CreateNewUuid();
   return guid;
 }
+
+
+XII_STATICLINK_FILE(Foundation, Foundation_Serialization_Implementation_ApplyNativePropertyChangesContext);

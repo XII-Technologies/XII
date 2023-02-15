@@ -488,3 +488,6 @@ void xiiGALCommandEncoder::InvalidateState()
 {
   m_State.InvalidateState();
 }
+
+
+XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_CommandEncoder_Implementation_CommandEncoder);

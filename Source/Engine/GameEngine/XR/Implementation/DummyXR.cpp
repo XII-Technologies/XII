@@ -319,3 +319,6 @@ void xiiDummyXRInput::UpdateInputSlotValues()
 void xiiDummyXRInput::RegisterInputSlots()
 {
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_XR_Implementation_DummyXR);

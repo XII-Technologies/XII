@@ -281,3 +281,6 @@ void xiiPipeChannel_linux::ProcessIncomingPackages()
 }
 
 #endif
+
+
+XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_Linux_PipeChannel_linux);

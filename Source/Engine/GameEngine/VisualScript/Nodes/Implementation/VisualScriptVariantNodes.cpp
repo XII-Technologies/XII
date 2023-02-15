@@ -53,3 +53,6 @@ void* xiiVisualScriptNode_ConvertTo::GetInputPinDataPointer(xiiUInt8 uiPin)
 
   return nullptr;
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_VisualScript_Nodes_Implementation_VisualScriptVariantNodes);

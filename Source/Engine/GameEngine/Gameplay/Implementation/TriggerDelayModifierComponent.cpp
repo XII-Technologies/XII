@@ -156,3 +156,6 @@ void xiiTriggerDelayModifierComponent::OnMsgComponentInternalTrigger(xiiMsgCompo
     }
   }
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_Gameplay_Implementation_TriggerDelayModifierComponent);

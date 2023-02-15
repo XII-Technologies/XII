@@ -136,3 +136,6 @@ void xiiJointOverrideComponent::OnAnimationPosePreparing(xiiMsgAnimationPosePrep
     msg.m_LocalTransforms[soaIdx].scale = val;
   }
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_Animation_Skeletal_Implementation_JointOverrideComponent);

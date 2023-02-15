@@ -316,3 +316,6 @@ void xiiExpressionAST::PrintGraph(xiiDGMLGraph& graph) const
     graph.AddConnection(uiGraphNode, currentNodeInfo.m_uiParentGraphNode);
   }
 }
+
+
+XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Expression_Implementation_ExpressionAST);

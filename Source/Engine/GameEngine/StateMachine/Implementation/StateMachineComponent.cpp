@@ -444,3 +444,6 @@ void xiiStateMachineComponent::Update()
     m_pStateMachineInstance->Update(GetWorld()->GetClock().GetTimeDiff());
   }
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_StateMachine_Implementation_StateMachineComponent);

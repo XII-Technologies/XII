@@ -409,3 +409,6 @@ bool xiiConfigFileResourceLoader::IsResourceOutdated(const xiiResource* pResourc
 {
   return static_cast<const xiiConfigFileResource*>(pResource)->m_RequiredFiles.HasAnyFileChanged();
 }
+
+
+XII_STATICLINK_FILE(Utilities, Utilities_Resources_ConfigFileResource);

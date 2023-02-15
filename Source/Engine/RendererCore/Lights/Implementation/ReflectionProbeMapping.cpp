@@ -273,3 +273,6 @@ void xiiReflectionProbeMapping::UnmapProbe(xiiReflectionProbeId id)
     m_Events.Broadcast(e);
   }
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_Lights_Implementation_ReflectionProbeMapping);

@@ -154,3 +154,6 @@ xiiSharedPtr<const xiiRasterizerObject> xiiRasterizerObject::CreateMesh(xiiStrin
 }
 
 #endif
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_Rasterizer_Implementation_RasterizerObject);

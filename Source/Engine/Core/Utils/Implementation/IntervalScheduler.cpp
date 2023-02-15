@@ -190,3 +190,6 @@ xiiIntervalSchedulerBase::DataMap::Iterator xiiIntervalSchedulerBase::InsertData
 
   return m_Data.Insert(data.m_DueTime, data);
 }
+
+
+XII_STATICLINK_FILE(Core, Core_Utils_Implementation_IntervalScheduler);

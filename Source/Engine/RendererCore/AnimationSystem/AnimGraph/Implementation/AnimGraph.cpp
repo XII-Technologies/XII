@@ -304,3 +304,6 @@ xiiSharedPtr<xiiAnimGraphSharedBoneWeights> xiiAnimGraph::CreateBoneWeights(cons
 
   return bw;
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_AnimGraph_Implementation_AnimGraph);

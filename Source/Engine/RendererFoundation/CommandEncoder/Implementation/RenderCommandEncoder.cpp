@@ -306,3 +306,6 @@ void xiiGALRenderCommandEncoder::ClearStatisticsCounters()
 
   m_uiDrawCalls = 0;
 }
+
+
+XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_CommandEncoder_Implementation_RenderCommandEncoder);

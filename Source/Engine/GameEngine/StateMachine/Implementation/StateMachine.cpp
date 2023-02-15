@@ -429,3 +429,6 @@ xiiUInt32 xiiStateMachineInstance::FindNewStateToTransitionTo()
 
   return xiiInvalidIndex;
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_StateMachine_Implementation_StateMachine);

@@ -133,3 +133,6 @@ void xiiBakedProbesWorldModule::SetProbeTreeResourcePrefix(const xiiHashedString
 
   m_hProbeTree = xiiResourceManager::LoadResource<xiiProbeTreeSectorResource>(sResourcePath);
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_BakedProbes_Implementation_BakedProbesWorldModule);

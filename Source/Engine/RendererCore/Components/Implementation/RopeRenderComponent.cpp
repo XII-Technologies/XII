@@ -482,3 +482,6 @@ void xiiRopeRenderComponent::UpdateSkinningTransformBuffer(xiiArrayPtr<const xii
 
   m_SkinningState.TransformsChanged();
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_Components_Implementation_RopeRenderComponent);

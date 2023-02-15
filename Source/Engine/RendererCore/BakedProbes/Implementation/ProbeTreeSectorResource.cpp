@@ -130,3 +130,6 @@ xiiResourceLoadDesc xiiProbeTreeSectorResource::CreateResource(xiiProbeTreeSecto
 
   return res;
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_BakedProbes_Implementation_ProbeTreeSectorResource);

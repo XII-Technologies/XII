@@ -422,3 +422,6 @@ void xiiWindVolumeConeComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& ms
 
   msg.AddBounds(xiiBoundingBox(c0, c1), xiiWindVolumeComponent::SpatialDataCategory);
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_Effects_Wind_Implementation_WindVolumeComponent);

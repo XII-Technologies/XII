@@ -208,4 +208,4 @@ void xiiInputDeviceMouseKeyboard::UpdateInputSlotValues()
   }
 }
 
-XII_STATICLINK_FILE(Core, Core_Input_DeviceTypes_DeviceTypes);
+XII_STATICLINK_FILE(Core, Core_Input_DeviceTypes_Implementation_DeviceTypes);

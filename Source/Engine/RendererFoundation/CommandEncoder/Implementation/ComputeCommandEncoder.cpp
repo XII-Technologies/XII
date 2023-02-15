@@ -46,3 +46,6 @@ void xiiGALComputeCommandEncoder::ClearStatisticsCounters()
 
   m_uiDispatchCalls = 0;
 }
+
+
+XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_CommandEncoder_Implementation_ComputeCommandEncoder);

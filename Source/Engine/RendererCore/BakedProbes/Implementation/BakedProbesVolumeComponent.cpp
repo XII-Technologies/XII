@@ -78,3 +78,6 @@ void xiiBakedProbesVolumeComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds&
 {
   msg.AddBounds(xiiBoundingBox(-m_vExtents * 0.5f, m_vExtents * 0.5f), xiiInvalidSpatialDataCategory);
 }
+
+
+XII_STATICLINK_FILE(RendererCore, RendererCore_BakedProbes_Implementation_BakedProbesVolumeComponent);

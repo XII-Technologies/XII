@@ -85,4 +85,4 @@ xiiVec3 xiiWindWorldModuleInterface::ComputeWindFlutter(const xiiVec3& vWind, co
   return flutterDir * fFlutter;
 }
 
-XII_STATICLINK_FILE(Core, Core_Interfaces_WindWorldModule);
+XII_STATICLINK_FILE(Core, Core_Interfaces_Implementation_WindWorldModule);
