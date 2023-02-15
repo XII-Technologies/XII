@@ -273,12 +273,12 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectedType)
     }
     {
       xiiDocumentObject* pObject = manager.CreateObject(pRttiPOD);
-      XII_TEST_INT(AccessorPropertiesTest(pObject->GetTypeAccessor()), 17);
+      XII_TEST_INT(AccessorPropertiesTest(pObject->GetTypeAccessor()), 18);
       manager.DestroyObject(pObject);
     }
     {
       xiiDocumentObject* pObject = manager.CreateObject(pRttiMath);
-      XII_TEST_INT(AccessorPropertiesTest(pObject->GetTypeAccessor()), 26);
+      XII_TEST_INT(AccessorPropertiesTest(pObject->GetTypeAccessor()), 27);
       manager.DestroyObject(pObject);
     }
     {

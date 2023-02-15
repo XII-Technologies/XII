@@ -44,6 +44,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPODClass, 1, xiiRTTIDefaultAllocator<xiiPODC
     XII_MEMBER_PROPERTY("Float", m_FloatStruct),
     XII_ACCESSOR_PROPERTY("Bool", GetBool, SetBool),
     XII_ACCESSOR_PROPERTY("Color", GetColor, SetColor),
+    XII_MEMBER_PROPERTY("ColorUB", m_Color2),
     XII_ACCESSOR_PROPERTY("String", GetString, SetString),
     XII_ACCESSOR_PROPERTY("Buffer", GetBuffer, SetBuffer),
     XII_ACCESSOR_PROPERTY("VarianceAngle", GetCustom, SetCustom),

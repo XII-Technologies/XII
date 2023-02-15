@@ -89,6 +89,7 @@ public:
   template <typename T>
   T        Get(const xiiDocumentObject* pObject, const char* szProp, xiiVariant index = xiiVariant());
   xiiInt32 GetCount(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp);
+  xiiInt32 GetCount(const xiiDocumentObject* pObject, const char* szProp);
 
   ///@}
 

@@ -20,10 +20,19 @@ T xiiObjectAccessorBase::Get(const xiiDocumentObject* pObject, const char* szPro
   return value.ConvertTo<T>();
 }
 
-inline xiiInt32 xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp)
+XII_FORCE_INLINE xiiInt32 xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp)
 {
   xiiInt32  iCount = 0;
   xiiStatus res    = GetCount(pObject, pProp, iCount);
+  if (res.m_Result.Failed())
+    xiiLog::Error("GetCount failed: {0}", res.m_sMessage);
+  return iCount;
+}
+
+XII_FORCE_INLINE xiiInt32 xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject, const char* szProp)
+{
+  xiiInt32  iCount = 0;
+  xiiStatus res    = GetCount(pObject, szProp, iCount);
   if (res.m_Result.Failed())
     xiiLog::Error("GetCount failed: {0}", res.m_sMessage);
   return iCount;
