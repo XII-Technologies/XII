@@ -165,7 +165,7 @@ xiiStatus xiiDocumentObjectManager::SetValue(xiiDocumentObject* pObject, const c
 
   if (!accessor.SetValue(szProperty, newValue, index))
   {
-    return xiiStatus(xiiFmt("Set Property: The property '{0}' does not exist", szProperty));
+    return xiiStatus(xiiFmt("Set Property: The property '{0}' does not exist or value type does not match", szProperty));
   }
 
   xiiDocumentObjectPropertyEvent e;

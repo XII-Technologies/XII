@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/VarianceTypes.h>
 
@@ -79,6 +80,7 @@ public:
   {
     m_bBool   = true;
     m_Color   = xiiColor(1.0f, 0.0f, 0.0f, 0.0f);
+    m_Color2  = xiiColorGammaUB(255, 10, 1);
     m_sString = "Test";
     m_Buffer.PushBack(0xFF);
     m_Buffer.PushBack(0x0);
@@ -105,6 +107,7 @@ public:
 private:
   bool                 m_bBool;
   xiiColor             m_Color;
+  xiiColorGammaUB      m_Color2;
   xiiString            m_sString;
   xiiDataBuffer        m_Buffer;
   xiiVarianceTypeAngle m_VarianceAngle;
