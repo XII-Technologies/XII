@@ -25,7 +25,7 @@ inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiVec2Templat
 template <typename Type>
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiVec2Template<Type>& Value)
 {
-  stream.ReadBytes(&Value, sizeof(xiiVec2Template<Type>));
+  XII_VERIFY(stream.ReadBytes(&Value, sizeof(xiiVec2Template<Type>)) == sizeof(xiiVec2Template<Type>), "End of stream reached.");
   return stream;
 }
 
@@ -58,7 +58,7 @@ inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiVec3Templat
 template <typename Type>
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiVec3Template<Type>& Value)
 {
-  stream.ReadBytes(&Value, sizeof(xiiVec3Template<Type>));
+  XII_VERIFY(stream.ReadBytes(&Value, sizeof(xiiVec3Template<Type>)) == sizeof(xiiVec3Template<Type>), "End of stream reached.");
   return stream;
 }
 
@@ -91,7 +91,7 @@ inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiVec4Templat
 template <typename Type>
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiVec4Template<Type>& Value)
 {
-  stream.ReadBytes(&Value, sizeof(xiiVec4Template<Type>));
+  XII_VERIFY(stream.ReadBytes(&Value, sizeof(xiiVec4Template<Type>)) == sizeof(xiiVec4Template<Type>), "End of stream reached.");
   return stream;
 }
 
@@ -124,7 +124,7 @@ inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiMat3Templat
 template <typename Type>
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiMat3Template<Type>& Value)
 {
-  stream.ReadBytes(Value.m_fElementsCM, sizeof(Type) * 9);
+  XII_VERIFY(stream.ReadBytes(Value.m_fElementsCM, sizeof(Type) * 9) == sizeof(Type) * 9, "End of stream reached.");
   return stream;
 }
 
@@ -157,7 +157,7 @@ inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiMat4Templat
 template <typename Type>
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiMat4Template<Type>& Value)
 {
-  stream.ReadBytes(Value.m_fElementsCM, sizeof(Type) * 16);
+  XII_VERIFY(stream.ReadBytes(Value.m_fElementsCM, sizeof(Type) * 16) == sizeof(Type) * 16, "End of stream reached.");
   return stream;
 }
 
@@ -212,7 +212,7 @@ inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiPlaneTempla
 template <typename Type>
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiPlaneTemplate<Type>& Value)
 {
-  stream.ReadBytes(&Value, sizeof(xiiPlaneTemplate<Type>));
+  XII_VERIFY(stream.ReadBytes(&Value, sizeof(xiiPlaneTemplate<Type>)) == sizeof(xiiPlaneTemplate<Type>), "End of stream reached.");
   return stream;
 }
 
@@ -245,7 +245,7 @@ inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiQuatTemplat
 template <typename Type>
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiQuatTemplate<Type>& Value)
 {
-  stream.ReadBytes(&Value, sizeof(xiiQuatTemplate<Type>));
+  XII_VERIFY(stream.ReadBytes(&Value, sizeof(xiiQuatTemplate<Type>)) == sizeof(xiiQuatTemplate<Type>), "End of stream reached.");
   return stream;
 }
 
@@ -331,7 +331,7 @@ inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiColor& Valu
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiColor& Value)
 {
-  stream.ReadBytes(&Value, sizeof(xiiColor));
+  XII_VERIFY(stream.ReadBytes(&Value, sizeof(xiiColor)) == sizeof(xiiColor), "End of stream reached.");
   return stream;
 }
 
@@ -360,7 +360,7 @@ inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiColorGammaU
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiColorGammaUB& Value)
 {
-  stream.ReadBytes(&Value, sizeof(xiiColorGammaUB));
+  XII_VERIFY(stream.ReadBytes(&Value, sizeof(xiiColorGammaUB)) == sizeof(xiiColorGammaUB), "End of stream reached.");
   return stream;
 }
 
@@ -424,7 +424,7 @@ inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiColorLinear
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiColorLinearUB& Value)
 {
-  stream.ReadBytes(&Value, sizeof(xiiColorLinearUB));
+  XII_VERIFY(stream.ReadBytes(&Value, sizeof(xiiColorLinearUB)) == sizeof(xiiColorLinearUB), "End of stream reached.");
   return stream;
 }
 

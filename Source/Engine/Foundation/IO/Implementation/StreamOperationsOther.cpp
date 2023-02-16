@@ -56,7 +56,7 @@ void operator>>(xiiStreamReader& Stream, xiiUuid& Value)
 
 void operator<<(xiiStreamWriter& Stream, const xiiHashedString& Value)
 {
-  Stream.WriteString(Value.GetView()).IgnoreResult();
+  Stream.WriteString(Value.GetView()).AssertSuccess();
 }
 
 void operator>>(xiiStreamReader& Stream, xiiHashedString& Value)
@@ -153,7 +153,7 @@ XII_FORCE_INLINE void WriteValueFunc::operator()<xiiDataBuffer>()
   const xiiDataBuffer& data   = m_pValue->Get<xiiDataBuffer>();
   const xiiUInt32      iCount = data.GetCount();
   (*m_pStream) << iCount;
-  m_pStream->WriteBytes(data.GetData(), data.GetCount()).IgnoreResult();
+  m_pStream->WriteBytes(data.GetData(), data.GetCount()).AssertSuccess();
 }
 
 struct ReadValueFunc

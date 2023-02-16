@@ -88,7 +88,7 @@ void xiiBlackboard::RegisterEntry(const xiiHashedString& name, const xiiVariant&
     entry.m_Flags |= flags;
   }
 
-  if (entry.m_Value != initialValue)
+  if (!bExisted && entry.m_Value != initialValue)
   {
     // broadcasts the change event, in case we overwrite an existing entry
     SetEntryValue(name, initialValue).IgnoreResult();
@@ -159,10 +159,10 @@ const xiiBlackboard::Entry* xiiBlackboard::GetEntry(const xiiTempHashedString& n
   return &itEntry.Value();
 }
 
-xiiVariant xiiBlackboard::GetEntryValue(const xiiTempHashedString& name) const
+xiiVariant xiiBlackboard::GetEntryValue(const xiiTempHashedString& name, xiiVariant fallback) const
 {
   auto value = m_Entries.GetValue(name);
-  return value != nullptr ? value->m_Value : xiiVariant();
+  return value != nullptr ? value->m_Value : fallback;
 }
 
 xiiBitflags<xiiBlackboardEntryFlags> xiiBlackboard::GetEntryFlags(const xiiTempHashedString& name) const
