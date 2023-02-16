@@ -120,8 +120,8 @@ public:
 
   /// \brief Registers an entry with a name, value and flags.
   ///
-  /// If the same entry already exists, this will act like SetEntryValue, but additionally it will add the entry flags
-  /// that hadn't been set before.
+  /// If the entry already exists, it will add the entry flags that hadn't been set before, but NOT change the value.
+  /// Thus you can use it to make sure that a value exists with a given start value, but keep it unchanged, if it already existed.
   void RegisterEntry(const xiiHashedString& name, const xiiVariant& initialValue, xiiBitflags<xiiBlackboardEntryFlags> flags = xiiBlackboardEntryFlags::None);
 
   /// \brief Removes the named entry. Does nothing, if no such entry exists.
@@ -146,8 +146,8 @@ public:
   /// \brief Returns the flags of the named entry, or xiiBlackboardEntryFlags::Invalid, if no such entry was registered.
   xiiBitflags<xiiBlackboardEntryFlags> GetEntryFlags(const xiiTempHashedString& name) const;
 
-  /// \brief Returns the value of the named entry, or an invalid xiiVariant, if no such entry was registered.
-  xiiVariant GetEntryValue(const xiiTempHashedString& name) const;
+  /// \brief Returns the value of the named entry, or the fallback xiiVariant, if no such entry was registered.
+  xiiVariant GetEntryValue(const xiiTempHashedString& name, xiiVariant fallback = {}) const;
 
   /// \brief Grants read access to the entire map of entries.
   const xiiHashTable<xiiHashedString, Entry>& GetAllEntries() const { return m_Entries; }

@@ -11,7 +11,7 @@
 xiiStreamWriter& operator<<(xiiStreamWriter& Stream, const char* szValue)
 {
   xiiStringView szView(szValue);
-  Stream.WriteString(szView).IgnoreResult();
+  Stream.WriteString(szView).AssertSuccess();
 
   return Stream;
 }
@@ -20,16 +20,15 @@ xiiStreamWriter& operator<<(xiiStreamWriter& Stream, const char* szValue)
 
 xiiStreamWriter& operator<<(xiiStreamWriter& Stream, const xiiStringBuilder& sValue)
 {
-  Stream.WriteString(sValue.GetView()).IgnoreResult();
+  Stream.WriteString(sValue.GetView()).AssertSuccess();
   return Stream;
 }
 
 xiiStreamReader& operator>>(xiiStreamReader& Stream, xiiStringBuilder& sValue)
 {
-  Stream.ReadString(sValue).IgnoreResult();
+  Stream.ReadString(sValue).AssertSuccess();
   return Stream;
 }
-
 
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_StreamOperations);

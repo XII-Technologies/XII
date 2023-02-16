@@ -465,7 +465,7 @@ xiiResourceLoadDesc xiiMaterialResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterStream)
 {
   m_mDesc.Clear();
   m_mOriginalDesc.Clear();
@@ -475,33 +475,33 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* Stream)
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Loaded;
 
-  if (Stream == nullptr)
+  if (pOuterStream == nullptr)
   {
     res.m_State = xiiResourceState::LoadedResourceMissing;
     return res;
   }
 
   xiiStringBuilder sAbsFilePath;
-  (*Stream) >> sAbsFilePath;
+  (*pOuterStream) >> sAbsFilePath;
 
   if (sAbsFilePath.HasExtension("xiiMaterialBin"))
   {
     xiiStringBuilder sTemp, sTemp2;
 
     xiiAssetFileHeader AssetHash;
-    AssetHash.Read(*Stream).IgnoreResult();
+    AssetHash.Read(*pOuterStream).IgnoreResult();
 
     xiiUInt8 uiVersion = 0;
-    (*Stream) >> uiVersion;
+    (*pOuterStream) >> uiVersion;
     XII_ASSERT_DEV(uiVersion <= 6, "Unknown xiiMaterialBin version {0}", uiVersion);
 
     xiiUInt8 uiCompressionMode = 0;
     if (uiVersion >= 6)
     {
-      *Stream >> uiCompressionMode;
+      *pOuterStream >> uiCompressionMode;
     }
 
-    xiiStreamReader* pCompressor = Stream;
+    xiiStreamReader* pInnerStream = pOuterStream;
 
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
     xiiCompressedStreamReaderZstd decompressorZstd;
@@ -514,8 +514,8 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* Stream)
 
       case 1:
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-        decompressorZstd.SetInputStream(Stream);
-        pCompressor = &decompressorZstd;
+        decompressorZstd.SetInputStream(pOuterStream);
+        pInnerStream = &decompressorZstd;
         break;
 #else
         xiiLog::Error("Material resource is compressed with zstandard, but support for this compressor is not compiled in.");
@@ -529,11 +529,11 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* Stream)
         return res;
     }
 
-    xiiStreamReader& stream = *pCompressor;
+    xiiStreamReader& s = *pInnerStream;
 
     // Base material
     {
-      stream >> sTemp;
+      s >> sTemp;
 
       if (!sTemp.IsEmpty())
         m_mDesc.m_hBaseMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(sTemp);
@@ -541,7 +541,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* Stream)
 
     if (uiVersion >= 4)
     {
-      stream >> sTemp;
+      s >> sTemp;
 
       if (!sTemp.IsEmpty())
       {
@@ -551,7 +551,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* Stream)
 
     // Shader
     {
-      stream >> sTemp;
+      s >> sTemp;
 
       if (!sTemp.IsEmpty())
         m_mDesc.m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sTemp);
@@ -560,14 +560,14 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* Stream)
     // Permutation Variables
     {
       xiiUInt16 uiPermVars;
-      stream >> uiPermVars;
+      s >> uiPermVars;
 
       m_mDesc.m_PermutationVars.Reserve(uiPermVars);
 
       for (xiiUInt16 i = 0; i < uiPermVars; ++i)
       {
-        stream >> sTemp;
-        stream >> sTemp2;
+        s >> sTemp;
+        s >> sTemp2;
 
         if (!sTemp.IsEmpty() && !sTemp2.IsEmpty())
         {
@@ -579,21 +579,21 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* Stream)
     // 2D Textures
     {
       xiiUInt16 uiTextures = 0;
-      stream >> uiTextures;
+      s >> uiTextures;
 
       m_mDesc.m_Texture2DBindings.Reserve(uiTextures);
 
       for (xiiUInt16 i = 0; i < uiTextures; ++i)
       {
-        stream >> sTemp;
-        stream >> sTemp2;
+        s >> sTemp;
+        s >> sTemp2;
 
-        if (sTemp.IsEmpty() || sTemp2.IsEmpty())
-          continue;
-
-        xiiMaterialResourceDescriptor::Texture2DBinding& tc = m_mDesc.m_Texture2DBindings.ExpandAndGetRef();
-        tc.m_Name.Assign(sTemp.GetData());
-        tc.m_Value = xiiResourceManager::LoadResource<xiiTexture2DResource>(sTemp2);
+        if (!sTemp.IsEmpty() && !sTemp2.IsEmpty())
+        {
+          xiiMaterialResourceDescriptor::Texture2DBinding& tc = m_mDesc.m_Texture2DBindings.ExpandAndGetRef();
+          tc.m_Name.Assign(sTemp.GetData());
+          tc.m_Value = xiiResourceManager::LoadResource<xiiTexture2DResource>(sTemp2);
+        }
       }
     }
 
@@ -601,21 +601,21 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* Stream)
     if (uiVersion >= 3)
     {
       xiiUInt16 uiTextures = 0;
-      stream >> uiTextures;
+      s >> uiTextures;
 
       m_mDesc.m_TextureCubeBindings.Reserve(uiTextures);
 
       for (xiiUInt16 i = 0; i < uiTextures; ++i)
       {
-        stream >> sTemp;
-        stream >> sTemp2;
+        s >> sTemp;
+        s >> sTemp2;
 
-        if (sTemp.IsEmpty() || sTemp2.IsEmpty())
-          continue;
-
-        xiiMaterialResourceDescriptor::TextureCubeBinding& tc = m_mDesc.m_TextureCubeBindings.ExpandAndGetRef();
-        tc.m_Name.Assign(sTemp.GetData());
-        tc.m_Value = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sTemp2);
+        if (!sTemp.IsEmpty() && !sTemp2.IsEmpty())
+        {
+          xiiMaterialResourceDescriptor::TextureCubeBinding& tc = m_mDesc.m_TextureCubeBindings.ExpandAndGetRef();
+          tc.m_Name.Assign(sTemp.GetData());
+          tc.m_Value = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sTemp2);
+        }
       }
     }
 
@@ -626,7 +626,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* Stream)
 
       xiiUInt16 uiConstants = 0;
 
-      stream >> uiConstants;
+      s >> uiConstants;
 
       m_mDesc.m_Parameters.Reserve(uiConstants);
 
@@ -634,21 +634,21 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* Stream)
 
       for (xiiUInt16 i = 0; i < uiConstants; ++i)
       {
-        stream >> sTemp;
-        stream >> vTemp;
+        s >> sTemp;
+        s >> vTemp;
 
-        if (sTemp.IsEmpty() || !vTemp.IsValid())
-          continue;
-
-        xiiMaterialResourceDescriptor::Parameter& tc = m_mDesc.m_Parameters.ExpandAndGetRef();
-        tc.m_Name.Assign(sTemp.GetData());
-        tc.m_Value = vTemp;
+        if (!sTemp.IsEmpty() && vTemp.IsValid())
+        {
+          xiiMaterialResourceDescriptor::Parameter& tc = m_mDesc.m_Parameters.ExpandAndGetRef();
+          tc.m_Name.Assign(sTemp.GetData());
+          tc.m_Value = vTemp;
+        }
       }
     }
 
     if (uiVersion >= 5)
     {
-      auto& s = *Stream;
+      xiiStreamReader& s = *pInnerStream;
 
       xiiStringBuilder sResourceName;
 
@@ -683,7 +683,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* Stream)
     xiiStringBuilder tmp, tmp2;
     xiiOpenDdlReader reader;
 
-    if (reader.ParseDocument(*Stream, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
+    if (reader.ParseDocument(*pOuterStream, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
     {
       res.m_State = xiiResourceState::LoadedResourceMissing;
       return res;

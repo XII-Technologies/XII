@@ -14,14 +14,14 @@
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, bool bValue)
 {
   xiiUInt8 uiValue = bValue ? 1 : 0;
-  stream.WriteBytes(&uiValue, sizeof(xiiUInt8)).IgnoreResult();
+  stream.WriteBytes(&uiValue, sizeof(xiiUInt8)).AssertSuccess();
   return stream;
 }
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, bool& bValue)
 {
   xiiUInt8 uiValue = 0;
-  stream.ReadBytes(&uiValue, sizeof(xiiUInt8));
+  XII_VERIFY(stream.ReadBytes(&uiValue, sizeof(xiiUInt8)) == sizeof(xiiUInt8), "End of stream reached.");
   bValue = (uiValue != 0);
   return stream;
 }
@@ -30,13 +30,13 @@ inline xiiStreamReader& operator>>(xiiStreamReader& stream, bool& bValue)
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, xiiUInt8 uiValue)
 {
-  stream.WriteBytes(&uiValue, sizeof(xiiUInt8)).IgnoreResult();
+  stream.WriteBytes(&uiValue, sizeof(xiiUInt8)).AssertSuccess();
   return stream;
 }
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiUInt8& uiValue)
 {
-  stream.ReadBytes(&uiValue, sizeof(xiiUInt8));
+  XII_VERIFY(stream.ReadBytes(&uiValue, sizeof(xiiUInt8)) == sizeof(xiiUInt8), "End of stream reached.");
   return stream;
 }
 
@@ -57,13 +57,13 @@ inline xiiResult DeserializeArray(xiiStreamReader& stream, xiiUInt8* pArray, xii
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, xiiUInt16 uiValue)
 {
-  stream.WriteWordValue(&uiValue).IgnoreResult();
+  stream.WriteWordValue(&uiValue).AssertSuccess();
   return stream;
 }
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiUInt16& uiValue)
 {
-  stream.ReadWordValue(&uiValue).IgnoreResult();
+  stream.ReadWordValue(&uiValue).AssertSuccess();
   return stream;
 }
 
@@ -84,13 +84,13 @@ inline xiiResult DeserializeArray(xiiStreamReader& stream, xiiUInt16* pArray, xi
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, xiiUInt32 uiValue)
 {
-  stream.WriteDWordValue(&uiValue).IgnoreResult();
+  stream.WriteDWordValue(&uiValue).AssertSuccess();
   return stream;
 }
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiUInt32& uiValue)
 {
-  stream.ReadDWordValue(&uiValue).IgnoreResult();
+  stream.ReadDWordValue(&uiValue).AssertSuccess();
   return stream;
 }
 
@@ -111,13 +111,13 @@ inline xiiResult DeserializeArray(xiiStreamReader& stream, xiiUInt32* pArray, xi
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, xiiUInt64 uiValue)
 {
-  stream.WriteQWordValue(&uiValue).IgnoreResult();
+  stream.WriteQWordValue(&uiValue).AssertSuccess();
   return stream;
 }
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiUInt64& uiValue)
 {
-  stream.ReadQWordValue(&uiValue).IgnoreResult();
+  stream.ReadQWordValue(&uiValue).AssertSuccess();
   return stream;
 }
 
@@ -139,13 +139,13 @@ inline xiiResult DeserializeArray(xiiStreamReader& stream, xiiUInt64* pArray, xi
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, xiiInt8 iValue)
 {
-  stream.WriteBytes(reinterpret_cast<const xiiUInt8*>(&iValue), sizeof(xiiInt8)).IgnoreResult();
+  stream.WriteBytes(reinterpret_cast<const xiiUInt8*>(&iValue), sizeof(xiiInt8)).AssertSuccess();
   return stream;
 }
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiInt8& iValue)
 {
-  stream.ReadBytes(reinterpret_cast<xiiUInt8*>(&iValue), sizeof(xiiInt8));
+  XII_VERIFY(stream.ReadBytes(reinterpret_cast<xiiUInt8*>(&iValue), sizeof(xiiInt8)) == sizeof(xiiInt8), "End of stream reached.");
   return stream;
 }
 
@@ -166,13 +166,13 @@ inline xiiResult DeserializeArray(xiiStreamReader& stream, xiiInt8* pArray, xiiU
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, xiiInt16 iValue)
 {
-  stream.WriteWordValue(&iValue).IgnoreResult();
+  stream.WriteWordValue(&iValue).AssertSuccess();
   return stream;
 }
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiInt16& iValue)
 {
-  stream.ReadWordValue(&iValue).IgnoreResult();
+  stream.ReadWordValue(&iValue).AssertSuccess();
   return stream;
 }
 
@@ -193,13 +193,13 @@ inline xiiResult DeserializeArray(xiiStreamReader& stream, xiiInt16* pArray, xii
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, xiiInt32 iValue)
 {
-  stream.WriteDWordValue(&iValue).IgnoreResult();
+  stream.WriteDWordValue(&iValue).AssertSuccess();
   return stream;
 }
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiInt32& iValue)
 {
-  stream.ReadDWordValue(&iValue).IgnoreResult();
+  stream.ReadDWordValue(&iValue).AssertSuccess();
   return stream;
 }
 
@@ -220,13 +220,13 @@ inline xiiResult DeserializeArray(xiiStreamReader& stream, xiiInt32* pArray, xii
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, xiiInt64 iValue)
 {
-  stream.WriteQWordValue(&iValue).IgnoreResult();
+  stream.WriteQWordValue(&iValue).AssertSuccess();
   return stream;
 }
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiInt64& iValue)
 {
-  stream.ReadQWordValue(&iValue).IgnoreResult();
+  stream.ReadQWordValue(&iValue).AssertSuccess();
   return stream;
 }
 
@@ -249,13 +249,13 @@ inline xiiResult DeserializeArray(xiiStreamReader& stream, xiiInt64* pArray, xii
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, float fValue)
 {
-  stream.WriteDWordValue(&fValue).IgnoreResult();
+  stream.WriteDWordValue(&fValue).AssertSuccess();
   return stream;
 }
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, float& fValue)
 {
-  stream.ReadDWordValue(&fValue).IgnoreResult();
+  stream.ReadDWordValue(&fValue).AssertSuccess();
   return stream;
 }
 
@@ -276,13 +276,13 @@ inline xiiResult DeserializeArray(xiiStreamReader& stream, float* pArray, xiiUIn
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, double fValue)
 {
-  stream.WriteQWordValue(&fValue).IgnoreResult();
+  stream.WriteQWordValue(&fValue).AssertSuccess();
   return stream;
 }
 
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, double& fValue)
 {
-  stream.ReadQWordValue(&fValue).IgnoreResult();
+  stream.ReadQWordValue(&fValue).AssertSuccess();
   return stream;
 }
 
@@ -311,7 +311,7 @@ XII_FOUNDATION_DLL xiiStreamWriter& operator<<(xiiStreamWriter& stream, const ch
 template <xiiUInt16 Size, typename AllocatorWrapper>
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiHybridString<Size, AllocatorWrapper>& sValue)
 {
-  stream.WriteString(sValue.GetView()).IgnoreResult();
+  stream.WriteString(sValue.GetView()).AssertSuccess();
   return stream;
 }
 
@@ -319,7 +319,7 @@ template <xiiUInt16 Size, typename AllocatorWrapper>
 inline xiiStreamReader& operator>>(xiiStreamReader& stream, xiiHybridString<Size, AllocatorWrapper>& sValue)
 {
   xiiStringBuilder builder;
-  stream.ReadString(builder).IgnoreResult();
+  stream.ReadString(builder).AssertSuccess();
   sValue = std::move(builder);
 
   return stream;
