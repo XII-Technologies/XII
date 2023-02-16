@@ -68,6 +68,7 @@ void xiiGameApplication::Init_ConfigureAssetManagement()
   xiiResourceManager::RegisterResourceForAssetType("PropertyAnim", xiiGetStaticRTTI<xiiPropertyAnimResource>());
   xiiResourceManager::RegisterResourceForAssetType("Visual Script", xiiGetStaticRTTI<xiiVisualScriptResource>());
   xiiResourceManager::RegisterResourceForAssetType("Decal", xiiGetStaticRTTI<xiiDecalResource>());
+  xiiResourceManager::RegisterResourceForAssetType("Decal Atlas", xiiGetStaticRTTI<xiiDecalAtlasResource>());
   xiiResourceManager::RegisterResourceForAssetType("LUT", xiiGetStaticRTTI<xiiTexture3DResource>());
 }
 

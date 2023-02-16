@@ -15,20 +15,28 @@ struct xiiAssetInfo;
 /// \brief Asset table class. Persistent cache for an asset table.
 ///
 /// The following assumptions need to be true for this cache to work:
-/// 1. xiiAssetDocumentManager::AddEntriesToAssetTable does never change over time
+/// 1. xiiAssetDocumentManager::AddEntriesToAssetTable does never change over time.
 /// 2. xiiAssetDocumentManager::GetAssetTableEntry never changes over the lifetime of an asset.
 struct xiiAssetTable
 {
-  xiiString                    m_sDataDir;
-  xiiString                    m_sTargetFile;
-  const xiiPlatformProfile*    m_pProfile = nullptr;
-  bool                         m_bDirty   = true;
-  bool                         m_bReset   = true;
-  xiiMap<xiiString, xiiString> m_GuidToPath;
+  struct ManagerResource
+  {
+    xiiString m_sPath;
+    xiiString m_sType;
+  };
+
+  xiiString                          m_sDataDir;
+  xiiString                          m_sTargetFile;
+  const xiiPlatformProfile*          m_pProfile = nullptr;
+  bool                               m_bDirty   = true;
+  bool                               m_bReset   = true;
+  xiiMap<xiiString, ManagerResource> m_GuidToManagerResource;
+  xiiMap<xiiString, xiiString>       m_GuidToPath;
 
   xiiResult WriteAssetTable();
   void      Remove(const xiiSubAsset& subAsset);
   void      Update(const xiiSubAsset& subAsset);
+  void      AddManagerResource(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType);
 };
 
 /// \brief Keeps track of all asset tables and their state as well as reloading modified resources.

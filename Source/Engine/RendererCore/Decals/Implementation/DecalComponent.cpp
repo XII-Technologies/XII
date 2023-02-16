@@ -553,6 +553,8 @@ void xiiDecalComponent::OnSimulationStarted()
     m_vExtents *= scale;
 
     TriggerLocalBoundsUpdate();
+
+    InvalidateCachedRenderData();
   }
 }
 

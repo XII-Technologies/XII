@@ -41,7 +41,7 @@ xiiDecalAssetDocumentManager::~xiiDecalAssetDocumentManager()
   xiiDocumentManager::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiDecalAssetDocumentManager::OnDocumentManagerEvent, this));
 }
 
-void xiiDecalAssetDocumentManager::AddEntriesToAssetTable(const char* szDataDirectory, const xiiPlatformProfile* pAssetProfile, xiiMap<xiiString, xiiString>& inout_GuidToPath) const
+void xiiDecalAssetDocumentManager::AddEntriesToAssetTable(const char* szDataDirectory, const xiiPlatformProfile* pAssetProfile, xiiDelegate<void(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType)> addEntry) const
 {
   xiiStringBuilder projectDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
   projectDir.MakeCleanPath();
@@ -49,7 +49,7 @@ void xiiDecalAssetDocumentManager::AddEntriesToAssetTable(const char* szDataDire
 
   if (projectDir.StartsWith_NoCase(szDataDirectory))
   {
-    inout_GuidToPath["{ ProjectDecalAtlas }"] = "PC/Decals.xiiTextureAtlas";
+    addEntry("{ ProjectDecalAtlas }", "PC/Decals.xiiTextureAtlas", "Decal Atlas");
   }
 }
 

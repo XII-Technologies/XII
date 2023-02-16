@@ -12,9 +12,9 @@ public:
   ~xiiDecalAssetDocumentManager();
 
   virtual void AddEntriesToAssetTable(
-    const char*                   szDataDirectory,
-    const xiiPlatformProfile*     pAssetProfile,
-    xiiMap<xiiString, xiiString>& inout_GuidToPath) const override;
+    const char*                                                                      szDataDirectory,
+    const xiiPlatformProfile*                                                        pAssetProfile,
+    xiiDelegate<void(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType)> addEntry) const override;
   virtual xiiString GetAssetTableEntry(
     const xiiSubAsset*        pSubAsset,
     const char*               szDataDirectory,
