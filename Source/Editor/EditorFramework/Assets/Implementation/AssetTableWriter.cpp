@@ -14,7 +14,6 @@ xiiResult xiiAssetTable::WriteAssetTable()
   xiiStringBuilder sTemp;
   xiiString        sResourcePath;
 
-  xiiMap<xiiString, xiiString> ManagerGuidToPath;
   {
     for (auto& man : xiiAssetDocumentManager::GetAllDocumentManagers())
     {
@@ -24,7 +23,7 @@ xiiResult xiiAssetTable::WriteAssetTable()
       xiiAssetDocumentManager* pManager = static_cast<xiiAssetDocumentManager*>(man);
 
       // allow to add fully custom entries
-      pManager->AddEntriesToAssetTable(m_sDataDir, m_pProfile, ManagerGuidToPath);
+      pManager->AddEntriesToAssetTable(m_sDataDir, m_pProfile, xiiMakeDelegate(&xiiAssetTable::AddManagerResource, this));
     }
   }
 
@@ -53,24 +52,21 @@ xiiResult xiiAssetTable::WriteAssetTable()
   xiiDeferredFileWriter file;
   file.SetOutput(m_sTargetFile);
 
-  auto Write = [](xiiMap<xiiString, xiiString>::ConstIterator it, xiiDeferredFileWriter& file) {
-    const xiiString& guid = it.Key();
-    const xiiString& path = it.Value();
-
-    file.WriteBytes(guid.GetData(), guid.GetElementCount()).IgnoreResult();
+  auto Write = [](const xiiString& sGuid, const xiiString& sPath, xiiDeferredFileWriter& file) {
+    file.WriteBytes(sGuid.GetData(), sGuid.GetElementCount()).IgnoreResult();
     file.WriteBytes(";", 1).IgnoreResult();
-    file.WriteBytes(path.GetData(), path.GetElementCount()).IgnoreResult();
+    file.WriteBytes(sPath.GetData(), sPath.GetElementCount()).IgnoreResult();
     file.WriteBytes("\n", 1).IgnoreResult();
   };
 
-  for (auto it = ManagerGuidToPath.GetIterator(); it.IsValid(); ++it)
+  for (auto it = m_GuidToManagerResource.GetIterator(); it.IsValid(); ++it)
   {
-    Write(it, file);
+    Write(it.Key(), it.Value().m_sPath, file);
   }
 
   for (auto it = m_GuidToPath.GetIterator(); it.IsValid(); ++it)
   {
-    Write(it, file);
+    Write(it.Key(), it.Value(), file);
   }
 
   if (file.Close().Failed())
@@ -105,6 +101,11 @@ void xiiAssetTable::Update(const xiiSubAsset& subAsset)
     m_GuidToPath[sTemp] = sEntry;
   }
   m_bDirty = true;
+}
+
+void xiiAssetTable::AddManagerResource(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType)
+{
+  m_GuidToManagerResource[sGuid] = ManagerResource{sPath, sType};
 }
 
 xiiAssetTableWriter::xiiAssetTableWriter(const xiiApplicationFileSystemConfig& fileSystemConfig)
@@ -153,9 +154,11 @@ void xiiAssetTableWriter::MainThreadTick()
     auto lock = xiiAssetCurator::GetSingleton()->GetKnownSubAssets();
     XII_LOCK(m_AssetTableMutex);
 
+    bool                      bReloadManagerResources = false;
+    const xiiPlatformProfile* pCurrentProfile         = xiiAssetCurator::GetSingleton()->GetActiveAssetProfile();
     for (const ReloadResource& reload : m_ReloadResources)
     {
-      if (xiiAssetTable* pTable = GetAssetTable(reload.m_uiDataDirIndex, xiiAssetCurator::GetSingleton()->GetActiveAssetProfile()))
+      if (xiiAssetTable* pTable = GetAssetTable(reload.m_uiDataDirIndex, pCurrentProfile))
       {
         if (pTable->m_GuidToPath.Contains(reload.m_sResource))
         {
@@ -164,9 +167,30 @@ void xiiAssetTableWriter::MainThreadTick()
           msg2.m_sResourceType = reload.m_sType;
           xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg2);
         }
+        else
+        {
+          // If an asset is not represented by a resource in the table we assume it is represented by a manager resource.
+          // Currently we don't know how these relate, e.g. we don't know all "Decal" assets are represented by the "{ ProjectDecalAtlas }" resource. Therefore, we just reload all manager resources.
+          bReloadManagerResources = true;
+        }
       }
     }
     m_ReloadResources.Clear();
+
+    if (bReloadManagerResources)
+    {
+      for (xiiUInt32 i = 0; i < m_FileSystemConfig.m_DataDirs.GetCount(); ++i)
+      {
+        xiiAssetTable* pTable = GetAssetTable(i, pCurrentProfile);
+        for (auto it : pTable->m_GuidToManagerResource)
+        {
+          xiiReloadResourceMsgToEngine msg2;
+          msg2.m_sResourceID   = it.Key();
+          msg2.m_sResourceType = it.Value().m_sType;
+          xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg2);
+        }
+      }
+    }
 
     xiiSimpleConfigMsgToEngine msg;
     msg.m_sWhatToDo = "ReloadResources";
