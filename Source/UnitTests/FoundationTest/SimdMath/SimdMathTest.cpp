@@ -4,11 +4,80 @@
 
 namespace
 {
-  xiiSimdVec4f SimdDegree(float degree) { return xiiSimdVec4f(xiiAngle::Degree(degree)); }
+  xiiSimdVec4f SimdDegree(float degree)
+  {
+    return xiiSimdVec4f(xiiAngle::Degree(degree));
+  }
 } // namespace
 
 XII_CREATE_SIMPLE_TEST(SimdMath, SimdMath)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Exp")
+  {
+    float testVals[] = {0.0f, 1.0f, 2.0f};
+    for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(testVals); ++i)
+    {
+      const float v = testVals[i];
+      const float r = xiiMath::Exp(v);
+      XII_TEST_BOOL(xiiSimdMath::Exp(xiiSimdVec4f(v)).IsEqual(xiiSimdVec4f(r), 0.000001f).AllSet());
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Ln")
+  {
+    float testVals[] = {1.0f, 2.7182818284f, 7.3890560989f};
+    for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(testVals); ++i)
+    {
+      const float v = testVals[i];
+      const float r = xiiMath::Ln(v);
+      XII_TEST_BOOL(xiiSimdMath::Ln(xiiSimdVec4f(v)).IsEqual(xiiSimdVec4f(r), 0.000001f).AllSet());
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log2")
+  {
+    float testVals[] = {1.0f, 2.0f, 4.0f};
+    for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(testVals); ++i)
+    {
+      const float v = testVals[i];
+      const float r = xiiMath::Log2(v);
+      XII_TEST_BOOL(xiiSimdMath::Log2(xiiSimdVec4f(v)).IsEqual(xiiSimdVec4f(r), 0.000001f).AllSet());
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log2i")
+  {
+    int testVals[] = {0, 1, 2, 3, 4, 6, 7, 8};
+    for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(testVals); ++i)
+    {
+      const int v = testVals[i];
+      const int r = xiiMath::Log2i(v);
+      XII_TEST_BOOL((xiiSimdMath::Log2i(xiiSimdVec4i(v)) == xiiSimdVec4i(r)).AllSet());
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log10")
+  {
+    float testVals[] = {1.0f, 10.0f, 100.0f};
+    for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(testVals); ++i)
+    {
+      const float v = testVals[i];
+      const float r = xiiMath::Log10(v);
+      XII_TEST_BOOL(xiiSimdMath::Log10(xiiSimdVec4f(v)).IsEqual(xiiSimdVec4f(r), 0.000001f).AllSet());
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pow2")
+  {
+    float testVals[] = {0.0f, 1.0f, 2.0f};
+    for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(testVals); ++i)
+    {
+      const float v = testVals[i];
+      const float r = xiiMath::Pow2(v);
+      XII_TEST_BOOL(xiiSimdMath::Pow2(xiiSimdVec4f(v)).IsEqual(xiiSimdVec4f(r), 0.000001f).AllSet());
+    }
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Sin")
   {
     XII_TEST_BOOL(xiiSimdMath::Sin(SimdDegree(0.0f)).IsEqual(xiiSimdVec4f(0.0f), 0.000001f).AllSet());

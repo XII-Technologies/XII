@@ -352,6 +352,15 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Abs() const
   return _mm_andnot_ps(_mm_set1_ps(-0.0f), m_v);
 }
 
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Round() const
+{
+#if XII_SSE_LEVEL >= XII_SSE_41
+  return _mm_round_ps(m_v, _MM_FROUND_NINT);
+#else
+  XII_ASSERT_NOT_IMPLEMENTED;
+#endif
+}
+
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Floor() const
 {
 #if XII_SSE_LEVEL >= XII_SSE_41
@@ -365,6 +374,15 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Ceil() const
 {
 #if XII_SSE_LEVEL >= XII_SSE_41
   return _mm_round_ps(m_v, _MM_FROUND_CEIL);
+#else
+  XII_ASSERT_NOT_IMPLEMENTED;
+#endif
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Trunc() const
+{
+#if XII_SSE_LEVEL >= XII_SSE_41
+  return _mm_round_ps(m_v, _MM_FROUND_TRUNC);
 #else
   XII_ASSERT_NOT_IMPLEMENTED;
 #endif

@@ -6,7 +6,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4b)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor")
   {
-#if XII_DISABLED(XII_COMPILER_GCC)
+#if XII_DISABLED(XII_COMPILER_GCC) && XII_DISABLED(XII_COMPILE_FOR_DEBUG)
     // Placement new of the default constructor should not have any effect on the previous data.
     alignas(16) float testBlock[4] = {1, 2, 3, 4};
     xiiSimdVec4b*     pDefCtor     = ::new ((void*)&testBlock[0]) xiiSimdVec4b;
@@ -88,7 +88,17 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4b)
     XII_TEST_BOOL(!c.AllSet<4>());
     XII_TEST_BOOL(c.NoneSet<4>());
 
+    c = a == b;
+    XII_TEST_BOOL(!c.x() && !c.y() && c.z() && c.w());
+
+    c = a != b;
+    XII_TEST_BOOL(c.x() && c.y() && !c.z() && !c.w());
+
     XII_TEST_BOOL(a.AllSet<1>());
     XII_TEST_BOOL(b.NoneSet<1>());
+
+    xiiSimdVec4b cmp(false, true, false, true);
+    c = xiiSimdVec4b::Select(cmp, a, b);
+    XII_TEST_BOOL(!c.x() && !c.y() && c.z() && !c.w());
   }
 }

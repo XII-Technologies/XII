@@ -1,13 +1,10 @@
 #include <EditorPluginProcGen/EditorPluginProcGenPCH.h>
 
 #include <EditorPluginProcGen/ProcGenGraphAsset/ProcGenNodes.h>
+#include <ProcGenPlugin/Tasks/Utils.h>
 
 namespace
 {
-  static xiiHashedString s_sRandom       = xiiMakeHashedString("Random");
-  static xiiHashedString s_sPerlinNoise  = xiiMakeHashedString("PerlinNoise");
-  static xiiHashedString s_sApplyVolumes = xiiMakeHashedString("ApplyVolumes");
-
   xiiExpressionAST::NodeType::Enum GetOperator(xiiProcGenBinaryOperator::Enum blendMode)
   {
     switch (blendMode)
@@ -31,16 +28,18 @@ namespace
     return xiiExpressionAST::NodeType::Invalid;
   }
 
-  xiiExpressionAST::Node* CreateRandom(float fSeed, xiiExpressionAST& out_Ast)
+  xiiExpressionAST::Node* CreateRandom(xiiUInt32 uiSeed, xiiExpressionAST& out_Ast, const xiiProcGenNodeBase::GraphContext& context)
   {
-    auto pPointIndex   = out_Ast.CreateInput(xiiProcGenInternal::ExpressionInputs::s_sPointIndex, xiiProcessingStream::DataType::Float);
-    auto pSeedConstant = out_Ast.CreateConstant(fSeed);
+    XII_ASSERT_DEV(context.m_OutputType != xiiProcGenNodeBase::GraphContext::Unknown, "Unkown output type");
 
-    auto pFunctionCall = out_Ast.CreateFunctionCall(s_sRandom);
-    pFunctionCall->m_Arguments.PushBack(pPointIndex);
-    pFunctionCall->m_Arguments.PushBack(pSeedConstant);
+    auto                    pointIndexDataType = context.m_OutputType == xiiProcGenNodeBase::GraphContext::Placement ? xiiProcessingStream::DataType::Short : xiiProcessingStream::DataType::Int;
+    xiiExpressionAST::Node* pPointIndex        = out_Ast.CreateInput({xiiProcGenInternal::ExpressionInputs::s_sPointIndex, pointIndexDataType});
 
-    return pFunctionCall;
+    xiiExpressionAST::Node* pSeed = out_Ast.CreateFunctionCall(xiiProcGenExpressionFunctions::s_GetInstanceSeedFunc.m_Desc, xiiArrayPtr<xiiExpressionAST::Node*>());
+    pSeed                         = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Add, pSeed, out_Ast.CreateConstant(uiSeed, xiiExpressionAST::DataType::Int));
+
+    xiiExpressionAST::Node* arguments[] = {pPointIndex, pSeed};
+    return out_Ast.CreateFunctionCall(xiiDefaultExpressionFunctions::s_RandomFunc.m_Desc, arguments);
   }
 
   xiiExpressionAST::Node* CreateRemapFrom01(xiiExpressionAST::Node* pInput, float fMin, float fMax, xiiExpressionAST& out_Ast)
@@ -169,7 +168,7 @@ xiiExpressionAST::Node* xiiProcGen_PlacementOutput::GenerateExpressionASTNode(xi
       pDensity = out_Ast.CreateConstant(1.0f);
     }
 
-    out_Ast.m_OutputNodes.PushBack(out_Ast.CreateOutput(xiiProcGenInternal::ExpressionOutputs::s_sDensity, xiiProcessingStream::DataType::Float, pDensity));
+    out_Ast.m_OutputNodes.PushBack(out_Ast.CreateOutput({xiiProcGenInternal::ExpressionOutputs::s_sOutDensity, xiiProcessingStream::DataType::Float}, pDensity));
   }
 
   // scale
@@ -177,10 +176,10 @@ xiiExpressionAST::Node* xiiProcGen_PlacementOutput::GenerateExpressionASTNode(xi
     auto pScale = inputs[1];
     if (pScale == nullptr)
     {
-      pScale = CreateRandom(11.0f, out_Ast);
+      pScale = CreateRandom(11.0f, out_Ast, context);
     }
 
-    out_Ast.m_OutputNodes.PushBack(out_Ast.CreateOutput(xiiProcGenInternal::ExpressionOutputs::s_sScale, xiiProcessingStream::DataType::Float, pScale));
+    out_Ast.m_OutputNodes.PushBack(out_Ast.CreateOutput({xiiProcGenInternal::ExpressionOutputs::s_sOutScale, xiiProcessingStream::DataType::Float}, pScale));
   }
 
   // color index
@@ -188,10 +187,14 @@ xiiExpressionAST::Node* xiiProcGen_PlacementOutput::GenerateExpressionASTNode(xi
     auto pColorIndex = inputs[2];
     if (pColorIndex == nullptr)
     {
-      pColorIndex = CreateRandom(13.0f, out_Ast);
+      pColorIndex = CreateRandom(13.0f, out_Ast, context);
     }
 
-    out_Ast.m_OutputNodes.PushBack(out_Ast.CreateOutput(xiiProcGenInternal::ExpressionOutputs::s_sColorIndex, xiiProcessingStream::DataType::Float, pColorIndex));
+    pColorIndex = out_Ast.CreateUnaryOperator(xiiExpressionAST::NodeType::Saturate, pColorIndex);
+    pColorIndex = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Multiply, pColorIndex, out_Ast.CreateConstant(255.0f));
+    pColorIndex = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Add, pColorIndex, out_Ast.CreateConstant(0.5f));
+
+    out_Ast.m_OutputNodes.PushBack(out_Ast.CreateOutput({xiiProcGenInternal::ExpressionOutputs::s_sOutColorIndex, xiiProcessingStream::DataType::Byte}, pColorIndex));
   }
 
   // object index
@@ -199,10 +202,14 @@ xiiExpressionAST::Node* xiiProcGen_PlacementOutput::GenerateExpressionASTNode(xi
     auto pObjectIndex = inputs[3];
     if (pObjectIndex == nullptr)
     {
-      pObjectIndex = CreateRandom(17.0f, out_Ast);
+      pObjectIndex = CreateRandom(17.0f, out_Ast, context);
     }
 
-    out_Ast.m_OutputNodes.PushBack(out_Ast.CreateOutput(xiiProcGenInternal::ExpressionOutputs::s_sObjectIndex, xiiProcessingStream::DataType::Float, pObjectIndex));
+    pObjectIndex = out_Ast.CreateUnaryOperator(xiiExpressionAST::NodeType::Saturate, pObjectIndex);
+    pObjectIndex = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Multiply, pObjectIndex, out_Ast.CreateConstant(m_ObjectsToPlace.GetCount() - 1));
+    pObjectIndex = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Add, pObjectIndex, out_Ast.CreateConstant(0.5f));
+
+    out_Ast.m_OutputNodes.PushBack(out_Ast.CreateOutput({xiiProcGenInternal::ExpressionOutputs::s_sOutObjectIndex, xiiProcessingStream::DataType::Byte}, pObjectIndex));
   }
 
   return nullptr;
@@ -269,7 +276,12 @@ xiiExpressionAST::Node* xiiProcGen_VertexColorOutput::GenerateExpressionASTNode(
 
   out_Ast.m_OutputNodes.Clear();
 
-  xiiHashedString sOutputNames[4] = {xiiProcGenInternal::ExpressionOutputs::s_sR, xiiProcGenInternal::ExpressionOutputs::s_sG, xiiProcGenInternal::ExpressionOutputs::s_sB, xiiProcGenInternal::ExpressionOutputs::s_sA};
+  xiiHashedString sOutputNames[4] = {
+    xiiProcGenInternal::ExpressionOutputs::s_sOutColorR,
+    xiiProcGenInternal::ExpressionOutputs::s_sOutColorG,
+    xiiProcGenInternal::ExpressionOutputs::s_sOutColorB,
+    xiiProcGenInternal::ExpressionOutputs::s_sOutColorA,
+  };
 
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(sOutputNames); ++i)
   {
@@ -279,7 +291,7 @@ xiiExpressionAST::Node* xiiProcGen_VertexColorOutput::GenerateExpressionASTNode(
       pInput = out_Ast.CreateConstant(0.0f);
     }
 
-    out_Ast.m_OutputNodes.PushBack(out_Ast.CreateOutput(sOutputNames[i], xiiProcessingStream::DataType::Float, pInput));
+    out_Ast.m_OutputNodes.PushBack(out_Ast.CreateOutput({sOutputNames[i], xiiProcessingStream::DataType::Float}, pInput));
   }
 
   return nullptr;
@@ -325,7 +337,7 @@ xiiExpressionAST::Node* xiiProcGen_Random::GenerateExpressionASTNode(xiiTempHash
 
   float fSeed = m_iSeed < 0 ? m_uiAutoSeed : m_iSeed;
 
-  auto pRandom = CreateRandom(fSeed, out_Ast);
+  auto pRandom = CreateRandom(fSeed, out_Ast, context);
   return CreateRemapFrom01(pRandom, m_fOutputMin, m_fOutputMax, out_Ast);
 }
 
@@ -364,25 +376,19 @@ xiiExpressionAST::Node* xiiProcGen_PerlinNoise::GenerateExpressionASTNode(xiiTem
 {
   XII_ASSERT_DEBUG(sOutputName == "Value", "Implementation error");
 
-  xiiExpressionAST::Node* pPosX = out_Ast.CreateInput(xiiProcGenInternal::ExpressionInputs::s_sPositionX, xiiProcessingStream::DataType::Float);
-  xiiExpressionAST::Node* pPosY = out_Ast.CreateInput(xiiProcGenInternal::ExpressionInputs::s_sPositionY, xiiProcessingStream::DataType::Float);
-  xiiExpressionAST::Node* pPosZ = out_Ast.CreateInput(xiiProcGenInternal::ExpressionInputs::s_sPositionZ, xiiProcessingStream::DataType::Float);
+  xiiExpressionAST::Node* pPos = out_Ast.CreateInput({xiiProcGenInternal::ExpressionInputs::s_sPosition, xiiProcessingStream::DataType::Float3});
+  pPos                         = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Divide, pPos, out_Ast.CreateConstant(m_Scale, xiiExpressionAST::DataType::Float3));
+  pPos                         = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Add, pPos, out_Ast.CreateConstant(m_Offset, xiiExpressionAST::DataType::Float3));
 
-  pPosX = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Divide, pPosX, out_Ast.CreateConstant(m_Scale.x));
-  pPosY = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Divide, pPosY, out_Ast.CreateConstant(m_Scale.y));
-  pPosZ = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Divide, pPosZ, out_Ast.CreateConstant(m_Scale.z));
+  auto pPosX = out_Ast.CreateSwizzle(xiiExpressionAST::VectorComponent::X, pPos);
+  auto pPosY = out_Ast.CreateSwizzle(xiiExpressionAST::VectorComponent::Y, pPos);
+  auto pPosZ = out_Ast.CreateSwizzle(xiiExpressionAST::VectorComponent::Z, pPos);
 
-  pPosX = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Add, pPosX, out_Ast.CreateConstant(m_Offset.x));
-  pPosY = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Add, pPosY, out_Ast.CreateConstant(m_Offset.y));
-  pPosZ = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Add, pPosZ, out_Ast.CreateConstant(m_Offset.z));
+  auto pNumOctaves = out_Ast.CreateConstant(m_uiNumOctaves, xiiExpressionAST::DataType::Int);
 
-  auto pNumOctaves = out_Ast.CreateConstant(static_cast<float>(m_uiNumOctaves));
+  xiiExpressionAST::Node* arguments[] = {pPosX, pPosY, pPosZ, pNumOctaves};
 
-  auto pNoiseFunc = out_Ast.CreateFunctionCall(s_sPerlinNoise);
-  pNoiseFunc->m_Arguments.PushBack(pPosX);
-  pNoiseFunc->m_Arguments.PushBack(pPosY);
-  pNoiseFunc->m_Arguments.PushBack(pPosZ);
-  pNoiseFunc->m_Arguments.PushBack(pNumOctaves);
+  auto pNoiseFunc = out_Ast.CreateFunctionCall(xiiDefaultExpressionFunctions::s_PerlinNoiseFunc.m_Desc, arguments);
 
   return CreateRemapFrom01(pNoiseFunc, m_fOutputMin, m_fOutputMax, out_Ast);
 }
@@ -469,7 +475,7 @@ xiiExpressionAST::Node* xiiProcGen_Height::GenerateExpressionASTNode(xiiTempHash
 {
   XII_ASSERT_DEBUG(sOutputName == "Value", "Implementation error");
 
-  auto pHeight = out_Ast.CreateInput(xiiProcGenInternal::ExpressionInputs::s_sPositionZ, xiiProcessingStream::DataType::Float);
+  auto pHeight = out_Ast.CreateInput({xiiProcGenInternal::ExpressionInputs::s_sPositionZ, xiiProcessingStream::DataType::Float});
   return CreateRemapTo01WithFadeout(pHeight, m_fMinHeight, m_fMaxHeight, m_fLowerFade, m_fUpperFade, out_Ast);
 }
 
@@ -503,7 +509,7 @@ xiiExpressionAST::Node* xiiProcGen_Slope::GenerateExpressionASTNode(xiiTempHashe
 {
   XII_ASSERT_DEBUG(sOutputName == "Value", "Implementation error");
 
-  auto pNormalZ = out_Ast.CreateInput(xiiProcGenInternal::ExpressionInputs::s_sNormalZ, xiiProcessingStream::DataType::Float);
+  auto pNormalZ = out_Ast.CreateInput({xiiProcGenInternal::ExpressionInputs::s_sNormalZ, xiiProcessingStream::DataType::Float});
   // acos explodes for values slightly larger than 1 so make sure to clamp before
   auto pClampedNormalZ = out_Ast.CreateBinaryOperator(xiiExpressionAST::NodeType::Min, out_Ast.CreateConstant(1.0f), pNormalZ);
   auto pAngle          = out_Ast.CreateUnaryOperator(xiiExpressionAST::NodeType::ACos, pClampedNormalZ);
@@ -537,20 +543,20 @@ xiiExpressionAST::Node* xiiProcGen_MeshVertexColor::GenerateExpressionASTNode(xi
 {
   if (sOutputName == "R")
   {
-    return out_Ast.CreateInput(xiiProcGenInternal::ExpressionInputs::s_sColorR, xiiProcessingStream::DataType::Float);
+    return out_Ast.CreateInput({xiiProcGenInternal::ExpressionInputs::s_sColorR, xiiProcessingStream::DataType::Float});
   }
   else if (sOutputName == "G")
   {
-    return out_Ast.CreateInput(xiiProcGenInternal::ExpressionInputs::s_sColorG, xiiProcessingStream::DataType::Float);
+    return out_Ast.CreateInput({xiiProcGenInternal::ExpressionInputs::s_sColorG, xiiProcessingStream::DataType::Float});
   }
   else if (sOutputName == "B")
   {
-    return out_Ast.CreateInput(xiiProcGenInternal::ExpressionInputs::s_sColorB, xiiProcessingStream::DataType::Float);
+    return out_Ast.CreateInput({xiiProcGenInternal::ExpressionInputs::s_sColorB, xiiProcessingStream::DataType::Float});
   }
   else
   {
     XII_ASSERT_DEBUG(sOutputName == "A", "Implementation error");
-    return out_Ast.CreateInput(xiiProcGenInternal::ExpressionInputs::s_sColorA, xiiProcessingStream::DataType::Float);
+    return out_Ast.CreateInput({xiiProcGenInternal::ExpressionInputs::s_sColorA, xiiProcessingStream::DataType::Float});
   }
 }
 
@@ -593,9 +599,9 @@ xiiExpressionAST::Node* xiiProcGen_ApplyVolumes::GenerateExpressionASTNode(xiiTe
     context.m_VolumeTagSetIndices.PushBack(tagSetIndex);
   }
 
-  xiiExpressionAST::Node* pPosX = out_Ast.CreateInput(xiiProcGenInternal::ExpressionInputs::s_sPositionX, xiiProcessingStream::DataType::Float);
-  xiiExpressionAST::Node* pPosY = out_Ast.CreateInput(xiiProcGenInternal::ExpressionInputs::s_sPositionY, xiiProcessingStream::DataType::Float);
-  xiiExpressionAST::Node* pPosZ = out_Ast.CreateInput(xiiProcGenInternal::ExpressionInputs::s_sPositionZ, xiiProcessingStream::DataType::Float);
+  auto pPosX = out_Ast.CreateInput({xiiProcGenInternal::ExpressionInputs::s_sPositionX, xiiProcessingStream::DataType::Float});
+  auto pPosY = out_Ast.CreateInput({xiiProcGenInternal::ExpressionInputs::s_sPositionY, xiiProcessingStream::DataType::Float});
+  auto pPosZ = out_Ast.CreateInput({xiiProcGenInternal::ExpressionInputs::s_sPositionZ, xiiProcessingStream::DataType::Float});
 
   auto pInput = inputs[0];
   if (pInput == nullptr)
@@ -603,19 +609,20 @@ xiiExpressionAST::Node* xiiProcGen_ApplyVolumes::GenerateExpressionASTNode(xiiTe
     pInput = out_Ast.CreateConstant(m_fInputValue);
   }
 
-  auto pFunctionCall = out_Ast.CreateFunctionCall(s_sApplyVolumes);
-  pFunctionCall->m_Arguments.PushBack(pPosX);
-  pFunctionCall->m_Arguments.PushBack(pPosY);
-  pFunctionCall->m_Arguments.PushBack(pPosZ);
-  pFunctionCall->m_Arguments.PushBack(pInput);
-  pFunctionCall->m_Arguments.PushBack(out_Ast.CreateConstant(static_cast<float>(tagSetIndex)));
-  pFunctionCall->m_Arguments.PushBack(out_Ast.CreateConstant(static_cast<float>(m_ImageVolumeMode.GetValue())));
-  pFunctionCall->m_Arguments.PushBack(out_Ast.CreateConstant(xiiMath::ColorByteToFloat(m_RefColor.r)));
-  pFunctionCall->m_Arguments.PushBack(out_Ast.CreateConstant(xiiMath::ColorByteToFloat(m_RefColor.g)));
-  pFunctionCall->m_Arguments.PushBack(out_Ast.CreateConstant(xiiMath::ColorByteToFloat(m_RefColor.b)));
-  pFunctionCall->m_Arguments.PushBack(out_Ast.CreateConstant(xiiMath::ColorByteToFloat(m_RefColor.a)));
+  xiiExpressionAST::Node* arguments[] = {
+    pPosX,
+    pPosY,
+    pPosZ,
+    pInput,
+    out_Ast.CreateConstant(tagSetIndex, xiiExpressionAST::DataType::Int),
+    out_Ast.CreateConstant(m_ImageVolumeMode.GetValue(), xiiExpressionAST::DataType::Int),
+    out_Ast.CreateConstant(xiiMath::ColorByteToFloat(m_RefColor.r)),
+    out_Ast.CreateConstant(xiiMath::ColorByteToFloat(m_RefColor.g)),
+    out_Ast.CreateConstant(xiiMath::ColorByteToFloat(m_RefColor.b)),
+    out_Ast.CreateConstant(xiiMath::ColorByteToFloat(m_RefColor.a)),
+  };
 
-  return pFunctionCall;
+  return out_Ast.CreateFunctionCall(xiiProcGenExpressionFunctions::s_ApplyVolumesFunc.m_Desc, arguments);
 }
 
 //////////////////////////////////////////////////////////////////////////

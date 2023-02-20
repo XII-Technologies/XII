@@ -38,11 +38,11 @@ void xiiDGMLGraph::AddNodeToGroup(NodeId node, NodeId group)
 
 xiiDGMLGraph::ConnectionId xiiDGMLGraph::AddConnection(xiiDGMLGraph::NodeId Source, xiiDGMLGraph::NodeId Target, const char* szLabel)
 {
-  xiiDGMLGraph::Connection& Connection = m_Connections.ExpandAndGetRef();
+  xiiDGMLGraph::Connection& connection = m_Connections.ExpandAndGetRef();
 
-  Connection.m_Source = Source;
-  Connection.m_Target = Target;
-  Connection.m_sLabel = szLabel;
+  connection.m_Source = Source;
+  connection.m_Target = Target;
+  connection.m_sLabel = szLabel;
 
   return m_Connections.GetCount() - 1;
 }
@@ -63,20 +63,22 @@ void xiiDGMLGraph::AddNodeProperty(NodeId node, PropertyId property, const xiiFo
   prop.m_sValue     = fmt.GetText(tmp);
 }
 
-xiiResult xiiDGMLGraphWriter::WriteGraphToFile(const char* szFileName, const xiiDGMLGraph& Graph)
+xiiResult xiiDGMLGraphWriter::WriteGraphToFile(xiiStringView sFileName, const xiiDGMLGraph& Graph)
 {
-  xiiStringBuilder StringBuilder;
+  xiiStringBuilder sGraph;
 
   // Write to memory object and then to file
-  if (WriteGraphToString(StringBuilder, Graph).Succeeded())
+  if (WriteGraphToString(sGraph, Graph).Succeeded())
   {
-    xiiFileWriter FileWriter;
-    if (!FileWriter.Open(szFileName).Succeeded())
+    xiiStringBuilder sTemp;
+
+    xiiFileWriter fileWriter;
+    if (!fileWriter.Open(sFileName.GetData(sTemp)).Succeeded())
       return XII_FAILURE;
 
-    FileWriter.WriteBytes(StringBuilder.GetData(), StringBuilder.GetElementCount()).IgnoreResult();
+    fileWriter.WriteBytes(sGraph.GetData(), sGraph.GetElementCount()).IgnoreResult();
 
-    FileWriter.Close();
+    fileWriter.Close();
 
     return XII_SUCCESS;
   }

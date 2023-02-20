@@ -10,9 +10,9 @@
 namespace
 {
   template <typename T>
-  XII_ALWAYS_INLINE xiiProcessingStream MakeStream(xiiArrayPtr<T> data, xiiUInt32 uiOffset, const xiiHashedString& sName)
+  XII_ALWAYS_INLINE xiiProcessingStream MakeStream(xiiArrayPtr<T> data, xiiUInt32 uiOffset, const xiiHashedString& sName, xiiProcessingStream::DataType dataType = xiiProcessingStream::DataType::Float)
   {
-    return xiiProcessingStream(sName, data.ToByteArray().GetSubArray(uiOffset), xiiProcessingStream::DataType::Float, sizeof(T));
+    return xiiProcessingStream(sName, data.ToByteArray().GetSubArray(uiOffset), dataType, sizeof(T));
   }
 
   XII_ALWAYS_INLINE float Remap(xiiEnum<xiiProcVertexColorChannelMapping> channelMapping, const xiiColor& srcColor)
@@ -32,8 +32,8 @@ using namespace xiiProcGenInternal;
 
 VertexColorTask::VertexColorTask()
 {
-  m_VM.RegisterDefaultFunctions();
-  m_VM.RegisterFunction("ApplyVolumes", &xiiProcGenExpressionFunctions::ApplyVolumes, &xiiProcGenExpressionFunctions::ApplyVolumesValidate);
+  m_VM.RegisterFunction(xiiProcGenExpressionFunctions::s_ApplyVolumesFunc);
+  m_VM.RegisterFunction(xiiProcGenExpressionFunctions::s_GetInstanceSeedFunc);
 }
 
 VertexColorTask::~VertexColorTask() = default;
@@ -111,7 +111,7 @@ void VertexColorTask::Prepare(const xiiWorld& world, const xiiMeshBufferResource
     vert.m_vPosition = transform.TransformPosition(xiiVec3(pPositions[0], pPositions[1], pPositions[2]));
     vert.m_vNormal   = normalTransform.TransformDirection(vNormal).GetNormalized();
     vert.m_Color     = pColors != nullptr ? xiiColor(*pColors) : xiiColor::ZeroColor();
-    vert.m_fIndex    = static_cast<float>(i);
+    vert.m_uiIndex   = i;
 
     pPositions = xiiMemoryUtils::AddByteOffset(pPositions, uiElementStride);
     pNormals   = xiiMemoryUtils::AddByteOffset(pNormals, uiElementStride);
@@ -139,6 +139,9 @@ void VertexColorTask::Prepare(const xiiWorld& world, const xiiMeshBufferResource
       xiiProcGenInternal::ExtractVolumeCollections(world, box, *pOutput, m_VolumeCollections, m_GlobalData);
     }
   }
+
+  const xiiUInt32 uiTransformHash = xiiHashingUtils::xxHash32(&transform, sizeof(xiiTransform));
+  xiiProcGenInternal::SetInstanceSeed(uiTransformHash, m_GlobalData);
 }
 
 void VertexColorTask::Execute()
@@ -173,15 +176,15 @@ void VertexColorTask::Execute()
       inputs.PushBack(MakeStream(m_InputVertices.GetArrayPtr(), offsetof(InputVertex, m_Color.b), ExpressionInputs::s_sColorB));
       inputs.PushBack(MakeStream(m_InputVertices.GetArrayPtr(), offsetof(InputVertex, m_Color.a), ExpressionInputs::s_sColorA));
 
-      inputs.PushBack(MakeStream(m_InputVertices.GetArrayPtr(), offsetof(InputVertex, m_fIndex), ExpressionInputs::s_sPointIndex));
+      inputs.PushBack(MakeStream(m_InputVertices.GetArrayPtr(), offsetof(InputVertex, m_uiIndex), ExpressionInputs::s_sPointIndex, xiiProcessingStream::DataType::Int));
     }
 
     xiiHybridArray<xiiProcessingStream, 8> outputs;
     {
-      outputs.PushBack(MakeStream(m_TempData.GetArrayPtr(), offsetof(xiiColor, r), ExpressionOutputs::s_sR));
-      outputs.PushBack(MakeStream(m_TempData.GetArrayPtr(), offsetof(xiiColor, g), ExpressionOutputs::s_sG));
-      outputs.PushBack(MakeStream(m_TempData.GetArrayPtr(), offsetof(xiiColor, b), ExpressionOutputs::s_sB));
-      outputs.PushBack(MakeStream(m_TempData.GetArrayPtr(), offsetof(xiiColor, a), ExpressionOutputs::s_sA));
+      outputs.PushBack(MakeStream(m_TempData.GetArrayPtr(), offsetof(xiiColor, r), ExpressionOutputs::s_sOutColorR));
+      outputs.PushBack(MakeStream(m_TempData.GetArrayPtr(), offsetof(xiiColor, g), ExpressionOutputs::s_sOutColorG));
+      outputs.PushBack(MakeStream(m_TempData.GetArrayPtr(), offsetof(xiiColor, b), ExpressionOutputs::s_sOutColorB));
+      outputs.PushBack(MakeStream(m_TempData.GetArrayPtr(), offsetof(xiiColor, a), ExpressionOutputs::s_sOutColorA));
     }
 
     // Execute expression bytecode

@@ -286,7 +286,8 @@ private:
     // MSVC builds a member function pointer on the stack writing only 12 bytes and then copies it
     // to the final location by copying 16 bytes. Thus the 4 byte padding get a random value (whatever is on the stack at that time).
     // To make the delegate comparable by memcmp we zero out those 4 byte padding.
-#if XII_ENABLED(XII_COMPILER_MSVC)
+    // Apparently clang does the same on windows but not on linux etc.
+#if XII_ENABLED(XII_COMPILER_MSVC) || (XII_ENABLED(XII_PLATFORM_WINDOWS) && XII_ENABLED(XII_COMPILER_CLANG))
     *reinterpret_cast<xiiUInt32*>(m_Data + 12) = 0;
 #endif
   }

@@ -1,42 +1,436 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/CodeUtils/Expression/ExpressionAST.h>
+#include <Foundation/Logging/Log.h>
 
-xiiExpressionAST::Node* xiiExpressionAST::ReplaceUnsupportedInstructions(Node* pNode)
+namespace
 {
-  NodeType::Enum nodeType = pNode->m_Type;
-  if (nodeType == NodeType::Negate)
+  struct OperandChainIndices
+  {
+    xiiUInt8 m_uiLeftOperand;
+    xiiUInt8 m_uiRightOperand;
+  };
+
+  struct MultiplicationChain
+  {
+    OperandChainIndices m_Chain[8];
+  };
+
+  static MultiplicationChain s_MultiplicationChains[] = {
+    {OperandChainIndices{}},                                     // 0
+    {OperandChainIndices{}},                                     // 1
+    {OperandChainIndices{0, 0}},                                 // 2
+    {OperandChainIndices{0, 0}, {1, 0}},                         // 3
+    {OperandChainIndices{0, 0}, {1, 1}},                         // 4
+    {OperandChainIndices{0, 0}, {1, 1}, {2, 0}},                 // 5
+    {OperandChainIndices{0, 0}, {1, 0}, {2, 2}},                 // 6
+    {OperandChainIndices{0, 0}, {1, 0}, {2, 2}, {3, 0}},         // 7
+    {OperandChainIndices{0, 0}, {1, 1}, {2, 2}},                 // 8
+    {OperandChainIndices{0, 0}, {1, 1}, {2, 2}, {3, 0}},         // 9
+    {OperandChainIndices{0, 0}, {1, 1}, {2, 0}, {3, 3}},         // 10
+    {OperandChainIndices{0, 0}, {1, 1}, {2, 0}, {3, 3}, {4, 0}}, // 11
+    {OperandChainIndices{0, 0}, {1, 0}, {2, 2}, {3, 3}},         // 12
+    {OperandChainIndices{0, 0}, {1, 0}, {2, 2}, {3, 3}, {4, 0}}, // 13
+    {OperandChainIndices{0, 0}, {1, 0}, {2, 2}, {3, 0}, {4, 4}}, // 14
+    {OperandChainIndices{0, 0}, {1, 0}, {2, 2}, {3, 3}, {4, 2}}, // 15
+    {OperandChainIndices{0, 0}, {1, 1}, {2, 2}, {3, 3}},         // 16
+  };
+
+  static xiiExpression::StreamDesc CreateScalarizedStreamDesc(const xiiExpression::StreamDesc& desc, xiiEnum<xiiExpressionAST::VectorComponent> component)
+  {
+    xiiStringBuilder sNewName = desc.m_sName.GetView();
+    sNewName.Append(".", xiiExpressionAST::VectorComponent::GetName(component));
+
+    xiiExpression::StreamDesc newDesc;
+    newDesc.m_sName.Assign(sNewName);
+    newDesc.m_DataType = static_cast<xiiProcessingStream::DataType>((xiiUInt32)desc.m_DataType & ~3u);
+
+    return newDesc;
+  }
+
+} // namespace
+
+xiiExpressionAST::Node* xiiExpressionAST::TypeDeductionAndConversion(Node* pNode)
+{
+  const NodeType::Enum nodeType   = pNode->m_Type;
+  const DataType::Enum returnType = pNode->m_ReturnType;
+
+  if (returnType == DataType::Unknown)
+  {
+    xiiLog::Error("No matching overload found for '{}'", NodeType::GetName(nodeType));
+    return nullptr;
+  }
+
+  auto children = GetChildren(pNode);
+  for (xiiUInt32 i = 0; i < children.GetCount(); ++i)
+  {
+    auto& pChildNode = children[i];
+    if (pChildNode == nullptr)
+    {
+      return nullptr;
+    }
+
+    DataType::Enum expectedChildDataType = GetExpectedChildDataType(pNode, i);
+
+    if (expectedChildDataType != DataType::Unknown && pChildNode->m_ReturnType != expectedChildDataType)
+    {
+      const auto      childRegisterType    = DataType::GetRegisterType(pChildNode->m_ReturnType);
+      const xiiUInt32 childElementCount    = DataType::GetElementCount(pChildNode->m_ReturnType);
+      const auto      expectedRegisterType = DataType::GetRegisterType(expectedChildDataType);
+      const xiiUInt32 expectedElementCount = DataType::GetElementCount(expectedChildDataType);
+
+      if (childRegisterType != expectedRegisterType)
+      {
+        pChildNode = CreateUnaryOperator(NodeType::TypeConversion, pChildNode, DataType::FromRegisterType(expectedRegisterType, childElementCount));
+      }
+
+      if (childElementCount == 1 && expectedElementCount > 1)
+      {
+        pChildNode = CreateConstructorCall(expectedChildDataType, xiiMakeArrayPtr(&pChildNode, 1));
+      }
+      else if (childElementCount < expectedElementCount)
+      {
+        xiiLog::Error("Cannot implicitly convert '{}' to '{}'", DataType::GetName(pChildNode->m_ReturnType), DataType::GetName(expectedChildDataType));
+        return nullptr;
+      }
+    }
+  }
+
+  return pNode;
+}
+
+xiiExpressionAST::Node* xiiExpressionAST::ReplaceVectorInstructions(Node* pNode)
+{
+  const NodeType::Enum nodeType           = pNode->m_Type;
+  const DataType::Enum returnType         = pNode->m_ReturnType;
+  const xiiUInt32      uiNumInputElements = pNode->m_uiNumInputElements;
+
+  if (nodeType == NodeType::Length)
   {
     auto pUnaryNode = static_cast<const UnaryOperator*>(pNode);
-    if (NodeType::IsConstant(pUnaryNode->m_pOperand->m_Type))
+    auto pDot       = ReplaceVectorInstructions(CreateBinaryOperator(NodeType::Dot, pUnaryNode->m_pOperand, pUnaryNode->m_pOperand));
+    return CreateUnaryOperator(NodeType::Sqrt, pDot);
+  }
+  else if (nodeType == NodeType::Normalize)
+  {
+    auto pUnaryNode = static_cast<const UnaryOperator*>(pNode);
+    auto pLength    = ReplaceVectorInstructions(CreateUnaryOperator(NodeType::Length, pUnaryNode->m_pOperand));
+    return CreateBinaryOperator(NodeType::Divide, pUnaryNode->m_pOperand, CreateConstructorCall(returnType, xiiMakeArrayPtr(&pLength, 1)));
+  }
+  else if (nodeType == NodeType::All || nodeType == NodeType::Any)
+  {
+    if (uiNumInputElements == 1)
+      return pNode;
+
+    auto  pUnaryNode = static_cast<const UnaryOperator*>(pNode);
+    auto  pX         = CreateSwizzle(VectorComponent::X, pUnaryNode->m_pOperand);
+    Node* pResult    = pX;
+
+    for (xiiUInt32 i = 1; i < uiNumInputElements; ++i)
     {
-      auto        pConstantNode = static_cast<Constant*>(pUnaryNode->m_pOperand);
-      const float fValue        = pConstantNode->m_Value.Get<float>();
-      return CreateConstant(-fValue);
+      auto pI = CreateSwizzle(static_cast<VectorComponent::Enum>(i), pUnaryNode->m_pOperand);
+      pResult = CreateBinaryOperator(nodeType == NodeType::All ? NodeType::LogicalAnd : NodeType::LogicalOr, pResult, pI);
+    }
+
+    return pResult;
+  }
+  else if (nodeType == NodeType::Dot)
+  {
+    auto pBinaryNode = static_cast<const BinaryOperator*>(pNode);
+    auto pAx         = CreateSwizzle(VectorComponent::X, pBinaryNode->m_pLeftOperand);
+    auto pBx         = CreateSwizzle(VectorComponent::X, pBinaryNode->m_pRightOperand);
+    auto pResult     = CreateBinaryOperator(NodeType::Multiply, pAx, pBx);
+
+    for (xiiUInt32 i = 1; i < uiNumInputElements; ++i)
+    {
+      auto pAi = CreateSwizzle(static_cast<VectorComponent::Enum>(i), pBinaryNode->m_pLeftOperand);
+      auto pBi = CreateSwizzle(static_cast<VectorComponent::Enum>(i), pBinaryNode->m_pRightOperand);
+      pResult  = CreateBinaryOperator(NodeType::Add, pResult, CreateBinaryOperator(NodeType::Multiply, pAi, pBi));
+    }
+
+    return pResult;
+  }
+  else if (nodeType == NodeType::Cross)
+  {
+    if (uiNumInputElements != 3)
+    {
+      xiiLog::Error("Cross product is only defined for vec3");
+      return nullptr;
+    }
+
+    auto pBinaryNode = static_cast<const BinaryOperator*>(pNode);
+    auto pA          = pBinaryNode->m_pLeftOperand;
+    auto pB          = pBinaryNode->m_pRightOperand;
+
+    // a.yzx * b.zxy - a.zxy * b.yzx
+    xiiEnum<VectorComponent> yzx[] = {VectorComponent::Y, VectorComponent::Z, VectorComponent::X};
+    xiiEnum<VectorComponent> zxy[] = {VectorComponent::Z, VectorComponent::X, VectorComponent::Y};
+    auto                     pMul0 = CreateBinaryOperator(NodeType::Multiply, CreateSwizzle(xiiMakeArrayPtr(yzx), pA), CreateSwizzle(xiiMakeArrayPtr(zxy), pB));
+    auto                     pMul1 = CreateBinaryOperator(NodeType::Multiply, CreateSwizzle(xiiMakeArrayPtr(zxy), pA), CreateSwizzle(xiiMakeArrayPtr(yzx), pB));
+    return CreateBinaryOperator(NodeType::Subtract, pMul0, pMul1);
+  }
+  else if (nodeType == NodeType::Reflect)
+  {
+    auto pBinaryNode = static_cast<const BinaryOperator*>(pNode);
+    auto pA          = pBinaryNode->m_pLeftOperand;
+    auto pN          = pBinaryNode->m_pRightOperand;
+
+    // a - n * 2 * dot(a, n)
+    auto  pDot = ReplaceVectorInstructions(CreateBinaryOperator(NodeType::Dot, pA, pN));
+    auto  pTwo = CreateConstant(2, DataType::FromRegisterType(DataType::GetRegisterType(returnType)));
+    Node* pMul = CreateBinaryOperator(NodeType::Multiply, pDot, pTwo);
+    pMul       = CreateBinaryOperator(NodeType::Multiply, pN, CreateConstructorCall(returnType, xiiMakeArrayPtr(&pMul, 1)));
+    return CreateBinaryOperator(NodeType::Subtract, pA, pMul);
+  }
+
+  return pNode;
+}
+
+xiiExpressionAST::Node* xiiExpressionAST::ScalarizeVectorInstructions(Node* pNode)
+{
+  const NodeType::Enum nodeType = pNode->m_Type;
+
+  if (nodeType == NodeType::Swizzle)
+  {
+    auto pSwizzleNode = static_cast<Swizzle*>(pNode);
+    if (pSwizzleNode->m_NumComponents == 1)
+    {
+      xiiEnum<VectorComponent> component                    = pSwizzleNode->m_Components[0];
+      Node*                    pChildNode                   = pSwizzleNode->m_pExpression;
+      NodeType::Enum           childNodeType                = pChildNode->m_Type;
+      DataType::Enum           childReturnTypeSingleElement = DataType::FromRegisterType(DataType::GetRegisterType(pChildNode->m_ReturnType));
+
+      if (NodeType::IsConstant(childNodeType))
+      {
+        auto            pConstantNode         = static_cast<const Constant*>(pChildNode);
+        const xiiUInt32 uiNumConstantElements = DataType::GetElementCount(pConstantNode->m_ReturnType);
+        if (static_cast<xiiUInt32>(component) >= uiNumConstantElements)
+        {
+          xiiLog::Error("Invalid subscript .{} for constant of type '{}'", VectorComponent::GetName(component), DataType::GetName(pConstantNode->m_ReturnType));
+          return nullptr;
+        }
+
+        xiiVariant newValue = pConstantNode->m_Value[component];
+        return CreateConstant(newValue, childReturnTypeSingleElement);
+      }
+      else if (NodeType::IsSwizzle(childNodeType))
+      {
+        auto pChildSwizzleNode = static_cast<Swizzle*>(pChildNode);
+        if (static_cast<xiiUInt32>(component) >= pChildSwizzleNode->m_NumComponents)
+        {
+          xiiLog::Error("Invalid Swizzle");
+          return nullptr;
+        }
+        return ScalarizeVectorInstructions(CreateSwizzle(pChildSwizzleNode->m_Components[component], pChildSwizzleNode->m_pExpression));
+      }
+      else if (NodeType::IsInput(childNodeType))
+      {
+        auto            pInput             = static_cast<const Input*>(pChildNode);
+        const xiiUInt32 uiNumInputElements = DataType::GetElementCount(pInput->m_ReturnType);
+        if (static_cast<xiiUInt32>(component) >= uiNumInputElements)
+        {
+          xiiLog::Error("Invalid subscript .{} for input '{}' of type '{}'", VectorComponent::GetName(component), pInput->m_Desc.m_sName, DataType::GetName(pInput->m_ReturnType));
+          return nullptr;
+        }
+        return CreateInput(CreateScalarizedStreamDesc(pInput->m_Desc, component));
+      }
+      else if (NodeType::IsConstructorCall(childNodeType))
+      {
+        auto pConstructorCall = static_cast<const ConstructorCall*>(pChildNode);
+        auto pArg             = pConstructorCall->m_Arguments[component];
+        return ScalarizeVectorInstructions(pArg);
+      }
+
+      auto                    innerChildren = GetChildren(pChildNode);
+      xiiSmallArray<Node*, 8> newSwizzleNodes;
+      for (auto pInnerChildNode : innerChildren)
+      {
+        newSwizzleNodes.PushBack(CreateSwizzle(component, pInnerChildNode));
+      }
+
+      if (NodeType::IsUnary(childNodeType))
+      {
+        return CreateUnaryOperator(childNodeType, newSwizzleNodes[0], childReturnTypeSingleElement);
+      }
+      else if (NodeType::IsBinary(childNodeType))
+      {
+        return CreateBinaryOperator(childNodeType, newSwizzleNodes[0], newSwizzleNodes[1]);
+      }
+      else if (NodeType::IsTernary(childNodeType))
+      {
+        return CreateTernaryOperator(childNodeType, newSwizzleNodes[0], newSwizzleNodes[1], newSwizzleNodes[2]);
+      }
+      else if (NodeType::IsFunctionCall(childNodeType))
+      {
+        auto pFunctionCall = static_cast<const FunctionCall*>(pChildNode);
+        return CreateFunctionCall(*pFunctionCall->m_Descs[pFunctionCall->m_uiOverloadIndex], std::move(newSwizzleNodes));
+      }
+
+      XII_ASSERT_NOT_IMPLEMENTED;
     }
     else
     {
-      auto pZero  = CreateConstant(0.0f);
-      auto pValue = pUnaryNode->m_pOperand;
-      return CreateBinaryOperator(NodeType::Subtract, pZero, pValue);
+      xiiLog::Error("Failed to scalarize AST");
+      return nullptr;
     }
+  }
+
+  return pNode;
+}
+
+xiiExpressionAST::Node* xiiExpressionAST::ReplaceUnsupportedInstructions(Node* pNode)
+{
+  const NodeType::Enum nodeType   = pNode->m_Type;
+  const DataType::Enum returnType = pNode->m_ReturnType;
+
+  if (nodeType == NodeType::Negate)
+  {
+    auto pUnaryNode = static_cast<const UnaryOperator*>(pNode);
+    auto pZero      = CreateConstant(0, returnType);
+    auto pValue     = pUnaryNode->m_pOperand;
+    return CreateBinaryOperator(NodeType::Subtract, pZero, pValue);
   }
   else if (nodeType == NodeType::Saturate)
   {
     auto pUnaryNode = static_cast<const UnaryOperator*>(pNode);
-    if (NodeType::IsConstant(pUnaryNode->m_pOperand->m_Type))
+    auto pZero      = CreateConstant(0, returnType);
+    auto pOne       = CreateConstant(1, returnType);
+    auto pValue     = pUnaryNode->m_pOperand;
+    return CreateBinaryOperator(NodeType::Max, pZero, CreateBinaryOperator(NodeType::Min, pOne, pValue));
+  }
+  else if (nodeType == NodeType::Pow2)
+  {
+    auto pUnaryNode = static_cast<const UnaryOperator*>(pNode);
+    if (returnType == DataType::Int)
     {
-      auto        pConstantNode = static_cast<Constant*>(pUnaryNode->m_pOperand);
-      const float fValue        = pConstantNode->m_Value.Get<float>();
-      return CreateConstant(xiiMath::Saturate(fValue));
+      auto pOne   = CreateConstant(1, returnType);
+      auto pValue = pUnaryNode->m_pOperand;
+      return CreateBinaryOperator(NodeType::BitshiftLeft, pOne, pValue);
+    }
+  }
+  else if (nodeType == NodeType::RadToDeg)
+  {
+    auto pUnaryNode  = static_cast<const UnaryOperator*>(pNode);
+    auto pValue      = pUnaryNode->m_pOperand;
+    auto pMultiplier = CreateConstant(xiiAngle::RadToDegMultiplier(), returnType);
+    return CreateBinaryOperator(NodeType::Multiply, pValue, pMultiplier);
+  }
+  else if (nodeType == NodeType::DegToRad)
+  {
+    auto pUnaryNode  = static_cast<const UnaryOperator*>(pNode);
+    auto pValue      = pUnaryNode->m_pOperand;
+    auto pMultiplier = CreateConstant(xiiAngle::DegToRadMultiplier(), returnType);
+    return CreateBinaryOperator(NodeType::Multiply, pValue, pMultiplier);
+  }
+  else if (nodeType == NodeType::Frac)
+  {
+    auto pUnaryNode = static_cast<const UnaryOperator*>(pNode);
+    auto pValue     = pUnaryNode->m_pOperand;
+    return CreateBinaryOperator(NodeType::Subtract, pValue, CreateUnaryOperator(NodeType::Trunc, pValue));
+  }
+  else if (nodeType == NodeType::Modulo)
+  {
+    auto  pBinaryNode = static_cast<const BinaryOperator*>(pNode);
+    auto  pLeftValue  = pBinaryNode->m_pLeftOperand;
+    auto  pRightValue = pBinaryNode->m_pRightOperand;
+    Node* pQuotient   = CreateBinaryOperator(NodeType::Divide, pLeftValue, pRightValue);
+    if (returnType == DataType::Float)
+    {
+      pQuotient = CreateUnaryOperator(NodeType::Trunc, pQuotient);
+    }
+    return CreateBinaryOperator(NodeType::Subtract, pLeftValue, CreateBinaryOperator(NodeType::Multiply, pRightValue, pQuotient));
+  }
+  else if (nodeType == NodeType::Log)
+  {
+    auto pBinaryNode = static_cast<const BinaryOperator*>(pNode);
+    auto pBase       = pBinaryNode->m_pLeftOperand;
+    auto pValue      = pBinaryNode->m_pRightOperand;
+    auto pLog2Value  = CreateUnaryOperator(NodeType::Log2, pValue);
+    if (NodeType::IsConstant(pBase->m_Type))
+    {
+      auto        pConstantNode = static_cast<Constant*>(pBase);
+      const float fBaseValue    = pConstantNode->m_Value.Get<float>();
+      if (fBaseValue == 2.0f)
+      {
+        return pLog2Value;
+      }
+      else
+      {
+        auto pFactor = CreateConstant(1.0f / xiiMath::Log2(fBaseValue));
+        return CreateBinaryOperator(NodeType::Multiply, pLog2Value, pFactor);
+      }
     }
     else
     {
-      auto pZero  = CreateConstant(0.0f);
-      auto pOne   = CreateConstant(1.0f);
-      auto pValue = static_cast<const UnaryOperator*>(pNode)->m_pOperand;
-      return CreateBinaryOperator(NodeType::Max, pZero, CreateBinaryOperator(NodeType::Min, pOne, pValue));
+      return CreateBinaryOperator(NodeType::Divide, pLog2Value, CreateUnaryOperator(NodeType::Log2, pBase));
     }
+  }
+  else if (nodeType == NodeType::Pow)
+  {
+    auto pBinaryNode = static_cast<const BinaryOperator*>(pNode);
+    auto pBase       = pBinaryNode->m_pLeftOperand;
+    auto pExp        = pBinaryNode->m_pRightOperand;
+    if (NodeType::IsConstant(pBase->m_Type))
+    {
+      auto         pConstantNode = static_cast<Constant*>(pBase);
+      const double fBaseValue    = pConstantNode->m_Value.ConvertTo<double>();
+      if (fBaseValue == 2.0f)
+      {
+        auto pPow2 = CreateUnaryOperator(NodeType::Pow2, pExp);
+        return ReplaceUnsupportedInstructions(pPow2);
+      }
+    }
+
+    if (NodeType::IsConstant(pExp->m_Type))
+    {
+      auto         pConstantNode = static_cast<Constant*>(pExp);
+      const double fExpValue     = pConstantNode->m_Value.ConvertTo<double>();
+      if (fExpValue == 1.0)
+      {
+        return pBase;
+      }
+
+      const bool isWholeNumber = fExpValue == xiiMath::Trunc(fExpValue);
+      if (isWholeNumber && fExpValue > 1 && fExpValue < XII_ARRAY_SIZE(s_MultiplicationChains))
+      {
+        xiiHybridArray<Node*, 8> multiplierStack;
+        multiplierStack.PushBack(pBase);
+
+        const auto& chain   = s_MultiplicationChains[(xiiUInt32)fExpValue].m_Chain;
+        xiiUInt32   uiIndex = 0;
+        do
+        {
+          auto& operandIndices = chain[uiIndex];
+          auto  pLeft          = multiplierStack[operandIndices.m_uiLeftOperand];
+          auto  pRight         = multiplierStack[operandIndices.m_uiRightOperand];
+          auto  pMultiply      = CreateBinaryOperator(NodeType::Multiply, pLeft, pRight);
+          multiplierStack.PushBack(pMultiply);
+
+          ++uiIndex;
+        } while (chain[uiIndex].m_uiLeftOperand != 0 || chain[uiIndex].m_uiRightOperand != 0);
+
+        return multiplierStack.PeekBack();
+      }
+    }
+
+    // reformulate x^y as 2 ^ (y * log2(x)). Only works with floating point math.
+    if (pBase->m_ReturnType == DataType::Int)
+    {
+      pBase = CreateUnaryOperator(NodeType::TypeConversion, pBase, DataType::Float);
+    }
+
+    if (pExp->m_ReturnType == DataType::Int)
+    {
+      pExp = CreateUnaryOperator(NodeType::TypeConversion, pExp, DataType::Float);
+    }
+
+    auto pLog2Base = CreateUnaryOperator(NodeType::Log2, pBase);
+    auto pPow2     = CreateUnaryOperator(NodeType::Pow2, CreateBinaryOperator(NodeType::Multiply, pExp, pLog2Base));
+    if (returnType == DataType::Int)
+    {
+      return CreateUnaryOperator(NodeType::TypeConversion, CreateUnaryOperator(NodeType::Round, pPow2), DataType::Int);
+    }
+    return pPow2;
   }
   else if (nodeType == NodeType::Clamp)
   {
@@ -46,49 +440,152 @@ xiiExpressionAST::Node* xiiExpressionAST::ReplaceUnsupportedInstructions(Node* p
     auto pMaxValue    = pTernaryNode->m_pThirdOperand;
     return CreateBinaryOperator(NodeType::Max, pMinValue, CreateBinaryOperator(NodeType::Min, pMaxValue, pValue));
   }
+  else if (nodeType == NodeType::Lerp)
+  {
+    auto pTernaryNode = static_cast<const TernaryOperator*>(pNode);
+    auto pAValue      = pTernaryNode->m_pFirstOperand;
+    auto pBValue      = pTernaryNode->m_pSecondOperand;
+    auto pSValue      = pTernaryNode->m_pThirdOperand;
+    auto pBMinusA     = CreateBinaryOperator(NodeType::Subtract, pBValue, pAValue);
+    return CreateBinaryOperator(NodeType::Add, pAValue, CreateBinaryOperator(NodeType::Multiply, pSValue, pBMinusA));
+  }
+  else if (nodeType == NodeType::TypeConversion)
+  {
+    auto pUnaryNode = static_cast<const UnaryOperator*>(pNode);
+    auto pValue     = pUnaryNode->m_pOperand;
+    if (returnType == DataType::Bool)
+    {
+      auto pZero = CreateConstant(0, pValue->m_ReturnType);
+      return CreateBinaryOperator(NodeType::NotEqual, pValue, pZero);
+    }
+    else if (pValue->m_ReturnType == DataType::Bool)
+    {
+      auto pOne  = CreateConstant(1, returnType);
+      auto pZero = CreateConstant(0, returnType);
+      return CreateTernaryOperator(NodeType::Select, pValue, pOne, pZero);
+    }
+  }
+  else if (nodeType == NodeType::ConstructorCall)
+  {
+    auto pConstructorCallNode = static_cast<const ConstructorCall*>(pNode);
+    if (pConstructorCallNode->m_Arguments.GetCount() > 1)
+    {
+      xiiLog::Error("Constructor of type '{}' has too many arguments", DataType::GetName(returnType));
+      return nullptr;
+    }
+
+    return pConstructorCallNode->m_Arguments[0];
+  }
 
   return pNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
-
 xiiExpressionAST::Node* xiiExpressionAST::FoldConstants(Node* pNode)
 {
-  NodeType::Enum nodeType = pNode->m_Type;
+  const NodeType::Enum nodeType   = pNode->m_Type;
+  const DataType::Enum returnType = pNode->m_ReturnType;
+
   if (NodeType::IsUnary(nodeType))
   {
     auto pUnaryNode = static_cast<const UnaryOperator*>(pNode);
     if (NodeType::IsConstant(pUnaryNode->m_pOperand->m_Type))
     {
-      auto        pConstantNode = static_cast<Constant*>(pUnaryNode->m_pOperand);
-      const float fValue        = pConstantNode->m_Value.Get<float>();
-
-      switch (nodeType)
+      auto pConstantNode = static_cast<Constant*>(pUnaryNode->m_pOperand);
+      if (nodeType == NodeType::TypeConversion)
       {
-        case NodeType::Negate:
-          return CreateConstant(-fValue);
-        case NodeType::Absolute:
-          return CreateConstant(xiiMath::Abs(fValue));
-        case NodeType::Saturate:
-          return CreateConstant(xiiMath::Saturate(fValue));
-        case NodeType::Sqrt:
-          return CreateConstant(xiiMath::Sqrt(fValue));
-        case NodeType::Sin:
-          return CreateConstant(xiiMath::Sin(xiiAngle::Radian(fValue)));
-        case NodeType::Cos:
-          return CreateConstant(xiiMath::Cos(xiiAngle::Radian(fValue)));
-        case NodeType::Tan:
-          return CreateConstant(xiiMath::Tan(xiiAngle::Radian(fValue)));
-        case NodeType::ASin:
-          return CreateConstant(xiiMath::ASin(fValue).GetRadian());
-        case NodeType::ACos:
-          return CreateConstant(xiiMath::ACos(fValue).GetRadian());
-        case NodeType::ATan:
-          return CreateConstant(xiiMath::ATan(fValue).GetRadian());
+        return CreateConstant(pConstantNode->m_Value, returnType);
+      }
 
-        default:
-          XII_ASSERT_NOT_IMPLEMENTED;
-          return pNode;
+      if (returnType == DataType::Bool)
+      {
+        const bool bValue = pConstantNode->m_Value.Get<bool>();
+
+        switch (nodeType)
+        {
+          case NodeType::LogicalNot:
+            return CreateConstant(!bValue, returnType);
+          default:
+            XII_ASSERT_NOT_IMPLEMENTED;
+            return pNode;
+        }
+      }
+      else if (returnType == DataType::Int)
+      {
+        const int iValue = pConstantNode->m_Value.Get<int>();
+
+        switch (nodeType)
+        {
+          case NodeType::Negate:
+            return CreateConstant(-iValue, returnType);
+          case NodeType::Absolute:
+            return CreateConstant(xiiMath::Abs(iValue), returnType);
+          case NodeType::Saturate:
+            return CreateConstant(xiiMath::Saturate(iValue), returnType);
+          case NodeType::Log2:
+            return CreateConstant(xiiMath::Log2i(iValue), returnType);
+          case NodeType::Pow2:
+            return CreateConstant(xiiMath::Pow2(iValue), returnType);
+          case NodeType::BitwiseNot:
+            return CreateConstant(~iValue, returnType);
+          default:
+            XII_ASSERT_NOT_IMPLEMENTED;
+            return pNode;
+        }
+      }
+      else if (returnType == DataType::Float)
+      {
+        const float fValue = pConstantNode->m_Value.Get<float>();
+
+        switch (nodeType)
+        {
+          case NodeType::Negate:
+            return CreateConstant(-fValue);
+          case NodeType::Absolute:
+            return CreateConstant(xiiMath::Abs(fValue));
+          case NodeType::Saturate:
+            return CreateConstant(xiiMath::Saturate(fValue));
+          case NodeType::Sqrt:
+            return CreateConstant(xiiMath::Sqrt(fValue));
+          case NodeType::Exp:
+            return CreateConstant(xiiMath::Exp(fValue));
+          case NodeType::Ln:
+            return CreateConstant(xiiMath::Ln(fValue));
+          case NodeType::Log2:
+            return CreateConstant(xiiMath::Log2(fValue));
+          case NodeType::Log10:
+            return CreateConstant(xiiMath::Log10(fValue));
+          case NodeType::Pow2:
+            return CreateConstant(xiiMath::Pow2(fValue));
+          case NodeType::Sin:
+            return CreateConstant(xiiMath::Sin(xiiAngle::Radian(fValue)));
+          case NodeType::Cos:
+            return CreateConstant(xiiMath::Cos(xiiAngle::Radian(fValue)));
+          case NodeType::Tan:
+            return CreateConstant(xiiMath::Tan(xiiAngle::Radian(fValue)));
+          case NodeType::ASin:
+            return CreateConstant(xiiMath::ASin(fValue).GetRadian());
+          case NodeType::ACos:
+            return CreateConstant(xiiMath::ACos(fValue).GetRadian());
+          case NodeType::ATan:
+            return CreateConstant(xiiMath::ATan(fValue).GetRadian());
+          case NodeType::RadToDeg:
+            return CreateConstant(xiiAngle::RadToDeg(fValue));
+          case NodeType::DegToRad:
+            return CreateConstant(xiiAngle::DegToRad(fValue));
+          case NodeType::Round:
+            return CreateConstant(xiiMath::Round(fValue));
+          case NodeType::Floor:
+            return CreateConstant(xiiMath::Floor(fValue));
+          case NodeType::Ceil:
+            return CreateConstant(xiiMath::Ceil(fValue));
+          case NodeType::Trunc:
+            return CreateConstant(xiiMath::Trunc(fValue));
+          case NodeType::Frac:
+            return CreateConstant(xiiMath::Fraction(fValue));
+          default:
+            XII_ASSERT_NOT_IMPLEMENTED;
+            return pNode;
+        }
       }
     }
   }
@@ -99,67 +596,424 @@ xiiExpressionAST::Node* xiiExpressionAST::FoldConstants(Node* pNode)
     const bool bRightIsConstant = NodeType::IsConstant(pBinaryNode->m_pRightOperand->m_Type);
     if (bLeftIsConstant && bRightIsConstant)
     {
-      auto        pLeftConstant  = static_cast<const Constant*>(pBinaryNode->m_pLeftOperand);
-      auto        pRightConstant = static_cast<const Constant*>(pBinaryNode->m_pRightOperand);
-      const float fLeftValue     = pLeftConstant->m_Value.Get<float>();
-      const float fRightValue    = pRightConstant->m_Value.Get<float>();
+      auto           pLeftConstant  = static_cast<const Constant*>(pBinaryNode->m_pLeftOperand);
+      auto           pRightConstant = static_cast<const Constant*>(pBinaryNode->m_pRightOperand);
+      DataType::Enum leftType       = pLeftConstant->m_ReturnType;
 
-      switch (nodeType)
+      if (leftType == DataType::Bool)
       {
-        case NodeType::Add:
-          return CreateConstant(fLeftValue + fRightValue);
-        case NodeType::Subtract:
-          return CreateConstant(fLeftValue - fRightValue);
-        case NodeType::Multiply:
-          return CreateConstant(fLeftValue * fRightValue);
-        case NodeType::Divide:
-          return CreateConstant(fLeftValue / fRightValue);
-        case NodeType::Min:
-          return CreateConstant(xiiMath::Min(fLeftValue, fRightValue));
-        case NodeType::Max:
-          return CreateConstant(xiiMath::Max(fLeftValue, fRightValue));
+        const bool bLeftValue  = pLeftConstant->m_Value.Get<bool>();
+        const bool bRightValue = pRightConstant->m_Value.Get<bool>();
 
-        default:
-          XII_ASSERT_NOT_IMPLEMENTED;
-          return pNode;
+        switch (nodeType)
+        {
+          case NodeType::Equal:
+            return CreateConstant(bLeftValue == bRightValue, returnType);
+          case NodeType::NotEqual:
+            return CreateConstant(bLeftValue != bRightValue, returnType);
+          case NodeType::LogicalAnd:
+            return CreateConstant(bLeftValue && bRightValue, returnType);
+          case NodeType::LogicalOr:
+            return CreateConstant(bLeftValue || bRightValue, returnType);
+          default:
+            XII_ASSERT_NOT_IMPLEMENTED;
+            return pNode;
+        }
+      }
+      else if (leftType == DataType::Int)
+      {
+        const int iLeftValue  = pLeftConstant->m_Value.Get<int>();
+        const int iRightValue = pRightConstant->m_Value.Get<int>();
+
+        switch (nodeType)
+        {
+          case NodeType::Add:
+            return CreateConstant(iLeftValue + iRightValue, returnType);
+          case NodeType::Subtract:
+            return CreateConstant(iLeftValue - iRightValue, returnType);
+          case NodeType::Multiply:
+            return CreateConstant(iLeftValue * iRightValue, returnType);
+          case NodeType::Divide:
+            return CreateConstant(iLeftValue / iRightValue, returnType);
+          case NodeType::Modulo:
+            return CreateConstant(iLeftValue % iRightValue, returnType);
+          case NodeType::Pow:
+            return CreateConstant(xiiMath::Pow(iLeftValue, iRightValue), returnType);
+          case NodeType::Min:
+            return CreateConstant(xiiMath::Min(iLeftValue, iRightValue), returnType);
+          case NodeType::Max:
+            return CreateConstant(xiiMath::Max(iLeftValue, iRightValue), returnType);
+          case NodeType::BitshiftLeft:
+            return CreateConstant(iLeftValue << iRightValue, returnType);
+          case NodeType::BitshiftRight:
+            return CreateConstant(iLeftValue >> iRightValue, returnType);
+          case NodeType::BitwiseAnd:
+            return CreateConstant(iLeftValue & iRightValue, returnType);
+          case NodeType::BitwiseXor:
+            return CreateConstant(iLeftValue ^ iRightValue, returnType);
+          case NodeType::BitwiseOr:
+            return CreateConstant(iLeftValue | iRightValue, returnType);
+          case NodeType::Equal:
+            return CreateConstant(iLeftValue == iRightValue, returnType);
+          case NodeType::NotEqual:
+            return CreateConstant(iLeftValue != iRightValue, returnType);
+          case NodeType::Less:
+            return CreateConstant(iLeftValue < iRightValue, returnType);
+          case NodeType::LessEqual:
+            return CreateConstant(iLeftValue <= iRightValue, returnType);
+          case NodeType::Greater:
+            return CreateConstant(iLeftValue > iRightValue, returnType);
+          case NodeType::GreaterEqual:
+            return CreateConstant(iLeftValue >= iRightValue, returnType);
+          default:
+            XII_ASSERT_NOT_IMPLEMENTED;
+            return pNode;
+        }
+      }
+      else if (leftType == DataType::Float)
+      {
+        const float fLeftValue  = pLeftConstant->m_Value.Get<float>();
+        const float fRightValue = pRightConstant->m_Value.Get<float>();
+
+        switch (nodeType)
+        {
+          case NodeType::Add:
+            return CreateConstant(fLeftValue + fRightValue, returnType);
+          case NodeType::Subtract:
+            return CreateConstant(fLeftValue - fRightValue, returnType);
+          case NodeType::Multiply:
+            return CreateConstant(fLeftValue * fRightValue, returnType);
+          case NodeType::Divide:
+            return CreateConstant(fLeftValue / fRightValue, returnType);
+          case NodeType::Modulo:
+            return CreateConstant(xiiMath::Mod(fLeftValue, fRightValue), returnType);
+          case NodeType::Log:
+            return CreateConstant(xiiMath::Log(fLeftValue, fRightValue), returnType);
+          case NodeType::Pow:
+            return CreateConstant(xiiMath::Pow(fLeftValue, fRightValue), returnType);
+          case NodeType::Min:
+            return CreateConstant(xiiMath::Min(fLeftValue, fRightValue), returnType);
+          case NodeType::Max:
+            return CreateConstant(xiiMath::Max(fLeftValue, fRightValue), returnType);
+          case NodeType::Equal:
+            return CreateConstant(fLeftValue == fRightValue, returnType);
+          case NodeType::NotEqual:
+            return CreateConstant(fLeftValue != fRightValue, returnType);
+          case NodeType::Less:
+            return CreateConstant(fLeftValue < fRightValue, returnType);
+          case NodeType::LessEqual:
+            return CreateConstant(fLeftValue <= fRightValue, returnType);
+          case NodeType::Greater:
+            return CreateConstant(fLeftValue > fRightValue, returnType);
+          case NodeType::GreaterEqual:
+            return CreateConstant(fLeftValue >= fRightValue, returnType);
+          default:
+            XII_ASSERT_NOT_IMPLEMENTED;
+            return pNode;
+        }
+      }
+    }
+    else if (bLeftIsConstant)
+    {
+      auto           pOperand  = pBinaryNode->m_pRightOperand;
+      auto           pConstant = static_cast<Constant*>(pBinaryNode->m_pLeftOperand);
+      DataType::Enum leftType  = pConstant->m_ReturnType;
+
+      if (leftType == DataType::Bool)
+      {
+        const bool bValue = pConstant->m_Value.Get<bool>();
+
+        switch (nodeType)
+        {
+          case NodeType::Equal:
+            return CreateBinaryOperator(NodeType::Equal, pOperand, pConstant);
+          case NodeType::NotEqual:
+            return CreateBinaryOperator(NodeType::NotEqual, pOperand, pConstant);
+          case NodeType::LogicalAnd:
+            if (bValue == false)
+            {
+              return CreateConstant(false, returnType);
+            }
+            return CreateBinaryOperator(NodeType::LogicalAnd, pOperand, pConstant);
+          case NodeType::LogicalOr:
+            if (bValue == true)
+            {
+              return CreateConstant(true, returnType);
+            }
+            return CreateBinaryOperator(NodeType::LogicalOr, pOperand, pConstant);
+          default:
+            XII_ASSERT_NOT_IMPLEMENTED;
+            return pNode;
+        }
+      }
+      else if (leftType == DataType::Int || leftType == DataType::Float)
+      {
+        const double fValue = pConstant->m_Value.ConvertTo<double>();
+
+        switch (nodeType)
+        {
+          case NodeType::Add:
+            if (fValue == 0.0f)
+            {
+              return pOperand;
+            }
+            return CreateBinaryOperator(NodeType::Add, pOperand, pConstant);
+          case NodeType::Subtract:
+            return pNode;
+          case NodeType::Multiply:
+            if (fValue == 0.0f)
+            {
+              return CreateConstant(0, returnType);
+            }
+            else if (fValue == 1.0f)
+            {
+              return pOperand;
+            }
+            return CreateBinaryOperator(NodeType::Multiply, pOperand, pConstant);
+          case NodeType::Divide:
+          case NodeType::Modulo:
+          case NodeType::Log:
+          case NodeType::Pow:
+            return pNode;
+          case NodeType::Min:
+            return CreateBinaryOperator(NodeType::Min, pOperand, pConstant);
+          case NodeType::Max:
+            return CreateBinaryOperator(NodeType::Max, pOperand, pConstant);
+          case NodeType::BitshiftLeft:
+          case NodeType::BitshiftRight:
+            return pNode;
+          case NodeType::BitwiseAnd:
+            return CreateBinaryOperator(NodeType::BitwiseAnd, pOperand, pConstant);
+          case NodeType::BitwiseXor:
+            return CreateBinaryOperator(NodeType::BitwiseXor, pOperand, pConstant);
+          case NodeType::BitwiseOr:
+            return CreateBinaryOperator(NodeType::BitwiseOr, pOperand, pConstant);
+          case NodeType::Equal:
+            return CreateBinaryOperator(NodeType::Equal, pOperand, pConstant);
+          case NodeType::NotEqual:
+            return CreateBinaryOperator(NodeType::NotEqual, pOperand, pConstant);
+          case NodeType::Less:
+            return CreateBinaryOperator(NodeType::Greater, pOperand, pConstant);
+          case NodeType::LessEqual:
+            return CreateBinaryOperator(NodeType::GreaterEqual, pOperand, pConstant);
+          case NodeType::Greater:
+            return CreateBinaryOperator(NodeType::Less, pOperand, pConstant);
+          case NodeType::GreaterEqual:
+            return CreateBinaryOperator(NodeType::LessEqual, pOperand, pConstant);
+          default:
+            XII_ASSERT_NOT_IMPLEMENTED;
+            return pNode;
+        }
       }
     }
     else if (bRightIsConstant)
     {
-      auto        pOperand      = pBinaryNode->m_pLeftOperand;
-      auto        pConstantNode = static_cast<Constant*>(pBinaryNode->m_pRightOperand);
-      const float fValue        = pConstantNode->m_Value.Get<float>();
+      auto           pOperand  = pBinaryNode->m_pLeftOperand;
+      auto           pConstant = static_cast<Constant*>(pBinaryNode->m_pRightOperand);
+      DataType::Enum leftType  = pOperand->m_ReturnType;
 
-      switch (nodeType)
+      if (leftType == DataType::Bool)
       {
-        case NodeType::Add:
-          return CreateBinaryOperator(xiiExpressionAST::NodeType::Add, pConstantNode, pOperand);
-        case NodeType::Subtract:
-          return CreateBinaryOperator(xiiExpressionAST::NodeType::Add, CreateConstant(-fValue), pOperand);
-        case NodeType::Multiply:
-          return CreateBinaryOperator(xiiExpressionAST::NodeType::Multiply, pConstantNode, pOperand);
-        case NodeType::Divide:
-          return CreateBinaryOperator(xiiExpressionAST::NodeType::Multiply, CreateConstant(1.0f / fValue), pOperand);
-        case NodeType::Min:
-          return CreateBinaryOperator(xiiExpressionAST::NodeType::Min, pConstantNode, pOperand);
-        case NodeType::Max:
-          return CreateBinaryOperator(xiiExpressionAST::NodeType::Max, pConstantNode, pOperand);
+        const bool bRightValue = pConstant->m_Value.Get<bool>();
 
-        default:
-          XII_ASSERT_NOT_IMPLEMENTED;
-          return pNode;
+        if (nodeType == NodeType::LogicalAnd && bRightValue == false)
+        {
+          return CreateConstant(false, returnType);
+        }
+        else if (nodeType == NodeType::LogicalOr && bRightValue == true)
+        {
+          return CreateConstant(true, returnType);
+        }
+      }
+      else if (leftType == DataType::Int)
+      {
+        const int iRightValue = pConstant->m_Value.Get<int>();
+
+        if ((nodeType == NodeType::Add || nodeType == NodeType::Subtract) && iRightValue == 0)
+        {
+          return pOperand;
+        }
+        else if (nodeType == NodeType::Multiply && iRightValue == 0)
+        {
+          return CreateConstant(0, returnType);
+        }
+        else if ((nodeType == NodeType::Multiply || nodeType == NodeType::Divide) && iRightValue == 1)
+        {
+          return pOperand;
+        }
+        else if (nodeType == NodeType::Divide && xiiMath::IsPowerOf2(iRightValue))
+        {
+          auto pShiftValue  = CreateConstant(xiiMath::Log2i(iRightValue), returnType);
+          auto pDivision    = CreateBinaryOperator(NodeType::BitshiftRight, CreateUnaryOperator(NodeType::Absolute, pOperand), pShiftValue);
+          auto pZero        = CreateConstant(0, returnType);
+          auto pGreaterZero = CreateBinaryOperator(NodeType::Greater, pOperand, pZero);
+          return CreateTernaryOperator(NodeType::Select, pGreaterZero, pDivision, CreateBinaryOperator(NodeType::Subtract, pZero, pDivision));
+        }
+        else if (nodeType == NodeType::Pow && iRightValue == 1)
+        {
+          return pOperand;
+        }
+        else if ((nodeType == NodeType::BitshiftLeft || nodeType == NodeType::BitshiftRight) && iRightValue == 0)
+        {
+          return pOperand;
+        }
+      }
+      else if (leftType == DataType::Float)
+      {
+        const float fRightValue = pConstant->m_Value.Get<float>();
+
+        if ((nodeType == NodeType::Add || nodeType == NodeType::Subtract) && fRightValue == 0.0f)
+        {
+          return pOperand;
+        }
+        else if (nodeType == NodeType::Multiply && fRightValue == 0.0f)
+        {
+          return CreateConstant(0.0f, returnType);
+        }
+        else if ((nodeType == NodeType::Multiply || nodeType == NodeType::Divide) && fRightValue == 1.0f)
+        {
+          return pOperand;
+        }
+        else if (nodeType == NodeType::Divide)
+        {
+          auto pMulValue = CreateConstant(1.0f / fRightValue, returnType);
+          return CreateBinaryOperator(NodeType::Multiply, pOperand, pMulValue);
+        }
+        else if (nodeType == NodeType::Pow && fRightValue == 1.0f)
+        {
+          return pOperand;
+        }
       }
     }
   }
   else if (NodeType::IsTernary(nodeType))
   {
-    auto       pTernaryNode      = static_cast<const TernaryOperator*>(pNode);
-    const bool bFirstIsConstant  = NodeType::IsConstant(pTernaryNode->m_pFirstOperand->m_Type);
-    const bool bSecondIsConstant = NodeType::IsConstant(pTernaryNode->m_pSecondOperand->m_Type);
-    const bool bThirdIsConstant  = NodeType::IsConstant(pTernaryNode->m_pThirdOperand->m_Type);
+    auto pTernaryNode = static_cast<const TernaryOperator*>(pNode);
+    if (nodeType == NodeType::Clamp || nodeType == NodeType::Lerp)
+    {
+      return pNode;
+    }
+    else if (nodeType == NodeType::Select)
+    {
+      if (NodeType::IsConstant(pTernaryNode->m_pFirstOperand->m_Type))
+      {
+        auto       pConstantNode = static_cast<Constant*>(pTernaryNode->m_pFirstOperand);
+        const bool bValue        = pConstantNode->m_Value.Get<bool>();
+        return bValue ? pTernaryNode->m_pSecondOperand : pTernaryNode->m_pThirdOperand;
+      }
+
+      return pNode;
+    }
+
+    XII_ASSERT_NOT_IMPLEMENTED;
+    return pNode;
   }
 
   return pNode;
+}
+
+xiiExpressionAST::Node* xiiExpressionAST::CommonSubexpressionElimination(Node* pNode)
+{
+  UpdateHash(pNode);
+
+  auto& nodesForHash = m_NodeDeduplicationTable[pNode->m_uiHash];
+  for (auto pExistingNode : nodesForHash)
+  {
+    if (IsEqual(pNode, pExistingNode))
+    {
+      return pExistingNode;
+    }
+  }
+
+  nodesForHash.PushBack(pNode);
+
+  return pNode;
+}
+
+xiiExpressionAST::Node* xiiExpressionAST::Validate(Node* pNode)
+{
+  const NodeType::Enum nodeType = pNode->m_Type;
+
+  if (pNode->m_ReturnType == DataType::Unknown)
+  {
+    xiiLog::Error("Unresolved return type on '{}'", NodeType::GetName(nodeType));
+    return nullptr;
+  }
+
+  if (NodeType::IsUnary(nodeType) || NodeType::IsBinary(nodeType) || NodeType::IsTernary(nodeType))
+  {
+    if (pNode->m_uiOverloadIndex == 0xFF)
+    {
+      xiiLog::Error("Unresolved overload on '{}'", NodeType::GetName(nodeType));
+      return nullptr;
+    }
+  }
+  else if (NodeType::IsConstant(nodeType))
+  {
+    auto pConstantNode = static_cast<Constant*>(pNode);
+    if (pConstantNode->m_Value.IsValid() == false)
+    {
+      xiiLog::Error("Invalid constant value");
+      return nullptr;
+    }
+  }
+  else if (NodeType::IsFunctionCall(nodeType))
+  {
+    if (pNode->m_uiOverloadIndex == 0xFF)
+    {
+      xiiLog::Error("Unresolved function overload on");
+      return nullptr;
+    }
+
+    auto pFunctionCall = static_cast<FunctionCall*>(pNode);
+    auto pDesc         = pFunctionCall->m_Descs[pNode->m_uiOverloadIndex];
+    if (pFunctionCall->m_Arguments.GetCount() < pDesc->m_uiNumRequiredInputs)
+    {
+      xiiLog::Error("Not enough arguments for function '{}'", pDesc->m_sName);
+      return nullptr;
+    }
+  }
+
+  auto children = GetChildren(pNode);
+  for (xiiUInt32 i = 0; i < children.GetCount(); ++i)
+  {
+    auto&          pChildNode            = children[i];
+    DataType::Enum expectedChildDataType = GetExpectedChildDataType(pNode, i);
+
+    if (expectedChildDataType != DataType::Unknown && pChildNode->m_ReturnType != expectedChildDataType)
+    {
+      xiiLog::Error("Invalid data type for argument {} on '{}'. Expected {} got {}", i, NodeType::GetName(nodeType), DataType::GetName(expectedChildDataType), DataType::GetName(pChildNode->m_ReturnType));
+      return nullptr;
+    }
+  }
+
+  return pNode;
+}
+
+xiiResult xiiExpressionAST::ScalarizeOutputs()
+{
+  for (xiiUInt32 uiOutputIndex = 0; uiOutputIndex < m_OutputNodes.GetCount(); ++uiOutputIndex)
+  {
+    const auto pOutput = m_OutputNodes[uiOutputIndex];
+    if (pOutput == nullptr || pOutput->m_pExpression == nullptr)
+      return XII_FAILURE;
+
+    const xiiUInt32 uiNumElements = pOutput->m_uiNumInputElements;
+    if (uiNumElements > 1)
+    {
+      m_OutputNodes.RemoveAtAndCopy(uiOutputIndex);
+
+      for (xiiUInt32 i = 0; i < uiNumElements; ++i)
+      {
+        xiiEnum<VectorComponent> component  = static_cast<VectorComponent::Enum>(i);
+        auto                     pSwizzle   = CreateSwizzle(component, pOutput->m_pExpression);
+        auto                     pNewOutput = CreateOutput(CreateScalarizedStreamDesc(pOutput->m_Desc, component), pSwizzle);
+        m_OutputNodes.Insert(pNewOutput, uiOutputIndex + i);
+      }
+    }
+  }
+
+  return XII_SUCCESS;
 }
 
 

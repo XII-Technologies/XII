@@ -66,7 +66,7 @@ public:
 
   static xiiUInt32 ComputeSortingKey(float fSortOrder, float fMaxScale);
 
-  float EvaluateAtGlobalPosition(const xiiVec3& vPosition, float fInitialValue, xiiProcVolumeImageMode::Enum imgMode, const xiiColor& refColor) const;
+  float EvaluateAtGlobalPosition(const xiiSimdVec4f& vPosition, float fInitialValue, xiiProcVolumeImageMode::Enum imgMode, const xiiColor& refColor) const;
 
   static void ExtractVolumesInBox(const xiiWorld& world, const xiiBoundingBox& box, xiiSpatialData::Category spatialCategory, const xiiTagSet& includeTags, xiiVolumeCollection& out_Collection, const xiiRTTI* pComponentBaseType = nullptr);
 

@@ -38,27 +38,20 @@ namespace xiiMath
     return ((i & 1) == 0);
   }
 
-  inline xiiUInt32 Log2i(xiiUInt32 val)
+  XII_ALWAYS_INLINE xiiUInt32 Log2i(xiiUInt32 val)
   {
-    xiiInt32 ret = -1;
-    while (val != 0)
-    {
-      val >>= 1;
-      ret++;
-    }
-
-    return (xiiUInt32)ret;
+    return (val != 0) ? FirstBitHigh(val) : -1;
   }
 
-  constexpr XII_ALWAYS_INLINE int Pow2(int i)
+  constexpr XII_ALWAYS_INLINE xiiInt32 Pow2(xiiInt32 i)
   {
     //
     return (1 << i);
   }
 
-  inline int Pow(int base, int exp)
+  inline xiiInt32 Pow(xiiInt32 base, xiiInt32 exp)
   {
-    int res = 1;
+    xiiInt32 res = 1;
     while (exp > 0)
     {
       res *= base;

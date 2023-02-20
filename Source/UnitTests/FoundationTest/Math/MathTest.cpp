@@ -198,6 +198,7 @@ XII_CREATE_SIMPLE_TEST(Math, General)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log2i")
   {
+    XII_TEST_BOOL(xiiMath::Log2i(0) == xiiUInt32(-1));
     XII_TEST_BOOL(xiiMath::Log2i(1) == 0);
     XII_TEST_BOOL(xiiMath::Log2i(2) == 1);
     XII_TEST_BOOL(xiiMath::Log2i(3) == 1);

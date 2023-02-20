@@ -1,8 +1,7 @@
 #pragma once
 
+#include <Foundation/CodeUtils/Expression/ExpressionDeclarations.h>
 #include <Foundation/Containers/DynamicArray.h>
-#include <Foundation/SimdMath/SimdVec4f.h>
-#include <Foundation/Strings/HashedString.h>
 
 class xiiStreamWriter;
 class xiiStreamReader;
@@ -14,59 +13,172 @@ public:
   {
     enum Enum
     {
-      // Unary
+      Nop,
+
       FirstUnary,
 
-      Abs_R,
-      Sqrt_R,
+      AbsF_R,
+      AbsI_R,
+      SqrtF_R,
 
-      Sin_R,
-      Cos_R,
-      Tan_R,
+      ExpF_R,
+      LnF_R,
+      Log2F_R,
+      Log2I_R,
+      Log10F_R,
+      Pow2F_R,
 
-      ASin_R,
-      ACos_R,
-      ATan_R,
+      SinF_R,
+      CosF_R,
+      TanF_R,
 
-      Mov_R,
-      Mov_C,
-      Load,
-      Store,
+      ASinF_R,
+      ACosF_R,
+      ATanF_R,
+
+      RoundF_R,
+      FloorF_R,
+      CeilF_R,
+      TruncF_R,
+
+      NotI_R,
+      NotB_R,
+
+      IToF_R,
+      FToI_R,
 
       LastUnary,
 
-      // Binary
       FirstBinary,
 
-      Add_RR,
-      Add_CR,
+      AddF_RR,
+      AddI_RR,
 
-      Sub_RR,
-      Sub_CR,
+      SubF_RR,
+      SubI_RR,
 
-      Mul_RR,
-      Mul_CR,
+      MulF_RR,
+      MulI_RR,
 
-      Div_RR,
-      Div_CR,
+      DivF_RR,
+      DivI_RR,
 
-      Min_RR,
-      Min_CR,
+      MinF_RR,
+      MinI_RR,
 
-      Max_RR,
-      Max_CR,
+      MaxF_RR,
+      MaxI_RR,
+
+      ShlI_RR,
+      ShrI_RR,
+      AndI_RR,
+      XorI_RR,
+      OrI_RR,
+
+      EqF_RR,
+      EqI_RR,
+      EqB_RR,
+
+      NEqF_RR,
+      NEqI_RR,
+      NEqB_RR,
+
+      LtF_RR,
+      LtI_RR,
+
+      LEqF_RR,
+      LEqI_RR,
+
+      GtF_RR,
+      GtI_RR,
+
+      GEqF_RR,
+      GEqI_RR,
+
+      AndB_RR,
+      OrB_RR,
 
       LastBinary,
 
+      FirstBinaryWithConstant,
+
+      AddF_RC,
+      AddI_RC,
+
+      SubF_RC,
+      SubI_RC,
+
+      MulF_RC,
+      MulI_RC,
+
+      DivF_RC,
+      DivI_RC,
+
+      MinF_RC,
+      MinI_RC,
+
+      MaxF_RC,
+      MaxI_RC,
+
+      ShlI_RC,
+      ShrI_RC,
+      AndI_RC,
+      XorI_RC,
+      OrI_RC,
+
+      EqF_RC,
+      EqI_RC,
+      EqB_RC,
+
+      NEqF_RC,
+      NEqI_RC,
+      NEqB_RC,
+
+      LtF_RC,
+      LtI_RC,
+
+      LEqF_RC,
+      LEqI_RC,
+
+      GtF_RC,
+      GtI_RC,
+
+      GEqF_RC,
+      GEqI_RC,
+
+      AndB_RC,
+      OrB_RC,
+
+      LastBinaryWithConstant,
+
+      FirstTernary,
+
+      SelF_RRR,
+      SelI_RRR,
+      SelB_RRR,
+
+      LastTernary,
+
+      FirstSpecial,
+
+      MovX_R,
+      MovX_C,
+      LoadF,
+      LoadI,
+      StoreF,
+      StoreI,
+
       Call,
 
-      Nop,
+      LastSpecial,
 
       Count
     };
+
+    static const char* GetName(Enum opCode);
   };
 
-  typedef xiiUInt32 StorageType;
+  using StorageType = xiiUInt32;
 
   xiiExpressionByteCode();
   ~xiiExpressionByteCode();
@@ -80,20 +192,19 @@ public:
   const StorageType* GetByteCode() const;
   const StorageType* GetByteCodeEnd() const;
 
-  xiiUInt32                          GetNumInstructions() const;
-  xiiUInt32                          GetNumTempRegisters() const;
-  xiiArrayPtr<const xiiHashedString> GetInputs() const;
-  xiiArrayPtr<const xiiHashedString> GetOutputs() const;
-  xiiArrayPtr<const xiiHashedString> GetFunctions() const;
+  xiiUInt32                                      GetNumInstructions() const;
+  xiiUInt32                                      GetNumTempRegisters() const;
+  xiiArrayPtr<const xiiExpression::StreamDesc>   GetInputs() const;
+  xiiArrayPtr<const xiiExpression::StreamDesc>   GetOutputs() const;
+  xiiArrayPtr<const xiiExpression::FunctionDesc> GetFunctions() const;
 
-  static OpCode::Enum GetOpCode(const StorageType*& pByteCode);
-  static xiiUInt32    GetRegisterIndex(const StorageType*& pByteCode, xiiUInt32 uiNumRegisters);
-  static xiiSimdVec4f GetConstant(const StorageType*& pByteCode);
-  static xiiUInt32    GetFunctionIndex(const StorageType*& pByteCode);
-  static xiiUInt32    GetFunctionArgCount(const StorageType*& pByteCode);
+  static OpCode::Enum            GetOpCode(const StorageType*& pByteCode);
+  static xiiUInt32               GetRegisterIndex(const StorageType*& pByteCode);
+  static xiiExpression::Register GetConstant(const StorageType*& pByteCode);
+  static xiiUInt32               GetFunctionIndex(const StorageType*& pByteCode);
+  static xiiUInt32               GetFunctionArgCount(const StorageType*& pByteCode);
 
-  void               Disassemble(xiiStringBuilder& out_sDisassembly) const;
-  static const char* GetOpCodeName(OpCode::Enum opCode);
+  void Disassemble(xiiStringBuilder& out_sDisassembly) const;
 
   void      Save(xiiStreamWriter& stream) const;
   xiiResult Load(xiiStreamReader& stream);
@@ -101,10 +212,10 @@ public:
 private:
   friend class xiiExpressionCompiler;
 
-  xiiDynamicArray<StorageType>     m_ByteCode;
-  xiiDynamicArray<xiiHashedString> m_Inputs;
-  xiiDynamicArray<xiiHashedString> m_Outputs;
-  xiiDynamicArray<xiiHashedString> m_Functions;
+  xiiDynamicArray<StorageType>                 m_ByteCode;
+  xiiDynamicArray<xiiExpression::StreamDesc>   m_Inputs;
+  xiiDynamicArray<xiiExpression::StreamDesc>   m_Outputs;
+  xiiDynamicArray<xiiExpression::FunctionDesc> m_Functions;
 
   xiiUInt32 m_uiNumInstructions  = 0;
   xiiUInt32 m_uiNumTempRegisters = 0;

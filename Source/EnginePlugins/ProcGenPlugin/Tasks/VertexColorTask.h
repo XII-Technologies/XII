@@ -27,10 +27,10 @@ namespace xiiProcGenInternal
     {
       XII_DECLARE_POD_TYPE();
 
-      xiiVec3  m_vPosition;
-      xiiVec3  m_vNormal;
-      xiiColor m_Color;
-      float    m_fIndex;
+      xiiVec3   m_vPosition;
+      xiiVec3   m_vNormal;
+      xiiColor  m_Color;
+      xiiUInt32 m_uiIndex;
     };
 
     xiiDynamicArray<InputVertex> m_InputVertices;

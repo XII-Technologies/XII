@@ -226,6 +226,15 @@ xiiResult xiiStreamWriter::WriteArray(const xiiArrayBase<ValueType, ArrayType>& 
   return xiiStreamWriterUtil::SerializeArray<ValueType>(*this, Array.GetArrayPtr().GetPtr(), Array.GetCount());
 }
 
+template <typename ValueType, xiiUInt16 uiSize>
+xiiResult xiiStreamWriter::WriteArray(const xiiSmallArrayBase<ValueType, uiSize>& Array)
+{
+  const xiiUInt32 uiCount = Array.GetCount();
+  XII_SUCCEED_OR_RETURN(WriteDWordValue(&uiCount));
+
+  return xiiStreamWriterUtil::SerializeArray<ValueType>(*this, Array.GetData(), Array.GetCount());
+}
+
 template <typename ValueType, xiiUInt32 uiSize>
 xiiResult xiiStreamWriter::WriteArray(const ValueType (&Array)[uiSize])
 {
@@ -358,6 +367,32 @@ xiiResult xiiStreamReader::ReadArray(xiiArrayBase<ValueType, ArrayType>& Array)
   else
   {
     // Containers currently use 32 bit for counts internally. Value from file is too large.
+    return XII_FAILURE;
+  }
+}
+
+template <typename ValueType, xiiUInt16 uiSize, typename AllocatorWrapper>
+xiiResult xiiStreamReader::ReadArray(xiiSmallArray<ValueType, uiSize, AllocatorWrapper>& Array)
+{
+  xiiUInt32 uiCount = 0;
+  XII_SUCCEED_OR_RETURN(ReadDWordValue(&uiCount));
+
+  if (uiCount < xiiMath::MaxValue<xiiUInt16>())
+  {
+    Array.Clear();
+
+    if (uiCount > 0)
+    {
+      Array.SetCount(static_cast<xiiUInt16>(uiCount));
+
+      XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::DeserializeArray<ValueType>(*this, Array.GetData(), uiCount));
+    }
+
+    return XII_SUCCESS;
+  }
+  else
+  {
+    // Small array uses 16 bit for counts internally. Value from file is too large.
     return XII_FAILURE;
   }
 }

@@ -12,8 +12,16 @@ class xiiProcGenNodeBase : public xiiReflectedClass
 public:
   struct GraphContext
   {
+    enum OutputType
+    {
+      Unknown,
+      Placement,
+      Color,
+    };
+
     xiiProcGenInternal::GraphSharedData m_SharedData;
     xiiHybridArray<xiiUInt8, 4>         m_VolumeTagSetIndices;
+    OutputType                          m_OutputType = OutputType::Unknown;
   };
 
   virtual xiiExpressionAST::Node* GenerateExpressionASTNode(xiiTempHashedString sOutputName, xiiArrayPtr<xiiExpressionAST::Node*> inputs, xiiExpressionAST& out_Ast, GraphContext& context) = 0;

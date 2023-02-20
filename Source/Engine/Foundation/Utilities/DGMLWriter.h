@@ -117,7 +117,7 @@ class XII_FOUNDATION_DLL xiiDGMLGraphWriter
 {
 public:
   /// \brief Helper method to write the graph to a file.
-  static xiiResult WriteGraphToFile(const char* szFileName, const xiiDGMLGraph& Graph);
+  static xiiResult WriteGraphToFile(xiiStringView sFileName, const xiiDGMLGraph& Graph);
 
   /// \brief Writes the graph as a DGML formatted document to the given string builder.
   static xiiResult WriteGraphToString(xiiStringBuilder& StringBuilder, const xiiDGMLGraph& Graph);

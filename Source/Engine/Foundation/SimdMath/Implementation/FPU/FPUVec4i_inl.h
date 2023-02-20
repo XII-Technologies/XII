@@ -37,6 +37,25 @@ XII_ALWAYS_INLINE void xiiSimdVec4i::SetZero()
   m_v.SetZero();
 }
 
+template <xiiInt32 N>
+XII_ALWAYS_INLINE void xiiSimdVec4i::Load(const xiiInt32* pInts)
+{
+  m_v.SetZero();
+  for (xiiUInt32 i = 0; i < N; ++i)
+  {
+    (&m_v.x)[i] = pInts[i];
+  }
+}
+
+template <xiiInt32 N>
+XII_ALWAYS_INLINE void xiiSimdVec4i::Store(xiiInt32* pInts) const
+{
+  for (xiiUInt32 i = 0; i < N; ++i)
+  {
+    pInts[i] = (&m_v.x)[i];
+  }
+}
+
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4i::ToFloat() const
 {
   xiiSimdVec4f result;
@@ -60,7 +79,7 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::Truncate(const xiiSimdVec4f& f)
   return result;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE xiiInt32 xiiSimdVec4i::GetComponent() const
 {
   return (&m_v.x)[N];
@@ -118,6 +137,11 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::operator-(const xiiSimdVec4i& v) co
 XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::CompMul(const xiiSimdVec4i& v) const
 {
   return m_v.CompMul(v.m_v);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::CompDiv(const xiiSimdVec4i& v) const
+{
+  return m_v.CompDiv(v.m_v);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::operator|(const xiiSimdVec4i& v) const
@@ -182,6 +206,28 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::operator>>(xiiUInt32 uiShift) const
   result.m_v.y = m_v.y >> uiShift;
   result.m_v.z = m_v.z >> uiShift;
   result.m_v.w = m_v.w >> uiShift;
+
+  return result;
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::operator<<(const xiiSimdVec4i& v) const
+{
+  xiiSimdVec4i result;
+  result.m_v.x = m_v.x << v.m_v.x;
+  result.m_v.y = m_v.y << v.m_v.y;
+  result.m_v.z = m_v.z << v.m_v.z;
+  result.m_v.w = m_v.w << v.m_v.w;
+
+  return result;
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::operator>>(const xiiSimdVec4i& v) const
+{
+  xiiSimdVec4i result;
+  result.m_v.x = m_v.x >> v.m_v.x;
+  result.m_v.y = m_v.y >> v.m_v.y;
+  result.m_v.z = m_v.z >> v.m_v.z;
+  result.m_v.w = m_v.w >> v.m_v.w;
 
   return result;
 }
@@ -266,13 +312,13 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::Abs() const
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4i::operator==(const xiiSimdVec4i& v) const
 {
-  xiiSimdVec4b result;
-  result.m_v.x = m_v.x == v.m_v.x;
-  result.m_v.y = m_v.y == v.m_v.y;
-  result.m_v.z = m_v.z == v.m_v.z;
-  result.m_v.w = m_v.w == v.m_v.w;
+  bool result[4];
+  result[0] = m_v.x == v.m_v.x;
+  result[1] = m_v.y == v.m_v.y;
+  result[2] = m_v.z == v.m_v.z;
+  result[3] = m_v.w == v.m_v.w;
 
-  return result;
+  return xiiSimdVec4b(result[0], result[1], result[2], result[3]);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4i::operator!=(const xiiSimdVec4i& v) const
@@ -287,13 +333,13 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4i::operator<=(const xiiSimdVec4i& v) c
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4i::operator<(const xiiSimdVec4i& v) const
 {
-  xiiSimdVec4b result;
-  result.m_v.x = m_v.x < v.m_v.x;
-  result.m_v.y = m_v.y < v.m_v.y;
-  result.m_v.z = m_v.z < v.m_v.z;
-  result.m_v.w = m_v.w < v.m_v.w;
+  bool result[4];
+  result[0] = m_v.x < v.m_v.x;
+  result[1] = m_v.y < v.m_v.y;
+  result[2] = m_v.z < v.m_v.z;
+  result[3] = m_v.w < v.m_v.w;
 
-  return result;
+  return xiiSimdVec4b(result[0], result[1], result[2], result[3]);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4i::operator>=(const xiiSimdVec4i& v) const
@@ -303,17 +349,29 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4i::operator>=(const xiiSimdVec4i& v) c
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4i::operator>(const xiiSimdVec4i& v) const
 {
-  xiiSimdVec4b result;
-  result.m_v.x = m_v.x > v.m_v.x;
-  result.m_v.y = m_v.y > v.m_v.y;
-  result.m_v.z = m_v.z > v.m_v.z;
-  result.m_v.w = m_v.w > v.m_v.w;
+  bool result[4];
+  result[0] = m_v.x > v.m_v.x;
+  result[1] = m_v.y > v.m_v.y;
+  result[2] = m_v.z > v.m_v.z;
+  result[3] = m_v.w > v.m_v.w;
 
-  return result;
+  return xiiSimdVec4b(result[0], result[1], result[2], result[3]);
 }
 
 // static
 XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::ZeroVector()
 {
   return xiiVec4I32::ZeroVector();
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::Select(const xiiSimdVec4b& cmp, const xiiSimdVec4i& ifTrue, const xiiSimdVec4i& ifFalse)
+{
+  xiiSimdVec4i result;
+  result.m_v.x = cmp.m_v.x ? ifTrue.m_v.x : ifFalse.m_v.x;
+  result.m_v.y = cmp.m_v.y ? ifTrue.m_v.y : ifFalse.m_v.y;
+  result.m_v.z = cmp.m_v.z ? ifTrue.m_v.z : ifFalse.m_v.z;
+  result.m_v.w = cmp.m_v.w ? ifTrue.m_v.w : ifFalse.m_v.w;
+
+  return result;
 }

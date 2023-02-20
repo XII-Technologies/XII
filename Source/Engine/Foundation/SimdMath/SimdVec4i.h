@@ -24,6 +24,12 @@ public:
 
   void SetZero(); // [tested]
 
+  template <xiiInt32 N>
+  void Load(const xiiInt32* pInts); // [tested]
+
+  template <xiiInt32 N>
+  void Store(xiiInt32* pInts) const; // [tested]
+
 public:
   explicit xiiSimdVec4i(const xiiSimdVec4u& u); // [tested]
 
@@ -50,14 +56,17 @@ public:
   xiiSimdVec4i operator-(const xiiSimdVec4i& v) const; // [tested]
 
   xiiSimdVec4i CompMul(const xiiSimdVec4i& v) const; // [tested]
+  xiiSimdVec4i CompDiv(const xiiSimdVec4i& v) const; // [tested]
 
   xiiSimdVec4i operator|(const xiiSimdVec4i& v) const; // [tested]
   xiiSimdVec4i operator&(const xiiSimdVec4i& v) const; // [tested]
   xiiSimdVec4i operator^(const xiiSimdVec4i& v) const; // [tested]
   xiiSimdVec4i operator~() const;                      // [tested]
 
-  xiiSimdVec4i operator<<(xiiUInt32 uiShift) const; // [tested]
-  xiiSimdVec4i operator>>(xiiUInt32 uiShift) const; // [tested]
+  xiiSimdVec4i operator<<(xiiUInt32 uiShift) const;     // [tested]
+  xiiSimdVec4i operator>>(xiiUInt32 uiShift) const;     // [tested]
+  xiiSimdVec4i operator<<(const xiiSimdVec4i& v) const; // [tested]
+  xiiSimdVec4i operator>>(const xiiSimdVec4i& v) const; // [tested]
 
   xiiSimdVec4i& operator+=(const xiiSimdVec4i& v); // [tested]
   xiiSimdVec4i& operator-=(const xiiSimdVec4i& v); // [tested]
@@ -81,6 +90,8 @@ public:
   xiiSimdVec4b operator>(const xiiSimdVec4i& v) const;  // [tested]
 
   static xiiSimdVec4i ZeroVector(); // [tested]
+
+  static xiiSimdVec4i Select(const xiiSimdVec4b& cmp, const xiiSimdVec4i& ifTrue, const xiiSimdVec4i& ifFalse); // [tested]
 
 public:
   xiiInternal::QuadInt m_v;

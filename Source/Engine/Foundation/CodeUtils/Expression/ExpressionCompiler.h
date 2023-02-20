@@ -11,18 +11,23 @@ public:
   xiiExpressionCompiler();
   ~xiiExpressionCompiler();
 
-  xiiResult Compile(xiiExpressionAST& ast, xiiExpressionByteCode& out_byteCode);
+  xiiResult Compile(xiiExpressionAST& ast, xiiExpressionByteCode& out_byteCode, xiiStringView sDebugAstOutputPath = xiiStringView());
 
 private:
-  xiiResult TransformAndOptimizeAST(xiiExpressionAST& ast);
+  xiiResult TransformAndOptimizeAST(xiiExpressionAST& ast, xiiStringView sDebugAstOutputPath);
   xiiResult BuildNodeInstructions(const xiiExpressionAST& ast);
   xiiResult UpdateRegisterLifetime(const xiiExpressionAST& ast);
   xiiResult AssignRegisters();
   xiiResult GenerateByteCode(const xiiExpressionAST& ast, xiiExpressionByteCode& out_byteCode);
+  xiiResult GenerateConstantByteCode(const xiiExpressionAST::Constant* pConstant, xiiExpressionByteCode& out_byteCode);
 
   using TransformFunc = xiiDelegate<xiiExpressionAST::Node*(xiiExpressionAST::Node*)>;
   xiiResult TransformASTPreOrder(xiiExpressionAST& ast, TransformFunc func);
   xiiResult TransformASTPostOrder(xiiExpressionAST& ast, TransformFunc func);
+  xiiResult TransformNode(xiiExpressionAST::Node*& pNode, TransformFunc& func);
+  xiiResult TransformOutputNode(xiiExpressionAST::Output*& pOutputNode, TransformFunc& func);
+
+  void DumpAST(const xiiExpressionAST& ast, xiiStringView sOutputPath, xiiStringView sSuffix);
 
   xiiHybridArray<xiiExpressionAST::Node*, 64>                    m_NodeStack;
   xiiHybridArray<xiiExpressionAST::Node*, 64>                    m_NodeInstructions;

@@ -3,6 +3,18 @@
 #include <Foundation/Basics.h>
 #include <Foundation/DataProcessing/Stream/ProcessingStream.h>
 
+// clang-format off
+
+// Ensure that we can retrieve the base data type with this simple bit operation
+static_assert(((xiiInt32)xiiProcessingStream::DataType::Half3 & ~3)   == (xiiInt32)xiiProcessingStream::DataType::Half);
+static_assert(((xiiInt32)xiiProcessingStream::DataType::Float4 & ~3)  == (xiiInt32)xiiProcessingStream::DataType::Float);
+static_assert(((xiiInt32)xiiProcessingStream::DataType::Double4 & ~3)  == (xiiInt32)xiiProcessingStream::DataType::Double);
+static_assert(((xiiInt32)xiiProcessingStream::DataType::Byte2 & ~3)   == (xiiInt32)xiiProcessingStream::DataType::Byte);
+static_assert(((xiiInt32)xiiProcessingStream::DataType::Short3 & ~3)  == (xiiInt32)xiiProcessingStream::DataType::Short);
+static_assert(((xiiInt32)xiiProcessingStream::DataType::Int4 & ~3)    == (xiiInt32)xiiProcessingStream::DataType::Int);
+
+// clang-format on
+
 #if XII_ENABLED(XII_PLATFORM_64BIT)
 static_assert(sizeof(xiiProcessingStream) == 32);
 #endif

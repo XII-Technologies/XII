@@ -12,6 +12,10 @@ namespace xiiMath
   template <typename TYPE>
   constexpr TYPE e();
 
+  /// \brief Returns the constant Phi (a+b/a).
+  template <typename TYPE>
+  constexpr TYPE Phi();
+
   /// \brief Returns whether the template type supports specialized values to represent NaN.
   template <typename TYPE>
   constexpr bool SupportsNaN();

@@ -500,11 +500,20 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4f)
       c = a.Abs();
       XII_TEST_BOOL(c.x() == 3.4f && c.y() == 5.4f && c.z() == 7.6f && c.w() == 9.6f);
 
+      c = a.Round();
+      XII_TEST_BOOL(c.x() == -3.0f && c.y() == 5.0f && c.z() == -8.0f && c.w() == 10.0f);
+
       c = a.Floor();
       XII_TEST_BOOL(c.x() == -4.0f && c.y() == 5.0f && c.z() == -8.0f && c.w() == 9.0f);
 
       c = a.Ceil();
       XII_TEST_BOOL(c.x() == -3.0f && c.y() == 6.0f && c.z() == -7.0f && c.w() == 10.0f);
+
+      c = a.Trunc();
+      XII_TEST_BOOL(c.x() == -3.0f && c.y() == 5.0f && c.z() == -7.0f && c.w() == 9.0f);
+
+      c = a.Fraction();
+      XII_TEST_BOOL(c.IsEqual(xiiSimdVec4f(-0.4f, 0.4f, -0.6f, 0.6f), xiiMath::SmallEpsilon<float>()).AllSet());
     }
 
     {

@@ -3,24 +3,92 @@
 ///\todo optimize these methods if needed
 
 // static
+XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Exp(const xiiSimdVec4f& f)
+{
+#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+  return _mm_exp_ps(f.m_v);
+#else
+  return xiiSimdVec4f(xiiMath::Exp(f.x()), xiiMath::Exp(f.y()), xiiMath::Exp(f.z()), xiiMath::Exp(f.w()));
+#endif
+}
+
+// static
+XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Ln(const xiiSimdVec4f& f)
+{
+#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+  return _mm_log_ps(f.m_v);
+#else
+  return xiiSimdVec4f(xiiMath::Ln(f.x()), xiiMath::Ln(f.y()), xiiMath::Ln(f.z()), xiiMath::Ln(f.w()));
+#endif
+}
+
+// static
+XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Log2(const xiiSimdVec4f& f)
+{
+#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+  return _mm_log2_ps(f.m_v);
+#else
+  return xiiSimdVec4f(xiiMath::Log2(f.x()), xiiMath::Log2(f.y()), xiiMath::Log2(f.z()), xiiMath::Log2(f.w()));
+#endif
+}
+
+// static
+XII_FORCE_INLINE xiiSimdVec4i xiiSimdMath::Log2i(const xiiSimdVec4i& i)
+{
+  return xiiSimdVec4i(xiiMath::Log2i(i.x()), xiiMath::Log2i(i.y()), xiiMath::Log2i(i.z()), xiiMath::Log2i(i.w()));
+}
+
+// static
+XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Log10(const xiiSimdVec4f& f)
+{
+#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+  return _mm_log10_ps(f.m_v);
+#else
+  return xiiSimdVec4f(xiiMath::Log10(f.x()), xiiMath::Log10(f.y()), xiiMath::Log10(f.z()), xiiMath::Log10(f.w()));
+#endif
+}
+
+// static
+XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Pow2(const xiiSimdVec4f& f)
+{
+#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+  return _mm_exp2_ps(f.m_v);
+#else
+  return xiiSimdVec4f(xiiMath::Pow2(f.x()), xiiMath::Pow2(f.y()), xiiMath::Pow2(f.z()), xiiMath::Pow2(f.w()));
+#endif
+}
+
+// static
 XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Sin(const xiiSimdVec4f& f)
 {
+#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+  return _mm_sin_ps(f.m_v);
+#else
   return xiiSimdVec4f(xiiMath::Sin(xiiAngle::Radian(f.x())), xiiMath::Sin(xiiAngle::Radian(f.y())), xiiMath::Sin(xiiAngle::Radian(f.z())),
                       xiiMath::Sin(xiiAngle::Radian(f.w())));
+#endif
 }
 
 // static
 XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Cos(const xiiSimdVec4f& f)
 {
+#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+  return _mm_cos_ps(f.m_v);
+#else
   return xiiSimdVec4f(xiiMath::Cos(xiiAngle::Radian(f.x())), xiiMath::Cos(xiiAngle::Radian(f.y())), xiiMath::Cos(xiiAngle::Radian(f.z())),
                       xiiMath::Cos(xiiAngle::Radian(f.w())));
+#endif
 }
 
 // static
 XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Tan(const xiiSimdVec4f& f)
 {
+#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+  return _mm_tan_ps(f.m_v);
+#else
   return xiiSimdVec4f(xiiMath::Tan(xiiAngle::Radian(f.x())), xiiMath::Tan(xiiAngle::Radian(f.y())), xiiMath::Tan(xiiAngle::Radian(f.z())),
                       xiiMath::Tan(xiiAngle::Radian(f.w())));
+#endif
 }
 
 // static

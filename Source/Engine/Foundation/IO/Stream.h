@@ -6,6 +6,7 @@
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Containers/Set.h>
+#include <Foundation/Containers/SmallArray.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Memory/EndianHelper.h>
 
@@ -22,56 +23,60 @@ class XII_FOUNDATION_DLL xiiStreamReader
   XII_DISALLOW_COPY_AND_ASSIGN(xiiStreamReader);
 
 public:
-  /// \brief Constructor
+  /// \brief Constructor.
   xiiStreamReader();
 
-  /// \brief Virtual destructor to ensure correct cleanup
+  /// \brief Virtual destructor to ensure correct cleanup.
   virtual ~xiiStreamReader();
 
   /// \brief Reads a raw number of bytes into the read buffer, this is the only method which has to be implemented to fully implement the
   /// interface.
   virtual xiiUInt64 ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead) = 0; // [tested]
 
-  /// \brief Helper method to read a word value correctly (copes with potentially different endianess)
+  /// \brief Helper method to read a word value correctly (copes with potentially different endianess).
   template <typename T>
   xiiResult ReadWordValue(T* pWordValue); // [tested]
 
-  /// \brief Helper method to read a dword value correctly (copes with potentially different endianess)
+  /// \brief Helper method to read a dword value correctly (copes with potentially different endianess).
   template <typename T>
   xiiResult ReadDWordValue(T* pDWordValue); // [tested]
 
-  /// \brief Helper method to read a qword value correctly (copes with potentially different endianess)
+  /// \brief Helper method to read a qword value correctly (copes with potentially different endianess).
   template <typename T>
   xiiResult ReadQWordValue(T* pQWordValue); // [tested]
 
-  /// \brief Reads an array of elements from the stream
+  /// \brief Reads an array of elements from the stream.
   template <typename ArrayType, typename ValueType>
   xiiResult ReadArray(xiiArrayBase<ValueType, ArrayType>& Array); // [tested]
 
-  /// \brief Writes a C style fixed array
+  /// \brief Reads a small array of elements from the stream.
+  template <typename ValueType, xiiUInt16 uiSize, typename AllocatorWrapper>
+  xiiResult ReadArray(xiiSmallArray<ValueType, uiSize, AllocatorWrapper>& Array);
+
+  /// \brief Writes a C style fixed array.
   template <typename ValueType, xiiUInt32 uiSize>
   xiiResult ReadArray(ValueType (&Array)[uiSize]);
 
-  /// \brief Reads a set
+  /// \brief Reads a set.
   template <typename KeyType, typename Comparer>
   xiiResult ReadSet(xiiSetBase<KeyType, Comparer>& Set); // [tested]
 
-  /// \brief Reads a map
+  /// \brief Reads a map.
   template <typename KeyType, typename ValueType, typename Comparer>
   xiiResult ReadMap(xiiMapBase<KeyType, ValueType, Comparer>& Map); // [tested]
 
-  /// \brief Read a hash table (note that the entry order is not stable)
+  /// \brief Read a hash table (note that the entry order is not stable).
   template <typename KeyType, typename ValueType, typename Hasher>
   xiiResult ReadHashTable(xiiHashTableBase<KeyType, ValueType, Hasher>& HashTable); // [tested]
 
-  /// \brief Reads a string into an xiiStringBuilder
+  /// \brief Reads a string into an xiiStringBuilder.
   xiiResult ReadString(xiiStringBuilder& builder); // [tested]
 
-  /// \brief Reads a string into an xiiString
+  /// \brief Reads a string into an xiiString.
   xiiResult ReadString(xiiString& string);
 
 
-  /// \brief Helper method to skip a number of bytes (implementations of the stream reader may implement this more efficiently for example)
+  /// \brief Helper method to skip a number of bytes (implementations of the stream reader may implement this more efficiently for example).
   virtual xiiUInt64 SkipBytes(xiiUInt64 uiBytesToSkip)
   {
     xiiUInt8 uiTempBuffer[1024];
@@ -120,24 +125,28 @@ public:
     return XII_SUCCESS;
   }
 
-  /// \brief Helper method to write a word value correctly (copes with potentially different endianess)
+  /// \brief Helper method to write a word value correctly (copes with potentially different endianess).
   template <typename T>
   xiiResult WriteWordValue(const T* pWordValue); // [tested]
 
-  /// \brief Helper method to write a dword value correctly (copes with potentially different endianess)
+  /// \brief Helper method to write a dword value correctly (copes with potentially different endianess).
   template <typename T>
   xiiResult WriteDWordValue(const T* pDWordValue); // [tested]
 
-  /// \brief Helper method to write a qword value correctly (copes with potentially different endianess)
+  /// \brief Helper method to write a qword value correctly (copes with potentially different endianess).
   template <typename T>
   xiiResult WriteQWordValue(const T* pQWordValue); // [tested]
 
-  /// \brief Writes a type version to the stream
+  /// \brief Writes a type version to the stream.
   XII_ALWAYS_INLINE void WriteVersion(xiiTypeVersion uiVersion);
 
-  /// \brief Writes an array of elements to the stream
+  /// \brief Writes an array of elements to the stream.
   template <typename ArrayType, typename ValueType>
   xiiResult WriteArray(const xiiArrayBase<ValueType, ArrayType>& Array); // [tested]
+
+  /// \brief Writes a small array of elements to the stream.
+  template <typename ValueType, xiiUInt16 uiSize>
+  xiiResult WriteArray(const xiiSmallArrayBase<ValueType, uiSize>& Array);
 
   /// \brief Writes a C style fixed array
   template <typename ValueType, xiiUInt32 uiSize>

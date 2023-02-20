@@ -14,7 +14,7 @@ public:
   xiiSimdVec4b(xiiInternal::QuadBool b);        // [tested]
 
 public:
-  template <int N>
+  template <xiiInt32 N>
   bool GetComponent() const; // [tested]
 
   bool x() const; // [tested]
@@ -30,14 +30,19 @@ public:
   xiiSimdVec4b operator||(const xiiSimdVec4b& rhs) const; // [tested]
   xiiSimdVec4b operator!() const;                         // [tested]
 
-  template <int N = 4>
+  xiiSimdVec4b operator==(const xiiSimdVec4b& rhs) const; // [tested]
+  xiiSimdVec4b operator!=(const xiiSimdVec4b& rhs) const; // [tested]
+
+  template <xiiInt32 N = 4>
   bool AllSet() const; // [tested]
 
-  template <int N = 4>
+  template <xiiInt32 N = 4>
   bool AnySet() const; // [tested]
 
-  template <int N = 4>
+  template <xiiInt32 N = 4>
   bool NoneSet() const; // [tested]
+
+  static xiiSimdVec4b Select(const xiiSimdVec4b& cmp, const xiiSimdVec4b& ifTrue, const xiiSimdVec4b& ifFalse); // [tested]
 
 public:
   xiiInternal::QuadBool m_v;

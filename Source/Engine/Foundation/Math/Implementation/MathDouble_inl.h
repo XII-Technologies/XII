@@ -42,19 +42,26 @@ namespace xiiMath
     return fFactor * fMultiple;
   }
 
-  XII_ALWAYS_INLINE double Sin(double a) { return sin(a); }
+  template <>
+  XII_ALWAYS_INLINE double Sin(xiiAngleTemplate<double> a) { return sin(a.GetRadian()); }
 
-  XII_ALWAYS_INLINE double Cos(double a) { return cos(a); }
+  template <>
+  XII_ALWAYS_INLINE double Cos(xiiAngleTemplate<double> a) { return cos(a.GetRadian()); }
 
-  XII_ALWAYS_INLINE double Tan(double a) { return tan(a); }
+  template <>
+  XII_ALWAYS_INLINE double Tan(xiiAngleTemplate<double> a) { return tan(a.GetRadian()); }
 
-  XII_ALWAYS_INLINE double ASin(double f) { return asin(f); }
+  template <>
+  XII_ALWAYS_INLINE xiiAngleTemplate<double> ASin(double f) { return xiiAngleTemplate<double>::Radian(asin(f)); }
 
-  XII_ALWAYS_INLINE double ACos(double f) { return acos(f); }
+  template <>
+  XII_ALWAYS_INLINE xiiAngleTemplate<double> ACos(double f) { return xiiAngleTemplate<double>::Radian(acos(f)); }
 
-  XII_ALWAYS_INLINE double ATan(double f) { return atan(f); }
+  template <>
+  XII_ALWAYS_INLINE xiiAngleTemplate<double> ATan(double f) { return xiiAngleTemplate<double>::Radian(atan(f)); }
 
-  XII_ALWAYS_INLINE double ATan2(double y, double x) { return atan2(y, x); }
+  template <>
+  XII_ALWAYS_INLINE xiiAngleTemplate<double> ATan2(double y, double x) { return xiiAngleTemplate<double>::Radian(atan2(y, x)); }
 
   XII_ALWAYS_INLINE double RoundToMultiple(double f, double multiple) { return Round(f / multiple) * multiple; }
 

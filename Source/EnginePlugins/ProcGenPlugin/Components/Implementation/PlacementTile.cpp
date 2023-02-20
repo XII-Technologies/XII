@@ -93,10 +93,18 @@ xiiColor PlacementTile::GetDebugColor() const
 
 void PlacementTile::PreparePlacementData(const xiiWorld* pWorld, const xiiPhysicsWorldModuleInterface* pPhysicsModule, PlacementData& placementData)
 {
+  const xiiUInt64 uiOutputNameHash = m_pOutput->m_sName.GetHash();
+  xiiUInt32       hashData[]       = {
+    static_cast<xiiUInt32>(m_Desc.m_iPosX),
+    static_cast<xiiUInt32>(m_Desc.m_iPosY),
+    static_cast<xiiUInt32>(uiOutputNameHash),
+    static_cast<xiiUInt32>(uiOutputNameHash >> 32),
+  };
+
   placementData.m_pPhysicsModule             = pPhysicsModule;
   placementData.m_pWorld                     = pWorld;
   placementData.m_pOutput                    = m_pOutput;
-  placementData.m_iTileSeed                  = (m_Desc.m_iPosX << 11) ^ (m_Desc.m_iPosY * 17);
+  placementData.m_uiTileSeed                 = xiiHashingUtils::xxHash32(hashData, sizeof(hashData));
   placementData.m_TileBoundingBox            = GetBoundingBox();
   placementData.m_GlobalToLocalBoxTransforms = m_Desc.m_GlobalToLocalBoxTransforms;
 
@@ -135,13 +143,13 @@ xiiUInt32 PlacementTile::PlaceObjects(xiiWorld& world, xiiArrayPtr<const Placeme
     pPrefab->InstantiatePrefab(world, transform, options);
 
     // only send the color message, if we actually have a custom color
-    if (objectTransform.m_uiSetColor != 0)
+    if (objectTransform.m_bHasValidColor)
     {
       for (auto pRootObject : rootObjects)
       {
         // Set the color
         xiiMsgSetColor msg;
-        msg.m_Color = objectTransform.m_ObjectColor;
+        msg.m_Color = objectTransform.m_ObjectColor.ToLinearFloat();
         pRootObject->PostMessageRecursive(msg, xiiTime::Zero(), xiiObjectMsgQueueType::AfterInitialized);
       }
     }

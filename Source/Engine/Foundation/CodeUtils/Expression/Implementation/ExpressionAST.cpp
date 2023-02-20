@@ -1,6 +1,7 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/CodeUtils/Expression/ExpressionAST.h>
+#include <Foundation/Math/ColorScheme.h>
 #include <Foundation/Utilities/DGMLWriter.h>
 
 // static
@@ -28,6 +29,12 @@ bool xiiExpressionAST::NodeType::IsConstant(Enum nodeType)
 }
 
 // static
+bool xiiExpressionAST::NodeType::IsSwizzle(Enum nodeType)
+{
+  return nodeType == Swizzle;
+}
+
+// static
 bool xiiExpressionAST::NodeType::IsInput(Enum nodeType)
 {
   return nodeType == Input;
@@ -39,32 +46,239 @@ bool xiiExpressionAST::NodeType::IsOutput(Enum nodeType)
   return nodeType == Output;
 }
 
+// static
+bool xiiExpressionAST::NodeType::IsFunctionCall(Enum nodeType)
+{
+  return nodeType == FunctionCall;
+}
+
+// static
+bool xiiExpressionAST::NodeType::IsConstructorCall(Enum nodeType)
+{
+  return nodeType == ConstructorCall;
+}
+
+// static
+bool xiiExpressionAST::NodeType::IsCommutative(Enum nodeType)
+{
+  return nodeType == Add || nodeType == Multiply ||
+    nodeType == Min || nodeType == Max ||
+    nodeType == BitwiseAnd || nodeType == BitwiseXor || nodeType == BitwiseOr ||
+    nodeType == Equal || nodeType == NotEqual ||
+    nodeType == LogicalAnd || nodeType == LogicalOr;
+}
+
+// static
+bool xiiExpressionAST::NodeType::AlwaysReturnsSingleElement(Enum nodeType)
+{
+  return nodeType == Length ||
+    nodeType == All || nodeType == Any ||
+    nodeType == Dot;
+}
+
 namespace
 {
-  static const char* s_szNodeTypeNames[] = {"Invalid",
+  static const char* s_szNodeTypeNames[] = {
+    "Invalid",
 
-                                            // Unary
-                                            "", "Negate", "Absolute", "Saturate", "Sqrt", "Sin", "Cos", "Tan", "ASin", "ACos", "ATan", "",
+    // Unary
+    "",
+    "Negate",
+    "Absolute",
+    "Saturate",
+    "Sqrt",
+    "Exp",
+    "Ln",
+    "Log2",
+    "Log10",
+    "Pow2",
+    "Sin",
+    "Cos",
+    "Tan",
+    "ASin",
+    "ACos",
+    "ATan",
+    "RadToDeg",
+    "DegToRad",
+    "Round",
+    "Floor",
+    "Ceil",
+    "Trunc",
+    "Frac",
+    "Length",
+    "Normalize",
+    "BitwiseNot",
+    "LogicalNot",
+    "All",
+    "Any",
+    "TypeConversion",
+    "",
 
-                                            // Binary
-                                            "", "Add", "Subtract", "Multiply", "Divide", "Min", "Max", "",
+    // Binary
+    "",
+    "Add",
+    "Subtract",
+    "Multiply",
+    "Divide",
+    "Modulo",
+    "Log",
+    "Pow",
+    "Min",
+    "Max",
+    "Dot",
+    "Cross",
+    "Reflect",
+    "BitshiftLeft",
+    "BitshiftRight",
+    "BitwiseAnd",
+    "BitwiseXor",
+    "BitwiseOr",
+    "Equal",
+    "NotEqual",
+    "Less",
+    "LessEqual",
+    "Greater",
+    "GreaterEqual",
+    "LogicalAnd",
+    "LogicalOr",
+    "",
 
-                                            // Ternary
-                                            "", "Clamp", "Select", "",
+    // Ternary
+    "",
+    "Clamp",
+    "Select",
+    "Lerp",
+    "",
 
-                                            // Constant
-                                            "FloatConstant",
+    "Constant",
+    "Swizzle",
+    "Input",
+    "Output",
 
-                                            // Input
-                                            "Input",
+    "FunctionCall",
+    "ConstructorCall",
+  };
 
-                                            // Output
-                                            "Output",
+  static_assert(XII_ARRAY_SIZE(s_szNodeTypeNames) == xiiExpressionAST::NodeType::Count);
 
-                                            "FunctionCall"};
+  static constexpr xiiUInt16 BuildSignature(xiiExpression::RegisterType::Enum returnType, xiiExpression::RegisterType::Enum a, xiiExpression::RegisterType::Enum b = xiiExpression::RegisterType::Unknown, xiiExpression::RegisterType::Enum c = xiiExpression::RegisterType::Unknown)
+  {
+    xiiUInt32 signature = static_cast<xiiUInt32>(returnType);
+    signature |= a << xiiExpression::RegisterType::MaxNumBits * 1;
+    signature |= b << xiiExpression::RegisterType::MaxNumBits * 2;
+    signature |= c << xiiExpression::RegisterType::MaxNumBits * 3;
+    return static_cast<xiiUInt16>(signature);
+  }
 
-  XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(s_szNodeTypeNames) == xiiExpressionAST::NodeType::Count, "Node name array size does not match node type count");
+  static constexpr xiiExpression::RegisterType::Enum GetReturnTypeFromSignature(xiiUInt16 uiSignature)
+  {
+    xiiUInt32 uiMask = XII_BIT(xiiExpression::RegisterType::MaxNumBits) - 1;
+    return static_cast<xiiExpression::RegisterType::Enum>(uiSignature & uiMask);
+  }
+
+  static constexpr xiiExpression::RegisterType::Enum GetArgumentTypeFromSignature(xiiUInt16 uiSignature, xiiUInt32 uiArgumentIndex)
+  {
+    xiiUInt32 uiShift = xiiExpression::RegisterType::MaxNumBits * (uiArgumentIndex + 1);
+    xiiUInt32 uiMask  = XII_BIT(xiiExpression::RegisterType::MaxNumBits) - 1;
+    return static_cast<xiiExpression::RegisterType::Enum>((uiSignature >> uiShift) & uiMask);
+  }
+
+#define SIG1(r, a)       BuildSignature(xiiExpression::RegisterType::r, xiiExpression::RegisterType::a)
+#define SIG2(r, a, b)    BuildSignature(xiiExpression::RegisterType::r, xiiExpression::RegisterType::a, xiiExpression::RegisterType::b)
+#define SIG3(r, a, b, c) BuildSignature(xiiExpression::RegisterType::r, xiiExpression::RegisterType::a, xiiExpression::RegisterType::b, xiiExpression::RegisterType::c)
+
+  struct Overloads
+  {
+    xiiUInt16 m_Signatures[4] = {};
+  };
+
+  static Overloads s_NodeTypeOverloads[] = {
+    {}, // Invalid,
+
+    // Unary
+    {},                                   // FirstUnary,
+    {SIG1(Float, Float), SIG1(Int, Int)}, // Negate,
+    {SIG1(Float, Float), SIG1(Int, Int)}, // Absolute,
+    {SIG1(Float, Float), SIG1(Int, Int)}, // Saturate,
+    {SIG1(Float, Float)},                 // Sqrt,
+    {SIG1(Float, Float)},                 // Exp,
+    {SIG1(Float, Float)},                 // Ln,
+    {SIG1(Float, Float), SIG1(Int, Int)}, // Log2,
+    {SIG1(Float, Float)},                 // Log10,
+    {SIG1(Float, Float), SIG1(Int, Int)}, // Pow2,
+    {SIG1(Float, Float)},                 // Sin,
+    {SIG1(Float, Float)},                 // Cos,
+    {SIG1(Float, Float)},                 // Tan,
+    {SIG1(Float, Float)},                 // ASin,
+    {SIG1(Float, Float)},                 // ACos,
+    {SIG1(Float, Float)},                 // ATan,
+    {SIG1(Float, Float)},                 // RadToDeg,
+    {SIG1(Float, Float)},                 // DegToRad,
+    {SIG1(Float, Float)},                 // Round,
+    {SIG1(Float, Float)},                 // Floor,
+    {SIG1(Float, Float)},                 // Ceil,
+    {SIG1(Float, Float)},                 // Trunc,
+    {SIG1(Float, Float)},                 // Frac,
+    {SIG1(Float, Float)},                 // Length,
+    {SIG1(Float, Float)},                 // Normalize,
+    {SIG1(Int, Int)},                     // BitwiseNot,
+    {SIG1(Bool, Bool)},                   // LogicalNot,
+    {SIG1(Bool, Bool)},                   // All,
+    {SIG1(Bool, Bool)},                   // Any,
+    {},                                   // TypeConversion,
+    {},                                   // LastUnary,
+
+    // Binary
+    {},                                                                       // FirstBinary,
+    {SIG2(Float, Float, Float), SIG2(Int, Int, Int)},                         // Add,
+    {SIG2(Float, Float, Float), SIG2(Int, Int, Int)},                         // Subtract,
+    {SIG2(Float, Float, Float), SIG2(Int, Int, Int)},                         // Multiply,
+    {SIG2(Float, Float, Float), SIG2(Int, Int, Int)},                         // Divide,
+    {SIG2(Float, Float, Float), SIG2(Int, Int, Int)},                         // Modulo,
+    {SIG2(Float, Float, Float)},                                              // Log,
+    {SIG2(Float, Float, Float), SIG2(Int, Int, Int)},                         // Pow,
+    {SIG2(Float, Float, Float), SIG2(Int, Int, Int)},                         // Min,
+    {SIG2(Float, Float, Float), SIG2(Int, Int, Int)},                         // Max,
+    {SIG2(Float, Float, Float), SIG2(Int, Int, Int)},                         // Dot,
+    {SIG2(Float, Float, Float), SIG2(Int, Int, Int)},                         // Cross,
+    {SIG2(Float, Float, Float), SIG2(Int, Int, Int)},                         // Reflect,
+    {SIG2(Int, Int, Int)},                                                    // BitshiftLeft,
+    {SIG2(Int, Int, Int)},                                                    // BitshiftRight,
+    {SIG2(Int, Int, Int)},                                                    // BitwiseAnd,
+    {SIG2(Int, Int, Int)},                                                    // BitwiseXor,
+    {SIG2(Int, Int, Int)},                                                    // BitwiseOr,
+    {SIG2(Bool, Float, Float), SIG2(Bool, Int, Int), SIG2(Bool, Bool, Bool)}, // Equal,
+    {SIG2(Bool, Float, Float), SIG2(Bool, Int, Int), SIG2(Bool, Bool, Bool)}, // NotEqual,
+    {SIG2(Bool, Float, Float), SIG2(Bool, Int, Int)},                         // Less,
+    {SIG2(Bool, Float, Float), SIG2(Bool, Int, Int)},                         // LessEqual,
+    {SIG2(Bool, Float, Float), SIG2(Bool, Int, Int)},                         // Greater,
+    {SIG2(Bool, Float, Float), SIG2(Bool, Int, Int)},                         // GreaterEqual,
+    {SIG2(Bool, Bool, Bool)},                                                 // LogicalAnd,
+    {SIG2(Bool, Bool, Bool)},                                                 // LogicalOr,
+    {},                                                                       // LastBinary,
+
+    // Ternary
+    {},                                                                                         // FirstTernary,
+    {SIG3(Float, Float, Float, Float), SIG3(Int, Int, Int, Int)},                               // Clamp,
+    {SIG3(Float, Bool, Float, Float), SIG3(Int, Bool, Int, Int), SIG3(Bool, Bool, Bool, Bool)}, // Select,
+    {SIG3(Float, Float, Float, Float)},                                                         // Lerp,
+    {},                                                                                         // LastTernary,
+
+    {}, // Constant,
+    {}, // Swizzle,
+    {}, // Input,
+    {}, // Output,
+
+    {}, // FunctionCall,
+    {}, // ConstructorCall,
+  };
+
+  static_assert(XII_ARRAY_SIZE(s_NodeTypeOverloads) == xiiExpressionAST::NodeType::Count);
 } // namespace
+
+#undef SIG1
+#undef SIG2
+#undef SIG3
 
 // static
 const char* xiiExpressionAST::NodeType::GetName(Enum nodeType)
@@ -75,20 +289,200 @@ const char* xiiExpressionAST::NodeType::GetName(Enum nodeType)
 
 //////////////////////////////////////////////////////////////////////////
 
+namespace
+{
+  static xiiVariantType::Enum s_DataTypeVariantTypes[] = {
+    xiiVariantType::Invalid, // Unknown,
+    xiiVariantType::Invalid, // Unknown2,
+    xiiVariantType::Invalid, // Unknown3,
+    xiiVariantType::Invalid, // Unknown4,
+
+    xiiVariantType::Bool,    // Bool,
+    xiiVariantType::Invalid, // Bool2,
+    xiiVariantType::Invalid, // Bool3,
+    xiiVariantType::Invalid, // Bool4,
+
+    xiiVariantType::Int32,    // Int,
+    xiiVariantType::Vector2I, // Int2,
+    xiiVariantType::Vector3I, // Int3,
+    xiiVariantType::Vector4I, // Int4,
+
+    xiiVariantType::Float,   // Float,
+    xiiVariantType::Vector2, // Float2,
+    xiiVariantType::Vector3, // Float3,
+    xiiVariantType::Vector4, // Float4,
+
+    xiiVariantType::Double,   // Double,
+    xiiVariantType::Vector2d, // Double2
+    xiiVariantType::Vector3d, // Double3
+    xiiVariantType::Vector4d  // Double4
+  };
+  static_assert(XII_ARRAY_SIZE(s_DataTypeVariantTypes) == (size_t)xiiExpressionAST::DataType::Count);
+
+  static xiiExpressionAST::DataType::Enum s_DataTypeFromStreamType[] = {
+    xiiExpressionAST::DataType::Float,  // Half,
+    xiiExpressionAST::DataType::Float2, // Half2,
+    xiiExpressionAST::DataType::Float3, // Half3,
+    xiiExpressionAST::DataType::Float4, // Half4,
+
+    xiiExpressionAST::DataType::Float,  // Float,
+    xiiExpressionAST::DataType::Float2, // Float2,
+    xiiExpressionAST::DataType::Float3, // Float3,
+    xiiExpressionAST::DataType::Float4, // Float4,
+
+    xiiExpressionAST::DataType::Double,  // Double
+    xiiExpressionAST::DataType::Double2, // Double2
+    xiiExpressionAST::DataType::Double3, // Double3
+    xiiExpressionAST::DataType::Double4, // Double4
+
+    xiiExpressionAST::DataType::Int,  // Byte,
+    xiiExpressionAST::DataType::Int2, // Byte2,
+    xiiExpressionAST::DataType::Int3, // Byte3,
+    xiiExpressionAST::DataType::Int4, // Byte4,
+
+    xiiExpressionAST::DataType::Int,  // Short,
+    xiiExpressionAST::DataType::Int2, // Short2,
+    xiiExpressionAST::DataType::Int3, // Short3,
+    xiiExpressionAST::DataType::Int4, // Short4,
+
+    xiiExpressionAST::DataType::Int,  // Int,
+    xiiExpressionAST::DataType::Int2, // Int2,
+    xiiExpressionAST::DataType::Int3, // Int3,
+    xiiExpressionAST::DataType::Int4  // Int4,
+  };
+  static_assert(XII_ARRAY_SIZE(s_DataTypeFromStreamType) == (size_t)xiiProcessingStream::DataType::Count);
+
+  static_assert(xiiExpressionAST::DataType::Double >> 2 == xiiExpression::RegisterType::Double);
+  static_assert(xiiExpressionAST::DataType::Float >> 2 == xiiExpression::RegisterType::Float);
+  static_assert(xiiExpressionAST::DataType::Int >> 2 == xiiExpression::RegisterType::Int);
+  static_assert(xiiExpressionAST::DataType::Bool >> 2 == xiiExpression::RegisterType::Bool);
+  static_assert(xiiExpressionAST::DataType::Unknown >> 2 == xiiExpression::RegisterType::Unknown);
+
+  static const char* s_szDataTypeNames[] = {
+    "Unknown",  // Unknown,
+    "Unknown2", // Unknown2,
+    "Unknown3", // Unknown3,
+    "Unknown4", // Unknown4,
+
+    "Bool",  // Bool,
+    "Bool2", // Bool2,
+    "Bool3", // Bool3,
+    "Bool4", // Bool4,
+
+    "Int",  // Int,
+    "Int2", // Int2,
+    "Int3", // Int3,
+    "Int4", // Int4,
+
+    "Float",  // Float,
+    "Float2", // Float2,
+    "Float3", // Float3,
+    "Float4", // Float4,
+
+    "Double",  // Double,
+    "Double2", // Double2,
+    "Double3", // Double3,
+    "Double4"  // Double4,
+  };
+
+  static_assert(XII_ARRAY_SIZE(s_szDataTypeNames) == xiiExpressionAST::DataType::Count);
+} // namespace
+
+
+// static
+xiiVariantType::Enum xiiExpressionAST::DataType::GetVariantType(Enum dataType)
+{
+  XII_ASSERT_DEBUG(dataType >= 0 && dataType < XII_ARRAY_SIZE(s_DataTypeVariantTypes), "Out of bounds access");
+  return s_DataTypeVariantTypes[dataType];
+}
+
+// static
+xiiExpressionAST::DataType::Enum xiiExpressionAST::DataType::FromStreamType(xiiProcessingStream::DataType dataType)
+{
+  XII_ASSERT_DEBUG(static_cast<xiiUInt32>(dataType) >= 0 && static_cast<xiiUInt32>(dataType) < XII_ARRAY_SIZE(s_DataTypeFromStreamType), "Out of bounds access");
+  return s_DataTypeFromStreamType[static_cast<xiiUInt32>(dataType)];
+}
+
+// static
+const char* xiiExpressionAST::DataType::GetName(Enum dataType)
+{
+  XII_ASSERT_DEBUG(dataType >= 0 && dataType < XII_ARRAY_SIZE(s_szDataTypeNames), "Out of bounds access");
+  return s_szDataTypeNames[dataType];
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+namespace
+{
+  static const char* s_szVectorComponentNames[] = {
+    "x",
+    "y",
+    "z",
+    "w",
+  };
+
+  static const char* s_szVectorComponentAltNames[] = {
+    "r",
+    "g",
+    "b",
+    "a",
+  };
+
+  static_assert(XII_ARRAY_SIZE(s_szVectorComponentNames) == xiiExpressionAST::VectorComponent::Count);
+  static_assert(XII_ARRAY_SIZE(s_szVectorComponentAltNames) == xiiExpressionAST::VectorComponent::Count);
+} // namespace
+
+// static
+const char* xiiExpressionAST::VectorComponent::GetName(Enum vectorComponent)
+{
+  XII_ASSERT_DEBUG(vectorComponent >= 0 && vectorComponent < XII_ARRAY_SIZE(s_szVectorComponentNames), "Out of bounds access");
+  return s_szVectorComponentNames[vectorComponent];
+}
+
+xiiExpressionAST::VectorComponent::Enum xiiExpressionAST::VectorComponent::FromChar(xiiUInt32 uiChar)
+{
+  for (xiiUInt32 i = 0; i < Count; ++i)
+  {
+    if (uiChar == s_szVectorComponentNames[i][0] || uiChar == s_szVectorComponentAltNames[i][0])
+    {
+      return static_cast<Enum>(i);
+    }
+  }
+
+  return Count;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 xiiExpressionAST::xiiExpressionAST() :
   m_Allocator("Expression AST", xiiFoundation::GetAlignedAllocator())
 {
+  static_assert(sizeof(Node) == 8);
+#if XII_ENABLED(XII_PLATFORM_64BIT)
+  static_assert(sizeof(UnaryOperator) == 16);
+  static_assert(sizeof(BinaryOperator) == 24);
+  static_assert(sizeof(TernaryOperator) == 32);
+  static_assert(sizeof(Constant) == 48);
+  static_assert(sizeof(Swizzle) == 24);
+  static_assert(sizeof(Input) == 24);
+  static_assert(sizeof(Output) == 32);
+  static_assert(sizeof(FunctionCall) == 96);
+  static_assert(sizeof(ConstructorCall) == 48);
+#endif
 }
 
-xiiExpressionAST::~xiiExpressionAST() {}
+xiiExpressionAST::~xiiExpressionAST() = default;
 
-xiiExpressionAST::UnaryOperator* xiiExpressionAST::CreateUnaryOperator(NodeType::Enum type, Node* pOperand)
+xiiExpressionAST::UnaryOperator* xiiExpressionAST::CreateUnaryOperator(NodeType::Enum type, Node* pOperand, DataType::Enum returnType /*= DataType::Unknown*/)
 {
   XII_ASSERT_DEBUG(NodeType::IsUnary(type), "Type '{}' is not an unary operator", NodeType::GetName(type));
 
-  auto pUnaryOperator        = XII_NEW(&m_Allocator, UnaryOperator);
-  pUnaryOperator->m_Type     = type;
-  pUnaryOperator->m_pOperand = pOperand;
+  auto pUnaryOperator          = XII_NEW(&m_Allocator, UnaryOperator);
+  pUnaryOperator->m_Type       = type;
+  pUnaryOperator->m_ReturnType = returnType;
+  pUnaryOperator->m_pOperand   = pOperand;
+
+  ResolveOverloads(pUnaryOperator);
 
   return pUnaryOperator;
 }
@@ -99,8 +493,11 @@ xiiExpressionAST::BinaryOperator* xiiExpressionAST::CreateBinaryOperator(NodeTyp
 
   auto pBinaryOperator             = XII_NEW(&m_Allocator, BinaryOperator);
   pBinaryOperator->m_Type          = type;
+  pBinaryOperator->m_ReturnType    = DataType::Unknown;
   pBinaryOperator->m_pLeftOperand  = pLeftOperand;
   pBinaryOperator->m_pRightOperand = pRightOperand;
+
+  ResolveOverloads(pBinaryOperator);
 
   return pBinaryOperator;
 }
@@ -111,53 +508,215 @@ xiiExpressionAST::TernaryOperator* xiiExpressionAST::CreateTernaryOperator(NodeT
 
   auto pTernaryOperator              = XII_NEW(&m_Allocator, TernaryOperator);
   pTernaryOperator->m_Type           = type;
+  pTernaryOperator->m_ReturnType     = DataType::Unknown;
   pTernaryOperator->m_pFirstOperand  = pFirstOperand;
   pTernaryOperator->m_pSecondOperand = pSecondOperand;
   pTernaryOperator->m_pThirdOperand  = pThirdOperand;
 
+  ResolveOverloads(pTernaryOperator);
+
   return pTernaryOperator;
 }
 
-xiiExpressionAST::Constant* xiiExpressionAST::CreateConstant(const xiiVariant& value)
+xiiExpressionAST::Constant* xiiExpressionAST::CreateConstant(const xiiVariant& value, DataType::Enum dataType /*= DataType::Float*/)
 {
-  XII_ASSERT_DEV(value.IsA<float>(), "value needs to be float");
+  xiiVariantType::Enum variantType = DataType::GetVariantType(dataType);
+  XII_ASSERT_DEV(variantType != xiiVariantType::Invalid, "Invalid constant type '{}'", DataType::GetName(dataType));
 
-  auto pConstant        = XII_NEW(&m_Allocator, Constant);
-  pConstant->m_Type     = NodeType::Constant;
-  pConstant->m_Value    = value;
-  pConstant->m_DataType = xiiProcessingStream::DataType::Float;
+  auto pConstant          = XII_NEW(&m_Allocator, Constant);
+  pConstant->m_Type       = NodeType::Constant;
+  pConstant->m_ReturnType = dataType;
+  pConstant->m_Value      = value.ConvertTo(DataType::GetVariantType(dataType));
+
+  XII_ASSERT_DEV(pConstant->m_Value.IsValid(), "Invalid constant value or conversion to target data type failed");
 
   return pConstant;
 }
 
-xiiExpressionAST::Input* xiiExpressionAST::CreateInput(const xiiHashedString& sName, xiiProcessingStream::DataType dataType)
+xiiExpressionAST::Swizzle* xiiExpressionAST::CreateSwizzle(xiiStringView sSwizzle, Node* pExpression)
 {
-  auto pInput        = XII_NEW(&m_Allocator, Input);
-  pInput->m_Type     = NodeType::Input;
-  pInput->m_sName    = sName;
-  pInput->m_DataType = dataType;
+  xiiEnum<VectorComponent> components[4];
+  xiiUInt32                numComponents = 0;
+
+  for (auto it : sSwizzle)
+  {
+    if (numComponents == XII_ARRAY_SIZE(components))
+      return nullptr;
+
+    xiiEnum<VectorComponent> component = VectorComponent::FromChar(it);
+    if (component == VectorComponent::Count)
+      return nullptr;
+
+    components[numComponents] = component;
+    ++numComponents;
+  }
+
+  return CreateSwizzle(xiiMakeArrayPtr(components, numComponents), pExpression);
+}
+
+xiiExpressionAST::Swizzle* xiiExpressionAST::CreateSwizzle(xiiEnum<VectorComponent> component, Node* pExpression)
+{
+  return CreateSwizzle(xiiMakeArrayPtr(&component, 1), pExpression);
+}
+
+xiiExpressionAST::Swizzle* xiiExpressionAST::CreateSwizzle(xiiArrayPtr<xiiEnum<VectorComponent>> swizzle, Node* pExpression)
+{
+  XII_ASSERT_DEV(swizzle.GetCount() >= 1 && swizzle.GetCount() <= 4, "Invalid number of vector components for swizzle.");
+  XII_ASSERT_DEV(pExpression->m_ReturnType != DataType::Unknown, "Expression return type must be known.");
+
+  auto pSwizzle          = XII_NEW(&m_Allocator, Swizzle);
+  pSwizzle->m_Type       = NodeType::Swizzle;
+  pSwizzle->m_ReturnType = DataType::FromRegisterType(DataType::GetRegisterType(pExpression->m_ReturnType), swizzle.GetCount());
+
+  xiiMemoryUtils::Copy(pSwizzle->m_Components, swizzle.GetPtr(), swizzle.GetCount());
+  pSwizzle->m_NumComponents = swizzle.GetCount();
+  pSwizzle->m_pExpression   = pExpression;
+
+  return pSwizzle;
+}
+
+xiiExpressionAST::Input* xiiExpressionAST::CreateInput(const xiiExpression::StreamDesc& desc)
+{
+  auto pInput          = XII_NEW(&m_Allocator, Input);
+  pInput->m_Type       = NodeType::Input;
+  pInput->m_ReturnType = DataType::FromStreamType(desc.m_DataType);
+  pInput->m_Desc       = desc;
 
   return pInput;
 }
 
-xiiExpressionAST::Output* xiiExpressionAST::CreateOutput(const xiiHashedString& sName, xiiProcessingStream::DataType dataType, Node* pExpression)
+xiiExpressionAST::Output* xiiExpressionAST::CreateOutput(const xiiExpression::StreamDesc& desc, Node* pExpression)
 {
-  auto pOutput           = XII_NEW(&m_Allocator, Output);
-  pOutput->m_Type        = NodeType::Output;
-  pOutput->m_sName       = sName;
-  pOutput->m_DataType    = dataType;
-  pOutput->m_pExpression = pExpression;
+  auto pOutput                  = XII_NEW(&m_Allocator, Output);
+  pOutput->m_Type               = NodeType::Output;
+  pOutput->m_ReturnType         = DataType::FromStreamType(desc.m_DataType);
+  pOutput->m_uiNumInputElements = static_cast<xiiUInt8>(DataType::GetElementCount(pOutput->m_ReturnType));
+  pOutput->m_Desc               = desc;
+  pOutput->m_pExpression        = pExpression;
 
   return pOutput;
 }
 
-xiiExpressionAST::FunctionCall* xiiExpressionAST::CreateFunctionCall(const xiiHashedString& sName)
+xiiExpressionAST::FunctionCall* xiiExpressionAST::CreateFunctionCall(const xiiExpression::FunctionDesc& desc, xiiArrayPtr<Node*> arguments)
 {
-  auto pFunctionCall     = XII_NEW(&m_Allocator, FunctionCall);
-  pFunctionCall->m_Type  = NodeType::FunctionCall;
-  pFunctionCall->m_sName = sName;
+  return CreateFunctionCall(xiiMakeArrayPtr(&desc, 1), arguments);
+}
+
+xiiExpressionAST::FunctionCall* xiiExpressionAST::CreateFunctionCall(xiiArrayPtr<const xiiExpression::FunctionDesc> descs, xiiArrayPtr<Node*> arguments)
+{
+  auto pFunctionCall          = XII_NEW(&m_Allocator, FunctionCall);
+  pFunctionCall->m_Type       = NodeType::FunctionCall;
+  pFunctionCall->m_ReturnType = DataType::Unknown;
+
+  for (auto& desc : descs)
+  {
+    auto it = m_FunctionDescs.Insert(desc);
+
+    pFunctionCall->m_Descs.PushBack(&it.Key());
+  }
+
+  pFunctionCall->m_Arguments = arguments;
+
+  ResolveOverloads(pFunctionCall);
 
   return pFunctionCall;
+}
+
+xiiExpressionAST::ConstructorCall* xiiExpressionAST::CreateConstructorCall(DataType::Enum dataType, xiiArrayPtr<Node*> arguments)
+{
+  XII_ASSERT_DEV(dataType >= DataType::Bool, "Invalid data type for constructor");
+
+  auto pConstructorCall          = XII_NEW(&m_Allocator, ConstructorCall);
+  pConstructorCall->m_Type       = NodeType::ConstructorCall;
+  pConstructorCall->m_ReturnType = dataType;
+  pConstructorCall->m_Arguments  = arguments;
+
+  ResolveOverloads(pConstructorCall);
+
+  return pConstructorCall;
+}
+
+xiiExpressionAST::ConstructorCall* xiiExpressionAST::CreateConstructorCall(Node* pOldValue, Node* pNewValue, xiiStringView sPartialAssignmentMask)
+{
+  xiiExpression::RegisterType::Enum registerType = xiiExpression::RegisterType::Unknown;
+  xiiSmallArray<Node*, 4>           arguments;
+
+  if (pOldValue != nullptr)
+  {
+    registerType = DataType::GetRegisterType(pOldValue->m_ReturnType);
+
+    if (NodeType::IsConstructorCall(pOldValue->m_Type))
+    {
+      auto pConstructorCall = static_cast<ConstructorCall*>(pOldValue);
+      arguments             = pConstructorCall->m_Arguments;
+    }
+    else
+    {
+      const xiiUInt32 uiNumElements = DataType::GetElementCount(pOldValue->m_ReturnType);
+      if (uiNumElements == 1)
+      {
+        arguments.PushBack(pOldValue);
+      }
+      else
+      {
+        for (xiiUInt32 i = 0; i < uiNumElements; ++i)
+        {
+          auto pSwizzle = CreateSwizzle(static_cast<VectorComponent::Enum>(i), pOldValue);
+          arguments.PushBack(pSwizzle);
+        }
+      }
+    }
+  }
+
+  const xiiUInt32 uiNewValueElementCount = DataType::GetElementCount(pNewValue->m_ReturnType);
+  xiiUInt32       uiNewValueElementIndex = 0;
+  for (auto it : sPartialAssignmentMask)
+  {
+    auto component = xiiExpressionAST::VectorComponent::FromChar(it);
+    if (component == xiiExpressionAST::VectorComponent::Count)
+    {
+      return nullptr;
+    }
+
+    Node* pNewValueElement = nullptr;
+    if (uiNewValueElementCount == 1)
+    {
+      pNewValueElement = pNewValue;
+    }
+    else
+    {
+      if (uiNewValueElementIndex >= uiNewValueElementCount)
+      {
+        return nullptr;
+      }
+
+      pNewValueElement = CreateSwizzle(static_cast<VectorComponent::Enum>(uiNewValueElementIndex), pNewValue);
+      ++uiNewValueElementIndex;
+    }
+
+    xiiUInt32 componentIndex = component;
+    if (componentIndex >= arguments.GetCount())
+    {
+      while (componentIndex > arguments.GetCount())
+      {
+        arguments.PushBack(CreateConstant(0));
+      }
+
+      arguments.PushBack(pNewValueElement);
+    }
+    else
+    {
+      arguments[componentIndex] = pNewValueElement;
+    }
+
+    if (pOldValue == nullptr)
+    {
+      registerType = xiiMath::Max(registerType, DataType::GetRegisterType(pNewValueElement->m_ReturnType));
+    }
+  }
+
+  xiiEnum<DataType> newType = DataType::FromRegisterType(registerType, arguments.GetCount());
+  return CreateConstructorCall(newType, arguments);
 }
 
 // static
@@ -179,14 +738,24 @@ xiiArrayPtr<xiiExpressionAST::Node*> xiiExpressionAST::GetChildren(Node* pNode)
     auto& pChildren = static_cast<TernaryOperator*>(pNode)->m_pFirstOperand;
     return xiiMakeArrayPtr(&pChildren, 3);
   }
+  else if (NodeType::IsSwizzle(nodeType))
+  {
+    auto& pChild = static_cast<Swizzle*>(pNode)->m_pExpression;
+    return xiiMakeArrayPtr(&pChild, 1);
+  }
   else if (NodeType::IsOutput(nodeType))
   {
     auto& pChild = static_cast<Output*>(pNode)->m_pExpression;
     return xiiMakeArrayPtr(&pChild, 1);
   }
-  else if (nodeType == NodeType::FunctionCall)
+  else if (NodeType::IsFunctionCall(nodeType))
   {
     auto& args = static_cast<FunctionCall*>(pNode)->m_Arguments;
+    return args;
+  }
+  else if (NodeType::IsConstructorCall(nodeType))
+  {
+    auto& args = static_cast<ConstructorCall*>(pNode)->m_Arguments;
     return args;
   }
 
@@ -213,14 +782,24 @@ xiiArrayPtr<const xiiExpressionAST::Node*> xiiExpressionAST::GetChildren(const N
     auto& pChildren = static_cast<const TernaryOperator*>(pNode)->m_pFirstOperand;
     return xiiMakeArrayPtr((const Node**)&pChildren, 3);
   }
+  else if (NodeType::IsSwizzle(nodeType))
+  {
+    auto& pChild = static_cast<const Swizzle*>(pNode)->m_pExpression;
+    return xiiMakeArrayPtr((const Node**)&pChild, 1);
+  }
   else if (NodeType::IsOutput(nodeType))
   {
     auto& pChild = static_cast<const Output*>(pNode)->m_pExpression;
     return xiiMakeArrayPtr((const Node**)&pChild, 1);
   }
-  else if (nodeType == NodeType::FunctionCall)
+  else if (NodeType::IsFunctionCall(nodeType))
   {
     auto& args = static_cast<const FunctionCall*>(pNode)->m_Arguments;
+    return xiiArrayPtr<const Node*>((const Node**)args.GetData(), args.GetCount());
+  }
+  else if (NodeType::IsConstructorCall(nodeType))
+  {
+    auto& args = static_cast<const ConstructorCall*>(pNode)->m_Arguments;
     return xiiArrayPtr<const Node*>((const Node**)args.GetData(), args.GetCount());
   }
 
@@ -250,11 +829,11 @@ void xiiExpressionAST::PrintGraph(xiiDGMLGraph& graph) const
       continue;
 
     sTmp = NodeType::GetName(pOutputNode->m_Type);
-    sTmp.Append("(", xiiProcessingStream::GetDataTypeName(pOutputNode->m_DataType), ")");
-    sTmp.Append(": ", pOutputNode->m_sName);
+    sTmp.Append("(", DataType::GetName(pOutputNode->m_ReturnType), ")");
+    sTmp.Append(": ", pOutputNode->m_Desc.m_sName);
 
     xiiDGMLGraph::NodeDesc nd;
-    nd.m_Color            = xiiColor::LightBlue;
+    nd.m_Color            = xiiColorScheme::LightUI(xiiColorScheme::Blue);
     xiiUInt32 uiGraphNode = graph.AddNode(sTmp, &nd);
 
     nodeStack.PushBack({pOutputNode->m_pExpression, uiGraphNode});
@@ -274,23 +853,41 @@ void xiiExpressionAST::PrintGraph(xiiDGMLGraph& graph) const
       {
         NodeType::Enum nodeType = currentNodeInfo.m_pNode->m_Type;
         sTmp                    = NodeType::GetName(nodeType);
-        xiiColor color          = xiiColor::White;
+        sTmp.Append("(", DataType::GetName(currentNodeInfo.m_pNode->m_ReturnType), ")");
+        xiiColor color = xiiColor::White;
 
         if (NodeType::IsConstant(nodeType))
         {
           sTmp.AppendFormat(": {0}", static_cast<const Constant*>(currentNodeInfo.m_pNode)->m_Value.ConvertTo<xiiString>());
         }
+        else if (NodeType::IsSwizzle(nodeType))
+        {
+          auto pSwizzleNode = static_cast<const Swizzle*>(currentNodeInfo.m_pNode);
+          sTmp.Append(": ");
+          for (xiiUInt32 i = 0; i < pSwizzleNode->m_NumComponents; ++i)
+          {
+            sTmp.Append(VectorComponent::GetName(pSwizzleNode->m_Components[i]));
+          }
+        }
         else if (NodeType::IsInput(nodeType))
         {
           auto pInputNode = static_cast<const Input*>(currentNodeInfo.m_pNode);
-          sTmp.Append("(", xiiProcessingStream::GetDataTypeName(pInputNode->m_DataType), ")");
-          sTmp.Append(": ", pInputNode->m_sName);
-          color = xiiColor::LightGreen;
+          sTmp.Append(": ", pInputNode->m_Desc.m_sName);
+          color = xiiColorScheme::LightUI(xiiColorScheme::Green);
         }
-        else if (nodeType == NodeType::FunctionCall)
+        else if (NodeType::IsFunctionCall(nodeType))
         {
-          sTmp.Append(": ", static_cast<const FunctionCall*>(currentNodeInfo.m_pNode)->m_sName);
-          color = xiiColor::LightGoldenRodYellow;
+          auto pFunctionCall = static_cast<const FunctionCall*>(currentNodeInfo.m_pNode);
+          if (pFunctionCall->m_uiOverloadIndex != 0xFF)
+          {
+            auto pDesc = pFunctionCall->m_Descs[currentNodeInfo.m_pNode->m_uiOverloadIndex];
+            sTmp.Append(": ", pDesc->GetMangledName());
+          }
+          else
+          {
+            sTmp.Append(": ", pFunctionCall->m_Descs[0]->m_sName);
+          }
+          color = xiiColorScheme::LightUI(xiiColorScheme::Yellow);
         }
 
         xiiDGMLGraph::NodeDesc nd;
@@ -315,6 +912,369 @@ void xiiExpressionAST::PrintGraph(xiiDGMLGraph& graph) const
 
     graph.AddConnection(uiGraphNode, currentNodeInfo.m_uiParentGraphNode);
   }
+}
+
+void xiiExpressionAST::ResolveOverloads(Node* pNode)
+{
+  if (pNode->m_uiOverloadIndex != 0xFF)
+  {
+    // already resolved
+    return;
+  }
+
+  const NodeType::Enum nodeType = pNode->m_Type;
+  if (nodeType == NodeType::TypeConversion)
+  {
+    XII_ASSERT_DEV(pNode->m_ReturnType != DataType::Unknown, "Return type must be specified for conversion nodes");
+    pNode->m_uiOverloadIndex = 0;
+    return;
+  }
+
+  auto CalculateMatchDistance = [](xiiArrayPtr<Node*> children, xiiArrayPtr<const xiiEnum<xiiExpression::RegisterType>> expectedTypes, xiiUInt32 uiNumRequiredArgs, xiiUInt32& uiMaxNumElements) {
+    if (children.GetCount() < uiNumRequiredArgs)
+    {
+      return xiiInvalidIndex;
+    }
+
+    xiiUInt32 uiMatchDistance = 0;
+    uiMaxNumElements          = 1;
+    for (xiiUInt32 i = 0; i < xiiMath::Min(children.GetCount(), expectedTypes.GetCount()); ++i)
+    {
+      auto& pChildNode = children[i];
+      XII_ASSERT_DEV(pChildNode != nullptr && pChildNode->m_ReturnType != DataType::Unknown, "Invalid child node");
+
+      auto childType = DataType::GetRegisterType(pChildNode->m_ReturnType);
+      int  iDistance = expectedTypes[i] - childType;
+      if (iDistance < 0)
+      {
+        // Penalty to prevent 'narrowing' conversions
+        iDistance *= -xiiExpression::RegisterType::Count;
+      }
+      uiMatchDistance += iDistance;
+      uiMaxNumElements = xiiMath::Max(uiMaxNumElements, DataType::GetElementCount(pChildNode->m_ReturnType));
+    }
+    return uiMatchDistance;
+  };
+
+  if (NodeType::IsUnary(nodeType) || NodeType::IsBinary(nodeType) || NodeType::IsTernary(nodeType))
+  {
+    auto                                                   children = GetChildren(pNode);
+    xiiSmallArray<xiiEnum<xiiExpression::RegisterType>, 4> expectedTypes;
+    xiiUInt32                                              uiBestMatchDistance = xiiInvalidIndex;
+
+    for (xiiUInt32 uiSigIndex = 0; uiSigIndex < XII_ARRAY_SIZE(Overloads::m_Signatures); ++uiSigIndex)
+    {
+      const xiiUInt16 uiSignature = s_NodeTypeOverloads[nodeType].m_Signatures[uiSigIndex];
+      if (uiSignature == 0)
+        break;
+
+      expectedTypes.Clear();
+      for (xiiUInt32 i = 0; i < children.GetCount(); ++i)
+      {
+        expectedTypes.PushBack(GetArgumentTypeFromSignature(uiSignature, i));
+      }
+
+      xiiUInt32 uiMaxNumElements = 1;
+      xiiUInt32 uiMatchDistance  = CalculateMatchDistance(children, expectedTypes, expectedTypes.GetCount(), uiMaxNumElements);
+      if (uiMatchDistance < uiBestMatchDistance)
+      {
+        const xiiUInt32 uiReturnTypeElements = NodeType::AlwaysReturnsSingleElement(nodeType) ? 1 : uiMaxNumElements;
+        pNode->m_ReturnType                  = DataType::FromRegisterType(GetReturnTypeFromSignature(uiSignature), uiReturnTypeElements);
+        pNode->m_uiNumInputElements          = static_cast<xiiUInt8>(uiMaxNumElements);
+        pNode->m_uiOverloadIndex             = static_cast<xiiUInt8>(uiSigIndex);
+        uiBestMatchDistance                  = uiMatchDistance;
+      }
+    }
+  }
+  else if (NodeType::IsFunctionCall(nodeType))
+  {
+    auto      pFunctionCall       = static_cast<FunctionCall*>(pNode);
+    xiiUInt32 uiBestMatchDistance = xiiInvalidIndex;
+
+    for (xiiUInt32 uiOverloadIndex = 0; uiOverloadIndex < pFunctionCall->m_Descs.GetCount(); ++uiOverloadIndex)
+    {
+      auto pFuncDesc = pFunctionCall->m_Descs[uiOverloadIndex];
+
+      xiiUInt32 uiMaxNumElements = 1;
+      xiiUInt32 uiMatchDistance  = CalculateMatchDistance(pFunctionCall->m_Arguments, pFuncDesc->m_InputTypes, pFuncDesc->m_uiNumRequiredInputs, uiMaxNumElements);
+      if (uiMatchDistance < uiBestMatchDistance)
+      {
+        pNode->m_ReturnType         = DataType::FromRegisterType(pFuncDesc->m_OutputType, uiMaxNumElements);
+        pNode->m_uiNumInputElements = static_cast<xiiUInt8>(uiMaxNumElements);
+        pNode->m_uiOverloadIndex    = static_cast<xiiUInt8>(uiOverloadIndex);
+        uiBestMatchDistance         = uiMatchDistance;
+      }
+    }
+
+    if (pNode->m_ReturnType != DataType::Unknown)
+    {
+      auto pFuncDesc = pFunctionCall->m_Descs[pNode->m_uiOverloadIndex];
+
+      // Trim arguments array to number of inputs
+      if (pFunctionCall->m_Arguments.GetCount() > pFuncDesc->m_InputTypes.GetCount())
+      {
+        pFunctionCall->m_Arguments.SetCount(static_cast<xiiUInt16>(pFuncDesc->m_InputTypes.GetCount()));
+      }
+    }
+  }
+  else if (NodeType::IsConstructorCall(nodeType))
+  {
+    auto            pConstructorCall = static_cast<ConstructorCall*>(pNode);
+    auto&           args             = pConstructorCall->m_Arguments;
+    const xiiUInt32 uiElementCount   = xiiExpressionAST::DataType::GetElementCount(pNode->m_ReturnType);
+
+    if (uiElementCount > 1 && args.GetCount() == 1 && xiiExpressionAST::DataType::GetElementCount(args[0]->m_ReturnType) == 1)
+    {
+      for (xiiUInt32 i = 0; i < uiElementCount - 1; ++i)
+      {
+        pConstructorCall->m_Arguments.PushBack(args[0]);
+      }
+
+      return;
+    }
+
+    xiiSmallArray<Node*, 4> newArguments;
+    Node*                   pZero = nullptr;
+
+    xiiUInt32 uiArgumentIndex        = 0;
+    xiiUInt32 uiArgumentElementIndex = 0;
+
+    for (xiiUInt32 i = 0; i < uiElementCount; ++i)
+    {
+      if (uiArgumentIndex < args.GetCount())
+      {
+        auto pArg = args[uiArgumentIndex];
+        XII_ASSERT_DEV(pArg != nullptr && pArg->m_ReturnType != DataType::Unknown, "Invalid argument node");
+
+        const xiiUInt32 uiArgElementCount = xiiExpressionAST::DataType::GetElementCount(pArg->m_ReturnType);
+        if (uiArgElementCount == 1)
+        {
+          newArguments.PushBack(pArg);
+        }
+        else if (uiArgumentElementIndex < uiArgElementCount)
+        {
+          newArguments.PushBack(CreateSwizzle(static_cast<VectorComponent::Enum>(uiArgumentElementIndex), pArg));
+        }
+
+        ++uiArgumentElementIndex;
+        if (uiArgumentElementIndex >= uiArgElementCount)
+        {
+          ++uiArgumentIndex;
+          uiArgumentElementIndex = 0;
+        }
+      }
+      else
+      {
+        if (pZero == nullptr)
+        {
+          pZero = CreateConstant(0);
+        }
+        newArguments.PushBack(pZero);
+      }
+    }
+
+    XII_ASSERT_DEBUG(newArguments.GetCount() == uiElementCount, "Not enough arguments");
+    pConstructorCall->m_Arguments = newArguments;
+  }
+}
+
+// static
+xiiExpressionAST::DataType::Enum xiiExpressionAST::GetExpectedChildDataType(const Node* pNode, xiiUInt32 uiChildIndex)
+{
+  const NodeType::Enum nodeType        = pNode->m_Type;
+  const DataType::Enum returnType      = pNode->m_ReturnType;
+  const xiiUInt32      uiOverloadIndex = pNode->m_uiOverloadIndex;
+  XII_ASSERT_DEV(returnType != DataType::Unknown, "Return type must not be unknown");
+
+  if (nodeType == NodeType::TypeConversion || NodeType::IsSwizzle(nodeType))
+  {
+    return DataType::Unknown;
+  }
+  else if (NodeType::IsUnary(nodeType) || NodeType::IsBinary(nodeType) || NodeType::IsTernary(nodeType))
+  {
+    XII_ASSERT_DEV(uiOverloadIndex != 0xFF, "Unresolved overload");
+    xiiUInt16 uiSignature = s_NodeTypeOverloads[nodeType].m_Signatures[uiOverloadIndex];
+    return DataType::FromRegisterType(GetArgumentTypeFromSignature(uiSignature, uiChildIndex), pNode->m_uiNumInputElements);
+  }
+  else if (NodeType::IsOutput(nodeType))
+  {
+    return returnType;
+  }
+  else if (NodeType::IsFunctionCall(nodeType))
+  {
+    XII_ASSERT_DEV(uiOverloadIndex != 0xFF, "Unresolved overload");
+
+    auto pDesc = static_cast<const FunctionCall*>(pNode)->m_Descs[uiOverloadIndex];
+    return DataType::FromRegisterType(pDesc->m_InputTypes[uiChildIndex], pNode->m_uiNumInputElements);
+  }
+  else if (NodeType::IsConstructorCall(nodeType))
+  {
+    return DataType::FromRegisterType(DataType::GetRegisterType(returnType));
+  }
+
+  XII_ASSERT_NOT_IMPLEMENTED;
+  return DataType::Unknown;
+}
+
+// static
+void xiiExpressionAST::UpdateHash(Node* pNode)
+{
+  xiiHybridArray<xiiUInt32, 16> valuesToHash;
+
+  const xiiUInt32* pBaseValues = reinterpret_cast<const xiiUInt32*>(pNode);
+  valuesToHash.PushBack(pBaseValues[0]);
+  valuesToHash.PushBack(pBaseValues[1]);
+
+  NodeType::Enum nodeType = pNode->m_Type;
+  if (NodeType::IsUnary(nodeType))
+  {
+    auto pUnary = static_cast<const UnaryOperator*>(pNode);
+    valuesToHash.PushBack(pUnary->m_pOperand->m_uiHash);
+  }
+  else if (NodeType::IsBinary(nodeType))
+  {
+    auto      pBinary     = static_cast<const BinaryOperator*>(pNode);
+    xiiUInt32 uiHashLeft  = pBinary->m_pLeftOperand->m_uiHash;
+    xiiUInt32 uiHashRight = pBinary->m_pRightOperand->m_uiHash;
+
+    // Sort by hash value for commutative operations so operand order doesn't matter
+    if (NodeType::IsCommutative(nodeType) && uiHashLeft > uiHashRight)
+    {
+      xiiMath::Swap(uiHashLeft, uiHashRight);
+    }
+
+    valuesToHash.PushBack(uiHashLeft);
+    valuesToHash.PushBack(uiHashRight);
+  }
+  else if (NodeType::IsTernary(nodeType))
+  {
+    auto pTernary = static_cast<const TernaryOperator*>(pNode);
+    valuesToHash.PushBack(pTernary->m_pFirstOperand->m_uiHash);
+    valuesToHash.PushBack(pTernary->m_pSecondOperand->m_uiHash);
+    valuesToHash.PushBack(pTernary->m_pThirdOperand->m_uiHash);
+  }
+  else if (NodeType::IsConstant(nodeType))
+  {
+    auto            pConstant   = static_cast<const Constant*>(pNode);
+    const xiiUInt64 uiValueHash = pConstant->m_Value.ComputeHash();
+    valuesToHash.PushBack(static_cast<xiiUInt32>(uiValueHash));
+    valuesToHash.PushBack(static_cast<xiiUInt32>(uiValueHash >> 32u));
+  }
+  else if (NodeType::IsInput(nodeType))
+  {
+    auto            pInput     = static_cast<const Input*>(pNode);
+    const xiiUInt64 uiNameHash = pInput->m_Desc.m_sName.GetHash();
+    valuesToHash.PushBack(static_cast<xiiUInt32>(uiNameHash));
+    valuesToHash.PushBack(static_cast<xiiUInt32>(uiNameHash >> 32u));
+  }
+  else if (NodeType::IsOutput(nodeType))
+  {
+    auto            pOutput    = static_cast<const Output*>(pNode);
+    const xiiUInt64 uiNameHash = pOutput->m_Desc.m_sName.GetHash();
+    valuesToHash.PushBack(static_cast<xiiUInt32>(uiNameHash));
+    valuesToHash.PushBack(static_cast<xiiUInt32>(uiNameHash >> 32u));
+    valuesToHash.PushBack(pOutput->m_pExpression->m_uiHash);
+  }
+  else if (NodeType::IsFunctionCall(nodeType))
+  {
+    auto            pFunctionCall = static_cast<const FunctionCall*>(pNode);
+    const xiiUInt64 uiNameHash    = pFunctionCall->m_Descs[0]->m_sName.GetHash();
+    valuesToHash.PushBack(static_cast<xiiUInt32>(uiNameHash));
+    valuesToHash.PushBack(static_cast<xiiUInt32>(uiNameHash >> 32u));
+
+    for (auto pArg : pFunctionCall->m_Arguments)
+    {
+      valuesToHash.PushBack(pArg->m_uiHash);
+    }
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+  }
+
+  pNode->m_uiHash = xiiHashingUtils::xxHash32(valuesToHash.GetData(), valuesToHash.GetCount() * sizeof(xiiUInt32));
+}
+
+// static
+bool xiiExpressionAST::IsEqual(const Node* pNodeA, const Node* pNodeB)
+{
+  const xiiUInt32 uiBaseValuesA = *reinterpret_cast<const xiiUInt32*>(pNodeA);
+  const xiiUInt32 uiBaseValuesB = *reinterpret_cast<const xiiUInt32*>(pNodeB);
+  if (uiBaseValuesA != uiBaseValuesB)
+  {
+    return false;
+  }
+
+  NodeType::Enum nodeType = pNodeA->m_Type;
+  if (NodeType::IsUnary(nodeType))
+  {
+    auto pUnaryA = static_cast<const UnaryOperator*>(pNodeA);
+    auto pUnaryB = static_cast<const UnaryOperator*>(pNodeB);
+
+    return pUnaryA->m_pOperand == pUnaryB->m_pOperand;
+  }
+  else if (NodeType::IsBinary(nodeType))
+  {
+    auto pBinaryA = static_cast<const BinaryOperator*>(pNodeA);
+    auto pBinaryB = static_cast<const BinaryOperator*>(pNodeB);
+
+    auto pLeftA  = pBinaryA->m_pLeftOperand;
+    auto pLeftB  = pBinaryB->m_pLeftOperand;
+    auto pRightA = pBinaryA->m_pRightOperand;
+    auto pRightB = pBinaryB->m_pRightOperand;
+
+    if (NodeType::IsCommutative(nodeType))
+    {
+      if (pLeftA > pRightA)
+        xiiMath::Swap(pLeftA, pRightA);
+
+      if (pLeftB > pRightB)
+        xiiMath::Swap(pLeftB, pRightB);
+    }
+
+    return pLeftA == pLeftB && pRightA == pRightB;
+  }
+  else if (NodeType::IsTernary(nodeType))
+  {
+    auto pTernaryA = static_cast<const TernaryOperator*>(pNodeA);
+    auto pTernaryB = static_cast<const TernaryOperator*>(pNodeB);
+
+    return pTernaryA->m_pFirstOperand == pTernaryB->m_pFirstOperand &&
+      pTernaryA->m_pSecondOperand == pTernaryB->m_pSecondOperand &&
+      pTernaryA->m_pThirdOperand == pTernaryB->m_pThirdOperand;
+  }
+  else if (NodeType::IsConstant(nodeType))
+  {
+    auto pConstantA = static_cast<const Constant*>(pNodeA);
+    auto pConstantB = static_cast<const Constant*>(pNodeB);
+
+    return pConstantA->m_Value == pConstantB->m_Value;
+  }
+  else if (NodeType::IsInput(nodeType))
+  {
+    auto pInputA = static_cast<const Input*>(pNodeA);
+    auto pInputB = static_cast<const Input*>(pNodeB);
+
+    return pInputA->m_Desc == pInputB->m_Desc;
+  }
+  else if (NodeType::IsOutput(nodeType))
+  {
+    auto pOutputA = static_cast<const Output*>(pNodeA);
+    auto pOutputB = static_cast<const Output*>(pNodeB);
+
+    return pOutputA->m_Desc == pOutputB->m_Desc && pOutputA->m_pExpression == pOutputB->m_pExpression;
+  }
+  else if (NodeType::IsFunctionCall(nodeType))
+  {
+    auto pFunctionCallA = static_cast<const FunctionCall*>(pNodeA);
+    auto pFunctionCallB = static_cast<const FunctionCall*>(pNodeB);
+
+    return pFunctionCallA->m_Descs[pFunctionCallA->m_uiOverloadIndex] == pFunctionCallB->m_Descs[pFunctionCallB->m_uiOverloadIndex] &&
+      pFunctionCallA->m_Arguments == pFunctionCallB->m_Arguments;
+  }
+
+  XII_ASSERT_NOT_IMPLEMENTED;
+  return false;
 }
 
 

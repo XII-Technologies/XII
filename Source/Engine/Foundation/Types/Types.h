@@ -10,7 +10,7 @@ using xiiUInt64 = unsigned long long;
 using xiiInt8  = signed char;
 using xiiInt16 = signed short;
 using xiiInt32 = signed int;
-using xiiInt64 = long long;
+using xiiInt64 = signed long long;
 
 #if XII_ENABLED(XII_DOUBLE_PRECISION)
 using xiiReal = double;

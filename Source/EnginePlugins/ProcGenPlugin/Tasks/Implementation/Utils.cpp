@@ -10,77 +10,137 @@ namespace
 {
   xiiSpatialData::Category s_ProcVolumeCategory = xiiSpatialData::RegisterCategory("ProcVolume", xiiSpatialData::Flags::None);
   static xiiHashedString   s_sVolumes           = xiiMakeHashedString("Volumes");
-} // namespace
 
-void xiiProcGenExpressionFunctions::ApplyVolumes(xiiExpression::Inputs inputs, xiiExpression::Output output, const xiiExpression::GlobalData& globalData)
-{
-  const xiiVariantArray& volumes = globalData.GetValue(s_sVolumes)->Get<xiiVariantArray>();
-  if (volumes.IsEmpty())
-    return;
+  static const xiiEnum<xiiExpression::RegisterType> s_ApplyVolumesTypes[] = {
+    xiiExpression::RegisterType::Float, // PosX
+    xiiExpression::RegisterType::Float, // PosY
+    xiiExpression::RegisterType::Float, // PosZ
+    xiiExpression::RegisterType::Float, // InitialValue
+    xiiExpression::RegisterType::Int,   // TagSetIndex
+    xiiExpression::RegisterType::Int,   // ImageMode
+    xiiExpression::RegisterType::Float, // RefColorR
+    xiiExpression::RegisterType::Float, // RefColorG
+    xiiExpression::RegisterType::Float, // RefColorB
+    xiiExpression::RegisterType::Float, // RefColorA
+  };
 
-  xiiUInt32 uiTagSetIndex = 0;
-  if (inputs.GetCount() > 4)
+  static void ApplyVolumes(xiiExpression::Inputs inputs, xiiExpression::Output output, const xiiExpression::GlobalData& globalData)
   {
-    uiTagSetIndex = xiiSimdVec4i::Truncate(inputs[4][0]).x();
-  }
+    const xiiVariantArray& volumes = globalData.GetValue(s_sVolumes)->Get<xiiVariantArray>();
+    if (volumes.IsEmpty())
+      return;
 
-  auto pVolumeCollection = xiiDynamicCast<const xiiVolumeCollection*>(volumes[uiTagSetIndex].Get<xiiReflectedClass*>());
-  if (pVolumeCollection == nullptr)
-    return;
+    xiiUInt32 uiTagSetIndex     = inputs[4].GetPtr()->i.x();
+    auto      pVolumeCollection = xiiDynamicCast<const xiiVolumeCollection*>(volumes[uiTagSetIndex].Get<xiiReflectedClass*>());
+    if (pVolumeCollection == nullptr)
+      return;
 
-  const xiiSimdVec4f* pPosX    = inputs[0].GetPtr();
-  const xiiSimdVec4f* pPosY    = inputs[1].GetPtr();
-  const xiiSimdVec4f* pPosZ    = inputs[2].GetPtr();
-  const xiiSimdVec4f* pPosXEnd = pPosX + inputs[0].GetCount();
+    const xiiExpression::Register* pPosX    = inputs[0].GetPtr();
+    const xiiExpression::Register* pPosY    = inputs[1].GetPtr();
+    const xiiExpression::Register* pPosZ    = inputs[2].GetPtr();
+    const xiiExpression::Register* pPosXEnd = inputs[0].GetEndPtr();
 
-  const xiiSimdVec4f* pInitialValues = inputs[3].GetPtr();
+    const xiiExpression::Register* pInitialValues = inputs[3].GetPtr();
 
-  xiiProcVolumeImageMode::Enum imgMode  = xiiProcVolumeImageMode::Default;
-  xiiColor                     refColor = xiiColor::White;
-  if (inputs.GetCount() > 5)
-  {
-    const xiiSimdVec4f* pImgMode = inputs[5].GetPtr();
-    const xiiSimdVec4f* pRefColR = inputs[6].GetPtr();
-    const xiiSimdVec4f* pRefColG = inputs[7].GetPtr();
-    const xiiSimdVec4f* pRefColB = inputs[8].GetPtr();
-    const xiiSimdVec4f* pRefColA = inputs[9].GetPtr();
-
-    imgMode  = static_cast<xiiProcVolumeImageMode::Enum>((float)pImgMode->x());
-    refColor = xiiColor(pRefColR->x(), pRefColG->x(), pRefColB->x(), pRefColA->x());
-  }
-
-  xiiSimdVec4f* pOutput = output.GetPtr();
-
-  while (pPosX < pPosXEnd)
-  {
-    pOutput->SetX(pVolumeCollection->EvaluateAtGlobalPosition(xiiVec3(pPosX->x(), pPosY->x(), pPosZ->x()), pInitialValues->x(), imgMode, refColor));
-    pOutput->SetY(pVolumeCollection->EvaluateAtGlobalPosition(xiiVec3(pPosX->y(), pPosY->y(), pPosZ->y()), pInitialValues->y(), imgMode, refColor));
-    pOutput->SetZ(pVolumeCollection->EvaluateAtGlobalPosition(xiiVec3(pPosX->z(), pPosY->z(), pPosZ->z()), pInitialValues->z(), imgMode, refColor));
-    pOutput->SetW(pVolumeCollection->EvaluateAtGlobalPosition(xiiVec3(pPosX->w(), pPosY->w(), pPosZ->w()), pInitialValues->w(), imgMode, refColor));
-
-    ++pPosX;
-    ++pPosY;
-    ++pPosZ;
-    ++pInitialValues;
-    ++pOutput;
-  }
-}
-
-xiiResult xiiProcGenExpressionFunctions::ApplyVolumesValidate(const xiiExpression::GlobalData& globalData)
-{
-  if (!globalData.IsEmpty())
-  {
-    if (const xiiVariant* pValue = globalData.GetValue("Volumes"))
+    xiiProcVolumeImageMode::Enum imgMode  = xiiProcVolumeImageMode::Default;
+    xiiColor                     refColor = xiiColor::White;
+    if (inputs.GetCount() >= 10)
     {
-      if (pValue->GetType() == xiiVariantType::VariantArray)
-      {
-        return XII_SUCCESS;
-      }
+      imgMode = static_cast<xiiProcVolumeImageMode::Enum>(inputs[5].GetPtr()->i.x());
+
+      const float refColR = inputs[6].GetPtr()->f.x();
+      const float refColG = inputs[7].GetPtr()->f.x();
+      const float refColB = inputs[8].GetPtr()->f.x();
+      const float refColA = inputs[9].GetPtr()->f.x();
+      refColor            = xiiColor(refColR, refColG, refColB, refColA);
+    }
+
+    xiiExpression::Register* pOutput = output.GetPtr();
+
+    xiiSimdMat4f helperMat;
+    while (pPosX < pPosXEnd)
+    {
+      helperMat.SetRows(pPosX->f, pPosY->f, pPosZ->f, xiiSimdVec4f::ZeroVector());
+
+      const float x = pVolumeCollection->EvaluateAtGlobalPosition(helperMat.m_col0, pInitialValues->f.x(), imgMode, refColor);
+      const float y = pVolumeCollection->EvaluateAtGlobalPosition(helperMat.m_col1, pInitialValues->f.y(), imgMode, refColor);
+      const float z = pVolumeCollection->EvaluateAtGlobalPosition(helperMat.m_col2, pInitialValues->f.z(), imgMode, refColor);
+      const float w = pVolumeCollection->EvaluateAtGlobalPosition(helperMat.m_col3, pInitialValues->f.w(), imgMode, refColor);
+      pOutput->f.Set(x, y, z, w);
+
+      ++pPosX;
+      ++pPosY;
+      ++pPosZ;
+      ++pInitialValues;
+      ++pOutput;
     }
   }
 
-  return XII_FAILURE;
-}
+  static xiiResult ApplyVolumesValidate(const xiiExpression::GlobalData& globalData)
+  {
+    if (!globalData.IsEmpty())
+    {
+      if (const xiiVariant* pValue = globalData.GetValue("Volumes"))
+      {
+        if (pValue->GetType() == xiiVariantType::VariantArray)
+        {
+          return XII_SUCCESS;
+        }
+      }
+    }
+
+    return XII_FAILURE;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  static xiiHashedString s_sInstanceSeed = xiiMakeHashedString("InstanceSeed");
+
+  static const xiiEnum<xiiExpression::RegisterType> s_GetInstanceSeedTypes = {};
+
+  static void GetInstanceSeed(xiiExpression::Inputs inputs, xiiExpression::Output output, const xiiExpression::GlobalData& globalData)
+  {
+    int instanceSeed = globalData.GetValue(s_sInstanceSeed)->Get<int>();
+
+    xiiExpression::Register* pOutput    = output.GetPtr();
+    xiiExpression::Register* pOutputEnd = output.GetEndPtr();
+
+    while (pOutput < pOutputEnd)
+    {
+      pOutput->i.Set(instanceSeed);
+
+      ++pOutput;
+    }
+  }
+
+  static xiiResult GetInstanceSeedValidate(const xiiExpression::GlobalData& globalData)
+  {
+    if (!globalData.IsEmpty())
+    {
+      if (const xiiVariant* pValue = globalData.GetValue(s_sInstanceSeed))
+      {
+        if (pValue->GetType() == xiiVariantType::Int32)
+        {
+          return XII_SUCCESS;
+        }
+      }
+    }
+
+    return XII_FAILURE;
+  }
+} // namespace
+
+xiiExpressionFunction xiiProcGenExpressionFunctions::s_ApplyVolumesFunc = {
+  {xiiMakeHashedString("ApplyVolumes"), xiiMakeArrayPtr(s_ApplyVolumesTypes), 5, xiiExpression::RegisterType::Float},
+  &ApplyVolumes,
+  &ApplyVolumesValidate,
+};
+
+xiiExpressionFunction xiiProcGenExpressionFunctions::s_GetInstanceSeedFunc = {
+  {xiiMakeHashedString("GetInstanceSeed"), xiiMakeArrayPtr(&s_GetInstanceSeedTypes, 0), 0, xiiExpression::RegisterType::Int},
+  &GetInstanceSeed,
+  &GetInstanceSeedValidate,
+};
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -114,4 +174,9 @@ void xiiProcGenInternal::ExtractVolumeCollections(const xiiWorld& world, const x
   }
 
   globalData.Insert(s_sVolumes, volumes);
+}
+
+void xiiProcGenInternal::SetInstanceSeed(xiiUInt32 uiSeed, xiiExpression::GlobalData& globalData)
+{
+  globalData.Insert(s_sInstanceSeed, (int)uiSeed);
 }
