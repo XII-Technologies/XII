@@ -52,20 +52,20 @@ XII_ALWAYS_INLINE void xiiSimdVec4f::SetZero()
   m_v.SetZero();
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE void xiiSimdVec4f::Load(const float* pFloats)
 {
   m_v.SetZero();
-  for (int i = 0; i < N; ++i)
+  for (xiiUInt32 i = 0; i < N; ++i)
   {
     (&m_v.x)[i] = pFloats[i];
   }
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE void xiiSimdVec4f::Store(float* pFloats) const
 {
-  for (int i = 0; i < N; ++i)
+  for (xiiUInt32 i = 0; i < N; ++i)
   {
     pFloats[i] = (&m_v.x)[i];
   }
@@ -101,7 +101,7 @@ xiiSimdVec4f xiiSimdVec4f::GetInvSqrt() const
   return result;
 }
 
-template <int N, xiiMathAcc::Enum acc>
+template <xiiInt32 N, xiiMathAcc::Enum acc>
 void xiiSimdVec4f::NormalizeIfNotZero(const xiiSimdFloat& fEpsilon)
 {
   xiiSimdFloat sqLength = GetLengthSquared<N>();
@@ -109,10 +109,10 @@ void xiiSimdVec4f::NormalizeIfNotZero(const xiiSimdFloat& fEpsilon)
   m_v = sqLength > fEpsilon.m_v ? m_v : xiiVec4::ZeroVector();
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero() const
 {
-  for (int i = 0; i < N; ++i)
+  for (xiiUInt32 i = 0; i < N; ++i)
   {
     if ((&m_v.x)[i] != 0.0f)
       return false;
@@ -121,10 +121,10 @@ XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero() const
   return true;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero(const xiiSimdFloat& fEpsilon) const
 {
-  for (int i = 0; i < N; ++i)
+  for (xiiUInt32 i = 0; i < N; ++i)
   {
     if (!xiiMath::IsZero((&m_v.x)[i], (float)fEpsilon))
       return false;
@@ -133,10 +133,10 @@ XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero(const xiiSimdFloat& fEpsilon) const
   return true;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsNaN() const
 {
-  for (int i = 0; i < N; ++i)
+  for (xiiUInt32 i = 0; i < N; ++i)
   {
     if (xiiMath::IsNaN((&m_v.x)[i]))
       return true;
@@ -145,10 +145,10 @@ XII_ALWAYS_INLINE bool xiiSimdVec4f::IsNaN() const
   return false;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsValid() const
 {
-  for (int i = 0; i < N; ++i)
+  for (xiiUInt32 i = 0; i < N; ++i)
   {
     if (!xiiMath::IsFinite((&m_v.x)[i]))
       return false;
@@ -157,7 +157,7 @@ XII_ALWAYS_INLINE bool xiiSimdVec4f::IsValid() const
   return true;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::GetComponent() const
 {
   return (&m_v.x)[N];
@@ -264,6 +264,17 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Abs() const
   return m_v.Abs();
 }
 
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Round() const
+{
+  xiiSimdVec4f result;
+  result.m_v.x = xiiMath::Round(m_v.x);
+  result.m_v.y = xiiMath::Round(m_v.y);
+  result.m_v.z = xiiMath::Round(m_v.z);
+  result.m_v.w = xiiMath::Round(m_v.w);
+
+  return result;
+}
+
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Floor() const
 {
   xiiSimdVec4f result;
@@ -282,6 +293,17 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Ceil() const
   result.m_v.y = xiiMath::Ceil(m_v.y);
   result.m_v.z = xiiMath::Ceil(m_v.z);
   result.m_v.w = xiiMath::Ceil(m_v.w);
+
+  return result;
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Trunc() const
+{
+  xiiSimdVec4f result;
+  result.m_v.x = xiiMath::Trunc(m_v.x);
+  result.m_v.y = xiiMath::Trunc(m_v.y);
+  result.m_v.z = xiiMath::Trunc(m_v.z);
+  result.m_v.w = xiiMath::Trunc(m_v.w);
 
   return result;
 }
@@ -335,13 +357,13 @@ XII_ALWAYS_INLINE xiiSimdVec4f& xiiSimdVec4f::operator/=(const xiiSimdFloat& f)
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4f::operator==(const xiiSimdVec4f& v) const
 {
-  xiiSimdVec4b result;
-  result.m_v.x = m_v.x == v.m_v.x;
-  result.m_v.y = m_v.y == v.m_v.y;
-  result.m_v.z = m_v.z == v.m_v.z;
-  result.m_v.w = m_v.w == v.m_v.w;
+  bool result[4];
+  result[0] = m_v.x == v.m_v.x;
+  result[1] = m_v.y == v.m_v.y;
+  result[2] = m_v.z == v.m_v.z;
+  result[3] = m_v.w == v.m_v.w;
 
-  return result;
+  return xiiSimdVec4b(result[0], result[1], result[2], result[3]);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4f::operator!=(const xiiSimdVec4f& v) const
@@ -356,13 +378,13 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4f::operator<=(const xiiSimdVec4f& v) c
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4f::operator<(const xiiSimdVec4f& v) const
 {
-  xiiSimdVec4b result;
-  result.m_v.x = m_v.x < v.m_v.x;
-  result.m_v.y = m_v.y < v.m_v.y;
-  result.m_v.z = m_v.z < v.m_v.z;
-  result.m_v.w = m_v.w < v.m_v.w;
+  bool result[4];
+  result[0] = m_v.x < v.m_v.x;
+  result[1] = m_v.y < v.m_v.y;
+  result[2] = m_v.z < v.m_v.z;
+  result[3] = m_v.w < v.m_v.w;
 
-  return result;
+  return xiiSimdVec4b(result[0], result[1], result[2], result[3]);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4f::operator>=(const xiiSimdVec4f& v) const
@@ -372,13 +394,13 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4f::operator>=(const xiiSimdVec4f& v) c
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4f::operator>(const xiiSimdVec4f& v) const
 {
-  xiiSimdVec4b result;
-  result.m_v.x = m_v.x > v.m_v.x;
-  result.m_v.y = m_v.y > v.m_v.y;
-  result.m_v.z = m_v.z > v.m_v.z;
-  result.m_v.w = m_v.w > v.m_v.w;
+  bool result[4];
+  result[0] = m_v.x > v.m_v.x;
+  result[1] = m_v.y > v.m_v.y;
+  result[2] = m_v.z > v.m_v.z;
+  result[3] = m_v.w > v.m_v.w;
 
-  return result;
+  return xiiSimdVec4b(result[0], result[1], result[2], result[3]);
 }
 
 template <>

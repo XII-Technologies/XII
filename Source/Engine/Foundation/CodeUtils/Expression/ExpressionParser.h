@@ -2,7 +2,6 @@
 
 #include <Foundation/CodeUtils/Expression/ExpressionAST.h>
 #include <Foundation/CodeUtils/TokenParseUtils.h>
-#include <Foundation/DataProcessing/Stream/ProcessingStream.h>
 
 class XII_FOUNDATION_DLL xiiExpressionParser
 {
@@ -10,44 +9,40 @@ public:
   xiiExpressionParser();
   ~xiiExpressionParser();
 
-  struct Stream
-  {
-    Stream(xiiStringView sName, xiiProcessingStream::DataType dataType) :
-      m_DataType(dataType)
-    {
-      m_sName.Assign(sName);
-    }
-
-    xiiHashedString               m_sName;
-    xiiProcessingStream::DataType m_DataType;
-  };
+  void RegisterFunction(const xiiExpression::FunctionDesc& funcDesc);
+  void UnregisterFunction(const xiiExpression::FunctionDesc& funcDesc);
 
   struct Options
   {
     bool m_bTreatUnknownVariablesAsInputs = false;
   };
 
-  xiiResult Parse(xiiStringView code, xiiArrayPtr<Stream> inputs, xiiArrayPtr<Stream> outputs, const Options& options, xiiExpressionAST& out_ast);
+  xiiResult Parse(xiiStringView code, xiiArrayPtr<xiiExpression::StreamDesc> inputs, xiiArrayPtr<xiiExpression::StreamDesc> outputs, const Options& options, xiiExpressionAST& out_ast);
 
 private:
   static constexpr int s_iLowestPrecedence = 20;
 
+  void RegisterKnownTypes();
   void RegisterBuiltinFunctions();
-  void SetupInAndOutputs(xiiArrayPtr<Stream> inputs, xiiArrayPtr<Stream> outputs);
+  void SetupInAndOutputs(xiiArrayPtr<xiiExpression::StreamDesc> inputs, xiiArrayPtr<xiiExpression::StreamDesc> outputs);
 
   xiiResult ParseStatement();
-  xiiResult ParseType(xiiStringView sTypeName);
-  xiiResult ParseVariableDefinition();
+  xiiResult ParseType(xiiStringView sTypeName, xiiEnum<xiiExpressionAST::DataType>& out_type);
+  xiiResult ParseVariableDefinition(xiiEnum<xiiExpressionAST::DataType> type);
   xiiResult ParseAssignment();
 
   xiiExpressionAST::Node* ParseFactor();
   xiiExpressionAST::Node* ParseExpression(int iPrecedence = s_iLowestPrecedence);
   xiiExpressionAST::Node* ParseUnaryExpression();
   xiiExpressionAST::Node* ParseFunctionCall(xiiStringView sFunctionName);
+  xiiExpressionAST::Node* ParseSwizzle(xiiExpressionAST::Node* pExpression);
 
   bool                    AcceptStatementTerminator();
-  bool                    AcceptBinaryOperator(xiiExpressionAST::NodeType::Enum& out_binaryOp, int& out_iOperatorPrecedence);
+  bool                    AcceptOperator(xiiStringView sName);
+  bool                    AcceptBinaryOperator(xiiExpressionAST::NodeType::Enum& out_binaryOp, int& out_iOperatorPrecedence, xiiUInt32& out_uiOperatorLength);
   xiiExpressionAST::Node* GetVariable(xiiStringView sVarName);
+  xiiExpressionAST::Node* EnsureExpectedType(xiiExpressionAST::Node* pNode, xiiExpressionAST::DataType::Enum expectedType);
+  xiiExpressionAST::Node* Unpack(xiiExpressionAST::Node* pNode, bool bUnassignedError = true);
 
   xiiResult Expect(const char* szToken, const xiiToken** pExpectedToken = nullptr);
   xiiResult Expect(xiiTokenType::Enum Type, const xiiToken** pExpectedToken = nullptr);
@@ -63,8 +58,11 @@ private:
   xiiUInt32                       m_uiCurrentToken = 0;
   xiiExpressionAST*               m_pAST           = nullptr;
 
-  xiiHashTable<xiiHashedString, xiiExpressionAST::Node*>             m_KnownVariables;
-  xiiHashTable<xiiHashedString, xiiEnum<xiiExpressionAST::NodeType>> m_BuiltinFunctions;
+  xiiHashTable<xiiHashedString, xiiEnum<xiiExpressionAST::DataType>> m_KnownTypes;
+
+  xiiHashTable<xiiHashedString, xiiExpressionAST::Node*>                        m_KnownVariables;
+  xiiHashTable<xiiHashedString, xiiEnum<xiiExpressionAST::NodeType>>            m_BuiltinFunctions;
+  xiiHashTable<xiiHashedString, xiiHybridArray<xiiExpression::FunctionDesc, 1>> m_FunctionDescs;
 };
 
 #include <Foundation/CodeUtils/Expression/Implementation/ExpressionParser_inl.h>

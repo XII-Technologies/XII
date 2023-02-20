@@ -25,8 +25,8 @@ void xiiMathExpression::Reset(xiiStringView sExpressionString)
   xiiStringBuilder tmp = s_sOutput.GetView();
   tmp.Append(" = ", sExpressionString);
 
-  xiiExpressionParser::Stream outputs[] = {
-    xiiExpressionParser::Stream(s_sOutput, xiiProcessingStream::DataType::Float),
+  xiiExpression::StreamDesc outputs[] = {
+    {s_sOutput, xiiProcessingStream::DataType::Float},
   };
 
   xiiExpressionParser          parser;
@@ -34,7 +34,7 @@ void xiiMathExpression::Reset(xiiStringView sExpressionString)
   parserOptions.m_bTreatUnknownVariablesAsInputs = true;
 
   xiiExpressionAST ast;
-  if (parser.Parse(tmp, xiiArrayPtr<xiiExpressionParser::Stream>(), outputs, parserOptions, ast).Failed())
+  if (parser.Parse(tmp, xiiArrayPtr<xiiExpression::StreamDesc>(), outputs, parserOptions, ast).Failed())
     return;
 
   xiiExpressionCompiler compiler;

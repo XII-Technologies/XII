@@ -43,6 +43,55 @@ XII_ALWAYS_INLINE void xiiSimdVec4i::SetZero()
   m_v = _mm_setzero_si128();
 }
 
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4i::Load<1>(const xiiInt32* pInts)
+{
+  m_v = _mm_loadu_si32(pInts);
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4i::Load<2>(const xiiInt32* pInts)
+{
+  m_v = _mm_loadu_si64(pInts);
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4i::Load<3>(const xiiInt32* pInts)
+{
+  m_v = _mm_setr_epi32(pInts[0], pInts[1], pInts[2], 0);
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4i::Load<4>(const xiiInt32* pInts)
+{
+  m_v = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pInts));
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4i::Store<1>(xiiInt32* pInts) const
+{
+  _mm_storeu_si32(pInts, m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4i::Store<2>(xiiInt32* pInts) const
+{
+  _mm_storeu_si64(pInts, m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4i::Store<3>(xiiInt32* pInts) const
+{
+  _mm_storeu_si64(pInts, m_v);
+  _mm_storeu_si32(pInts + 2, _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(m_v), _mm_castsi128_ps(m_v))));
+}
+
+template <>
+XII_ALWAYS_INLINE void xiiSimdVec4i::Store<4>(xiiInt32* pInts) const
+{
+  _mm_storeu_si128(reinterpret_cast<__m128i*>(pInts), m_v);
+}
+
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4i::ToFloat() const
 {
   return _mm_cvtepi32_ps(m_v);
@@ -54,7 +103,7 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::Truncate(const xiiSimdVec4f& f)
   return _mm_cvttps_epi32(f.m_v);
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE xiiInt32 xiiSimdVec4i::GetComponent() const
 {
 #if XII_SSE_LEVEL >= XII_SSE_41
@@ -117,6 +166,27 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::CompMul(const xiiSimdVec4i& v) cons
 #endif
 }
 
+XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::CompDiv(const xiiSimdVec4i& v) const
+{
+#if XII_ENABLED(XII_COMPILER_MSVC)
+  return _mm_div_epi32(m_v, v.m_v);
+#else
+  int a[4];
+  int b[4];
+  Store<4>(a);
+  v.Store<4>(b);
+
+  for (xiiUInt32 i = 0; i < 4; ++i)
+  {
+    a[i] = a[i] / b[i];
+  }
+
+  xiiSimdVec4i r;
+  r.Load<4>(a);
+  return r;
+#endif
+}
+
 XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::operator|(const xiiSimdVec4i& v) const
 {
   return _mm_or_si128(m_v, v.m_v);
@@ -146,6 +216,40 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::operator<<(xiiUInt32 uiShift) const
 XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::operator>>(xiiUInt32 uiShift) const
 {
   return _mm_srai_epi32(m_v, uiShift);
+}
+
+XII_FORCE_INLINE xiiSimdVec4i xiiSimdVec4i::operator<<(const xiiSimdVec4i& v) const
+{
+  int a[4];
+  int b[4];
+  Store<4>(a);
+  v.Store<4>(b);
+
+  for (xiiUInt32 i = 0; i < 4; ++i)
+  {
+    a[i] = a[i] << b[i];
+  }
+
+  xiiSimdVec4i r;
+  r.Load<4>(a);
+  return r;
+}
+
+XII_FORCE_INLINE xiiSimdVec4i xiiSimdVec4i::operator>>(const xiiSimdVec4i& v) const
+{
+  int a[4];
+  int b[4];
+  Store<4>(a);
+  v.Store<4>(b);
+
+  for (xiiUInt32 i = 0; i < 4; ++i)
+  {
+    a[i] = a[i] >> b[i];
+  }
+
+  xiiSimdVec4i r;
+  r.Load<4>(a);
+  return r;
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4i& xiiSimdVec4i::operator+=(const xiiSimdVec4i& v)
@@ -255,6 +359,16 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4i::operator>(const xiiSimdVec4i& v) co
 XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::ZeroVector()
 {
   return _mm_setzero_si128();
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::Select(const xiiSimdVec4b& cmp, const xiiSimdVec4i& ifTrue, const xiiSimdVec4i& ifFalse)
+{
+#if XII_SSE_LEVEL >= XII_SSE_41
+  return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(ifFalse.m_v), _mm_castsi128_ps(ifTrue.m_v), cmp.m_v));
+#else
+  return _mm_castps_si128(_mm_or_ps(_mm_andnot_ps(cmp.m_v, _mm_castsi128_ps(ifFalse.m_v)), _mm_and_ps(cmp.m_v, _mm_castsi128_ps(ifTrue.m_v))));
+#endif
 }
 
 // not needed atm

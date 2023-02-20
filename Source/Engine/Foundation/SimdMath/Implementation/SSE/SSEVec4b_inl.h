@@ -27,7 +27,7 @@ XII_ALWAYS_INLINE xiiSimdVec4b::xiiSimdVec4b(xiiInternal::QuadBool v)
   m_v = v;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4b::GetComponent() const
 {
   return _mm_movemask_ps(_mm_shuffle_ps(m_v, m_v, XII_SHUFFLE(N, N, N, N))) != 0;
@@ -75,23 +75,43 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4b::operator!() const
   return _mm_xor_ps(m_v, allTrue);
 }
 
-template <int N>
+XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4b::operator==(const xiiSimdVec4b& rhs) const
+{
+  return !(*this != rhs);
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4b::operator!=(const xiiSimdVec4b& rhs) const
+{
+  return _mm_xor_ps(m_v, rhs.m_v);
+}
+
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4b::AllSet() const
 {
-  const int mask = XII_BIT(N) - 1;
+  const xiiInt32 mask = XII_BIT(N) - 1;
   return (_mm_movemask_ps(m_v) & mask) == mask;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4b::AnySet() const
 {
-  const int mask = XII_BIT(N) - 1;
+  const xiiInt32 mask = XII_BIT(N) - 1;
   return (_mm_movemask_ps(m_v) & mask) != 0;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4b::NoneSet() const
 {
-  const int mask = XII_BIT(N) - 1;
+  const xiiInt32 mask = XII_BIT(N) - 1;
   return (_mm_movemask_ps(m_v) & mask) == 0;
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4b::Select(const xiiSimdVec4b& cmp, const xiiSimdVec4b& ifTrue, const xiiSimdVec4b& ifFalse)
+{
+#if XII_SSE_LEVEL >= XII_SSE_41
+  return _mm_blendv_ps(ifFalse.m_v, ifTrue.m_v, cmp.m_v);
+#else
+  return _mm_or_ps(_mm_andnot_ps(cmp.m_v, ifFalse.m_v), _mm_and_ps(cmp.m_v, ifTrue.m_v));
+#endif
 }

@@ -21,6 +21,20 @@ namespace xiiMath
   //////////////////////////////////////////////////////////////////////////
 
   template <>
+  constexpr float Phi()
+  {
+    return static_cast<float>(1.6180339887498948482045868343656f);
+  }
+
+  template <>
+  constexpr double Phi()
+  {
+    return static_cast<double>(1.6180339887498948482045868343656);
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  template <>
   constexpr float e()
   {
     return static_cast<float>(2.71828182845904);

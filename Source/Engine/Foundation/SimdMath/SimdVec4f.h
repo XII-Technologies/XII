@@ -30,10 +30,10 @@ public:
 
   void SetZero(); // [tested]
 
-  template <int N>
+  template <xiiInt32 N>
   void Load(const float* pFloats); // [tested]
 
-  template <int N>
+  template <xiiInt32 N>
   void Store(float* pFloats) const; // [tested]
 
 public:
@@ -46,47 +46,47 @@ public:
   template <xiiMathAcc::Enum acc = xiiMathAcc::FULL>
   xiiSimdVec4f GetInvSqrt() const; // [tested]
 
-  template <int N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiInt32 N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
   xiiSimdFloat GetLength() const; // [tested]
 
-  template <int N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiInt32 N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
   xiiSimdFloat GetInvLength() const; // [tested]
 
-  template <int N>
+  template <xiiInt32 N>
   xiiSimdFloat GetLengthSquared() const; // [tested]
 
-  template <int N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiInt32 N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
   xiiSimdFloat GetLengthAndNormalize(); // [tested]
 
-  template <int N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiInt32 N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
   xiiSimdVec4f GetNormalized() const; // [tested]
 
-  template <int N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiInt32 N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
   void Normalize(); // [tested]
 
-  template <int N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiInt32 N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
   void NormalizeIfNotZero(const xiiSimdFloat& fEpsilon = xiiMath::SmallEpsilon<float>()); // [tested]
 
-  template <int N>
+  template <xiiInt32 N>
   bool IsZero() const; // [tested]
 
-  template <int N>
+  template <xiiInt32 N>
   bool IsZero(const xiiSimdFloat& fEpsilon) const; // [tested]
 
-  template <int N>
+  template <xiiInt32 N>
   bool IsNormalized(const xiiSimdFloat& fEpsilon = xiiMath::HugeEpsilon<float>()) const; // [tested]
 
-  template <int N>
+  template <xiiInt32 N>
   bool IsNaN() const; // [tested]
 
-  template <int N>
+  template <xiiInt32 N>
   bool IsValid() const; // [tested]
 
 public:
-  template <int N>
+  template <xiiInt32 N>
   xiiSimdFloat GetComponent() const; // [tested]
 
-  xiiSimdFloat GetComponent(int i) const; // [tested]
+  xiiSimdFloat GetComponent(xiiInt32 i) const; // [tested]
 
   xiiSimdFloat x() const; // [tested]
   xiiSimdFloat y() const; // [tested]
@@ -115,9 +115,13 @@ public:
 
   xiiSimdVec4f CompMin(const xiiSimdVec4f& rhs) const; // [tested]
   xiiSimdVec4f CompMax(const xiiSimdVec4f& rhs) const; // [tested]
-  xiiSimdVec4f Abs() const;                            // [tested]
-  xiiSimdVec4f Floor() const;                          // [tested]
-  xiiSimdVec4f Ceil() const;                           // [tested]
+
+  xiiSimdVec4f Abs() const;      // [tested]
+  xiiSimdVec4f Round() const;    // [tested]
+  xiiSimdVec4f Floor() const;    // [tested]
+  xiiSimdVec4f Ceil() const;     // [tested]
+  xiiSimdVec4f Trunc() const;    // [tested]
+  xiiSimdVec4f Fraction() const; // [tested]
 
   xiiSimdVec4f FlipSign(const xiiSimdVec4b& cmp) const; // [tested]
 
@@ -140,16 +144,16 @@ public:
   xiiSimdVec4b operator>=(const xiiSimdVec4f& v) const; // [tested]
   xiiSimdVec4b operator>(const xiiSimdVec4f& v) const;  // [tested]
 
-  template <int N>
+  template <xiiInt32 N>
   xiiSimdFloat HorizontalSum() const; // [tested]
 
-  template <int N>
+  template <xiiInt32 N>
   xiiSimdFloat HorizontalMin() const; // [tested]
 
-  template <int N>
+  template <xiiInt32 N>
   xiiSimdFloat HorizontalMax() const; // [tested]
 
-  template <int N>
+  template <xiiInt32 N>
   xiiSimdFloat Dot(const xiiSimdVec4f& v) const; // [tested]
 
   ///\brief 3D cross product, w is ignored.

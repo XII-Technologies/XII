@@ -2,6 +2,7 @@
 
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <Core/World/Declarations.h>
+#include <Foundation/Math/Color16f.h>
 #include <Foundation/SimdMath/SimdTransform.h>
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Types/SharedPtr.h>
@@ -202,12 +203,15 @@ namespace xiiProcGenInternal
 
   struct XII_PROCGENPLUGIN_DLL ExpressionInputs
   {
+    static xiiHashedString s_sPosition;
     static xiiHashedString s_sPositionX;
     static xiiHashedString s_sPositionY;
     static xiiHashedString s_sPositionZ;
+    static xiiHashedString s_sNormal;
     static xiiHashedString s_sNormalX;
     static xiiHashedString s_sNormalY;
     static xiiHashedString s_sNormalZ;
+    static xiiHashedString s_sColor;
     static xiiHashedString s_sColorR;
     static xiiHashedString s_sColorG;
     static xiiHashedString s_sColorB;
@@ -217,15 +221,16 @@ namespace xiiProcGenInternal
 
   struct XII_PROCGENPLUGIN_DLL ExpressionOutputs
   {
-    static xiiHashedString s_sDensity;
-    static xiiHashedString s_sScale;
-    static xiiHashedString s_sColorIndex;
-    static xiiHashedString s_sObjectIndex;
+    static xiiHashedString s_sOutDensity;
+    static xiiHashedString s_sOutScale;
+    static xiiHashedString s_sOutColorIndex;
+    static xiiHashedString s_sOutObjectIndex;
 
-    static xiiHashedString s_sR;
-    static xiiHashedString s_sG;
-    static xiiHashedString s_sB;
-    static xiiHashedString s_sA;
+    static xiiHashedString s_sOutColor;
+    static xiiHashedString s_sOutColorR;
+    static xiiHashedString s_sOutColorG;
+    static xiiHashedString s_sOutColorB;
+    static xiiHashedString s_sOutColorA;
   };
 
   struct PlacementPoint
@@ -244,11 +249,12 @@ namespace xiiProcGenInternal
   {
     XII_DECLARE_POD_TYPE();
 
-    xiiSimdTransform m_Transform;
-    xiiColor         m_ObjectColor;
-    xiiUInt8         m_uiObjectIndex;
-    xiiUInt16        m_uiPointIndex;
-    xiiUInt8         m_uiSetColor : 1;
+    xiiSimdTransform  m_Transform;
+    xiiColorLinear16f m_ObjectColor;
+    xiiUInt16         m_uiPointIndex;
+    xiiUInt8          m_uiObjectIndex;
+    bool              m_bHasValidColor;
+    xiiUInt32         m_uiPadding;
   };
 
   struct PlacementTileDesc

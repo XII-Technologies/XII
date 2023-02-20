@@ -81,7 +81,7 @@ struct xiiProcGenGraphAssetDocument::GenerateContext
 
 ////////////////////////////////////////////////////////////////
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProcGenGraphAssetDocument, 5, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProcGenGraphAssetDocument, 6, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiProcGenGraphAssetDocument::xiiProcGenGraphAssetDocument(const char* szDocumentPath) :
@@ -124,6 +124,20 @@ xiiStatus xiiProcGenGraphAssetDocument::WriteAsset(xiiStreamWriter& stream, cons
 
   auto WriteByteCode = [&](const xiiDocumentObject* pOutputNode) {
     context.m_GraphContext.m_VolumeTagSetIndices.Clear();
+
+    if (pOutputNode->GetType()->IsDerivedFrom<xiiProcGen_PlacementOutput>())
+    {
+      context.m_GraphContext.m_OutputType = xiiProcGenNodeBase::GraphContext::Placement;
+    }
+    else if (pOutputNode->GetType()->IsDerivedFrom<xiiProcGen_VertexColorOutput>())
+    {
+      context.m_GraphContext.m_OutputType = xiiProcGenNodeBase::GraphContext::Color;
+    }
+    else
+    {
+      XII_ASSERT_NOT_IMPLEMENTED;
+      return xiiStatus("Unknown output type");
+    }
 
     xiiExpressionAST ast;
     GenerateExpressionAST(pOutputNode, "", context, ast);
@@ -173,6 +187,7 @@ xiiStatus xiiProcGenGraphAssetDocument::WriteAsset(xiiStreamWriter& stream, cons
       chunk << uiNumNodes;
 
       context.m_GraphContext.m_VolumeTagSetIndices.Clear();
+      context.m_GraphContext.m_OutputType = xiiProcGenNodeBase::GraphContext::Placement;
 
       xiiExpressionAST ast;
       GenerateDebugExpressionAST(context, ast);
@@ -420,7 +435,7 @@ void xiiProcGenGraphAssetDocument::DumpSelectedOutput(bool bAst, bool bDisassemb
   if (!selection.IsEmpty())
   {
     pSelectedNode = selection[0];
-    if (!pSelectedNode->GetType()->IsDerivedFrom(xiiGetStaticRTTI<xiiProcGenOutput>()))
+    if (!pSelectedNode->GetType()->IsDerivedFrom<xiiProcGenOutput>())
     {
       pSelectedNode = nullptr;
     }
@@ -432,7 +447,21 @@ void xiiProcGenGraphAssetDocument::DumpSelectedOutput(bool bAst, bool bDisassemb
     return;
   }
 
-  GenerateContext  context(GetObjectManager());
+  GenerateContext context(GetObjectManager());
+  if (pSelectedNode->GetType()->IsDerivedFrom<xiiProcGen_PlacementOutput>())
+  {
+    context.m_GraphContext.m_OutputType = xiiProcGenNodeBase::GraphContext::Placement;
+  }
+  else if (pSelectedNode->GetType()->IsDerivedFrom<xiiProcGen_VertexColorOutput>())
+  {
+    context.m_GraphContext.m_OutputType = xiiProcGenNodeBase::GraphContext::Color;
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+    return;
+  }
+
   xiiExpressionAST ast;
   GenerateExpressionAST(pSelectedNode, "", context, ast);
 
@@ -445,34 +474,40 @@ void xiiProcGenGraphAssetDocument::DumpSelectedOutput(bool bAst, bool bDisassemb
     DumpAST(ast, sAssetName, sOutputName);
   }
 
+  xiiExpressionByteCode byteCode;
+  xiiExpressionCompiler compiler;
+  if (compiler.Compile(ast, byteCode).Failed())
+  {
+    xiiLog::Error("Compiling expression failed");
+    return;
+  }
+
+  if (bAst)
+  {
+    xiiStringBuilder sOutputName2 = sOutputName;
+    sOutputName2.Append("_Opt");
+
+    DumpAST(ast, sAssetName, sOutputName2);
+  }
+
   if (bDisassembly)
   {
-    xiiExpressionByteCode byteCode;
+    xiiStringBuilder sDisassembly;
+    byteCode.Disassemble(sDisassembly);
 
-    xiiExpressionCompiler compiler;
-    if (compiler.Compile(ast, byteCode).Succeeded())
+    xiiStringBuilder sFileName;
+    sFileName.Format(":appdata/{0}_{1}_ByteCode.txt", sAssetName, sOutputName);
+
+    xiiFileWriter fileWriter;
+    if (fileWriter.Open(sFileName).Succeeded())
     {
-      xiiStringBuilder sDisassembly;
-      byteCode.Disassemble(sDisassembly);
+      fileWriter.WriteBytes(sDisassembly.GetData(), sDisassembly.GetElementCount()).IgnoreResult();
 
-      xiiStringBuilder sFileName;
-      sFileName.Format(":appdata/{0}_{1}_ByteCode.txt", sAssetName, sOutputName);
-
-      xiiFileWriter fileWriter;
-      if (fileWriter.Open(sFileName).Succeeded())
-      {
-        fileWriter.WriteBytes(sDisassembly.GetData(), sDisassembly.GetElementCount()).IgnoreResult();
-
-        xiiLog::Info("Disassembly was dumped to: {0}", sFileName);
-      }
-      else
-      {
-        xiiLog::Error("Failed to dump Disassembly to: {0}", sFileName);
-      }
+      xiiLog::Info("Disassembly was dumped to: {0}", sFileName);
     }
     else
     {
-      xiiLog::Error("Compiling expression failed");
+      xiiLog::Error("Failed to dump Disassembly to: {0}", sFileName);
     }
   }
 }

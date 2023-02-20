@@ -84,6 +84,14 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdNoise)
       ++histogram[randomValuesAsInt.y()];
       ++histogram[randomValuesAsInt.z()];
       ++histogram[randomValuesAsInt.w()];
+
+      randomValues      = xiiSimdRandom::FloatMinMax(xiiSimdVec4i(32, 33, 34, 35), xiiSimdVec4f::ZeroVector(), xiiSimdVec4f(256.0f), seed);
+      randomValuesAsInt = xiiSimdVec4i::Truncate(randomValues);
+
+      ++histogram[randomValuesAsInt.x()];
+      ++histogram[randomValuesAsInt.y()];
+      ++histogram[randomValuesAsInt.z()];
+      ++histogram[randomValuesAsInt.w()];
     }
 
     const char* szOutFile = ":output/SimdNoise/result-random.csv";

@@ -36,7 +36,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, MathExpression)
       XII_TEST_DOUBLE(expr.Evaluate(), 2.0, 0.0);
     }
     {
-      xiiMathExpression expr(" 1/2 ");
+      xiiMathExpression expr(" 1.0/2 ");
       XII_TEST_BOOL(expr.IsValid());
       XII_TEST_DOUBLE(expr.Evaluate(), 0.5, 0.0);
     }
@@ -95,7 +95,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, MathExpression)
       XII_TEST_DOUBLE(expr.Evaluate(), -9.0, 0.0);
     }
     {
-      xiiMathExpression expr("1 - 2 / 4");
+      xiiMathExpression expr("1 - 2.0 / 4");
       XII_TEST_BOOL(expr.IsValid());
       XII_TEST_DOUBLE(expr.Evaluate(), 0.5, 0.0);
     }

@@ -1,10 +1,7 @@
 #pragma once
 
-#include <Foundation/CodeUtils/Expression/ExpressionFunctions.h>
-#include <Foundation/Containers/DynamicArray.h>
-#include <Foundation/DataProcessing/Stream/ProcessingStream.h>
-
-class xiiExpressionByteCode;
+#include <Foundation/CodeUtils/Expression/ExpressionByteCode.h>
+#include <Foundation/Types/UniquePtr.h>
 
 class XII_FOUNDATION_DLL xiiExpressionVM
 {
@@ -12,28 +9,27 @@ public:
   xiiExpressionVM();
   ~xiiExpressionVM();
 
-  void RegisterFunction(const char* szName, xiiExpressionFunction func, xiiExpressionValidateGlobalData validationFunc = xiiExpressionValidateGlobalData());
-
-  void RegisterDefaultFunctions();
+  void RegisterFunction(const xiiExpressionFunction& func);
+  void UnregisterFunction(const xiiExpressionFunction& func);
 
   xiiResult Execute(const xiiExpressionByteCode& byteCode, xiiArrayPtr<const xiiProcessingStream> inputs, xiiArrayPtr<xiiProcessingStream> outputs, xiiUInt32 uiNumInstances, const xiiExpression::GlobalData& globalData = xiiExpression::GlobalData());
 
 private:
-  void ValidateDataSize(const xiiProcessingStream& stream, xiiUInt32 uiNumInstances, const char* szDataName) const;
+  void RegisterDefaultFunctions();
 
-  xiiDynamicArray<xiiSimdVec4f, xiiAlignedAllocatorWrapper> m_Registers;
+  xiiResult ScalarizeStreams(xiiArrayPtr<const xiiProcessingStream> streams, xiiDynamicArray<xiiProcessingStream>& out_ScalarizedStreams);
+  xiiResult MapStreams(xiiArrayPtr<const xiiExpression::StreamDesc> streamDescs, xiiArrayPtr<xiiProcessingStream> streams, const char* szStreamType, xiiUInt32 uiNumInstances, xiiDynamicArray<xiiProcessingStream*>& out_MappedStreams);
+  xiiResult MapFunctions(xiiArrayPtr<const xiiExpression::FunctionDesc> functionDescs, const xiiExpression::GlobalData& globalData);
 
-  xiiDynamicArray<xiiUInt32> m_InputMapping;
-  xiiDynamicArray<xiiUInt32> m_OutputMapping;
-  xiiDynamicArray<xiiUInt32> m_FunctionMapping;
+  xiiDynamicArray<xiiExpression::Register, xiiAlignedAllocatorWrapper> m_Registers;
 
-  struct FunctionInfo
-  {
-    xiiHashedString                 m_sName;
-    xiiExpressionFunction           m_Func;
-    xiiExpressionValidateGlobalData m_ValidationFunc;
-  };
+  xiiDynamicArray<xiiProcessingStream> m_ScalarizedInputs;
+  xiiDynamicArray<xiiProcessingStream> m_ScalarizedOutputs;
 
-  xiiDynamicArray<FunctionInfo>            m_Functions;
+  xiiDynamicArray<xiiProcessingStream*>         m_MappedInputs;
+  xiiDynamicArray<xiiProcessingStream*>         m_MappedOutputs;
+  xiiDynamicArray<const xiiExpressionFunction*> m_MappedFunctions;
+
+  xiiDynamicArray<xiiExpressionFunction>   m_Functions;
   xiiHashTable<xiiHashedString, xiiUInt32> m_FunctionNamesToIndex;
 };

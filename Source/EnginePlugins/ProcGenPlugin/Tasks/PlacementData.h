@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Foundation/CodeUtils/Expression/ExpressionFunctions.h>
+#include <Foundation/CodeUtils/Expression/ExpressionDeclarations.h>
 #include <ProcGenPlugin/Declarations.h>
 
 class xiiPhysicsWorldModuleInterface;
@@ -19,7 +19,7 @@ namespace xiiProcGenInternal
     const xiiWorld*                       m_pWorld         = nullptr;
 
     xiiSharedPtr<const PlacementOutput> m_pOutput;
-    xiiInt32                            m_iTileSeed = 0;
+    xiiUInt32                           m_uiTileSeed = 0;
     xiiBoundingBox                      m_TileBoundingBox;
 
     xiiDynamicArray<xiiSimdMat4f, xiiAlignedAllocatorWrapper> m_GlobalToLocalBoxTransforms;

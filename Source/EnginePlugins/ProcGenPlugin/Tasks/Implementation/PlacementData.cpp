@@ -13,8 +13,8 @@ namespace xiiProcGenInternal
     m_pPhysicsModule = nullptr;
     m_pWorld         = nullptr;
 
-    m_pOutput   = nullptr;
-    m_iTileSeed = 0;
+    m_pOutput    = nullptr;
+    m_uiTileSeed = 0;
     m_TileBoundingBox.SetInvalid();
     m_GlobalToLocalBoxTransforms.Clear();
 

@@ -65,17 +65,16 @@ xiiUInt32 xiiVolumeCollection::ComputeSortingKey(float fSortOrder, float fMaxSca
   return uiSortingKey;
 }
 
-float xiiVolumeCollection::EvaluateAtGlobalPosition(const xiiVec3& vPosition, float fInitialValue, xiiProcVolumeImageMode::Enum imgMode, const xiiColor& refColor) const
+float xiiVolumeCollection::EvaluateAtGlobalPosition(const xiiSimdVec4f& vPosition, float fInitialValue, xiiProcVolumeImageMode::Enum imgMode, const xiiColor& refColor) const
 {
-  xiiSimdVec4f globalPos = xiiSimdConversion::ToVec3(vPosition);
-  float        fValue    = fInitialValue;
+  float fValue = fInitialValue;
 
   for (auto pShape : m_SortedShapes)
   {
     if (pShape->m_Type == ShapeType::Sphere)
     {
       auto&              sphere      = *static_cast<const Sphere*>(pShape);
-      const xiiSimdVec4f localPos    = sphere.GetGlobalToLocalTransform().TransformPosition(globalPos);
+      const xiiSimdVec4f localPos    = sphere.GetGlobalToLocalTransform().TransformPosition(vPosition);
       const float        distSquared = localPos.GetLengthSquared<3>();
       if (distSquared <= 1.0f)
       {
@@ -87,7 +86,7 @@ float xiiVolumeCollection::EvaluateAtGlobalPosition(const xiiVec3& vPosition, fl
     else if (pShape->m_Type == ShapeType::Box)
     {
       auto&              box         = *static_cast<const Box*>(pShape);
-      const xiiSimdVec4f absLocalPos = box.GetGlobalToLocalTransform().TransformPosition(globalPos).Abs();
+      const xiiSimdVec4f absLocalPos = box.GetGlobalToLocalTransform().TransformPosition(vPosition).Abs();
       if ((absLocalPos <= xiiSimdVec4f(1.0f)).AllSet<3>())
       {
         const float  fNewValue = ApplyValue(box.m_BlendMode, fValue, box.m_fValue);
@@ -101,7 +100,7 @@ float xiiVolumeCollection::EvaluateAtGlobalPosition(const xiiVec3& vPosition, fl
     {
       auto& image = *static_cast<const Image*>(pShape);
 
-      const xiiSimdVec4f localPos    = image.GetGlobalToLocalTransform().TransformPosition(globalPos);
+      const xiiSimdVec4f localPos    = image.GetGlobalToLocalTransform().TransformPosition(vPosition);
       const xiiSimdVec4f absLocalPos = localPos.Abs();
 
       if ((absLocalPos <= xiiSimdVec4f(1.0f)).AllSet<3>() && image.m_pPixelData != nullptr)

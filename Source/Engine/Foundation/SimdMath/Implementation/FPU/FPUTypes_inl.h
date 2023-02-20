@@ -7,9 +7,5 @@ namespace xiiInternal
   typedef xiiVec4    QuadFloat;
   typedef xiiVec4I32 QuadInt;
   typedef xiiVec4U32 QuadUInt;
-
-  struct QuadBool
-  {
-    bool x, y, z, w;
-  };
+  typedef xiiVec4U32 QuadBool;
 } // namespace xiiInternal

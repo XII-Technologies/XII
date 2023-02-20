@@ -26,16 +26,21 @@ namespace xiiProcGenInternal
     void FindPlacementPoints();
     void ExecuteVM();
 
-    xiiProcessingStream MakeInputStream(const xiiHashedString& sName, xiiUInt32 uiOffset)
+    xiiProcessingStream MakeInputStream(const xiiHashedString& sName, xiiUInt32 uiOffset, xiiProcessingStream::DataType dataType = xiiProcessingStream::DataType::Float)
     {
-      return xiiProcessingStream(sName, m_InputPoints.GetByteArrayPtr().GetSubArray(uiOffset), xiiProcessingStream::DataType::Float, sizeof(PlacementPoint));
+      return xiiProcessingStream(sName, m_InputPoints.GetByteArrayPtr().GetSubArray(uiOffset), dataType, sizeof(PlacementPoint));
+    }
+
+    xiiProcessingStream MakeOutputStream(const xiiHashedString& sName, xiiUInt32 uiOffset, xiiProcessingStream::DataType dataType = xiiProcessingStream::DataType::Float)
+    {
+      return xiiProcessingStream(sName, m_InputPoints.GetByteArrayPtr().GetSubArray(uiOffset), dataType, sizeof(PlacementPoint));
     }
 
     PlacementData* m_pData = nullptr;
 
     xiiDynamicArray<PlacementPoint, xiiAlignedAllocatorWrapper>     m_InputPoints;
     xiiDynamicArray<PlacementTransform, xiiAlignedAllocatorWrapper> m_OutputTransforms;
-    xiiDynamicArray<float>                                          m_TempData;
+    xiiDynamicArray<float>                                          m_Density;
     xiiDynamicArray<xiiUInt32>                                      m_ValidPoints;
 
     xiiExpressionVM m_VM;

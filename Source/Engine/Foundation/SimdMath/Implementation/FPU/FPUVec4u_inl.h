@@ -37,7 +37,7 @@ XII_ALWAYS_INLINE void xiiSimdVec4u::SetZero()
   m_v.SetZero();
 }
 
-// needs to be implemented here because of include dependencies
+// Needs to be implemented here because of include dependencies
 XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i(const xiiSimdVec4u& u) :
   m_v(u.m_v.x, u.m_v.y, u.m_v.z, u.m_v.w)
 {
@@ -73,7 +73,7 @@ XII_ALWAYS_INLINE xiiSimdVec4u xiiSimdVec4u::Truncate(const xiiSimdVec4f& f)
   return result;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE xiiUInt32 xiiSimdVec4u::GetComponent() const
 {
   return (&m_v.x)[N];
@@ -263,13 +263,13 @@ XII_ALWAYS_INLINE xiiSimdVec4u xiiSimdVec4u::CompMax(const xiiSimdVec4u& v) cons
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4u::operator==(const xiiSimdVec4u& v) const
 {
-  xiiSimdVec4b result;
-  result.m_v.x = m_v.x == v.m_v.x;
-  result.m_v.y = m_v.y == v.m_v.y;
-  result.m_v.z = m_v.z == v.m_v.z;
-  result.m_v.w = m_v.w == v.m_v.w;
+  bool result[4];
+  result[0] = m_v.x == v.m_v.x;
+  result[1] = m_v.y == v.m_v.y;
+  result[2] = m_v.z == v.m_v.z;
+  result[3] = m_v.w == v.m_v.w;
 
-  return result;
+  return xiiSimdVec4b(result[0], result[1], result[2], result[3]);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4u::operator!=(const xiiSimdVec4u& v) const
@@ -284,13 +284,13 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4u::operator<=(const xiiSimdVec4u& v) c
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4u::operator<(const xiiSimdVec4u& v) const
 {
-  xiiSimdVec4b result;
-  result.m_v.x = m_v.x < v.m_v.x;
-  result.m_v.y = m_v.y < v.m_v.y;
-  result.m_v.z = m_v.z < v.m_v.z;
-  result.m_v.w = m_v.w < v.m_v.w;
+  bool result[4];
+  result[0] = m_v.x < v.m_v.x;
+  result[1] = m_v.y < v.m_v.y;
+  result[2] = m_v.z < v.m_v.z;
+  result[3] = m_v.w < v.m_v.w;
 
-  return result;
+  return xiiSimdVec4b(result[0], result[1], result[2], result[3]);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4u::operator>=(const xiiSimdVec4u& v) const
@@ -300,13 +300,13 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4u::operator>=(const xiiSimdVec4u& v) c
 
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4u::operator>(const xiiSimdVec4u& v) const
 {
-  xiiSimdVec4b result;
-  result.m_v.x = m_v.x > v.m_v.x;
-  result.m_v.y = m_v.y > v.m_v.y;
-  result.m_v.z = m_v.z > v.m_v.z;
-  result.m_v.w = m_v.w > v.m_v.w;
+  bool result[4];
+  result[0] = m_v.x > v.m_v.x;
+  result[1] = m_v.y > v.m_v.y;
+  result[2] = m_v.z > v.m_v.z;
+  result[3] = m_v.w > v.m_v.w;
 
-  return result;
+  return xiiSimdVec4b(result[0], result[1], result[2], result[3]);
 }
 
 // static

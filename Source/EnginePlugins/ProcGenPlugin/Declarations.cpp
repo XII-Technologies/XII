@@ -70,25 +70,29 @@ namespace xiiProcGenInternal
   GraphSharedDataBase::~GraphSharedDataBase() = default;
   Output::~Output()                           = default;
 
-  xiiHashedString ExpressionInputs::s_sPositionX  = xiiMakeHashedString("PositionX");
-  xiiHashedString ExpressionInputs::s_sPositionY  = xiiMakeHashedString("PositionY");
-  xiiHashedString ExpressionInputs::s_sPositionZ  = xiiMakeHashedString("PositionZ");
-  xiiHashedString ExpressionInputs::s_sNormalX    = xiiMakeHashedString("NormalX");
-  xiiHashedString ExpressionInputs::s_sNormalY    = xiiMakeHashedString("NormalY");
-  xiiHashedString ExpressionInputs::s_sNormalZ    = xiiMakeHashedString("NormalZ");
-  xiiHashedString ExpressionInputs::s_sColorR     = xiiMakeHashedString("ColorR");
-  xiiHashedString ExpressionInputs::s_sColorG     = xiiMakeHashedString("ColorG");
-  xiiHashedString ExpressionInputs::s_sColorB     = xiiMakeHashedString("ColorB");
-  xiiHashedString ExpressionInputs::s_sColorA     = xiiMakeHashedString("ColorA");
-  xiiHashedString ExpressionInputs::s_sPointIndex = xiiMakeHashedString("PointIndex");
+  xiiHashedString ExpressionInputs::s_sPosition   = xiiMakeHashedString("position");
+  xiiHashedString ExpressionInputs::s_sPositionX  = xiiMakeHashedString("position.x");
+  xiiHashedString ExpressionInputs::s_sPositionY  = xiiMakeHashedString("position.y");
+  xiiHashedString ExpressionInputs::s_sPositionZ  = xiiMakeHashedString("position.z");
+  xiiHashedString ExpressionInputs::s_sNormal     = xiiMakeHashedString("normal");
+  xiiHashedString ExpressionInputs::s_sNormalX    = xiiMakeHashedString("normal.x");
+  xiiHashedString ExpressionInputs::s_sNormalY    = xiiMakeHashedString("normal.y");
+  xiiHashedString ExpressionInputs::s_sNormalZ    = xiiMakeHashedString("normal.z");
+  xiiHashedString ExpressionInputs::s_sColor      = xiiMakeHashedString("color");
+  xiiHashedString ExpressionInputs::s_sColorR     = xiiMakeHashedString("color.x");
+  xiiHashedString ExpressionInputs::s_sColorG     = xiiMakeHashedString("color.y");
+  xiiHashedString ExpressionInputs::s_sColorB     = xiiMakeHashedString("color.z");
+  xiiHashedString ExpressionInputs::s_sColorA     = xiiMakeHashedString("color.w");
+  xiiHashedString ExpressionInputs::s_sPointIndex = xiiMakeHashedString("pointIndex");
 
-  xiiHashedString ExpressionOutputs::s_sDensity     = xiiMakeHashedString("Density");
-  xiiHashedString ExpressionOutputs::s_sScale       = xiiMakeHashedString("Scale");
-  xiiHashedString ExpressionOutputs::s_sColorIndex  = xiiMakeHashedString("ColorIndex");
-  xiiHashedString ExpressionOutputs::s_sObjectIndex = xiiMakeHashedString("ObjectIndex");
+  xiiHashedString ExpressionOutputs::s_sOutDensity     = xiiMakeHashedString("outDensity");
+  xiiHashedString ExpressionOutputs::s_sOutScale       = xiiMakeHashedString("outScale");
+  xiiHashedString ExpressionOutputs::s_sOutColorIndex  = xiiMakeHashedString("outColorIndex");
+  xiiHashedString ExpressionOutputs::s_sOutObjectIndex = xiiMakeHashedString("outObjectIndex");
 
-  xiiHashedString ExpressionOutputs::s_sR = xiiMakeHashedString("R");
-  xiiHashedString ExpressionOutputs::s_sG = xiiMakeHashedString("G");
-  xiiHashedString ExpressionOutputs::s_sB = xiiMakeHashedString("B");
-  xiiHashedString ExpressionOutputs::s_sA = xiiMakeHashedString("A");
+  xiiHashedString ExpressionOutputs::s_sOutColor  = xiiMakeHashedString("outColor");
+  xiiHashedString ExpressionOutputs::s_sOutColorR = xiiMakeHashedString("outColor.x");
+  xiiHashedString ExpressionOutputs::s_sOutColorG = xiiMakeHashedString("outColor.y");
+  xiiHashedString ExpressionOutputs::s_sOutColorB = xiiMakeHashedString("outColor.z");
+  xiiHashedString ExpressionOutputs::s_sOutColorA = xiiMakeHashedString("outColor.w");
 } // namespace xiiProcGenInternal

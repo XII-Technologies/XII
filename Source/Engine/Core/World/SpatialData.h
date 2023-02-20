@@ -40,7 +40,7 @@ struct xiiSpatialData
 
     xiiUInt32 m_uiValue;
 
-    XII_ALWAYS_INLINE xiiUInt32 GetBitmask() const { return m_uiValue != xiiInvalidIndex ? XII_BIT(m_uiValue) : 0; }
+    XII_ALWAYS_INLINE xiiUInt32 GetBitmask() const { return m_uiValue != xiiInvalidIndex ? static_cast<xiiUInt32>(XII_BIT(m_uiValue)) : 0; }
   };
 
   /// \brief Registers a spatial data category under the given name.
