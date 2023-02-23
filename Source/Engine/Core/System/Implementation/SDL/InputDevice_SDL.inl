@@ -1,7 +1,7 @@
 
 #include <Core/System/Implementation/SDL/InputDevice_SDL.h>
 
-#include <SDL/include/SDL.h>
+#include <SDL2/include/SDL.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>

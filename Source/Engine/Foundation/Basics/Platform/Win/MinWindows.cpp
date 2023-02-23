@@ -8,11 +8,11 @@
 template <typename xiiType, typename WindowsType, bool mustBeConvertible>
 void xiiVerifyWindowsType()
 {
-  static_assert(sizeof(xiiType) == sizeof(WindowsType), "xii <=> windows.h size mismatch");
-  static_assert(alignof(xiiType) == alignof(WindowsType), "xii <=> windows.h alignment mismatch");
-  static_assert(std::is_pointer<xiiType>::value == std::is_pointer<WindowsType>::value, "xii <=> windows.h pointer type mismatch");
-  static_assert(!mustBeConvertible || xiiConversionTest<xiiType, WindowsType>::exists == 1, "xii <=> windows.h conversion failure");
-  static_assert(!mustBeConvertible || xiiConversionTest<WindowsType, xiiType>::exists == 1, "windows.h <=> xii conversion failure");
+  static_assert(sizeof(xiiType) == sizeof(WindowsType), "XII <=> windows.h size mismatch");
+  static_assert(alignof(xiiType) == alignof(WindowsType), "XII <=> windows.h alignment mismatch");
+  static_assert(std::is_pointer<xiiType>::value == std::is_pointer<WindowsType>::value, "XII <=> windows.h pointer type mismatch");
+  static_assert(!mustBeConvertible || xiiConversionTest<xiiType, WindowsType>::exists == 1, "XII <=> windows.h conversion failure");
+  static_assert(!mustBeConvertible || xiiConversionTest<WindowsType, xiiType>::exists == 1, "windows.h <=> XII conversion failure");
 };
 
 void CALLBACK             WindowsCallbackTest1();

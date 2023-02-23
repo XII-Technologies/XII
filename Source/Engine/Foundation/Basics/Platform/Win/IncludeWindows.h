@@ -5,18 +5,18 @@
 #define XII_INCLUDED_WINDOWS_H 1
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-// this is important for code that wants to include winsock2.h later on
+// This is important for code that wants to include winsock2.h later on
 #  define _WINSOCKAPI_ /* Prevent inclusion of winsock.h in windows.h */
 
-// already includes Windows.h, but defines important other things first
-//#include <winsock2.h>
+// Already includes Windows.h, but defines important other things first
+// #include <winsock2.h>
 
 #  ifndef WIN32_LEAN_AND_MEAN
 #    define WIN32_LEAN_AND_MEAN
 #  endif
 #  include <Windows.h>
 
-// unset windows macros
+// Unset windows macros
 #  undef min
 #  undef max
 #  undef GetObject

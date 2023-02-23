@@ -1,7 +1,7 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
-#include <SDL/include/SDL.h>
+#include <SDL2/include/SDL.h>
 
 namespace
 {

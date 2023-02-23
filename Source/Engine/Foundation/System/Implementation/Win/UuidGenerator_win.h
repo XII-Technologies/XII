@@ -10,10 +10,10 @@ void xiiUuid::CreateNewUuid()
 {
   xiiUInt64 uiUuidData[2];
 
-  // this works on desktop Windows
+  // This works on desktop Windows
   // UuidCreate(reinterpret_cast<UUID*>(uiUuidData));
 
-  // this also works on UWP
+  // This also works on UWP
   GUID*   guid = reinterpret_cast<GUID*>(&uiUuidData[0]);
   HRESULT hr   = CoCreateGuid(guid);
   XII_ASSERT_DEBUG(SUCCEEDED(hr), "CoCreateGuid failed, guid might be invalid!");

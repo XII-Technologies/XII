@@ -59,8 +59,8 @@ struct xiiPipeWin
       m_readThread = std::thread([&]() {
         xiiStringBuilder overflowBuffer;
 
-        constexpr int BUFSIZE = 512;
-        char          chBuf[BUFSIZE];
+        constexpr xiiInt32 BUFSIZE = 512;
+        char               chBuf[BUFSIZE];
         while (true)
         {
           DWORD bytesRead = 0;
@@ -222,7 +222,7 @@ static BOOL CreateProcessWithExplicitHandles(LPCWSTR lpApplicationName, LPWSTR l
     info.StartupInfo.cb  = sizeof(info);
     info.lpAttributeList = lpAttributeList;
 
-    // it is both possible to pass in (STARTUPINFOW*)&info OR info.StartupInfo ...
+    // It is both possible to pass in (STARTUPINFOW*)&info OR info.StartupInfo ...
     fSuccess = CreateProcessW(lpApplicationName, lpCommandLine, lpProcessAttributes, lpThreadAttributes, bInheritHandles,
                               dwCreationFlags | EXTENDED_STARTUPINFO_PRESENT, lpEnvironment, lpCurrentDirectory, &info.StartupInfo, lpProcessInformation);
   }
@@ -246,35 +246,34 @@ xiiResult xiiProcess::Launch(const xiiProcessOptions& opt, xiiBitflags<xiiProces
   m_OnStdOut   = opt.m_onStdOut;
   m_OnStdError = opt.m_onStdError;
 
-  STARTUPINFOW si;
-  xiiMemoryUtils::ZeroFill(&si, 1);
-  si.cb      = sizeof(si);
-  si.dwFlags = STARTF_FORCEOFFFEEDBACK; // do not show a wait cursor while launching the process
+  STARTUPINFOW startupInformation;
+  xiiMemoryUtils::ZeroFill(&startupInformation, 1);
+  startupInformation.cb      = sizeof(startupInformation);
+  startupInformation.dwFlags = STARTF_FORCEOFFFEEDBACK; // Do not show a wait cursor while launching the process
 
-  // attention: passing in even a single null handle will fail the handle inheritance entirely,
-  // but CreateProcess will still return success
-  // therefore we must ensure to only pass non-null handles to inherit
+  // Attention: passing in even a single null handle will fail the handle inheritance entirely,
+  // but CreateProcess will still return success.
+  // Therefore we must ensure to only pass non-null handles to inherit
   HANDLE    HandlesToInherit[2];
   xiiUInt32 uiNumHandlesToInherit = 0;
 
   if (m_OnStdOut.IsValid())
   {
     m_pImpl->m_pipeStdOut.Create();
-    si.hStdOutput = m_pImpl->m_pipeStdOut.m_pipeWrite;
-    si.dwFlags |= STARTF_USESTDHANDLES;
+    startupInformation.hStdOutput = m_pImpl->m_pipeStdOut.m_pipeWrite;
+    startupInformation.dwFlags |= STARTF_USESTDHANDLES;
     HandlesToInherit[uiNumHandlesToInherit++] = m_pImpl->m_pipeStdOut.m_pipeWrite;
   }
   if (m_OnStdError.IsValid())
   {
     m_pImpl->m_pipeStdErr.Create();
-    si.hStdError = m_pImpl->m_pipeStdErr.m_pipeWrite;
-    si.dwFlags |= STARTF_USESTDHANDLES;
+    startupInformation.hStdError = m_pImpl->m_pipeStdErr.m_pipeWrite;
+    startupInformation.dwFlags |= STARTF_USESTDHANDLES;
     HandlesToInherit[uiNumHandlesToInherit++] = m_pImpl->m_pipeStdErr.m_pipeWrite;
   }
 
-  PROCESS_INFORMATION pi;
-  xiiMemoryUtils::ZeroFill(&pi, 1);
-
+  PROCESS_INFORMATION processInformation;
+  xiiMemoryUtils::ZeroFill(&processInformation, 1);
 
   xiiStringBuilder sCmdLine;
   BuildFullCommandLineString(opt, sProcess, sCmdLine);
@@ -300,8 +299,8 @@ xiiResult xiiProcess::Launch(const xiiProcessOptions& opt, xiiBitflags<xiiProces
                                         dwCreationFlags,
                                         nullptr, // lpEnvironment
                                         opt.m_sWorkingDirectory.IsEmpty() ? nullptr : xiiStringWChar(opt.m_sWorkingDirectory).GetData(),
-                                        &si,                   // lpStartupInfo
-                                        &pi,                   // lpProcessInformation
+                                        &startupInformation,   // lpStartupInfo
+                                        &processInformation,   // lpProcessInformation
                                         uiNumHandlesToInherit, // cHandlesToInherit
                                         HandlesToInherit       // rgHandlesToInherit
                                         ))
@@ -314,17 +313,17 @@ xiiResult xiiProcess::Launch(const xiiProcessOptions& opt, xiiBitflags<xiiProces
   m_pImpl->m_pipeStdOut.StartRead(m_OnStdOut);
   m_pImpl->m_pipeStdErr.StartRead(m_OnStdError);
 
-  m_pImpl->m_ProcessHandle = pi.hProcess;
-  m_pImpl->m_ProcessID     = pi.dwProcessId;
+  m_pImpl->m_ProcessHandle = processInformation.hProcess;
+  m_pImpl->m_ProcessID     = processInformation.dwProcessId;
 
   if (launchFlags.IsSet(xiiProcessLaunchFlags::Suspended))
   {
-    // store the main thread handle for ResumeSuspended() later
-    m_pImpl->m_MainThreadHandle = pi.hThread;
+    // Store the main thread handle for ResumeSuspended() later
+    m_pImpl->m_MainThreadHandle = processInformation.hThread;
   }
   else
   {
-    CloseHandle(pi.hThread);
+    CloseHandle(processInformation.hThread);
   }
 
   if (launchFlags.IsSet(xiiProcessLaunchFlags::Detached))
@@ -342,7 +341,7 @@ xiiResult xiiProcess::ResumeSuspended()
 
   ResumeThread(m_pImpl->m_MainThreadHandle);
 
-  // invalidate the thread handle, so that we cannot resume the process twice
+  // Invalidate the thread handle, so that we cannot resume the process twice
   CloseHandle(m_pImpl->m_MainThreadHandle);
   m_pImpl->m_MainThreadHandle = nullptr;
 
@@ -365,7 +364,7 @@ xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
 
   if (res == WAIT_TIMEOUT)
   {
-    // the process is not yet finished, the timeout was reached
+    // The process is not yet finished, the timeout was reached
     return XII_FAILURE;
   }
 
@@ -375,7 +374,7 @@ xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
     return XII_FAILURE;
   }
 
-  // the process has finished
+  // The process has finished
 
   m_pImpl->m_pipeStdOut.Close();
   m_pImpl->m_pipeStdErr.Close();
@@ -426,8 +425,8 @@ xiiProcessState xiiProcess::GetState() const
   {
     xiiLog::Error("Failed to retrieve exit code for process '{}' - {}", m_sProcess, xiiArgErrorCode(GetLastError()));
 
-    // not sure what kind of errors can happen (probably access denied and such)
-    // have to return something, so lets claim the process is finished
+    // Not sure what kind of errors can happen (probably access denied and such).
+    // However, we have to return something, so lets claim the process is finished
     return xiiProcessState::Finished;
   }
 
@@ -444,9 +443,9 @@ xiiProcessState xiiProcess::GetState() const
 
 void xiiProcess::Detach()
 {
-  // throw away the previous xiiProcessImpl and create a blank one
+  // Throw away the previous xiiProcessImpl and create a blank one
   m_pImpl = XII_DEFAULT_NEW(xiiProcessImpl);
 
-  // reset the exit code to the default
+  // Reset the exit code to the default
   m_iExitCode = -0xFFFF;
 }

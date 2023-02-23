@@ -42,17 +42,17 @@ void xiiStandardInputDevice::InitializeDevice()
   {
     RAWINPUTDEVICE Rid[2];
 
-    // keyboard
+    // Keyboard
     Rid[0].usUsagePage = 0x01;
-    Rid[0].usUsage = 0x06;
-    Rid[0].dwFlags = RIDEV_NOHOTKEYS; // Disables Windows-Key and Application-Key
-    Rid[0].hwndTarget = nullptr;
+    Rid[0].usUsage     = 0x06;
+    Rid[0].dwFlags     = RIDEV_NOHOTKEYS; // Disables Windows-Key and Application-Key
+    Rid[0].hwndTarget  = nullptr;
 
-    // mouse
+    // Mouse
     Rid[1].usUsagePage = 0x01;
-    Rid[1].usUsage = 0x02;
-    Rid[1].dwFlags = 0;
-    Rid[1].hwndTarget = nullptr;
+    Rid[1].usUsage     = 0x02;
+    Rid[1].dwFlags     = 0;
+    Rid[1].hwndTarget  = nullptr;
 
     if (RegisterRawInputDevices(&Rid[0], (UINT)2, sizeof(RAWINPUTDEVICE)) == FALSE)
     {
@@ -260,12 +260,12 @@ void xiiStandardInputDevice::RegisterInputSlots()
 
 void xiiStandardInputDevice::ResetInputSlotValues()
 {
-  m_InputSlotValues[xiiInputSlot_MouseWheelUp] = 0;
+  m_InputSlotValues[xiiInputSlot_MouseWheelUp]   = 0;
   m_InputSlotValues[xiiInputSlot_MouseWheelDown] = 0;
-  m_InputSlotValues[xiiInputSlot_MouseMoveNegX] = 0;
-  m_InputSlotValues[xiiInputSlot_MouseMovePosX] = 0;
-  m_InputSlotValues[xiiInputSlot_MouseMoveNegY] = 0;
-  m_InputSlotValues[xiiInputSlot_MouseMovePosY] = 0;
+  m_InputSlotValues[xiiInputSlot_MouseMoveNegX]  = 0;
+  m_InputSlotValues[xiiInputSlot_MouseMovePosX]  = 0;
+  m_InputSlotValues[xiiInputSlot_MouseMoveNegY]  = 0;
+  m_InputSlotValues[xiiInputSlot_MouseMovePosY]  = 0;
   m_InputSlotValues[xiiInputSlot_MouseDblClick0] = 0;
   m_InputSlotValues[xiiInputSlot_MouseDblClick1] = 0;
   m_InputSlotValues[xiiInputSlot_MouseDblClick2] = 0;
@@ -275,16 +275,16 @@ void xiiStandardInputDevice::UpdateInputSlotValues()
 {
   const char* slotDown[5] = {xiiInputSlot_MouseButton0, xiiInputSlot_MouseButton1, xiiInputSlot_MouseButton2, xiiInputSlot_MouseButton3, xiiInputSlot_MouseButton4};
 
-  // don't read uninitialized values
+  // Do not read uninitialized values
   if (!m_InputSlotValues.Contains(slotDown[4]))
   {
-    for (int i = 0; i < 5; ++i)
+    for (xiiInt32 i = 0; i < 5; ++i)
     {
       m_InputSlotValues[slotDown[i]] = 0;
     }
   }
 
-  for (int i = 0; i < 5; ++i)
+  for (xiiInt32 i = 0; i < 5; ++i)
   {
     if (m_InputSlotValues[slotDown[i]] > 0)
     {
@@ -333,9 +333,9 @@ void xiiStandardInputDevice::ApplyClipRect(xiiMouseCursorClipMode::Enum mode, xi
     ClientToScreen(xiiMinWindows::ToNative(hWnd), &p0);
     ClientToScreen(xiiMinWindows::ToNative(hWnd), &p1);
 
-    r.top = p0.y;
-    r.left = p0.x;
-    r.right = p1.x;
+    r.top    = p0.y;
+    r.left   = p0.x;
+    r.right  = p1.x;
     r.bottom = p1.y;
   }
 
@@ -344,14 +344,14 @@ void xiiStandardInputDevice::ApplyClipRect(xiiMouseCursorClipMode::Enum mode, xi
     POINT mp;
     if (GetCursorPos(&mp))
     {
-      // make sure the position is inside the window rect
+      // Ensure the position is inside the window rect
       mp.x = xiiMath::Clamp(mp.x, r.left, r.right);
       mp.y = xiiMath::Clamp(mp.y, r.top, r.bottom);
 
-      r.top = mp.y;
+      r.top    = mp.y;
       r.bottom = mp.y;
-      r.left = mp.x;
-      r.right = mp.x;
+      r.left   = mp.x;
+      r.right  = mp.x;
     }
   }
 
@@ -375,7 +375,10 @@ void xiiStandardInputDevice::SetClipMouseCursor(xiiMouseCursorClipMode::Enum mod
 #define XII_MOUSEBUTTON_COMPATIBILTY_MODE XII_ON
 
 void xiiStandardInputDevice::WindowMessage(
-  xiiMinWindows::HWND hWnd, xiiMinWindows::UINT Msg, xiiMinWindows::WPARAM wParam, xiiMinWindows::LPARAM lParam)
+  xiiMinWindows::HWND   hWnd,
+  xiiMinWindows::UINT   Msg,
+  xiiMinWindows::WPARAM wParam,
+  xiiMinWindows::LPARAM lParam)
 {
 #if XII_ENABLED(XII_MOUSEBUTTON_COMPATIBILTY_MODE)
   static xiiInt32 s_iMouseCaptureCount = 0;
@@ -394,9 +397,8 @@ void xiiStandardInputDevice::WindowMessage(
         m_InputSlotValues[xiiInputSlot_MouseWheelUp] = iRotated / 120.0f;
       else
         m_InputSlotValues[xiiInputSlot_MouseWheelDown] = iRotated / -120.0f;
-
-      break;
     }
+    break;
 
     case WM_MOUSEMOVE:
     {
@@ -406,10 +408,10 @@ void xiiStandardInputDevice::WindowMessage(
       const xiiUInt32 uiResX = area.right - area.left;
       const xiiUInt32 uiResY = area.bottom - area.top;
 
-      const float fPosX = (float)((short)LOWORD(lParam));
-      const float fPosY = (float)((short)HIWORD(lParam));
+      const float fPosX = (float)((xiiInt16)LOWORD(lParam));
+      const float fPosY = (float)((xiiInt16)HIWORD(lParam));
 
-      s_iMouseIsOverWindowNumber = m_uiWindowNumber;
+      s_iMouseIsOverWindowNumber                     = m_uiWindowNumber;
       m_InputSlotValues[xiiInputSlot_MousePositionX] = (fPosX / uiResX);
       m_InputSlotValues[xiiInputSlot_MousePositionY] = (fPosY / uiResY);
 
@@ -417,16 +419,15 @@ void xiiStandardInputDevice::WindowMessage(
       {
         ApplyClipRect(m_ClipCursorMode, hWnd);
       }
-
-      break;
     }
+    break;
 
     case WM_SETFOCUS:
     {
       m_bApplyClipRect = true;
       ApplyClipRect(m_ClipCursorMode, hWnd);
-      break;
     }
+    break;
 
     case WM_KILLFOCUS:
     {
@@ -435,36 +436,48 @@ void xiiStandardInputDevice::WindowMessage(
     }
 
     case WM_CHAR:
+    {
       m_uiLastCharacter = (wchar_t)wParam;
       return;
+    }
 
-      // these messages would only arrive, if the window had the flag CS_DBLCLKS
-      // see https://docs.microsoft.com/windows/win32/inputdev/wm-lbuttondblclk
-      // this would add lag and hide single clicks when the user double clicks
-      // therefore it is not used
-      //case WM_LBUTTONDBLCLK:
-      //  m_InputSlotValues[xiiInputSlot_MouseDblClick0] = 1.0f;
-      //  return;
-      //case WM_RBUTTONDBLCLK:
-      //  m_InputSlotValues[xiiInputSlot_MouseDblClick1] = 1.0f;
-      //  return;
-      //case WM_MBUTTONDBLCLK:
-      //  m_InputSlotValues[xiiInputSlot_MouseDblClick2] = 1.0f;
-      //  return;
+    // These messages would only arrive, if the window had the flag CS_DBLCLKS
+    // see https://docs.microsoft.com/windows/win32/inputdev/wm-lbuttondblclk
+    // this would add lag and hide single clicks when the user double clicks
+    // therefore it is not used
+    //case WM_LBUTTONDBLCLK:
+    // {
+    //  m_InputSlotValues[xiiInputSlot_MouseDblClick0] = 1.0f;
+    //  return;
+    // }
+    //
+    //case WM_RBUTTONDBLCLK:
+    // {
+    //  m_InputSlotValues[xiiInputSlot_MouseDblClick1] = 1.0f;
+    //  return;
+    // }
+    //
+    //case WM_MBUTTONDBLCLK:
+    // {
+    //  m_InputSlotValues[xiiInputSlot_MouseDblClick2] = 1.0f;
+    //  return;
+    // }
 
 #if XII_ENABLED(XII_MOUSEBUTTON_COMPATIBILTY_MODE)
 
     case WM_LBUTTONDOWN:
+    {
       m_uiMouseButtonReceivedDown[0]++;
 
       if (s_iMouseCaptureCount == 0)
         SetCapture(xiiMinWindows::ToNative(hWnd));
       ++s_iMouseCaptureCount;
 
-
       return;
+    }
 
     case WM_LBUTTONUP:
+    {
       m_uiMouseButtonReceivedUp[0]++;
       ApplyClipRect(m_ClipCursorMode, hWnd);
 
@@ -473,8 +486,10 @@ void xiiStandardInputDevice::WindowMessage(
         ReleaseCapture();
 
       return;
+    }
 
     case WM_RBUTTONDOWN:
+    {
       m_uiMouseButtonReceivedDown[1]++;
 
       if (s_iMouseCaptureCount == 0)
@@ -482,8 +497,10 @@ void xiiStandardInputDevice::WindowMessage(
       ++s_iMouseCaptureCount;
 
       return;
+    }
 
     case WM_RBUTTONUP:
+    {
       m_uiMouseButtonReceivedUp[1]++;
       ApplyClipRect(m_ClipCursorMode, hWnd);
 
@@ -491,18 +508,22 @@ void xiiStandardInputDevice::WindowMessage(
       if (s_iMouseCaptureCount <= 0)
         ReleaseCapture();
 
-
       return;
+    }
 
     case WM_MBUTTONDOWN:
+    {
       m_uiMouseButtonReceivedDown[2]++;
 
       if (s_iMouseCaptureCount == 0)
         SetCapture(xiiMinWindows::ToNative(hWnd));
       ++s_iMouseCaptureCount;
+
       return;
+    }
 
     case WM_MBUTTONUP:
+    {
       m_uiMouseButtonReceivedUp[2]++;
 
       --s_iMouseCaptureCount;
@@ -510,8 +531,10 @@ void xiiStandardInputDevice::WindowMessage(
         ReleaseCapture();
 
       return;
+    }
 
     case WM_XBUTTONDOWN:
+    {
       if (GET_XBUTTON_WPARAM(wParam) == XBUTTON1)
         m_uiMouseButtonReceivedDown[3]++;
       if (GET_XBUTTON_WPARAM(wParam) == XBUTTON2)
@@ -522,8 +545,10 @@ void xiiStandardInputDevice::WindowMessage(
       ++s_iMouseCaptureCount;
 
       return;
+    }
 
     case WM_XBUTTONUP:
+    {
       if (GET_XBUTTON_WPARAM(wParam) == XBUTTON1)
         m_uiMouseButtonReceivedUp[3]++;
       if (GET_XBUTTON_WPARAM(wParam) == XBUTTON2)
@@ -534,16 +559,21 @@ void xiiStandardInputDevice::WindowMessage(
         ReleaseCapture();
 
       return;
+    }
 
     case WM_CAPTURECHANGED: // Sent to the window that is losing the mouse capture.
+    {
       s_iMouseCaptureCount = 0;
       return;
+    }
 
 #else
 
     case WM_LBUTTONUP:
+    {
       ApplyClipRect(m_bClipCursor, hWnd);
       return;
+    }
 
 #endif
 
@@ -574,14 +604,14 @@ void xiiStandardInputDevice::WindowMessage(
           return;
         }
 
-        static bool bWasStupidLeftShift = false;
+        static bool bWasLeftShift = false;
 
-        const xiiUInt8 uiScanCode = static_cast<xiiUInt8>(raw->data.keyboard.MakeCode);
-        const bool bIsExtended = (raw->data.keyboard.Flags & RI_KEY_E0) != 0;
+        const xiiUInt8 uiScanCode  = static_cast<xiiUInt8>(raw->data.keyboard.MakeCode);
+        const bool     bIsExtended = (raw->data.keyboard.Flags & RI_KEY_E0) != 0;
 
         if (uiScanCode == 42 && bIsExtended) // 42 has to be special I guess
         {
-          bWasStupidLeftShift = true;
+          bWasLeftShift = true;
           return;
         }
 
@@ -592,19 +622,19 @@ void xiiStandardInputDevice::WindowMessage(
         if (raw->data.keyboard.Flags & RI_KEY_E1)
         {
           szInputSlotName = xiiInputSlot_KeyPause;
-          bIgnoreNext = true;
+          bIgnoreNext     = true;
         }
 
         // The Print key is sent as a two key sequence, first an 'extended left shift' and then the Numpad* key is sent
-        // we ignore the first stupid shift key entirely and then modify the following Numpad* key
-        // Note that the 'stupid shift' is sent along with several other keys as well (e.g. left/right/up/down arrows)
-        // in these cases we can ignore them entirely, as the following key will have an unambiguous key code
-        if (xiiStringUtils::IsEqual(szInputSlotName, xiiInputSlot_KeyNumpadStar) && bWasStupidLeftShift)
+        // we ignore the first shift key entirely and then modify the following Numpad* key.
+        // Note that the 'shift' is sent along with several other keys as well (e.g. left/right/up/down arrows).
+        // In these cases we can ignore them entirely, as the following key will have an unambiguous key code.
+        if (xiiStringUtils::IsEqual(szInputSlotName, xiiInputSlot_KeyNumpadStar) && bWasLeftShift)
           szInputSlotName = xiiInputSlot_KeyPrint;
 
-        bWasStupidLeftShift = false;
+        bWasLeftShift = false;
 
-        int iRequest = raw->data.keyboard.MakeCode << 16;
+        xiiInt32 iRequest = raw->data.keyboard.MakeCode << 16;
 
         if (raw->data.keyboard.Flags & RI_KEY_E0)
           iRequest |= 1 << 24;
@@ -632,8 +662,8 @@ void xiiStandardInputDevice::WindowMessage(
       {
         const xiiUInt32 uiButtons = raw->data.mouse.usButtonFlags;
 
-        // "absolute" positions are only reported by devices such as Pens
-        // if at all, we should handle them as touch points, not as mouse positions
+        // The "absolute" positions are only reported by devices such as Pens.
+        // If at all, we should handle them as touch points, not as mouse positions.
         if ((raw->data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) == 0)
         {
           m_InputSlotValues[xiiInputSlot_MouseMoveNegX] +=
@@ -668,14 +698,14 @@ void xiiStandardInputDevice::WindowMessage(
         {
           if ((raw->data.mouse.usFlags & MOUSE_VIRTUAL_DESKTOP) != 0)
           {
-            // if this flag is set, we are getting mouse input through a remote desktop session
+            // If this flag is set, we are getting mouse input through a remote desktop session
             // and that means we will not get any relative mouse move events, so we need to emulate them
 
             static const xiiInt32 iVirtualDesktopW = GetSystemMetrics(SM_CXVIRTUALSCREEN);
             static const xiiInt32 iVirtualDesktopH = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
             static xiiVec2 vLastPos(xiiMath::MaxValue<float>());
-            const xiiVec2 vNewPos(
+            const xiiVec2  vNewPos(
               (raw->data.mouse.lLastX / 65535.0f) * iVirtualDesktopW, (raw->data.mouse.lLastY / 65535.0f) * iVirtualDesktopH);
 
             if (vLastPos.x != xiiMath::MaxValue<float>())
@@ -692,10 +722,10 @@ void xiiStandardInputDevice::WindowMessage(
           }
           else
           {
-            static int iTouchPoint = 0;
-            static bool bTouchPointDown = false;
+            static xiiInt32 iTouchPoint     = 0;
+            static bool     bTouchPointDown = false;
 
-            const char* szSlot = xiiInputManager::GetInputSlotTouchPoint(iTouchPoint);
+            const char* szSlot  = xiiInputManager::GetInputSlotTouchPoint(iTouchPoint);
             const char* szSlotX = xiiInputManager::GetInputSlotTouchPointPositionX(iTouchPoint);
             const char* szSlotY = xiiInputManager::GetInputSlotTouchPointPositionY(iTouchPoint);
 
@@ -704,13 +734,13 @@ void xiiStandardInputDevice::WindowMessage(
 
             if ((uiButtons & (RI_MOUSE_BUTTON_1_DOWN | RI_MOUSE_BUTTON_2_DOWN)) != 0)
             {
-              bTouchPointDown = true;
+              bTouchPointDown           = true;
               m_InputSlotValues[szSlot] = 1.0f;
             }
 
             if ((uiButtons & (RI_MOUSE_BUTTON_1_UP | RI_MOUSE_BUTTON_2_UP)) != 0)
             {
-              bTouchPointDown = false;
+              bTouchPointDown           = false;
               m_InputSlotValues[szSlot] = 0.0f;
             }
           }
@@ -718,7 +748,7 @@ void xiiStandardInputDevice::WindowMessage(
         else
         {
           xiiLog::Info("Unknown Mouse Move: {0} | {1}, Flags = {2}", xiiArgF(raw->data.mouse.lLastX, 1), xiiArgF(raw->data.mouse.lLastY, 1),
-            (xiiUInt32)raw->data.mouse.usFlags);
+                       (xiiUInt32)raw->data.mouse.usFlags);
         }
       }
     }
@@ -897,15 +927,14 @@ void xiiStandardInputDevice::OnFocusLost(xiiMinWindows::HWND hWnd)
     it.Next();
   }
 
-
   const char* slotDown[5] = {xiiInputSlot_MouseButton0, xiiInputSlot_MouseButton1, xiiInputSlot_MouseButton2, xiiInputSlot_MouseButton3, xiiInputSlot_MouseButton4};
 
   static_assert(XII_ARRAY_SIZE(m_uiMouseButtonReceivedDown) == XII_ARRAY_SIZE(slotDown));
 
-  for (int i = 0; i < XII_ARRAY_SIZE(m_uiMouseButtonReceivedDown); ++i)
+  for (xiiInt32 i = 0; i < XII_ARRAY_SIZE(m_uiMouseButtonReceivedDown); ++i)
   {
     m_uiMouseButtonReceivedDown[i] = 0;
-    m_uiMouseButtonReceivedUp[i] = 0;
+    m_uiMouseButtonReceivedUp[i]   = 0;
 
     m_InputSlotValues[slotDown[i]] = 0;
   }

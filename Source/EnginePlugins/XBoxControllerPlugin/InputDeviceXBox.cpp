@@ -111,15 +111,15 @@ void xiiInputDeviceXBox360::UpdateHardwareState(xiiTime tTimeDifference)
 
 void xiiInputDeviceXBox360::UpdateInputSlotValues()
 {
-  // reset all keys
+  // Reset all keys
   for (auto it = m_InputSlotValues.GetIterator(); it.IsValid(); ++it)
     it.Value() = 0.0f;
 
   XINPUT_STATE State[MaxControllers];
   bool         bIsAvailable[MaxControllers];
 
-  // update not connected controllers only every few milliseconds, apparently it takes quite some time to do this
-  // even on not connected controllers
+  // Update unconnected controllers only every few milliseconds, apparently it takes quite some time to do this
+  // even on unconnected controllers
   static xiiTime tLastControllerSearch;
   const xiiTime  tNow               = xiiTime::Now();
   const bool     bSearchControllers = tNow - tLastControllerSearch > xiiTime::Seconds(0.5);
@@ -127,7 +127,7 @@ void xiiInputDeviceXBox360::UpdateInputSlotValues()
   if (bSearchControllers)
     tLastControllerSearch = tNow;
 
-  // get the data from all physical devices
+  // Retrieve the data from all physical devices
   for (xiiInt32 iPhysical = 0; iPhysical < MaxControllers; ++iPhysical)
   {
     if (bSearchControllers || m_bControllerConnected[iPhysical])
@@ -138,7 +138,7 @@ void xiiInputDeviceXBox360::UpdateInputSlotValues()
       {
         xiiLog::Info("XBox Controller {0} has been {1}.", iPhysical, bIsAvailable[iPhysical] ? "connected" : "disconnected");
 
-        // this makes sure to reset all values below
+        // This ensures to reset all values below
         if (!bIsAvailable[iPhysical])
           xiiMemoryUtils::ZeroFill(&State[iPhysical], 1);
       }
@@ -147,18 +147,18 @@ void xiiInputDeviceXBox360::UpdateInputSlotValues()
       bIsAvailable[iPhysical] = m_bControllerConnected[iPhysical];
   }
 
-  // now update all virtual controllers
+  // Now update all virtual controllers
   for (xiiUInt8 uiVirtual = 0; uiVirtual < MaxControllers; ++uiVirtual)
   {
-    // check from which physical device to take the input data
+    // Check from which physical device to take the input data
     const xiiInt8 iPhysical = GetControllerMapping(uiVirtual);
 
-    // if the mapping is negative (which means 'deactivated'), ignore this controller
+    // If the mapping is negative (which means 'deactivated'), ignore this controller
     if ((iPhysical < 0) || (iPhysical >= MaxControllers))
       continue;
 
-    // if the controller is not active, no point in updating it
-    // if it just got inactive, this will reset it once, because the state is only passed on after this loop
+    // If the controller is not active, no point in updating it
+    // If it just got inactive, this will reset it once, because the state is only passed on after this loop
     if (!m_bControllerConnected[iPhysical])
       continue;
 
@@ -182,7 +182,7 @@ void xiiInputDeviceXBox360::UpdateInputSlotValues()
     SetValue(uiVirtual, "left_trigger", State[iPhysical].Gamepad.bLeftTrigger / fTriggerRange);
     SetValue(uiVirtual, "right_trigger", State[iPhysical].Gamepad.bRightTrigger / fTriggerRange);
 
-    // all input points have dead-zones, so we can let the state handler do the rest
+    // All input points have dead-zones, so we can let the state handler do the rest
     SetValue(uiVirtual, "leftstick_negx", (State[iPhysical].Gamepad.sThumbLX < 0) ? (-State[iPhysical].Gamepad.sThumbLX / 32767.0f) : 0.0f);
     SetValue(uiVirtual, "leftstick_posx", (State[iPhysical].Gamepad.sThumbLX > 0) ? (State[iPhysical].Gamepad.sThumbLX / 32767.0f) : 0.0f);
     SetValue(uiVirtual, "leftstick_negy", (State[iPhysical].Gamepad.sThumbLY < 0) ? (-State[iPhysical].Gamepad.sThumbLY / 32767.0f) : 0.0f);
@@ -222,7 +222,6 @@ void xiiInputDeviceXBox360::ApplyVibration(xiiUInt8 uiPhysicalController, Motor:
     XInputSetState(uiPhysicalController, &v[uiPhysicalController]);
   }
 }
-
 
 
 XII_STATICLINK_FILE(System, System_XBoxController_InputDeviceXBox);

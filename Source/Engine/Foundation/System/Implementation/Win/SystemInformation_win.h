@@ -46,7 +46,7 @@ void xiiSystemInformation::Initialize()
 
   s_SystemInformation.m_sHostName[0] = '\0';
 
-  // Get system information via various APIs
+  // Retrieve system information via various APIs
   SYSTEM_INFO sysInfo;
   ZeroMemory(&sysInfo, sizeof(sysInfo));
   GetNativeSystemInfo(&sysInfo);
@@ -73,8 +73,7 @@ void xiiSystemInformation::Initialize()
   s_SystemInformation.m_szBuildConfiguration = "undefined";
 #endif
 
-  //  Get host name
-
+  // Retrieve host name
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
   using namespace ABI::Windows::Networking::Connectivity;

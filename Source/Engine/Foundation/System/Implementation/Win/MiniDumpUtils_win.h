@@ -23,18 +23,18 @@ typedef BOOL(WINAPI* MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD ProcessId, HANDLE
 
 xiiMinWindows::HANDLE xiiMiniDumpUtils::GetProcessHandleWithNecessaryRights(xiiUInt32 uiProcessID)
 {
-  // try to get more than we need
+  // Try to get more than we need
   HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, uiProcessID);
 
   if (hProcess == NULL)
   {
-    // try to get all that we need for a nice dump
+    // Try to get all that we need for a nice dump
     hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE, FALSE, uiProcessID);
   }
 
   if (hProcess == NULL)
   {
-    // try to get rights for a limited dump
+    // Try to get rights for a limited dump
     hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, uiProcessID);
   }
 
@@ -69,7 +69,7 @@ xiiStatus xiiMiniDumpUtils::WriteProcessMiniDump(
     dumpType |= MiniDumpWithFullMemory;
   }
 
-  // make sure the target folder exists
+  // Make sure the target folder exists
   {
     xiiStringBuilder folder = szDumpFile;
     folder.PathParentDirectory();
@@ -87,7 +87,7 @@ xiiStatus xiiMiniDumpUtils::WriteProcessMiniDump(
   XII_SCOPE_EXIT(CloseHandle(hFile););
 
   MINIDUMP_EXCEPTION_INFORMATION exceptionParam;
-  exceptionParam.ThreadId          = GetCurrentThreadId(); // only valid for WriteOwnProcessMiniDump()
+  exceptionParam.ThreadId          = GetCurrentThreadId(); // This is only valid for WriteOwnProcessMiniDump()
   exceptionParam.ExceptionPointers = pExceptionInfo;
   exceptionParam.ClientPointers    = TRUE;
 
@@ -125,7 +125,7 @@ xiiStatus xiiMiniDumpUtils::WriteExternalProcessMiniDump(const char* szDumpFile,
   return WriteProcessMiniDump(szDumpFile, uiProcessID, hProcess, nullptr);
 
 #else
-  return xiiStatus("Not implemented on UPW");
+  return xiiStatus("Not implemented on UWP");
 #endif
 }
 
@@ -148,7 +148,7 @@ xiiStatus xiiMiniDumpUtils::LaunchMiniDumpTool(const char* szDumpFile)
 
   if (opt_FullCrashDumps.GetOptionValue(xiiCommandLineOption::LogMode::Always))
   {
-    // forward the '-fullcrashdumps' command line argument
+    // Forward the '-fullcrashdumps' command line argument
     procOpt.AddArgument("-fullcrashdumps");
   }
 
@@ -162,6 +162,6 @@ xiiStatus xiiMiniDumpUtils::LaunchMiniDumpTool(const char* szDumpFile)
   return xiiStatus(XII_SUCCESS);
 
 #else
-  return xiiStatus("Not implemented on UPW");
+  return xiiStatus("Not implemented on UWP");
 #endif
 }

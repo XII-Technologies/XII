@@ -36,14 +36,14 @@ static LRESULT CALLBACK xiiWindowsMessageFuncTrampoline(HWND hWnd, UINT Msg, WPA
 
       case WM_SYSKEYDOWN:
       {
-        // filter this message out, otherwise pressing ALT will give focus to the system menu, locking out other actions
+        // Filter this message out, otherwise pressing ALT will give focus to the system menu, locking out other actions
         // until ALT is pressed again, which is typically not desired
         return 0;
       }
 
       case WM_MOVE:
       {
-        pWindow->OnWindowMove((int)(short)LOWORD(LParam), (int)(short)HIWORD(LParam));
+        pWindow->OnWindowMove((xiiInt32)(xiiInt16)LOWORD(LParam), (xiiInt32)(xiiInt16)HIWORD(LParam));
       }
       break;
     }
@@ -66,17 +66,17 @@ xiiResult xiiWindow::Initialize()
   XII_ASSERT_RELEASE(m_CreationDescription.m_Resolution.HasNonZeroArea(), "The client area size can't be zero sized!");
 
   // Initialize window class
-  WNDCLASSEXW windowClass = {};
-  windowClass.cbSize = sizeof(WNDCLASSEXW);
-  windowClass.style = CS_HREDRAW | CS_VREDRAW;
-  windowClass.hInstance = GetModuleHandleW(nullptr);
-  windowClass.hIcon = LoadIcon(GetModuleHandleW(nullptr), MAKEINTRESOURCE(101)); /// \todo Expose icon functionality somehow (101 == IDI_ICON1, see resource.h)
-  windowClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
+  WNDCLASSEXW windowClass   = {};
+  windowClass.cbSize        = sizeof(WNDCLASSEXW);
+  windowClass.style         = CS_HREDRAW | CS_VREDRAW;
+  windowClass.hInstance     = GetModuleHandleW(nullptr);
+  windowClass.hIcon         = LoadIcon(GetModuleHandleW(nullptr), MAKEINTRESOURCE(101)); /// \todo Expose icon functionality somehow (101 == IDI_ICON1, see resource.h)
+  windowClass.hCursor       = LoadCursor(nullptr, IDC_ARROW);
   windowClass.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
   windowClass.lpszClassName = L"xiiWin32Window";
-  windowClass.lpfnWndProc = xiiWindowsMessageFuncTrampoline;
+  windowClass.lpfnWndProc   = xiiWindowsMessageFuncTrampoline;
 
-  if (!RegisterClassExW(&windowClass)) /// \todo test & support for multiple windows
+  if (!RegisterClassExW(&windowClass)) /// \todo Test & support for multiple windows.
   {
     DWORD error = GetLastError();
 
@@ -87,17 +87,17 @@ xiiResult xiiWindow::Initialize()
     }
   }
 
-  // setup fullscreen mode
+  // Setup fullscreen mode
   if (m_CreationDescription.m_WindowMode == xiiWindowMode::FullscreenFixedResolution)
   {
     xiiLog::Dev("Changing display resolution for fullscreen mode to {0}*{1}", m_CreationDescription.m_Resolution.width, m_CreationDescription.m_Resolution.height);
 
-    DEVMODEW dmScreenSettings = {};
-    dmScreenSettings.dmSize = sizeof(DEVMODEW);
-    dmScreenSettings.dmPelsWidth = m_CreationDescription.m_Resolution.width;
+    DEVMODEW dmScreenSettings     = {};
+    dmScreenSettings.dmSize       = sizeof(DEVMODEW);
+    dmScreenSettings.dmPelsWidth  = m_CreationDescription.m_Resolution.width;
     dmScreenSettings.dmPelsHeight = m_CreationDescription.m_Resolution.height;
     dmScreenSettings.dmBitsPerPel = 32;
-    dmScreenSettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+    dmScreenSettings.dmFields     = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
 
     if (ChangeDisplaySettingsW(&dmScreenSettings, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL)
     {
@@ -108,9 +108,8 @@ xiiResult xiiWindow::Initialize()
     }
   }
 
-
-  // setup window style
-  DWORD dwExStyle = WS_EX_APPWINDOW;
+  // Setup window style
+  DWORD dwExStyle     = WS_EX_APPWINDOW;
   DWORD dwWindowStyle = WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
 
   if (m_CreationDescription.m_WindowMode == xiiWindowMode::WindowFixedResolution || m_CreationDescription.m_WindowMode == xiiWindowMode::WindowResizable)
@@ -140,17 +139,17 @@ xiiResult xiiWindow::Initialize()
     // Adjust for borders and bars etc.
     AdjustWindowRectEx(&Rect, dwWindowStyle, FALSE, dwExStyle);
 
-    // top left position now may be negative (due to AdjustWindowRectEx)
-    // move
+    // Top left position now may be negative (due to AdjustWindowRectEx)
+    // Move
     Rect.right -= Rect.left;
     Rect.bottom -= Rect.top;
-    // apply user translation
+    // Apply user translation
     Rect.left = m_CreationDescription.m_Position.x;
-    Rect.top = m_CreationDescription.m_Position.y;
+    Rect.top  = m_CreationDescription.m_Position.y;
     Rect.right += m_CreationDescription.m_Position.x;
     Rect.bottom += m_CreationDescription.m_Position.y;
 
-    // move into work area
+    // Move into work area
     RECT RectWorkArea = {0};
     SystemParametersInfoW(SPI_GETWORKAREA, 0, &RectWorkArea, 0);
 
@@ -160,16 +159,15 @@ xiiResult xiiWindow::Initialize()
     Rect.bottom += RectWorkArea.top;
   }
 
-  const int iWidth = Rect.right - Rect.left;
-  const int iHeight = Rect.bottom - Rect.top;
+  const xiiInt32 iWidth  = Rect.right - Rect.left;
+  const xiiInt32 iHeight = Rect.bottom - Rect.top;
 
   xiiLog::Info("Window Dimensions: {0}*{1} at left/top origin ({2}, {3}).", iWidth, iHeight, m_CreationDescription.m_Position.x, m_CreationDescription.m_Position.y);
 
-
-  // create window
+  // Create window
   xiiStringWChar sTitelWChar(m_CreationDescription.m_Title.GetData());
   const wchar_t* sTitelWCharRaw = sTitelWChar.GetData();
-  m_hWindowHandle = xiiMinWindows::FromNative(CreateWindowExW(dwExStyle, windowClass.lpszClassName, sTitelWCharRaw, dwWindowStyle, m_CreationDescription.m_Position.x, m_CreationDescription.m_Position.y, iWidth, iHeight, nullptr, nullptr, windowClass.hInstance, nullptr));
+  m_hWindowHandle               = xiiMinWindows::FromNative(CreateWindowExW(dwExStyle, windowClass.lpszClassName, sTitelWCharRaw, dwWindowStyle, m_CreationDescription.m_Position.x, m_CreationDescription.m_Position.y, iWidth, iHeight, nullptr, nullptr, windowClass.hInstance, nullptr));
 
   if (m_hWindowHandle == INVALID_HANDLE_VALUE)
   {
@@ -179,10 +177,10 @@ xiiResult xiiWindow::Initialize()
 
   auto windowHandle = xiiMinWindows::ToNative(m_hWindowHandle);
 
-  // safe window pointer for lookup in xiiWindowsMessageFuncTrampoline
+  // Safe window pointer for lookup in xiiWindowsMessageFuncTrampoline
   SetWindowLongPtrW(windowHandle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
 
-  // show window and activate if required
+  // Show window and activate if required
   ShowWindow(windowHandle, m_CreationDescription.m_bSetForegroundOnInit ? SW_SHOWNORMAL : SW_SHOWNOACTIVATE);
   if (m_CreationDescription.m_bSetForegroundOnInit)
   {
@@ -201,10 +199,8 @@ xiiResult xiiWindow::Initialize()
     GetClientRect(windowHandle, &r);
   }
 
-  m_CreationDescription.m_Resolution.width = r.right - r.left;
+  m_CreationDescription.m_Resolution.width  = r.right - r.left;
   m_CreationDescription.m_Resolution.height = r.bottom - r.top;
-
-
 
   m_bInitialized = true;
   xiiLog::Success("Created window successfully. Resolution is {0}*{1}", GetClientAreaSize().width, GetClientAreaSize().height);
@@ -234,7 +230,7 @@ xiiResult xiiWindow::Destroy()
     ChangeDisplaySettingsW(nullptr, 0);
 
   HWND hWindow = xiiMinWindows::ToNative(GetNativeWindowHandle());
-  // the following line of code is a work around, because 'LONG_PTR pNull = reinterpret_cast<LONG_PTR>(nullptr)' crashes the VS 2010 32 Bit
+  // The following line of code is a work around, because 'LONG_PTR pNull = reinterpret_cast<LONG_PTR>(nullptr)' crashes the VS 2010 32 Bit
   // compiler :-(
   LONG_PTR pNull = 0;
   // Set the window ptr to null before calling DestroyWindow as it might trigger callbacks and we are potentially already in the destructor, making any virtual function call unsafe.
@@ -246,18 +242,16 @@ xiiResult xiiWindow::Destroy()
     Res = XII_FAILURE;
   }
 
-
-
-  // actually nobody cares about this, all Window Classes are cleared when the application closes
+  // Actually nobody cares about this, all Window Classes are cleared when the application closes
   // in the mean time, having multiple windows will just result in errors when one is closed,
   // as the Window Class must not be in use anymore when one calls UnregisterClassW
   // if (!UnregisterClassW(L"xiiWin32Window", GetModuleHandleW(nullptr)))
-  //{
-  //  xiiLog::SeriousWarning("UnregisterClassW failed.");
-  //  Res = XII_FAILURE;
-  //}
+  // {
+  //   xiiLog::SeriousWarning("UnregisterClassW failed.");
+  //   Res = XII_FAILURE;
+  // }
 
-  m_bInitialized = false;
+  m_bInitialized  = false;
   m_hWindowHandle = INVALID_WINDOW_HANDLE_VALUE;
 
   if (Res == XII_SUCCESS)
@@ -271,7 +265,7 @@ xiiResult xiiWindow::Destroy()
 xiiResult xiiWindow::Resize(const xiiSizeU32& newWindowSize)
 {
   auto windowHandle = xiiMinWindows::ToNative(m_hWindowHandle);
-  BOOL res = ::SetWindowPos(windowHandle, HWND_NOTOPMOST, 0, 0, newWindowSize.width, newWindowSize.height, SWP_NOSENDCHANGING | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER);
+  BOOL res          = ::SetWindowPos(windowHandle, HWND_NOTOPMOST, 0, 0, newWindowSize.width, newWindowSize.height, SWP_NOSENDCHANGING | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER);
   return res == TRUE ? XII_SUCCESS : XII_FAILURE;
 }
 
