@@ -1,6 +1,6 @@
 
 #include <ShaderCompiler/ShaderCompilerPCH.h>
 
-#if VULKAN_ENABLED
+#if VULKAN_SUPPORTED
 
 #endif

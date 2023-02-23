@@ -376,7 +376,7 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         }
         break;
 #endif
-#if D3D12_ENABLED
+#if D3D12_SUPPORTED
         case xiiGraphicsDevice::D3D12:
         {
           xiiComPtr<IDxcBlob>    pOutputBlob;
@@ -392,7 +392,7 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         }
         break;
 #endif
-#if VULKAN_ENABLED
+#if VULKAN_SUPPORTED
         case xiiGraphicsDevice::Vulkan:
         {
         }
