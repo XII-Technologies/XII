@@ -8,7 +8,6 @@ xii_create_target(LIBRARY ${PROJECT_NAME})
 if(XII_CMAKE_PLATFORM_WINDOWS)
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
-
     Rpcrt4.lib
   )
 endif()
@@ -25,7 +24,6 @@ if (XII_CMAKE_PLATFORM_LINUX)
   
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
-
     uuid
     dl # dlopen, dlclose, etc
   )
@@ -47,26 +45,34 @@ endif()
 
 
 if (XII_3RDPARTY_ENET_SUPPORT)
-
-  target_link_libraries(${PROJECT_NAME} PUBLIC enet)
-
+  target_link_libraries(${PROJECT_NAME}
+    PUBLIC
+    enet
+  )
 endif()
 
 if (XII_3RDPARTY_ZSTD_SUPPORT)
-
-  target_link_libraries(${PROJECT_NAME} PUBLIC zstd)
-
+  target_link_libraries(${PROJECT_NAME}
+    PUBLIC
+    zstd
+  )
 endif()
 
 
 if (XII_3RDPARTY_SDL_SUPPORT)
-
-  target_compile_definitions(${PROJECT_NAME} PUBLIC BUILDSYSTEM_ENABLE_SDL_SUPPORT)
+  target_compile_definitions(${PROJECT_NAME}
+    PUBLIC BUILDSYSTEM_ENABLE_SDL_SUPPORT
+  )
 
   if(XII_COMPILE_ENGINE_AS_DLL)
-    target_link_libraries(${PROJECT_NAME} PRIVATE SDL2)
+    target_link_libraries(${PROJECT_NAME}
+      PRIVATE
+      SDL2
+    )
   else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE SDL2-static)
+    target_link_libraries(${PROJECT_NAME}
+      PRIVATE
+      SDL2-static
+    )
   endif()
-
 endif()

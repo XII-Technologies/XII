@@ -85,7 +85,7 @@ elif [[ $Issue =~ $KaliPattern ]]; then
 fi
 
 if [ "$Distribution" = "Ubuntu" -a "$Version" = "22" ] || [ "$Distribution" = "Mint" -a "$Version" = "21" ] || [ "$Distribution" = "Kali" -a "$Version" = "2022" ] ; then
-  packages=(cmake build-essential ninja-build qt6-base-abi qt6-base-dev libqt6svg6-dev qt6-base-private-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev uuid-dev mold libfreetype-dev libtinfo5)
+  packages=(cmake build-essential ninja-build qt6-base-abi qt6-base-dev libqt6svg6-dev qt6-base-private-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev xcb libxcb-xkb-dev x11-xkb-utils libx11-xcb-dev libxkbcommon-x11-dev uuid-dev mold libfreetype-dev libtinfo5)
 
   if [ "$UseClang" = true ]; then
     packages+=(clang-14 libstdc++-12-dev)

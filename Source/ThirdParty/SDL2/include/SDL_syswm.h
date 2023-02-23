@@ -66,8 +66,10 @@ struct SDL_SysWMinfo;
 #define Cursor X11Cursor
 #endif
 
+#if !defined(SDL_HAS_XLIB_INCLUDED)
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#endif
 
 #if defined(__APPLE__) && defined(__MACH__)
 /* matches the re-define above */

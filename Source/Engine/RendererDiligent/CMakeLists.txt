@@ -27,9 +27,3 @@ target_link_libraries(${PROJECT_NAME}
   RendererFoundation
   ShaderCompiler
 )
-
-if(XII_3RDPARTY_SDL_SUPPORT)
-
-  target_link_libraries(${PROJECT_NAME} PRIVATE SDL2)
-
-endif()

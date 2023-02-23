@@ -6,20 +6,20 @@
 #  ifdef APIENTRY
 #    undef APIENTRY
 #  endif
-
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-#  include <Foundation/Basics/Platform/Linux/Platform_Linux.h>
+#  include <Foundation/Basics/Platform/Linux/IncludeX11.h>
+#  define SDL_VIDEO_DRIVER_X11
+#  define SDL_HAS_XLIB_INCLUDED
 #elif XII_ENABLED(XII_PLATFORM_OSX)
 #  include <Foundation/Basics/Platform/OSX/Platform_OSX.h>
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
 #  include <Foundation/Basics/Platform/Android/AndroidJni.h>
 #endif
 
-#include <SDL/include/SDL.h>
-#include <SDL/include/SDL_syswm.h>
-
 #define SDL_MAIN_HANDLED
+#include <SDL2/include/SDL.h>
+#include <SDL2/include/SDL_syswm.h>
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(Core, Window)
@@ -30,7 +30,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Core, Window)
 
   ON_CORESYSTEMS_STARTUP
   {
-    int code = SDL_Init(SDL_INIT_EVERYTHING);
+    xiiInt32 code = SDL_Init(SDL_INIT_EVERYTHING);
     if (code < 0)
       xiiLog::Warning("Failed to initialize SDL. Window and input related functionality will not be available. Error Code {}. SDL Error Message: {}", code, SDL_GetError());
   }
@@ -361,8 +361,9 @@ xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
     return xiiMinWindows::FromNative<HWND>(wmInfo.info.win.window);
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
     xiiWindowHandle hWindowHandle;
-    hWindowHandle.type      = xiiWindowHandle::Type::XCB;
-    hWindowHandle.x11Window = wmInfo.info.x11.window;
+    hWindowHandle.type                    = xiiWindowHandle::Type::XCB;
+    hWindowHandle.xcbWindow.m_hWindow     = wmInfo.info.x11.window;
+    hWindowHandle.xcbWindow.m_pConnection = xiiMinX11::FromNative<xcb_connection_t*>(XGetXCBConnection(wmInfo.info.x11.display));
     return hWindowHandle;
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
     return wmInfo.info.android.window;

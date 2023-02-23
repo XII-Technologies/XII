@@ -41,8 +41,8 @@ void xiiProcessGroupImpl::Initialize()
       return;
     }
 
-    // configure the job object such that it kill all processes once this job object is cleaned up
-    // ie. either when all job object handles are closed, or the application crashes
+    // Configure the job object such that it kill all processes once this job object is cleaned up
+    // ie. Either when all job object handles are closed, or the application crashes
 
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION exinfo = {0};
     exinfo.BasicLimitInformation.LimitFlags     = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
@@ -102,7 +102,7 @@ xiiResult xiiProcessGroup::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
   if (m_pImpl->m_hJobObject == INVALID_HANDLE_VALUE)
     return XII_SUCCESS;
 
-  // check if no new processes were launched, because waiting could end up in an infinite loop,
+  // Check if no new processes were launched, because waiting could end up in an infinite loop,
   // so don't even try in this case
   bool allProcessesGone = true;
   for (const xiiProcess& p : m_Processes)
@@ -143,7 +143,7 @@ xiiResult xiiProcessGroup::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
   while (true)
   {
     // ATTENTION !
-    // If you are looking at a crash dump of xii this line will typically be at the top of the callstack.
+    // If you are looking at a crash dump of XII this line will typically be at the top of the callstack.
     // That is because to write the crash dump an external process is called and this is where we are waiting for that process to finish.
     // To see the actual reason for the crash, locate the call to xiiCrashHandlerFunc further down in the callstack.
     // The crashing code is usually the one calling that function.
@@ -160,7 +160,7 @@ xiiResult xiiProcessGroup::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
       return XII_FAILURE;
     }
 
-    // we got the expected result, all processes have finished
+    // We got the expected result, all processes have finished
     if (((HANDLE)CompletionKey == m_pImpl->m_hJobObject && CompletionCode == JOB_OBJECT_MSG_ACTIVE_PROCESS_ZERO))
     {
       // We need to wait for processes even if the job is done as the threads for the pipes are potentially still alive and lead to incomplete stdout / stderr output even though the process has exited.
@@ -173,23 +173,23 @@ xiiResult xiiProcessGroup::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
       return XII_SUCCESS;
     }
 
-    // we got some different message, ignore this
-    // however, we need to adjust our timeout
+    // We got some different message, ignore this.
+    // However, we need to adjust our timeout
 
     if (timeout.IsPositive())
     {
-      // subtract the time that we spent
+      // Subtract the time that we spent
       const xiiTime now = xiiTime::Now();
       timeout -= now - tStart;
       tStart = now;
 
-      // the timeout has been reached
+      // The timeout has been reached
       if (timeout.IsZeroOrNegative())
       {
         return XII_FAILURE;
       }
 
-      // otherwise try again, but with a reduced timeout
+      // Otherwise, try again, but with a reduced timeout
       dwTimeout = (DWORD)timeout.GetMilliseconds();
     }
   }

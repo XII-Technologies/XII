@@ -249,7 +249,7 @@ xiiUInt32 xiiStackTracer::GetStackTrace(xiiArrayPtr<void*>& trace, void* pContex
       }
       else
       {
-        // skip the last three stack-frames since they are useless
+        // Skip the last three stack-frames since they are useless
         return xiiMath::Max(i - 4, 0);
       }
     }
@@ -260,7 +260,7 @@ xiiUInt32 xiiStackTracer::GetStackTrace(xiiArrayPtr<void*>& trace, void* pContex
     const xiiUInt32 uiMaxNumTrace = xiiMath::Min(62U, trace.GetCount());
     xiiInt32        iNumTraces    = (*s_pImplementation->captureStackBackTrace)(uiSkip, uiMaxNumTrace, trace.GetPtr(), nullptr);
 
-    // skip the last three stack-frames since they are useless
+    // Skip the last three stack-frames since they are useless
     return xiiMath::Max(iNumTraces - 3, 0);
   }
 

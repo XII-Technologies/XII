@@ -2,16 +2,19 @@
 
 namespace xiiMinWindows
 {
-  using BOOL  = int;
+  using BOOL  = xiiInt32;
   using DWORD = unsigned long;
-  using UINT  = unsigned int;
+  using UINT  = xiiUInt32;
   using LPSTR = char*;
+
   struct xiiHINSTANCE;
   using HINSTANCE = xiiHINSTANCE*;
   using HMODULE   = HINSTANCE;
+
   struct xiiHWND;
-  using HWND    = xiiHWND*;
-  using HRESULT = long;
+  using HWND = xiiHWND*;
+
+  using HRESULT = signed long;
   using HANDLE  = void*;
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
@@ -50,4 +53,4 @@ namespace xiiMinWindows
 } // namespace xiiMinWindows
 #define XII_WINDOWS_CALLBACK             __stdcall
 #define XII_WINDOWS_WINAPI               __stdcall
-#define XII_WINDOWS_INVALID_HANDLE_VALUE ((void*)(long long)-1)
+#define XII_WINDOWS_INVALID_HANDLE_VALUE ((void*)(signed long long)-1)

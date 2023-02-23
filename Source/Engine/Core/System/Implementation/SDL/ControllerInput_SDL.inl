@@ -4,7 +4,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Core/Input/DeviceTypes/Controller.h>
 
-#include <SDL/include/SDL.h>
+#include <SDL2/include/SDL.h>
 
 /// \brief An implementation of xiiInputDeviceController that handles Game Controllers.
 class XII_CORE_DLL xiiControllerInputSDL : public xiiInputDeviceController

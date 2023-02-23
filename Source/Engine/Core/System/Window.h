@@ -29,30 +29,21 @@ class xiiOpenDdlReaderElement;
 // - SDL / XCB on linux. Runtime uses SDL_Window*. Editor uses xcb-window. Tagged union is passed around as window handle.
 
 #if XII_ENABLED(XII_SUPPORTS_SDL)
-
 extern "C"
 {
   typedef struct SDL_Window SDL_Window;
 }
-
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #    include <Foundation/Basics/Platform/Win/MinWindows.h>
 using xiiWindowHandle         = xiiMinWindows::HWND;
 using xiiWindowInternalHandle = SDL_Window*;
-#    define INVALID_WINDOW_HANDLE_VALUE          (xiiWindowHandle)(0)
-#    define INVALID_INTERNAL_WINDOW_HANDLE_VALUE nullptr
+#    define INVALID_WINDOW_HANDLE_VALUE (xiiWindowHandle)(0)
 #  elif XII_ENABLED(XII_PLATFORM_LINUX)
-
-extern "C"
-{
-  typedef struct xcb_connection_t xcb_connection_t;
-  typedef struct Window           Window;
-}
-
+#    include <Foundation/Basics/Platform/Linux/MinX11.h>
 struct xiiXcbWindowHandle
 {
-  xcb_connection_t* m_pConnection;
-  xiiUInt32         m_Window;
+  xiiMinX11::xcb_connection_t m_pConnection;
+  xiiMinX11::Window           m_hWindow;
 };
 
 struct xiiWindowHandle
@@ -63,13 +54,12 @@ struct xiiWindowHandle
     SDL     = 1, // Used by the Runtime
     XCB     = 2  // Used by the Editor
   };
-
   Type type;
+
   union
   {
     SDL_Window*        sdlWindow;
     xiiXcbWindowHandle xcbWindow;
-    Window             x11Window;
   };
 
   bool operator==(xiiWindowHandle& rhs)
@@ -84,7 +74,7 @@ struct xiiWindowHandle
     else
     {
       // We don't compare the connection because we only want to know if we reference the same window.
-      return xcbWindow.m_Window == rhs.xcbWindow.m_Window;
+      return xcbWindow.m_hWindow == rhs.xcbWindow.m_hWindow;
     }
   }
 };
@@ -95,16 +85,13 @@ using xiiWindowInternalHandle = xiiWindowHandle;
       {}
 
 #  elif XII_ENABLED(XII_PLATFORM_ANDROID)
-
 extern "C"
 {
   typedef struct ANativeWindow ANativeWindow;
 }
-
 using xiiWindowHandle         = ANativeWindow*;
 using xiiWindowInternalHandle = SDL_Window*;
-#    define INVALID_WINDOW_HANDLE_VALUE          nullptr
-#    define INVALID_INTERNAL_WINDOW_HANDLE_VALUE nullptr
+#    define INVALID_WINDOW_HANDLE_VALUE nullptr
 #  else
 using xiiWindowHandle         = SDL_Window*;
 using xiiWindowInternalHandle = SDL_Window*;
