@@ -146,16 +146,6 @@ protected:
 
   xiiUniquePtr<xiiGALPassDiligent> m_pDefaultPass;
 
-  xiiUniquePtr<Diligent::ScopedQueryHelper>   m_pPipelineStatsQuery;
-  xiiUniquePtr<Diligent::ScopedQueryHelper>   m_pOcclusionQuery;
-  xiiUniquePtr<Diligent::ScopedQueryHelper>   m_pDurationQuery;
-  xiiUniquePtr<Diligent::DurationQueryHelper> m_pDurationFromTimestamps;
-
-  Diligent::QueryDataPipelineStatistics m_PipelineStatsData;
-  Diligent::QueryDataOcclusion          m_OcclusionData;
-  Diligent::QueryDataDuration           m_DurationData;
-  double                                m_DurationFromTimestamps = 0;
-
 #if XII_ENABLED(XII_USE_PROFILING)
   struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
   struct GPUTimingScope* m_pPipelineTimingScope = nullptr;

@@ -459,37 +459,6 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
-  // Check query support
-  const auto& Features = m_pDevice->GetDeviceInfo().Features;
-  if (Features.PipelineStatisticsQueries)
-  {
-    Diligent::QueryDesc queryDesc;
-    queryDesc.Name        = "Pipeline statistics query";
-    queryDesc.Type        = QUERY_TYPE_PIPELINE_STATISTICS;
-    m_pPipelineStatsQuery = XII_NEW(&m_Allocator, ScopedQueryHelper, m_pDevice, queryDesc, 2);
-  }
-
-  if (Features.OcclusionQueries)
-  {
-    Diligent::QueryDesc queryDesc;
-    queryDesc.Name    = "Occlusion query";
-    queryDesc.Type    = QUERY_TYPE_OCCLUSION;
-    m_pOcclusionQuery = XII_NEW(&m_Allocator, ScopedQueryHelper, m_pDevice, queryDesc, 2);
-  }
-
-  if (Features.DurationQueries)
-  {
-    Diligent::QueryDesc queryDesc;
-    queryDesc.Name   = "Duration query";
-    queryDesc.Type   = QUERY_TYPE_DURATION;
-    m_pDurationQuery = XII_NEW(&m_Allocator, ScopedQueryHelper, m_pDevice, queryDesc, 2);
-  }
-
-  if (Features.TimestampQueries)
-  {
-    m_pDurationFromTimestamps = XII_NEW(&m_Allocator, DurationQueryHelper, m_pDevice, 2);
-  }
-
   m_SyncTimeDiff.SetZero();
 
   xiiGALWindowSwapChain::SetFactoryMethod([this](const xiiGALWindowSwapChainCreationDescription& desc) -> xiiGALSwapChainHandle { return CreateSwapChain([this, &desc](xiiAllocatorBase* pAllocator) -> xiiGALSwapChain* { return XII_NEW(pAllocator, xiiGALSwapChainDiligent, desc); }); });
@@ -500,11 +469,6 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
 xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 {
   xiiGALWindowSwapChain::SetFactoryMethod({});
-
-  m_pPipelineStatsQuery.Clear();
-  m_pOcclusionQuery.Clear();
-  m_pDurationQuery.Clear();
-  m_pDurationFromTimestamps.Clear();
 
   if (!m_pDeviceContexts.IsEmpty())
   {
@@ -556,21 +520,6 @@ void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapC
     pSwapChain->AcquireNextRenderTarget(this);
   }
 
-  // Begin supported queries
-  {
-    if (m_pPipelineStatsQuery)
-      m_pPipelineStatsQuery->Begin(GetImmediateContext());
-
-    if (m_pOcclusionQuery)
-      m_pOcclusionQuery->Begin(GetImmediateContext());
-
-    if (m_pDurationFromTimestamps)
-      m_pDurationFromTimestamps->Begin(GetImmediateContext());
-
-    if (m_pDurationQuery)
-      m_pDurationQuery->Begin(GetImmediateContext());
-  }
-
 #if XII_ENABLED(XII_USE_PROFILING)
   m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), szName);
 #endif
@@ -579,24 +528,6 @@ void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapC
 void xiiGALDeviceDiligent::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
 {
   XII_PROFILE_SCOPE("EndPipelinePlatform");
-
-  // End queries
-  {
-    if (m_pDurationFromTimestamps)
-      m_pDurationFromTimestamps->End(GetImmediateContext(), m_DurationFromTimestamps);
-
-    // Note that recording the query itself may take measurable amount of time, so
-    // if m_pDurationFromTimestamps and m_pDurationQuery queries are nested, the results
-    // may noticeably differ.
-    if (m_pDurationQuery)
-      m_pDurationQuery->End(GetImmediateContext(), &m_DurationData, sizeof(m_DurationData));
-
-    if (m_pOcclusionQuery)
-      m_pOcclusionQuery->End(GetImmediateContext(), &m_OcclusionData, sizeof(m_OcclusionData));
-
-    if (m_pPipelineStatsQuery)
-      m_pPipelineStatsQuery->End(GetImmediateContext(), &m_PipelineStatsData, sizeof(m_PipelineStatsData));
-  }
 
 #if XII_ENABLED(XII_USE_PROFILING)
   xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pPipelineTimingScope);
@@ -896,15 +827,6 @@ xiiGALTimestampHandle xiiGALDeviceDiligent::GetTimestampPlatform()
 
 xiiResult xiiGALDeviceDiligent::GetTimestampResultPlatform(xiiGALTimestampHandle hTimestamp, xiiTime& result)
 {
-  if (m_DurationData.Frequency == 0)
-  {
-    result.SetZero();
-  }
-  else
-  {
-    result = xiiTime::Seconds(m_DurationFromTimestamps * m_DurationData.Frequency) + m_SyncTimeDiff;
-  }
-
   return XII_SUCCESS;
 }
 
