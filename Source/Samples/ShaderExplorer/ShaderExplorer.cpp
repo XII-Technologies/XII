@@ -237,7 +237,7 @@ void xiiShaderExplorerApp::AfterCoreSystemsStartup()
 
 #if BUILDSYSTEM_ENABLE_DILIGENT_SUPPORT
   constexpr const char* szDefaultRenderer = "Diligent";
-  xiiGraphicsDevice::Default              = xiiGraphicsDevice::D3D12;
+  xiiGraphicsDevice::Default              = xiiGraphicsDevice::Vulkan;
 #else
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
   constexpr const char* szDefaultRenderer = "DX11";

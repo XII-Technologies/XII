@@ -12,10 +12,10 @@
 
 #if D3D12_SUPPORTED
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D12.h>
+#endif
 
-#  include <atlcomcli.h>
-#  include <d3d12shader.h>
-#  include <dxc/dxcapi.h>
+#if VULKAN_SUPPORTED
+#  include <ShaderCompiler/Implementation/Vulkan/ShaderCompilerVulkan.h>
 #endif
 
 // clang-format off
@@ -24,9 +24,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 ////////// Utility Functions //////////
-
-constexpr xiiUInt32 VK_API_VERSION_1_1 = (1u << 22) | (1u << 12);
-constexpr xiiUInt32 VK_API_VERSION_1_2 = (1u << 22) | (2u << 12);
 
 const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xiiGALShaderStage::Enum Stage)
 {
@@ -395,6 +392,17 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
 #if VULKAN_SUPPORTED
         case xiiGraphicsDevice::Vulkan:
         {
+          std::vector<xiiUInt32>     spirvOutput;
+          xiiShaderCompilerVulkan    shaderCompilerVulkan;
+          Diligent::ShaderCreateInfo ShaderCI;
+          if (shaderCompilerVulkan.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), (xiiGALShaderStage::Enum)stage, ShaderCI, GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode(), spirvOutput).Succeeded())
+          {
+            XII_SUCCEED_OR_RETURN(shaderCompilerVulkan.ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage, ShaderCI, spirvOutput, m_VertexInputMapping));
+          }
+          else
+          {
+            return XII_FAILURE;
+          }
         }
         break;
 #endif

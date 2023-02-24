@@ -3,54 +3,52 @@
 
 #if VULKAN_SUPPORTED
 
+#  include <DiligentCore/Common/interface/DataBlobImpl.hpp>
 #  include <DiligentCore/Graphics/GraphicsEngine/include/EngineMemory.h>
-#  include <DiligentCore/Graphics/ShaderTools/include/DXBCUtils.hpp>
 #  include <DiligentCore/Graphics/ShaderTools/include/DXCompiler.hpp>
 #  include <DiligentCore/Graphics/ShaderTools/include/HLSLUtils.hpp>
 #  include <DiligentCore/Graphics/ShaderTools/include/SPIRVShaderResources.hpp>
-#  include <DiligentCore/Graphics/ShaderTools/include/SPIRVTools.hpp>
 #  include <DiligentCore/Graphics/ShaderTools/include/ShaderToolsCommon.hpp>
 
 #  include <ShaderCompiler/Implementation/Vulkan/ShaderCompilerVulkan.h>
 #  include <ShaderCompiler/ShaderCompiler.h>
 #  include <ShaderCompiler/ShaderMetadata.h>
 
+#  if !DILIGENT_NO_GLSLANG
+#    include <DiligentCore/Graphics/ShaderTools/include/GLSLangUtils.hpp>
+#  endif
+
 #  if !DILIGENT_NO_HLSL
 #    include <DiligentCore/Graphics/ShaderTools/include/SPIRVTools.hpp>
 #  else
 #    error Diligent Core must be built with HLSL support enabled.
 #  endif
-// #  include <spirv_cross/spirv_cross.hpp>
-// #  include <spirv_cross/spirv_parser.hpp>
 
-std::unique_ptr<Diligent::IDXCompiler> g_pDXCompiler = nullptr;
+#  include "dxc/DxilContainer/DxilContainer.h"
 
-////////// Utility Functions //////////
+constexpr xiiUInt32 VK_API_VERSION_1_1 = (1u << 22) | (1u << 12);
+constexpr xiiUInt32 VK_API_VERSION_1_2 = (1u << 22) | (2u << 12);
 
-Diligent::SHADER_TYPE GALToDiligentShaderStage(xiiGALShaderStage::Enum e)
+std::unique_ptr<Diligent::IDXCompiler> g_pDXCompilerVulkan = nullptr;
+
+xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char* szSource, bool bDebug, xiiGALShaderStage::Enum Stage, Diligent::ShaderCreateInfo& shaderCreateInfo, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode, std::vector<xiiUInt32>& out_SpirvOutput)
 {
-  switch (e)
-  {
-    case xiiGALShaderStage::VertexShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_VERTEX;
-    case xiiGALShaderStage::HullShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_HULL;
-    case xiiGALShaderStage::DomainShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_DOMAIN;
-    case xiiGALShaderStage::GeometryShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_GEOMETRY;
-    case xiiGALShaderStage::PixelShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_PIXEL;
-    case xiiGALShaderStage::ComputeShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_COMPUTE;
+  auto InitializeCompiler = [this](std::unique_ptr<Diligent::IDXCompiler>& pCompiler) -> xiiResult {
+    if (pCompiler != nullptr)
+      return XII_SUCCESS;
 
-      XII_ASSERT_NOT_IMPLEMENTED;
-  }
-  return Diligent::SHADER_TYPE::SHADER_TYPE_UNKNOWN;
-}
+    pCompiler = Diligent::CreateDXCompiler(Diligent::DXCompilerTarget::Vulkan, VK_API_VERSION_1_2, nullptr);
 
-xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char* szSource, bool bDebug, xiiGALShaderStage::Enum Stage, const char* szProfile, const char* szEntryPoint, std::unique_ptr<Diligent::IDXCompiler>& pDXCompiler, xiiDynamicArray<xiiUInt8>& out_ByteCode, std::vector<xiiUInt32>& out_SpirvOutput)
-{
+    if (pCompiler == nullptr)
+    {
+      xiiLog::Error("Failed to create DX Compiler");
+      return XII_FAILURE;
+    }
+    return XII_SUCCESS;
+  };
+
+  XII_SUCCEED_OR_RETURN(InitializeCompiler(g_pDXCompilerVulkan));
+
   out_ByteCode.Clear();
 
   const char*      szCompileSource = szSource;
@@ -73,19 +71,17 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
     args.PushBack("-O3"); // Optimization Level 3
   }
 
-  xiiComPtr<IDxcBlob>            pByteCode;
-  xiiComPtr<Diligent::IDataBlob> pCompilerOutput;
+  xiiComPtr<IDxcBlob> pByteCode;
 
-  Diligent::ShaderCreateInfo ShaderCI;
-  ShaderCI.EntryPoint      = szEntryPoint;
-  ShaderCI.CompileFlags    = Diligent::SHADER_COMPILE_FLAG_NONE;
-  ShaderCI.Source          = szCompileSource;
-  ShaderCI.SourceLength    = (xiiUInt32)strlen(szCompileSource);
-  ShaderCI.Desc.ShaderType = GALToDiligentShaderStage(Stage);
-  ShaderCI.SourceLanguage  = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
-  ShaderCI.HLSLVersion     = {6, 0};
+  shaderCreateInfo.EntryPoint      = szEntryPoint;
+  shaderCreateInfo.CompileFlags    = Diligent::SHADER_COMPILE_FLAG_NONE;
+  shaderCreateInfo.Source          = szCompileSource;
+  shaderCreateInfo.SourceLength    = (xiiUInt32)strlen(szCompileSource);
+  shaderCreateInfo.Desc.ShaderType = GALToDiligentShaderStage(Stage);
+  shaderCreateInfo.SourceLanguage  = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
+  shaderCreateInfo.HLSLVersion     = {6, 0};
 
-  pDXCompiler->Compile(ShaderCI, ShaderCI.HLSLVersion, nullptr, pByteCode.RawDblPtr(), &out_SpirvOutput, pCompilerOutput.RawDblPtr());
+  g_pDXCompilerVulkan->Compile(shaderCreateInfo, shaderCreateInfo.HLSLVersion, nullptr, pByteCode.RawDblPtr(), &out_SpirvOutput, shaderCreateInfo.ppCompilerOutput);
 
   if (pByteCode == nullptr)
   {
@@ -93,6 +89,7 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
     return XII_FAILURE;
   }
 
+#  if !DILIGENT_NO_HLSL
   // SPIR-V bytecode generated from HLSL must be legalized into a valid Vulkan SPIR-V shader.
   std::vector<xiiUInt32> LegalizedSPIRV = Diligent::OptimizeSPIRV(out_SpirvOutput, spv_target_env::SPV_ENV_MAX, Diligent::SPIRV_OPTIMIZATION_FLAG_LEGALIZATION);
   if (!LegalizedSPIRV.empty())
@@ -104,6 +101,9 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
     xiiLog::Error("Failed to legalize SPIR-V shader generated from HLSL. This may result in undefined behavior.");
     return XII_FAILURE;
   }
+#  else
+  xiiLog::Warning("Unable to legalize SPIRV bytecode generated by DXC as the engine was built with DILIGENT_NO_HLSL option. The byte code may be invalid.");
+#  endif
 
   out_ByteCode.SetCountUninitialized(static_cast<xiiUInt32>(pByteCode->GetBufferSize()));
 
@@ -112,7 +112,7 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage, std::vector<xiiUInt32>& spirvOutput, std::unique_ptr<Diligent::IDXCompiler>& pDXCompiler, xiiMap<const char*, xiiGALVertexAttributeSemantic::Enum, CompareConstChar>& vertexInputMapping)
+xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage, Diligent::ShaderCreateInfo& shaderCreateInfo, std::vector<xiiUInt32>& spirvOutput, xiiMap<const char*, xiiGALVertexAttributeSemantic::Enum, CompareConstChar>& vertexInputMapping)
 {
   XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_szSourceFile);
 

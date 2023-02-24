@@ -105,7 +105,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(RendererDiligent, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
-  xiiGALDeviceFactory::RegisterCreatorFunc("Diligent", &CreateDiligentDevice, "D3D_SM60", "xiiShaderCompiler");
+  xiiGALDeviceFactory::RegisterCreatorFunc("Diligent", &CreateDiligentDevice, "VK_SM60", "xiiShaderCompiler");
 }
 
 ON_CORESYSTEMS_SHUTDOWN

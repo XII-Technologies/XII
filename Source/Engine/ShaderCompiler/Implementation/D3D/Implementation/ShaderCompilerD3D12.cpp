@@ -11,35 +11,22 @@
 #  include <ShaderCompiler/ShaderCompiler.h>
 #  include <ShaderCompiler/ShaderMetadata.h>
 
-#  include <atlcomcli.h>
+#  include "WinHPostface.h"
+#  include "WinHPreface.h"
 #  include <d3d12shader.h>
-#  include <dxc/dxcapi.h>
 
-std::unique_ptr<Diligent::IDXCompiler> g_pDXCompiler = nullptr;
+#  ifndef NTDDI_WIN10_VB // First defined in Win SDK 10.0.19041.0
+#    define NO_D3D_SIT_ACCELSTRUCT_FEEDBACK_TEX 1
+
+#    define D3D_SIT_RTACCELERATIONSTRUCTURE static_cast<D3D_SHADER_INPUT_TYPE>(D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER + 1)
+#    define D3D_SIT_UAV_FEEDBACKTEXTURE     static_cast<D3D_SHADER_INPUT_TYPE>(D3D_SIT_RTACCELERATIONSTRUCTURE + 1)
+#  endif
+
+#include "dxc/DxilContainer/DxilContainer.h"
+
+std::unique_ptr<Diligent::IDXCompiler> g_pDXCompilerD3D12 = nullptr;
 
 ////////// Utility Functions //////////
-
-Diligent::SHADER_TYPE GALToDiligentShaderStage(xiiGALShaderStage::Enum e)
-{
-  switch (e)
-  {
-    case xiiGALShaderStage::VertexShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_VERTEX;
-    case xiiGALShaderStage::HullShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_HULL;
-    case xiiGALShaderStage::DomainShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_DOMAIN;
-    case xiiGALShaderStage::GeometryShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_GEOMETRY;
-    case xiiGALShaderStage::PixelShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_PIXEL;
-    case xiiGALShaderStage::ComputeShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_COMPUTE;
-
-      XII_ASSERT_NOT_IMPLEMENTED;
-  }
-  return Diligent::SHADER_TYPE::SHADER_TYPE_UNKNOWN;
-}
 
 xiiGALResourceFormat::Enum GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents)
 {
@@ -384,7 +371,7 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::x
   auto& byteCode = inout_Data.m_StageBinary[Stage].GetByteCode();
 
   xiiComPtr<ID3D12ShaderReflection> pReflector;
-  g_pDXCompiler->GetD3D12ShaderReflection(pShaderBlob.RawPtr(), pReflector.RawDblPtr());
+  g_pDXCompilerD3D12->GetD3D12ShaderReflection(pShaderBlob.RawPtr(), pReflector.RawDblPtr());
 
   D3D12_SHADER_DESC ShaderDesc;
   if (FAILED(pReflector->GetDesc(&ShaderDesc)))
@@ -574,7 +561,7 @@ xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* 
     return XII_SUCCESS;
   };
 
-  XII_SUCCEED_OR_RETURN(InitializeCompiler(g_pDXCompiler));
+  XII_SUCCEED_OR_RETURN(InitializeCompiler(g_pDXCompilerD3D12));
 
   out_ByteCode.Clear();
 
@@ -620,7 +607,7 @@ xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* 
   compileAttribs.ppBlobOut        = out_pOutputBlob.Put();
   compileAttribs.ppCompilerOutput = pCompilerOutput.Put();
 
-  if (!g_pDXCompiler->Compile(compileAttribs))
+  if (!g_pDXCompilerD3D12->Compile(compileAttribs))
   {
     xiiLog::Error("Shader Compilation Failed.");
     if (pCompilerOutput != nullptr && pCompilerOutput->GetBufferSize() != 0)
