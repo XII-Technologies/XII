@@ -55,6 +55,7 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
   xiiStringBuilder sDebugSource;
 
   xiiDynamicArray<const char*> args;
+  args.PushBack("-fvk-use-dx-position-w");
 
   if (bDebug)
   {
