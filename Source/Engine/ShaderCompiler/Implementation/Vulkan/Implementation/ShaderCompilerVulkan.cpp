@@ -74,13 +74,17 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
 
   xiiComPtr<IDxcBlob> pByteCode;
 
-  shaderCreateInfo.EntryPoint      = szEntryPoint;
-  shaderCreateInfo.CompileFlags    = Diligent::SHADER_COMPILE_FLAG_NONE;
-  shaderCreateInfo.Source          = szCompileSource;
-  shaderCreateInfo.SourceLength    = (xiiUInt32)strlen(szCompileSource);
-  shaderCreateInfo.Desc.ShaderType = GALToDiligentShaderStage(Stage);
-  shaderCreateInfo.SourceLanguage  = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
-  shaderCreateInfo.HLSLVersion     = {6, 0};
+  shaderCreateInfo.EntryPoint     = szEntryPoint;
+  shaderCreateInfo.CompileFlags   = Diligent::SHADER_COMPILE_FLAG_NONE;
+  shaderCreateInfo.Source         = szCompileSource;
+  shaderCreateInfo.SourceLength   = (xiiUInt32)strlen(szCompileSource);
+  shaderCreateInfo.SourceLanguage = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
+  shaderCreateInfo.HLSLVersion    = {6, 0};
+
+  shaderCreateInfo.Desc.Name                       = "Shader";
+  shaderCreateInfo.Desc.UseCombinedTextureSamplers = false;
+  shaderCreateInfo.Desc.CombinedSamplerSuffix      = "_AutoSampler";
+  shaderCreateInfo.Desc.ShaderType                 = GALToDiligentShaderStage(Stage);
 
   g_pDXCompilerVulkan->Compile(shaderCreateInfo, shaderCreateInfo.HLSLVersion, nullptr, pByteCode.RawDblPtr(), &out_SpirvOutput, shaderCreateInfo.ppCompilerOutput);
 
@@ -119,11 +123,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
 
   auto& byteCode = inout_Data.m_StageBinary[Stage].GetByteCode();
 
-  Diligent::ShaderDesc shaderDesc = {};
-  shaderDesc.Name                 = "";
-  shaderDesc.ShaderType           = GALToDiligentShaderStage(Stage);
-
-  std::string sEntryPoint = "";
+  std::string sEntryPoint = "main";
 
   auto& Allocator        = Diligent::GetRawAllocator();
   auto* pRawMem          = ALLOCATE(Allocator, "Memory for SPIRVShaderResources", Diligent::SPIRVShaderResources, 1);
@@ -132,8 +132,8 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
     {
       Allocator,
       spirvOutput,
-      shaderDesc,
-      shaderDesc.UseCombinedTextureSamplers ? shaderDesc.CombinedSamplerSuffix : nullptr,
+      shaderCreateInfo.Desc,
+      shaderCreateInfo.Desc.UseCombinedTextureSamplers ? shaderCreateInfo.Desc.CombinedSamplerSuffix : nullptr,
       LoadShaderInputs,
       true,
       sEntryPoint //
