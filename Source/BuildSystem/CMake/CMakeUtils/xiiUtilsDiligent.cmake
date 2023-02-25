@@ -2,7 +2,7 @@
 # ## Diligent Engine support
 # #####################################
 
-set (XII_BUILD_DILIGENT OFF CACHE BOOL "Enable experimental diligent renderer")
+set (XII_BUILD_DILIGENT ON CACHE BOOL "Enable experimental diligent renderer")
 
 # #####################################
 # ## xii_requires_diligent()
