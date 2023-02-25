@@ -130,6 +130,15 @@ template <> struct VALUE_TYPE2CType<VT_FLOAT32>
     typedef Float32 CType;
 };
 
+/// VALUE_TYPE2CType<> template specialization for double-precision 64-bit floating-point value type.
+
+/// Usage example:
+///
+///     VALUE_TYPE2CType<VT_FLOAT64>::CType MyFloat64Var;
+template <> struct VALUE_TYPE2CType<VT_FLOAT64>
+{
+    typedef Float64 CType;
+};
 
 static const Uint32 ValueTypeToSizeMap[] =
     // clang-format off
@@ -142,10 +151,11 @@ static const Uint32 ValueTypeToSizeMap[] =
     sizeof(VALUE_TYPE2CType<VT_UINT16>  :: CType),
     sizeof(VALUE_TYPE2CType<VT_UINT32>  :: CType),
     sizeof(VALUE_TYPE2CType<VT_FLOAT16> :: CType),
-    sizeof(VALUE_TYPE2CType<VT_FLOAT32> :: CType)
+    sizeof(VALUE_TYPE2CType<VT_FLOAT32> :: CType),
+    sizeof(VALUE_TYPE2CType<VT_FLOAT64> :: CType),
 };
 // clang-format on
-static_assert(VT_NUM_TYPES == VT_FLOAT32 + 1, "Not all value type sizes initialized.");
+static_assert(VT_NUM_TYPES == 10, "Not all value type sizes initialized.");
 
 /// Returns the size of the specified value type
 inline Uint32 GetValueSize(VALUE_TYPE Val)
@@ -740,5 +750,8 @@ inline uint3 GetNumSparseTilesInMipLevel(const TextureDesc& Desc,
     const auto MipProps = GetMipLevelProperties(Desc, MipLevel);
     return GetNumSparseTilesInBox(Box{0, MipProps.StorageWidth, 0, MipProps.StorageHeight, 0, MipProps.Depth}, TileSize);
 }
+
+/// Returns true if the Mapping defines an identity texture component swizzle
+bool IsIdentityComponentMapping(const TextureComponentMapping& Mapping);
 
 } // namespace Diligent
