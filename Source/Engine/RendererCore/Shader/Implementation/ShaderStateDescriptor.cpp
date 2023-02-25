@@ -457,7 +457,7 @@ xiiResult xiiShaderStateResourceDescriptor::Load(const char* szSource)
   }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  // check for invalid variable names
+  // Check for invalid variable names
   {
     for (auto it = VariableValues.GetIterator(); it.IsValid(); ++it)
     {

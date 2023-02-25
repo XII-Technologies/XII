@@ -10,4 +10,5 @@ xiiGALUnorderedAccessView::xiiGALUnorderedAccessView(xiiGALResourceBase* pResour
 
 xiiGALUnorderedAccessView::~xiiGALUnorderedAccessView() {}
 
+
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Resources_Implementation_UnorderedAccessView);

@@ -106,4 +106,5 @@ namespace xiiShaderHelper
   }
 } // namespace xiiShaderHelper
 
+
 XII_STATICLINK_FILE(RendererCore, RendererCore_Shader_Implementation_Helper);

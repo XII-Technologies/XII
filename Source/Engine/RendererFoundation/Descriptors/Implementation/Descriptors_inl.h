@@ -1,3 +1,4 @@
+
 XII_FORCE_INLINE bool xiiShaderResourceType::IsArray(xiiShaderResourceType::Enum format)
 {
   switch (format)

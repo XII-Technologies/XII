@@ -1,5 +1,4 @@
 
-
 const void* xiiGALShaderByteCode::GetByteCode() const
 {
   if (m_Source.IsEmpty())

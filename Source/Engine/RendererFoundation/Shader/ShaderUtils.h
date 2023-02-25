@@ -65,4 +65,5 @@ public:
     g_RequestBuiltinShaderCallback(type, out_shader);
   }
 };
+
 XII_DEFINE_AS_POD_TYPE(xiiShaderUtils::xiiBuiltinShaderType);

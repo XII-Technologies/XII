@@ -27,7 +27,7 @@ xiiShaderPermutationBinary::xiiShaderPermutationBinary()
 
 xiiResult xiiShaderPermutationBinary::Write(xiiStreamWriter& Stream)
 {
-  // write this at the beginning so that the file can be read as an xiiDependencyFile
+  // Write this at the beginning so that the file can be read as an xiiDependencyFile
   m_DependencyFile.StoreCurrentTimeStamp();
   XII_SUCCEED_OR_RETURN(m_DependencyFile.WriteDependencyFile(Stream));
 

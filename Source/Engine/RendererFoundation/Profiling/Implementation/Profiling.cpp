@@ -132,4 +132,5 @@ xiiProfilingScopeAndMarker::~xiiProfilingScopeAndMarker()
 
 #endif
 
+
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Profiling_Implementation_Profiling);

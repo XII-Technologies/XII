@@ -89,7 +89,6 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALIndexType
     ENUM_COUNT
   };
 
-
   /// \brief The size in bytes of a single element of the given index format.
   static xiiUInt8 GetSize(xiiGALIndexType::Enum format) { return s_Size[format]; }
 

@@ -12,5 +12,4 @@ xiiGALResourceView::xiiGALResourceView(xiiGALResourceBase* pResource, const xiiG
 xiiGALResourceView::~xiiGALResourceView() {}
 
 
-
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Resources_Implementation_ResourceView);

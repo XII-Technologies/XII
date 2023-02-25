@@ -12,5 +12,4 @@ xiiGALRenderTargetView::xiiGALRenderTargetView(xiiGALTexture* pTexture, const xi
 xiiGALRenderTargetView::~xiiGALRenderTargetView() {}
 
 
-
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Resources_Implementation_RenderTargetView);
