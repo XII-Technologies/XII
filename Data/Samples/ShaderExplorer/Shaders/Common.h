@@ -9,7 +9,7 @@ CONSTANT_BUFFER(xiiMaterialConstants, 0)
 
 struct VS_IN
 {
-  float3 Position : POSITION;
+  float3 Position : ATTRIB0;
 };
 
 struct VS_OUT
@@ -21,6 +21,3 @@ struct VS_OUT
 typedef VS_OUT PS_IN;
 
 #endif
-
-
-

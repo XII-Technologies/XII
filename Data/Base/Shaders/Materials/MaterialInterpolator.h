@@ -2,7 +2,7 @@
 
 #include <Shaders/Common/Common.h>
 
-// defines:
+// Defines:
 // USE_WORLDPOS
 // USE_NORMAL
 // USE_TANGENT
@@ -17,39 +17,39 @@
 
 struct VS_IN
 {
-  float3 Position : POSITION;
+  float3 Position : ATTRIB0;
 
 #if defined(USE_NORMAL)
-  float3 Normal : NORMAL;
+  float3 Normal : ATTRIB1;
 #endif
 
 #if defined(USE_TANGENT)
-  float4 Tangent : TANGENT;
+  float4 Tangent : ATTRIB2;
 #endif
 
 #if defined(USE_TEXCOORD0)
-  float2 TexCoord0 : TEXCOORD0;
+  float2 TexCoord0 : ATTRIB3;
 
 #  if defined(USE_TEXCOORD1)
-  float2 TexCoord1 : TEXCOORD1;
+  float2 TexCoord1 : ATTRIB4;
 #  endif
 #endif
 
 #if defined(USE_COLOR0)
-  float4 Color0 : COLOR0;
+  float4 Color0 : ATTRIB5;
 
 #  if defined(USE_COLOR1)
-  float4 Color1 : COLOR1;
+  float4 Color1 : ATTRIB6;
 #  endif
 #endif
 
 #if defined(USE_SKINNING)
-  float4 BoneWeights : BONEWEIGHTS0;
-  uint4  BoneIndices : BONEINDICES0;
+  float4 BoneWeights : ATTRIB7;
+  uint4  BoneIndices : ATTRIB8;
 #endif
 
-  uint InstanceID : SV_InstanceID;
-  uint VertexID : SV_VertexID;
+  uint InstanceID : ATTRIB9;
+  uint VertexID : ATTRIB10;
 };
 
 #if defined(VERTEX_SHADER)
@@ -87,4 +87,4 @@ struct VS_IN
 #  undef STAGE_TEMPLATE
 #endif
 
-//typedef VS_OUT PS_IN;
+// typedef VS_OUT PS_IN;

@@ -9,6 +9,8 @@ struct xiiComPtr;
 
 struct IDxcBlob;
 
+struct SpvReflectDescriptorBinding;
+
 class xiiShaderCompilerProgram;
 
 class XII_SHADERCOMPILER_DLL xiiShaderCompilerVulkan
@@ -20,10 +22,10 @@ private:
   friend xiiShaderCompilerProgram;
 
   xiiResult                      ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage, Diligent::ShaderCreateInfo& shaderCreateInfo, std::vector<xiiUInt32>& spirvOutput, xiiMap<const char*, xiiGALVertexAttributeSemantic::Enum, CompareConstChar>& vertexInputMapping);
-  xiiShaderConstantBufferLayout* ReflectConstantBufferLayout(xiiShaderStageBinary& pStageBinary, const char* szName);
-  xiiResult                      FillResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding);
-  xiiResult                      FillSRVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding);
-  xiiResult                      FillUAVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding);
+  xiiShaderConstantBufferLayout* ReflectConstantBufferLayout(xiiShaderStageBinary& pStageBinary, const char* szName, const SpvReflectDescriptorBinding& constantBufferReflection);
+  xiiResult                      FillResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const SpvReflectDescriptorBinding& info);
+  xiiResult                      FillSRVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const SpvReflectDescriptorBinding& info);
+  xiiResult                      FillUAVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const SpvReflectDescriptorBinding& info);
 };
 
 #endif

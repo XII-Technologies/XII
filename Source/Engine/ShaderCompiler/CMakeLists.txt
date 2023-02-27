@@ -39,6 +39,7 @@ if (XII_BUILD_DILIGENT)
 
   if(VULKAN_SUPPORTED)
     xii_link_target_diligent_vulkan(${PROJECT_NAME})
+    xii_sources_target_spirv_reflect(${PROJECT_NAME})
   endif()
 
   if(METAL_SUPPORTED)

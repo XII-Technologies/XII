@@ -38,6 +38,8 @@ xiiResult xiiGALVertexDeclarationDiligent::InitPlatform(xiiGALDevice* pDevice)
     return XII_FAILURE;
   }
 
+  auto& vertexInputAttributes = pShader->GetVertexInputAttributes();
+
   // Copy attribute descriptions
   for (xiiUInt32 i = 0; i < m_Description.m_VertexAttributes.GetCount(); ++i)
   {
@@ -57,8 +59,20 @@ xiiResult xiiGALVertexDeclarationDiligent::InitPlatform(xiiGALDevice* pDevice)
     ElementDesc.BufferSlot           = Current.m_uiVertexBufferSlot;
     ElementDesc.Frequency            = Current.m_bInstanceData ? Diligent::INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : Diligent::INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
     ElementDesc.InstanceDataStepRate = Current.m_bInstanceData ? Current.m_uiStepRate : 0;
-    ElementDesc.InputIndex           = GALSemanticToIndexDiligent[Current.m_eSemantic];
-    ElementDesc.HLSLSemantic         = GALSemanticToDiligent[Current.m_eSemantic];
+    if (pDeviceDiligent->GetDevice()->GetDeviceInfo().IsVulkanDevice())
+    {
+      ElementDesc.InputIndex = vertexInputAttributes[i].m_uiSemanticIndex;
+      /// HLSL semantic. Default value ("ATTRIBx") allows HLSL shaders to be converted
+      /// to GLSL and used in OpenGL backend as well as compiled to SPIRV and used
+      /// in Vulkan backend.
+      /// Any value other than default will only work in Direct3D11 and Direct3D12 backends.
+      ElementDesc.HLSLSemantic = "ATTRIB";
+    }
+    else
+    {
+      ElementDesc.InputIndex   = GALSemanticToIndexDiligent[Current.m_eSemantic];
+      ElementDesc.HLSLSemantic = GALSemanticToDiligent[Current.m_eSemantic];
+    }
 
     m_InputElementDescs.PushBack(ElementDesc);
   }

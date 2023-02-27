@@ -59,10 +59,10 @@ float3 DiffuseLambert(float3 diffuseColor)
   return diffuseColor;
 }
 
-// divide by PI postponed
+// Divide by PI postponed
 float SpecularGGX(float roughness, float NdotH)
 {
-  // mad friendly reformulation of:
+  // Extremely friendly reformulation of:
   //
   //              a^2
   // --------------------------------
@@ -96,11 +96,11 @@ float3 FresnelSchlick(float3 specularColor, float u)
   float ff = f * f;
   float f5 = ff * ff * f;
 
-  // specularColor below 2% is considered to be shadowing
+  // SpecularColor below 2% is considered to be shadowing
   return saturate(50.0 * GetLuminance(specularColor)) * f5 + (1 - f5) * specularColor;
 }
 
-// note that 1/PI is applied later
+// Note that 1/PI is applied later
 AccumulatedLight DefaultShading(xiiMaterialData matData, float3 L, float3 V)
 {
   float3 N     = matData.worldNormal;

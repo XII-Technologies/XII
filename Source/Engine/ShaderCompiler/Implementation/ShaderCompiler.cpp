@@ -332,6 +332,37 @@ xiiResult xiiShaderCompilerProgram::Initialize(const char* szPlatformName)
     m_VertexInputMapping["BONEINDICES1"] = xiiGALVertexAttributeSemantic::BoneIndices1;
     m_VertexInputMapping["BONEWEIGHTS0"] = xiiGALVertexAttributeSemantic::BoneWeights0;
     m_VertexInputMapping["BONEWEIGHTS1"] = xiiGALVertexAttributeSemantic::BoneWeights1;
+
+    // Vulkan Spirv Reflect
+    m_VertexInputMapping["in.var.POSITION"] = xiiGALVertexAttributeSemantic::Position;
+    m_VertexInputMapping["in.var.NORMAL"]   = xiiGALVertexAttributeSemantic::Normal;
+    m_VertexInputMapping["in.var.TANGENT"]  = xiiGALVertexAttributeSemantic::Tangent;
+
+    m_VertexInputMapping["in.var.COLOR0"] = xiiGALVertexAttributeSemantic::Color0;
+    m_VertexInputMapping["in.var.COLOR1"] = xiiGALVertexAttributeSemantic::Color1;
+    m_VertexInputMapping["in.var.COLOR2"] = xiiGALVertexAttributeSemantic::Color2;
+    m_VertexInputMapping["in.var.COLOR3"] = xiiGALVertexAttributeSemantic::Color3;
+    m_VertexInputMapping["in.var.COLOR4"] = xiiGALVertexAttributeSemantic::Color4;
+    m_VertexInputMapping["in.var.COLOR5"] = xiiGALVertexAttributeSemantic::Color5;
+    m_VertexInputMapping["in.var.COLOR6"] = xiiGALVertexAttributeSemantic::Color6;
+    m_VertexInputMapping["in.var.COLOR7"] = xiiGALVertexAttributeSemantic::Color7;
+
+    m_VertexInputMapping["in.var.TEXCOORD0"] = xiiGALVertexAttributeSemantic::TexCoord0;
+    m_VertexInputMapping["in.var.TEXCOORD1"] = xiiGALVertexAttributeSemantic::TexCoord1;
+    m_VertexInputMapping["in.var.TEXCOORD2"] = xiiGALVertexAttributeSemantic::TexCoord2;
+    m_VertexInputMapping["in.var.TEXCOORD3"] = xiiGALVertexAttributeSemantic::TexCoord3;
+    m_VertexInputMapping["in.var.TEXCOORD4"] = xiiGALVertexAttributeSemantic::TexCoord4;
+    m_VertexInputMapping["in.var.TEXCOORD5"] = xiiGALVertexAttributeSemantic::TexCoord5;
+    m_VertexInputMapping["in.var.TEXCOORD6"] = xiiGALVertexAttributeSemantic::TexCoord6;
+    m_VertexInputMapping["in.var.TEXCOORD7"] = xiiGALVertexAttributeSemantic::TexCoord7;
+    m_VertexInputMapping["in.var.TEXCOORD8"] = xiiGALVertexAttributeSemantic::TexCoord8;
+    m_VertexInputMapping["in.var.TEXCOORD9"] = xiiGALVertexAttributeSemantic::TexCoord9;
+
+    m_VertexInputMapping["in.var.BITANGENT"]    = xiiGALVertexAttributeSemantic::BiTangent;
+    m_VertexInputMapping["in.var.BONEINDICES0"] = xiiGALVertexAttributeSemantic::BoneIndices0;
+    m_VertexInputMapping["in.var.BONEINDICES1"] = xiiGALVertexAttributeSemantic::BoneIndices1;
+    m_VertexInputMapping["in.var.BONEWEIGHTS0"] = xiiGALVertexAttributeSemantic::BoneWeights0;
+    m_VertexInputMapping["in.var.BONEWEIGHTS1"] = xiiGALVertexAttributeSemantic::BoneWeights1;
   }
 
   return XII_SUCCESS;

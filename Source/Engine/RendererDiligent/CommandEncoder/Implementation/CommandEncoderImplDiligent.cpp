@@ -235,14 +235,14 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 {
   // This looks to require custom code, either using buffer copies or clearing via a compute shader
 
-  XII_ASSERT_NOT_IMPLEMENTED;
+  // XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xiiGALUnorderedAccessView* pUnorderedAccessView, xiiVec4U32 clearValues)
 {
   // This looks to require custom code, either using buffer copies or clearing via a compute shader
 
-  XII_ASSERT_NOT_IMPLEMENTED;
+  // XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiGALCommandEncoderImplDiligent::CopyBufferPlatform(const xiiGALBuffer* pDestination, const xiiGALBuffer* pSource)

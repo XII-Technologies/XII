@@ -5,8 +5,6 @@
 #include <RendererFoundation/RendererFoundationDLL.h>
 #include <RendererFoundation/Shader/VertexDeclaration.h>
 
-struct ID3D11InputLayout;
-
 class xiiGALVertexDeclarationDiligent : public xiiGALVertexDeclaration
 {
 public:
