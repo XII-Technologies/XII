@@ -11,7 +11,7 @@ ALL
 
 struct VS_IN
 {
-  float3 pos : POSITION;
+  float3 pos : ATTRIB0;
   uint InstanceID : SV_InstanceID;
 };
 

@@ -97,8 +97,7 @@ xiiResult xiiShaderCompilerD3D11::CompileShader(const char* szFile, const char* 
 
     const char* szError = static_cast<const char*>(pErrorBlob->GetBufferPointer());
 
-    XII_LOG_BLOCK("Shader Compilation Failed", szFile);
-
+    xiiLog::Error("Shader Compilation Failed.");
     xiiLog::Error("Could not compile shader '{0}' for profile '{1}'", szFile, szProfile);
     xiiLog::Error("{0}", szError);
 
@@ -110,8 +109,7 @@ xiiResult xiiShaderCompilerD3D11::CompileShader(const char* szFile, const char* 
   {
     const char* szError = static_cast<const char*>(pErrorBlob->GetBufferPointer());
 
-    XII_LOG_BLOCK("Shader Compilation Error Message", szFile);
-    xiiLog::Dev("{0}", szError);
+    xiiLog::SeriousWarning("{0}", szError);
 
     pErrorBlob->Release();
   }
@@ -162,13 +160,19 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramCompiler::x
       xiiShaderVertexInputAttribute& attribute = vertexInputAttributes.ExpandAndGetRef();
       attribute.m_uiSemanticIndex              = parameterDesc.SemanticIndex;
 
-      xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(parameterDesc.SemanticName);
-      // XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {}", parameterDesc.SemanticName);
+      xiiStringBuilder sSemanticName = parameterDesc.SemanticName;
+      sSemanticName.AppendFormat("{}", parameterDesc.SemanticIndex);
 
-      if (pVAS != nullptr)
-        attribute.m_eSemantic = *pVAS;
-      else
-        xiiLog::Dev("Unknown vertex input semantic found: {}", parameterDesc.SemanticName);
+      if (!sSemanticName.StartsWith_NoCase("SV_"))
+      {
+        xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(sSemanticName);
+        XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {}", sSemanticName);
+
+        if (pVAS != nullptr)
+          attribute.m_eSemantic = *pVAS;
+        else
+          xiiLog::Dev("Unknown vertex input semantic found: {}", parameterDesc.SemanticName);
+      }
 
       attribute.m_eFormat = GetXIIFormatD3D11(parameterDesc.ComponentType, parameterDesc.Mask);
       XII_ASSERT_DEV(attribute.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", parameterDesc.ComponentType);
@@ -340,8 +344,6 @@ xiiShaderConstantBufferLayout* xiiShaderCompilerD3D11::ReflectConstantBufferLayo
       xiiLog::Info("Failed to retrieve shader variable type descriptor");
       return nullptr;
     }
-
-    XII_LOG_BLOCK("Constant", Desc.Name);
 
     xiiShaderConstantBufferLayout::Constant constant;
     constant.m_sName.Assign(Desc.Name);

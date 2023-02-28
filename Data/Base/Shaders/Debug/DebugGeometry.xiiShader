@@ -34,7 +34,7 @@ StructuredBuffer<BoxData> boxData;
 struct VS_IN_POS_ONLY
 {
   float3 Position : ATTRIB0;
-  uint InstanceID : ATTRIB1;
+  uint InstanceID : SV_InstanceID;
 };
 
 VS_OUT main(VS_IN_POS_ONLY Input)

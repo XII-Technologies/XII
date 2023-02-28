@@ -12,7 +12,7 @@ CullMode = CullMode_None
 
 struct VS_IN
 {
-  float3 Position : POSITION;
+  float3 Position : ATTRIB0;
 };
 
 struct VS_OUT

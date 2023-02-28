@@ -5,17 +5,6 @@
 #include <RendererDiligent/Shader/VertexDeclarationDiligent.h>
 #include <RendererFoundation/Shader/Shader.h>
 
-static const char* GALSemanticToDiligent[] = {"POSITION", "NORMAL", "TANGENT", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR",
-                                              "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "BITANGENT", "BONEINDICES",
-                                              "BONEINDICES", "BONEWEIGHTS", "BONEWEIGHTS"};
-
-static xiiUInt32 GALSemanticToIndexDiligent[] = {0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 1, 0, 1};
-
-XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToDiligent) == xiiGALVertexAttributeSemantic::ENUM_COUNT,
-                             "GALSemanticToDiligent array size does not match vertex attribute semantic count");
-XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToIndexDiligent) == xiiGALVertexAttributeSemantic::ENUM_COUNT,
-                             "GALSemanticToIndexDiligent array size does not match vertex attribute semantic count");
-
 xiiGALVertexDeclarationDiligent::xiiGALVertexDeclarationDiligent(const xiiGALVertexDeclarationCreationDescription& Description) :
   xiiGALVertexDeclaration(Description)
 {
@@ -41,40 +30,30 @@ xiiResult xiiGALVertexDeclarationDiligent::InitPlatform(xiiGALDevice* pDevice)
   auto& vertexInputAttributes = pShader->GetVertexInputAttributes();
 
   // Copy attribute descriptions
-  for (xiiUInt32 i = 0; i < m_Description.m_VertexAttributes.GetCount(); ++i)
+  for (xiiUInt32 uiAttribute = 0; uiAttribute < m_Description.m_VertexAttributes.GetCount(); ++uiAttribute)
   {
-    const xiiGALVertexAttribute& Current = m_Description.m_VertexAttributes[i];
+    const xiiGALVertexAttribute& Current = m_Description.m_VertexAttributes[uiAttribute];
 
-    Diligent::LayoutElement ElementDesc;
-    ElementDesc.RelativeOffset = Current.m_uiOffset;
-    ElementDesc.ValueType      = xiiDiligentUtils::GALToDiligentFormat(pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(Current.m_eFormat).m_eVertexAttributeType);
-    ElementDesc.NumComponents  = xiiDiligentUtils::GALToDiligentNumComponent(pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(Current.m_eFormat).m_eVertexAttributeType);
+    Diligent::LayoutElement& layoutElement = m_InputElementDescs.ExpandAndGetRef();
+    /// HLSL semantic. Default value ("ATTRIB") allows HLSL shaders to be converted
+    /// to GLSL and used in OpenGL backend as well as compiled to SPIRV and used
+    /// in Vulkan backend.
+    /// Any value other than default will only work in Direct3D11 and Direct3D12 backends.
+    layoutElement.InputIndex           = vertexInputAttributes[uiAttribute].m_uiSemanticIndex;
+    layoutElement.BufferSlot           = Current.m_uiVertexBufferSlot;
+    layoutElement.NumComponents        = xiiDiligentUtils::GALToDiligentNumComponent(pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(Current.m_eFormat).m_eVertexAttributeType);
+    layoutElement.ValueType            = xiiDiligentUtils::GALToDiligentFormat(pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(Current.m_eFormat).m_eVertexAttributeType);
+    layoutElement.IsNormalized         = xiiDiligentUtils::GALIsFormatNormalized(pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(Current.m_eFormat).m_eVertexAttributeType);
+    layoutElement.RelativeOffset       = Current.m_uiOffset;
+    layoutElement.Stride               = Diligent::LAYOUT_ELEMENT_AUTO_STRIDE;
+    layoutElement.Frequency            = Current.m_bInstanceData ? Diligent::INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : Diligent::INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
+    layoutElement.InstanceDataStepRate = Current.m_bInstanceData ? Current.m_uiStepRate : 0;
 
-    if (ElementDesc.ValueType == Diligent::VT_UNDEFINED)
+    if (layoutElement.ValueType == Diligent::VT_UNDEFINED)
     {
-      xiiLog::Error("Vertex attribute format {0} of attribute at index {1} is unknown!", Current.m_eFormat, i);
+      xiiLog::Error("Vertex attribute format {0} of attribute at index {1} is unknown!", Current.m_eFormat, uiAttribute);
       return XII_FAILURE;
     }
-
-    ElementDesc.BufferSlot           = Current.m_uiVertexBufferSlot;
-    ElementDesc.Frequency            = Current.m_bInstanceData ? Diligent::INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : Diligent::INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
-    ElementDesc.InstanceDataStepRate = Current.m_bInstanceData ? Current.m_uiStepRate : 0;
-    if (pDeviceDiligent->GetDevice()->GetDeviceInfo().IsVulkanDevice())
-    {
-      ElementDesc.InputIndex = vertexInputAttributes[i].m_uiSemanticIndex;
-      /// HLSL semantic. Default value ("ATTRIBx") allows HLSL shaders to be converted
-      /// to GLSL and used in OpenGL backend as well as compiled to SPIRV and used
-      /// in Vulkan backend.
-      /// Any value other than default will only work in Direct3D11 and Direct3D12 backends.
-      ElementDesc.HLSLSemantic = "ATTRIB";
-    }
-    else
-    {
-      ElementDesc.InputIndex   = GALSemanticToIndexDiligent[Current.m_eSemantic];
-      ElementDesc.HLSLSemantic = GALSemanticToDiligent[Current.m_eSemantic];
-    }
-
-    m_InputElementDescs.PushBack(ElementDesc);
   }
 
   m_InputLayoutDesc.LayoutElements = m_InputElementDescs.GetData();

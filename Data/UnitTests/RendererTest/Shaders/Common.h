@@ -2,7 +2,7 @@
 
 struct VS_IN
 {
-  float3 pos : POSITION;
+  float3 pos : ATTRIB0;
 };
 
 struct VS_OUT

@@ -145,7 +145,7 @@ xiiApplication::Execution xiiComputeShaderHistogramApp::Run()
 
 void xiiComputeShaderHistogramApp::AfterCoreSystemsStartup()
 {
-  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D12;
+  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D11;
 
   SUPER::AfterCoreSystemsStartup();
 

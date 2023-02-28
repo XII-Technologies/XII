@@ -164,8 +164,9 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
         xiiShaderVertexInputAttribute& attr = vertexInputAttributes.ExpandAndGetRef();
         attr.m_uiSemanticIndex              = static_cast<xiiUInt8>(pVar->location);
 
-        xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(pVar->name);
-        // XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input sematic found: {}", pVar->name);
+        xiiStringBuilder sSemanticName = pVar->name;
+        xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(sSemanticName);
+        XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {}", sSemanticName);
 
         if (pVAS != nullptr)
           attr.m_eSemantic = *pVAS;

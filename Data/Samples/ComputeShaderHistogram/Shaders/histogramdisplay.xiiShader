@@ -16,8 +16,8 @@ CullMode = CullMode_None
 
 struct VS_IN
 {
-  float3 Position : POSITION;
-  float2 TexCoord : TEXCOORD0;
+  float3 Position : ATTRIB0;
+  float2 TexCoord : ATTRIB11;
 };
 struct VS_OUT
 {

@@ -7,8 +7,8 @@
 
 struct VS_IN
 {
-  float3 Position : POSITION;
-  float2 TexCoord0 : TEXCOORD0;
+  float3 Position : ATTRIB0;
+  float2 TexCoord0 : ATTRIB11;
 };
 
 struct VS_OUT
@@ -20,6 +20,3 @@ struct VS_OUT
 typedef VS_OUT PS_IN;
 
 #endif
-
-
-

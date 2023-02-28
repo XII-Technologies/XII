@@ -247,6 +247,120 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
   return Diligent::VT_UNDEFINED;
 }
 
+XII_ALWAYS_INLINE bool xiiDiligentUtils::GALIsFormatNormalized(Diligent::TEXTURE_FORMAT format)
+{
+  switch (format)
+  {
+    case Diligent::TEX_FORMAT_RGBA16_UNORM:
+    case Diligent::TEX_FORMAT_RGBA16_SNORM:
+    case Diligent::TEX_FORMAT_RGB10A2_UNORM:
+    case Diligent::TEX_FORMAT_RGBA8_UNORM:
+    case Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_RG16_UNORM:
+    case Diligent::TEX_FORMAT_RGBA8_SNORM:
+    case Diligent::TEX_FORMAT_D24_UNORM_S8_UINT:
+    case Diligent::TEX_FORMAT_R24_UNORM_X8_TYPELESS:
+    case Diligent::TEX_FORMAT_RG8_UNORM:
+    case Diligent::TEX_FORMAT_D16_UNORM:
+    case Diligent::TEX_FORMAT_R16_UNORM:
+    case Diligent::TEX_FORMAT_R8_UNORM:
+    case Diligent::TEX_FORMAT_A8_UNORM:
+    case Diligent::TEX_FORMAT_R1_UNORM:
+    case Diligent::TEX_FORMAT_RG8_B8G8_UNORM:
+    case Diligent::TEX_FORMAT_G8R8_G8B8_UNORM:
+    case Diligent::TEX_FORMAT_BC1_UNORM:
+    case Diligent::TEX_FORMAT_BC1_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_BC2_UNORM:
+    case Diligent::TEX_FORMAT_BC2_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_BC3_UNORM:
+    case Diligent::TEX_FORMAT_BC3_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_BC4_UNORM:
+    case Diligent::TEX_FORMAT_BC5_UNORM:
+    case Diligent::TEX_FORMAT_B5G6R5_UNORM:
+    case Diligent::TEX_FORMAT_B5G5R5A1_UNORM:
+    case Diligent::TEX_FORMAT_BGRA8_UNORM:
+    case Diligent::TEX_FORMAT_BGRX8_UNORM:
+    case Diligent::TEX_FORMAT_BGRA8_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_BGRX8_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
+    case Diligent::TEX_FORMAT_BC7_UNORM:
+    case Diligent::TEX_FORMAT_BC7_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_RG16_SNORM:
+    case Diligent::TEX_FORMAT_RG8_SNORM:
+    case Diligent::TEX_FORMAT_R16_SNORM:
+    case Diligent::TEX_FORMAT_R8_SNORM:
+    case Diligent::TEX_FORMAT_BC4_SNORM:
+    case Diligent::TEX_FORMAT_BC5_SNORM:
+      return true;
+
+    case Diligent::TEX_FORMAT_UNKNOWN:
+    case Diligent::TEX_FORMAT_RGBA32_TYPELESS:
+    case Diligent::TEX_FORMAT_RGBA32_FLOAT:
+    case Diligent::TEX_FORMAT_RGBA32_UINT:
+    case Diligent::TEX_FORMAT_RGBA32_SINT:
+    case Diligent::TEX_FORMAT_RGB32_TYPELESS:
+    case Diligent::TEX_FORMAT_RGB32_FLOAT:
+    case Diligent::TEX_FORMAT_RGB32_UINT:
+    case Diligent::TEX_FORMAT_RGB32_SINT:
+    case Diligent::TEX_FORMAT_RGBA16_TYPELESS:
+    case Diligent::TEX_FORMAT_RGBA16_FLOAT:
+    case Diligent::TEX_FORMAT_RGBA16_UINT:
+    case Diligent::TEX_FORMAT_RGBA16_SINT:
+    case Diligent::TEX_FORMAT_RG32_TYPELESS:
+    case Diligent::TEX_FORMAT_RG32_FLOAT:
+    case Diligent::TEX_FORMAT_RG32_UINT:
+    case Diligent::TEX_FORMAT_RG32_SINT:
+    case Diligent::TEX_FORMAT_R32G8X24_TYPELESS:
+    case Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT:
+    case Diligent::TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS:
+    case Diligent::TEX_FORMAT_X32_TYPELESS_G8X24_UINT:
+    case Diligent::TEX_FORMAT_RGB10A2_TYPELESS:
+    case Diligent::TEX_FORMAT_RGB10A2_UINT:
+    case Diligent::TEX_FORMAT_R11G11B10_FLOAT:
+    case Diligent::TEX_FORMAT_RGBA8_TYPELESS:
+    case Diligent::TEX_FORMAT_RGBA8_UINT:
+    case Diligent::TEX_FORMAT_RGBA8_SINT:
+    case Diligent::TEX_FORMAT_RG16_TYPELESS:
+    case Diligent::TEX_FORMAT_RG16_FLOAT:
+    case Diligent::TEX_FORMAT_RG16_UINT:
+    case Diligent::TEX_FORMAT_RG16_SINT:
+    case Diligent::TEX_FORMAT_R32_TYPELESS:
+    case Diligent::TEX_FORMAT_D32_FLOAT:
+    case Diligent::TEX_FORMAT_R32_FLOAT:
+    case Diligent::TEX_FORMAT_R32_UINT:
+    case Diligent::TEX_FORMAT_R32_SINT:
+    case Diligent::TEX_FORMAT_R24G8_TYPELESS:
+    case Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT:
+    case Diligent::TEX_FORMAT_RG8_TYPELESS:
+    case Diligent::TEX_FORMAT_RG8_UINT:
+    case Diligent::TEX_FORMAT_RG8_SINT:
+    case Diligent::TEX_FORMAT_R16_TYPELESS:
+    case Diligent::TEX_FORMAT_R16_FLOAT:
+    case Diligent::TEX_FORMAT_R16_UINT:
+    case Diligent::TEX_FORMAT_R16_SINT:
+    case Diligent::TEX_FORMAT_R8_TYPELESS:
+    case Diligent::TEX_FORMAT_R8_UINT:
+    case Diligent::TEX_FORMAT_R8_SINT:
+    case Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP:
+    case Diligent::TEX_FORMAT_BC1_TYPELESS:
+    case Diligent::TEX_FORMAT_BC2_TYPELESS:
+    case Diligent::TEX_FORMAT_BC3_TYPELESS:
+    case Diligent::TEX_FORMAT_BC4_TYPELESS:
+    case Diligent::TEX_FORMAT_BC5_TYPELESS:
+    case Diligent::TEX_FORMAT_BGRA8_TYPELESS:
+    case Diligent::TEX_FORMAT_BGRX8_TYPELESS:
+    case Diligent::TEX_FORMAT_BC6H_TYPELESS:
+    case Diligent::TEX_FORMAT_BC6H_UF16:
+    case Diligent::TEX_FORMAT_BC6H_SF16:
+    case Diligent::TEX_FORMAT_BC7_TYPELESS:
+    case Diligent::TEX_FORMAT_NUM_FORMATS:
+      return false;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return false;
+}
+
 XII_ALWAYS_INLINE xiiInt32 xiiDiligentUtils::GALToDiligentNumComponent(Diligent::TEXTURE_FORMAT format)
 {
   switch (format)
