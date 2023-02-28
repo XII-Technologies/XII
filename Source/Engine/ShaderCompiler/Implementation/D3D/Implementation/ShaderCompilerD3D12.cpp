@@ -26,65 +26,7 @@
 
 std::unique_ptr<Diligent::IDXCompiler> g_pDXCompilerD3D12 = nullptr;
 
-////////// Utility Functions //////////
-
-xiiGALResourceFormat::Enum GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents)
-{
-  switch (format)
-  {
-    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UINT32:
-    {
-      switch (numComponents)
-      {
-        case 0b1111:
-          return xiiGALResourceFormat::RGBAUInt;
-        case 0b111:
-          return xiiGALResourceFormat::RGBUInt;
-        case 0b11:
-          return xiiGALResourceFormat::RGUInt;
-        case 0b1:
-          return xiiGALResourceFormat::RUInt;
-      }
-    }
-    break;
-    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_SINT32:
-    {
-      switch (numComponents)
-      {
-        case 0b1111:
-          return xiiGALResourceFormat::RGBAInt;
-        case 0b111:
-          return xiiGALResourceFormat::RGBInt;
-        case 0b11:
-          return xiiGALResourceFormat::RGInt;
-        case 0b1:
-          return xiiGALResourceFormat::RInt;
-      }
-    }
-    break;
-    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_FLOAT32:
-    {
-      switch (numComponents)
-      {
-        case 0b1111:
-          return xiiGALResourceFormat::RGBAFloat;
-        case 0b111:
-          return xiiGALResourceFormat::RGBFloat;
-        case 0b11:
-          return xiiGALResourceFormat::RGFloat;
-        case 0b1:
-          return xiiGALResourceFormat::RFloat;
-      }
-    }
-    break;
-
-    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UNKNOWN:
-    default:
-      return xiiGALResourceFormat::Invalid;
-  }
-
-  return xiiGALResourceFormat::Invalid;
-}
+xiiGALResourceFormat::Enum GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents);
 
 xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* szSource, bool bDebug, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode, xiiComPtr<IDxcBlob>& out_pOutputBlob)
 {
@@ -691,4 +633,61 @@ xiiResult xiiShaderCompilerD3D12::FillUAVResourceBinding(xiiShaderStageBinary& s
   return XII_FAILURE;
 }
 
+xiiGALResourceFormat::Enum GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents)
+{
+  switch (format)
+  {
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UINT32:
+    {
+      switch (numComponents)
+      {
+        case 0b1111:
+          return xiiGALResourceFormat::RGBAUInt;
+        case 0b111:
+          return xiiGALResourceFormat::RGBUInt;
+        case 0b11:
+          return xiiGALResourceFormat::RGUInt;
+        case 0b1:
+          return xiiGALResourceFormat::RUInt;
+      }
+    }
+    break;
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_SINT32:
+    {
+      switch (numComponents)
+      {
+        case 0b1111:
+          return xiiGALResourceFormat::RGBAInt;
+        case 0b111:
+          return xiiGALResourceFormat::RGBInt;
+        case 0b11:
+          return xiiGALResourceFormat::RGInt;
+        case 0b1:
+          return xiiGALResourceFormat::RInt;
+      }
+    }
+    break;
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_FLOAT32:
+    {
+      switch (numComponents)
+      {
+        case 0b1111:
+          return xiiGALResourceFormat::RGBAFloat;
+        case 0b111:
+          return xiiGALResourceFormat::RGBFloat;
+        case 0b11:
+          return xiiGALResourceFormat::RGFloat;
+        case 0b1:
+          return xiiGALResourceFormat::RFloat;
+      }
+    }
+    break;
+
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UNKNOWN:
+    default:
+      return xiiGALResourceFormat::Invalid;
+  }
+
+  return xiiGALResourceFormat::Invalid;
+}
 #endif

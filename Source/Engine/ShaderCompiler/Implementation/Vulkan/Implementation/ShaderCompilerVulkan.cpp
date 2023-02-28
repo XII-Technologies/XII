@@ -159,23 +159,25 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
     for (xiiUInt32 i = 0; i < vars.GetCount(); ++i)
     {
       SpvReflectInterfaceVariable* pVar = vars[i];
-      if (pVar->name != nullptr)
-      {
-        xiiShaderVertexInputAttribute& attr = vertexInputAttributes.ExpandAndGetRef();
-        attr.m_uiSemanticIndex              = static_cast<xiiUInt8>(pVar->location);
 
-        xiiStringBuilder sSemanticName = pVar->name;
+      xiiShaderVertexInputAttribute& attr = vertexInputAttributes.ExpandAndGetRef();
+      attr.m_uiSemanticIndex              = static_cast<xiiUInt8>(pVar->location);
+
+      xiiStringBuilder sSemanticName = pVar->semantic;
+
+      if (!sSemanticName.StartsWith_NoCase("SV_"))
+      {
         xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(sSemanticName);
         XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {}", sSemanticName);
 
         if (pVAS != nullptr)
           attr.m_eSemantic = *pVAS;
         else
-          xiiLog::Dev("Unknown vertex input semantic found: {}", pVar->name);
-
-        attr.m_eFormat = GetXIIFormat(pVar->format);
-        XII_ASSERT_DEV(attr.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", pVar->format);
+          xiiLog::Dev("Unknown vertex input semantic found: {}", pVar->semantic);
       }
+
+      attr.m_eFormat = GetXIIFormat(pVar->format);
+      XII_ASSERT_DEV(attr.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", pVar->format);
     }
   }
 
@@ -221,12 +223,12 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
         shaderResourceBinding.m_iSlot = uiVirtualResourceView;
         uiVirtualResourceView++;
       }
+
       if (info.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER)
       {
         shaderResourceBinding.m_iSlot = uiVirtualSampler;
         uiVirtualSampler++;
       }
-
 
       XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiShaderResourceType::Unknown, "FillResourceBinding should have failed.");
 
