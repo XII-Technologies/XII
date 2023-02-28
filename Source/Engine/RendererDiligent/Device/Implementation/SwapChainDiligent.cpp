@@ -30,6 +30,23 @@
 #  include <Graphics/GraphicsEngineMetal/interface/EngineFactoryMtl.h>
 #endif
 
+xiiGALResourceFormat::Enum ToGALRenderTargetFormat(Diligent::TEXTURE_FORMAT format)
+{
+  switch (format)
+  {
+    case Diligent::TEX_FORMAT_RGBA8_UNORM:
+      return xiiGALResourceFormat::RGBAUByteNormalized;
+    case Diligent::TEX_FORMAT_BGRA8_UNORM:
+      return xiiGALResourceFormat::BGRAUByteNormalized;
+    case Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB:
+      return xiiGALResourceFormat::RGBAUByteNormalizedsRGB;
+    case Diligent::TEX_FORMAT_BGRA8_UNORM_SRGB:
+      return xiiGALResourceFormat::BGRAUByteNormalizedsRGB;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiGALResourceFormat::Invalid;
+}
 
 void xiiGALSwapChainDiligent::AcquireNextRenderTarget(xiiGALDevice* pDevice)
 {
@@ -238,7 +255,7 @@ xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent
   TexDesc.m_bCreateRenderTarget         = true;
   TexDesc.m_ResourceAccess.m_bImmutable = true;
   TexDesc.m_ResourceAccess.m_bReadBack  = false;
-  TexDesc.m_Format                      = xiiGALResourceFormat::RGBAUByteNormalizedsRGB;
+  TexDesc.m_Format                      = ToGALRenderTargetFormat(rtvDesc.Format);
 
   m_hBackbufferTexture = m_pDeviceDiligent->CreateTexture(TexDesc);
 
