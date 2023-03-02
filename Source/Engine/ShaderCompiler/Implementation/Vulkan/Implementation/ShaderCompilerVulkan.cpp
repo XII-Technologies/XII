@@ -35,7 +35,7 @@ std::unique_ptr<Diligent::IDXCompiler> g_pDXCompilerVulkan = nullptr;
 
 xiiGALResourceFormat::Enum GetXIIFormat(SpvReflectFormat format);
 
-xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char* szSource, bool bDebug, xiiGALShaderStage::Enum Stage, Diligent::ShaderCreateInfo& shaderCreateInfo, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode, std::vector<xiiUInt32>& out_SpirvOutput)
+xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char* szSource, bool bDebug, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode, xiiComPtr<IDxcBlob>& out_pOutputBlob)
 {
   auto InitializeCompiler = [this](std::unique_ptr<Diligent::IDXCompiler>& pCompiler) -> xiiResult {
     if (pCompiler != nullptr)
@@ -58,8 +58,13 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
   const char*      szCompileSource = szSource;
   xiiStringBuilder sDebugSource;
 
-  xiiDynamicArray<const char*> args;
-  args.PushBack("-fvk-use-dx-position-w");
+  xiiDynamicArray<xiiStringWChar> args;
+  args.PushBack(L"-Zpc"); // Matrices in column-major order
+  args.PushBack(L"-spirv");
+  args.PushBack(L"-fspv-reflect");
+  args.PushBack(L"-fvk-use-dx-position-w");
+  args.PushBack(L"-fspv-target-env=vulkan1.1");
+  // args.PushBack(L"-fvk-ignore-unused-resources");
 
   if (bDebug)
   {
@@ -68,59 +73,117 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
     sDebugSource.ReplaceAll("#line ", "//line ");
     szCompileSource = sDebugSource;
 
-    args.PushBack("-Zi"); // Enable debug information.
+    args.PushBack(L"-Zi"); // Enable debug information.
+    args.PushBack(L"-Od"); // Disable optimization
   }
   else
   {
-    args.PushBack("-O3"); // Optimization Level 3
+    args.PushBack(L"-O3"); // Optimization Level 3
   }
 
-  xiiComPtr<IDxcBlob> pByteCode;
+  xiiHybridArray<const wchar_t*, 16> pszArgs;
+  pszArgs.SetCount(args.GetCount());
+  for (xiiUInt32 i = 0; i < args.GetCount(); ++i)
+  {
+    pszArgs[i] = args[i].GetData();
+  }
 
-  shaderCreateInfo.EntryPoint     = szEntryPoint;
-  shaderCreateInfo.CompileFlags   = Diligent::SHADER_COMPILE_FLAG_SKIP_REFLECTION;
-  shaderCreateInfo.Source         = szCompileSource;
-  shaderCreateInfo.SourceLength   = (xiiUInt32)strlen(szCompileSource);
-  shaderCreateInfo.SourceLanguage = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
-  shaderCreateInfo.HLSLVersion    = {6, 0};
+  xiiStringWChar sEntryPoint(szEntryPoint);
+  xiiStringWChar sProfile(szProfile);
 
-  shaderCreateInfo.Desc.Name                       = "Shader";
-  shaderCreateInfo.Desc.UseCombinedTextureSamplers = false;
-  shaderCreateInfo.Desc.CombinedSamplerSuffix      = "_AutoSampler";
-  shaderCreateInfo.Desc.ShaderType                 = GALToDiligentShaderStage(Stage);
+  Diligent::IDXCompiler::CompileAttribs compileAttribs;
+  compileAttribs.Source       = szSource;
+  compileAttribs.SourceLength = (xiiUInt32)strlen(szCompileSource);
+  compileAttribs.EntryPoint   = sEntryPoint;
+  compileAttribs.Profile      = sProfile;
+  compileAttribs.pArgs        = pszArgs.GetData();
+  compileAttribs.ArgsCount    = pszArgs.GetCount();
 
-  g_pDXCompilerVulkan->Compile(shaderCreateInfo, shaderCreateInfo.HLSLVersion, nullptr, pByteCode.RawDblPtr(), &out_SpirvOutput, shaderCreateInfo.ppCompilerOutput);
+  xiiComPtr<IDxcBlob> pCompilerOutput;
+  compileAttribs.ppBlobOut        = out_pOutputBlob.Put();
+  compileAttribs.ppCompilerOutput = pCompilerOutput.Put();
 
-  if (pByteCode == nullptr)
+  if (!g_pDXCompilerVulkan->Compile(compileAttribs))
+  {
+    xiiLog::Error("Shader Compilation Failed.");
+    if (pCompilerOutput != nullptr && pCompilerOutput->GetBufferSize() != 0)
+    {
+      xiiStringBuilder sCleanOutput = xiiStringUtf8(reinterpret_cast<const char*>(pCompilerOutput->GetBufferPointer())).GetData();
+
+      xiiHybridArray<xiiString, 2> sOutputSplit;
+      sCleanOutput.Split(false, sOutputSplit, ":");
+
+      // Rebuild output string
+      sCleanOutput.Clear();
+      for (xiiUInt32 i = 1; i < sOutputSplit.GetCount(); ++i)
+      {
+        // Remove whitespace and uppercase first character
+        if (i == 1)
+        {
+          xiiStringBuilder sTemp = sOutputSplit[i];
+          sTemp.Shrink(1, 0);
+
+          auto iter = begin(sTemp);
+          sTemp.ChangeCharacter(iter, xiiStringUtils::ToUpperChar(sTemp[0]));
+
+          sCleanOutput.AppendFormat("{}", sTemp);
+        }
+        else
+        {
+          sCleanOutput.AppendFormat("{}", sOutputSplit[i]);
+        }
+      }
+
+      xiiLog::Error("{}", sCleanOutput.GetData());
+      return XII_FAILURE;
+    }
+  }
+
+  if (pCompilerOutput != nullptr && pCompilerOutput->GetBufferSize() != 0)
+  {
+    xiiStringBuilder sCleanOutput = xiiStringUtf8(reinterpret_cast<const char*>(pCompilerOutput->GetBufferPointer())).GetData();
+
+    xiiHybridArray<xiiString, 2> sOutputSplit;
+    sCleanOutput.Split(false, sOutputSplit, ":");
+
+    // Rebuild output string
+    sCleanOutput.Clear();
+    for (xiiUInt32 i = 1; i < sOutputSplit.GetCount(); ++i)
+    {
+      // Remove whitespace and uppercase first character
+      if (i == 1)
+      {
+        xiiStringBuilder sTemp = sOutputSplit[i];
+        sTemp.Shrink(1, 0);
+
+        auto iter = begin(sTemp);
+        sTemp.ChangeCharacter(iter, xiiStringUtils::ToUpperChar(sTemp[0]));
+
+        sCleanOutput.AppendFormat("{}", sTemp);
+      }
+      else
+      {
+        sCleanOutput.AppendFormat("{}", sOutputSplit[i]);
+      }
+    }
+
+    xiiLog::Warning("{}", sCleanOutput.GetData());
+  }
+
+  if (out_pOutputBlob == nullptr)
   {
     xiiLog::Error("No shader bytecode was generated.");
     return XII_FAILURE;
   }
 
-#  if !DILIGENT_NO_HLSL
-  // SPIR-V bytecode generated from HLSL must be legalized into a valid Vulkan SPIR-V shader.
-  std::vector<xiiUInt32> LegalizedSPIRV = Diligent::OptimizeSPIRV(out_SpirvOutput, spv_target_env::SPV_ENV_MAX, Diligent::SPIRV_OPTIMIZATION_FLAG_LEGALIZATION);
-  if (!LegalizedSPIRV.empty())
-  {
-    out_SpirvOutput = std::move(LegalizedSPIRV);
-  }
-  else
-  {
-    xiiLog::Error("Failed to legalize SPIR-V shader generated from HLSL. This may result in undefined behavior.");
-    return XII_FAILURE;
-  }
-#  else
-  xiiLog::Warning("Unable to legalize SPIRV bytecode generated by DXC as the engine was built with DILIGENT_NO_HLSL option. The byte code may be invalid.");
-#  endif
+  out_ByteCode.SetCountUninitialized(static_cast<xiiUInt32>(out_pOutputBlob->GetBufferSize()));
 
-  out_ByteCode.SetCountUninitialized(static_cast<xiiUInt32>(pByteCode->GetBufferSize()));
-
-  xiiMemoryUtils::Copy(out_ByteCode.GetData(), reinterpret_cast<xiiUInt8*>(pByteCode->GetBufferPointer()), out_ByteCode.GetCount());
+  xiiMemoryUtils::Copy(out_ByteCode.GetData(), reinterpret_cast<xiiUInt8*>(out_pOutputBlob->GetBufferPointer()), out_ByteCode.GetCount());
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage, Diligent::ShaderCreateInfo& shaderCreateInfo, std::vector<xiiUInt32>& spirvOutput, xiiMap<const char*, xiiGALVertexAttributeSemantic::Enum, CompareConstChar>& vertexInputMapping)
+xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage, xiiComPtr<IDxcBlob>& pShaderBlob, xiiMap<const char*, xiiGALVertexAttributeSemantic::Enum, CompareConstChar>& vertexInputMapping)
 {
   XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_szSourceFile);
 

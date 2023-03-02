@@ -391,12 +391,11 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
 #if VULKAN_SUPPORTED
         case xiiGraphicsDevice::Vulkan:
         {
-          std::vector<xiiUInt32>     spirvOutput;
-          xiiShaderCompilerVulkan    shaderCompilerVulkan;
-          Diligent::ShaderCreateInfo ShaderCI;
-          if (shaderCompilerVulkan.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), (xiiGALShaderStage::Enum)stage, ShaderCI, GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode(), spirvOutput).Succeeded())
+          xiiComPtr<IDxcBlob>     pOutputBlob;
+          xiiShaderCompilerVulkan shaderCompilerVulkan;
+          if (shaderCompilerVulkan.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode(), pOutputBlob).Succeeded())
           {
-            XII_SUCCEED_OR_RETURN(shaderCompilerVulkan.ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage, ShaderCI, spirvOutput, m_VertexInputMapping));
+            XII_SUCCEED_OR_RETURN(shaderCompilerVulkan.ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage, pOutputBlob, m_VertexInputMapping));
           }
           else
           {

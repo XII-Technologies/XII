@@ -52,6 +52,7 @@ xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* 
   xiiStringBuilder sDebugSource;
 
   xiiDynamicArray<xiiStringWChar> args;
+  args.PushBack(L"-Zpc"); // Matrices in column-major order
 
   if (bDebug)
   {
