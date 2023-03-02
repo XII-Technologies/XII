@@ -78,7 +78,7 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
   xiiComPtr<IDxcBlob> pByteCode;
 
   shaderCreateInfo.EntryPoint     = szEntryPoint;
-  shaderCreateInfo.CompileFlags   = Diligent::SHADER_COMPILE_FLAG_NONE;
+  shaderCreateInfo.CompileFlags   = Diligent::SHADER_COMPILE_FLAG_SKIP_REFLECTION;
   shaderCreateInfo.Source         = szCompileSource;
   shaderCreateInfo.SourceLength   = (xiiUInt32)strlen(szCompileSource);
   shaderCreateInfo.SourceLanguage = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
@@ -126,74 +126,73 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
 
   auto& byteCode = inout_Data.m_StageBinary[Stage].GetByteCode();
 
-  SpvReflectShaderModule module;
-
-  if (spvReflectCreateShaderModule(byteCode.GetCount(), byteCode.GetData(), &module) != SPV_REFLECT_RESULT_SUCCESS)
+  SpvReflectShaderModule reflectShaderModule = {};
+  if (spvReflectCreateShaderModule(byteCode.GetCount(), byteCode.GetData(), &reflectShaderModule) != SPV_REFLECT_RESULT_SUCCESS)
   {
     xiiLog::Error("Extracting shader reflection information failed.");
     return XII_FAILURE;
   }
 
-  XII_SCOPE_EXIT(spvReflectDestroyShaderModule(&module));
+  XII_SCOPE_EXIT(spvReflectDestroyShaderModule(&reflectShaderModule));
 
   xiiHybridArray<xiiShaderVertexInputAttribute, 8> vertexInputAttributes;
   if (Stage == xiiGALShaderStage::VertexShader)
   {
-    xiiUInt32 uiNumVars = 0;
-    if (spvReflectEnumerateInputVariables(&module, &uiNumVars, nullptr) != SPV_REFLECT_RESULT_SUCCESS)
+    xiiUInt32 uiNumInputVariables = 0;
+    if (spvReflectEnumerateInputVariables(&reflectShaderModule, &uiNumInputVariables, nullptr) != SPV_REFLECT_RESULT_SUCCESS)
     {
       xiiLog::Error("Failed to retrieve number of input variables.");
       return XII_FAILURE;
     }
-    xiiDynamicArray<SpvReflectInterfaceVariable*> vars;
-    vars.SetCount(uiNumVars);
 
-    if (spvReflectEnumerateInputVariables(&module, &uiNumVars, vars.GetData()) != SPV_REFLECT_RESULT_SUCCESS)
+    xiiDynamicArray<SpvReflectInterfaceVariable*> inputVariables;
+    inputVariables.SetCount(uiNumInputVariables);
+
+    if (spvReflectEnumerateInputVariables(&reflectShaderModule, &uiNumInputVariables, inputVariables.GetData()) != SPV_REFLECT_RESULT_SUCCESS)
     {
       xiiLog::Error("Failed to retrieve input variables.");
       return XII_FAILURE;
     }
 
-    vertexInputAttributes.Reserve(vars.GetCount());
+    vertexInputAttributes.Reserve(inputVariables.GetCount());
 
-    for (xiiUInt32 i = 0; i < vars.GetCount(); ++i)
+    for (xiiUInt32 i = 0; i < inputVariables.GetCount(); ++i)
     {
-      SpvReflectInterfaceVariable* pVar = vars[i];
+      SpvReflectInterfaceVariable* pInputVariable = inputVariables[i];
 
-      xiiShaderVertexInputAttribute& attr = vertexInputAttributes.ExpandAndGetRef();
-      attr.m_uiSemanticIndex              = static_cast<xiiUInt8>(pVar->location);
+      xiiShaderVertexInputAttribute& attribute = vertexInputAttributes.ExpandAndGetRef();
+      attribute.m_uiSemanticIndex              = static_cast<xiiUInt8>(pInputVariable->location);
 
-      xiiStringBuilder sSemanticName = pVar->semantic;
-
+      xiiStringBuilder sSemanticName = pInputVariable->semantic;
       if (!sSemanticName.StartsWith_NoCase("SV_"))
       {
         xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(sSemanticName);
         XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {}", sSemanticName);
 
         if (pVAS != nullptr)
-          attr.m_eSemantic = *pVAS;
+          attribute.m_eSemantic = *pVAS;
         else
-          xiiLog::Dev("Unknown vertex input semantic found: {}", pVar->semantic);
+          xiiLog::Dev("Unknown vertex input semantic found: {}", pInputVariable->semantic);
       }
 
-      attr.m_eFormat = GetXIIFormat(pVar->format);
-      XII_ASSERT_DEV(attr.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", pVar->format);
+      attribute.m_eFormat = GetXIIFormat(pInputVariable->format);
+      XII_ASSERT_DEV(attribute.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", pInputVariable->format);
     }
   }
 
-  // Descriptor bindings
+  // Descriptor Bindings
   {
-    xiiUInt32 uiNumVars = 0;
-    if (spvReflectEnumerateDescriptorBindings(&module, &uiNumVars, nullptr) != SPV_REFLECT_RESULT_SUCCESS)
+    xiiUInt32 uiNumDescriptorBindings = 0;
+    if (spvReflectEnumerateDescriptorBindings(&reflectShaderModule, &uiNumDescriptorBindings, nullptr) != SPV_REFLECT_RESULT_SUCCESS)
     {
-      xiiLog::Error("Failed to retrieve number of descriptor bindings.");
+      xiiLog::Error("Failed to retrieve the number of descriptor bindings.");
       return XII_FAILURE;
     }
 
-    xiiDynamicArray<SpvReflectDescriptorBinding*> vars;
-    vars.SetCount(uiNumVars);
+    xiiDynamicArray<SpvReflectDescriptorBinding*> descriptorBindings;
+    descriptorBindings.SetCount(uiNumDescriptorBindings);
 
-    if (spvReflectEnumerateDescriptorBindings(&module, &uiNumVars, vars.GetData()) != SPV_REFLECT_RESULT_SUCCESS)
+    if (spvReflectEnumerateDescriptorBindings(&reflectShaderModule, &uiNumDescriptorBindings, descriptorBindings.GetData()) != SPV_REFLECT_RESULT_SUCCESS)
     {
       xiiLog::Error("Failed to retrieve descriptor bindings.");
       return XII_FAILURE;
@@ -203,28 +202,28 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
     xiiUInt32                    uiVirtualResourceView = 0;
     xiiUInt32                    uiVirtualSampler      = 0;
 
-    for (xiiUInt32 i = 0; i < vars.GetCount(); ++i)
+    for (xiiUInt32 i = 0; i < uiNumDescriptorBindings; ++i)
     {
-      auto& info = *vars[i];
+      auto& descriptorBinding = *descriptorBindings[i];
 
-      xiiLog::Info("Bound Resource: '{}' at slot {} (Count: {})", info.name, info.binding, info.count);
+      xiiLog::Info("Bound Resource: '{}' at slot {} (Count: {})", descriptorBinding.name, descriptorBinding.binding, descriptorBinding.count);
 
       xiiShaderResourceBinding shaderResourceBinding;
       shaderResourceBinding.m_Type  = xiiShaderResourceType::Unknown;
-      shaderResourceBinding.m_iSlot = info.binding;
-      shaderResourceBinding.m_sName.Assign(info.name);
+      shaderResourceBinding.m_iSlot = descriptorBinding.binding;
+      shaderResourceBinding.m_sName.Assign(descriptorBinding.name);
 
-      if (FillResourceBinding(inout_Data.m_StageBinary[Stage], shaderResourceBinding, info).Failed())
+      if (FillResourceBinding(inout_Data.m_StageBinary[Stage], shaderResourceBinding, descriptorBinding).Failed())
         continue;
 
       // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the DX11-based high level render interface.
-      if (info.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV)
+      if (descriptorBinding.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV)
       {
         shaderResourceBinding.m_iSlot = uiVirtualResourceView;
         uiVirtualResourceView++;
       }
 
-      if (info.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER)
+      if (descriptorBinding.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER)
       {
         shaderResourceBinding.m_iSlot = uiVirtualSampler;
         uiVirtualSampler++;
@@ -236,51 +235,61 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
       inout_Data.m_StageBinary[Stage].AddShaderResourceBinding(shaderResourceBinding);
     }
 
+    // Write Bindings
     {
       xiiArrayPtr<const xiiShaderResourceBinding> xiiBindings = inout_Data.m_StageBinary[Stage].GetShaderResourceBindings();
+
       // Modify meta data
       xiiDefaultMemoryStreamStorage storage;
       xiiMemoryStreamWriter         stream(&storage);
 
-      const xiiUInt32 uiCount = vars.GetCount();
+      const xiiUInt32 uiCount = xiiBindings.GetCount();
 
-      // Currently hard coded to a single DescriptorSetLayout.
+      // Only a single descriptor set is currently supported.
       xiiHybridArray<xiiShaderDescriptorSetLayout, 3> sets;
       xiiShaderDescriptorSetLayout&                   set = sets.ExpandAndGetRef();
 
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        auto& info = *vars[i];
-        XII_ASSERT_DEV(info.set == 0, "Only a single descriptor set is currently supported.");
+        auto& info = xiiBindings[i];
+
+        auto& spirvInfo = *descriptorBindings[i];
+        XII_ASSERT_DEV(spirvInfo.set == 0, "Only a single descriptor set is currently supported.");
+
         xiiShaderDescriptorSetLayoutBinding& binding = set.Bindings.ExpandAndGetRef();
-        binding.m_sName                              = info.name;
-        binding.m_uiBinding                          = static_cast<xiiUInt8>(info.binding);
+        binding.m_sName                              = info.m_sName;
+        binding.m_uiBinding                          = static_cast<xiiUInt8>(spirvInfo.binding);
         binding.m_uiVirtualBinding                   = xiiBindings[descriptorToXIIBinding[i]].m_iSlot;
         binding.m_xiiType                            = xiiBindings[descriptorToXIIBinding[i]].m_Type;
-        switch (info.resource_type)
+        switch (spirvInfo.resource_type)
         {
           case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER:
             binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceType::Sampler;
             break;
+
           case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_CBV:
             binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceType::ConstantBuffer;
             break;
+
           case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV:
             binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceType::ResourceView;
             break;
-          default:
+
           case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_UAV:
             binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessView;
             break;
         }
-        binding.m_uiDescriptorType  = static_cast<xiiUInt32>(info.descriptor_type);
+
+        binding.m_uiDescriptorType  = static_cast<xiiUInt32>(spirvInfo.descriptor_type);
         binding.m_uiDescriptorCount = 1;
-        for (xiiUInt32 uiDim = 0; uiDim < info.array.dims_count; ++uiDim)
+        for (xiiUInt32 uiDim = 0; uiDim < spirvInfo.array.dims_count; ++uiDim)
         {
-          binding.m_uiDescriptorCount *= info.array.dims[uiDim];
+          binding.m_uiDescriptorCount *= spirvInfo.array.dims[uiDim];
         }
-        binding.m_uiWordOffset = info.word_offset.binding;
+
+        binding.m_uiWordOffset = spirvInfo.word_offset.binding;
       }
+
       set.Bindings.Sort([](const xiiShaderDescriptorSetLayoutBinding& lhs, const xiiShaderDescriptorSetLayoutBinding& rhs) { return lhs.m_uiBinding < rhs.m_uiBinding; });
 
       xiiShaderMetaData::Write(stream, byteCode, sets, vertexInputAttributes);
@@ -521,13 +530,6 @@ xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiShaderStageBinary& sha
   {
     binding.m_Type = xiiShaderResourceType::Sampler;
 
-    if (binding.m_sName.GetString().EndsWith("_AutoSampler"))
-    {
-      xiiStringBuilder sb = binding.m_sName.GetString();
-      sb.TrimWordEnd("_AutoSampler");
-      binding.m_sName.Assign(sb);
-    }
-
     return XII_SUCCESS;
   }
 
@@ -566,9 +568,8 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
             return XII_SUCCESS;
           }
         }
-
-        break;
       }
+      break;
 
       case SpvDim::SpvDim2D:
       {
@@ -598,9 +599,8 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
             return XII_SUCCESS;
           }
         }
-
-        break;
       }
+      break;
 
       case SpvDim::SpvDim3D:
       {
@@ -609,9 +609,8 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
           binding.m_Type = xiiShaderResourceType::Texture3D;
           return XII_SUCCESS;
         }
-
-        break;
       }
+      break;
 
       case SpvDim::SpvDimCube:
       {
@@ -628,9 +627,8 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
             return XII_SUCCESS;
           }
         }
-
-        break;
       }
+      break;
 
       case SpvDim::SpvDimBuffer:
         binding.m_Type = xiiShaderResourceType::GenericBuffer;

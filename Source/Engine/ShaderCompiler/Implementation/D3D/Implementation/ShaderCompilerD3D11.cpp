@@ -125,13 +125,13 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramCompiler::x
 
   // Descriptor Bindings
   {
-    xiiUInt32 uiNumVars = ShaderDesc.BoundResources;
+    xiiUInt32 uiNumBoundResources = ShaderDesc.BoundResources;
 
     xiiMap<xiiUInt32, xiiUInt32> descriptorToXIIBinding;
     xiiUInt32                    uiVirtualResourceView = 0;
     xiiUInt32                    uiVirtualSampler      = 0;
 
-    for (xiiUInt32 i = 0; i < uiNumVars; ++i)
+    for (xiiUInt32 i = 0; i < uiNumBoundResources; ++i)
     {
       D3D11_SHADER_INPUT_BIND_DESC inputDesc;
       if (FAILED(pReflector->GetResourceBindingDesc(i, &inputDesc)))
@@ -402,7 +402,6 @@ xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiShaderStageBinary& shad
     || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_RTACCELERATIONSTRUCTURE)
   // clang-format on
   {
-    // Fill Shader Resource View
     return FillSRVResourceBinding(shaderBinary, binding, info);
   }
 
@@ -416,13 +415,11 @@ xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiShaderStageBinary& shad
     || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_UAV_FEEDBACKTEXTURE)
   // clang-format on
   {
-    // Fill Unordered Access Views
     return FillUAVResourceBinding(shaderBinary, binding, info);
   }
 
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_CBUFFER)
   {
-    // Fill Constant Buffer
     binding.m_Type    = xiiShaderResourceType::ConstantBuffer;
     binding.m_pLayout = ReflectConstantBufferLayout(shaderBinary, info.Name, pReflector->GetConstantBufferByName(info.Name));
 
@@ -431,7 +428,6 @@ xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiShaderStageBinary& shad
 
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_SAMPLER)
   {
-    // Fill Sampler
     binding.m_Type = xiiShaderResourceType::Sampler;
 
     return XII_SUCCESS;
