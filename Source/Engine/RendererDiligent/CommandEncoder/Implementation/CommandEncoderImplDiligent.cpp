@@ -272,15 +272,67 @@ void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* 
   xiiGALBuffer*      pDst               = const_cast<xiiGALBuffer*>(pDestination);
   Diligent::IBuffer* pDestinationBuffer = static_cast<xiiGALBufferDiligent*>(pDst)->GetBuffer();
 
+  switch (updateMode)
+  {
+    case xiiGALUpdateMode::Discard:
+    {
+      Diligent::PVoid pMapResult;
+
+      m_pContext->MapBuffer(pDestinationBuffer, Diligent::MAP_WRITE, Diligent::MAP_FLAG_DISCARD, pMapResult);
+
+      if (pMapResult)
+      {
+        memcpy(xiiMemoryUtils::AddByteOffset((xiiUInt8*)pMapResult, uiDestOffset), pSourceData.GetPtr(), pSourceData.GetCount());
+
+        m_pContext->UnmapBuffer(pDestinationBuffer, Diligent::MAP_WRITE);
+      }
+      else
+      {
+        xiiLog::Error("Failed to map buffer to update content.");
+      }
+    }
+    break;
+
+    case xiiGALUpdateMode::NoOverwrite:
+    {
+      Diligent::PVoid pMapResult;
+
+      m_pContext->MapBuffer(pDestinationBuffer, Diligent::MAP_WRITE, Diligent::MAP_FLAG_NO_OVERWRITE, pMapResult);
+
+      if (pMapResult)
+      {
+        memcpy(xiiMemoryUtils::AddByteOffset((xiiUInt8*)pMapResult, uiDestOffset), pSourceData.GetPtr(), pSourceData.GetCount());
+
+        m_pContext->UnmapBuffer(pDestinationBuffer, Diligent::MAP_WRITE);
+      }
+      else
+      {
+        xiiLog::Error("Failed to map buffer to update content.");
+      }
+    }
+    break;
+
+    case xiiGALUpdateMode::CopyToTempStorage:
+    {
+    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+#if 0
   if (pDestination->GetDescription().m_BufferType == xiiGALBufferType::ConstantBuffer)
   {
     Diligent::PVoid MapResult;
 
     m_pContext->MapBuffer(pDestinationBuffer, Diligent::MAP_WRITE, Diligent::MAP_FLAG_DISCARD, MapResult);
 
-    memcpy(MapResult, pSourceData.GetPtr(), pSourceData.GetCount());
+    if (MapResult)
+    {
+      memcpy(MapResult, pSourceData.GetPtr(), pSourceData.GetCount());
 
-    m_pContext->UnmapBuffer(pDestinationBuffer, Diligent::MAP_WRITE);
+      m_pContext->UnmapBuffer(pDestinationBuffer, Diligent::MAP_WRITE);
+    }
   }
   else
   {
@@ -294,6 +346,7 @@ void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* 
       XII_ASSERT_NOT_IMPLEMENTED;
     }
   }
+#endif
 }
 
 void xiiGALCommandEncoderImplDiligent::CopyTexturePlatform(const xiiGALTexture* pDestination, const xiiGALTexture* pSource)
