@@ -102,7 +102,7 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
 
   if (m_pBuffer == nullptr)
   {
-    xiiLog::Error("Creation of native DirectX buffer failed!");
+    xiiLog::Error("Failed to create buffer for graphics device!");
     return XII_FAILURE;
   }
 
