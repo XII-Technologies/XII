@@ -8,6 +8,8 @@
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+#  include <Foundation/Basics/Platform/Linux/IncludeX11.h>
 #endif
 
 #if D3D11_SUPPORTED
@@ -101,6 +103,11 @@ xiiResult xiiGALSwapChainDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   Diligent::Win32NativeWindow Window{xiiMinWindows::ToNative(m_WindowDesc.m_pWindow->GetNativeWindowHandle())};
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  xiiWindowHandle             xcbWindowHandle = m_WindowDesc.m_pWindow->GetNativeWindowHandle();
+  Diligent::LinuxNativeWindow Window          = {};
+  Window.WindowId                             = xiiMinX11::ToNative(xcbWindowHandle.xcbWindow.m_hWindow);
+  Window.pXCBConnection                       = xcbWindowHandle.xcbWindow.m_pConnection;
 #else
 #  error Not Implemented on platform!
 #endif
