@@ -14,16 +14,6 @@
 #  include <ShaderCompiler/ShaderCompiler.h>
 #  include <ShaderCompiler/ShaderMetadata.h>
 
-#  if !DILIGENT_NO_GLSLANG
-#    include <DiligentCore/Graphics/ShaderTools/include/GLSLangUtils.hpp>
-#  endif
-
-#  if !DILIGENT_NO_HLSL
-#    include <DiligentCore/Graphics/ShaderTools/include/SPIRVTools.hpp>
-#  else
-#    error Diligent Core must be built with HLSL support enabled.
-#  endif
-
 #  include "dxc/DxilContainer/DxilContainer.h"
 
 #  include <spirv_reflect.h>

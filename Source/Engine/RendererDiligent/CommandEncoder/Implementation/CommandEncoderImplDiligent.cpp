@@ -62,7 +62,6 @@ xiiGALCommandEncoderImplDiligent::~xiiGALCommandEncoderImplDiligent()
   for (xiiUInt32 i = 0; i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
   {
     m_pBoundVertexBuffers[i] = nullptr;
-    m_VertexBufferOffsets[i] = 0;
   }
 
   for (xiiUInt32 i = 0; i < XII_GAL_MAX_CONSTANT_BUFFER_COUNT; ++i)
@@ -1073,7 +1072,7 @@ void xiiGALCommandEncoderImplDiligent::Reset()
   for (xiiUInt32 i = 0; i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
   {
     m_pBoundVertexBuffers[i] = nullptr;
-    m_VertexBufferOffsets[i] = 0;
+    m_VertexBufferStrides[i] = 0;
   }
 
   for (xiiUInt32 i = 0; i < XII_GAL_MAX_CONSTANT_BUFFER_COUNT; ++i)
@@ -1170,7 +1169,8 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
         if (i - uiCurrentStartSlot > 0)
         {
           // There are some null elements in the array. We can't submit these to Diligent and need to skip them so flush everything before it.
-          m_pContext->SetVertexBuffers(uiCurrentStartSlot, i - uiCurrentStartSlot, m_pBoundVertexBuffers + uiCurrentStartSlot, m_VertexBufferOffsets + uiCurrentStartSlot, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
+          const Diligent::Uint64* uiVertexBufferOffsets = static_cast<const Diligent::Uint64*>(m_VertexBufferStrides + uiCurrentStartSlot);
+          m_pContext->SetVertexBuffers(uiCurrentStartSlot, i - uiCurrentStartSlot, m_pBoundVertexBuffers + uiCurrentStartSlot, uiVertexBufferOffsets, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
         }
         uiCurrentStartSlot = i + 1;
       }
@@ -1178,7 +1178,10 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
     // The last element in the buffer range must always be valid so we can simply flush the rest.
     if (m_pBoundVertexBuffers[uiCurrentStartSlot])
-      m_pContext->SetVertexBuffers(uiCurrentStartSlot, m_BoundVertexBuffersRange.m_uiMax - uiCurrentStartSlot + 1, m_pBoundVertexBuffers + uiCurrentStartSlot, m_VertexBufferOffsets + uiCurrentStartSlot, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
+    {
+      const Diligent::Uint64* uiVertexBufferOffset = static_cast<const Diligent::Uint64*>(m_VertexBufferStrides + uiCurrentStartSlot);
+      m_pContext->SetVertexBuffers(uiCurrentStartSlot, m_BoundVertexBuffersRange.m_uiMax - uiCurrentStartSlot + 1, m_pBoundVertexBuffers + uiCurrentStartSlot, uiVertexBufferOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
+    }
 
     m_BoundVertexBuffersRange.Reset();
   }
