@@ -180,6 +180,8 @@ private:
   Diligent::ITextureView* m_pBoundDepthStencilTarget                            = nullptr;
 
   Diligent::IBuffer*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
-  Diligent::Uint64      m_VertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
   xiiGAL::ModifiedRange m_BoundVertexBuffersRange;
+
+  Diligent::Uint64 m_VertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  Diligent::Uint64 m_VertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 };
