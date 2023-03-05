@@ -608,7 +608,6 @@ xiiGALBufferHandle xiiGALDevice::CreateConstantBuffer(xiiUInt32 uiBufferSize, co
   return CreateBuffer(desc);
 }
 
-
 xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& desc, xiiArrayPtr<xiiGALSystemMemoryDescription> pInitialData)
 {
   XII_GALDEVICE_LOCK_AND_CHECK();
