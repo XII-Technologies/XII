@@ -273,6 +273,33 @@ void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* 
   xiiGALBuffer*      pDst               = const_cast<xiiGALBuffer*>(pDestination);
   Diligent::IBuffer* pDestinationBuffer = static_cast<xiiGALBufferDiligent*>(pDst)->GetBuffer();
 
+#if 0
+  if (pDestination->GetDescription().m_BufferType == xiiGALBufferType::ConstantBuffer)
+  {
+    Diligent::PVoid MapResult;
+
+    m_pContext->MapBuffer(pDestinationBuffer, Diligent::MAP_WRITE, Diligent::MAP_FLAG_DISCARD, MapResult);
+
+    if (MapResult)
+    {
+      memcpy(MapResult, pSourceData.GetPtr(), pSourceData.GetCount());
+
+      m_pContext->UnmapBuffer(pDestinationBuffer, Diligent::MAP_WRITE);
+    }
+  }
+  else
+  {
+    const Diligent::BufferDesc& desc = pDestinationBuffer->GetDesc();
+    if (desc.Usage == Diligent::USAGE_DEFAULT || desc.Usage == Diligent::USAGE_SPARSE)
+    {
+      m_pContext->UpdateBuffer(pDestinationBuffer, uiDestOffset, pSourceData.GetCount(), reinterpret_cast<const void*>(pSourceData.GetPtr()), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    }
+    else
+    {
+      XII_ASSERT_NOT_IMPLEMENTED;
+    }
+  }
+#else
   switch (updateMode)
   {
     case xiiGALUpdateMode::Discard:
@@ -315,37 +342,11 @@ void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* 
 
     case xiiGALUpdateMode::CopyToTempStorage:
     {
+      XII_ASSERT_NOT_IMPLEMENTED
     }
     break;
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
-
-#if 0
-  if (pDestination->GetDescription().m_BufferType == xiiGALBufferType::ConstantBuffer)
-  {
-    Diligent::PVoid MapResult;
-
-    m_pContext->MapBuffer(pDestinationBuffer, Diligent::MAP_WRITE, Diligent::MAP_FLAG_DISCARD, MapResult);
-
-    if (MapResult)
-    {
-      memcpy(MapResult, pSourceData.GetPtr(), pSourceData.GetCount());
-
-      m_pContext->UnmapBuffer(pDestinationBuffer, Diligent::MAP_WRITE);
-    }
-  }
-  else
-  {
-    const Diligent::BufferDesc& desc = pDestinationBuffer->GetDesc();
-    if (desc.Usage == Diligent::USAGE_DEFAULT || desc.Usage == Diligent::USAGE_SPARSE)
-    {
-      m_pContext->UpdateBuffer(pDestinationBuffer, uiDestOffset, pSourceData.GetCount(), reinterpret_cast<const void*>(pSourceData.GetPtr()), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-    }
-    else
-    {
-      XII_ASSERT_NOT_IMPLEMENTED;
-    }
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED
   }
 #endif
 }
