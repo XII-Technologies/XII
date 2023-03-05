@@ -839,10 +839,12 @@ void xiiGALDeviceDiligent::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 {
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
 
-#if XII_ENABLED(XII_USE_PROFILING)
+#if 0
+#  if XII_ENABLED(XII_USE_PROFILING
   xiiStringBuilder sb;
   sb.Format("Frame {}", uiRenderFrame);
   m_pFrameTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), sb);
+#  endif
 #endif
 }
 
@@ -850,8 +852,10 @@ void xiiGALDeviceDiligent::EndFramePlatform()
 {
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
 
-#if XII_ENABLED(XII_USE_PROFILING)
+#if 0
+#  if XII_ENABLED(XII_USE_PROFILING)
   xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pFrameTimingScope);
+#  endif
 #endif
 }
 
