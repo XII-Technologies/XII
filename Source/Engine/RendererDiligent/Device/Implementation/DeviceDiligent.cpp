@@ -150,7 +150,10 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
 
   m_DeviceType = xiiDiligentUtils::GetDiligentRenderDeviceType();
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  // Using our memory allocator crashes on Linux allocating 64 byte aligned buffers.
   m_pMemoryAllocator = std::make_unique<xiiDiligentMemoryAllocator>("Diligent Engine Memory Allocator");
+#endif
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   m_iValidationLevel = Diligent::VALIDATION_LEVEL_2;
