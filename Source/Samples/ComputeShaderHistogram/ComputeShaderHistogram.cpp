@@ -145,8 +145,6 @@ xiiApplication::Execution xiiComputeShaderHistogramApp::Run()
 
 void xiiComputeShaderHistogramApp::AfterCoreSystemsStartup()
 {
-  xiiGraphicsDevice::Default = xiiGraphicsDevice::Vulkan;
-
   SUPER::AfterCoreSystemsStartup();
 
   m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);

@@ -95,8 +95,21 @@ void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity,
   }
 }
 
-xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
+xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceD3D11(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
 {
+  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D11;
+  return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
+}
+
+xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceD3D12(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
+{
+  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D12;
+  return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
+}
+
+xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
+{
+  xiiGraphicsDevice::Default = xiiGraphicsDevice::Vulkan;
   return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
 }
 
@@ -105,12 +118,16 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(RendererDiligent, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
-  xiiGALDeviceFactory::RegisterCreatorFunc("Diligent", &CreateDiligentDevice, "VK_SM60", "xiiShaderCompiler");
+  xiiGALDeviceFactory::RegisterCreatorFunc("D3D11", &CreateDiligentDeviceD3D11, "D3D_SM50", "xiiShaderCompiler");
+  xiiGALDeviceFactory::RegisterCreatorFunc("D3D12", &CreateDiligentDeviceD3D12, "D3D_SM60", "xiiShaderCompiler");
+  xiiGALDeviceFactory::RegisterCreatorFunc("Vulkan", &CreateDiligentDeviceVulkan, "VK_SM60", "xiiShaderCompiler");
 }
 
 ON_CORESYSTEMS_SHUTDOWN
 {
-  xiiGALDeviceFactory::UnregisterCreatorFunc("Diligent");
+  xiiGALDeviceFactory::UnregisterCreatorFunc("D3D11");
+  xiiGALDeviceFactory::UnregisterCreatorFunc("D3D12");
+  xiiGALDeviceFactory::UnregisterCreatorFunc("Vulkan");
 }
 
 XII_END_SUBSYSTEM_DECLARATION;
