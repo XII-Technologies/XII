@@ -404,9 +404,10 @@ void xiiShaderExplorerApp::UpdateSwapChain()
   {
     xiiGALWindowSwapChainCreationDescription swapChainDesc;
     swapChainDesc.m_pWindow            = m_pWindow;
-    swapChainDesc.m_SampleCount        = xiiGALMSAASampleCount::None;
     swapChainDesc.m_bAllowScreenshots  = true;
     swapChainDesc.m_InitialPresentMode = xiiGALPresentMode::VSync;
+    swapChainDesc.m_SampleCount        = xiiGALMSAASampleCount::None;
+    swapChainDesc.m_BackBufferFormat   = xiiGALResourceFormat::RGBAUByteNormalizedsRGB;
     m_hSwapChain                       = xiiGALWindowSwapChain::Create(swapChainDesc);
   }
   else

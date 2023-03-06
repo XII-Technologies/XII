@@ -248,15 +248,16 @@ xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent
     return XII_FAILURE;
   }
 
-  const Diligent::TextureDesc& rtvDesc = pTexture->GetDesc();
+  const Diligent::TextureDesc&     textureDesc = pTexture->GetDesc();
+  const Diligent::TextureViewDesc& rtvDesc     = pRTV->GetDesc();
 
   xiiGALTextureCreationDescription TexDesc;
   TexDesc.m_Type                        = xiiGALTextureType ::Texture2D;
-  TexDesc.m_szName                      = rtvDesc.Name;
-  TexDesc.m_uiWidth                     = rtvDesc.Width;
-  TexDesc.m_uiHeight                    = rtvDesc.Height;
-  TexDesc.m_SampleCount                 = xiiDiligentUtils::ToGALMSAASampleCount(rtvDesc.SampleCount);
-  TexDesc.m_uiDepth                     = rtvDesc.Depth;
+  TexDesc.m_szName                      = textureDesc.Name;
+  TexDesc.m_uiWidth                     = textureDesc.Width;
+  TexDesc.m_uiHeight                    = textureDesc.Height;
+  TexDesc.m_SampleCount                 = xiiDiligentUtils::ToGALMSAASampleCount(textureDesc.SampleCount);
+  TexDesc.m_uiDepth                     = textureDesc.Depth;
   TexDesc.m_pExisitingNativeObject      = pTexture;
   TexDesc.m_bAllowShaderResourceView    = false;
   TexDesc.m_bCreateRenderTarget         = true;
