@@ -241,7 +241,7 @@ if(PLATFORM_LINUX)
     # set(DXC_SPIRV_PATH "/usr/lib/dxc/libdxcompiler.so")
     # XII Addition Begin
       xii_requires_vulkan()
-      set(DXC_SPIRV_PATH "${CMAKE_BINARY_DIR}/vulkan-sdk/${XII_CONFIG_VULKAN_SDK_LINUXX64_VERSION}/x86_64/lib/libdxcompiler.so")
+      set(DXC_SPIRV_PATH "${CMAKE_BINARY_DIR}/vulkan-sdk/${XII_CONFIG_VULKAN_SDK_LINUXX64_VERSION}/x86_64/lib/libdxcompiler.so.3.7")
     # XII Addition End
 endif()
 

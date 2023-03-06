@@ -171,7 +171,7 @@ function(xii_link_target_diligent_vulkan TARGET_NAME)
 				add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
 					COMMAND ${CMAKE_COMMAND} -E copy_if_different
 						${DILIGENT_DXCOMPILER_FOR_SPIRV_PATH}
-						"\"$<TARGET_FILE_DIR:${TARGET_NAME}>/spv_dxcompiler.so\"")
+						"\"$<TARGET_FILE_DIR:${TARGET_NAME}>/libdxcompiler.so\"")
 			endif()
 		endif()
     endif()
