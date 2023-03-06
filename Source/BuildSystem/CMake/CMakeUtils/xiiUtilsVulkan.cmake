@@ -9,8 +9,6 @@
 # #####################################
 macro(xii_requires_vulkan)
 	xii_requires_one_of(XII_CMAKE_PLATFORM_LINUX XII_CMAKE_PLATFORM_WINDOWS)
-	xii_requires(XII_BUILD_DILIGENT)
-    xii_requires(VULKAN_SUPPORTED)
 	find_package(XIIVulkan REQUIRED)
 endmacro()
 
@@ -28,12 +26,10 @@ function(xii_link_target_vulkan TARGET_NAME)
 		# Only on linux is the loader a dll.
 		if(XII_CMAKE_PLATFORM_LINUX)
 			get_target_property(_dll_location XIIVulkan::Loader IMPORTED_LOCATION)
-
 			if(NOT _dll_location STREQUAL "")
 				add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
 					COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:XIIVulkan::Loader> $<TARGET_FILE_DIR:${TARGET_NAME}>)
 			endif()
-
 			unset(_dll_location)
 		endif()
 	endif()
@@ -49,14 +45,11 @@ function(xii_link_target_dxc TARGET_NAME)
 
 	if(XIIVULKAN_FOUND)
 		target_link_libraries(${TARGET_NAME} PRIVATE XIIVulkan::DXC)
-
 		get_target_property(_dll_location XIIVulkan::DXC IMPORTED_LOCATION)
-
 		if(NOT _dll_location STREQUAL "")
 			add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
 				COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:XIIVulkan::DXC> $<TARGET_FILE_DIR:${TARGET_NAME}>)
 		endif()
-
 		unset(_dll_location)
 	endif()
 endfunction()

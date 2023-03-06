@@ -18,4 +18,3 @@ set_property(GLOBAL PROPERTY XII_CONFIG_QT_WINX64_URL "https://github.com/ezEngi
 
 set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_VERSION "1.3.216.0")
 set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_URL "https://sdk.lunarg.com/sdk/download/1.3.216.0/linux/vulkansdk-linux-x86_64-1.3.216.0.tar.gz")
-
