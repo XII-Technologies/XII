@@ -111,16 +111,18 @@ public:
     xiiTelemetry::CreateServer();
     xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 
-#if BUILDSYSTEM_ENABLE_DILIGENT_SUPPORT
-    constexpr const char* szDefaultRenderer = "Diligent";
-    xiiGraphicsDevice::Default              = xiiGraphicsDevice::Vulkan;
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    constexpr const char* szDefaultRenderer = "D3D11";
+#elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+    constexpr const char* szDefaultRenderer = "Vulkan";
 #else
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    constexpr const char* szDefaultRenderer = "DX11";
-#  else
-#    error Renderer not implemented on platform
-#  endif
+#  error Renderer not implemented on platform
 #endif
+
+    constexpr const char* szDefaultLibraryName = "xiiRendererDiligent";
+    xiiGALDeviceFactory::ConfigureLibraryName("D3D11", szDefaultLibraryName);
+    xiiGALDeviceFactory::ConfigureLibraryName("D3D12", szDefaultLibraryName);
+    xiiGALDeviceFactory::ConfigureLibraryName("Vulkan", szDefaultLibraryName);
 
     const char* szRendererName   = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
     const char* szShaderModel    = "";
@@ -256,7 +258,6 @@ public:
       }
     }
   }
-
 
   Execution Run() override
   {
