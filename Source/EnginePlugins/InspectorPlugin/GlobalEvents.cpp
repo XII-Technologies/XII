@@ -27,7 +27,7 @@ static void SendAllGlobalEventTelemetry()
   if (!xiiTelemetry::IsConnectedToClient())
     return;
 
-  // clear
+  // Clear
   {
     xiiTelemetryMessage msg;
     xiiTelemetry::Broadcast(xiiTelemetry::Reliable, 'EVNT', ' CLR', nullptr, 0);
@@ -136,7 +136,6 @@ void RemoveGlobalEventHandler()
 
   xiiTelemetry::RemoveEventHandler(GlobalEventsDetail::TelemetryEventsHandler);
 }
-
 
 
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_GlobalEvents);

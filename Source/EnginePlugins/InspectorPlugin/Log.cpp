@@ -45,5 +45,4 @@ void RemoveLogWriter()
 }
 
 
-
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Log);

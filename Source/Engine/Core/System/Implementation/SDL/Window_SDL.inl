@@ -17,7 +17,6 @@
 #  include <Foundation/Basics/Platform/Android/AndroidJni.h>
 #endif
 
-#define SDL_MAIN_HANDLED
 #include <SDL2/include/SDL.h>
 #include <SDL2/include/SDL_syswm.h>
 
@@ -30,11 +29,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Core, Window)
 
   ON_CORESYSTEMS_STARTUP
   {
-    xiiInt32 code = SDL_Init(SDL_INIT_EVERYTHING);
-    if (code < 0)
-      xiiLog::Warning("Failed to initialize SDL. Window and input related functionality will not be available. Error Code {}. SDL Error Message: {}", code, SDL_GetError());
   }
-  
+
   ON_CORESYSTEMS_SHUTDOWN
   {
     SDL_Quit();
@@ -81,6 +77,26 @@ xiiResult xiiWindow::Initialize()
   }
 
   XII_ASSERT_RELEASE(m_CreationDescription.m_Resolution.HasNonZeroArea(), "The client area size can't be zero sized!");
+
+  // Initialize the video subsystem if not initialized
+  if (SDL_WasInit(SDL_INIT_VIDEO) != 1)
+  {
+    if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0)
+    {
+      xiiLog::Error("Failed to initialize the SDL Video Subsystem with error '{0}'.", SDL_GetError());
+      return XII_FAILURE;
+    }
+  }
+
+  // Initialize the event subsystem if not initialized
+  if (SDL_WasInit(SDL_INIT_EVENTS) != 1)
+  {
+    if (SDL_InitSubSystem(SDL_INIT_EVENTS) != 0)
+    {
+      xiiLog::Error("Failed to initialize the SDL Event Subsystem with error '{0}'.", SDL_GetError());
+      return XII_FAILURE;
+    }
+  }
 
   SDL_Window* pMonitor    = nullptr;
   xiiUInt32   windowFlags = 0;

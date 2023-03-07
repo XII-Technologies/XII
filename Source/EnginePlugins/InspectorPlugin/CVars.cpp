@@ -117,9 +117,7 @@ static void SendCVarTelemetry(xiiCVar* pCVar)
     }
     break;
 
-    case xiiCVarType::ENUM_COUNT:
-      XII_ASSERT_NOT_IMPLEMENTED;
-      break;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED
   }
 
   xiiTelemetry::Broadcast(xiiTelemetry::Reliable, msg);
@@ -130,7 +128,7 @@ static void SendAllCVarTelemetry()
   if (!xiiTelemetry::IsConnectedToClient())
     return;
 
-  // clear
+  // Clear
   {
     xiiTelemetryMessage msg;
     xiiTelemetry::Broadcast(xiiTelemetry::Reliable, 'CVAR', ' CLR', nullptr, 0);
@@ -218,7 +216,6 @@ void RemoveCVarEventHandler()
   xiiTelemetry::RemoveEventHandler(CVarsDetail::TelemetryEventsHandler);
   xiiTelemetry::AcceptMessagesForSystem('SVAR', false);
 }
-
 
 
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_CVars);

@@ -357,7 +357,7 @@ void xiiGameApplicationBase::BeforeCoreSystemsShutdown()
 
   Deinit_UnloadPlugins();
 
-  // shut down telemetry if it was set up
+  // Shut down telemetry if it was set up
   {
     xiiTelemetry::CloseConnection();
   }

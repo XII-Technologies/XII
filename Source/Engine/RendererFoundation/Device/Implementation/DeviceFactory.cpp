@@ -10,21 +10,18 @@ struct CreatorFuncInfo
 };
 
 static xiiHashTable<xiiString, CreatorFuncInfo> s_CreatorFuncs;
-static xiiHashTable<xiiString, xiiStringView>   s_LibraryNames;
+static xiiHashTable<xiiString, const char*>   s_LibraryNames;
 
 CreatorFuncInfo* GetCreatorFuncInfo(const char* szRendererName)
 {
   auto pFuncInfo = s_CreatorFuncs.GetValue(szRendererName);
   if (pFuncInfo == nullptr)
   {
-    auto sLibraryName = s_LibraryNames.GetValue(szRendererName);
+    xiiStringBuilder sLibraryName = *s_LibraryNames.GetValue(szRendererName);
     XII_ASSERT_DEV(sLibraryName != nullptr, "Renderer library name is unknown");
-    XII_ASSERT_DEV(!sLibraryName->IsEmpty(), "Renderer library name must not be empty");
+    XII_ASSERT_DEV(!sLibraryName.IsEmpty(), "Renderer library name must not be empty");
 
-    xiiStringBuilder sPluginName;
-    sLibraryName->GetData(sPluginName);
-
-    XII_VERIFY(xiiPlugin::LoadPlugin(sPluginName).Succeeded(), "Renderer plugin '{}' not found", sPluginName);
+    XII_VERIFY(xiiPlugin::LoadPlugin(sLibraryName).Succeeded(), "Renderer plugin '{}' not found", sLibraryName);
 
     pFuncInfo = s_CreatorFuncs.GetValue(szRendererName);
     XII_ASSERT_DEV(pFuncInfo != nullptr, "Renderer '{}' is not registered", szRendererName);
