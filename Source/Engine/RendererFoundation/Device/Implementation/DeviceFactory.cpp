@@ -10,7 +10,7 @@ struct CreatorFuncInfo
 };
 
 static xiiHashTable<xiiString, CreatorFuncInfo> s_CreatorFuncs;
-static xiiHashTable<xiiString, const char*>   s_LibraryNames;
+static xiiHashTable<xiiString, const char*>     s_LibraryNames;
 
 CreatorFuncInfo* GetCreatorFuncInfo(const char* szRendererName)
 {
