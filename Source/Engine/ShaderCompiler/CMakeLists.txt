@@ -21,7 +21,7 @@ endif()
 if (XII_BUILD_DILIGENT)
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
-    Diligent-ShaderTools
+    # Diligent-ShaderTools
   )
 
   #  Add Supported Tools
@@ -41,32 +41,11 @@ if (XII_BUILD_DILIGENT)
     xii_link_target_diligent_vulkan(${PROJECT_NAME})
 
     xii_requires_vulkan()
+    xii_link_target_dxc(${PROJECT_NAME})
     xii_sources_target_spirv_reflect(${PROJECT_NAME})
   endif()
 
   if(METAL_SUPPORTED)
     xii_link_target_diligent_metal(${PROJECT_NAME})
-  endif()
-
-  # Link SPIRV Cross for Vulkan Shader Reflection
-  if(ENABLE_SPIRV)
-      target_link_libraries(${PROJECT_NAME}
-          PRIVATE
-          spirv-cross-core
-      )
-      if (${USE_SPIRV_TOOLS})
-          target_link_libraries(${PROJECT_NAME}
-              PRIVATE
-              SPIRV-Tools-opt
-          )
-      endif()
-
-      if (${USE_GLSLANG})
-          target_link_libraries(${PROJECT_NAME}
-              PRIVATE
-              SPIRV
-              glslang
-          )
-      endif()
   endif()
 endif()

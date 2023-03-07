@@ -391,11 +391,10 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
 #if VULKAN_SUPPORTED
         case xiiGraphicsDevice::Vulkan:
         {
-          xiiComPtr<IDxcBlob>     pOutputBlob;
           xiiShaderCompilerVulkan shaderCompilerVulkan;
-          if (shaderCompilerVulkan.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode(), pOutputBlob).Succeeded())
+          if (shaderCompilerVulkan.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
           {
-            XII_SUCCEED_OR_RETURN(shaderCompilerVulkan.ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage, pOutputBlob, m_VertexInputMapping));
+            XII_SUCCEED_OR_RETURN(shaderCompilerVulkan.ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage, m_VertexInputMapping));
           }
           else
           {

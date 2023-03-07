@@ -5,7 +5,7 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Logging/Log.h>
 
-#if D3D12_SUPPORTED || VULKAN_SUPPORTED
+#if D3D12_SUPPORTED
 #  undef NULL
 #  define NULL 0
 
@@ -35,12 +35,6 @@
 #    include "WinHPostface.h"
 
 #    include "DXCompiler.hpp"
-#  elif XII_ENABLED(XII_PLATFORM_LINUX)
-#    include "DXCompiler.hpp"
-
-#    include "dxc/dxcapi.h"
-#  else
-#    error DXC Shader Compiler is not supported on this platform
 #  endif
 #endif
 
