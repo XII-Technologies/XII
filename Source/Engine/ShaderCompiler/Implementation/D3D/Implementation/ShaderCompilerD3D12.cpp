@@ -2,11 +2,6 @@
 
 #if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 
-#  include <DiligentCore/Graphics/ShaderTools/include/DXBCUtils.hpp>
-#  include <DiligentCore/Graphics/ShaderTools/include/DXCompiler.hpp>
-#  include <DiligentCore/Graphics/ShaderTools/include/HLSLUtils.hpp>
-#  include <DiligentCore/Graphics/ShaderTools/include/ShaderToolsCommon.hpp>
-
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D12.h>
 #  include <ShaderCompiler/ShaderCompiler.h>
 #  include <ShaderCompiler/ShaderMetadata.h>

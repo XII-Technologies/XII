@@ -2,7 +2,7 @@
 # ## Diligent Engine support
 # #####################################
 
-set (XII_BUILD_DILIGENT ON CACHE BOOL "Enable Diligent Graphics abstraction driver")
+set (XII_BUILD_DILIGENT OFF CACHE BOOL "Enable Diligent Graphics abstraction driver")
 
 # #####################################
 # ## xii_requires_diligent()

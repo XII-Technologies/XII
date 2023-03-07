@@ -2,7 +2,7 @@
 # ## Vulkan support
 # #####################################
 
-set(XII_BUILD_VULKAN ON CACHE BOOL "Build the Vulkan Graphics Device")
+set(XII_BUILD_VULKAN OFF CACHE BOOL "Build the Vulkan Graphics Device")
 
 # #####################################
 # ## xii_requires_vulkan()

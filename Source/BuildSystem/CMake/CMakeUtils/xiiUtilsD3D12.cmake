@@ -2,11 +2,7 @@
 # ## DirectX 12 support
 # #####################################
 
-if (XII_CMAKE_PLATFORM_WINDOWS)
-    set(XII_BUILD_D3D12 ON CACHE BOOL "Build the DirectX 12 Graphics Device")
-else()
-    set(XII_BUILD_D3D12 OFF CACHE BOOL "Build the DirectX 12 Graphics Device")
-endif()
+set(XII_BUILD_D3D12 OFF CACHE BOOL "Build the DirectX 12 Graphics Device")
 
 # #####################################
 # ## xii_requires_d3d12()

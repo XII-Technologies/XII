@@ -2,11 +2,7 @@
 # ## DirectX11 support
 # #####################################
 
-if (XII_CMAKE_PLATFORM_WINDOWS)
-    set(XII_BUILD_D3D11 ON CACHE BOOL "Build the DirectX 11 Graphics Device")
-else()
-    set(XII_BUILD_D3D11 OFF CACHE BOOL "Build the DirectX 11 Graphics Device")
-endif()
+set(XII_BUILD_D3D11 OFF CACHE BOOL "Build the DirectX 11 Graphics Device")
 
 # #####################################
 # ## xii_requires_d3d11()

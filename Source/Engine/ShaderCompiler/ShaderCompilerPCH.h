@@ -61,10 +61,3 @@ public:
 private:
   T* m_ptr = nullptr;
 };
-
-////////// Utility Functions //////////
-
-#include <DiligentCore/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
-#include <RendererFoundation/Shader/Shader.h>
-
-Diligent::SHADER_TYPE GALToDiligentShaderStage(xiiGALShaderStage::Enum e);
