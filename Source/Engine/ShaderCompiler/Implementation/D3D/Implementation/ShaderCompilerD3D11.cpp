@@ -1,6 +1,6 @@
 #include <ShaderCompiler/ShaderCompilerPCH.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
 
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D11.h>
 #  include <ShaderCompiler/ShaderCompiler.h>

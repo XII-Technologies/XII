@@ -1,5 +1,7 @@
 xii_cmake_init()
 
+xii_requires_one_of(XII_BUILD_D3D11 XII_BUILD_D3D12 XII_BUILD_VULKAN)
+
 # Get the name of this folder as the project name
 get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
@@ -10,7 +12,7 @@ target_link_libraries(${PROJECT_NAME}
   RendererCore
 )
 
-if (XII_CMAKE_PLATFORM_WINDOWS)
+if (XII_BUILD_D3D11 OR XII_BUILD_D3D12)
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
     dxguid.lib
@@ -18,34 +20,9 @@ if (XII_CMAKE_PLATFORM_WINDOWS)
   )
 endif()
 
-if (XII_BUILD_DILIGENT)
-  target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-    # Diligent-ShaderTools
-  )
-
-  #  Add Supported Tools
-  if(GL_SUPPORTED OR GLES_SUPPORTED)
-    xii_link_target_diligent_opengl(${PROJECT_NAME})
-  endif()
-
-  if(D3D11_SUPPORTED)
-    xii_link_target_diligent_dx11(${PROJECT_NAME})
-  endif()
-
-  if(D3D12_SUPPORTED)
-    xii_link_target_diligent_dx12(${PROJECT_NAME})
-  endif()
-
-  if(VULKAN_SUPPORTED)
-    xii_link_target_diligent_vulkan(${PROJECT_NAME})
-
-    xii_requires_vulkan()
-    xii_link_target_dxc(${PROJECT_NAME})
-    xii_sources_target_spirv_reflect(${PROJECT_NAME})
-  endif()
-
-  if(METAL_SUPPORTED)
-    xii_link_target_diligent_metal(${PROJECT_NAME})
-  endif()
+if (XII_BUILD_VULKAN)
+  # Call Find Vulkan first as that initializes resources that are needed
+  xii_requires_vulkan()
+  xii_link_target_dxc(${PROJECT_NAME})
+  xii_sources_target_spirv_reflect(${PROJECT_NAME})
 endif()

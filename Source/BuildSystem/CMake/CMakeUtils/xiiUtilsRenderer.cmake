@@ -3,7 +3,7 @@
 # #####################################
 
 macro(xii_requires_renderer)
-	xii_requires_diligent()
+	xii_requires_one_of(XII_BUILD_D3D11 XII_BUILD_D3D12 XII_BUILD_VULKAN)
 endmacro()
 
 # #####################################

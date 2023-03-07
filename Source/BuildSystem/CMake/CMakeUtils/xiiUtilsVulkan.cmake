@@ -2,13 +2,15 @@
 # ## Vulkan support
 # #####################################
 
-# set(XII_BUILD_VULKAN OFF CACHE BOOL "")
+set(XII_BUILD_VULKAN ON CACHE BOOL "Build the Vulkan Graphics Device")
 
 # #####################################
 # ## xii_requires_vulkan()
 # #####################################
+
 macro(xii_requires_vulkan)
 	xii_requires_one_of(XII_CMAKE_PLATFORM_LINUX XII_CMAKE_PLATFORM_WINDOWS)
+    xii_requires(XII_BUILD_VULKAN)
 	find_package(XIIVulkan REQUIRED)
 endmacro()
 

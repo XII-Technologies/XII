@@ -1,6 +1,6 @@
 #include <ShaderCompiler/ShaderCompilerPCH.h>
 
-#if D3D12_SUPPORTED
+#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 
 #  include <DiligentCore/Graphics/ShaderTools/include/DXBCUtils.hpp>
 #  include <DiligentCore/Graphics/ShaderTools/include/DXCompiler.hpp>
@@ -11,18 +11,7 @@
 #  include <ShaderCompiler/ShaderCompiler.h>
 #  include <ShaderCompiler/ShaderMetadata.h>
 
-#  include "WinHPostface.h"
-#  include "WinHPreface.h"
-#  include <d3d12shader.h>
-
-#  ifndef NTDDI_WIN10_VB // First defined in Win SDK 10.0.19041.0
-#    define NO_D3D_SIT_ACCELSTRUCT_FEEDBACK_TEX 1
-
-#    define D3D_SIT_RTACCELERATIONSTRUCTURE static_cast<D3D_SHADER_INPUT_TYPE>(D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER + 1)
-#    define D3D_SIT_UAV_FEEDBACKTEXTURE     static_cast<D3D_SHADER_INPUT_TYPE>(D3D_SIT_RTACCELERATIONSTRUCTURE + 1)
-#  endif
-
-#  include "dxc/DxilContainer/DxilContainer.h"
+#  include <d3dcompiler.h>
 
 std::unique_ptr<Diligent::IDXCompiler> g_pDXCompilerD3D12 = nullptr;
 

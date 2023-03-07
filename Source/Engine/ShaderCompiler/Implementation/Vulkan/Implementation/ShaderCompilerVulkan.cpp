@@ -1,7 +1,7 @@
 
 #include <ShaderCompiler/ShaderCompilerPCH.h>
 
-#if VULKAN_SUPPORTED
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
 
 #  include <Foundation/IO/MemoryStream.h>
 #  include <Foundation/Memory/MemoryUtils.h>

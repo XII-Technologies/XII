@@ -5,39 +5,6 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Logging/Log.h>
 
-#if D3D12_SUPPORTED
-#  undef NULL
-#  define NULL 0
-
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-#    include "WinHPreface.h"
-
-#    include <Unknwn.h>
-#    include <atlbase.h>
-#    include <atlcom.h>
-#    include <guiddef.h>
-
-#    include "dxc/dxcapi.h"
-
-#    include "WinHPostface.h"
-
-#    include "DXCompiler.hpp"
-#  elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-#    include "WinHPreface.h"
-
-#    include <Unknwn.h>
-#    include <atlbase.h>
-#    include <atlcom.h>
-#    include <guiddef.h>
-
-#    include "dxc/dxcapi.h"
-
-#    include "WinHPostface.h"
-
-#    include "DXCompiler.hpp"
-#  endif
-#endif
-
 /// \brief XII ComPtr to automatically free resources.
 template <typename T>
 struct xiiComPtr

@@ -2,7 +2,7 @@
 
 #include <ShaderCompiler/ShaderCompilerDLL.h>
 
-#if D3D12_SUPPORTED
+#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 
 template <typename T>
 struct xiiComPtr;
