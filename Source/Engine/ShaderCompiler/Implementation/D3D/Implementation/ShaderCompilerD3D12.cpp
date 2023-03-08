@@ -9,16 +9,18 @@
 #  undef NULL
 #  define NULL 0
 
+// clang-format off
 #  include <atlbase.h>
 #  include <d3d12shader.h>
-#  include <dxc/dxcapi.h>
+#  include <ShaderCompiler/ThirdParty/dxcapi.h>
+// clang-format on
 
 xiiComPtr<IDxcUtils>     s_pDxcUtilsD3D12;
 xiiComPtr<IDxcCompiler3> s_pDxcCompilerD3D12;
 
 xiiGALResourceFormat::Enum GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents);
 
-xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* szSource, bool bDebug, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode, xiiComPtr<IDxcBlob>& out_pOutputBlob)
+xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* szSource, bool bDebug, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
 {
   auto InitializeCompiler = [this](xiiComPtr<IDxcUtils>& pDxcUtils, xiiComPtr<IDxcCompiler3>& pDxcCompiler) -> xiiResult {
     if (pDxcUtils != nullptr)
@@ -45,11 +47,7 @@ xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* 
   args.PushBack(xiiStringWChar(szEntryPoint));
   args.PushBack(L"-T");
   args.PushBack(xiiStringWChar(szProfile));
-  args.PushBack(L"-spirv");
-  args.PushBack(L"-fspv-reflect");
   args.PushBack(L"-Zpc"); // Matrices in column-major order
-  args.PushBack(L"-fvk-use-dx-position-w");
-  args.PushBack(L"-fspv-target-env=vulkan1.1");
 
   if (bDebug)
   {
@@ -117,8 +115,6 @@ xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* 
     return XII_FAILURE;
   }
 
-  pCompileResult->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(out_pOutputBlob.RawDblPtr()), nullptr);
-
   out_ByteCode.SetCountUninitialized(static_cast<xiiUInt32>(pShader->GetBufferSize()));
 
   xiiMemoryUtils::Copy(out_ByteCode.GetData(), reinterpret_cast<xiiUInt8*>(pShader->GetBufferPointer()), out_ByteCode.GetCount());
@@ -126,7 +122,7 @@ xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* 
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage, xiiComPtr<IDxcBlob>& pShaderBlob, xiiMap<const char*, xiiGALVertexAttributeSemantic::Enum, CompareConstChar>& vertexInputMapping)
+xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage, xiiMap<const char*, xiiGALVertexAttributeSemantic::Enum, CompareConstChar>& vertexInputMapping)
 {
   XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_szSourceFile);
 
@@ -134,11 +130,15 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::x
 
   DxcBuffer ReflectionData;
   ReflectionData.Encoding = DXC_CP_ACP;
-  ReflectionData.Ptr      = pShaderBlob.RawPtr();
-  ReflectionData.Size     = pShaderBlob->GetBufferSize();
+  ReflectionData.Ptr      = reinterpret_cast<const void*>(byteCode.GetData());
+  ReflectionData.Size     = byteCode.GetCount();
 
   xiiComPtr<ID3D12ShaderReflection> pReflector;
-  s_pDxcUtilsD3D12->CreateReflection(&ReflectionData, IID_PPV_ARGS(pReflector.RawDblPtr()));
+  if (FAILED(s_pDxcUtilsD3D12->CreateReflection(&ReflectionData, IID_PPV_ARGS(pReflector.RawDblPtr()))))
+  {
+    xiiLog::Error("Failed to create shader reflector.");
+    return XII_FAILURE;
+  }
 
   D3D12_SHADER_DESC ShaderDesc;
   if (FAILED(pReflector->GetDesc(&ShaderDesc)))

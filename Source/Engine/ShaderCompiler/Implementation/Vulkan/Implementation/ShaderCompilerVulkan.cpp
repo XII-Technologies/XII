@@ -17,7 +17,7 @@
 #    include <d3dcompiler.h>
 #  endif
 
-#  include <dxc/dxcapi.h>
+#  include <ShaderCompiler/ThirdParty/dxcapi.h>
 
 xiiComPtr<IDxcUtils>     s_pDxcUtilsVulkan;
 xiiComPtr<IDxcCompiler3> s_pDxcCompilerVulkan;

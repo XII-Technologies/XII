@@ -70,24 +70,7 @@ function(xii_link_target_d3d12 TARGET_NAME)
 		)
 	endif()
 
-    # Note that CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION is stated to be defined when targeting Windows 10
-    # and above, however it is also defined when targeting 8.1 and Visual Studio 2019 (but not VS2017)
-    if(CMAKE_SYSTEM_VERSION VERSION_GREATER_EQUAL "10.0")
-        if (DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION)
-            # Note that VS_WINDOWS_SDK_BIN_DIR as well as all derived paths can only be used in Visual Studio
-            # commands and are not valid paths during CMake configuration
-            set(VS_WINDOWS_SDK_BIN_DIR "$(WindowsSdkDir)\\bin\\${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}\\${D3D12_COPY_DLLS_BIT}")
+    # Note that this function does not copy the DXIL dll to the build output. For now this is only handled
+    # in the ShaderCompiler library. See its CMakeLists.
 
-            # DXC is only present in Windows SDK starting with version 10.0.17763.0
-            if(${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION} VERSION_GREATER_EQUAL "10.0.17763.0")
-                message("\"${VS_WINDOWS_SDK_BIN_DIR}\\dxil.dll\"")
-                add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-			        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-			        "\"${VS_WINDOWS_SDK_BIN_DIR}\\dxil.dll\""
-			        $<TARGET_FILE_DIR:${TARGET_NAME}>
-			        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-		        )
-            endif()
-        endif()
-    endif()
 endfunction()

@@ -6,15 +6,15 @@
 
 #include <ShaderCompiler/ShaderMetadata.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D11.h>
 #endif
 
-#if D3D12_SUPPORTED
+#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D12.h>
 #endif
 
-#if VULKAN_SUPPORTED
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
 #  include <ShaderCompiler/Implementation/Vulkan/ShaderCompilerVulkan.h>
 #endif
 
@@ -357,7 +357,7 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
 
       switch (device)
       {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
         case xiiGraphicsDevice::D3D11:
         {
           xiiShaderCompilerD3D11 shaderCompilerD3D11;
@@ -372,14 +372,13 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         }
         break;
 #endif
-#if D3D12_SUPPORTED
+#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
         case xiiGraphicsDevice::D3D12:
         {
-          xiiComPtr<IDxcBlob>    pOutputBlob;
           xiiShaderCompilerD3D12 shaderCompilerD3D12;
-          if (shaderCompilerD3D12.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode(), pOutputBlob).Succeeded())
+          if (shaderCompilerD3D12.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
           {
-            XII_SUCCEED_OR_RETURN(shaderCompilerD3D12.ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage, pOutputBlob, m_VertexInputMapping));
+            XII_SUCCEED_OR_RETURN(shaderCompilerD3D12.ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage, m_VertexInputMapping));
           }
           else
           {
@@ -388,7 +387,7 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         }
         break;
 #endif
-#if VULKAN_SUPPORTED
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
         case xiiGraphicsDevice::Vulkan:
         {
           xiiShaderCompilerVulkan shaderCompilerVulkan;

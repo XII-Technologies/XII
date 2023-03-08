@@ -17,7 +17,7 @@ endmacro()
 # #####################################
 
 function(xii_link_target_d3d11 TARGET_NAME)
-	xii_requires_d3d()
+	xii_requires_d3d11()
 
 	get_property(XII_DX11_LIBRARY GLOBAL PROPERTY XII_DX11_LIBRARY)
 
