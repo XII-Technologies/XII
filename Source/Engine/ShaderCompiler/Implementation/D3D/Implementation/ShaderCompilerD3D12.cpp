@@ -6,29 +6,33 @@
 #  include <ShaderCompiler/ShaderCompiler.h>
 #  include <ShaderCompiler/ShaderMetadata.h>
 
-#  include <d3dcompiler.h>
+#  undef NULL
+#  define NULL 0
 
-std::unique_ptr<Diligent::IDXCompiler> g_pDXCompilerD3D12 = nullptr;
+#  include <atlbase.h>
+#  include <d3d12shader.h>
+#  include <dxc/dxcapi.h>
+
+xiiComPtr<IDxcUtils>     s_pDxcUtilsD3D12;
+xiiComPtr<IDxcCompiler3> s_pDxcCompilerD3D12;
 
 xiiGALResourceFormat::Enum GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents);
 
 xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* szSource, bool bDebug, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode, xiiComPtr<IDxcBlob>& out_pOutputBlob)
 {
-  auto InitializeCompiler = [this](std::unique_ptr<Diligent::IDXCompiler>& pCompiler) -> xiiResult {
-    if (pCompiler != nullptr)
+  auto InitializeCompiler = [this](xiiComPtr<IDxcUtils>& pDxcUtils, xiiComPtr<IDxcCompiler3>& pDxcCompiler) -> xiiResult {
+    if (pDxcUtils != nullptr)
       return XII_SUCCESS;
 
-    pCompiler = Diligent::CreateDXCompiler(Diligent::DXCompilerTarget::Direct3D12, 0, nullptr);
+    DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(pDxcUtils.RawDblPtr()));
+    DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(pDxcCompiler.RawDblPtr()));
 
-    if (pCompiler == nullptr)
-    {
-      xiiLog::Error("Failed to create DX Compiler");
-      return XII_FAILURE;
-    }
+    XII_ASSERT_DEV(pDxcUtils != nullptr, "Failed to load DXC Utils.");
+    XII_ASSERT_DEV(pDxcCompiler != nullptr, "Failed to load DXC Compiler.");
     return XII_SUCCESS;
   };
 
-  XII_SUCCEED_OR_RETURN(InitializeCompiler(g_pDXCompilerD3D12));
+  XII_SUCCEED_OR_RETURN(InitializeCompiler(s_pDxcUtilsD3D12, s_pDxcCompilerD3D12));
 
   out_ByteCode.Clear();
 
@@ -36,7 +40,16 @@ xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* 
   xiiStringBuilder sDebugSource;
 
   xiiDynamicArray<xiiStringWChar> args;
+  args.PushBack(xiiStringWChar(szFile));
+  args.PushBack(L"-E");
+  args.PushBack(xiiStringWChar(szEntryPoint));
+  args.PushBack(L"-T");
+  args.PushBack(xiiStringWChar(szProfile));
+  args.PushBack(L"-spirv");
+  args.PushBack(L"-fspv-reflect");
   args.PushBack(L"-Zpc"); // Matrices in column-major order
+  args.PushBack(L"-fvk-use-dx-position-w");
+  args.PushBack(L"-fspv-target-env=vulkan1.1");
 
   if (bDebug)
   {
@@ -53,104 +66,62 @@ xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* 
     args.PushBack(L"-O3"); // Optimization Level 3
   }
 
-  xiiHybridArray<const wchar_t*, 16> pszArgs;
+  xiiHybridArray<LPCWSTR, 16> pszArgs;
   pszArgs.SetCount(args.GetCount());
   for (xiiUInt32 i = 0; i < args.GetCount(); ++i)
   {
     pszArgs[i] = args[i].GetData();
   }
 
-  xiiStringWChar sEntryPoint(szEntryPoint);
-  xiiStringWChar sProfile(szProfile);
+  xiiComPtr<IDxcBlobEncoding> pSource;
+  s_pDxcUtilsD3D12->CreateBlob(szCompileSource, (xiiUInt32)strlen(szCompileSource), DXC_CP_UTF8, pSource.RawDblPtr());
 
-  Diligent::IDXCompiler::CompileAttribs compileAttribs;
-  compileAttribs.Source       = szSource;
-  compileAttribs.SourceLength = (xiiUInt32)strlen(szCompileSource);
-  compileAttribs.EntryPoint   = sEntryPoint;
-  compileAttribs.Profile      = sProfile;
-  compileAttribs.pArgs        = pszArgs.GetData();
-  compileAttribs.ArgsCount    = pszArgs.GetCount();
+  DxcBuffer Source;
+  Source.Ptr      = pSource->GetBufferPointer();
+  Source.Size     = pSource->GetBufferSize();
+  Source.Encoding = DXC_CP_UTF8;
 
-  xiiComPtr<IDxcBlob> pCompilerOutput;
-  compileAttribs.ppBlobOut        = out_pOutputBlob.Put();
-  compileAttribs.ppCompilerOutput = pCompilerOutput.Put();
+  xiiComPtr<IDxcResult> pCompileResult;
+  s_pDxcCompilerD3D12->Compile(&Source, pszArgs.GetData(), pszArgs.GetCount(), nullptr, IID_PPV_ARGS(pCompileResult.RawDblPtr()));
 
-  if (!g_pDXCompilerD3D12->Compile(compileAttribs))
+  xiiComPtr<IDxcBlobUtf8> pCompileError;
+  pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pCompileError.RawDblPtr()), nullptr);
+
+  HRESULT hrStatus;
+  pCompileResult->GetStatus(&hrStatus);
+  if (FAILED(hrStatus))
   {
-    xiiLog::Error("Shader Compilation Failed.");
-    if (pCompilerOutput != nullptr && pCompilerOutput->GetBufferSize() != 0)
+    xiiLog::Error("Shader compilation failed.");
+
+    if (pCompileError != nullptr && pCompileError->GetStringLength() != 0)
     {
-      xiiStringBuilder sCleanOutput = xiiStringUtf8(reinterpret_cast<const char*>(pCompilerOutput->GetBufferPointer())).GetData();
-
-      xiiHybridArray<xiiString, 2> sOutputSplit;
-      sCleanOutput.Split(false, sOutputSplit, ":");
-
-      // Rebuild output string
-      sCleanOutput.Clear();
-      for (xiiUInt32 i = 1; i < sOutputSplit.GetCount(); ++i)
-      {
-        // Remove whitespace and uppercase first character
-        if (i == 1)
-        {
-          xiiStringBuilder sTemp = sOutputSplit[i];
-          sTemp.Shrink(1, 0);
-
-          auto iter = begin(sTemp);
-          sTemp.ChangeCharacter(iter, xiiStringUtils::ToUpperChar(sTemp[0]));
-
-          sCleanOutput.AppendFormat("{}", sTemp);
-        }
-        else
-        {
-          sCleanOutput.AppendFormat("{}", sOutputSplit[i]);
-        }
-      }
-
-      xiiLog::Error("{}", sCleanOutput.GetData());
-      return XII_FAILURE;
+      xiiLog::Error("{}", xiiStringUtf8(pCompileError->GetStringPointer()).GetData());
+    }
+    return XII_FAILURE;
+  }
+  else
+  {
+    if (pCompileError != nullptr && pCompileError->GetStringLength() != 0)
+    {
+      xiiLog::Warning("{}", xiiStringUtf8(pCompileError->GetStringPointer()).GetData());
     }
   }
 
-  if (pCompilerOutput != nullptr && pCompilerOutput->GetBufferSize() != 0)
-  {
-    xiiStringBuilder sCleanOutput = xiiStringUtf8(reinterpret_cast<const char*>(pCompilerOutput->GetBufferPointer())).GetData();
+  xiiComPtr<IDxcBlob>     pShader;
+  xiiComPtr<IDxcBlobWide> pShaderName;
+  pCompileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(pShader.RawDblPtr()), pShaderName.RawDblPtr());
 
-    xiiHybridArray<xiiString, 2> sOutputSplit;
-    sCleanOutput.Split(false, sOutputSplit, ":");
-
-    // Rebuild output string
-    sCleanOutput.Clear();
-    for (xiiUInt32 i = 1; i < sOutputSplit.GetCount(); ++i)
-    {
-      // Remove whitespace and uppercase first character
-      if (i == 1)
-      {
-        xiiStringBuilder sTemp = sOutputSplit[i];
-        sTemp.Shrink(1, 0);
-
-        auto iter = begin(sTemp);
-        sTemp.ChangeCharacter(iter, xiiStringUtils::ToUpperChar(sTemp[0]));
-
-        sCleanOutput.AppendFormat("{}", sTemp);
-      }
-      else
-      {
-        sCleanOutput.AppendFormat("{}", sOutputSplit[i]);
-      }
-    }
-
-    xiiLog::Warning("{}", sCleanOutput.GetData());
-  }
-
-  if (out_pOutputBlob == nullptr)
+  if (pShader == nullptr)
   {
     xiiLog::Error("No shader bytecode was generated.");
     return XII_FAILURE;
   }
 
-  out_ByteCode.SetCountUninitialized(static_cast<xiiUInt32>(out_pOutputBlob->GetBufferSize()));
+  pCompileResult->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(out_pOutputBlob.RawDblPtr()), nullptr);
 
-  xiiMemoryUtils::Copy(out_ByteCode.GetData(), reinterpret_cast<xiiUInt8*>(out_pOutputBlob->GetBufferPointer()), out_ByteCode.GetCount());
+  out_ByteCode.SetCountUninitialized(static_cast<xiiUInt32>(pShader->GetBufferSize()));
+
+  xiiMemoryUtils::Copy(out_ByteCode.GetData(), reinterpret_cast<xiiUInt8*>(pShader->GetBufferPointer()), out_ByteCode.GetCount());
 
   return XII_SUCCESS;
 }
@@ -161,8 +132,13 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::x
 
   auto& byteCode = inout_Data.m_StageBinary[Stage].GetByteCode();
 
+  DxcBuffer ReflectionData;
+  ReflectionData.Encoding = DXC_CP_ACP;
+  ReflectionData.Ptr      = pShaderBlob.RawPtr();
+  ReflectionData.Size     = pShaderBlob->GetBufferSize();
+
   xiiComPtr<ID3D12ShaderReflection> pReflector;
-  g_pDXCompilerD3D12->GetD3D12ShaderReflection(pShaderBlob.RawPtr(), pReflector.RawDblPtr());
+  s_pDxcUtilsD3D12->CreateReflection(&ReflectionData, IID_PPV_ARGS(pReflector.RawDblPtr()));
 
   D3D12_SHADER_DESC ShaderDesc;
   if (FAILED(pReflector->GetDesc(&ShaderDesc)))

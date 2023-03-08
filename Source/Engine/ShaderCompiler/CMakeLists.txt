@@ -12,11 +12,19 @@ target_link_libraries(${PROJECT_NAME}
   RendererCore
 )
 
-if (XII_BUILD_D3D11 OR XII_BUILD_D3D12)
+if (XII_BUILD_D3D11)
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
     dxguid.lib
     d3dcompiler.lib
+  )
+endif()
+
+if (XII_BUILD_D3D12)
+  target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+    dxguid.lib
+    dxcompiler.lib
   )
 endif()
 

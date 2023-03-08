@@ -19,8 +19,8 @@
 
 #  include <dxc/dxcapi.h>
 
-xiiComPtr<IDxcUtils>     s_pDxcUtils;
-xiiComPtr<IDxcCompiler3> s_pDxcCompiler;
+xiiComPtr<IDxcUtils>     s_pDxcUtilsVulkan;
+xiiComPtr<IDxcCompiler3> s_pDxcCompilerVulkan;
 
 xiiGALResourceFormat::Enum GetXIIFormat(SpvReflectFormat format);
 
@@ -38,7 +38,7 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
     return XII_SUCCESS;
   };
 
-  XII_SUCCEED_OR_RETURN(InitializeCompiler(s_pDxcUtils, s_pDxcCompiler));
+  XII_SUCCEED_OR_RETURN(InitializeCompiler(s_pDxcUtilsVulkan, s_pDxcCompilerVulkan));
 
   out_ByteCode.Clear();
 
@@ -80,7 +80,7 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
   }
 
   xiiComPtr<IDxcBlobEncoding> pSource;
-  s_pDxcUtils->CreateBlob(szCompileSource, (xiiUInt32)strlen(szCompileSource), DXC_CP_UTF8, pSource.RawDblPtr());
+  s_pDxcUtilsVulkan->CreateBlob(szCompileSource, (xiiUInt32)strlen(szCompileSource), DXC_CP_UTF8, pSource.RawDblPtr());
 
   DxcBuffer Source;
   Source.Ptr      = pSource->GetBufferPointer();
@@ -88,7 +88,7 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
   Source.Encoding = DXC_CP_UTF8;
 
   xiiComPtr<IDxcResult> pCompileResult;
-  s_pDxcCompiler->Compile(&Source, pszArgs.GetData(), pszArgs.GetCount(), nullptr, IID_PPV_ARGS(pCompileResult.RawDblPtr()));
+  s_pDxcCompilerVulkan->Compile(&Source, pszArgs.GetData(), pszArgs.GetCount(), nullptr, IID_PPV_ARGS(pCompileResult.RawDblPtr()));
 
   xiiComPtr<IDxcBlobUtf8> pCompileError;
   pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pCompileError.RawDblPtr()), nullptr);
