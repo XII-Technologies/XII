@@ -144,8 +144,6 @@ xiiGALDeviceDiligent::~xiiGALDeviceDiligent() = default;
 
 xiiResult xiiGALDeviceDiligent::InitPlatform()
 {
-  using namespace Diligent;
-
   XII_LOG_BLOCK("xiiGALDeviceDiligent::InitPlatform");
 
   m_DeviceType = xiiDiligentUtils::GetDiligentRenderDeviceType();
@@ -166,11 +164,12 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
   xiiUInt32 NumImmediateContexts = 0;
 
 #if D3D11_SUPPORTED || D3D12_SUPPORTED || VULKAN_SUPPORTED
-  auto FindAdapter = [this](auto* pFactory, Diligent::Version GraphicsAPIVersion, Diligent::GraphicsAdapterInfo& AdapterAttribs) {
+  auto FindAdapter = [this](auto* pFactory, Diligent::Version GraphicsAPIVersion, Diligent::GraphicsAdapterInfo& AdapterAttribs) -> xiiUInt32 {
     xiiUInt32 NumAdapters = 0;
     pFactory->EnumerateAdapters(GraphicsAPIVersion, NumAdapters, nullptr);
-    xiiDynamicArray<Diligent::GraphicsAdapterInfo> Adapters;
-    Adapters.SetCount(NumAdapters);
+    xiiHybridArray<Diligent::GraphicsAdapterInfo, 2> Adapters;
+    Adapters.Reserve(NumAdapters);
+
     if (NumAdapters > 0)
       pFactory->EnumerateAdapters(GraphicsAPIVersion, NumAdapters, Adapters.GetData());
     else
@@ -210,8 +209,9 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       m_AdapterType = Diligent::ADAPTER_TYPE_UNKNOWN;
       for (xiiUInt32 i = 0; i < Adapters.GetCount(); ++i)
       {
-        const auto& AdapterInfo = Adapters[i];
-        const auto  AdapterType = AdapterInfo.Type;
+        const Diligent::GraphicsAdapterInfo& AdapterInfo = Adapters[i];
+        const Diligent::ADAPTER_TYPE         AdapterType = AdapterInfo.Type;
+
         static_assert((Diligent::ADAPTER_TYPE_DISCRETE > Diligent::ADAPTER_TYPE_INTEGRATED &&
                        Diligent::ADAPTER_TYPE_INTEGRATED > Diligent::ADAPTER_TYPE_SOFTWARE &&
                        Diligent::ADAPTER_TYPE_SOFTWARE > Diligent::ADAPTER_TYPE_UNKNOWN),
@@ -247,7 +247,7 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
   };
 #endif
 
-  xiiDynamicArray<Diligent::IDeviceContext*> ppContexts;
+  xiiHybridArray<Diligent::IDeviceContext*, 1> ppContexts;
 
   switch (m_DeviceType)
   {
@@ -275,10 +275,6 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
       EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
       EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-
-#  ifdef DILIGENT_DEBUG
-      EngineCI.SetValidationLevel(VALIDATION_LEVEL_2);
-#  endif
 
       if (m_iValidationLevel >= 0)
         EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
