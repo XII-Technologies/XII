@@ -234,15 +234,11 @@ void xiiGALCommandEncoderImplDiligent::InsertTimestampPlatform(xiiGALTimestampHa
 
 void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xiiGALUnorderedAccessView* pUnorderedAccessView, xiiVec4 clearValues)
 {
-  // This looks to require custom code, either using buffer copies or clearing via a compute shader
-
   // XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xiiGALUnorderedAccessView* pUnorderedAccessView, xiiVec4U32 clearValues)
 {
-  // This looks to require custom code, either using buffer copies or clearing via a compute shader
-
   // XII_ASSERT_NOT_IMPLEMENTED;
 }
 
@@ -649,17 +645,17 @@ void xiiGALCommandEncoderImplDiligent::FlushPlatform()
 
 void xiiGALCommandEncoderImplDiligent::PushMarkerPlatform(const char* szMarker)
 {
-  // m_pContext->BeginDebugGroup(szMarker);
+  m_pContext->BeginDebugGroup(szMarker);
 }
 
 void xiiGALCommandEncoderImplDiligent::PopMarkerPlatform()
 {
-  // m_pContext->EndDebugGroup();
+  m_pContext->EndDebugGroup();
 }
 
 void xiiGALCommandEncoderImplDiligent::InsertEventMarkerPlatform(const char* szMarker)
 {
-  // m_pContext->InsertDebugLabel(szMarker);
+  m_pContext->InsertDebugLabel(szMarker);
 }
 
 //////////////////////////////////////////////////////////////////////////

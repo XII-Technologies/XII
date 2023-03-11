@@ -92,6 +92,8 @@ void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity,
     case Diligent::DEBUG_MESSAGE_SEVERITY_FATAL_ERROR:
       xiiLog::Error("{}", Message);
       break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED
   }
 }
 
