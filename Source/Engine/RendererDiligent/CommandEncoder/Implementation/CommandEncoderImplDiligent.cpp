@@ -666,6 +666,40 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
   {
     m_RenderTargetSetup = renderingSetup.m_RenderTargetSetup;
 
+    const xiiUInt32 uiRenderTargetCount = m_RenderTargetSetup.GetRenderTargetCount();
+
+    // Reset bound render targets
+    for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; i++)
+    {
+      m_pBoundRenderTargets[i]                           = nullptr;
+      m_PipelineStateDesc.GraphicsPipeline.RTVFormats[i] = Diligent::TEX_FORMAT_UNKNOWN;
+    }
+
+    m_uiBoundRenderTargetCount = uiRenderTargetCount;
+    m_PipelineStateDesc.GraphicsPipeline.NumRenderTargets = m_uiBoundRenderTargetCount;
+
+    for (xiiUInt32 uiIndex = 0; uiIndex < uiRenderTargetCount; ++uiIndex)
+    {
+      if (!m_RenderTargetSetup.GetRenderTarget(uiIndex).IsInvalidated())
+      {
+        xiiGALRenderTargetView* pRenderTargetView                = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderTargetSetup.GetRenderTarget(uiIndex)));
+        m_pBoundRenderTargets[uiIndex]                           = static_cast<xiiGALRenderTargetViewDiligent*>(pRenderTargetView)->GetRenderTargetView();
+        m_PipelineStateDesc.GraphicsPipeline.RTVFormats[uiIndex] = m_pBoundRenderTargets[uiIndex]->GetDesc().Format;
+      }
+    }
+
+    m_pBoundDepthStencilTarget                     = nullptr;
+    m_PipelineStateDesc.GraphicsPipeline.DSVFormat = Diligent::TEX_FORMAT_UNKNOWN;
+    if (!m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated())
+    {
+      xiiGALRenderTargetView* pDepthStencilView      = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderTargetSetup.GetDepthStencilTarget()));
+      m_pBoundDepthStencilTarget                     = static_cast<xiiGALRenderTargetViewDiligent*>(pDepthStencilView)->GetDepthStencilView();
+      m_PipelineStateDesc.GraphicsPipeline.DSVFormat = m_pBoundDepthStencilTarget->GetDesc().Format;
+    }
+
+    m_pContext->SetRenderTargets(uiRenderTargetCount, m_pBoundRenderTargets, m_pBoundDepthStencilTarget, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+#if 0
     xiiGALRenderTargetView* pRenderTargetViews[XII_GAL_MAX_RENDERTARGET_COUNT] = {nullptr};
     xiiGALRenderTargetView* pDepthStencilView                                  = nullptr;
 
@@ -748,6 +782,7 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
 
       m_PipelineStateDesc.GraphicsPipeline.NumRenderTargets = m_uiBoundRenderTargetCount;
     }
+#endif
   }
   else
   {
