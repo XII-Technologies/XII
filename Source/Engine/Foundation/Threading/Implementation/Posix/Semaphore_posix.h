@@ -8,7 +8,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 #include <fcntl.h>
 #include <semaphore.h>
 #include <sys/stat.h>
-#include <time>
+#include <time.h>
 
 xiiSemaphore::xiiSemaphore() = default;
 
