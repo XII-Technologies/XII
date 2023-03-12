@@ -86,18 +86,18 @@ void xiiSemaphore::ReturnToken()
   XII_VERIFY(ReleaseSemaphore(m_hSemaphore, 1, nullptr) != 0, "Returning a semaphore token failed, most likely due to a AcquireToken() / ReturnToken() mismatch.");
 }
 
-xiiResult xiiSemaphore::TryAcquireToken()
+xiiResult xiiSemaphore::TryAcquireToken(xiiTime timeout)
 {
   XII_ASSERT_DEV(m_hSemaphore != nullptr, "Invalid semaphore.");
 
-  const xiiUInt32 res = WaitForSingleObject(m_hSemaphore, 0 /* timeout of zero milliseconds */);
+  const xiiUInt32 uiResult = WaitForSingleObject(m_hSemaphore, xiiMath::FloatToInt(timeout.AsFloatInSeconds()));
 
-  if (res == WAIT_OBJECT_0)
+  if (uiResult == WAIT_OBJECT_0)
   {
     return XII_SUCCESS;
   }
 
-  XII_ASSERT_DEV(res == WAIT_OBJECT_0 || res == WAIT_TIMEOUT, "Semaphore TryAcquireToken (WaitForSingleObject) failed with error code {}.", res);
+  XII_ASSERT_DEV(uiResult == WAIT_OBJECT_0 || uiResult == WAIT_TIMEOUT, "Semaphore TryAcquireToken (WaitForSingleObject) failed with error code {}.", uiResult);
 
   return XII_FAILURE;
 }
