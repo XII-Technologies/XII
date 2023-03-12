@@ -681,7 +681,7 @@ xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(const char* 
 
           xiiVisualShaderErrorLog log;
 
-          ret = xiiQtEditorApp::GetSingleton()->ExecuteTool("ShaderCompiler", arguments, 60, &log);
+          ret = xiiQtEditorApp::GetSingleton()->ExecuteTool("ShaderCompilerTool", arguments, 60, &log);
           if (ret.Failed())
           {
             e.m_Type            = xiiMaterialVisualShaderEvent::TransformFailed;
