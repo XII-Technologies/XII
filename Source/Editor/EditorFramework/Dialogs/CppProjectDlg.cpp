@@ -135,7 +135,7 @@ xiiResult xiiQtCppProjectDlg::GenerateSolution()
       }
 
       content.ReplaceAll("SourceTemplate", sProjectName);
-      content.ReplaceAll("SOURCE_TEMPLATE", sProjectNameUpper);
+      content.ReplaceAll("SOURCETEMPLATE", sProjectNameUpper);
 
       {
         xiiFileWriter file;
