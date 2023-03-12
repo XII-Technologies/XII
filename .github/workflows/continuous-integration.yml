@@ -1,0 +1,92 @@
+name: Continuous Integration
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # run at 6 AM UTC [12 AM Mountain Time]
+
+env:
+    FULL_BINARIES_ARTIFACT: false # Create full binaries artifact
+    RELEASE_ARTIFACT: true # Create release artifact
+    TRANSFORM_PROJECTS: false # Transform projects
+    COMPILE_SHADERS: false # Compile Shaders
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout XII repository
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.API_TOKEN_GITHUB }}
+          path: repo
+          submodules: 'recursive'
+
+      - name: Read SDK Version
+        id: sdk-version
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: repo/version.txt
+
+      - name: Echo SDK Version
+        run: echo "SDK Version is ${{ steps.sdk-version.outputs.content }}"
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1.0.2
+
+      - name: Run CMake
+        run: |
+          cmake.exe -S repo -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_SYSTEM_VERSION:STRING="10.0.18362.0" -DXII_ENABLE_QT_SUPPORT:BOOL=ON -DXII_BUILD_SAMPLES:BOOL=ON -DXII_BUILD_UNITTESTS:BOOL=OFF -DXII_BUILD_KRAUT:BOOL=ON -DXII_BUILD_RMLUI:BOOL=ON -DXII_SOLUTION_NAME:string="solution"
+
+      - name: Build Full Solution
+        run:  msbuild build/solution.sln /p:Configuration=Dev
+
+      - name: Artifact - Full Binaries
+        if: env.FULL_BINARIES_ARTIFACT == 'true'
+        uses: actions/upload-artifact@v2
+        with:
+          name: full-binaries
+          path: repo\Output\Bin\WinVs2022Dev64
+          retention-days: 1
+
+      - name: Remove Unwanted Files
+        run: |
+          Get-ChildItem * -Include *.pdb -Recurse | Remove-Item
+
+          rm -r -fo repo\Data\Platform
+          rm -r -fo repo\Data\UnitTests
+      
+        #rm -r -fo repo\Output\lib
+        #rm -r -fo repo\Data\Tools\Precompiled
+
+      - name: Compile Shaders
+        if: env.COMPILE_SHADERS == 'true'
+        run: |
+          repo\Output\Bin\WinVs2019Dev64\ShaderCompilerTool.exe -project repo\Data\Base -shader "Shaders" -IgnoreErrors
+
+      - name: Transform All Projects
+        if: env.TRANSFORM_PROJECTS == 'true'
+        shell: pwsh
+        run: repo\Utilities\Scripts\transform-all-projects.ps1
+
+      - name: Generate Package
+        run: |
+          mkdir _package
+          mkdir _package\Output
+          mkdir _package\Data
+          mkdir _package\Source
+          xcopy repo\Output _package\Output /s
+          xcopy repo\Data _package\Data /s
+          xcopy repo\Source _package\Source /s
+
+      - name: Create 7z Archive
+        run: |
+          repo\Data\Tools\Precompiled\7z.exe a XII.Release.${{ steps.sdk-version.outputs.content }}.zip .\_package\* -mx9
+
+      - name: Artifact - Release Package
+        if: env.RELEASE_ARTIFACT == 'true'
+        uses: actions/upload-artifact@v2
+        with:
+          name: XII.Release.${{ steps.sdk-version.outputs.content }}
+          path: XII.Release.${{ steps.sdk-version.outputs.content }}.zip
+          retention-days: 1

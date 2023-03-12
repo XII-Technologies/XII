@@ -9,15 +9,15 @@
 ## Generate Docs
 
 * Use the *Doxyfile* in this directory.
-* Set `%ezEngine%/Documentation` as the working directory.
+* Set `%XII%/Documentation` as the working directory.
 
 Either run it with the *Doxywizard*, or from the command line:
 
 ```cmd
-%ezEngine%\Documentation>"C:\Program Files\doxygen\bin\doxygen.exe" Doxyfile
+%XII%\Documentation>"C:\Program Files\doxygen\bin\doxygen.exe" Doxyfile
 ```
 
-The output is written to: `%ezEngine%/Output/Doxygen/html/index.htm`
+The output is written to: `%XII%/Output/Doxygen/html/index.htm`
 
 ## Searchdata.xml
 
