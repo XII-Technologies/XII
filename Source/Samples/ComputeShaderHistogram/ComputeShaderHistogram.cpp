@@ -87,7 +87,6 @@ xiiApplication::Execution xiiComputeShaderHistogramApp::Run()
     }
 
     // Switch to backbuffer (so that the screen texture is no longer bound)
-    if (false)
     {
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hBackbufferRTV);
@@ -96,7 +95,6 @@ xiiApplication::Execution xiiComputeShaderHistogramApp::Run()
     }
 
     // Compute histogram.
-    if (false)
     {
       renderContext.BeginCompute(pGALPass, "ComputeHistogram");
 
@@ -112,7 +110,6 @@ xiiApplication::Execution xiiComputeShaderHistogramApp::Run()
     }
 
     // Draw histogram.
-    if (false)
     {
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hBackbufferRTV);
