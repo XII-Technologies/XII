@@ -170,8 +170,8 @@ FULL_PATH_NAMES        = YES
 # will be relative from the directory where doxygen is started.
 # This tag requires that the tag FULL_PATH_NAMES is set to YES.
 
-STRIP_FROM_PATH        = C:/GitLab/XII/ \
-                         D:/GitLab/XII/
+STRIP_FROM_PATH        = C:/GitHub/XII-Technologies/ \
+                         D:/GitHub/XII-Technologies/
 
 # The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of the
 # path mentioned in the documentation of a class, which tells the reader which
@@ -867,7 +867,7 @@ WARN_LOGFILE           = DoxygenLog.txt
 
 INPUT                  = . \
                          ../README.md \
-                         ../Code
+                         ../Source
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -920,7 +920,6 @@ EXCLUDE                = ../Source/BuildSystem \
                          ../Source/ThirdParty \
                          ../Source/Engine/Texture/DirectXTex \
                          ../Source/Engine/Foundation/ThirdParty \
-                         ../Source/EnginePlugins/PhysXPlugin/ThirdParty \
                          ../Source/EnginePlugins/RenderDocPlugin/ThirdParty \
                          Readme.md
 
