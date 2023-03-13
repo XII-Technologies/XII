@@ -13,6 +13,6 @@ namespace xiiLogWriter
     static void LogMessageHandler(const xiiLoggingEventData& eventData);
 
     /// \brief Log Message to ETW.
-    static void LogMessage(xiiLogMsgType::Enum eventType, xiiUInt8 uiIndentation, const char* szText);
+    static void LogMessage(xiiLogMsgType::Enum eventType, xiiUInt8 uiIndentation, xiiStringView sText);
   };
 } // namespace xiiLogWriter

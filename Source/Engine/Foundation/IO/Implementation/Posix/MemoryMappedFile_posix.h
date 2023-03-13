@@ -64,12 +64,14 @@ xiiMemoryMappedFile::~xiiMemoryMappedFile()
 }
 
 #if XII_ENABLED(XII_SUPPORTS_MEMORY_MAPPED_FILE)
-xiiResult xiiMemoryMappedFile::Open(const char* szAbsolutePath, Mode mode)
+xiiResult xiiMemoryMappedFile::Open(xiiStringView sAbsolutePath, Mode mode)
 {
   XII_ASSERT_DEV(mode != Mode::None, "Invalid mode to open the memory mapped file");
-  XII_ASSERT_DEV(xiiPathUtils::IsAbsolutePath(szAbsolutePath), "xiiMemoryMappedFile::Open() can only be used with absolute file paths");
+  XII_ASSERT_DEV(xiiPathUtils::IsAbsolutePath(sAbsolutePath), "xiiMemoryMappedFile::Open() can only be used with absolute file paths");
 
-  XII_LOG_BLOCK("MemoryMapFile", szAbsolutePath);
+  XII_LOG_BLOCK("MemoryMapFile", sAbsolutePath);
+
+  const xiiStringBuilder sPath = sAbsolutePath;
 
   Close();
 
@@ -89,7 +91,7 @@ xiiResult xiiMemoryMappedFile::Open(const char* szAbsolutePath, Mode mode)
   flags |= MAP_POPULATE;
 #    endif
 #  endif
-  m_pImpl->m_hFile = open(szAbsolutePath, access | O_CLOEXEC, 0);
+  m_pImpl->m_hFile = open(sPath, access | O_CLOEXEC, 0);
   if (m_pImpl->m_hFile == -1)
   {
     xiiLog::Error("Could not open file for memory mapping - {}", strerror(errno));
@@ -97,7 +99,7 @@ xiiResult xiiMemoryMappedFile::Open(const char* szAbsolutePath, Mode mode)
     return XII_FAILURE;
   }
   struct stat sb;
-  if (stat(szAbsolutePath, &sb) == -1 || sb.st_size == 0)
+  if (stat(sPath, &sb) == -1 || sb.st_size == 0)
   {
     xiiLog::Error("File for memory mapping is empty - {}", strerror(errno));
     Close();
@@ -118,12 +120,14 @@ xiiResult xiiMemoryMappedFile::Open(const char* szAbsolutePath, Mode mode)
 #endif
 
 #if XII_ENABLED(XII_SUPPORTS_SHARED_MEMORY)
-xiiResult xiiMemoryMappedFile::OpenShared(const char* szSharedName, xiiUInt64 uiSize, Mode mode)
+xiiResult xiiMemoryMappedFile::OpenShared(xiiStringView sSharedName, xiiUInt64 uiSize, Mode mode)
 {
   XII_ASSERT_DEV(mode != Mode::None, "Invalid mode to open the memory mapped file");
   XII_ASSERT_DEV(uiSize > 0, "xiiMemoryMappedFile::OpenShared() needs a valid file size to map");
 
-  XII_LOG_BLOCK("MemoryMapFile", szSharedName);
+  const xiiStringBuilder sName = sSharedName;
+
+  XII_LOG_BLOCK("MemoryMapFile", sName);
 
   Close();
 
@@ -145,14 +149,14 @@ xiiResult xiiMemoryMappedFile::OpenShared(const char* szSharedName, xiiUInt64 ui
   }
   oflag |= O_CREAT;
 
-  m_pImpl->m_hFile = shm_open(szSharedName, oflag, 0666);
+  m_pImpl->m_hFile = shm_open(sName, oflag, 0666);
   if (m_pImpl->m_hFile == -1)
   {
     xiiLog::Error("Could not open shared memory mapping - {}", strerror(errno));
     Close();
     return XII_FAILURE;
   }
-  m_pImpl->m_sSharedMemoryName = szSharedName;
+  m_pImpl->m_sSharedMemoryName = sName;
 
   if (ftruncate(m_pImpl->m_hFile, uiSize) == -1)
   {

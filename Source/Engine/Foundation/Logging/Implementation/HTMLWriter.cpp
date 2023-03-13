@@ -75,9 +75,9 @@ void xiiLogWriter::HTML::LogMessageHandler(const xiiLoggingEventData& eventData)
   if (!m_File.IsOpen())
     return;
 
-  xiiStringBuilder sOriginalText = eventData.m_szText;
+  xiiStringBuilder sOriginalText = eventData.m_sText;
 
-  xiiStringBuilder sTag = eventData.m_szTag;
+  xiiStringBuilder sTag = eventData.m_sTag;
 
   // Cannot write <, > or & to HTML, must be escaped
   sOriginalText.ReplaceAll("&", "&amp;");
@@ -164,10 +164,10 @@ void xiiLogWriter::HTML::LogMessageHandler(const xiiLoggingEventData& eventData)
   }
 }
 
-void xiiLogWriter::HTML::WriteString(const char* szString, xiiUInt32 uiColor)
+void xiiLogWriter::HTML::WriteString(xiiStringView sText, xiiUInt32 uiColor)
 {
   xiiStringBuilder sTemp;
-  sTemp.Format("<font color=\"#{0}\">{1}</font>", xiiArgU(uiColor, 1, false, 16, true), szString);
+  sTemp.Format("<font color=\"#{0}\">{1}</font>", xiiArgU(uiColor, 1, false, 16, true), sText);
 
   m_File.WriteBytes(sTemp.GetData(), sizeof(char) * sTemp.GetElementCount()).IgnoreResult();
 }

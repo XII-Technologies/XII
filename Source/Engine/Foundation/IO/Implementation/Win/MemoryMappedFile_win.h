@@ -44,12 +44,12 @@ xiiMemoryMappedFile::~xiiMemoryMappedFile()
   Close();
 }
 
-xiiResult xiiMemoryMappedFile::Open(const char* szAbsolutePath, Mode mode)
+xiiResult xiiMemoryMappedFile::Open(xiiStringView sAbsolutePath, Mode mode)
 {
   XII_ASSERT_DEV(mode != Mode::None, "Invalid mode to open the memory mapped file");
-  XII_ASSERT_DEV(xiiPathUtils::IsAbsolutePath(szAbsolutePath), "xiiMemoryMappedFile::Open() can only be used with absolute file paths");
+  XII_ASSERT_DEV(xiiPathUtils::IsAbsolutePath(sAbsolutePath), "xiiMemoryMappedFile::Open() can only be used with absolute file paths");
 
-  XII_LOG_BLOCK("MemoryMapFile", szAbsolutePath);
+  XII_LOG_BLOCK("MemoryMapFile", sAbsolutePath);
 
 
   Close();
@@ -63,7 +63,7 @@ xiiResult xiiMemoryMappedFile::Open(const char* szAbsolutePath, Mode mode)
     access |= GENERIC_WRITE;
   }
 
-  m_pImpl->m_hFile = CreateFileW(xiiDosDevicePath(szAbsolutePath), access, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+  m_pImpl->m_hFile = CreateFileW(xiiDosDevicePath(sAbsolutePath), access, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 
   DWORD errorCode = GetLastError();
 
@@ -106,12 +106,12 @@ xiiResult xiiMemoryMappedFile::Open(const char* szAbsolutePath, Mode mode)
   return XII_SUCCESS;
 }
 
-xiiResult xiiMemoryMappedFile::OpenShared(const char* szSharedName, xiiUInt64 uiSize, Mode mode)
+xiiResult xiiMemoryMappedFile::OpenShared(xiiStringView sSharedName, xiiUInt64 uiSize, Mode mode)
 {
   XII_ASSERT_DEV(mode != Mode::None, "Invalid mode to open the memory mapped file");
   XII_ASSERT_DEV(uiSize > 0, "xiiMemoryMappedFile::OpenShared() needs a valid file size to map");
 
-  XII_LOG_BLOCK("MemoryMapFile", szSharedName);
+  XII_LOG_BLOCK("MemoryMapFile", sSharedName);
 
   Close();
 
@@ -122,7 +122,7 @@ xiiResult xiiMemoryMappedFile::OpenShared(const char* szSharedName, xiiUInt64 ui
   DWORD sizeLow   = static_cast<DWORD>(uiSize & 0xFFFFFFFFu);
 
   m_pImpl->m_hMapping = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, m_pImpl->m_Mode == Mode::ReadOnly ? PAGE_READONLY : PAGE_READWRITE, sizeHigh,
-                                           sizeLow, xiiStringWChar(szSharedName).GetData());
+                                           sizeLow, xiiStringWChar(sSharedName).GetData());
 
   if (m_pImpl->m_hMapping == nullptr || m_pImpl->m_hMapping == INVALID_HANDLE_VALUE)
   {

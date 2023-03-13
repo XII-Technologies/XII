@@ -55,11 +55,11 @@ struct XII_FOUNDATION_DLL xiiLoggingEventData
   xiiUInt8 m_uiIndentation = 0;
 
   /// \brief The information text.
-  const char* m_szText = "";
+  xiiStringView m_sText;
 
   /// \brief An optional tag extracted from the log-string (if it started with "[SomeTag]Logging String.") Can be used by log-writers for
   /// additional configuration, or simply be ignored.
-  const char* m_szTag = "";
+  xiiStringView m_sTag;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   /// \brief Used by log-blocks for profiling the duration of the block
@@ -395,12 +395,12 @@ public:
   /// header will not be printed, to prevent spamming the log.
   ///
   /// This constructor will output the log block data to the xiiGlobalLog.
-  xiiLogBlock(const char* szName, const char* szContextInfo = "");
+  xiiLogBlock(xiiStringView sName, xiiStringView sContextInfo = {});
 
   /// \brief Creates a named grouping block for log messages.
   ///
   /// This variant of the constructor takes an explicit xiiLogInterface to write the log messages to.
-  xiiLogBlock(xiiLogInterface* pInterface, const char* szName, const char* szContextInfo = "");
+  xiiLogBlock(xiiLogInterface* pInterface, xiiStringView sName, xiiStringView sContextInfo = {});
 
   ~xiiLogBlock();
 
@@ -409,8 +409,8 @@ private:
 
   xiiLogInterface* m_pLogInterface;
   xiiLogBlock*     m_pParentBlock;
-  const char*      m_szName;
-  const char*      m_szContextInfo;
+  xiiStringView    m_sName;
+  xiiStringView    m_sContextInfo;
   xiiUInt8         m_uiBlockDepth;
   bool             m_bWritten;
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -450,17 +450,17 @@ public:
     switch (le.m_EventType)
     {
       case xiiLogMsgType::ErrorMsg:
-        m_sBuffer.Append("Error: ", le.m_szText, "\n");
+        m_sBuffer.Append("Error: ", le.m_sText, "\n");
         break;
       case xiiLogMsgType::SeriousWarningMsg:
       case xiiLogMsgType::WarningMsg:
-        m_sBuffer.Append("Warning: ", le.m_szText, "\n");
+        m_sBuffer.Append("Warning: ", le.m_sText, "\n");
         break;
       case xiiLogMsgType::SuccessMsg:
       case xiiLogMsgType::InfoMsg:
       case xiiLogMsgType::DevMsg:
       case xiiLogMsgType::DebugMsg:
-        m_sBuffer.Append(le.m_szText, "\n");
+        m_sBuffer.Append(le.m_sText, "\n");
         break;
       default:
         break;

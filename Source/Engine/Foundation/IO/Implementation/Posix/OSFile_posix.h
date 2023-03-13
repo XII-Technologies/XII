@@ -37,8 +37,11 @@ XII_FOUNDATION_INTERNAL_HEADER
 #  define PATH_MAX 1024
 #endif
 
-xiiResult xiiOSFile::InternalOpen(const char* szFile, xiiFileOpenMode::Enum OpenMode, xiiFileShareMode::Enum FileShareMode)
+xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum OpenMode, xiiFileShareMode::Enum FileShareMode)
 {
+  xiiStringBuilder sFileCopy = sFile;
+  const char*      szFile    = sFileCopy;
+
 #if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP) // UWP does not support these functions
   int fd = -1;
   switch (OpenMode)
@@ -257,9 +260,9 @@ void xiiOSFile::InternalSetFilePosition(xiiInt64 iDistance, xiiFileSeekMode::Enu
 #endif
 }
 
-bool xiiOSFile::InternalExistsFile(const char* szFile)
+bool xiiOSFile::InternalExistsFile(xiiStringView sFile)
 {
-  FILE* pFile = fopen(szFile, "r");
+  FILE* pFile = fopen(xiiString(sFile), "r");
 
   if (pFile == nullptr)
     return false;
@@ -273,18 +276,18 @@ bool xiiOSFile::InternalExistsFile(const char* szFile)
 #  define S_ISDIR(m) (((m)&S_IFMT) == S_IFDIR)
 #endif
 
-bool xiiOSFile::InternalExistsDirectory(const char* szDirectory)
+bool xiiOSFile::InternalExistsDirectory(xiiStringView sDirectory)
 {
   struct stat sb;
-  return (stat(szDirectory, &sb) == 0 && S_ISDIR(sb.st_mode));
+  return (stat(xiiString(sDirectory), &sb) == 0 && S_ISDIR(sb.st_mode));
 }
 
-xiiResult xiiOSFile::InternalDeleteFile(const char* szFile)
+xiiResult xiiOSFile::InternalDeleteFile(xiiStringView sFile)
 {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  int iRes = _unlink(szFile);
+  int iRes = _unlink(xiiString(sFile));
 #else
-  int iRes = unlink(szFile);
+  int iRes = unlink(xiiString(sFile));
 #endif
 
   if (iRes == 0 || (iRes == -1 && errno == ENOENT))
@@ -293,12 +296,12 @@ xiiResult xiiOSFile::InternalDeleteFile(const char* szFile)
   return XII_FAILURE;
 }
 
-xiiResult xiiOSFile::InternalDeleteDirectory(const char* szDirectory)
+xiiResult xiiOSFile::InternalDeleteDirectory(xiiStringView sDirectory)
 {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  int iRes = _rmdir(szDirectory);
+  int iRes = _rmdir(xiiString(sDirectory));
 #else
-  int iRes = rmdir(szDirectory);
+  int iRes = rmdir(xiiString(sDirectory));
 #endif
 
   if (iRes == 0 || (iRes == -1 && errno == ENOENT))
@@ -307,16 +310,16 @@ xiiResult xiiOSFile::InternalDeleteDirectory(const char* szDirectory)
   return XII_FAILURE;
 }
 
-xiiResult xiiOSFile::InternalCreateDirectory(const char* szDirectory)
+xiiResult xiiOSFile::InternalCreateDirectory(xiiStringView sDirectory)
 {
   // handle drive letters as always successful
-  if (xiiStringUtils::GetCharacterCount(szDirectory) <= 1) // '/'
+  if (xiiStringUtils::GetCharacterCount(sDirectory.GetStartPointer(), sDirectory.GetEndPointer()) <= 1) // '/'
     return XII_SUCCESS;
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  int iRes = _mkdir(szDirectory);
+  int iRes = _mkdir(xiiString(sDirectory));
 #else
-  int iRes = mkdir(szDirectory, 0777);
+  int iRes = mkdir(xiiString(sDirectory), 0777);
 #endif
 
   if (iRes == 0 || (iRes == -1 && errno == EEXIST))
@@ -325,15 +328,15 @@ xiiResult xiiOSFile::InternalCreateDirectory(const char* szDirectory)
   // If we were not allowed to access the folder but it alreay exists, we treat the operation as successful.
   // Note that this is espcially relevant for calls to xiiOSFile::CreateDirectoryStructure where we may call mkdir on top level directories that are
   // not accessible.
-  if (errno == EACCES && InternalExistsDirectory(szDirectory))
+  if (errno == EACCES && InternalExistsDirectory(sDirectory))
     return XII_SUCCESS;
 
   return XII_FAILURE;
 }
 
-xiiResult xiiOSFile::InternalMoveFileOrDirectory(const char* szDirectoryFrom, const char* szDirectoryTo)
+xiiResult xiiOSFile::InternalMoveFileOrDirectory(xiiStringView sDirectoryFrom, xiiStringView sDirectoryTo)
 {
-  if (rename(szDirectoryFrom, szDirectoryTo) != 0)
+  if (rename(xiiString(sDirectoryFrom), xiiString(sDirectoryTo)) != 0)
   {
     return XII_FAILURE;
   }
@@ -341,19 +344,19 @@ xiiResult xiiOSFile::InternalMoveFileOrDirectory(const char* szDirectoryFrom, co
 }
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS) && XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
-xiiResult xiiOSFile::InternalGetFileStats(const char* szFileOrFolder, xiiFileStats& out_Stats)
+xiiResult xiiOSFile::InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_Stats)
 {
   struct stat tempStat;
-  int         iRes = stat(szFileOrFolder, &tempStat);
+  int         iRes = stat(xiiString(sFileOrFolder), &tempStat);
 
   if (iRes != 0)
     return XII_FAILURE;
 
   out_Stats.m_bIsDirectory = S_ISDIR(tempStat.st_mode);
   out_Stats.m_uiFileSize   = tempStat.st_size;
-  out_Stats.m_sParentPath  = szFileOrFolder;
+  out_Stats.m_sParentPath  = sFileOrFolder;
   out_Stats.m_sParentPath.PathParentDirectory();
-  out_Stats.m_sName = xiiPathUtils::GetFileNameAndExtension(szFileOrFolder); // no OS support, so just pass it through
+  out_Stats.m_sName = xiiPathUtils::GetFileNameAndExtension(sFileOrFolder); // no OS support, so just pass it through
   out_Stats.m_LastModificationTime.SetInt64(tempStat.st_mtime, xiiSIUnitOfTime::Second);
 
   return XII_SUCCESS;
@@ -414,7 +417,7 @@ const char* xiiOSFile::GetApplicationDirectory()
   return s_Path.GetData();
 }
 
-xiiString xiiOSFile::GetUserDataFolder(const char* szSubFolder)
+xiiString xiiOSFile::GetUserDataFolder(xiiStringView sSubFolder)
 {
   if (s_sUserDataPath.IsEmpty())
   {
@@ -430,12 +433,12 @@ xiiString xiiOSFile::GetUserDataFolder(const char* szSubFolder)
   }
 
   xiiStringBuilder s = s_sUserDataPath;
-  s.AppendPath(szSubFolder);
+  s.AppendPath(sSubFolder);
   s.MakeCleanPath();
   return s;
 }
 
-xiiString xiiOSFile::GetTempDataFolder(const char* szSubFolder)
+xiiString xiiOSFile::GetTempDataFolder(xiiStringView sSubFolder)
 {
   if (s_sTempDataPath.IsEmpty())
   {
@@ -451,7 +454,7 @@ xiiString xiiOSFile::GetTempDataFolder(const char* szSubFolder)
   }
 
   xiiStringBuilder s = s_sTempDataPath;
-  s.AppendPath(szSubFolder);
+  s.AppendPath(sSubFolder);
   s.MakeCleanPath();
   return s;
 }
@@ -518,13 +521,13 @@ namespace
   }
 } // namespace
 
-void xiiFileSystemIterator::StartSearch(const char* szSearchStart, xiiBitflags<xiiFileSystemIteratorFlags> flags /*= xiiFileSystemIteratorFlags::All*/)
+void xiiFileSystemIterator::StartSearch(xiiStringView sSearchTerm, xiiBitflags<xiiFileSystemIteratorFlags> flags /*= xiiFileSystemIteratorFlags::All*/)
 {
   XII_ASSERT_DEV(m_Data.m_Handles.IsEmpty(), "Cannot start another search.");
 
-  m_sSearchTerm = szSearchStart;
+  m_sSearchTerm = sSearchTerm;
 
-  xiiStringBuilder sSearch = szSearchStart;
+  xiiStringBuilder sSearch = sSearchTerm;
   sSearch.MakeCleanPath();
 
   // same as just passing in the folder path, so remove this

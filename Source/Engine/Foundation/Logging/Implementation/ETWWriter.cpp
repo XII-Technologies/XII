@@ -11,22 +11,22 @@ void xiiLogWriter::ETW::LogMessageHandler(const xiiLoggingEventData& eventData)
   if (eventData.m_EventType == xiiLogMsgType::Flush)
     return;
 
-  xiiETWProvider::GetInstance().LogMessge(eventData.m_EventType, eventData.m_uiIndentation, eventData.m_szText);
+  xiiETWProvider::GetInstance().LogMessge(eventData.m_EventType, eventData.m_uiIndentation, eventData.m_sText);
 }
 
-void xiiLogWriter::ETW::LogMessage(xiiLogMsgType::Enum eventType, xiiUInt8 uiIndentation, const char* szText)
+void xiiLogWriter::ETW::LogMessage(xiiLogMsgType::Enum eventType, xiiUInt8 uiIndentation, xiiStringView sText)
 {
   if (eventType == xiiLogMsgType::Flush)
     return;
 
-  xiiETWProvider::GetInstance().LogMessge(eventType, uiIndentation, szText);
+  xiiETWProvider::GetInstance().LogMessge(eventType, uiIndentation, sText);
 }
 
 #else
 
 void xiiLogWriter::ETW::LogMessageHandler(const xiiLoggingEventData& eventData) {}
 
-void xiiLogWriter::ETW::LogMessage(xiiLogMsgType::Enum eventType, xiiUInt8 uiIndentation, const char* szText) {}
+void xiiLogWriter::ETW::LogMessage(xiiLogMsgType::Enum eventType, xiiUInt8 uiIndentation, xiiStringView sText) {}
 
 #endif
 

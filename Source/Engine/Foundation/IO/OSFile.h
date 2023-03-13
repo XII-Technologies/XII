@@ -33,6 +33,7 @@ struct xiiFileOpenMode
 struct XII_FOUNDATION_DLL xiiFileStats
 {
   xiiFileStats();
+  ~xiiFileStats();
 
   /// \brief Stores the concatenated m_sParentPath and m_sName in \a path.
   void GetFullPath(xiiStringBuilder& path) const;
@@ -108,12 +109,12 @@ public:
   /// If XII_SUCCESS is returned, the iterator points to a valid file, and the functions GetCurrentPath() and GetStats() will return
   /// the information about that file. To advance to the next file, use Next() or SkipFolder().
   /// When no iteration is possible (the directory does not exist or the wild-cards are used incorrectly), XII_FAILURE is returned.
-  void StartSearch(const char* szSearchTerm, xiiBitflags<xiiFileSystemIteratorFlags> flags = xiiFileSystemIteratorFlags::Default); // [tested]
+  void StartSearch(xiiStringView sSearchTerm, xiiBitflags<xiiFileSystemIteratorFlags> flags = xiiFileSystemIteratorFlags::Default); // [tested]
 
   /// \brief The same as StartSearch() but executes the same search on multiple folders.
   ///
   /// The search term is appended to each start folder and they are searched one after the other.
-  void StartMultiFolderSearch(xiiArrayPtr<xiiString> startFolders, const char* szSearchTerm, xiiBitflags<xiiFileSystemIteratorFlags> flags = xiiFileSystemIteratorFlags::Default);
+  void StartMultiFolderSearch(xiiArrayPtr<xiiString> startFolders, xiiStringView sSearchTerm, xiiBitflags<xiiFileSystemIteratorFlags> flags = xiiFileSystemIteratorFlags::Default);
 
   /// \brief Returns the search string with which StartSearch() was called.
   ///
@@ -174,7 +175,7 @@ public:
   ~xiiOSFile();
 
   /// \brief Opens a file for reading or writing. Returns XII_SUCCESS if the file could be opened successfully.
-  xiiResult Open(const char* szFile, xiiFileOpenMode::Enum OpenMode, xiiFileShareMode::Enum FileShareMode = xiiFileShareMode::Default); // [tested]
+  xiiResult Open(xiiStringView sFile, xiiFileOpenMode::Enum OpenMode, xiiFileShareMode::Enum FileShareMode = xiiFileShareMode::Default); // [tested]
 
   /// \brief Returns true if a file is currently open.
   bool IsOpen() const; // [tested]
@@ -192,7 +193,7 @@ public:
   xiiUInt64 ReadAll(xiiDynamicArray<xiiUInt8>& out_FileContent); // [tested]
 
   /// \brief Returns the name of the file that is currently opened. Returns an empty string, if no file is open.
-  const char* GetOpenFileName() const { return m_sFileName.GetData(); } // [tested]
+  xiiStringView GetOpenFileName() const { return m_sFileName; } // [tested]
 
   /// \brief Returns the position in the file at which read/write operations will occur.
   xiiUInt64 GetFilePosition() const; // [tested]
@@ -219,35 +220,35 @@ public:
   /// \brief If szPath is a relative path, this function prepends GetCurrentWorkingDirectory().
   ///
   /// In either case, MakeCleanPath() is used before the string is returned.
-  static const xiiString MakePathAbsoluteWithCWD(const char* szPath); // [tested]
+  static const xiiString MakePathAbsoluteWithCWD(xiiStringView sPath); // [tested]
 
   /// \brief Checks whether the given file exists.
-  static bool ExistsFile(const char* szFile); // [tested]
+  static bool ExistsFile(xiiStringView sFile); // [tested]
 
   /// \brief Checks whether the given file exists.
-  static bool ExistsDirectory(const char* szDirectory); // [tested]
+  static bool ExistsDirectory(xiiStringView sDirectory); // [tested]
 
   /// \brief Deletes the given file. Returns XII_SUCCESS, if the file was deleted or did not exist in the first place. Returns XII_FAILURE
-  static xiiResult DeleteFile(const char* szFile); // [tested]
+  static xiiResult DeleteFile(xiiStringView sFile); // [tested]
 
   /// \brief Creates the given directory structure (meaning all directories in the path, that do not exist). Returns false, if any directory could not
   /// be created.
-  static xiiResult CreateDirectoryStructure(const char* szDirectory); // [tested]
+  static xiiResult CreateDirectoryStructure(xiiStringView sDirectory); // [tested]
 
   /// \brief Renames / Moves an existing directory. The file / directory at szFrom must exist. The parent directory of szTo must exist.
   /// Returns XII_FAILURE if the move failed.
-  static xiiResult MoveFileOrDirectory(const char* szFrom, const char* szTo);
+  static xiiResult MoveFileOrDirectory(xiiStringView sFrom, xiiStringView sTo);
 
   /// \brief Copies the source file into the destination file.
-  static xiiResult CopyFile(const char* szSource, const char* szDestination); // [tested]
+  static xiiResult CopyFile(xiiStringView sSource, xiiStringView sDestination); // [tested]
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS) || defined(XII_DOCS)
   /// \brief Gets the stats about the given file or folder. Returns false, if the stats could not be determined.
-  static xiiResult GetFileStats(const char* szFileOrFolder, xiiFileStats& out_Stats); // [tested]
+  static xiiResult GetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_Stats); // [tested]
 
 #  if (XII_ENABLED(XII_SUPPORTS_CASE_INSENSITIVE_PATHS) && XII_ENABLED(XII_SUPPORTS_UNRESTRICTED_FILE_ACCESS)) || defined(XII_DOCS)
   /// \brief Useful on systems that are not strict about the casing of file names. Determines the correct name of a file.
-  static xiiResult GetFileCasing(const char* szFileOrFolder, xiiStringBuilder& out_sCorrectSpelling); // [tested]
+  static xiiResult GetFileCasing(xiiStringView sFileOrFolder, xiiStringBuilder& out_sCorrectSpelling); // [tested]
 #  endif
 
 #endif
@@ -255,17 +256,17 @@ public:
 #if (XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS) && XII_ENABLED(XII_SUPPORTS_FILE_STATS)) || defined(XII_DOCS)
 
   /// \brief Returns the xiiFileStats for all files and folders in the given folder
-  static void GatherAllItemsInFolder(xiiDynamicArray<xiiFileStats>& out_ItemList, const char* szFolder, xiiBitflags<xiiFileSystemIteratorFlags> flags = xiiFileSystemIteratorFlags::Default);
+  static void GatherAllItemsInFolder(xiiDynamicArray<xiiFileStats>& out_ItemList, xiiStringView sFolder, xiiBitflags<xiiFileSystemIteratorFlags> flags = xiiFileSystemIteratorFlags::Default);
 
   /// \brief Copies \a szSourceFolder to \a szDestinationFolder. Overwrites existing files.
   ///
   /// If \a out_FilesCopied is provided, the destination path of every successfully copied file is appended to it.
-  static xiiResult CopyFolder(const char* szSourceFolder, const char* szDestinationFolder, xiiDynamicArray<xiiString>* out_FilesCopied = nullptr);
+  static xiiResult CopyFolder(xiiStringView sSourceFolder, xiiStringView sDestinationFolder, xiiDynamicArray<xiiString>* out_FilesCopied = nullptr);
 
   /// \brief Deletes all files recursively in \a szFolder.
   ///
   /// \note The current implementation does not remove the (empty) folders themselves.
-  static xiiResult DeleteFolder(const char* szFolder);
+  static xiiResult DeleteFolder(xiiStringView sFolder);
 
 #endif
 
@@ -279,7 +280,7 @@ public:
   /// On Posix systems this is the '~' (home) directory.
   ///
   /// If szSubFolder is specified, it will be appended to the result.
-  static xiiString GetUserDataFolder(const char* szSubFolder = nullptr);
+  static xiiString GetUserDataFolder(xiiStringView sSubFolder = {});
 
   /// \brief Returns the folder into which temp data may be written.
   ///
@@ -287,7 +288,7 @@ public:
   /// On Posix systems this is the '~/.cache' directory.
   ///
   /// If szSubFolder is specified, it will be appended to the result.
-  static xiiString GetTempDataFolder(const char* szSubFolder = nullptr);
+  static xiiString GetTempDataFolder(xiiStringView sSubFolder = {});
 
 public:
   /// \brief Describes the types of events that xiiOSFile sends.
@@ -314,40 +315,29 @@ public:
   struct EventData
   {
     /// \brief The type of information that is sent.
-    EventType::Enum m_EventType;
+    EventType::Enum m_EventType = EventType::None;
 
     /// \brief A unique ID for each file access. Reads and writes to the same open file use the same ID. If the same file is opened multiple times,
     /// different IDs are used.
-    xiiInt32 m_iFileID;
+    xiiInt32 m_iFileID = 0;
 
     /// \brief The name of the file that was operated upon.
-    const char* m_szFile;
+    xiiStringView m_sFile;
 
     /// \brief If a second file was operated upon (FileCopy), that is the second file name.
-    const char* m_szFile2;
+    xiiStringView m_sFile2;
 
     /// \brief Mode that a file has been opened in.
-    xiiFileOpenMode::Enum m_FileMode;
+    xiiFileOpenMode::Enum m_FileMode = xiiFileOpenMode::None;
 
     /// \brief Whether the operation succeeded (reading, writing, etc.)
-    bool m_bSuccess;
+    bool m_bSuccess = true;
 
     /// \brief How long the operation took.
     xiiTime m_Duration;
 
     /// \brief How many bytes were transfered (reading, writing)
-    xiiUInt64 m_uiBytesAccessed;
-
-    EventData()
-    {
-      m_EventType       = EventType::None;
-      m_iFileID         = 0;
-      m_szFile          = nullptr;
-      m_szFile2         = nullptr;
-      m_FileMode        = xiiFileOpenMode::None;
-      m_bSuccess        = true;
-      m_uiBytesAccessed = 0;
-    }
+    xiiUInt64 m_uiBytesAccessed = 0;
   };
 
   using Event = xiiEvent<const EventData&, xiiMutex>;
@@ -364,22 +354,22 @@ private:
 
   // *** Internal Functions that do the platform specific work ***
 
-  xiiResult InternalOpen(const char* szFile, xiiFileOpenMode::Enum OpenMode, xiiFileShareMode::Enum FileShareMode);
+  xiiResult InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum OpenMode, xiiFileShareMode::Enum FileShareMode);
   void      InternalClose();
   xiiResult InternalWrite(const void* pBuffer, xiiUInt64 uiBytes);
   xiiUInt64 InternalRead(void* pBuffer, xiiUInt64 uiBytes);
   xiiUInt64 InternalGetFilePosition() const;
   void      InternalSetFilePosition(xiiInt64 iDistance, xiiFileSeekMode::Enum Pos) const;
 
-  static bool      InternalExistsFile(const char* szFile);
-  static bool      InternalExistsDirectory(const char* szDirectory);
-  static xiiResult InternalDeleteFile(const char* szFile);
-  static xiiResult InternalDeleteDirectory(const char* szDirectory);
-  static xiiResult InternalCreateDirectory(const char* szFile);
-  static xiiResult InternalMoveFileOrDirectory(const char* szDirectoryFrom, const char* szDirectoryTo);
+  static bool      InternalExistsFile(xiiStringView sFile);
+  static bool      InternalExistsDirectory(xiiStringView sDirectory);
+  static xiiResult InternalDeleteFile(xiiStringView sFile);
+  static xiiResult InternalDeleteDirectory(xiiStringView sDirectory);
+  static xiiResult InternalCreateDirectory(xiiStringView sFile);
+  static xiiResult InternalMoveFileOrDirectory(xiiStringView sDirectoryFrom, xiiStringView sDirectoryTo);
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
-  static xiiResult InternalGetFileStats(const char* szFileOrFolder, xiiFileStats& out_Stats);
+  static xiiResult InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_Stats);
 #endif
 
   // *************************************************************

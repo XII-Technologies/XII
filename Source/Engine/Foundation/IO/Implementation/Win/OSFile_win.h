@@ -23,7 +23,7 @@ static xiiUInt64 HighLowToUInt64(xiiUInt32 uiHigh32, xiiUInt32 uiLow32)
 
 #  include <Shlobj.h>
 
-xiiResult xiiOSFile::InternalOpen(const char* szFile, xiiFileOpenMode::Enum OpenMode, xiiFileShareMode::Enum FileShareMode)
+xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum OpenMode, xiiFileShareMode::Enum FileShareMode)
 {
   const xiiTime sleepTime = xiiTime::Milliseconds(20);
   xiiInt32      iRetries  = 20;
@@ -57,15 +57,15 @@ xiiResult xiiOSFile::InternalOpen(const char* szFile, xiiFileOpenMode::Enum Open
     switch (OpenMode)
     {
       case xiiFileOpenMode::Read:
-        m_FileData.m_pFileHandle = CreateFileW(xiiDosDevicePath(szFile), GENERIC_READ, dwSharedMode, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        m_FileData.m_pFileHandle = CreateFileW(xiiDosDevicePath(sFile), GENERIC_READ, dwSharedMode, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
         break;
 
       case xiiFileOpenMode::Write:
-        m_FileData.m_pFileHandle = CreateFileW(xiiDosDevicePath(szFile), GENERIC_WRITE, dwSharedMode, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        m_FileData.m_pFileHandle = CreateFileW(xiiDosDevicePath(sFile), GENERIC_WRITE, dwSharedMode, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
         break;
 
       case xiiFileOpenMode::Append:
-        m_FileData.m_pFileHandle = CreateFileW(xiiDosDevicePath(szFile), FILE_APPEND_DATA, dwSharedMode, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        m_FileData.m_pFileHandle = CreateFileW(xiiDosDevicePath(sFile), FILE_APPEND_DATA, dwSharedMode, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 
         // in append mode we need to set the file pointer to the end explicitly, otherwise GetFilePosition might return 0 the first time
         if ((m_FileData.m_pFileHandle != nullptr) && (m_FileData.m_pFileHandle != INVALID_HANDLE_VALUE))
@@ -80,7 +80,7 @@ xiiResult xiiOSFile::InternalOpen(const char* szFile, xiiFileOpenMode::Enum Open
 
     if (res.Failed())
     {
-      if (xiiOSFile::ExistsDirectory(szFile))
+      if (xiiOSFile::ExistsDirectory(sFile))
       {
         // trying to 'open' a directory fails with little useful error codes such as 'access denied'
         return XII_FAILURE;
@@ -220,23 +220,23 @@ void xiiOSFile::InternalSetFilePosition(xiiInt64 iDistance, xiiFileSeekMode::Enu
   }
 }
 
-bool xiiOSFile::InternalExistsFile(const char* szFile)
+bool xiiOSFile::InternalExistsFile(xiiStringView sFile)
 {
-  const DWORD dwAttrib = GetFileAttributesW(xiiDosDevicePath(szFile).GetData());
+  const DWORD dwAttrib = GetFileAttributesW(xiiDosDevicePath(sFile).GetData());
 
   return ((dwAttrib != INVALID_FILE_ATTRIBUTES) && ((dwAttrib & FILE_ATTRIBUTE_DIRECTORY) == 0));
 }
 
-bool xiiOSFile::InternalExistsDirectory(const char* szDirectory)
+bool xiiOSFile::InternalExistsDirectory(xiiStringView sDirectory)
 {
-  const DWORD dwAttrib = GetFileAttributesW(xiiDosDevicePath(szDirectory));
+  const DWORD dwAttrib = GetFileAttributesW(xiiDosDevicePath(sDirectory));
 
   return ((dwAttrib != INVALID_FILE_ATTRIBUTES) && ((dwAttrib & FILE_ATTRIBUTE_DIRECTORY) != 0));
 }
 
-xiiResult xiiOSFile::InternalDeleteFile(const char* szFile)
+xiiResult xiiOSFile::InternalDeleteFile(xiiStringView sFile)
 {
-  if (DeleteFileW(xiiDosDevicePath(szFile)) == FALSE)
+  if (DeleteFileW(xiiDosDevicePath(sFile)) == FALSE)
   {
     if (GetLastError() == ERROR_FILE_NOT_FOUND)
       return XII_SUCCESS;
@@ -247,9 +247,9 @@ xiiResult xiiOSFile::InternalDeleteFile(const char* szFile)
   return XII_SUCCESS;
 }
 
-xiiResult xiiOSFile::InternalDeleteDirectory(const char* szDirectory)
+xiiResult xiiOSFile::InternalDeleteDirectory(xiiStringView sDirectory)
 {
-  if (RemoveDirectoryW(xiiDosDevicePath(szDirectory)) == FALSE)
+  if (RemoveDirectoryW(xiiDosDevicePath(sDirectory)) == FALSE)
   {
     if (GetLastError() == ERROR_FILE_NOT_FOUND)
       return XII_SUCCESS;
@@ -260,13 +260,13 @@ xiiResult xiiOSFile::InternalDeleteDirectory(const char* szDirectory)
   return XII_SUCCESS;
 }
 
-xiiResult xiiOSFile::InternalCreateDirectory(const char* szDirectory)
+xiiResult xiiOSFile::InternalCreateDirectory(xiiStringView sDirectory)
 {
   // handle drive letters as always successful
-  if (xiiStringUtils::GetCharacterCount(szDirectory) <= 3) // 'C:\'
+  if (xiiStringUtils::GetCharacterCount(sDirectory.GetStartPointer(), sDirectory.GetEndPointer()) <= 3) // 'C:\'
     return XII_SUCCESS;
 
-  if (CreateDirectoryW(xiiDosDevicePath(szDirectory), nullptr) == FALSE)
+  if (CreateDirectoryW(xiiDosDevicePath(sDirectory), nullptr) == FALSE)
   {
     const DWORD uiError = GetLastError();
     if (uiError == ERROR_ALREADY_EXISTS)
@@ -278,9 +278,9 @@ xiiResult xiiOSFile::InternalCreateDirectory(const char* szDirectory)
   return XII_SUCCESS;
 }
 
-xiiResult xiiOSFile::InternalMoveFileOrDirectory(const char* szDirectoryFrom, const char* szDirectoryTo)
+xiiResult xiiOSFile::InternalMoveFileOrDirectory(xiiStringView sDirectoryFrom, xiiStringView sDirectoryTo)
 {
-  if (MoveFileW(xiiDosDevicePath(szDirectoryFrom), xiiDosDevicePath(szDirectoryTo)) == 0)
+  if (MoveFileW(xiiDosDevicePath(sDirectoryFrom), xiiDosDevicePath(sDirectoryTo)) == 0)
   {
     return XII_FAILURE;
   }
@@ -289,9 +289,9 @@ xiiResult xiiOSFile::InternalMoveFileOrDirectory(const char* szDirectoryFrom, co
 
 #endif // not XII_USE_POSIX_FILE_API
 
-xiiResult xiiOSFile::InternalGetFileStats(const char* szFileOrFolder, xiiFileStats& out_Stats)
+xiiResult xiiOSFile::InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_Stats)
 {
-  xiiStringBuilder s = szFileOrFolder;
+  xiiStringBuilder s = sFileOrFolder;
 
   // FindFirstFile does not like paths that end with a separator, so remove them all
   s.Trim(nullptr, "/\\");
@@ -317,7 +317,7 @@ xiiResult xiiOSFile::InternalGetFileStats(const char* szFileOrFolder, xiiFileSta
 
   out_Stats.m_uiFileSize   = HighLowToUInt64(data.nFileSizeHigh, data.nFileSizeLow);
   out_Stats.m_bIsDirectory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-  out_Stats.m_sParentPath  = szFileOrFolder;
+  out_Stats.m_sParentPath  = sFileOrFolder;
   out_Stats.m_sParentPath.PathParentDirectory();
   out_Stats.m_sName = data.cFileName;
   out_Stats.m_LastModificationTime.SetInt64(FileTimeToEpoch(data.ftLastWriteTime), xiiSIUnitOfTime::Microsecond);
@@ -344,13 +344,13 @@ bool xiiFileSystemIterator::IsValid() const
   return !m_Data.m_Handles.IsEmpty();
 }
 
-void xiiFileSystemIterator::StartSearch(const char* szSearchStart, xiiBitflags<xiiFileSystemIteratorFlags> flags /*= xiiFileSystemIteratorFlags::All*/)
+void xiiFileSystemIterator::StartSearch(xiiStringView sSearchStart, xiiBitflags<xiiFileSystemIteratorFlags> flags /*= xiiFileSystemIteratorFlags::All*/)
 {
   XII_ASSERT_DEV(m_Data.m_Handles.IsEmpty(), "Cannot start another search.");
 
-  m_sSearchTerm = szSearchStart;
+  m_sSearchTerm = sSearchStart;
 
-  xiiStringBuilder sSearch = szSearchStart;
+  xiiStringBuilder sSearch = sSearchStart;
   sSearch.MakeCleanPath();
 
   // same as just passing in the folder path, so remove this
@@ -562,7 +562,7 @@ const char* xiiOSFile::GetApplicationDirectory()
 #  include <windows.storage.h>
 #endif
 
-xiiString xiiOSFile::GetUserDataFolder(const char* szSubFolder)
+xiiString xiiOSFile::GetUserDataFolder(xiiStringView sSubFolder)
 {
   if (s_sUserDataPath.IsEmpty())
   {
@@ -601,12 +601,12 @@ xiiString xiiOSFile::GetUserDataFolder(const char* szSubFolder)
   }
 
   xiiStringBuilder s = s_sUserDataPath;
-  s.AppendPath(szSubFolder);
+  s.AppendPath(sSubFolder);
   s.MakeCleanPath();
   return s;
 }
 
-xiiString xiiOSFile::GetTempDataFolder(const char* szSubFolder /*= nullptr*/)
+xiiString xiiOSFile::GetTempDataFolder(xiiStringView sSubFolder /*= nullptr*/)
 {
   xiiStringBuilder s;
 
@@ -649,7 +649,7 @@ xiiString xiiOSFile::GetTempDataFolder(const char* szSubFolder /*= nullptr*/)
   }
 
   s = s_sTempDataPath;
-  s.AppendPath(szSubFolder);
+  s.AppendPath(sSubFolder);
   s.MakeCleanPath();
   return s;
 }

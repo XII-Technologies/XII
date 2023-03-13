@@ -79,9 +79,9 @@ xiiUInt64 xiiMemoryStreamReader::GetByteCount64() const
   return m_pStreamStorage->GetStorageSize64();
 }
 
-void xiiMemoryStreamReader::SetDebugSourceInformation(const char* szDebugSourceInformation)
+void xiiMemoryStreamReader::SetDebugSourceInformation(xiiStringView sDebugSourceInformation)
 {
-  m_sDebugSourceInformation = szDebugSourceInformation;
+  m_sDebugSourceInformation = sDebugSourceInformation;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -230,9 +230,9 @@ xiiUInt64 xiiRawMemoryStreamReader::GetByteCount() const
   return m_uiChunkSize;
 }
 
-void xiiRawMemoryStreamReader::SetDebugSourceInformation(const char* szDebugSourceInformation)
+void xiiRawMemoryStreamReader::SetDebugSourceInformation(xiiStringView sDebugSourceInformation)
 {
-  m_sDebugSourceInformation = szDebugSourceInformation;
+  m_sDebugSourceInformation = sDebugSourceInformation;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -280,9 +280,9 @@ xiiUInt64 xiiRawMemoryStreamWriter::GetNumWrittenBytes() const
   return m_uiWritePosition;
 }
 
-void xiiRawMemoryStreamWriter::SetDebugSourceInformation(const char* szDebugSourceInformation)
+void xiiRawMemoryStreamWriter::SetDebugSourceInformation(xiiStringView sDebugSourceInformation)
 {
-  m_sDebugSourceInformation = szDebugSourceInformation;
+  m_sDebugSourceInformation = sDebugSourceInformation;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -86,10 +86,10 @@ xiiResult xiiArchiveUtils::ReadHeader(xiiStreamReader& stream, xiiUInt8& out_uiV
   return XII_SUCCESS;
 }
 
-xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& stream, const char* szAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiArchiveEntry& tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress /*= FileWriteProgressCallback()*/)
+xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& stream, xiiStringView sAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiInt32 iCompressionLevel, xiiArchiveEntry& tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress /*= FileWriteProgressCallback()*/)
 {
   xiiFileReader file;
-  XII_SUCCEED_OR_RETURN(file.Open(szAbsSourcePath, 1024 * 1024));
+  XII_SUCCEED_OR_RETURN(file.Open(sAbsSourcePath, 1024 * 1024));
 
   const xiiUInt64 uiMaxBytes = file.GetFileSize();
 
@@ -110,17 +110,16 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& stream, const char* szAbs
     case xiiArchiveCompressionMode::Uncompressed:
       break;
 
-    case xiiArchiveCompressionMode::Compressed_zstd:
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-      zstdWriter.SetOutputStream(&stream);
+    case xiiArchiveCompressionMode::Compressed_zstd:
+      zstdWriter.SetOutputStream(&stream, (xiiCompressedStreamWriterZstd::Compression)iCompressionLevel);
       pWriter = &zstdWriter;
-#else
-      compression = xiiArchiveCompressionMode::Uncompressed;
-#endif
       break;
+#endif
 
     default:
-      XII_ASSERT_NOT_IMPLEMENTED;
+      compression = xiiArchiveCompressionMode::Uncompressed;
+      break;
   }
 
   tocEntry.m_CompressionMode = compression;
@@ -144,14 +143,15 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& stream, const char* szAbs
     XII_SUCCEED_OR_RETURN(pWriter->WriteBytes(uiTemp, uiRead));
   }
 
-
   switch (compression)
   {
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
     case xiiArchiveCompressionMode::Compressed_zstd:
+    {
       XII_SUCCEED_OR_RETURN(zstdWriter.FinishCompressedStream());
       tocEntry.m_uiStoredDataSize = zstdWriter.GetWrittenBytes();
-      break;
+    }
+    break;
 #endif
 
     case xiiArchiveCompressionMode::Uncompressed:
@@ -165,11 +165,11 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& stream, const char* szAbs
   return XII_SUCCESS;
 }
 
-xiiResult xiiArchiveUtils::WriteEntryOptimal(xiiStreamWriter& stream, const char* szAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiArchiveEntry& tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress /*= FileWriteProgressCallback()*/)
+xiiResult xiiArchiveUtils::WriteEntryOptimal(xiiStreamWriter& stream, xiiStringView sAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiInt32 iCompressionLevel, xiiArchiveEntry& tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress /*= FileWriteProgressCallback()*/)
 {
   if (compression == xiiArchiveCompressionMode::Uncompressed)
   {
-    return WriteEntry(stream, szAbsSourcePath, uiPathStringOffset, xiiArchiveCompressionMode::Uncompressed, tocEntry, inout_uiCurrentStreamPosition, progress);
+    return WriteEntry(stream, sAbsSourcePath, uiPathStringOffset, xiiArchiveCompressionMode::Uncompressed, iCompressionLevel, tocEntry, inout_uiCurrentStreamPosition, progress);
   }
   else
   {
@@ -177,12 +177,12 @@ xiiResult xiiArchiveUtils::WriteEntryOptimal(xiiStreamWriter& stream, const char
     xiiMemoryStreamWriter         writer(&storage);
 
     xiiUInt64 streamPos = inout_uiCurrentStreamPosition;
-    XII_SUCCEED_OR_RETURN(WriteEntry(writer, szAbsSourcePath, uiPathStringOffset, compression, tocEntry, streamPos, progress));
+    XII_SUCCEED_OR_RETURN(WriteEntry(writer, sAbsSourcePath, uiPathStringOffset, compression, iCompressionLevel, tocEntry, streamPos, progress));
 
     if (tocEntry.m_uiStoredDataSize * 12 >= tocEntry.m_uiUncompressedDataSize * 10)
     {
       // less than 20% size saving -> go uncompressed
-      return WriteEntry(stream, szAbsSourcePath, uiPathStringOffset, xiiArchiveCompressionMode::Uncompressed, tocEntry, inout_uiCurrentStreamPosition, progress);
+      return WriteEntry(stream, sAbsSourcePath, uiPathStringOffset, xiiArchiveCompressionMode::Uncompressed, iCompressionLevel, tocEntry, inout_uiCurrentStreamPosition, progress);
     }
     else
     {
@@ -216,8 +216,8 @@ xiiUniquePtr<xiiStreamReader> xiiArchiveUtils::CreateEntryReader(const xiiArchiv
       reader                               = XII_DEFAULT_NEW(xiiRawMemoryStreamReader);
       xiiRawMemoryStreamReader* pRawReader = static_cast<xiiRawMemoryStreamReader*>(reader.Borrow());
       ConfigureRawMemoryStreamReader(entry, pStartOfArchiveData, *pRawReader);
-      break;
     }
+    break;
 
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
     case xiiArchiveCompressionMode::Compressed_zstd:
@@ -226,12 +226,12 @@ xiiUniquePtr<xiiStreamReader> xiiArchiveUtils::CreateEntryReader(const xiiArchiv
       xiiCompressedStreamReaderZstdWithSource* pRawReader = static_cast<xiiCompressedStreamReaderZstdWithSource*>(reader.Borrow());
       ConfigureRawMemoryStreamReader(entry, pStartOfArchiveData, pRawReader->m_Source);
       pRawReader->SetInputStream(&pRawReader->m_Source);
-      break;
     }
+    break;
 #endif
 
     default:
-      XII_REPORT_FAILURE("Archive entry compression mode '{}' is not supported by xiiArchiveReader", (int)entry.m_CompressionMode);
+      XII_REPORT_FAILURE("Archive entry compression mode '{}' is not supported by xiiArchiveReader", (xiiInt32)entry.m_CompressionMode);
       break;
   }
 

@@ -26,7 +26,7 @@ public:
   ///
   /// You should typically not disable bAllowFileEvents, unless you need to prevent recursive file events,
   /// which is only the case, if you are doing file accesses from within a File Event Handler.
-  xiiResult Open(const char* szFile, xiiUInt32 uiCacheSize = 1024 * 64, xiiFileShareMode::Enum FileShareMode = xiiFileShareMode::Default, bool bAllowFileEvents = true);
+  xiiResult Open(xiiStringView sFile, xiiUInt32 uiCacheSize = 1024 * 64, xiiFileShareMode::Enum FileShareMode = xiiFileShareMode::Default, bool bAllowFileEvents = true);
 
   /// \brief Closes the file, if it is open.
   void Close();

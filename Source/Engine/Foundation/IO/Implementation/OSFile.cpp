@@ -8,7 +8,8 @@ xiiString64        xiiOSFile::s_sTempDataPath;
 xiiAtomicInteger32 xiiOSFile::s_iFileCounter;
 xiiOSFile::Event   xiiOSFile::s_FileEvents;
 
-xiiFileStats::xiiFileStats() = default;
+xiiFileStats::xiiFileStats()  = default;
+xiiFileStats::~xiiFileStats() = default;
 
 void xiiFileStats::GetFullPath(xiiStringBuilder& path) const
 {
@@ -27,7 +28,7 @@ xiiOSFile::~xiiOSFile()
   Close();
 }
 
-xiiResult xiiOSFile::Open(const char* szFile, xiiFileOpenMode::Enum OpenMode, xiiFileShareMode::Enum FileShareMode)
+xiiResult xiiOSFile::Open(xiiStringView sFile, xiiFileOpenMode::Enum OpenMode, xiiFileShareMode::Enum FileShareMode)
 {
   m_iFileID = s_iFileCounter.Increment();
 
@@ -36,7 +37,7 @@ xiiResult xiiOSFile::Open(const char* szFile, xiiFileOpenMode::Enum OpenMode, xi
 
   const xiiTime t0 = xiiTime::Now();
 
-  m_sFileName = szFile;
+  m_sFileName = sFile;
   m_sFileName.MakeCleanPath();
   m_sFileName.MakePathSeparatorsNative();
 
@@ -74,7 +75,7 @@ done:
   e.m_Duration  = tdiff;
   e.m_FileMode  = OpenMode;
   e.m_iFileID   = m_iFileID;
-  e.m_szFile    = m_sFileName.GetData();
+  e.m_sFile     = m_sFileName;
   e.m_EventType = EventType::FileOpen;
 
   s_FileEvents.Broadcast(e);
@@ -103,7 +104,7 @@ void xiiOSFile::Close()
   e.m_bSuccess  = true;
   e.m_Duration  = tdiff;
   e.m_iFileID   = m_iFileID;
-  e.m_szFile    = m_sFileName.GetData();
+  e.m_sFile     = m_sFileName;
   e.m_EventType = EventType::FileClose;
 
   s_FileEvents.Broadcast(e);
@@ -128,7 +129,7 @@ xiiResult xiiOSFile::Write(const void* pBuffer, xiiUInt64 uiBytes)
   e.m_bSuccess        = Res == XII_SUCCESS;
   e.m_Duration        = tdiff;
   e.m_iFileID         = m_iFileID;
-  e.m_szFile          = m_sFileName.GetData();
+  e.m_sFile           = m_sFileName;
   e.m_EventType       = EventType::FileWrite;
   e.m_uiBytesAccessed = uiBytes;
 
@@ -153,7 +154,7 @@ xiiUInt64 xiiOSFile::Read(void* pBuffer, xiiUInt64 uiBytes)
   e.m_bSuccess        = (Res == uiBytes);
   e.m_Duration        = tdiff;
   e.m_iFileID         = m_iFileID;
-  e.m_szFile          = m_sFileName.GetData();
+  e.m_sFile           = m_sFileName;
   e.m_EventType       = EventType::FileRead;
   e.m_uiBytesAccessed = Res;
 
@@ -209,9 +210,9 @@ xiiUInt64 xiiOSFile::GetFileSize() const
   return uiCurSize;
 }
 
-const xiiString xiiOSFile::MakePathAbsoluteWithCWD(const char* szPath)
+const xiiString xiiOSFile::MakePathAbsoluteWithCWD(xiiStringView sPath)
 {
-  xiiStringBuilder tmp = szPath;
+  xiiStringBuilder tmp = sPath;
   tmp.MakeCleanPath();
 
   if (tmp.IsRelativePath())
@@ -223,11 +224,11 @@ const xiiString xiiOSFile::MakePathAbsoluteWithCWD(const char* szPath)
   return tmp;
 }
 
-bool xiiOSFile::ExistsFile(const char* szFile)
+bool xiiOSFile::ExistsFile(xiiStringView sFile)
 {
   const xiiTime t0 = xiiTime::Now();
 
-  xiiStringBuilder s(szFile);
+  xiiStringBuilder s(sFile);
   s.MakeCleanPath();
   s.MakePathSeparatorsNative();
 
@@ -241,7 +242,7 @@ bool xiiOSFile::ExistsFile(const char* szFile)
   e.m_bSuccess  = bRes;
   e.m_Duration  = tdiff;
   e.m_iFileID   = s_iFileCounter.Increment();
-  e.m_szFile    = s;
+  e.m_sFile     = s;
   e.m_EventType = EventType::FileExists;
 
   s_FileEvents.Broadcast(e);
@@ -249,11 +250,11 @@ bool xiiOSFile::ExistsFile(const char* szFile)
   return bRes;
 }
 
-bool xiiOSFile::ExistsDirectory(const char* szDirectory)
+bool xiiOSFile::ExistsDirectory(xiiStringView sDirectory)
 {
   const xiiTime t0 = xiiTime::Now();
 
-  xiiStringBuilder s(szDirectory);
+  xiiStringBuilder s(sDirectory);
   s.MakeCleanPath();
   s.MakePathSeparatorsNative();
 
@@ -269,7 +270,7 @@ bool xiiOSFile::ExistsDirectory(const char* szDirectory)
   e.m_bSuccess  = bRes;
   e.m_Duration  = tdiff;
   e.m_iFileID   = s_iFileCounter.Increment();
-  e.m_szFile    = s;
+  e.m_sFile     = s;
   e.m_EventType = EventType::DirectoryExists;
 
   s_FileEvents.Broadcast(e);
@@ -277,11 +278,11 @@ bool xiiOSFile::ExistsDirectory(const char* szDirectory)
   return bRes;
 }
 
-xiiResult xiiOSFile::DeleteFile(const char* szFile)
+xiiResult xiiOSFile::DeleteFile(xiiStringView sFile)
 {
   const xiiTime t0 = xiiTime::Now();
 
-  xiiStringBuilder s(szFile);
+  xiiStringBuilder s(sFile);
   s.MakeCleanPath();
   s.MakePathSeparatorsNative();
 
@@ -294,7 +295,7 @@ xiiResult xiiOSFile::DeleteFile(const char* szFile)
   e.m_bSuccess  = Res == XII_SUCCESS;
   e.m_Duration  = tdiff;
   e.m_iFileID   = s_iFileCounter.Increment();
-  e.m_szFile    = szFile;
+  e.m_sFile     = sFile;
   e.m_EventType = EventType::FileDelete;
 
   s_FileEvents.Broadcast(e);
@@ -302,11 +303,11 @@ xiiResult xiiOSFile::DeleteFile(const char* szFile)
   return Res;
 }
 
-xiiResult xiiOSFile::CreateDirectoryStructure(const char* szDirectory)
+xiiResult xiiOSFile::CreateDirectoryStructure(xiiStringView sDirectory)
 {
   const xiiTime t0 = xiiTime::Now();
 
-  xiiStringBuilder s(szDirectory);
+  xiiStringBuilder s(sDirectory);
   s.MakeCleanPath();
   s.MakePathSeparatorsNative();
 
@@ -343,7 +344,7 @@ xiiResult xiiOSFile::CreateDirectoryStructure(const char* szDirectory)
   e.m_bSuccess  = Res == XII_SUCCESS;
   e.m_Duration  = tdiff;
   e.m_iFileID   = s_iFileCounter.Increment();
-  e.m_szFile    = szDirectory;
+  e.m_sFile     = sDirectory;
   e.m_EventType = EventType::MakeDir;
 
   s_FileEvents.Broadcast(e);
@@ -351,20 +352,20 @@ xiiResult xiiOSFile::CreateDirectoryStructure(const char* szDirectory)
   return Res;
 }
 
-xiiResult xiiOSFile::MoveFileOrDirectory(const char* szDirectoryFrom, const char* szDirectoryTo)
+xiiResult xiiOSFile::MoveFileOrDirectory(xiiStringView sDirectoryFrom, xiiStringView sDirectoryTo)
 {
-  xiiStringBuilder sFrom(szDirectoryFrom);
+  xiiStringBuilder sFrom(sDirectoryFrom);
   sFrom.MakeCleanPath();
   sFrom.MakePathSeparatorsNative();
 
-  xiiStringBuilder sTo(szDirectoryTo);
+  xiiStringBuilder sTo(sDirectoryTo);
   sTo.MakeCleanPath();
   sTo.MakePathSeparatorsNative();
 
   return InternalMoveFileOrDirectory(sFrom, sTo);
 }
 
-xiiResult xiiOSFile::CopyFile(const char* szSource, const char* szDestination)
+xiiResult xiiOSFile::CopyFile(xiiStringView sSource, xiiStringView sDestination)
 {
   const xiiTime t0 = xiiTime::Now();
 
@@ -372,11 +373,11 @@ xiiResult xiiOSFile::CopyFile(const char* szSource, const char* szDestination)
 
   xiiResult Res = XII_FAILURE;
 
-  if (SrcFile.Open(szSource, xiiFileOpenMode::Read) == XII_FAILURE)
+  if (SrcFile.Open(sSource, xiiFileOpenMode::Read) == XII_FAILURE)
     goto done;
 
   DstFile.m_bRetryOnSharingViolation = false;
-  if (DstFile.Open(szDestination, xiiFileOpenMode::Write) == XII_FAILURE)
+  if (DstFile.Open(sDestination, xiiFileOpenMode::Write) == XII_FAILURE)
     goto done;
 
   {
@@ -409,8 +410,8 @@ done:
   e.m_bSuccess  = Res == XII_SUCCESS;
   e.m_Duration  = tdiff;
   e.m_iFileID   = s_iFileCounter.Increment();
-  e.m_szFile    = szSource;
-  e.m_szFile2   = szDestination;
+  e.m_sFile     = sSource;
+  e.m_sFile2    = sDestination;
   e.m_EventType = EventType::FileCopy;
 
   s_FileEvents.Broadcast(e);
@@ -420,11 +421,11 @@ done:
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
 
-xiiResult xiiOSFile::GetFileStats(const char* szFileOrFolder, xiiFileStats& out_Stats)
+xiiResult xiiOSFile::GetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_Stats)
 {
   const xiiTime t0 = xiiTime::Now();
 
-  xiiStringBuilder s = szFileOrFolder;
+  xiiStringBuilder s = sFileOrFolder;
   s.MakeCleanPath();
   s.MakePathSeparatorsNative();
 
@@ -439,7 +440,7 @@ xiiResult xiiOSFile::GetFileStats(const char* szFileOrFolder, xiiFileStats& out_
   e.m_bSuccess  = Res == XII_SUCCESS;
   e.m_Duration  = tdiff;
   e.m_iFileID   = s_iFileCounter.Increment();
-  e.m_szFile    = szFileOrFolder;
+  e.m_sFile     = sFileOrFolder;
   e.m_EventType = EventType::FileStat;
 
   s_FileEvents.Broadcast(e);
@@ -448,13 +449,13 @@ xiiResult xiiOSFile::GetFileStats(const char* szFileOrFolder, xiiFileStats& out_
 }
 
 #  if XII_ENABLED(XII_SUPPORTS_CASE_INSENSITIVE_PATHS) && XII_ENABLED(XII_SUPPORTS_UNRESTRICTED_FILE_ACCESS)
-xiiResult xiiOSFile::GetFileCasing(const char* szFileOrFolder, xiiStringBuilder& out_sCorrectSpelling)
+xiiResult xiiOSFile::GetFileCasing(xiiStringView sFileOrFolder, xiiStringBuilder& out_sCorrectSpelling)
 {
   /// \todo We should implement this also on xiiFileSystem, to be able to support stats through virtual filesystems
 
   const xiiTime t0 = xiiTime::Now();
 
-  xiiStringBuilder s(szFileOrFolder);
+  xiiStringBuilder s(sFileOrFolder);
   s.MakeCleanPath();
   s.MakePathSeparatorsNative();
 
@@ -498,7 +499,7 @@ xiiResult xiiOSFile::GetFileCasing(const char* szFileOrFolder, xiiStringBuilder&
   e.m_bSuccess  = Res == XII_SUCCESS;
   e.m_Duration  = tdiff;
   e.m_iFileID   = s_iFileCounter.Increment();
-  e.m_szFile    = szFileOrFolder;
+  e.m_sFile     = sFileOrFolder;
   e.m_EventType = EventType::FileCasing;
 
   s_FileEvents.Broadcast(e);
@@ -512,12 +513,12 @@ xiiResult xiiOSFile::GetFileCasing(const char* szFileOrFolder, xiiStringBuilder&
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS) && XII_ENABLED(XII_SUPPORTS_FILE_STATS)
 
-void xiiOSFile::GatherAllItemsInFolder(xiiDynamicArray<xiiFileStats>& out_ItemList, const char* szFolder, xiiBitflags<xiiFileSystemIteratorFlags> flags /*= xiiFileSystemIteratorFlags::All*/)
+void xiiOSFile::GatherAllItemsInFolder(xiiDynamicArray<xiiFileStats>& out_ItemList, xiiStringView sFolder, xiiBitflags<xiiFileSystemIteratorFlags> flags /*= xiiFileSystemIteratorFlags::All*/)
 {
   out_ItemList.Clear();
 
   xiiFileSystemIterator iterator;
-  iterator.StartSearch(szFolder, flags);
+  iterator.StartSearch(sFolder, flags);
 
   if (!iterator.IsValid())
     return;
@@ -532,10 +533,10 @@ void xiiOSFile::GatherAllItemsInFolder(xiiDynamicArray<xiiFileStats>& out_ItemLi
   }
 }
 
-xiiResult xiiOSFile::CopyFolder(const char* szSourceFolder, const char* szDestinationFolder, xiiDynamicArray<xiiString>* out_FilesCopied /*= nullptr*/)
+xiiResult xiiOSFile::CopyFolder(xiiStringView sSourceFolder, xiiStringView sDestinationFolder, xiiDynamicArray<xiiString>* out_FilesCopied /*= nullptr*/)
 {
   xiiDynamicArray<xiiFileStats> items;
-  GatherAllItemsInFolder(items, szSourceFolder);
+  GatherAllItemsInFolder(items, sSourceFolder);
 
   xiiStringBuilder srcPath;
   xiiStringBuilder dstPath;
@@ -548,10 +549,10 @@ xiiResult xiiOSFile::CopyFolder(const char* szSourceFolder, const char* szDestin
 
     relPath = srcPath;
 
-    if (relPath.MakeRelativeTo(szSourceFolder).Failed())
+    if (relPath.MakeRelativeTo(sSourceFolder).Failed())
       return XII_FAILURE; // unexpected to ever fail, but don't want to assert on it
 
-    dstPath = szDestinationFolder;
+    dstPath = sDestinationFolder;
     dstPath.AppendPath(relPath);
 
     if (item.m_bIsDirectory)
@@ -576,10 +577,10 @@ xiiResult xiiOSFile::CopyFolder(const char* szSourceFolder, const char* szDestin
   return XII_SUCCESS;
 }
 
-xiiResult xiiOSFile::DeleteFolder(const char* szFolder)
+xiiResult xiiOSFile::DeleteFolder(xiiStringView sFolder)
 {
   xiiDynamicArray<xiiFileStats> items;
-  GatherAllItemsInFolder(items, szFolder);
+  GatherAllItemsInFolder(items, sFolder);
 
   xiiStringBuilder fullPath;
 
@@ -609,7 +610,7 @@ xiiResult xiiOSFile::DeleteFolder(const char* szFolder)
       return XII_FAILURE;
   }
 
-  if (xiiOSFile::InternalDeleteDirectory(szFolder).Failed())
+  if (xiiOSFile::InternalDeleteDirectory(sFolder).Failed())
     return XII_FAILURE;
 
   return XII_SUCCESS;
@@ -619,18 +620,18 @@ xiiResult xiiOSFile::DeleteFolder(const char* szFolder)
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS)
 
-void xiiFileSystemIterator::StartMultiFolderSearch(xiiArrayPtr<xiiString> startFolders, const char* szSearchTerm, xiiBitflags<xiiFileSystemIteratorFlags> flags /*= xiiFileSystemIteratorFlags::Default*/)
+void xiiFileSystemIterator::StartMultiFolderSearch(xiiArrayPtr<xiiString> startFolders, xiiStringView sSearchTerm, xiiBitflags<xiiFileSystemIteratorFlags> flags /*= xiiFileSystemIteratorFlags::Default*/)
 {
   if (startFolders.IsEmpty())
     return;
 
-  m_sMultiSearchTerm     = szSearchTerm;
+  m_sMultiSearchTerm     = sSearchTerm;
   m_Flags                = flags;
   m_uiCurrentStartFolder = 0;
   m_StartFolders         = startFolders;
 
   xiiStringBuilder search = startFolders[m_uiCurrentStartFolder];
-  search.AppendPath(szSearchTerm);
+  search.AppendPath(sSearchTerm);
 
   StartSearch(search, m_Flags);
 
@@ -705,5 +706,6 @@ void xiiFileSystemIterator::SkipFolder()
 #else
 #  error "Unknown Platform."
 #endif
+
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_OSFile);

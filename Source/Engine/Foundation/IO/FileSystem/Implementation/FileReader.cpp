@@ -2,13 +2,13 @@
 
 #include <Foundation/IO/FileSystem/FileReader.h>
 
-xiiResult xiiFileReader::Open(const char* szFile, xiiUInt32 uiCacheSize /*= 1024 * 64*/, xiiFileShareMode::Enum FileShareMode /*= xiiFileShareMode::SharedReads*/, bool bAllowFileEvents /*= true*/)
+xiiResult xiiFileReader::Open(xiiStringView sFile, xiiUInt32 uiCacheSize /*= 1024 * 64*/, xiiFileShareMode::Enum FileShareMode /*= xiiFileShareMode::SharedReads*/, bool bAllowFileEvents /*= true*/)
 {
-  XII_ASSERT_DEV(m_pDataDirReader == nullptr, "The file reader is already open. (File: '{0}')", szFile);
+  XII_ASSERT_DEV(m_pDataDirReader == nullptr, "The file reader is already open. (File: '{0}')", sFile);
 
   uiCacheSize = xiiMath::Clamp<xiiUInt32>(uiCacheSize, 1024, 1024 * 1024 * 32);
 
-  m_pDataDirReader = GetFileReader(szFile, FileShareMode, bAllowFileEvents);
+  m_pDataDirReader = GetFileReader(sFile, FileShareMode, bAllowFileEvents);
 
   if (!m_pDataDirReader)
     return XII_FAILURE;
@@ -34,6 +34,7 @@ void xiiFileReader::Close()
 xiiUInt64 xiiFileReader::ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead)
 {
   XII_ASSERT_DEV(m_pDataDirReader != nullptr, "The file has not been opened (successfully).");
+
   if (m_bEOF)
     return 0;
 
@@ -42,9 +43,13 @@ xiiUInt64 xiiFileReader::ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead)
 
   if (uiBytesToRead > m_Cache.GetCount())
   {
-    // if any data is still in the cache, use that first
+    // If any data is still in the cache, use that first
     const xiiUInt64 uiCachedBytesLeft = m_uiBytesCached - m_uiCacheReadPosition;
-    xiiMemoryUtils::Copy(&pBuffer[uiBufferPosition], &m_Cache[(xiiUInt32)m_uiCacheReadPosition], (xiiUInt32)uiCachedBytesLeft);
+
+    if (uiCachedBytesLeft > 0)
+    {
+      xiiMemoryUtils::Copy(&pBuffer[uiBufferPosition], &m_Cache[(xiiUInt32)m_uiCacheReadPosition], (xiiUInt32)uiCachedBytesLeft);
+    }
 
     uiBufferPosition += uiCachedBytesLeft;
     m_uiCacheReadPosition += uiCachedBytesLeft;
@@ -63,7 +68,7 @@ xiiUInt64 xiiFileReader::ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead)
   {
     while (uiBytesToRead > 0)
     {
-      // determine the chunk size to read
+      // Determine the chunk size to read
       xiiUInt64 uiChunkSize = uiBytesToRead;
 
       const xiiUInt64 uiCachedBytesLeft = m_uiBytesCached - m_uiCacheReadPosition;
@@ -72,28 +77,28 @@ xiiUInt64 xiiFileReader::ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead)
 
       if (uiChunkSize > 0)
       {
-        // copy data into the buffer
+        // Copy data into the buffer
         // uiChunkSize can never be larger than the cache size, which is limited to 32 Bit
         xiiMemoryUtils::Copy(&pBuffer[uiBufferPosition], &m_Cache[(xiiUInt32)m_uiCacheReadPosition], (xiiUInt32)uiChunkSize);
 
-        // store how much was read and how much is still left to read
+        // Store how much was read and how much is still left to read
         uiBufferPosition += uiChunkSize;
         m_uiCacheReadPosition += uiChunkSize;
         uiBytesToRead -= uiChunkSize;
       }
 
 
-      // if the cache is depleted, refill it
-      // this will even be triggered if EXACTLY the amount of available bytes was read
+      // If the cache is depleted, refill it
+      // This will even be triggered if EXACTLY the amount of available bytes was read
       if (m_uiCacheReadPosition >= m_uiBytesCached)
       {
         m_uiBytesCached       = m_pDataDirReader->Read(&m_Cache[0], m_Cache.GetCount());
         m_uiCacheReadPosition = 0;
 
-        // if nothing else could be read from the file, return the number of bytes that have been read
+        // If nothing else could be read from the file, return the number of bytes that have been read
         if (m_uiBytesCached == 0)
         {
-          // if absolutely nothing could be read, we reached the end of the file (and we actually returned everything else,
+          // If absolutely nothing could be read, we reached the end of the file (and we actually returned everything else,
           // so the file was really read to the end).
           m_bEOF = true;
           return uiBufferPosition;
@@ -102,10 +107,9 @@ xiiUInt64 xiiFileReader::ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead)
     }
   }
 
-  // return how much was read
+  // Return how much was read
   return uiBufferPosition;
 }
-
 
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_FileSystem_Implementation_FileReader);

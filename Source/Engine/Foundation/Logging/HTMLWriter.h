@@ -32,7 +32,7 @@ namespace xiiLogWriter
     void SetTimestampMode(xiiLog::TimestampMode mode);
 
   private:
-    void WriteString(const char* szString, xiiUInt32 uiColor);
+    void WriteString(xiiStringView sText, xiiUInt32 uiColor);
 
     xiiFileWriter m_File;
 

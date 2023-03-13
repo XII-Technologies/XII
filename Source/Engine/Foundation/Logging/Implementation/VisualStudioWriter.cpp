@@ -20,62 +20,62 @@ void xiiLogWriter::VisualStudio::LogMessageHandler(const xiiLoggingEventData& ev
   for (xiiUInt32 i = 0; i < eventData.m_uiIndentation; ++i)
     OutputDebugStringA(" ");
 
-  char sz[4096];
+  xiiStringBuilder s;
 
   switch (eventData.m_EventType)
   {
     case xiiLogMsgType::BeginGroup:
-      xiiStringUtils::snprintf(sz, 1024, "+++++ %s (%s) +++++\n", eventData.m_szText, eventData.m_szTag);
-      OutputDebugStringW(xiiStringWChar(sz).GetData());
+      s.Format("+++++ {} ({}) +++++\n", eventData.m_sText, eventData.m_sTag);
+      OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::EndGroup:
 #  if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-      xiiStringUtils::snprintf(sz, 1024, "----- %s (%.6f sec) -----\n\n", eventData.m_szText, eventData.m_fSeconds);
+      s.Format("----- {} ({} sec) -----\n\n", eventData.m_sText, eventData.m_fSeconds);
 #  else
-      xiiStringUtils::snprintf(sz, 1024, "----- %s (%s) -----\n\n", eventData.m_szText, "timing info not available");
+      s.Format("----- {} (timing info not available) -----\n\n", eventData.m_sText);
 #  endif
-      OutputDebugStringW(xiiStringWChar(sz).GetData());
+      OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::ErrorMsg:
-      xiiStringUtils::snprintf(sz, 1024, "Error: %s\n", eventData.m_szText);
-      OutputDebugStringW(xiiStringWChar(sz).GetData());
+      s.Format("Error: {}\n", eventData.m_sText);
+      OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::SeriousWarningMsg:
-      xiiStringUtils::snprintf(sz, 1024, "Seriously: %s\n", eventData.m_szText);
-      OutputDebugStringW(xiiStringWChar(sz).GetData());
+      s.Format("Seriously: {}\n", eventData.m_sText);
+      OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::WarningMsg:
-      xiiStringUtils::snprintf(sz, 1024, "Warning: %s\n", eventData.m_szText);
-      OutputDebugStringW(xiiStringWChar(sz).GetData());
+      s.Format("Warning: {}\n", eventData.m_sText);
+      OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::SuccessMsg:
-      xiiStringUtils::snprintf(sz, 1024, "%s\n", eventData.m_szText);
-      OutputDebugStringW(xiiStringWChar(sz).GetData());
+      s.Format("{}\n", eventData.m_sText);
+      OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::InfoMsg:
-      xiiStringUtils::snprintf(sz, 1024, "%s\n", eventData.m_szText);
-      OutputDebugStringW(xiiStringWChar(sz).GetData());
+      s.Format("{}\n", eventData.m_sText);
+      OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::DevMsg:
-      xiiStringUtils::snprintf(sz, 1024, "%s\n", eventData.m_szText);
-      OutputDebugStringW(xiiStringWChar(sz).GetData());
+      s.Format("{}\n", eventData.m_sText);
+      OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::DebugMsg:
-      xiiStringUtils::snprintf(sz, 1024, "%s\n", eventData.m_szText);
-      OutputDebugStringW(xiiStringWChar(sz).GetData());
+      s.Format("{}\n", eventData.m_sText);
+      OutputDebugStringW(xiiStringWChar(s));
       break;
 
     default:
-      xiiStringUtils::snprintf(sz, 1024, "%s\n", eventData.m_szText);
-      OutputDebugStringW(xiiStringWChar(sz).GetData());
+      s.Format("{}\n", eventData.m_sText);
+      OutputDebugStringW(xiiStringWChar(s));
 
       xiiLog::Warning("Unknown Message Type {0}", eventData.m_EventType);
       break;
@@ -87,7 +87,6 @@ void xiiLogWriter::VisualStudio::LogMessageHandler(const xiiLoggingEventData& ev
 void xiiLogWriter::VisualStudio::LogMessageHandler(const xiiLoggingEventData& eventData) {}
 
 #endif
-
 
 
 XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_VisualStudioWriter);

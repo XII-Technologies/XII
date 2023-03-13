@@ -66,13 +66,13 @@ public:
   xiiCrashHandler_WriteMiniDump();
 
   /// \brief Sets the raw path for the dump-file to write
-  void SetFullDumpFilePath(const char* szFullAbsDumpFilePath);
+  void SetFullDumpFilePath(xiiStringView sFullAbsDumpFilePath);
 
   /// \brief Sets the dump-file path to "{szAbsDirectoryPath}/{szAppName}_{cur-date}.tmp"
-  void SetDumpFilePath(const char* szAbsDirectoryPath, const char* szAppName, xiiBitflags<PathFlags> flags = PathFlags::Default);
+  void SetDumpFilePath(xiiStringView sAbsDirectoryPath, xiiStringView sAppName, xiiBitflags<PathFlags> flags = PathFlags::Default);
 
   /// \brief Sets the dump-file path to "{xiiOSFile::GetApplicationDirectory()}/{szAppName}_{cur-date}.tmp"
-  void SetDumpFilePath(const char* szAppName, xiiBitflags<PathFlags> flags = PathFlags::Default);
+  void SetDumpFilePath(xiiStringView sAppName, xiiBitflags<PathFlags> flags = PathFlags::Default);
 
   virtual void HandleCrash(void* pOsSpecificData) override;
 

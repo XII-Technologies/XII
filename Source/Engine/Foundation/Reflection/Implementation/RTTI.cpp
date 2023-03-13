@@ -406,6 +406,8 @@ void xiiRTTI::AssignPlugin(const char* szPluginName)
   }
 }
 
+// Warning C4505: 'IsValidIdentifierName': unreferenced function with internal linkage has been removed
+// This happens in Release builds, because the function is only used in a debug assert
 #define XII_MSVC_WARNING_NUMBER 4505
 #include <Foundation/Basics/Compiler/MSVC/DisableWarning_MSVC.h>
 
@@ -440,6 +442,8 @@ static bool IsValidIdentifierName(const char* szIdentifier)
   return true;
 }
 
+#include <Foundation/Basics/Compiler/MSVC/RestoreWarning_MSVC.h>
+
 void xiiRTTI::SanityCheckType(xiiRTTI* pType)
 {
   XII_ASSERT_DEV(pType->GetTypeFlags().IsSet(xiiTypeFlags::StandardType) + pType->GetTypeFlags().IsSet(xiiTypeFlags::IsEnum) +
@@ -453,13 +457,15 @@ void xiiRTTI::SanityCheckType(xiiRTTI* pType)
 
     XII_ASSERT_DEBUG(IsValidIdentifierName(pProp->GetPropertyName()), "Property name is invalid: '{0}'", pProp->GetPropertyName());
 
-    // if (!IsValidIdentifierName(pProp->GetPropertyName()))
-    //{
-    //  xiiStringBuilder s;
-    //  s.Format("RTTI: {0}\n", pProp->GetPropertyName());
+#if 0
+    if (!IsValidIdentifierName(pProp->GetPropertyName()))
+    {
+      xiiStringBuilder s;
+      s.Format("RTTI: {0}\n", pProp->GetPropertyName());
 
-    //  xiiLog::Print(s.GetData());
-    //}
+      xiiLog::Print(s.GetData());
+    }
+#endif
 
     if (pProp->GetCategory() != xiiPropertyCategory::Function)
     {

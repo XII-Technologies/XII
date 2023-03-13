@@ -11,19 +11,19 @@
 
 #include <Foundation/Logging/Log.h>
 
-xiiResult xiiArchiveReader::OpenArchive(const char* szPath)
+xiiResult xiiArchiveReader::OpenArchive(xiiStringView sPath)
 {
 #if XII_ENABLED(XII_SUPPORTS_MEMORY_MAPPED_FILE)
-  XII_LOG_BLOCK("OpenArchive", szPath);
+  XII_LOG_BLOCK("OpenArchive", sPath);
 
-  XII_SUCCEED_OR_RETURN(m_MemFile.Open(szPath, xiiMemoryMappedFile::Mode::ReadOnly));
+  XII_SUCCEED_OR_RETURN(m_MemFile.Open(sPath, xiiMemoryMappedFile::Mode::ReadOnly));
   m_uiMemFileSize = m_MemFile.GetFileSize();
 
   // validate the archive
   {
     xiiRawMemoryStreamReader reader(m_MemFile.GetReadPointer(), m_MemFile.GetFileSize());
 
-    xiiStringView extension = xiiPathUtils::GetFileExtension(szPath);
+    xiiStringView extension = xiiPathUtils::GetFileExtension(sPath);
 
     if (xiiArchiveUtils::IsAcceptedArchiveFileExtensions(extension))
     {
@@ -80,20 +80,20 @@ const xiiArchiveTOC& xiiArchiveReader::GetArchiveTOC()
   return m_ArchiveTOC;
 }
 
-xiiResult xiiArchiveReader::ExtractAllFiles(const char* szTargetFolder) const
+xiiResult xiiArchiveReader::ExtractAllFiles(xiiStringView sTargetFolder) const
 {
-  XII_LOG_BLOCK("ExtractAllFiles", szTargetFolder);
+  XII_LOG_BLOCK("ExtractAllFiles", sTargetFolder);
 
   const xiiUInt32 numEntries = m_ArchiveTOC.m_Entries.GetCount();
 
   for (xiiUInt32 e = 0; e < numEntries; ++e)
   {
-    const char* szPath = reinterpret_cast<const char*>(&m_ArchiveTOC.m_AllPathStrings[m_ArchiveTOC.m_Entries[e].m_uiPathStringOffset]);
+    xiiStringView sPath = reinterpret_cast<const char*>(&m_ArchiveTOC.m_AllPathStrings[m_ArchiveTOC.m_Entries[e].m_uiPathStringOffset]);
 
-    if (!ExtractNextFileCallback(e + 1, numEntries, szPath))
+    if (!ExtractNextFileCallback(e + 1, numEntries, sPath))
       return XII_FAILURE;
 
-    XII_SUCCEED_OR_RETURN(ExtractFile(e, szTargetFolder));
+    XII_SUCCEED_OR_RETURN(ExtractFile(e, sTargetFolder));
   }
 
   return XII_SUCCESS;
@@ -109,14 +109,14 @@ xiiUniquePtr<xiiStreamReader> xiiArchiveReader::CreateEntryReader(xiiUInt32 uiEn
   return xiiArchiveUtils::CreateEntryReader(m_ArchiveTOC.m_Entries[uiEntryIdx], m_pDataStart);
 }
 
-xiiResult xiiArchiveReader::ExtractFile(xiiUInt32 uiEntryIdx, const char* szTargetFolder) const
+xiiResult xiiArchiveReader::ExtractFile(xiiUInt32 uiEntryIdx, xiiStringView sTargetFolder) const
 {
   const char*     szFilePath = m_ArchiveTOC.GetEntryPathString(uiEntryIdx);
   const xiiUInt64 uiMaxSize  = m_ArchiveTOC.m_Entries[uiEntryIdx].m_uiUncompressedDataSize;
 
   xiiUniquePtr<xiiStreamReader> pReader = CreateEntryReader(uiEntryIdx);
 
-  xiiStringBuilder sOutputFile = szTargetFolder;
+  xiiStringBuilder sOutputFile = sTargetFolder;
   sOutputFile.AppendPath(szFilePath);
 
   xiiFileWriter file;
@@ -146,7 +146,7 @@ xiiResult xiiArchiveReader::ExtractFile(xiiUInt32 uiEntryIdx, const char* szTarg
   return XII_SUCCESS;
 }
 
-bool xiiArchiveReader::ExtractNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, const char* szSourceFile) const
+bool xiiArchiveReader::ExtractNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile) const
 {
   return true;
 }

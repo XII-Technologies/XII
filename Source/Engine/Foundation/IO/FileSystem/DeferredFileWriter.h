@@ -16,7 +16,7 @@ public:
   ~xiiDeferredFileWriter() { Close().IgnoreResult(); }
 
   /// \brief This must be configured before anything is written to the file.
-  void SetOutput(const char* szFileToWriteTo, bool bOnlyWriteIfDifferent = false); // [tested]
+  void SetOutput(xiiStringView sFileToWriteTo, bool bOnlyWriteIfDifferent = false); // [tested]
 
   virtual xiiResult WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite) override; // [tested]
 

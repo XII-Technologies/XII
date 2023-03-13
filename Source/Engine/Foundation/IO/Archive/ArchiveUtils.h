@@ -41,11 +41,11 @@ namespace xiiArchiveUtils
   ///
   /// Appends information to the TOC for finding the data in the stream. Reads and updates inout_uiCurrentStreamPosition with the data byte
   /// offset. The progress callback is executed for every couple of KB of data that were written.
-  XII_FOUNDATION_DLL xiiResult WriteEntry(xiiStreamWriter& stream, const char* szAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiArchiveEntry& tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress = FileWriteProgressCallback());
+  XII_FOUNDATION_DLL xiiResult WriteEntry(xiiStreamWriter& stream, xiiStringView sAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiInt32 iCompressionLevel, xiiArchiveEntry& tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress = FileWriteProgressCallback());
 
   /// \brief Similar to WriteEntry, but if compression is enabled, checks that compression makes enough of a difference.
   /// If compression does not reduce file size enough, the file is stored uncompressed instead.
-  XII_FOUNDATION_DLL xiiResult WriteEntryOptimal(xiiStreamWriter& stream, const char* szAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiArchiveEntry& tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress = FileWriteProgressCallback());
+  XII_FOUNDATION_DLL xiiResult WriteEntryOptimal(xiiStreamWriter& stream, xiiStringView sAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiInt32 iCompressionLevel, xiiArchiveEntry& tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress = FileWriteProgressCallback());
 
   /// \brief Configures \a memReader as a view into the data stored for \a entry in the archive file.
   ///

@@ -2,16 +2,18 @@
 
 #include <Foundation/IO/Archive/ArchiveBuilder.h>
 #include <Foundation/IO/Archive/ArchiveUtils.h>
+#include <Foundation/IO/CompressedStreamZstd.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Logging/Log.h>
+#include <Foundation/Time/Stopwatch.h>
 
-void xiiArchiveBuilder::AddFolder(const char* szAbsFolderPath, xiiArchiveCompressionMode defaultMode /*= xiiArchiveCompressionMode::Uncompressed*/, InclusionCallback callback /*= InclusionCallback()*/)
+void xiiArchiveBuilder::AddFolder(xiiStringView sAbsFolderPath, xiiArchiveCompressionMode defaultMode /*= xiiArchiveCompressionMode::Uncompressed*/, InclusionCallback callback /*= InclusionCallback()*/)
 {
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS)
   xiiFileSystemIterator fileIt;
 
-  xiiStringBuilder sBasePath = szAbsFolderPath;
+  xiiStringBuilder sBasePath = sAbsFolderPath;
   sBasePath.MakeCleanPath();
 
   xiiStringBuilder fullPath;
@@ -26,7 +28,8 @@ void xiiArchiveBuilder::AddFolder(const char* szAbsFolderPath, xiiArchiveCompres
 
     if (relPath.MakeRelativeTo(sBasePath).Succeeded())
     {
-      xiiArchiveCompressionMode compression = defaultMode;
+      xiiArchiveCompressionMode compression       = defaultMode;
+      xiiInt32                  iCompressionLevel = 0;
 
       if (callback.IsValid())
       {
@@ -39,16 +42,34 @@ void xiiArchiveBuilder::AddFolder(const char* szAbsFolderPath, xiiArchiveCompres
             compression = xiiArchiveCompressionMode::Uncompressed;
             break;
 
-          case InclusionMode::Compress_zstd:
-            compression = xiiArchiveCompressionMode::Compressed_zstd;
+          case InclusionMode::Compress_zstd_fastest:
+            compression       = xiiArchiveCompressionMode::Compressed_zstd;
+            iCompressionLevel = xiiCompressedStreamWriterZstd::Compression::Fastest;
+            break;
+          case InclusionMode::Compress_zstd_fast:
+            compression       = xiiArchiveCompressionMode::Compressed_zstd;
+            iCompressionLevel = xiiCompressedStreamWriterZstd::Compression::Fast;
+            break;
+          case InclusionMode::Compress_zstd_average:
+            compression       = xiiArchiveCompressionMode::Compressed_zstd;
+            iCompressionLevel = xiiCompressedStreamWriterZstd::Compression::Average;
+            break;
+          case InclusionMode::Compress_zstd_high:
+            compression       = xiiArchiveCompressionMode::Compressed_zstd;
+            iCompressionLevel = xiiCompressedStreamWriterZstd::Compression::High;
+            break;
+          case InclusionMode::Compress_zstd_highest:
+            compression       = xiiArchiveCompressionMode::Compressed_zstd;
+            iCompressionLevel = xiiCompressedStreamWriterZstd::Compression::Highest;
             break;
         }
       }
 
-      auto& e             = m_Entries.ExpandAndGetRef();
-      e.m_sAbsSourcePath  = fullPath;
-      e.m_sRelTargetPath  = relPath;
-      e.m_CompressionMode = compression;
+      auto& e               = m_Entries.ExpandAndGetRef();
+      e.m_sAbsSourcePath    = fullPath;
+      e.m_sRelTargetPath    = relPath;
+      e.m_CompressionMode   = compression;
+      e.m_iCompressionLevel = iCompressionLevel;
     }
   }
 
@@ -57,14 +78,14 @@ void xiiArchiveBuilder::AddFolder(const char* szAbsFolderPath, xiiArchiveCompres
 #endif
 }
 
-xiiResult xiiArchiveBuilder::WriteArchive(const char* szFile) const
+xiiResult xiiArchiveBuilder::WriteArchive(xiiStringView sFile) const
 {
-  XII_LOG_BLOCK("WriteArchive", szFile);
+  XII_LOG_BLOCK("WriteArchive", sFile);
 
   xiiFileWriter file;
-  if (file.Open(szFile, 1024 * 1024 * 16).Failed())
+  if (file.Open(sFile, 1024 * 1024 * 16).Failed())
   {
-    xiiLog::Error("Could not open file for writing archive to: '{}'", szFile);
+    xiiLog::Error("Could not open file for writing archive to: '{}'", sFile);
     return XII_FAILURE;
   }
 
@@ -82,6 +103,8 @@ xiiResult xiiArchiveBuilder::WriteArchive(xiiStreamWriter& stream) const
   xiiUInt64       uiStreamSize = 0;
   const xiiUInt32 uiNumEntries = m_Entries.GetCount();
 
+  xiiStopwatch sw;
+
   for (xiiUInt32 i = 0; i < uiNumEntries; ++i)
   {
     const SourceEntry& e = m_Entries[i];
@@ -97,7 +120,11 @@ xiiResult xiiArchiveBuilder::WriteArchive(xiiStreamWriter& stream) const
     if (!WriteNextFileCallback(i + 1, uiNumEntries, e.m_sAbsSourcePath))
       return XII_FAILURE;
 
-    XII_SUCCEED_OR_RETURN(xiiArchiveUtils::WriteEntryOptimal(stream, e.m_sAbsSourcePath, uiPathStringOffset, e.m_CompressionMode, toc.m_Entries.ExpandAndGetRef(), uiStreamSize, xiiMakeDelegate(&xiiArchiveBuilder::WriteFileProgressCallback, this)));
+    xiiArchiveEntry& tocEntry = toc.m_Entries.ExpandAndGetRef();
+
+    XII_SUCCEED_OR_RETURN(xiiArchiveUtils::WriteEntryOptimal(stream, e.m_sAbsSourcePath, uiPathStringOffset, e.m_CompressionMode, e.m_iCompressionLevel, tocEntry, uiStreamSize, xiiMakeDelegate(&xiiArchiveBuilder::WriteFileProgressCallback, this)));
+
+    WriteFileResultCallback(i + 1, uiNumEntries, e.m_sAbsSourcePath, tocEntry.m_uiUncompressedDataSize, tocEntry.m_uiStoredDataSize, sw.Checkpoint());
   }
 
   XII_SUCCEED_OR_RETURN(xiiArchiveUtils::AppendTOC(stream, toc));
@@ -105,7 +132,7 @@ xiiResult xiiArchiveBuilder::WriteArchive(xiiStreamWriter& stream) const
   return XII_SUCCESS;
 }
 
-bool xiiArchiveBuilder::WriteNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, const char* szSourceFile) const
+bool xiiArchiveBuilder::WriteNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile) const
 {
   return true;
 }

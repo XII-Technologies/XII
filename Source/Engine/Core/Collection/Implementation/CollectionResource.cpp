@@ -14,24 +14,27 @@ xiiCollectionResource::xiiCollectionResource() :
 {
 }
 
-void xiiCollectionResource::PreloadResources()
+bool xiiCollectionResource::PreloadResources(xiiUInt32 numResourcesToPreload)
 {
   XII_LOCK(m_PreloadMutex);
   XII_PROFILE_SCOPE("Inject Resources to Preload");
 
-  if (!m_PreloadedResources.IsEmpty())
+  if (m_PreloadedResources.GetCount() == m_Collection.m_Resources.GetCount())
   {
-    // PreloadResources has already been called so there is no need
+    // All resources have already been queued so there is no need
     // to redo the work. Clearing the array would in fact potentially
     // trigger one of the resources to be unloaded, undoing the work
     // that was already done to preload the collection.
-    return;
+    return false;
   }
 
   m_PreloadedResources.Reserve(m_Collection.m_Resources.GetCount());
 
-  for (const auto& e : m_Collection.m_Resources)
+  const xiiUInt32 remainingResources = m_Collection.m_Resources.GetCount() - m_PreloadedResources.GetCount();
+  const xiiUInt32 end                = xiiMath::Min(remainingResources, numResourcesToPreload) + m_PreloadedResources.GetCount();
+  for (xiiUInt32 i = m_PreloadedResources.GetCount(); i < end; ++i)
   {
+    const xiiCollectionEntry& e = m_Collection.m_Resources[i];
     xiiTypelessResourceHandle hTypeless;
 
     if (!e.m_sAssetTypeName.IsEmpty())
@@ -42,9 +45,9 @@ void xiiCollectionResource::PreloadResources()
       }
       else
       {
-        xiiLog::Warning("There was no valid RTTI available for assets with type name '{}'. Could not pre-load resource '{}'. Did you forget to register "
-                        "the resource type with the xiiResourceManager?",
-                        e.m_sAssetTypeName, xiiArgSensitive(e.m_sResourceID, "ResourceID"));
+        xiiLog::Error("There was no valid RTTI available for assets with type name '{}'. Could not pre-load resource '{}'. Did you forget to register "
+                      "the resource type with the xiiResourceManager?",
+                      e.m_sAssetTypeName, xiiArgSensitive(e.m_sResourceID, "ResourceID"));
       }
     }
     else
@@ -59,13 +62,13 @@ void xiiCollectionResource::PreloadResources()
       xiiResourceManager::PreloadResource(hTypeless);
     }
   }
+
+  return m_PreloadedResources.GetCount() < m_Collection.m_Resources.GetCount();
 }
 
 bool xiiCollectionResource::IsLoadingFinished(float* out_progress) const
 {
   XII_LOCK(m_PreloadMutex);
-
-  XII_ASSERT_DEBUG(m_PreloadedResources.GetCount() == m_Collection.m_Resources.GetCount(), "Collection size mismatch. PreloadResources not called?");
 
   xiiUInt64 loadedWeight = 0;
   xiiUInt64 totalWeight  = 0;
@@ -93,13 +96,14 @@ bool xiiCollectionResource::IsLoadingFinished(float* out_progress) const
 
   if (out_progress != nullptr)
   {
+    const float maxLoadedFraction = m_Collection.m_Resources.GetCount() == 0 ? 1.f : (float)m_PreloadedResources.GetCount() / m_Collection.m_Resources.GetCount();
     if (totalWeight != 0 && totalWeight != loadedWeight)
     {
-      *out_progress = static_cast<float>(static_cast<double>(loadedWeight) / totalWeight);
+      *out_progress = static_cast<float>(static_cast<double>(loadedWeight) / totalWeight) * maxLoadedFraction;
     }
     else
     {
-      *out_progress = 1.f;
+      *out_progress = maxLoadedFraction;
     }
   }
 
@@ -110,7 +114,6 @@ bool xiiCollectionResource::IsLoadingFinished(float* out_progress) const
 
   return false;
 }
-
 
 const xiiCollectionResourceDescriptor& xiiCollectionResource::GetDescriptor() const
 {
@@ -190,7 +193,6 @@ void xiiCollectionResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
   out_NewMemoryUsage.m_uiMemoryCPU = static_cast<xiiUInt32>(m_PreloadedResources.GetHeapMemoryUsage() + m_Collection.m_Resources.GetHeapMemoryUsage());
 }
 
-
 void xiiCollectionResource::RegisterNames()
 {
   if (m_bRegistered)
@@ -208,7 +210,6 @@ void xiiCollectionResource::RegisterNames()
     }
   }
 }
-
 
 void xiiCollectionResource::UnregisterNames()
 {
@@ -283,7 +284,6 @@ void xiiCollectionResourceDescriptor::Load(xiiStreamReader& stream)
     }
   }
 }
-
 
 
 XII_STATICLINK_FILE(Core, Core_Collection_Implementation_CollectionResource);

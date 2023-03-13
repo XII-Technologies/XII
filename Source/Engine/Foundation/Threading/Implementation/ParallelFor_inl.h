@@ -40,30 +40,26 @@ private:
 };
 
 template <typename ElemType>
-void xiiTaskSystem::ParallelForInternal(
-  xiiArrayPtr<ElemType>            taskItems,
-  xiiParallelForFunction<ElemType> taskCallback,
-  const char*                      taskName,
-  const xiiParallelForParams&      params)
+void xiiTaskSystem::ParallelForInternal(xiiArrayPtr<ElemType> taskItems, xiiParallelForFunction<ElemType> taskCallback, const char* taskName, const xiiParallelForParams& params)
 {
-  const xiiUInt32 uiMultiplicity       = params.DetermineMultiplicity(taskItems.GetCount());
-  const xiiUInt32 uiItemsPerInvocation = params.DetermineItemsPerInvocation(taskItems.GetCount(), uiMultiplicity);
-
-  if (uiMultiplicity == 0)
+  if (taskItems.GetCount() <= params.m_uiBinSize)
   {
-    ArrayPtrTask<ElemType> arrayPtrTask(taskItems, std::move(taskCallback), uiItemsPerInvocation);
-    arrayPtrTask.ConfigureTask(taskName ? taskName : "Generic ArrayPtr Task", params.nestingMode);
+    ArrayPtrTask<ElemType> arrayPtrTask(taskItems, std::move(taskCallback), taskItems.GetCount());
+    arrayPtrTask.ConfigureTask(taskName ? taskName : "Generic ArrayPtr Task", params.m_NestingMode);
 
     XII_PROFILE_SCOPE(arrayPtrTask.m_sTaskName);
     arrayPtrTask.Execute();
   }
   else
   {
-    xiiAllocatorBase* pAllocator = (params.pTaskAllocator != nullptr) ? params.pTaskAllocator : xiiFoundation::GetDefaultAllocator();
+    xiiUInt32 uiMultiplicity;
+    xiiUInt64 uiItemsPerInvocation;
+    params.DetermineThreading(taskItems.GetCount(), uiMultiplicity, uiItemsPerInvocation);
 
-    xiiSharedPtr<ArrayPtrTask<ElemType>> pArrayPtrTask =
-      XII_NEW(pAllocator, ArrayPtrTask<ElemType>, taskItems, std::move(taskCallback), uiItemsPerInvocation);
-    pArrayPtrTask->ConfigureTask(taskName ? taskName : "Generic ArrayPtr Task", params.nestingMode);
+    xiiAllocatorBase* pAllocator = (params.m_pTaskAllocator != nullptr) ? params.m_pTaskAllocator : xiiFoundation::GetDefaultAllocator();
+
+    xiiSharedPtr<ArrayPtrTask<ElemType>> pArrayPtrTask = XII_NEW(pAllocator, ArrayPtrTask<ElemType>, taskItems, std::move(taskCallback), static_cast<xiiUInt32>(uiItemsPerInvocation));
+    pArrayPtrTask->ConfigureTask(taskName ? taskName : "Generic ArrayPtr Task", params.m_NestingMode);
 
     pArrayPtrTask->SetMultiplicity(uiMultiplicity);
     xiiTaskGroupID taskGroupId = xiiTaskSystem::StartSingleTask(pArrayPtrTask, xiiTaskPriority::EarlyThisFrame);
@@ -101,8 +97,8 @@ void xiiTaskSystem::ParallelForSingle(xiiArrayPtr<ElemType> taskItems, Callback 
 template <typename ElemType, typename Callback>
 void xiiTaskSystem::ParallelForSingleIndex(
   xiiArrayPtr<ElemType>       taskItems,
-  Callback                    taskCallback,
-  const char*                 taskName,
+  Callback                   taskCallback,
+  const char*                taskName,
   const xiiParallelForParams& params)
 {
   auto wrappedCallback = [taskCallback = std::move(taskCallback)](xiiUInt32 uiBaseIndex, xiiArrayPtr<ElemType> taskSlice) {
