@@ -1,0 +1,92 @@
+name: Update Precompiled Tools
+
+on: 
+  workflow_dispatch:
+    inputs:
+      push-to-repository:
+        description: 'Submit to Submodule'
+        required: true
+        default: 'true'
+      full-binaries-artifact:
+        description: 'Create full binaries artifact'
+        required: true
+        default: 'false'
+      new-binaries-artifact:
+        description: 'Create new binaries artifact'
+        required: true
+        default: 'false'
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          path: repo
+          submodules: 'recursive'
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1.0.2
+
+      - name: Run CMake
+        run: |
+          cmake.exe -S repo -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_SYSTEM_VERSION:STRING="10.0.18362.0" -DXII_ENABLE_QT_SUPPORT:BOOL=ON -DXII_BUILD_FILTER:STRING="PrecompiledTools" -DXII_3RDPARTY_LUA_SUPPORT:BOOL=OFF -DXII_3RDPARTY_DUKTAPE_SUPPORT:BOOL=OFF -DXII_3RDPARTY_IMGUI_SUPPORT:BOOL=OFF -DXII_SOLUTION_NAME:string="solution"
+
+      # These commands should NOT use 'rebuild', as that wastes a lot of time
+      # But MSVC on GitHub is currently broken and doesn't build without it at all
+
+      - name: Build Projects
+        run:  msbuild build/solution.sln /p:Configuration=Shipping
+
+      - name: Artifact - Full Binaries
+        if: github.event.inputs.full-binaries-artifact == 'true'
+        uses: actions/upload-artifact@v2
+        with:
+          name: full-binaries
+          path: repo\Output\Bin\WinVs2022Shipping64
+          retention-days: 3
+
+      - name: Checkout Precompiled Tools Repository
+        uses: actions/checkout@v2
+        with:
+          repository: XII-Technologies/PrecompiledTools
+          ref: master
+          path: _tools
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Copy Precompiled Binaries
+        run: |
+          xcopy repo\Output\Bin\WinVs2022Shipping64 _tools /s /u /y
+
+      - name: Artifact - New Precompiled Tools
+        if: github.event.inputs.new-binaries-artifact == 'true'
+        uses: actions/upload-artifact@v2
+        with:
+          name: new-precompiled-tools
+          path: _tools
+          retention-days: 3
+
+      - name: Commit to Submodule
+        run: |
+          cd _tools
+          git config --global user.email "automation@xiitechnologies.com"
+          git config --global user.name "XII Automation"
+          git add .
+          git commit -m "Updated Precompiled Tools"
+
+      - name: Push to Submodule
+        if: github.event.inputs.push-to-repository == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.API_TOKEN_GITHUB }}
+          branch: master
+          directory: _tools
+          repository: XII-Technologies/PrecompiledTools
+          force: true
+
+      # In theory we could now also update the submodule in the XII Engine repository 
+      # and do an automated commit there as well
+      # however, maybe it's better to have some user validation there

@@ -1,3 +1,3 @@
 ### Contributions are welcome. Please see our documentation for details:
 
->https://ezengine.net/pages/getting-started/how-to-contribute.html
+> Coming soon... please ask in official channels if there are any questions
