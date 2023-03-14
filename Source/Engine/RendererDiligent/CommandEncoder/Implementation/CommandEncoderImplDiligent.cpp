@@ -753,10 +753,10 @@ void xiiGALCommandEncoderImplDiligent::DrawIndexedInstancedIndirectPlatform(cons
   drawAttribs.Flags                            = Diligent::DRAW_FLAG_VERIFY_ALL;
   drawAttribs.DrawCount                        = 1;
   drawAttribs.DrawArgsStride                   = sizeof(xiiUInt32) * 5;
-  drawAttribs.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE;
+  drawAttribs.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
   drawAttribs.pCounterBuffer                   = nullptr;
   drawAttribs.CounterOffset                    = 0;
-  drawAttribs.CounterBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE;
+  drawAttribs.CounterBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
 
   m_pContext->DrawIndexedIndirect(drawAttribs);
 }
@@ -787,10 +787,10 @@ void xiiGALCommandEncoderImplDiligent::DrawInstancedIndirectPlatform(const xiiGA
   drawAttribs.Flags                            = Diligent::DRAW_FLAG_VERIFY_ALL;
   drawAttribs.DrawCount                        = 1;
   drawAttribs.DrawArgsStride                   = sizeof(xiiUInt32) * 4;
-  drawAttribs.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE;
+  drawAttribs.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
   drawAttribs.pCounterBuffer                   = nullptr;
   drawAttribs.CounterOffset                    = 0;
-  drawAttribs.CounterBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE;
+  drawAttribs.CounterBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
 
   m_pContext->DrawIndirect(drawAttribs);
 }
@@ -992,7 +992,7 @@ void xiiGALCommandEncoderImplDiligent::DispatchIndirectPlatform(const xiiGALBuff
 
   Diligent::DispatchComputeIndirectAttribs DispatchAttribs;
   DispatchAttribs.pAttribsBuffer                   = static_cast<xiiGALBufferDiligent*>(pIABuffer)->GetBuffer();
-  DispatchAttribs.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE;
+  DispatchAttribs.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
   DispatchAttribs.DispatchArgsByteOffset           = uiArgumentOffsetInBytes;
 
   // These are only needed in a Metal backend.
@@ -1098,8 +1098,6 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 {
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderResourceBindingGraphics);
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderResourceBindingCompute);
-
-  xiiHybridArray<Diligent::StateTransitionDesc, 2u> stateTransitions;
 
   if (m_bPipelineStateModified)
   {
@@ -1307,44 +1305,19 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
 {
   xiiHybridArray<Diligent::StateTransitionDesc, 2u> stateTransitions;
 
-  if (!m_bComputePipelineRequested && m_BoundVertexBuffersRange.IsValid())
+  for (xiiUInt32 i = 0; i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
   {
-    const xiiUInt32 uiStartSlot = m_BoundVertexBuffersRange.m_uiMin;
-    const xiiUInt32 uiNumSlots  = m_BoundVertexBuffersRange.GetCount();
+    if (m_pBoundVertexBuffers[i] == nullptr)
+      continue;
 
-    xiiUInt32 uiCurrentStartSlot = uiStartSlot;
-
-    // Finding valid ranges.
-    for (xiiUInt32 i = uiStartSlot; i < (uiStartSlot + uiNumSlots); i++)
-    {
-      if (!m_pBoundVertexBuffers[i])
-      {
-        uiCurrentStartSlot = i + 1;
-      }
-      else
-      {
-        Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
-        transitionDesc.pResource                      = m_pBoundVertexBuffers[i];
-        transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
-        transitionDesc.NewState                       = Diligent::RESOURCE_STATE_VERTEX_BUFFER;
-        transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
-      }
-    }
-
-    // The last element in the buffer range must always be valid so we can simply flush the rest.
-    if (m_pBoundVertexBuffers[uiCurrentStartSlot])
-    {
-      Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
-      transitionDesc.pResource                      = m_pBoundVertexBuffers[uiCurrentStartSlot];
-      transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
-      transitionDesc.NewState                       = Diligent::RESOURCE_STATE_VERTEX_BUFFER;
-      transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
-    }
-
-    m_BoundVertexBuffersRange.Reset();
+    Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+    transitionDesc.pResource                      = m_pBoundVertexBuffers[i];
+    transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
+    transitionDesc.NewState                       = Diligent::RESOURCE_STATE_VERTEX_BUFFER;
+    transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
   }
 
-  if (!m_bComputePipelineRequested && m_bIndexBufferModified)
+  if (m_pIndexBuffer != nullptr)
   {
     Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
     transitionDesc.pResource                      = m_pIndexBuffer;
@@ -1353,7 +1326,7 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
     transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
   }
 
-  if (m_bDescriptorsModified)
+  if (m_pCurrentShader != nullptr)
   {
     Diligent::IPipelineState* pPipelineState = nullptr;
 
