@@ -14,7 +14,8 @@ class xiiGALCommandEncoderImplDiligent;
 class XII_RENDERERDILIGENT_DLL xiiGALPassDiligent : public xiiGALPass
 {
 public:
-  XII_ALWAYS_INLINE Diligent::IRenderPass* GetRenderPass();
+  XII_ALWAYS_INLINE Diligent::IRenderPass* GetRenderPass(const xiiGALRenderingSetup& renderingSetup);
+  XII_ALWAYS_INLINE Diligent::IFramebuffer* GetFramebuffer(const xiiGALRenderingSetup& renderingSetup);
 
 protected:
   friend class xiiGALDeviceDiligent;
@@ -33,7 +34,8 @@ protected:
   void Reset();
 
 private:
-  void CreateRenderPass(const xiiGALRenderingSetup& renderingSetup);
+  void CreateRenderPass(const xiiGALRenderingSetup& renderingSetup, const char* szName);
+  void CreateFramebuffer(const xiiGALRenderingSetup& renderingSetup, const char* szName);
 
   xiiGALDeviceDiligent& m_GALDeviceDiligent;
 
@@ -43,8 +45,8 @@ private:
   xiiUniquePtr<xiiGALRenderCommandEncoder>  m_pRenderCommandEncoder;
   xiiUniquePtr<xiiGALComputeCommandEncoder> m_pComputeCommandEncoder;
 
-  Diligent::RenderPassDesc                       m_RenderpassDescriptor;
-  Diligent::RefCntAutoPtr<Diligent::IRenderPass> m_pRenderPass;
+  xiiHashTable<xiiGALRenderingSetup, Diligent::IRenderPass*> m_RenderPasses;
+  xiiHashTable<xiiGALRenderingSetup, Diligent::IFramebuffer*> m_Framebuffers;
 };
 
 #include <RendererDiligent/Device/Implementation/PassDiligent_inl.h>

@@ -160,7 +160,6 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
       else
         Tex3DDesc.Type = Diligent::RESOURCE_DIM_TEX_3D;
 
-
       if (!pInitialData.IsEmpty())
       {
         const xiiUInt32 uiInitialDataCount = m_Description.m_uiMipLevelCount;

@@ -20,6 +20,8 @@ public:
   static xiiInt32              GALToDiligentNumComponent(Diligent::TEXTURE_FORMAT format);
 
   static Diligent::COLOR_MASK ToDiligentColorWriteMask(xiiGALColorWriteMask::Enum mask);
+
+  static bool IsDepthFormat(Diligent::TEXTURE_FORMAT format);
 };
 
 #include <RendererDiligent/Utilities/Implementation/DiligentConversions_inl.h>

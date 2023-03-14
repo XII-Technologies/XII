@@ -511,3 +511,17 @@ XII_ALWAYS_INLINE Diligent::COLOR_MASK xiiDiligentUtils::ToDiligentColorWriteMas
                               ((mask & xiiGALColorWriteMask::Blue) ? Diligent::COLOR_MASK_BLUE : 0) |
                               ((mask & xiiGALColorWriteMask::Alpha) ? Diligent::COLOR_MASK_ALPHA : 0));
 }
+
+XII_ALWAYS_INLINE bool xiiDiligentUtils::IsDepthFormat(Diligent::TEXTURE_FORMAT format)
+{
+  switch (format)
+  {
+    // Case D16 Unorm S8 Uint not supported
+    case Diligent::TEX_FORMAT_D16_UNORM:
+    case Diligent::TEX_FORMAT_D32_FLOAT:
+    case Diligent::TEX_FORMAT_D24_UNORM_S8_UINT:
+    case Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT:
+      return true;
+  }
+  return false;
+}
