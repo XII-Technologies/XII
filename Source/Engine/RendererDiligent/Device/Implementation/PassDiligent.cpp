@@ -117,8 +117,11 @@ xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderingPlatform(const xii
     colorClear.Color[3]                       = renderingSetup.m_ClearColor.a;
   }
 
-  renderPassBeginInfo.pClearValues    = m_ClearValues.GetData();
-  renderPassBeginInfo.ClearValueCount = m_ClearValues.GetCount();
+  renderPassBeginInfo.pClearValues        = m_ClearValues.GetData();
+  renderPassBeginInfo.ClearValueCount     = m_ClearValues.GetCount();
+  renderPassBeginInfo.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+
+  m_pCommandEncoderImpl->TransitionResourceStates();
 
   m_GALDeviceDiligent.GetImmediateContext()->BeginRenderPass(renderPassBeginInfo);
 
@@ -204,12 +207,12 @@ void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingS
 
     if (renderingSetup.m_bDiscardDepth)
     {
-      depthAttachment.InitialState = Diligent::RESOURCE_STATE_UNDEFINED;
+      depthAttachment.InitialState = Diligent::RESOURCE_STATE_DEPTH_WRITE;
       depthAttachment.LoadOp       = Diligent::ATTACHMENT_LOAD_OP_DISCARD;
     }
     else
     {
-      depthAttachment.InitialState = renderingSetup.m_bClearDepth ? Diligent::RESOURCE_STATE_UNDEFINED : Diligent::RESOURCE_STATE_DEPTH_WRITE;
+      depthAttachment.InitialState = Diligent::RESOURCE_STATE_DEPTH_WRITE;
       depthAttachment.LoadOp       = renderingSetup.m_bClearDepth ? Diligent::ATTACHMENT_LOAD_OP_CLEAR : Diligent::ATTACHMENT_LOAD_OP_LOAD;
     }
     depthAttachment.StoreOp = Diligent::ATTACHMENT_STORE_OP_STORE;
@@ -246,14 +249,14 @@ void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingS
 
     if (renderingSetup.m_bDiscardColor)
     {
-      colorAttachment.InitialState = Diligent::RESOURCE_STATE_UNDEFINED;
+      colorAttachment.InitialState = Diligent::RESOURCE_STATE_RENDER_TARGET;
       colorAttachment.LoadOp       = Diligent::ATTACHMENT_LOAD_OP_DISCARD;
     }
     else
     {
       if (renderingSetup.m_uiRenderTargetClearMask & (1u << i))
       {
-        colorAttachment.InitialState = Diligent::RESOURCE_STATE_UNDEFINED;
+        colorAttachment.InitialState = Diligent::RESOURCE_STATE_RENDER_TARGET;
         colorAttachment.LoadOp       = Diligent::ATTACHMENT_LOAD_OP_CLEAR;
       }
       else
@@ -280,7 +283,7 @@ void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingS
     const bool bIsDepthFormat = xiiDiligentUtils::IsDepthFormat(attachment.Format);
     if (bIsDepthFormat)
     {
-      attachment.FinalState = Diligent::RESOURCE_STATE_DEPTH_READ; // Perhaps the COMMON state?
+      attachment.FinalState = Diligent::RESOURCE_STATE_DEPTH_WRITE; // Perhaps the COMMON state?
 
       Diligent::AttachmentReference& depthAttachmentRef = depthAttachmentReferences.ExpandAndGetRef();
       depthAttachmentRef.State                          = Diligent::RESOURCE_STATE_DEPTH_WRITE;

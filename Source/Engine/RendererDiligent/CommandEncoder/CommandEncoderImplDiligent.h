@@ -122,6 +122,7 @@ public:
 
 protected:
   virtual void FlushDeferredStateChanges();
+  virtual void TransitionResourceStates();
 
 private:
   friend class xiiGALPassDiligent;
