@@ -152,12 +152,6 @@ void xiiGALPassDiligent::EndComputePlatform(xiiGALComputeCommandEncoder* pComman
 
 void xiiGALPassDiligent::MarkDirty()
 {
-  m_pCommandEncoderImpl->MarkDirty();
-}
-
-void xiiGALPassDiligent::Reset()
-{
-#if 0
   for (auto iter : m_RenderPasses)
   {
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pRenderPass);
@@ -171,8 +165,12 @@ void xiiGALPassDiligent::Reset()
   }
   m_Framebuffers.Clear();
   m_Framebuffers.Compact();
-#endif
 
+  m_pCommandEncoderImpl->MarkDirty();
+}
+
+void xiiGALPassDiligent::Reset()
+{
   // m_pCommandEncoderImpl->Reset();
   m_pRenderCommandEncoder->InvalidateState();
   m_pComputeCommandEncoder->InvalidateState();

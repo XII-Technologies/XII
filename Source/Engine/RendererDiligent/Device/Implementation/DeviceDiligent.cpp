@@ -576,6 +576,8 @@ void xiiGALDeviceDiligent::ReportLiveGpuObjects()
 void xiiGALDeviceDiligent::FlushDeadObjects()
 {
   DestroyDeadObjects();
+
+  m_pDefaultPass->MarkDirty();
 }
 
 // Pipeline & Pass functions

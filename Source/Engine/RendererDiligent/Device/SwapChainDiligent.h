@@ -16,6 +16,14 @@ public:
 
   XII_ALWAYS_INLINE Diligent::ISwapChain* GetSwapChain();
 
+  struct RenderTargetInfo
+  {
+    XII_DECLARE_POD_TYPE();
+
+    Diligent::ITexture*     m_pTexture;
+    Diligent::ITextureView* m_pTextureView;
+  };
+
 protected:
   friend class xiiGALDeviceDiligent;
   friend class xiiMemoryUtils;
@@ -28,16 +36,14 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  xiiResult CreateBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent);
+  xiiResult CreateBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent, bool bInitPlatform);
   void      DestroyBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent);
 
   xiiGALDeviceDiligent* m_pDeviceDiligent = nullptr;
 
   Diligent::RefCntAutoPtr<Diligent::ISwapChain> m_pSwapChain;
 
-  Diligent::ITextureView* m_pCurrentBackbufferRTV;
-
-  xiiGALTextureHandle m_hBackbufferTexture;
+  xiiHashTable<RenderTargetInfo, xiiGALTextureHandle> m_BackbufferTextures;
 
   xiiEnum<xiiGALPresentMode> m_CurrentPresentMode;
 };

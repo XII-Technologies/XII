@@ -32,6 +32,22 @@
 #  include <Graphics/GraphicsEngineMetal/interface/EngineFactoryMtl.h>
 #endif
 
+template <>
+struct xiiHashHelper<xiiGALSwapChainDiligent::RenderTargetInfo>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiGALSwapChainDiligent::RenderTargetInfo& value)
+  {
+    const xiiUInt32 hashA = xiiHashHelper<const void*>::Hash(value.m_pTexture);
+    const xiiUInt32 hashB = xiiHashHelper<const void*>::Hash(value.m_pTextureView);
+    return xiiHashingUtils::CombineHashValues32(hashA, hashB);
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(const xiiGALSwapChainDiligent::RenderTargetInfo& a, const xiiGALSwapChainDiligent::RenderTargetInfo& b)
+  {
+    return a.m_pTexture == b.m_pTexture && a.m_pTextureView == b.m_pTextureView;
+  }
+};
+
 xiiGALResourceFormat::Enum ToGALRenderTargetFormat(Diligent::TEXTURE_FORMAT format)
 {
   switch (format)
@@ -54,17 +70,22 @@ void xiiGALSwapChainDiligent::AcquireNextRenderTarget(xiiGALDevice* pDevice)
 {
   XII_PROFILE_SCOPE("AcquireNextRenderTarget");
 
-  Diligent::ITextureView* pCurrentBackbuffer = m_pSwapChain->GetCurrentBackBufferRTV();
+  Diligent::ITexture*     pCurrentTexture     = m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture();
+  Diligent::ITextureView* pCurrentTextureView = m_pSwapChain->GetCurrentBackBufferRTV();
+  RenderTargetInfo        rendertargetInfo{pCurrentTexture, pCurrentTextureView};
 
-  if (pCurrentBackbuffer != m_pCurrentBackbufferRTV)
+  xiiGALTextureHandle hBackbufferTexture;
+  if (!m_BackbufferTextures.TryGetValue(rendertargetInfo, hBackbufferTexture))
   {
-    DestroyBackBufferInternal(m_pDeviceDiligent);
-
-    if (CreateBackBufferInternal(m_pDeviceDiligent).Failed())
+    if (CreateBackBufferInternal(m_pDeviceDiligent, false).Failed())
     {
       xiiLog::Error("Failed to acquire next render target");
     }
   }
+
+  XII_ASSERT_DEV(m_BackbufferTextures.TryGetValue(rendertargetInfo, hBackbufferTexture), "Failed to retrieve backbuffer texture handle. This should have succeeded.");
+
+  m_RenderTargets.m_hRTs[0] = hBackbufferTexture;
 }
 
 void xiiGALSwapChainDiligent::PresentRenderTarget(xiiGALDevice* pDevice)
@@ -87,11 +108,11 @@ xiiResult xiiGALSwapChainDiligent::UpdateSwapChain(xiiGALDevice* pDevice, xiiEnu
 
   m_pSwapChain->Resize(m_WindowDesc.m_pWindow->GetClientAreaSize().width, m_WindowDesc.m_pWindow->GetClientAreaSize().height);
 
-  return CreateBackBufferInternal(m_pDeviceDiligent);
+  return CreateBackBufferInternal(m_pDeviceDiligent, true);
 }
 
 xiiGALSwapChainDiligent::xiiGALSwapChainDiligent(const xiiGALWindowSwapChainCreationDescription& Description) :
-  xiiGALWindowSwapChain(Description), m_pSwapChain(nullptr), m_pDeviceDiligent(nullptr), m_pCurrentBackbufferRTV(nullptr)
+  xiiGALWindowSwapChain(Description), m_pSwapChain(nullptr), m_pDeviceDiligent(nullptr)
 {
 }
 
@@ -232,10 +253,10 @@ xiiResult xiiGALSwapChainDiligent::InitPlatform(xiiGALDevice* pDevice)
   // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
   m_WindowDesc.m_pWindow->AddReference();
 
-  return CreateBackBufferInternal(m_pDeviceDiligent);
+  return CreateBackBufferInternal(m_pDeviceDiligent, true);
 }
 
-xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent* m_pDeviceDiligent)
+xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent* m_pDeviceDiligent, bool bInitPlatform)
 {
   Diligent::ITextureView* pRTV     = m_pSwapChain->GetCurrentBackBufferRTV();
   Diligent::ITexture*     pTexture = pRTV->GetTexture();
@@ -265,23 +286,34 @@ xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent
   TexDesc.m_ResourceAccess.m_bReadBack  = false;
   TexDesc.m_Format                      = ToGALRenderTargetFormat(rtvDesc.Format);
 
-  m_hBackbufferTexture = m_pDeviceDiligent->CreateTexture(TexDesc);
+  xiiGALTextureHandle hBackbufferTexture = m_pDeviceDiligent->CreateTexture(TexDesc);
 
-  XII_ASSERT_RELEASE(!m_hBackbufferTexture.IsInvalidated(), "Couldn't create native backbuffer texture object!");
-  m_RenderTargets.m_hRTs[0] = m_hBackbufferTexture;
+  XII_ASSERT_RELEASE(!hBackbufferTexture.IsInvalidated(), "Couldn't create native backbuffer texture object!");
 
-  m_pCurrentBackbufferRTV = pRTV;
+  RenderTargetInfo rendertargetInfo{pTexture, pRTV};
+  m_BackbufferTextures.Insert(rendertargetInfo, hBackbufferTexture);
+
+  if (bInitPlatform)
+  {
+    m_RenderTargets.m_hRTs[0] = hBackbufferTexture;
+  }
 
   return XII_SUCCESS;
 }
 
 void xiiGALSwapChainDiligent::DestroyBackBufferInternal(xiiGALDeviceDiligent* m_pDeviceDiligent)
 {
-  m_pDeviceDiligent->DestroyTexture(m_hBackbufferTexture);
+  for (auto iter : m_BackbufferTextures)
+  {
+    m_pDeviceDiligent->DestroyTexture(iter.Value());
 
-  m_hBackbufferTexture.Invalidate();
+    iter.Value().Invalidate();
+  }
 
   m_RenderTargets.m_hRTs[0].Invalidate();
+
+  m_BackbufferTextures.Clear();
+  m_BackbufferTextures.Compact();
 }
 
 xiiResult xiiGALSwapChainDiligent::DeInitPlatform(xiiGALDevice* pDevice)
@@ -301,5 +333,6 @@ xiiResult xiiGALSwapChainDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 
   return XII_FAILURE;
 }
+
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Device_Implementation_SwapChainDiligent);
