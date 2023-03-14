@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <RendererDiligent/RendererDiligentDLL.h>
 #include <RendererFoundation/Device/Pass.h>
@@ -34,6 +35,22 @@ protected:
   void Reset();
 
 private:
+  struct RenderPassWrapper
+  {
+    Diligent::IRenderPass* m_pRenderPass = nullptr;
+  };
+
+  struct FramebufferWrapper
+  {
+    Diligent::IFramebuffer* m_pFramebuffer = nullptr;
+  };
+
+  struct ResourceCacheHash
+  {
+    static xiiUInt32 Hash(const xiiGALRenderingSetup& renderingSetup);
+    static bool      Equal(const xiiGALRenderingSetup& a, const xiiGALRenderingSetup& b);
+  };
+
   void CreateRenderPass(const xiiGALRenderingSetup& renderingSetup, const char* szName);
   void CreateFramebuffer(const xiiGALRenderingSetup& renderingSetup, const char* szName);
 
@@ -45,8 +62,10 @@ private:
   xiiUniquePtr<xiiGALRenderCommandEncoder>  m_pRenderCommandEncoder;
   xiiUniquePtr<xiiGALComputeCommandEncoder> m_pComputeCommandEncoder;
 
-  xiiHashTable<xiiGALRenderingSetup, Diligent::IRenderPass*> m_RenderPasses;
-  xiiHashTable<xiiGALRenderingSetup, Diligent::IFramebuffer*> m_Framebuffers;
+  xiiHashTable<xiiGALRenderingSetup, RenderPassWrapper, xiiGALPassDiligent::ResourceCacheHash>  m_RenderPasses;
+  xiiHashTable<xiiGALRenderingSetup, FramebufferWrapper, xiiGALPassDiligent::ResourceCacheHash> m_Framebuffers;
+
+  xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_ClearValues;
 };
 
 #include <RendererDiligent/Device/Implementation/PassDiligent_inl.h>

@@ -3,6 +3,15 @@
 #include <RendererDiligent/Device/DeviceDiligent.h>
 #include <RendererDiligent/Resources/TextureDiligent.h>
 
+xiiVec3U32 xiiGALTextureDiligent::GetMipLevelSize(xiiUInt32 uiMipLevelSize) const
+{
+  xiiVec3U32 size = {m_Description.m_uiWidth, m_Description.m_uiHeight, m_Description.m_uiDepth};
+  size.x          = xiiMath::Max(1u, size.x >> uiMipLevelSize);
+  size.y          = xiiMath::Max(1u, size.y >> uiMipLevelSize);
+  size.z          = xiiMath::Max(1u, size.z >> uiMipLevelSize);
+  return size;
+}
+
 xiiGALTextureDiligent::xiiGALTextureDiligent(const xiiGALTextureCreationDescription& Description) :
   xiiGALTexture(Description), m_pTexture(nullptr), m_pStagingTexture(nullptr), m_pExisitingNativeObject(Description.m_pExisitingNativeObject)
 {

@@ -607,8 +607,6 @@ void xiiGALDeviceDiligent::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
     pSwapChain->PresentRenderTarget(this);
   }
 
-  // Render context is reset on every end pipeline so it will re-submit all state change for the next render pass. Thus it is safe at this point to do a full reset.
-  // Technically don't have to reset here, MarkDirty would also be fine but we do need to do a Reset at the end of the frame as pointers held by the xiiGALCommandEncoderImplVulkan may not be valid in the next frame.
   m_pDefaultPass->Reset();
 }
 
@@ -909,7 +907,7 @@ void xiiGALDeviceDiligent::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
 
 #if 0
-#  if XII_ENABLED(XII_USE_PROFILING
+#  if XII_ENABLED(XII_USE_PROFILING)
   xiiStringBuilder sb;
   sb.Format("Frame {}", uiRenderFrame);
   m_pFrameTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), sb);

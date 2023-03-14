@@ -9,6 +9,17 @@
 #include <RendererFoundation/CommandEncoder/ComputeCommandEncoder.h>
 #include <RendererFoundation/CommandEncoder/RenderCommandEncoder.h>
 
+XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt32) == sizeof(xiiGALRenderTargetViewHandle));
+namespace
+{
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& Stream, const xiiGALRenderTargetViewHandle& Value)
+  {
+    Stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return Stream;
+  }
+} // namespace
+
+
 xiiGALPassDiligent::xiiGALPassDiligent(xiiGALDevice& device) :
   xiiGALPass(device), m_GALDeviceDiligent(static_cast<xiiGALDeviceDiligent&>(device))
 {
@@ -21,21 +32,95 @@ xiiGALPassDiligent::xiiGALPassDiligent(xiiGALDevice& device) :
   m_pCommandEncoderImpl->m_pOwner = m_pRenderCommandEncoder.Borrow();
 }
 
-xiiGALPassDiligent::~xiiGALPassDiligent() = default;
+xiiGALPassDiligent::~xiiGALPassDiligent()
+{
+  for (auto iter : m_RenderPasses)
+  {
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pRenderPass);
+  }
+  m_RenderPasses.Clear();
+  m_RenderPasses.Compact();
+
+  for (auto iter : m_Framebuffers)
+  {
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pFramebuffer);
+  }
+  m_Framebuffers.Clear();
+  m_Framebuffers.Compact();
+}
 
 xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderingPlatform(const xiiGALRenderingSetup& renderingSetup, const char* szName)
 {
-  Diligent::IRenderPass** pRenderPass = m_RenderPasses.GetValue(renderingSetup);
-  if (pRenderPass == nullptr)
+  RenderPassWrapper renderPass;
+  if (!m_RenderPasses.TryGetValue(renderingSetup, renderPass))
   {
+    xiiLog::Info("Creating Renderpass #{}", m_RenderPasses.GetCount());
     CreateRenderPass(renderingSetup, szName);
   }
+  XII_ASSERT_DEV(m_RenderPasses.TryGetValue(renderingSetup, renderPass), "Failed to retrieve render pass, this should have been successful.");
 
-  Diligent::IFramebuffer** pFrameBuffer = m_Framebuffers.GetValue(renderingSetup);
-  if (pFrameBuffer == nullptr)
+  FramebufferWrapper frameBuffer;
+  if (!m_Framebuffers.TryGetValue(renderingSetup, frameBuffer))
   {
+    xiiLog::Info("Creating Framebuffer #{}", m_Framebuffers.GetCount());
     CreateFramebuffer(renderingSetup, szName);
   }
+  XII_ASSERT_DEV(m_Framebuffers.TryGetValue(renderingSetup, frameBuffer), "Failed to retrieve frame buffer, this should have been successful.");
+
+  const Diligent::FramebufferDesc& framebufferDesc = frameBuffer.m_pFramebuffer->GetDesc();
+  m_pRenderCommandEncoder->SetScissorRect(xiiRectU32(framebufferDesc.Width, framebufferDesc.Height));
+
+  m_ClearValues.Clear();
+
+  Diligent::BeginRenderPassAttribs renderPassBeginInfo = {};
+  renderPassBeginInfo.pRenderPass                      = renderPass.m_pRenderPass;
+  renderPassBeginInfo.pFramebuffer                     = frameBuffer.m_pFramebuffer;
+
+  const bool      bHasDepth    = !renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+  const xiiUInt32 uiColorCount = renderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+
+  if (bHasDepth)
+  {
+    const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent =
+      static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
+
+    xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
+    const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_GALDeviceDiligent.GetTexture(hTexture)->GetParentResource());
+
+    const xiiGALTextureCreationDescription& textureDescription = pTextureDiligent->GetDescription();
+    xiiEnum<xiiGALResourceFormat>           format             = textureDescription.m_Format;
+    const auto&                             formatInfo         = m_GALDeviceDiligent.GetFormatLookupTable().GetFormatInfo(format);
+
+    Diligent::OptimizedClearValue& depthClear = m_ClearValues.ExpandAndGetRef();
+    depthClear.Format                         = formatInfo.m_eDepthStencilType;
+    depthClear.DepthStencil.Depth             = 1.0f;
+    depthClear.DepthStencil.Stencil           = 0;
+  }
+
+  for (xiiUInt32 i = 0; i < uiColorCount; ++i)
+  {
+    xiiGALRenderTargetViewHandle          hColorRenderTarget        = renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i));
+    const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(hColorRenderTarget));
+
+    xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
+    const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_GALDeviceDiligent.GetTexture(hTexture)->GetParentResource());
+
+    const xiiGALTextureCreationDescription& textureDescription = pTextureDiligent->GetDescription();
+    xiiEnum<xiiGALResourceFormat>           format             = textureDescription.m_Format;
+    const auto&                             formatInfo         = m_GALDeviceDiligent.GetFormatLookupTable().GetFormatInfo(format);
+
+    Diligent::OptimizedClearValue& colorClear = m_ClearValues.ExpandAndGetRef();
+    colorClear.Format                         = formatInfo.m_eRenderTarget;
+    colorClear.Color[0]                       = renderingSetup.m_ClearColor.r;
+    colorClear.Color[1]                       = renderingSetup.m_ClearColor.g;
+    colorClear.Color[2]                       = renderingSetup.m_ClearColor.b;
+    colorClear.Color[3]                       = renderingSetup.m_ClearColor.a;
+  }
+
+  renderPassBeginInfo.pClearValues    = m_ClearValues.GetData();
+  renderPassBeginInfo.ClearValueCount = m_ClearValues.GetCount();
+
+  m_GALDeviceDiligent.GetImmediateContext()->BeginRenderPass(renderPassBeginInfo);
 
   m_pCommandEncoderImpl->BeginRendering(renderingSetup);
 
@@ -45,6 +130,8 @@ xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderingPlatform(const xii
 void xiiGALPassDiligent::EndRenderingPlatform(xiiGALRenderCommandEncoder* pCommandEncoder)
 {
   XII_ASSERT_DEV(m_pRenderCommandEncoder.Borrow() == pCommandEncoder, "Invalid command encoder");
+
+  m_GALDeviceDiligent.GetImmediateContext()->EndRenderPass();
 
   m_pCommandEncoderImpl->EndRendering();
 }
@@ -70,6 +157,22 @@ void xiiGALPassDiligent::MarkDirty()
 
 void xiiGALPassDiligent::Reset()
 {
+#if 0
+  for (auto iter : m_RenderPasses)
+  {
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pRenderPass);
+  }
+  m_RenderPasses.Clear();
+  m_RenderPasses.Compact();
+
+  for (auto iter : m_Framebuffers)
+  {
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pFramebuffer);
+  }
+  m_Framebuffers.Clear();
+  m_Framebuffers.Compact();
+#endif
+
   // m_pCommandEncoderImpl->Reset();
   m_pRenderCommandEncoder->InvalidateState();
   m_pComputeCommandEncoder->InvalidateState();
@@ -96,7 +199,7 @@ void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingS
     const auto&                             formatInfo         = m_GALDeviceDiligent.GetFormatLookupTable().GetFormatInfo(format);
 
     Diligent::RenderPassAttachmentDesc& depthAttachment = Attachments.ExpandAndGetRef();
-    depthAttachment.Format                              = formatInfo.m_eRenderTarget;
+    depthAttachment.Format                              = formatInfo.m_eDepthStencilType;
     // \todo Handle format overrides
 
     depthAttachment.SampleCount = xiiDiligentUtils::ToDiligentMSAACount(textureDescription.m_SampleCount);
@@ -108,7 +211,7 @@ void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingS
     }
     else
     {
-      depthAttachment.InitialState = renderingSetup.m_bClearDepth ? Diligent::RESOURCE_STATE_UNDEFINED : (Diligent::RESOURCE_STATE_DEPTH_READ | Diligent::RESOURCE_STATE_DEPTH_WRITE);
+      depthAttachment.InitialState = renderingSetup.m_bClearDepth ? Diligent::RESOURCE_STATE_UNDEFINED : Diligent::RESOURCE_STATE_DEPTH_WRITE;
       depthAttachment.LoadOp       = renderingSetup.m_bClearDepth ? Diligent::ATTACHMENT_LOAD_OP_CLEAR : Diligent::ATTACHMENT_LOAD_OP_LOAD;
     }
     depthAttachment.StoreOp = Diligent::ATTACHMENT_STORE_OP_STORE;
@@ -179,10 +282,10 @@ void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingS
     const bool bIsDepthFormat = xiiDiligentUtils::IsDepthFormat(attachment.Format);
     if (bIsDepthFormat)
     {
-      attachment.FinalState = (Diligent::RESOURCE_STATE_DEPTH_READ | Diligent::RESOURCE_STATE_DEPTH_WRITE);
+      attachment.FinalState = Diligent::RESOURCE_STATE_DEPTH_READ; // Perhaps the COMMON state?
 
       Diligent::AttachmentReference& depthAttachmentRef = depthAttachmentReferences.ExpandAndGetRef();
-      depthAttachmentRef.State                          = (Diligent::RESOURCE_STATE_DEPTH_READ | Diligent::RESOURCE_STATE_DEPTH_WRITE);
+      depthAttachmentRef.State                          = Diligent::RESOURCE_STATE_DEPTH_WRITE;
       depthAttachmentRef.AttachmentIndex                = uiAttachmentIndex;
     }
     else
@@ -233,7 +336,8 @@ void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingS
 
   m_GALDeviceDiligent.GetDevice()->CreateRenderPass(renderPassDesc, &pRenderPass);
 
-  m_RenderPasses.Insert(renderingSetup, pRenderPass);
+  RenderPassWrapper wrapper{pRenderPass};
+  m_RenderPasses.Insert(renderingSetup, wrapper);
 
   XII_ASSERT_DEV(pRenderPass != nullptr, "Failed to create render pass for {0}", szName);
 
@@ -245,4 +349,106 @@ void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingS
 
 void xiiGALPassDiligent::CreateFramebuffer(const xiiGALRenderingSetup& renderingSetup, const char* szName)
 {
+  Diligent::IRenderPass*          pRenderPass    = GetRenderPass(renderingSetup);
+  const Diligent::RenderPassDesc& renderPassDesc = pRenderPass->GetDesc();
+
+  Diligent::FramebufferDesc framebufferDesc = {};
+  framebufferDesc.Name                      = szName;
+  framebufferDesc.pRenderPass               = pRenderPass;
+  framebufferDesc.AttachmentCount           = renderPassDesc.AttachmentCount;
+
+  const bool      bHasDepth              = !renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+  const xiiUInt32 uiColorAttachmentCount = renderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+
+  xiiHybridArray<Diligent::ITextureView*, 2> framebufferAttachments;
+
+  if (bHasDepth)
+  {
+    const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent =
+      static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
+
+    xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
+    const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_GALDeviceDiligent.GetTexture(hTexture)->GetParentResource());
+
+    const xiiGALTextureCreationDescription& textureDescription = pTextureDiligent->GetDescription();
+
+    xiiVec3U32 size                = pTextureDiligent->GetMipLevelSize(pRenderTargetViewDiligent->GetDescription().m_uiMipLevel);
+    framebufferDesc.Width          = size.x;
+    framebufferDesc.Height         = size.y;
+    framebufferDesc.NumArraySlices = textureDescription.m_uiArraySize;
+
+    framebufferAttachments.PushBack(const_cast<xiiGALRenderTargetViewDiligent*>(pRenderTargetViewDiligent)->GetDepthStencilView());
+  }
+
+  for (xiiUInt32 uiColorAttachmentIndex = 0; uiColorAttachmentIndex < uiColorAttachmentCount; ++uiColorAttachmentIndex)
+  {
+    xiiGALRenderTargetViewHandle          hColorRenderTarget        = renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(uiColorAttachmentIndex));
+    const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(hColorRenderTarget));
+
+    xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
+    const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_GALDeviceDiligent.GetTexture(hTexture)->GetParentResource());
+
+    const xiiGALTextureCreationDescription& textureDescription = pTextureDiligent->GetDescription();
+
+    xiiVec3U32 size                = pTextureDiligent->GetMipLevelSize(pRenderTargetViewDiligent->GetDescription().m_uiMipLevel);
+    framebufferDesc.Width          = size.x;
+    framebufferDesc.Height         = size.y;
+    framebufferDesc.NumArraySlices = textureDescription.m_uiArraySize;
+
+    framebufferAttachments.PushBack(const_cast<xiiGALRenderTargetViewDiligent*>(pRenderTargetViewDiligent)->GetRenderTargetView());
+  }
+
+  // In some places rendering is started with an empty xiiGALRenderTargetSetup just to be able to run GPU commands.
+  // An empty size is invalid in Vulkan so we just set it so 1,1.
+  if (xiiVec2U32(framebufferDesc.Width, framebufferDesc.Height) == xiiVec2U32(0, 0))
+  {
+    framebufferDesc.Width          = 1;
+    framebufferDesc.Height         = 1;
+    framebufferDesc.NumArraySlices = 1;
+  }
+
+  framebufferDesc.ppAttachments   = framebufferAttachments.GetData();
+  framebufferDesc.AttachmentCount = framebufferAttachments.GetCount();
+
+  Diligent::IFramebuffer* pFramebuffer = nullptr;
+
+  m_GALDeviceDiligent.GetDevice()->CreateFramebuffer(framebufferDesc, &pFramebuffer);
+
+  FramebufferWrapper wrapper{pFramebuffer};
+  m_Framebuffers.Insert(renderingSetup, wrapper);
+
+  XII_ASSERT_DEV(pFramebuffer != nullptr, "Failed to create frame buffer for {0}", szName);
+
+  if (pFramebuffer == nullptr)
+  {
+    xiiLog::Error("Failed to create frame buffer for '{0}'", szName);
+  }
+}
+
+xiiUInt32 xiiGALPassDiligent::ResourceCacheHash::Hash(const xiiGALRenderingSetup& renderingSetup)
+{
+  xiiHashStreamWriter32 writer;
+  writer << renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget();
+
+  const xiiUInt8 uiCount = renderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+  for (xiiUInt8 i = 0; i < uiCount; ++i)
+  {
+    writer << renderingSetup.m_RenderTargetSetup.GetRenderTarget(i);
+  }
+
+  writer << renderingSetup.m_ClearColor;
+  writer << renderingSetup.m_uiRenderTargetClearMask;
+  writer << renderingSetup.m_fDepthClear;
+  writer << renderingSetup.m_uiStencilClear;
+  writer << renderingSetup.m_bClearDepth;
+  writer << renderingSetup.m_bClearStencil;
+  writer << renderingSetup.m_bDiscardColor;
+  writer << renderingSetup.m_bDiscardDepth;
+
+  return writer.GetHashValue();
+}
+
+bool xiiGALPassDiligent::ResourceCacheHash::Equal(const xiiGALRenderingSetup& a, const xiiGALRenderingSetup& b)
+{
+  return a == b;
 }

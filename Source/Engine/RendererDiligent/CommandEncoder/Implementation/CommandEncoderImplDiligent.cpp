@@ -2,6 +2,7 @@
 
 #include <RendererDiligent/CommandEncoder/CommandEncoderImplDiligent.h>
 #include <RendererDiligent/Device/DeviceDiligent.h>
+#include <RendererDiligent/Device/PassDiligent.h>
 #include <RendererDiligent/Resources/BufferDiligent.h>
 #include <RendererDiligent/Resources/QueryDiligent.h>
 #include <RendererDiligent/Resources/RenderTargetViewDiligent.h>
@@ -662,60 +663,22 @@ void xiiGALCommandEncoderImplDiligent::InsertEventMarkerPlatform(const char* szM
 
 void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup& renderingSetup)
 {
-  if (m_RenderTargetSetup != renderingSetup.m_RenderTargetSetup)
-  {
-    m_RenderTargetSetup = renderingSetup.m_RenderTargetSetup;
-
-    const xiiUInt32 uiRenderTargetCount = m_RenderTargetSetup.GetRenderTargetCount();
-
-    // Reset bound render targets
-    for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; i++)
-    {
-      m_pBoundRenderTargets[i]                           = nullptr;
-      m_PipelineStateDesc.GraphicsPipeline.RTVFormats[i] = Diligent::TEX_FORMAT_UNKNOWN;
-    }
-
-    m_uiBoundRenderTargetCount = uiRenderTargetCount;
-    m_PipelineStateDesc.GraphicsPipeline.NumRenderTargets = m_uiBoundRenderTargetCount;
-
-    for (xiiUInt32 uiIndex = 0; uiIndex < uiRenderTargetCount; ++uiIndex)
-    {
-      if (!m_RenderTargetSetup.GetRenderTarget(uiIndex).IsInvalidated())
-      {
-        xiiGALRenderTargetView* pRenderTargetView                = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderTargetSetup.GetRenderTarget(uiIndex)));
-        m_pBoundRenderTargets[uiIndex]                           = static_cast<xiiGALRenderTargetViewDiligent*>(pRenderTargetView)->GetRenderTargetView();
-        m_PipelineStateDesc.GraphicsPipeline.RTVFormats[uiIndex] = m_pBoundRenderTargets[uiIndex]->GetDesc().Format;
-      }
-    }
-
-    m_pBoundDepthStencilTarget                     = nullptr;
-    m_PipelineStateDesc.GraphicsPipeline.DSVFormat = Diligent::TEX_FORMAT_UNKNOWN;
-    if (!m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated())
-    {
-      xiiGALRenderTargetView* pDepthStencilView      = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderTargetSetup.GetDepthStencilTarget()));
-      m_pBoundDepthStencilTarget                     = static_cast<xiiGALRenderTargetViewDiligent*>(pDepthStencilView)->GetDepthStencilView();
-      m_PipelineStateDesc.GraphicsPipeline.DSVFormat = m_pBoundDepthStencilTarget->GetDesc().Format;
-    }
-
-    m_pContext->SetRenderTargets(uiRenderTargetCount, m_pBoundRenderTargets, m_pBoundDepthStencilTarget, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-  }
-  else
-  {
-    // Set the amount of render targets. This must be rebound every render call.
-    m_pContext->SetRenderTargets(m_uiBoundRenderTargetCount, m_pBoundRenderTargets, m_pBoundDepthStencilTarget, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-  }
-
-  ClearPlatform(renderingSetup.m_ClearColor, renderingSetup.m_uiRenderTargetClearMask, renderingSetup.m_bClearDepth, renderingSetup.m_bClearStencil, renderingSetup.m_fDepthClear, renderingSetup.m_uiStencilClear);
+  // Retrieve the current render pass
+  xiiGALPassDiligent* pDefaultPass                 = m_GALDeviceDiligent.m_pDefaultPass.Borrow();
+  m_pRenderPass                                    = pDefaultPass->GetRenderPass(renderingSetup);
+  m_PipelineStateDesc.GraphicsPipeline.pRenderPass = m_pRenderPass;
 }
 
 void xiiGALCommandEncoderImplDiligent::EndRendering()
 {
+  m_pRenderPass = nullptr;
 }
 
 // Draw functions
 
 void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor, xiiUInt32 uiRenderTargetClearMask, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
+#if 0
   for (xiiUInt32 i = 0; i < m_uiBoundRenderTargetCount; i++)
   {
     if (uiRenderTargetClearMask & (1u << i) && m_pBoundRenderTargets[i])
@@ -728,6 +691,7 @@ void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor,
   {
     m_pContext->ClearDepthStencil(m_pBoundDepthStencilTarget, bClearDepth ? Diligent::CLEAR_DEPTH_FLAG : Diligent::CLEAR_DEPTH_FLAG_NONE, fDepthClear, uiStencilClear, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
   }
+#endif
 }
 
 void xiiGALCommandEncoderImplDiligent::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -1208,7 +1172,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
         if (i - uiCurrentStartSlot > 0)
         {
           // There are some null elements in the array. We can't submit these to Diligent and need to skip them so flush everything before it.
-          m_pContext->SetVertexBuffers(uiCurrentStartSlot, i - uiCurrentStartSlot, m_pBoundVertexBuffers + uiCurrentStartSlot, m_VertexBufferOffsets + uiCurrentStartSlot, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
+          m_pContext->SetVertexBuffers(uiCurrentStartSlot, i - uiCurrentStartSlot, m_pBoundVertexBuffers + uiCurrentStartSlot, m_VertexBufferOffsets + uiCurrentStartSlot, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
         }
         uiCurrentStartSlot = i + 1;
       }
@@ -1216,14 +1180,14 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
     // The last element in the buffer range must always be valid so we can simply flush the rest.
     if (m_pBoundVertexBuffers[uiCurrentStartSlot])
-      m_pContext->SetVertexBuffers(uiCurrentStartSlot, m_BoundVertexBuffersRange.m_uiMax - uiCurrentStartSlot + 1, m_pBoundVertexBuffers + uiCurrentStartSlot, m_VertexBufferOffsets + uiCurrentStartSlot, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
+      m_pContext->SetVertexBuffers(uiCurrentStartSlot, m_BoundVertexBuffersRange.m_uiMax - uiCurrentStartSlot + 1, m_pBoundVertexBuffers + uiCurrentStartSlot, m_VertexBufferOffsets + uiCurrentStartSlot, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
 
     m_BoundVertexBuffersRange.Reset();
   }
 
   if (!m_bComputePipelineRequested && m_bIndexBufferModified)
   {
-    m_pContext->SetIndexBuffer(m_pIndexBuffer, 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pContext->SetIndexBuffer(m_pIndexBuffer, 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 
     m_bIndexBufferModified = false;
   }
@@ -1317,7 +1281,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
     m_pContext->SetPipelineState(m_pPipelineStateCompute);
 
-    m_pContext->CommitShaderResources(m_pShaderResourceBindingCompute, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pContext->CommitShaderResources(m_pShaderResourceBindingCompute, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
   }
   else
   {
@@ -1331,6 +1295,6 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
     m_pContext->SetPipelineState(m_pPipelineStateGraphics);
 
-    m_pContext->CommitShaderResources(m_pShaderResourceBindingGraphics, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pContext->CommitShaderResources(m_pShaderResourceBindingGraphics, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
   }
 }

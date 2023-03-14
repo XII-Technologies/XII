@@ -6,10 +6,10 @@ class xiiGALTextureDiligent : public xiiGALTexture
 {
 public:
   XII_ALWAYS_INLINE Diligent::ITexture* GetTexture();
-
   XII_ALWAYS_INLINE Diligent::ITexture* GetStagingTexture();
+  XII_ALWAYS_INLINE bool                IsNativeWrapperObject();
 
-  XII_ALWAYS_INLINE bool IsNativeWrapperObject();
+  xiiVec3U32 GetMipLevelSize(xiiUInt32 uiMipLevelSize) const;
 
 protected:
   friend class xiiGALDeviceDiligent;

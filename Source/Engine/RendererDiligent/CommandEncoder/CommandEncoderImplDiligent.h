@@ -143,6 +143,7 @@ private:
   Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> m_pShaderResourceBindingCompute;
 
   // Pipeline State
+  Diligent::IRenderPass* m_pRenderPass = nullptr;
 
   // Cache flags
   bool m_bPipelineStateModified    = true;
