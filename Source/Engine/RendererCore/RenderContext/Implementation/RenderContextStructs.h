@@ -13,16 +13,13 @@ struct XII_RENDERERCORE_DLL xiiShaderBindFlags
 
   enum Enum
   {
-    None        = 0,          ///< No flags causes the default shader binding behavior (all render states are applied)
-    ForceRebind = XII_BIT(0), ///< Executes shader binding (and state setting), even if the shader hasn't changed. Use this, when the same shader was
-                              ///< previously used with custom bound states
-    NoRasterizerState =
-      XII_BIT(1), ///< The rasterizer state that is associated with the shader will not be bound. Use this when you intend to bind a custom rasterizer
-    NoDepthStencilState = XII_BIT(
-      2), ///< The depth-stencil state that is associated with the shader will not be bound. Use this when you intend to bind a custom depth-stencil
-    NoBlendState =
-      XII_BIT(3), ///< The blend state that is associated with the shader will not be bound. Use this when you intend to bind a custom blend
-    NoStateBinding = NoRasterizerState | NoDepthStencilState | NoBlendState,
+    None        = 0,                  ///< No flags causes the default shader binding behavior (all render states are applied)
+    ForceRebind = XII_BIT(0),         ///< Executes shader binding (and state setting), even if the shader hasn't changed. Use this, when the same shader was
+                                      ///< previously used with custom bound states
+    NoRasterizerState   = XII_BIT(1), ///< The rasterizer state that is associated with the shader will not be bound. Use this when you intend to bind a custom rasterizer
+    NoDepthStencilState = XII_BIT(2), ///< The depth-stencil state that is associated with the shader will not be bound. Use this when you intend to bind a custom depth-stencil
+    NoBlendState        = XII_BIT(3), ///< The blend state that is associated with the shader will not be bound. Use this when you intend to bind a custom blend
+    NoStateBinding      = NoRasterizerState | NoDepthStencilState | NoBlendState,
 
     Default = None
   };
