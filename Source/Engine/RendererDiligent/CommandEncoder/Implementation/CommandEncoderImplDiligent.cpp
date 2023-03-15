@@ -267,62 +267,40 @@ void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* 
 {
   XII_CHECK_ALIGNMENT_16(pSourceData.GetPtr());
 
-  xiiGALBuffer*      pDst               = const_cast<xiiGALBuffer*>(pDestination);
-  Diligent::IBuffer* pDestinationBuffer = static_cast<xiiGALBufferDiligent*>(pDst)->GetBuffer();
-
-#if 0
-  if (pDestination->GetDescription().m_BufferType == xiiGALBufferType::ConstantBuffer)
+  Diligent::IBuffer* pDestinationBuffer = nullptr;
   {
-    Diligent::PVoid MapResult;
-
-    m_pContext->MapBuffer(pDestinationBuffer, Diligent::MAP_WRITE, Diligent::MAP_FLAG_DISCARD, MapResult);
-
-    if (MapResult)
-    {
-      memcpy(MapResult, pSourceData.GetPtr(), pSourceData.GetCount());
-
-      m_pContext->UnmapBuffer(pDestinationBuffer, Diligent::MAP_WRITE);
-    }
+    xiiGALBuffer* pDestinationNonConst = const_cast<xiiGALBuffer*>(pDestination);
+    pDestinationBuffer                 = static_cast<xiiGALBufferDiligent*>(pDestinationNonConst)->GetBuffer();
   }
-  else
+
+  const Diligent::BufferDesc& bufferDescription = pDestinationBuffer->GetDesc();
+  Diligent::MAP_FLAGS         mapFlags          = Diligent::MAP_FLAG_NONE;
+
+  if (updateMode & xiiGALUpdateMode::DoNotWait)
+    mapFlags |= Diligent::MAP_FLAG_DO_NOT_WAIT;
+
+  if (updateMode & xiiGALUpdateMode::Discard)
   {
-    const Diligent::BufferDesc& desc = pDestinationBuffer->GetDesc();
-    if (desc.Usage == Diligent::USAGE_DEFAULT || desc.Usage == Diligent::USAGE_SPARSE)
+    mapFlags |= Diligent::MAP_FLAG_DISCARD;
+
+    XII_ASSERT_DEV(pSourceData.GetCount() == pDestination->GetSize(), "Only the entire buffer can currently be mapped with the Discard flag.");
+  }
+
+  if (updateMode & xiiGALUpdateMode::NoOverWrite)
+    mapFlags |= Diligent::MAP_FLAG_NO_OVERWRITE;
+
+  switch (bufferDescription.Usage)
+  {
+    case Diligent::USAGE_DEFAULT:
     {
       m_pContext->UpdateBuffer(pDestinationBuffer, uiDestOffset, pSourceData.GetCount(), reinterpret_cast<const void*>(pSourceData.GetPtr()), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     }
-    else
-    {
-      XII_ASSERT_NOT_IMPLEMENTED;
-    }
-  }
-#else
-  switch (updateMode)
-  {
-    case xiiGALUpdateMode::Discard:
-    {
-      Diligent::PVoid pMapResult;
-
-      m_pContext->MapBuffer(pDestinationBuffer, Diligent::MAP_WRITE, Diligent::MAP_FLAG_DISCARD, pMapResult);
-
-      if (pMapResult)
-      {
-        memcpy(xiiMemoryUtils::AddByteOffset((xiiUInt8*)pMapResult, uiDestOffset), pSourceData.GetPtr(), pSourceData.GetCount());
-
-        m_pContext->UnmapBuffer(pDestinationBuffer, Diligent::MAP_WRITE);
-      }
-      else
-      {
-        xiiLog::Error("Failed to map buffer to update content.");
-      }
-    }
     break;
 
-    case xiiGALUpdateMode::NoOverwrite:
+    case Diligent::USAGE_DYNAMIC:
     {
       Diligent::PVoid pMapResult;
-
-      m_pContext->MapBuffer(pDestinationBuffer, Diligent::MAP_WRITE, Diligent::MAP_FLAG_NO_OVERWRITE, pMapResult);
+      m_pContext->MapBuffer(pDestinationBuffer, Diligent::MAP_WRITE, mapFlags, pMapResult);
 
       if (pMapResult)
       {
@@ -334,57 +312,11 @@ void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* 
       {
         xiiLog::Error("Failed to map buffer to update content.");
       }
-    }
-    break;
-
-    case xiiGALUpdateMode::CopyToTempStorage:
-    {
-#  if 0
-      Diligent::PVoid pMapResult;
-
-      m_pContext->MapBuffer(pDestinationBuffer, Diligent::MAP_WRITE, Diligent::MAP_FLAG_NO_OVERWRITE, pMapResult);
-
-      if (pMapResult)
-      {
-        memcpy(xiiMemoryUtils::AddByteOffset((xiiUInt8*)pMapResult, uiDestOffset), pSourceData.GetPtr(), pSourceData.GetCount());
-
-        m_pContext->UnmapBuffer(pDestinationBuffer, Diligent::MAP_WRITE);
-      }
-      else
-      {
-        xiiLog::Error("Failed to map buffer to update content.");
-      }
-#  else
-      if (Diligent::IBuffer* pTempBuffer = m_GALDeviceDiligent.FindTempBuffer(pSourceData.GetCount()))
-      {
-        Diligent::PVoid pMapResult;
-
-        m_pContext->MapBuffer(pTempBuffer, Diligent::MAP_WRITE, Diligent::MAP_FLAG_NONE, pMapResult);
-
-        if (pMapResult)
-        {
-          memcpy(pMapResult, pSourceData.GetPtr(), pSourceData.GetCount());
-
-          m_pContext->UnmapBuffer(pTempBuffer, Diligent::MAP_WRITE);
-
-          m_pContext->CopyBuffer(pTempBuffer, 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, pDestinationBuffer, 0, pSourceData.GetCount(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-        }
-        else
-        {
-          xiiLog::Error("Failed to map buffer to temporary storage.");
-        }
-      }
-      else
-      {
-        XII_REPORT_FAILURE("Could not find a temp buffer for update.");
-      }
-#  endif
     }
     break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED
   }
-#endif
 }
 
 void xiiGALCommandEncoderImplDiligent::CopyTexturePlatform(const xiiGALTexture* pDestination, const xiiGALTexture* pSource)
@@ -439,85 +371,92 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureRegionPlatform(const xiiGALTex
 
 void xiiGALCommandEncoderImplDiligent::UpdateTexturePlatform(const xiiGALTexture* pDestination, const xiiGALTextureSubresource& DestinationSubResource, const xiiBoundingBoxu32& DestinationBox, const xiiGALSystemMemoryDescription& pSourceData)
 {
-  xiiGALTexture*      pDst                = const_cast<xiiGALTexture*>(pDestination);
-  Diligent::ITexture* pDestinationTexture = static_cast<xiiGALTextureDiligent*>(pDst)->GetTexture();
+  Diligent::ITexture* pDestinationTexture = nullptr;
+  {
+    xiiGALTexture* pDestinationNonConst = const_cast<xiiGALTexture*>(pDestination);
+    pDestinationTexture                 = static_cast<xiiGALTextureDiligent*>(pDestinationNonConst)->GetTexture();
+  }
 
   xiiUInt32                  uiWidth  = xiiMath::Max(DestinationBox.m_vMax.x - DestinationBox.m_vMin.x, 1u);
   xiiUInt32                  uiHeight = xiiMath::Max(DestinationBox.m_vMax.y - DestinationBox.m_vMin.y, 1u);
   xiiUInt32                  uiDepth  = xiiMath::Max(DestinationBox.m_vMax.z - DestinationBox.m_vMin.z, 1u);
   xiiGALResourceFormat::Enum format   = pDestination->GetDescription().m_Format;
 
-#if 0
-
-  xiiUInt32 uiRowPitch   = uiWidth * xiiGALResourceFormat::GetBitsPerElement(format) / 8;
-  xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
-  XII_ASSERT_DEV(pSourceData.m_uiRowPitch == uiRowPitch, "Invalid row pitch. Expected {0} got {1}", uiRowPitch, pSourceData.m_uiRowPitch);
-  XII_ASSERT_DEV(pSourceData.m_uiSlicePitch == 0 || pSourceData.m_uiSlicePitch == uiSlicePitch, "Invalid slice pitch. Expected {0} got {1}",
-                 uiSlicePitch, pSourceData.m_uiSlicePitch);
-
-  Diligent::Box SubRegion = {};
-  SubRegion.MinX          = DestinationBox.m_vMin.x;
-  SubRegion.MinY          = DestinationBox.m_vMin.y;
-  SubRegion.MinZ          = DestinationBox.m_vMin.z;
-  SubRegion.MaxX          = DestinationBox.m_vMax.x;
-  SubRegion.MaxY          = DestinationBox.m_vMax.y;
-  SubRegion.MaxZ          = DestinationBox.m_vMax.z;
-
-  Diligent::TextureSubResData SubResData = {};
-  SubResData.pData                       = pSourceData.m_pData;
-  SubResData.Stride                      = uiRowPitch;
-  SubResData.DepthStride                 = uiSlicePitch;
-
-  m_pContext->UpdateTexture(pDestinationTexture, DestinationSubResource.m_uiMipLevel, DestinationSubResource.m_uiArraySlice, SubRegion, SubResData, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-#else
-  if (Diligent::ITexture* pTempTexture = m_GALDeviceDiligent.FindTempTexture(uiWidth, uiHeight, uiDepth, format))
+  const Diligent::TextureDesc& textureDescription = pDestinationTexture->GetDesc();
+  switch (textureDescription.Usage)
   {
-    Diligent::Box SubRegion = {};
-    SubRegion.MinX          = DestinationBox.m_vMin.x;
-    SubRegion.MinY          = DestinationBox.m_vMin.y;
-    SubRegion.MinZ          = DestinationBox.m_vMin.z;
-    SubRegion.MaxX          = DestinationBox.m_vMax.x;
-    SubRegion.MaxY          = DestinationBox.m_vMax.y;
-    SubRegion.MaxZ          = DestinationBox.m_vMax.z;
-
-    Diligent::MappedTextureSubresource MapResult;
-    m_pContext->MapTextureSubresource(pTempTexture, DestinationSubResource.m_uiMipLevel, DestinationSubResource.m_uiArraySlice, Diligent::MAP_READ, Diligent::MAP_FLAG_NONE, &SubRegion, MapResult);
-
-    xiiUInt32 uiRowPitch   = uiWidth * xiiGALResourceFormat::GetBitsPerElement(format) / 8;
-    xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
-    XII_ASSERT_DEV(pSourceData.m_uiRowPitch == uiRowPitch, "Invalid row pitch. Expected {0} got {1}", uiRowPitch, pSourceData.m_uiRowPitch);
-    XII_ASSERT_DEV(pSourceData.m_uiSlicePitch == 0 || pSourceData.m_uiSlicePitch == uiSlicePitch, "Invalid slice pitch. Expected {0} got {1}",
-                   uiSlicePitch, pSourceData.m_uiSlicePitch);
-
-    if (MapResult.Stride == uiRowPitch && MapResult.DepthStride == uiSlicePitch)
+    case Diligent::USAGE_DEFAULT:
     {
-      memcpy(MapResult.pData, pSourceData.m_pData, uiSlicePitch * uiDepth);
+      xiiUInt32 uiRowPitch   = uiWidth * xiiGALResourceFormat::GetBitsPerElement(format) / 8;
+      xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
+      XII_ASSERT_DEV(pSourceData.m_uiRowPitch == uiRowPitch, "Invalid row pitch. Expected {0} got {1}", uiRowPitch, pSourceData.m_uiRowPitch);
+      XII_ASSERT_DEV(pSourceData.m_uiSlicePitch == 0 || pSourceData.m_uiSlicePitch == uiSlicePitch, "Invalid slice pitch. Expected {0} got {1}",
+                     uiSlicePitch, pSourceData.m_uiSlicePitch);
+
+      Diligent::Box SubRegion = {};
+      SubRegion.MinX          = DestinationBox.m_vMin.x;
+      SubRegion.MinY          = DestinationBox.m_vMin.y;
+      SubRegion.MinZ          = DestinationBox.m_vMin.z;
+      SubRegion.MaxX          = DestinationBox.m_vMax.x;
+      SubRegion.MaxY          = DestinationBox.m_vMax.y;
+      SubRegion.MaxZ          = DestinationBox.m_vMax.z;
+
+      Diligent::TextureSubResData SubResData = {};
+      SubResData.pData                       = pSourceData.m_pData;
+      SubResData.Stride                      = uiRowPitch;
+      SubResData.DepthStride                 = uiSlicePitch;
+
+      m_pContext->UpdateTexture(pDestinationTexture, DestinationSubResource.m_uiMipLevel, DestinationSubResource.m_uiArraySlice, SubRegion, SubResData, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     }
-    else
+    break;
+
+    case Diligent::USAGE_DYNAMIC:
     {
-      // Copy by row
-      for (xiiUInt32 z = 0; z < uiDepth; ++z)
+      Diligent::Box SubRegion = {};
+      SubRegion.MinX          = DestinationBox.m_vMin.x;
+      SubRegion.MinY          = DestinationBox.m_vMin.y;
+      SubRegion.MinZ          = DestinationBox.m_vMin.z;
+      SubRegion.MaxX          = DestinationBox.m_vMax.x;
+      SubRegion.MaxY          = DestinationBox.m_vMax.y;
+      SubRegion.MaxZ          = DestinationBox.m_vMax.z;
+
+      Diligent::MappedTextureSubresource MapResult;
+      m_pContext->MapTextureSubresource(pDestinationTexture, DestinationSubResource.m_uiMipLevel, DestinationSubResource.m_uiArraySlice, Diligent::MAP_READ, Diligent::MAP_FLAG_NONE, &SubRegion, MapResult);
+
+      xiiUInt32 uiRowPitch   = uiWidth * xiiGALResourceFormat::GetBitsPerElement(format) / 8;
+      xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
+      XII_ASSERT_DEV(pSourceData.m_uiRowPitch == uiRowPitch, "Invalid row pitch. Expected {0} got {1}", uiRowPitch, pSourceData.m_uiRowPitch);
+      XII_ASSERT_DEV(pSourceData.m_uiSlicePitch == 0 || pSourceData.m_uiSlicePitch == uiSlicePitch, "Invalid slice pitch. Expected {0} got {1}",
+                     uiSlicePitch, pSourceData.m_uiSlicePitch);
+
+      if (MapResult.Stride == uiRowPitch && MapResult.DepthStride == uiSlicePitch)
       {
-        const void* pSource = xiiMemoryUtils::AddByteOffset(pSourceData.m_pData, z * uiSlicePitch);
-        void*       pDest   = xiiMemoryUtils::AddByteOffset(MapResult.pData, z * MapResult.DepthStride);
-
-        for (xiiUInt32 y = 0; y < uiHeight; ++y)
+        memcpy(MapResult.pData, pSourceData.m_pData, uiSlicePitch * uiDepth);
+      }
+      else
+      {
+        // Copy by row
+        for (xiiUInt32 z = 0; z < uiDepth; ++z)
         {
-          memcpy(pDest, pSource, uiRowPitch);
+          const void* pSource = xiiMemoryUtils::AddByteOffset(pSourceData.m_pData, z * uiSlicePitch);
+          void*       pDest   = xiiMemoryUtils::AddByteOffset(MapResult.pData, z * MapResult.DepthStride);
 
-          pSource = xiiMemoryUtils::AddByteOffset(pSource, uiRowPitch);
-          pDest   = xiiMemoryUtils::AddByteOffset(pDest, MapResult.Stride);
+          for (xiiUInt32 y = 0; y < uiHeight; ++y)
+          {
+            memcpy(pDest, pSource, uiRowPitch);
+
+            pSource = xiiMemoryUtils::AddByteOffset(pSource, uiRowPitch);
+            pDest   = xiiMemoryUtils::AddByteOffset(pDest, MapResult.Stride);
+          }
         }
       }
-    }
 
-    m_pContext->UnmapTextureSubresource(pTempTexture, DestinationSubResource.m_uiMipLevel, DestinationSubResource.m_uiArraySlice);
+      m_pContext->UnmapTextureSubresource(pDestinationTexture, DestinationSubResource.m_uiMipLevel, DestinationSubResource.m_uiArraySlice);
+    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED
   }
-  else
-  {
-    XII_REPORT_FAILURE("Could not find a temp texture for update.");
-  }
-#endif
 }
 
 void xiiGALCommandEncoderImplDiligent::ResolveTexturePlatform(const xiiGALTexture* pDestination, const xiiGALTextureSubresource& DestinationSubResource, const xiiGALTexture* pSource, const xiiGALTextureSubresource& SourceSubResource)

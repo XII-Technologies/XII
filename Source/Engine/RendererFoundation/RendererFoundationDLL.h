@@ -284,9 +284,10 @@ struct xiiGALUpdateMode
 {
   enum Enum
   {
-    Discard,
-    NoOverwrite,
-    CopyToTempStorage
+    None        = XII_BIT(0),
+    DoNotWait   = XII_BIT(1), ///< Do not wait another previous command using the resource completes. Map returns null pointer if the resource is still in use.
+    Discard     = XII_BIT(2), ///< Discard the previous contents of the resource. Thus, making its contents undefined.
+    NoOverWrite = XII_BIT(3)  ///< The system will not synchronize pending operations before mapping the buffer.
   };
 };
 

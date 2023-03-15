@@ -52,7 +52,7 @@ void xiiInstanceData::UpdateInstanceData(xiiRenderContext* pRenderContext, xiiUI
 
   xiiUInt32              uiDestOffset = m_uiBufferOffset * sizeof(xiiPerInstanceData);
   auto                   pSourceData  = m_PerInstanceData.GetArrayPtr().GetSubArray(m_uiBufferOffset, uiCount);
-  xiiGALUpdateMode::Enum updateMode   = (m_uiBufferOffset == 0) ? xiiGALUpdateMode::Discard : xiiGALUpdateMode::NoOverwrite;
+  xiiGALUpdateMode::Enum updateMode   = (m_uiBufferOffset == 0) ? xiiGALUpdateMode::Discard : xiiGALUpdateMode::NoOverWrite;
 
   pGALCommandEncoder->UpdateBuffer(m_hInstanceDataBuffer, uiDestOffset, pSourceData.ToByteArray(), updateMode);
 
@@ -103,7 +103,6 @@ void* xiiInstanceDataProvider::UpdateData(const xiiRenderViewContext& renderView
 
   return &m_Data;
 }
-
 
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_InstanceDataProvider);

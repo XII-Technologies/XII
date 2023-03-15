@@ -1212,7 +1212,7 @@ void xiiGALDeviceDiligent::WaitForFencePlatform(Diligent::IDeviceContext* pConte
 
 Diligent::IBuffer* xiiGALDeviceDiligent::FindTempBuffer(xiiUInt32 uiSize)
 {
-  const xiiUInt32 uiExpGrowthLimit = 16 * 1024 * 1024;
+  constexpr const xiiUInt32 uiExpGrowthLimit = 16 * 1024 * 1024;
 
   uiSize = xiiMath::Max(uiSize, 256U);
   if (uiSize < uiExpGrowthLimit)
