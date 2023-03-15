@@ -496,10 +496,6 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
   if (bMSAASourceTexture)
   {
     Diligent::ResolveTextureSubresourceAttribs ResolveTexAttribs;
-    // Internally Direct3D swap chain images are not SRGB, and ResolveSubresource
-    // requires source and destination formats to match exactly or be typeless.
-    // So we will have to create a typeless texture and use SRGB render target view with it.
-    ResolveTexAttribs.Format                   = Diligent::TEX_FORMAT_RGBA8_TYPELESS;
     ResolveTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
     ResolveTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
