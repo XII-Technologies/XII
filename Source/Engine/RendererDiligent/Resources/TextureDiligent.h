@@ -28,8 +28,6 @@ protected:
 
   Diligent::RefCntAutoPtr<Diligent::ITexture> m_pStagingTexture;
 
-  Diligent::TextureData m_TextureData = {};
-
   xiiHybridArray<Diligent::TextureSubResData, 16> m_InitialData;
 
   void* m_pExisitingNativeObject = nullptr;
