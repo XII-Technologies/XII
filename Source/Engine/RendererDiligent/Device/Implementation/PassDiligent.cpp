@@ -453,3 +453,6 @@ bool xiiGALPassDiligent::ResourceCacheHash::Equal(const xiiGALRenderingSetup& a,
 {
   return a == b;
 }
+
+
+XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Device_Implementation_PassDiligent);

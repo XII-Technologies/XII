@@ -253,4 +253,5 @@ xiiResult xiiGALTextureDiligent::CreateStagingTexture(xiiGALDeviceDiligent* pDev
   return XII_SUCCESS;
 }
 
+
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Resources_Implementation_TextureDiligent);

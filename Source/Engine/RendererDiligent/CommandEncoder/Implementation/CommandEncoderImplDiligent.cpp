@@ -1386,3 +1386,6 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
 
   m_pContext->TransitionResourceStates(stateTransitions.GetCount(), stateTransitions.GetData());
 }
+
+
+XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_CommandEncoder_Implementation_CommandEncoderImplDiligent);
