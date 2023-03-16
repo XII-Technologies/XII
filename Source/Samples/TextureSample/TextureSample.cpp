@@ -171,6 +171,8 @@ public:
       xiiWindowCreationDesc WindowCreationDesc;
       WindowCreationDesc.m_Resolution.width  = g_uiWindowWidth;
       WindowCreationDesc.m_Resolution.height = g_uiWindowHeight;
+      WindowCreationDesc.m_bShowMouseCursor  = true;
+      WindowCreationDesc.m_bClipMouseCursor  = false;
       WindowCreationDesc.m_Title             = "Texture Sample";
       m_pWindow                              = XII_DEFAULT_NEW(TextureSampleWindow);
       m_pWindow->Initialize(WindowCreationDesc).IgnoreResult();
@@ -274,6 +276,9 @@ public:
 
     if (xiiInputManager::GetInputActionState("Main", "MouseDown") == xiiKeyState::Down)
     {
+      m_pWindow->GetInputDevice()->SetShowMouseCursor(false);
+      m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::ClipToPosition);
+
       float       fInputValue = 0.0f;
       const float fMouseSpeed = 0.5f;
 
@@ -285,6 +290,11 @@ public:
         m_vCameraPosition.y += fInputValue * fMouseSpeed;
       if (xiiInputManager::GetInputActionState("Main", "MoveNegY", &fInputValue) != xiiKeyState::Up)
         m_vCameraPosition.y -= fInputValue * fMouseSpeed;
+    }
+    else
+    {
+      m_pWindow->GetInputDevice()->SetShowMouseCursor(true);
+      m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::NoClip);
     }
 
     // update all input state

@@ -19,7 +19,6 @@ namespace
   }
 } // namespace
 
-
 xiiGALPassDiligent::xiiGALPassDiligent(xiiGALDevice& device) :
   xiiGALPass(device), m_GALDeviceDiligent(static_cast<xiiGALDeviceDiligent&>(device))
 {

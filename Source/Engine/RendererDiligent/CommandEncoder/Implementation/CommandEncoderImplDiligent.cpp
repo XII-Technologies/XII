@@ -300,7 +300,7 @@ void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* 
     case Diligent::USAGE_DYNAMIC:
     {
       Diligent::PVoid pMapResult;
-      m_pContext->MapBuffer(pDestinationBuffer, Diligent::MAP_WRITE, mapFlags, pMapResult);
+      m_pContext->MapBuffer(pDestinationBuffer, Diligent::MAP_WRITE, mapFlags, reinterpret_cast<Diligent::PVoid&>(pMapResult));
 
       if (pMapResult)
       {
