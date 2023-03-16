@@ -186,8 +186,9 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
 
     xiiRenderContext::GetDefaultInstance()->BindMaterial(m_hMaterial);
     xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(m_hQuadMeshBuffer);
+    pGALPass->BeginRenderPass(renderingSetup);
     xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer().IgnoreResult();
-
+    pGALPass->EndRenderPass();
     xiiRenderContext::GetDefaultInstance()->EndRendering();
     m_pDevice->EndPass(pGALPass);
 

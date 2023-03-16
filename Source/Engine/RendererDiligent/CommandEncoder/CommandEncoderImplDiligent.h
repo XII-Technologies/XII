@@ -144,7 +144,8 @@ private:
   Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> m_pShaderResourceBindingCompute;
 
   // Pipeline State
-  Diligent::IRenderPass* m_pRenderPass = nullptr;
+  xiiGALRenderingSetup   m_RenderingSetup = {};
+  Diligent::IRenderPass* m_pRenderPass    = nullptr;
 
   // Cache flags
   bool m_bPipelineStateModified    = true;
@@ -152,6 +153,9 @@ private:
   bool m_bIndexBufferModified      = false;
   bool m_bDescriptorsModified      = false;
   bool m_bComputePipelineRequested = false;
+
+  bool m_bVertexBufferSet      = false;
+  bool m_bPipelineStateCreated = false;
 
   Diligent::Viewport m_Viewport;
   Diligent::Rect     m_ScissorRect;

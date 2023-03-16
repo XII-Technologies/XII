@@ -31,6 +31,9 @@ protected:
   virtual xiiGALComputeCommandEncoder* BeginComputePlatform(const char* szName) override;
   virtual void                         EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder) override;
 
+  virtual xiiGALRenderCommandEncoder* BeginRenderPassPlatform(const xiiGALRenderingSetup& renderingSetup, const char* szName) override;
+  virtual void                        EndRenderPassPlatform() override;
+
   void MarkDirty();
   void Reset();
 

@@ -598,10 +598,10 @@ void xiiGALCommandEncoderImplDiligent::InsertEventMarkerPlatform(const char* szM
 
 void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup& renderingSetup)
 {
-  // Retrieve the current render pass
-  xiiGALPassDiligent* pDefaultPass                 = m_GALDeviceDiligent.m_pDefaultPass.Borrow();
-  m_pRenderPass                                    = pDefaultPass->GetRenderPass(renderingSetup);
-  m_PipelineStateDesc.GraphicsPipeline.pRenderPass = m_pRenderPass;
+  if (m_RenderingSetup != renderingSetup)
+  {
+    m_RenderingSetup = renderingSetup;
+  }
 }
 
 void xiiGALCommandEncoderImplDiligent::EndRendering()
@@ -631,7 +631,8 @@ void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor,
 
 void xiiGALCommandEncoderImplDiligent::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
 {
-  FlushDeferredStateChanges();
+  if (!m_bPipelineStateCreated)
+    return;
 
   Diligent::DrawAttribs drawAttribs;
   drawAttribs.NumVertices           = uiVertexCount;
@@ -645,7 +646,8 @@ void xiiGALCommandEncoderImplDiligent::DrawPlatform(xiiUInt32 uiVertexCount, xii
 
 void xiiGALCommandEncoderImplDiligent::DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex)
 {
-  FlushDeferredStateChanges();
+  if (!m_bPipelineStateCreated)
+    return;
 
   Diligent::DrawIndexedAttribs drawAttribs;
   drawAttribs.NumIndices            = uiIndexCount;
@@ -661,7 +663,8 @@ void xiiGALCommandEncoderImplDiligent::DrawIndexedPlatform(xiiUInt32 uiIndexCoun
 
 void xiiGALCommandEncoderImplDiligent::DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex)
 {
-  FlushDeferredStateChanges();
+  if (!m_bPipelineStateCreated)
+    return;
 
   Diligent::DrawIndexedAttribs drawAttribs;
   drawAttribs.NumIndices            = uiIndexCountPerInstance;
@@ -677,7 +680,8 @@ void xiiGALCommandEncoderImplDiligent::DrawIndexedInstancedPlatform(xiiUInt32 ui
 
 void xiiGALCommandEncoderImplDiligent::DrawIndexedInstancedIndirectPlatform(const xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
-  FlushDeferredStateChanges();
+  if (!m_bPipelineStateCreated)
+    return;
 
   xiiGALBuffer* pIABuffer = const_cast<xiiGALBuffer*>(pIndirectArgumentBuffer);
 
@@ -698,7 +702,8 @@ void xiiGALCommandEncoderImplDiligent::DrawIndexedInstancedIndirectPlatform(cons
 
 void xiiGALCommandEncoderImplDiligent::DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex)
 {
-  FlushDeferredStateChanges();
+  if (!m_bPipelineStateCreated)
+    return;
 
   Diligent::DrawAttribs drawAttribs;
   drawAttribs.NumVertices           = uiVertexCountPerInstance;
@@ -712,7 +717,8 @@ void xiiGALCommandEncoderImplDiligent::DrawInstancedPlatform(xiiUInt32 uiVertexC
 
 void xiiGALCommandEncoderImplDiligent::DrawInstancedIndirectPlatform(const xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
-  FlushDeferredStateChanges();
+  if (!m_bPipelineStateCreated)
+    return;
 
   xiiGALBuffer* pIABuffer = const_cast<xiiGALBuffer*>(pIndirectArgumentBuffer);
 
@@ -732,8 +738,6 @@ void xiiGALCommandEncoderImplDiligent::DrawInstancedIndirectPlatform(const xiiGA
 
 void xiiGALCommandEncoderImplDiligent::DrawAutoPlatform()
 {
-  // FlushDeferredStateChanges();
-
   XII_ASSERT_NOT_IMPLEMENTED
 }
 
@@ -1031,11 +1035,23 @@ void xiiGALCommandEncoderImplDiligent::Reset()
 
 void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 {
+  if (!m_bVertexBufferSet)
+    return;
+
+  // Retrieve the current render pass
+  {
+    xiiGALPassDiligent* pDefaultPass                 = m_GALDeviceDiligent.m_pDefaultPass.Borrow();
+    m_pRenderPass                                    = pDefaultPass->GetRenderPass(m_RenderingSetup);
+    m_PipelineStateDesc.GraphicsPipeline.pRenderPass = m_pRenderPass;
+  }
+
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderResourceBindingGraphics);
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderResourceBindingCompute);
 
   if (m_bPipelineStateModified)
   {
+    m_bPipelineStateCreated = false;
+
     XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pPipelineStateGraphics);
     XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pPipelineStateCompute);
 
@@ -1069,6 +1085,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
     // Changes to the descriptor layout always require the descriptor set to be re-created.
     m_bDescriptorsModified = true;
+    m_bPipelineStateCreated = true;
   }
 
   if (!m_bComputePipelineRequested && m_bViewportModified)
@@ -1229,7 +1246,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     {
       m_bPipelineStateModified = false;
     }
-
+    
     m_pContext->SetPipelineState(m_pPipelineStateGraphics);
 
     m_pContext->CommitShaderResources(m_pShaderResourceBindingGraphics, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
@@ -1239,6 +1256,8 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
 {
   xiiHybridArray<Diligent::StateTransitionDesc, 2u> stateTransitions;
+
+  m_bVertexBufferSet = false;
 
   for (xiiUInt32 i = 0; i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
   {
@@ -1251,6 +1270,8 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
     transitionDesc.NewState                       = Diligent::RESOURCE_STATE_VERTEX_BUFFER;
     transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
     transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+
+    m_bVertexBufferSet = true;
   }
 
   if (m_pIndexBuffer != nullptr)
@@ -1274,6 +1295,9 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
 
     for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
     {
+      if (pPipelineState == nullptr)
+        break;
+
       auto& bindings = m_pCurrentShader->GetDescriptorSets((xiiGALShaderStage::Enum)stage);
       for (xiiUInt32 i = 0; i < bindings.GetCount(); ++i)
       {
@@ -1385,6 +1409,8 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
   }
 
   m_pContext->TransitionResourceStates(stateTransitions.GetCount(), stateTransitions.GetData());
+
+  FlushDeferredStateChanges();
 }
 
 

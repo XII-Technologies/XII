@@ -50,6 +50,34 @@ xiiGALPassDiligent::~xiiGALPassDiligent()
 
 xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderingPlatform(const xiiGALRenderingSetup& renderingSetup, const char* szName)
 {
+  m_pCommandEncoderImpl->BeginRendering(renderingSetup);
+
+  return m_pRenderCommandEncoder.Borrow();
+}
+
+void xiiGALPassDiligent::EndRenderingPlatform(xiiGALRenderCommandEncoder* pCommandEncoder)
+{
+  XII_ASSERT_DEV(m_pRenderCommandEncoder.Borrow() == pCommandEncoder, "Invalid command encoder");
+
+  m_pCommandEncoderImpl->EndRendering();
+}
+
+xiiGALComputeCommandEncoder* xiiGALPassDiligent::BeginComputePlatform(const char* szName)
+{
+  m_pCommandEncoderImpl->BeginCompute();
+
+  return m_pComputeCommandEncoder.Borrow();
+}
+
+void xiiGALPassDiligent::EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder)
+{
+  XII_ASSERT_DEV(m_pComputeCommandEncoder.Borrow() == pCommandEncoder, "Invalid command encoder");
+
+  m_pCommandEncoderImpl->EndCompute();
+}
+
+xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderPassPlatform(const xiiGALRenderingSetup& renderingSetup, const char* szName)
+{
   RenderPassWrapper renderPass;
   if (!m_RenderPasses.TryGetValue(renderingSetup, renderPass))
   {
@@ -124,32 +152,12 @@ xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderingPlatform(const xii
 
   m_GALDeviceDiligent.GetImmediateContext()->BeginRenderPass(renderPassBeginInfo);
 
-  m_pCommandEncoderImpl->BeginRendering(renderingSetup);
-
   return m_pRenderCommandEncoder.Borrow();
 }
 
-void xiiGALPassDiligent::EndRenderingPlatform(xiiGALRenderCommandEncoder* pCommandEncoder)
+void xiiGALPassDiligent::EndRenderPassPlatform()
 {
-  XII_ASSERT_DEV(m_pRenderCommandEncoder.Borrow() == pCommandEncoder, "Invalid command encoder");
-
   m_GALDeviceDiligent.GetImmediateContext()->EndRenderPass();
-
-  m_pCommandEncoderImpl->EndRendering();
-}
-
-xiiGALComputeCommandEncoder* xiiGALPassDiligent::BeginComputePlatform(const char* szName)
-{
-  m_pCommandEncoderImpl->BeginCompute();
-
-  return m_pComputeCommandEncoder.Borrow();
-}
-
-void xiiGALPassDiligent::EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder)
-{
-  XII_ASSERT_DEV(m_pComputeCommandEncoder.Borrow() == pCommandEncoder, "Invalid command encoder");
-
-  m_pCommandEncoderImpl->EndCompute();
 }
 
 void xiiGALPassDiligent::MarkDirty()

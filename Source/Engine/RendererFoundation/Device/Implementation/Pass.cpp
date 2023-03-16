@@ -64,6 +64,18 @@ void xiiGALPass::EndCompute(xiiGALComputeCommandEncoder* pCommandEncoder)
   EndComputePlatform(pCommandEncoder);
 }
 
+xiiGALRenderCommandEncoder* xiiGALPass::BeginRenderPass(const xiiGALRenderingSetup& renderingSetup, const char* szName)
+{
+  xiiGALRenderCommandEncoder* pCommandEncoder = BeginRenderPassPlatform(renderingSetup, szName);
+
+  return pCommandEncoder;
+}
+
+void xiiGALPass::EndRenderPass()
+{
+  EndRenderPassPlatform();
+}
+
 xiiGALPass::xiiGALPass(xiiGALDevice& device) :
   m_Device(device)
 {
