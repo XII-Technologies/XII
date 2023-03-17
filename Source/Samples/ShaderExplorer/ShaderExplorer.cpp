@@ -419,6 +419,7 @@ void xiiShaderExplorerApp::UpdateSwapChain()
     m_pDevice->DestroyTexture(m_hDepthStencilTexture);
     m_hDepthStencilTexture.Invalidate();
   }
+
   // Create depth texture
   {
     xiiGALTextureCreationDescription texDesc;

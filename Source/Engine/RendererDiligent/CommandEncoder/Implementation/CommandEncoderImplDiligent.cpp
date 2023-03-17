@@ -235,12 +235,16 @@ void xiiGALCommandEncoderImplDiligent::InsertTimestampPlatform(xiiGALTimestampHa
 
 void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xiiGALUnorderedAccessView* pUnorderedAccessView, xiiVec4 clearValues)
 {
-  // XII_ASSERT_NOT_IMPLEMENTED;
+  // \todo Implement clearing unordered access views through a compute shader
+
+  XII_ASSERT_NOT_IMPLEMENTED
 }
 
 void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xiiGALUnorderedAccessView* pUnorderedAccessView, xiiVec4U32 clearValues)
 {
-  // XII_ASSERT_NOT_IMPLEMENTED;
+  // \todo Implement clearing unordered access views through a compute shader
+
+  XII_ASSERT_NOT_IMPLEMENTED
 }
 
 void xiiGALCommandEncoderImplDiligent::CopyBufferPlatform(const xiiGALBuffer* pDestination, const xiiGALBuffer* pSource)
@@ -616,7 +620,7 @@ void xiiGALCommandEncoderImplDiligent::EndRendering()
 
 void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor, xiiUInt32 uiRenderTargetClearMask, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
-#if 0
+#if 1
   for (xiiUInt32 i = 0; i < m_uiBoundRenderTargetCount; i++)
   {
     if (uiRenderTargetClearMask & (1u << i) && m_pBoundRenderTargets[i])
