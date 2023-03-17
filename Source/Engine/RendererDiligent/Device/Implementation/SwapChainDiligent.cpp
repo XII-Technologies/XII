@@ -200,14 +200,14 @@ xiiResult xiiGALSwapChainDiligent::InitPlatform(xiiGALDevice* pDevice)
         EngineCI.NumDeferredContexts = 0;
       }
 
-      EngineCI.Features.OcclusionQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.BinaryOcclusionQueries    = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-
-      EngineCI.Features.MultithreadedResourceCreation = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthClamp                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.TimestampQueries              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
       EngineCI.Features.WireframeFill                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MultithreadedResourceCreation = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.OcclusionQueries              = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.BinaryOcclusionQueries        = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.PipelineStatisticsQueries     = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.DurationQueries               = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
 
       Diligent::IRenderDevice*  pDevice  = m_pDeviceDiligent->GetDevice();
       Diligent::IDeviceContext* pContext = m_pDeviceDiligent->GetImmediateContext();

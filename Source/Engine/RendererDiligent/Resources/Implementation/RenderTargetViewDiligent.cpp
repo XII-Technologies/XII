@@ -4,6 +4,8 @@
 #include <RendererDiligent/Resources/RenderTargetViewDiligent.h>
 #include <RendererDiligent/Resources/TextureDiligent.h>
 
+XII_CHECK_AT_COMPILETIME(XII_GAL_MAX_RENDERTARGET_COUNT == Diligent::MAX_RENDER_TARGETS);
+
 bool IsArrayView(const xiiGALTextureCreationDescription& texDesc, const xiiGALRenderTargetViewCreationDescription& viewDesc)
 {
   return texDesc.m_uiArraySize > 1 || viewDesc.m_uiFirstSlice > 0;

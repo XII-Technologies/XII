@@ -272,11 +272,44 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       EngineCI.pRawMemAllocator   = m_pMemoryAllocator.get();
       EngineCI.EnableValidation   = m_Description.m_bDebugDevice;
 
-      EngineCI.Features.OcclusionQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.BinaryOcclusionQueries    = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.SeparablePrograms                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ShaderResourceQueries             = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.WireframeFill                     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MultithreadedResourceCreation     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ComputeShaders                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.GeometryShaders                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.Tessellation                      = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MeshShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.RayTracing                        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.BindlessResources                 = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.OcclusionQueries                  = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.BinaryOcclusionQueries            = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.TimestampQueries                  = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.PipelineStatisticsQueries         = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.DurationQueries                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthBiasClamp                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthClamp                        = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.IndependentBlend                  = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.DualSourceBlend                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.MultiViewport                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureCompressionBC              = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.VertexPipelineUAVWritesAndAtomics = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.PixelUAVWritesAndAtomics          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureUAVExtendedFormats         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderFloat16                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ResourceBuffer16BitAccess         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.UniformBuffer16BitAccess          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderInputOutput16               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderResourceRuntimeArray        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.WaveOp                            = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.InstanceDataStepRate              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TileShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TransferQueueTimestampQueries     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.VariableRateShading               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SparseResources                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SubpassFramebufferFetch           = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureComponentSwizzle           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
 
       if (m_iValidationLevel >= 0)
         EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
@@ -318,14 +351,49 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       m_pEngineFactory->SetMessageCallback(XIILogDiligent);
 
       Diligent::EngineD3D12CreateInfo EngineCI;
-      EngineCI.GraphicsAPIVersion                 = {11, 0};
-      EngineCI.pRawMemAllocator                   = m_pMemoryAllocator.get();
-      EngineCI.EnableValidation                   = m_Description.m_bDebugDevice;
-      EngineCI.Features.OcclusionQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.BinaryOcclusionQueries    = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.GraphicsAPIVersion = {11, 0};
+      EngineCI.pRawMemAllocator   = m_pMemoryAllocator.get();
+      EngineCI.EnableValidation   = m_Description.m_bDebugDevice;
+
+      EngineCI.Features.SeparablePrograms                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ShaderResourceQueries             = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.WireframeFill                     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MultithreadedResourceCreation     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ComputeShaders                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.GeometryShaders                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.Tessellation                      = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MeshShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.RayTracing                        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.BindlessResources                 = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.OcclusionQueries                  = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.BinaryOcclusionQueries            = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.TimestampQueries                  = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.PipelineStatisticsQueries         = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.DurationQueries                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthBiasClamp                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthClamp                        = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.IndependentBlend                  = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.DualSourceBlend                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.MultiViewport                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureCompressionBC              = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.VertexPipelineUAVWritesAndAtomics = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.PixelUAVWritesAndAtomics          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureUAVExtendedFormats         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderFloat16                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ResourceBuffer16BitAccess         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.UniformBuffer16BitAccess          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderInputOutput16               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderResourceRuntimeArray        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.WaveOp                            = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.InstanceDataStepRate              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TileShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TransferQueueTimestampQueries     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.VariableRateShading               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SparseResources                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SubpassFramebufferFetch           = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureComponentSwizzle           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+
       if (m_iValidationLevel >= 0)
         EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
 
@@ -402,13 +470,47 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       m_pEngineFactory->SetMessageCallback(XIILogDiligent);
 
       Diligent::EngineVkCreateInfo EngineCI;
-      EngineCI.pRawMemAllocator                   = m_pMemoryAllocator.get();
-      EngineCI.EnableValidation                   = m_Description.m_bDebugDevice;
-      EngineCI.Features.OcclusionQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.BinaryOcclusionQueries    = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.pRawMemAllocator = m_pMemoryAllocator.get();
+      EngineCI.EnableValidation = m_Description.m_bDebugDevice;
+
+      EngineCI.Features.SeparablePrograms                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ShaderResourceQueries             = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.WireframeFill                     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MultithreadedResourceCreation     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ComputeShaders                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.GeometryShaders                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.Tessellation                      = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MeshShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.RayTracing                        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.BindlessResources                 = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.OcclusionQueries                  = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.BinaryOcclusionQueries            = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.TimestampQueries                  = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.PipelineStatisticsQueries         = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.DurationQueries                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthBiasClamp                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthClamp                        = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.IndependentBlend                  = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.DualSourceBlend                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.MultiViewport                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureCompressionBC              = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.VertexPipelineUAVWritesAndAtomics = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.PixelUAVWritesAndAtomics          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureUAVExtendedFormats         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderFloat16                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ResourceBuffer16BitAccess         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.UniformBuffer16BitAccess          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderInputOutput16               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderResourceRuntimeArray        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.WaveOp                            = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.InstanceDataStepRate              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TileShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TransferQueueTimestampQueries     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.VariableRateShading               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SparseResources                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SubpassFramebufferFetch           = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureComponentSwizzle           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
 
       if (m_iValidationLevel >= 0)
         EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
@@ -438,11 +540,45 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
     case Diligent::RENDER_DEVICE_TYPE_METAL:
     {
       Diligent::EngineMtlCreateInfo EngineCI;
-      EngineCI.Features.OcclusionQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.BinaryOcclusionQueries    = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+
+      EngineCI.Features.SeparablePrograms                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ShaderResourceQueries             = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.WireframeFill                     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MultithreadedResourceCreation     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ComputeShaders                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.GeometryShaders                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.Tessellation                      = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MeshShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.RayTracing                        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.BindlessResources                 = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.OcclusionQueries                  = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.BinaryOcclusionQueries            = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.TimestampQueries                  = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.PipelineStatisticsQueries         = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.DurationQueries                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthBiasClamp                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthClamp                        = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.IndependentBlend                  = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.DualSourceBlend                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.MultiViewport                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureCompressionBC              = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.VertexPipelineUAVWritesAndAtomics = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.PixelUAVWritesAndAtomics          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureUAVExtendedFormats         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderFloat16                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ResourceBuffer16BitAccess         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.UniformBuffer16BitAccess          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderInputOutput16               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderResourceRuntimeArray        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.WaveOp                            = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.InstanceDataStepRate              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TileShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TransferQueueTimestampQueries     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.VariableRateShading               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SparseResources                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SubpassFramebufferFetch           = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureComponentSwizzle           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
 
       if (m_iValidationLevel >= 0)
         EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
@@ -909,7 +1045,7 @@ void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
     m_Capabilities.m_uiMaxTextureDimension   = static_cast<xiiUInt16>(adapterInfo.Texture.MaxTexture1DDimension);
     m_Capabilities.m_uiMaxCubemapDimension   = static_cast<xiiUInt16>(adapterInfo.Texture.MaxTextureCubeDimension);
     m_Capabilities.m_uiMax3DTextureDimension = static_cast<xiiUInt16>(adapterInfo.Texture.MaxTexture3DDimension);
-    m_Capabilities.m_uiMaxRendertargets      = Diligent::MAX_RENDER_TARGETS;
+    m_Capabilities.m_uiMaxRendertargets      = XII_GAL_MAX_RENDERTARGET_COUNT;
     m_Capabilities.m_bAlphaToCoverage        = true;
 
     m_Capabilities.m_uiUAVCount                          = 8;
