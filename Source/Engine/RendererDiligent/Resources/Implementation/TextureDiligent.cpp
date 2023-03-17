@@ -81,10 +81,20 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
       if (m_Description.m_bAllowDynamicMipGeneration)
         Tex2DDesc.MiscFlags |= Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS;
 
-      if (m_Description.m_Type == xiiGALTextureType::TextureCube)
-        Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_CUBE;
+      if (m_Description.m_uiArraySize > 1)
+      {
+        if (m_Description.m_Type == xiiGALTextureType::TextureCube)
+          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
+        else
+          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+      }
       else
-        Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_2D;
+      {
+        if (m_Description.m_Type == xiiGALTextureType::TextureCube)
+          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_CUBE;
+        else
+          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_2D;
+      }
 
       if (!pInitialData.IsEmpty())
       {
@@ -125,6 +135,7 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
       Diligent::TextureDesc Tex3DDesc;
       Tex3DDesc.Name      = m_Description.m_szName;
       Tex3DDesc.BindFlags = Diligent::BIND_NONE;
+      Tex3DDesc.Type      = Diligent::RESOURCE_DIM_TEX_3D;
 
       if (m_Description.m_bAllowShaderResourceView)
         Tex3DDesc.BindFlags |= Diligent::BIND_SHADER_RESOURCE;
@@ -157,11 +168,6 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
       if (m_Description.m_bAllowDynamicMipGeneration)
         Tex3DDesc.MiscFlags |= Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS;
-
-      if (m_Description.m_Type == xiiGALTextureType::TextureCube)
-        Tex3DDesc.Type = Diligent::RESOURCE_DIM_TEX_CUBE;
-      else
-        Tex3DDesc.Type = Diligent::RESOURCE_DIM_TEX_3D;
 
       if (!pInitialData.IsEmpty())
       {

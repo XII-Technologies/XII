@@ -79,7 +79,11 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
       case xiiGALTextureType::TextureCube:
       {
-        UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_CUBE;
+        if (bIsArrayView)
+          UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
+        else
+          UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_CUBE;
+
         UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
         UAVDesc.NumArraySlices  = m_Description.m_uiArraySize;
         UAVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
