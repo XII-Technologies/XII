@@ -792,11 +792,11 @@ void xiiGALCommandEncoderImplDiligent::SetVertexDeclarationPlatform(const xiiGAL
   if (pVertexDeclaration == nullptr)
     return;
 
-  const Diligent::InputLayoutDesc desc = *static_cast<const xiiGALVertexDeclarationDiligent*>(pVertexDeclaration)->GetInputLayoutDesc();
+  const Diligent::InputLayoutDesc* desc = static_cast<const xiiGALVertexDeclarationDiligent*>(pVertexDeclaration)->GetInputLayoutDesc();
 
-  if (m_PipelineStateDesc.GraphicsPipeline.InputLayout != desc)
+  if (m_PipelineStateDesc.GraphicsPipeline.InputLayout != *desc)
   {
-    m_PipelineStateDesc.GraphicsPipeline.InputLayout = desc;
+    m_PipelineStateDesc.GraphicsPipeline.InputLayout = *desc;
     m_bPipelineStateModified                         = true;
   }
 }
@@ -822,33 +822,33 @@ void xiiGALCommandEncoderImplDiligent::SetBlendStatePlatform(const xiiGALBlendSt
 
   m_pContext->SetBlendFactors(BlendFactors);
 
-  const Diligent::BlendStateDesc desc = *static_cast<const xiiGALBlendStateDiligent*>(pBlendState)->GetBlendStateDesc();
+  const Diligent::BlendStateDesc* desc = static_cast<const xiiGALBlendStateDiligent*>(pBlendState)->GetBlendStateDesc();
 
-  if (m_PipelineStateDesc.GraphicsPipeline.BlendDesc != desc)
+  if (m_PipelineStateDesc.GraphicsPipeline.BlendDesc != *desc)
   {
-    m_PipelineStateDesc.GraphicsPipeline.BlendDesc = desc;
+    m_PipelineStateDesc.GraphicsPipeline.BlendDesc = *desc;
     m_bPipelineStateModified                       = true;
   }
 }
 
 void xiiGALCommandEncoderImplDiligent::SetDepthStencilStatePlatform(const xiiGALDepthStencilState* pDepthStencilState, xiiUInt8 uiStencilRefValue)
 {
-  const Diligent::DepthStencilStateDesc desc = *static_cast<const xiiGALDepthStencilStateDiligent*>(pDepthStencilState)->GetDepthStencilStateDesc();
+  const Diligent::DepthStencilStateDesc* desc = static_cast<const xiiGALDepthStencilStateDiligent*>(pDepthStencilState)->GetDepthStencilStateDesc();
 
-  if (m_PipelineStateDesc.GraphicsPipeline.DepthStencilDesc != desc)
+  if (m_PipelineStateDesc.GraphicsPipeline.DepthStencilDesc != *desc)
   {
-    m_PipelineStateDesc.GraphicsPipeline.DepthStencilDesc = desc;
+    m_PipelineStateDesc.GraphicsPipeline.DepthStencilDesc = *desc;
     m_bPipelineStateModified                              = true;
   }
 }
 
 void xiiGALCommandEncoderImplDiligent::SetRasterizerStatePlatform(const xiiGALRasterizerState* pRasterizerState)
 {
-  const Diligent::RasterizerStateDesc desc = *static_cast<const xiiGALRasterizerStateDiligent*>(pRasterizerState)->GetRasterizerStateDesc();
+  const Diligent::RasterizerStateDesc* desc = static_cast<const xiiGALRasterizerStateDiligent*>(pRasterizerState)->GetRasterizerStateDesc();
 
-  if (m_PipelineStateDesc.GraphicsPipeline.RasterizerDesc != desc)
+  if (m_PipelineStateDesc.GraphicsPipeline.RasterizerDesc != *desc)
   {
-    m_PipelineStateDesc.GraphicsPipeline.RasterizerDesc = desc;
+    m_PipelineStateDesc.GraphicsPipeline.RasterizerDesc = *desc;
 
     if (m_PipelineStateDesc.GraphicsPipeline.RasterizerDesc.ScissorEnable != m_bScissorEnabled)
     {
