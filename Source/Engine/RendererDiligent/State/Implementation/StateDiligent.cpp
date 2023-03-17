@@ -55,6 +55,7 @@ xiiGALDepthStencilStateDiligent::~xiiGALDepthStencilStateDiligent() {}
 xiiResult xiiGALDepthStencilStateDiligent::InitPlatform(xiiGALDevice* pDevice)
 {
   m_DepthStencilState.DepthEnable      = m_Description.m_bDepthTest;
+  m_DepthStencilState.DepthWriteEnable = m_Description.m_bDepthWrite;
   m_DepthStencilState.DepthFunc        = GALCompareFuncToDiligent[m_Description.m_DepthTestFunc];
   m_DepthStencilState.StencilEnable    = m_Description.m_bStencilTest;
   m_DepthStencilState.StencilReadMask  = m_Description.m_uiStencilReadMask;
