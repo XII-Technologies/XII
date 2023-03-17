@@ -73,7 +73,6 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
       Tex2DDesc.Width       = m_Description.m_uiWidth;
       Tex2DDesc.Height      = m_Description.m_uiHeight;
-      Tex2DDesc.Depth       = m_Description.m_uiDepth;
       Tex2DDesc.MipLevels   = m_Description.m_uiMipLevelCount;
       Tex2DDesc.SampleCount = xiiDiligentUtils::ToDiligentMSAACount(m_Description.m_SampleCount);
 
