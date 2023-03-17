@@ -69,16 +69,16 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
   if (m_pWindow->m_bCloseRequested || xiiInputManager::GetInputActionState("Main", "CloseApp") == xiiKeyState::Pressed)
     return Execution::Quit;
 
-  // make sure time goes on
+  // Ensure time goes on
   xiiClock::GetGlobalClock()->Update();
 
-  // update all input state
+  // Update all input state
   xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
 
-  // make sure telemetry is sent out regularly
+  // Ensure telemetry is sent out regularly
   xiiTelemetry::PerFrameUpdate();
 
-  // mouse look
+  // Mouse look
   if (xiiInputManager::GetInputActionState("Main", "Look") == xiiKeyState::Down)
   {
     m_pWindow->GetInputDevice()->SetShowMouseCursor(false);
@@ -107,7 +107,7 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
     m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::NoClip);
   }
 
-  // turn camera with keys
+  // Turn camera with keys
   {
     float       fInputValue = 0.0f;
     const float fTurnSpeed  = 1.0f;
@@ -127,7 +127,7 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
     m_pCamera->RotateGlobally(xiiAngle::Radian(0.0), xiiAngle::Radian(mouseMotion.x), xiiAngle::Radian(0.0));
   }
 
-  // movement
+  // Handle movement
   {
     float   fInputValue = 0.0f;
     xiiVec3 cameraMotion(0.0f);
@@ -354,7 +354,7 @@ void xiiShaderExplorerApp::AfterCoreSystemsStartup()
     xiiGALDevice::SetDefaultDevice(m_pDevice);
   }
 
-  // now that we have a window and device, tell the engine to initialize the rendering infrastructure
+  // Now that we have a window and device, tell the engine to initialize the rendering infrastructure
   xiiStartup::StartupHighLevelSystems();
 
   UpdateSwapChain();
@@ -379,16 +379,16 @@ void xiiShaderExplorerApp::BeforeHighLevelSystemsShutdown()
   m_hQuadMeshBuffer.Invalidate();
   m_pDevice->DestroySwapChain(m_hSwapChain);
 
-  // tell the engine that we are about to destroy window and graphics device,
+  // Tell the engine that we are about to destroy window and graphics device,
   // and that it therefore needs to cleanup anything that depends on that
   xiiStartup::ShutdownHighLevelSystems();
 
-  // now we can destroy the graphics device
+  // Now we can destroy the graphics device
   m_pDevice->Shutdown().IgnoreResult();
 
   XII_DEFAULT_DELETE(m_pDevice);
 
-  // finally destroy the window
+  // Finally destroy the window
   m_pWindow->Destroy().IgnoreResult();
   XII_DEFAULT_DELETE(m_pWindow);
 
@@ -414,13 +414,15 @@ void xiiShaderExplorerApp::UpdateSwapChain()
     m_pDevice->UpdateSwapChain(m_hSwapChain, xiiGALPresentMode::VSync).IgnoreResult();
   }
 
-  if (!m_hSwapChain.IsInvalidated() && !m_hDepthStencilTexture.IsInvalidated())
+  // Do not destroy the texture if the swapchain is minimized
+  if (!m_hSwapChain.IsInvalidated() && !m_hDepthStencilTexture.IsInvalidated() && g_uiWindowWidth != 0 && g_uiWindowHeight != 0)
   {
     m_pDevice->DestroyTexture(m_hDepthStencilTexture);
     m_hDepthStencilTexture.Invalidate();
   }
 
   // Create depth texture
+  if (g_uiWindowWidth != 0 && g_uiWindowHeight != 0)
   {
     xiiGALTextureCreationDescription texDesc;
     texDesc.m_uiWidth             = g_uiWindowWidth;
@@ -474,5 +476,6 @@ void xiiShaderExplorerApp::OnFileChanged(const char* filename, xiiDirectoryWatch
     m_bStuffChanged = true;
   }
 }
+
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiShaderExplorerApp);
