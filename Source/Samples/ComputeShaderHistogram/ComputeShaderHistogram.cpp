@@ -86,14 +86,6 @@ xiiApplication::Execution xiiComputeShaderHistogramApp::Run()
       renderContext.EndRendering();
     }
 
-    // Switch to backbuffer (so that the screen texture is no longer bound)
-    {
-      xiiGALRenderingSetup renderingSetup;
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hBackbufferRTV);
-      renderContext.BeginRendering(pGALPass, renderingSetup, viewport, "Dummy");
-      renderContext.EndRendering();
-    }
-
     // Compute histogram.
     {
       renderContext.BeginCompute(pGALPass, "ComputeHistogram");
