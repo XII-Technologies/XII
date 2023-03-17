@@ -6,17 +6,11 @@
 #include <RendererDiligent/RendererDiligentDLL.h>
 #include <RendererFoundation/Device/Device.h>
 
-namespace Diligent
-{
-  class ScopedQueryHelper;
-  class DurationQueryHelper;
-} // namespace Diligent
-
 struct xiiDiligentMemoryAllocator;
 class xiiGALPassDiligent;
 
-typedef xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, (Diligent::TEXTURE_FORMAT)0> xiiGALFormatLookupEntryDiligent;
-typedef xiiGALFormatLookupTable<xiiGALFormatLookupEntryDiligent>                       xiiGALFormatLookupTableDiligent;
+typedef xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, Diligent::TEX_FORMAT_UNKNOWN> xiiGALFormatLookupEntryDiligent;
+typedef xiiGALFormatLookupTable<xiiGALFormatLookupEntryDiligent>                        xiiGALFormatLookupTableDiligent;
 
 /// \brief The Diligent device implementation of the graphics abstraction layer.
 class XII_RENDERERDILIGENT_DLL xiiGALDeviceDiligent : public xiiGALDevice
@@ -130,13 +124,7 @@ protected:
 
   void WaitForFencePlatform(Diligent::IDeviceContext* pContext, Diligent::IQuery* pFence);
 
-  Diligent::IBuffer* FindTempBuffer(xiiUInt32 uiSize);
-
-  Diligent::ITexture* FindTempTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiGALResourceFormat::Enum format);
-
-  void FreeTempResources(xiiUInt64 uiFrame);
-
-  Diligent::RENDER_DEVICE_TYPE                                       m_DeviceType = Diligent::RENDER_DEVICE_TYPE_D3D11;
+  Diligent::RENDER_DEVICE_TYPE                                       m_DeviceType = Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
   Diligent::RefCntAutoPtr<Diligent::IEngineFactory>                  m_pEngineFactory;
   Diligent::RefCntAutoPtr<Diligent::IRenderDevice>                   m_pDevice;
   xiiDynamicArray<Diligent::RefCntAutoPtr<Diligent::IDeviceContext>> m_pDeviceContexts;
@@ -154,29 +142,6 @@ protected:
   std::unique_ptr<xiiDiligentMemoryAllocator> m_pMemoryAllocator;
 
   xiiUniquePtr<xiiGALPassDiligent> m_pDefaultPass;
-
-  struct UsedTempResource
-  {
-    XII_DECLARE_POD_TYPE();
-
-    Diligent::IDeviceObject* m_pResource;
-    xiiUInt64                m_uiFrame;
-    xiiUInt32                m_uiHash;
-  };
-
-  struct TempResourceType
-  {
-    enum Enum
-    {
-      Buffer,
-      Texture,
-
-      ENUM_COUNT
-    };
-  };
-
-  xiiMap<xiiUInt32, xiiDynamicArray<Diligent::IDeviceObject*>, xiiCompareHelper<xiiUInt32>, xiiLocalAllocatorWrapper> m_FreeTempResources[TempResourceType::ENUM_COUNT];
-  xiiDeque<UsedTempResource, xiiLocalAllocatorWrapper>                                                                m_UsedTempResources[TempResourceType::ENUM_COUNT];
 
 #if XII_ENABLED(XII_USE_PROFILING)
   struct GPUTimingScope* m_pFrameTimingScope    = nullptr;

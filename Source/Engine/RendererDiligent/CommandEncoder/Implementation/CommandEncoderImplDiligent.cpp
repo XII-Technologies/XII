@@ -104,14 +104,14 @@ void xiiGALCommandEncoderImplDiligent::SetShaderPlatform(const xiiGALShader* pSh
       xiiGALShader* pShaderNonConst = const_cast<xiiGALShader*>(pShader);
       pShaderDiligent               = static_cast<xiiGALShaderDiligent*>(pShaderNonConst);
     }
-    m_pCurrentShader = pShaderDiligent;
 
-    pVS = pShaderDiligent->GetVertexShader();
-    pHS = pShaderDiligent->GetHullShader();
-    pDS = pShaderDiligent->GetDomainShader();
-    pGS = pShaderDiligent->GetGeometryShader();
-    pPS = pShaderDiligent->GetPixelShader();
-    pCS = pShaderDiligent->GetComputeShader();
+    m_pCurrentShader = pShaderDiligent;
+    pVS              = pShaderDiligent->GetVertexShader();
+    pHS              = pShaderDiligent->GetHullShader();
+    pDS              = pShaderDiligent->GetDomainShader();
+    pGS              = pShaderDiligent->GetGeometryShader();
+    pPS              = pShaderDiligent->GetPixelShader();
+    pCS              = pShaderDiligent->GetComputeShader();
   }
 
   if (pVS != m_pBoundShaders[xiiGALShaderStage::VertexShader])
@@ -1084,7 +1084,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     // Do not set m_bPipelineStateModified to false here, some updates are deferred to the end of the function.
 
     // Changes to the descriptor layout always require the descriptor set to be re-created.
-    m_bDescriptorsModified = true;
+    m_bDescriptorsModified  = true;
     m_bPipelineStateCreated = true;
   }
 
@@ -1246,7 +1246,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     {
       m_bPipelineStateModified = false;
     }
-    
+
     m_pContext->SetPipelineState(m_pPipelineStateGraphics);
 
     m_pContext->CommitShaderResources(m_pShaderResourceBindingGraphics, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);

@@ -181,7 +181,6 @@ void xiiGALPassDiligent::MarkDirty()
 
 void xiiGALPassDiligent::Reset()
 {
-  // m_pCommandEncoderImpl->Reset();
   m_pRenderCommandEncoder->InvalidateState();
   m_pComputeCommandEncoder->InvalidateState();
 }
