@@ -179,10 +179,7 @@ void xiiRenderContext::EndRendering()
   m_pGALCommandEncoder = nullptr;
   m_bStereoRendering   = false;
 
-  // TODO: The render context needs to reset its state after every encoding block if we want to record to separate command buffers.
-  // Although this is currently not possible since a lot of high level code binds stuff only once per frame on the render context.
-  // Resetting the state after every encoding block breaks those assumptions.
-  //ResetContextState();
+  ResetContextState();
 }
 
 xiiGALComputeCommandEncoder* xiiRenderContext::BeginCompute(xiiGALPass* pGALPass, const char* szName /*= ""*/)
@@ -203,8 +200,7 @@ void xiiRenderContext::EndCompute()
   m_pGALPass           = nullptr;
   m_pGALCommandEncoder = nullptr;
 
-  // TODO: See EndRendering
-  //ResetContextState();
+  ResetContextState();
 }
 
 void xiiRenderContext::SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sTempValue)
@@ -514,10 +510,13 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
 
   uiPrimitiveCount *= uiVertsPerPrimitive;
   uiFirstPrimitive *= uiVertsPerPrimitive;
+
   if (m_bStereoRendering)
   {
     uiInstanceCount *= 2;
   }
+
+  m_pGALPass->BeginRenderPass();
 
   if (uiInstanceCount > 1)
   {
@@ -541,6 +540,8 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
       pCommandEncoder->Draw(uiPrimitiveCount, uiFirstPrimitive);
     }
   }
+
+  m_pGALPass->EndRenderPass();
 
   return XII_SUCCESS;
 }

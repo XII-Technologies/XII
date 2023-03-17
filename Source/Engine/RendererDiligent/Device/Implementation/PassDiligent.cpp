@@ -50,6 +50,11 @@ xiiGALPassDiligent::~xiiGALPassDiligent()
 
 xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderingPlatform(const xiiGALRenderingSetup& renderingSetup, const char* szName)
 {
+  if (m_RenderingSetup != renderingSetup)
+  {
+    m_RenderingSetup = renderingSetup;
+  }
+
   m_pCommandEncoderImpl->BeginRendering(renderingSetup);
 
   return m_pRenderCommandEncoder.Borrow();
@@ -76,23 +81,31 @@ void xiiGALPassDiligent::EndComputePlatform(xiiGALComputeCommandEncoder* pComman
   m_pCommandEncoderImpl->EndCompute();
 }
 
-xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderPassPlatform(const xiiGALRenderingSetup& renderingSetup, const char* szName)
+xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderPassPlatform()
 {
   RenderPassWrapper renderPass;
-  if (!m_RenderPasses.TryGetValue(renderingSetup, renderPass))
+  if (!m_RenderPasses.TryGetValue(m_RenderingSetup, renderPass))
   {
     xiiLog::Info("Creating Renderpass #{}", m_RenderPasses.GetCount());
-    CreateRenderPass(renderingSetup, szName);
+
+    xiiStringBuilder sName;
+    m_sName.GetData(sName);
+
+    CreateRenderPass(m_RenderingSetup, sName.GetData());
   }
-  XII_ASSERT_DEV(m_RenderPasses.TryGetValue(renderingSetup, renderPass), "Failed to retrieve render pass, this should have been successful.");
+  XII_ASSERT_DEV(m_RenderPasses.TryGetValue(m_RenderingSetup, renderPass), "Failed to retrieve render pass, this should have been successful.");
 
   FramebufferWrapper frameBuffer;
-  if (!m_Framebuffers.TryGetValue(renderingSetup, frameBuffer))
+  if (!m_Framebuffers.TryGetValue(m_RenderingSetup, frameBuffer))
   {
     xiiLog::Info("Creating Framebuffer #{}", m_Framebuffers.GetCount());
-    CreateFramebuffer(renderingSetup, szName);
+
+    xiiStringBuilder sName;
+    m_sName.GetData(sName);
+
+    CreateFramebuffer(m_RenderingSetup, sName.GetData());
   }
-  XII_ASSERT_DEV(m_Framebuffers.TryGetValue(renderingSetup, frameBuffer), "Failed to retrieve frame buffer, this should have been successful.");
+  XII_ASSERT_DEV(m_Framebuffers.TryGetValue(m_RenderingSetup, frameBuffer), "Failed to retrieve frame buffer, this should have been successful.");
 
   const Diligent::FramebufferDesc& framebufferDesc = frameBuffer.m_pFramebuffer->GetDesc();
   m_pRenderCommandEncoder->SetScissorRect(xiiRectU32(framebufferDesc.Width, framebufferDesc.Height));
@@ -103,13 +116,13 @@ xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderPassPlatform(const xi
   renderPassBeginInfo.pRenderPass                      = renderPass.m_pRenderPass;
   renderPassBeginInfo.pFramebuffer                     = frameBuffer.m_pFramebuffer;
 
-  const bool      bHasDepth    = !renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
-  const xiiUInt32 uiColorCount = renderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+  const bool      bHasDepth    = !m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+  const xiiUInt32 uiColorCount = m_RenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
 
   if (bHasDepth)
   {
     const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent =
-      static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
+      static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
 
     xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
     const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_GALDeviceDiligent.GetTexture(hTexture)->GetParentResource());
@@ -126,7 +139,7 @@ xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderPassPlatform(const xi
 
   for (xiiUInt32 i = 0; i < uiColorCount; ++i)
   {
-    xiiGALRenderTargetViewHandle          hColorRenderTarget        = renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i));
+    xiiGALRenderTargetViewHandle          hColorRenderTarget        = m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i));
     const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(hColorRenderTarget));
 
     xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
@@ -138,10 +151,10 @@ xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderPassPlatform(const xi
 
     Diligent::OptimizedClearValue& colorClear = m_ClearValues.ExpandAndGetRef();
     colorClear.Format                         = formatInfo.m_eRenderTarget;
-    colorClear.Color[0]                       = renderingSetup.m_ClearColor.r;
-    colorClear.Color[1]                       = renderingSetup.m_ClearColor.g;
-    colorClear.Color[2]                       = renderingSetup.m_ClearColor.b;
-    colorClear.Color[3]                       = renderingSetup.m_ClearColor.a;
+    colorClear.Color[0]                       = m_RenderingSetup.m_ClearColor.r;
+    colorClear.Color[1]                       = m_RenderingSetup.m_ClearColor.g;
+    colorClear.Color[2]                       = m_RenderingSetup.m_ClearColor.b;
+    colorClear.Color[3]                       = m_RenderingSetup.m_ClearColor.a;
   }
 
   renderPassBeginInfo.pClearValues        = m_ClearValues.GetData();

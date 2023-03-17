@@ -151,15 +151,16 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
     xiiResourceManager::ReloadAllResources(false);
   }
 
-  // do the rendering
+  // Perform rendering
   {
     // Before starting to render in a frame call this function
     m_pDevice->BeginFrame();
 
     m_pDevice->BeginPipeline("ShaderExplorer", m_hSwapChain);
 
+    xiiGALPass* pGALPass = m_pDevice->BeginPass("xiiShaderExplorerMainPass");
+
     // Must always retrieve the current swapchain render target
-    xiiGALPass*                  pGALPass          = m_pDevice->BeginPass("xiiShaderExplorerMainPass");
     const xiiGALSwapChain*       pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
     xiiGALRenderTargetViewHandle hBBRTV            = m_pDevice->GetDefaultRenderTargetView(pPrimarySwapChain->GetRenderTargets().m_hRTs[0]);
     xiiGALRenderTargetViewHandle hBBDSV            = m_pDevice->GetDefaultRenderTargetView(m_hDepthStencilTexture);
@@ -186,24 +187,21 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
 
     xiiRenderContext::GetDefaultInstance()->BindMaterial(m_hMaterial);
     xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(m_hQuadMeshBuffer);
-    pGALPass->BeginRenderPass(renderingSetup);
     xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer().IgnoreResult();
-    pGALPass->EndRenderPass();
     xiiRenderContext::GetDefaultInstance()->EndRendering();
+
     m_pDevice->EndPass(pGALPass);
 
     m_pDevice->EndPipeline(m_hSwapChain);
 
     m_pDevice->EndFrame();
-    xiiRenderContext::GetDefaultInstance()->ResetContextState();
   }
 
-  // needs to be called once per frame
+  // Needs to be called once per frame
   xiiResourceManager::PerFrameUpdate();
 
-  // tell the task system to finish its work for this frame
-  // this has to be done at the very end, so that the task system will only use up the time that is left in this frame for
-  // uploading GPU data etc.
+  // Tell the task system to finish its work for this frame
+  // This has to be done at the very end, so that the task system will only use up the time that is left in this frame for uploading GPU data etc.
   xiiTaskSystem::FinishFrameTasks();
 
   return xiiApplication::Execution::Continue;

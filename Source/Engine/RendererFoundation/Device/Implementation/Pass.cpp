@@ -64,9 +64,9 @@ void xiiGALPass::EndCompute(xiiGALComputeCommandEncoder* pCommandEncoder)
   EndComputePlatform(pCommandEncoder);
 }
 
-xiiGALRenderCommandEncoder* xiiGALPass::BeginRenderPass(const xiiGALRenderingSetup& renderingSetup, const char* szName)
+xiiGALRenderCommandEncoder* xiiGALPass::BeginRenderPass()
 {
-  xiiGALRenderCommandEncoder* pCommandEncoder = BeginRenderPassPlatform(renderingSetup, szName);
+  xiiGALRenderCommandEncoder* pCommandEncoder = BeginRenderPassPlatform();
 
   return pCommandEncoder;
 }

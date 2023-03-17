@@ -14,7 +14,7 @@ public:
   xiiGALComputeCommandEncoder* BeginCompute(const char* szName = "");
   void                         EndCompute(xiiGALComputeCommandEncoder* pCommandEncoder);
 
-  xiiGALRenderCommandEncoder* BeginRenderPass(const xiiGALRenderingSetup& renderingSetup, const char* szName = "");
+  xiiGALRenderCommandEncoder* BeginRenderPass();
   void                        EndRenderPass();
 
   // BeginRaytracing() could be here as well (would match Vulkan)
@@ -26,8 +26,8 @@ protected:
   virtual xiiGALComputeCommandEncoder* BeginComputePlatform(const char* szName)                         = 0;
   virtual void                         EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder) = 0;
 
-  virtual xiiGALRenderCommandEncoder* BeginRenderPassPlatform(const xiiGALRenderingSetup& renderingSetup, const char* szName) = 0;
-  virtual void                        EndRenderPassPlatform()                                                                 = 0;
+  virtual xiiGALRenderCommandEncoder* BeginRenderPassPlatform() = 0;
+  virtual void                        EndRenderPassPlatform()   = 0;
 
   xiiGALPass(xiiGALDevice& device);
   virtual ~xiiGALPass();

@@ -121,8 +121,10 @@ public:
   void Reset();
 
 protected:
-  virtual void FlushDeferredStateChanges();
-  virtual void TransitionResourceStates();
+  void FlushDeferredStateChangesCompute();
+  void FlushDeferredStateChangesGraphics();
+  void TransitionResourceStates();
+  void FillDescriptorBindings(Diligent::IPipelineState* pPipelineState);
 
 private:
   friend class xiiGALPassDiligent;

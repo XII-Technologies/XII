@@ -581,17 +581,20 @@ void xiiGALCommandEncoderImplDiligent::FlushPlatform()
 
 void xiiGALCommandEncoderImplDiligent::PushMarkerPlatform(const char* szMarker)
 {
-  m_pContext->BeginDebugGroup(szMarker);
+  /// \todo Fix Debug Groups
+  // m_pContext->BeginDebugGroup(szMarker);
 }
 
 void xiiGALCommandEncoderImplDiligent::PopMarkerPlatform()
 {
-  m_pContext->EndDebugGroup();
+  /// \todo Fix Debug Groups
+  // m_pContext->EndDebugGroup();
 }
 
 void xiiGALCommandEncoderImplDiligent::InsertEventMarkerPlatform(const char* szMarker)
 {
-  m_pContext->InsertDebugLabel(szMarker);
+  /// \todo Fix Debug Groups
+  // m_pContext->InsertDebugLabel(szMarker);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -743,7 +746,7 @@ void xiiGALCommandEncoderImplDiligent::DrawAutoPlatform()
 
 void xiiGALCommandEncoderImplDiligent::BeginStreamOutPlatform()
 {
-  FlushDeferredStateChanges();
+  XII_ASSERT_NOT_IMPLEMENTED
 }
 
 void xiiGALCommandEncoderImplDiligent::EndStreamOutPlatform()
@@ -893,12 +896,6 @@ void xiiGALCommandEncoderImplDiligent::SetStreamOutBufferPlatform(xiiUInt32 uiSl
 void xiiGALCommandEncoderImplDiligent::BeginCompute()
 {
   m_bComputePipelineRequested = true;
-  m_bPipelineStateModified    = true;
-
-  // We need to unbind all render targets as otherwise using them in a compute shader as input will fail:
-  // DEVICE_CSSETSHADERRESOURCES_HAZARD: Resource being set to CS shader resource slot 0 is still bound on output!
-  m_RenderTargetSetup = xiiGALRenderTargetSetup();
-  m_pContext->SetRenderTargets(0, nullptr, nullptr, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 void xiiGALCommandEncoderImplDiligent::EndCompute()
@@ -908,7 +905,7 @@ void xiiGALCommandEncoderImplDiligent::EndCompute()
 
 void xiiGALCommandEncoderImplDiligent::DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
 {
-  FlushDeferredStateChanges();
+  FlushDeferredStateChangesCompute();
 
   Diligent::DispatchComputeAttribs DispatchAttribs;
   DispatchAttribs.ThreadGroupCountX = uiThreadGroupCountX;
@@ -925,7 +922,7 @@ void xiiGALCommandEncoderImplDiligent::DispatchPlatform(xiiUInt32 uiThreadGroupC
 
 void xiiGALCommandEncoderImplDiligent::DispatchIndirectPlatform(const xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
-  FlushDeferredStateChanges();
+  FlushDeferredStateChangesCompute();
 
   xiiGALBuffer* pIABuffer = const_cast<xiiGALBuffer*>(pIndirectArgumentBuffer);
 
@@ -1033,8 +1030,40 @@ void xiiGALCommandEncoderImplDiligent::Reset()
 
 //////////////////////////////////////////////////////////////////////////
 
-void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
+void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
 {
+  XII_ASSERT_DEV(m_bComputePipelineRequested, "Compute pipeline is not requested.");
+
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderResourceBindingCompute);
+
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pPipelineStateCompute);
+
+  // Copy attributes set in the graphics pipeline state
+  m_PipelineStateComputeDesc.PSODesc.SRBAllocationGranularity = m_PipelineStateDesc.PSODesc.SRBAllocationGranularity;
+  m_PipelineStateComputeDesc.PSODesc.ImmediateContextMask     = m_PipelineStateDesc.PSODesc.ImmediateContextMask;
+  m_PipelineStateComputeDesc.PSODesc.ResourceLayout           = m_PipelineStateDesc.PSODesc.ResourceLayout;
+
+  m_GALDeviceDiligent.GetDevice()->CreatePipelineState(m_PipelineStateComputeDesc, &m_pPipelineStateCompute);
+
+  XII_ASSERT_DEV(m_pPipelineStateCompute != nullptr, "Failed to create compute pipeline state.");
+
+  // Always fill descriptor bindings for now
+  FillDescriptorBindings(m_pPipelineStateCompute);
+
+  // Create a shader resource binding object and bind all static resources in it
+  m_pPipelineStateCompute->CreateShaderResourceBinding(&m_pShaderResourceBindingCompute, true);
+
+  m_pContext->SetPipelineState(m_pPipelineStateCompute);
+
+  m_pContext->CommitShaderResources(m_pShaderResourceBindingCompute, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+  m_bComputePipelineRequested = false;
+}
+
+void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
+{
+  XII_ASSERT_DEV(!m_bComputePipelineRequested, "Cannot flush deferred state changes while the compute pipeline is active");
+
   if (!m_bVertexBufferSet)
     return;
 
@@ -1046,40 +1075,16 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
   }
 
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderResourceBindingGraphics);
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderResourceBindingCompute);
 
   if (m_bPipelineStateModified)
   {
     m_bPipelineStateCreated = false;
 
     XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pPipelineStateGraphics);
-    XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pPipelineStateCompute);
 
-    if (m_bComputePipelineRequested)
-    {
-      // Copy attributes set in the graphics pipeline state
-      m_PipelineStateComputeDesc.PSODesc = m_PipelineStateDesc.PSODesc;
+    m_GALDeviceDiligent.GetDevice()->CreatePipelineState(m_PipelineStateDesc, &m_pPipelineStateGraphics);
 
-      // Pipeline state name is used by the engine to report issues.
-      // It is always a good idea to give objects descriptive names.
-      m_PipelineStateComputeDesc.PSODesc.Name = "Compute Pipeline State";
-
-      // This is a graphics pipeline
-      m_PipelineStateComputeDesc.PSODesc.PipelineType = Diligent::PIPELINE_TYPE_COMPUTE;
-
-      // Define variable type that will be used by default
-      m_PipelineStateComputeDesc.PSODesc.ResourceLayout.DefaultVariableType = Diligent::SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
-
-      m_GALDeviceDiligent.GetDevice()->CreatePipelineState(m_PipelineStateComputeDesc, &m_pPipelineStateCompute);
-
-      XII_ASSERT_DEV(m_pPipelineStateCompute != nullptr, "Failed to create compute pipeline state.");
-    }
-    else
-    {
-      m_GALDeviceDiligent.GetDevice()->CreatePipelineState(m_PipelineStateDesc, &m_pPipelineStateGraphics);
-
-      XII_ASSERT_DEV(m_pPipelineStateGraphics != nullptr, "Failed to create graphics pipeline state.");
-    }
+    XII_ASSERT_DEV(m_pPipelineStateGraphics != nullptr, "Failed to create graphics pipeline state.");
 
     // Do not set m_bPipelineStateModified to false here, some updates are deferred to the end of the function.
 
@@ -1088,7 +1093,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     m_bPipelineStateCreated = true;
   }
 
-  if (!m_bComputePipelineRequested && m_bViewportModified)
+  if (m_bViewportModified)
   {
     m_pContext->SetViewports(1, &m_Viewport, static_cast<xiiUInt32>(m_Viewport.Width), static_cast<xiiUInt32>(m_Viewport.Height));
 
@@ -1109,7 +1114,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     m_bViewportModified = false;
   }
 
-  if (!m_bComputePipelineRequested && m_BoundVertexBuffersRange.IsValid())
+  if (m_BoundVertexBuffersRange.IsValid())
   {
     const xiiUInt32 uiStartSlot = m_BoundVertexBuffersRange.m_uiMin;
     const xiiUInt32 uiNumSlots  = m_BoundVertexBuffersRange.GetCount();
@@ -1139,7 +1144,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     m_BoundVertexBuffersRange.Reset();
   }
 
-  if (!m_bComputePipelineRequested && m_bIndexBufferModified)
+  if (m_bIndexBufferModified)
   {
     m_pContext->SetIndexBuffer(m_pIndexBuffer, 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 
@@ -1148,109 +1153,22 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
   if (m_bDescriptorsModified)
   {
-    Diligent::IPipelineState* pPipelineState = nullptr;
-
-    if (m_bComputePipelineRequested)
-      pPipelineState = m_pPipelineStateCompute;
-    else
-      pPipelineState = m_pPipelineStateGraphics;
-
-    for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
-    {
-      auto& bindings = m_pCurrentShader->GetDescriptorSets((xiiGALShaderStage::Enum)stage);
-      for (xiiUInt32 i = 0; i < bindings.GetCount(); ++i)
-      {
-        auto& binding = bindings[i].Bindings;
-
-        for (xiiUInt32 j = 0; j < binding.GetCount(); ++j)
-        {
-          auto& currentBinding = binding[j];
-
-          xiiStringBuilder sData;
-          currentBinding.m_sName.GetData(sData);
-
-          switch (currentBinding.m_Type)
-          {
-            case xiiShaderDescriptorSetLayoutBinding::ResourceType::ConstantBuffer:
-            {
-              auto* pConstantBuffer = pPipelineState->GetStaticVariableByName(xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)stage), sData);
-              if (pConstantBuffer == nullptr)
-              {
-                xiiLog::Error("Constant buffer pointer for {} returned null.", sData);
-                continue;
-              }
-              pConstantBuffer->Set(static_cast<Diligent::IBuffer*>(m_pBoundConstantBuffers[currentBinding.m_uiVirtualBinding]->GetBuffer()), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
-            }
-            break;
-            case xiiShaderDescriptorSetLayoutBinding::ResourceType::ResourceView:
-            {
-              auto* pResourceView = pPipelineState->GetStaticVariableByName(xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)stage), sData);
-              if (pResourceView == nullptr)
-              {
-                xiiLog::Error("Resource view pointer for {} returned null.", sData);
-                continue;
-              }
-              pResourceView->Set(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetResourceView(), Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
-            }
-            break;
-            case xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessView:
-            {
-              auto* pUnorderedResourceView = pPipelineState->GetStaticVariableByName(xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)stage), sData);
-              if (pUnorderedResourceView == nullptr)
-              {
-                xiiLog::Error("Unordered access view pointer for {} returned null.", sData);
-                continue;
-              }
-              pUnorderedResourceView->Set(m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetResourceView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
-            }
-            break;
-            case xiiShaderDescriptorSetLayoutBinding::ResourceType::Sampler:
-            {
-              auto* pSampler = pPipelineState->GetStaticVariableByName(xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)stage), sData);
-              if (pSampler == nullptr)
-              {
-                xiiLog::Error("Sampler pointer for {} returned null.", sData);
-                continue;
-              }
-              pSampler->Set(m_pBoundSamplerStates[stage][currentBinding.m_uiVirtualBinding], Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
-            }
-            break;
-          }
-        }
-      }
-    }
+    FillDescriptorBindings(m_pPipelineStateGraphics);
 
     m_bDescriptorsModified = false;
   }
 
-  if (m_bComputePipelineRequested)
+  // Create a shader resource binding object and bind all static resources in it
+  m_pPipelineStateGraphics->CreateShaderResourceBinding(&m_pShaderResourceBindingGraphics, true);
+
+  if (m_bPipelineStateModified)
   {
-    // Create a shader resource binding object and bind all static resources in it
-    m_pPipelineStateCompute->CreateShaderResourceBinding(&m_pShaderResourceBindingCompute, true);
-
-    if (m_bPipelineStateModified)
-    {
-      m_bPipelineStateModified = false;
-    }
-
-    m_pContext->SetPipelineState(m_pPipelineStateCompute);
-
-    m_pContext->CommitShaderResources(m_pShaderResourceBindingCompute, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+    m_bPipelineStateModified = false;
   }
-  else
-  {
-    // Create a shader resource binding object and bind all static resources in it
-    m_pPipelineStateGraphics->CreateShaderResourceBinding(&m_pShaderResourceBindingGraphics, true);
 
-    if (m_bPipelineStateModified)
-    {
-      m_bPipelineStateModified = false;
-    }
+  m_pContext->SetPipelineState(m_pPipelineStateGraphics);
 
-    m_pContext->SetPipelineState(m_pPipelineStateGraphics);
-
-    m_pContext->CommitShaderResources(m_pShaderResourceBindingGraphics, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
-  }
+  m_pContext->CommitShaderResources(m_pShaderResourceBindingGraphics, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 }
 
 void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
@@ -1286,18 +1204,8 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
 
   if (m_pCurrentShader != nullptr)
   {
-    Diligent::IPipelineState* pPipelineState = nullptr;
-
-    if (m_bComputePipelineRequested)
-      pPipelineState = m_pPipelineStateCompute;
-    else
-      pPipelineState = m_pPipelineStateGraphics;
-
     for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
     {
-      if (pPipelineState == nullptr)
-        break;
-
       auto& bindings = m_pCurrentShader->GetDescriptorSets((xiiGALShaderStage::Enum)stage);
       for (xiiUInt32 i = 0; i < bindings.GetCount(); ++i)
       {
@@ -1314,13 +1222,6 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
           {
             case xiiShaderDescriptorSetLayoutBinding::ResourceType::ConstantBuffer:
             {
-              auto* pConstantBuffer = pPipelineState->GetStaticVariableByName(xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)stage), sData);
-              if (pConstantBuffer == nullptr)
-              {
-                xiiLog::Error("Constant buffer pointer for {} returned null.", sData);
-                continue;
-              }
-
               Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
               transitionDesc.pResource                      = m_pBoundConstantBuffers[currentBinding.m_uiVirtualBinding]->GetBuffer();
               transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
@@ -1331,13 +1232,6 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
             break;
             case xiiShaderDescriptorSetLayoutBinding::ResourceType::ResourceView:
             {
-              auto* pResourceView = pPipelineState->GetStaticVariableByName(xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)stage), sData);
-              if (pResourceView == nullptr)
-              {
-                xiiLog::Error("Resource view pointer for {} returned null.", sData);
-                continue;
-              }
-
               if (Diligent::ITextureView* pTextureView = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView())
               {
                 auto& description = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
@@ -1368,13 +1262,6 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
             break;
             case xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessView:
             {
-              auto* pUnorderedResourceView = pPipelineState->GetStaticVariableByName(xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)stage), sData);
-              if (pUnorderedResourceView == nullptr)
-              {
-                xiiLog::Error("Unordered access view pointer for {} returned null.", sData);
-                continue;
-              }
-
               if (Diligent::ITextureView* pTextureView = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetTextureView())
               {
                 auto& description = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetDescription();
@@ -1410,7 +1297,77 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
 
   m_pContext->TransitionResourceStates(stateTransitions.GetCount(), stateTransitions.GetData());
 
-  FlushDeferredStateChanges();
+  FlushDeferredStateChangesGraphics();
+}
+
+void xiiGALCommandEncoderImplDiligent::FillDescriptorBindings(Diligent::IPipelineState* pPipelineState)
+{
+  // Note that this function does not check if the bindings have been modified
+
+  for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  {
+    auto& bindings = m_pCurrentShader->GetDescriptorSets((xiiGALShaderStage::Enum)stage);
+    for (xiiUInt32 i = 0; i < bindings.GetCount(); ++i)
+    {
+      auto& binding = bindings[i].Bindings;
+
+      for (xiiUInt32 j = 0; j < binding.GetCount(); ++j)
+      {
+        auto& currentBinding = binding[j];
+
+        xiiStringBuilder sData;
+        currentBinding.m_sName.GetData(sData);
+
+        switch (currentBinding.m_Type)
+        {
+          case xiiShaderDescriptorSetLayoutBinding::ResourceType::ConstantBuffer:
+          {
+            auto* pConstantBuffer = pPipelineState->GetStaticVariableByName(xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)stage), sData);
+            if (pConstantBuffer == nullptr)
+            {
+              xiiLog::Error("Constant buffer pointer for {} returned null.", sData);
+              continue;
+            }
+            pConstantBuffer->Set(static_cast<Diligent::IBuffer*>(m_pBoundConstantBuffers[currentBinding.m_uiVirtualBinding]->GetBuffer()), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+          }
+          break;
+          case xiiShaderDescriptorSetLayoutBinding::ResourceType::ResourceView:
+          {
+            auto* pResourceView = pPipelineState->GetStaticVariableByName(xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)stage), sData);
+            if (pResourceView == nullptr)
+            {
+              xiiLog::Error("Resource view pointer for {} returned null.", sData);
+              continue;
+            }
+            pResourceView->Set(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetResourceView(), Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+          }
+          break;
+          case xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessView:
+          {
+            auto* pUnorderedResourceView = pPipelineState->GetStaticVariableByName(xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)stage), sData);
+            if (pUnorderedResourceView == nullptr)
+            {
+              xiiLog::Error("Unordered access view pointer for {} returned null.", sData);
+              continue;
+            }
+            pUnorderedResourceView->Set(m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetResourceView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+          }
+          break;
+          case xiiShaderDescriptorSetLayoutBinding::ResourceType::Sampler:
+          {
+            auto* pSampler = pPipelineState->GetStaticVariableByName(xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)stage), sData);
+            if (pSampler == nullptr)
+            {
+              xiiLog::Error("Sampler pointer for {} returned null.", sData);
+              continue;
+            }
+            pSampler->Set(m_pBoundSamplerStates[stage][currentBinding.m_uiVirtualBinding], Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+          }
+          break;
+        }
+      }
+    }
+  }
 }
 
 

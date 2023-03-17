@@ -31,7 +31,7 @@ protected:
   virtual xiiGALComputeCommandEncoder* BeginComputePlatform(const char* szName) override;
   virtual void                         EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder) override;
 
-  virtual xiiGALRenderCommandEncoder* BeginRenderPassPlatform(const xiiGALRenderingSetup& renderingSetup, const char* szName) override;
+  virtual xiiGALRenderCommandEncoder* BeginRenderPassPlatform() override;
   virtual void                        EndRenderPassPlatform() override;
 
   void MarkDirty();
@@ -58,6 +58,9 @@ private:
   void CreateFramebuffer(const xiiGALRenderingSetup& renderingSetup, const char* szName);
 
   xiiGALDeviceDiligent& m_GALDeviceDiligent;
+
+  xiiStringView m_sName;
+  xiiGALRenderingSetup m_RenderingSetup = {};
 
   xiiUniquePtr<xiiGALCommandEncoderRenderState>  m_pCommandEncoderState;
   xiiUniquePtr<xiiGALCommandEncoderImplDiligent> m_pCommandEncoderImpl;
