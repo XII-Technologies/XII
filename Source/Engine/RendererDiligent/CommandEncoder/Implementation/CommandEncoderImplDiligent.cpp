@@ -14,6 +14,25 @@
 #include <RendererDiligent/State/StateDiligent.h>
 #include <RendererFoundation/CommandEncoder/CommandEncoder.h>
 
+#undef NULL
+#define NULL 0
+
+#if D3D11_SUPPORTED
+#  include <Unknwn.h>
+#  include <atlbase.h>
+#  include <atlcom.h>
+#  include <guiddef.h>
+
+// clang-format disable
+#  include <d3d11.h>
+#include <Graphics/GraphicsEngineD3D11/interface/BufferViewD3D11.h>
+// clang-format enable
+#endif
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#endif
+
 xiiGALCommandEncoderImplDiligent::xiiGALCommandEncoderImplDiligent(xiiGALDeviceDiligent& deviceDiligent) :
   m_GALDeviceDiligent(deviceDiligent), m_pContext(m_GALDeviceDiligent.GetImmediateContext())
 {
@@ -235,16 +254,52 @@ void xiiGALCommandEncoderImplDiligent::InsertTimestampPlatform(xiiGALTimestampHa
 
 void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xiiGALUnorderedAccessView* pUnorderedAccessView, xiiVec4 clearValues)
 {
-  // \todo Implement clearing unordered access views through a compute shader
+  xiiGALUnorderedAccessViewDiligent* pUnorderedAccessViewDiligent = nullptr;
+  Diligent::IBufferView*             pUAVDiligent                 = nullptr;
+  {
+    xiiGALUnorderedAccessView* pGALUnorderedAccessView = const_cast<xiiGALUnorderedAccessView*>(pUnorderedAccessView);
+    pUnorderedAccessViewDiligent                       = static_cast<xiiGALUnorderedAccessViewDiligent*>(pGALUnorderedAccessView);
+    pUAVDiligent                                       = pUnorderedAccessViewDiligent->GetBufferView();
+  }
 
-  XII_ASSERT_NOT_IMPLEMENTED
+  switch (m_GALDeviceDiligent.GetDeviceType())
+  {
+#if D3D11_SUPPORTED
+    case Diligent::RENDER_DEVICE_TYPE_D3D11:
+    {
+      // Diligent::IRenderDeviceD3D11* pDeviceD3D11 = nullptr;
+      // m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D11, reinterpret_cast<Diligent::IObject**>(pDeviceD3D11));
+    }
+    break;
+#endif
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED
+  }
 }
 
 void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xiiGALUnorderedAccessView* pUnorderedAccessView, xiiVec4U32 clearValues)
 {
-  // \todo Implement clearing unordered access views through a compute shader
+  xiiGALUnorderedAccessViewDiligent* pUnorderedAccessViewDiligent = nullptr;
+  Diligent::IBufferView*             pUAVDiligent                 = nullptr;
+  {
+    xiiGALUnorderedAccessView* pGALUnorderedAccessView = const_cast<xiiGALUnorderedAccessView*>(pUnorderedAccessView);
+    pUnorderedAccessViewDiligent                       = static_cast<xiiGALUnorderedAccessViewDiligent*>(pGALUnorderedAccessView);
+    pUAVDiligent                                       = pUnorderedAccessViewDiligent->GetBufferView();
+  }
 
-  XII_ASSERT_NOT_IMPLEMENTED
+  switch (m_GALDeviceDiligent.GetDeviceType())
+  {
+#if D3D11_SUPPORTED
+    case Diligent::RENDER_DEVICE_TYPE_D3D11:
+    {
+      Diligent::IBufferViewD3D11* ppD3D11BufferViewDiligent = nullptr;
+      pUAVDiligent->QueryInterface(...);
+    }
+    break;
+#endif
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED
+  }
 }
 
 void xiiGALCommandEncoderImplDiligent::CopyBufferPlatform(const xiiGALBuffer* pDestination, const xiiGALBuffer* pSource)
