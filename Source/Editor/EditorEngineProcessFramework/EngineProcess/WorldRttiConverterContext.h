@@ -22,7 +22,7 @@ public:
   void         DeleteExistingObjects();
 
   virtual xiiInternal::NewInstance<void> CreateObject(const xiiUuid& guid, const xiiRTTI* pRtti) override;
-  virtual void                          DeleteObject(const xiiUuid& guid) override;
+  virtual void                           DeleteObject(const xiiUuid& guid) override;
 
   virtual void RegisterObject(const xiiUuid& guid, const xiiRTTI* pRtti, void* pObject) override;
   virtual void UnregisterObject(const xiiUuid& guid) override;
@@ -32,14 +32,14 @@ public:
 
   virtual void OnUnknownTypeError(xiiStringView sTypeName) override;
 
-  xiiWorld*                                        m_pWorld;
+  xiiWorld*                                         m_pWorld;
   xiiEditorGuidEngineHandleMap<xiiGameObjectHandle> m_GameObjectMap;
   xiiEditorGuidEngineHandleMap<xiiComponentHandle>  m_ComponentMap;
 
   xiiEditorGuidEngineHandleMap<xiiUInt32> m_OtherPickingMap;
   xiiEditorGuidEngineHandleMap<xiiUInt32> m_ComponentPickingMap;
-  xiiUInt32                              m_uiNextComponentPickingID;
-  xiiUInt32                              m_uiHighlightID;
+  xiiUInt32                               m_uiNextComponentPickingID;
+  xiiUInt32                               m_uiHighlightID;
 
   struct Event
   {
@@ -49,7 +49,7 @@ public:
       GameObjectDeleted,
     };
 
-    Type   m_Type;
+    Type    m_Type;
     xiiUuid m_ObjectGuid;
   };
 

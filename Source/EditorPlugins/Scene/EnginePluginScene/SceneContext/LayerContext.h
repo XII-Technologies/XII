@@ -27,7 +27,7 @@ protected:
 
   virtual xiiEngineProcessViewContext* CreateViewContext() override;
   virtual void                         DestroyViewContext(xiiEngineProcessViewContext* pContext) override;
-  virtual xiiStatus                         ExportDocument(const xiiExportDocumentMsgToEngine* pMsg) override;
+  virtual xiiStatus                    ExportDocument(const xiiExportDocumentMsgToEngine* pMsg) override;
 
   virtual void UpdateDocumentContext() override;
 
