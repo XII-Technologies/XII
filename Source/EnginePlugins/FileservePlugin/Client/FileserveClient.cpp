@@ -107,7 +107,7 @@ xiiResult xiiFileserveClient::EnsureConnected(xiiTime timeout)
     ClearState();
     m_bFailedToConnect = true;
 
-    if (m_pNetwork->ConnectToServer('XIIFS', m_sServerConnectionAddress).Failed())
+    if (m_pNetwork->ConnectToServer('XIFS', m_sServerConnectionAddress).Failed())
       return XII_FAILURE;
 
     if (timeout.GetSeconds() < 0)
@@ -759,7 +759,7 @@ xiiResult xiiFileserveClient::TryConnectWithFileserver(const char* szAddress, xi
   xiiLog::Info("File server address: '{0}' ({1} sec)", szAddress, timeout.GetSeconds());
 
   xiiUniquePtr<xiiRemoteInterfaceEnet> network = xiiRemoteInterfaceEnet::Make(); /// \todo Abstract this somehow ?
-  if (network->ConnectToServer('XIIFS', szAddress, false).Failed())
+  if (network->ConnectToServer('XIFS', szAddress, false).Failed())
     return XII_FAILURE;
 
   bool bServerFound = false;
