@@ -45,7 +45,7 @@ public:
   /// the resource will be loaded. If it is not possible to load the resource it will change to a 'missing' state. If the code accessing the
   /// resource cannot handle that case, the application will 'terminate' (that means crash).
   template <typename ResourceType>
-  static xiiTypedResourceHandle<ResourceType> LoadResource(const char* szResourceID);
+  static xiiTypedResourceHandle<ResourceType> LoadResource(xiiStringView sResourceID);
 
   /// \brief Same as LoadResource(), but additionally allows to set a priority on the resource and a custom fallback resource for this
   /// instance.
@@ -55,12 +55,12 @@ public:
   /// If a valid fallback resource is specified, the resource will store that as its instance specific fallback resource. This will be used
   /// when trying to acquire the resource later.
   template <typename ResourceType>
-  static xiiTypedResourceHandle<ResourceType> LoadResource(const char* szResourceID, xiiTypedResourceHandle<ResourceType> hLoadingFallback);
+  static xiiTypedResourceHandle<ResourceType> LoadResource(xiiStringView sResourceID, xiiTypedResourceHandle<ResourceType> hLoadingFallback);
 
 
   /// \brief Same as LoadResource(), but instead of a template argument, the resource type to use is given as xiiRTTI info. Returns a
   /// typeless handle due to the missing template argument.
-  static xiiTypelessResourceHandle LoadResourceByType(const xiiRTTI* pResourceType, const char* szResourceID);
+  static xiiTypelessResourceHandle LoadResourceByType(const xiiRTTI* pResourceType, xiiStringView sResourceID);
 
   /// \brief Checks whether any resource loading is in progress
   static bool IsAnyLoadingInProgress();
@@ -69,7 +69,7 @@ public:
   ///
   /// Provide a prefix that is preferably not used anywhere else (i.e., closely related to your code).
   /// If the prefix is not also used to manually generate resource IDs, this function is guaranteed to return a unique resource ID.
-  static xiiString GenerateUniqueResourceID(const char* szResourceIDPrefix);
+  static xiiString GenerateUniqueResourceID(xiiStringView sResourceIDPrefix);
 
   /// \brief Creates a resource from a descriptor.
   ///
@@ -78,10 +78,7 @@ public:
   /// \param szResourceDescription An optional description that might help during debugging. Often a human readable name or path is stored
   /// here, to make it easier to identify this resource.
   template <typename ResourceType, typename DescriptorType>
-  static xiiTypedResourceHandle<ResourceType> CreateResource(
-    const char*      szResourceID,
-    DescriptorType&& descriptor,
-    const char*      szResourceDescription = nullptr);
+  static xiiTypedResourceHandle<ResourceType> CreateResource(xiiStringView sResourceID, DescriptorType&& descriptor, xiiStringView sResourceDescription = nullptr);
 
   /// \brief Returns a handle to the resource with the given ID if it exists or creates it from a descriptor.
   ///
@@ -89,25 +86,22 @@ public:
   /// \param descriptor A type specific descriptor that holds all the information to create the resource.
   /// \param szResourceDescription An optional description that might help during debugging. Often a human readable name or path is stored here, to make it easier to identify this resource.
   template <typename ResourceType, typename DescriptorType>
-  static xiiTypedResourceHandle<ResourceType> GetOrCreateResource(
-    const char*      szResourceID,
-    DescriptorType&& descriptor,
-    const char*      szResourceDescription = nullptr);
+  static xiiTypedResourceHandle<ResourceType> GetOrCreateResource(xiiStringView sResourceID, DescriptorType&& descriptor, xiiStringView sResourceDescription = nullptr);
 
   /// \brief Returns a handle to the resource with the given ID. If the resource does not exist, the handle is invalid.
   ///
   /// Use this if a resource needs to be created procedurally (with CreateResource()), but might already have been created.
   /// If the returned handle is invalid, then just go through the resource creation step.
   template <typename ResourceType>
-  static xiiTypedResourceHandle<ResourceType> GetExistingResource(const char* szResourceID);
+  static xiiTypedResourceHandle<ResourceType> GetExistingResource(xiiStringView sResourceID);
 
   /// \brief Same as GetExistingResourceByType() but allows to specify the resource type as an xiiRTTI.
-  static xiiTypelessResourceHandle GetExistingResourceByType(const xiiRTTI* pResourceType, const char* szResourceID);
+  static xiiTypelessResourceHandle GetExistingResourceByType(const xiiRTTI* pResourceType, xiiStringView sResourceID);
 
   template <typename ResourceType>
-  static xiiTypedResourceHandle<ResourceType> GetExistingResourceOrCreateAsync(const char* szResourceID, xiiUniquePtr<xiiResourceTypeLoader>&& loader, xiiTypedResourceHandle<ResourceType> hLoadingFallback = {})
+  static xiiTypedResourceHandle<ResourceType> GetExistingResourceOrCreateAsync(xiiStringView sResourceID, xiiUniquePtr<xiiResourceTypeLoader>&& loader, xiiTypedResourceHandle<ResourceType> hLoadingFallback = {})
   {
-    xiiTypelessResourceHandle hTypeless = GetExistingResourceOrCreateAsync(xiiGetStaticRTTI<ResourceType>(), szResourceID, std::move(loader));
+    xiiTypelessResourceHandle hTypeless = GetExistingResourceOrCreateAsync(xiiGetStaticRTTI<ResourceType>(), sResourceID, std::move(loader));
 
     auto hTyped = xiiTypedResourceHandle<ResourceType>((ResourceType*)hTypeless.m_pResource);
 
@@ -119,7 +113,7 @@ public:
     return hTyped;
   }
 
-  static xiiTypelessResourceHandle GetExistingResourceOrCreateAsync(const xiiRTTI* pResourceType, const char* szResourceID, xiiUniquePtr<xiiResourceTypeLoader>&& loader);
+  static xiiTypelessResourceHandle GetExistingResourceOrCreateAsync(const xiiRTTI* pResourceType, xiiStringView sResourceID, xiiUniquePtr<xiiResourceTypeLoader>&& loader);
 
   /// \brief Triggers loading of the given resource. tShouldBeAvailableIn specifies how long the resource is not yet needed, thus allowing
   /// other resources to be loaded first. This is only a hint and there are no guarantees when the resource is available.
@@ -301,10 +295,10 @@ public:
   ///
   /// This can be used to register a resource under an easier to use name. For example one can register "MenuBackground" as the name for "{
   /// E50DCC85-D375-4999-9CFE-42F1377FAC85 }". If the lookup name already exists, it will be overwritten.
-  static void RegisterNamedResource(const char* szLookupName, const char* szRedirectionResource);
+  static void RegisterNamedResource(xiiStringView sLookupName, xiiStringView sRedirectionResource);
 
   /// \brief Removes a previously registered name from the redirection table.
-  static void UnregisterNamedResource(const char* szLookupName);
+  static void UnregisterNamedResource(xiiStringView sLookupName);
 
 
   ///@}
@@ -313,11 +307,11 @@ public:
 
 public:
   /// \brief Registers which resource type to use to load an asset with the given type name
-  static void RegisterResourceForAssetType(const char* szAssetTypeName, const xiiRTTI* pResourceType);
+  static void RegisterResourceForAssetType(xiiStringView sAssetTypeName, const xiiRTTI* pResourceType);
 
   /// \brief Returns the resource type that was registered to handle the given asset type for loading. nullptr if no resource type was
   /// registered for this asset type.
-  static const xiiRTTI* FindResourceForAssetType(const char* szAssetTypeName);
+  static const xiiRTTI* FindResourceForAssetType(xiiStringView sAssetTypeName);
 
   ///@}
   /// \name Export mode
@@ -335,7 +329,7 @@ public:
   /// Internally it will create a resource but does not load the content. This way it can be ensured that the resource handle is always only
   /// the size of a pointer.
   template <typename ResourceType>
-  static xiiTypedResourceHandle<ResourceType> GetResourceHandleForExport(const char* szResourceID);
+  static xiiTypedResourceHandle<ResourceType> GetResourceHandleForExport(xiiStringView sResourceID);
 
 
   ///@}
@@ -471,8 +465,8 @@ private:
   static void InternalPreloadResource(xiiResource* pResource, bool bHighestPriority);
 
   template <typename ResourceType>
-  static ResourceType* GetResource(const char* szResourceID, bool bIsReloadable);
-  static xiiResource*  GetResource(const xiiRTTI* pRtti, const char* szResourceID, bool bIsReloadable);
+  static ResourceType* GetResource(xiiStringView sResourceID, bool bIsReloadable);
+  static xiiResource*  GetResource(const xiiRTTI* pRtti, xiiStringView sResourceID, bool bIsReloadable);
   static void          RunWorkerTask(xiiResource* pResource);
   static void          UpdateLoadingDeadlines();
   static void          ReverseBubbleSortStep(xiiDeque<LoadingInfo>& data);
@@ -512,7 +506,7 @@ private:
   };
 
   /// \brief Checks whether there is a type override for pRtti given szResourceID and returns that
-  static const xiiRTTI* FindResourceTypeOverride(const xiiRTTI* pRtti, const char* szResourceID);
+  static const xiiRTTI* FindResourceTypeOverride(const xiiRTTI* pRtti, xiiStringView sResourceID);
 };
 
 #include <Core/ResourceManager/Implementation/ResourceLock.h>

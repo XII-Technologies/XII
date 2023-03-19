@@ -72,6 +72,8 @@ xiiWorld::xiiWorld(xiiWorldDesc& desc) :
 
 xiiWorld::~xiiWorld()
 {
+  SetWorldSimulationEnabled(false);
+
   XII_LOCK(GetWriteMarker());
   m_Data.Clear();
 

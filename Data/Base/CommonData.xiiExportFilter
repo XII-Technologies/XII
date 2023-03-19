@@ -4,7 +4,11 @@
 *.dds
 *.jpg
 *.tga
-*/CppSource
+*.png
+*.gltf
+*.glb
+*.fbx
+*/Source
 */AssetCache
 */Editor/*
 */DataDirectories.ddl
