@@ -9,13 +9,10 @@ inline xiiDataDirectoryReaderWriterBase::xiiDataDirectoryReaderWriterBase(xiiInt
   m_bIsReader        = bIsReader;
 }
 
-inline xiiResult xiiDataDirectoryReaderWriterBase::Open(
-  const char*            szResourcePath,
-  xiiDataDirectoryType*  pDataDirectory,
-  xiiFileShareMode::Enum FileShareMode)
+inline xiiResult xiiDataDirectoryReaderWriterBase::Open(xiiStringView sFile, xiiDataDirectoryType* pDataDirectory, xiiFileShareMode::Enum FileShareMode)
 {
   m_pDataDirectory = pDataDirectory;
-  m_sFilePath      = szResourcePath;
+  m_sFilePath      = sFile;
 
   return InternalOpen(FileShareMode);
 }

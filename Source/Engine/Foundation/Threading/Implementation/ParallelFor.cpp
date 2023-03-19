@@ -23,6 +23,8 @@ public:
     const IndexType uiSliceStartIndex = uiInvocation * m_uiItemsPerInvocation;
     const IndexType uiSliceEndIndex   = xiiMath::Min(uiSliceStartIndex + m_uiItemsPerInvocation, m_uiStartIndex + m_uiNumItems);
 
+    XII_ASSERT_DEV(uiSliceStartIndex < uiSliceEndIndex, "ParallelFor start/end indices given to index task are invalid: {} -> {}", uiSliceStartIndex, uiSliceEndIndex);
+
     // Run through the calculated slice, the end index is exclusive, i.e., should not be handled by this instance.
     m_TaskCallback(uiSliceStartIndex, uiSliceEndIndex);
   }
@@ -44,12 +46,11 @@ void ParallelForIndexedInternal(IndexType uiStartIndex, IndexType uiNumItems, co
     taskName = "Generic Indexed Task";
   }
 
-  const xiiUInt32 uiMultiplicity       = params.DetermineMultiplicity(uiNumItems);
-  const IndexType uiItemsPerInvocation = params.DetermineItemsPerInvocation(uiNumItems, uiMultiplicity);
-
-  if (uiMultiplicity == 0)
+  if (uiNumItems <= params.m_uiBinSize)
   {
-    Task indexedTask(uiStartIndex, uiNumItems, std::move(taskCallback), uiItemsPerInvocation);
+    // If we have not exceeded the threading threshold we use serial execution
+
+    Task indexedTask(uiStartIndex, uiNumItems, std::move(taskCallback), uiNumItems);
     indexedTask.ConfigureTask(taskName, xiiTaskNesting::Never);
 
     XII_PROFILE_SCOPE(taskName);
@@ -57,9 +58,13 @@ void ParallelForIndexedInternal(IndexType uiStartIndex, IndexType uiNumItems, co
   }
   else
   {
-    xiiAllocatorBase* pAllocator = (params.pTaskAllocator != nullptr) ? params.pTaskAllocator : xiiFoundation::GetDefaultAllocator();
+    xiiUInt32 uiMultiplicity;
+    xiiUInt64 uiItemsPerInvocation;
+    params.DetermineThreading(uiNumItems, uiMultiplicity, uiItemsPerInvocation);
 
-    xiiSharedPtr<Task> pIndexedTask = XII_NEW(pAllocator, Task, uiStartIndex, uiNumItems, std::move(taskCallback), uiItemsPerInvocation);
+    xiiAllocatorBase* pAllocator = (params.m_pTaskAllocator != nullptr) ? params.m_pTaskAllocator : xiiFoundation::GetDefaultAllocator();
+
+    xiiSharedPtr<Task> pIndexedTask = XII_NEW(pAllocator, Task, uiStartIndex, uiNumItems, std::move(taskCallback), static_cast<IndexType>(uiItemsPerInvocation));
     pIndexedTask->ConfigureTask(taskName, xiiTaskNesting::Never);
 
     pIndexedTask->SetMultiplicity(uiMultiplicity);
@@ -68,82 +73,68 @@ void ParallelForIndexedInternal(IndexType uiStartIndex, IndexType uiNumItems, co
   }
 }
 
-xiiUInt32 xiiParallelForParams::DetermineMultiplicity(xiiUInt64 uiNumTaskItems) const
+void xiiParallelForParams::DetermineThreading(xiiUInt64 uiNumItemsToExecute, xiiUInt32& out_uiNumTasksToRun, xiiUInt64& out_uiNumItemsPerTask) const
 {
-  // If we have not exceeded the threading threshold we will indicate to use serial execution.
-  if (uiNumTaskItems < uiBinSize)
-  {
-    return 0;
-  }
+  // We create a single task, but we set it's multiplicity to M (= out_uiNumTasksToRun)
+  // so that it gets scheduled M times, which is effectively the same as creating M tasks
 
-  const xiiUInt32 uiNumWorkers = xiiTaskSystem::GetWorkerThreadCount(xiiWorkerThreadType::ShortTasks);
-  // The slice size gives the number of items that can be processed when giving exactly uiBinSize
-  // task items to each worker.
-  const xiiUInt32 uiSliceSize = uiNumWorkers * uiBinSize;
+  const xiiUInt32 uiNumWorkerThreads      = xiiTaskSystem::GetWorkerThreadCount(xiiWorkerThreadType::ShortTasks);
+  const xiiUInt64 uiMaxTasksToUse         = uiNumWorkerThreads * m_uiMaxTasksPerThread;
+  const xiiUInt64 uiMaxExecutionsRequired = xiiMath::Max(1llu, uiNumItemsToExecute / m_uiBinSize);
 
-  // Needing at most #_workers threads.
-  if (uiNumTaskItems <= uiSliceSize)
+  if (uiMaxExecutionsRequired >= uiMaxTasksToUse)
   {
-    // Fill up each thread with at most uiBinSize task items.
-    const xiiUInt64 numThreads = (uiNumTaskItems + uiBinSize - 1) / uiBinSize;
-    XII_ASSERT_DEV(numThreads <= uiNumWorkers, "");
-    XII_ASSERT_DEV(numThreads < (1ull << 32), "");
-    return (xiiUInt32)numThreads;
+    // If we have more items to execute, than the upper limit of tasks that we want to spawn, clamp the number of tasks
+    // and give each task more items to do
+    out_uiNumTasksToRun = uiMaxTasksToUse & 0xFFFFFFFF;
   }
-  // Needing at most #_workers * threading_factor threads.
-  else if (uiNumTaskItems <= uiSliceSize * uiMaxTasksPerThread)
-  {
-    const xiiUInt64 uiNumSlices = (uiNumTaskItems + uiSliceSize - 1) / uiSliceSize;
-    XII_ASSERT_DEV(uiNumSlices <= uiMaxTasksPerThread, "");
-    const xiiUInt64 result = uiNumSlices * uiNumWorkers;
-    XII_ASSERT_DEV(result < (1ull << 32), "");
-    return (xiiUInt32)result;
-  }
-  // Needing more than #_workers * threading_factor threads --> clamp to that number.
   else
   {
-    const xiiUInt64 result = uiNumWorkers * uiMaxTasksPerThread;
-    XII_ASSERT_DEV(result < (1ull << 32), "");
-    return (xiiUInt32)result;
+    // If we want to execute fewer items than we have tasks available, just run exactly as many tasks as we have items
+    out_uiNumTasksToRun = uiMaxExecutionsRequired & 0xFFFFFFFF;
   }
-}
 
-xiiUInt64 xiiParallelForParams::DetermineItemsPerInvocation(xiiUInt64 uiNumTaskItems, xiiUInt32 uiMultiplicity) const
-{
-  if (uiMultiplicity == 0)
+  // Now that we determined the number of tasks to run, compute how much each task should do
+  out_uiNumItemsPerTask = uiNumItemsToExecute / out_uiNumTasksToRun;
+
+  // Due to rounding down in the line above, it can happen that we would execute too few tasks
+  if (out_uiNumItemsPerTask * out_uiNumTasksToRun < uiNumItemsToExecute)
   {
-    return uiNumTaskItems;
+    // To fix this, either do one more task invocation, or one more item per task
+    if (out_uiNumItemsPerTask * (out_uiNumTasksToRun + 1) >= uiNumItemsToExecute)
+    {
+      ++out_uiNumTasksToRun;
+
+      // Though with one more task we may execute too many items, so if possible reduce the number of items that each task executes
+      while ((out_uiNumItemsPerTask - 1) * out_uiNumTasksToRun >= uiNumItemsToExecute)
+      {
+        --out_uiNumItemsPerTask;
+      }
+    }
+    else
+    {
+      ++out_uiNumItemsPerTask;
+
+      // Though if every task executes one more item, we may execute too many items, so if possible reduce the number of tasks again
+      while (out_uiNumItemsPerTask * (out_uiNumTasksToRun - 1) >= uiNumItemsToExecute)
+      {
+        --out_uiNumTasksToRun;
+      }
+    }
+
+    XII_ASSERT_DEV(out_uiNumItemsPerTask * out_uiNumTasksToRun >= uiNumItemsToExecute, "xiiParallelFor is missing invocations");
   }
-
-  const xiiUInt64 uiItemsPerInvocation = (uiNumTaskItems + uiMultiplicity - 1) / uiMultiplicity;
-  return uiItemsPerInvocation;
 }
 
-xiiUInt32 xiiParallelForParams::DetermineItemsPerInvocation(xiiUInt32 uiNumTaskItems, xiiUInt32 uiMultiplicity) const
-{
-  const xiiUInt64 result = DetermineItemsPerInvocation(xiiUInt64(uiNumTaskItems), uiMultiplicity);
-  XII_ASSERT_DEV(result < (1ull << 32), "");
-  return (xiiUInt32)result;
-}
-
-void xiiTaskSystem::ParallelForIndexed(
-  xiiUInt32                       uiStartIndex,
-  xiiUInt32                       uiNumItems,
-  xiiParallelForIndexedFunction32 taskCallback,
-  const char*                     taskName,
-  const xiiParallelForParams&     params)
+void xiiTaskSystem::ParallelForIndexed(xiiUInt32 uiStartIndex, xiiUInt32 uiNumItems, xiiParallelForIndexedFunction32 taskCallback, const char* taskName, const xiiParallelForParams& params)
 {
   ParallelForIndexedInternal<xiiUInt32, xiiParallelForIndexedFunction32>(uiStartIndex, uiNumItems, taskCallback, taskName, params);
 }
 
-void xiiTaskSystem::ParallelForIndexed(
-  xiiUInt64                       uiStartIndex,
-  xiiUInt64                       uiNumItems,
-  xiiParallelForIndexedFunction64 taskCallback,
-  const char*                     taskName,
-  const xiiParallelForParams&     params)
+void xiiTaskSystem::ParallelForIndexed(xiiUInt64 uiStartIndex, xiiUInt64 uiNumItems, xiiParallelForIndexedFunction64 taskCallback, const char* taskName, const xiiParallelForParams& params)
 {
   ParallelForIndexedInternal<xiiUInt64, xiiParallelForIndexedFunction64>(uiStartIndex, uiNumItems, taskCallback, taskName, params);
 }
+
 
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_ParallelFor);

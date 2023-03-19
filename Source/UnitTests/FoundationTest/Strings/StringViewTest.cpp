@@ -290,6 +290,48 @@ XII_CREATE_SIMPLE_TEST(Strings, StringView)
     XII_TEST_BOOL(!it.IsValid());
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ChopAwayFirstCharacterUtf8")
+  {
+    xiiStringUtf8 utf8(L"О, Господи!");
+    xiiStringView s(utf8.GetData());
+
+    const char* szOrgStart = s.GetStartPointer();
+    const char* szOrgEnd   = s.GetEndPointer();
+
+    while (!s.IsEmpty())
+    {
+      const xiiUInt32 uiNumCharsBefore = xiiStringUtils::GetCharacterCount(s.GetStartPointer(), s.GetEndPointer());
+      s.ChopAwayFirstCharacterUtf8();
+      const xiiUInt32 uiNumCharsAfter = xiiStringUtils::GetCharacterCount(s.GetStartPointer(), s.GetEndPointer());
+
+      XII_TEST_INT(uiNumCharsBefore, uiNumCharsAfter + 1);
+    }
+
+    // This needs to be true, some code relies on the fact that the start pointer always moves forwards
+    XII_TEST_BOOL(s.GetStartPointer() == szOrgEnd);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ChopAwayFirstCharacterAscii")
+  {
+    xiiStringUtf8 utf8(L"Wosn Schmarrn");
+    xiiStringView s("");
+
+    const char* szOrgStart = s.GetStartPointer();
+    const char* szOrgEnd   = s.GetEndPointer();
+
+    while (!s.IsEmpty())
+    {
+      const xiiUInt32 uiNumCharsBefore = s.GetElementCount();
+      s.ChopAwayFirstCharacterAscii();
+      const xiiUInt32 uiNumCharsAfter = s.GetElementCount();
+
+      XII_TEST_INT(uiNumCharsBefore, uiNumCharsAfter + 1);
+    }
+
+    // This needs to be true, some code relies on the fact that the start pointer always moves forwards
+    XII_TEST_BOOL(s.GetStartPointer() == szOrgEnd);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Trim")
   {
     // Empty input

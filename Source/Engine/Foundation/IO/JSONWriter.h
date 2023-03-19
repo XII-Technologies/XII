@@ -62,7 +62,7 @@ public:
   void AddVariableDouble(const char* szName, double value); // [tested]
 
   /// \brief Shorthand for "BeginVariable(szName); WriteString(value); EndVariable(); "
-  void AddVariableString(const char* szName, const char* value); // [tested]
+  void AddVariableString(const char* szName, xiiStringView value); // [tested]
 
   /// \brief Shorthand for "BeginVariable(szName); WriteNULL(value); EndVariable(); "
   void AddVariableNULL(const char* szName); // [tested]
@@ -189,7 +189,7 @@ public:
   virtual void WriteDouble(double value) = 0;
 
   /// \brief Writes a string to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
-  virtual void WriteString(const char* value) = 0;
+  virtual void WriteString(xiiStringView value) = 0;
 
   /// \brief Writes the value 'null' to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   virtual void WriteNULL() = 0;
@@ -450,7 +450,7 @@ public:
   virtual void WriteDouble(double value) override; // [tested]
 
   /// \brief \copydoc xiiJSONWriter::WriteString()
-  virtual void WriteString(const char* value) override; // [tested]
+  virtual void WriteString(xiiStringView value) override; // [tested]
 
   /// \brief \copydoc xiiJSONWriter::WriteNULL()
   virtual void WriteNULL() override; // [tested]
@@ -604,8 +604,8 @@ protected:
     xiiStandardJSONWriter* m_pWriter;
   };
 
-  void OutputString(const char* sz);
-  void OutputEscapedString(const char* sz);
+  void OutputString(xiiStringView s);
+  void OutputEscapedString(xiiStringView s);
   void OutputIndentation();
 
   xiiInt32         m_iIndentation;

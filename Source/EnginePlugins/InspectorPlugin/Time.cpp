@@ -29,5 +29,4 @@ void RemoveTimeEventHandler()
 }
 
 
-
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Time);

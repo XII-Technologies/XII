@@ -4,9 +4,9 @@ XII_ALWAYS_INLINE xiiViewHandle xiiView::GetHandle() const
   return xiiViewHandle(m_InternalId);
 }
 
-XII_ALWAYS_INLINE const char* xiiView::GetName() const
+XII_ALWAYS_INLINE xiiStringView xiiView::GetName() const
 {
-  return m_sName.GetString();
+  return m_sName.GetView();
 }
 
 XII_ALWAYS_INLINE xiiWorld* xiiView::GetWorld()

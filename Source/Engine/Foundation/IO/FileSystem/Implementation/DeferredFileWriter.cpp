@@ -8,10 +8,10 @@ xiiDeferredFileWriter::xiiDeferredFileWriter() :
 {
 }
 
-void xiiDeferredFileWriter::SetOutput(const char* szFileToWriteTo, bool bOnlyWriteIfDifferent)
+void xiiDeferredFileWriter::SetOutput(xiiStringView sFileToWriteTo, bool bOnlyWriteIfDifferent)
 {
   m_bOnlyWriteIfDifferent = bOnlyWriteIfDifferent;
-  m_sOutputFile           = szFileToWriteTo;
+  m_sOutputFile           = sFileToWriteTo;
 }
 
 xiiResult xiiDeferredFileWriter::WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite)

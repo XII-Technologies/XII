@@ -47,7 +47,7 @@ public:
   xiiPlatformProfile();
   ~xiiPlatformProfile();
 
-  const char* GetConfigName() const { return m_sName; }
+  xiiStringView GetConfigName() const { return m_sName; }
 
   void Clear();
   void AddMissingConfigs();
@@ -67,8 +67,8 @@ public:
   const xiiProfileConfigData* GetTypeConfig(const xiiRTTI* pRtti) const;
   xiiProfileConfigData*       GetTypeConfig(const xiiRTTI* pRtti);
 
-  xiiResult SaveForRuntime(const char* szFile) const;
-  xiiResult LoadForRuntime(const char* szFile);
+  xiiResult SaveForRuntime(xiiStringView sFile) const;
+  xiiResult LoadForRuntime(xiiStringView sFile);
 
   xiiString                              m_sName;
   xiiEnum<xiiProfileTargetPlatform>      m_TargetPlatform;

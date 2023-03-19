@@ -708,7 +708,7 @@ static int __CPP_GameObject_GetString(duk_context* pDuk)
 
   xiiGameObject* pGameObject = xiiTypeScriptBinding::ExpectGameObject(duk, 0 /*this*/);
 
-  const char* res = "";
+  xiiStringView res;
 
   switch (duk.GetFunctionMagicValue())
   {

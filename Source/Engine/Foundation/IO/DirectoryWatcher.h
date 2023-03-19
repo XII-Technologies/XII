@@ -66,7 +66,7 @@ public:
   ///   Opens the directory at \p absolutePath for watching. \p whatToWatch controls what exactly should be watched.
   ///
   /// \note A instance of xiiDirectoryWatcher can only watch one directory at a time.
-  xiiResult OpenDirectory(const xiiString& absolutePath, xiiBitflags<Watch> whatToWatch);
+  xiiResult OpenDirectory(xiiStringView sAbsolutePath, xiiBitflags<Watch> whatToWatch);
 
   /// \brief
   ///   Closes the currently watched directory if any.

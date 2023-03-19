@@ -29,7 +29,7 @@ public:
   void Clear();
 
   /// \brief Returns the name of this world.
-  const char* GetName() const;
+  xiiStringView GetName() const;
 
   /// \brief Returns the index of this world.
   xiiUInt32 GetIndex() const;
@@ -181,7 +181,7 @@ public:
   /// It is ensured that the Initialize function is called for all components in a batch before the OnSimulationStarted is called.
   /// If bMustFinishWithinOneFrame is set to false the processing of an init batch can be distributed over multiple frames if
   /// m_MaxComponentInitializationTimePerFrame in the world desc is set to a reasonable value.
-  xiiComponentInitBatchHandle CreateComponentInitBatch(const char* szBatchName, bool bMustFinishWithinOneFrame = true);
+  xiiComponentInitBatchHandle CreateComponentInitBatch(xiiStringView sBatchName, bool bMustFinishWithinOneFrame = true);
 
   /// \brief Deletes a component init batch. It must be completely processed before it can be deleted.
   void DeleteComponentInitBatch(const xiiComponentInitBatchHandle& batch);
@@ -359,8 +359,8 @@ private:
   void LinkToParent(xiiGameObject* pObject);
   void UnlinkFromParent(xiiGameObject* pObject);
 
-  void        SetObjectGlobalKey(xiiGameObject* pObject, const xiiHashedString& sGlobalKey);
-  const char* GetObjectGlobalKey(const xiiGameObject* pObject) const;
+  void          SetObjectGlobalKey(xiiGameObject* pObject, const xiiHashedString& sGlobalKey);
+  xiiStringView GetObjectGlobalKey(const xiiGameObject* pObject) const;
 
   void PostMessage(const xiiGameObjectHandle& receiverObject, const xiiMessage& msg, xiiObjectMsgQueueType::Enum queueType, xiiTime delay, bool bRecursive) const;
   void ProcessQueuedMessage(const xiiInternal::WorldData::MessageQueue::Entry& entry);

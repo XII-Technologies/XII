@@ -102,10 +102,10 @@ private:
     xiiMap<xiiString, FileCacheStatus> m_CacheStatus;
   };
 
-  void             DeleteFile(xiiUInt16 uiDataDir, const char* szFile);
-  xiiUInt16        MountDataDirectory(const char* szDataDir, const char* szRootName);
+  void             DeleteFile(xiiUInt16 uiDataDir, xiiStringView sFile);
+  xiiUInt16        MountDataDirectory(xiiStringView sDataDir, xiiStringView sRootName);
   void             UnmountDataDirectory(xiiUInt16 uiDataDir);
-  static void      ComputeDataDirMountPoint(const char* szDataDir, xiiStringBuilder& out_sMountPoint);
+  static void      ComputeDataDirMountPoint(xiiStringView sDataDir, xiiStringBuilder& out_sMountPoint);
   void             BuildPathInCache(const char* szFile, const char* szMountPoint, xiiStringBuilder* out_pAbsPath, xiiStringBuilder* out_pFullPathMeta) const;
   void             GetFullDataDirCachePath(const char* szDataDir, xiiStringBuilder& out_sFullPath, xiiStringBuilder& out_sFullPathMeta) const;
   void             NetworkMsgHandler(xiiRemoteMessage& msg);
@@ -116,7 +116,7 @@ private:
   xiiResult        DownloadFile(xiiUInt16 uiDataDirID, const char* szFile, bool bForceThisDataDir, xiiStringBuilder* out_pFullPath);
   void             DetermineCacheStatus(xiiUInt16 uiDataDirID, const char* szFile, FileCacheStatus& out_Status) const;
   void             UploadFile(xiiUInt16 uiDataDirID, const char* szFile, const xiiDynamicArray<xiiUInt8>& fileContent);
-  void             InvalidateFileCache(xiiUInt16 uiDataDirID, const char* szFile, xiiUInt64 uiHash);
+  void             InvalidateFileCache(xiiUInt16 uiDataDirID, xiiStringView sFile, xiiUInt64 uiHash);
   static xiiResult TryReadFileserveConfig(const char* szFile, xiiStringBuilder& out_Result);
   xiiResult        TryConnectWithFileserver(const char* szAddress, xiiTime timeout) const;
   void             FillFileStatusCache(const char* szFile);

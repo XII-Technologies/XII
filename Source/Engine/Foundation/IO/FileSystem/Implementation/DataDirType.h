@@ -41,7 +41,7 @@ protected:
 
   /// \brief Tries to setup the data directory. Can fail, if the type is incorrect (e.g. a ZIP file data directory type cannot handle a
   /// simple folder and vice versa)
-  xiiResult InitializeDataDirectory(const char* szDataDirPath);
+  xiiResult InitializeDataDirectory(xiiStringView sDataDirPath);
 
   /// \brief Must be implemented to create a xiiDataDirectoryReader for accessing the given file. Returns nullptr if the file could not be
   /// opened.
@@ -53,13 +53,13 @@ protected:
   /// by using a rooted path.
   /// If an absolute path is used, which incidentally matches the prefix of this data directory, bSpecificallyThisDataDir is NOT set to
   /// true, as there might be other data directories that also match.
-  virtual xiiDataDirectoryReader* OpenFileToRead(const char* szFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir) = 0;
+  virtual xiiDataDirectoryReader* OpenFileToRead(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir) = 0;
 
   /// \brief Must be implemented to create a xiiDataDirectoryWriter for accessing the given file. Returns nullptr if the file could not be
   /// opened.
   ///
   /// If it always returns nullptr (default) the data directory is read-only (at least through this type).
-  virtual xiiDataDirectoryWriter* OpenFileToWrite(const char* szFile, xiiFileShareMode::Enum FileShareMode) { return nullptr; }
+  virtual xiiDataDirectoryWriter* OpenFileToWrite(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode) { return nullptr; }
 
   /// \brief This function is called by the filesystem when a data directory is removed.
   ///
@@ -67,20 +67,20 @@ protected:
   virtual void RemoveDataDirectory() = 0;
 
   /// \brief If a Data Directory Type supports it, this function will remove the given file from it.
-  virtual void DeleteFile(const char* szFile) {}
+  virtual void DeleteFile(xiiStringView sFile) {}
 
   /// \brief This function checks whether the given file exists in this data directory.
   ///
   /// The default implementation simply calls xiiOSFile::ExistsFile
   /// An optimized implementation might look this information up in some hash-map.
-  virtual bool ExistsFile(const char* szFile, bool bOneSpecificDataDir);
+  virtual bool ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir);
 
   /// \brief Upon success returns the xiiFileStats for a file in this data directory.
-  virtual xiiResult GetFileStats(const char* szFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats) = 0;
+  virtual xiiResult GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats) = 0;
 
   /// \brief If this data directory knows how to redirect the given path, it should do so and return true.
   /// Called by xiiFileSystem::ResolveAssetRedirection
-  virtual bool ResolveAssetRedirection(const char* szPathOrAssetGuid, xiiStringBuilder& out_sRedirection) { return false; }
+  virtual bool ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection) { return false; }
 
 protected:
   friend class xiiDataDirectoryReaderWriterBase;
@@ -95,7 +95,7 @@ protected:
   ///
   /// It is used to initialize the data directory. If this xiiDataDirectoryType cannot handle the given type,
   /// it must return XII_FAILURE and the Factory needs to clean it up properly.
-  virtual xiiResult InternalInitializeDataDirectory(const char* szDirectory) = 0;
+  virtual xiiResult InternalInitializeDataDirectory(xiiStringView sDirectory) = 0;
 
   /// \brief Derived classes can use 'GetDataDirectoryPath' to access this data.
   xiiString128 m_sDataDirectoryPath;
@@ -117,7 +117,7 @@ public:
   virtual ~xiiDataDirectoryReaderWriterBase() = default;
 
   /// \brief Used by xiiDataDirectoryType's to try to open the given file. They need to pass along their own pointer.
-  xiiResult Open(const char* szFilePath, xiiDataDirectoryType* pOwnerDataDirectory, xiiFileShareMode::Enum FileShareMode);
+  xiiResult Open(xiiStringView sFile, xiiDataDirectoryType* pOwnerDataDirectory, xiiFileShareMode::Enum FileShareMode);
 
   /// \brief Closes this data stream.
   void Close();

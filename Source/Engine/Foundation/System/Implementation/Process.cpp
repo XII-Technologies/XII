@@ -98,7 +98,7 @@ void xiiProcessOptions::BuildCommandLineString(xiiStringBuilder& cmd) const
     xiiStringView arg = arg0;
 
     while (arg.StartsWith("\""))
-      arg.Shrink(1, 0);
+      arg.ChopAwayFirstCharacterAscii();
 
     while (arg.EndsWith("\""))
       arg.Shrink(0, 1);

@@ -311,7 +311,6 @@ xiiTestAppRun xiiTexConvTest::RunSubTest(xiiInt32 iIdentifier, xiiUInt32 uiInvoc
 }
 
 
-
 static xiiTexConvTest s_xiiTexConvTest;
 
 #endif

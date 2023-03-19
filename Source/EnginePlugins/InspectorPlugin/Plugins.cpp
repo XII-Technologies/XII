@@ -75,5 +75,4 @@ void RemovePluginEventHandler()
 }
 
 
-
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Plugins);

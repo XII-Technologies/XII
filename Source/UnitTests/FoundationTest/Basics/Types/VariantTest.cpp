@@ -5,8 +5,8 @@
 #include <Foundation/Types/Variant.h>
 #include <FoundationTest/Reflection/ReflectionTestClasses.h>
 
-// this file takes ages to compile in a Release build
-// since we don't care for runtime performance, just disable all optimizations
+// This file takes ages to compile in a Release build
+// since we don't care for runtime performance, just disable all optimizations.
 #pragma optimize("", off)
 
 class Blubb : public xiiReflectedClass
@@ -275,21 +275,45 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(b.IsFloatingPoint() == false);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiInt8") { TestIntegerVariant<xiiInt8>(xiiVariant::Type::Int8); }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiInt8")
+  {
+    TestIntegerVariant<xiiInt8>(xiiVariant::Type::Int8);
+  }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiUInt8") { TestIntegerVariant<xiiUInt8>(xiiVariant::Type::UInt8); }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiUInt8")
+  {
+    TestIntegerVariant<xiiUInt8>(xiiVariant::Type::UInt8);
+  }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiInt16") { TestIntegerVariant<xiiInt16>(xiiVariant::Type::Int16); }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiInt16")
+  {
+    TestIntegerVariant<xiiInt16>(xiiVariant::Type::Int16);
+  }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiUInt16") { TestIntegerVariant<xiiUInt16>(xiiVariant::Type::UInt16); }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiUInt16")
+  {
+    TestIntegerVariant<xiiUInt16>(xiiVariant::Type::UInt16);
+  }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiInt32") { TestIntegerVariant<xiiInt32>(xiiVariant::Type::Int32); }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiInt32")
+  {
+    TestIntegerVariant<xiiInt32>(xiiVariant::Type::Int32);
+  }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiUInt32") { TestIntegerVariant<xiiUInt32>(xiiVariant::Type::UInt32); }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiUInt32")
+  {
+    TestIntegerVariant<xiiUInt32>(xiiVariant::Type::UInt32);
+  }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiInt64") { TestIntegerVariant<xiiInt64>(xiiVariant::Type::Int64); }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiInt64")
+  {
+    TestIntegerVariant<xiiInt64>(xiiVariant::Type::Int64);
+  }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiUInt64") { TestIntegerVariant<xiiUInt64>(xiiVariant::Type::UInt64); }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiUInt64")
+  {
+    TestIntegerVariant<xiiUInt64>(xiiVariant::Type::UInt64);
+  }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "float")
   {
@@ -2526,3 +2550,5 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::VariantDictionary).Get<xiiVariantDictionary>() == va);
   }
 }
+
+#pragma optimize("", on)

@@ -65,18 +65,18 @@ void xiiProgress::SetActiveRange(xiiProgressRange* pRange)
   m_pActiveRange = pRange;
 }
 
-const char* xiiProgress::GetMainDisplayText() const
+xiiStringView xiiProgress::GetMainDisplayText() const
 {
   if (m_pActiveRange == nullptr)
-    return "";
+    return {};
 
   return m_pActiveRange->m_sDisplayText;
 }
 
-const char* xiiProgress::GetStepDisplayText() const
+xiiStringView xiiProgress::GetStepDisplayText() const
 {
   if (m_pActiveRange == nullptr)
-    return "";
+    return {};
 
   return m_pActiveRange->m_sStepDisplayText;
 }
@@ -123,7 +123,7 @@ void xiiProgress::SetGlobalProgressbar(xiiProgress* pProgress)
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiProgressRange::xiiProgressRange(const char* szDisplayText, xiiUInt32 uiSteps, bool bAllowCancel, xiiProgress* pProgressbar /*= nullptr*/)
+xiiProgressRange::xiiProgressRange(xiiStringView sDisplayText, xiiUInt32 uiSteps, bool bAllowCancel, xiiProgress* pProgressbar /*= nullptr*/)
 {
   XII_ASSERT_DEV(uiSteps > 0, "Every progress range must have at least one step to complete");
 
@@ -131,15 +131,15 @@ xiiProgressRange::xiiProgressRange(const char* szDisplayText, xiiUInt32 uiSteps,
   m_fWeightedCompletion = -1.0;
   m_fSummedWeight       = (double)uiSteps;
 
-  Init(szDisplayText, bAllowCancel, pProgressbar);
+  Init(sDisplayText, bAllowCancel, pProgressbar);
 }
 
-xiiProgressRange::xiiProgressRange(const char* szDisplayText, bool bAllowCancel, xiiProgress* pProgressbar /*= nullptr*/)
+xiiProgressRange::xiiProgressRange(xiiStringView sDisplayText, bool bAllowCancel, xiiProgress* pProgressbar /*= nullptr*/)
 {
-  Init(szDisplayText, bAllowCancel, pProgressbar);
+  Init(sDisplayText, bAllowCancel, pProgressbar);
 }
 
-void xiiProgressRange::Init(const char* szDisplayText, bool bAllowCancel, xiiProgress* pProgressbar)
+void xiiProgressRange::Init(xiiStringView sDisplayText, bool bAllowCancel, xiiProgress* pProgressbar)
 {
   if (pProgressbar == nullptr)
     m_pProgressbar = xiiProgress::GetGlobalProgressbar();
@@ -149,7 +149,7 @@ void xiiProgressRange::Init(const char* szDisplayText, bool bAllowCancel, xiiPro
   XII_ASSERT_DEV(m_pProgressbar != nullptr, "No global progress-bar context available.");
 
   m_bAllowCancel = bAllowCancel;
-  m_sDisplayText = szDisplayText;
+  m_sDisplayText = sDisplayText;
 
   m_pParentRange = m_pProgressbar->m_pActiveRange;
 
@@ -205,11 +205,11 @@ void xiiProgressRange::ComputeCurStepBaseAndRange(double& out_base, double& out_
   XII_ASSERT_DEBUG(out_base + out_range <= 1.0f, "Invalid range");
 }
 
-bool xiiProgressRange::BeginNextStep(const char* szStepDisplayText, xiiUInt32 uiNumSteps)
+bool xiiProgressRange::BeginNextStep(xiiStringView sStepDisplayText, xiiUInt32 uiNumSteps)
 {
   XII_ASSERT_DEV(m_fSummedWeight > 0.0, "This function is only supported if ProgressRange was initialized with steps");
 
-  m_sStepDisplayText = szStepDisplayText;
+  m_sStepDisplayText = sStepDisplayText;
 
   for (xiiUInt32 i = 0; i < uiNumSteps; ++i)
   {
@@ -255,7 +255,5 @@ bool xiiProgressRange::WasCanceled() const
 
   return true;
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Utilities_Implementation_Progress);

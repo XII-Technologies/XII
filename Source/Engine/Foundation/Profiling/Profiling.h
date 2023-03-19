@@ -16,14 +16,14 @@ class xiiThread;
 class XII_FOUNDATION_DLL xiiProfilingScope
 {
 public:
-  xiiProfilingScope(const char* szName, const char* szFunctionName, xiiTime timeout);
+  xiiProfilingScope(xiiStringView sName, const char* szFunctionName, xiiTime timeout);
   ~xiiProfilingScope();
 
 protected:
-  const char* m_szName;
-  const char* m_szFunction;
-  xiiTime     m_BeginTime;
-  xiiTime     m_Timeout;
+  xiiStringView m_sName;
+  const char*   m_szFunction;
+  xiiTime       m_BeginTime;
+  xiiTime       m_Timeout;
 };
 
 /// \brief This class implements a profiling scope similar to xiiProfilingScope, but with additional sub-scopes which can be added easily without
@@ -37,22 +37,22 @@ protected:
 class xiiProfilingListScope
 {
 public:
-  XII_FOUNDATION_DLL xiiProfilingListScope(const char* szListName, const char* szFirstSectionName, const char* szFunctionName);
+  XII_FOUNDATION_DLL xiiProfilingListScope(xiiStringView sListName, xiiStringView sFirstSectionName, const char* szFunctionName);
   XII_FOUNDATION_DLL ~xiiProfilingListScope();
 
-  XII_FOUNDATION_DLL static void StartNextSection(const char* szNextSectionName);
+  XII_FOUNDATION_DLL static void StartNextSection(xiiStringView sNextSectionName);
 
 protected:
   static thread_local xiiProfilingListScope* s_pCurrentList;
 
   xiiProfilingListScope* m_pPreviousList;
 
-  const char* m_szListName;
-  const char* m_szListFunction;
-  xiiTime     m_ListBeginTime;
+  xiiStringView m_sListName;
+  const char*   m_szListFunction;
+  xiiTime       m_ListBeginTime;
 
-  const char* m_szCurSectionName;
-  xiiTime     m_CurSectionBeginTime;
+  xiiStringView m_sCurSectionName;
+  xiiTime       m_CurSectionBeginTime;
 };
 
 /// \brief Helper functionality of the profiling system.
@@ -127,7 +127,7 @@ public:
   /// \brief Scopes are discarded if their duration is shorter than the specified threshold. Default is 0.1ms.
   static void SetDiscardThreshold(xiiTime threshold);
 
-  using ScopeTimeoutDelegate = xiiDelegate<void(const char* szName, const char* szFunctionName, xiiTime duration)>;
+  using ScopeTimeoutDelegate = xiiDelegate<void(xiiStringView sName, xiiStringView sFunctionName, xiiTime duration)>;
 
   /// \brief Sets a callback that is triggered when a profiling scope takes longer than desired.
   static void SetScopeTimeoutCallback(ScopeTimeoutDelegate callback);
@@ -136,13 +136,14 @@ public:
   static void StartNewFrame();
 
   /// \brief Adds a new scoped event for the calling thread in the profiling system
-  static void AddCPUScope(const char* szName, const char* szFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout);
+  static void AddCPUScope(xiiStringView sName, const char* szFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout);
 
   /// \brief Get current frame counter
   static xiiUInt64 GetFrameCount();
 
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Foundation, ProfilingSystem);
+
   friend xiiUInt32 RunThread(xiiThread* pThread);
 
   static void Initialize();
@@ -150,7 +151,7 @@ private:
   static void Reset();
 
   /// \brief Sets the name of the current thread.
-  static void SetThreadName(const char* szThreadName);
+  static void SetThreadName(xiiStringView sThreadName);
   /// \brief Removes the current thread from the profiling system.
   ///  Needs to be called before the thread exits to be able to release profiling memory of dead threads on Reset.
   static void RemoveThread();
@@ -160,7 +161,7 @@ public:
   static void InitializeGPUData(xiiUInt32 gpuCount = 1);
 
   /// \brief Adds a GPU profiling scope in the internal event ringbuffer.
-  static void AddGPUScope(const char* szName, xiiTime beginTime, xiiTime endTime, xiiUInt32 gpuIndex = 0);
+  static void AddGPUScope(xiiStringView sName, xiiTime beginTime, xiiTime endTime, xiiUInt32 gpuIndex = 0);
 };
 
 #if XII_ENABLED(XII_USE_PROFILING) || defined(XII_DOCS)

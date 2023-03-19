@@ -10,35 +10,36 @@
 #include <Foundation/Strings/String.h>
 #include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/System/SystemInformation.h>
+#include <Foundation/Time/Stopwatch.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 
 /* ArchiveTool command line options:
 
 -out <path>
     Path to a file or folder.
-    
+
     -out specifies the target to pack or unpack things to.
     For packing mode it has to be a file. The file will be overwritten, if it already exists.
     For unpacking, the target should be a folder (may or may not exist) into which the archives get extracted.
-    
+
     If no -out is specified, it is determined to be where the input file is located.
 
 -unpack <paths>
     One or multiple paths to xiiArchive files that shall be extracted.
-    
+
     Example:
       -unpack "path/to/file.xiiArchive" "another/file.xiiArchive"
 
 -pack <paths>
     One or multiple paths to folders that shall be packed.
-    
+
     Example:
       -pack "path/to/folder" "path/to/another/folder"
 
 Description:
     -pack and -unpack can take multiple inputs to either aggregate multiple folders into one archive (pack)
     or to unpack multiple archives at the same time.
-    
+
     If neither -pack nor -unpack is specified, the mode is detected automatically from the list of inputs.
     If all inputs are folders, the mode is 'pack'.
     If all inputs are files, the mode is 'unpack'.
@@ -46,13 +47,13 @@ Description:
 Examples:
     ArchiveTool.exe "C:/Stuff"
       Packs all data in "C:/Stuff" into "C:/Stuff.xiiArchive"
-    
+
     ArchiveTool.exe "C:/Stuff" -out "C:/MyStuff.xiiArchive"
       Packs all data in "C:/Stuff" into "C:/MyStuff.xiiArchive"
-    
+
     ArchiveTool.exe "C:/Stuff.xiiArchive"
       Unpacks all data from the archive into "C:/Stuff"
-    
+
     ArchiveTool.exe "C:/Stuff.xiiArchive" -out "C:/MyStuff"
       Unpacks all data from the archive into "C:/MyStuff"
 */
@@ -111,19 +112,11 @@ ArchiveTool.exe \"C:/Stuff.xiiArchive\" -out \"C:/MyStuff\"\n\
 
 class xiiArchiveBuilderImpl : public xiiArchiveBuilder
 {
-public:
 protected:
-  virtual bool WriteNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, const char* szSourceFile) const override
+  virtual void WriteFileResultCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile, xiiUInt64 uiSourceSize, xiiUInt64 uiStoredSize, xiiTime duration) const override
   {
-    xiiLog::Info(" [{}%%] {}", xiiArgU(100 * uiCurEntry / uiMaxEntries, 2), szSourceFile);
-    return true;
-  }
-
-
-  virtual bool WriteFileProgressCallback(xiiUInt64 bytesWritten, xiiUInt64 bytesTotal) const override
-  {
-    // xiiLog::Dev("   {}%%", xiiArgU(100 * bytesWritten / bytesTotal));
-    return true;
+    const xiiUInt64 uiPercentage = (uiSourceSize == 0) ? 100 : (uiStoredSize * 100 / uiSourceSize);
+    xiiLog::Info(" [{}%%] {} ({}%%) - {}", xiiArgU(100 * uiCurEntry / uiMaxEntries, 2), sSourceFile, uiPercentage, duration);
   }
 };
 
@@ -131,9 +124,9 @@ class xiiArchiveReaderImpl : public xiiArchiveReader
 {
 public:
 protected:
-  virtual bool ExtractNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, const char* szSourceFile) const override
+  virtual bool ExtractNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile) const override
   {
-    xiiLog::Info(" [{}%%] {}", xiiArgU(100 * uiCurEntry / uiMaxEntries, 2), szSourceFile);
+    xiiLog::Info(" [{}%%] {}", xiiArgU(100 * uiCurEntry / uiMaxEntries, 2), sSourceFile);
     return true;
   }
 
@@ -305,7 +298,10 @@ public:
     if (ext.IsEqual_NoCase("mp3") || ext.IsEqual_NoCase("ogg"))
       return xiiArchiveBuilder::InclusionMode::Uncompressed;
 
-    return xiiArchiveBuilder::InclusionMode::Compress_zstd;
+    if (ext.IsEqual_NoCase("dds"))
+      return xiiArchiveBuilder::InclusionMode::Compress_zstd_fast;
+
+    return xiiArchiveBuilder::InclusionMode::Compress_zstd_average;
   }
 
   xiiResult Pack()
@@ -383,6 +379,8 @@ public:
       }
     }
 
+    xiiStopwatch sw;
+
     if (ParseArguments().Failed())
     {
       SetReturnCode(1);
@@ -397,6 +395,7 @@ public:
         SetReturnCode(2);
       }
 
+      xiiLog::Success("Finished packing archive in {}", sw.GetRunningTotal());
       return xiiApplication::Execution::Quit;
     }
 
@@ -408,6 +407,7 @@ public:
         SetReturnCode(3);
       }
 
+      xiiLog::Success("Finished extracting archive in {}", sw.GetRunningTotal());
       return xiiApplication::Execution::Quit;
     }
 

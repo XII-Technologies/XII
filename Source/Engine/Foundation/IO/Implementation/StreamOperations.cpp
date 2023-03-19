@@ -16,6 +16,13 @@ xiiStreamWriter& operator<<(xiiStreamWriter& Stream, const char* szValue)
   return Stream;
 }
 
+xiiStreamWriter& operator<<(xiiStreamWriter& Stream, xiiStringView sValue)
+{
+  Stream.WriteString(sValue).AssertSuccess();
+
+  return Stream;
+}
+
 // xiiStringBuilder
 
 xiiStreamWriter& operator<<(xiiStreamWriter& Stream, const xiiStringBuilder& sValue)

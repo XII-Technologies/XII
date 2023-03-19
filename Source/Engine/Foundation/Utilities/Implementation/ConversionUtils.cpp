@@ -7,28 +7,29 @@
 namespace xiiConversionUtils
 {
 
-  static bool IsWhitespace(char c) { return (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v' || c == '\f' || c == '\a'); }
-
-  static void SkipWhitespace(const char*& szString)
+  static bool IsWhitespace(xiiUInt32 c)
   {
-    if (szString == nullptr)
-      return;
+    return (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v' || c == '\f' || c == '\a');
+  }
 
-    while (*szString != '\0' && IsWhitespace(*szString))
+  static void SkipWhitespace(xiiStringView& sText)
+  {
+    // we are only looking at ASCII characters here, so no need to decode Utf8 sequences
+
+    while (!sText.IsEmpty() && IsWhitespace(*sText.GetStartPointer()))
     {
-      ++szString;
+      sText.ChopAwayFirstCharacterAscii();
     }
   }
 
-  static xiiResult FindFirstDigit(const char*& inout_szString, bool& out_bSignIsPositive)
+  static xiiResult FindFirstDigit(xiiStringView& inout_sText, bool& out_bSignIsPositive)
   {
     out_bSignIsPositive = true;
 
-    // we are only looking at ASCII characters here, so no need to decode Utf8 sequences
-
-    while (*inout_szString != '\0')
+    while (!inout_sText.IsEmpty())
     {
-      const char c = *inout_szString;
+      // we are only looking at ASCII characters here, so no need to decode Utf8 sequences
+      const char c = *inout_sText.GetStartPointer();
 
       // found a digit
       if (c >= '0' && c <= '9')
@@ -37,14 +38,14 @@ namespace xiiConversionUtils
       // skip all whitespace
       if (IsWhitespace(c))
       {
-        ++inout_szString;
+        inout_sText.ChopAwayFirstCharacterAscii();
         continue;
       }
 
       // NO change sign, just ignore + signs
       if (c == '+')
       {
-        ++inout_szString;
+        inout_sText.ChopAwayFirstCharacterAscii();
         continue;
       }
 
@@ -52,7 +53,7 @@ namespace xiiConversionUtils
       if (c == '-')
       {
         out_bSignIsPositive = !out_bSignIsPositive;
-        ++inout_szString;
+        inout_sText.ChopAwayFirstCharacterAscii();
         continue;
       }
 
@@ -60,24 +61,33 @@ namespace xiiConversionUtils
     }
 
     // not a single digit found
-    if (xiiStringUtils::IsNullOrEmpty(inout_szString))
+    if (inout_sText.IsEmpty())
       return XII_FAILURE;
 
     // remove all leading zeros
-    while (inout_szString[0] == '0' && inout_szString[1] == '0')
-      ++inout_szString;
+    while (inout_sText.StartsWith("00"))
+    {
+      inout_sText.ChopAwayFirstCharacterAscii();
+    }
 
     // if it is a leading zero before a non-zero digit, remove it (otherwise keep the zero)
-    if (inout_szString[0] == '0' && inout_szString[1] >= '1' && inout_szString[1] <= '9')
-      ++inout_szString;
+    if (inout_sText.GetElementCount() >= 2 && inout_sText.StartsWith("0"))
+    {
+      char c = *(inout_sText.GetStartPointer() + 1);
+
+      if (c >= '1' && c <= '9')
+      {
+        inout_sText.ChopAwayFirstCharacterAscii();
+      }
+    }
 
     return XII_SUCCESS;
   }
 
-  xiiResult StringToInt(const char* szString, xiiInt32& out_Res, const char** out_LastParsePosition)
+  xiiResult StringToInt(xiiStringView sText, xiiInt32& out_Res, const char** out_LastParsePosition)
   {
     xiiInt64 tmp = out_Res;
-    if (StringToInt64(szString, tmp, out_LastParsePosition) == XII_SUCCESS && tmp <= (xiiInt32)0x7FFFFFFF && tmp >= (xiiInt32)0x80000000)
+    if (StringToInt64(sText, tmp, out_LastParsePosition) == XII_SUCCESS && tmp <= (xiiInt32)0x7FFFFFFF && tmp >= (xiiInt32)0x80000000)
     {
       out_Res = (xiiInt32)tmp;
       return XII_SUCCESS;
@@ -86,10 +96,10 @@ namespace xiiConversionUtils
     return XII_FAILURE;
   }
 
-  xiiResult StringToUInt(const char* szString, xiiUInt32& out_Res, const char** out_LastParsePosition)
+  xiiResult StringToUInt(xiiStringView sText, xiiUInt32& out_Res, const char** out_LastParsePosition)
   {
     xiiInt64 tmp = out_Res;
-    if (StringToInt64(szString, tmp, out_LastParsePosition) == XII_SUCCESS && tmp <= (xiiUInt32)0xFFFFFFFF && tmp >= 0)
+    if (StringToInt64(sText, tmp, out_LastParsePosition) == XII_SUCCESS && tmp <= (xiiUInt32)0xFFFFFFFF && tmp >= 0)
     {
       out_Res = (xiiUInt32)tmp;
       return XII_SUCCESS;
@@ -98,14 +108,14 @@ namespace xiiConversionUtils
     return XII_FAILURE;
   }
 
-  xiiResult StringToInt64(const char* szString, xiiInt64& out_Res, const char** out_LastParsePosition)
+  xiiResult StringToInt64(xiiStringView sText, xiiInt64& out_Res, const char** out_LastParsePosition)
   {
-    if (xiiStringUtils::IsNullOrEmpty(szString))
+    if (sText.IsEmpty())
       return XII_FAILURE;
 
     bool bSignIsPos = true;
 
-    if (FindFirstDigit(szString, bSignIsPos) == XII_FAILURE)
+    if (FindFirstDigit(sText, bSignIsPos) == XII_FAILURE)
       return XII_FAILURE;
 
     xiiInt64       iCurRes = 0;
@@ -113,9 +123,9 @@ namespace xiiConversionUtils
     const xiiInt64 iMax    = 0x7FFFFFFFFFFFFFFF;
     const xiiInt64 iMin    = 0x8000000000000000;
 
-    while (*szString != '\0')
+    while (!sText.IsEmpty())
     {
-      const char c = *szString;
+      const char c = *sText.GetStartPointer();
 
       // end of digits reached -> return success (allows to write something like "239*4" -> parses first part as 239)
       if (c < '0' || c > '9')
@@ -131,28 +141,28 @@ namespace xiiConversionUtils
 
       iCurRes = iCurRes * 10 + iLastDigit * iSign; // shift all previously read digits to the left and add the last digit
 
-      ++szString;
+      sText.ChopAwayFirstCharacterAscii();
     }
 
     out_Res = iCurRes;
 
     if (out_LastParsePosition != nullptr)
-      *out_LastParsePosition = szString;
+      *out_LastParsePosition = sText.GetStartPointer();
 
     return XII_SUCCESS;
   }
 
-  xiiResult StringToFloat(const char* szString, double& out_Res, const char** out_LastParsePosition)
+  xiiResult StringToFloat(xiiStringView sText, double& out_Res, const char** out_LastParsePosition)
   {
-    if (xiiStringUtils::IsNullOrEmpty(szString))
+    if (sText.IsEmpty())
       return XII_FAILURE;
 
     bool bSignIsPos = true;
 
-    if (FindFirstDigit(szString, bSignIsPos) == XII_FAILURE)
+    if (FindFirstDigit(sText, bSignIsPos) == XII_FAILURE)
     {
       // if it is a '.' continue (this is valid)
-      if (*szString != '.')
+      if (!sText.StartsWith("."))
         return XII_FAILURE;
     }
 
@@ -171,14 +181,14 @@ namespace xiiConversionUtils
     xiiUInt64 uiExponentPart      = 0;
     bool      bExponentIsPositive = true;
 
-    while (*szString != '\0')
+    while (!sText.IsEmpty())
     {
-      const char c = *szString;
+      const char c = *sText.GetStartPointer();
 
       // allow underscores in floats for improved readability
       if (c == '_')
       {
-        ++szString;
+        sText.ChopAwayFirstCharacterAscii();
         continue;
       }
 
@@ -187,7 +197,7 @@ namespace xiiConversionUtils
         if (c == '.')
         {
           Part = Fraction;
-          ++szString;
+          sText.ChopAwayFirstCharacterAscii();
           continue;
         }
 
@@ -195,24 +205,24 @@ namespace xiiConversionUtils
         {
           uiIntegerPart *= 10;
           uiIntegerPart += c - '0';
-          ++szString;
+          sText.ChopAwayFirstCharacterAscii();
           continue;
         }
 
         if ((c == 'e') || (c == 'E'))
         {
           Part = Exponent;
-          ++szString;
+          sText.ChopAwayFirstCharacterAscii();
 
-          if (*szString == '-')
+          if (*sText.GetStartPointer() == '-')
           {
             bExponentIsPositive = false;
-            ++szString;
+            sText.ChopAwayFirstCharacterAscii();
           }
-          else if (*szString == '+')
+          else if (*sText.GetStartPointer() == '+')
           {
             bExponentIsPositive = true;
-            ++szString;
+            sText.ChopAwayFirstCharacterAscii();
           }
 
           continue;
@@ -225,24 +235,24 @@ namespace xiiConversionUtils
           uiFractionalPart *= 10;
           uiFractionalPart += c - '0';
           uiFractionDivisor *= 10;
-          ++szString;
+          sText.ChopAwayFirstCharacterAscii();
           continue;
         }
 
         if ((c == 'e') || (c == 'E'))
         {
           Part = Exponent;
-          ++szString;
+          sText.ChopAwayFirstCharacterAscii();
 
-          if (*szString == '-')
+          if (*sText.GetStartPointer() == '-')
           {
             bExponentIsPositive = false;
-            ++szString;
+            sText.ChopAwayFirstCharacterAscii();
           }
-          else if (*szString == '+')
+          else if (*sText.GetStartPointer() == '+')
           {
             bExponentIsPositive = true;
-            ++szString;
+            sText.ChopAwayFirstCharacterAscii();
           }
 
           continue;
@@ -254,7 +264,7 @@ namespace xiiConversionUtils
         {
           uiExponentPart *= 10;
           uiExponentPart += c - '0';
-          ++szString;
+          sText.ChopAwayFirstCharacterAscii();
           continue;
         }
       }
@@ -270,7 +280,7 @@ namespace xiiConversionUtils
       out_Res = -out_Res;
 
     if (out_LastParsePosition)
-      *out_LastParsePosition = szString;
+      *out_LastParsePosition = sText.GetStartPointer();
 
     if (Part == Exponent)
     {
@@ -283,111 +293,111 @@ namespace xiiConversionUtils
     return XII_SUCCESS;
   }
 
-  xiiResult StringToBool(const char* szString, bool& out_Res, const char** out_LastParsePosition)
+  xiiResult StringToBool(xiiStringView sText, bool& out_Res, const char** out_LastParsePosition)
   {
-    SkipWhitespace(szString);
+    SkipWhitespace(sText);
 
-    if (xiiStringUtils::IsNullOrEmpty(szString))
+    if (sText.IsEmpty())
       return XII_FAILURE;
 
     // we are only looking at ASCII characters here, so no need to decode Utf8 sequences
 
-    if (xiiStringUtils::StartsWith(szString, "1"))
+    if (sText.StartsWith("1"))
     {
       out_Res = true;
 
       if (out_LastParsePosition)
-        *out_LastParsePosition = szString + 1;
+        *out_LastParsePosition = sText.GetStartPointer() + 1;
 
       return XII_SUCCESS;
     }
 
-    if (xiiStringUtils::StartsWith(szString, "0"))
+    if (sText.StartsWith("0"))
     {
       out_Res = false;
 
       if (out_LastParsePosition)
-        *out_LastParsePosition = szString + 1;
+        *out_LastParsePosition = sText.GetStartPointer() + 1;
 
       return XII_SUCCESS;
     }
 
-    if (xiiStringUtils::StartsWith_NoCase(szString, "true"))
+    if (sText.StartsWith_NoCase("true"))
     {
       out_Res = true;
 
       if (out_LastParsePosition)
-        *out_LastParsePosition = szString + 4;
+        *out_LastParsePosition = sText.GetStartPointer() + 4;
 
       return XII_SUCCESS;
     }
 
-    if (xiiStringUtils::StartsWith_NoCase(szString, "false"))
+    if (sText.StartsWith_NoCase("false"))
     {
       out_Res = false;
 
       if (out_LastParsePosition)
-        *out_LastParsePosition = szString + 5;
+        *out_LastParsePosition = sText.GetStartPointer() + 5;
 
       return XII_SUCCESS;
     }
 
-    if (xiiStringUtils::StartsWith_NoCase(szString, "on"))
+    if (sText.StartsWith_NoCase("on"))
     {
       out_Res = true;
 
       if (out_LastParsePosition)
-        *out_LastParsePosition = szString + 2;
+        *out_LastParsePosition = sText.GetStartPointer() + 2;
 
       return XII_SUCCESS;
     }
 
-    if (xiiStringUtils::StartsWith_NoCase(szString, "off"))
+    if (sText.StartsWith_NoCase("off"))
     {
       out_Res = false;
 
       if (out_LastParsePosition)
-        *out_LastParsePosition = szString + 3;
+        *out_LastParsePosition = sText.GetStartPointer() + 3;
 
       return XII_SUCCESS;
     }
 
-    if (xiiStringUtils::StartsWith_NoCase(szString, "yes"))
+    if (sText.StartsWith_NoCase("yes"))
     {
       out_Res = true;
 
       if (out_LastParsePosition)
-        *out_LastParsePosition = szString + 3;
+        *out_LastParsePosition = sText.GetStartPointer() + 3;
 
       return XII_SUCCESS;
     }
 
-    if (xiiStringUtils::StartsWith_NoCase(szString, "no"))
+    if (sText.StartsWith_NoCase("no"))
     {
       out_Res = false;
 
       if (out_LastParsePosition)
-        *out_LastParsePosition = szString + 2;
+        *out_LastParsePosition = sText.GetStartPointer() + 2;
 
       return XII_SUCCESS;
     }
 
-    if (xiiStringUtils::StartsWith_NoCase(szString, "enable"))
+    if (sText.StartsWith_NoCase("enable"))
     {
       out_Res = true;
 
       if (out_LastParsePosition)
-        *out_LastParsePosition = szString + 6;
+        *out_LastParsePosition = sText.GetStartPointer() + 6;
 
       return XII_SUCCESS;
     }
 
-    if (xiiStringUtils::StartsWith_NoCase(szString, "disable"))
+    if (sText.StartsWith_NoCase("disable"))
     {
       out_Res = false;
 
       if (out_LastParsePosition)
-        *out_LastParsePosition = szString + 7;
+        *out_LastParsePosition = sText.GetStartPointer() + 7;
 
       return XII_SUCCESS;
     }
@@ -395,32 +405,34 @@ namespace xiiConversionUtils
     return XII_FAILURE;
   }
 
-  xiiUInt32 ExtractFloatsFromString(const char* szText, xiiUInt32 uiNumFloats, float* out_pFloats, const char** out_LastParsePosition)
+  xiiUInt32 ExtractFloatsFromString(xiiStringView sText, xiiUInt32 uiNumFloats, float* out_pFloats, const char** out_LastParsePosition)
   {
     xiiUInt32 uiFloatsFound = 0;
 
     // just try to extract n floats from the given text
     // if n floats were extracted, or the text end is reached, stop
 
-    while (*szText != '\0' && uiFloatsFound < uiNumFloats)
+    while (!sText.IsEmpty() && uiFloatsFound < uiNumFloats)
     {
       double      res;
       const char* szPos;
 
       // if successful, store the float, otherwise advance the string by one, to skip invalid characters
-      if (StringToFloat(szText, res, &szPos) == XII_SUCCESS)
+      if (StringToFloat(sText, res, &szPos) == XII_SUCCESS)
       {
         out_pFloats[uiFloatsFound] = (float)res;
         ++uiFloatsFound;
 
-        szText = szPos;
+        sText.SetStartPosition(szPos);
       }
       else
-        ++szText;
+      {
+        sText.ChopAwayFirstCharacterUtf8();
+      }
     }
 
     if (out_LastParsePosition != nullptr)
-      *out_LastParsePosition = szText;
+      *out_LastParsePosition = sText.GetStartPointer();
 
     return uiFloatsFound;
   }
@@ -439,35 +451,25 @@ namespace xiiConversionUtils
     return -1;
   }
 
-  xiiUInt32 ConvertHexStringToUInt32(const char* szHEX)
+  xiiResult ConvertHexStringToUInt32(xiiStringView sHex, xiiUInt32& out_uiResult)
   {
-    if (xiiStringUtils::IsNullOrEmpty(szHEX))
-      return 0;
+    xiiUInt64       uiTemp = 0;
+    const xiiResult res    = ConvertHexStringToUInt(sHex, uiTemp, 8, nullptr);
 
-    xiiUInt32 uiResult = 0;
-
-    // skip 0x
-    if (szHEX[0] == '0' && szHEX[1] == 'x')
-      szHEX += 2;
-
-    // convert two characters to one byte, at a time
-    // try not to run out of buffer space
-    while (*szHEX != '\0')
-    {
-      xiiUInt8 uiValue = xiiConversionUtils::HexCharacterToIntValue(*szHEX);
-
-      uiResult <<= 4; // 4 Bits, ie. half a byte
-      uiResult += uiValue;
-
-      szHEX += 1;
-    }
-
-    return uiResult;
+    out_uiResult = static_cast<xiiUInt32>(uiTemp);
+    return res;
   }
-
 
   xiiResult ConvertHexStringToUInt64(xiiStringView sHex, xiiUInt64& out_uiResult)
   {
+    return ConvertHexStringToUInt(sHex, out_uiResult, 16, nullptr);
+  }
+
+  xiiResult ConvertHexStringToUInt(xiiStringView sHex, xiiUInt64& out_uiResult, xiiUInt32 uiMaxHexCharacters, xiiUInt32* outTotalCharactersParsed)
+  {
+    XII_ASSERT_DEBUG(uiMaxHexCharacters <= 16, "Only HEX strings of up to 16 character can be parsed into a 64-bit integer");
+    const xiiUInt32 origStringElementsCount = sHex.GetElementCount();
+
     out_uiResult = 0;
 
     // skip 0x
@@ -475,7 +477,7 @@ namespace xiiConversionUtils
       sHex.Shrink(2, 0);
 
     // convert two characters to one byte, at a time
-    for (xiiUInt32 i = 0; i < 16; ++i)
+    for (xiiUInt32 i = 0; i < uiMaxHexCharacters; ++i)
     {
       if (sHex.IsEmpty())
       {
@@ -489,38 +491,48 @@ namespace xiiConversionUtils
       {
         // invalid HEX character
         out_uiResult = 0;
+        if (outTotalCharactersParsed)
+        {
+          *outTotalCharactersParsed = 0;
+        }
         return XII_FAILURE;
       }
 
       out_uiResult <<= 4; // 4 Bits, ie. half a byte
       out_uiResult += iValue;
 
-      sHex.Shrink(1, 0);
+      sHex.ChopAwayFirstCharacterAscii();
+    }
+
+    if (outTotalCharactersParsed)
+    {
+      XII_ASSERT_DEBUG(sHex.GetElementCount() <= origStringElementsCount, "");
+      *outTotalCharactersParsed = origStringElementsCount - sHex.GetElementCount();
     }
 
     return XII_SUCCESS;
   }
 
-  void ConvertHexToBinary(const char* szHEX, xiiUInt8* pBinary, xiiUInt32 uiBinaryBuffer)
+  void ConvertHexToBinary(xiiStringView sHex, xiiUInt8* pBinary, xiiUInt32 uiBinaryBuffer)
   {
-    if (xiiStringUtils::IsNullOrEmpty(szHEX))
-      return;
-
     // skip 0x
-    if (szHEX[0] == '0' && (szHEX[1] == 'x' || szHEX[1] == 'X'))
-      szHEX += 2;
+    if (sHex.StartsWith_NoCase("0x"))
+      sHex.Shrink(2, 0);
 
     // convert two characters to one byte, at a time
     // try not to run out of buffer space
-    while (szHEX[0] != '\0' && szHEX[1] != '\0' && uiBinaryBuffer >= 1)
+    while (sHex.GetElementCount() >= 2 && uiBinaryBuffer >= 1)
     {
-      xiiUInt8 uiValue1 = xiiConversionUtils::HexCharacterToIntValue(szHEX[0]);
-      xiiUInt8 uiValue2 = xiiConversionUtils::HexCharacterToIntValue(szHEX[1]);
+      const xiiUInt32 c0 = *sHex.GetStartPointer();
+      const xiiUInt32 c1 = *(sHex.GetStartPointer() + 1);
+
+      xiiUInt8 uiValue1 = xiiConversionUtils::HexCharacterToIntValue(c0);
+      xiiUInt8 uiValue2 = xiiConversionUtils::HexCharacterToIntValue(c1);
       xiiUInt8 uiValue  = 16 * uiValue1 + uiValue2;
       *pBinary          = uiValue;
 
       pBinary += 1;
-      szHEX += 2;
+      sHex.Shrink(2, 0);
 
       uiBinaryBuffer -= 1;
     }
@@ -803,7 +815,7 @@ namespace xiiConversionUtils
     return out_Result;
   }
 
-  xiiUuid ConvertStringToUuid(const xiiStringView& sText);
+  xiiUuid ConvertStringToUuid(xiiStringView sText);
 
   const xiiStringBuilder& ToString(const xiiUuid& value, xiiStringBuilder& out_Result)
   {
@@ -830,27 +842,25 @@ namespace xiiConversionUtils
     return out_Result;
   }
 
-  bool IsStringUuid(const xiiStringView& sText)
+  bool IsStringUuid(xiiStringView sText)
   {
-    if (sText.IsEmpty())
+    if (sText.GetElementCount() != 40)
+      return false;
+
+    if (!sText.StartsWith("{"))
       return false;
 
     const char* szText = sText.GetStartPointer();
 
-    if (szText[0] != '{')
+    if ((szText[1] != ' ') || (szText[10] != '-') || (szText[15] != '-') || (szText[20] != '-') || (szText[25] != '-') || (szText[38] != ' ') || (szText[39] != '}'))
+    {
       return false;
-
-    if (sText.GetElementCount() != 40)
-      return false;
-
-    if ((szText[1] != ' ') || (szText[10] != '-') || (szText[15] != '-') || (szText[20] != '-') || (szText[25] != '-') || (szText[38] != ' ') ||
-        (szText[39] != '}'))
-      return false;
+    }
 
     return true;
   }
 
-  xiiUuid ConvertStringToUuid(const xiiStringView& sText)
+  xiiUuid ConvertStringToUuid(xiiStringView sText)
   {
     XII_ASSERT_DEBUG(IsStringUuid(sText), "The given string is not in the correct Uuid format: '{0}'", sText);
 
@@ -923,25 +933,27 @@ namespace xiiConversionUtils
     return result;
   }
 
-#define Check(name)                                                     \
-  if (xiiStringUtils::IsEqual_NoCase(szColorName, XII_STRINGIZE(name))) \
+#define Check(name)                                   \
+  if (sColorName.IsEqual_NoCase(XII_STRINGIZE(name))) \
   return xiiColor::name
 
-  xiiColor GetColorByName(const char* szColorName, bool* out_ValidColorName)
+  xiiColor GetColorByName(xiiStringView sColorName, bool* out_ValidColorName)
   {
     if (out_ValidColorName)
       *out_ValidColorName = false;
 
-    if (xiiStringUtils::IsNullOrEmpty(szColorName))
+    if (sColorName.IsEmpty())
       return xiiColor::Black; // considered not to be a valid color name
 
-    const xiiUInt32 uiLen = xiiStringUtils::GetStringElementCount(szColorName);
+    const xiiUInt32 uiLen = sColorName.GetElementCount();
 
-    if (szColorName[0] == '#')
+    if (sColorName.StartsWith("#"))
     {
       if (uiLen == 7 || uiLen == 9) // #RRGGBB or #RRGGBBAA
       {
         xiiUInt8 cv[4] = {0, 0, 0, 255};
+
+        const char* szColorName = sColorName.GetStartPointer();
 
         cv[0] = static_cast<xiiUInt8>((HexCharacterToIntValue(*(szColorName + 1)) << 4) | HexCharacterToIntValue(*(szColorName + 2)));
         cv[1] = static_cast<xiiUInt8>((HexCharacterToIntValue(*(szColorName + 3)) << 4) | HexCharacterToIntValue(*(szColorName + 4)));

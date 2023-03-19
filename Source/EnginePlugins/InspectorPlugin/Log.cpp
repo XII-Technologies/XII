@@ -17,8 +17,8 @@ namespace xiiLogWriter
 
       msg.GetWriter() << (xiiInt8)eventData.m_EventType;
       msg.GetWriter() << (xiiUInt8)eventData.m_uiIndentation;
-      msg.GetWriter() << eventData.m_szTag;
-      msg.GetWriter() << eventData.m_szText;
+      msg.GetWriter() << eventData.m_sTag;
+      msg.GetWriter() << eventData.m_sText;
 
       if (eventData.m_EventType == xiiLogMsgType::EndGroup)
       {

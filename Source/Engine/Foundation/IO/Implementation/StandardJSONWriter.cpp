@@ -84,19 +84,19 @@ void xiiStandardJSONWriter::SetOutputStream(xiiStreamWriter* pOutput)
   m_pOutput = pOutput;
 }
 
-void xiiStandardJSONWriter::OutputString(const char* sz)
+void xiiStandardJSONWriter::OutputString(xiiStringView s)
 {
   XII_ASSERT_DEBUG(m_pOutput != nullptr, "No output stream has been set yet.");
 
-  if (m_pOutput->WriteBytes(sz, xiiStringUtils::GetStringElementCount(sz)).Failed())
+  if (m_pOutput->WriteBytes(s.GetStartPointer(), s.GetElementCount()).Failed())
   {
     SetWriteErrorState();
   }
 }
 
-void xiiStandardJSONWriter::OutputEscapedString(const char* sz)
+void xiiStandardJSONWriter::OutputEscapedString(xiiStringView s)
 {
-  xiiStringBuilder sEscaped = sz;
+  xiiStringBuilder sEscaped = s;
   sEscaped.ReplaceAll("\\", "\\\\");
   // sEscaped.ReplaceAll("/", "\\/"); // this is not necessary to escape
   sEscaped.ReplaceAll("\"", "\\\"");
@@ -107,7 +107,7 @@ void xiiStandardJSONWriter::OutputEscapedString(const char* sz)
   sEscaped.ReplaceAll("\t", "\\t");
 
   OutputString("\"");
-  OutputString(sEscaped.GetData());
+  OutputString(sEscaped);
   OutputString("\"");
 }
 
@@ -197,7 +197,7 @@ void xiiStandardJSONWriter::WriteDouble(double value)
   OutputString(s.GetData());
 }
 
-void xiiStandardJSONWriter::WriteString(const char* value)
+void xiiStandardJSONWriter::WriteString(xiiStringView value)
 {
   CommaWriter cw(this);
 

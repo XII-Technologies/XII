@@ -64,10 +64,10 @@ void VisitObject(xiiWorld& world, xiiGameObject* pObject)
   if (!pObject->GetComponents().IsEmpty())
     return;
 
-  if (!xiiStringUtils::IsNullOrEmpty(pObject->GetName()))
+  if (!pObject->GetName().IsEmpty())
     return;
 
-  if (!xiiStringUtils::IsNullOrEmpty(pObject->GetGlobalKey()))
+  if (!pObject->GetGlobalKey().IsEmpty())
     return;
 
   world.DeleteObjectDelayed(pObject->GetHandle(), false);
@@ -77,6 +77,9 @@ void xiiSceneExportModifier::CleanUpWorld(xiiWorld& world)
 {
   XII_LOCK(world.GetWriteMarker());
 
+  // Disabled temporarily because objects that are referenced by other components would be deleted
+  // and currently we cannot deduce which ones are necessary to be kept.
+#if 0
   for (auto it = world.GetObjects(); it.IsValid(); it.Next())
   {
     // Only visit objects without parents, those are the root objects
@@ -85,6 +88,7 @@ void xiiSceneExportModifier::CleanUpWorld(xiiWorld& world)
 
     VisitObject(world, it);
   }
+#endif
 
   const bool bSim = world.GetWorldSimulationEnabled();
   world.SetWorldSimulationEnabled(false);

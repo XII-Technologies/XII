@@ -16,11 +16,11 @@ struct xiiActorImpl
 };
 
 
-xiiActor::xiiActor(const char* szActorName, const void* pCreatedBy)
+xiiActor::xiiActor(xiiStringView sActorName, const void* pCreatedBy)
 {
   m_pImpl = XII_DEFAULT_NEW(xiiActorImpl);
 
-  m_pImpl->m_sName      = szActorName;
+  m_pImpl->m_sName      = sActorName;
   m_pImpl->m_pCreatedBy = pCreatedBy;
 
   XII_ASSERT_DEV(!m_pImpl->m_sName.IsEmpty(), "Actor name must not be empty");
@@ -28,7 +28,7 @@ xiiActor::xiiActor(const char* szActorName, const void* pCreatedBy)
 
 xiiActor::~xiiActor() = default;
 
-const char* xiiActor::GetName() const
+xiiStringView xiiActor::GetName() const
 {
   return m_pImpl->m_sName;
 }

@@ -36,9 +36,9 @@ namespace xiiInternal
     void*                      pUserData /* = nullptr*/)
   {
     xiiParallelForParams parallelForParams;
-    parallelForParams.uiBinSize           = 100;
-    parallelForParams.uiMaxTasksPerThread = 2;
-    parallelForParams.pTaskAllocator      = m_StackAllocator.GetCurrentAllocator();
+    parallelForParams.m_uiBinSize           = 100;
+    parallelForParams.m_uiMaxTasksPerThread = 2;
+    parallelForParams.m_pTaskAllocator      = m_StackAllocator.GetCurrentAllocator();
 
     xiiTaskSystem::ParallelFor(
       blocks.GetArrayPtr(),

@@ -25,31 +25,31 @@ namespace
           m_Result.Append("[Flush]\n");
           return;
         case xiiLogMsgType::BeginGroup:
-          m_Result.Append(">", le.m_szTag, " ", le.m_szText, "\n");
+          m_Result.Append(">", le.m_sTag, " ", le.m_sText, "\n");
           break;
         case xiiLogMsgType::EndGroup:
-          m_Result.Append("<", le.m_szTag, " ", le.m_szText, "\n");
+          m_Result.Append("<", le.m_sTag, " ", le.m_sText, "\n");
           break;
         case xiiLogMsgType::ErrorMsg:
-          m_Result.Append("E:", le.m_szTag, " ", le.m_szText, "\n");
+          m_Result.Append("E:", le.m_sTag, " ", le.m_sText, "\n");
           break;
         case xiiLogMsgType::SeriousWarningMsg:
-          m_Result.Append("SW:", le.m_szTag, " ", le.m_szText, "\n");
+          m_Result.Append("SW:", le.m_sTag, " ", le.m_sText, "\n");
           break;
         case xiiLogMsgType::WarningMsg:
-          m_Result.Append("W:", le.m_szTag, " ", le.m_szText, "\n");
+          m_Result.Append("W:", le.m_sTag, " ", le.m_sText, "\n");
           break;
         case xiiLogMsgType::SuccessMsg:
-          m_Result.Append("S:", le.m_szTag, " ", le.m_szText, "\n");
+          m_Result.Append("S:", le.m_sTag, " ", le.m_sText, "\n");
           break;
         case xiiLogMsgType::InfoMsg:
-          m_Result.Append("I:", le.m_szTag, " ", le.m_szText, "\n");
+          m_Result.Append("I:", le.m_sTag, " ", le.m_sText, "\n");
           break;
         case xiiLogMsgType::DevMsg:
-          m_Result.Append("E:", le.m_szTag, " ", le.m_szText, "\n");
+          m_Result.Append("E:", le.m_sTag, " ", le.m_sText, "\n");
           break;
         case xiiLogMsgType::DebugMsg:
-          m_Result.Append("D:", le.m_szTag, " ", le.m_szText, "\n");
+          m_Result.Append("D:", le.m_sTag, " ", le.m_sText, "\n");
           break;
 
         default:

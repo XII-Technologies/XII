@@ -45,10 +45,10 @@ public:
   void SetCompletion(float fCompletion);
 
   /// \brief Returns the current 'headline' text for the progress bar
-  const char* GetMainDisplayText() const;
+  xiiStringView GetMainDisplayText() const;
 
   /// \brief Returns the current detail text for the progress bar
-  const char* GetStepDisplayText() const;
+  xiiStringView GetStepDisplayText() const;
 
   /// \brief Used to inform xiiProgress of outside user input. May have an effect or not.
   void UserClickedCancel();
@@ -105,10 +105,10 @@ public:
   /// \param uiSteps is the number of steps that this range will be subdivided into
   /// \param bAllowCancel specifies whether the user can cancel this operation
   /// \param pProgressbar can be specified, if available, otherwise the currently active xiiProgress instance is used.
-  xiiProgressRange(const char* szDisplayText, xiiUInt32 uiSteps, bool bAllowCancel, xiiProgress* pProgressbar = nullptr);
+  xiiProgressRange(xiiStringView sDisplayText, xiiUInt32 uiSteps, bool bAllowCancel, xiiProgress* pProgressbar = nullptr);
 
   /// \brief Creates a progress range scope without steps. Use SetCompletion to manually set the completion value.
-  xiiProgressRange(const char* szDisplayText, bool bAllowCancel, xiiProgress* pProgressbar = nullptr);
+  xiiProgressRange(xiiStringView sDisplayText, bool bAllowCancel, xiiProgress* pProgressbar = nullptr);
 
   /// \brief The destructor closes the current range. All progress in this range is assumed to have completed,
   /// even if BeginNextStep() has not been called once for every subdivision step.
@@ -129,7 +129,7 @@ public:
   /// \param szStepDisplayText The sub-text for the next step to be displayed.
   /// \param uiNumSteps How many steps have been completed.
   /// \return Returns false if the user clicked cancel.
-  bool BeginNextStep(const char* szStepDisplayText, xiiUInt32 uiNumSteps = 1);
+  bool BeginNextStep(xiiStringView sStepDisplayText, xiiUInt32 uiNumSteps = 1);
 
   /// \brief Manually set the completion value between 0..1.
   bool SetCompletion(double fCompletionFactor);
@@ -140,7 +140,7 @@ public:
 private:
   friend class xiiProgress;
 
-  void  Init(const char* szDisplayText, bool bAllowCancel, xiiProgress* pProgressbar);
+  void  Init(xiiStringView sDisplayText, bool bAllowCancel, xiiProgress* pProgressbar);
   float GetStepWeight(xiiUInt32 uiStep) const;
   void  ComputeCurStepBaseAndRange(double& out_base, double& out_range);
 

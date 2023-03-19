@@ -78,7 +78,7 @@ public:
   /// mounted in different ways. For example a simple folder could be mounted on the local system, or via a HTTP server
   /// over a network (lets call it a 'FileServer'). Thus depending on which type of factories are registered, the file system
   /// can provide data from very different sources.
-  using xiiDataDirFactory = xiiDataDirectoryType* (*)(const char*, const char*, const char*, xiiFileSystem::DataDirUsage);
+  using xiiDataDirFactory = xiiDataDirectoryType* (*)(xiiStringView, xiiStringView, xiiStringView, xiiFileSystem::DataDirUsage);
 
   /// \brief This function allows to register another data directory factory, which might be invoked when a new data directory is to be added.
   static void RegisterDataDirectoryFactory(xiiDataDirFactory Factory, float fPriority = 0); // [tested]
@@ -98,25 +98,21 @@ public:
   /// that data directory. It must be used when writing to a file in this directory. For instance, if a data dir root name is "mydata", then the path
   /// ":mydata/SomeFile.txt" can be used to write to the top level folder of this data directory. The same can be used for reading exactly that file
   /// and ignoring the other data dirs.
-  static xiiResult AddDataDirectory(
-    const char*                 szDataDirectory,
-    const char*                 szGroup    = "",
-    const char*                 szRootName = "",
-    xiiFileSystem::DataDirUsage Usage      = ReadOnly); // [tested]
+  static xiiResult AddDataDirectory(xiiStringView sDataDirectory, xiiStringView sGroup = {}, xiiStringView sRootName = {}, xiiFileSystem::DataDirUsage Usage = ReadOnly); // [tested]
 
   /// \brief Searches for a data directory with the given root name and removes it
   ///
   /// Returns true, if one was found and removed, false if no such data dir existed.
-  static bool RemoveDataDirectory(const char* szRootName);
+  static bool RemoveDataDirectory(xiiStringView sRootName);
 
   /// \brief Removes all data directories that belong to the given group. Returns the number of data directories that were removed.
-  static xiiUInt32 RemoveDataDirectoryGroup(const char* szGroup); // [tested]
+  static xiiUInt32 RemoveDataDirectoryGroup(xiiStringView sGroup); // [tested]
 
   /// \brief Removes all data directories.
   static void ClearAllDataDirectories(); // [tested]
 
   /// \brief If a data directory with the given root name already exists, it will be returned, nullptr otherwise.
-  static xiiDataDirectoryType* FindDataDirectoryWithRoot(const char* szRootName);
+  static xiiDataDirectoryType* FindDataDirectoryWithRoot(xiiStringView sRootName);
 
   /// \brief Returns the number of currently active data directories.
   static xiiUInt32 GetNumDataDirectories(); // [tested]
@@ -147,13 +143,13 @@ public:
   /// It will not override a previously set value. If that is desired, call SetSdkRootDirectory("") first.
   ///
   /// \sa xiiFileSystem::FindFolderWithSubPath()
-  static xiiResult DetectSdkRootDirectory(const char* szExpectedSubFolder = "Data/Base");
+  static xiiResult DetectSdkRootDirectory(xiiStringView sExpectedSubFolder = "Data/Base");
 
   /// \brief the special directory ">Sdk" is the root folder of the SDK data, it is often used as the main reference
   /// from where other data directories are found. For higher level code (e.g. xiiApplication) it is often vital that this is set early at startup.
   ///
   /// \sa DetectSdkRootDirectory()
-  static void SetSdkRootDirectory(const char* szSdkDir);
+  static void SetSdkRootDirectory(xiiStringView sSdkDir);
 
   /// \brief Returns the previously set Sdk root directory.
   ///
@@ -169,7 +165,7 @@ public:
   /// Special directories are needed to be able to set up other paths relative to them and to be able to use different
   /// ones on different PCs. For instance when using file-serve functionality, the special directories may be different
   /// on the host and client machines, but the paths used to mount data directories can stay the same because of this.
-  static void SetSpecialDirectory(const char* szName, const char* szReplacement);
+  static void SetSpecialDirectory(xiiStringView sName, xiiStringView sReplacement);
 
   /// \brief Returns the absolute path to \a szDirectory.
   ///
@@ -184,7 +180,7 @@ public:
   /// ">appdir/" - Resolves to what xiiOSFile::GetApplicationDirectory() returns.
   ///
   /// Returns XII_FAILURE if \a szDirectory starts with an unknown special directory.
-  static xiiResult ResolveSpecialDirectory(const char* szDirectory, xiiStringBuilder& out_Path);
+  static xiiResult ResolveSpecialDirectory(xiiStringView sDirectory, xiiStringBuilder& out_Path);
 
   ///@}
 
@@ -197,29 +193,29 @@ public:
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS)
   /// \brief Starts a multi-folder search for \a szSearchTerm on all current data directories.
-  static void StartSearch(xiiFileSystemIterator& iterator, const char* szSearchTerm, xiiBitflags<xiiFileSystemIteratorFlags> flags = xiiFileSystemIteratorFlags::Default);
+  static void StartSearch(xiiFileSystemIterator& iterator, xiiStringView sSearchTerm, xiiBitflags<xiiFileSystemIteratorFlags> flags = xiiFileSystemIteratorFlags::Default);
 #endif
 
   ///@}
 
-  static xiiResult CreateDirectoryStructure(const char* szPath);
+  static xiiResult CreateDirectoryStructure(xiiStringView sPath);
 
 public:
   /// \brief Deletes the given file from all data directories, if possible.
   ///
   /// The path must be absolute or rooted, to uniquely identify which file to delete.
   /// For example ":appdata/SomeData.txt", assuming a writable data directory has been mounted with the "appdata" root name.
-  static void DeleteFile(const char* szFile); // [tested]
+  static void DeleteFile(xiiStringView sFile); // [tested]
 
   /// \brief Checks whether the given file exists in any data directory.
   ///
   /// The search can be restricted to directories of certain categories (see AddDataDirectory).
-  static bool ExistsFile(const char* szFile); // [tested]
+  static bool ExistsFile(xiiStringView sFile); // [tested]
 
   /// \brief Tries to get the xiiFileStats for the given file.
   /// Typically should give the same results as xiiOSFile::GetFileStats, but some data dir implementations may not support
   /// retrieving all data (e.g. GetFileStats on folders might not always work).
-  static xiiResult GetFileStats(const char* szFileOrFolder, xiiFileStats& out_Stats);
+  static xiiResult GetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_Stats);
 
   /// \brief Tries to resolve the given path and returns the absolute and relative path to the final file.
   ///
@@ -237,8 +233,7 @@ public:
   /// \param out_ppDataDir If not null, it will be set to the data directory that would handle this path.
   ///
   /// \returns The function will return XII_FAILURE if it was not able to determine any location where the file could be read from or written to.
-  static xiiResult ResolvePath(const char* szPath, xiiStringBuilder* out_sAbsolutePath, xiiStringBuilder* out_sDataDirRelativePath,
-                               xiiDataDirectoryType** out_ppDataDir = nullptr); // [tested]
+  static xiiResult ResolvePath(xiiStringView sPath, xiiStringBuilder* out_sAbsolutePath, xiiStringBuilder* out_sDataDirRelativePath, xiiDataDirectoryType** out_ppDataDir = nullptr); // [tested]
 
   /// \brief Starts at szStartDirectory and goes up until it finds a folder that contains the given sub folder structure.
   ///
@@ -248,10 +243,10 @@ public:
   /// \param szStartDirectory The directory in which to start the search and iterate upwards.
   /// \param szSubPath the relative path to look for in each visited directory. The function succeeds if such a file or folder is found.
   /// \param szRedirectionFileName An optional file name for a redirection file. If in any visited folder a file with this name is found, it will be opened, read entirely, and appended to the current search path, and it is checked whether \a szSubPath can be found there. This step is not recursive and can't result in an endless loop. It allows to relocate the SDK folder and still have it found, by placing such a redirection file. A common use case, is when xiiEngine is used as a Git submodule and therefore the overall file structure is slightly different.
-  static xiiResult FindFolderWithSubPath(xiiStringBuilder& result, const char* szStartDirectory, const char* szSubPath, const char* szRedirectionFileName = nullptr); // [tested]
+  static xiiResult FindFolderWithSubPath(xiiStringBuilder& result, xiiStringView sStartDirectory, xiiStringView sSubPath, xiiStringView sRedirectionFileName = {}); // [tested]
 
   /// \brief Returns true, if any data directory knows how to redirect the given path. Otherwise the original string is returned in out_sRedirection.
-  static bool ResolveAssetRedirection(const char* szPathOrAssetGuid, xiiStringBuilder& out_sRedirection);
+  static bool ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection);
 
 private:
   friend class xiiDataDirectoryReaderWriterBase;
@@ -265,7 +260,7 @@ private:
   /// If bAllowFileEvents is true, the file system will broadcast events about its activity.
   /// This should usually be set to true, unless code is already acting on a file event and needs to do a file operation
   /// itself, which should not trigger an endless recursion of file events.
-  static xiiDataDirectoryReader* GetFileReader(const char* szFile, xiiFileShareMode::Enum FileShareMode, bool bAllowFileEvents);
+  static xiiDataDirectoryReader* GetFileReader(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bAllowFileEvents);
 
   /// \brief This is used by the actual file writers (like xiiFileWriter) to get an abstract file writer.
   ///
@@ -274,7 +269,7 @@ private:
   /// If bAllowFileEvents is true, the file system will broadcast events about its activity.
   /// This should usually be set to true, unless code is already acting on a file event and needs to do a file operation
   /// itself, which should not trigger an endless recursion of file events.
-  static xiiDataDirectoryWriter* GetFileWriter(const char* szFile, xiiFileShareMode::Enum FileShareMode, bool bAllowFileEvents);
+  static xiiDataDirectoryWriter* GetFileWriter(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bAllowFileEvents);
 
 
 private:
@@ -314,10 +309,10 @@ private:
   };
 
   /// \brief Returns a list of data directory categories that were embedded in the path.
-  static const char* ExtractRootName(const char* szPath, xiiString& rootName);
+  static xiiStringView ExtractRootName(xiiStringView sFile, xiiString& rootName);
 
   /// \brief Returns the given path relative to its data directory. The path must be inside the given data directory.
-  static const char* GetDataDirRelativePath(const char* szPath, xiiUInt32 uiDataDir);
+  static xiiStringView GetDataDirRelativePath(xiiStringView sFile, xiiUInt32 uiDataDir);
 
   static DataDirectory* GetDataDirForRoot(const xiiString& sRoot);
 
@@ -356,10 +351,10 @@ struct xiiFileSystem::FileEvent
   xiiFileSystem::FileEventType::Enum m_EventType = FileEventType::None;
 
   /// \brief Path to the file or directory that was involved.
-  const char* m_szFileOrDirectory = nullptr;
+  xiiStringView m_sFileOrDirectory;
 
   /// \brief Additional Path / Name that might be of interest.
-  const char* m_szOther = nullptr;
+  xiiStringView m_sOther;
 
   /// \brief The data-directory, that was involved.
   const xiiDataDirectoryType* m_pDataDir = nullptr;

@@ -74,18 +74,18 @@ void xiiFileSystem::CleanUpRootName(xiiStringBuilder& sRoot)
   sRoot.ToUpper();
 }
 
-xiiResult xiiFileSystem::AddDataDirectory(const char* szDataDirectory, const char* szGroup, const char* szRootName, DataDirUsage Usage)
+xiiResult xiiFileSystem::AddDataDirectory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, DataDirUsage Usage)
 {
   XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
-  XII_ASSERT_DEV(Usage != AllowWrites || !xiiStringUtils::IsNullOrEmpty(szRootName), "A data directory must have a non-empty, unique name to be mounted for write access");
+  XII_ASSERT_DEV(Usage != AllowWrites || !sRootName.IsEmpty(), "A data directory must have a non-empty, unique name to be mounted for write access");
 
-  xiiStringBuilder sPath = szDataDirectory;
+  xiiStringBuilder sPath = sDataDirectory;
   sPath.MakeCleanPath();
 
   if (!sPath.IsEmpty() && !sPath.EndsWith("/"))
     sPath.Append("/");
 
-  xiiStringBuilder sCleanRootName = szRootName;
+  xiiStringBuilder sCleanRootName = sRootName;
   CleanUpRootName(sCleanRootName);
 
   XII_LOCK(s_pData->m_FsMutex);
@@ -104,7 +104,7 @@ xiiResult xiiFileSystem::AddDataDirectory(const char* szDataDirectory, const cha
     // use the factory that was added last as the one with the highest priority -> allows to override already added factories
     for (xiiInt32 i = s_pData->m_DataDirFactories.GetCount() - 1; i >= 0; --i)
     {
-      xiiDataDirectoryType* pDataDir = s_pData->m_DataDirFactories[i].m_Factory(sPath, szGroup, szRootName, Usage);
+      xiiDataDirectoryType* pDataDir = s_pData->m_DataDirFactories[i].m_Factory(sPath, sGroup, sRootName, Usage);
 
       if (pDataDir != nullptr)
       {
@@ -112,17 +112,17 @@ xiiResult xiiFileSystem::AddDataDirectory(const char* szDataDirectory, const cha
         dd.m_Usage          = Usage;
         dd.m_pDataDirectory = pDataDir;
         dd.m_sRootName      = sCleanRootName;
-        dd.m_sGroup         = szGroup;
+        dd.m_sGroup         = sGroup;
 
         s_pData->m_DataDirectories.PushBack(dd);
 
         {
           // Broadcast that a data directory was added
           FileEvent fe;
-          fe.m_EventType         = FileEventType::AddDataDirectorySucceeded;
-          fe.m_szFileOrDirectory = sPath;
-          fe.m_szOther           = sCleanRootName;
-          fe.m_pDataDir          = pDataDir;
+          fe.m_EventType        = FileEventType::AddDataDirectorySucceeded;
+          fe.m_sFileOrDirectory = sPath;
+          fe.m_sOther           = sCleanRootName;
+          fe.m_pDataDir         = pDataDir;
           s_pData->m_Event.Broadcast(fe);
         }
 
@@ -134,20 +134,20 @@ xiiResult xiiFileSystem::AddDataDirectory(const char* szDataDirectory, const cha
   {
     // Broadcast that adding a data directory failed
     FileEvent fe;
-    fe.m_EventType         = FileEventType::AddDataDirectoryFailed;
-    fe.m_szFileOrDirectory = sPath;
-    fe.m_szOther           = sCleanRootName;
+    fe.m_EventType        = FileEventType::AddDataDirectoryFailed;
+    fe.m_sFileOrDirectory = sPath;
+    fe.m_sOther           = sCleanRootName;
     s_pData->m_Event.Broadcast(fe);
   }
 
-  xiiLog::Error("Adding Data Directory '{0}' failed.", xiiArgSensitive(szDataDirectory, "Path"));
+  xiiLog::Error("Adding Data Directory '{0}' failed.", xiiArgSensitive(sDataDirectory, "Path"));
   return XII_FAILURE;
 }
 
 
-bool xiiFileSystem::RemoveDataDirectory(const char* szRootName)
+bool xiiFileSystem::RemoveDataDirectory(xiiStringView sRootName)
 {
-  xiiStringBuilder sCleanRootName = szRootName;
+  xiiStringBuilder sCleanRootName = sRootName;
   CleanUpRootName(sCleanRootName);
 
   XII_LOCK(s_pData->m_FsMutex);
@@ -159,10 +159,10 @@ bool xiiFileSystem::RemoveDataDirectory(const char* szRootName)
       {
         // Broadcast that a data directory is about to be removed
         FileEvent fe;
-        fe.m_EventType         = FileEventType::RemoveDataDirectory;
-        fe.m_szFileOrDirectory = s_pData->m_DataDirectories[i].m_pDataDirectory->GetDataDirectoryPath();
-        fe.m_szOther           = s_pData->m_DataDirectories[i].m_sRootName;
-        fe.m_pDataDir          = s_pData->m_DataDirectories[i].m_pDataDirectory;
+        fe.m_EventType        = FileEventType::RemoveDataDirectory;
+        fe.m_sFileOrDirectory = s_pData->m_DataDirectories[i].m_pDataDirectory->GetDataDirectoryPath();
+        fe.m_sOther           = s_pData->m_DataDirectories[i].m_sRootName;
+        fe.m_pDataDir         = s_pData->m_DataDirectories[i].m_pDataDirectory;
         s_pData->m_Event.Broadcast(fe);
       }
 
@@ -178,7 +178,7 @@ bool xiiFileSystem::RemoveDataDirectory(const char* szRootName)
   return false;
 }
 
-xiiUInt32 xiiFileSystem::RemoveDataDirectoryGroup(const char* szGroup)
+xiiUInt32 xiiFileSystem::RemoveDataDirectoryGroup(xiiStringView sGroup)
 {
   if (s_pData == nullptr)
     return 0;
@@ -189,15 +189,15 @@ xiiUInt32 xiiFileSystem::RemoveDataDirectoryGroup(const char* szGroup)
 
   for (xiiUInt32 i = 0; i < s_pData->m_DataDirectories.GetCount();)
   {
-    if (s_pData->m_DataDirectories[i].m_sGroup == szGroup)
+    if (s_pData->m_DataDirectories[i].m_sGroup == sGroup)
     {
       {
         // Broadcast that a data directory is about to be removed
         FileEvent fe;
-        fe.m_EventType         = FileEventType::RemoveDataDirectory;
-        fe.m_szFileOrDirectory = s_pData->m_DataDirectories[i].m_pDataDirectory->GetDataDirectoryPath();
-        fe.m_szOther           = s_pData->m_DataDirectories[i].m_sRootName;
-        fe.m_pDataDir          = s_pData->m_DataDirectories[i].m_pDataDirectory;
+        fe.m_EventType        = FileEventType::RemoveDataDirectory;
+        fe.m_sFileOrDirectory = s_pData->m_DataDirectories[i].m_pDataDirectory->GetDataDirectoryPath();
+        fe.m_sOther           = s_pData->m_DataDirectories[i].m_sRootName;
+        fe.m_pDataDir         = s_pData->m_DataDirectories[i].m_pDataDirectory;
         s_pData->m_Event.Broadcast(fe);
       }
 
@@ -224,10 +224,10 @@ void xiiFileSystem::ClearAllDataDirectories()
     {
       // Broadcast that a data directory is about to be removed
       FileEvent fe;
-      fe.m_EventType         = FileEventType::RemoveDataDirectory;
-      fe.m_szFileOrDirectory = s_pData->m_DataDirectories[i].m_pDataDirectory->GetDataDirectoryPath();
-      fe.m_szOther           = s_pData->m_DataDirectories[i].m_sRootName;
-      fe.m_pDataDir          = s_pData->m_DataDirectories[i].m_pDataDirectory;
+      fe.m_EventType        = FileEventType::RemoveDataDirectory;
+      fe.m_sFileOrDirectory = s_pData->m_DataDirectories[i].m_pDataDirectory->GetDataDirectoryPath();
+      fe.m_sOther           = s_pData->m_DataDirectories[i].m_sRootName;
+      fe.m_pDataDir         = s_pData->m_DataDirectories[i].m_pDataDirectory;
       s_pData->m_Event.Broadcast(fe);
     }
 
@@ -237,16 +237,16 @@ void xiiFileSystem::ClearAllDataDirectories()
   s_pData->m_DataDirectories.Clear();
 }
 
-xiiDataDirectoryType* xiiFileSystem::FindDataDirectoryWithRoot(const char* szRootName)
+xiiDataDirectoryType* xiiFileSystem::FindDataDirectoryWithRoot(xiiStringView sRootName)
 {
-  if (xiiStringUtils::IsNullOrEmpty(szRootName))
+  if (sRootName.IsEmpty())
     return nullptr;
 
   XII_LOCK(s_pData->m_FsMutex);
 
   for (const auto& dd : s_pData->m_DataDirectories)
   {
-    if (dd.m_sRootName.IsEqual_NoCase(szRootName))
+    if (dd.m_sRootName.IsEqual_NoCase(sRootName))
     {
       return dd.m_pDataDirectory;
     }
@@ -269,7 +269,7 @@ xiiDataDirectoryType* xiiFileSystem::GetDataDirectory(xiiUInt32 uiDataDirIndex)
   return s_pData->m_DataDirectories[uiDataDirIndex].m_pDataDirectory;
 }
 
-const char* xiiFileSystem::GetDataDirRelativePath(const char* szPath, xiiUInt32 uiDataDir)
+xiiStringView xiiFileSystem::GetDataDirRelativePath(xiiStringView sPath, xiiUInt32 uiDataDir)
 {
   XII_LOCK(s_pData->m_FsMutex);
 
@@ -280,15 +280,17 @@ const char* xiiFileSystem::GetDataDirRelativePath(const char* szPath, xiiUInt32 
   // first check the redirected directory
   const xiiString128& sRedDirPath = s_pData->m_DataDirectories[uiDataDir].m_pDataDirectory->GetRedirectedDataDirectoryPath();
 
-  if (!sRedDirPath.IsEmpty() && xiiStringUtils::StartsWith_NoCase(szPath, sRedDirPath))
+  if (!sRedDirPath.IsEmpty() && sPath.StartsWith_NoCase(sRedDirPath))
   {
-    const char* szRelPath = &szPath[sRedDirPath.GetElementCount()];
+    xiiStringView sRelPath(sPath.GetStartPointer() + sRedDirPath.GetElementCount(), sPath.GetEndPointer());
 
     // if the relative path still starts with a path-separator, skip it
-    if (xiiPathUtils::IsPathSeparator(*szRelPath))
-      ++szRelPath;
+    if (xiiPathUtils::IsPathSeparator(sRelPath.GetCharacter()))
+    {
+      sRelPath.ChopAwayFirstCharacterUtf8();
+    }
 
-    return szRelPath;
+    return sRelPath;
   }
 
   // then check the original mount path
@@ -296,18 +298,20 @@ const char* xiiFileSystem::GetDataDirRelativePath(const char* szPath, xiiUInt32 
 
   // If the data dir is empty we return the paths as is or the code below would remove the '/' in front of an
   // absolute path.
-  if (!sDirPath.IsEmpty() && xiiStringUtils::StartsWith_NoCase(szPath, sDirPath))
+  if (!sDirPath.IsEmpty() && sPath.StartsWith_NoCase(sDirPath))
   {
-    const char* szRelPath = &szPath[sDirPath.GetElementCount()];
+    xiiStringView sRelPath(sPath.GetStartPointer() + sDirPath.GetElementCount(), sPath.GetEndPointer());
 
     // if the relative path still starts with a path-separator, skip it
-    if (xiiPathUtils::IsPathSeparator(*szRelPath))
-      ++szRelPath;
+    if (xiiPathUtils::IsPathSeparator(sRelPath.GetCharacter()))
+    {
+      sRelPath.ChopAwayFirstCharacterUtf8();
+    }
 
-    return szRelPath;
+    return sRelPath;
   }
 
-  return szPath;
+  return sPath;
 }
 
 
@@ -325,18 +329,18 @@ xiiFileSystem::DataDirectory* xiiFileSystem::GetDataDirForRoot(const xiiString& 
 }
 
 
-void xiiFileSystem::DeleteFile(const char* szFile)
+void xiiFileSystem::DeleteFile(xiiStringView sFile)
 {
   XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
 
-  if (xiiPathUtils::IsAbsolutePath(szFile))
+  if (xiiPathUtils::IsAbsolutePath(sFile))
   {
-    xiiOSFile::DeleteFile(szFile).IgnoreResult();
+    xiiOSFile::DeleteFile(sFile).IgnoreResult();
     return;
   }
 
   xiiString sRootName;
-  szFile = ExtractRootName(szFile, sRootName);
+  sFile = ExtractRootName(sFile, sRootName);
 
   XII_ASSERT_DEV(!sRootName.IsEmpty(), "Files can only be deleted with a rooted path name.");
 
@@ -354,29 +358,29 @@ void xiiFileSystem::DeleteFile(const char* szFile)
     if (s_pData->m_DataDirectories[i].m_sRootName != sRootName)
       continue;
 
-    const char* szRelPath = GetDataDirRelativePath(szFile, i);
+    xiiStringView sRelPath = GetDataDirRelativePath(sFile, i);
 
     {
       // Broadcast that a file is about to be deleted
       // This can be used to check out files or mark them as deleted in a revision control system
       FileEvent fe;
-      fe.m_EventType         = FileEventType::DeleteFile;
-      fe.m_szFileOrDirectory = szRelPath;
-      fe.m_pDataDir          = s_pData->m_DataDirectories[i].m_pDataDirectory;
-      fe.m_szOther           = sRootName;
+      fe.m_EventType        = FileEventType::DeleteFile;
+      fe.m_sFileOrDirectory = sRelPath;
+      fe.m_pDataDir         = s_pData->m_DataDirectories[i].m_pDataDirectory;
+      fe.m_sOther           = sRootName;
       s_pData->m_Event.Broadcast(fe);
     }
 
-    s_pData->m_DataDirectories[i].m_pDataDirectory->DeleteFile(szRelPath);
+    s_pData->m_DataDirectories[i].m_pDataDirectory->DeleteFile(sRelPath);
   }
 }
 
-bool xiiFileSystem::ExistsFile(const char* szFile)
+bool xiiFileSystem::ExistsFile(xiiStringView sFile)
 {
   XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
 
   xiiString sRootName;
-  szFile = ExtractRootName(szFile, sRootName);
+  sFile = ExtractRootName(sFile, sRootName);
 
   const bool bOneSpecificDataDir = !sRootName.IsEmpty();
 
@@ -387,9 +391,9 @@ bool xiiFileSystem::ExistsFile(const char* szFile)
     if (!sRootName.IsEmpty() && s_pData->m_DataDirectories[i].m_sRootName != sRootName)
       continue;
 
-    const char* szRelPath = GetDataDirRelativePath(szFile, i);
+    xiiStringView sRelPath = GetDataDirRelativePath(sFile, i);
 
-    if (s_pData->m_DataDirectories[i].m_pDataDirectory->ExistsFile(szRelPath, bOneSpecificDataDir))
+    if (s_pData->m_DataDirectories[i].m_pDataDirectory->ExistsFile(sRelPath, bOneSpecificDataDir))
       return true;
   }
 
@@ -397,14 +401,14 @@ bool xiiFileSystem::ExistsFile(const char* szFile)
 }
 
 
-xiiResult xiiFileSystem::GetFileStats(const char* szFileOrFolder, xiiFileStats& out_Stats)
+xiiResult xiiFileSystem::GetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_Stats)
 {
   XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
 
   XII_LOCK(s_pData->m_FsMutex);
 
   xiiString sRootName;
-  szFileOrFolder = ExtractRootName(szFileOrFolder, sRootName);
+  sFileOrFolder = ExtractRootName(sFileOrFolder, sRootName);
 
   const bool bOneSpecificDataDir = !sRootName.IsEmpty();
 
@@ -413,25 +417,25 @@ xiiResult xiiFileSystem::GetFileStats(const char* szFileOrFolder, xiiFileStats& 
     if (!sRootName.IsEmpty() && s_pData->m_DataDirectories[i].m_sRootName != sRootName)
       continue;
 
-    const char* szRelPath = GetDataDirRelativePath(szFileOrFolder, i);
+    xiiStringView sRelPath = GetDataDirRelativePath(sFileOrFolder, i);
 
-    if (s_pData->m_DataDirectories[i].m_pDataDirectory->GetFileStats(szRelPath, bOneSpecificDataDir, out_Stats).Succeeded())
+    if (s_pData->m_DataDirectories[i].m_pDataDirectory->GetFileStats(sRelPath, bOneSpecificDataDir, out_Stats).Succeeded())
       return XII_SUCCESS;
   }
 
   return XII_FAILURE;
 }
 
-const char* xiiFileSystem::ExtractRootName(const char* szPath, xiiString& rootName)
+xiiStringView xiiFileSystem::ExtractRootName(xiiStringView sPath, xiiString& rootName)
 {
   rootName.Clear();
 
-  if (!xiiStringUtils::StartsWith(szPath, ":"))
-    return szPath;
+  if (!sPath.StartsWith(":"))
+    return sPath;
 
   xiiStringBuilder    sCur;
-  const xiiStringView view(szPath);
-  xiiStringIterator   it = view.GetIteratorFront();
+  const xiiStringView view = sPath;
+  xiiStringIterator   it   = view.GetIteratorFront();
   ++it;
 
   while (it.IsValid() && (it.GetCharacter() != '/'))
@@ -440,7 +444,7 @@ const char* xiiFileSystem::ExtractRootName(const char* szPath, xiiString& rootNa
     ++it;
   }
 
-  XII_ASSERT_DEV(it.IsValid(), "Cannot parse the path \"{0}\". The data-dir root name starts with a ':' but does not end with '/'.", szPath);
+  XII_ASSERT_DEV(it.IsValid(), "Cannot parse the path \"{0}\". The data-dir root name starts with a ':' but does not end with '/'.", sPath);
 
   sCur.ToUpper();
   rootName = sCur;
@@ -449,20 +453,20 @@ const char* xiiFileSystem::ExtractRootName(const char* szPath, xiiString& rootNa
   return it.GetData(); // return the string after the data-dir filter declaration
 }
 
-xiiDataDirectoryReader* xiiFileSystem::GetFileReader(const char* szFile, xiiFileShareMode::Enum FileShareMode, bool bAllowFileEvents)
+xiiDataDirectoryReader* xiiFileSystem::GetFileReader(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bAllowFileEvents)
 {
   XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
 
-  if (xiiStringUtils::IsNullOrEmpty(szFile))
+  if (sFile.IsEmpty())
     return nullptr;
 
   XII_LOCK(s_pData->m_FsMutex);
 
   xiiString sRootName;
-  szFile = ExtractRootName(szFile, sRootName);
+  sFile = ExtractRootName(sFile, sRootName);
 
   // clean up the path to get rid of ".." etc.
-  xiiStringBuilder sPath = szFile;
+  xiiStringBuilder sPath = sFile;
   sPath.MakeCleanPath();
 
   const bool bOneSpecificDataDir = !sRootName.IsEmpty();
@@ -474,31 +478,31 @@ xiiDataDirectoryReader* xiiFileSystem::GetFileReader(const char* szFile, xiiFile
     if (bOneSpecificDataDir && s_pData->m_DataDirectories[i].m_sRootName != sRootName)
       continue;
 
-    const char* szRelPath = GetDataDirRelativePath(sPath, i);
+    xiiStringView sRelPath = GetDataDirRelativePath(sPath, i);
 
     if (bAllowFileEvents)
     {
       // Broadcast that we now try to open this file
       // Could be useful to check this file out before it is accessed
       FileEvent fe;
-      fe.m_EventType         = FileEventType::OpenFileAttempt;
-      fe.m_szFileOrDirectory = szRelPath;
-      fe.m_szOther           = sRootName;
-      fe.m_pDataDir          = s_pData->m_DataDirectories[i].m_pDataDirectory;
+      fe.m_EventType        = FileEventType::OpenFileAttempt;
+      fe.m_sFileOrDirectory = sRelPath;
+      fe.m_sOther           = sRootName;
+      fe.m_pDataDir         = s_pData->m_DataDirectories[i].m_pDataDirectory;
       s_pData->m_Event.Broadcast(fe);
     }
 
     // Let the data directory try to open the file.
-    xiiDataDirectoryReader* pReader = s_pData->m_DataDirectories[i].m_pDataDirectory->OpenFileToRead(szRelPath, FileShareMode, bOneSpecificDataDir);
+    xiiDataDirectoryReader* pReader = s_pData->m_DataDirectories[i].m_pDataDirectory->OpenFileToRead(sRelPath, FileShareMode, bOneSpecificDataDir);
 
     if (bAllowFileEvents && pReader != nullptr)
     {
       // Broadcast that this file has been opened.
       FileEvent fe;
-      fe.m_EventType         = FileEventType::OpenFileSucceeded;
-      fe.m_szFileOrDirectory = szRelPath;
-      fe.m_szOther           = sRootName;
-      fe.m_pDataDir          = s_pData->m_DataDirectories[i].m_pDataDirectory;
+      fe.m_EventType        = FileEventType::OpenFileSucceeded;
+      fe.m_sFileOrDirectory = sRelPath;
+      fe.m_sOther           = sRootName;
+      fe.m_pDataDir         = s_pData->m_DataDirectories[i].m_pDataDirectory;
       s_pData->m_Event.Broadcast(fe);
 
       return pReader;
@@ -509,36 +513,36 @@ xiiDataDirectoryReader* xiiFileSystem::GetFileReader(const char* szFile, xiiFile
   {
     // Broadcast that opening this file failed.
     FileEvent fe;
-    fe.m_EventType         = FileEventType::OpenFileFailed;
-    fe.m_szFileOrDirectory = sPath;
+    fe.m_EventType        = FileEventType::OpenFileFailed;
+    fe.m_sFileOrDirectory = sPath;
     s_pData->m_Event.Broadcast(fe);
   }
 
   return nullptr;
 }
 
-xiiDataDirectoryWriter* xiiFileSystem::GetFileWriter(const char* szFile, xiiFileShareMode::Enum FileShareMode, bool bAllowFileEvents)
+xiiDataDirectoryWriter* xiiFileSystem::GetFileWriter(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bAllowFileEvents)
 {
   XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
 
-  if (xiiStringUtils::IsNullOrEmpty(szFile))
+  if (sFile.IsEmpty())
     return nullptr;
 
   XII_LOCK(s_pData->m_FsMutex);
 
   xiiString sRootName;
 
-  if (!xiiPathUtils::IsAbsolutePath(szFile))
+  if (!xiiPathUtils::IsAbsolutePath(sFile))
   {
-    XII_ASSERT_DEV(xiiStringUtils::StartsWith(szFile, ":"),
+    XII_ASSERT_DEV(sFile.StartsWith(":"),
                    "Only native absolute paths or rooted paths (starting with a colon and then the data dir root name) are allowed for "
                    "writing to files. This path is neither: '{0}'",
-                   szFile);
-    szFile = ExtractRootName(szFile, sRootName);
+                   sFile);
+    sFile = ExtractRootName(sFile, sRootName);
   }
 
   // clean up the path to get rid of ".." etc.
-  xiiStringBuilder sPath = szFile;
+  xiiStringBuilder sPath = sFile;
   sPath.MakeCleanPath();
 
   // the last added data directory has the highest priority
@@ -551,30 +555,30 @@ xiiDataDirectoryWriter* xiiFileSystem::GetFileWriter(const char* szFile, xiiFile
     if (s_pData->m_DataDirectories[i].m_sRootName != sRootName)
       continue;
 
-    const char* szRelPath = GetDataDirRelativePath(sPath, i);
+    xiiStringView sRelPath = GetDataDirRelativePath(sPath, i);
 
     if (bAllowFileEvents)
     {
       // Broadcast that we now try to open this file
       // Could be useful to check this file out before it is accessed
       FileEvent fe;
-      fe.m_EventType         = FileEventType::CreateFileAttempt;
-      fe.m_szFileOrDirectory = szRelPath;
-      fe.m_szOther           = sRootName;
-      fe.m_pDataDir          = s_pData->m_DataDirectories[i].m_pDataDirectory;
+      fe.m_EventType        = FileEventType::CreateFileAttempt;
+      fe.m_sFileOrDirectory = sRelPath;
+      fe.m_sOther           = sRootName;
+      fe.m_pDataDir         = s_pData->m_DataDirectories[i].m_pDataDirectory;
       s_pData->m_Event.Broadcast(fe);
     }
 
-    xiiDataDirectoryWriter* pWriter = s_pData->m_DataDirectories[i].m_pDataDirectory->OpenFileToWrite(szRelPath, FileShareMode);
+    xiiDataDirectoryWriter* pWriter = s_pData->m_DataDirectories[i].m_pDataDirectory->OpenFileToWrite(sRelPath, FileShareMode);
 
     if (bAllowFileEvents && pWriter != nullptr)
     {
       // Broadcast that this file has been created.
       FileEvent fe;
-      fe.m_EventType         = FileEventType::CreateFileSucceeded;
-      fe.m_szFileOrDirectory = szRelPath;
-      fe.m_szOther           = sRootName;
-      fe.m_pDataDir          = s_pData->m_DataDirectories[i].m_pDataDirectory;
+      fe.m_EventType        = FileEventType::CreateFileSucceeded;
+      fe.m_sFileOrDirectory = sRelPath;
+      fe.m_sOther           = sRootName;
+      fe.m_pDataDir         = s_pData->m_DataDirectories[i].m_pDataDirectory;
       s_pData->m_Event.Broadcast(fe);
 
       return pWriter;
@@ -585,15 +589,15 @@ xiiDataDirectoryWriter* xiiFileSystem::GetFileWriter(const char* szFile, xiiFile
   {
     // Broadcast that creating this file failed.
     FileEvent fe;
-    fe.m_EventType         = FileEventType::CreateFileFailed;
-    fe.m_szFileOrDirectory = sPath;
+    fe.m_EventType        = FileEventType::CreateFileFailed;
+    fe.m_sFileOrDirectory = sPath;
     s_pData->m_Event.Broadcast(fe);
   }
 
   return nullptr;
 }
 
-xiiResult xiiFileSystem::ResolvePath(const char* szPath, xiiStringBuilder* out_sAbsolutePath, xiiStringBuilder* out_sDataDirRelativePath, xiiDataDirectoryType** out_ppDataDir /*= nullptr*/)
+xiiResult xiiFileSystem::ResolvePath(xiiStringView sPath, xiiStringBuilder* out_sAbsolutePath, xiiStringBuilder* out_sDataDirRelativePath, xiiDataDirectoryType** out_ppDataDir /*= nullptr*/)
 {
   XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
 
@@ -601,11 +605,11 @@ xiiResult xiiFileSystem::ResolvePath(const char* szPath, xiiStringBuilder* out_s
 
   xiiStringBuilder absPath, relPath;
 
-  if (xiiStringUtils::StartsWith(szPath, ":"))
+  if (sPath.StartsWith(":"))
   {
     // writing is only allowed using rooted paths
     xiiString sRootName;
-    ExtractRootName(szPath, sRootName);
+    ExtractRootName(sPath, sRootName);
 
     DataDirectory* pDataDir = GetDataDirForRoot(sRootName);
 
@@ -615,14 +619,14 @@ xiiResult xiiFileSystem::ResolvePath(const char* szPath, xiiStringBuilder* out_s
     if (out_ppDataDir != nullptr)
       *out_ppDataDir = pDataDir->m_pDataDirectory;
 
-    relPath = &szPath[sRootName.GetElementCount() + 2];
+    relPath = sPath.GetShrunk(sRootName.GetCharacterCount() + 2);
 
     absPath = pDataDir->m_pDataDirectory->GetRedirectedDataDirectoryPath(); /// \todo We might also need the none-redirected path as an output
     absPath.AppendPath(relPath);
   }
-  else if (xiiPathUtils::IsAbsolutePath(szPath))
+  else if (xiiPathUtils::IsAbsolutePath(sPath))
   {
-    absPath = szPath;
+    absPath = sPath;
     absPath.MakeCleanPath();
 
     for (xiiUInt32 dd = s_pData->m_DataDirectories.GetCount(); dd > 0; --dd)
@@ -652,7 +656,7 @@ xiiResult xiiFileSystem::ResolvePath(const char* szPath, xiiStringBuilder* out_s
   else
   {
     // try to get a reader -> if we get one, the file does indeed exist
-    xiiDataDirectoryReader* pReader = xiiFileSystem::GetFileReader(szPath, xiiFileShareMode::SharedReads, true);
+    xiiDataDirectoryReader* pReader = xiiFileSystem::GetFileReader(sPath, xiiFileShareMode::SharedReads, true);
 
     if (!pReader)
       return XII_FAILURE;
@@ -677,9 +681,9 @@ xiiResult xiiFileSystem::ResolvePath(const char* szPath, xiiStringBuilder* out_s
   return XII_SUCCESS;
 }
 
-xiiResult xiiFileSystem::FindFolderWithSubPath(xiiStringBuilder& result, const char* szStartDirectory, const char* szSubPath, const char* szRedirectionFileName /*= nullptr*/)
+xiiResult xiiFileSystem::FindFolderWithSubPath(xiiStringBuilder& result, xiiStringView sStartDirectory, xiiStringView sSubPath, xiiStringView sRedirectionFileName /*= nullptr*/)
 {
-  xiiStringBuilder sStartDirAbs = szStartDirectory;
+  xiiStringBuilder sStartDirAbs = sStartDirectory;
   sStartDirAbs.MakeCleanPath();
 
   // in this case the given path and the absolute path are different
@@ -698,7 +702,7 @@ xiiResult xiiFileSystem::FindFolderWithSubPath(xiiStringBuilder& result, const c
     sStartDirAbs = abs;
   }
 
-  result = szStartDirectory;
+  result = sStartDirectory;
   result.MakeCleanPath();
 
   xiiStringBuilder FullPath, sRedirection;
@@ -707,10 +711,10 @@ xiiResult xiiFileSystem::FindFolderWithSubPath(xiiStringBuilder& result, const c
   {
     sRedirection.Clear();
 
-    if (!xiiStringUtils::IsNullOrEmpty(szRedirectionFileName))
+    if (!sRedirectionFileName.IsEmpty())
     {
       FullPath = sStartDirAbs;
-      FullPath.AppendPath(szRedirectionFileName);
+      FullPath.AppendPath(sRedirectionFileName);
 
       xiiOSFile f;
       if (f.Open(FullPath, xiiFileOpenMode::Read).Succeeded())
@@ -726,7 +730,7 @@ xiiResult xiiFileSystem::FindFolderWithSubPath(xiiStringBuilder& result, const c
     {
       FullPath = sStartDirAbs;
       FullPath.AppendPath(sRedirection);
-      FullPath.AppendPath(szSubPath);
+      FullPath.AppendPath(sSubPath);
       FullPath.MakeCleanPath();
 
       if (xiiOSFile::ExistsDirectory(FullPath) || xiiOSFile::ExistsFile(FullPath))
@@ -739,7 +743,7 @@ xiiResult xiiFileSystem::FindFolderWithSubPath(xiiStringBuilder& result, const c
 
     // then try without the redirection
     FullPath = sStartDirAbs;
-    FullPath.AppendPath(szSubPath);
+    FullPath.AppendPath(sSubPath);
     FullPath.MakeCleanPath();
 
     if (xiiOSFile::ExistsDirectory(FullPath) || xiiOSFile::ExistsFile(FullPath))
@@ -754,17 +758,17 @@ xiiResult xiiFileSystem::FindFolderWithSubPath(xiiStringBuilder& result, const c
   return XII_FAILURE;
 }
 
-bool xiiFileSystem::ResolveAssetRedirection(const char* szPathOrAssetGuid, xiiStringBuilder& out_sRedirection)
+bool xiiFileSystem::ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection)
 {
   XII_LOCK(s_pData->m_FsMutex);
 
   for (auto& dd : s_pData->m_DataDirectories)
   {
-    if (dd.m_pDataDirectory->ResolveAssetRedirection(szPathOrAssetGuid, out_sRedirection))
+    if (dd.m_pDataDirectory->ResolveAssetRedirection(sPathOrAssetGuid, out_sRedirection))
       return true;
   }
 
-  out_sRedirection = szPathOrAssetGuid;
+  out_sRedirection = sPathOrAssetGuid;
   return false;
 }
 
@@ -798,7 +802,7 @@ void xiiFileSystem::Shutdown()
   XII_DEFAULT_DELETE(s_pData);
 }
 
-xiiResult xiiFileSystem::DetectSdkRootDirectory(const char* szExpectedSubFolder /*= "Data/Base"*/)
+xiiResult xiiFileSystem::DetectSdkRootDirectory(xiiStringView sExpectedSubFolder /*= "Data/Base"*/)
 {
   if (!s_sSdkRootDir.IsEmpty())
     return XII_SUCCESS;
@@ -811,9 +815,9 @@ xiiResult xiiFileSystem::DetectSdkRootDirectory(const char* szExpectedSubFolder 
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
   sdkRoot = xiiOSFile::GetApplicationDirectory();
 #else
-  if (xiiFileSystem::FindFolderWithSubPath(sdkRoot, xiiOSFile::GetApplicationDirectory(), szExpectedSubFolder, "xiiSdkRoot.txt").Failed())
+  if (xiiFileSystem::FindFolderWithSubPath(sdkRoot, xiiOSFile::GetApplicationDirectory(), sExpectedSubFolder, "xiiSdkRoot.txt").Failed())
   {
-    xiiLog::Error("Could not find SDK root. Application dir is '{0}'. Searched for parent with '{1}' sub-folder.", xiiOSFile::GetApplicationDirectory(), szExpectedSubFolder);
+    xiiLog::Error("Could not find SDK root. Application dir is '{0}'. Searched for parent with '{1}' sub-folder.", xiiOSFile::GetApplicationDirectory(), sExpectedSubFolder);
     return XII_FAILURE;
   }
 #endif
@@ -822,9 +826,9 @@ xiiResult xiiFileSystem::DetectSdkRootDirectory(const char* szExpectedSubFolder 
   return XII_SUCCESS;
 }
 
-void xiiFileSystem::SetSdkRootDirectory(const char* szSdkDir)
+void xiiFileSystem::SetSdkRootDirectory(xiiStringView sSdkDir)
 {
-  xiiStringBuilder s = szSdkDir;
+  xiiStringBuilder s = sSdkDir;
   s.MakeCleanPath();
 
   s_sSdkRootDir = s;
@@ -836,32 +840,34 @@ const char* xiiFileSystem::GetSdkRootDirectory()
   return s_sSdkRootDir.GetData();
 }
 
-void xiiFileSystem::SetSpecialDirectory(const char* szName, const char* szReplacement)
+void xiiFileSystem::SetSpecialDirectory(xiiStringView sName, xiiStringView sReplacement)
 {
-  xiiStringBuilder tmp = szName;
+  xiiStringBuilder tmp = sName;
   tmp.ToLower();
 
-  if (szReplacement == nullptr)
+  if (sReplacement.IsEmpty())
   {
     s_SpecialDirectories.Remove(tmp);
   }
   else
   {
-    s_SpecialDirectories[tmp] = szReplacement;
+    s_SpecialDirectories[tmp] = sReplacement;
   }
 }
 
-xiiResult xiiFileSystem::ResolveSpecialDirectory(const char* szDirectory, xiiStringBuilder& out_Path)
+xiiResult xiiFileSystem::ResolveSpecialDirectory(xiiStringView sDirectory, xiiStringBuilder& out_Path)
 {
-  if (xiiStringUtils::IsNullOrEmpty(szDirectory) || szDirectory[0] != '>')
+  if (sDirectory.IsEmpty() || !sDirectory.StartsWith(">"))
   {
-    out_Path = szDirectory;
+    out_Path = sDirectory;
     return XII_SUCCESS;
   }
 
-  const char* szStart = szDirectory + 1; // skip the '>'
+  // skip the '>'
+  sDirectory.ChopAwayFirstCharacterAscii();
+  const char* szStart = sDirectory.GetStartPointer();
 
-  const char* szEnd = xiiStringUtils::FindSubString(szStart, "/");
+  const char* szEnd = sDirectory.FindSubString("/");
 
   if (szEnd == nullptr)
     szEnd = szStart + xiiStringUtils::GetStringElementCount(szStart);
@@ -881,32 +887,36 @@ xiiResult xiiFileSystem::ResolveSpecialDirectory(const char* szDirectory, xiiStr
 
   if (sName == "sdk")
   {
+    sDirectory.Shrink(3, 0);
     out_Path = GetSdkRootDirectory();
-    out_Path.AppendPath(&szDirectory[4]);
+    out_Path.AppendPath(sDirectory);
     out_Path.MakeCleanPath();
     return XII_SUCCESS;
   }
 
   if (sName == "user")
   {
+    sDirectory.Shrink(4, 0);
     out_Path = xiiOSFile::GetUserDataFolder();
-    out_Path.AppendPath(&szDirectory[5]);
+    out_Path.AppendPath(sDirectory);
     out_Path.MakeCleanPath();
     return XII_SUCCESS;
   }
 
   if (sName == "temp")
   {
+    sDirectory.Shrink(4, 0);
     out_Path = xiiOSFile::GetTempDataFolder();
-    out_Path.AppendPath(&szDirectory[5]);
+    out_Path.AppendPath(sDirectory);
     out_Path.MakeCleanPath();
     return XII_SUCCESS;
   }
 
   if (sName == "appdir")
   {
+    sDirectory.Shrink(6, 0);
     out_Path = xiiOSFile::GetApplicationDirectory();
-    out_Path.AppendPath(&szDirectory[7]);
+    out_Path.AppendPath(sDirectory);
     out_Path.MakeCleanPath();
     return XII_SUCCESS;
   }
@@ -923,7 +933,7 @@ xiiMutex& xiiFileSystem::GetMutex()
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS)
 
-void xiiFileSystem::StartSearch(xiiFileSystemIterator& iterator, const char* szSearchTerm, xiiBitflags<xiiFileSystemIteratorFlags> flags /*= xiiFileSystemIteratorFlags::Default*/)
+void xiiFileSystem::StartSearch(xiiFileSystemIterator& iterator, xiiStringView sSearchTerm, xiiBitflags<xiiFileSystemIteratorFlags> flags /*= xiiFileSystemIteratorFlags::Default*/)
 {
   XII_LOCK(s_pData->m_FsMutex);
 
@@ -944,15 +954,15 @@ void xiiFileSystem::StartSearch(xiiFileSystemIterator& iterator, const char* szS
     folders.PushBack(sDdPath);
   }
 
-  iterator.StartMultiFolderSearch(folders, szSearchTerm, flags);
+  iterator.StartMultiFolderSearch(folders, sSearchTerm, flags);
 }
 
 #endif
 
-xiiResult xiiFileSystem::CreateDirectoryStructure(const char* szPath)
+xiiResult xiiFileSystem::CreateDirectoryStructure(xiiStringView sPath)
 {
   xiiStringBuilder sRedir;
-  XII_SUCCEED_OR_RETURN(ResolveSpecialDirectory(szPath, sRedir));
+  XII_SUCCEED_OR_RETURN(ResolveSpecialDirectory(sPath, sRedir));
 
   return xiiOSFile::CreateDirectoryStructure(sRedir);
 }

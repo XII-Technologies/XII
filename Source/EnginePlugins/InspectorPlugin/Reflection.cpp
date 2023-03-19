@@ -145,5 +145,4 @@ void RemoveReflectionEventHandler()
 }
 
 
-
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Reflection);

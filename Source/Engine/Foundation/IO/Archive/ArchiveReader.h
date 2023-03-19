@@ -12,7 +12,7 @@ class XII_FOUNDATION_DLL xiiArchiveReader
 {
 public:
   /// \brief Opens the given file and validates that it is a valid archive file.
-  xiiResult OpenArchive(const char* szPath);
+  xiiResult OpenArchive(xiiStringView sPath);
 
   /// \brief Returns the table-of-contents for the previously opened archive.
   const xiiArchiveTOC& GetArchiveTOC();
@@ -20,12 +20,12 @@ public:
   /// \brief Extracts the given entry to the target folder.
   ///
   /// Calls ExtractFileProgressCallback() to report progress.
-  xiiResult ExtractFile(xiiUInt32 uiEntryIdx, const char* szTargetFolder) const;
+  xiiResult ExtractFile(xiiUInt32 uiEntryIdx, xiiStringView sTargetFolder) const;
 
   /// \brief Extracts all files to the target folder.
   ///
   /// Calls ExtractNextFileCallback() for every file that is being extracted.
-  xiiResult ExtractAllFiles(const char* szTargetFolder) const;
+  xiiResult ExtractAllFiles(xiiStringView sTargetFolder) const;
 
   /// \brief Sets up \a memReader for reading the raw (potentially compressed) data that is stored for the given entry in the archive.
   void ConfigureRawMemoryStreamReader(xiiUInt32 uiEntryIdx, xiiRawMemoryStreamReader& memReader) const;
@@ -35,7 +35,7 @@ public:
 
 protected:
   /// \brief Called by ExtractAllFiles() for progress reporting. Return false to abort.
-  virtual bool ExtractNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, const char* szSourceFile) const;
+  virtual bool ExtractNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile) const;
 
   /// \brief Called by ExtractFile() for progress reporting. Return false to abort.
   virtual bool ExtractFileProgressCallback(xiiUInt64 bytesWritten, xiiUInt64 bytesTotal) const;

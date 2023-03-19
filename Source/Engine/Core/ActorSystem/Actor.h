@@ -12,11 +12,11 @@ class XII_CORE_DLL xiiActor : public xiiReflectedClass
   XII_DISALLOW_COPY_AND_ASSIGN(xiiActor);
 
 public:
-  xiiActor(const char* szActorName, const void* pCreatedBy);
+  xiiActor(xiiStringView sActorName, const void* pCreatedBy);
   ~xiiActor();
 
   /// \brief Returns the name of this actor
-  const char* GetName() const;
+  xiiStringView GetName() const;
 
   /// \brief Returns the 'created by' pointer of the actor
   const void* GetCreatedBy() const;

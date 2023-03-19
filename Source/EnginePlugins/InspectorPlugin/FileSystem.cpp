@@ -13,7 +13,7 @@ static void FileSystemEventHandler(const xiiFileSystem::FileEvent& e)
     case xiiFileSystem::FileEventType::AddDataDirectorySucceeded:
     {
       bool bExisted = false;
-      auto it       = s_KnownDataDirs.FindOrAdd(e.m_szFileOrDirectory, &bExisted);
+      auto it       = s_KnownDataDirs.FindOrAdd(e.m_sFileOrDirectory, &bExisted);
 
       if (!bExisted)
       {
@@ -24,13 +24,13 @@ static void FileSystemEventHandler(const xiiFileSystem::FileEvent& e)
       xiiStringBuilder sName;
       sName.Format("IO/DataDirs/Dir{0}", xiiArgI(it.Value(), 2, true));
 
-      xiiStats::SetStat(sName.GetData(), e.m_szFileOrDirectory);
+      xiiStats::SetStat(sName.GetData(), e.m_sFileOrDirectory);
     }
     break;
 
     case xiiFileSystem::FileEventType::RemoveDataDirectory:
     {
-      auto it = s_KnownDataDirs.Find(e.m_szFileOrDirectory);
+      auto it = s_KnownDataDirs.Find(e.m_sFileOrDirectory);
 
       if (!it.IsValid())
         break;

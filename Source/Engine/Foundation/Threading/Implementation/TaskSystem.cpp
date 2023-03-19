@@ -39,7 +39,7 @@ void xiiTaskSystem::Startup()
   tl_TaskWorkerInfo.m_WorkerType   = xiiWorkerThreadType::MainThread;
   tl_TaskWorkerInfo.m_iWorkerIndex = 0;
 
-  // initialize with the default number of worker threads
+  // Initialize with the default number of worker threads
   SetWorkerThreadCount();
 }
 
@@ -55,5 +55,6 @@ void xiiTaskSystem::SetTargetFrameTime(xiiTime targetFrameTime)
 {
   s_pState->m_TargetFrameTime = targetFrameTime;
 }
+
 
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_TaskSystem);

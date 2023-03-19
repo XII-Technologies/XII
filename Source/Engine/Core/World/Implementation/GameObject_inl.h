@@ -85,9 +85,9 @@ XII_ALWAYS_INLINE bool xiiGameObject::IsActive() const
   return m_Flags.IsSet(xiiObjectFlags::ActiveState);
 }
 
-XII_ALWAYS_INLINE void xiiGameObject::SetName(const char* szName)
+XII_ALWAYS_INLINE void xiiGameObject::SetName(xiiStringView sName)
 {
-  m_sName.Assign(szName);
+  m_sName.Assign(sName);
 }
 
 XII_ALWAYS_INLINE void xiiGameObject::SetName(const xiiHashedString& sName)
@@ -95,16 +95,31 @@ XII_ALWAYS_INLINE void xiiGameObject::SetName(const xiiHashedString& sName)
   m_sName = sName;
 }
 
-XII_ALWAYS_INLINE void xiiGameObject::SetGlobalKey(const char* szGlobalKey)
+XII_ALWAYS_INLINE void xiiGameObject::SetGlobalKey(xiiStringView sKey)
 {
   xiiHashedString sGlobalKey;
-  sGlobalKey.Assign(szGlobalKey);
+  sGlobalKey.Assign(sKey);
   SetGlobalKey(sGlobalKey);
 }
 
-XII_ALWAYS_INLINE const char* xiiGameObject::GetName() const
+XII_ALWAYS_INLINE xiiStringView xiiGameObject::GetName() const
 {
-  return m_sName.GetString().GetData();
+  return m_sName.GetView();
+}
+
+XII_ALWAYS_INLINE void xiiGameObject::SetNameInternal(const char* szName)
+{
+  m_sName.Assign(szName);
+}
+
+XII_ALWAYS_INLINE const char* xiiGameObject::GetNameInternal() const
+{
+  return m_sName;
+}
+
+XII_ALWAYS_INLINE void xiiGameObject::SetGlobalKeyInternal(const char* szName)
+{
+  SetGlobalKey(szName);
 }
 
 XII_ALWAYS_INLINE bool xiiGameObject::HasName(const xiiTempHashedString& name) const

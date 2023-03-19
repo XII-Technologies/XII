@@ -40,15 +40,15 @@ namespace xiiConversionUtils
   ///   XII_SUCCESS if any integer value could get properly extracted from szString (including 0). This includes that only some part of the
   ///   string was parsed until a non-digit character was encountered.
   ///   XII_FAILURE if the string starts with something that can not be interpreted as an integer.
-  XII_FOUNDATION_DLL xiiResult StringToInt(const char* szString, xiiInt32& out_Res, const char** out_LastParsePosition = nullptr); // [tested]
+  XII_FOUNDATION_DLL xiiResult StringToInt(xiiStringView sText, xiiInt32& out_Res, const char** out_LastParsePosition = nullptr); // [tested]
 
   /// \brief Same as StringToInt() but expects the string to be a uint32.
   ///
   /// If the parsed value is a valid int but outside the uint32 value range, the function returns XII_FAILURE.
-  XII_FOUNDATION_DLL xiiResult StringToUInt(const char* szString, xiiUInt32& out_Res, const char** out_LastParsePosition = nullptr); // [tested]
+  XII_FOUNDATION_DLL xiiResult StringToUInt(xiiStringView sText, xiiUInt32& out_Res, const char** out_LastParsePosition = nullptr); // [tested]
 
   /// \brief Same as StringToInt but converts to a 64bit integer value instead.
-  XII_FOUNDATION_DLL xiiResult StringToInt64(const char* szString, xiiInt64& out_Res,
+  XII_FOUNDATION_DLL xiiResult StringToInt64(xiiStringView sText, xiiInt64& out_Res,
                                              const char** out_LastParsePosition = nullptr); // [tested]
 
   /// \brief Parses szString and converts it to a double value. Returns XII_FAILURE if the string contains no parseable floating point value.
@@ -84,7 +84,7 @@ namespace xiiConversionUtils
   ///   stopped. On the down-side StringToFloat() is probably not as precise as atof(), because of a very simplistic conversion algorithm.
   ///   If you require the features of StringToFloat() and the precision of atof(), you can let StringToFloat() handle the cases for
   ///   detecting the validity, the sign and where the value ends and then use atof to parse only that substring with maximum precision.
-  XII_FOUNDATION_DLL xiiResult StringToFloat(const char* szString, double& out_Res, const char** out_LastParsePosition = nullptr); // [tested]
+  XII_FOUNDATION_DLL xiiResult StringToFloat(xiiStringView sText, double& out_Res, const char** out_LastParsePosition = nullptr); // [tested]
 
   /// \brief Parses szString and checks that the first word it finds starts with a phrase that can be interpreted as a boolean value.
   ///
@@ -105,7 +105,7 @@ namespace xiiConversionUtils
   /// \return
   ///   XII_SUCCESS if any phrase was encountered that can be interpreted as a boolean value.
   ///   XII_FAILURE otherwise.
-  XII_FOUNDATION_DLL xiiResult StringToBool(const char* szString, bool& out_Res, const char** out_LastParsePosition = nullptr); // [tested]
+  XII_FOUNDATION_DLL xiiResult StringToBool(xiiStringView sText, bool& out_Res, const char** out_LastParsePosition = nullptr); // [tested]
 
 
   /// \brief Parses \a szText and tries to find up to \a uiNumFloats float values to extract. Skips all characters that cannot be
@@ -127,7 +127,7 @@ namespace xiiConversionUtils
   ///   or uiNumFloats values were successfully extracted.
   /// \return
   ///   The number of successfully extracted values (and thus valid values in out_pFloats).
-  XII_FOUNDATION_DLL xiiUInt32 ExtractFloatsFromString(const char* szText, xiiUInt32 uiNumFloats, float* out_pFloats,
+  XII_FOUNDATION_DLL xiiUInt32 ExtractFloatsFromString(xiiStringView sText, xiiUInt32 uiNumFloats, float* out_pFloats,
                                                        const char** out_LastParsePosition = nullptr); // [tested]
 
   /// \brief Converts a hex character ('0', '1', ... '9', 'A'/'a', ... 'F'/'f') to the corresponding int value 0 - 15.
@@ -135,17 +135,20 @@ namespace xiiConversionUtils
   /// \note Returns -1 for invalid HEX characters.
   XII_FOUNDATION_DLL xiiInt8 HexCharacterToIntValue(xiiUInt32 Character); // [tested]
 
-  /// \brief Converts a hex string (i.e. 0xAABBCCDD) into its uint32 value.
-  XII_FOUNDATION_DLL xiiUInt32 ConvertHexStringToUInt32(const char* szHEX); // [tested]
+  /// \brief Same as ConvertHexStringToUInt() with uiMaxHexCharacters set to 8.
+  XII_FOUNDATION_DLL xiiResult ConvertHexStringToUInt32(xiiStringView sHex, xiiUInt32& out_uiResult); // [tested]
+
+  /// \brief Same as ConvertHexStringToUInt() with uiMaxHexCharacters set to 16.
+  XII_FOUNDATION_DLL xiiResult ConvertHexStringToUInt64(xiiStringView sHex, xiiUInt64& out_uiResult); // [tested]
 
   /// \brief Converts a hex string (i.e. 0xAABBCCDD) into its uint64 value.
   ///
   /// "0x" at the beginning is ignored.
   /// Empty strings are interpreted as 'valid', representing the value 0 (returns XII_SUCCESS).
-  /// If the xiiStringView is shorter than 16 characters, this is interpreted as a valid HEX value with a smaller value.
-  /// If the string is longer than 16 characters (after the '0x'), the additional characters are not parsed at all.
-  /// If the first 16 characters (after the '0x') contain any non-HEX characters, parsing is interrupted and XII_FAILURE is returned.
-  XII_FOUNDATION_DLL xiiResult ConvertHexStringToUInt64(xiiStringView sHex, xiiUInt64& out_uiResult);
+  /// If the xiiStringView is shorter than uiMaxHexCharacters, this is interpreted as a valid HEX value with a smaller value.
+  /// If the string is longer than uiMaxHexCharacters (after the '0x'), the additional characters are not parsed, at all.
+  /// If the first uiMaxHexCharacters (after the '0x') contain any non-HEX characters, parsing is interrupted and XII_FAILURE is returned.
+  XII_FOUNDATION_DLL xiiResult ConvertHexStringToUInt(xiiStringView sHex, xiiUInt64& out_uiResult, xiiUInt32 uiMaxHexCharacters, xiiUInt32* outTotalCharactersParsed); // [tested]
 
   /// \brief Converts a HEX string to a binary value.
   ///
@@ -158,7 +161,7 @@ namespace xiiConversionUtils
   ///
   /// \note This function does not validate that the incoming string is actually valid HEX. If an invalid character is used, the result will
   /// be invalid and there is no error reported.
-  XII_FOUNDATION_DLL void ConvertHexToBinary(const char* szHEX, xiiUInt8* pBinary, xiiUInt32 uiBinaryBuffer); // [tested]
+  XII_FOUNDATION_DLL void ConvertHexToBinary(xiiStringView sText, xiiUInt8* pBinary, xiiUInt32 uiBinaryBuffer); // [tested]
 
   /// \brief Converts a binary stream to a HEX string.
   ///
@@ -170,11 +173,11 @@ namespace xiiConversionUtils
   inline void ConvertBinaryToHex(const void* pBinaryData, xiiUInt32 uiBytes, APPEND_CONTAINER_LAMBDA append); // [tested]
 
   /// \brief Converts a string that was written with xiiConversionUtils::ToString(xiiUuid) back to an xiiUuid object.
-  XII_FOUNDATION_DLL xiiUuid ConvertStringToUuid(const xiiStringView& sText); // [tested]
+  XII_FOUNDATION_DLL xiiUuid ConvertStringToUuid(xiiStringView sText); // [tested]
 
   /// \brief Returns true when the given string is in the exact format "{ 05af8d07-0b38-44a6-8d50-49731ae2625d }"
   /// This includes braces, whitespaces and dashes. This is the format that ToString produces.
-  XII_FOUNDATION_DLL bool IsStringUuid(const xiiStringView& sText); // [tested]
+  XII_FOUNDATION_DLL bool IsStringUuid(xiiStringView sText); // [tested]
 
   /// \brief Converts a bool to a string
   XII_ALWAYS_INLINE const xiiStringBuilder& ToString(bool value, xiiStringBuilder& out_Result) // [tested]
@@ -324,7 +327,7 @@ namespace xiiConversionUtils
   ///
   /// Allowed are all predefined color names (case-insensitive), as well as Hex-Values in the form '#RRGGBB' and '#RRGGBBAA'
   /// If out_ValidColorName is a valid pointer, it contains true if the color name was known, otherwise false
-  XII_FOUNDATION_DLL xiiColor GetColorByName(const char* szColorName, bool* out_ValidColorName = nullptr); // [tested]
+  XII_FOUNDATION_DLL xiiColor GetColorByName(xiiStringView sText, bool* out_ValidColorName = nullptr); // [tested]
 
   /// \brief The inverse of GetColorByName
   XII_FOUNDATION_DLL xiiString GetColorName(const xiiColor& col); // [tested]

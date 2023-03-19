@@ -134,15 +134,15 @@ public:
   bool IsActive() const;
 
   /// \brief Sets the name to identify this object. Does not have to be a unique name.
-  void        SetName(const char* szName);
-  void        SetName(const xiiHashedString& sName);
-  const char* GetName() const;
-  bool        HasName(const xiiTempHashedString& name) const;
+  void          SetName(xiiStringView sName);
+  void          SetName(const xiiHashedString& sName);
+  xiiStringView GetName() const;
+  bool          HasName(const xiiTempHashedString& name) const;
 
   /// \brief Sets the global key to identify this object. Global keys must be unique within a world.
-  void        SetGlobalKey(const char* szGlobalKey);
-  void        SetGlobalKey(const xiiHashedString& sGlobalKey);
-  const char* GetGlobalKey() const;
+  void          SetGlobalKey(xiiStringView sGlobalKey);
+  void          SetGlobalKey(const xiiHashedString& sGlobalKey);
+  xiiStringView GetGlobalKey() const;
 
   /// \brief Enables or disabled notification message 'xiiMsgChildrenChanged' when children are added or removed. The message is sent to this object and all its parent objects.
   void EnableChildChangesNotifications();
@@ -199,7 +199,7 @@ public:
   /// When on any part of the path the next child cannot be found, nullptr is returned.
   /// This function expects an exact path to the destination. It does not search the full hierarchy for
   /// the next child, as SearchChildByNameSequence() does.
-  xiiGameObject* FindChildByPath(const char* path);
+  xiiGameObject* FindChildByPath(xiiStringView sPath);
 
   /// \brief Searches for a child similar to FindChildByName() but allows to search for multiple names in a sequence.
   ///
@@ -208,10 +208,10 @@ public:
   /// named "a". If that is found, the search continues from there for a child called "b".
   /// If such a child is found and pExpectedComponent != nullptr, it is verified that the object
   /// contains a component of that type. If it doesn't the search continues (including back-tracking).
-  xiiGameObject* SearchForChildByNameSequence(const char* szObjectSequence, const xiiRTTI* pExpectedComponent = nullptr);
+  xiiGameObject* SearchForChildByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent = nullptr);
 
   /// \brief Same as SearchForChildByNameSequence but returns ALL matches, in case the given path could mean multiple objects
-  void SearchForChildrenByNameSequence(const char* szObjectSequence, const xiiRTTI* pExpectedComponent, xiiHybridArray<xiiGameObject*, 8>& out_Objects);
+  void SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiHybridArray<xiiGameObject*, 8>& out_Objects);
 
   xiiWorld*       GetWorld();
   const xiiWorld* GetWorld() const;
@@ -476,6 +476,12 @@ public:
 private:
   friend class xiiComponentManagerBase;
   friend class xiiGameObjectTest;
+
+  // Only needed until reflection can deal with xiiStringView
+  void        SetNameInternal(const char* szName);
+  const char* GetNameInternal() const;
+  void        SetGlobalKeyInternal(const char* szKey);
+  const char* GetGlobalKeyInternal() const;
 
   bool SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg);
   bool SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg) const;

@@ -199,7 +199,7 @@ xiiDirectoryWatcher::~xiiDirectoryWatcher()
   XII_DEFAULT_DELETE(m_pImpl);
 }
 
-xiiResult xiiDirectoryWatcher::OpenDirectory(const xiiString& path, xiiBitflags<Watch> whatToWatch)
+xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBitflags<Watch> whatToWatch)
 {
   if (m_pImpl->m_inotifyFd >= 0)
   {
@@ -220,7 +220,7 @@ xiiResult xiiDirectoryWatcher::OpenDirectory(const xiiString& path, xiiBitflags<
     m_pImpl->m_inotifyFd = -1;
   }
 
-  xiiStringBuilder folder = path;
+  xiiStringBuilder folder = sAbsolutePath;
   folder.MakeCleanPath();
   EnsureTrailingSlash(folder);
 

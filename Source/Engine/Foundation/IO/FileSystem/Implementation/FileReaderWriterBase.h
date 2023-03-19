@@ -37,9 +37,9 @@ public:
   xiiUInt64 GetFileSize() const { return m_pDataDirReader->GetFileSize(); }
 
 protected:
-  xiiDataDirectoryReader* GetFileReader(const char* szFile, xiiFileShareMode::Enum FileShareMode, bool bAllowFileEvents)
+  xiiDataDirectoryReader* GetFileReader(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bAllowFileEvents)
   {
-    return xiiFileSystem::GetFileReader(szFile, FileShareMode, bAllowFileEvents);
+    return xiiFileSystem::GetFileReader(sFile, FileShareMode, bAllowFileEvents);
   }
 
   xiiDataDirectoryReader* m_pDataDirReader;
@@ -79,9 +79,9 @@ public:
   xiiUInt64 GetFileSize() const { return m_pDataDirWriter->GetFileSize(); } // [tested]
 
 protected:
-  xiiDataDirectoryWriter* GetFileWriter(const char* szFile, xiiFileShareMode::Enum FileShareMode, bool bAllowFileEvents)
+  xiiDataDirectoryWriter* GetFileWriter(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bAllowFileEvents)
   {
-    return xiiFileSystem::GetFileWriter(szFile, FileShareMode, bAllowFileEvents);
+    return xiiFileSystem::GetFileWriter(sFile, FileShareMode, bAllowFileEvents);
   }
 
   xiiDataDirectoryWriter* m_pDataDirWriter;

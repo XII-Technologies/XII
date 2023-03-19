@@ -19,21 +19,21 @@ namespace
 
     sTemp.Prepend("!");
 
-    // if it contains '!platform'
+    // If it contains '!platform'
     if (sPlatforms.FindWholeWord_NoCase(sTemp.GetData(), xiiStringUtils::IsIdentifierDelimiter_C_Code) != nullptr)
       return false;
 
     sTemp = szPlatform;
 
-    // if it contains 'platform'
+    // If it contains 'platform'
     if (sPlatforms.FindWholeWord_NoCase(sTemp.GetData(), xiiStringUtils::IsIdentifierDelimiter_C_Code) != nullptr)
       return true;
 
-    // do not enable this when ALL is specified
+    // Do not enable this when ALL is specified
     if (xiiStringUtils::IsEqual(szPlatform, "DEBUG"))
       return false;
 
-    // if it contains 'ALL'
+    // If it contains 'ALL'
     if (sPlatforms.FindWholeWord_NoCase("ALL", xiiStringUtils::IsIdentifierDelimiter_C_Code) != nullptr)
       return true;
 
@@ -215,12 +215,12 @@ xiiResult xiiShaderCompiler::CompileShaderPermutationForPlatforms(const char* sz
   {
     xiiStringView sStageSource = Sections.GetSectionContent(xiiShaderHelper::xiiShaderSections::VERTEXSHADER + stage, uiFirstLine);
 
-    // later code checks whether the string is empty, to see whether we have any shader source, so this has to be kept empty
+    // Later code checks whether the string is empty, to see whether we have any shader source, so this has to be kept empty
     if (!sStageSource.IsEmpty())
     {
       sTemp.Clear();
 
-      // prepend common shader section if there is any
+      // Prepend common shader section if there is any
       if (!sShaderSource.IsEmpty())
       {
         sTemp.AppendFormat("#line {0}\n{1}", uiFirstShaderLine, sShaderSource);

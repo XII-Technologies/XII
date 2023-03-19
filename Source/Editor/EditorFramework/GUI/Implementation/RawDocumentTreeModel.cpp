@@ -68,17 +68,11 @@ QVariant xiiQtDummyAdapter::data(const xiiDocumentObject* pObject, int row, int 
   return QVariant();
 }
 
-xiiQtNamedAdapter::xiiQtNamedAdapter(
-  const xiiDocumentObjectManager* pTree,
-  const xiiRTTI*                  pType,
-  const char*                     m_sChildProperty,
-  const char*                     szNameProperty) :
+xiiQtNamedAdapter::xiiQtNamedAdapter(const xiiDocumentObjectManager* pTree, const xiiRTTI* pType, const char* m_sChildProperty, const char* szNameProperty) :
   xiiQtDocumentTreeModelAdapter(pTree, pType, m_sChildProperty), m_sNameProperty(szNameProperty)
 {
   auto pProp = pType->FindPropertyByName(m_sNameProperty);
-  XII_ASSERT_DEV(
-    pProp != nullptr && pProp->GetCategory() == xiiPropertyCategory::Member && pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String,
-    "THe name property must be a string member property.");
+  XII_ASSERT_DEV(pProp != nullptr && pProp->GetCategory() == xiiPropertyCategory::Member && pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String, "The name property must be a string member property.");
 
   m_pTree->m_PropertyEvents.AddEventHandler(xiiMakeDelegate(&xiiQtNamedAdapter::TreePropertyEventHandler, this));
 }
@@ -183,8 +177,7 @@ void xiiQtDocumentTreeModel::AddAdapter(xiiQtDocumentTreeModelAdapter* adapter)
     auto index = ComputeModelIndex(pObject);
     if (!index.isValid())
       return;
-    dataChanged(index, index, roles);
-  });
+    dataChanged(index, index, roles); });
   m_Adapters.Insert(adapter->GetType(), adapter);
   beginResetModel();
   endResetModel();
@@ -533,7 +526,7 @@ bool xiiQtDocumentTreeModel::MoveObjects(const xiiDragDropInfo& info)
 
     for (const xiiDocumentObject* pDocObject : Dragged)
     {
-      //if (action != Qt::DropAction::MoveAction)
+      // if (action != Qt::DropAction::MoveAction)
       {
         bool                     bCanMove   = true;
         const xiiDocumentObject* pCurParent = pTarget;

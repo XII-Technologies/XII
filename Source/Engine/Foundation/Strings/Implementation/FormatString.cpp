@@ -273,9 +273,9 @@ xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiTime& arg)
     tRem -= iMin * 60;
     iMin *= xiiMath::Sign(static_cast<xiiInt32>(arg.GetSeconds()));
 
-    const double fSec = tRem;
+    const xiiInt32 iSec = static_cast<xiiInt32>(xiiMath::Trunc(tRem));
 
-    writepos = xiiStringUtils::snprintf(tmp, uiLength, "%imin %fsec", iMin, fSec);
+    writepos = xiiStringUtils::snprintf(tmp, uiLength, "%imin %isec", iMin, iSec);
   }
   else
   {
@@ -288,9 +288,9 @@ xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiTime& arg)
     const xiiInt32 iMin = static_cast<xiiInt32>(xiiMath::Trunc(tRem / 60.0));
     tRem -= iMin * 60;
 
-    const double fSec = tRem;
+    const xiiInt32 iSec = static_cast<xiiInt32>(xiiMath::Trunc(tRem));
 
-    writepos = xiiStringUtils::snprintf(tmp, uiLength, "%ih %imin %fsec", iHrs, iMin, fSec);
+    writepos = xiiStringUtils::snprintf(tmp, uiLength, "%ih %imin %isec", iHrs, iMin, iSec);
   }
 
   tmp[writepos] = '\0';
@@ -383,5 +383,6 @@ xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgErrorCode& 
   return xiiStringView(FullMessage);
 }
 #endif
+
 
 XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_FormatString);

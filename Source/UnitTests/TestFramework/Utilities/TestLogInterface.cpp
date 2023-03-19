@@ -26,7 +26,7 @@ void xiiTestLogInterface::HandleLogMessage(const xiiLoggingEventData& le)
       if (msg.m_Type != xiiLogMsgType::All && le.m_EventType != msg.m_Type)
         continue;
 
-      if (xiiStringUtils::FindSubString(le.m_szText, msg.m_sMsgSubString))
+      if (le.m_sText.FindSubString(msg.m_sMsgSubString))
       {
         --msg.m_iCount;
 

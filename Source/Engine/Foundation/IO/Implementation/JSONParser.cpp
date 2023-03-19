@@ -570,7 +570,7 @@ void xiiJSONParser::ReadString()
     {
       ParsingError("While reading string: Reached end of document before end of string was found.", true);
 
-      break; // stop when end of stream is encountered
+      break; // Stop when end of stream is encountered
     }
 
     if (!bEscapeSequence && m_uiCurByte == '\"')
@@ -585,7 +585,7 @@ void xiiJSONParser::ReadString()
           break;
         case '\\':
           m_TempString.PushBack('\\');
-          m_uiCurByte = '\0'; // make sure the next character isn't interpreted as an escape sequence
+          m_uiCurByte = '\0'; // Make sure the next character isn't interpreted as an escape sequence
           break;
         case '/':
           m_TempString.PushBack('/');
@@ -609,6 +609,8 @@ void xiiJSONParser::ReadString()
         {
           xiiUInt16 cpt[2];
           auto      ReadUtf16CodePoint = [&](xiiUInt16& uiCodePoint) -> bool {
+            uiCodePoint = 0;
+
             // Unicode literal are utf16 in the format \uFFFF. The hex number FFFF can be upper or lower case but must be 4 characters long.
             xiiUInt8  unicodeLiteral[5] = {0, 0, 0, 0, 0};
             xiiUInt32 i                 = 0;
@@ -616,7 +618,7 @@ void xiiJSONParser::ReadString()
             {
               if (m_uiNextByte == '\0' || m_uiNextByte == '\"')
               {
-                ParsingError("Unicode literal is too short, must be 4 hex characters.", false);
+                ParsingError("Unicode literal is too short, must be 4 HEX characters.", false);
                 return false;
               }
               if ((m_uiNextByte < '0' || m_uiNextByte > '9') && (m_uiNextByte < 'A' || m_uiNextByte > 'F') && (m_uiNextByte < 'a' || m_uiNextByte > 'f'))
@@ -628,7 +630,17 @@ void xiiJSONParser::ReadString()
 
               unicodeLiteral[i] = m_uiCurByte;
             }
-            uiCodePoint = static_cast<xiiUInt16>(xiiConversionUtils::ConvertHexStringToUInt32((const char*)&unicodeLiteral[0]));
+
+            xiiUInt32 uiHexValue = 0;
+            if (xiiConversionUtils::ConvertHexStringToUInt32((const char*)&unicodeLiteral[0], uiHexValue).Succeeded())
+            {
+              uiCodePoint = static_cast<xiiUInt16>(uiHexValue);
+            }
+            else
+            {
+              ParsingError("Unicode HEX literal is malformed.", false);
+            }
+
             return true;
           };
           if (ReadUtf16CodePoint(cpt[0]))
@@ -688,7 +700,7 @@ void xiiJSONParser::ReadWord()
     m_uiCurByte = '\0';
 
     if (!ReadCharacter(true))
-      break; // stop when end of stream is encountered
+      break; // Stop when end of stream is encountered
   } while (!xiiStringUtils::IsWhiteSpace(m_uiCurByte) && m_uiCurByte != ',' && m_uiCurByte != ']' && m_uiCurByte != '}');
 
   m_TempString.PushBack('\0');
@@ -707,7 +719,7 @@ double xiiJSONParser::ReadNumber()
     m_uiCurByte = '\0';
 
     if (!ReadCharacter(true))
-      break; // stop when end of stream is encountered
+      break; // Stop when end of stream is encountered
   } while ((m_uiCurByte >= '0' && m_uiCurByte <= '9') || m_uiCurByte == '.' || m_uiCurByte == 'e' || m_uiCurByte == 'E' || m_uiCurByte == '-' ||
            m_uiCurByte == '+');
 
@@ -723,7 +735,6 @@ double xiiJSONParser::ReadNumber()
 
   return fResult;
 }
-
 
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_JSONParser);

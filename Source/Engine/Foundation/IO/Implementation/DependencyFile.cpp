@@ -30,12 +30,12 @@ void xiiDependencyFile::Clear()
   m_AssetTransformDependencies.Clear();
 }
 
-void xiiDependencyFile::AddFileDependency(const char* szFile)
+void xiiDependencyFile::AddFileDependency(xiiStringView sFile)
 {
-  if (xiiStringUtils::IsNullOrEmpty(szFile))
+  if (sFile.IsEmpty())
     return;
 
-  m_AssetTransformDependencies.PushBack(szFile);
+  m_AssetTransformDependencies.PushBack(sFile);
 }
 
 void xiiDependencyFile::StoreCurrentTimeStamp()
@@ -142,21 +142,21 @@ xiiResult xiiDependencyFile::ReadDependencyFile(xiiStreamReader& stream)
   return XII_SUCCESS;
 }
 
-xiiResult xiiDependencyFile::RetrieveFileTimeStamp(const char* szFile, xiiTimestamp& out_Result)
+xiiResult xiiDependencyFile::RetrieveFileTimeStamp(xiiStringView sFile, xiiTimestamp& out_Result)
 {
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
 
   bool bExisted = false;
-  auto it       = s_FileTimestamps.FindOrAdd(szFile, &bExisted);
+  auto it       = s_FileTimestamps.FindOrAdd(sFile, &bExisted);
 
   if (!bExisted || it.Value().m_LastCheck + xiiTime::Seconds(2.0) < xiiTime::Now())
   {
     it.Value().m_LastCheck = xiiTime::Now();
 
     xiiFileStats stats;
-    if (xiiFileSystem::GetFileStats(szFile, stats).Failed())
+    if (xiiFileSystem::GetFileStats(sFile, stats).Failed())
     {
-      xiiLog::Error("Could not query the file stats for '{0}'", xiiArgSensitive(szFile, "File"));
+      xiiLog::Error("Could not query the file stats for '{0}'", xiiArgSensitive(sFile, "File"));
       return XII_FAILURE;
     }
 
@@ -175,28 +175,27 @@ xiiResult xiiDependencyFile::RetrieveFileTimeStamp(const char* szFile, xiiTimest
   return out_Result.IsValid() ? XII_SUCCESS : XII_FAILURE;
 }
 
-xiiResult xiiDependencyFile::WriteDependencyFile(const char* szFile) const
+xiiResult xiiDependencyFile::WriteDependencyFile(xiiStringView sFile) const
 {
-  XII_LOG_BLOCK("xiiDependencyFile::WriteDependencyFile", szFile);
+  XII_LOG_BLOCK("xiiDependencyFile::WriteDependencyFile", sFile);
 
   xiiFileWriter file;
-  if (file.Open(szFile).Failed())
+  if (file.Open(sFile).Failed())
     return XII_FAILURE;
 
   return WriteDependencyFile(file);
 }
 
-xiiResult xiiDependencyFile::ReadDependencyFile(const char* szFile)
+xiiResult xiiDependencyFile::ReadDependencyFile(xiiStringView sFile)
 {
-  XII_LOG_BLOCK("xiiDependencyFile::ReadDependencyFile", szFile);
+  XII_LOG_BLOCK("xiiDependencyFile::ReadDependencyFile", sFile);
 
   xiiFileReader file;
-  if (file.Open(szFile).Failed())
+  if (file.Open(sFile).Failed())
     return XII_FAILURE;
 
   return ReadDependencyFile(file);
 }
-
 
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_DependencyFile);

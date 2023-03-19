@@ -95,11 +95,11 @@ xiiInt32 xiiDuktapeFunction::ReturnNumber(double value)
   return 1;
 }
 
-xiiInt32 xiiDuktapeFunction::ReturnString(const char* value)
+xiiInt32 xiiDuktapeFunction::ReturnString(xiiStringView value)
 {
   XII_ASSERT_DEV(!m_bDidReturnValue, "Only one ReturnXYZ function may be called when exiting a C function");
   m_bDidReturnValue = true;
-  duk_push_string(GetContext(), value);
+  duk_push_lstring(GetContext(), value.GetStartPointer(), value.GetElementCount());
   return 1;
 }
 
@@ -107,7 +107,7 @@ xiiInt32 xiiDuktapeFunction::ReturnCustom()
 {
   XII_ASSERT_DEV(!m_bDidReturnValue, "Only one ReturnXYZ function may be called when exiting a C function");
   m_bDidReturnValue = true;
-  // push nothing, the user calls this because he pushed something custom already
+  // Push nothing, the user calls this because he pushed something custom already
   return 1;
 }
 
