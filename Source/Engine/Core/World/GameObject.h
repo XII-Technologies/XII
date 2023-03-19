@@ -480,6 +480,8 @@ private:
   // Only needed until reflection can deal with xiiStringView
   void        SetNameInternal(const char* szName);
   const char* GetNameInternal() const;
+  void        SetGlobalKeyInternal(const char* szKey);
+  const char* GetGlobalKeyInternal() const;
 
   bool SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg);
   bool SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg) const;
