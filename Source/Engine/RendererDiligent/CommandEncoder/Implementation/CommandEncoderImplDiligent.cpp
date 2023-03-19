@@ -18,15 +18,11 @@
 #define NULL 0
 
 #if D3D11_SUPPORTED
-#  include <Unknwn.h>
-#  include <atlbase.h>
-#  include <atlcom.h>
-#  include <guiddef.h>
-
-// clang-format disable
+// clang-format off
 #  include <d3d11.h>
-#include <Graphics/GraphicsEngineD3D11/interface/BufferViewD3D11.h>
-// clang-format enable
+#  include <Graphics/GraphicsEngineD3D11/interface/BufferViewD3D11.h>
+#  include <Graphics/GraphicsEngineD3D11/interface/TextureViewD3D11.h>
+// clang-format on
 #endif
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
@@ -280,11 +276,9 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xiiGALUnorderedAccessView* pUnorderedAccessView, xiiVec4U32 clearValues)
 {
   xiiGALUnorderedAccessViewDiligent* pUnorderedAccessViewDiligent = nullptr;
-  Diligent::IBufferView*             pUAVDiligent                 = nullptr;
   {
     xiiGALUnorderedAccessView* pGALUnorderedAccessView = const_cast<xiiGALUnorderedAccessView*>(pUnorderedAccessView);
     pUnorderedAccessViewDiligent                       = static_cast<xiiGALUnorderedAccessViewDiligent*>(pGALUnorderedAccessView);
-    pUAVDiligent                                       = pUnorderedAccessViewDiligent->GetBufferView();
   }
 
   switch (m_GALDeviceDiligent.GetDeviceType())
@@ -292,13 +286,42 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 #if D3D11_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D11:
     {
-      Diligent::IBufferViewD3D11* ppD3D11BufferViewDiligent = nullptr;
-      pUAVDiligent->QueryInterface(...);
+      if (Diligent::ITextureView* pUAVTextureDiligent = pUnorderedAccessViewDiligent->GetTextureView())
+      {
+        Diligent::ITextureViewD3D11** ppD3D11TextureViewDiligent = nullptr;
+        pUAVTextureDiligent->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>(ppD3D11TextureViewDiligent));
+        XII_ASSERT_DEV(ppD3D11TextureViewDiligent != nullptr, "Failed to retrieve D3D11 texture view implementation.");
+      }
+
+      if (Diligent::IBufferView* pUAVBufferDiligent = pUnorderedAccessViewDiligent->GetBufferView())
+      {
+        Diligent::IBufferViewD3D11** ppD3D11BufferViewDiligent = nullptr;
+        pUAVBufferDiligent->QueryInterface(Diligent::IID_BufferViewD3D11, reinterpret_cast<Diligent::IObject**>(ppD3D11BufferViewDiligent));
+        XII_ASSERT_DEV(ppD3D11BufferViewDiligent != nullptr, "Failed to retrieve D3D11 buffer view implementation.");
+      }
     }
     break;
 #endif
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED
+#if D3D12_SUPPORTED
+    case Diligent::RENDER_DEVICE_TYPE_D3D12:
+    {
+      // \todo Implement unordered access view clearing in D3D12
+      XII_ASSERT_NOT_IMPLEMENTED;
+    }
+    break;
+#endif
+
+#if VULKAN_SUPPORTED
+    case Diligent::RENDER_DEVICE_TYPE_VULKAN:
+    {
+      // \todo Implement unordered access view clearing in Vulkan
+      XII_ASSERT_NOT_IMPLEMENTED;
+    }
+    break;
+#endif
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 
