@@ -107,7 +107,7 @@ xiiResult xiiFileserveClient::EnsureConnected(xiiTime timeout)
     ClearState();
     m_bFailedToConnect = true;
 
-    if (m_pNetwork->ConnectToServer('XIFS', m_sServerConnectionAddress).Failed())
+    if (m_pNetwork->ConnectToServer('XIIFS', m_sServerConnectionAddress).Failed())
       return XII_FAILURE;
 
     if (timeout.GetSeconds() < 0)
@@ -251,17 +251,17 @@ void xiiFileserveClient::UploadFile(xiiUInt16 uiDataDirID, const char* szFile, c
 }
 
 
-void xiiFileserveClient::InvalidateFileCache(xiiUInt16 uiDataDirID, const char* szFile, xiiUInt64 uiHash)
+void xiiFileserveClient::InvalidateFileCache(xiiUInt16 uiDataDirID, xiiStringView sFile, xiiUInt64 uiHash)
 {
   XII_LOCK(m_Mutex);
-  auto& cache       = m_MountedDataDirs[uiDataDirID].m_CacheStatus[szFile];
+  auto& cache       = m_MountedDataDirs[uiDataDirID].m_CacheStatus[sFile];
   cache.m_FileHash  = uiHash;
   cache.m_TimeStamp = 0;
   cache.m_LastCheck.SetZero(); // will trigger a server request and that in turn will update the file timestamp
 
   // redirect the next access to this cache entry
   // together with the zero LastCheck that will make sure the best match gets updated as well
-  m_FileDataDir[szFile] = uiDataDirID;
+  m_FileDataDir[sFile] = uiDataDirID;
 }
 
 void xiiFileserveClient::FillFileStatusCache(const char* szFile)
@@ -312,11 +312,11 @@ void xiiFileserveClient::BuildPathInCache(const char* szFile, const char* szMoun
   }
 }
 
-void xiiFileserveClient::ComputeDataDirMountPoint(const char* szDataDir, xiiStringBuilder& out_sMountPoint)
+void xiiFileserveClient::ComputeDataDirMountPoint(xiiStringView sDataDir, xiiStringBuilder& out_sMountPoint)
 {
-  XII_ASSERT_DEV(xiiStringUtils::IsNullOrEmpty(szDataDir) || xiiStringUtils::EndsWith(szDataDir, "/"), "Invalid path");
+  XII_ASSERT_DEV(sDataDir.IsEmpty() || sDataDir.EndsWith("/"), "Invalid path");
 
-  const xiiUInt32 uiMountPoint = xiiHashingUtils::xxHash32(szDataDir, xiiStringUtils::GetStringElementCount(szDataDir));
+  const xiiUInt32 uiMountPoint = xiiHashingUtils::xxHash32String(sDataDir);
   out_sMountPoint.Format("{0}", xiiArgU(uiMountPoint, 8, true, 16));
 }
 
@@ -374,22 +374,22 @@ void xiiFileserveClient::NetworkMsgHandler(xiiRemoteMessage& msg)
   xiiLog::Error("Unknown FSRV message: '{0}' - {1} bytes", msg.GetMessageID(), msg.GetMessageData().GetCount());
 }
 
-xiiUInt16 xiiFileserveClient::MountDataDirectory(const char* szDataDirectory, const char* szRootName)
+xiiUInt16 xiiFileserveClient::MountDataDirectory(xiiStringView sDataDirectory, xiiStringView sRootName)
 {
   XII_LOCK(m_Mutex);
   if (!m_pNetwork->IsConnectedToServer())
     return 0xffff;
 
-  xiiStringBuilder sRoot = szRootName;
+  xiiStringBuilder sRoot = sRootName;
   sRoot.Trim(":/");
 
   xiiStringBuilder sMountPoint;
-  ComputeDataDirMountPoint(szDataDirectory, sMountPoint);
+  ComputeDataDirMountPoint(sDataDirectory, sMountPoint);
 
   const xiiUInt16 uiDataDirID = static_cast<xiiUInt16>(m_MountedDataDirs.GetCount());
 
   xiiRemoteMessage msg('FSRV', ' MNT');
-  msg.GetWriter() << szDataDirectory;
+  msg.GetWriter() << sDataDirectory;
   msg.GetWriter() << sRoot;
   msg.GetWriter() << sMountPoint;
   msg.GetWriter() << uiDataDirID;
@@ -397,7 +397,7 @@ xiiUInt16 xiiFileserveClient::MountDataDirectory(const char* szDataDirectory, co
   m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
 
   auto& dd = m_MountedDataDirs.ExpandAndGetRef();
-  // dd.m_sPathOnClient = szDataDirectory;
+  // dd.m_sPathOnClient = sDataDirectory;
   // dd.m_sRootName = sRoot;
   dd.m_sMountPoint = sMountPoint;
   dd.m_bMounted    = true;
@@ -421,17 +421,17 @@ void xiiFileserveClient::UnmountDataDirectory(xiiUInt16 uiDataDir)
   dd.m_bMounted = false;
 }
 
-void xiiFileserveClient::DeleteFile(xiiUInt16 uiDataDir, const char* szFile)
+void xiiFileserveClient::DeleteFile(xiiUInt16 uiDataDir, xiiStringView sFile)
 {
   XII_LOCK(m_Mutex);
   if (!m_pNetwork->IsConnectedToServer())
     return;
 
-  InvalidateFileCache(uiDataDir, szFile, 0);
+  InvalidateFileCache(uiDataDir, sFile, 0);
 
   xiiRemoteMessage msg('FSRV', 'DELF');
   msg.GetWriter() << uiDataDir;
-  msg.GetWriter() << szFile;
+  msg.GetWriter() << sFile;
 
   m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
 }
@@ -759,7 +759,7 @@ xiiResult xiiFileserveClient::TryConnectWithFileserver(const char* szAddress, xi
   xiiLog::Info("File server address: '{0}' ({1} sec)", szAddress, timeout.GetSeconds());
 
   xiiUniquePtr<xiiRemoteInterfaceEnet> network = xiiRemoteInterfaceEnet::Make(); /// \todo Abstract this somehow ?
-  if (network->ConnectToServer('XIFS', szAddress, false).Failed())
+  if (network->ConnectToServer('XIIFS', szAddress, false).Failed())
     return XII_FAILURE;
 
   bool bServerFound = false;
@@ -769,8 +769,7 @@ xiiResult xiiFileserveClient::TryConnectWithFileserver(const char* szAddress, xi
       case ' YES':
         bServerFound = true;
         break;
-    }
-  });
+    } });
 
   if (network->WaitForConnectionToServer(timeout).Succeeded())
   {
@@ -810,26 +809,23 @@ xiiResult xiiFileserveClient::WaitForServerInfo(xiiTime timeout /*= xiiTime::Sec
 
   {
     xiiUniquePtr<xiiRemoteInterfaceEnet> network = xiiRemoteInterfaceEnet::Make(); /// \todo Abstract this somehow ?
-    network->SetMessageHandler('FSRV', [&sServerIPs, &uiPort](xiiRemoteMessage& msg)
+    network->SetMessageHandler('FSRV', [&sServerIPs, &uiPort](xiiRemoteMessage& msg) {
+        switch (msg.GetMessageID())
+        {
+          case 'MYIP':
+            msg.GetReader() >> uiPort;
 
-                               {
-                                 switch (msg.GetMessageID())
-                                 {
-                                   case 'MYIP':
-                                     msg.GetReader() >> uiPort;
+            xiiUInt8 uiCount = 0;
+            msg.GetReader() >> uiCount;
 
-                                     xiiUInt8 uiCount = 0;
-                                     msg.GetReader() >> uiCount;
+            sServerIPs.SetCount(uiCount);
+            for (xiiUInt32 i = 0; i < uiCount; ++i)
+            {
+              msg.GetReader() >> sServerIPs[i];
+            }
 
-                                     sServerIPs.SetCount(uiCount);
-                                     for (xiiUInt32 i = 0; i < uiCount; ++i)
-                                     {
-                                       msg.GetReader() >> sServerIPs[i];
-                                     }
-
-                                     break;
-                                 }
-                               });
+            break;
+        } });
 
     XII_SUCCEED_OR_RETURN(network->StartServer('XIIP', "2042", false));
 
@@ -891,7 +887,6 @@ XII_ON_GLOBAL_EVENT(GameApp_UpdatePlugins)
     xiiFileserveClient::GetSingleton()->UpdateClient();
   }
 }
-
 
 
 XII_STATICLINK_FILE(FileservePlugin, FileservePlugin_Client_FileserveClient);

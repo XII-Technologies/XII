@@ -18,14 +18,14 @@ void xiiDataDirectory::FileserveType::ReloadExternalConfigs()
   FolderType::ReloadExternalConfigs();
 }
 
-xiiDataDirectoryReader* xiiDataDirectory::FileserveType::OpenFileToRead(const char* szFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir)
+xiiDataDirectoryReader* xiiDataDirectory::FileserveType::OpenFileToRead(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir)
 {
   // fileserve cannot handle absolute paths, which is actually already ruled out at creation time, so this is just an optimization
-  if (xiiPathUtils::IsAbsolutePath(szFile))
+  if (xiiPathUtils::IsAbsolutePath(sFile))
     return nullptr;
 
   xiiStringBuilder sRedirected;
-  if (ResolveAssetRedirection(szFile, sRedirected))
+  if (ResolveAssetRedirection(sFile, sRedirected))
     bSpecificallyThisDataDir = true; // If this data dir can resolve the guid, only this should load it as well.
 
   // we know that the server cannot resolve asset GUIDs, so don't even ask
@@ -40,18 +40,18 @@ xiiDataDirectoryReader* xiiDataDirectory::FileserveType::OpenFileToRead(const ch
   return FolderType::OpenFileToRead(sFullPath, FileShareMode, bSpecificallyThisDataDir);
 }
 
-xiiDataDirectoryWriter* xiiDataDirectory::FileserveType::OpenFileToWrite(const char* szFile, xiiFileShareMode::Enum FileShareMode)
+xiiDataDirectoryWriter* xiiDataDirectory::FileserveType::OpenFileToWrite(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode)
 {
   // fileserve cannot handle absolute paths, which is actually already ruled out at creation time, so this is just an optimization
-  if (xiiPathUtils::IsAbsolutePath(szFile))
+  if (xiiPathUtils::IsAbsolutePath(sFile))
     return nullptr;
 
-  return FolderType::OpenFileToWrite(szFile, FileShareMode);
+  return FolderType::OpenFileToWrite(sFile, FileShareMode);
 }
 
-xiiResult xiiDataDirectory::FileserveType::InternalInitializeDataDirectory(const char* szDirectory)
+xiiResult xiiDataDirectory::FileserveType::InternalInitializeDataDirectory(xiiStringView sDirectory)
 {
-  xiiStringBuilder sDataDir = szDirectory;
+  xiiStringBuilder sDataDir = sDirectory;
   sDataDir.MakeCleanPath();
 
   xiiStringBuilder sCacheFolder, sCacheMetaFolder;
@@ -73,14 +73,14 @@ void xiiDataDirectory::FileserveType::RemoveDataDirectory()
   FolderType::RemoveDataDirectory();
 }
 
-void xiiDataDirectory::FileserveType::DeleteFile(const char* szFile)
+void xiiDataDirectory::FileserveType::DeleteFile(xiiStringView sFile)
 {
   if (xiiFileserveClient::GetSingleton())
   {
-    xiiFileserveClient::GetSingleton()->DeleteFile(m_uiDataDirID, szFile);
+    xiiFileserveClient::GetSingleton()->DeleteFile(m_uiDataDirID, sFile);
   }
 
-  FolderType::DeleteFile(szFile);
+  FolderType::DeleteFile(sFile);
 }
 
 xiiDataDirectory::FolderReader* xiiDataDirectory::FileserveType::CreateFolderReader() const
@@ -93,10 +93,10 @@ xiiDataDirectory::FolderWriter* xiiDataDirectory::FileserveType::CreateFolderWri
   return XII_DEFAULT_NEW(FileserveDataDirectoryWriter);
 }
 
-xiiResult xiiDataDirectory::FileserveType::GetFileStats(const char* szFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats)
+xiiResult xiiDataDirectory::FileserveType::GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats)
 {
   xiiStringBuilder sRedirected;
-  if (ResolveAssetRedirection(szFileOrFolder, sRedirected))
+  if (ResolveAssetRedirection(sFileOrFolder, sRedirected))
     bOneSpecificDataDir = true; // If this data dir can resolve the guid, only this should load it as well.
 
   // we know that the server cannot resolve asset GUIDs, so don't even ask
@@ -108,10 +108,10 @@ xiiResult xiiDataDirectory::FileserveType::GetFileStats(const char* szFileOrFold
   return xiiOSFile::GetFileStats(sFullPath, out_Stats);
 }
 
-bool xiiDataDirectory::FileserveType::ExistsFile(const char* szFile, bool bOneSpecificDataDir)
+bool xiiDataDirectory::FileserveType::ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir)
 {
   xiiStringBuilder sRedirected;
-  if (ResolveAssetRedirection(szFile, sRedirected))
+  if (ResolveAssetRedirection(sFile, sRedirected))
     bOneSpecificDataDir = true; // If this data dir can resolve the guid, only this should load it as well.
 
   // we know that the server cannot resolve asset GUIDs, so don't even ask
@@ -121,27 +121,27 @@ bool xiiDataDirectory::FileserveType::ExistsFile(const char* szFile, bool bOneSp
   return xiiFileserveClient::GetSingleton()->DownloadFile(m_uiDataDirID, sRedirected, bOneSpecificDataDir, nullptr).Succeeded();
 }
 
-xiiDataDirectoryType* xiiDataDirectory::FileserveType::Factory(const char* szDataDirectory, const char* szGroup, const char* szRootName, xiiFileSystem::DataDirUsage Usage)
+xiiDataDirectoryType* xiiDataDirectory::FileserveType::Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage Usage)
 {
   if (!xiiFileserveClient::s_bEnableFileserve || xiiFileserveClient::GetSingleton() == nullptr)
     return nullptr; // this would only happen if the functionality is switched off, but not before the factory was added
 
   // ignore the empty data dir, which handles absolute paths, as we cannot translate these paths to the fileserve host OS
-  if (xiiStringUtils::IsNullOrEmpty(szDataDirectory))
+  if (sDataDirectory.IsEmpty())
     return nullptr;
 
   // Fileserve can only translate paths on the server that start with a 'Special Directory' (e.g. ">sdk/" or ">project/")
   // ignore everything else
-  if (szDataDirectory[0] != '>')
+  if (!sDataDirectory.StartsWith(">"))
     return nullptr;
 
   if (xiiFileserveClient::GetSingleton()->EnsureConnected().Failed())
     return nullptr;
 
   xiiDataDirectory::FileserveType* pDataDir = XII_DEFAULT_NEW(xiiDataDirectory::FileserveType);
-  pDataDir->m_uiDataDirID                   = xiiFileserveClient::GetSingleton()->MountDataDirectory(szDataDirectory, szRootName);
+  pDataDir->m_uiDataDirID                   = xiiFileserveClient::GetSingleton()->MountDataDirectory(sDataDirectory, sRootName);
 
-  if (pDataDir->m_uiDataDirID < 0xffff && pDataDir->InitializeDataDirectory(szDataDirectory) == XII_SUCCESS)
+  if (pDataDir->m_uiDataDirID < 0xffff && pDataDir->InitializeDataDirectory(sDataDirectory) == XII_SUCCESS)
     return pDataDir;
 
   XII_DEFAULT_DELETE(pDataDir);
@@ -186,7 +186,6 @@ void xiiDataDirectory::FileserveType::FinishedWriting(FolderWriter* pWriter)
 
   xiiFileserveClient::GetSingleton()->UploadFile(m_uiDataDirID, pWriter->GetFilePath(), content);
 }
-
 
 
 XII_STATICLINK_FILE(FileservePlugin, FileservePlugin_Client_FileserveDataDir);

@@ -31,7 +31,7 @@ namespace xiiDataDirectory
   {
   public:
     /// \brief The factory that can be registered at xiiFileSystem to create data directories of this type.
-    static xiiDataDirectoryType* Factory(const char* szDataDirectory, const char* szGroup, const char* szRootName, xiiFileSystem::DataDirUsage Usage);
+    static xiiDataDirectoryType* Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage Usage);
 
     /// \brief [internal] Makes sure the redirection config files are up to date and then reloads them.
     virtual void ReloadExternalConfigs() override;
@@ -40,14 +40,14 @@ namespace xiiDataDirectory
     void FinishedWriting(FolderWriter* pWriter);
 
   protected:
-    virtual xiiDataDirectoryReader* OpenFileToRead(const char* szFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir) override;
-    virtual xiiDataDirectoryWriter* OpenFileToWrite(const char* szFile, xiiFileShareMode::Enum FileShareMode) override;
-    virtual xiiResult               InternalInitializeDataDirectory(const char* szDirectory) override;
+    virtual xiiDataDirectoryReader* OpenFileToRead(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir) override;
+    virtual xiiDataDirectoryWriter* OpenFileToWrite(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode) override;
+    virtual xiiResult               InternalInitializeDataDirectory(xiiStringView sDirectory) override;
     virtual void                    RemoveDataDirectory() override;
-    virtual void                    DeleteFile(const char* szFile) override;
-    virtual bool                    ExistsFile(const char* szFile, bool bOneSpecificDataDir) override;
+    virtual void                    DeleteFile(xiiStringView sFile) override;
+    virtual bool                    ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir) override;
     /// \brief Limitation: Fileserve does not handle folders, only files. If someone stats a folder, this will fail.
-    virtual xiiResult     GetFileStats(const char* szFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats) override;
+    virtual xiiResult     GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats) override;
     virtual FolderReader* CreateFolderReader() const override;
     virtual FolderWriter* CreateFolderWriter() const override;
 

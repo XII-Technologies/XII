@@ -611,12 +611,12 @@ public:
     {
       case xiiLogMsgType::ErrorMsg:
         m_Status = XII_FAILURE;
-        m_sResult.Append("Error: ", le.m_szText, "\n");
+        m_sResult.Append("Error: ", le.m_sText, "\n");
         break;
 
       case xiiLogMsgType::SeriousWarningMsg:
       case xiiLogMsgType::WarningMsg:
-        m_sResult.Append("Warning: ", le.m_szText, "\n");
+        m_sResult.Append("Warning: ", le.m_sText, "\n");
         break;
 
       default:

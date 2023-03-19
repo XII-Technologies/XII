@@ -197,7 +197,7 @@ XII_CREATE_SIMPLE_TEST(Strings, FormatString)
     TestFormat(xiiFmt("{}", xiiTime::Seconds(59)), "59sec");
     TestFormat(xiiFmt("{}", xiiTime::Seconds(-59.9)), "-59.9sec");
     TestFormat(xiiFmt("{}", xiiTime::Seconds(75)), "1min 15sec");
-    TestFormat(xiiFmt("{}", xiiTime::Seconds(-75.4)), "-1min 15.4sec");
+    TestFormat(xiiFmt("{}", xiiTime::Seconds(-75.4)), "-1min 15sec");
     TestFormat(xiiFmt("{}", xiiTime::Minutes(59)), "59min 0sec");
     TestFormat(xiiFmt("{}", xiiTime::Minutes(-1)), "-1min 0sec");
     TestFormat(xiiFmt("{}", xiiTime::Minutes(90)), "1h 30min 0sec");

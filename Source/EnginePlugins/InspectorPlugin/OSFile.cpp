@@ -18,7 +18,7 @@ static void OSFileEventHandler(const xiiOSFile::EventData& e)
     case xiiOSFile::EventType::FileOpen:
     {
       Msg.SetMessageID('FILE', 'OPEN');
-      Msg.GetWriter() << e.m_szFile;
+      Msg.GetWriter() << e.m_sFile;
       Msg.GetWriter() << (xiiUInt8)e.m_FileMode;
       Msg.GetWriter() << e.m_bSuccess;
     }
@@ -49,7 +49,7 @@ static void OSFileEventHandler(const xiiOSFile::EventData& e)
     case xiiOSFile::EventType::DirectoryExists:
     {
       Msg.SetMessageID('FILE', 'EXST');
-      Msg.GetWriter() << e.m_szFile;
+      Msg.GetWriter() << e.m_sFile;
       Msg.GetWriter() << e.m_bSuccess;
     }
     break;
@@ -57,7 +57,7 @@ static void OSFileEventHandler(const xiiOSFile::EventData& e)
     case xiiOSFile::EventType::FileDelete:
     {
       Msg.SetMessageID('FILE', ' DEL');
-      Msg.GetWriter() << e.m_szFile;
+      Msg.GetWriter() << e.m_sFile;
       Msg.GetWriter() << e.m_bSuccess;
     }
     break;
@@ -65,7 +65,7 @@ static void OSFileEventHandler(const xiiOSFile::EventData& e)
     case xiiOSFile::EventType::MakeDir:
     {
       Msg.SetMessageID('FILE', 'CDIR');
-      Msg.GetWriter() << e.m_szFile;
+      Msg.GetWriter() << e.m_sFile;
       Msg.GetWriter() << e.m_bSuccess;
     }
     break;
@@ -73,8 +73,8 @@ static void OSFileEventHandler(const xiiOSFile::EventData& e)
     case xiiOSFile::EventType::FileCopy:
     {
       Msg.SetMessageID('FILE', 'COPY');
-      Msg.GetWriter() << e.m_szFile;
-      Msg.GetWriter() << e.m_szFile2;
+      Msg.GetWriter() << e.m_sFile;
+      Msg.GetWriter() << e.m_sFile2;
       Msg.GetWriter() << e.m_bSuccess;
     }
     break;
@@ -82,7 +82,7 @@ static void OSFileEventHandler(const xiiOSFile::EventData& e)
     case xiiOSFile::EventType::FileStat:
     {
       Msg.SetMessageID('FILE', 'STAT');
-      Msg.GetWriter() << e.m_szFile;
+      Msg.GetWriter() << e.m_sFile;
       Msg.GetWriter() << e.m_bSuccess;
     }
     break;
@@ -90,7 +90,7 @@ static void OSFileEventHandler(const xiiOSFile::EventData& e)
     case xiiOSFile::EventType::FileCasing:
     {
       Msg.SetMessageID('FILE', 'CASE');
-      Msg.GetWriter() << e.m_szFile;
+      Msg.GetWriter() << e.m_sFile;
       Msg.GetWriter() << e.m_bSuccess;
     }
     break;
@@ -123,7 +123,6 @@ void RemoveOSFileEventHandler()
 {
   xiiOSFile::RemoveEventHandler(OSFileEventHandler);
 }
-
 
 
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_OSFile);

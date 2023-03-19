@@ -6,6 +6,10 @@
 #include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Strings/String.h>
 
+// This file takes ages to compile in a Release build
+// since we don't care for runtime performance, just disable all optimizations.
+#pragma optimize("", off)
+
 XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor(empty)")
@@ -1568,3 +1572,5 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     }
   }
 }
+
+#pragma optimize("", on)

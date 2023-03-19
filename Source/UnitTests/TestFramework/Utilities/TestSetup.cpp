@@ -34,7 +34,7 @@ xiiTestFramework* xiiTestSetup::InitTestFramework(const char* szTestName, const 
   }
 #endif
 
-  // without at proper file system the current working directory is pretty much useless
+  // without a proper file system the current working directory is pretty much useless
   std::string sTestFolder = std::string(xiiOSFile::GetUserDataFolder());
   if (*sTestFolder.rbegin() != '/')
     sTestFolder.append("/");
@@ -146,7 +146,7 @@ void xiiTestSetup::DeInitTestFramework(bool bSilent /*= false*/)
     {
       std::cout << "Press the any key to continue...\n";
       fflush(stdin);
-      getchar();
+      [[maybe_unused]] xiiInt32 c = getchar();
     }
   }
 

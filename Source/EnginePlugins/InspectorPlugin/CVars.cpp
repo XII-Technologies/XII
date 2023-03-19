@@ -220,5 +220,4 @@ void RemoveCVarEventHandler()
 }
 
 
-
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_CVars);

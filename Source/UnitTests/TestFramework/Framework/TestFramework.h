@@ -150,8 +150,8 @@ public:
 
   static void Output(xiiTestOutput::Enum Type, const char* szMsg, ...);
   static void OutputArgs(xiiTestOutput::Enum Type, const char* szMsg, va_list args);
-  static void Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...);
-  static void Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, va_list args);
+  static void Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, xiiStringView sMsg, ...);
+  static void Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, xiiStringView sMsg, va_list args);
   static void TestResult(xiiInt32 iSubTestIndex, bool bSuccess, double fDuration);
 
   // static members
