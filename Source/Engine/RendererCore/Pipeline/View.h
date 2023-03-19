@@ -29,7 +29,7 @@ private:
 public:
   xiiViewHandle GetHandle() const;
 
-  void        SetName(xiiStringView sName);
+  void          SetName(xiiStringView sName);
   xiiStringView GetName() const;
 
   void            SetWorld(xiiWorld* pWorld);
