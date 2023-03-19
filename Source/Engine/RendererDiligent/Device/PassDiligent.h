@@ -59,7 +59,7 @@ private:
 
   xiiGALDeviceDiligent& m_GALDeviceDiligent;
 
-  xiiStringView m_sName;
+  xiiStringView        m_sName;
   xiiGALRenderingSetup m_RenderingSetup = {};
 
   xiiUniquePtr<xiiGALCommandEncoderRenderState>  m_pCommandEncoderState;
