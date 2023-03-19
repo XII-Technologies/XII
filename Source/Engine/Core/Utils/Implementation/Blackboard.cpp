@@ -69,10 +69,10 @@ xiiSharedPtr<xiiBlackboard> xiiBlackboard::FindGlobal(const xiiTempHashedString&
 xiiBlackboard::xiiBlackboard()  = default;
 xiiBlackboard::~xiiBlackboard() = default;
 
-void xiiBlackboard::SetName(const char* szName)
+void xiiBlackboard::SetName(xiiStringView sName)
 {
   XII_LOCK(s_GlobalBlackboardsMutex);
-  m_sName.Assign(szName);
+  m_sName.Assign(sName);
 }
 
 void xiiBlackboard::RegisterEntry(const xiiHashedString& name, const xiiVariant& initialValue, xiiBitflags<xiiBlackboardEntryFlags> flags /*= xiiBlackboardEntryFlags::None*/)

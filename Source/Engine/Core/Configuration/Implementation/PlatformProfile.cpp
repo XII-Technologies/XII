@@ -112,10 +112,10 @@ xiiProfileConfigData* xiiPlatformProfile::GetTypeConfig(const xiiRTTI* pRtti)
   return const_cast<xiiProfileConfigData*>(((const xiiPlatformProfile*)this)->GetTypeConfig(pRtti));
 }
 
-xiiResult xiiPlatformProfile::SaveForRuntime(const char* szFile) const
+xiiResult xiiPlatformProfile::SaveForRuntime(xiiStringView sFile) const
 {
   xiiFileWriter file;
-  XII_SUCCEED_OR_RETURN(file.Open(szFile));
+  XII_SUCCEED_OR_RETURN(file.Open(sFile));
 
   xiiChunkStreamWriter chunk(file);
 
@@ -131,10 +131,10 @@ xiiResult xiiPlatformProfile::SaveForRuntime(const char* szFile) const
   return XII_SUCCESS;
 }
 
-xiiResult xiiPlatformProfile::LoadForRuntime(const char* szFile)
+xiiResult xiiPlatformProfile::LoadForRuntime(xiiStringView sFile)
 {
   xiiFileReader file;
-  XII_SUCCEED_OR_RETURN(file.Open(szFile));
+  XII_SUCCEED_OR_RETURN(file.Open(sFile));
 
   xiiChunkStreamReader chunk(file);
 

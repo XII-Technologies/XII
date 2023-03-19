@@ -16,13 +16,11 @@
 #  error "Uuid generation functions are not implemented on current platform"
 #endif
 
-xiiUuid xiiUuid::StableUuidForString(const char* szString)
+xiiUuid xiiUuid::StableUuidForString(xiiStringView sString)
 {
-  size_t length = std::strlen(szString);
-
   xiiUuid NewUuid;
-  NewUuid.m_uiLow  = xiiHashingUtils::xxHash64(szString, length);
-  NewUuid.m_uiHigh = xiiHashingUtils::xxHash64(szString, length, 0x7FFFFFFFFFFFFFE7u);
+  NewUuid.m_uiLow  = xiiHashingUtils::xxHash64String(sString);
+  NewUuid.m_uiHigh = xiiHashingUtils::xxHash64String(sString, 0x7FFFFFFFFFFFFFE7U);
 
   return NewUuid;
 }
@@ -31,7 +29,7 @@ xiiUuid xiiUuid::StableUuidForInt(xiiInt64 iInt)
 {
   xiiUuid NewUuid;
   NewUuid.m_uiLow  = xiiHashingUtils::xxHash64(&iInt, sizeof(xiiInt64));
-  NewUuid.m_uiHigh = xiiHashingUtils::xxHash64(&iInt, sizeof(xiiInt64), 0x7FFFFFFFFFFFFFE7u);
+  NewUuid.m_uiHigh = xiiHashingUtils::xxHash64(&iInt, sizeof(xiiInt64), 0x7FFFFFFFFFFFFFE7U);
 
   return NewUuid;
 }

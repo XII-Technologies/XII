@@ -119,10 +119,10 @@ void xiiWindowCreationDesc::SaveToDDL(xiiOpenDdlWriter& writer)
 }
 
 
-xiiResult xiiWindowCreationDesc::SaveToDDL(const char* szFile)
+xiiResult xiiWindowCreationDesc::SaveToDDL(xiiStringView sFile)
 {
   xiiFileWriter file;
-  XII_SUCCEED_OR_RETURN(file.Open(szFile));
+  XII_SUCCEED_OR_RETURN(file.Open(sFile));
 
   xiiOpenDdlWriter writer;
   writer.SetOutputStream(&file);
@@ -188,10 +188,10 @@ void xiiWindowCreationDesc::LoadFromDDL(const xiiOpenDdlReaderElement* pParentEl
 }
 
 
-xiiResult xiiWindowCreationDesc::LoadFromDDL(const char* szFile)
+xiiResult xiiWindowCreationDesc::LoadFromDDL(xiiStringView sFile)
 {
   xiiFileReader file;
-  XII_SUCCEED_OR_RETURN(file.Open(szFile));
+  XII_SUCCEED_OR_RETURN(file.Open(sFile));
 
   xiiOpenDdlReader reader;
   XII_SUCCEED_OR_RETURN(reader.ParseDocument(file));

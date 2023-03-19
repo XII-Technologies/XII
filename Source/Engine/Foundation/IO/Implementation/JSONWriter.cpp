@@ -54,7 +54,7 @@ void xiiJSONWriter::AddVariableDouble(const char* szName, double value)
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableString(const char* szName, const char* value)
+void xiiJSONWriter::AddVariableString(const char* szName, xiiStringView value)
 {
   BeginVariable(szName);
   WriteString(value);

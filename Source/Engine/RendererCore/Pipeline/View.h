@@ -29,8 +29,8 @@ private:
 public:
   xiiViewHandle GetHandle() const;
 
-  void        SetName(const char* szName);
-  const char* GetName() const;
+  void          SetName(xiiStringView sName);
+  xiiStringView GetName() const;
 
   void            SetWorld(xiiWorld* pWorld);
   xiiWorld*       GetWorld();

@@ -9,9 +9,9 @@ xiiHybridArray<xiiSpatialData::CategoryData, 32>& xiiSpatialData::GetCategoryDat
 }
 
 // static
-xiiSpatialData::Category xiiSpatialData::RegisterCategory(const char* szCategoryName, const xiiBitflags<Flags>& flags)
+xiiSpatialData::Category xiiSpatialData::RegisterCategory(xiiStringView sCategoryName, const xiiBitflags<Flags>& flags)
 {
-  Category oldCategory = FindCategory(szCategoryName);
+  Category oldCategory = FindCategory(sCategoryName);
   if (oldCategory != xiiInvalidSpatialDataCategory)
   {
     XII_ASSERT_DEV(GetCategoryFlags(oldCategory) == flags, "Category registered with different flags");
@@ -27,16 +27,16 @@ xiiSpatialData::Category xiiSpatialData::RegisterCategory(const char* szCategory
   Category newCategory = Category(GetCategoryData().GetCount());
 
   auto& data = GetCategoryData().ExpandAndGetRef();
-  data.m_sName.Assign(szCategoryName);
+  data.m_sName.Assign(sCategoryName);
   data.m_Flags = flags;
 
   return newCategory;
 }
 
 // static
-xiiSpatialData::Category xiiSpatialData::FindCategory(const char* szCategoryName)
+xiiSpatialData::Category xiiSpatialData::FindCategory(xiiStringView sCategoryName)
 {
-  xiiTempHashedString categoryName(szCategoryName);
+  xiiTempHashedString categoryName(sCategoryName);
 
   for (xiiUInt32 uiCategoryIndex = 0; uiCategoryIndex < GetCategoryData().GetCount(); ++uiCategoryIndex)
   {

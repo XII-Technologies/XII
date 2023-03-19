@@ -4,32 +4,32 @@
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/OSFile.h>
 
-void xiiCollectionUtils::AddFiles(xiiCollectionResourceDescriptor& collection, const char* szAssetTypeName, const char* szAbsPathToFolder, const char* szFileExtension, const char* szStripPrefix, const char* szPrependPrefix)
+void xiiCollectionUtils::AddFiles(xiiCollectionResourceDescriptor& collection, xiiStringView sAssetTypeNameView, xiiStringView sAbsPathToFolder, xiiStringView sFileExtension, xiiStringView sStripPrefix, xiiStringView sPrependPrefix)
 {
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS)
 
-  const xiiUInt32 uiStripPrefixLength = xiiStringUtils::GetCharacterCount(szStripPrefix);
+  const xiiUInt32 uiStripPrefixLength = xiiStringUtils::GetCharacterCount(sStripPrefix.GetStartPointer(), sStripPrefix.GetEndPointer());
 
   xiiFileSystemIterator fsIt;
-  fsIt.StartSearch(szAbsPathToFolder, xiiFileSystemIteratorFlags::ReportFilesRecursive);
+  fsIt.StartSearch(sAbsPathToFolder, xiiFileSystemIteratorFlags::ReportFilesRecursive);
 
   if (!fsIt.IsValid())
     return;
 
   xiiStringBuilder sFullPath;
   xiiHashedString  sAssetTypeName;
-  sAssetTypeName.Assign(szAssetTypeName);
+  sAssetTypeName.Assign(sAssetTypeNameView);
 
   for (; fsIt.IsValid(); fsIt.Next())
   {
     const auto& stats = fsIt.GetStats();
 
-    if (xiiPathUtils::HasExtension(stats.m_sName, szFileExtension))
+    if (xiiPathUtils::HasExtension(stats.m_sName, sFileExtension))
     {
       stats.GetFullPath(sFullPath);
 
       sFullPath.Shrink(uiStripPrefixLength, 0);
-      sFullPath.Prepend(szPrependPrefix);
+      sFullPath.Prepend(sPrependPrefix);
       sFullPath.MakeCleanPath();
 
       auto& entry            = collection.m_Resources.ExpandAndGetRef();
@@ -69,7 +69,7 @@ XII_CORE_DLL void xiiCollectionUtils::DeDuplicateEntries(xiiCollectionResourceDe
   MergeCollections(result, xiiArrayPtr<const xiiCollectionResourceDescriptor*>(&firstInput, 1));
 }
 
-void xiiCollectionUtils::AddResourceHandle(xiiCollectionResourceDescriptor& collection, xiiTypelessResourceHandle handle, const char* szAssetTypeName, const char* szAbsFolderpath)
+void xiiCollectionUtils::AddResourceHandle(xiiCollectionResourceDescriptor& collection, xiiTypelessResourceHandle handle, xiiStringView sAssetTypeName, xiiStringView sAbsFolderpath)
 {
   if (!handle.IsValid())
     return;
@@ -78,17 +78,17 @@ void xiiCollectionUtils::AddResourceHandle(xiiCollectionResourceDescriptor& coll
 
   auto& entry = collection.m_Resources.ExpandAndGetRef();
 
-  entry.m_sAssetTypeName.Assign(szAssetTypeName);
+  entry.m_sAssetTypeName.Assign(sAssetTypeName);
   entry.m_sResourceID = resID;
 
   xiiStringBuilder absFilename;
 
   // if a folder path is specified, replace the root (for testing filesize below)
-  if (szAbsFolderpath != nullptr)
+  if (!sAbsFolderpath.IsEmpty())
   {
     xiiStringView root, relFile;
     xiiPathUtils::GetRootedPathParts(resID, root, relFile);
-    absFilename = szAbsFolderpath;
+    absFilename = sAbsFolderpath;
     absFilename.AppendPath(relFile.GetStartPointer());
     absFilename.MakeCleanPath();
 

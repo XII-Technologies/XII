@@ -210,7 +210,7 @@ private:
     xiiTime GetMaxStepTime() const;
 
   private:
-    void BeginNextProgressStep(const char* szName);
+    void BeginNextProgressStep(xiiStringView sName);
     void SetSubProgressCompletion(double fCompletion);
 
     friend class xiiWorldReader;

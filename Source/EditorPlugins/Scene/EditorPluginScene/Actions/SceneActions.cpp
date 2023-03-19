@@ -544,7 +544,7 @@ QStringList xiiSceneAction::GetPlayerCommandLine(xiiStringBuilder& out_SingleLin
   }
 
   arguments << "-profile";
-  arguments << xiiAssetCurator::GetSingleton()->GetActiveAssetProfile()->GetConfigName();
+  arguments << xiiString(xiiAssetCurator::GetSingleton()->GetActiveAssetProfile()->GetConfigName()).GetData();
 
   for (QString s : arguments)
   {

@@ -64,10 +64,10 @@ void VisitObject(xiiWorld& world, xiiGameObject* pObject)
   if (!pObject->GetComponents().IsEmpty())
     return;
 
-  if (!xiiStringUtils::IsNullOrEmpty(pObject->GetName()))
+  if (!pObject->GetName().IsEmpty())
     return;
 
-  if (!xiiStringUtils::IsNullOrEmpty(pObject->GetGlobalKey()))
+  if (!pObject->GetGlobalKey().IsEmpty())
     return;
 
   world.DeleteObjectDelayed(pObject->GetHandle(), false);

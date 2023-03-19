@@ -11,23 +11,23 @@ XII_CREATE_SIMPLE_TEST(Utility, Progress)
       xiiProgressRange progressRange = xiiProgressRange("TestProgress", 4, false, &progress);
 
       XII_TEST_FLOAT(progress.GetCompletion(), 0.0f, xiiMath::DefaultEpsilon<float>());
-      XII_TEST_STRING(progress.GetMainDisplayText(), "TestProgress");
+      XII_TEST_BOOL(progress.GetMainDisplayText() == "TestProgress");
 
       progressRange.BeginNextStep("Step1");
       XII_TEST_FLOAT(progress.GetCompletion(), 0.0f, xiiMath::DefaultEpsilon<float>());
-      XII_TEST_STRING(progress.GetStepDisplayText(), "Step1");
+      XII_TEST_BOOL(progress.GetStepDisplayText() == "Step1");
 
       progressRange.BeginNextStep("Step2");
       XII_TEST_FLOAT(progress.GetCompletion(), 0.25f, xiiMath::DefaultEpsilon<float>());
-      XII_TEST_STRING(progress.GetStepDisplayText(), "Step2");
+      XII_TEST_BOOL(progress.GetStepDisplayText() == "Step2");
 
       progressRange.BeginNextStep("Step3");
       XII_TEST_FLOAT(progress.GetCompletion(), 0.5f, xiiMath::DefaultEpsilon<float>());
-      XII_TEST_STRING(progress.GetStepDisplayText(), "Step3");
+      XII_TEST_BOOL(progress.GetStepDisplayText() == "Step3");
 
       progressRange.BeginNextStep("Step4");
       XII_TEST_FLOAT(progress.GetCompletion(), 0.75f, xiiMath::DefaultEpsilon<float>());
-      XII_TEST_STRING(progress.GetStepDisplayText(), "Step4");
+      XII_TEST_BOOL(progress.GetStepDisplayText() == "Step4");
     }
 
     XII_TEST_FLOAT(progress.GetCompletion(), 1.0f, xiiMath::DefaultEpsilon<float>());
@@ -145,8 +145,7 @@ XII_CREATE_SIMPLE_TEST(Utility, Progress)
       {
         ++uiNumProgressUpdatedEvents;
         XII_TEST_FLOAT(e.m_pProgressbar->GetCompletion(), uiNumProgressUpdatedEvents * 0.25f, xiiMath::DefaultEpsilon<float>());
-      }
-    });
+      } });
 
     {
       xiiProgressRange progressRange = xiiProgressRange("TestProgress", 4, false, &progress);

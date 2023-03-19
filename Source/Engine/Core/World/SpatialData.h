@@ -47,10 +47,10 @@ struct xiiSpatialData
   ///
   /// If the same category was already registered before, it returns that instead.
   /// Asserts that there are no more than 32 unique categories.
-  XII_CORE_DLL static Category RegisterCategory(const char* szCategoryName, const xiiBitflags<Flags>& flags);
+  XII_CORE_DLL static Category RegisterCategory(xiiStringView sCategoryName, const xiiBitflags<Flags>& flags);
 
   /// \brief Returns either an existing category with the given name or xiiInvalidSpatialDataCategory.
-  XII_CORE_DLL static Category FindCategory(const char* szCategoryName);
+  XII_CORE_DLL static Category FindCategory(xiiStringView sCategoryName);
 
   /// \brief Returns the flags for the given category.
   XII_CORE_DLL static const xiiBitflags<Flags>& GetCategoryFlags(Category category);
