@@ -4,11 +4,11 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Profiling/Profiling.h>
 
-xiiTypelessResourceHandle xiiResourceManager::LoadResourceByType(const xiiRTTI* pResourceType, const char* szResourceID)
+xiiTypelessResourceHandle xiiResourceManager::LoadResourceByType(const xiiRTTI* pResourceType, xiiStringView sResourceID)
 {
   // the mutex here is necessary to prevent a race between resource unloading and storing the pointer in the handle
   XII_LOCK(s_ResourceMutex);
-  return xiiTypelessResourceHandle(GetResource(pResourceType, szResourceID, true));
+  return xiiTypelessResourceHandle(GetResource(pResourceType, sResourceID, true));
 }
 
 void xiiResourceManager::InternalPreloadResource(xiiResource* pResource, bool bHighestPriority)

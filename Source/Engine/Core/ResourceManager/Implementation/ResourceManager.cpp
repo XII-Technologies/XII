@@ -125,17 +125,17 @@ void xiiResourceManager::BroadcastResourceEvent(const xiiResourceEvent& e)
   s_pState->m_ResourceEvents.Broadcast(e);
 }
 
-void xiiResourceManager::RegisterResourceForAssetType(const char* szAssetTypeName, const xiiRTTI* pResourceType)
+void xiiResourceManager::RegisterResourceForAssetType(xiiStringView sAssetTypeName, const xiiRTTI* pResourceType)
 {
-  xiiStringBuilder s = szAssetTypeName;
+  xiiStringBuilder s = sAssetTypeName;
   s.ToLower();
 
   s_pState->m_AssetToResourceType[s] = pResourceType;
 }
 
-const xiiRTTI* xiiResourceManager::FindResourceForAssetType(const char* szAssetTypeName)
+const xiiRTTI* xiiResourceManager::FindResourceForAssetType(xiiStringView sAssetTypeName)
 {
-  xiiStringBuilder s = szAssetTypeName;
+  xiiStringBuilder s = sAssetTypeName;
   s.ToLower();
 
   return s_pState->m_AssetToResourceType.GetValueOrDefault(s, nullptr);
@@ -682,27 +682,27 @@ void xiiResourceManager::OnCoreShutdown()
   s_pState.Clear();
 }
 
-xiiResource* xiiResourceManager::GetResource(const xiiRTTI* pRtti, const char* szResourceID, bool bIsReloadable)
+xiiResource* xiiResourceManager::GetResource(const xiiRTTI* pRtti, xiiStringView sResourceID, bool bIsReloadable)
 {
-  if (xiiStringUtils::IsNullOrEmpty(szResourceID))
+  if (sResourceID.IsEmpty())
     return nullptr;
 
   XII_ASSERT_DEV(s_ResourceMutex.IsLocked(), "Calling code must lock the mutex until the resource pointer is stored in a handle");
 
   // redirect requested type to override type, if available
-  pRtti = FindResourceTypeOverride(pRtti, szResourceID);
+  pRtti = FindResourceTypeOverride(pRtti, sResourceID);
 
   XII_ASSERT_DEBUG(pRtti != nullptr, "There is no RTTI information available for the given resource type '{0}'", XII_STRINGIZE(ResourceType));
   XII_ASSERT_DEBUG(pRtti->GetAllocator() != nullptr && pRtti->GetAllocator()->CanAllocate(), "There is no RTTI allocator available for the given resource type '{0}'", XII_STRINGIZE(ResourceType));
 
   xiiResource*        pResource = nullptr;
-  xiiTempHashedString sHashedResourceID(szResourceID);
+  xiiTempHashedString sHashedResourceID(sResourceID);
 
   xiiHashedString* redirection;
   if (s_pState->m_NamedResources.TryGetValue(sHashedResourceID, redirection))
   {
     sHashedResourceID = *redirection;
-    szResourceID      = redirection->GetData();
+    sResourceID       = redirection->GetView();
   }
 
   LoadedResources& lr = s_pState->m_LoadedResources[pRtti];
@@ -712,7 +712,7 @@ xiiResource* xiiResourceManager::GetResource(const xiiRTTI* pRtti, const char* s
 
   xiiResource* pNewResource = pRtti->GetAllocator()->Allocate<xiiResource>();
   pNewResource->m_Priority  = s_pState->m_ResourceTypePriorities.GetValueOrDefault(pRtti, xiiResourcePriority::Medium);
-  pNewResource->SetUniqueID(szResourceID, bIsReloadable);
+  pNewResource->SetUniqueID(sResourceID, bIsReloadable);
   pNewResource->m_Flags.AddOrRemove(xiiResourceFlags::ResourceHasTypeFallback, pNewResource->HasResourceTypeLoadingFallback());
 
   lr.m_Resources.Insert(sHashedResourceID, pNewResource);
@@ -754,7 +754,7 @@ void xiiResourceManager::UnregisterResourceOverrideType(const xiiRTTI* pDerivedT
   }
 }
 
-const xiiRTTI* xiiResourceManager::FindResourceTypeOverride(const xiiRTTI* pRtti, const char* szResourceID)
+const xiiRTTI* xiiResourceManager::FindResourceTypeOverride(const xiiRTTI* pRtti, xiiStringView sResourceID)
 {
   auto it = s_pState->m_DerivedTypeInfos.Find(pRtti);
 
@@ -762,7 +762,7 @@ const xiiRTTI* xiiResourceManager::FindResourceTypeOverride(const xiiRTTI* pRtti
     return pRtti;
 
   xiiStringBuilder sRedirectedPath;
-  xiiFileSystem::ResolveAssetRedirection(szResourceID, sRedirectedPath);
+  xiiFileSystem::ResolveAssetRedirection(sResourceID, sRedirectedPath);
 
   while (it.IsValid())
   {
@@ -782,22 +782,22 @@ const xiiRTTI* xiiResourceManager::FindResourceTypeOverride(const xiiRTTI* pRtti
   return pRtti;
 }
 
-xiiString xiiResourceManager::GenerateUniqueResourceID(const char* prefix)
+xiiString xiiResourceManager::GenerateUniqueResourceID(xiiStringView sResourceIDPrefix)
 {
   xiiStringBuilder resourceID;
-  resourceID.Format("{}-{}", prefix, s_pState->m_uiNextResourceID++);
+  resourceID.Format("{}-{}", sResourceIDPrefix, s_pState->m_uiNextResourceID++);
   return resourceID;
 }
 
-xiiTypelessResourceHandle xiiResourceManager::GetExistingResourceByType(const xiiRTTI* pResourceType, const char* szResourceID)
+xiiTypelessResourceHandle xiiResourceManager::GetExistingResourceByType(const xiiRTTI* pResourceType, xiiStringView sResourceID)
 {
   xiiResource* pResource = nullptr;
 
-  const xiiTempHashedString sResourceHash(szResourceID);
+  const xiiTempHashedString sResourceHash(sResourceID);
 
   XII_LOCK(s_ResourceMutex);
 
-  const xiiRTTI* pRtti = FindResourceTypeOverride(pResourceType, szResourceID);
+  const xiiRTTI* pRtti = FindResourceTypeOverride(pResourceType, sResourceID);
 
   if (s_pState->m_LoadedResources[pRtti].m_Resources.TryGetValue(sResourceHash, pResource))
     return xiiTypelessResourceHandle(pResource);
@@ -805,16 +805,16 @@ xiiTypelessResourceHandle xiiResourceManager::GetExistingResourceByType(const xi
   return xiiTypelessResourceHandle();
 }
 
-xiiTypelessResourceHandle xiiResourceManager::GetExistingResourceOrCreateAsync(const xiiRTTI* pResourceType, const char* szResourceID, xiiUniquePtr<xiiResourceTypeLoader>&& loader)
+xiiTypelessResourceHandle xiiResourceManager::GetExistingResourceOrCreateAsync(const xiiRTTI* pResourceType, xiiStringView sResourceID, xiiUniquePtr<xiiResourceTypeLoader>&& loader)
 {
   XII_LOCK(s_ResourceMutex);
 
-  xiiTypelessResourceHandle hResource = GetExistingResourceByType(pResourceType, szResourceID);
+  xiiTypelessResourceHandle hResource = GetExistingResourceByType(pResourceType, sResourceID);
 
   if (hResource.IsValid())
     return hResource;
 
-  hResource              = GetResource(pResourceType, szResourceID, false);
+  hResource              = GetResource(pResourceType, sResourceID, false);
   xiiResource* pResource = hResource.m_pResource;
 
   pResource->m_Flags.Add(xiiResourceFlags::HasCustomDataLoader | xiiResourceFlags::IsCreatedResource);
@@ -837,23 +837,23 @@ void xiiResourceManager::ForceLoadResourceNow(const xiiTypelessResourceHandle& h
   }
 }
 
-void xiiResourceManager::RegisterNamedResource(const char* szLookupName, const char* szRedirectionResource)
+void xiiResourceManager::RegisterNamedResource(xiiStringView sLookupName, xiiStringView sRedirectionResource)
 {
   XII_LOCK(s_ResourceMutex);
 
-  xiiTempHashedString lookup(szLookupName);
+  xiiTempHashedString lookup(sLookupName);
 
   xiiHashedString redirection;
-  redirection.Assign(szRedirectionResource);
+  redirection.Assign(sRedirectionResource);
 
   s_pState->m_NamedResources[lookup] = redirection;
 }
 
-void xiiResourceManager::UnregisterNamedResource(const char* szLookupName)
+void xiiResourceManager::UnregisterNamedResource(xiiStringView sLookupName)
 {
   XII_LOCK(s_ResourceMutex);
 
-  xiiTempHashedString hash(szLookupName);
+  xiiTempHashedString hash(sLookupName);
   s_pState->m_NamedResources.Remove(hash);
 }
 

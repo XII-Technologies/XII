@@ -105,15 +105,15 @@ void xiiResource::PrintHandleStackTraces()
 #endif
 }
 
-void xiiResource::SetResourceDescription(const char* szDescription)
+void xiiResource::SetResourceDescription(xiiStringView sDescription)
 {
-  m_sResourceDescription = szDescription;
+  m_sResourceDescription = sDescription;
 }
 
-void xiiResource::SetUniqueID(const char* szUniqueID, bool bIsReloadable)
+void xiiResource::SetUniqueID(xiiStringView sUniqueID, bool bIsReloadable)
 {
-  m_sUniqueID      = szUniqueID;
-  m_uiUniqueIDHash = xiiHashingUtils::StringHash(szUniqueID);
+  m_sUniqueID      = sUniqueID;
+  m_uiUniqueIDHash = xiiHashingUtils::StringHash(sUniqueID);
   SetIsReloadable(bIsReloadable);
 
   xiiResourceEvent e;
