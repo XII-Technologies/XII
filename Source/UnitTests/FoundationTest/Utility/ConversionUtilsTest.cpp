@@ -569,18 +569,45 @@ XII_CREATE_SIMPLE_TEST(Utility, ConversionUtils)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ConvertHexStringToUInt32")
   {
-    XII_TEST_INT(xiiConversionUtils::ConvertHexStringToUInt32(""), 0);
-    XII_TEST_INT(xiiConversionUtils::ConvertHexStringToUInt32("0x"), 0);
-    XII_TEST_INT(xiiConversionUtils::ConvertHexStringToUInt32("0"), 0);
-    XII_TEST_INT(xiiConversionUtils::ConvertHexStringToUInt32("0x0"), 0);
-    XII_TEST_INT(xiiConversionUtils::ConvertHexStringToUInt32("a"), 10);
-    XII_TEST_INT(xiiConversionUtils::ConvertHexStringToUInt32("0xb"), 11);
-    XII_TEST_INT(xiiConversionUtils::ConvertHexStringToUInt32("000c"), 12);
-    XII_TEST_INT(xiiConversionUtils::ConvertHexStringToUInt32("AA"), 170);
-    XII_TEST_INT(xiiConversionUtils::ConvertHexStringToUInt32("aAbB"), 43707);
-    XII_TEST_INT(xiiConversionUtils::ConvertHexStringToUInt32("FFFFffff"), 4294967295);
-    XII_TEST_INT(xiiConversionUtils::ConvertHexStringToUInt32("0000FFFFffff"), 4294967295);
-    XII_TEST_INT(xiiConversionUtils::ConvertHexStringToUInt32("100000000"), 0);
+    xiiUInt32 res;
+
+    XII_TEST_BOOL(xiiConversionUtils::ConvertHexStringToUInt32("", res).Succeeded());
+    XII_TEST_BOOL(res == 0);
+
+    XII_TEST_BOOL(xiiConversionUtils::ConvertHexStringToUInt32("0x", res).Succeeded());
+    XII_TEST_BOOL(res == 0);
+
+    XII_TEST_BOOL(xiiConversionUtils::ConvertHexStringToUInt32("0", res).Succeeded());
+    XII_TEST_BOOL(res == 0);
+
+    XII_TEST_BOOL(xiiConversionUtils::ConvertHexStringToUInt32("0x0", res).Succeeded());
+    XII_TEST_BOOL(res == 0);
+
+    XII_TEST_BOOL(xiiConversionUtils::ConvertHexStringToUInt32("a", res).Succeeded());
+    XII_TEST_BOOL(res == 10);
+
+    XII_TEST_BOOL(xiiConversionUtils::ConvertHexStringToUInt32("0xb", res).Succeeded());
+    XII_TEST_BOOL(res == 11);
+
+    XII_TEST_BOOL(xiiConversionUtils::ConvertHexStringToUInt32("000c", res).Succeeded());
+    XII_TEST_BOOL(res == 12);
+
+    XII_TEST_BOOL(xiiConversionUtils::ConvertHexStringToUInt32("AA", res).Succeeded());
+    XII_TEST_BOOL(res == 170);
+
+    XII_TEST_BOOL(xiiConversionUtils::ConvertHexStringToUInt32("aAjbB", res).Failed());
+
+    XII_TEST_BOOL(xiiConversionUtils::ConvertHexStringToUInt32("aAbB", res).Succeeded());
+    XII_TEST_BOOL(res == 43707);
+
+    XII_TEST_BOOL(xiiConversionUtils::ConvertHexStringToUInt32("FFFFffff", res).Succeeded());
+    XII_TEST_BOOL(res == 0xFFFFFFFF);
+
+    XII_TEST_BOOL(xiiConversionUtils::ConvertHexStringToUInt32("0000FFFFffff", res).Succeeded());
+    XII_TEST_BOOL(res == 0xFFFF);
+
+    XII_TEST_BOOL(xiiConversionUtils::ConvertHexStringToUInt32("100000000", res).Succeeded());
+    XII_TEST_BOOL(res == 0x10000000);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ConvertHexStringToUInt64")

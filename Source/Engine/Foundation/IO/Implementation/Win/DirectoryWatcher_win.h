@@ -59,10 +59,10 @@ xiiDirectoryWatcher::xiiDirectoryWatcher() :
   m_pImpl->m_buffer.SetCountUninitialized(1024 * 1024);
 }
 
-xiiResult xiiDirectoryWatcher::OpenDirectory(const xiiString& absolutePath, xiiBitflags<Watch> whatToWatch)
+xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBitflags<Watch> whatToWatch)
 {
   XII_ASSERT_DEV(m_sDirectoryPath.IsEmpty(), "Directory already open, call CloseDirectory first!");
-  xiiStringBuilder sPath(absolutePath);
+  xiiStringBuilder sPath(sAbsolutePath);
   sPath.MakeCleanPath();
   sPath.Trim("/");
 

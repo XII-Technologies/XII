@@ -37,21 +37,21 @@ xiiCrashHandler_WriteMiniDump xiiCrashHandler_WriteMiniDump::g_Instance;
 
 xiiCrashHandler_WriteMiniDump::xiiCrashHandler_WriteMiniDump() = default;
 
-void xiiCrashHandler_WriteMiniDump::SetFullDumpFilePath(const char* szFullAbsDumpFilePath)
+void xiiCrashHandler_WriteMiniDump::SetFullDumpFilePath(xiiStringView sFullAbsDumpFilePath)
 {
-  m_sDumpFilePath = szFullAbsDumpFilePath;
+  m_sDumpFilePath = sFullAbsDumpFilePath;
 }
 
-void xiiCrashHandler_WriteMiniDump::SetDumpFilePath(const char* szAbsDirectoryPath, const char* szAppName, xiiBitflags<PathFlags> flags)
+void xiiCrashHandler_WriteMiniDump::SetDumpFilePath(xiiStringView sAbsDirectoryPath, xiiStringView sAppName, xiiBitflags<PathFlags> flags)
 {
-  xiiStringBuilder sOutputPath = szAbsDirectoryPath;
+  xiiStringBuilder sOutputPath = sAbsDirectoryPath;
 
   if (flags.IsSet(PathFlags::AppendSubFolder))
   {
     sOutputPath.AppendPath("CrashDumps");
   }
 
-  sOutputPath.AppendPath(szAppName);
+  sOutputPath.AppendPath(sAppName);
 
   if (flags.IsSet(PathFlags::AppendDate))
   {
@@ -72,9 +72,9 @@ void xiiCrashHandler_WriteMiniDump::SetDumpFilePath(const char* szAbsDirectoryPa
   SetFullDumpFilePath(sOutputPath);
 }
 
-void xiiCrashHandler_WriteMiniDump::SetDumpFilePath(const char* szAppName, xiiBitflags<PathFlags> flags)
+void xiiCrashHandler_WriteMiniDump::SetDumpFilePath(xiiStringView sAppName, xiiBitflags<PathFlags> flags)
 {
-  SetDumpFilePath(xiiOSFile::GetApplicationDirectory(), szAppName, flags);
+  SetDumpFilePath(xiiOSFile::GetApplicationDirectory(), sAppName, flags);
 }
 
 void xiiCrashHandler_WriteMiniDump::HandleCrash(void* pOsSpecificData)

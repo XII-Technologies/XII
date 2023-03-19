@@ -4,6 +4,7 @@
 
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
 
+#  include <Foundation/System/SystemInformation.h>
 #  include <zstd/zstd.h>
 
 xiiCompressedStreamReaderZstd::xiiCompressedStreamReaderZstd() = default;
@@ -163,10 +164,10 @@ void xiiCompressedStreamWriterZstd::SetOutputStream(xiiStreamWriter* pOutputStre
   if (m_pOutputStream == pOutputStream)
     return;
 
-  // limit the cache to 63KB, because at 64KB we run into an endless loop due to a 16 bit overflow
+  // Limit the cache to 63KB, because at 64KB we run into an endless loop due to a 16 bit overflow
   uiCompressionCacheSizeKB = xiiMath::Min(uiCompressionCacheSizeKB, 63u);
 
-  // finish anything done on a previous output stream
+  // Finish anything done on a previous output stream
   FinishCompressedStream().IgnoreResult();
 
   m_uiUncompressedSize = 0;
@@ -182,7 +183,12 @@ void xiiCompressedStreamWriterZstd::SetOutputStream(xiiStreamWriter* pOutputStre
       m_pZstdCStream = ZSTD_createCStream();
     }
 
-    ZSTD_initCStream(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), (int)Ratio);
+    const xiiUInt32 uiCoreCount = xiiMath::Clamp(xiiSystemInformation::Get().GetCPUCoreCount(), 1u, 12u);
+
+    ZSTD_CCtx_reset(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), ZSTD_reset_session_only);
+    ZSTD_CCtx_refCDict(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), nullptr);
+    ZSTD_CCtx_setParameter(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), ZSTD_c_compressionLevel, (int)Ratio);
+    ZSTD_CCtx_setParameter(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), ZSTD_c_nbWorkers, uiCoreCount);
 
     m_CompressedCache.SetCountUninitialized(xiiMath::Max(1U, uiCompressionCacheSizeKB) * 1024);
 
@@ -200,14 +206,19 @@ xiiResult xiiCompressedStreamWriterZstd::FinishCompressedStream()
   if (Flush().Failed())
     return XII_FAILURE;
 
-  const size_t res = ZSTD_endStream(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), reinterpret_cast<ZSTD_outBuffer*>(&m_OutBuffer));
+  ZSTD_inBuffer emptyBuffer;
+  emptyBuffer.pos  = 0;
+  emptyBuffer.size = 0;
+  emptyBuffer.src  = nullptr;
+
+  const size_t res = ZSTD_compressStream2(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), reinterpret_cast<ZSTD_outBuffer*>(&m_OutBuffer), &emptyBuffer, ZSTD_e_end);
   XII_VERIFY(!ZSTD_isError(res), "Deinitializing the zstd compression stream failed: '{0}'", ZSTD_getErrorName(res));
 
-  // one more flush to write out the last chunk
+  // One more flush to write out the last chunk
   if (FlushWriteCache() == XII_FAILURE)
     return XII_FAILURE;
 
-  // write a zero-terminator
+  // Write a zero-terminator
   const xiiUInt16 uiTerminator = 0;
   if (m_pOutputStream->WriteBytes(&uiTerminator, sizeof(xiiUInt16)) == XII_FAILURE)
     return XII_FAILURE;
@@ -223,7 +234,12 @@ xiiResult xiiCompressedStreamWriterZstd::Flush()
   if (m_pOutputStream == nullptr)
     return XII_SUCCESS;
 
-  while (ZSTD_flushStream(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), reinterpret_cast<ZSTD_outBuffer*>(&m_OutBuffer)) > 0)
+  ZSTD_inBuffer emptyBuffer;
+  emptyBuffer.pos  = 0;
+  emptyBuffer.size = 0;
+  emptyBuffer.src  = nullptr;
+
+  while (ZSTD_compressStream2(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), reinterpret_cast<ZSTD_outBuffer*>(&m_OutBuffer), &emptyBuffer, ZSTD_e_flush) > 0)
   {
     if (FlushWriteCache() == XII_FAILURE)
       return XII_FAILURE;
@@ -254,7 +270,7 @@ xiiResult xiiCompressedStreamWriterZstd::FlushWriteCache()
   m_uiCompressedSize += uiUsedCache;
   m_uiWrittenBytes += sizeof(xiiUInt16) + uiUsedCache;
 
-  // reset the write position
+  // Reset the write position
   m_OutBuffer.pos = 0;
 
   return XII_SUCCESS;
@@ -279,7 +295,7 @@ xiiResult xiiCompressedStreamWriterZstd::WriteBytes(const void* pWriteBuffer, xi
         return XII_FAILURE;
     }
 
-    const size_t res = ZSTD_compressStream(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), reinterpret_cast<ZSTD_outBuffer*>(&m_OutBuffer), &inBuffer);
+    const size_t res = ZSTD_compressStream2(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), reinterpret_cast<ZSTD_outBuffer*>(&m_OutBuffer), &inBuffer, ZSTD_e_continue);
 
     XII_VERIFY(!ZSTD_isError(res), "Compressing the zstd stream failed: '{0}'", ZSTD_getErrorName(res));
   }
@@ -288,7 +304,6 @@ xiiResult xiiCompressedStreamWriterZstd::WriteBytes(const void* pWriteBuffer, xi
 }
 
 #endif
-
 
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_CompressedStreamZstd);

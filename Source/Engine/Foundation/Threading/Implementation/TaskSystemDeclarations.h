@@ -128,11 +128,11 @@ private:
   friend class xiiTaskSystem;
   friend class xiiTaskGroup;
 
-  // the counter is used to determine whether this group id references the 'same' group, as m_pTaskGroup.
+  // The counter is used to determine whether this group id references the 'same' group, as m_pTaskGroup.
   // if m_pTaskGroup->m_uiGroupCounter is different to this->m_uiGroupCounter, then the group ID is not valid anymore.
   xiiUInt32 m_uiGroupCounter = 0;
 
-  // points to the actual task group object
+  // This points to the actual task group object.
   xiiTaskGroup* m_pTaskGroup = nullptr;
 };
 
@@ -170,7 +170,7 @@ struct XII_FOUNDATION_DLL xiiParallelForParams
   /// The minimum number of items that must be processed by a task instance.
   /// If the overall number of tasks lies below this value, all work will be executed purely serially
   /// without involving any tasks at all.
-  xiiUInt32 uiBinSize = 1;
+  xiiUInt32 m_uiBinSize = 1;
 
   /// Indicates how many tasks per thread may be spawned at most by a ParallelFor invocation.
   /// Higher numbers give the scheduler more leeway to balance work across available threads.
@@ -178,21 +178,14 @@ struct XII_FOUNDATION_DLL xiiParallelForParams
   /// low numbers (usually 1) are recommended, while higher numbers (initially test with 2 or 3)
   /// might yield better results for workloads where task items may take vastly different amounts
   /// of time, such that scheduling in a balanced fashion becomes more difficult.
-  xiiUInt32 uiMaxTasksPerThread = 2;
+  xiiUInt32 m_uiMaxTasksPerThread = 2;
 
-  xiiTaskNesting nestingMode = xiiTaskNesting::Never;
+  xiiTaskNesting m_NestingMode = xiiTaskNesting::Never;
 
   /// The allocator used to for the tasks that the parallel-for uses internally. If null, will use the default allocator.
-  xiiAllocatorBase* pTaskAllocator = nullptr;
+  xiiAllocatorBase* m_pTaskAllocator = nullptr;
 
-  /// Returns the multiplicity to use for the given task. If 0 is returned,
-  /// serial execution is to be performed.
-  xiiUInt32 DetermineMultiplicity(xiiUInt64 uiNumTaskItems) const;
-
-  /// Returns the number of task items to work on per invocation (multiplicity).
-  /// This is aligned with the multiplicity, i.e., multiplicity * bin_size >= # task items.
-  xiiUInt64 DetermineItemsPerInvocation(xiiUInt64 uiNumTaskItems, xiiUInt32 uiMultiplicity) const;
-  xiiUInt32 DetermineItemsPerInvocation(xiiUInt32 uiNumTaskItems, xiiUInt32 uiMultiplicity) const;
+  void DetermineThreading(xiiUInt64 uiNumItemsToExecute, xiiUInt32& out_uiNumTasksToRun, xiiUInt64& out_uiNumItemsPerTask) const;
 };
 
 using xiiParallelForIndexedFunction32 = xiiDelegate<void(xiiUInt32, xiiUInt32), 48>;

@@ -8,6 +8,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 #include <fcntl.h>
 #include <semaphore.h>
 #include <sys/stat.h>
+#include <time.h>
 
 xiiSemaphore::xiiSemaphore() = default;
 
@@ -87,12 +88,16 @@ void xiiSemaphore::ReturnToken()
   XII_VERIFY(sem_post(m_hSemaphore.m_pNamedOrUnnamed) == 0, "Returning a semaphore token failed, most likely due to a AcquireToken() / ReturnToken() mismatch.");
 }
 
-xiiResult xiiSemaphore::TryAcquireToken()
+xiiResult xiiSemaphore::TryAcquireToken(xiiTime timeout)
 {
   // documentation is unclear whether one needs to check errno, or not
   // assuming that this will return 0 only when trywait got a token
 
-  if (sem_trywait(m_hSemaphore.m_pNamedOrUnnamed) == 0)
+  struct timespec spec = {};
+  clock_gettime(CLOCK_REALTIME, &spec);
+  spec.tv_sec += timeout.AsFloatInSeconds();
+
+  if (sem_timedwait(m_hSemaphore.m_pNamedOrUnnamed, &spec) == 0)
     return XII_SUCCESS;
 
   return XII_FAILURE;

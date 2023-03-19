@@ -32,12 +32,12 @@ void xiiChunkStreamWriter::EndStream()
   m_Stream.WriteBytes(szTag, 8).IgnoreResult();
 }
 
-void xiiChunkStreamWriter::BeginChunk(const char* szName, xiiUInt32 uiVersion)
+void xiiChunkStreamWriter::BeginChunk(xiiStringView sName, xiiUInt32 uiVersion)
 {
   XII_ASSERT_DEV(m_bWritingFile, "Not writing to the file.");
   XII_ASSERT_DEV(!m_bWritingChunk, "A chunk is already open for writing: '{0}'", m_sChunkName);
 
-  m_sChunkName = szName;
+  m_sChunkName = sName;
 
   const char* szTag = "NXT CHNK";
   m_Stream.WriteBytes(szTag, 8).IgnoreResult();
@@ -174,7 +174,6 @@ void xiiChunkStreamReader::NextChunk()
 
   TryReadChunkHeader();
 }
-
 
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_ChunkStream);

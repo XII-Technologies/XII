@@ -32,11 +32,20 @@ namespace xiiDataDirectory
     return m_File.Open(sPath.GetData(), xiiFileOpenMode::Read, FileShareMode);
   }
 
-  void FolderReader::InternalClose() { m_File.Close(); }
+  void FolderReader::InternalClose()
+  {
+    m_File.Close();
+  }
 
-  xiiUInt64 FolderReader::Read(void* pBuffer, xiiUInt64 uiBytes) { return m_File.Read(pBuffer, uiBytes); }
+  xiiUInt64 FolderReader::Read(void* pBuffer, xiiUInt64 uiBytes)
+  {
+    return m_File.Read(pBuffer, uiBytes);
+  }
 
-  xiiUInt64 FolderReader::GetFileSize() const { return m_File.GetFileSize(); }
+  xiiUInt64 FolderReader::GetFileSize() const
+  {
+    return m_File.GetFileSize();
+  }
 
   xiiResult FolderWriter::InternalOpen(xiiFileShareMode::Enum FileShareMode)
   {
@@ -46,17 +55,26 @@ namespace xiiDataDirectory
     return m_File.Open(sPath.GetData(), xiiFileOpenMode::Write, FileShareMode);
   }
 
-  void FolderWriter::InternalClose() { m_File.Close(); }
+  void FolderWriter::InternalClose()
+  {
+    m_File.Close();
+  }
 
-  xiiResult FolderWriter::Write(const void* pBuffer, xiiUInt64 uiBytes) { return m_File.Write(pBuffer, uiBytes); }
+  xiiResult FolderWriter::Write(const void* pBuffer, xiiUInt64 uiBytes)
+  {
+    return m_File.Write(pBuffer, uiBytes);
+  }
 
-  xiiUInt64 FolderWriter::GetFileSize() const { return m_File.GetFileSize(); }
+  xiiUInt64 FolderWriter::GetFileSize() const
+  {
+    return m_File.GetFileSize();
+  }
 
-  xiiDataDirectoryType* FolderType::Factory(const char* szDataDirectory, const char* szGroup, const char* szRootName, xiiFileSystem::DataDirUsage Usage)
+  xiiDataDirectoryType* FolderType::Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage Usage)
   {
     FolderType* pDataDir = XII_DEFAULT_NEW(FolderType);
 
-    if (pDataDir->InitializeDataDirectory(szDataDirectory) == XII_SUCCESS)
+    if (pDataDir->InitializeDataDirectory(sDataDirectory) == XII_SUCCESS)
       return pDataDir;
 
     XII_DEFAULT_DELETE(pDataDir);
@@ -81,10 +99,10 @@ namespace xiiDataDirectory
     XII_DEFAULT_DELETE(pThis);
   }
 
-  void FolderType::DeleteFile(const char* szFile)
+  void FolderType::DeleteFile(xiiStringView sFile)
   {
     xiiStringBuilder sPath = GetRedirectedDataDirectoryPath();
-    sPath.AppendPath(szFile);
+    sPath.AppendPath(sFile);
 
     xiiOSFile::DeleteFile(sPath.GetData()).IgnoreResult();
   }
@@ -99,7 +117,10 @@ namespace xiiDataDirectory
       XII_DEFAULT_DELETE(m_Writers[i]);
   }
 
-  void FolderType::ReloadExternalConfigs() { LoadRedirectionFile(); }
+  void FolderType::ReloadExternalConfigs()
+  {
+    LoadRedirectionFile();
+  }
 
   void FolderType::LoadRedirectionFile()
   {
@@ -127,7 +148,7 @@ namespace xiiDataDirectory
           content.PushBackRange(xiiArrayPtr<char>(uiTemp, (xiiUInt32)uiRead));
         } while (uiRead == XII_ARRAY_SIZE(uiTemp));
 
-        content.PushBack(0); // make sure the string is terminated
+        content.PushBack(0); // Make sure the string is terminated
 
         const char* szLineStart = content.GetData();
         const char* szSeparator = nullptr;
@@ -159,26 +180,26 @@ namespace xiiDataDirectory
   }
 
 
-  bool FolderType::ExistsFile(const char* szFile, bool bOneSpecificDataDir)
+  bool FolderType::ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir)
   {
     xiiStringBuilder sRedirectedAsset;
-    ResolveAssetRedirection(szFile, sRedirectedAsset);
+    ResolveAssetRedirection(sFile, sRedirectedAsset);
 
     xiiStringBuilder sPath = GetRedirectedDataDirectoryPath();
     sPath.AppendPath(sRedirectedAsset);
     return xiiOSFile::ExistsFile(sPath);
   }
 
-  xiiResult FolderType::GetFileStats(const char* szFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats)
+  xiiResult FolderType::GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats)
   {
     xiiStringBuilder sRedirectedAsset;
-    ResolveAssetRedirection(szFileOrFolder, sRedirectedAsset);
+    ResolveAssetRedirection(sFileOrFolder, sRedirectedAsset);
 
     xiiStringBuilder sPath = GetRedirectedDataDirectoryPath();
 
     if (xiiPathUtils::IsAbsolutePath(sRedirectedAsset))
     {
-      if (!xiiStringUtils::StartsWith_NoCase(sRedirectedAsset, sPath))
+      if (!sRedirectedAsset.StartsWith_NoCase(sPath))
         return XII_FAILURE;
 
       sPath.Clear();
@@ -192,20 +213,20 @@ namespace xiiDataDirectory
     return xiiOSFile::GetFileStats(sPath, out_Stats);
   }
 
-  xiiResult FolderType::InternalInitializeDataDirectory(const char* szDirectory)
+  xiiResult FolderType::InternalInitializeDataDirectory(xiiStringView sDirectory)
   {
-    // allow to set the 'empty' directory to handle all absolute paths
-    if (xiiStringUtils::IsNullOrEmpty(szDirectory))
+    // Allow to set the 'empty' directory to handle all absolute paths
+    if (sDirectory.IsEmpty())
       return XII_SUCCESS;
 
     xiiStringBuilder sRedirected;
-    if (xiiFileSystem::ResolveSpecialDirectory(szDirectory, sRedirected).Succeeded())
+    if (xiiFileSystem::ResolveSpecialDirectory(sDirectory, sRedirected).Succeeded())
     {
       m_sRedirectedDataDirPath = sRedirected;
     }
     else
     {
-      m_sRedirectedDataDirPath = szDirectory;
+      m_sRedirectedDataDirPath = sDirectory;
     }
 
     if (!xiiOSFile::ExistsDirectory(m_sRedirectedDataDirPath))
@@ -231,16 +252,22 @@ namespace xiiDataDirectory
     }
   }
 
-  xiiDataDirectory::FolderReader* FolderType::CreateFolderReader() const { return XII_DEFAULT_NEW(FolderReader, 0); }
+  xiiDataDirectory::FolderReader* FolderType::CreateFolderReader() const
+  {
+    return XII_DEFAULT_NEW(FolderReader, 0);
+  }
 
-  xiiDataDirectory::FolderWriter* FolderType::CreateFolderWriter() const { return XII_DEFAULT_NEW(FolderWriter, 0); }
+  xiiDataDirectory::FolderWriter* FolderType::CreateFolderWriter() const
+  {
+    return XII_DEFAULT_NEW(FolderWriter, 0);
+  }
 
-  xiiDataDirectoryReader* FolderType::OpenFileToRead(const char* szFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir)
+  xiiDataDirectoryReader* FolderType::OpenFileToRead(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir)
   {
     xiiStringBuilder sFileToOpen;
-    ResolveAssetRedirection(szFile, sFileToOpen);
+    ResolveAssetRedirection(sFile, sFileToOpen);
 
-    // we know that these files cannot be opened, so don't even try
+    // We know that these files cannot be opened, so don't even try
     if (xiiConversionUtils::IsStringUuid(sFileToOpen))
       return nullptr;
 
@@ -261,7 +288,7 @@ namespace xiiDataDirectory
       pReader->m_bIsInUse = true;
     }
 
-    // if opening the file fails, the reader's m_bIsInUse needs to be reset.
+    // If opening the file fails, the reader's m_bIsInUse needs to be reset.
     if (pReader->Open(sFileToOpen, this, FileShareMode) == XII_FAILURE)
     {
       XII_LOCK(m_ReaderWriterMutex);
@@ -269,18 +296,18 @@ namespace xiiDataDirectory
       return nullptr;
     }
 
-    // if it succeeds, we return the reader
+    // If it succeeds, we return the reader
     return pReader;
   }
 
 
-  bool FolderType::ResolveAssetRedirection(const char* szFile, xiiStringBuilder& out_sRedirection)
+  bool FolderType::ResolveAssetRedirection(xiiStringView sFile, xiiStringBuilder& out_sRedirection)
   {
     XII_LOCK(m_RedirectionMutex);
     // Check if we know about a file redirection for this
-    auto it = m_FileRedirection.Find(szFile);
+    auto it = m_FileRedirection.Find(sFile);
 
-    // if available, open the file that is mentioned in the redirection file instead
+    // If available, open the file that is mentioned in the redirection file instead
     if (it.IsValid())
     {
 
@@ -297,12 +324,12 @@ namespace xiiDataDirectory
     }
     else
     {
-      out_sRedirection = szFile;
+      out_sRedirection = sFile;
       return false;
     }
   }
 
-  xiiDataDirectoryWriter* FolderType::OpenFileToWrite(const char* szFile, xiiFileShareMode::Enum FileShareMode)
+  xiiDataDirectoryWriter* FolderType::OpenFileToWrite(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode)
   {
     FolderWriter* pWriter = nullptr;
 
@@ -321,19 +348,19 @@ namespace xiiDataDirectory
       }
       pWriter->m_bIsInUse = true;
     }
-    // if opening the file fails, the writer's m_bIsInUse needs to be reset.
-    if (pWriter->Open(szFile, this, FileShareMode) == XII_FAILURE)
+
+    // If opening the file fails, the writer's m_bIsInUse needs to be reset.
+    if (pWriter->Open(sFile, this, FileShareMode) == XII_FAILURE)
     {
       XII_LOCK(m_ReaderWriterMutex);
       pWriter->m_bIsInUse = false;
       return nullptr;
     }
 
-    // if it succeeds, we return the reader
+    // If it succeeds, we return the reader
     return pWriter;
   }
 } // namespace xiiDataDirectory
-
 
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_FileSystem_Implementation_DataDirTypeFolder);

@@ -20,7 +20,7 @@ namespace xiiDataDirectory
     ~FolderType();
 
     /// \brief The factory that can be registered at xiiFileSystem to create data directories of this type.
-    static xiiDataDirectoryType* Factory(const char* szDataDirectory, const char* szGroup, const char* szRootName, xiiFileSystem::DataDirUsage Usage);
+    static xiiDataDirectoryType* Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage Usage);
 
     /// A 'redirection file' is an optional file located inside a data directory that lists which file access is redirected to which other
     /// file lookup. Each redirection is one line in the file (terminated by a \n). Each line consists of the 'key' string, a semicolon and
@@ -42,19 +42,19 @@ namespace xiiDataDirectory
   protected:
     // The implementations of the abstract functions.
 
-    virtual xiiDataDirectoryReader* OpenFileToRead(const char* szFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir) override;
+    virtual xiiDataDirectoryReader* OpenFileToRead(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir) override;
 
-    virtual bool                    ResolveAssetRedirection(const char* szPathOrAssetGuid, xiiStringBuilder& out_sRedirection) override;
-    virtual xiiDataDirectoryWriter* OpenFileToWrite(const char* szFile, xiiFileShareMode::Enum FileShareMode) override;
+    virtual bool                    ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection) override;
+    virtual xiiDataDirectoryWriter* OpenFileToWrite(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode) override;
     virtual void                    RemoveDataDirectory() override;
-    virtual void                    DeleteFile(const char* szFile) override;
-    virtual bool                    ExistsFile(const char* szFile, bool bOneSpecificDataDir) override;
-    virtual xiiResult               GetFileStats(const char* szFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats) override;
+    virtual void                    DeleteFile(xiiStringView sFile) override;
+    virtual bool                    ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir) override;
+    virtual xiiResult               GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats) override;
     virtual FolderReader*           CreateFolderReader() const;
     virtual FolderWriter*           CreateFolderWriter() const;
 
     /// \brief Called by 'xiiDataDirectoryType_Folder::Factory'
-    virtual xiiResult InternalInitializeDataDirectory(const char* szDirectory) override;
+    virtual xiiResult InternalInitializeDataDirectory(xiiStringView sDirectory) override;
 
     /// \brief Marks the given reader/writer as reusable.
     virtual void OnReaderWriterClose(xiiDataDirectoryReaderWriterBase* pClosed) override;

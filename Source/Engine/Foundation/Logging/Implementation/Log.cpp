@@ -88,16 +88,16 @@ void xiiGlobalLog::HandleLogMessage(const xiiLoggingEventData& le)
   }
 }
 
-xiiLogBlock::xiiLogBlock(const char* szName, const char* szContextInfo)
+xiiLogBlock::xiiLogBlock(xiiStringView sName, xiiStringView sContextInfo)
 {
   m_pLogInterface = xiiLog::GetThreadLocalLogSystem();
 
   if (!m_pLogInterface)
     return;
 
-  m_szName        = szName;
-  m_szContextInfo = szContextInfo;
-  m_bWritten      = false;
+  m_sName        = sName;
+  m_sContextInfo = sContextInfo;
+  m_bWritten     = false;
 
   m_pParentBlock                   = m_pLogInterface->m_pCurrentBlock;
   m_pLogInterface->m_pCurrentBlock = this;
@@ -110,16 +110,16 @@ xiiLogBlock::xiiLogBlock(const char* szName, const char* szContextInfo)
 }
 
 
-xiiLogBlock::xiiLogBlock(xiiLogInterface* pInterface, const char* szName, const char* szContextInfo)
+xiiLogBlock::xiiLogBlock(xiiLogInterface* pInterface, xiiStringView sName, xiiStringView sContextInfo)
 {
   m_pLogInterface = pInterface;
 
   if (!m_pLogInterface)
     return;
 
-  m_szName        = szName;
-  m_szContextInfo = szContextInfo;
-  m_bWritten      = false;
+  m_sName        = sName;
+  m_sContextInfo = sContextInfo;
+  m_bWritten     = false;
 
   m_pParentBlock                   = m_pLogInterface->m_pCurrentBlock;
   m_pLogInterface->m_pCurrentBlock = this;
@@ -152,9 +152,9 @@ void xiiLog::EndLogBlock(xiiLogInterface* pInterface, xiiLogBlock* pBlock)
   {
     xiiLoggingEventData le;
     le.m_EventType     = xiiLogMsgType::EndGroup;
-    le.m_szText        = pBlock->m_szName;
+    le.m_sText         = pBlock->m_sName;
     le.m_uiIndentation = pBlock->m_uiBlockDepth;
-    le.m_szTag         = pBlock->m_szContextInfo;
+    le.m_sTag          = pBlock->m_sContextInfo;
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     le.m_fSeconds = pBlock->m_fSeconds;
 #endif
@@ -174,9 +174,9 @@ void xiiLog::WriteBlockHeader(xiiLogInterface* pInterface, xiiLogBlock* pBlock)
 
   xiiLoggingEventData le;
   le.m_EventType     = xiiLogMsgType::BeginGroup;
-  le.m_szText        = pBlock->m_szName;
+  le.m_sText         = pBlock->m_sName;
   le.m_uiIndentation = pBlock->m_uiBlockDepth;
-  le.m_szTag         = pBlock->m_szContextInfo;
+  le.m_sTag          = pBlock->m_sContextInfo;
 
   pInterface->HandleLogMessage(le);
 }
@@ -224,9 +224,9 @@ void xiiLog::BroadcastLoggingEvent(xiiLogInterface* pInterface, xiiLogMsgType::E
 
   xiiLoggingEventData le;
   le.m_EventType     = type;
-  le.m_szText        = szString;
+  le.m_sText         = szString;
   le.m_uiIndentation = uiIndentation;
-  le.m_szTag         = szTag;
+  le.m_sTag          = szTag;
 
   pInterface->HandleLogMessage(le);
   pInterface->m_uiLoggedMsgsSinceFlush++;
@@ -438,5 +438,6 @@ bool xiiLog::Flush(xiiUInt32 uiNumNewMsgThreshold, xiiTime timeIntervalThreshold
 
   return true;
 }
+
 
 XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_Log);

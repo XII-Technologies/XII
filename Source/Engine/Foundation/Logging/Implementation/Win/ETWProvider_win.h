@@ -15,7 +15,7 @@ public:
   xiiETWProvider();
   ~xiiETWProvider();
 
-  void LogMessge(xiiLogMsgType::Enum eventType, xiiUInt8 uiIndentation, const char* szText);
+  void LogMessge(xiiLogMsgType::Enum eventType, xiiUInt8 uiIndentation, xiiStringView sText);
 
   static xiiETWProvider& GetInstance();
 };

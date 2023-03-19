@@ -611,12 +611,12 @@ public:
     {
       case xiiLogMsgType::ErrorMsg:
         m_Status = XII_FAILURE;
-        m_sResult.Append("Error: ", le.m_szText, "\n");
+        m_sResult.Append("Error: ", le.m_sText, "\n");
         break;
 
       case xiiLogMsgType::SeriousWarningMsg:
       case xiiLogMsgType::WarningMsg:
-        m_sResult.Append("Warning: ", le.m_szText, "\n");
+        m_sResult.Append("Warning: ", le.m_sText, "\n");
         break;
 
       default:
@@ -681,7 +681,7 @@ xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(const char* 
 
           xiiVisualShaderErrorLog log;
 
-          ret = xiiQtEditorApp::GetSingleton()->ExecuteTool("ShaderCompiler", arguments, 60, &log);
+          ret = xiiQtEditorApp::GetSingleton()->ExecuteTool("ShaderCompilerTool", arguments, 60, &log);
           if (ret.Failed())
           {
             e.m_Type            = xiiMaterialVisualShaderEvent::TransformFailed;

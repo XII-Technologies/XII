@@ -95,7 +95,8 @@ void xiiQuakeConsole::LogHandler(const xiiLoggingEventData& data)
   }
 
   xiiStringBuilder sFormat;
-  sFormat.Printf("%*s%s", data.m_uiIndentation, "", data.m_szText);
+  sFormat.Printf("%*s%s", data.m_uiIndentation, "");
+  sFormat.Append(data.m_sText);
 
   AddConsoleString(sFormat.GetData(), type);
 }

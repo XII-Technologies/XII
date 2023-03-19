@@ -92,5 +92,4 @@ void RemoveMemoryEventHandler()
 }
 
 
-
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Memory);

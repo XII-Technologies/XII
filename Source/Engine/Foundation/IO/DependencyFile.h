@@ -20,7 +20,7 @@ public:
   void Clear();
 
   /// \brief Adds one file as a dependency to the list
-  void AddFileDependency(const char* szFile);
+  void AddFileDependency(xiiStringView sFile);
 
   /// \brief Allows read access to all currently stored file dependencies
   const xiiHybridArray<xiiString, 16>& GetFileDependencies() const { return m_AssetTransformDependencies; }
@@ -35,11 +35,11 @@ public:
 
   /// \brief Writes the current state to a file. Note that you probably should call StoreCurrentTimeStamp() before this, to serialize the latest file
   /// stamp
-  xiiResult WriteDependencyFile(const char* szFile) const;
+  xiiResult WriteDependencyFile(xiiStringView sFile) const;
 
   /// \brief Reads the state from a file. Call HasAnyFileChanged() afterwards to determine whether anything has changed since when the data was
   /// serialized.
-  xiiResult ReadDependencyFile(const char* szFile);
+  xiiResult ReadDependencyFile(xiiStringView sFile);
 
   /// \brief Retrieves the current file time stamps from the filesystem and determines whether any file has changed since the last call to
   /// StoreCurrentTimeStamp() (or ReadDependencyFile())
@@ -50,7 +50,7 @@ public:
   void StoreCurrentTimeStamp();
 
 private:
-  static xiiResult RetrieveFileTimeStamp(const char* szFile, xiiTimestamp& out_Result);
+  static xiiResult RetrieveFileTimeStamp(xiiStringView sFile, xiiTimestamp& out_Result);
 
   xiiHybridArray<xiiString, 16> m_AssetTransformDependencies;
   xiiInt64                      m_iMaxTimeStampStored  = 0;

@@ -2,11 +2,11 @@
 
 #include <Foundation/IO/FileSystem/FileWriter.h>
 
-xiiResult xiiFileWriter::Open(const char* szFile, xiiUInt32 uiCacheSize /*= 1024 * 1024*/, xiiFileShareMode::Enum FileShareMode /*= xiiFileShareMode::Exclusive*/, bool bAllowFileEvents /*= true*/)
+xiiResult xiiFileWriter::Open(xiiStringView sFile, xiiUInt32 uiCacheSize /*= 1024 * 1024*/, xiiFileShareMode::Enum FileShareMode /*= xiiFileShareMode::Exclusive*/, bool bAllowFileEvents /*= true*/)
 {
   uiCacheSize = xiiMath::Clamp<xiiUInt32>(uiCacheSize, 1024, 1024 * 1024 * 32);
 
-  m_pDataDirWriter = GetFileWriter(szFile, FileShareMode, bAllowFileEvents);
+  m_pDataDirWriter = GetFileWriter(sFile, FileShareMode, bAllowFileEvents);
 
   if (!m_pDataDirWriter)
     return XII_FAILURE;
@@ -85,7 +85,6 @@ xiiResult xiiFileWriter::WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesT
     return XII_SUCCESS;
   }
 }
-
 
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_FileSystem_Implementation_FileWriter);

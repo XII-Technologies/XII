@@ -15,7 +15,7 @@ XII_IMPLEMENT_SINGLETON(xiiQtEditorApp);
 xiiEvent<const xiiEditorAppEvent&> xiiQtEditorApp::m_Events;
 
 xiiQtEditorApp::xiiQtEditorApp() :
-  m_SingletonRegistrar(this), m_RecentProjects(10), m_RecentDocuments(50)
+  m_SingletonRegistrar(this), m_RecentProjects(20), m_RecentDocuments(100)
 {
   m_bSavePreferencesAfterOpenProject = false;
 

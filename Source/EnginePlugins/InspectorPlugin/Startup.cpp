@@ -97,5 +97,4 @@ void RemoveStartupEventHandler()
 }
 
 
-
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Startup);

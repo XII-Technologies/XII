@@ -40,6 +40,8 @@ void xiiLogWriter::Console::LogMessageHandler(const xiiLoggingEventData& eventDa
   for (xiiUInt32 i = 0; i < eventData.m_uiIndentation; ++i)
     printf(" ");
 
+  xiiStringBuilder sTemp1, sTemp2;
+
   switch (eventData.m_EventType)
   {
     case xiiLogMsgType::Flush:
@@ -48,13 +50,13 @@ void xiiLogWriter::Console::LogMessageHandler(const xiiLoggingEventData& eventDa
 
     case xiiLogMsgType::BeginGroup:
       SetConsoleColor(0x02);
-      printf("+++++ %s (%s) +++++\n", eventData.m_szText, eventData.m_szTag);
+      printf("+++++ %s (%s) +++++\n", eventData.m_sText.GetData(sTemp1), eventData.m_sTag.GetData(sTemp2));
       break;
 
     case xiiLogMsgType::EndGroup:
       SetConsoleColor(0x02);
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-      printf("----- %s (%.6f sec)-----\n\n", eventData.m_szText, eventData.m_fSeconds);
+      printf("----- %s (%.6f sec)-----\n\n", eventData.m_sText.GetData(sTemp1), eventData.m_fSeconds);
 #else
       printf("----- %s (%s)-----\n\n", eventData.m_szText, "timing info not available");
 #endif
@@ -62,44 +64,44 @@ void xiiLogWriter::Console::LogMessageHandler(const xiiLoggingEventData& eventDa
 
     case xiiLogMsgType::ErrorMsg:
       SetConsoleColor(0x0C);
-      printf("%sError: %s\n", sTimestamp.GetData(), eventData.m_szText);
+      printf("%sError: %s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
       fflush(stdout);
       break;
 
     case xiiLogMsgType::SeriousWarningMsg:
       SetConsoleColor(0x0C);
-      printf("%sSeriously: %s\n", sTimestamp.GetData(), eventData.m_szText);
+      printf("%sSeriously: %s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
       break;
 
     case xiiLogMsgType::WarningMsg:
       SetConsoleColor(0x0E);
-      printf("%sWarning: %s\n", sTimestamp.GetData(), eventData.m_szText);
+      printf("%sWarning: %s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
       break;
 
     case xiiLogMsgType::SuccessMsg:
       SetConsoleColor(0x0A);
-      printf("%s%s\n", sTimestamp.GetData(), eventData.m_szText);
+      printf("%s%s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
       fflush(stdout);
       break;
 
     case xiiLogMsgType::InfoMsg:
       SetConsoleColor(0x07);
-      printf("%s%s\n", sTimestamp.GetData(), eventData.m_szText);
+      printf("%s%s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
       break;
 
     case xiiLogMsgType::DevMsg:
       SetConsoleColor(0x08);
-      printf("%s%s\n", sTimestamp.GetData(), eventData.m_szText);
+      printf("%s%s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
       break;
 
     case xiiLogMsgType::DebugMsg:
       SetConsoleColor(0x09);
-      printf("%s%s\n", sTimestamp.GetData(), eventData.m_szText);
+      printf("%s%s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
       break;
 
     default:
       SetConsoleColor(0x0D);
-      printf("%s%s\n", sTimestamp.GetData(), eventData.m_szText);
+      printf("%s%s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
 
       xiiLog::Warning("Unknown Message Type {0}", eventData.m_EventType);
       break;

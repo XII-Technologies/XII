@@ -9,7 +9,7 @@
 
 // Standard operators for overloads of common data types
 
-/// bool versions
+/// Boolean versions
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, bool bValue)
 {
@@ -26,7 +26,7 @@ inline xiiStreamReader& operator>>(xiiStreamReader& stream, bool& bValue)
   return stream;
 }
 
-/// unsigned int versions
+/// Unsigned Integer versions
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, xiiUInt8 uiValue)
 {
@@ -135,7 +135,7 @@ inline xiiResult DeserializeArray(xiiStreamReader& stream, xiiUInt64* pArray, xi
   return XII_FAILURE;
 }
 
-/// signed int versions
+/// Signed Integer versions
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, xiiInt8 iValue)
 {
@@ -245,7 +245,7 @@ inline xiiResult DeserializeArray(xiiStreamReader& stream, xiiInt64* pArray, xii
 }
 
 
-/// float and double versions
+/// Float and Double versions
 
 inline xiiStreamWriter& operator<<(xiiStreamWriter& stream, float fValue)
 {
@@ -305,6 +305,7 @@ inline xiiResult DeserializeArray(xiiStreamReader& stream, double* pArray, xiiUI
 // No read equivalent for C-style strings (but can be read as xiiString & xiiStringBuilder instances)
 
 XII_FOUNDATION_DLL xiiStreamWriter& operator<<(xiiStreamWriter& stream, const char* szValue);
+XII_FOUNDATION_DLL xiiStreamWriter& operator<<(xiiStreamWriter& stream, xiiStringView sValue);
 
 // xiiHybridString
 

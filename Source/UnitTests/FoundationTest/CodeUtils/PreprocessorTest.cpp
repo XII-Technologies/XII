@@ -34,7 +34,7 @@ xiiResult FileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, 
 class Logger : public xiiLogInterface
 {
 public:
-  virtual void HandleLogMessage(const xiiLoggingEventData& le) override { m_sOutput.AppendFormat("Log: '{0}'\r\n", le.m_szText); }
+  virtual void HandleLogMessage(const xiiLoggingEventData& le) override { m_sOutput.AppendFormat("Log: '{0}'\r\n", le.m_sText); }
 
   void EventHandler(const xiiPreprocessor::ProcessingEvent& ed)
   {

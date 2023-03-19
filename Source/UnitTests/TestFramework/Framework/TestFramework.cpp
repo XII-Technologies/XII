@@ -5,10 +5,12 @@
 #include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/IO/OSFile.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Logging/VisualStudioWriter.h>
 #include <Foundation/System/CrashHandler.h>
 #include <Foundation/System/EnvironmentVariableUtils.h>
+#include <Foundation/System/Process.h>
 #include <Foundation/System/StackTracer.h>
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -430,6 +432,31 @@ void xiiTestFramework::UpdateReferenceImages()
   const xiiStringBuilder sRefFiles(sDir, "/Images_Reference");
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS) && XII_ENABLED(XII_SUPPORTS_FILE_STATS)
+
+
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+  xiiStringBuilder sOptiPng = xiiFileSystem::GetSdkRootDirectory();
+  sOptiPng.AppendPath("Data/Tools/Precompiled/optipng/optipng.exe");
+
+  if (xiiOSFile::ExistsFile(sOptiPng))
+  {
+    xiiStringBuilder sPath;
+
+    xiiFileSystemIterator it;
+    it.StartSearch(sNewFiles, xiiFileSystemIteratorFlags::ReportFiles);
+    for (; it.IsValid(); it.Next())
+    {
+      it.GetStats().GetFullPath(sPath);
+
+      xiiProcessOptions opt;
+      opt.m_sProcess = sOptiPng;
+      opt.m_Arguments.PushBack(sPath);
+      xiiProcess::Execute(opt).IgnoreResult();
+    }
+  }
+
+#  endif
+
   xiiOSFile::CopyFolder(sNewFiles, sRefFiles).IgnoreResult();
   xiiOSFile::DeleteFolder(sNewFiles).IgnoreResult();
 #endif
@@ -643,23 +670,25 @@ void xiiTestFramework::StartTests()
 // Redirects engine warnings / errors to test-framework output
 static void LogWriter(const xiiLoggingEventData& e)
 {
+  const xiiStringBuilder sText = e.m_sText;
+
   switch (e.m_EventType)
   {
     case xiiLogMsgType::ErrorMsg:
-      xiiTestFramework::Output(xiiTestOutput::Error, "xiiLog Error: %s", e.m_szText);
+      xiiTestFramework::Output(xiiTestOutput::Error, "xiiLog Error: %s", sText.GetData());
       break;
     case xiiLogMsgType::SeriousWarningMsg:
-      xiiTestFramework::Output(xiiTestOutput::Error, "xiiLog Serious Warning: %s", e.m_szText);
+      xiiTestFramework::Output(xiiTestOutput::Error, "xiiLog Serious Warning: %s", sText.GetData());
       break;
     case xiiLogMsgType::WarningMsg:
-      xiiTestFramework::Output(xiiTestOutput::Warning, "xiiLog Warning: %s", e.m_szText);
+      xiiTestFramework::Output(xiiTestOutput::Warning, "xiiLog Warning: %s", sText.GetData());
       break;
     case xiiLogMsgType::InfoMsg:
     case xiiLogMsgType::DevMsg:
     case xiiLogMsgType::DebugMsg:
     {
-      if (xiiStringUtils::IsEqual_NoCase(e.m_szTag, "test"))
-        xiiTestFramework::Output(xiiTestOutput::Details, e.m_szText);
+      if (e.m_sTag.IsEqual_NoCase("test"))
+        xiiTestFramework::Output(xiiTestOutput::Details, sText.GetData());
     }
     break;
 
@@ -1650,21 +1679,21 @@ void xiiTestFramework::OutputArgs(xiiTestOutput::Enum Type, const char* szMsg, v
   GetInstance()->OutputImpl(Type, szBuffer);
 }
 
-void xiiTestFramework::Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...)
+void xiiTestFramework::Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, xiiStringView sMsg, ...)
 {
   va_list args;
-  va_start(args, szMsg);
+  va_start(args, sMsg);
 
-  Error(szError, szFile, iLine, szFunction, szMsg, args);
+  Error(szError, szFile, iLine, szFunction, sMsg, args);
 
   va_end(args);
 }
 
-void xiiTestFramework::Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, va_list args)
+void xiiTestFramework::Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, xiiStringView sMsg, va_list args)
 {
   // format the output text
   char szBuffer[1024 * 10];
-  xiiStringUtils::vsnprintf(szBuffer, XII_ARRAY_SIZE(szBuffer), szMsg, args);
+  xiiStringUtils::vsnprintf(szBuffer, XII_ARRAY_SIZE(szBuffer), xiiString(sMsg).GetData(), args);
 
   GetInstance()->ErrorImpl(szError, szFile, iLine, szFunction, szBuffer);
 }

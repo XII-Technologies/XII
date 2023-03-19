@@ -21,20 +21,20 @@ namespace xiiDataDirectory
     ArchiveType();
     ~ArchiveType();
 
-    static xiiDataDirectoryType* Factory(const char* szDataDirectory, const char* szGroup, const char* szRootName, xiiFileSystem::DataDirUsage Usage);
+    static xiiDataDirectoryType* Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage Usage);
 
     virtual const xiiString128& GetRedirectedDataDirectoryPath() const override { return m_sRedirectedDataDirPath; }
 
   protected:
-    virtual xiiDataDirectoryReader* OpenFileToRead(const char* szFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir) override;
+    virtual xiiDataDirectoryReader* OpenFileToRead(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir) override;
 
     virtual void RemoveDataDirectory() override;
 
-    virtual bool ExistsFile(const char* szFile, bool bOneSpecificDataDir) override;
+    virtual bool ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir) override;
 
-    virtual xiiResult GetFileStats(const char* szFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats) override;
+    virtual xiiResult GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats) override;
 
-    virtual xiiResult InternalInitializeDataDirectory(const char* szDirectory) override;
+    virtual xiiResult InternalInitializeDataDirectory(xiiStringView sDirectory) override;
 
     virtual void OnReaderWriterClose(xiiDataDirectoryReaderWriterBase* pClosed) override;
 

@@ -119,5 +119,4 @@ void RemoveInputEventHandler()
 }
 
 
-
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Input);

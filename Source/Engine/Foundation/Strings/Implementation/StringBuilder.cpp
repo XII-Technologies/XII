@@ -772,7 +772,7 @@ void xiiStringBuilder::AppendPath(xiiStringView sPath1, xiiStringView sPath2, xi
       {
         // prevent creating multiple path separators through concatenation
         while (xiiPathUtils::IsPathSeparator(*sThisPath.GetStartPointer()))
-          sThisPath.Shrink(1, 0);
+          sThisPath.ChopAwayFirstCharacterAscii();
       }
 
       if (IsEmpty() || xiiPathUtils::IsPathSeparator(GetIteratorBack().GetCharacter()))
@@ -851,7 +851,7 @@ void xiiStringBuilder::ChangeFileExtension(xiiStringView sNewExtension)
 {
   while (sNewExtension.StartsWith("."))
   {
-    sNewExtension.Shrink(1, 0);
+    sNewExtension.ChopAwayFirstCharacterAscii();
   }
 
   const xiiStringView it = xiiPathUtils::GetFileExtension(GetView());
@@ -1194,5 +1194,6 @@ void xiiStringBuilder::Printf(const char* szUtf8Format, ...)
 
   va_end(args);
 }
+
 
 XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_StringBuilder);

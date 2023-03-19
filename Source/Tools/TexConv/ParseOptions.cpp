@@ -432,10 +432,16 @@ xiiResult xiiTexConv::ParseAssetHeader()
 
   m_Processor.m_Descriptor.m_uiAssetVersion = (xiiUInt16)opt_AssetVersion.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
-  const xiiUInt64 uiHashLow  = xiiConversionUtils::ConvertHexStringToUInt32(opt_AssetHashLow.GetOptionValue(xiiCommandLineOption::LogMode::Always));
-  const xiiUInt64 uiHashHigh = xiiConversionUtils::ConvertHexStringToUInt32(opt_AssetHashHigh.GetOptionValue(xiiCommandLineOption::LogMode::Always));
+  xiiUInt32 uiHashLow  = 0;
+  xiiUInt32 uiHashHigh = 0;
+  if (xiiConversionUtils::ConvertHexStringToUInt32(opt_AssetHashLow.GetOptionValue(xiiCommandLineOption::LogMode::Always), uiHashLow).Failed() ||
+      xiiConversionUtils::ConvertHexStringToUInt32(opt_AssetHashHigh.GetOptionValue(xiiCommandLineOption::LogMode::Always), uiHashHigh).Failed())
+  {
+    xiiLog::Error("'-assetHashLow 0xHEX32' and '-assetHashHigh 0xHEX32' have not been specified correctly.");
+    return XII_FAILURE;
+  }
 
-  m_Processor.m_Descriptor.m_uiAssetHash = (uiHashHigh << 32) | uiHashLow;
+  m_Processor.m_Descriptor.m_uiAssetHash = (static_cast<xiiUInt64>(uiHashHigh) << 32) | static_cast<xiiUInt64>(uiHashLow);
 
   if (m_Processor.m_Descriptor.m_uiAssetHash == 0)
   {

@@ -25,22 +25,22 @@ XII_END_SUBSYSTEM_DECLARATION;
 xiiDataDirectory::ArchiveType::ArchiveType()  = default;
 xiiDataDirectory::ArchiveType::~ArchiveType() = default;
 
-xiiDataDirectoryType* xiiDataDirectory::ArchiveType::Factory(const char* szDataDirectory, const char* szGroup, const char* szRootName, xiiFileSystem::DataDirUsage Usage)
+xiiDataDirectoryType* xiiDataDirectory::ArchiveType::Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage Usage)
 {
   ArchiveType* pDataDir = XII_DEFAULT_NEW(ArchiveType);
 
-  if (pDataDir->InitializeDataDirectory(szDataDirectory) == XII_SUCCESS)
+  if (pDataDir->InitializeDataDirectory(sDataDirectory) == XII_SUCCESS)
     return pDataDir;
 
   XII_DEFAULT_DELETE(pDataDir);
   return nullptr;
 }
 
-xiiDataDirectoryReader* xiiDataDirectory::ArchiveType::OpenFileToRead(const char* szFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir)
+xiiDataDirectoryReader* xiiDataDirectory::ArchiveType::OpenFileToRead(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir)
 {
   const xiiArchiveTOC& toc          = m_ArchiveReader.GetArchiveTOC();
   xiiStringBuilder     sArchivePath = m_sArchiveSubFolder;
-  sArchivePath.AppendPath(szFile);
+  sArchivePath.AppendPath(sFile);
 
   const xiiUInt32 uiEntryIndex = toc.FindEntry(sArchivePath);
 
@@ -114,18 +114,18 @@ void xiiDataDirectory::ArchiveType::RemoveDataDirectory()
   XII_DEFAULT_DELETE(pThis);
 }
 
-bool xiiDataDirectory::ArchiveType::ExistsFile(const char* szFile, bool bOneSpecificDataDir)
+bool xiiDataDirectory::ArchiveType::ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir)
 {
   xiiStringBuilder sArchivePath = m_sArchiveSubFolder;
-  sArchivePath.AppendPath(szFile);
+  sArchivePath.AppendPath(sFile);
   return m_ArchiveReader.GetArchiveTOC().FindEntry(sArchivePath) != xiiInvalidIndex;
 }
 
-xiiResult xiiDataDirectory::ArchiveType::GetFileStats(const char* szFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats)
+xiiResult xiiDataDirectory::ArchiveType::GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats)
 {
   const xiiArchiveTOC& toc          = m_ArchiveReader.GetArchiveTOC();
   xiiStringBuilder     sArchivePath = m_sArchiveSubFolder;
-  sArchivePath.AppendPath(szFileOrFolder);
+  sArchivePath.AppendPath(sFileOrFolder);
   const xiiUInt32 uiEntryIndex = toc.FindEntry(sArchivePath);
 
   if (uiEntryIndex == xiiInvalidIndex)
@@ -145,10 +145,10 @@ xiiResult xiiDataDirectory::ArchiveType::GetFileStats(const char* szFileOrFolder
   return XII_SUCCESS;
 }
 
-xiiResult xiiDataDirectory::ArchiveType::InternalInitializeDataDirectory(const char* szDirectory)
+xiiResult xiiDataDirectory::ArchiveType::InternalInitializeDataDirectory(xiiStringView sDirectory)
 {
   xiiStringBuilder sRedirected;
-  XII_SUCCEED_OR_RETURN(xiiFileSystem::ResolveSpecialDirectory(szDirectory, sRedirected));
+  XII_SUCCEED_OR_RETURN(xiiFileSystem::ResolveSpecialDirectory(sDirectory, sRedirected));
 
   sRedirected.MakeCleanPath();
   // remove trailing slashes
@@ -193,7 +193,7 @@ endloop:
   if (xiiOSFile::GetFileStats(sArchivePath, stats).Failed())
     return XII_FAILURE;
 
-  XII_LOG_BLOCK("xiiArchiveDataDir", szDirectory);
+  XII_LOG_BLOCK("xiiArchiveDataDir", sDirectory);
 
   m_LastModificationTime = stats.m_LastModificationTime;
 

@@ -138,5 +138,4 @@ void RemoveGlobalEventHandler()
 }
 
 
-
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_GlobalEvents);

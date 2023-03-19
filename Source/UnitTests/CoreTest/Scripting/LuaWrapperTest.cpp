@@ -64,7 +64,7 @@ class ScriptLog : public xiiLogInterface
 public:
   virtual void HandleLogMessage(const xiiLoggingEventData& le) override
   {
-    XII_TEST_FAILURE("Script Error", le.m_szText);
+    XII_TEST_FAILURE("Script Error", le.m_sText);
     XII_TEST_DEBUG_BREAK;
   }
 };
