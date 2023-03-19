@@ -302,9 +302,9 @@ void xiiWorld::DeleteObjectDelayed(const xiiGameObjectHandle& hObject, bool bAls
   PostMessage(hObject, msg, xiiTime::Zero());
 }
 
-xiiComponentInitBatchHandle xiiWorld::CreateComponentInitBatch(const char* szBatchName, bool bMustFinishWithinOneFrame /*= true*/)
+xiiComponentInitBatchHandle xiiWorld::CreateComponentInitBatch(xiiStringView sBatchName, bool bMustFinishWithinOneFrame /*= true*/)
 {
-  auto pInitBatch = XII_NEW(GetAllocator(), xiiInternal::WorldData::InitBatch, GetAllocator(), szBatchName, bMustFinishWithinOneFrame);
+  auto pInitBatch = XII_NEW(GetAllocator(), xiiInternal::WorldData::InitBatch, GetAllocator(), sBatchName, bMustFinishWithinOneFrame);
   return xiiComponentInitBatchHandle(m_Data.m_InitBatches.Insert(pInitBatch));
 }
 
@@ -755,17 +755,17 @@ void xiiWorld::SetObjectGlobalKey(xiiGameObject* pObject, const xiiHashedString&
   }
 }
 
-const char* xiiWorld::GetObjectGlobalKey(const xiiGameObject* pObject) const
+xiiStringView xiiWorld::GetObjectGlobalKey(const xiiGameObject* pObject) const
 {
   const xiiUInt32 uiId = pObject->m_InternalId.m_InstanceIndex;
 
   const xiiHashedString* pGlobalKey;
   if (m_Data.m_IdToGlobalKeyTable.TryGetValue(uiId, pGlobalKey))
   {
-    return pGlobalKey->GetData();
+    return pGlobalKey->GetView();
   }
 
-  return "";
+  return {};
 }
 
 void xiiWorld::ProcessQueuedMessage(const xiiInternal::WorldData::MessageQueue::Entry& entry)

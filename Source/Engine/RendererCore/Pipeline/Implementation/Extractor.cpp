@@ -301,8 +301,8 @@ void xiiVisibleObjectsExtractor::Extract(
     if (cvar_SpatialVisBounds || cvar_SpatialVisLocalBBox || cvar_SpatialVisData)
     {
       if ((cvar_SpatialVisDataOnlyObject.GetValue().IsEmpty() ||
-            xiiStringUtils::FindSubString_NoCase(pObject->GetName(), cvar_SpatialVisDataOnlyObject.GetValue()) != nullptr) &&
-          !cvar_SpatialVisDataOnlySelected)
+           pObject->GetName().FindSubString_NoCase(cvar_SpatialVisDataOnlyObject.GetValue()) != nullptr) &&
+           !cvar_SpatialVisDataOnlySelected)
       {
         VisualizeObject(view, pObject);
       }

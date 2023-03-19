@@ -311,12 +311,12 @@ XII_CREATE_SIMPLE_TEST(World, Components)
     // XII_TEST_BOOL(world.TryGetComponent(hComponentC, pComponentC));
 
     XII_TEST_BOOL(pObjectA->IsActive());
-    XII_TEST_STRING(pObjectA->GetName(), "A");
+    XII_TEST_BOOL(pObjectA->GetName() == "A");
     XII_TEST_BOOL(pComponentA->IsActive());
     XII_TEST_BOOL(pComponentA->GetOwner() == pObjectA);
 
     XII_TEST_BOOL(pObjectC->IsActive());
-    XII_TEST_STRING(pObjectC->GetName(), "C");
+    XII_TEST_BOOL(pObjectC->GetName() == "C");
     XII_TEST_BOOL(pComponentC->IsActive());
     XII_TEST_BOOL(pComponentC->GetOwner() == pObjectC);
 

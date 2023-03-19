@@ -41,11 +41,11 @@ xiiView::xiiView()
 
 xiiView::~xiiView() = default;
 
-void xiiView::SetName(const char* szName)
+void xiiView::SetName(xiiStringView sName)
 {
-  m_sName.Assign(szName);
+  m_sName.Assign(sName);
 
-  xiiStringBuilder sb = szName;
+  xiiStringBuilder sb = sName;
   sb.Append(".ExtractData");
   m_pExtractTask->ConfigureTask(sb, xiiTaskNesting::Maybe);
 }

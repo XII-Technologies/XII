@@ -1,7 +1,7 @@
 
-XII_ALWAYS_INLINE const char* xiiWorld::GetName() const
+XII_ALWAYS_INLINE xiiStringView xiiWorld::GetName() const
 {
-  return m_Data.m_sName.GetData();
+  return m_Data.m_sName;
 }
 
 XII_ALWAYS_INLINE xiiUInt32 xiiWorld::GetIndex() const

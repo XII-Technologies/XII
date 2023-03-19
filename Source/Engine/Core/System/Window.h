@@ -181,17 +181,17 @@ struct XII_CORE_DLL xiiWindowCreationDesc
   void SaveToDDL(xiiOpenDdlWriter& writer);
 
   /// Serializes the configuration to DDL.
-  xiiResult SaveToDDL(const char* szFile);
+  xiiResult SaveToDDL(xiiStringView sFile);
 
   /// Deserializes the configuration from DDL.
   void LoadFromDDL(const xiiOpenDdlReaderElement* pParentElement);
 
   /// Deserializes the configuration from DDL.
-  xiiResult LoadFromDDL(const char* szFile);
+  xiiResult LoadFromDDL(xiiStringView sFile);
 
 
   /// The window title to be displayed.
-  xiiString m_Title = "XII Engine";
+  xiiString m_Title = "XII";
 
   /// Defines how the window size is determined.
   xiiEnum<xiiWindowMode> m_WindowMode;

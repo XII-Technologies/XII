@@ -329,10 +329,10 @@ void xiiCameraComponent::ShowStats(xiiView* pView)
 
   // draw stats
   {
-    const char* szName = GetOwner()->GetName();
+    xiiStringView sName = GetOwner()->GetName();
 
     xiiStringBuilder sb;
-    sb.Format("Camera '{0}':\nEV100: {1}, Exposure: {2}", xiiStringUtils::IsNullOrEmpty(szName) ? pView->GetName() : szName, GetEV100(), GetExposure());
+    sb.Format("Camera '{0}':\nEV100: {1}, Exposure: {2}", sName.IsEmpty() ? pView->GetName() : sName, GetEV100(), GetExposure());
     xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugRenderer::ScreenPlacement::TopLeft, "CamStats", sb, xiiColor::White);
   }
 

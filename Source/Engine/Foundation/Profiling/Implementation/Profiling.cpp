@@ -675,7 +675,7 @@ void xiiProfilingSystem::StartNewFrame()
 }
 
 // static
-void xiiProfilingSystem::AddCPUScope(const char* szName, const char* szFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout)
+void xiiProfilingSystem::AddCPUScope(xiiStringView sName, const char* szFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout)
 {
   const xiiTime duration = endTime - beginTime;
 
@@ -709,7 +709,7 @@ void xiiProfilingSystem::AddCPUScope(const char* szName, const char* szFunctionN
   scope.m_szFunctionName = szFunctionName;
   scope.m_BeginTime      = beginTime;
   scope.m_EndTime        = endTime;
-  xiiStringUtils::Copy(scope.m_szName, XII_ARRAY_SIZE(scope.m_szName), szName);
+  xiiStringUtils::Copy(scope.m_szName, XII_ARRAY_SIZE(scope.m_szName), sName.GetStartPointer(), sName.GetEndPointer());
 
   if (xiiThreadUtils::IsMainThread())
   {
@@ -734,7 +734,7 @@ void xiiProfilingSystem::AddCPUScope(const char* szName, const char* szFunctionN
 
   if (scopeTimeout.IsPositive() && duration > scopeTimeout && s_ScopeTimeoutCallback.IsValid())
   {
-    s_ScopeTimeoutCallback(szName, szFunctionName, duration);
+    s_ScopeTimeoutCallback(sName, szFunctionName, duration);
   }
 }
 
@@ -784,13 +784,13 @@ void xiiProfilingSystem::Reset()
 }
 
 // static
-void xiiProfilingSystem::SetThreadName(const char* szThreadName)
+void xiiProfilingSystem::SetThreadName(xiiStringView sThreadName)
 {
   XII_LOCK(s_ThreadInfosMutex);
 
   ThreadInfo& info  = s_ThreadInfos.ExpandAndGetRef();
   info.m_uiThreadId = (xiiUInt64)xiiThreadUtils::GetCurrentThreadID();
-  info.m_sName      = szThreadName;
+  info.m_sName      = sThreadName;
 }
 
 // static
@@ -818,7 +818,7 @@ void xiiProfilingSystem::InitializeGPUData(xiiUInt32 gpuCount)
   }
 }
 
-void xiiProfilingSystem::AddGPUScope(const char* szName, xiiTime beginTime, xiiTime endTime, xiiUInt32 gpuIndex)
+void xiiProfilingSystem::AddGPUScope(xiiStringView sName, xiiTime beginTime, xiiTime endTime, xiiUInt32 gpuIndex)
 {
   // discard?
   if (endTime - beginTime < xiiTime::Milliseconds(cvar_ProfilingDiscardThresholdMS))
@@ -832,29 +832,29 @@ void xiiProfilingSystem::AddGPUScope(const char* szName, xiiTime beginTime, xiiT
   GPUScope scope;
   scope.m_BeginTime = beginTime;
   scope.m_EndTime   = endTime;
-  xiiStringUtils::Copy(scope.m_szName, XII_ARRAY_SIZE(scope.m_szName), szName);
+  xiiStringUtils::Copy(scope.m_szName, XII_ARRAY_SIZE(scope.m_szName), sName.GetStartPointer(), sName.GetEndPointer());
 
   s_GPUScopes[gpuIndex]->PushBack(scope);
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiProfilingScope::xiiProfilingScope(const char* szName, const char* szFunctionName, xiiTime timeout) :
-  m_szName(szName), m_szFunction(szFunctionName), m_BeginTime(xiiTime::Now()), m_Timeout(timeout)
+xiiProfilingScope::xiiProfilingScope(xiiStringView sName, const char* szFunctionName, xiiTime timeout) :
+  m_sName(sName), m_szFunction(szFunctionName), m_BeginTime(xiiTime::Now()), m_Timeout(timeout)
 {
 }
 
 xiiProfilingScope::~xiiProfilingScope()
 {
-  xiiProfilingSystem::AddCPUScope(m_szName, m_szFunction, m_BeginTime, xiiTime::Now(), m_Timeout);
+  xiiProfilingSystem::AddCPUScope(m_sName, m_szFunction, m_BeginTime, xiiTime::Now(), m_Timeout);
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 thread_local xiiProfilingListScope* xiiProfilingListScope::s_pCurrentList = nullptr;
 
-xiiProfilingListScope::xiiProfilingListScope(const char* szListName, const char* szFirstSectionName, const char* szFunctionName) :
-  m_szListName(szListName), m_szListFunction(szFunctionName), m_ListBeginTime(xiiTime::Now()), m_szCurSectionName(szFirstSectionName), m_CurSectionBeginTime(m_ListBeginTime)
+xiiProfilingListScope::xiiProfilingListScope(xiiStringView sListName, xiiStringView sFirstSectionName, const char* szFunctionName) :
+  m_sListName(sListName), m_szListFunction(szFunctionName), m_ListBeginTime(xiiTime::Now()), m_sCurSectionName(sFirstSectionName), m_CurSectionBeginTime(m_ListBeginTime)
 {
   m_pPreviousList = s_pCurrentList;
   s_pCurrentList  = this;
@@ -863,21 +863,21 @@ xiiProfilingListScope::xiiProfilingListScope(const char* szListName, const char*
 xiiProfilingListScope::~xiiProfilingListScope()
 {
   xiiTime now = xiiTime::Now();
-  xiiProfilingSystem::AddCPUScope(m_szCurSectionName, nullptr, m_CurSectionBeginTime, now, xiiTime::Zero());
-  xiiProfilingSystem::AddCPUScope(m_szListName, m_szListFunction, m_ListBeginTime, now, xiiTime::Zero());
+  xiiProfilingSystem::AddCPUScope(m_sCurSectionName, nullptr, m_CurSectionBeginTime, now, xiiTime::Zero());
+  xiiProfilingSystem::AddCPUScope(m_sListName, m_szListFunction, m_ListBeginTime, now, xiiTime::Zero());
 
   s_pCurrentList = m_pPreviousList;
 }
 
 // static
-void xiiProfilingListScope::StartNextSection(const char* szNextSectionName)
+void xiiProfilingListScope::StartNextSection(xiiStringView sNextSectionName)
 {
   xiiProfilingListScope* pCurScope = s_pCurrentList;
 
   xiiTime now = xiiTime::Now();
-  xiiProfilingSystem::AddCPUScope(pCurScope->m_szCurSectionName, nullptr, pCurScope->m_CurSectionBeginTime, now, xiiTime::Zero());
+  xiiProfilingSystem::AddCPUScope(pCurScope->m_sCurSectionName, nullptr, pCurScope->m_CurSectionBeginTime, now, xiiTime::Zero());
 
-  pCurScope->m_szCurSectionName    = szNextSectionName;
+  pCurScope->m_sCurSectionName     = sNextSectionName;
   pCurScope->m_CurSectionBeginTime = now;
 }
 
@@ -896,19 +896,19 @@ void xiiProfilingSystem::SetDiscardThreshold(xiiTime threshold) {}
 
 void xiiProfilingSystem::StartNewFrame() {}
 
-void xiiProfilingSystem::AddCPUScope(const char* szName, const char* szFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout) {}
+void xiiProfilingSystem::AddCPUScope(xiiStringView sName, xiiStringView sFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout) {}
 
 void xiiProfilingSystem::Initialize() {}
 
 void xiiProfilingSystem::Reset() {}
 
-void xiiProfilingSystem::SetThreadName(const char* szThreadName) {}
+void xiiProfilingSystem::SetThreadName(xiiStringView sThreadName) {}
 
 void xiiProfilingSystem::RemoveThread() {}
 
 void xiiProfilingSystem::InitializeGPUData(xiiUInt32 gpuCount) {}
 
-void xiiProfilingSystem::AddGPUScope(const char* szName, xiiTime beginTime, xiiTime endTime, xiiUInt32 gpuIndex) {}
+void xiiProfilingSystem::AddGPUScope(xiiStringView sName, xiiTime beginTime, xiiTime endTime, xiiUInt32 gpuIndex) {}
 
 void xiiProfilingSystem::ProfilingData::Merge(ProfilingData& out_Merged, xiiArrayPtr<const ProfilingData*> inputs) {}
 

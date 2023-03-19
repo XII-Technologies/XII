@@ -215,7 +215,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
     XII_TEST_BOOL(pParentObject->GetGlobalRotation().IsEqualRotation(desc.m_LocalRotation, eps * 10.0f));
     XII_TEST_VEC3(pParentObject->GetGlobalScaling(), desc.m_LocalScaling, 0);
 
-    XII_TEST_STRING(pParentObject->GetName(), desc.m_sName.GetString().GetData());
+    XII_TEST_BOOL(pParentObject->GetName() == desc.m_sName.GetString());
 
     desc.m_LocalRotation.SetIdentity();
     desc.m_LocalScaling.Set(1.0f);
@@ -239,7 +239,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
       xiiStringBuilder sb;
       sb.AppendFormat("Child_{0}", uiCounter);
 
-      XII_TEST_STRING(it->GetName(), sb.GetData());
+      XII_TEST_BOOL(it->GetName() == sb);
 
       XII_TEST_VEC3(it->GetGlobalPosition(), xiiVec3(100.0f, uiCounter * 15.0f, 0.0f), eps * 2.0f); // 15 because parent is scaled by 1.5
       XII_TEST_BOOL(it->GetGlobalRotation().IsEqualRotation(q, eps * 10.0f));
@@ -267,7 +267,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
       xiiStringBuilder sb;
       sb.AppendFormat("Child_{0}", indices[uiCounter]);
 
-      XII_TEST_STRING(it->GetName(), sb.GetData());
+      XII_TEST_BOOL(it->GetName() == sb);
 
       ++uiCounter;
     }
@@ -289,7 +289,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
       xiiStringBuilder sb;
       sb.AppendFormat("Child_{0}", indices[uiCounter]);
 
-      XII_TEST_STRING(it->GetName(), sb.GetData());
+      XII_TEST_BOOL(it->GetName() == sb);
 
       ++uiCounter;
     }

@@ -739,13 +739,13 @@ xiiTime xiiWorldReader::InstantiationContext::GetMaxStepTime() const
   return m_Options.m_MaxStepTime;
 }
 
-void xiiWorldReader::InstantiationContext::BeginNextProgressStep(const char* szName)
+void xiiWorldReader::InstantiationContext::BeginNextProgressStep(xiiStringView sName)
 {
   if (m_pOverallProgressRange != nullptr)
   {
-    m_pOverallProgressRange->BeginNextStep(szName);
+    m_pOverallProgressRange->BeginNextStep(sName);
     m_pSubProgressRange = nullptr;
-    m_pSubProgressRange = XII_DEFAULT_NEW(xiiProgressRange, szName, false, m_pOverallProgressRange->GetProgressbar());
+    m_pSubProgressRange = XII_DEFAULT_NEW(xiiProgressRange, sName, false, m_pOverallProgressRange->GetProgressbar());
   }
 }
 

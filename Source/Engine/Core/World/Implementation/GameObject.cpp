@@ -22,7 +22,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGameObject, xiiNoBase, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Name", GetName, SetName),
+    XII_ACCESSOR_PROPERTY("Name", GetNameInternal, SetNameInternal),
     XII_ACCESSOR_PROPERTY("Active", GetActiveFlag, SetActiveFlag)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ACCESSOR_PROPERTY("GlobalKey", GetGlobalKey, SetGlobalKey),
     XII_ENUM_ACCESSOR_PROPERTY("Mode", xiiObjectMode, Reflection_GetMode, Reflection_SetMode),
@@ -331,7 +331,7 @@ void xiiGameObject::SetGlobalKey(const xiiHashedString& sName)
   GetWorld()->SetObjectGlobalKey(this, sName);
 }
 
-const char* xiiGameObject::GetGlobalKey() const
+xiiStringView xiiGameObject::GetGlobalKey() const
 {
   return GetWorld()->GetObjectGlobalKey(this);
 }
@@ -418,35 +418,35 @@ xiiGameObject* xiiGameObject::FindChildByName(const xiiTempHashedString& name, b
   return nullptr;
 }
 
-xiiGameObject* xiiGameObject::FindChildByPath(const char* path)
+xiiGameObject* xiiGameObject::FindChildByPath(xiiStringView sPath)
 {
   /// \test Needs a unit test
 
-  if (xiiStringUtils::IsNullOrEmpty(path))
+  if (sPath.IsEmpty())
     return this;
 
-  const char* szSep      = xiiStringUtils::FindSubString(path, "/");
+  const char* szSep      = sPath.FindSubString("/");
   xiiUInt64   uiNameHash = 0;
 
   if (szSep == nullptr)
-    uiNameHash = xiiHashingUtils::StringHash(path);
+    uiNameHash = xiiHashingUtils::StringHash(sPath);
   else
-    uiNameHash = xiiHashingUtils::StringHash(xiiStringView(path, szSep));
+    uiNameHash = xiiHashingUtils::StringHash(xiiStringView(sPath.GetStartPointer(), szSep));
 
   xiiGameObject* pNextChild = FindChildByName(xiiTempHashedString(uiNameHash), false);
 
   if (szSep == nullptr || pNextChild == nullptr)
     return pNextChild;
 
-  return pNextChild->FindChildByPath(szSep + 1);
+  return pNextChild->FindChildByPath(xiiStringView(szSep + 1, sPath.GetEndPointer()));
 }
 
 
-xiiGameObject* xiiGameObject::SearchForChildByNameSequence(const char* szObjectSequence, const xiiRTTI* pExpectedComponent /*= nullptr*/)
+xiiGameObject* xiiGameObject::SearchForChildByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent /*= nullptr*/)
 {
   /// \test Needs a unit test
 
-  if (xiiStringUtils::IsNullOrEmpty(szObjectSequence))
+  if (sObjectSequence.IsEmpty())
   {
     // in case we are searching for a specific component type, verify that it exists on this object
     if (pExpectedComponent != nullptr)
@@ -459,20 +459,18 @@ xiiGameObject* xiiGameObject::SearchForChildByNameSequence(const char* szObjectS
     return this;
   }
 
-  const char* szSep          = xiiStringUtils::FindSubString(szObjectSequence, "/");
-  const char* szNextSequence = nullptr;
-  xiiUInt64   uiNameHash     = 0;
+  const char*   szSep = sObjectSequence.FindSubString("/");
+  xiiStringView sNextSequence;
+  xiiUInt64     uiNameHash = 0;
 
   if (szSep == nullptr)
   {
-    const xiiUInt32 len = xiiStringUtils::GetStringElementCount(szObjectSequence);
-    uiNameHash          = xiiHashingUtils::StringHash(xiiStringView(szObjectSequence, len));
-    szNextSequence      = szObjectSequence + len;
+    uiNameHash = xiiHashingUtils::StringHash(sObjectSequence);
   }
   else
   {
-    uiNameHash     = xiiHashingUtils::StringHash(xiiStringView(szObjectSequence, static_cast<xiiUInt32>(szSep - szObjectSequence)));
-    szNextSequence = szSep + 1;
+    uiNameHash    = xiiHashingUtils::StringHash(xiiStringView(sObjectSequence.GetStartPointer(), szSep));
+    sNextSequence = xiiStringView(szSep + 1, sObjectSequence.GetEndPointer());
   }
 
   const xiiTempHashedString name(uiNameHash);
@@ -483,7 +481,7 @@ xiiGameObject* xiiGameObject::SearchForChildByNameSequence(const char* szObjectS
   {
     if (it->m_sName == name)
     {
-      xiiGameObject* res = it->SearchForChildByNameSequence(szNextSequence, pExpectedComponent);
+      xiiGameObject* res = it->SearchForChildByNameSequence(sNextSequence, pExpectedComponent);
       if (res != nullptr)
         return res;
     }
@@ -496,7 +494,7 @@ xiiGameObject* xiiGameObject::SearchForChildByNameSequence(const char* szObjectS
   {
     if (it->m_sName != name)
     {
-      xiiGameObject* res = it->SearchForChildByNameSequence(szObjectSequence, pExpectedComponent);
+      xiiGameObject* res = it->SearchForChildByNameSequence(sObjectSequence, pExpectedComponent);
       if (res != nullptr)
         return res;
     }
@@ -506,14 +504,11 @@ xiiGameObject* xiiGameObject::SearchForChildByNameSequence(const char* szObjectS
 }
 
 
-void xiiGameObject::SearchForChildrenByNameSequence(
-  const char*                        szObjectSequence,
-  const xiiRTTI*                     pExpectedComponent,
-  xiiHybridArray<xiiGameObject*, 8>& out_Objects)
+void xiiGameObject::SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiHybridArray<xiiGameObject*, 8>& out_Objects)
 {
   /// \test Needs a unit test
 
-  if (xiiStringUtils::IsNullOrEmpty(szObjectSequence))
+  if (sObjectSequence.IsEmpty())
   {
     // in case we are searching for a specific component type, verify that it exists on this object
     if (pExpectedComponent != nullptr)
@@ -527,20 +522,18 @@ void xiiGameObject::SearchForChildrenByNameSequence(
     return;
   }
 
-  const char* szSep          = xiiStringUtils::FindSubString(szObjectSequence, "/");
-  const char* szNextSequence = nullptr;
-  xiiUInt64   uiNameHash     = 0;
+  const char*   szSep = sObjectSequence.FindSubString("/");
+  xiiStringView sNextSequence;
+  xiiUInt64     uiNameHash = 0;
 
   if (szSep == nullptr)
   {
-    const xiiUInt32 len = xiiStringUtils::GetStringElementCount(szObjectSequence);
-    uiNameHash          = xiiHashingUtils::StringHash(xiiStringView(szObjectSequence, len));
-    szNextSequence      = szObjectSequence + len;
+    uiNameHash = xiiHashingUtils::StringHash(sObjectSequence);
   }
   else
   {
-    uiNameHash     = xiiHashingUtils::StringHash(xiiStringView(szObjectSequence, static_cast<xiiUInt32>(szSep - szObjectSequence)));
-    szNextSequence = szSep + 1;
+    uiNameHash    = xiiHashingUtils::StringHash(xiiStringView(sObjectSequence.GetStartPointer(), szSep));
+    sNextSequence = xiiStringView(szSep + 1, sObjectSequence.GetEndPointer());
   }
 
   const xiiTempHashedString name(uiNameHash);
@@ -551,7 +544,7 @@ void xiiGameObject::SearchForChildrenByNameSequence(
   {
     if (it->m_sName == name)
     {
-      it->SearchForChildrenByNameSequence(szNextSequence, pExpectedComponent, out_Objects);
+      it->SearchForChildrenByNameSequence(sNextSequence, pExpectedComponent, out_Objects);
     }
   }
 
@@ -562,7 +555,7 @@ void xiiGameObject::SearchForChildrenByNameSequence(
   {
     if (it->m_sName != name) // TODO: in this function it is actually debatable whether to skip these or not
     {
-      it->SearchForChildrenByNameSequence(szObjectSequence, pExpectedComponent, out_Objects);
+      it->SearchForChildrenByNameSequence(sObjectSequence, pExpectedComponent, out_Objects);
     }
   }
 }

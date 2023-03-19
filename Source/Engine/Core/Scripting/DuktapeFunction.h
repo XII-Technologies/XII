@@ -32,7 +32,7 @@ public:
   xiiInt32 ReturnUInt(xiiUInt32 value);
   xiiInt32 ReturnFloat(float value);
   xiiInt32 ReturnNumber(double value);
-  xiiInt32 ReturnString(const char* value);
+  xiiInt32 ReturnString(xiiStringView value);
   xiiInt32 ReturnCustom();
 
   ///@}
