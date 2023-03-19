@@ -97,8 +97,8 @@ void xiiTaskSystem::ParallelForSingle(xiiArrayPtr<ElemType> taskItems, Callback 
 template <typename ElemType, typename Callback>
 void xiiTaskSystem::ParallelForSingleIndex(
   xiiArrayPtr<ElemType>       taskItems,
-  Callback                   taskCallback,
-  const char*                taskName,
+  Callback                    taskCallback,
+  const char*                 taskName,
   const xiiParallelForParams& params)
 {
   auto wrappedCallback = [taskCallback = std::move(taskCallback)](xiiUInt32 uiBaseIndex, xiiArrayPtr<ElemType> taskSlice) {
