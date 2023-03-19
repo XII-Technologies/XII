@@ -527,14 +527,14 @@ void xiiSceneContext::UnregisterLayer(xiiLayerContext* pLayer)
     m_Layers.PopBack();
 }
 
-void xiiSceneContext::AddLayerIndexTag(const xiiEntityMsgToEngine& msg, xiiWorldRttiConverterContext& context, const xiiTag& layerTag)
+void xiiSceneContext::AddLayerIndexTag(const xiiEntityMsgToEngine& msg, xiiWorldRttiConverterContext& ref_context, const xiiTag& layerTag)
 {
   if (msg.m_change.m_Change.m_Operation == xiiObjectChangeType::NodeAdded)
   {
     if ((msg.m_change.m_Change.m_sProperty == "Children" || msg.m_change.m_Change.m_sProperty.IsEmpty()) && msg.m_change.m_Change.m_Value.IsA<xiiUuid>())
     {
       const xiiUuid&         object = msg.m_change.m_Change.m_Value.Get<xiiUuid>();
-      xiiRttiConverterObject target = context.GetObjectByGUID(object);
+      xiiRttiConverterObject target = ref_context.GetObjectByGUID(object);
       if (target.m_pType == xiiGetStaticRTTI<xiiGameObject>() && target.m_pObject != nullptr)
       {
         // We do postpone tagging until after the first frame so that prefab references are instantiated and affected as well.
@@ -797,8 +797,22 @@ void xiiSceneContext::InsertSelectedChildren(const xiiGameObject* pObject)
   }
 }
 
-bool xiiSceneContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
+xiiStatus xiiSceneContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
 {
+  if (!m_Context.m_UnknownTypes.IsEmpty())
+  {
+    xiiStringBuilder s;
+
+    s.Append("Scene / prefab export failed: ");
+
+    for (const xiiString& sType : m_Context.m_UnknownTypes)
+    {
+      s.AppendFormat("'{}' is unknown. ", sType);
+    }
+
+    return xiiStatus(s.GetView());
+  }
+
   // make sure the world has been updated at least once, otherwise components aren't initialized
   // and messages for geometry extraction won't be delivered
   // this is necessary for the scene export modifiers to work
@@ -842,7 +856,10 @@ bool xiiSceneContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
   }
 
   // do the actual file writing
-  return file.Close().Succeeded();
+  if (file.Close().Failed())
+    return xiiStatus(xiiFmt("Writing to '{}' failed.", pMsg->m_sOutputFile));
+
+  return xiiStatus(XII_SUCCESS);
 }
 
 void xiiSceneContext::ExportExposedParameters(const xiiWorldWriter& ww, xiiDeferredFileWriter& file) const

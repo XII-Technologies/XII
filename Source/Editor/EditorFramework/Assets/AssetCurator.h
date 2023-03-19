@@ -190,10 +190,10 @@ public:
   xiiUInt32 GetNumAssetProfiles() const;
 
   /// \brief Always returns a valid config. E.g. even if xiiInvalidIndex is passed in, it will fall back to the default config (at index 0).
-  const xiiPlatformProfile* GetAssetProfile(xiiUInt32 index) const;
+  const xiiPlatformProfile* GetAssetProfile(xiiUInt32 uiIndex) const;
 
   /// \brief Always returns a valid config. E.g. even if xiiInvalidIndex is passed in, it will fall back to the default config (at index 0).
-  xiiPlatformProfile* GetAssetProfile(xiiUInt32 index);
+  xiiPlatformProfile* GetAssetProfile(xiiUInt32 uiIndex);
 
   /// \brief Adds a new profile. The name should be set afterwards to a unique name.
   xiiPlatformProfile* CreateAssetProfile();
@@ -207,7 +207,7 @@ public:
   /// \brief Switches the currently active asset target platform.
   ///
   /// Broadcasts xiiAssetCuratorEvent::Type::ActivePlatformChanged on change.
-  void SetActiveAssetProfileByIndex(xiiUInt32 index, bool bForceReevaluation = false);
+  void SetActiveAssetProfileByIndex(xiiUInt32 uiIndex, bool bForceReevaluation = false);
 
   /// \brief Saves the current asset configurations. Returns failure if the output file could not be written to.
   xiiResult SaveAssetProfiles();
@@ -270,9 +270,9 @@ public:
   /// \brief Computes the combined hash for the asset and its references. Returns 0 if anything went wrong.
   xiiUInt64 GetAssetReferenceHash(xiiUuid assetGuid);
 
-  void GenerateTransitiveHull(const xiiStringView assetOrPath, xiiSet<xiiString>* pDependencies, xiiSet<xiiString>* pReferences);
+  void GenerateTransitiveHull(const xiiStringView sAssetOrPath, xiiSet<xiiString>* pDependencies, xiiSet<xiiString>* pReferences);
 
-  xiiAssetInfo::TransformState IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile* pAssetProfile, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce = false);
+  xiiAssetInfo::TransformState IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile* pAssetProfile, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_uiAssetHash, xiiUInt64& out_uiThumbHash, bool bForce = false);
   /// \brief Returns the number of assets in the system and how many are in what transform state
   void GetAssetTransformStats(xiiUInt32& out_uiNumAssets, xiiHybridArray<xiiUInt32, xiiAssetInfo::TransformState::COUNT>& out_count);
 
@@ -286,7 +286,7 @@ public:
   ///
   /// \param sFile
   ///   File name (may include a path) to search for. Will be modified both on success and failure to give a 'reasonable' result.
-  xiiResult FindBestMatchForFile(xiiStringBuilder& sFile, xiiArrayPtr<xiiString> AllowedFileExtensions) const;
+  xiiResult FindBestMatchForFile(xiiStringBuilder& ref_sFile, xiiArrayPtr<xiiString> allowedFileExtensions) const;
 
   /// \brief Finds all uses, either as references or dependencies to a given asset.
   ///
@@ -298,7 +298,7 @@ public:
   ///   List of assets that use 'assetGuid'.
   /// \param transitive
   ///   If set, will also find indirect uses of the asset.
-  void FindAllUses(xiiUuid assetGuid, xiiSet<xiiUuid>& uses, bool transitive) const;
+  void FindAllUses(xiiUuid assetGuid, xiiSet<xiiUuid>& ref_uses, bool bTransitive) const;
 
   ///@}
   /// \name Manual and Automatic Change Notification
@@ -318,6 +318,7 @@ public:
 
   ///@}
 
+  void InvalidateAssetsWithTransformState(xiiAssetInfo::TransformState state);
 
 public:
   xiiEvent<const xiiAssetCuratorEvent&> m_Events;
@@ -360,16 +361,8 @@ private:
   /// \name Asset Hashing and Status Updates (AssetUpdates.cpp)
   ///@{
 
-  xiiAssetInfo::TransformState HashAsset(
-    xiiUInt64                            uiSettingsHash,
-    const xiiHybridArray<xiiString, 16>& assetTransformDependencies,
-    const xiiHybridArray<xiiString, 16>& runtimeDependencies,
-    xiiSet<xiiString>&                   missingDependencies,
-    xiiSet<xiiString>&                   missingReferences,
-    xiiUInt64&                           out_AssetHash,
-    xiiUInt64&                           out_ThumbHash,
-    bool                                 bForce);
-  bool AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce);
+  xiiAssetInfo::TransformState HashAsset(xiiUInt64 uiSettingsHash, const xiiHybridArray<xiiString, 16>& assetTransformDependencies, const xiiHybridArray<xiiString, 16>& runtimeDependencies, xiiSet<xiiString>& missingDependencies, xiiSet<xiiString>& missingReferences, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce);
+  bool                         AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce);
 
   xiiResult EnsureAssetInfoUpdated(const xiiUuid& assetGuid);
   xiiResult EnsureAssetInfoUpdated(const char* szAbsFilePath);
@@ -382,8 +375,9 @@ private:
   /// \brief Computes the hash of the given file. Optionally passes the data stream through into another stream writer.
   static xiiUInt64 HashFile(xiiStreamReader& InputStream, xiiStreamWriter* pPassThroughStream);
 
-  void                         RemoveAssetTransformState(const xiiUuid& assetGuid);
-  void                         InvalidateAssetTransformState(const xiiUuid& assetGuid);
+  void RemoveAssetTransformState(const xiiUuid& assetGuid);
+  void InvalidateAssetTransformState(const xiiUuid& assetGuid);
+
   xiiAssetInfo::TransformState UpdateAssetTransformState(xiiUuid assetGuid, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce);
   void                         UpdateAssetTransformState(const xiiUuid& assetGuid, xiiAssetInfo::TransformState state);
   void                         UpdateAssetTransformLog(const xiiUuid& assetGuid, xiiDynamicArray<xiiLogEntry>& logEntries);

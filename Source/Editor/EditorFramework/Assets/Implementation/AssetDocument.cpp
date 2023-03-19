@@ -271,7 +271,7 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
         }
         break;
         case xiiPropertyCategory::Map:
-          //#TODO Search for exposed params that reference assets.
+          // #TODO Search for exposed params that reference assets.
           if (pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) && pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String)
           {
             xiiVariant                  value   = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName());
@@ -657,10 +657,10 @@ xiiStatus xiiAssetDocument::RemoteExport(const xiiAssetFileHeader& header, const
 
   GetEditorEngineConnection()->SendMessage(&msg);
 
-  bool                                                   bSuccess = false;
-  xiiProcessCommunicationChannel::WaitForMessageCallback callback = [&bSuccess](xiiProcessMessage* pMsg) -> bool {
+  xiiStatus                                              status(XII_FAILURE);
+  xiiProcessCommunicationChannel::WaitForMessageCallback callback = [&status](xiiProcessMessage* pMsg) -> bool {
     xiiExportDocumentMsgToEditor* pMsg2 = xiiDynamicCast<xiiExportDocumentMsgToEditor*>(pMsg);
-    bSuccess                            = pMsg2->m_bOutputSuccess;
+    status                              = xiiStatus(pMsg2->m_bOutputSuccess ? XII_SUCCESS : XII_FAILURE, pMsg2->m_sFailureMsg);
     return true;
   };
 
@@ -670,9 +670,9 @@ xiiStatus xiiAssetDocument::RemoteExport(const xiiAssetFileHeader& header, const
   }
   else
   {
-    if (!bSuccess)
+    if (status.Failed())
     {
-      return xiiStatus(xiiFmt("Remote exporting {0} to \"{1}\" failed.", GetDocumentTypeName(), msg.m_sOutputFile));
+      return status;
     }
 
     xiiLog::Success("{0} \"{1}\" has been exported.", GetDocumentTypeName(), msg.m_sOutputFile);
@@ -861,14 +861,14 @@ void xiiAssetDocument::SyncObjectsToEngine() const
 
 namespace
 {
-  static const char* szThumbnailInfoTag = "xiThumb";
+  static const char* szThumbnailInfoTag = "xiiThumb";
 }
 
-xiiResult xiiAssetDocument::ThumbnailInfo::Deserialize(xiiStreamReader& Reader)
+xiiResult xiiAssetDocument::ThumbnailInfo::Deserialize(xiiStreamReader& inout_reader)
 {
   char tag[8] = {0};
 
-  if (Reader.ReadBytes(tag, 7) != 7)
+  if (inout_reader.ReadBytes(tag, 7) != 7)
     return XII_FAILURE;
 
   if (!xiiStringUtils::IsEqual(tag, szThumbnailInfoTag))
@@ -876,20 +876,20 @@ xiiResult xiiAssetDocument::ThumbnailInfo::Deserialize(xiiStreamReader& Reader)
     return XII_FAILURE;
   }
 
-  Reader >> m_uiHash;
-  Reader >> m_uiVersion;
-  Reader >> m_uiReserved;
+  inout_reader >> m_uiHash;
+  inout_reader >> m_uiVersion;
+  inout_reader >> m_uiReserved;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiAssetDocument::ThumbnailInfo::Serialize(xiiStreamWriter& Writer) const
+xiiResult xiiAssetDocument::ThumbnailInfo::Serialize(xiiStreamWriter& inout_writer) const
 {
-  XII_SUCCEED_OR_RETURN(Writer.WriteBytes(szThumbnailInfoTag, 7));
+  XII_SUCCEED_OR_RETURN(inout_writer.WriteBytes(szThumbnailInfoTag, 7));
 
-  Writer << m_uiHash;
-  Writer << m_uiVersion;
-  Writer << m_uiReserved;
+  inout_writer << m_uiHash;
+  inout_writer << m_uiVersion;
+  inout_writer << m_uiReserved;
 
   return XII_SUCCESS;
 }

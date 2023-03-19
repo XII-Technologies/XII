@@ -97,7 +97,7 @@ protected:
   virtual void UpdateDocumentContext();
 
   /// \brief Exports to current document resource to file. Make sure to write xiiAssetFileHeader at the start of it.
-  virtual bool ExportDocument(const xiiExportDocumentMsgToEngine* pMsg);
+  virtual xiiStatus ExportDocument(const xiiExportDocumentMsgToEngine* pMsg);
   void         UpdateSyncObjects();
 
   /// \brief Creates the thumbnail view context. It uses 'CreateViewContext' in combination with an off-screen render target.

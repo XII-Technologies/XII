@@ -409,6 +409,8 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
     SendDocumentOpenMessage(pDoc, true);
   }
 
+  xiiAssetCurator::GetSingleton()->InvalidateAssetsWithTransformState(xiiAssetInfo::TransformState::TransformError);
+
   xiiLog::Success("Engine Process is running");
 
   m_bClientIsConfigured = true;

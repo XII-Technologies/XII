@@ -62,7 +62,7 @@ protected:
 
   virtual xiiEngineProcessViewContext* CreateViewContext() override;
   virtual void                         DestroyViewContext(xiiEngineProcessViewContext* pContext) override;
-  virtual bool                         ExportDocument(const xiiExportDocumentMsgToEngine* pMsg) override;
+  virtual xiiStatus                    ExportDocument(const xiiExportDocumentMsgToEngine* pMsg) override;
   void                                 ExportExposedParameters(const xiiWorldWriter& ww, xiiDeferredFileWriter& file) const;
 
   virtual bool                UpdateThumbnailViewContext(xiiEngineProcessViewContext* pThumbnailViewContext) override;

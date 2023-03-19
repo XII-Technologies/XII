@@ -1436,7 +1436,12 @@ void xiiSceneDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) cons
 
 xiiTransformStatus xiiSceneDocument::ExportScene(bool bCreateThumbnail)
 {
-  // #TODO export layers
+  if (GetUnknownObjectTypeInstances() > 0)
+  {
+    return xiiTransformStatus("Can't export scene/prefab when it contains unknown object types.");
+  }
+
+  // \todo Add export support for layers
   auto saveres = SaveDocument();
 
   if (saveres.m_Result.Failed())

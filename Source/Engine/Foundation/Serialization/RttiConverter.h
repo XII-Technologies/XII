@@ -48,6 +48,8 @@ public:
   virtual xiiUuid                EnqueObject(const xiiUuid& guid, const xiiRTTI* pRtti, void* pObject);
   virtual xiiRttiConverterObject DequeueObject();
 
+  virtual void OnUnknownTypeError(xiiStringView sTypeName);
+
 protected:
   xiiHashTable<xiiUuid, xiiRttiConverterObject> m_GuidToObject;
   mutable xiiHashTable<const void*, xiiUuid>    m_ObjectToGuid;
@@ -75,11 +77,11 @@ public:
   xiiAbstractObjectNode* AddSubObjectToGraph(const xiiRTTI* pRtti, const void* pObject, const xiiUuid& guid, const char* szNodeName);
 
 private:
-  xiiRttiConverterContext* m_pContext;
-  xiiAbstractObjectGraph*  m_pGraph;
+  xiiRttiConverterContext* m_pContext = nullptr;
+  xiiAbstractObjectGraph*  m_pGraph   = nullptr;
   FilterFunction           m_Filter;
-  bool                     m_bSerializeReadOnly;
-  bool                     m_bSerializeOwnerPtrs;
+  bool                     m_bSerializeReadOnly  = false;
+  bool                     m_bSerializeOwnerPtrs = false;
 };
 
 class XII_FOUNDATION_DLL xiiRttiConverterReader
@@ -94,6 +96,6 @@ private:
   void ApplyProperty(void* pObject, xiiAbstractProperty* pProperty, const xiiAbstractObjectNode::Property* pSource);
   void CallOnObjectCreated(const xiiAbstractObjectNode* pNode, const xiiRTTI* pRtti, void* pObject);
 
-  xiiRttiConverterContext*      m_pContext;
-  const xiiAbstractObjectGraph* m_pGraph;
+  xiiRttiConverterContext*      m_pContext = nullptr;
+  const xiiAbstractObjectGraph* m_pGraph   = nullptr;
 };
