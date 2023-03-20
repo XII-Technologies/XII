@@ -113,10 +113,10 @@ void xiiLayerContext::DestroyViewContext(xiiEngineProcessViewContext* pContext)
   XII_REPORT_FAILURE("Layers should not create views.");
 }
 
-bool xiiLayerContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
+xiiStatus xiiLayerContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
 {
   XII_REPORT_FAILURE("Layers do not support export yet. THe layer content is baked into the main scene instead.");
-  return false;
+  return xiiStatus("Nope");
 }
 
 void xiiLayerContext::UpdateDocumentContext()

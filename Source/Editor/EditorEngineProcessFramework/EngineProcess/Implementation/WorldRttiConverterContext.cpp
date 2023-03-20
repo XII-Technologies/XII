@@ -12,13 +12,16 @@ void xiiWorldRttiConverterContext::Clear()
 
   m_OtherPickingMap.Clear();
   m_ComponentPickingMap.Clear();
-}
 
+  m_UnknownTypes.Clear();
+}
 
 void xiiWorldRttiConverterContext::DeleteExistingObjects()
 {
   if (m_pWorld == nullptr)
     return;
+
+  m_UnknownTypes.Clear();
 
   XII_LOCK(m_pWorld->GetWriteMarker());
 
@@ -266,4 +269,11 @@ xiiUuid xiiWorldRttiConverterContext::GetObjectGUID(const xiiRTTI* pRtti, const 
     return m_ComponentMap.GetGuid(pComponent->GetHandle());
   }
   return xiiRttiConverterContext::GetObjectGUID(pRtti, pObject);
+}
+
+void xiiWorldRttiConverterContext::OnUnknownTypeError(xiiStringView sTypeName)
+{
+  xiiRttiConverterContext::OnUnknownTypeError(sTypeName);
+
+  m_UnknownTypes.Insert(sTypeName);
 }

@@ -333,6 +333,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExportDocumentMsgToEditor, 1, xiiRTTIDefault
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("OutputSuccess", m_bOutputSuccess),
+    XII_MEMBER_PROPERTY("FailureMsg", m_sFailureMsg),
   }
   XII_END_PROPERTIES;
 }

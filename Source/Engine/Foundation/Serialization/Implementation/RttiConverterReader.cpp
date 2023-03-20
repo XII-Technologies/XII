@@ -16,7 +16,7 @@ xiiInternal::NewInstance<void> xiiRttiConverterReader::CreateObjectFromNode(cons
   const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(pNode->GetType());
   if (pRtti == nullptr)
   {
-    xiiLog::Error("RTTI type '{0}' is unknown, CreateObjectFromNode failed.", pNode->GetType());
+    m_pContext->OnUnknownTypeError(pNode->GetType());
     return nullptr;
   }
 

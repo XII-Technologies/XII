@@ -61,6 +61,8 @@ public:
   {
     if (const xiiProcessAssetMsg* pMsg = xiiDynamicCast<const xiiProcessAssetMsg*>(e.m_pMessage))
     {
+      xiiQtEditorApp::GetSingleton()->RestartEngineProcessIfPluginsChanged();
+
       xiiProcessAssetResponseMsg msg;
       {
         xiiLogEntryDelegate logger([&msg](xiiLogEntry& entry) -> void { msg.m_LogEntries.PushBack(std::move(entry)); },
