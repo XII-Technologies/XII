@@ -356,6 +356,62 @@ xiiQuat xiiBasisAxis::GetBasisRotation_PosX(Enum axis)
   return rotAxis;
 }
 
+xiiQuatd xiiBasisAxis::GetBasisRotationDouble_PosX(Enum axis)
+{
+  xiiQuatd rotAxis;
+  switch (axis)
+  {
+    case xiiBasisAxis::PositiveX:
+      rotAxis.SetIdentity();
+      break;
+    case xiiBasisAxis::PositiveY:
+      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 0, 1), xiiAngled::Degree(90));
+      break;
+    case xiiBasisAxis::PositiveZ:
+      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 1, 0), xiiAngled::Degree(-90));
+      break;
+    case xiiBasisAxis::NegativeX:
+      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 1, 0), xiiAngled::Degree(180));
+      break;
+    case xiiBasisAxis::NegativeY:
+      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 0, 1), xiiAngled::Degree(-90));
+      break;
+    case xiiBasisAxis::NegativeZ:
+      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 1, 0), xiiAngled::Degree(90));
+      break;
+  }
+
+  return rotAxis;
+}
+
+xiiQuatReal xiiBasisAxis::GetBasisRotationReal_PosX(Enum axis)
+{
+  xiiQuatReal rotAxis;
+  switch (axis)
+  {
+    case xiiBasisAxis::PositiveX:
+      rotAxis.SetIdentity();
+      break;
+    case xiiBasisAxis::PositiveY:
+      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 0, 1), xiiAngleReal::Degree(90));
+      break;
+    case xiiBasisAxis::PositiveZ:
+      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 1, 0), xiiAngleReal::Degree(-90));
+      break;
+    case xiiBasisAxis::NegativeX:
+      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 1, 0), xiiAngleReal::Degree(180));
+      break;
+    case xiiBasisAxis::NegativeY:
+      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 0, 1), xiiAngleReal::Degree(-90));
+      break;
+    case xiiBasisAxis::NegativeZ:
+      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 1, 0), xiiAngleReal::Degree(90));
+      break;
+  }
+
+  return rotAxis;
+}
+
 xiiQuat xiiBasisAxis::GetBasisRotation(Enum identity, Enum axis)
 {
   xiiQuat rotId;
