@@ -313,12 +313,8 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiExportDocumentMsgToEditor : public
   XII_ADD_DYNAMIC_REFLECTION(xiiExportDocumentMsgToEditor, xiiEditorEngineDocumentMsg);
 
 public:
-  xiiExportDocumentMsgToEditor() :
-    m_bOutputSuccess(false)
-  {
-  }
-
-  bool m_bOutputSuccess;
+  bool      m_bOutputSuccess = false;
+  xiiString m_sFailureMsg;
 };
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiCreateThumbnailMsgToEngine : public xiiEditorEngineDocumentMsg

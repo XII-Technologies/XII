@@ -106,9 +106,9 @@ xiiEngineProcessDocumentContext::~xiiEngineProcessDocumentContext()
   m_Context.m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiEngineProcessDocumentContext::WorldRttiConverterContextEventHandler, this));
 }
 
-void xiiEngineProcessDocumentContext::Initialize(const xiiUuid& DocumentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC)
+void xiiEngineProcessDocumentContext::Initialize(const xiiUuid& documentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC)
 {
-  m_DocumentGuid = DocumentGuid;
+  m_DocumentGuid = documentGuid;
   m_MetaData     = metaData;
   m_pIPC         = pIPC;
 
@@ -202,8 +202,12 @@ void xiiEngineProcessDocumentContext::HandleMessage(const xiiEditorEngineDocumen
 
     const xiiExportDocumentMsgToEngine* pMsg2 = static_cast<const xiiExportDocumentMsgToEngine*>(pMsg);
     xiiExportDocumentMsgToEditor        ret;
-    ret.m_DocumentGuid   = pMsg->m_DocumentGuid;
-    ret.m_bOutputSuccess = ExportDocument(pMsg2);
+    ret.m_DocumentGuid = pMsg->m_DocumentGuid;
+
+    xiiStatus res        = ExportDocument(pMsg2);
+    ret.m_bOutputSuccess = res.Succeeded();
+    ret.m_sFailureMsg    = res.m_sMessage;
+
     if (!ret.m_bOutputSuccess)
     {
       xiiLog::Error("Could not export to file '{0}'.", pMsg2->m_sOutputFile);
@@ -496,10 +500,9 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
   }
 }
 
-bool xiiEngineProcessDocumentContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
+xiiStatus xiiEngineProcessDocumentContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
 {
-  xiiLog::Error("Export document not implemented for '{0}'", GetDynamicRTTI()->GetTypeName());
-  return false;
+  return xiiStatus(xiiFmt("Export document not implemented for '{0}'", GetDynamicRTTI()->GetTypeName()));
 }
 
 

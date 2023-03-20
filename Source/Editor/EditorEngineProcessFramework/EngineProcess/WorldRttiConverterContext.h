@@ -30,6 +30,8 @@ public:
   virtual xiiRttiConverterObject GetObjectByGUID(const xiiUuid& guid) const override;
   virtual xiiUuid                GetObjectGUID(const xiiRTTI* pRtti, const void* pObject) const override;
 
+  virtual void OnUnknownTypeError(xiiStringView sTypeName) override;
+
   xiiWorld*                                         m_pWorld;
   xiiEditorGuidEngineHandleMap<xiiGameObjectHandle> m_GameObjectMap;
   xiiEditorGuidEngineHandleMap<xiiComponentHandle>  m_ComponentMap;
@@ -52,4 +54,6 @@ public:
   };
 
   xiiEvent<const Event&> m_Events;
+
+  xiiSet<xiiString> m_UnknownTypes;
 };

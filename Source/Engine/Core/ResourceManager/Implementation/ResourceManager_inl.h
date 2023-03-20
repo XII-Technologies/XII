@@ -3,27 +3,27 @@
 #include <Foundation/Logging/Log.h>
 
 template <typename ResourceType>
-ResourceType* xiiResourceManager::GetResource(const char* szResourceID, bool bIsReloadable)
+ResourceType* xiiResourceManager::GetResource(xiiStringView sResourceID, bool bIsReloadable)
 {
-  return static_cast<ResourceType*>(GetResource(xiiGetStaticRTTI<ResourceType>(), szResourceID, bIsReloadable));
+  return static_cast<ResourceType*>(GetResource(xiiGetStaticRTTI<ResourceType>(), sResourceID, bIsReloadable));
 }
 
 template <typename ResourceType>
-xiiTypedResourceHandle<ResourceType> xiiResourceManager::LoadResource(const char* szResourceID)
+xiiTypedResourceHandle<ResourceType> xiiResourceManager::LoadResource(xiiStringView sResourceID)
 {
   // the mutex here is necessary to prevent a race between resource unloading and storing the pointer in the handle
   XII_LOCK(s_ResourceMutex);
-  return xiiTypedResourceHandle<ResourceType>(GetResource<ResourceType>(szResourceID, true));
+  return xiiTypedResourceHandle<ResourceType>(GetResource<ResourceType>(sResourceID, true));
 }
 
 template <typename ResourceType>
-xiiTypedResourceHandle<ResourceType> xiiResourceManager::LoadResource(const char* szResourceID, xiiTypedResourceHandle<ResourceType> hLoadingFallback)
+xiiTypedResourceHandle<ResourceType> xiiResourceManager::LoadResource(xiiStringView sResourceID, xiiTypedResourceHandle<ResourceType> hLoadingFallback)
 {
   xiiTypedResourceHandle<ResourceType> hResource;
   {
     // the mutex here is necessary to prevent a race between resource unloading and storing the pointer in the handle
     XII_LOCK(s_ResourceMutex);
-    hResource = xiiTypedResourceHandle<ResourceType>(GetResource<ResourceType>(szResourceID, true));
+    hResource = xiiTypedResourceHandle<ResourceType>(GetResource<ResourceType>(sResourceID, true));
   }
 
   if (hLoadingFallback.IsValid())
@@ -35,15 +35,15 @@ xiiTypedResourceHandle<ResourceType> xiiResourceManager::LoadResource(const char
 }
 
 template <typename ResourceType>
-xiiTypedResourceHandle<ResourceType> xiiResourceManager::GetExistingResource(const char* szResourceID)
+xiiTypedResourceHandle<ResourceType> xiiResourceManager::GetExistingResource(xiiStringView sResourceID)
 {
   xiiResource* pResource = nullptr;
 
-  const xiiTempHashedString sResourceHash(szResourceID);
+  const xiiTempHashedString sResourceHash(sResourceID);
 
   XII_LOCK(s_ResourceMutex);
 
-  const xiiRTTI* pRtti = FindResourceTypeOverride(xiiGetStaticRTTI<ResourceType>(), szResourceID);
+  const xiiRTTI* pRtti = FindResourceTypeOverride(xiiGetStaticRTTI<ResourceType>(), sResourceID);
 
   if (GetLoadedResources()[pRtti].m_Resources.TryGetValue(sResourceHash, pResource))
     return xiiTypedResourceHandle<ResourceType>((ResourceType*)pResource);
@@ -52,21 +52,18 @@ xiiTypedResourceHandle<ResourceType> xiiResourceManager::GetExistingResource(con
 }
 
 template <typename ResourceType, typename DescriptorType>
-xiiTypedResourceHandle<ResourceType> xiiResourceManager::CreateResource(
-  const char*      szResourceID,
-  DescriptorType&& descriptor,
-  const char*      szResourceDescription)
+xiiTypedResourceHandle<ResourceType> xiiResourceManager::CreateResource(xiiStringView sResourceID, DescriptorType&& descriptor, xiiStringView sResourceDescription)
 {
   static_assert(std::is_rvalue_reference<DescriptorType&&>::value, "Please std::move the descriptor into this function");
 
-  XII_LOG_BLOCK("xiiResourceManager::CreateResource", szResourceID);
+  XII_LOG_BLOCK("xiiResourceManager::CreateResource", sResourceID);
 
   XII_LOCK(s_ResourceMutex);
 
-  xiiTypedResourceHandle<ResourceType> hResource(GetResource<ResourceType>(szResourceID, false));
+  xiiTypedResourceHandle<ResourceType> hResource(GetResource<ResourceType>(sResourceID, false));
 
   ResourceType* pResource = BeginAcquireResource(hResource, xiiResourceAcquireMode::PointerOnly);
-  pResource->SetResourceDescription(szResourceDescription);
+  pResource->SetResourceDescription(sResourceDescription);
   pResource->m_Flags.Add(xiiResourceFlags::IsCreatedResource);
 
   XII_ASSERT_DEV(pResource->GetLoadingState() == xiiResourceState::Unloaded, "CreateResource was called on a resource that is already created");
@@ -88,13 +85,13 @@ xiiTypedResourceHandle<ResourceType> xiiResourceManager::CreateResource(
 
 template <typename ResourceType, typename DescriptorType>
 xiiTypedResourceHandle<ResourceType>
-xiiResourceManager::GetOrCreateResource(const char* szResourceID, DescriptorType&& descriptor, const char* szResourceDescription)
+xiiResourceManager::GetOrCreateResource(xiiStringView sResourceID, DescriptorType&& descriptor, xiiStringView sResourceDescription)
 {
   XII_LOCK(s_ResourceMutex);
-  xiiTypedResourceHandle<ResourceType> hResource = GetExistingResource<ResourceType>(szResourceID);
+  xiiTypedResourceHandle<ResourceType> hResource = GetExistingResource<ResourceType>(sResourceID);
   if (!hResource.IsValid())
   {
-    hResource = CreateResource<ResourceType, DescriptorType>(szResourceID, std::move(descriptor), szResourceDescription);
+    hResource = CreateResource<ResourceType, DescriptorType>(sResourceID, std::move(descriptor), sResourceDescription);
   }
 
   return hResource;
@@ -316,11 +313,11 @@ void xiiResourceManager::SetResourceTypeLoader(xiiResourceTypeLoader* creator)
 }
 
 template <typename ResourceType>
-xiiTypedResourceHandle<ResourceType> xiiResourceManager::GetResourceHandleForExport(const char* szResourceID)
+xiiTypedResourceHandle<ResourceType> xiiResourceManager::GetResourceHandleForExport(xiiStringView sResourceID)
 {
   XII_ASSERT_DEV(IsExportModeEnabled(), "Export mode needs to be enabled");
 
-  return LoadResource<ResourceType>(szResourceID);
+  return LoadResource<ResourceType>(sResourceID);
 }
 
 template <typename ResourceType>
