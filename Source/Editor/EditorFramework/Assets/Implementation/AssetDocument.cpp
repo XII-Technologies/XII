@@ -861,7 +861,7 @@ void xiiAssetDocument::SyncObjectsToEngine() const
 
 namespace
 {
-  static const char* szThumbnailInfoTag = "xiiThumb";
+  static const char* szThumbnailInfoTag = "xiThumb";
 }
 
 xiiResult xiiAssetDocument::ThumbnailInfo::Deserialize(xiiStreamReader& inout_reader)
