@@ -55,70 +55,31 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     SRVDesc.ViewType = Diligent::TEXTURE_VIEW_SHADER_RESOURCE;
     SRVDesc.Format   = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eResourceViewType;
 
+    SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
+    SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
+    SRVDesc.NumArraySlices  = m_Description.m_uiArraySize;
+    SRVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
+
     switch (texDesc.m_Type)
     {
       case xiiGALTextureType::Texture2D:
       case xiiGALTextureType::Texture2DProxy:
       {
-        if (!bIsArrayView)
-        {
-          if (texDesc.m_SampleCount == xiiGALMSAASampleCount::None)
-          {
-            SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D;
-            SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
-            SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
-          }
-          else
-          {
-            SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D;
-            SRVDesc.MostDetailedMip = 0u;
-            SRVDesc.NumMipLevels    = 0u;
-          }
-        }
-        else
-        {
-          if (texDesc.m_SampleCount == xiiGALMSAASampleCount::None)
-          {
-            SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
-            SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
-            SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
-            SRVDesc.NumArraySlices  = m_Description.m_uiArraySize;
-            SRVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
-          }
-          else
-          {
-            SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
-            SRVDesc.NumArraySlices  = m_Description.m_uiArraySize;
-            SRVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
-          }
-        }
+        SRVDesc.TextureDim = bIsArrayView ? Diligent::RESOURCE_DIM_TEX_2D_ARRAY : Diligent::RESOURCE_DIM_TEX_2D;
       }
       break;
 
       case xiiGALTextureType::TextureCube:
       {
-        if (!bIsArrayView)
-        {
-          SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_CUBE;
-          SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
-          SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
-        }
-        else
-        {
-          SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
-          SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
-          SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
-          SRVDesc.NumArraySlices  = m_Description.m_uiArraySize;
-          SRVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
-        }
+        SRVDesc.TextureDim = bIsArrayView ? Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY : Diligent::RESOURCE_DIM_TEX_CUBE;
       }
       break;
 
       case xiiGALTextureType::Texture3D:
       {
         SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_3D;
-        SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
-        SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
+        SRVDesc.FirstDepthSlice = m_Description.m_uiFirstArraySlice;
+        SRVDesc.NumDepthSlices  = m_Description.m_uiArraySize;
       }
       break;
 
