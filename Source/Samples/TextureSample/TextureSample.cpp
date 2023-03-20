@@ -370,6 +370,7 @@ public:
       }
 
       xiiRenderContext::GetDefaultInstance()->EndRendering();
+
       m_pDevice->EndPass(pGALPass);
 
       m_pDevice->EndPipeline(m_hSwapChain);
@@ -378,12 +379,11 @@ public:
       xiiRenderContext::GetDefaultInstance()->ResetContextState();
     }
 
-    // needs to be called once per frame
+    // Needs to be called once per frame
     xiiResourceManager::PerFrameUpdate();
 
-    // tell the task system to finish its work for this frame
-    // this has to be done at the very end, so that the task system will only use up the time that is left in this frame for
-    // uploading GPU data etc.
+    // Tell the task system to finish its work for this frame
+    // This has to be done at the very end, so that the task system will only use up the time that is left in this frame for uploading GPU data etc.
     xiiTaskSystem::FinishFrameTasks();
 
     return xiiApplication::Execution::Continue;
