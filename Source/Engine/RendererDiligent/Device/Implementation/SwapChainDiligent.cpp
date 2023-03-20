@@ -12,24 +12,12 @@
 #  include <Foundation/Basics/Platform/Linux/IncludeX11.h>
 #endif
 
-#if D3D11_SUPPORTED
-#  include <Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
-#endif
-
 #if D3D12_SUPPORTED
 #  include <Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
 #endif
 
-#if GL_SUPPORTED || GLES_SUPPORTED
-#  include <Graphics/GraphicsEngineOpenGL/interface/EngineFactoryOpenGL.h>
-#endif
-
 #if VULKAN_SUPPORTED
 #  include <Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
-#endif
-
-#if METAL_SUPPORTED
-#  include <Graphics/GraphicsEngineMetal/interface/EngineFactoryMtl.h>
 #endif
 
 template <>
@@ -156,17 +144,6 @@ xiiResult xiiGALSwapChainDiligent::InitPlatform(xiiGALDevice* pDevice)
   const Diligent::RENDER_DEVICE_TYPE& deviceType = m_pDeviceDiligent->GetDeviceType();
   switch (deviceType)
   {
-#if D3D11_SUPPORTED
-    case Diligent::RENDER_DEVICE_TYPE_D3D11:
-    {
-      Diligent::FullScreenModeDesc FSMDesc;
-
-      auto* pFactoryD3D11 = static_cast<Diligent::IEngineFactoryD3D11*>(m_pDeviceDiligent->GetFactory());
-      pFactoryD3D11->CreateSwapChainD3D11(m_pDeviceDiligent->GetDevice(), m_pDeviceDiligent->GetImmediateContext(), SCDesc, FSMDesc, Window, &m_pSwapChain);
-    }
-    break;
-#endif
-
 #if D3D12_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D12:
     {
@@ -178,66 +155,12 @@ xiiResult xiiGALSwapChainDiligent::InitPlatform(xiiGALDevice* pDevice)
     break;
 #endif
 
-#if GL_SUPPORTED || GLES_SUPPORTED
-    case Diligent::RENDER_DEVICE_TYPE_GL:
-    case Diligent::RENDER_DEVICE_TYPE_GLES:
-    {
-      auto* pFactoryOpenGL = static_cast<Diligent::IEngineFactoryOpenGL*>(m_pDeviceDiligent->GetFactory());
-
-      Diligent::EngineGLCreateInfo EngineCI;
-      EngineCI.Window = Window;
-
-      if (m_pDeviceDiligent->GetValidationLevel() >= 0)
-        EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_pDeviceDiligent->GetValidationLevel()));
-
-      bool bForceNonSeprblProgs = false;
-      if (bForceNonSeprblProgs)
-        EngineCI.Features.SeparablePrograms = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-
-      if (EngineCI.NumDeferredContexts != 0)
-      {
-        xiiLog::Warning("Deferred contexts are not supported in OpenGL mode");
-        EngineCI.NumDeferredContexts = 0;
-      }
-
-      EngineCI.Features.DepthClamp                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.TimestampQueries              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.WireframeFill                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.MultithreadedResourceCreation = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.OcclusionQueries              = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.BinaryOcclusionQueries        = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.PipelineStatisticsQueries     = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.DurationQueries               = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-
-      Diligent::IRenderDevice*  pDevice  = m_pDeviceDiligent->GetDevice();
-      Diligent::IDeviceContext* pContext = m_pDeviceDiligent->GetImmediateContext();
-
-      pFactoryOpenGL->CreateDeviceAndSwapChainGL(EngineCI, &pDevice, &pContext, SCDesc, &m_pSwapChain);
-      if (!m_pDeviceDiligent->GetDevice())
-      {
-        xiiLog::Error("Unable to initialize Diligent Engine in OpenGL mode. The API may not be available, "
-                      "or required features may not be supported by this GPU/driver/OS version.");
-      }
-    }
-    break;
-#endif
-
 #if VULKAN_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_VULKAN:
     {
       auto* pFactoryVk = static_cast<Diligent::IEngineFactoryVk*>(m_pDeviceDiligent->GetFactory());
 
       pFactoryVk->CreateSwapChainVk(m_pDeviceDiligent->GetDevice(), m_pDeviceDiligent->GetImmediateContext(), SCDesc, Window, &m_pSwapChain);
-    }
-    break;
-#endif
-
-#if METAL_SUPPORTED
-    case Diligent::RENDER_DEVICE_TYPE_METAL:
-    {
-      auto* pFactoryMtl = static_cast<Diligent::IEngineFactoryMtl>(m_pDeviceDiligent->GetFactory());
-
-      pFactoryMtl->CreateSwapChainMtl(m_pDeviceDiligent->GetDevice(), m_pDeviceDiligent->GetImmediateContext(), SCDesc, Window, &m_pSwapChain);
     }
     break;
 #endif

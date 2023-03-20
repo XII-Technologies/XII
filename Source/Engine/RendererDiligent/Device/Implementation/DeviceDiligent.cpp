@@ -28,24 +28,12 @@
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #endif
 
-#if D3D11_SUPPORTED
-#  include <Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
-#endif
-
 #if D3D12_SUPPORTED
 #  include <Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
 #endif
 
-#if GL_SUPPORTED || GLES_SUPPORTED
-#  include <Graphics/GraphicsEngineOpenGL/interface/EngineFactoryOpenGL.h>
-#endif
-
 #if VULKAN_SUPPORTED
 #  include <Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
-#endif
-
-#if METAL_SUPPORTED
-#  include <Graphics/GraphicsEngineMetal/interface/EngineFactoryMtl.h>
 #endif
 
 struct xiiDiligentMemoryAllocator : public Diligent::IMemoryAllocator
@@ -120,14 +108,12 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(RendererDiligent, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
-  xiiGALDeviceFactory::RegisterCreatorFunc("D3D11", &CreateDiligentDeviceD3D11, "D3D_SM50", "xiiShaderCompiler");
   xiiGALDeviceFactory::RegisterCreatorFunc("D3D12", &CreateDiligentDeviceD3D12, "D3D_SM60", "xiiShaderCompiler");
   xiiGALDeviceFactory::RegisterCreatorFunc("Vulkan", &CreateDiligentDeviceVulkan, "VK_SM60", "xiiShaderCompiler");
 }
 
 ON_CORESYSTEMS_SHUTDOWN
 {
-  xiiGALDeviceFactory::UnregisterCreatorFunc("D3D11");
   xiiGALDeviceFactory::UnregisterCreatorFunc("D3D12");
   xiiGALDeviceFactory::UnregisterCreatorFunc("Vulkan");
 }
@@ -165,7 +151,7 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
 
   xiiUInt32 NumImmediateContexts = 0;
 
-#if D3D11_SUPPORTED || D3D12_SUPPORTED || VULKAN_SUPPORTED
+#if D3D12_SUPPORTED || VULKAN_SUPPORTED
   auto FindAdapter = [this](auto* pFactory, Diligent::Version GraphicsAPIVersion, Diligent::GraphicsAdapterInfo& AdapterAttribs) -> xiiUInt32 {
     xiiUInt32 NumAdapters = 0;
     pFactory->EnumerateAdapters(GraphicsAPIVersion, NumAdapters, nullptr);
@@ -253,88 +239,6 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
 
   switch (m_DeviceType)
   {
-#if D3D11_SUPPORTED
-    case Diligent::RENDER_DEVICE_TYPE_D3D11:
-    {
-    CreateDeviceD3D11:
-#  if ENGINE_DLL
-      // Load the dll and import GetEngineFactoryD3D11() function
-      auto GetEngineFactoryD3D11 = Diligent::LoadGraphicsEngineD3D11();
-#  endif
-      auto* pFactoryD3D11 = GetEngineFactoryD3D11();
-      m_pEngineFactory    = pFactoryD3D11;
-
-      // Register custom message callback
-      m_pEngineFactory->SetMessageCallback(XIILogDiligent);
-
-      Diligent::EngineD3D11CreateInfo EngineCI;
-      EngineCI.GraphicsAPIVersion = {11, 0};
-      EngineCI.pRawMemAllocator   = m_pMemoryAllocator.get();
-      EngineCI.EnableValidation   = m_Description.m_bDebugDevice;
-
-      EngineCI.Features.SeparablePrograms                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.ShaderResourceQueries             = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.WireframeFill                     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.MultithreadedResourceCreation     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.ComputeShaders                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.GeometryShaders                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.Tessellation                      = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.MeshShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.RayTracing                        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.BindlessResources                 = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.OcclusionQueries                  = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.BinaryOcclusionQueries            = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.TimestampQueries                  = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.PipelineStatisticsQueries         = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.DurationQueries                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.DepthBiasClamp                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.DepthClamp                        = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.IndependentBlend                  = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.DualSourceBlend                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.MultiViewport                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.TextureCompressionBC              = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.VertexPipelineUAVWritesAndAtomics = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.PixelUAVWritesAndAtomics          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.TextureUAVExtendedFormats         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.ShaderFloat16                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.ResourceBuffer16BitAccess         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.UniformBuffer16BitAccess          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.ShaderInputOutput16               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.ShaderResourceRuntimeArray        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.WaveOp                            = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.InstanceDataStepRate              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.TileShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.TransferQueueTimestampQueries     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.VariableRateShading               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.SparseResources                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.SubpassFramebufferFetch           = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.TextureComponentSwizzle           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-
-      if (m_iValidationLevel >= 0)
-        EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
-
-      EngineCI.AdapterId = FindAdapter(pFactoryD3D11, EngineCI.GraphicsAPIVersion, m_AdapterAttribs);
-
-      if (m_AdapterType != Diligent::ADAPTER_TYPE_SOFTWARE && EngineCI.AdapterId != Diligent::DEFAULT_ADAPTER_ID)
-      {
-        // Display mode enumeration fails with error for software adapter
-        xiiUInt32 NumDisplayModes = 0;
-        pFactoryD3D11->EnumerateDisplayModes(EngineCI.GraphicsAPIVersion, EngineCI.AdapterId, 0, Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB, NumDisplayModes, nullptr);
-        m_DisplayModes.SetCount(NumDisplayModes);
-        pFactoryD3D11->EnumerateDisplayModes(EngineCI.GraphicsAPIVersion, EngineCI.AdapterId, 0, Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB, NumDisplayModes, m_DisplayModes.GetData());
-      }
-
-      NumImmediateContexts = xiiMath::Max(1u, EngineCI.NumImmediateContexts);
-      ppContexts.SetCount(size_t{NumImmediateContexts} + size_t{EngineCI.NumDeferredContexts});
-      pFactoryD3D11->CreateDeviceAndContextsD3D11(EngineCI, &m_pDevice, ppContexts.GetData());
-
-      XII_ASSERT_DEV(m_pDevice != nullptr, "Unable to initialize Diligent Engine in Direct3D11 mode. The API may not be available, "
-                                           "or required features may not be supported by this GPU/driver/OS version.");
-    }
-    break;
-#endif
-
 #if D3D12_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D12:
     {
@@ -403,14 +307,8 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       }
       catch (...)
       {
-#  if D3D11_SUPPORTED
-        xiiLog::Error("Failed to find Direct3D12-compatible hardware adapters. Attempting to initialize the engine in Direct3D11 mode.");
-        xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D11;
-        m_DeviceType               = Diligent::RENDER_DEVICE_TYPE_D3D11;
-        goto CreateDeviceD3D11;
-#  else
-        throw;
-#  endif
+        xiiLog::Error("Failed to find Direct3D12 compatible hardware adapters.");
+        return XII_FAILURE;
       }
 
       if (m_AdapterType != Diligent::ADAPTER_TYPE_SOFTWARE && EngineCI.AdapterId != Diligent::DEFAULT_ADAPTER_ID)
@@ -428,28 +326,6 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
 
       XII_ASSERT_DEV(m_pDevice != nullptr, "Unable to initialize Diligent Engine in Direct3D12 mode. The API may not be available, "
                                            "or required features may not be supported by this GPU/driver/OS version.");
-    }
-    break;
-#endif
-
-#if GL_SUPPORTED || GLES_SUPPORTED
-    case Diligent::RENDER_DEVICE_TYPE_GL:
-    case Diligent::RENDER_DEVICE_TYPE_GLES:
-    {
-#  if EXPLICITLY_LOAD_ENGINE_GL_DLL
-      // Load the dll and import GetEngineFactoryOpenGL() function
-      auto GetEngineFactoryOpenGL = Diligent::LoadGraphicsEngineOpenGL();
-#  endif
-
-      auto* pFactoryGL = GetEngineFactoryOpenGL();
-      XII_ASSERT_DEV(pFactoryGL != nullptr, "Failed To Load OpenGL");
-      m_pEngineFactory = pFactoryGL;
-
-      // Register custom message callback
-      m_pEngineFactory->SetMessageCallback(XIILogDiligent);
-
-      NumImmediateContexts = 1; // + EngineCI.NumImmediateContexts which is zero
-      ppContexts.SetCount(NumImmediateContexts);
     }
     break;
 #endif
@@ -531,66 +407,6 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       pFactoryVk->CreateDeviceAndContextsVk(EngineCI, &m_pDevice, ppContexts.GetData());
 
       XII_ASSERT_DEV(m_pDevice != nullptr, "Unable to initialize Diligent Engine in Vulkan mode. The API may not be available, "
-                                           "or required features may not be supported by this GPU/driver/OS version.");
-    }
-    break;
-#endif
-
-#if METAL_SUPPORTED
-    case Diligent::RENDER_DEVICE_TYPE_METAL:
-    {
-      Diligent::EngineMtlCreateInfo EngineCI;
-
-      EngineCI.Features.SeparablePrograms                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.ShaderResourceQueries             = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.WireframeFill                     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.MultithreadedResourceCreation     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.ComputeShaders                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.GeometryShaders                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.Tessellation                      = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.MeshShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.RayTracing                        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.BindlessResources                 = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.OcclusionQueries                  = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.BinaryOcclusionQueries            = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.TimestampQueries                  = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.PipelineStatisticsQueries         = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.DurationQueries                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.DepthBiasClamp                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.DepthClamp                        = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.IndependentBlend                  = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.DualSourceBlend                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.MultiViewport                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.TextureCompressionBC              = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.VertexPipelineUAVWritesAndAtomics = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.PixelUAVWritesAndAtomics          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.TextureUAVExtendedFormats         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.ShaderFloat16                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.ResourceBuffer16BitAccess         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.UniformBuffer16BitAccess          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.ShaderInputOutput16               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.ShaderResourceRuntimeArray        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.WaveOp                            = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.InstanceDataStepRate              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.TileShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.TransferQueueTimestampQueries     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.VariableRateShading               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.SparseResources                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.SubpassFramebufferFetch           = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-      EngineCI.Features.TextureComponentSwizzle           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-
-      if (m_iValidationLevel >= 0)
-        EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
-
-      auto* pFactoryMtl = GetEngineFactoryMtl();
-      m_pEngineFactory  = pFactoryMtl;
-
-      NumImmediateContexts = xiiMath::Max(1u, EngineCI.NumImmediateContexts);
-      ppContexts.resize(NumImmediateContexts + EngineCI.NumDeferredContexts);
-      pFactoryMtl->CreateDeviceAndContextsMtl(EngineCI, &m_pDevice, ppContexts.GetData());
-
-      XII_ASSERT_DEV(m_pDevice != nullptr, "Unable to initialize Diligent Engine in Metal mode. The API may not be available, "
                                            "or required features may not be supported by this GPU/driver/OS version.");
     }
     break;

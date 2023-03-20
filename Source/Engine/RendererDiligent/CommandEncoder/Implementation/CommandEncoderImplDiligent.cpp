@@ -17,14 +17,6 @@
 #undef NULL
 #define NULL 0
 
-#if D3D11_SUPPORTED
-// clang-format off
-#  include <d3d11.h>
-#  include <Graphics/GraphicsEngineD3D11/interface/BufferViewD3D11.h>
-#  include <Graphics/GraphicsEngineD3D11/interface/TextureViewD3D11.h>
-// clang-format on
-#endif
-
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #endif
@@ -260,16 +252,19 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 
   switch (m_GALDeviceDiligent.GetDeviceType())
   {
-#if D3D11_SUPPORTED
-    case Diligent::RENDER_DEVICE_TYPE_D3D11:
+    case Diligent::RENDER_DEVICE_TYPE_D3D12:
     {
-      // Diligent::IRenderDeviceD3D11* pDeviceD3D11 = nullptr;
-      // m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D11, reinterpret_cast<Diligent::IObject**>(pDeviceD3D11));
+      XII_ASSERT_NOT_IMPLEMENTED;
     }
     break;
-#endif
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED
+    case Diligent::RENDER_DEVICE_TYPE_VULKAN:
+    {
+      XII_ASSERT_NOT_IMPLEMENTED;
+    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 
@@ -283,26 +278,6 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 
   switch (m_GALDeviceDiligent.GetDeviceType())
   {
-#if D3D11_SUPPORTED
-    case Diligent::RENDER_DEVICE_TYPE_D3D11:
-    {
-      if (Diligent::ITextureView* pUAVTextureDiligent = pUnorderedAccessViewDiligent->GetTextureView())
-      {
-        Diligent::ITextureViewD3D11** ppD3D11TextureViewDiligent = nullptr;
-        pUAVTextureDiligent->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>(ppD3D11TextureViewDiligent));
-        XII_ASSERT_DEV(ppD3D11TextureViewDiligent != nullptr, "Failed to retrieve D3D11 texture view implementation.");
-      }
-
-      if (Diligent::IBufferView* pUAVBufferDiligent = pUnorderedAccessViewDiligent->GetBufferView())
-      {
-        Diligent::IBufferViewD3D11** ppD3D11BufferViewDiligent = nullptr;
-        pUAVBufferDiligent->QueryInterface(Diligent::IID_BufferViewD3D11, reinterpret_cast<Diligent::IObject**>(ppD3D11BufferViewDiligent));
-        XII_ASSERT_DEV(ppD3D11BufferViewDiligent != nullptr, "Failed to retrieve D3D11 buffer view implementation.");
-      }
-    }
-    break;
-#endif
-
 #if D3D12_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D12:
     {

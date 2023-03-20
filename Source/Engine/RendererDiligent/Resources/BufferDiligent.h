@@ -25,7 +25,8 @@ protected:
 
   Diligent::BufferData m_InitialData;
 
-  Diligent::VALUE_TYPE m_IndexFormat; // Only applicable for Index Buffers
+  // Only applicable for Index Buffers
+  Diligent::VALUE_TYPE m_IndexFormat;
 };
 
 #include <RendererDiligent/Resources/Implementation/BufferDiligent_inl.h>

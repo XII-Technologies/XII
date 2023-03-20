@@ -38,5 +38,4 @@ static const Diligent::STENCIL_OP GALStencilOpTableIndexToDiligent[8] =
   Diligent::STENCIL_OP_INCR_WRAP,
   Diligent::STENCIL_OP_DECR_WRAP
 };
-
 // clang-format on
