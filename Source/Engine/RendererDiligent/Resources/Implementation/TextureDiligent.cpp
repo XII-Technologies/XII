@@ -81,20 +81,10 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
       if (m_Description.m_bAllowDynamicMipGeneration)
         Tex2DDesc.MiscFlags |= Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS;
 
-      if (m_Description.m_uiArraySize > 1)
-      {
-        if (m_Description.m_Type == xiiGALTextureType::TextureCube)
-          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
-        else
-          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
-      }
+      if (m_Description.m_Type == xiiGALTextureType::TextureCube)
+        Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_CUBE;
       else
-      {
-        if (m_Description.m_Type == xiiGALTextureType::TextureCube)
-          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_CUBE;
-        else
-          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_2D;
-      }
+        Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_2D;
 
       if (!pInitialData.IsEmpty())
       {
@@ -103,7 +93,7 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
         m_InitialData.SetCount(uiInitialDataCount);
 
-        for (xiiUInt32 i = 0; i < uiInitialDataCount; i++)
+        for (xiiUInt32 i = 0; i < uiInitialDataCount; ++i)
         {
           m_InitialData[i].pData       = pInitialData[i].m_pData;
           m_InitialData[i].Stride      = pInitialData[i].m_uiRowPitch;
@@ -231,7 +221,7 @@ xiiResult xiiGALTextureDiligent::CreateStagingTexture(xiiGALDeviceDiligent* pDev
       Desc.CPUAccessFlags        = Diligent::CPU_ACCESS_NONE;
       Desc.Usage                 = Diligent::USAGE_STAGING;
       Desc.SampleCount           = xiiDiligentUtils::ToDiligentMSAACount(xiiGALMSAASampleCount::None); // Disable MSAA for the readback texture, the conversion needs to happen during readback!
-      Desc.MiscFlags &= ~Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS;
+      Desc.MiscFlags            &= ~Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS;
 
       if (m_Description.m_ResourceAccess.m_bReadBack)
         Desc.CPUAccessFlags = Diligent::CPU_ACCESS_READ;
@@ -249,11 +239,10 @@ xiiResult xiiGALTextureDiligent::CreateStagingTexture(xiiGALDeviceDiligent* pDev
     }
     break;
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Resources_Implementation_TextureDiligent);
