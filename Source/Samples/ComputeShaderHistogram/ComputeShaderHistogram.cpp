@@ -90,8 +90,8 @@ xiiApplication::Execution xiiComputeShaderHistogramApp::Run()
     {
       renderContext.BeginCompute(pGALPass, "ComputeHistogram");
 
-      // Reset first.
-      renderContext.GetCommandEncoder()->ClearUnorderedAccessView(m_hHistogramUAV, xiiVec4U32(0, 0, 0, 0));
+      // Reset first (Not yet supported).
+      // renderContext.GetCommandEncoder()->ClearUnorderedAccessView(m_hHistogramUAV, xiiVec4U32(0, 0, 0, 0));
 
       renderContext.BindShader(m_hHistogramComputeShader);
       renderContext.BindTexture2D("ScreenTexture", m_hScreenSRV);

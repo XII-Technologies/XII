@@ -10,7 +10,12 @@ class xiiGALDeviceDiligent;
 class xiiGALBufferDiligent;
 class xiiGALShaderDiligent;
 class xiiGALResourceViewDiligent;
+class xiiGALSamplerStateDiligent;
 class xiiGALUnorderedAccessViewDiligent;
+class xiiGALVertexDeclarationDiligent;
+class xiiGALBlendStateDiligent;
+class xiiGALDepthStencilStateDiligent;
+class xiiGALRasterizerStateDiligent;
 
 class XII_RENDERERDILIGENT_DLL xiiGALCommandEncoderImplDiligent : public xiiGALCommandEncoderCommonPlatformInterface, public xiiGALCommandEncoderRenderPlatformInterface, public xiiGALCommandEncoderComputePlatformInterface
 {
@@ -160,12 +165,17 @@ private:
   Diligent::Rect     m_ScissorRect;
   bool               m_bScissorEnabled = false;
 
+  Diligent::PRIMITIVE_TOPOLOGY           m_PrimitiveTopology  = {};
+  const xiiGALVertexDeclarationDiligent* m_pVertexDeclaration = nullptr;
+  const xiiGALBlendStateDiligent*        m_pBlendStateState   = nullptr;
+  const xiiGALDepthStencilStateDiligent* m_pDepthStencilState = nullptr;
+  const xiiGALRasterizerStateDiligent*   m_pRasterizerState   = nullptr;
+
   // Bound objects for deferred state flushes
   Diligent::IBuffer*   m_pIndexBuffer      = nullptr;
   Diligent::VALUE_TYPE m_IndexBufferFormat = Diligent::VT_UNDEFINED;
 
   xiiGALBufferDiligent* m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[xiiGALShaderStage::ENUM_COUNT];
 
   xiiHybridArray<xiiGALResourceViewDiligent*, 16> m_pBoundShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
   xiiGAL::ModifiedRange                           m_BoundShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];
@@ -173,11 +183,9 @@ private:
   xiiHybridArray<xiiGALUnorderedAccessViewDiligent*, 16> m_pBoundUnoderedAccessViews;
   xiiGAL::ModifiedRange                                  m_pBoundUnoderedAccessViewsRange;
 
-  Diligent::ISampler*   m_pBoundSamplerStates[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundSamplerStatesRange[xiiGALShaderStage::ENUM_COUNT];
+  xiiGALSamplerStateDiligent* m_pBoundSamplerStates[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
 
-  xiiGALShaderDiligent* m_pCurrentShader                               = nullptr;
-  Diligent::IShader*    m_pBoundShaders[xiiGALShaderStage::ENUM_COUNT] = {};
+  xiiGALShaderDiligent* m_pCurrentShader = nullptr;
 
   xiiGALRenderTargetSetup m_RenderTargetSetup;
   Diligent::ITextureView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};

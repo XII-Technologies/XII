@@ -189,11 +189,14 @@ void xiiGALPassDiligent::MarkDirty()
   m_Framebuffers.Clear();
   m_Framebuffers.Compact();
 
+  m_ClearValues.Clear();
+
   m_pCommandEncoderImpl->MarkDirty();
 }
 
 void xiiGALPassDiligent::Reset()
 {
+  m_pCommandEncoderImpl->Reset();
   m_pRenderCommandEncoder->InvalidateState();
   m_pComputeCommandEncoder->InvalidateState();
 }
