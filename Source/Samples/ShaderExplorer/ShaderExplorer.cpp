@@ -195,6 +195,8 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
     m_pDevice->EndPipeline(m_hSwapChain);
 
     m_pDevice->EndFrame();
+
+    xiiRenderContext::GetDefaultInstance()->ResetContextState();
   }
 
   // Needs to be called once per frame

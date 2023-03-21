@@ -644,7 +644,7 @@ void xiiGALCommandEncoderImplDiligent::DrawIndexedPlatform(xiiUInt32 uiIndexCoun
 
   Diligent::DrawIndexedAttribs drawAttribs;
   drawAttribs.NumIndices            = uiIndexCount;
-  drawAttribs.IndexType             = m_IndexBufferFormat;
+  drawAttribs.IndexType             = m_pIndexBuffer != nullptr ? m_pIndexBuffer->GetIndexFormat() : Diligent::VT_UNDEFINED;
   drawAttribs.Flags                 = Diligent::DRAW_FLAG_VERIFY_ALL;
   drawAttribs.NumInstances          = 1;
   drawAttribs.FirstIndexLocation    = uiStartIndex;
@@ -659,8 +659,8 @@ void xiiGALCommandEncoderImplDiligent::DrawIndexedInstancedPlatform(xiiUInt32 ui
   FlushDeferredStateChangesGraphics();
 
   Diligent::DrawIndexedAttribs drawAttribs;
+  drawAttribs.IndexType             = m_pIndexBuffer != nullptr ? m_pIndexBuffer->GetIndexFormat() : Diligent::VT_UNDEFINED;
   drawAttribs.NumIndices            = uiIndexCountPerInstance;
-  drawAttribs.IndexType             = m_IndexBufferFormat;
   drawAttribs.Flags                 = Diligent::DRAW_FLAG_VERIFY_ALL;
   drawAttribs.NumInstances          = uiInstanceCount;
   drawAttribs.FirstIndexLocation    = uiStartIndex;
@@ -677,7 +677,7 @@ void xiiGALCommandEncoderImplDiligent::DrawIndexedInstancedIndirectPlatform(cons
   xiiGALBuffer* pIABuffer = const_cast<xiiGALBuffer*>(pIndirectArgumentBuffer);
 
   Diligent::DrawIndexedIndirectAttribs drawAttribs;
-  drawAttribs.IndexType                        = m_IndexBufferFormat;
+  drawAttribs.IndexType                        = m_pIndexBuffer != nullptr ? m_pIndexBuffer->GetIndexFormat() : Diligent::VT_UNDEFINED;
   drawAttribs.pAttribsBuffer                   = static_cast<xiiGALBufferDiligent*>(pIABuffer)->GetBuffer();
   drawAttribs.DrawArgsOffset                   = uiArgumentOffsetInBytes;
   drawAttribs.Flags                            = Diligent::DRAW_FLAG_VERIFY_ALL;
@@ -727,12 +727,12 @@ void xiiGALCommandEncoderImplDiligent::DrawInstancedIndirectPlatform(const xiiGA
 
 void xiiGALCommandEncoderImplDiligent::DrawAutoPlatform()
 {
-  XII_ASSERT_NOT_IMPLEMENTED
+  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiGALCommandEncoderImplDiligent::BeginStreamOutPlatform()
 {
-  XII_ASSERT_NOT_IMPLEMENTED
+  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiGALCommandEncoderImplDiligent::EndStreamOutPlatform()
@@ -741,13 +741,11 @@ void xiiGALCommandEncoderImplDiligent::EndStreamOutPlatform()
 
 void xiiGALCommandEncoderImplDiligent::SetIndexBufferPlatform(const xiiGALBuffer* pIndexBuffer)
 {
-  xiiGALBuffer*         pIndexBufferNonConst = const_cast<xiiGALBuffer*>(pIndexBuffer);
-  xiiGALBufferDiligent* pDiligentBuffer      = static_cast<xiiGALBufferDiligent*>(pIndexBufferNonConst);
+  xiiGALBuffer* pGALIndexBuffer = const_cast<xiiGALBuffer*>(pIndexBuffer);
 
-  if (m_pIndexBuffer != pDiligentBuffer->GetBuffer())
+  if (m_pIndexBuffer != pIndexBuffer)
   {
-    m_pIndexBuffer         = pDiligentBuffer->GetBuffer();
-    m_IndexBufferFormat    = pDiligentBuffer->GetIndexFormat();
+    m_pIndexBuffer         = pIndexBuffer != nullptr ? static_cast<xiiGALBufferDiligent*>(pGALIndexBuffer) : nullptr;
     m_bIndexBufferModified = true;
   }
 }
@@ -1127,7 +1125,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
   {
     if (m_pIndexBuffer)
     {
-      m_pContext->SetIndexBuffer(m_pIndexBuffer, 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+      m_pContext->SetIndexBuffer(m_pIndexBuffer->GetBuffer(), 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
     }
     m_bIndexBufferModified = false;
   }
@@ -1176,7 +1174,7 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
   if (m_pIndexBuffer != nullptr)
   {
     Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
-    transitionDesc.pResource                      = m_pIndexBuffer;
+    transitionDesc.pResource                      = m_pIndexBuffer ->GetBuffer();
     transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
     transitionDesc.NewState                       = Diligent::RESOURCE_STATE_INDEX_BUFFER;
     transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;

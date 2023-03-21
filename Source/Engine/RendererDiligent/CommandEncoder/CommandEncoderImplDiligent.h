@@ -172,8 +172,7 @@ private:
   const xiiGALRasterizerStateDiligent*   m_pRasterizerState   = nullptr;
 
   // Bound objects for deferred state flushes
-  Diligent::IBuffer*   m_pIndexBuffer      = nullptr;
-  Diligent::VALUE_TYPE m_IndexBufferFormat = Diligent::VT_UNDEFINED;
+  xiiGALBufferDiligent* m_pIndexBuffer = nullptr;
 
   xiiGALBufferDiligent* m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
 
