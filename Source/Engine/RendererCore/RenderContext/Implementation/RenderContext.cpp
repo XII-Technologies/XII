@@ -182,7 +182,7 @@ void xiiRenderContext::EndRendering()
   // TODO: The render context needs to reset its state after every encoding block if we want to record to separate command buffers.
   // Although this is currently not possible since a lot of high level code binds stuff only once per frame on the render context.
   // Resetting the state after every encoding block breaks those assumptions.
-  //ResetContextState();
+  // ResetContextState();
 }
 
 xiiGALComputeCommandEncoder* xiiRenderContext::BeginCompute(xiiGALPass* pGALPass, const char* szName /*= ""*/)
@@ -204,7 +204,7 @@ void xiiRenderContext::EndCompute()
   m_pGALCommandEncoder = nullptr;
 
   // TODO: See EndRendering
-  //ResetContextState();
+  // ResetContextState();
 }
 
 void xiiRenderContext::SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sTempValue)
@@ -1320,7 +1320,7 @@ xiiTextureFilterSetting::Enum xiiRenderContext::GetSpecificTextureFilter(xiiText
       break;
   }
 
-  iFilter = xiiMath::Clamp<int>(iFilter, xiiTextureFilterSetting::FixedBilinear, xiiTextureFilterSetting::FixedAnisotropic16x);
+  iFilter = xiiMath::Clamp<xiiInt32>(iFilter, xiiTextureFilterSetting::FixedBilinear, xiiTextureFilterSetting::FixedAnisotropic16x);
 
   return (xiiTextureFilterSetting::Enum)iFilter;
 }

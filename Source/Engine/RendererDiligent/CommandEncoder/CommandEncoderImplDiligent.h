@@ -156,9 +156,6 @@ private:
   bool m_bDescriptorsModified      = false;
   bool m_bComputePipelineRequested = false;
 
-  bool m_bVertexBufferSet      = false;
-  bool m_bPipelineStateCreated = false;
-
   Diligent::Viewport m_Viewport;
   Diligent::Rect     m_ScissorRect;
   bool               m_bScissorEnabled = false;

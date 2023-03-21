@@ -673,7 +673,7 @@ void xiiGALCommandEncoderImplDiligent::EndRendering()
 
 void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor, xiiUInt32 uiRenderTargetClearMask, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
-#if 1
+#if 0
   for (xiiUInt32 i = 0; i < m_uiBoundRenderTargetCount; i++)
   {
     if (uiRenderTargetClearMask & (1u << i) && m_pBoundRenderTargets[i])
@@ -691,8 +691,7 @@ void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor,
 
 void xiiGALCommandEncoderImplDiligent::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
 {
-  if (!m_bPipelineStateCreated)
-    return;
+  FlushDeferredStateChangesGraphics();
 
   Diligent::DrawAttribs drawAttribs;
   drawAttribs.NumVertices           = uiVertexCount;
@@ -706,8 +705,7 @@ void xiiGALCommandEncoderImplDiligent::DrawPlatform(xiiUInt32 uiVertexCount, xii
 
 void xiiGALCommandEncoderImplDiligent::DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex)
 {
-  if (!m_bPipelineStateCreated)
-    return;
+  FlushDeferredStateChangesGraphics();
 
   Diligent::DrawIndexedAttribs drawAttribs;
   drawAttribs.NumIndices            = uiIndexCount;
@@ -723,8 +721,7 @@ void xiiGALCommandEncoderImplDiligent::DrawIndexedPlatform(xiiUInt32 uiIndexCoun
 
 void xiiGALCommandEncoderImplDiligent::DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex)
 {
-  if (!m_bPipelineStateCreated)
-    return;
+  FlushDeferredStateChangesGraphics();
 
   Diligent::DrawIndexedAttribs drawAttribs;
   drawAttribs.NumIndices            = uiIndexCountPerInstance;
@@ -740,8 +737,7 @@ void xiiGALCommandEncoderImplDiligent::DrawIndexedInstancedPlatform(xiiUInt32 ui
 
 void xiiGALCommandEncoderImplDiligent::DrawIndexedInstancedIndirectPlatform(const xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
-  if (!m_bPipelineStateCreated)
-    return;
+  FlushDeferredStateChangesGraphics();
 
   xiiGALBuffer* pIABuffer = const_cast<xiiGALBuffer*>(pIndirectArgumentBuffer);
 
@@ -762,8 +758,7 @@ void xiiGALCommandEncoderImplDiligent::DrawIndexedInstancedIndirectPlatform(cons
 
 void xiiGALCommandEncoderImplDiligent::DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex)
 {
-  if (!m_bPipelineStateCreated)
-    return;
+  FlushDeferredStateChangesGraphics();
 
   Diligent::DrawAttribs drawAttribs;
   drawAttribs.NumVertices           = uiVertexCountPerInstance;
@@ -777,8 +772,7 @@ void xiiGALCommandEncoderImplDiligent::DrawInstancedPlatform(xiiUInt32 uiVertexC
 
 void xiiGALCommandEncoderImplDiligent::DrawInstancedIndirectPlatform(const xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
-  if (!m_bPipelineStateCreated)
-    return;
+  FlushDeferredStateChangesGraphics();
 
   xiiGALBuffer* pIABuffer = const_cast<xiiGALBuffer*>(pIndirectArgumentBuffer);
 
@@ -1121,9 +1115,6 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
 {
   XII_ASSERT_DEV(!m_bComputePipelineRequested, "Cannot flush deferred state changes while the compute pipeline is active");
 
-  if (!m_bVertexBufferSet)
-    return;
-
   // Retrieve the current render pass
   {
     xiiGALPassDiligent* pDefaultPass                 = m_GALDeviceDiligent.m_pDefaultPass.Borrow();
@@ -1135,8 +1126,6 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
 
   if (m_bPipelineStateModified)
   {
-    m_bPipelineStateCreated = false;
-
     XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pPipelineStateGraphics);
 
     m_GALDeviceDiligent.GetDevice()->CreatePipelineState(m_PipelineStateDesc, &m_pPipelineStateGraphics);
@@ -1147,7 +1136,6 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
 
     // Changes to the descriptor layout always require the descriptor set to be re-created.
     m_bDescriptorsModified  = true;
-    m_bPipelineStateCreated = true;
   }
 
   if (m_bViewportModified)
@@ -1232,7 +1220,7 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
 {
   xiiHybridArray<Diligent::StateTransitionDesc, 2u> stateTransitions;
 
-  m_bVertexBufferSet = false;
+  bool bVertexBufferSet = false;
 
   for (xiiUInt32 i = 0; i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
   {
@@ -1246,7 +1234,7 @@ void xiiGALCommandEncoderImplDiligent::TransitionResourceStates()
     transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
     transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
 
-    m_bVertexBufferSet = true;
+    bVertexBufferSet = true;
   }
 
   if (m_pIndexBuffer != nullptr)
