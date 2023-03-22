@@ -275,6 +275,9 @@ struct xiiGALTextureFilterMode
     Point = 0,
     Linear,
     Anisotropic,
+    ComparisonPoint,
+    ComparisonLinear,
+    ComparisonAnisotropic,
 
     Default = Linear
   };

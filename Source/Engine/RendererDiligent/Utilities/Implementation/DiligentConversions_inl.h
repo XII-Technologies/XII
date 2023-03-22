@@ -55,10 +55,21 @@ XII_ALWAYS_INLINE Diligent::FILTER_TYPE xiiDiligentUtils ::ToDiligentFilter(xiiG
   {
     case xiiGALTextureFilterMode::Point:
       return Diligent::FILTER_TYPE_POINT;
+
     case xiiGALTextureFilterMode::Linear:
       return Diligent::FILTER_TYPE_LINEAR;
+
     case xiiGALTextureFilterMode::Anisotropic:
       return Diligent::FILTER_TYPE_ANISOTROPIC;
+
+    case xiiGALTextureFilterMode::ComparisonPoint:
+      return Diligent::FILTER_TYPE_COMPARISON_POINT;
+
+    case xiiGALTextureFilterMode::ComparisonLinear:
+      return Diligent::FILTER_TYPE_COMPARISON_LINEAR;
+
+    case xiiGALTextureFilterMode::ComparisonAnisotropic:
+      return Diligent::FILTER_TYPE_COMPARISON_ANISOTROPIC;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED
   }
