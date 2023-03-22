@@ -101,8 +101,8 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
   }
 
   Diligent::BufferData initialData = {};
-  initialData.pData    = pInitialData.GetPtr();
-  initialData.DataSize = pInitialData.GetCount();
+  initialData.pData                = pInitialData.GetPtr();
+  initialData.DataSize             = pInitialData.GetCount();
   pDeviceDiligent->GetDevice()->CreateBuffer(BufferDesc, pInitialData.IsEmpty() ? nullptr : &initialData, &m_pBuffer);
 
   if (m_pBuffer == nullptr)
