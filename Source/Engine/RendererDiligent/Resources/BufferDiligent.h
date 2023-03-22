@@ -23,8 +23,6 @@ protected:
 
   Diligent::RefCntAutoPtr<Diligent::IBuffer> m_pBuffer;
 
-  Diligent::BufferData m_InitialData;
-
   // Only applicable for Index Buffers
   Diligent::VALUE_TYPE m_IndexFormat;
 };

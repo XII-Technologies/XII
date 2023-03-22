@@ -520,8 +520,6 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
     uiInstanceCount *= 2;
   }
 
-  m_pGALPass->BeginRenderPass();
-
   if (uiInstanceCount > 1)
   {
     if (!m_hIndexBuffer.IsInvalidated())
@@ -544,8 +542,6 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
       pCommandEncoder->Draw(uiPrimitiveCount, uiFirstPrimitive);
     }
   }
-
-  m_pGALPass->EndRenderPass();
 
   return XII_SUCCESS;
 }
