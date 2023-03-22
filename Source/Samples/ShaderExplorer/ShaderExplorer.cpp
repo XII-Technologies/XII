@@ -237,7 +237,7 @@ void xiiShaderExplorerApp::AfterCoreSystemsStartup()
   xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  constexpr const char* szDefaultRenderer = "D3D12";
+  constexpr const char* szDefaultRenderer = "D3D11";
 #elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
   constexpr const char* szDefaultRenderer = "Vulkan";
 #else
@@ -245,6 +245,7 @@ void xiiShaderExplorerApp::AfterCoreSystemsStartup()
 #endif
 
   constexpr const char* szDefaultLibraryName = "xiiRendererDiligent";
+  xiiGALDeviceFactory::ConfigureLibraryName("D3D11", szDefaultLibraryName);
   xiiGALDeviceFactory::ConfigureLibraryName("D3D12", szDefaultLibraryName);
   xiiGALDeviceFactory::ConfigureLibraryName("Vulkan", szDefaultLibraryName);
 

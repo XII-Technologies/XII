@@ -28,7 +28,7 @@
 #include <RendererFoundation/Device/DeviceFactory.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-constexpr const char* szDefaultRenderer = "D3D12";
+constexpr const char* szDefaultRenderer = "D3D11";
 #elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
 constexpr const char* szDefaultRenderer = "Vulkan";
 #else

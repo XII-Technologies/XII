@@ -187,17 +187,32 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 
   switch (m_GALDeviceDiligent.GetDeviceType())
   {
+#if D3D11_SUPPORTED
+    case Diligent::RENDER_DEVICE_TYPE_D3D11:
+    {
+      /// \todo Implement unordered access view clearing in D3D11
+      XII_ASSERT_NOT_IMPLEMENTED;
+    }
+    break;
+#endif
+
+#if D3D12_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D12:
     {
+      // \todo Implement unordered access view clearing in D3D12
       XII_ASSERT_NOT_IMPLEMENTED;
     }
     break;
+#endif
 
+#if VULKAN_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_VULKAN:
     {
+      // \todo Implement unordered access view clearing in Vulkan
       XII_ASSERT_NOT_IMPLEMENTED;
     }
     break;
+#endif
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
@@ -213,6 +228,15 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 
   switch (m_GALDeviceDiligent.GetDeviceType())
   {
+#if D3D11_SUPPORTED
+    case Diligent::RENDER_DEVICE_TYPE_D3D11:
+    {
+      /// \todo Implement unordered access view clearing in D3D11
+      XII_ASSERT_NOT_IMPLEMENTED;
+    }
+    break;
+#endif
+
 #if D3D12_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D12:
     {
@@ -598,12 +622,11 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
     m_RenderingSetup = renderingSetup;
   }
 
-  ClearPlatform(renderingSetup.m_ClearColor, renderingSetup.m_uiRenderTargetClearMask, renderingSetup.m_bClearDepth, renderingSetup.m_bClearStencil, renderingSetup.m_fDepthClear, renderingSetup.m_uiStencilClear);
+  // ClearPlatform(renderingSetup.m_ClearColor, renderingSetup.m_uiRenderTargetClearMask, renderingSetup.m_bClearDepth, renderingSetup.m_bClearStencil, renderingSetup.m_fDepthClear, renderingSetup.m_uiStencilClear);
 }
 
 void xiiGALCommandEncoderImplDiligent::EndRendering()
 {
-  m_pRenderPass = nullptr;
 }
 
 // Draw functions
@@ -613,25 +636,36 @@ void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor,
   const bool      bHasDepth              = !m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
   const xiiUInt32 uiColorAttachmentCount = m_RenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
 
-  if (bHasDepth && bClearDepth)
+  if (uiRenderTargetClearMask != 0)
+  {
+    for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
+    {
+      if (uiRenderTargetClearMask & (1u << i) && i < uiColorAttachmentCount)
+      {
+        xiiGALRenderTargetViewHandle hColorRenderTarget = m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i));
+
+        xiiGALRenderTargetView*         pGALRenderTargetView      = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(hColorRenderTarget));
+        xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<xiiGALRenderTargetViewDiligent*>(pGALRenderTargetView);
+
+        m_pContext->ClearRenderTarget(pRenderTargetViewDiligent->GetRenderTargetView(), ClearColor.GetData(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+      }
+    }
+  }
+
+  if (bHasDepth && (bClearDepth || bClearStencil))
   {
     xiiGALRenderTargetView*         pGALDepthStencilView      = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
     xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<xiiGALRenderTargetViewDiligent*>(pGALDepthStencilView);
 
-    m_pContext->ClearDepthStencil(pRenderTargetViewDiligent->GetDepthStencilView(), bClearDepth ? Diligent::CLEAR_DEPTH_FLAG : Diligent::CLEAR_DEPTH_FLAG_NONE, fDepthClear, uiStencilClear, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-  }
+    Diligent::CLEAR_DEPTH_STENCIL_FLAGS flags = Diligent::CLEAR_DEPTH_FLAG_NONE;
 
-  for (xiiUInt32 uiColorAttachmentIndex = 0; uiColorAttachmentIndex < uiColorAttachmentCount; ++uiColorAttachmentIndex)
-  {
-    if (!(uiRenderTargetClearMask & (1u << uiColorAttachmentIndex)))
-      continue;
+    if (bClearDepth)
+      flags |= Diligent::CLEAR_DEPTH_FLAG;
 
-    xiiGALRenderTargetViewHandle hColorRenderTarget = m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(uiColorAttachmentIndex));
+    if (bClearStencil)
+      flags |= Diligent::CLEAR_STENCIL_FLAG;
 
-    xiiGALRenderTargetView*         pGALRenderTargetView      = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(hColorRenderTarget));
-    xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<xiiGALRenderTargetViewDiligent*>(pGALRenderTargetView);
-
-    m_pContext->ClearRenderTarget(pRenderTargetViewDiligent->GetRenderTargetView(), ClearColor.GetData(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pContext->ClearDepthStencil(pRenderTargetViewDiligent->GetDepthStencilView(), flags, fDepthClear, uiStencilClear, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
   }
 }
 
@@ -1032,9 +1066,9 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
 
   // Retrieve the current render pass
   {
-    xiiGALPassDiligent* pDefaultPass                 = m_GALDeviceDiligent.m_pDefaultPass.Borrow();
-    m_pRenderPass                                    = pDefaultPass->GetRenderPass(m_RenderingSetup);
-    m_PipelineStateDesc.GraphicsPipeline.pRenderPass = m_pRenderPass;
+    xiiGALPassDiligent*    pDefaultPass              = m_GALDeviceDiligent.m_pDefaultPass.Borrow();
+    Diligent::IRenderPass* pRenderPass               = pDefaultPass->GetRenderPass(m_RenderingSetup);
+    m_PipelineStateDesc.GraphicsPipeline.pRenderPass = pRenderPass;
   }
 
   if (m_bPipelineStateModified)

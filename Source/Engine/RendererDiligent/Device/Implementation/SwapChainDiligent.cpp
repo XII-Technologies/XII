@@ -12,6 +12,10 @@
 #  include <Foundation/Basics/Platform/Linux/IncludeX11.h>
 #endif
 
+#if D3D11_SUPPORTED
+#  include <Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
+#endif
+
 #if D3D12_SUPPORTED
 #  include <Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
 #endif
@@ -144,6 +148,17 @@ xiiResult xiiGALSwapChainDiligent::InitPlatform(xiiGALDevice* pDevice)
   const Diligent::RENDER_DEVICE_TYPE& deviceType = m_pDeviceDiligent->GetDeviceType();
   switch (deviceType)
   {
+#if D3D11_SUPPORTED
+    case Diligent::RENDER_DEVICE_TYPE_D3D11:
+    {
+      Diligent::FullScreenModeDesc FSMDesc;
+
+      auto* pFactoryD3D11 = static_cast<Diligent::IEngineFactoryD3D11*>(m_pDeviceDiligent->GetFactory());
+      pFactoryD3D11->CreateSwapChainD3D11(m_pDeviceDiligent->GetDevice(), m_pDeviceDiligent->GetImmediateContext(), SCDesc, FSMDesc, Window, &m_pSwapChain);
+    }
+    break;
+#endif
+
 #if D3D12_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D12:
     {

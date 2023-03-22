@@ -152,7 +152,6 @@ private:
 
   // Pipeline State
   xiiGALRenderingSetup   m_RenderingSetup = {};
-  Diligent::IRenderPass* m_pRenderPass    = nullptr;
 
   // Cache flags
   bool m_bPipelineStateModified    = true;

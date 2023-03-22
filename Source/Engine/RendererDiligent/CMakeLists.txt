@@ -7,6 +7,7 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
 xii_create_target(LIBRARY ${PROJECT_NAME})
 
+xii_link_target_diligent_d3d11(${PROJECT_NAME})
 xii_link_target_diligent_d3d12(${PROJECT_NAME})
 xii_link_target_diligent_vulkan(${PROJECT_NAME})
 

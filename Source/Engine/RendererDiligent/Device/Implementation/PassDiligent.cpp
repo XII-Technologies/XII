@@ -165,6 +165,42 @@ xiiGALRenderCommandEncoder* xiiGALPassDiligent::BeginRenderPassPlatform()
 
   m_GALDeviceDiligent.GetImmediateContext()->BeginRenderPass(renderPassBeginInfo);
 
+#if 0
+
+  // Clear Render Target
+  if (m_RenderingSetup.m_uiRenderTargetClearMask != 0)
+  {
+    for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
+    {
+      if (m_RenderingSetup.m_uiRenderTargetClearMask & (1u << i) && i < uiColorCount)
+      {
+        xiiGALRenderTargetViewHandle hColorRenderTarget = m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i));
+
+        xiiGALRenderTargetView*         pGALRenderTargetView      = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(hColorRenderTarget));
+        xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<xiiGALRenderTargetViewDiligent*>(pGALRenderTargetView);
+
+        m_pCommandEncoderImpl->m_pContext->ClearRenderTarget(pRenderTargetViewDiligent->GetRenderTargetView(), m_RenderingSetup.m_ClearColor.GetData(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+      }
+    }
+  }
+
+  if (bHasDepth && (m_RenderingSetup.m_bClearDepth || m_RenderingSetup.m_bClearStencil))
+  {
+    xiiGALRenderTargetView*         pGALDepthStencilView      = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
+    xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<xiiGALRenderTargetViewDiligent*>(pGALDepthStencilView);
+
+    Diligent::CLEAR_DEPTH_STENCIL_FLAGS flags = Diligent::CLEAR_DEPTH_FLAG_NONE;
+
+    if (m_RenderingSetup.m_bClearDepth)
+      flags |= Diligent::CLEAR_DEPTH_FLAG;
+
+    if (m_RenderingSetup.m_bClearStencil)
+      flags |= Diligent::CLEAR_STENCIL_FLAG;
+
+    m_pCommandEncoderImpl->m_pContext->ClearDepthStencil(pRenderTargetViewDiligent->GetDepthStencilView(), flags, m_RenderingSetup.m_fDepthClear, m_RenderingSetup.m_uiStencilClear, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  }
+#endif
+
   return m_pRenderCommandEncoder.Borrow();
 }
 
@@ -237,6 +273,7 @@ void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingS
       depthAttachment.InitialState = Diligent::RESOURCE_STATE_DEPTH_WRITE;
       depthAttachment.LoadOp       = renderingSetup.m_bClearDepth ? Diligent::ATTACHMENT_LOAD_OP_CLEAR : Diligent::ATTACHMENT_LOAD_OP_LOAD;
     }
+
     depthAttachment.StoreOp = Diligent::ATTACHMENT_STORE_OP_STORE;
 
     if (format == xiiGALResourceFormat::D24S8)
@@ -305,7 +342,7 @@ void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingS
     const bool bIsDepthFormat = xiiDiligentUtils::IsDepthFormat(attachment.Format);
     if (bIsDepthFormat)
     {
-      attachment.FinalState = Diligent::RESOURCE_STATE_DEPTH_WRITE; // Perhaps the COMMON state?
+      attachment.FinalState = Diligent::RESOURCE_STATE_DEPTH_WRITE;
 
       Diligent::AttachmentReference& depthAttachmentRef = depthAttachmentReferences.ExpandAndGetRef();
       depthAttachmentRef.State                          = Diligent::RESOURCE_STATE_DEPTH_WRITE;
