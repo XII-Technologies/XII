@@ -221,7 +221,7 @@ xiiResult xiiGALTextureDiligent::CreateStagingTexture(xiiGALDeviceDiligent* pDev
       Desc.CPUAccessFlags        = Diligent::CPU_ACCESS_NONE;
       Desc.Usage                 = Diligent::USAGE_STAGING;
       Desc.SampleCount           = xiiDiligentUtils::ToDiligentMSAACount(xiiGALMSAASampleCount::None); // Disable MSAA for the readback texture, the conversion needs to happen during readback!
-      Desc.MiscFlags            &= ~Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS;
+      Desc.MiscFlags &= ~Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS;
 
       if (m_Description.m_ResourceAccess.m_bReadBack)
         Desc.CPUAccessFlags = Diligent::CPU_ACCESS_READ;

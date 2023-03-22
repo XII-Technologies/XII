@@ -151,7 +151,7 @@ private:
   Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> m_pShaderResourceBindingCompute;
 
   // Pipeline State
-  xiiGALRenderingSetup   m_RenderingSetup = {};
+  xiiGALRenderingSetup m_RenderingSetup = {};
 
   // Cache flags
   bool m_bPipelineStateModified    = true;
