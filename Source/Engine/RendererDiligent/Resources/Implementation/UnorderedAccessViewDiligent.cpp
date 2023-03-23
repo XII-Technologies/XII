@@ -54,46 +54,47 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     xiiGALResourceFormat::Enum              viewFormat     = m_Description.m_OverrideViewFormat == xiiGALResourceFormat::Invalid ? texDesc.m_Format : m_Description.m_OverrideViewFormat;
 
     Diligent::TextureViewDesc UAVDesc;
-    UAVDesc.ViewType = Diligent::TEXTURE_VIEW_UNORDERED_ACCESS;
-    UAVDesc.Format   = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eResourceViewType;
+    UAVDesc.ViewType        = Diligent::TEXTURE_VIEW_UNORDERED_ACCESS;
+    UAVDesc.Format          = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eResourceViewType;
+    UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
 
     switch (texDesc.m_Type)
     {
+      case xiiGALTextureType::Texture1D:
+        UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_1D;
+        break;
+
       case xiiGALTextureType::Texture2D:
       case xiiGALTextureType::Texture2DProxy:
-      {
-        if (!bIsArrayView)
-        {
-          UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D;
-          UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
-        }
-        else
-        {
-          UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
-          UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
-          UAVDesc.NumArraySlices  = m_Description.m_uiArraySize;
-          UAVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
-        }
-      }
-      break;
+        UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_2D;
+        break;
 
       case xiiGALTextureType::TextureCube:
-      {
-        if (bIsArrayView)
-          UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
-        else
-          UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_CUBE;
+        UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_CUBE;
+        break;
 
-        UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
+      case xiiGALTextureType::Texture1DArray:
+        UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_1D_ARRAY;
         UAVDesc.NumArraySlices  = m_Description.m_uiArraySize;
         UAVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
-      }
-      break;
+        break;
+
+      case xiiGALTextureType::Texture2DArray:
+      case xiiGALTextureType::Texture2DProxyArray:
+        UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+        UAVDesc.NumArraySlices  = m_Description.m_uiArraySize;
+        UAVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
+        break;
+
+      case xiiGALTextureType::TextureCubeArray:
+        UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
+        UAVDesc.NumArraySlices  = m_Description.m_uiArraySize;
+        UAVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
+        break;
 
       case xiiGALTextureType::Texture3D:
       {
         UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_3D;
-        UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
         UAVDesc.FirstDepthSlice = m_Description.m_uiFirstArraySlice;
         UAVDesc.NumDepthSlices  = m_Description.m_uiArraySize;
       }

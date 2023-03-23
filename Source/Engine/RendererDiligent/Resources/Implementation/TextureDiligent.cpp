@@ -40,12 +40,50 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
   switch (m_Description.m_Type)
   {
+    case xiiGALTextureType::Texture1D:
     case xiiGALTextureType::Texture2D:
     case xiiGALTextureType::TextureCube:
+    case xiiGALTextureType::Texture1DArray:
+    case xiiGALTextureType::Texture2DArray:
+    case xiiGALTextureType::TextureCubeArray:
     {
       Diligent::TextureDesc Tex2DDesc;
-      Tex2DDesc.Name      = m_Description.m_szName;
-      Tex2DDesc.ArraySize = (m_Description.m_Type == xiiGALTextureType::Texture2D ? m_Description.m_uiArraySize : (m_Description.m_uiArraySize * 6u));
+      Tex2DDesc.Name = m_Description.m_szName;
+
+      switch (m_Description.m_Type)
+      {
+        case xiiGALTextureType::Texture1D:
+          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_1D;
+          break;
+
+        case xiiGALTextureType::Texture2D:
+          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_2D;
+          break;
+
+        case xiiGALTextureType::TextureCube:
+          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_CUBE;
+          break;
+
+        case xiiGALTextureType::Texture1DArray:
+          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_1D_ARRAY;
+          break;
+
+        case xiiGALTextureType::Texture2DArray:
+          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+          break;
+
+        case xiiGALTextureType::TextureCubeArray:
+          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
+          break;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+
+      if (m_Description.m_Type == xiiGALTextureType::TextureCube || m_Description.m_Type == xiiGALTextureType::TextureCubeArray)
+        Tex2DDesc.ArraySize = m_Description.m_uiArraySize * 6u;
+      else
+        Tex2DDesc.ArraySize = m_Description.m_uiArraySize;
+
       Tex2DDesc.BindFlags = Diligent::BIND_NONE;
 
       if (m_Description.m_bAllowShaderResourceView || m_Description.m_bAllowDynamicMipGeneration)
@@ -80,11 +118,6 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
       if (m_Description.m_bAllowDynamicMipGeneration)
         Tex2DDesc.MiscFlags |= Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS;
-
-      if (m_Description.m_Type == xiiGALTextureType::TextureCube)
-        Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_CUBE;
-      else
-        Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_2D;
 
       if (!pInitialData.IsEmpty())
       {

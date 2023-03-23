@@ -157,10 +157,15 @@ struct xiiGALTextureType
   enum Enum
   {
     Invalid   = -1,
-    Texture2D = 0,
+    Texture1D = 0,
+    Texture1DArray,
+    Texture2D,
+    Texture2DArray,
     TextureCube,
+    TextureCubeArray,
     Texture3D,
     Texture2DProxy,
+    Texture2DProxyArray,
 
     ENUM_COUNT,
 

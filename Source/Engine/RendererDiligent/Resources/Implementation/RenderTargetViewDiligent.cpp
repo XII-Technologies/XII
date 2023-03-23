@@ -6,11 +6,6 @@
 
 XII_CHECK_AT_COMPILETIME(XII_GAL_MAX_RENDERTARGET_COUNT == Diligent::MAX_RENDER_TARGETS);
 
-bool IsArrayView(const xiiGALTextureCreationDescription& texDesc, const xiiGALRenderTargetViewCreationDescription& viewDesc)
-{
-  return texDesc.m_uiArraySize > 1 || viewDesc.m_uiFirstSlice > 0;
-}
-
 xiiGALRenderTargetViewDiligent::xiiGALRenderTargetViewDiligent(xiiGALTexture* pTexture, const xiiGALRenderTargetViewCreationDescription& Description) :
   xiiGALRenderTargetView(pTexture, Description), m_pRenderTargetView(nullptr), m_pDepthStencilView(nullptr), m_pUnorderedAccessView(nullptr)
 {
@@ -38,7 +33,6 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
   xiiGALResourceBase* pRes             = const_cast<xiiGALResourceBase*>(pTexture->GetParentResource());
   Diligent::ITexture* pTextureDiligent = static_cast<xiiGALTextureDiligent*>(pRes)->GetTexture();
-  const bool          bIsArrayView     = IsArrayView(texDesc, m_Description);
 
   if (m_Description.m_OverrideViewFormat != xiiGALResourceFormat::Invalid)
     viewFormat = m_Description.m_OverrideViewFormat;
@@ -66,7 +60,7 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     DSViewDesc.ViewType = Diligent::TEXTURE_VIEW_DEPTH_STENCIL;
     DSViewDesc.Format   = ViewFormat;
 
-    DSViewDesc.TextureDim      = bIsArrayView ? Diligent::RESOURCE_DIM_TEX_2D_ARRAY : Diligent::RESOURCE_DIM_TEX_2D;
+    DSViewDesc.TextureDim      = pTextureDiligent->GetDesc().Type;
     DSViewDesc.MostDetailedMip = m_Description.m_uiMipLevel;
     DSViewDesc.FirstArraySlice = m_Description.m_uiFirstSlice;
     DSViewDesc.NumArraySlices  = m_Description.m_uiSliceCount;
@@ -92,7 +86,7 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     RTViewDesc.ViewType = Diligent::TEXTURE_VIEW_RENDER_TARGET;
     RTViewDesc.Format   = ViewFormat;
 
-    RTViewDesc.TextureDim      = bIsArrayView ? Diligent::RESOURCE_DIM_TEX_2D_ARRAY : Diligent::RESOURCE_DIM_TEX_2D;
+    RTViewDesc.TextureDim      = pTextureDiligent->GetDesc().Type;
     RTViewDesc.MostDetailedMip = m_Description.m_uiMipLevel;
     RTViewDesc.FirstArraySlice = m_Description.m_uiFirstSlice;
     RTViewDesc.NumArraySlices  = m_Description.m_uiSliceCount;
