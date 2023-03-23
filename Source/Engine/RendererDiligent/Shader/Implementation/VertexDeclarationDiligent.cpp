@@ -9,11 +9,7 @@ static const char* GALSemanticToDiligentD3D[] = {"POSITION", "NORMAL", "TANGENT"
                                                  "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "BITANGENT", "BONEINDICES",
                                                  "BONEINDICES", "BONEWEIGHTS", "BONEWEIGHTS"};
 
-static const char* GALSemanticToDiligentVulkan[] = {"POSITION", "NORMAL", "TANGENT", "COLOR0", "COLOR1", "COLOR2", "COLOR3", "COLOR4", "COLOR5", "COLOR6", "COLOR7",
-                                                    "TEXCOORD0", "TEXCOORD1", "TEXCOORD2", "TEXCOORD3", "TEXCOORD4", "TEXCOORD5", "TEXCOORD6", "TEXCOORD7", "TEXCOORD8", "TEXCOORD9", "BITANGENT", "BONEINDICES0",
-                                                    "BONEINDICES1", "BONEWEIGHTS0", "BONEWEIGHTS1"};
-
-XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToDiligentD3D) == XII_ARRAY_SIZE(GALSemanticToDiligentVulkan) == xiiGALVertexAttributeSemantic::ENUM_COUNT,
+XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToDiligentD3D) == xiiGALVertexAttributeSemantic::ENUM_COUNT,
                              "GALSemanticToDiligent array size does not match vertex attribute semantic count");
 
 xiiGALVertexDeclarationDiligent::xiiGALVertexDeclarationDiligent(const xiiGALVertexDeclarationCreationDescription& Description) :
@@ -43,6 +39,8 @@ xiiResult xiiGALVertexDeclarationDiligent::InitPlatform(xiiGALDevice* pDevice)
   // Copy attribute descriptions
   for (xiiUInt32 uiAttribute = 0; uiAttribute < m_Description.m_VertexAttributes.GetCount(); ++uiAttribute)
   {
+    /// \todo Validate input location for the Vulkan backend
+
     const xiiGALVertexAttribute& Current = m_Description.m_VertexAttributes[uiAttribute];
 
     Diligent::LayoutElement& layoutElement = m_InputElementDescs.ExpandAndGetRef();
@@ -56,12 +54,12 @@ xiiResult xiiGALVertexDeclarationDiligent::InitPlatform(xiiGALDevice* pDevice)
     layoutElement.Frequency                = Current.m_bInstanceData ? Diligent::INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : Diligent::INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
     layoutElement.InstanceDataStepRate     = Current.m_bInstanceData ? Current.m_uiStepRate : 0;
 
-    if (pDeviceDiligent->GetDevice()->GetDeviceInfo().IsVulkanDevice())
+    if (pDeviceDiligent->GetDevice()->GetDeviceInfo().IsD3DDevice())
     {
-      layoutElement.HLSLSemantic = GALSemanticToDiligentVulkan[vertexInputAttributes[uiAttribute].m_eSemantic];
-    }
-    else
-    {
+      /// HLSL semantic. Default value ("ATTRIB") allows HLSL shaders to be converted
+      /// to GLSL and used in OpenGL backend as well as compiled to SPIRV and used
+      /// in Vulkan backend.
+      /// Any value other than default will only work in Direct3D11 and Direct3D12 backends.
       layoutElement.HLSLSemantic = GALSemanticToDiligentD3D[vertexInputAttributes[uiAttribute].m_eSemantic];
     }
 
