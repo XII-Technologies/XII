@@ -68,7 +68,7 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
   // Make sure telemetry is sent out regularly
   xiiTelemetry::PerFrameUpdate();
 
-  // mouse look
+  // Engage mouse look
   if (xiiInputManager::GetInputActionState("Main", "Look") == xiiKeyState::Down)
   {
     m_pWindow->GetInputDevice()->SetShowMouseCursor(false);
@@ -94,7 +94,7 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
     m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::NoClip);
   }
 
-  // Turn camera with keys
+  // Turn camera with arrow keys
   {
     float       fInputValue = 0.0f;
     const float fTurnSpeed  = 1.0f;
@@ -111,7 +111,7 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
       mouseMotion.y -= fInputValue * fTurnSpeed;
   }
 
-  // movement
+  // Apply translation
   {
     float   fInputValue = 0.0f;
     xiiVec3 cameraMotion(0.0f);
@@ -142,8 +142,10 @@ void xiiSampleWindowApp::AfterCoreSystemsStartup()
   xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
   xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
-#if XII_DISABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
   xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
+  xiiTelemetry::SetServerName(GetApplicationName());
+  xiiTelemetry::CreateServer();
 #endif
 
   // Register Input
@@ -235,6 +237,13 @@ void xiiSampleWindowApp::AfterCoreSystemsStartup()
 
   // Now that we have a window and device, tell the engine to initialize the rendering infrastructure
   xiiStartup::StartupHighLevelSystems();
+}
+
+void xiiSampleWindowApp::BeforeCoreSystemsShutdown()
+{
+  xiiTelemetry::CloseConnection();
+
+  SUPER::BeforeCoreSystemsShutdown();
 }
 
 void xiiSampleWindowApp::BeforeHighLevelSystemsShutdown()

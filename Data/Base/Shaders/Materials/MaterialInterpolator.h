@@ -2,7 +2,8 @@
 
 #include <Shaders/Common/Common.h>
 
-// defines:
+////////// Defines //////////
+
 // USE_WORLDPOS
 // USE_NORMAL
 // USE_TANGENT
@@ -87,4 +88,4 @@ struct VS_IN
 #  undef STAGE_TEMPLATE
 #endif
 
-//typedef VS_OUT PS_IN;
+// typedef VS_OUT PS_IN;

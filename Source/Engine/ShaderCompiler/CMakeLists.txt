@@ -1,5 +1,7 @@
 xii_cmake_init()
 
+xii_requires_one_of(XII_BUILD_D3D11 XII_BUILD_D3D12 XII_BUILD_VULKAN)
+
 # Get the name of this folder as the project name
 get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
@@ -10,60 +12,31 @@ target_link_libraries(${PROJECT_NAME}
   RendererCore
 )
 
-if (XII_CMAKE_PLATFORM_WINDOWS)
-  target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-    dxguid.lib
-    d3dcompiler.lib
-  )
+if (XII_BUILD_D3D11)
+  xii_link_target_d3d11(${PROJECT_NAME})
 endif()
 
-if (XII_BUILD_DILIGENT)
-  target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-    Diligent-ShaderTools
-  )
+if (XII_BUILD_D3D12)
+  # Always link D3D12 first before Vulkan so that the SPIRV Enabled DX Compiler
+  # Can overwrite the default one from the Windows SDK
+  xii_link_target_d3d12(${PROJECT_NAME})
 
-  #  Add Supported Tools
-  if(GL_SUPPORTED OR GLES_SUPPORTED)
-    xii_link_target_diligent_opengl(${PROJECT_NAME})
-  endif()
+  # Using the Diligent Library, Copy the DXIL dll
+  if(D3D12_SUPPORTED AND VS_DXIL_SIGNER_PATH)
+    # Note that VS_DXC_COMPILER_PATH and VS_DXIL_SIGNER_PATH can only be used in a Visual Studio command
+		# and are not valid paths during CMake configuration
 
-  if(D3D11_SUPPORTED)
-    xii_link_target_diligent_dx11(${PROJECT_NAME})
-  endif()
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      ${VS_DXIL_SIGNER_PATH}
+      "\"$<TARGET_FILE_DIR:${PROJECT_NAME}>\""
+    )
+	endif()
+endif()
 
-  if(D3D12_SUPPORTED)
-    xii_link_target_diligent_dx12(${PROJECT_NAME})
-  endif()
-
-  if(VULKAN_SUPPORTED)
-    xii_link_target_diligent_vulkan(${PROJECT_NAME})
-  endif()
-
-  if(METAL_SUPPORTED)
-    xii_link_target_diligent_metal(${PROJECT_NAME})
-  endif()
-
-  # Link SPIRV Cross for Vulkan Shader Reflection
-  if(ENABLE_SPIRV)
-      target_link_libraries(${PROJECT_NAME}
-          PRIVATE
-          spirv-cross-core
-      )
-      if (${USE_SPIRV_TOOLS})
-          target_link_libraries(${PROJECT_NAME}
-              PRIVATE
-              SPIRV-Tools-opt
-          )
-      endif()
-
-      if (${USE_GLSLANG})
-          target_link_libraries(${PROJECT_NAME}
-              PRIVATE
-              SPIRV
-              glslang
-          )
-      endif()
-  endif()
+if (XII_BUILD_VULKAN)
+  # Call Find Vulkan first as that initializes resources that are needed
+  xii_requires_vulkan()
+  xii_link_target_dxc(${PROJECT_NAME})
+  xii_sources_target_spirv_reflect(${PROJECT_NAME})
 endif()

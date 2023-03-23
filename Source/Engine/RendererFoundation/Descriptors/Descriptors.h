@@ -53,7 +53,9 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALPresentMode
   {
     Immediate,
     VSync,
+
     ENUM_COUNT,
+
     Default = VSync
   };
 };
@@ -274,6 +276,7 @@ struct xiiGALBufferCreationDescription : public xiiHashableStruct<xiiGALBufferCr
   xiiEnum<xiiGALBufferType> m_BufferType = xiiGALBufferType::Generic;
 
   bool m_bUseForIndirectArguments = false;
+  bool m_bUseAsFormattedBuffer    = false;
   bool m_bUseAsStructuredBuffer   = false;
   bool m_bAllowRawViews           = false;
   bool m_bStreamOutputTarget      = false;
@@ -378,16 +381,11 @@ struct xiiGALQueryType
 
   enum Enum
   {
-    /// Number of samples that passed the depth and stencil test between begin and end (on a context).
-    Occlusion,
-    /// Acts like Occlusion. Returns true if at least one sample passed.
-    BinaryOcclusion,
-    /// Requests the GPU timestamp, similar to an EndQuery call.
-    Timestamp,
-    /// Gets the pipeline statistics such as the number of pixel shader invocations.
-    PipelineStatistics,
-    /// Gets the number of high-frequency counter ticks between BeginQuery and EndQuery calls.
-    Duration,
+    Occlusion,          ///< Number of samples that passed the depth and stencil test between begin and end (on a context).
+    BinaryOcclusion,    ///< Acts like Occlusion. Returns true if at least one sample passed.
+    Timestamp,          ///< Requests the GPU timestamp, similar to an EndQuery call.
+    PipelineStatistics, ///< Gets the pipeline statistics such as the number of pixel shader invocations.
+    Duration,           ///< Gets the number of high-frequency counter ticks between BeginQuery and EndQuery calls.
 
     Default = Occlusion
 

@@ -1,13 +1,28 @@
 # #####################################
-# ## xii_link_target_dx11(<target>)
+# ## DirectX11 support
 # #####################################
 
-function(xii_link_target_dx11 TARGET_NAME)
-	xii_requires_d3d()
+set(XII_BUILD_D3D11 OFF CACHE BOOL "Build the DirectX 11 Graphics Device")
+
+# #####################################
+# ## xii_requires_d3d11()
+# #####################################
+
+macro(xii_requires_d3d11)
+	xii_requires_windows()
+    xii_requires(XII_BUILD_D3D11)
+endmacro()
+
+# #####################################
+# ## xii_link_target_d3d11(<target>)
+# #####################################
+
+function(xii_link_target_d3d11 TARGET_NAME)
+	xii_requires_d3d11()
 
 	get_property(XII_DX11_LIBRARY GLOBAL PROPERTY XII_DX11_LIBRARY)
 
-	# only execute find_package once
+	# Execute find_package once
 	if(NOT XII_DX11_LIBRARY)
 		find_package(DirectX11 REQUIRED)
 
@@ -61,10 +76,3 @@ function(xii_link_target_dx11 TARGET_NAME)
 		)
 	endif()
 endfunction()
-
-# #####################################
-# ## xii_requires_d3d()
-# #####################################
-macro(xii_requires_d3d)
-	xii_requires_windows()
-endmacro()

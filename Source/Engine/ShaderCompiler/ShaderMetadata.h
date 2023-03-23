@@ -45,9 +45,10 @@ struct XII_SHADERCOMPILER_DLL xiiShaderVertexInputAttribute
   xiiGALResourceFormat::Enum          m_eFormat         = xiiGALResourceFormat::XYZFloat;
 };
 
-namespace xiiShaderMetaData
+class XII_SHADERCOMPILER_DLL xiiShaderMetaData
 {
-  constexpr xiiUInt32 x_uiMetaDataTag = 0x58494958; // XIIX
+public:
+  static constexpr xiiUInt32 x_uiMetaDataTag = 0x58494958; // XIIX
 
   enum MetaDataVersion
   {
@@ -61,11 +62,11 @@ namespace xiiShaderMetaData
   };
 
   /// \brief Writes the custom shader bytecode format to a stream.
-  void XII_SHADERCOMPILER_DLL Write(xiiStreamWriter& stream, const xiiArrayPtr<xiiUInt8>& shaderCode, const xiiDynamicArray<xiiShaderDescriptorSetLayout>& sets, const xiiDynamicArray<xiiShaderVertexInputAttribute>& vertexInputAttributes);
+  static void Write(xiiStreamWriter& stream, const xiiArrayPtr<xiiUInt8>& shaderCode, const xiiDynamicArray<xiiShaderDescriptorSetLayout>& sets, const xiiDynamicArray<xiiShaderVertexInputAttribute>& vertexInputAttributes);
 
   /// \brief Reads Shader code and meta data from a data buffer. Note that 'data' must be kept alive for the lifetime of the shader as this functions stores views into this memory in its out parameters.
   /// \param data Raw data buffer to read the shader code and meta data from.
   /// \param out_shaderCode Will be filled with a view into data that contains the shader byte code.
   /// \param out_sets Will be filled with shader meta data. Note that this array contains string views into 'data'.
-  void XII_SHADERCOMPILER_DLL Read(const xiiArrayPtr<const xiiUInt8> data, xiiArrayPtr<const xiiUInt8>& out_shaderCode, xiiDynamicArray<xiiShaderDescriptorSetLayout>& out_sets, xiiDynamicArray<xiiShaderVertexInputAttribute>& out_vertexInputAttributes);
-} // namespace xiiShaderMetaData
+  static void Read(const xiiArrayPtr<const xiiUInt8> data, xiiArrayPtr<const xiiUInt8>& out_shaderCode, xiiDynamicArray<xiiShaderDescriptorSetLayout>& out_sets, xiiDynamicArray<xiiShaderVertexInputAttribute>& out_vertexInputAttributes);
+};

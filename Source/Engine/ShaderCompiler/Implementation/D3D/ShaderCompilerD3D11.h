@@ -2,7 +2,7 @@
 
 #include <ShaderCompiler/ShaderCompilerDLL.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
 
 template <typename T>
 struct xiiComPtr;

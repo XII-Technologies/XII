@@ -10,16 +10,18 @@ struct CreatorFuncInfo
 };
 
 static xiiHashTable<xiiString, CreatorFuncInfo> s_CreatorFuncs;
+static xiiHashTable<xiiString, const char*>     s_LibraryNames;
 
 CreatorFuncInfo* GetCreatorFuncInfo(const char* szRendererName)
 {
   auto pFuncInfo = s_CreatorFuncs.GetValue(szRendererName);
   if (pFuncInfo == nullptr)
   {
-    xiiStringBuilder sPluginName = "xiiRenderer";
-    sPluginName.Append(szRendererName);
+    xiiStringBuilder sLibraryName = *s_LibraryNames.GetValue(szRendererName);
+    XII_ASSERT_DEV(sLibraryName != nullptr, "Renderer library name is unknown");
+    XII_ASSERT_DEV(!sLibraryName.IsEmpty(), "Renderer library name must not be empty");
 
-    XII_VERIFY(xiiPlugin::LoadPlugin(sPluginName).Succeeded(), "Renderer plugin '{}' not found", sPluginName);
+    XII_VERIFY(xiiPlugin::LoadPlugin(sLibraryName).Succeeded(), "Renderer plugin '{}' not found", sLibraryName);
 
     pFuncInfo = s_CreatorFuncs.GetValue(szRendererName);
     XII_ASSERT_DEV(pFuncInfo != nullptr, "Renderer '{}' is not registered", szRendererName);
@@ -59,7 +61,13 @@ void xiiGALDeviceFactory::RegisterCreatorFunc(const char* szRendererName, const 
 
 void xiiGALDeviceFactory::UnregisterCreatorFunc(const char* szRendererName)
 {
-  XII_VERIFY(s_CreatorFuncs.Remove(szRendererName), "Creator func not registered");
+  XII_VERIFY(s_CreatorFuncs.Remove(szRendererName), "Creator func is not registered");
+  XII_VERIFY(s_LibraryNames.Remove(szRendererName), "Library name is not registered");
+}
+
+void xiiGALDeviceFactory::ConfigureLibraryName(const char* szRendererName, const char* szLibraryName)
+{
+  XII_VERIFY(s_LibraryNames.Insert(szRendererName, szLibraryName) == false, "Library name already registered");
 }
 
 

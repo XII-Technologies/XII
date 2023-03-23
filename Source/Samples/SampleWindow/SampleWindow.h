@@ -19,6 +19,8 @@ public:
 
   virtual void BeforeHighLevelSystemsShutdown() override;
 
+  virtual void BeforeCoreSystemsShutdown() override;
+
 private:
   xiiSampleWindow* m_pWindow = nullptr;
 };

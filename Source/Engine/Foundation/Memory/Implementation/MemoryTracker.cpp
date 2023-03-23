@@ -16,7 +16,7 @@
 
 namespace
 {
-  // no tracking for the tracker data itself
+  // No tracking for the tracker data itself
   typedef xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, 0> TrackerDataAllocator;
 
   static TrackerDataAllocator* s_pTrackerDataAllocator;

@@ -96,7 +96,7 @@ void xiiGameApplicationBase::StoreScreenshot(xiiImage&& image, const char* szCon
   private:
     virtual void Execute() override
     {
-      // get rid of Alpha channel before saving
+      // Remove the Alpha channel before saving
       m_Image.Convert(xiiImageFormat::R8G8B8_UNORM_SRGB).IgnoreResult();
 
       if (m_Image.SaveTo(m_sPath).Succeeded())
@@ -115,8 +115,8 @@ void xiiGameApplicationBase::StoreScreenshot(xiiImage&& image, const char* szCon
   pWriteTask->m_sPath.Append(szContext);
   pWriteTask->m_sPath.Append(".png");
 
-  // we move the file writing off to another thread to save some time
-  // if we moved it to the 'FileAccess' thread, writing a screenshot would block resource loading, which can reduce game performance
+  // We move the file writing off to another thread to save some time.
+  // If we moved it to the 'FileAccess' thread, writing a screenshot would block resource loading, which can reduce game performance
   // 'LongRunning' will give it even less priority and let the task system do them in parallel to other things
   xiiTaskSystem::StartSingleTask(pWriteTask, xiiTaskPriority::LongRunning);
 }
@@ -330,7 +330,7 @@ void xiiGameApplicationBase::BeforeHighLevelSystemsShutdown()
   DeactivateGameState();
 
   {
-    // make sure that no resources continue to be streamed in, while the engine shuts down
+    // Ensure that no resources continue to be streamed in, while the engine shuts down
     xiiResourceManager::EngineAboutToShutdown();
     xiiResourceManager::ExecuteAllResourceCleanupCallbacks();
     xiiResourceManager::FreeAllUnusedResources();
@@ -339,7 +339,7 @@ void xiiGameApplicationBase::BeforeHighLevelSystemsShutdown()
 
 void xiiGameApplicationBase::BeforeCoreSystemsShutdown()
 {
-  // shut down all actors and APIs that may have been in use
+  // Shut down all actors and APIs that may have been in use
   if (xiiActorManager::GetSingleton() != nullptr)
   {
     xiiActorManager::GetSingleton()->Shutdown();
@@ -357,7 +357,7 @@ void xiiGameApplicationBase::BeforeCoreSystemsShutdown()
 
   Deinit_UnloadPlugins();
 
-  // shut down telemetry if it was set up
+  // Shut down telemetry if it was set up
   {
     xiiTelemetry::CloseConnection();
   }
@@ -409,7 +409,7 @@ xiiApplication::Execution xiiGameApplicationBase::Run()
   }
 
   {
-    // for plugins that need to hook into this without a link dependency on this lib
+    // For plugins that need to hook into this without a link dependency on this lib
     XII_PROFILE_SCOPE("GameApp_EndAppTick");
     XII_BROADCAST_EVENT(GameApp_EndAppTick);
 
@@ -506,7 +506,7 @@ void xiiGameApplicationBase::Run_UpdatePlugins()
     m_ExecutionEvents.Broadcast(e);
   }
 
-  // for plugins that need to hook into this without a link dependency on this lib
+  // For plugins that need to hook into this without a link dependency on this lib
   XII_BROADCAST_EVENT(GameApp_UpdatePlugins);
 
   {
@@ -526,10 +526,10 @@ void xiiGameApplicationBase::Run_FinishFrame()
   xiiFrameAllocator::Swap();
   xiiProfilingSystem::StartNewFrame();
 
-  // if many messages have been logged, make sure they get written to disk
+  // If many messages have been logged, make sure they get written to disk
   xiiLog::Flush(100, xiiTime::Seconds(10));
 
-  // reset this state
+  // Reset this state
   m_bTakeScreenshot = false;
 }
 

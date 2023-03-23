@@ -30,6 +30,7 @@
 
 xiiInternal::NewInstance<xiiGALDevice> CreateDX11Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
 {
+  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D11;
   return XII_NEW(pAllocator, xiiGALDeviceDX11, Description);
 }
 
@@ -242,9 +243,8 @@ xiiResult xiiGALDeviceDX11::InitPlatform()
 void xiiGALDeviceDX11::ReportLiveGpuObjects()
 {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  // not implemented
+  // Not implemented
   return;
-
 #else
 
   const HMODULE hDxgiDebugDLL = LoadLibraryW(L"Dxgidebug.dll");
@@ -266,7 +266,7 @@ void xiiGALDeviceDX11::ReportLiveGpuObjects()
 
   OutputDebugStringW(L" +++++ Live DX11 Objects: +++++\n");
 
-  // prints to OutputDebugString
+  // Prints to OutputDebugString
   dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
 
   OutputDebugStringW(L" ----- Live DX11 Objects: -----\n");
