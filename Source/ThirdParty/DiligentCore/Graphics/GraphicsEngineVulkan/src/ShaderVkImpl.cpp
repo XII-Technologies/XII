@@ -246,6 +246,9 @@ ShaderVkImpl::ShaderVkImpl(IReferenceCounters*     pRefCounters,
 
 void ShaderVkImpl::MapHLSLVertexShaderInputs()
 {
+    // XII Addition: Do not map HLSL Inputs, this is already provided through shader reflection.
+    return;
+
     for (Uint32 i = 0; i < m_pShaderResources->GetNumShaderStageInputs(); ++i)
     {
         const auto&        Input  = m_pShaderResources->GetShaderStageInputAttribs(i);

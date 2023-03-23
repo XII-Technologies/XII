@@ -25,4 +25,5 @@ XII_ENUM_CONSTANTS(
   xiiGALMSAASampleCount::EightSamples)
 XII_END_STATIC_REFLECTED_ENUM;
 
+
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Basics);
