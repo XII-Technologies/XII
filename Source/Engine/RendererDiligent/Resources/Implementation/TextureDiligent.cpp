@@ -48,7 +48,7 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
     case xiiGALTextureType::TextureCubeArray:
     {
       Diligent::TextureDesc Tex2DDesc = {};
-      Tex2DDesc.Name = m_Description.m_szName;
+      Tex2DDesc.Name                  = m_Description.m_szName;
 
       switch (m_Description.m_Type)
       {
