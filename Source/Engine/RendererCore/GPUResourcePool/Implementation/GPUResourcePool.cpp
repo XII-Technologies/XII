@@ -97,7 +97,7 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(
   TextureDesc.m_bCreateRenderTarget      = true;
   TextureDesc.m_bAllowShaderResourceView = true;
   TextureDesc.m_Format                   = eFormat;
-  TextureDesc.m_Type                     = xiiGALTextureType::Texture2D;
+  TextureDesc.m_Type                     = xiiGALTextureType::Texture2DArray;
   TextureDesc.m_uiWidth                  = uiWidth;
   TextureDesc.m_uiHeight                 = uiHeight;
   TextureDesc.m_SampleCount              = sampleCount;

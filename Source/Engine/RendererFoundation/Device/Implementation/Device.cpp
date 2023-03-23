@@ -699,7 +699,9 @@ xiiGALTextureHandle xiiGALDevice::CreateProxyTexture(xiiGALTextureHandle hParent
 
   const auto& parentDesc = pParentTexture->GetDescription();
   XII_ASSERT_DEV(parentDesc.m_Type != xiiGALTextureType::Texture2DProxy, "Can't create a proxy texture of a proxy texture.");
-  XII_ASSERT_DEV(parentDesc.m_Type == xiiGALTextureType::TextureCube || parentDesc.m_uiArraySize > 1,
+  XII_ASSERT_DEV(parentDesc.m_Type != xiiGALTextureType::Texture1D || parentDesc.m_Type != xiiGALTextureType::Texture1DArray,
+                 "Proxy textures cannot be created for 1D textures or 1D texture arrays.");
+  XII_ASSERT_DEV(parentDesc.m_Type == xiiGALTextureType::TextureCube || parentDesc.m_Type == xiiGALTextureType::TextureCubeArray || parentDesc.m_uiArraySize > 1,
                  "Proxy textures can only be created for cubemaps or array textures.");
 
   xiiGALProxyTexture* pProxyTexture = XII_NEW(&m_Allocator, xiiGALProxyTexture, *pParentTexture, szName);

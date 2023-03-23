@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{5189305147899033520,5264929536831011917}}
-		u4 %Hash{11067382921900749217}
+		u4 %Hash{9938847988959464258}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %References
@@ -216,19 +216,6 @@ o
 }
 o
 {
-	Uuid %id{u4{13409126510310617266,4829257709026331137}}
-	s %t{"DocumentNodeManager_DefaultConnection"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Connection::Source{u4{16411398774033032383,5216678342510795943}}
-		s %Connection::SourcePin{"Output"}
-		Uuid %Connection::Target{u4{150329125500045468,5149639443521869275}}
-		s %Connection::TargetPin{"Color"}
-	}
-}
-o
-{
 	Uuid %id{u4{9460453536666668674,4909720988548600779}}
 	s %t{"DocumentNodeManager_DefaultConnection"}
 	u3 %v{1}
@@ -238,6 +225,19 @@ o
 		s %Connection::SourcePin{"DepthStencil"}
 		Uuid %Connection::Target{u4{12025421613094468508,5132296434815839289}}
 		s %Connection::TargetPin{"DepthStencil"}
+	}
+}
+o
+{
+	Uuid %id{u4{11109057645192709762,4966431435699652749}}
+	s %t{"DocumentNodeManager_DefaultConnection"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Connection::Source{u4{16411398774033032383,5216678342510795943}}
+		s %Connection::SourcePin{"Output"}
+		Uuid %Connection::Target{u4{13104320872804311201,4767145777032331907}}
+		s %Connection::TargetPin{"Input"}
 	}
 }
 o
@@ -341,27 +341,6 @@ o
 		s %Message{""}
 		s %Name{"SimplePass"}
 		Vec2 %Node::Pos{f{0xB7F66944,0x4099C3C2}}
-	}
-}
-o
-{
-	Uuid %id{u4{150329125500045468,5149639443521869275}}
-	s %t{"xiiTonemapAdvancedPass"}
-	u3 %v{1}
-	p
-	{
-		b %Active{1}
-		b %AutoExposure{1}
-		f %AverageLogLum{0x0000803F}
-		Uuid %Color{u4{3041673564607184100,11723688789586287756}}
-		b %LightAdaptation{1}
-		f %LuminanceSaturation{0x0000803F}
-		f %MiddleGray{0x00000040}
-		s %Name{""}
-		Vec2 %Node::Pos{f{0x6A0BBA43,0xF3F5C8C2}}
-		Uuid %Output{u4{2678265685247863785,10289661150456131465}}
-		s %TonemapMode{"xiiTonemapMode::Aces"}
-		f %WhitePoint{0x00004040}
 	}
 }
 o
@@ -512,19 +491,6 @@ o
 		s %Name{""}
 		Vec2 %Node::Pos{f{0x3DC7B744,0xFE6EC0C2}}
 		Uuid %Output{u4{9648075072256611633,12146613130991592161}}
-	}
-}
-o
-{
-	Uuid %id{u4{13868768975024301711,5325332059619978714}}
-	s %t{"DocumentNodeManager_DefaultConnection"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Connection::Source{u4{150329125500045468,5149639443521869275}}
-		s %Connection::SourcePin{"Output"}
-		Uuid %Connection::Target{u4{13104320872804311201,4767145777032331907}}
-		s %Connection::TargetPin{"Input"}
 	}
 }
 o
@@ -847,9 +813,7 @@ o
 			Uuid{u4{16792996106006079375,4815240157029274476}}
 			Uuid{u4{14158916982781269897,5166489920795777660}}
 			Uuid{u4{14761260171370226848,4614374089066522459}}
-			Uuid{u4{150329125500045468,5149639443521869275}}
-			Uuid{u4{13409126510310617266,4829257709026331137}}
-			Uuid{u4{13868768975024301711,5325332059619978714}}
+			Uuid{u4{11109057645192709762,4966431435699652749}}
 		}
 	}
 }
@@ -939,13 +903,6 @@ o
 }
 o
 {
-	Uuid %id{u4{2678265685247863785,10289661150456131465}}
-	s %t{"xiiRenderPipelineNodeOutputPin"}
-	u3 %v{1}
-	p{}
-}
-o
-{
 	Uuid %id{u4{14875504142847411101,10765359602908898676}}
 	s %t{"xiiRenderPipelineNodeInputPin"}
 	u3 %v{1}
@@ -955,13 +912,6 @@ o
 {
 	Uuid %id{u4{6946315863658569953,11259191255110231988}}
 	s %t{"xiiRenderPipelineNodeOutputPin"}
-	u3 %v{1}
-	p{}
-}
-o
-{
-	Uuid %id{u4{3041673564607184100,11723688789586287756}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
 	u3 %v{1}
 	p{}
 }
@@ -1568,23 +1518,6 @@ o
 }
 o
 {
-	Uuid %id{u4{15685299353364955400,9727789569881945321}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiRenderPipelinePass"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiTonemapAdvancedPass"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
 	Uuid %id{u4{16995823927036104411,9987210547672971610}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -1658,23 +1591,6 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiRenderPipelineNodeInputPin"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{3770047958319106051,12250222731850347329}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiEnumBase"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiTonemapMode"}
 		u3 %TypeVersion{1}
 	}
 }

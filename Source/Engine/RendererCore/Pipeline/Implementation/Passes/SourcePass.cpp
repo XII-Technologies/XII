@@ -41,6 +41,7 @@ bool xiiSourcePass::GetRenderTargetDescriptions(
   xiiUInt32 uiHeight = static_cast<xiiUInt32>(view.GetViewport().height);
 
   xiiGALTextureCreationDescription desc;
+  desc.m_Type                = xiiGALTextureType::Texture2DArray;
   desc.m_uiWidth             = uiWidth;
   desc.m_uiHeight            = uiHeight;
   desc.m_SampleCount         = m_MsaaMode;

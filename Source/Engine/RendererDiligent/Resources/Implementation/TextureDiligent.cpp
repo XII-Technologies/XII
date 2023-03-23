@@ -47,7 +47,7 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
     case xiiGALTextureType::Texture2DArray:
     case xiiGALTextureType::TextureCubeArray:
     {
-      Diligent::TextureDesc Tex2DDesc;
+      Diligent::TextureDesc Tex2DDesc = {};
       Tex2DDesc.Name = m_Description.m_szName;
 
       switch (m_Description.m_Type)
@@ -83,8 +83,6 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
         Tex2DDesc.ArraySize = m_Description.m_uiArraySize * 6u;
       else
         Tex2DDesc.ArraySize = m_Description.m_uiArraySize;
-
-      Tex2DDesc.BindFlags = Diligent::BIND_NONE;
 
       if (m_Description.m_bAllowShaderResourceView || m_Description.m_bAllowDynamicMipGeneration)
         Tex2DDesc.BindFlags |= Diligent::BIND_SHADER_RESOURCE;
@@ -246,8 +244,12 @@ xiiResult xiiGALTextureDiligent::CreateStagingTexture(xiiGALDeviceDiligent* pDev
 {
   switch (m_Description.m_Type)
   {
+    case xiiGALTextureType::Texture1D:
     case xiiGALTextureType::Texture2D:
     case xiiGALTextureType::TextureCube:
+    case xiiGALTextureType::Texture1DArray:
+    case xiiGALTextureType::Texture2DArray:
+    case xiiGALTextureType::TextureCubeArray:
     {
       Diligent::TextureDesc Desc = m_pTexture->GetDesc();
       Desc.BindFlags             = Diligent::BIND_NONE;
