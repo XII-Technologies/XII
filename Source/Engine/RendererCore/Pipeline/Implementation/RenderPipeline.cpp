@@ -632,6 +632,8 @@ bool xiiRenderPipeline::InitRenderPipelinePasses()
   // Init every pass now.
   for (auto& pPass : m_Passes)
   {
+    xiiLog::Info("Init Pass {}", pPass.Borrow()->GetName());
+
     ConnectionData& data = m_Connections[pPass.Borrow()];
     pPass->InitRenderPipelinePass(data.m_Inputs, data.m_Outputs);
   }

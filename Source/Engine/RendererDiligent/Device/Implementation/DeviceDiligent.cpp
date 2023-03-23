@@ -605,8 +605,6 @@ void xiiGALDeviceDiligent::ReportLiveGpuObjects()
 void xiiGALDeviceDiligent::FlushDeadObjects()
 {
   DestroyDeadObjects();
-
-  m_pDefaultPass->MarkDirty();
 }
 
 // Pipeline & Pass functions
@@ -674,10 +672,6 @@ void xiiGALDeviceDiligent::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
   {
     pSwapChain->PresentRenderTarget(this);
   }
-
-  // Render context is reset on every end pipeline so it will re-submit all state change for the next render pass. Thus it is safe at this point to do a full reset.
-  // Technically don't have to reset here, MarkDirty would also be fine but we do need to do a Reset at the end of the frame as pointers held by the xiiGALCommandEncoderImplVulkan may not be valid in the next frame.
-  m_pDefaultPass->Reset();
 }
 
 xiiGALPass* xiiGALDeviceDiligent::BeginPassPlatform(const char* szName)

@@ -112,7 +112,6 @@ public:
 
   virtual void SetStreamOutBufferPlatform(xiiUInt32 uiSlot, const xiiGALBuffer* pBuffer, xiiUInt32 uiOffset) override;
 
-
   // xiiGALCommandEncoderComputePlatformInterface
   // Dispatch
 
@@ -121,9 +120,6 @@ public:
 
   virtual void DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) override;
   virtual void DispatchIndirectPlatform(const xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override;
-
-  void MarkDirty();
-  void Reset();
 
 protected:
   void FlushDeferredStateChangesCompute();
@@ -150,14 +146,12 @@ private:
   Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> m_pShaderResourceBindingCompute;
 
   // Pipeline State
-  xiiGALRenderingSetup m_RenderingSetup = {};
 
   // Cache flags
   bool m_bPipelineStateModified    = true;
   bool m_bViewportModified         = true;
   bool m_bIndexBufferModified      = false;
   bool m_bDescriptorsModified      = false;
-  bool m_bComputePipelineRequested = false;
 
   Diligent::Viewport m_Viewport;
   Diligent::Rect     m_ScissorRect;
@@ -184,6 +178,7 @@ private:
 
   xiiGALShaderDiligent* m_pCurrentShader = nullptr;
 
+  xiiGALRenderTargetSetup m_RenderTargetSetup;
   Diligent::ITextureView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
   xiiUInt32               m_uiBoundRenderTargetCount                            = 0;
   Diligent::ITextureView* m_pBoundDepthStencilTarget                            = nullptr;
