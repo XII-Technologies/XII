@@ -309,7 +309,7 @@ void xiiGALCommandEncoder::UpdateBuffer(
 
   if (pDest != nullptr)
   {
-    if (updateMode == xiiGALUpdateMode::NoOverwrite && !(GetDevice().GetCapabilities().m_bNoOverwriteBufferUpdate))
+    if ((updateMode & xiiGALUpdateMode::NoOverWrite) && !(GetDevice().GetCapabilities().m_bNoOverwriteBufferUpdate))
     {
       updateMode = xiiGALUpdateMode::CopyToTempStorage;
     }
