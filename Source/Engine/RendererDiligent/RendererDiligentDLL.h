@@ -19,6 +19,7 @@
 #include <Common/interface/RefCntAutoPtr.hpp>
 
 #include <Graphics/GraphicsAccessories/interface/GraphicsAccessories.hpp>
+#include <Graphics/GraphicsEngine/interface/GraphicsTypesX.hpp>
 #include <Graphics/GraphicsEngine/interface/DeviceContext.h>
 #include <Graphics/GraphicsEngine/interface/RenderDevice.h>
 #include <Graphics/GraphicsEngine/interface/SwapChain.h>
