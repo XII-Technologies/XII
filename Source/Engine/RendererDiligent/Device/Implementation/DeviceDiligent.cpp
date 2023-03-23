@@ -620,6 +620,7 @@ void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapC
     pSwapChain->AcquireNextRenderTarget(this);
   }
 
+#if 0
   // Begin supported queries
   {
     if (m_pPipelineStatsQuery)
@@ -634,6 +635,7 @@ void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapC
     if (m_pDurationQuery)
       m_pDurationQuery->Begin(GetImmediateContext());
   }
+#endif
 
 #if XII_ENABLED(XII_USE_PROFILING)
   m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), szName);
@@ -645,6 +647,7 @@ void xiiGALDeviceDiligent::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
   XII_PROFILE_SCOPE("EndPipelinePlatform");
 
   // End queries
+#if 0
   {
     if (m_pDurationFromTimestamps)
       m_pDurationFromTimestamps->End(GetImmediateContext(), m_DurationFromTimestamps);
@@ -661,6 +664,7 @@ void xiiGALDeviceDiligent::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
     if (m_pPipelineStatsQuery)
       m_pPipelineStatsQuery->End(GetImmediateContext(), &m_PipelineStatsData, sizeof(m_PipelineStatsData));
   }
+#endif
 
 #if XII_ENABLED(XII_USE_PROFILING)
   xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pPipelineTimingScope);

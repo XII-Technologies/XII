@@ -2,7 +2,7 @@
 
 #include <RendererDX11/Device/DeviceDX11.h>
 #include <RendererDX11/Shader/VertexDeclarationDX11.h>
-#include <RendererFoundation/Shader/Shader.h>
+#include <RendererDX11/Shader/ShaderDX11.h>
 
 #include <d3d11.h>
 
