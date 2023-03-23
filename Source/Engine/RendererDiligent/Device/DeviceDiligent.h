@@ -15,14 +15,17 @@ namespace Diligent
 struct xiiDiligentMemoryAllocator;
 class xiiGALPassDiligent;
 
-typedef xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, (Diligent::TEXTURE_FORMAT)0> xiiGALFormatLookupEntryDiligent;
+typedef xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, Diligent::TEX_FORMAT_UNKNOWN> xiiGALFormatLookupEntryDiligent;
 typedef xiiGALFormatLookupTable<xiiGALFormatLookupEntryDiligent>                       xiiGALFormatLookupTableDiligent;
 
 /// \brief The Diligent device implementation of the graphics abstraction layer.
 class XII_RENDERERDILIGENT_DLL xiiGALDeviceDiligent : public xiiGALDevice
 {
 private:
-  friend xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description);
+  friend xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceD3D11(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description);
+  friend xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceD3D12(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description);
+  friend xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description);
+
   xiiGALDeviceDiligent(const xiiGALDeviceCreationDescription& Description);
 
 public:
@@ -127,7 +130,7 @@ protected:
 
   void WaitForFencePlatform(Diligent::IDeviceContext* pContext, Diligent::IQuery* pFence);
 
-  Diligent::RENDER_DEVICE_TYPE                                       m_DeviceType = Diligent::RENDER_DEVICE_TYPE_D3D11;
+  Diligent::RENDER_DEVICE_TYPE                                       m_DeviceType = Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
   Diligent::RefCntAutoPtr<Diligent::IEngineFactory>                  m_pEngineFactory;
   Diligent::RefCntAutoPtr<Diligent::IRenderDevice>                   m_pDevice;
   xiiDynamicArray<Diligent::RefCntAutoPtr<Diligent::IDeviceContext>> m_pDeviceContexts;

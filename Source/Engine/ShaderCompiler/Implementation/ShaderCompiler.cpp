@@ -302,9 +302,14 @@ xiiResult xiiShaderCompilerProgram::Initialize(const char* szPlatformName)
 {
   if (m_VertexInputMapping.IsEmpty())
   {
+    m_VertexInputMapping["POSITION"]  = xiiGALVertexAttributeSemantic::Position;
     m_VertexInputMapping["POSITION0"] = xiiGALVertexAttributeSemantic::Position;
-    m_VertexInputMapping["TANGENT0"]  = xiiGALVertexAttributeSemantic::Tangent;
-    m_VertexInputMapping["NORMAL0"]   = xiiGALVertexAttributeSemantic::Normal;
+
+    m_VertexInputMapping["TANGENT"]  = xiiGALVertexAttributeSemantic::Tangent;
+    m_VertexInputMapping["TANGENT0"] = xiiGALVertexAttributeSemantic::Tangent;
+
+    m_VertexInputMapping["NORMAL"]  = xiiGALVertexAttributeSemantic::Normal;
+    m_VertexInputMapping["NORMAL0"] = xiiGALVertexAttributeSemantic::Normal;
 
     m_VertexInputMapping["COLOR0"] = xiiGALVertexAttributeSemantic::Color0;
     m_VertexInputMapping["COLOR1"] = xiiGALVertexAttributeSemantic::Color1;
@@ -326,9 +331,12 @@ xiiResult xiiShaderCompilerProgram::Initialize(const char* szPlatformName)
     m_VertexInputMapping["TEXCOORD8"] = xiiGALVertexAttributeSemantic::TexCoord8;
     m_VertexInputMapping["TEXCOORD9"] = xiiGALVertexAttributeSemantic::TexCoord9;
 
-    m_VertexInputMapping["BITANGENT0"]   = xiiGALVertexAttributeSemantic::BiTangent;
+    m_VertexInputMapping["BITANGENT"]  = xiiGALVertexAttributeSemantic::BiTangent;
+    m_VertexInputMapping["BITANGENT0"] = xiiGALVertexAttributeSemantic::BiTangent;
+
     m_VertexInputMapping["BONEINDICES0"] = xiiGALVertexAttributeSemantic::BoneIndices0;
     m_VertexInputMapping["BONEINDICES1"] = xiiGALVertexAttributeSemantic::BoneIndices1;
+
     m_VertexInputMapping["BONEWEIGHTS0"] = xiiGALVertexAttributeSemantic::BoneWeights0;
     m_VertexInputMapping["BONEWEIGHTS1"] = xiiGALVertexAttributeSemantic::BoneWeights1;
   }
