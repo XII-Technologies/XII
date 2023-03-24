@@ -16,13 +16,27 @@
 #  define XII_RENDERERFOUNDATION_DLL
 #endif
 
-// Necessary array sizes
-#define XII_GAL_MAX_CONSTANT_BUFFER_COUNT 16
-#define XII_GAL_MAX_SAMPLER_COUNT         16
-#define XII_GAL_MAX_VERTEX_BUFFER_COUNT   16
-#define XII_GAL_MAX_RENDERTARGET_COUNT    8
+////////// Definitions //////////
 
-// Forward declarations
+/// The maximum number of bound constant buffers.
+#define XII_GAL_MAX_CONSTANT_BUFFER_COUNT 16
+
+/// The maximum number of bound samplers.
+#define XII_GAL_MAX_SAMPLER_COUNT 16
+
+/// The maximum number of bound vertex buffers.
+#define XII_GAL_MAX_VERTEX_BUFFER_COUNT 16
+
+/// The maximum number of bound render targets.
+#define XII_GAL_MAX_RENDERTARGET_COUNT 8
+
+/// The maximum number of shading rate modes.
+#define XII_GAL_MAX_SHADING_RATE 9
+
+/// The bit shift for the shading X-Axis rate.
+#define XII_GAL_SHADING_RATE_X_SHIFT 2
+
+////////// Forward declarations //////////
 
 struct xiiGALDeviceCreationDescription;
 struct xiiGALSwapChainCreationDescription;
@@ -61,32 +75,66 @@ class xiiGALCommandEncoder;
 class xiiGALRenderCommandEncoder;
 class xiiGALComputeCommandEncoder;
 
-// Basic enums
-struct xiiGALPrimitiveTopology
+////////// Enumerations //////////
+
+/// \brief Defines the graphics device.
+struct XII_RENDERERFOUNDATION_DLL xiiGraphicsDeviceType
 {
-  typedef xiiUInt8 StorageType;
-  enum Enum
+  using StorageType = xiiUInt8;
+
+  enum Enum : xiiUInt8
   {
-    // keep this order, it is used to allocate the desired number of indices in xiiMeshBufferResourceDescriptor::AllocateStreams
-    Points,    // 1 index per primitive
-    Lines,     // 2 indices per primitive
-    Triangles, // 3 indices per primitive
+    Undefined = 0, ///< Undefined graphics device type.
+
+    D3D11,  ///< DirectX 11 graphics device.
+    D3D12,  ///< DirectX 12 graphics device.
+    Vulkan, ///< Vulkan graphics device.
+  };
+
+  /// \brief Holds the default graphics device to use.
+  static Enum Default /*= xiiGraphicsDeviceType::Undefined*/;
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGraphicsDeviceType);
+
+/// \brief Defines the primitive type.
+struct XII_RENDERERFOUNDATION_DLL xiiGALPrimitiveTopology
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : xiiUInt8
+  {
+    /// Note: Preserve this order, it is used to allocate the desired number of indices in xiiMeshBufferResourceDescriptor::AllocateStreams
+
+    Undefined, ///< Undefined topology. No primitive indices.
+    Points,    ///< Interpret the vertex data as a list of points. 1 index per primitive.
+    Lines,     ///< Interpret the vertex data as a list of lines. 2 indices per primitive.
+    Triangles, ///< Interpret the vertex data as a list of triangles. 3 indices per primitive.
+
     ENUM_COUNT,
+
     Default = Triangles
   };
 
   static xiiUInt32 VerticesPerPrimitive(xiiGALPrimitiveTopology::Enum e) { return (xiiUInt32)e + 1; }
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALPrimitiveTopology);
+
+/// \brief Defines the primitive index type.
 struct XII_RENDERERFOUNDATION_DLL xiiGALIndexType
 {
-  enum Enum
-  {
-    None,   // indices are not used, vertices are just used in order to form primitives
-    UShort, // 16 bit indices are used to select which vertices shall form a primitive, thus meshes can only use up to 65535 vertices
-    UInt,   // 32 bit indices are used to select which vertices shall form a primitive
+  using StorageType = xiiUInt8;
 
-    ENUM_COUNT
+  enum Enum : xiiUInt8
+  {
+    None,   ///< The indices are not used, vertices are only used in order to form primitives.
+    UShort, ///< 16 bit indices are used to select which vertices shall form a primitive, thus meshes can only use up to 65535 vertices.
+    UInt,   ///< 32 bit indices are used to select which vertices shall form a primitive.
+
+    ENUM_COUNT,
+
+    Default = None
   };
 
   /// \brief The size in bytes of a single element of the given index format.
@@ -96,51 +144,81 @@ private:
   static const xiiUInt8 s_Size[xiiGALIndexType::ENUM_COUNT];
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALIndexType);
+
 /// \brief Defines the writable components of a render target.
 struct XII_RENDERERFOUNDATION_DLL xiiGALColorWriteMask
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : xiiUInt8
   {
-    None  = 0u,       ///< Do not write to any components.
-    Red   = 1u << 0u, ///< Write to the red component.
-    Green = 1u << 1u, ///< Write to the green component.
-    Blue  = 1u << 2u, ///< Write to the blue component.
-    Alpha = 1u << 3u, ///< Write to the alpha component.
+    None = 0x0, ///< Do not write to any components.
 
-    Default = (((Red | Green) | Blue) | Alpha)
+    Red   = XII_BIT(0), ///< Write to the red component.
+    Green = XII_BIT(1), ///< Write to the green component.
+    Blue  = XII_BIT(2), ///< Write to the blue component.
+    Alpha = XII_BIT(3), ///< Write to the alpha component.
+
+    RG   = Red | Green,                ///< Write to the red and green components.
+    RGB  = Red | Green | Blue,         ///< Write to the red, green and blue components.
+    RGBA = Red | Green | Blue | Alpha, ///< Write to the red, green, blue, and alpha components.
+
+    Default = (((Red | Green) | Blue) | Alpha) ///< Write to all components.
   };
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALColorWriteMask);
+
+/// \brief Defines the pipeline shader stage.
 struct XII_RENDERERFOUNDATION_DLL xiiGALShaderStage
 {
-  enum Enum : xiiUInt8
+  using StorageType = xiiUInt32;
+
+  enum Enum : xiiUInt32
   {
-    VertexShader,
-    HullShader,
-    DomainShader,
-    GeometryShader,
-    PixelShader,
+    None = 0x0, ///< Undefined shader stage.
 
-    ComputeShader,
+    VertexShader    = XII_BIT(0),  ///< Vertex shader stage.
+    PixelShader     = XII_BIT(1),  ///< Pixel (fragment) shader stage.
+    GeometryShader  = XII_BIT(2),  ///< Geometry shader stage.
+    HullShader      = XII_BIT(3),  ///< Hull (tessellation control) shader stage.
+    DomainShader    = XII_BIT(4),  ///< Domain (tessellation evaluation) shader stage.
+    ComputeShader   = XII_BIT(5),  ///< Compute shader stage.
+    Amplification   = XII_BIT(6),  ///< Amplification shader stage.
+    Mesh            = XII_BIT(7),  ///< Mesh shader stage.
+    RayGen          = XII_BIT(8),  ///< Ray generation shader stage.
+    RayMiss         = XII_BIT(9),  ///< Ray miss shader stage.
+    RayAnyHit       = XII_BIT(10), ///< Ray any hit shader stage.
+    RayClosestHit   = XII_BIT(11), ///< Ray closest hit shader stage.
+    RayIntersection = XII_BIT(12), ///< Ray intersection shader stage.
+    Callable        = XII_BIT(13), ///< Callable shader stage.
 
-    ENUM_COUNT
+    ENUM_COUNT,
+
+    AllGraphics   = VertexShader | PixelShader | GeometryShader | HullShader | DomainShader,   ///< All graphics pipeline shader stages.
+    AllMesh       = Amplification | Mesh | PixelShader,                                        ///< All mesh shading pipeline shader stages.
+    AllRayTracing = RayGen | RayMiss | RayClosestHit | RayAnyHit | RayIntersection | Callable, ///< All ray-tracing pipeline shader stages.
+
+    Default = None
   };
 
   static const char* Names[ENUM_COUNT];
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALShaderStage);
+
+/// \brief Defines the multisample anti-aliasing count.
 struct XII_RENDERERFOUNDATION_DLL xiiGALMSAASampleCount
 {
   typedef xiiUInt8 StorageType;
 
-  enum Enum
+  enum Enum : xiiUInt8
   {
-    None         = 1,
-    TwoSamples   = 2,
-    FourSamples  = 4,
-    EightSamples = 8,
+    None         = 1, ///< No multisampling.
+    TwoSamples   = 2, ///< Two samples per pixel.
+    FourSamples  = 4, ///< Four samples per pixel.
+    EightSamples = 8, ///< Eight samples per pixel.
 
     ENUM_COUNT = 4,
 
@@ -150,6 +228,7 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALMSAASampleCount
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALMSAASampleCount);
 
+/// \brief Defines the texture type.
 struct xiiGALTextureType
 {
   typedef xiiUInt8 StorageType;

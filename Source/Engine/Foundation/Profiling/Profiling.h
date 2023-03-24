@@ -111,18 +111,18 @@ public:
     xiiDynamicArray<xiiDynamicArray<GPUScope>> m_GPUScopes;
 
     /// \brief Writes profiling data as JSON to the output stream.
-    xiiResult Write(xiiStreamWriter& outputStream) const;
+    xiiResult Write(xiiStreamWriter& ref_outputStream) const;
 
     void Clear();
 
     /// \brief Concatenates all given ProfilingData instances into one merge struct
-    static void Merge(ProfilingData& out_Merged, xiiArrayPtr<const ProfilingData*> inputs);
+    static void Merge(ProfilingData& out_merged, xiiArrayPtr<const ProfilingData*> inputs);
   };
 
 public:
   static void Clear();
 
-  static void Capture(xiiProfilingSystem::ProfilingData& out_Capture, bool bClearAfterCapture = false);
+  static void Capture(xiiProfilingSystem::ProfilingData& out_capture, bool bClearAfterCapture = false);
 
   /// \brief Scopes are discarded if their duration is shorter than the specified threshold. Default is 0.1ms.
   static void SetDiscardThreshold(xiiTime threshold);
@@ -136,14 +136,13 @@ public:
   static void StartNewFrame();
 
   /// \brief Adds a new scoped event for the calling thread in the profiling system
-  static void AddCPUScope(xiiStringView sName, xiiStringView sFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout);
+  static void AddCPUScope(xiiStringView sName, const char* szFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout);
 
   /// \brief Get current frame counter
   static xiiUInt64 GetFrameCount();
 
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Foundation, ProfilingSystem);
-
   friend xiiUInt32 RunThread(xiiThread* pThread);
 
   static void Initialize();
@@ -158,10 +157,10 @@ private:
 
 public:
   /// \brief Initialized internal data structures for GPU profiling data. Needs to be called before adding any data.
-  static void InitializeGPUData(xiiUInt32 gpuCount = 1);
+  static void InitializeGPUData(xiiUInt32 uiGpuCount = 1);
 
   /// \brief Adds a GPU profiling scope in the internal event ringbuffer.
-  static void AddGPUScope(xiiStringView sName, xiiTime beginTime, xiiTime endTime, xiiUInt32 gpuIndex = 0);
+  static void AddGPUScope(xiiStringView sName, xiiTime beginTime, xiiTime endTime, xiiUInt32 uiGpuIndex = 0);
 };
 
 #if XII_ENABLED(XII_USE_PROFILING) || defined(XII_DOCS)
