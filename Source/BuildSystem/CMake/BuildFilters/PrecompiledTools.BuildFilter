@@ -1,5 +1,4 @@
 set_property(GLOBAL PROPERTY XII_BUILD_FILTER_PrecompiledTools
-	
 	ArchiveTool
 	enet
 	Texture
@@ -11,15 +10,16 @@ set_property(GLOBAL PROPERTY XII_BUILD_FILTER_PrecompiledTools
 	RendererCore
 	RendererDX11
 	RendererFoundation
-	ShaderCompilerHLSL
+	ShaderCompiler
 	ToolsFoundation
 	Fileserve
 	FileservePlugin
 	GdbProxy
+	HeaderTool
 	Inspector
 	MiniDumpTool
 	ozz
-	ShaderCompiler
+	ShaderCompilerTool
 	stb_image
 	TexConv
 	zstd

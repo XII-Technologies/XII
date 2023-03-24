@@ -136,7 +136,7 @@ public:
   static void StartNewFrame();
 
   /// \brief Adds a new scoped event for the calling thread in the profiling system
-  static void AddCPUScope(xiiStringView sName, const char* szFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout);
+  static void AddCPUScope(xiiStringView sName, xiiStringView sFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout);
 
   /// \brief Get current frame counter
   static xiiUInt64 GetFrameCount();
