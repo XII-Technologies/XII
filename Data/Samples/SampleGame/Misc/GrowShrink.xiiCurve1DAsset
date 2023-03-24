@@ -28,10 +28,10 @@ o
 	p
 	{
 		Vec2 %LeftTangent{f{0xD2BA54BE,0x78ED353C}}
-		s %LeftTangentMode{"xiiCurveTangentMode::Bxiiier"}
+		s %LeftTangentMode{"xiiCurveTangentMode::Bezier"}
 		b %Linked{1}
 		Vec2 %RightTangent{f{0xD2BA543E,0x78ED35BC}}
-		s %RightTangentMode{"xiiCurveTangentMode::Bxiiier"}
+		s %RightTangentMode{"xiiCurveTangentMode::Bezier"}
 		i4 %Tick{1680}
 		d %Value{0x47BC3F9B84ACEF3F}
 	}

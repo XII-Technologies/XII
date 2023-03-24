@@ -1,188 +1,321 @@
 #include <ShaderCompiler/ShaderCompilerPCH.h>
 
-#if D3D12_SUPPORTED
-
-#  include <DiligentCore/Graphics/ShaderTools/include/DXBCUtils.hpp>
-#  include <DiligentCore/Graphics/ShaderTools/include/DXCompiler.hpp>
-#  include <DiligentCore/Graphics/ShaderTools/include/HLSLUtils.hpp>
-#  include <DiligentCore/Graphics/ShaderTools/include/ShaderToolsCommon.hpp>
+#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D12.h>
 #  include <ShaderCompiler/ShaderCompiler.h>
 #  include <ShaderCompiler/ShaderMetadata.h>
 
-#  include <atlcomcli.h>
+#  undef NULL
+#  define NULL 0
+
+// clang-format off
+#  include <atlbase.h>
 #  include <d3d12shader.h>
-#  include <dxc/dxcapi.h>
+#  include <ShaderCompiler/ThirdParty/dxcapi.h>
+// clang-format on
 
-std::unique_ptr<Diligent::IDXCompiler> g_pDXCompiler = nullptr;
+xiiComPtr<IDxcUtils>     s_pDxcUtilsD3D12;
+xiiComPtr<IDxcCompiler3> s_pDxcCompilerD3D12;
 
-////////// Utility Functions //////////
+xiiGALResourceFormat::Enum GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents);
 
-Diligent::SHADER_TYPE GALToDiligentShaderStage(xiiGALShaderStage::Enum e)
+xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* szSource, bool bDebug, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
 {
-  switch (e)
-  {
-    case xiiGALShaderStage::VertexShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_VERTEX;
-    case xiiGALShaderStage::HullShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_HULL;
-    case xiiGALShaderStage::DomainShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_DOMAIN;
-    case xiiGALShaderStage::GeometryShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_GEOMETRY;
-    case xiiGALShaderStage::PixelShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_PIXEL;
-    case xiiGALShaderStage::ComputeShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_COMPUTE;
+  auto InitializeCompiler = [this](xiiComPtr<IDxcUtils>& pDxcUtils, xiiComPtr<IDxcCompiler3>& pDxcCompiler) -> xiiResult {
+    if (pDxcUtils != nullptr)
+      return XII_SUCCESS;
 
-      XII_ASSERT_NOT_IMPLEMENTED;
-  }
-  return Diligent::SHADER_TYPE::SHADER_TYPE_UNKNOWN;
-}
+    DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(pDxcUtils.RawDblPtr()));
+    DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(pDxcCompiler.RawDblPtr()));
 
-xiiGALResourceFormat::Enum GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents)
-{
-  switch (format)
-  {
-    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UINT32:
-    {
-      switch (numComponents)
-      {
-        case 0b1111:
-          return xiiGALResourceFormat::RGBAUInt;
-        case 0b111:
-          return xiiGALResourceFormat::RGBUInt;
-        case 0b11:
-          return xiiGALResourceFormat::RGUInt;
-        case 0b1:
-          return xiiGALResourceFormat::RUInt;
-      }
-    }
-    break;
-    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_SINT32:
-    {
-      switch (numComponents)
-      {
-        case 0b1111:
-          return xiiGALResourceFormat::RGBAInt;
-        case 0b111:
-          return xiiGALResourceFormat::RGBInt;
-        case 0b11:
-          return xiiGALResourceFormat::RGInt;
-        case 0b1:
-          return xiiGALResourceFormat::RInt;
-      }
-    }
-    break;
-    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_FLOAT32:
-    {
-      switch (numComponents)
-      {
-        case 0b1111:
-          return xiiGALResourceFormat::RGBAFloat;
-        case 0b111:
-          return xiiGALResourceFormat::RGBFloat;
-        case 0b11:
-          return xiiGALResourceFormat::RGFloat;
-        case 0b1:
-          return xiiGALResourceFormat::RFloat;
-      }
-    }
-    break;
-
-    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UNKNOWN:
-    default:
-      return xiiGALResourceFormat::Invalid;
-  }
-
-  return xiiGALResourceFormat::Invalid;
-}
-
-xiiResult xiiShaderCompilerD3D12::FillSRVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const D3D12_SHADER_INPUT_BIND_DESC& info)
-{
-  if (info.Dimension == D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_BUFFEREX || info.Dimension == D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_BUFFER)
-  {
-    binding.m_Type = xiiShaderResourceType::GenericBuffer;
+    XII_ASSERT_DEV(pDxcUtils != nullptr, "Failed to load DXC Utils.");
+    XII_ASSERT_DEV(pDxcCompiler != nullptr, "Failed to load DXC Compiler.");
     return XII_SUCCESS;
+  };
+
+  XII_SUCCEED_OR_RETURN(InitializeCompiler(s_pDxcUtilsD3D12, s_pDxcCompilerD3D12));
+
+  out_ByteCode.Clear();
+
+  const char*      szCompileSource = szSource;
+  xiiStringBuilder sDebugSource;
+
+  xiiDynamicArray<xiiStringWChar> args;
+  args.PushBack(xiiStringWChar(szFile));
+  args.PushBack(L"-E");
+  args.PushBack(xiiStringWChar(szEntryPoint));
+  args.PushBack(L"-T");
+  args.PushBack(xiiStringWChar(szProfile));
+  args.PushBack(L"-Zpc"); // Matrices in column-major order
+
+  if (bDebug)
+  {
+    // In debug mode we need to remove '#line' as any shader debugger won't work with them.
+    sDebugSource = szSource;
+    sDebugSource.ReplaceAll("#line ", "//line ");
+    szCompileSource = sDebugSource;
+
+    args.PushBack(L"-Zi"); // Enable debug information.
+    args.PushBack(L"-Od"); // Disable optimization
+  }
+  else
+  {
+    args.PushBack(L"-O3"); // Optimization Level 3
   }
 
-  if (info.Type == D3D_SIT_TEXTURE)
+  xiiHybridArray<LPCWSTR, 16> pszArgs;
+  pszArgs.SetCount(args.GetCount());
+  for (xiiUInt32 i = 0; i < args.GetCount(); ++i)
   {
-    switch (info.Dimension)
-    {
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1D:
-        binding.m_Type = xiiShaderResourceType::Texture1D;
-        break;
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1DARRAY:
-        binding.m_Type = xiiShaderResourceType::Texture1DArray;
-        break;
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2D:
-        binding.m_Type = xiiShaderResourceType::Texture2D;
-        break;
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DARRAY:
-        binding.m_Type = xiiShaderResourceType::Texture2DArray;
-        break;
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DMS:
-        binding.m_Type = xiiShaderResourceType::Texture2DMS;
-        break;
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
-        binding.m_Type = xiiShaderResourceType::Texture2DMSArray;
-        break;
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE3D:
-        binding.m_Type = xiiShaderResourceType::Texture3D;
-        break;
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURECUBE:
-        binding.m_Type = xiiShaderResourceType::TextureCube;
-        break;
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURECUBEARRAY:
-        binding.m_Type = xiiShaderResourceType::TextureCubeArray;
-        break;
+    pszArgs[i] = args[i].GetData();
+  }
 
-      default:
-        XII_ASSERT_NOT_IMPLEMENTED;
+  xiiComPtr<IDxcBlobEncoding> pSource;
+  s_pDxcUtilsD3D12->CreateBlob(szCompileSource, (xiiUInt32)strlen(szCompileSource), DXC_CP_UTF8, pSource.RawDblPtr());
+
+  DxcBuffer Source;
+  Source.Ptr      = pSource->GetBufferPointer();
+  Source.Size     = pSource->GetBufferSize();
+  Source.Encoding = DXC_CP_UTF8;
+
+  xiiComPtr<IDxcResult> pCompileResult;
+  s_pDxcCompilerD3D12->Compile(&Source, pszArgs.GetData(), pszArgs.GetCount(), nullptr, IID_PPV_ARGS(pCompileResult.RawDblPtr()));
+
+  xiiComPtr<IDxcBlobUtf8> pCompileError;
+  pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pCompileError.RawDblPtr()), nullptr);
+
+  HRESULT hrStatus;
+  pCompileResult->GetStatus(&hrStatus);
+  if (FAILED(hrStatus))
+  {
+    xiiLog::Error("Shader compilation failed.");
+
+    if (pCompileError != nullptr && pCompileError->GetStringLength() != 0)
+    {
+      xiiLog::Error("{}", xiiStringUtf8(pCompileError->GetStringPointer()).GetData());
+    }
+    return XII_FAILURE;
+  }
+  else
+  {
+    if (pCompileError != nullptr && pCompileError->GetStringLength() != 0)
+    {
+      xiiLog::Warning("{}", xiiStringUtf8(pCompileError->GetStringPointer()).GetData());
+    }
+  }
+
+  xiiComPtr<IDxcBlob>     pShader;
+  xiiComPtr<IDxcBlobWide> pShaderName;
+  pCompileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(pShader.RawDblPtr()), pShaderName.RawDblPtr());
+
+  if (pShader == nullptr)
+  {
+    xiiLog::Error("No shader bytecode was generated.");
+    return XII_FAILURE;
+  }
+
+  out_ByteCode.SetCountUninitialized(static_cast<xiiUInt32>(pShader->GetBufferSize()));
+
+  xiiMemoryUtils::Copy(out_ByteCode.GetData(), reinterpret_cast<xiiUInt8*>(pShader->GetBufferPointer()), out_ByteCode.GetCount());
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage, xiiMap<const char*, xiiGALVertexAttributeSemantic::Enum, CompareConstChar>& vertexInputMapping)
+{
+  XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_szSourceFile);
+
+  auto& byteCode = inout_Data.m_StageBinary[Stage].GetByteCode();
+
+  DxcBuffer ReflectionData;
+  ReflectionData.Encoding = DXC_CP_ACP;
+  ReflectionData.Ptr      = reinterpret_cast<const void*>(byteCode.GetData());
+  ReflectionData.Size     = byteCode.GetCount();
+
+  xiiComPtr<ID3D12ShaderReflection> pReflector;
+  if (FAILED(s_pDxcUtilsD3D12->CreateReflection(&ReflectionData, IID_PPV_ARGS(pReflector.RawDblPtr()))))
+  {
+    xiiLog::Error("Failed to create shader reflector.");
+    return XII_FAILURE;
+  }
+
+  D3D12_SHADER_DESC ShaderDesc;
+  if (FAILED(pReflector->GetDesc(&ShaderDesc)))
+  {
+    xiiLog::Error("Failed to extract shader information.");
+    return XII_FAILURE;
+  }
+
+  // Vertex Attributes
+  xiiHybridArray<xiiShaderVertexInputAttribute, 8> vertexInputAttributes;
+  if (Stage == xiiGALShaderStage::VertexShader)
+  {
+    xiiUInt32 uiNumVars = ShaderDesc.InputParameters;
+
+    xiiDynamicArray<D3D12_PARAMETER_DESC*> inputParameters;
+    inputParameters.SetCount(uiNumVars);
+
+    vertexInputAttributes.Reserve(inputParameters.GetCount());
+
+    for (xiiUInt32 i = 0; i < inputParameters.GetCount(); ++i)
+    {
+      D3D12_SIGNATURE_PARAMETER_DESC parameterDesc;
+      if FAILED (pReflector->GetInputParameterDesc(i, &parameterDesc))
+      {
+        xiiLog::Error("Failed to retrieve shader parameter descriptor");
         return XII_FAILURE;
-    }
-
-    return XII_SUCCESS;
-  }
-
-  return XII_FAILURE;
-}
-
-xiiResult xiiShaderCompilerD3D12::FillUAVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const D3D12_SHADER_INPUT_BIND_DESC& info)
-{
-  switch (info.Type)
-  {
-    case D3D_SIT_UAV_RWTYPED:
-    {
-      switch (info.Dimension)
-      {
-        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1D:
-        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1DARRAY:
-        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2D:
-        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DARRAY:
-        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_BUFFER:
-        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_BUFFEREX:
-          binding.m_Type = xiiShaderResourceType::UAV;
-          break;
-
-          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
       }
 
-      return XII_SUCCESS;
-    }
+      xiiShaderVertexInputAttribute& attribute = vertexInputAttributes.ExpandAndGetRef();
+      attribute.m_uiSemanticIndex              = parameterDesc.SemanticIndex;
 
-    case D3D_SIT_UAV_RWSTRUCTURED:
-    case D3D_SIT_UAV_RWBYTEADDRESS:
-    case D3D_SIT_UAV_APPEND_STRUCTURED:
-    case D3D_SIT_UAV_CONSUME_STRUCTURED:
-    case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
-      binding.m_Type = xiiShaderResourceType::UAV;
-      return XII_SUCCESS;
+      xiiStringBuilder sSemanticName = parameterDesc.SemanticName;
+      sSemanticName.AppendFormat("{}", parameterDesc.SemanticIndex);
+
+      if (!sSemanticName.StartsWith_NoCase("SV_"))
+      {
+        xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(sSemanticName);
+        XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {0} in file {1}", sSemanticName, inout_Data.m_szSourceFile);
+
+        if (pVAS != nullptr)
+          attribute.m_eSemantic = *pVAS;
+        else
+          xiiLog::Dev("Unknown vertex input semantic found: {}", parameterDesc.SemanticName);
+      }
+
+      attribute.m_eFormat = GetXIIFormatD3D12(parameterDesc.ComponentType, parameterDesc.Mask);
+      XII_ASSERT_DEV(attribute.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", parameterDesc.ComponentType);
+    }
   }
 
-  return XII_FAILURE;
+  // Descriptor Bindings
+  {
+    xiiUInt32 uiNumBoundResources = ShaderDesc.BoundResources;
+
+    xiiMap<xiiUInt32, xiiUInt32> descriptorToXIIBinding;
+    xiiUInt32                    uiVirtualResourceView = 0;
+    xiiUInt32                    uiVirtualSampler      = 0;
+
+    for (xiiUInt32 i = 0; i < uiNumBoundResources; ++i)
+    {
+      D3D12_SHADER_INPUT_BIND_DESC inputDesc;
+      if (FAILED(pReflector->GetResourceBindingDesc(i, &inputDesc)))
+      {
+        xiiLog::Error("Failed to retrieve shader input descriptor");
+        return XII_FAILURE;
+      }
+
+      xiiLog::Info("Bound Resource: '{}' at slot {} (Count: {})", inputDesc.Name, inputDesc.BindPoint, inputDesc.BindCount);
+
+      xiiShaderResourceBinding shaderResourceBinding;
+      shaderResourceBinding.m_Type  = xiiShaderResourceType::Unknown;
+      shaderResourceBinding.m_iSlot = inputDesc.BindPoint;
+      shaderResourceBinding.m_sName.Assign(inputDesc.Name);
+
+      if (FillResourceBinding(inout_Data.m_StageBinary[Stage], shaderResourceBinding, pReflector, inputDesc).Failed())
+        continue;
+
+      // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the DX11-based high level render interface.
+
+      // clang-format off
+      if (inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED
+        || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TBUFFER
+        || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TEXTURE
+        || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_BYTEADDRESS
+        || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_RTACCELERATIONSTRUCTURE)
+      // clang-format on
+      {
+        shaderResourceBinding.m_iSlot = uiVirtualResourceView;
+        uiVirtualResourceView++;
+      }
+
+      // clang-format off
+      if (inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_SAMPLER)
+      // clang-format on
+      {
+        shaderResourceBinding.m_iSlot = uiVirtualSampler;
+        uiVirtualSampler++;
+      }
+
+      XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiShaderResourceType::Unknown, "FillResourceBinding should have failed.");
+
+      descriptorToXIIBinding[i] = inout_Data.m_StageBinary[Stage].GetShaderResourceBindings().GetCount();
+      inout_Data.m_StageBinary[Stage].AddShaderResourceBinding(shaderResourceBinding);
+    }
+
+    // Write Bindings
+    {
+      xiiArrayPtr<const xiiShaderResourceBinding> xiiBindings = inout_Data.m_StageBinary[Stage].GetShaderResourceBindings();
+
+      // Modify meta data
+      xiiDefaultMemoryStreamStorage storage;
+      xiiMemoryStreamWriter         stream(&storage);
+
+      const xiiUInt32 uiCount = xiiBindings.GetCount();
+
+      xiiHybridArray<xiiShaderDescriptorSetLayout, 3> sets;
+      xiiShaderDescriptorSetLayout&                   set = sets.ExpandAndGetRef();
+
+      for (xiiUInt32 i = 0; i < uiCount; ++i)
+      {
+        auto& info = xiiBindings[i];
+
+        xiiShaderDescriptorSetLayoutBinding& binding = set.Bindings.ExpandAndGetRef();
+        binding.m_sName                              = info.m_sName;
+        binding.m_uiVirtualBinding                   = xiiBindings[descriptorToXIIBinding[i]].m_iSlot;
+        binding.m_xiiType                            = xiiBindings[descriptorToXIIBinding[i]].m_Type;
+
+        switch (info.m_Type)
+        {
+          case xiiShaderResourceType::ConstantBuffer:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ConstantBuffer;
+            break;
+
+          case xiiShaderResourceType::Sampler:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::Sampler;
+            break;
+
+          case xiiShaderResourceType::GenericBuffer:
+          case xiiShaderResourceType::Texture1D:
+          case xiiShaderResourceType::Texture2D:
+          case xiiShaderResourceType::Texture2DArray:
+          case xiiShaderResourceType::Texture2DMS:
+          case xiiShaderResourceType::Texture2DMSArray:
+          case xiiShaderResourceType::Texture3D:
+          case xiiShaderResourceType::TextureCube:
+          case xiiShaderResourceType::TextureCubeArray:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceView;
+            break;
+
+          case xiiShaderResourceType::UAV:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::UnorderedAccessView;
+            break;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+
+      set.Bindings.Sort([](const xiiShaderDescriptorSetLayoutBinding& lhs, const xiiShaderDescriptorSetLayoutBinding& rhs) { return lhs.m_uiBinding < rhs.m_uiBinding; });
+
+      xiiShaderMetaData::Write(stream, byteCode, sets, vertexInputAttributes);
+
+      // Replaced compiled shader code with custom xiiSpirvMetaData format.
+      xiiUInt64 uiBytesLeft    = storage.GetStorageSize64();
+      xiiUInt64 uiReadPosition = 0;
+      byteCode.Clear();
+      byteCode.Reserve((xiiUInt32)uiBytesLeft);
+      while (uiBytesLeft > 0)
+      {
+        xiiArrayPtr<const xiiUInt8> data = storage.GetContiguousMemoryRange(uiReadPosition);
+        byteCode.PushBackRange(data);
+        uiReadPosition += data.GetCount();
+        uiBytesLeft -= data.GetCount();
+      }
+    }
+  }
+
+  return XII_SUCCESS;
 }
 
 xiiShaderConstantBufferLayout* xiiShaderCompilerD3D12::ReflectConstantBufferLayout(xiiShaderStageBinary& pStageBinary, const char* szName, ID3D12ShaderReflectionConstantBuffer* pConstantBufferReflection)
@@ -221,8 +354,6 @@ xiiShaderConstantBufferLayout* xiiShaderCompilerD3D12::ReflectConstantBufferLayo
       xiiLog::Info("Failed to retrieve shader variable type descriptor");
       return nullptr;
     }
-
-    XII_LOG_BLOCK("Constant", Desc.Name);
 
     xiiShaderConstantBufferLayout::Constant constant;
     constant.m_sName.Assign(Desc.Name);
@@ -351,13 +482,11 @@ xiiResult xiiShaderCompilerD3D12::FillResourceBinding(xiiShaderStageBinary& shad
     || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_UAV_FEEDBACKTEXTURE)
   // clang-format on
   {
-    // Fill Unordered Access Views
     return FillUAVResourceBinding(shaderBinary, binding, info);
   }
 
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_CBUFFER)
   {
-    // Fill Constant Buffer
     binding.m_Type    = xiiShaderResourceType::ConstantBuffer;
     binding.m_pLayout = ReflectConstantBufferLayout(shaderBinary, info.Name, pReflector->GetConstantBufferByName(info.Name));
 
@@ -366,7 +495,6 @@ xiiResult xiiShaderCompilerD3D12::FillResourceBinding(xiiShaderStageBinary& shad
 
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_SAMPLER)
   {
-    // Fill Sampler
     binding.m_Type = xiiShaderResourceType::Sampler;
 
     return XII_SUCCESS;
@@ -377,327 +505,147 @@ xiiResult xiiShaderCompilerD3D12::FillResourceBinding(xiiShaderStageBinary& shad
   return XII_FAILURE;
 }
 
-xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage, xiiComPtr<IDxcBlob>& pShaderBlob, xiiMap<const char*, xiiGALVertexAttributeSemantic::Enum, CompareConstChar>& vertexInputMapping)
+xiiResult xiiShaderCompilerD3D12::FillSRVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const D3D12_SHADER_INPUT_BIND_DESC& info)
 {
-  XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_szSourceFile);
-
-  auto& byteCode = inout_Data.m_StageBinary[Stage].GetByteCode();
-
-  xiiComPtr<ID3D12ShaderReflection> pReflector;
-  g_pDXCompiler->GetD3D12ShaderReflection(pShaderBlob.RawPtr(), pReflector.RawDblPtr());
-
-  D3D12_SHADER_DESC ShaderDesc;
-  if (FAILED(pReflector->GetDesc(&ShaderDesc)))
+  if (info.Dimension == D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_BUFFEREX || info.Dimension == D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_BUFFER)
   {
-    xiiLog::Error("Failed to extract shader information.");
-    return XII_FAILURE;
-  }
-
-  // Vertex Attributes
-  xiiHybridArray<xiiShaderVertexInputAttribute, 8> vertexInputAttributes;
-  if (Stage == xiiGALShaderStage::VertexShader)
-  {
-    xiiUInt32 uiNumVars = ShaderDesc.InputParameters;
-
-    xiiDynamicArray<D3D12_PARAMETER_DESC*> inputParameters;
-    inputParameters.SetCount(uiNumVars);
-
-    vertexInputAttributes.Reserve(inputParameters.GetCount());
-
-    for (xiiUInt32 i = 0; i < inputParameters.GetCount(); ++i)
-    {
-      D3D12_SIGNATURE_PARAMETER_DESC parameterDesc;
-      if FAILED (pReflector->GetInputParameterDesc(i, &parameterDesc))
-      {
-        xiiLog::Error("Failed to retrieve shader parameter descriptor");
-        return XII_FAILURE;
-      }
-
-      xiiShaderVertexInputAttribute& attribute = vertexInputAttributes.ExpandAndGetRef();
-      attribute.m_uiSemanticIndex              = parameterDesc.SemanticIndex;
-
-      xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(parameterDesc.SemanticName);
-      // XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {}", parameterDesc.SemanticName);
-
-      if (pVAS != nullptr)
-        attribute.m_eSemantic = *pVAS;
-      else
-        xiiLog::Dev("Unknown vertex input semantic found: {}", parameterDesc.SemanticName);
-
-      attribute.m_eFormat = GetXIIFormatD3D12(parameterDesc.ComponentType, parameterDesc.Mask);
-      XII_ASSERT_DEV(attribute.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", parameterDesc.ComponentType);
-    }
-  }
-
-  // Descriptor Bindings
-  {
-    xiiUInt32 uiNumVars = ShaderDesc.BoundResources;
-
-    xiiMap<xiiUInt32, xiiUInt32> descriptorToXIIBinding;
-    xiiUInt32                    uiVirtualResourceView = 0;
-    xiiUInt32                    uiVirtualSampler      = 0;
-
-    for (xiiUInt32 i = 0; i < uiNumVars; ++i)
-    {
-      D3D12_SHADER_INPUT_BIND_DESC inputDesc;
-      if (FAILED(pReflector->GetResourceBindingDesc(i, &inputDesc)))
-      {
-        xiiLog::Error("Failed to retrieve shader input descriptor");
-        return XII_FAILURE;
-      }
-
-      xiiLog::Info("Bound Resource: '{}' at slot {} (Count: {})", inputDesc.Name, inputDesc.BindPoint, inputDesc.BindCount);
-
-      xiiShaderResourceBinding shaderResourceBinding;
-      shaderResourceBinding.m_Type  = xiiShaderResourceType::Unknown;
-      shaderResourceBinding.m_iSlot = inputDesc.BindPoint;
-      shaderResourceBinding.m_sName.Assign(inputDesc.Name);
-
-      if (FillResourceBinding(inout_Data.m_StageBinary[Stage], shaderResourceBinding, pReflector, inputDesc).Failed())
-        continue;
-
-      // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the DX11-based high level render interface.
-
-      // clang-format off
-      if (inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED
-        || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TBUFFER
-        || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TEXTURE
-        || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_BYTEADDRESS
-        || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_RTACCELERATIONSTRUCTURE)
-      // clang-format on
-      {
-        shaderResourceBinding.m_iSlot = uiVirtualResourceView;
-        uiVirtualResourceView++;
-      }
-
-      // clang-format off
-      if (inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_SAMPLER)
-      // clang-format on
-      {
-        shaderResourceBinding.m_iSlot = uiVirtualSampler;
-        uiVirtualSampler++;
-      }
-
-      XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiShaderResourceType::Unknown, "FillResourceBinding should have failed.");
-
-      descriptorToXIIBinding[i] = inout_Data.m_StageBinary[Stage].GetShaderResourceBindings().GetCount();
-      inout_Data.m_StageBinary[Stage].AddShaderResourceBinding(shaderResourceBinding);
-    }
-
-    // Write Bindings
-    {
-      xiiArrayPtr<const xiiShaderResourceBinding> xiiBindings = inout_Data.m_StageBinary[Stage].GetShaderResourceBindings();
-
-      // Modify meta data
-      xiiDefaultMemoryStreamStorage storage;
-      xiiMemoryStreamWriter         stream(&storage);
-
-      const xiiUInt32 uiCount = xiiBindings.GetCount();
-
-      xiiHybridArray<xiiShaderDescriptorSetLayout, 3> sets;
-      xiiShaderDescriptorSetLayout&                   set = sets.ExpandAndGetRef();
-
-      for (xiiUInt32 i = 0; i < uiCount; ++i)
-      {
-        auto& info = xiiBindings[i];
-
-        xiiShaderDescriptorSetLayoutBinding& binding = set.Bindings.ExpandAndGetRef();
-        binding.m_sName                              = info.m_sName;
-        binding.m_uiVirtualBinding                   = xiiBindings[descriptorToXIIBinding[i]].m_iSlot;
-        binding.m_xiiType                            = xiiBindings[descriptorToXIIBinding[i]].m_Type;
-
-        switch (info.m_Type)
-        {
-          case xiiShaderResourceType::ConstantBuffer:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ConstantBuffer;
-            break;
-
-          case xiiShaderResourceType::Sampler:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::Sampler;
-            break;
-
-          case xiiShaderResourceType::GenericBuffer:
-          case xiiShaderResourceType::Texture1D:
-          case xiiShaderResourceType::Texture2D:
-          case xiiShaderResourceType::Texture2DArray:
-          case xiiShaderResourceType::Texture2DMS:
-          case xiiShaderResourceType::Texture2DMSArray:
-          case xiiShaderResourceType::Texture3D:
-          case xiiShaderResourceType::TextureCube:
-          case xiiShaderResourceType::TextureCubeArray:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceView;
-            break;
-
-          case xiiShaderResourceType::UAV:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::UnorderedAccessView;
-            break;
-
-            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-        }
-      }
-
-      set.Bindings.Sort([](const xiiShaderDescriptorSetLayoutBinding& lhs, const xiiShaderDescriptorSetLayoutBinding& rhs) { return lhs.m_uiBinding < rhs.m_uiBinding; });
-
-      xiiShaderMetaData::Write(stream, byteCode, sets, vertexInputAttributes);
-
-      // Replaced compiled shader code with custom xiiSpirvMetaData format.
-      xiiUInt64 uiBytesLeft    = storage.GetStorageSize64();
-      xiiUInt64 uiReadPosition = 0;
-      byteCode.Clear();
-      byteCode.Reserve((xiiUInt32)uiBytesLeft);
-      while (uiBytesLeft > 0)
-      {
-        xiiArrayPtr<const xiiUInt8> data = storage.GetContiguousMemoryRange(uiReadPosition);
-        byteCode.PushBackRange(data);
-        uiReadPosition += data.GetCount();
-        uiBytesLeft -= data.GetCount();
-      }
-    }
-  }
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiShaderCompilerD3D12::CompileShader(const char* szFile, const char* szSource, bool bDebug, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode, xiiComPtr<IDxcBlob>& out_pOutputBlob)
-{
-  auto InitializeCompiler = [this](std::unique_ptr<Diligent::IDXCompiler>& pCompiler) -> xiiResult {
-    if (pCompiler != nullptr)
-      return XII_SUCCESS;
-
-    pCompiler = Diligent::CreateDXCompiler(Diligent::DXCompilerTarget::Direct3D12, 0, nullptr);
-
-    if (pCompiler == nullptr)
-    {
-      xiiLog::Error("Failed to create DX Compiler");
-      return XII_FAILURE;
-    }
+    binding.m_Type = xiiShaderResourceType::GenericBuffer;
     return XII_SUCCESS;
-  };
-
-  XII_SUCCEED_OR_RETURN(InitializeCompiler(g_pDXCompiler));
-
-  out_ByteCode.Clear();
-
-  const char*      szCompileSource = szSource;
-  xiiStringBuilder sDebugSource;
-
-  xiiDynamicArray<xiiStringWChar> args;
-
-  if (bDebug)
-  {
-    // In debug mode we need to remove '#line' as any shader debugger won't work with them.
-    sDebugSource = szSource;
-    sDebugSource.ReplaceAll("#line ", "//line ");
-    szCompileSource = sDebugSource;
-
-    args.PushBack(L"-Zi"); // Enable debug information.
-    args.PushBack(L"-Od"); // Disable optimization
-  }
-  else
-  {
-    args.PushBack(L"-O3"); // Optimization Level 3
   }
 
-  xiiHybridArray<const wchar_t*, 16> pszArgs;
-  pszArgs.SetCount(args.GetCount());
-  for (xiiUInt32 i = 0; i < args.GetCount(); ++i)
+  if (info.Type == D3D_SIT_TEXTURE)
   {
-    pszArgs[i] = args[i].GetData();
-  }
-
-  xiiStringWChar sEntryPoint(szEntryPoint);
-  xiiStringWChar sProfile(szProfile);
-
-  Diligent::IDXCompiler::CompileAttribs compileAttribs;
-  compileAttribs.Source       = szSource;
-  compileAttribs.SourceLength = (xiiUInt32)strlen(szCompileSource);
-  compileAttribs.EntryPoint   = sEntryPoint;
-  compileAttribs.Profile      = sProfile;
-  compileAttribs.pArgs        = pszArgs.GetData();
-  compileAttribs.ArgsCount    = pszArgs.GetCount();
-
-  xiiComPtr<IDxcBlob> pCompilerOutput;
-  compileAttribs.ppBlobOut        = out_pOutputBlob.Put();
-  compileAttribs.ppCompilerOutput = pCompilerOutput.Put();
-
-  if (!g_pDXCompiler->Compile(compileAttribs))
-  {
-    xiiLog::Error("Shader Compilation Failed.");
-    if (pCompilerOutput != nullptr && pCompilerOutput->GetBufferSize() != 0)
+    switch (info.Dimension)
     {
-      xiiStringBuilder sCleanOutput = xiiStringUtf8(reinterpret_cast<const char*>(pCompilerOutput->GetBufferPointer())).GetData();
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1D:
+        binding.m_Type = xiiShaderResourceType::Texture1D;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1DARRAY:
+        binding.m_Type = xiiShaderResourceType::Texture1DArray;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2D:
+        binding.m_Type = xiiShaderResourceType::Texture2D;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+        binding.m_Type = xiiShaderResourceType::Texture2DArray;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DMS:
+        binding.m_Type = xiiShaderResourceType::Texture2DMS;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
+        binding.m_Type = xiiShaderResourceType::Texture2DMSArray;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE3D:
+        binding.m_Type = xiiShaderResourceType::Texture3D;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURECUBE:
+        binding.m_Type = xiiShaderResourceType::TextureCube;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURECUBEARRAY:
+        binding.m_Type = xiiShaderResourceType::TextureCubeArray;
+        break;
 
-      xiiHybridArray<xiiString, 2> sOutputSplit;
-      sCleanOutput.Split(false, sOutputSplit, ":");
-
-      // Rebuild output string
-      sCleanOutput.Clear();
-      for (xiiUInt32 i = 1; i < sOutputSplit.GetCount(); ++i)
-      {
-        // Remove whitespace and uppercase first character
-        if (i == 1)
-        {
-          xiiStringBuilder sTemp = sOutputSplit[i];
-          sTemp.Shrink(1, 0);
-
-          auto iter = begin(sTemp);
-          sTemp.ChangeCharacter(iter, xiiStringUtils::ToUpperChar(sTemp[0]));
-
-          sCleanOutput.AppendFormat("{}", sTemp);
-        }
-        else
-        {
-          sCleanOutput.AppendFormat("{}", sOutputSplit[i]);
-        }
-      }
-
-      xiiLog::Error("{}", sCleanOutput.GetData());
-      return XII_FAILURE;
-    }
-  }
-
-  if (pCompilerOutput != nullptr && pCompilerOutput->GetBufferSize() != 0)
-  {
-    xiiStringBuilder sCleanOutput = xiiStringUtf8(reinterpret_cast<const char*>(pCompilerOutput->GetBufferPointer())).GetData();
-
-    xiiHybridArray<xiiString, 2> sOutputSplit;
-    sCleanOutput.Split(false, sOutputSplit, ":");
-
-    // Rebuild output string
-    sCleanOutput.Clear();
-    for (xiiUInt32 i = 1; i < sOutputSplit.GetCount(); ++i)
-    {
-      // Remove whitespace and uppercase first character
-      if (i == 1)
-      {
-        xiiStringBuilder sTemp = sOutputSplit[i];
-        sTemp.Shrink(1, 0);
-
-        auto iter = begin(sTemp);
-        sTemp.ChangeCharacter(iter, xiiStringUtils::ToUpperChar(sTemp[0]));
-
-        sCleanOutput.AppendFormat("{}", sTemp);
-      }
-      else
-      {
-        sCleanOutput.AppendFormat("{}", sOutputSplit[i]);
-      }
+      default:
+        XII_ASSERT_NOT_IMPLEMENTED;
+        return XII_FAILURE;
     }
 
-    xiiLog::Warning("{}", sCleanOutput.GetData());
+    return XII_SUCCESS;
   }
 
-  if (out_pOutputBlob == nullptr)
-  {
-    xiiLog::Error("No shader bytecode was generated.");
-    return XII_FAILURE;
-  }
-
-  out_ByteCode.SetCountUninitialized(static_cast<xiiUInt32>(out_pOutputBlob->GetBufferSize()));
-
-  xiiMemoryUtils::Copy(out_ByteCode.GetData(), reinterpret_cast<xiiUInt8*>(out_pOutputBlob->GetBufferPointer()), out_ByteCode.GetCount());
-
-  return XII_SUCCESS;
+  return XII_FAILURE;
 }
 
+xiiResult xiiShaderCompilerD3D12::FillUAVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const D3D12_SHADER_INPUT_BIND_DESC& info)
+{
+  switch (info.Type)
+  {
+    case D3D_SIT_UAV_RWTYPED:
+    {
+      switch (info.Dimension)
+      {
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1D:
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1DARRAY:
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2D:
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_BUFFER:
+        case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_BUFFEREX:
+          binding.m_Type = xiiShaderResourceType::UAV;
+          break;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+
+      return XII_SUCCESS;
+    }
+
+    case D3D_SIT_UAV_RWSTRUCTURED:
+    case D3D_SIT_UAV_RWBYTEADDRESS:
+    case D3D_SIT_UAV_APPEND_STRUCTURED:
+    case D3D_SIT_UAV_CONSUME_STRUCTURED:
+    case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
+      binding.m_Type = xiiShaderResourceType::UAV;
+      return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
+xiiGALResourceFormat::Enum GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents)
+{
+  switch (format)
+  {
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UINT32:
+    {
+      switch (numComponents)
+      {
+        case 0b1111:
+          return xiiGALResourceFormat::RGBAUInt;
+        case 0b111:
+          return xiiGALResourceFormat::RGBUInt;
+        case 0b11:
+          return xiiGALResourceFormat::RGUInt;
+        case 0b1:
+          return xiiGALResourceFormat::RUInt;
+      }
+    }
+    break;
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_SINT32:
+    {
+      switch (numComponents)
+      {
+        case 0b1111:
+          return xiiGALResourceFormat::RGBAInt;
+        case 0b111:
+          return xiiGALResourceFormat::RGBInt;
+        case 0b11:
+          return xiiGALResourceFormat::RGInt;
+        case 0b1:
+          return xiiGALResourceFormat::RInt;
+      }
+    }
+    break;
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_FLOAT32:
+    {
+      switch (numComponents)
+      {
+        case 0b1111:
+          return xiiGALResourceFormat::RGBAFloat;
+        case 0b111:
+          return xiiGALResourceFormat::RGBFloat;
+        case 0b11:
+          return xiiGALResourceFormat::RGFloat;
+        case 0b1:
+          return xiiGALResourceFormat::RFloat;
+      }
+    }
+    break;
+
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UNKNOWN:
+    default:
+      return xiiGALResourceFormat::Invalid;
+  }
+
+  return xiiGALResourceFormat::Invalid;
+}
 #endif

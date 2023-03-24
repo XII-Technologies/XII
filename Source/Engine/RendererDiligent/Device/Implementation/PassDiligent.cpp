@@ -49,14 +49,5 @@ void xiiGALPassDiligent::EndComputePlatform(xiiGALComputeCommandEncoder* pComman
   m_pCommandEncoderImpl->EndCompute();
 }
 
-void xiiGALPassDiligent::MarkDirty()
-{
-  m_pCommandEncoderImpl->MarkDirty();
-}
 
-void xiiGALPassDiligent::Reset()
-{
-  // m_pCommandEncoderImpl->Reset();
-  m_pRenderCommandEncoder->InvalidateState();
-  m_pComputeCommandEncoder->InvalidateState();
-}
+XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Device_Implementation_PassDiligent);

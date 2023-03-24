@@ -1,6 +1,6 @@
 #include <ShaderCompiler/ShaderCompilerPCH.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
 
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D11.h>
 #  include <ShaderCompiler/ShaderCompiler.h>
@@ -8,63 +8,7 @@
 
 #  include <d3dcompiler.h>
 
-xiiGALResourceFormat::Enum GetXIIFormatD3D11(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents)
-{
-  switch (format)
-  {
-    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UINT32:
-    {
-      switch (numComponents)
-      {
-        case 0b1111:
-          return xiiGALResourceFormat::RGBAUInt;
-        case 0b111:
-          return xiiGALResourceFormat::RGBUInt;
-        case 0b11:
-          return xiiGALResourceFormat::RGUInt;
-        case 0b1:
-          return xiiGALResourceFormat::RUInt;
-      }
-    }
-    break;
-    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_SINT32:
-    {
-      switch (numComponents)
-      {
-        case 0b1111:
-          return xiiGALResourceFormat::RGBAInt;
-        case 0b111:
-          return xiiGALResourceFormat::RGBInt;
-        case 0b11:
-          return xiiGALResourceFormat::RGInt;
-        case 0b1:
-          return xiiGALResourceFormat::RInt;
-      }
-    }
-    break;
-    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_FLOAT32:
-    {
-      switch (numComponents)
-      {
-        case 0b1111:
-          return xiiGALResourceFormat::RGBAFloat;
-        case 0b111:
-          return xiiGALResourceFormat::RGBFloat;
-        case 0b11:
-          return xiiGALResourceFormat::RGFloat;
-        case 0b1:
-          return xiiGALResourceFormat::RFloat;
-      }
-    }
-    break;
-
-    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UNKNOWN:
-    default:
-      return xiiGALResourceFormat::Invalid;
-  }
-
-  return xiiGALResourceFormat::Invalid;
-}
+xiiGALResourceFormat::Enum GetXIIFormatD3D11(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents);
 
 xiiResult xiiShaderCompilerD3D11::CompileShader(const char* szFile, const char* szSource, bool bDebug, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
 {
@@ -97,8 +41,7 @@ xiiResult xiiShaderCompilerD3D11::CompileShader(const char* szFile, const char* 
 
     const char* szError = static_cast<const char*>(pErrorBlob->GetBufferPointer());
 
-    XII_LOG_BLOCK("Shader Compilation Failed", szFile);
-
+    xiiLog::Error("Shader Compilation Failed.");
     xiiLog::Error("Could not compile shader '{0}' for profile '{1}'", szFile, szProfile);
     xiiLog::Error("{0}", szError);
 
@@ -110,8 +53,7 @@ xiiResult xiiShaderCompilerD3D11::CompileShader(const char* szFile, const char* 
   {
     const char* szError = static_cast<const char*>(pErrorBlob->GetBufferPointer());
 
-    XII_LOG_BLOCK("Shader Compilation Error Message", szFile);
-    xiiLog::Dev("{0}", szError);
+    xiiLog::SeriousWarning("{0}", szError);
 
     pErrorBlob->Release();
   }
@@ -162,13 +104,19 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramCompiler::x
       xiiShaderVertexInputAttribute& attribute = vertexInputAttributes.ExpandAndGetRef();
       attribute.m_uiSemanticIndex              = parameterDesc.SemanticIndex;
 
-      xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(parameterDesc.SemanticName);
-      // XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {}", parameterDesc.SemanticName);
+      xiiStringBuilder sSemanticName = parameterDesc.SemanticName;
+      sSemanticName.AppendFormat("{}", parameterDesc.SemanticIndex);
 
-      if (pVAS != nullptr)
-        attribute.m_eSemantic = *pVAS;
-      else
-        xiiLog::Dev("Unknown vertex input semantic found: {}", parameterDesc.SemanticName);
+      if (!sSemanticName.StartsWith_NoCase("SV_"))
+      {
+        xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(sSemanticName);
+        XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {0} in file {1}", sSemanticName, inout_Data.m_szSourceFile);
+
+        if (pVAS != nullptr)
+          attribute.m_eSemantic = *pVAS;
+        else
+          xiiLog::Dev("Unknown vertex input semantic found: {}", parameterDesc.SemanticName);
+      }
 
       attribute.m_eFormat = GetXIIFormatD3D11(parameterDesc.ComponentType, parameterDesc.Mask);
       XII_ASSERT_DEV(attribute.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", parameterDesc.ComponentType);
@@ -177,13 +125,13 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramCompiler::x
 
   // Descriptor Bindings
   {
-    xiiUInt32 uiNumVars = ShaderDesc.BoundResources;
+    xiiUInt32 uiNumBoundResources = ShaderDesc.BoundResources;
 
     xiiMap<xiiUInt32, xiiUInt32> descriptorToXIIBinding;
     xiiUInt32                    uiVirtualResourceView = 0;
     xiiUInt32                    uiVirtualSampler      = 0;
 
-    for (xiiUInt32 i = 0; i < uiNumVars; ++i)
+    for (xiiUInt32 i = 0; i < uiNumBoundResources; ++i)
     {
       D3D11_SHADER_INPUT_BIND_DESC inputDesc;
       if (FAILED(pReflector->GetResourceBindingDesc(i, &inputDesc)))
@@ -341,8 +289,6 @@ xiiShaderConstantBufferLayout* xiiShaderCompilerD3D11::ReflectConstantBufferLayo
       return nullptr;
     }
 
-    XII_LOG_BLOCK("Constant", Desc.Name);
-
     xiiShaderConstantBufferLayout::Constant constant;
     constant.m_sName.Assign(Desc.Name);
     constant.m_uiOffset        = static_cast<xiiUInt16>(Desc.StartOffset);
@@ -456,7 +402,6 @@ xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiShaderStageBinary& shad
     || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_RTACCELERATIONSTRUCTURE)
   // clang-format on
   {
-    // Fill Shader Resource View
     return FillSRVResourceBinding(shaderBinary, binding, info);
   }
 
@@ -470,13 +415,11 @@ xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiShaderStageBinary& shad
     || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_UAV_FEEDBACKTEXTURE)
   // clang-format on
   {
-    // Fill Unordered Access Views
     return FillUAVResourceBinding(shaderBinary, binding, info);
   }
 
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_CBUFFER)
   {
-    // Fill Constant Buffer
     binding.m_Type    = xiiShaderResourceType::ConstantBuffer;
     binding.m_pLayout = ReflectConstantBufferLayout(shaderBinary, info.Name, pReflector->GetConstantBufferByName(info.Name));
 
@@ -485,7 +428,6 @@ xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiShaderStageBinary& shad
 
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_SAMPLER)
   {
-    // Fill Sampler
     binding.m_Type = xiiShaderResourceType::Sampler;
 
     return XII_SUCCESS;
@@ -580,6 +522,64 @@ xiiResult xiiShaderCompilerD3D11::FillUAVResourceBinding(xiiShaderStageBinary& s
   }
 
   return XII_FAILURE;
+}
+
+xiiGALResourceFormat::Enum GetXIIFormatD3D11(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents)
+{
+  switch (format)
+  {
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UINT32:
+    {
+      switch (numComponents)
+      {
+        case 0b1111:
+          return xiiGALResourceFormat::RGBAUInt;
+        case 0b111:
+          return xiiGALResourceFormat::RGBUInt;
+        case 0b11:
+          return xiiGALResourceFormat::RGUInt;
+        case 0b1:
+          return xiiGALResourceFormat::RUInt;
+      }
+    }
+    break;
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_SINT32:
+    {
+      switch (numComponents)
+      {
+        case 0b1111:
+          return xiiGALResourceFormat::RGBAInt;
+        case 0b111:
+          return xiiGALResourceFormat::RGBInt;
+        case 0b11:
+          return xiiGALResourceFormat::RGInt;
+        case 0b1:
+          return xiiGALResourceFormat::RInt;
+      }
+    }
+    break;
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_FLOAT32:
+    {
+      switch (numComponents)
+      {
+        case 0b1111:
+          return xiiGALResourceFormat::RGBAFloat;
+        case 0b111:
+          return xiiGALResourceFormat::RGBFloat;
+        case 0b11:
+          return xiiGALResourceFormat::RGFloat;
+        case 0b1:
+          return xiiGALResourceFormat::RFloat;
+      }
+    }
+    break;
+
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UNKNOWN:
+    default:
+      return xiiGALResourceFormat::Invalid;
+  }
+
+  return xiiGALResourceFormat::Invalid;
 }
 
 #endif

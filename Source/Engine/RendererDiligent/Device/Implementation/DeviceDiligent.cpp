@@ -36,39 +36,28 @@
 #  include <Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
 #endif
 
-#if GL_SUPPORTED || GLES_SUPPORTED
-#  include <Graphics/GraphicsEngineOpenGL/interface/EngineFactoryOpenGL.h>
-#endif
-
 #if VULKAN_SUPPORTED
 #  include <Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
-#endif
-
-#if METAL_SUPPORTED
-#  include <Graphics/GraphicsEngineMetal/interface/EngineFactoryMtl.h>
 #endif
 
 struct xiiDiligentMemoryAllocator : public Diligent::IMemoryAllocator
 {
 public:
-  xiiDiligentMemoryAllocator(const char* szName) :
-    m_ProxyAlloc(szName, xiiFoundation::GetDefaultAllocator())
+  xiiDiligentMemoryAllocator(const char* szName)
   {
   }
 
   /// Allocates block of memory
   virtual void* Allocate(size_t Size, const Diligent::Char* dbgDescription, const char* dbgFileName, const Diligent::Int32 dbgLineNumber) override
   {
-    return m_ProxyAlloc.Allocate(Size, 8u);
+    return xiiAlignedAllocatorWrapper::GetAllocator()->Allocate(Size, 16u);
   }
 
   /// Releases memory
   virtual void Free(void* Ptr) override
   {
-    m_ProxyAlloc.Deallocate(Ptr);
+    xiiAlignedAllocatorWrapper::GetAllocator()->Deallocate(Ptr);
   }
-
-  xiiProxyAllocator m_ProxyAlloc;
 };
 
 void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity,
@@ -92,11 +81,26 @@ void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity,
     case Diligent::DEBUG_MESSAGE_SEVERITY_FATAL_ERROR:
       xiiLog::Error("{}", Message);
       break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 
-xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
+xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceD3D11(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
 {
+  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D11;
+  return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
+}
+
+xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceD3D12(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
+{
+  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D12;
+  return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
+}
+
+xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
+{
+  xiiGraphicsDevice::Default = xiiGraphicsDevice::Vulkan;
   return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
 }
 
@@ -105,12 +109,16 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(RendererDiligent, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
-  xiiGALDeviceFactory::RegisterCreatorFunc("Diligent", &CreateDiligentDevice, "D3D_SM60", "xiiShaderCompiler");
+  xiiGALDeviceFactory::RegisterCreatorFunc("D3D11", &CreateDiligentDeviceD3D11, "D3D_SM50", "xiiShaderCompiler");
+  xiiGALDeviceFactory::RegisterCreatorFunc("D3D12", &CreateDiligentDeviceD3D12, "D3D_SM60", "xiiShaderCompiler");
+  xiiGALDeviceFactory::RegisterCreatorFunc("Vulkan", &CreateDiligentDeviceVulkan, "VK_SM60", "xiiShaderCompiler");
 }
 
 ON_CORESYSTEMS_SHUTDOWN
 {
-  xiiGALDeviceFactory::UnregisterCreatorFunc("Diligent");
+  xiiGALDeviceFactory::UnregisterCreatorFunc("D3D11");
+  xiiGALDeviceFactory::UnregisterCreatorFunc("D3D12");
+  xiiGALDeviceFactory::UnregisterCreatorFunc("Vulkan");
 }
 
 XII_END_SUBSYSTEM_DECLARATION;
@@ -127,30 +135,32 @@ xiiGALDeviceDiligent::~xiiGALDeviceDiligent() = default;
 
 xiiResult xiiGALDeviceDiligent::InitPlatform()
 {
-  using namespace Diligent;
-
   XII_LOG_BLOCK("xiiGALDeviceDiligent::InitPlatform");
 
   m_DeviceType = xiiDiligentUtils::GetDiligentRenderDeviceType();
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  // Using our memory allocator crashes on Linux allocating 64 byte aligned buffers.
   m_pMemoryAllocator = std::make_unique<xiiDiligentMemoryAllocator>("Diligent Engine Memory Allocator");
+#endif
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  m_iValidationLevel = 2;
+  m_iValidationLevel = Diligent::VALIDATION_LEVEL_2;
 #elif XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  m_iValidationLevel = 1;
+  m_iValidationLevel = Diligent::VALIDATION_LEVEL_1;
 #else
-  m_iValidationLevel = 0;
+  m_iValidationLevel = Diligent::VALIDATION_LEVEL_DISABLED;
 #endif
 
   xiiUInt32 NumImmediateContexts = 0;
 
 #if D3D11_SUPPORTED || D3D12_SUPPORTED || VULKAN_SUPPORTED
-  auto FindAdapter = [this](auto* pFactory, Diligent::Version GraphicsAPIVersion, Diligent::GraphicsAdapterInfo& AdapterAttribs) {
+  auto FindAdapter = [this](auto* pFactory, Diligent::Version GraphicsAPIVersion, Diligent::GraphicsAdapterInfo& AdapterAttribs) -> xiiUInt32 {
     xiiUInt32 NumAdapters = 0;
     pFactory->EnumerateAdapters(GraphicsAPIVersion, NumAdapters, nullptr);
-    xiiDynamicArray<Diligent::GraphicsAdapterInfo> Adapters;
-    Adapters.SetCount(NumAdapters);
+    xiiHybridArray<Diligent::GraphicsAdapterInfo, 2> Adapters;
+    Adapters.Reserve(NumAdapters);
+
     if (NumAdapters > 0)
       pFactory->EnumerateAdapters(GraphicsAPIVersion, NumAdapters, Adapters.GetData());
     else
@@ -190,8 +200,9 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       m_AdapterType = Diligent::ADAPTER_TYPE_UNKNOWN;
       for (xiiUInt32 i = 0; i < Adapters.GetCount(); ++i)
       {
-        const auto& AdapterInfo = Adapters[i];
-        const auto  AdapterType = AdapterInfo.Type;
+        const Diligent::GraphicsAdapterInfo& AdapterInfo = Adapters[i];
+        const Diligent::ADAPTER_TYPE         AdapterType = AdapterInfo.Type;
+
         static_assert((Diligent::ADAPTER_TYPE_DISCRETE > Diligent::ADAPTER_TYPE_INTEGRATED &&
                        Diligent::ADAPTER_TYPE_INTEGRATED > Diligent::ADAPTER_TYPE_SOFTWARE &&
                        Diligent::ADAPTER_TYPE_SOFTWARE > Diligent::ADAPTER_TYPE_UNKNOWN),
@@ -227,7 +238,7 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
   };
 #endif
 
-  xiiDynamicArray<Diligent::IDeviceContext*> ppContexts;
+  xiiHybridArray<Diligent::IDeviceContext*, 1> ppContexts;
 
   switch (m_DeviceType)
   {
@@ -250,15 +261,44 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       EngineCI.pRawMemAllocator   = m_pMemoryAllocator.get();
       EngineCI.EnableValidation   = m_Description.m_bDebugDevice;
 
-      EngineCI.Features.OcclusionQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.BinaryOcclusionQueries    = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-
-#  ifdef DILIGENT_DEBUG
-      EngineCI.SetValidationLevel(VALIDATION_LEVEL_2);
-#  endif
+      EngineCI.Features.SeparablePrograms                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ShaderResourceQueries             = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.WireframeFill                     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MultithreadedResourceCreation     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ComputeShaders                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.GeometryShaders                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.Tessellation                      = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MeshShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.RayTracing                        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.BindlessResources                 = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.OcclusionQueries                  = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.BinaryOcclusionQueries            = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.TimestampQueries                  = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.PipelineStatisticsQueries         = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.DurationQueries                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthBiasClamp                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthClamp                        = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.IndependentBlend                  = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.DualSourceBlend                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.MultiViewport                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureCompressionBC              = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.VertexPipelineUAVWritesAndAtomics = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.PixelUAVWritesAndAtomics          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureUAVExtendedFormats         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderFloat16                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ResourceBuffer16BitAccess         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.UniformBuffer16BitAccess          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderInputOutput16               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderResourceRuntimeArray        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.WaveOp                            = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.InstanceDataStepRate              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TileShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TransferQueueTimestampQueries     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.VariableRateShading               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SparseResources                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SubpassFramebufferFetch           = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureComponentSwizzle           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
 
       if (m_iValidationLevel >= 0)
         EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
@@ -300,14 +340,49 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       m_pEngineFactory->SetMessageCallback(XIILogDiligent);
 
       Diligent::EngineD3D12CreateInfo EngineCI;
-      EngineCI.GraphicsAPIVersion                 = {11, 0};
-      EngineCI.pRawMemAllocator                   = m_pMemoryAllocator.get();
-      EngineCI.EnableValidation                   = m_Description.m_bDebugDevice;
-      EngineCI.Features.OcclusionQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.BinaryOcclusionQueries    = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.GraphicsAPIVersion = {11, 0};
+      EngineCI.pRawMemAllocator   = m_pMemoryAllocator.get();
+      EngineCI.EnableValidation   = m_Description.m_bDebugDevice;
+
+      EngineCI.Features.SeparablePrograms                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ShaderResourceQueries             = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.WireframeFill                     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MultithreadedResourceCreation     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ComputeShaders                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.GeometryShaders                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.Tessellation                      = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MeshShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.RayTracing                        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.BindlessResources                 = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.OcclusionQueries                  = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.BinaryOcclusionQueries            = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.TimestampQueries                  = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.PipelineStatisticsQueries         = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.DurationQueries                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthBiasClamp                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthClamp                        = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.IndependentBlend                  = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.DualSourceBlend                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.MultiViewport                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureCompressionBC              = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.VertexPipelineUAVWritesAndAtomics = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.PixelUAVWritesAndAtomics          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureUAVExtendedFormats         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderFloat16                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ResourceBuffer16BitAccess         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.UniformBuffer16BitAccess          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderInputOutput16               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderResourceRuntimeArray        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.WaveOp                            = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.InstanceDataStepRate              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TileShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TransferQueueTimestampQueries     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.VariableRateShading               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SparseResources                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SubpassFramebufferFetch           = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureComponentSwizzle           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+
       if (m_iValidationLevel >= 0)
         EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
 
@@ -323,7 +398,8 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
         m_DeviceType               = Diligent::RENDER_DEVICE_TYPE_D3D11;
         goto CreateDeviceD3D11;
 #  else
-        throw;
+        xiiLog::Error("Failed to find Direct3D12 compatible hardware adapters.");
+        return XII_FAILURE;
 #  endif
       }
 
@@ -346,28 +422,6 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
     break;
 #endif
 
-#if GL_SUPPORTED || GLES_SUPPORTED
-    case Diligent::RENDER_DEVICE_TYPE_GL:
-    case Diligent::RENDER_DEVICE_TYPE_GLES:
-    {
-#  if EXPLICITLY_LOAD_ENGINE_GL_DLL
-      // Load the dll and import GetEngineFactoryOpenGL() function
-      auto GetEngineFactoryOpenGL = Diligent::LoadGraphicsEngineOpenGL();
-#  endif
-
-      auto* pFactoryGL = GetEngineFactoryOpenGL();
-      XII_ASSERT_DEV(pFactoryGL != nullptr, "Failed To Load OpenGL");
-      m_pEngineFactory = pFactoryGL;
-
-      // Register custom message callback
-      m_pEngineFactory->SetMessageCallback(XIILogDiligent);
-
-      NumImmediateContexts = 1; // + EngineCI.NumImmediateContexts which is zero
-      ppContexts.SetCount(NumImmediateContexts);
-    }
-    break;
-#endif
-
 #if VULKAN_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_VULKAN:
     {
@@ -384,13 +438,47 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       m_pEngineFactory->SetMessageCallback(XIILogDiligent);
 
       Diligent::EngineVkCreateInfo EngineCI;
-      EngineCI.pRawMemAllocator                   = m_pMemoryAllocator.get();
-      EngineCI.EnableValidation                   = m_Description.m_bDebugDevice;
-      EngineCI.Features.OcclusionQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.BinaryOcclusionQueries    = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.pRawMemAllocator = m_pMemoryAllocator.get();
+      EngineCI.EnableValidation = m_Description.m_bDebugDevice;
+
+      EngineCI.Features.SeparablePrograms                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ShaderResourceQueries             = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.WireframeFill                     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MultithreadedResourceCreation     = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.ComputeShaders                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.GeometryShaders                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.Tessellation                      = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.MeshShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.RayTracing                        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.BindlessResources                 = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.OcclusionQueries                  = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.BinaryOcclusionQueries            = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.TimestampQueries                  = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.PipelineStatisticsQueries         = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.DurationQueries                   = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthBiasClamp                    = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.DepthClamp                        = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.IndependentBlend                  = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.DualSourceBlend                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.MultiViewport                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureCompressionBC              = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+      EngineCI.Features.VertexPipelineUAVWritesAndAtomics = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.PixelUAVWritesAndAtomics          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureUAVExtendedFormats         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderFloat16                     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ResourceBuffer16BitAccess         = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.UniformBuffer16BitAccess          = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderInputOutput16               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.ShaderResourceRuntimeArray        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.WaveOp                            = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.InstanceDataStepRate              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TileShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TransferQueueTimestampQueries     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.VariableRateShading               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SparseResources                   = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.SubpassFramebufferFetch           = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.TextureComponentSwizzle           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
 
       if (m_iValidationLevel >= 0)
         EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
@@ -411,32 +499,6 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       pFactoryVk->CreateDeviceAndContextsVk(EngineCI, &m_pDevice, ppContexts.GetData());
 
       XII_ASSERT_DEV(m_pDevice != nullptr, "Unable to initialize Diligent Engine in Vulkan mode. The API may not be available, "
-                                           "or required features may not be supported by this GPU/driver/OS version.");
-    }
-    break;
-#endif
-
-#if METAL_SUPPORTED
-    case Diligent::RENDER_DEVICE_TYPE_METAL:
-    {
-      Diligent::EngineMtlCreateInfo EngineCI;
-      EngineCI.Features.OcclusionQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.BinaryOcclusionQueries    = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.TimestampQueries          = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.PipelineStatisticsQueries = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-      EngineCI.Features.DurationQueries           = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
-
-      if (m_iValidationLevel >= 0)
-        EngineCI.SetValidationLevel(static_cast<Diligent::VALIDATION_LEVEL>(m_iValidationLevel));
-
-      auto* pFactoryMtl = GetEngineFactoryMtl();
-      m_pEngineFactory  = pFactoryMtl;
-
-      NumImmediateContexts = xiiMath::Max(1u, EngineCI.NumImmediateContexts);
-      ppContexts.resize(NumImmediateContexts + EngineCI.NumDeferredContexts);
-      pFactoryMtl->CreateDeviceAndContextsMtl(EngineCI, &m_pDevice, ppContexts.GetData());
-
-      XII_ASSERT_DEV(m_pDevice != nullptr, "Unable to initialize Diligent Engine in Metal mode. The API may not be available, "
                                            "or required features may not be supported by this GPU/driver/OS version.");
     }
     break;
@@ -465,29 +527,29 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
   {
     Diligent::QueryDesc queryDesc;
     queryDesc.Name        = "Pipeline statistics query";
-    queryDesc.Type        = QUERY_TYPE_PIPELINE_STATISTICS;
-    m_pPipelineStatsQuery = XII_NEW(&m_Allocator, ScopedQueryHelper, m_pDevice, queryDesc, 2);
+    queryDesc.Type        = Diligent::QUERY_TYPE_PIPELINE_STATISTICS;
+    m_pPipelineStatsQuery = XII_NEW(&m_Allocator, Diligent::ScopedQueryHelper, m_pDevice, queryDesc, 2);
   }
 
   if (Features.OcclusionQueries)
   {
     Diligent::QueryDesc queryDesc;
     queryDesc.Name    = "Occlusion query";
-    queryDesc.Type    = QUERY_TYPE_OCCLUSION;
-    m_pOcclusionQuery = XII_NEW(&m_Allocator, ScopedQueryHelper, m_pDevice, queryDesc, 2);
+    queryDesc.Type    = Diligent::QUERY_TYPE_OCCLUSION;
+    m_pOcclusionQuery = XII_NEW(&m_Allocator, Diligent::ScopedQueryHelper, m_pDevice, queryDesc, 2);
   }
 
   if (Features.DurationQueries)
   {
     Diligent::QueryDesc queryDesc;
     queryDesc.Name   = "Duration query";
-    queryDesc.Type   = QUERY_TYPE_DURATION;
-    m_pDurationQuery = XII_NEW(&m_Allocator, ScopedQueryHelper, m_pDevice, queryDesc, 2);
+    queryDesc.Type   = Diligent::QUERY_TYPE_DURATION;
+    m_pDurationQuery = XII_NEW(&m_Allocator, Diligent::ScopedQueryHelper, m_pDevice, queryDesc, 2);
   }
 
   if (Features.TimestampQueries)
   {
-    m_pDurationFromTimestamps = XII_NEW(&m_Allocator, DurationQueryHelper, m_pDevice, 2);
+    m_pDurationFromTimestamps = XII_NEW(&m_Allocator, Diligent::DurationQueryHelper, m_pDevice, 2);
   }
 
   m_SyncTimeDiff.SetZero();
@@ -537,7 +599,7 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 
 void xiiGALDeviceDiligent::ReportLiveGpuObjects()
 {
-  // Implement detailed live GPU Object information
+  // \todo Implement detailed live GPU Object information
 }
 
 void xiiGALDeviceDiligent::FlushDeadObjects()
@@ -556,6 +618,7 @@ void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapC
     pSwapChain->AcquireNextRenderTarget(this);
   }
 
+#if 0
   // Begin supported queries
   {
     if (m_pPipelineStatsQuery)
@@ -570,6 +633,7 @@ void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapC
     if (m_pDurationQuery)
       m_pDurationQuery->Begin(GetImmediateContext());
   }
+#endif
 
 #if XII_ENABLED(XII_USE_PROFILING)
   m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), szName);
@@ -581,6 +645,7 @@ void xiiGALDeviceDiligent::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
   XII_PROFILE_SCOPE("EndPipelinePlatform");
 
   // End queries
+#if 0
   {
     if (m_pDurationFromTimestamps)
       m_pDurationFromTimestamps->End(GetImmediateContext(), m_DurationFromTimestamps);
@@ -597,6 +662,7 @@ void xiiGALDeviceDiligent::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
     if (m_pPipelineStatsQuery)
       m_pPipelineStatsQuery->End(GetImmediateContext(), &m_PipelineStatsData, sizeof(m_PipelineStatsData));
   }
+#endif
 
 #if XII_ENABLED(XII_USE_PROFILING)
   xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pPipelineTimingScope);
@@ -606,10 +672,6 @@ void xiiGALDeviceDiligent::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
   {
     pSwapChain->PresentRenderTarget(this);
   }
-
-  // Render context is reset on every end pipeline so it will re-submit all state change for the next render pass. Thus it is safe at this point to do a full reset.
-  // Technically don't have to reset here, MarkDirty would also be fine but we do need to do a Reset at the end of the frame as pointers held by the xiiGALCommandEncoderImplVulkan may not be valid in the next frame.
-  m_pDefaultPass->Reset();
 }
 
 xiiGALPass* xiiGALDeviceDiligent::BeginPassPlatform(const char* szName)
@@ -917,10 +979,12 @@ void xiiGALDeviceDiligent::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 {
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
 
-#if XII_ENABLED(XII_USE_PROFILING)
+#if 0
+#  if XII_ENABLED(XII_USE_PROFILING)
   xiiStringBuilder sb;
   sb.Format("Frame {}", uiRenderFrame);
   m_pFrameTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), sb);
+#  endif
 #endif
 }
 
@@ -928,8 +992,10 @@ void xiiGALDeviceDiligent::EndFramePlatform()
 {
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
 
-#if XII_ENABLED(XII_USE_PROFILING)
+#if 0
+#  if XII_ENABLED(XII_USE_PROFILING)
   xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pFrameTimingScope);
+#  endif
 #endif
 }
 
@@ -967,7 +1033,7 @@ void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
     m_Capabilities.m_uiMaxTextureDimension   = static_cast<xiiUInt16>(adapterInfo.Texture.MaxTexture1DDimension);
     m_Capabilities.m_uiMaxCubemapDimension   = static_cast<xiiUInt16>(adapterInfo.Texture.MaxTextureCubeDimension);
     m_Capabilities.m_uiMax3DTextureDimension = static_cast<xiiUInt16>(adapterInfo.Texture.MaxTexture3DDimension);
-    m_Capabilities.m_uiMaxRendertargets      = Diligent::MAX_RENDER_TARGETS;
+    m_Capabilities.m_uiMaxRendertargets      = XII_GAL_MAX_RENDERTARGET_COUNT;
     m_Capabilities.m_bAlphaToCoverage        = true;
 
     m_Capabilities.m_uiUAVCount                          = 8;
@@ -981,6 +1047,8 @@ void xiiGALDeviceDiligent::WaitIdlePlatform()
   DestroyDeadObjects();
 
   m_pDevice->IdleGPU();
+
+  m_pDevice->ReleaseStaleResources(false);
 }
 
 void xiiGALDeviceDiligent::FillFormatLookupTable()

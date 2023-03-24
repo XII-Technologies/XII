@@ -2,7 +2,8 @@ param
 (
     [Parameter(Mandatory = $True)] [ValidateSet('Win64vs2019', 'Uwp64vs2019', 'Win64vs2022', 'Uwp64vs2022')][string] $Target,
     [switch]$NoUnityBuild,
-    [switch]$NoSubmoduleUpdate
+    [switch]$NoSubmoduleUpdate,
+    [switch]$BuildDiligentGraphics
 )
 
 Set-Location $PSScriptRoot
@@ -44,6 +45,13 @@ if ($NoUnityBuild) {
 }
 else {
     $CMAKE_ARGS += "-DXII_ENABLE_FOLDER_UNITY_FILES:BOOL=ON"
+}
+
+if ($BuildDiligentGraphics) {
+    $CMAKE_ARGS += "-DXII_BUILD_DILIGENT:BOOL=ON"
+    $CMAKE_ARGS += "-DXII_BUILD_D3D11:BOOL=ON"
+    $CMAKE_ARGS += "-DXII_BUILD_D3D12:BOOL=ON"
+    $CMAKE_ARGS += "-DXII_BUILD_VULKAN:BOOL=ON"
 }
 
 $CMAKE_ARGS += "-G"

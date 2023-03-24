@@ -16,9 +16,12 @@ public:
 
   static Diligent::SHADER_TYPE GALToDiligentShaderStage(xiiGALShaderStage::Enum e);
   static Diligent::VALUE_TYPE  GALToDiligentFormat(Diligent::TEXTURE_FORMAT format);
+  static bool                  GALIsFormatNormalized(Diligent::TEXTURE_FORMAT format);
   static xiiInt32              GALToDiligentNumComponent(Diligent::TEXTURE_FORMAT format);
 
   static Diligent::COLOR_MASK ToDiligentColorWriteMask(xiiGALColorWriteMask::Enum mask);
+
+  static bool IsDepthFormat(Diligent::TEXTURE_FORMAT format);
 };
 
 #include <RendererDiligent/Utilities/Implementation/DiligentConversions_inl.h>

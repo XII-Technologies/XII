@@ -58,11 +58,16 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
   if (m_Description.m_bUseForIndirectArguments)
     BufferDesc.BindFlags |= Diligent::BIND_INDIRECT_DRAW_ARGS;
 
+  BufferDesc.Mode = Diligent::BUFFER_MODE_UNDEFINED;
+
   if (m_Description.m_bAllowRawViews)
     BufferDesc.Mode = Diligent::BUFFER_MODE_RAW;
 
   if (m_Description.m_bUseAsStructuredBuffer)
     BufferDesc.Mode = Diligent::BUFFER_MODE_STRUCTURED;
+
+  if (m_Description.m_bUseAsFormattedBuffer)
+    BufferDesc.Mode = Diligent::BUFFER_MODE_FORMATTED;
 
   BufferDesc.ElementByteStride = m_Description.m_uiStructSize;
 
@@ -95,13 +100,14 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
     }
   }
 
-  m_InitialData.pData    = pInitialData.GetPtr();
-  m_InitialData.DataSize = pInitialData.GetCount();
-  pDeviceDiligent->GetDevice()->CreateBuffer(BufferDesc, pInitialData.IsEmpty() ? nullptr : &m_InitialData, &m_pBuffer);
+  Diligent::BufferData initialData = {};
+  initialData.pData                = pInitialData.GetPtr();
+  initialData.DataSize             = pInitialData.GetCount();
+  pDeviceDiligent->GetDevice()->CreateBuffer(BufferDesc, pInitialData.IsEmpty() ? nullptr : &initialData, &m_pBuffer);
 
   if (m_pBuffer == nullptr)
   {
-    xiiLog::Error("Creation of native DirectX buffer failed!");
+    xiiLog::Error("Failed to create buffer for graphics device!");
     return XII_FAILURE;
   }
 
@@ -114,5 +120,6 @@ xiiResult xiiGALBufferDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 
   return XII_SUCCESS;
 }
+
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Resources_Implementation_BufferDiligent);

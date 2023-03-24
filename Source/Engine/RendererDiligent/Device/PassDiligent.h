@@ -26,9 +26,6 @@ protected:
   virtual xiiGALComputeCommandEncoder* BeginComputePlatform(const char* szName) override;
   virtual void                         EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder) override;
 
-  void MarkDirty();
-  void Reset();
-
 private:
   xiiUniquePtr<xiiGALCommandEncoderRenderState>  m_pCommandEncoderState;
   xiiUniquePtr<xiiGALCommandEncoderImplDiligent> m_pCommandEncoderImpl;

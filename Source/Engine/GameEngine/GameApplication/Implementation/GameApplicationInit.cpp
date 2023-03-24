@@ -27,14 +27,12 @@
 #include <RendererFoundation/Device/Device.h>
 #include <RendererFoundation/Device/DeviceFactory.h>
 
-#if BUILDSYSTEM_ENABLE_DILIGENT_SUPPORT
-constexpr const char* szDefaultRenderer = "Diligent";
-#else
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 constexpr const char* szDefaultRenderer = "DX11";
-#  else
-#    error Renderer not implemented on platform
-#  endif
+#elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+constexpr const char* szDefaultRenderer = "Vulkan";
+#else
+#  error Renderer not implemented on platform
 #endif
 
 xiiCommandLineOptionString opt_Renderer("app", "-renderer", "The renderer implementation to use.", szDefaultRenderer);
@@ -277,6 +275,12 @@ void xiiGameApplication::Init_LoadRequiredPlugins()
 {
   xiiPlugin::InitializeStaticallyLinkedPlugins();
 
+  constexpr const char* szDefaultLibraryName = "xiiRendererDiligent";
+  xiiGALDeviceFactory::ConfigureLibraryName("DX11", "xiiRendererDX11");
+  xiiGALDeviceFactory::ConfigureLibraryName("D3D11", szDefaultLibraryName);
+  xiiGALDeviceFactory::ConfigureLibraryName("D3D12", szDefaultLibraryName);
+  xiiGALDeviceFactory::ConfigureLibraryName("Vulkan", szDefaultLibraryName);
+
   const char* szRendererName   = GetRendererNameFromCommandLine();
   const char* szShaderModel    = "";
   const char* szShaderCompiler = "";
@@ -286,7 +290,7 @@ void xiiGameApplication::Init_LoadRequiredPlugins()
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 
-  // on sandboxed platforms, we can only load data through fileserve, so enforce use of this plugin
+  // On sandboxed platforms, we can only load data through fileserve, so enforce use of this plugin
 #  if XII_DISABLED(XII_SUPPORTS_UNRESTRICTED_FILE_ACCESS)
   xiiPlugin::LoadPlugin("xiiFileservePlugin").IgnoreResult(); // don't care if it fails to load
 #  endif

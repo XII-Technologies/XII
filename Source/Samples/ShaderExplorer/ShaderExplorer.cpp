@@ -69,16 +69,16 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
   if (m_pWindow->m_bCloseRequested || xiiInputManager::GetInputActionState("Main", "CloseApp") == xiiKeyState::Pressed)
     return Execution::Quit;
 
-  // make sure time goes on
+  // Ensure time goes on
   xiiClock::GetGlobalClock()->Update();
 
-  // update all input state
+  // Update all input state
   xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
 
-  // make sure telemetry is sent out regularly
+  // Ensure telemetry is sent out regularly
   xiiTelemetry::PerFrameUpdate();
 
-  // mouse look
+  // Mouse look
   if (xiiInputManager::GetInputActionState("Main", "Look") == xiiKeyState::Down)
   {
     m_pWindow->GetInputDevice()->SetShowMouseCursor(false);
@@ -107,7 +107,7 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
     m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::NoClip);
   }
 
-  // turn camera with keys
+  // Turn camera with keys
   {
     float       fInputValue = 0.0f;
     const float fTurnSpeed  = 1.0f;
@@ -127,7 +127,7 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
     m_pCamera->RotateGlobally(xiiAngle::Radian(0.0), xiiAngle::Radian(mouseMotion.x), xiiAngle::Radian(0.0));
   }
 
-  // movement
+  // Handle movement
   {
     float   fInputValue = 0.0f;
     xiiVec3 cameraMotion(0.0f);
@@ -151,15 +151,16 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
     xiiResourceManager::ReloadAllResources(false);
   }
 
-  // do the rendering
+  // Perform rendering
   {
     // Before starting to render in a frame call this function
     m_pDevice->BeginFrame();
 
     m_pDevice->BeginPipeline("ShaderExplorer", m_hSwapChain);
 
+    xiiGALPass* pGALPass = m_pDevice->BeginPass("xiiShaderExplorerMainPass");
+
     // Must always retrieve the current swapchain render target
-    xiiGALPass*                  pGALPass          = m_pDevice->BeginPass("xiiShaderExplorerMainPass");
     const xiiGALSwapChain*       pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
     xiiGALRenderTargetViewHandle hBBRTV            = m_pDevice->GetDefaultRenderTargetView(pPrimarySwapChain->GetRenderTargets().m_hRTs[0]);
     xiiGALRenderTargetViewHandle hBBDSV            = m_pDevice->GetDefaultRenderTargetView(m_hDepthStencilTexture);
@@ -187,22 +188,22 @@ xiiApplication::Execution xiiShaderExplorerApp::Run()
     xiiRenderContext::GetDefaultInstance()->BindMaterial(m_hMaterial);
     xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(m_hQuadMeshBuffer);
     xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer().IgnoreResult();
-
     xiiRenderContext::GetDefaultInstance()->EndRendering();
+
     m_pDevice->EndPass(pGALPass);
 
     m_pDevice->EndPipeline(m_hSwapChain);
 
     m_pDevice->EndFrame();
+
     xiiRenderContext::GetDefaultInstance()->ResetContextState();
   }
 
-  // needs to be called once per frame
+  // Needs to be called once per frame
   xiiResourceManager::PerFrameUpdate();
 
-  // tell the task system to finish its work for this frame
-  // this has to be done at the very end, so that the task system will only use up the time that is left in this frame for
-  // uploading GPU data etc.
+  // Tell the task system to finish its work for this frame
+  // This has to be done at the very end, so that the task system will only use up the time that is left in this frame for uploading GPU data etc.
   xiiTaskSystem::FinishFrameTasks();
 
   return xiiApplication::Execution::Continue;
@@ -235,16 +236,19 @@ void xiiShaderExplorerApp::AfterCoreSystemsStartup()
 
   xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 
-#if BUILDSYSTEM_ENABLE_DILIGENT_SUPPORT
-  constexpr const char* szDefaultRenderer = "Diligent";
-  xiiGraphicsDevice::Default              = xiiGraphicsDevice::D3D12;
-#else
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   constexpr const char* szDefaultRenderer = "DX11";
-#  else
-#    error Renderer not implemented on platform
-#  endif
+#elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+  constexpr const char* szDefaultRenderer = "Vulkan";
+#else
+#  error Renderer not implemented on platform
 #endif
+
+  constexpr const char* szDefaultLibraryName = "xiiRendererDiligent";
+  xiiGALDeviceFactory::ConfigureLibraryName("DX11", "xiiRendererDX11");
+  xiiGALDeviceFactory::ConfigureLibraryName("D3D11", szDefaultLibraryName);
+  xiiGALDeviceFactory::ConfigureLibraryName("D3D12", szDefaultLibraryName);
+  xiiGALDeviceFactory::ConfigureLibraryName("Vulkan", szDefaultLibraryName);
 
   const char* szRendererName   = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
   const char* szShaderModel    = "";
@@ -353,7 +357,7 @@ void xiiShaderExplorerApp::AfterCoreSystemsStartup()
     xiiGALDevice::SetDefaultDevice(m_pDevice);
   }
 
-  // now that we have a window and device, tell the engine to initialize the rendering infrastructure
+  // Now that we have a window and device, tell the engine to initialize the rendering infrastructure
   xiiStartup::StartupHighLevelSystems();
 
   UpdateSwapChain();
@@ -378,16 +382,16 @@ void xiiShaderExplorerApp::BeforeHighLevelSystemsShutdown()
   m_hQuadMeshBuffer.Invalidate();
   m_pDevice->DestroySwapChain(m_hSwapChain);
 
-  // tell the engine that we are about to destroy window and graphics device,
+  // Tell the engine that we are about to destroy window and graphics device,
   // and that it therefore needs to cleanup anything that depends on that
   xiiStartup::ShutdownHighLevelSystems();
 
-  // now we can destroy the graphics device
+  // Now we can destroy the graphics device
   m_pDevice->Shutdown().IgnoreResult();
 
   XII_DEFAULT_DELETE(m_pDevice);
 
-  // finally destroy the window
+  // Finally destroy the window
   m_pWindow->Destroy().IgnoreResult();
   XII_DEFAULT_DELETE(m_pWindow);
 
@@ -402,9 +406,10 @@ void xiiShaderExplorerApp::UpdateSwapChain()
   {
     xiiGALWindowSwapChainCreationDescription swapChainDesc;
     swapChainDesc.m_pWindow            = m_pWindow;
-    swapChainDesc.m_SampleCount        = xiiGALMSAASampleCount::None;
     swapChainDesc.m_bAllowScreenshots  = true;
     swapChainDesc.m_InitialPresentMode = xiiGALPresentMode::VSync;
+    swapChainDesc.m_SampleCount        = xiiGALMSAASampleCount::None;
+    swapChainDesc.m_BackBufferFormat   = xiiGALResourceFormat::RGBAUByteNormalizedsRGB;
     m_hSwapChain                       = xiiGALWindowSwapChain::Create(swapChainDesc);
   }
   else
@@ -412,12 +417,15 @@ void xiiShaderExplorerApp::UpdateSwapChain()
     m_pDevice->UpdateSwapChain(m_hSwapChain, xiiGALPresentMode::VSync).IgnoreResult();
   }
 
-  if (!m_hSwapChain.IsInvalidated() && !m_hDepthStencilTexture.IsInvalidated())
+  // Do not destroy the texture if the swapchain is minimized
+  if (!m_hSwapChain.IsInvalidated() && !m_hDepthStencilTexture.IsInvalidated() && g_uiWindowWidth != 0 && g_uiWindowHeight != 0)
   {
     m_pDevice->DestroyTexture(m_hDepthStencilTexture);
     m_hDepthStencilTexture.Invalidate();
   }
+
   // Create depth texture
+  if (g_uiWindowWidth != 0 && g_uiWindowHeight != 0)
   {
     xiiGALTextureCreationDescription texDesc;
     texDesc.m_uiWidth             = g_uiWindowWidth;
@@ -471,5 +479,6 @@ void xiiShaderExplorerApp::OnFileChanged(const char* filename, xiiDirectoryWatch
     m_bStuffChanged = true;
   }
 }
+
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiShaderExplorerApp);

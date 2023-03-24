@@ -117,7 +117,7 @@ struct xiiHandedness
     RightHanded,
   };
 
-  /// \brief Holds the default handedness value to use. xii uses 'LeftHanded' by default.
+  /// \brief Holds the default handedness value to use. XII uses 'LeftHanded' by default.
   XII_FOUNDATION_DLL static Enum Default /*= xiiHandedness::LeftHanded*/;
 };
 

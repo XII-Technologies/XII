@@ -111,16 +111,19 @@ public:
     xiiTelemetry::CreateServer();
     xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 
-#if BUILDSYSTEM_ENABLE_DILIGENT_SUPPORT
-    constexpr const char* szDefaultRenderer = "Diligent";
-    xiiGraphicsDevice::Default              = xiiGraphicsDevice::D3D12;
-#else
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
     constexpr const char* szDefaultRenderer = "DX11";
-#  else
-#    error Renderer not implemented on platform
-#  endif
+#elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+    constexpr const char* szDefaultRenderer = "Vulkan";
+#else
+#  error Renderer not implemented on platform
 #endif
+
+    constexpr const char* szDefaultLibraryName = "xiiRendererDiligent";
+    xiiGALDeviceFactory::ConfigureLibraryName("DX11", "xiiRendererDX11");
+    xiiGALDeviceFactory::ConfigureLibraryName("D3D11", szDefaultLibraryName);
+    xiiGALDeviceFactory::ConfigureLibraryName("D3D12", szDefaultLibraryName);
+    xiiGALDeviceFactory::ConfigureLibraryName("Vulkan", szDefaultLibraryName);
 
     const char* szRendererName   = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
     const char* szShaderModel    = "";
@@ -169,6 +172,8 @@ public:
       xiiWindowCreationDesc WindowCreationDesc;
       WindowCreationDesc.m_Resolution.width  = g_uiWindowWidth;
       WindowCreationDesc.m_Resolution.height = g_uiWindowHeight;
+      WindowCreationDesc.m_bShowMouseCursor  = true;
+      WindowCreationDesc.m_bClipMouseCursor  = false;
       WindowCreationDesc.m_Title             = "Texture Sample";
       m_pWindow                              = XII_DEFAULT_NEW(TextureSampleWindow);
       m_pWindow->Initialize(WindowCreationDesc).IgnoreResult();
@@ -257,7 +262,6 @@ public:
     }
   }
 
-
   Execution Run() override
   {
     m_pWindow->ProcessWindowMessages();
@@ -273,6 +277,9 @@ public:
 
     if (xiiInputManager::GetInputActionState("Main", "MouseDown") == xiiKeyState::Down)
     {
+      m_pWindow->GetInputDevice()->SetShowMouseCursor(false);
+      m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::ClipToPosition);
+
       float       fInputValue = 0.0f;
       const float fMouseSpeed = 0.5f;
 
@@ -284,6 +291,11 @@ public:
         m_vCameraPosition.y += fInputValue * fMouseSpeed;
       if (xiiInputManager::GetInputActionState("Main", "MoveNegY", &fInputValue) != xiiKeyState::Up)
         m_vCameraPosition.y -= fInputValue * fMouseSpeed;
+    }
+    else
+    {
+      m_pWindow->GetInputDevice()->SetShowMouseCursor(true);
+      m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::NoClip);
     }
 
     // update all input state
@@ -359,20 +371,21 @@ public:
       }
 
       xiiRenderContext::GetDefaultInstance()->EndRendering();
+
       m_pDevice->EndPass(pGALPass);
 
       m_pDevice->EndPipeline(m_hSwapChain);
 
       m_pDevice->EndFrame();
+
       xiiRenderContext::GetDefaultInstance()->ResetContextState();
     }
 
-    // needs to be called once per frame
+    // Needs to be called once per frame
     xiiResourceManager::PerFrameUpdate();
 
-    // tell the task system to finish its work for this frame
-    // this has to be done at the very end, so that the task system will only use up the time that is left in this frame for
-    // uploading GPU data etc.
+    // Tell the task system to finish its work for this frame
+    // This has to be done at the very end, so that the task system will only use up the time that is left in this frame for uploading GPU data etc.
     xiiTaskSystem::FinishFrameTasks();
 
     return xiiApplication::Execution::Continue;

@@ -27,11 +27,12 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
     xiiShaderMetaData::Read(metaData, byteCode[i], m_DescriptorSets[i], m_VertexInputAttributes);
 
     Diligent::ShaderCreateInfo ShaderCI;
-    ShaderCI.Desc.Name       = m_Description.m_szName;
-    ShaderCI.Desc.ShaderType = xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)i);
-    ShaderCI.ByteCode        = reinterpret_cast<const void*>(byteCode[i].GetPtr());
-    ShaderCI.ByteCodeSize    = byteCode[i].GetCount();
-    ShaderCI.SourceLanguage  = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.Desc.Name                    = m_Description.m_szName;
+    ShaderCI.Desc.ShaderType              = xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)i);
+    ShaderCI.ByteCode                     = reinterpret_cast<const void*>(byteCode[i].GetPtr());
+    ShaderCI.ByteCodeSize                 = byteCode[i].GetCount();
+    ShaderCI.SourceLanguage               = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
+    ShaderCI.LoadConstantBufferReflection = false;
 
     pDeviceDiligent->GetDevice()->CreateShader(ShaderCI, &m_pShaderStages[i]);
 

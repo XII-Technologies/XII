@@ -145,8 +145,6 @@ xiiApplication::Execution xiiComputeShaderHistogramApp::Run()
 
 void xiiComputeShaderHistogramApp::AfterCoreSystemsStartup()
 {
-  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D12;
-
   SUPER::AfterCoreSystemsStartup();
 
   m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
@@ -234,11 +232,11 @@ void xiiComputeShaderHistogramApp::BeforeHighLevelSystemsShutdown()
   m_hScreenSRV.Invalidate();
   device->DestroyTexture(m_hScreenTexture);
   m_hScreenTexture.Invalidate();
-  device->DestroySwapChain(m_hSwapChain);
 
   device->DestroyUnorderedAccessView(m_hHistogramUAV);
   m_hHistogramUAV.Invalidate();
   m_hHistogramSRV.Invalidate();
+
   device->DestroyTexture(m_hHistogramTexture);
   m_hHistogramTexture.Invalidate();
 
@@ -255,29 +253,29 @@ void xiiComputeShaderHistogramApp::CreateHistogramQuad()
     const float borderOffsetPix = 80.0f;
     const float sizeScreen      = 0.8f;
 
-    xiiGeometry             geom;
-    xiiGeometry::GeoOptions opt;
-    opt.m_Color     = xiiColor::Black;
-    opt.m_Transform = xiiMat4(xiiMat3::IdentityMatrix(), xiiVec3(1.0f - pixToScreen.x * borderOffsetPix - sizeScreen / 2, -1.0f + pixToScreen.y * borderOffsetPix + sizeScreen / 2, 0.0f));
-    geom.AddRectXY(xiiVec2(sizeScreen, sizeScreen), 1, 1, opt);
+    xiiGeometry             geometry;
+    xiiGeometry::GeoOptions options;
+    options.m_Color     = xiiColor::Black;
+    options.m_Transform = xiiMat4(xiiMat3::IdentityMatrix(), xiiVec3(1.0f - pixToScreen.x * borderOffsetPix - sizeScreen / 2, -1.0f + pixToScreen.y * borderOffsetPix + sizeScreen / 2, 0.0f));
+    geometry.AddRectXY(xiiVec2(sizeScreen, sizeScreen), 1, 1, options);
 
-    xiiMeshBufferResourceDescriptor desc;
-    desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALResourceFormat::XYZFloat);
-    desc.AddStream(xiiGALVertexAttributeSemantic::TexCoord0, xiiGALResourceFormat::XYFloat);
-    desc.AllocateStreamsFromGeometry(geom);
+    xiiMeshBufferResourceDescriptor descriptor;
+    descriptor.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALResourceFormat::XYZFloat);
+    descriptor.AddStream(xiiGALVertexAttributeSemantic::TexCoord0, xiiGALResourceFormat::XYFloat);
+    descriptor.AllocateStreamsFromGeometry(geometry);
 
     xiiUInt32 t = 0;
-    for (xiiUInt32 p = 0; p < geom.GetPolygons().GetCount(); ++p)
+    for (xiiUInt32 p = 0; p < geometry.GetPolygons().GetCount(); ++p)
     {
-      for (xiiUInt32 v = 0; v < geom.GetPolygons()[p].m_Vertices.GetCount() - 2; ++v)
+      for (xiiUInt32 v = 0; v < geometry.GetPolygons()[p].m_Vertices.GetCount() - 2; ++v)
       {
-        desc.SetTriangleIndices(t, geom.GetPolygons()[p].m_Vertices[0], geom.GetPolygons()[p].m_Vertices[v + 1], geom.GetPolygons()[p].m_Vertices[v + 2]);
+        descriptor.SetTriangleIndices(t, geometry.GetPolygons()[p].m_Vertices[0], geometry.GetPolygons()[p].m_Vertices[v + 1], geometry.GetPolygons()[p].m_Vertices[v + 2]);
 
         ++t;
       }
     }
 
-    m_hHistogramQuadMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>("{4BEFA142-FEDB-42D0-84DC-58223ADD8C62}", std::move(desc));
+    m_hHistogramQuadMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>("{4BEFA142-FEDB-42D0-84DC-58223ADD8C62}", std::move(descriptor));
   }
 }
 
@@ -289,5 +287,6 @@ void xiiComputeShaderHistogramApp::OnFileChanged(const char* filename, xiiDirect
     m_bDirectoryModified = true;
   }
 }
+
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiComputeShaderHistogramApp);

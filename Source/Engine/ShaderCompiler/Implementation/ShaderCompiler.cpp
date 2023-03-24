@@ -6,16 +6,16 @@
 
 #include <ShaderCompiler/ShaderMetadata.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D11.h>
 #endif
 
-#if D3D12_SUPPORTED
+#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D12.h>
+#endif
 
-#  include <atlcomcli.h>
-#  include <d3d12shader.h>
-#  include <dxc/dxcapi.h>
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+#  include <ShaderCompiler/Implementation/Vulkan/ShaderCompilerVulkan.h>
 #endif
 
 // clang-format off
@@ -24,9 +24,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 ////////// Utility Functions //////////
-
-constexpr xiiUInt32 VK_API_VERSION_1_1 = (1u << 22) | (1u << 12);
-constexpr xiiUInt32 VK_API_VERSION_1_2 = (1u << 22) | (2u << 12);
 
 const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xiiGALShaderStage::Enum Stage)
 {
@@ -305,9 +302,14 @@ xiiResult xiiShaderCompilerProgram::Initialize(const char* szPlatformName)
 {
   if (m_VertexInputMapping.IsEmpty())
   {
-    m_VertexInputMapping["POSITION"] = xiiGALVertexAttributeSemantic::Position;
+    m_VertexInputMapping["POSITION"]  = xiiGALVertexAttributeSemantic::Position;
+    m_VertexInputMapping["POSITION0"] = xiiGALVertexAttributeSemantic::Position;
+
     m_VertexInputMapping["TANGENT"]  = xiiGALVertexAttributeSemantic::Tangent;
-    m_VertexInputMapping["NORMAL"]   = xiiGALVertexAttributeSemantic::Normal;
+    m_VertexInputMapping["TANGENT0"] = xiiGALVertexAttributeSemantic::Tangent;
+
+    m_VertexInputMapping["NORMAL"]  = xiiGALVertexAttributeSemantic::Normal;
+    m_VertexInputMapping["NORMAL0"] = xiiGALVertexAttributeSemantic::Normal;
 
     m_VertexInputMapping["COLOR0"] = xiiGALVertexAttributeSemantic::Color0;
     m_VertexInputMapping["COLOR1"] = xiiGALVertexAttributeSemantic::Color1;
@@ -318,7 +320,6 @@ xiiResult xiiShaderCompilerProgram::Initialize(const char* szPlatformName)
     m_VertexInputMapping["COLOR6"] = xiiGALVertexAttributeSemantic::Color6;
     m_VertexInputMapping["COLOR7"] = xiiGALVertexAttributeSemantic::Color7;
 
-    m_VertexInputMapping["TEXCOORD"]  = xiiGALVertexAttributeSemantic::TexCoord0;
     m_VertexInputMapping["TEXCOORD0"] = xiiGALVertexAttributeSemantic::TexCoord0;
     m_VertexInputMapping["TEXCOORD1"] = xiiGALVertexAttributeSemantic::TexCoord1;
     m_VertexInputMapping["TEXCOORD2"] = xiiGALVertexAttributeSemantic::TexCoord2;
@@ -330,9 +331,12 @@ xiiResult xiiShaderCompilerProgram::Initialize(const char* szPlatformName)
     m_VertexInputMapping["TEXCOORD8"] = xiiGALVertexAttributeSemantic::TexCoord8;
     m_VertexInputMapping["TEXCOORD9"] = xiiGALVertexAttributeSemantic::TexCoord9;
 
-    m_VertexInputMapping["BITANGENT"]    = xiiGALVertexAttributeSemantic::BiTangent;
+    m_VertexInputMapping["BITANGENT"]  = xiiGALVertexAttributeSemantic::BiTangent;
+    m_VertexInputMapping["BITANGENT0"] = xiiGALVertexAttributeSemantic::BiTangent;
+
     m_VertexInputMapping["BONEINDICES0"] = xiiGALVertexAttributeSemantic::BoneIndices0;
     m_VertexInputMapping["BONEINDICES1"] = xiiGALVertexAttributeSemantic::BoneIndices1;
+
     m_VertexInputMapping["BONEWEIGHTS0"] = xiiGALVertexAttributeSemantic::BoneWeights0;
     m_VertexInputMapping["BONEWEIGHTS1"] = xiiGALVertexAttributeSemantic::BoneWeights1;
   }
@@ -361,7 +365,7 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
 
       switch (device)
       {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
         case xiiGraphicsDevice::D3D11:
         {
           xiiShaderCompilerD3D11 shaderCompilerD3D11;
@@ -376,14 +380,13 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         }
         break;
 #endif
-#if D3D12_ENABLED
+#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
         case xiiGraphicsDevice::D3D12:
         {
-          xiiComPtr<IDxcBlob>    pOutputBlob;
           xiiShaderCompilerD3D12 shaderCompilerD3D12;
-          if (shaderCompilerD3D12.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode(), pOutputBlob).Succeeded())
+          if (shaderCompilerD3D12.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
           {
-            XII_SUCCEED_OR_RETURN(shaderCompilerD3D12.ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage, pOutputBlob, m_VertexInputMapping));
+            XII_SUCCEED_OR_RETURN(shaderCompilerD3D12.ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage, m_VertexInputMapping));
           }
           else
           {
@@ -392,9 +395,18 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         }
         break;
 #endif
-#if VULKAN_ENABLED
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
         case xiiGraphicsDevice::Vulkan:
         {
+          xiiShaderCompilerVulkan shaderCompilerVulkan;
+          if (shaderCompilerVulkan.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
+          {
+            XII_SUCCEED_OR_RETURN(shaderCompilerVulkan.ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage, m_VertexInputMapping));
+          }
+          else
+          {
+            return XII_FAILURE;
+          }
         }
         break;
 #endif

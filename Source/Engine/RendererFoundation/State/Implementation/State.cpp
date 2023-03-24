@@ -3,6 +3,8 @@
 #include <RendererFoundation/RendererFoundationDLL.h>
 #include <RendererFoundation/State/State.h>
 
+//////////////////////////////////////////////////////////////////////////
+
 xiiGALBlendState::xiiGALBlendState(const xiiGALBlendStateCreationDescription& Description) :
   xiiGALObject(Description)
 {
@@ -10,7 +12,7 @@ xiiGALBlendState::xiiGALBlendState(const xiiGALBlendStateCreationDescription& De
 
 xiiGALBlendState::~xiiGALBlendState() {}
 
-
+//////////////////////////////////////////////////////////////////////////
 
 xiiGALDepthStencilState::xiiGALDepthStencilState(const xiiGALDepthStencilStateCreationDescription& Description) :
   xiiGALObject(Description)
@@ -19,7 +21,7 @@ xiiGALDepthStencilState::xiiGALDepthStencilState(const xiiGALDepthStencilStateCr
 
 xiiGALDepthStencilState::~xiiGALDepthStencilState() {}
 
-
+//////////////////////////////////////////////////////////////////////////
 
 xiiGALRasterizerState::xiiGALRasterizerState(const xiiGALRasterizerStateCreationDescription& Description) :
   xiiGALObject(Description)
@@ -28,6 +30,7 @@ xiiGALRasterizerState::xiiGALRasterizerState(const xiiGALRasterizerStateCreation
 
 xiiGALRasterizerState::~xiiGALRasterizerState() {}
 
+//////////////////////////////////////////////////////////////////////////
 
 xiiGALSamplerState::xiiGALSamplerState(const xiiGALSamplerStateCreationDescription& Description) :
   xiiGALObject(Description)
@@ -36,6 +39,7 @@ xiiGALSamplerState::xiiGALSamplerState(const xiiGALSamplerStateCreationDescripti
 
 xiiGALSamplerState::~xiiGALSamplerState() {}
 
+//////////////////////////////////////////////////////////////////////////
 
 
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_State_Implementation_State);

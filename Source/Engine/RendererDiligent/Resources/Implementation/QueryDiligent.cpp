@@ -56,4 +56,5 @@ xiiResult xiiGALQueryDiligent::DeInitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
+
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Resources_Implementation_QueryDiligent);

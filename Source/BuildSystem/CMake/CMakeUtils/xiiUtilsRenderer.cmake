@@ -3,9 +3,7 @@
 # #####################################
 
 macro(xii_requires_renderer)
-	if(XII_CMAKE_PLATFORM_WINDOWS)
-		xii_requires_d3d()
-	endif()
+	xii_requires_one_of(XII_BUILD_D3D11 XII_BUILD_D3D12 XII_BUILD_VULKAN)
 endmacro()
 
 # #####################################
@@ -14,14 +12,14 @@ endmacro()
 # #####################################
 
 function(xii_add_renderers TARGET_NAME)
-	if(XII_CMAKE_PLATFORM_WINDOWS)
+    if (XII_BUILD_D3D11)
 		target_link_libraries(${TARGET_NAME}
 			PRIVATE
 			RendererDX11
 		)
-		xii_link_target_dx11(${TARGET_NAME})
+		xii_link_target_d3d11(${TARGET_NAME})
 	endif()
-	
+
 	if (XII_BUILD_DILIGENT)
 		target_link_libraries(${TARGET_NAME}
 			PRIVATE

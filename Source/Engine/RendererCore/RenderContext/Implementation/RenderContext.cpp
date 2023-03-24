@@ -1295,7 +1295,7 @@ xiiTextureFilterSetting::Enum xiiRenderContext::GetSpecificTextureFilter(xiiText
   if (configuration >= xiiTextureFilterSetting::FixedNearest && configuration <= xiiTextureFilterSetting::FixedAnisotropic16x)
     return configuration;
 
-  int iFilter = m_DefaultTextureFilter;
+  xiiInt32 iFilter = m_DefaultTextureFilter;
 
   switch (configuration)
   {
@@ -1315,7 +1315,7 @@ xiiTextureFilterSetting::Enum xiiRenderContext::GetSpecificTextureFilter(xiiText
       break;
   }
 
-  iFilter = xiiMath::Clamp<int>(iFilter, xiiTextureFilterSetting::FixedBilinear, xiiTextureFilterSetting::FixedAnisotropic16x);
+  iFilter = xiiMath::Clamp<xiiInt32>(iFilter, xiiTextureFilterSetting::FixedBilinear, xiiTextureFilterSetting::FixedAnisotropic16x);
 
   return (xiiTextureFilterSetting::Enum)iFilter;
 }

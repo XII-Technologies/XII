@@ -11,7 +11,7 @@ o
 		s %AssetType{"ColorGradient"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{13621572428772333617,1444910283028215760}}
-		u4 %Hash{1806830708658589795}
+		u4 %Hash{3750330796844306357}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %References{}
@@ -207,7 +207,7 @@ Types
 {
 o
 {
-	Uuid %id{u4{9491473581377719452,4451399860225586302}}
+	Uuid %id{u4{9083836085341169600,305910007582073419}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
@@ -224,7 +224,7 @@ o
 }
 o
 {
-	Uuid %id{u4{4645803681883095669,7506122234867881289}}
+	Uuid %id{u4{11494814606417980374,389175445999033773}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
@@ -241,7 +241,7 @@ o
 }
 o
 {
-	Uuid %id{u4{6089094783765586323,8705960867921430659}}
+	Uuid %id{u4{8224268647907297484,2300230217040154700}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
@@ -258,24 +258,7 @@ o
 }
 o
 {
-	Uuid %id{u4{9143222088539867141,9609721939939207251}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiReflectedClass"}
-		s %PluginName{"xiiEditorPluginAssets"}
-		VarArray %Properties{}
-		s %TypeName{"xiiColorGradientAssetData"}
-		u3 %TypeVersion{2}
-	}
-}
-o
-{
-	Uuid %id{u4{13088963179257465887,12792043508414429321}}
+	Uuid %id{u4{12708453995482030977,4115787865304145168}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
@@ -292,7 +275,7 @@ o
 }
 o
 {
-	Uuid %id{u4{983387834180907111,17935407260904399048}}
+	Uuid %id{u4{11757360558073105519,15956676577570765383}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
@@ -305,6 +288,23 @@ o
 		VarArray %Properties{}
 		s %TypeName{"xiiReflectedClass"}
 		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{10236299322142574248,16632249877562647922}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"xiiEditorPluginAssets"}
+		VarArray %Properties{}
+		s %TypeName{"xiiColorGradientAssetData"}
+		u3 %TypeVersion{2}
 	}
 }
 }

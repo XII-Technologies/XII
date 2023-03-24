@@ -5,11 +5,11 @@ XII_STATICLINK_LIBRARY(RendererDiligent)
   if (bReturn)
     return;
 
-  XII_STATICLINK_REFERENCE(RendererDiligent_Context_Implementation_ContextDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_CommandEncoder_Implementation_CommandEncoderImplDiligent);
   XII_STATICLINK_REFERENCE(RendererDiligent_Device_Implementation_DeviceDiligent);
+  XII_STATICLINK_REFERENCE(RendererDiligent_Device_Implementation_PassDiligent);
   XII_STATICLINK_REFERENCE(RendererDiligent_Device_Implementation_SwapChainDiligent);
   XII_STATICLINK_REFERENCE(RendererDiligent_Resources_Implementation_BufferDiligent);
-  XII_STATICLINK_REFERENCE(RendererDiligent_Resources_Implementation_FenceDiligent);
   XII_STATICLINK_REFERENCE(RendererDiligent_Resources_Implementation_QueryDiligent);
   XII_STATICLINK_REFERENCE(RendererDiligent_Resources_Implementation_RenderTargetViewDiligent);
   XII_STATICLINK_REFERENCE(RendererDiligent_Resources_Implementation_ResourceViewDiligent);
