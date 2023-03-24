@@ -1,7 +1,5 @@
 xii_cmake_init()
 
-
-
 xii_requires_rmlui()
 
 # Get the name of this folder as the project name

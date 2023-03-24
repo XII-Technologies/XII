@@ -1,7 +1,5 @@
 xii_cmake_init()
 
-
-
 xii_requires(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP)
 
 xii_requires(XII_3RDPARTY_RENDERDOC_SUPPORT)
@@ -19,4 +17,4 @@ target_link_libraries(${PROJECT_NAME}
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/RenderDoc.xiiPluginBundle" $<TARGET_FILE_DIR:${PROJECT_NAME}>
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	  )
+)
