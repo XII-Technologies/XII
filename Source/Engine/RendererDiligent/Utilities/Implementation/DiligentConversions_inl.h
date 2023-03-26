@@ -537,20 +537,38 @@ XII_ALWAYS_INLINE Diligent::SHADER_TYPE xiiDiligentUtils::GALToDiligentShaderSta
 {
   switch (e)
   {
+    case xiiGALShaderStage::Undefined:
+      return Diligent::SHADER_TYPE_UNKNOWN;
     case xiiGALShaderStage::VertexShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_VERTEX;
-    case xiiGALShaderStage::HullShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_HULL;
-    case xiiGALShaderStage::DomainShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_DOMAIN;
-    case xiiGALShaderStage::GeometryShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_GEOMETRY;
+      return Diligent::SHADER_TYPE_VERTEX;
     case xiiGALShaderStage::PixelShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_PIXEL;
+      return Diligent::SHADER_TYPE_PIXEL;
+    case xiiGALShaderStage::GeometryShader:
+      return Diligent::SHADER_TYPE_GEOMETRY;
+    case xiiGALShaderStage::HullShader:
+      return Diligent::SHADER_TYPE_HULL;
+    case xiiGALShaderStage::DomainShader:
+      return Diligent::SHADER_TYPE_DOMAIN;
     case xiiGALShaderStage::ComputeShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_COMPUTE;
+      return Diligent::SHADER_TYPE_COMPUTE;
+    case xiiGALShaderStage::Amplification:
+      return Diligent::SHADER_TYPE_AMPLIFICATION;
+    case xiiGALShaderStage::Mesh:
+      return Diligent::SHADER_TYPE_MESH;
+    case xiiGALShaderStage::RayGen:
+      return Diligent::SHADER_TYPE_RAY_GEN;
+    case xiiGALShaderStage::RayMiss:
+      return Diligent::SHADER_TYPE_RAY_MISS;
+    case xiiGALShaderStage::RayAnyHit:
+      return Diligent::SHADER_TYPE_RAY_ANY_HIT;
+    case xiiGALShaderStage::RayClosestHit:
+      return Diligent::SHADER_TYPE_RAY_CLOSEST_HIT;
+    case xiiGALShaderStage::RayIntersection:
+      return Diligent::SHADER_TYPE_RAY_INTERSECTION;
+    case xiiGALShaderStage::Callable:
+      return Diligent::SHADER_TYPE_CALLABLE;
 
-      XII_ASSERT_NOT_IMPLEMENTED;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return Diligent::SHADER_TYPE::SHADER_TYPE_UNKNOWN;
 }
