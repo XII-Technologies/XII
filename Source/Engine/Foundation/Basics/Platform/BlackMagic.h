@@ -76,19 +76,60 @@
 
 //////////////////////////////////////////////////////////////////////////
 
-#define XII_EXPAND_ARGS_WITH_INDEX_1(op, a0)                         op(a0, 0)
-#define XII_EXPAND_ARGS_WITH_INDEX_2(op, a0, a1)                     op(a0, 0) op(a1, 1)
-#define XII_EXPAND_ARGS_WITH_INDEX_3(op, a0, a1, a2)                 op(a0, 0) op(a1, 1) op(a2, 2)
-#define XII_EXPAND_ARGS_WITH_INDEX_4(op, a0, a1, a2, a3)             op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3)
-#define XII_EXPAND_ARGS_WITH_INDEX_5(op, a0, a1, a2, a3, a4)         op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4)
-#define XII_EXPAND_ARGS_WITH_INDEX_6(op, a0, a1, a2, a3, a4, a5)     op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5)
-#define XII_EXPAND_ARGS_WITH_INDEX_7(op, a0, a1, a2, a3, a4, a5, a6) op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6)
-#define XII_EXPAND_ARGS_WITH_INDEX_8(op, a0, a1, a2, a3, a4, a5, a6, a7) \
-  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7)
-#define XII_EXPAND_ARGS_WITH_INDEX_9(op, a0, a1, a2, a3, a4, a5, a6, a7, a8) \
-  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 8)
-#define XII_EXPAND_ARGS_WITH_INDEX_10(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9) \
-  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 8) op(a9, 9)
+#define XII_EXPAND_ARGS_WITH_INDEX_1(op, a0)                                      op(a0, 0)
+#define XII_EXPAND_ARGS_WITH_INDEX_2(op, a0, a1)                                  op(a0, 0) op(a1, 1)
+#define XII_EXPAND_ARGS_WITH_INDEX_3(op, a0, a1, a2)                              op(a0, 0) op(a1, 1) op(a2, 2)
+#define XII_EXPAND_ARGS_WITH_INDEX_4(op, a0, a1, a2, a3)                          op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3)
+#define XII_EXPAND_ARGS_WITH_INDEX_5(op, a0, a1, a2, a3, a4)                      op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4)
+#define XII_EXPAND_ARGS_WITH_INDEX_6(op, a0, a1, a2, a3, a4, a5)                  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5)
+#define XII_EXPAND_ARGS_WITH_INDEX_7(op, a0, a1, a2, a3, a4, a5, a6)              op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6)
+#define XII_EXPAND_ARGS_WITH_INDEX_8(op, a0, a1, a2, a3, a4, a5, a6, a7)          op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7)
+#define XII_EXPAND_ARGS_WITH_INDEX_9(op, a0, a1, a2, a3, a4, a5, a6, a7, a8)      op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9)
+#define XII_EXPAND_ARGS_WITH_INDEX_10(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9) op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9)
+#define XII_EXPAND_ARGS_WITH_INDEX_11(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10)
+#define XII_EXPAND_ARGS_WITH_INDEX_12(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11)
+#define XII_EXPAND_ARGS_WITH_INDEX_13(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12)
+#define XII_EXPAND_ARGS_WITH_INDEX_14(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13)
+#define XII_EXPAND_ARGS_WITH_INDEX_15(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14)
+#define XII_EXPAND_ARGS_WITH_INDEX_16(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15)
+#define XII_EXPAND_ARGS_WITH_INDEX_17(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16)
+#define XII_EXPAND_ARGS_WITH_INDEX_18(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17)
+#define XII_EXPAND_ARGS_WITH_INDEX_19(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18)
+#define XII_EXPAND_ARGS_WITH_INDEX_20(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19)
+#define XII_EXPAND_ARGS_WITH_INDEX_21(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19) op(a20, 20)
+#define XII_EXPAND_ARGS_WITH_INDEX_22(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19) op(a20, 20) op(a21, 21)
+#define XII_EXPAND_ARGS_WITH_INDEX_23(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19) op(a20, 20) op(a21, 21) op(a22, 22)
+#define XII_EXPAND_ARGS_WITH_INDEX_24(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19) op(a20, 20) op(a21, 21) op(a22, 22) op(a23, 23)
+#define XII_EXPAND_ARGS_WITH_INDEX_25(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19) op(a20, 20) op(a21, 21) op(a22, 22) op(a23, 23) op(a24, 24)
+#define XII_EXPAND_ARGS_WITH_INDEX_26(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19) op(a20, 20) op(a21, 21) op(a22, 22) op(a23, 23) op(a24, 24) op(a25, 25)
+#define XII_EXPAND_ARGS_WITH_INDEX_27(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19) op(a20, 20) op(a21, 21) op(a22, 22) op(a23, 23) op(a24, 24) op(a25, 25) op(a26, 26)
+#define XII_EXPAND_ARGS_WITH_INDEX_28(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19) op(a20, 20) op(a21, 21) op(a22, 22) op(a23, 23) op(a24, 24) op(a25, 25) op(a26, 26) op(a27, 27)
+#define XII_EXPAND_ARGS_WITH_INDEX_29(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19) op(a20, 20) op(a21, 21) op(a22, 22) op(a23, 23) op(a24, 24) op(a25, 25) op(a26, 26) op(a27, 27) op(a28, 28)
+#define XII_EXPAND_ARGS_WITH_INDEX_30(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19) op(a20, 20) op(a21, 21) op(a22, 22) op(a23, 23) op(a24, 24) op(a25, 25) op(a26, 26) op(a27, 27) op(a28, 28) op(a29, 29)
+#define XII_EXPAND_ARGS_WITH_INDEX_31(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19) op(a20, 20) op(a21, 21) op(a22, 22) op(a23, 23) op(a24, 24) op(a25, 25) op(a26, 26) op(a27, 27) op(a28, 28) op(a29, 29) op(a30, 30)
+#define XII_EXPAND_ARGS_WITH_INDEX_32(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31) \
+  op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19) op(a20, 20) op(a21, 21) op(a22, 22) op(a23, 23) op(a24, 24) op(a25, 25) op(a26, 26) op(a27, 27) op(a28, 28) op(a29, 29) op(a30, 30) op(a31, 31)
 
 #define XII_EXPAND_ARGS_WITH_INDEX(op, ...) XII_CALL_MACRO(XII_CONCAT(XII_EXPAND_ARGS_WITH_INDEX_, XII_VA_NUM_ARGS(__VA_ARGS__)), (op, __VA_ARGS__))
 
@@ -116,7 +157,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 
-#define XII_EXPAND_ARGS_PAIR_COMMA_1(...)                                         /* handles the case of zero parameters (e.g. an empty __VA_ARGS__) */
+#define XII_EXPAND_ARGS_PAIR_COMMA_1(...)                                         /* This handles the case of zero parameters (e.g. an empty __VA_ARGS__) */
 #define XII_EXPAND_ARGS_PAIR_COMMA_2(op, a0, a1)                                  op(a0, a1)
 #define XII_EXPAND_ARGS_PAIR_COMMA_3(op, a0, a1, ...)                             op(a0, a1)
 #define XII_EXPAND_ARGS_PAIR_COMMA_4(op, a0, a1, a2, a3)                          op(a0, a1), op(a2, a3)
