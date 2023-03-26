@@ -29,6 +29,46 @@
   op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10)
 #define XII_EXPAND_ARGS_12(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) \
   op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11)
+#define XII_EXPAND_ARGS_13(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12)
+#define XII_EXPAND_ARGS_14(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13)
+#define XII_EXPAND_ARGS_15(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14)
+#define XII_EXPAND_ARGS_16(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15)
+#define XII_EXPAND_ARGS_17(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16)
+#define XII_EXPAND_ARGS_18(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17)
+#define XII_EXPAND_ARGS_19(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18)
+#define XII_EXPAND_ARGS_20(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18) op(a19)
+#define XII_EXPAND_ARGS_21(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18) op(a19) op(a20)
+#define XII_EXPAND_ARGS_22(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18) op(a19) op(a20) op(a21)
+#define XII_EXPAND_ARGS_23(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18) op(a19) op(a20) op(a21) op(a22)
+#define XII_EXPAND_ARGS_24(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18) op(a19) op(a20) op(a21) op(a22) op(a23)
+#define XII_EXPAND_ARGS_25(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18) op(a19) op(a20) op(a21) op(a22) op(a23) op(a24)
+#define XII_EXPAND_ARGS_26(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18) op(a19) op(a20) op(a21) op(a22) op(a23) op(a24) op(a25)
+#define XII_EXPAND_ARGS_27(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18) op(a19) op(a20) op(a21) op(a22) op(a23) op(a24) op(a25) op(a26)
+#define XII_EXPAND_ARGS_28(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18) op(a19) op(a20) op(a21) op(a22) op(a23) op(a24) op(a25) op(a26) op(a27)
+#define XII_EXPAND_ARGS_29(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18) op(a19) op(a20) op(a21) op(a22) op(a23) op(a24) op(a25) op(a26) op(a27) op(a28)
+#define XII_EXPAND_ARGS_30(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18) op(a19) op(a20) op(a21) op(a22) op(a23) op(a24) op(a25) op(a26) op(a27) op(a28) op(a29)
+#define XII_EXPAND_ARGS_31(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18) op(a19) op(a20) op(a21) op(a22) op(a23) op(a24) op(a25) op(a26) op(a27) op(a28) op(a29) op(a30)
+#define XII_EXPAND_ARGS_32(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31) \
+  op(a0) op(a1) op(a2) op(a3) op(a4) op(a5) op(a6) op(a7) op(a8) op(a9) op(a10) op(a11) op(a12) op(a13) op(a14) op(a15) op(a16) op(a17) op(a18) op(a19) op(a20) op(a21) op(a22) op(a23) op(a24) op(a25) op(a26) op(a27) op(a28) op(a29) op(a30) op(a31)
 
 /// Variadic macro "dispatching" the arguments to the correct macro.
 /// The number of arguments is found by using XII_VA_NUM_ARGS(__VA_ARGS__)
