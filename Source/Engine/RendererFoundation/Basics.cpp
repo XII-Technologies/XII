@@ -47,7 +47,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShaderStage, 1)
 XII_ENUM_CONSTANTS(
-  xiiGALShaderStage::None,
+  xiiGALShaderStage::Undefined,
   xiiGALShaderStage::VertexShader,
   xiiGALShaderStage::PixelShader,
   xiiGALShaderStage::GeometryShader,
@@ -66,7 +66,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format off
 const char* xiiGALShaderStage::Names[ENUM_COUNT] = {
-  "None",
+  "Undefined",
   "VertexShader",
   "PixelShader",
   "GeometryShader",
@@ -107,7 +107,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALBlendFactor, 1)
 XII_ENUM_CONSTANTS(
-  xiiGALBlendFactor::None,
+  xiiGALBlendFactor::Undefined,
   xiiGALBlendFactor::Zero,
   xiiGALBlendFactor::SrcColor,
   xiiGALBlendFactor::InvSrcColor,
@@ -128,7 +128,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALBlendOperation, 1)
 XII_ENUM_CONSTANTS(
-  xiiGALBlendOperation::None,
+  xiiGALBlendOperation::Undefined,
   xiiGALBlendOperation::Add,
   xiiGALBlendOperation::Subtract,
   xiiGALBlendOperation::RevSubtract,
@@ -138,11 +138,10 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALStencilOperation, 1)
 XII_ENUM_CONSTANTS(
-  xiiGALStencilOperation::None,
+  xiiGALStencilOperation::Undefined,
   xiiGALStencilOperation::Keep,
   xiiGALStencilOperation::Zero,
   xiiGALStencilOperation::Replace,
-  xiiGALStencilOperation::None,
   xiiGALStencilOperation::IncrementSaturated,
   xiiGALStencilOperation::DecrementSaturated,
   xiiGALStencilOperation::Invert,
@@ -150,5 +149,52 @@ XII_ENUM_CONSTANTS(
   xiiGALStencilOperation::DecrementWrap)
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALCompareFunc, 1)
+XII_ENUM_CONSTANTS(
+  xiiGALCompareFunc::Undefined,
+  xiiGALCompareFunc::Never,
+  xiiGALCompareFunc::Less,
+  xiiGALCompareFunc::Equal,
+  xiiGALCompareFunc::LessEqual,
+  xiiGALCompareFunc::Greater,
+  xiiGALCompareFunc::NotEqual,
+  xiiGALCompareFunc::GreaterEqual,
+  xiiGALCompareFunc::Always)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALCullMode, 1)
+XII_ENUM_CONSTANTS(
+  xiiGALCullMode::Undefined,
+  xiiGALCullMode::None,
+  xiiGALCullMode::Front,
+  xiiGALCullMode::Back)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALTextureFilterMode, 1)
+XII_ENUM_CONSTANTS(
+  xiiGALTextureFilterMode::Undefined,
+  xiiGALTextureFilterMode::Point,
+  xiiGALTextureFilterMode::Linear,
+  xiiGALTextureFilterMode::Anisotropic,
+  xiiGALTextureFilterMode::ComparisonPoint,
+  xiiGALTextureFilterMode::ComparisonLinear,
+  xiiGALTextureFilterMode::ComparisonAnisotropic)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALUpdateMode, 1)
+XII_ENUM_CONSTANTS(
+  xiiGALUpdateMode::Undefined,
+  xiiGALUpdateMode::DoNotWait,
+  xiiGALUpdateMode::Discard,
+  xiiGALUpdateMode::NoOverWrite,
+  xiiGALUpdateMode::CopyToTempStorage)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALUpdateType, 1)
+XII_ENUM_CONSTANTS(
+  xiiGALUpdateType::Read,
+  xiiGALUpdateType::Write,
+  xiiGALUpdateType::ReadWrite)
+XII_END_STATIC_REFLECTED_ENUM;
 
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Basics);

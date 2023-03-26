@@ -180,7 +180,7 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALShaderStage
 
   enum Enum : xiiUInt32
   {
-    None = 0x0, ///< Undefined shader stage.
+    Undefined = 0x0, ///< Undefined shader stage.
 
     VertexShader    = XII_BIT(0),  ///< Vertex shader stage.
     PixelShader     = XII_BIT(1),  ///< Pixel (fragment) shader stage.
@@ -203,7 +203,7 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALShaderStage
     AllMesh       = Amplification | Mesh | PixelShader,                                        ///< All mesh shading pipeline shader stages.
     AllRayTracing = RayGen | RayMiss | RayClosestHit | RayAnyHit | RayIntersection | Callable, ///< All ray-tracing pipeline shader stages.
 
-    Default = None
+    Default = Undefined
   };
 
   static const char* Names[ENUM_COUNT];
@@ -265,7 +265,7 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALBlendFactor
 
   enum Enum : xiiUInt8
   {
-    None = 0,          ///< Undefined blend factor.
+    Undefined = 0,     ///< Undefined blend factor.
     Zero,              ///< The blend factor is Zero.
     One,               ///< The blend factor is One.
     SrcColor,          ///< The blend factor is RGB data from a pixel shader.
@@ -286,7 +286,7 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALBlendFactor
 
     ENUM_COUNT,
 
-    Default = None
+    Default = Undefined
   };
 };
 
@@ -299,16 +299,16 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALBlendOperation
 
   enum Enum : xiiUInt8
   {
-    None = 0,    ///< Undefined blend operation.
-    Add,         ///< Add source and destination color components.
-    Subtract,    ///< Subtract destination color components from source color components.
-    RevSubtract, ///< Subtract source color components from destination color components.
-    Min,         ///< Compute the minimum of source and destination color components.
-    Max,         ///< Compute the maximum of source and destination color components.
+    Undefined = 0, ///< Undefined blend operation.
+    Add,           ///< Add source and destination color components.
+    Subtract,      ///< Subtract destination color components from source color components.
+    RevSubtract,   ///< Subtract source color components from destination color components.
+    Min,           ///< Compute the minimum of source and destination color components.
+    Max,           ///< Compute the maximum of source and destination color components.
 
     ENUM_COUNT,
 
-    Default = None
+    Default = Undefined
   };
 };
 
@@ -321,7 +321,7 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALStencilOperation
 
   enum Enum : xiiUInt8
   {
-    None = 0,           ///< Undefined stencil operation.
+    Undefined = 0,      ///< Undefined stencil operation.
     Keep,               ///< Keep the existing stencil data.
     Zero,               ///< Set the stencil data to Zero.
     Replace,            ///< Set the stencil data to the reference value set by calling xiiGALCommandEncoder::SetStencilRef(...).
@@ -339,20 +339,22 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALStencilOperation
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALStencilOperation);
 
-struct xiiGALCompareFunc
+/// \brief Defines the comparison function.
+struct XII_RENDERERFOUNDATION_DLL xiiGALCompareFunc
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : xiiUInt8
   {
-    Never = 0,
-    Less,
-    Equal,
-    LessEqual,
-    Greater,
-    NotEqual,
-    GreaterEqual,
-    Always,
+    Undefined = 0, ///< Undefined comparison function.
+    Never,         ///< Comparison never passes.
+    Less,          ///< Comparison passes if the source data is less than the destination data.
+    Equal,         ///< Comparison passes if the source data is equal to the destination data.
+    LessEqual,     ///< Comparison passes if the source data is less than or equal to the destination data.
+    Greater,       ///< Comparison passes if the source data is greater than the destination data.
+    NotEqual,      ///< Comparison passes if the source data is not equal to the destination data.
+    GreaterEqual,  ///< Comparison passes if the source data is greater than or equal to the destination data.
+    Always,        ///< Comparison always passes.
 
     ENUM_COUNT,
 
@@ -360,17 +362,20 @@ struct xiiGALCompareFunc
   };
 };
 
-/// \brief Defines which sides of a polygon gets culled by the graphics card
-struct xiiGALCullMode
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALCompareFunc);
+
+/// \brief Defines which triangles are not drawn during the rasterization stage.
+struct XII_RENDERERFOUNDATION_DLL xiiGALCullMode
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   /// \brief Defines which sides of a polygon gets culled by the graphics card
-  enum Enum
+  enum Enum : xiiUInt8
   {
-    None  = 0, ///< Triangles do not get culled
-    Front = 1, ///< When the 'front' of a triangle is visible, it gets culled. The rasterizer state defines which side is the 'front'. See xiiGALRasterizerStateCreationDescription for details.
-    Back  = 2, ///< When the 'back'  of a triangle is visible, it gets culled. The rasterizer state defines which side is the 'front'. See xiiGALRasterizerStateCreationDescription for details.
+    Undefined = 0, ///< Undefined cull mode.
+    None,          ///< Draw all triangles.
+    Front,         ///< Do not draw trangles that are front facing.
+    Back,          ///< Do not draw triangles that are back facing.
 
     ENUM_COUNT,
 
@@ -378,43 +383,83 @@ struct xiiGALCullMode
   };
 };
 
-struct xiiGALTextureFilterMode
-{
-  typedef xiiUInt8 StorageType;
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALCullMode);
 
-  enum Enum
+/// \brief Defines the filter mode.
+///
+/// \note On D3D11, comparison filters only work with textures that have the following formats
+/// R32_FLOAT_X8X24_TYPELESS, R32_FLOAT, R24_UNORM_X8_TYPELESS, R16_UNORM.
+struct XII_RENDERERFOUNDATION_DLL xiiGALTextureFilterMode
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : xiiUInt8
   {
-    Point = 0,
-    Linear,
-    Anisotropic,
-    ComparisonPoint,
-    ComparisonLinear,
-    ComparisonAnisotropic,
+    Undefined = 0,         ///< Undefined filter mode.
+    Point,                 ///< Pointer filtering.
+    Linear,                ///< Linear filtering.
+    Anisotropic,           ///< Anisotropic filtering.
+    ComparisonPoint,       ///< Comparison-point filtering.
+    ComparisonLinear,      ///< Comparison-linear filtering.
+    ComparisonAnisotropic, ///< Comparison-anisotropic filtering.
+
+    ENUM_COUNT,
 
     Default = Linear
   };
 };
 
-struct xiiGALUpdateMode
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALTextureFilterMode);
+
+/// \brief Defines the update mode.
+struct XII_RENDERERFOUNDATION_DLL xiiGALUpdateMode
 {
-  enum Enum
+  using StorageType = xiiUInt8;
+
+  enum Enum : xiiUInt8
   {
-    None              = XII_BIT(0),
-    DoNotWait         = XII_BIT(1), ///< Do not wait another previous command using the resource completes. Map returns null pointer if the resource is still in use.
-    Discard           = XII_BIT(2), ///< Discard the previous contents of the resource. Thus, making its contents undefined.
-    NoOverWrite       = XII_BIT(3), ///< The system will not synchronize pending operations before mapping the buffer.
-    CopyToTempStorage = XII_BIT(4)  ///< Use a temporary staging resource to upload data to the GPU.
+    Undefined         = 0x0,        ///< Undefined update mode.
+    DoNotWait         = XII_BIT(0), ///< Do not wait another previous command using the resource completes. Map returns null pointer if the resource is still in use.
+    Discard           = XII_BIT(1), ///< Discard the previous contents of the resource. Thus, making its contents undefined.
+    NoOverWrite       = XII_BIT(2), ///< The system will not synchronize pending operations before mapping the buffer.
+    CopyToTempStorage = XII_BIT(3), ///< Use a temporary staging resource to upload data to the GPU.
+
+    ENUM_COUNT,
+
+    Default = Undefined
   };
 };
 
-// Basic structs
-struct xiiGALTextureSubresource
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALUpdateMode);
+
+/// \brief Defines the update type.
+struct XII_RENDERERFOUNDATION_DLL xiiGALUpdateType
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : xiiUInt8
+  {
+    Read      = XII_BIT(0), ///< Read the resource.
+    Write     = XII_BIT(1), ///< Write to the resource.
+    ReadWrite = XII_BIT(2), ///< Read and Write to the resource.
+
+    ENUM_COUNT,
+
+    Default = Read,
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALUpdateType);
+
+////////// Basic Structs //////////
+
+struct XII_RENDERERFOUNDATION_DLL xiiGALTextureSubresource
 {
   xiiUInt32 m_uiMipLevel   = 0;
   xiiUInt32 m_uiArraySlice = 0;
 };
 
-struct xiiGALSystemMemoryDescription
+struct XII_RENDERERFOUNDATION_DLL xiiGALSystemMemoryDescription
 {
   void*     m_pData        = nullptr;
   xiiUInt32 m_uiRowPitch   = 0;
@@ -440,103 +485,103 @@ protected:
 // Handles
 namespace xiiGAL
 {
-  typedef xiiGenericId<16, 16> xii16_16Id;
-  typedef xiiGenericId<18, 14> xii18_14Id;
-  typedef xiiGenericId<20, 12> xii20_12Id;
+  using xii16_16Id = xiiGenericId<16, 16>;
+  using xii18_14Id = xiiGenericId<18, 14>;
+  using xii20_12Id = xiiGenericId<20, 12>;
 } // namespace xiiGAL
 
-class xiiGALSwapChainHandle
+class XII_RENDERERFOUNDATION_DLL xiiGALSwapChainHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALSwapChainHandle, xiiGAL::xii16_16Id);
 
   friend class xiiGALDevice;
 };
 
-class xiiGALShaderHandle
+class XII_RENDERERFOUNDATION_DLL xiiGALShaderHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALShaderHandle, xiiGAL::xii18_14Id);
 
   friend class xiiGALDevice;
 };
 
-class xiiGALTextureHandle
+class XII_RENDERERFOUNDATION_DLL xiiGALTextureHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALTextureHandle, xiiGAL::xii18_14Id);
 
   friend class xiiGALDevice;
 };
 
-class xiiGALBufferHandle
+class XII_RENDERERFOUNDATION_DLL xiiGALBufferHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALBufferHandle, xiiGAL::xii18_14Id);
 
   friend class xiiGALDevice;
 };
 
-class xiiGALResourceViewHandle
+class XII_RENDERERFOUNDATION_DLL xiiGALResourceViewHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALResourceViewHandle, xiiGAL::xii18_14Id);
 
   friend class xiiGALDevice;
 };
 
-class xiiGALUnorderedAccessViewHandle
+class XII_RENDERERFOUNDATION_DLL xiiGALUnorderedAccessViewHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALUnorderedAccessViewHandle, xiiGAL::xii18_14Id);
 
   friend class xiiGALDevice;
 };
 
-class xiiGALRenderTargetViewHandle
+class XII_RENDERERFOUNDATION_DLL xiiGALRenderTargetViewHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALRenderTargetViewHandle, xiiGAL::xii18_14Id);
 
   friend class xiiGALDevice;
 };
 
-class xiiGALDepthStencilStateHandle
+class XII_RENDERERFOUNDATION_DLL xiiGALDepthStencilStateHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALDepthStencilStateHandle, xiiGAL::xii16_16Id);
 
   friend class xiiGALDevice;
 };
 
-class xiiGALBlendStateHandle
+class XII_RENDERERFOUNDATION_DLL xiiGALBlendStateHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALBlendStateHandle, xiiGAL::xii16_16Id);
 
   friend class xiiGALDevice;
 };
 
-class xiiGALRasterizerStateHandle
+class XII_RENDERERFOUNDATION_DLL xiiGALRasterizerStateHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALRasterizerStateHandle, xiiGAL::xii16_16Id);
 
   friend class xiiGALDevice;
 };
 
-class xiiGALSamplerStateHandle
+class XII_RENDERERFOUNDATION_DLL xiiGALSamplerStateHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALSamplerStateHandle, xiiGAL::xii16_16Id);
 
   friend class xiiGALDevice;
 };
 
-class xiiGALVertexDeclarationHandle
+class XII_RENDERERFOUNDATION_DLL xiiGALVertexDeclarationHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALVertexDeclarationHandle, xiiGAL::xii18_14Id);
 
   friend class xiiGALDevice;
 };
 
-class xiiGALQueryHandle
+class XII_RENDERERFOUNDATION_DLL xiiGALQueryHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALQueryHandle, xiiGAL::xii20_12Id);
 
   friend class xiiGALDevice;
 };
 
-struct xiiGALTimestampHandle
+struct XII_RENDERERFOUNDATION_DLL xiiGALTimestampHandle
 {
   XII_DECLARE_POD_TYPE();
 
@@ -546,7 +591,7 @@ struct xiiGALTimestampHandle
 
 namespace xiiGAL
 {
-  struct ModifiedRange
+  struct XII_RENDERERFOUNDATION_DLL ModifiedRange
   {
     XII_ALWAYS_INLINE void Reset()
     {

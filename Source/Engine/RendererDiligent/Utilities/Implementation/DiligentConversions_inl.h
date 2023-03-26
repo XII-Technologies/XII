@@ -53,6 +53,9 @@ XII_ALWAYS_INLINE Diligent::FILTER_TYPE xiiDiligentUtils ::ToDiligentFilter(xiiG
 {
   switch (e)
   {
+    case xiiGALTextureFilterMode::Undefined:
+      return Diligent::FILTER_TYPE_UNKNOWN;
+
     case xiiGALTextureFilterMode::Point:
       return Diligent::FILTER_TYPE_POINT;
 
@@ -80,7 +83,7 @@ XII_ALWAYS_INLINE Diligent::STENCIL_OP xiiDiligentUtils::ToDiligentStencilOperat
 {
   switch (e)
   {
-    case xiiGALStencilOperation::None:
+    case xiiGALStencilOperation::Undefined:
       return Diligent::STENCIL_OP_UNDEFINED;
     case xiiGALStencilOperation::Keep:
       return Diligent::STENCIL_OP_KEEP;
@@ -108,7 +111,7 @@ XII_ALWAYS_INLINE Diligent::BLEND_OPERATION xiiDiligentUtils::ToDiligentBlendOpe
 {
   switch (e)
   {
-    case xiiGALBlendOperation::None:
+    case xiiGALBlendOperation::Undefined:
       return Diligent::BLEND_OPERATION::BLEND_OPERATION_UNDEFINED;
     case xiiGALBlendOperation::Add:
       return Diligent::BLEND_OPERATION::BLEND_OPERATION_ADD;
@@ -130,7 +133,7 @@ XII_ALWAYS_INLINE Diligent::BLEND_FACTOR xiiDiligentUtils::ToDiligentBlendFactor
 {
   switch (e)
   {
-    case xiiGALBlendFactor::None:
+    case xiiGALBlendFactor::Undefined:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_UNDEFINED;
     case xiiGALBlendFactor::Zero:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_ZERO;
