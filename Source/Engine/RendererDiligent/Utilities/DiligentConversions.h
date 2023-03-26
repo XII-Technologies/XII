@@ -10,9 +10,10 @@ public:
   static xiiEnum<xiiGALMSAASampleCount> ToGALMSAASampleCount(xiiUInt32 uiSampleCount);
   static xiiUInt32                      ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount);
 
-  static Diligent::BLEND_FACTOR    ToDiligentBlendFactor(xiiGALBlend::Enum e);
-  static Diligent::BLEND_OPERATION ToDiligentBlendOperation(xiiGALBlendOp::Enum e);
+  static Diligent::BLEND_FACTOR    ToDiligentBlendFactor(xiiGALBlendFactor::Enum e);
+  static Diligent::BLEND_OPERATION ToDiligentBlendOperation(xiiGALBlendOperation::Enum e);
   static Diligent::FILTER_TYPE     ToDiligentFilter(xiiGALTextureFilterMode::Enum e);
+  static Diligent::STENCIL_OP     ToDiligentStencilOperation(xiiGALStencilOperation::Enum e);
 
   static Diligent::SHADER_TYPE GALToDiligentShaderStage(xiiGALShaderStage::Enum e);
   static Diligent::VALUE_TYPE  GALToDiligentFormat(Diligent::TEXTURE_FORMAT format);

@@ -1,21 +1,21 @@
 
 XII_ALWAYS_INLINE Diligent::RENDER_DEVICE_TYPE xiiDiligentUtils::GetDiligentRenderDeviceType()
 {
-  switch (xiiGraphicsDevice::Default)
+  switch (xiiGraphicsDeviceType::Default)
   {
-    case xiiGraphicsDevice::OpenGL:
+    case xiiGraphicsDeviceType::OpenGL:
       return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_GL;
 
-    case xiiGraphicsDevice::D3D11:
+    case xiiGraphicsDeviceType::D3D11:
       return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_D3D11;
 
-    case xiiGraphicsDevice::D3D12:
+    case xiiGraphicsDeviceType::D3D12:
       return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_D3D12;
 
-    case xiiGraphicsDevice::Vulkan:
+    case xiiGraphicsDeviceType ::Vulkan:
       return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_VULKAN;
 
-    case xiiGraphicsDevice::Metal:
+    case xiiGraphicsDeviceType::Metal:
       return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_METAL;
   }
   return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_UNDEFINED;
@@ -71,24 +71,54 @@ XII_ALWAYS_INLINE Diligent::FILTER_TYPE xiiDiligentUtils ::ToDiligentFilter(xiiG
     case xiiGALTextureFilterMode::ComparisonAnisotropic:
       return Diligent::FILTER_TYPE_COMPARISON_ANISOTROPIC;
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return Diligent::FILTER_TYPE_UNKNOWN;
 }
 
-XII_ALWAYS_INLINE Diligent::BLEND_OPERATION xiiDiligentUtils::ToDiligentBlendOperation(xiiGALBlendOp::Enum e)
+XII_ALWAYS_INLINE Diligent::STENCIL_OP xiiDiligentUtils::ToDiligentStencilOperation(xiiGALStencilOperation::Enum e)
 {
   switch (e)
   {
-    case xiiGALBlendOp::Add:
+    case xiiGALStencilOperation::None:
+      return Diligent::STENCIL_OP_UNDEFINED;
+    case xiiGALStencilOperation::Keep:
+      return Diligent::STENCIL_OP_KEEP;
+    case xiiGALStencilOperation::Zero:
+      return Diligent::STENCIL_OP_ZERO;
+    case xiiGALStencilOperation::Replace:
+      return Diligent::STENCIL_OP_REPLACE;
+    case xiiGALStencilOperation::IncrementSaturated:
+      return Diligent::STENCIL_OP_INCR_SAT;
+    case xiiGALStencilOperation::DecrementSaturated:
+      return Diligent::STENCIL_OP_DECR_SAT;
+    case xiiGALStencilOperation::Invert:
+      return Diligent::STENCIL_OP_INVERT;
+    case xiiGALStencilOperation::IncrementWrap:
+      return Diligent::STENCIL_OP_INCR_WRAP;
+    case xiiGALStencilOperation::DecrementWrap:
+      return Diligent::STENCIL_OP_DECR_WRAP;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::STENCIL_OP::STENCIL_OP_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE Diligent::BLEND_OPERATION xiiDiligentUtils::ToDiligentBlendOperation(xiiGALBlendOperation::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALBlendOperation::None:
+      return Diligent::BLEND_OPERATION::BLEND_OPERATION_UNDEFINED;
+    case xiiGALBlendOperation::Add:
       return Diligent::BLEND_OPERATION::BLEND_OPERATION_ADD;
-    case xiiGALBlendOp::Subtract:
+    case xiiGALBlendOperation::Subtract:
       return Diligent::BLEND_OPERATION::BLEND_OPERATION_SUBTRACT;
-    case xiiGALBlendOp::RevSubtract:
+    case xiiGALBlendOperation::RevSubtract:
       return Diligent::BLEND_OPERATION::BLEND_OPERATION_REV_SUBTRACT;
-    case xiiGALBlendOp::Min:
+    case xiiGALBlendOperation::Min:
       return Diligent::BLEND_OPERATION::BLEND_OPERATION_MIN;
-    case xiiGALBlendOp::Max:
+    case xiiGALBlendOperation::Max:
       return Diligent::BLEND_OPERATION::BLEND_OPERATION_MAX;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
@@ -96,36 +126,46 @@ XII_ALWAYS_INLINE Diligent::BLEND_OPERATION xiiDiligentUtils::ToDiligentBlendOpe
   return Diligent::BLEND_OPERATION_UNDEFINED;
 }
 
-XII_ALWAYS_INLINE Diligent::BLEND_FACTOR xiiDiligentUtils::ToDiligentBlendFactor(xiiGALBlend::Enum e)
+XII_ALWAYS_INLINE Diligent::BLEND_FACTOR xiiDiligentUtils::ToDiligentBlendFactor(xiiGALBlendFactor::Enum e)
 {
   switch (e)
   {
-    case xiiGALBlend::Zero:
+    case xiiGALBlendFactor::None:
+      return Diligent::BLEND_FACTOR::BLEND_FACTOR_UNDEFINED;
+    case xiiGALBlendFactor::Zero:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_ZERO;
-    case xiiGALBlend::One:
+    case xiiGALBlendFactor::One:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_ONE;
-    case xiiGALBlend::SrcColor:
+    case xiiGALBlendFactor::SrcColor:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_SRC_COLOR;
-    case xiiGALBlend::InvSrcColor:
+    case xiiGALBlendFactor::InvSrcColor:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_SRC_COLOR;
-    case xiiGALBlend::SrcAlpha:
+    case xiiGALBlendFactor::SrcAlpha:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_SRC_ALPHA;
-    case xiiGALBlend::InvSrcAlpha:
+    case xiiGALBlendFactor::InvSrcAlpha:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_SRC_ALPHA;
-    case xiiGALBlend::DestAlpha:
+    case xiiGALBlendFactor::DestAlpha:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_DEST_ALPHA;
-    case xiiGALBlend::InvDestAlpha:
+    case xiiGALBlendFactor::InvDestAlpha:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_DEST_ALPHA;
-    case xiiGALBlend::DestColor:
+    case xiiGALBlendFactor::DestColor:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_DEST_COLOR;
-    case xiiGALBlend::InvDestColor:
+    case xiiGALBlendFactor::InvDestColor:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_DEST_COLOR;
-    case xiiGALBlend::SrcAlphaSaturated:
+    case xiiGALBlendFactor::SrcAlphaSaturated:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_SRC_ALPHA_SAT;
-    case xiiGALBlend::BlendFactor:
+    case xiiGALBlendFactor::BlendFactor:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_BLEND_FACTOR;
-    case xiiGALBlend::InvBlendFactor:
+    case xiiGALBlendFactor::InvBlendFactor:
       return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_BLEND_FACTOR;
+    case xiiGALBlendFactor::SrcOneColor:
+      return Diligent::BLEND_FACTOR::BLEND_FACTOR_SRC1_COLOR;
+    case xiiGALBlendFactor::InvSrcOneColor:
+      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_SRC1_COLOR;
+    case xiiGALBlendFactor::SrcOneAlpha:
+      return Diligent::BLEND_FACTOR::BLEND_FACTOR_SRC1_ALPHA;
+    case xiiGALBlendFactor::InvSrcOneAlpha:
+      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_SRC1_ALPHA;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }

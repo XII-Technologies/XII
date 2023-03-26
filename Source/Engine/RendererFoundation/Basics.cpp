@@ -64,6 +64,7 @@ XII_ENUM_CONSTANTS(
   xiiGALShaderStage::Callable)
 XII_END_STATIC_REFLECTED_ENUM;
 
+// clang-format off
 const char* xiiGALShaderStage::Names[ENUM_COUNT] = {
   "None",
   "VertexShader",
@@ -81,6 +82,7 @@ const char* xiiGALShaderStage::Names[ENUM_COUNT] = {
   "RayIntersection",
   "Callable"
 };
+// clang-format on
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALMSAASampleCount, 1)
 XII_ENUM_CONSTANTS(
@@ -88,6 +90,64 @@ XII_ENUM_CONSTANTS(
   xiiGALMSAASampleCount::TwoSamples,
   xiiGALMSAASampleCount::FourSamples,
   xiiGALMSAASampleCount::EightSamples)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALTextureType, 1)
+XII_ENUM_CONSTANTS(
+  xiiGALTextureType::Texture1D,
+  xiiGALTextureType::Texture1DArray,
+  xiiGALTextureType::Texture2D,
+  xiiGALTextureType::Texture2DArray,
+  xiiGALTextureType::TextureCube,
+  xiiGALTextureType::TextureCubeArray,
+  xiiGALTextureType::Texture3D,
+  xiiGALTextureType::Texture2DProxy,
+  xiiGALTextureType::Texture2DProxyArray)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALBlendFactor, 1)
+XII_ENUM_CONSTANTS(
+  xiiGALBlendFactor::None,
+  xiiGALBlendFactor::Zero,
+  xiiGALBlendFactor::SrcColor,
+  xiiGALBlendFactor::InvSrcColor,
+  xiiGALBlendFactor::SrcAlpha,
+  xiiGALBlendFactor::InvSrcAlpha,
+  xiiGALBlendFactor::DestAlpha,
+  xiiGALBlendFactor::InvDestAlpha,
+  xiiGALBlendFactor::DestColor,
+  xiiGALBlendFactor::InvDestColor,
+  xiiGALBlendFactor::SrcAlphaSaturated,
+  xiiGALBlendFactor::BlendFactor,
+  xiiGALBlendFactor::InvBlendFactor,
+  xiiGALBlendFactor::SrcOneColor,
+  xiiGALBlendFactor::InvSrcOneColor,
+  xiiGALBlendFactor::SrcOneAlpha,
+  xiiGALBlendFactor::InvSrcOneAlpha)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALBlendOperation, 1)
+XII_ENUM_CONSTANTS(
+  xiiGALBlendOperation::None,
+  xiiGALBlendOperation::Add,
+  xiiGALBlendOperation::Subtract,
+  xiiGALBlendOperation::RevSubtract,
+  xiiGALBlendOperation::Min,
+  xiiGALBlendOperation::Max)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALStencilOperation, 1)
+XII_ENUM_CONSTANTS(
+  xiiGALStencilOperation::None,
+  xiiGALStencilOperation::Keep,
+  xiiGALStencilOperation::Zero,
+  xiiGALStencilOperation::Replace,
+  xiiGALStencilOperation::None,
+  xiiGALStencilOperation::IncrementSaturated,
+  xiiGALStencilOperation::DecrementSaturated,
+  xiiGALStencilOperation::Invert,
+  xiiGALStencilOperation::IncrementWrap,
+  xiiGALStencilOperation::DecrementWrap)
 XII_END_STATIC_REFLECTED_ENUM;
 
 

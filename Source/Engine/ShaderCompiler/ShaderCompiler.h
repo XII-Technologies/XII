@@ -40,7 +40,7 @@ public:
 
   const char* GetProfileName(const char* szPlatform, xiiGALShaderStage::Enum Stage);
 
-  xiiGraphicsDevice::Enum GetProfileNameDeviceType(const char* szPlatform, const char* szProfileName);
+  xiiGraphicsDeviceType::Enum GetProfileNameDeviceType(const char* szPlatform, const char* szProfileName);
 
 private:
   xiiResult Initialize(const char* szPlatformName);

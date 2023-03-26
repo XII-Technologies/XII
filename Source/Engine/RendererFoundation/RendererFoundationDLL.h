@@ -86,9 +86,12 @@ struct XII_RENDERERFOUNDATION_DLL xiiGraphicsDeviceType
   {
     Undefined = 0, ///< Undefined graphics device type.
 
-    D3D11,  ///< DirectX 11 graphics device.
-    D3D12,  ///< DirectX 12 graphics device.
-    Vulkan, ///< Vulkan graphics device.
+    D3D11,   ///< DirectX 11 graphics device.
+    D3D12,   ///< DirectX 12 graphics device.
+    Vulkan,  ///< Vulkan graphics device.
+    Metal,   ///< Metal graphics device.
+    OpenGL,  ///< OpenGL graphics device.
+    OpenGLES ///< OpenGLES graphics device.
   };
 
   /// \brief Holds the default graphics device to use.
@@ -211,7 +214,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALShaderStage);
 /// \brief Defines the multisample anti-aliasing count.
 struct XII_RENDERERFOUNDATION_DLL xiiGALMSAASampleCount
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum : xiiUInt8
   {
@@ -229,22 +232,23 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALMSAASampleCount
 XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALMSAASampleCount);
 
 /// \brief Defines the texture type.
-struct xiiGALTextureType
+struct XII_RENDERERFOUNDATION_DLL xiiGALTextureType
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiInt8;
 
-  enum Enum
+  enum Enum : xiiInt8
   {
-    Invalid   = -1,
-    Texture1D = 0,
-    Texture1DArray,
-    Texture2D,
-    Texture2DArray,
-    TextureCube,
-    TextureCubeArray,
-    Texture3D,
-    Texture2DProxy,
-    Texture2DProxyArray,
+    Invalid = -1,
+
+    Texture1D = 0,       ///< One dimensional texture.
+    Texture1DArray,      ///< One dimensional texture array.
+    Texture2D,           ///< Two dimensional texture.
+    Texture2DArray,      ///< Two dimensional texture array.
+    TextureCube,         ///< Two dimensional texture array that contains 6 textures, one for each face of the cube.
+    TextureCubeArray,    ///< An array of texture cubes.
+    Texture3D,           ///< Three dimensional texture.
+    Texture2DProxy,      ///< Proxy texture to a two dimensional texture.
+    Texture2DProxyArray, ///< Proxy texture array to an array of two dimensional textures.
 
     ENUM_COUNT,
 
@@ -252,62 +256,88 @@ struct xiiGALTextureType
   };
 };
 
-struct xiiGALBlend
-{
-  enum Enum
-  {
-    Zero = 0,
-    One,
-    SrcColor,
-    InvSrcColor,
-    SrcAlpha,
-    InvSrcAlpha,
-    DestAlpha,
-    InvDestAlpha,
-    DestColor,
-    InvDestColor,
-    SrcAlphaSaturated,
-    BlendFactor,
-    InvBlendFactor,
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALTextureType);
 
-    ENUM_COUNT
+/// \brief Defines the blend factors for alpha-blending.
+struct XII_RENDERERFOUNDATION_DLL xiiGALBlendFactor
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : xiiUInt8
+  {
+    None = 0,          ///< Undefined blend factor.
+    Zero,              ///< The blend factor is Zero.
+    One,               ///< The blend factor is One.
+    SrcColor,          ///< The blend factor is RGB data from a pixel shader.
+    InvSrcColor,       ///< The blend factor is One minus RGB, where RGB is the data from a pixel shader.
+    SrcAlpha,          ///< The blend factor is Alpha (A) data from a pixel shader.
+    InvSrcAlpha,       ///< The blend factor is One minus Alpha, where Alpha is alpha data from a pixel shader.
+    DestAlpha,         ///< The blend factor is Alpha data from a render target.
+    InvDestAlpha,      ///< The blend factor is One minus Alpha, where Alpha is alpha data from a render target.
+    DestColor,         ///< The blend factor is RGB data from a render target.
+    InvDestColor,      ///< The blend factor is One minus RGB, where RGB is the data from a render target.
+    SrcAlphaSaturated, ///< The blend factor is (f, f, f, 1), where f = min(As, 1 - Ad). As is alpha data from a pixel shader, and Ad is alpha from a render target.
+    BlendFactor,       ///< The blend factor is the constant blend factor set with the xiiGALRenderCommandEncoder::SetBlendState(...).
+    InvBlendFactor,    ///< The blend factor is One minus the constant blend factor set with the xiiGALRenderCommandEncoder::SetBlendState(...).
+    SrcOneColor,       ///< The blend factor is the second RGB data output from a pixel shader.
+    InvSrcOneColor,    ///< The blend factor is One minus RGB, where RGB is the second RGB data output from a pixel shader.
+    SrcOneAlpha,       ///< The blend factor is second Alpha (A) data output from a pixel shader.
+    InvSrcOneAlpha,    ///< The blend factor is One minus Alpha, where Alpha is the second alpha data output from a pixel shader.
+
+    ENUM_COUNT,
+
+    Default = None
   };
 };
 
-struct xiiGALBlendOp
-{
-  enum Enum
-  {
-    Add = 0,
-    Subtract,
-    RevSubtract,
-    Min,
-    Max,
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALBlendFactor);
 
-    ENUM_COUNT
+/// \brief Defines the blend operation for RGB or Alpha channels.
+struct XII_RENDERERFOUNDATION_DLL xiiGALBlendOperation
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : xiiUInt8
+  {
+    None = 0,    ///< Undefined blend operation.
+    Add,         ///< Add source and destination color components.
+    Subtract,    ///< Subtract destination color components from source color components.
+    RevSubtract, ///< Subtract source color components from destination color components.
+    Min,         ///< Compute the minimum of source and destination color components.
+    Max,         ///< Compute the maximum of source and destination color components.
+
+    ENUM_COUNT,
+
+    Default = None
   };
 };
 
-struct xiiGALStencilOp
-{
-  typedef xiiUInt8 StorageType;
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALBlendOperation);
 
-  enum Enum
+/// Defines the stencil operation.
+struct XII_RENDERERFOUNDATION_DLL xiiGALStencilOperation
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : xiiUInt8
   {
-    Keep = 0,
-    Zero,
-    Replace,
-    IncrementSaturated,
-    DecrementSaturated,
-    Invert,
-    Increment,
-    Decrement,
+    None = 0,           ///< Undefined stencil operation.
+    Keep,               ///< Keep the existing stencil data.
+    Zero,               ///< Set the stencil data to Zero.
+    Replace,            ///< Set the stencil data to the reference value set by calling xiiGALCommandEncoder::SetStencilRef(...).
+    IncrementSaturated, ///< Increment the current stencil value, and clamp to the maximum representable unsigned value.
+    DecrementSaturated, ///< Decrement the current stencil value, and clamp to Zero.
+    Invert,             ///< Bitwise invert the current stencil buffer value.
+    IncrementWrap,      ///< Increment the current stencil value, and wrap to Zero when incrementing.
+    DecrementWrap,      ///< Decrement the current stencil value, and wrap the value to the maximum representable unsigned value when decrementing a value of Zero.
 
     ENUM_COUNT,
 
     Default = Keep
   };
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALStencilOperation);
 
 struct xiiGALCompareFunc
 {
@@ -339,10 +369,8 @@ struct xiiGALCullMode
   enum Enum
   {
     None  = 0, ///< Triangles do not get culled
-    Front = 1, ///< When the 'front' of a triangle is visible, it gets culled. The rasterizer state defines which side is the 'front'. See
-               ///< xiiGALRasterizerStateCreationDescription for details.
-    Back = 2,  ///< When the 'back'  of a triangle is visible, it gets culled. The rasterizer state defines which side is the 'front'. See
-               ///< xiiGALRasterizerStateCreationDescription for details.
+    Front = 1, ///< When the 'front' of a triangle is visible, it gets culled. The rasterizer state defines which side is the 'front'. See xiiGALRasterizerStateCreationDescription for details.
+    Back  = 2, ///< When the 'back'  of a triangle is visible, it gets culled. The rasterizer state defines which side is the 'front'. See xiiGALRasterizerStateCreationDescription for details.
 
     ENUM_COUNT,
 
