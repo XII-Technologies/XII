@@ -30,6 +30,24 @@ CreatorFuncInfo* GetCreatorFuncInfo(const char* szRendererName)
   return pFuncInfo;
 }
 
+xiiGraphicsDeviceType::Enum xiiGALDeviceFactory::GetGraphicsDevice(const char* szRendererName)
+{
+  if (szRendererName == "D3D11")
+    return xiiGraphicsDeviceType::D3D11;
+  if (szRendererName == "D3D12")
+    return xiiGraphicsDeviceType::D3D12;
+  if (szRendererName == "Vulkan")
+    return xiiGraphicsDeviceType::Vulkan;
+  if (szRendererName == "Metal")
+    return xiiGraphicsDeviceType::Metal;
+  if (szRendererName == "OpenGL")
+    return xiiGraphicsDeviceType::OpenGL;
+  if (szRendererName == "OpenGLES")
+    return xiiGraphicsDeviceType::OpenGLES;
+
+  return xiiGraphicsDeviceType::Undefined;
+}
+
 xiiInternal::NewInstance<xiiGALDevice> xiiGALDeviceFactory::CreateDevice(const char* szRendererName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& desc)
 {
   if (auto pFuncInfo = GetCreatorFuncInfo(szRendererName))

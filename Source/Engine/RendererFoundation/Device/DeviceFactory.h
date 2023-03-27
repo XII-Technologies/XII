@@ -7,6 +7,8 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALDeviceFactory
 {
   using CreatorFunc = xiiDelegate<xiiInternal::NewInstance<xiiGALDevice>(xiiAllocatorBase*, const xiiGALDeviceCreationDescription&)>;
 
+  static xiiGraphicsDeviceType::Enum GetGraphicsDevice(const char* szRendererName);
+
   static xiiInternal::NewInstance<xiiGALDevice> CreateDevice(const char* szRendererName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& desc);
 
   static void GetShaderModelAndCompiler(const char* szRendererName, const char*& szShaderModel, const char*& szShaderCompiler);

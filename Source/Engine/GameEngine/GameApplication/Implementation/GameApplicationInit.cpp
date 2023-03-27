@@ -28,7 +28,7 @@
 #include <RendererFoundation/Device/DeviceFactory.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-constexpr const char* szDefaultRenderer = "DX11";
+constexpr const char* szDefaultRenderer = "D3D11";
 #elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
 constexpr const char* szDefaultRenderer = "Vulkan";
 #else
@@ -258,7 +258,9 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
     else
     {
       const char* szRendererName = GetRendererNameFromCommandLine();
-      pDevice                    = xiiGALDeviceFactory::CreateDevice(szRendererName, xiiFoundation::GetDefaultAllocator(), DeviceInit);
+
+      DeviceInit.m_GraphicsDevice = xiiGALDeviceFactory::GetGraphicsDevice(szRendererName);
+      pDevice                     = xiiGALDeviceFactory::CreateDevice(szRendererName, xiiFoundation::GetDefaultAllocator(), DeviceInit);
       XII_ASSERT_DEV(pDevice != nullptr, "Device implemention for '{}' not found", szRendererName);
     }
 
@@ -276,7 +278,6 @@ void xiiGameApplication::Init_LoadRequiredPlugins()
   xiiPlugin::InitializeStaticallyLinkedPlugins();
 
   constexpr const char* szDefaultLibraryName = "xiiRendererDiligent";
-  xiiGALDeviceFactory::ConfigureLibraryName("DX11", "xiiRendererDX11");
   xiiGALDeviceFactory::ConfigureLibraryName("D3D11", szDefaultLibraryName);
   xiiGALDeviceFactory::ConfigureLibraryName("D3D12", szDefaultLibraryName);
   xiiGALDeviceFactory::ConfigureLibraryName("Vulkan", szDefaultLibraryName);

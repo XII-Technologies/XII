@@ -17,7 +17,7 @@
 static xiiUInt32 g_uiComputeThreadGroupSize = 32;
 
 xiiComputeShaderHistogramApp::xiiComputeShaderHistogramApp() :
-  xiiGameApplication("ComputeShaderHistogram", "Data/Samples/ComputeShaderHistogram"), m_pWindow(nullptr)
+  xiiGameApplication("ComputeShaderHistogram", "Data/Samples/ComputeShaderHistogram"), m_pWindow(nullptr), m_bDirectoryModified(false)
 {
 }
 
@@ -170,8 +170,12 @@ void xiiComputeShaderHistogramApp::AfterCoreSystemsStartup()
       if (auto pOutput = pWindowPlugin->GetOutputTarget())
       {
         m_hSwapChain = static_cast<xiiWindowOutputTargetGAL*>(pOutput)->m_hSwapChain;
+        break;
       }
     }
+
+    XII_ASSERT_DEV(m_pWindow != nullptr, "Failed to retrieve active window. No window plugins have been registered.");
+    XII_ASSERT_DEV(!m_hSwapChain.IsInvalidated(), "Failed to retrieve active window output target.");
   }
 
   // Create textures and texture view for screen content (can't use back-buffer as shader resource view)
