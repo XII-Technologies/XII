@@ -473,7 +473,7 @@ void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBu
     m_Topology = topology;
 
     xiiTempHashedString sTopologies[xiiGALPrimitiveTopology::ENUM_COUNT] = {
-      xiiTempHashedString("TOPOLOGY_UNDEFINED"), xiiTempHashedString("TOPOLOGY_POINTS"), xiiTempHashedString("TOPOLOGY_LINES"), xiiTempHashedString("TOPOLOGY_TRIANGLES")};
+      xiiTempHashedString("TOPOLOGY_POINTS"), xiiTempHashedString("TOPOLOGY_LINES"), xiiTempHashedString("TOPOLOGY_TRIANGLES")};
 
     SetShaderPermutationVariable("TOPOLOGY", sTopologies[m_Topology]);
   }

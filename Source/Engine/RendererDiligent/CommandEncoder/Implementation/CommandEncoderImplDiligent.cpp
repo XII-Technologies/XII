@@ -957,7 +957,6 @@ void xiiGALCommandEncoderImplDiligent::SetVertexDeclarationPlatform(const xiiGAL
 }
 
 static const Diligent::PRIMITIVE_TOPOLOGY GALTopologyToDiligent[xiiGALPrimitiveTopology::ENUM_COUNT] = {
-  Diligent::PRIMITIVE_TOPOLOGY_UNDEFINED,
   Diligent::PRIMITIVE_TOPOLOGY_POINT_LIST,
   Diligent::PRIMITIVE_TOPOLOGY_LINE_LIST,
   Diligent::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
