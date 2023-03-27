@@ -16,6 +16,15 @@
 #undef NULL
 #define NULL 0
 
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
+#  include <d3d11.h>
+
+#  include <Graphics/GraphicsEngineD3D11/interface/BufferViewD3D11.h>
+#  include <Graphics/GraphicsEngineD3D11/interface/DeviceContextD3D11.h>
+#  include <Graphics/GraphicsEngineD3D11/interface/RenderDeviceD3D11.h>
+#  include <Graphics/GraphicsEngineD3D11/interface/TextureViewD3D11.h>
+#endif
+
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #endif
@@ -186,11 +195,9 @@ void xiiGALCommandEncoderImplDiligent::InsertTimestampPlatform(xiiGALTimestampHa
 void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xiiGALUnorderedAccessView* pUnorderedAccessView, xiiVec4 clearValues)
 {
   xiiGALUnorderedAccessViewDiligent* pUnorderedAccessViewDiligent = nullptr;
-  Diligent::IBufferView*             pUAVDiligent                 = nullptr;
   {
     xiiGALUnorderedAccessView* pGALUnorderedAccessView = const_cast<xiiGALUnorderedAccessView*>(pUnorderedAccessView);
     pUnorderedAccessViewDiligent                       = static_cast<xiiGALUnorderedAccessViewDiligent*>(pGALUnorderedAccessView);
-    pUAVDiligent                                       = pUnorderedAccessViewDiligent->GetBufferView();
   }
 
   switch (m_GALDeviceDiligent.GetDeviceType())
@@ -198,8 +205,33 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 #if D3D11_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D11:
     {
-      /// \todo Implement unordered access view clearing in D3D11
-      XII_ASSERT_NOT_IMPLEMENTED;
+      Diligent::RefCntAutoPtr<Diligent::IDeviceContextD3D11> pContextD3D11(static_cast<Diligent::IDeviceContextD3D11*>(m_pContext));
+      m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D11, reinterpret_cast<Diligent::IObject**>(pContextD3D11.RawDblPtr()));
+      XII_ASSERT_DEV(pContextD3D11 != nullptr, "Failed to retrieve the D3D11 context.");
+
+      if (Diligent::IBufferView* pBufferView = pUnorderedAccessViewDiligent->GetBufferView())
+      {
+        Diligent::RefCntAutoPtr<Diligent::IBufferViewD3D11> pBufferViewD3D11(static_cast<Diligent::IBufferViewD3D11*>(pBufferView));
+        pBufferView->QueryInterface(Diligent::IID_BufferViewD3D11, reinterpret_cast<Diligent::IObject**>(pBufferViewD3D11.RawDblPtr()));
+        XII_ASSERT_DEV(pBufferViewD3D11 != nullptr, "Failed to retrieve the D3D11 buffer view.");
+
+        pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewFloat(static_cast<ID3D11UnorderedAccessView*>(pBufferViewD3D11->GetD3D11View()), &clearValues.x);
+
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pBufferViewD3D11);
+      }
+
+      if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
+      {
+        Diligent::RefCntAutoPtr<Diligent::ITextureViewD3D11> pTextureViewD3D11(static_cast<Diligent::ITextureViewD3D11*>(pTextureView));
+        pTextureView->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>(pTextureViewD3D11.RawDblPtr()));
+        XII_ASSERT_DEV(pTextureViewD3D11 != nullptr, "Failed to retrieve the D3D11 buffer view.");
+
+        pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewFloat(static_cast<ID3D11UnorderedAccessView*>(pTextureViewD3D11->GetD3D11View()), &clearValues.x);
+
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pTextureViewD3D11);
+      }
+
+      XII_GAL_DILIGENT_WRAPPED_RELEASE(pContextD3D11);
     }
     break;
 #endif
@@ -239,8 +271,33 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 #if D3D11_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D11:
     {
-      /// \todo Implement unordered access view clearing in D3D11
-      XII_ASSERT_NOT_IMPLEMENTED;
+      Diligent::RefCntAutoPtr<Diligent::IDeviceContextD3D11> pContextD3D11(static_cast<Diligent::IDeviceContextD3D11*>(m_pContext));
+      m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D11, reinterpret_cast<Diligent::IObject**>(pContextD3D11.RawDblPtr()));
+      XII_ASSERT_DEV(pContextD3D11 != nullptr, "Failed to retrieve the D3D11 context.");
+
+      if (Diligent::IBufferView* pBufferView = pUnorderedAccessViewDiligent->GetBufferView())
+      {
+        Diligent::RefCntAutoPtr<Diligent::IBufferViewD3D11> pBufferViewD3D11(static_cast<Diligent::IBufferViewD3D11*>(pBufferView));
+        pBufferView->QueryInterface(Diligent::IID_BufferViewD3D11, reinterpret_cast<Diligent::IObject**>(pBufferViewD3D11.RawDblPtr()));
+        XII_ASSERT_DEV(pBufferViewD3D11 != nullptr, "Failed to retrieve the D3D11 buffer view.");
+
+        pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewUint(static_cast<ID3D11UnorderedAccessView*>(pBufferViewD3D11->GetD3D11View()), &clearValues.x);
+
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pBufferViewD3D11);
+      }
+
+      if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
+      {
+        Diligent::RefCntAutoPtr<Diligent::ITextureViewD3D11> pTextureViewD3D11(static_cast<Diligent::ITextureViewD3D11*>(pTextureView));
+        pTextureView->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>(pTextureViewD3D11.RawDblPtr()));
+        XII_ASSERT_DEV(pTextureViewD3D11 != nullptr, "Failed to retrieve the D3D11 buffer view.");
+
+        pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewUint(static_cast<ID3D11UnorderedAccessView*>(pTextureViewD3D11->GetD3D11View()), &clearValues.x);
+
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pTextureViewD3D11);
+      }
+
+      XII_GAL_DILIGENT_WRAPPED_RELEASE(pContextD3D11);
     }
     break;
 #endif
@@ -900,6 +957,7 @@ void xiiGALCommandEncoderImplDiligent::SetVertexDeclarationPlatform(const xiiGAL
 }
 
 static const Diligent::PRIMITIVE_TOPOLOGY GALTopologyToDiligent[xiiGALPrimitiveTopology::ENUM_COUNT] = {
+  Diligent::PRIMITIVE_TOPOLOGY_UNDEFINED,
   Diligent::PRIMITIVE_TOPOLOGY_POINT_LIST,
   Diligent::PRIMITIVE_TOPOLOGY_LINE_LIST,
   Diligent::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
