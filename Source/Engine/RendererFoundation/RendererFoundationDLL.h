@@ -86,16 +86,17 @@ struct XII_RENDERERFOUNDATION_DLL xiiGraphicsDeviceType
   {
     Undefined = 0, ///< Undefined graphics device type.
 
-    D3D11,   ///< DirectX 11 graphics device.
-    D3D12,   ///< DirectX 12 graphics device.
-    Vulkan,  ///< Vulkan graphics device.
-    Metal,   ///< Metal graphics device.
-    OpenGL,  ///< OpenGL graphics device.
-    OpenGLES ///< OpenGLES graphics device.
-  };
+    D3D11,    ///< DirectX 11 graphics device.
+    D3D12,    ///< DirectX 12 graphics device.
+    Vulkan,   ///< Vulkan graphics device.
+    Metal,    ///< Metal graphics device.
+    OpenGL,   ///< OpenGL graphics device.
+    OpenGLES, ///< OpenGLES graphics device.
 
-  /// \brief Holds the default graphics device to use.
-  static Enum Default /*= xiiGraphicsDeviceType::Undefined*/;
+    ENUM_COUNT,
+
+    Default = Undefined
+  };
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGraphicsDeviceType);

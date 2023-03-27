@@ -5,7 +5,7 @@
 class XII_RENDERERDILIGENT_DLL xiiDiligentUtils
 {
 public:
-  static Diligent::RENDER_DEVICE_TYPE GetDiligentRenderDeviceType();
+  static Diligent::RENDER_DEVICE_TYPE GetDiligentRenderDeviceType(const xiiGraphicsDeviceType::Enum type);
 
   static xiiEnum<xiiGALMSAASampleCount> ToGALMSAASampleCount(xiiUInt32 uiSampleCount);
   static xiiUInt32                      ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount);

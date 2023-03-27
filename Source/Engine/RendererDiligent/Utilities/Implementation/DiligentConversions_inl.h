@@ -1,24 +1,27 @@
 
-XII_ALWAYS_INLINE Diligent::RENDER_DEVICE_TYPE xiiDiligentUtils::GetDiligentRenderDeviceType()
+XII_ALWAYS_INLINE Diligent::RENDER_DEVICE_TYPE xiiDiligentUtils::GetDiligentRenderDeviceType(const xiiGraphicsDeviceType::Enum type)
 {
-  switch (xiiGraphicsDeviceType::Default)
+  switch (type)
   {
+    case xiiGraphicsDeviceType::OpenGLES:
+      return Diligent::RENDER_DEVICE_TYPE_GLES;
+
     case xiiGraphicsDeviceType::OpenGL:
-      return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_GL;
+      return Diligent::RENDER_DEVICE_TYPE_GL;
 
     case xiiGraphicsDeviceType::D3D11:
-      return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_D3D11;
+      return Diligent::RENDER_DEVICE_TYPE_D3D11;
 
     case xiiGraphicsDeviceType::D3D12:
-      return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_D3D12;
+      return Diligent::RENDER_DEVICE_TYPE_D3D12;
 
     case xiiGraphicsDeviceType ::Vulkan:
-      return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_VULKAN;
+      return Diligent::RENDER_DEVICE_TYPE_VULKAN;
 
     case xiiGraphicsDeviceType::Metal:
-      return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_METAL;
+      return Diligent::RENDER_DEVICE_TYPE_METAL;
   }
-  return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_UNDEFINED;
+  return Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
 }
 
 XII_ALWAYS_INLINE xiiUInt32 xiiDiligentUtils::ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount)
@@ -112,17 +115,17 @@ XII_ALWAYS_INLINE Diligent::BLEND_OPERATION xiiDiligentUtils::ToDiligentBlendOpe
   switch (e)
   {
     case xiiGALBlendOperation::Undefined:
-      return Diligent::BLEND_OPERATION::BLEND_OPERATION_UNDEFINED;
+      return Diligent::BLEND_OPERATION_UNDEFINED;
     case xiiGALBlendOperation::Add:
-      return Diligent::BLEND_OPERATION::BLEND_OPERATION_ADD;
+      return Diligent::BLEND_OPERATION_ADD;
     case xiiGALBlendOperation::Subtract:
-      return Diligent::BLEND_OPERATION::BLEND_OPERATION_SUBTRACT;
+      return Diligent::BLEND_OPERATION_SUBTRACT;
     case xiiGALBlendOperation::RevSubtract:
-      return Diligent::BLEND_OPERATION::BLEND_OPERATION_REV_SUBTRACT;
+      return Diligent::BLEND_OPERATION_REV_SUBTRACT;
     case xiiGALBlendOperation::Min:
-      return Diligent::BLEND_OPERATION::BLEND_OPERATION_MIN;
+      return Diligent::BLEND_OPERATION_MIN;
     case xiiGALBlendOperation::Max:
-      return Diligent::BLEND_OPERATION::BLEND_OPERATION_MAX;
+      return Diligent::BLEND_OPERATION_MAX;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
@@ -134,41 +137,41 @@ XII_ALWAYS_INLINE Diligent::BLEND_FACTOR xiiDiligentUtils::ToDiligentBlendFactor
   switch (e)
   {
     case xiiGALBlendFactor::Undefined:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_UNDEFINED;
+      return Diligent::BLEND_FACTOR_UNDEFINED;
     case xiiGALBlendFactor::Zero:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_ZERO;
+      return Diligent::BLEND_FACTOR_ZERO;
     case xiiGALBlendFactor::One:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_ONE;
+      return Diligent::BLEND_FACTOR_ONE;
     case xiiGALBlendFactor::SrcColor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_SRC_COLOR;
+      return Diligent::BLEND_FACTOR_SRC_COLOR;
     case xiiGALBlendFactor::InvSrcColor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_SRC_COLOR;
+      return Diligent::BLEND_FACTOR_INV_SRC_COLOR;
     case xiiGALBlendFactor::SrcAlpha:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_SRC_ALPHA;
+      return Diligent::BLEND_FACTOR_SRC_ALPHA;
     case xiiGALBlendFactor::InvSrcAlpha:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_SRC_ALPHA;
+      return Diligent::BLEND_FACTOR_INV_SRC_ALPHA;
     case xiiGALBlendFactor::DestAlpha:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_DEST_ALPHA;
+      return Diligent::BLEND_FACTOR_DEST_ALPHA;
     case xiiGALBlendFactor::InvDestAlpha:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_DEST_ALPHA;
+      return Diligent::BLEND_FACTOR_INV_DEST_ALPHA;
     case xiiGALBlendFactor::DestColor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_DEST_COLOR;
+      return Diligent::BLEND_FACTOR_DEST_COLOR;
     case xiiGALBlendFactor::InvDestColor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_DEST_COLOR;
+      return Diligent::BLEND_FACTOR_INV_DEST_COLOR;
     case xiiGALBlendFactor::SrcAlphaSaturated:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_SRC_ALPHA_SAT;
+      return Diligent::BLEND_FACTOR_SRC_ALPHA_SAT;
     case xiiGALBlendFactor::BlendFactor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_BLEND_FACTOR;
+      return Diligent::BLEND_FACTOR_BLEND_FACTOR;
     case xiiGALBlendFactor::InvBlendFactor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_BLEND_FACTOR;
+      return Diligent::BLEND_FACTOR_INV_BLEND_FACTOR;
     case xiiGALBlendFactor::SrcOneColor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_SRC1_COLOR;
+      return Diligent::BLEND_FACTOR_SRC1_COLOR;
     case xiiGALBlendFactor::InvSrcOneColor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_SRC1_COLOR;
+      return Diligent::BLEND_FACTOR_INV_SRC1_COLOR;
     case xiiGALBlendFactor::SrcOneAlpha:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_SRC1_ALPHA;
+      return Diligent::BLEND_FACTOR_SRC1_ALPHA;
     case xiiGALBlendFactor::InvSrcOneAlpha:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_SRC1_ALPHA;
+      return Diligent::BLEND_FACTOR_INV_SRC1_ALPHA;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
@@ -535,41 +538,37 @@ XII_ALWAYS_INLINE xiiInt32 xiiDiligentUtils::GALToDiligentNumComponent(Diligent:
 
 XII_ALWAYS_INLINE Diligent::SHADER_TYPE xiiDiligentUtils::GALToDiligentShaderStage(xiiGALShaderStage::Enum e)
 {
-  switch (e)
-  {
-    case xiiGALShaderStage::Undefined:
-      return Diligent::SHADER_TYPE_UNKNOWN;
-    case xiiGALShaderStage::VertexShader:
-      return Diligent::SHADER_TYPE_VERTEX;
-    case xiiGALShaderStage::PixelShader:
-      return Diligent::SHADER_TYPE_PIXEL;
-    case xiiGALShaderStage::GeometryShader:
-      return Diligent::SHADER_TYPE_GEOMETRY;
-    case xiiGALShaderStage::HullShader:
-      return Diligent::SHADER_TYPE_HULL;
-    case xiiGALShaderStage::DomainShader:
-      return Diligent::SHADER_TYPE_DOMAIN;
-    case xiiGALShaderStage::ComputeShader:
-      return Diligent::SHADER_TYPE_COMPUTE;
-    case xiiGALShaderStage::Amplification:
-      return Diligent::SHADER_TYPE_AMPLIFICATION;
-    case xiiGALShaderStage::Mesh:
-      return Diligent::SHADER_TYPE_MESH;
-    case xiiGALShaderStage::RayGen:
-      return Diligent::SHADER_TYPE_RAY_GEN;
-    case xiiGALShaderStage::RayMiss:
-      return Diligent::SHADER_TYPE_RAY_MISS;
-    case xiiGALShaderStage::RayAnyHit:
-      return Diligent::SHADER_TYPE_RAY_ANY_HIT;
-    case xiiGALShaderStage::RayClosestHit:
-      return Diligent::SHADER_TYPE_RAY_CLOSEST_HIT;
-    case xiiGALShaderStage::RayIntersection:
-      return Diligent::SHADER_TYPE_RAY_INTERSECTION;
-    case xiiGALShaderStage::Callable:
-      return Diligent::SHADER_TYPE_CALLABLE;
+  Diligent::SHADER_TYPE shaderType = Diligent::SHADER_TYPE_UNKNOWN;
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
+  if (e & xiiGALShaderStage::VertexShader)
+    shaderType |= Diligent::SHADER_TYPE_VERTEX;
+  if (e & xiiGALShaderStage::PixelShader)
+    shaderType |= Diligent::SHADER_TYPE_PIXEL;
+  if (e & xiiGALShaderStage::GeometryShader)
+    shaderType |= Diligent::SHADER_TYPE_GEOMETRY;
+  if (e & xiiGALShaderStage::HullShader)
+    shaderType |= Diligent::SHADER_TYPE_HULL;
+  if (e & xiiGALShaderStage::DomainShader)
+    shaderType |= Diligent::SHADER_TYPE_DOMAIN;
+  if (e & xiiGALShaderStage::ComputeShader)
+    shaderType |= Diligent::SHADER_TYPE_COMPUTE;
+  if (e & xiiGALShaderStage::Amplification)
+    shaderType |= Diligent::SHADER_TYPE_AMPLIFICATION;
+  if (e & xiiGALShaderStage::Mesh)
+    shaderType |= Diligent::SHADER_TYPE_MESH;
+  if (e & xiiGALShaderStage::RayGen)
+    shaderType |= Diligent::SHADER_TYPE_RAY_GEN;
+  if (e & xiiGALShaderStage::RayMiss)
+    shaderType |= Diligent::SHADER_TYPE_RAY_MISS;
+  if (e & xiiGALShaderStage::RayAnyHit)
+    shaderType |= Diligent::SHADER_TYPE_RAY_ANY_HIT;
+  if (e & xiiGALShaderStage::RayClosestHit)
+    shaderType |= Diligent::SHADER_TYPE_RAY_CLOSEST_HIT;
+  if (e & xiiGALShaderStage::RayIntersection)
+    shaderType |= Diligent::SHADER_TYPE_RAY_INTERSECTION;
+  if (e & xiiGALShaderStage::Callable)
+    shaderType |= Diligent::SHADER_TYPE_CALLABLE;
+
   return Diligent::SHADER_TYPE::SHADER_TYPE_UNKNOWN;
 }
 

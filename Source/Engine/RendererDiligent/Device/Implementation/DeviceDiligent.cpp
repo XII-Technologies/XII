@@ -88,19 +88,16 @@ void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity,
 
 xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceD3D11(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
 {
-  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D11;
   return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
 }
 
 xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceD3D12(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
 {
-  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D12;
   return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
 }
 
 xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
 {
-  xiiGraphicsDevice::Default = xiiGraphicsDevice::Vulkan;
   return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
 }
 
@@ -137,7 +134,7 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceDiligent::InitPlatform");
 
-  m_DeviceType = xiiDiligentUtils::GetDiligentRenderDeviceType();
+  m_DeviceType = xiiDiligentUtils::GetDiligentRenderDeviceType(m_Description.m_GraphicsDevice);
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   // Using our memory allocator crashes on Linux allocating 64 byte aligned buffers.
@@ -394,7 +391,6 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       {
 #  if D3D11_SUPPORTED
         xiiLog::Error("Failed to find Direct3D12-compatible hardware adapters. Attempting to initialize the engine in Direct3D11 mode.");
-        xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D11;
         m_DeviceType               = Diligent::RENDER_DEVICE_TYPE_D3D11;
         goto CreateDeviceD3D11;
 #  else

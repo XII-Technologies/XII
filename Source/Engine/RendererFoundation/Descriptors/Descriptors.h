@@ -85,6 +85,8 @@ struct xiiGALSwapChainCreationDescription : public xiiHashableStruct<xiiGALSwapC
 
 struct xiiGALDeviceCreationDescription
 {
+  xiiGraphicsDeviceType::Enum m_GraphicsDevice = xiiGraphicsDeviceType::Undefined;
+
   bool m_bDebugDevice = false;
 };
 
@@ -102,13 +104,13 @@ struct xiiGALShaderCreationDescription : public xiiHashableStruct<xiiGALShaderCr
 
 struct xiiGALRenderTargetBlendDescription : public xiiHashableStruct<xiiGALRenderTargetBlendDescription>
 {
-  xiiGALBlend::Enum   m_SourceBlend = xiiGALBlend::One;
-  xiiGALBlend::Enum   m_DestBlend   = xiiGALBlend::One;
-  xiiGALBlendOp::Enum m_BlendOp     = xiiGALBlendOp::Add;
+  xiiGALBlendFactor::Enum    m_SourceBlend = xiiGALBlendFactor::One;
+  xiiGALBlendFactor::Enum    m_DestBlend   = xiiGALBlendFactor::One;
+  xiiGALBlendOperation::Enum m_BlendOp     = xiiGALBlendOperation::Add;
 
-  xiiGALBlend::Enum   m_SourceBlendAlpha = xiiGALBlend::One;
-  xiiGALBlend::Enum   m_DestBlendAlpha   = xiiGALBlend::One;
-  xiiGALBlendOp::Enum m_BlendOpAlpha     = xiiGALBlendOp::Add;
+  xiiGALBlendFactor::Enum    m_SourceBlendAlpha = xiiGALBlendFactor::One;
+  xiiGALBlendFactor::Enum    m_DestBlendAlpha   = xiiGALBlendFactor::One;
+  xiiGALBlendOperation::Enum m_BlendOpAlpha     = xiiGALBlendOperation::Add;
 
   xiiGALColorWriteMask::Enum m_ColorWriteMask = xiiGALColorWriteMask::Default;
 
@@ -127,9 +129,9 @@ struct xiiGALBlendStateCreationDescription : public xiiHashableStruct<xiiGALBlen
 
 struct xiiGALStencilOpDescription : public xiiHashableStruct<xiiGALStencilOpDescription>
 {
-  xiiEnum<xiiGALStencilOp> m_FailOp      = xiiGALStencilOp::Keep;
-  xiiEnum<xiiGALStencilOp> m_DepthFailOp = xiiGALStencilOp::Keep;
-  xiiEnum<xiiGALStencilOp> m_PassOp      = xiiGALStencilOp::Keep;
+  xiiEnum<xiiGALStencilOperation> m_FailOp      = xiiGALStencilOperation::Keep;
+  xiiEnum<xiiGALStencilOperation> m_DepthFailOp = xiiGALStencilOperation::Keep;
+  xiiEnum<xiiGALStencilOperation> m_PassOp      = xiiGALStencilOperation::Keep;
 
   xiiEnum<xiiGALCompareFunc> m_StencilFunc = xiiGALCompareFunc::Always;
 };

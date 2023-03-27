@@ -2,8 +2,6 @@
 
 #include <RendererFoundation/RendererFoundationDLL.h>
 
-xiiGraphicsDeviceType::Enum xiiGraphicsDeviceType::Default = xiiGraphicsDeviceType::Undefined;
-
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGraphicsDeviceType, 1)
 XII_ENUM_CONSTANTS(
   xiiGraphicsDeviceType::Undefined,
