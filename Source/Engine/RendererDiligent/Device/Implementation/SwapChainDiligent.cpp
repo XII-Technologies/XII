@@ -226,6 +226,8 @@ xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent
     m_RenderTargets.m_hRTs[0] = hBackbufferTexture;
   }
 
+  m_CurrentSize = xiiSizeU32(TexDesc.m_uiWidth, TexDesc.m_uiHeight);
+
   return XII_SUCCESS;
 }
 
