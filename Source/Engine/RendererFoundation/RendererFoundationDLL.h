@@ -181,30 +181,24 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALShaderStage
 
   enum Enum : xiiUInt32
   {
-    Undefined = 0x0, ///< Undefined shader stage.
-
-    VertexShader    = XII_BIT(0),  ///< Vertex shader stage.
-    PixelShader     = XII_BIT(1),  ///< Pixel (fragment) shader stage.
-    GeometryShader  = XII_BIT(2),  ///< Geometry shader stage.
-    HullShader      = XII_BIT(3),  ///< Hull (tessellation control) shader stage.
-    DomainShader    = XII_BIT(4),  ///< Domain (tessellation evaluation) shader stage.
-    ComputeShader   = XII_BIT(5),  ///< Compute shader stage.
-    Amplification   = XII_BIT(6),  ///< Amplification shader stage.
-    Mesh            = XII_BIT(7),  ///< Mesh shader stage.
-    RayGen          = XII_BIT(8),  ///< Ray generation shader stage.
-    RayMiss         = XII_BIT(9),  ///< Ray miss shader stage.
-    RayAnyHit       = XII_BIT(10), ///< Ray any hit shader stage.
-    RayClosestHit   = XII_BIT(11), ///< Ray closest hit shader stage.
-    RayIntersection = XII_BIT(12), ///< Ray intersection shader stage.
-    Callable        = XII_BIT(13), ///< Callable shader stage.
+    VertexShader = 0, ///< Vertex shader stage.
+    PixelShader,      ///< Pixel (fragment) shader stage.
+    GeometryShader,   ///< Geometry shader stage.
+    HullShader,       ///< Hull (tessellation control) shader stage.
+    DomainShader,     ///< Domain (tessellation evaluation) shader stage.
+    ComputeShader,    ///< Compute shader stage.
+    Amplification,    ///< Amplification shader stage.
+    Mesh,             ///< Mesh shader stage.
+    RayGen,           ///< Ray generation shader stage.
+    RayMiss,          ///< Ray miss shader stage.
+    RayAnyHit,        ///< Ray any hit shader stage.
+    RayClosestHit,    ///< Ray closest hit shader stage.
+    RayIntersection,  ///< Ray intersection shader stage.
+    Callable,         ///< Callable shader stage.
 
     ENUM_COUNT,
 
-    AllGraphics   = VertexShader | PixelShader | GeometryShader | HullShader | DomainShader,   ///< All graphics pipeline shader stages.
-    AllMesh       = Amplification | Mesh | PixelShader,                                        ///< All mesh shading pipeline shader stages.
-    AllRayTracing = RayGen | RayMiss | RayClosestHit | RayAnyHit | RayIntersection | Callable, ///< All ray-tracing pipeline shader stages.
-
-    Default = Undefined
+    Default = VertexShader
   };
 
   static const char* Names[ENUM_COUNT];
@@ -425,7 +419,7 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALUpdateMode
     NoOverWrite       = XII_BIT(2), ///< The system will not synchronize pending operations before mapping the buffer.
     CopyToTempStorage = XII_BIT(3), ///< Use a temporary staging resource to upload data to the GPU.
 
-    ENUM_COUNT,
+    ENUM_COUNT = 5,
 
     Default = Undefined
   };
@@ -444,7 +438,7 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALUpdateType
     Write     = XII_BIT(1), ///< Write to the resource.
     ReadWrite = XII_BIT(2), ///< Read and Write to the resource.
 
-    ENUM_COUNT,
+    ENUM_COUNT = 3,
 
     Default = Read,
   };

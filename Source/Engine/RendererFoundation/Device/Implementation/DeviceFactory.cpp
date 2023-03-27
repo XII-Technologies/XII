@@ -32,17 +32,19 @@ CreatorFuncInfo* GetCreatorFuncInfo(const char* szRendererName)
 
 xiiGraphicsDeviceType::Enum xiiGALDeviceFactory::GetGraphicsDevice(const char* szRendererName)
 {
-  if (szRendererName == "D3D11")
+  xiiStringBuilder sName = szRendererName;
+
+  if (sName.Compare("D3D11") == 0)
     return xiiGraphicsDeviceType::D3D11;
-  if (szRendererName == "D3D12")
+  if (sName.Compare("D3D12") == 0)
     return xiiGraphicsDeviceType::D3D12;
-  if (szRendererName == "Vulkan")
+  if (sName.Compare("Vulkan") == 0)
     return xiiGraphicsDeviceType::Vulkan;
-  if (szRendererName == "Metal")
+  if (sName.Compare("Metal") == 0)
     return xiiGraphicsDeviceType::Metal;
-  if (szRendererName == "OpenGL")
+  if (sName.Compare("OpenGL") == 0)
     return xiiGraphicsDeviceType::OpenGL;
-  if (szRendererName == "OpenGLES")
+  if (sName.Compare("OpenGLES") == 0)
     return xiiGraphicsDeviceType::OpenGLES;
 
   return xiiGraphicsDeviceType::Undefined;

@@ -538,36 +538,39 @@ XII_ALWAYS_INLINE xiiInt32 xiiDiligentUtils::GALToDiligentNumComponent(Diligent:
 
 XII_ALWAYS_INLINE Diligent::SHADER_TYPE xiiDiligentUtils::GALToDiligentShaderStage(xiiGALShaderStage::Enum e)
 {
-  Diligent::SHADER_TYPE shaderType = Diligent::SHADER_TYPE_UNKNOWN;
+  switch (e)
+  {
+    case xiiGALShaderStage::VertexShader:
+      return Diligent::SHADER_TYPE_VERTEX;
+    case xiiGALShaderStage::PixelShader:
+      return Diligent::SHADER_TYPE_PIXEL;
+    case xiiGALShaderStage::GeometryShader:
+      return Diligent::SHADER_TYPE_GEOMETRY;
+    case xiiGALShaderStage::HullShader:
+      return Diligent::SHADER_TYPE_HULL;
+    case xiiGALShaderStage::DomainShader:
+      return Diligent::SHADER_TYPE_DOMAIN;
+    case xiiGALShaderStage::ComputeShader:
+      return Diligent::SHADER_TYPE_COMPUTE;
+    case xiiGALShaderStage::Amplification:
+      return Diligent::SHADER_TYPE_AMPLIFICATION;
+    case xiiGALShaderStage::Mesh:
+      return Diligent::SHADER_TYPE_MESH;
+    case xiiGALShaderStage::RayGen:
+      return Diligent::SHADER_TYPE_RAY_GEN;
+    case xiiGALShaderStage::RayMiss:
+      return Diligent::SHADER_TYPE_RAY_MISS;
+    case xiiGALShaderStage::RayAnyHit:
+      return Diligent::SHADER_TYPE_RAY_ANY_HIT;
+    case xiiGALShaderStage::RayClosestHit:
+      return Diligent::SHADER_TYPE_RAY_CLOSEST_HIT;
+    case xiiGALShaderStage::RayIntersection:
+      return Diligent::SHADER_TYPE_RAY_INTERSECTION;
+    case xiiGALShaderStage::Callable:
+      return Diligent::SHADER_TYPE_CALLABLE;
 
-  if (e & xiiGALShaderStage::VertexShader)
-    shaderType |= Diligent::SHADER_TYPE_VERTEX;
-  if (e & xiiGALShaderStage::PixelShader)
-    shaderType |= Diligent::SHADER_TYPE_PIXEL;
-  if (e & xiiGALShaderStage::GeometryShader)
-    shaderType |= Diligent::SHADER_TYPE_GEOMETRY;
-  if (e & xiiGALShaderStage::HullShader)
-    shaderType |= Diligent::SHADER_TYPE_HULL;
-  if (e & xiiGALShaderStage::DomainShader)
-    shaderType |= Diligent::SHADER_TYPE_DOMAIN;
-  if (e & xiiGALShaderStage::ComputeShader)
-    shaderType |= Diligent::SHADER_TYPE_COMPUTE;
-  if (e & xiiGALShaderStage::Amplification)
-    shaderType |= Diligent::SHADER_TYPE_AMPLIFICATION;
-  if (e & xiiGALShaderStage::Mesh)
-    shaderType |= Diligent::SHADER_TYPE_MESH;
-  if (e & xiiGALShaderStage::RayGen)
-    shaderType |= Diligent::SHADER_TYPE_RAY_GEN;
-  if (e & xiiGALShaderStage::RayMiss)
-    shaderType |= Diligent::SHADER_TYPE_RAY_MISS;
-  if (e & xiiGALShaderStage::RayAnyHit)
-    shaderType |= Diligent::SHADER_TYPE_RAY_ANY_HIT;
-  if (e & xiiGALShaderStage::RayClosestHit)
-    shaderType |= Diligent::SHADER_TYPE_RAY_CLOSEST_HIT;
-  if (e & xiiGALShaderStage::RayIntersection)
-    shaderType |= Diligent::SHADER_TYPE_RAY_INTERSECTION;
-  if (e & xiiGALShaderStage::Callable)
-    shaderType |= Diligent::SHADER_TYPE_CALLABLE;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
 
   return Diligent::SHADER_TYPE::SHADER_TYPE_UNKNOWN;
 }

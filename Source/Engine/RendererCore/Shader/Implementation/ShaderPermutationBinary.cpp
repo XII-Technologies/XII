@@ -99,5 +99,4 @@ xiiResult xiiShaderPermutationBinary::Read(xiiStreamReader& Stream, bool& out_bO
 }
 
 
-
 XII_STATICLINK_FILE(RendererCore, RendererCore_Shader_Implementation_ShaderPermutationBinary);

@@ -347,7 +347,8 @@ void xiiShaderExplorerApp::AfterCoreSystemsStartup()
   // Create a device
   {
     xiiGALDeviceCreationDescription DeviceInit;
-    DeviceInit.m_bDebugDevice = true;
+    DeviceInit.m_bDebugDevice   = true;
+    DeviceInit.m_GraphicsDevice = xiiGALDeviceFactory::GetGraphicsDevice(szRendererName);
 
     m_pDevice = xiiGALDeviceFactory::CreateDevice(szRendererName, xiiFoundation::GetDefaultAllocator(), DeviceInit);
     XII_ASSERT_DEV(m_pDevice != nullptr, "Device implemention for '{}' not found", szRendererName);

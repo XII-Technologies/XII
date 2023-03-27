@@ -508,4 +508,5 @@ void xiiShaderCompiler::WriteFailedShaderSource(xiiShaderProgramCompiler::xiiSha
   }
 }
 
+
 XII_STATICLINK_FILE(RendererCore, RendererCore_ShaderCompiler_Implementation_ShaderCompiler);

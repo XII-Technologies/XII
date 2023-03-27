@@ -45,7 +45,6 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShaderStage, 1)
 XII_ENUM_CONSTANTS(
-  xiiGALShaderStage::Undefined,
   xiiGALShaderStage::VertexShader,
   xiiGALShaderStage::PixelShader,
   xiiGALShaderStage::GeometryShader,
@@ -64,7 +63,6 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format off
 const char* xiiGALShaderStage::Names[ENUM_COUNT] = {
-  "Undefined",
   "VertexShader",
   "PixelShader",
   "GeometryShader",
