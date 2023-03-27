@@ -89,7 +89,8 @@ namespace
     }
   }
 
-  static const char* s_szStageDefines[xiiGALShaderStage::ENUM_COUNT] = {"VERTEX_SHADER", "HULL_SHADER", "DOMAIN_SHADER", "GEOMETRY_SHADER", "PIXEL_SHADER", "COMPUTE_SHADER"};
+  static const char* s_szStageDefines[xiiGALShaderStage::ENUM_COUNT] = {
+    "VERTEX_SHADER", "PIXEL_SHADER", "GEOMETRY_SHADER, HULL_SHADER, DOMAIN_SHADER, COMPUTE_SHADER, AMPLIFICATION_SHADER, MESH_SHADER, RAYGEN_SHADER, RAYMISS_SHADER, RAYANYHIT_SHADER, RAYCLOSESTHIT_SHADER, RAYINTERSECTION_SHADER, CALLABLE_SHADER"};
 } // namespace
 
 xiiResult xiiShaderCompiler::FileOpen(const char* szAbsoluteFile, xiiDynamicArray<xiiUInt8>& FileContent, xiiTimestamp& out_FileModification)

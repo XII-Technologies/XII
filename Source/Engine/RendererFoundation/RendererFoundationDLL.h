@@ -177,9 +177,9 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGALColorWriteMask);
 /// \brief Defines the pipeline shader stage.
 struct XII_RENDERERFOUNDATION_DLL xiiGALShaderStage
 {
-  using StorageType = xiiUInt32;
+  using StorageType = xiiUInt8;
 
-  enum Enum : xiiUInt32
+  enum Enum : xiiUInt8
   {
     VertexShader = 0, ///< Vertex shader stage.
     PixelShader,      ///< Pixel (fragment) shader stage.
