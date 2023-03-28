@@ -83,8 +83,6 @@ xiiResult xiiGALUnorderedAccessViewDX11::InitPlatform(xiiGALDevice* pDevice)
     {
       case xiiGALTextureType::Texture2D:
       case xiiGALTextureType::Texture2DProxy:
-      case xiiGALTextureType::Texture2DArray:
-      case xiiGALTextureType::Texture2DProxyArray:
 
         if (!bIsArrayView)
         {
@@ -101,7 +99,6 @@ xiiResult xiiGALUnorderedAccessViewDX11::InitPlatform(xiiGALDevice* pDevice)
         break;
 
       case xiiGALTextureType::TextureCube:
-      case xiiGALTextureType::TextureCubeArray:
         DXUAVDesc.ViewDimension                  = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
         DXUAVDesc.Texture2DArray.MipSlice        = m_Description.m_uiMipLevelToUse;
         DXUAVDesc.Texture2DArray.ArraySize       = m_Description.m_uiArraySize;

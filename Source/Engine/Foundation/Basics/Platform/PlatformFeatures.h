@@ -13,7 +13,7 @@
 #endif
 
 
-// now check that the defines for each feature are set (either to 1 or 0, but they must be defined)
+// Now check that the defines for each feature are set (either to 1 or 0, but they must be defined)
 
 #ifndef XII_SUPPORTS_FILE_ITERATORS
 #  error "XII_SUPPORTS_FILE_ITERATORS is not defined."

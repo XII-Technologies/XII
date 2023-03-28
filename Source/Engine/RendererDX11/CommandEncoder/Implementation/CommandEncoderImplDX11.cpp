@@ -207,7 +207,7 @@ void xiiGALCommandEncoderImplDX11::UpdateBufferPlatform(const xiiGALBuffer* pDes
   }
   else
   {
-    if (updateMode & xiiGALUpdateMode::CopyToTempStorage)
+    if (updateMode == xiiGALUpdateMode::CopyToTempStorage)
     {
       if (ID3D11Resource* pDXTempBuffer = m_GALDeviceDX11.FindTempBuffer(pSourceData.GetCount()))
       {
@@ -229,7 +229,7 @@ void xiiGALCommandEncoderImplDX11::UpdateBufferPlatform(const xiiGALBuffer* pDes
     }
     else
     {
-      D3D11_MAP mapType = (updateMode & xiiGALUpdateMode::Discard) ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE;
+      D3D11_MAP mapType = (updateMode == xiiGALUpdateMode::Discard) ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE;
 
       D3D11_MAPPED_SUBRESOURCE MapResult;
       if (SUCCEEDED(m_pDXContext->Map(pDXDestination, 0, mapType, 0, &MapResult)))

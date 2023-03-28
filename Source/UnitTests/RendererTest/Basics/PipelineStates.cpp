@@ -623,7 +623,7 @@ void xiiRendererTestPipelineStates::StructuredBufferTest()
       xiiHybridArray<xiiTestShaderData, 16> instanceData;
       FillStructuredBuffer(instanceData);
       instanceData.SetCount(8);
-      pCommandEncoder->UpdateBuffer(m_hInstancingData, 8 * sizeof(xiiTestShaderData), instanceData.GetArrayPtr().ToByteArray(), xiiGALUpdateMode::NoOverwrite);
+      pCommandEncoder->UpdateBuffer(m_hInstancingData, 8 * sizeof(xiiTestShaderData), instanceData.GetArrayPtr().ToByteArray(), xiiGALUpdateMode::NoOverWrite);
     }
     else if (m_iFrame == ImageCaptureFrames::StructuredBuffer_CopyToTempStorage)
     {

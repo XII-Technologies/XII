@@ -39,21 +39,13 @@ xiiResult xiiGALTextureDX11::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<xii
   {
     case xiiGALTextureType::Texture2D:
     case xiiGALTextureType::TextureCube:
-    case xiiGALTextureType::Texture2DArray:
-    case xiiGALTextureType::TextureCubeArray:
     {
       D3D11_TEXTURE2D_DESC Tex2DDesc;
-
-      if (m_Description.m_Type == xiiGALTextureType::TextureCube || m_Description.m_Type == xiiGALTextureType::TextureCubeArray)
-        Tex2DDesc.ArraySize = m_Description.m_uiArraySize * 6u;
-      else
-        Tex2DDesc.ArraySize = m_Description.m_uiArraySize;
-
+      Tex2DDesc.ArraySize = (m_Description.m_Type == xiiGALTextureType::Texture2D ? m_Description.m_uiArraySize : (m_Description.m_uiArraySize * 6));
       Tex2DDesc.BindFlags = 0;
 
       if (m_Description.m_bAllowShaderResourceView || m_Description.m_bAllowDynamicMipGeneration)
         Tex2DDesc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
-
       if (m_Description.m_bAllowUAV)
         Tex2DDesc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
 
@@ -83,7 +75,7 @@ xiiResult xiiGALTextureDX11::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<xii
       if (m_Description.m_bAllowDynamicMipGeneration)
         Tex2DDesc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
 
-      if (m_Description.m_Type == xiiGALTextureType::TextureCube || m_Description.m_Type == xiiGALTextureType::TextureCubeArray)
+      if (m_Description.m_Type == xiiGALTextureType::TextureCube)
         Tex2DDesc.MiscFlags |= D3D11_RESOURCE_MISC_TEXTURECUBE;
 
       Tex2DDesc.SampleDesc.Count   = m_Description.m_SampleCount;
@@ -232,8 +224,6 @@ xiiResult xiiGALTextureDX11::CreateStagingTexture(xiiGALDeviceDX11* pDevice)
   {
     case xiiGALTextureType::Texture2D:
     case xiiGALTextureType::TextureCube:
-    case xiiGALTextureType::Texture2DArray:
-    case xiiGALTextureType::TextureCubeArray:
     {
       D3D11_TEXTURE2D_DESC Desc;
       static_cast<ID3D11Texture2D*>(m_pDXTexture)->GetDesc(&Desc);

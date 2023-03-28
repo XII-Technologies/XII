@@ -61,6 +61,28 @@ class xiiGALCommandEncoder;
 class xiiGALRenderCommandEncoder;
 class xiiGALComputeCommandEncoder;
 
+/// \brief Defines the graphics device.
+struct XII_RENDERERFOUNDATION_DLL xiiGraphicsDevice
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : xiiUInt8
+  {
+    Undefined = 0, ///< Undefined graphics device type.
+
+    D3D11,    ///< DirectX 11 graphics device.
+    D3D12,    ///< DirectX 12 graphics device.
+    Vulkan,   ///< Vulkan graphics device.
+    Metal,    ///< Metal graphics device.
+    OpenGL,   ///< OpenGL graphics device.
+    OpenGLES, ///< OpenGLES graphics device.
+
+    ENUM_COUNT,
+
+    Default = Undefined
+  };
+};
+
 // Basic enums
 struct xiiGALPrimitiveTopology
 {
@@ -292,11 +314,9 @@ struct xiiGALUpdateMode
 {
   enum Enum
   {
-    None              = XII_BIT(0),
-    DoNotWait         = XII_BIT(1), ///< Do not wait another previous command using the resource completes. Map returns null pointer if the resource is still in use.
-    Discard           = XII_BIT(2), ///< Discard the previous contents of the resource. Thus, making its contents undefined.
-    NoOverWrite       = XII_BIT(3), ///< The system will not synchronize pending operations before mapping the buffer.
-    CopyToTempStorage = XII_BIT(4)  ///< Use a temporary staging resource to upload data to the GPU.
+    Discard,
+    NoOverWrite,
+    CopyToTempStorage
   };
 };
 
