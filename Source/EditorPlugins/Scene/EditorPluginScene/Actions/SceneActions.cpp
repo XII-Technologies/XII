@@ -1,9 +1,9 @@
 #include <EditorPluginScene/EditorPluginScenePCH.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
-#include <EditorFramework/SourceGen/CppProject.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/SourceGen/CppProject.h>
 #include <EditorPluginScene/Actions/SceneActions.h>
 #include <EditorPluginScene/Dialogs/ExportAndRunDlg.moc.h>
 #include <EditorPluginScene/Dialogs/ExtractGeometryDlg.moc.h>

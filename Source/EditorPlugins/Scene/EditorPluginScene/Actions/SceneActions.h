@@ -110,5 +110,5 @@ private:
   void UpdateState();
 
   xiiSceneDocument* m_pSceneDocument;
-  ActionType       m_Type;
+  ActionType        m_Type;
 };

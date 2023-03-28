@@ -16,7 +16,7 @@ public:
     Vs2022,
   };
 
-  xiiString m_sPluginName;
-  Compiler m_Compiler = Compiler::None;
+  xiiString         m_sPluginName;
+  Compiler          m_Compiler = Compiler::None;
   mutable xiiString m_sMsBuildPath;
 };

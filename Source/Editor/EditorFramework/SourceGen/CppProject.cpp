@@ -1,7 +1,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
-#include <EditorFramework/SourceGen/CppProject.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/SourceGen/CppProject.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/System/Process.h>
@@ -138,8 +138,8 @@ xiiResult xiiCppProject::PopulateWithDefaultSources(const xiiCppSettings& cfg)
         break;
       }
 
-      auto& ftc = filesCopied.ExpandAndGetRef();
-      ftc.m_sSource = srcPath;
+      auto& ftc          = filesCopied.ExpandAndGetRef();
+      ftc.m_sSource      = srcPath;
       ftc.m_sDestination = dstPath;
     }
   }
@@ -217,8 +217,8 @@ xiiResult xiiCppProject::RunCMake(const xiiCppSettings& cfg)
     return XII_FAILURE;
   }
 
-  const xiiString sSdkDir = xiiFileSystem::GetSdkRootDirectory();
-  const xiiString sBuildDir = xiiCppProject::GetBuildDir(cfg);
+  const xiiString sSdkDir       = xiiFileSystem::GetSdkRootDirectory();
+  const xiiString sBuildDir     = xiiCppProject::GetBuildDir(cfg);
   const xiiString sSolutionFile = xiiCppProject::GetSolutionPath(cfg);
 
   xiiStringBuilder tmp;
@@ -290,9 +290,9 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
   xiiHybridArray<xiiString, 32> errors;
 
   xiiProcessOptions po;
-  po.m_sProcess = cfg.m_sMsBuildPath;
+  po.m_sProcess           = cfg.m_sMsBuildPath;
   po.m_bHideConsoleWindow = true;
-  po.m_onStdOut = [&](xiiStringView res) {
+  po.m_onStdOut           = [&](xiiStringView res) {
     if (res.FindSubString_NoCase("error") != nullptr)
       errors.PushBack(res);
   };
@@ -368,11 +368,13 @@ xiiResult xiiCppProject::FindMsBuild(const xiiCppSettings& cfg)
     return XII_FAILURE;
   }
 
-  xiiStringBuilder sStdOut;
+  xiiStringBuilder  sStdOut;
   xiiProcessOptions po;
-  po.m_sProcess = sVsWhere;
+  po.m_sProcess           = sVsWhere;
   po.m_bHideConsoleWindow = true;
-  po.m_onStdOut = [&](xiiStringView res) { sStdOut.Append(res); };
+  po.m_onStdOut           = [&](xiiStringView res) {
+    sStdOut.Append(res);
+  };
 
   // TODO: search for VS2022 or VS2019 depending on cfg
   po.AddCommandLine("-latest -requires Microsoft.Component.MSBuild -find MSBuild\\**\\Bin\\MSBuild.exe");
@@ -402,9 +404,9 @@ void xiiCppProject::UpdatePluginConfig(const xiiCppSettings& cfg)
   xiiStringBuilder txt;
   bundles.m_Plugins.Remove(sPluginName);
   xiiPluginBundle& plugin = bundles.m_Plugins[sPluginName];
-  plugin.m_bLoadCopy = true;
-  plugin.m_bSelected = true;
-  plugin.m_bMissing = true;
+  plugin.m_bLoadCopy      = true;
+  plugin.m_bSelected      = true;
+  plugin.m_bMissing       = true;
   plugin.m_LastModificationTime.Invalidate();
   plugin.m_ExclusiveFeatures.PushBack("ProjectPlugin");
   txt.Set("'", cfg.m_sPluginName, "' project plugin");

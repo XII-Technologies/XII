@@ -1,7 +1,7 @@
 #pragma once
 
-#include <EditorFramework/SourceGen/CppSettings.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+#include <EditorFramework/SourceGen/CppSettings.h>
 #include <Foundation/Communication/Event.h>
 
 struct XII_EDITORFRAMEWORK_DLL xiiCppProject
