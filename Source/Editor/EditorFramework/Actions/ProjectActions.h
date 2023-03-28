@@ -4,6 +4,8 @@
 #include <GuiFoundation/Action/BaseActions.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
+class xiiCppSettings;
+
 ///
 class XII_EDITORFRAMEWORK_DLL xiiProjectActions
 {
@@ -52,7 +54,10 @@ public:
   static xiiActionDescriptorHandle s_hOpenVsCode;
   static xiiActionDescriptorHandle s_hImportAsset;
 
+  static xiiActionDescriptorHandle s_hCppProjectMenu;
   static xiiActionDescriptorHandle s_hSetupCppProject;
+  static xiiActionDescriptorHandle s_hOpenCppProject;
+  static xiiActionDescriptorHandle s_hCompileCppProject;
 };
 
 ///
@@ -65,7 +70,7 @@ public:
     xiiDynamicMenuAction(context, szName, szIconPath)
   {
   }
-  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_Entries) override;
+  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries) override;
   virtual void Execute(const xiiVariant& value) override;
 };
 
@@ -79,7 +84,7 @@ public:
     xiiDynamicMenuAction(context, szName, szIconPath)
   {
   }
-  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_Entries) override;
+  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries) override;
   virtual void Execute(const xiiVariant& value) override;
 };
 
@@ -112,6 +117,8 @@ public:
     ImportAsset,
     AssetProfiles,
     SetupCppProject,
+    OpenCppProject,
+    CompileCppProject,
     ShowDocsAndCommunity,
     ExportProject,
     PluginSelection,
@@ -124,6 +131,7 @@ public:
 
 private:
   void ProjectEventHandler(const xiiToolsProjectEvent& e);
+  void CppEventHandler(const xiiCppSettings& e);
 
   ButtonType m_ButtonType;
 };

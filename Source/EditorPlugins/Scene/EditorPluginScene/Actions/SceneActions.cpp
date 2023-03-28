@@ -2,10 +2,13 @@
 
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
+#include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/SourceGen/CppProject.h>
 #include <EditorPluginScene/Actions/SceneActions.h>
 #include <EditorPluginScene/Dialogs/ExportAndRunDlg.moc.h>
 #include <EditorPluginScene/Dialogs/ExtractGeometryDlg.moc.h>
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Utilities/Progress.h>
 #include <GuiFoundation/Action/ActionManager.h>
 #include <GuiFoundation/Action/ActionMapManager.h>
 #include <QProcess>
@@ -60,89 +63,49 @@ void xiiSceneActions::RegisterActions()
   {
     s_hFavoriteCamsMenu = XII_REGISTER_MENU_WITH_ICON("Scene.FavoriteCams.Menu", "");
 
-    s_hStoreEditorCamera[0] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Store.0", xiiActionScope::Document, "Scene - Cameras", "Ctrl+0", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera0);
-    s_hStoreEditorCamera[1] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Store.1", xiiActionScope::Document, "Scene - Cameras", "Ctrl+1", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera1);
-    s_hStoreEditorCamera[2] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Store.2", xiiActionScope::Document, "Scene - Cameras", "Ctrl+2", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera2);
-    s_hStoreEditorCamera[3] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Store.3", xiiActionScope::Document, "Scene - Cameras", "Ctrl+3", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera3);
-    s_hStoreEditorCamera[4] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Store.4", xiiActionScope::Document, "Scene - Cameras", "Ctrl+4", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera4);
-    s_hStoreEditorCamera[5] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Store.5", xiiActionScope::Document, "Scene - Cameras", "Ctrl+5", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera5);
-    s_hStoreEditorCamera[6] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Store.6", xiiActionScope::Document, "Scene - Cameras", "Ctrl+6", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera6);
-    s_hStoreEditorCamera[7] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Store.7", xiiActionScope::Document, "Scene - Cameras", "Ctrl+7", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera7);
-    s_hStoreEditorCamera[8] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Store.8", xiiActionScope::Document, "Scene - Cameras", "Ctrl+8", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera8);
-    s_hStoreEditorCamera[9] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Store.9", xiiActionScope::Document, "Scene - Cameras", "Ctrl+9", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera9);
+    s_hStoreEditorCamera[0] = XII_REGISTER_ACTION_1("Scene.Camera.Store.0", xiiActionScope::Document, "Scene - Cameras", "Ctrl+0", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera0);
+    s_hStoreEditorCamera[1] = XII_REGISTER_ACTION_1("Scene.Camera.Store.1", xiiActionScope::Document, "Scene - Cameras", "Ctrl+1", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera1);
+    s_hStoreEditorCamera[2] = XII_REGISTER_ACTION_1("Scene.Camera.Store.2", xiiActionScope::Document, "Scene - Cameras", "Ctrl+2", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera2);
+    s_hStoreEditorCamera[3] = XII_REGISTER_ACTION_1("Scene.Camera.Store.3", xiiActionScope::Document, "Scene - Cameras", "Ctrl+3", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera3);
+    s_hStoreEditorCamera[4] = XII_REGISTER_ACTION_1("Scene.Camera.Store.4", xiiActionScope::Document, "Scene - Cameras", "Ctrl+4", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera4);
+    s_hStoreEditorCamera[5] = XII_REGISTER_ACTION_1("Scene.Camera.Store.5", xiiActionScope::Document, "Scene - Cameras", "Ctrl+5", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera5);
+    s_hStoreEditorCamera[6] = XII_REGISTER_ACTION_1("Scene.Camera.Store.6", xiiActionScope::Document, "Scene - Cameras", "Ctrl+6", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera6);
+    s_hStoreEditorCamera[7] = XII_REGISTER_ACTION_1("Scene.Camera.Store.7", xiiActionScope::Document, "Scene - Cameras", "Ctrl+7", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera7);
+    s_hStoreEditorCamera[8] = XII_REGISTER_ACTION_1("Scene.Camera.Store.8", xiiActionScope::Document, "Scene - Cameras", "Ctrl+8", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera8);
+    s_hStoreEditorCamera[9] = XII_REGISTER_ACTION_1("Scene.Camera.Store.9", xiiActionScope::Document, "Scene - Cameras", "Ctrl+9", xiiSceneAction, xiiSceneAction::ActionType::StoreEditorCamera9);
 
-    s_hRestoreEditorCamera[0] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Restore.0", xiiActionScope::Document, "Scene - Cameras", "0", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera0);
-    s_hRestoreEditorCamera[1] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Restore.1", xiiActionScope::Document, "Scene - Cameras", "1", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera1);
-    s_hRestoreEditorCamera[2] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Restore.2", xiiActionScope::Document, "Scene - Cameras", "2", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera2);
-    s_hRestoreEditorCamera[3] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Restore.3", xiiActionScope::Document, "Scene - Cameras", "3", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera3);
-    s_hRestoreEditorCamera[4] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Restore.4", xiiActionScope::Document, "Scene - Cameras", "4", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera4);
-    s_hRestoreEditorCamera[5] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Restore.5", xiiActionScope::Document, "Scene - Cameras", "5", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera5);
-    s_hRestoreEditorCamera[6] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Restore.6", xiiActionScope::Document, "Scene - Cameras", "6", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera6);
-    s_hRestoreEditorCamera[7] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Restore.7", xiiActionScope::Document, "Scene - Cameras", "7", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera7);
-    s_hRestoreEditorCamera[8] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Restore.8", xiiActionScope::Document, "Scene - Cameras", "8", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera8);
-    s_hRestoreEditorCamera[9] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.Restore.9", xiiActionScope::Document, "Scene - Cameras", "9", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera9);
+    s_hRestoreEditorCamera[0] = XII_REGISTER_ACTION_1("Scene.Camera.Restore.0", xiiActionScope::Document, "Scene - Cameras", "0", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera0);
+    s_hRestoreEditorCamera[1] = XII_REGISTER_ACTION_1("Scene.Camera.Restore.1", xiiActionScope::Document, "Scene - Cameras", "1", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera1);
+    s_hRestoreEditorCamera[2] = XII_REGISTER_ACTION_1("Scene.Camera.Restore.2", xiiActionScope::Document, "Scene - Cameras", "2", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera2);
+    s_hRestoreEditorCamera[3] = XII_REGISTER_ACTION_1("Scene.Camera.Restore.3", xiiActionScope::Document, "Scene - Cameras", "3", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera3);
+    s_hRestoreEditorCamera[4] = XII_REGISTER_ACTION_1("Scene.Camera.Restore.4", xiiActionScope::Document, "Scene - Cameras", "4", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera4);
+    s_hRestoreEditorCamera[5] = XII_REGISTER_ACTION_1("Scene.Camera.Restore.5", xiiActionScope::Document, "Scene - Cameras", "5", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera5);
+    s_hRestoreEditorCamera[6] = XII_REGISTER_ACTION_1("Scene.Camera.Restore.6", xiiActionScope::Document, "Scene - Cameras", "6", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera6);
+    s_hRestoreEditorCamera[7] = XII_REGISTER_ACTION_1("Scene.Camera.Restore.7", xiiActionScope::Document, "Scene - Cameras", "7", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera7);
+    s_hRestoreEditorCamera[8] = XII_REGISTER_ACTION_1("Scene.Camera.Restore.8", xiiActionScope::Document, "Scene - Cameras", "8", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera8);
+    s_hRestoreEditorCamera[9] = XII_REGISTER_ACTION_1("Scene.Camera.Restore.9", xiiActionScope::Document, "Scene - Cameras", "9", xiiSceneAction, xiiSceneAction::ActionType::RestoreEditorCamera9);
 
-    s_hJumpToCamera[0] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.JumpTo.0", xiiActionScope::Document, "Scene - Cameras", "Alt+0", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera0);
-    s_hJumpToCamera[1] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.JumpTo.1", xiiActionScope::Document, "Scene - Cameras", "Alt+1", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera1);
-    s_hJumpToCamera[2] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.JumpTo.2", xiiActionScope::Document, "Scene - Cameras", "Alt+2", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera2);
-    s_hJumpToCamera[3] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.JumpTo.3", xiiActionScope::Document, "Scene - Cameras", "Alt+3", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera3);
-    s_hJumpToCamera[4] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.JumpTo.4", xiiActionScope::Document, "Scene - Cameras", "Alt+4", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera4);
-    s_hJumpToCamera[5] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.JumpTo.5", xiiActionScope::Document, "Scene - Cameras", "Alt+5", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera5);
-    s_hJumpToCamera[6] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.JumpTo.6", xiiActionScope::Document, "Scene - Cameras", "Alt+6", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera6);
-    s_hJumpToCamera[7] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.JumpTo.7", xiiActionScope::Document, "Scene - Cameras", "Alt+7", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera7);
-    s_hJumpToCamera[8] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.JumpTo.8", xiiActionScope::Document, "Scene - Cameras", "Alt+8", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera8);
-    s_hJumpToCamera[9] = XII_REGISTER_ACTION_1(
-      "Scene.Camera.JumpTo.9", xiiActionScope::Document, "Scene - Cameras", "Alt+9", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera9);
+    s_hJumpToCamera[0] = XII_REGISTER_ACTION_1("Scene.Camera.JumpTo.0", xiiActionScope::Document, "Scene - Cameras", "Alt+0", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera0);
+    s_hJumpToCamera[1] = XII_REGISTER_ACTION_1("Scene.Camera.JumpTo.1", xiiActionScope::Document, "Scene - Cameras", "Alt+1", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera1);
+    s_hJumpToCamera[2] = XII_REGISTER_ACTION_1("Scene.Camera.JumpTo.2", xiiActionScope::Document, "Scene - Cameras", "Alt+2", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera2);
+    s_hJumpToCamera[3] = XII_REGISTER_ACTION_1("Scene.Camera.JumpTo.3", xiiActionScope::Document, "Scene - Cameras", "Alt+3", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera3);
+    s_hJumpToCamera[4] = XII_REGISTER_ACTION_1("Scene.Camera.JumpTo.4", xiiActionScope::Document, "Scene - Cameras", "Alt+4", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera4);
+    s_hJumpToCamera[5] = XII_REGISTER_ACTION_1("Scene.Camera.JumpTo.5", xiiActionScope::Document, "Scene - Cameras", "Alt+5", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera5);
+    s_hJumpToCamera[6] = XII_REGISTER_ACTION_1("Scene.Camera.JumpTo.6", xiiActionScope::Document, "Scene - Cameras", "Alt+6", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera6);
+    s_hJumpToCamera[7] = XII_REGISTER_ACTION_1("Scene.Camera.JumpTo.7", xiiActionScope::Document, "Scene - Cameras", "Alt+7", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera7);
+    s_hJumpToCamera[8] = XII_REGISTER_ACTION_1("Scene.Camera.JumpTo.8", xiiActionScope::Document, "Scene - Cameras", "Alt+8", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera8);
+    s_hJumpToCamera[9] = XII_REGISTER_ACTION_1("Scene.Camera.JumpTo.9", xiiActionScope::Document, "Scene - Cameras", "Alt+9", xiiSceneAction, xiiSceneAction::ActionType::JumpToCamera9);
 
-    s_hCreateLevelCamera[0] = XII_REGISTER_ACTION_1("Scene.Camera.Create.0", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+0", xiiSceneAction,
-                                                    xiiSceneAction::ActionType::CreateLevelCamera0);
-    s_hCreateLevelCamera[1] = XII_REGISTER_ACTION_1("Scene.Camera.Create.1", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+1", xiiSceneAction,
-                                                    xiiSceneAction::ActionType::CreateLevelCamera1);
-    s_hCreateLevelCamera[2] = XII_REGISTER_ACTION_1("Scene.Camera.Create.2", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+2", xiiSceneAction,
-                                                    xiiSceneAction::ActionType::CreateLevelCamera2);
-    s_hCreateLevelCamera[3] = XII_REGISTER_ACTION_1("Scene.Camera.Create.3", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+3", xiiSceneAction,
-                                                    xiiSceneAction::ActionType::CreateLevelCamera3);
-    s_hCreateLevelCamera[4] = XII_REGISTER_ACTION_1("Scene.Camera.Create.4", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+4", xiiSceneAction,
-                                                    xiiSceneAction::ActionType::CreateLevelCamera4);
-    s_hCreateLevelCamera[5] = XII_REGISTER_ACTION_1("Scene.Camera.Create.5", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+5", xiiSceneAction,
-                                                    xiiSceneAction::ActionType::CreateLevelCamera5);
-    s_hCreateLevelCamera[6] = XII_REGISTER_ACTION_1("Scene.Camera.Create.6", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+6", xiiSceneAction,
-                                                    xiiSceneAction::ActionType::CreateLevelCamera6);
-    s_hCreateLevelCamera[7] = XII_REGISTER_ACTION_1("Scene.Camera.Create.7", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+7", xiiSceneAction,
-                                                    xiiSceneAction::ActionType::CreateLevelCamera7);
-    s_hCreateLevelCamera[8] = XII_REGISTER_ACTION_1("Scene.Camera.Create.8", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+8", xiiSceneAction,
-                                                    xiiSceneAction::ActionType::CreateLevelCamera8);
-    s_hCreateLevelCamera[9] = XII_REGISTER_ACTION_1("Scene.Camera.Create.9", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+9", xiiSceneAction,
-                                                    xiiSceneAction::ActionType::CreateLevelCamera9);
+    s_hCreateLevelCamera[0] = XII_REGISTER_ACTION_1("Scene.Camera.Create.0", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+0", xiiSceneAction, xiiSceneAction::ActionType::CreateLevelCamera0);
+    s_hCreateLevelCamera[1] = XII_REGISTER_ACTION_1("Scene.Camera.Create.1", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+1", xiiSceneAction, xiiSceneAction::ActionType::CreateLevelCamera1);
+    s_hCreateLevelCamera[2] = XII_REGISTER_ACTION_1("Scene.Camera.Create.2", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+2", xiiSceneAction, xiiSceneAction::ActionType::CreateLevelCamera2);
+    s_hCreateLevelCamera[3] = XII_REGISTER_ACTION_1("Scene.Camera.Create.3", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+3", xiiSceneAction, xiiSceneAction::ActionType::CreateLevelCamera3);
+    s_hCreateLevelCamera[4] = XII_REGISTER_ACTION_1("Scene.Camera.Create.4", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+4", xiiSceneAction, xiiSceneAction::ActionType::CreateLevelCamera4);
+    s_hCreateLevelCamera[5] = XII_REGISTER_ACTION_1("Scene.Camera.Create.5", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+5", xiiSceneAction, xiiSceneAction::ActionType::CreateLevelCamera5);
+    s_hCreateLevelCamera[6] = XII_REGISTER_ACTION_1("Scene.Camera.Create.6", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+6", xiiSceneAction, xiiSceneAction::ActionType::CreateLevelCamera6);
+    s_hCreateLevelCamera[7] = XII_REGISTER_ACTION_1("Scene.Camera.Create.7", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+7", xiiSceneAction, xiiSceneAction::ActionType::CreateLevelCamera7);
+    s_hCreateLevelCamera[8] = XII_REGISTER_ACTION_1("Scene.Camera.Create.8", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+8", xiiSceneAction, xiiSceneAction::ActionType::CreateLevelCamera8);
+    s_hCreateLevelCamera[9] = XII_REGISTER_ACTION_1("Scene.Camera.Create.9", xiiActionScope::Document, "Scene - Cameras", "Ctrl+Alt+9", xiiSceneAction, xiiSceneAction::ActionType::CreateLevelCamera9);
   }
 }
 
@@ -319,8 +282,33 @@ void xiiSceneAction::Execute(const xiiVariant& value)
       if (dlg.exec() != QDialog::Accepted)
         return;
 
+      xiiProgressRange range("Export and Run", 4, true);
+
+      range.BeginNextStep("Build C++");
+      if (dlg.s_bCompileCpp)
+      {
+        if (xiiCppProject::BuildCodeIfNecessary(dlg.m_CppSettings).Failed())
+        {
+          xiiQtUiServices::GetSingleton()->MessageBoxWarning(xiiFmt("Failed to build the C++ code. See log for details."));
+          return;
+        }
+
+        xiiQtEditorApp::GetSingleton()->RestartEngineProcessIfPluginsChanged(true);
+      }
+
+      range.BeginNextStep("Transform Assets");
+      if (dlg.s_bTransformAll)
+      {
+        if (xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::None).Succeeded())
+        {
+          // once all assets have been transformed, disable it for the next export
+          dlg.s_bTransformAll = false;
+        }
+      }
+
       bool bCreateThumbnail = dlg.s_bUpdateThumbnail;
 
+      range.BeginNextStep("Create Thumbnail");
       if (!m_pSceneDocument->IsPrefab() && !bCreateThumbnail)
       {
         // if the thumbnail doesn't exist, or is very old, update it anyway
@@ -344,18 +332,14 @@ void xiiSceneAction::Execute(const xiiVariant& value)
         }
       }
 
-      if (dlg.s_bTransformAll)
-      {
-        if (xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::None).Succeeded())
-        {
-          // once all assets have been transformed, disable it for the next export
-          dlg.s_bTransformAll = false;
-        }
-      }
-
-
-      m_pSceneDocument->ExportScene(bCreateThumbnail);
       dlg.s_bUpdateThumbnail = false;
+
+      range.BeginNextStep("Export Scene");
+      if (m_pSceneDocument->ExportScene(bCreateThumbnail).Failed())
+      {
+        xiiQtUiServices::GetSingleton()->MessageBoxWarning("Scene export failed.");
+        return;
+      }
 
       // send event, so that 3rd party code can hook into this
       {
@@ -515,7 +499,7 @@ void xiiSceneAction::LaunchPlayer(const char* szPlayerApp)
   proc.startDetached(QString::fromUtf8(szPlayerApp), arguments);
 }
 
-QStringList xiiSceneAction::GetPlayerCommandLine(xiiStringBuilder& out_SingleLine) const
+QStringList xiiSceneAction::GetPlayerCommandLine(xiiStringBuilder& out_sSingleLine) const
 {
   QStringList arguments;
   arguments << "-project";
@@ -549,9 +533,9 @@ QStringList xiiSceneAction::GetPlayerCommandLine(xiiStringBuilder& out_SingleLin
   for (QString s : arguments)
   {
     if (s.contains(" "))
-      out_SingleLine.AppendFormat(" \"{}\"", s.toUtf8().data());
+      out_sSingleLine.AppendFormat(" \"{}\"", s.toUtf8().data());
     else
-      out_SingleLine.AppendFormat(" {}", s.toUtf8().data());
+      out_sSingleLine.AppendFormat(" {}", s.toUtf8().data());
   }
 
   return arguments;

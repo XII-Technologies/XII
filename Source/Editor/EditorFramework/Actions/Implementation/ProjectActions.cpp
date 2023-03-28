@@ -14,6 +14,7 @@
 #include <EditorFramework/Dialogs/TagsDlg.moc.h>
 #include <EditorFramework/Dialogs/WindowCfgDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/SourceGen/CppProject.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <GuiFoundation/Dialogs/ShortcutEditorDlg.moc.h>
@@ -56,7 +57,10 @@ xiiActionDescriptorHandle xiiProjectActions::s_hLaunchInspector;
 xiiActionDescriptorHandle xiiProjectActions::s_hSaveProfiling;
 xiiActionDescriptorHandle xiiProjectActions::s_hOpenVsCode;
 
+xiiActionDescriptorHandle xiiProjectActions::s_hCppProjectMenu;
 xiiActionDescriptorHandle xiiProjectActions::s_hSetupCppProject;
+xiiActionDescriptorHandle xiiProjectActions::s_hOpenCppProject;
+xiiActionDescriptorHandle xiiProjectActions::s_hCompileCppProject;
 
 void xiiProjectActions::RegisterActions()
 {
@@ -99,7 +103,10 @@ void xiiProjectActions::RegisterActions()
   s_hSaveProfiling   = XII_REGISTER_ACTION_1("Editor.SaveProfiling", xiiActionScope::Global, "Engine", "Ctrl+Alt+P", xiiProjectAction, xiiProjectAction::ButtonType::SaveProfiling);
   s_hOpenVsCode      = XII_REGISTER_ACTION_1("Editor.OpenVsCode", xiiActionScope::Global, "Project", "Ctrl+Alt+O", xiiProjectAction, xiiProjectAction::ButtonType::OpenVsCode);
 
-  s_hSetupCppProject = XII_REGISTER_ACTION_1("Project.SetupCppProject", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::SetupCppProject);
+  s_hCppProjectMenu    = XII_REGISTER_MENU("Project.Cpp");
+  s_hSetupCppProject   = XII_REGISTER_ACTION_1("Project.SetupCppProject", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::SetupCppProject);
+  s_hOpenCppProject    = XII_REGISTER_ACTION_1("Project.OpenCppProject", xiiActionScope::Global, "Project", "Ctrl+Shift+O", xiiProjectAction, xiiProjectAction::ButtonType::OpenCppProject);
+  s_hCompileCppProject = XII_REGISTER_ACTION_1("Project.CompileCppProject", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::CompileCppProject);
 
   s_hDocsAndCommunity = XII_REGISTER_ACTION_1("Editor.DocsAndCommunity", xiiActionScope::Global, "Editor", "", xiiProjectAction, xiiProjectAction::ButtonType::ShowDocsAndCommunity);
 }
@@ -137,7 +144,10 @@ void xiiProjectActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hImportAsset);
   xiiActionManager::UnregisterAction(s_hInputConfig);
   xiiActionManager::UnregisterAction(s_hAssetProfiles);
+  xiiActionManager::UnregisterAction(s_hCppProjectMenu);
   xiiActionManager::UnregisterAction(s_hSetupCppProject);
+  xiiActionManager::UnregisterAction(s_hOpenCppProject);
+  xiiActionManager::UnregisterAction(s_hCompileCppProject);
   xiiActionManager::UnregisterAction(s_hExportProject);
   xiiActionManager::UnregisterAction(s_hPluginSelection);
 }
@@ -161,9 +171,13 @@ void xiiProjectActions::MapActions(const char* szMapping)
   // pMap->MapAction(s_hOpenProject, "Menu.Editor/ProjectCategory", 2.0f);   // use dashboard
   // pMap->MapAction(s_hRecentProjects, "Menu.Editor/ProjectCategory", 3.0f);// use dashboard
   pMap->MapAction(s_hCloseProject, "Menu.Editor/ProjectCategory", 4.0f);
-  pMap->MapAction(s_hSetupCppProject, "Menu.Editor/ProjectCategory", 5.0f);
   pMap->MapAction(s_hExportProject, "Menu.Editor/ProjectCategory", 6.0f);
   pMap->MapAction(s_hProjectSettingsMenu, "Menu.Editor/ProjectCategory", 1000.0f);
+
+  pMap->MapAction(s_hCppProjectMenu, "Menu.Editor/ProjectCategory", 5.0f);
+  pMap->MapAction(s_hSetupCppProject, "Menu.Editor/ProjectCategory/Project.Cpp", 1.0f);
+  pMap->MapAction(s_hOpenCppProject, "Menu.Editor/ProjectCategory/Project.Cpp", 2.0f);
+  pMap->MapAction(s_hCompileCppProject, "Menu.Editor/ProjectCategory/Project.Cpp", 3.0f);
 
   pMap->MapAction(s_hSettingsCategory, "Menu.Editor", 3.0f);
   pMap->MapAction(s_hEditorSettingsMenu, "Menu.Editor/SettingsCategory", 1.0f);
@@ -198,9 +212,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRecentDocumentsMenuAction, 0, xiiRTTINoAlloc
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 
-void xiiRecentDocumentsMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_Entries)
+void xiiRecentDocumentsMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries)
 {
-  out_Entries.Clear();
+  out_entries.Clear();
 
   if (xiiQtEditorApp::GetSingleton()->GetRecentDocumentsList().GetFileList().IsEmpty())
     return;
@@ -230,13 +244,13 @@ void xiiRecentDocumentsMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuActio
 
       item.m_sDisplay = sRelativePath;
 
-      out_Entries.PushBack(item);
+      out_entries.PushBack(item);
     }
     else
     {
       item.m_sDisplay = file.m_File;
 
-      out_Entries.PushBack(item);
+      out_entries.PushBack(item);
     }
 
     --iMaxDocumentsToAdd;
@@ -260,9 +274,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRecentProjectsMenuAction, 1, xiiRTTINoAlloca
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 
-void xiiRecentProjectsMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_Entries)
+void xiiRecentProjectsMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries)
 {
-  out_Entries.Clear();
+  out_entries.Clear();
 
   if (xiiQtEditorApp::GetSingleton()->GetRecentProjectsList().GetFileList().IsEmpty())
     return;
@@ -282,7 +296,7 @@ void xiiRecentProjectsMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction
     item.m_sDisplay  = sTemp;
     item.m_UserValue = file.m_File;
 
-    out_Entries.PushBack(item);
+    out_entries.PushBack(item);
   }
 }
 
@@ -374,33 +388,95 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
     case xiiProjectAction::ButtonType::SetupCppProject:
       SetIconPath(":/EditorFramework/Icons/VisualStudio.svg");
       break;
+    case xiiProjectAction::ButtonType::OpenCppProject:
+      // SetIconPath(":/EditorFramework/Icons/VisualStudio.svg"); // TODO
+      break;
+    case xiiProjectAction::ButtonType::CompileCppProject:
+      // SetIconPath(":/EditorFramework/Icons/VisualStudio.svg"); // TODO
+      break;
     case xiiProjectAction::ButtonType::ShowDocsAndCommunity:
-      //SetIconPath(":/GuiFoundation/Icons/Project16.png"); // TODO
+      // SetIconPath(":/GuiFoundation/Icons/Project16.png"); // TODO
       break;
   }
 
-  if (m_ButtonType == ButtonType::CloseProject || m_ButtonType == ButtonType::DataDirectories || m_ButtonType == ButtonType::WindowConfig || m_ButtonType == ButtonType::ImportAsset || m_ButtonType == ButtonType::TagsDialog ||
-      m_ButtonType == ButtonType::ReloadEngine || m_ButtonType == ButtonType::ReloadResources || m_ButtonType == ButtonType::LaunchFileserve || m_ButtonType == ButtonType::LaunchInspector || m_ButtonType == ButtonType::OpenVsCode || m_ButtonType == ButtonType::InputConfig ||
-      m_ButtonType == ButtonType::AssetProfiles || m_ButtonType == ButtonType::SetupCppProject || m_ButtonType == ButtonType::ExportProject || m_ButtonType == ButtonType::PluginSelection)
+  if (m_ButtonType == ButtonType::CloseProject ||
+      m_ButtonType == ButtonType::DataDirectories ||
+      m_ButtonType == ButtonType::WindowConfig ||
+      m_ButtonType == ButtonType::ImportAsset ||
+      m_ButtonType == ButtonType::TagsDialog ||
+      m_ButtonType == ButtonType::ReloadEngine ||
+      m_ButtonType == ButtonType::ReloadResources ||
+      m_ButtonType == ButtonType::LaunchFileserve ||
+      m_ButtonType == ButtonType::LaunchInspector ||
+      m_ButtonType == ButtonType::OpenVsCode ||
+      m_ButtonType == ButtonType::InputConfig ||
+      m_ButtonType == ButtonType::AssetProfiles ||
+      m_ButtonType == ButtonType::SetupCppProject ||
+      m_ButtonType == ButtonType::OpenCppProject ||
+      m_ButtonType == ButtonType::CompileCppProject ||
+      m_ButtonType == ButtonType::ExportProject ||
+      m_ButtonType == ButtonType::PluginSelection)
   {
     SetEnabled(xiiToolsProject::IsProjectOpen());
 
     xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiProjectAction::ProjectEventHandler, this));
   }
+
+  if (m_ButtonType == ButtonType::OpenCppProject ||
+      m_ButtonType == ButtonType::CompileCppProject)
+  {
+    SetEnabled(xiiCppProject::ExistsProjectCMakeListsTxt());
+
+    xiiCppProject::s_ChangeEvents.AddEventHandler(xiiMakeDelegate(&xiiProjectAction::CppEventHandler, this));
+  }
 }
 
 xiiProjectAction::~xiiProjectAction()
 {
-  if (m_ButtonType == ButtonType::CloseProject || m_ButtonType == ButtonType::DataDirectories || m_ButtonType == ButtonType::WindowConfig || m_ButtonType == ButtonType::ImportAsset || m_ButtonType == ButtonType::TagsDialog ||
-      m_ButtonType == ButtonType::ReloadEngine || m_ButtonType == ButtonType::ReloadResources || m_ButtonType == ButtonType::LaunchFileserve || m_ButtonType == ButtonType::LaunchInspector || m_ButtonType == ButtonType::OpenVsCode || m_ButtonType == ButtonType::InputConfig || m_ButtonType == ButtonType::AssetProfiles || m_ButtonType == ButtonType::SetupCppProject || m_ButtonType == ButtonType::ExportProject || m_ButtonType == ButtonType::PluginSelection)
+  if (m_ButtonType == ButtonType::CloseProject ||
+      m_ButtonType == ButtonType::DataDirectories ||
+      m_ButtonType == ButtonType::WindowConfig ||
+      m_ButtonType == ButtonType::ImportAsset ||
+      m_ButtonType == ButtonType::TagsDialog ||
+      m_ButtonType == ButtonType::ReloadEngine ||
+      m_ButtonType == ButtonType::ReloadResources ||
+      m_ButtonType == ButtonType::LaunchFileserve ||
+      m_ButtonType == ButtonType::LaunchInspector ||
+      m_ButtonType == ButtonType::OpenVsCode ||
+      m_ButtonType == ButtonType::InputConfig ||
+      m_ButtonType == ButtonType::AssetProfiles ||
+      m_ButtonType == ButtonType::SetupCppProject ||
+      m_ButtonType == ButtonType::OpenCppProject ||
+      m_ButtonType == ButtonType::CompileCppProject ||
+      m_ButtonType == ButtonType::ExportProject ||
+      m_ButtonType == ButtonType::PluginSelection)
   {
     xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiProjectAction::ProjectEventHandler, this));
+  }
+
+  if (m_ButtonType == ButtonType::OpenCppProject ||
+      m_ButtonType == ButtonType::CompileCppProject)
+  {
+    xiiCppProject::s_ChangeEvents.RemoveEventHandler(xiiMakeDelegate(&xiiProjectAction::CppEventHandler, this));
   }
 }
 
 void xiiProjectAction::ProjectEventHandler(const xiiToolsProjectEvent& e)
 {
-  SetEnabled(xiiToolsProject::IsProjectOpen());
+  if (m_ButtonType == ButtonType::OpenCppProject ||
+      m_ButtonType == ButtonType::CompileCppProject)
+  {
+    SetEnabled(xiiCppProject::ExistsProjectCMakeListsTxt());
+  }
+  else
+  {
+    SetEnabled(xiiToolsProject::IsProjectOpen());
+  }
+}
+
+void xiiProjectAction::CppEventHandler(const xiiCppSettings& e)
+{
+  SetEnabled(xiiCppProject::ExistsProjectCMakeListsTxt());
 }
 
 void xiiProjectAction::Execute(const xiiVariant& value)
@@ -699,6 +775,52 @@ void xiiProjectAction::Execute(const xiiVariant& value)
     {
       xiiQtCppProjectDlg dlg(nullptr);
       dlg.exec();
+    }
+    break;
+
+    case xiiProjectAction::ButtonType::OpenCppProject:
+    {
+      xiiCppSettings cpp;
+      cpp.Load().IgnoreResult();
+
+      if (xiiCppProject::ExistsProjectCMakeListsTxt())
+      {
+        if (xiiCppProject::RunCMakeIfNecessary(cpp).Failed())
+        {
+          xiiQtUiServices::GetSingleton()->MessageBoxWarning("Generating the C++ solution failed.");
+        }
+        else if (!xiiQtUiServices::OpenFileInDefaultProgram(xiiCppProject::GetSolutionPath(cpp)))
+        {
+          xiiQtUiServices::GetSingleton()->MessageBoxWarning("Opening the solution failed.");
+        }
+      }
+      else
+      {
+        xiiQtUiServices::GetSingleton()->MessageBoxInformation("C++ code has not been set up, opening a solution is not possible.");
+      }
+    }
+    break;
+
+    case xiiProjectAction::ButtonType::CompileCppProject:
+    {
+      xiiCppSettings cpp;
+      cpp.Load().IgnoreResult();
+
+      if (xiiCppProject::ExistsProjectCMakeListsTxt())
+      {
+        if (xiiCppProject::BuildCodeIfNecessary(cpp).Succeeded())
+        {
+          xiiQtUiServices::GetSingleton()->MessageBoxInformation("Successfully compiled the C++ code.");
+        }
+        else
+        {
+          xiiQtUiServices::GetSingleton()->MessageBoxWarning("Compiling the code failed. See log for details.");
+        }
+      }
+      else
+      {
+        xiiQtUiServices::GetSingleton()->MessageBoxInformation("C++ code has not been set up, compilation is not necessary.");
+      }
     }
     break;
 

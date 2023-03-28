@@ -7,20 +7,24 @@
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetProcessorMessages.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/SourceGen/CppProject.h>
+#include <EditorFramework/SourceGen/CppSettings.h>
 #include <Foundation/Application/Application.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 #include <GuiFoundation/Action/ActionManager.h>
 
-xiiCommandLineOptionPath   opt_OutputDir("_EditorProcessor", "-outputDir", "Output directory", "");
-xiiCommandLineOptionBool   opt_Debug("_EditorProcessor", "-debug", "Writes various debug logs into the output folder.", false);
-xiiCommandLineOptionPath   opt_Project("_EditorProcessor", "-project", "Path to the project folder.", "");
-xiiCommandLineOptionBool   opt_Resave("_EditorProcessor", "-resave", "If specified, assets will be resaved.", false);
+xiiCommandLineOptionPath opt_OutputDir("_EditorProcessor", "-outputDir", "Output directory", "");
+xiiCommandLineOptionBool opt_Debug("_EditorProcessor", "-debug", "Writes various debug logs into the output folder.", false);
+xiiCommandLineOptionPath opt_Project("_EditorProcessor", "-project", "Path to the project folder.", "");
+xiiCommandLineOptionBool opt_Resave("_EditorProcessor", "-resave", "If specified, assets will be resaved.", false);
+// clang-format off
 xiiCommandLineOptionString opt_Transform("_EditorProcessor", "-transform", "If specified, assets will be transformed for the given platform profile.\n\
 \n\
 Example:\n\
   -transform PC\n\
 ",
-                                         "");
+"");
+// clang-format on
 
 class xiiEditorApplication : public xiiApplication
 {
@@ -61,11 +65,14 @@ public:
   {
     if (const xiiProcessAssetMsg* pMsg = xiiDynamicCast<const xiiProcessAssetMsg*>(e.m_pMessage))
     {
-      xiiQtEditorApp::GetSingleton()->RestartEngineProcessIfPluginsChanged();
+      if (pMsg->m_sAssetPath.HasExtension("xiiPrefab") || pMsg->m_sAssetPath.HasExtension("xiiScene"))
+      {
+        xiiQtEditorApp::GetSingleton()->RestartEngineProcessIfPluginsChanged(true);
+      }
 
       xiiProcessAssetResponseMsg msg;
       {
-        xiiLogEntryDelegate logger([&msg](xiiLogEntry& entry) -> void { msg.m_LogEntries.PushBack(std::move(entry)); },
+        xiiLogEntryDelegate logger([&msg](xiiLogEntry& ref_entry) -> void { msg.m_LogEntries.PushBack(std::move(ref_entry)); },
                                    xiiLogMsgType::WarningMsg);
         xiiLogSystemScope   logScope(&logger);
 
@@ -164,7 +171,26 @@ public:
 
     if (!sTransformProfile.IsEmpty())
     {
-      xiiQtEditorApp::GetSingleton()->OpenProject(sProject).IgnoreResult();
+      if (xiiQtEditorApp::GetSingleton()->OpenProject(sProject).Failed())
+      {
+        SetReturnCode(2);
+        return xiiApplication::Execution::Quit;
+      }
+
+      // Before we transform any assets, make sure the C++ code is properly built
+      {
+        xiiCppSettings cppSettings;
+        if (cppSettings.Load().Succeeded())
+        {
+          if (xiiCppProject::BuildCodeIfNecessary(cppSettings).Failed())
+          {
+            SetReturnCode(3);
+            return xiiApplication::Execution::Quit;
+          }
+
+          xiiQtEditorApp::GetSingleton()->RestartEngineProcessIfPluginsChanged(true);
+        }
+      }
 
       bool bTransform = true;
 

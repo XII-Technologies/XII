@@ -52,7 +52,7 @@ void xiiQtEditorApp::SlotTimedUpdate()
 
   Q_EMIT IdleEvent();
 
-  RestartEngineProcessIfPluginsChanged();
+  RestartEngineProcessIfPluginsChanged(false);
 
   m_pTimer->start(1);
 }

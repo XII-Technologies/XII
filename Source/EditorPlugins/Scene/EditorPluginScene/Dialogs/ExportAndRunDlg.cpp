@@ -2,17 +2,19 @@
 
 #include <EditorFramework/Preferences/Preferences.h>
 #include <EditorFramework/Preferences/ProjectPreferences.h>
+#include <EditorFramework/SourceGen/CppProject.h>
 #include <EditorPluginScene/Dialogs/ExportAndRunDlg.moc.h>
 #include <Foundation/IO/OSFile.h>
 #include <QFileDialog>
 
 bool xiiQtExportAndRunDlg::s_bTransformAll    = true;
 bool xiiQtExportAndRunDlg::s_bUpdateThumbnail = false;
+bool xiiQtExportAndRunDlg::s_bCompileCpp      = true;
 
 static int s_iLastPlayerApp = 0;
 
-xiiQtExportAndRunDlg::xiiQtExportAndRunDlg(QWidget* parent) :
-  QDialog(parent)
+xiiQtExportAndRunDlg::xiiQtExportAndRunDlg(QWidget* pParent) :
+  QDialog(pParent)
 {
   setupUi(this);
 
@@ -32,6 +34,8 @@ xiiQtExportAndRunDlg::xiiQtExportAndRunDlg(QWidget* parent) :
   }
 
   ToolCombo->setCurrentIndex(s_iLastPlayerApp);
+
+  m_CppSettings.Load().IgnoreResult();
 }
 
 void xiiQtExportAndRunDlg::PullFromUI()
@@ -39,6 +43,7 @@ void xiiQtExportAndRunDlg::PullFromUI()
   s_bTransformAll    = TransformAll->isChecked();
   s_bUpdateThumbnail = UpdateThumbnail->isChecked();
   s_iLastPlayerApp   = ToolCombo->currentIndex();
+  s_bCompileCpp      = CompileCpp->isChecked();
 
   xiiProjectPreferencesUser* pPref = xiiPreferences::QueryPreferences<xiiProjectPreferencesUser>();
   pPref->m_PlayerApps.Clear();
@@ -60,6 +65,17 @@ void xiiQtExportAndRunDlg::showEvent(QShowEvent* e)
   TransformAll->setChecked(s_bTransformAll);
   UpdateThumbnail->setChecked(s_bUpdateThumbnail);
   PlayerCmdLine->setPlainText(m_sCmdLine.GetData());
+
+  if (!xiiCppProject::ExistsProjectCMakeListsTxt())
+  {
+    CompileCpp->setEnabled(false);
+    CompileCpp->setToolTip("This project doesn't have a C++ plugin.");
+    CompileCpp->setChecked(false);
+  }
+  else
+  {
+    CompileCpp->setChecked(s_bCompileCpp);
+  }
 }
 
 void xiiQtExportAndRunDlg::on_ExportOnly_clicked()
@@ -83,7 +99,7 @@ void xiiQtExportAndRunDlg::on_AddToolButton_clicked()
   appDir.MakeCleanPath();
   static QString sLastPath = appDir.GetData();
 
-  const QString sFile = QFileDialog::getOpenFileName(this, "Select Program", sLastPath, "Application (*.exe)", nullptr, QFileDialog::Option::DontResolveSymlinks);
+  const QString sFile = QFileDialog::getOpenFileName(this, "Select Program", sLastPath, "Applicaation (*.exe)", nullptr, QFileDialog::Option::DontResolveSymlinks);
 
   if (sFile.isEmpty())
     return;

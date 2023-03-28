@@ -103,7 +103,7 @@ public:
   virtual void Execute(const xiiVariant& value) override;
 
   void        LaunchPlayer(const char* szPlayerApp);
-  QStringList GetPlayerCommandLine(xiiStringBuilder& out_SingleLine) const;
+  QStringList GetPlayerCommandLine(xiiStringBuilder& out_sSingleLine) const;
 
 private:
   void SceneEventHandler(const xiiGameObjectEvent& e);

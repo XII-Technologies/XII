@@ -99,7 +99,7 @@ public:
   ///
   /// The applications output is parsed and forwarded to the given log interface. A custom log level is applied first.
   /// If the tool cannot be found or it takes longer to execute than the allowed timeout, the function returns failure.
-  xiiStatus ExecuteTool(const char* szTool, const QStringList& arguments, xiiUInt32 uiSecondsTillTimeout, xiiLogInterface* pLogOutput = nullptr, xiiLogMsgType::Enum LogLevel = xiiLogMsgType::WarningMsg, const char* szCWD = nullptr);
+  xiiStatus ExecuteTool(const char* szTool, const QStringList& arguments, xiiUInt32 uiSecondsTillTimeout, xiiLogInterface* pLogOutput = nullptr, xiiLogMsgType::Enum logLevel = xiiLogMsgType::WarningMsg, const char* szCWD = nullptr);
 
   /// \brief Creates the string with which to run Fileserve for the currently open project.
   xiiString BuildFileserveCommandLine() const;
@@ -143,7 +143,7 @@ public:
   /// \brief Reads the list of last open documents in the current project.
   xiiRecentFilesList LoadOpenDocumentsList();
 
-  void     InitQt(int argc, char** argv);
+  void     InitQt(int iArgc, char** pArgv);
   void     StartupEditor();
   void     StartupEditor(xiiBitflags<StartupFlags> startupFlags, const char* szUserDataFolder = nullptr);
   void     ShutdownEditor();
@@ -195,13 +195,13 @@ public:
 
   void SetFileSystemConfig(const xiiApplicationFileSystemConfig& cfg);
 
-  bool MakeDataDirectoryRelativePathAbsolute(xiiStringBuilder& sPath) const;
-  bool MakeDataDirectoryRelativePathAbsolute(xiiString& sPath) const;
-  bool MakePathDataDirectoryRelative(xiiStringBuilder& sPath) const;
-  bool MakePathDataDirectoryRelative(xiiString& sPath) const;
+  bool MakeDataDirectoryRelativePathAbsolute(xiiStringBuilder& ref_sPath) const;
+  bool MakeDataDirectoryRelativePathAbsolute(xiiString& ref_sPath) const;
+  bool MakePathDataDirectoryRelative(xiiStringBuilder& ref_sPath) const;
+  bool MakePathDataDirectoryRelative(xiiString& ref_sPath) const;
 
-  bool MakePathDataDirectoryParentRelative(xiiStringBuilder& sPath) const;
-  bool MakeParentDataDirectoryRelativePathAbsolute(xiiStringBuilder& sPath, bool bCheckExists) const;
+  bool MakePathDataDirectoryParentRelative(xiiStringBuilder& ref_sPath) const;
+  bool MakeParentDataDirectoryRelativePathAbsolute(xiiStringBuilder& ref_sPath, bool bCheckExists) const;
 
   xiiStatus SaveTagRegistry();
 
@@ -214,7 +214,7 @@ public:
   /// \brief Instructs the engine to reload its resources
   void ReloadEngineResources();
 
-  void RestartEngineProcessIfPluginsChanged();
+  void RestartEngineProcessIfPluginsChanged(bool bForce);
 
 Q_SIGNALS:
   void IdleEvent();
