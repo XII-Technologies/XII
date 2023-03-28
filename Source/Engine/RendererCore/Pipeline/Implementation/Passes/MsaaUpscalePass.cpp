@@ -108,5 +108,4 @@ public:
 xiiMsaaUpscalePassPatch_1_2 g_xiiMsaaUpscalePassPatch_1_2;
 
 
-
 XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_Passes_MsaaUpscalePass);
