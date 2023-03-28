@@ -42,7 +42,7 @@ public:
   xiiHybridArray<DataDirConfig, 4> m_DataDirs;
 };
 
-using xiiApplicationFileSystemConfig_DataDirConfig = xiiApplicationFileSystemConfig::DataDirConfig ;
+using xiiApplicationFileSystemConfig_DataDirConfig = xiiApplicationFileSystemConfig::DataDirConfig;
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiApplicationFileSystemConfig);
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiApplicationFileSystemConfig_DataDirConfig);
