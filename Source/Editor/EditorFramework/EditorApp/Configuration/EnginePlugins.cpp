@@ -20,7 +20,7 @@ void xiiQtEditorApp::StoreEnginePluginModificationTimes()
       {
         if (!plugin.m_LastModificationTime.IsValid() || stats.m_LastModificationTime.Compare(plugin.m_LastModificationTime, xiiTimestamp::CompareMode::Newer))
         {
-          // store the maximum (latest) modification timestamp
+          // Store the maximum (latest) modification timestamp
           plugin.m_LastModificationTime = stats.m_LastModificationTime;
         }
       }
@@ -67,10 +67,13 @@ bool xiiQtEditorApp::CheckForEnginePluginModifications()
   return false;
 }
 
-void xiiQtEditorApp::RestartEngineProcessIfPluginsChanged()
+void xiiQtEditorApp::RestartEngineProcessIfPluginsChanged(bool bForce)
 {
-  if (m_LastPluginModificationCheck + xiiTime::Seconds(2) > xiiTime::Now())
-    return;
+  if (!bForce)
+  {
+    if (m_LastPluginModificationCheck + xiiTime::Seconds(2) > xiiTime::Now())
+      return;
+  }
 
   m_LastPluginModificationCheck = xiiTime::Now();
 
@@ -80,7 +83,7 @@ void xiiQtEditorApp::RestartEngineProcessIfPluginsChanged()
     {
       if (!pDoc->CanEngineProcessBeRestarted())
       {
-        // not allowed to restart at the moment
+        // Not allowed to restart at the moment
         return;
       }
     }

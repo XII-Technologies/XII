@@ -2,6 +2,7 @@
 
 #include <EditorFramework/EditorFrameworkDLL.h>
 
+#include <EditorFramework/SourceGen/CppSettings.h>
 #include <EditorFramework/ui_CppProjectDlg.h>
 #include <Foundation/Strings/String.h>
 #include <QDialog>
@@ -12,7 +13,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtCppProjectDlg(QWidget* parent);
+  xiiQtCppProjectDlg(QWidget* pParent);
 
 private Q_SLOTS:
   void on_Result_rejected();
@@ -21,14 +22,11 @@ private Q_SLOTS:
   void on_Generator_currentIndexChanged(int);
   void on_OpenSolution_clicked();
   void on_GenerateSolution_clicked();
+  void on_PluginName_textEdited(const QString& text);
 
 private:
   void UpdateUI();
 
-  xiiString GetTargetDir() const;
-  xiiString GetBuildDir() const;
-  xiiString GetSolutionFile() const;
-  xiiString GetGeneratorCMake() const;
-  xiiString GetGeneratorFolder() const;
-  xiiResult GenerateSolution();
+  xiiCppSettings m_OldCppSettings;
+  xiiCppSettings m_CppSettings;
 };

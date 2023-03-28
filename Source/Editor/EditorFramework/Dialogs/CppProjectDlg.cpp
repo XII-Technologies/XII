@@ -1,206 +1,47 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
+#include "Foundation/Logging/Log.h"
 #include <EditorFramework/Dialogs/CppProjectDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/SourceGen/CppProject.h>
+#include <EditorFramework/SourceGen/CppSettings.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/OSFile.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
-xiiQtCppProjectDlg::xiiQtCppProjectDlg(QWidget* parent) :
-  QDialog(parent)
+xiiQtCppProjectDlg::xiiQtCppProjectDlg(QWidget* pParent) :
+  QDialog(pParent)
 {
   setupUi(this);
 
-  Generator->addItem("Visual Studio 2019");
-  Generator->addItem("Visual Studio 2022");
-  Generator->setCurrentIndex(1);
+  m_OldCppSettings.Load().IgnoreResult();
+  m_CppSettings.Load().IgnoreResult();
+
+  {
+    xiiQtScopedBlockSignals _1(PluginName);
+    PluginName->setPlaceholderText(xiiToolsProject::GetSingleton()->GetProjectName(true).GetData());
+    PluginName->setText(m_CppSettings.m_sPluginName.GetData());
+  }
+
+  {
+    xiiQtScopedBlockSignals _1(Generator);
+    Generator->addItem("None");
+    Generator->addItem("Visual Studio 2019");
+    Generator->addItem("Visual Studio 2022");
+    Generator->setCurrentIndex(0);
+
+    if (m_CppSettings.m_Compiler == xiiCppSettings::Compiler::Vs2019)
+    {
+      Generator->setCurrentIndex(1);
+    }
+    else if (m_CppSettings.m_Compiler == xiiCppSettings::Compiler::Vs2022)
+    {
+      Generator->setCurrentIndex(2);
+    }
+  }
 
   UpdateUI();
-}
-
-xiiResult xiiQtCppProjectDlg::GenerateSolution()
-{
-  if (xiiSystemInformation::IsDebuggerAttached())
-  {
-    xiiQtUiServices::GetSingleton()->MessageBoxWarning("When a debugger is attached, CMake can fail with the error that no C/C++ compiler can be found.");
-  }
-
-  xiiProgressRange progress("Generating Solution", 4, false);
-  progress.SetStepWeighting(0, 0.05f);
-  progress.SetStepWeighting(1, 0.1f);
-  progress.SetStepWeighting(2, 0.1f);
-  progress.SetStepWeighting(3, 1.0f);
-
-  QApplication::setOverrideCursor(Qt::WaitCursor);
-
-  OutputLog->clear();
-  xiiStringBuilder output;
-  XII_SCOPE_EXIT(OutputLog->setText(output.GetData()));
-  XII_SCOPE_EXIT(QApplication::restoreOverrideCursor());
-  XII_SCOPE_EXIT(UpdateUI());
-
-  const xiiString sRealProjectName = xiiToolsProject::GetSingleton()->GetProjectName(false);
-  const xiiString sProjectName     = xiiToolsProject::GetSingleton()->GetProjectName(true);
-
-  if (sRealProjectName != sProjectName)
-  {
-    if (xiiQtUiServices::MessageBoxQuestion(xiiFmt("The project's name '{}' contains characters and/or whitespace that can't be used in C++ identifiers.\n\nInstead the adjusted name '{}' will be used.\n\nIf you don't want this, you need to rename your project (rename the folder in which it resides) and try again.\n\nDo you want to continue?", sRealProjectName, sProjectName), QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::Yes) != QMessageBox::StandardButton::Yes)
-    {
-      output.AppendFormat("User doesn't like auto-generated project name '{}' :(", sProjectName);
-      return XII_FAILURE;
-    }
-  }
-
-  xiiStringBuilder sProjectNameUpper = sProjectName;
-  sProjectNameUpper.ToUpper();
-
-  const xiiStringBuilder sTargetDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-
-  xiiStringBuilder sSourceDir = xiiApplicationServices::GetSingleton()->GetApplicationDataFolder();
-  sSourceDir.AppendPath("SourceTemplate");
-
-  xiiDynamicArray<xiiFileStats> items;
-  xiiOSFile::GatherAllItemsInFolder(items, sSourceDir, xiiFileSystemIteratorFlags::ReportFilesRecursive);
-
-  struct FileToCopy
-  {
-    xiiString m_sSource;
-    xiiString m_sDestination;
-  };
-
-  xiiHybridArray<FileToCopy, 32> filesCopied;
-
-  // Gather files
-  {
-    progress.BeginNextStep("Gathering source files");
-
-    for (const auto& item : items)
-    {
-      xiiStringBuilder srcPath, dstPath;
-      item.GetFullPath(srcPath);
-
-      dstPath = srcPath;
-      dstPath.MakeRelativeTo(sSourceDir).IgnoreResult();
-
-      dstPath.ReplaceAll("SourceTemplate", sProjectName);
-      dstPath.Prepend(sTargetDir, "/");
-      dstPath.MakeCleanPath();
-
-      // Do not copy files over that already exist (and may have edits)
-      if (xiiOSFile::ExistsFile(dstPath))
-      {
-        // If any file already exists, don't copy non-existing (user might have deleted unwanted sample files)
-        filesCopied.Clear();
-        break;
-      }
-
-      auto& ftc          = filesCopied.ExpandAndGetRef();
-      ftc.m_sSource      = srcPath;
-      ftc.m_sDestination = dstPath;
-    }
-  }
-
-  // Copy files
-  {
-    progress.BeginNextStep("Copying sources");
-
-    for (const auto& ftc : filesCopied)
-    {
-      if (xiiOSFile::CopyFile(ftc.m_sSource, ftc.m_sDestination).Failed())
-      {
-        output.AppendFormat("Failed to copy a file.\nSource: '{}'\nDestination: '{}'\n", ftc.m_sSource, ftc.m_sDestination);
-        return XII_FAILURE;
-      }
-    }
-  }
-
-  // Modify sources
-  {
-    progress.BeginNextStep("Modifying sources");
-
-    for (const auto& filePath : filesCopied)
-    {
-      xiiStringBuilder content;
-
-      {
-        xiiFileReader file;
-        if (file.Open(filePath.m_sDestination).Failed())
-        {
-          output.AppendFormat("Failed to open C++ project file for reading.\nSource: '{}'\n", filePath.m_sDestination);
-          return XII_FAILURE;
-        }
-
-        content.ReadAll(file);
-      }
-
-      content.ReplaceAll("SourceTemplate", sProjectName);
-      content.ReplaceAll("SOURCETEMPLATE", sProjectNameUpper);
-
-      {
-        xiiFileWriter file;
-        if (file.Open(filePath.m_sDestination).Failed())
-        {
-          output.AppendFormat("Failed to open C++ project file for writing.\nSource: '{}'\n", filePath.m_sDestination);
-          return XII_FAILURE;
-        }
-
-        file.WriteBytes(content.GetData(), content.GetElementCount()).IgnoreResult();
-      }
-    }
-  }
-
-  // Invoke CMake
-  {
-    progress.BeginNextStep("Invoking CMake");
-
-    const xiiString sSdkDir       = xiiFileSystem::GetSdkRootDirectory();
-    const xiiString sBuildDir     = GetBuildDir();
-    const xiiString sSolutionFile = GetSolutionFile();
-
-    if (xiiOSFile::ExistsDirectory(sBuildDir) && xiiOSFile::DeleteFolder(sBuildDir).Failed())
-    {
-      output.AppendFormat("Couldn't delete build output directory:\n{}\n\nProject is probably already open in Visual Studio.\n", sBuildDir);
-    }
-
-    xiiStringBuilder tmp;
-
-    QStringList args;
-    args << "-S";
-    args << GetTargetDir().GetData();
-
-    tmp.Format("-DXII_SDK_DIR:PATH={}", sSdkDir);
-    args << tmp.GetData();
-
-    tmp.Format("-DXII_BUILDTYPE_ONLY:STRING={}", BUILDSYSTEM_BUILDTYPE);
-    args << tmp.GetData();
-
-    args << "-G";
-    args << GetGeneratorCMake().GetData();
-
-    args << "-B";
-    args << sBuildDir.GetData();
-
-    args << "-A";
-    args << "x64";
-
-    xiiLogSystemToBuffer log;
-
-    xiiStatus res = xiiQtEditorApp::GetSingleton()->ExecuteTool("cmake/bin/cmake", args, 120, &log, xiiLogMsgType::InfoMsg);
-
-    if (res.Failed())
-    {
-      output.AppendFormat("Solution generation failed:\n\n");
-      output.AppendFormat("{}\n", log.m_sBuffer);
-      output.AppendFormat("{}\n", res.m_sMessage);
-      return XII_FAILURE;
-    }
-
-    output.AppendFormat("Generated solution successfully.\n\n");
-    output.AppendFormat("{}\n", log.m_sBuffer);
-  }
-
-  return XII_SUCCESS;
 }
 
 void xiiQtCppProjectDlg::on_Result_rejected()
@@ -220,123 +61,179 @@ void xiiQtCppProjectDlg::on_OpenBuildFolder_clicked()
 
 void xiiQtCppProjectDlg::on_Generator_currentIndexChanged(int)
 {
+  switch (Generator->currentIndex())
+  {
+    case 0:
+      m_CppSettings.m_Compiler = xiiCppSettings::Compiler::None;
+      break;
+    case 1:
+      m_CppSettings.m_Compiler = xiiCppSettings::Compiler::Vs2019;
+      break;
+    case 2:
+      m_CppSettings.m_Compiler = xiiCppSettings::Compiler::Vs2022;
+      break;
+  }
+
   UpdateUI();
 }
 
 void xiiQtCppProjectDlg::on_OpenSolution_clicked()
 {
-  if (!xiiQtUiServices::OpenFileInDefaultProgram(GetSolutionFile()))
+  if (!xiiQtUiServices::OpenFileInDefaultProgram(xiiCppProject::GetSolutionPath(m_CppSettings)))
   {
     xiiQtUiServices::GetSingleton()->MessageBoxWarning("Opening the solution failed.");
   }
 }
 
-void xiiQtCppProjectDlg::on_GenerateSolution_clicked()
+void xiiQtCppProjectDlg::on_PluginName_textEdited(const QString& text)
 {
-  if (xiiOSFile::ExistsFile(GetSolutionFile()))
-  {
-    if (xiiQtUiServices::MessageBoxQuestion("The solution already exists, do you want to recreate it?", QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) != QMessageBox::StandardButton::Yes)
-      return;
-  }
+  m_CppSettings.m_sPluginName = PluginName->text().toUtf8().data();
 
-  if (GenerateSolution().Failed())
-  {
-    xiiQtUiServices::GetSingleton()->MessageBoxWarning("Generating the solution failed. Check the log output for details.");
-  }
-  else
-  {
-    xiiStringBuilder txt;
-    txt.Format("The solution was generated successfully.\n\nDo you want to open the solution now?");
-
-    if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion(txt, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes) == QMessageBox::Yes)
-    {
-      on_OpenSolution_clicked();
-    }
-
-    xiiStringBuilder sProjectName = xiiToolsProject::GetSingleton()->GetProjectName(true);
-    xiiStringBuilder sPluginName(sProjectName, "Plugin");
-
-    xiiPluginBundleSet& bundles = xiiQtEditorApp::GetSingleton()->GetPluginBundles();
-
-    bundles.m_Plugins.Remove(sPluginName);
-    xiiPluginBundle& plugin       = bundles.m_Plugins[sPluginName];
-    plugin.m_bLoadCopy            = true;
-    plugin.m_bSelected            = true;
-    plugin.m_bMissing             = true;
-    plugin.m_LastModificationTime = xiiTimestamp::CurrentTimestamp();
-    plugin.m_ExclusiveFeatures.PushBack("ProjectPlugin");
-    txt.Set("'", sProjectName, "' project plugin");
-    plugin.m_sDisplayName = txt;
-    txt.Set("C++ code for the '", sProjectName, "' project.");
-    plugin.m_sDescription = txt;
-    plugin.m_RuntimePlugins.PushBack(sPluginName);
-
-    xiiQtEditorApp::GetSingleton()->WritePluginSelectionStateDDL();
-  }
+  UpdateUI();
 }
 
 void xiiQtCppProjectDlg::UpdateUI()
 {
-  PluginLocation->setText(GetTargetDir().GetData());
-  BuildFolder->setText(GetBuildDir().GetData());
+  PluginLocation->setText(xiiCppProject::GetTargetSourceDir().GetData());
+  BuildFolder->setText(xiiCppProject::GetBuildDir(m_CppSettings).GetData());
 
+  GenerateSolution->setEnabled(m_CppSettings.m_Compiler != xiiCppSettings::Compiler::None);
   OpenPluginLocation->setEnabled(xiiOSFile::ExistsDirectory(PluginLocation->text().toUtf8().data()));
   OpenBuildFolder->setEnabled(xiiOSFile::ExistsDirectory(BuildFolder->text().toUtf8().data()));
-  OpenSolution->setEnabled(xiiOSFile::ExistsFile(GetSolutionFile()));
+  OpenSolution->setEnabled(xiiCppProject::ExistsSolution(m_CppSettings));
 }
 
-xiiString xiiQtCppProjectDlg::GetTargetDir() const
+class xiiForwardToQTextEdit : public xiiLogInterface
 {
-  xiiStringBuilder sTargetDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-  sTargetDir.AppendPath("Source");
+public:
+  QTextEdit* m_pTextEdit = nullptr;
 
-  return sTargetDir;
-}
-
-xiiString xiiQtCppProjectDlg::GetBuildDir() const
-{
-  xiiStringBuilder sBuildDir;
-  sBuildDir.Format("{}/Build/{}", xiiToolsProject::GetSingleton()->GetProjectDirectory(), GetGeneratorFolder());
-
-  return sBuildDir;
-}
-
-xiiString xiiQtCppProjectDlg::GetSolutionFile() const
-{
-  xiiStringBuilder sSolutionFile;
-  sSolutionFile = GetBuildDir();
-  sSolutionFile.AppendPath(xiiToolsProject::GetSingleton()->GetProjectName(true));
-  sSolutionFile.Append(".sln");
-
-  return sSolutionFile;
-}
-
-xiiString xiiQtCppProjectDlg::GetGeneratorCMake() const
-{
-  switch (Generator->currentIndex())
+  void HandleLogMessage(const xiiLoggingEventData& le) override
   {
-    case 0:
-      return "Visual Studio 16 2019";
-    case 1:
-      return "Visual Studio 17 2022";
+    switch (le.m_EventType)
+    {
+      case xiiLogMsgType::GlobalDefault:
+      case xiiLogMsgType::Flush:
+      case xiiLogMsgType::BeginGroup:
+      case xiiLogMsgType::EndGroup:
+      case xiiLogMsgType::None:
+      case xiiLogMsgType::All:
+      case xiiLogMsgType::ENUM_COUNT:
+        return;
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      case xiiLogMsgType::ErrorMsg:
+      case xiiLogMsgType::SeriousWarningMsg:
+      case xiiLogMsgType::WarningMsg:
+      case xiiLogMsgType::SuccessMsg:
+      case xiiLogMsgType::InfoMsg:
+      case xiiLogMsgType::DevMsg:
+      case xiiLogMsgType::DebugMsg:
+      {
+        xiiStringBuilder tmp(le.m_sText, "\n");
+
+        QString s = m_pTextEdit->toPlainText();
+        s.append(tmp);
+        m_pTextEdit->setText(s);
+        return;
+      }
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+  }
+};
+
+void xiiQtCppProjectDlg::on_GenerateSolution_clicked()
+{
+  if (xiiCppProject::ExistsSolution(m_CppSettings))
+  {
+    if (xiiQtUiServices::MessageBoxQuestion("The solution already exists, do you want to recreate it?", QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) != QMessageBox::StandardButton::Yes)
+    {
+      return;
+    }
   }
 
-  return "";
-}
-
-xiiString xiiQtCppProjectDlg::GetGeneratorFolder() const
-{
-  switch (Generator->currentIndex())
+  if (m_CppSettings.m_sPluginName.IsEmpty())
   {
-    case 0:
-      return "Vs2019x64";
-    case 1:
-      return "Vs2022x64";
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    m_CppSettings.m_sPluginName = PluginName->placeholderText().toUtf8().data();
   }
 
-  return "";
+  if (!m_OldCppSettings.m_sPluginName.IsEmpty() && m_OldCppSettings.m_sPluginName != m_CppSettings.m_sPluginName)
+  {
+    if (xiiQtUiServices::MessageBoxQuestion("You are attempting to change the name of the existing C++ plugin.\n\nTHIS IS A BAD IDEA.\n\nThe C++ sources and CMake files were already created with the old name in it. To not accidentally delete your work, XII won't touch any of those files. Therefore this change won't have any effect, unless you have already deleted those files yourself and XII can just create new ones. Only select YES if you have done the necessary steps and/or know what you are doing.", QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) != QMessageBox::StandardButton::Yes)
+    {
+      return;
+    }
+  }
+
+  if (m_CppSettings.Save().Failed())
+  {
+    xiiQtUiServices::GetSingleton()->MessageBoxWarning("Saving new C++ project settings failed.");
+    return;
+  }
+
+  m_OldCppSettings.Load().IgnoreResult();
+
+  if (xiiSystemInformation::IsDebuggerAttached())
+  {
+    xiiQtUiServices::GetSingleton()->MessageBoxWarning("When a debugger is attached, CMake usually fails with the error that no C/C++ compiler can be found.\n\nDetach the debugger now, then press OK to continue.");
+  }
+
+  OutputLog->clear();
+
+  {
+    xiiForwardToQTextEdit log;
+    log.m_pTextEdit = OutputLog;
+    xiiLogSystemScope _logScope(&log);
+
+    xiiProgressRange progress("Generating Solution", 3, false);
+    progress.SetStepWeighting(0, 0.1f);
+    progress.SetStepWeighting(1, 0.1f);
+    progress.SetStepWeighting(2, 0.8f);
+
+    XII_SCOPE_EXIT(UpdateUI());
+
+    {
+      progress.BeginNextStep("Clean Build Directory");
+
+      if (xiiCppProject::CleanBuildDir(m_CppSettings).Failed())
+      {
+        xiiLog::Warning("Couldn't delete build output directory:\n{}\n\nProject is probably already open in Visual Studio.\n", xiiCppProject::GetBuildDir(m_CppSettings));
+      }
+    }
+
+    {
+      progress.BeginNextStep("Populate with Default Sources");
+      if (xiiCppProject::PopulateWithDefaultSources(m_CppSettings).Failed())
+      {
+        xiiQtUiServices::GetSingleton()->MessageBoxWarning("Failed to populate the CppSource directory with the default files.\n\nCheck the log for details.");
+        return;
+      }
+    }
+
+    // run CMake
+    {
+      progress.BeginNextStep("Running CMake");
+
+      if (xiiCppProject::RunCMake(m_CppSettings).Failed())
+      {
+
+        xiiQtUiServices::GetSingleton()->MessageBoxWarning("Generating the solution failed.\n\nCheck the log for details.");
+        return;
+      }
+    }
+
+    if (xiiCppProject::BuildCodeIfNecessary(m_CppSettings).Failed())
+    {
+      xiiLog::Error("Failed to compile the newly generated C++ solution.");
+    }
+  }
+
+  xiiCppProject::UpdatePluginConfig(m_CppSettings);
+
+  xiiQtEditorApp::GetSingleton()->RestartEngineProcessIfPluginsChanged(true);
+
+  if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion("The solution was generated successfully.\n\nDo you want to open it now?", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes) == QMessageBox::Yes)
+  {
+    on_OpenSolution_clicked();
+  }
 }
