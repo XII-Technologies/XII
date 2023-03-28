@@ -30,7 +30,6 @@
 
 xiiInternal::NewInstance<xiiGALDevice> CreateDX11Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
 {
-  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D11;
   return XII_NEW(pAllocator, xiiGALDeviceDX11, Description);
 }
 

@@ -83,5 +83,4 @@ xiiResult xiiGALVertexDeclarationDX11::DeInitPlatform(xiiGALDevice* pDevice)
 }
 
 
-
 XII_STATICLINK_FILE(RendererDX11, RendererDX11_Shader_Implementation_VertexDeclarationDX11);
