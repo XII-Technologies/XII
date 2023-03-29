@@ -10,8 +10,8 @@ namespace
   {
     xiiImageFormatMetaData()
     {
-      xiiMemoryUtils::ZeroFill(m_uiBitsPerChannel);
-      xiiMemoryUtils::ZeroFill(m_uiChannelMasks);
+      xiiMemoryUtils::ZeroFillArray(m_uiBitsPerChannel);
+      xiiMemoryUtils::ZeroFillArray(m_uiChannelMasks);
 
       m_planeData.SetCount(1);
     }

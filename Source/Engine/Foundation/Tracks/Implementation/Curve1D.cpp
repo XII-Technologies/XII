@@ -557,10 +557,10 @@ void xiiCurve1D::MakeAutoTangentRight(xiiUInt32 uiCpIdx)
   const auto& nCP = m_ControlPoints[uiCpIdx + 1];
 
   const double len = (nCP.m_Position.x - pCP.m_Position.x);
-  if (len <= 0)
+  if (len <= 0.0)
     return;
 
-  const double fLerpFactor = (tCP.m_Position.x - pCP.m_Position.x) / (nCP.m_Position.x - pCP.m_Position.x);
+  const double fLerpFactor = (tCP.m_Position.x - pCP.m_Position.x) / len;
 
   const xiiVec2d dirP = (tCP.m_Position - pCP.m_Position) * 0.3333333333;
   const xiiVec2d dirN = (nCP.m_Position - tCP.m_Position) * 0.3333333333;

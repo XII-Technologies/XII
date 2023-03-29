@@ -277,7 +277,7 @@ XII_CREATE_SIMPLE_TEST(Memory, MemoryUtils)
     XII_TEST_INT(uiRawData[4], 5);
 
     // T[N] overload
-    xiiMemoryUtils::ZeroFill(uiRawData);
+    xiiMemoryUtils::ZeroFillArray(uiRawData);
 
     XII_TEST_INT(uiRawData[0], 0);
     XII_TEST_INT(uiRawData[1], 0);
@@ -306,7 +306,7 @@ XII_CREATE_SIMPLE_TEST(Memory, MemoryUtils)
     XII_TEST_INT(uiRawData[4], 5);
 
     // T[N] overload
-    xiiMemoryUtils::PatternFill(uiRawData, 0xCD);
+    xiiMemoryUtils::PatternFillArray(uiRawData, 0xCD);
 
     XII_TEST_INT(uiRawData[0], 0xCD);
     XII_TEST_INT(uiRawData[1], 0xCD);

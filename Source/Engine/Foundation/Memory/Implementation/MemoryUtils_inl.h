@@ -177,7 +177,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::ZeroFill(T* pDestination, size_t uiCount)
 }
 
 template <typename T, size_t N>
-XII_ALWAYS_INLINE void xiiMemoryUtils::ZeroFill(T (&destination)[N])
+XII_ALWAYS_INLINE void xiiMemoryUtils::ZeroFillArray(T (&destination)[N])
 {
   return ZeroFill(destination, N);
 }
@@ -189,7 +189,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::PatternFill(T* pDestination, xiiUInt8 uiB
 }
 
 template <typename T, size_t N>
-XII_ALWAYS_INLINE void xiiMemoryUtils::PatternFill(T (&destination)[N], xiiUInt8 uiBytePattern)
+XII_ALWAYS_INLINE void xiiMemoryUtils::PatternFillArray(T (&destination)[N], xiiUInt8 uiBytePattern)
 {
   return PatternFill(destination, uiBytePattern, N);
 }

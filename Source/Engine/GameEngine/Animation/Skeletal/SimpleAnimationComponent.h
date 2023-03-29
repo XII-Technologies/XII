@@ -12,7 +12,6 @@
 #include <ozz/base/maths/soa_transform.h>
 
 class xiiEventTrack;
-struct xiiMsgAnimationReachedEnd;
 struct xiiMsgGenericEvent;
 
 using xiiAnimationClipResourceHandle = xiiTypedResourceHandle<class xiiAnimationClipResource>;
