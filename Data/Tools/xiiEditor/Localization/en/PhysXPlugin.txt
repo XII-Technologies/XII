@@ -47,12 +47,12 @@ xiiPxBoneColliderComponent;Bone Collider (PhysX);;https://xiiengine.net/pages/do
 xiiPxRopeComponent;Physical Rope (PhysX);;https://xiiengine.net/pages/docs/physics/special/physx-rope-component.html
 xiiPxQueryShapeActorComponent;Query Shape Actor (PhysX);;https://xiiengine.net/pages/docs/physics/actors/physx-queryshape-actor-component.html
 xiiPxRagdollComponent;Ragdoll (PhysX);;https://xiiengine.net/pages/docs/physics/ragdolls/physx-ragdoll-component.html
-xiiPxActorLockingFlags::FrexiiePositionX;Frexiie Position X
-xiiPxActorLockingFlags::FrexiiePositionY;Frexiie Position Y
-xiiPxActorLockingFlags::FrexiiePositionZ;Frexiie Position Z
-xiiPxActorLockingFlags::FrexiieRotationX;Frexiie Rotation X
-xiiPxActorLockingFlags::FrexiieRotationY;Frexiie Rotation Y
-xiiPxActorLockingFlags::FrexiieRotationZ;Frexiie Rotation Z
+xiiPxActorLockingFlags::FreezePositionX;Freeze Position X
+xiiPxActorLockingFlags::FreezePositionY;Freeze Position Y
+xiiPxActorLockingFlags::FreezePositionZ;Freeze Position Z
+xiiPxActorLockingFlags::FreezeRotationX;Freeze Rotation X
+xiiPxActorLockingFlags::FreezeRotationY;Freeze Rotation Y
+xiiPxActorLockingFlags::FreezeRotationZ;Freeze Rotation Z
 xiiPxControlledRagdollComponent;Controlled Ragdoll (PhysX);;https://xiiengine.net/pages/docs/physics/ragdolls/physx-ragdoll-component.html
 xiiPxSimulatedRagdollComponent;Simulated Ragdoll (PhysX);;https://xiiengine.net/pages/docs/physics/ragdolls/physx-ragdoll-component.html
 xiiPxRagdollStart::BindPose;Bind Pose
