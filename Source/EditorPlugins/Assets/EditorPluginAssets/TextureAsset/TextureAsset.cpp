@@ -351,6 +351,12 @@ void xiiTextureAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInf
 {
   SUPER::UpdateAssetDocumentInfo(pInfo);
 
+  if (!m_bIsRenderTarget)
+  {
+    // Every 2D texture also generates a "-lowres" output, which is used to be embedded into materials for quick streaming
+    pInfo->m_Outputs.Insert("LOWRES");
+  }
+
   for (xiiUInt32 i = GetProperties()->GetNumInputFiles(); i < 4; ++i)
   {
     // remove unused dependencies
@@ -376,6 +382,12 @@ void xiiTextureAssetDocument::InitializeAfterLoading(bool bFirstTimeCreation)
 
 xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(const char* szTargetFile, const char* szOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
+  if (xiiStringUtils::IsEqual(szOutputTag, "LOWRES"))
+  {
+    // No need to generate this file, it will be generated together with the main output
+    return xiiTransformStatus();
+  }
+
   // XII_ASSERT_DEV(xiiStringUtils::IsEqual(szPlatform, "PC"), "Platform '{0}' is not supported", szPlatform);
 
   const auto* pAssetConfig = pAssetProfile->GetTypeConfig<xiiTextureAssetProfileConfig>();

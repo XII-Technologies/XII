@@ -12,6 +12,8 @@ public:
   xiiImageDataAssetDocumentManager();
   ~xiiImageDataAssetDocumentManager();
 
+  virtual OutputReliability GetAssetTypeOutputReliability() const override { return xiiAssetDocumentManager::OutputReliability::Perfect; }
+
 private:
   void OnDocumentManagerEvent(const xiiDocumentManager::Event& e);
 

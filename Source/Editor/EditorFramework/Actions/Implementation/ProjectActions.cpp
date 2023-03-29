@@ -47,6 +47,7 @@ xiiActionDescriptorHandle xiiProjectActions::s_hImportAsset;
 xiiActionDescriptorHandle xiiProjectActions::s_hAssetProfiles;
 xiiActionDescriptorHandle xiiProjectActions::s_hExportProject;
 xiiActionDescriptorHandle xiiProjectActions::s_hPluginSelection;
+xiiActionDescriptorHandle xiiProjectActions::s_hClearAssetCaches;
 
 xiiActionDescriptorHandle xiiProjectActions::s_hToolsMenu;
 xiiActionDescriptorHandle xiiProjectActions::s_hToolsCategory;
@@ -87,12 +88,13 @@ void xiiProjectActions::RegisterActions()
   s_hTagsDlg         = XII_REGISTER_ACTION_1("Engine.Tags", xiiActionScope::Global, "Editor", "", xiiProjectAction, xiiProjectAction::ButtonType::TagsDialog);
   s_hPluginSelection = XII_REGISTER_ACTION_1("Project.PluginSelection", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::PluginSelection);
 
-  s_hDataDirectories = XII_REGISTER_ACTION_1("Project.DataDirectories", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::DataDirectories);
-  s_hInputConfig     = XII_REGISTER_ACTION_1("Project.InputConfig", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::InputConfig);
-  s_hWindowConfig    = XII_REGISTER_ACTION_1("Project.WindowConfig", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::WindowConfig);
-  s_hImportAsset     = XII_REGISTER_ACTION_1("Project.ImportAsset", xiiActionScope::Global, "Project", "Ctrl+I", xiiProjectAction, xiiProjectAction::ButtonType::ImportAsset);
-  s_hAssetProfiles   = XII_REGISTER_ACTION_1("Project.AssetProfiles", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::AssetProfiles);
-  s_hExportProject   = XII_REGISTER_ACTION_1("Project.ExportProject", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::ExportProject);
+  s_hDataDirectories  = XII_REGISTER_ACTION_1("Project.DataDirectories", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::DataDirectories);
+  s_hInputConfig      = XII_REGISTER_ACTION_1("Project.InputConfig", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::InputConfig);
+  s_hWindowConfig     = XII_REGISTER_ACTION_1("Project.WindowConfig", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::WindowConfig);
+  s_hImportAsset      = XII_REGISTER_ACTION_1("Project.ImportAsset", xiiActionScope::Global, "Project", "Ctrl+I", xiiProjectAction, xiiProjectAction::ButtonType::ImportAsset);
+  s_hAssetProfiles    = XII_REGISTER_ACTION_1("Project.AssetProfiles", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::AssetProfiles);
+  s_hExportProject    = XII_REGISTER_ACTION_1("Project.ExportProject", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::ExportProject);
+  s_hClearAssetCaches = XII_REGISTER_ACTION_1("Project.ClearAssetCaches", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::ClearAssetCaches);
 
   s_hToolsMenu       = XII_REGISTER_MENU("Menu.Tools");
   s_hToolsCategory   = XII_REGISTER_CATEGORY("ToolsCategory");
@@ -142,6 +144,7 @@ void xiiProjectActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hDataDirectories);
   xiiActionManager::UnregisterAction(s_hWindowConfig);
   xiiActionManager::UnregisterAction(s_hImportAsset);
+  xiiActionManager::UnregisterAction(s_hClearAssetCaches);
   xiiActionManager::UnregisterAction(s_hInputConfig);
   xiiActionManager::UnregisterAction(s_hAssetProfiles);
   xiiActionManager::UnregisterAction(s_hCppProjectMenu);
@@ -190,6 +193,7 @@ void xiiProjectActions::MapActions(const char* szMapping)
   pMap->MapAction(s_hLaunchInspector, "Menu.Tools/ToolsCategory", 3.5f);
   pMap->MapAction(s_hSaveProfiling, "Menu.Tools/ToolsCategory", 4.0f);
   pMap->MapAction(s_hOpenVsCode, "Menu.Tools/ToolsCategory", 5.0f);
+  pMap->MapAction(s_hClearAssetCaches, "Menu.Tools/ToolsCategory", 6.0f);
 
   pMap->MapAction(s_hShortcutEditor, "Menu.Editor/SettingsCategory/Menu.EditorSettings", 2.0f);
   pMap->MapAction(s_hPreferencesDlg, "Menu.Editor/SettingsCategory/Menu.EditorSettings", 3.0f);
@@ -397,6 +401,9 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
     case xiiProjectAction::ButtonType::ShowDocsAndCommunity:
       // SetIconPath(":/GuiFoundation/Icons/Project16.png"); // TODO
       break;
+    case xiiProjectAction::ButtonType::ClearAssetCaches:
+      // SetIconPath(":/GuiFoundation/Icons/Project16.png"); // TODO
+      break;
   }
 
   if (m_ButtonType == ButtonType::CloseProject ||
@@ -415,6 +422,7 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
       m_ButtonType == ButtonType::OpenCppProject ||
       m_ButtonType == ButtonType::CompileCppProject ||
       m_ButtonType == ButtonType::ExportProject ||
+      m_ButtonType == ButtonType::ClearAssetCaches ||
       m_ButtonType == ButtonType::PluginSelection)
   {
     SetEnabled(xiiToolsProject::IsProjectOpen());
@@ -449,6 +457,7 @@ xiiProjectAction::~xiiProjectAction()
       m_ButtonType == ButtonType::OpenCppProject ||
       m_ButtonType == ButtonType::CompileCppProject ||
       m_ButtonType == ButtonType::ExportProject ||
+      m_ButtonType == ButtonType::ClearAssetCaches ||
       m_ButtonType == ButtonType::PluginSelection)
   {
     xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiProjectAction::ProjectEventHandler, this));
@@ -577,10 +586,21 @@ void xiiProjectAction::Execute(const xiiVariant& value)
     case xiiProjectAction::ButtonType::ExportProject:
     {
       xiiQtExportProjectDlg dlg(nullptr);
-      if (dlg.exec() == QDialog::Accepted)
-      {
-        // TODO
-      }
+      dlg.exec();
+    }
+    break;
+
+    case xiiProjectAction::ButtonType::ClearAssetCaches:
+    {
+      auto res = xiiQtUiServices::GetSingleton()->MessageBoxQuestion("Delete ALL cached asset files?\n\n* 'Yes All' deletes everything and takes a long time to re-process. This is rarely needed.\n* 'No All' only deletes assets that are likely to make problems.", QMessageBox::StandardButton::YesAll | QMessageBox::StandardButton::NoAll | QMessageBox::StandardButton::Cancel, QMessageBox::StandardButton::Cancel);
+
+      if (res == QMessageBox::StandardButton::Cancel)
+        break;
+
+      if (res == QMessageBox::StandardButton::YesAll)
+        xiiAssetCurator::GetSingleton()->ClearAssetCaches(xiiAssetDocumentManager::Perfect);
+      else
+        xiiAssetCurator::GetSingleton()->ClearAssetCaches(xiiAssetDocumentManager::Unknown);
     }
     break;
 

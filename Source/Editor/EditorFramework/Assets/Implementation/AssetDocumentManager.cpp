@@ -127,12 +127,12 @@ xiiString xiiAssetDocumentManager::GetAbsoluteOutputFileName(const xiiAssetDocum
 
 xiiString xiiAssetDocumentManager::GetRelativeOutputFileName(const xiiAssetDocumentTypeDescriptor* pTypeDesc, const char* szDataDirectory, const char* szDocumentPath, const char* szOutputTag, const xiiPlatformProfile* pAssetProfile) const
 {
-  const xiiPlatformProfile* sPlatform = xiiAssetDocumentManager::DetermineFinalTargetProfile(pAssetProfile);
+  const xiiPlatformProfile* pPlatform = xiiAssetDocumentManager::DetermineFinalTargetProfile(pAssetProfile);
   XII_ASSERT_DEBUG(xiiStringUtils::IsNullOrEmpty(szOutputTag), "The output tag '%s' for '%s' is not supported, override GetRelativeOutputFileName", szOutputTag, szDocumentPath);
 
   xiiStringBuilder sRelativePath(szDocumentPath);
   sRelativePath.MakeRelativeTo(szDataDirectory).IgnoreResult();
-  GenerateOutputFilename(sRelativePath, sPlatform, pTypeDesc->m_sResourceFileExtension, GeneratesProfileSpecificAssets());
+  GenerateOutputFilename(sRelativePath, pPlatform, pTypeDesc->m_sResourceFileExtension, GeneratesProfileSpecificAssets());
 
   return sRelativePath;
 }
@@ -217,7 +217,10 @@ void xiiAssetDocumentManager::GenerateOutputFilename(xiiStringBuilder& inout_sRe
   inout_sRelativeDocumentPath.MakeCleanPath();
 
   if (bPlatformSpecific)
-    inout_sRelativeDocumentPath.Prepend(pAssetProfile->GetConfigName(), "/");
+  {
+    const xiiPlatformProfile* pPlatform = xiiAssetDocumentManager::DetermineFinalTargetProfile(pAssetProfile);
+    inout_sRelativeDocumentPath.Prepend(pPlatform->GetConfigName(), "/");
+  }
   else
     inout_sRelativeDocumentPath.Prepend("Common/");
 }

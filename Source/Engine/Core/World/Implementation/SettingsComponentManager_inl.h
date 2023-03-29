@@ -76,8 +76,7 @@ xiiComponent* xiiSettingsComponentManager<ComponentType>::CreateComponentStorage
 {
   if (!m_Components.IsEmpty())
   {
-    xiiLog::Warning("A component of type '{0}' is already present in this world. Having more than one is not allowed.",
-                    xiiGetStaticRTTI<ComponentType>()->GetTypeName());
+    xiiLog::Warning("A component of type '{0}' is already present in this world. Having more than one is not allowed.", xiiGetStaticRTTI<ComponentType>()->GetTypeName());
   }
 
   m_Components.PushBack(XII_NEW(GetAllocator(), ComponentType));

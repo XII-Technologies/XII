@@ -395,6 +395,19 @@ private:
 
   ///@}
 
+  /// \name Utilities
+  ///@{
+
+public:
+  /// \brief Deletes all files in all asset caches, except for the asset outputs that exceed the threshold.
+  ///
+  /// -> OutputReliability::Perfect -> deletes everything
+  /// -> OutputReliability::Good -> keeps the 'Perfect' files
+  /// -> OutputReliability::Unknown -> keeps the 'Good' and 'Perfect' files
+  void ClearAssetCaches(xiiAssetDocumentManager::OutputReliability threshold);
+
+  ///@}
+
 private:
   friend class xiiUpdateTask;
   friend class xiiAssetProcessor;

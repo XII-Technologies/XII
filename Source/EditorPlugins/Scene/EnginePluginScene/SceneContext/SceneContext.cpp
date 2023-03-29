@@ -403,7 +403,7 @@ void xiiSceneContext::HandleWorldSettingsMsg(const xiiWorldSettingsMsgToEngine* 
   m_bRenderSelectionBoxes   = pMsg->m_bRenderSelectionBoxes;
 
   if (pMsg->m_bAddAmbientLight)
-    AddAmbientLight(true);
+    AddAmbientLight(true, false);
   else
     RemoveAmbientLight();
 }
@@ -954,14 +954,13 @@ void xiiSceneContext::OnThumbnailViewContextCreated()
   // make sure there is ambient light in the thumbnails
   // TODO: should check whether this is a prefab (info currently not available in xiiSceneContext)
   RemoveAmbientLight();
-  AddAmbientLight(false);
+  AddAmbientLight(false, true);
 }
 
 void xiiSceneContext::OnDestroyThumbnailViewContext()
 {
   RemoveAmbientLight();
 }
-
 
 void xiiSceneContext::UpdateDocumentContext()
 {
@@ -1037,12 +1036,16 @@ bool xiiSceneContext::UpdateThumbnailViewContext(xiiEngineProcessViewContext* pT
   return result;
 }
 
-void xiiSceneContext::AddAmbientLight(bool bSetEditorTag)
+void xiiSceneContext::AddAmbientLight(bool bSetEditorTag, bool bForce)
 {
   if (!m_hSkyLight.IsInvalidated() || !m_hDirectionalLight.IsInvalidated())
     return;
 
   XII_LOCK(GetWorld()->GetWriteMarker());
+
+  // Delay adding ambient light until the scene isn't empty, to prevent adding two skylights
+  if (!bForce && GetWorld()->GetObjectCount() == 0)
+    return;
 
   xiiSkyLightComponentManager* pSkyMan = GetWorld()->GetComponentManager<xiiSkyLightComponentManager>();
   if (pSkyMan == nullptr || pSkyMan->GetSingletonComponent() == nullptr)

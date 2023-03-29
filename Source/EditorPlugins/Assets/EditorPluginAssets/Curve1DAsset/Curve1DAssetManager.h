@@ -11,6 +11,8 @@ public:
   xiiCurve1DAssetDocumentManager();
   ~xiiCurve1DAssetDocumentManager();
 
+  virtual OutputReliability GetAssetTypeOutputReliability() const override { return xiiAssetDocumentManager::OutputReliability::Perfect; }
+
 private:
   void OnDocumentManagerEvent(const xiiDocumentManager::Event& e);
 
