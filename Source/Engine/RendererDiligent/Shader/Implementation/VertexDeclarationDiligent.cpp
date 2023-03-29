@@ -41,14 +41,12 @@ xiiResult xiiGALVertexDeclarationDiligent::InitPlatform(xiiGALDevice* pDevice)
   for (xiiUInt32 uiAttribute = 0; uiAttribute < m_Description.m_VertexAttributes.GetCount(); ++uiAttribute)
   {
     /// \todo Validate input location for the Vulkan backend
-    /// \todo Validate m_Description format
 
     const xiiGALVertexAttribute& Current = m_Description.m_VertexAttributes[uiAttribute];
 
     Diligent::LayoutElement& layoutElement = m_InputElementDescs.ExpandAndGetRef();
-    layoutElement.InputIndex               = GALSemanticToIndexDiligentD3D[Current.m_eSemantic];
     layoutElement.BufferSlot               = Current.m_uiVertexBufferSlot;
-    layoutElement.NumComponents            = xiiDiligentUtils::GALToDiligentNumComponent(pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(Current.m_eFormat).m_eVertexAttributeType);
+    layoutElement.NumComponents            = xiiGALResourceFormat::GetChannelCount(Current.m_eFormat);
     layoutElement.ValueType                = xiiDiligentUtils::GALToDiligentFormat(pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(Current.m_eFormat).m_eVertexAttributeType);
     layoutElement.IsNormalized             = xiiDiligentUtils::GALIsFormatNormalized(pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(Current.m_eFormat).m_eVertexAttributeType);
     layoutElement.RelativeOffset           = Current.m_uiOffset;
@@ -56,14 +54,7 @@ xiiResult xiiGALVertexDeclarationDiligent::InitPlatform(xiiGALDevice* pDevice)
     layoutElement.Frequency                = Current.m_bInstanceData ? Diligent::INPUT_ELEMENT_FREQUENCY_PER_INSTANCE : Diligent::INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
     layoutElement.InstanceDataStepRate     = Current.m_bInstanceData ? Current.m_uiStepRate : 0;
 
-    /// \todo Implement 32 bit unsigned normalized format in Diligent or use XYZ Float replacements. This is currently a hack to use the float equivalent internally.
-    if ((layoutElement.NumComponents == 4 && layoutElement.ValueType == Diligent::VT_UINT32 && layoutElement.IsNormalized))
-    {
-      layoutElement.ValueType    = Diligent::VT_FLOAT32;
-      layoutElement.IsNormalized = false;
-    }
-
-    // XII_ASSERT_DEV(!(layoutElement.NumComponents == 4 && layoutElement.ValueType == Diligent::VT_UINT32 && layoutElement.IsNormalized), "32-bit UNORM formats are not supported. Use RGBAUByte instead");
+    XII_ASSERT_DEV(!(layoutElement.NumComponents == 4 && layoutElement.ValueType == Diligent::VT_UINT32 && layoutElement.IsNormalized), "32-bit UNORM formats are not supported. Use RGBAUByte instead");
 
     if (pDeviceDiligent->GetDevice()->GetDeviceInfo().IsD3DDevice())
     {
@@ -72,6 +63,7 @@ xiiResult xiiGALVertexDeclarationDiligent::InitPlatform(xiiGALDevice* pDevice)
       /// in Vulkan backend.
       /// Any value other than default will only work in Direct3D11 and Direct3D12 backends.
       layoutElement.HLSLSemantic = GALSemanticToDiligentD3D[Current.m_eSemantic];
+      layoutElement.InputIndex   = GALSemanticToIndexDiligentD3D[Current.m_eSemantic];
     }
 
     if (layoutElement.ValueType == Diligent::VT_UNDEFINED)

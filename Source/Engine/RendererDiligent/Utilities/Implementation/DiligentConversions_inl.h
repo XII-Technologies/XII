@@ -178,6 +178,12 @@ XII_ALWAYS_INLINE Diligent::BLEND_FACTOR xiiDiligentUtils::ToDiligentBlendFactor
   return Diligent::BLEND_FACTOR_UNDEFINED;
 }
 
+XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALNumBitsToDiligentValueType(xiiUInt32 value)
+{
+  XII_ASSERT_NOT_IMPLEMENTED;
+  return Diligent::VT_UNDEFINED;
+}
+
 XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Diligent::TEXTURE_FORMAT format)
 {
   switch (format)
@@ -185,15 +191,15 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_RGBA32_FLOAT:
     case Diligent::TEX_FORMAT_RGB32_FLOAT:
     case Diligent::TEX_FORMAT_RG32_FLOAT:
+    case Diligent::TEX_FORMAT_D32_FLOAT:
+    case Diligent::TEX_FORMAT_R32_FLOAT:
     case Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT:
-    case Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP:
       return Diligent::VALUE_TYPE::VT_FLOAT32;
 
+    // case Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP:
     case Diligent::TEX_FORMAT_RGBA16_FLOAT:
     case Diligent::TEX_FORMAT_R11G11B10_FLOAT:
     case Diligent::TEX_FORMAT_RG16_FLOAT:
-    case Diligent::TEX_FORMAT_D32_FLOAT:
-    case Diligent::TEX_FORMAT_R32_FLOAT:
     case Diligent::TEX_FORMAT_R16_FLOAT:
       return Diligent::VALUE_TYPE::VT_FLOAT16;
 
@@ -202,12 +208,9 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_RG32_UINT:
     case Diligent::TEX_FORMAT_RGB10A2_UNORM:
     case Diligent::TEX_FORMAT_RGB10A2_UINT:
-    case Diligent::TEX_FORMAT_RGBA8_UNORM:
-    case Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB:
-    case Diligent::TEX_FORMAT_RGBA8_UINT:
     case Diligent::TEX_FORMAT_R32_UINT:
     case Diligent::TEX_FORMAT_D24_UNORM_S8_UINT:
-    case Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
+    // case Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
       return Diligent::VALUE_TYPE::VT_UINT32;
 
     case Diligent::TEX_FORMAT_RGBA16_UNORM:
@@ -231,6 +234,9 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_B5G5R5A1_UNORM:
       return Diligent::VALUE_TYPE::VT_UINT16;
 
+    case Diligent::TEX_FORMAT_RGBA8_UNORM:
+    case Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_RGBA8_UINT:
     case Diligent::TEX_FORMAT_RG8_UNORM:
     case Diligent::TEX_FORMAT_RG8_UINT:
     case Diligent::TEX_FORMAT_R8_UNORM:
@@ -248,8 +254,6 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_RGBA32_SINT:
     case Diligent::TEX_FORMAT_RGB32_SINT:
     case Diligent::TEX_FORMAT_RG32_SINT:
-    case Diligent::TEX_FORMAT_RGBA8_SNORM:
-    case Diligent::TEX_FORMAT_RGBA8_SINT:
     case Diligent::TEX_FORMAT_R32_SINT:
       return Diligent::VALUE_TYPE::VT_INT32;
 
@@ -261,6 +265,8 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_R16_SINT:
       return Diligent::VALUE_TYPE::VT_INT16;
 
+    case Diligent::TEX_FORMAT_RGBA8_SNORM:
+    case Diligent::TEX_FORMAT_RGBA8_SINT:
     case Diligent::TEX_FORMAT_RG8_SNORM:
     case Diligent::TEX_FORMAT_RG8_SINT:
     case Diligent::TEX_FORMAT_R8_SNORM:
