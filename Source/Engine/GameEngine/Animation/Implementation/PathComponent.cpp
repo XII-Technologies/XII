@@ -54,7 +54,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiPathComponent, 1, xiiComponentMode::Static)
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY("Flags", xiiPathComponentFlags, GetPathFlags, SetPathFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiPathComponentFlags::VisualizePath)),
     XII_ACCESSOR_PROPERTY("Closed", GetClosed,SetClosed),
-    XII_ACCESSOR_PROPERTY("Detail", GetLinearizationError, SetLinearizationError)->AddAttributes(new xiiDefaultValueAttribute(0.01f), new xiiClampValueAttribute(1.0f, 0.001f)),
+    XII_ACCESSOR_PROPERTY("Detail", GetLinearizationError, SetLinearizationError)->AddAttributes(new xiiDefaultValueAttribute(0.01f), new xiiClampValueAttribute(0.001f, 1.0f)),
     XII_ARRAY_ACCESSOR_PROPERTY("Nodes", Nodes_GetCount, Nodes_GetNode, Nodes_SetNode, Nodes_Insert, Nodes_Remove),
   }
   XII_END_PROPERTIES;
@@ -630,17 +630,28 @@ static void GeneratePathSegment(xiiUInt32 uiCp0, xiiUInt32 uiCp1, xiiArrayPtr<co
 
 static void ComputeSegmentUpVector(xiiArrayPtr<xiiPathComponent::LinearizedElement> segmentElements, xiiUInt32 uiCp0, xiiUInt32 uiCp1, const xiiArrayPtr<const xiiPathComponent::ControlPoint> points, const xiiArrayPtr<const xiiVec3> cpUp, const xiiArrayPtr<const xiiVec3> tangents, const xiiVec3& vWorldUp)
 {
-  const double fSegmentLength    = ComputePathLength(segmentElements);
-  const double fInvSegmentLength = 1.0 / fSegmentLength;
-
-  double  fCurDist = 0.0;
-  xiiVec3 vPrevPos = segmentElements[0].m_vPosition;
-
   const auto& cp0 = points[uiCp0];
   const auto& cp1 = points[uiCp1];
 
   const xiiVec3 cp0up = cpUp[uiCp0];
   const xiiVec3 cp1up = cpUp[uiCp1];
+
+  const double fSegmentLength = ComputePathLength(segmentElements);
+
+  if (fSegmentLength <= 0.00001f)
+  {
+    for (xiiUInt32 t = 0; t < segmentElements.GetCount(); ++t)
+    {
+      segmentElements[t].m_vUpDirection = cp1up;
+    }
+
+    return;
+  }
+
+  const double fInvSegmentLength = 1.0 / fSegmentLength;
+
+  double  fCurDist = 0.0;
+  xiiVec3 vPrevPos = segmentElements[0].m_vPosition;
 
   for (xiiUInt32 t = 0; t < segmentElements.GetCount(); ++t)
   {

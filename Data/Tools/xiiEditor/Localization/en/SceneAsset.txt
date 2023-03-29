@@ -61,6 +61,9 @@ xiiTriggerDelayModifierComponent;Trigger Delay Modifier
 xiiWindVolumeConeComponent;Cone Wind Volume;;https://xiiengine.net/pages/docs/effects/wind-volume-components.html
 xiiWindVolumeCylinderComponent;Cylinder Wind Volume;;https://xiiengine.net/pages/docs/effects/wind-volume-components.html
 xiiWindVolumeSphereComponent;Sphere Wind Volume;;https://xiiengine.net/pages/docs/effects/wind-volume-components.html
+xiiPathComponent;Path;;https://xiiengine.net/pages/docs/animation/paths/path-component.html
+xiiPathNodeComponent;Path Node;;https://xiiengine.net/pages/docs/animation/paths/path-node-component.html
+xiiFollowPathComponent;Follow Path;;https://xiiengine.net/pages/docs/animation/paths/follow-path-component.html
 
 # Properties
 
