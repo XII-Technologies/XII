@@ -15,6 +15,7 @@ struct XII_FOUNDATION_DLL xiiStatus
   {
   }
 
+  // This const char* version is needed for disambiguation.
   explicit xiiStatus(const char* szError) :
     m_Result(XII_FAILURE), m_sMessage(szError)
   {
@@ -37,9 +38,29 @@ struct XII_FOUNDATION_DLL xiiStatus
 
   explicit xiiStatus(const xiiFormatString& fmt);
 
-  XII_ALWAYS_INLINE bool Succeeded() const { return m_Result.Succeeded(); }
-  XII_ALWAYS_INLINE bool Failed() const { return m_Result.Failed(); }
-  void                   LogFailure(xiiLogInterface* pLog = nullptr);
+  [[nodiscard]] XII_ALWAYS_INLINE bool Succeeded() const { return m_Result.Succeeded(); }
+  [[nodiscard]] XII_ALWAYS_INLINE bool Failed() const { return m_Result.Failed(); }
+
+  /// \brief Same as 'Succeeded()'.
+  ///
+  /// Allows xiiStatus to be used in if statements:
+  ///  - if (r)
+  ///  - if (!r)
+  ///  - if (r1 && r2)
+  ///  - if (r1 || r2)
+  ///
+  /// Disallows anything else implicitly, e.g. all these won't compile:
+  ///   - if (r == true)
+  ///   - bool b = r;
+  ///   - void* p = r;
+  ///   - return r; // with bool return type
+  explicit operator bool() const { return m_Result.Succeeded(); }
+
+  /// \brief Special case to prevent this from working: "bool b = !r"
+  xiiResult operator!() const { return xiiResult(m_Result.Succeeded() ? XII_FAILURE : XII_SUCCESS); }
+
+  /// \brief If the state is XII_FAILURE, the message is written to the given log (or the currently active thread-local log).
+  void LogFailure(xiiLogInterface* pLog = nullptr);
 
   xiiResult m_Result;
   xiiString m_sMessage;
