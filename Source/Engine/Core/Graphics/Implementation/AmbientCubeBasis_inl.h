@@ -3,7 +3,7 @@
 template <typename T>
 XII_ALWAYS_INLINE xiiAmbientCube<T>::xiiAmbientCube()
 {
-  xiiMemoryUtils::ZeroFill(m_Values);
+  xiiMemoryUtils::ZeroFillArray(m_Values);
 }
 
 template <typename T>
