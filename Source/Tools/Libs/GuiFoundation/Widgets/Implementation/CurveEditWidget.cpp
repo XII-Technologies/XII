@@ -1364,12 +1364,12 @@ xiiQtCurveEditWidget::ClickTarget xiiQtCurveEditWidget::DetectClickTarget(const 
     xiiVec2d       ptLeft;
     xiiVec2d       ptRight;
 
-    // if (cp.m_LeftTangentMode == xiiCurveTangentMode::Bezier)
+    // if (cp.m_LeftTangentMode == xiiCurveTangentMode::Bxiiier)
     ptLeft = ToVec(MapFromScene(point + xiiVec2d(cp.m_LeftTangent.x, cp.m_LeftTangent.y)));
     // else
     // ptLeft = ToVec(MapFromScene(cp.m_Point)) + MapDirFromScene(cp.m_LeftTangent).GetNormalized() * 50.0f;
 
-    // if (cp.m_RightTangentMode == xiiCurveTangentMode::Bezier)
+    // if (cp.m_RightTangentMode == xiiCurveTangentMode::Bxiiier)
     ptRight = ToVec(MapFromScene(point + xiiVec2d(cp.m_RightTangent.x, cp.m_RightTangent.y)));
     // else
     // ptRight = ToVec(MapFromScene(cp.m_Point)) + MapDirFromScene(cp.m_RightTangent).GetNormalized() * 50.0f;

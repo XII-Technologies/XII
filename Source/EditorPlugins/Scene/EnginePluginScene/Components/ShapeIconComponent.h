@@ -2,9 +2,10 @@
 
 #include <Core/World/Component.h>
 #include <Core/World/World.h>
+#include <EditorEngineProcessFramework/SceneExport/SceneExportModifier.h>
 #include <GameEngine/GameEngineDLL.h>
 
-using xiiShapeIconComponentManager = xiiComponentManager<class xiiShapeIconComponent, xiiBlockStorageType::Compact>;
+typedef xiiComponentManager<class xiiShapeIconComponent, xiiBlockStorageType::Compact> xiiShapeIconComponentManager;
 
 /// \brief This is a dummy component that the editor creates on all 'empty' nodes for the sole purpose to render a shape icon and enable picking.
 ///
@@ -19,4 +20,14 @@ class XII_ENGINEPLUGINSCENE_DLL xiiShapeIconComponent : public xiiComponent
 public:
   xiiShapeIconComponent();
   ~xiiShapeIconComponent();
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+class XII_ENGINEPLUGINSCENE_DLL xiiSceneExportModifier_RemoveShapeIconComponents : public xiiSceneExportModifier
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiSceneExportModifier_RemoveShapeIconComponents, xiiSceneExportModifier);
+
+public:
+  virtual void ModifyWorld(xiiWorld& world, const xiiUuid& documentGuid, bool bForExport) override;
 };

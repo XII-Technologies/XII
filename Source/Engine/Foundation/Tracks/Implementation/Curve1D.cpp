@@ -284,7 +284,7 @@ void xiiCurve1D::RecomputeExtents()
     m_fMinX = xiiMath::Min(m_fMinX, cp.m_Position.x);
     m_fMaxX = xiiMath::Max(m_fMaxX, cp.m_Position.x);
 
-    // ignore X values that could go outside the control point range due to Bezier curve interpolation
+    // ignore X values that could go outside the control point range due to Bxiiier curve interpolation
     // we just assume the curve is always restricted along X by the CPs
 
     // m_fMinX = xiiMath::Min(m_fMinX, cp.m_Position.x + cp.m_LeftTangent.x);
