@@ -39,7 +39,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiFollowPathComponent, 1, xiiComponentMode::Dynamic)
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiFollowPathComponent::xiiFollowPathComponent() = default;
+xiiFollowPathComponent::xiiFollowPathComponent()  = default;
 xiiFollowPathComponent::~xiiFollowPathComponent() = default;
 
 void xiiFollowPathComponent::Update(bool bForce)
@@ -84,7 +84,7 @@ void xiiFollowPathComponent::Update(bool bForce)
       else if (m_Mode == xiiPropertyAnimMode::BackAndForth)
       {
         m_bIsRunningForwards = !m_bIsRunningForwards;
-        fToAdvance = -fToAdvance;
+        fToAdvance           = -fToAdvance;
         pPathComponent->AdvanceLinearSamplerBy(m_PathSampler, fToAdvance);
       }
       else
@@ -109,31 +109,31 @@ void xiiFollowPathComponent::Update(bool bForce)
     }
   }
 
-  auto transform = pPathComponent->SampleLinearizedRepresentation(m_PathSampler);
+  auto transform      = pPathComponent->SampleLinearizedRepresentation(m_PathSampler);
   auto transformAhead = pPathComponent->SampleLinearizedRepresentation(samplerAhead);
 
   if (m_bLastStateValid)
   {
     const float fSmoothing = xiiMath::Clamp(m_fSmoothing, 0.0f, 0.99f);
 
-    transform.m_vPosition = xiiMath::Lerp(transform.m_vPosition, m_vLastPosition, fSmoothing);
-    transform.m_vUpDirection = xiiMath::Lerp(transform.m_vUpDirection, m_vLastUpDir, fSmoothing);
+    transform.m_vPosition      = xiiMath::Lerp(transform.m_vPosition, m_vLastPosition, fSmoothing);
+    transform.m_vUpDirection   = xiiMath::Lerp(transform.m_vUpDirection, m_vLastUpDir, fSmoothing);
     transformAhead.m_vPosition = xiiMath::Lerp(transformAhead.m_vPosition, m_vLastTargetPosition, fSmoothing);
   }
 
   xiiVec3 vTarget = transformAhead.m_vPosition - transform.m_vPosition;
   vTarget.NormalizeIfNotZero(xiiVec3::UnitXAxis()).IgnoreResult();
 
-  xiiVec3 vUp = transform.m_vUpDirection;
+  xiiVec3 vUp    = transform.m_vUpDirection;
   xiiVec3 vRight = vTarget.CrossRH(vUp);
   vRight.NormalizeIfNotZero(xiiVec3::UnitYAxis()).IgnoreResult();
   vUp = vRight.CrossRH(vTarget);
   vUp.NormalizeIfNotZero(xiiVec3::UnitZAxis()).IgnoreResult();
 
   {
-    m_bLastStateValid = true;
-    m_vLastPosition = transform.m_vPosition;
-    m_vLastUpDir = transform.m_vUpDirection;
+    m_bLastStateValid     = true;
+    m_vLastPosition       = transform.m_vPosition;
+    m_vLastUpDir          = transform.m_vUpDirection;
     m_vLastTargetPosition = transformAhead.m_vPosition;
   }
 
@@ -163,7 +163,7 @@ void xiiFollowPathComponent::SetPathObject(const char* szReference)
 void xiiFollowPathComponent::SetDistanceAlongPath(float fDistance)
 {
   m_bLastStateValid = false;
-  m_fStartDistance = fDistance;
+  m_fStartDistance  = fDistance;
 
   if (IsActiveAndInitialized())
   {

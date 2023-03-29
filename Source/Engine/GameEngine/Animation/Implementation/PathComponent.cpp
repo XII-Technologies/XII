@@ -72,7 +72,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiPathComponent, 1, xiiComponentMode::Static)
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiPathComponent::xiiPathComponent() = default;
+xiiPathComponent::xiiPathComponent()  = default;
 xiiPathComponent::~xiiPathComponent() = default;
 
 void xiiPathComponent::SerializeComponent(xiiWorldWriter& stream) const
@@ -107,8 +107,8 @@ void xiiPathComponent::DeserializeComponent(xiiWorldReader& stream)
 
   stream.GetStream().ReadArray(m_ControlPointRepresentation).AssertSuccess();
 
-  m_bDisableControlPointUpdates = true;
-  m_bControlPointsChanged = false;
+  m_bDisableControlPointUpdates      = true;
+  m_bControlPointsChanged            = false;
   m_bLinearizedRepresentationChanged = true;
 }
 
@@ -117,8 +117,8 @@ void xiiPathComponent::SetClosed(bool bClosed)
   if (m_bClosed == bClosed)
     return;
 
-  m_bClosed = bClosed;
-  m_bControlPointsChanged = true;
+  m_bClosed                          = bClosed;
+  m_bControlPointsChanged            = true;
   m_bLinearizedRepresentationChanged = true;
 }
 
@@ -140,22 +140,22 @@ void xiiPathComponent::SetPathFlags(xiiBitflags<xiiPathComponentFlags> flags)
 
 void xiiPathComponent::Nodes_SetNode(xiiUInt32 i, const xiiString& node)
 {
-  m_Nodes[i] = node;
-  m_bControlPointsChanged = true;
+  m_Nodes[i]                         = node;
+  m_bControlPointsChanged            = true;
   m_bLinearizedRepresentationChanged = true;
 }
 
 void xiiPathComponent::Nodes_Insert(xiiUInt32 uiIndex, const xiiString& node)
 {
   m_Nodes.Insert(node, uiIndex);
-  m_bControlPointsChanged = true;
+  m_bControlPointsChanged            = true;
   m_bLinearizedRepresentationChanged = true;
 }
 
 void xiiPathComponent::Nodes_Remove(xiiUInt32 uiIndex)
 {
   m_Nodes.RemoveAtAndCopy(uiIndex);
-  m_bControlPointsChanged = true;
+  m_bControlPointsChanged            = true;
   m_bLinearizedRepresentationChanged = true;
 }
 
@@ -168,7 +168,7 @@ void xiiPathComponent::FindControlPoints(xiiDynamicArray<ControlPoint>& out_Cont
   if (m_Nodes.GetCount() <= 1)
     return;
 
-  xiiGameObject* pOwner = const_cast<xiiGameObject*>(GetOwner());
+  xiiGameObject*     pOwner   = const_cast<xiiGameObject*>(GetOwner());
   const xiiTransform invTrans = pOwner->GetGlobalTransform().GetInverse();
 
   xiiHybridArray<xiiPathNodeTangentMode::StorageType, 64> tangentsIn;
@@ -184,16 +184,16 @@ void xiiPathComponent::FindControlPoints(xiiDynamicArray<ControlPoint>& out_Cont
     if (!pNodeObj->TryGetComponentOfBaseType(pNodeComp))
       continue;
 
-    auto& cp = points.ExpandAndGetRef();
+    auto& cp       = points.ExpandAndGetRef();
     cp.m_vPosition = invTrans * pNodeObj->GetGlobalPosition();
-    cp.m_Roll = pNodeComp->GetRoll();
+    cp.m_Roll      = pNodeComp->GetRoll();
 
     tangentsOut.PushBack(pNodeComp->GetTangentMode1().GetValue());
     tangentsIn.PushBack(pNodeComp->GetTangentMode2().GetValue());
   }
 
   const xiiUInt32 uiNumPoints = points.GetCount();
-  const xiiUInt32 uiLastIdx = points.GetCount() - 1;
+  const xiiUInt32 uiLastIdx   = points.GetCount() - 1;
 
   if (uiNumPoints <= 1)
   {
@@ -202,34 +202,34 @@ void xiiPathComponent::FindControlPoints(xiiDynamicArray<ControlPoint>& out_Cont
   }
 
   xiiUInt32 uiNumTangentsToUpdate = uiNumPoints;
-  xiiUInt32 uiPrevIdx = uiLastIdx - 1;
-  xiiUInt32 uiCurIdx = uiLastIdx;
-  xiiUInt32 uiNextIdx = 0;
+  xiiUInt32 uiPrevIdx             = uiLastIdx - 1;
+  xiiUInt32 uiCurIdx              = uiLastIdx;
+  xiiUInt32 uiNextIdx             = 0;
 
   if (!m_bClosed)
   {
     const xiiVec3 vStartTangent = (points[1].m_vPosition - points[0].m_vPosition) * 0.3333333333f;
-    const xiiVec3 vEndTangent = (points[uiLastIdx].m_vPosition - points[uiLastIdx - 1].m_vPosition) * 0.3333333333f;
+    const xiiVec3 vEndTangent   = (points[uiLastIdx].m_vPosition - points[uiLastIdx - 1].m_vPosition) * 0.3333333333f;
 
-    points[0].m_vTangentIn = vStartTangent;
+    points[0].m_vTangentIn  = vStartTangent;
     points[0].m_vTangentOut = -vStartTangent;
 
-    points[uiLastIdx].m_vTangentIn = vEndTangent;
+    points[uiLastIdx].m_vTangentIn  = vEndTangent;
     points[uiLastIdx].m_vTangentOut = -vEndTangent;
 
     uiNumTangentsToUpdate = uiNumPoints - 2;
-    uiPrevIdx = 0;
-    uiCurIdx = 1;
-    uiNextIdx = 2;
+    uiPrevIdx             = 0;
+    uiCurIdx              = 1;
+    uiNextIdx             = 2;
   }
 
   for (xiiUInt32 i = 0; i < uiNumTangentsToUpdate; ++i)
   {
-    auto& tCP = points[uiCurIdx];
+    auto&       tCP = points[uiCurIdx];
     const auto& pCP = points[uiPrevIdx];
     const auto& nCP = points[uiNextIdx];
 
-    const float fLength = xiiMath::Max(0.001f, (nCP.m_vPosition - pCP.m_vPosition).GetLength());
+    const float fLength     = xiiMath::Max(0.001f, (nCP.m_vPosition - pCP.m_vPosition).GetLength());
     const float fLerpFactor = xiiMath::Min(1.0f, (tCP.m_vPosition - pCP.m_vPosition).GetLength() / fLength);
 
     const xiiVec3 dirP = (tCP.m_vPosition - pCP.m_vPosition) * 0.3333333333f;
@@ -258,7 +258,7 @@ void xiiPathComponent::FindControlPoints(xiiDynamicArray<ControlPoint>& out_Cont
     }
 
     uiPrevIdx = uiCurIdx;
-    uiCurIdx = uiNextIdx;
+    uiCurIdx  = uiNextIdx;
     ++uiNextIdx;
   }
 }
@@ -295,7 +295,7 @@ void xiiPathComponent::EnsureLinearizedRepresentationIsUpToDate()
 
 void xiiPathComponent::OnEventMsgPathChanged(xiiEventMsgPathChanged& msg)
 {
-  m_bControlPointsChanged = true;
+  m_bControlPointsChanged            = true;
   m_bLinearizedRepresentationChanged = true;
 }
 
@@ -305,7 +305,7 @@ void xiiPathComponent::DrawDebugVisualizations()
     return;
 
   const bool bVisPath = m_PathFlags.IsSet(xiiPathComponentFlags::VisualizePath);
-  const bool bVisUp = m_PathFlags.IsSet(xiiPathComponentFlags::VisualizeUpDir);
+  const bool bVisUp   = m_PathFlags.IsSet(xiiPathComponentFlags::VisualizeUpDir);
 
   EnsureLinearizedRepresentationIsUpToDate();
 
@@ -324,20 +324,20 @@ void xiiPathComponent::DrawDebugVisualizations()
 
     if (bVisPath)
     {
-      auto& line = lines.ExpandAndGetRef();
-      line.m_start = n0.m_vPosition;
-      line.m_end = n1.m_vPosition;
+      auto& line        = lines.ExpandAndGetRef();
+      line.m_start      = n0.m_vPosition;
+      line.m_end        = n1.m_vPosition;
       line.m_startColor = xiiColor::DarkRed;
-      line.m_endColor = xiiColor::DarkRed;
+      line.m_endColor   = xiiColor::DarkRed;
     }
 
     if (bVisUp)
     {
-      auto& line = lines.ExpandAndGetRef();
-      line.m_start = n0.m_vPosition;
-      line.m_end = n0.m_vPosition + n0.m_vUpDirection * 0.25f;
+      auto& line        = lines.ExpandAndGetRef();
+      line.m_start      = n0.m_vPosition;
+      line.m_end        = n0.m_vPosition + n0.m_vUpDirection * 0.25f;
       line.m_startColor = xiiColor::Black;
-      line.m_endColor = xiiColor::LightBlue;
+      line.m_endColor   = xiiColor::LightBlue;
     }
 
     uiPrev = uiNext;
@@ -370,19 +370,19 @@ void xiiPathComponent::OnDeactivated()
 void xiiPathComponent::LinearSampler::SetToStart()
 {
   m_fSegmentFraction = 0.0f;
-  m_uiSegmentNode = 0;
+  m_uiSegmentNode    = 0;
 }
 
 void xiiPathComponent::SetLinearSamplerTo(LinearSampler& sampler, float fDistance) const
 {
   if (fDistance < 0.0f && m_LinearizedRepresentation.GetCount() >= 2)
   {
-    sampler.m_uiSegmentNode = m_LinearizedRepresentation.GetCount() - 1;
+    sampler.m_uiSegmentNode    = m_LinearizedRepresentation.GetCount() - 1;
     sampler.m_fSegmentFraction = 1.0f;
   }
   else
   {
-    sampler.m_uiSegmentNode = 0;
+    sampler.m_uiSegmentNode    = 0;
     sampler.m_fSegmentFraction = 0.0f;
   }
 
@@ -411,14 +411,14 @@ bool xiiPathComponent::AdvanceLinearSamplerBy(LinearSampler& sampler, float& ino
       const auto& nd0 = m_LinearizedRepresentation[i - 1];
       const auto& nd1 = m_LinearizedRepresentation[i];
 
-      const float fSegmentLength = (nd1.m_vPosition - nd0.m_vPosition).GetLength();
-      const float fSegmentDistance = sampler.m_fSegmentFraction * fSegmentLength;
+      const float fSegmentLength            = (nd1.m_vPosition - nd0.m_vPosition).GetLength();
+      const float fSegmentDistance          = sampler.m_fSegmentFraction * fSegmentLength;
       const float fRemainingSegmentDistance = fSegmentLength - fSegmentDistance;
 
       if (inout_fAddDistance >= fRemainingSegmentDistance)
       {
         inout_fAddDistance -= fRemainingSegmentDistance;
-        sampler.m_uiSegmentNode = i;
+        sampler.m_uiSegmentNode    = i;
         sampler.m_fSegmentFraction = 0.0f;
       }
       else
@@ -428,7 +428,7 @@ bool xiiPathComponent::AdvanceLinearSamplerBy(LinearSampler& sampler, float& ino
       }
     }
 
-    sampler.m_uiSegmentNode = m_LinearizedRepresentation.GetCount() - 1;
+    sampler.m_uiSegmentNode    = m_LinearizedRepresentation.GetCount() - 1;
     sampler.m_fSegmentFraction = 1.0f;
     return false;
   }
@@ -442,8 +442,8 @@ bool xiiPathComponent::AdvanceLinearSamplerBy(LinearSampler& sampler, float& ino
       const auto& nd0 = m_LinearizedRepresentation[ic];
       const auto& nd1 = m_LinearizedRepresentation[in];
 
-      const float fSegmentLength = (nd1.m_vPosition - nd0.m_vPosition).GetLength();
-      const float fSegmentDistance = sampler.m_fSegmentFraction * fSegmentLength;
+      const float fSegmentLength            = (nd1.m_vPosition - nd0.m_vPosition).GetLength();
+      const float fSegmentDistance          = sampler.m_fSegmentFraction * fSegmentLength;
       const float fRemainingSegmentDistance = -fSegmentDistance;
 
       if (inout_fAddDistance <= fRemainingSegmentDistance)
@@ -452,7 +452,7 @@ bool xiiPathComponent::AdvanceLinearSamplerBy(LinearSampler& sampler, float& ino
 
         if (sampler.m_uiSegmentNode == 0)
         {
-          sampler.m_uiSegmentNode = 0;
+          sampler.m_uiSegmentNode    = 0;
           sampler.m_fSegmentFraction = 0.0f;
           return false;
         }
@@ -485,7 +485,7 @@ xiiPathComponent::LinearizedElement xiiPathComponent::SampleLinearizedRepresenta
   const auto& nd1 = m_LinearizedRepresentation[sampler.m_uiSegmentNode + 1];
 
   LinearizedElement res;
-  res.m_vPosition = xiiMath::Lerp(nd0.m_vPosition, nd1.m_vPosition, sampler.m_fSegmentFraction);
+  res.m_vPosition    = xiiMath::Lerp(nd0.m_vPosition, nd1.m_vPosition, sampler.m_fSegmentFraction);
   res.m_vUpDirection = xiiMath::Lerp(nd0.m_vUpDirection, nd1.m_vUpDirection, sampler.m_fSegmentFraction);
 
   return res;
@@ -496,7 +496,7 @@ void xiiPathComponent::SetLinearizationError(float fError)
   if (m_fLinearizationError == fError)
     return;
 
-  m_fLinearizationError = fError;
+  m_fLinearizationError              = fError;
   m_bLinearizedRepresentationChanged = true;
 }
 
@@ -551,7 +551,7 @@ static void ComputeCpDirs(const xiiDynamicArray<xiiPathComponent::ControlPoint>&
     dirUp.NormalizeIfNotZero(cs.m_vUpDir).IgnoreResult();
 
     inout_cpFwd[uiCurPt] = dirAvg;
-    inout_cpUp[uiCurPt] = dirUp;
+    inout_cpUp[uiCurPt]  = dirUp;
   }
 }
 
@@ -596,7 +596,7 @@ static void InsertHalfPoint(xiiDynamicArray<xiiPathComponent::LinearizedElement>
   }
 
   result.ExpandAndGetRef().m_vPosition = vHalfPos;
-  tangents.ExpandAndGetRef() = ComputeTangentAt(fHalfT, cp0, cp1);
+  tangents.ExpandAndGetRef()           = ComputeTangentAt(fHalfT, cp0, cp1);
 
   if (iMaxSteps > 0)
   {
@@ -612,7 +612,7 @@ static void GeneratePathSegment(xiiUInt32 uiCp0, xiiUInt32 uiCp1, xiiArrayPtr<co
   const auto& cp1 = points[uiCp1];
 
   xiiInt32 iRollDiv = 0;
-  float fToRoll = xiiMath::Abs((cp1.m_Roll - cp0.m_Roll).GetDegree());
+  float    fToRoll  = xiiMath::Abs((cp1.m_Roll - cp0.m_Roll).GetDegree());
   while (fToRoll > 45.0f)
   {
     fToRoll *= 0.5f;
@@ -620,20 +620,20 @@ static void GeneratePathSegment(xiiUInt32 uiCp0, xiiUInt32 uiCp1, xiiArrayPtr<co
   }
 
   result.ExpandAndGetRef().m_vPosition = cp0.m_vPosition;
-  tangents.ExpandAndGetRef() = -cpFwd[uiCp0];
+  tangents.ExpandAndGetRef()           = -cpFwd[uiCp0];
 
   InsertHalfPoint(result, tangents, cp0, cp1, 0.0f, 1.0f, cp0.m_vPosition, cp1.m_vPosition, fDistSqr, xiiMath::Max(1, iRollDiv), 7);
 
   result.ExpandAndGetRef().m_vPosition = cp1.m_vPosition;
-  tangents.ExpandAndGetRef() = -cpFwd[uiCp1];
+  tangents.ExpandAndGetRef()           = -cpFwd[uiCp1];
 }
 
 static void ComputeSegmentUpVector(xiiArrayPtr<xiiPathComponent::LinearizedElement> segmentElements, xiiUInt32 uiCp0, xiiUInt32 uiCp1, const xiiArrayPtr<const xiiPathComponent::ControlPoint> points, const xiiArrayPtr<const xiiVec3> cpUp, const xiiArrayPtr<const xiiVec3> tangents, const xiiVec3& vWorldUp)
 {
-  const double fSegmentLength = ComputePathLength(segmentElements);
+  const double fSegmentLength    = ComputePathLength(segmentElements);
   const double fInvSegmentLength = 1.0 / fSegmentLength;
 
-  double fCurDist = 0.0;
+  double  fCurDist = 0.0;
   xiiVec3 vPrevPos = segmentElements[0].m_vPosition;
 
   const auto& cp0 = points[uiCp0];
@@ -732,7 +732,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiPathNodeComponent, 1, xiiComponentMode::Static)
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiPathNodeComponent::xiiPathNodeComponent() = default;
+xiiPathNodeComponent::xiiPathNodeComponent()  = default;
 xiiPathNodeComponent::~xiiPathNodeComponent() = default;
 
 void xiiPathNodeComponent::SetRoll(xiiAngle roll)
@@ -813,8 +813,8 @@ void xiiPathNodeComponent::PathChanged()
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiPathComponentManager::xiiPathComponentManager(xiiWorld* pWorld)
-  : xiiComponentManager(pWorld)
+xiiPathComponentManager::xiiPathComponentManager(xiiWorld* pWorld) :
+  xiiComponentManager(pWorld)
 {
 }
 
@@ -833,9 +833,9 @@ void xiiPathComponentManager::SetEnableUpdate(xiiPathComponent* pThis, bool bEna
 
 void xiiPathComponentManager::Initialize()
 {
-  auto desc = xiiWorldModule::UpdateFunctionDesc(xiiWorldModule::UpdateFunction(&xiiPathComponentManager::Update, this), "xiiPathComponentManager::Update");
+  auto desc                        = xiiWorldModule::UpdateFunctionDesc(xiiWorldModule::UpdateFunction(&xiiPathComponentManager::Update, this), "xiiPathComponentManager::Update");
   desc.m_bOnlyUpdateWhenSimulating = false;
-  desc.m_Phase = xiiWorldModule::UpdateFunctionDesc::Phase::PostTransform;
+  desc.m_Phase                     = xiiWorldModule::UpdateFunctionDesc::Phase::PostTransform;
 
   this->RegisterUpdateFunction(desc);
 }

@@ -80,16 +80,16 @@ public:
   void SetClosed(bool bClosed);                // [ property ]
   bool GetClosed() const { return m_bClosed; } // [ property ]
 
-  void SetPathFlags(xiiBitflags<xiiPathComponentFlags> flags);                    // [ property ]
-  xiiBitflags<xiiPathComponentFlags> GetPathFlags() const { return m_PathFlags; } // [ property ]
+  void                               SetPathFlags(xiiBitflags<xiiPathComponentFlags> flags); // [ property ]
+  xiiBitflags<xiiPathComponentFlags> GetPathFlags() const { return m_PathFlags; }            // [ property ]
 
 
   /// \brief The 'raw' data for a single path control point
   struct ControlPoint
   {
-    xiiVec3 m_vPosition = xiiVec3::ZeroVector();
-    xiiVec3 m_vTangentIn = xiiVec3::ZeroVector();
-    xiiVec3 m_vTangentOut = xiiVec3::ZeroVector();
+    xiiVec3  m_vPosition   = xiiVec3::ZeroVector();
+    xiiVec3  m_vTangentIn  = xiiVec3::ZeroVector();
+    xiiVec3  m_vTangentOut = xiiVec3::ZeroVector();
     xiiAngle m_Roll;
 
     xiiResult Serialize(xiiStreamWriter& writer) const;
@@ -106,7 +106,7 @@ public:
   /// \brief If the path is linearized, this represents a single sample point
   struct LinearizedElement
   {
-    xiiVec3 m_vPosition = xiiVec3::ZeroVector();
+    xiiVec3 m_vPosition    = xiiVec3::ZeroVector();
     xiiVec3 m_vUpDirection = xiiVec3::UnitZAxis();
   };
 
@@ -134,8 +134,8 @@ public:
   private:
     friend class xiiPathComponent;
 
-    float m_fSegmentFraction = 0.0f;
-    xiiUInt32 m_uiSegmentNode = 0;
+    float     m_fSegmentFraction = 0.0f;
+    xiiUInt32 m_uiSegmentNode    = 0;
   };
 
   /// \brief Sets the sampler to the desired distance along the path.
@@ -159,31 +159,31 @@ public:
   ///
   /// The error is a distance measure. Thus a value of 0.01 means that the linearized representation
   /// may at most deviate a centimeter from the real curve.
-  void SetLinearizationError(float fError);                             // [ property ]
+  void  SetLinearizationError(float fError);                            // [ property ]
   float GetLinearizationError() const { return m_fLinearizationError; } // [ property ]
 
 protected:
-  xiiUInt32 Nodes_GetCount() const { return m_Nodes.GetCount(); }         // [ property ]
+  xiiUInt32        Nodes_GetCount() const { return m_Nodes.GetCount(); }   // [ property ]
   const xiiString& Nodes_GetNode(xiiUInt32 i) const { return m_Nodes[i]; } // [ property ]
-  void Nodes_SetNode(xiiUInt32 i, const xiiString& node);                  // [ property ]
-  void Nodes_Insert(xiiUInt32 uiIndex, const xiiString& node);             // [ property ]
-  void Nodes_Remove(xiiUInt32 uiIndex);                                   // [ property ]
+  void             Nodes_SetNode(xiiUInt32 i, const xiiString& node);      // [ property ]
+  void             Nodes_Insert(xiiUInt32 uiIndex, const xiiString& node); // [ property ]
+  void             Nodes_Remove(xiiUInt32 uiIndex);                        // [ property ]
 
   void FindControlPoints(xiiDynamicArray<ControlPoint>& out_ControlPoints) const;
   void CreateLinearizedPathRepresentation(const xiiDynamicArray<ControlPoint>& points);
 
   void DrawDebugVisualizations();
 
-  xiiBitflags<xiiPathComponentFlags> m_PathFlags;                 // [ property ]
-  float m_fLinearizationError = 0.05f;                          // [ property ]
-  float m_fLinearizedLength = 0.0f;                             //
-  bool m_bDisableControlPointUpdates = false;                   //
-  bool m_bControlPointsChanged = true;                          //
-  bool m_bLinearizedRepresentationChanged = true;               //
-  bool m_bClosed = false;                                       // [ property ]
-  xiiDynamicArray<xiiString> m_Nodes;                             // [ property ]
-  xiiDynamicArray<LinearizedElement> m_LinearizedRepresentation; //
-  xiiDynamicArray<ControlPoint> m_ControlPointRepresentation;    //
+  xiiBitflags<xiiPathComponentFlags> m_PathFlags;                                // [ property ]
+  float                              m_fLinearizationError              = 0.05f; // [ property ]
+  float                              m_fLinearizedLength                = 0.0f;  //
+  bool                               m_bDisableControlPointUpdates      = false; //
+  bool                               m_bControlPointsChanged            = true;  //
+  bool                               m_bLinearizedRepresentationChanged = true;  //
+  bool                               m_bClosed                          = false; // [ property ]
+  xiiDynamicArray<xiiString>         m_Nodes;                                    // [ property ]
+  xiiDynamicArray<LinearizedElement> m_LinearizedRepresentation;                 //
+  xiiDynamicArray<ControlPoint>      m_ControlPointRepresentation;               //
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -225,14 +225,14 @@ public:
   ~xiiPathNodeComponent();
 
   /// \brief Sets the rotation along the forward axis, that the path shall have at this location.
-  void SetRoll(xiiAngle roll);                                                      // [ property ]
-  xiiAngle GetRoll() const { return m_Roll; }                                       // [ property ]
-                                                                                   //
-  void SetTangentMode1(xiiEnum<xiiPathNodeTangentMode> mode);                        // [ property ]
-  xiiEnum<xiiPathNodeTangentMode> GetTangentMode1() const { return m_TangentMode1; } // [ property ]
-                                                                                   //
-  void SetTangentMode2(xiiEnum<xiiPathNodeTangentMode> mode);                        // [ property ]
-  xiiEnum<xiiPathNodeTangentMode> GetTangentMode2() const { return m_TangentMode2; } // [ property ]
+  void     SetRoll(xiiAngle roll);                                                       // [ property ]
+  xiiAngle GetRoll() const { return m_Roll; }                                            // [ property ]
+                                                                                         //
+  void                            SetTangentMode1(xiiEnum<xiiPathNodeTangentMode> mode); // [ property ]
+  xiiEnum<xiiPathNodeTangentMode> GetTangentMode1() const { return m_TangentMode1; }     // [ property ]
+                                                                                         //
+  void                            SetTangentMode2(xiiEnum<xiiPathNodeTangentMode> mode); // [ property ]
+  xiiEnum<xiiPathNodeTangentMode> GetTangentMode2() const { return m_TangentMode2; }     // [ property ]
 
 protected:
   void OnMsgTransformChanged(xiiMsgTransformChanged& msg);
@@ -243,7 +243,7 @@ protected:
 
   void PathChanged();
 
-  xiiAngle m_Roll;
+  xiiAngle                        m_Roll;
   xiiEnum<xiiPathNodeTangentMode> m_TangentMode1;
   xiiEnum<xiiPathNodeTangentMode> m_TangentMode2;
 };
