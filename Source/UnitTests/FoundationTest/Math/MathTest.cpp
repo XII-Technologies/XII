@@ -771,7 +771,7 @@ XII_CREATE_SIMPLE_TEST(Math, General)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "EvaluateBezierCurve")
   {
-    // Determined through the scientific method of manually comparing the result of the function with an online Bxiiier curve generator:
+    // Determined through the scientific method of manually comparing the result of the function with an online Bezier curve generator:
     // https://www.desmos.com/calculator/cahqdxeshd
     const xiiVec2 res[] = {xiiVec2(1, 5), xiiVec2(0.893f, 4.455f), xiiVec2(1.112f, 4.008f), xiiVec2(1.557f, 3.631f), xiiVec2(2.136f, 3.304f), xiiVec2(2.750f, 3.000f),
                            xiiVec2(3.303f, 2.695f), xiiVec2(3.701f, 2.368f), xiiVec2(3.847f, 1.991f), xiiVec2(3.645f, 1.543f), xiiVec2(3, 1)};

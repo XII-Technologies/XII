@@ -85,8 +85,10 @@
     <file>xiiStateMachineComponent.svg</file>
 	  <file>xiiOccluderComponent.png</file>
     <file>xiiForwardEventsToGameStateComponent.png</file>
+    <file>xiiPathComponent.png</file>
     <file>xiiCommentComponent.png</file>
     <file>xiiCameraShakeVolumeSphereComponent.png</file>
+    <file>xiiPathNodeComponent.png</file>
   </qresource>
   <qresource prefix="GroupIcons">
     <file>Size.png</file>

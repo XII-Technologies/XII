@@ -41,10 +41,10 @@ public:
 
     enum Enum
     {
-      BxiiierCurve,
+      BezierCurve,
       StraightLine,
 
-      Default = BxiiierCurve
+      Default = BezierCurve
     };
   };
 
