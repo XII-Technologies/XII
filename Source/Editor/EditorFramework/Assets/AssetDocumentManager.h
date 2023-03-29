@@ -18,12 +18,12 @@ public:
   ~xiiAssetDocumentManager();
 
   /// \brief Opens the asset file and reads the "Header" into the given xiiAssetDocumentInfo.
-  virtual xiiStatus ReadAssetDocumentInfo(xiiUniquePtr<xiiAssetDocumentInfo>& out_pInfo, xiiStreamReader& stream) const;
-  virtual void      FillOutSubAssetList(const xiiAssetDocumentInfo& assetInfo, xiiHybridArray<xiiSubAssetData, 4>& out_SubAssets) const {}
+  virtual xiiStatus ReadAssetDocumentInfo(xiiUniquePtr<xiiAssetDocumentInfo>& out_pInfo, xiiStreamReader& inout_stream) const;
+  virtual void      FillOutSubAssetList(const xiiAssetDocumentInfo& assetInfo, xiiHybridArray<xiiSubAssetData, 4>& out_subAssets) const {}
 
   /// If this asset type has additional output files that need to be generated (like a texture atlas that combines outputs from multiple assets)
   /// this function should make sure those files are all generated and return the list of relative file paths (from the data directory root).
-  virtual xiiStatus GetAdditionalOutputs(xiiDynamicArray<xiiString>& files) { return xiiStatus(XII_SUCCESS); }
+  virtual xiiStatus GetAdditionalOutputs(xiiDynamicArray<xiiString>& ref_files) { return xiiStatus(XII_SUCCESS); }
 
   // xiiDocumentManager overrides:
 public:
@@ -63,10 +63,7 @@ public:
   /// \name Output Functions
   ///@{
 
-  virtual void AddEntriesToAssetTable(
-    const char*                                                                      szDataDirectory,
-    const xiiPlatformProfile*                                                        pAssetProfile,
-    xiiDelegate<void(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType)> addEntry) const;
+  virtual void      AddEntriesToAssetTable(const char* szDataDirectory, const xiiPlatformProfile* pAssetProfile, xiiDelegate<void(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType)> addEntry) const;
   virtual xiiString GetAssetTableEntry(const xiiSubAsset* pSubAsset, const char* szDataDirectory, const xiiPlatformProfile* pAssetProfile) const;
 
   /// \brief Calls GetRelativeOutputFileName and prepends [DataDir]/AssetCache/ .
@@ -76,16 +73,22 @@ public:
   virtual xiiString GetRelativeOutputFileName(const xiiAssetDocumentTypeDescriptor* pTypeDesc, const char* szDataDirectory, const char* szDocumentPath, const char* szOutputTag, const xiiPlatformProfile* pAssetProfile = nullptr) const;
   virtual bool      GeneratesProfileSpecificAssets() const = 0;
 
-  bool IsOutputUpToDate(
-    const char*                           szDocumentPath,
-    const xiiDynamicArray<xiiString>&     outputs,
-    xiiUInt64                             uiHash,
-    const xiiAssetDocumentTypeDescriptor* pTypeDescriptor);
-  virtual bool IsOutputUpToDate(
-    const char*                           szDocumentPath,
-    const char*                           szOutputTag,
-    xiiUInt64                             uiHash,
-    const xiiAssetDocumentTypeDescriptor* pTypeDescriptor);
+  bool         IsOutputUpToDate(const char* szDocumentPath, const xiiDynamicArray<xiiString>& outputs, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor);
+  virtual bool IsOutputUpToDate(const char* szDocumentPath, const char* szOutputTag, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor);
+
+  /// Describes how likely it is that a generated file is 'corrupted', due to dependency issues and such.
+  /// For example a prefab may not work correctly, if it was written with a very different C++ plugin state, but this can't be detected later.
+  /// Whereas a texture always produces exactly the same output and is thus perfectly reliable.
+  /// This is used to clear asset caches selectively, and keep things that are unlikely to be in a broken state.
+  enum OutputReliability : xiiUInt8
+  {
+    Unknown = 0,
+    Good    = 1,
+    Perfect = 2,
+  };
+
+  /// \see OutputReliability
+  virtual OutputReliability GetAssetTypeOutputReliability() const { return OutputReliability::Unknown; }
 
   ///@}
 
@@ -97,9 +100,5 @@ public:
 
 protected:
   static bool IsResourceUpToDate(const char* szResourceFile, xiiUInt64 uiHash, xiiUInt16 uiTypeVersion);
-  static void GenerateOutputFilename(
-    xiiStringBuilder&         inout_sRelativeDocumentPath,
-    const xiiPlatformProfile* pAssetProfile,
-    const char*               szExtension,
-    bool                      bPlatformSpecific);
+  static void GenerateOutputFilename(xiiStringBuilder& inout_sRelativeDocumentPath, const xiiPlatformProfile* pAssetProfile, const char* szExtension, bool bPlatformSpecific);
 };

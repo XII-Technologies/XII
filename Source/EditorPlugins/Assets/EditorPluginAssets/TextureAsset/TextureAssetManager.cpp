@@ -105,3 +105,18 @@ void xiiTextureAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynami
   inout_DocumentTypes.PushBack(&m_DocTypeDesc);
   inout_DocumentTypes.PushBack(&m_DocTypeDesc2);
 }
+
+xiiString xiiTextureAssetDocumentManager::GetRelativeOutputFileName(const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, const char* szDataDirectory, const char* szDocumentPath, const char* szOutputTag, const xiiPlatformProfile* pAssetProfile) const
+{
+  if (xiiStringUtils::IsEqual(szOutputTag, "LOWRES"))
+  {
+    xiiStringBuilder sRelativePath(szDocumentPath);
+    sRelativePath.MakeRelativeTo(szDataDirectory).IgnoreResult();
+    sRelativePath.RemoveFileExtension();
+    sRelativePath.Append("-lowres");
+    xiiAssetDocumentManager::GenerateOutputFilename(sRelativePath, pAssetProfile, "xiiTexture2D", true);
+    return sRelativePath;
+  }
+
+  return SUPER::GetRelativeOutputFileName(pTypeDescriptor, szDataDirectory, szDocumentPath, szOutputTag, pAssetProfile);
+}

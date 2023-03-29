@@ -411,18 +411,17 @@ void xiiDocumentManager::CloseDocument(xiiDocument* pDocument)
 
   Event e;
   e.m_pDocument = pDocument;
-  e.m_Type      = Event::Type::DocumentClosing;
+
+  e.m_Type = Event::Type::DocumentClosing;
   s_Events.Broadcast(e);
 
-  e.m_pDocument = pDocument;
-  e.m_Type      = Event::Type::DocumentClosing2;
+  e.m_Type = Event::Type::DocumentClosing2;
   s_Events.Broadcast(e);
 
   pDocument->BeforeClosing();
-  delete pDocument;
+  delete pDocument; // The pointer in e.m_pDocument won't be valid anymore at broadcast time, it is only sent for comparison purposes, not to be dereferenced
 
-  e.m_pDocument = pDocument;
-  e.m_Type      = Event::Type::DocumentClosed;
+  e.m_Type = Event::Type::DocumentClosed;
   s_Events.Broadcast(e);
 }
 
