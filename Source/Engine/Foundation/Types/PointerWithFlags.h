@@ -22,13 +22,13 @@ private:
   void* m_pPtr = nullptr;
 
 public:
-  /// \brief Initializes the pointer and flags with zero
+  /// \brief Initializes the pointer and flags with zero.
   xiiPointerWithFlags() = default;
 
-  /// \brief Initializes the pointer and flags
+  /// \brief Initializes the pointer and flags.
   explicit xiiPointerWithFlags(PtrType* ptr, uint8_t flags = 0) { SetPtrAndFlags(ptr, flags); }
 
-  /// \brief Changes the pointer and flags
+  /// \brief Changes the pointer and flags.
   void SetPtrAndFlags(PtrType* ptr, uint8_t flags)
   {
     const std::uintptr_t isrc = *reinterpret_cast<std::uintptr_t*>(&ptr);
@@ -37,14 +37,14 @@ public:
     iptr = (isrc & PtrMask) | (flags & FlagsMask);
   }
 
-  /// \brief Returns the masked off pointer value
+  /// \brief Returns the masked off pointer value.
   const PtrType* GetPtr() const
   {
     const std::uintptr_t& iptr = *reinterpret_cast<const std::uintptr_t*>(&m_pPtr);
     return reinterpret_cast<const PtrType*>(iptr & PtrMask); // mask off lower N bits
   }
 
-  /// \brief Returns the masked off pointer value
+  /// \brief Returns the masked off pointer value.
   PtrType* GetPtr()
   {
     std::uintptr_t& iptr = *reinterpret_cast<std::uintptr_t*>(&m_pPtr);
@@ -62,7 +62,7 @@ public:
 
     iptr = (isrc & PtrMask) | (iptr & FlagsMask);
   }
-  /// \brief Returns the flags value only
+  /// \brief Returns the flags value only.
   uint8_t GetFlags() const
   {
     const std::uintptr_t& iptr = *reinterpret_cast<const std::uintptr_t*>(&m_pPtr);
@@ -79,45 +79,45 @@ public:
     iptr = (iptr & PtrMask) | (flags & FlagsMask);
   }
 
-  /// \brief Returns the masked off pointer value
+  /// \brief Returns the masked off pointer value.
   operator PtrType*() { return GetPtr(); }
 
-  /// \brief Returns the masked off pointer value
+  /// \brief Returns the masked off pointer value.
   operator const PtrType*() const { return GetPtr(); }
 
   /// \brief Changes the pointer value only. Flags stay unchanged.
   void operator=(PtrType* ptr) { SetPtr(ptr); }
 
-  /// \brief Compares the pointer part for equality (flags are ignored)
+  /// \brief Compares the pointer part for equality (flags are ignored).
   bool operator==(const PtrType* ptr) const { return GetPtr() == ptr; }
 
-  /// \brief Compares the pointer part for inequality (flags are ignored)
+  /// \brief Compares the pointer part for inequality (flags are ignored).
   bool operator!=(const PtrType* ptr) const { return !(*this == ptr); }
 
-  /// \brief Compares the pointer part for equality (flags are ignored)
+  /// \brief Compares the pointer part for equality (flags are ignored).
   bool operator==(PtrType* ptr) const { return GetPtr() == ptr; }
 
-  /// \brief Compares the pointer part for inequality (flags are ignored)
+  /// \brief Compares the pointer part for inequality (flags are ignored).
   bool operator!=(PtrType* ptr) const { return !(*this == ptr); }
 
-  /// \brief Compares the pointer part for equality (flags are ignored)
+  /// \brief Compares the pointer part for equality (flags are ignored).
   bool operator==(std::nullptr_t) const { return GetPtr() == nullptr; }
 
-  /// \brief Compares the pointer part for inequality (flags are ignored)
+  /// \brief Compares the pointer part for inequality (flags are ignored).
   bool operator!=(std::nullptr_t) const { return !(*this == nullptr); }
 
-  /// \brief Checks whether the pointer part is not nullptr (flags are ignored)
-  operator bool() const { return GetPtr() != nullptr; }
+  /// \brief Checks whether the pointer part is not nullptr (flags are ignored).
+  explicit operator bool() const { return GetPtr() != nullptr; }
 
-  /// \brief Dereferences the pointer
+  /// \brief Dereferences the pointer.
   const PtrType* operator->() const { return GetPtr(); }
 
-  /// \brief Dereferences the pointer
+  /// \brief Dereferences the pointer.
   PtrType* operator->() { return GetPtr(); }
 
-  /// \brief Dereferences the pointer
+  /// \brief Dereferences the pointer.
   const PtrType& operator*() const { return *GetPtr(); }
 
-  /// \brief Dereferences the pointer
+  /// \brief Dereferences the pointer.
   PtrType& operator*() { return *GetPtr(); }
 };

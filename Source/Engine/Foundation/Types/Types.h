@@ -63,8 +63,8 @@ public:
   bool operator==(xiiResultEnum cmp) const { return m_E == cmp; }
   bool operator!=(xiiResultEnum cmp) const { return m_E != cmp; }
 
-  XII_ALWAYS_INLINE bool Succeeded() const { return m_E == XII_SUCCESS; }
-  XII_ALWAYS_INLINE bool Failed() const { return m_E == XII_FAILURE; }
+  [[nodiscard]] XII_ALWAYS_INLINE bool Succeeded() const { return m_E == XII_SUCCESS; }
+  [[nodiscard]] XII_ALWAYS_INLINE bool Failed() const { return m_E == XII_FAILURE; }
 
   /// \brief Used to silence compiler warnings, when success or failure doesn't matter.
   XII_ALWAYS_INLINE void IgnoreResult()
@@ -75,6 +75,24 @@ public:
   ///
   /// If \a msg is given, this will be the assert message. If \a details is provided, \a msg should contain a formatting element ({}), e.g. "Error: {}".
   void AssertSuccess(const char* msg = nullptr, const char* details = nullptr) const;
+
+  /// \brief Same as 'Succeeded()'.
+  ///
+  /// Allows xiiResult to be used in if statements:
+  ///  - if (r)
+  ///  - if (!r)
+  ///  - if (r1 && r2)
+  ///  - if (r1 || r2)
+  ///
+  /// Disallows anything else implicitly, e.g. all these won't compile:
+  ///   - if (r == true)
+  ///   - bool b = r;
+  ///   - void* p = r;
+  ///   - return r; // With bool return type
+  explicit operator bool() const { return m_E == XII_SUCCESS; }
+
+  /// \brief Special case to prevent this from working: "bool b = !r"
+  xiiResult operator!() const { return xiiResult((m_E == XII_SUCCESS) ? XII_FAILURE : XII_SUCCESS); }
 
 private:
   xiiResultEnum m_E;
