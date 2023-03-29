@@ -54,7 +54,11 @@ void xiiFollowPathComponent::Update(bool bForce)
 
   xiiGameObject* pPathObject = nullptr;
   if (!pWorld->TryGetObject(m_hPathObject, pPathObject))
+  {
+    // No need to retry this again
+    m_hPathObject.Invalidate();
     return;
+  }
 
   xiiPathComponent* pPathComponent;
   if (!pPathObject->TryGetComponentOfBaseType(pPathComponent))
@@ -235,7 +239,7 @@ void xiiFollowPathComponent::OnActivated()
 {
   SUPER::OnActivated();
 
-  // initialize sampler
+  // Initialize sampler
   SetDistanceAlongPath(m_fStartDistance);
 }
 
@@ -243,7 +247,24 @@ void xiiFollowPathComponent::OnSimulationStarted()
 {
   SUPER::OnSimulationStarted();
 
-  // initialize sampler
+  // If no path reference was set, search the parent objects for a path
+  if (m_hPathObject.IsInvalidated())
+  {
+    xiiGameObject* pParent = GetOwner()->GetParent();
+    while (pParent != nullptr)
+    {
+      xiiPathComponent* pPath = nullptr;
+      if (pParent->TryGetComponentOfBaseType(pPath))
+      {
+        m_hPathObject = pPath->GetOwner()->GetHandle();
+        break;
+      }
+
+      pParent = pParent->GetParent();
+    }
+  }
+
+  // Initialize sampler
   SetDistanceAlongPath(m_fStartDistance);
 }
 

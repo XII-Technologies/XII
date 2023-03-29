@@ -89,6 +89,7 @@
     <file>xiiCommentComponent.png</file>
     <file>xiiCameraShakeVolumeSphereComponent.png</file>
     <file>xiiPathNodeComponent.png</file>
+    <file>xiiFollowPathComponent.png</file>
   </qresource>
   <qresource prefix="GroupIcons">
     <file>Size.png</file>
