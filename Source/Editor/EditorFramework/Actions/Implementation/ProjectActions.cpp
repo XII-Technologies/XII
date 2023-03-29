@@ -3,7 +3,6 @@
 #include <EditorFramework/Actions/ProjectActions.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocumentGenerator.h>
-#include <EditorFramework/SourceGen/CppProject.h>
 #include <EditorFramework/Dialogs/AssetProfilesDlg.moc.h>
 #include <EditorFramework/Dialogs/CppProjectDlg.moc.h>
 #include <EditorFramework/Dialogs/DataDirsDlg.moc.h>
@@ -15,6 +14,7 @@
 #include <EditorFramework/Dialogs/TagsDlg.moc.h>
 #include <EditorFramework/Dialogs/WindowCfgDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/SourceGen/CppProject.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <GuiFoundation/Dialogs/ShortcutEditorDlg.moc.h>
