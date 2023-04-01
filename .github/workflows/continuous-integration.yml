@@ -47,7 +47,7 @@ jobs:
         with:
           name: full-binaries
           path: repo\Output\Bin\WinVs2022Dev64
-          retention-days: 1
+          retention-days: 3
 
       - name: Remove Unwanted Files
         run: |
@@ -89,4 +89,4 @@ jobs:
         with:
           name: XII.Release.${{ steps.sdk-version.outputs.content }}
           path: XII.Release.${{ steps.sdk-version.outputs.content }}.zip
-          retention-days: 1
+          retention-days: 7
