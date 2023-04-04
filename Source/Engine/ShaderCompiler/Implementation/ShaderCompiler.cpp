@@ -39,8 +39,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "vs_4_0_level_9_3";
       case xiiGALShaderStage::PixelShader:
         return "ps_4_0_level_9_3";
-      default:
-        break;
     }
   }
 
@@ -56,8 +54,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_4_0";
       case xiiGALShaderStage::ComputeShader:
         return "cs_4_0";
-      default:
-        break;
     }
   }
 
@@ -73,8 +69,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_4_1";
       case xiiGALShaderStage::ComputeShader:
         return "cs_4_1";
-      default:
-        break;
     }
   }
 
@@ -94,8 +88,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_5_0";
       case xiiGALShaderStage::ComputeShader:
         return "cs_5_0";
-      default:
-        break;
     }
   }
 
@@ -115,8 +107,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_5_1";
       case xiiGALShaderStage::ComputeShader:
         return "cs_5_1";
-      default:
-        break;
     }
   }
 
@@ -136,8 +126,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_0";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_0";
-      default:
-        break;
     }
   }
 
@@ -157,8 +145,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_1";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_1";
-      default:
-        break;
     }
   }
 
@@ -178,8 +164,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_2";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_2";
-      default:
-        break;
     }
   }
 
@@ -199,8 +183,14 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_3";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_3";
-      default:
-        break;
+
+      case xiiGALShaderStage::RayGen:
+      case xiiGALShaderStage::RayMiss:
+      case xiiGALShaderStage::RayAnyHit:
+      case xiiGALShaderStage::RayClosestHit:
+      case xiiGALShaderStage::RayIntersection:
+      case xiiGALShaderStage::Callable:
+        return "lib_6_3";
     }
   }
 
@@ -220,8 +210,14 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_4";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_4";
-      default:
-        break;
+
+      case xiiGALShaderStage::RayGen:
+      case xiiGALShaderStage::RayMiss:
+      case xiiGALShaderStage::RayAnyHit:
+      case xiiGALShaderStage::RayClosestHit:
+      case xiiGALShaderStage::RayIntersection:
+      case xiiGALShaderStage::Callable:
+        return "lib_6_4";
     }
   }
 
@@ -241,8 +237,20 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_5";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_5";
-      default:
-        break;
+
+      case xiiGALShaderStage::RayGen:
+      case xiiGALShaderStage::RayMiss:
+      case xiiGALShaderStage::RayAnyHit:
+      case xiiGALShaderStage::RayClosestHit:
+      case xiiGALShaderStage::RayIntersection:
+      case xiiGALShaderStage::Callable:
+        return "lib_6_5";
+
+      case xiiGALShaderStage::Amplification:
+        return "as_6_5";
+
+      case xiiGALShaderStage::Mesh:
+        return "ms_6_5";
     }
   }
 
@@ -262,12 +270,24 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_6";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_6";
-      default:
-        break;
+
+      case xiiGALShaderStage::RayGen:
+      case xiiGALShaderStage::RayMiss:
+      case xiiGALShaderStage::RayAnyHit:
+      case xiiGALShaderStage::RayClosestHit:
+      case xiiGALShaderStage::RayIntersection:
+      case xiiGALShaderStage::Callable:
+        return "lib_6_6";
+
+      case xiiGALShaderStage::Amplification:
+        return "as_6_6";
+
+      case xiiGALShaderStage::Mesh:
+        return "ms_6_6";
     }
   }
 
-  XII_REPORT_FAILURE("Unknown Platform '{0}' or Stage {1}", szPlatform, Stage);
+  XII_REPORT_FAILURE("Unknown (or unsupported) Platform '{0}' or Stage {1}", szPlatform, Stage);
   return "";
 }
 
