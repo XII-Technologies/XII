@@ -19,7 +19,7 @@ endfunction(custom_post_configure_target)
 ### XII Additions End
 ######################################
 
-cmake_minimum_required (VERSION 3.6)
+cmake_minimum_required (VERSION 3.19)
 
 project(DiligentCore)
 
@@ -162,10 +162,6 @@ endif()
 
 add_library(Diligent-PublicBuildSettings INTERFACE)
 
-if(COMMAND custom_post_configure_target)
-    custom_post_configure_target(Diligent-PublicBuildSettings)
-endif()
-
 if(PLATFORM_WIN32)
     if(MSVC)
         set(D3D11_SUPPORTED TRUE CACHE INTERNAL "D3D11 is supported on Win32 platform")
@@ -180,14 +176,14 @@ if(PLATFORM_WIN32)
     endif()
 
     set(GL_SUPPORTED       TRUE CACHE INTERNAL "OpenGL is supported on Win32 platform")
-	set(VULKAN_SUPPORTED   TRUE CACHE INTERNAL "Vulkan is supported on Win32 platform")
+    set(VULKAN_SUPPORTED   TRUE CACHE INTERNAL "Vulkan is supported on Win32 platform")
     set(ARCHIVER_SUPPORTED TRUE CACHE INTERNAL "Archiver is supported on Win32 platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_WIN32=1)
 elseif(PLATFORM_UNIVERSAL_WINDOWS)
     set(D3D11_SUPPORTED TRUE CACHE INTERNAL "D3D11 is supported on Universal Windows platform")
-	if(CMAKE_SYSTEM_VERSION VERSION_GREATER_EQUAL "10.0")
-		set(D3D12_SUPPORTED TRUE CACHE INTERNAL "D3D12 is supported on Universal Windows platform")
-	endif()
+    if(CMAKE_SYSTEM_VERSION VERSION_GREATER_EQUAL "10.0")
+        set(D3D12_SUPPORTED TRUE CACHE INTERNAL "D3D12 is supported on Universal Windows platform")
+    endif()
     set(ARCHIVER_SUPPORTED TRUE CACHE INTERNAL "Archiver is supported on Universal Windows platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_UNIVERSAL_WINDOWS=1)
 elseif(PLATFORM_ANDROID)
@@ -298,7 +294,11 @@ else()
   option(DILIGENT_NO_DIRECT3D12  "Disable Direct3D12 backend" ON)
 endif()
 
-option(DILIGENT_NO_OPENGL  "Disable OpenGL/GLES backend" ON)
+if (XII_BUILD_OPENGL)
+  option(DILIGENT_NO_OPENGL  "Disable OpenGL/GLES backend" OFF)
+else()
+  option(DILIGENT_NO_OPENGL  "Disable OpenGL/GLES backend" ON)
+endif()
 
 if (XII_BUILD_VULKAN)
   option(DILIGENT_NO_VULKAN  "Disable Vulkan backend" OFF)
@@ -358,7 +358,7 @@ endforeach()
 
 if(DILIGENT_DEVELOPMENT)
     foreach(REL_CONFIG ${RELEASE_CONFIGURATIONS})
-		target_compile_definitions(Diligent-PublicBuildSettings INTERFACE "$<$<CONFIG:${REL_CONFIG}>:DILIGENT_DEVELOPMENT>")
+        target_compile_definitions(Diligent-PublicBuildSettings INTERFACE "$<$<CONFIG:${REL_CONFIG}>:DILIGENT_DEVELOPMENT>")
     endforeach()
 endif()
 
@@ -366,16 +366,12 @@ endif()
 add_library(Diligent-BuildSettings INTERFACE)
 target_link_libraries(Diligent-BuildSettings INTERFACE Diligent-PublicBuildSettings)
 
-if(COMMAND custom_post_configure_target)
-    custom_post_configure_target(Diligent-BuildSettings)
-endif()
-
 foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
     target_compile_definitions(Diligent-BuildSettings INTERFACE "$<$<CONFIG:${DBG_CONFIG}>:_DEBUG;DEBUG>")
 endforeach()
 
 foreach(REL_CONFIG ${RELEASE_CONFIGURATIONS})
-	target_compile_definitions(Diligent-BuildSettings INTERFACE "$<$<CONFIG:${REL_CONFIG}>:NDEBUG>")
+    target_compile_definitions(Diligent-BuildSettings INTERFACE "$<$<CONFIG:${REL_CONFIG}>:NDEBUG>")
 endforeach()
 
 if(MSVC)
@@ -395,7 +391,7 @@ if(MSVC)
     # - w4201  - nonstandard extension used: nameless struct/union
     # - w4505  - unreferenced local function has been removed
     # - C26812 - Prefer 'enum class' over 'enum' (Code analysis warning)
-    target_compile_options(Diligent-BuildSettings INTERFACE /W3 /wd4100 /wd4201 /wd4505 /wd26812 /MP ${DILIGENT_MSVC_COMPILE_OPTIONS})
+    target_compile_options(Diligent-BuildSettings INTERFACE /W4 /wd4100 /wd4201 /wd4505 /wd26812 /MP ${DILIGENT_MSVC_COMPILE_OPTIONS})
 
     # In all release modes also:
     # - disable w4189 - local variable is initialized but not referenced
@@ -407,7 +403,7 @@ if(MSVC)
     # In RELEASE mode:
     # - Set favor fast code option (/Ot)
     # - Enable intrinsic functions (/Oi)
-	# - Maximize Speed (/O2)
+    # - Maximize Speed (/O2)
     # - Inline any suitable function (/Ob2)
     set(MSVC_RELEASE_COMPILE_OPTIONS ${MSVC_ALL_RELEASE_COMPILE_OPTIONS} /Ot /Oi /Ob2 /O2 ${DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS})
     set(MSVC_RELWITHDEBINFO_COMPILE_OPTIONS ${MSVC_RELEASE_COMPILE_OPTIONS})

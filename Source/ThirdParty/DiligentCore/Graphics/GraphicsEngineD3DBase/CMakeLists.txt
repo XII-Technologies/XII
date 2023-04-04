@@ -42,10 +42,6 @@ add_library(Diligent-GraphicsEngineD3DBaseInterface INTERFACE)
 target_link_libraries     (Diligent-GraphicsEngineD3DBaseInterface INTERFACE Diligent-GraphicsEngineInterface)
 target_include_directories(Diligent-GraphicsEngineD3DBaseInterface INTERFACE interface)
 
-if(COMMAND custom_post_configure_target)
-    custom_post_configure_target(Diligent-GraphicsEngineD3DBaseInterface)
-endif()
-
 target_include_directories(Diligent-GraphicsEngineD3DBase
 PUBLIC
     include

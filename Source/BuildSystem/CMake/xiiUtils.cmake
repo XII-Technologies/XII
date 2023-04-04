@@ -192,6 +192,10 @@ function(xii_set_common_target_definitions TARGET_NAME)
 		target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_DILIGENT_SUPPORT)
 	endif()
 
+    if (XII_BUILD_OPENGL)
+        target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_OPENGL_SUPPORT)
+    endif()
+
     if (XII_BUILD_D3D11)
 		target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_D3D11_SUPPORT)
     endif()

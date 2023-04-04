@@ -100,9 +100,6 @@ add_library(Diligent-GraphicsEngineD3D11Interface INTERFACE)
 target_link_libraries     (Diligent-GraphicsEngineD3D11Interface INTERFACE Diligent-GraphicsEngineD3DBaseInterface)
 target_include_directories(Diligent-GraphicsEngineD3D11Interface INTERFACE interface)
 
-if(COMMAND custom_post_configure_target)
-    custom_post_configure_target(Diligent-GraphicsEngineD3D11Interface)
-endif()
 
 add_library(Diligent-GraphicsEngineD3D11-static STATIC 
     ${SRC} ${INTERFACE} ${INCLUDE}

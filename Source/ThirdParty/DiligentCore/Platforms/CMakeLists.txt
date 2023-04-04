@@ -2,10 +2,6 @@ cmake_minimum_required (VERSION 3.6)
 
 add_library(Diligent-PlatformInterface INTERFACE)
 
-if(COMMAND custom_post_configure_target)
-	custom_post_configure_target(Diligent-PlatformInterface)
-endif()
-
 target_include_directories(Diligent-PlatformInterface INTERFACE interface)
 
 set(PLATFORM_INTERFACE_HEADERS

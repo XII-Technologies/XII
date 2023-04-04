@@ -14,10 +14,6 @@ INTERFACE
     Diligent-PublicBuildSettings
 )
 
-if(COMMAND custom_post_configure_target)
-    custom_post_configure_target(Diligent-GraphicsEngineInterface)
-endif()
-
 add_subdirectory(GraphicsAccessories)
 add_subdirectory(GraphicsEngine)
 
