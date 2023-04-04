@@ -298,7 +298,11 @@ else()
   option(DILIGENT_NO_DIRECT3D12  "Disable Direct3D12 backend" ON)
 endif()
 
-option(DILIGENT_NO_OPENGL  "Disable OpenGL/GLES backend" ON)
+if (XII_BUILD_OPENGL)
+  option(DILIGENT_NO_OPENGL  "Disable OpenGL/GLES backend" OFF)
+else()
+  option(DILIGENT_NO_OPENGL  "Disable OpenGL/GLES backend" ON)
+endif()
 
 if (XII_BUILD_VULKAN)
   option(DILIGENT_NO_VULKAN  "Disable Vulkan backend" OFF)
