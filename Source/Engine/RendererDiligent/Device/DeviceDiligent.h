@@ -20,7 +20,7 @@ private:
   friend xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceD3D12(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description);
   friend xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description);
 
-  xiiGALDeviceDiligent(const xiiGALDeviceCreationDescription& Description);
+  xiiGALDeviceDiligent(const xiiGALDeviceCreationDescription& Description, Diligent::RENDER_DEVICE_TYPE DeviceType);
 
 public:
   virtual ~xiiGALDeviceDiligent();

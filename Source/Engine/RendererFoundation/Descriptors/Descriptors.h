@@ -85,8 +85,6 @@ struct xiiGALSwapChainCreationDescription : public xiiHashableStruct<xiiGALSwapC
 
 struct xiiGALDeviceCreationDescription
 {
-  xiiGraphicsDeviceType::Enum m_GraphicsDevice = xiiGraphicsDeviceType::Undefined;
-
   bool m_bDebugDevice = false;
 };
 

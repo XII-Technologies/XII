@@ -92,17 +92,17 @@ void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity,
 
 xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceD3D11(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
 {
-  return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
+  return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description, Diligent::RENDER_DEVICE_TYPE_D3D11);
 }
 
 xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceD3D12(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
 {
-  return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
+  return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description, Diligent::RENDER_DEVICE_TYPE_D3D12);
 }
 
 xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
 {
-  return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
+  return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description, Diligent::RENDER_DEVICE_TYPE_VULKAN);
 }
 
 // clang-format off
@@ -125,8 +125,8 @@ ON_CORESYSTEMS_SHUTDOWN
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiGALDeviceDiligent::xiiGALDeviceDiligent(const xiiGALDeviceCreationDescription& Description) :
-  xiiGALDevice(Description), m_pDevice(nullptr), m_pEngineFactory(nullptr)
+xiiGALDeviceDiligent::xiiGALDeviceDiligent(const xiiGALDeviceCreationDescription& Description, Diligent::RENDER_DEVICE_TYPE DeviceType) :
+  xiiGALDevice(Description), m_pDevice(nullptr), m_pEngineFactory(nullptr), m_DeviceType(DeviceType)
 {
 }
 
@@ -137,8 +137,6 @@ xiiGALDeviceDiligent::~xiiGALDeviceDiligent() = default;
 xiiResult xiiGALDeviceDiligent::InitPlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceDiligent::InitPlatform");
-
-  m_DeviceType = xiiDiligentUtils::GetDiligentRenderDeviceType(m_Description.m_GraphicsDevice);
 
   m_pMemoryAllocator = std::make_unique<xiiDiligentMemoryAllocator>("Diligent Engine Memory Allocator");
 
@@ -392,7 +390,6 @@ CreateRenderDevice:
       {
 #  if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
         xiiLog::Error("Failed to find Direct3D12-compatible hardware adapters. Attempting to initialize the engine in Direct3D11 mode.");
-        m_Description.m_GraphicsDevice = xiiGraphicsDeviceType::D3D11;
         m_DeviceType                   = Diligent::RENDER_DEVICE_TYPE_D3D11;
         goto CreateRenderDevice;
 #  else
