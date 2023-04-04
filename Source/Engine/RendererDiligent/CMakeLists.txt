@@ -11,6 +11,30 @@ xii_link_target_diligent_d3d11(${PROJECT_NAME})
 xii_link_target_diligent_d3d12(${PROJECT_NAME})
 xii_link_target_diligent_vulkan(${PROJECT_NAME})
 
+if (XII_BUILD_D3D11)
+  xii_link_target_d3d11(${PROJECT_NAME})
+  target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+    Diligent-GraphicsEngineD3D11-static
+  )
+endif()
+
+if (XII_BUILD_D3D12)
+  xii_link_target_d3d12(${PROJECT_NAME})
+  target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+    Diligent-GraphicsEngineD3D12-static
+  )
+endif()
+
+if (XII_BUILD_VULKAN)
+  xii_link_target_vulkan(${PROJECT_NAME})
+  target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+    Diligent-GraphicsEngineVk-static
+  )
+endif()
+
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
   Foundation
