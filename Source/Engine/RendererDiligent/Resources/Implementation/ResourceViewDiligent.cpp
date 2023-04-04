@@ -138,7 +138,7 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
       SRVDesc.Format.ValueType     = xiiDiligentUtils::GALToDiligentFormat(ViewFormatDiligent);
       SRVDesc.Format.IsNormalized  = xiiDiligentUtils::GALIsFormatNormalized(ViewFormatDiligent);
-      SRVDesc.Format.NumComponents = xiiDiligentUtils::GALToDiligentNumComponent(ViewFormatDiligent);
+      SRVDesc.Format.NumComponents = xiiGALResourceFormat::GetChannelCount(viewFormat);
       SRVDesc.ByteOffset           = sizeof(xiiUInt32) * m_Description.m_uiFirstElement;
       SRVDesc.ByteWidth            = sizeof(xiiUInt32) * m_Description.m_uiNumElements;
     }
@@ -152,7 +152,7 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
       SRVDesc.Format.ValueType     = xiiDiligentUtils::GALToDiligentFormat(ViewFormatDiligent);
       SRVDesc.Format.IsNormalized  = xiiDiligentUtils::GALIsFormatNormalized(ViewFormatDiligent);
-      SRVDesc.Format.NumComponents = xiiDiligentUtils::GALToDiligentNumComponent(ViewFormatDiligent);
+      SRVDesc.Format.NumComponents = xiiGALResourceFormat::GetChannelCount(viewFormat);
       SRVDesc.ByteOffset           = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiFirstElement;
       SRVDesc.ByteWidth            = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiNumElements;
     }

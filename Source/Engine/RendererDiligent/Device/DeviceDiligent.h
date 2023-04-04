@@ -1,22 +1,16 @@
 
 #pragma once
 
+#include <RendererDiligent/RendererDiligentDLL.h>
+
 #include <Foundation/Types/Bitflags.h>
 #include <Foundation/Types/UniquePtr.h>
-#include <RendererDiligent/RendererDiligentDLL.h>
 #include <RendererFoundation/Device/Device.h>
 
-namespace Diligent
-{
-  class ScopedQueryHelper;
-  class DurationQueryHelper;
-} // namespace Diligent
-
 struct xiiDiligentMemoryAllocator;
-class xiiGALPassDiligent;
 
-typedef xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, Diligent::TEX_FORMAT_UNKNOWN> xiiGALFormatLookupEntryDiligent;
-typedef xiiGALFormatLookupTable<xiiGALFormatLookupEntryDiligent>                       xiiGALFormatLookupTableDiligent;
+using xiiGALFormatLookupEntryDiligent = xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, Diligent::TEX_FORMAT_UNKNOWN>;
+using xiiGALFormatLookupTableDiligent = xiiGALFormatLookupTable<xiiGALFormatLookupEntryDiligent>;
 
 /// \brief The Diligent device implementation of the graphics abstraction layer.
 class XII_RENDERERDILIGENT_DLL xiiGALDeviceDiligent : public xiiGALDevice

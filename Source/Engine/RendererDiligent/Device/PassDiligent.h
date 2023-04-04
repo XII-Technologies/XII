@@ -1,15 +1,10 @@
 
 #pragma once
 
-#include <Foundation/Types/UniquePtr.h>
 #include <RendererDiligent/RendererDiligentDLL.h>
+
+#include <Foundation/Types/UniquePtr.h>
 #include <RendererFoundation/Device/Pass.h>
-
-struct xiiGALCommandEncoderRenderState;
-class xiiGALRenderCommandEncoder;
-class xiiGALComputeCommandEncoder;
-
-class xiiGALCommandEncoderImplDiligent;
 
 class XII_RENDERERDILIGENT_DLL xiiGALPassDiligent : public xiiGALPass
 {

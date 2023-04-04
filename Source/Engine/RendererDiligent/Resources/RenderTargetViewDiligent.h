@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <RendererFoundation/Resources/RenderTargetView.h>

@@ -9,8 +9,13 @@ static const char* GALSemanticToDiligentD3D[] = {"POSITION", "NORMAL", "TANGENT"
                                                  "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "BITANGENT", "BONEINDICES",
                                                  "BONEINDICES", "BONEWEIGHTS", "BONEWEIGHTS"};
 
+static Diligent::Uint32 GALSemanticToIndexDiligentD3D[] = {0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 1, 0, 1};
+
 XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToDiligentD3D) == xiiGALVertexAttributeSemantic::ENUM_COUNT,
                              "GALSemanticToDiligent array size does not match vertex attribute semantic count");
+XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToIndexDiligentD3D) == xiiGALVertexAttributeSemantic::ENUM_COUNT,
+                             "GALSemanticToIndexDiligent array size does not match vertex attribute semantic count");
+
 
 xiiGALVertexDeclarationDiligent::xiiGALVertexDeclarationDiligent(const xiiGALVertexDeclarationCreationDescription& Description) :
   xiiGALVertexDeclaration(Description)
@@ -36,17 +41,15 @@ xiiResult xiiGALVertexDeclarationDiligent::InitPlatform(xiiGALDevice* pDevice)
 
   auto& vertexInputAttributes = pShader->GetVertexInputAttributes();
 
-  // Copy attribute descriptions
   for (xiiUInt32 uiAttribute = 0; uiAttribute < m_Description.m_VertexAttributes.GetCount(); ++uiAttribute)
   {
-    /// \todo Validate input location for the Vulkan backend
+    /// \todo Assign input location for the Vulkan backend
 
     const xiiGALVertexAttribute& Current = m_Description.m_VertexAttributes[uiAttribute];
 
     Diligent::LayoutElement& layoutElement = m_InputElementDescs.ExpandAndGetRef();
-    layoutElement.InputIndex               = vertexInputAttributes[uiAttribute].m_uiSemanticIndex;
     layoutElement.BufferSlot               = Current.m_uiVertexBufferSlot;
-    layoutElement.NumComponents            = xiiDiligentUtils::GALToDiligentNumComponent(pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(Current.m_eFormat).m_eVertexAttributeType);
+    layoutElement.NumComponents            = xiiGALResourceFormat::GetChannelCount(Current.m_eFormat);
     layoutElement.ValueType                = xiiDiligentUtils::GALToDiligentFormat(pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(Current.m_eFormat).m_eVertexAttributeType);
     layoutElement.IsNormalized             = xiiDiligentUtils::GALIsFormatNormalized(pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(Current.m_eFormat).m_eVertexAttributeType);
     layoutElement.RelativeOffset           = Current.m_uiOffset;
@@ -60,7 +63,8 @@ xiiResult xiiGALVertexDeclarationDiligent::InitPlatform(xiiGALDevice* pDevice)
       /// to GLSL and used in OpenGL backend as well as compiled to SPIRV and used
       /// in Vulkan backend.
       /// Any value other than default will only work in Direct3D11 and Direct3D12 backends.
-      layoutElement.HLSLSemantic = GALSemanticToDiligentD3D[vertexInputAttributes[uiAttribute].m_eSemantic];
+      layoutElement.HLSLSemantic = GALSemanticToDiligentD3D[Current.m_eSemantic];
+      layoutElement.InputIndex   = GALSemanticToIndexDiligentD3D[Current.m_eSemantic];
     }
 
     if (layoutElement.ValueType == Diligent::VT_UNDEFINED)

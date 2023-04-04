@@ -28,36 +28,40 @@
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #endif
 
-#if D3D11_SUPPORTED
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
 #  include <Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
 #endif
 
-#if D3D12_SUPPORTED
+#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 #  include <Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
 #endif
 
-#if VULKAN_SUPPORTED
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
 #  include <Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
 #endif
 
+/// Custom Diligent Engine Memory Allocator
 struct xiiDiligentMemoryAllocator : public Diligent::IMemoryAllocator
 {
 public:
-  xiiDiligentMemoryAllocator(const char* szName)
+  xiiDiligentMemoryAllocator(const char* szName) :
+    m_Allocator(szName, xiiAlignedAllocatorWrapper::GetAllocator())
   {
   }
 
   /// Allocates block of memory
   virtual void* Allocate(size_t Size, const Diligent::Char* dbgDescription, const char* dbgFileName, const Diligent::Int32 dbgLineNumber) override
   {
-    return xiiAlignedAllocatorWrapper::GetAllocator()->Allocate(Size, 16u);
+    return m_Allocator.Allocate(Size, 16u);
   }
 
   /// Releases memory
   virtual void Free(void* Ptr) override
   {
-    xiiAlignedAllocatorWrapper::GetAllocator()->Deallocate(Ptr);
+    return m_Allocator.Deallocate(Ptr);
   }
+
+  xiiProxyAllocator m_Allocator;
 };
 
 void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity,
@@ -88,19 +92,16 @@ void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity,
 
 xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceD3D11(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
 {
-  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D11;
   return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
 }
 
 xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceD3D12(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
 {
-  xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D12;
   return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
 }
 
 xiiInternal::NewInstance<xiiGALDevice> CreateDiligentDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& Description)
 {
-  xiiGraphicsDevice::Default = xiiGraphicsDevice::Vulkan;
   return XII_NEW(pAllocator, xiiGALDeviceDiligent, Description);
 }
 
@@ -137,12 +138,9 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceDiligent::InitPlatform");
 
-  m_DeviceType = xiiDiligentUtils::GetDiligentRenderDeviceType();
+  m_DeviceType = xiiDiligentUtils::GetDiligentRenderDeviceType(m_Description.m_GraphicsDevice);
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  // Using our memory allocator crashes on Linux allocating 64 byte aligned buffers.
   m_pMemoryAllocator = std::make_unique<xiiDiligentMemoryAllocator>("Diligent Engine Memory Allocator");
-#endif
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   m_iValidationLevel = Diligent::VALIDATION_LEVEL_2;
@@ -240,12 +238,12 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
 
   xiiHybridArray<Diligent::IDeviceContext*, 1> ppContexts;
 
+CreateRenderDevice:
   switch (m_DeviceType)
   {
 #if D3D11_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D11:
     {
-    CreateDeviceD3D11:
 #  if ENGINE_DLL
       // Load the dll and import GetEngineFactoryD3D11() function
       auto GetEngineFactoryD3D11 = Diligent::LoadGraphicsEngineD3D11();
@@ -392,13 +390,15 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
       }
       catch (...)
       {
-#  if D3D11_SUPPORTED
+#  if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
         xiiLog::Error("Failed to find Direct3D12-compatible hardware adapters. Attempting to initialize the engine in Direct3D11 mode.");
-        xiiGraphicsDevice::Default = xiiGraphicsDevice::D3D11;
-        m_DeviceType               = Diligent::RENDER_DEVICE_TYPE_D3D11;
-        goto CreateDeviceD3D11;
+        m_Description.m_GraphicsDevice = xiiGraphicsDeviceType::D3D11;
+        m_DeviceType                   = Diligent::RENDER_DEVICE_TYPE_D3D11;
+        goto CreateRenderDevice;
 #  else
-        xiiLog::Error("Failed to find Direct3D12 compatible hardware adapters.");
+        // Delete memory allocator.
+        m_pMemoryAllocator.reset();
+        xiiLog::Error("Failed to find D3D12 compatible hardware adapters.");
         return XII_FAILURE;
 #  endif
       }
@@ -521,7 +521,8 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
-  // Check query support
+// Check query support
+#if 0
   const auto& Features = m_pDevice->GetDeviceInfo().Features;
   if (Features.PipelineStatisticsQueries)
   {
@@ -551,10 +552,15 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
   {
     m_pDurationFromTimestamps = XII_NEW(&m_Allocator, Diligent::DurationQueryHelper, m_pDevice, 2);
   }
+#endif
 
   m_SyncTimeDiff.SetZero();
-
-  xiiGALWindowSwapChain::SetFactoryMethod([this](const xiiGALWindowSwapChainCreationDescription& desc) -> xiiGALSwapChainHandle { return CreateSwapChain([this, &desc](xiiAllocatorBase* pAllocator) -> xiiGALSwapChain* { return XII_NEW(pAllocator, xiiGALSwapChainDiligent, desc); }); });
+  
+  xiiGALWindowSwapChain::SetFactoryMethod([this](const xiiGALWindowSwapChainCreationDescription& desc) -> xiiGALSwapChainHandle {
+    return CreateSwapChain([this, &desc](xiiAllocatorBase* pAllocator) -> xiiGALSwapChain* {
+      return XII_NEW(pAllocator, xiiGALSwapChainDiligent, desc);
+    });
+  });
 
   return XII_SUCCESS;
 }

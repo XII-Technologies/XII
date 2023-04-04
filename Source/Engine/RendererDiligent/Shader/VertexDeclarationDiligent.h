@@ -2,7 +2,7 @@
 #pragma once
 
 #include <RendererDiligent/RendererDiligentDLL.h>
-#include <RendererFoundation/RendererFoundationDLL.h>
+
 #include <RendererFoundation/Shader/VertexDeclaration.h>
 
 class xiiGALVertexDeclarationDiligent : public xiiGALVertexDeclaration

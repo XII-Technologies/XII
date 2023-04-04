@@ -1,21 +1,11 @@
 
 #pragma once
 
-#include <Foundation/Types/Bitflags.h>
 #include <RendererDiligent/RendererDiligentDLL.h>
+
+#include <Foundation/Types/Bitflags.h>
 #include <RendererFoundation/CommandEncoder/CommandEncoderPlatformInterface.h>
 #include <RendererFoundation/Resources/RenderTargetSetup.h>
-
-class xiiGALDeviceDiligent;
-class xiiGALBufferDiligent;
-class xiiGALShaderDiligent;
-class xiiGALResourceViewDiligent;
-class xiiGALSamplerStateDiligent;
-class xiiGALUnorderedAccessViewDiligent;
-class xiiGALVertexDeclarationDiligent;
-class xiiGALBlendStateDiligent;
-class xiiGALDepthStencilStateDiligent;
-class xiiGALRasterizerStateDiligent;
 
 class XII_RENDERERDILIGENT_DLL xiiGALCommandEncoderImplDiligent : public xiiGALCommandEncoderCommonPlatformInterface, public xiiGALCommandEncoderRenderPlatformInterface, public xiiGALCommandEncoderComputePlatformInterface
 {
@@ -148,10 +138,10 @@ private:
   // Pipeline State
 
   // Cache flags
-  bool m_bPipelineStateModified    = true;
-  bool m_bViewportModified         = true;
-  bool m_bIndexBufferModified      = false;
-  bool m_bDescriptorsModified      = false;
+  bool m_bPipelineStateModified = true;
+  bool m_bViewportModified      = true;
+  bool m_bIndexBufferModified   = false;
+  bool m_bDescriptorsModified   = false;
 
   Diligent::Viewport m_Viewport;
   Diligent::Rect     m_ScissorRect;
@@ -180,7 +170,7 @@ private:
 
   xiiGALRenderTargetSetup m_RenderTargetSetup;
   Diligent::ITextureView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
-  xiiUInt32               m_uiBoundRenderTargetCount                            = 0;
+  xiiUInt8                m_uiBoundRenderTargetCount                            = 0;
   Diligent::ITextureView* m_pBoundDepthStencilTarget                            = nullptr;
 
   Diligent::IBuffer*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};

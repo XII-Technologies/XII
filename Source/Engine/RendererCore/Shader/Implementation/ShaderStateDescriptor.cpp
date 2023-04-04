@@ -93,17 +93,17 @@ void xiiShaderStateResourceDescriptor::Load(xiiStreamReader& stream)
       xiiUInt8 uiTemp;
       stream >> m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_bBlendingEnabled;
       stream >> uiTemp;
-      m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_BlendOp = (xiiGALBlendOp::Enum)uiTemp;
+      m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_BlendOp = (xiiGALBlendOperation::Enum)uiTemp;
       stream >> uiTemp;
-      m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_BlendOpAlpha = (xiiGALBlendOp::Enum)uiTemp;
+      m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_BlendOpAlpha = (xiiGALBlendOperation::Enum)uiTemp;
       stream >> uiTemp;
-      m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_DestBlend = (xiiGALBlend::Enum)uiTemp;
+      m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_DestBlend = (xiiGALBlendFactor::Enum)uiTemp;
       stream >> uiTemp;
-      m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_DestBlendAlpha = (xiiGALBlend::Enum)uiTemp;
+      m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_DestBlendAlpha = (xiiGALBlendFactor::Enum)uiTemp;
       stream >> uiTemp;
-      m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlend = (xiiGALBlend::Enum)uiTemp;
+      m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlend = (xiiGALBlendFactor::Enum)uiTemp;
       stream >> uiTemp;
-      m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlendAlpha = (xiiGALBlend::Enum)uiTemp;
+      m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlendAlpha = (xiiGALBlendFactor::Enum)uiTemp;
       stream >> uiTemp;
       m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_ColorWriteMask = (xiiGALColorWriteMask::Enum)uiTemp;
     }
@@ -121,19 +121,19 @@ void xiiShaderStateResourceDescriptor::Load(xiiStreamReader& stream)
     stream >> m_DepthStencilDesc.m_uiStencilReadMask;
     stream >> m_DepthStencilDesc.m_uiStencilWriteMask;
     stream >> uiTemp;
-    m_DepthStencilDesc.m_FrontFaceStencilOp.m_DepthFailOp = (xiiGALStencilOp::Enum)uiTemp;
+    m_DepthStencilDesc.m_FrontFaceStencilOp.m_DepthFailOp = (xiiGALStencilOperation::Enum)uiTemp;
     stream >> uiTemp;
-    m_DepthStencilDesc.m_FrontFaceStencilOp.m_FailOp = (xiiGALStencilOp::Enum)uiTemp;
+    m_DepthStencilDesc.m_FrontFaceStencilOp.m_FailOp = (xiiGALStencilOperation::Enum)uiTemp;
     stream >> uiTemp;
-    m_DepthStencilDesc.m_FrontFaceStencilOp.m_PassOp = (xiiGALStencilOp::Enum)uiTemp;
+    m_DepthStencilDesc.m_FrontFaceStencilOp.m_PassOp = (xiiGALStencilOperation::Enum)uiTemp;
     stream >> uiTemp;
     m_DepthStencilDesc.m_FrontFaceStencilOp.m_StencilFunc = (xiiGALCompareFunc::Enum)uiTemp;
     stream >> uiTemp;
-    m_DepthStencilDesc.m_BackFaceStencilOp.m_DepthFailOp = (xiiGALStencilOp::Enum)uiTemp;
+    m_DepthStencilDesc.m_BackFaceStencilOp.m_DepthFailOp = (xiiGALStencilOperation::Enum)uiTemp;
     stream >> uiTemp;
-    m_DepthStencilDesc.m_BackFaceStencilOp.m_FailOp = (xiiGALStencilOp::Enum)uiTemp;
+    m_DepthStencilDesc.m_BackFaceStencilOp.m_FailOp = (xiiGALStencilOperation::Enum)uiTemp;
     stream >> uiTemp;
-    m_DepthStencilDesc.m_BackFaceStencilOp.m_PassOp = (xiiGALStencilOp::Enum)uiTemp;
+    m_DepthStencilDesc.m_BackFaceStencilOp.m_PassOp = (xiiGALStencilOperation::Enum)uiTemp;
     stream >> uiTemp;
     m_DepthStencilDesc.m_BackFaceStencilOp.m_StencilFunc = (xiiGALCompareFunc::Enum)uiTemp;
   }
@@ -326,39 +326,47 @@ xiiResult xiiShaderStateResourceDescriptor::Load(const char* szSource)
   {
     // xiiGALBlend
     {
-      StateValuesBlend["Blend_Zero"]              = xiiGALBlend::Zero;
-      StateValuesBlend["Blend_One"]               = xiiGALBlend::One;
-      StateValuesBlend["Blend_SrcColor"]          = xiiGALBlend::SrcColor;
-      StateValuesBlend["Blend_InvSrcColor"]       = xiiGALBlend::InvSrcColor;
-      StateValuesBlend["Blend_SrcAlpha"]          = xiiGALBlend::SrcAlpha;
-      StateValuesBlend["Blend_InvSrcAlpha"]       = xiiGALBlend::InvSrcAlpha;
-      StateValuesBlend["Blend_DestAlpha"]         = xiiGALBlend::DestAlpha;
-      StateValuesBlend["Blend_InvDestAlpha"]      = xiiGALBlend::InvDestAlpha;
-      StateValuesBlend["Blend_DestColor"]         = xiiGALBlend::DestColor;
-      StateValuesBlend["Blend_InvDestColor"]      = xiiGALBlend::InvDestColor;
-      StateValuesBlend["Blend_SrcAlphaSaturated"] = xiiGALBlend::SrcAlphaSaturated;
-      StateValuesBlend["Blend_BlendFactor"]       = xiiGALBlend::BlendFactor;
-      StateValuesBlend["Blend_InvBlendFactor"]    = xiiGALBlend::InvBlendFactor;
+      StateValuesBlend["Blend_Undefined"]         = xiiGALBlendFactor::Undefined;
+      StateValuesBlend["Blend_Zero"]              = xiiGALBlendFactor::Zero;
+      StateValuesBlend["Blend_One"]               = xiiGALBlendFactor::One;
+      StateValuesBlend["Blend_SrcColor"]          = xiiGALBlendFactor::SrcColor;
+      StateValuesBlend["Blend_InvSrcColor"]       = xiiGALBlendFactor::InvSrcColor;
+      StateValuesBlend["Blend_SrcAlpha"]          = xiiGALBlendFactor::SrcAlpha;
+      StateValuesBlend["Blend_InvSrcAlpha"]       = xiiGALBlendFactor::InvSrcAlpha;
+      StateValuesBlend["Blend_DestAlpha"]         = xiiGALBlendFactor::DestAlpha;
+      StateValuesBlend["Blend_InvDestAlpha"]      = xiiGALBlendFactor::InvDestAlpha;
+      StateValuesBlend["Blend_DestColor"]         = xiiGALBlendFactor::DestColor;
+      StateValuesBlend["Blend_InvDestColor"]      = xiiGALBlendFactor::InvDestColor;
+      StateValuesBlend["Blend_SrcAlphaSaturated"] = xiiGALBlendFactor::SrcAlphaSaturated;
+      StateValuesBlend["Blend_BlendFactor"]       = xiiGALBlendFactor::BlendFactor;
+      StateValuesBlend["Blend_InvBlendFactor"]    = xiiGALBlendFactor::InvBlendFactor;
+      StateValuesBlend["Blend_SrcOneColor"]       = xiiGALBlendFactor::SrcOneColor;
+      StateValuesBlend["Blend_InvSrcOneColor"]    = xiiGALBlendFactor::InvSrcOneColor;
+      StateValuesBlend["Blend_SrcOneAlpha"]       = xiiGALBlendFactor::SrcOneAlpha;
+      StateValuesBlend["Blend_InvSrcOneAlpha"]    = xiiGALBlendFactor::InvSrcOneAlpha;
     }
 
     // xiiGALBlendOp
     {
-      StateValuesBlendOp["BlendOp_Add"]         = xiiGALBlendOp::Add;
-      StateValuesBlendOp["BlendOp_Subtract"]    = xiiGALBlendOp::Subtract;
-      StateValuesBlendOp["BlendOp_RevSubtract"] = xiiGALBlendOp::RevSubtract;
-      StateValuesBlendOp["BlendOp_Min"]         = xiiGALBlendOp::Min;
-      StateValuesBlendOp["BlendOp_Max"]         = xiiGALBlendOp::Max;
+      StateValuesBlendOp["BlendOp_Undefined"]   = xiiGALBlendOperation::Undefined;
+      StateValuesBlendOp["BlendOp_Add"]         = xiiGALBlendOperation::Add;
+      StateValuesBlendOp["BlendOp_Subtract"]    = xiiGALBlendOperation::Subtract;
+      StateValuesBlendOp["BlendOp_RevSubtract"] = xiiGALBlendOperation::RevSubtract;
+      StateValuesBlendOp["BlendOp_Min"]         = xiiGALBlendOperation::Min;
+      StateValuesBlendOp["BlendOp_Max"]         = xiiGALBlendOperation::Max;
     }
 
     // xiiGALCullMode
     {
-      StateValuesCullMode["CullMode_None"]  = xiiGALCullMode::None;
-      StateValuesCullMode["CullMode_Front"] = xiiGALCullMode::Front;
-      StateValuesCullMode["CullMode_Back"]  = xiiGALCullMode::Back;
+      StateValuesCullMode["CullMode_Undefined"] = xiiGALCullMode::Undefined;
+      StateValuesCullMode["CullMode_None"]      = xiiGALCullMode::None;
+      StateValuesCullMode["CullMode_Front"]     = xiiGALCullMode::Front;
+      StateValuesCullMode["CullMode_Back"]      = xiiGALCullMode::Back;
     }
 
     // xiiGALCompareFunc
     {
+      StateValuesCompareFunc["CompareFunc_Undefined"]    = xiiGALCompareFunc::Undefined;
       StateValuesCompareFunc["CompareFunc_Never"]        = xiiGALCompareFunc::Never;
       StateValuesCompareFunc["CompareFunc_Less"]         = xiiGALCompareFunc::Less;
       StateValuesCompareFunc["CompareFunc_Equal"]        = xiiGALCompareFunc::Equal;
@@ -371,14 +379,15 @@ xiiResult xiiShaderStateResourceDescriptor::Load(const char* szSource)
 
     // xiiGALStencilOp
     {
-      StateValuesStencilOp["StencilOp_Keep"]               = xiiGALStencilOp::Keep;
-      StateValuesStencilOp["StencilOp_Zero"]               = xiiGALStencilOp::Zero;
-      StateValuesStencilOp["StencilOp_Replace"]            = xiiGALStencilOp::Replace;
-      StateValuesStencilOp["StencilOp_IncrementSaturated"] = xiiGALStencilOp::IncrementSaturated;
-      StateValuesStencilOp["StencilOp_DecrementSaturated"] = xiiGALStencilOp::DecrementSaturated;
-      StateValuesStencilOp["StencilOp_Invert"]             = xiiGALStencilOp::Invert;
-      StateValuesStencilOp["StencilOp_Increment"]          = xiiGALStencilOp::Increment;
-      StateValuesStencilOp["StencilOp_Decrement"]          = xiiGALStencilOp::Decrement;
+      StateValuesStencilOp["StencilOp_Undefined"]          = xiiGALStencilOperation::Undefined;
+      StateValuesStencilOp["StencilOp_Keep"]               = xiiGALStencilOperation::Keep;
+      StateValuesStencilOp["StencilOp_Zero"]               = xiiGALStencilOperation::Zero;
+      StateValuesStencilOp["StencilOp_Replace"]            = xiiGALStencilOperation::Replace;
+      StateValuesStencilOp["StencilOp_IncrementSaturated"] = xiiGALStencilOperation::IncrementSaturated;
+      StateValuesStencilOp["StencilOp_DecrementSaturated"] = xiiGALStencilOperation::DecrementSaturated;
+      StateValuesStencilOp["StencilOp_Invert"]             = xiiGALStencilOperation::Invert;
+      StateValuesStencilOp["StencilOp_IncrementWrap"]      = xiiGALStencilOperation::IncrementWrap;
+      StateValuesStencilOp["StencilOp_DecrementWrap"]      = xiiGALStencilOperation::DecrementWrap;
     }
   }
 
@@ -393,18 +402,18 @@ xiiResult xiiShaderStateResourceDescriptor::Load(const char* szSource)
     {
       m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_bBlendingEnabled = GetBoolStateVariable(
         VariableValues, InsertNumber("BlendingEnabled{0}", i, s), m_BlendDesc.m_RenderTargetBlendDescriptions[0].m_bBlendingEnabled);
-      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_BlendOp = (xiiGALBlendOp::Enum)GetEnumStateVariable(
+      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_BlendOp = (xiiGALBlendOperation::Enum)GetEnumStateVariable(
         VariableValues, StateValuesBlendOp, InsertNumber("BlendOp{0}", i, s), m_BlendDesc.m_RenderTargetBlendDescriptions[0].m_BlendOp);
-      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_BlendOpAlpha = (xiiGALBlendOp::Enum)GetEnumStateVariable(
+      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_BlendOpAlpha = (xiiGALBlendOperation::Enum)GetEnumStateVariable(
         VariableValues, StateValuesBlendOp, InsertNumber("BlendOpAlpha{0}", i, s), m_BlendDesc.m_RenderTargetBlendDescriptions[0].m_BlendOpAlpha);
-      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_DestBlend = (xiiGALBlend::Enum)GetEnumStateVariable(
+      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_DestBlend = (xiiGALBlendFactor::Enum)GetEnumStateVariable(
         VariableValues, StateValuesBlend, InsertNumber("DestBlend{0}", i, s), m_BlendDesc.m_RenderTargetBlendDescriptions[0].m_DestBlend);
-      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_DestBlendAlpha = (xiiGALBlend::Enum)GetEnumStateVariable(
+      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_DestBlendAlpha = (xiiGALBlendFactor::Enum)GetEnumStateVariable(
         VariableValues, StateValuesBlend, InsertNumber("DestBlendAlpha{0}", i, s), m_BlendDesc.m_RenderTargetBlendDescriptions[0].m_DestBlendAlpha);
-      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_SourceBlend = (xiiGALBlend::Enum)GetEnumStateVariable(
+      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_SourceBlend = (xiiGALBlendFactor::Enum)GetEnumStateVariable(
         VariableValues, StateValuesBlend, InsertNumber("SourceBlend{0}", i, s), m_BlendDesc.m_RenderTargetBlendDescriptions[0].m_SourceBlend);
-      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_SourceBlendAlpha = (xiiGALBlend::Enum)GetEnumStateVariable(VariableValues, StateValuesBlend,
-                                                                                                                  InsertNumber("SourceBlendAlpha{0}", i, s), m_BlendDesc.m_RenderTargetBlendDescriptions[0].m_SourceBlendAlpha);
+      m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_SourceBlendAlpha = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlend,
+                                                                                                                        InsertNumber("SourceBlendAlpha{0}", i, s), m_BlendDesc.m_RenderTargetBlendDescriptions[0].m_SourceBlendAlpha);
       m_BlendDesc.m_RenderTargetBlendDescriptions[i].m_ColorWriteMask   = (xiiGALColorWriteMask::Enum)GetIntStateVariable(VariableValues, InsertNumber("WriteMask{0}", i, s), m_BlendDesc.m_RenderTargetBlendDescriptions[0].m_ColorWriteMask);
     }
   }
@@ -427,20 +436,20 @@ xiiResult xiiShaderStateResourceDescriptor::Load(const char* szSource)
 
   // Retrieve Depth-Stencil State
   {
-    m_DepthStencilDesc.m_BackFaceStencilOp.m_DepthFailOp = (xiiGALStencilOp::Enum)GetEnumStateVariable(
+    m_DepthStencilDesc.m_BackFaceStencilOp.m_DepthFailOp = (xiiGALStencilOperation::Enum)GetEnumStateVariable(
       VariableValues, StateValuesStencilOp, "BackFaceDepthFailOp", m_DepthStencilDesc.m_BackFaceStencilOp.m_DepthFailOp);
-    m_DepthStencilDesc.m_BackFaceStencilOp.m_FailOp = (xiiGALStencilOp::Enum)GetEnumStateVariable(
+    m_DepthStencilDesc.m_BackFaceStencilOp.m_FailOp = (xiiGALStencilOperation::Enum)GetEnumStateVariable(
       VariableValues, StateValuesStencilOp, "BackFaceFailOp", m_DepthStencilDesc.m_BackFaceStencilOp.m_FailOp);
-    m_DepthStencilDesc.m_BackFaceStencilOp.m_PassOp = (xiiGALStencilOp::Enum)GetEnumStateVariable(
+    m_DepthStencilDesc.m_BackFaceStencilOp.m_PassOp = (xiiGALStencilOperation::Enum)GetEnumStateVariable(
       VariableValues, StateValuesStencilOp, "BackFacePassOp", m_DepthStencilDesc.m_BackFaceStencilOp.m_PassOp);
     m_DepthStencilDesc.m_BackFaceStencilOp.m_StencilFunc = (xiiGALCompareFunc::Enum)GetEnumStateVariable(
       VariableValues, StateValuesCompareFunc, "BackFaceStencilFunc", m_DepthStencilDesc.m_BackFaceStencilOp.m_StencilFunc);
 
-    m_DepthStencilDesc.m_FrontFaceStencilOp.m_DepthFailOp = (xiiGALStencilOp::Enum)GetEnumStateVariable(
+    m_DepthStencilDesc.m_FrontFaceStencilOp.m_DepthFailOp = (xiiGALStencilOperation::Enum)GetEnumStateVariable(
       VariableValues, StateValuesStencilOp, "FrontFaceDepthFailOp", m_DepthStencilDesc.m_FrontFaceStencilOp.m_DepthFailOp);
-    m_DepthStencilDesc.m_FrontFaceStencilOp.m_FailOp = (xiiGALStencilOp::Enum)GetEnumStateVariable(
+    m_DepthStencilDesc.m_FrontFaceStencilOp.m_FailOp = (xiiGALStencilOperation::Enum)GetEnumStateVariable(
       VariableValues, StateValuesStencilOp, "FrontFaceFailOp", m_DepthStencilDesc.m_FrontFaceStencilOp.m_FailOp);
-    m_DepthStencilDesc.m_FrontFaceStencilOp.m_PassOp = (xiiGALStencilOp::Enum)GetEnumStateVariable(
+    m_DepthStencilDesc.m_FrontFaceStencilOp.m_PassOp = (xiiGALStencilOperation::Enum)GetEnumStateVariable(
       VariableValues, StateValuesStencilOp, "FrontFacePassOp", m_DepthStencilDesc.m_FrontFaceStencilOp.m_PassOp);
     m_DepthStencilDesc.m_FrontFaceStencilOp.m_StencilFunc = (xiiGALCompareFunc::Enum)GetEnumStateVariable(
       VariableValues, StateValuesCompareFunc, "FrontFaceStencilFunc", m_DepthStencilDesc.m_FrontFaceStencilOp.m_StencilFunc);
@@ -457,7 +466,7 @@ xiiResult xiiShaderStateResourceDescriptor::Load(const char* szSource)
   }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  // check for invalid variable names
+  // Check for invalid variable names
   {
     for (auto it = VariableValues.GetIterator(); it.IsValid(); ++it)
     {
@@ -468,7 +477,6 @@ xiiResult xiiShaderStateResourceDescriptor::Load(const char* szSource)
     }
   }
 #endif
-
 
   return XII_SUCCESS;
 }

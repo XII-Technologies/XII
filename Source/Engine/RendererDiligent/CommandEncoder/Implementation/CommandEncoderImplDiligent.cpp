@@ -628,7 +628,7 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
     xiiGALRenderTargetView* pRenderTargetViews[XII_GAL_MAX_RENDERTARGET_COUNT] = {nullptr};
     xiiGALRenderTargetView* pDepthStencilView                                  = nullptr;
 
-    const xiiUInt32 uiRenderTargetCount = m_RenderTargetSetup.GetRenderTargetCount();
+    const xiiUInt8 uiRenderTargetCount = m_RenderTargetSetup.GetRenderTargetCount();
 
     bool bFlushNeeded = false;
 

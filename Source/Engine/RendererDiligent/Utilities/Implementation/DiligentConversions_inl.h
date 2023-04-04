@@ -1,24 +1,27 @@
 
-XII_ALWAYS_INLINE Diligent::RENDER_DEVICE_TYPE xiiDiligentUtils::GetDiligentRenderDeviceType()
+XII_ALWAYS_INLINE Diligent::RENDER_DEVICE_TYPE xiiDiligentUtils::GetDiligentRenderDeviceType(const xiiGraphicsDeviceType::Enum type)
 {
-  switch (xiiGraphicsDevice::Default)
+  switch (type)
   {
-    case xiiGraphicsDevice::OpenGL:
-      return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_GL;
+    case xiiGraphicsDeviceType::OpenGLES:
+      return Diligent::RENDER_DEVICE_TYPE_GLES;
 
-    case xiiGraphicsDevice::D3D11:
-      return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_D3D11;
+    case xiiGraphicsDeviceType::OpenGL:
+      return Diligent::RENDER_DEVICE_TYPE_GL;
 
-    case xiiGraphicsDevice::D3D12:
-      return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_D3D12;
+    case xiiGraphicsDeviceType::D3D11:
+      return Diligent::RENDER_DEVICE_TYPE_D3D11;
 
-    case xiiGraphicsDevice::Vulkan:
-      return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_VULKAN;
+    case xiiGraphicsDeviceType::D3D12:
+      return Diligent::RENDER_DEVICE_TYPE_D3D12;
 
-    case xiiGraphicsDevice::Metal:
-      return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_METAL;
+    case xiiGraphicsDeviceType ::Vulkan:
+      return Diligent::RENDER_DEVICE_TYPE_VULKAN;
+
+    case xiiGraphicsDeviceType::Metal:
+      return Diligent::RENDER_DEVICE_TYPE_METAL;
   }
-  return Diligent::RENDER_DEVICE_TYPE::RENDER_DEVICE_TYPE_UNDEFINED;
+  return Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
 }
 
 XII_ALWAYS_INLINE xiiUInt32 xiiDiligentUtils::ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount)
@@ -53,6 +56,9 @@ XII_ALWAYS_INLINE Diligent::FILTER_TYPE xiiDiligentUtils ::ToDiligentFilter(xiiG
 {
   switch (e)
   {
+    case xiiGALTextureFilterMode::Undefined:
+      return Diligent::FILTER_TYPE_UNKNOWN;
+
     case xiiGALTextureFilterMode::Point:
       return Diligent::FILTER_TYPE_POINT;
 
@@ -71,65 +77,111 @@ XII_ALWAYS_INLINE Diligent::FILTER_TYPE xiiDiligentUtils ::ToDiligentFilter(xiiG
     case xiiGALTextureFilterMode::ComparisonAnisotropic:
       return Diligent::FILTER_TYPE_COMPARISON_ANISOTROPIC;
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return Diligent::FILTER_TYPE_UNKNOWN;
 }
 
-XII_ALWAYS_INLINE Diligent::BLEND_OPERATION xiiDiligentUtils::ToDiligentBlendOperation(xiiGALBlendOp::Enum e)
+XII_ALWAYS_INLINE Diligent::STENCIL_OP xiiDiligentUtils::ToDiligentStencilOperation(xiiGALStencilOperation::Enum e)
 {
   switch (e)
   {
-    case xiiGALBlendOp::Add:
-      return Diligent::BLEND_OPERATION::BLEND_OPERATION_ADD;
-    case xiiGALBlendOp::Subtract:
-      return Diligent::BLEND_OPERATION::BLEND_OPERATION_SUBTRACT;
-    case xiiGALBlendOp::RevSubtract:
-      return Diligent::BLEND_OPERATION::BLEND_OPERATION_REV_SUBTRACT;
-    case xiiGALBlendOp::Min:
-      return Diligent::BLEND_OPERATION::BLEND_OPERATION_MIN;
-    case xiiGALBlendOp::Max:
-      return Diligent::BLEND_OPERATION::BLEND_OPERATION_MAX;
+    case xiiGALStencilOperation::Undefined:
+      return Diligent::STENCIL_OP_UNDEFINED;
+    case xiiGALStencilOperation::Keep:
+      return Diligent::STENCIL_OP_KEEP;
+    case xiiGALStencilOperation::Zero:
+      return Diligent::STENCIL_OP_ZERO;
+    case xiiGALStencilOperation::Replace:
+      return Diligent::STENCIL_OP_REPLACE;
+    case xiiGALStencilOperation::IncrementSaturated:
+      return Diligent::STENCIL_OP_INCR_SAT;
+    case xiiGALStencilOperation::DecrementSaturated:
+      return Diligent::STENCIL_OP_DECR_SAT;
+    case xiiGALStencilOperation::Invert:
+      return Diligent::STENCIL_OP_INVERT;
+    case xiiGALStencilOperation::IncrementWrap:
+      return Diligent::STENCIL_OP_INCR_WRAP;
+    case xiiGALStencilOperation::DecrementWrap:
+      return Diligent::STENCIL_OP_DECR_WRAP;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::STENCIL_OP::STENCIL_OP_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE Diligent::BLEND_OPERATION xiiDiligentUtils::ToDiligentBlendOperation(xiiGALBlendOperation::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALBlendOperation::Undefined:
+      return Diligent::BLEND_OPERATION_UNDEFINED;
+    case xiiGALBlendOperation::Add:
+      return Diligent::BLEND_OPERATION_ADD;
+    case xiiGALBlendOperation::Subtract:
+      return Diligent::BLEND_OPERATION_SUBTRACT;
+    case xiiGALBlendOperation::RevSubtract:
+      return Diligent::BLEND_OPERATION_REV_SUBTRACT;
+    case xiiGALBlendOperation::Min:
+      return Diligent::BLEND_OPERATION_MIN;
+    case xiiGALBlendOperation::Max:
+      return Diligent::BLEND_OPERATION_MAX;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return Diligent::BLEND_OPERATION_UNDEFINED;
 }
 
-XII_ALWAYS_INLINE Diligent::BLEND_FACTOR xiiDiligentUtils::ToDiligentBlendFactor(xiiGALBlend::Enum e)
+XII_ALWAYS_INLINE Diligent::BLEND_FACTOR xiiDiligentUtils::ToDiligentBlendFactor(xiiGALBlendFactor::Enum e)
 {
   switch (e)
   {
-    case xiiGALBlend::Zero:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_ZERO;
-    case xiiGALBlend::One:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_ONE;
-    case xiiGALBlend::SrcColor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_SRC_COLOR;
-    case xiiGALBlend::InvSrcColor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_SRC_COLOR;
-    case xiiGALBlend::SrcAlpha:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_SRC_ALPHA;
-    case xiiGALBlend::InvSrcAlpha:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_SRC_ALPHA;
-    case xiiGALBlend::DestAlpha:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_DEST_ALPHA;
-    case xiiGALBlend::InvDestAlpha:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_DEST_ALPHA;
-    case xiiGALBlend::DestColor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_DEST_COLOR;
-    case xiiGALBlend::InvDestColor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_DEST_COLOR;
-    case xiiGALBlend::SrcAlphaSaturated:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_SRC_ALPHA_SAT;
-    case xiiGALBlend::BlendFactor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_BLEND_FACTOR;
-    case xiiGALBlend::InvBlendFactor:
-      return Diligent::BLEND_FACTOR::BLEND_FACTOR_INV_BLEND_FACTOR;
+    case xiiGALBlendFactor::Undefined:
+      return Diligent::BLEND_FACTOR_UNDEFINED;
+    case xiiGALBlendFactor::Zero:
+      return Diligent::BLEND_FACTOR_ZERO;
+    case xiiGALBlendFactor::One:
+      return Diligent::BLEND_FACTOR_ONE;
+    case xiiGALBlendFactor::SrcColor:
+      return Diligent::BLEND_FACTOR_SRC_COLOR;
+    case xiiGALBlendFactor::InvSrcColor:
+      return Diligent::BLEND_FACTOR_INV_SRC_COLOR;
+    case xiiGALBlendFactor::SrcAlpha:
+      return Diligent::BLEND_FACTOR_SRC_ALPHA;
+    case xiiGALBlendFactor::InvSrcAlpha:
+      return Diligent::BLEND_FACTOR_INV_SRC_ALPHA;
+    case xiiGALBlendFactor::DestAlpha:
+      return Diligent::BLEND_FACTOR_DEST_ALPHA;
+    case xiiGALBlendFactor::InvDestAlpha:
+      return Diligent::BLEND_FACTOR_INV_DEST_ALPHA;
+    case xiiGALBlendFactor::DestColor:
+      return Diligent::BLEND_FACTOR_DEST_COLOR;
+    case xiiGALBlendFactor::InvDestColor:
+      return Diligent::BLEND_FACTOR_INV_DEST_COLOR;
+    case xiiGALBlendFactor::SrcAlphaSaturated:
+      return Diligent::BLEND_FACTOR_SRC_ALPHA_SAT;
+    case xiiGALBlendFactor::BlendFactor:
+      return Diligent::BLEND_FACTOR_BLEND_FACTOR;
+    case xiiGALBlendFactor::InvBlendFactor:
+      return Diligent::BLEND_FACTOR_INV_BLEND_FACTOR;
+    case xiiGALBlendFactor::SrcOneColor:
+      return Diligent::BLEND_FACTOR_SRC1_COLOR;
+    case xiiGALBlendFactor::InvSrcOneColor:
+      return Diligent::BLEND_FACTOR_INV_SRC1_COLOR;
+    case xiiGALBlendFactor::SrcOneAlpha:
+      return Diligent::BLEND_FACTOR_SRC1_ALPHA;
+    case xiiGALBlendFactor::InvSrcOneAlpha:
+      return Diligent::BLEND_FACTOR_INV_SRC1_ALPHA;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return Diligent::BLEND_FACTOR_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALNumBitsToDiligentValueType(xiiUInt32 value)
+{
+  XII_ASSERT_NOT_IMPLEMENTED;
+  return Diligent::VT_UNDEFINED;
 }
 
 XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Diligent::TEXTURE_FORMAT format)
@@ -139,15 +191,15 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_RGBA32_FLOAT:
     case Diligent::TEX_FORMAT_RGB32_FLOAT:
     case Diligent::TEX_FORMAT_RG32_FLOAT:
+    case Diligent::TEX_FORMAT_D32_FLOAT:
+    case Diligent::TEX_FORMAT_R32_FLOAT:
     case Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT:
-    case Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP:
       return Diligent::VALUE_TYPE::VT_FLOAT32;
 
+    // case Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP:
     case Diligent::TEX_FORMAT_RGBA16_FLOAT:
     case Diligent::TEX_FORMAT_R11G11B10_FLOAT:
     case Diligent::TEX_FORMAT_RG16_FLOAT:
-    case Diligent::TEX_FORMAT_D32_FLOAT:
-    case Diligent::TEX_FORMAT_R32_FLOAT:
     case Diligent::TEX_FORMAT_R16_FLOAT:
       return Diligent::VALUE_TYPE::VT_FLOAT16;
 
@@ -156,12 +208,9 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_RG32_UINT:
     case Diligent::TEX_FORMAT_RGB10A2_UNORM:
     case Diligent::TEX_FORMAT_RGB10A2_UINT:
-    case Diligent::TEX_FORMAT_RGBA8_UNORM:
-    case Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB:
-    case Diligent::TEX_FORMAT_RGBA8_UINT:
     case Diligent::TEX_FORMAT_R32_UINT:
     case Diligent::TEX_FORMAT_D24_UNORM_S8_UINT:
-    case Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
+      // case Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
       return Diligent::VALUE_TYPE::VT_UINT32;
 
     case Diligent::TEX_FORMAT_RGBA16_UNORM:
@@ -185,6 +234,9 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_B5G5R5A1_UNORM:
       return Diligent::VALUE_TYPE::VT_UINT16;
 
+    case Diligent::TEX_FORMAT_RGBA8_UNORM:
+    case Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_RGBA8_UINT:
     case Diligent::TEX_FORMAT_RG8_UNORM:
     case Diligent::TEX_FORMAT_RG8_UINT:
     case Diligent::TEX_FORMAT_R8_UNORM:
@@ -202,8 +254,6 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_RGBA32_SINT:
     case Diligent::TEX_FORMAT_RGB32_SINT:
     case Diligent::TEX_FORMAT_RG32_SINT:
-    case Diligent::TEX_FORMAT_RGBA8_SNORM:
-    case Diligent::TEX_FORMAT_RGBA8_SINT:
     case Diligent::TEX_FORMAT_R32_SINT:
       return Diligent::VALUE_TYPE::VT_INT32;
 
@@ -215,6 +265,8 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_R16_SINT:
       return Diligent::VALUE_TYPE::VT_INT16;
 
+    case Diligent::TEX_FORMAT_RGBA8_SNORM:
+    case Diligent::TEX_FORMAT_RGBA8_SINT:
     case Diligent::TEX_FORMAT_RG8_SNORM:
     case Diligent::TEX_FORMAT_RG8_SINT:
     case Diligent::TEX_FORMAT_R8_SNORM:
@@ -495,20 +547,37 @@ XII_ALWAYS_INLINE Diligent::SHADER_TYPE xiiDiligentUtils::GALToDiligentShaderSta
   switch (e)
   {
     case xiiGALShaderStage::VertexShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_VERTEX;
-    case xiiGALShaderStage::HullShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_HULL;
-    case xiiGALShaderStage::DomainShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_DOMAIN;
-    case xiiGALShaderStage::GeometryShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_GEOMETRY;
+      return Diligent::SHADER_TYPE_VERTEX;
     case xiiGALShaderStage::PixelShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_PIXEL;
+      return Diligent::SHADER_TYPE_PIXEL;
+    case xiiGALShaderStage::GeometryShader:
+      return Diligent::SHADER_TYPE_GEOMETRY;
+    case xiiGALShaderStage::HullShader:
+      return Diligent::SHADER_TYPE_HULL;
+    case xiiGALShaderStage::DomainShader:
+      return Diligent::SHADER_TYPE_DOMAIN;
     case xiiGALShaderStage::ComputeShader:
-      return Diligent::SHADER_TYPE::SHADER_TYPE_COMPUTE;
+      return Diligent::SHADER_TYPE_COMPUTE;
+    case xiiGALShaderStage::Amplification:
+      return Diligent::SHADER_TYPE_AMPLIFICATION;
+    case xiiGALShaderStage::Mesh:
+      return Diligent::SHADER_TYPE_MESH;
+    case xiiGALShaderStage::RayGen:
+      return Diligent::SHADER_TYPE_RAY_GEN;
+    case xiiGALShaderStage::RayMiss:
+      return Diligent::SHADER_TYPE_RAY_MISS;
+    case xiiGALShaderStage::RayAnyHit:
+      return Diligent::SHADER_TYPE_RAY_ANY_HIT;
+    case xiiGALShaderStage::RayClosestHit:
+      return Diligent::SHADER_TYPE_RAY_CLOSEST_HIT;
+    case xiiGALShaderStage::RayIntersection:
+      return Diligent::SHADER_TYPE_RAY_INTERSECTION;
+    case xiiGALShaderStage::Callable:
+      return Diligent::SHADER_TYPE_CALLABLE;
 
-      XII_ASSERT_NOT_IMPLEMENTED;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
+
   return Diligent::SHADER_TYPE::SHADER_TYPE_UNKNOWN;
 }
 

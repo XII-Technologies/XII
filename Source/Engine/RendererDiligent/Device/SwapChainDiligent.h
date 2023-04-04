@@ -1,12 +1,11 @@
 
 #pragma once
 
-#include <Foundation/Algorithm/HashingUtils.h>
 #include <RendererDiligent/RendererDiligentDLL.h>
+
+#include <Foundation/Algorithm/HashingUtils.h>
 #include <RendererFoundation/Descriptors/Descriptors.h>
 #include <RendererFoundation/Device/SwapChain.h>
-
-class xiiGALDeviceDiligent;
 
 struct RenderTargetInfo
 {

@@ -1,7 +1,7 @@
-
 #pragma once
 
 #include <RendererDiligent/RendererDiligentDLL.h>
+
 #include <RendererFoundation/State/State.h>
 
 class XII_RENDERERDILIGENT_DLL xiiGALBlendStateDiligent : public xiiGALBlendState

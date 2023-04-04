@@ -149,7 +149,7 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
       UAVDesc.Format.ValueType     = xiiDiligentUtils::GALToDiligentFormat(ViewFormatDiligent);
       UAVDesc.Format.IsNormalized  = xiiDiligentUtils::GALIsFormatNormalized(ViewFormatDiligent);
-      UAVDesc.Format.NumComponents = xiiDiligentUtils::GALToDiligentNumComponent(ViewFormatDiligent);
+      UAVDesc.Format.NumComponents = xiiGALResourceFormat::GetChannelCount(viewFormat);
       UAVDesc.ByteOffset           = sizeof(xiiUInt32) * m_Description.m_uiFirstElement;
       UAVDesc.ByteWidth            = sizeof(xiiUInt32) * m_Description.m_uiNumElements;
     }
@@ -163,7 +163,7 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
       UAVDesc.Format.ValueType     = xiiDiligentUtils::GALToDiligentFormat(ViewFormatDiligent);
       UAVDesc.Format.IsNormalized  = xiiDiligentUtils::GALIsFormatNormalized(ViewFormatDiligent);
-      UAVDesc.Format.NumComponents = xiiDiligentUtils::GALToDiligentNumComponent(ViewFormatDiligent);
+      UAVDesc.Format.NumComponents = xiiGALResourceFormat::GetChannelCount(viewFormat);
       UAVDesc.ByteOffset           = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiFirstElement;
       UAVDesc.ByteWidth            = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiNumElements;
     }

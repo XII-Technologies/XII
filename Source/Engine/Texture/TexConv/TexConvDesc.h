@@ -74,7 +74,7 @@ public:
   float    m_fHdrExposureBias  = 0.0f;
   float    m_fMaxValue         = 64000.f;
 
-  // xii specific
+  // XII specific
   xiiUInt64 m_uiAssetHash    = 0;
   xiiUInt16 m_uiAssetVersion = 0;
 
