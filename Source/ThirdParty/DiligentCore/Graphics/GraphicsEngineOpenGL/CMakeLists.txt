@@ -157,9 +157,6 @@ add_library(Diligent-GraphicsEngineOpenGLInterface INTERFACE)
 target_link_libraries     (Diligent-GraphicsEngineOpenGLInterface INTERFACE Diligent-GraphicsEngineInterface)
 target_include_directories(Diligent-GraphicsEngineOpenGLInterface INTERFACE interface)
 
-if(COMMAND custom_post_configure_target)
-    custom_post_configure_target(Diligent-GraphicsEngineOpenGLInterface)
-endif()
 
 add_library(Diligent-GraphicsEngineOpenGL-static STATIC
     ${SOURCE} ${INTERFACE} ${INCLUDE}

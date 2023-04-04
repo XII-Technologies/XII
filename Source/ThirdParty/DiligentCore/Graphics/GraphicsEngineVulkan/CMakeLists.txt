@@ -147,9 +147,6 @@ add_library(Diligent-GraphicsEngineVkInterface INTERFACE)
 target_link_libraries     (Diligent-GraphicsEngineVkInterface INTERFACE Diligent-GraphicsEngineInterface)
 target_include_directories(Diligent-GraphicsEngineVkInterface INTERFACE interface)
 
-if(COMMAND custom_post_configure_target)
-    custom_post_configure_target(Diligent-GraphicsEngineVkInterface)
-endif()
 
 add_library(Diligent-GraphicsEngineVk-static STATIC
     ${SRC} ${VULKAN_UTILS_SRC} ${INTERFACE} ${INCLUDE} ${VULKAN_UTILS_INCLUDE}
