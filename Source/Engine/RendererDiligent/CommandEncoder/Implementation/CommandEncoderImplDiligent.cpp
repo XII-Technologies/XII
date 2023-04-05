@@ -1097,6 +1097,8 @@ void xiiGALCommandEncoderImplDiligent::DispatchIndirectPlatform(const xiiGALBuff
 
 void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
 {
+  /// \todo RendererDiligent: Cache compute pipeline state and shader resource binding objects.
+
   XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pShaderResourceBindingCompute);
 
   XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pPipelineStateCompute);
@@ -1124,13 +1126,15 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
   // Create a shader resource binding object and bind all static resources in it
   m_pPipelineStateCompute->CreateShaderResourceBinding(&m_pShaderResourceBindingCompute, true);
 
-  m_pContext->SetPipelineState(m_pPipelineStateCompute);
-
   m_pContext->CommitShaderResources(m_pShaderResourceBindingCompute, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+  m_pContext->SetPipelineState(m_pPipelineStateCompute);
 }
 
 void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
 {
+  /// \todo RendererDiligent: Cache graphics pipeline state and shader resource binding objects.
+
   if (m_bPipelineStateModified)
   {
     if (!m_pCurrentShader)
@@ -1242,17 +1246,17 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
     m_bDescriptorsModified = false;
   }
 
-  // Create a shader resource binding object and bind all static resources in it
-  m_pPipelineStateGraphics->CreateShaderResourceBinding(&m_pShaderResourceBindingGraphics, true);
-
   if (m_bPipelineStateModified)
   {
+    // Create a shader resource binding object and bind all static resources in it
+    m_pPipelineStateGraphics->CreateShaderResourceBinding(&m_pShaderResourceBindingGraphics, true);
+
+    m_pContext->CommitShaderResources(m_pShaderResourceBindingGraphics, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+    m_pContext->SetPipelineState(m_pPipelineStateGraphics);
+
     m_bPipelineStateModified = false;
   }
-
-  m_pContext->SetPipelineState(m_pPipelineStateGraphics);
-
-  m_pContext->CommitShaderResources(m_pShaderResourceBindingGraphics, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 void xiiGALCommandEncoderImplDiligent::FillDescriptorBindings(Diligent::IPipelineState* pPipelineState)
