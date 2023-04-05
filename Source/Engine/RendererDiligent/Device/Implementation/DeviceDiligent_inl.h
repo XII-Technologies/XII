@@ -1,17 +1,17 @@
 
 XII_ALWAYS_INLINE Diligent::IRenderDevice* xiiGALDeviceDiligent::GetDevice()
 {
-  return m_pDevice.RawPtr();
+  return m_pDevice;
 }
 
 XII_ALWAYS_INLINE Diligent::IEngineFactory* xiiGALDeviceDiligent::GetFactory()
 {
-  return m_pEngineFactory.RawPtr();
+  return m_pEngineFactory;
 }
 
 XII_ALWAYS_INLINE Diligent::IDeviceContext* xiiGALDeviceDiligent::GetImmediateContext()
 {
-  return m_pDeviceContexts[0].RawPtr();
+  return m_pDeviceContexts[0];
 }
 
 XII_ALWAYS_INLINE const xiiGALFormatLookupTableDiligent& xiiGALDeviceDiligent::GetFormatLookupTable() const

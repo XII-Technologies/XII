@@ -94,11 +94,11 @@ xiiGALCommandEncoderImplDiligent::~xiiGALCommandEncoderImplDiligent()
 
   xiiMemoryUtils::ZeroFill(&m_pBoundSamplerStates[0][0], xiiGALShaderStage::ENUM_COUNT * XII_GAL_MAX_SAMPLER_COUNT);
 
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pPipelineStateGraphics);
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderResourceBindingGraphics);
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pPipelineStateGraphics);
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pShaderResourceBindingGraphics);
 
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pPipelineStateCompute);
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderResourceBindingCompute);
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pPipelineStateCompute);
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pShaderResourceBindingCompute);
 }
 
 // State setting functions
@@ -205,33 +205,33 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 #if D3D11_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D11:
     {
-      Diligent::RefCntAutoPtr<Diligent::IDeviceContextD3D11> pContextD3D11(static_cast<Diligent::IDeviceContextD3D11*>(m_pContext));
-      m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D11, reinterpret_cast<Diligent::IObject**>(pContextD3D11.RawDblPtr()));
+      Diligent::IDeviceContextD3D11* pContextD3D11 = static_cast<Diligent::IDeviceContextD3D11*>(m_pContext);
+      m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D11, reinterpret_cast<Diligent::IObject**>(&pContextD3D11));
       XII_ASSERT_DEV(pContextD3D11 != nullptr, "Failed to retrieve the D3D11 context.");
 
       if (Diligent::IBufferView* pBufferView = pUnorderedAccessViewDiligent->GetBufferView())
       {
-        Diligent::RefCntAutoPtr<Diligent::IBufferViewD3D11> pBufferViewD3D11(static_cast<Diligent::IBufferViewD3D11*>(pBufferView));
-        pBufferView->QueryInterface(Diligent::IID_BufferViewD3D11, reinterpret_cast<Diligent::IObject**>(pBufferViewD3D11.RawDblPtr()));
+        Diligent::IBufferViewD3D11* pBufferViewD3D11 = static_cast<Diligent::IBufferViewD3D11*>(pBufferView);
+        pBufferView->QueryInterface(Diligent::IID_BufferViewD3D11, reinterpret_cast<Diligent::IObject**>(&pBufferViewD3D11));
         XII_ASSERT_DEV(pBufferViewD3D11 != nullptr, "Failed to retrieve the D3D11 buffer view.");
 
         pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewFloat(static_cast<ID3D11UnorderedAccessView*>(pBufferViewD3D11->GetD3D11View()), &clearValues.x);
 
-        XII_GAL_DILIGENT_WRAPPED_RELEASE(pBufferViewD3D11);
+        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pBufferViewD3D11);
       }
 
       if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
       {
-        Diligent::RefCntAutoPtr<Diligent::ITextureViewD3D11> pTextureViewD3D11(static_cast<Diligent::ITextureViewD3D11*>(pTextureView));
-        pTextureView->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>(pTextureViewD3D11.RawDblPtr()));
+        Diligent::ITextureViewD3D11* pTextureViewD3D11 = static_cast<Diligent::ITextureViewD3D11*>(pTextureView);
+        pTextureView->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>(&pTextureViewD3D11));
         XII_ASSERT_DEV(pTextureViewD3D11 != nullptr, "Failed to retrieve the D3D11 buffer view.");
 
         pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewFloat(static_cast<ID3D11UnorderedAccessView*>(pTextureViewD3D11->GetD3D11View()), &clearValues.x);
 
-        XII_GAL_DILIGENT_WRAPPED_RELEASE(pTextureViewD3D11);
+        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureViewD3D11);
       }
 
-      XII_GAL_DILIGENT_WRAPPED_RELEASE(pContextD3D11);
+      XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pContextD3D11);
     }
     break;
 #endif
@@ -271,33 +271,33 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 #if D3D11_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D11:
     {
-      Diligent::RefCntAutoPtr<Diligent::IDeviceContextD3D11> pContextD3D11(static_cast<Diligent::IDeviceContextD3D11*>(m_pContext));
-      m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D11, reinterpret_cast<Diligent::IObject**>(pContextD3D11.RawDblPtr()));
+      Diligent::IDeviceContextD3D11* pContextD3D11 = static_cast<Diligent::IDeviceContextD3D11*>(m_pContext);
+      m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D11, reinterpret_cast<Diligent::IObject**>(&pContextD3D11));
       XII_ASSERT_DEV(pContextD3D11 != nullptr, "Failed to retrieve the D3D11 context.");
 
       if (Diligent::IBufferView* pBufferView = pUnorderedAccessViewDiligent->GetBufferView())
       {
-        Diligent::RefCntAutoPtr<Diligent::IBufferViewD3D11> pBufferViewD3D11(static_cast<Diligent::IBufferViewD3D11*>(pBufferView));
-        pBufferView->QueryInterface(Diligent::IID_BufferViewD3D11, reinterpret_cast<Diligent::IObject**>(pBufferViewD3D11.RawDblPtr()));
+        Diligent::IBufferViewD3D11* pBufferViewD3D11 = static_cast<Diligent::IBufferViewD3D11*>(pBufferView);
+        pBufferView->QueryInterface(Diligent::IID_BufferViewD3D11, reinterpret_cast<Diligent::IObject**>(&pBufferViewD3D11));
         XII_ASSERT_DEV(pBufferViewD3D11 != nullptr, "Failed to retrieve the D3D11 buffer view.");
 
         pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewUint(static_cast<ID3D11UnorderedAccessView*>(pBufferViewD3D11->GetD3D11View()), &clearValues.x);
 
-        XII_GAL_DILIGENT_WRAPPED_RELEASE(pBufferViewD3D11);
+        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pBufferViewD3D11);
       }
 
       if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
       {
-        Diligent::RefCntAutoPtr<Diligent::ITextureViewD3D11> pTextureViewD3D11(static_cast<Diligent::ITextureViewD3D11*>(pTextureView));
-        pTextureView->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>(pTextureViewD3D11.RawDblPtr()));
+        Diligent::ITextureViewD3D11* pTextureViewD3D11 = static_cast<Diligent::ITextureViewD3D11*>(pTextureView);
+        pTextureView->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>(&pTextureViewD3D11));
         XII_ASSERT_DEV(pTextureViewD3D11 != nullptr, "Failed to retrieve the D3D11 buffer view.");
 
         pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewUint(static_cast<ID3D11UnorderedAccessView*>(pTextureViewD3D11->GetD3D11View()), &clearValues.x);
 
-        XII_GAL_DILIGENT_WRAPPED_RELEASE(pTextureViewD3D11);
+        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureViewD3D11);
       }
 
-      XII_GAL_DILIGENT_WRAPPED_RELEASE(pContextD3D11);
+      XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pContextD3D11);
     }
     break;
 #endif
@@ -1097,9 +1097,9 @@ void xiiGALCommandEncoderImplDiligent::DispatchIndirectPlatform(const xiiGALBuff
 
 void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
 {
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderResourceBindingCompute);
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pShaderResourceBindingCompute);
 
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pPipelineStateCompute);
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pPipelineStateCompute);
 
   // Copy attributes set in the graphics pipeline state
   m_PipelineStateComputeDesc.PSODesc.SRBAllocationGranularity = m_PipelineStateDesc.PSODesc.SRBAllocationGranularity;
@@ -1161,9 +1161,9 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
     else
       m_PipelineStateDesc.GraphicsPipeline.RasterizerDesc = {};
 
-    XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderResourceBindingGraphics);
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pShaderResourceBindingGraphics);
 
-    XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pPipelineStateGraphics);
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pPipelineStateGraphics);
 
     m_GALDeviceDiligent.GetDevice()->CreatePipelineState(m_PipelineStateDesc, &m_pPipelineStateGraphics);
 

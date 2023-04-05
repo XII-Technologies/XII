@@ -24,6 +24,22 @@
 #  include <Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
 #endif
 
+template <>
+struct xiiHashHelper<RenderTargetInfo>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(const RenderTargetInfo& value)
+  {
+    const xiiUInt32 hashA = xiiHashHelper<const void*>::Hash(value.m_pTexture);
+    const xiiUInt32 hashB = xiiHashHelper<const void*>::Hash(value.m_pTextureView);
+    return xiiHashingUtils::CombineHashValues32(hashA, hashB);
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(const RenderTargetInfo& a, const RenderTargetInfo& b)
+  {
+    return a.m_pTexture == b.m_pTexture && a.m_pTextureView == b.m_pTextureView;
+  }
+};
+
 xiiGALResourceFormat::Enum ToGALRenderTargetFormat(Diligent::TEXTURE_FORMAT format)
 {
   switch (format)
@@ -192,7 +208,7 @@ xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent
   if (pRTV == nullptr)
   {
     xiiLog::Error("Couldn't access backbuffer texture of swapchain");
-    XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pSwapChain);
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pSwapChain);
 
     return XII_FAILURE;
   }
@@ -256,7 +272,7 @@ xiiResult xiiGALSwapChainDiligent::DeInitPlatform(xiiGALDevice* pDevice)
     // See: https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Destroying
     m_pSwapChain->SetWindowedMode();
 
-    XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pSwapChain);
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pSwapChain);
 
     m_WindowDesc.m_pWindow->RemoveReference();
   }

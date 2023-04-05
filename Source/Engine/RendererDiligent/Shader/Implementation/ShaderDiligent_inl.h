@@ -1,32 +1,32 @@
 
 XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetVertexShader()
 {
-  return m_pShaderStages[xiiGALShaderStage::VertexShader].RawPtr();
+  return m_pShaderStages[xiiGALShaderStage::VertexShader];
 }
 
 XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetHullShader()
 {
-  return m_pShaderStages[xiiGALShaderStage::HullShader].RawPtr();
+  return m_pShaderStages[xiiGALShaderStage::HullShader];
 }
 
 XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetDomainShader()
 {
-  return m_pShaderStages[xiiGALShaderStage::DomainShader].RawPtr();
+  return m_pShaderStages[xiiGALShaderStage::DomainShader];
 }
 
 XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetGeometryShader()
 {
-  return m_pShaderStages[xiiGALShaderStage::GeometryShader].RawPtr();
+  return m_pShaderStages[xiiGALShaderStage::GeometryShader];
 }
 
 XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetPixelShader()
 {
-  return m_pShaderStages[xiiGALShaderStage::PixelShader].RawPtr();
+  return m_pShaderStages[xiiGALShaderStage::PixelShader];
 }
 
 XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetComputeShader()
 {
-  return m_pShaderStages[xiiGALShaderStage::ComputeShader].RawPtr();
+  return m_pShaderStages[xiiGALShaderStage::ComputeShader];
 }
 
 XII_ALWAYS_INLINE xiiDynamicArray<xiiShaderDescriptorSetLayout>& xiiGALShaderDiligent::GetDescriptorSets(xiiGALShaderStage::Enum stage)

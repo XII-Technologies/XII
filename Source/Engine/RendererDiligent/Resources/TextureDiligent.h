@@ -24,9 +24,9 @@ protected:
 
   xiiResult CreateStagingTexture(xiiGALDeviceDiligent* pDevice);
 
-  Diligent::RefCntAutoPtr<Diligent::ITexture> m_pTexture;
+  Diligent::ITexture* m_pTexture = nullptr;
 
-  Diligent::RefCntAutoPtr<Diligent::ITexture> m_pStagingTexture;
+  Diligent::ITexture* m_pStagingTexture = nullptr;
 
   void* m_pExisitingNativeObject = nullptr;
 };

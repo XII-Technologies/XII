@@ -1,5 +1,5 @@
 
 Diligent::ISwapChain* xiiGALSwapChainDiligent::GetSwapChain()
 {
-  return m_pSwapChain.RawPtr();
+  return m_pSwapChain;
 }

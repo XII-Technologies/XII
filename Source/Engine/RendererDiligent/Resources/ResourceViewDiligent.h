@@ -24,9 +24,9 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pTextureView;
+  Diligent::ITextureView* m_pTextureView = nullptr;
 
-  Diligent::RefCntAutoPtr<Diligent::IBufferView> m_pBufferView;
+  Diligent::IBufferView* m_pBufferView = nullptr;
 };
 
 #include <RendererDiligent/Resources/Implementation/ResourceViewDiligent_inl.h>

@@ -124,13 +124,13 @@ protected:
 
   void WaitForFencePlatform(Diligent::IDeviceContext* pContext, Diligent::IQuery* pFence);
 
-  Diligent::RENDER_DEVICE_TYPE                                       m_DeviceType = Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
-  Diligent::RefCntAutoPtr<Diligent::IEngineFactory>                  m_pEngineFactory;
-  Diligent::RefCntAutoPtr<Diligent::IRenderDevice>                   m_pDevice;
-  xiiDynamicArray<Diligent::RefCntAutoPtr<Diligent::IDeviceContext>> m_pDeviceContexts;
-  xiiUInt32                                                          m_uiNumImmediateContexts = 0;
-  Diligent::GraphicsAdapterInfo                                      m_AdapterAttribs;
-  xiiDynamicArray<Diligent::DisplayModeAttribs>                      m_DisplayModes;
+  Diligent::RENDER_DEVICE_TYPE                  m_DeviceType = Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
+  Diligent::IEngineFactory*                     m_pEngineFactory = nullptr;
+  Diligent::IRenderDevice*                      m_pDevice = nullptr;
+  xiiDynamicArray<Diligent::IDeviceContext*>    m_pDeviceContexts;
+  xiiUInt32                                     m_uiNumImmediateContexts = 0;
+  Diligent::GraphicsAdapterInfo                 m_AdapterAttribs;
+  xiiDynamicArray<Diligent::DisplayModeAttribs> m_DisplayModes;
 
   xiiInt32               m_iValidationLevel = -1;
   xiiUInt32              m_uiAdapterId      = Diligent::DEFAULT_ADAPTER_ID;
@@ -142,16 +142,6 @@ protected:
   std::unique_ptr<xiiDiligentMemoryAllocator> m_pMemoryAllocator;
 
   xiiUniquePtr<xiiGALPassDiligent> m_pDefaultPass;
-
-  xiiUniquePtr<Diligent::ScopedQueryHelper>   m_pPipelineStatsQuery;
-  xiiUniquePtr<Diligent::ScopedQueryHelper>   m_pOcclusionQuery;
-  xiiUniquePtr<Diligent::ScopedQueryHelper>   m_pDurationQuery;
-  xiiUniquePtr<Diligent::DurationQueryHelper> m_pDurationFromTimestamps;
-
-  Diligent::QueryDataPipelineStatistics m_PipelineStatsData;
-  Diligent::QueryDataOcclusion          m_OcclusionData;
-  Diligent::QueryDataDuration           m_DurationData;
-  double                                m_DurationFromTimestamps = 0;
 
 #if XII_ENABLED(XII_USE_PROFILING)
   struct GPUTimingScope* m_pFrameTimingScope    = nullptr;

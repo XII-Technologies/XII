@@ -390,7 +390,7 @@ CreateRenderDevice:
       {
 #  if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
         xiiLog::Error("Failed to find Direct3D12-compatible hardware adapters. Attempting to initialize the engine in Direct3D11 mode.");
-        m_DeviceType                   = Diligent::RENDER_DEVICE_TYPE_D3D11;
+        m_DeviceType = Diligent::RENDER_DEVICE_TYPE_D3D11;
         goto CreateRenderDevice;
 #  else
         // Delete memory allocator.
@@ -507,7 +507,7 @@ CreateRenderDevice:
   m_uiNumImmediateContexts = NumImmediateContexts;
   m_pDeviceContexts.SetCount(ppContexts.GetCount());
   for (xiiUInt32 i = 0; i < ppContexts.GetCount(); ++i)
-    m_pDeviceContexts[i].Attach(ppContexts[i]);
+    m_pDeviceContexts[i] = ppContexts[i];
 
   // Create default pass
   m_pDefaultPass = XII_NEW(&m_Allocator, xiiGALPassDiligent, *this);
@@ -518,41 +518,8 @@ CreateRenderDevice:
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
-// Check query support
-#if 0
-  const auto& Features = m_pDevice->GetDeviceInfo().Features;
-  if (Features.PipelineStatisticsQueries)
-  {
-    Diligent::QueryDesc queryDesc;
-    queryDesc.Name        = "Pipeline statistics query";
-    queryDesc.Type        = Diligent::QUERY_TYPE_PIPELINE_STATISTICS;
-    m_pPipelineStatsQuery = XII_NEW(&m_Allocator, Diligent::ScopedQueryHelper, m_pDevice, queryDesc, 2);
-  }
-
-  if (Features.OcclusionQueries)
-  {
-    Diligent::QueryDesc queryDesc;
-    queryDesc.Name    = "Occlusion query";
-    queryDesc.Type    = Diligent::QUERY_TYPE_OCCLUSION;
-    m_pOcclusionQuery = XII_NEW(&m_Allocator, Diligent::ScopedQueryHelper, m_pDevice, queryDesc, 2);
-  }
-
-  if (Features.DurationQueries)
-  {
-    Diligent::QueryDesc queryDesc;
-    queryDesc.Name   = "Duration query";
-    queryDesc.Type   = Diligent::QUERY_TYPE_DURATION;
-    m_pDurationQuery = XII_NEW(&m_Allocator, Diligent::ScopedQueryHelper, m_pDevice, queryDesc, 2);
-  }
-
-  if (Features.TimestampQueries)
-  {
-    m_pDurationFromTimestamps = XII_NEW(&m_Allocator, Diligent::DurationQueryHelper, m_pDevice, 2);
-  }
-#endif
-
   m_SyncTimeDiff.SetZero();
-  
+
   xiiGALWindowSwapChain::SetFactoryMethod([this](const xiiGALWindowSwapChainCreationDescription& desc) -> xiiGALSwapChainHandle {
     return CreateSwapChain([this, &desc](xiiAllocatorBase* pAllocator) -> xiiGALSwapChain* {
       return XII_NEW(pAllocator, xiiGALSwapChainDiligent, desc);
@@ -566,18 +533,13 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 {
   xiiGALWindowSwapChain::SetFactoryMethod({});
 
-  m_pPipelineStatsQuery.Clear();
-  m_pOcclusionQuery.Clear();
-  m_pDurationQuery.Clear();
-  m_pDurationFromTimestamps.Clear();
-
   if (!m_pDeviceContexts.IsEmpty())
   {
     for (xiiUInt32 q = 0; q < m_uiNumImmediateContexts; ++q)
     {
       m_pDeviceContexts[q]->Flush();
 
-      XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDeviceContexts[q]);
+      XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pDeviceContexts[q]);
     }
 
     m_pDeviceContexts.Clear();
@@ -589,9 +551,9 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 
   m_pDevice->ReleaseStaleResources(true);
 
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDevice);
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pDevice);
 
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pEngineFactory);
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pEngineFactory);
 
   m_pMemoryAllocator.reset();
 
@@ -621,23 +583,6 @@ void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapC
     pSwapChain->AcquireNextRenderTarget(this);
   }
 
-#if 0
-  // Begin supported queries
-  {
-    if (m_pPipelineStatsQuery)
-      m_pPipelineStatsQuery->Begin(GetImmediateContext());
-
-    if (m_pOcclusionQuery)
-      m_pOcclusionQuery->Begin(GetImmediateContext());
-
-    if (m_pDurationFromTimestamps)
-      m_pDurationFromTimestamps->Begin(GetImmediateContext());
-
-    if (m_pDurationQuery)
-      m_pDurationQuery->Begin(GetImmediateContext());
-  }
-#endif
-
 #if XII_ENABLED(XII_USE_PROFILING)
   m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), szName);
 #endif
@@ -646,26 +591,6 @@ void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapC
 void xiiGALDeviceDiligent::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
 {
   XII_PROFILE_SCOPE("EndPipelinePlatform");
-
-  // End queries
-#if 0
-  {
-    if (m_pDurationFromTimestamps)
-      m_pDurationFromTimestamps->End(GetImmediateContext(), m_DurationFromTimestamps);
-
-    // Note that recording the query itself may take measurable amount of time, so
-    // if m_pDurationFromTimestamps and m_pDurationQuery queries are nested, the results
-    // may noticeably differ.
-    if (m_pDurationQuery)
-      m_pDurationQuery->End(GetImmediateContext(), &m_DurationData, sizeof(m_DurationData));
-
-    if (m_pOcclusionQuery)
-      m_pOcclusionQuery->End(GetImmediateContext(), &m_OcclusionData, sizeof(m_OcclusionData));
-
-    if (m_pPipelineStatsQuery)
-      m_pPipelineStatsQuery->End(GetImmediateContext(), &m_PipelineStatsData, sizeof(m_PipelineStatsData));
-  }
-#endif
 
 #if XII_ENABLED(XII_USE_PROFILING)
   xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pPipelineTimingScope);
@@ -961,14 +886,7 @@ xiiGALTimestampHandle xiiGALDeviceDiligent::GetTimestampPlatform()
 
 xiiResult xiiGALDeviceDiligent::GetTimestampResultPlatform(xiiGALTimestampHandle hTimestamp, xiiTime& result)
 {
-  if (m_DurationData.Frequency == 0)
-  {
-    result.SetZero();
-  }
-  else
-  {
-    result = xiiTime::Seconds(m_DurationFromTimestamps * m_DurationData.Frequency) + m_SyncTimeDiff;
-  }
+  result.SetZero();
 
   return XII_SUCCESS;
 }

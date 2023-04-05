@@ -123,17 +123,17 @@ private:
   xiiGALDeviceDiligent& m_GALDeviceDiligent;
   xiiGALCommandEncoder* m_pOwner = nullptr;
 
-  Diligent::IDeviceContext* m_pContext;
+  Diligent::IDeviceContext* m_pContext = nullptr;
 
   // Graphics pipeline state creation
-  Diligent::GraphicsPipelineStateCreateInfo                 m_PipelineStateDesc;
-  Diligent::RefCntAutoPtr<Diligent::IPipelineState>         m_pPipelineStateGraphics;
-  Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> m_pShaderResourceBindingGraphics;
+  Diligent::GraphicsPipelineStateCreateInfo m_PipelineStateDesc;
+  Diligent::IPipelineState*                 m_pPipelineStateGraphics         = nullptr;
+  Diligent::IShaderResourceBinding*         m_pShaderResourceBindingGraphics = nullptr;
 
   // Compute pipeline state creation
-  Diligent::ComputePipelineStateCreateInfo                  m_PipelineStateComputeDesc;
-  Diligent::RefCntAutoPtr<Diligent::IPipelineState>         m_pPipelineStateCompute;
-  Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> m_pShaderResourceBindingCompute;
+  Diligent::ComputePipelineStateCreateInfo m_PipelineStateComputeDesc;
+  Diligent::IPipelineState*                m_pPipelineStateCompute         = nullptr;
+  Diligent::IShaderResourceBinding*        m_pShaderResourceBindingCompute = nullptr;
 
   // Pipeline State
 
@@ -156,7 +156,7 @@ private:
   // Bound objects for deferred state flushes
   xiiGALBufferDiligent* m_pIndexBuffer = nullptr;
 
-  xiiGALBufferDiligent* m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
+  xiiGALBufferDiligent* m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {nullptr};
 
   xiiHybridArray<xiiGALResourceViewDiligent*, 16> m_pBoundShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
   xiiGAL::ModifiedRange                           m_BoundShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];
@@ -164,16 +164,16 @@ private:
   xiiHybridArray<xiiGALUnorderedAccessViewDiligent*, 16> m_pBoundUnoderedAccessViews;
   xiiGAL::ModifiedRange                                  m_pBoundUnoderedAccessViewsRange;
 
-  xiiGALSamplerStateDiligent* m_pBoundSamplerStates[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
+  xiiGALSamplerStateDiligent* m_pBoundSamplerStates[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {nullptr};
 
   xiiGALShaderDiligent* m_pCurrentShader = nullptr;
 
   xiiGALRenderTargetSetup m_RenderTargetSetup;
-  Diligent::ITextureView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
+  Diligent::ITextureView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {nullptr};
   xiiUInt8                m_uiBoundRenderTargetCount                            = 0;
   Diligent::ITextureView* m_pBoundDepthStencilTarget                            = nullptr;
 
-  Diligent::IBuffer*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  Diligent::IBuffer*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {nullptr};
   xiiGAL::ModifiedRange m_BoundVertexBuffersRange;
 
   Diligent::Uint64 m_VertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};

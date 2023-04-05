@@ -17,7 +17,7 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::RefCntAutoPtr<Diligent::IQuery> m_pQuery;
+  Diligent::IQuery* m_pQuery = nullptr;
 };
 
 #include <RendererDiligent/Resources/Implementation/QueryDiligent_inl.h>
