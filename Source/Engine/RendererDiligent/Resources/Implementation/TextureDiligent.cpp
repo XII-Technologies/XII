@@ -117,24 +117,26 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
       if (m_Description.m_bAllowDynamicMipGeneration)
         Tex2DDesc.MiscFlags |= Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS;
 
+      xiiHybridArray<Diligent::TextureSubResData, 16> initialData;
+
       if (!pInitialData.IsEmpty())
       {
         xiiUInt32 uiInitialDataCount = (m_Description.m_uiMipLevelCount * Tex2DDesc.ArraySize);
         XII_ASSERT_DEV(pInitialData.GetCount() == uiInitialDataCount, "The array of initial data values is not equal to the amount of mip levels!");
 
-        m_InitialData.SetCount(uiInitialDataCount);
+        initialData.SetCount(uiInitialDataCount);
 
         for (xiiUInt32 i = 0; i < uiInitialDataCount; ++i)
         {
-          m_InitialData[i].pData       = pInitialData[i].m_pData;
-          m_InitialData[i].Stride      = pInitialData[i].m_uiRowPitch;
-          m_InitialData[i].DepthStride = pInitialData[i].m_uiSlicePitch;
+          initialData[i].pData       = pInitialData[i].m_pData;
+          initialData[i].Stride      = pInitialData[i].m_uiRowPitch;
+          initialData[i].DepthStride = pInitialData[i].m_uiSlicePitch;
         }
       }
 
       Diligent::TextureData textureData = {};
-      textureData.pSubResources         = m_InitialData.GetData();
-      textureData.NumSubresources       = m_InitialData.GetCount();
+      textureData.pSubResources         = initialData.GetData();
+      textureData.NumSubresources       = initialData.GetCount();
       pDeviceDiligent->GetDevice()->CreateTexture(Tex2DDesc, pInitialData.IsEmpty() ? nullptr : &textureData, &m_pTexture);
 
       if (m_pTexture == nullptr)
@@ -190,24 +192,26 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
       if (m_Description.m_bAllowDynamicMipGeneration)
         Tex3DDesc.MiscFlags |= Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS;
 
+      xiiHybridArray<Diligent::TextureSubResData, 16> initialData;
+
       if (!pInitialData.IsEmpty())
       {
         const xiiUInt32 uiInitialDataCount = m_Description.m_uiMipLevelCount;
         XII_ASSERT_DEV(pInitialData.GetCount() == uiInitialDataCount, "The array of initial data values is not equal to the amount of mip levels!");
 
-        m_InitialData.SetCount(uiInitialDataCount);
+        initialData.SetCount(uiInitialDataCount);
 
         for (xiiUInt32 i = 0; i < uiInitialDataCount; ++i)
         {
-          m_InitialData[i].pData       = pInitialData[i].m_pData;
-          m_InitialData[i].Stride      = pInitialData[i].m_uiRowPitch;
-          m_InitialData[i].DepthStride = pInitialData[i].m_uiSlicePitch;
+          initialData[i].pData       = pInitialData[i].m_pData;
+          initialData[i].Stride      = pInitialData[i].m_uiRowPitch;
+          initialData[i].DepthStride = pInitialData[i].m_uiSlicePitch;
         }
       }
 
       Diligent::TextureData textureData = {};
-      textureData.pSubResources         = m_InitialData.GetData();
-      textureData.NumSubresources       = m_InitialData.GetCount();
+      textureData.pSubResources         = initialData.GetData();
+      textureData.NumSubresources       = initialData.GetCount();
       pDeviceDiligent->GetDevice()->CreateTexture(Tex3DDesc, pInitialData.IsEmpty() ? nullptr : &textureData, &m_pTexture);
 
       if (m_pTexture == nullptr)
