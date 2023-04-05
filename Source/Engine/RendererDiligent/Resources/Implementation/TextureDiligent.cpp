@@ -229,8 +229,6 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
     break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-
-      return XII_FAILURE;
   }
 
   return XII_FAILURE;
