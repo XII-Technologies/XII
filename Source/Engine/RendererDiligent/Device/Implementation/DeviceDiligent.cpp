@@ -311,7 +311,7 @@ CreateRenderDevice:
       }
 
       NumImmediateContexts = xiiMath::Max(1u, EngineCI.NumImmediateContexts);
-      ppContexts.SetCount(size_t{NumImmediateContexts} + size_t{EngineCI.NumDeferredContexts});
+      ppContexts.SetCount(NumImmediateContexts + EngineCI.NumDeferredContexts);
       pFactoryD3D11->CreateDeviceAndContextsD3D11(EngineCI, &m_pDevice, ppContexts.GetData());
 
       XII_ASSERT_DEV(m_pDevice != nullptr, "Unable to initialize Diligent Engine in Direct3D11 mode. The API may not be available, "
