@@ -89,8 +89,8 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
         SRVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_3D;
         break;
 
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-
+      default:
+        XII_ASSERT_NOT_IMPLEMENTED;
         return XII_FAILURE;
     }
 
@@ -138,7 +138,7 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
       SRVDesc.Format.ValueType     = xiiDiligentUtils::GALToDiligentFormat(ViewFormatDiligent);
       SRVDesc.Format.IsNormalized  = xiiDiligentUtils::GALIsFormatNormalized(ViewFormatDiligent);
-      SRVDesc.Format.NumComponents = xiiDiligentUtils::GALToDiligentNumComponent(ViewFormatDiligent);
+      SRVDesc.Format.NumComponents = xiiGALResourceFormat::GetChannelCount(viewFormat);
       SRVDesc.ByteOffset           = sizeof(xiiUInt32) * m_Description.m_uiFirstElement;
       SRVDesc.ByteWidth            = sizeof(xiiUInt32) * m_Description.m_uiNumElements;
     }
@@ -152,7 +152,7 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
       SRVDesc.Format.ValueType     = xiiDiligentUtils::GALToDiligentFormat(ViewFormatDiligent);
       SRVDesc.Format.IsNormalized  = xiiDiligentUtils::GALIsFormatNormalized(ViewFormatDiligent);
-      SRVDesc.Format.NumComponents = xiiDiligentUtils::GALToDiligentNumComponent(ViewFormatDiligent);
+      SRVDesc.Format.NumComponents = xiiGALResourceFormat::GetChannelCount(viewFormat);
       SRVDesc.ByteOffset           = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiFirstElement;
       SRVDesc.ByteWidth            = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiNumElements;
     }
@@ -170,11 +170,10 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALResourceViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pBufferView);
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pTextureView);
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pBufferView);
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pTextureView);
 
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Resources_Implementation_ResourceViewDiligent);

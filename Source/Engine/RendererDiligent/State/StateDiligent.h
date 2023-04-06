@@ -1,7 +1,7 @@
-
 #pragma once
 
 #include <RendererDiligent/RendererDiligentDLL.h>
+
 #include <RendererFoundation/State/State.h>
 
 class XII_RENDERERDILIGENT_DLL xiiGALBlendStateDiligent : public xiiGALBlendState
@@ -81,7 +81,7 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::RefCntAutoPtr<Diligent::ISampler> m_pSamplerState;
+  Diligent::ISampler* m_pSamplerState = nullptr;
 };
 
 #include <RendererDiligent/State/Implementation/StateDiligent_inl.h>

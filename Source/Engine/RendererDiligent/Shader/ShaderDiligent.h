@@ -2,7 +2,7 @@
 #pragma once
 
 #include <RendererDiligent/RendererDiligentDLL.h>
-#include <RendererFoundation/RendererFoundationDLL.h>
+
 #include <RendererFoundation/Shader/Shader.h>
 
 #include <ShaderCompiler/ShaderMetadata.h>
@@ -38,7 +38,7 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::RefCntAutoPtr<Diligent::IShader> m_pShaderStages[xiiGALShaderStage::ENUM_COUNT];
+  Diligent::IShader* m_pShaderStages[xiiGALShaderStage::ENUM_COUNT] = {nullptr};
 
   xiiDynamicArray<xiiShaderDescriptorSetLayout> m_DescriptorSets[xiiGALShaderStage::ENUM_COUNT];
 

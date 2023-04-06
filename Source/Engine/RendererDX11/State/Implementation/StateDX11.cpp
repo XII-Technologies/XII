@@ -20,19 +20,19 @@ xiiGALBlendStateDX11::xiiGALBlendStateDX11(const xiiGALBlendStateCreationDescrip
 
 xiiGALBlendStateDX11::~xiiGALBlendStateDX11() {}
 
-static D3D11_BLEND_OP ToD3DBlendOp(xiiGALBlendOp::Enum e)
+static D3D11_BLEND_OP ToD3DBlendOp(xiiGALBlendOperation::Enum e)
 {
   switch (e)
   {
-    case xiiGALBlendOp::Add:
+    case xiiGALBlendOperation::Add:
       return D3D11_BLEND_OP_ADD;
-    case xiiGALBlendOp::Max:
+    case xiiGALBlendOperation::Max:
       return D3D11_BLEND_OP_MAX;
-    case xiiGALBlendOp::Min:
+    case xiiGALBlendOperation::Min:
       return D3D11_BLEND_OP_MIN;
-    case xiiGALBlendOp::RevSubtract:
+    case xiiGALBlendOperation::RevSubtract:
       return D3D11_BLEND_OP_REV_SUBTRACT;
-    case xiiGALBlendOp::Subtract:
+    case xiiGALBlendOperation::Subtract:
       return D3D11_BLEND_OP_SUBTRACT;
     default:
       XII_ASSERT_NOT_IMPLEMENTED;
@@ -41,43 +41,42 @@ static D3D11_BLEND_OP ToD3DBlendOp(xiiGALBlendOp::Enum e)
   return D3D11_BLEND_OP_ADD;
 }
 
-static D3D11_BLEND ToD3DBlend(xiiGALBlend::Enum e)
+static D3D11_BLEND ToD3DBlend(xiiGALBlendFactor::Enum e)
 {
   switch (e)
   {
-    case xiiGALBlend::BlendFactor:
+    case xiiGALBlendFactor::BlendFactor:
       XII_ASSERT_NOT_IMPLEMENTED;
       // if this is used, it also must be implemented in xiiGALContextDX11::SetBlendStatePlatform
       return D3D11_BLEND_BLEND_FACTOR;
-    case xiiGALBlend::DestAlpha:
+    case xiiGALBlendFactor::DestAlpha:
       return D3D11_BLEND_DEST_ALPHA;
-    case xiiGALBlend::DestColor:
+    case xiiGALBlendFactor::DestColor:
       return D3D11_BLEND_DEST_COLOR;
-    case xiiGALBlend::InvBlendFactor:
+    case xiiGALBlendFactor::InvBlendFactor:
       XII_ASSERT_NOT_IMPLEMENTED;
       // if this is used, it also must be implemented in xiiGALContextDX11::SetBlendStatePlatform
       return D3D11_BLEND_INV_BLEND_FACTOR;
-    case xiiGALBlend::InvDestAlpha:
+    case xiiGALBlendFactor::InvDestAlpha:
       return D3D11_BLEND_INV_DEST_ALPHA;
-    case xiiGALBlend::InvDestColor:
+    case xiiGALBlendFactor::InvDestColor:
       return D3D11_BLEND_INV_DEST_COLOR;
-    case xiiGALBlend::InvSrcAlpha:
+    case xiiGALBlendFactor::InvSrcAlpha:
       return D3D11_BLEND_INV_SRC_ALPHA;
-    case xiiGALBlend::InvSrcColor:
+    case xiiGALBlendFactor::InvSrcColor:
       return D3D11_BLEND_INV_SRC_COLOR;
-    case xiiGALBlend::One:
+    case xiiGALBlendFactor::One:
       return D3D11_BLEND_ONE;
-    case xiiGALBlend::SrcAlpha:
+    case xiiGALBlendFactor::SrcAlpha:
       return D3D11_BLEND_SRC_ALPHA;
-    case xiiGALBlend::SrcAlphaSaturated:
+    case xiiGALBlendFactor::SrcAlphaSaturated:
       return D3D11_BLEND_SRC_ALPHA_SAT;
-    case xiiGALBlend::SrcColor:
+    case xiiGALBlendFactor::SrcColor:
       return D3D11_BLEND_SRC_COLOR;
-    case xiiGALBlend::Zero:
+    case xiiGALBlendFactor::Zero:
       return D3D11_BLEND_ZERO;
 
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   return D3D11_BLEND_ONE;

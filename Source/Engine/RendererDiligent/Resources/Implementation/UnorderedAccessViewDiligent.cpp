@@ -100,8 +100,8 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
       }
       break;
 
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-
+      default:
+        XII_ASSERT_NOT_IMPLEMENTED;
         return XII_FAILURE;
     }
 
@@ -149,7 +149,7 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
       UAVDesc.Format.ValueType     = xiiDiligentUtils::GALToDiligentFormat(ViewFormatDiligent);
       UAVDesc.Format.IsNormalized  = xiiDiligentUtils::GALIsFormatNormalized(ViewFormatDiligent);
-      UAVDesc.Format.NumComponents = xiiDiligentUtils::GALToDiligentNumComponent(ViewFormatDiligent);
+      UAVDesc.Format.NumComponents = xiiGALResourceFormat::GetChannelCount(viewFormat);
       UAVDesc.ByteOffset           = sizeof(xiiUInt32) * m_Description.m_uiFirstElement;
       UAVDesc.ByteWidth            = sizeof(xiiUInt32) * m_Description.m_uiNumElements;
     }
@@ -163,7 +163,7 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
       UAVDesc.Format.ValueType     = xiiDiligentUtils::GALToDiligentFormat(ViewFormatDiligent);
       UAVDesc.Format.IsNormalized  = xiiDiligentUtils::GALIsFormatNormalized(ViewFormatDiligent);
-      UAVDesc.Format.NumComponents = xiiDiligentUtils::GALToDiligentNumComponent(ViewFormatDiligent);
+      UAVDesc.Format.NumComponents = xiiGALResourceFormat::GetChannelCount(viewFormat);
       UAVDesc.ByteOffset           = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiFirstElement;
       UAVDesc.ByteWidth            = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiNumElements;
     }
@@ -181,11 +181,10 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALUnorderedAccessViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pUnorderedAccessTextureView);
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pUnorderedAccessBufferView);
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pUnorderedAccessTextureView);
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pUnorderedAccessBufferView);
 
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Resources_Implementation_UnorderedAccessViewDiligent);

@@ -2,6 +2,7 @@
 // clang-format off
 static Diligent::CULL_MODE GALCullModeToDiligent[xiiGALCullMode::ENUM_COUNT] =
 {
+  Diligent::CULL_MODE_UNDEFINED,
   Diligent::CULL_MODE_NONE,
   Diligent::CULL_MODE_FRONT,
   Diligent::CULL_MODE_BACK
@@ -17,6 +18,7 @@ static const Diligent::TEXTURE_ADDRESS_MODE GALTextureAddressModeToDiligent[xiiI
 
 static const Diligent::COMPARISON_FUNCTION GALCompareFuncToDiligent[xiiGALCompareFunc::ENUM_COUNT] =
 {
+  Diligent::COMPARISON_FUNC_UNKNOWN,
   Diligent::COMPARISON_FUNC_NEVER,
   Diligent::COMPARISON_FUNC_LESS,
   Diligent::COMPARISON_FUNC_EQUAL,
@@ -27,8 +29,9 @@ static const Diligent::COMPARISON_FUNCTION GALCompareFuncToDiligent[xiiGALCompar
   Diligent::COMPARISON_FUNC_ALWAYS
 };
 
-static const Diligent::STENCIL_OP GALStencilOpTableIndexToDiligent[8] =
+static const Diligent::STENCIL_OP GALStencilOpTableIndexToDiligent[xiiGALStencilOperation::ENUM_COUNT] =
 {
+  Diligent::STENCIL_OP_UNDEFINED,
   Diligent::STENCIL_OP_KEEP,
   Diligent::STENCIL_OP_ZERO,
   Diligent::STENCIL_OP_REPLACE,

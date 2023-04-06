@@ -247,8 +247,7 @@ ShaderVkImpl::ShaderVkImpl(IReferenceCounters*     pRefCounters,
 void ShaderVkImpl::MapHLSLVertexShaderInputs()
 {
     // XII Addition: Do not map HLSL Inputs, this is already provided through shader reflection.
-    return;
-
+#if 0
     for (Uint32 i = 0; i < m_pShaderResources->GetNumShaderStageInputs(); ++i)
     {
         const auto&        Input  = m_pShaderResources->GetShaderStageInputAttribs(i);
@@ -276,6 +275,7 @@ void ShaderVkImpl::MapHLSLVertexShaderInputs()
         }
         m_SPIRV[Input.LocationDecorationOffset] = Location;
     }
+#endif
 }
 
 ShaderVkImpl::~ShaderVkImpl()

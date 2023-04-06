@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <RendererFoundation/Resources/RenderTargetView.h>
@@ -24,11 +23,11 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pRenderTargetView;
+  Diligent::ITextureView* m_pRenderTargetView = nullptr;
 
-  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pDepthStencilView;
+  Diligent::ITextureView* m_pDepthStencilView = nullptr;
 
-  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pUnorderedAccessView;
+  Diligent::ITextureView* m_pUnorderedAccessView = nullptr;
 };
 
 #include <RendererDiligent/Resources/Implementation/RenderTargetViewDiligent_inl.h>

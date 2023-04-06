@@ -10,10 +10,10 @@ struct XII_TEXTURE_DLL xiiImageAddressMode
 
   enum Enum
   {
-    Repeat,
-    Clamp,
-    ClampBorder,
-    Mirror,
+    Repeat,      ///< Repeats the texture on every integer junction.
+    Clamp,       ///< Clamps the texture coordinates to the [0.0, 1.0] range.
+    ClampBorder, ///< Uses an arbitrary border color for any texture coordinates outside the range [0.0, 1.0].
+    Mirror,      ///< Mirrors the texture at every integer boundary.
 
     ENUM_COUNT,
 

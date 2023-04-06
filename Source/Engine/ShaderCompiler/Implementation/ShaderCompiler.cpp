@@ -39,8 +39,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "vs_4_0_level_9_3";
       case xiiGALShaderStage::PixelShader:
         return "ps_4_0_level_9_3";
-      default:
-        break;
     }
   }
 
@@ -56,8 +54,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_4_0";
       case xiiGALShaderStage::ComputeShader:
         return "cs_4_0";
-      default:
-        break;
     }
   }
 
@@ -73,8 +69,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_4_1";
       case xiiGALShaderStage::ComputeShader:
         return "cs_4_1";
-      default:
-        break;
     }
   }
 
@@ -94,8 +88,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_5_0";
       case xiiGALShaderStage::ComputeShader:
         return "cs_5_0";
-      default:
-        break;
     }
   }
 
@@ -115,8 +107,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_5_1";
       case xiiGALShaderStage::ComputeShader:
         return "cs_5_1";
-      default:
-        break;
     }
   }
 
@@ -136,8 +126,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_0";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_0";
-      default:
-        break;
     }
   }
 
@@ -157,8 +145,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_1";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_1";
-      default:
-        break;
     }
   }
 
@@ -178,8 +164,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_2";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_2";
-      default:
-        break;
     }
   }
 
@@ -199,8 +183,14 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_3";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_3";
-      default:
-        break;
+
+      case xiiGALShaderStage::RayGen:
+      case xiiGALShaderStage::RayMiss:
+      case xiiGALShaderStage::RayAnyHit:
+      case xiiGALShaderStage::RayClosestHit:
+      case xiiGALShaderStage::RayIntersection:
+      case xiiGALShaderStage::Callable:
+        return "lib_6_3";
     }
   }
 
@@ -220,8 +210,14 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_4";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_4";
-      default:
-        break;
+
+      case xiiGALShaderStage::RayGen:
+      case xiiGALShaderStage::RayMiss:
+      case xiiGALShaderStage::RayAnyHit:
+      case xiiGALShaderStage::RayClosestHit:
+      case xiiGALShaderStage::RayIntersection:
+      case xiiGALShaderStage::Callable:
+        return "lib_6_4";
     }
   }
 
@@ -241,8 +237,20 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_5";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_5";
-      default:
-        break;
+
+      case xiiGALShaderStage::RayGen:
+      case xiiGALShaderStage::RayMiss:
+      case xiiGALShaderStage::RayAnyHit:
+      case xiiGALShaderStage::RayClosestHit:
+      case xiiGALShaderStage::RayIntersection:
+      case xiiGALShaderStage::Callable:
+        return "lib_6_5";
+
+      case xiiGALShaderStage::Amplification:
+        return "as_6_5";
+
+      case xiiGALShaderStage::Mesh:
+        return "ms_6_5";
     }
   }
 
@@ -262,16 +270,28 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_6";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_6";
-      default:
-        break;
+
+      case xiiGALShaderStage::RayGen:
+      case xiiGALShaderStage::RayMiss:
+      case xiiGALShaderStage::RayAnyHit:
+      case xiiGALShaderStage::RayClosestHit:
+      case xiiGALShaderStage::RayIntersection:
+      case xiiGALShaderStage::Callable:
+        return "lib_6_6";
+
+      case xiiGALShaderStage::Amplification:
+        return "as_6_6";
+
+      case xiiGALShaderStage::Mesh:
+        return "ms_6_6";
     }
   }
 
-  XII_REPORT_FAILURE("Unknown Platform '{0}' or Stage {1}", szPlatform, Stage);
+  XII_REPORT_FAILURE("Unknown (or unsupported) Platform '{0}' or Stage {1}", szPlatform, Stage);
   return "";
 }
 
-xiiGraphicsDevice::Enum xiiShaderCompilerProgram::GetProfileNameDeviceType(const char* szPlatform, const char* szProfileName)
+xiiGraphicsDeviceType::Enum xiiShaderCompilerProgram::GetProfileNameDeviceType(const char* szPlatform, const char* szProfileName)
 {
   xiiStringBuilder sPlatform = szPlatform;
   xiiStringBuilder sProfile  = szProfileName;
@@ -280,22 +300,22 @@ xiiGraphicsDevice::Enum xiiShaderCompilerProgram::GetProfileNameDeviceType(const
   {
     if (sProfile.FindSubString("s_6") != nullptr || sProfile.FindSubString("s_5_1") != nullptr)
     {
-      return xiiGraphicsDevice::D3D12;
+      return xiiGraphicsDeviceType::D3D12;
     }
     else
     {
-      return xiiGraphicsDevice::D3D11;
+      return xiiGraphicsDeviceType::D3D11;
     }
   }
 
   if (sPlatform.FindSubString("VK_") != nullptr)
   {
-    return xiiGraphicsDevice::Vulkan;
+    return xiiGraphicsDeviceType::Vulkan;
   }
 
   XII_ASSERT_NOT_IMPLEMENTED;
 
-  return xiiGraphicsDevice::Undefined;
+  return xiiGraphicsDeviceType::Undefined;
 }
 
 xiiResult xiiShaderCompilerProgram::Initialize(const char* szPlatformName)
@@ -361,12 +381,12 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
 
     if (uiLength > 0 && xiiStringUtils::FindSubString(szShaderSource, "main") != nullptr)
     {
-      xiiGraphicsDevice::Enum device = GetProfileNameDeviceType(inout_Data.m_szPlatform, GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage));
+      xiiGraphicsDeviceType::Enum device = GetProfileNameDeviceType(inout_Data.m_szPlatform, GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage));
 
       switch (device)
       {
 #if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
-        case xiiGraphicsDevice::D3D11:
+        case xiiGraphicsDeviceType::D3D11:
         {
           xiiShaderCompilerD3D11 shaderCompilerD3D11;
           if (shaderCompilerD3D11.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
@@ -381,7 +401,7 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         break;
 #endif
 #if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
-        case xiiGraphicsDevice::D3D12:
+        case xiiGraphicsDeviceType::D3D12:
         {
           xiiShaderCompilerD3D12 shaderCompilerD3D12;
           if (shaderCompilerD3D12.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
@@ -396,7 +416,7 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         break;
 #endif
 #if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
-        case xiiGraphicsDevice::Vulkan:
+        case xiiGraphicsDeviceType::Vulkan:
         {
           xiiShaderCompilerVulkan shaderCompilerVulkan;
           if (shaderCompilerVulkan.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())

@@ -151,10 +151,9 @@ xiiResult xiiGALSamplerStateDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALSamplerStateDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pSamplerState);
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pSamplerState);
 
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_State_Implementation_StateDiligent);

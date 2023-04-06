@@ -2,10 +2,10 @@
 #pragma once
 
 #include <RendererDiligent/RendererDiligentDLL.h>
-#include <RendererFoundation/RendererFoundationDLL.h>
+
 #include <RendererFoundation/Shader/VertexDeclaration.h>
 
-class xiiGALVertexDeclarationDiligent : public xiiGALVertexDeclaration
+class XII_RENDERERDILIGENT_DLL xiiGALVertexDeclarationDiligent : public xiiGALVertexDeclaration
 {
 public:
   XII_ALWAYS_INLINE const Diligent::InputLayoutDesc* GetInputLayoutDesc() const;

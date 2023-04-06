@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <RendererFoundation/Resources/Buffer.h>
@@ -21,9 +20,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<const xiiUInt8> pInitialData) override;
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::RefCntAutoPtr<Diligent::IBuffer> m_pBuffer;
+  Diligent::IBuffer* m_pBuffer = nullptr;
 
-  // Only applicable for Index Buffers
+  // Only applicable to Index Buffers
   Diligent::VALUE_TYPE m_IndexFormat;
 };
 
