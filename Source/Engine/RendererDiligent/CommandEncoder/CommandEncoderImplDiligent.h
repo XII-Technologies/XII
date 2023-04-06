@@ -159,10 +159,8 @@ private:
   xiiGALBufferDiligent* m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {nullptr};
 
   xiiHybridArray<xiiGALResourceViewDiligent*, 16> m_pBoundShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
-  xiiGAL::ModifiedRange                           m_BoundShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];
 
   xiiHybridArray<xiiGALUnorderedAccessViewDiligent*, 16> m_pBoundUnoderedAccessViews;
-  xiiGAL::ModifiedRange                                  m_pBoundUnoderedAccessViewsRange;
 
   xiiGALSamplerStateDiligent* m_pBoundSamplerStates[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {nullptr};
 

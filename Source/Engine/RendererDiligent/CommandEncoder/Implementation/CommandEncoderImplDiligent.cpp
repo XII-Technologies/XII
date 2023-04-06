@@ -147,7 +147,6 @@ void xiiGALCommandEncoderImplDiligent::SetResourceViewPlatform(xiiGALShaderStage
 
   xiiGALResourceView* pResource    = const_cast<xiiGALResourceView*>(pResourceView);
   boundShaderResourceViews[uiSlot] = pResourceView != nullptr ? static_cast<xiiGALResourceViewDiligent*>(pResource) : nullptr;
-  m_BoundShaderResourceViewsRange[Stage].SetToIncludeValue(uiSlot);
 
   m_bDescriptorsModified = true;
 }
@@ -158,7 +157,6 @@ void xiiGALCommandEncoderImplDiligent::SetUnorderedAccessViewPlatform(xiiUInt32 
 
   m_pBoundUnoderedAccessViews.EnsureCount(uiSlot + 1);
   m_pBoundUnoderedAccessViews[uiSlot] = pUnorderedAccessView != nullptr ? static_cast<xiiGALUnorderedAccessViewDiligent*>(pUAView) : nullptr;
-  m_pBoundUnoderedAccessViewsRange.SetToIncludeValue(uiSlot);
 
   m_bDescriptorsModified = true;
 }
@@ -1328,6 +1326,5 @@ void xiiGALCommandEncoderImplDiligent::FillDescriptorBindings(Diligent::IPipelin
     }
   }
 }
-
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_CommandEncoder_Implementation_CommandEncoderImplDiligent);
