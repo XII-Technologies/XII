@@ -18,8 +18,8 @@ xiiTestAppRun xiiRendererTestBasics::SubtestBlendStates()
 
   if (m_iFrame == 1)
   {
-    StateDesc.m_RenderTargetBlendDescriptions[0].m_SourceBlend = xiiGALBlend::SrcAlpha;
-    StateDesc.m_RenderTargetBlendDescriptions[0].m_DestBlend   = xiiGALBlend::InvSrcAlpha;
+    StateDesc.m_RenderTargetBlendDescriptions[0].m_SourceBlend = xiiGALBlendFactor::SrcAlpha;
+    StateDesc.m_RenderTargetBlendDescriptions[0].m_DestBlend   = xiiGALBlendFactor::InvSrcAlpha;
   }
 
   xiiColor clear(0, 0, 0, 0);
