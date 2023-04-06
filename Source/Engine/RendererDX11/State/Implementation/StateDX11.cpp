@@ -76,7 +76,7 @@ static D3D11_BLEND ToD3DBlend(xiiGALBlendFactor::Enum e)
     case xiiGALBlendFactor::Zero:
       return D3D11_BLEND_ZERO;
 
-    XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   return D3D11_BLEND_ONE;

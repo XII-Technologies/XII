@@ -102,12 +102,12 @@ struct xiiGALShaderCreationDescription : public xiiHashableStruct<xiiGALShaderCr
 
 struct xiiGALRenderTargetBlendDescription : public xiiHashableStruct<xiiGALRenderTargetBlendDescription>
 {
-  xiiGALBlendFactor::Enum   m_SourceBlend = xiiGALBlendFactor::One;
-  xiiGALBlendFactor::Enum   m_DestBlend   = xiiGALBlendFactor::One;
+  xiiGALBlendFactor::Enum    m_SourceBlend = xiiGALBlendFactor::One;
+  xiiGALBlendFactor::Enum    m_DestBlend   = xiiGALBlendFactor::One;
   xiiGALBlendOperation::Enum m_BlendOp     = xiiGALBlendOperation::Add;
 
-  xiiGALBlendFactor::Enum   m_SourceBlendAlpha = xiiGALBlendFactor::One;
-  xiiGALBlendFactor::Enum   m_DestBlendAlpha   = xiiGALBlendFactor::One;
+  xiiGALBlendFactor::Enum    m_SourceBlendAlpha = xiiGALBlendFactor::One;
+  xiiGALBlendFactor::Enum    m_DestBlendAlpha   = xiiGALBlendFactor::One;
   xiiGALBlendOperation::Enum m_BlendOpAlpha     = xiiGALBlendOperation::Add;
 
   xiiGALColorWriteMask::Enum m_ColorWriteMask = xiiGALColorWriteMask::Default;

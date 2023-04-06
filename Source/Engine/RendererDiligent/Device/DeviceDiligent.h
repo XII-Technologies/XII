@@ -124,9 +124,9 @@ protected:
 
   void WaitForFencePlatform(Diligent::IDeviceContext* pContext, Diligent::IQuery* pFence);
 
-  Diligent::RENDER_DEVICE_TYPE                  m_DeviceType = Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
+  Diligent::RENDER_DEVICE_TYPE                  m_DeviceType     = Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
   Diligent::IEngineFactory*                     m_pEngineFactory = nullptr;
-  Diligent::IRenderDevice*                      m_pDevice = nullptr;
+  Diligent::IRenderDevice*                      m_pDevice        = nullptr;
   xiiDynamicArray<Diligent::IDeviceContext*>    m_pDeviceContexts;
   xiiUInt32                                     m_uiNumImmediateContexts = 0;
   Diligent::GraphicsAdapterInfo                 m_AdapterAttribs;
