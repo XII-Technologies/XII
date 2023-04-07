@@ -184,12 +184,12 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_3";
 
-      case xiiGALShaderStage::RayGen:
-      case xiiGALShaderStage::RayMiss:
-      case xiiGALShaderStage::RayAnyHit:
-      case xiiGALShaderStage::RayClosestHit:
-      case xiiGALShaderStage::RayIntersection:
-      case xiiGALShaderStage::Callable:
+      case xiiGALShaderStage::RayGenShader:
+      case xiiGALShaderStage::RayMissShader:
+      case xiiGALShaderStage::RayAnyHitShader:
+      case xiiGALShaderStage::RayClosestHitShader:
+      case xiiGALShaderStage::RayIntersectionShader:
+      case xiiGALShaderStage::CallableShader:
         return "lib_6_3";
     }
   }
@@ -211,12 +211,12 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_4";
 
-      case xiiGALShaderStage::RayGen:
-      case xiiGALShaderStage::RayMiss:
-      case xiiGALShaderStage::RayAnyHit:
-      case xiiGALShaderStage::RayClosestHit:
-      case xiiGALShaderStage::RayIntersection:
-      case xiiGALShaderStage::Callable:
+      case xiiGALShaderStage::RayGenShader:
+      case xiiGALShaderStage::RayMissShader:
+      case xiiGALShaderStage::RayAnyHitShader:
+      case xiiGALShaderStage::RayClosestHitShader:
+      case xiiGALShaderStage::RayIntersectionShader:
+      case xiiGALShaderStage::CallableShader:
         return "lib_6_4";
     }
   }
@@ -238,18 +238,18 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_5";
 
-      case xiiGALShaderStage::RayGen:
-      case xiiGALShaderStage::RayMiss:
-      case xiiGALShaderStage::RayAnyHit:
-      case xiiGALShaderStage::RayClosestHit:
-      case xiiGALShaderStage::RayIntersection:
-      case xiiGALShaderStage::Callable:
+      case xiiGALShaderStage::RayGenShader:
+      case xiiGALShaderStage::RayMissShader:
+      case xiiGALShaderStage::RayAnyHitShader:
+      case xiiGALShaderStage::RayClosestHitShader:
+      case xiiGALShaderStage::RayIntersectionShader:
+      case xiiGALShaderStage::CallableShader:
         return "lib_6_5";
 
-      case xiiGALShaderStage::Amplification:
+      case xiiGALShaderStage::AmplificationShader:
         return "as_6_5";
 
-      case xiiGALShaderStage::Mesh:
+      case xiiGALShaderStage::MeshShader:
         return "ms_6_5";
     }
   }
@@ -271,18 +271,18 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_6";
 
-      case xiiGALShaderStage::RayGen:
-      case xiiGALShaderStage::RayMiss:
-      case xiiGALShaderStage::RayAnyHit:
-      case xiiGALShaderStage::RayClosestHit:
-      case xiiGALShaderStage::RayIntersection:
-      case xiiGALShaderStage::Callable:
+      case xiiGALShaderStage::RayGenShader:
+      case xiiGALShaderStage::RayMissShader:
+      case xiiGALShaderStage::RayAnyHitShader:
+      case xiiGALShaderStage::RayClosestHitShader:
+      case xiiGALShaderStage::RayIntersectionShader:
+      case xiiGALShaderStage::CallableShader:
         return "lib_6_6";
 
-      case xiiGALShaderStage::Amplification:
+      case xiiGALShaderStage::AmplificationShader:
         return "as_6_6";
 
-      case xiiGALShaderStage::Mesh:
+      case xiiGALShaderStage::MeshShader:
         return "ms_6_6";
     }
   }

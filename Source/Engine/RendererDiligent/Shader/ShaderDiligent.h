@@ -22,6 +22,10 @@ public:
 
   XII_ALWAYS_INLINE Diligent::IShader* GetComputeShader();
 
+  XII_ALWAYS_INLINE Diligent::IShader* GetAmplificationShader();
+
+  XII_ALWAYS_INLINE Diligent::IShader* GetMeshShader();
+
   XII_ALWAYS_INLINE xiiDynamicArray<xiiShaderDescriptorSetLayout>& GetDescriptorSets(xiiGALShaderStage::Enum stage);
 
   XII_ALWAYS_INLINE xiiHybridArray<xiiShaderVertexInputAttribute, 8>& GetVertexInputAttributes();

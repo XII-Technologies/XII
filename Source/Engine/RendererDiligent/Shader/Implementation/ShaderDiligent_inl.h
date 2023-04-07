@@ -29,6 +29,16 @@ XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetComputeShader()
   return m_pShaderStages[xiiGALShaderStage::ComputeShader];
 }
 
+XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetAmplificationShader()
+{
+  return m_pShaderStages[xiiGALShaderStage::AmplificationShader];
+}
+
+XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetMeshShader()
+{
+  return m_pShaderStages[xiiGALShaderStage::MeshShader];
+}
+
 XII_ALWAYS_INLINE xiiDynamicArray<xiiShaderDescriptorSetLayout>& xiiGALShaderDiligent::GetDescriptorSets(xiiGALShaderStage::Enum stage)
 {
   return m_DescriptorSets[stage];

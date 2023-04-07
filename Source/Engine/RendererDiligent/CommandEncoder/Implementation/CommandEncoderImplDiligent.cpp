@@ -29,44 +29,197 @@
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #endif
 
+XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt32) == sizeof(xiiGALRenderTargetViewHandle));
+namespace
+{
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& Stream, const xiiGALRenderTargetViewHandle& Value)
+  {
+    Stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return Stream;
+  }
+} // namespace
+
+xiiUInt32 xiiGALCommandEncoderImplDiligent::ResourceCacheHash::Hash(const xiiGALRenderingSetup& renderingSetup)
+{
+  xiiHashStreamWriter32 writer;
+
+  writer << renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget();
+
+  const xiiUInt8 uiCount = renderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+  for (xiiUInt8 i = 0; i < uiCount; ++i)
+  {
+    writer << renderingSetup.m_RenderTargetSetup.GetRenderTarget(i);
+  }
+
+  writer << renderingSetup.m_ClearColor;
+  writer << renderingSetup.m_uiRenderTargetClearMask;
+  writer << renderingSetup.m_fDepthClear;
+  writer << renderingSetup.m_uiStencilClear;
+  writer << renderingSetup.m_bClearDepth;
+  writer << renderingSetup.m_bClearStencil;
+  writer << renderingSetup.m_bDiscardColor;
+  writer << renderingSetup.m_bDiscardDepth;
+
+  return writer.GetHashValue();
+}
+
+bool xiiGALCommandEncoderImplDiligent::ResourceCacheHash::Equal(const xiiGALRenderingSetup& a, const xiiGALRenderingSetup& b)
+{
+  return a == b;
+}
+
+xiiUInt32 xiiGALCommandEncoderImplDiligent::ResourceCacheHash::Hash(const Diligent::GraphicsPipelineStateCreateInfo& desc)
+{
+  xiiHashStreamWriter32 writer;
+
+  writer << desc.PSODesc.PipelineType;
+  writer << desc.PSODesc.SRBAllocationGranularity;
+  writer << desc.PSODesc.ImmediateContextMask;
+  writer << desc.PSODesc.ResourceLayout.DefaultVariableType;
+  writer << desc.PSODesc.ResourceLayout.DefaultVariableMergeStages;
+
+  for (xiiUInt32 i = 0; i < desc.PSODesc.ResourceLayout.NumVariables; ++i)
+  {
+    writer << (desc.PSODesc.ResourceLayout.Variables + i);
+  }
+
+  for (xiiUInt32 i = 0; i < desc.PSODesc.ResourceLayout.NumImmutableSamplers; ++i)
+  {
+    writer << (desc.PSODesc.ResourceLayout.ImmutableSamplers + i);
+  }
+
+  writer << desc.Flags;
+
+  for (xiiUInt32 i = 0; i < desc.ResourceSignaturesCount; ++i)
+  {
+    writer << *desc.ppResourceSignatures;
+  }
+
+  writer << desc.pPSOCache;
+
+  writer << desc.GraphicsPipeline.BlendDesc.AlphaToCoverageEnable;
+  writer << desc.GraphicsPipeline.BlendDesc.IndependentBlendEnable;
+
+  for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
+  {
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].BlendEnable;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].LogicOperationEnable;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].SrcBlend;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].DestBlend;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].BlendOp;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].SrcBlendAlpha;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].DestBlendAlpha;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].BlendOpAlpha;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].LogicOp;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].RenderTargetWriteMask;
+  }
+
+  writer << desc.GraphicsPipeline.SampleMask;
+  writer << desc.GraphicsPipeline.RasterizerDesc.FillMode;
+  writer << desc.GraphicsPipeline.RasterizerDesc.CullMode;
+  writer << desc.GraphicsPipeline.RasterizerDesc.FrontCounterClockwise;
+  writer << desc.GraphicsPipeline.RasterizerDesc.DepthClipEnable;
+  writer << desc.GraphicsPipeline.RasterizerDesc.ScissorEnable;
+  writer << desc.GraphicsPipeline.RasterizerDesc.AntialiasedLineEnable;
+  writer << desc.GraphicsPipeline.RasterizerDesc.DepthBias;
+  writer << desc.GraphicsPipeline.RasterizerDesc.DepthBiasClamp;
+  writer << desc.GraphicsPipeline.RasterizerDesc.SlopeScaledDepthBias;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.DepthEnable;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.DepthWriteEnable;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.DepthFunc;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.StencilEnable;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.StencilReadMask;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.StencilWriteMask;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilFailOp;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilDepthFailOp;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilPassOp;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilFunc;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.BackFace.StencilFailOp;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.BackFace.StencilDepthFailOp;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.BackFace.StencilPassOp;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.BackFace.StencilFunc;
+
+  for (xiiUInt32 i = 0; i < desc.GraphicsPipeline.InputLayout.NumElements; ++i)
+  {
+    writer << (desc.GraphicsPipeline.InputLayout.LayoutElements + i);
+  }
+
+  writer << desc.GraphicsPipeline.PrimitiveTopology;
+  writer << desc.GraphicsPipeline.NumViewports;
+  writer << desc.GraphicsPipeline.NumRenderTargets;
+  writer << desc.GraphicsPipeline.SubpassIndex;
+
+  for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
+  {
+    writer << desc.GraphicsPipeline.RTVFormats[i];
+  }
+
+  writer << desc.GraphicsPipeline.DSVFormat;
+  writer << desc.GraphicsPipeline.SmplDesc.Count;
+  writer << desc.GraphicsPipeline.SmplDesc.Quality;
+  writer << desc.GraphicsPipeline.pRenderPass;
+  writer << desc.GraphicsPipeline.NodeMask;
+  writer << desc.pVS;
+  writer << desc.pPS;
+  writer << desc.pDS;
+  writer << desc.pHS;
+  writer << desc.pGS;
+  writer << desc.pAS;
+  writer << desc.pMS;
+
+  return writer.GetHashValue();
+}
+
+bool xiiGALCommandEncoderImplDiligent::ResourceCacheHash::Equal(const Diligent::GraphicsPipelineStateCreateInfo& a, const Diligent::GraphicsPipelineStateCreateInfo& b)
+{
+  return a == b;
+}
+
+xiiUInt32 xiiGALCommandEncoderImplDiligent::ResourceCacheHash::Hash(const Diligent::ComputePipelineStateCreateInfo& desc)
+{
+  xiiHashStreamWriter32 writer;
+
+  writer << desc.PSODesc.PipelineType;
+  writer << desc.PSODesc.SRBAllocationGranularity;
+  writer << desc.PSODesc.ImmediateContextMask;
+  writer << desc.PSODesc.ResourceLayout.DefaultVariableType;
+  writer << desc.PSODesc.ResourceLayout.DefaultVariableMergeStages;
+
+  for (xiiUInt32 i = 0; i < desc.PSODesc.ResourceLayout.NumVariables; ++i)
+  {
+    writer << (desc.PSODesc.ResourceLayout.Variables + i);
+  }
+
+  for (xiiUInt32 i = 0; i < desc.PSODesc.ResourceLayout.NumImmutableSamplers; ++i)
+  {
+    writer << (desc.PSODesc.ResourceLayout.ImmutableSamplers + i);
+  }
+
+  writer << desc.Flags;
+
+  for (xiiUInt32 i = 0; i < desc.ResourceSignaturesCount; ++i)
+  {
+    writer << *desc.ppResourceSignatures;
+  }
+
+  writer << desc.pPSOCache;
+  writer << desc.pCS;
+
+  return writer.GetHashValue();
+}
+
+bool xiiGALCommandEncoderImplDiligent::ResourceCacheHash::Equal(const Diligent::ComputePipelineStateCreateInfo& a, const Diligent::ComputePipelineStateCreateInfo& b)
+{
+  return a == b;
+}
+
 xiiGALCommandEncoderImplDiligent::xiiGALCommandEncoderImplDiligent(xiiGALDeviceDiligent& deviceDiligent) :
   m_GALDeviceDiligent(deviceDiligent), m_pContext(m_GALDeviceDiligent.GetImmediateContext())
 {
-  // Pipeline state object encompasses configuration of all GPU stages
-
-  // Graphics Pipeline
-  {
-    // Pipeline state name is used by the engine to report issues.
-    // It is always a good idea to give objects descriptive names.
-    m_PipelineStateDesc.PSODesc.Name = "Graphics Pipeline State";
-
-    // This is a graphics pipeline
-    m_PipelineStateDesc.PSODesc.PipelineType = Diligent::PIPELINE_TYPE_GRAPHICS;
-
-    // Define variable type that will be used by default
-    m_PipelineStateDesc.PSODesc.ResourceLayout.DefaultVariableType = Diligent::SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
-  }
-
-  // Compute Pipeline
-  {
-    // Pipeline state name is used by the engine to report issues.
-    // It is always a good idea to give objects descriptive names.
-    m_PipelineStateComputeDesc.PSODesc.Name = "Compute Pipeline State";
-
-    // This is a graphics pipeline
-    m_PipelineStateComputeDesc.PSODesc.PipelineType = Diligent::PIPELINE_TYPE_COMPUTE;
-
-    // Define variable type that will be used by default
-    m_PipelineStateComputeDesc.PSODesc.ResourceLayout.DefaultVariableType = Diligent::SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
-  }
 }
 
 xiiGALCommandEncoderImplDiligent::~xiiGALCommandEncoderImplDiligent()
 {
-  m_bPipelineStateModified   = true;
-  m_PipelineStateDesc        = Diligent::GraphicsPipelineStateCreateInfo();
-  m_PipelineStateComputeDesc = Diligent::ComputePipelineStateCreateInfo();
-
   for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
   {
     m_pBoundRenderTargets[i] = nullptr;
@@ -94,11 +247,21 @@ xiiGALCommandEncoderImplDiligent::~xiiGALCommandEncoderImplDiligent()
 
   xiiMemoryUtils::ZeroFill(&m_pBoundSamplerStates[0][0], xiiGALShaderStage::ENUM_COUNT * XII_GAL_MAX_SAMPLER_COUNT);
 
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pPipelineStateGraphics);
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pShaderResourceBindingGraphics);
+  for (auto iter : m_CachedGraphicsPipelineStates)
+  {
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pPipelineState);
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pShaderResourceBinding);
+  }
+  m_CachedGraphicsPipelineStates.Clear();
+  m_CachedGraphicsPipelineStates.Compact();
 
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pPipelineStateCompute);
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pShaderResourceBindingCompute);
+  for (auto iter : m_CachedComputePipelineStates)
+  {
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pPipelineState);
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pShaderResourceBinding);
+  }
+  m_CachedComputePipelineStates.Clear();
+  m_CachedComputePipelineStates.Compact();
 }
 
 // State setting functions
@@ -109,16 +272,6 @@ void xiiGALCommandEncoderImplDiligent::SetShaderPlatform(const xiiGALShader* pSh
   {
     xiiGALShader* pShaderNonConst = const_cast<xiiGALShader*>(pShader);
     m_pCurrentShader              = pShader != nullptr ? static_cast<xiiGALShaderDiligent*>(pShaderNonConst) : nullptr;
-
-    m_PipelineStateDesc.pVS = m_pCurrentShader->GetVertexShader();
-    m_PipelineStateDesc.pPS = m_pCurrentShader->GetPixelShader();
-    m_PipelineStateDesc.pDS = m_pCurrentShader->GetDomainShader();
-    m_PipelineStateDesc.pHS = m_pCurrentShader->GetHullShader();
-    m_PipelineStateDesc.pGS = m_pCurrentShader->GetGeometryShader();
-    m_PipelineStateDesc.pAS = nullptr; // Not yet supported
-    m_PipelineStateDesc.pMS = nullptr; // Not yet supported
-
-    m_bPipelineStateModified = true;
   }
 }
 
@@ -128,7 +281,6 @@ void xiiGALCommandEncoderImplDiligent::SetConstantBufferPlatform(xiiUInt32 uiSlo
   xiiGALBuffer* pGALBuffer = const_cast<xiiGALBuffer*>(pBuffer);
 
   m_pBoundConstantBuffers[uiSlot] = pBuffer != nullptr ? static_cast<xiiGALBufferDiligent*>(pGALBuffer) : nullptr;
-  m_bDescriptorsModified          = true;
 }
 
 void xiiGALCommandEncoderImplDiligent::SetSamplerStatePlatform(xiiGALShaderStage::Enum Stage, xiiUInt32 uiSlot, const xiiGALSamplerState* pSamplerState)
@@ -137,7 +289,6 @@ void xiiGALCommandEncoderImplDiligent::SetSamplerStatePlatform(xiiGALShaderStage
   xiiGALSamplerState* pGALSampler = const_cast<xiiGALSamplerState*>(pSamplerState);
 
   m_pBoundSamplerStates[Stage][uiSlot] = pSamplerState != nullptr ? static_cast<xiiGALSamplerStateDiligent*>(pGALSampler) : nullptr;
-  m_bDescriptorsModified               = true;
 }
 
 void xiiGALCommandEncoderImplDiligent::SetResourceViewPlatform(xiiGALShaderStage::Enum Stage, xiiUInt32 uiSlot, const xiiGALResourceView* pResourceView)
@@ -147,8 +298,6 @@ void xiiGALCommandEncoderImplDiligent::SetResourceViewPlatform(xiiGALShaderStage
 
   xiiGALResourceView* pResource    = const_cast<xiiGALResourceView*>(pResourceView);
   boundShaderResourceViews[uiSlot] = pResourceView != nullptr ? static_cast<xiiGALResourceViewDiligent*>(pResource) : nullptr;
-
-  m_bDescriptorsModified = true;
 }
 
 void xiiGALCommandEncoderImplDiligent::SetUnorderedAccessViewPlatform(xiiUInt32 uiSlot, const xiiGALUnorderedAccessView* pUnorderedAccessView)
@@ -157,8 +306,6 @@ void xiiGALCommandEncoderImplDiligent::SetUnorderedAccessViewPlatform(xiiUInt32 
 
   m_pBoundUnoderedAccessViews.EnsureCount(uiSlot + 1);
   m_pBoundUnoderedAccessViews[uiSlot] = pUnorderedAccessView != nullptr ? static_cast<xiiGALUnorderedAccessViewDiligent*>(pUAView) : nullptr;
-
-  m_bDescriptorsModified = true;
 }
 
 // Query functions
@@ -717,12 +864,12 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
 
     for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; i++)
     {
-      m_pBoundRenderTargets[i]                           = nullptr;
-      m_PipelineStateDesc.GraphicsPipeline.RTVFormats[i] = Diligent::TEX_FORMAT_UNKNOWN;
+      m_pBoundRenderTargets[i] = nullptr;
+      m_RTVFormats[i]          = Diligent::TEX_FORMAT_UNKNOWN;
     }
 
-    m_pBoundDepthStencilTarget                     = nullptr;
-    m_PipelineStateDesc.GraphicsPipeline.DSVFormat = Diligent::TEX_FORMAT_UNKNOWN;
+    m_pBoundDepthStencilTarget = nullptr;
+    m_DSVFormat                = Diligent::TEX_FORMAT_UNKNOWN;
 
     if (uiRenderTargetCount != 0 || pDepthStencilView != nullptr)
     {
@@ -730,36 +877,34 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
       {
         if (pRenderTargetViews[i] != nullptr)
         {
-          m_pBoundRenderTargets[i]                           = static_cast<xiiGALRenderTargetViewDiligent*>(pRenderTargetViews[i])->GetRenderTargetView();
-          m_PipelineStateDesc.GraphicsPipeline.RTVFormats[i] = m_pBoundRenderTargets[i]->GetDesc().Format;
+          m_pBoundRenderTargets[i] = static_cast<xiiGALRenderTargetViewDiligent*>(pRenderTargetViews[i])->GetRenderTargetView();
+          m_RTVFormats[i]          = m_pBoundRenderTargets[i]->GetDesc().Format;
         }
       }
 
       if (pDepthStencilView != nullptr)
       {
-        m_pBoundDepthStencilTarget                     = static_cast<xiiGALRenderTargetViewDiligent*>(pDepthStencilView)->GetDepthStencilView();
-        m_PipelineStateDesc.GraphicsPipeline.DSVFormat = m_pBoundDepthStencilTarget->GetDesc().Format;
+        m_pBoundDepthStencilTarget = static_cast<xiiGALRenderTargetViewDiligent*>(pDepthStencilView)->GetDepthStencilView();
+        m_DSVFormat                = m_pBoundDepthStencilTarget->GetDesc().Format;
       }
 
       // Bind rendertargets, bind max(new rt count, old rt count) to overwrite bound rts if new count < old count
       m_pContext->SetRenderTargets(xiiMath::Max(uiRenderTargetCount, m_uiBoundRenderTargetCount), m_pBoundRenderTargets, m_pBoundDepthStencilTarget, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-      m_uiBoundRenderTargetCount                            = uiRenderTargetCount;
-      m_PipelineStateDesc.GraphicsPipeline.NumRenderTargets = uiRenderTargetCount;
+      m_uiBoundRenderTargetCount = uiRenderTargetCount;
     }
     else
     {
-      for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; i++)
+      for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
       {
-        m_pBoundRenderTargets[i]                           = nullptr;
-        m_PipelineStateDesc.GraphicsPipeline.RTVFormats[i] = Diligent::TEX_FORMAT_UNKNOWN;
+        m_pBoundRenderTargets[i] = nullptr;
+        m_RTVFormats[i]          = Diligent::TEX_FORMAT_UNKNOWN;
       }
 
-      m_uiBoundRenderTargetCount                            = 0;
-      m_PipelineStateDesc.GraphicsPipeline.NumRenderTargets = 0;
+      m_uiBoundRenderTargetCount = 0;
 
-      m_pBoundDepthStencilTarget                     = nullptr;
-      m_PipelineStateDesc.GraphicsPipeline.DSVFormat = Diligent::TEX_FORMAT_UNKNOWN;
+      m_pBoundDepthStencilTarget = nullptr;
+      m_DSVFormat                = Diligent::TEX_FORMAT_UNKNOWN;
 
       m_pContext->SetRenderTargets(0, nullptr, nullptr, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     }
@@ -919,8 +1064,7 @@ void xiiGALCommandEncoderImplDiligent::SetIndexBufferPlatform(const xiiGALBuffer
 
   if (m_pIndexBuffer != pIndexBuffer)
   {
-    m_pIndexBuffer         = pIndexBuffer != nullptr ? static_cast<xiiGALBufferDiligent*>(pGALIndexBuffer) : nullptr;
-    m_bIndexBufferModified = true;
+    m_pIndexBuffer = pIndexBuffer != nullptr ? static_cast<xiiGALBufferDiligent*>(pGALIndexBuffer) : nullptr;
   }
 }
 
@@ -940,7 +1084,6 @@ void xiiGALCommandEncoderImplDiligent::SetVertexBufferPlatform(xiiUInt32 uiSlot,
     if (m_VertexBufferStrides[uiSlot] != stride)
     {
       m_VertexBufferStrides[uiSlot] = stride;
-      m_bPipelineStateModified      = true;
     }
   }
 }
@@ -949,8 +1092,7 @@ void xiiGALCommandEncoderImplDiligent::SetVertexDeclarationPlatform(const xiiGAL
 {
   if (m_pVertexDeclaration != pVertexDeclaration)
   {
-    m_pVertexDeclaration     = static_cast<const xiiGALVertexDeclarationDiligent*>(pVertexDeclaration);
-    m_bPipelineStateModified = true;
+    m_pVertexDeclaration = static_cast<const xiiGALVertexDeclarationDiligent*>(pVertexDeclaration);
   }
 }
 
@@ -964,8 +1106,7 @@ void xiiGALCommandEncoderImplDiligent::SetPrimitiveTopologyPlatform(xiiGALPrimit
 {
   if (m_PrimitiveTopology != GALTopologyToDiligent[Topology])
   {
-    m_PrimitiveTopology      = GALTopologyToDiligent[Topology];
-    m_bPipelineStateModified = true;
+    m_PrimitiveTopology = GALTopologyToDiligent[Topology];
   }
 }
 
@@ -977,8 +1118,7 @@ void xiiGALCommandEncoderImplDiligent::SetBlendStatePlatform(const xiiGALBlendSt
 
   if (m_pBlendStateState != pBlendState)
   {
-    m_pBlendStateState       = pBlendState != nullptr ? static_cast<const xiiGALBlendStateDiligent*>(pBlendState) : nullptr;
-    m_bPipelineStateModified = true;
+    m_pBlendStateState = pBlendState != nullptr ? static_cast<const xiiGALBlendStateDiligent*>(pBlendState) : nullptr;
   }
 }
 
@@ -988,8 +1128,7 @@ void xiiGALCommandEncoderImplDiligent::SetDepthStencilStatePlatform(const xiiGAL
 
   if (m_pDepthStencilState != pDepthStencilState)
   {
-    m_pDepthStencilState     = pDepthStencilState != nullptr ? static_cast<const xiiGALDepthStencilStateDiligent*>(pDepthStencilState) : nullptr;
-    m_bPipelineStateModified = true;
+    m_pDepthStencilState = pDepthStencilState != nullptr ? static_cast<const xiiGALDepthStencilStateDiligent*>(pDepthStencilState) : nullptr;
   }
 }
 
@@ -997,8 +1136,7 @@ void xiiGALCommandEncoderImplDiligent::SetRasterizerStatePlatform(const xiiGALRa
 {
   if (m_pRasterizerState != pRasterizerState)
   {
-    m_pRasterizerState       = pRasterizerState != nullptr ? static_cast<const xiiGALRasterizerStateDiligent*>(pRasterizerState) : nullptr;
-    m_bPipelineStateModified = true;
+    m_pRasterizerState = pRasterizerState != nullptr ? static_cast<const xiiGALRasterizerStateDiligent*>(pRasterizerState) : nullptr;
 
     if (m_pRasterizerState != nullptr)
     {
@@ -1095,88 +1233,49 @@ void xiiGALCommandEncoderImplDiligent::DispatchIndirectPlatform(const xiiGALBuff
 
 void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
 {
-  /// \todo RendererDiligent: Cache compute pipeline state and shader resource binding objects.
-
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pShaderResourceBindingCompute);
-
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pPipelineStateCompute);
-
-  // Copy attributes set in the graphics pipeline state
-  m_PipelineStateComputeDesc.PSODesc.SRBAllocationGranularity = m_PipelineStateDesc.PSODesc.SRBAllocationGranularity;
-  m_PipelineStateComputeDesc.PSODesc.ImmediateContextMask     = m_PipelineStateDesc.PSODesc.ImmediateContextMask;
-  m_PipelineStateComputeDesc.PSODesc.ResourceLayout           = m_PipelineStateDesc.PSODesc.ResourceLayout;
-
   if (!m_pCurrentShader)
   {
     xiiLog::Error("No shader set in pipeline");
     return;
   }
 
-  m_PipelineStateComputeDesc.pCS = m_pCurrentShader->GetComputeShader();
+  Diligent::ComputePipelineStateCreateInfo computePipelineStateDesc;
+  computePipelineStateDesc.PSODesc.PipelineType = Diligent::PIPELINE_TYPE_COMPUTE;
+  computePipelineStateDesc.pCS                  = m_pCurrentShader->GetComputeShader();
 
-  m_GALDeviceDiligent.GetDevice()->CreatePipelineState(m_PipelineStateComputeDesc, &m_pPipelineStateCompute);
+  auto pCachedPipelineStateComputeKey = m_CachedComputePipelineStates.Find(computePipelineStateDesc);
 
-  XII_ASSERT_DEV(m_pPipelineStateCompute != nullptr, "Failed to create compute pipeline state.");
+  // Create a new pipeline state if an existing one is not found, else use an existing one and update the data in it.
+  if (!pCachedPipelineStateComputeKey.IsValid())
+  {
+    PipelineStateInfo pipelineInfo;
+    m_GALDeviceDiligent.GetDevice()->CreatePipelineState(computePipelineStateDesc, &pipelineInfo.m_pPipelineState);
 
-  // Always fill descriptor bindings for now
-  FillDescriptorBindings(m_pPipelineStateCompute);
+    XII_ASSERT_DEV(pipelineInfo.m_pPipelineState != nullptr, "Failed to create new compute pipeline state object.");
 
-  // Create a shader resource binding object and bind all static resources in it
-  m_pPipelineStateCompute->CreateShaderResourceBinding(&m_pShaderResourceBindingCompute, true);
+    FillDescriptorBindings(pipelineInfo.m_pPipelineState);
 
-  m_pContext->CommitShaderResources(m_pShaderResourceBindingCompute, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    // Create a shader resource binding object and bind all static resources in it.
+    pipelineInfo.m_pPipelineState->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
 
-  m_pContext->SetPipelineState(m_pPipelineStateCompute);
+    m_pContext->SetPipelineState(pipelineInfo.m_pPipelineState);
+    m_pContext->CommitShaderResources(pipelineInfo.m_pShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+    m_CachedComputePipelineStates.Insert(computePipelineStateDesc, pipelineInfo);
+
+    xiiLog::Dev("Created new Compute Pipeline State object.");
+  }
+  else
+  {
+    FillDescriptorBindings(pCachedPipelineStateComputeKey.Value().m_pPipelineState);
+
+    m_pContext->SetPipelineState(pCachedPipelineStateComputeKey.Value().m_pPipelineState);
+    m_pContext->CommitShaderResources(pCachedPipelineStateComputeKey.Value().m_pShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  }
 }
 
 void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
 {
-  /// \todo RendererDiligent: Cache graphics pipeline state and shader resource binding objects.
-
-  if (m_bPipelineStateModified)
-  {
-    if (!m_pCurrentShader)
-    {
-      xiiLog::Error("No shader set in pipeline");
-      return;
-    }
-
-    m_PipelineStateDesc.GraphicsPipeline.PrimitiveTopology = m_PrimitiveTopology;
-
-    if (m_pVertexDeclaration)
-      m_PipelineStateDesc.GraphicsPipeline.InputLayout = *m_pVertexDeclaration->GetInputLayoutDesc();
-    else
-      m_PipelineStateDesc.GraphicsPipeline.InputLayout = {};
-
-    if (m_pBlendStateState)
-      m_PipelineStateDesc.GraphicsPipeline.BlendDesc = *m_pBlendStateState->GetBlendStateDesc();
-    else
-      m_PipelineStateDesc.GraphicsPipeline.BlendDesc = {};
-
-    if (m_pDepthStencilState)
-      m_PipelineStateDesc.GraphicsPipeline.DepthStencilDesc = *m_pDepthStencilState->GetDepthStencilStateDesc();
-    else
-      m_PipelineStateDesc.GraphicsPipeline.DepthStencilDesc = {};
-
-    if (m_pRasterizerState)
-      m_PipelineStateDesc.GraphicsPipeline.RasterizerDesc = *m_pRasterizerState->GetRasterizerStateDesc();
-    else
-      m_PipelineStateDesc.GraphicsPipeline.RasterizerDesc = {};
-
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pShaderResourceBindingGraphics);
-
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pPipelineStateGraphics);
-
-    m_GALDeviceDiligent.GetDevice()->CreatePipelineState(m_PipelineStateDesc, &m_pPipelineStateGraphics);
-
-    XII_ASSERT_DEV(m_pPipelineStateGraphics != nullptr, "Failed to create graphics pipeline state.");
-
-    // Do not set m_bPipelineStateModified to false here, some updates are deferred to the end of the function.
-
-    // Changes to the descriptor layout always require the descriptor set to be re-created.
-    m_bDescriptorsModified = true;
-  }
-
   if (m_bViewportModified)
   {
     m_pContext->SetViewports(1, &m_Viewport, static_cast<xiiUInt32>(m_Viewport.Width), static_cast<xiiUInt32>(m_Viewport.Height));
@@ -1228,32 +1327,89 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
     m_BoundVertexBuffersRange.Reset();
   }
 
-  if (m_bIndexBufferModified)
+  Diligent::IBuffer* pIndexBuffer = (m_pIndexBuffer != nullptr) ? m_pIndexBuffer->GetBuffer() : nullptr;
+  m_pContext->SetIndexBuffer(pIndexBuffer, 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+  if (!m_pCurrentShader)
   {
-    if (m_pIndexBuffer)
-    {
-      m_pContext->SetIndexBuffer(m_pIndexBuffer->GetBuffer(), 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-    }
-    m_bIndexBufferModified = false;
+    xiiLog::Error("No shader set in pipeline");
+    m_pContext->SetPipelineState(nullptr);
+    return;
   }
 
-  if (m_bDescriptorsModified)
-  {
-    FillDescriptorBindings(m_pPipelineStateGraphics);
+  Diligent::GraphicsPipelineStateCreateInfo graphicsPipelineStateDesc;
 
-    m_bDescriptorsModified = false;
+  graphicsPipelineStateDesc.pVS = m_pCurrentShader->GetVertexShader();
+  graphicsPipelineStateDesc.pPS = m_pCurrentShader->GetPixelShader();
+  graphicsPipelineStateDesc.pDS = m_pCurrentShader->GetDomainShader();
+  graphicsPipelineStateDesc.pHS = m_pCurrentShader->GetHullShader();
+  graphicsPipelineStateDesc.pGS = m_pCurrentShader->GetGeometryShader();
+  graphicsPipelineStateDesc.pAS = m_pCurrentShader->GetAmplificationShader();
+  graphicsPipelineStateDesc.pMS = m_pCurrentShader->GetMeshShader();
+
+  graphicsPipelineStateDesc.GraphicsPipeline.PrimitiveTopology = m_PrimitiveTopology;
+
+  if (m_pVertexDeclaration)
+    graphicsPipelineStateDesc.GraphicsPipeline.InputLayout = *m_pVertexDeclaration->GetInputLayoutDesc();
+  else
+    graphicsPipelineStateDesc.GraphicsPipeline.InputLayout = {};
+
+  if (m_pBlendStateState)
+    graphicsPipelineStateDesc.GraphicsPipeline.BlendDesc = *m_pBlendStateState->GetBlendStateDesc();
+  else
+    graphicsPipelineStateDesc.GraphicsPipeline.BlendDesc = {};
+
+  if (m_pDepthStencilState)
+    graphicsPipelineStateDesc.GraphicsPipeline.DepthStencilDesc = *m_pDepthStencilState->GetDepthStencilStateDesc();
+  else
+    graphicsPipelineStateDesc.GraphicsPipeline.DepthStencilDesc = {};
+
+  if (m_pRasterizerState)
+    graphicsPipelineStateDesc.GraphicsPipeline.RasterizerDesc = *m_pRasterizerState->GetRasterizerStateDesc();
+  else
+    graphicsPipelineStateDesc.GraphicsPipeline.RasterizerDesc = {};
+
+  graphicsPipelineStateDesc.GraphicsPipeline.NumViewports = 1;
+
+  graphicsPipelineStateDesc.GraphicsPipeline.NumRenderTargets = m_uiBoundRenderTargetCount;
+  for (xiiUInt8 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
+  {
+    graphicsPipelineStateDesc.GraphicsPipeline.RTVFormats[i] = m_RTVFormats[i];
   }
 
-  if (m_bPipelineStateModified)
+  graphicsPipelineStateDesc.GraphicsPipeline.DSVFormat = m_DSVFormat;
+
+  auto pCachedPipelineStateGraphicsKey = m_CachedGraphicsPipelineStates.Find(graphicsPipelineStateDesc);
+
+  // Create a new pipeline state if an existing one is not found, else use an existing one and update the data in it.
+  if (!pCachedPipelineStateGraphicsKey.IsValid())
   {
-    // Create a shader resource binding object and bind all static resources in it
-    m_pPipelineStateGraphics->CreateShaderResourceBinding(&m_pShaderResourceBindingGraphics, true);
+    PipelineStateInfo pipelineInfo;
+    m_GALDeviceDiligent.GetDevice()->CreatePipelineState(graphicsPipelineStateDesc, &pipelineInfo.m_pPipelineState);
 
-    m_pContext->CommitShaderResources(m_pShaderResourceBindingGraphics, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    XII_ASSERT_DEV(pipelineInfo.m_pPipelineState != nullptr, "Failed to create new graphics pipeline state object.");
 
-    m_pContext->SetPipelineState(m_pPipelineStateGraphics);
+    FillDescriptorBindings(pipelineInfo.m_pPipelineState);
 
-    m_bPipelineStateModified = false;
+    // Create a shader resource binding object and bind all static resources in it.
+    pipelineInfo.m_pPipelineState->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
+
+    m_pContext->SetPipelineState(pipelineInfo.m_pPipelineState);
+    m_pContext->CommitShaderResources(pipelineInfo.m_pShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+    m_CachedGraphicsPipelineStates.Insert(graphicsPipelineStateDesc, pipelineInfo);
+
+    xiiLog::Dev("Created new Graphics Pipeline State object.");
+  }
+  else
+  {
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding);
+    
+    FillDescriptorBindings(pCachedPipelineStateGraphicsKey.Value().m_pPipelineState);
+    pCachedPipelineStateGraphicsKey.Value().m_pPipelineState->CreateShaderResourceBinding(&pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding, true);
+
+    m_pContext->SetPipelineState(pCachedPipelineStateGraphicsKey.Value().m_pPipelineState);
+    m_pContext->CommitShaderResources(pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
   }
 }
 
