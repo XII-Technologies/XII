@@ -58,7 +58,6 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UnloadData(Unload WhatToUnload
     m_hRasterizerState.Invalidate();
   }
 
-
   xiiResourceLoadDesc res;
   res.m_State                      = xiiResourceState::Unloaded;
   res.m_uiQualityLevelsDiscardable = 0;
@@ -323,8 +322,6 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
     File.Close();
   }
 
-
-
   ShaderPermutationResourceLoadData* pData = XII_DEFAULT_NEW(ShaderPermutationResourceLoadData);
 
   xiiMemoryStreamWriter w(&pData->m_Storage);
@@ -358,7 +355,5 @@ void xiiShaderPermutationResourceLoader::CloseDataStream(const xiiResource* pRes
 
   XII_DEFAULT_DELETE(pData);
 }
-
-
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_Shader_Implementation_ShaderPermutationResource);

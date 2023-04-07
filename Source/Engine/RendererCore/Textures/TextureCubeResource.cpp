@@ -221,6 +221,4 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTextureCubeResource, xiiTextureCubeResource
   return ret;
 }
 
-
-
 XII_STATICLINK_FILE(RendererCore, RendererCore_Textures_TextureCubeResource);

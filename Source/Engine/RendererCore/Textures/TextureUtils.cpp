@@ -360,6 +360,4 @@ void xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::Enum filter, xii
   }
 }
 
-
-
 XII_STATICLINK_FILE(RendererCore, RendererCore_Textures_TextureUtils);

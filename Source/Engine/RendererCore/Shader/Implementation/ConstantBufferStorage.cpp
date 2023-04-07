@@ -47,6 +47,4 @@ void xiiConstantBufferStorageBase::UploadData(xiiGALCommandEncoder* pCommandEnco
   }
 }
 
-
-
 XII_STATICLINK_FILE(RendererCore, RendererCore_Shader_Implementation_ConstantBufferStorage);

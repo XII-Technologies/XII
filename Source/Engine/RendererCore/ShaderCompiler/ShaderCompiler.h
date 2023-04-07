@@ -15,7 +15,8 @@
 // \brief Flags that affect the compilation process of a shader
 struct xiiShaderCompilerFlags
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
+
   enum Enum
   {
     Debug   = XII_BIT(0),
