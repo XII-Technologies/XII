@@ -296,7 +296,6 @@ xiiShaderPermutationResourceHandle xiiShaderManager::PreloadSinglePermutation(xi
   return PreloadSinglePermutationInternal(pShader->GetResourceID(), pShader->GetResourceIDHash(), uiPermutationHash, filteredPermutationVariables);
 }
 
-
 xiiUInt32 xiiShaderManager::FilterPermutationVars(xiiArrayPtr<const xiiHashedString> usedVars, const xiiHashTable<xiiHashedString, xiiHashedString>& permVars, xiiDynamicArray<xiiPermutationVar>& out_FilteredPermutationVariables)
 {
   for (auto& sName : usedVars)
@@ -325,8 +324,6 @@ xiiUInt32 xiiShaderManager::FilterPermutationVars(xiiArrayPtr<const xiiHashedStr
 
   return xiiShaderHelper::CalculateHash(out_FilteredPermutationVariables);
 }
-
-
 
 xiiShaderPermutationResourceHandle xiiShaderManager::PreloadSinglePermutationInternal(const char* szResourceId, xiiUInt64 uiResourceIdHash, xiiUInt32 uiPermutationHash, xiiArrayPtr<xiiPermutationVar> filteredPermutationVariables)
 {
