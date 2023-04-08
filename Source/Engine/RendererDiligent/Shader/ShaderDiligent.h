@@ -42,11 +42,11 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::IShader* m_pShaderStages[xiiGALShaderStage::ENUM_COUNT] = {nullptr};
-
-  xiiDynamicArray<xiiShaderDescriptorSetLayout> m_DescriptorSets[xiiGALShaderStage::ENUM_COUNT];
+  Diligent::IPipelineResourceSignature* m_pPipelineResourceSignature                   = nullptr;
+  Diligent::IShader*                    m_pShaderStages[xiiGALShaderStage::ENUM_COUNT] = {};
 
   xiiHybridArray<xiiShaderVertexInputAttribute, 8> m_VertexInputAttributes;
+  xiiDynamicArray<xiiShaderDescriptorSetLayout>    m_DescriptorSets[xiiGALShaderStage::ENUM_COUNT];
 };
 
 #include <RendererDiligent/Shader/Implementation/ShaderDiligent_inl.h>

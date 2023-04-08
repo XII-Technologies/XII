@@ -1274,6 +1274,8 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
   }
 }
 
+/// \todo RendererDiligent: Use Pipeline Resource Signature From Shader in Pipeline State.
+
 void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
 {
   if (m_bViewportModified)
@@ -1403,10 +1405,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
   }
   else
   {
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding);
-    
     FillDescriptorBindings(pCachedPipelineStateGraphicsKey.Value().m_pPipelineState);
-    pCachedPipelineStateGraphicsKey.Value().m_pPipelineState->CreateShaderResourceBinding(&pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding, true);
 
     m_pContext->SetPipelineState(pCachedPipelineStateGraphicsKey.Value().m_pPipelineState);
     m_pContext->CommitShaderResources(pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
@@ -1452,7 +1451,7 @@ void xiiGALCommandEncoderImplDiligent::FillDescriptorBindings(Diligent::IPipelin
               xiiLog::Error("Resource view pointer for {} returned null.", sData);
               continue;
             }
-            pResourceView->Set(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetResourceView(), Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+            pResourceView->Set(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetResourceView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
           }
           break;
           case xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessView:
