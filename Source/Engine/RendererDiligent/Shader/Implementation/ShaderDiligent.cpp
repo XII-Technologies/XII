@@ -123,6 +123,8 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
     }
   }
 
+  m_StringStorage.SetCount(resources.GetCount());
+
   pipelineResourceSignatureDesc.Resources                  = resources.GetData();
   pipelineResourceSignatureDesc.NumResources               = resources.GetCount();
   pipelineResourceSignatureDesc.ImmutableSamplers          = nullptr;
