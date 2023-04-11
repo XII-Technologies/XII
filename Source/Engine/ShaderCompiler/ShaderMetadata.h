@@ -14,20 +14,26 @@ struct XII_SHADERCOMPILER_DLL xiiShaderDescriptorSetLayoutBinding
 
   enum ResourceType : xiiUInt8
   {
-    ConstantBuffer,
-    ResourceView,
-    UnorderedAccessView,
-    Sampler,
+    Unknown = 0,                ///< Unknown resource type.
+    ConstantBuffer,             ///< Constant (uniform) buffer.
+    ResourceViewTexture,        ///< Shader resource view of a texture.
+    ResourceViewBuffer,         ///< Shader resource view of a buffer.
+    UnorderedAccessViewTexture, ///< Unordered access view of a texture.
+    UnorderedAccessViewBuffer,  ///< Unordered access view of a buffer.
+    Sampler,                    ///< Sampler (separate sampler).
+    InputAttachment,            ///< Input attachment in a render pass.
+    AccelerationStructure       ///< Acceleration structure.
   };
 
   xiiStringView               m_sName;                                              ///< Used to match the same descriptor use across multiple stages.
   xiiUInt8                    m_uiBinding         = 0;                              ///< Target descriptor binding slot.
   xiiUInt8                    m_uiVirtualBinding  = 0;                              ///< Virtual binding slot in the high level renderer interface.
   xiiShaderResourceType::Enum m_xiiType           = xiiShaderResourceType::Unknown; ///< XII shader resource type, needed to find compatible fallback resources.
-  ResourceType                m_Type              = ResourceType::ConstantBuffer;   ///< Resource type, used to map to the correct XII resource type.
+  ResourceType                m_Type              = ResourceType::Unknown;          ///< Resource type, used to map to the correct XII resource type.
   xiiUInt16                   m_uiDescriptorType  = 0;                              ///< Maps to vk::DescriptorType
   xiiUInt32                   m_uiDescriptorCount = 1;                              ///< For now, this must be 1 as XII does not support descriptor arrays currently.
   xiiUInt32                   m_uiWordOffset      = 0;                              ///< Offset of the location in the spirv or hlsl code where the binding index is located to allow changing it at runtime.
+  xiiUInt32                   m_uiArraySize       = 1;                              ///< Resource array size. This must be 1 for non-array resources.
 };
 
 /// \brief Shader Descriptor Set Layout.
@@ -40,7 +46,7 @@ struct XII_SHADERCOMPILER_DLL xiiShaderDescriptorSetLayout
 /// \brief Shader Vertex Input Attributes.
 struct XII_SHADERCOMPILER_DLL xiiShaderVertexInputAttribute
 {
-  xiiGALVertexAttributeSemantic::Enum m_eSemantic       = xiiGALVertexAttributeSemantic::Position;
+  xiiGALVertexAttributeSemantic::Enum m_eSemantic       = xiiGALVertexAttributeSemantic::ENUM_COUNT;
   xiiUInt8                            m_uiSemanticIndex = 0;
   xiiGALResourceFormat::Enum          m_eFormat         = xiiGALResourceFormat::XYZFloat;
 };

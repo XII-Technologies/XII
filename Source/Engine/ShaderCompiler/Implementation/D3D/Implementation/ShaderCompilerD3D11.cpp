@@ -8,6 +8,8 @@
 
 #  include <d3dcompiler.h>
 
+XII_DEFINE_AS_POD_TYPE(D3D11_SHADER_INPUT_BIND_DESC);
+
 xiiGALResourceFormat::Enum GetXIIFormatD3D11(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents);
 
 xiiResult xiiShaderCompilerD3D11::CompileShader(const char* szFile, const char* szSource, bool bDebug, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
@@ -131,9 +133,11 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramCompiler::x
     xiiUInt32                    uiVirtualResourceView = 0;
     xiiUInt32                    uiVirtualSampler      = 0;
 
+    xiiDynamicArray<D3D11_SHADER_INPUT_BIND_DESC> boundResources;
+
     for (xiiUInt32 i = 0; i < uiNumBoundResources; ++i)
     {
-      D3D11_SHADER_INPUT_BIND_DESC inputDesc;
+      D3D11_SHADER_INPUT_BIND_DESC& inputDesc = boundResources.ExpandAndGetRef();
       if (FAILED(pReflector->GetResourceBindingDesc(i, &inputDesc)))
       {
         xiiLog::Error("Failed to retrieve shader input descriptor");
@@ -154,10 +158,8 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramCompiler::x
 
       // clang-format off
       if (inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED
-        || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TBUFFER
         || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TEXTURE
-        || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_BYTEADDRESS
-        || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_RTACCELERATIONSTRUCTURE)
+        || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_BYTEADDRESS)
       // clang-format on
       {
         shaderResourceBinding.m_iSlot = uiVirtualResourceView;
@@ -193,37 +195,48 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramCompiler::x
 
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        auto& info = xiiBindings[i];
+        auto& info         = xiiBindings[i];
+        auto& resourceInfo = boundResources[i];
 
         xiiShaderDescriptorSetLayoutBinding& binding = set.Bindings.ExpandAndGetRef();
         binding.m_sName                              = info.m_sName;
         binding.m_uiVirtualBinding                   = xiiBindings[descriptorToXIIBinding[i]].m_iSlot;
         binding.m_xiiType                            = xiiBindings[descriptorToXIIBinding[i]].m_Type;
+        binding.m_uiArraySize                        = resourceInfo.BindCount;
 
-        switch (info.m_Type)
+        switch (resourceInfo.Type)
         {
-          case xiiShaderResourceType::ConstantBuffer:
+          case D3D_SIT_CBUFFER:
             binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ConstantBuffer;
             break;
 
-          case xiiShaderResourceType::Sampler:
+          case D3D_SIT_TEXTURE:
+            binding.m_Type = (resourceInfo.Dimension == D3D_SRV_DIMENSION_BUFFER) ? xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer : xiiShaderDescriptorSetLayoutBinding::ResourceViewTexture;
+            break;
+
+          case D3D_SIT_SAMPLER:
             binding.m_Type = xiiShaderDescriptorSetLayoutBinding::Sampler;
             break;
 
-          case xiiShaderResourceType::GenericBuffer:
-          case xiiShaderResourceType::Texture1D:
-          case xiiShaderResourceType::Texture2D:
-          case xiiShaderResourceType::Texture2DArray:
-          case xiiShaderResourceType::Texture2DMS:
-          case xiiShaderResourceType::Texture2DMSArray:
-          case xiiShaderResourceType::Texture3D:
-          case xiiShaderResourceType::TextureCube:
-          case xiiShaderResourceType::TextureCubeArray:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceView;
+          case D3D_SIT_UAV_RWTYPED:
+            binding.m_Type = (resourceInfo.Dimension == D3D_SRV_DIMENSION_BUFFER) ? xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer : xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewTexture;
             break;
 
-          case xiiShaderResourceType::UAV:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::UnorderedAccessView;
+          case D3D_SIT_STRUCTURED:
+          case D3D_SIT_BYTEADDRESS:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer;
+            break;
+
+          case D3D_SIT_UAV_RWSTRUCTURED:
+          case D3D_SIT_UAV_RWBYTEADDRESS:
+          case D3D_SIT_UAV_APPEND_STRUCTURED:
+          case D3D_SIT_UAV_CONSUME_STRUCTURED:
+          case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer;
+            break;
+
+          case D3D_SIT_RTACCELERATIONSTRUCTURE:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::AccelerationStructure;
             break;
 
             XII_DEFAULT_CASE_NOT_IMPLEMENTED;
@@ -396,10 +409,8 @@ xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiShaderStageBinary& shad
 {
   // clang-format off
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED
-    || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TBUFFER
     || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TEXTURE
-    || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_BYTEADDRESS
-    || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_RTACCELERATIONSTRUCTURE)
+    || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_BYTEADDRESS)
   // clang-format on
   {
     return FillSRVResourceBinding(shaderBinary, binding, info);
@@ -433,6 +444,13 @@ xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiShaderStageBinary& shad
     return XII_SUCCESS;
   }
 
+  if (info.Type == D3D_SIT_RTACCELERATIONSTRUCTURE)
+  {
+    binding.m_Type = xiiShaderResourceType::AccelerationStructure;
+
+    return XII_SUCCESS;
+  }
+
   xiiLog::Error("Resource '{}': Unsupported resource type.", info.Name);
 
   return XII_FAILURE;
@@ -440,7 +458,7 @@ xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiShaderStageBinary& shad
 
 xiiResult xiiShaderCompilerD3D11::FillSRVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const D3D11_SHADER_INPUT_BIND_DESC& info)
 {
-  if (info.Dimension == D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_BUFFEREX || info.Dimension == D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_BUFFER)
+  if (info.Type == D3D_SIT_STRUCTURED || info.Type == D3D_SIT_BYTEADDRESS)
   {
     binding.m_Type = xiiShaderResourceType::GenericBuffer;
     return XII_SUCCESS;
@@ -481,6 +499,12 @@ xiiResult xiiShaderCompilerD3D11::FillSRVResourceBinding(xiiShaderStageBinary& s
       default:
         XII_ASSERT_NOT_IMPLEMENTED;
         return XII_FAILURE;
+    }
+
+    if (info.Type == D3D_SIT_RTACCELERATIONSTRUCTURE)
+    {
+      binding.m_Type = xiiShaderResourceType::AccelerationStructure;
+      return XII_SUCCESS;
     }
 
     return XII_SUCCESS;

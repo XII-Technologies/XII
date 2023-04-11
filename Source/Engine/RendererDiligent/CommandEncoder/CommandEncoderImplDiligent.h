@@ -135,7 +135,8 @@ public:
 protected:
   void FlushDeferredStateChangesCompute();
   void FlushDeferredStateChangesGraphics();
-  void FillDescriptorBindings(Diligent::IPipelineState* pPipelineState);
+  void FillPipelineDescriptorBindings(Diligent::IPipelineState* pPipelineState);
+  void FillShaderDescriptorBindings(Diligent::IShaderResourceBinding* pResourceBinding);
 
 private:
   friend class xiiGALPassDiligent;

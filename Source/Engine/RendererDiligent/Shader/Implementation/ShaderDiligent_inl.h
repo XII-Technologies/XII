@@ -39,6 +39,11 @@ XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetMeshShader()
   return m_pShaderStages[xiiGALShaderStage::MeshShader];
 }
 
+XII_ALWAYS_INLINE Diligent::IPipelineResourceSignature* xiiGALShaderDiligent::GetPipelineResourceSignature()
+{
+  return m_pPipelineResourceSignature;
+}
+
 XII_ALWAYS_INLINE xiiDynamicArray<xiiShaderDescriptorSetLayout>& xiiGALShaderDiligent::GetDescriptorSets(xiiGALShaderStage::Enum stage)
 {
   return m_DescriptorSets[stage];

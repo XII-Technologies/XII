@@ -271,23 +271,53 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
         binding.m_uiBinding                          = static_cast<xiiUInt8>(spirvInfo.binding);
         binding.m_uiVirtualBinding                   = xiiBindings[descriptorToXIIBinding[i]].m_iSlot;
         binding.m_xiiType                            = xiiBindings[descriptorToXIIBinding[i]].m_Type;
-        switch (spirvInfo.resource_type)
+
+        if (spirvInfo.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
         {
-          case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceType::Sampler;
+          binding.m_Type = xiiShaderDescriptorSetLayoutBinding::AccelerationStructure;
+        }
+        else if (spirvInfo.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
+        {
+          binding.m_Type = xiiShaderDescriptorSetLayoutBinding::InputAttachment;
+        }
+        else
+        {
+          switch (spirvInfo.resource_type)
+          {
+            case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER:
+              binding.m_Type = xiiShaderDescriptorSetLayoutBinding::Sampler;
+              break;
+
+            case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_CBV:
+              binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ConstantBuffer;
+              break;
+
+            case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV:
+            {
+              if (spirvInfo.image.dim == SpvDim::SpvDimBuffer)
+              {
+                binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer;
+              }
+              else
+              {
+                binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceViewTexture;
+              }
+            }
             break;
 
-          case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_CBV:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceType::ConstantBuffer;
+            case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_UAV:
+            {
+              if (spirvInfo.image.dim == SpvDim::SpvDimBuffer)
+              {
+                binding.m_Type = xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer;
+              }
+              else
+              {
+                binding.m_Type = xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewTexture;
+              }
+            }
             break;
-
-          case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceType::ResourceView;
-            break;
-
-          case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_UAV:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessView;
-            break;
+          }
         }
 
         binding.m_uiDescriptorType  = static_cast<xiiUInt32>(spirvInfo.descriptor_type);
@@ -298,6 +328,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
         }
 
         binding.m_uiWordOffset = spirvInfo.word_offset.binding;
+        binding.m_uiArraySize  = spirvInfo.count;
       }
 
       set.Bindings.Sort([](const xiiShaderDescriptorSetLayoutBinding& lhs, const xiiShaderDescriptorSetLayoutBinding& rhs) { return lhs.m_uiBinding < rhs.m_uiBinding; });
@@ -518,6 +549,20 @@ xiiShaderConstantBufferLayout* xiiShaderCompilerVulkan::ReflectConstantBufferLay
 
 xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const SpvReflectDescriptorBinding& info)
 {
+  if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+  {
+    binding.m_Type = xiiShaderResourceType::AccelerationStructure;
+
+    return XII_SUCCESS;
+  }
+
+  if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
+  {
+    binding.m_Type = xiiShaderResourceType::InputAttachment;
+
+    return XII_SUCCESS;
+  }
+
   if (info.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV)
   {
     return FillSRVResourceBinding(shaderBinary, binding, info);
