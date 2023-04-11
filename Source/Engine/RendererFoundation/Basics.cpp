@@ -51,14 +51,14 @@ XII_ENUM_CONSTANTS(
   xiiGALShaderStage::HullShader,
   xiiGALShaderStage::DomainShader,
   xiiGALShaderStage::ComputeShader,
-  xiiGALShaderStage::Amplification,
-  xiiGALShaderStage::Mesh,
-  xiiGALShaderStage::RayGen,
-  xiiGALShaderStage::RayMiss,
-  xiiGALShaderStage::RayAnyHit,
-  xiiGALShaderStage::RayClosestHit,
-  xiiGALShaderStage::RayIntersection,
-  xiiGALShaderStage::Callable)
+  xiiGALShaderStage::AmplificationShader,
+  xiiGALShaderStage::MeshShader,
+  xiiGALShaderStage::RayGenShader,
+  xiiGALShaderStage::RayMissShader,
+  xiiGALShaderStage::RayAnyHitShader,
+  xiiGALShaderStage::RayClosestHitShader,
+  xiiGALShaderStage::RayIntersectionShader,
+  xiiGALShaderStage::CallableShader)
 XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format off
@@ -69,14 +69,14 @@ const char* xiiGALShaderStage::Names[ENUM_COUNT] = {
   "HullShader",
   "DomainShader",
   "ComputeShader",
-  "Amplification",
-  "Mesh",
-  "RayGen",
-  "RayMiss",
-  "RayAnyHit",
-  "RayClosestHit",
-  "RayIntersection",
-  "Callable"
+  "AmplificationShader",
+  "MeshShader",
+  "RayGenShader",
+  "RayMissShader",
+  "RayAnyHitShader",
+  "RayClosestHitShader",
+  "RayIntersectionShader",
+  "CallableShader"
 };
 // clang-format on
 

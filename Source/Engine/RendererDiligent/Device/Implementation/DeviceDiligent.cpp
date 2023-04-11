@@ -1202,5 +1202,4 @@ void xiiGALDeviceDiligent::WaitForFencePlatform(Diligent::IDeviceContext* pConte
   }
 }
 
-
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Device_Implementation_DeviceDiligent);

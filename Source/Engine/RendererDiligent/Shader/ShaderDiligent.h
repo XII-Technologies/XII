@@ -22,6 +22,12 @@ public:
 
   XII_ALWAYS_INLINE Diligent::IShader* GetComputeShader();
 
+  XII_ALWAYS_INLINE Diligent::IShader* GetAmplificationShader();
+
+  XII_ALWAYS_INLINE Diligent::IShader* GetMeshShader();
+
+  XII_ALWAYS_INLINE Diligent::IPipelineResourceSignature* GetPipelineResourceSignature();
+
   XII_ALWAYS_INLINE xiiDynamicArray<xiiShaderDescriptorSetLayout>& GetDescriptorSets(xiiGALShaderStage::Enum stage);
 
   XII_ALWAYS_INLINE xiiHybridArray<xiiShaderVertexInputAttribute, 8>& GetVertexInputAttributes();
@@ -38,11 +44,13 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::IShader* m_pShaderStages[xiiGALShaderStage::ENUM_COUNT] = {nullptr};
+  Diligent::IPipelineResourceSignature* m_pPipelineResourceSignature                   = nullptr;
+  Diligent::IShader*                    m_pShaderStages[xiiGALShaderStage::ENUM_COUNT] = {};
 
-  xiiDynamicArray<xiiShaderDescriptorSetLayout> m_DescriptorSets[xiiGALShaderStage::ENUM_COUNT];
+  xiiDynamicArray<xiiString> m_StringStorage;
 
   xiiHybridArray<xiiShaderVertexInputAttribute, 8> m_VertexInputAttributes;
+  xiiDynamicArray<xiiShaderDescriptorSetLayout>    m_DescriptorSets[xiiGALShaderStage::ENUM_COUNT];
 };
 
 #include <RendererDiligent/Shader/Implementation/ShaderDiligent_inl.h>

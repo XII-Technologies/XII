@@ -68,18 +68,18 @@ void xiiGALSwapChainDiligent::AcquireNextRenderTarget(xiiGALDevice* pDevice)
   Diligent::ITextureView* pCurrentTextureView = m_pSwapChain->GetCurrentBackBufferRTV();
   RenderTargetInfo        rendertargetInfo{pCurrentTexture, pCurrentTextureView};
 
-  xiiGALTextureHandle hBackbufferTexture;
-  if (!m_BackbufferTextures.TryGetValue(rendertargetInfo, hBackbufferTexture))
+  auto renderTargetHandleKey = m_BackbufferTextures.Find(rendertargetInfo);
+  if (!renderTargetHandleKey.IsValid())
   {
-    if (CreateBackBufferInternal(pDeviceDiligent, false).Failed())
+    if (CreateBackBufferInternal(pDeviceDiligent, true).Failed())
     {
       xiiLog::Error("Failed to acquire next render target");
     }
   }
-
-  XII_ASSERT_DEV(m_BackbufferTextures.TryGetValue(rendertargetInfo, hBackbufferTexture), "Failed to retrieve backbuffer texture handle. This should have succeeded.");
-
-  m_RenderTargets.m_hRTs[0] = hBackbufferTexture;
+  else
+  {
+    m_RenderTargets.m_hRTs[0] = renderTargetHandleKey.Value();
+  }
 }
 
 void xiiGALSwapChainDiligent::PresentRenderTarget(xiiGALDevice* pDevice)
@@ -279,6 +279,5 @@ xiiResult xiiGALSwapChainDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 
   return XII_FAILURE;
 }
-
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Device_Implementation_SwapChainDiligent);

@@ -15,7 +15,7 @@ class xiiWindowBase;
 
 struct XII_RENDERERFOUNDATION_DLL xiiShaderResourceType
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum : xiiUInt8
   {
@@ -36,12 +36,14 @@ struct XII_RENDERERFOUNDATION_DLL xiiShaderResourceType
     GenericBuffer  = 21, ///< Read only (structured) buffers
     Sampler        = 22, ///< Separate sampler states
 
+    InputAttachment       = 23,
+    AccelerationStructure = 24,
+
     Default = Unknown,
   };
 
   static bool IsArray(xiiShaderResourceType::Enum format);
 };
-
 
 /// \brief Defines a swap chain's present mode.
 /// \sa xiiGALWindowSwapChainCreationDescription

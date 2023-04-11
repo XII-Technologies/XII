@@ -3,6 +3,8 @@
 
 #include <RendererDiligent/RendererDiligentDLL.h>
 
+#include <Foundation/Algorithm/HashStream.h>
+#include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Types/Bitflags.h>
 #include <RendererFoundation/CommandEncoder/CommandEncoderPlatformInterface.h>
 #include <RendererFoundation/Resources/RenderTargetSetup.h>
@@ -111,10 +113,30 @@ public:
   virtual void DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) override;
   virtual void DispatchIndirectPlatform(const xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override;
 
+public:
+  struct ResourceCacheHash
+  {
+    static xiiUInt32 Hash(const xiiGALRenderingSetup& renderingSetup);
+    static bool      Equal(const xiiGALRenderingSetup& a, const xiiGALRenderingSetup& b);
+
+    static xiiUInt32 Hash(const Diligent::GraphicsPipelineStateCreateInfo& desc);
+    static bool      Equal(const Diligent::GraphicsPipelineStateCreateInfo& a, const Diligent::GraphicsPipelineStateCreateInfo& b);
+
+    static xiiUInt32 Hash(const Diligent::ComputePipelineStateCreateInfo& desc);
+    static bool      Equal(const Diligent::ComputePipelineStateCreateInfo& a, const Diligent::ComputePipelineStateCreateInfo& b);
+  };
+
+  struct PipelineStateInfo
+  {
+    Diligent::IPipelineState*         m_pPipelineState         = nullptr;
+    Diligent::IShaderResourceBinding* m_pShaderResourceBinding = nullptr;
+  };
+
 protected:
   void FlushDeferredStateChangesCompute();
   void FlushDeferredStateChangesGraphics();
-  void FillDescriptorBindings(Diligent::IPipelineState* pPipelineState);
+  void FillPipelineDescriptorBindings(Diligent::IPipelineState* pPipelineState);
+  void FillShaderDescriptorBindings(Diligent::IShaderResourceBinding* pResourceBinding);
 
 private:
   friend class xiiGALPassDiligent;
@@ -125,23 +147,12 @@ private:
 
   Diligent::IDeviceContext* m_pContext = nullptr;
 
-  // Graphics pipeline state creation
-  Diligent::GraphicsPipelineStateCreateInfo m_PipelineStateDesc;
-  Diligent::IPipelineState*                 m_pPipelineStateGraphics         = nullptr;
-  Diligent::IShaderResourceBinding*         m_pShaderResourceBindingGraphics = nullptr;
-
-  // Compute pipeline state creation
-  Diligent::ComputePipelineStateCreateInfo m_PipelineStateComputeDesc;
-  Diligent::IPipelineState*                m_pPipelineStateCompute         = nullptr;
-  Diligent::IShaderResourceBinding*        m_pShaderResourceBindingCompute = nullptr;
-
   // Pipeline State
+  xiiHashTable<Diligent::GraphicsPipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash> m_CachedGraphicsPipelineStates;
+  xiiHashTable<Diligent::ComputePipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash>  m_CachedComputePipelineStates;
 
-  // Cache flags
-  bool m_bPipelineStateModified = true;
-  bool m_bViewportModified      = true;
-  bool m_bIndexBufferModified   = false;
-  bool m_bDescriptorsModified   = false;
+  Diligent::TEXTURE_FORMAT m_RTVFormats[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
+  Diligent::TEXTURE_FORMAT m_DSVFormat                                  = Diligent::TEX_FORMAT_UNKNOWN;
 
   Diligent::Viewport m_Viewport;
   Diligent::Rect     m_ScissorRect;
@@ -152,6 +163,9 @@ private:
   const xiiGALBlendStateDiligent*        m_pBlendStateState   = nullptr;
   const xiiGALDepthStencilStateDiligent* m_pDepthStencilState = nullptr;
   const xiiGALRasterizerStateDiligent*   m_pRasterizerState   = nullptr;
+
+  // Cache flags
+  bool m_bViewportModified = true;
 
   // Bound objects for deferred state flushes
   xiiGALBufferDiligent* m_pIndexBuffer = nullptr;

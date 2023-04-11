@@ -33,6 +33,7 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
     ShaderCI.ByteCodeSize                 = byteCode[i].GetCount();
     ShaderCI.SourceLanguage               = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
     ShaderCI.LoadConstantBufferReflection = false;
+    // ShaderCI.CompileFlags                 = Diligent::SHADER_COMPILE_FLAG_SKIP_REFLECTION;
 
     pDeviceDiligent->GetDevice()->CreateShader(ShaderCI, &m_pShaderStages[i]);
 
@@ -41,6 +42,103 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
       xiiLog::Error("Couldn't create native shader from bytecode from type: {}.", (xiiGALShaderStage::Enum)i);
       return XII_FAILURE;
     }
+  }
+
+  /// \todo RendererFoundation: Add interface for specifying resource type (dynamic, mutable, static), for choosing a resource variable type.
+
+  xiiHybridArray<Diligent::PipelineResourceDesc, 2u> resources;
+
+  Diligent::PipelineResourceSignatureDesc pipelineResourceSignatureDesc;
+  pipelineResourceSignatureDesc.Name = m_Description.m_szName;
+
+  for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderStage::ENUM_COUNT; ++uiStage)
+  {
+    auto& set = m_DescriptorSets[(xiiGALShaderStage::Enum)uiStage];
+
+    for (xiiUInt32 i = 0; i < set.GetCount(); ++i)
+    {
+      auto& bindings = set[i].Bindings;
+
+      for (xiiUInt32 j = 0; j < bindings.GetCount(); ++j)
+      {
+        auto& currentBinding = bindings[j];
+
+        xiiStringBuilder sData;
+        currentBinding.m_sName.GetData(sData);
+
+        auto& storageData = m_StringStorage.ExpandAndGetRef();
+        storageData       = sData;
+
+        // Pipeline signature description
+        {
+          auto& resourceDesc = resources.ExpandAndGetRef();
+
+          resourceDesc.Name         = storageData;
+          resourceDesc.ShaderStages = xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)uiStage);
+          resourceDesc.ArraySize    = currentBinding.m_uiArraySize;
+
+          switch (currentBinding.m_Type)
+          {
+            case xiiShaderDescriptorSetLayoutBinding::ResourceType::ConstantBuffer:
+            {
+              resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_CONSTANT_BUFFER;
+            }
+            break;
+            case xiiShaderDescriptorSetLayoutBinding::ResourceType::ResourceViewTexture:
+            {
+              resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_TEXTURE_SRV;
+            }
+            break;
+            case xiiShaderDescriptorSetLayoutBinding::ResourceType::ResourceViewBuffer:
+            {
+              resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_BUFFER_SRV;
+            }
+            break;
+            case xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessViewTexture:
+            {
+              resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_TEXTURE_UAV;
+            }
+            break;
+            case xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessViewBuffer:
+            {
+              resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_BUFFER_UAV;
+            }
+            break;
+            case xiiShaderDescriptorSetLayoutBinding::ResourceType::Sampler:
+            {
+              resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_SAMPLER;
+            }
+            break;
+            case xiiShaderDescriptorSetLayoutBinding::ResourceType::AccelerationStructure:
+            {
+              resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_ACCEL_STRUCT;
+            }
+            break;
+          }
+
+          resourceDesc.VarType = Diligent::SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE; // Variables are always mutable for now.
+          resourceDesc.Flags   = Diligent::PIPELINE_RESOURCE_FLAG_NONE;           // Not yet assessed
+        }
+      }
+    }
+  }
+
+  m_StringStorage.SetCount(resources.GetCount());
+
+  pipelineResourceSignatureDesc.Resources                  = resources.GetData();
+  pipelineResourceSignatureDesc.NumResources               = resources.GetCount();
+  pipelineResourceSignatureDesc.ImmutableSamplers          = nullptr;
+  pipelineResourceSignatureDesc.NumImmutableSamplers       = 0;
+  pipelineResourceSignatureDesc.BindingIndex               = 0;
+  pipelineResourceSignatureDesc.UseCombinedTextureSamplers = false; // Handled by XII
+  pipelineResourceSignatureDesc.SRBAllocationGranularity   = 1;     // Default
+
+  pDeviceDiligent->GetDevice()->CreatePipelineResourceSignature(pipelineResourceSignatureDesc, &m_pPipelineResourceSignature);
+
+  if (m_pPipelineResourceSignature == nullptr)
+  {
+    xiiLog::Error("Failed to create pipeline resource for shader {}", m_Description.m_szName);
+    return XII_FAILURE;
   }
 
   return XII_SUCCESS;
@@ -53,6 +151,9 @@ xiiResult xiiGALShaderDiligent::DeInitPlatform(xiiGALDevice* pDevice)
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pShaderStages[i]);
   }
 
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pPipelineResourceSignature);
+
+  m_StringStorage.Clear();
   m_DescriptorSets->Clear();
   m_VertexInputAttributes.Clear();
 

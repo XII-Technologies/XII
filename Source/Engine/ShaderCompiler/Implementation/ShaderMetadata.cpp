@@ -32,6 +32,7 @@ void xiiShaderMetaData::Write(xiiStreamWriter& stream, const xiiArrayPtr<xiiUInt
       stream << binding.m_uiDescriptorType;
       stream << binding.m_uiDescriptorCount;
       stream << binding.m_uiWordOffset;
+      stream << binding.m_uiArraySize;
     }
   }
 
@@ -101,6 +102,7 @@ void xiiShaderMetaData::Read(const xiiArrayPtr<const xiiUInt8> data, xiiArrayPtr
       stream >> binding.m_uiDescriptorType;
       stream >> binding.m_uiDescriptorCount;
       stream >> binding.m_uiWordOffset;
+      stream >> binding.m_uiArraySize;
     }
   }
 

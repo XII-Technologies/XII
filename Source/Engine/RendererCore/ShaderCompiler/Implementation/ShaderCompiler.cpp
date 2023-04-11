@@ -258,29 +258,29 @@ xiiResult xiiShaderCompiler::CompileShaderPermutationForPlatforms(const char* sz
   m_StageSourceFile[xiiGALShaderStage::ComputeShader] = tmp;
   m_StageSourceFile[xiiGALShaderStage::ComputeShader].ChangeFileExtension("cs");
 
-  m_StageSourceFile[xiiGALShaderStage::Amplification] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::Amplification].ChangeFileExtension("as");
+  m_StageSourceFile[xiiGALShaderStage::AmplificationShader] = tmp;
+  m_StageSourceFile[xiiGALShaderStage::AmplificationShader].ChangeFileExtension("as");
 
-  m_StageSourceFile[xiiGALShaderStage::Mesh] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::Mesh].ChangeFileExtension("as");
+  m_StageSourceFile[xiiGALShaderStage::MeshShader] = tmp;
+  m_StageSourceFile[xiiGALShaderStage::MeshShader].ChangeFileExtension("as");
 
-  m_StageSourceFile[xiiGALShaderStage::RayGen] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::RayGen].ChangeFileExtension("lib");
+  m_StageSourceFile[xiiGALShaderStage::RayGenShader] = tmp;
+  m_StageSourceFile[xiiGALShaderStage::RayGenShader].ChangeFileExtension("lib");
 
-  m_StageSourceFile[xiiGALShaderStage::RayMiss] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::RayMiss].ChangeFileExtension("lib");
+  m_StageSourceFile[xiiGALShaderStage::RayMissShader] = tmp;
+  m_StageSourceFile[xiiGALShaderStage::RayMissShader].ChangeFileExtension("lib");
 
-  m_StageSourceFile[xiiGALShaderStage::RayAnyHit] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::RayAnyHit].ChangeFileExtension("lib");
+  m_StageSourceFile[xiiGALShaderStage::RayAnyHitShader] = tmp;
+  m_StageSourceFile[xiiGALShaderStage::RayAnyHitShader].ChangeFileExtension("lib");
 
-  m_StageSourceFile[xiiGALShaderStage::RayClosestHit] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::RayClosestHit].ChangeFileExtension("lib");
+  m_StageSourceFile[xiiGALShaderStage::RayClosestHitShader] = tmp;
+  m_StageSourceFile[xiiGALShaderStage::RayClosestHitShader].ChangeFileExtension("lib");
 
-  m_StageSourceFile[xiiGALShaderStage::RayIntersection] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::RayIntersection].ChangeFileExtension("lib");
+  m_StageSourceFile[xiiGALShaderStage::RayIntersectionShader] = tmp;
+  m_StageSourceFile[xiiGALShaderStage::RayIntersectionShader].ChangeFileExtension("lib");
 
-  m_StageSourceFile[xiiGALShaderStage::Callable] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::Callable].ChangeFileExtension("lib");
+  m_StageSourceFile[xiiGALShaderStage::CallableShader] = tmp;
+  m_StageSourceFile[xiiGALShaderStage::CallableShader].ChangeFileExtension("lib");
 
   // Try out every compiler that we can find
   xiiRTTI* pRtti = xiiRTTI::GetFirstInstance();

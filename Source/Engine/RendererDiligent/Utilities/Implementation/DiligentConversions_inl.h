@@ -558,21 +558,21 @@ XII_ALWAYS_INLINE Diligent::SHADER_TYPE xiiDiligentUtils::GALToDiligentShaderSta
       return Diligent::SHADER_TYPE_DOMAIN;
     case xiiGALShaderStage::ComputeShader:
       return Diligent::SHADER_TYPE_COMPUTE;
-    case xiiGALShaderStage::Amplification:
+    case xiiGALShaderStage::AmplificationShader:
       return Diligent::SHADER_TYPE_AMPLIFICATION;
-    case xiiGALShaderStage::Mesh:
+    case xiiGALShaderStage::MeshShader:
       return Diligent::SHADER_TYPE_MESH;
-    case xiiGALShaderStage::RayGen:
+    case xiiGALShaderStage::RayGenShader:
       return Diligent::SHADER_TYPE_RAY_GEN;
-    case xiiGALShaderStage::RayMiss:
+    case xiiGALShaderStage::RayMissShader:
       return Diligent::SHADER_TYPE_RAY_MISS;
-    case xiiGALShaderStage::RayAnyHit:
+    case xiiGALShaderStage::RayAnyHitShader:
       return Diligent::SHADER_TYPE_RAY_ANY_HIT;
-    case xiiGALShaderStage::RayClosestHit:
+    case xiiGALShaderStage::RayClosestHitShader:
       return Diligent::SHADER_TYPE_RAY_CLOSEST_HIT;
-    case xiiGALShaderStage::RayIntersection:
+    case xiiGALShaderStage::RayIntersectionShader:
       return Diligent::SHADER_TYPE_RAY_INTERSECTION;
-    case xiiGALShaderStage::Callable:
+    case xiiGALShaderStage::CallableShader:
       return Diligent::SHADER_TYPE_CALLABLE;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;

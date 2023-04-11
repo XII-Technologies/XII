@@ -181,20 +181,20 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALShaderStage
 
   enum Enum : xiiUInt8
   {
-    VertexShader = 0, ///< Vertex shader stage.
-    PixelShader,      ///< Pixel (fragment) shader stage.
-    GeometryShader,   ///< Geometry shader stage.
-    HullShader,       ///< Hull (tessellation control) shader stage.
-    DomainShader,     ///< Domain (tessellation evaluation) shader stage.
-    ComputeShader,    ///< Compute shader stage.
-    Amplification,    ///< Amplification shader stage.
-    Mesh,             ///< Mesh shader stage.
-    RayGen,           ///< Ray generation shader stage.
-    RayMiss,          ///< Ray miss shader stage.
-    RayAnyHit,        ///< Ray any hit shader stage.
-    RayClosestHit,    ///< Ray closest hit shader stage.
-    RayIntersection,  ///< Ray intersection shader stage.
-    Callable,         ///< Callable shader stage.
+    VertexShader = 0,      ///< Vertex shader stage.
+    PixelShader,           ///< Pixel (fragment) shader stage.
+    GeometryShader,        ///< Geometry shader stage.
+    HullShader,            ///< Hull (tessellation control) shader stage.
+    DomainShader,          ///< Domain (tessellation evaluation) shader stage.
+    ComputeShader,         ///< Compute shader stage.
+    AmplificationShader,   ///< Amplification shader stage.
+    MeshShader,            ///< Mesh shader stage.
+    RayGenShader,          ///< Ray generation shader stage.
+    RayMissShader,         ///< Ray miss shader stage.
+    RayAnyHitShader,       ///< Ray any hit shader stage.
+    RayClosestHitShader,   ///< Ray closest hit shader stage.
+    RayIntersectionShader, ///< Ray intersection shader stage.
+    CallableShader,        ///< Callable shader stage.
 
     ENUM_COUNT,
 
