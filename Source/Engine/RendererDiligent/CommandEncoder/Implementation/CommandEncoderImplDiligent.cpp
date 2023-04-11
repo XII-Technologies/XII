@@ -1277,6 +1277,9 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
   }
   else
   {
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pCachedPipelineStateComputeKey.Value().m_pShaderResourceBinding);
+    m_pCurrentShader->GetPipelineResourceSignature()->CreateShaderResourceBinding(&pCachedPipelineStateComputeKey.Value().m_pShaderResourceBinding, true);
+
     FillShaderDescriptorBindings(pCachedPipelineStateComputeKey.Value().m_pShaderResourceBinding);
 
     m_pContext->SetPipelineState(pCachedPipelineStateComputeKey.Value().m_pPipelineState);
@@ -1416,6 +1419,9 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
   }
   else
   {
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding);
+    m_pCurrentShader->GetPipelineResourceSignature()->CreateShaderResourceBinding(&pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding, true);
+
     FillShaderDescriptorBindings(pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding);
 
     m_pContext->SetPipelineState(pCachedPipelineStateGraphicsKey.Value().m_pPipelineState);

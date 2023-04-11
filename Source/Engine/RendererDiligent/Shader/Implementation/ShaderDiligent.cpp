@@ -116,7 +116,7 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
             break;
           }
 
-          resourceDesc.VarType = Diligent::SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC; // Variables are always dynamic for now.
+          resourceDesc.VarType = Diligent::SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE; // Variables are always mutable for now.
           resourceDesc.Flags   = Diligent::PIPELINE_RESOURCE_FLAG_NONE; // Not yet assessed
         }
       }
