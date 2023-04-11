@@ -270,7 +270,7 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::x
         binding.m_xiiType                            = xiiBindings[descriptorToXIIBinding[i]].m_Type;
         binding.m_uiArraySize                        = resourceInfo.BindCount;
 
-         switch (resourceInfo.Type)
+        switch (resourceInfo.Type)
         {
           case D3D_SIT_CBUFFER:
             binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ConstantBuffer;

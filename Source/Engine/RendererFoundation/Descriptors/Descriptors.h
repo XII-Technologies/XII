@@ -36,7 +36,7 @@ struct XII_RENDERERFOUNDATION_DLL xiiShaderResourceType
     GenericBuffer  = 21, ///< Read only (structured) buffers
     Sampler        = 22, ///< Separate sampler states
 
-    InputAttachment = 23,
+    InputAttachment       = 23,
     AccelerationStructure = 24,
 
     Default = Unknown,
