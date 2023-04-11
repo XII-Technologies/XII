@@ -25,6 +25,15 @@
 #  include <Graphics/GraphicsEngineD3D11/interface/TextureViewD3D11.h>
 #endif
 
+#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
+#  include <d3d12.h>
+
+#  include <Graphics/GraphicsEngineD3D12/interface/BufferViewD3D12.h>
+#  include <Graphics/GraphicsEngineD3D12/interface/DeviceContextD3D12.h>
+#  include <Graphics/GraphicsEngineD3D12/interface/RenderDeviceD3D12.h>
+#  include <Graphics/GraphicsEngineD3D12/interface/TextureViewD3D12.h>
+#endif
+
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #endif
@@ -1186,7 +1195,7 @@ void xiiGALCommandEncoderImplDiligent::SetStreamOutBufferPlatform(xiiUInt32 uiSl
 void xiiGALCommandEncoderImplDiligent::BeginCompute()
 {
   m_RenderTargetSetup = xiiGALRenderTargetSetup();
-  m_pContext->SetRenderTargets(0, nullptr, nullptr, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  m_pContext->SetRenderTargets(0, nullptr, nullptr, Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE);
 }
 
 void xiiGALCommandEncoderImplDiligent::EndCompute()
@@ -1240,8 +1249,8 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
   }
 
   Diligent::ComputePipelineStateCreateInfo computePipelineStateDesc;
-  computePipelineStateDesc.PSODesc.PipelineType   = Diligent::PIPELINE_TYPE_COMPUTE;
-  computePipelineStateDesc.pCS                    = m_pCurrentShader->GetComputeShader();
+  computePipelineStateDesc.PSODesc.PipelineType = Diligent::PIPELINE_TYPE_COMPUTE;
+  computePipelineStateDesc.pCS                  = m_pCurrentShader->GetComputeShader();
 
   Diligent::IPipelineResourceSignature* ppResourceSignatures[]{m_pCurrentShader->GetPipelineResourceSignature()};
   computePipelineStateDesc.ppResourceSignatures    = ppResourceSignatures;
