@@ -410,7 +410,7 @@ void xiiQtEditorApp::SetupNewProject()
   // Write the default window config
   {
     xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-    sPath.AppendPath("Window.ddl");
+    sPath.AppendPath("RuntimeConfigs/Window.ddl");
 
     xiiWindowCreationDesc desc;
     desc.m_Title = xiiToolsProject::GetSingleton()->GetProjectName(false);
@@ -420,7 +420,7 @@ void xiiQtEditorApp::SetupNewProject()
   // Write a stub input mapping
   {
     xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-    sPath.AppendPath("InputConfig.ddl");
+    sPath.AppendPath("RuntimeConfigs/InputConfig.ddl");
 
     xiiDeferredFileWriter file;
     file.SetOutput(sPath);

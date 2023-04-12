@@ -6,8 +6,6 @@
 
 void UpdateCollisionLayerDynamicEnumValues();
 
-constexpr const char* g_szJoltConfigFile = ":project/RuntimeConfigs/CollisionLayers.cfg";
-
 xiiQtJoltProjectSettingsDlg::xiiQtJoltProjectSettingsDlg(QWidget* parent) :
   QDialog(parent)
 {
@@ -25,7 +23,7 @@ xiiQtJoltProjectSettingsDlg::xiiQtJoltProjectSettingsDlg(QWidget* parent) :
 
 void xiiQtJoltProjectSettingsDlg::EnsureConfigFileExists()
 {
-  if (xiiFileSystem::ExistsFile(g_szJoltConfigFile))
+  if (xiiFileSystem::ExistsFile(xiiCollisionFilterConfig::s_sConfigFile))
     return;
 
   xiiCollisionFilterConfig cfg;
@@ -94,7 +92,9 @@ void xiiQtJoltProjectSettingsDlg::EnsureConfigFileExists()
 
   cfg.EnableCollision(8, 8, false);
 
-  cfg.Save(g_szJoltConfigFile).IgnoreResult();
+  cfg.Save().IgnoreResult();
+
+  UpdateCollisionLayerDynamicEnumValues();
 }
 
 void xiiQtJoltProjectSettingsDlg::SetupTable()
@@ -145,10 +145,10 @@ void xiiQtJoltProjectSettingsDlg::SetupTable()
 
 xiiResult xiiQtJoltProjectSettingsDlg::Save()
 {
-  if (m_Config.Save(g_szJoltConfigFile).Failed())
+  if (m_Config.Save().Failed())
   {
     xiiStringBuilder sError;
-    sError.Format("Failed to save the Collision Layer file\n'{0}'", g_szJoltConfigFile);
+    sError.Format("Failed to save the Collision Layer file\n'{}'", xiiCollisionFilterConfig::s_sConfigFile);
 
     xiiQtUiServices::GetSingleton()->MessageBoxWarning(sError);
 
@@ -162,7 +162,7 @@ xiiResult xiiQtJoltProjectSettingsDlg::Save()
 
 xiiResult xiiQtJoltProjectSettingsDlg::Load()
 {
-  auto res = m_Config.Load(g_szJoltConfigFile);
+  auto res = m_Config.Load();
 
   m_ConfigReset = m_Config;
   return res;

@@ -10,8 +10,10 @@ class XII_FOUNDATION_DLL xiiApplicationPluginConfig
 public:
   xiiApplicationPluginConfig();
 
-  xiiResult Save(const char* szConfigPath = ":project/Plugins.ddl") const;
-  void      Load(const char* szConfigPath = ":project/Plugins.ddl");
+  static constexpr const xiiStringView s_sConfigFile = ":project/RuntimeConfigs/Plugins.ddl"_xiisv;
+
+  xiiResult Save(xiiStringView sConfigPath = s_sConfigFile) const;
+  void      Load(xiiStringView sConfigPath = s_sConfigFile);
   void      Apply();
 
   struct XII_FOUNDATION_DLL PluginConfig

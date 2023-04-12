@@ -380,7 +380,7 @@ void xiiGameApplication::Init_ConfigureInput()
 
   {
     xiiFileReader file;
-    if (file.Open(":project/InputConfig.ddl").Succeeded())
+    if (file.Open(xiiGameAppInputConfig::s_sConfigFile).Succeeded())
     {
       xiiHybridArray<xiiGameAppInputConfig, 32> InputActions;
 

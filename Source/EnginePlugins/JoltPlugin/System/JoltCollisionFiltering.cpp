@@ -17,9 +17,9 @@ namespace xiiJoltCollisionFiltering
   {
     XII_LOG_BLOCK("xiiJoltCore::LoadCollisionFilters");
 
-    if (s_CollisionFilterConfig.Load("RuntimeConfigs/CollisionLayers.cfg").Failed())
+    if (s_CollisionFilterConfig.Load().Failed())
     {
-      xiiLog::Info("Collision filter config file could not be found ('RuntimeConfigs/CollisionLayers.cfg'). Using default values.");
+      xiiLog::Info("Collision filter config file could not be found ('{}'). Using default values.", xiiCollisionFilterConfig::s_sConfigFile);
 
       // setup some default config
 

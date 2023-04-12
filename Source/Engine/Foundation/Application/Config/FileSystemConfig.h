@@ -7,8 +7,10 @@
 class XII_FOUNDATION_DLL xiiApplicationFileSystemConfig
 {
 public:
-  xiiResult Save(const char* szPath = ":project/DataDirectories.ddl");
-  void      Load(const char* szPath = ":project/DataDirectories.ddl");
+  static constexpr const xiiStringView s_sConfigFile = ":project/RuntimeConfigs/DataDirectories.ddl"_xiisv;
+
+  xiiResult Save(xiiStringView sPath = s_sConfigFile);
+  void      Load(xiiStringView sPath = s_sConfigFile);
 
   /// \brief Sets up the data directories that were configured or loaded into this object
   void Apply();

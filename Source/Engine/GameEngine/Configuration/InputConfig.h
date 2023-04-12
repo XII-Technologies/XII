@@ -12,6 +12,8 @@ class XII_GAMEENGINE_DLL xiiGameAppInputConfig
 public:
   constexpr static xiiUInt32 MaxInputSlotAlternatives = 3;
 
+  static constexpr const xiiStringView s_sConfigFile = ":project/RuntimeConfigs/InputConfig.ddl"_xiisv;
+
   xiiGameAppInputConfig();
 
   void Apply() const;

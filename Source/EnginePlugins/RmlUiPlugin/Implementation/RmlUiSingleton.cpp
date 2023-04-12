@@ -12,10 +12,12 @@
 #include <RmlUiPlugin/RmlUiContext.h>
 #include <RmlUiPlugin/RmlUiSingleton.h>
 
-xiiResult xiiRmlUiConfiguration::Save(const char* szFile) const
+xiiResult xiiRmlUiConfiguration::Save(xiiStringView sFile) const
 {
+  XII_LOG_BLOCK("xiiRmlUiConfiguration::Save()");
+
   xiiFileWriter file;
-  if (file.Open(szFile).Failed())
+  if (file.Open(sFile).Failed())
     return XII_FAILURE;
 
   xiiOpenDdlWriter writer;
@@ -33,20 +35,20 @@ xiiResult xiiRmlUiConfiguration::Save(const char* szFile) const
   return XII_SUCCESS;
 }
 
-xiiResult xiiRmlUiConfiguration::Load(const char* szFile)
+xiiResult xiiRmlUiConfiguration::Load(xiiStringView sFile)
 {
-  XII_LOG_BLOCK("xiiWorldModuleConfig::Load()");
+  XII_LOG_BLOCK("xiiRmlUiConfiguration::Load()");
 
   m_Fonts.Clear();
 
   xiiFileReader file;
-  if (file.Open(szFile).Failed())
+  if (file.Open(sFile).Failed())
     return XII_FAILURE;
 
   xiiOpenDdlReader reader;
   if (reader.ParseDocument(file, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
   {
-    xiiLog::Error("Failed to parse RmlUi config file '{0}'", szFile);
+    xiiLog::Error("Failed to parse RmlUi config file '{0}'", sFile);
     return XII_FAILURE;
   }
 
@@ -105,10 +107,9 @@ xiiRmlUi::xiiRmlUi() :
   Rml::Factory::RegisterContextInstancer(&m_pData->m_ContextInstancer);
   Rml::Factory::RegisterEventListenerInstancer(&m_pData->m_EventListenerInstancer);
 
-  const char* szFile = ":project/RmlUiConfig.ddl";
-  if (m_pData->m_Config.Load(szFile).Failed())
+  if (m_pData->m_Config.Load().Failed())
   {
-    xiiLog::Warning("No valid RmlUi configuration file available in '{0}'.", szFile);
+    xiiLog::Warning("No valid RmlUi configuration file available in '{}'.", xiiRmlUiConfiguration::s_sConfigFile);
     return;
   }
 

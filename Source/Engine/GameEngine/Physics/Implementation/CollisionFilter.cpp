@@ -96,10 +96,10 @@ xiiInt32 xiiCollisionFilterConfig::FindUnnamedGroup() const
   return -1;
 }
 
-xiiResult xiiCollisionFilterConfig::Save(const char* szFile) const
+xiiResult xiiCollisionFilterConfig::Save(xiiStringView sFile) const
 {
   xiiFileWriter file;
-  if (file.Open(szFile).Failed())
+  if (file.Open(sFile).Failed())
     return XII_FAILURE;
 
   Save(file);
@@ -107,10 +107,10 @@ xiiResult xiiCollisionFilterConfig::Save(const char* szFile) const
   return XII_SUCCESS;
 }
 
-xiiResult xiiCollisionFilterConfig::Load(const char* szFile)
+xiiResult xiiCollisionFilterConfig::Load(xiiStringView sFile)
 {
   xiiFileReader file;
-  if (file.Open(szFile).Failed())
+  if (file.Open(sFile).Failed())
     return XII_FAILURE;
 
   Load(file);

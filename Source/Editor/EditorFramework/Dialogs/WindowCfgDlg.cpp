@@ -79,7 +79,7 @@ void xiiQtWindowCfgDlg::LoadDescs()
 
   {
     sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-    sPath.AppendPath("Window.ddl");
+    sPath.AppendPath("RuntimeConfigs/Window.ddl");
 
     if (m_Descs[0].LoadFromDDL(sPath).Failed())
     {
@@ -91,7 +91,7 @@ void xiiQtWindowCfgDlg::LoadDescs()
 
   {
     sPath = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
-    sPath.AppendPath("Window.ddl");
+    sPath.AppendPath("RuntimeConfigs/Window.ddl");
 
     m_bOverrideProjectDefault[1] = m_Descs[1].LoadFromDDL(sPath).Succeeded();
   }
@@ -103,14 +103,14 @@ void xiiQtWindowCfgDlg::SaveDescs()
 
   {
     sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-    sPath.AppendPath("Window.ddl");
+    sPath.AppendPath("RuntimeConfigs/Window.ddl");
 
     m_Descs[0].SaveToDDL(sPath).IgnoreResult();
   }
 
   {
     sPath = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
-    sPath.AppendPath("Window.ddl");
+    sPath.AppendPath("RuntimeConfigs/Window.ddl");
 
     if (m_bOverrideProjectDefault[1])
     {
