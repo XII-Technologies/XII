@@ -82,11 +82,8 @@ public:
   xiiSkeletonAssetDocumentGenerator();
   ~xiiSkeletonAssetDocumentGenerator();
 
-  virtual void      GetImportModes(const char* szParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const override;
-  virtual xiiStatus Generate(
-    const char*                            szDataDirRelativePath,
-    const xiiAssetDocumentGenerator::Info& info,
-    xiiDocument*&                          out_pGeneratedDocument) override;
-  virtual const char* GetDocumentExtension() const override { return "xiiSkeletonAsset"; }
-  virtual const char* GetGeneratorGroup() const override { return "AnimationSkeletonGroup"; }
+  virtual void          GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const override;
+  virtual xiiStatus     Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument) override;
+  virtual xiiStringView GetDocumentExtension() const override { return "xiiSkeletonAsset"; }
+  virtual xiiStringView GetGeneratorGroup() const override { return "AnimationSkeletonGroup"; }
 };

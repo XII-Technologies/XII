@@ -113,9 +113,9 @@ xiiLUTAssetDocumentGenerator::xiiLUTAssetDocumentGenerator()
 
 xiiLUTAssetDocumentGenerator::~xiiLUTAssetDocumentGenerator() = default;
 
-void xiiLUTAssetDocumentGenerator::GetImportModes(const char* szParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiLUTAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
 {
-  xiiStringBuilder baseOutputFile = szParentDirRelativePath;
+  xiiStringBuilder baseOutputFile = sParentDirRelativePath;
 
   const xiiStringBuilder baseFilename = baseOutputFile.GetFileName();
 
@@ -129,7 +129,7 @@ void xiiLUTAssetDocumentGenerator::GetImportModes(const char* szParentDirRelativ
   info.m_sIcon = ":/AssetIcons/LUT.png";
 }
 
-xiiStatus xiiLUTAssetDocumentGenerator::Generate(const char* szDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiLUTAssetDocumentGenerator::Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
 {
   auto pApp = xiiQtEditorApp::GetSingleton();
 
@@ -142,7 +142,7 @@ xiiStatus xiiLUTAssetDocumentGenerator::Generate(const char* szDataDirRelativePa
     return xiiStatus("Target document is not a valid xiiLUTAssetDocument");
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
-  accessor.SetValue("Input", szDataDirRelativePath);
+  accessor.SetValue("Input", sDataDirRelativePath);
 
   return xiiStatus(XII_SUCCESS);
 }

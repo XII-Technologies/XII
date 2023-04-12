@@ -43,7 +43,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiJoltCollisionMeshAssetProperties, 1, xiiRTTI
     XII_MEMBER_PROPERTY("Radius2", m_fRadius2)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("Height", m_fHeight)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("Detail", m_uiDetail)->AddAttributes(new xiiDefaultValueAttribute(1), new xiiClampValueAttribute(0, 32)),
-    XII_MEMBER_PROPERTY("MeshFile", m_sMeshFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", "*.obj;*.fbx;*.gltf;*.glb")),
+    XII_MEMBER_PROPERTY("MeshFile", m_sMeshFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", xiiFileBrowserAttribute::Meshes)),
     XII_ARRAY_MEMBER_PROPERTY("Surfaces", m_Slots)->AddAttributes(new xiiContainerAttribute(false, false, true)),
     XII_MEMBER_PROPERTY("Surface", m_sConvexMeshSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
   }

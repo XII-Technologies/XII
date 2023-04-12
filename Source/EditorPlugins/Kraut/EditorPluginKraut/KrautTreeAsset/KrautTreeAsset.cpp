@@ -225,9 +225,9 @@ xiiKrautTreeAssetDocumentGenerator::xiiKrautTreeAssetDocumentGenerator()
 
 xiiKrautTreeAssetDocumentGenerator::~xiiKrautTreeAssetDocumentGenerator() = default;
 
-void xiiKrautTreeAssetDocumentGenerator::GetImportModes(const char* szParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiKrautTreeAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
 {
-  xiiStringBuilder baseOutputFile = szParentDirRelativePath;
+  xiiStringBuilder baseOutputFile = sParentDirRelativePath;
   baseOutputFile.ChangeFileExtension("xiiKrautTreeAsset");
 
   {
@@ -239,7 +239,7 @@ void xiiKrautTreeAssetDocumentGenerator::GetImportModes(const char* szParentDirR
   }
 }
 
-xiiStatus xiiKrautTreeAssetDocumentGenerator::Generate(const char* szDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiKrautTreeAssetDocumentGenerator::Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
 {
   auto pApp = xiiQtEditorApp::GetSingleton();
 
@@ -254,7 +254,7 @@ xiiStatus xiiKrautTreeAssetDocumentGenerator::Generate(const char* szDataDirRela
     return xiiStatus("Target document is not a valid xiiKrautTreeAssetDocument");
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
-  accessor.SetValue("KrautFile", szDataDirRelativePath);
+  accessor.SetValue("KrautFile", sDataDirRelativePath);
 
   return xiiStatus(XII_SUCCESS);
 }

@@ -285,9 +285,9 @@ xiiMeshAssetDocumentGenerator::xiiMeshAssetDocumentGenerator()
 
 xiiMeshAssetDocumentGenerator::~xiiMeshAssetDocumentGenerator() {}
 
-void xiiMeshAssetDocumentGenerator::GetImportModes(const char* szParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiMeshAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
 {
-  xiiStringBuilder baseOutputFile = szParentDirRelativePath;
+  xiiStringBuilder baseOutputFile = sParentDirRelativePath;
   baseOutputFile.ChangeFileExtension(GetDocumentExtension());
 
   {
@@ -307,7 +307,7 @@ void xiiMeshAssetDocumentGenerator::GetImportModes(const char* szParentDirRelati
   }
 }
 
-xiiStatus xiiMeshAssetDocumentGenerator::Generate(const char* szDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiMeshAssetDocumentGenerator::Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
 {
   auto pApp = xiiQtEditorApp::GetSingleton();
 
@@ -320,7 +320,7 @@ xiiStatus xiiMeshAssetDocumentGenerator::Generate(const char* szDataDirRelativeP
     return xiiStatus("Target document is not a valid xiiMeshAssetDocument");
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
-  accessor.SetValue("MeshFile", szDataDirRelativePath);
+  accessor.SetValue("MeshFile", sDataDirRelativePath);
 
   if (info.m_sName == "MeshImport.WithMaterials")
   {

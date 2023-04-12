@@ -23,12 +23,12 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeAssetProperties, 3, xiiRTTIDefaul
 
     XII_ENUM_MEMBER_PROPERTY("ChannelMapping", xiiTextureCubeChannelMappingEnum, m_ChannelMapping),
 
-    XII_ACCESSOR_PROPERTY("Input1", GetInputFile0, SetInputFile0)->AddAttributes(new xiiFileBrowserAttribute("Select Texture", "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr")),
-    XII_ACCESSOR_PROPERTY("Input2", GetInputFile1, SetInputFile1)->AddAttributes(new xiiFileBrowserAttribute("Select Texture", "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr")),
-    XII_ACCESSOR_PROPERTY("Input3", GetInputFile2, SetInputFile2)->AddAttributes(new xiiFileBrowserAttribute("Select Texture", "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr")),
-    XII_ACCESSOR_PROPERTY("Input4", GetInputFile3, SetInputFile3)->AddAttributes(new xiiFileBrowserAttribute("Select Texture", "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr")),
-    XII_ACCESSOR_PROPERTY("Input5", GetInputFile4, SetInputFile4)->AddAttributes(new xiiFileBrowserAttribute("Select Texture", "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr")),
-    XII_ACCESSOR_PROPERTY("Input6", GetInputFile5, SetInputFile5)->AddAttributes(new xiiFileBrowserAttribute("Select Texture", "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr")),
+    XII_ACCESSOR_PROPERTY("Input1", GetInputFile0, SetInputFile0)->AddAttributes(new xiiFileBrowserAttribute("Select Texture", xiiFileBrowserAttribute::ImagesLdrAndHdr)),
+    XII_ACCESSOR_PROPERTY("Input2", GetInputFile1, SetInputFile1)->AddAttributes(new xiiFileBrowserAttribute("Select Texture", xiiFileBrowserAttribute::ImagesLdrAndHdr)),
+    XII_ACCESSOR_PROPERTY("Input3", GetInputFile2, SetInputFile2)->AddAttributes(new xiiFileBrowserAttribute("Select Texture", xiiFileBrowserAttribute::ImagesLdrAndHdr)),
+    XII_ACCESSOR_PROPERTY("Input4", GetInputFile3, SetInputFile3)->AddAttributes(new xiiFileBrowserAttribute("Select Texture", xiiFileBrowserAttribute::ImagesLdrAndHdr)),
+    XII_ACCESSOR_PROPERTY("Input5", GetInputFile4, SetInputFile4)->AddAttributes(new xiiFileBrowserAttribute("Select Texture", xiiFileBrowserAttribute::ImagesLdrAndHdr)),
+    XII_ACCESSOR_PROPERTY("Input6", GetInputFile5, SetInputFile5)->AddAttributes(new xiiFileBrowserAttribute("Select Texture", xiiFileBrowserAttribute::ImagesLdrAndHdr)),
 
   }
   XII_END_PROPERTIES;

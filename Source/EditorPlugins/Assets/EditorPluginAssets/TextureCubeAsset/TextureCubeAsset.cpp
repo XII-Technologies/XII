@@ -222,6 +222,7 @@ xiiTextureCubeAssetDocumentGenerator::xiiTextureCubeAssetDocumentGenerator()
 {
   AddSupportedFileType("dds");
   AddSupportedFileType("hdr");
+  AddSupportedFileType("exr");
 
   // these formats would need to use 6 files for the faces
   // more elaborate detection and mapping would need to be implemented
@@ -233,12 +234,12 @@ xiiTextureCubeAssetDocumentGenerator::xiiTextureCubeAssetDocumentGenerator()
 
 xiiTextureCubeAssetDocumentGenerator::~xiiTextureCubeAssetDocumentGenerator() {}
 
-void xiiTextureCubeAssetDocumentGenerator::GetImportModes(const char* szParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiTextureCubeAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
 {
-  xiiStringBuilder baseOutputFile = szParentDirRelativePath;
+  xiiStringBuilder baseOutputFile = sParentDirRelativePath;
 
   const xiiStringBuilder baseFilename = baseOutputFile.GetFileName();
-  const bool             isHDR        = xiiPathUtils::HasExtension(szParentDirRelativePath, "hdr");
+  const bool             isHDR        = xiiPathUtils::HasExtension(sParentDirRelativePath, "hdr") || xiiPathUtils::HasExtension(sParentDirRelativePath, "exr");
 
   /// \todo Make this configurable
   const bool isCubemap = ((baseFilename.FindSubString_NoCase("cubemap") != nullptr) || (baseFilename.FindSubString_NoCase("skybox") != nullptr));
@@ -267,7 +268,7 @@ void xiiTextureCubeAssetDocumentGenerator::GetImportModes(const char* szParentDi
   }
 }
 
-xiiStatus xiiTextureCubeAssetDocumentGenerator::Generate(const char* szDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiTextureCubeAssetDocumentGenerator::Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
 {
   auto pApp = xiiQtEditorApp::GetSingleton();
 
@@ -280,7 +281,7 @@ xiiStatus xiiTextureCubeAssetDocumentGenerator::Generate(const char* szDataDirRe
     return xiiStatus("Target document is not a valid xiiTextureCubeAssetDocument");
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
-  accessor.SetValue("Input1", szDataDirRelativePath);
+  accessor.SetValue("Input1", sDataDirRelativePath);
   accessor.SetValue("ChannelMapping", (int)xiiTextureCubeChannelMappingEnum::RGB1);
 
   if (info.m_sName == "CubemapImport.SkyboxHDR")

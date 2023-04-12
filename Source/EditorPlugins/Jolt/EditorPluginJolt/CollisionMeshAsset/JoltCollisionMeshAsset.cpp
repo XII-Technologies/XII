@@ -360,9 +360,9 @@ xiiJoltCollisionMeshAssetDocumentGenerator::xiiJoltCollisionMeshAssetDocumentGen
 
 xiiJoltCollisionMeshAssetDocumentGenerator::~xiiJoltCollisionMeshAssetDocumentGenerator() = default;
 
-void xiiJoltCollisionMeshAssetDocumentGenerator::GetImportModes(const char* szParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiJoltCollisionMeshAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
 {
-  xiiStringBuilder baseOutputFile = szParentDirRelativePath;
+  xiiStringBuilder baseOutputFile = sParentDirRelativePath;
   baseOutputFile.ChangeFileExtension("xiiJoltCollisionMeshAsset");
 
   {
@@ -374,7 +374,7 @@ void xiiJoltCollisionMeshAssetDocumentGenerator::GetImportModes(const char* szPa
   }
 }
 
-xiiStatus xiiJoltCollisionMeshAssetDocumentGenerator::Generate(const char* szDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiJoltCollisionMeshAssetDocumentGenerator::Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
 {
   auto pApp = xiiQtEditorApp::GetSingleton();
 
@@ -387,7 +387,7 @@ xiiStatus xiiJoltCollisionMeshAssetDocumentGenerator::Generate(const char* szDat
     return xiiStatus("Target document is not a valid xiiJoltCollisionMeshAssetDocument");
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
-  accessor.SetValue("MeshFile", szDataDirRelativePath);
+  accessor.SetValue("MeshFile", sDataDirRelativePath);
 
   return xiiStatus(XII_SUCCESS);
 }
@@ -408,9 +408,9 @@ xiiJoltConvexCollisionMeshAssetDocumentGenerator::xiiJoltConvexCollisionMeshAsse
 
 xiiJoltConvexCollisionMeshAssetDocumentGenerator::~xiiJoltConvexCollisionMeshAssetDocumentGenerator() = default;
 
-void xiiJoltConvexCollisionMeshAssetDocumentGenerator::GetImportModes(const char* szParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiJoltConvexCollisionMeshAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
 {
-  xiiStringBuilder baseOutputFile = szParentDirRelativePath;
+  xiiStringBuilder baseOutputFile = sParentDirRelativePath;
   baseOutputFile.ChangeFileExtension("xiiJoltConvexCollisionMeshAsset");
 
   {
@@ -422,7 +422,7 @@ void xiiJoltConvexCollisionMeshAssetDocumentGenerator::GetImportModes(const char
   }
 }
 
-xiiStatus xiiJoltConvexCollisionMeshAssetDocumentGenerator::Generate(const char* szDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiJoltConvexCollisionMeshAssetDocumentGenerator::Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
 {
   auto pApp = xiiQtEditorApp::GetSingleton();
 
@@ -435,7 +435,7 @@ xiiStatus xiiJoltConvexCollisionMeshAssetDocumentGenerator::Generate(const char*
     return xiiStatus("Target document is not a valid xiiJoltCollisionMeshAssetDocument");
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
-  accessor.SetValue("MeshFile", szDataDirRelativePath);
+  accessor.SetValue("MeshFile", sDataDirRelativePath);
 
   return xiiStatus(XII_SUCCESS);
 }

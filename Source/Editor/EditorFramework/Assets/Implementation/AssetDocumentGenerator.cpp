@@ -12,38 +12,38 @@ xiiAssetDocumentGenerator::xiiAssetDocumentGenerator() {}
 
 xiiAssetDocumentGenerator::~xiiAssetDocumentGenerator() {}
 
-void xiiAssetDocumentGenerator::AddSupportedFileType(const char* szExtension)
+void xiiAssetDocumentGenerator::AddSupportedFileType(xiiStringView sExtension)
 {
-  xiiStringBuilder tmp = szExtension;
+  xiiStringBuilder tmp = sExtension;
   tmp.ToLower();
 
   m_SupportedFileTypes.PushBack(tmp);
 }
 
-bool xiiAssetDocumentGenerator::SupportsFileType(const char* szFile) const
+bool xiiAssetDocumentGenerator::SupportsFileType(xiiStringView sFile) const
 {
-  xiiStringBuilder tmp = xiiPathUtils::GetFileExtension(szFile);
+  xiiStringBuilder tmp = xiiPathUtils::GetFileExtension(sFile);
   tmp.ToLower();
 
   return m_SupportedFileTypes.Contains(tmp);
 }
 
-void xiiAssetDocumentGenerator::BuildFileDialogFilterString(xiiStringBuilder& out_Filter) const
+void xiiAssetDocumentGenerator::BuildFileDialogFilterString(xiiStringBuilder& out_sFilter) const
 {
   bool semicolon = false;
-  out_Filter.Format("{0} (", GetDocumentExtension());
-  AppendFileFilterStrings(out_Filter, semicolon);
-  out_Filter.Append(")");
+  out_sFilter.Format("{0} (", GetDocumentExtension());
+  AppendFileFilterStrings(out_sFilter, semicolon);
+  out_sFilter.Append(")");
 }
 
-void xiiAssetDocumentGenerator::AppendFileFilterStrings(xiiStringBuilder& out_Filter, bool& semicolon) const
+void xiiAssetDocumentGenerator::AppendFileFilterStrings(xiiStringBuilder& out_sFilter, bool& ref_bSemicolon) const
 {
   for (const xiiString ext : m_SupportedFileTypes)
   {
     xiiStringBuilder extWithStarDot;
     extWithStarDot.AppendFormat("*.{0}", ext);
 
-    if (const char* pos = out_Filter.FindSubString(extWithStarDot.GetData()))
+    if (const char* pos = out_sFilter.FindSubString(extWithStarDot.GetData()))
     {
       const char afterExt = *(pos + extWithStarDot.GetElementCount());
 
@@ -51,14 +51,14 @@ void xiiAssetDocumentGenerator::AppendFileFilterStrings(xiiStringBuilder& out_Fi
         continue;
     }
 
-    if (semicolon)
+    if (ref_bSemicolon)
     {
-      out_Filter.AppendFormat("; {0}", extWithStarDot.GetView());
+      out_sFilter.AppendFormat("; {0}", extWithStarDot.GetView());
     }
     else
     {
-      out_Filter.Append(extWithStarDot.GetView());
-      semicolon = true;
+      out_sFilter.Append(extWithStarDot.GetView());
+      ref_bSemicolon = true;
     }
   }
 }
@@ -75,7 +75,7 @@ void xiiAssetDocumentGenerator::CreateGenerators(xiiHybridArray<xiiAssetDocument
 
   // sort by name
   out_Generators.Sort([](xiiAssetDocumentGenerator* lhs, xiiAssetDocumentGenerator* rhs) -> bool {
-    return xiiStringUtils::Compare_NoCase(lhs->GetDocumentExtension(), rhs->GetDocumentExtension()) < 0;
+    return lhs->GetDocumentExtension().Compare_NoCase(rhs->GetDocumentExtension()) < 0;
   });
 }
 
@@ -90,9 +90,9 @@ void xiiAssetDocumentGenerator::DestroyGenerators(xiiHybridArray<xiiAssetDocumen
 }
 
 
-void xiiAssetDocumentGenerator::ExecuteImport(xiiDynamicArray<ImportData>& allImports)
+void xiiAssetDocumentGenerator::ExecuteImport(xiiDynamicArray<ImportData>& ref_allImports)
 {
-  for (auto& data : allImports)
+  for (auto& data : ref_allImports)
   {
     if (data.m_iSelectedOption < 0)
       continue;
@@ -296,9 +296,7 @@ void xiiAssetDocumentGenerator::CreateImportOptionList(const xiiHybridArray<xiiS
 
 void xiiAssetDocumentGenerator::SortAndSelectBestImportOption(xiiDynamicArray<xiiAssetDocumentGenerator::ImportData>& allImports)
 {
-  allImports.Sort([](const xiiAssetDocumentGenerator::ImportData& lhs, const xiiAssetDocumentGenerator::ImportData& rhs) -> bool {
-    return lhs.m_sInputFileParentRelative < rhs.m_sInputFileParentRelative;
-  });
+  allImports.Sort([](const xiiAssetDocumentGenerator::ImportData& lhs, const xiiAssetDocumentGenerator::ImportData& rhs) -> bool { return lhs.m_sInputFileParentRelative < rhs.m_sInputFileParentRelative; });
 
   for (auto& singleImport : allImports)
   {

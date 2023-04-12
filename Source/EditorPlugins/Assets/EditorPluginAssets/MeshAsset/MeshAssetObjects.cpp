@@ -10,7 +10,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetProperties, 3, xiiRTTIDefaultAlloca
   XII_BEGIN_PROPERTIES
   {
     XII_ENUM_MEMBER_PROPERTY("PrimitiveType", xiiMeshPrimitive, m_PrimitiveType),
-    XII_MEMBER_PROPERTY("MeshFile", m_sMeshFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", "*.obj;*.fbx;*.gltf;*.glb")),
+    XII_MEMBER_PROPERTY("MeshFile", m_sMeshFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", xiiFileBrowserAttribute::Meshes)),
     XII_ENUM_MEMBER_PROPERTY("RightDir", xiiBasisAxis, m_RightDir)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveX)),
     XII_ENUM_MEMBER_PROPERTY("UpDir", xiiBasisAxis, m_UpDir)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveY)),
     XII_MEMBER_PROPERTY("FlipForwardDir", m_bFlipForwardDir),

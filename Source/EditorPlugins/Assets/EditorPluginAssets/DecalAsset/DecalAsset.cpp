@@ -20,11 +20,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDecalAssetProperties, 3, xiiRTTIDefaultAlloc
   {
     XII_ENUM_MEMBER_PROPERTY("Mode", xiiDecalMode, m_Mode),
     XII_MEMBER_PROPERTY("BlendModeColorize", m_bBlendModeColorize),
-    XII_MEMBER_PROPERTY("AlphaMask", m_sAlphaMask)->AddAttributes(new xiiFileBrowserAttribute("Select Alpha Mask", "*.dds;*.tga;*.png;*.jpg;*.jpeg")),
-    XII_MEMBER_PROPERTY("BaseColor", m_sBaseColor)->AddAttributes(new xiiFileBrowserAttribute("Select Base Color Map", "*.dds;*.tga;*.png;*.jpg;*.jpeg")),
-    XII_MEMBER_PROPERTY("Normal", m_sNormal)->AddAttributes(new xiiFileBrowserAttribute("Select Normal Map", "*.dds;*.tga;*.png;*.jpg;*.jpeg"), new xiiDefaultValueAttribute(xiiStringView("Textures/NeutralNormal.tga"))), // wrap in xiiStringView to prevent a memory leak report
-    XII_MEMBER_PROPERTY("ORM", m_sORM)->AddAttributes(new xiiFileBrowserAttribute("Select ORM Map", "*.dds;*.tga;*.png;*.jpg;*.jpeg")),
-    XII_MEMBER_PROPERTY("Emissive", m_sEmissive)->AddAttributes(new xiiFileBrowserAttribute("Select Emissive Map", "*.dds;*.tga;*.png;*.jpg;*.jpeg")),
+    XII_MEMBER_PROPERTY("AlphaMask", m_sAlphaMask)->AddAttributes(new xiiFileBrowserAttribute("Select Alpha Mask", xiiFileBrowserAttribute::ImagesLdrOnly)),
+    XII_MEMBER_PROPERTY("BaseColor", m_sBaseColor)->AddAttributes(new xiiFileBrowserAttribute("Select Base Color Map", xiiFileBrowserAttribute::ImagesLdrOnly)),
+    XII_MEMBER_PROPERTY("Normal", m_sNormal)->AddAttributes(new xiiFileBrowserAttribute("Select Normal Map", xiiFileBrowserAttribute::ImagesLdrOnly), new xiiDefaultValueAttribute(xiiStringView("Textures/NeutralNormal.tga"))), // wrap in xiiStringView to prevent a memory leak report
+    XII_MEMBER_PROPERTY("ORM", m_sORM)->AddAttributes(new xiiFileBrowserAttribute("Select ORM Map", xiiFileBrowserAttribute::ImagesLdrOnly)),
+    XII_MEMBER_PROPERTY("Emissive", m_sEmissive)->AddAttributes(new xiiFileBrowserAttribute("Select Emissive Map", xiiFileBrowserAttribute::ImagesLdrOnly)),
   }
   XII_END_PROPERTIES;
 }
@@ -174,9 +174,9 @@ xiiDecalAssetDocumentGenerator::xiiDecalAssetDocumentGenerator()
 
 xiiDecalAssetDocumentGenerator::~xiiDecalAssetDocumentGenerator() {}
 
-void xiiDecalAssetDocumentGenerator::GetImportModes(const char* szParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiDecalAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
 {
-  xiiStringBuilder baseOutputFile = szParentDirRelativePath;
+  xiiStringBuilder baseOutputFile = sParentDirRelativePath;
 
   const xiiStringBuilder baseFilename = baseOutputFile.GetFileName();
 
@@ -194,7 +194,7 @@ void xiiDecalAssetDocumentGenerator::GetImportModes(const char* szParentDirRelat
   }
 }
 
-xiiStatus xiiDecalAssetDocumentGenerator::Generate(const char* szDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiDecalAssetDocumentGenerator::Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
 {
   auto pApp              = xiiQtEditorApp::GetSingleton();
   out_pGeneratedDocument = pApp->CreateDocument(info.m_sOutputFileAbsolute, xiiDocumentFlags::None);
@@ -207,7 +207,7 @@ xiiStatus xiiDecalAssetDocumentGenerator::Generate(const char* szDataDirRelative
     return xiiStatus("Target document is not a valid xiiDecalAssetDocument");
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
-  accessor.SetValue("BaseColor", szDataDirRelativePath);
+  accessor.SetValue("BaseColor", sDataDirRelativePath);
 
   return xiiStatus(XII_SUCCESS);
 }
