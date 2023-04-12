@@ -4,12 +4,6 @@
 #include <EditorFramework/Preferences/EditorPreferences.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
-xiiString xiiQtEditorApp::GetExternalToolsFolder(bool bForceUseCustomTools)
-{
-  xiiEditorPreferencesUser* pPref = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
-  return xiiApplicationServices::GetSingleton()->GetPrecompiledToolsFolder(bForceUseCustomTools ? false : pPref->m_bUsePrecompiledTools);
-}
-
 xiiString xiiQtEditorApp::FindToolApplication(const char* szToolName)
 {
   xiiStringBuilder toolExe = szToolName;
@@ -22,13 +16,22 @@ xiiString xiiQtEditorApp::FindToolApplication(const char* szToolName)
 
   szToolName = toolExe;
 
-  xiiStringBuilder sTool = xiiQtEditorApp::GetSingleton()->GetExternalToolsFolder();
+  xiiEditorPreferencesUser* pPref = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+
+  bool bFolders[2] = {false, true};
+
+  if (pPref->m_bUsePrecompiledTools)
+  {
+    xiiMath::Swap(bFolders[0], bFolders[1]);
+  }
+
+  xiiStringBuilder sTool = xiiApplicationServices::GetSingleton()->GetPrecompiledToolsFolder(bFolders[0]);
   sTool.AppendPath(szToolName);
 
   if (xiiFileSystem::ExistsFile(sTool))
     return sTool;
 
-  sTool = xiiQtEditorApp::GetSingleton()->GetExternalToolsFolder(true);
+  sTool = xiiApplicationServices::GetSingleton()->GetPrecompiledToolsFolder(bFolders[1]);
   sTool.AppendPath(szToolName);
 
   if (xiiFileSystem::ExistsFile(sTool))
@@ -38,7 +41,7 @@ xiiString xiiQtEditorApp::FindToolApplication(const char* szToolName)
   return szToolName;
 }
 
-xiiStatus xiiQtEditorApp::ExecuteTool(const char* szTool, const QStringList& arguments, xiiUInt32 uiSecondsTillTimeout, xiiLogInterface* pLogOutput /*= nullptr*/, xiiLogMsgType::Enum LogLevel /*= xiiLogMsgType::InfoMsg*/, const char* szCWD /*= nullptr*/)
+xiiStatus xiiQtEditorApp::ExecuteTool(const char* szTool, const QStringList& arguments, xiiUInt32 uiSecondsTillTimeout, xiiLogInterface* pLogOutput /*= nullptr*/, xiiLogMsgType::Enum logLevel /*= xiiLogMsgType::InfoMsg*/, const char* szCWD /*= nullptr*/)
 {
   // this block is supposed to be in the global log, not the given log interface
   XII_LOG_BLOCK("Executing Tool", szTool);
@@ -151,7 +154,7 @@ xiiStatus xiiQtEditorApp::ExecuteTool(const char* szTool, const QStringList& arg
         // TODO: output all logged data in one big message, if the tool failed
       }
 
-      if (msgType > LogLevel || szMsg == nullptr)
+      if (msgType > logLevel || szMsg == nullptr)
         continue;
 
       xiiLog::BroadcastLoggingEvent(pLogOutput, msgType, szMsg);

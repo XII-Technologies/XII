@@ -10,7 +10,7 @@ class XII_FOUNDATION_DLL xiiStackTracer
 public:
   /// \brief Captures the current stack trace.
   ///
-  /// The trace will contain not more than trace.GetCount() entries.
+  /// The trace will contain not more than ref_trace.GetCount() entries.
   /// [Windows] If called in an exception handler, set pContext to PEXCEPTION_POINTERS::ContextRecord.
   /// Returns the actual number of captured entries.
   static xiiUInt32 GetStackTrace(xiiArrayPtr<void*>& trace, void* pContext = nullptr);
@@ -25,6 +25,8 @@ public:
   static void PrintStackTrace(const xiiArrayPtr<void*>& trace, PrintFunc printFunc);
 
 private:
+  xiiStackTracer() = delete;
+
   static void OnPluginEvent(const xiiPluginEvent& e);
 
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Foundation, StackTracer);
