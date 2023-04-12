@@ -12,9 +12,17 @@ class XII_EDITORFRAMEWORK_DLL xiiSelectionContext : public xiiEditorInputContext
 {
 public:
   xiiSelectionContext(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView, const xiiCamera* pCamera);
+  ~xiiSelectionContext();
 
   void SetWindowConfig(const xiiVec2I32& viewport) { m_vViewport = viewport; }
 
+  /// \brief Adds a delegate that gets called whenever an object is picked, as long as the override is active.
+  ///
+  /// It also changes the owner view's cursor to a cross-hair.
+  /// If something gets picked, the override is called with a non-null object.
+  /// In case the user presses ESC or the view gets destroyed while the override is active,
+  /// the delegate is called with nullptr.
+  /// This indicates that all picking should be stopped and the registered user should clean up.
   void SetPickObjectOverride(xiiDelegate<void(const xiiDocumentObject*)> pickOverride);
   void ResetPickObjectOverride();
 

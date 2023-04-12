@@ -14,10 +14,13 @@ xiiQtEngineDocumentWindow::xiiQtEngineDocumentWindow(xiiAssetDocument* pDocument
 
 xiiQtEngineDocumentWindow::~xiiQtEngineDocumentWindow()
 {
+  // Ensure that the selection gets cleared before the views are destroyed, so that the dependent code can clean up first.
+  GetDocument()->GetSelectionManager()->Clear();
+
   GetDocument()->m_ProcessMessageEvent.RemoveEventHandler(xiiMakeDelegate(&xiiQtEngineDocumentWindow::ProcessMessageEventHandler, this));
   GetDocument()->m_CommonAssetUiChangeEvent.RemoveEventHandler(xiiMakeDelegate(&xiiQtEngineDocumentWindow::CommonAssetUiEventHandler, this));
 
-  // delete all view widgets, so that they can send their messages before we clean up the engine connection
+  // Delete all view widgets, so that they can send their messages before we clean up the engine connection.
   DestroyAllViews();
 }
 
