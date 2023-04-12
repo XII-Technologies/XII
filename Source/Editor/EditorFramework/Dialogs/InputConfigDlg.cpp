@@ -10,9 +10,8 @@ void UpdateInputDynamicEnumValues()
 {
   xiiHybridArray<xiiGameAppInputConfig, 32> Actions;
 
-  xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectFile();
-  sPath.PathParentDirectory();
-  sPath.AppendPath("InputConfig.ddl");
+  xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
+  sPath.AppendPath("RuntimeConfigs/InputConfig.ddl");
 
   xiiFileReader file;
   if (file.Open(sPath).Failed())
@@ -165,9 +164,8 @@ void xiiQtInputConfigDlg::LoadActions()
 {
   m_Actions.Clear();
 
-  xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectFile();
-  sPath.PathParentDirectory();
-  sPath.AppendPath("InputConfig.ddl");
+  xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
+  sPath.AppendPath("RuntimeConfigs/InputConfig.ddl");
 
   xiiFileReader file;
   if (file.Open(sPath).Failed())
@@ -178,9 +176,8 @@ void xiiQtInputConfigDlg::LoadActions()
 
 void xiiQtInputConfigDlg::SaveActions()
 {
-  xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectFile();
-  sPath.PathParentDirectory();
-  sPath.AppendPath("InputConfig.ddl");
+  xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
+  sPath.AppendPath("RuntimeConfigs/InputConfig.ddl");
 
   xiiDeferredFileWriter file;
   file.SetOutput(sPath);

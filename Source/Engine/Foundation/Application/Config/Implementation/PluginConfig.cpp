@@ -70,15 +70,12 @@ bool xiiApplicationPluginConfig::RemovePlugin(const PluginConfig& cfg0)
 
 xiiApplicationPluginConfig::xiiApplicationPluginConfig() = default;
 
-xiiResult xiiApplicationPluginConfig::Save(const char* szConfigPath) const
+xiiResult xiiApplicationPluginConfig::Save(xiiStringView sConfigPath) const
 {
   m_Plugins.Sort();
 
-  xiiStringBuilder sPath;
-  sPath = szConfigPath;
-
   xiiFileWriter file;
-  if (file.Open(sPath).Failed())
+  if (file.Open(sConfigPath).Failed())
     return XII_FAILURE;
 
   xiiOpenDdlWriter writer;
@@ -99,26 +96,23 @@ xiiResult xiiApplicationPluginConfig::Save(const char* szConfigPath) const
   return XII_SUCCESS;
 }
 
-void xiiApplicationPluginConfig::Load(const char* szConfigPath)
+void xiiApplicationPluginConfig::Load(xiiStringView sConfigPath)
 {
   XII_LOG_BLOCK("xiiApplicationPluginConfig::Load()");
 
   m_Plugins.Clear();
 
-  xiiStringBuilder sPath;
-  sPath = szConfigPath;
-
   xiiFileReader file;
-  if (file.Open(sPath).Failed())
+  if (file.Open(sConfigPath).Failed())
   {
-    xiiLog::Warning("Could not open plugins config file '{0}'", sPath);
+    xiiLog::Warning("Could not open plugins config file '{0}'", sConfigPath);
     return;
   }
 
   xiiOpenDdlReader reader;
   if (reader.ParseDocument(file, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
   {
-    xiiLog::Error("Failed to parse plugins config file '{0}'", sPath);
+    xiiLog::Error("Failed to parse plugins config file '{0}'", sConfigPath);
     return;
   }
 

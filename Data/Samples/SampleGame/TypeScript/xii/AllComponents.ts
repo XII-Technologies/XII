@@ -417,6 +417,28 @@ export class FogComponent extends SettingsComponent
   set SkyDistance(value: number) { __CPP_ComponentProperty_set(this, 2069465566, value); }
 }
 
+export class FollowPathComponent extends Component
+{
+  public static GetTypeNameHash(): number { return 1924203800; }
+  SetDirectionForwards(Forwards: boolean): void { __CPP_ComponentFunction_Call(this, 1431908031, Forwards); }
+  IsDirectionForwards(): boolean { return __CPP_ComponentFunction_Call(this, 3942280336); }
+  ToggleDirection(): void { __CPP_ComponentFunction_Call(this, 400298289); }
+  get Path(): string { return __CPP_ComponentProperty_get(this, 4294635661); }
+  set Path(value: string) { __CPP_ComponentProperty_set(this, 4294635661, value); }
+  get StartDistance(): number { return __CPP_ComponentProperty_get(this, 1555113697); }
+  set StartDistance(value: number) { __CPP_ComponentProperty_set(this, 1555113697, value); }
+  get Running(): boolean { return __CPP_ComponentProperty_get(this, 2518314482); }
+  set Running(value: boolean) { __CPP_ComponentProperty_set(this, 2518314482, value); }
+  get Mode(): Enum.PropertyAnimMode { return __CPP_ComponentProperty_get(this, 2871645551); }
+  set Mode(value: Enum.PropertyAnimMode) { __CPP_ComponentProperty_set(this, 2871645551, value); }
+  get Speed(): number { return __CPP_ComponentProperty_get(this, 42656182); }
+  set Speed(value: number) { __CPP_ComponentProperty_set(this, 42656182, value); }
+  get LookAhead(): number { return __CPP_ComponentProperty_get(this, 4096587980); }
+  set LookAhead(value: number) { __CPP_ComponentProperty_set(this, 4096587980, value); }
+  get Smoothing(): number { return __CPP_ComponentProperty_get(this, 1570493541); }
+  set Smoothing(value: number) { __CPP_ComponentProperty_set(this, 1570493541, value); }
+}
+
 export class ForwardEventsToGameStateComponent extends EventMessageHandlerComponent
 {
   public static GetTypeNameHash(): number { return 4180057688; }
@@ -576,6 +598,28 @@ export class ParticleComponent extends RenderComponent
 export class ParticleFinisherComponent extends RenderComponent
 {
   public static GetTypeNameHash(): number { return 2180374617; }
+}
+
+export class PathComponent extends Component
+{
+  public static GetTypeNameHash(): number { return 1869527729; }
+  get Flags(): Flags.PathComponentFlags { return __CPP_ComponentProperty_get(this, 1841421151); }
+  set Flags(value: Flags.PathComponentFlags) { __CPP_ComponentProperty_set(this, 1841421151, value); }
+  get Closed(): boolean { return __CPP_ComponentProperty_get(this, 2909610872); }
+  set Closed(value: boolean) { __CPP_ComponentProperty_set(this, 2909610872, value); }
+  get Detail(): number { return __CPP_ComponentProperty_get(this, 1959794179); }
+  set Detail(value: number) { __CPP_ComponentProperty_set(this, 1959794179, value); }
+}
+
+export class PathNodeComponent extends Component
+{
+  public static GetTypeNameHash(): number { return 1209101987; }
+  get Roll(): number { return __CPP_ComponentProperty_get(this, 4209489507); }
+  set Roll(value: number) { __CPP_ComponentProperty_set(this, 4209489507, value); }
+  get Tangent1(): Enum.PathNodeTangentMode { return __CPP_ComponentProperty_get(this, 3022242417); }
+  set Tangent1(value: Enum.PathNodeTangentMode) { __CPP_ComponentProperty_set(this, 3022242417, value); }
+  get Tangent2(): Enum.PathNodeTangentMode { return __CPP_ComponentProperty_get(this, 197788457); }
+  set Tangent2(value: Enum.PathNodeTangentMode) { __CPP_ComponentProperty_set(this, 197788457, value); }
 }
 
 export class PlayerStartPointComponent extends Component

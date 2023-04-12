@@ -519,7 +519,7 @@ QStringList xiiSceneAction::GetPlayerCommandLine(xiiStringBuilder& out_sSingleLi
   }
 
   xiiStringBuilder sWndCfgPath = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
-  sWndCfgPath.AppendPath("Window.ddl");
+  sWndCfgPath.AppendPath("RuntimeConfigs/Window.ddl");
 
   if (xiiOSFile::ExistsFile(sWndCfgPath))
   {

@@ -238,7 +238,7 @@ xiiResult xiiProjectExport::CreateDataDirectoryDDL(const DirectoryMapping& mappi
     ddc.m_sRootName           = info.m_sTargetDirRootName;
   }
 
-  sPath.Set(szTargetDirectory, "/Data/project/DataDirectories.ddl");
+  sPath.Set(szTargetDirectory, "/Data/project/RuntimeConfigs/DataDirectories.ddl");
 
   if (cfg.Save(sPath).Failed())
   {

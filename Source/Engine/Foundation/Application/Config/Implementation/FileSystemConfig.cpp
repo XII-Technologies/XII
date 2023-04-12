@@ -33,10 +33,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiApplicationFileSystemConfig_DataDirConfig, xi
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiResult xiiApplicationFileSystemConfig::Save(const char* szPath)
+xiiResult xiiApplicationFileSystemConfig::Save(xiiStringView sPath)
 {
-  xiiStringBuilder sPath = szPath;
-
   xiiFileWriter file;
   if (file.Open(sPath).Failed())
     return XII_FAILURE;
@@ -60,13 +58,11 @@ xiiResult xiiApplicationFileSystemConfig::Save(const char* szPath)
   return XII_SUCCESS;
 }
 
-void xiiApplicationFileSystemConfig::Load(const char* szPath /*= ":project/DataDirectories.ddl"*/)
+void xiiApplicationFileSystemConfig::Load(xiiStringView sPath)
 {
   XII_LOG_BLOCK("xiiApplicationFileSystemConfig::Load()");
 
   m_DataDirs.Clear();
-
-  xiiStringBuilder sPath = szPath;
 
   xiiFileReader file;
   if (file.Open(sPath).Failed())

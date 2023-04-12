@@ -21,8 +21,8 @@ xiiQtTestGUI::xiiQtTestGUI(xiiQtTestFramework& testFramework) :
   this->setupUi(this);
   this->setWindowTitle(testFramework.GetTestName());
 
-  QCoreApplication::setOrganizationDomain("www.xiiengine.net");
-  QCoreApplication::setOrganizationName("xiiEngine Project");
+  QCoreApplication::setOrganizationDomain("www.xiitechnologies.com");
+  QCoreApplication::setOrganizationName("XII Technologies");
   QCoreApplication::setApplicationName("xiiTestFramework");
   QCoreApplication::setApplicationVersion("1.0.0");
 

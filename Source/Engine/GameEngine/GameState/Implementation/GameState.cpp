@@ -339,10 +339,13 @@ xiiUniquePtr<xiiWindow> xiiGameState::CreateMainWindow()
 
   if (sWndCfg.IsEmpty())
   {
-    if (xiiFileSystem::ExistsFile(":appdata/Window.ddl"))
-      sWndCfg = ":appdata/Window.ddl";
+    const xiiStringView sCfgAppData = ":appdata/RuntimeConfigs/Window.ddl";
+    const xiiStringView sCfgProject = ":project/RuntimeConfigs/Window.ddl";
+
+    if (xiiFileSystem::ExistsFile(sCfgAppData))
+      sWndCfg = sCfgAppData;
     else
-      sWndCfg = ":project/Window.ddl";
+      sWndCfg = sCfgProject;
   }
 
   xiiWindowCreationDesc wndDesc;

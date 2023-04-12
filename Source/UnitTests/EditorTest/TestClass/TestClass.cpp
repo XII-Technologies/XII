@@ -56,7 +56,7 @@ void xiiEditorTestApplication::AfterCoreSystemsStartup()
   XII_PROFILE_SCOPE("AfterCoreSystemsStartup");
   // We override the user data dir to not pollute the editor settings.
   xiiStringBuilder userDataDir = xiiOSFile::GetUserDataFolder();
-  userDataDir.AppendPath("xiiEngine Project", "EditorTest");
+  userDataDir.AppendPath("XII/UnitTests", "EditorTest");
   userDataDir.MakeCleanPath();
 
   xiiQtEditorApp::GetSingleton()->StartupEditor(xiiQtEditorApp::StartupFlags::SafeMode | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::UnitTest, userDataDir);

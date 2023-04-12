@@ -81,11 +81,8 @@ void UpdateCollisionLayerDynamicEnumValues()
   auto& cfe = xiiDynamicEnum::GetDynamicEnum("PhysicsCollisionLayer");
   cfe.Clear();
 
-  xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-  sPath.AppendPath("RuntimeConfigs/CollisionLayers.cfg");
-
   xiiCollisionFilterConfig cfg;
-  if (cfg.Load(sPath).Failed())
+  if (cfg.Load().Failed())
     return;
 
   // add all names and values that are valid (non-empty)

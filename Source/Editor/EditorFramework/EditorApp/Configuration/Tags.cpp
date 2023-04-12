@@ -11,7 +11,7 @@ xiiStatus xiiQtEditorApp::SaveTagRegistry()
 
   xiiStringBuilder sPath;
   sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-  sPath.AppendPath("Tags.ddl");
+  sPath.AppendPath("RuntimeConfigs/Tags.ddl");
 
   xiiDeferredFileWriter file;
   file.SetOutput(sPath);
@@ -22,6 +22,7 @@ xiiStatus xiiQtEditorApp::SaveTagRegistry()
   {
     return xiiStatus(xiiFmt("Could not open tags config file '{0}' for writing", sPath));
   }
+
   return xiiStatus(XII_SUCCESS);
 }
 
@@ -33,7 +34,7 @@ void xiiQtEditorApp::ReadTagRegistry()
 
   xiiStringBuilder sPath;
   sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-  sPath.AppendPath("Tags.ddl");
+  sPath.AppendPath("RuntimeConfigs/ Tags.ddl");
 
   xiiFileReader file;
   if (file.Open(sPath).Failed())

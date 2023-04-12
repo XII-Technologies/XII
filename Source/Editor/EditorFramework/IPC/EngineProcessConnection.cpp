@@ -146,10 +146,13 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
 
   {
     xiiStringBuilder sWndCfgPath = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
-    sWndCfgPath.AppendPath("Window.ddl");
+    sWndCfgPath.AppendPath("RuntimeConfigs/Window.ddl");
 
-    args << "-wnd";
-    args << sWndCfgPath.GetData();
+    if (xiiFileSystem::ExistsFile(sWndCfgPath))
+    {
+      args << "-wnd";
+      args << sWndCfgPath.GetData();
+    }
   }
 
   // set up the EditorEngineProcess telemetry server on a different port

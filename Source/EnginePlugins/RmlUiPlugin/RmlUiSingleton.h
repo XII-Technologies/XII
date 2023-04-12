@@ -8,13 +8,15 @@
 class xiiRmlUiContext;
 struct xiiMsgExtractRenderData;
 
-/// \brief The fmod configuration to be used on a specific platform
+/// \brief The RML configuration to be used on a specific platform
 struct XII_RMLUIPLUGIN_DLL xiiRmlUiConfiguration
 {
   xiiDynamicArray<xiiString> m_Fonts;
 
-  xiiResult Save(const char* szFile) const;
-  xiiResult Load(const char* szFile);
+  static constexpr const xiiStringView s_sConfigFile = ":project/RuntimeConfigs/RmlUiConfig.ddl"_xiisv;
+
+  xiiResult Save(xiiStringView sFile = s_sConfigFile) const;
+  xiiResult Load(xiiStringView sFile = s_sConfigFile);
 
   bool operator==(const xiiRmlUiConfiguration& rhs) const;
   bool operator!=(const xiiRmlUiConfiguration& rhs) const { return !operator==(rhs); }

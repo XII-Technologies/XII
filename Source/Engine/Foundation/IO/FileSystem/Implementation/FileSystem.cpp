@@ -772,6 +772,48 @@ bool xiiFileSystem::ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiS
   return false;
 }
 
+xiiStringView xiiFileSystem::MigrateFileLocation(xiiStringView sOldLocation, xiiStringView sNewLocation)
+{
+  xiiStringBuilder sOldPathFull, sNewPathFull;
+
+  if (ResolvePath(sOldLocation, &sOldPathFull, nullptr).Failed() || sOldPathFull.IsEmpty())
+  {
+    // If the old path could not be resolved, use the new path
+    return sNewLocation;
+  }
+
+  ResolvePath(sNewLocation, &sNewPathFull, nullptr).AssertSuccess();
+
+  if (!ExistsFile(sOldPathFull))
+  {
+    // old path doesn't exist -> use the new
+    return sNewLocation;
+  }
+
+  // old path does exist -> deal with it
+
+  if (ExistsFile(sNewPathFull))
+  {
+    // new path also exists -> delete the old one (in all data directories), use the new one
+    DeleteFile(sOldLocation); // location, not full path
+    return sNewLocation;
+  }
+
+  // new one doesn't exist -> try to move old to new
+  if (xiiOSFile::MoveFileOrDirectory(sOldPathFull, sNewPathFull).Failed())
+  {
+    // if the old location exists, but we can't move the file, return the old location to use
+    return sOldLocation;
+  }
+
+  // deletes the file in the old location in ALL data directories,
+  // so that they can't interfere with the new file in the future
+  DeleteFile(sOldLocation); // location, not full path
+
+  // if we successfully moved the file to the new location, use the new location
+  return sNewLocation;
+}
+
 void xiiFileSystem::ReloadAllExternalDataDirectoryConfigs()
 {
   XII_LOG_BLOCK("ReloadAllExternalDataDirectoryConfigs");

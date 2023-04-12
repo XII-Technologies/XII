@@ -187,10 +187,12 @@ void xiiGameApplicationBase::Init_ConfigureTags()
 {
   XII_LOG_BLOCK("Reading Tags", "Tags.ddl");
 
+  xiiStringView sFile = ":project/RuntimeConfigs/Tags.ddl";
+
   xiiFileReader file;
-  if (file.Open(":project/Tags.ddl").Failed())
+  if (file.Open(sFile).Failed())
   {
-    xiiLog::Dev("'Tags.ddl' does not exist");
+    xiiLog::Dev("'{}' does not exist", sFile);
     return;
   }
 

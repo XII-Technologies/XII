@@ -36,9 +36,10 @@ public:
   void Save(xiiStreamWriter& stream) const;
   void Load(xiiStreamReader& stream);
 
-  xiiResult Save(const char* szFile) const;
-  xiiResult Load(const char* szFile);
+  static constexpr const xiiStringView s_sConfigFile = ":project/RuntimeConfigs/CollisionLayers.cfg"_xiisv;
 
+  xiiResult Save(xiiStringView sFile = s_sConfigFile) const;
+  xiiResult Load(xiiStringView sFile = s_sConfigFile);
 
 private:
   xiiUInt32 m_GroupMasks[32];

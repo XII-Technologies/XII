@@ -185,8 +185,8 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 {
   XII_PROFILE_SCOPE("StartupEditor");
 
-  QCoreApplication::setOrganizationDomain("www.xiiengine.net");
-  QCoreApplication::setOrganizationName("XII");
+  QCoreApplication::setOrganizationDomain("www.xiitechnologies.com");
+  QCoreApplication::setOrganizationName("XII Technologies");
   QCoreApplication::setApplicationName(xiiApplication::GetApplicationInstance()->GetApplicationName().GetData());
   QCoreApplication::setApplicationVersion("1.0.0");
 
