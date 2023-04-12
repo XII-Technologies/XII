@@ -42,8 +42,8 @@ public:
   xiiJoltCollisionMeshAssetDocumentGenerator();
   ~xiiJoltCollisionMeshAssetDocumentGenerator();
 
-  virtual void        GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const override;
-  virtual xiiStatus   Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument) override;
+  virtual void          GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const override;
+  virtual xiiStatus     Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument) override;
   virtual xiiStringView GetDocumentExtension() const override { return "xiiJoltCollisionMeshAsset"; }
   virtual xiiStringView GetGeneratorGroup() const override { return "JoltCollisionMeshes"; }
 };
@@ -56,8 +56,8 @@ public:
   xiiJoltConvexCollisionMeshAssetDocumentGenerator();
   ~xiiJoltConvexCollisionMeshAssetDocumentGenerator();
 
-  virtual void        GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const override;
-  virtual xiiStatus   Generate(xiiStringView szDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument) override;
+  virtual void          GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const override;
+  virtual xiiStatus     Generate(xiiStringView szDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument) override;
   virtual xiiStringView GetDocumentExtension() const override { return "xiiJoltConvexCollisionMeshAsset"; }
   virtual xiiStringView GetGeneratorGroup() const override { return "JoltCollisionMeshes"; }
 };
