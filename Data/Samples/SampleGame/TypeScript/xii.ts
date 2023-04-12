@@ -94,6 +94,7 @@ export import LightComponent = __AllComponents.LightComponent;
 export import DirectionalLightComponent = __AllComponents.DirectionalLightComponent;
 export import EventMessageHandlerComponent = __AllComponents.EventMessageHandlerComponent;
 export import FogComponent = __AllComponents.FogComponent;
+export import FollowPathComponent = __AllComponents.FollowPathComponent;
 export import ForwardEventsToGameStateComponent = __AllComponents.ForwardEventsToGameStateComponent;
 export import MeshComponent = __AllComponents.MeshComponent;
 export import GizmoComponent = __AllComponents.GizmoComponent;
@@ -108,6 +109,8 @@ export import NpcComponent = __AllComponents.NpcComponent;
 export import OccluderComponent = __AllComponents.OccluderComponent;
 export import ParticleComponent = __AllComponents.ParticleComponent;
 export import ParticleFinisherComponent = __AllComponents.ParticleFinisherComponent;
+export import PathComponent = __AllComponents.PathComponent;
+export import PathNodeComponent = __AllComponents.PathNodeComponent;
 export import PlayerStartPointComponent = __AllComponents.PlayerStartPointComponent;
 export import PointLightComponent = __AllComponents.PointLightComponent;
 export import PrefabReferenceComponent = __AllComponents.PrefabReferenceComponent;
@@ -148,6 +151,7 @@ export import WindVolumeSphereComponent = __AllComponents.WindVolumeSphereCompon
 
 // AUTO-GENERATED
 import __AllMessages = require("./xii/AllMessages")
+export import EventMsgPathChanged = __AllMessages.EventMsgPathChanged;
 export import MsgAnimationPosePreparing = __AllMessages.MsgAnimationPosePreparing;
 export import MsgAnimationPoseProposal = __AllMessages.MsgAnimationPoseProposal;
 export import MsgAnimationPoseUpdated = __AllMessages.MsgAnimationPoseUpdated;
@@ -200,6 +204,7 @@ export import GreyBoxShape = __AllEnums.GreyBoxShape;
 export import InputMessageGranularity = __AllEnums.InputMessageGranularity;
 export import OnComponentFinishedAction = __AllEnums.OnComponentFinishedAction;
 export import OnComponentFinishedAction2 = __AllEnums.OnComponentFinishedAction2;
+export import PathNodeTangentMode = __AllEnums.PathNodeTangentMode;
 export import PropertyAnimMode = __AllEnums.PropertyAnimMode;
 export import ReflectionProbeMode = __AllEnums.ReflectionProbeMode;
 export import RootMotionMode = __AllEnums.RootMotionMode;
@@ -220,4 +225,5 @@ export import XRTransformSpace = __AllEnums.XRTransformSpace;
 // AUTO-GENERATED
 import __AllFlags = require("./xii/AllFlags")
 export import DebugRenderComponentMask = __AllFlags.DebugRenderComponentMask;
+export import PathComponentFlags = __AllFlags.PathComponentFlags;
 

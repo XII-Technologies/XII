@@ -113,8 +113,8 @@ public:
     char** cArgs = (char**)GetArgumentsArray();
 
     QApplication app(iArgs, cArgs);
-    QCoreApplication::setOrganizationDomain("www.xiiengine.com");
-    QCoreApplication::setOrganizationName("XII");
+    QCoreApplication::setOrganizationDomain("www.xiitechnologies.com");
+    QCoreApplication::setOrganizationName("XII Technologies");
     QCoreApplication::setApplicationName("xiiInspector");
     QCoreApplication::setApplicationVersion("1.0.0");
 

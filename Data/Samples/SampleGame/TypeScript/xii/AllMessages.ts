@@ -35,6 +35,12 @@ import Enum = require("./AllEnums")
 import Flags = require("./AllFlags")
 
 
+export class EventMsgPathChanged extends EventMessage
+{
+  public static GetTypeNameHash(): number { return 2034644494; }
+  constructor() { super(); this.TypeNameHash = 2034644494; }
+}
+
 export class MsgAnimationPosePreparing extends Message
 {
   public static GetTypeNameHash(): number { return 603069670; }
