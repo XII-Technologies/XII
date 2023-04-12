@@ -101,8 +101,12 @@ void xiiQtGameObjectReferencePropertyWidget::PickObjectOverride(const xiiDocumen
 
 void xiiQtGameObjectReferencePropertyWidget::ClearPicking()
 {
-  m_pGrid->GetDocument()->GetSelectionManager()->m_Events.RemoveEventHandler(
-    xiiMakeDelegate(&xiiQtGameObjectReferencePropertyWidget::SelectionManagerEventHandler, this));
+  auto delegateHandler = xiiMakeDelegate(&xiiQtGameObjectReferencePropertyWidget::SelectionManagerEventHandler, this);
+
+  if (!m_pGrid->GetDocument()->GetSelectionManager()->m_Events.HasEventHandler(delegateHandler))
+    return;
+
+  m_pGrid->GetDocument()->GetSelectionManager()->m_Events.RemoveEventHandler(delegateHandler);
 
   for (auto pContext : m_SelectionContextsToUnsubscribe)
   {
@@ -171,6 +175,7 @@ void xiiQtGameObjectReferencePropertyWidget::on_PickObject_clicked()
   {
     // this happens when clicking the 'pick' button twice
     ClearPicking();
+    return;
   }
 
   xiiQtDocumentWindow* pWindow = xiiQtDocumentWindow::FindWindowByDocument(m_pGrid->GetDocument());
