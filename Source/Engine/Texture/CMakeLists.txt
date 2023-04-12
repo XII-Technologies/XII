@@ -23,3 +23,10 @@ if(XII_CMAKE_PLATFORM_LINUX)
   set(THIRDPARTY_DIR "${CMAKE_SOURCE_DIR}/${XII_SUBMODULE_PREFIX_PATH}/Source/ThirdParty")
   target_include_directories(${PROJECT_NAME} PRIVATE "${THIRDPARTY_DIR}/DirectXMath/include" "${THIRDPARTY_DIR}/sal")
 endif()
+
+if (NOT XII_CMAKE_PLATFORM_WINDOWS_UWP) # Not supported on UWP
+  target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+    tinyexr
+  )
+endif()

@@ -477,7 +477,7 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(const char* s
     file << resX;
     file << resY;
     file << props->m_fCVarResolutionScale;
-    file << (int)format;
+    file << (xiiInt32)format;
 
 
     if (file.Close().Failed())
@@ -530,15 +530,16 @@ xiiTextureAssetDocumentGenerator::xiiTextureAssetDocumentGenerator()
   AddSupportedFileType("dds");
   AddSupportedFileType("jpg");
   AddSupportedFileType("jpeg");
-  AddSupportedFileType("hdr");
   AddSupportedFileType("png");
+  AddSupportedFileType("hdr");
+  AddSupportedFileType("exr");
 }
 
 xiiTextureAssetDocumentGenerator::~xiiTextureAssetDocumentGenerator() = default;
 
-void xiiTextureAssetDocumentGenerator::GetImportModes(const char* szParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiTextureAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
 {
-  xiiStringBuilder baseOutputFile = szParentDirRelativePath;
+  xiiStringBuilder baseOutputFile = sParentDirRelativePath;
 
   xiiStringBuilder baseFilename = baseOutputFile.GetFileName();
 
@@ -563,7 +564,11 @@ void xiiTextureAssetDocumentGenerator::GetImportModes(const char* szParentDirRel
 
   TextureType tt = TextureType::Diffuse;
 
-  if (xiiPathUtils::HasExtension(szParentDirRelativePath, "hdr"))
+  if (xiiPathUtils::HasExtension(sParentDirRelativePath, "hdr"))
+  {
+    tt = TextureType::HDR;
+  }
+  else if (xiiPathUtils::HasExtension(sParentDirRelativePath, "exr"))
   {
     tt = TextureType::HDR;
   }
@@ -746,7 +751,7 @@ void xiiTextureAssetDocumentGenerator::GetImportModes(const char* szParentDirRel
   }
 }
 
-xiiStatus xiiTextureAssetDocumentGenerator::Generate(const char* szDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiTextureAssetDocumentGenerator::Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
 {
   auto pApp = xiiQtEditorApp::GetSingleton();
 
@@ -759,7 +764,7 @@ xiiStatus xiiTextureAssetDocumentGenerator::Generate(const char* szDataDirRelati
     return xiiStatus("Target document is not a valid xiiTextureAssetDocument");
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
-  accessor.SetValue("Input1", szDataDirRelativePath);
+  accessor.SetValue("Input1", sDataDirRelativePath);
   accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::RGB1);
   accessor.SetValue("Usage", (int)xiiTexConvUsage::Linear);
 

@@ -18,7 +18,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationClipAssetProperties, 3, xiiRTTIDefa
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("File", m_sSourceFile)->AddAttributes(new xiiFileBrowserAttribute("Select Animation", "*.fbx;*.gltf;*.glb")),
+    XII_MEMBER_PROPERTY("File", m_sSourceFile)->AddAttributes(new xiiFileBrowserAttribute("Select Animation", xiiFileBrowserAttribute::SkeletalMeshes)),
     XII_MEMBER_PROPERTY("UseAnimationClip", m_sAnimationClipToExtract),
     XII_MEMBER_PROPERTY("Additive", m_bAdditive),
     XII_ARRAY_MEMBER_PROPERTY("AvailableClips", m_AvailableClips)->AddAttributes(new xiiReadOnlyAttribute, new xiiContainerAttribute(false, false, false)),
@@ -362,9 +362,9 @@ xiiAnimationClipAssetDocumentGenerator::xiiAnimationClipAssetDocumentGenerator()
 
 xiiAnimationClipAssetDocumentGenerator::~xiiAnimationClipAssetDocumentGenerator() = default;
 
-void xiiAnimationClipAssetDocumentGenerator::GetImportModes(const char* szParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiAnimationClipAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
 {
-  xiiStringBuilder baseOutputFile = szParentDirRelativePath;
+  xiiStringBuilder baseOutputFile = sParentDirRelativePath;
   baseOutputFile.ChangeFileExtension(GetDocumentExtension());
 
   {
@@ -376,7 +376,7 @@ void xiiAnimationClipAssetDocumentGenerator::GetImportModes(const char* szParent
   }
 }
 
-xiiStatus xiiAnimationClipAssetDocumentGenerator::Generate(const char* szDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiAnimationClipAssetDocumentGenerator::Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
 {
   auto pApp = xiiQtEditorApp::GetSingleton();
 
@@ -389,7 +389,7 @@ xiiStatus xiiAnimationClipAssetDocumentGenerator::Generate(const char* szDataDir
     return xiiStatus("Target document is not a valid xiiAnimationClipAssetDocument");
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
-  accessor.SetValue("File", szDataDirRelativePath);
+  accessor.SetValue("File", sDataDirRelativePath);
 
   return xiiStatus(XII_SUCCESS);
 }

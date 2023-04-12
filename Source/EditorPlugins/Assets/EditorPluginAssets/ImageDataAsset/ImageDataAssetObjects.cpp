@@ -7,7 +7,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiImageDataAssetProperties, 1, xiiRTTIDefaultA
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Input", m_sInputFile)->AddAttributes(new xiiFileBrowserAttribute("Select Image", "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr"))
+    XII_MEMBER_PROPERTY("Input", m_sInputFile)->AddAttributes(new xiiFileBrowserAttribute("Select Image", xiiFileBrowserAttribute::ImagesLdrAndHdr))
   }
   XII_END_PROPERTIES;
 }

@@ -7,7 +7,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimatedMeshAssetProperties, 2, xiiRTTIDefau
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("MeshFile", m_sMeshFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", "*.fbx;*.gltf;*.glb")),
+    XII_MEMBER_PROPERTY("MeshFile", m_sMeshFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", xiiFileBrowserAttribute::SkeletalMeshes)),
     XII_MEMBER_PROPERTY("DefaultSkeleton", m_sDefaultSkeleton)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Skeleton")),
     XII_MEMBER_PROPERTY("RecalculateNormals", m_bRecalculateNormals),
     XII_MEMBER_PROPERTY("RecalculateTangents", m_bRecalculateTrangents)->AddAttributes(new xiiDefaultValueAttribute(true)),

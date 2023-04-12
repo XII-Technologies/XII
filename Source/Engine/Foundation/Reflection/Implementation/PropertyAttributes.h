@@ -345,6 +345,14 @@ class XII_FOUNDATION_DLL xiiFileBrowserAttribute : public xiiTypeWidgetAttribute
   XII_ADD_DYNAMIC_REFLECTION(xiiFileBrowserAttribute, xiiTypeWidgetAttribute);
 
 public:
+  // Predefined common type filters
+  static constexpr const char* Meshes            = "*.obj;*.fbx;*.gltf;*.glb";
+  static constexpr const char* SkeletalMeshes    = "*.fbx;*.gltf;*.glb";
+  static constexpr const char* ImagesLdrOnly     = "*.dds;*.tga;*.png;*.jpg;*.jpeg";
+  static constexpr const char* ImagesHdrOnly     = "*.hdr;*.exr";
+  static constexpr const char* ImagesLdrAndHdr   = "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr;*.exr";
+  static constexpr const char* CubemapsLdrAndHdr = "*.dds;*.hdr";
+
   xiiFileBrowserAttribute() = default;
   xiiFileBrowserAttribute(const char* szDialogTitle, const char* szTypeFilter, const char* szCustomAction = nullptr)
   {

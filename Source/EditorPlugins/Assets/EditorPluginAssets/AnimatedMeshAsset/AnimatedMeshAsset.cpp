@@ -126,9 +126,9 @@ xiiAnimatedMeshAssetDocumentGenerator::xiiAnimatedMeshAssetDocumentGenerator()
 
 xiiAnimatedMeshAssetDocumentGenerator::~xiiAnimatedMeshAssetDocumentGenerator() {}
 
-void xiiAnimatedMeshAssetDocumentGenerator::GetImportModes(const char* szParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiAnimatedMeshAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
 {
-  xiiStringBuilder baseOutputFile = szParentDirRelativePath;
+  xiiStringBuilder baseOutputFile = sParentDirRelativePath;
   baseOutputFile.ChangeFileExtension(GetDocumentExtension());
 
   {
@@ -148,7 +148,7 @@ void xiiAnimatedMeshAssetDocumentGenerator::GetImportModes(const char* szParentD
   }
 }
 
-xiiStatus xiiAnimatedMeshAssetDocumentGenerator::Generate(const char* szDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiAnimatedMeshAssetDocumentGenerator::Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
 {
   auto pApp = xiiQtEditorApp::GetSingleton();
 
@@ -161,7 +161,7 @@ xiiStatus xiiAnimatedMeshAssetDocumentGenerator::Generate(const char* szDataDirR
     return xiiStatus("Target document is not a valid xiiAnimatedMeshAssetDocument");
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
-  accessor.SetValue("MeshFile", szDataDirRelativePath);
+  accessor.SetValue("MeshFile", sDataDirRelativePath);
 
   if (info.m_sName == "AnimatedMeshImport.WithMaterials")
   {

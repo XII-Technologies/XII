@@ -397,9 +397,9 @@ xiiSkeletonAssetDocumentGenerator::xiiSkeletonAssetDocumentGenerator()
 
 xiiSkeletonAssetDocumentGenerator::~xiiSkeletonAssetDocumentGenerator() = default;
 
-void xiiSkeletonAssetDocumentGenerator::GetImportModes(const char* szParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiSkeletonAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
 {
-  xiiStringBuilder baseOutputFile = szParentDirRelativePath;
+  xiiStringBuilder baseOutputFile = sParentDirRelativePath;
   baseOutputFile.ChangeFileExtension(GetDocumentExtension());
 
   {
@@ -411,7 +411,7 @@ void xiiSkeletonAssetDocumentGenerator::GetImportModes(const char* szParentDirRe
   }
 }
 
-xiiStatus xiiSkeletonAssetDocumentGenerator::Generate(const char* szDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiSkeletonAssetDocumentGenerator::Generate(xiiStringView sDataDirRelativePath, const xiiAssetDocumentGenerator::Info& info, xiiDocument*& out_pGeneratedDocument)
 {
   auto pApp = xiiQtEditorApp::GetSingleton();
 
@@ -424,7 +424,7 @@ xiiStatus xiiSkeletonAssetDocumentGenerator::Generate(const char* szDataDirRelat
     return xiiStatus("Target document is not a valid xiiSkeletonAssetDocument");
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
-  accessor.SetValue("File", szDataDirRelativePath);
+  accessor.SetValue("File", sDataDirRelativePath);
 
   return xiiStatus(XII_SUCCESS);
 }
