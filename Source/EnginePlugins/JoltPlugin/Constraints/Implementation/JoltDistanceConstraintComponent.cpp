@@ -76,11 +76,27 @@ void xiiJoltDistanceConstraintComponent::ApplySettings()
   }
 }
 
-void xiiJoltDistanceConstraintComponent::SerializeComponent(xiiWorldWriter& stream) const
+bool xiiJoltDistanceConstraintComponent::ExceededBreakingPoint()
 {
-  SUPER::SerializeComponent(stream);
+  if (auto pConstraint = static_cast<JPH::DistanceConstraint*>(m_pConstraint))
+  {
+    if (m_fBreakForce > 0)
+    {
+      if (pConstraint->GetTotalLambdaPosition() >= m_fBreakForce)
+      {
+        return true;
+      }
+    }
+  }
 
-  auto& s = stream.GetStream();
+  return false;
+}
+
+void xiiJoltDistanceConstraintComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
+{
+  SUPER::SerializeComponent(inout_stream);
+
+  auto& s = inout_stream.GetStream();
 
   s << m_fMinDistance;
   s << m_fMaxDistance;
@@ -88,12 +104,12 @@ void xiiJoltDistanceConstraintComponent::SerializeComponent(xiiWorldWriter& stre
   s << m_fDamping;
 }
 
-void xiiJoltDistanceConstraintComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltDistanceConstraintComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_fMinDistance;
   s >> m_fMaxDistance;

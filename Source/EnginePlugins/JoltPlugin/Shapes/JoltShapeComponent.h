@@ -40,7 +40,7 @@ public:
   xiiJoltShapeComponent();
   ~xiiJoltShapeComponent();
 
-  virtual void ExtractGeometry(xiiMsgExtractGeometry& msg) const {}
+  virtual void ExtractGeometry(xiiMsgExtractGeometry& ref_msg) const {}
 
 protected:
   friend class xiiJoltActorComponent;

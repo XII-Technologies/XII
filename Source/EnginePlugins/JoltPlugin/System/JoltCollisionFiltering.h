@@ -103,8 +103,8 @@ class xiiJoltBodyFilter final : public JPH::BodyFilter
 public:
   xiiUInt32 m_uiObjectFilterIDToIgnore = xiiInvalidIndex - 1;
 
-  xiiJoltBodyFilter(xiiUInt32 bodyFilterIdToIgnore = xiiInvalidIndex - 1) :
-    m_uiObjectFilterIDToIgnore(bodyFilterIdToIgnore)
+  xiiJoltBodyFilter(xiiUInt32 uiBodyFilterIdToIgnore = xiiInvalidIndex - 1) :
+    m_uiObjectFilterIDToIgnore(uiBodyFilterIdToIgnore)
   {
   }
 
@@ -113,8 +113,8 @@ public:
     m_uiObjectFilterIDToIgnore = xiiInvalidIndex - 1;
   }
 
-  virtual bool ShouldCollideLocked(const JPH::Body& inBody) const override
+  virtual bool ShouldCollideLocked(const JPH::Body& body) const override
   {
-    return inBody.GetCollisionGroup().GetGroupID() != m_uiObjectFilterIDToIgnore;
+    return body.GetCollisionGroup().GetGroupID() != m_uiObjectFilterIDToIgnore;
   }
 };

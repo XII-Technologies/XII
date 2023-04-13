@@ -13,8 +13,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltShapeConvexHullComponent : public xiiJoltShapeCo
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -31,7 +31,7 @@ public:
   xiiJoltShapeConvexHullComponent();
   ~xiiJoltShapeConvexHullComponent();
 
-  virtual void ExtractGeometry(xiiMsgExtractGeometry& msg) const override;
+  virtual void ExtractGeometry(xiiMsgExtractGeometry& ref_msg) const override;
 
   void        SetMeshFile(const char* szFile); // [ property ]
   const char* GetMeshFile() const;             // [ property ]

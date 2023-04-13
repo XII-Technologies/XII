@@ -25,21 +25,21 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltConeConstraintComponent::xiiJoltConeConstraintComponent()  = default;
 xiiJoltConeConstraintComponent::~xiiJoltConeConstraintComponent() = default;
 
-void xiiJoltConeConstraintComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltConeConstraintComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s << m_ConeAngle;
 }
 
-void xiiJoltConeConstraintComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltConeConstraintComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_ConeAngle;
 }
@@ -74,6 +74,30 @@ void xiiJoltConeConstraintComponent::ApplySettings()
     xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
     pModule->GetJoltSystem()->GetBodyInterface().ActivateBody(pConstraint->GetBody2()->GetID());
   }
+}
+
+bool xiiJoltConeConstraintComponent::ExceededBreakingPoint()
+{
+  if (auto pConstraint = static_cast<JPH::ConeConstraint*>(m_pConstraint))
+  {
+    if (m_fBreakForce > 0)
+    {
+      if (pConstraint->GetTotalLambdaPosition().ReduceMax() >= m_fBreakForce)
+      {
+        return true;
+      }
+    }
+
+    if (m_fBreakTorque > 0)
+    {
+      if (pConstraint->GetTotalLambdaRotation() >= m_fBreakTorque)
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 void xiiJoltConeConstraintComponent::SetConeAngle(xiiAngle f)

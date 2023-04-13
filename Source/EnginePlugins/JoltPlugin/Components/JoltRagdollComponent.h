@@ -53,8 +53,8 @@ struct XII_JOLTPLUGIN_DLL xiiJoltRagdollConstraint : public xiiReflectedClass
   xiiString m_sBone;
   xiiVec3   m_vRelativePosition;
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+  xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -67,8 +67,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltRagdollComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 protected:
   virtual void OnSimulationStarted() override;
@@ -83,18 +83,18 @@ public:
 
   xiiUInt32 GetObjectFilterID() const { return m_uiObjectFilterID; } // [ scriptable ]
 
-  void OnAnimationPoseProposal(xiiMsgAnimationPoseProposal& msg); // [ msg handler ]
-  void OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& msg);   // [ msg handler ]
-  void OnRetrieveBoneState(xiiMsgRetrieveBoneState& msg) const;   // [ msg handler ]
+  void OnAnimationPoseProposal(xiiMsgAnimationPoseProposal& ref_msg); // [ msg handler ]
+  void OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& ref_msg);   // [ msg handler ]
+  void OnRetrieveBoneState(xiiMsgRetrieveBoneState& ref_msg) const;   // [ msg handler ]
 
   float GetGravityFactor() const { return m_fGravityFactor; } // [ property ]
-  void  SetGravityFactor(float factor);                       // [ property ]
+  void  SetGravityFactor(float fFactor);                      // [ property ]
 
   xiiUInt8 m_uiCollisionLayer = 0;     // [ property ]
   bool     m_bSelfCollision   = false; // [ property ]
 
-  void AddImpulseAtPos(xiiMsgPhysicsAddImpulse& msg); // [ message ]
-  void AddForceAtPos(xiiMsgPhysicsAddForce& msg);     // [ message ]
+  void AddImpulseAtPos(xiiMsgPhysicsAddImpulse& ref_msg); // [ message ]
+  void AddForceAtPos(xiiMsgPhysicsAddForce& ref_msg);     // [ message ]
 
 protected:
   struct Limb

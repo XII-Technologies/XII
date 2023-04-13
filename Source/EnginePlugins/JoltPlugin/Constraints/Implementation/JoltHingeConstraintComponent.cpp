@@ -38,11 +38,11 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltHingeConstraintComponent::xiiJoltHingeConstraintComponent()  = default;
 xiiJoltHingeConstraintComponent::~xiiJoltHingeConstraintComponent() = default;
 
-void xiiJoltHingeConstraintComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltHingeConstraintComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s << m_LimitMode;
   s << m_LowerLimit;
@@ -55,12 +55,12 @@ void xiiJoltHingeConstraintComponent::SerializeComponent(xiiWorldWriter& stream)
   s << m_fFriction;
 }
 
-void xiiJoltHingeConstraintComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltHingeConstraintComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_LimitMode;
   s >> m_LowerLimit;
@@ -197,5 +197,29 @@ void xiiJoltHingeConstraintComponent::ApplySettings()
   }
 }
 
+bool xiiJoltHingeConstraintComponent::ExceededBreakingPoint()
+{
+  if (auto pConstraint = static_cast<JPH::HingeConstraint*>(m_pConstraint))
+  {
+    if (m_fBreakForce > 0)
+    {
+      if (pConstraint->GetTotalLambdaPosition().ReduceMax() >= m_fBreakForce)
+      {
+        return true;
+      }
+    }
+
+    if (m_fBreakTorque > 0)
+    {
+      if (pConstraint->GetTotalLambdaRotation()[0] >= m_fBreakTorque ||
+          pConstraint->GetTotalLambdaRotation()[1] >= m_fBreakTorque)
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Constraints_Implementation_JoltHingeConstraintComponent);

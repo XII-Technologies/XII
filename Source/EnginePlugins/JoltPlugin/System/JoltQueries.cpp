@@ -6,32 +6,32 @@
 #include <JoltPlugin/System/JoltWorldModule.h>
 #include <JoltPlugin/Utilities/JoltUserData.h>
 
-void FillCastResult(xiiPhysicsCastResult& result, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const JPH::BodyID& bodyId, const JPH::SubShapeID& subShapeId, const JPH::BodyLockInterface& lockInterface, const JPH::BodyInterface& bodyInterface, const xiiJoltWorldModule* pModule)
+void FillCastResult(xiiPhysicsCastResult& ref_result, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const JPH::BodyID& bodyId, const JPH::SubShapeID& subShapeId, const JPH::BodyLockInterface& lockInterface, const JPH::BodyInterface& bodyInterface, const xiiJoltWorldModule* pModule)
 {
   JPH::BodyLockRead bodyLock(lockInterface, bodyId);
-  const auto&       body    = bodyLock.GetBody();
-  result.m_vNormal          = xiiJoltConversionUtils::ToVec3(body.GetWorldSpaceSurfaceNormal(subShapeId, xiiJoltConversionUtils::ToVec3(result.m_vPosition)));
-  result.m_uiObjectFilterID = body.GetCollisionGroup().GetGroupID();
+  const auto&       body        = bodyLock.GetBody();
+  ref_result.m_vNormal          = xiiJoltConversionUtils::ToVec3(body.GetWorldSpaceSurfaceNormal(subShapeId, xiiJoltConversionUtils::ToVec3(ref_result.m_vPosition)));
+  ref_result.m_uiObjectFilterID = body.GetCollisionGroup().GetGroupID();
 
   if (xiiComponent* pShapeComponent = xiiJoltUserData::GetComponent(reinterpret_cast<const void*>(body.GetShape()->GetSubShapeUserData(subShapeId))))
   {
-    result.m_hShapeObject = pShapeComponent->GetOwner()->GetHandle();
+    ref_result.m_hShapeObject = pShapeComponent->GetOwner()->GetHandle();
   }
 
   if (xiiComponent* pActorComponent = xiiJoltUserData::GetComponent(reinterpret_cast<const void*>(body.GetUserData())))
   {
-    result.m_hActorObject = pActorComponent->GetOwner()->GetHandle();
+    ref_result.m_hActorObject = pActorComponent->GetOwner()->GetHandle();
   }
 
   if (const xiiJoltMaterial* pMaterial = static_cast<const xiiJoltMaterial*>(bodyInterface.GetMaterial(bodyId, subShapeId)))
   {
-    result.m_hSurface = pMaterial->m_pSurface->GetResourceHandle();
+    ref_result.m_hSurface = pMaterial->m_pSurface->GetResourceHandle();
   }
 
-  const size_t uiBodyId          = bodyId.GetIndexAndSequenceNumber();
-  const size_t uiShapeId         = subShapeId.GetValue();
-  result.m_pInternalPhysicsActor = reinterpret_cast<void*>(uiBodyId);
-  result.m_pInternalPhysicsShape = reinterpret_cast<void*>(uiShapeId);
+  const size_t uiBodyId              = bodyId.GetIndexAndSequenceNumber();
+  const size_t uiShapeId             = subShapeId.GetValue();
+  ref_result.m_pInternalPhysicsActor = reinterpret_cast<void*>(uiBodyId);
+  ref_result.m_pInternalPhysicsShape = reinterpret_cast<void*>(uiShapeId);
 }
 
 class xiiRayCastCollector : public JPH::CastRayCollector
@@ -41,11 +41,11 @@ public:
   bool               m_bAnyHit   = false;
   bool               m_bFoundAny = false;
 
-  virtual void AddHit(const JPH::RayCastResult& inResult) override
+  virtual void AddHit(const JPH::RayCastResult& result) override
   {
-    if (inResult.mFraction < m_Result.mFraction)
+    if (result.mFraction < m_Result.mFraction)
     {
-      m_Result    = inResult;
+      m_Result    = result;
       m_bFoundAny = true;
 
       if (m_bAnyHit)
@@ -56,7 +56,7 @@ public:
   }
 };
 
-bool xiiJoltWorldModule::Raycast(xiiPhysicsCastResult& out_Result, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection /*= xiiPhysicsHitCollection::Closest*/) const
+bool xiiJoltWorldModule::Raycast(xiiPhysicsCastResult& out_result, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection /*= xiiPhysicsHitCollection::Closest*/) const
 {
   if (fDistance <= 0.001f || vDir.IsZero())
     return false;
@@ -91,10 +91,10 @@ bool xiiJoltWorldModule::Raycast(xiiPhysicsCastResult& out_Result, const xiiVec3
       return false;
   }
 
-  out_Result.m_fDistance = collector.m_Result.mFraction * fDistance;
-  out_Result.m_vPosition = vStart + fDistance * collector.m_Result.mFraction * vDir;
+  out_result.m_fDistance = collector.m_Result.mFraction * fDistance;
+  out_result.m_vPosition = vStart + fDistance * collector.m_Result.mFraction * vDir;
 
-  FillCastResult(out_Result, vStart, vDir, fDistance, collector.m_Result.mBodyID, collector.m_Result.mSubShapeID2, m_pSystem->GetBodyLockInterfaceNoLock(), m_pSystem->GetBodyInterfaceNoLock(), this);
+  FillCastResult(out_result, vStart, vDir, fDistance, collector.m_Result.mBodyID, collector.m_Result.mSubShapeID2, m_pSystem->GetBodyLockInterfaceNoLock(), m_pSystem->GetBodyInterfaceNoLock(), this);
 
   return true;
 }
@@ -105,14 +105,14 @@ public:
   xiiArrayPtr<JPH::RayCastResult> m_Results;
   xiiUInt32                       m_uiFound = 0;
 
-  virtual void AddHit(const JPH::RayCastResult& inResult) override
+  virtual void AddHit(const JPH::RayCastResult& result) override
   {
-    m_Results[m_uiFound] = inResult;
+    m_Results[m_uiFound] = result;
     ++m_uiFound;
   }
 };
 
-bool xiiJoltWorldModule::RaycastAll(xiiPhysicsCastResultArray& out_Results, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params) const
+bool xiiJoltWorldModule::RaycastAll(xiiPhysicsCastResultArray& out_results, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params) const
 {
   if (fDistance <= 0.001f || vDir.IsZero())
     return false;
@@ -139,14 +139,14 @@ bool xiiJoltWorldModule::RaycastAll(xiiPhysicsCastResultArray& out_Results, cons
   if (collector.m_uiFound == 0)
     return false;
 
-  out_Results.m_Results.SetCount(collector.m_uiFound);
+  out_results.m_Results.SetCount(collector.m_uiFound);
 
   for (xiiUInt32 i = 0; i < collector.m_uiFound; ++i)
   {
-    out_Results.m_Results[i].m_fDistance = collector.m_Results[i].mFraction * fDistance;
-    out_Results.m_Results[i].m_vPosition = vStart + fDistance * collector.m_Results[i].mFraction * vDir;
+    out_results.m_Results[i].m_fDistance = collector.m_Results[i].mFraction * fDistance;
+    out_results.m_Results[i].m_vPosition = vStart + fDistance * collector.m_Results[i].mFraction * vDir;
 
-    FillCastResult(out_Results.m_Results[i], vStart, vDir, fDistance, collector.m_Results[i].mBodyID, collector.m_Results[i].mSubShapeID2, m_pSystem->GetBodyLockInterfaceNoLock(), m_pSystem->GetBodyInterfaceNoLock(), this);
+    FillCastResult(out_results.m_Results[i], vStart, vDir, fDistance, collector.m_Results[i].mBodyID, collector.m_Results[i].mSubShapeID2, m_pSystem->GetBodyLockInterfaceNoLock(), m_pSystem->GetBodyInterfaceNoLock(), this);
   }
 
   return true;
@@ -159,44 +159,44 @@ public:
   bool                 m_bFoundAny = false;
   bool                 m_bAnyHit   = false;
 
-  virtual void AddHit(const JPH::ShapeCastResult& inResult) override
+  virtual void AddHit(const JPH::ShapeCastResult& result) override
   {
-    if (inResult.mIsBackFaceHit)
+    if (result.mIsBackFaceHit)
       return;
 
-    if (inResult.mFraction >= GetEarlyOutFraction())
+    if (result.mFraction >= GetEarlyOutFraction())
       return;
 
     m_bFoundAny = true;
-    m_Result    = inResult;
+    m_Result    = result;
 
-    UpdateEarlyOutFraction(inResult.mFraction);
+    UpdateEarlyOutFraction(result.mFraction);
 
     if (m_bAnyHit)
       ForceEarlyOut();
   }
 };
 
-bool xiiJoltWorldModule::SweepTestSphere(xiiPhysicsCastResult& out_Result, float fSphereRadius, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection) const
+bool xiiJoltWorldModule::SweepTestSphere(xiiPhysicsCastResult& out_result, float fSphereRadius, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection) const
 {
   if (fSphereRadius <= 0.0f)
     return false;
 
   const JPH::SphereShape shape(fSphereRadius);
 
-  return SweepTest(out_Result, shape, JPH::Mat44::sTranslation(xiiJoltConversionUtils::ToVec3(vStart)), vDir, fDistance, params, collection);
+  return SweepTest(out_result, shape, JPH::Mat44::sTranslation(xiiJoltConversionUtils::ToVec3(vStart)), vDir, fDistance, params, collection);
 }
 
-bool xiiJoltWorldModule::SweepTestBox(xiiPhysicsCastResult& out_Result, xiiVec3 vBoxExtends, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection) const
+bool xiiJoltWorldModule::SweepTestBox(xiiPhysicsCastResult& out_result, xiiVec3 vBoxExtends, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection) const
 {
   const JPH::BoxShape shape(xiiJoltConversionUtils::ToVec3(vBoxExtends * 0.5f));
 
   const JPH::Mat44 trans = JPH::Mat44::sRotationTranslation(xiiJoltConversionUtils::ToQuat(transform.m_qRotation), xiiJoltConversionUtils::ToVec3(transform.m_vPosition));
 
-  return SweepTest(out_Result, shape, trans, vDir, fDistance, params, collection);
+  return SweepTest(out_result, shape, trans, vDir, fDistance, params, collection);
 }
 
-bool xiiJoltWorldModule::SweepTestCapsule(xiiPhysicsCastResult& out_Result, float fCapsuleRadius, float fCapsuleHeight, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection) const
+bool xiiJoltWorldModule::SweepTestCapsule(xiiPhysicsCastResult& out_result, float fCapsuleRadius, float fCapsuleHeight, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection) const
 {
   if (fCapsuleRadius <= 0.0f)
     return false;
@@ -212,7 +212,7 @@ bool xiiJoltWorldModule::SweepTestCapsule(xiiPhysicsCastResult& out_Result, floa
 
   const JPH::Mat44 trans = JPH::Mat44::sRotationTranslation(xiiJoltConversionUtils::ToQuat(qRot), xiiJoltConversionUtils::ToVec3(transform.m_vPosition));
 
-  return SweepTest(out_Result, shape, trans, vDir, fDistance, params, collection);
+  return SweepTest(out_result, shape, trans, vDir, fDistance, params, collection);
 }
 
 bool xiiJoltWorldModule::SweepTest(xiiPhysicsCastResult& out_Result, const JPH::Shape& shape, const JPH::Mat44& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection) const
@@ -248,7 +248,7 @@ class xiiJoltShapeCollectorAny : public JPH::CollideShapeCollector
 public:
   bool m_bFoundAny = false;
 
-  virtual void AddHit(const JPH::CollideShapeResult& inResult) override
+  virtual void AddHit(const JPH::CollideShapeResult& result) override
   {
     m_bFoundAny = true;
     ForceEarlyOut();
@@ -260,9 +260,9 @@ class xiiJoltShapeCollectorAll : public JPH::CollideShapeCollector
 public:
   xiiHybridArray<JPH::CollideShapeResult, 32, xiiAlignedAllocatorWrapper> m_Results;
 
-  virtual void AddHit(const JPH::CollideShapeResult& inResult) override
+  virtual void AddHit(const JPH::CollideShapeResult& result) override
   {
-    m_Results.PushBack(inResult);
+    m_Results.PushBack(result);
 
     if (m_Results.GetCount() >= 256)
     {
@@ -314,9 +314,9 @@ bool xiiJoltWorldModule::OverlapTest(const JPH::Shape& shape, const JPH::Mat44& 
   return collector.m_bFoundAny;
 }
 
-void xiiJoltWorldModule::QueryShapesInSphere(xiiPhysicsOverlapResultArray& out_Results, float fSphereRadius, const xiiVec3& vPosition, const xiiPhysicsQueryParameters& params) const
+void xiiJoltWorldModule::QueryShapesInSphere(xiiPhysicsOverlapResultArray& out_results, float fSphereRadius, const xiiVec3& vPosition, const xiiPhysicsQueryParameters& params) const
 {
-  out_Results.m_Results.Clear();
+  out_results.m_Results.Clear();
 
   if (fSphereRadius <= 0.0f)
     return;
@@ -331,13 +331,13 @@ void xiiJoltWorldModule::QueryShapesInSphere(xiiPhysicsOverlapResultArray& out_R
   xiiJoltShapeCollectorAll collector;
   query.CollideShape(&shape, JPH::RVec3(1, 1, 1), JPH::Mat44::sTranslation(xiiJoltConversionUtils::ToVec3(vPosition)), {}, JPH::RVec3::sZero(), collector, broadphaseFilter, objectFilter, bodyFilter);
 
-  out_Results.m_Results.SetCount(collector.m_Results.GetCount());
+  out_results.m_Results.SetCount(collector.m_Results.GetCount());
 
   auto& lockInterface = m_pSystem->GetBodyLockInterfaceNoLock();
 
   for (xiiUInt32 i = 0; i < collector.m_Results.GetCount(); ++i)
   {
-    auto& overlapResult = out_Results.m_Results[i];
+    auto& overlapResult = out_results.m_Results[i];
     auto& overlapHit    = collector.m_Results[i];
 
     JPH::BodyLockRead bodyLock(lockInterface, overlapHit.mBodyID2);

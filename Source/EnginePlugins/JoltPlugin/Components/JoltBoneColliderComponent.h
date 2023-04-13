@@ -19,8 +19,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltBoneColliderComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 protected:
   virtual void OnSimulationStarted() override;
@@ -38,7 +38,7 @@ public:
   bool    m_bQueryShapeOnly = true; // [ property ]
   xiiTime m_UpdateThreshold;        // [ property ]
 
-  void OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& msg); // [ msg handler ]
+  void OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& ref_msg); // [ msg handler ]
 
   /// \brief Destroys the current shape objects and creates new ones.
   ///

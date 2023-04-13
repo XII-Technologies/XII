@@ -80,27 +80,27 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltRagdollComponent, 1, xiiComponentMode::Dynamic)
 XII_END_ABSTRACT_COMPONENT_TYPE;
 // clang-format on
 
-xiiResult xiiJoltRagdollConstraint::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiJoltRagdollConstraint::Serialize(xiiStreamWriter& inout_stream) const
 {
-  stream << m_sBone;
-  stream << m_vRelativePosition;
+  inout_stream << m_sBone;
+  inout_stream << m_vRelativePosition;
   return XII_SUCCESS;
 }
 
-xiiResult xiiJoltRagdollConstraint::Deserialize(xiiStreamReader& stream)
+xiiResult xiiJoltRagdollConstraint::Deserialize(xiiStreamReader& inout_stream)
 {
-  stream >> m_sBone;
-  stream >> m_vRelativePosition;
+  inout_stream >> m_sBone;
+  inout_stream >> m_vRelativePosition;
   return XII_SUCCESS;
 }
 
 xiiJoltRagdollComponent::xiiJoltRagdollComponent()  = default;
 xiiJoltRagdollComponent::~xiiJoltRagdollComponent() = default;
 
-void xiiJoltRagdollComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltRagdollComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(inout_stream);
+  auto& s = inout_stream.GetStream();
 
   s << m_Start;
   s << m_fGravityFactor;
@@ -109,11 +109,11 @@ void xiiJoltRagdollComponent::SerializeComponent(xiiWorldWriter& stream) const
   s.WriteArray(m_Constraints).AssertSuccess();
 }
 
-void xiiJoltRagdollComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltRagdollComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = inout_stream.GetStream();
 
   s >> m_Start;
   s >> m_fGravityFactor;
@@ -189,12 +189,12 @@ void xiiJoltRagdollComponent::ClearPhysicsObjects()
   m_NextImpulse = {};
 }
 
-void xiiJoltRagdollComponent::SetGravityFactor(float factor)
+void xiiJoltRagdollComponent::SetGravityFactor(float fFactor)
 {
-  if (m_fGravityFactor == factor)
+  if (m_fGravityFactor == fFactor)
     return;
 
-  m_fGravityFactor = factor;
+  m_fGravityFactor = fFactor;
 
   if (!m_pRagdoll)
     return;
@@ -209,7 +209,7 @@ void xiiJoltRagdollComponent::SetGravityFactor(float factor)
   m_pRagdoll->Activate();
 }
 
-void xiiJoltRagdollComponent::AddForceAtPos(xiiMsgPhysicsAddForce& msg)
+void xiiJoltRagdollComponent::AddForceAtPos(xiiMsgPhysicsAddForce& ref_msg)
 {
   // if (m_pPxAggregate != nullptr)
   //{
@@ -224,7 +224,7 @@ void xiiJoltRagdollComponent::AddForceAtPos(xiiMsgPhysicsAddForce& msg)
   //}
 }
 
-void xiiJoltRagdollComponent::AddImpulseAtPos(xiiMsgPhysicsAddImpulse& msg)
+void xiiJoltRagdollComponent::AddImpulseAtPos(xiiMsgPhysicsAddImpulse& ref_msg)
 {
   // XII_ASSERT_DEV(!msg.m_vImpulse.IsNaN() && !msg.m_vGlobalPosition.IsNaN(), "xiiMsgPhysicsAddImpulse contains invalid (NaN) impulse or position");
 
@@ -275,7 +275,7 @@ void xiiJoltRagdollComponent::ApplyImpulse()
   // m_NextImpulse = {};
 }
 
-void xiiJoltRagdollComponent::OnAnimationPoseProposal(xiiMsgAnimationPoseProposal& msg)
+void xiiJoltRagdollComponent::OnAnimationPoseProposal(xiiMsgAnimationPoseProposal& ref_msg)
 {
   // if (!m_bShapesCreated)
   //   return;
@@ -307,7 +307,7 @@ void xiiJoltRagdollComponent::OnAnimationPoseProposal(xiiMsgAnimationPoseProposa
   //}
 }
 
-void xiiJoltRagdollComponent::OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& poseMsg)
+void xiiJoltRagdollComponent::OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& ref_poseMsg)
 {
   if (!IsActiveAndSimulating())
     return;
@@ -315,7 +315,7 @@ void xiiJoltRagdollComponent::OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated&
   if (m_Start == xiiJoltRagdollStart::Wait)
     return;
 
-  poseMsg.m_bContinueAnimating = false; // TODO: change this
+  ref_poseMsg.m_bContinueAnimating = false; // TODO: change this
 
   if (m_bLimbsSetup)
   {
@@ -324,12 +324,12 @@ void xiiJoltRagdollComponent::OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated&
     return;
   }
 
-  m_LimbPoses = poseMsg.m_ModelTransforms;
+  m_LimbPoses = ref_poseMsg.m_ModelTransforms;
 
-  SetupLimbs(poseMsg);
+  SetupLimbs(ref_poseMsg);
 }
 
-void xiiJoltRagdollComponent::OnRetrieveBoneState(xiiMsgRetrieveBoneState& msg) const
+void xiiJoltRagdollComponent::OnRetrieveBoneState(xiiMsgRetrieveBoneState& ref_msg) const
 {
   if (!m_bLimbsSetup)
     return;
@@ -351,7 +351,7 @@ void xiiJoltRagdollComponent::OnRetrieveBoneState(xiiMsgRetrieveBoneState& msg) 
       mJoint = mParent * mJoint;
     }
 
-    auto& t       = msg.m_BoneTransforms[joint.GetName().GetString()];
+    auto& t       = ref_msg.m_BoneTransforms[joint.GetName().GetString()];
     t.m_vPosition = mJoint.GetTranslationVector();
     t.m_qRotation.ReconstructFromMat4(mJoint);
     t.m_vScale.Set(1.0f);

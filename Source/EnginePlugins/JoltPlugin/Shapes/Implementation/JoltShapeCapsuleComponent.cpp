@@ -36,22 +36,22 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltShapeCapsuleComponent::xiiJoltShapeCapsuleComponent()  = default;
 xiiJoltShapeCapsuleComponent::~xiiJoltShapeCapsuleComponent() = default;
 
-void xiiJoltShapeCapsuleComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltShapeCapsuleComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
   s << m_fRadius;
   s << m_fHeight;
 }
 
-void xiiJoltShapeCapsuleComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltShapeCapsuleComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
   s >> m_fRadius;
   s >> m_fHeight;
 }
@@ -84,19 +84,19 @@ void xiiJoltShapeCapsuleComponent::SetHeight(float f)
 
 void xiiJoltShapeCapsuleComponent::CreateShapes(xiiDynamicArray<xiiJoltSubShape>& out_Shapes, const xiiTransform& rootTransform, float fDensity, const xiiJoltMaterial* pMaterial)
 {
-  auto pNewShape = new JPH::CapsuleShape(m_fHeight * 0.5f, m_fRadius);
+  JPH::Ref<JPH::CapsuleShape> pNewShape = new JPH::CapsuleShape(m_fHeight * 0.5f, m_fRadius);
   pNewShape->SetDensity(fDensity);
   pNewShape->SetUserData(reinterpret_cast<xiiUInt64>(GetUserData()));
   pNewShape->SetMaterial(pMaterial);
 
-  auto pRotShapeSet = new JPH::RotatedTranslatedShapeSettings(JPH::Vec3::sZero(), JPH::Quat::sRotation(JPH::Vec3::sAxisX(), xiiAngle::Degree(90).GetRadian()), pNewShape);
-  pRotShapeSet->AddRef();
+  JPH::Ref<JPH::RotatedTranslatedShapeSettings> pRotShapeSet = new JPH::RotatedTranslatedShapeSettings(JPH::Vec3::sZero(), JPH::Quat::sRotation(JPH::Vec3::sAxisX(), xiiAngle::Degree(90).GetRadian()), pNewShape);
 
   JPH::Shape* pRotShape = pRotShapeSet->Create().Get().GetPtr();
   pRotShape->SetUserData(reinterpret_cast<xiiUInt64>(GetUserData()));
 
   xiiJoltSubShape& sub = out_Shapes.ExpandAndGetRef();
   sub.m_pShape         = pRotShape;
+  sub.m_pShape->AddRef();
   sub.m_Transform.SetLocalTransform(rootTransform, GetOwner()->GetGlobalTransform());
 }
 

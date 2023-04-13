@@ -37,36 +37,38 @@ public:
   const JPH::PhysicsSystem* GetJoltSystem() const { return m_pSystem.get(); }
 
   xiiUInt32 CreateObjectFilterID();
-  void      DeleteObjectFilterID(xiiUInt32& uiObjectFilterID);
+  void      DeleteObjectFilterID(xiiUInt32& ref_uiObjectFilterID);
 
   xiiUInt32              AllocateUserData(xiiJoltUserData*& out_pUserData);
-  void                   DeallocateUserData(xiiUInt32& uiUserDataId);
+  void                   DeallocateUserData(xiiUInt32& ref_uiUserDataId);
   const xiiJoltUserData& GetUserData(xiiUInt32 uiUserDataId) const;
 
-  void            SetGravity(const xiiVec3& objectGravity, const xiiVec3& characterGravity);
+  void            SetGravity(const xiiVec3& vObjectGravity, const xiiVec3& vCharacterGravity);
   virtual xiiVec3 GetGravity() const override { return xiiVec3(0, 0, -10); }
   xiiVec3         GetCharacterGravity() const { return m_Settings.m_vCharacterGravity; }
 
   //////////////////////////////////////////////////////////////////////////
   // xiiPhysicsWorldModuleInterface
 
-  virtual bool Raycast(xiiPhysicsCastResult& out_Result, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const override;
+  virtual bool Raycast(xiiPhysicsCastResult& out_result, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const override;
 
-  virtual bool RaycastAll(xiiPhysicsCastResultArray& out_Results, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params) const override;
+  virtual bool RaycastAll(xiiPhysicsCastResultArray& out_results, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params) const override;
 
-  virtual bool SweepTestSphere(xiiPhysicsCastResult& out_Result, float fSphereRadius, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const override;
+  virtual bool SweepTestSphere(xiiPhysicsCastResult& out_result, float fSphereRadius, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const override;
 
-  virtual bool SweepTestBox(xiiPhysicsCastResult& out_Result, xiiVec3 vBoxExtends, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const override;
+  virtual bool SweepTestBox(xiiPhysicsCastResult& out_result, xiiVec3 vBoxExtends, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const override;
 
-  virtual bool SweepTestCapsule(xiiPhysicsCastResult& out_Result, float fCapsuleRadius, float fCapsuleHeight, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const override;
+  virtual bool SweepTestCapsule(xiiPhysicsCastResult& out_result, float fCapsuleRadius, float fCapsuleHeight, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const override;
 
   virtual bool OverlapTestSphere(float fSphereRadius, const xiiVec3& vPosition, const xiiPhysicsQueryParameters& params) const override;
 
   virtual bool OverlapTestCapsule(float fCapsuleRadius, float fCapsuleHeight, const xiiTransform& transform, const xiiPhysicsQueryParameters& params) const override;
 
-  virtual void QueryShapesInSphere(xiiPhysicsOverlapResultArray& out_Results, float fSphereRadius, const xiiVec3& vPosition, const xiiPhysicsQueryParameters& params) const override;
+  virtual void QueryShapesInSphere(xiiPhysicsOverlapResultArray& out_results, float fSphereRadius, const xiiVec3& vPosition, const xiiPhysicsQueryParameters& params) const override;
 
-  virtual void AddStaticCollisionBox(xiiGameObject* pObject, xiiVec3 boxSize) override;
+  virtual void AddStaticCollisionBox(xiiGameObject* pObject, xiiVec3 vBoxSize) override;
+
+  virtual void AddFixedJointComponent(xiiGameObject* pOwner, const xiiPhysicsWorldModuleInterface::FixedJointConfig& cfg) override;
 
   xiiDeque<xiiComponentHandle> m_RequireUpdate;
 
@@ -87,6 +89,10 @@ public:
   {
     return reinterpret_cast<xiiJoltContactListener*>(m_pContactListener);
   }
+
+  void CheckBreakableConstraints();
+
+  xiiSet<xiiComponentHandle> m_BreakableConstraints;
 
 private:
   bool SweepTest(xiiPhysicsCastResult& out_Result, const JPH::Shape& shape, const JPH::Mat44& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection) const;

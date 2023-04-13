@@ -13,8 +13,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltPointConstraintComponent : public xiiJoltConstra
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -23,7 +23,7 @@ public:
 protected:
   virtual void ApplySettings() override;
   virtual void CreateContstraintType(JPH::Body* pBody0, JPH::Body* pBody1) override;
-
+  virtual bool ExceededBreakingPoint() override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiJoltPointConstraintComponent

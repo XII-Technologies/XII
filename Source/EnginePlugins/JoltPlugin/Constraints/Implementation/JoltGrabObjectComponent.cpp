@@ -12,29 +12,6 @@
 #include <RendererCore/Debug/DebugRenderer.h>
 
 // clang-format off
-XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgObjectGrabbed);
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgObjectGrabbed, 1, xiiRTTIDefaultAllocator<xiiMsgObjectGrabbed>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("GrabbedBy", m_hGrabbedBy),
-    XII_MEMBER_PROPERTY("GotGrabbed", m_bGotGrabbed),
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_DYNAMIC_REFLECTED_TYPE;
-
-XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgReleaseObjectGrab);
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgReleaseObjectGrab, 1, xiiRTTIDefaultAllocator<xiiMsgReleaseObjectGrab>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("GrabbedObjectToRelease", m_hGrabbedObjectToRelease),
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_DYNAMIC_REFLECTED_TYPE;
-
 XII_BEGIN_COMPONENT_TYPE(xiiJoltGrabObjectComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
@@ -74,11 +51,11 @@ XII_END_COMPONENT_TYPE
 xiiJoltGrabObjectComponent::xiiJoltGrabObjectComponent()  = default;
 xiiJoltGrabObjectComponent::~xiiJoltGrabObjectComponent() = default;
 
-void xiiJoltGrabObjectComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltGrabObjectComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s << m_fBreakDistance;
   s << m_fSpringStiffness;
@@ -87,15 +64,15 @@ void xiiJoltGrabObjectComponent::SerializeComponent(xiiWorldWriter& stream) cons
   s << m_uiCollisionLayer;
   s << m_fAllowGrabAnyObjectWithSize;
 
-  stream.WriteGameObjectHandle(m_hAttachTo);
+  inout_stream.WriteGameObjectHandle(m_hAttachTo);
 }
 
-void xiiJoltGrabObjectComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltGrabObjectComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_fBreakDistance;
   s >> m_fSpringStiffness;
@@ -104,10 +81,10 @@ void xiiJoltGrabObjectComponent::DeserializeComponent(xiiWorldReader& stream)
   s >> m_uiCollisionLayer;
   s >> m_fAllowGrabAnyObjectWithSize;
 
-  m_hAttachTo = stream.ReadGameObjectHandle();
+  m_hAttachTo = inout_stream.ReadGameObjectHandle();
 }
 
-bool xiiJoltGrabObjectComponent::FindNearbyObject(xiiGameObject*& out_pObject, xiiTransform& out_LocalGrabPoint) const
+bool xiiJoltGrabObjectComponent::FindNearbyObject(xiiGameObject*& out_pObject, xiiTransform& out_localGrabPoint) const
 {
   const xiiPhysicsWorldModuleInterface* pPhysicsModule = GetWorld()->GetModuleReadOnly<xiiPhysicsWorldModuleInterface>();
 
@@ -139,7 +116,7 @@ bool xiiJoltGrabObjectComponent::FindNearbyObject(xiiGameObject*& out_pObject, x
   if (pActorComp->GetKinematic())
     return false;
 
-  if (DetermineGrabPoint(pActorComp, out_LocalGrabPoint).Failed())
+  if (DetermineGrabPoint(pActorComp, out_localGrabPoint).Failed())
     return false;
 
   out_pObject = const_cast<xiiGameObject*>(pActorObj);

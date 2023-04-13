@@ -50,7 +50,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltQueryShapeActorComponent, 1, xiiComponentMode::S
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Surface", GetSurfaceFile, SetSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
+    XII_ACCESSOR_PROPERTY("Surface", GetSurfaceFile, SetSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
   }
   XII_END_PROPERTIES;
 }
@@ -60,20 +60,20 @@ XII_END_COMPONENT_TYPE
 xiiJoltQueryShapeActorComponent::xiiJoltQueryShapeActorComponent()  = default;
 xiiJoltQueryShapeActorComponent::~xiiJoltQueryShapeActorComponent() = default;
 
-void xiiJoltQueryShapeActorComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltQueryShapeActorComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(inout_stream);
+  auto& s = inout_stream.GetStream();
 
   s << m_hSurface;
 }
 
-void xiiJoltQueryShapeActorComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltQueryShapeActorComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_hSurface;
 }

@@ -15,7 +15,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltShapeConvexHullComponent, 1, xiiComponentMode::S
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("CollisionMesh", GetMeshFile, SetMeshFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Jolt_Colmesh_Convex")),
+    XII_ACCESSOR_PROPERTY("CollisionMesh", GetMeshFile, SetMeshFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Jolt_Colmesh_Convex", xiiDependencyFlags::Package)),
   }
   XII_END_PROPERTIES;
 }
@@ -25,21 +25,21 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltShapeConvexHullComponent::xiiJoltShapeConvexHullComponent()  = default;
 xiiJoltShapeConvexHullComponent::~xiiJoltShapeConvexHullComponent() = default;
 
-void xiiJoltShapeConvexHullComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltShapeConvexHullComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s << m_hCollisionMesh;
 }
 
-void xiiJoltShapeConvexHullComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltShapeConvexHullComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_hCollisionMesh;
 }
@@ -86,16 +86,16 @@ void xiiJoltShapeConvexHullComponent::CreateShapes(xiiDynamicArray<xiiJoltSubSha
   }
 }
 
-void xiiJoltShapeConvexHullComponent::ExtractGeometry(xiiMsgExtractGeometry& msg) const
+void xiiJoltShapeConvexHullComponent::ExtractGeometry(xiiMsgExtractGeometry& ref_msg) const
 {
-  if (msg.m_Mode != xiiWorldGeoExtractionUtil::ExtractionMode::CollisionMesh && msg.m_Mode != xiiWorldGeoExtractionUtil::ExtractionMode::NavMeshGeneration)
+  if (ref_msg.m_Mode != xiiWorldGeoExtractionUtil::ExtractionMode::CollisionMesh && ref_msg.m_Mode != xiiWorldGeoExtractionUtil::ExtractionMode::NavMeshGeneration)
     return;
 
   if (m_hCollisionMesh.IsValid())
   {
     xiiResourceLock<xiiJoltMeshResource> pMesh(m_hCollisionMesh, xiiResourceAcquireMode::BlockTillLoaded);
 
-    msg.AddMeshObject(GetOwner()->GetGlobalTransform(), pMesh->ConvertToCpuMesh());
+    ref_msg.AddMeshObject(GetOwner()->GetGlobalTransform(), pMesh->ConvertToCpuMesh());
   }
 }
 

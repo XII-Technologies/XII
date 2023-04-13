@@ -34,48 +34,48 @@ void xiiJoltContactListener::RemoveTrigger(const xiiJoltTriggerComponent* pTrigg
   }
 }
 
-void xiiJoltContactListener::OnContactAdded(const JPH::Body& inBody0, const JPH::Body& inBody1, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
+void xiiJoltContactListener::OnContactAdded(const JPH::Body& body0, const JPH::Body& body1, const JPH::ContactManifold& manifold, JPH::ContactSettings& ref_settings)
 {
-  const xiiUInt64 uiBody0id = inBody0.GetID().GetIndexAndSequenceNumber();
-  const xiiUInt64 uiBody1id = inBody1.GetID().GetIndexAndSequenceNumber();
+  const xiiUInt64 uiBody0id = body0.GetID().GetIndexAndSequenceNumber();
+  const xiiUInt64 uiBody1id = body1.GetID().GetIndexAndSequenceNumber();
 
-  if (ActivateTrigger(inBody0, inBody1, uiBody0id, uiBody1id))
+  if (ActivateTrigger(body0, body1, uiBody0id, uiBody1id))
     return;
 
-  OnContact(inBody0, inBody1, inManifold, ioSettings, false);
+  OnContact(body0, body1, manifold, ref_settings, false);
 }
 
-void xiiJoltContactListener::OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
+void xiiJoltContactListener::OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& ref_settings)
 {
-  OnContact(inBody1, inBody2, inManifold, ioSettings, true);
+  OnContact(body1, body2, manifold, ref_settings, true);
 }
 
-void xiiJoltContactListener::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair)
+void xiiJoltContactListener::OnContactRemoved(const JPH::SubShapeIDPair& subShapePair)
 {
-  const xiiUInt64 uiBody1id = inSubShapePair.GetBody1ID().GetIndexAndSequenceNumber();
-  const xiiUInt64 uiBody2id = inSubShapePair.GetBody2ID().GetIndexAndSequenceNumber();
+  const xiiUInt64 uiBody1id = subShapePair.GetBody1ID().GetIndexAndSequenceNumber();
+  const xiiUInt64 uiBody2id = subShapePair.GetBody2ID().GetIndexAndSequenceNumber();
 
   DeactivateTrigger(uiBody1id, uiBody2id);
 }
 
-void xiiJoltContactListener::OnContact(const JPH::Body& inBody0, const JPH::Body& inBody1, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings, bool bPersistent)
+void xiiJoltContactListener::OnContact(const JPH::Body& body0, const JPH::Body& body1, const JPH::ContactManifold& manifold, JPH::ContactSettings& ref_settings, bool bPersistent)
 {
   // compute per-material friction and restitution
   {
-    const xiiJoltMaterial* pMat0 = static_cast<const xiiJoltMaterial*>(inBody0.GetShape()->GetMaterial(inManifold.mSubShapeID1));
-    const xiiJoltMaterial* pMat1 = static_cast<const xiiJoltMaterial*>(inBody1.GetShape()->GetMaterial(inManifold.mSubShapeID2));
+    const xiiJoltMaterial* pMat0 = static_cast<const xiiJoltMaterial*>(body0.GetShape()->GetMaterial(manifold.mSubShapeID1));
+    const xiiJoltMaterial* pMat1 = static_cast<const xiiJoltMaterial*>(body1.GetShape()->GetMaterial(manifold.mSubShapeID2));
 
     if (pMat0 && pMat1)
     {
-      ioSettings.mCombinedRestitution = xiiMath::Max(pMat0->m_fRestitution, pMat1->m_fRestitution);
-      ioSettings.mCombinedFriction    = xiiMath::Sqrt(pMat0->m_fFriction * pMat1->m_fFriction);
+      ref_settings.mCombinedRestitution = xiiMath::Max(pMat0->m_fRestitution, pMat1->m_fRestitution);
+      ref_settings.mCombinedFriction    = xiiMath::Sqrt(pMat0->m_fFriction * pMat1->m_fFriction);
     }
   }
 
   m_ContactEvents.m_pWorld = m_pWorld;
 
-  const xiiJoltDynamicActorComponent* pActor0 = xiiJoltUserData::GetDynamicActorComponent(reinterpret_cast<const void*>(inBody0.GetUserData()));
-  const xiiJoltDynamicActorComponent* pActor1 = xiiJoltUserData::GetDynamicActorComponent(reinterpret_cast<const void*>(inBody1.GetUserData()));
+  const xiiJoltDynamicActorComponent* pActor0 = xiiJoltUserData::GetDynamicActorComponent(reinterpret_cast<const void*>(body0.GetUserData()));
+  const xiiJoltDynamicActorComponent* pActor1 = xiiJoltUserData::GetDynamicActorComponent(reinterpret_cast<const void*>(body1.GetUserData()));
 
   if (pActor0 || pActor1)
   {
@@ -90,33 +90,33 @@ void xiiJoltContactListener::OnContact(const JPH::Body& inBody0, const JPH::Body
     if (CombinedContactFlags.IsAnySet(xiiOnJoltContact::AllReactions))
     {
       xiiVec3       vAvgPos(0);
-      const xiiVec3 vAvgNormal = xiiJoltConversionUtils::ToVec3(inManifold.mWorldSpaceNormal);
+      const xiiVec3 vAvgNormal = xiiJoltConversionUtils::ToVec3(manifold.mWorldSpaceNormal);
 
-      const float fImpactSqr = (inBody0.GetLinearVelocity() - inBody1.GetLinearVelocity()).LengthSq();
+      const float fImpactSqr = (body0.GetLinearVelocity() - body1.GetLinearVelocity()).LengthSq();
 
-      for (xiiUInt32 uiContactPointIndex = 0; uiContactPointIndex < inManifold.mRelativeContactPointsOn1.size(); ++uiContactPointIndex)
+      for (xiiUInt32 uiContactPointIndex = 0; uiContactPointIndex < manifold.mRelativeContactPointsOn1.size(); ++uiContactPointIndex)
       {
-        vAvgPos += xiiJoltConversionUtils::ToVec3(inManifold.GetWorldSpaceContactPointOn1(uiContactPointIndex));
-        vAvgPos -= vAvgNormal * inManifold.mPenetrationDepth;
+        vAvgPos += xiiJoltConversionUtils::ToVec3(manifold.GetWorldSpaceContactPointOn1(uiContactPointIndex));
+        vAvgPos -= vAvgNormal * manifold.mPenetrationDepth;
       }
 
-      vAvgPos /= (float)inManifold.mRelativeContactPointsOn1.size();
+      vAvgPos /= (float)manifold.mRelativeContactPointsOn1.size();
 
       if (bPersistent)
       {
-        m_ContactEvents.OnContact_SlideAndRollReaction(inBody0, inBody1, inManifold, ContactFlags0, ContactFlags1, vAvgPos, vAvgNormal, CombinedContactFlags);
+        m_ContactEvents.OnContact_SlideAndRollReaction(body0, body1, manifold, ContactFlags0, ContactFlags1, vAvgPos, vAvgNormal, CombinedContactFlags);
       }
       else if (fImpactSqr >= 1.0f && CombinedContactFlags.IsAnySet(xiiOnJoltContact::ImpactReactions))
       {
-        const xiiJoltMaterial* pMat1 = static_cast<const xiiJoltMaterial*>(inBody0.GetShape()->GetMaterial(inManifold.mSubShapeID1));
-        const xiiJoltMaterial* pMat2 = static_cast<const xiiJoltMaterial*>(inBody1.GetShape()->GetMaterial(inManifold.mSubShapeID2));
+        const xiiJoltMaterial* pMat1 = static_cast<const xiiJoltMaterial*>(body0.GetShape()->GetMaterial(manifold.mSubShapeID1));
+        const xiiJoltMaterial* pMat2 = static_cast<const xiiJoltMaterial*>(body1.GetShape()->GetMaterial(manifold.mSubShapeID2));
 
         if (pMat1 == nullptr)
           pMat1 = static_cast<const xiiJoltMaterial*>(xiiJoltMaterial::sDefault.GetPtr());
         if (pMat2 == nullptr)
           pMat2 = static_cast<const xiiJoltMaterial*>(xiiJoltMaterial::sDefault.GetPtr());
 
-        m_ContactEvents.OnContact_ImpactReaction(vAvgPos, vAvgNormal, fImpactSqr, pMat1->m_pSurface, pMat2->m_pSurface, inBody0.IsStatic() || inBody0.IsKinematic());
+        m_ContactEvents.OnContact_ImpactReaction(vAvgPos, vAvgNormal, fImpactSqr, pMat1->m_pSurface, pMat2->m_pSurface, body0.IsStatic() || body0.IsKinematic());
       }
     }
   }
@@ -127,23 +127,23 @@ void xiiJoltContactListener::OnContact(const JPH::Body& inBody0, const JPH::Body
   //   }
 }
 
-bool xiiJoltContactListener::ActivateTrigger(const JPH::Body& inBody1, const JPH::Body& inBody2, xiiUInt64 uiBody1id, xiiUInt64 uiBody2id)
+bool xiiJoltContactListener::ActivateTrigger(const JPH::Body& body1, const JPH::Body& body2, xiiUInt64 uiBody1id, xiiUInt64 uiBody2id)
 {
-  if (!inBody1.IsSensor() && !inBody2.IsSensor())
+  if (!body1.IsSensor() && !body2.IsSensor())
     return false;
 
   const xiiJoltTriggerComponent* pTrigger   = nullptr;
   const xiiComponent*            pComponent = nullptr;
 
-  if (inBody1.IsSensor())
+  if (body1.IsSensor())
   {
-    pTrigger   = xiiJoltUserData::GetTriggerComponent(reinterpret_cast<const void*>(inBody1.GetUserData()));
-    pComponent = xiiJoltUserData::GetComponent(reinterpret_cast<const void*>(inBody2.GetUserData()));
+    pTrigger   = xiiJoltUserData::GetTriggerComponent(reinterpret_cast<const void*>(body1.GetUserData()));
+    pComponent = xiiJoltUserData::GetComponent(reinterpret_cast<const void*>(body2.GetUserData()));
   }
   else
   {
-    pTrigger   = xiiJoltUserData::GetTriggerComponent(reinterpret_cast<const void*>(inBody2.GetUserData()));
-    pComponent = xiiJoltUserData::GetComponent(reinterpret_cast<const void*>(inBody1.GetUserData()));
+    pTrigger   = xiiJoltUserData::GetTriggerComponent(reinterpret_cast<const void*>(body2.GetUserData()));
+    pComponent = xiiJoltUserData::GetComponent(reinterpret_cast<const void*>(body1.GetUserData()));
   }
 
   if (pTrigger && pComponent)
@@ -481,14 +481,14 @@ xiiJoltContactEvents::SlideAndRollInfo* xiiJoltContactEvents::FindSlideOrRollInf
   return nullptr;
 }
 
-void xiiJoltContactEvents::OnContact_RollReaction(const JPH::Body& inBody0, const JPH::Body& inBody1, const JPH::ContactManifold& inManifold, xiiBitflags<xiiOnJoltContact> onContact0, xiiBitflags<xiiOnJoltContact> onContact1, const xiiVec3& vAvgPos, const xiiVec3& vAvgNormal0)
+void xiiJoltContactEvents::OnContact_RollReaction(const JPH::Body& body0, const JPH::Body& body1, const JPH::ContactManifold& manifold, xiiBitflags<xiiOnJoltContact> onContact0, xiiBitflags<xiiOnJoltContact> onContact1, const xiiVec3& vAvgPos, const xiiVec3& vAvgNormal0)
 {
   // only consider something 'rolling' when it turns faster than this (per second)
   constexpr xiiAngle rollThreshold = xiiAngle::Degree(45);
 
   xiiBitflags<xiiOnJoltContact> contactFlags[2] = {onContact0, onContact1};
-  const JPH::Body*              bodies[2]       = {&inBody0, &inBody1};
-  const JPH::SubShapeID         shapeIds[2]     = {inManifold.mSubShapeID1, inManifold.mSubShapeID2};
+  const JPH::Body*              bodies[2]       = {&body0, &body1};
+  const JPH::SubShapeID         shapeIds[2]     = {manifold.mSubShapeID1, manifold.mSubShapeID2};
 
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
@@ -521,19 +521,19 @@ void xiiJoltContactEvents::OnContact_RollReaction(const JPH::Body& inBody0, cons
   }
 }
 
-void xiiJoltContactEvents::OnContact_SlideReaction(const JPH::Body& inBody0, const JPH::Body& inBody1, const JPH::ContactManifold& inManifold, xiiBitflags<xiiOnJoltContact> onContact0, xiiBitflags<xiiOnJoltContact> onContact1, const xiiVec3& vAvgPos, const xiiVec3& vAvgNormal0)
+void xiiJoltContactEvents::OnContact_SlideReaction(const JPH::Body& body0, const JPH::Body& body1, const JPH::ContactManifold& manifold, xiiBitflags<xiiOnJoltContact> onContact0, xiiBitflags<xiiOnJoltContact> onContact1, const xiiVec3& vAvgPos, const xiiVec3& vAvgNormal0)
 {
   xiiVec3 vVelocity[2] = {xiiVec3::ZeroVector(), xiiVec3::ZeroVector()};
 
   {
-    vVelocity[0] = xiiJoltConversionUtils::ToVec3(inBody0.GetLinearVelocity());
+    vVelocity[0] = xiiJoltConversionUtils::ToVec3(body0.GetLinearVelocity());
 
     if (!vVelocity[0].IsValid())
       vVelocity[0].SetZero();
   }
 
   {
-    vVelocity[1] = xiiJoltConversionUtils::ToVec3(inBody1.GetLinearVelocity());
+    vVelocity[1] = xiiJoltConversionUtils::ToVec3(body1.GetLinearVelocity());
 
     if (!vVelocity[1].IsValid())
       vVelocity[1].SetZero();
@@ -558,8 +558,8 @@ void xiiJoltContactEvents::OnContact_SlideReaction(const JPH::Body& inBody0, con
       if (vRelativeVelocity.GetLengthSquared() > xiiMath::Square(slideSpeedThreshold))
       {
         xiiBitflags<xiiOnJoltContact> contactFlags[2] = {onContact0, onContact1};
-        const JPH::Body*              bodies[2]       = {&inBody0, &inBody1};
-        const JPH::SubShapeID         shapeIds[2]     = {inManifold.mSubShapeID1, inManifold.mSubShapeID2};
+        const JPH::Body*              bodies[2]       = {&body0, &body1};
+        const JPH::SubShapeID         shapeIds[2]     = {manifold.mSubShapeID1, manifold.mSubShapeID2};
 
         for (xiiUInt32 i = 0; i < 2; ++i)
         {
@@ -591,16 +591,16 @@ void xiiJoltContactEvents::OnContact_SlideReaction(const JPH::Body& inBody0, con
   }
 }
 
-void xiiJoltContactEvents::OnContact_SlideAndRollReaction(const JPH::Body& inBody0, const JPH::Body& inBody1, const JPH::ContactManifold& inManifold, xiiBitflags<xiiOnJoltContact> onContact0, xiiBitflags<xiiOnJoltContact> onContact1, const xiiVec3& vAvgPos, const xiiVec3& vAvgNormal, xiiBitflags<xiiOnJoltContact> CombinedContactFlags)
+void xiiJoltContactEvents::OnContact_SlideAndRollReaction(const JPH::Body& body0, const JPH::Body& body1, const JPH::ContactManifold& manifold, xiiBitflags<xiiOnJoltContact> onContact0, xiiBitflags<xiiOnJoltContact> onContact1, const xiiVec3& vAvgPos, const xiiVec3& vAvgNormal, xiiBitflags<xiiOnJoltContact> combinedContactFlags)
 {
-  if (inManifold.mRelativeContactPointsOn1.size() >= 2 && CombinedContactFlags.IsAnySet(xiiOnJoltContact::SlideReactions))
+  if (manifold.mRelativeContactPointsOn1.size() >= 2 && combinedContactFlags.IsAnySet(xiiOnJoltContact::SlideReactions))
   {
-    OnContact_SlideReaction(inBody0, inBody1, inManifold, onContact0, onContact1, vAvgPos, vAvgNormal);
+    OnContact_SlideReaction(body0, body1, manifold, onContact0, onContact1, vAvgPos, vAvgNormal);
   }
 
-  if (CombinedContactFlags.IsAnySet(xiiOnJoltContact::AllRollReactions))
+  if (combinedContactFlags.IsAnySet(xiiOnJoltContact::AllRollReactions))
   {
-    OnContact_RollReaction(inBody0, inBody1, inManifold, onContact0, onContact1, vAvgPos, vAvgNormal);
+    OnContact_RollReaction(body0, body1, manifold, onContact0, onContact1, vAvgPos, vAvgNormal);
   }
 }
 

@@ -8,23 +8,6 @@ namespace JPH
   class SixDOFConstraint;
 }
 
-/// \brief Sent by components such as xiiJoltGrabObjectComponent to indicate that the object has been grabbed or released.
-class XII_JOLTPLUGIN_DLL xiiMsgObjectGrabbed : public xiiMessage
-{
-  XII_DECLARE_MESSAGE_TYPE(xiiMsgObjectGrabbed, xiiMessage);
-
-  xiiGameObjectHandle m_hGrabbedBy;
-  bool                m_bGotGrabbed = true;
-};
-
-/// \brief Send this to components such as xiiJoltGrabObjectComponent to demand that m_hGrabbedObjectToRelease should no longer be grabbed.
-class XII_JOLTPLUGIN_DLL xiiMsgReleaseObjectGrab : public xiiMessage
-{
-  XII_DECLARE_MESSAGE_TYPE(xiiMsgReleaseObjectGrab, xiiMessage);
-
-  xiiGameObjectHandle m_hGrabbedObjectToRelease;
-};
-
 using xiiJoltGrabObjectComponentManager = xiiComponentManagerSimple<class xiiJoltGrabObjectComponent, xiiComponentUpdateType::WhenSimulating, xiiBlockStorageType::Compact>;
 
 /// \brief Used to 'grab' physical objects and attach them to an object. For player objects to pick up objects.
@@ -43,8 +26,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltGrabObjectComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 protected:
   virtual void OnSimulationStarted() override;
@@ -59,7 +42,7 @@ public:
 
   /// \brief Checks whether there is an object nearby. Note that this function reports static and dynamic objects that are within reach.
   /// Whether these objects are interact able or not is up to the caller.
-  bool FindNearbyObject(xiiGameObject*& out_pObject, xiiTransform& out_LocalGrabPoint) const;
+  bool FindNearbyObject(xiiGameObject*& out_pObject, xiiTransform& out_localGrabPoint) const;
 
   /// \brief Grabs the given object at the given grab point if possible.
   bool GrabObject(xiiGameObject* pObjectToGrab, const xiiTransform& localGrabPoint);

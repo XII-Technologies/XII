@@ -15,12 +15,12 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiJoltConstraintComponent, 1)
 {
   XII_BEGIN_PROPERTIES
   {
-    //XII_ACCESSOR_PROPERTY("BreakForce", GetBreakForce, SetBreakForce),
-    //XII_ACCESSOR_PROPERTY("BreakTorque", GetBreakTorque, SetBreakTorque),
     XII_ACCESSOR_PROPERTY("PairCollision", GetPairCollision, SetPairCollision)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ACCESSOR_PROPERTY("ParentActor", DummyGetter, SetParentActorReference)->AddAttributes(new xiiGameObjectReferenceAttribute()),
     XII_ACCESSOR_PROPERTY("ChildActor", DummyGetter, SetChildActorReference)->AddAttributes(new xiiGameObjectReferenceAttribute()),
     XII_ACCESSOR_PROPERTY("ChildActorAnchor", DummyGetter, SetChildActorAnchorReference)->AddAttributes(new xiiGameObjectReferenceAttribute()),
+    XII_ACCESSOR_PROPERTY("BreakForce", GetBreakForce, SetBreakForce),
+    XII_ACCESSOR_PROPERTY("BreakTorque", GetBreakTorque, SetBreakTorque),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -43,17 +43,17 @@ XII_END_STATIC_REFLECTED_ENUM;
 xiiJoltConstraintComponent::xiiJoltConstraintComponent()  = default;
 xiiJoltConstraintComponent::~xiiJoltConstraintComponent() = default;
 
-// void xiiJoltConstraintComponent::SetBreakForce(float value)
-//{
-//   m_fBreakForce = value;
-//   QueueApplySettings();
-// }
-//
-// void xiiJoltConstraintComponent::SetBreakTorque(float value)
-//{
-//   m_fBreakTorque = value;
-//   QueueApplySettings();
-// }
+void xiiJoltConstraintComponent::SetBreakForce(float value)
+{
+  m_fBreakForce = value;
+  QueueApplySettings();
+}
+
+void xiiJoltConstraintComponent::SetBreakTorque(float value)
+{
+  m_fBreakTorque = value;
+  QueueApplySettings();
+}
 
 void xiiJoltConstraintComponent::SetPairCollision(bool value)
 {
@@ -120,7 +120,7 @@ void xiiJoltConstraintComponent::OnDeactivated()
     xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
     pModule->GetJoltSystem()->RemoveConstraint(m_pConstraint);
 
-    // pModule->m_BreakableConstraints.Remove(m_pConstraint->getConstraint());
+    pModule->m_BreakableConstraints.Remove(GetHandle());
 
     // wake up the joined bodies, so that removing a constraint doesn't let them hang in the air
     {
@@ -165,44 +165,44 @@ void xiiJoltConstraintComponent::OnDeactivated()
   SUPER::OnDeactivated();
 }
 
-void xiiJoltConstraintComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltConstraintComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   // s << m_fBreakForce;
   // s << m_fBreakTorque;
   s << m_bPairCollision;
 
-  stream.WriteGameObjectHandle(m_hActorA);
-  stream.WriteGameObjectHandle(m_hActorB);
+  inout_stream.WriteGameObjectHandle(m_hActorA);
+  inout_stream.WriteGameObjectHandle(m_hActorB);
 
   s << m_LocalFrameA;
   s << m_LocalFrameB;
 
-  stream.WriteGameObjectHandle(m_hActorBAnchor);
+  inout_stream.WriteGameObjectHandle(m_hActorBAnchor);
 }
 
-void xiiJoltConstraintComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltConstraintComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   // s >> m_fBreakForce;
   // s >> m_fBreakTorque;
   s >> m_bPairCollision;
 
-  m_hActorA = stream.ReadGameObjectHandle();
-  m_hActorB = stream.ReadGameObjectHandle();
+  m_hActorA = inout_stream.ReadGameObjectHandle();
+  m_hActorB = inout_stream.ReadGameObjectHandle();
 
   s >> m_LocalFrameA;
   s >> m_LocalFrameB;
 
-  m_hActorBAnchor = stream.ReadGameObjectHandle();
+  m_hActorBAnchor = inout_stream.ReadGameObjectHandle();
 }
 
 void xiiJoltConstraintComponent::SetParentActorReference(const char* szReference)
@@ -272,26 +272,16 @@ void xiiJoltConstraintComponent::ApplySettings()
 {
   SetUserFlag(2, false);
 
-  // const float fBreakForce = m_fBreakForce <= 0.0f ? xiiMath::MaxValue<float>() : m_fBreakForce;
-  // const float fBreakTorque = m_fBreakTorque <= 0.0f ? xiiMath::MaxValue<float>() : m_fBreakTorque;
-  // m_pConstraint->setBreakForce(fBreakForce, fBreakTorque);
-
-  // if (m_fBreakForce > 0.0f || m_fBreakTorque > 0.0f)
-  //{
-  //   xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
-  //   pModule->m_BreakableConstraints[m_pConstraint->getConstraint()] = GetHandle();
-  // }
-
-  // m_pConstraint->setConstraintFlag(PxConstraintFlag::eCOLLISION_ENABLED, m_bPairCollision);
-
-  // JoltRigidActor* pActor0 = nullptr;
-  // JoltRigidActor* pActor1 = nullptr;
-  // m_pConstraint->getActors(pActor0, pActor1);
-
-  // if (pActor0 && pActor0->is<PxRigidDynamic>() && !static_cast<PxRigidDynamic*>(pActor0)->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
-  //   static_cast<PxRigidDynamic*>(pActor0)->wakeUp();
-  // if (pActor1 && pActor1->is<PxRigidDynamic>() && !static_cast<PxRigidDynamic*>(pActor1)->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
-  //   static_cast<PxRigidDynamic*>(pActor1)->wakeUp();
+  if (m_fBreakForce > 0.0f || m_fBreakTorque > 0.0f)
+  {
+    xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
+    pModule->m_BreakableConstraints.Insert(GetHandle());
+  }
+  else
+  {
+    xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
+    pModule->m_BreakableConstraints.Remove(GetHandle());
+  }
 }
 
 xiiResult xiiJoltConstraintComponent::FindParentBody(xiiUInt32& out_uiJoltBodyID)

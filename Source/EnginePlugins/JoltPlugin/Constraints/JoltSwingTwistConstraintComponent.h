@@ -12,8 +12,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltSwingTwistConstraintComponent : public xiiJoltCo
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -31,6 +31,7 @@ public:
   ~xiiJoltSwingTwistConstraintComponent();
 
   virtual void ApplySettings() final override;
+  virtual bool ExceededBreakingPoint() final override;
 
   void     SetSwingLimitY(xiiAngle f);                      // [ property ]
   xiiAngle GetSwingLimitY() const { return m_SwingLimitY; } // [ property ]

@@ -36,11 +36,11 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltSwingTwistConstraintComponent::xiiJoltSwingTwistConstraintComponent()  = default;
 xiiJoltSwingTwistConstraintComponent::~xiiJoltSwingTwistConstraintComponent() = default;
 
-void xiiJoltSwingTwistConstraintComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltSwingTwistConstraintComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s << m_SwingLimitY;
   s << m_SwingLimitZ;
@@ -55,12 +55,12 @@ void xiiJoltSwingTwistConstraintComponent::SerializeComponent(xiiWorldWriter& st
   // s << m_fTwistDriveStrength;
 }
 
-void xiiJoltSwingTwistConstraintComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltSwingTwistConstraintComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_SwingLimitY;
   s >> m_SwingLimitZ;
@@ -143,6 +143,32 @@ void xiiJoltSwingTwistConstraintComponent::ApplySettings()
     xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
     pModule->GetJoltSystem()->GetBodyInterface().ActivateBody(pConstraint->GetBody2()->GetID());
   }
+}
+
+bool xiiJoltSwingTwistConstraintComponent::ExceededBreakingPoint()
+{
+  if (auto pConstraint = static_cast<JPH::SwingTwistConstraint*>(m_pConstraint))
+  {
+    if (m_fBreakForce > 0)
+    {
+      if (pConstraint->GetTotalLambdaPosition().ReduceMax() >= m_fBreakForce)
+      {
+        return true;
+      }
+    }
+
+    if (m_fBreakTorque > 0)
+    {
+      if (pConstraint->GetTotalLambdaSwingY() >= m_fBreakTorque ||
+          pConstraint->GetTotalLambdaSwingZ() >= m_fBreakTorque ||
+          pConstraint->GetTotalLambdaTwist() >= m_fBreakTorque)
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 void xiiJoltSwingTwistConstraintComponent::SetSwingLimitZ(xiiAngle f)

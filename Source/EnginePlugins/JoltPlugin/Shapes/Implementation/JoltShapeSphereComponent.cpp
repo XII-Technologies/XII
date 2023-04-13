@@ -34,21 +34,21 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltShapeSphereComponent::xiiJoltShapeSphereComponent()  = default;
 xiiJoltShapeSphereComponent::~xiiJoltShapeSphereComponent() = default;
 
-void xiiJoltShapeSphereComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltShapeSphereComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
   s << m_fRadius;
 }
 
-void xiiJoltShapeSphereComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltShapeSphereComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
   s >> m_fRadius;
 }
 

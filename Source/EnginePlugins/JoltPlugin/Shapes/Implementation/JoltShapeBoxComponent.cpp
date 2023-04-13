@@ -35,20 +35,20 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltShapeBoxComponent::xiiJoltShapeBoxComponent()  = default;
 xiiJoltShapeBoxComponent::~xiiJoltShapeBoxComponent() = default;
 
-void xiiJoltShapeBoxComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltShapeBoxComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
   s << m_vHalfExtents;
 }
 
-void xiiJoltShapeBoxComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltShapeBoxComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
   s >> m_vHalfExtents;
 }
 
@@ -57,9 +57,9 @@ void xiiJoltShapeBoxComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)
   msg.AddBounds(xiiBoundingBox(-m_vHalfExtents, m_vHalfExtents), xiiInvalidSpatialDataCategory);
 }
 
-void xiiJoltShapeBoxComponent::ExtractGeometry(xiiMsgExtractGeometry& msg) const
+void xiiJoltShapeBoxComponent::ExtractGeometry(xiiMsgExtractGeometry& ref_msg) const
 {
-  msg.AddBox(GetOwner()->GetGlobalTransform(), m_vHalfExtents * 2.0f);
+  ref_msg.AddBox(GetOwner()->GetGlobalTransform(), m_vHalfExtents * 2.0f);
 }
 
 void xiiJoltShapeBoxComponent::SetHalfExtents(const xiiVec3& value)
