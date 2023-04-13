@@ -100,6 +100,24 @@ xiiResult xiiJoltCooking::CookTriangleMesh(const xiiJoltCookingMesh& mesh, xiiSt
           const xiiUInt32 idx1 = mesh.m_PolygonIndices[uiIdxOffset + tri + 1];
           const xiiUInt32 idx2 = mesh.m_PolygonIndices[uiIdxOffset + tri + 2];
 
+          if (idx0 == idx1 || idx0 == idx2 || idx1 == idx2)
+          {
+            // triangle is degenerate, remove it from the list
+            triangleList.resize(triangleList.size() - 1);
+            continue;
+          }
+
+          const xiiVec3 v0 = xiiJoltConversionUtils::ToVec3(vertexList[idx0]);
+          const xiiVec3 v1 = xiiJoltConversionUtils::ToVec3(vertexList[idx1]);
+          const xiiVec3 v2 = xiiJoltConversionUtils::ToVec3(vertexList[idx2]);
+
+          if (v0.IsEqual(v1, 0.001f) || v0.IsEqual(v2, 0.001f) || v1.IsEqual(v2, 0.001f))
+          {
+            // triangle is degenerate, remove it from the list
+            triangleList.resize(triangleList.size() - 1);
+            continue;
+          }
+
           triangleList[uiTriIdx].mMaterialIndex = uiMaterialID;
           triangleList[uiTriIdx].mIdx[0]        = idx0;
           triangleList[uiTriIdx].mIdx[1]        = idx1;
