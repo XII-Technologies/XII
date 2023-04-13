@@ -64,11 +64,6 @@ public:
 
   bool IsEngineSetup() const { return m_bClientIsConfigured; }
 
-  /// /brief Sends a message that the document has been opened or closed. Resends all document data.
-  ///
-  /// Calling this will always clear the existing document on the engine side and reset the state to the editor state.
-  void SendDocumentOpenMessage(const xiiAssetDocument* pDocument, bool bOpen);
-
   void ActivateRemoteProcess(const xiiAssetDocument* pDocument, xiiUInt32 uiViewID);
 
   xiiProcessCommunicationChannel& GetCommunicationChannel() { return m_IPC; }

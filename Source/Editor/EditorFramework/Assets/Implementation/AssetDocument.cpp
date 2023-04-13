@@ -859,6 +859,25 @@ void xiiAssetDocument::SyncObjectsToEngine() const
   }
 }
 
+void xiiAssetDocument::SendDocumentOpenMessage(bool bOpen)
+{
+  XII_PROFILE_SCOPE("SendDocumentOpenMessage");
+
+  // It is important to have up-to-date lookup tables in the engine process, because document contexts might try to
+  // load resources, and if the file redirection does not happen correctly, derived resource types may not be created as they should
+  xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
+
+  m_EngineStatus = EngineStatus::Initializing;
+
+  xiiDocumentOpenMsgToEngine m;
+  m.m_DocumentGuid     = GetGuid();
+  m.m_bDocumentOpen    = bOpen;
+  m.m_sDocumentType    = GetDocumentTypeDescriptor()->m_sDocumentTypeName;
+  m.m_DocumentMetaData = GetCreateEngineMetaData();
+
+  xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&m);
+}
+
 namespace
 {
   static const char* szThumbnailInfoTag = "xiThumb";

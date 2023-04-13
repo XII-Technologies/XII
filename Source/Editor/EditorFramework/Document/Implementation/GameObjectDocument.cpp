@@ -794,7 +794,7 @@ void xiiGameObjectDocument::ScheduleSendObjectSelection()
 
 void xiiGameObjectDocument::SendGameWorldToEngine()
 {
-  xiiEditorEngineProcessConnection::GetSingleton()->SendDocumentOpenMessage(this, true);
+  SendDocumentOpenMessage(true);
 }
 
 void xiiGameObjectDocument::SetSimulationSpeed(float f)

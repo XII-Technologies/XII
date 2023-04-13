@@ -29,26 +29,6 @@ xiiEditorEngineProcessConnection::~xiiEditorEngineProcessConnection()
   m_IPC.m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiEditorEngineProcessConnection::HandleIPCEvent, this));
 }
 
-void xiiEditorEngineProcessConnection::SendDocumentOpenMessage(const xiiAssetDocument* pDocument, bool bOpen)
-{
-  XII_PROFILE_SCOPE("SendDocumentOpenMessage");
-
-  if (!pDocument)
-    return;
-
-  // it is important to have up-to-date lookup tables in the engine process, because document contexts might try to
-  // load resources, and if the file redirection does not happen correctly, derived resource types may not be created as they should
-  xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
-
-  xiiDocumentOpenMsgToEngine m;
-  m.m_DocumentGuid     = pDocument->GetGuid();
-  m.m_bDocumentOpen    = bOpen;
-  m.m_sDocumentType    = pDocument->GetDocumentTypeDescriptor()->m_sDocumentTypeName;
-  m.m_DocumentMetaData = pDocument->GetCreateEngineMetaData();
-
-  SendMessage(&m);
-}
-
 void xiiEditorEngineProcessConnection::HandleIPCEvent(const xiiProcessCommunicationChannel::Event& e)
 {
   if (e.m_pMessage->GetDynamicRTTI()->IsDerivedFrom<xiiSyncWithProcessMsgToEditor>())
@@ -103,14 +83,14 @@ xiiEditorEngineConnection* xiiEditorEngineProcessConnection::CreateEngineConnect
 
   m_DocumentByGuid[pDocument->GetGuid()] = pDocument;
 
-  SendDocumentOpenMessage(pDocument, true);
+  pDocument->SendDocumentOpenMessage(true);
 
   return pConnection;
 }
 
 void xiiEditorEngineProcessConnection::DestroyEngineConnection(xiiAssetDocument* pDocument)
 {
-  SendDocumentOpenMessage(pDocument, false);
+  pDocument->SendDocumentOpenMessage(false);
 
   m_DocumentByGuid.Remove(pDocument->GetGuid());
 
@@ -409,7 +389,7 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
 
   for (xiiAssetDocument* pDoc : docs)
   {
-    SendDocumentOpenMessage(pDoc, true);
+    pDoc->SendDocumentOpenMessage(true);
   }
 
   xiiAssetCurator::GetSingleton()->InvalidateAssetsWithTransformState(xiiAssetInfo::TransformState::TransformError);
