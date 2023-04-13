@@ -785,7 +785,7 @@ void xiiQtAssetBrowserWidget::OnAssetSelectionChanged(const QItemSelection& sele
     QModelIndex index = ListAssets->selectionModel()->selectedIndexes()[0];
 
     xiiUuid guid = m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::SubAssetGuid).value<xiiUuid>();
-    Q_EMIT ItemSelected(guid, m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString());
+    Q_EMIT  ItemSelected(guid, m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString());
   }
 }
 
@@ -800,7 +800,7 @@ void xiiQtAssetBrowserWidget::OnAssetSelectionCurrentChanged(const QModelIndex& 
     QModelIndex index = ListAssets->selectionModel()->selectedIndexes()[0];
 
     xiiUuid guid = m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::SubAssetGuid).value<xiiUuid>();
-    Q_EMIT ItemSelected(guid, m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString());
+    Q_EMIT  ItemSelected(guid, m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString());
   }
 }
 
