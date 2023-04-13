@@ -13,25 +13,13 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiRotateGizmo::xiiRotateGizmo()
 {
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
-  m_bUseExperimentalGizmo                = !pPreferences->m_bOldGizmos;
+  const xiiColor colr = xiiColorScheme::LightUI(xiiColorScheme::Red);
+  const xiiColor colg = xiiColorScheme::LightUI(xiiColorScheme::Green);
+  const xiiColor colb = xiiColorScheme::LightUI(xiiColorScheme::Blue);
 
-  if (m_bUseExperimentalGizmo)
-  {
-    const xiiColor colr = xiiColorScheme::LightUI(xiiColorScheme::Red);
-    const xiiColor colg = xiiColorScheme::LightUI(xiiColorScheme::Green);
-    const xiiColor colb = xiiColorScheme::LightUI(xiiColorScheme::Blue);
-
-    m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/RotatePlaneX.obj");
-    m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/RotatePlaneY.obj");
-    m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/RotatePlaneZ.obj");
-  }
-  else
-  {
-    m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::Ring, xiiColorLinearUB(128, 0, 0), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::Ring, xiiColorLinearUB(0, 128, 0), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Ring, xiiColorLinearUB(0, 0, 128), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-  }
+  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/RotatePlaneX.obj");
+  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/RotatePlaneY.obj");
+  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/RotatePlaneZ.obj");
 
   SetVisible(false);
   SetTransformation(xiiTransform::IdentityTransform());
@@ -58,26 +46,9 @@ void xiiRotateGizmo::OnVisibleChanged(bool bVisible)
 
 void xiiRotateGizmo::OnTransformationChanged(const xiiTransform& transform)
 {
-  if (m_bUseExperimentalGizmo)
-  {
-    m_hAxisX.SetTransformation(transform);
-    m_hAxisY.SetTransformation(transform);
-    m_hAxisZ.SetTransformation(transform);
-  }
-  else
-  {
-    xiiTransform m;
-    m.SetIdentity();
-
-    m.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(-90));
-    m_hAxisX.SetTransformation(transform * m);
-
-    m.m_qRotation.SetFromAxisAndAngle(xiiVec3(1, 0, 0), xiiAngle::Degree(90));
-    m_hAxisY.SetTransformation(transform * m);
-
-    m.SetIdentity();
-    m_hAxisZ.SetTransformation(transform * m);
-  }
+  m_hAxisX.SetTransformation(transform);
+  m_hAxisY.SetTransformation(transform);
+  m_hAxisZ.SetTransformation(transform);
 }
 
 void xiiRotateGizmo::DoFocusLost(bool bCancel)

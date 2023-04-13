@@ -19,10 +19,9 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* parent) :
   ButtonListMode->setVisible(false);
   ButtonIconMode->setVisible(false);
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
-
-  ListTypeFilter->setVisible(!pPreferences->m_bAssetFilterCombobox);
-  TypeFilter->setVisible(pPreferences->m_bAssetFilterCombobox);
+  const bool bAssetFilterCombobox = true;
+  ListTypeFilter->setVisible(!bAssetFilterCombobox);
+  TypeFilter->setVisible(bAssetFilterCombobox);
 
   m_pFilter = new xiiQtAssetBrowserFilter(this);
   m_pModel  = new xiiQtAssetBrowserModel(this, m_pFilter);

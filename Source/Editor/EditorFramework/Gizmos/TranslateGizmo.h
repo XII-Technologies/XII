@@ -85,6 +85,4 @@ private:
   xiiVec3 m_vPlaneAxis[2];
   xiiVec3 m_vStartPosition;
   xiiMat4 m_mInvViewProj;
-
-  bool m_bUseExperimentalGizmo = false;
 };
