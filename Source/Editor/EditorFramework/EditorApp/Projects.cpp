@@ -137,6 +137,16 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, const char* szFile)
 
       LoadPluginBundleDlls(sProjectFile);
 
+      xiiStringBuilder sTemp = xiiOSFile::GetTempDataFolder("xiiEditor");
+      sTemp.AppendPath("xiiEditorCrashIndicator");
+      xiiOSFile f;
+      if (f.Open(sTemp, xiiFileOpenMode::Write, xiiFileShareMode::Exclusive).Succeeded())
+      {
+        f.Write(sTemp.GetData(), sTemp.GetElementCount()).IgnoreResult();
+        f.Close();
+        m_bWroteCrashIndicatorFile = true;
+      }
+
       res = xiiToolsProject::OpenProject(sProjectFile);
     }
   }

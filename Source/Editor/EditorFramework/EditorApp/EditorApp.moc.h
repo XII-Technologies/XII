@@ -264,6 +264,7 @@ private:
   bool m_bSavePreferencesAfterOpenProject;
   bool m_bLoadingProjectInProgress = false;
   bool m_bAnyProjectOpened         = false;
+  bool m_bWroteCrashIndicatorFile  = false;
 
   xiiBitflags<StartupFlags>  m_StartupFlags;
   xiiDynamicArray<xiiString> m_DocumentsToOpen;

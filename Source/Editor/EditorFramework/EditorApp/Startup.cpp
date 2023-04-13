@@ -171,6 +171,22 @@ xiiCommandLineOptionBool opt_NoRecent("_Editor", "-noRecent", "Disables automati
 
 void xiiQtEditorApp::StartupEditor()
 {
+  {
+    xiiStringBuilder sTemp = xiiOSFile::GetTempDataFolder("xiiEditor");
+    sTemp.AppendPath("xiiEditorCrashIndicator");
+
+    if (xiiOSFile::ExistsFile(sTemp))
+    {
+      xiiOSFile::DeleteFile(sTemp).IgnoreResult();
+
+      if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion("It seems the editor ran into problems last time.\n\nDo you want to run it in safe mode, to deactivate automatic project loading and document restoration?", QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::Yes) == QMessageBox::StandardButton::Yes)
+      {
+        opt_Safe.GetOptions(sTemp);
+        xiiCommandLineUtils::GetGlobalInstance()->InjectCustomArgument(sTemp);
+      }
+    }
+  }
+
   xiiBitflags<StartupFlags> startupFlags;
 
   startupFlags.AddOrRemove(StartupFlags::SafeMode, opt_Safe.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));

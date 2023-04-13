@@ -54,6 +54,17 @@ void xiiQtEditorApp::SlotTimedUpdate()
 
   RestartEngineProcessIfPluginsChanged(false);
 
+  if (m_bWroteCrashIndicatorFile)
+  {
+    m_bWroteCrashIndicatorFile = false;
+    QTimer::singleShot(2000, []() {
+      xiiStringBuilder sTemp = xiiOSFile::GetTempDataFolder("xiiEditor");
+      sTemp.AppendPath("xiiEditorCrashIndicator");
+      xiiOSFile::DeleteFile(sTemp).IgnoreResult();
+      //
+    });
+  }
+
   m_pTimer->start(1);
 }
 
