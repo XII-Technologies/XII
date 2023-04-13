@@ -59,9 +59,8 @@ public:
       Headless   = XII_BIT(0), ///< The app does not do any rendering.
       SafeMode   = XII_BIT(1), ///< '-safe' : Prevent automatic loading of projects, scenes, etc. to minimize risk of crashing.
       NoRecent   = XII_BIT(2), ///< '-norecent' : Do not modify recent file lists. Used for modes such as tests, where the user does not do any interactions.
-      Debug      = XII_BIT(3), ///< '-debug' : Tell the engine process to wait for a debugger to attach.
-      UnitTest   = XII_BIT(4), ///< Specified when the process is running as a unit test
-      Background = XII_BIT(5), ///< This process is an editor processor background process handling IPC tasks of the editor parent process.
+      UnitTest   = XII_BIT(3), ///< Specified when the process is running as a unit test
+      Background = XII_BIT(4), ///< This process is an editor processor background process handling IPC tasks of the editor parent process.
       Default    = 0,
     };
 
@@ -70,7 +69,6 @@ public:
       StorageType Headless : 1;
       StorageType SafeMode : 1;
       StorageType NoRecent : 1;
-      StorageType Debug : 1;
       StorageType UnitTest : 1;
       StorageType Background : 1;
     };

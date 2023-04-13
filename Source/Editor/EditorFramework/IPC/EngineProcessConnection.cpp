@@ -115,7 +115,7 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
   QStringList args;
   if (m_bProcessShouldWaitForDebugger)
   {
-    args << "-debug";
+    args << "-WaitForDebugger";
   }
 
   if (!m_sRenderer.IsEmpty())

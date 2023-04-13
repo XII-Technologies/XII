@@ -14,7 +14,7 @@
 #include <GuiFoundation/Action/ActionManager.h>
 
 xiiCommandLineOptionPath opt_OutputDir("_EditorProcessor", "-outputDir", "Output directory", "");
-xiiCommandLineOptionBool opt_Debug("_EditorProcessor", "-debug", "Writes various debug logs into the output folder.", false);
+xiiCommandLineOptionBool opt_SaveProfilingData("_EditorProcessor", "-profiling", "Saves performance profiling information into the output folder.", false);
 xiiCommandLineOptionPath opt_Project("_EditorProcessor", "-project", "Path to the project folder.", "");
 xiiCommandLineOptionBool opt_Resave("_EditorProcessor", "-resave", "If specified, assets will be resaved.", false);
 // clang-format off
@@ -215,7 +215,7 @@ public:
             SetReturnCode(1);
           }
 
-          if (opt_Debug.GetOptionValue(xiiCommandLineOption::LogMode::Always))
+          if (opt_SaveProfilingData.GetOptionValue(xiiCommandLineOption::LogMode::Always))
           {
             xiiActionContext context;
             xiiActionManager::ExecuteAction("Engine", "Editor.SaveProfiling", context).IgnoreResult();
@@ -235,13 +235,14 @@ public:
       xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this]() {
         xiiAssetCurator::GetSingleton()->ResaveAllAssets();
         
-          if (opt_Debug.GetOptionValue(xiiCommandLineOption::LogMode::Always))
-          {
-            xiiActionContext context;
-            xiiActionManager::ExecuteAction("Engine", "Editor.SaveProfiling", context).IgnoreResult();
-          }
+        if (opt_SaveProfilingData.GetOptionValue(xiiCommandLineOption::LogMode::Always))
+        {
+          xiiActionContext context;
+          xiiActionManager::ExecuteAction("Engine", "Editor.SaveProfiling", context).IgnoreResult();
+        }
 
-        QApplication::quit(); });
+        QApplication::quit();
+       });
 
       const xiiInt32 iReturnCode = xiiQtEditorApp::GetSingleton()->RunEditor();
       if (iReturnCode != 0)
