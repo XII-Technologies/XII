@@ -254,7 +254,7 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
         SaveRecentFiles();
       }
 
-      if (m_StartupFlags.AreNoneSet(xiiQtEditorApp::StartupFlags::Headless | xiiQtEditorApp::StartupFlags::SafeMode | xiiQtEditorApp::StartupFlags::UnitTest))
+      if (m_StartupFlags.AreNoneSet(xiiQtEditorApp::StartupFlags::Headless | xiiQtEditorApp::StartupFlags::SafeMode | xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::Background))
       {
         xiiTimestamp lastTransform = xiiAssetCurator::GetSingleton()->GetLastFullTransformDate().GetTimestamp();
 

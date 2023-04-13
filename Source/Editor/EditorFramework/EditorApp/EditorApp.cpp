@@ -251,6 +251,9 @@ bool xiiQtEditorApp::ExistsPluginSelectionStateDDL(const char* szProjectDir /*= 
 
 void xiiQtEditorApp::WritePluginSelectionStateDDL(const char* szProjectDir /*= ":project"*/)
 {
+  if (m_StartupFlags.IsAnySet(StartupFlags::Background | StartupFlags::Headless | StartupFlags::UnitTest))
+    return;
+
   xiiStringBuilder path = szProjectDir;
   path.AppendPath("Editor/PluginSelection.ddl");
 
@@ -265,6 +268,9 @@ void xiiQtEditorApp::WritePluginSelectionStateDDL(const char* szProjectDir /*= "
 
 void xiiQtEditorApp::CreatePluginSelectionDDL(const char* szProjectFile, const char* szTemplate)
 {
+  if (m_StartupFlags.IsAnySet(StartupFlags::Background | StartupFlags::Headless | StartupFlags::UnitTest))
+    return;
+
   xiiStringBuilder sPath = szProjectFile;
   sPath.PathParentDirectory();
 
