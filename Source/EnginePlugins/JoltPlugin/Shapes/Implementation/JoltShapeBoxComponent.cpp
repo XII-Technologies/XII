@@ -93,4 +93,3 @@ void xiiJoltShapeBoxComponent::CreateShapes(xiiDynamicArray<xiiJoltSubShape>& ou
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Shapes_Implementation_JoltShapeBoxComponent);
-

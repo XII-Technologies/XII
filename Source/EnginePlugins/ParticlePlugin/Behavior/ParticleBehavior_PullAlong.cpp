@@ -111,4 +111,3 @@ void xiiParticleBehavior_PullAlong::StepParticleSystem(const xiiTime& tDiff, xii
 
 
 XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Behavior_ParticleBehavior_PullAlong);
-

@@ -37,4 +37,3 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Startup);
-

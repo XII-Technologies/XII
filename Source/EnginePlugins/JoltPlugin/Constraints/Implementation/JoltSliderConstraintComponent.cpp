@@ -190,4 +190,3 @@ void xiiJoltSliderConstraintComponent::CreateContstraintType(JPH::Body* pBody0, 
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Constraints_Implementation_JoltSliderConstraintComponent);
-

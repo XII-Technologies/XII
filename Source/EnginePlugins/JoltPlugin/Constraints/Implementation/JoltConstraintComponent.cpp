@@ -454,4 +454,3 @@ void xiiJoltConstraintComponent::QueueApplySettings()
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Constraints_Implementation_JoltConstraintComponent);
-

@@ -63,4 +63,3 @@ void xiiParticleFinalizer_LastPosition::Process(xiiUInt64 uiNumElements)
 
 
 XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Finalizer_ParticleFinalizer_LastPosition);
-

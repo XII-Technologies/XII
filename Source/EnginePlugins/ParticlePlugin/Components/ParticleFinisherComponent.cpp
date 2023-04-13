@@ -92,4 +92,3 @@ void xiiParticleFinisherComponent::UpdateBounds()
 
 
 XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Components_ParticleFinisherComponent);
-

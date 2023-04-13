@@ -62,4 +62,3 @@ void xiiParticleFinalizer_ApplyVelocity::Process(xiiUInt64 uiNumElements)
 
 
 XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Finalizer_ParticleFinalizer_ApplyVelocity);
-

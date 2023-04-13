@@ -32,4 +32,3 @@ xiiParticleFinalizer::xiiParticleFinalizer()
 
 
 XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Finalizer_ParticleFinalizer);
-

@@ -898,4 +898,3 @@ void xiiJoltRagdollComponent::CreateLimbJoint(const xiiSkeletonJoint& thisJoint,
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Components_Implementation_JoltRagdollComponent);
-

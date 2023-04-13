@@ -96,4 +96,3 @@ void xiiJoltSettingsComponent::SetMaxBodies(xiiUInt32 uiMaxBodies)
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Components_Implementation_JoltSettingsComponent);
-

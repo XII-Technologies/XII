@@ -195,4 +195,3 @@ void xiiJoltSwingTwistConstraintComponent::SetUpperTwistLimit(xiiAngle f)
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Constraints_Implementation_JoltSwingTwistConstraintComponent);
-

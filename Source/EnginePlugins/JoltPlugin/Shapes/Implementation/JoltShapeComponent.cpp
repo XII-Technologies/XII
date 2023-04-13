@@ -67,4 +67,3 @@ xiiUInt32 xiiJoltShapeComponent::GetUserDataIndex()
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Shapes_Implementation_JoltShapeComponent);
-

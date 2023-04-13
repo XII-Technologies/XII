@@ -606,4 +606,3 @@ void xiiJoltContactEvents::OnContact_SlideAndRollReaction(const JPH::Body& inBod
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_System_JoltContacts);
-

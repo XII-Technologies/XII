@@ -143,4 +143,3 @@ xiiUInt32 xiiParticleEmitter_Distance::ComputeSpawnCount(const xiiTime& tDiff)
 
 
 XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Emitter_ParticleEmitter_Distance);
-

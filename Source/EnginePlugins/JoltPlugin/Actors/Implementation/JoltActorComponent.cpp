@@ -229,4 +229,3 @@ void xiiJoltActorComponent::SetInitialObjectFilterID(xiiUInt32 uiObjectFilterID)
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Actors_Implementation_JoltActorComponent);
-

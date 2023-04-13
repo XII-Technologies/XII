@@ -101,4 +101,3 @@ void xiiJoltShapeConvexHullComponent::ExtractGeometry(xiiMsgExtractGeometry& msg
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Shapes_Implementation_JoltShapeConvexHullComponent);
-

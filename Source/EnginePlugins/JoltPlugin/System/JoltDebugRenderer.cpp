@@ -157,4 +157,3 @@ void xiiJoltDebugRenderer::DrawGeometry(JPH::Mat44Arg inModelMatrix, const JPH::
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_System_JoltDebugRenderer);
-

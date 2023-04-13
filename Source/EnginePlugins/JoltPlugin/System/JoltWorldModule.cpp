@@ -702,4 +702,3 @@ void xiiJoltWorldModule::UpdateConstraints()
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_System_JoltWorldModule);
-

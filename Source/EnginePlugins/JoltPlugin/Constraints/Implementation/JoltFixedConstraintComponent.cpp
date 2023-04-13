@@ -38,4 +38,3 @@ void xiiJoltFixedConstraintComponent::CreateContstraintType(JPH::Body* pBody0, J
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Constraints_Implementation_JoltFixedConstraintComponent);
-

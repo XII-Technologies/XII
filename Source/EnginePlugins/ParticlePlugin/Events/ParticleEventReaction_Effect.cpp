@@ -313,4 +313,3 @@ void xiiParticleEventReaction_Effect::ProcessEvent(const xiiParticleEvent& e)
 
 
 XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Events_ParticleEventReaction_Effect);
-

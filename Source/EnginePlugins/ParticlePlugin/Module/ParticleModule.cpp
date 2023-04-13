@@ -9,4 +9,3 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 
 XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Module_ParticleModule);
-

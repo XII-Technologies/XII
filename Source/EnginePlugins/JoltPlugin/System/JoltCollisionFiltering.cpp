@@ -144,4 +144,3 @@ bool xiiJoltObjectLayerPairFilter::ShouldCollide(JPH::ObjectLayer inObject1, JPH
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_System_JoltCollisionFiltering);
-

@@ -359,4 +359,3 @@ void xiiJoltWorldModule::QueryShapesInSphere(xiiPhysicsOverlapResultArray& out_R
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_System_JoltQueries);
-

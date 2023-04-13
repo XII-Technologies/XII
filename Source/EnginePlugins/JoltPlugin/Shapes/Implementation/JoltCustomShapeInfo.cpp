@@ -163,4 +163,3 @@ void xiiJoltCustomShapeInfo::sCastShapeVsUser1(const JPH::ShapeCast& inShapeCast
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Shapes_Implementation_JoltCustomShapeInfo);
-

@@ -166,4 +166,3 @@ const xiiJoltMaterial* xiiJoltQueryShapeActorComponent::GetJoltMaterial() const
 
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Actors_Implementation_JoltQueryShapeActorComponent);
-

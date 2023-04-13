@@ -127,4 +127,3 @@ void xiiParticleQuadRenderer::ConfigureRenderMode(const xiiParticleQuadRenderDat
 
 
 XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Type_Quad_QuadParticleRenderer);
-

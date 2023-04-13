@@ -234,7 +234,7 @@ public:
 
       xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this]() {
         xiiAssetCurator::GetSingleton()->ResaveAllAssets();
-        
+
         if (opt_SaveProfilingData.GetOptionValue(xiiCommandLineOption::LogMode::Always))
         {
           xiiActionContext context;
@@ -242,7 +242,7 @@ public:
         }
 
         QApplication::quit();
-       });
+      });
 
       const xiiInt32 iReturnCode = xiiQtEditorApp::GetSingleton()->RunEditor();
       if (iReturnCode != 0)
