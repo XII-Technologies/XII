@@ -16,6 +16,7 @@ xiiQtVarianceTypeWidget::xiiQtVarianceTypeWidget()
   setLayout(m_pLayout);
 
   m_pValueWidget = new xiiQtDoubleSpinBox(this);
+  m_pValueWidget->installEventFilter(m_pValueWidget);
   m_pValueWidget->setMinimum(-xiiMath::Infinity<double>());
   m_pValueWidget->setMaximum(xiiMath::Infinity<double>());
   m_pValueWidget->setSingleStep(0.1f);
@@ -75,7 +76,6 @@ void xiiQtVarianceTypeWidget::SlotValueChanged()
 
   BroadcastValueChanged(newValue);
 }
-
 
 void xiiQtVarianceTypeWidget::SlotVarianceChanged()
 {

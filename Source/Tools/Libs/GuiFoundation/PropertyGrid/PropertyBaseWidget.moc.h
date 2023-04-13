@@ -79,6 +79,8 @@ protected:
 protected:
   virtual void DoPrepareToDie() = 0;
 
+  virtual bool eventFilter(QObject* pWatched, QEvent* pEvent) override;
+
   xiiQtPropertyGridWidget*                m_pGrid           = nullptr;
   xiiObjectAccessorBase*                  m_pObjectAccessor = nullptr;
   const xiiRTTI*                          m_pType           = nullptr;

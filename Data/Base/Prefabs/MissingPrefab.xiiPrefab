@@ -21,7 +21,7 @@ o
 		s %AssetType{"Prefab"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{8866705325096395918,5045814042450016507}}
-		u4 %Hash{487384509396512853}
+		u4 %Hash{1593115094004065420}
 		VarArray %MetaInfo
 		{
 			Uuid{u4{6260322975900899627,3647404401962759201}}
@@ -30,7 +30,7 @@ o
 		VarArray %References
 		{
 			s{"Materials/Common/MissingPrefab.xiiMaterial"}
-			s{"Meshes/MissingMesh.xiiMesh"}
+			s{"{ e9e6b167-c18c-4260-9b0e-4cf4503c1463 }"}
 		}
 	}
 }
@@ -50,7 +50,7 @@ o
 		{
 			s{"Materials/Common/MissingPrefab.xiiMaterial"}
 		}
-		s %Mesh{"Meshes/MissingMesh.xiiMesh"}
+		s %Mesh{"{ e9e6b167-c18c-4260-9b0e-4cf4503c1463 }"}
 	}
 }
 o
