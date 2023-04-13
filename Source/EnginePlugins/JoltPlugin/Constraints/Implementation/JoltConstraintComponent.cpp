@@ -122,6 +122,42 @@ void xiiJoltConstraintComponent::OnDeactivated()
 
     // pModule->m_BreakableConstraints.Remove(m_pConstraint->getConstraint());
 
+    // wake up the joined bodies, so that removing a constraint doesn't let them hang in the air
+    {
+      JPH::BodyID bodies[2] = {JPH::BodyID(JPH::BodyID::cInvalidBodyID), JPH::BodyID(JPH::BodyID::cInvalidBodyID)};
+      xiiInt32    iBodies   = 0;
+
+      if (!m_hActorA.IsInvalidated())
+      {
+        xiiGameObject*                pObject = nullptr;
+        xiiJoltDynamicActorComponent* pRbComp = nullptr;
+
+        if (GetWorld()->TryGetObject(m_hActorA, pObject) && pObject->IsActive() && pObject->TryGetComponentOfBaseType(pRbComp))
+        {
+          bodies[iBodies] = JPH::BodyID(pRbComp->GetJoltBodyID());
+          ++iBodies;
+        }
+      }
+
+      if (!m_hActorB.IsInvalidated())
+      {
+        xiiGameObject*                pObject = nullptr;
+        xiiJoltDynamicActorComponent* pRbComp = nullptr;
+
+        if (GetWorld()->TryGetObject(m_hActorB, pObject) && pObject->IsActive() && pObject->TryGetComponentOfBaseType(pRbComp))
+        {
+          bodies[iBodies] = JPH::BodyID(pRbComp->GetJoltBodyID());
+          ++iBodies;
+        }
+      }
+
+      if (iBodies > 0)
+      {
+        xiiLog::Info("Waking up {} bodies", iBodies);
+        pModule->GetJoltSystem()->GetBodyInterface().ActivateBodies(bodies, iBodies);
+      }
+    }
+
     m_pConstraint->Release();
     m_pConstraint = nullptr;
   }
