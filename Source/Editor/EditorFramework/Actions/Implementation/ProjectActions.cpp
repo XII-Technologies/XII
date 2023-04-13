@@ -282,9 +282,6 @@ void xiiRecentProjectsMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction
 {
   out_entries.Clear();
 
-  if (xiiQtEditorApp::GetSingleton()->GetRecentProjectsList().GetFileList().IsEmpty())
-    return;
-
   xiiStringBuilder sTemp;
 
   for (auto file : xiiQtEditorApp::GetSingleton()->GetRecentProjectsList().GetFileList())

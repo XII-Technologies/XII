@@ -108,3 +108,6 @@ void xiiParticleBehavior_PullAlong::StepParticleSystem(const xiiTime& tDiff, xii
 
   m_vLastEmitterPosition = vPos;
 }
+
+
+XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Behavior_ParticleBehavior_PullAlong);

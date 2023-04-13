@@ -234,7 +234,7 @@ void xiiScene2Document::SendGameWorldToEngine()
     xiiSceneDocument* pLayer = layer.Value().m_pLayer;
     if (pLayer != this && pLayer != nullptr)
     {
-      xiiEditorEngineProcessConnection::GetSingleton()->SendDocumentOpenMessage(pLayer, true);
+      pLayer->SendDocumentOpenMessage(true);
     }
   }
 }

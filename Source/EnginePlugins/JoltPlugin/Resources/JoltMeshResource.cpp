@@ -500,3 +500,6 @@ JPH::Shape* xiiJoltMeshResource::InstantiateConvexPart(xiiUInt32 uiPartIdx, xiiU
     return pShapeDeco;
   }
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Resources_JoltMeshResource);

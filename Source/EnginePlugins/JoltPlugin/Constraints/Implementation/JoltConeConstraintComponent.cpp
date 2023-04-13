@@ -81,3 +81,6 @@ void xiiJoltConeConstraintComponent::SetConeAngle(xiiAngle f)
   m_ConeAngle = f;
   QueueApplySettings();
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Constraints_Implementation_JoltConeConstraintComponent);

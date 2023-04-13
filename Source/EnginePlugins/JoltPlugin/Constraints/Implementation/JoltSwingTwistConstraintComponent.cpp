@@ -192,3 +192,6 @@ void xiiJoltSwingTwistConstraintComponent::SetUpperTwistLimit(xiiAngle f)
 //   m_fTwistDriveStrength = f;
 //   QueueApplySettings();
 // }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Constraints_Implementation_JoltSwingTwistConstraintComponent);

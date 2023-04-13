@@ -298,3 +298,6 @@ void xiiParticleEventReaction_Prefab::ProcessEvent(const xiiParticleEvent& e)
 
   pPrefab->InstantiatePrefab(*m_pOwnerEffect->GetWorld(), trans, options);
 }
+
+
+XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Events_ParticleEventReaction_Prefab);

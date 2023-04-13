@@ -4,4 +4,3 @@ xii_cmake_init()
 get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
 xii_create_target(LIBRARY ${PROJECT_NAME} NO_XII_PREFIX)
-

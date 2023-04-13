@@ -34,3 +34,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Jolt, JoltPlugin)
 
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Startup);

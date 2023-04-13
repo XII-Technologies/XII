@@ -94,6 +94,7 @@ xiiQtPropertyEditorDoubleSpinboxWidget::xiiQtPropertyEditorDoubleSpinboxWidget(x
   for (xiiInt32 c = 0; c < m_iNumComponents; ++c)
   {
     m_pWidget[c] = new xiiQtDoubleSpinBox(this);
+    m_pWidget[c]->installEventFilter(this);
     m_pWidget[c]->setMinimum(-xiiMath::Infinity<double>());
     m_pWidget[c]->setMaximum(xiiMath::Infinity<double>());
     m_pWidget[c]->setSingleStep(0.1f);
@@ -364,6 +365,7 @@ xiiQtPropertyEditorTimeWidget::xiiQtPropertyEditorTimeWidget() :
 
   {
     m_pWidget = new xiiQtDoubleSpinBox(this);
+    m_pWidget->installEventFilter(this);
     m_pWidget->setDisplaySuffix(" sec");
     m_pWidget->setMinimum(-xiiMath::Infinity<double>());
     m_pWidget->setMaximum(xiiMath::Infinity<double>());
@@ -440,6 +442,7 @@ xiiQtPropertyEditorAngleWidget::xiiQtPropertyEditorAngleWidget() :
 
   {
     m_pWidget = new xiiQtDoubleSpinBox(this);
+    m_pWidget->installEventFilter(this);
     m_pWidget->setDisplaySuffix(xiiStringUtf8(L"\u00B0").GetData());
     m_pWidget->setMinimum(-xiiMath::Infinity<double>());
     m_pWidget->setMaximum(xiiMath::Infinity<double>());
@@ -535,6 +538,7 @@ xiiQtPropertyEditorIntSpinboxWidget::xiiQtPropertyEditorIntSpinboxWidget(xiiInt8
   for (xiiInt32 c = 0; c < m_iNumComponents; ++c)
   {
     m_pWidget[c] = new xiiQtDoubleSpinBox(this, true);
+    m_pWidget[c]->installEventFilter(this);
     m_pWidget[c]->setMinimum(iMinValue);
     m_pWidget[c]->setMaximum(iMaxValue);
     m_pWidget[c]->setSingleStep(1);
@@ -574,6 +578,7 @@ void xiiQtPropertyEditorIntSpinboxWidget::OnInit()
           // we have to create the slider here, because in the constructor we don't know the real
           // min and max values from the xiiClampValueAttribute (only the rough type ranges)
           m_pSlider = new QSlider(this);
+          m_pSlider->installEventFilter(this);
           m_pSlider->setOrientation(Qt::Orientation::Horizontal);
           m_pSlider->setMinimum(iMinValue);
           m_pSlider->setMaximum(iMaxValue);
@@ -831,6 +836,7 @@ xiiQtPropertyEditorQuaternionWidget::xiiQtPropertyEditorQuaternionWidget() :
   for (xiiInt32 c = 0; c < 3; ++c)
   {
     m_pWidget[c] = new xiiQtDoubleSpinBox(this);
+    m_pWidget[c]->installEventFilter(this);
     m_pWidget[c]->setMinimum(-xiiMath::Infinity<double>());
     m_pWidget[c]->setMaximum(xiiMath::Infinity<double>());
     m_pWidget[c]->setSingleStep(1.0);
@@ -851,6 +857,9 @@ void xiiQtPropertyEditorQuaternionWidget::OnInit() {}
 
 void xiiQtPropertyEditorQuaternionWidget::InternalSetValue(const xiiVariant& value)
 {
+  if (m_bTemporaryCommand)
+    return;
+
   xiiQtScopedBlockSignals b0(m_pWidget[0]);
   xiiQtScopedBlockSignals b1(m_pWidget[1]);
   xiiQtScopedBlockSignals b2(m_pWidget[2]);
@@ -908,6 +917,7 @@ xiiQtPropertyEditorLineEditWidget::xiiQtPropertyEditorLineEditWidget() :
   setLayout(m_pLayout);
 
   m_pWidget = new QLineEdit(this);
+  m_pWidget->installEventFilter(this);
   m_pWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
   m_pWidget->setFocusPolicy(Qt::FocusPolicy::StrongFocus);
   setFocusProxy(m_pWidget);
@@ -1090,6 +1100,7 @@ xiiQtPropertyEditorEnumWidget::xiiQtPropertyEditorEnumWidget() :
   setLayout(m_pLayout);
 
   m_pWidget = new QComboBox(this);
+  m_pWidget->installEventFilter(this);
   m_pWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
   m_pLayout->addWidget(m_pWidget);
 
@@ -1452,13 +1463,13 @@ void xiiQtPropertyEditorCurve1DWidget::on_Button_triggered()
 
   if (pDlg->exec() == QDialog::Accepted)
   {
-    //m_pObjectAccessor->GetObjectManager()->GetDocument()->GetCommandHistory()->FinishTransaction();
+    // m_pObjectAccessor->GetObjectManager()->GetDocument()->GetCommandHistory()->FinishTransaction();
 
     UpdatePreview();
   }
   else
   {
-    //m_pObjectAccessor->GetObjectManager()->GetDocument()->GetCommandHistory()->CancelTransaction();
+    // m_pObjectAccessor->GetObjectManager()->GetDocument()->GetCommandHistory()->CancelTransaction();
   }
 
   delete pDlg;

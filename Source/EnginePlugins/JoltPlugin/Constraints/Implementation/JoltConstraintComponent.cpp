@@ -451,3 +451,6 @@ void xiiJoltConstraintComponent::QueueApplySettings()
   xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
   pModule->m_RequireUpdate.PushBack(GetHandle());
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Constraints_Implementation_JoltConstraintComponent);

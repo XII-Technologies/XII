@@ -610,3 +610,6 @@ public:
 };
 
 xiiParticleTypeQuadFactory_1_2 g_xiiParticleTypeQuadFactory_1_2;
+
+
+XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Type_Quad_ParticleTypeQuad);

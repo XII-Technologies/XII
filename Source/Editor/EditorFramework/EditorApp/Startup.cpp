@@ -168,15 +168,29 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 xiiCommandLineOptionBool opt_Safe("_Editor", "-safe", "In safe-mode the editor minimizes the risk of crashing, for instance by not loading previous projects and scenes.", false);
 xiiCommandLineOptionBool opt_NoRecent("_Editor", "-noRecent", "Disables automatic loading of recent projects and documents.", false);
-xiiCommandLineOptionBool opt_Debug("_Editor", "-debug", "Enables debug-mode, which makes the editor wait for a debugger to attach, and disables risky features, such as recent file loading.", false);
 
 void xiiQtEditorApp::StartupEditor()
 {
+  {
+    xiiStringBuilder sTemp = xiiOSFile::GetTempDataFolder("xiiEditor");
+    sTemp.AppendPath("xiiEditorCrashIndicator");
+
+    if (xiiOSFile::ExistsFile(sTemp))
+    {
+      xiiOSFile::DeleteFile(sTemp).IgnoreResult();
+
+      if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion("It seems the editor ran into problems last time.\n\nDo you want to run it in safe mode, to deactivate automatic project loading and document restoration?", QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::Yes) == QMessageBox::StandardButton::Yes)
+      {
+        opt_Safe.GetOptions(sTemp);
+        xiiCommandLineUtils::GetGlobalInstance()->InjectCustomArgument(sTemp);
+      }
+    }
+  }
+
   xiiBitflags<StartupFlags> startupFlags;
 
   startupFlags.AddOrRemove(StartupFlags::SafeMode, opt_Safe.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
   startupFlags.AddOrRemove(StartupFlags::NoRecent, opt_NoRecent.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
-  startupFlags.AddOrRemove(StartupFlags::Debug, opt_Debug.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
 
   StartupEditor(startupFlags);
 }
@@ -220,7 +234,6 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
   m_pEngineViewProcess = new xiiEditorEngineProcessConnection;
 
-  m_pEngineViewProcess->SetWaitForDebugger(m_StartupFlags.IsSet(StartupFlags::Debug));
   m_pEngineViewProcess->SetRenderer(pCmd->GetStringOption("-renderer", 0, ""));
 
   m_LongOpControllerManager.Startup(&m_pEngineViewProcess->GetCommunicationChannel());
@@ -337,7 +350,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
     CreateOrOpenProject(false, pCmd->GetAbsolutePathOption("-project")).IgnoreResult();
   }
-  else if (!bNoRecent && !m_StartupFlags.IsSet(StartupFlags::Debug) && pPreferences->m_bLoadLastProjectAtStartup)
+  else if (!bNoRecent && pPreferences->m_bLoadLastProjectAtStartup)
   {
     if (!m_RecentProjects.GetFileList().IsEmpty())
     {

@@ -429,29 +429,53 @@ XII_ALWAYS_INLINE bool operator!=(const xiiQuatTemplate<Type>& q1, const xiiQuat
 template <typename Type>
 void xiiQuatTemplate<Type>::GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiAngleTemplate<Type>& out_y, xiiAngleTemplate<Type>& out_z) const
 {
-  /// \test This is new
+  XII_NAN_ASSERT(this);
 
-  /// Taken from here (roll->pitch->yaw, x->y->z order):
-  /// https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-  auto& yaw   = out_z;
-  auto& pitch = out_y;
-  auto& roll  = out_x;
-  // roll (x-axis rotation)
-  const double sinr = 2.0 * (w * v.x + v.y * v.z);
-  const double cosr = 1.0 - 2.0 * (v.x * v.x + v.y * v.y);
-  roll              = xiiMath::ATan2((Type)sinr, (Type)cosr);
+  ///\test This is new.
 
-  // pitch (y-axis rotation)
-  const double sinp = 2.0 * (w * v.y - v.z * v.x);
-  if (xiiMath::Abs(sinp) >= 1.0)
-    pitch = xiiAngle::Radian(copysign(xiiMath::Pi<Type>() / 2.0, (Type)sinp)); // use 90 degrees if out of range
+  /// This is adapted from https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/
+  /// It is also used in the OZZ Animation Library's "ToEuler" conversion.
+
+  struct Q
+  {
+    Type x, y, z, w;
+  };
+
+  const Q _q{v.x, v.y, v.z, w};
+
+  const Type kPi_2 = (Type)1.5707963267948966192313216916398;
+
+  const Type sqw = _q.w * _q.w;
+  const Type sqx = _q.x * _q.x;
+  const Type sqy = _q.y * _q.y;
+  const Type sqz = _q.z * _q.z;
+  // If normalized is one, otherwise is correction factor.
+  const Type            unit = sqx + sqy + sqz + sqw;
+  const Type            test = _q.x * _q.y + _q.z * _q.w;
+  xiiVec3Template<Type> euler;
+
+  if (test > 0.499f * unit) // Singularity at the North Pole.
+  {
+    euler.x = 2.0f * std::atan2(_q.x, _q.w);
+    euler.y = kPi_2;
+    euler.z = 0;
+  }
+  else if (test < -0.499f * unit) // Singularity at the South Pole.
+  {
+    euler.x = -2 * std::atan2(_q.x, _q.w);
+    euler.y = -kPi_2;
+    euler.z = 0;
+  }
   else
-    pitch = xiiMath::ASin((Type)sinp);
+  {
+    euler.x = std::atan2(2.0f * _q.y * _q.w - 2.0f * _q.x * _q.z, sqx - sqy - sqz + sqw);
+    euler.y = std::asin(2.0f * test / unit);
+    euler.z = std::atan2(2.0f * _q.x * _q.w - 2.0f * _q.y * _q.z, -sqx + sqy - sqz + sqw);
+  }
 
-  // yaw (z-axis rotation)
-  const double siny = 2.0 * (w * v.z + v.x * v.y);
-  const double cosy = 1.0 - 2.0 * (v.y * v.y + v.z * v.z);
-  yaw               = xiiMath::ATan2((Type)siny, (Type)cosy);
+  out_x.SetRadian(euler.z);
+  out_y.SetRadian(euler.x);
+  out_z.SetRadian(euler.y);
 }
 
 template <typename Type>

@@ -226,3 +226,6 @@ void xiiJoltActorComponent::SetInitialObjectFilterID(xiiUInt32 uiObjectFilterID)
   XII_ASSERT_DEBUG(!IsActiveAndSimulating(), "The object filter ID can't be changed after simulation has started.");
   m_uiObjectFilterID = uiObjectFilterID;
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Actors_Implementation_JoltActorComponent);

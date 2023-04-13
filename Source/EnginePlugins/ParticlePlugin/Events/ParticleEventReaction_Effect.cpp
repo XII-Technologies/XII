@@ -310,3 +310,6 @@ void xiiParticleEventReaction_Effect::ProcessEvent(const xiiParticleEvent& e)
     pComponent->m_ColorParams         = m_Parameters->m_ColorParams;
   }
 }
+
+
+XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Events_ParticleEventReaction_Effect);

@@ -31,6 +31,9 @@ void xiiRecentFilesList::Insert(const char* szFile, xiiInt32 iContainerWindow)
 
 void xiiRecentFilesList::Save(const char* szFile)
 {
+  if (m_Files.IsEmpty())
+    return;
+
   xiiDeferredFileWriter File;
   File.SetOutput(szFile);
 

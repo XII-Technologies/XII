@@ -90,3 +90,6 @@ void xiiJoltShapeBoxComponent::CreateShapes(xiiDynamicArray<xiiJoltSubShape>& ou
   sub.m_pShape         = pNewShape;
   sub.m_Transform.SetLocalTransform(rootTransform, GetOwner()->GetGlobalTransform());
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Shapes_Implementation_JoltShapeBoxComponent);

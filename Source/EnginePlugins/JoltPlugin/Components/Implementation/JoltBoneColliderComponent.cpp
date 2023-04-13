@@ -248,3 +248,6 @@ void xiiJoltBoneColliderComponent::DestroyPhysicsShapes()
 
   m_Shapes.Clear();
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Components_Implementation_JoltBoneColliderComponent);

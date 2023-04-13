@@ -579,3 +579,6 @@ void xiiJoltGrabObjectComponent::Update()
     BreakObjectGrab();
   }
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Constraints_Implementation_JoltGrabObjectComponent);

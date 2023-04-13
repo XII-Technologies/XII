@@ -82,3 +82,6 @@ void xiiParticleEventReaction::Reset(xiiParticleEffectInstance* pOwner)
 {
   m_pOwnerEffect = pOwner;
 }
+
+
+XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Events_ParticleEventReaction);

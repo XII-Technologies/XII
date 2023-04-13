@@ -504,6 +504,21 @@ void xiiQtPropertyWidget::PropertyChangedHandler(const xiiPropertyEvent& ed)
   }
 }
 
+bool xiiQtPropertyWidget::eventFilter(QObject* pWatched, QEvent* pEvent)
+{
+  if (pEvent->type() == QEvent::Wheel)
+  {
+    if (pWatched->parent())
+    {
+      pWatched->parent()->event(pEvent);
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
 /// *** xiiQtUnsupportedPropertyWidget ***
 
 xiiQtUnsupportedPropertyWidget::xiiQtUnsupportedPropertyWidget(const char* szMessage) :

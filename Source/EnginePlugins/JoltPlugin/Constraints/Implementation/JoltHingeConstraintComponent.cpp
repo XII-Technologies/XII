@@ -196,3 +196,6 @@ void xiiJoltHingeConstraintComponent::ApplySettings()
     pModule->GetJoltSystem()->GetBodyInterface().ActivateBody(pConstraint->GetBody2()->GetID());
   }
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Constraints_Implementation_JoltHingeConstraintComponent);

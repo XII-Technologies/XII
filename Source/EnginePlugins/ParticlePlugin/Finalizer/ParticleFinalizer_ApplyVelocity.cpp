@@ -59,3 +59,6 @@ void xiiParticleFinalizer_ApplyVelocity::Process(xiiUInt64 uiNumElements)
     itVelocity.Advance();
   }
 }
+
+
+XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Finalizer_ParticleFinalizer_ApplyVelocity);

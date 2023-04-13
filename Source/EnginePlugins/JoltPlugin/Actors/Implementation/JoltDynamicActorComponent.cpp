@@ -416,3 +416,6 @@ const char* xiiJoltDynamicActorComponent::GetSurfaceFile() const
 
   return m_hSurface.GetResourceID();
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Actors_Implementation_JoltDynamicActorComponent);

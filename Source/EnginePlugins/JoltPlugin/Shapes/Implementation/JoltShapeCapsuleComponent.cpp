@@ -99,3 +99,6 @@ void xiiJoltShapeCapsuleComponent::CreateShapes(xiiDynamicArray<xiiJoltSubShape>
   sub.m_pShape         = pRotShape;
   sub.m_Transform.SetLocalTransform(rootTransform, GetOwner()->GetGlobalTransform());
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Shapes_Implementation_JoltShapeCapsuleComponent);

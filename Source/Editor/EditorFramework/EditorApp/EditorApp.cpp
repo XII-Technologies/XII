@@ -54,6 +54,17 @@ void xiiQtEditorApp::SlotTimedUpdate()
 
   RestartEngineProcessIfPluginsChanged(false);
 
+  if (m_bWroteCrashIndicatorFile)
+  {
+    m_bWroteCrashIndicatorFile = false;
+    QTimer::singleShot(2000, []() {
+      xiiStringBuilder sTemp = xiiOSFile::GetTempDataFolder("xiiEditor");
+      sTemp.AppendPath("xiiEditorCrashIndicator");
+      xiiOSFile::DeleteFile(sTemp).IgnoreResult();
+      //
+    });
+  }
+
   m_pTimer->start(1);
 }
 
@@ -251,6 +262,9 @@ bool xiiQtEditorApp::ExistsPluginSelectionStateDDL(const char* szProjectDir /*= 
 
 void xiiQtEditorApp::WritePluginSelectionStateDDL(const char* szProjectDir /*= ":project"*/)
 {
+  if (m_StartupFlags.IsAnySet(StartupFlags::Background | StartupFlags::Headless | StartupFlags::UnitTest))
+    return;
+
   xiiStringBuilder path = szProjectDir;
   path.AppendPath("Editor/PluginSelection.ddl");
 
@@ -265,6 +279,9 @@ void xiiQtEditorApp::WritePluginSelectionStateDDL(const char* szProjectDir /*= "
 
 void xiiQtEditorApp::CreatePluginSelectionDDL(const char* szProjectFile, const char* szTemplate)
 {
+  if (m_StartupFlags.IsAnySet(StartupFlags::Background | StartupFlags::Headless | StartupFlags::UnitTest))
+    return;
+
   xiiStringBuilder sPath = szProjectFile;
   sPath.PathParentDirectory();
 
@@ -394,8 +411,6 @@ void xiiQtEditorApp::LaunchEditor(const char* szProject, bool bCreate)
     args << "-safe";
   if (m_StartupFlags.IsSet(StartupFlags::NoRecent))
     args << "-noRecent";
-  if (m_StartupFlags.IsSet(StartupFlags::Debug))
-    args << "-debug";
 
   QProcess proc;
   proc.startDetached(QString::fromUtf8(app, app.GetElementCount()), args);

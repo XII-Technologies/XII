@@ -69,8 +69,8 @@ public:
   /// \brief Block and wait for new messages and call ProcessMessages.
   xiiResult WaitForMessages(xiiTime timeout);
 
-  xiiEvent<const xiiIpcChannelEvent&> m_Events;       ///< Will be sent from any thread.
-  xiiEvent<const xiiProcessMessage*>  m_MessageEvent; ///< Will be sent from thread calling ProcessMessages or WaitForMessages.
+  xiiEvent<const xiiIpcChannelEvent&, xiiMutex> m_Events;       ///< Will be sent from any thread.
+  xiiEvent<const xiiProcessMessage*>            m_MessageEvent; ///< Will be sent from thread calling ProcessMessages or WaitForMessages.
 
 protected:
   xiiIpcChannel(const char* szAddress, Mode::Enum mode);

@@ -775,3 +775,6 @@ void xiiJoltRopeComponentManager::Update(const xiiWorldModule::UpdateContext& co
     }
   }
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Components_Implementation_JoltRopeComponent);

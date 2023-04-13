@@ -263,3 +263,6 @@ void xiiJoltVisColMeshComponentManager::ResourceEventHandler(const xiiResourceEv
     }
   }
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Components_Implementation_JoltVisColMeshComponent);

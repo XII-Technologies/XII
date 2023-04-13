@@ -163,3 +163,6 @@ const xiiJoltMaterial* xiiJoltQueryShapeActorComponent::GetJoltMaterial() const
 
   return nullptr;
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Actors_Implementation_JoltQueryShapeActorComponent);

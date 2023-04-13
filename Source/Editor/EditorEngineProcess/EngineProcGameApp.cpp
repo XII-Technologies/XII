@@ -84,7 +84,7 @@ void xiiEngineProcessGameApplication::DisableErrorReport()
 
 void xiiEngineProcessGameApplication::WaitForDebugger()
 {
-  if (xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-debug"))
+  if (xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-WaitForDebugger"))
   {
     while (!xiiSystemInformation::IsDebuggerAttached())
     {
