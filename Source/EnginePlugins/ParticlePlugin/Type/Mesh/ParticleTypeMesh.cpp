@@ -232,3 +232,7 @@ void xiiParticleTypeMesh::ExtractTypeRenderData(xiiMsgExtractRenderData& msg, co
     }
   }
 }
+
+
+XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Type_Mesh_ParticleTypeMesh);
+

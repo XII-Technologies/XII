@@ -152,3 +152,7 @@ xiiUInt32 xiiParticleEmitter_Burst::ComputeSpawnCount(const xiiTime& tDiff)
 
   return uiSpawn;
 }
+
+
+XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Emitter_ParticleEmitter_Burst);
+

@@ -661,3 +661,7 @@ void xiiJoltDefaultCharacterComponent::UpdateCharacter()
 
   ResetInputState();
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Character_Implementation_JoltDefaultCharacterComponent);
+

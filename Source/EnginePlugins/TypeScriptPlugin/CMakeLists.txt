@@ -1,7 +1,5 @@
 xii_cmake_init()
 
-
-
 xii_requires(XII_3RDPARTY_DUKTAPE_SUPPORT)
 
 # Get the name of this folder as the project name

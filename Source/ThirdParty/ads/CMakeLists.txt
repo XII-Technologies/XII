@@ -7,7 +7,7 @@ xii_requires_qt()
 # Get the name of this folder as the project name
 get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
-xii_create_target(SHARED_LIBRARY ${PROJECT_NAME} NO_XII_PREFIX)
+xii_create_target(LIBRARY ${PROJECT_NAME} NO_XII_PREFIX)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -35,7 +35,7 @@ set (MOC_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/ElidingLabel.h
   ${CMAKE_CURRENT_SOURCE_DIR}/FloatingDockContainer.h
   ${CMAKE_CURRENT_SOURCE_DIR}/FloatingDragPreview.h
-  )
+)
 xii_qt_wrap_target_moc_files(${PROJECT_NAME} "${MOC_FILES}")
 
 if(XII_CMAKE_COMPILER_MSVC)

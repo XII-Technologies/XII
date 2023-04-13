@@ -699,3 +699,7 @@ void xiiJoltWorldModule::UpdateConstraints()
 
   m_RequireUpdate.Clear();
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_System_JoltWorldModule);
+

@@ -89,3 +89,7 @@ void xiiParticleFinisherComponent::UpdateBounds()
     GetWorld()->DeleteObjectDelayed(GetOwner()->GetHandle());
   }
 }
+
+
+XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Components_ParticleFinisherComponent);
+

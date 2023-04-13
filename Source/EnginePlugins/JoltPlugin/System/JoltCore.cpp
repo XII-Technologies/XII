@@ -222,3 +222,7 @@ void xiiJoltCore::SurfaceResourceEventHandler(const xiiSurfaceResourceEvent& e)
     }
   }
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_System_JoltCore);
+

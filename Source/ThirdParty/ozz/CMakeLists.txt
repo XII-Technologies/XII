@@ -1,7 +1,5 @@
 xii_cmake_init()
 
-
-
 xii_requires(XII_3RDPARTY_OZZ_SUPPORT)
 
 # Get the name of this folder as the project name
@@ -26,5 +24,7 @@ if(XII_CMAKE_COMPILER_MSVC)
 endif()
 
 if(XII_CMAKE_PLATFORM_WINDOWS)
-  target_compile_definitions(${PROJECT_NAME} PUBLIC OZZ_USE_DYNAMIC_LINKING)
+  if (XII_COMPILE_ENGINE_AS_DLL)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC OZZ_USE_DYNAMIC_LINKING)
+  endif()
 endif()

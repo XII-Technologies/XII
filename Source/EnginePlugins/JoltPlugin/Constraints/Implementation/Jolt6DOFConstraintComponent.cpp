@@ -385,3 +385,7 @@ void xiiJolt6DOFConstraintComponent::SetTwistDamping(float f)
 }
 
 #endif
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Constraints_Implementation_Jolt6DOFConstraintComponent);
+

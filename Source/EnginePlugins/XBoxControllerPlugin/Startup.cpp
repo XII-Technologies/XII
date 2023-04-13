@@ -55,5 +55,3 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(InputDevices, InputDeviceXBox360)
  
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
-
-XII_STATICLINK_FILE(System, System_XBoxController_Startup);

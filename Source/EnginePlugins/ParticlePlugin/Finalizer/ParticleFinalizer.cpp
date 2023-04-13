@@ -29,3 +29,7 @@ xiiParticleFinalizer::xiiParticleFinalizer()
   // run after the behaviors, before the types
   m_fPriority = +500.0f;
 }
+
+
+XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Finalizer_ParticleFinalizer);
+

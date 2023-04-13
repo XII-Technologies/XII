@@ -87,3 +87,7 @@ void xiiParticleFinalizer_Volume::Process(xiiUInt64 uiNumElements)
 
   GetOwnerSystem()->SetBoundingVolume(xiiSimdConversion::ToBBoxSphere(volume), fMaxSize);
 }
+
+
+XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Finalizer_ParticleFinalizer_Volume);
+

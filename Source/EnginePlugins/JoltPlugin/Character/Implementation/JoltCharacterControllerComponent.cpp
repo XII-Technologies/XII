@@ -640,3 +640,7 @@ void xiiJoltCharacterControllerComponent::MovePresenceBody(xiiTime deltaTime)
 
   pBodies->MoveKinematic(bodyId, xiiJoltConversionUtils::ToVec3(trans.m_Position), xiiJoltConversionUtils::ToQuat(trans.m_Rotation).Normalized(), tDiff);
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Character_Implementation_JoltCharacterControllerComponent);
+

@@ -222,6 +222,3 @@ void xiiInputDeviceXBox360::ApplyVibration(xiiUInt8 uiPhysicalController, Motor:
     XInputSetState(uiPhysicalController, &v[uiPhysicalController]);
   }
 }
-
-
-XII_STATICLINK_FILE(System, System_XBoxController_InputDeviceXBox);

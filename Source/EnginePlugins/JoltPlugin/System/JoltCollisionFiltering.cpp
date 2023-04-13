@@ -141,3 +141,7 @@ bool xiiJoltObjectLayerPairFilter::ShouldCollide(JPH::ObjectLayer inObject1, JPH
 {
   return xiiJoltCollisionFiltering::s_CollisionFilterConfig.IsCollisionEnabled(static_cast<xiiUInt32>(inObject1) & 0xFF, static_cast<xiiUInt32>(inObject2) & 0xFF);
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_System_JoltCollisionFiltering);
+

@@ -160,3 +160,7 @@ void xiiJoltCustomShapeInfo::sCastShapeVsUser1(const JPH::ShapeCast& inShapeCast
 
   CollisionDispatch::sCastShapeVsShapeLocalSpace(inShapeCast, inShapeCastSettings, shape->mInnerShape, inScale, inShapeFilter, inCenterOfMassTransform2, inSubShapeIDCreator1, inSubShapeIDCreator2, ioCollector);
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Shapes_Implementation_JoltCustomShapeInfo);
+

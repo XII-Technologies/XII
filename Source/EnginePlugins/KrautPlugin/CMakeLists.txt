@@ -14,5 +14,5 @@ target_link_libraries(${PROJECT_NAME}
   Kraut
 )
 
-# needed for shader files to compile
+# This is needed for shader files to compile
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../../Data/Base")

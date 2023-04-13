@@ -143,3 +143,7 @@ void xiiJoltTriggerComponent::PostTriggerMessage(const xiiGameObjectHandle& hOth
 
   m_TriggerEventSender.PostEventMessage(msg, this, GetOwner(), xiiTime::Zero(), xiiObjectMsgQueueType::PostTransform);
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Actors_Implementation_JoltTriggerComponent);
+

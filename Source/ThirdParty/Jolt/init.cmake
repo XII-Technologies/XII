@@ -10,7 +10,5 @@ mark_as_advanced(FORCE XII_3RDPARTY_JOLT_SUPPORT)
 ######################################
 
 macro(xii_requires_jolt)
-
-	xii_requires(XII_3RDPARTY_JOLT_SUPPORT)
-
+    xii_requires(XII_3RDPARTY_JOLT_SUPPORT)
 endmacro()

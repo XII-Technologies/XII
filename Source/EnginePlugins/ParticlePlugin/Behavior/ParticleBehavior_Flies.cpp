@@ -141,3 +141,7 @@ void xiiParticleBehavior_Flies::Process(xiiUInt64 uiNumElements)
     itVelocity.Advance();
   }
 }
+
+
+XII_STATICLINK_FILE(ParticlePlugin, ParticlePlugin_Behavior_ParticleBehavior_Flies);
+

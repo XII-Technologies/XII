@@ -98,3 +98,7 @@ void xiiJoltShapeConvexHullComponent::ExtractGeometry(xiiMsgExtractGeometry& msg
     msg.AddMeshObject(GetOwner()->GetGlobalTransform(), pMesh->ConvertToCpuMesh());
   }
 }
+
+
+XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Shapes_Implementation_JoltShapeConvexHullComponent);
+
