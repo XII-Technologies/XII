@@ -857,6 +857,9 @@ void xiiQtPropertyEditorQuaternionWidget::OnInit() {}
 
 void xiiQtPropertyEditorQuaternionWidget::InternalSetValue(const xiiVariant& value)
 {
+  if (m_bTemporaryCommand)
+    return;
+
   xiiQtScopedBlockSignals b0(m_pWidget[0]);
   xiiQtScopedBlockSignals b1(m_pWidget[1]);
   xiiQtScopedBlockSignals b2(m_pWidget[2]);
