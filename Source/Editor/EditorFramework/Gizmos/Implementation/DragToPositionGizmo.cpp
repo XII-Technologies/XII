@@ -14,42 +14,22 @@ xiiDragToPositionGizmo::xiiDragToPositionGizmo()
 {
   m_bModifiesRotation = false;
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
-  m_bUseExperimentalGizmo                = !pPreferences->m_bOldGizmos;
+  // \todo Adjust colors for +/- axis
+  const xiiColor colr1 = xiiColorGammaUB(206, 0, 46);
+  const xiiColor colr2 = xiiColorGammaUB(206, 0, 46);
+  const xiiColor colg1 = xiiColorGammaUB(101, 206, 0);
+  const xiiColor colg2 = xiiColorGammaUB(101, 206, 0);
+  const xiiColor colb1 = xiiColorGammaUB(0, 125, 206);
+  const xiiColor colb2 = xiiColorGammaUB(0, 125, 206);
+  const xiiColor coly  = xiiColorGammaUB(128, 128, 0);
 
-  if (m_bUseExperimentalGizmo)
-  {
-    // TODO: adjust colors for +/- axis
-    const xiiColor colr1 = xiiColorGammaUB(206, 0, 46);
-    const xiiColor colr2 = xiiColorGammaUB(206, 0, 46);
-    const xiiColor colg1 = xiiColorGammaUB(101, 206, 0);
-    const xiiColor colg2 = xiiColorGammaUB(101, 206, 0);
-    const xiiColor colb1 = xiiColorGammaUB(0, 125, 206);
-    const xiiColor colb2 = xiiColorGammaUB(0, 125, 206);
-    const xiiColor coly  = xiiColorGammaUB(128, 128, 0);
-
-    m_hBobble.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, coly, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragCenter.obj");
-    m_hAlignPX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr1, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowPX.obj");
-    m_hAlignNX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowNX.obj");
-    m_hAlignPY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg1, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowPY.obj");
-    m_hAlignNY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowNY.obj");
-    m_hAlignPZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb1, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowPZ.obj");
-    m_hAlignNZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowNZ.obj");
-  }
-  else
-  {
-    const float b = 0.1f;
-    const float l = 0.5f;
-    const float h = 0.9f;
-
-    m_hBobble.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, xiiColor::DodgerBlue, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hAlignPX.ConfigureHandle(this, xiiEngineGizmoHandleType::HalfPiston, xiiColor(h, b, b), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hAlignNX.ConfigureHandle(this, xiiEngineGizmoHandleType::HalfPiston, xiiColor(l, b, b), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hAlignPY.ConfigureHandle(this, xiiEngineGizmoHandleType::HalfPiston, xiiColor(b, h, b), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hAlignNY.ConfigureHandle(this, xiiEngineGizmoHandleType::HalfPiston, xiiColor(b, l, b), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hAlignPZ.ConfigureHandle(this, xiiEngineGizmoHandleType::HalfPiston, xiiColor(b, b, h), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hAlignNZ.ConfigureHandle(this, xiiEngineGizmoHandleType::HalfPiston, xiiColor(b, b, l / 3), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-  }
+  m_hBobble.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, coly, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragCenter.obj");
+  m_hAlignPX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr1, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowPX.obj");
+  m_hAlignNX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowNX.obj");
+  m_hAlignPY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg1, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowPY.obj");
+  m_hAlignNY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowNY.obj");
+  m_hAlignPZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb1, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowPZ.obj");
+  m_hAlignNZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowNZ.obj");
 
   SetVisible(false);
   SetTransformation(xiiTransform::IdentityTransform());
@@ -104,8 +84,6 @@ void xiiDragToPositionGizmo::OnVisibleChanged(bool bVisible)
 
 void xiiDragToPositionGizmo::OnTransformationChanged(const xiiTransform& transform)
 {
-  if (m_bUseExperimentalGizmo)
-  {
     m_hBobble.SetTransformation(transform);
     m_hAlignPX.SetTransformation(transform);
     m_hAlignNX.SetTransformation(transform);
@@ -113,30 +91,6 @@ void xiiDragToPositionGizmo::OnTransformationChanged(const xiiTransform& transfo
     m_hAlignNY.SetTransformation(transform);
     m_hAlignPZ.SetTransformation(transform);
     m_hAlignNZ.SetTransformation(transform);
-  }
-  else
-  {
-    xiiTransform m;
-    m.SetIdentity();
-
-    m.m_vScale = xiiVec3(0.2f);
-    m_hBobble.SetTransformation(transform * m);
-
-    m.SetIdentity();
-    m_hAlignPX.SetTransformation(transform * m);
-    m.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(180));
-    m_hAlignNX.SetTransformation(transform * m);
-
-    m.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(+90));
-    m_hAlignPY.SetTransformation(transform * m);
-    m.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(-90));
-    m_hAlignNY.SetTransformation(transform * m);
-
-    m.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(-90));
-    m_hAlignPZ.SetTransformation(transform * m);
-    m.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(+90));
-    m_hAlignNZ.SetTransformation(transform * m);
-  }
 }
 
 void xiiDragToPositionGizmo::DoFocusLost(bool bCancel)

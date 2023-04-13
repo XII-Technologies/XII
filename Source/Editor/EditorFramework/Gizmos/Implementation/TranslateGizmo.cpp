@@ -16,33 +16,17 @@ xiiTranslateGizmo::xiiTranslateGizmo()
   m_vStartPosition.SetZero();
   m_fCameraSpeed = 0.2f;
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
-  m_bUseExperimentalGizmo                = !pPreferences->m_bOldGizmos;
+  const xiiColor colr = xiiColorScheme::LightUI(xiiColorScheme::Red);
+  const xiiColor colg = xiiColorScheme::LightUI(xiiColorScheme::Green);
+  const xiiColor colb = xiiColorScheme::LightUI(xiiColorScheme::Blue);
 
-  if (m_bUseExperimentalGizmo)
-  {
-    const xiiColor colr = xiiColorScheme::LightUI(xiiColorScheme::Red);
-    const xiiColor colg = xiiColorScheme::LightUI(xiiColorScheme::Green);
-    const xiiColor colb = xiiColorScheme::LightUI(xiiColorScheme::Blue);
+  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/TranslateArrowX.obj");
+  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/TranslateArrowY.obj");
+  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/TranslateArrowZ.obj");
 
-    m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/TranslateArrowX.obj");
-    m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/TranslateArrowY.obj");
-    m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/TranslateArrowZ.obj");
-
-    m_hPlaneYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::FaceCamera, "Editor/Meshes/TranslatePlaneX.obj");
-    m_hPlaneXZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::FaceCamera, "Editor/Meshes/TranslatePlaneY.obj");
-    m_hPlaneXY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::FaceCamera, "Editor/Meshes/TranslatePlaneZ.obj");
-  }
-  else
-  {
-    m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::Arrow, xiiColorLinearUB(128, 0, 0), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::Arrow, xiiColorLinearUB(0, 128, 0), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Arrow, xiiColorLinearUB(0, 0, 128), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-
-    m_hPlaneXY.ConfigureHandle(this, xiiEngineGizmoHandleType::Rect, xiiColorLinearUB(128, 128, 255), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hPlaneXZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Rect, xiiColorLinearUB(128, 255, 128), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hPlaneYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Rect, xiiColorLinearUB(255, 128, 128), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-  }
+  m_hPlaneYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::FaceCamera, "Editor/Meshes/TranslatePlaneX.obj");
+  m_hPlaneXZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::FaceCamera, "Editor/Meshes/TranslatePlaneY.obj");
+  m_hPlaneXY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::FaceCamera, "Editor/Meshes/TranslatePlaneZ.obj");
 
   SetVisible(false);
   SetTransformation(xiiTransform::IdentityTransform());
@@ -76,38 +60,12 @@ void xiiTranslateGizmo::OnVisibleChanged(bool bVisible)
 
 void xiiTranslateGizmo::OnTransformationChanged(const xiiTransform& transform)
 {
-  if (m_bUseExperimentalGizmo)
-  {
-    m_hAxisX.SetTransformation(transform);
-    m_hAxisY.SetTransformation(transform);
-    m_hAxisZ.SetTransformation(transform);
-    m_hPlaneXY.SetTransformation(transform);
-    m_hPlaneYZ.SetTransformation(transform);
-    m_hPlaneXZ.SetTransformation(transform);
-  }
-  else
-  {
-    xiiTransform m;
-    m.SetIdentity();
-
-    m.m_vScale.Set(2.0f);
-    m_hAxisX.SetTransformation(transform * m);
-
-    m.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
-    m_hAxisY.SetTransformation(transform * m);
-
-    m.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(-90));
-    m_hAxisZ.SetTransformation(transform * m);
-
-    m.SetIdentity();
-    m_hPlaneXY.SetTransformation(transform * m);
-
-    m.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
-    m_hPlaneYZ.SetTransformation(transform * m);
-
-    m.m_qRotation.SetFromAxisAndAngle(xiiVec3(1, 0, 0), xiiAngle::Degree(90));
-    m_hPlaneXZ.SetTransformation(transform * m);
-  }
+  m_hAxisX.SetTransformation(transform);
+  m_hAxisY.SetTransformation(transform);
+  m_hAxisZ.SetTransformation(transform);
+  m_hPlaneXY.SetTransformation(transform);
+  m_hPlaneYZ.SetTransformation(transform);
+  m_hPlaneXZ.SetTransformation(transform);
 
   if (!IsActiveInputContext())
   {

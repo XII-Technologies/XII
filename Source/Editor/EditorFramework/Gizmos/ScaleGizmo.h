@@ -41,8 +41,6 @@ private:
   xiiTime m_LastInteraction;
   xiiVec3 m_vMoveAxis;
   xiiMat4 m_mInvViewProj;
-
-  bool m_bUseExperimentalGizmo = false;
 };
 
 /// \brief Scale gizmo version that only uses boxes that can be composited with

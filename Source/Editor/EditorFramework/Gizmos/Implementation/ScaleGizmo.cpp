@@ -12,28 +12,15 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiScaleGizmo::xiiScaleGizmo()
 {
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
-  m_bUseExperimentalGizmo                = !pPreferences->m_bOldGizmos;
+  const xiiColor colr = xiiColorScheme::LightUI(xiiColorScheme::Red);
+  const xiiColor colg = xiiColorScheme::LightUI(xiiColorScheme::Green);
+  const xiiColor colb = xiiColorScheme::LightUI(xiiColorScheme::Blue);
+  const xiiColor coly = xiiColorScheme::LightUI(xiiColorScheme::Gray);
 
-  if (m_bUseExperimentalGizmo)
-  {
-    const xiiColor colr = xiiColorScheme::LightUI(xiiColorScheme::Red);
-    const xiiColor colg = xiiColorScheme::LightUI(xiiColorScheme::Green);
-    const xiiColor colb = xiiColorScheme::LightUI(xiiColorScheme::Blue);
-    const xiiColor coly = xiiColorScheme::LightUI(xiiColorScheme::Gray);
-
-    m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleArrowX.obj");
-    m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleArrowY.obj");
-    m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleArrowZ.obj");
-    m_hAxisXYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, coly, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleXYZ.obj");
-  }
-  else
-  {
-    m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::Piston, xiiColorLinearUB(128, 0, 0), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::Piston, xiiColorLinearUB(0, 128, 0), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Piston, xiiColorLinearUB(0, 0, 128), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-    m_hAxisXYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, xiiColorLinearUB(128, 128, 0), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-  }
+  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleArrowX.obj");
+  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleArrowY.obj");
+  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleArrowZ.obj");
+  m_hAxisXYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, coly, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleXYZ.obj");
 
   SetVisible(false);
   SetTransformation(xiiTransform::IdentityTransform());
@@ -63,31 +50,10 @@ void xiiScaleGizmo::OnVisibleChanged(bool bVisible)
 
 void xiiScaleGizmo::OnTransformationChanged(const xiiTransform& transform)
 {
-  if (m_bUseExperimentalGizmo)
-  {
-    m_hAxisX.SetTransformation(transform);
-    m_hAxisY.SetTransformation(transform);
-    m_hAxisZ.SetTransformation(transform);
-    m_hAxisXYZ.SetTransformation(transform);
-  }
-  else
-  {
-    xiiTransform t;
-    t.SetIdentity();
-
-    t.m_vScale.Set(2.0f);
-    m_hAxisX.SetTransformation(transform * t);
-
-    t.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
-    m_hAxisY.SetTransformation(transform * t);
-
-    t.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(-90));
-    m_hAxisZ.SetTransformation(transform * t);
-
-    t.SetIdentity();
-    t.m_vScale = xiiVec3(0.2f);
-    m_hAxisXYZ.SetTransformation(transform * t);
-  }
+  m_hAxisX.SetTransformation(transform);
+  m_hAxisY.SetTransformation(transform);
+  m_hAxisZ.SetTransformation(transform);
+  m_hAxisXYZ.SetTransformation(transform);
 }
 
 void xiiScaleGizmo::DoFocusLost(bool bCancel)

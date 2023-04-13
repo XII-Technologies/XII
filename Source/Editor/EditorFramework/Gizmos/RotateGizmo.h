@@ -41,6 +41,4 @@ private:
   xiiVec3 m_vRotationAxis;
   xiiMat4 m_mInvViewProj;
   xiiVec2 m_vScreenTangent;
-
-  bool m_bUseExperimentalGizmo = false;
 };

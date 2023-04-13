@@ -19,10 +19,9 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* parent) :
   ButtonListMode->setVisible(false);
   ButtonIconMode->setVisible(false);
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
-
-  ListTypeFilter->setVisible(!pPreferences->m_bAssetFilterCombobox);
-  TypeFilter->setVisible(pPreferences->m_bAssetFilterCombobox);
+  const bool bAssetFilterCombobox = true;
+  ListTypeFilter->setVisible(!bAssetFilterCombobox);
+  TypeFilter->setVisible(bAssetFilterCombobox);
 
   m_pFilter = new xiiQtAssetBrowserFilter(this);
   m_pModel  = new xiiQtAssetBrowserModel(this, m_pFilter);
@@ -786,7 +785,7 @@ void xiiQtAssetBrowserWidget::OnAssetSelectionChanged(const QItemSelection& sele
     QModelIndex index = ListAssets->selectionModel()->selectedIndexes()[0];
 
     xiiUuid guid = m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::SubAssetGuid).value<xiiUuid>();
-    Q_EMIT  ItemSelected(guid, m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString());
+    Q_EMIT ItemSelected(guid, m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString());
   }
 }
 
@@ -801,7 +800,7 @@ void xiiQtAssetBrowserWidget::OnAssetSelectionCurrentChanged(const QModelIndex& 
     QModelIndex index = ListAssets->selectionModel()->selectedIndexes()[0];
 
     xiiUuid guid = m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::SubAssetGuid).value<xiiUuid>();
-    Q_EMIT  ItemSelected(guid, m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString());
+    Q_EMIT ItemSelected(guid, m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString());
   }
 }
 

@@ -41,7 +41,6 @@ protected:
   xiiEngineGizmoHandle m_hAlignPZ;
   xiiEngineGizmoHandle m_hAlignNZ;
 
-  bool    m_bUseExperimentalGizmo = false;
   bool    m_bModifiesRotation;
   xiiTime m_LastInteraction;
   xiiVec3 m_vStartPosition;
