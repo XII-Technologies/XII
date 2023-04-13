@@ -1,5 +1,6 @@
 #include <Core/Configuration/PlatformProfile.h>
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Project/ProjectExport.h>
 #include <Foundation/Application/Config/FileSystemConfig.h>
 #include <Foundation/Containers/HybridArray.h>
@@ -445,6 +446,36 @@ xiiResult xiiProjectExport::ExportProject(const char* szTargetDirectory, const x
 
   // 3
   {
+    // by default all DLLs are excluded by CommonBinaries.ezExportFilter
+    // we want to override this for all the runtime DLLs and indirect DLL dependencies
+    // so we add those to the 'include filter'
+
+    for (auto it : xiiQtEditorApp::GetSingleton()->GetPluginBundles().m_Plugins)
+    {
+      if (!it.Value().m_bSelected)
+        continue;
+
+      for (const auto& dep : it.Value().m_PackageDependencies)
+      {
+        binariesFilter.AddFilter(dep, true);
+      }
+
+      for (const auto& dep : it.Value().m_RuntimePlugins)
+      {
+        xiiStringBuilder tmp = dep;
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+        tmp.Append(".dll");
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+        tmp.Append(".so");
+#else
+#  error "Platform not implemented"
+#endif
+
+        binariesFilter.AddFilter(tmp, true);
+      }
+    }
+
     mainProgress.BeginNextStep("Gathering binaries");
     XII_SUCCEED_OR_RETURN(xiiProjectExport::GatherBinaries(fileList, binariesFilter));
   }

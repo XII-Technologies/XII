@@ -8,7 +8,7 @@ PluginInfo
 	string %EditorPlugins{"xiiEditorPluginRmlUi"}
 	string %EditorEnginePlugins{"xiiEnginePluginRmlUi"}
 	string %RuntimePlugins{"xiiRmlUiPlugin"}
-	string %PackageDependencies{}
+	string %PackageDependencies{"freetype.dll", "RmlCore.dll"}
 	string %RequiredPlugins{}
 	string %ExclusiveFeatures{}
 	string %EnabledInTemplates{"General2D", "General3D"}

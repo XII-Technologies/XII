@@ -1,19 +1,37 @@
 [EXCLUDE]
 
 *.exe
-*.loaded
+*.dll
 *.pdb
+*.loaded
+*.xiiPluginBundle
 */iconengines/*
 */imageformats/*
 */platforms/*
-*/xiiEditorPlugin*
-*/xiiEnginePlugin*
-*/xiiSharedPlugin*
-*/Qt5*
-*/Qt6*
+
+// failed shader compilations
+*/_Failed_*
+
 
 [INCLUDE]
 
 #if PLATFORM_PROFILE_PC
 /Player.exe
+/xiiFoundation.dll
+/xiiCore.dll
+/xiiGameEngine.dll
+/xiiRendererCore.dll
+/xiiRendererDX11.dll
+/xiiRendererDiligent.dll
+/xiiRendererFoundation.dll
+/xiiShaderCompilerHLSL.dll
+/xiiTexture.dll
+/xiiUtilities.dll
+/Imgui.dll
+/Lua.dll
+/ozz.dll
+/zstd.dll
+/Duktape.dll
+/stb_image.dll
+/enet.dll
 #endif
