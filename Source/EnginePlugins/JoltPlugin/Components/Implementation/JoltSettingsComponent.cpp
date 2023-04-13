@@ -29,10 +29,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltSettingsComponent::xiiJoltSettingsComponent()  = default;
 xiiJoltSettingsComponent::~xiiJoltSettingsComponent() = default;
 
-void xiiJoltSettingsComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltSettingsComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(inout_stream);
+  auto& s = inout_stream.GetStream();
 
   s << m_Settings.m_vObjectGravity;
   s << m_Settings.m_vCharacterGravity;
@@ -43,12 +43,12 @@ void xiiJoltSettingsComponent::SerializeComponent(xiiWorldWriter& stream) const
 }
 
 
-void xiiJoltSettingsComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltSettingsComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_Settings.m_vObjectGravity;
   s >> m_Settings.m_vCharacterGravity;

@@ -15,13 +15,13 @@ class XII_JOLTPLUGIN_DLL xiiJoltStaticActorComponent : public xiiJoltActorCompon
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
   virtual void OnDeactivated() override;
   virtual void OnSimulationStarted() override;
 
-  void PullSurfacesFromGraphicsMesh(xiiDynamicArray<const xiiJoltMaterial*>& materials);
+  void PullSurfacesFromGraphicsMesh(xiiDynamicArray<const xiiJoltMaterial*>& ref_materials);
 
   //////////////////////////////////////////////////////////////////////////
   // xiiJoltActorComponent

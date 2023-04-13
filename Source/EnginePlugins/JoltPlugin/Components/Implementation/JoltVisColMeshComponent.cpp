@@ -13,7 +13,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltVisColMeshComponent, 1, xiiComponentMode::Static
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("CollisionMesh", GetMeshFile, SetMeshFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Jolt_Colmesh_Triangle;CompatibleAsset_Jolt_Colmesh_Convex")),
+    XII_ACCESSOR_PROPERTY("CollisionMesh", GetMeshFile, SetMeshFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Jolt_Colmesh_Triangle;CompatibleAsset_Jolt_Colmesh_Convex", xiiDependencyFlags::Package)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_MESSAGEHANDLERS
@@ -33,29 +33,29 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltVisColMeshComponent::xiiJoltVisColMeshComponent()  = default;
 xiiJoltVisColMeshComponent::~xiiJoltVisColMeshComponent() = default;
 
-void xiiJoltVisColMeshComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltVisColMeshComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s << m_hCollisionMesh;
 }
 
 
-void xiiJoltVisColMeshComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltVisColMeshComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_hCollisionMesh;
 
   GetWorld()->GetOrCreateComponentManager<xiiJoltVisColMeshComponentManager>()->EnqueueUpdate(GetHandle());
 }
 
-xiiResult xiiJoltVisColMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiJoltVisColMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   // have to assume this isn't thread safe
   // CreateCollisionRenderMesh();
@@ -63,7 +63,7 @@ xiiResult xiiJoltVisColMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& bound
   if (m_hMesh.IsValid())
   {
     xiiResourceLock<xiiMeshResource> pMesh(m_hMesh, xiiResourceAcquireMode::BlockTillLoaded);
-    bounds = pMesh->GetBounds();
+    ref_bounds = pMesh->GetBounds();
     return XII_SUCCESS;
   }
 

@@ -38,21 +38,21 @@ XII_END_ABSTRACT_COMPONENT_TYPE
 xiiJoltActorComponent::xiiJoltActorComponent()  = default;
 xiiJoltActorComponent::~xiiJoltActorComponent() = default;
 
-void xiiJoltActorComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltActorComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s << m_uiCollisionLayer;
 }
 
-void xiiJoltActorComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltActorComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_uiCollisionLayer;
 }

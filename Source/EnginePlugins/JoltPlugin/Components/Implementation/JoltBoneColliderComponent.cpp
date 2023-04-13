@@ -44,20 +44,20 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltBoneColliderComponent::xiiJoltBoneColliderComponent()  = default;
 xiiJoltBoneColliderComponent::~xiiJoltBoneColliderComponent() = default;
 
-void xiiJoltBoneColliderComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltBoneColliderComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(inout_stream);
+  auto& s = inout_stream.GetStream();
 
   s << m_bQueryShapeOnly;
   s << m_UpdateThreshold;
 }
 
-void xiiJoltBoneColliderComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltBoneColliderComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = inout_stream.GetStream();
 
   s >> m_bQueryShapeOnly;
   s >> m_UpdateThreshold;
@@ -83,7 +83,7 @@ void xiiJoltBoneColliderComponent::OnDeactivated()
   SUPER::OnDeactivated();
 }
 
-void xiiJoltBoneColliderComponent::OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& msg)
+void xiiJoltBoneColliderComponent::OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& ref_msg)
 {
   if (m_UpdateThreshold.IsPositive())
   {
@@ -99,7 +99,7 @@ void xiiJoltBoneColliderComponent::OnAnimationPoseUpdated(xiiMsgAnimationPoseUpd
   {
     xiiMat4 boneTrans;
     xiiQuat boneRot;
-    msg.ComputeFullBoneTransform(shape.m_uiAttachedToBone, boneTrans, boneRot);
+    ref_msg.ComputeFullBoneTransform(shape.m_uiAttachedToBone, boneTrans, boneRot);
 
     xiiTransform pose;
     pose.SetIdentity();

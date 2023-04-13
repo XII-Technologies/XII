@@ -35,11 +35,11 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltSliderConstraintComponent::xiiJoltSliderConstraintComponent()  = default;
 xiiJoltSliderConstraintComponent::~xiiJoltSliderConstraintComponent() = default;
 
-void xiiJoltSliderConstraintComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltSliderConstraintComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s << m_fLowerLimitDistance;
   s << m_fUpperLimitDistance;
@@ -51,12 +51,12 @@ void xiiJoltSliderConstraintComponent::SerializeComponent(xiiWorldWriter& stream
   s << m_fDriveStrength;
 }
 
-void xiiJoltSliderConstraintComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltSliderConstraintComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_fLowerLimitDistance;
   s >> m_fUpperLimitDistance;
@@ -168,6 +168,31 @@ void xiiJoltSliderConstraintComponent::ApplySettings()
     xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
     pModule->GetJoltSystem()->GetBodyInterface().ActivateBody(pConstraint->GetBody2()->GetID());
   }
+}
+
+bool xiiJoltSliderConstraintComponent::ExceededBreakingPoint()
+{
+  if (auto pConstraint = static_cast<JPH::SliderConstraint*>(m_pConstraint))
+  {
+    if (m_fBreakForce > 0)
+    {
+      if (pConstraint->GetTotalLambdaPosition()[0] >= m_fBreakForce ||
+          pConstraint->GetTotalLambdaPosition()[1] >= m_fBreakForce)
+      {
+        return true;
+      }
+    }
+
+    if (m_fBreakTorque > 0)
+    {
+      if (pConstraint->GetTotalLambdaRotation().ReduceMax() >= m_fBreakTorque)
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 void xiiJoltSliderConstraintComponent::CreateContstraintType(JPH::Body* pBody0, JPH::Body* pBody1)

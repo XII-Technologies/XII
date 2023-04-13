@@ -55,8 +55,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltConstraintComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 protected:
   virtual void OnSimulationStarted() override;
@@ -70,11 +70,11 @@ public:
   xiiJoltConstraintComponent();
   ~xiiJoltConstraintComponent();
 
-  // void SetBreakForce(float value);                      // [ property ]
-  // float GetBreakForce() const { return m_fBreakForce; } // [ property ]
+  void  SetBreakForce(float value);                     // [ property ]
+  float GetBreakForce() const { return m_fBreakForce; } // [ property ]
 
-  // void SetBreakTorque(float value);                       // [ property ]
-  // float GetBreakTorque() const { return m_fBreakTorque; } // [ property ]
+  void  SetBreakTorque(float value);                      // [ property ]
+  float GetBreakTorque() const { return m_fBreakTorque; } // [ property ]
 
   void SetPairCollision(bool value);                         // [ property ]
   bool GetPairCollision() const { return m_bPairCollision; } // [ property ]
@@ -90,6 +90,8 @@ public:
   void SetActors(xiiGameObjectHandle hActorA, const xiiTransform& localFrameA, xiiGameObjectHandle hActorB, const xiiTransform& localFrameB);
 
   virtual void ApplySettings() = 0;
+
+  virtual bool ExceededBreakingPoint() = 0;
 
 protected:
   xiiResult FindParentBody(xiiUInt32& out_uiJoltBodyID);
@@ -113,9 +115,9 @@ protected:
 
   JPH::Constraint* m_pConstraint = nullptr;
 
-  // float m_fBreakForce = 0.0f;
-  // float m_fBreakTorque = 0.0f;
-  bool m_bPairCollision = true;
+  float m_fBreakForce    = 0.0f;
+  float m_fBreakTorque   = 0.0f;
+  bool  m_bPairCollision = true;
 
 private:
   const char* DummyGetter() const { return nullptr; }

@@ -22,10 +22,10 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltStaticActorComponent, 1, xiiComponentMode::Stati
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("CollisionMesh", GetMeshFile, SetMeshFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Jolt_Colmesh_Triangle")),
+    XII_ACCESSOR_PROPERTY("CollisionMesh", GetMeshFile, SetMeshFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Jolt_Colmesh_Triangle", xiiDependencyFlags::Package)),
     XII_MEMBER_PROPERTY("IncludeInNavmesh", m_bIncludeInNavmesh)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("PullSurfacesFromGraphicsMesh", m_bPullSurfacesFromGraphicsMesh),
-    XII_ACCESSOR_PROPERTY("Surface", GetSurfaceFile, SetSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
+    XII_ACCESSOR_PROPERTY("Surface", GetSurfaceFile, SetSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_MESSAGEHANDLERS
@@ -44,10 +44,10 @@ xiiJoltStaticActorComponent::xiiJoltStaticActorComponent()
 
 xiiJoltStaticActorComponent::~xiiJoltStaticActorComponent() = default;
 
-void xiiJoltStaticActorComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltStaticActorComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(inout_stream);
+  auto& s = inout_stream.GetStream();
 
   s << m_hCollisionMesh;
   s << m_bIncludeInNavmesh;
@@ -56,12 +56,12 @@ void xiiJoltStaticActorComponent::SerializeComponent(xiiWorldWriter& stream) con
 }
 
 
-void xiiJoltStaticActorComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltStaticActorComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_hCollisionMesh;
   s >> m_bIncludeInNavmesh;
@@ -161,7 +161,7 @@ void xiiJoltStaticActorComponent::CreateShapes(xiiDynamicArray<xiiJoltSubShape>&
   }
 }
 
-void xiiJoltStaticActorComponent::PullSurfacesFromGraphicsMesh(xiiDynamicArray<const xiiJoltMaterial*>& materials)
+void xiiJoltStaticActorComponent::PullSurfacesFromGraphicsMesh(xiiDynamicArray<const xiiJoltMaterial*>& ref_materials)
 {
   // the materials don't hold a handle to the surfaces, so they don't keep them alive
   // therefore, we need to keep them alive by storing a handle
@@ -179,10 +179,10 @@ void xiiJoltStaticActorComponent::PullSurfacesFromGraphicsMesh(xiiDynamicArray<c
   if (pMeshRes.GetAcquireResult() != xiiResourceAcquireResult::Final)
     return;
 
-  if (pMeshRes->GetMaterials().GetCount() != materials.GetCount())
+  if (pMeshRes->GetMaterials().GetCount() != ref_materials.GetCount())
     return;
 
-  const xiiUInt32 uiNumMats = materials.GetCount();
+  const xiiUInt32 uiNumMats = ref_materials.GetCount();
   m_UsedSurfaces.SetCount(uiNumMats);
 
   for (xiiUInt32 s = 0; s < uiNumMats; ++s)
@@ -213,7 +213,7 @@ void xiiJoltStaticActorComponent::PullSurfacesFromGraphicsMesh(xiiDynamicArray<c
       continue;
 
     XII_ASSERT_DEV(pSurface->m_pPhysicsMaterialJolt != nullptr, "Invalid Jolt material pointer on surface");
-    materials[s] = static_cast<xiiJoltMaterial*>(pSurface->m_pPhysicsMaterialJolt);
+    ref_materials[s] = static_cast<xiiJoltMaterial*>(pSurface->m_pPhysicsMaterialJolt);
   }
 }
 

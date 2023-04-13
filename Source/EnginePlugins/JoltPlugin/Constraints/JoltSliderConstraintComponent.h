@@ -12,8 +12,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltSliderConstraintComponent : public xiiJoltConstr
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -52,6 +52,7 @@ public:
   float GetDriveStrength() const { return m_fDriveStrength; } // [ property ]
 
   virtual void ApplySettings() final override;
+  virtual bool ExceededBreakingPoint() final override;
 
 protected:
   xiiEnum<xiiJoltConstraintLimitMode> m_LimitMode;

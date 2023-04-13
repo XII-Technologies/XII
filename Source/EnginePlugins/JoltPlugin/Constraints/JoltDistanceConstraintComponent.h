@@ -12,8 +12,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltDistanceConstraintComponent : public xiiJoltCons
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -43,6 +43,7 @@ public:
   float GetDamping() const { return m_fDamping; } // [ property ]
 
   virtual void ApplySettings() final override;
+  virtual bool ExceededBreakingPoint() final override;
 
 protected:
   float m_fMinDistance = 0.0f;

@@ -47,27 +47,27 @@ void xiiJoltDebugRenderer::DrawTriangle(JPH::Vec3Arg inV1, JPH::Vec3Arg inV2, JP
 }
 
 
-JPH::DebugRenderer::Batch xiiJoltDebugRenderer::CreateTriangleBatch(const JPH::DebugRenderer::Triangle* inTriangles, int inTriangleCount)
+JPH::DebugRenderer::Batch xiiJoltDebugRenderer::CreateTriangleBatch(const JPH::DebugRenderer::Triangle* pInTriangles, int iInTriangleCount)
 {
   TriangleBatch* pBatch = XII_DEFAULT_NEW(TriangleBatch);
-  pBatch->m_Triangles.Reserve(inTriangleCount);
+  pBatch->m_Triangles.Reserve(iInTriangleCount);
 
-  for (int i = 0; i < inTriangleCount; ++i)
+  for (int i = 0; i < iInTriangleCount; ++i)
   {
     auto& t         = pBatch->m_Triangles.ExpandAndGetRef();
-    t.m_position[0] = xiiJoltConversionUtils::ToVec3(inTriangles[i].mV[0].mPosition);
-    t.m_position[1] = xiiJoltConversionUtils::ToVec3(inTriangles[i].mV[1].mPosition);
-    t.m_position[2] = xiiJoltConversionUtils::ToVec3(inTriangles[i].mV[2].mPosition);
-    t.m_color       = xiiJoltConversionUtils::ToColor(inTriangles[i].mV[0].mColor);
+    t.m_position[0] = xiiJoltConversionUtils::ToVec3(pInTriangles[i].mV[0].mPosition);
+    t.m_position[1] = xiiJoltConversionUtils::ToVec3(pInTriangles[i].mV[1].mPosition);
+    t.m_position[2] = xiiJoltConversionUtils::ToVec3(pInTriangles[i].mV[2].mPosition);
+    t.m_color       = xiiJoltConversionUtils::ToColor(pInTriangles[i].mV[0].mColor);
   }
 
   return pBatch;
 }
 
 
-JPH::DebugRenderer::Batch xiiJoltDebugRenderer::CreateTriangleBatch(const JPH::DebugRenderer::Vertex* inVertices, int inVertexCount, const JPH::uint32* inIndices, int inIndexCount)
+JPH::DebugRenderer::Batch xiiJoltDebugRenderer::CreateTriangleBatch(const JPH::DebugRenderer::Vertex* pInVertices, int iInVertexCount, const JPH::uint32* pInIndices, int iInIndexCount)
 {
-  const xiiUInt32 numTris = inIndexCount / 3;
+  const xiiUInt32 numTris = iInIndexCount / 3;
 
   TriangleBatch* pBatch = XII_DEFAULT_NEW(TriangleBatch);
   pBatch->m_Triangles.Reserve(numTris);
@@ -77,10 +77,10 @@ JPH::DebugRenderer::Batch xiiJoltDebugRenderer::CreateTriangleBatch(const JPH::D
   for (xiiUInt32 i = 0; i < numTris; ++i)
   {
     auto& t         = pBatch->m_Triangles.ExpandAndGetRef();
-    t.m_position[0] = xiiJoltConversionUtils::ToVec3(inVertices[inIndices[index + 0]].mPosition);
-    t.m_position[1] = xiiJoltConversionUtils::ToVec3(inVertices[inIndices[index + 1]].mPosition);
-    t.m_position[2] = xiiJoltConversionUtils::ToVec3(inVertices[inIndices[index + 2]].mPosition);
-    t.m_color       = xiiJoltConversionUtils::ToColor(inVertices[inIndices[index + 0]].mColor);
+    t.m_position[0] = xiiJoltConversionUtils::ToVec3(pInVertices[pInIndices[index + 0]].mPosition);
+    t.m_position[1] = xiiJoltConversionUtils::ToVec3(pInVertices[pInIndices[index + 1]].mPosition);
+    t.m_position[2] = xiiJoltConversionUtils::ToVec3(pInVertices[pInIndices[index + 2]].mPosition);
+    t.m_color       = xiiJoltConversionUtils::ToColor(pInVertices[pInIndices[index + 0]].mColor);
 
     index += 3;
   }
@@ -89,20 +89,20 @@ JPH::DebugRenderer::Batch xiiJoltDebugRenderer::CreateTriangleBatch(const JPH::D
 }
 
 
-void xiiJoltDebugRenderer::DrawGeometry(JPH::Mat44Arg inModelMatrix, const JPH::AABox& inWorldSpaceBounds, float inLODScaleSq, JPH::ColorArg inModelColor, const GeometryRef& inGeometry, ECullMode inCullMode /*= ECullMode::CullBackFace*/, ECastShadow inCastShadow /*= ECastShadow::On*/, EDrawMode inDrawMode /*= EDrawMode::Solid*/)
+void xiiJoltDebugRenderer::DrawGeometry(JPH::Mat44Arg modelMatrix, const JPH::AABox& worldSpaceBounds, float fInLODScaleSq, JPH::ColorArg inModelColor, const GeometryRef& geometry, ECullMode inCullMode /*= ECullMode::CullBackFace*/, ECastShadow inCastShadow /*= ECastShadow::On*/, EDrawMode inDrawMode /*= EDrawMode::Solid*/)
 {
-  if (inGeometry == nullptr)
+  if (geometry == nullptr)
     return;
 
   xiiUInt32 uiLod = 0;
-  if (inGeometry->mLODs.size() > 1)
+  if (geometry->mLODs.size() > 1)
     uiLod = 1;
-  if (inGeometry->mLODs.size() > 2)
+  if (geometry->mLODs.size() > 2)
     uiLod = 2;
 
-  const TriangleBatch* pBatch = static_cast<const TriangleBatch*>(inGeometry->mLODs[uiLod].mTriangleBatch.GetPtr());
+  const TriangleBatch* pBatch = static_cast<const TriangleBatch*>(geometry->mLODs[uiLod].mTriangleBatch.GetPtr());
 
-  const xiiMat4  trans = reinterpret_cast<const xiiMat4&>(inModelMatrix);
+  const xiiMat4  trans = reinterpret_cast<const xiiMat4&>(modelMatrix);
   const xiiColor color = xiiJoltConversionUtils::ToColor(inModelColor);
 
   if (inDrawMode == JPH::DebugRenderer::EDrawMode::Solid)

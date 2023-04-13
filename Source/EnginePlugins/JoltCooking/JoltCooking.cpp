@@ -29,9 +29,9 @@ public:
     m_pWriter = pPassThrough;
   }
 
-  virtual void WriteBytes(const void* inData, size_t inNumBytes) override
+  virtual void WriteBytes(const void* pInData, size_t uiInNumBytes) override
   {
-    if (m_pWriter->WriteBytes(inData, inNumBytes).Failed())
+    if (m_pWriter->WriteBytes(pInData, uiInNumBytes).Failed())
       m_bFailed = true;
   }
 
@@ -46,7 +46,7 @@ private:
   bool             m_bFailed = false;
 };
 
-xiiResult xiiJoltCooking::CookTriangleMesh(const xiiJoltCookingMesh& mesh, xiiStreamWriter& OutputStream)
+xiiResult xiiJoltCooking::CookTriangleMesh(const xiiJoltCookingMesh& mesh, xiiStreamWriter& ref_outputStream)
 {
   JPH::RegisterDefaultAllocator();
 
@@ -150,20 +150,20 @@ xiiResult xiiJoltCooking::CookTriangleMesh(const xiiJoltCookingMesh& mesh, xiiSt
     xiiJoltStreamOut jOut(&memWriter);
     shapeRes.Get()->SaveBinaryState(jOut);
 
-    OutputStream << storage.GetStorageSize32();
-    storage.CopyToStream(OutputStream).AssertSuccess();
+    ref_outputStream << storage.GetStorageSize32();
+    storage.CopyToStream(ref_outputStream).AssertSuccess();
 
     const xiiUInt32 uiNumVertices = static_cast<xiiUInt32>(vertexList.size());
-    OutputStream << uiNumVertices;
+    ref_outputStream << uiNumVertices;
 
     const xiiUInt32 uiNumTriangles = shapeRes.Get()->GetStats().mNumTriangles;
-    OutputStream << uiNumTriangles;
+    ref_outputStream << uiNumTriangles;
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiJoltCooking::CookConvexMesh(const xiiJoltCookingMesh& mesh0, xiiStreamWriter& OutputStream)
+xiiResult xiiJoltCooking::CookConvexMesh(const xiiJoltCookingMesh& mesh0, xiiStreamWriter& ref_outputStream)
 {
   xiiProgressRange range("Cooking Convex Mesh", 2, false);
 
@@ -174,7 +174,7 @@ xiiResult xiiJoltCooking::CookConvexMesh(const xiiJoltCookingMesh& mesh0, xiiStr
 
   range.BeginNextStep("Cooking Convex Hull");
 
-  XII_SUCCEED_OR_RETURN(CookSingleConvexJoltMesh(mesh, OutputStream));
+  XII_SUCCEED_OR_RETURN(CookSingleConvexJoltMesh(mesh, ref_outputStream));
 
   return XII_SUCCESS;
 }
@@ -222,11 +222,11 @@ xiiResult xiiJoltCooking::CookSingleConvexJoltMesh(const xiiJoltCookingMesh& mes
   return XII_SUCCESS;
 }
 
-xiiResult xiiJoltCooking::ComputeConvexHull(const xiiJoltCookingMesh& mesh, xiiJoltCookingMesh& outMesh)
+xiiResult xiiJoltCooking::ComputeConvexHull(const xiiJoltCookingMesh& mesh, xiiJoltCookingMesh& out_mesh)
 {
   xiiStopwatch timer;
 
-  outMesh.m_bFlipNormals = mesh.m_bFlipNormals;
+  out_mesh.m_bFlipNormals = mesh.m_bFlipNormals;
 
 
   xiiConvexHullGenerator gen;
@@ -237,7 +237,7 @@ xiiResult xiiJoltCooking::ComputeConvexHull(const xiiJoltCookingMesh& mesh, xiiJ
   }
 
   xiiDynamicArray<xiiConvexHullGenerator::Face> faces;
-  gen.Retrieve(outMesh.m_Vertices, faces);
+  gen.Retrieve(out_mesh.m_Vertices, faces);
 
   if (faces.GetCount() >= 255)
   {
@@ -246,89 +246,89 @@ xiiResult xiiJoltCooking::ComputeConvexHull(const xiiJoltCookingMesh& mesh, xiiJ
     gen2.SetSimplificationFlatVertexNormalThreshold(xiiAngle::Degree(10));
     gen2.SetSimplificationMinTriangleEdgeLength(0.08f);
 
-    if (gen2.Build(outMesh.m_Vertices).Failed())
+    if (gen2.Build(out_mesh.m_Vertices).Failed())
     {
       xiiLog::Error("Computing the convex hull failed (second try).");
       return XII_FAILURE;
     }
 
-    gen2.Retrieve(outMesh.m_Vertices, faces);
+    gen2.Retrieve(out_mesh.m_Vertices, faces);
   }
 
 
   for (const auto& face : faces)
   {
-    outMesh.m_VerticesInPolygon.ExpandAndGetRef() = 3;
-    outMesh.m_PolygonSurfaceID.ExpandAndGetRef()  = 0;
+    out_mesh.m_VerticesInPolygon.ExpandAndGetRef() = 3;
+    out_mesh.m_PolygonSurfaceID.ExpandAndGetRef()  = 0;
 
     for (int vert = 0; vert < 3; ++vert)
-      outMesh.m_PolygonIndices.ExpandAndGetRef() = face.m_uiVertexIdx[vert];
+      out_mesh.m_PolygonIndices.ExpandAndGetRef() = face.m_uiVertexIdx[vert];
   }
 
   xiiLog::Dev("Computed the convex hull in {0} milliseconds", xiiArgF(timer.GetRunningTotal().GetMilliseconds(), 1));
   return XII_SUCCESS;
 }
 
-xiiStatus xiiJoltCooking::WriteResourceToStream(xiiChunkStreamWriter& stream, const xiiJoltCookingMesh& mesh, const xiiArrayPtr<xiiString>& surfaces, MeshType meshType, xiiUInt32 uiMaxConvexPieces)
+xiiStatus xiiJoltCooking::WriteResourceToStream(xiiChunkStreamWriter& inout_stream, const xiiJoltCookingMesh& mesh, const xiiArrayPtr<xiiString>& surfaces, MeshType meshType, xiiUInt32 uiMaxConvexPieces)
 {
   xiiResult resCooking = XII_FAILURE;
 
   {
-    stream.BeginChunk("Surfaces", 1);
+    inout_stream.BeginChunk("Surfaces", 1);
 
-    stream << surfaces.GetCount();
+    inout_stream << surfaces.GetCount();
 
     for (const auto& slot : surfaces)
     {
-      stream << slot;
+      inout_stream << slot;
     }
 
-    stream.EndChunk();
+    inout_stream.EndChunk();
   }
 
   {
-    stream.BeginChunk("Details", 1);
+    inout_stream.BeginChunk("Details", 1);
 
     xiiBoundingBoxSphere aabb;
     aabb.SetFromPoints(mesh.m_Vertices.GetData(), mesh.m_Vertices.GetCount());
 
-    stream << aabb;
+    inout_stream << aabb;
 
-    stream.EndChunk();
+    inout_stream.EndChunk();
   }
 
   if (meshType == MeshType::Triangle)
   {
-    stream.BeginChunk("TriangleMesh", 1);
+    inout_stream.BeginChunk("TriangleMesh", 1);
 
     xiiStopwatch timer;
-    resCooking = xiiJoltCooking::CookTriangleMesh(mesh, stream);
+    resCooking = xiiJoltCooking::CookTriangleMesh(mesh, inout_stream);
     xiiLog::Dev("Triangle Mesh Cooking time: {0}s", xiiArgF(timer.GetRunningTotal().GetSeconds(), 2));
 
-    stream.EndChunk();
+    inout_stream.EndChunk();
   }
   else
   {
     if (meshType == MeshType::ConvexDecomposition)
     {
-      stream.BeginChunk("ConvexDecompositionMesh", 1);
+      inout_stream.BeginChunk("ConvexDecompositionMesh", 1);
 
       xiiStopwatch timer;
-      resCooking = xiiJoltCooking::CookDecomposedConvexMesh(mesh, stream, uiMaxConvexPieces);
+      resCooking = xiiJoltCooking::CookDecomposedConvexMesh(mesh, inout_stream, uiMaxConvexPieces);
       xiiLog::Dev("Decomposed Convex Mesh Cooking time: {0}s", xiiArgF(timer.GetRunningTotal().GetSeconds(), 2));
 
-      stream.EndChunk();
+      inout_stream.EndChunk();
     }
 
     if (meshType == MeshType::ConvexHull)
     {
-      stream.BeginChunk("ConvexMesh", 1);
+      inout_stream.BeginChunk("ConvexMesh", 1);
 
       xiiStopwatch timer;
-      resCooking = xiiJoltCooking::CookConvexMesh(mesh, stream);
+      resCooking = xiiJoltCooking::CookConvexMesh(mesh, inout_stream);
       xiiLog::Dev("Convex Mesh Cooking time: {0}s", xiiArgF(timer.GetRunningTotal().GetSeconds(), 2));
 
-      stream.EndChunk();
+      inout_stream.EndChunk();
     }
   }
 
@@ -339,7 +339,7 @@ xiiStatus xiiJoltCooking::WriteResourceToStream(xiiChunkStreamWriter& stream, co
   return xiiStatus(XII_SUCCESS);
 }
 
-xiiResult xiiJoltCooking::CookDecomposedConvexMesh(const xiiJoltCookingMesh& mesh, xiiStreamWriter& OutputStream, xiiUInt32 uiMaxConvexPieces)
+xiiResult xiiJoltCooking::CookDecomposedConvexMesh(const xiiJoltCookingMesh& mesh, xiiStreamWriter& ref_outputStream, xiiUInt32 uiMaxConvexPieces)
 {
   XII_LOG_BLOCK("Decomposing Mesh");
 
@@ -393,7 +393,7 @@ xiiResult xiiJoltCooking::CookDecomposedConvexMesh(const xiiJoltCookingMesh& mes
 
   xiiLog::Dev("Convex mesh parts: {}", uiNumParts);
 
-  OutputStream << uiNumParts;
+  ref_outputStream << uiNumParts;
 
   for (xiiUInt32 i = 0; i < pConDec->GetNConvexHulls(); ++i)
   {
@@ -426,7 +426,7 @@ xiiResult xiiJoltCooking::CookDecomposedConvexMesh(const xiiJoltCookingMesh& mes
       chm.m_PolygonIndices[t * 3 + 2] = ch.m_triangles[t].mI2;
     }
 
-    XII_SUCCEED_OR_RETURN(CookSingleConvexJoltMesh(chm, OutputStream));
+    XII_SUCCEED_OR_RETURN(CookSingleConvexJoltMesh(chm, ref_outputStream));
   }
 
   return XII_SUCCESS;

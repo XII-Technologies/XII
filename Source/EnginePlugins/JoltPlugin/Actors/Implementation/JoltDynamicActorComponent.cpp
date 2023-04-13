@@ -91,7 +91,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltDynamicActorComponent, 3, xiiComponentMode::Dyna
       XII_MEMBER_PROPERTY("StartAsleep", m_bStartAsleep),
       XII_MEMBER_PROPERTY("Mass", m_fMass)->AddAttributes(new xiiSuffixAttribute(" kg"), new xiiClampValueAttribute(0.0f, xiiVariant())),
       XII_MEMBER_PROPERTY("Density", m_fDensity)->AddAttributes(new xiiDefaultValueAttribute(100.0f), new xiiSuffixAttribute(" kg/m^3")),
-      XII_ACCESSOR_PROPERTY("Surface", GetSurfaceFile, SetSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
+      XII_ACCESSOR_PROPERTY("Surface", GetSurfaceFile, SetSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
       XII_ACCESSOR_PROPERTY("GravityFactor", GetGravityFactor, SetGravityFactor)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
       XII_MEMBER_PROPERTY("LinearDamping", m_fLinearDamping)->AddAttributes(new xiiDefaultValueAttribute(0.2f)),
       XII_MEMBER_PROPERTY("AngularDamping", m_fAngularDamping)->AddAttributes(new xiiDefaultValueAttribute(0.2f)),
@@ -131,11 +131,11 @@ xiiJoltDynamicActorComponent::xiiJoltDynamicActorComponent()
 
 xiiJoltDynamicActorComponent::~xiiJoltDynamicActorComponent() = default;
 
-void xiiJoltDynamicActorComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltDynamicActorComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s << m_bKinematic;
   s << m_bCCD;
@@ -151,12 +151,12 @@ void xiiJoltDynamicActorComponent::SerializeComponent(xiiWorldWriter& stream) co
   s << m_bStartAsleep;
 }
 
-void xiiJoltDynamicActorComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltDynamicActorComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_bKinematic;
   s >> m_bCCD;
@@ -223,12 +223,12 @@ void xiiJoltDynamicActorComponent::SetKinematic(bool b)
   }
 }
 
-void xiiJoltDynamicActorComponent::SetGravityFactor(float factor)
+void xiiJoltDynamicActorComponent::SetGravityFactor(float fFactor)
 {
-  if (m_fGravityFactor == factor)
+  if (m_fGravityFactor == fFactor)
     return;
 
-  m_fGravityFactor = factor;
+  m_fGravityFactor = fFactor;
 
   JPH::BodyID bodyId(m_uiJoltBodyID);
 
@@ -365,22 +365,22 @@ void xiiJoltDynamicActorComponent::AddAngularImpulse(const xiiVec3& vImpulse)
   pBodies->AddAngularImpulse(JPH::BodyID(m_uiJoltBodyID), xiiJoltConversionUtils::ToVec3(vImpulse));
 }
 
-void xiiJoltDynamicActorComponent::AddForceAtPos(xiiMsgPhysicsAddForce& msg)
+void xiiJoltDynamicActorComponent::AddForceAtPos(xiiMsgPhysicsAddForce& ref_msg)
 {
   if (m_bKinematic || m_uiJoltBodyID == xiiInvalidIndex)
     return;
 
   auto pBodies = &GetWorld()->GetModule<xiiJoltWorldModule>()->GetJoltSystem()->GetBodyInterface();
-  pBodies->AddForce(JPH::BodyID(m_uiJoltBodyID), xiiJoltConversionUtils::ToVec3(msg.m_vForce), xiiJoltConversionUtils::ToVec3(msg.m_vGlobalPosition));
+  pBodies->AddForce(JPH::BodyID(m_uiJoltBodyID), xiiJoltConversionUtils::ToVec3(ref_msg.m_vForce), xiiJoltConversionUtils::ToVec3(ref_msg.m_vGlobalPosition));
 }
 
-void xiiJoltDynamicActorComponent::AddImpulseAtPos(xiiMsgPhysicsAddImpulse& msg)
+void xiiJoltDynamicActorComponent::AddImpulseAtPos(xiiMsgPhysicsAddImpulse& ref_msg)
 {
   if (m_bKinematic || m_uiJoltBodyID == xiiInvalidIndex)
     return;
 
   auto pBodies = &GetWorld()->GetModule<xiiJoltWorldModule>()->GetJoltSystem()->GetBodyInterface();
-  pBodies->AddImpulse(JPH::BodyID(m_uiJoltBodyID), xiiJoltConversionUtils::ToVec3(msg.m_vImpulse), xiiJoltConversionUtils::ToVec3(msg.m_vGlobalPosition));
+  pBodies->AddImpulse(JPH::BodyID(m_uiJoltBodyID), xiiJoltConversionUtils::ToVec3(ref_msg.m_vImpulse), xiiJoltConversionUtils::ToVec3(ref_msg.m_vGlobalPosition));
 }
 
 const xiiJoltMaterial* xiiJoltDynamicActorComponent::GetJoltMaterial() const

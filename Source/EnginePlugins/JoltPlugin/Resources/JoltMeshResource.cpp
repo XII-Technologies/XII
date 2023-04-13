@@ -25,9 +25,9 @@ public:
   xiiStreamReader* m_pStream = nullptr;
   bool             m_bEOF    = false;
 
-  virtual void ReadBytes(void* outData, size_t inNumBytes) override
+  virtual void ReadBytes(void* pData, size_t uiInNumBytes) override
   {
-    if (m_pStream->ReadBytes(outData, inNumBytes) < inNumBytes)
+    if (m_pStream->ReadBytes(pData, uiInNumBytes) < uiInNumBytes)
       m_bEOF = true;
   }
 
@@ -106,24 +106,24 @@ xiiResourceLoadDesc xiiJoltMeshResource::UnloadData(Unload WhatToUnload)
 
 XII_DEFINE_AS_POD_TYPE(JPH::Vec3);
 
-static void ReadConvexMesh(xiiStreamReader& stream, xiiDataBuffer* pBuffer)
+static void ReadConvexMesh(xiiStreamReader& inout_stream, xiiDataBuffer* pBuffer)
 {
   xiiUInt32 uiSize = 0;
 
-  stream >> uiSize;
+  inout_stream >> uiSize;
   pBuffer->SetCountUninitialized(uiSize);
-  XII_VERIFY(stream.ReadBytes(pBuffer->GetData(), uiSize) == uiSize, "Reading cooked convex mesh data failed.");
+  XII_VERIFY(inout_stream.ReadBytes(pBuffer->GetData(), uiSize) == uiSize, "Reading cooked convex mesh data failed.");
 }
 
-static void AddStats(xiiStreamReader& stream, xiiUInt32& uiVertices, xiiUInt32& uiTriangles)
+static void AddStats(xiiStreamReader& inout_stream, xiiUInt32& ref_uiVertices, xiiUInt32& ref_uiTriangles)
 {
   xiiUInt32 verts = 0, tris = 0;
 
-  stream >> verts;
-  stream >> tris;
+  inout_stream >> verts;
+  inout_stream >> tris;
 
-  uiVertices += verts;
-  uiTriangles += tris;
+  ref_uiVertices += verts;
+  ref_uiTriangles += tris;
 }
 
 xiiResourceLoadDesc xiiJoltMeshResource::UpdateContent(xiiStreamReader* Stream)
@@ -300,7 +300,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiJoltMeshResource, xiiJoltMeshResourceDescri
   return res;
 }
 
-void RetrieveShapeTriangles(const JPH::Shape* pShape, xiiDynamicArray<xiiVec3>& positions)
+void RetrieveShapeTriangles(const JPH::Shape* pShape, xiiDynamicArray<xiiVec3>& ref_positions)
 {
   const int iMaxTris = 256;
 
@@ -315,21 +315,21 @@ void RetrieveShapeTriangles(const JPH::Shape* pShape, xiiDynamicArray<xiiVec3>& 
   {
     int found = pShape->GetTrianglesNext(ctxt, iMaxTris, reinterpret_cast<JPH::Float3*>(positionsTmp.GetData()), nullptr);
 
-    positions.PushBackRange(positionsTmp.GetArrayPtr().GetSubArray(0, found * 3));
+    ref_positions.PushBackRange(positionsTmp.GetArrayPtr().GetSubArray(0, found * 3));
 
     if (found == 0)
       return;
   }
 }
 
-void RetrieveShapeTriangles(JPH::ShapeSettings* pShapeOpt, xiiDynamicArray<xiiVec3>& positions)
+void RetrieveShapeTriangles(JPH::ShapeSettings* pShapeOpt, xiiDynamicArray<xiiVec3>& ref_positions)
 {
   auto res = pShapeOpt->Create();
 
   if (res.HasError())
     return;
 
-  RetrieveShapeTriangles(res.Get(), positions);
+  RetrieveShapeTriangles(res.Get(), ref_positions);
 }
 
 xiiCpuMeshResourceHandle xiiJoltMeshResource::ConvertToCpuMesh() const
@@ -403,10 +403,18 @@ JPH::Shape* xiiJoltMeshResource::InstantiateTriangleMesh(xiiUInt64 uiUserData, c
       if (!m_Surfaces[i].IsValid())
         continue;
 
-      xiiResourceLock        pSurf(m_Surfaces[i], xiiResourceAcquireMode::BlockTillLoaded);
-      const xiiJoltMaterial* pMat = static_cast<const xiiJoltMaterial*>(pSurf->m_pPhysicsMaterialJolt);
+      xiiResourceLock pSurf(m_Surfaces[i], xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
 
-      materials[i] = pMat;
+      if (pSurf.GetAcquireResult() != xiiResourceAcquireResult::None)
+      {
+        const xiiJoltMaterial* pMat = static_cast<const xiiJoltMaterial*>(pSurf->m_pPhysicsMaterialJolt);
+
+        materials[i] = pMat;
+      }
+      else
+      {
+        xiiLog::Warning("Surface resource '{}' not available.", m_Surfaces[i].GetResourceID());
+      }
     }
 
     shapeRes.Get()->RestoreMaterialState(materials.GetData(), materials.GetCount());

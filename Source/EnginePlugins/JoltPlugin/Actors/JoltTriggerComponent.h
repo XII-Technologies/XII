@@ -31,8 +31,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltTriggerComponent : public xiiJoltActorComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 public:
   virtual void OnSimulationStarted() override;
@@ -45,8 +45,8 @@ public:
   xiiJoltTriggerComponent();
   ~xiiJoltTriggerComponent();
 
-  void        SetTriggerMessage(const char* sz) { m_sTriggerMessage.Assign(sz); } // [ property ]
-  const char* GetTriggerMessage() const { return m_sTriggerMessage.GetData(); }   // [ property ]
+  void        SetTriggerMessage(const char* szSz) { m_sTriggerMessage.Assign(szSz); } // [ property ]
+  const char* GetTriggerMessage() const { return m_sTriggerMessage.GetData(); }       // [ property ]
 
 protected:
   friend class xiiJoltWorldModule;

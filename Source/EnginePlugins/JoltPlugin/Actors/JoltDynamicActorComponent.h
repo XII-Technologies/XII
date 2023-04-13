@@ -30,8 +30,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltDynamicActorComponent : public xiiJoltActorCompo
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
   virtual void OnSimulationStarted() override;
   virtual void OnDeactivated() override;
@@ -45,13 +45,13 @@ public:
 
   xiiUInt32 GetJoltBodyID() const { return m_uiJoltBodyID; }
 
-  void AddImpulseAtPos(xiiMsgPhysicsAddImpulse& msg); // [ message ]
-  void AddForceAtPos(xiiMsgPhysicsAddForce& msg);     // [ message ]
+  void AddImpulseAtPos(xiiMsgPhysicsAddImpulse& ref_msg); // [ message ]
+  void AddForceAtPos(xiiMsgPhysicsAddForce& ref_msg);     // [ message ]
 
   bool GetKinematic() const { return m_bKinematic; } // [ property ]
   void SetKinematic(bool b);                         // [ property ]
 
-  void  SetGravityFactor(float factor);                       // [ property ]
+  void  SetGravityFactor(float fFactor);                      // [ property ]
   float GetGravityFactor() const { return m_fGravityFactor; } // [ property ]
 
   void        SetSurfaceFile(const char* szFile); // [ property ]

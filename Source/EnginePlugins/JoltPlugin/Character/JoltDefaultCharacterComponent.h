@@ -14,8 +14,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltDefaultCharacterComponent : public xiiJoltCharac
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 protected:
   virtual void OnSimulationStarted() override;
@@ -55,8 +55,8 @@ public:
   float                    m_fWalkInteractionDistance = 1.0f; ///< [ property ] How far the CC has to walk for spawning another surface interaction
   float                    m_fRunInteractionDistance  = 3.0f; ///< [ property ] How far the CC has to run for spawning another surface interaction
 
-  void        SetWalkSurfaceInteraction(const char* sz) { m_sWalkSurfaceInteraction.Assign(sz); } // [ property ]
-  const char* GetWalkSurfaceInteraction() const { return m_sWalkSurfaceInteraction.GetData(); }   // [ property ]
+  void        SetWalkSurfaceInteraction(const char* szSz) { m_sWalkSurfaceInteraction.Assign(szSz); } // [ property ]
+  const char* GetWalkSurfaceInteraction() const { return m_sWalkSurfaceInteraction.GetData(); }       // [ property ]
 
   void        SetFallbackWalkSurfaceFile(const char* szFile); // [ property ]
   const char* GetFallbackWalkSurfaceFile() const;             // [ property ]
@@ -66,7 +66,7 @@ public:
 
   void SetHeadObjectReference(const char* szReference); // [ property ]
 
-  void SetInputState(xiiMsgMoveCharacterController& msg);
+  void SetInputState(xiiMsgMoveCharacterController& ref_msg);
 
 
   /// \brief Returns the current height of the entire capsule (crouching or standing).
@@ -99,7 +99,7 @@ public:
     float           m_fMaxStepDown                        = 0;
   };
 
-  virtual void DetermineConfig(Config& out_Inputs);
+  virtual void DetermineConfig(Config& out_inputs);
 
 protected:
   void         OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) const;

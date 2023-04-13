@@ -55,21 +55,21 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltTriggerComponent::xiiJoltTriggerComponent()  = default;
 xiiJoltTriggerComponent::~xiiJoltTriggerComponent() = default;
 
-void xiiJoltTriggerComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltTriggerComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s << m_sTriggerMessage;
 }
 
-void xiiJoltTriggerComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltTriggerComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_sTriggerMessage;
 }

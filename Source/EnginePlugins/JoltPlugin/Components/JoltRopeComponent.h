@@ -36,8 +36,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltRopeComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
   virtual void OnSimulationStarted() override;
   virtual void OnActivated() override;
@@ -69,8 +69,8 @@ public:
   void SetAnchorReference(const char* szReference); // [ property ]
   void SetAnchor(xiiGameObjectHandle hActor);
 
-  void AddForceAtPos(xiiMsgPhysicsAddForce& msg);
-  void AddImpulseAtPos(xiiMsgPhysicsAddImpulse& msg);
+  void AddForceAtPos(xiiMsgPhysicsAddForce& ref_msg);
+  void AddImpulseAtPos(xiiMsgPhysicsAddImpulse& ref_msg);
 
 private:
   void                   CreateRope();

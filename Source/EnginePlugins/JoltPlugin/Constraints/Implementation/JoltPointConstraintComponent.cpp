@@ -15,16 +15,16 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltPointConstraintComponent::xiiJoltPointConstraintComponent()  = default;
 xiiJoltPointConstraintComponent::~xiiJoltPointConstraintComponent() = default;
 
-void xiiJoltPointConstraintComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltPointConstraintComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
   // auto& s = stream.GetStream();
 }
 
-void xiiJoltPointConstraintComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltPointConstraintComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(inout_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
   // auto& s = stream.GetStream();
 }
@@ -49,5 +49,20 @@ void xiiJoltPointConstraintComponent::CreateContstraintType(JPH::Body* pBody0, J
   m_pConstraint = opt.Create(*pBody0, *pBody1);
 }
 
+bool xiiJoltPointConstraintComponent::ExceededBreakingPoint()
+{
+  if (auto pConstraint = static_cast<JPH::PointConstraint*>(m_pConstraint))
+  {
+    if (m_fBreakForce > 0)
+    {
+      if (pConstraint->GetTotalLambdaPosition().ReduceMax() >= m_fBreakForce)
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_Constraints_Implementation_JoltPointConstraintComponent);

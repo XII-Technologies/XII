@@ -34,22 +34,22 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiJoltShapeCylinderComponent::xiiJoltShapeCylinderComponent()  = default;
 xiiJoltShapeCylinderComponent::~xiiJoltShapeCylinderComponent() = default;
 
-void xiiJoltShapeCylinderComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJoltShapeCylinderComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
   s << m_fRadius;
   s << m_fHeight;
 }
 
-void xiiJoltShapeCylinderComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJoltShapeCylinderComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
 
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
   s >> m_fRadius;
   s >> m_fHeight;
 }

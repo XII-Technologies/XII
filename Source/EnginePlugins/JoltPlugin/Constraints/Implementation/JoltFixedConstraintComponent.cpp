@@ -17,6 +17,30 @@ void xiiJoltFixedConstraintComponent::ApplySettings()
   xiiJoltConstraintComponent::ApplySettings();
 }
 
+bool xiiJoltFixedConstraintComponent::ExceededBreakingPoint()
+{
+  if (auto pConstraint = static_cast<JPH::FixedConstraint*>(m_pConstraint))
+  {
+    if (m_fBreakForce > 0)
+    {
+      if (pConstraint->GetTotalLambdaPosition().ReduceMax() >= m_fBreakForce)
+      {
+        return true;
+      }
+    }
+
+    if (m_fBreakTorque > 0)
+    {
+      if (pConstraint->GetTotalLambdaRotation().ReduceMax() >= m_fBreakTorque)
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 void xiiJoltFixedConstraintComponent::CreateContstraintType(JPH::Body* pBody0, JPH::Body* pBody1)
 {
   const auto inv1 = pBody0->GetInverseCenterOfMassTransform() * pBody0->GetWorldTransform();

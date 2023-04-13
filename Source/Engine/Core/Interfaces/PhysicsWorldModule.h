@@ -106,25 +106,48 @@ protected:
   }
 
 public:
-  virtual bool Raycast(xiiPhysicsCastResult& out_Result, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
+  virtual bool Raycast(xiiPhysicsCastResult& out_result, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
 
-  virtual bool RaycastAll(xiiPhysicsCastResultArray& out_Results, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params) const = 0;
+  virtual bool RaycastAll(xiiPhysicsCastResultArray& out_results, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params) const = 0;
 
-  virtual bool SweepTestSphere(xiiPhysicsCastResult& out_Result, float fSphereRadius, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
+  virtual bool SweepTestSphere(xiiPhysicsCastResult& out_result, float fSphereRadius, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
 
-  virtual bool SweepTestBox(xiiPhysicsCastResult& out_Result, xiiVec3 vBoxExtends, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
+  virtual bool SweepTestBox(xiiPhysicsCastResult& out_result, xiiVec3 vBoxExtends, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
 
-  virtual bool SweepTestCapsule(xiiPhysicsCastResult& out_Result, float fCapsuleRadius, float fCapsuleHeight, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
+  virtual bool SweepTestCapsule(xiiPhysicsCastResult& out_result, float fCapsuleRadius, float fCapsuleHeight, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
 
   virtual bool OverlapTestSphere(float fSphereRadius, const xiiVec3& vPosition, const xiiPhysicsQueryParameters& params) const = 0;
 
   virtual bool OverlapTestCapsule(float fCapsuleRadius, float fCapsuleHeight, const xiiTransform& transform, const xiiPhysicsQueryParameters& params) const = 0;
 
-  virtual void QueryShapesInSphere(xiiPhysicsOverlapResultArray& out_Results, float fSphereRadius, const xiiVec3& vPosition, const xiiPhysicsQueryParameters& params) const = 0;
+  virtual void QueryShapesInSphere(xiiPhysicsOverlapResultArray& out_results, float fSphereRadius, const xiiVec3& vPosition, const xiiPhysicsQueryParameters& params) const = 0;
 
   virtual xiiVec3 GetGravity() const = 0;
 
-  virtual void AddStaticCollisionBox(xiiGameObject* pObject, xiiVec3 boxSize) {}
+  //////////////////////////////////////////////////////////////////////////
+  // ABSTRACTION HELPERS
+  //
+  // These functions are used to be able to use certain physics functionality, without having a direct dependency on the exact implementation (Jolt / PhysX).
+  // If no physics module is available, they simply do nothing.
+  // Add functions on demand.
+
+  /// \brief Adds a static actor with a box shape to pOwner.
+  virtual void AddStaticCollisionBox(xiiGameObject* pOwner, xiiVec3 vBoxSize) {}
+
+  struct JointConfig
+  {
+    xiiGameObjectHandle m_hActorA;
+    xiiGameObjectHandle m_hActorB;
+    xiiTransform        m_LocalFrameA = xiiTransform::IdentityTransform();
+    xiiTransform        m_LocalFrameB = xiiTransform::IdentityTransform();
+  };
+
+  struct FixedJointConfig : JointConfig
+  {
+  };
+
+  /// \brief Adds a fixed joint to pOwner.
+  virtual void AddFixedJointComponent(xiiGameObject* pOwner, const xiiPhysicsWorldModuleInterface::FixedJointConfig& cfg) {}
 };
 
 /// \brief Used to apply a physical impulse on the object
@@ -161,6 +184,22 @@ struct XII_CORE_DLL xiiMsgPhysicsJointBroke : public xiiEventMessage
   xiiGameObjectHandle m_hJointObject;
 };
 
+/// \brief Sent by components such as xiiJoltGrabObjectComponent to indicate that the object has been grabbed or released.
+struct XII_CORE_DLL xiiMsgObjectGrabbed : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgObjectGrabbed, xiiMessage);
+
+  xiiGameObjectHandle m_hGrabbedBy;
+  bool                m_bGotGrabbed = true;
+};
+
+/// \brief Send this to components such as xiiJoltGrabObjectComponent to demand that m_hGrabbedObjectToRelease should no longer be grabbed.
+struct XII_CORE_DLL xiiMsgReleaseObjectGrab : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgReleaseObjectGrab, xiiMessage);
+
+  xiiGameObjectHandle m_hGrabbedObjectToRelease;
+};
 
 //////////////////////////////////////////////////////////////////////////
 

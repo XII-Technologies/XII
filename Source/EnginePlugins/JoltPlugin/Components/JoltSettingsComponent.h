@@ -14,8 +14,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltSettingsComponent : public xiiSettingsComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////

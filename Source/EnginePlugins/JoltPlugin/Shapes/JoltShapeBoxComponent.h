@@ -12,8 +12,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltShapeBoxComponent : public xiiJoltShapeComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -33,7 +33,7 @@ public:
   void           SetHalfExtents(const xiiVec3& value);             // [ property ]
   const xiiVec3& GetHalfExtents() const { return m_vHalfExtents; } // [ property ]
 
-  virtual void ExtractGeometry(xiiMsgExtractGeometry& msg) const override;
+  virtual void ExtractGeometry(xiiMsgExtractGeometry& ref_msg) const override;
 
 protected:
   void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) const;

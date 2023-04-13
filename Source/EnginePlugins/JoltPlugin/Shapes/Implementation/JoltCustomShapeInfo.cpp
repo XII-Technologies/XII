@@ -6,7 +6,7 @@
 
 using namespace JPH;
 
-const JPH::PhysicsMaterial* xiiJoltCustomShapeInfo::GetMaterial(const SubShapeID& inSubShapeID) const
+const JPH::PhysicsMaterial* xiiJoltCustomShapeInfo::GetMaterial(const SubShapeID& subShapeID) const
 {
   if (!m_CustomMaterials.IsEmpty())
   {
@@ -14,16 +14,16 @@ const JPH::PhysicsMaterial* xiiJoltCustomShapeInfo::GetMaterial(const SubShapeID
     {
       const JPH::MeshShape* pMeshShape = static_cast<const JPH::MeshShape*>(mInnerShape.GetPtr());
 
-      return m_CustomMaterials[pMeshShape->GetMaterialIndex(inSubShapeID)];
+      return m_CustomMaterials[pMeshShape->GetMaterialIndex(subShapeID)];
     }
 
     return m_CustomMaterials[0];
   }
 
-  return mInnerShape->GetMaterial(inSubShapeID);
+  return mInnerShape->GetMaterial(subShapeID);
 }
 
-JPH::uint64 xiiJoltCustomShapeInfo::GetSubShapeUserData(const SubShapeID& inSubShapeID) const
+JPH::uint64 xiiJoltCustomShapeInfo::GetSubShapeUserData(const SubShapeID& subShapeID) const
 {
   return GetUserData();
 }
@@ -56,19 +56,19 @@ float xiiJoltCustomShapeInfo::GetInnerRadius() const
   return mInnerShape->GetInnerRadius();
 }
 
-JPH::Vec3 xiiJoltCustomShapeInfo::GetSurfaceNormal(const SubShapeID& inSubShapeID, Vec3Arg inLocalSurfacePosition) const
+JPH::Vec3 xiiJoltCustomShapeInfo::GetSurfaceNormal(const SubShapeID& subShapeID, Vec3Arg inLocalSurfacePosition) const
 {
-  return mInnerShape->GetSurfaceNormal(inSubShapeID, inLocalSurfacePosition);
+  return mInnerShape->GetSurfaceNormal(subShapeID, inLocalSurfacePosition);
 }
 
-void xiiJoltCustomShapeInfo::GetSubmergedVolume(Mat44Arg inCenterOfMassTransform, Vec3Arg inScale, const Plane& inSurface, float& outTotalVolume, float& outSubmergedVolume, Vec3& outCenterOfBuoyancy
+void xiiJoltCustomShapeInfo::GetSubmergedVolume(Mat44Arg centerOfMassTransform, Vec3Arg inScale, const Plane& surface, float& out_fTotalVolume, float& out_fSubmergedVolume, Vec3& out_centerOfBuoyancy
 #ifdef JPH_DEBUG_RENDERER // Not using JPH_IF_DEBUG_RENDERER for Doxygen
                                                 ,
                                                 JPH::RVec3Arg inBaseOffset
 #endif
 ) const
 {
-  mInnerShape->GetSubmergedVolume(inCenterOfMassTransform, inScale, inSurface, outTotalVolume, outSubmergedVolume, outCenterOfBuoyancy
+  mInnerShape->GetSubmergedVolume(centerOfMassTransform, inScale, surface, out_fTotalVolume, out_fSubmergedVolume, out_centerOfBuoyancy
 #ifdef JPH_DEBUG_RENDERER // Not using JPH_IF_DEBUG_RENDERER for Doxygen
                                   ,
                                   inBaseOffset
@@ -76,34 +76,34 @@ void xiiJoltCustomShapeInfo::GetSubmergedVolume(Mat44Arg inCenterOfMassTransform
   );
 }
 
-void xiiJoltCustomShapeInfo::Draw(DebugRenderer* inRenderer, Mat44Arg inCenterOfMassTransform, Vec3Arg inScale, ColorArg inColor, bool inUseMaterialColors, bool inDrawWireframe) const
+void xiiJoltCustomShapeInfo::Draw(DebugRenderer* pInRenderer, Mat44Arg centerOfMassTransform, Vec3Arg inScale, ColorArg inColor, bool bInUseMaterialColors, bool bInDrawWireframe) const
 {
-  mInnerShape->Draw(inRenderer, inCenterOfMassTransform, inScale, inColor, inUseMaterialColors, inDrawWireframe);
+  mInnerShape->Draw(pInRenderer, centerOfMassTransform, inScale, inColor, bInUseMaterialColors, bInDrawWireframe);
 }
 
-bool xiiJoltCustomShapeInfo::CastRay(const RayCast& inRay, const SubShapeIDCreator& inSubShapeIDCreator, RayCastResult& ioHit) const
+bool xiiJoltCustomShapeInfo::CastRay(const RayCast& ray, const SubShapeIDCreator& subShapeIDCreator, RayCastResult& ref_hit) const
 {
-  return mInnerShape->CastRay(inRay, inSubShapeIDCreator, ioHit);
+  return mInnerShape->CastRay(ray, subShapeIDCreator, ref_hit);
 }
 
-void xiiJoltCustomShapeInfo::CastRay(const JPH::RayCast& inRay, const JPH::RayCastSettings& inRayCastSettings, const JPH::SubShapeIDCreator& inSubShapeIDCreator, JPH::CastRayCollector& ioCollector, const JPH::ShapeFilter& inShapeFilter) const
+void xiiJoltCustomShapeInfo::CastRay(const JPH::RayCast& ray, const JPH::RayCastSettings& rayCastSettings, const JPH::SubShapeIDCreator& subShapeIDCreator, JPH::CastRayCollector& ref_collector, const JPH::ShapeFilter& shapeFilter) const
 {
-  return mInnerShape->CastRay(inRay, inRayCastSettings, inSubShapeIDCreator, ioCollector, inShapeFilter);
+  return mInnerShape->CastRay(ray, rayCastSettings, subShapeIDCreator, ref_collector, shapeFilter);
 }
 
-void xiiJoltCustomShapeInfo::CollidePoint(JPH::Vec3Arg inPoint, const JPH::SubShapeIDCreator& inSubShapeIDCreator, JPH::CollidePointCollector& ioCollector, const JPH::ShapeFilter& inShapeFilter) const
+void xiiJoltCustomShapeInfo::CollidePoint(JPH::Vec3Arg inPoint, const JPH::SubShapeIDCreator& subShapeIDCreator, JPH::CollidePointCollector& ref_collector, const JPH::ShapeFilter& shapeFilter) const
 {
-  mInnerShape->CollidePoint(inPoint, inSubShapeIDCreator, ioCollector, inShapeFilter);
+  mInnerShape->CollidePoint(inPoint, subShapeIDCreator, ref_collector, shapeFilter);
 }
 
-void xiiJoltCustomShapeInfo::GetTrianglesStart(GetTrianglesContext& ioContext, const AABox& inBox, Vec3Arg inPositionCOM, QuatArg inRotation, Vec3Arg inScale) const
+void xiiJoltCustomShapeInfo::GetTrianglesStart(GetTrianglesContext& ref_context, const AABox& box, Vec3Arg inPositionCOM, QuatArg inRotation, Vec3Arg inScale) const
 {
-  mInnerShape->GetTrianglesStart(ioContext, inBox, inPositionCOM, inRotation, inScale);
+  mInnerShape->GetTrianglesStart(ref_context, box, inPositionCOM, inRotation, inScale);
 }
 
-int xiiJoltCustomShapeInfo::GetTrianglesNext(GetTrianglesContext& ioContext, int inMaxTrianglesRequested, Float3* outTriangleVertices, const PhysicsMaterial** outMaterials /*= nullptr*/) const
+int xiiJoltCustomShapeInfo::GetTrianglesNext(GetTrianglesContext& ref_context, int iInMaxTrianglesRequested, Float3* pTriangleVertices, const PhysicsMaterial** pMaterials /*= nullptr*/) const
 {
-  return mInnerShape->GetTrianglesNext(ioContext, inMaxTrianglesRequested, outTriangleVertices, outMaterials);
+  return mInnerShape->GetTrianglesNext(ref_context, iInMaxTrianglesRequested, pTriangleVertices, pMaterials);
 }
 
 float xiiJoltCustomShapeInfo::GetVolume() const

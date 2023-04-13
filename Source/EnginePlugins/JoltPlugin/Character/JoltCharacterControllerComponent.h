@@ -24,8 +24,8 @@ class XII_JOLTPLUGIN_DLL xiiJoltCharacterControllerComponent : public xiiCompone
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 protected:
   virtual void OnSimulationStarted() override;
@@ -70,11 +70,11 @@ public:                                                                   // [ p
   xiiAngle GetMaxClimbingSlope() const { return m_MaxClimbingSlope; } // [ property ]
 
   /// \brief The mass with which the character will push down on objects that it is standing on.
-  void  SetMass(float mass);                // [ property ]
+  void  SetMass(float fMass);               // [ property ]
   float GetMass() const { return m_fMass; } // [ property ]
 
   /// \brief The strength with which the character will push against objects that it is running into.
-  void  SetStrength(float strength);                // [ property ]
+  void  SetStrength(float fStrength);               // [ property ]
   float GetStrength() const { return m_fStrength; } // [ property ]
 
 private:                                              // [ properties ]

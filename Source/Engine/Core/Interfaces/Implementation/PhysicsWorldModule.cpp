@@ -52,6 +52,29 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgPhysicsJointBroke, 1, xiiRTTIDefaultAlloc
 //}
 XII_END_DYNAMIC_REFLECTED_TYPE
 
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgObjectGrabbed);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgObjectGrabbed, 1, xiiRTTIDefaultAllocator<xiiMsgObjectGrabbed>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("GrabbedBy", m_hGrabbedBy),
+    XII_MEMBER_PROPERTY("GotGrabbed", m_bGotGrabbed),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgReleaseObjectGrab);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgReleaseObjectGrab, 1, xiiRTTIDefaultAllocator<xiiMsgReleaseObjectGrab>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("GrabbedObjectToRelease", m_hGrabbedObjectToRelease),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 //////////////////////////////////////////////////////////////////////////
 
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgBuildStaticMesh);

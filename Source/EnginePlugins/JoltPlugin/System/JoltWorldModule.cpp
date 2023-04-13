@@ -7,6 +7,7 @@
 #include <JoltPlugin/Character/JoltCharacterControllerComponent.h>
 #include <JoltPlugin/Components/JoltSettingsComponent.h>
 #include <JoltPlugin/Constraints/JoltConstraintComponent.h>
+#include <JoltPlugin/Constraints/JoltFixedConstraintComponent.h>
 #include <JoltPlugin/Shapes/JoltShapeBoxComponent.h>
 #include <JoltPlugin/System/JoltContacts.h>
 #include <JoltPlugin/System/JoltCore.h>
@@ -43,16 +44,16 @@ xiiJoltWorldModule::~xiiJoltWorldModule() = default;
 class xiiJoltBodyActivationListener : public JPH::BodyActivationListener
 {
 public:
-  virtual void OnBodyActivated(const JPH::BodyID& inBodyID, JPH::uint64 inBodyUserData) override
+  virtual void OnBodyActivated(const JPH::BodyID& bodyID, JPH::uint64 inBodyUserData) override
   {
     const xiiJoltUserData* pUserData = reinterpret_cast<const xiiJoltUserData*>(inBodyUserData);
     if (xiiJoltActorComponent* pActor = xiiJoltUserData::GetActorComponent(pUserData))
     {
-      m_pActiveActors->Insert(pActor, inBodyID.GetIndexAndSequenceNumber());
+      m_pActiveActors->Insert(pActor, bodyID.GetIndexAndSequenceNumber());
     }
   }
 
-  virtual void OnBodyDeactivated(const JPH::BodyID& inBodyID, JPH::uint64 inBodyUserData) override
+  virtual void OnBodyDeactivated(const JPH::BodyID& bodyID, JPH::uint64 inBodyUserData) override
   {
     const xiiJoltUserData* pUserData = reinterpret_cast<const xiiJoltUserData*>(inBodyUserData);
     if (xiiJoltActorComponent* pActor = xiiJoltUserData::GetActorComponent(pUserData))
@@ -67,9 +68,9 @@ public:
 class xiiJoltGroupFilter : public JPH::GroupFilter
 {
 public:
-  virtual bool CanCollide(const JPH::CollisionGroup& inGroup1, const JPH::CollisionGroup& inGroup2) const override
+  virtual bool CanCollide(const JPH::CollisionGroup& group1, const JPH::CollisionGroup& group2) const override
   {
-    const xiiUInt64 id = static_cast<xiiUInt64>(inGroup1.GetGroupID()) << 32 | inGroup2.GetGroupID();
+    const xiiUInt64 id = static_cast<xiiUInt64>(group1.GetGroupID()) << 32 | group2.GetGroupID();
 
     return !m_IgnoreCollisions.Contains(id);
   }
@@ -80,9 +81,9 @@ public:
 class xiiJoltGroupFilterIgnoreSame : public JPH::GroupFilter
 {
 public:
-  virtual bool CanCollide(const JPH::CollisionGroup& inGroup1, const JPH::CollisionGroup& inGroup2) const override
+  virtual bool CanCollide(const JPH::CollisionGroup& group1, const JPH::CollisionGroup& group2) const override
   {
-    return inGroup1.GetGroupID() != inGroup2.GetGroupID();
+    return group1.GetGroupID() != group2.GetGroupID();
   }
 };
 
@@ -145,9 +146,9 @@ public:
     return pRes;
   }
 
-  virtual void Free(void* inAddress, JPH::uint inSize) override
+  virtual void Free(void* pInAddress, JPH::uint inSize) override
   {
-    if (inAddress == nullptr)
+    if (pInAddress == nullptr)
       return;
 
     const xiiUInt32 uiAllocSize = xiiMemoryUtils::AlignSize(inSize, 16u);
@@ -288,14 +289,14 @@ xiiUInt32 xiiJoltWorldModule::CreateObjectFilterID()
   return m_uiNextObjectFilterID++;
 }
 
-void xiiJoltWorldModule::DeleteObjectFilterID(xiiUInt32& uiObjectFilterID)
+void xiiJoltWorldModule::DeleteObjectFilterID(xiiUInt32& ref_uiObjectFilterID)
 {
-  if (uiObjectFilterID == xiiInvalidIndex)
+  if (ref_uiObjectFilterID == xiiInvalidIndex)
     return;
 
-  m_FreeObjectFilterIDs.PushBack(uiObjectFilterID);
+  m_FreeObjectFilterIDs.PushBack(ref_uiObjectFilterID);
 
-  uiObjectFilterID = xiiInvalidIndex;
+  ref_uiObjectFilterID = xiiInvalidIndex;
 }
 
 xiiUInt32 xiiJoltWorldModule::AllocateUserData(xiiJoltUserData*& out_pUserData)
@@ -313,16 +314,16 @@ xiiUInt32 xiiJoltWorldModule::AllocateUserData(xiiJoltUserData*& out_pUserData)
   return m_AllocatedUserData.GetCount() - 1;
 }
 
-void xiiJoltWorldModule::DeallocateUserData(xiiUInt32& uiUserDataId)
+void xiiJoltWorldModule::DeallocateUserData(xiiUInt32& ref_uiUserDataId)
 {
-  if (uiUserDataId == xiiInvalidIndex)
+  if (ref_uiUserDataId == xiiInvalidIndex)
     return;
 
-  m_AllocatedUserData[uiUserDataId].Invalidate();
+  m_AllocatedUserData[ref_uiUserDataId].Invalidate();
 
-  m_FreeUserDataAfterSimulationStep.PushBack(uiUserDataId);
+  m_FreeUserDataAfterSimulationStep.PushBack(ref_uiUserDataId);
 
-  uiUserDataId = xiiInvalidIndex;
+  ref_uiUserDataId = xiiInvalidIndex;
 }
 
 const xiiJoltUserData& xiiJoltWorldModule::GetUserData(xiiUInt32 uiUserDataId) const
@@ -332,10 +333,10 @@ const xiiJoltUserData& xiiJoltWorldModule::GetUserData(xiiUInt32 uiUserDataId) c
   return m_AllocatedUserData[uiUserDataId];
 }
 
-void xiiJoltWorldModule::SetGravity(const xiiVec3& objectGravity, const xiiVec3& characterGravity)
+void xiiJoltWorldModule::SetGravity(const xiiVec3& vObjectGravity, const xiiVec3& vCharacterGravity)
 {
-  m_Settings.m_vObjectGravity    = objectGravity;
-  m_Settings.m_vCharacterGravity = characterGravity;
+  m_Settings.m_vObjectGravity    = vObjectGravity;
+  m_Settings.m_vCharacterGravity = vCharacterGravity;
 
   if (m_pSystem)
   {
@@ -343,14 +344,21 @@ void xiiJoltWorldModule::SetGravity(const xiiVec3& objectGravity, const xiiVec3&
   }
 }
 
-void xiiJoltWorldModule::AddStaticCollisionBox(xiiGameObject* pObject, xiiVec3 boxSize)
+void xiiJoltWorldModule::AddStaticCollisionBox(xiiGameObject* pObject, xiiVec3 vBoxSize)
 {
   xiiJoltStaticActorComponent* pActor = nullptr;
   xiiJoltStaticActorComponent::CreateComponent(pObject, pActor);
 
   xiiJoltShapeBoxComponent* pBox;
   xiiJoltShapeBoxComponent::CreateComponent(pObject, pBox);
-  pBox->SetHalfExtents(boxSize * 0.5f);
+  pBox->SetHalfExtents(vBoxSize * 0.5f);
+}
+
+void xiiJoltWorldModule::AddFixedJointComponent(xiiGameObject* pOwner, const xiiPhysicsWorldModuleInterface::FixedJointConfig& cfg)
+{
+  xiiJoltFixedConstraintComponent* pConstraint = nullptr;
+  m_pWorld->GetOrCreateComponentManager<xiiJoltFixedConstraintComponentManager>()->CreateComponent(pOwner, pConstraint);
+  pConstraint->SetActors(cfg.m_hActorA, cfg.m_LocalFrameA, cfg.m_hActorB, cfg.m_LocalFrameB);
 }
 
 void xiiJoltWorldModule::QueueBodyToAdd(JPH::Body* pBody, bool bAwake)
@@ -393,6 +401,38 @@ void xiiJoltWorldModule::ActivateCharacterController(xiiJoltCharacterControllerC
     if (!m_ActiveCharacters.RemoveAndSwap(pCharacter))
     {
       XII_ASSERT_DEBUG(false, "xiiJoltCharacterControllerComponent was deactivated more than once.");
+    }
+  }
+}
+
+void xiiJoltWorldModule::CheckBreakableConstraints()
+{
+  xiiWorld* pWorld = GetWorld();
+
+  for (auto it = m_BreakableConstraints.GetIterator(); it.IsValid();)
+  {
+    xiiJoltConstraintComponent* pConstraint;
+    if (pWorld->TryGetComponent(*it, pConstraint) && pConstraint->IsActive())
+    {
+      if (pConstraint->ExceededBreakingPoint())
+      {
+        // notify interested parties, that this constraint is now broken
+        xiiMsgPhysicsJointBroke msg;
+        msg.m_hJointObject = pConstraint->GetOwner()->GetHandle();
+        pConstraint->GetOwner()->SendEventMessage(msg, pConstraint);
+
+        // currently we don't track the broken state separately, we just remove the component
+        pConstraint->GetOwningManager()->DeleteComponent(pConstraint);
+        it = m_BreakableConstraints.Remove(it);
+      }
+      else
+      {
+        ++it;
+      }
+    }
+    else
+    {
+      it = m_BreakableConstraints.Remove(it);
     }
   }
 }
@@ -541,7 +581,7 @@ void xiiJoltWorldModule::FetchResults(const xiiWorldModule::UpdateContext& conte
   reinterpret_cast<xiiJoltContactListener*>(m_pContactListener)->m_ContactEvents.UpdatePhysicsSlideReactions();
   reinterpret_cast<xiiJoltContactListener*>(m_pContactListener)->m_ContactEvents.UpdatePhysicsRollReactions();
 
-  //  HandleBrokenConstraints();
+  CheckBreakableConstraints();
 
   FreeUserDataAfterSimulationStep();
 }
