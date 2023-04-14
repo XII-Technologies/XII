@@ -15,7 +15,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSurfaceInteraction, xiiNoBase, 1, xiiRTTIDefa
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Type", m_sInteractionType)->AddAttributes(new xiiDynamicStringEnumAttribute("SurfaceInteractionTypeEnum")),
-    XII_ACCESSOR_PROPERTY("Prefab", GetPrefab, SetPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab")),
+    XII_ACCESSOR_PROPERTY("Prefab", GetPrefab, SetPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
     // this does not work yet (asset transform fails)
     //XII_MAP_ACCESSOR_PROPERTY("Parameters", GetParameters, GetParameter, SetParameter, RemoveParameter)->AddAttributes(new xiiExposedParametersAttribute("CompatibleAsset_Prefab")),
     XII_ENUM_MEMBER_PROPERTY("Alignment", xiiSurfaceInteractionAlignment, m_Alignment),
@@ -31,13 +31,13 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceResourceDescriptor, 2, xiiRTTIDefault
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("BaseSurface", GetBaseSurfaceFile, SetBaseSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
+    XII_ACCESSOR_PROPERTY("BaseSurface", GetBaseSurfaceFile, SetBaseSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
     XII_MEMBER_PROPERTY("Restitution", m_fPhysicsRestitution)->AddAttributes(new xiiDefaultValueAttribute(0.25f)),
     XII_MEMBER_PROPERTY("StaticFriction", m_fPhysicsFrictionStatic)->AddAttributes(new xiiDefaultValueAttribute(0.6f)),
     XII_MEMBER_PROPERTY("DynamicFriction", m_fPhysicsFrictionDynamic)->AddAttributes(new xiiDefaultValueAttribute(0.4f)),
     XII_ACCESSOR_PROPERTY("OnCollideInteraction", GetCollisionInteraction, SetCollisionInteraction)->AddAttributes(new xiiDynamicStringEnumAttribute("SurfaceInteractionTypeEnum")),
-    XII_ACCESSOR_PROPERTY("SlideReaction", GetSlideReactionPrefabFile, SetSlideReactionPrefabFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab")),
-    XII_ACCESSOR_PROPERTY("RollReaction", GetRollReactionPrefabFile, SetRollReactionPrefabFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab")),
+    XII_ACCESSOR_PROPERTY("SlideReaction", GetSlideReactionPrefabFile, SetSlideReactionPrefabFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
+    XII_ACCESSOR_PROPERTY("RollReaction", GetRollReactionPrefabFile, SetRollReactionPrefabFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
     XII_ARRAY_MEMBER_PROPERTY("Interactions", m_Interactions),
   }
   XII_END_PROPERTIES;

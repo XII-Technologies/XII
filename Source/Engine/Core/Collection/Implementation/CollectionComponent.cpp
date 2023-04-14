@@ -9,7 +9,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiCollectionComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Collection", GetCollectionFile, SetCollectionFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_AssetCollection")),
+    XII_ACCESSOR_PROPERTY("Collection", GetCollectionFile, SetCollectionFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_AssetCollection", xiiDependencyFlags::Package)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES

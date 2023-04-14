@@ -13,7 +13,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiPlayerStartPointComponent, 2, xiiComponentMode::Stat
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("PlayerPrefab", GetPlayerPrefabFile, SetPlayerPrefabFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab")),
+    XII_ACCESSOR_PROPERTY("PlayerPrefab", GetPlayerPrefabFile, SetPlayerPrefabFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
     XII_MAP_ACCESSOR_PROPERTY("Parameters", GetParameters, GetParameter, SetParameter, RemoveParameter)->AddAttributes(new xiiExposedParametersAttribute("PlayerPrefab")),
   }
   XII_END_PROPERTIES;

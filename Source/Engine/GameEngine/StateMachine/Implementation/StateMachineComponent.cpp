@@ -253,7 +253,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiStateMachineComponent, 2, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Resource", GetResourceFile, SetResourceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_StateMachine")),
+    XII_ACCESSOR_PROPERTY("Resource", GetResourceFile, SetResourceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_StateMachine", xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("InitialState", GetInitialState, SetInitialState),
     XII_ACCESSOR_PROPERTY("BlackboardName", GetBlackboardName, SetBlackboardName),
   }
