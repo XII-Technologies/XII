@@ -65,37 +65,37 @@ enum class TypeLightVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleTypeLightFactory::Save(xiiStreamWriter& stream) const
+void xiiParticleTypeLightFactory::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)TypeLightVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_fSizeFactor;
-  stream << m_fIntensity;
-  stream << m_uiPercentage;
+  inout_stream << m_fSizeFactor;
+  inout_stream << m_fIntensity;
+  inout_stream << m_uiPercentage;
 
   // Version 2
-  stream << m_sTintColorParameter;
-  stream << m_sIntensityParameter;
-  stream << m_sSizeScaleParameter;
+  inout_stream << m_sTintColorParameter;
+  inout_stream << m_sIntensityParameter;
+  inout_stream << m_sSizeScaleParameter;
 }
 
-void xiiParticleTypeLightFactory::Load(xiiStreamReader& stream)
+void xiiParticleTypeLightFactory::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)TypeLightVersion::Version_Current, "Invalid version {0}", uiVersion);
 
-  stream >> m_fSizeFactor;
-  stream >> m_fIntensity;
-  stream >> m_uiPercentage;
+  inout_stream >> m_fSizeFactor;
+  inout_stream >> m_fIntensity;
+  inout_stream >> m_uiPercentage;
 
   if (uiVersion >= 2)
   {
-    stream >> m_sTintColorParameter;
-    stream >> m_sIntensityParameter;
-    stream >> m_sSizeScaleParameter;
+    inout_stream >> m_sTintColorParameter;
+    inout_stream >> m_sIntensityParameter;
+    inout_stream >> m_sSizeScaleParameter;
   }
 }
 
@@ -114,7 +114,7 @@ void xiiParticleTypeLight::CreateRequiredStreams()
 }
 
 
-void xiiParticleTypeLight::ExtractTypeRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& instanceTransform) const
+void xiiParticleTypeLight::ExtractTypeRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const
 {
   XII_PROFILE_SCOPE("PFX: Light");
 
@@ -180,10 +180,10 @@ void xiiParticleTypeLight::ExtractTypeRenderData(xiiMsgExtractRenderData& msg, c
     pRenderData->m_fRange                      = pSize[i] * sizeFactor;
     pRenderData->m_uiShadowDataOffset          = xiiInvalidIndex;
 
-    float fScreenSpaceSize = xiiLightComponent::CalculateScreenSpaceSize(xiiBoundingSphere(pRenderData->m_GlobalTransform.m_vPosition, pRenderData->m_fRange * 0.5f), *msg.m_pView->GetCullingCamera());
+    float fScreenSpaceSize = xiiLightComponent::CalculateScreenSpaceSize(xiiBoundingSphere(pRenderData->m_GlobalTransform.m_vPosition, pRenderData->m_fRange * 0.5f), *ref_msg.m_pView->GetCullingCamera());
     pRenderData->FillBatchIdAndSortingKey(fScreenSpaceSize);
 
-    msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Light, xiiRenderData::Caching::Never);
+    ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Light, xiiRenderData::Caching::Never);
   }
 }
 

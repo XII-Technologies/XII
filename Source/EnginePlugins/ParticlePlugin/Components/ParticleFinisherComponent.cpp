@@ -55,11 +55,11 @@ void xiiParticleFinisherComponent::OnDeactivated()
   xiiRenderComponent::OnDeactivated();
 }
 
-xiiResult xiiParticleFinisherComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiParticleFinisherComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   if (m_EffectController.IsAlive())
   {
-    m_EffectController.GetBoundingVolume(bounds);
+    m_EffectController.GetBoundingVolume(ref_bounds);
     return XII_SUCCESS;
   }
 

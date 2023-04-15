@@ -70,8 +70,9 @@ xiiTestAppRun xiiEditorTestProject::RunSubTest(xiiInt32 iIdentifier, xiiUInt32 u
     xiiAssetCurator::GetSingleton()->GetAssetTransformStats(uiNumAssets, sections);
 
     XII_TEST_INT(sections[xiiAssetInfo::TransformState::TransformError], 0);
-    XII_TEST_INT(sections[xiiAssetInfo::TransformState::MissingDependency], 0);
-    XII_TEST_INT(sections[xiiAssetInfo::TransformState::MissingReference], 0);
+    XII_TEST_INT(sections[xiiAssetInfo::TransformState::MissingTransformDependency], 0);
+    XII_TEST_INT(sections[xiiAssetInfo::TransformState::MissingThumbnailDependency], 0);
+    XII_TEST_INT(sections[xiiAssetInfo::TransformState::CircularDependency], 0);
   }
   return xiiTestAppRun::Quit;
 }

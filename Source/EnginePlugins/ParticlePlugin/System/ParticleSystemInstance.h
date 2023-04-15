@@ -21,7 +21,7 @@ public:
 
   bool IsVisible() const { return m_bVisible; }
 
-  void SetEmitterEnabled(bool enable) { m_bEmitterEnabled = enable; }
+  void SetEmitterEnabled(bool bEnable) { m_bEmitterEnabled = bEnable; }
   bool GetEmitterEnabled() const { return m_bEmitterEnabled; }
 
   bool HasActiveParticles() const;
@@ -39,7 +39,7 @@ public:
   const xiiTransform& GetTransform() const { return m_Transform; }
   const xiiVec3&      GetParticleStartVelocity() const { return m_vParticleStartVelocity; }
 
-  xiiParticleSystemState::Enum Update(const xiiTime& tDiff);
+  xiiParticleSystemState::Enum Update(const xiiTime& diff);
 
   xiiWorld* GetWorld() const { return m_pWorld; }
 
@@ -49,17 +49,17 @@ public:
 
 
   /// \brief Returns the desired stream, if it already exists, nullptr otherwise.
-  xiiProcessingStream* QueryStream(const char* szName, xiiProcessingStream::DataType Type) const;
+  xiiProcessingStream* QueryStream(const char* szName, xiiProcessingStream::DataType type) const;
 
   /// \brief Returns the desired stream, if it already exists, creates it otherwise.
-  void CreateStream(const char* szName, xiiProcessingStream::DataType Type, xiiProcessingStream** ppStream, xiiParticleStreamBinding& binding, bool bExpectInitializedValue);
+  void CreateStream(const char* szName, xiiProcessingStream::DataType type, xiiProcessingStream** pStream, xiiParticleStreamBinding& ref_binding, bool bExpectInitializedValue);
 
   void ProcessEventQueue(xiiParticleEventQueue queue);
 
   xiiParticleEffectInstance* GetOwnerEffect() const { return m_pOwnerEffect; }
   xiiParticleWorldModule*    GetOwnerWorldModule() const;
 
-  void ExtractSystemRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& instanceTransform) const;
+  void ExtractSystemRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const;
 
   typedef xiiEvent<const xiiStreamGroupElementRemovedEvent&>::Handler ParticleDeathHandler;
 

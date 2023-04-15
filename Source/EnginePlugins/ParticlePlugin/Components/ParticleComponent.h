@@ -40,15 +40,15 @@ class XII_PARTICLEPLUGIN_DLL xiiParticleComponent final : public xiiRenderCompon
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg) override;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -73,7 +73,7 @@ public:
   /// \brief Returns true, if an effect is currently in a state where it might emit new particles
   bool IsEffectActive() const; // [ scriptable ]
 
-  void OnMsgSetPlaying(xiiMsgSetPlaying& msg); // [ msg handler ]
+  void OnMsgSetPlaying(xiiMsgSetPlaying& ref_msg); // [ msg handler ]
 
   void                    SetParticleEffect(const xiiParticleEffectResourceHandle& hEffect);
   XII_ALWAYS_INLINE const xiiParticleEffectResourceHandle& GetParticleEffect() const { return m_hEffectResource; }

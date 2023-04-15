@@ -19,19 +19,13 @@ xiiActionDescriptorHandle xiiGameObjectSelectionActions::s_hCreateEmptyGameObjec
 void xiiGameObjectSelectionActions::RegisterActions()
 {
   s_hSelectionCategory        = XII_REGISTER_CATEGORY("SelectionCategory");
-  s_hShowInScenegraph         = XII_REGISTER_ACTION_1("Selection.ShowInScenegraph", xiiActionScope::Document, "Scene - Selection", "Ctrl+T",
-                                              xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::ShowInScenegraph);
-  s_hFocusOnSelection         = XII_REGISTER_ACTION_1("Selection.FocusSingleView", xiiActionScope::Document, "Scene - Selection", "F",
-                                              xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::FocusOnSelection);
-  s_hFocusOnSelectionAllViews = XII_REGISTER_ACTION_1("Selection.FocusAllViews", xiiActionScope::Document, "Scene - Selection", "Shift+F",
-                                                      xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::FocusOnSelectionAllViews);
-  s_hSnapCameraToObject       = XII_REGISTER_ACTION_1("Scene.Camera.SnapCameraToObject", xiiActionScope::Document, "Camera", "", xiiGameObjectSelectionAction,
-                                                xiiGameObjectSelectionAction::ActionType::SnapCameraToObject);
-  s_hMoveCameraHere           = XII_REGISTER_ACTION_1("Scene.Camera.MoveCameraHere", xiiActionScope::Document, "Camera", "C", xiiGameObjectSelectionAction,
-                                            xiiGameObjectSelectionAction::ActionType::MoveCameraHere);
+  s_hShowInScenegraph         = XII_REGISTER_ACTION_1("Selection.ShowInScenegraph", xiiActionScope::Document, "Scene - Selection", "Ctrl+T", xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::ShowInScenegraph);
+  s_hFocusOnSelection         = XII_REGISTER_ACTION_1("Selection.FocusSingleView", xiiActionScope::Document, "Scene - Selection", "F", xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::FocusOnSelection);
+  s_hFocusOnSelectionAllViews = XII_REGISTER_ACTION_1("Selection.FocusAllViews", xiiActionScope::Document, "Scene - Selection", "Shift+F", xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::FocusOnSelectionAllViews);
+  s_hSnapCameraToObject       = XII_REGISTER_ACTION_1("Scene.Camera.SnapCameraToObject", xiiActionScope::Document, "Camera", "", xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::SnapCameraToObject);
+  s_hMoveCameraHere           = XII_REGISTER_ACTION_1("Scene.Camera.MoveCameraHere", xiiActionScope::Document, "Camera", "C", xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::MoveCameraHere);
 
-  s_hCreateEmptyGameObjectHere = XII_REGISTER_ACTION_1("Scene.GameObject.CreateEmptyHere", xiiActionScope::Document, "Scene", "",
-                                                       xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::CreateGameObjectHere);
+  s_hCreateEmptyGameObjectHere = XII_REGISTER_ACTION_1("Scene.GameObject.CreateEmptyHere", xiiActionScope::Document, "Scene", "", xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::CreateGameObjectHere);
 }
 
 void xiiGameObjectSelectionActions::UnregisterActions()

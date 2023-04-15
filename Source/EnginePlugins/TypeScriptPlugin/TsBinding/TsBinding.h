@@ -51,10 +51,10 @@ public:
   xiiTypeScriptBinding();
   ~xiiTypeScriptBinding();
 
-  xiiResult Initialize(xiiWorld& world);
-  xiiResult LoadComponent(const xiiUuid& typeGuid, TsComponentTypeInfo& out_TypeInfo);
+  xiiResult Initialize(xiiWorld& ref_world);
+  xiiResult LoadComponent(const xiiUuid& typeGuid, TsComponentTypeInfo& out_typeInfo);
 
-  xiiResult FindScriptComponentInfo(const char* szComponentType, TsComponentTypeInfo& out_TypeInfo);
+  xiiResult FindScriptComponentInfo(const char* szComponentType, TsComponentTypeInfo& out_typeInfo);
 
   void RegisterMessageHandlersForComponentType(const char* szComponent, const xiiUuid& componentType);
 
@@ -147,7 +147,7 @@ public:
   static void              DukPutMessage(duk_context* pDuk, const xiiMessage& msg);
 
   bool HasMessageHandler(const TsComponentTypeInfo& typeInfo, const xiiRTTI* pMsgRtti) const;
-  bool DeliverMessage(const TsComponentTypeInfo& typeInfo, xiiTypeScriptComponent* pComponent, xiiMessage& msg, bool bSynchronizeAfterwards);
+  bool DeliverMessage(const TsComponentTypeInfo& typeInfo, xiiTypeScriptComponent* pComponent, xiiMessage& ref_msg, bool bSynchronizeAfterwards);
   bool DeliverTsMessage(const TsComponentTypeInfo& typeInfo, xiiTypeScriptComponent* pComponent, const xiiMsgTypeScriptMsgProxy& msg);
 
 private:
@@ -227,32 +227,32 @@ public:
   static void    PushVec2(duk_context* pDuk, const xiiVec2& value);
   static void    SetVec2(duk_context* pDuk, xiiInt32 iObjIdx, const xiiVec2& value);
   static void    SetVec2Property(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, const xiiVec2& value);
-  static xiiVec2 GetVec2(duk_context* pDuk, xiiInt32 iObjIdx, const xiiVec2& fallback = xiiVec2::ZeroVector());
-  static xiiVec2 GetVec2Property(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, const xiiVec2& fallback = xiiVec2::ZeroVector());
+  static xiiVec2 GetVec2(duk_context* pDuk, xiiInt32 iObjIdx, const xiiVec2& vFallback = xiiVec2::ZeroVector());
+  static xiiVec2 GetVec2Property(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, const xiiVec2& vFallback = xiiVec2::ZeroVector());
 
   static void    PushVec3(duk_context* pDuk, const xiiVec3& value);
   static void    SetVec3(duk_context* pDuk, xiiInt32 iObjIdx, const xiiVec3& value);
   static void    SetVec3Property(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, const xiiVec3& value);
-  static xiiVec3 GetVec3(duk_context* pDuk, xiiInt32 iObjIdx, const xiiVec3& fallback = xiiVec3::ZeroVector());
-  static xiiVec3 GetVec3Property(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, const xiiVec3& fallback = xiiVec3::ZeroVector());
+  static xiiVec3 GetVec3(duk_context* pDuk, xiiInt32 iObjIdx, const xiiVec3& vFallback = xiiVec3::ZeroVector());
+  static xiiVec3 GetVec3Property(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, const xiiVec3& vFallback = xiiVec3::ZeroVector());
 
   static void    PushMat3(duk_context* pDuk, const xiiMat3& value);
   static void    SetMat3(duk_context* pDuk, xiiInt32 iObjIdx, const xiiMat3& value);
   static void    SetMat3Property(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, const xiiMat3& value);
-  static xiiMat3 GetMat3(duk_context* pDuk, xiiInt32 iObjIdx, const xiiMat3& fallback = xiiMat3::IdentityMatrix());
-  static xiiMat3 GetMat3Property(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, const xiiMat3& fallback = xiiMat3::IdentityMatrix());
+  static xiiMat3 GetMat3(duk_context* pDuk, xiiInt32 iObjIdx, const xiiMat3& mFallback = xiiMat3::IdentityMatrix());
+  static xiiMat3 GetMat3Property(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, const xiiMat3& mFallback = xiiMat3::IdentityMatrix());
 
   static void    PushMat4(duk_context* pDuk, const xiiMat4& value);
   static void    SetMat4(duk_context* pDuk, xiiInt32 iObjIdx, const xiiMat4& value);
   static void    SetMat4Property(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, const xiiMat4& value);
-  static xiiMat4 GetMat4(duk_context* pDuk, xiiInt32 iObjIdx, const xiiMat4& fallback = xiiMat4::IdentityMatrix());
-  static xiiMat4 GetMat4Property(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, const xiiMat4& fallback = xiiMat4::IdentityMatrix());
+  static xiiMat4 GetMat4(duk_context* pDuk, xiiInt32 iObjIdx, const xiiMat4& mFallback = xiiMat4::IdentityMatrix());
+  static xiiMat4 GetMat4Property(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, const xiiMat4& mFallback = xiiMat4::IdentityMatrix());
 
   static void    PushQuat(duk_context* pDuk, const xiiQuat& value);
   static void    SetQuat(duk_context* pDuk, xiiInt32 iObjIdx, const xiiQuat& value);
   static void    SetQuatProperty(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, const xiiQuat& value);
-  static xiiQuat GetQuat(duk_context* pDuk, xiiInt32 iObjIdx, xiiQuat fallback = xiiQuat::IdentityQuaternion());
-  static xiiQuat GetQuatProperty(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, xiiQuat fallback = xiiQuat::IdentityQuaternion());
+  static xiiQuat GetQuat(duk_context* pDuk, xiiInt32 iObjIdx, xiiQuat qFallback = xiiQuat::IdentityQuaternion());
+  static xiiQuat GetQuatProperty(duk_context* pDuk, const char* szPropertyName, xiiInt32 iObjIdx, xiiQuat qFallback = xiiQuat::IdentityQuaternion());
 
   static void     PushColor(duk_context* pDuk, const xiiColor& value);
   static void     SetColor(duk_context* pDuk, xiiInt32 iObjIdx, const xiiColor& value);
@@ -309,14 +309,14 @@ private:
   /// \name C++ Object Registration
   ///@{
 public:
-  bool      RegisterGameObject(xiiGameObjectHandle handle, xiiUInt32& out_uiStashIdx);
-  xiiResult RegisterComponent(const char* szTypeName, xiiComponentHandle handle, xiiUInt32& out_uiStashIdx, bool bIsNativeComponent);
+  bool      RegisterGameObject(xiiGameObjectHandle hHandle, xiiUInt32& out_uiStashIdx);
+  xiiResult RegisterComponent(const char* szTypeName, xiiComponentHandle hHandle, xiiUInt32& out_uiStashIdx, bool bIsNativeComponent);
 
   /// \brief Removes dead GameObject and Component references from the DukTape stash.
   void CleanupStash(xiiUInt32 uiNumIterations);
 
   xiiUInt32 AcquireStashObjIndex();
-  void      ReleaseStashObjIndex(xiiUInt32 idx);
+  void      ReleaseStashObjIndex(xiiUInt32 uiIdx);
 
 private:
   static void StoreReferenceInStash(duk_context* pDuk, xiiUInt32 uiStashIdx);

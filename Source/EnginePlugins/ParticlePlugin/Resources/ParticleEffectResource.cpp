@@ -73,14 +73,14 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiParticleEffectResource, xiiParticleEffectRe
   return res;
 }
 
-void xiiParticleEffectResourceDescriptor::Save(xiiStreamWriter& stream) const
+void xiiParticleEffectResourceDescriptor::Save(xiiStreamWriter& inout_stream) const
 {
-  m_Effect.Save(stream);
+  m_Effect.Save(inout_stream);
 }
 
-void xiiParticleEffectResourceDescriptor::Load(xiiStreamReader& stream)
+void xiiParticleEffectResourceDescriptor::Load(xiiStreamReader& inout_stream)
 {
-  m_Effect.Load(stream);
+  m_Effect.Load(inout_stream);
 }
 
 

@@ -15,8 +15,7 @@ xiiActionDescriptorHandle xiiTypeScriptActions::s_hEditScript;
 void xiiTypeScriptActions::RegisterActions()
 {
   s_hCategory   = XII_REGISTER_CATEGORY("TypeScriptCategory");
-  s_hEditScript = XII_REGISTER_ACTION_1(
-    "TypeScript.Edit", xiiActionScope::Document, "TypeScripts", "Edit Script", xiiTypeScriptAction, xiiTypeScriptAction::ActionType::EditScript);
+  s_hEditScript = XII_REGISTER_ACTION_1("TypeScript.Edit", xiiActionScope::Document, "TypeScripts", "Edit Script", xiiTypeScriptAction, xiiTypeScriptAction::ActionType::EditScript);
 }
 
 void xiiTypeScriptActions::UnregisterActions()

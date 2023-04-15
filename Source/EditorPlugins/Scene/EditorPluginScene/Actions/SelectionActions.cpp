@@ -38,45 +38,27 @@ xiiActionDescriptorHandle xiiSelectionActions::s_hCopyReference;
 
 void xiiSelectionActions::RegisterActions()
 {
-  s_hGroupSelectedItems          = XII_REGISTER_ACTION_1("Selection.GroupItems", xiiActionScope::Document, "Scene - Selection", "Ctrl+G", xiiSelectionAction,
-                                                xiiSelectionAction::ActionType::GroupSelectedItems);
-  s_hCreateEmptyChildObject      = XII_REGISTER_ACTION_1("Selection.CreateEmptyChildObject", xiiActionScope::Document, "Scene - Selection", "",
-                                                    xiiSelectionAction, xiiSelectionAction::ActionType::CreateEmptyChildObject);
-  s_hCreateEmptyObjectAtPosition = XII_REGISTER_ACTION_1("Selection.CreateEmptyObjectAtPosition", xiiActionScope::Document, "Scene - Selection",
-                                                         "Ctrl+Shift+X", xiiSelectionAction, xiiSelectionAction::ActionType::CreateEmptyObjectAtPosition);
-  s_hHideSelectedObjects         = XII_REGISTER_ACTION_1(
-    "Selection.HideItems", xiiActionScope::Document, "Scene - Selection", "H", xiiSelectionAction, xiiSelectionAction::ActionType::HideSelectedObjects);
-  s_hHideUnselectedObjects = XII_REGISTER_ACTION_1("Selection.HideUnselectedItems", xiiActionScope::Document, "Scene - Selection", "Shift+H",
-                                                   xiiSelectionAction, xiiSelectionAction::ActionType::HideUnselectedObjects);
-  s_hShowHiddenObjects     = XII_REGISTER_ACTION_1("Selection.ShowHidden", xiiActionScope::Document, "Scene - Selection", "Ctrl+H", xiiSelectionAction,
-                                               xiiSelectionAction::ActionType::ShowHiddenObjects);
-  s_hAttachToObject        = XII_REGISTER_ACTION_1(
-    "Selection.Attach", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::AttachToObject);
-  s_hDetachFromParent = XII_REGISTER_ACTION_1(
-    "Selection.Detach", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::DetachFromParent);
+  s_hGroupSelectedItems          = XII_REGISTER_ACTION_1("Selection.GroupItems", xiiActionScope::Document, "Scene - Selection", "Ctrl+G", xiiSelectionAction, xiiSelectionAction::ActionType::GroupSelectedItems);
+  s_hCreateEmptyChildObject      = XII_REGISTER_ACTION_1("Selection.CreateEmptyChildObject", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::CreateEmptyChildObject);
+  s_hCreateEmptyObjectAtPosition = XII_REGISTER_ACTION_1("Selection.CreateEmptyObjectAtPosition", xiiActionScope::Document, "Scene - Selection", "Ctrl+Shift+X", xiiSelectionAction, xiiSelectionAction::ActionType::CreateEmptyObjectAtPosition);
+  s_hHideSelectedObjects         = XII_REGISTER_ACTION_1("Selection.HideItems", xiiActionScope::Document, "Scene - Selection", "H", xiiSelectionAction, xiiSelectionAction::ActionType::HideSelectedObjects);
+  s_hHideUnselectedObjects       = XII_REGISTER_ACTION_1("Selection.HideUnselectedItems", xiiActionScope::Document, "Scene - Selection", "Shift+H", xiiSelectionAction, xiiSelectionAction::ActionType::HideUnselectedObjects);
+  s_hShowHiddenObjects           = XII_REGISTER_ACTION_1("Selection.ShowHidden", xiiActionScope::Document, "Scene - Selection", "Ctrl+H", xiiSelectionAction, xiiSelectionAction::ActionType::ShowHiddenObjects);
+  s_hAttachToObject              = XII_REGISTER_ACTION_1("Selection.Attach", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::AttachToObject);
+  s_hDetachFromParent            = XII_REGISTER_ACTION_1("Selection.Detach", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::DetachFromParent);
 
-  s_hPrefabMenu = XII_REGISTER_MENU_WITH_ICON("Prefabs.Menu", ":/AssetIcons/Prefab.png");
-  s_hCreatePrefab =
-    XII_REGISTER_ACTION_1("Prefabs.Create", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::CreatePrefab);
-  s_hRevertPrefab =
-    XII_REGISTER_ACTION_1("Prefabs.Revert", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::RevertPrefab);
-  s_hUnlinkFromPrefab = XII_REGISTER_ACTION_1(
-    "Prefabs.Unlink", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::UnlinkFromPrefab);
-  s_hOpenPrefabDocument = XII_REGISTER_ACTION_1(
-    "Prefabs.OpenDocument", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::OpenPrefabDocument);
-  s_hConvertToEnginePrefab = XII_REGISTER_ACTION_1(
-    "Prefabs.ConvertToEngine", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::ConvertToEnginePrefab);
-  s_hConvertToEditorPrefab = XII_REGISTER_ACTION_1(
-    "Prefabs.ConvertToEditor", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::ConvertToEditorPrefab);
+  s_hPrefabMenu            = XII_REGISTER_MENU_WITH_ICON("Prefabs.Menu", ":/AssetIcons/Prefab.png");
+  s_hCreatePrefab          = XII_REGISTER_ACTION_1("Prefabs.Create", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::CreatePrefab);
+  s_hRevertPrefab          = XII_REGISTER_ACTION_1("Prefabs.Revert", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::RevertPrefab);
+  s_hUnlinkFromPrefab      = XII_REGISTER_ACTION_1("Prefabs.Unlink", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::UnlinkFromPrefab);
+  s_hOpenPrefabDocument    = XII_REGISTER_ACTION_1("Prefabs.OpenDocument", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::OpenPrefabDocument);
+  s_hConvertToEnginePrefab = XII_REGISTER_ACTION_1("Prefabs.ConvertToEngine", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::ConvertToEnginePrefab);
+  s_hConvertToEditorPrefab = XII_REGISTER_ACTION_1("Prefabs.ConvertToEditor", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::ConvertToEditorPrefab);
 
-  s_hDuplicateSpecial   = XII_REGISTER_ACTION_1("Selection.DuplicateSpecial", xiiActionScope::Document, "Scene - Selection", "Ctrl+D", xiiSelectionAction,
-                                              xiiSelectionAction::ActionType::DuplicateSpecial);
-  s_hDeltaTransform     = XII_REGISTER_ACTION_1("Selection.DeltaTransform", xiiActionScope::Document, "Scene - Selection", "Ctrl+M", xiiSelectionAction,
-                                            xiiSelectionAction::ActionType::DeltaTransform);
-  s_hSnapObjectToCamera = XII_REGISTER_ACTION_1(
-    "Scene.Camera.SnapObjectToCamera", xiiActionScope::Document, "Camera", "", xiiSelectionAction, xiiSelectionAction::ActionType::SnapObjectToCamera);
-  s_hCopyReference = XII_REGISTER_ACTION_1(
-    "Selection.CopyReference", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::CopyReference);
+  s_hDuplicateSpecial   = XII_REGISTER_ACTION_1("Selection.DuplicateSpecial", xiiActionScope::Document, "Scene - Selection", "Ctrl+D", xiiSelectionAction, xiiSelectionAction::ActionType::DuplicateSpecial);
+  s_hDeltaTransform     = XII_REGISTER_ACTION_1("Selection.DeltaTransform", xiiActionScope::Document, "Scene - Selection", "Ctrl+M", xiiSelectionAction, xiiSelectionAction::ActionType::DeltaTransform);
+  s_hSnapObjectToCamera = XII_REGISTER_ACTION_1("Scene.Camera.SnapObjectToCamera", xiiActionScope::Document, "Camera", "", xiiSelectionAction, xiiSelectionAction::ActionType::SnapObjectToCamera);
+  s_hCopyReference      = XII_REGISTER_ACTION_1("Selection.CopyReference", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::CopyReference);
 }
 
 void xiiSelectionActions::UnregisterActions()

@@ -365,7 +365,7 @@ void xiiParticleSystemInstance::Destruct()
   m_StreamInfo.Clear();
 }
 
-xiiParticleSystemState::Enum xiiParticleSystemInstance::Update(const xiiTime& tDiff)
+xiiParticleSystemState::Enum xiiParticleSystemInstance::Update(const xiiTime& diff)
 {
   XII_PROFILE_SCOPE("PFX: System Update");
 
@@ -381,7 +381,7 @@ xiiParticleSystemState::Enum xiiParticleSystemInstance::Update(const xiiTime& tD
       if (pEmitter->IsFinished() == xiiParticleEmitterState::Active)
       {
         bAllEmittersInactive    = false;
-        const xiiUInt32 uiSpawn = pEmitter->ComputeSpawnCount(tDiff);
+        const xiiUInt32 uiSpawn = pEmitter->ComputeSpawnCount(diff);
 
         if (uiSpawn > 0)
         {
@@ -410,7 +410,7 @@ xiiParticleSystemState::Enum xiiParticleSystemInstance::Update(const xiiTime& tD
       {
         bHasReactingEmitters = true;
 
-        const xiiUInt32 uiSpawn = pEmitter->ComputeSpawnCount(tDiff);
+        const xiiUInt32 uiSpawn = pEmitter->ComputeSpawnCount(diff);
 
         if (uiSpawn > 0)
         {
@@ -426,7 +426,7 @@ xiiParticleSystemState::Enum xiiParticleSystemInstance::Update(const xiiTime& tD
     XII_PROFILE_SCOPE("PFX: System Step Behaviors");
     for (auto pBehavior : m_Behaviors)
     {
-      pBehavior->StepParticleSystem(tDiff, uiSpawnedParticles);
+      pBehavior->StepParticleSystem(diff, uiSpawnedParticles);
     }
   }
 
@@ -434,7 +434,7 @@ xiiParticleSystemState::Enum xiiParticleSystemInstance::Update(const xiiTime& tD
     XII_PROFILE_SCOPE("PFX: System Step Finalizers");
     for (auto pFinalizer : m_Finalizers)
     {
-      pFinalizer->StepParticleSystem(tDiff, uiSpawnedParticles);
+      pFinalizer->StepParticleSystem(diff, uiSpawnedParticles);
     }
   }
 
@@ -442,7 +442,7 @@ xiiParticleSystemState::Enum xiiParticleSystemInstance::Update(const xiiTime& tD
     XII_PROFILE_SCOPE("PFX: System Step Types");
     for (auto pType : m_Types)
     {
-      pType->StepParticleSystem(tDiff, uiSpawnedParticles);
+      pType->StepParticleSystem(diff, uiSpawnedParticles);
     }
   }
 
@@ -461,27 +461,27 @@ xiiParticleSystemState::Enum xiiParticleSystemInstance::Update(const xiiTime& tD
   return bHasReactingEmitters ? xiiParticleSystemState::OnlyReacting : xiiParticleSystemState::Inactive;
 }
 
-xiiProcessingStream* xiiParticleSystemInstance::QueryStream(const char* szName, xiiProcessingStream::DataType Type) const
+xiiProcessingStream* xiiParticleSystemInstance::QueryStream(const char* szName, xiiProcessingStream::DataType type) const
 {
   xiiStringBuilder fullName;
-  xiiParticleStreamFactory::GetFullStreamName(szName, Type, fullName);
+  xiiParticleStreamFactory::GetFullStreamName(szName, type, fullName);
 
   return m_StreamGroup.GetStreamByName(fullName);
 }
 
-void xiiParticleSystemInstance::CreateStream(const char* szName, xiiProcessingStream::DataType Type, xiiProcessingStream** ppStream, xiiParticleStreamBinding& binding, bool bWillInitializeElements)
+void xiiParticleSystemInstance::CreateStream(const char* szName, xiiProcessingStream::DataType type, xiiProcessingStream** pStream, xiiParticleStreamBinding& inout_binding, bool bWillInitializeElements)
 {
-  XII_ASSERT_DEV(ppStream != nullptr, "The pointer to the stream pointer must not be null");
+  XII_ASSERT_DEV(pStream != nullptr, "The pointer to the stream pointer must not be null");
 
   xiiStringBuilder fullName;
-  xiiParticleStreamFactory::GetFullStreamName(szName, Type, fullName);
+  xiiParticleStreamFactory::GetFullStreamName(szName, type, fullName);
 
   StreamInfo* pInfo = nullptr;
 
-  xiiProcessingStream* pStream = m_StreamGroup.GetStreamByName(fullName);
-  if (pStream == nullptr)
+  xiiProcessingStream* pSubStream = m_StreamGroup.GetStreamByName(fullName);
+  if (pSubStream == nullptr)
   {
-    pStream = m_StreamGroup.AddStream(fullName, Type);
+    pSubStream = m_StreamGroup.AddStream(fullName, type);
 
     pInfo          = &m_StreamInfo.ExpandAndGetRef();
     pInfo->m_sName = fullName;
@@ -504,12 +504,12 @@ void xiiParticleSystemInstance::CreateStream(const char* szName, xiiProcessingSt
   if (bWillInitializeElements)
     pInfo->m_bGetsInitialized = true;
 
-  XII_ASSERT_DEV(pStream != nullptr, "Stream creation failed ('{0}' -> '{1}')", szName, fullName);
-  *ppStream = pStream;
+  XII_ASSERT_DEV(pSubStream != nullptr, "Stream creation failed ('{0}' -> '{1}')", szName, fullName);
+  *pStream = pSubStream;
 
   {
-    auto& bind      = binding.m_Bindings.ExpandAndGetRef();
-    bind.m_ppStream = ppStream;
+    auto& bind      = inout_binding.m_Bindings.ExpandAndGetRef();
+    bind.m_ppStream = pStream;
     bind.m_sName    = fullName;
   }
 }
@@ -592,11 +592,11 @@ xiiParticleWorldModule* xiiParticleSystemInstance::GetOwnerWorldModule() const
   return m_pOwnerEffect->GetOwnerWorldModule();
 }
 
-void xiiParticleSystemInstance::ExtractSystemRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& instanceTransform) const
+void xiiParticleSystemInstance::ExtractSystemRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const
 {
   for (auto pType : m_Types)
   {
-    pType->ExtractTypeRenderData(msg, instanceTransform);
+    pType->ExtractTypeRenderData(ref_msg, instanceTransform);
   }
 }
 

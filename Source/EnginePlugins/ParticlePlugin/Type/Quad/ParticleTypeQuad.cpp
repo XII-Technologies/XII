@@ -85,54 +85,54 @@ enum class TypeQuadVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleTypeQuadFactory::Save(xiiStreamWriter& stream) const
+void xiiParticleTypeQuadFactory::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)TypeQuadVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_Orientation;
-  stream << m_RenderMode;
-  stream << m_sTexture;
-  stream << m_uiNumSpritesX;
-  stream << m_uiNumSpritesY;
-  stream << m_sTintColorParameter;
-  stream << m_MaxDeviation;
-  stream << m_sDistortionTexture;
-  stream << m_fDistortionStrength;
-  stream << m_TextureAtlasType;
+  inout_stream << m_Orientation;
+  inout_stream << m_RenderMode;
+  inout_stream << m_sTexture;
+  inout_stream << m_uiNumSpritesX;
+  inout_stream << m_uiNumSpritesY;
+  inout_stream << m_sTintColorParameter;
+  inout_stream << m_MaxDeviation;
+  inout_stream << m_sDistortionTexture;
+  inout_stream << m_fDistortionStrength;
+  inout_stream << m_TextureAtlasType;
 
   // Version 5
-  stream << m_fStretch;
+  inout_stream << m_fStretch;
 }
 
-void xiiParticleTypeQuadFactory::Load(xiiStreamReader& stream)
+void xiiParticleTypeQuadFactory::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)TypeQuadVersion::Version_Current, "Invalid version {0}", uiVersion);
 
-  stream >> m_Orientation;
-  stream >> m_RenderMode;
-  stream >> m_sTexture;
-  stream >> m_uiNumSpritesX;
-  stream >> m_uiNumSpritesY;
-  stream >> m_sTintColorParameter;
+  inout_stream >> m_Orientation;
+  inout_stream >> m_RenderMode;
+  inout_stream >> m_sTexture;
+  inout_stream >> m_uiNumSpritesX;
+  inout_stream >> m_uiNumSpritesY;
+  inout_stream >> m_sTintColorParameter;
 
   if (uiVersion >= 2)
   {
-    stream >> m_MaxDeviation;
+    inout_stream >> m_MaxDeviation;
   }
 
   if (uiVersion >= 3)
   {
-    stream >> m_sDistortionTexture;
-    stream >> m_fDistortionStrength;
+    inout_stream >> m_sDistortionTexture;
+    inout_stream >> m_fDistortionStrength;
   }
 
   if (uiVersion >= 4)
   {
-    stream >> m_TextureAtlasType;
+    inout_stream >> m_TextureAtlasType;
 
     if (m_TextureAtlasType == xiiParticleTextureAtlasType::None)
     {
@@ -143,15 +143,15 @@ void xiiParticleTypeQuadFactory::Load(xiiStreamReader& stream)
 
   if (uiVersion >= 5)
   {
-    stream >> m_fStretch;
+    inout_stream >> m_fStretch;
   }
 }
 
-void xiiParticleTypeQuadFactory::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_FinalizerDeps) const
+void xiiParticleTypeQuadFactory::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_finalizerDeps) const
 {
   if (m_Orientation == xiiQuadParticleOrientation::FixedAxis_ParticleDir)
   {
-    inout_FinalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_LastPosition>());
+    inout_finalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_LastPosition>());
   }
 }
 
@@ -194,7 +194,7 @@ struct sodComparer
   XII_ALWAYS_INLINE bool Equal(const xiiParticleTypeQuad::sod& a, const xiiParticleTypeQuad::sod& b) const { return a.dist == b.dist; }
 };
 
-void xiiParticleTypeQuad::ExtractTypeRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& instanceTransform) const
+void xiiParticleTypeQuad::ExtractTypeRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const
 {
   XII_PROFILE_SCOPE("PFX: Quad");
 
@@ -217,7 +217,7 @@ void xiiParticleTypeQuad::ExtractTypeRenderData(xiiMsgExtractRenderData& msg, co
       xiiHybridArray<sod, 64> sorted; // (xiiFrameAllocator::GetCurrentAllocator());
       sorted.SetCountUninitialized(numParticles);
 
-      const xiiVec3  vCameraPos = msg.m_pView->GetCullingCamera()->GetCenterPosition();
+      const xiiVec3  vCameraPos = ref_msg.m_pView->GetCullingCamera()->GetCenterPosition();
       const xiiVec4* pPosition  = m_pStreamPosition->GetData<xiiVec4>();
 
       for (xiiUInt32 p = 0; p < numParticles; ++p)
@@ -236,17 +236,17 @@ void xiiParticleTypeQuad::ExtractTypeRenderData(xiiMsgExtractRenderData& msg, co
     }
   }
 
-  AddParticleRenderData(msg, instanceTransform);
+  AddParticleRenderData(ref_msg, instanceTransform);
 }
 
-XII_ALWAYS_INLINE xiiUInt32 noRedirect(xiiUInt32 idx, const xiiHybridArray<xiiParticleTypeQuad::sod, 64>* pSorted)
+XII_ALWAYS_INLINE xiiUInt32 noRedirect(xiiUInt32 uiIdx, const xiiHybridArray<xiiParticleTypeQuad::sod, 64>* pSorted)
 {
-  return idx;
+  return uiIdx;
 }
 
-XII_ALWAYS_INLINE xiiUInt32 sortedRedirect(xiiUInt32 idx, const xiiHybridArray<xiiParticleTypeQuad::sod, 64>* pSorted)
+XII_ALWAYS_INLINE xiiUInt32 sortedRedirect(xiiUInt32 uiIdx, const xiiHybridArray<xiiParticleTypeQuad::sod, 64>* pSorted)
 {
-  return (*pSorted)[idx].index;
+  return (*pSorted)[uiIdx].index;
 }
 
 void xiiParticleTypeQuad::CreateExtractedData(const xiiHybridArray<sod, 64>* pSorted) const
@@ -280,70 +280,70 @@ void xiiParticleTypeQuad::CreateExtractedData(const xiiHybridArray<sod, 64>* pSo
 
   AllocateParticleData(numParticles, bNeedsBillboardData, bNeedsTangentData);
 
-  auto SetBaseData = [&](xiiUInt32 dstIdx, xiiUInt32 srcIdx) {
-    m_BaseParticleData[dstIdx].Size      = pSize[srcIdx];
-    m_BaseParticleData[dstIdx].Color     = pColor[srcIdx].ToLinearFloat() * tintColor;
-    m_BaseParticleData[dstIdx].Life      = pLifeTime[srcIdx].x * pLifeTime[srcIdx].y;
-    m_BaseParticleData[dstIdx].Variation = (pVariation != nullptr) ? pVariation[srcIdx] : 0;
+  auto SetBaseData = [&](xiiUInt32 uiDstIdx, xiiUInt32 uiSrcIdx) {
+    m_BaseParticleData[uiDstIdx].Size      = pSize[uiSrcIdx];
+    m_BaseParticleData[uiDstIdx].Color     = pColor[uiSrcIdx].ToLinearFloat() * tintColor;
+    m_BaseParticleData[uiDstIdx].Life      = pLifeTime[uiSrcIdx].x * pLifeTime[uiSrcIdx].y;
+    m_BaseParticleData[uiDstIdx].Variation = (pVariation != nullptr) ? pVariation[uiSrcIdx] : 0;
   };
 
-  auto SetBillboardData = [&](xiiUInt32 dstIdx, xiiUInt32 srcIdx) {
-    m_BillboardParticleData[dstIdx].Position       = pPosition[srcIdx].GetAsVec3();
-    m_BillboardParticleData[dstIdx].RotationOffset = pRotationOffset[srcIdx];
-    m_BillboardParticleData[dstIdx].RotationSpeed  = pRotationSpeed[srcIdx];
+  auto SetBillboardData = [&](xiiUInt32 uiDstIdx, xiiUInt32 uiSrcIdx) {
+    m_BillboardParticleData[uiDstIdx].Position       = pPosition[uiSrcIdx].GetAsVec3();
+    m_BillboardParticleData[uiDstIdx].RotationOffset = pRotationOffset[uiSrcIdx];
+    m_BillboardParticleData[uiDstIdx].RotationSpeed  = pRotationSpeed[uiSrcIdx];
   };
 
-  auto SetTangentDataEmitterDir = [&](xiiUInt32 dstIdx, xiiUInt32 srcIdx) {
+  auto SetTangentDataEmitterDir = [&](xiiUInt32 uiDstIdx, xiiUInt32 uiSrcIdx) {
     xiiMat3 mRotation;
-    mRotation.SetRotationMatrix(vEmitterDir, xiiAngle::Radian((float)(tCur.GetSeconds() * pRotationSpeed[srcIdx]) + pRotationOffset[srcIdx]));
+    mRotation.SetRotationMatrix(vEmitterDir, xiiAngle::Radian((float)(tCur.GetSeconds() * pRotationSpeed[uiSrcIdx]) + pRotationOffset[uiSrcIdx]));
 
-    m_TangentParticleData[dstIdx].Position = pPosition[srcIdx].GetAsVec3();
-    m_TangentParticleData[dstIdx].TangentX = mRotation * vEmitterDirOrtho;
-    m_TangentParticleData[dstIdx].TangentZ = vEmitterDir;
+    m_TangentParticleData[uiDstIdx].Position = pPosition[uiSrcIdx].GetAsVec3();
+    m_TangentParticleData[uiDstIdx].TangentX = mRotation * vEmitterDirOrtho;
+    m_TangentParticleData[uiDstIdx].TangentZ = vEmitterDir;
   };
 
-  auto SetTangentDataEmitterDirOrtho = [&](xiiUInt32 dstIdx, xiiUInt32 srcIdx) {
-    const xiiVec3 vDirToParticle = (pPosition[srcIdx].GetAsVec3() - vEmitterPos);
+  auto SetTangentDataEmitterDirOrtho = [&](xiiUInt32 uiDstIdx, xiiUInt32 uiSrcIdx) {
+    const xiiVec3 vDirToParticle = (pPosition[uiSrcIdx].GetAsVec3() - vEmitterPos);
     xiiVec3       vOrthoDir      = vEmitterDir.CrossRH(vDirToParticle);
     vOrthoDir.NormalizeIfNotZero(xiiVec3(1, 0, 0)).IgnoreResult();
 
     xiiMat3 mRotation;
-    mRotation.SetRotationMatrix(vOrthoDir, xiiAngle::Radian((float)(tCur.GetSeconds() * pRotationSpeed[srcIdx]) + pRotationOffset[srcIdx]));
+    mRotation.SetRotationMatrix(vOrthoDir, xiiAngle::Radian((float)(tCur.GetSeconds() * pRotationSpeed[uiSrcIdx]) + pRotationOffset[uiSrcIdx]));
 
-    m_TangentParticleData[dstIdx].Position = pPosition[srcIdx].GetAsVec3();
-    m_TangentParticleData[dstIdx].TangentX = vOrthoDir;
-    m_TangentParticleData[dstIdx].TangentZ = mRotation * vEmitterDir;
+    m_TangentParticleData[uiDstIdx].Position = pPosition[uiSrcIdx].GetAsVec3();
+    m_TangentParticleData[uiDstIdx].TangentX = vOrthoDir;
+    m_TangentParticleData[uiDstIdx].TangentZ = mRotation * vEmitterDir;
   };
 
-  auto SetTangentDataFromAxis = [&](xiiUInt32 dstIdx, xiiUInt32 srcIdx) {
-    xiiVec3 vNormal = pAxis[srcIdx];
+  auto SetTangentDataFromAxis = [&](xiiUInt32 uiDstIdx, xiiUInt32 uiSrcIdx) {
+    xiiVec3 vNormal = pAxis[uiSrcIdx];
     vNormal.Normalize();
 
     const xiiVec3 vTangentStart = vNormal.GetOrthogonalVector().GetNormalized();
 
     xiiMat3 mRotation;
-    mRotation.SetRotationMatrix(vNormal, xiiAngle::Radian((float)(tCur.GetSeconds() * pRotationSpeed[srcIdx]) + pRotationOffset[srcIdx]));
+    mRotation.SetRotationMatrix(vNormal, xiiAngle::Radian((float)(tCur.GetSeconds() * pRotationSpeed[uiSrcIdx]) + pRotationOffset[uiSrcIdx]));
 
     const xiiVec3 vTangentX = mRotation * vTangentStart;
 
-    m_TangentParticleData[dstIdx].Position = pPosition[srcIdx].GetAsVec3();
-    m_TangentParticleData[dstIdx].TangentX = vTangentX;
-    m_TangentParticleData[dstIdx].TangentZ = vTangentX.CrossRH(vNormal);
+    m_TangentParticleData[uiDstIdx].Position = pPosition[uiSrcIdx].GetAsVec3();
+    m_TangentParticleData[uiDstIdx].TangentX = vTangentX;
+    m_TangentParticleData[uiDstIdx].TangentZ = vTangentX.CrossRH(vNormal);
   };
 
-  auto SetTangentDataAligned_Emitter = [&](xiiUInt32 dstIdx, xiiUInt32 srcIdx) {
-    m_TangentParticleData[dstIdx].Position   = pPosition[srcIdx].GetAsVec3();
-    m_TangentParticleData[dstIdx].TangentX   = vEmitterDir;
-    m_TangentParticleData[dstIdx].TangentZ.x = m_fStretch;
+  auto SetTangentDataAligned_Emitter = [&](xiiUInt32 uiDstIdx, xiiUInt32 uiSrcIdx) {
+    m_TangentParticleData[uiDstIdx].Position   = pPosition[uiSrcIdx].GetAsVec3();
+    m_TangentParticleData[uiDstIdx].TangentX   = vEmitterDir;
+    m_TangentParticleData[uiDstIdx].TangentZ.x = m_fStretch;
   };
 
-  auto SetTangentDataAligned_ParticleDir = [&](xiiUInt32 dstIdx, xiiUInt32 srcIdx) {
-    const xiiVec3 vCurPos                    = pPosition[srcIdx].GetAsVec3();
-    const xiiVec3 vLastPos                   = pLastPosition[srcIdx];
-    const xiiVec3 vDir                       = vCurPos - vLastPos;
-    m_TangentParticleData[dstIdx].Position   = vCurPos;
-    m_TangentParticleData[dstIdx].TangentX   = vDir;
-    m_TangentParticleData[dstIdx].TangentZ.x = m_fStretch;
+  auto SetTangentDataAligned_ParticleDir = [&](xiiUInt32 uiDstIdx, xiiUInt32 uiSrcIdx) {
+    const xiiVec3 vCurPos                      = pPosition[uiSrcIdx].GetAsVec3();
+    const xiiVec3 vLastPos                     = pLastPosition[uiSrcIdx];
+    const xiiVec3 vDir                         = vCurPos - vLastPos;
+    m_TangentParticleData[uiDstIdx].Position   = vCurPos;
+    m_TangentParticleData[uiDstIdx].TangentX   = vDir;
+    m_TangentParticleData[uiDstIdx].TangentZ.x = m_fStretch;
   };
 
   for (xiiUInt32 p = 0; p < numParticles; ++p)
@@ -557,7 +557,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     // TODO: this type of patch does not work
 
@@ -584,7 +584,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     xiiAbstractObjectNode::Property* pProp = pNode->FindProperty("Orientation");
     const xiiStringBuilder           sOri  = pProp->m_Value.Get<xiiString>();

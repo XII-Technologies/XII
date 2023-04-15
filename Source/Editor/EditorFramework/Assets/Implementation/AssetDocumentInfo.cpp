@@ -7,8 +7,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAssetDocumentInfo, 2, xiiRTTIDefaultAllocato
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_SET_MEMBER_PROPERTY("Dependencies", m_AssetTransformDependencies),
-    XII_SET_MEMBER_PROPERTY("References", m_RuntimeDependencies),
+    XII_SET_MEMBER_PROPERTY("Dependencies", m_TransformDependencies),
+    XII_SET_MEMBER_PROPERTY("References", m_ThumbnailDependencies),
+    XII_SET_MEMBER_PROPERTY("PackageDeps", m_PackageDependencies),
     XII_SET_MEMBER_PROPERTY("Outputs", m_Outputs),
     XII_MEMBER_PROPERTY("Hash", m_uiSettingsHash),
     XII_ACCESSOR_PROPERTY("AssetType", GetAssetsDocumentTypeName, SetAssetsDocumentTypeName),
@@ -36,21 +37,23 @@ xiiAssetDocumentInfo::xiiAssetDocumentInfo(xiiAssetDocumentInfo&& rhs)
 
 void xiiAssetDocumentInfo::operator=(xiiAssetDocumentInfo&& rhs)
 {
-  m_uiSettingsHash             = rhs.m_uiSettingsHash;
-  m_AssetTransformDependencies = rhs.m_AssetTransformDependencies;
-  m_RuntimeDependencies        = rhs.m_RuntimeDependencies;
-  m_Outputs                    = rhs.m_Outputs;
-  m_sAssetsDocumentTypeName    = rhs.m_sAssetsDocumentTypeName;
-  m_MetaInfo                   = std::move(rhs.m_MetaInfo);
+  m_uiSettingsHash          = rhs.m_uiSettingsHash;
+  m_TransformDependencies   = rhs.m_TransformDependencies;
+  m_ThumbnailDependencies   = rhs.m_ThumbnailDependencies;
+  m_PackageDependencies     = rhs.m_PackageDependencies;
+  m_Outputs                 = rhs.m_Outputs;
+  m_sAssetsDocumentTypeName = rhs.m_sAssetsDocumentTypeName;
+  m_MetaInfo                = std::move(rhs.m_MetaInfo);
 }
 
 void xiiAssetDocumentInfo::CreateShallowClone(xiiAssetDocumentInfo& rhs) const
 {
-  rhs.m_uiSettingsHash             = m_uiSettingsHash;
-  rhs.m_AssetTransformDependencies = m_AssetTransformDependencies;
-  rhs.m_RuntimeDependencies        = m_RuntimeDependencies;
-  rhs.m_Outputs                    = m_Outputs;
-  rhs.m_sAssetsDocumentTypeName    = m_sAssetsDocumentTypeName;
+  rhs.m_uiSettingsHash          = m_uiSettingsHash;
+  rhs.m_TransformDependencies   = m_TransformDependencies;
+  rhs.m_ThumbnailDependencies   = m_ThumbnailDependencies;
+  rhs.m_PackageDependencies     = m_PackageDependencies;
+  rhs.m_Outputs                 = m_Outputs;
+  rhs.m_sAssetsDocumentTypeName = m_sAssetsDocumentTypeName;
   rhs.m_MetaInfo.Clear();
 }
 
@@ -68,9 +71,9 @@ const char* xiiAssetDocumentInfo::GetAssetsDocumentTypeName() const
   return m_sAssetsDocumentTypeName.GetData();
 }
 
-void xiiAssetDocumentInfo::SetAssetsDocumentTypeName(const char* sz)
+void xiiAssetDocumentInfo::SetAssetsDocumentTypeName(const char* szSz)
 {
-  m_sAssetsDocumentTypeName.Assign(sz);
+  m_sAssetsDocumentTypeName.Assign(szSz);
 }
 
 const xiiReflectedClass* xiiAssetDocumentInfo::GetMetaInfo(const xiiRTTI* pType) const

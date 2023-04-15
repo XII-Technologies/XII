@@ -18,7 +18,7 @@ namespace xiiRmlUiInternal
 class XII_RMLUIPLUGIN_DLL xiiRmlUiContext final : public Rml::Context
 {
 public:
-  xiiRmlUiContext(const Rml::String& name);
+  xiiRmlUiContext(const Rml::String& sName);
   ~xiiRmlUiContext();
 
 public:
@@ -31,11 +31,11 @@ public:
   void ShowDocument();
   void HideDocument();
 
-  void UpdateInput(const xiiVec2& mousePos);
+  void UpdateInput(const xiiVec2& vMousePos);
   bool WantsInput() const { return m_bWantsInput; }
 
-  void SetOffset(const xiiVec2I32& offset);
-  void SetSize(const xiiVec2U32& size);
+  void SetOffset(const xiiVec2I32& vOffset);
+  void SetSize(const xiiVec2U32& vSize);
   void SetDpiScale(float fScale);
 
   using EventHandler = xiiDelegate<void(Rml::Event&)>;
@@ -67,8 +67,8 @@ namespace xiiRmlUiInternal
   class ContextInstancer : public Rml::ContextInstancer
   {
   public:
-    virtual Rml::ContextPtr InstanceContext(const Rml::String& name) override;
-    virtual void            ReleaseContext(Rml::Context* context) override;
+    virtual Rml::ContextPtr InstanceContext(const Rml::String& sName) override;
+    virtual void            ReleaseContext(Rml::Context* pContext) override;
 
   private:
     virtual void Release() override;

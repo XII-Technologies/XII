@@ -8,41 +8,41 @@ namespace xiiRmlUiInternal
 {
   double SystemInterface::GetElapsedTime() { return xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(); }
 
-  void SystemInterface::JoinPath(Rml::String& translated_path, const Rml::String& document_path, const Rml::String& path)
+  void SystemInterface::JoinPath(Rml::String& ref_sTranslated_path, const Rml::String& sDocument_path, const Rml::String& sPath)
   {
-    if (xiiFileSystem::ExistsFile(path.c_str()))
+    if (xiiFileSystem::ExistsFile(sPath.c_str()))
     {
       // path is already a valid path for xii file system so don't join with document path
-      translated_path = path;
+      ref_sTranslated_path = sPath;
       return;
     }
 
-    Rml::SystemInterface::JoinPath(translated_path, document_path, path);
+    Rml::SystemInterface::JoinPath(ref_sTranslated_path, sDocument_path, sPath);
   }
 
-  bool SystemInterface::LogMessage(Rml::Log::Type type, const Rml::String& message)
+  bool SystemInterface::LogMessage(Rml::Log::Type type, const Rml::String& sMessage)
   {
     switch (type)
     {
       case Rml::Log::LT_ERROR:
-        xiiLog::Error("{}", message.c_str());
+        xiiLog::Error("{}", sMessage.c_str());
         break;
 
       case Rml::Log::LT_ASSERT:
-        XII_REPORT_FAILURE(message.c_str());
+        XII_REPORT_FAILURE(sMessage.c_str());
         break;
 
       case Rml::Log::LT_WARNING:
-        xiiLog::Warning("{}", message.c_str());
+        xiiLog::Warning("{}", sMessage.c_str());
         break;
 
       case Rml::Log::LT_ALWAYS:
       case Rml::Log::LT_INFO:
-        xiiLog::Info("{}", message.c_str());
+        xiiLog::Info("{}", sMessage.c_str());
         break;
 
       case Rml::Log::LT_DEBUG:
-        xiiLog::Debug("{}", message.c_str());
+        xiiLog::Debug("{}", sMessage.c_str());
         break;
       default:
         break;

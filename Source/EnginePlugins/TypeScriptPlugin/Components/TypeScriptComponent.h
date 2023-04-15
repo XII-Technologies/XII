@@ -72,11 +72,11 @@ public:
   xiiTypeScriptComponent();
   ~xiiTypeScriptComponent();
 
-  void BroadcastEventMsg(xiiEventMessage& msg);
+  void BroadcastEventMsg(xiiEventMessage& ref_msg);
 
   void SetUpdateInterval(xiiTime interval) { m_UpdateInterval = interval; }
 
-  void           SetTypeScriptComponentGuid(const xiiUuid& hResource);
+  void           SetTypeScriptComponentGuid(const xiiUuid& resource);
   const xiiUuid& GetTypeScriptComponentGuid() const;
 
 private:

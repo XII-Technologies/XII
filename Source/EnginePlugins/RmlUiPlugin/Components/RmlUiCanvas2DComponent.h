@@ -37,13 +37,13 @@ public:
   void                          SetRmlResource(const xiiRmlUiResourceHandle& hResource);
   const xiiRmlUiResourceHandle& GetRmlResource() const { return m_hResource; }
 
-  void              SetOffset(const xiiVec2I32& offset);    // [ property ]
+  void              SetOffset(const xiiVec2I32& vOffset);   // [ property ]
   const xiiVec2I32& GetOffset() const { return m_vOffset; } // [ property ]
 
-  void              SetSize(const xiiVec2U32& size);    // [ property ]
+  void              SetSize(const xiiVec2U32& vSize);   // [ property ]
   const xiiVec2U32& GetSize() const { return m_vSize; } // [ property ]
 
-  void           SetAnchorPoint(const xiiVec2& anchorPoint);       // [ property ]
+  void           SetAnchorPoint(const xiiVec2& vAnchorPoint);      // [ property ]
   const xiiVec2& GetAnchorPoint() const { return m_vAnchorPoint; } // [ property ]
 
   void SetPassInput(bool bPassInput);                // [ property ]
@@ -53,7 +53,7 @@ public:
   void SetAutobindBlackboards(bool bAutobind);                           // [ property ]
   bool GetAutobindBlackboards() const { return m_bAutobindBlackboards; } // [ property ]
 
-  xiiUInt32 AddDataBinding(xiiUniquePtr<xiiRmlUiDataBinding>&& dataBinding);
+  xiiUInt32 AddDataBinding(xiiUniquePtr<xiiRmlUiDataBinding>&& pDataBinding);
   void      RemoveDataBinding(xiiUInt32 uiDataBindingIndex);
 
   /// \brief Adds the given blackboard as data binding. The name of the board is used as model name for the binding.
@@ -63,10 +63,10 @@ public:
   xiiRmlUiContext* GetOrCreateRmlContext();
   xiiRmlUiContext* GetRmlContext() { return m_pContext; }
 
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg) override;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
 protected:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const;

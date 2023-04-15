@@ -34,12 +34,12 @@ xiiResult xiiTypeScriptBinding::Init_Component()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTypeScriptBinding::RegisterComponent(const char* szTypeName, xiiComponentHandle handle, xiiUInt32& out_uiStashIdx, bool bIsNativeComponent)
+xiiResult xiiTypeScriptBinding::RegisterComponent(const char* szTypeName, xiiComponentHandle hHandle, xiiUInt32& out_uiStashIdx, bool bIsNativeComponent)
 {
-  if (handle.IsInvalidated())
+  if (hHandle.IsInvalidated())
     return XII_FAILURE;
 
-  xiiUInt32& uiStashIdx = m_ComponentToStashIdx[handle];
+  xiiUInt32& uiStashIdx = m_ComponentToStashIdx[hHandle];
 
   if (uiStashIdx != 0)
   {
@@ -85,7 +85,7 @@ xiiResult xiiTypeScriptBinding::RegisterComponent(const char* szTypeName, xiiCom
   {
     xiiComponentHandle* pBuffer =
       reinterpret_cast<xiiComponentHandle*>(duk_push_fixed_buffer(duk, sizeof(xiiComponentHandle))); // [ global __CompModule object buffer ]
-    *pBuffer = handle;
+    *pBuffer = hHandle;
     duk_put_prop_index(duk, -2, xiiTypeScriptBindingIndexProperty::ComponentHandle); // [ global __CompModule object ]
   }
 

@@ -67,8 +67,9 @@ struct XII_EDITORFRAMEWORK_DLL xiiAssetInfo
     NeedsTransform,
     NeedsThumbnail,
     TransformError,
-    MissingDependency,
-    MissingReference,
+    MissingTransformDependency,
+    MissingThumbnailDependency,
+    CircularDependency,
     COUNT,
   };
 
@@ -87,8 +88,9 @@ struct XII_EDITORFRAMEWORK_DLL xiiAssetInfo
 
   xiiUniquePtr<xiiAssetDocumentInfo> m_Info;
 
-  xiiSet<xiiString> m_MissingDependencies;
-  xiiSet<xiiString> m_MissingReferences;
+  xiiSet<xiiString> m_MissingTransformDeps;
+  xiiSet<xiiString> m_MissingThumbnailDeps;
+  xiiSet<xiiString> m_CircularDependencies;
 
   xiiSet<xiiUuid> m_SubAssets; ///< Main asset uses the same GUID as this (see m_Info), but is NOT stored in m_SubAssets
 
@@ -270,8 +272,6 @@ public:
   /// \brief Computes the combined hash for the asset and its references. Returns 0 if anything went wrong.
   xiiUInt64 GetAssetReferenceHash(xiiUuid assetGuid);
 
-  void GenerateTransitiveHull(const xiiStringView sAssetOrPath, xiiSet<xiiString>* pDependencies, xiiSet<xiiString>* pReferences);
-
   xiiAssetInfo::TransformState IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile* pAssetProfile, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_uiAssetHash, xiiUInt64& out_uiThumbHash, bool bForce = false);
   /// \brief Returns the number of assets in the system and how many are in what transform state
   void GetAssetTransformStats(xiiUInt32& out_uiNumAssets, xiiHybridArray<xiiUInt32, xiiAssetInfo::TransformState::COUNT>& out_count);
@@ -316,9 +316,23 @@ public:
 
   void NeedsReloadResources(const xiiUuid& assetGuid);
 
+  void InvalidateAssetsWithTransformState(xiiAssetInfo::TransformState state);
+
   ///@}
 
-  void InvalidateAssetsWithTransformState(xiiAssetInfo::TransformState state);
+  /// \name Utilities
+  ///@{
+
+  /// \brief Generates one transitive hull for all the dependencies that are enabled. The set will contain dependencies that are reachable via any combination of enabled reference types.
+  void GenerateTransitiveHull(const xiiStringView sAssetOrPath, xiiSet<xiiString>& inout_deps, bool bIncludeTransformDeps = false, bool bIncludeThumbnailDeps = false, bool bIncludePackageDeps = false) const;
+
+  /// \brief Generates one inverse transitive hull for all the types dependencies that are enabled. The set will contain inverse dependencies that can reach the given asset (pAssetInfo) via any combination of the enabled reference types. As only assets can have dependencies, the inverse hull is always just asset GUIDs.
+  void GenerateInverseTransitiveHull(const xiiAssetInfo* pAssetInfo, xiiSet<xiiUuid>& inout_inverseDeps, bool bIncludeTransformDeps = false, bool bIncludeThumbnailDeps = false) const;
+
+  /// \brief Generates a DGML graph of all transform and thumbnail dependencies.
+  void WriteDependencyDGML(const xiiUuid& guid, xiiStringView sOutputFile) const;
+
+  ///@}
 
 public:
   xiiEvent<const xiiAssetCuratorEvent&> m_Events;
@@ -361,13 +375,22 @@ private:
   /// \name Asset Hashing and Status Updates (AssetUpdates.cpp)
   ///@{
 
-  xiiAssetInfo::TransformState HashAsset(xiiUInt64 uiSettingsHash, const xiiHybridArray<xiiString, 16>& assetTransformDependencies, const xiiHybridArray<xiiString, 16>& runtimeDependencies, xiiSet<xiiString>& missingDependencies, xiiSet<xiiString>& missingReferences, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce);
-  bool                         AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce);
+  xiiAssetInfo::TransformState HashAsset(
+    xiiUInt64                            uiSettingsHash,
+    const xiiHybridArray<xiiString, 16>& assetTransformDeps,
+    const xiiHybridArray<xiiString, 16>& assetThumbnailDeps,
+    xiiSet<xiiString>&                   missingTransformDeps,
+    xiiSet<xiiString>&                   missingThumbnailDeps,
+    xiiUInt64&                           out_AssetHash,
+    xiiUInt64&                           out_ThumbHash,
+    bool                                 bForce);
+  bool AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce);
 
   xiiResult EnsureAssetInfoUpdated(const xiiUuid& assetGuid);
   xiiResult EnsureAssetInfoUpdated(const char* szAbsFilePath);
   void      TrackDependencies(xiiAssetInfo* pAssetInfo);
   void      UntrackDependencies(xiiAssetInfo* pAssetInfo);
+  xiiResult CheckForCircularDependencies(xiiAssetInfo* pAssetInfo);
   void      UpdateTrackedFiles(const xiiUuid& assetGuid, const xiiSet<xiiString>& files, xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>>& inverseTracker, xiiSet<std::tuple<xiiUuid, xiiUuid>>& unresolved, bool bAdd);
   void      UpdateUnresolvedTrackedFiles(xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>>& inverseTracker, xiiSet<std::tuple<xiiUuid, xiiUuid>>& unresolved);
   xiiResult ReadAssetDocumentInfo(const char* szAbsFilePath, xiiFileStatus& stat, xiiUniquePtr<xiiAssetInfo>& assetInfo);
@@ -394,7 +417,6 @@ private:
   void        SaveCaches();
 
   ///@}
-
   /// \name Utilities
   ///@{
 
@@ -427,10 +449,10 @@ private:
   xiiSet<xiiString>                                         m_AssetFolders;
 
   // Derived dependency lookup tables
-  xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>> m_InverseDependency;
-  xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>> m_InverseReferences;
-  xiiSet<std::tuple<xiiUuid, xiiUuid>>          m_UnresolvedDependencies; ///< If a dependency wasn't known yet when an asset info was loaded, it is put in here.
-  xiiSet<std::tuple<xiiUuid, xiiUuid>>          m_UnresolvedReferences;
+  xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>> m_InverseTransformDeps;    // [Absolute path -> asset Guid]
+  xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>> m_InverseThumbnailDeps;    // [Absolute path -> asset Guid]
+  xiiSet<std::tuple<xiiUuid, xiiUuid>>          m_UnresolvedTransformDeps; ///< If a dependency wasn't known yet when an asset info was loaded, it is put in here.
+  xiiSet<std::tuple<xiiUuid, xiiUuid>>          m_UnresolvedThumbnailDeps;
 
   // State caches
   xiiHashSet<xiiUuid> m_TransformState[xiiAssetInfo::TransformState::COUNT];

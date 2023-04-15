@@ -41,72 +41,72 @@ enum class ReactionEffectVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleEventReactionFactory_Effect::Save(xiiStreamWriter& stream) const
+void xiiParticleEventReactionFactory_Effect::Save(xiiStreamWriter& inout_stream) const
 {
-  SUPER::Save(stream);
+  SUPER::Save(inout_stream);
 
   const xiiUInt8 uiVersion = (int)ReactionEffectVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
   // Version 1
-  stream << m_sEffect;
+  inout_stream << m_sEffect;
 
   // Version 2
-  stream << m_pParameters->m_FloatParams.GetCount();
+  inout_stream << m_pParameters->m_FloatParams.GetCount();
   for (xiiUInt32 i = 0; i < m_pParameters->m_FloatParams.GetCount(); ++i)
   {
-    stream << m_pParameters->m_FloatParams[i].m_sName;
-    stream << m_pParameters->m_FloatParams[i].m_Value;
+    inout_stream << m_pParameters->m_FloatParams[i].m_sName;
+    inout_stream << m_pParameters->m_FloatParams[i].m_Value;
   }
-  stream << m_pParameters->m_ColorParams.GetCount();
+  inout_stream << m_pParameters->m_ColorParams.GetCount();
   for (xiiUInt32 i = 0; i < m_pParameters->m_ColorParams.GetCount(); ++i)
   {
-    stream << m_pParameters->m_ColorParams[i].m_sName;
-    stream << m_pParameters->m_ColorParams[i].m_Value;
+    inout_stream << m_pParameters->m_ColorParams[i].m_sName;
+    inout_stream << m_pParameters->m_ColorParams[i].m_Value;
   }
 
   // Version 3
-  stream << m_Alignment;
+  inout_stream << m_Alignment;
 }
 
-void xiiParticleEventReactionFactory_Effect::Load(xiiStreamReader& stream)
+void xiiParticleEventReactionFactory_Effect::Load(xiiStreamReader& inout_stream)
 {
-  SUPER::Load(stream);
+  SUPER::Load(inout_stream);
 
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)ReactionEffectVersion::Version_Current, "Invalid version {0}", uiVersion);
 
   // Version 1
-  stream >> m_sEffect;
+  inout_stream >> m_sEffect;
 
   if (uiVersion >= 2)
   {
     xiiUInt32 numFloats, numColors;
 
-    stream >> numFloats;
+    inout_stream >> numFloats;
     m_pParameters->m_FloatParams.SetCountUninitialized(numFloats);
 
     for (xiiUInt32 i = 0; i < m_pParameters->m_FloatParams.GetCount(); ++i)
     {
-      stream >> m_pParameters->m_FloatParams[i].m_sName;
-      stream >> m_pParameters->m_FloatParams[i].m_Value;
+      inout_stream >> m_pParameters->m_FloatParams[i].m_sName;
+      inout_stream >> m_pParameters->m_FloatParams[i].m_Value;
     }
 
-    stream >> numColors;
+    inout_stream >> numColors;
     m_pParameters->m_ColorParams.SetCountUninitialized(numColors);
 
     for (xiiUInt32 i = 0; i < m_pParameters->m_ColorParams.GetCount(); ++i)
     {
-      stream >> m_pParameters->m_ColorParams[i].m_sName;
-      stream >> m_pParameters->m_ColorParams[i].m_Value;
+      inout_stream >> m_pParameters->m_ColorParams[i].m_sName;
+      inout_stream >> m_pParameters->m_ColorParams[i].m_Value;
     }
   }
 
   if (uiVersion >= 3)
   {
-    stream >> m_Alignment;
+    inout_stream >> m_Alignment;
   }
 }
 
@@ -133,12 +133,12 @@ void xiiParticleEventReactionFactory_Effect::CopyReactionProperties(xiiParticleE
 const xiiRangeView<const char*, xiiUInt32> xiiParticleEventReactionFactory_Effect::GetParameters() const
 {
   return xiiRangeView<const char*, xiiUInt32>([this]() -> xiiUInt32 { return 0; },
-                                              [this]() -> xiiUInt32 { return m_pParameters->m_FloatParams.GetCount() + m_pParameters->m_ColorParams.GetCount(); }, [this](xiiUInt32& it) { ++it; },
-                                              [this](const xiiUInt32& it) -> const char* {
-                                                if (it < m_pParameters->m_FloatParams.GetCount())
-                                                  return m_pParameters->m_FloatParams[it].m_sName.GetData();
+                                              [this]() -> xiiUInt32 { return m_pParameters->m_FloatParams.GetCount() + m_pParameters->m_ColorParams.GetCount(); }, [this](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                              [this](const xiiUInt32& uiIt) -> const char* {
+                                                if (uiIt < m_pParameters->m_FloatParams.GetCount())
+                                                  return m_pParameters->m_FloatParams[uiIt].m_sName.GetData();
                                                 else
-                                                  return m_pParameters->m_ColorParams[it - m_pParameters->m_FloatParams.GetCount()].m_sName.GetData();
+                                                  return m_pParameters->m_ColorParams[uiIt - m_pParameters->m_FloatParams.GetCount()].m_sName.GetData();
                                               });
 }
 

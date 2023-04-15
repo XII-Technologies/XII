@@ -14,8 +14,8 @@ public:
   virtual const xiiRTTI* GetBehaviorType() const override;
   virtual void           CopyBehaviorProperties(xiiParticleBehavior* pObject, bool bFirstTime) const override;
 
-  virtual void Save(xiiStreamWriter& stream) const override;
-  virtual void Load(xiiStreamReader& stream) override;
+  virtual void Save(xiiStreamWriter& inout_stream) const override;
+  virtual void Load(xiiStreamReader& inout_stream) override;
 
   xiiVec3                             m_vPositionOffset;
   xiiVec3                             m_vBoxExtents;

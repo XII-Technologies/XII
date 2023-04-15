@@ -85,63 +85,63 @@ enum class EmitterContinuousVersion
 };
 
 
-void xiiParticleEmitterFactory_Continuous::Save(xiiStreamWriter& stream) const
+void xiiParticleEmitterFactory_Continuous::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)EmitterContinuousVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
   // Version 4
-  stream << m_StartDelay;
+  inout_stream << m_StartDelay;
 
   // Version 6
-  stream << m_uiSpawnCountPerSec;
-  stream << m_uiSpawnCountPerSecRange;
+  inout_stream << m_uiSpawnCountPerSec;
+  inout_stream << m_uiSpawnCountPerSecRange;
 
   // Version 2
-  stream << m_hCountCurve;
-  stream << m_CurveDuration;
+  inout_stream << m_hCountCurve;
+  inout_stream << m_CurveDuration;
 
   // Version 5
-  stream << m_sSpawnCountScaleParameter;
+  inout_stream << m_sSpawnCountScaleParameter;
 }
 
-void xiiParticleEmitterFactory_Continuous::Load(xiiStreamReader& stream)
+void xiiParticleEmitterFactory_Continuous::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)EmitterContinuousVersion::Version_Current, "Invalid version {0}", uiVersion);
 
   if (uiVersion >= 3 && uiVersion < 6)
   {
     xiiTime duraton;
-    stream >> duraton;
+    inout_stream >> duraton;
   }
 
   if (uiVersion >= 4)
   {
-    stream >> m_StartDelay;
+    inout_stream >> m_StartDelay;
   }
 
-  stream >> m_uiSpawnCountPerSec;
-  stream >> m_uiSpawnCountPerSecRange;
+  inout_stream >> m_uiSpawnCountPerSec;
+  inout_stream >> m_uiSpawnCountPerSecRange;
 
   if (uiVersion < 6)
   {
     xiiVarianceTypeFloat interval;
-    stream >> interval.m_Value;
-    stream >> interval.m_fVariance;
+    inout_stream >> interval.m_Value;
+    inout_stream >> interval.m_fVariance;
   }
 
   if (uiVersion >= 2)
   {
-    stream >> m_hCountCurve;
-    stream >> m_CurveDuration;
+    inout_stream >> m_hCountCurve;
+    inout_stream >> m_CurveDuration;
   }
 
   if (uiVersion >= 5)
   {
-    stream >> m_sSpawnCountScaleParameter;
+    inout_stream >> m_sSpawnCountScaleParameter;
   }
 }
 

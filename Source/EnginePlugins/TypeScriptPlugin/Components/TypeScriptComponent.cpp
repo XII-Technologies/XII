@@ -20,7 +20,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiTypeScriptComponent, 4, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Script", GetTypeScriptComponentFile, SetTypeScriptComponentFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Code_TypeScript")),
+    XII_ACCESSOR_PROPERTY("Script", GetTypeScriptComponentFile, SetTypeScriptComponentFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Code_TypeScript", xiiDependencyFlags::Package)),
     XII_MAP_ACCESSOR_PROPERTY("Parameters", GetParameters, GetParameter, SetParameter, RemoveParameter)->AddAttributes(new xiiExposedParametersAttribute("Script")),
   }
   XII_END_PROPERTIES;
@@ -125,22 +125,22 @@ bool xiiTypeScriptComponent::HandleUnhandledMessage(xiiMessage& msg, bool bWasPo
   return binding.DeliverMessage(m_ComponentTypeInfo, this, msg, bWasPostedMsg == false);
 }
 
-void xiiTypeScriptComponent::BroadcastEventMsg(xiiEventMessage& msg)
+void xiiTypeScriptComponent::BroadcastEventMsg(xiiEventMessage& ref_msg)
 {
-  const xiiRTTI* pType = msg.GetDynamicRTTI();
+  const xiiRTTI* pType = ref_msg.GetDynamicRTTI();
 
   for (auto& sender : m_EventSenders)
   {
     if (sender.m_pMsgType == pType)
     {
-      sender.m_Sender.SendEventMessage(msg, this, GetOwner()->GetParent());
+      sender.m_Sender.SendEventMessage(ref_msg, this, GetOwner()->GetParent());
       return;
     }
   }
 
   auto& sender      = m_EventSenders.ExpandAndGetRef();
   sender.m_pMsgType = pType;
-  sender.m_Sender.SendEventMessage(msg, this, GetOwner()->GetParent());
+  sender.m_Sender.SendEventMessage(ref_msg, this, GetOwner()->GetParent());
 }
 
 bool xiiTypeScriptComponent::CallTsFunc(const char* szFuncName)
@@ -341,9 +341,9 @@ const char* xiiTypeScriptComponent::GetTypeScriptComponentFile() const
   return "";
 }
 
-void xiiTypeScriptComponent::SetTypeScriptComponentGuid(const xiiUuid& hResource)
+void xiiTypeScriptComponent::SetTypeScriptComponentGuid(const xiiUuid& resource)
 {
-  m_TypeScriptComponentGuid = hResource;
+  m_TypeScriptComponentGuid = resource;
 }
 
 const xiiUuid& xiiTypeScriptComponent::GetTypeScriptComponentGuid() const
@@ -365,8 +365,8 @@ const xiiRangeView<const char*, xiiUInt32> xiiTypeScriptComponent::GetParameters
 {
   return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; },
                                               [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
-                                              [](xiiUInt32& it) { ++it; },
-                                              [this](const xiiUInt32& it) -> const char* { return m_Parameters.GetKey(it).GetString().GetData(); });
+                                              [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                              [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
 }
 
 void xiiTypeScriptComponent::SetParameter(const char* szKey, const xiiVariant& value)

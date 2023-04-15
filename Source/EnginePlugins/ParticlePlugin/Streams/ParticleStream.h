@@ -21,7 +21,7 @@ public:
   xiiProcessingStream::DataType GetStreamDataType() const;
   const char*                   GetStreamName() const;
 
-  static void GetFullStreamName(const char* szName, xiiProcessingStream::DataType type, xiiStringBuilder& out_Result);
+  static void GetFullStreamName(const char* szName, xiiProcessingStream::DataType type, xiiStringBuilder& out_sResult);
 
   xiiParticleStream* CreateParticleStream(xiiParticleSystemInstance* pOwner) const;
 

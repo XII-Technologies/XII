@@ -41,7 +41,7 @@ public:
   bool TryGetEffectInstance(const xiiParticleEffectHandle& hEffect, const xiiParticleEffectInstance*& out_pEffect) const;
 
   /// \brief Extracts render data for the given effect.
-  void ExtractEffectRenderData(const xiiParticleEffectInstance* pEffect, xiiMsgExtractRenderData& msg, const xiiTransform& systemTransform) const;
+  void ExtractEffectRenderData(const xiiParticleEffectInstance* pEffect, xiiMsgExtractRenderData& ref_msg, const xiiTransform& systemTransform) const;
 
   xiiParticleSystemInstance* CreateSystemInstance(xiiUInt32 uiMaxParticles, xiiWorld* pWorld, xiiParticleEffectInstance* pOwnerEffect, float fSpawnMultiplier);
   void                       DestroySystemInstance(xiiParticleSystemInstance* pInstance);

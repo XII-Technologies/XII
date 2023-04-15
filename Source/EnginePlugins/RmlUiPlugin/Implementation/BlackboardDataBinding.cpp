@@ -14,7 +14,7 @@ namespace xiiRmlUiInternal
 
   BlackboardDataBinding::~BlackboardDataBinding() = default;
 
-  xiiResult BlackboardDataBinding::Initialize(Rml::Context& context)
+  xiiResult BlackboardDataBinding::Initialize(Rml::Context& ref_context)
   {
     if (m_pBlackboard == nullptr)
       return XII_FAILURE;
@@ -26,7 +26,7 @@ namespace xiiRmlUiInternal
       return XII_FAILURE;
     }
 
-    Rml::DataModelConstructor constructor = context.CreateDataModel(szModelName);
+    Rml::DataModelConstructor constructor = ref_context.CreateDataModel(szModelName);
     if (!constructor)
     {
       return XII_FAILURE;
@@ -41,7 +41,7 @@ namespace xiiRmlUiInternal
     {
       constructor.BindFunc(
         wrapper.m_sName.GetData(),
-        [&](Rml::Variant& out_Value) { wrapper.GetValue(out_Value); },
+        [&](Rml::Variant& out_value) { wrapper.GetValue(out_value); },
         [&](const Rml::Variant& value) { wrapper.SetValue(value); });
     }
 
@@ -53,11 +53,11 @@ namespace xiiRmlUiInternal
     return XII_SUCCESS;
   }
 
-  void BlackboardDataBinding::Deinitialize(Rml::Context& context)
+  void BlackboardDataBinding::Deinitialize(Rml::Context& ref_context)
   {
     if (m_pBlackboard != nullptr)
     {
-      context.RemoveDataModel(m_pBlackboard->GetName());
+      ref_context.RemoveDataModel(m_pBlackboard->GetName());
     }
   }
 
@@ -102,9 +102,9 @@ namespace xiiRmlUiInternal
     }
   }
 
-  void BlackboardDataBinding::EntryWrapper::GetValue(Rml::Variant& out_Value) const
+  void BlackboardDataBinding::EntryWrapper::GetValue(Rml::Variant& out_value) const
   {
-    out_Value = xiiRmlUiConversionUtils::ToVariant(m_Blackboard.GetEntryValue(m_sName));
+    out_value = xiiRmlUiConversionUtils::ToVariant(m_Blackboard.GetEntryValue(m_sName));
   }
 
 } // namespace xiiRmlUiInternal

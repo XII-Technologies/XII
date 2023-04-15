@@ -81,24 +81,24 @@ void xiiParticleEffectController::SetTransform(const xiiTransform& t, const xiiV
   }
 }
 
-void xiiParticleEffectController::Tick(const xiiTime& tDiff) const
+void xiiParticleEffectController::Tick(const xiiTime& diff) const
 {
   xiiParticleEffectInstance* pEffect = GetInstance();
 
   if (pEffect)
   {
     pEffect->PreSimulate();
-    pEffect->Update(tDiff);
+    pEffect->Update(diff);
   }
 }
 
-void xiiParticleEffectController::ExtractRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& systemTransform) const
+void xiiParticleEffectController::ExtractRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& systemTransform) const
 {
   if (const xiiParticleEffectInstance* pEffect = GetInstance())
   {
     pEffect->SetIsVisible();
 
-    m_pModule->ExtractEffectRenderData(pEffect, msg, systemTransform);
+    m_pModule->ExtractEffectRenderData(pEffect, ref_msg, systemTransform);
   }
 }
 
@@ -113,11 +113,11 @@ void xiiParticleEffectController::StopImmediate()
   }
 }
 
-void xiiParticleEffectController::GetBoundingVolume(xiiBoundingBoxSphere& volume) const
+void xiiParticleEffectController::GetBoundingVolume(xiiBoundingBoxSphere& ref_volume) const
 {
   if (xiiParticleEffectInstance* pEffect = GetInstance())
   {
-    pEffect->GetBoundingVolume(volume);
+    pEffect->GetBoundingVolume(ref_volume);
   }
 }
 
@@ -147,23 +147,23 @@ xiiUInt64 xiiParticleEffectController::GetNumActiveParticles() const
   return 0;
 }
 
-void xiiParticleEffectController::SetParameter(const xiiTempHashedString& name, float value)
+void xiiParticleEffectController::SetParameter(const xiiTempHashedString& sName, float value)
 {
   xiiParticleEffectInstance* pEffect = GetInstance();
 
   if (pEffect)
   {
-    pEffect->SetParameter(name, value);
+    pEffect->SetParameter(sName, value);
   }
 }
 
-void xiiParticleEffectController::SetParameter(const xiiTempHashedString& name, const xiiColor& value)
+void xiiParticleEffectController::SetParameter(const xiiTempHashedString& sName, const xiiColor& value)
 {
   xiiParticleEffectInstance* pEffect = GetInstance();
 
   if (pEffect)
   {
-    pEffect->SetParameter(name, value);
+    pEffect->SetParameter(sName, value);
   }
 }
 

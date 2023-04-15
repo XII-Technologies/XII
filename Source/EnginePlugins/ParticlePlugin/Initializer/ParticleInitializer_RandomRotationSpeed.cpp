@@ -50,29 +50,29 @@ enum class InitializerRandomRotationVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleInitializerFactory_RandomRotationSpeed::Save(xiiStreamWriter& stream) const
+void xiiParticleInitializerFactory_RandomRotationSpeed::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)InitializerRandomRotationVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_RotationSpeed.m_Value;
-  stream << m_RotationSpeed.m_fVariance;
+  inout_stream << m_RotationSpeed.m_Value;
+  inout_stream << m_RotationSpeed.m_fVariance;
 
   // Version 2
-  stream << m_bRandomStartAngle;
+  inout_stream << m_bRandomStartAngle;
 }
 
-void xiiParticleInitializerFactory_RandomRotationSpeed::Load(xiiStreamReader& stream)
+void xiiParticleInitializerFactory_RandomRotationSpeed::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
-  stream >> m_RotationSpeed.m_Value;
-  stream >> m_RotationSpeed.m_fVariance;
+  inout_stream >> m_RotationSpeed.m_Value;
+  inout_stream >> m_RotationSpeed.m_fVariance;
 
   if (uiVersion >= 2)
   {
-    stream >> m_bRandomStartAngle;
+    inout_stream >> m_bRandomStartAngle;
   }
 }
 
@@ -143,7 +143,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->InlineProperty("DegreesPerSecond").IgnoreResult();
   }

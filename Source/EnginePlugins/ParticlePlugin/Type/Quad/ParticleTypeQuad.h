@@ -38,10 +38,10 @@ public:
   virtual const xiiRTTI* GetTypeType() const override;
   virtual void           CopyTypeProperties(xiiParticleType* pObject, bool bFirstTime) const override;
 
-  virtual void Save(xiiStreamWriter& stream) const override;
-  virtual void Load(xiiStreamReader& stream) override;
+  virtual void Save(xiiStreamWriter& inout_stream) const override;
+  virtual void Load(xiiStreamReader& inout_stream) override;
 
-  virtual void QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_FinalizerDeps) const override;
+  virtual void QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_finalizerDeps) const override;
 
   xiiEnum<xiiQuadParticleOrientation>  m_Orientation;
   xiiAngle                             m_MaxDeviation;
@@ -78,7 +78,7 @@ public:
   float                                m_fDistortionStrength = 0;
   float                                m_fStretch            = 1;
 
-  virtual void ExtractTypeRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& instanceTransform) const override;
+  virtual void ExtractTypeRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const override;
 
   struct sod
   {

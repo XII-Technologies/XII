@@ -35,22 +35,22 @@ void xiiParticleBehaviorFactory_FadeOut::CopyBehaviorProperties(xiiParticleBehav
   pBehavior->m_fExponent   = m_fExponent;
 }
 
-void xiiParticleBehaviorFactory_FadeOut::Save(xiiStreamWriter& stream) const
+void xiiParticleBehaviorFactory_FadeOut::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = 1;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_fStartAlpha;
-  stream << m_fExponent;
+  inout_stream << m_fStartAlpha;
+  inout_stream << m_fExponent;
 }
 
-void xiiParticleBehaviorFactory_FadeOut::Load(xiiStreamReader& stream)
+void xiiParticleBehaviorFactory_FadeOut::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
-  stream >> m_fStartAlpha;
-  stream >> m_fExponent;
+  inout_stream >> m_fStartAlpha;
+  inout_stream >> m_fExponent;
 }
 
 void xiiParticleBehavior_FadeOut::CreateRequiredStreams()

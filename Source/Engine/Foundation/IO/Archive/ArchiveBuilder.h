@@ -15,7 +15,7 @@ public:
   {
     xiiString                 m_sAbsSourcePath; ///< The source file to read
     xiiString                 m_sRelTargetPath; ///< Under which relative path to store it in the xiiArchive
-    xiiArchiveCompressionMode m_CompressionMode = xiiArchiveCompressionMode::Uncompressed;
+    xiiArchiveCompressionMode m_CompressionMode   = xiiArchiveCompressionMode::Uncompressed;
     xiiInt32                  m_iCompressionLevel = 0;
   };
 

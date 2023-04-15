@@ -13,8 +13,7 @@ xiiActionDescriptorHandle xiiVisualScriptActions::s_hPickDebugTarget;
 void xiiVisualScriptActions::RegisterActions()
 {
   s_hCategory        = XII_REGISTER_CATEGORY("VisualScriptCategory");
-  s_hPickDebugTarget = XII_REGISTER_ACTION_1(
-    "VisScript.PickDebugTarget", xiiActionScope::Window, "Visual Script", "", xiiVisualScriptAction, xiiVisualScriptAction::ActionType::PickDebugTarget);
+  s_hPickDebugTarget = XII_REGISTER_ACTION_1("VisScript.PickDebugTarget", xiiActionScope::Window, "Visual Script", "", xiiVisualScriptAction, xiiVisualScriptAction::ActionType::PickDebugTarget);
 }
 
 void xiiVisualScriptActions::UnregisterActions()

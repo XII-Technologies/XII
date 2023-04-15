@@ -15,7 +15,7 @@ struct xiiAssetInfo;
 /// \brief Asset table class. Persistent cache for an asset table.
 ///
 /// The following assumptions need to be true for this cache to work:
-/// 1. xiiAssetDocumentManager::AddEntriesToAssetTable does never change over time.
+/// 1. xiiAssetDocumentManager::AddEntriesToAssetTable does never change over time
 /// 2. xiiAssetDocumentManager::GetAssetTableEntry never changes over the lifetime of an asset.
 struct xiiAssetTable
 {

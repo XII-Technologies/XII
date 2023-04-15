@@ -80,39 +80,39 @@ float xiiParticleInitializerFactory_BoxPosition::GetSpawnCountMultiplier(const x
   return fSpawnMultiplier;
 }
 
-void xiiParticleInitializerFactory_BoxPosition::Save(xiiStreamWriter& stream) const
+void xiiParticleInitializerFactory_BoxPosition::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = 3;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_vSize;
+  inout_stream << m_vSize;
 
   // version 2
-  stream << m_vPositionOffset;
+  inout_stream << m_vPositionOffset;
 
   // version 3
-  stream << m_sScaleXParameter;
-  stream << m_sScaleYParameter;
-  stream << m_sScaleZParameter;
+  inout_stream << m_sScaleXParameter;
+  inout_stream << m_sScaleYParameter;
+  inout_stream << m_sScaleZParameter;
 }
 
-void xiiParticleInitializerFactory_BoxPosition::Load(xiiStreamReader& stream)
+void xiiParticleInitializerFactory_BoxPosition::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
-  stream >> m_vSize;
+  inout_stream >> m_vSize;
 
   if (uiVersion >= 2)
   {
-    stream >> m_vPositionOffset;
+    inout_stream >> m_vPositionOffset;
   }
 
   if (uiVersion >= 3)
   {
-    stream >> m_sScaleXParameter;
-    stream >> m_sScaleYParameter;
-    stream >> m_sScaleZParameter;
+    inout_stream >> m_sScaleXParameter;
+    inout_stream >> m_sScaleYParameter;
+    inout_stream >> m_sScaleZParameter;
   }
 }
 

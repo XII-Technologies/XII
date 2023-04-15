@@ -13,8 +13,8 @@ public:
   virtual const xiiRTTI* GetInitializerType() const override;
   virtual void           CopyInitializerProperties(xiiParticleInitializer* pInitializer, bool bFirstTime) const override;
 
-  virtual void Save(xiiStreamWriter& stream) const override;
-  virtual void Load(xiiStreamReader& stream) override;
+  virtual void Save(xiiStreamWriter& inout_stream) const override;
+  virtual void Load(xiiStreamReader& inout_stream) override;
 
   void                    SetColorGradient(const xiiColorGradientResourceHandle& hResource) { m_hGradient = hResource; }
   XII_ALWAYS_INLINE const xiiColorGradientResourceHandle& GetColorGradient() const { return m_hGradient; }

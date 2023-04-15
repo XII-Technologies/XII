@@ -21,7 +21,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiProjectileSurfaceInteraction, xiiNoBase, 3, x
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Surface", GetSurface, SetSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
+    XII_ACCESSOR_PROPERTY("Surface", GetSurface, SetSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
     XII_ENUM_MEMBER_PROPERTY("Reaction", xiiProjectileReaction, m_Reaction),
     XII_MEMBER_PROPERTY("Interaction", m_sInteraction)->AddAttributes(new xiiDynamicStringEnumAttribute("SurfaceInteractionTypeEnum")),
     XII_MEMBER_PROPERTY("Impulse", m_fImpulse),
@@ -38,9 +38,9 @@ XII_BEGIN_COMPONENT_TYPE(xiiProjectileComponent, 4, xiiComponentMode::Dynamic)
     XII_MEMBER_PROPERTY("Speed", m_fMetersPerSecond)->AddAttributes(new xiiDefaultValueAttribute(10.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("GravityMultiplier", m_fGravityMultiplier),
     XII_MEMBER_PROPERTY("MaxLifetime", m_MaxLifetime)->AddAttributes(new xiiClampValueAttribute(xiiTime(), xiiVariant())),
-    XII_ACCESSOR_PROPERTY("OnTimeoutSpawn", GetTimeoutPrefab, SetTimeoutPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab")),
+    XII_ACCESSOR_PROPERTY("OnTimeoutSpawn", GetTimeoutPrefab, SetTimeoutPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
     XII_MEMBER_PROPERTY("CollisionLayer", m_uiCollisionLayer)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),
-    XII_ACCESSOR_PROPERTY("FallbackSurface", GetFallbackSurfaceFile, SetFallbackSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
+    XII_ACCESSOR_PROPERTY("FallbackSurface", GetFallbackSurfaceFile, SetFallbackSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
     XII_ARRAY_MEMBER_PROPERTY("Interactions", m_SurfaceInteractions),
   }
   XII_END_PROPERTIES;

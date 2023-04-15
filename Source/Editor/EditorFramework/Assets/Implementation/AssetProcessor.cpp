@@ -293,8 +293,8 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiAssetInfo* pInfo, xiiUuid& out_gui
       return false;
   }
 
-  auto TestFunc = [this, &bComplete](const xiiSet<xiiString>& Files) -> xiiAssetInfo* {
-    for (const auto& sFile : Files)
+  auto TestFunc = [this, &bComplete](const xiiSet<xiiString>& files) -> xiiAssetInfo* {
+    for (const auto& sFile : files)
     {
       if (xiiAssetInfo* pFileInfo = xiiAssetCurator::GetSingleton()->GetAssetInfo(sFile))
       {
@@ -302,8 +302,9 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiAssetInfo* pInfo, xiiUuid& out_gui
         {
           case xiiAssetInfo::TransformState::Unknown:
           case xiiAssetInfo::TransformState::TransformError:
-          case xiiAssetInfo::TransformState::MissingDependency:
-          case xiiAssetInfo::TransformState::MissingReference:
+          case xiiAssetInfo::TransformState::MissingTransformDependency:
+          case xiiAssetInfo::TransformState::MissingThumbnailDependency:
+          case xiiAssetInfo::TransformState::CircularDependency:
           {
             bComplete = false;
             continue;
@@ -328,15 +329,17 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiAssetInfo* pInfo, xiiUuid& out_gui
     return nullptr;
   };
 
-  if (xiiAssetInfo* pDepInfo = TestFunc(pInfo->m_Info->m_AssetTransformDependencies))
+  if (xiiAssetInfo* pDepInfo = TestFunc(pInfo->m_Info->m_TransformDependencies))
   {
     return GetNextAssetToProcess(pDepInfo, out_guid, out_sAbsPath, out_sRelPath);
   }
 
-  if (xiiAssetInfo* pDepInfo = TestFunc(pInfo->m_Info->m_RuntimeDependencies))
+  if (xiiAssetInfo* pDepInfo = TestFunc(pInfo->m_Info->m_ThumbnailDependencies))
   {
     return GetNextAssetToProcess(pDepInfo, out_guid, out_sAbsPath, out_sRelPath);
   }
+
+  // not needed to go through package dependencies here
 
   if (bComplete && !xiiAssetCurator::GetSingleton()->m_Updating.Contains(pInfo->m_Info->m_DocumentID) &&
       !xiiAssetCurator::GetSingleton()->m_TransformStateStale.Contains(pInfo->m_Info->m_DocumentID))
@@ -384,7 +387,7 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiUuid& out_guid, xiiStringBuilder& 
 void xiiProcessTask::OnProcessCrashed()
 {
   m_Status = xiiStatus("Asset processor crashed");
-  xiiLogEntryDelegate logger([this](xiiLogEntry& entry) { m_LogEntries.PushBack(std::move(entry)); });
+  xiiLogEntryDelegate logger([this](xiiLogEntry& ref_entry) { m_LogEntries.PushBack(std::move(ref_entry)); });
   xiiLog::Error(&logger, "AssetProcessor crashed!");
   xiiLog::Error(&xiiAssetProcessor::GetSingleton()->m_CuratorLog, "AssetProcessor crashed!");
 }
@@ -414,7 +417,7 @@ bool xiiProcessTask::BeginExecute()
     xiiSet<xiiString> dependencies;
 
     xiiStringBuilder sTemp;
-    xiiAssetCurator::GetSingleton()->GenerateTransitiveHull(xiiConversionUtils::ToString(m_AssetGuid, sTemp), &dependencies, &dependencies);
+    xiiAssetCurator::GetSingleton()->GenerateTransitiveHull(xiiConversionUtils::ToString(m_AssetGuid, sTemp), dependencies, true, true);
 
     m_TransitiveHull.Reserve(dependencies.GetCount());
     for (const xiiString& str : dependencies)

@@ -67,9 +67,9 @@ import Flags = require("./AllFlags")
   }
 }
 
-static void CreateMessageTypeList(xiiSet<const xiiRTTI*>& found, xiiDynamicArray<const xiiRTTI*>& sorted, const xiiRTTI* pRtti)
+static void CreateMessageTypeList(xiiSet<const xiiRTTI*>& ref_found, xiiDynamicArray<const xiiRTTI*>& ref_sorted, const xiiRTTI* pRtti)
 {
-  if (found.Contains(pRtti))
+  if (ref_found.Contains(pRtti))
     return;
 
   if (!pRtti->IsDerivedFrom<xiiMessage>())
@@ -78,10 +78,10 @@ static void CreateMessageTypeList(xiiSet<const xiiRTTI*>& found, xiiDynamicArray
   if (pRtti == xiiGetStaticRTTI<xiiMessage>() || pRtti == xiiGetStaticRTTI<xiiEventMessage>())
     return;
 
-  found.Insert(pRtti);
-  CreateMessageTypeList(found, sorted, pRtti->GetParentType());
+  ref_found.Insert(pRtti);
+  CreateMessageTypeList(ref_found, ref_sorted, pRtti->GetParentType());
 
-  sorted.PushBack(pRtti);
+  ref_sorted.PushBack(pRtti);
 }
 
 void xiiTypeScriptBinding::GenerateAllMessagesCode(xiiStringBuilder& out_Code)
@@ -181,28 +181,28 @@ void xiiTypeScriptBinding::InjectMessageImportExport(xiiStringBuilder& content, 
   AppendToTextFile(content, sImportExport);
 }
 
-static xiiUniquePtr<xiiMessage> CreateMessage(xiiUInt32 uiTypeHash, const xiiRTTI*& pRtti)
+static xiiUniquePtr<xiiMessage> CreateMessage(xiiUInt32 uiTypeHash, const xiiRTTI*& ref_pRtti)
 {
   static xiiHashTable<xiiUInt32, const xiiRTTI*, xiiHashHelper<xiiUInt32>, xiiStaticAllocatorWrapper> MessageTypes;
 
-  if (!MessageTypes.TryGetValue(uiTypeHash, pRtti))
+  if (!MessageTypes.TryGetValue(uiTypeHash, ref_pRtti))
   {
     MessageTypes[uiTypeHash] = nullptr;
 
-    for (pRtti = xiiRTTI::GetFirstInstance(); pRtti != nullptr; pRtti = pRtti->GetNextInstance())
+    for (ref_pRtti = xiiRTTI::GetFirstInstance(); ref_pRtti != nullptr; ref_pRtti = ref_pRtti->GetNextInstance())
     {
-      if (xiiHashingUtils::StringHashTo32(pRtti->GetTypeNameHash()) == uiTypeHash)
+      if (xiiHashingUtils::StringHashTo32(ref_pRtti->GetTypeNameHash()) == uiTypeHash)
       {
-        MessageTypes[uiTypeHash] = pRtti;
+        MessageTypes[uiTypeHash] = ref_pRtti;
         break;
       }
     }
   }
 
-  if (pRtti == nullptr || !pRtti->GetAllocator()->CanAllocate())
+  if (ref_pRtti == nullptr || !ref_pRtti->GetAllocator()->CanAllocate())
     return nullptr;
 
-  return pRtti->GetAllocator()->Allocate<xiiMessage>();
+  return ref_pRtti->GetAllocator()->Allocate<xiiMessage>();
 }
 
 xiiUniquePtr<xiiMessage> xiiTypeScriptBinding::MessageFromParameter(duk_context* pDuk, xiiInt32 iObjIdx, xiiTime delay)
@@ -357,7 +357,7 @@ bool xiiTypeScriptBinding::HasMessageHandler(const TsComponentTypeInfo& typeInfo
   return false;
 }
 
-bool xiiTypeScriptBinding::DeliverMessage(const TsComponentTypeInfo& typeInfo, xiiTypeScriptComponent* pComponent, xiiMessage& msg, bool bSynchronizeAfterwards)
+bool xiiTypeScriptBinding::DeliverMessage(const TsComponentTypeInfo& typeInfo, xiiTypeScriptComponent* pComponent, xiiMessage& ref_msg, bool bSynchronizeAfterwards)
 {
   if (!typeInfo.IsValid())
     return false;
@@ -367,7 +367,7 @@ bool xiiTypeScriptBinding::DeliverMessage(const TsComponentTypeInfo& typeInfo, x
   if (tsc.m_MessageHandlers.IsEmpty())
     return false;
 
-  const xiiRTTI* pMsgRtti = msg.GetDynamicRTTI();
+  const xiiRTTI* pMsgRtti = ref_msg.GetDynamicRTTI();
 
   ++m_iMsgDeliveryRecursion;
   XII_SCOPE_EXIT(--m_iMsgDeliveryRecursion);
@@ -384,7 +384,7 @@ bool xiiTypeScriptBinding::DeliverMessage(const TsComponentTypeInfo& typeInfo, x
 
       if (duk.PrepareMethodCall(mh.m_sHandlerFunc).Succeeded()) // [ comp func comp ]
       {
-        xiiTypeScriptBinding::DukPutMessage(duk, msg); // [ comp func comp msg ]
+        xiiTypeScriptBinding::DukPutMessage(duk, ref_msg); // [ comp func comp msg ]
 
         if (bSynchronizeAfterwards)
         {
@@ -402,10 +402,10 @@ bool xiiTypeScriptBinding::DeliverMessage(const TsComponentTypeInfo& typeInfo, x
 
         if (bSynchronizeAfterwards)
         {
-          duk.PushGlobalStash();                                                  // [ ... stash ]
-          duk_get_prop_string(duk, -1, sStashMsgName);                            // [ ... stash msg ]
-          xiiTypeScriptBinding::SyncTsObjectXIITsObject(duk, pMsgRtti, &msg, -1); // [ ... stash msg ]
-          duk_pop_2(duk);                                                         // [ ... ]
+          duk.PushGlobalStash();                                                      // [ ... stash ]
+          duk_get_prop_string(duk, -1, sStashMsgName);                                // [ ... stash msg ]
+          xiiTypeScriptBinding::SyncTsObjectXIITsObject(duk, pMsgRtti, &ref_msg, -1); // [ ... stash msg ]
+          duk_pop_2(duk);                                                             // [ ... ]
         }
 
         XII_DUK_RETURN_AND_VERIFY_STACK(duk, true, 0);

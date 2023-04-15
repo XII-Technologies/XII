@@ -48,8 +48,8 @@ public:
 
   //////////////////////////////////////////////////////////////////////////
 
-  void Save(xiiStreamWriter& stream) const;
-  void Load(xiiStreamReader& stream);
+  void Save(xiiStreamWriter& inout_stream) const;
+  void Load(xiiStreamReader& inout_stream);
 
 private:
   void ClearEmitters();

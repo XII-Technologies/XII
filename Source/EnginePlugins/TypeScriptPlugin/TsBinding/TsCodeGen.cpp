@@ -101,7 +101,7 @@ void xiiTypeScriptBinding::InjectEnumImportExport(xiiStringBuilder& content, con
   {
     sorted.PushBack(pRtti);
   }
-  sorted.Sort([](const xiiRTTI* r1, const xiiRTTI* r2) -> bool { return xiiStringUtils::Compare(r1->GetTypeName(), r2->GetTypeName()) < 0; });
+  sorted.Sort([](const xiiRTTI* p1, const xiiRTTI* p2) -> bool { return xiiStringUtils::Compare(p1->GetTypeName(), p2->GetTypeName()) < 0; });
 
   for (const xiiRTTI* pRtti : sorted)
   {
@@ -124,7 +124,7 @@ void xiiTypeScriptBinding::InjectFlagsImportExport(xiiStringBuilder& content, co
   {
     sorted.PushBack(pRtti);
   }
-  sorted.Sort([](const xiiRTTI* r1, const xiiRTTI* r2) -> bool { return xiiStringUtils::Compare(r1->GetTypeName(), r2->GetTypeName()) < 0; });
+  sorted.Sort([](const xiiRTTI* p1, const xiiRTTI* p2) -> bool { return xiiStringUtils::Compare(p1->GetTypeName(), p2->GetTypeName()) < 0; });
 
   for (const xiiRTTI* pRtti : sorted)
   {

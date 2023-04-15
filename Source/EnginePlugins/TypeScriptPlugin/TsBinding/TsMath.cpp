@@ -42,18 +42,18 @@ void xiiTypeScriptBinding::SetVec2Property(duk_context* pDuk, const char* szProp
   XII_DUK_RETURN_VOID_AND_VERIFY_STACK(duk, 0);
 }
 
-xiiVec2 xiiTypeScriptBinding::GetVec2(duk_context* pDuk, xiiInt32 iObjIdx, const xiiVec2& fallback /*= xiiVec2::ZeroVector()*/)
+xiiVec2 xiiTypeScriptBinding::GetVec2(duk_context* pDuk, xiiInt32 iObjIdx, const xiiVec2& vFallback /*= xiiVec2::ZeroVector()*/)
 {
   if (duk_is_null_or_undefined(pDuk, iObjIdx))
-    return fallback;
+    return vFallback;
 
   xiiVec2 res;
 
   XII_VERIFY(duk_get_prop_string(pDuk, iObjIdx, "x"), "");
-  res.x = static_cast<float>(duk_get_number_default(pDuk, -1, fallback.x));
+  res.x = static_cast<float>(duk_get_number_default(pDuk, -1, vFallback.x));
   duk_pop(pDuk);
   XII_VERIFY(duk_get_prop_string(pDuk, iObjIdx, "y"), "");
-  res.y = static_cast<float>(duk_get_number_default(pDuk, -1, fallback.y));
+  res.y = static_cast<float>(duk_get_number_default(pDuk, -1, vFallback.y));
   duk_pop(pDuk);
 
   return res;
@@ -63,16 +63,16 @@ xiiVec2 xiiTypeScriptBinding::GetVec2Property(
   duk_context*   pDuk,
   const char*    szPropertyName,
   xiiInt32       iObjIdx,
-  const xiiVec2& fallback /*= xiiVec2::ZeroVector()*/)
+  const xiiVec2& vFallback /*= xiiVec2::ZeroVector()*/)
 {
   xiiDuktapeHelper duk(pDuk);
 
   if (duk.PushLocalObject(szPropertyName, iObjIdx).Failed()) // [ prop ]
   {
-    XII_DUK_RETURN_AND_VERIFY_STACK(duk, fallback, 0);
+    XII_DUK_RETURN_AND_VERIFY_STACK(duk, vFallback, 0);
   }
 
-  const xiiVec2 res = GetVec2(pDuk, -1, fallback);
+  const xiiVec2 res = GetVec2(pDuk, -1, vFallback);
   duk.PopStack(); // [ ]
   XII_DUK_RETURN_AND_VERIFY_STACK(duk, res, 0);
 }
@@ -116,21 +116,21 @@ void xiiTypeScriptBinding::SetVec3Property(duk_context* pDuk, const char* szProp
   XII_DUK_RETURN_VOID_AND_VERIFY_STACK(duk, 0);
 }
 
-xiiVec3 xiiTypeScriptBinding::GetVec3(duk_context* pDuk, xiiInt32 iObjIdx, const xiiVec3& fallback /*= xiiVec3::ZeroVector()*/)
+xiiVec3 xiiTypeScriptBinding::GetVec3(duk_context* pDuk, xiiInt32 iObjIdx, const xiiVec3& vFallback /*= xiiVec3::ZeroVector()*/)
 {
   if (duk_is_null_or_undefined(pDuk, iObjIdx))
-    return fallback;
+    return vFallback;
 
   xiiVec3 res;
 
   XII_VERIFY(duk_get_prop_string(pDuk, iObjIdx, "x"), "");
-  res.x = static_cast<float>(duk_get_number_default(pDuk, -1, fallback.x));
+  res.x = static_cast<float>(duk_get_number_default(pDuk, -1, vFallback.x));
   duk_pop(pDuk);
   XII_VERIFY(duk_get_prop_string(pDuk, iObjIdx, "y"), "");
-  res.y = static_cast<float>(duk_get_number_default(pDuk, -1, fallback.y));
+  res.y = static_cast<float>(duk_get_number_default(pDuk, -1, vFallback.y));
   duk_pop(pDuk);
   XII_VERIFY(duk_get_prop_string(pDuk, iObjIdx, "z"), "");
-  res.z = static_cast<float>(duk_get_number_default(pDuk, -1, fallback.z));
+  res.z = static_cast<float>(duk_get_number_default(pDuk, -1, vFallback.z));
   duk_pop(pDuk);
 
   return res;
@@ -140,16 +140,16 @@ xiiVec3 xiiTypeScriptBinding::GetVec3Property(
   duk_context*   pDuk,
   const char*    szPropertyName,
   xiiInt32       iObjIdx,
-  const xiiVec3& fallback /*= xiiVec3::ZeroVector()*/)
+  const xiiVec3& vFallback /*= xiiVec3::ZeroVector()*/)
 {
   xiiDuktapeHelper duk(pDuk);
 
   if (duk.PushLocalObject(szPropertyName, iObjIdx).Failed()) // [ prop ]
   {
-    XII_DUK_RETURN_AND_VERIFY_STACK(duk, fallback, 0);
+    XII_DUK_RETURN_AND_VERIFY_STACK(duk, vFallback, 0);
   }
 
-  const xiiVec3 res = GetVec3(pDuk, -1, fallback);
+  const xiiVec3 res = GetVec3(pDuk, -1, vFallback);
   duk.PopStack(); // [ ]
 
   XII_DUK_RETURN_AND_VERIFY_STACK(duk, res, 0);
@@ -210,10 +210,10 @@ void xiiTypeScriptBinding::SetMat3Property(duk_context* pDuk, const char* szProp
   XII_DUK_RETURN_VOID_AND_VERIFY_STACK(duk, 0);
 }
 
-xiiMat3 xiiTypeScriptBinding::GetMat3(duk_context* pDuk, xiiInt32 iObjIdx, const xiiMat3& fallback /*= xiiMat3::ZeroVector()*/)
+xiiMat3 xiiTypeScriptBinding::GetMat3(duk_context* pDuk, xiiInt32 iObjIdx, const xiiMat3& mFallback /*= xiiMat3::ZeroVector()*/)
 {
   if (duk_is_null_or_undefined(pDuk, iObjIdx))
-    return fallback;
+    return mFallback;
 
   xiiMat3 res;
 
@@ -240,16 +240,16 @@ xiiMat3 xiiTypeScriptBinding::GetMat3Property(
   duk_context*   pDuk,
   const char*    szPropertyName,
   xiiInt32       iObjIdx,
-  const xiiMat3& fallback /*= xiiMat3::ZeroVector()*/)
+  const xiiMat3& mFallback /*= xiiMat3::ZeroVector()*/)
 {
   xiiDuktapeHelper duk(pDuk);
 
   if (duk.PushLocalObject(szPropertyName, iObjIdx).Failed()) // [ prop ]
   {
-    XII_DUK_RETURN_AND_VERIFY_STACK(duk, fallback, 0);
+    XII_DUK_RETURN_AND_VERIFY_STACK(duk, mFallback, 0);
   }
 
-  const xiiMat3 res = GetMat3(pDuk, -1, fallback);
+  const xiiMat3 res = GetMat3(pDuk, -1, mFallback);
   duk.PopStack(); // [ ]
 
   XII_DUK_RETURN_AND_VERIFY_STACK(duk, res, 0);
@@ -317,10 +317,10 @@ void xiiTypeScriptBinding::SetMat4Property(duk_context* pDuk, const char* szProp
   XII_DUK_RETURN_VOID_AND_VERIFY_STACK(duk, 0);
 }
 
-xiiMat4 xiiTypeScriptBinding::GetMat4(duk_context* pDuk, xiiInt32 iObjIdx, const xiiMat4& fallback /*= xiiMat4::ZeroVector()*/)
+xiiMat4 xiiTypeScriptBinding::GetMat4(duk_context* pDuk, xiiInt32 iObjIdx, const xiiMat4& mFallback /*= xiiMat4::ZeroVector()*/)
 {
   if (duk_is_null_or_undefined(pDuk, iObjIdx))
-    return fallback;
+    return mFallback;
 
   xiiMat4 res;
 
@@ -354,16 +354,16 @@ xiiMat4 xiiTypeScriptBinding::GetMat4Property(
   duk_context*   pDuk,
   const char*    szPropertyName,
   xiiInt32       iObjIdx,
-  const xiiMat4& fallback /*= xiiMat4::ZeroVector()*/)
+  const xiiMat4& mFallback /*= xiiMat4::ZeroVector()*/)
 {
   xiiDuktapeHelper duk(pDuk);
 
   if (duk.PushLocalObject(szPropertyName, iObjIdx).Failed()) // [ prop ]
   {
-    XII_DUK_RETURN_AND_VERIFY_STACK(duk, fallback, 0);
+    XII_DUK_RETURN_AND_VERIFY_STACK(duk, mFallback, 0);
   }
 
-  const xiiMat4 res = GetMat4(pDuk, -1, fallback);
+  const xiiMat4 res = GetMat4(pDuk, -1, mFallback);
   duk.PopStack(); // [ ]
 
   XII_DUK_RETURN_AND_VERIFY_STACK(duk, res, 0);
@@ -410,24 +410,24 @@ void xiiTypeScriptBinding::SetQuatProperty(duk_context* pDuk, const char* szProp
   XII_DUK_RETURN_VOID_AND_VERIFY_STACK(duk, 0);
 }
 
-xiiQuat xiiTypeScriptBinding::GetQuat(duk_context* pDuk, xiiInt32 iObjIdx, xiiQuat fallback /*= xiiQuat::IdentityQuaternion()*/)
+xiiQuat xiiTypeScriptBinding::GetQuat(duk_context* pDuk, xiiInt32 iObjIdx, xiiQuat qFallback /*= xiiQuat::IdentityQuaternion()*/)
 {
   if (duk_is_null_or_undefined(pDuk, iObjIdx))
-    return fallback;
+    return qFallback;
 
   xiiQuat res;
 
   XII_VERIFY(duk_get_prop_string(pDuk, iObjIdx, "x"), "");
-  res.v.x = static_cast<float>(duk_get_number_default(pDuk, -1, fallback.v.x));
+  res.v.x = static_cast<float>(duk_get_number_default(pDuk, -1, qFallback.v.x));
   duk_pop(pDuk);
   XII_VERIFY(duk_get_prop_string(pDuk, iObjIdx, "y"), "");
-  res.v.y = static_cast<float>(duk_get_number_default(pDuk, -1, fallback.v.y));
+  res.v.y = static_cast<float>(duk_get_number_default(pDuk, -1, qFallback.v.y));
   duk_pop(pDuk);
   XII_VERIFY(duk_get_prop_string(pDuk, iObjIdx, "z"), "");
-  res.v.z = static_cast<float>(duk_get_number_default(pDuk, -1, fallback.v.z));
+  res.v.z = static_cast<float>(duk_get_number_default(pDuk, -1, qFallback.v.z));
   duk_pop(pDuk);
   XII_VERIFY(duk_get_prop_string(pDuk, iObjIdx, "w"), "");
-  res.w = static_cast<float>(duk_get_number_default(pDuk, -1, fallback.w));
+  res.w = static_cast<float>(duk_get_number_default(pDuk, -1, qFallback.w));
   duk_pop(pDuk);
 
   return res;
@@ -437,16 +437,16 @@ xiiQuat xiiTypeScriptBinding::GetQuatProperty(
   duk_context* pDuk,
   const char*  szPropertyName,
   xiiInt32     iObjIdx,
-  xiiQuat      fallback /*= xiiQuat::IdentityQuaternion()*/)
+  xiiQuat      qFallback /*= xiiQuat::IdentityQuaternion()*/)
 {
   xiiDuktapeHelper duk(pDuk);
 
   if (duk.PushLocalObject(szPropertyName, iObjIdx).Failed()) // [ prop ]
   {
-    XII_DUK_RETURN_AND_VERIFY_STACK(duk, fallback, 0);
+    XII_DUK_RETURN_AND_VERIFY_STACK(duk, qFallback, 0);
   }
 
-  const xiiQuat res = GetQuat(pDuk, -1, fallback);
+  const xiiQuat res = GetQuat(pDuk, -1, qFallback);
   duk.PopStack(); // [ ]
   XII_DUK_RETURN_AND_VERIFY_STACK(duk, res, 0);
 }

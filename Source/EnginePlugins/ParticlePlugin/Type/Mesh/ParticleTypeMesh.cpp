@@ -61,31 +61,31 @@ enum class TypeMeshVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleTypeMeshFactory::Save(xiiStreamWriter& stream) const
+void xiiParticleTypeMeshFactory::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)TypeMeshVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_sMesh;
-  stream << m_sTintColorParameter;
+  inout_stream << m_sMesh;
+  inout_stream << m_sTintColorParameter;
 
   // Version 2
-  stream << m_sMaterial;
+  inout_stream << m_sMaterial;
 }
 
-void xiiParticleTypeMeshFactory::Load(xiiStreamReader& stream)
+void xiiParticleTypeMeshFactory::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)TypeMeshVersion::Version_Current, "Invalid version {0}", uiVersion);
 
-  stream >> m_sMesh;
-  stream >> m_sTintColorParameter;
+  inout_stream >> m_sMesh;
+  inout_stream >> m_sTintColorParameter;
 
   if (uiVersion >= 2)
   {
-    stream >> m_sMaterial;
+    inout_stream >> m_sMaterial;
   }
 }
 
@@ -167,7 +167,7 @@ bool xiiParticleTypeMesh::QueryMeshAndMaterialInfo() const
   return true;
 }
 
-void xiiParticleTypeMesh::ExtractTypeRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& instanceTransform) const
+void xiiParticleTypeMesh::ExtractTypeRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const
 {
   if (!m_bRenderDataCached)
   {
@@ -228,7 +228,7 @@ void xiiParticleTypeMesh::ExtractTypeRenderData(xiiMsgExtractRenderData& msg, co
         pRenderData->FillBatchIdAndSortingKey();
       }
 
-      msg.AddRenderData(pRenderData, m_RenderCategory, xiiRenderData::Caching::Never);
+      ref_msg.AddRenderData(pRenderData, m_RenderCategory, xiiRenderData::Caching::Never);
     }
   }
 }

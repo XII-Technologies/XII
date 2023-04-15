@@ -72,76 +72,76 @@ enum class ParticleEffectVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleEffectDescriptor::Save(xiiStreamWriter& stream) const
+void xiiParticleEffectDescriptor::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)ParticleEffectVersion::Version_Current;
 
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
   const xiiUInt32 uiNumSystems = m_ParticleSystems.GetCount();
 
-  stream << uiNumSystems;
+  inout_stream << uiNumSystems;
 
   // Version 3
-  stream << m_bSimulateInLocalSpace;
-  stream << m_PreSimulateDuration;
+  inout_stream << m_bSimulateInLocalSpace;
+  inout_stream << m_PreSimulateDuration;
   // Version 4
-  stream << m_InvisibleUpdateRate;
+  inout_stream << m_InvisibleUpdateRate;
   // Version 5
-  stream << m_bAlwaysShared;
+  inout_stream << m_bAlwaysShared;
 
   // Version 3
   for (auto pSystem : m_ParticleSystems)
   {
-    stream << pSystem->GetDynamicRTTI()->GetTypeName();
+    inout_stream << pSystem->GetDynamicRTTI()->GetTypeName();
 
-    pSystem->Save(stream);
+    pSystem->Save(inout_stream);
   }
 
   // Version 6
   {
     xiiUInt8 paramCol = static_cast<xiiUInt8>(m_ColorParameters.GetCount());
-    stream << paramCol;
+    inout_stream << paramCol;
     for (auto it = m_ColorParameters.GetIterator(); it.IsValid(); ++it)
     {
-      stream << it.Key();
-      stream << it.Value();
+      inout_stream << it.Key();
+      inout_stream << it.Value();
     }
 
     xiiUInt8 paramFloat = static_cast<xiiUInt8>(m_FloatParameters.GetCount());
-    stream << paramFloat;
+    inout_stream << paramFloat;
     for (auto it = m_FloatParameters.GetIterator(); it.IsValid(); ++it)
     {
-      stream << it.Key();
-      stream << it.Value();
+      inout_stream << it.Key();
+      inout_stream << it.Value();
     }
   }
 
   // Version 7
-  stream << m_fApplyInstanceVelocity;
+  inout_stream << m_fApplyInstanceVelocity;
 
   // Version 8
   {
     const xiiUInt32 uiNumReactions = m_EventReactions.GetCount();
-    stream << uiNumReactions;
+    inout_stream << uiNumReactions;
 
     for (auto pReaction : m_EventReactions)
     {
-      stream << pReaction->GetDynamicRTTI()->GetTypeName();
+      inout_stream << pReaction->GetDynamicRTTI()->GetTypeName();
 
-      pReaction->Save(stream);
+      pReaction->Save(inout_stream);
     }
   }
 }
 
 
-void xiiParticleEffectDescriptor::Load(xiiStreamReader& stream)
+void xiiParticleEffectDescriptor::Load(xiiStreamReader& inout_stream)
 {
   ClearSystems();
   ClearEventReactions();
 
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
   XII_ASSERT_DEV(uiVersion <= (int)ParticleEffectVersion::Version_Current, "Unknown particle effect template version {0}", uiVersion);
 
   if (uiVersion < (int)ParticleEffectVersion::Version_9)
@@ -151,12 +151,12 @@ void xiiParticleEffectDescriptor::Load(xiiStreamReader& stream)
   }
 
   xiiUInt32 uiNumSystems = 0;
-  stream >> uiNumSystems;
+  inout_stream >> uiNumSystems;
 
-  stream >> m_bSimulateInLocalSpace;
-  stream >> m_PreSimulateDuration;
-  stream >> m_InvisibleUpdateRate;
-  stream >> m_bAlwaysShared;
+  inout_stream >> m_bSimulateInLocalSpace;
+  inout_stream >> m_PreSimulateDuration;
+  inout_stream >> m_InvisibleUpdateRate;
+  inout_stream >> m_bAlwaysShared;
 
   m_ParticleSystems.SetCountUninitialized(uiNumSystems);
 
@@ -164,14 +164,14 @@ void xiiParticleEffectDescriptor::Load(xiiStreamReader& stream)
 
   for (auto& pSystem : m_ParticleSystems)
   {
-    stream >> sType;
+    inout_stream >> sType;
 
     const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(sType);
     XII_ASSERT_DEBUG(pRtti != nullptr, "Unknown particle effect type '{0}'", sType);
 
     pSystem = pRtti->GetAllocator()->Allocate<xiiParticleSystemDescriptor>();
 
-    pSystem->Load(stream);
+    pSystem->Load(inout_stream);
   }
 
   xiiStringBuilder key;
@@ -179,42 +179,42 @@ void xiiParticleEffectDescriptor::Load(xiiStreamReader& stream)
   m_FloatParameters.Clear();
 
   xiiUInt8 paramCol;
-  stream >> paramCol;
+  inout_stream >> paramCol;
   for (xiiUInt32 i = 0; i < paramCol; ++i)
   {
     xiiColor val;
-    stream >> key;
-    stream >> val;
+    inout_stream >> key;
+    inout_stream >> val;
     m_ColorParameters[key] = val;
   }
 
   xiiUInt8 paramFloat;
-  stream >> paramFloat;
+  inout_stream >> paramFloat;
   for (xiiUInt32 i = 0; i < paramFloat; ++i)
   {
     float val;
-    stream >> key;
-    stream >> val;
+    inout_stream >> key;
+    inout_stream >> val;
     m_FloatParameters[key] = val;
   }
 
-  stream >> m_fApplyInstanceVelocity;
+  inout_stream >> m_fApplyInstanceVelocity;
 
   xiiUInt32 uiNumReactions = 0;
-  stream >> uiNumReactions;
+  inout_stream >> uiNumReactions;
 
   m_EventReactions.SetCountUninitialized(uiNumReactions);
 
   for (auto& pReaction : m_EventReactions)
   {
-    stream >> sType;
+    inout_stream >> sType;
 
     const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(sType);
     XII_ASSERT_DEBUG(pRtti != nullptr, "Unknown particle effect event reaction type '{0}'", sType);
 
     pReaction = pRtti->GetAllocator()->Allocate<xiiParticleEventReactionFactory>();
 
-    pReaction->Load(stream);
+    pReaction->Load(inout_stream);
   }
 }
 

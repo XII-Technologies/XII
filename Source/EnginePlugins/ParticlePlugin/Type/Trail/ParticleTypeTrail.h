@@ -16,8 +16,8 @@ public:
   virtual const xiiRTTI* GetTypeType() const override;
   virtual void           CopyTypeProperties(xiiParticleType* pObject, bool bFirstTime) const override;
 
-  virtual void Save(xiiStreamWriter& stream) const override;
-  virtual void Load(xiiStreamReader& stream) override;
+  virtual void Save(xiiStreamWriter& inout_stream) const override;
+  virtual void Load(xiiStreamReader& inout_stream) override;
 
   xiiEnum<xiiParticleTypeRenderMode>   m_RenderMode;
   xiiUInt16                            m_uiMaxPoints;
@@ -51,7 +51,7 @@ public:
   float                                m_fDistortionStrength = 0;
 
   virtual void CreateRequiredStreams() override;
-  virtual void ExtractTypeRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& instanceTransform) const override;
+  virtual void ExtractTypeRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const override;
   /// \todo This is a hacky guess, one would actually need to inspect the trail positions
   virtual float GetMaxParticleRadius(float fParticleSize) const override { return fParticleSize + m_uiMaxPoints * 0.05f; }
 

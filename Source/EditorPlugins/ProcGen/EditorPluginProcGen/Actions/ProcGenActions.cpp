@@ -10,11 +10,9 @@ xiiActionDescriptorHandle xiiProcGenActions::s_hDumpDisassembly;
 
 void xiiProcGenActions::RegisterActions()
 {
-  s_hCategory = XII_REGISTER_CATEGORY("ProcGen");
-  s_hDumpAST =
-    XII_REGISTER_ACTION_1("ProcGen.DumpAST", xiiActionScope::Document, "ProcGen Graph", "", xiiProcGenAction, xiiProcGenAction::ActionType::DumpAST);
-  s_hDumpDisassembly = XII_REGISTER_ACTION_1(
-    "ProcGen.DumpDisassembly", xiiActionScope::Document, "ProcGen Graph", "", xiiProcGenAction, xiiProcGenAction::ActionType::DumpDisassembly);
+  s_hCategory        = XII_REGISTER_CATEGORY("ProcGen");
+  s_hDumpAST         = XII_REGISTER_ACTION_1("ProcGen.DumpAST", xiiActionScope::Document, "ProcGen Graph", "", xiiProcGenAction, xiiProcGenAction::ActionType::DumpAST);
+  s_hDumpDisassembly = XII_REGISTER_ACTION_1("ProcGen.DumpDisassembly", xiiActionScope::Document, "ProcGen Graph", "", xiiProcGenAction, xiiProcGenAction::ActionType::DumpDisassembly);
 }
 
 void xiiProcGenActions::UnregisterActions()

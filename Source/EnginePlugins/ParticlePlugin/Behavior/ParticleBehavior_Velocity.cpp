@@ -62,37 +62,37 @@ enum class BehaviorVelocityVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleBehaviorFactory_Velocity::Save(xiiStreamWriter& stream) const
+void xiiParticleBehaviorFactory_Velocity::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)BehaviorVelocityVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_fRiseSpeed;
-  stream << m_fFriction;
+  inout_stream << m_fRiseSpeed;
+  inout_stream << m_fFriction;
 
   // Version 3
-  stream << m_fWindInfluence;
+  inout_stream << m_fWindInfluence;
 }
 
-void xiiParticleBehaviorFactory_Velocity::Load(xiiStreamReader& stream)
+void xiiParticleBehaviorFactory_Velocity::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)BehaviorVelocityVersion::Version_Current, "Invalid version {0}", uiVersion);
 
-  stream >> m_fRiseSpeed;
-  stream >> m_fFriction;
+  inout_stream >> m_fRiseSpeed;
+  inout_stream >> m_fFriction;
 
   if (uiVersion >= 3)
   {
-    stream >> m_fWindInfluence;
+    inout_stream >> m_fWindInfluence;
   }
 }
 
-void xiiParticleBehaviorFactory_Velocity::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_FinalizerDeps) const
+void xiiParticleBehaviorFactory_Velocity::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_finalizerDeps) const
 {
-  inout_FinalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_ApplyVelocity>());
+  inout_finalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_ApplyVelocity>());
 }
 
 void xiiParticleBehavior_Velocity::CreateRequiredStreams()

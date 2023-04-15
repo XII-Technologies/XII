@@ -10,8 +10,7 @@ xiiActionDescriptorHandle xiiSceneGizmoActions::s_hGreyBoxingGizmo;
 
 void xiiSceneGizmoActions::RegisterActions()
 {
-  s_hGreyBoxingGizmo =
-    XII_REGISTER_ACTION_1("Gizmo.Mode.GreyBoxing", xiiActionScope::Document, "Gizmo", "B", xiiGizmoAction, xiiGetStaticRTTI<xiiGreyBoxEditTool>());
+  s_hGreyBoxingGizmo = XII_REGISTER_ACTION_1("Gizmo.Mode.GreyBoxing", xiiActionScope::Document, "Gizmo", "B", xiiGizmoAction, xiiGetStaticRTTI<xiiGreyBoxEditTool>());
 }
 
 void xiiSceneGizmoActions::UnregisterActions()

@@ -20,8 +20,8 @@ namespace
   XII_CHECK_AT_COMPILETIME(XII_ARRAY_SIZE(s_szXIIKeys) == XII_ARRAY_SIZE(s_rmlKeys));
 } // namespace
 
-xiiRmlUiContext::xiiRmlUiContext(const Rml::String& name) :
-  Rml::Context(name)
+xiiRmlUiContext::xiiRmlUiContext(const Rml::String& sName) :
+  Rml::Context(sName)
 {
 }
 
@@ -89,12 +89,12 @@ void xiiRmlUiContext::HideDocument()
   }
 }
 
-void xiiRmlUiContext::UpdateInput(const xiiVec2& mousePos)
+void xiiRmlUiContext::UpdateInput(const xiiVec2& vMousePos)
 {
   float width  = static_cast<float>(GetDimensions().x);
   float height = static_cast<float>(GetDimensions().y);
 
-  m_bWantsInput = mousePos.x >= 0.0f && mousePos.x <= width && mousePos.y >= 0.0f && mousePos.y <= height;
+  m_bWantsInput = vMousePos.x >= 0.0f && vMousePos.x <= width && vMousePos.y >= 0.0f && vMousePos.y <= height;
 
   const bool bCtrlPressed = xiiInputManager::GetInputSlotState(xiiInputSlot_KeyLeftCtrl) >= xiiKeyState::Pressed ||
     xiiInputManager::GetInputSlotState(xiiInputSlot_KeyRightCtrl) >= xiiKeyState::Pressed;
@@ -110,7 +110,7 @@ void xiiRmlUiContext::UpdateInput(const xiiVec2& mousePos)
 
   // Mouse
   {
-    ProcessMouseMove(static_cast<int>(mousePos.x), static_cast<int>(mousePos.y), modifierState);
+    ProcessMouseMove(static_cast<int>(vMousePos.x), static_cast<int>(vMousePos.y), modifierState);
 
     static const char* szMouseButtons[] = {xiiInputSlot_MouseButton0, xiiInputSlot_MouseButton1, xiiInputSlot_MouseButton2};
     for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(szMouseButtons); ++i)
@@ -165,14 +165,14 @@ void xiiRmlUiContext::UpdateInput(const xiiVec2& mousePos)
   }
 }
 
-void xiiRmlUiContext::SetOffset(const xiiVec2I32& offset)
+void xiiRmlUiContext::SetOffset(const xiiVec2I32& vOffset)
 {
-  m_vOffset = offset;
+  m_vOffset = vOffset;
 }
 
-void xiiRmlUiContext::SetSize(const xiiVec2U32& size)
+void xiiRmlUiContext::SetSize(const xiiVec2U32& vSize)
 {
-  SetDimensions(Rml::Vector2i(size.x, size.y));
+  SetDimensions(Rml::Vector2i(vSize.x, vSize.y));
 }
 
 void xiiRmlUiContext::SetDpiScale(float fScale)
@@ -219,14 +219,14 @@ void xiiRmlUiContext::ProcessEvent(const xiiHashedString& sIdentifier, Rml::Even
 
 //////////////////////////////////////////////////////////////////////////
 
-Rml::ContextPtr xiiRmlUiInternal::ContextInstancer::InstanceContext(const Rml::String& name)
+Rml::ContextPtr xiiRmlUiInternal::ContextInstancer::InstanceContext(const Rml::String& sName)
 {
-  return Rml::ContextPtr(XII_DEFAULT_NEW(xiiRmlUiContext, name));
+  return Rml::ContextPtr(XII_DEFAULT_NEW(xiiRmlUiContext, sName));
 }
 
-void xiiRmlUiInternal::ContextInstancer::ReleaseContext(Rml::Context* context)
+void xiiRmlUiInternal::ContextInstancer::ReleaseContext(Rml::Context* pContext)
 {
-  XII_DEFAULT_DELETE(context);
+  XII_DEFAULT_DELETE(pContext);
 }
 
 void xiiRmlUiInternal::ContextInstancer::Release()

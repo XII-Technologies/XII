@@ -141,12 +141,12 @@ xiiGameObject* xiiTypeScriptBinding::ExpectGameObject(duk_context* pDuk, xiiInt3
   return pGameObject;
 }
 
-bool xiiTypeScriptBinding::RegisterGameObject(xiiGameObjectHandle handle, xiiUInt32& out_uiStashIdx)
+bool xiiTypeScriptBinding::RegisterGameObject(xiiGameObjectHandle hHandle, xiiUInt32& out_uiStashIdx)
 {
-  if (handle.IsInvalidated())
+  if (hHandle.IsInvalidated())
     return false;
 
-  xiiUInt32& uiStashIdx = m_GameObjectToStashIdx[handle];
+  xiiUInt32& uiStashIdx = m_GameObjectToStashIdx[hHandle];
 
   if (uiStashIdx != 0)
   {
@@ -167,7 +167,7 @@ bool xiiTypeScriptBinding::RegisterGameObject(xiiGameObjectHandle handle, xiiUIn
   {
     xiiGameObjectHandle* pHandleBuffer =
       reinterpret_cast<xiiGameObjectHandle*>(duk_push_fixed_buffer(duk, sizeof(xiiGameObjectHandle))); // [ global __GameObject object buffer ]
-    *pHandleBuffer = handle;
+    *pHandleBuffer = hHandle;
     duk_put_prop_index(duk, -2, xiiTypeScriptBindingIndexProperty::GameObjectHandle); // [ global __GameObject object ]
   }
 

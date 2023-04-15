@@ -14,8 +14,8 @@ public:
   virtual void           CopyEmitterProperties(xiiParticleEmitter* pEmitter, bool bFirstTime) const override;
   virtual void           QueryMaxParticleCount(xiiUInt32& out_uiMaxParticlesAbs, xiiUInt32& out_uiMaxParticlesPerSecond) const override;
 
-  virtual void Save(xiiStreamWriter& stream) const override;
-  virtual void Load(xiiStreamReader& stream) override;
+  virtual void Save(xiiStreamWriter& inout_stream) const override;
+  virtual void Load(xiiStreamReader& inout_stream) override;
 
 public:
   float     m_fDistanceThreshold = 0.1f;

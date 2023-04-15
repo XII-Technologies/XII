@@ -21,7 +21,7 @@ public:
   xiiParticleRenderer();
   ~xiiParticleRenderer();
 
-  virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const override;
+  virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const override;
 
 protected:
   struct TempSystemCB
@@ -29,7 +29,7 @@ protected:
     TempSystemCB(xiiRenderContext* pRenderContext);
     ~TempSystemCB();
 
-    void SetGenericData(bool bApplyObjectTransform, const xiiTransform& ObjectTransform, xiiTime effectLifeTime, xiiUInt8 uiNumVariationsX, xiiUInt8 uiNumVariationsY, xiiUInt8 uiNumFlipbookAnimsX, xiiUInt8 uiNumFlipbookAnimsY, float fDistortionStrength = 0);
+    void SetGenericData(bool bApplyObjectTransform, const xiiTransform& objectTransform, xiiTime effectLifeTime, xiiUInt8 uiNumVariationsX, xiiUInt8 uiNumVariationsY, xiiUInt8 uiNumFlipbookAnimsX, xiiUInt8 uiNumFlipbookAnimsY, float fDistortionStrength = 0);
     void SetTrailData(float fSnapshotFraction, xiiInt32 iNumUsedTrailPoints);
 
     xiiConstantBufferStorage<xiiParticleSystemConstants>* m_pConstants;

@@ -45,11 +45,11 @@ xiiUInt64 xiiAssetDocumentManager::ComputeAssetProfileHashImpl(const xiiPlatform
   return 0;
 }
 
-xiiStatus xiiAssetDocumentManager::ReadAssetDocumentInfo(xiiUniquePtr<xiiAssetDocumentInfo>& out_pInfo, xiiStreamReader& stream) const
+xiiStatus xiiAssetDocumentManager::ReadAssetDocumentInfo(xiiUniquePtr<xiiAssetDocumentInfo>& out_pInfo, xiiStreamReader& inout_stream) const
 {
   xiiAbstractObjectGraph graph;
 
-  if (xiiAbstractGraphDdlSerializer::ReadHeader(stream, &graph).Failed())
+  if (xiiAbstractGraphDdlSerializer::ReadHeader(inout_stream, &graph).Failed())
     return xiiStatus("Failed to read asset document");
 
   xiiRttiConverterContext context;

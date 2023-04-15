@@ -13,8 +13,8 @@ xiiMap<xiiString, xiiString> xiiQtAssetBrowserDlg::s_TextFilter;
 xiiMap<xiiString, xiiString> xiiQtAssetBrowserDlg::s_PathFilter;
 xiiMap<xiiString, xiiString> xiiQtAssetBrowserDlg::s_TypeFilter;
 
-xiiQtAssetBrowserDlg::xiiQtAssetBrowserDlg(QWidget* parent, const xiiUuid& preselectedAsset, const char* szVisibleFilters) :
-  QDialog(parent)
+xiiQtAssetBrowserDlg::xiiQtAssetBrowserDlg(QWidget* pParent, const xiiUuid& preselectedAsset, const char* szVisibleFilters) :
+  QDialog(pParent)
 {
   setupUi(this);
 

@@ -8,8 +8,8 @@ using xiiParticleEffectResourceHandle = xiiTypedResourceHandle<class xiiParticle
 
 struct XII_PARTICLEPLUGIN_DLL xiiParticleEffectResourceDescriptor
 {
-  virtual void Save(xiiStreamWriter& stream) const;
-  virtual void Load(xiiStreamReader& stream);
+  virtual void Save(xiiStreamWriter& inout_stream) const;
+  virtual void Load(xiiStreamReader& inout_stream);
 
   xiiParticleEffectDescriptor m_Effect;
 };

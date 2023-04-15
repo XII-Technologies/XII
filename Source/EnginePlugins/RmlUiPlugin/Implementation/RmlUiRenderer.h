@@ -17,8 +17,8 @@ public:
   ~xiiRmlUiRenderer();
 
   // xiiRenderer implementation
-  virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const override;
-  virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const override;
+  virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const override;
+  virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const override;
 
   virtual void RenderBatch(
     const xiiRenderViewContext&  renderViewContext,

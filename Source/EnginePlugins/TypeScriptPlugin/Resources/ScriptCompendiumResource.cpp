@@ -66,44 +66,44 @@ void xiiScriptCompendiumResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUs
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiResult xiiScriptCompendiumResourceDesc::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiScriptCompendiumResourceDesc::Serialize(xiiStreamWriter& inout_stream) const
 {
-  stream.WriteVersion(2);
+  inout_stream.WriteVersion(2);
 
-  XII_SUCCEED_OR_RETURN(stream.WriteMap(m_PathToSource));
-  XII_SUCCEED_OR_RETURN(stream.WriteMap(m_AssetGuidToInfo));
+  XII_SUCCEED_OR_RETURN(inout_stream.WriteMap(m_PathToSource));
+  XII_SUCCEED_OR_RETURN(inout_stream.WriteMap(m_AssetGuidToInfo));
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiScriptCompendiumResourceDesc::Deserialize(xiiStreamReader& stream)
+xiiResult xiiScriptCompendiumResourceDesc::Deserialize(xiiStreamReader& inout_stream)
 {
-  xiiTypeVersion version = stream.ReadVersion(2);
+  xiiTypeVersion version = inout_stream.ReadVersion(2);
 
-  XII_SUCCEED_OR_RETURN(stream.ReadMap(m_PathToSource));
+  XII_SUCCEED_OR_RETURN(inout_stream.ReadMap(m_PathToSource));
 
   if (version >= 2)
   {
-    XII_SUCCEED_OR_RETURN(stream.ReadMap(m_AssetGuidToInfo));
+    XII_SUCCEED_OR_RETURN(inout_stream.ReadMap(m_AssetGuidToInfo));
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiScriptCompendiumResourceDesc::ComponentTypeInfo::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiScriptCompendiumResourceDesc::ComponentTypeInfo::Serialize(xiiStreamWriter& inout_stream) const
 {
-  stream.WriteVersion(1);
+  inout_stream.WriteVersion(1);
 
-  XII_SUCCEED_OR_RETURN(stream.WriteString(m_sComponentTypeName));
-  XII_SUCCEED_OR_RETURN(stream.WriteString(m_sComponentFilePath));
+  XII_SUCCEED_OR_RETURN(inout_stream.WriteString(m_sComponentTypeName));
+  XII_SUCCEED_OR_RETURN(inout_stream.WriteString(m_sComponentFilePath));
   return XII_SUCCESS;
 }
 
-xiiResult xiiScriptCompendiumResourceDesc::ComponentTypeInfo::Deserialize(xiiStreamReader& stream)
+xiiResult xiiScriptCompendiumResourceDesc::ComponentTypeInfo::Deserialize(xiiStreamReader& inout_stream)
 {
-  xiiTypeVersion version = stream.ReadVersion(1);
+  xiiTypeVersion version = inout_stream.ReadVersion(1);
 
-  XII_SUCCEED_OR_RETURN(stream.ReadString(m_sComponentTypeName));
-  XII_SUCCEED_OR_RETURN(stream.ReadString(m_sComponentFilePath));
+  XII_SUCCEED_OR_RETURN(inout_stream.ReadString(m_sComponentTypeName));
+  XII_SUCCEED_OR_RETURN(inout_stream.ReadString(m_sComponentFilePath));
   return XII_SUCCESS;
 }

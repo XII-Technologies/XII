@@ -22,7 +22,7 @@ xiiParticleRenderer::TempSystemCB::~TempSystemCB()
   xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBuffer);
 }
 
-void xiiParticleRenderer::TempSystemCB::SetGenericData(bool bApplyObjectTransform, const xiiTransform& ObjectTransform, xiiTime effectLifeTime, xiiUInt8 uiNumVariationsX, xiiUInt8 uiNumVariationsY, xiiUInt8 uiNumFlipbookAnimsX, xiiUInt8 uiNumFlipbookAnimsY, float fDistortionStrength /*= 0*/)
+void xiiParticleRenderer::TempSystemCB::SetGenericData(bool bApplyObjectTransform, const xiiTransform& objectTransform, xiiTime effectLifeTime, xiiUInt8 uiNumVariationsX, xiiUInt8 uiNumVariationsY, xiiUInt8 uiNumFlipbookAnimsX, xiiUInt8 uiNumFlipbookAnimsY, float fDistortionStrength /*= 0*/)
 {
   xiiParticleSystemConstants& cb  = m_pConstants->GetDataForWriting();
   cb.TextureAtlasVariationFramesX = uiNumVariationsX;
@@ -33,7 +33,7 @@ void xiiParticleRenderer::TempSystemCB::SetGenericData(bool bApplyObjectTransfor
   cb.TotalEffectLifeTime          = effectLifeTime.AsFloatInSeconds();
 
   if (bApplyObjectTransform)
-    cb.ObjectToWorldMatrix = ObjectTransform.GetAsMat4();
+    cb.ObjectToWorldMatrix = objectTransform.GetAsMat4();
   else
     cb.ObjectToWorldMatrix.SetIdentity();
 }
@@ -49,9 +49,9 @@ void xiiParticleRenderer::TempSystemCB::SetTrailData(float fSnapshotFraction, xi
 xiiParticleRenderer::xiiParticleRenderer()  = default;
 xiiParticleRenderer::~xiiParticleRenderer() = default;
 
-void xiiParticleRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const
+void xiiParticleRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
-  categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
 }
 
 void xiiParticleRenderer::CreateParticleDataBuffer(xiiGALBufferHandle& inout_hBuffer, xiiUInt32 uiDataTypeSize, xiiUInt32 uiNumParticlesPerBatch)

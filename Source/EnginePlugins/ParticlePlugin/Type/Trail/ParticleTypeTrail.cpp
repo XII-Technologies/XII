@@ -86,50 +86,50 @@ enum class TypeTrailVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleTypeTrailFactory::Save(xiiStreamWriter& stream) const
+void xiiParticleTypeTrailFactory::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)TypeTrailVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_sTexture;
-  stream << m_uiMaxPoints;
-  stream << m_UpdateDiff;
-  stream << m_RenderMode;
+  inout_stream << m_sTexture;
+  inout_stream << m_uiMaxPoints;
+  inout_stream << m_UpdateDiff;
+  inout_stream << m_RenderMode;
 
   // version 3
-  stream << m_TextureAtlasType;
-  stream << m_uiNumSpritesX;
-  stream << m_uiNumSpritesY;
+  inout_stream << m_TextureAtlasType;
+  inout_stream << m_uiNumSpritesX;
+  inout_stream << m_uiNumSpritesY;
 
   // version 4
-  stream << m_sTintColorParameter;
+  inout_stream << m_sTintColorParameter;
 
   // version 5
-  stream << m_sDistortionTexture;
-  stream << m_fDistortionStrength;
+  inout_stream << m_sDistortionTexture;
+  inout_stream << m_fDistortionStrength;
 }
 
-void xiiParticleTypeTrailFactory::Load(xiiStreamReader& stream)
+void xiiParticleTypeTrailFactory::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)TypeTrailVersion::Version_Current, "Invalid version {0}", uiVersion);
 
-  stream >> m_sTexture;
-  stream >> m_uiMaxPoints;
-  stream >> m_UpdateDiff;
+  inout_stream >> m_sTexture;
+  inout_stream >> m_uiMaxPoints;
+  inout_stream >> m_UpdateDiff;
 
   if (uiVersion >= 2)
   {
-    stream >> m_RenderMode;
+    inout_stream >> m_RenderMode;
   }
 
   if (uiVersion >= 3)
   {
-    stream >> m_TextureAtlasType;
-    stream >> m_uiNumSpritesX;
-    stream >> m_uiNumSpritesY;
+    inout_stream >> m_TextureAtlasType;
+    inout_stream >> m_uiNumSpritesX;
+    inout_stream >> m_uiNumSpritesY;
 
     if (m_TextureAtlasType == xiiParticleTextureAtlasType::None)
     {
@@ -140,13 +140,13 @@ void xiiParticleTypeTrailFactory::Load(xiiStreamReader& stream)
 
   if (uiVersion >= 4)
   {
-    stream >> m_sTintColorParameter;
+    inout_stream >> m_sTintColorParameter;
   }
 
   if (uiVersion >= 5)
   {
-    stream >> m_sDistortionTexture;
-    stream >> m_fDistortionStrength;
+    inout_stream >> m_sDistortionTexture;
+    inout_stream >> m_fDistortionStrength;
   }
 }
 
@@ -178,7 +178,7 @@ void xiiParticleTypeTrail::CreateRequiredStreams()
   }
 }
 
-void xiiParticleTypeTrail::ExtractTypeRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& instanceTransform) const
+void xiiParticleTypeTrail::ExtractTypeRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const
 {
   XII_PROFILE_SCOPE("PFX: Trail");
 
@@ -288,7 +288,7 @@ void xiiParticleTypeTrail::ExtractTypeRenderData(xiiMsgExtractRenderData& msg, c
       break;
   }
 
-  msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::LitTransparent, xiiRenderData::Caching::Never);
+  ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::LitTransparent, xiiRenderData::Caching::Never);
 }
 
 void xiiParticleTypeTrail::InitializeElements(xiiUInt64 uiStartIndex, xiiUInt64 uiNumElements)

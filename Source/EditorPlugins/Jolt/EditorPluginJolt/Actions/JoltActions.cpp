@@ -12,9 +12,8 @@ xiiActionDescriptorHandle xiiJoltActions::s_hProjectSettings;
 
 void xiiJoltActions::RegisterActions()
 {
-  s_hCategoryJolt = XII_REGISTER_CATEGORY("Jolt");
-  s_hProjectSettings =
-    XII_REGISTER_ACTION_1("Jolt.Settings.Project", xiiActionScope::Document, "Jolt", "", xiiJoltAction, xiiJoltAction::ActionType::ProjectSettings);
+  s_hCategoryJolt    = XII_REGISTER_CATEGORY("Jolt");
+  s_hProjectSettings = XII_REGISTER_ACTION_1("Jolt.Settings.Project", xiiActionScope::Document, "Jolt", "", xiiJoltAction, xiiJoltAction::ActionType::ProjectSettings);
 }
 
 void xiiJoltActions::UnregisterActions()
