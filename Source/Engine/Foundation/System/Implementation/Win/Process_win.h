@@ -51,16 +51,37 @@ struct xiiPipeWin
     }
   }
 
-  void StartRead(xiiDelegate<void(xiiStringView)>& onStdOut)
+  static void ReportString(xiiDelegate<void(xiiStringView)> func, xiiHybridArray<char, 256>& temp)
+  {
+    xiiStringBuilder result;
+
+    xiiUnicodeUtils::RepairNonUtf8Text(temp.GetData(), temp.GetData() + temp.GetCount(), result);
+    func(result);
+  }
+
+  static void ReportString(xiiDelegate<void(xiiStringView)> func, const char* szStart, const char* szEnd)
+  {
+    xiiHybridArray<char, 256> tmp;
+
+    while (szStart < szEnd)
+    {
+      tmp.PushBack(*szStart);
+      ++szStart;
+    }
+
+    ReportString(func, tmp);
+  }
+
+  void StartRead(xiiDelegate<void(xiiStringView)>& ref_onStdOut)
   {
     if (m_pipeWrite)
     {
       m_running    = true;
       m_readThread = std::thread([&]() {
-        xiiStringBuilder overflowBuffer;
+        xiiHybridArray<char, 256> overflowBuffer;
 
-        constexpr xiiInt32 BUFSIZE = 512;
-        char               chBuf[BUFSIZE];
+        constexpr int BUFSIZE = 512;
+        char          chBuf[BUFSIZE];
         while (true)
         {
           DWORD bytesRead = 0;
@@ -69,13 +90,14 @@ struct xiiPipeWin
           {
             if (!overflowBuffer.IsEmpty())
             {
-              onStdOut(overflowBuffer);
+              ReportString(ref_onStdOut, overflowBuffer);
             }
             break;
           }
 
           const char* szCurrentPos = chBuf;
           const char* szEndPos     = chBuf + bytesRead;
+
           while (szCurrentPos < szEndPos)
           {
             const char* szFound = xiiStringUtils::FindSubString(szCurrentPos, "\n", szEndPos);
@@ -84,26 +106,39 @@ struct xiiPipeWin
               if (overflowBuffer.IsEmpty())
               {
                 // If there is nothing in the overflow buffer this is a complete line and can be fired as is.
-                onStdOut(xiiStringView(szCurrentPos, szFound + 1));
+                ReportString(ref_onStdOut, szCurrentPos, szFound + 1);
               }
               else
               {
                 // We have data in the overflow buffer so this is the final part of a partial line so we need to complete and fire the overflow buffer.
-                overflowBuffer.Append(xiiStringView(szCurrentPos, szFound + 1));
-                onStdOut(overflowBuffer);
+
+                while (szCurrentPos < szFound + 1)
+                {
+                  overflowBuffer.PushBack(*szCurrentPos);
+                  ++szCurrentPos;
+                }
+
+                ReportString(ref_onStdOut, overflowBuffer);
+
                 overflowBuffer.Clear();
               }
+
               szCurrentPos = szFound + 1;
             }
             else
             {
               // This is either the start or a middle segment of a line, append to overflow buffer.
-              overflowBuffer.Append(xiiStringView(szCurrentPos, szEndPos));
-              szCurrentPos = szEndPos;
+
+              while (szCurrentPos < szEndPos)
+              {
+                overflowBuffer.PushBack(*szCurrentPos);
+                ++szCurrentPos;
+              }
             }
           }
         }
         m_running = false;
+        //
       });
     }
   }
