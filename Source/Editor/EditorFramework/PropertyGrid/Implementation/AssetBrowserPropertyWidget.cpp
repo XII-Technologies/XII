@@ -183,7 +183,7 @@ void xiiQtAssetPropertyWidget::InternalSetValue(const xiiVariant& value)
           xiiAssetCurator::GetSingleton()->GenerateInverseTransitiveHull(asset->m_pAssetInfo, inverseHull, true, true);
           if (inverseHull.Contains(newAssetGuid))
           {
-            xiiQtUiServices::GetSingleton()->MessageBoxWarning("The asset can't be selected as it would create a circular dependency");
+            xiiQtUiServices::GetSingleton()->MessageBoxWarning("This asset cannot be used here, as that would create a circular dependency.");
             return;
           }
         }

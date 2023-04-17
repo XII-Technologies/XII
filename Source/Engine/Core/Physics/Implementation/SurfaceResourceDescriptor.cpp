@@ -31,7 +31,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceResourceDescriptor, 2, xiiRTTIDefault
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("BaseSurface", GetBaseSurfaceFile, SetBaseSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
+    XII_ACCESSOR_PROPERTY("BaseSurface", GetBaseSurfaceFile, SetBaseSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")), // Package + Thumbnail So that circular dependencies are caught.
     XII_MEMBER_PROPERTY("Restitution", m_fPhysicsRestitution)->AddAttributes(new xiiDefaultValueAttribute(0.25f)),
     XII_MEMBER_PROPERTY("StaticFriction", m_fPhysicsFrictionStatic)->AddAttributes(new xiiDefaultValueAttribute(0.6f)),
     XII_MEMBER_PROPERTY("DynamicFriction", m_fPhysicsFrictionDynamic)->AddAttributes(new xiiDefaultValueAttribute(0.4f)),
