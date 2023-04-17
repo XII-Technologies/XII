@@ -3,10 +3,10 @@
 #include <Foundation/Configuration/CVar.h>
 
 template <typename Type, xiiCVarType::Enum CVarType>
-xiiTypedCVar<Type, CVarType>::xiiTypedCVar(const char* szName, const Type& Value, xiiBitflags<xiiCVarFlags> Flags, const char* szDescription) :
-  xiiCVar(szName, Flags, szDescription)
+xiiTypedCVar<Type, CVarType>::xiiTypedCVar(xiiStringView sName, const Type& Value, xiiBitflags<xiiCVarFlags> Flags, xiiStringView sDescription) :
+  xiiCVar(sName, Flags, sDescription)
 {
-  XII_ASSERT_DEBUG(xiiStringUtils::FindSubString(szName, " ") == nullptr, "CVar names must not contain whitespace");
+  XII_ASSERT_DEBUG(sName.FindSubString(" ") == nullptr, "CVar names must not contain whitespace");
 
   for (xiiUInt32 i = 0; i < xiiCVarValue::ENUM_COUNT; ++i)
     m_Values[i] = Value;
@@ -30,14 +30,14 @@ void xiiTypedCVar<Type, CVarType>::SetToRestartValue()
   if (m_Values[xiiCVarValue::Current] == m_Values[xiiCVarValue::Restart])
     return;
 
-  // this will NOT trigger a 'restart value changed' event
+  // This will NOT trigger a 'restart value changed' event.
   m_Values[xiiCVarValue::Current] = m_Values[xiiCVarValue::Restart];
 
   xiiCVarEvent e(this);
   e.m_EventType = xiiCVarEvent::ValueChanged;
   m_CVarEvents.Broadcast(e);
 
-  // broadcast the same to the 'all cvars' event handlers
+  // Broadcast the same to the 'all cvars' event handlers.
   s_AllCVarEvents.Broadcast(e);
 }
 
@@ -54,14 +54,14 @@ void xiiTypedCVar<Type, CVarType>::operator=(const Type& value)
 
   if (GetFlags().IsAnySet(xiiCVarFlags::RequiresRestart))
   {
-    if (value == m_Values[xiiCVarValue::Restart]) // no change
+    if (value == m_Values[xiiCVarValue::Restart]) // No change
       return;
 
     e.m_EventType = xiiCVarEvent::RestartValueChanged;
   }
   else
   {
-    if (m_Values[xiiCVarValue::Current] == value) // no change
+    if (m_Values[xiiCVarValue::Current] == value) // No change
       return;
 
     m_Values[xiiCVarValue::Current] = value;
@@ -72,6 +72,6 @@ void xiiTypedCVar<Type, CVarType>::operator=(const Type& value)
 
   m_CVarEvents.Broadcast(e);
 
-  // broadcast the same to the 'all cvars' event handlers
+  // Broadcast the same to the 'all cvars' event handlers.
   s_AllCVarEvents.Broadcast(e);
 }

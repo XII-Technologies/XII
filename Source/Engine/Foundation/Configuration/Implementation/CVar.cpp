@@ -17,8 +17,8 @@ XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiCVar);
 // to be informed about plugin changes.
 XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, CVars)
 
-  // for saving and loading we need the filesystem, so make sure we are initialized after
-  // and shutdown before the filesystem is
+  // For saving and loading we need the filesystem, so make sure we are initialized after
+  // and shutdown before the filesystem is.
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "FileSystem"
   END_SUBSYSTEM_DEPENDENCIES
@@ -30,10 +30,10 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, CVars)
 
   ON_CORESYSTEMS_SHUTDOWN
   {
-    // save the CVars every time the core is shut down
-    // at this point the filesystem might already be uninitialized by the user (data dirs)
+    // Save the CVars every time the core is shut down.
+    // At this point the filesystem might already be uninitialized by the user (data dirs),
     // in that case the variables cannot be saved, but it will fail silently
-    // if it succeeds, the most recent state will be serialized though
+    // if it succeeds, the most recent state will be serialized though.
     xiiCVar::SaveCVars();
 
     xiiPlugin::Events().RemoveEventHandler(xiiCVar::PluginEventHandler);
@@ -41,8 +41,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, CVars)
 
   ON_HIGHLEVELSYSTEMS_SHUTDOWN
   {
-    // save the CVars every time the engine is shut down
-    // at this point the filesystem should usually still be configured properly
+    // Save the CVars every time the engine is shut down.
+    // At this point the filesystem should usually still be configured properly.
     xiiCVar::SaveCVars();
   }
 
@@ -56,14 +56,14 @@ XII_END_SUBSYSTEM_DECLARATION;
 xiiString                     xiiCVar::s_sStorageFolder;
 xiiEvent<const xiiCVarEvent&> xiiCVar::s_AllCVarEvents;
 
-void xiiCVar::AssignSubSystemPlugin(const char* szPluginName)
+void xiiCVar::AssignSubSystemPlugin(xiiStringView sPluginName)
 {
   xiiCVar* pCVar = xiiCVar::GetFirstInstance();
 
   while (pCVar)
   {
-    if (pCVar->m_szPluginName == nullptr)
-      pCVar->m_szPluginName = szPluginName;
+    if (pCVar->m_sPluginName.IsEmpty())
+      pCVar->m_sPluginName = sPluginName;
 
     pCVar = pCVar->GetNextInstance();
   }
@@ -75,20 +75,18 @@ void xiiCVar::PluginEventHandler(const xiiPluginEvent& EventData)
   {
     case xiiPluginEvent::BeforeLoading:
     {
-      // before a new plugin is loaded, make sure all currently available CVars
-      // are assigned to the proper plugin
-      // all not-yet assigned cvars cannot be in any plugin, so assign them to the 'static' plugin
+      // Before a new plugin is loaded, make sure all currently available CVars are assigned to the proper plugin.
+      // All not-yet assigned cvars cannot be in any plugin, so assign them to the 'static' plugin.
       AssignSubSystemPlugin("Static");
     }
     break;
 
     case xiiPluginEvent::AfterLoadingBeforeInit:
     {
-      // after we loaded a new plugin, but before it is initialized,
-      // find all new CVars and assign them to that new plugin
+      // After we loaded a new plugin, but before it is initialized, find all new CVars and assign them to that new plugin.
       AssignSubSystemPlugin(EventData.m_szPluginBinary);
 
-      // now load the state of all CVars
+      // Aow load the state of all CVars.
       LoadCVars();
     }
     break;
@@ -104,29 +102,28 @@ void xiiCVar::PluginEventHandler(const xiiPluginEvent& EventData)
   }
 }
 
-xiiCVar::xiiCVar(const char* szName, xiiBitflags<xiiCVarFlags> Flags, const char* szDescription)
+xiiCVar::xiiCVar(xiiStringView sName, xiiBitflags<xiiCVarFlags> Flags, xiiStringView sDescription)
 {
-  m_szPluginName        = nullptr; // will be filled out when plugins are loaded
-  m_bHasNeverBeenLoaded = true;    // next time 'LoadCVars' is called, its state will be changed
+  m_bHasNeverBeenLoaded = true; // Next time 'LoadCVars' is called, its state will be changed.
 
-  m_szName        = szName;
-  m_Flags         = Flags;
-  m_szDescription = szDescription;
+  m_sName        = sName;
+  m_Flags        = Flags;
+  m_sDescription = sDescription;
 
-  // 'RequiresRestart' only works together with 'Save'
+  // 'RequiresRestart' only works together with 'Save'.
   if (m_Flags.IsAnySet(xiiCVarFlags::RequiresRestart))
     m_Flags.Add(xiiCVarFlags::Save);
 
-  XII_ASSERT_DEV(!xiiStringUtils::IsNullOrEmpty(m_szDescription), "Please add a useful description for CVar '{}'.", szName);
+  XII_ASSERT_DEV(!sDescription.IsEmpty(), "Please add a useful description for CVar '{}'.", sName);
 }
 
-xiiCVar* xiiCVar::FindCVarByName(const char* szName)
+xiiCVar* xiiCVar::FindCVarByName(xiiStringView sName)
 {
   xiiCVar* pCVar = xiiCVar::GetFirstInstance();
 
   while (pCVar)
   {
-    if (xiiStringUtils::IsEqual(pCVar->GetName(), szName))
+    if (pCVar->GetName() == sName)
       return pCVar;
 
     pCVar = pCVar->GetNextInstance();
@@ -135,9 +132,9 @@ xiiCVar* xiiCVar::FindCVarByName(const char* szName)
   return nullptr;
 }
 
-void xiiCVar::SetStorageFolder(const char* szFolder)
+void xiiCVar::SetStorageFolder(xiiStringView sFolder)
 {
-  s_sStorageFolder = szFolder;
+  s_sStorageFolder = sFolder;
 }
 
 xiiCommandLineOptionBool opt_NoFileCVars("cvar", "-no-file-cvars", "Disables loading CVar values from the user-specific, persisted configuration file.", false);
@@ -147,22 +144,22 @@ void xiiCVar::SaveCVars()
   if (s_sStorageFolder.IsEmpty())
     return;
 
-  // this command line disables loading and saving CVars to and from files
+  // This command line disables loading and saving CVars to and from files.
   if (opt_NoFileCVars.GetOptionValue(xiiCommandLineOption::LogMode::FirstTimeIfSpecified))
     return;
 
-  // first gather all the cvars by plugin
+  // First gather all the cvars by plugin.
   xiiMap<xiiString, xiiHybridArray<xiiCVar*, 128>> PluginCVars;
 
   {
     xiiCVar* pCVar = xiiCVar::GetFirstInstance();
     while (pCVar)
     {
-      // only store cvars that should be saved
+      // Only store cvars that should be saved
       if (pCVar->GetFlags().IsAnySet(xiiCVarFlags::Save))
       {
-        if (pCVar->m_szPluginName != nullptr)
-          PluginCVars[pCVar->m_szPluginName].PushBack(pCVar);
+        if (!pCVar->m_sPluginName.IsEmpty())
+          PluginCVars[pCVar->m_sPluginName].PushBack(pCVar);
         else
           PluginCVars["Static"].PushBack(pCVar);
       }
@@ -175,16 +172,16 @@ void xiiCVar::SaveCVars()
 
   xiiStringBuilder sTemp;
 
-  // now save all cvars in their plugin specific file
+  // Now save all cvars in their plugin specific file.
   while (it.IsValid())
   {
-    // create the plugin specific file
+    // Create the plugin specific file.
     sTemp.Format("{0}/CVars_{1}.cfg", s_sStorageFolder, it.Key());
 
     xiiFileWriter File;
     if (File.Open(sTemp.GetData()) == XII_SUCCESS)
     {
-      // write one line for each cvar, to save its current value
+      // Write one line for each cvar, to save its current value.
       for (xiiUInt32 var = 0; var < it.Value().GetCount(); ++var)
       {
         xiiCVar* pCVar = it.Value()[var];
@@ -226,12 +223,12 @@ void xiiCVar::SaveCVars()
             break;
         }
 
-        // add the one line for that cvar to the config file
+        // Add the one line for that cvar to the config file.
         File.WriteBytes(sTemp.GetData(), sTemp.GetElementCount()).IgnoreResult();
       }
     }
 
-    // continue with the next plugin
+    // Continue with the next plugin.
     ++it;
   }
 }
@@ -250,26 +247,25 @@ static xiiResult ReadLine(xiiStreamReader& Stream, xiiStringBuilder& sLine)
   c[0] = '\0';
   c[1] = '\0';
 
-  // read the first character
+  // Read the first character
   if (Stream.ReadBytes(c, 1) == 0)
     return XII_FAILURE;
 
-  // skip all white-spaces at the beginning
-  // also skip all empty lines
+  // Skip all white-spaces at the beginning, also skip all empty lines
   while ((c[0] == '\n' || c[0] == '\r' || c[0] == ' ' || c[0] == '\t') && (Stream.ReadBytes(c, 1) > 0))
   {
   }
 
-  // we found something that is not empty, so now read till the end of the line
+  // We found something that is not empty, so now read till the end of the line.
   while (c[0] != '\0' && c[0] != '\n')
   {
-    // skip all tabs and carriage returns
+    // Skip all tabs and carriage returns.
     if (c[0] != '\r' && c[0] != '\t')
     {
       sLine.Append(c);
     }
 
-    // stop if we reached the end of the file
+    // Stop if we reached the end of the file.
     if (Stream.ReadBytes(c, 1) == 0)
       break;
   }
@@ -290,7 +286,7 @@ static xiiResult ParseLine(const xiiStringBuilder& sLine, xiiStringBuilder& VarN
   {
     xiiStringView sSubString(sLine.GetData(), szSign);
 
-    // remove all trailing spaces
+    // Remove all trailing spaces.
     while (sSubString.EndsWith(" "))
       sSubString.Shrink(0, 1);
 
@@ -300,16 +296,16 @@ static xiiResult ParseLine(const xiiStringBuilder& sLine, xiiStringBuilder& VarN
   {
     xiiStringView sSubString(szSign + 1);
 
-    // remove all spaces
+    // Remove all spaces.
     while (sSubString.StartsWith(" "))
       sSubString.Shrink(1, 0);
 
-    // remove all trailing spaces
+    // Remove all trailing spaces.
     while (sSubString.EndsWith(" "))
       sSubString.Shrink(0, 1);
 
 
-    // remove " and start and end
+    // Remove " and start and end.
 
     if (sSubString.StartsWith("\""))
       sSubString.Shrink(1, 0);
@@ -328,34 +324,34 @@ void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue)
   if (s_sStorageFolder.IsEmpty())
     return;
 
-  // this command line disables loading and saving CVars to and from files
+  // This command line disables loading and saving CVars to and from files.
   if (opt_NoFileCVars.GetOptionValue(xiiCommandLineOption::LogMode::FirstTimeIfSpecified))
     return;
 
   xiiMap<xiiString, xiiHybridArray<xiiCVar*, 128>> PluginCVars;
 
-  // first gather all the cvars by plugin
+  // First gather all the cvars by plugin.
   {
     for (xiiCVar* pCVar = xiiCVar::GetFirstInstance(); pCVar != nullptr; pCVar = pCVar->GetNextInstance())
     {
-      // only load cvars that should be saved
+      // Only load cvars that should be saved.
       if (pCVar->GetFlags().IsAnySet(xiiCVarFlags::Save))
       {
         if (!bOnlyNewOnes || pCVar->m_bHasNeverBeenLoaded)
         {
-          if (pCVar->m_szPluginName != nullptr)
-            PluginCVars[pCVar->m_szPluginName].PushBack(pCVar);
+          if (!pCVar->m_sPluginName.IsEmpty())
+            PluginCVars[pCVar->m_sPluginName].PushBack(pCVar);
           else
             PluginCVars["Static"].PushBack(pCVar);
         }
       }
 
-      // it doesn't matter whether the CVar could be loaded from file, either it works the first time, or it stays at its current value
+      // It doesn't matter whether the CVar could be loaded from file, either it works the first time, or it stays at its current value.
       pCVar->m_bHasNeverBeenLoaded = false;
     }
   }
 
-  // now load all cvars from their plugin specific file
+  // Now load all cvars from their plugin specific file.
   {
     xiiMap<xiiString, xiiHybridArray<xiiCVar*, 128>>::Iterator it = PluginCVars.GetIterator();
 
@@ -363,7 +359,7 @@ void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue)
 
     while (it.IsValid())
     {
-      // create the plugin specific file
+      // Create the plugin specific file.
       sTemp.Format("{0}/CVars_{1}.cfg", s_sStorageFolder, it.Key());
 
       xiiFileReader File;
@@ -375,7 +371,7 @@ void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue)
           if (ParseLine(sLine, sVarName, sVarValue) == XII_FAILURE)
             continue;
 
-          // now find a variable with the same name
+          // Now find a variable with the same name.
           for (xiiUInt32 var = 0; var < it.Value().GetCount(); ++var)
           {
             xiiCVar* pCVar = it.Value()[var];
@@ -383,7 +379,7 @@ void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue)
             if (!sVarName.IsEqual(pCVar->GetName()))
               continue;
 
-            // found the cvar, now convert the text into the proper value *sigh*
+            // Found the cvar, now convert the text into the proper value.
 
             switch (pCVar->GetType())
             {
@@ -455,13 +451,15 @@ void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue)
   }
 }
 
+// clang-format off
 xiiCommandLineOptionDoc opt_CVar("cvar", "-CVarName", "<value>", "Forces a CVar to the given value.\n\
 Overrides persisted settings.\n\
 Examples:\n\
 -MyIntVar 42\n\
 -MyStringVar \"Hello\"\n\
 ",
-                                 nullptr);
+nullptr);
+// clang-format on
 
 void xiiCVar::LoadCVarsFromCommandLine(bool bOnlyNewOnes /*= true*/, bool bSetAsCurrentValue /*= true*/)
 {
@@ -476,7 +474,7 @@ void xiiCVar::LoadCVarsFromCommandLine(bool bOnlyNewOnes /*= true*/, bool bSetAs
 
     if (xiiCommandLineUtils::GetGlobalInstance()->GetOptionIndex(sTemp) != -1)
     {
-      // has been specified on the command line -> mark it as 'has been loaded'
+      // Has been specified on the command line -> mark it as 'has been loaded'.
       pCVar->m_bHasNeverBeenLoaded = false;
 
       switch (pCVar->GetType())
@@ -541,9 +539,9 @@ void xiiCVar::LoadCVarsFromCommandLine(bool bOnlyNewOnes /*= true*/, bool bSetAs
   }
 }
 
-void xiiCVar::ListOfCVarsChanged(const char* szSetPluginNameTo)
+void xiiCVar::ListOfCVarsChanged(xiiStringView sSetPluginNameTo)
 {
-  AssignSubSystemPlugin(szSetPluginNameTo);
+  AssignSubSystemPlugin(sSetPluginNameTo);
 
   LoadCVars();
 

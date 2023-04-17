@@ -8,8 +8,8 @@ public:
 
   FUNC m_Func;
 
-  xiiConsoleFunction(const char* szFunctionName, const char* szDescription, FUNC f) :
-    xiiConsoleFunctionBase(szFunctionName, szDescription)
+  xiiConsoleFunction(xiiStringView sFunctionName, xiiStringView sDescription, FUNC f) :
+    xiiConsoleFunctionBase(sFunctionName, sDescription)
   {
     m_Func = f;
   }

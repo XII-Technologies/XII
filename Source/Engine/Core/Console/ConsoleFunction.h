@@ -21,10 +21,10 @@
 /// Note that although functions with return types are accepted, the return value is currently always ignored.
 ///
 /// \code{.cpp}
-///   void MyConsoleFunc1(int a, float b, const char* sz) { ... }
+///   void MyConsoleFunc1(int a, float b, xiiStringView sz) { ... }
 ///   xiiConsoleFunction<void ()> ConFunc_MyConsoleFunc1("MyConsoleFunc1", "()", MyConsoleFunc1);
 ///
-///   int MyConsoleFunc2(int a, float b, const char* sz) { ... }
+///   int MyConsoleFunc2(int a, float b, xiiStringView sz) { ... }
 ///   xiiConsoleFunction<int (int, float, xiiString)> ConFunc_MyConsoleFunc2("MyConsoleFunc2", "(int a, float b, string c)", MyConsoleFunc2);
 /// \endcode
 ///
@@ -39,17 +39,17 @@ class XII_CORE_DLL xiiConsoleFunctionBase : public xiiEnumerable<xiiConsoleFunct
 
 public:
   /// \brief The constructor takes the function name and description as it should appear in the console.
-  xiiConsoleFunctionBase(const char* szFunctionName, const char* szDescription)
+  xiiConsoleFunctionBase(xiiStringView sFunctionName, xiiStringView sDescription)
   {
-    m_szFunctionName = szFunctionName;
-    m_szDescription  = szDescription;
+    m_sFunctionName = sFunctionName;
+    m_sDescription  = sDescription;
   }
 
   /// \brief Returns the name of the function as it should be exposed in the console.
-  const char* GetName() const { return m_szFunctionName; }
+  xiiStringView GetName() const { return m_sFunctionName; }
 
   /// \brief Returns the description of the function as it should appear in the console.
-  const char* GetDescription() const { return m_szDescription; }
+  xiiStringView GetDescription() const { return m_sDescription; }
 
   /// \brief Returns the number of parameters that this function takes.
   virtual xiiUInt32 GetNumParameters() const = 0;
@@ -64,8 +64,8 @@ public:
   virtual xiiResult Call(xiiArrayPtr<xiiVariant> params) = 0;
 
 private:
-  const char* m_szFunctionName;
-  const char* m_szDescription;
+  xiiStringView m_sFunctionName;
+  xiiStringView m_sDescription;
 };
 
 

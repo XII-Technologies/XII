@@ -200,8 +200,8 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
       if (pInt)
       {
         XII_TEST_BOOL(pInt->GetType() == xiiCVarType::Int);
-        XII_TEST_BOOL(xiiStringUtils::IsEqual(pInt->GetName(), "test1_Int"));
-        XII_TEST_BOOL(xiiStringUtils::IsEqual(pInt->GetDescription(), "Desc: test1_Int"));
+        XII_TEST_BOOL(pInt->GetName() == "test1_Int");
+        XII_TEST_BOOL(pInt->GetDescription() == "Desc: test1_Int");
 
         pInt->m_CVarEvents.AddEventHandler(ChangedCVar);
 
@@ -222,8 +222,8 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
       if (pFloat)
       {
         XII_TEST_BOOL(pFloat->GetType() == xiiCVarType::Float);
-        XII_TEST_BOOL(xiiStringUtils::IsEqual(pFloat->GetName(), "test1_Float"));
-        XII_TEST_BOOL(xiiStringUtils::IsEqual(pFloat->GetDescription(), "Desc: test1_Float"));
+        XII_TEST_BOOL(pFloat->GetName() == "test1_Float");
+        XII_TEST_BOOL(pFloat->GetDescription() == "Desc: test1_Float");
 
         pFloat->m_CVarEvents.AddEventHandler(ChangedCVar);
 
@@ -251,8 +251,8 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
       if (pDouble)
       {
         XII_TEST_BOOL(pDouble->GetType() == xiiCVarType::Double);
-        XII_TEST_BOOL(xiiStringUtils::IsEqual(pDouble->GetName(), "test1_Double"));
-        XII_TEST_BOOL(xiiStringUtils::IsEqual(pDouble->GetDescription(), "Desc: test1_Double"));
+        XII_TEST_BOOL(pDouble->GetName() == "test1_Double");
+        XII_TEST_BOOL(pDouble->GetDescription() == "Desc: test1_Double");
 
         pDouble->m_CVarEvents.AddEventHandler(ChangedCVar);
 
@@ -280,8 +280,8 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
       if (pBool)
       {
         XII_TEST_BOOL(pBool->GetType() == xiiCVarType::Bool);
-        XII_TEST_BOOL(xiiStringUtils::IsEqual(pBool->GetName(), "test1_Bool"));
-        XII_TEST_BOOL(xiiStringUtils::IsEqual(pBool->GetDescription(), "Desc: test1_Bool"));
+        XII_TEST_BOOL(pBool->GetName() == "test1_Bool");
+        XII_TEST_BOOL(pBool->GetDescription() == "Desc: test1_Bool");
 
         *pBool = true;
         CHECK_CVAR(pBool, true, false, false, true);
@@ -293,8 +293,8 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
       if (pString)
       {
         XII_TEST_BOOL(pString->GetType() == xiiCVarType::String);
-        XII_TEST_BOOL(xiiStringUtils::IsEqual(pString->GetName(), "test1_String"));
-        XII_TEST_BOOL(xiiStringUtils::IsEqual(pString->GetDescription(), "Desc: test1_String"));
+        XII_TEST_BOOL(pString->GetName() == "test1_String");
+        XII_TEST_BOOL(pString->GetDescription() == "Desc: test1_String");
 
         *pString = "test1_value2";
         CHECK_CVAR(pString, "test1_value2", "test1", "test1", "test1_value2");

@@ -155,7 +155,7 @@ void xiiCommandInterpreterLua::Interpret(xiiCommandInterpreterState& inout_State
     xiiConsoleFunctionBase* pFunc = xiiConsoleFunctionBase::GetFirstInstance();
     while (pFunc)
     {
-      Script.RegisterCFunction(pFunc->GetName(), LUAFUNC_ConsoleFunc, pFunc);
+      Script.RegisterCFunction(pFunc->GetName().GetData(sTemp), LUAFUNC_ConsoleFunc, pFunc);
 
       pFunc = pFunc->GetNextInstance();
     }
@@ -170,7 +170,7 @@ void xiiCommandInterpreterLua::Interpret(xiiCommandInterpreterState& inout_State
   {
     if ((bSetValue) && (sValue == "") && (pCVAR->GetType() == xiiCVarType::Bool))
     {
-      // someone typed "myvar =" -> on bools this is the short form for "myvar = not myvar" (toggle), so insert the rest here
+      // Someone typed "myvar =" -> on bools this is the short form for "myvar = not myvar" (toggle), so insert the rest here.
 
       bValueEmpty = false;
 
@@ -202,7 +202,7 @@ void xiiCommandInterpreterLua::Interpret(xiiCommandInterpreterState& inout_State
       sTemp.Format("{0} = {1}", sRealVarName, xiiQuakeConsole::GetFullInfoAsString(pCVAR));
       inout_State.AddOutputLine(sTemp);
 
-      if (!xiiStringUtils::IsNullOrEmpty(pCVAR->GetDescription()))
+      if (!pCVAR->GetDescription().IsEmpty())
       {
         sTemp.Format("  Description: {0}", pCVAR->GetDescription());
         inout_State.AddOutputLine(sTemp, xiiConsoleString::Type::Success);
