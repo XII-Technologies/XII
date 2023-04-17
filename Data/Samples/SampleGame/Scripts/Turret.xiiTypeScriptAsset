@@ -20,7 +20,11 @@ o
 			Uuid{u4{10944762888702339003,12508742281141824978}}
 		}
 		VarArray %Outputs{}
-		VarArray %References{}
+		VarArray %PackageDeps{}
+		VarArray %References
+		{
+			s{"Scripts/Turret.ts"}
+		}
 	}
 }
 o

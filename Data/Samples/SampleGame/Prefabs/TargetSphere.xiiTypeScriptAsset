@@ -20,7 +20,11 @@ o
 			Uuid{u4{10561153868623732257,13048168655223106588}}
 		}
 		VarArray %Outputs{}
-		VarArray %References{}
+		VarArray %PackageDeps{}
+		VarArray %References
+		{
+			s{"Prefabs/TargetSphere.ts"}
+		}
 	}
 }
 o
