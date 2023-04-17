@@ -41,7 +41,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneExportModifier_RemoveCommentComponents,
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiSceneExportModifier_RemoveCommentComponents::ModifyWorld(xiiWorld& world,  xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport)
+void xiiSceneExportModifier_RemoveCommentComponents::ModifyWorld(xiiWorld& world, xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport)
 {
   XII_LOCK(world.GetWriteMarker());
 
