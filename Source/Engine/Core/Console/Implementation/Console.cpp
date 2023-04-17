@@ -2,6 +2,8 @@
 
 #include <Core/Console/LuaInterpreter.h>
 #include <Core/Console/QuakeConsole.h>
+#include <Foundation/IO/FileSystem/FileReader.h>
+#include <Foundation/IO/FileSystem/FileWriter.h>
 
 XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiConsoleFunctionBase);
 
@@ -390,6 +392,44 @@ void xiiConsole::RetrieveInputHistory(xiiInt32 iHistoryUp, xiiStringBuilder& res
   if (!m_InputHistory[m_iCurrentInputHistoryElement].IsEmpty())
   {
     result = m_InputHistory[m_iCurrentInputHistoryElement];
+  }
+}
+
+xiiResult xiiConsole::SaveInputHistory(xiiStringView sFile)
+{
+  xiiFileWriter file;
+  XII_SUCCEED_OR_RETURN(file.Open(sFile));
+
+  xiiStringBuilder str;
+
+  for (const xiiString& line : m_InputHistory)
+  {
+    if (line.IsEmpty())
+      continue;
+
+    str.Set(line, "\n");
+
+    XII_SUCCEED_OR_RETURN(file.WriteBytes(str.GetData(), str.GetElementCount()));
+  }
+
+  return XII_SUCCESS;
+}
+
+void xiiConsole::LoadInputHistory(xiiStringView sFile)
+{
+  xiiFileReader file;
+  if (file.Open(sFile).Failed())
+    return;
+
+  xiiStringBuilder str;
+  str.ReadAll(file);
+
+  xiiHybridArray<xiiStringView, 32> lines;
+  str.Split(false, lines, "\n", "\r");
+
+  for (xiiUInt32 i = 0; i < lines.GetCount(); ++i)
+  {
+    AddToInputHistory(lines[lines.GetCount() - 1 - i]);
   }
 }
 

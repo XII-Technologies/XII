@@ -3,14 +3,14 @@
 #include <Core/Console/Console.h>
 #include <Core/Console/QuakeConsole.h>
 
-void xiiCommandInterpreter::FindPossibleCVars(const char* szVariable, xiiDeque<xiiString>& AutoCompleteOptions, xiiDeque<xiiConsoleString>& AutoCompleteDescriptions)
+void xiiCommandInterpreter::FindPossibleCVars(xiiStringView sVariable, xiiDeque<xiiString>& AutoCompleteOptions, xiiDeque<xiiConsoleString>& AutoCompleteDescriptions)
 {
   xiiStringBuilder sText;
 
   xiiCVar* pCVar = xiiCVar::GetFirstInstance();
   while (pCVar)
   {
-    if (xiiStringUtils::StartsWith_NoCase(pCVar->GetName(), szVariable))
+    if (pCVar->GetName().StartsWith_NoCase(sVariable))
     {
       sText.Format("    {0} = {1}", pCVar->GetName(), xiiQuakeConsole::GetFullInfoAsString(pCVar));
 
@@ -26,14 +26,14 @@ void xiiCommandInterpreter::FindPossibleCVars(const char* szVariable, xiiDeque<x
   }
 }
 
-void xiiCommandInterpreter::FindPossibleFunctions(const char* szVariable, xiiDeque<xiiString>& AutoCompleteOptions, xiiDeque<xiiConsoleString>& AutoCompleteDescriptions)
+void xiiCommandInterpreter::FindPossibleFunctions(xiiStringView sVariable, xiiDeque<xiiString>& AutoCompleteOptions, xiiDeque<xiiConsoleString>& AutoCompleteDescriptions)
 {
   xiiStringBuilder sText;
 
   xiiConsoleFunctionBase* pFunc = xiiConsoleFunctionBase::GetFirstInstance();
   while (pFunc)
   {
-    if (xiiStringUtils::StartsWith_NoCase(pFunc->GetName(), szVariable))
+    if (pFunc->GetName().StartsWith_NoCase(sVariable))
     {
       sText.Format("    {0} {1}", pFunc->GetName(), pFunc->GetDescription());
 

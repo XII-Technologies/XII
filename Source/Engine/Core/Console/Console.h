@@ -51,10 +51,10 @@ public:
   virtual void AutoComplete(xiiCommandInterpreterState& inout_State);
 
   /// \brief Iterates over all cvars and finds all that start with the string \a szVariable.
-  static void FindPossibleCVars(const char* szVariable, xiiDeque<xiiString>& CommonStrings, xiiDeque<xiiConsoleString>& ConsoleStrings);
+  static void FindPossibleCVars(xiiStringView sVariable, xiiDeque<xiiString>& CommonStrings, xiiDeque<xiiConsoleString>& ConsoleStrings);
 
   /// \brief Iterates over all console functions and finds all that start with the string \a szVariable.
-  static void FindPossibleFunctions(const char* szVariable, xiiDeque<xiiString>& CommonStrings, xiiDeque<xiiConsoleString>& ConsoleStrings);
+  static void FindPossibleFunctions(xiiStringView sVariable, xiiDeque<xiiString>& CommonStrings, xiiDeque<xiiConsoleString>& ConsoleStrings);
 
   /// \brief Returns the prefix string that is common to all strings in the \a vStrings array.
   static const xiiString FindCommonString(const xiiDeque<xiiString>& vStrings);
@@ -164,6 +164,12 @@ public:
 
   /// \brief Replaces the input line by the next (or previous) history item.
   void RetrieveInputHistory(xiiInt32 iHistoryUp, xiiStringBuilder& result);
+
+  /// \brief Writes the current input history to a text file.
+  xiiResult SaveInputHistory(xiiStringView sFile);
+
+  /// \brief Reads the text file and appends all lines to the input history.
+  void LoadInputHistory(xiiStringView sFile);
 
 protected:
   xiiInt32                      m_iCurrentInputHistoryElement = -1;

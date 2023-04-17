@@ -109,10 +109,10 @@ public:
   /// so \a szFolder must not be a file name, but only a path to a folder.
   ///
   /// After setting the storage folder, one should immediately load all CVars via LoadCVars.
-  static void SetStorageFolder(const char* szFolder); // [tested]
+  static void SetStorageFolder(xiiStringView sFolder); // [tested]
 
   /// \brief Searches all CVars for one with the given name. Returns nullptr if no CVar could be found. The name is case-sensitive.
-  static xiiCVar* FindCVarByName(const char* szName); // [tested]
+  static xiiCVar* FindCVarByName(xiiStringView sName); // [tested]
 
   /// \brief Stores all CVar values in files in the storage folder, that must have been set via 'SetStorageFolder'.
   ///
@@ -156,13 +156,13 @@ public:
   virtual void SetToRestartValue() = 0; // [tested]
 
   /// \brief Returns the (display) name of the CVar.
-  const char* GetName() const { return m_szName; } // [tested]
+  xiiStringView GetName() const { return m_sName; } // [tested]
 
   /// \brief Returns the type of the CVar.
   virtual xiiCVarType::Enum GetType() const = 0; // [tested]
 
   /// \brief Returns the description of the CVar.
-  const char* GetDescription() const { return m_szDescription; } // [tested]
+  xiiStringView GetDescription() const { return m_sDescription; } // [tested]
 
   /// \brief Returns all the CVar flags.
   xiiBitflags<xiiCVarFlags> GetFlags() const { return m_Flags; } // [tested]
@@ -174,31 +174,27 @@ public:
   static xiiEvent<const xiiCVarEvent&> s_AllCVarEvents;
 
   /// \brief Returns the name of the plugin which this CVar is declared in.
-  const char* GetPluginName() const { return m_szPluginName; }
+  xiiStringView GetPluginName() const { return m_sPluginName; }
 
   /// \brief Call this after creating or destroying CVars dynamically (not through loading plugins) to allow UIs to update their state.
   ///
   /// Broadcasts xiiCVarEvent::ListOfVarsChanged.
-  static void ListOfCVarsChanged(const char* szSetPluginNameTo);
+  static void ListOfCVarsChanged(xiiStringView sSetPluginNameTo);
 
 protected:
-  xiiCVar(const char* szName, xiiBitflags<xiiCVarFlags> Flags, const char* szDescription);
-
-  void RegisterCVarTelemetryChangeCB();
-
-  static void TelemetryMessage(void* pPassThrough);
+  xiiCVar(xiiStringView sName, xiiBitflags<xiiCVarFlags> Flags, xiiStringView sDescription);
 
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Foundation, CVars);
 
-  static void AssignSubSystemPlugin(const char* szPluginName);
+  static void AssignSubSystemPlugin(xiiStringView sPluginName);
   static void PluginEventHandler(const xiiPluginEvent& EventData);
 
 
   bool                      m_bHasNeverBeenLoaded;
-  const char*               m_szName;
-  const char*               m_szDescription;
-  const char*               m_szPluginName;
+  xiiStringView             m_sName;
+  xiiStringView             m_sDescription;
+  xiiStringView             m_sPluginName;
   xiiBitflags<xiiCVarFlags> m_Flags;
 
   static xiiString s_sStorageFolder;
@@ -223,7 +219,7 @@ template <typename Type, xiiCVarType::Enum CVarType>
 class xiiTypedCVar : public xiiCVar
 {
 public:
-  xiiTypedCVar(const char* szName, const Type& Value, xiiBitflags<xiiCVarFlags> Flags, const char* szDescription);
+  xiiTypedCVar(xiiStringView sName, const Type& Value, xiiBitflags<xiiCVarFlags> Flags, xiiStringView sDescription);
 
   /// \brief Returns the 'current' value of the CVar. Same as 'GetValue(xiiCVarValue::Current)'
   operator const Type&() const; // [tested]
@@ -260,7 +256,6 @@ typedef xiiTypedCVar<int, xiiCVarType::Int> xiiCVarInt;
 
 /// \brief A CVar that stores a string.
 typedef xiiTypedCVar<xiiHybridString<32>, xiiCVarType::String> xiiCVarString;
-
 
 
 #include <Foundation/Configuration/Implementation/CVar_inl.h>

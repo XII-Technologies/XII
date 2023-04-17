@@ -388,6 +388,11 @@ void xiiGameApplication::Init_ConfigureInput()
       xiiGameAppInputConfig::ApplyAll(InputActions);
     }
   }
+
+  if (m_pConsole)
+  {
+    m_pConsole->LoadInputHistory(":appdata/ConsoleInputHistory.cfg");
+  }
 }
 
 bool xiiGameApplication::Run_ProcessApplicationInput()
@@ -400,7 +405,10 @@ bool xiiGameApplication::Run_ProcessApplicationInput()
     if (m_bShowConsole)
       xiiInputManager::SetExclusiveInputSet("Console");
     else
+    {
       xiiInputManager::SetExclusiveInputSet("");
+      m_pConsole->SaveInputHistory(":appdata/ConsoleInputHistory.cfg").IgnoreResult();
+    }
   }
 
   if (xiiInputManager::GetInputActionState(s_szInputSet, s_szShowFpsAction) == xiiKeyState::Pressed)
