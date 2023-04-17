@@ -918,7 +918,7 @@ void xiiAssetDocument::SendDocumentOpenMessage(bool bOpen)
 
 namespace
 {
-  static const char* szThumbnailInfoTag = "xiiThumb";
+  static const char* szThumbnailInfoTag = "xiThumb";
 }
 
 xiiResult xiiAssetDocument::ThumbnailInfo::Deserialize(xiiStreamReader& inout_reader)

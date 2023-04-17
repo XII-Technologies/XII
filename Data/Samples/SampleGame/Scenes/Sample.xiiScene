@@ -14,7 +14,7 @@ o
 		u4 %Hash{11503504542045316572}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
-		VarArray %References
+		VarArray %PackageDeps
 		{
 			s{"{ 01208831-506c-499a-a3b2-cb95639b2b47 }"}
 			s{"{ 0b202e08-a64f-465d-b38e-15b81d161822 }"}
@@ -23,6 +23,17 @@ o
 			s{"{ 9fc82cb4-e800-cc3d-feed-61a7c88e2a20 }"}
 			s{"{ b783b641-7f90-4f2a-bcb5-b1472c9c7b88 }"}
 			s{"{ c93ac546-dcd5-42a2-886f-cfba5224cc7c }"}
+			s{"{ cbd060e2-5c3c-49ad-aac5-4bbd2fed8a99 }"}
+			s{"{ f962fc28-661b-485c-a527-c997e239a3f0 }"}
+		}
+		VarArray %References
+		{
+			s{"{ 01208831-506c-499a-a3b2-cb95639b2b47 }"}
+			s{"{ 0b202e08-a64f-465d-b38e-15b81d161822 }"}
+			s{"{ 6ae73fcf-e09c-1c3f-54a8-8a80498519fb }"}
+			s{"{ 8005f5b4-dfbb-43b0-b181-e087482e09af }"}
+			s{"{ 9fc82cb4-e800-cc3d-feed-61a7c88e2a20 }"}
+			s{"{ b783b641-7f90-4f2a-bcb5-b1472c9c7b88 }"}
 			s{"{ cbd060e2-5c3c-49ad-aac5-4bbd2fed8a99 }"}
 			s{"{ f962fc28-661b-485c-a527-c997e239a3f0 }"}
 		}
@@ -1919,6 +1930,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }

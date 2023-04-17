@@ -17,11 +17,16 @@ o
 			Uuid{u4{12875955975058824341,16279626489739883300}}
 		}
 		VarArray %Outputs{}
-		VarArray %References
+		VarArray %PackageDeps
 		{
 			s{"{ 00be66b6-d25d-4320-a494-26545175f76c }"}
 			s{"{ 1dd7dbfb-f712-0acc-d78b-cd7f36eddea1 }"}
 			s{"{ 2dee6f85-56dd-41ca-a842-d0f8a0f5934d }"}
+			s{"{ 8005f5b4-dfbb-43b0-b181-e087482e09af }"}
+		}
+		VarArray %References
+		{
+			s{"{ 1dd7dbfb-f712-0acc-d78b-cd7f36eddea1 }"}
 			s{"{ 8005f5b4-dfbb-43b0-b181-e087482e09af }"}
 		}
 	}

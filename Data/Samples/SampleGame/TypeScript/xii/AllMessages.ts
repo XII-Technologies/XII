@@ -182,6 +182,13 @@ export class MsgMoveCharacterController extends Message
   Crouch: boolean = false;
 }
 
+export class MsgObjectGrabbed extends Message
+{
+  public static GetTypeNameHash(): number { return 886514815; }
+  constructor() { super(); this.TypeNameHash = 886514815; }
+  GotGrabbed: boolean = false;
+}
+
 export class MsgOnlyApplyToObject extends Message
 {
   public static GetTypeNameHash(): number { return 3594874705; }
@@ -221,6 +228,12 @@ export class MsgQueryAnimationSkeleton extends Message
 {
   public static GetTypeNameHash(): number { return 1154169994; }
   constructor() { super(); this.TypeNameHash = 1154169994; }
+}
+
+export class MsgReleaseObjectGrab extends Message
+{
+  public static GetTypeNameHash(): number { return 2127815804; }
+  constructor() { super(); this.TypeNameHash = 2127815804; }
 }
 
 export class MsgRetrieveBoneState extends Message
