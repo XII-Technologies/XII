@@ -785,7 +785,10 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
   {
     // Block till the base material has been fully loaded to ensure that all parameters have their final value once this material is loaded.
     xiiResourceLock<xiiMaterialResource> pBaseMaterial(m_mDesc.m_hBaseMaterial, xiiResourceAcquireMode::BlockTillLoaded);
-    pBaseMaterial->m_ModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiMaterialResource::OnBaseMaterialModified, this));
+    if (!pBaseMaterial->m_ModifiedEvent.HasEventHandler(xiiMakeDelegate(&xiiMaterialResource::OnBaseMaterialModified, this)))
+    {
+      pBaseMaterial->m_ModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiMaterialResource::OnBaseMaterialModified, this));
+    }
   }
 
   m_mOriginalDesc = m_mDesc;
