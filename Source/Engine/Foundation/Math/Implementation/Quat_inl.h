@@ -84,6 +84,14 @@ xiiResult xiiQuatTemplate<Type>::GetRotationAxisAndAngle(xiiVec3Template<Type>& 
 }
 
 template <typename Type>
+XII_FORCE_INLINE void xiiQuatTemplate<Type>::Invert()
+{
+  XII_NAN_ASSERT(this);
+
+  *this = -(*this);
+}
+
+template <typename Type>
 XII_FORCE_INLINE const xiiQuatTemplate<Type> xiiQuatTemplate<Type>::operator-() const
 {
   XII_NAN_ASSERT(this);
