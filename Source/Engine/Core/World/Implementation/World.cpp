@@ -1096,6 +1096,11 @@ bool xiiWorld::ProcessInitializationBatch(xiiInternal::WorldData::InitBatch& bat
 {
   CheckForWriteAccess();
 
+  // Ensure that all components that are created during this batch (e.g. from prefabs)
+  // will also get initialized within this batch
+  m_Data.m_pCurrentInitBatch = &batch;
+  XII_SCOPE_EXIT(m_Data.m_pCurrentInitBatch = m_Data.m_pDefaultInitBatch);
+
   if (!batch.m_ComponentsToInitialize.IsEmpty())
   {
     xiiStringBuilder profileScopeName("Init ", batch.m_sName);
