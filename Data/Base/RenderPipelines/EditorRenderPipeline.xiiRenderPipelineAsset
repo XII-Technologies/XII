@@ -14,6 +14,10 @@ o
 		u4 %Hash{9938847988959464258}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
+		VarArray %PackageDeps
+		{
+			s{"{ 3edf10b3-36d2-434f-9683-c653909abe7e }"}
+		}
 		VarArray %References
 		{
 			s{"{ 3edf10b3-36d2-434f-9683-c653909abe7e }"}

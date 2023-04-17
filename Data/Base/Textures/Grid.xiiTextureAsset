@@ -16,8 +16,15 @@ o
 		Uuid %DocumentID{u4{17339766635678476197,5214154738922355752}}
 		u4 %Hash{11950628944330702608}
 		VarArray %MetaInfo{}
-		VarArray %Outputs{}
-		VarArray %References{}
+		VarArray %Outputs
+		{
+			s{"LOWRES"}
+		}
+		VarArray %PackageDeps{}
+		VarArray %References
+		{
+			s{"Textures/Grid.png"}
+		}
 	}
 }
 }

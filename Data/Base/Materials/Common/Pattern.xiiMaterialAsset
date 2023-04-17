@@ -26,6 +26,10 @@ o
 		{
 			s{"VISUAL_SHADER"}
 		}
+		VarArray %PackageDeps
+		{
+			s{"{ f962fc28-661b-485c-a527-c997e239a3f0 }"}
+		}
 		VarArray %References
 		{
 			s{"{ f962fc28-661b-485c-a527-c997e239a3f0 }"}
@@ -386,6 +390,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }
@@ -689,6 +694,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{""}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }

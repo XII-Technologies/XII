@@ -27,6 +27,11 @@ o
 			Uuid{u4{5697229966826873357,5299780223228843891}}
 		}
 		VarArray %Outputs{}
+		VarArray %PackageDeps
+		{
+			s{"{ 618ee743-ed04-4fac-bf5f-572939db2f1d }"}
+			s{"{ b93a6e80-5bf7-48f0-b7b3-2097d0133159 }"}
+		}
 		VarArray %References
 		{
 			s{"{ 618ee743-ed04-4fac-bf5f-572939db2f1d }"}

@@ -17,9 +17,14 @@ o
 		u4 %Hash{7405727597429360061}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
+		VarArray %PackageDeps
+		{
+			s{"RebeccaPurple.color"}
+		}
 		VarArray %References
 		{
 			s{"RebeccaPurple.color"}
+			s{"Shaders/Materials/DefaultMaterial.xiiShader"}
 		}
 	}
 }
@@ -337,6 +342,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }
@@ -397,6 +403,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }
@@ -429,6 +436,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }
@@ -841,6 +849,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }
@@ -868,6 +877,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }
@@ -923,6 +933,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }
@@ -1072,6 +1083,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }

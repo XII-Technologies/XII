@@ -14,6 +14,7 @@ o
 		u4 %Hash{3750330796844306357}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
+		VarArray %PackageDeps{}
 		VarArray %References{}
 	}
 }

@@ -17,7 +17,11 @@ o
 		u4 %Hash{8015573151011356169}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
-		VarArray %References{}
+		VarArray %PackageDeps{}
+		VarArray %References
+		{
+			s{"Textures/Sky.jpg"}
+		}
 	}
 }
 }

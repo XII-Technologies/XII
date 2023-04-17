@@ -16,8 +16,15 @@ o
 		Uuid %DocumentID{u4{11398830688999107201,5676112980344832649}}
 		u4 %Hash{14048102217262372496}
 		VarArray %MetaInfo{}
-		VarArray %Outputs{}
-		VarArray %References{}
+		VarArray %Outputs
+		{
+			s{"LOWRES"}
+		}
+		VarArray %PackageDeps{}
+		VarArray %References
+		{
+			s{"Textures/Reference_D.dds"}
+		}
 	}
 }
 }

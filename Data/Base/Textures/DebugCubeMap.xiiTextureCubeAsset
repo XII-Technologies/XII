@@ -17,7 +17,11 @@ o
 		u4 %Hash{13795729365161493011}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
-		VarArray %References{}
+		VarArray %PackageDeps{}
+		VarArray %References
+		{
+			s{"Textures/MissingCubeMap.dds"}
+		}
 	}
 }
 }

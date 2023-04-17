@@ -27,6 +27,11 @@ o
 			Uuid{u4{6260322975900899627,3647404401962759201}}
 		}
 		VarArray %Outputs{}
+		VarArray %PackageDeps
+		{
+			s{"Materials/Common/MissingPrefab.xiiMaterial"}
+			s{"{ e9e6b167-c18c-4260-9b0e-4cf4503c1463 }"}
+		}
 		VarArray %References
 		{
 			s{"Materials/Common/MissingPrefab.xiiMaterial"}

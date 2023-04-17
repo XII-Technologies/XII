@@ -14,6 +14,10 @@ o
 		u4 %Hash{17036088628916900123}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
+		VarArray %PackageDeps
+		{
+			s{"Materials/Common/MissingMesh.xiiMaterial"}
+		}
 		VarArray %References
 		{
 			s{"Materials/Common/MissingMesh.xiiMaterial"}
