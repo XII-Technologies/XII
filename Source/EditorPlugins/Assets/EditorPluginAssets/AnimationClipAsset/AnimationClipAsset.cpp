@@ -24,7 +24,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationClipAssetProperties, 3, xiiRTTIDefa
     XII_ARRAY_MEMBER_PROPERTY("AvailableClips", m_AvailableClips)->AddAttributes(new xiiReadOnlyAttribute, new xiiContainerAttribute(false, false, false)),
     XII_MEMBER_PROPERTY("FirstFrame", m_uiFirstFrame),
     XII_MEMBER_PROPERTY("NumFrames", m_uiNumFrames),
-    XII_MEMBER_PROPERTY("PreviewMesh", m_sPreviewMesh)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Skinned")), // TODO: need an attribute that something is 'UI only' (doesn't change the transform state, but is also not 'temporary'
+    XII_MEMBER_PROPERTY("PreviewMesh", m_sPreviewMesh)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Skinned", xiiDependencyFlags::None)),
     XII_ENUM_MEMBER_PROPERTY("RootMotion", xiiRootMotionSource, m_RootMotionMode),
     XII_MEMBER_PROPERTY("ConstantRootMotion", m_vConstantRootMotion),
     //XII_MEMBER_PROPERTY("Joint1", m_sJoint1),

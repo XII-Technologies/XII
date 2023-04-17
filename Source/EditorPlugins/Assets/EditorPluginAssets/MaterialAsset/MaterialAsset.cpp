@@ -35,7 +35,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetProperties, 4, xiiRTTIDefaultAl
   {
     XII_ENUM_ACCESSOR_PROPERTY("ShaderMode", xiiMaterialShaderMode, GetShaderMode, SetShaderMode),
     XII_ACCESSOR_PROPERTY("BaseMaterial", GetBaseMaterial, SetBaseMaterial)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
-    XII_ACCESSOR_PROPERTY("Surface", GetSurface, SetSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
+    XII_ACCESSOR_PROPERTY("Surface", GetSurface, SetSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("Shader", GetShader, SetShader)->AddAttributes(new xiiFileBrowserAttribute("Select Shader", "*.xiiShader", "CustomAction_CreateShaderFromTemplate")),
     // This property holds the phantom shader properties type so it is only used in the object graph but not actually in the instance of this object.
     XII_ACCESSOR_PROPERTY("ShaderProperties", GetShaderProperties, SetShaderProperties)->AddFlags(xiiPropertyFlags::PointerOwner)->AddAttributes(new xiiContainerAttribute(false, false, false)),
@@ -755,13 +755,15 @@ void xiiMaterialAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pIn
   if (GetProperties()->m_ShaderMode != xiiMaterialShaderMode::BaseMaterial)
   {
     // remove base material dependency, if it isn't used
-    pInfo->m_AssetTransformDependencies.Remove(GetProperties()->GetBaseMaterial());
+    pInfo->m_TransformDependencies.Remove(GetProperties()->GetBaseMaterial());
+    pInfo->m_ThumbnailDependencies.Remove(GetProperties()->GetBaseMaterial());
   }
 
   if (GetProperties()->m_ShaderMode != xiiMaterialShaderMode::File)
   {
     // remove shader file dependency, if it isn't used
-    pInfo->m_AssetTransformDependencies.Remove(GetProperties()->GetShader());
+    pInfo->m_TransformDependencies.Remove(GetProperties()->GetShader());
+    pInfo->m_ThumbnailDependencies.Remove(GetProperties()->GetShader());
   }
 
   if (GetProperties()->m_ShaderMode == xiiMaterialShaderMode::Custom)
@@ -769,7 +771,8 @@ void xiiMaterialAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pIn
     // We write our own guid into the shader field so BaseMaterial materials can find the shader file.
     // This would cause us to have a dependency to ourselves so we need to remove it.
     xiiStringBuilder tmp;
-    pInfo->m_AssetTransformDependencies.Remove(xiiConversionUtils::ToString(GetGuid(), tmp));
+    pInfo->m_TransformDependencies.Remove(GetProperties()->GetShader());
+    pInfo->m_ThumbnailDependencies.Remove(GetProperties()->GetShader());
 
     xiiVisualShaderCodeGenerator codeGen;
 
@@ -778,7 +781,7 @@ void xiiMaterialAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pIn
 
     for (const auto& sCfgFile : cfgFiles)
     {
-      pInfo->m_AssetTransformDependencies.Insert(sCfgFile);
+      pInfo->m_TransformDependencies.Insert(sCfgFile);
     }
 
     pInfo->m_Outputs.Insert(xiiMaterialAssetDocumentManager::s_szShaderOutputTag);

@@ -7,6 +7,7 @@
 #include <EditorFramework/PropertyGrid/AssetBrowserPropertyWidget.moc.h>
 #include <GuiFoundation/UIServices/ImageCache.moc.h>
 #include <ToolsFoundation/Assets/AssetFileExtensionWhitelist.h>
+#include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
 xiiQtAssetPropertyWidget::xiiQtAssetPropertyWidget() :
   xiiQtStandardPropertyWidget()
@@ -168,8 +169,27 @@ void xiiQtAssetPropertyWidget::InternalSetValue(const xiiVariant& value)
         return;
       }
 
-      m_AssetGuid = xiiConversionUtils::ConvertStringToUuid(sText);
+      xiiUuid newAssetGuid = xiiConversionUtils::ConvertStringToUuid(sText);
 
+      // If this is a thumbnail or transform dependency, make sure the target is not in our inverse hull, i.e. we don't create a circular dependency.
+      const xiiAssetBrowserAttribute* pAssetAttribute = m_pProp->GetAttributeByType<xiiAssetBrowserAttribute>();
+      if (pAssetAttribute->GetDependencyFlags().IsAnySet(xiiDependencyFlags::Thumbnail | xiiDependencyFlags::Transform))
+      {
+        xiiUuid                            documentGuid = m_pObjectAccessor->GetObjectManager()->GetDocument()->GetGuid();
+        xiiAssetCurator::xiiLockedSubAsset asset        = xiiAssetCurator::GetSingleton()->GetSubAsset(documentGuid);
+        if (asset.isValid())
+        {
+          xiiSet<xiiUuid> inverseHull;
+          xiiAssetCurator::GetSingleton()->GenerateInverseTransitiveHull(asset->m_pAssetInfo, inverseHull, true, true);
+          if (inverseHull.Contains(newAssetGuid))
+          {
+            xiiQtUiServices::GetSingleton()->MessageBoxWarning("The asset can't be selected as it would create a circular dependency");
+            return;
+          }
+        }
+      }
+
+      m_AssetGuid = newAssetGuid;
       auto pAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(m_AssetGuid);
 
       if (pAsset)

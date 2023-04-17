@@ -135,7 +135,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProcGen_PlacementOutput, 1, xiiRTTIDefaultAl
     XII_MEMBER_PROPERTY("CullDistance", m_fCullDistance)->AddAttributes(new xiiDefaultValueAttribute(30.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_ENUM_MEMBER_PROPERTY("PlacementMode", xiiProcPlacementMode, m_PlacementMode),
     XII_MEMBER_PROPERTY("CollisionLayer", m_uiCollisionLayer)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),
-    XII_MEMBER_PROPERTY("Surface", m_sSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
+    XII_MEMBER_PROPERTY("Surface", m_sSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
 
     XII_MEMBER_PROPERTY("Density", m_DensityPin),
     XII_MEMBER_PROPERTY("Scale", m_ScalePin)->AddAttributes(new xiiColorAttribute(xiiColorScheme::DarkUI(xiiColorScheme::Pink))),

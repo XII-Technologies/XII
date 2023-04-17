@@ -19,6 +19,7 @@ void OnLoadPlugin()
       xiiStandardMenus::MapActions("RmlUiAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
       xiiProjectActions::MapActions("RmlUiAssetMenuBar");
       xiiDocumentActions::MapActions("RmlUiAssetMenuBar", "Menu.File", false);
+      xiiAssetActions::MapMenuActions("RmlUiAssetMenuBar", "Menu.File");
       xiiCommandHistoryActions::MapActions("RmlUiAssetMenuBar", "Menu.Edit");
     }
 
@@ -27,7 +28,7 @@ void OnLoadPlugin()
       xiiActionMapManager::RegisterActionMap("RmlUiAssetToolBar").IgnoreResult();
       xiiDocumentActions::MapActions("RmlUiAssetToolBar", "", true);
       xiiCommandHistoryActions::MapActions("RmlUiAssetToolBar", "");
-      xiiAssetActions::MapActions("RmlUiAssetToolBar", true);
+      xiiAssetActions::MapToolBarActions("RmlUiAssetToolBar", true);
     }
   }
 }

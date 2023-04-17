@@ -325,6 +325,33 @@ void xiiSceneAction::Execute(const xiiVariant& value)
         }
       }
 
+      // Convert collections
+      {
+        XII_PROFILE_SCOPE("ConvertCollections");
+        xiiAssetCurator* pCurator = xiiAssetCurator::GetSingleton();
+        xiiSet<xiiUuid>  collections;
+        {
+          xiiAssetCurator::xiiLockedAssetTable allAssets = pCurator->GetKnownAssets();
+
+          //#TODO_ASSET Instead of hard-coding this to 'Collection' add a virtual function to all asset managers that defines those that need to be transformed on scene export.
+          xiiTempHashedString sCollection = "Collection";
+          for (auto it : *allAssets)
+          {
+            if (it.Value()->m_Info->m_sAssetsDocumentTypeName == sCollection)
+            {
+              collections.Insert(it.Value()->m_Info->m_DocumentID);
+            }
+          }
+        }
+
+        const xiiPlatformProfile* pCurrentProfile = pCurator->GetActiveAssetProfile();
+        for (const auto& guid : collections)
+        {
+          // Ignore result
+          pCurator->TransformAsset(guid, xiiTransformFlags::TriggeredManually | xiiTransformFlags::ForceTransform, pCurrentProfile);
+        }
+      }
+
       dlg.s_bUpdateThumbnail = false;
 
       range.BeginNextStep("Export Scene");

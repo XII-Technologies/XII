@@ -9,7 +9,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiJoltSurfaceResourceSlot, xiiNoBase, 1, xiiRTT
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Label", m_sLabel)->AddAttributes(new xiiReadOnlyAttribute()),
-    XII_MEMBER_PROPERTY("Resource", m_sResource)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
+    XII_MEMBER_PROPERTY("Resource", m_sResource)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
     XII_MEMBER_PROPERTY("Exclude", m_bExclude),
   }
   XII_END_PROPERTIES;
@@ -45,7 +45,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiJoltCollisionMeshAssetProperties, 1, xiiRTTI
     XII_MEMBER_PROPERTY("Detail", m_uiDetail)->AddAttributes(new xiiDefaultValueAttribute(1), new xiiClampValueAttribute(0, 32)),
     XII_MEMBER_PROPERTY("MeshFile", m_sMeshFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", xiiFileBrowserAttribute::Meshes)),
     XII_ARRAY_MEMBER_PROPERTY("Surfaces", m_Slots)->AddAttributes(new xiiContainerAttribute(false, false, true)),
-    XII_MEMBER_PROPERTY("Surface", m_sConvexMeshSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
+    XII_MEMBER_PROPERTY("Surface", m_sConvexMeshSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
   }
   XII_END_PROPERTIES;
 }

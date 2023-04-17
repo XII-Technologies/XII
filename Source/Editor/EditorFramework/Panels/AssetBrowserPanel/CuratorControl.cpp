@@ -42,14 +42,15 @@ void xiiQtCuratorControl::paintEvent(QPaintEvent* e)
   xiiHybridArray<xiiUInt32, xiiAssetInfo::TransformState::COUNT> sections;
   xiiAssetCurator::GetSingleton()->GetAssetTransformStats(uiNumAssets, sections);
   QColor colors[xiiAssetInfo::TransformState::COUNT];
-  colors[xiiAssetInfo::TransformState::Unknown]           = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Gray));
-  colors[xiiAssetInfo::TransformState::NeedsImport]       = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Yellow));
-  colors[xiiAssetInfo::TransformState::NeedsTransform]    = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Blue));
-  colors[xiiAssetInfo::TransformState::NeedsThumbnail]    = xiiToQtColor(xiiColorScheme::DarkUI(float(xiiColorScheme::Blue + xiiColorScheme::Green) * 0.5f * xiiColorScheme::s_fIndexNormalizer));
-  colors[xiiAssetInfo::TransformState::UpToDate]          = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Green));
-  colors[xiiAssetInfo::TransformState::MissingDependency] = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Red));
-  colors[xiiAssetInfo::TransformState::MissingReference]  = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Orange));
-  colors[xiiAssetInfo::TransformState::TransformError]    = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Red));
+  colors[xiiAssetInfo::TransformState::Unknown]                    = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Gray));
+  colors[xiiAssetInfo::TransformState::NeedsImport]                = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Yellow));
+  colors[xiiAssetInfo::TransformState::NeedsTransform]             = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Blue));
+  colors[xiiAssetInfo::TransformState::NeedsThumbnail]             = xiiToQtColor(xiiColorScheme::DarkUI(float(xiiColorScheme::Blue + xiiColorScheme::Green) * 0.5f * xiiColorScheme::s_fIndexNormalizer));
+  colors[xiiAssetInfo::TransformState::UpToDate]                   = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Green));
+  colors[xiiAssetInfo::TransformState::MissingTransformDependency] = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Red));
+  colors[xiiAssetInfo::TransformState::MissingThumbnailDependency] = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Orange));
+  colors[xiiAssetInfo::TransformState::CircularDependency]         = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Red));
+  colors[xiiAssetInfo::TransformState::TransformError]             = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Red));
 
   const float    fTotalCount   = uiNumAssets;
   const xiiInt32 iTargetWidth  = rect.width();
@@ -73,8 +74,8 @@ void xiiQtCuratorControl::paintEvent(QPaintEvent* e)
   xiiStringBuilder s;
   s.Format("[Un: {0}, Imp: {4}, Tr: {1}, Th: {2}, Err: {3}]", sections[xiiAssetInfo::TransformState::Unknown],
            sections[xiiAssetInfo::TransformState::NeedsTransform], sections[xiiAssetInfo::TransformState::NeedsThumbnail],
-           sections[xiiAssetInfo::TransformState::MissingDependency] + sections[xiiAssetInfo::TransformState::MissingReference] +
-             sections[xiiAssetInfo::TransformState::TransformError],
+           sections[xiiAssetInfo::TransformState::MissingTransformDependency] + sections[xiiAssetInfo::TransformState::MissingThumbnailDependency] +
+             sections[xiiAssetInfo::TransformState::TransformError] + sections[xiiAssetInfo::TransformState::CircularDependency],
            sections[xiiAssetInfo::TransformState::NeedsImport]);
 
   painter.setPen(QPen(Qt::white));
@@ -134,11 +135,15 @@ void xiiQtCuratorControl::SlotUpdateTransformStats()
 
   if (uiNumAssets > 0)
   {
-    s.Format("Unknown: {0}\nImport Needed: {6}\nTransform Needed: {1}\nThumbnail Needed: {2}\nMissing Dependency: {3}\nMissing Reference: {4}\nFailed "
-             "Transform: {5}",
-             sections[xiiAssetInfo::TransformState::Unknown], sections[xiiAssetInfo::TransformState::NeedsTransform],
-             sections[xiiAssetInfo::TransformState::NeedsThumbnail], sections[xiiAssetInfo::TransformState::MissingDependency],
-             sections[xiiAssetInfo::TransformState::MissingReference], sections[xiiAssetInfo::TransformState::TransformError], sections[xiiAssetInfo::TransformState::NeedsImport]);
+    s.Format("Unknown: {0}\nImport Needed: {1}\nTransform Needed: {2}\nThumbnail Needed: {3}\nMissing Dependency: {4}\nMissing Reference: {5}\nCircular Dependency: {6}\nFailed Transform: {7}",
+             sections[xiiAssetInfo::TransformState::Unknown],
+             sections[xiiAssetInfo::TransformState::NeedsImport],
+             sections[xiiAssetInfo::TransformState::NeedsTransform],
+             sections[xiiAssetInfo::TransformState::NeedsThumbnail],
+             sections[xiiAssetInfo::TransformState::MissingTransformDependency],
+             sections[xiiAssetInfo::TransformState::MissingThumbnailDependency],
+             sections[xiiAssetInfo::TransformState::CircularDependency],
+             sections[xiiAssetInfo::TransformState::TransformError]);
     setToolTip(s.GetData());
   }
   else

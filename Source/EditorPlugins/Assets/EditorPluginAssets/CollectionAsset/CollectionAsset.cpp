@@ -10,7 +10,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCollectionAssetEntry, 1, xiiRTTIDefaultAlloc
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Name", m_sLookupName),
-    XII_MEMBER_PROPERTY("Asset", m_sRedirectionAsset)->AddAttributes(new xiiAssetBrowserAttribute(""))
+    XII_MEMBER_PROPERTY("Asset", m_sRedirectionAsset)->AddAttributes(new xiiAssetBrowserAttribute("", xiiDependencyFlags::Package))
   }
   XII_END_PROPERTIES;
 }
@@ -66,43 +66,14 @@ static void InsertEntry(xiiStringView sID, xiiStringView sLookupName, xiiMap<xii
     entry.m_sAssetTypeName          = pInfo->m_Data.m_sSubAssetsDocumentTypeName;
   }
 
-  // Insert dependencies
+  // insert dependencies
   {
     const xiiAssetDocumentInfo* pDocInfo = pInfo->m_pAssetInfo->m_Info.Borrow();
 
-    for (const xiiString& doc : pDocInfo->m_AssetTransformDependencies)
+    for (const xiiString& doc : pDocInfo->m_PackageDependencies)
     {
       InsertEntry(doc, {}, inout_Found);
     }
-
-    for (const xiiString& doc : pDocInfo->m_RuntimeDependencies)
-    {
-      InsertEntry(doc, {}, inout_Found);
-    }
-  }
-}
-
-void xiiCollectionAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const
-{
-  // TODO: why are collections not marked as needs-transform, out of the box, when a dependency changes ?
-
-  SUPER::UpdateAssetDocumentInfo(pInfo);
-
-  const xiiCollectionAssetData* pProp = GetProperties();
-
-  xiiMap<xiiString, xiiCollectionEntry> entries;
-
-  for (const auto& e : pProp->m_Entries)
-  {
-    if (e.m_sRedirectionAsset.IsEmpty())
-      continue;
-
-    InsertEntry(e.m_sRedirectionAsset, e.m_sLookupName, entries);
-  }
-
-  for (auto it : entries)
-  {
-    pInfo->m_AssetTransformDependencies.Insert(it.Value().m_sResourceID);
   }
 }
 

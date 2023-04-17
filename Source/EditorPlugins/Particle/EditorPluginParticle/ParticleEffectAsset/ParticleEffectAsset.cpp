@@ -209,7 +209,7 @@ void xiiParticleEffectAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInf
         if (pType->m_RenderMode != xiiParticleTypeRenderMode::Distortion)
         {
           // remove unused dependencies
-          pInfo->m_AssetTransformDependencies.Remove(pType->m_sDistortionTexture);
+          pInfo->m_TransformDependencies.Remove(pType->m_sDistortionTexture);
         }
       }
 
@@ -218,7 +218,7 @@ void xiiParticleEffectAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInf
         if (pType->m_RenderMode != xiiParticleTypeRenderMode::Distortion)
         {
           // remove unused dependencies
-          pInfo->m_AssetTransformDependencies.Remove(pType->m_sDistortionTexture);
+          pInfo->m_TransformDependencies.Remove(pType->m_sDistortionTexture);
         }
       }
     }

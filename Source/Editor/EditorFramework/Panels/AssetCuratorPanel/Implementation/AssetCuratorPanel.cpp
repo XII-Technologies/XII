@@ -21,17 +21,17 @@ bool xiiQtAssetCuratorFilter::IsAssetFiltered(const xiiSubAsset* pInfo) const
   if (!pInfo->m_bMainAsset)
     return true;
 
-  if (pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingDependency &&
-      pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingReference && pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::TransformError)
+  if (pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingTransformDependency && pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::CircularDependency &&
+      pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingThumbnailDependency && pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::TransformError)
   {
     return true;
   }
 
   if (m_bFilterTransitive)
   {
-    if (pInfo->m_pAssetInfo->m_TransformState == xiiAssetInfo::MissingReference)
+    if (pInfo->m_pAssetInfo->m_TransformState == xiiAssetInfo::MissingThumbnailDependency)
     {
-      for (auto& ref : pInfo->m_pAssetInfo->m_MissingReferences)
+      for (auto& ref : pInfo->m_pAssetInfo->m_MissingThumbnailDeps)
       {
         if (!xiiAssetCurator::GetSingleton()->FindSubAsset(ref).isValid())
         {
@@ -167,10 +167,10 @@ void xiiQtAssetCuratorPanel::UpdateIssueInfo()
 
   xiiAssetInfo* pAssetInfo = pSubAsset->m_pAssetInfo;
 
-  auto getNiceName = [](const xiiString& dep) -> xiiStringBuilder {
-    if (xiiConversionUtils::IsStringUuid(dep))
+  auto getNiceName = [](const xiiString& sDep) -> xiiStringBuilder {
+    if (xiiConversionUtils::IsStringUuid(sDep))
     {
-      xiiUuid guid         = xiiConversionUtils::ConvertStringToUuid(dep);
+      xiiUuid guid         = xiiConversionUtils::ConvertStringToUuid(sDep);
       auto    assetInfoDep = xiiAssetCurator::GetSingleton()->GetSubAsset(guid);
       if (assetInfoDep)
       {
@@ -181,29 +181,38 @@ void xiiQtAssetCuratorPanel::UpdateIssueInfo()
       xiiUInt64 uiHigh;
       guid.GetValues(uiLow, uiHigh);
       xiiStringBuilder sTmp;
-      sTmp.Format("{} - u4{{},{}}", dep, uiLow, uiHigh);
+      sTmp.Format("{} - u4{{},{}}", sDep, uiLow, uiHigh);
 
       return sTmp;
     }
 
-    return dep;
+    return sDep;
   };
 
-  xiiLogEntryDelegate logger(([this](xiiLogEntry& entry) -> void { TransformLog->GetLog()->AddLogMsg(std::move(entry)); }));
+  xiiLogEntryDelegate logger(([this](xiiLogEntry& ref_entry) -> void { TransformLog->GetLog()->AddLogMsg(std::move(ref_entry)); }));
   xiiStringBuilder    text;
-  if (pAssetInfo->m_TransformState == xiiAssetInfo::MissingDependency)
+  if (pAssetInfo->m_TransformState == xiiAssetInfo::MissingTransformDependency)
   {
-    xiiLog::Error(&logger, "Missing Dependency:");
-    for (const xiiString& dep : pAssetInfo->m_MissingDependencies)
+    xiiLog::Error(&logger, "Missing Transform Dependency:");
+    for (const xiiString& dep : pAssetInfo->m_MissingTransformDeps)
     {
       xiiStringBuilder sNiceName = getNiceName(dep);
       xiiLog::Error(&logger, "{0}", sNiceName);
     }
   }
-  else if (pAssetInfo->m_TransformState == xiiAssetInfo::MissingReference)
+  else if (pAssetInfo->m_TransformState == xiiAssetInfo::CircularDependency)
   {
-    xiiLog::Error(&logger, "Missing Reference:");
-    for (const xiiString& ref : pAssetInfo->m_MissingReferences)
+    xiiLog::Error(&logger, "Circular Dependency:");
+    for (const xiiString& ref : pAssetInfo->m_CircularDependencies)
+    {
+      xiiStringBuilder sNiceName = getNiceName(ref);
+      xiiLog::Error(&logger, "{0}", sNiceName);
+    }
+  }
+  else if (pAssetInfo->m_TransformState == xiiAssetInfo::MissingThumbnailDependency)
+  {
+    xiiLog::Error(&logger, "Missing Thumbnail Dependency:");
+    for (const xiiString& ref : pAssetInfo->m_MissingThumbnailDeps)
     {
       xiiStringBuilder sNiceName = getNiceName(ref);
       xiiLog::Error(&logger, "{0}", sNiceName);

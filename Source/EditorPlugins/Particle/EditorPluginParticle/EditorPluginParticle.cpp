@@ -23,6 +23,7 @@ void OnLoadPlugin()
       xiiStandardMenus::MapActions("ParticleEffectAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
       xiiProjectActions::MapActions("ParticleEffectAssetMenuBar");
       xiiDocumentActions::MapActions("ParticleEffectAssetMenuBar", "Menu.File", false);
+      xiiAssetActions::MapMenuActions("ParticleEffectAssetMenuBar", "Menu.File");
       xiiCommandHistoryActions::MapActions("ParticleEffectAssetMenuBar", "Menu.Edit");
     }
 
@@ -31,7 +32,7 @@ void OnLoadPlugin()
       xiiActionMapManager::RegisterActionMap("ParticleEffectAssetToolBar").IgnoreResult();
       xiiDocumentActions::MapActions("ParticleEffectAssetToolBar", "", true);
       xiiCommandHistoryActions::MapActions("ParticleEffectAssetToolBar", "");
-      xiiAssetActions::MapActions("ParticleEffectAssetToolBar", true);
+      xiiAssetActions::MapToolBarActions("ParticleEffectAssetToolBar", true);
       xiiParticleActions::MapActions("ParticleEffectAssetToolBar", "");
     }
 
