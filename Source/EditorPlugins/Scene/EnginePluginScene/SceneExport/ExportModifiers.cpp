@@ -11,7 +11,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneExportModifier_RemoveShapeIconComponent
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiSceneExportModifier_RemoveShapeIconComponents::ModifyWorld(xiiWorld& ref_world, const xiiUuid& documentGuid, bool bForExport)
+void xiiSceneExportModifier_RemoveShapeIconComponents::ModifyWorld(xiiWorld& ref_world, xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport)
 {
   XII_LOCK(ref_world.GetWriteMarker());
 
@@ -31,7 +31,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneExportModifier_RemovePathNodeComponents
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiSceneExportModifier_RemovePathNodeComponents::ModifyWorld(xiiWorld& world, const xiiUuid& documentGuid, bool bForExport)
+void xiiSceneExportModifier_RemovePathNodeComponents::ModifyWorld(xiiWorld& world, xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport)
 {
   if (!bForExport)
     return;

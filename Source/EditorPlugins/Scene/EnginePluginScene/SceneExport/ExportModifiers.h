@@ -10,7 +10,7 @@ class XII_ENGINEPLUGINSCENE_DLL xiiSceneExportModifier_RemoveShapeIconComponents
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneExportModifier_RemoveShapeIconComponents, xiiSceneExportModifier);
 
 public:
-  virtual void ModifyWorld(xiiWorld& ref_world, const xiiUuid& documentGuid, bool bForExport) override;
+  virtual void ModifyWorld(xiiWorld& ref_world, xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport) override;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -20,5 +20,5 @@ class XII_ENGINEPLUGINSCENE_DLL xiiSceneExportModifier_RemovePathNodeComponents 
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneExportModifier_RemovePathNodeComponents, xiiSceneExportModifier);
 
 public:
-  virtual void ModifyWorld(xiiWorld& world, const xiiUuid& documentGuid, bool bForExport) override;
+  virtual void ModifyWorld(xiiWorld& world, xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport) override;
 };

@@ -36,14 +36,14 @@ void xiiSceneExportModifier::DestroyModifiers(xiiHybridArray<xiiSceneExportModif
   modifiers.Clear();
 }
 
-void xiiSceneExportModifier::ApplyAllModifiers(xiiWorld& world, const xiiUuid& documentGuid, bool bForExport)
+void xiiSceneExportModifier::ApplyAllModifiers(xiiWorld& world, xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport)
 {
   xiiHybridArray<xiiSceneExportModifier*, 8> modifiers;
   CreateModifiers(modifiers);
 
   for (auto pMod : modifiers)
   {
-    pMod->ModifyWorld(world, documentGuid, bForExport);
+    pMod->ModifyWorld(world, sDocumentType, documentGuid, bForExport);
   }
 
   DestroyModifiers(modifiers);

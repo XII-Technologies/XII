@@ -35,5 +35,5 @@ class XII_ENGINEPLUGINSCENE_DLL xiiSceneExportModifier_RemoveCommentComponents :
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneExportModifier_RemoveCommentComponents, xiiSceneExportModifier);
 
 public:
-  virtual void ModifyWorld(xiiWorld& world, const xiiUuid& documentGuid, bool bForExport) override;
+  virtual void ModifyWorld(xiiWorld& world, xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport) override;
 };

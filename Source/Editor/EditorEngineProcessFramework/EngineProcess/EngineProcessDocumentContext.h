@@ -46,14 +46,17 @@ public:
   xiiEngineProcessDocumentContext(xiiBitflags<xiiEngineProcessDocumentContextFlags> flags);
   virtual ~xiiEngineProcessDocumentContext();
 
-  virtual void Initialize(const xiiUuid& DocumentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC);
+  virtual void Initialize(const xiiUuid& documentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType);
   void         Deinitialize();
+
+  /// \brief Returns the document type for which this context was created. Useful in case a context may be used for multiple document types.
+  xiiStringView GetDocumentType() const { return m_sDocumentType; }
 
   void         SendProcessMessage(xiiProcessMessage* pMsg = nullptr);
   virtual void HandleMessage(const xiiEditorEngineDocumentMsg* pMsg);
 
   static xiiEngineProcessDocumentContext* GetDocumentContext(xiiUuid guid);
-  static void                             AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pView, xiiEngineProcessCommunicationChannel* pIPC);
+  static void                             AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pView, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType);
   static bool                             PendingOperationsInProgress();
   static void                             UpdateDocumentContexts();
   static void                             DestroyDocumentContext(xiiUuid guid);
@@ -181,6 +184,7 @@ private:
   xiiGALTextureHandle          m_hThumbnailColorRT;
   xiiGALTextureHandle          m_hThumbnailDepthRT;
   bool                         m_bWorldSimStateBeforeThumbnail = false;
+  xiiString                    m_sDocumentType;
 
   //////////////////////////////////////////////////////////////////////////
   // GameObject reference resolution
