@@ -237,4 +237,30 @@ XII_ALWAYS_INLINE void xiiStringBuilder::Remove(const char* szRemoveFromPos, con
   ReplaceSubString(szRemoveFromPos, szRemoveToPos, xiiStringView());
 }
 
+template <typename Container>
+bool xiiUnicodeUtils::RepairNonUtf8Text(const char* pStartData, const char* pEndData, Container& out_Result)
+{
+  if (xiiUnicodeUtils::IsValidUtf8(pStartData, pEndData))
+  {
+    out_Result = xiiStringView(pStartData, pEndData);
+    return false;
+  }
+
+  out_Result.Clear();
+
+  xiiHybridArray<char, 1024>                              fixedText;
+  xiiUnicodeUtils::UtfInserter<char, decltype(fixedText)> inserter(&fixedText);
+
+  while (pStartData < pEndData)
+  {
+    const xiiUInt32 uiChar = xiiUnicodeUtils::DecodeUtf8ToUtf32(pStartData);
+    xiiUnicodeUtils::EncodeUtf32ToUtf8(uiChar, inserter);
+  }
+
+  XII_ASSERT_DEV(xiiUnicodeUtils::IsValidUtf8(fixedText.GetData(), fixedText.GetData() + fixedText.GetCount()), "Repaired text is still not a valid Utf8 string.");
+
+  out_Result = xiiStringView(fixedText.GetData(), fixedText.GetCount());
+  return true;
+}
+
 #include <Foundation/Strings/Implementation/AllStrings_inl.h>
