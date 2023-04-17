@@ -28,10 +28,10 @@ public:
 
   xiiParticleType* CreateType(xiiParticleSystemInstance* pOwner) const;
 
-  virtual void QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_FinalizerDeps) const {}
+  virtual void QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_finalizerDeps) const {}
 
-  virtual void Save(xiiStreamWriter& stream) const = 0;
-  virtual void Load(xiiStreamReader& stream)       = 0;
+  virtual void Save(xiiStreamWriter& inout_stream) const = 0;
+  virtual void Load(xiiStreamReader& inout_stream)       = 0;
 };
 
 class XII_PARTICLEPLUGIN_DLL xiiParticleType : public xiiParticleModule
@@ -43,7 +43,7 @@ class XII_PARTICLEPLUGIN_DLL xiiParticleType : public xiiParticleModule
 public:
   virtual float GetMaxParticleRadius(float fParticleSize) const { return fParticleSize * 0.5f; }
 
-  virtual void ExtractTypeRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& instanceTransform) const = 0;
+  virtual void ExtractTypeRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const = 0;
 
 protected:
   xiiParticleType();

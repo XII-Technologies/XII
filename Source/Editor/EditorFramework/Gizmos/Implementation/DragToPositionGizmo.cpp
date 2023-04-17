@@ -84,13 +84,13 @@ void xiiDragToPositionGizmo::OnVisibleChanged(bool bVisible)
 
 void xiiDragToPositionGizmo::OnTransformationChanged(const xiiTransform& transform)
 {
-    m_hBobble.SetTransformation(transform);
-    m_hAlignPX.SetTransformation(transform);
-    m_hAlignNX.SetTransformation(transform);
-    m_hAlignPY.SetTransformation(transform);
-    m_hAlignNY.SetTransformation(transform);
-    m_hAlignPZ.SetTransformation(transform);
-    m_hAlignNZ.SetTransformation(transform);
+  m_hBobble.SetTransformation(transform);
+  m_hAlignPX.SetTransformation(transform);
+  m_hAlignNX.SetTransformation(transform);
+  m_hAlignPY.SetTransformation(transform);
+  m_hAlignNY.SetTransformation(transform);
+  m_hAlignPZ.SetTransformation(transform);
+  m_hAlignNZ.SetTransformation(transform);
 }
 
 void xiiDragToPositionGizmo::DoFocusLost(bool bCancel)

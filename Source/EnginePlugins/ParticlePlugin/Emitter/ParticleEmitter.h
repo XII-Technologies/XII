@@ -21,8 +21,8 @@ public:
   xiiParticleEmitter* CreateEmitter(xiiParticleSystemInstance* pOwner) const;
   virtual void        QueryMaxParticleCount(xiiUInt32& out_uiMaxParticlesAbs, xiiUInt32& out_uiMaxParticlesPerSecond) const = 0;
 
-  virtual void Save(xiiStreamWriter& stream) const = 0;
-  virtual void Load(xiiStreamReader& stream)       = 0;
+  virtual void Save(xiiStreamWriter& inout_stream) const = 0;
+  virtual void Load(xiiStreamReader& inout_stream)       = 0;
 };
 
 enum class xiiParticleEmitterState

@@ -83,9 +83,9 @@ void xiiParticleEffectInstance::Interrupt()
   m_bEmitterEnabled = false;
 }
 
-void xiiParticleEffectInstance::SetEmitterEnabled(bool enable)
+void xiiParticleEffectInstance::SetEmitterEnabled(bool bEnable)
 {
-  m_bEmitterEnabled = enable;
+  m_bEmitterEnabled = bEnable;
 
   for (xiiUInt32 i = 0; i < m_ParticleSystems.GetCount(); ++i)
   {
@@ -404,7 +404,7 @@ void xiiParticleEffectInstance::Reconfigure(bool bFirstTime, xiiArrayPtr<xiiPart
   }
 }
 
-bool xiiParticleEffectInstance::Update(const xiiTime& tDiff)
+bool xiiParticleEffectInstance::Update(const xiiTime& diff)
 {
   XII_PROFILE_SCOPE("PFX: Effect Update");
 
@@ -453,7 +453,7 @@ bool xiiParticleEffectInstance::Update(const xiiTime& tDiff)
     }
   }
 
-  m_ElapsedTimeSinceUpdate += tDiff;
+  m_ElapsedTimeSinceUpdate += diff;
   PassTransformToSystems();
 
   // if the time step is too big, iterate multiple times
@@ -572,26 +572,26 @@ void xiiParticleEffectInstance::SetTransformForNextFrame(const xiiTransform& tra
   m_vVelocityForNextFrame = vParticleStartVelocity;
 }
 
-xiiInt32 xiiParticleEffectInstance::AddWindSampleLocation(const xiiVec3& pos)
+xiiInt32 xiiParticleEffectInstance::AddWindSampleLocation(const xiiVec3& vPos)
 {
   const xiiUInt32 uiDataIdx = xiiRenderWorld::GetDataIndexForRendering();
 
   if (m_vSampleWindLocations[uiDataIdx].GetCount() < m_vSampleWindLocations[uiDataIdx].GetCapacity())
   {
-    m_vSampleWindLocations[uiDataIdx].PushBack(pos);
+    m_vSampleWindLocations[uiDataIdx].PushBack(vPos);
     return m_vSampleWindLocations[uiDataIdx].GetCount() - 1;
   }
 
   return -1;
 }
 
-xiiVec3 xiiParticleEffectInstance::GetWindSampleResult(xiiInt32 idx) const
+xiiVec3 xiiParticleEffectInstance::GetWindSampleResult(xiiInt32 iIdx) const
 {
   const xiiUInt32 uiDataIdx = xiiRenderWorld::GetDataIndexForRendering();
 
-  if (idx >= 0 && m_vSampleWindResults[uiDataIdx].GetCount() > (xiiUInt32)idx)
+  if (iIdx >= 0 && m_vSampleWindResults[uiDataIdx].GetCount() > (xiiUInt32)iIdx)
   {
-    return m_vSampleWindResults[uiDataIdx][idx];
+    return m_vSampleWindResults[uiDataIdx][iIdx];
   }
 
   return xiiVec3::ZeroVector();
@@ -635,21 +635,21 @@ bool xiiParticleEffectInstance::ShouldBeUpdated() const
   return true;
 }
 
-void xiiParticleEffectInstance::GetBoundingVolume(xiiBoundingBoxSphere& volume) const
+void xiiParticleEffectInstance::GetBoundingVolume(xiiBoundingBoxSphere& ref_volume) const
 {
   if (!m_BoundingVolume.IsValid())
   {
-    volume = xiiBoundingSphere(xiiVec3::ZeroVector(), 0.25f);
+    ref_volume = xiiBoundingSphere(xiiVec3::ZeroVector(), 0.25f);
     return;
   }
 
-  volume = m_BoundingVolume;
+  ref_volume = m_BoundingVolume;
 
   if (!m_bSimulateInLocalSpace)
   {
     // transform the bounding volume to local space, unless it was already created there
     const xiiMat4 invTrans = GetTransform().GetAsMat4().GetInverse();
-    volume.Transform(invTrans);
+    ref_volume.Transform(invTrans);
   }
 }
 
@@ -737,7 +737,7 @@ void xiiParticleEffectUpdateTask::Execute()
   }
 }
 
-void xiiParticleEffectInstance::SetParameter(const xiiTempHashedString& name, float value)
+void xiiParticleEffectInstance::SetParameter(const xiiTempHashedString& sName, float value)
 {
   // shared effects do not support parameters
   if (m_bIsSharedEffect)
@@ -745,7 +745,7 @@ void xiiParticleEffectInstance::SetParameter(const xiiTempHashedString& name, fl
 
   for (xiiUInt32 i = 0; i < m_FloatParameters.GetCount(); ++i)
   {
-    if (m_FloatParameters[i].m_uiNameHash == name.GetHash())
+    if (m_FloatParameters[i].m_uiNameHash == sName.GetHash())
     {
       m_FloatParameters[i].m_fValue = value;
       return;
@@ -753,11 +753,11 @@ void xiiParticleEffectInstance::SetParameter(const xiiTempHashedString& name, fl
   }
 
   auto& ref        = m_FloatParameters.ExpandAndGetRef();
-  ref.m_uiNameHash = name.GetHash();
+  ref.m_uiNameHash = sName.GetHash();
   ref.m_fValue     = value;
 }
 
-void xiiParticleEffectInstance::SetParameter(const xiiTempHashedString& name, const xiiColor& value)
+void xiiParticleEffectInstance::SetParameter(const xiiTempHashedString& sName, const xiiColor& value)
 {
   // shared effects do not support parameters
   if (m_bIsSharedEffect)
@@ -765,7 +765,7 @@ void xiiParticleEffectInstance::SetParameter(const xiiTempHashedString& name, co
 
   for (xiiUInt32 i = 0; i < m_ColorParameters.GetCount(); ++i)
   {
-    if (m_ColorParameters[i].m_uiNameHash == name.GetHash())
+    if (m_ColorParameters[i].m_uiNameHash == sName.GetHash())
     {
       m_ColorParameters[i].m_Value = value;
       return;
@@ -773,54 +773,54 @@ void xiiParticleEffectInstance::SetParameter(const xiiTempHashedString& name, co
   }
 
   auto& ref        = m_ColorParameters.ExpandAndGetRef();
-  ref.m_uiNameHash = name.GetHash();
+  ref.m_uiNameHash = sName.GetHash();
   ref.m_Value      = value;
 }
 
-xiiInt32 xiiParticleEffectInstance::FindFloatParameter(const xiiTempHashedString& name) const
+xiiInt32 xiiParticleEffectInstance::FindFloatParameter(const xiiTempHashedString& sName) const
 {
   for (xiiUInt32 i = 0; i < m_FloatParameters.GetCount(); ++i)
   {
-    if (m_FloatParameters[i].m_uiNameHash == name.GetHash())
+    if (m_FloatParameters[i].m_uiNameHash == sName.GetHash())
       return i;
   }
 
   return -1;
 }
 
-float xiiParticleEffectInstance::GetFloatParameter(const xiiTempHashedString& name, float defaultValue) const
+float xiiParticleEffectInstance::GetFloatParameter(const xiiTempHashedString& sName, float fDefaultValue) const
 {
-  if (name.IsEmpty())
-    return defaultValue;
+  if (sName.IsEmpty())
+    return fDefaultValue;
 
   for (xiiUInt32 i = 0; i < m_FloatParameters.GetCount(); ++i)
   {
-    if (m_FloatParameters[i].m_uiNameHash == name.GetHash())
+    if (m_FloatParameters[i].m_uiNameHash == sName.GetHash())
       return m_FloatParameters[i].m_fValue;
   }
 
-  return defaultValue;
+  return fDefaultValue;
 }
 
-xiiInt32 xiiParticleEffectInstance::FindColorParameter(const xiiTempHashedString& name) const
+xiiInt32 xiiParticleEffectInstance::FindColorParameter(const xiiTempHashedString& sName) const
 {
   for (xiiUInt32 i = 0; i < m_ColorParameters.GetCount(); ++i)
   {
-    if (m_ColorParameters[i].m_uiNameHash == name.GetHash())
+    if (m_ColorParameters[i].m_uiNameHash == sName.GetHash())
       return i;
   }
 
   return -1;
 }
 
-const xiiColor& xiiParticleEffectInstance::GetColorParameter(const xiiTempHashedString& name, const xiiColor& defaultValue) const
+const xiiColor& xiiParticleEffectInstance::GetColorParameter(const xiiTempHashedString& sName, const xiiColor& defaultValue) const
 {
-  if (name.IsEmpty())
+  if (sName.IsEmpty())
     return defaultValue;
 
   for (xiiUInt32 i = 0; i < m_ColorParameters.GetCount(); ++i)
   {
-    if (m_ColorParameters[i].m_uiNameHash == name.GetHash())
+    if (m_ColorParameters[i].m_uiNameHash == sName.GetHash())
       return m_ColorParameters[i].m_Value;
   }
 

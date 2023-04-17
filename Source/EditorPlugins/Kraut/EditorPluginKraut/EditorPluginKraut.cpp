@@ -18,6 +18,7 @@ void OnLoadPlugin()
       xiiStandardMenus::MapActions("KrautTreeAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
       xiiProjectActions::MapActions("KrautTreeAssetMenuBar");
       xiiDocumentActions::MapActions("KrautTreeAssetMenuBar", "Menu.File", false);
+      xiiAssetActions::MapMenuActions("KrautTreeAssetMenuBar", "Menu.File");
       xiiCommandHistoryActions::MapActions("KrautTreeAssetMenuBar", "Menu.Edit");
     }
 
@@ -26,7 +27,7 @@ void OnLoadPlugin()
       xiiActionMapManager::RegisterActionMap("KrautTreeAssetToolBar").IgnoreResult();
       xiiDocumentActions::MapActions("KrautTreeAssetToolBar", "", true);
       xiiCommandHistoryActions::MapActions("KrautTreeAssetToolBar", "");
-      xiiAssetActions::MapActions("KrautTreeAssetToolBar", true);
+      xiiAssetActions::MapToolBarActions("KrautTreeAssetToolBar", true);
     }
   }
 }

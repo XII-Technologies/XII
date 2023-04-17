@@ -47,22 +47,22 @@ enum class BehaviorPullAlongVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleBehaviorFactory_PullAlong::Save(xiiStreamWriter& stream) const
+void xiiParticleBehaviorFactory_PullAlong::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)BehaviorPullAlongVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_fStrength;
+  inout_stream << m_fStrength;
 }
 
-void xiiParticleBehaviorFactory_PullAlong::Load(xiiStreamReader& stream)
+void xiiParticleBehaviorFactory_PullAlong::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)BehaviorPullAlongVersion::Version_Current, "Invalid version {0}", uiVersion);
 
-  stream >> m_fStrength;
+  inout_stream >> m_fStrength;
 }
 
 void xiiParticleBehavior_PullAlong::CreateRequiredStreams()

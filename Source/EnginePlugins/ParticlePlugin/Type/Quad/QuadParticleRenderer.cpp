@@ -29,9 +29,9 @@ xiiParticleQuadRenderer::~xiiParticleQuadRenderer()
   DestroyParticleDataBuffer(m_hTangentDataBuffer);
 }
 
-void xiiParticleQuadRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const
+void xiiParticleQuadRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {
-  types.PushBack(xiiGetStaticRTTI<xiiParticleQuadRenderData>());
+  ref_types.PushBack(xiiGetStaticRTTI<xiiParticleQuadRenderData>());
 }
 
 void xiiParticleQuadRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const

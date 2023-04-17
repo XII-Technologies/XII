@@ -156,7 +156,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 10, xiiComponentMode::Static)
     XII_MEMBER_PROPERTY("EditorShortcut", m_iEditorShortcut)->AddAttributes(new xiiDefaultValueAttribute(-1), new xiiClampValueAttribute(-1, 9)),
     XII_ENUM_ACCESSOR_PROPERTY("UsageHint", xiiCameraUsageHint, GetUsageHint, SetUsageHint),
     XII_ENUM_ACCESSOR_PROPERTY("Mode", xiiCameraMode, GetCameraMode, SetCameraMode),
-    XII_ACCESSOR_PROPERTY("RenderTarget", GetRenderTargetFile, SetRenderTargetFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_Target")),
+    XII_ACCESSOR_PROPERTY("RenderTarget", GetRenderTargetFile, SetRenderTargetFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_Target", xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("RenderTargetOffset", GetRenderTargetRectOffset, SetRenderTargetRectOffset)->AddAttributes(new xiiClampValueAttribute(xiiVec2(0.0f), xiiVec2(0.9f))),
     XII_ACCESSOR_PROPERTY("RenderTargetSize", GetRenderTargetRectSize, SetRenderTargetRectSize)->AddAttributes(new xiiDefaultValueAttribute(xiiVec2(1.0f)), new xiiClampValueAttribute(xiiVec2(0.1f), xiiVec2(1.0f))),
     XII_ACCESSOR_PROPERTY("NearPlane", GetNearPlane, SetNearPlane)->AddAttributes(new xiiDefaultValueAttribute(0.25f), new xiiClampValueAttribute(0.01f, 4.0f)),

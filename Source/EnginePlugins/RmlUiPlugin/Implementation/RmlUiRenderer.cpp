@@ -76,14 +76,14 @@ xiiRmlUiRenderer::~xiiRmlUiRenderer()
   m_hQuadIndexBuffer.Invalidate();
 }
 
-void xiiRmlUiRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const
+void xiiRmlUiRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {
-  types.PushBack(xiiGetStaticRTTI<xiiRmlUiRenderData>());
+  ref_types.PushBack(xiiGetStaticRTTI<xiiRmlUiRenderData>());
 }
 
-void xiiRmlUiRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const
+void xiiRmlUiRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
-  categories.PushBack(xiiDefaultRenderDataCategories::GUI);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
 }
 
 void xiiRmlUiRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const

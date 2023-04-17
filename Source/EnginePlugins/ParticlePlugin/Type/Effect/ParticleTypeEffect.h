@@ -16,8 +16,8 @@ public:
   virtual const xiiRTTI* GetTypeType() const override;
   virtual void           CopyTypeProperties(xiiParticleType* pObject, bool bFirstTime) const override;
 
-  virtual void Save(xiiStreamWriter& stream) const override;
-  virtual void Load(xiiStreamReader& stream) override;
+  virtual void Save(xiiStreamWriter& inout_stream) const override;
+  virtual void Load(xiiStreamReader& inout_stream) override;
 
   xiiString m_sEffect;
   xiiString m_sSharedInstanceName; // to be removed
@@ -35,7 +35,7 @@ public:
   // xiiString m_sSharedInstanceName;
 
   virtual void CreateRequiredStreams() override;
-  virtual void ExtractTypeRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& instanceTransform) const override;
+  virtual void ExtractTypeRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const override;
 
   virtual float GetMaxParticleRadius(float fParticleSize) const override { return m_fMaxEffectRadius; }
 

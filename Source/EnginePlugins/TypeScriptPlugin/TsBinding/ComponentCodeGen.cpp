@@ -87,9 +87,9 @@ void xiiTypeScriptBinding::GenerateComponentCode(xiiStringBuilder& out_Code, con
   out_Code.Append("}\n\n");
 }
 
-static void CreateComponentTypeList(xiiSet<const xiiRTTI*>& found, xiiDynamicArray<const xiiRTTI*>& sorted, const xiiRTTI* pRtti)
+static void CreateComponentTypeList(xiiSet<const xiiRTTI*>& ref_found, xiiDynamicArray<const xiiRTTI*>& ref_sorted, const xiiRTTI* pRtti)
 {
-  if (found.Contains(pRtti))
+  if (ref_found.Contains(pRtti))
     return;
 
   if (!pRtti->IsDerivedFrom<xiiComponent>())
@@ -98,10 +98,10 @@ static void CreateComponentTypeList(xiiSet<const xiiRTTI*>& found, xiiDynamicArr
   if (pRtti == xiiGetStaticRTTI<xiiComponent>() || pRtti == xiiGetStaticRTTI<xiiTypeScriptComponent>())
     return;
 
-  found.Insert(pRtti);
-  CreateComponentTypeList(found, sorted, pRtti->GetParentType());
+  ref_found.Insert(pRtti);
+  CreateComponentTypeList(ref_found, ref_sorted, pRtti->GetParentType());
 
-  sorted.PushBack(pRtti);
+  ref_sorted.PushBack(pRtti);
 }
 
 void xiiTypeScriptBinding::GenerateAllComponentsCode(xiiStringBuilder& out_Code)

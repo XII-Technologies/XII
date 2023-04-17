@@ -9,7 +9,7 @@ class xiiQtAssetBrowserDlg : public QDialog, public Ui_AssetBrowserDlg
   Q_OBJECT
 
 public:
-  xiiQtAssetBrowserDlg(QWidget* parent, const xiiUuid& preselectedAsset, const char* szVisibleFilters);
+  xiiQtAssetBrowserDlg(QWidget* pParent, const xiiUuid& preselectedAsset, const char* szVisibleFilters);
   ~xiiQtAssetBrowserDlg();
 
   const char*   GetSelectedAssetPathRelative() const { return m_sSelectedAssetPathRelative; }

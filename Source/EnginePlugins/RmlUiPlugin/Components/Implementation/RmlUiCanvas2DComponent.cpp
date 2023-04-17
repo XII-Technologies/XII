@@ -173,16 +173,16 @@ void xiiRmlUiCanvas2DComponent::SetRmlResource(const xiiRmlUiResourceHandle& hRe
   }
 }
 
-void xiiRmlUiCanvas2DComponent::SetOffset(const xiiVec2I32& offset)
+void xiiRmlUiCanvas2DComponent::SetOffset(const xiiVec2I32& vOffset)
 {
-  m_vOffset = offset;
+  m_vOffset = vOffset;
 }
 
-void xiiRmlUiCanvas2DComponent::SetSize(const xiiVec2U32& size)
+void xiiRmlUiCanvas2DComponent::SetSize(const xiiVec2U32& vSize)
 {
-  if (m_vSize != size)
+  if (m_vSize != vSize)
   {
-    m_vSize = size;
+    m_vSize = vSize;
 
     if (m_pContext != nullptr)
     {
@@ -191,9 +191,9 @@ void xiiRmlUiCanvas2DComponent::SetSize(const xiiVec2U32& size)
   }
 }
 
-void xiiRmlUiCanvas2DComponent::SetAnchorPoint(const xiiVec2& anchorPoint)
+void xiiRmlUiCanvas2DComponent::SetAnchorPoint(const xiiVec2& vAnchorPoint)
 {
-  m_vAnchorPoint = anchorPoint;
+  m_vAnchorPoint = vAnchorPoint;
 }
 
 void xiiRmlUiCanvas2DComponent::SetPassInput(bool bPassInput)
@@ -211,12 +211,12 @@ void xiiRmlUiCanvas2DComponent::SetAutobindBlackboards(bool bAutobind)
   }
 }
 
-xiiUInt32 xiiRmlUiCanvas2DComponent::AddDataBinding(xiiUniquePtr<xiiRmlUiDataBinding>&& dataBinding)
+xiiUInt32 xiiRmlUiCanvas2DComponent::AddDataBinding(xiiUniquePtr<xiiRmlUiDataBinding>&& pDataBinding)
 {
   // Document needs to be loaded again since data bindings have to be set before document load
   if (m_pContext != nullptr)
   {
-    if (dataBinding->Initialize(*m_pContext).Succeeded())
+    if (pDataBinding->Initialize(*m_pContext).Succeeded())
     {
       if (m_pContext->LoadDocumentFromResource(m_hResource).Succeeded() && IsActive())
       {
@@ -227,15 +227,15 @@ xiiUInt32 xiiRmlUiCanvas2DComponent::AddDataBinding(xiiUniquePtr<xiiRmlUiDataBin
 
   for (xiiUInt32 i = 0; i < m_DataBindings.GetCount(); ++i)
   {
-    if (dataBinding == nullptr)
+    if (pDataBinding == nullptr)
     {
-      m_DataBindings[i] = std::move(dataBinding);
+      m_DataBindings[i] = std::move(pDataBinding);
       return i;
     }
   }
 
   xiiUInt32 uiDataBindingIndex = m_DataBindings.GetCount();
-  m_DataBindings.PushBack(std::move(dataBinding));
+  m_DataBindings.PushBack(std::move(pDataBinding));
   return uiDataBindingIndex;
 }
 
@@ -290,11 +290,11 @@ xiiRmlUiContext* xiiRmlUiCanvas2DComponent::GetOrCreateRmlContext()
   return m_pContext;
 }
 
-void xiiRmlUiCanvas2DComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiRmlUiCanvas2DComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(inout_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = inout_stream.GetStream();
 
   s << m_hResource;
   s << m_vOffset;
@@ -304,11 +304,11 @@ void xiiRmlUiCanvas2DComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_bAutobindBlackboards;
 }
 
-void xiiRmlUiCanvas2DComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiRmlUiCanvas2DComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32  uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s         = stream.GetStream();
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32  uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  xiiStreamReader& s         = inout_stream.GetStream();
 
   s >> m_hResource;
   s >> m_vOffset;
@@ -322,9 +322,9 @@ void xiiRmlUiCanvas2DComponent::DeserializeComponent(xiiWorldReader& stream)
   }
 }
 
-xiiResult xiiRmlUiCanvas2DComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiRmlUiCanvas2DComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
-  bAlwaysVisible = true;
+  ref_bAlwaysVisible = true;
   return XII_SUCCESS;
 }
 

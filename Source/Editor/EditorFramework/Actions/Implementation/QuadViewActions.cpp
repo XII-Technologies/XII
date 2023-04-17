@@ -10,10 +10,8 @@ xiiActionDescriptorHandle xiiQuadViewActions::s_hSpawnView;
 
 void xiiQuadViewActions::RegisterActions()
 {
-  s_hToggleViews =
-    XII_REGISTER_ACTION_1("Scene.View.Toggle", xiiActionScope::Window, "Scene", "", xiiQuadViewAction, xiiQuadViewAction::ButtonType::ToggleViews);
-  s_hSpawnView =
-    XII_REGISTER_ACTION_1("Scene.View.Span", xiiActionScope::Window, "Scene", "", xiiQuadViewAction, xiiQuadViewAction::ButtonType::SpawnView);
+  s_hToggleViews = XII_REGISTER_ACTION_1("Scene.View.Toggle", xiiActionScope::Window, "Scene", "", xiiQuadViewAction, xiiQuadViewAction::ButtonType::ToggleViews);
+  s_hSpawnView   = XII_REGISTER_ACTION_1("Scene.View.Span", xiiActionScope::Window, "Scene", "", xiiQuadViewAction, xiiQuadViewAction::ButtonType::SpawnView);
 }
 
 void xiiQuadViewActions::UnregisterActions()

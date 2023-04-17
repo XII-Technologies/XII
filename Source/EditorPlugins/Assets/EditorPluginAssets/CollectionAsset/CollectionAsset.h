@@ -28,7 +28,5 @@ public:
   xiiCollectionAssetDocument(const char* szDocumentPath);
 
 protected:
-  virtual void UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const override;
-
   virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, const char* szOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
 };

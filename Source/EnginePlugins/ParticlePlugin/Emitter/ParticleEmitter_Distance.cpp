@@ -61,29 +61,29 @@ enum class EmitterDistanceVersion
 };
 
 
-void xiiParticleEmitterFactory_Distance::Save(xiiStreamWriter& stream) const
+void xiiParticleEmitterFactory_Distance::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)EmitterDistanceVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
   // Version 1
-  stream << m_fDistanceThreshold;
-  stream << m_uiSpawnCountMin;
-  stream << m_uiSpawnCountRange;
-  stream << m_sSpawnCountScaleParameter;
+  inout_stream << m_fDistanceThreshold;
+  inout_stream << m_uiSpawnCountMin;
+  inout_stream << m_uiSpawnCountRange;
+  inout_stream << m_sSpawnCountScaleParameter;
 }
 
-void xiiParticleEmitterFactory_Distance::Load(xiiStreamReader& stream)
+void xiiParticleEmitterFactory_Distance::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)EmitterDistanceVersion::Version_Current, "Invalid version {0}", uiVersion);
 
-  stream >> m_fDistanceThreshold;
-  stream >> m_uiSpawnCountMin;
-  stream >> m_uiSpawnCountRange;
-  stream >> m_sSpawnCountScaleParameter;
+  inout_stream >> m_fDistanceThreshold;
+  inout_stream >> m_uiSpawnCountMin;
+  inout_stream >> m_uiSpawnCountRange;
+  inout_stream >> m_sSpawnCountScaleParameter;
 }
 
 void xiiParticleEmitter_Distance::CreateRequiredStreams() {}

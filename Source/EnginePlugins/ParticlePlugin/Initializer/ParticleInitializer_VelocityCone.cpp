@@ -48,29 +48,29 @@ void xiiParticleInitializerFactory_VelocityCone::CopyInitializerProperties(xiiPa
   pInitializer->m_Speed = m_Speed;
 }
 
-void xiiParticleInitializerFactory_VelocityCone::Save(xiiStreamWriter& stream) const
+void xiiParticleInitializerFactory_VelocityCone::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = 1;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_Angle;
-  stream << m_Speed.m_Value;
-  stream << m_Speed.m_fVariance;
+  inout_stream << m_Angle;
+  inout_stream << m_Speed.m_Value;
+  inout_stream << m_Speed.m_fVariance;
 }
 
-void xiiParticleInitializerFactory_VelocityCone::Load(xiiStreamReader& stream)
+void xiiParticleInitializerFactory_VelocityCone::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
-  stream >> m_Angle;
-  stream >> m_Speed.m_Value;
-  stream >> m_Speed.m_fVariance;
+  inout_stream >> m_Angle;
+  inout_stream >> m_Speed.m_Value;
+  inout_stream >> m_Speed.m_fVariance;
 }
 
-void xiiParticleInitializerFactory_VelocityCone::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_FinalizerDeps) const
+void xiiParticleInitializerFactory_VelocityCone::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_finalizerDeps) const
 {
-  inout_FinalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_ApplyVelocity>());
+  inout_finalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_ApplyVelocity>());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -127,7 +127,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->InlineProperty("Speed").IgnoreResult();
   }

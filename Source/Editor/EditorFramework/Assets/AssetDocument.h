@@ -48,16 +48,16 @@ public:
   class XII_EDITORFRAMEWORK_DLL ThumbnailInfo
   {
   public:
-    xiiResult Deserialize(xiiStreamReader& Reader);
-    xiiResult Serialize(xiiStreamWriter& Writer) const;
+    xiiResult Deserialize(xiiStreamReader& inout_reader);
+    xiiResult Serialize(xiiStreamWriter& inout_writer) const;
 
     /// \brief Checks whether the stored file contains the same hash.
     bool IsThumbnailUpToDate(xiiUInt64 uiExpectedHash, xiiUInt16 uiVersion) const { return (m_uiHash == uiExpectedHash && m_uiVersion == uiVersion); }
 
     /// \brief Sets the asset file hash
-    void SetFileHashAndVersion(xiiUInt64 hash, xiiUInt16 v)
+    void SetFileHashAndVersion(xiiUInt64 uiHash, xiiUInt16 v)
     {
-      m_uiHash    = hash;
+      m_uiHash    = uiHash;
       m_uiVersion = v;
     }
 
@@ -149,6 +149,7 @@ public:
   ///
   /// Calling this will always clear the existing document on the engine side and reset the state to the editor state.
   void SendDocumentOpenMessage(bool bOpen);
+
 
   ///@}
 

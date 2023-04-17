@@ -35,10 +35,10 @@ const char* xiiParticleStreamFactory::GetStreamName() const
   return m_szStreamName;
 }
 
-void xiiParticleStreamFactory::GetFullStreamName(const char* szName, xiiProcessingStream::DataType type, xiiStringBuilder& out_Result)
+void xiiParticleStreamFactory::GetFullStreamName(const char* szName, xiiProcessingStream::DataType type, xiiStringBuilder& out_sResult)
 {
-  out_Result = szName;
-  out_Result.AppendFormat("({0})", (int)type);
+  out_sResult = szName;
+  out_sResult.AppendFormat("({0})", (int)type);
 }
 
 xiiParticleStream* xiiParticleStreamFactory::CreateParticleStream(xiiParticleSystemInstance* pOwner) const

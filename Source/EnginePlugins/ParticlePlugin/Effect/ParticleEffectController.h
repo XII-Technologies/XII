@@ -22,15 +22,15 @@ public:
 
   void SetTransform(const xiiTransform& t, const xiiVec3& vParticleStartVelocity) const;
 
-  void Tick(const xiiTime& tDiff) const;
+  void Tick(const xiiTime& diff) const;
 
-  void ExtractRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& systemTransform) const;
+  void ExtractRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& systemTransform) const;
 
   void StopImmediate();
 
   /// \brief Returns the bounding volume of the effect.
   /// The volume is in the local space of the effect.
-  void GetBoundingVolume(xiiBoundingBoxSphere& volume) const;
+  void GetBoundingVolume(xiiBoundingBoxSphere& ref_volume) const;
 
   void UpdateWindSamples();
 
@@ -43,10 +43,10 @@ public:
   ///@{
 public:
   /// \brief Passes an effect parameter on to the effect instance
-  void SetParameter(const xiiTempHashedString& name, float value);
+  void SetParameter(const xiiTempHashedString& sName, float value);
 
   /// \brief Passes an effect parameter on to the effect instance
-  void SetParameter(const xiiTempHashedString& name, const xiiColor& value);
+  void SetParameter(const xiiTempHashedString& sName, const xiiColor& value);
 
   ///@}
 

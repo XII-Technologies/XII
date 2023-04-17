@@ -1,5 +1,6 @@
 #include <EditorPluginScene/EditorPluginScenePCH.h>
 
+#include <EditorFramework/Actions/AssetActions.h>
 #include <EditorFramework/Actions/GameObjectDocumentActions.h>
 #include <EditorFramework/Actions/GameObjectSelectionActions.h>
 #include <EditorFramework/Actions/ProjectActions.h>
@@ -114,6 +115,7 @@ void OnLoadPlugin()
     xiiStandardMenus::MapActions(szMenuBar, xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Scene | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::View | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions(szMenuBar);
     xiiDocumentActions::MapActions(szMenuBar, "Menu.File", false);
+    xiiAssetActions::MapMenuActions(szMenuBar, "Menu.File");
     xiiDocumentActions::MapToolsActions(szMenuBar, "Menu.Tools");
     xiiCommandHistoryActions::MapActions(szMenuBar, "Menu.Edit");
     xiiTransformGizmoActions::MapMenuActions(szMenuBar, "Menu.Edit");

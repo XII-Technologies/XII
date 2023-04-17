@@ -16,8 +16,8 @@ public:
   virtual const xiiRTTI* GetTypeType() const override;
   virtual void           CopyTypeProperties(xiiParticleType* pObject, bool bFirstTime) const override;
 
-  virtual void Save(xiiStreamWriter& stream) const override;
-  virtual void Load(xiiStreamReader& stream) override;
+  virtual void Save(xiiStreamWriter& inout_stream) const override;
+  virtual void Load(xiiStreamReader& inout_stream) override;
 
   xiiString m_sMesh;
   xiiString m_sMaterial;
@@ -38,7 +38,7 @@ public:
   mutable xiiMaterialResourceHandle m_hMaterial;
   xiiTempHashedString               m_sTintColorParameter;
 
-  virtual void ExtractTypeRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& instanceTransform) const override;
+  virtual void ExtractTypeRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const override;
 
 protected:
   virtual void InitializeElements(xiiUInt64 uiStartIndex, xiiUInt64 uiNumElements) override;

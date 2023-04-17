@@ -15,9 +15,9 @@ public:
   void      SetOutputFolder(const char* szFolder);
   void      StartLoadTranspiler();
   void      FinishLoadTranspiler();
-  xiiResult TranspileString(const char* szString, xiiStringBuilder& out_Result);
-  xiiResult TranspileFile(const char* szFile, xiiUInt64 uiSkipIfFileHash, xiiStringBuilder& out_Result, xiiUInt64& out_uiFileHash);
-  xiiResult TranspileFileAndStoreJS(const char* szFile, xiiStringBuilder& out_Result);
+  xiiResult TranspileString(const char* szString, xiiStringBuilder& out_sResult);
+  xiiResult TranspileFile(const char* szFile, xiiUInt64 uiSkipIfFileHash, xiiStringBuilder& out_sResult, xiiUInt64& out_uiFileHash);
+  xiiResult TranspileFileAndStoreJS(const char* szFile, xiiStringBuilder& out_sResult);
   void      SetModifyTsBeforeTranspilationCallback(xiiDelegate<void(xiiStringBuilder&)> callback);
 
 private:

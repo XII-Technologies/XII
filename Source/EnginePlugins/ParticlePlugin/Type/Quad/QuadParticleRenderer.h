@@ -40,7 +40,7 @@ public:
   xiiParticleQuadRenderer();
   ~xiiParticleQuadRenderer();
 
-  virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const override;
+  virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const override;
   virtual void RenderBatch(
     const xiiRenderViewContext&  renderContext,
     const xiiRenderPipelinePass* pPass,

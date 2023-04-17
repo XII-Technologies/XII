@@ -14,10 +14,10 @@ public:
   virtual void           CopyInitializerProperties(xiiParticleInitializer* pInitializer, bool bFirstTime) const override;
   virtual float          GetSpawnCountMultiplier(const xiiParticleEffectInstance* pEffect) const override;
 
-  virtual void Save(xiiStreamWriter& stream) const override;
-  virtual void Load(xiiStreamReader& stream) override;
+  virtual void Save(xiiStreamWriter& inout_stream) const override;
+  virtual void Load(xiiStreamReader& inout_stream) override;
 
-  virtual void QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_FinalizerDeps) const override;
+  virtual void QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_finalizerDeps) const override;
 
 public:
   xiiVec3              m_vPositionOffset;

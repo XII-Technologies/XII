@@ -74,9 +74,7 @@ void xiiAssetDocumentGenerator::CreateGenerators(xiiHybridArray<xiiAssetDocument
   }
 
   // sort by name
-  out_Generators.Sort([](xiiAssetDocumentGenerator* lhs, xiiAssetDocumentGenerator* rhs) -> bool {
-    return lhs->GetDocumentExtension().Compare_NoCase(rhs->GetDocumentExtension()) < 0;
-  });
+  out_Generators.Sort([](xiiAssetDocumentGenerator* lhs, xiiAssetDocumentGenerator* rhs) -> bool { return lhs->GetDocumentExtension().Compare_NoCase(rhs->GetDocumentExtension()) < 0; });
 }
 
 void xiiAssetDocumentGenerator::DestroyGenerators(xiiHybridArray<xiiAssetDocumentGenerator*, 16>& generators)

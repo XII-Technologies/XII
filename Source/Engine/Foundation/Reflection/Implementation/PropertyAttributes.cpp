@@ -15,6 +15,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTemporaryAttribute, 1, xiiRTTIDefaultAllocator<xiiTemporaryAttribute>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiDependencyFlags, 1)
+  XII_BITFLAGS_CONSTANTS(xiiDependencyFlags::Package, xiiDependencyFlags::Thumbnail, xiiDependencyFlags::Transform)
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCategoryAttribute, 1, xiiRTTIDefaultAllocator<xiiCategoryAttribute>)
 {
   XII_BEGIN_PROPERTIES
@@ -281,6 +285,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFileBrowserAttribute, 1, xiiRTTIDefaultAlloc
   {
     XII_MEMBER_PROPERTY("Title", m_sDialogTitle),
     XII_MEMBER_PROPERTY("Filter", m_sTypeFilter),
+    XII_MEMBER_PROPERTY("CustomAction", m_sCustomAction),
+    XII_BITFLAGS_MEMBER_PROPERTY("DependencyFlags", xiiDependencyFlags, m_DependencyFlags),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
@@ -296,6 +302,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAssetBrowserAttribute, 1, xiiRTTIDefaultAllo
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Filter", m_sTypeFilter),
+    XII_BITFLAGS_MEMBER_PROPERTY("DependencyFlags", xiiDependencyFlags, m_DependencyFlags),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS

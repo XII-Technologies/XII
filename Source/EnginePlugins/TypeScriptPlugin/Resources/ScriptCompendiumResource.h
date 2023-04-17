@@ -17,14 +17,14 @@ struct XII_TYPESCRIPTPLUGIN_DLL xiiScriptCompendiumResourceDesc
     xiiString m_sComponentTypeName;
     xiiString m_sComponentFilePath;
 
-    xiiResult Serialize(xiiStreamWriter& stream) const;
-    xiiResult Deserialize(xiiStreamReader& stream);
+    xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+    xiiResult Deserialize(xiiStreamReader& inout_stream);
   };
 
   xiiMap<xiiUuid, ComponentTypeInfo> m_AssetGuidToInfo;
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+  xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
 class XII_TYPESCRIPTPLUGIN_DLL xiiScriptCompendiumResource : public xiiResource

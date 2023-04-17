@@ -85,23 +85,16 @@ xiiActionDescriptorHandle xiiTransformGizmoActions::s_SnapSettings;
 
 void xiiTransformGizmoActions::RegisterActions()
 {
-  s_hGizmoCategory  = XII_REGISTER_CATEGORY("GizmoCategory");
-  s_hGizmoMenu      = XII_REGISTER_MENU("Gizmo.Menu");
-  s_hNoGizmo        = XII_REGISTER_ACTION_1("Gizmo.Mode.Select", xiiActionScope::Document, "Gizmo", "Q", xiiGizmoAction, nullptr);
-  s_hTranslateGizmo = XII_REGISTER_ACTION_1(
-    "Gizmo.Mode.Translate", xiiActionScope::Document, "Gizmo", "W", xiiToggleWorldSpaceGizmo, xiiGetStaticRTTI<xiiTranslateGizmoEditTool>());
-  s_hRotateGizmo = XII_REGISTER_ACTION_1(
-    "Gizmo.Mode.Rotate", xiiActionScope::Document, "Gizmo", "E", xiiToggleWorldSpaceGizmo, xiiGetStaticRTTI<xiiRotateGizmoEditTool>());
-  s_hScaleGizmo =
-    XII_REGISTER_ACTION_1("Gizmo.Mode.Scale", xiiActionScope::Document, "Gizmo", "R", xiiGizmoAction, xiiGetStaticRTTI<xiiScaleGizmoEditTool>());
-  s_hDragToPositionGizmo = XII_REGISTER_ACTION_1(
-    "Gizmo.Mode.DragToPosition", xiiActionScope::Document, "Gizmo", "T", xiiGizmoAction, xiiGetStaticRTTI<xiiDragToPositionGizmoEditTool>());
-  s_hWorldSpace = XII_REGISTER_ACTION_1(
-    "Gizmo.TransformSpace", xiiActionScope::Document, "Gizmo", "", xiiTransformGizmoAction, xiiTransformGizmoAction::ActionType::GizmoToggleWorldSpace);
-  s_hMoveParentOnly = XII_REGISTER_ACTION_1("Gizmo.MoveParentOnly", xiiActionScope::Document, "Gizmo", "", xiiTransformGizmoAction,
-                                            xiiTransformGizmoAction::ActionType::GizmoToggleMoveParentOnly);
-  s_SnapSettings    = XII_REGISTER_ACTION_1(
-    "Gizmo.SnapSettings", xiiActionScope::Document, "Gizmo", "End", xiiTransformGizmoAction, xiiTransformGizmoAction::ActionType::GizmoSnapSettings);
+  s_hGizmoCategory       = XII_REGISTER_CATEGORY("GizmoCategory");
+  s_hGizmoMenu           = XII_REGISTER_MENU("Gizmo.Menu");
+  s_hNoGizmo             = XII_REGISTER_ACTION_1("Gizmo.Mode.Select", xiiActionScope::Document, "Gizmo", "Q", xiiGizmoAction, nullptr);
+  s_hTranslateGizmo      = XII_REGISTER_ACTION_1("Gizmo.Mode.Translate", xiiActionScope::Document, "Gizmo", "W", xiiToggleWorldSpaceGizmo, xiiGetStaticRTTI<xiiTranslateGizmoEditTool>());
+  s_hRotateGizmo         = XII_REGISTER_ACTION_1("Gizmo.Mode.Rotate", xiiActionScope::Document, "Gizmo", "E", xiiToggleWorldSpaceGizmo, xiiGetStaticRTTI<xiiRotateGizmoEditTool>());
+  s_hScaleGizmo          = XII_REGISTER_ACTION_1("Gizmo.Mode.Scale", xiiActionScope::Document, "Gizmo", "R", xiiGizmoAction, xiiGetStaticRTTI<xiiScaleGizmoEditTool>());
+  s_hDragToPositionGizmo = XII_REGISTER_ACTION_1("Gizmo.Mode.DragToPosition", xiiActionScope::Document, "Gizmo", "T", xiiGizmoAction, xiiGetStaticRTTI<xiiDragToPositionGizmoEditTool>());
+  s_hWorldSpace          = XII_REGISTER_ACTION_1("Gizmo.TransformSpace", xiiActionScope::Document, "Gizmo", "", xiiTransformGizmoAction, xiiTransformGizmoAction::ActionType::GizmoToggleWorldSpace);
+  s_hMoveParentOnly      = XII_REGISTER_ACTION_1("Gizmo.MoveParentOnly", xiiActionScope::Document, "Gizmo", "", xiiTransformGizmoAction, xiiTransformGizmoAction::ActionType::GizmoToggleMoveParentOnly);
+  s_SnapSettings         = XII_REGISTER_ACTION_1("Gizmo.SnapSettings", xiiActionScope::Document, "Gizmo", "End", xiiTransformGizmoAction, xiiTransformGizmoAction::ActionType::GizmoSnapSettings);
 }
 
 void xiiTransformGizmoActions::UnregisterActions()
@@ -258,10 +251,8 @@ xiiActionDescriptorHandle xiiTranslateGizmoAction::s_hSnapObjectsToGrid;
 void xiiTranslateGizmoAction::RegisterActions()
 {
   s_hSnappingValueMenu = XII_REGISTER_CATEGORY("Gizmo.Translate.Snap.Menu");
-  s_hSnapPivotToGrid   = XII_REGISTER_ACTION_1("Gizmo.Translate.Snap.PivotToGrid", xiiActionScope::Document, "Gizmo - Position Snap", "Ctrl+End",
-                                             xiiTranslateGizmoAction, xiiTranslateGizmoAction::ActionType::SnapSelectionPivotToGrid);
-  s_hSnapObjectsToGrid = XII_REGISTER_ACTION_1("Gizmo.Translate.Snap.ObjectsToGrid", xiiActionScope::Document, "Gizmo - Position Snap", "",
-                                               xiiTranslateGizmoAction, xiiTranslateGizmoAction::ActionType::SnapEachSelectedObjectToGrid);
+  s_hSnapPivotToGrid   = XII_REGISTER_ACTION_1("Gizmo.Translate.Snap.PivotToGrid", xiiActionScope::Document, "Gizmo - Position Snap", "Ctrl+End", xiiTranslateGizmoAction, xiiTranslateGizmoAction::ActionType::SnapSelectionPivotToGrid);
+  s_hSnapObjectsToGrid = XII_REGISTER_ACTION_1("Gizmo.Translate.Snap.ObjectsToGrid", xiiActionScope::Document, "Gizmo - Position Snap", "", xiiTranslateGizmoAction, xiiTranslateGizmoAction::ActionType::SnapEachSelectedObjectToGrid);
 }
 
 void xiiTranslateGizmoAction::UnregisterActions()

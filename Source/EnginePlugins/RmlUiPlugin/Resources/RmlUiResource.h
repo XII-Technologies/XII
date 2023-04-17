@@ -21,8 +21,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_RMLUIPLUGIN_DLL, xiiRmlUiScaleMode);
 
 struct XII_RMLUIPLUGIN_DLL xiiRmlUiResourceDescriptor
 {
-  xiiResult Save(xiiStreamWriter& stream);
-  xiiResult Load(xiiStreamReader& stream);
+  xiiResult Save(xiiStreamWriter& inout_stream);
+  xiiResult Load(xiiStreamReader& inout_stream);
 
   xiiDependencyFile m_DependencyFile;
 

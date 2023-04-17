@@ -30,7 +30,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeletonBoneShape, 1, xiiRTTIDefault
     XII_MEMBER_PROPERTY("OverrideName", m_bOverrideName),
     XII_MEMBER_PROPERTY("Name", m_sNameOverride),
     XII_MEMBER_PROPERTY("OverrideSurface", m_bOverrideSurface),
-    XII_MEMBER_PROPERTY("Surface", m_sSurfaceOverride)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
+    XII_MEMBER_PROPERTY("Surface", m_sSurfaceOverride)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
     XII_MEMBER_PROPERTY("OverrideCollisionLayer", m_bOverrideCollisionLayer),
     XII_MEMBER_PROPERTY("CollisionLayer", m_uiCollisionLayerOverride)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),
 
@@ -77,7 +77,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeleton, 1, xiiRTTIDefaultAllocator
     XII_MEMBER_PROPERTY("UniformScaling", m_fUniformScaling)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0001f, 10000.0f)),
     XII_ENUM_MEMBER_PROPERTY("BoneDirection", xiiBasisAxis, m_BoneDirection)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveY)),
     XII_MEMBER_PROPERTY("CollisionLayer", m_uiCollisionLayer)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),
-    XII_MEMBER_PROPERTY("Surface", m_sSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
+    XII_MEMBER_PROPERTY("Surface", m_sSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
 
     XII_ARRAY_MEMBER_PROPERTY("Children", m_Children)->AddFlags(xiiPropertyFlags::PointerOwner | xiiPropertyFlags::Hidden),
   }

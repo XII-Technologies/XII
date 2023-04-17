@@ -41,18 +41,18 @@ enum class ReactionPrefabVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleEventReactionFactory_Prefab::Save(xiiStreamWriter& stream) const
+void xiiParticleEventReactionFactory_Prefab::Save(xiiStreamWriter& inout_stream) const
 {
-  SUPER::Save(stream);
+  SUPER::Save(inout_stream);
 
   const xiiUInt8 uiVersion = (int)ReactionPrefabVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
   // Version 1
-  stream << m_sPrefab;
+  inout_stream << m_sPrefab;
 
   // Version 2
-  stream << m_Alignment;
+  inout_stream << m_Alignment;
 
   // Version 3
   // stream << m_Parameters->m_FloatParams.GetCount();
@@ -69,21 +69,21 @@ void xiiParticleEventReactionFactory_Prefab::Save(xiiStreamWriter& stream) const
   //}
 }
 
-void xiiParticleEventReactionFactory_Prefab::Load(xiiStreamReader& stream)
+void xiiParticleEventReactionFactory_Prefab::Load(xiiStreamReader& inout_stream)
 {
-  SUPER::Load(stream);
+  SUPER::Load(inout_stream);
 
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)ReactionPrefabVersion::Version_Current, "Invalid version {0}", uiVersion);
 
   // Version 1
-  stream >> m_sPrefab;
+  inout_stream >> m_sPrefab;
 
   if (uiVersion >= 2)
   {
-    stream >> m_Alignment;
+    inout_stream >> m_Alignment;
   }
 
   // if (uiVersion >= 3)

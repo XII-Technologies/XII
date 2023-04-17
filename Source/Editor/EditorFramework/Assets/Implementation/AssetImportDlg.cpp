@@ -13,8 +13,8 @@ enum Columns
   ENUM_COUNT
 };
 
-xiiQtAssetImportDlg::xiiQtAssetImportDlg(QWidget* parent, xiiDynamicArray<xiiAssetDocumentGenerator::ImportData>& allImports) :
-  QDialog(parent), m_AllImports(allImports)
+xiiQtAssetImportDlg::xiiQtAssetImportDlg(QWidget* pParent, xiiDynamicArray<xiiAssetDocumentGenerator::ImportData>& ref_allImports) :
+  QDialog(pParent), m_AllImports(ref_allImports)
 {
   setupUi(this);
 

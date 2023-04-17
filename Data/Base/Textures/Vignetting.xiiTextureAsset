@@ -16,8 +16,15 @@ o
 		Uuid %DocumentID{u4{9132907039025431446,4850155600327151795}}
 		u4 %Hash{14897128361460916186}
 		VarArray %MetaInfo{}
-		VarArray %Outputs{}
-		VarArray %References{}
+		VarArray %Outputs
+		{
+			s{"LOWRES"}
+		}
+		VarArray %PackageDeps{}
+		VarArray %References
+		{
+			s{"Textures/Vignetting.tga"}
+		}
 	}
 }
 }

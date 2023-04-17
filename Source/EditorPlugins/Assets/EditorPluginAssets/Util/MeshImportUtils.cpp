@@ -4,60 +4,89 @@
 #include <EditorPluginAssets/MaterialAsset/MaterialAsset.h>
 #include <EditorPluginAssets/TextureAsset/TextureAsset.h>
 #include <EditorPluginAssets/Util/MeshImportUtils.h>
+#include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/Utilities/Progress.h>
 #include <ModelImporter2/Importer/Importer.h>
 #include <RendererCore/Meshes/MeshResourceDescriptor.h>
 
 namespace xiiMeshImportUtils
 {
-  xiiString ImportOrResolveTexture(const char* szImportSourceFolder, const char* szImportTargetFolder, const char* szTexturePath, xiiModelImporter2::TextureSemantic hint, bool bTextureClamp)
+  void FillFileFilter(xiiDynamicArray<xiiString>& out_List, xiiStringView sSeparated)
   {
-    if (!xiiUnicodeUtils::IsValidUtf8(szTexturePath))
+    sSeparated.Split(false, out_List, ";", "*", ".");
+  }
+
+  xiiString ImportOrResolveTexture(const char* szImportSourceFolder, const char* szImportTargetFolder, xiiStringView sTexturePath, xiiModelImporter2::TextureSemantic hint, bool bTextureClamp, const xiiModelImporter2::Importer* pImporter)
+  {
+    if (!xiiUnicodeUtils::IsValidUtf8(sTexturePath.GetStartPointer(), sTexturePath.GetEndPointer()))
     {
       xiiLog::Error("Texture to resolve is not a valid UTF-8 string.");
       return xiiString();
     }
 
-    xiiStringBuilder textureNameTemp = xiiStringBuilder(szTexturePath).GetFileName();
-    xiiStringBuilder textureName;
-    xiiPathUtils::MakeValidFilename(textureNameTemp, '_', textureName);
+    xiiHybridArray<xiiString, 16> allowedExtensions;
+    FillFileFilter(allowedExtensions, xiiFileBrowserAttribute::ImagesLdrAndHdr);
+
+    xiiStringBuilder sFinalTextureName;
+    xiiPathUtils::MakeValidFilename(sTexturePath.GetFileName(), '_', sFinalTextureName);
+
+    xiiStringBuilder relTexturePath = szImportSourceFolder;
+    relTexturePath.AppendPath(sFinalTextureName);
+
+    if (auto itTex = pImporter->m_OutputTextures.Find(sTexturePath); itTex.IsValid())
+    {
+      if (itTex.Value().m_RawData.IsEmpty() || !allowedExtensions.Contains(itTex.Value().m_sFileFormatExtension))
+      {
+        xiiLog::Error("Mesh uses embedded texture of unsupported type ('{}').", itTex.Value().m_sFileFormatExtension);
+        return xiiString();
+      }
+
+      sFinalTextureName.Prepend("Embedded");
+
+      xiiStringBuilder sEmbededFile;
+      sEmbededFile = szImportTargetFolder;
+      sEmbededFile.AppendPath(sFinalTextureName);
+      sEmbededFile.ChangeFileExtension(itTex.Value().m_sFileFormatExtension);
+
+      // xiiFileWriter out;
+      // if (out.Open(sEmbededFile).Succeeded())
+      //{
+      //   out.WriteBytes(itTex.Value().m_RawData.GetPtr(), itTex.Value().m_RawData.GetCount()).AssertSuccess();
+      // }
+
+      relTexturePath = sEmbededFile;
+    }
+
 
     xiiStringBuilder newAssetPathAbs = szImportTargetFolder;
-    newAssetPathAbs.AppendPath(xiiStringBuilder(szTexturePath).GetFileNameAndExtension().GetStartPointer());
+    newAssetPathAbs.AppendPath(sFinalTextureName);
     newAssetPathAbs.ChangeFileExtension("xiiTextureAsset");
 
-    // Try to resolve.
-    auto textureAssetInfo = xiiAssetCurator::GetSingleton()->FindSubAsset(newAssetPathAbs);
-    if (textureAssetInfo)
+    if (auto textureAssetInfo = xiiAssetCurator::GetSingleton()->FindSubAsset(newAssetPathAbs))
     {
+      // Try to resolve.
+
       xiiStringBuilder guidString;
       return xiiConversionUtils::ToString(textureAssetInfo->m_Data.m_Guid, guidString);
     }
-
-    // Import otherwise.
     else
     {
+      // Import otherwise
+
       xiiTextureAssetDocument* textureDocument = xiiDynamicCast<xiiTextureAssetDocument*>(xiiQtEditorApp::GetSingleton()->CreateDocument(newAssetPathAbs, xiiDocumentFlags::None));
       if (!textureDocument)
       {
-        xiiLog::Error("Failed to create new texture asset '{0}'", szTexturePath);
-        return szTexturePath;
+        xiiLog::Error("Failed to create new texture asset '{0}'", sTexturePath);
+        return sFinalTextureName;
       }
 
       xiiObjectAccessorBase* pAccessor = textureDocument->GetObjectAccessor();
       pAccessor->StartTransaction("Import Texture");
       xiiDocumentObject* pTextureAsset = textureDocument->GetPropertyObject();
 
-      // TODO: we already have a list of allowed texture formats somewhere (file browse attribute?), use that
-      xiiString allowedExtensions[] = {"dds", "png", "tga", "jpg"};
-
-      // Set filename.
-      xiiStringBuilder relTexturePath = szImportSourceFolder;
-      relTexturePath.AppendPath(szTexturePath);
-
       if (xiiAssetCurator::GetSingleton()->FindBestMatchForFile(relTexturePath, allowedExtensions).Failed())
       {
-        relTexturePath = szTexturePath;
+        relTexturePath = sFinalTextureName;
       }
 
       pAccessor->SetValue(pTextureAsset, "Input1", relTexturePath.GetData()).LogFailure();
@@ -128,32 +157,32 @@ namespace xiiMeshImportUtils
     }
   };
 
-  void SetMeshAssetMaterialSlots(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_MaterialSlots, const xiiModelImporter2::Importer* pImporter)
+  void SetMeshAssetMaterialSlots(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_materialSlots, const xiiModelImporter2::Importer* pImporter)
   {
     const auto& opt = pImporter->GetImportOptions();
 
     const xiiUInt32 uiNumSubmeshes = opt.m_pMeshOutput->GetSubMeshes().GetCount();
 
-    inout_MaterialSlots.SetCount(uiNumSubmeshes);
+    inout_materialSlots.SetCount(uiNumSubmeshes);
 
     for (const auto& material : pImporter->m_OutputMaterials)
     {
       if (material.m_iReferencedByMesh < 0)
         continue;
 
-      inout_MaterialSlots[material.m_iReferencedByMesh].m_sLabel = material.m_sName;
+      inout_materialSlots[material.m_iReferencedByMesh].m_sLabel = material.m_sName;
     }
   }
 
-  void CopyMeshAssetMaterialSlotToResource(xiiMeshResourceDescriptor& desc, const xiiHybridArray<xiiMaterialResourceSlot, 8>& materialSlots)
+  void CopyMeshAssetMaterialSlotToResource(xiiMeshResourceDescriptor& ref_desc, const xiiHybridArray<xiiMaterialResourceSlot, 8>& materialSlots)
   {
     for (xiiUInt32 i = 0; i < materialSlots.GetCount(); ++i)
     {
-      desc.SetMaterial(i, materialSlots[i].m_sResource);
+      ref_desc.SetMaterial(i, materialSlots[i].m_sResource);
     }
   }
 
-  static void ImportMeshAssetMaterialProperties(xiiMaterialAssetDocument* pMaterialDoc, const xiiModelImporter2::OutputMaterial& material, const char* szImportSourceFolder, const char* szImportTargetFolder)
+  static void ImportMeshAssetMaterialProperties(xiiMaterialAssetDocument* pMaterialDoc, const xiiModelImporter2::OutputMaterial& material, const char* szImportSourceFolder, const char* szImportTargetFolder, const xiiModelImporter2::Importer* pImporter)
   {
     xiiStringBuilder materialName = xiiPathUtils::GetFileName(pMaterialDoc->GetDocumentPath());
 
@@ -191,7 +220,7 @@ namespace xiiMeshImportUtils
       if (material.m_TextureReferences.TryGetValue(xiiModelImporter2::TextureSemantic::DiffuseMap, textureDiffuse))
       {
         pAccessor->SetValue(pMaterialProperties, "UseBaseTexture", true).LogFailure();
-        pAccessor->SetValue(pMaterialProperties, "BaseTexture", xiiVariant(xiiMeshImportUtils::ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureDiffuse, xiiModelImporter2::TextureSemantic::DiffuseMap, false))).LogFailure();
+        pAccessor->SetValue(pMaterialProperties, "BaseTexture", xiiVariant(xiiMeshImportUtils::ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureDiffuse, xiiModelImporter2::TextureSemantic::DiffuseMap, false, pImporter))).LogFailure();
       }
       else
       {
@@ -213,7 +242,7 @@ namespace xiiMeshImportUtils
       {
         pAccessor->SetValue(pMaterialProperties, "UseNormalTexture", true).LogFailure();
 
-        pAccessor->SetValue(pMaterialProperties, "NormalTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureNormal, xiiModelImporter2::TextureSemantic::NormalMap, false))).LogFailure();
+        pAccessor->SetValue(pMaterialProperties, "NormalTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureNormal, xiiModelImporter2::TextureSemantic::NormalMap, false, pImporter))).LogFailure();
       }
       else
       {
@@ -227,7 +256,7 @@ namespace xiiMeshImportUtils
       {
         pAccessor->SetValue(pMaterialProperties, "UseRoughnessTexture", true).LogFailure();
 
-        pAccessor->SetValue(pMaterialProperties, "RoughnessTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureRoughness, xiiModelImporter2::TextureSemantic::RoughnessMap, false))).LogFailure();
+        pAccessor->SetValue(pMaterialProperties, "RoughnessTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureRoughness, xiiModelImporter2::TextureSemantic::RoughnessMap, false, pImporter))).LogFailure();
       }
       else
       {
@@ -241,7 +270,7 @@ namespace xiiMeshImportUtils
       if (!textureMetallic.IsEmpty())
       {
         pAccessor->SetValue(pMaterialProperties, "UseMetallicTexture", true).LogFailure();
-        pAccessor->SetValue(pMaterialProperties, "MetallicTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureMetallic, xiiModelImporter2::TextureSemantic::MetallicMap, false))).LogFailure();
+        pAccessor->SetValue(pMaterialProperties, "MetallicTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureMetallic, xiiModelImporter2::TextureSemantic::MetallicMap, false, pImporter))).LogFailure();
       }
     }
 
@@ -252,7 +281,7 @@ namespace xiiMeshImportUtils
       if (material.m_TextureReferences.TryGetValue(xiiModelImporter2::TextureSemantic::EmissiveMap, textureEmissive))
       {
         pAccessor->SetValue(pMaterialProperties, "UseEmissiveTexture", true).LogFailure();
-        pAccessor->SetValue(pMaterialProperties, "EmissiveTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureEmissive, xiiModelImporter2::TextureSemantic::EmissiveMap, false))).LogFailure();
+        pAccessor->SetValue(pMaterialProperties, "EmissiveTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureEmissive, xiiModelImporter2::TextureSemantic::EmissiveMap, false, pImporter))).LogFailure();
       }
     }
 
@@ -264,7 +293,7 @@ namespace xiiMeshImportUtils
       if (material.m_TextureReferences.TryGetValue(xiiModelImporter2::TextureSemantic::OcclusionMap, textureAo))
       {
         pAccessor->SetValue(pMaterialProperties, "UseOcclusionTexture", true).LogFailure();
-        pAccessor->SetValue(pMaterialProperties, "OcclusionTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureAo, xiiModelImporter2::TextureSemantic::OcclusionMap, false))).LogFailure();
+        pAccessor->SetValue(pMaterialProperties, "OcclusionTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureAo, xiiModelImporter2::TextureSemantic::OcclusionMap, false, pImporter))).LogFailure();
       }
     }
 
@@ -333,7 +362,7 @@ namespace xiiMeshImportUtils
       pAccessor->SetValue(pMaterialProperties, "RoughnessValue", 1.0f).LogFailure();
       pAccessor->SetValue(pMaterialProperties, "MetallicValue", 0.0f).LogFailure();
 
-      pAccessor->SetValue(pMaterialProperties, "OrmTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureRoughness, xiiModelImporter2::TextureSemantic::OrmMap, false))).LogFailure();
+      pAccessor->SetValue(pMaterialProperties, "OrmTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureRoughness, xiiModelImporter2::TextureSemantic::OrmMap, false, pImporter))).LogFailure();
     }
 
     // Todo:
@@ -343,7 +372,7 @@ namespace xiiMeshImportUtils
     pAccessor->FinishTransaction();
   }
 
-  void ImportMeshAssetMaterials(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_MaterialSlots, const char* szDocumentDirectory, const xiiModelImporter2::Importer* pImporter)
+  void ImportMeshAssetMaterials(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_materialSlots, const char* szDocumentDirectory, const xiiModelImporter2::Importer* pImporter)
   {
     XII_PROFILE_SCOPE("ImportMeshAssetMaterials");
 
@@ -353,7 +382,7 @@ namespace xiiMeshImportUtils
     xiiStringBuilder tmp;
     xiiStringBuilder newResourcePathAbs;
 
-    const xiiUInt32 uiNumSubmeshes = inout_MaterialSlots.GetCount();
+    const xiiUInt32 uiNumSubmeshes = inout_materialSlots.GetCount();
 
     xiiProgressRange range("Importing Materials", uiNumSubmeshes, false);
 
@@ -370,6 +399,32 @@ namespace xiiMeshImportUtils
       pendingSaveTasks.Clear();
     };
 
+    xiiHybridArray<xiiString, 16> allowedExtensions;
+    FillFileFilter(allowedExtensions, xiiFileBrowserAttribute::ImagesLdrAndHdr);
+
+    for (const auto& itTex : pImporter->m_OutputTextures)
+    {
+      if (itTex.Value().m_RawData.IsEmpty() || !allowedExtensions.Contains(itTex.Value().m_sFileFormatExtension))
+      {
+        xiiLog::Error("Mesh uses embedded texture of unsupported type ('{}').", itTex.Value().m_sFileFormatExtension);
+        continue;
+      }
+
+      xiiStringBuilder sFinalTextureName;
+      xiiPathUtils::MakeValidFilename(itTex.Key().GetFileName(), '_', sFinalTextureName);
+      sFinalTextureName.Prepend("Embedded");
+
+      xiiStringBuilder sEmbededFile;
+      sEmbededFile = targetDirectory;
+      sEmbededFile.AppendPath(sFinalTextureName);
+      sEmbededFile.ChangeFileExtension(itTex.Value().m_sFileFormatExtension);
+
+      xiiDeferredFileWriter out;
+      out.SetOutput(sEmbededFile, true);
+      out.WriteBytes(itTex.Value().m_RawData.GetPtr(), itTex.Value().m_RawData.GetCount()).AssertSuccess();
+      out.Close().IgnoreResult();
+    }
+
     for (const auto& impMaterial : pImporter->m_OutputMaterials)
     {
       if (impMaterial.m_iReferencedByMesh < 0)
@@ -380,10 +435,10 @@ namespace xiiMeshImportUtils
       range.BeginNextStep("Importing Material");
 
       // Didn't find currently set resource, create new imported material.
-      if (!xiiAssetCurator::GetSingleton()->FindSubAsset(inout_MaterialSlots[subMeshIdx].m_sResource))
+      if (!xiiAssetCurator::GetSingleton()->FindSubAsset(inout_materialSlots[subMeshIdx].m_sResource))
       {
         // Check first if we already imported this material.
-        if (importMatToGuid.TryGetValue(&impMaterial, inout_MaterialSlots[subMeshIdx].m_sResource))
+        if (importMatToGuid.TryGetValue(&impMaterial, inout_materialSlots[subMeshIdx].m_sResource))
           continue;
 
         // Put the new asset in the data folder.
@@ -394,7 +449,7 @@ namespace xiiMeshImportUtils
         // Does the generated path already exist? Use it.
         if (const auto assetInfo = xiiAssetCurator::GetSingleton()->FindSubAsset(newResourcePathAbs))
         {
-          inout_MaterialSlots[subMeshIdx].m_sResource = xiiConversionUtils::ToString(assetInfo->m_Data.m_Guid, tmp);
+          inout_materialSlots[subMeshIdx].m_sResource = xiiConversionUtils::ToString(assetInfo->m_Data.m_Guid, tmp);
           continue;
         }
 
@@ -405,8 +460,8 @@ namespace xiiMeshImportUtils
           continue;
         }
 
-        ImportMeshAssetMaterialProperties(pMaterialDoc, impMaterial, sourceDirectory, targetDirectory);
-        inout_MaterialSlots[subMeshIdx].m_sResource = xiiConversionUtils::ToString(pMaterialDoc->GetGuid(), tmp);
+        ImportMeshAssetMaterialProperties(pMaterialDoc, impMaterial, sourceDirectory, targetDirectory, pImporter);
+        inout_materialSlots[subMeshIdx].m_sResource = xiiConversionUtils::ToString(pMaterialDoc->GetGuid(), tmp);
 
         pMaterialDoc->SaveDocumentAsync({});
         pendingSaveTasks.PushBack(pMaterialDoc);
@@ -419,9 +474,9 @@ namespace xiiMeshImportUtils
       // If we have a material now, fill the mapping.
       // It is important to do this even for "old"/known materials since a mesh might have gotten a new slot that points to the same
       // material as previous slots.
-      if (inout_MaterialSlots[subMeshIdx].m_sResource)
+      if (inout_materialSlots[subMeshIdx].m_sResource)
       {
-        importMatToGuid.Insert(&impMaterial, inout_MaterialSlots[subMeshIdx].m_sResource);
+        importMatToGuid.Insert(&impMaterial, inout_materialSlots[subMeshIdx].m_sResource);
       }
     }
 

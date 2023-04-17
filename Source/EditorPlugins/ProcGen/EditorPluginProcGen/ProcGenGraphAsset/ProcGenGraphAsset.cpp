@@ -261,21 +261,26 @@ void xiiProcGenGraphAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo*
         xiiVariant prefab = typeAccessor.GetValue("Objects", i);
         if (prefab.IsA<xiiString>())
         {
-          pInfo->m_RuntimeDependencies.Insert(prefab.Get<xiiString>());
+          pInfo->m_PackageDependencies.Insert(prefab.Get<xiiString>());
+          pInfo->m_ThumbnailDependencies.Insert(prefab.Get<xiiString>());
         }
       }
 
       xiiVariant colorGradient = typeAccessor.GetValue("ColorGradient");
       if (colorGradient.IsA<xiiString>())
       {
-        pInfo->m_RuntimeDependencies.Insert(colorGradient.Get<xiiString>());
+        pInfo->m_PackageDependencies.Insert(colorGradient.Get<xiiString>());
+        pInfo->m_ThumbnailDependencies.Insert(colorGradient.Get<xiiString>());
       }
     }
   }
   else
   {
-    pInfo->m_RuntimeDependencies.Insert(s_szSphereAssetId);
-    pInfo->m_RuntimeDependencies.Insert(s_szBWGradientAssetId);
+    pInfo->m_PackageDependencies.Insert(s_szSphereAssetId);
+    pInfo->m_PackageDependencies.Insert(s_szBWGradientAssetId);
+
+    pInfo->m_ThumbnailDependencies.Insert(s_szSphereAssetId);
+    pInfo->m_ThumbnailDependencies.Insert(s_szBWGradientAssetId);
   }
 }
 

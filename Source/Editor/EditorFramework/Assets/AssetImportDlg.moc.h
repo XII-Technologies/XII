@@ -10,7 +10,7 @@ class xiiQtAssetImportDlg : public QDialog, public Ui_AssetImportDlg
   Q_OBJECT
 
 public:
-  xiiQtAssetImportDlg(QWidget* parent, xiiDynamicArray<xiiAssetDocumentGenerator::ImportData>& allImports);
+  xiiQtAssetImportDlg(QWidget* pParent, xiiDynamicArray<xiiAssetDocumentGenerator::ImportData>& ref_allImports);
   ~xiiQtAssetImportDlg();
 
 private Q_SLOTS:

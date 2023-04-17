@@ -39,24 +39,17 @@ void xiiSceneActions::RegisterActions()
   s_hSceneCategory  = XII_REGISTER_CATEGORY("SceneCategory");
   s_hSceneUtilsMenu = XII_REGISTER_MENU_WITH_ICON("Scene.Utils.Menu", "");
 
-  s_hExportScene = XII_REGISTER_ACTION_1(
-    "Scene.ExportAndRun", xiiActionScope::Document, "Scene", "Ctrl+E", xiiSceneAction, xiiSceneAction::ActionType::ExportAndRunScene);
-  s_hGameModeSimulate = XII_REGISTER_ACTION_1(
-    "Scene.GameMode.Simulate", xiiActionScope::Document, "Scene", "F5", xiiSceneAction, xiiSceneAction::ActionType::StartGameModeSimulate);
-  s_hGameModePlay = XII_REGISTER_ACTION_1(
-    "Scene.GameMode.Play", xiiActionScope::Document, "Scene", "Ctrl+F5", xiiSceneAction, xiiSceneAction::ActionType::StartGameModePlay);
+  s_hExportScene      = XII_REGISTER_ACTION_1("Scene.ExportAndRun", xiiActionScope::Document, "Scene", "Ctrl+E", xiiSceneAction, xiiSceneAction::ActionType::ExportAndRunScene);
+  s_hGameModeSimulate = XII_REGISTER_ACTION_1("Scene.GameMode.Simulate", xiiActionScope::Document, "Scene", "F5", xiiSceneAction, xiiSceneAction::ActionType::StartGameModeSimulate);
+  s_hGameModePlay     = XII_REGISTER_ACTION_1("Scene.GameMode.Play", xiiActionScope::Document, "Scene", "Ctrl+F5", xiiSceneAction, xiiSceneAction::ActionType::StartGameModePlay);
 
-  s_hGameModePlayFromHere = XII_REGISTER_ACTION_1("Scene.GameMode.PlayFromHere", xiiActionScope::Document, "Scene", "Ctrl+Shift+F5", xiiSceneAction,
-                                                  xiiSceneAction::ActionType::StartGameModePlayFromHere);
+  s_hGameModePlayFromHere = XII_REGISTER_ACTION_1("Scene.GameMode.PlayFromHere", xiiActionScope::Document, "Scene", "Ctrl+Shift+F5", xiiSceneAction, xiiSceneAction::ActionType::StartGameModePlayFromHere);
 
-  s_hGameModeStop =
-    XII_REGISTER_ACTION_1("Scene.GameMode.Stop", xiiActionScope::Document, "Scene", "Shift+F5", xiiSceneAction, xiiSceneAction::ActionType::StopGameMode);
+  s_hGameModeStop = XII_REGISTER_ACTION_1("Scene.GameMode.Stop", xiiActionScope::Document, "Scene", "Shift+F5", xiiSceneAction, xiiSceneAction::ActionType::StopGameMode);
 
-  s_hUtilExportSceneToOBJ =
-    XII_REGISTER_ACTION_1("Scene.ExportSceneToOBJ", xiiActionScope::Document, "Scene", "", xiiSceneAction, xiiSceneAction::ActionType::ExportSceneToOBJ);
+  s_hUtilExportSceneToOBJ = XII_REGISTER_ACTION_1("Scene.ExportSceneToOBJ", xiiActionScope::Document, "Scene", "", xiiSceneAction, xiiSceneAction::ActionType::ExportSceneToOBJ);
 
-  s_hKeepSimulationChanges = XII_REGISTER_ACTION_1(
-    "Scene.KeepSimulationChanges", xiiActionScope::Document, "Scene", "K", xiiSceneAction, xiiSceneAction::ActionType::KeepSimulationChanges);
+  s_hKeepSimulationChanges = XII_REGISTER_ACTION_1("Scene.KeepSimulationChanges", xiiActionScope::Document, "Scene", "K", xiiSceneAction, xiiSceneAction::ActionType::KeepSimulationChanges);
 
   s_hCreateThumbnail = XII_REGISTER_ACTION_1("Scene.CreateThumbnail", xiiActionScope::Document, "Scene", "", xiiSceneAction, xiiSceneAction::ActionType::CreateThumbnail);
   // unfortunately the macros use lambdas thus using a loop to generate the strings does not work
@@ -329,6 +322,33 @@ void xiiSceneAction::Execute(const xiiVariant& value)
           {
             bCreateThumbnail = true;
           }
+        }
+      }
+
+      // Convert collections
+      {
+        XII_PROFILE_SCOPE("ConvertCollections");
+        xiiAssetCurator* pCurator = xiiAssetCurator::GetSingleton();
+        xiiSet<xiiUuid>  collections;
+        {
+          xiiAssetCurator::xiiLockedAssetTable allAssets = pCurator->GetKnownAssets();
+
+          //#TODO_ASSET Instead of hard-coding this to 'Collection' add a virtual function to all asset managers that defines those that need to be transformed on scene export.
+          xiiTempHashedString sCollection = "Collection";
+          for (auto it : *allAssets)
+          {
+            if (it.Value()->m_Info->m_sAssetsDocumentTypeName == sCollection)
+            {
+              collections.Insert(it.Value()->m_Info->m_DocumentID);
+            }
+          }
+        }
+
+        const xiiPlatformProfile* pCurrentProfile = pCurator->GetActiveAssetProfile();
+        for (const auto& guid : collections)
+        {
+          // Ignore result
+          pCurator->TransformAsset(guid, xiiTransformFlags::TriggeredManually | xiiTransformFlags::ForceTransform, pCurrentProfile);
         }
       }
 

@@ -67,34 +67,34 @@ enum class EmitterOnEventVersion
 };
 
 
-void xiiParticleEmitterFactory_OnEvent::Save(xiiStreamWriter& stream) const
+void xiiParticleEmitterFactory_OnEvent::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)EmitterOnEventVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
   // Version 1
-  stream << m_sEventName;
+  inout_stream << m_sEventName;
 
   // Version 2
-  stream << m_uiSpawnCountMin;
-  stream << m_uiSpawnCountRange;
-  stream << m_sSpawnCountScaleParameter;
+  inout_stream << m_uiSpawnCountMin;
+  inout_stream << m_uiSpawnCountRange;
+  inout_stream << m_sSpawnCountScaleParameter;
 }
 
-void xiiParticleEmitterFactory_OnEvent::Load(xiiStreamReader& stream)
+void xiiParticleEmitterFactory_OnEvent::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)EmitterOnEventVersion::Version_Current, "Invalid version {0}", uiVersion);
 
-  stream >> m_sEventName;
+  inout_stream >> m_sEventName;
 
   if (uiVersion >= 2)
   {
-    stream >> m_uiSpawnCountMin;
-    stream >> m_uiSpawnCountRange;
-    stream >> m_sSpawnCountScaleParameter;
+    inout_stream >> m_uiSpawnCountMin;
+    inout_stream >> m_uiSpawnCountRange;
+    inout_stream >> m_sSpawnCountScaleParameter;
   }
 }
 

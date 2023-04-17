@@ -17,7 +17,11 @@ o
 		u4 %Hash{15281474290921095176}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
-		VarArray %References{}
+		VarArray %PackageDeps{}
+		VarArray %References
+		{
+			s{"Shaders/Materials/ReflectionProbeVisualization.xiiShader"}
+		}
 	}
 }
 }

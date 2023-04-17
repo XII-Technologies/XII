@@ -44,32 +44,32 @@ enum class ReactionVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleEventReactionFactory::Save(xiiStreamWriter& stream) const
+void xiiParticleEventReactionFactory::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)ReactionVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
   // Version 1
-  stream << m_sEventType;
+  inout_stream << m_sEventType;
 
   // Version 2
-  stream << m_uiProbability;
+  inout_stream << m_uiProbability;
 }
 
 
-void xiiParticleEventReactionFactory::Load(xiiStreamReader& stream)
+void xiiParticleEventReactionFactory::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)ReactionVersion::Version_Current, "Invalid version {0}", uiVersion);
 
   // Version 1
-  stream >> m_sEventType;
+  inout_stream >> m_sEventType;
 
   if (uiVersion >= 2)
   {
-    stream >> m_uiProbability;
+    inout_stream >> m_uiProbability;
   }
 }
 

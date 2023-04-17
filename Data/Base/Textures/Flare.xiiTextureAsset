@@ -16,8 +16,15 @@ o
 		Uuid %DocumentID{u4{104150515546721672,4824860388845839080}}
 		u4 %Hash{15661697732879529982}
 		VarArray %MetaInfo{}
-		VarArray %Outputs{}
-		VarArray %References{}
+		VarArray %Outputs
+		{
+			s{"LOWRES"}
+		}
+		VarArray %PackageDeps{}
+		VarArray %References
+		{
+			s{"Textures/Flare.tga"}
+		}
 	}
 }
 }

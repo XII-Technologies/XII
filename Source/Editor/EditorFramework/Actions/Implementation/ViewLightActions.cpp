@@ -30,28 +30,18 @@ xiiActionDescriptorHandle xiiViewLightActions::s_hSetAsDefault;
 
 void xiiViewLightActions::RegisterActions()
 {
-  s_hLightMenu = XII_REGISTER_MENU_WITH_ICON("View.LightMenu", ":/EditorFramework/Icons/ViewLightMenu.png");
-  s_hSkyBox    = XII_REGISTER_ACTION_1(
-    "View.SkyBox", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::SkyBoxChanged);
-  s_hSkyLight = XII_REGISTER_ACTION_1(
-    "View.SkyLight", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::SkyLightChanged);
-  s_hSkyLightCubeMap = XII_REGISTER_ACTION_1(
-    "View.SkyLightCubeMap", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::SkyLightCubeMapChanged);
-  s_hSkyLightIntensity = XII_REGISTER_ACTION_1(
-    "View.SkyLightIntensity", xiiActionScope::Document, "View", "", xiiViewLightSliderAction, xiiEngineViewLightSettingsEvent::Type::SkyLightIntensityChanged);
+  s_hLightMenu         = XII_REGISTER_MENU_WITH_ICON("View.LightMenu", ":/EditorFramework/Icons/ViewLightMenu.png");
+  s_hSkyBox            = XII_REGISTER_ACTION_1("View.SkyBox", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::SkyBoxChanged);
+  s_hSkyLight          = XII_REGISTER_ACTION_1("View.SkyLight", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::SkyLightChanged);
+  s_hSkyLightCubeMap   = XII_REGISTER_ACTION_1("View.SkyLightCubeMap", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::SkyLightCubeMapChanged);
+  s_hSkyLightIntensity = XII_REGISTER_ACTION_1("View.SkyLightIntensity", xiiActionScope::Document, "View", "", xiiViewLightSliderAction, xiiEngineViewLightSettingsEvent::Type::SkyLightIntensityChanged);
 
-  s_hDirLight = XII_REGISTER_ACTION_1(
-    "View.DirectionalLight", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::DirectionalLightChanged);
-  s_hDirLightAngle = XII_REGISTER_ACTION_1(
-    "View.DirLightAngle", xiiActionScope::Document, "View", "", xiiViewLightSliderAction, xiiEngineViewLightSettingsEvent::Type::DirectionalLightAngleChanged);
-  s_hDirLightShadows = XII_REGISTER_ACTION_1(
-    "View.DirectionalLightShadows", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::DirectionalLightShadowsChanged);
-  s_hDirLightIntensity = XII_REGISTER_ACTION_1(
-    "View.DirLightIntensity", xiiActionScope::Document, "View", "", xiiViewLightSliderAction, xiiEngineViewLightSettingsEvent::Type::DirectionalLightIntensityChanged);
-  s_hFog = XII_REGISTER_ACTION_1(
-    "View.Fog", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::FogChanged);
-  s_hSetAsDefault = XII_REGISTER_ACTION_1(
-    "View.SetAsDefault", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::DefaultValuesChanged);
+  s_hDirLight          = XII_REGISTER_ACTION_1("View.DirectionalLight", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::DirectionalLightChanged);
+  s_hDirLightAngle     = XII_REGISTER_ACTION_1("View.DirLightAngle", xiiActionScope::Document, "View", "", xiiViewLightSliderAction, xiiEngineViewLightSettingsEvent::Type::DirectionalLightAngleChanged);
+  s_hDirLightShadows   = XII_REGISTER_ACTION_1("View.DirectionalLightShadows", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::DirectionalLightShadowsChanged);
+  s_hDirLightIntensity = XII_REGISTER_ACTION_1("View.DirLightIntensity", xiiActionScope::Document, "View", "", xiiViewLightSliderAction, xiiEngineViewLightSettingsEvent::Type::DirectionalLightIntensityChanged);
+  s_hFog               = XII_REGISTER_ACTION_1("View.Fog", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::FogChanged);
+  s_hSetAsDefault      = XII_REGISTER_ACTION_1("View.SetAsDefault", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::DefaultValuesChanged);
 }
 
 void xiiViewLightActions::UnregisterActions()

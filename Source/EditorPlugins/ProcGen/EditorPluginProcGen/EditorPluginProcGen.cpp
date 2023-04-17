@@ -22,6 +22,7 @@ void OnLoadPlugin()
   xiiStandardMenus::MapActions(szMenuBar, xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
   xiiProjectActions::MapActions(szMenuBar);
   xiiDocumentActions::MapActions(szMenuBar, "Menu.File", false);
+  xiiAssetActions::MapMenuActions(szMenuBar, "Menu.File");
   xiiCommandHistoryActions::MapActions(szMenuBar, "Menu.Edit");
 
   xiiEditActions::MapActions("ProcGenAssetMenuBar", "Menu.Edit", false, false);
@@ -33,7 +34,7 @@ void OnLoadPlugin()
   xiiActionMapManager::RegisterActionMap(szToolBar).IgnoreResult();
   xiiDocumentActions::MapActions(szToolBar, "", true);
   xiiCommandHistoryActions::MapActions(szToolBar, "");
-  xiiAssetActions::MapActions(szToolBar, true);
+  xiiAssetActions::MapToolBarActions(szToolBar, true);
 }
 }
 

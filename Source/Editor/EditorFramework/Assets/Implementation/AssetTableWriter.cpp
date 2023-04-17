@@ -52,11 +52,11 @@ xiiResult xiiAssetTable::WriteAssetTable()
   xiiDeferredFileWriter file;
   file.SetOutput(m_sTargetFile);
 
-  auto Write = [](const xiiString& sGuid, const xiiString& sPath, xiiDeferredFileWriter& file) {
-    file.WriteBytes(sGuid.GetData(), sGuid.GetElementCount()).IgnoreResult();
-    file.WriteBytes(";", 1).IgnoreResult();
-    file.WriteBytes(sPath.GetData(), sPath.GetElementCount()).IgnoreResult();
-    file.WriteBytes("\n", 1).IgnoreResult();
+  auto Write = [](const xiiString& sGuid, const xiiString& sPath, xiiDeferredFileWriter& ref_file) {
+    ref_file.WriteBytes(sGuid.GetData(), sGuid.GetElementCount()).IgnoreResult();
+    ref_file.WriteBytes(";", 1).IgnoreResult();
+    ref_file.WriteBytes(sPath.GetData(), sPath.GetElementCount()).IgnoreResult();
+    ref_file.WriteBytes("\n", 1).IgnoreResult();
   };
 
   for (auto it = m_GuidToManagerResource.GetIterator(); it.IsValid(); ++it)

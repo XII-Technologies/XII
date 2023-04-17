@@ -28,12 +28,12 @@ xiiEngineProcessDocumentContext* xiiEngineProcessDocumentContext::GetDocumentCon
   return pResult;
 }
 
-void xiiEngineProcessDocumentContext::AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pContext, xiiEngineProcessCommunicationChannel* pIPC)
+void xiiEngineProcessDocumentContext::AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pContext, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType)
 {
   XII_ASSERT_DEV(!s_DocumentContexts.Contains(guid), "Cannot add a view with an index that already exists");
   s_DocumentContexts[guid] = pContext;
 
-  pContext->Initialize(guid, metaData, pIPC);
+  pContext->Initialize(guid, metaData, pIPC, sDocumentType);
 }
 
 bool xiiEngineProcessDocumentContext::PendingOperationsInProgress()
@@ -106,11 +106,16 @@ xiiEngineProcessDocumentContext::~xiiEngineProcessDocumentContext()
   m_Context.m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiEngineProcessDocumentContext::WorldRttiConverterContextEventHandler, this));
 }
 
-void xiiEngineProcessDocumentContext::Initialize(const xiiUuid& documentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC)
+void xiiEngineProcessDocumentContext::Initialize(const xiiUuid& documentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType)
 {
   m_DocumentGuid = documentGuid;
   m_MetaData     = metaData;
   m_pIPC         = pIPC;
+
+  if (m_sDocumentType != sDocumentType)
+  {
+    m_sDocumentType = sDocumentType;
+  }
 
   if (m_Flags.IsSet(xiiEngineProcessDocumentContextFlags::CreateWorld))
   {
@@ -387,7 +392,7 @@ void xiiEngineProcessDocumentContext::Reset()
 
   Deinitialize();
 
-  Initialize(guid, m_MetaData, ipc);
+  Initialize(guid, m_MetaData, ipc, m_sDocumentType);
 }
 
 void xiiEngineProcessDocumentContext::ClearExistingObjects()

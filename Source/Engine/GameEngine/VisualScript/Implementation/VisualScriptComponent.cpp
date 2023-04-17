@@ -84,7 +84,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiVisualScriptComponent, 5, xiiComponentMode::Static);
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Script", GetScriptFile, SetScriptFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Code_VisualScript")),
+    XII_ACCESSOR_PROPERTY("Script", GetScriptFile, SetScriptFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Code_VisualScript", xiiDependencyFlags::Package)),
     XII_MAP_ACCESSOR_PROPERTY("Parameters", GetParameters, GetParameter, SetParameter, RemoveParameter)->AddAttributes(new xiiExposedParametersAttribute("Script"), new xiiExposeColorAlphaAttribute),
   }
   XII_END_PROPERTIES;

@@ -17,8 +17,13 @@ o
 		u4 %Hash{16523837023292758152}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
+		VarArray %PackageDeps
+		{
+			s{"White.color"}
+		}
 		VarArray %References
 		{
+			s{"Kraut/Kraut.xiiShader"}
 			s{"White.color"}
 		}
 	}
@@ -326,6 +331,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }
@@ -336,6 +342,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }
@@ -585,6 +592,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }
@@ -695,6 +703,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
 	}
 }

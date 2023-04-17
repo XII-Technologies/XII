@@ -30,12 +30,12 @@ public:
   xiiRmlUi();
   ~xiiRmlUi();
 
-  xiiRmlUiContext* CreateContext(const char* szName, const xiiVec2U32& initialSize);
+  xiiRmlUiContext* CreateContext(const char* szName, const xiiVec2U32& vInitialSize);
   void             DeleteContext(xiiRmlUiContext* pContext);
 
   bool AnyContextWantsInput();
 
-  void ExtractContext(xiiRmlUiContext& context, xiiMsgExtractRenderData& msg);
+  void ExtractContext(xiiRmlUiContext& ref_context, xiiMsgExtractRenderData& ref_msg);
 
 private:
   struct Data;

@@ -178,11 +178,11 @@ xiiTime xiiParticleSystemDescriptor::GetAvgLifetime() const
   return time;
 }
 
-void xiiParticleSystemDescriptor::Save(xiiStreamWriter& stream) const
+void xiiParticleSystemDescriptor::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)ParticleSystemVersion::Version_Current;
 
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
   const xiiUInt32 uiNumEmitters     = m_EmitterFactories.GetCount();
   const xiiUInt32 uiNumInitializers = m_InitializerFactories.GetCount();
@@ -190,48 +190,48 @@ void xiiParticleSystemDescriptor::Save(xiiStreamWriter& stream) const
   const xiiUInt32 uiNumTypes        = m_TypeFactories.GetCount();
 
   xiiUInt32 uiMaxParticles = 0;
-  stream << m_bVisible;
-  stream << uiMaxParticles;
-  stream << m_LifeTime.m_Value;
-  stream << m_LifeTime.m_fVariance;
-  stream << m_sOnDeathEvent;
-  stream << m_sLifeScaleParameter;
-  stream << uiNumEmitters;
-  stream << uiNumInitializers;
-  stream << uiNumBehaviors;
-  stream << uiNumTypes;
+  inout_stream << m_bVisible;
+  inout_stream << uiMaxParticles;
+  inout_stream << m_LifeTime.m_Value;
+  inout_stream << m_LifeTime.m_fVariance;
+  inout_stream << m_sOnDeathEvent;
+  inout_stream << m_sLifeScaleParameter;
+  inout_stream << uiNumEmitters;
+  inout_stream << uiNumInitializers;
+  inout_stream << uiNumBehaviors;
+  inout_stream << uiNumTypes;
 
   for (auto pEmitter : m_EmitterFactories)
   {
-    stream << pEmitter->GetDynamicRTTI()->GetTypeName();
+    inout_stream << pEmitter->GetDynamicRTTI()->GetTypeName();
 
-    pEmitter->Save(stream);
+    pEmitter->Save(inout_stream);
   }
 
   for (auto pInitializer : m_InitializerFactories)
   {
-    stream << pInitializer->GetDynamicRTTI()->GetTypeName();
+    inout_stream << pInitializer->GetDynamicRTTI()->GetTypeName();
 
-    pInitializer->Save(stream);
+    pInitializer->Save(inout_stream);
   }
 
   for (auto pBehavior : m_BehaviorFactories)
   {
-    stream << pBehavior->GetDynamicRTTI()->GetTypeName();
+    inout_stream << pBehavior->GetDynamicRTTI()->GetTypeName();
 
-    pBehavior->Save(stream);
+    pBehavior->Save(inout_stream);
   }
 
   for (auto pType : m_TypeFactories)
   {
-    stream << pType->GetDynamicRTTI()->GetTypeName();
+    inout_stream << pType->GetDynamicRTTI()->GetTypeName();
 
-    pType->Save(stream);
+    pType->Save(inout_stream);
   }
 }
 
 
-void xiiParticleSystemDescriptor::Load(xiiStreamReader& stream)
+void xiiParticleSystemDescriptor::Load(xiiStreamReader& inout_stream)
 {
   ClearEmitters();
   ClearInitializers();
@@ -240,7 +240,7 @@ void xiiParticleSystemDescriptor::Load(xiiStreamReader& stream)
   ClearTypes();
 
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
   XII_ASSERT_DEV(uiVersion <= (int)ParticleSystemVersion::Version_Current, "Unknown particle template version {0}", uiVersion);
 
   xiiUInt32 uiNumEmitters     = 0;
@@ -250,40 +250,40 @@ void xiiParticleSystemDescriptor::Load(xiiStreamReader& stream)
 
   if (uiVersion >= 3)
   {
-    stream >> m_bVisible;
+    inout_stream >> m_bVisible;
   }
 
   if (uiVersion >= 2)
   {
     // now unused
     xiiUInt32 uiMaxParticles = 0;
-    stream >> uiMaxParticles;
+    inout_stream >> uiMaxParticles;
   }
 
   if (uiVersion >= 5)
   {
-    stream >> m_LifeTime.m_Value;
-    stream >> m_LifeTime.m_fVariance;
-    stream >> m_sOnDeathEvent;
+    inout_stream >> m_LifeTime.m_Value;
+    inout_stream >> m_LifeTime.m_fVariance;
+    inout_stream >> m_sOnDeathEvent;
   }
 
   if (uiVersion >= 7)
   {
-    stream >> m_sLifeScaleParameter;
+    inout_stream >> m_sLifeScaleParameter;
   }
 
-  stream >> uiNumEmitters;
+  inout_stream >> uiNumEmitters;
 
   if (uiVersion >= 2)
   {
-    stream >> uiNumInitializers;
+    inout_stream >> uiNumInitializers;
   }
 
-  stream >> uiNumBehaviors;
+  inout_stream >> uiNumBehaviors;
 
   if (uiVersion >= 4)
   {
-    stream >> uiNumTypes;
+    inout_stream >> uiNumTypes;
   }
 
   m_EmitterFactories.SetCountUninitialized(uiNumEmitters);
@@ -295,55 +295,55 @@ void xiiParticleSystemDescriptor::Load(xiiStreamReader& stream)
 
   for (auto& pEmitter : m_EmitterFactories)
   {
-    stream >> sType;
+    inout_stream >> sType;
 
     const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(sType);
     XII_ASSERT_DEBUG(pRtti != nullptr, "Unknown emitter factory type '{0}'", sType);
 
     pEmitter = pRtti->GetAllocator()->Allocate<xiiParticleEmitterFactory>();
 
-    pEmitter->Load(stream);
+    pEmitter->Load(inout_stream);
   }
 
   if (uiVersion >= 2)
   {
     for (auto& pInitializer : m_InitializerFactories)
     {
-      stream >> sType;
+      inout_stream >> sType;
 
       const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(sType);
       XII_ASSERT_DEBUG(pRtti != nullptr, "Unknown initializer factory type '{0}'", sType);
 
       pInitializer = pRtti->GetAllocator()->Allocate<xiiParticleInitializerFactory>();
 
-      pInitializer->Load(stream);
+      pInitializer->Load(inout_stream);
     }
   }
 
   for (auto& pBehavior : m_BehaviorFactories)
   {
-    stream >> sType;
+    inout_stream >> sType;
 
     const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(sType);
     XII_ASSERT_DEBUG(pRtti != nullptr, "Unknown behavior factory type '{0}'", sType);
 
     pBehavior = pRtti->GetAllocator()->Allocate<xiiParticleBehaviorFactory>();
 
-    pBehavior->Load(stream);
+    pBehavior->Load(inout_stream);
   }
 
   if (uiVersion >= 4)
   {
     for (auto& pType : m_TypeFactories)
     {
-      stream >> sType;
+      inout_stream >> sType;
 
       const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(sType);
       XII_ASSERT_DEBUG(pRtti != nullptr, "Unknown type factory type '{0}'", sType);
 
       pType = pRtti->GetAllocator()->Allocate<xiiParticleTypeFactory>();
 
-      pType->Load(stream);
+      pType->Load(inout_stream);
     }
   }
 
@@ -360,7 +360,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->InlineProperty("LifeTime").IgnoreResult();
   }

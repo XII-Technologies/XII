@@ -14,30 +14,30 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 static xiiTypeVersion s_RmlUiDescVersion = 1;
 
-xiiResult xiiRmlUiResourceDescriptor::Save(xiiStreamWriter& stream)
+xiiResult xiiRmlUiResourceDescriptor::Save(xiiStreamWriter& inout_stream)
 {
   // write this at the beginning so that the file can be read as an xiiDependencyFile
   m_DependencyFile.StoreCurrentTimeStamp();
-  XII_SUCCEED_OR_RETURN(m_DependencyFile.WriteDependencyFile(stream));
+  XII_SUCCEED_OR_RETURN(m_DependencyFile.WriteDependencyFile(inout_stream));
 
-  stream.WriteVersion(s_RmlUiDescVersion);
+  inout_stream.WriteVersion(s_RmlUiDescVersion);
 
-  stream << m_sRmlFile;
-  stream << m_ScaleMode;
-  stream << m_ReferenceResolution;
+  inout_stream << m_sRmlFile;
+  inout_stream << m_ScaleMode;
+  inout_stream << m_ReferenceResolution;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiRmlUiResourceDescriptor::Load(xiiStreamReader& stream)
+xiiResult xiiRmlUiResourceDescriptor::Load(xiiStreamReader& inout_stream)
 {
-  XII_SUCCEED_OR_RETURN(m_DependencyFile.ReadDependencyFile(stream));
+  XII_SUCCEED_OR_RETURN(m_DependencyFile.ReadDependencyFile(inout_stream));
 
-  xiiTypeVersion uiVersion = stream.ReadVersion(s_RmlUiDescVersion);
+  xiiTypeVersion uiVersion = inout_stream.ReadVersion(s_RmlUiDescVersion);
 
-  stream >> m_sRmlFile;
-  stream >> m_ScaleMode;
-  stream >> m_ReferenceResolution;
+  inout_stream >> m_sRmlFile;
+  inout_stream >> m_ScaleMode;
+  inout_stream >> m_ReferenceResolution;
 
   return XII_SUCCESS;
 }

@@ -13,10 +13,10 @@ public:
   virtual const xiiRTTI* GetInitializerType() const override;
   virtual void           CopyInitializerProperties(xiiParticleInitializer* pInitializer, bool bFirstTime) const override;
 
-  virtual void Save(xiiStreamWriter& stream) const override;
-  virtual void Load(xiiStreamReader& stream) override;
+  virtual void Save(xiiStreamWriter& inout_stream) const override;
+  virtual void Load(xiiStreamReader& inout_stream) override;
 
-  virtual void QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_FinalizerDeps) const override;
+  virtual void QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_finalizerDeps) const override;
 
 public:
   xiiAngle             m_Angle;

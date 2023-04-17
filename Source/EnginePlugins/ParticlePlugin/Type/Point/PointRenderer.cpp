@@ -32,9 +32,9 @@ xiiParticlePointRenderer::~xiiParticlePointRenderer()
   DestroyParticleDataBuffer(m_hBillboardDataBuffer);
 }
 
-void xiiParticlePointRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const
+void xiiParticlePointRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {
-  types.PushBack(xiiGetStaticRTTI<xiiParticlePointRenderData>());
+  ref_types.PushBack(xiiGetStaticRTTI<xiiParticlePointRenderData>());
 }
 
 void xiiParticlePointRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const

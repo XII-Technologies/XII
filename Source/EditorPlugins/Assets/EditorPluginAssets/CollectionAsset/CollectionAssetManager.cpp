@@ -19,7 +19,7 @@ xiiCollectionAssetDocumentManager::xiiCollectionAssetDocumentManager()
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_AssetCollection");
 
   m_DocTypeDesc.m_sResourceFileExtension = "xiiCollection";
-  m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoTransformOnSave;
+  m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoTransformOnSave | xiiAssetDocumentFlags::OnlyTransformManually;
 
   xiiQtImageCache::GetSingleton()->RegisterTypeImage("Collection", QPixmap(":/AssetIcons/Collection.png"));
 }

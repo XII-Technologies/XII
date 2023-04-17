@@ -8,7 +8,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStateMachineState_NestedStateMachine, 1, xii
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Resource", GetResourceFile, SetResourceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_StateMachine")),
+    XII_ACCESSOR_PROPERTY("Resource", GetResourceFile, SetResourceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_StateMachine", xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("InitialState", GetInitialState, SetInitialState),
     XII_MEMBER_PROPERTY("KeepCurrentStateOnExit", m_bKeepCurrentStateOnExit),
   }

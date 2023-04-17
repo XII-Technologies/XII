@@ -37,24 +37,24 @@ void xiiParticleBehaviorFactory_SizeCurve::CopyBehaviorProperties(xiiParticleBeh
   pBehavior->m_fCurveScale = m_fCurveScale;
 }
 
-void xiiParticleBehaviorFactory_SizeCurve::Save(xiiStreamWriter& stream) const
+void xiiParticleBehaviorFactory_SizeCurve::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = 1;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_hCurve;
-  stream << m_fBaseSize;
-  stream << m_fCurveScale;
+  inout_stream << m_hCurve;
+  inout_stream << m_fBaseSize;
+  inout_stream << m_fCurveScale;
 }
 
-void xiiParticleBehaviorFactory_SizeCurve::Load(xiiStreamReader& stream)
+void xiiParticleBehaviorFactory_SizeCurve::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
-  stream >> m_hCurve;
-  stream >> m_fBaseSize;
-  stream >> m_fCurveScale;
+  inout_stream >> m_hCurve;
+  inout_stream >> m_fBaseSize;
+  inout_stream >> m_fCurveScale;
 }
 
 void xiiParticleBehaviorFactory_SizeCurve::SetSizeCurveFile(const char* szFile)

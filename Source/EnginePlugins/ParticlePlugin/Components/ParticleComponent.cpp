@@ -65,7 +65,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiParticleComponent, 5, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Effect", GetParticleEffectFile, SetParticleEffectFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Particle_Effect")),
+    XII_ACCESSOR_PROPERTY("Effect", GetParticleEffectFile, SetParticleEffectFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Particle_Effect", xiiDependencyFlags::Package)),
     XII_MEMBER_PROPERTY("SpawnAtStart", m_bSpawnAtStart)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ENUM_MEMBER_PROPERTY("OnFinishedAction", xiiOnComponentFinishedAction2, m_OnFinishedAction),
     XII_MEMBER_PROPERTY("MinRestartDelay", m_MinRestartDelay),
@@ -111,9 +111,9 @@ void xiiParticleComponent::OnDeactivated()
   xiiRenderComponent::OnDeactivated();
 }
 
-void xiiParticleComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiParticleComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  auto& s = stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s << m_hEffectResource;
   s << m_bSpawnAtStart;
@@ -156,10 +156,10 @@ void xiiParticleComponent::SerializeComponent(xiiWorldWriter& stream) const
   /// \todo store effect state
 }
 
-void xiiParticleComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiParticleComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  auto&           s         = stream.GetStream();
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = inout_stream.GetStream();
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
   s >> m_hEffectResource;
   s >> m_bSpawnAtStart;
@@ -257,9 +257,9 @@ bool xiiParticleComponent::IsEffectActive() const
 }
 
 
-void xiiParticleComponent::OnMsgSetPlaying(xiiMsgSetPlaying& msg)
+void xiiParticleComponent::OnMsgSetPlaying(xiiMsgSetPlaying& ref_msg)
 {
-  if (msg.m_bPlay)
+  if (ref_msg.m_bPlay)
   {
     StartEffect();
   }
@@ -301,7 +301,7 @@ const char* xiiParticleComponent::GetParticleEffectFile() const
 }
 
 
-xiiResult xiiParticleComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiParticleComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   if (m_EffectController.IsAlive())
   {
@@ -323,7 +323,7 @@ xiiResult xiiParticleComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, boo
         volume.Transform((-GetOwner()->GetGlobalRotation()).GetAsMat4());
       }
 
-      bounds = volume;
+      ref_bounds = volume;
       return XII_SUCCESS;
     }
   }
@@ -419,12 +419,12 @@ void xiiParticleComponent::Update()
 
 const xiiRangeView<const char*, xiiUInt32> xiiParticleComponent::GetParameters() const
 {
-  return xiiRangeView<const char*, xiiUInt32>([this]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_FloatParams.GetCount() + m_ColorParams.GetCount(); }, [this](xiiUInt32& it) { ++it; },
-                                              [this](const xiiUInt32& it) -> const char* {
-                                                if (it < m_FloatParams.GetCount())
-                                                  return m_FloatParams[it].m_sName.GetData();
+  return xiiRangeView<const char*, xiiUInt32>([this]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_FloatParams.GetCount() + m_ColorParams.GetCount(); }, [this](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                              [this](const xiiUInt32& uiIt) -> const char* {
+                                                if (uiIt < m_FloatParams.GetCount())
+                                                  return m_FloatParams[uiIt].m_sName.GetData();
                                                 else
-                                                  return m_ColorParams[it - m_FloatParams.GetCount()].m_sName.GetData();
+                                                  return m_ColorParams[uiIt - m_FloatParams.GetCount()].m_sName.GetData();
                                               });
 }
 

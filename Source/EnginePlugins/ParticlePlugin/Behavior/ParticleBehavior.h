@@ -20,10 +20,10 @@ public:
 
   xiiParticleBehavior* CreateBehavior(xiiParticleSystemInstance* pOwner) const;
 
-  virtual void Save(xiiStreamWriter& stream) const = 0;
-  virtual void Load(xiiStreamReader& stream)       = 0;
+  virtual void Save(xiiStreamWriter& inout_stream) const = 0;
+  virtual void Load(xiiStreamReader& inout_stream)       = 0;
 
-  virtual void QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_FinalizerDeps) const {}
+  virtual void QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_finalizerDeps) const {}
 };
 
 class XII_PARTICLEPLUGIN_DLL xiiParticleBehavior : public xiiParticleModule

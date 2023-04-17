@@ -15,7 +15,7 @@ template <typename ObjectProperties>
 class xiiSimpleDocumentObjectManager : public xiiDocumentObjectManager
 {
 public:
-  virtual void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& Types) const override { Types.PushBack(xiiGetStaticRTTI<ObjectProperties>()); }
+  virtual void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const override { ref_types.PushBack(xiiGetStaticRTTI<ObjectProperties>()); }
 };
 
 template <typename PropertyType, typename BaseClass = xiiAssetDocument>

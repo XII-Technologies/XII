@@ -90,51 +90,51 @@ float xiiParticleInitializerFactory_SpherePosition::GetSpawnCountMultiplier(cons
   return 1.0f;
 }
 
-void xiiParticleInitializerFactory_SpherePosition::Save(xiiStreamWriter& stream) const
+void xiiParticleInitializerFactory_SpherePosition::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = 3;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_fRadius;
-  stream << m_bSpawnOnSurface;
-  stream << m_bSetVelocity;
-  stream << m_Speed.m_Value;
-  stream << m_Speed.m_fVariance;
+  inout_stream << m_fRadius;
+  inout_stream << m_bSpawnOnSurface;
+  inout_stream << m_bSetVelocity;
+  inout_stream << m_Speed.m_Value;
+  inout_stream << m_Speed.m_fVariance;
 
   // version 2
-  stream << m_vPositionOffset;
+  inout_stream << m_vPositionOffset;
 
   // version 3
-  stream << m_sScaleRadiusParameter;
+  inout_stream << m_sScaleRadiusParameter;
 }
 
-void xiiParticleInitializerFactory_SpherePosition::Load(xiiStreamReader& stream)
+void xiiParticleInitializerFactory_SpherePosition::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
-  stream >> m_fRadius;
-  stream >> m_bSpawnOnSurface;
-  stream >> m_bSetVelocity;
-  stream >> m_Speed.m_Value;
-  stream >> m_Speed.m_fVariance;
+  inout_stream >> m_fRadius;
+  inout_stream >> m_bSpawnOnSurface;
+  inout_stream >> m_bSetVelocity;
+  inout_stream >> m_Speed.m_Value;
+  inout_stream >> m_Speed.m_fVariance;
 
   if (uiVersion >= 2)
   {
-    stream >> m_vPositionOffset;
+    inout_stream >> m_vPositionOffset;
   }
 
   if (uiVersion >= 3)
   {
-    stream >> m_sScaleRadiusParameter;
+    inout_stream >> m_sScaleRadiusParameter;
   }
 }
 
-void xiiParticleInitializerFactory_SpherePosition::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_FinalizerDeps) const
+void xiiParticleInitializerFactory_SpherePosition::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_finalizerDeps) const
 {
   if (m_bSetVelocity)
   {
-    inout_FinalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_ApplyVelocity>());
+    inout_finalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_ApplyVelocity>());
   }
 }
 
@@ -201,7 +201,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->InlineProperty("Speed").IgnoreResult();
   }

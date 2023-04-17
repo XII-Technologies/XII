@@ -38,7 +38,7 @@ public:
 
   const xiiParticleEffectHandle& GetHandle() const { return m_hEffectHandle; }
 
-  void SetEmitterEnabled(bool enable);
+  void SetEmitterEnabled(bool bEnable);
   bool GetEmitterEnabled() const { return m_bEmitterEnabled; }
 
   bool HasActiveParticles() const;
@@ -92,12 +92,12 @@ public:
   /// In the next frame, the result can be retrieved via GetWindSampleResult() with the returned index.
   ///
   /// Only a very limited amount of locations can be sampled (4) across all behaviors.
-  xiiInt32 AddWindSampleLocation(const xiiVec3& pos);
+  xiiInt32 AddWindSampleLocation(const xiiVec3& vPos);
 
   /// \brief Returns the wind result sampled at the previously specified location (see AddWindSampleLocation()).
   ///
   /// Returns a zero vector, if no wind value is available (invalid index).
-  xiiVec3 GetWindSampleResult(xiiInt32 idx) const;
+  xiiVec3 GetWindSampleResult(xiiInt32 iIdx) const;
 
 private:
   void PassTransformToSystems();
@@ -117,7 +117,7 @@ private:
 
 public:
   /// \brief Returns false when the effect is finished.
-  bool Update(const xiiTime& tDiff);
+  bool Update(const xiiTime& diff);
 
   /// \brief Returns the total (game) time that the effect is alive and has been updated.
   ///
@@ -174,7 +174,7 @@ public:
 
   /// \brief Returns the bounding volume of the effect.
   /// The volume is in the local space of the effect.
-  void GetBoundingVolume(xiiBoundingBoxSphere& volume) const;
+  void GetBoundingVolume(xiiBoundingBoxSphere& ref_volume) const;
 
 private:
   void CombineSystemBoundingVolumes();
@@ -189,16 +189,16 @@ private:
   /// \name Effect Parameters
   /// @{
 public:
-  void SetParameter(const xiiTempHashedString& name, float value);
-  void SetParameter(const xiiTempHashedString& name, const xiiColor& value);
+  void SetParameter(const xiiTempHashedString& sName, float value);
+  void SetParameter(const xiiTempHashedString& sName, const xiiColor& value);
 
-  xiiInt32 FindFloatParameter(const xiiTempHashedString& name) const;
-  float    GetFloatParameter(const xiiTempHashedString& name, float defaultValue) const;
-  float    GetFloatParameter(xiiUInt32 idx) const { return m_FloatParameters[idx].m_fValue; }
+  xiiInt32 FindFloatParameter(const xiiTempHashedString& sName) const;
+  float    GetFloatParameter(const xiiTempHashedString& sName, float fDefaultValue) const;
+  float    GetFloatParameter(xiiUInt32 uiIdx) const { return m_FloatParameters[uiIdx].m_fValue; }
 
-  xiiInt32        FindColorParameter(const xiiTempHashedString& name) const;
-  const xiiColor& GetColorParameter(const xiiTempHashedString& name, const xiiColor& defaultValue) const;
-  const xiiColor& GetColorParameter(xiiUInt32 idx) const { return m_ColorParameters[idx].m_Value; }
+  xiiInt32        FindColorParameter(const xiiTempHashedString& sName) const;
+  const xiiColor& GetColorParameter(const xiiTempHashedString& sName, const xiiColor& defaultValue) const;
+  const xiiColor& GetColorParameter(xiiUInt32 uiIdx) const { return m_ColorParameters[uiIdx].m_Value; }
 
 
 private:

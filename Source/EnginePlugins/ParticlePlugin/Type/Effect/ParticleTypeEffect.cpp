@@ -59,33 +59,33 @@ enum class TypeEffectVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleTypeEffectFactory::Save(xiiStreamWriter& stream) const
+void xiiParticleTypeEffectFactory::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)TypeEffectVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
   xiiUInt64 m_uiRandomSeed = 0;
 
-  stream << m_sEffect;
-  stream << m_uiRandomSeed;
-  stream << m_sSharedInstanceName;
+  inout_stream << m_sEffect;
+  inout_stream << m_uiRandomSeed;
+  inout_stream << m_sSharedInstanceName;
 }
 
-void xiiParticleTypeEffectFactory::Load(xiiStreamReader& stream)
+void xiiParticleTypeEffectFactory::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)TypeEffectVersion::Version_Current, "Invalid version {0}", uiVersion);
 
-  stream >> m_sEffect;
+  inout_stream >> m_sEffect;
 
   if (uiVersion >= 2)
   {
     xiiUInt64 m_uiRandomSeed = 0;
 
-    stream >> m_uiRandomSeed;
-    stream >> m_sSharedInstanceName;
+    inout_stream >> m_uiRandomSeed;
+    inout_stream >> m_sSharedInstanceName;
   }
 }
 
@@ -108,7 +108,7 @@ void xiiParticleTypeEffect::CreateRequiredStreams()
   CreateStream("EffectID", xiiProcessingStream::DataType::Int, &m_pStreamEffectID, false);
 }
 
-void xiiParticleTypeEffect::ExtractTypeRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& instanceTransform) const
+void xiiParticleTypeEffect::ExtractTypeRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const
 {
   XII_PROFILE_SCOPE("PFX: Effect");
 
@@ -128,7 +128,7 @@ void xiiParticleTypeEffect::ExtractTypeRenderData(xiiMsgExtractRenderData& msg, 
     const xiiParticleEffectInstance* pEffect = nullptr;
     if (pWorldModule->TryGetEffectInstance(hInstance, pEffect))
     {
-      pWorldModule->ExtractEffectRenderData(pEffect, msg, pEffect->GetTransform());
+      pWorldModule->ExtractEffectRenderData(pEffect, ref_msg, pEffect->GetTransform());
     }
   }
 }

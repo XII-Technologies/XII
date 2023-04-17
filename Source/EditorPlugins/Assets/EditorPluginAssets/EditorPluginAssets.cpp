@@ -41,6 +41,7 @@ static void ConfigureAnimationControllerAsset()
     xiiStandardMenus::MapActions("AnimationControllerAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("AnimationControllerAssetMenuBar");
     xiiDocumentActions::MapActions("AnimationControllerAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("AnimationControllerAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("AnimationControllerAssetMenuBar", "Menu.Edit");
     xiiEditActions::MapActions("AnimationControllerAssetMenuBar", "Menu.Edit", false, false);
   }
@@ -50,7 +51,7 @@ static void ConfigureAnimationControllerAsset()
     xiiActionMapManager::RegisterActionMap("AnimationControllerAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("AnimationControllerAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("AnimationControllerAssetToolBar", "");
-    xiiAssetActions::MapActions("AnimationControllerAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("AnimationControllerAssetToolBar", true);
   }
 }
 
@@ -66,6 +67,7 @@ static void ConfigureTexture2DAsset()
     xiiStandardMenus::MapActions("TextureAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("TextureAssetMenuBar");
     xiiDocumentActions::MapActions("TextureAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("TextureAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("TextureAssetMenuBar", "Menu.Edit");
   }
 
@@ -74,7 +76,7 @@ static void ConfigureTexture2DAsset()
     xiiActionMapManager::RegisterActionMap("TextureAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("TextureAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("TextureAssetToolBar", "");
-    xiiAssetActions::MapActions("TextureAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("TextureAssetToolBar", true);
     xiiTextureAssetActions::MapActions("TextureAssetToolBar", "");
   }
 }
@@ -91,6 +93,7 @@ static void ConfigureTextureCubeAsset()
     xiiStandardMenus::MapActions("TextureCubeAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("TextureCubeAssetMenuBar");
     xiiDocumentActions::MapActions("TextureCubeAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("TextureCubeAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("TextureCubeAssetMenuBar", "Menu.Edit");
   }
 
@@ -99,7 +102,7 @@ static void ConfigureTextureCubeAsset()
     xiiActionMapManager::RegisterActionMap("TextureCubeAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("TextureCubeAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("TextureCubeAssetToolBar", "");
-    xiiAssetActions::MapActions("TextureCubeAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("TextureCubeAssetToolBar", true);
     xiiTextureAssetActions::MapActions("TextureCubeAssetToolBar", "");
   }
 }
@@ -116,6 +119,7 @@ static void ConfigureLUTAsset()
     xiiStandardMenus::MapActions("LUTAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("LUTAssetMenuBar");
     xiiDocumentActions::MapActions("LUTAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("LUTAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("LUTAssetMenuBar", "Menu.Edit");
   }
 
@@ -124,7 +128,7 @@ static void ConfigureLUTAsset()
     xiiActionMapManager::RegisterActionMap("LUTAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("LUTAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("LUTAssetToolBar", "");
-    xiiAssetActions::MapActions("LUTAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("LUTAssetToolBar", true);
   }
 }
 
@@ -139,6 +143,7 @@ static void ConfigureMaterialAsset()
     xiiProjectActions::MapActions("MaterialAssetMenuBar");
     xiiDocumentActions::MapActions("MaterialAssetMenuBar", "Menu.File", false);
     xiiDocumentActions::MapToolsActions("MaterialAssetMenuBar", "Menu.Tools");
+    xiiAssetActions::MapMenuActions("MaterialAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("MaterialAssetMenuBar", "Menu.Edit");
     xiiEditActions::MapActions("MaterialAssetMenuBar", "Menu.Edit", false, false);
   }
@@ -148,7 +153,7 @@ static void ConfigureMaterialAsset()
     xiiActionMapManager::RegisterActionMap("MaterialAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("MaterialAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("MaterialAssetToolBar", "");
-    xiiAssetActions::MapActions("MaterialAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("MaterialAssetToolBar", true);
 
     xiiMaterialAssetActions::RegisterActions();
     xiiMaterialAssetActions::MapActions("MaterialAssetToolBar", "");
@@ -174,6 +179,7 @@ static void ConfigureRenderPipelineAsset()
     xiiStandardMenus::MapActions("RenderPipelineAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("RenderPipelineAssetMenuBar");
     xiiDocumentActions::MapActions("RenderPipelineAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("RenderPipelineAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("RenderPipelineAssetMenuBar", "Menu.Edit");
     xiiEditActions::MapActions("RenderPipelineAssetMenuBar", "Menu.Edit", false, false);
   }
@@ -183,7 +189,7 @@ static void ConfigureRenderPipelineAsset()
     xiiActionMapManager::RegisterActionMap("RenderPipelineAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("RenderPipelineAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("RenderPipelineAssetToolBar", "");
-    xiiAssetActions::MapActions("RenderPipelineAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("RenderPipelineAssetToolBar", true);
   }
 }
 
@@ -197,6 +203,7 @@ static void ConfigureMeshAsset()
     xiiStandardMenus::MapActions("MeshAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("MeshAssetMenuBar");
     xiiDocumentActions::MapActions("MeshAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("MeshAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("MeshAssetMenuBar", "Menu.Edit");
   }
 
@@ -205,7 +212,7 @@ static void ConfigureMeshAsset()
     xiiActionMapManager::RegisterActionMap("MeshAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("MeshAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("MeshAssetToolBar", "");
-    xiiAssetActions::MapActions("MeshAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("MeshAssetToolBar", true);
     xiiCommonAssetActions::MapActions("MeshAssetToolBar", "", xiiCommonAssetUiState::Grid);
   }
 
@@ -225,6 +232,7 @@ static void ConfigureSurfaceAsset()
     xiiStandardMenus::MapActions("SurfaceAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("SurfaceAssetMenuBar");
     xiiDocumentActions::MapActions("SurfaceAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("SurfaceAssetMenuBar", "Menu.File");
     xiiDocumentActions::MapToolsActions("SurfaceAssetMenuBar", "Menu.Tools");
     xiiCommandHistoryActions::MapActions("SurfaceAssetMenuBar", "Menu.Edit");
   }
@@ -234,7 +242,7 @@ static void ConfigureSurfaceAsset()
     xiiActionMapManager::RegisterActionMap("SurfaceAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("SurfaceAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("SurfaceAssetToolBar", "");
-    xiiAssetActions::MapActions("SurfaceAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("SurfaceAssetToolBar", true);
   }
 }
 
@@ -246,6 +254,7 @@ static void ConfigureCollectionAsset()
     xiiStandardMenus::MapActions("CollectionAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("CollectionAssetMenuBar");
     xiiDocumentActions::MapActions("CollectionAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("CollectionAssetMenuBar", "Menu.File");
     xiiDocumentActions::MapToolsActions("CollectionAssetMenuBar", "Menu.Tools");
     xiiCommandHistoryActions::MapActions("CollectionAssetMenuBar", "Menu.Edit");
   }
@@ -255,7 +264,7 @@ static void ConfigureCollectionAsset()
     xiiActionMapManager::RegisterActionMap("CollectionAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("CollectionAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("CollectionAssetToolBar", "");
-    xiiAssetActions::MapActions("CollectionAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("CollectionAssetToolBar", true);
   }
 }
 
@@ -267,6 +276,7 @@ static void ConfigureColorGradientAsset()
     xiiStandardMenus::MapActions("ColorGradientAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("ColorGradientAssetMenuBar");
     xiiDocumentActions::MapActions("ColorGradientAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("ColorGradientAssetMenuBar", "Menu.File");
     xiiDocumentActions::MapToolsActions("ColorGradientAssetMenuBar", "Menu.Tools");
     xiiCommandHistoryActions::MapActions("ColorGradientAssetMenuBar", "Menu.Edit");
   }
@@ -276,7 +286,7 @@ static void ConfigureColorGradientAsset()
     xiiActionMapManager::RegisterActionMap("ColorGradientAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("ColorGradientAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("ColorGradientAssetToolBar", "");
-    xiiAssetActions::MapActions("ColorGradientAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("ColorGradientAssetToolBar", true);
   }
 }
 
@@ -288,6 +298,7 @@ static void ConfigureCurve1DAsset()
     xiiStandardMenus::MapActions("Curve1DAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("Curve1DAssetMenuBar");
     xiiDocumentActions::MapActions("Curve1DAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("Curve1DAssetMenuBar", "Menu.File");
     xiiDocumentActions::MapToolsActions("Curve1DAssetMenuBar", "Menu.Tools");
     xiiCommandHistoryActions::MapActions("Curve1DAssetMenuBar", "Menu.Edit");
   }
@@ -297,7 +308,7 @@ static void ConfigureCurve1DAsset()
     xiiActionMapManager::RegisterActionMap("Curve1DAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("Curve1DAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("Curve1DAssetToolBar", "");
-    xiiAssetActions::MapActions("Curve1DAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("Curve1DAssetToolBar", true);
   }
 }
 
@@ -309,6 +320,7 @@ static void ConfigurePropertyAnimAsset()
     xiiStandardMenus::MapActions("PropertyAnimAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Scene | xiiStandardMenuTypes::View | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("PropertyAnimAssetMenuBar");
     xiiDocumentActions::MapActions("PropertyAnimAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("PropertyAnimAssetMenuBar", "Menu.File");
     xiiDocumentActions::MapToolsActions("PropertyAnimAssetMenuBar", "Menu.Tools");
     xiiCommandHistoryActions::MapActions("PropertyAnimAssetMenuBar", "Menu.Edit");
     xiiGameObjectSelectionActions::MapActions("PropertyAnimAssetMenuBar", "Menu.Edit");
@@ -323,7 +335,7 @@ static void ConfigurePropertyAnimAsset()
     xiiActionMapManager::RegisterActionMap("PropertyAnimAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("PropertyAnimAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("PropertyAnimAssetToolBar", "");
-    xiiAssetActions::MapActions("PropertyAnimAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("PropertyAnimAssetToolBar", true);
     xiiGameObjectContextActions::MapToolbarActions("PropertyAnimAssetToolBar", "");
     xiiGameObjectDocumentActions::MapToolbarActions("PropertyAnimAssetToolBar", "");
     xiiTransformGizmoActions::MapToolbarActions("PropertyAnimAssetToolBar", "");
@@ -354,6 +366,7 @@ static void ConfigureVisualScriptAsset()
     xiiStandardMenus::MapActions("VisualScriptAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("VisualScriptAssetMenuBar");
     xiiDocumentActions::MapActions("VisualScriptAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("VisualScriptAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("VisualScriptAssetMenuBar", "Menu.Edit");
     xiiEditActions::MapActions("VisualScriptAssetMenuBar", "Menu.Edit", false, false);
   }
@@ -363,7 +376,7 @@ static void ConfigureVisualScriptAsset()
     xiiActionMapManager::RegisterActionMap("VisualScriptAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("VisualScriptAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("VisualScriptAssetToolBar", "");
-    xiiAssetActions::MapActions("VisualScriptAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("VisualScriptAssetToolBar", true);
     xiiVisualScriptActions::MapActions("VisualScriptAssetToolBar", "");
   }
 }
@@ -378,6 +391,7 @@ static void ConfigureDecalAsset()
     xiiStandardMenus::MapActions("DecalAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("DecalAssetMenuBar");
     xiiDocumentActions::MapActions("DecalAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("DecalAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("DecalAssetMenuBar", "Menu.Edit");
   }
 
@@ -386,7 +400,7 @@ static void ConfigureDecalAsset()
     xiiActionMapManager::RegisterActionMap("DecalAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("DecalAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("DecalAssetToolBar", "");
-    xiiAssetActions::MapActions("DecalAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("DecalAssetToolBar", true);
   }
 
   // View Tool Bar
@@ -407,6 +421,7 @@ static void ConfigureAnimationClipAsset()
     xiiStandardMenus::MapActions("AnimationClipAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("AnimationClipAssetMenuBar");
     xiiDocumentActions::MapActions("AnimationClipAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("AnimationClipAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("AnimationClipAssetMenuBar", "Menu.Edit");
   }
 
@@ -415,7 +430,7 @@ static void ConfigureAnimationClipAsset()
     xiiActionMapManager::RegisterActionMap("AnimationClipAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("AnimationClipAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("AnimationClipAssetToolBar", "");
-    xiiAssetActions::MapActions("AnimationClipAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("AnimationClipAssetToolBar", true);
     xiiCommonAssetActions::MapActions("AnimationClipAssetToolBar", "", xiiCommonAssetUiState::Loop | xiiCommonAssetUiState::Pause | xiiCommonAssetUiState::Restart | xiiCommonAssetUiState::SimulationSpeed | xiiCommonAssetUiState::Grid);
   }
 
@@ -439,6 +454,7 @@ static void ConfigureSkeletonAsset()
     xiiStandardMenus::MapActions("SkeletonAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("SkeletonAssetMenuBar");
     xiiDocumentActions::MapActions("SkeletonAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("SkeletonAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("SkeletonAssetMenuBar", "Menu.Edit");
   }
 
@@ -447,7 +463,7 @@ static void ConfigureSkeletonAsset()
     xiiActionMapManager::RegisterActionMap("SkeletonAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("SkeletonAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("SkeletonAssetToolBar", "");
-    xiiAssetActions::MapActions("SkeletonAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("SkeletonAssetToolBar", true);
     xiiCommonAssetActions::MapActions("SkeletonAssetToolBar", "", xiiCommonAssetUiState::Grid);
     xiiSkeletonActions::MapActions("SkeletonAssetToolBar", "");
   }
@@ -468,6 +484,7 @@ static void ConfigureAnimatedMeshAsset()
     xiiStandardMenus::MapActions("AnimatedMeshAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("AnimatedMeshAssetMenuBar");
     xiiDocumentActions::MapActions("AnimatedMeshAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("AnimatedMeshAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("AnimatedMeshAssetMenuBar", "Menu.Edit");
   }
 
@@ -476,7 +493,7 @@ static void ConfigureAnimatedMeshAsset()
     xiiActionMapManager::RegisterActionMap("AnimatedMeshAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("AnimatedMeshAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("AnimatedMeshAssetToolBar", "");
-    xiiAssetActions::MapActions("AnimatedMeshAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("AnimatedMeshAssetToolBar", true);
     xiiCommonAssetActions::MapActions("AnimatedMeshAssetToolBar", "", xiiCommonAssetUiState::Grid);
   }
 
@@ -496,6 +513,7 @@ static void ConfigureImageDataAsset()
     xiiStandardMenus::MapActions("ImageDataAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("ImageDataAssetMenuBar");
     xiiDocumentActions::MapActions("ImageDataAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("ImageDataAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("ImageDataAssetMenuBar", "Menu.Edit");
   }
 
@@ -504,7 +522,7 @@ static void ConfigureImageDataAsset()
     xiiActionMapManager::RegisterActionMap("ImageDataAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("ImageDataAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("ImageDataAssetToolBar", "");
-    xiiAssetActions::MapActions("ImageDataAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("ImageDataAssetToolBar", true);
   }
 
   // View Tool Bar
@@ -524,6 +542,7 @@ static void ConfigureStateMachineAsset()
     xiiStandardMenus::MapActions("StateMachineAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
     xiiProjectActions::MapActions("StateMachineAssetMenuBar");
     xiiDocumentActions::MapActions("StateMachineAssetMenuBar", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("StateMachineAssetMenuBar", "Menu.File");
     xiiCommandHistoryActions::MapActions("StateMachineAssetMenuBar", "Menu.Edit");
     xiiEditActions::MapActions("StateMachineAssetMenuBar", "Menu.Edit", false, false);
   }
@@ -533,7 +552,7 @@ static void ConfigureStateMachineAsset()
     xiiActionMapManager::RegisterActionMap("StateMachineAssetToolBar").IgnoreResult();
     xiiDocumentActions::MapActions("StateMachineAssetToolBar", "", true);
     xiiCommandHistoryActions::MapActions("StateMachineAssetToolBar", "");
-    xiiAssetActions::MapActions("StateMachineAssetToolBar", true);
+    xiiAssetActions::MapToolBarActions("StateMachineAssetToolBar", true);
   }
 }
 

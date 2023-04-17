@@ -261,7 +261,7 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::x
 
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        auto& info = xiiBindings[i];
+        auto& info         = xiiBindings[i];
         auto& resourceInfo = boundResources[i];
 
         xiiShaderDescriptorSetLayoutBinding& binding = set.Bindings.ExpandAndGetRef();

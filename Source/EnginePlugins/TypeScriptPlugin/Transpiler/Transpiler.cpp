@@ -49,7 +49,7 @@ void xiiTypeScriptTranspiler::FinishLoadTranspiler()
   xiiTaskSystem::WaitForGroup(m_LoadTaskGroup);
 }
 
-xiiResult xiiTypeScriptTranspiler::TranspileString(const char* szString, xiiStringBuilder& out_Result)
+xiiResult xiiTypeScriptTranspiler::TranspileString(const char* szString, xiiStringBuilder& out_sResult)
 {
   XII_LOG_BLOCK("TranspileString");
 
@@ -82,13 +82,13 @@ xiiResult xiiTypeScriptTranspiler::TranspileString(const char* szString, xiiStri
     XII_DUK_RETURN_AND_VERIFY_STACK(duk, XII_FAILURE, 0);
   }
 
-  out_Result = m_Transpiler.GetStringValue(-1); // [ global ts result ]
-  m_Transpiler.PopStack(3);                     // [ ]
+  out_sResult = m_Transpiler.GetStringValue(-1); // [ global ts result ]
+  m_Transpiler.PopStack(3);                      // [ ]
 
   XII_DUK_RETURN_AND_VERIFY_STACK(duk, XII_SUCCESS, 0);
 }
 
-xiiResult xiiTypeScriptTranspiler::TranspileFile(const char* szFile, xiiUInt64 uiSkipIfFileHash, xiiStringBuilder& out_Result, xiiUInt64& out_uiFileHash)
+xiiResult xiiTypeScriptTranspiler::TranspileFile(const char* szFile, xiiUInt64 uiSkipIfFileHash, xiiStringBuilder& out_sResult, xiiUInt64& out_uiFileHash)
 {
   XII_LOG_BLOCK("TranspileFile", szFile);
 
@@ -114,10 +114,10 @@ xiiResult xiiTypeScriptTranspiler::TranspileFile(const char* szFile, xiiUInt64 u
   if (uiSkipIfFileHash == out_uiFileHash)
     return XII_SUCCESS;
 
-  return TranspileString(source, out_Result);
+  return TranspileString(source, out_sResult);
 }
 
-xiiResult xiiTypeScriptTranspiler::TranspileFileAndStoreJS(const char* szFile, xiiStringBuilder& out_Result)
+xiiResult xiiTypeScriptTranspiler::TranspileFileAndStoreJS(const char* szFile, xiiStringBuilder& out_sResult)
 {
   XII_LOG_BLOCK("TranspileFileAndStoreJS", szFile);
 
@@ -135,11 +135,11 @@ xiiResult xiiTypeScriptTranspiler::TranspileFileAndStoreJS(const char* szFile, x
     xiiFileReader fileIn;
     if (fileIn.Open(sOutFile).Succeeded())
     {
-      out_Result.ReadAll(fileIn);
+      out_sResult.ReadAll(fileIn);
 
-      if (out_Result.StartsWith_NoCase("/*SOURCE-HASH:"))
+      if (out_sResult.StartsWith_NoCase("/*SOURCE-HASH:"))
       {
-        xiiStringView sHashView = out_Result.GetView();
+        xiiStringView sHashView = out_sResult.GetView();
         sHashView.Shrink(14, 0);
 
         // try to extract the hash
@@ -151,7 +151,7 @@ xiiResult xiiTypeScriptTranspiler::TranspileFileAndStoreJS(const char* szFile, x
     }
   }
 
-  XII_SUCCEED_OR_RETURN(TranspileFile(szFile, uiExpectedFileHash, out_Result, uiActualFileHash));
+  XII_SUCCEED_OR_RETURN(TranspileFile(szFile, uiExpectedFileHash, out_sResult, uiActualFileHash));
 
   if (uiExpectedFileHash != uiActualFileHash)
   {
@@ -164,9 +164,9 @@ xiiResult xiiTypeScriptTranspiler::TranspileFileAndStoreJS(const char* szFile, x
 
     xiiStringBuilder sHashHeader;
     sHashHeader.Format("/*SOURCE-HASH:{}*/\n", xiiArgU(uiActualFileHash, 16, true, 16, true));
-    out_Result.Prepend(sHashHeader);
+    out_sResult.Prepend(sHashHeader);
 
-    XII_SUCCEED_OR_RETURN(fileOut.WriteBytes(out_Result.GetData(), out_Result.GetElementCount()));
+    XII_SUCCEED_OR_RETURN(fileOut.WriteBytes(out_sResult.GetData(), out_sResult.GetElementCount()));
     xiiLog::Success("Transpiled '{}'", szFile);
   }
 

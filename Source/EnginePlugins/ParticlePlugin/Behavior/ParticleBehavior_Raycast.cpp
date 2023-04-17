@@ -69,47 +69,47 @@ enum class BehaviorRaycastVersion
 };
 
 
-void xiiParticleBehaviorFactory_Raycast::Save(xiiStreamWriter& stream) const
+void xiiParticleBehaviorFactory_Raycast::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)BehaviorRaycastVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_uiCollisionLayer;
-  stream << m_sOnCollideEvent;
+  inout_stream << m_uiCollisionLayer;
+  inout_stream << m_sOnCollideEvent;
 
   xiiParticleRaycastHitReaction::StorageType hr = m_Reaction.GetValue();
-  stream << hr;
+  inout_stream << hr;
 
-  stream << m_fBounceFactor;
+  inout_stream << m_fBounceFactor;
 }
 
-void xiiParticleBehaviorFactory_Raycast::Load(xiiStreamReader& stream)
+void xiiParticleBehaviorFactory_Raycast::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)BehaviorRaycastVersion::Version_Current, "Invalid version {0}", uiVersion);
 
   if (uiVersion >= 2)
   {
-    stream >> m_uiCollisionLayer;
-    stream >> m_sOnCollideEvent;
+    inout_stream >> m_uiCollisionLayer;
+    inout_stream >> m_sOnCollideEvent;
 
     xiiParticleRaycastHitReaction::StorageType hr;
-    stream >> hr;
+    inout_stream >> hr;
     m_Reaction.SetValue(hr);
   }
 
   if (uiVersion >= 3)
   {
-    stream >> m_fBounceFactor;
+    inout_stream >> m_fBounceFactor;
   }
 }
 
-void xiiParticleBehaviorFactory_Raycast::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_FinalizerDeps) const
+void xiiParticleBehaviorFactory_Raycast::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_finalizerDeps) const
 {
-  inout_FinalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_ApplyVelocity>());
-  inout_FinalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_LastPosition>());
+  inout_finalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_ApplyVelocity>());
+  inout_finalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_LastPosition>());
 }
 
 //////////////////////////////////////////////////////////////////////////

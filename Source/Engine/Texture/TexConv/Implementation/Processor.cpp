@@ -314,12 +314,15 @@ xiiResult xiiTexConvProcessor::GenerateLowResOutput(const xiiImage& srcImg, xiiI
 
   XII_PROFILE_SCOPE("GenerateLowResOutput");
 
+  // Do not early out here in this case, otherwise external processes may consider the output to be incomplete.
+#if 0
   if (srcImg.GetNumMipLevels() <= uiLowResMip)
   {
     // probably just a low-resolution input image, do not generate output, but also do not fail
     xiiLog::Warning("LowRes image not generated, original resolution is already below threshold.");
     return XII_SUCCESS;
   }
+#endif
 
   if (xiiImageUtils::ExtractLowerMipChain(srcImg, dstImg, uiLowResMip).Failed())
   {

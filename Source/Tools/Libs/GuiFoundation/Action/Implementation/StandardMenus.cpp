@@ -18,17 +18,15 @@ xiiActionDescriptorHandle xiiStandardMenus::s_hReportProblem;
 
 void xiiStandardMenus::RegisterActions()
 {
-  s_hMenuFile    = XII_REGISTER_MENU("Menu.File");
-  s_hMenuEdit    = XII_REGISTER_MENU("Menu.Edit");
-  s_hMenuPanels  = XII_REGISTER_DYNAMIC_MENU("Menu.Panels", xiiApplicationPanelsMenuAction, "");
-  s_hMenuProject = XII_REGISTER_MENU("Menu.Project");
-  s_hMenuScene   = XII_REGISTER_MENU("Menu.Scene");
-  s_hMenuView    = XII_REGISTER_MENU("Menu.View");
-  s_hMenuHelp    = XII_REGISTER_MENU("Menu.Help");
-  s_hCheckForUpdates =
-    XII_REGISTER_ACTION_1("Help.CheckForUpdates", xiiActionScope::Global, "Help", "", xiiHelpActions, xiiHelpActions::ButtonType::CheckForUpdates);
-  s_hReportProblem =
-    XII_REGISTER_ACTION_1("Help.ReportProblem", xiiActionScope::Global, "Help", "", xiiHelpActions, xiiHelpActions::ButtonType::ReportProblem);
+  s_hMenuFile        = XII_REGISTER_MENU("Menu.File");
+  s_hMenuEdit        = XII_REGISTER_MENU("Menu.Edit");
+  s_hMenuPanels      = XII_REGISTER_DYNAMIC_MENU("Menu.Panels", xiiApplicationPanelsMenuAction, "");
+  s_hMenuProject     = XII_REGISTER_MENU("Menu.Project");
+  s_hMenuScene       = XII_REGISTER_MENU("Menu.Scene");
+  s_hMenuView        = XII_REGISTER_MENU("Menu.View");
+  s_hMenuHelp        = XII_REGISTER_MENU("Menu.Help");
+  s_hCheckForUpdates = XII_REGISTER_ACTION_1("Help.CheckForUpdates", xiiActionScope::Global, "Help", "", xiiHelpActions, xiiHelpActions::ButtonType::CheckForUpdates);
+  s_hReportProblem   = XII_REGISTER_ACTION_1("Help.ReportProblem", xiiActionScope::Global, "Help", "", xiiHelpActions, xiiHelpActions::ButtonType::ReportProblem);
 }
 
 void xiiStandardMenus::UnregisterActions()

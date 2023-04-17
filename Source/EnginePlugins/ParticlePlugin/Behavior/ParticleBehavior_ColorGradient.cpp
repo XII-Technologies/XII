@@ -42,37 +42,37 @@ void xiiParticleBehaviorFactory_ColorGradient::CopyBehaviorProperties(xiiParticl
   pBehavior->m_InitColor = xiiColor::RebeccaPurple;
 }
 
-void xiiParticleBehaviorFactory_ColorGradient::Save(xiiStreamWriter& stream) const
+void xiiParticleBehaviorFactory_ColorGradient::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = 4;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_hGradient;
+  inout_stream << m_hGradient;
 
   // version 3
-  stream << m_GradientMode;
-  stream << m_fMaxSpeed;
+  inout_stream << m_GradientMode;
+  inout_stream << m_fMaxSpeed;
 
   // Version 4
-  stream << m_TintColor;
+  inout_stream << m_TintColor;
 }
 
-void xiiParticleBehaviorFactory_ColorGradient::Load(xiiStreamReader& stream)
+void xiiParticleBehaviorFactory_ColorGradient::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
-  stream >> m_hGradient;
+  inout_stream >> m_hGradient;
 
   if (uiVersion >= 3)
   {
-    stream >> m_GradientMode;
-    stream >> m_fMaxSpeed;
+    inout_stream >> m_GradientMode;
+    inout_stream >> m_fMaxSpeed;
   }
 
   if (uiVersion >= 4)
   {
-    stream >> m_TintColor;
+    inout_stream >> m_TintColor;
   }
 }
 

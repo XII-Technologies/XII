@@ -92,7 +92,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
     xiiProjectActions::MapActions("SettingsTabMenuBar");
 
     xiiActionMapManager::RegisterActionMap("AssetBrowserToolBar").IgnoreResult();
-    xiiAssetActions::MapActions("AssetBrowserToolBar", false);
+    xiiAssetActions::MapToolBarActions("AssetBrowserToolBar", false);
 
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiFileBrowserAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtFilePropertyWidget(); });
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiAssetBrowserAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtAssetPropertyWidget(); });

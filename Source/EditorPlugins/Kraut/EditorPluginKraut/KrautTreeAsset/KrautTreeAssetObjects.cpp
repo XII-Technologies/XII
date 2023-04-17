@@ -23,7 +23,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiKrautTreeAssetProperties, 1, xiiRTTIDefaultA
     XII_MEMBER_PROPERTY("LodDistanceScale", m_fLodDistanceScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
     XII_MEMBER_PROPERTY("StaticColliderRadius", m_fStaticColliderRadius)->AddAttributes(new xiiDefaultValueAttribute(0.4f), new xiiClampValueAttribute(0.0f, 10.0f)),
     XII_MEMBER_PROPERTY("TreeStiffness", m_fTreeStiffness)->AddAttributes(new xiiDefaultValueAttribute(10.0f), new xiiClampValueAttribute(1.0f, 10000.0f)),
-    XII_MEMBER_PROPERTY("Surface", m_sSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
+    XII_MEMBER_PROPERTY("Surface", m_sSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
     XII_ARRAY_MEMBER_PROPERTY("Materials", m_Materials)->AddAttributes(new xiiContainerAttribute(false, false, false)),
     XII_MEMBER_PROPERTY("DisplayRandomSeed", m_uiRandomSeedForDisplay),
     XII_ARRAY_MEMBER_PROPERTY("GoodRandomSeeds", m_GoodRandomSeeds),

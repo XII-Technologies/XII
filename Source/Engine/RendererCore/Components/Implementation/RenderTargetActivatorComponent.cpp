@@ -12,7 +12,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiRenderTargetActivatorComponent, 1, xiiComponentMode:
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("RenderTarget", GetRenderTargetFile, SetRenderTargetFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_Target")),
+    XII_ACCESSOR_PROPERTY("RenderTarget", GetRenderTargetFile, SetRenderTargetFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_Target", xiiDependencyFlags::Package)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES

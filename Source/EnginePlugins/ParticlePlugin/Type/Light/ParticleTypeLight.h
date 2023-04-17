@@ -16,8 +16,8 @@ public:
   virtual const xiiRTTI* GetTypeType() const override;
   virtual void           CopyTypeProperties(xiiParticleType* pObject, bool bFirstTime) const override;
 
-  virtual void Save(xiiStreamWriter& stream) const override;
-  virtual void Load(xiiStreamReader& stream) override;
+  virtual void Save(xiiStreamWriter& inout_stream) const override;
+  virtual void Load(xiiStreamReader& inout_stream) override;
 
   float     m_fSizeFactor;
   float     m_fIntensity;
@@ -43,7 +43,7 @@ public:
 
   virtual float GetMaxParticleRadius(float fParticleSize) const override { return 0.5f * fParticleSize * m_fSizeFactor; }
 
-  virtual void ExtractTypeRenderData(xiiMsgExtractRenderData& msg, const xiiTransform& instanceTransform) const override;
+  virtual void ExtractTypeRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const override;
 
 protected:
   virtual void Process(xiiUInt64 uiNumElements) override {}

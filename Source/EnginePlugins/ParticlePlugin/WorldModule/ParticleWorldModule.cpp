@@ -110,7 +110,7 @@ void xiiParticleWorldModule::EnsureUpdatesFinished(const xiiWorldModule::UpdateC
   }
 }
 
-void xiiParticleWorldModule::ExtractEffectRenderData(const xiiParticleEffectInstance* pEffect, xiiMsgExtractRenderData& msg, const xiiTransform& systemTransform) const
+void xiiParticleWorldModule::ExtractEffectRenderData(const xiiParticleEffectInstance* pEffect, xiiMsgExtractRenderData& ref_msg, const xiiTransform& systemTransform) const
 {
   XII_ASSERT_DEBUG(xiiTaskSystem::IsTaskGroupFinished(m_EffectUpdateTaskGroup), "Particle Effect Update Task is not finished!");
 
@@ -126,7 +126,7 @@ void xiiParticleWorldModule::ExtractEffectRenderData(const xiiParticleEffectInst
     if (!pSystem->HasActiveParticles() || !pSystem->IsVisible())
       continue;
 
-    pSystem->ExtractSystemRenderData(msg, systemTransform);
+    pSystem->ExtractSystemRenderData(ref_msg, systemTransform);
   }
 }
 

@@ -18,8 +18,8 @@ public:
 
   xiiParticleEventReaction* CreateEventReaction(xiiParticleEffectInstance* pOwner) const;
 
-  virtual void Save(xiiStreamWriter& stream) const;
-  virtual void Load(xiiStreamReader& stream);
+  virtual void Save(xiiStreamWriter& inout_stream) const;
+  virtual void Load(xiiStreamReader& inout_stream);
 
   xiiString m_sEventType;
   xiiUInt8  m_uiProbability = 100;

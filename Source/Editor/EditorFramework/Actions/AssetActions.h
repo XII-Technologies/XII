@@ -10,7 +10,8 @@ public:
   static void RegisterActions();
   static void UnregisterActions();
 
-  static void MapActions(const char* szMapping, bool bDocument);
+  static void MapMenuActions(const char* szMapping, const char* szPath);
+  static void MapToolBarActions(const char* szMapping, bool bDocument);
 
   static xiiActionDescriptorHandle s_hAssetCategory;
   static xiiActionDescriptorHandle s_hTransformAsset;
@@ -18,6 +19,7 @@ public:
   static xiiActionDescriptorHandle s_hResaveAllAssets;
   static xiiActionDescriptorHandle s_hCheckFileSystem;
   static xiiActionDescriptorHandle s_hWriteLookupTable;
+  static xiiActionDescriptorHandle s_hWriteDependencyDGML;
 };
 
 ///
@@ -33,6 +35,7 @@ public:
     ResaveAllAssets,
     CheckFileSystem,
     WriteLookupTable,
+    WriteDependencyDGML,
   };
 
   xiiAssetAction(const xiiActionContext& context, const char* szName, ButtonType button);

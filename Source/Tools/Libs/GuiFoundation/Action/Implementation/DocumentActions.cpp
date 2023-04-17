@@ -33,23 +33,16 @@ xiiActionDescriptorHandle xiiDocumentActions::s_hDocumentCategory;
 
 void xiiDocumentActions::RegisterActions()
 {
-  s_hSaveCategory = XII_REGISTER_CATEGORY("SaveCategory");
-  s_hSave =
-    XII_REGISTER_ACTION_1("Document.Save", xiiActionScope::Document, "Document", "Ctrl+S", xiiDocumentAction, xiiDocumentAction::ButtonType::Save);
-  s_hSaveAll = XII_REGISTER_ACTION_1(
-    "Document.SaveAll", xiiActionScope::Document, "Document", "Ctrl+Shift+S", xiiDocumentAction, xiiDocumentAction::ButtonType::SaveAll);
-  s_hSaveAs =
-    XII_REGISTER_ACTION_1("Document.SaveAs", xiiActionScope::Document, "Document", "", xiiDocumentAction, xiiDocumentAction::ButtonType::SaveAs);
-  s_hCloseCategory = XII_REGISTER_CATEGORY("CloseCategory");
-  s_hClose =
-    XII_REGISTER_ACTION_1("Document.Close", xiiActionScope::Document, "Document", "Ctrl+W", xiiDocumentAction, xiiDocumentAction::ButtonType::Close);
-  s_hOpenContainingFolder = XII_REGISTER_ACTION_1(
-    "Document.OpenContainingFolder", xiiActionScope::Document, "Document", "", xiiDocumentAction, xiiDocumentAction::ButtonType::OpenContainingFolder);
-  s_hCopyAssetGuid = XII_REGISTER_ACTION_1(
-    "Document.CopyAssetGuid", xiiActionScope::Document, "Document", "", xiiDocumentAction, xiiDocumentAction::ButtonType::CopyAssetGuid);
-  s_hDocumentCategory = XII_REGISTER_CATEGORY("Tools.DocumentCategory");
-  s_hUpdatePrefabs    = XII_REGISTER_ACTION_1(
-    "Prefabs.UpdateAll", xiiActionScope::Document, "Scene", "Ctrl+Shift+P", xiiDocumentAction, xiiDocumentAction::ButtonType::UpdatePrefabs);
+  s_hSaveCategory         = XII_REGISTER_CATEGORY("SaveCategory");
+  s_hSave                 = XII_REGISTER_ACTION_1("Document.Save", xiiActionScope::Document, "Document", "Ctrl+S", xiiDocumentAction, xiiDocumentAction::ButtonType::Save);
+  s_hSaveAll              = XII_REGISTER_ACTION_1("Document.SaveAll", xiiActionScope::Document, "Document", "Ctrl+Shift+S", xiiDocumentAction, xiiDocumentAction::ButtonType::SaveAll);
+  s_hSaveAs               = XII_REGISTER_ACTION_1("Document.SaveAs", xiiActionScope::Document, "Document", "", xiiDocumentAction, xiiDocumentAction::ButtonType::SaveAs);
+  s_hCloseCategory        = XII_REGISTER_CATEGORY("CloseCategory");
+  s_hClose                = XII_REGISTER_ACTION_1("Document.Close", xiiActionScope::Document, "Document", "Ctrl+W", xiiDocumentAction, xiiDocumentAction::ButtonType::Close);
+  s_hOpenContainingFolder = XII_REGISTER_ACTION_1("Document.OpenContainingFolder", xiiActionScope::Document, "Document", "", xiiDocumentAction, xiiDocumentAction::ButtonType::OpenContainingFolder);
+  s_hCopyAssetGuid        = XII_REGISTER_ACTION_1("Document.CopyAssetGuid", xiiActionScope::Document, "Document", "", xiiDocumentAction, xiiDocumentAction::ButtonType::CopyAssetGuid);
+  s_hDocumentCategory     = XII_REGISTER_CATEGORY("Tools.DocumentCategory");
+  s_hUpdatePrefabs        = XII_REGISTER_ACTION_1("Prefabs.UpdateAll", xiiActionScope::Document, "Scene", "Ctrl+Shift+P", xiiDocumentAction, xiiDocumentAction::ButtonType::UpdatePrefabs);
 }
 
 void xiiDocumentActions::UnregisterActions()

@@ -27,6 +27,7 @@ void OnLoadPlugin()
       xiiStandardMenus::MapActions("TypeScriptAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
       xiiProjectActions::MapActions("TypeScriptAssetMenuBar");
       xiiDocumentActions::MapActions("TypeScriptAssetMenuBar", "Menu.File", false);
+      xiiAssetActions::MapMenuActions("TypeScriptAssetMenuBar", "Menu.File");
       xiiCommandHistoryActions::MapActions("TypeScriptAssetMenuBar", "Menu.Edit");
     }
 
@@ -35,7 +36,7 @@ void OnLoadPlugin()
       xiiActionMapManager::RegisterActionMap("TypeScriptAssetToolBar").IgnoreResult();
       xiiDocumentActions::MapActions("TypeScriptAssetToolBar", "", true);
       xiiCommandHistoryActions::MapActions("TypeScriptAssetToolBar", "");
-      xiiAssetActions::MapActions("TypeScriptAssetToolBar", true);
+      xiiAssetActions::MapToolBarActions("TypeScriptAssetToolBar", true);
       xiiTypeScriptActions::MapActions("TypeScriptAssetToolBar", "");
     }
   }

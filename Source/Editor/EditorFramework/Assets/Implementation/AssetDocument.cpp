@@ -93,8 +93,9 @@ xiiTaskGroupID xiiAssetDocument::InternalSaveDocument(AfterSaveCallback callback
 {
   xiiAssetDocumentInfo* pInfo = static_cast<xiiAssetDocumentInfo*>(m_pDocumentInfo);
 
-  pInfo->m_AssetTransformDependencies.Clear();
-  pInfo->m_RuntimeDependencies.Clear();
+  pInfo->m_TransformDependencies.Clear();
+  pInfo->m_ThumbnailDependencies.Clear();
+  pInfo->m_PackageDependencies.Clear();
   pInfo->m_Outputs.Clear();
   pInfo->m_uiSettingsHash = GetDocumentHash();
   pInfo->m_sAssetsDocumentTypeName.Assign(GetDocumentTypeName());
@@ -102,8 +103,9 @@ xiiTaskGroupID xiiAssetDocument::InternalSaveDocument(AfterSaveCallback callback
   UpdateAssetDocumentInfo(pInfo);
 
   // In case someone added an empty reference.
-  pInfo->m_AssetTransformDependencies.Remove(xiiString());
-  pInfo->m_RuntimeDependencies.Remove(xiiString());
+  pInfo->m_TransformDependencies.Remove(xiiString());
+  pInfo->m_ThumbnailDependencies.Remove(xiiString());
+  pInfo->m_PackageDependencies.Remove(xiiString());
 
   return xiiDocument::InternalSaveDocument(callback);
 }
@@ -158,7 +160,7 @@ void xiiAssetDocument::AddPrefabDependencies(const xiiDocumentObject* pObject, x
     if (pMeta->m_CreateFromPrefab.IsValid())
     {
       xiiStringBuilder tmp;
-      pInfo->m_AssetTransformDependencies.Insert(xiiConversionUtils::ToString(pMeta->m_CreateFromPrefab, tmp));
+      pInfo->m_TransformDependencies.Insert(xiiConversionUtils::ToString(pMeta->m_CreateFromPrefab, tmp));
     }
 
     m_DocumentObjectMetaData->EndReadMetaData();
@@ -185,7 +187,8 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
     {
       bInsidePrefab = true;
       xiiStringBuilder tmp;
-      pInfo->m_RuntimeDependencies.Insert(xiiConversionUtils::ToString(pMeta->m_CreateFromPrefab, tmp));
+      pInfo->m_TransformDependencies.Insert(xiiConversionUtils::ToString(pMeta->m_CreateFromPrefab, tmp));
+      pInfo->m_ThumbnailDependencies.Insert(xiiConversionUtils::ToString(pMeta->m_CreateFromPrefab, tmp));
     }
 
     m_DocumentObjectMetaData->EndReadMetaData();
@@ -199,10 +202,20 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
     if (pProp->GetAttributeByType<xiiTemporaryAttribute>() != nullptr)
       continue;
 
-    bool bIsReference  = pProp->GetAttributeByType<xiiAssetBrowserAttribute>() != nullptr;
-    bool bIsDependency = pProp->GetAttributeByType<xiiFileBrowserAttribute>() != nullptr;
+    xiiBitflags<xiiDependencyFlags> depFlags;
+
+    if (auto pAttr = pProp->GetAttributeByType<xiiAssetBrowserAttribute>())
+    {
+      depFlags |= pAttr->GetDependencyFlags();
+    }
+
+    if (auto pAttr = pProp->GetAttributeByType<xiiFileBrowserAttribute>())
+    {
+      depFlags |= pAttr->GetDependencyFlags();
+    }
+
     // add all strings that are marked as asset references or file references
-    if (bIsDependency || bIsReference)
+    if (depFlags != 0)
     {
       switch (pProp->GetCategory())
       {
@@ -219,18 +232,23 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
                 continue;
             }
 
-            const xiiVariant& var = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName());
+            const xiiVariant& value = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName());
 
-            if (var.IsA<xiiString>())
+            if (value.IsA<xiiString>())
             {
-              if (bIsDependency)
-                pInfo->m_AssetTransformDependencies.Insert(var.Get<xiiString>());
-              else
-                pInfo->m_RuntimeDependencies.Insert(var.Get<xiiString>());
+              if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                pInfo->m_TransformDependencies.Insert(value.Get<xiiString>());
+
+              if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                pInfo->m_ThumbnailDependencies.Insert(value.Get<xiiString>());
+
+              if (depFlags.IsSet(xiiDependencyFlags::Package))
+                pInfo->m_PackageDependencies.Insert(value.Get<xiiString>());
             }
           }
         }
         break;
+
         case xiiPropertyCategory::Array:
         case xiiPropertyCategory::Set:
         {
@@ -250,10 +268,14 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
                 {
                   continue;
                 }
-                if (bIsDependency)
-                  pInfo->m_AssetTransformDependencies.Insert(value.Get<xiiString>());
-                else
-                  pInfo->m_RuntimeDependencies.Insert(value.Get<xiiString>());
+                if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                  pInfo->m_TransformDependencies.Insert(value.Get<xiiString>());
+
+                if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                  pInfo->m_ThumbnailDependencies.Insert(value.Get<xiiString>());
+
+                if (depFlags.IsSet(xiiDependencyFlags::Package))
+                  pInfo->m_PackageDependencies.Insert(value.Get<xiiString>());
               }
             }
             else
@@ -261,15 +283,21 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
               for (xiiInt32 i = 0; i < iCount; ++i)
               {
                 xiiVariant value = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName(), i);
-                if (bIsDependency)
-                  pInfo->m_AssetTransformDependencies.Insert(value.Get<xiiString>());
-                else
-                  pInfo->m_RuntimeDependencies.Insert(value.Get<xiiString>());
+
+                if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                  pInfo->m_TransformDependencies.Insert(value.Get<xiiString>());
+
+                if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                  pInfo->m_ThumbnailDependencies.Insert(value.Get<xiiString>());
+
+                if (depFlags.IsSet(xiiDependencyFlags::Package))
+                  pInfo->m_PackageDependencies.Insert(value.Get<xiiString>());
               }
             }
           }
         }
         break;
+
         case xiiPropertyCategory::Map:
           // #TODO Search for exposed params that reference assets.
           if (pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) && pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String)
@@ -287,24 +315,34 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
                 {
                   continue;
                 }
-                if (bIsDependency)
-                  pInfo->m_AssetTransformDependencies.Insert(it.Value().Get<xiiString>());
-                else
-                  pInfo->m_RuntimeDependencies.Insert(it.Value().Get<xiiString>());
+
+                if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                  pInfo->m_TransformDependencies.Insert(it.Value().Get<xiiString>());
+
+                if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                  pInfo->m_ThumbnailDependencies.Insert(it.Value().Get<xiiString>());
+
+                if (depFlags.IsSet(xiiDependencyFlags::Package))
+                  pInfo->m_PackageDependencies.Insert(it.Value().Get<xiiString>());
               }
             }
             else
             {
               for (auto it : varDict)
               {
-                if (bIsDependency)
-                  pInfo->m_AssetTransformDependencies.Insert(it.Value().Get<xiiString>());
-                else
-                  pInfo->m_RuntimeDependencies.Insert(it.Value().Get<xiiString>());
+                if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                  pInfo->m_TransformDependencies.Insert(it.Value().Get<xiiString>());
+
+                if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                  pInfo->m_ThumbnailDependencies.Insert(it.Value().Get<xiiString>());
+
+                if (depFlags.IsSet(xiiDependencyFlags::Package))
+                  pInfo->m_PackageDependencies.Insert(it.Value().Get<xiiString>());
               }
             }
           }
           break;
+
         default:
           break;
       }
@@ -863,7 +901,7 @@ void xiiAssetDocument::SendDocumentOpenMessage(bool bOpen)
 {
   XII_PROFILE_SCOPE("SendDocumentOpenMessage");
 
-  // It is important to have up-to-date lookup tables in the engine process, because document contexts might try to
+  // it is important to have up-to-date lookup tables in the engine process, because document contexts might try to
   // load resources, and if the file redirection does not happen correctly, derived resource types may not be created as they should
   xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
 
@@ -880,7 +918,7 @@ void xiiAssetDocument::SendDocumentOpenMessage(bool bOpen)
 
 namespace
 {
-  static const char* szThumbnailInfoTag = "xiThumb";
+  static const char* szThumbnailInfoTag = "xiiThumb";
 }
 
 xiiResult xiiAssetDocument::ThumbnailInfo::Deserialize(xiiStreamReader& inout_reader)

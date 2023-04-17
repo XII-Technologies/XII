@@ -16,8 +16,8 @@ xiiQtAssetFilter::xiiQtAssetFilter(QObject* pParent) :
 
 struct AssetComparer
 {
-  AssetComparer(xiiQtAssetBrowserModel* model, const xiiHashTable<xiiUuid, xiiSubAsset>& allAssets) :
-    m_Model(model), m_AllAssets(allAssets)
+  AssetComparer(xiiQtAssetBrowserModel* pModel, const xiiHashTable<xiiUuid, xiiSubAsset>& allAssets) :
+    m_Model(pModel), m_AllAssets(allAssets)
   {
   }
 
@@ -249,7 +249,7 @@ void xiiQtAssetBrowserModel::ThumbnailInvalidated(QString sPath, xiiUInt32 uiIma
   }
 }
 
-QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int role) const
+QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int iRole) const
 {
   if (!index.isValid() || index.column() != 0)
     return QVariant();
@@ -266,7 +266,7 @@ QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int role) const
   if (pSubAsset == nullptr)
     return QVariant();
 
-  switch (role)
+  switch (iRole)
   {
     case Qt::DisplayRole:
     {
@@ -297,11 +297,14 @@ QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int role) const
         case xiiAssetInfo::TransformError:
           sToolTip.Append("Transform Error");
           break;
-        case xiiAssetInfo::MissingDependency:
-          sToolTip.Append("Missing Dependency");
+        case xiiAssetInfo::MissingTransformDependency:
+          sToolTip.Append("Missing Transform Dependency");
           break;
-        case xiiAssetInfo::MissingReference:
-          sToolTip.Append("Missing Reference");
+        case xiiAssetInfo::MissingThumbnailDependency:
+          sToolTip.Append("Missing Thumbnail Dependency");
+          break;
+        case xiiAssetInfo::CircularDependency:
+          sToolTip.Append("Circular Dependency");
           break;
         default:
           break;
@@ -362,11 +365,11 @@ Qt::ItemFlags xiiQtAssetBrowserModel::flags(const QModelIndex& index) const
   return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled;
 }
 
-QVariant xiiQtAssetBrowserModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant xiiQtAssetBrowserModel::headerData(int iSection, Qt::Orientation orientation, int iRole) const
 {
-  if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
+  if (orientation == Qt::Horizontal && iRole == Qt::DisplayRole)
   {
-    switch (section)
+    switch (iSection)
     {
       case 0:
         return QString("Asset");
@@ -375,12 +378,12 @@ QVariant xiiQtAssetBrowserModel::headerData(int section, Qt::Orientation orienta
   return QVariant();
 }
 
-QModelIndex xiiQtAssetBrowserModel::index(int row, int column, const QModelIndex& parent) const
+QModelIndex xiiQtAssetBrowserModel::index(int iRow, int iColumn, const QModelIndex& parent) const
 {
-  if (parent.isValid() || column != 0)
+  if (parent.isValid() || iColumn != 0)
     return QModelIndex();
 
-  return createIndex(row, column);
+  return createIndex(iRow, iColumn);
 }
 
 QModelIndex xiiQtAssetBrowserModel::parent(const QModelIndex& index) const

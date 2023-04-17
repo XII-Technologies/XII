@@ -18,37 +18,23 @@ xiiActionDescriptorHandle xiiParticleActions::s_hRenderVisualizers;
 
 void xiiParticleActions::RegisterActions()
 {
-  s_hCategory = XII_REGISTER_CATEGORY("ParticleCategory");
-  s_hPauseEffect =
-    XII_REGISTER_ACTION_1("PFX.Pause", xiiActionScope::Document, "Particles", "Pause", xiiParticleAction, xiiParticleAction::ActionType::PauseEffect);
-  s_hRestartEffect =
-    XII_REGISTER_ACTION_1("PFX.Restart", xiiActionScope::Document, "Particles", "F5", xiiParticleAction, xiiParticleAction::ActionType::RestartEffect);
-  s_hAutoRestart =
-    XII_REGISTER_ACTION_1("PFX.AutoRestart", xiiActionScope::Document, "Particles", "", xiiParticleAction, xiiParticleAction::ActionType::AutoRestart);
+  s_hCategory      = XII_REGISTER_CATEGORY("ParticleCategory");
+  s_hPauseEffect   = XII_REGISTER_ACTION_1("PFX.Pause", xiiActionScope::Document, "Particles", "Pause", xiiParticleAction, xiiParticleAction::ActionType::PauseEffect);
+  s_hRestartEffect = XII_REGISTER_ACTION_1("PFX.Restart", xiiActionScope::Document, "Particles", "F5", xiiParticleAction, xiiParticleAction::ActionType::RestartEffect);
+  s_hAutoRestart   = XII_REGISTER_ACTION_1("PFX.AutoRestart", xiiActionScope::Document, "Particles", "", xiiParticleAction, xiiParticleAction::ActionType::AutoRestart);
 
   s_hSimulationSpeedMenu = XII_REGISTER_MENU_WITH_ICON("PFX.Speed.Menu", ":/EditorPluginParticle/Icons/Speed16.png");
-  s_hSimulationSpeed[0]  = XII_REGISTER_ACTION_2(
-    "PFX.Speed.01", xiiActionScope::Document, "Particles", "Ctrl+1", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 0.1f);
-  s_hSimulationSpeed[1] = XII_REGISTER_ACTION_2(
-    "PFX.Speed.025", xiiActionScope::Document, "Particles", "Ctrl+2", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 0.25f);
-  s_hSimulationSpeed[2] = XII_REGISTER_ACTION_2(
-    "PFX.Speed.05", xiiActionScope::Document, "Particles", "Ctrl+3", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 0.5f);
-  s_hSimulationSpeed[3] = XII_REGISTER_ACTION_2(
-    "PFX.Speed.1", xiiActionScope::Document, "Particles", "Ctrl+4", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 1.0f);
-  s_hSimulationSpeed[4] = XII_REGISTER_ACTION_2(
-    "PFX.Speed.15", xiiActionScope::Document, "Particles", "Ctrl+5", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 1.5f);
-  s_hSimulationSpeed[5] = XII_REGISTER_ACTION_2(
-    "PFX.Speed.2", xiiActionScope::Document, "Particles", "Ctrl+6", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 2.0f);
-  s_hSimulationSpeed[6] = XII_REGISTER_ACTION_2(
-    "PFX.Speed.3", xiiActionScope::Document, "Particles", "Ctrl+7", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 3.0f);
-  s_hSimulationSpeed[7] = XII_REGISTER_ACTION_2(
-    "PFX.Speed.4", xiiActionScope::Document, "Particles", "Ctrl+8", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 4.0f);
-  s_hSimulationSpeed[8] = XII_REGISTER_ACTION_2(
-    "PFX.Speed.5", xiiActionScope::Document, "Particles", "Ctrl+9", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 5.0f);
-  s_hSimulationSpeed[9] = XII_REGISTER_ACTION_2(
-    "PFX.Speed.10", xiiActionScope::Document, "Particles", "Ctrl+0", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 10.0f);
-  s_hRenderVisualizers = XII_REGISTER_ACTION_1(
-    "PFX.Render.Visualizers", xiiActionScope::Document, "Particles", "V", xiiParticleAction, xiiParticleAction::ActionType::RenderVisualizers);
+  s_hSimulationSpeed[0]  = XII_REGISTER_ACTION_2("PFX.Speed.01", xiiActionScope::Document, "Particles", "Ctrl+1", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 0.1f);
+  s_hSimulationSpeed[1]  = XII_REGISTER_ACTION_2("PFX.Speed.025", xiiActionScope::Document, "Particles", "Ctrl+2", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 0.25f);
+  s_hSimulationSpeed[2]  = XII_REGISTER_ACTION_2("PFX.Speed.05", xiiActionScope::Document, "Particles", "Ctrl+3", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 0.5f);
+  s_hSimulationSpeed[3]  = XII_REGISTER_ACTION_2("PFX.Speed.1", xiiActionScope::Document, "Particles", "Ctrl+4", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 1.0f);
+  s_hSimulationSpeed[4]  = XII_REGISTER_ACTION_2("PFX.Speed.15", xiiActionScope::Document, "Particles", "Ctrl+5", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 1.5f);
+  s_hSimulationSpeed[5]  = XII_REGISTER_ACTION_2("PFX.Speed.2", xiiActionScope::Document, "Particles", "Ctrl+6", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 2.0f);
+  s_hSimulationSpeed[6]  = XII_REGISTER_ACTION_2("PFX.Speed.3", xiiActionScope::Document, "Particles", "Ctrl+7", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 3.0f);
+  s_hSimulationSpeed[7]  = XII_REGISTER_ACTION_2("PFX.Speed.4", xiiActionScope::Document, "Particles", "Ctrl+8", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 4.0f);
+  s_hSimulationSpeed[8]  = XII_REGISTER_ACTION_2("PFX.Speed.5", xiiActionScope::Document, "Particles", "Ctrl+9", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 5.0f);
+  s_hSimulationSpeed[9]  = XII_REGISTER_ACTION_2("PFX.Speed.10", xiiActionScope::Document, "Particles", "Ctrl+0", xiiParticleAction, xiiParticleAction::ActionType::SimulationSpeed, 10.0f);
+  s_hRenderVisualizers   = XII_REGISTER_ACTION_1("PFX.Render.Visualizers", xiiActionScope::Document, "Particles", "V", xiiParticleAction, xiiParticleAction::ActionType::RenderVisualizers);
 }
 
 void xiiParticleActions::UnregisterActions()

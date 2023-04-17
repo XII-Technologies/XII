@@ -61,9 +61,12 @@ xiiTriggerDelayModifierComponent;Trigger Delay Modifier
 xiiWindVolumeConeComponent;Cone Wind Volume;;https://xiiengine.net/pages/docs/effects/wind-volume-components.html
 xiiWindVolumeCylinderComponent;Cylinder Wind Volume;;https://xiiengine.net/pages/docs/effects/wind-volume-components.html
 xiiWindVolumeSphereComponent;Sphere Wind Volume;;https://xiiengine.net/pages/docs/effects/wind-volume-components.html
-xiiPathComponent;Path;;https://xiiengine.net/pages/docs/animation/paths/path-component.html
+xiiPathComponent;Path Shape;;https://xiiengine.net/pages/docs/animation/paths/path-component.html
 xiiPathNodeComponent;Path Node;;https://xiiengine.net/pages/docs/animation/paths/path-node-component.html
 xiiFollowPathComponent;Follow Path;;https://xiiengine.net/pages/docs/animation/paths/follow-path-component.html
+xiiTriggerDelayModifierComponent;Trigger Delay Modifier;;https://xiiengine.net/pages/docs/custom-code/game-logic/trigger-delay-modifier-component.html
+xiiCommentComponent;Comment;;https://xiiengine.net/pages/docs/Miscellaneous/components/comment-component.html
+xiiForwardEventsToGameStateComponent;Forward Events To Game State;;https://xiiengine.net/pages/docs/custom-code/game-logic/forward-events-to-game-state-component.html
 
 # Properties
 

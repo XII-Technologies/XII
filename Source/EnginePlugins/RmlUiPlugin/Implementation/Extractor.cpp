@@ -25,25 +25,25 @@ namespace xiiRmlUiInternal
     }
   }
 
-  void Extractor::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices, Rml::TextureHandle texture, const Rml::Vector2f& translation)
+  void Extractor::RenderGeometry(Rml::Vertex* pVertices, int iNum_vertices, int* pIndices, int iNum_indices, Rml::TextureHandle texture, const Rml::Vector2f& translation)
   {
     // Should never be called since we are using compiled geometry
     XII_ASSERT_NOT_IMPLEMENTED;
   }
 
-  Rml::CompiledGeometryHandle Extractor::CompileGeometry(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices, Rml::TextureHandle texture)
+  Rml::CompiledGeometryHandle Extractor::CompileGeometry(Rml::Vertex* pVertices, int iNum_vertices, int* pIndices, int iNum_indices, Rml::TextureHandle texture)
   {
     CompiledGeometry geometry;
-    geometry.m_uiTriangleCount = num_indices / 3;
+    geometry.m_uiTriangleCount = iNum_indices / 3;
 
     // vertices
     {
       xiiDynamicArray<Vertex> vertexStorage(xiiFrameAllocator::GetCurrentAllocator());
-      vertexStorage.SetCountUninitialized(num_vertices);
+      vertexStorage.SetCountUninitialized(iNum_vertices);
 
       for (xiiUInt32 i = 0; i < vertexStorage.GetCount(); ++i)
       {
-        auto& srcVertex       = vertices[i];
+        auto& srcVertex       = pVertices[i];
         auto& destVertex      = vertexStorage[i];
         destVertex.m_Position = xiiVec3(srcVertex.position.x, srcVertex.position.y, 0);
         destVertex.m_TexCoord = xiiVec2(srcVertex.tex_coord.x, srcVertex.tex_coord.y);
@@ -62,10 +62,10 @@ namespace xiiRmlUiInternal
     {
       xiiGALBufferCreationDescription desc;
       desc.m_uiStructSize = sizeof(xiiUInt32);
-      desc.m_uiTotalSize  = num_indices * desc.m_uiStructSize;
+      desc.m_uiTotalSize  = iNum_indices * desc.m_uiStructSize;
       desc.m_BufferType   = xiiGALBufferType::IndexBuffer;
 
-      geometry.m_hIndexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc, xiiMakeArrayPtr(indices, num_indices).ToByteArray());
+      geometry.m_hIndexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc, xiiMakeArrayPtr(pIndices, iNum_indices).ToByteArray());
     }
 
     // texture
@@ -109,19 +109,19 @@ namespace xiiRmlUiInternal
 
   void Extractor::ReleaseCompiledGeometry(Rml::CompiledGeometryHandle geometry_handle) { m_ReleasedCompiledGeometry.PushBack({xiiRenderWorld::GetFrameCounter(), GeometryId::FromRml(geometry_handle)}); }
 
-  void Extractor::EnableScissorRegion(bool enable) { m_bEnableScissorRect = enable; }
+  void Extractor::EnableScissorRegion(bool bEnable) { m_bEnableScissorRect = bEnable; }
 
-  void Extractor::SetScissorRegion(int x, int y, int width, int height) { m_ScissorRect = xiiRectFloat(static_cast<float>(x), static_cast<float>(y), static_cast<float>(width), static_cast<float>(height)); }
+  void Extractor::SetScissorRegion(int x, int y, int iWidth, int iHeight) { m_ScissorRect = xiiRectFloat(static_cast<float>(x), static_cast<float>(y), static_cast<float>(iWidth), static_cast<float>(iHeight)); }
 
-  bool Extractor::LoadTexture(Rml::TextureHandle& texture_handle, Rml::Vector2i& texture_dimensions, const Rml::String& source)
+  bool Extractor::LoadTexture(Rml::TextureHandle& ref_texture_handle, Rml::Vector2i& ref_texture_dimensions, const Rml::String& sSource)
   {
-    xiiTexture2DResourceHandle hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(source.c_str());
+    xiiTexture2DResourceHandle hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(sSource.c_str());
 
     xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, xiiResourceAcquireMode::BlockTillLoaded);
     if (pTexture.GetAcquireResult() == xiiResourceAcquireResult::Final)
     {
-      texture_handle     = m_Textures.Insert(hTexture).ToRml();
-      texture_dimensions = Rml::Vector2i(pTexture->GetWidth(), pTexture->GetHeight());
+      ref_texture_handle     = m_Textures.Insert(hTexture).ToRml();
+      ref_texture_dimensions = Rml::Vector2i(pTexture->GetWidth(), pTexture->GetHeight());
 
       return true;
     }
@@ -129,13 +129,13 @@ namespace xiiRmlUiInternal
     return false;
   }
 
-  bool Extractor::GenerateTexture(Rml::TextureHandle& texture_handle, const Rml::byte* source, const Rml::Vector2i& source_dimensions)
+  bool Extractor::GenerateTexture(Rml::TextureHandle& ref_texture_handle, const Rml::byte* pSource, const Rml::Vector2i& source_dimensions)
   {
     xiiUInt32 uiWidth       = source_dimensions.x;
     xiiUInt32 uiHeight      = source_dimensions.y;
     xiiUInt32 uiSizeInBytes = uiWidth * uiHeight * 4;
 
-    xiiUInt64 uiHash = xiiHashingUtils::xxHash64(source, uiSizeInBytes);
+    xiiUInt64 uiHash = xiiHashingUtils::xxHash64(pSource, uiSizeInBytes);
 
     xiiStringBuilder sTextureName;
     sTextureName.Format("RmlUiGeneratedTexture_{}x{}_{}", uiWidth, uiHeight, uiHash);
@@ -145,7 +145,7 @@ namespace xiiRmlUiInternal
     if (!hTexture.IsValid())
     {
       xiiGALSystemMemoryDescription memoryDesc;
-      memoryDesc.m_pData        = const_cast<Rml::byte*>(source);
+      memoryDesc.m_pData        = const_cast<Rml::byte*>(pSource);
       memoryDesc.m_uiRowPitch   = uiWidth * 4;
       memoryDesc.m_uiSlicePitch = uiSizeInBytes;
 
@@ -158,18 +158,18 @@ namespace xiiRmlUiInternal
       hTexture = xiiResourceManager::GetOrCreateResource<xiiTexture2DResource>(sTextureName, std::move(desc));
     }
 
-    texture_handle = m_Textures.Insert(hTexture).ToRml();
+    ref_texture_handle = m_Textures.Insert(hTexture).ToRml();
     return true;
   }
 
   void Extractor::ReleaseTexture(Rml::TextureHandle texture_handle) { XII_VERIFY(m_Textures.Remove(TextureId::FromRml(texture_handle)), "Invalid texture handle"); }
 
-  void Extractor::SetTransform(const Rml::Matrix4f* transform)
+  void Extractor::SetTransform(const Rml::Matrix4f* pTransform)
   {
-    if (transform != nullptr)
+    if (pTransform != nullptr)
     {
       constexpr xiiMatrixLayout::Enum matrixLayout = std::is_same<Rml::Matrix4f, Rml::ColumnMajorMatrix4f>::value ? xiiMatrixLayout::ColumnMajor : xiiMatrixLayout::RowMajor;
-      m_mTransform.SetFromArray(transform->data(), matrixLayout);
+      m_mTransform.SetFromArray(pTransform->data(), matrixLayout);
     }
     else
     {
@@ -177,9 +177,9 @@ namespace xiiRmlUiInternal
     }
   }
 
-  void Extractor::BeginExtraction(const xiiVec2I32& offset)
+  void Extractor::BeginExtraction(const xiiVec2I32& vOffset)
   {
-    m_vOffset    = xiiVec2(static_cast<float>(offset.x), static_cast<float>(offset.y));
+    m_vOffset    = xiiVec2(static_cast<float>(vOffset.x), static_cast<float>(vOffset.y));
     m_mTransform = xiiMat4::IdentityMatrix();
 
     m_Batches.Clear();

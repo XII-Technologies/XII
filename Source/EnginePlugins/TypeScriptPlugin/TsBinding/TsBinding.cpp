@@ -72,7 +72,7 @@ xiiTypeScriptBinding* xiiTypeScriptBinding::RetrieveBinding(duk_context* pDuk)
   return pBinding;
 }
 
-xiiResult xiiTypeScriptBinding::Initialize(xiiWorld& world)
+xiiResult xiiTypeScriptBinding::Initialize(xiiWorld& ref_world)
 {
   XII_LOG_BLOCK("Initialize TypeScript Binding");
   XII_PROFILE_SCOPE("Initialize TypeScript Binding");
@@ -84,7 +84,7 @@ xiiResult xiiTypeScriptBinding::Initialize(xiiWorld& world)
 
   m_Duk.RegisterGlobalFunction("__CPP_Binding_RegisterMessageHandler", &xiiTypeScriptBinding::__CPP_Binding_RegisterMessageHandler, 2);
 
-  StoreWorld(&world);
+  StoreWorld(&ref_world);
 
   SetupRttiFunctionBindings();
   SetupRttiPropertyBindings();
@@ -107,7 +107,7 @@ xiiResult xiiTypeScriptBinding::Initialize(xiiWorld& world)
   return XII_SUCCESS;
 }
 
-xiiResult xiiTypeScriptBinding::LoadComponent(const xiiUuid& typeGuid, TsComponentTypeInfo& out_TypeInfo)
+xiiResult xiiTypeScriptBinding::LoadComponent(const xiiUuid& typeGuid, TsComponentTypeInfo& out_typeInfo)
 {
   if (!m_bInitialized || !typeGuid.IsValid())
   {
@@ -120,7 +120,7 @@ xiiResult xiiTypeScriptBinding::LoadComponent(const xiiUuid& typeGuid, TsCompone
 
     if (itLoaded.IsValid())
     {
-      out_TypeInfo = m_TsComponentTypes.Find(typeGuid);
+      out_typeInfo = m_TsComponentTypes.Find(typeGuid);
       return itLoaded.Value() ? XII_SUCCESS : XII_FAILURE;
     }
   }
@@ -164,18 +164,18 @@ xiiResult xiiTypeScriptBinding::LoadComponent(const xiiUuid& typeGuid, TsCompone
 
   bLoaded = true;
 
-  out_TypeInfo = m_TsComponentTypes.FindOrAdd(typeGuid, nullptr);
+  out_typeInfo = m_TsComponentTypes.FindOrAdd(typeGuid, nullptr);
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiTypeScriptBinding::FindScriptComponentInfo(const char* szComponentType, TsComponentTypeInfo& out_TypeInfo)
+xiiResult xiiTypeScriptBinding::FindScriptComponentInfo(const char* szComponentType, TsComponentTypeInfo& out_typeInfo)
 {
   for (auto it : m_TsComponentTypes)
   {
     if (it.Value().m_sComponentTypeName == szComponentType)
     {
-      out_TypeInfo = it;
+      out_typeInfo = it;
       return XII_SUCCESS;
     }
   }
@@ -256,9 +256,9 @@ xiiUInt32 xiiTypeScriptBinding::AcquireStashObjIndex()
   return idx;
 }
 
-void xiiTypeScriptBinding::ReleaseStashObjIndex(xiiUInt32 idx)
+void xiiTypeScriptBinding::ReleaseStashObjIndex(xiiUInt32 uiIdx)
 {
-  m_FreeStashObjIdx.PushBack(idx);
+  m_FreeStashObjIdx.PushBack(uiIdx);
 }
 
 void xiiTypeScriptBinding::StoreReferenceInStash(duk_context* pDuk, xiiUInt32 uiStashIdx)

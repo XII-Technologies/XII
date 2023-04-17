@@ -45,9 +45,9 @@ void xiiParticleBehaviorFactory_Flies::CopyBehaviorProperties(xiiParticleBehavio
   pBehavior->m_MaxSteeringAngle    = m_MaxSteeringAngle;
 }
 
-void xiiParticleBehaviorFactory_Flies::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_FinalizerDeps) const
+void xiiParticleBehaviorFactory_Flies::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_finalizerDeps) const
 {
-  inout_FinalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_ApplyVelocity>());
+  inout_finalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_ApplyVelocity>());
 }
 
 enum class BehaviorFliesVersion
@@ -60,28 +60,28 @@ enum class BehaviorFliesVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleBehaviorFactory_Flies::Save(xiiStreamWriter& stream) const
+void xiiParticleBehaviorFactory_Flies::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)BehaviorFliesVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_fSpeed;
-  stream << m_fPathLength;
-  stream << m_fMaxEmitterDistance;
-  stream << m_MaxSteeringAngle;
+  inout_stream << m_fSpeed;
+  inout_stream << m_fPathLength;
+  inout_stream << m_fMaxEmitterDistance;
+  inout_stream << m_MaxSteeringAngle;
 }
 
-void xiiParticleBehaviorFactory_Flies::Load(xiiStreamReader& stream)
+void xiiParticleBehaviorFactory_Flies::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)BehaviorFliesVersion::Version_Current, "Invalid version {0}", uiVersion);
 
-  stream >> m_fSpeed;
-  stream >> m_fPathLength;
-  stream >> m_fMaxEmitterDistance;
-  stream >> m_MaxSteeringAngle;
+  inout_stream >> m_fSpeed;
+  inout_stream >> m_fPathLength;
+  inout_stream >> m_fMaxEmitterDistance;
+  inout_stream >> m_MaxSteeringAngle;
 }
 
 void xiiParticleBehavior_Flies::CreateRequiredStreams()

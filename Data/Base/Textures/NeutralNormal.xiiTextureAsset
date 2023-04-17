@@ -16,8 +16,15 @@ o
 		Uuid %DocumentID{u4{15840237980637101481,5475314895401003152}}
 		u4 %Hash{13423080357050126686}
 		VarArray %MetaInfo{}
-		VarArray %Outputs{}
-		VarArray %References{}
+		VarArray %Outputs
+		{
+			s{"LOWRES"}
+		}
+		VarArray %PackageDeps{}
+		VarArray %References
+		{
+			s{"Textures/NeutralNormal.tga"}
+		}
 	}
 }
 }

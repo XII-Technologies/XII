@@ -57,31 +57,31 @@ enum class BehaviorBoundsVersion
   Version_Current = Version_Count - 1
 };
 
-void xiiParticleBehaviorFactory_Bounds::Save(xiiStreamWriter& stream) const
+void xiiParticleBehaviorFactory_Bounds::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = (int)BehaviorBoundsVersion::Version_Current;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_vPositionOffset;
-  stream << m_vBoxExtents;
+  inout_stream << m_vPositionOffset;
+  inout_stream << m_vBoxExtents;
 
   // version 1
-  stream << m_OutOfBoundsMode;
+  inout_stream << m_OutOfBoundsMode;
 }
 
-void xiiParticleBehaviorFactory_Bounds::Load(xiiStreamReader& stream)
+void xiiParticleBehaviorFactory_Bounds::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion <= (int)BehaviorBoundsVersion::Version_Current, "Invalid version {0}", uiVersion);
 
-  stream >> m_vPositionOffset;
-  stream >> m_vBoxExtents;
+  inout_stream >> m_vPositionOffset;
+  inout_stream >> m_vBoxExtents;
 
   if (uiVersion >= 1)
   {
-    stream >> m_OutOfBoundsMode;
+    inout_stream >> m_OutOfBoundsMode;
   }
 }
 

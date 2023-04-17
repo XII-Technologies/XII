@@ -45,25 +45,25 @@ void xiiParticleBehaviorFactory_Gravity::CopyBehaviorProperties(xiiParticleBehav
   pBehavior->m_pPhysicsModule = (xiiPhysicsWorldModuleInterface*)pBehavior->GetOwnerSystem()->GetOwnerWorldModule()->GetCachedWorldModule(xiiGetStaticRTTI<xiiPhysicsWorldModuleInterface>());
 }
 
-void xiiParticleBehaviorFactory_Gravity::Save(xiiStreamWriter& stream) const
+void xiiParticleBehaviorFactory_Gravity::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = 1;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_fGravityFactor;
+  inout_stream << m_fGravityFactor;
 }
 
-void xiiParticleBehaviorFactory_Gravity::Load(xiiStreamReader& stream)
+void xiiParticleBehaviorFactory_Gravity::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
-  stream >> m_fGravityFactor;
+  inout_stream >> m_fGravityFactor;
 }
 
-void xiiParticleBehaviorFactory_Gravity::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_FinalizerDeps) const
+void xiiParticleBehaviorFactory_Gravity::QueryFinalizerDependencies(xiiSet<const xiiRTTI*>& inout_finalizerDeps) const
 {
-  inout_FinalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_ApplyVelocity>());
+  inout_finalizerDeps.Insert(xiiGetStaticRTTI<xiiParticleFinalizerFactory_ApplyVelocity>());
 }
 
 //////////////////////////////////////////////////////////////////////////

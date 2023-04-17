@@ -17,8 +17,13 @@ o
 		u4 %Hash{17288606896826490208}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
+		VarArray %PackageDeps
+		{
+			s{"{ 0b202e08-a64f-465d-b38e-15b81d161822 }"}
+		}
 		VarArray %References
 		{
+			s{"Shaders/Materials/SkyMaterial.xiiShader"}
 			s{"{ 0b202e08-a64f-465d-b38e-15b81d161822 }"}
 		}
 	}
@@ -427,6 +432,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_Cube;"}
 	}
 }

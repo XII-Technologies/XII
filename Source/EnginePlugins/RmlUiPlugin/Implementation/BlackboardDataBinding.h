@@ -14,8 +14,8 @@ namespace xiiRmlUiInternal
     BlackboardDataBinding(const xiiSharedPtr<xiiBlackboard>& pBlackboard);
     ~BlackboardDataBinding();
 
-    virtual xiiResult Initialize(Rml::Context& context) override;
-    virtual void      Deinitialize(Rml::Context& context) override;
+    virtual xiiResult Initialize(Rml::Context& ref_context) override;
+    virtual void      Deinitialize(Rml::Context& ref_context) override;
     virtual void      Update() override;
 
   private:
@@ -25,13 +25,13 @@ namespace xiiRmlUiInternal
 
     struct EntryWrapper
     {
-      EntryWrapper(xiiBlackboard& blackboard, const xiiHashedString& sName, xiiUInt32 uiChangeCounter) :
-        m_Blackboard(blackboard), m_sName(sName), m_uiChangeCounter(uiChangeCounter)
+      EntryWrapper(xiiBlackboard& ref_blackboard, const xiiHashedString& sName, xiiUInt32 uiChangeCounter) :
+        m_Blackboard(ref_blackboard), m_sName(sName), m_uiChangeCounter(uiChangeCounter)
       {
       }
 
       void SetValue(const Rml::Variant& value);
-      void GetValue(Rml::Variant& out_Value) const;
+      void GetValue(Rml::Variant& out_value) const;
 
       xiiBlackboard&  m_Blackboard;
       xiiHashedString m_sName;

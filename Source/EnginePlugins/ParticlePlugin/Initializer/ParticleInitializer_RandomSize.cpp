@@ -60,24 +60,24 @@ const char* xiiParticleInitializerFactory_RandomSize::GetSizeCurveFile() const
   return m_hCurve.GetResourceID();
 }
 
-void xiiParticleInitializerFactory_RandomSize::Save(xiiStreamWriter& stream) const
+void xiiParticleInitializerFactory_RandomSize::Save(xiiStreamWriter& inout_stream) const
 {
   const xiiUInt8 uiVersion = 2;
-  stream << uiVersion;
+  inout_stream << uiVersion;
 
-  stream << m_hCurve;
-  stream << m_Size.m_Value;
-  stream << m_Size.m_fVariance;
+  inout_stream << m_hCurve;
+  inout_stream << m_Size.m_Value;
+  inout_stream << m_Size.m_fVariance;
 }
 
-void xiiParticleInitializerFactory_RandomSize::Load(xiiStreamReader& stream)
+void xiiParticleInitializerFactory_RandomSize::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  inout_stream >> uiVersion;
 
-  stream >> m_hCurve;
-  stream >> m_Size.m_Value;
-  stream >> m_Size.m_fVariance;
+  inout_stream >> m_hCurve;
+  inout_stream >> m_Size.m_Value;
+  inout_stream >> m_Size.m_fVariance;
 }
 
 
@@ -142,7 +142,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->InlineProperty("Size").IgnoreResult();
   }

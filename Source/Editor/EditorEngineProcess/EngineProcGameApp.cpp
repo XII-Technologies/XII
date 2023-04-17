@@ -496,9 +496,11 @@ xiiEngineProcessDocumentContext* xiiEngineProcessGameApplication::CreateDocument
             }
 
             if (!pDocumentContext)
+            {
               pDocumentContext = pRtti->GetAllocator()->Allocate<xiiEngineProcessDocumentContext>();
+            }
 
-            xiiEngineProcessDocumentContext::AddDocumentContext(pMsg->m_DocumentGuid, pMsg->m_DocumentMetaData, pDocumentContext, &m_IPC);
+            xiiEngineProcessDocumentContext::AddDocumentContext(pMsg->m_DocumentGuid, pMsg->m_DocumentMetaData, pDocumentContext, &m_IPC, pMsg->m_sDocumentType);
             break;
           }
         }

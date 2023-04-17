@@ -16,8 +16,8 @@ public:
   virtual const xiiRTTI* GetEventReactionType() const override;
   virtual void           CopyReactionProperties(xiiParticleEventReaction* pObject, bool bFirstTime) const override;
 
-  virtual void Save(xiiStreamWriter& stream) const override;
-  virtual void Load(xiiStreamReader& stream) override;
+  virtual void Save(xiiStreamWriter& inout_stream) const override;
+  virtual void Load(xiiStreamReader& inout_stream) override;
 
   xiiString                               m_sPrefab;
   xiiEnum<xiiSurfaceInteractionAlignment> m_Alignment;

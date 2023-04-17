@@ -13,7 +13,7 @@ class xiiQtAssetBrowserWidget : public QWidget, public Ui_AssetBrowserWidget
 {
   Q_OBJECT
 public:
-  xiiQtAssetBrowserWidget(QWidget* parent);
+  xiiQtAssetBrowserWidget(QWidget* pParent);
   ~xiiQtAssetBrowserWidget();
 
   void SetDialogMode();
