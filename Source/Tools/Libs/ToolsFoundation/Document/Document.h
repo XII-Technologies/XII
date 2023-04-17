@@ -64,9 +64,9 @@ public:
   /// \name Document State Functions
   ///@{
 
-  bool           IsModified() const { return m_bModified; }
-  bool           IsReadOnly() const { return m_bReadOnly; }
-  const xiiUuid& GetGuid() const { return m_pDocumentInfo->m_DocumentID; }
+  bool          IsModified() const { return m_bModified; }
+  bool          IsReadOnly() const { return m_bReadOnly; }
+  const xiiUuid GetGuid() const { return m_pDocumentInfo ? m_pDocumentInfo->m_DocumentID : xiiUuid(); }
 
   const xiiDocumentObjectManager* GetObjectManager() const { return m_pObjectManager.Borrow(); }
   xiiDocumentObjectManager*       GetObjectManager() { return m_pObjectManager.Borrow(); }
