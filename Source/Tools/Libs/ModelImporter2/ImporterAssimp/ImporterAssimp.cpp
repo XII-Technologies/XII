@@ -19,19 +19,19 @@ namespace xiiModelImporter2
   class aiLogStreamError : public Assimp::LogStream
   {
   public:
-    void write(const char* message) { xiiLog::Warning("AssImp: {0}", message); }
+    void write(const char* szMessage) { xiiLog::Warning("AssImp: {0}", szMessage); }
   };
 
   class aiLogStreamWarning : public Assimp::LogStream
   {
   public:
-    void write(const char* message) { xiiLog::Warning("AssImp: {0}", message); }
+    void write(const char* szMessage) { xiiLog::Warning("AssImp: {0}", szMessage); }
   };
 
   class aiLogStreamInfo : public Assimp::LogStream
   {
   public:
-    void write(const char* message) { xiiLog::Dev("AssImp: {0}", message); }
+    void write(const char* szMessage) { xiiLog::Dev("AssImp: {0}", szMessage); }
   };
 
   xiiResult ImporterAssimp::DoImport()
@@ -116,6 +116,28 @@ namespace xiiModelImporter2
         {
           xiiLog::Error("Recomputing the mesh tangents failed.");
           // do not return failure here, because we can still continue
+        }
+      }
+    }
+
+    if (m_pScene->mNumTextures > 0 && m_pScene->mTextures)
+    {
+      for (xiiUInt32 i = 0; i < m_pScene->mNumTextures; ++i)
+      {
+        const auto&      st       = *m_pScene->mTextures[i];
+        xiiStringBuilder fileName = st.mFilename.C_Str();
+
+        if (fileName.IsEmpty())
+        {
+          fileName.Format("*{}", i);
+        }
+
+        auto& tex = m_OutputTextures[fileName];
+
+        if (st.mHeight == 0 && st.mWidth > 0)
+        {
+          tex.m_sFileFormatExtension = st.achFormatHint;
+          tex.m_RawData              = xiiMakeArrayPtr((const xiiUInt8*)st.pcData, st.mWidth);
         }
       }
     }

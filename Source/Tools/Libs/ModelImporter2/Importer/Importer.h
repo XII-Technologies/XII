@@ -62,7 +62,8 @@ namespace xiiModelImporter2
 
   struct XII_MODELIMPORTER2_DLL OutputTexture
   {
-    xiiDataBuffer m_EmbeddedData; ///< Not yet used / implemented
+    xiiString            m_sFileFormatExtension;
+    xiiConstByteArrayPtr m_RawData;
   };
 
   struct XII_MODELIMPORTER2_DLL OutputMaterial
