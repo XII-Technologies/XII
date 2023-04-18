@@ -3,6 +3,7 @@ param
     [Parameter(Mandatory = $True)] [ValidateSet('Win64vs2019', 'Uwp64vs2019', 'Win64vs2022', 'Uwp64vs2022')][string] $Target,
     [switch]$NoUnityBuild,
     [switch]$NoSubmoduleUpdate,
+    [string]$SolutionName,
     [switch]$BuildDiligentGraphics
 )
 
@@ -47,6 +48,10 @@ else {
     $CMAKE_ARGS += "-DXII_ENABLE_FOLDER_UNITY_FILES:BOOL=ON"
 }
 
+if ($SolutionName -ne "") {
+    $CMAKE_ARGS += "-XII_SOLUTION_NAME:STRING='$SolutionName'"
+}
+
 if ($BuildDiligentGraphics) {
     $CMAKE_ARGS += "-DXII_BUILD_DILIGENT:BOOL=ON"
     $CMAKE_ARGS += "-DXII_BUILD_OPENGL:BOOL=OFF"
@@ -82,6 +87,9 @@ elseif ($Target -eq "Uwp64vs2019") {
     $CMAKE_ARGS += "-B"
     $CMAKE_ARGS += "$PSScriptRoot\Workspace\vs2019x64uwp"
     $CMAKE_ARGS += "-DCMAKE_TOOLCHAIN_FILE=$PSScriptRoot\Code\BuildSystem\CMake\toolchain-winstore.cmake"
+
+    $CMAKE_ARGS += "-DXII_ENABLE_QT_SUPPORT:BOOL=OFF"
+    $CMAKE_ARGS += "-DXII_BUILD_FILTER='UwpProjects'"
 }
 elseif ($Target -eq "Win64vs2022") {
 
@@ -103,6 +111,9 @@ elseif ($Target -eq "Uwp64vs2022") {
     $CMAKE_ARGS += "-B"
     $CMAKE_ARGS += "$PSScriptRoot\Workspace\vs2022x64uwp"
     $CMAKE_ARGS += "-DCMAKE_TOOLCHAIN_FILE=$PSScriptRoot\Code\BuildSystem\CMake\toolchain-winstore.cmake"
+
+    $CMAKE_ARGS += "-DXII_ENABLE_QT_SUPPORT:BOOL=OFF"
+    $CMAKE_ARGS += "-DXII_BUILD_FILTER='UwpProjects'"
 }
 else {
     throw "Unknown target '$Target'."
