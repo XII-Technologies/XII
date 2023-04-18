@@ -134,7 +134,7 @@ bool xiiQtAnimatedMeshAssetDocumentWindow::UpdatePreview()
   msg.m_Materials.SetCount(materials.GetCount());
 
   xiiUInt32 uiSlot       = 0;
-  bool     bHighlighted = false;
+  bool      bHighlighted = false;
 
   for (xiiUInt32 i = 0; i < materials.GetCount(); ++i)
   {
