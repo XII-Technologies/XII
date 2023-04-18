@@ -11,7 +11,6 @@ xiiQtOrbitCamViewWidget::xiiQtOrbitCamViewWidget(xiiQtEngineDocumentWindow* pOwn
 
   m_pOrbitCameraContext = XII_DEFAULT_NEW(xiiOrbitCameraContext, pOwnerWindow, this);
   m_pOrbitCameraContext->SetCamera(&m_pViewConfig->m_Camera);
-  m_pOrbitCameraContext->SetOrbitVolume(xiiVec3(0, 0, 1), xiiVec3(10.0f), xiiVec3(-5, 1, 2), true);
 
   if (bPicking)
   {
@@ -25,9 +24,37 @@ xiiQtOrbitCamViewWidget::xiiQtOrbitCamViewWidget(xiiQtEngineDocumentWindow* pOwn
 xiiQtOrbitCamViewWidget::~xiiQtOrbitCamViewWidget() = default;
 
 
-void xiiQtOrbitCamViewWidget::ConfigureOrbitCameraVolume(const xiiVec3& vCenterPos, const xiiVec3& vHalfBoxSize, const xiiVec3& vDefaultCameraPosition)
+void xiiQtOrbitCamViewWidget::ConfigureFixed(const xiiVec3& vCenterPos, const xiiVec3& vHalfBoxSize, const xiiVec3& vCamPosition)
 {
-  m_pOrbitCameraContext->SetOrbitVolume(vCenterPos, vHalfBoxSize, vDefaultCameraPosition, true);
+  m_pOrbitCameraContext->SetDefaultCameraFixed(vCamPosition);
+  m_pOrbitCameraContext->SetOrbitVolume(vCenterPos, vHalfBoxSize);
+  m_pOrbitCameraContext->MoveCameraToDefaultPosition();
+  m_bSetDefaultCamPos = false;
+}
+
+void xiiQtOrbitCamViewWidget::ConfigureRelative(const xiiVec3& vCenterPos, const xiiVec3& vHalfBoxSize, const xiiVec3& vCamDirection, float fCamDistanceScale)
+{
+  m_pOrbitCameraContext->SetDefaultCameraRelative(vCamDirection, fCamDistanceScale);
+  m_pOrbitCameraContext->SetOrbitVolume(vCenterPos, vHalfBoxSize);
+  m_pOrbitCameraContext->MoveCameraToDefaultPosition();
+  m_bSetDefaultCamPos = true;
+}
+
+void xiiQtOrbitCamViewWidget::SetOrbitVolume(const xiiVec3& vCenterPos, const xiiVec3& vHalfBoxSize)
+{
+  m_pOrbitCameraContext->SetOrbitVolume(vCenterPos, vHalfBoxSize);
+
+  if (m_bSetDefaultCamPos)
+  {
+    if (vHalfBoxSize != xiiVec3(0.1f))
+    {
+      // 0.1f is a hard-coded value for the bounding box, in case nothing is available yet
+      // not pretty, but somehow we need to know when the first 'proper' bounds are available
+
+      m_bSetDefaultCamPos = false;
+      m_pOrbitCameraContext->MoveCameraToDefaultPosition();
+    }
+  }
 }
 
 xiiOrbitCameraContext* xiiQtOrbitCamViewWidget::GetOrbitCamera()

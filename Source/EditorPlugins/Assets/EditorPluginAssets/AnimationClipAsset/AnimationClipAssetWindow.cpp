@@ -45,7 +45,7 @@ xiiQtAnimationClipAssetDocumentWindow::xiiQtAnimationClipAssetDocumentWindow(xii
     m_ViewConfig.ApplyPerspectiveSetting(90);
 
     m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig);
-    m_pViewWidget->ConfigureOrbitCameraVolume(xiiVec3(0, 0, 1), xiiVec3(10.0f), xiiVec3(-5, 1, 2));
+    m_pViewWidget->ConfigureRelative(xiiVec3(0, 0, 1), xiiVec3(5.0f), xiiVec3(5, -2, 3), 2.0f);
     AddViewWidget(m_pViewWidget);
     pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, "AnimationClipAssetViewToolBar");
     setCentralWidget(pContainer);
@@ -105,8 +105,6 @@ xiiQtAnimationClipAssetDocumentWindow::xiiQtAnimationClipAssetDocumentWindow(xii
 
   FinishWindowCreation();
 
-  QueryObjectBBox(0);
-
   GetAnimationClipDocument()->m_CommonAssetUiChangeEvent.AddEventHandler(xiiMakeDelegate(&xiiQtAnimationClipAssetDocumentWindow::CommonAssetUiEventHandler, this));
   GetDocument()->GetCommandHistory()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtAnimationClipAssetDocumentWindow::CommandHistoryEventHandler, this));
 }
@@ -161,10 +159,10 @@ void xiiQtAnimationClipAssetDocumentWindow::SendRedrawMsg()
     pView->SyncToEngine();
   }
 
-  QueryObjectBBox(-1);
+  QueryObjectBBox();
 }
 
-void xiiQtAnimationClipAssetDocumentWindow::QueryObjectBBox(xiiInt32 iPurpose)
+void xiiQtAnimationClipAssetDocumentWindow::QueryObjectBBox(xiiInt32 iPurpose /*= 0*/)
 {
   xiiQuerySelectionBBoxMsgToEngine msg;
   msg.m_uiViewID = 0xFFFFFFFF;
@@ -225,11 +223,9 @@ void xiiQtAnimationClipAssetDocumentWindow::ProcessMessageEventHandler(const xii
 
     if (pMessage->m_vCenter.IsValid() && pMessage->m_vHalfExtents.IsValid())
     {
-      const xiiVec3 vHalfExtents = pMessage->m_vHalfExtents.CompMax(xiiVec3(0.1f));
-
-      m_pViewWidget->GetOrbitCamera()->SetOrbitVolume(pMessage->m_vCenter, vHalfExtents * 2.0f, pMessage->m_vCenter + xiiVec3(5, -2, 3) * vHalfExtents.GetLength() * 0.3f, pMessage->m_iPurpose == 0);
+      m_pViewWidget->SetOrbitVolume(pMessage->m_vCenter, pMessage->m_vHalfExtents.CompMax(xiiVec3(0.1f)));
     }
-    else if (pMessage->m_iPurpose == 0)
+    else
     {
       // try again
       QueryObjectBBox(pMessage->m_iPurpose);
