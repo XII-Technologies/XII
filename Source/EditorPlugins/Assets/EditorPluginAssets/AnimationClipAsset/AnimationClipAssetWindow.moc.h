@@ -45,7 +45,7 @@ protected Q_SLOTS:
 
 private:
   void SendRedrawMsg();
-  void QueryObjectBBox(xiiInt32 iPurpose);
+  void QueryObjectBBox(xiiInt32 iPurpose = 0);
   void UpdateEventTrackEditor();
 
   xiiClock                 m_Clock;

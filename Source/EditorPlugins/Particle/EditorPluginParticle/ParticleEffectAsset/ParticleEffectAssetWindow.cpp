@@ -227,7 +227,8 @@ xiiQtParticleEffectAssetDocumentWindow::xiiQtParticleEffectAssetDocumentWindow(x
     m_ViewConfig.ApplyPerspectiveSetting(90);
 
     m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig);
-    m_pViewWidget->ConfigureOrbitCameraVolume(xiiVec3(0), xiiVec3(5.0f), xiiVec3(-2, 0, 0.5f));
+    m_pViewWidget->ConfigureRelative(xiiVec3(0), xiiVec3(5.0f), xiiVec3(-2, 0, 0.5f), 1.0f);
+
     AddViewWidget(m_pViewWidget);
     xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, "ParticleEffectAssetViewToolBar");
     setCentralWidget(pContainer);

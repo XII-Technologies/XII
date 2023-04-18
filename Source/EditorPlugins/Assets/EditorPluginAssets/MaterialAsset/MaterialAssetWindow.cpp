@@ -111,7 +111,8 @@ xiiQtMaterialAssetDocumentWindow::xiiQtMaterialAssetDocumentWindow(xiiMaterialAs
     m_ViewConfig.ApplyPerspectiveSetting(90, 0.01f, 100.0f);
 
     m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig);
-    m_pViewWidget->ConfigureOrbitCameraVolume(xiiVec3(0), xiiVec3(0.0f), xiiVec3(+0.23f, -0.04f, 0.02f));
+    m_pViewWidget->ConfigureFixed(xiiVec3(0), xiiVec3(0.0f), xiiVec3(+0.23f, -0.04f, 0.02f));
+
     AddViewWidget(m_pViewWidget);
     xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(nullptr, m_pViewWidget, "MaterialAssetViewToolBar");
 

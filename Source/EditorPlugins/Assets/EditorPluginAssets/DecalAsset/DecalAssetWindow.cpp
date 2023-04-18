@@ -46,7 +46,7 @@ xiiQtDecalAssetDocumentWindow::xiiQtDecalAssetDocumentWindow(xiiDecalAssetDocume
     m_ViewConfig.ApplyPerspectiveSetting(90);
 
     m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig);
-    m_pViewWidget->ConfigureOrbitCameraVolume(xiiVec3(0), xiiVec3(0.0f), xiiVec3(2, 0, 0));
+    m_pViewWidget->ConfigureFixed(xiiVec3(0), xiiVec3(0.0f), xiiVec3(2, 0, 0));
     AddViewWidget(m_pViewWidget);
 
     xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(nullptr, m_pViewWidget, "DecalAssetViewToolBar");

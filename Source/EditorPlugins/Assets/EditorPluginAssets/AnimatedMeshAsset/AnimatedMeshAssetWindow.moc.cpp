@@ -45,7 +45,7 @@ xiiQtAnimatedMeshAssetDocumentWindow::xiiQtAnimatedMeshAssetDocumentWindow(xiiAn
     m_ViewConfig.ApplyPerspectiveSetting(90);
 
     m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig);
-    m_pViewWidget->ConfigureOrbitCameraVolume(xiiVec3(0, 0, 1), xiiVec3(10.0f), xiiVec3(-5, 1, 2));
+    m_pViewWidget->ConfigureRelative(xiiVec3(0, 0, 1), xiiVec3(10.0f), xiiVec3(5, -2, 3), 2.0f);
     AddViewWidget(m_pViewWidget);
     pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, "AnimatedMeshAssetViewToolBar");
     setCentralWidget(pContainer);
@@ -67,8 +67,6 @@ xiiQtAnimatedMeshAssetDocumentWindow::xiiQtAnimatedMeshAssetDocumentWindow(xiiAn
   }
 
   FinishWindowCreation();
-
-  QueryObjectBBox(0);
 
   UpdatePreview();
 
@@ -103,10 +101,10 @@ void xiiQtAnimatedMeshAssetDocumentWindow::SendRedrawMsg()
     pView->SyncToEngine();
   }
 
-  QueryObjectBBox(-1);
+  QueryObjectBBox();
 }
 
-void xiiQtAnimatedMeshAssetDocumentWindow::QueryObjectBBox(xiiInt32 iPurpose)
+void xiiQtAnimatedMeshAssetDocumentWindow::QueryObjectBBox(xiiInt32 iPurpose /* = 0*/)
 {
   xiiQuerySelectionBBoxMsgToEngine msg;
   msg.m_uiViewID = 0xFFFFFFFF;
@@ -136,7 +134,7 @@ bool xiiQtAnimatedMeshAssetDocumentWindow::UpdatePreview()
   msg.m_Materials.SetCount(materials.GetCount());
 
   xiiUInt32 uiSlot       = 0;
-  bool      bHighlighted = false;
+  bool     bHighlighted = false;
 
   for (xiiUInt32 i = 0; i < materials.GetCount(); ++i)
   {
@@ -174,11 +172,9 @@ void xiiQtAnimatedMeshAssetDocumentWindow::ProcessMessageEventHandler(const xiiE
 
     if (pMessage->m_vCenter.IsValid() && pMessage->m_vHalfExtents.IsValid())
     {
-      const xiiVec3 vHalfExtents = pMessage->m_vHalfExtents.CompMax(xiiVec3(0.1f));
-
-      m_pViewWidget->GetOrbitCamera()->SetOrbitVolume(pMessage->m_vCenter, vHalfExtents * 2.0f, pMessage->m_vCenter + xiiVec3(5, -2, 3) * vHalfExtents.GetLength() * 0.3f, pMessage->m_iPurpose == 0);
+      m_pViewWidget->SetOrbitVolume(pMessage->m_vCenter, pMessage->m_vHalfExtents.CompMax(xiiVec3(0.1f)));
     }
-    else if (pMessage->m_iPurpose == 0)
+    else
     {
       // try again
       QueryObjectBBox(pMessage->m_iPurpose);

@@ -24,7 +24,7 @@ protected:
 
 private:
   void SendRedrawMsg();
-  void QueryObjectBBox(xiiInt32 iPurpose);
+  void QueryObjectBBox(xiiInt32 iPurpose = 0);
 
   xiiEngineViewConfig        m_ViewConfig;
   xiiQtOrbitCamViewWidget*   m_pViewWidget;
