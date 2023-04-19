@@ -5,14 +5,14 @@ XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(xiiInternal::QuadFloat v)
   m_v = v;
 }
 
-template <xiiInt32 N, xiiMathAcc::Enum acc>
+template <xiiInt32 N, xiiMathFloatBits::Enum acc>
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::GetLength() const
 {
   const xiiSimdFloat squaredLen = GetLengthSquared<N>();
   return squaredLen.GetSqrt<acc>();
 }
 
-template <xiiInt32 N, xiiMathAcc::Enum acc>
+template <xiiInt32 N, xiiMathFloatBits::Enum acc>
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::GetInvLength() const
 {
   const xiiSimdFloat squaredLen = GetLengthSquared<N>();
@@ -25,7 +25,7 @@ XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::GetLengthSquared() const
   return Dot<N>(*this);
 }
 
-template <xiiInt32 N, xiiMathAcc::Enum acc>
+template <xiiInt32 N, xiiMathFloatBits::Enum acc>
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::GetLengthAndNormalize()
 {
   const xiiSimdFloat squaredLen    = GetLengthSquared<N>();
@@ -34,13 +34,13 @@ XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::GetLengthAndNormalize()
   return squaredLen * reciprocalLen;
 }
 
-template <xiiInt32 N, xiiMathAcc::Enum acc>
+template <xiiInt32 N, xiiMathFloatBits::Enum acc>
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetNormalized() const
 {
   return (*this) * GetInvLength<N, acc>();
 }
 
-template <xiiInt32 N, xiiMathAcc::Enum acc>
+template <xiiInt32 N, xiiMathFloatBits::Enum acc>
 XII_ALWAYS_INLINE void xiiSimdVec4f::Normalize()
 {
   *this = GetNormalized<N, acc>();

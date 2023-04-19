@@ -2,13 +2,23 @@
 
 #include <Foundation/Math/Math.h>
 
-struct xiiMathAcc
+struct xiiMathFloatBits
 {
   enum Enum
   {
     FULL,
     BITS_23,
     BITS_12
+  };
+};
+
+struct xiiMathDoubleBits
+{
+  enum Enum
+  {
+    FULL,
+    BITS_27,
+    BITS_14
   };
 };
 

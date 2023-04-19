@@ -2,7 +2,7 @@
 
 XII_ALWAYS_INLINE xiiSimdFloat::xiiSimdFloat()
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
@@ -12,14 +12,14 @@ XII_ALWAYS_INLINE xiiSimdFloat::xiiSimdFloat()
 
 XII_ALWAYS_INLINE xiiSimdFloat::xiiSimdFloat(float f)
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   m_v = _mm_set1_ps(f);
 }
 
 XII_ALWAYS_INLINE xiiSimdFloat::xiiSimdFloat(xiiInt32 i)
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   __m128 v = _mm_cvtsi32_ss(_mm_setzero_ps(), i);
   m_v      = _mm_shuffle_ps(v, v, XII_TO_SHUFFLE(xiiSwizzle::XXXX));
@@ -27,7 +27,7 @@ XII_ALWAYS_INLINE xiiSimdFloat::xiiSimdFloat(xiiInt32 i)
 
 XII_ALWAYS_INLINE xiiSimdFloat::xiiSimdFloat(xiiUInt32 i)
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
   __m128 v = _mm_cvtsi64_ss(_mm_setzero_ps(), i);
@@ -39,7 +39,7 @@ XII_ALWAYS_INLINE xiiSimdFloat::xiiSimdFloat(xiiUInt32 i)
 
 XII_ALWAYS_INLINE xiiSimdFloat::xiiSimdFloat(xiiAngle a)
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   m_v = _mm_set1_ps(a.GetRadian());
 }
@@ -174,13 +174,13 @@ XII_ALWAYS_INLINE bool xiiSimdFloat::operator<=(float f) const
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathAcc::FULL>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathFloatBits::FULL>() const
 {
   return _mm_div_ps(_mm_set1_ps(1.0f), m_v);
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathAcc::BITS_23>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathFloatBits::BITS_23>() const
 {
   __m128 x0 = _mm_rcp_ps(m_v);
 
@@ -191,19 +191,19 @@ XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathAcc::BITS_23>(
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathAcc::BITS_12>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathFloatBits::BITS_12>() const
 {
   return _mm_rcp_ps(m_v);
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathAcc::FULL>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathFloatBits::FULL>() const
 {
   return _mm_div_ps(_mm_set1_ps(1.0f), _mm_sqrt_ps(m_v));
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathAcc::BITS_23>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathFloatBits::BITS_23>() const
 {
   const __m128 x0 = _mm_rsqrt_ps(m_v);
 
@@ -212,27 +212,27 @@ XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathAcc::BITS_23>() c
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathAcc::BITS_12>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathFloatBits::BITS_12>() const
 {
   return _mm_rsqrt_ps(m_v);
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetSqrt<xiiMathAcc::FULL>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetSqrt<xiiMathFloatBits::FULL>() const
 {
   return _mm_sqrt_ps(m_v);
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetSqrt<xiiMathAcc::BITS_23>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetSqrt<xiiMathFloatBits::BITS_23>() const
 {
-  return (*this) * GetInvSqrt<xiiMathAcc::BITS_23>();
+  return (*this) * GetInvSqrt<xiiMathFloatBits::BITS_23>();
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetSqrt<xiiMathAcc::BITS_12>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetSqrt<xiiMathFloatBits::BITS_12>() const
 {
-  return (*this) * GetInvSqrt<xiiMathAcc::BITS_12>();
+  return (*this) * GetInvSqrt<xiiMathFloatBits::BITS_12>();
 }
 
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::Max(const xiiSimdFloat& f) const

@@ -2,12 +2,12 @@
 
 XII_ALWAYS_INLINE xiiSimdVec4b::xiiSimdVec4b()
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4b::xiiSimdVec4b(bool b)
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   xiiUInt32 mask = b ? 0xFFFFFFFF : 0;
   __m128    tmp  = _mm_load_ss((float*)&mask);
@@ -16,7 +16,7 @@ XII_ALWAYS_INLINE xiiSimdVec4b::xiiSimdVec4b(bool b)
 
 XII_ALWAYS_INLINE xiiSimdVec4b::xiiSimdVec4b(bool x, bool y, bool z, bool w)
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   alignas(16) xiiUInt32 mask[4] = {x ? 0xFFFFFFFF : 0, y ? 0xFFFFFFFF : 0, z ? 0xFFFFFFFF : 0, w ? 0xFFFFFFFF : 0};
   m_v                           = _mm_load_ps((float*)mask);

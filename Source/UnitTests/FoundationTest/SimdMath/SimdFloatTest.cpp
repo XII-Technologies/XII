@@ -117,19 +117,19 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdFloat)
     xiiSimdFloat a = 2.0f;
 
     XII_TEST_FLOAT(a.GetReciprocal(), 0.5f, xiiMath::SmallEpsilon<float>());
-    XII_TEST_FLOAT(a.GetReciprocal<xiiMathAcc::FULL>(), 0.5f, xiiMath::SmallEpsilon<float>());
-    XII_TEST_FLOAT(a.GetReciprocal<xiiMathAcc::BITS_23>(), 0.5f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(a.GetReciprocal<xiiMathAcc::BITS_12>(), 0.5f, xiiMath::HugeEpsilon<float>());
+    XII_TEST_FLOAT(a.GetReciprocal<xiiMathFloatBits::FULL>(), 0.5f, xiiMath::SmallEpsilon<float>());
+    XII_TEST_FLOAT(a.GetReciprocal<xiiMathFloatBits::BITS_23>(), 0.5f, xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(a.GetReciprocal<xiiMathFloatBits::BITS_12>(), 0.5f, xiiMath::HugeEpsilon<float>());
 
     XII_TEST_FLOAT(a.GetSqrt(), 1.41421356f, xiiMath::SmallEpsilon<float>());
-    XII_TEST_FLOAT(a.GetSqrt<xiiMathAcc::FULL>(), 1.41421356f, xiiMath::SmallEpsilon<float>());
-    XII_TEST_FLOAT(a.GetSqrt<xiiMathAcc::BITS_23>(), 1.41421356f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(a.GetSqrt<xiiMathAcc::BITS_12>(), 1.41421356f, xiiMath::HugeEpsilon<float>());
+    XII_TEST_FLOAT(a.GetSqrt<xiiMathFloatBits::FULL>(), 1.41421356f, xiiMath::SmallEpsilon<float>());
+    XII_TEST_FLOAT(a.GetSqrt<xiiMathFloatBits::BITS_23>(), 1.41421356f, xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(a.GetSqrt<xiiMathFloatBits::BITS_12>(), 1.41421356f, xiiMath::HugeEpsilon<float>());
 
     XII_TEST_FLOAT(a.GetInvSqrt(), 0.70710678f, xiiMath::SmallEpsilon<float>());
-    XII_TEST_FLOAT(a.GetInvSqrt<xiiMathAcc::FULL>(), 0.70710678f, xiiMath::SmallEpsilon<float>());
-    XII_TEST_FLOAT(a.GetInvSqrt<xiiMathAcc::BITS_23>(), 0.70710678f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(a.GetInvSqrt<xiiMathAcc::BITS_12>(), 0.70710678f, xiiMath::HugeEpsilon<float>());
+    XII_TEST_FLOAT(a.GetInvSqrt<xiiMathFloatBits::FULL>(), 0.70710678f, xiiMath::SmallEpsilon<float>());
+    XII_TEST_FLOAT(a.GetInvSqrt<xiiMathFloatBits::BITS_23>(), 0.70710678f, xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(a.GetInvSqrt<xiiMathFloatBits::BITS_12>(), 0.70710678f, xiiMath::HugeEpsilon<float>());
 
     xiiSimdFloat b = 5.0f;
     XII_TEST_BOOL(a.Max(b) == b);

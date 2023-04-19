@@ -16,7 +16,7 @@
 #  elif defined(__EMSCRIPTEN__)
 #    pragma message("ARCH:'emscripten'")
 #  else
-#    error unhandled clang/gcc architecture
+#    error Unhandled clang/gcc architecture
 #  endif
 #elif defined(_MSC_VER)
 #  define STRINGIFY(s)       STRINGFY_HELPER(s)
