@@ -9,7 +9,7 @@
 #define XII_SSE_AVX2   0x51
 #define XII_SSE_AVX512 0x52
 
-#define XII_SSE_LEVEL XII_SSE_AVX512
+#define XII_SSE_LEVEL XII_SSE_AVX2
 
 #if XII_SSE_LEVEL >= XII_SSE_20
 #  include <emmintrin.h>
