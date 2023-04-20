@@ -37,34 +37,34 @@ public:
   void Store(float* pFloats) const; // [tested]
 
 public:
-  template <xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   xiiSimdVec4f GetReciprocal() const; // [tested]
 
-  template <xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   xiiSimdVec4f GetSqrt() const; // [tested]
 
-  template <xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   xiiSimdVec4f GetInvSqrt() const; // [tested]
 
-  template <xiiInt32 N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiInt32 N, xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   xiiSimdFloat GetLength() const; // [tested]
 
-  template <xiiInt32 N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiInt32 N, xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   xiiSimdFloat GetInvLength() const; // [tested]
 
   template <xiiInt32 N>
   xiiSimdFloat GetLengthSquared() const; // [tested]
 
-  template <xiiInt32 N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiInt32 N, xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   xiiSimdFloat GetLengthAndNormalize(); // [tested]
 
-  template <xiiInt32 N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiInt32 N, xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   xiiSimdVec4f GetNormalized() const; // [tested]
 
-  template <xiiInt32 N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiInt32 N, xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   void Normalize(); // [tested]
 
-  template <xiiInt32 N, xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiInt32 N, xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   void NormalizeIfNotZero(const xiiSimdFloat& fEpsilon = xiiMath::SmallEpsilon<float>()); // [tested]
 
   template <xiiInt32 N>
@@ -110,7 +110,7 @@ public:
 
   xiiSimdVec4f CompMul(const xiiSimdVec4f& v) const; // [tested]
 
-  template <xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   xiiSimdVec4f CompDiv(const xiiSimdVec4f& v) const; // [tested]
 
   xiiSimdVec4f CompMin(const xiiSimdVec4f& rhs) const; // [tested]

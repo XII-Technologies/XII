@@ -2,7 +2,7 @@
 
 XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i()
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   m_v = _mm_set1_epi32(0xCDCDCDCD);
@@ -11,14 +11,14 @@ XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i()
 
 XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i(xiiInt32 xyzw)
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   m_v = _mm_set1_epi32(xyzw);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i(xiiInt32 x, xiiInt32 y, xiiInt32 z, xiiInt32 w)
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   m_v = _mm_setr_epi32(x, y, z, w);
 }

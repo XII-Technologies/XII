@@ -71,13 +71,13 @@ XII_ALWAYS_INLINE void xiiSimdVec4f::Store(float* pFloats) const
   }
 }
 
-template <xiiMathAcc::Enum acc>
+template <xiiMathFloatBits::Enum acc>
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal() const
 {
   return xiiVec4(1.0f).CompDiv(m_v);
 }
 
-template <xiiMathAcc::Enum acc>
+template <xiiMathFloatBits::Enum acc>
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt() const
 {
   xiiSimdVec4f result;
@@ -89,7 +89,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt() const
   return result;
 }
 
-template <xiiMathAcc::Enum acc>
+template <xiiMathFloatBits::Enum acc>
 xiiSimdVec4f xiiSimdVec4f::GetInvSqrt() const
 {
   xiiSimdVec4f result;
@@ -101,7 +101,7 @@ xiiSimdVec4f xiiSimdVec4f::GetInvSqrt() const
   return result;
 }
 
-template <xiiInt32 N, xiiMathAcc::Enum acc>
+template <xiiInt32 N, xiiMathFloatBits::Enum acc>
 void xiiSimdVec4f::NormalizeIfNotZero(const xiiSimdFloat& fEpsilon)
 {
   xiiSimdFloat sqLength = GetLengthSquared<N>();
@@ -243,7 +243,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompMul(const xiiSimdVec4f& v) cons
   return m_v.CompMul(v.m_v);
 }
 
-template <xiiMathAcc::Enum acc>
+template <xiiMathFloatBits::Enum acc>
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv(const xiiSimdVec4f& v) const
 {
   return m_v.CompDiv(v.m_v);

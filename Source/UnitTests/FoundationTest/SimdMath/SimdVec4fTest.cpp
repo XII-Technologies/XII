@@ -13,7 +13,7 @@ namespace
     return test.x() == test.y() && test.x() == test.z() && test.x() == test.w();
   }
 
-  template <xiiMathAcc::Enum acc>
+  template <xiiMathFloatBits::Enum acc>
   static void TestLength(const xiiSimdVec4f& a, float r[4], const xiiSimdFloat& eps)
   {
     xiiSimdFloat l1 = a.GetLength<1, acc>();
@@ -30,7 +30,7 @@ namespace
     XII_TEST_BOOL(AllCompSame(l4));
   }
 
-  template <xiiMathAcc::Enum acc>
+  template <xiiMathFloatBits::Enum acc>
   static void TestInvLength(const xiiSimdVec4f& a, float r[4], const xiiSimdFloat& eps)
   {
     xiiSimdFloat l1 = a.GetInvLength<1, acc>();
@@ -47,7 +47,7 @@ namespace
     XII_TEST_BOOL(AllCompSame(l4));
   }
 
-  template <xiiMathAcc::Enum acc>
+  template <xiiMathFloatBits::Enum acc>
   static void TestNormalize(const xiiSimdVec4f& a, xiiSimdVec4f n[4], xiiSimdFloat r[4], const xiiSimdFloat& eps)
   {
     xiiSimdVec4f n1 = a.GetNormalized<1, acc>();
@@ -104,7 +104,7 @@ namespace
     XII_TEST_BOOL(a4.IsEqual(n[3], eps).AllSet());
   }
 
-  template <xiiMathAcc::Enum acc>
+  template <xiiMathFloatBits::Enum acc>
   static void TestNormalizeIfNotZero(const xiiSimdVec4f& a, xiiSimdVec4f n[4], const xiiSimdFloat& eps)
   {
     xiiSimdVec4f a1 = a;
@@ -269,9 +269,9 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4f)
       xiiSimdVec4f b(1.0f, 0.5f, 0.25f, 0.125f);
 
       XII_TEST_BOOL(a.GetReciprocal().IsEqual(b, xiiMath::SmallEpsilon<float>()).AllSet());
-      XII_TEST_BOOL(a.GetReciprocal<xiiMathAcc::FULL>().IsEqual(b, xiiMath::SmallEpsilon<float>()).AllSet());
-      XII_TEST_BOOL(a.GetReciprocal<xiiMathAcc::BITS_23>().IsEqual(b, xiiMath::DefaultEpsilon<float>()).AllSet());
-      XII_TEST_BOOL(a.GetReciprocal<xiiMathAcc::BITS_12>().IsEqual(b, xiiMath::HugeEpsilon<float>()).AllSet());
+      XII_TEST_BOOL(a.GetReciprocal<xiiMathFloatBits::FULL>().IsEqual(b, xiiMath::SmallEpsilon<float>()).AllSet());
+      XII_TEST_BOOL(a.GetReciprocal<xiiMathFloatBits::BITS_23>().IsEqual(b, xiiMath::DefaultEpsilon<float>()).AllSet());
+      XII_TEST_BOOL(a.GetReciprocal<xiiMathFloatBits::BITS_12>().IsEqual(b, xiiMath::HugeEpsilon<float>()).AllSet());
     }
 
     {
@@ -279,9 +279,9 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4f)
       xiiSimdVec4f b(1.0f, xiiMath::Sqrt(2.0f), xiiMath::Sqrt(4.0f), xiiMath::Sqrt(8.0f));
 
       XII_TEST_BOOL(a.GetSqrt().IsEqual(b, xiiMath::SmallEpsilon<float>()).AllSet());
-      XII_TEST_BOOL(a.GetSqrt<xiiMathAcc::FULL>().IsEqual(b, xiiMath::SmallEpsilon<float>()).AllSet());
-      XII_TEST_BOOL(a.GetSqrt<xiiMathAcc::BITS_23>().IsEqual(b, xiiMath::DefaultEpsilon<float>()).AllSet());
-      XII_TEST_BOOL(a.GetSqrt<xiiMathAcc::BITS_12>().IsEqual(b, xiiMath::HugeEpsilon<float>()).AllSet());
+      XII_TEST_BOOL(a.GetSqrt<xiiMathFloatBits::FULL>().IsEqual(b, xiiMath::SmallEpsilon<float>()).AllSet());
+      XII_TEST_BOOL(a.GetSqrt<xiiMathFloatBits::BITS_23>().IsEqual(b, xiiMath::DefaultEpsilon<float>()).AllSet());
+      XII_TEST_BOOL(a.GetSqrt<xiiMathFloatBits::BITS_12>().IsEqual(b, xiiMath::HugeEpsilon<float>()).AllSet());
     }
 
     {
@@ -289,9 +289,9 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4f)
       xiiSimdVec4f b(1.0f, 1.0f / xiiMath::Sqrt(2.0f), 1.0f / xiiMath::Sqrt(4.0f), 1.0f / xiiMath::Sqrt(8.0f));
 
       XII_TEST_BOOL(a.GetInvSqrt().IsEqual(b, xiiMath::SmallEpsilon<float>()).AllSet());
-      XII_TEST_BOOL(a.GetInvSqrt<xiiMathAcc::FULL>().IsEqual(b, xiiMath::SmallEpsilon<float>()).AllSet());
-      XII_TEST_BOOL(a.GetInvSqrt<xiiMathAcc::BITS_23>().IsEqual(b, xiiMath::DefaultEpsilon<float>()).AllSet());
-      XII_TEST_BOOL(a.GetInvSqrt<xiiMathAcc::BITS_12>().IsEqual(b, xiiMath::HugeEpsilon<float>()).AllSet());
+      XII_TEST_BOOL(a.GetInvSqrt<xiiMathFloatBits::FULL>().IsEqual(b, xiiMath::SmallEpsilon<float>()).AllSet());
+      XII_TEST_BOOL(a.GetInvSqrt<xiiMathFloatBits::BITS_23>().IsEqual(b, xiiMath::DefaultEpsilon<float>()).AllSet());
+      XII_TEST_BOOL(a.GetInvSqrt<xiiMathFloatBits::BITS_12>().IsEqual(b, xiiMath::HugeEpsilon<float>()).AllSet());
     }
 
     {
@@ -307,9 +307,9 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4f)
       XII_TEST_FLOAT(a.GetLength<3>(), r[2], xiiMath::SmallEpsilon<float>());
       XII_TEST_FLOAT(a.GetLength<4>(), r[3], xiiMath::SmallEpsilon<float>());
 
-      TestLength<xiiMathAcc::FULL>(a, r, xiiMath::SmallEpsilon<float>());
-      TestLength<xiiMathAcc::BITS_23>(a, r, xiiMath::DefaultEpsilon<float>());
-      TestLength<xiiMathAcc::BITS_12>(a, r, 0.01f);
+      TestLength<xiiMathFloatBits::FULL>(a, r, xiiMath::SmallEpsilon<float>());
+      TestLength<xiiMathFloatBits::BITS_23>(a, r, xiiMath::DefaultEpsilon<float>());
+      TestLength<xiiMathFloatBits::BITS_12>(a, r, 0.01f);
     }
 
     {
@@ -325,9 +325,9 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4f)
       XII_TEST_FLOAT(a.GetInvLength<3>(), r[2], xiiMath::SmallEpsilon<float>());
       XII_TEST_FLOAT(a.GetInvLength<4>(), r[3], xiiMath::SmallEpsilon<float>());
 
-      TestInvLength<xiiMathAcc::FULL>(a, r, xiiMath::SmallEpsilon<float>());
-      TestInvLength<xiiMathAcc::BITS_23>(a, r, xiiMath::DefaultEpsilon<float>());
-      TestInvLength<xiiMathAcc::BITS_12>(a, r, xiiMath::HugeEpsilon<float>());
+      TestInvLength<xiiMathFloatBits::FULL>(a, r, xiiMath::SmallEpsilon<float>());
+      TestInvLength<xiiMathFloatBits::BITS_23>(a, r, xiiMath::DefaultEpsilon<float>());
+      TestInvLength<xiiMathFloatBits::BITS_12>(a, r, xiiMath::HugeEpsilon<float>());
     }
 
     {
@@ -358,9 +358,9 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4f)
       n[2] = a / r[2];
       n[3] = a / r[3];
 
-      TestNormalize<xiiMathAcc::FULL>(a, n, r, xiiMath::SmallEpsilon<float>());
-      TestNormalize<xiiMathAcc::BITS_23>(a, n, r, xiiMath::DefaultEpsilon<float>());
-      TestNormalize<xiiMathAcc::BITS_12>(a, n, r, 0.01f);
+      TestNormalize<xiiMathFloatBits::FULL>(a, n, r, xiiMath::SmallEpsilon<float>());
+      TestNormalize<xiiMathFloatBits::BITS_23>(a, n, r, xiiMath::DefaultEpsilon<float>());
+      TestNormalize<xiiMathFloatBits::BITS_12>(a, n, r, 0.01f);
     }
 
     {
@@ -371,9 +371,9 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4f)
       n[2] = a / xiiVec3(a.x(), a.y(), a.z()).GetLength();
       n[3] = a / xiiVec4(a.x(), a.y(), a.z(), a.w()).GetLength();
 
-      TestNormalizeIfNotZero<xiiMathAcc::FULL>(a, n, xiiMath::SmallEpsilon<float>());
-      TestNormalizeIfNotZero<xiiMathAcc::BITS_23>(a, n, xiiMath::DefaultEpsilon<float>());
-      TestNormalizeIfNotZero<xiiMathAcc::BITS_12>(a, n, xiiMath::HugeEpsilon<float>());
+      TestNormalizeIfNotZero<xiiMathFloatBits::FULL>(a, n, xiiMath::SmallEpsilon<float>());
+      TestNormalizeIfNotZero<xiiMathFloatBits::BITS_23>(a, n, xiiMath::DefaultEpsilon<float>());
+      TestNormalizeIfNotZero<xiiMathFloatBits::BITS_12>(a, n, xiiMath::HugeEpsilon<float>());
     }
 
     {
@@ -476,9 +476,9 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4f)
 
       xiiSimdVec4f divRes(-0.375f, 5.0f / 6.0f, -1.75f, 4.5f);
       xiiSimdVec4f d1 = a.CompDiv(b);
-      xiiSimdVec4f d2 = a.CompDiv<xiiMathAcc::FULL>(b);
-      xiiSimdVec4f d3 = a.CompDiv<xiiMathAcc::BITS_23>(b);
-      xiiSimdVec4f d4 = a.CompDiv<xiiMathAcc::BITS_12>(b);
+      xiiSimdVec4f d2 = a.CompDiv<xiiMathFloatBits::FULL>(b);
+      xiiSimdVec4f d3 = a.CompDiv<xiiMathFloatBits::BITS_23>(b);
+      xiiSimdVec4f d4 = a.CompDiv<xiiMathFloatBits::BITS_12>(b);
 
       XII_TEST_BOOL(d1.IsEqual(divRes, xiiMath::SmallEpsilon<float>()).AllSet());
       XII_TEST_BOOL(d2.IsEqual(divRes, xiiMath::SmallEpsilon<float>()).AllSet());

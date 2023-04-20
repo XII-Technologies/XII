@@ -2,7 +2,7 @@
 
 XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f()
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
@@ -12,21 +12,21 @@ XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f()
 
 XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(float xyzw)
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   m_v = _mm_set1_ps(xyzw);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(const xiiSimdFloat& xyzw)
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   m_v = xyzw.m_v;
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(float x, float y, float z, float w)
 {
-  XII_CHECK_SIMD_ALIGNMENT(this);
+  XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   m_v = _mm_setr_ps(x, y, z, w);
 }
@@ -121,13 +121,13 @@ XII_ALWAYS_INLINE void xiiSimdVec4f::Store<4>(float* pFloat) const
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathAcc::BITS_12>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathFloatBits::BITS_12>() const
 {
   return _mm_rcp_ps(m_v);
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathAcc::BITS_23>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathFloatBits::BITS_23>() const
 {
   __m128 x0 = _mm_rcp_ps(m_v);
 
@@ -138,19 +138,19 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathAcc::BITS_23>(
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathAcc::FULL>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathFloatBits::FULL>() const
 {
   return _mm_div_ps(_mm_set1_ps(1.0f), m_v);
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathAcc::BITS_12>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathFloatBits::BITS_12>() const
 {
   return _mm_mul_ps(m_v, _mm_rsqrt_ps(m_v));
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathAcc::BITS_23>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathFloatBits::BITS_23>() const
 {
   __m128 x0 = _mm_rsqrt_ps(m_v);
 
@@ -161,19 +161,19 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathAcc::BITS_23>() cons
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathAcc::FULL>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathFloatBits::FULL>() const
 {
   return _mm_sqrt_ps(m_v);
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathAcc::FULL>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathFloatBits::FULL>() const
 {
   return _mm_div_ps(_mm_set1_ps(1.0f), _mm_sqrt_ps(m_v));
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathAcc::BITS_23>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathFloatBits::BITS_23>() const
 {
   const __m128 x0 = _mm_rsqrt_ps(m_v);
 
@@ -182,12 +182,12 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathAcc::BITS_23>() c
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathAcc::BITS_12>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathFloatBits::BITS_12>() const
 {
   return _mm_rsqrt_ps(m_v);
 }
 
-template <int N, xiiMathAcc::Enum acc>
+template <int N, xiiMathFloatBits::Enum acc>
 void xiiSimdVec4f::NormalizeIfNotZero(const xiiSimdFloat& fEpsilon)
 {
   xiiSimdFloat sqLength  = GetLengthSquared<N>();
@@ -315,13 +315,13 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompMul(const xiiSimdVec4f& v) cons
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathAcc::FULL>(const xiiSimdVec4f& v) const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathFloatBits::FULL>(const xiiSimdVec4f& v) const
 {
   return _mm_div_ps(m_v, v.m_v);
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathAcc::BITS_23>(const xiiSimdVec4f& v) const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathFloatBits::BITS_23>(const xiiSimdVec4f& v) const
 {
   __m128 x0 = _mm_rcp_ps(v.m_v);
 
@@ -332,7 +332,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathAcc::BITS_23>(const 
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathAcc::BITS_12>(const xiiSimdVec4f& v) const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathFloatBits::BITS_12>(const xiiSimdVec4f& v) const
 {
   return _mm_mul_ps(m_v, _mm_rcp_ps(v.m_v));
 }

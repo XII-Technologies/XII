@@ -147,19 +147,19 @@ XII_ALWAYS_INLINE bool xiiSimdFloat::operator<=(float f) const
   return m_v.x <= f;
 }
 
-template <xiiMathAcc::Enum acc>
+template <xiiMathFloatBits::Enum bits>
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal() const
 {
   return xiiSimdFloat(1.0f / m_v.x);
 }
 
-template <xiiMathAcc::Enum acc>
+template <xiiMathFloatBits::Enum bits>
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetSqrt() const
 {
   return xiiSimdFloat(xiiMath::Sqrt(m_v.x));
 }
 
-template <xiiMathAcc::Enum acc>
+template <xiiMathFloatBits::Enum bits>
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt() const
 {
   return xiiSimdFloat(1.0f / xiiMath::Sqrt(m_v.x));

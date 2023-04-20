@@ -58,13 +58,13 @@ public:
   bool operator<(float f) const;  // [tested]
   bool operator<=(float f) const; // [tested]
 
-  template <xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   xiiSimdFloat GetReciprocal() const; // [tested]
 
-  template <xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   xiiSimdFloat GetSqrt() const; // [tested]
 
-  template <xiiMathAcc::Enum acc = xiiMathAcc::FULL>
+  template <xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   xiiSimdFloat GetInvSqrt() const; // [tested]
 
   xiiSimdFloat Max(const xiiSimdFloat& f) const; // [tested]
