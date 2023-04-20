@@ -264,6 +264,10 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
         if (!pWindow->CanCloseWindow())
           continue;
 
+        // Prevent closing the settings window.
+        if (xiiStringUtils::Compare(pWindow->GetUniqueName(), "Settings") == 0)
+          continue;
+
         pWindow->CloseDocumentWindow();
       }
     }
@@ -277,6 +281,10 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
       for (xiiQtDocumentWindow* pWindow : documentWindows)
       {
         if (!pWindow->CanCloseWindow() || pWindow == pThisWindow)
+          continue;
+
+        // Prevent closing the settings window.
+        if (xiiStringUtils::Compare(pWindow->GetUniqueName(), "Settings") == 0)
           continue;
 
         pWindow->CloseDocumentWindow();
