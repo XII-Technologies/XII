@@ -27,4 +27,6 @@ private:
 
 void CreateFileserveMainWindow(xiiApplication* pApp);
 
+void SetApplicationDarkTheme();
+
 #endif

@@ -33,8 +33,11 @@ int main(int argc, const char** argv)
 
   xiiRun_Startup(pApp).IgnoreResult();
 
+  SetApplicationDarkTheme();
   CreateFileserveMainWindow(pApp);
+
   pQtApplication->exec();
+
   xiiRun_Shutdown(pApp);
 #else
   pApp->SetCommandLineArguments((xiiUInt32)argc, argv);

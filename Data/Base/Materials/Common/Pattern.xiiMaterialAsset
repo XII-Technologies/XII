@@ -46,7 +46,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x37BFC343,0x8863EE42}}
+		Vec2 %Node::Pos{f{0xE882C443,0x125E0043}}
 		f %a{0x0000803F}
 		f %b{0x0000803F}
 	}
@@ -58,7 +58,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0xF733E643,0xE61B8343}}
+		Vec2 %Node::Pos{f{0x23EFC543,0x08348643}}
 		f %a{0x0000803F}
 		f %b{0x0000003F}
 	}
@@ -70,7 +70,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x83684E43,0xD0388742}}
+		Vec2 %Node::Pos{f{0xFFCA4F43,0x28498042}}
 	}
 }
 o
@@ -110,7 +110,7 @@ o
 		Vec3 %Emissive{f{0,0,0}}
 		f %MaskThreshold{0x0000803E}
 		f %Metallic{0}
-		Vec2 %Node::Pos{f{0xF9078544,0x7CD92B43}}
+		Vec2 %Node::Pos{f{0x0F428E44,0xAFF09442}}
 		f %Occlusion{0x0000803F}
 		f %Opacity{0x0000803F}
 		f %Reflectance{0x0000003F}
@@ -191,7 +191,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0xA79B6344,0x90DE9943}}
+		Vec2 %Node::Pos{f{0x983D7044,0xB1C38743}}
 	}
 }
 o
@@ -268,7 +268,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x05BD3944,0xBE8E6F43}}
+		Vec2 %Node::Pos{f{0x71C13A44,0x3C357443}}
 	}
 }
 o
@@ -291,7 +291,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x3A441644,0x81056F43}}
+		Vec2 %Node::Pos{f{0x75EA0F44,0x925E7443}}
 		f %a{0x6666A63F}
 		f %b{0}
 	}
@@ -316,7 +316,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x0D630C44,0x8965C642}}
+		Vec2 %Node::Pos{f{0x8EA60D44,0xFFDE9542}}
 		f %a{0x0000803F}
 		f %b{0x0000803F}
 	}

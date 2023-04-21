@@ -26,6 +26,8 @@ xiiActionDescriptorHandle xiiDocumentActions::s_hSaveAs;
 xiiActionDescriptorHandle xiiDocumentActions::s_hSaveAll;
 xiiActionDescriptorHandle xiiDocumentActions::s_hCloseCategory;
 xiiActionDescriptorHandle xiiDocumentActions::s_hClose;
+xiiActionDescriptorHandle xiiDocumentActions::s_hCloseAll;
+xiiActionDescriptorHandle xiiDocumentActions::s_hCloseAllButThis;
 xiiActionDescriptorHandle xiiDocumentActions::s_hOpenContainingFolder;
 xiiActionDescriptorHandle xiiDocumentActions::s_hCopyAssetGuid;
 xiiActionDescriptorHandle xiiDocumentActions::s_hUpdatePrefabs;
@@ -39,6 +41,8 @@ void xiiDocumentActions::RegisterActions()
   s_hSaveAs               = XII_REGISTER_ACTION_1("Document.SaveAs", xiiActionScope::Document, "Document", "", xiiDocumentAction, xiiDocumentAction::ButtonType::SaveAs);
   s_hCloseCategory        = XII_REGISTER_CATEGORY("CloseCategory");
   s_hClose                = XII_REGISTER_ACTION_1("Document.Close", xiiActionScope::Document, "Document", "Ctrl+W", xiiDocumentAction, xiiDocumentAction::ButtonType::Close);
+  s_hCloseAll             = XII_REGISTER_ACTION_1("Document.CloseAll", xiiActionScope::Document, "Document", "Ctrl+Shift+W", xiiDocumentAction, xiiDocumentAction::ButtonType::CloseAll);
+  s_hCloseAllButThis      = XII_REGISTER_ACTION_1("Document.CloseAllButThis", xiiActionScope::Document, "Document", "Shift+Alt+W", xiiDocumentAction, xiiDocumentAction::ButtonType::CloseAllButThis);
   s_hOpenContainingFolder = XII_REGISTER_ACTION_1("Document.OpenContainingFolder", xiiActionScope::Document, "Document", "", xiiDocumentAction, xiiDocumentAction::ButtonType::OpenContainingFolder);
   s_hCopyAssetGuid        = XII_REGISTER_ACTION_1("Document.CopyAssetGuid", xiiActionScope::Document, "Document", "", xiiDocumentAction, xiiDocumentAction::ButtonType::CopyAssetGuid);
   s_hDocumentCategory     = XII_REGISTER_CATEGORY("Tools.DocumentCategory");
@@ -53,6 +57,8 @@ void xiiDocumentActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hSaveAll);
   xiiActionManager::UnregisterAction(s_hCloseCategory);
   xiiActionManager::UnregisterAction(s_hClose);
+  xiiActionManager::UnregisterAction(s_hCloseAll);
+  xiiActionManager::UnregisterAction(s_hCloseAllButThis);
   xiiActionManager::UnregisterAction(s_hOpenContainingFolder);
   xiiActionManager::UnregisterAction(s_hCopyAssetGuid);
   xiiActionManager::UnregisterAction(s_hDocumentCategory);
@@ -77,11 +83,12 @@ void xiiDocumentActions::MapActions(const char* szMapping, const char* szPath, b
     sSubPath.Set(szPath, "/CloseCategory");
     pMap->MapAction(s_hCloseCategory, szPath, 2.0f);
     pMap->MapAction(s_hClose, sSubPath, 1.0f);
-    pMap->MapAction(s_hCopyAssetGuid, sSubPath, 2.0f);
-    pMap->MapAction(s_hOpenContainingFolder, sSubPath, 3.0f);
+    pMap->MapAction(s_hCloseAll, sSubPath, 2.0f);
+    pMap->MapAction(s_hCloseAllButThis, sSubPath, 3.0f);
+    pMap->MapAction(s_hCopyAssetGuid, sSubPath, 4.0f);
+    pMap->MapAction(s_hOpenContainingFolder, sSubPath, 5.0f);
   }
 }
-
 
 void xiiDocumentActions::MapToolsActions(const char* szMapping, const char* szPath)
 {
@@ -115,6 +122,12 @@ xiiDocumentAction::xiiDocumentAction(const xiiActionContext& context, const char
       SetIconPath(":/GuiFoundation/Icons/SaveAll16.png");
       break;
     case xiiDocumentAction::ButtonType::Close:
+      SetIconPath("");
+      break;
+    case xiiDocumentAction::ButtonType::CloseAll:
+      SetIconPath("");
+      break;
+    case xiiDocumentAction::ButtonType::CloseAllButThis:
       SetIconPath("");
       break;
     case xiiDocumentAction::ButtonType::OpenContainingFolder:
@@ -234,12 +247,48 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
 
     case xiiDocumentAction::ButtonType::Close:
     {
-      xiiQtDocumentWindow* pWnd = xiiQtDocumentWindow::FindWindowByDocument(m_Context.m_pDocument);
+      xiiQtDocumentWindow* pWindow = xiiQtDocumentWindow::FindWindowByDocument(m_Context.m_pDocument);
 
-      if (!pWnd->CanCloseWindow())
+      if (!pWindow->CanCloseWindow())
         return;
 
-      pWnd->CloseDocumentWindow();
+      pWindow->CloseDocumentWindow();
+    }
+    break;
+
+    case xiiDocumentAction::ButtonType::CloseAll:
+    {
+      auto& documentWindows = xiiQtDocumentWindow::GetAllDocumentWindows();
+      for (xiiQtDocumentWindow* pWindow : documentWindows)
+      {
+        if (!pWindow->CanCloseWindow())
+          continue;
+
+        // Prevent closing the settings window.
+        if (xiiStringUtils::Compare(pWindow->GetUniqueName(), "Settings") == 0)
+          continue;
+
+        pWindow->CloseDocumentWindow();
+      }
+    }
+    break;
+
+    case xiiDocumentAction::ButtonType::CloseAllButThis:
+    {
+      xiiQtDocumentWindow* pThisWindow = xiiQtDocumentWindow::FindWindowByDocument(m_Context.m_pDocument);
+
+      auto& documentWindows = xiiQtDocumentWindow::GetAllDocumentWindows();
+      for (xiiQtDocumentWindow* pWindow : documentWindows)
+      {
+        if (!pWindow->CanCloseWindow() || pWindow == pThisWindow)
+          continue;
+
+        // Prevent closing the settings window.
+        if (xiiStringUtils::Compare(pWindow->GetUniqueName(), "Settings") == 0)
+          continue;
+
+        pWindow->CloseDocumentWindow();
+      }
     }
     break;
 

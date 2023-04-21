@@ -101,7 +101,7 @@ void xiiQtEditorApp::DocumentWindowEventHandler(const xiiQtDocumentWindowEvent& 
   {
     case xiiQtDocumentWindowEvent::WindowClosed:
     {
-      // if all windows are closed, show at least the settings window
+      // If all windows are closed, show at least the settings window
       if (xiiQtDocumentWindow::GetAllDocumentWindows().GetCount() == 0)
       {
         ShowSettingsDocument();
