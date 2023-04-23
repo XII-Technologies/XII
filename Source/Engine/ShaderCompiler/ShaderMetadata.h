@@ -59,8 +59,6 @@ public:
   enum MetaDataVersion
   {
     Version1 = 1,
-    Version2 = 2, ///< m_uiVirtualBinding, m_xiiType added
-    Version3 = 3, ///< Vertex input binding
 
     ENUM_COUNT,
 
