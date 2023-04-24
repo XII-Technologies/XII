@@ -15,10 +15,10 @@ JPH_NAMESPACE_BEGIN
 class VehicleConstraint;
 
 /// Base class for wheel settings, each VehicleController can implement a derived class of this
-class WheelSettings : public SerializableObject, public RefTarget<WheelSettings>, public NonCopyable
+class JPH_EXPORT WheelSettings : public SerializableObject, public RefTarget<WheelSettings>, public NonCopyable
 {
 public:
-	JPH_DECLARE_SERIALIZABLE_VIRTUAL(WheelSettings)
+	JPH_DECLARE_SERIALIZABLE_VIRTUAL(JPH_EXPORT, WheelSettings)
 
 	/// Saves the contents in binary form to inStream.
 	virtual void			SaveBinaryState(StreamOut &inStream) const;
@@ -41,7 +41,7 @@ public:
 };
 
 /// Base class for runtime data for a wheel, each VehicleController can implement a derived class of this
-class Wheel
+class JPH_EXPORT Wheel
 {
 public:
 	JPH_OVERRIDE_NEW_DELETE
@@ -72,7 +72,7 @@ public:
 	void					SetSteerAngle(float inAngle)				{ mSteerAngle = inAngle; }
 
 	/// Returns true if the wheel is touching an object
-	bool					HasContact() const							{ return mContactBody != nullptr; }
+	inline bool				HasContact() const							{ return !mContactBodyID.IsInvalid(); }
 
 	/// Returns the body ID of the body that this wheel is touching
 	BodyID					GetContactBodyID() const					{ return mContactBodyID; }
@@ -81,19 +81,19 @@ public:
 	SubShapeID				GetContactSubShapeID() const				{ return mContactSubShapeID; }
 
 	/// Returns the current contact position in world space (note by the time you call this the vehicle has moved)
-	RVec3					GetContactPosition() const					{ JPH_ASSERT(mContactBody != nullptr); return mContactPosition; }
+	RVec3					GetContactPosition() const					{ JPH_ASSERT(HasContact()); return mContactPosition; }
 
 	/// Velocity of the contact point (m / s, not relative to the wheel but in world space)
-	Vec3					GetContactPointVelocity() const				{ JPH_ASSERT(mContactBody != nullptr); return mContactPointVelocity; }
+	Vec3					GetContactPointVelocity() const				{ JPH_ASSERT(HasContact()); return mContactPointVelocity; }
 
 	/// Returns the current contact mormal in world space (note by the time you call this the vehicle has moved)
-	Vec3					GetContactNormal() const					{ JPH_ASSERT(mContactBody != nullptr); return mContactNormal; }
+	Vec3					GetContactNormal() const					{ JPH_ASSERT(HasContact()); return mContactNormal; }
 
 	/// Returns longitudinal direction (direction along the wheel relative to floor) in world space (note by the time you call this the vehicle has moved)
-	Vec3					GetContactLongitudinal() const				{ JPH_ASSERT(mContactBody != nullptr); return mContactLongitudinal; }
+	Vec3					GetContactLongitudinal() const				{ JPH_ASSERT(HasContact()); return mContactLongitudinal; }
 
 	/// Returns lateral direction (sideways direction) in world space (note by the time you call this the vehicle has moved)
-	Vec3					GetContactLateral() const					{ JPH_ASSERT(mContactBody != nullptr); return mContactLateral; }
+	Vec3					GetContactLateral() const					{ JPH_ASSERT(HasContact()); return mContactLateral; }
 
 	/// Get the length of the suspension for a wheel (m) relative to the suspension attachment point (hard point)
 	float					GetSuspensionLength() const					{ return mSuspensionLength; }
