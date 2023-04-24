@@ -339,7 +339,7 @@ void xiiGameEngineTestApplication_Basics::SubTestSkyboxSetup()
 
   m_pWorld->Clear();
 
-  xiiTextureCubeResourceHandle hSkybox = xiiResourceManager::LoadResource<xiiTextureCubeResource>("Textures/Cubemap/xiiLogo_Cube_DXT1_Mips_D.dds");
+  xiiTextureCubeResourceHandle hSkybox = xiiResourceManager::LoadResource<xiiTextureCubeResource>("Textures/Cubemap/ezLogo_Cube_DXT1_Mips_D.dds");
   xiiMeshResourceHandle        hMesh   = xiiResourceManager::LoadResource<xiiMeshResource>("Meshes/MissingMesh.xiiMesh");
 
   // Skybox

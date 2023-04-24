@@ -24,16 +24,19 @@ xiiGraphicsTest::xiiGraphicsTest() = default;
 
 xiiResult xiiGraphicsTest::InitializeSubTest(xiiInt32 iIdentifier)
 {
-  // initialize everything up to 'core'
+  // Initialize everything up to 'Core'
   xiiStartup::StartupCoreSystems();
+
   return XII_SUCCESS;
 }
 
 xiiResult xiiGraphicsTest::DeInitializeSubTest(xiiInt32 iIdentifier)
 {
-  // shut down completely
+  // Shut down completely
   xiiStartup::ShutdownCoreSystems();
+
   xiiMemoryTracker::DumpMemoryLeaks();
+
   return XII_SUCCESS;
 }
 
@@ -63,11 +66,19 @@ xiiResult xiiGraphicsTest::SetupRenderer()
     XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(sReadDir, "ImageComparisonDataDir"));
   }
 
-#ifdef BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  constexpr const char* szDefaultRenderer = "DX11";
+#elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
   constexpr const char* szDefaultRenderer = "Vulkan";
 #else
-  constexpr const char* szDefaultRenderer = "DX11";
+#  error Renderer not implemented on platform
 #endif
+
+  constexpr const char* szDefaultLibraryName = "xiiRendererDiligent";
+  xiiGALDeviceFactory::RegisterLibraryName("DX11", "xiiRendererDX11");
+  xiiGALDeviceFactory::RegisterLibraryName("D3D11", szDefaultLibraryName);
+  xiiGALDeviceFactory::RegisterLibraryName("D3D12", szDefaultLibraryName);
+  xiiGALDeviceFactory::RegisterLibraryName("Vulkan", szDefaultLibraryName);
 
   const char* szRendererName   = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
   const char* szShaderModel    = "";
@@ -88,11 +99,11 @@ xiiResult xiiGraphicsTest::SetupRenderer()
     xiiGALDevice::SetDefaultDevice(m_pDevice);
   }
 
-  if (xiiStringUtils::IsEqual_NoCase(szRendererName, "DX11"))
+  if (xiiStringUtils::IsEqual_NoCase(szRendererName, "DX11") || xiiStringUtils::IsEqual_NoCase(szRendererName, "D3D11") || xiiStringUtils::IsEqual_NoCase(szRendererName, "D3D12"))
   {
     if (m_pDevice->GetCapabilities().m_sAdapterName == "Microsoft Basic Render Driver" || m_pDevice->GetCapabilities().m_sAdapterName.StartsWith_NoCase("Intel(R) UHD Graphics"))
     {
-      // Use different images for comparison when running the D3D11 Reference Device
+      // Use different images for comparison when running the D3D Reference Device
       xiiTestFramework::GetInstance()->SetImageReferenceOverrideFolderName("Images_Reference_D3D11Ref");
     }
     else if (m_pDevice->GetCapabilities().m_sAdapterName.FindSubString_NoCase("AMD") || m_pDevice->GetCapabilities().m_sAdapterName.FindSubString_NoCase("Radeon"))
@@ -121,6 +132,7 @@ xiiResult xiiGraphicsTest::SetupRenderer()
   m_hShader            = xiiResourceManager::LoadResource<xiiShaderResource>("RendererTest/Shaders/Default.xiiShader");
 
   xiiStartup::StartupHighLevelSystems();
+
   return XII_SUCCESS;
 }
 
@@ -184,6 +196,11 @@ void xiiGraphicsTest::ShutdownRenderer()
     m_pDevice->Shutdown().IgnoreResult();
     XII_DEFAULT_DELETE(m_pDevice);
   }
+
+  xiiGALDeviceFactory::UnregisterLibraryName("DX11");
+  xiiGALDeviceFactory::UnregisterLibraryName("D3D11");
+  xiiGALDeviceFactory::UnregisterLibraryName("D3D12");
+  xiiGALDeviceFactory::UnregisterLibraryName("Vulkan");
 
   xiiFileSystem::RemoveDataDirectoryGroup("ImageComparisonDataDir");
 }
