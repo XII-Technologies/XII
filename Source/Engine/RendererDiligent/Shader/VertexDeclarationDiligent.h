@@ -24,7 +24,7 @@ protected:
 
   Diligent::InputLayoutDesc m_InputLayoutDesc;
 
-  xiiHybridArray<Diligent::LayoutElement, 8> m_InputElementDescs;
+  xiiHybridArray<Diligent::LayoutElement, 8U> m_InputElements;
 };
 
 #include <RendererDiligent/Shader/Implementation/VertexDeclarationDiligent_inl.h>

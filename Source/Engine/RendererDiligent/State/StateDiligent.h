@@ -21,7 +21,7 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::BlendStateDesc m_BlendState = {};
+  Diligent::BlendStateDesc m_BlendStateDesc = {};
 };
 
 class XII_RENDERERDILIGENT_DLL xiiGALDepthStencilStateDiligent : public xiiGALDepthStencilState
@@ -41,7 +41,7 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::DepthStencilStateDesc m_DepthStencilState = {};
+  Diligent::DepthStencilStateDesc m_DepthStencilStateDesc = {};
 };
 
 class XII_RENDERERDILIGENT_DLL xiiGALRasterizerStateDiligent : public xiiGALRasterizerState
@@ -61,7 +61,7 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::RasterizerStateDesc m_RasterizerState = {};
+  Diligent::RasterizerStateDesc m_RasterizerStateDesc = {};
 };
 
 class XII_RENDERERDILIGENT_DLL xiiGALSamplerStateDiligent : public xiiGALSamplerState

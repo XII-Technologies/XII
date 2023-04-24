@@ -125,6 +125,8 @@ ON_CORESYSTEMS_SHUTDOWN
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
+std::unique_ptr<xiiDiligentMemoryAllocator> g_pMemoryAllocator = std::make_unique<xiiDiligentMemoryAllocator>("Diligent Engine Memory Allocator");
+
 xiiGALDeviceDiligent::xiiGALDeviceDiligent(const xiiGALDeviceCreationDescription& Description, Diligent::RENDER_DEVICE_TYPE DeviceType) :
   xiiGALDevice(Description), m_pDevice(nullptr), m_pEngineFactory(nullptr), m_DeviceType(DeviceType)
 {
@@ -137,8 +139,6 @@ xiiGALDeviceDiligent::~xiiGALDeviceDiligent() = default;
 xiiResult xiiGALDeviceDiligent::InitPlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceDiligent::InitPlatform");
-
-  m_pMemoryAllocator = std::make_unique<xiiDiligentMemoryAllocator>("Diligent Engine Memory Allocator");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   m_iValidationLevel = Diligent::VALIDATION_LEVEL_2;
@@ -254,7 +254,7 @@ CreateRenderDevice:
 
       Diligent::EngineD3D11CreateInfo EngineCI;
       EngineCI.GraphicsAPIVersion = {11, 0};
-      EngineCI.pRawMemAllocator   = m_pMemoryAllocator.get();
+      EngineCI.pRawMemAllocator   = g_pMemoryAllocator.get();
       EngineCI.EnableValidation   = m_Description.m_bDebugDevice;
 
       EngineCI.Features.SeparablePrograms                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
@@ -337,7 +337,7 @@ CreateRenderDevice:
 
       Diligent::EngineD3D12CreateInfo EngineCI;
       EngineCI.GraphicsAPIVersion = {11, 0};
-      EngineCI.pRawMemAllocator   = m_pMemoryAllocator.get();
+      EngineCI.pRawMemAllocator   = g_pMemoryAllocator.get();
       EngineCI.EnableValidation   = m_Description.m_bDebugDevice;
 
       EngineCI.Features.SeparablePrograms                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
@@ -435,7 +435,7 @@ CreateRenderDevice:
       m_pEngineFactory->SetMessageCallback(XIILogDiligent);
 
       Diligent::EngineVkCreateInfo EngineCI;
-      EngineCI.pRawMemAllocator = m_pMemoryAllocator.get();
+      EngineCI.pRawMemAllocator = g_pMemoryAllocator.get();
       EngineCI.EnableValidation = m_Description.m_bDebugDevice;
 
       EngineCI.Features.SeparablePrograms                 = Diligent::DEVICE_FEATURE_STATE_ENABLED;
@@ -555,8 +555,6 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 
   XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pEngineFactory);
 
-  m_pMemoryAllocator.reset();
-
   ReportLiveGpuObjects();
 
   return XII_SUCCESS;
@@ -564,7 +562,7 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 
 void xiiGALDeviceDiligent::ReportLiveGpuObjects()
 {
-  // \todo Implement detailed live GPU Object information
+  // \todo RendererDiligent: Implement detailed live GPU Object information
 }
 
 void xiiGALDeviceDiligent::FlushDeadObjects()

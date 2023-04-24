@@ -14,5 +14,6 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALDeviceFactory
   static void RegisterCreatorFunc(const char* szRendererName, const CreatorFunc& func, const char* szShaderModel, const char* szShaderCompiler);
   static void UnregisterCreatorFunc(const char* szRendererName);
 
-  static void ConfigureLibraryName(const char* szRendererName, const char* szLibraryName);
+  static void RegisterLibraryName(const char* szRendererName, const char* szLibraryName);
+  static void UnregisterLibraryName(const char* szRendererName);
 };

@@ -87,17 +87,8 @@ void xiiShaderMetaData::Read(const xiiArrayPtr<const xiiUInt8> data, xiiArrayPtr
       stream.SkipBytes(uiStringElements);
 
       stream >> binding.m_uiBinding;
-      if (uiVersion >= MetaDataVersion::Version2)
-      {
-        stream >> binding.m_uiVirtualBinding;
-        stream >> reinterpret_cast<xiiUInt8&>(binding.m_xiiType);
-      }
-      else
-      {
-        binding.m_uiVirtualBinding = binding.m_uiBinding;
-        binding.m_xiiType          = xiiShaderResourceType::Texture2D;
-      }
-
+      stream >> binding.m_uiVirtualBinding;
+      stream >> reinterpret_cast<xiiUInt8&>(binding.m_xiiType);
       stream >> reinterpret_cast<xiiUInt8&>(binding.m_Type);
       stream >> binding.m_uiDescriptorType;
       stream >> binding.m_uiDescriptorCount;
@@ -106,7 +97,6 @@ void xiiShaderMetaData::Read(const xiiArrayPtr<const xiiUInt8> data, xiiArrayPtr
     }
   }
 
-  if (uiVersion >= MetaDataVersion::Version3)
   {
     xiiUInt8 uiVIA = 0;
     stream >> uiVIA;

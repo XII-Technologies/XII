@@ -20,19 +20,19 @@ xiiGALBlendStateDiligent::~xiiGALBlendStateDiligent() {}
 
 xiiResult xiiGALBlendStateDiligent::InitPlatform(xiiGALDevice* pDevice)
 {
-  m_BlendState.AlphaToCoverageEnable  = m_Description.m_bAlphaToCoverage;
-  m_BlendState.IndependentBlendEnable = m_Description.m_bIndependentBlend;
+  m_BlendStateDesc.AlphaToCoverageEnable  = m_Description.m_bAlphaToCoverage;
+  m_BlendStateDesc.IndependentBlendEnable = m_Description.m_bIndependentBlend;
 
   for (xiiInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
   {
-    m_BlendState.RenderTargets[i].BlendEnable           = m_Description.m_RenderTargetBlendDescriptions[i].m_bBlendingEnabled;
-    m_BlendState.RenderTargets[i].BlendOp               = xiiDiligentUtils::ToDiligentBlendOperation(m_Description.m_RenderTargetBlendDescriptions[i].m_BlendOp);
-    m_BlendState.RenderTargets[i].BlendOpAlpha          = xiiDiligentUtils::ToDiligentBlendOperation(m_Description.m_RenderTargetBlendDescriptions[i].m_BlendOpAlpha);
-    m_BlendState.RenderTargets[i].DestBlend             = xiiDiligentUtils::ToDiligentBlendFactor(m_Description.m_RenderTargetBlendDescriptions[i].m_DestBlend);
-    m_BlendState.RenderTargets[i].DestBlendAlpha        = xiiDiligentUtils::ToDiligentBlendFactor(m_Description.m_RenderTargetBlendDescriptions[i].m_DestBlendAlpha);
-    m_BlendState.RenderTargets[i].SrcBlend              = xiiDiligentUtils::ToDiligentBlendFactor(m_Description.m_RenderTargetBlendDescriptions[i].m_SourceBlend);
-    m_BlendState.RenderTargets[i].SrcBlendAlpha         = xiiDiligentUtils::ToDiligentBlendFactor(m_Description.m_RenderTargetBlendDescriptions[i].m_SourceBlendAlpha);
-    m_BlendState.RenderTargets[i].RenderTargetWriteMask = xiiDiligentUtils::ToDiligentColorWriteMask(m_Description.m_RenderTargetBlendDescriptions[i].m_ColorWriteMask);
+    m_BlendStateDesc.RenderTargets[i].BlendEnable           = m_Description.m_RenderTargetBlendDescriptions[i].m_bBlendingEnabled;
+    m_BlendStateDesc.RenderTargets[i].BlendOp               = xiiDiligentUtils::ToDiligentBlendOperation(m_Description.m_RenderTargetBlendDescriptions[i].m_BlendOp);
+    m_BlendStateDesc.RenderTargets[i].BlendOpAlpha          = xiiDiligentUtils::ToDiligentBlendOperation(m_Description.m_RenderTargetBlendDescriptions[i].m_BlendOpAlpha);
+    m_BlendStateDesc.RenderTargets[i].DestBlend             = xiiDiligentUtils::ToDiligentBlendFactor(m_Description.m_RenderTargetBlendDescriptions[i].m_DestBlend);
+    m_BlendStateDesc.RenderTargets[i].DestBlendAlpha        = xiiDiligentUtils::ToDiligentBlendFactor(m_Description.m_RenderTargetBlendDescriptions[i].m_DestBlendAlpha);
+    m_BlendStateDesc.RenderTargets[i].SrcBlend              = xiiDiligentUtils::ToDiligentBlendFactor(m_Description.m_RenderTargetBlendDescriptions[i].m_SourceBlend);
+    m_BlendStateDesc.RenderTargets[i].SrcBlendAlpha         = xiiDiligentUtils::ToDiligentBlendFactor(m_Description.m_RenderTargetBlendDescriptions[i].m_SourceBlendAlpha);
+    m_BlendStateDesc.RenderTargets[i].RenderTargetWriteMask = xiiDiligentUtils::ToDiligentColorWriteMask(m_Description.m_RenderTargetBlendDescriptions[i].m_ColorWriteMask);
   }
 
   return XII_SUCCESS;
@@ -54,24 +54,24 @@ xiiGALDepthStencilStateDiligent::~xiiGALDepthStencilStateDiligent() {}
 
 xiiResult xiiGALDepthStencilStateDiligent::InitPlatform(xiiGALDevice* pDevice)
 {
-  m_DepthStencilState.DepthEnable      = m_Description.m_bDepthTest;
-  m_DepthStencilState.DepthWriteEnable = m_Description.m_bDepthWrite;
-  m_DepthStencilState.DepthFunc        = GALCompareFuncToDiligent[m_Description.m_DepthTestFunc];
-  m_DepthStencilState.StencilEnable    = m_Description.m_bStencilTest;
-  m_DepthStencilState.StencilReadMask  = m_Description.m_uiStencilReadMask;
-  m_DepthStencilState.StencilWriteMask = m_Description.m_uiStencilWriteMask;
+  m_DepthStencilStateDesc.DepthEnable      = m_Description.m_bDepthTest;
+  m_DepthStencilStateDesc.DepthWriteEnable = m_Description.m_bDepthWrite;
+  m_DepthStencilStateDesc.DepthFunc        = GALCompareFuncToDiligent[m_Description.m_DepthTestFunc];
 
-  m_DepthStencilState.FrontFace.StencilFailOp      = GALStencilOpTableIndexToDiligent[m_Description.m_FrontFaceStencilOp.m_FailOp];
-  m_DepthStencilState.FrontFace.StencilDepthFailOp = GALStencilOpTableIndexToDiligent[m_Description.m_FrontFaceStencilOp.m_DepthFailOp];
-  m_DepthStencilState.FrontFace.StencilPassOp      = GALStencilOpTableIndexToDiligent[m_Description.m_FrontFaceStencilOp.m_PassOp];
-  m_DepthStencilState.FrontFace.StencilFunc        = GALCompareFuncToDiligent[m_Description.m_FrontFaceStencilOp.m_StencilFunc];
+  m_DepthStencilStateDesc.StencilEnable    = m_Description.m_bStencilTest;
+  m_DepthStencilStateDesc.StencilReadMask  = m_Description.m_uiStencilReadMask;
+  m_DepthStencilStateDesc.StencilWriteMask = m_Description.m_uiStencilWriteMask;
 
-  const xiiGALStencilOpDescription& backFaceStencilOp =
-    m_Description.m_bSeparateFrontAndBack ? m_Description.m_BackFaceStencilOp : m_Description.m_FrontFaceStencilOp;
-  m_DepthStencilState.BackFace.StencilFailOp      = GALStencilOpTableIndexToDiligent[backFaceStencilOp.m_FailOp];
-  m_DepthStencilState.BackFace.StencilDepthFailOp = GALStencilOpTableIndexToDiligent[backFaceStencilOp.m_DepthFailOp];
-  m_DepthStencilState.BackFace.StencilPassOp      = GALStencilOpTableIndexToDiligent[backFaceStencilOp.m_PassOp];
-  m_DepthStencilState.BackFace.StencilFunc        = GALCompareFuncToDiligent[backFaceStencilOp.m_StencilFunc];
+  m_DepthStencilStateDesc.FrontFace.StencilFailOp      = GALStencilOpTableIndexToDiligent[m_Description.m_FrontFaceStencilOp.m_FailOp];
+  m_DepthStencilStateDesc.FrontFace.StencilDepthFailOp = GALStencilOpTableIndexToDiligent[m_Description.m_FrontFaceStencilOp.m_DepthFailOp];
+  m_DepthStencilStateDesc.FrontFace.StencilPassOp      = GALStencilOpTableIndexToDiligent[m_Description.m_FrontFaceStencilOp.m_PassOp];
+  m_DepthStencilStateDesc.FrontFace.StencilFunc        = GALCompareFuncToDiligent[m_Description.m_FrontFaceStencilOp.m_StencilFunc];
+
+  const xiiGALStencilOpDescription& backFaceStencilOp = m_Description.m_bSeparateFrontAndBack ? m_Description.m_BackFaceStencilOp : m_Description.m_FrontFaceStencilOp;
+  m_DepthStencilStateDesc.BackFace.StencilFailOp      = GALStencilOpTableIndexToDiligent[backFaceStencilOp.m_FailOp];
+  m_DepthStencilStateDesc.BackFace.StencilDepthFailOp = GALStencilOpTableIndexToDiligent[backFaceStencilOp.m_DepthFailOp];
+  m_DepthStencilStateDesc.BackFace.StencilPassOp      = GALStencilOpTableIndexToDiligent[backFaceStencilOp.m_PassOp];
+  m_DepthStencilStateDesc.BackFace.StencilFunc        = GALCompareFuncToDiligent[backFaceStencilOp.m_StencilFunc];
 
   return XII_SUCCESS;
 }
@@ -92,20 +92,21 @@ xiiGALRasterizerStateDiligent::~xiiGALRasterizerStateDiligent() {}
 
 xiiResult xiiGALRasterizerStateDiligent::InitPlatform(xiiGALDevice* pDevice)
 {
-  m_RasterizerState.CullMode              = GALCullModeToDiligent[m_Description.m_CullMode];
-  m_RasterizerState.DepthBias             = m_Description.m_iDepthBias;
-  m_RasterizerState.DepthBiasClamp        = m_Description.m_fDepthBiasClamp;
-  m_RasterizerState.DepthClipEnable       = m_Description.m_fDepthBiasClamp > 0.0f;
-  m_RasterizerState.FillMode              = m_Description.m_bWireFrame ? Diligent::FILL_MODE::FILL_MODE_WIREFRAME : Diligent::FILL_MODE::FILL_MODE_SOLID;
-  m_RasterizerState.FrontCounterClockwise = m_Description.m_bFrontCounterClockwise;
-  m_RasterizerState.AntialiasedLineEnable = true;
-  m_RasterizerState.ScissorEnable         = m_Description.m_bScissorTest;
-  m_RasterizerState.SlopeScaledDepthBias  = m_Description.m_fSlopeScaledDepthBias;
+  m_RasterizerStateDesc.CullMode              = GALCullModeToDiligent[m_Description.m_CullMode];
+  m_RasterizerStateDesc.DepthBias             = m_Description.m_iDepthBias;
+  m_RasterizerStateDesc.DepthBiasClamp        = m_Description.m_fDepthBiasClamp;
+  m_RasterizerStateDesc.DepthClipEnable       = m_Description.m_fDepthBiasClamp > 0.0f;
+  m_RasterizerStateDesc.FillMode              = m_Description.m_bWireFrame ? Diligent::FILL_MODE::FILL_MODE_WIREFRAME : Diligent::FILL_MODE::FILL_MODE_SOLID;
+  m_RasterizerStateDesc.FrontCounterClockwise = m_Description.m_bFrontCounterClockwise;
+  m_RasterizerStateDesc.AntialiasedLineEnable = true;
+  m_RasterizerStateDesc.ScissorEnable         = m_Description.m_bScissorTest;
+  m_RasterizerStateDesc.SlopeScaledDepthBias  = m_Description.m_fSlopeScaledDepthBias;
 
   if (m_Description.m_bConservativeRasterization)
   {
     xiiLog::Warning("Rasterizer state description enables conservative rasterization which is not available!");
   }
+
   return XII_SUCCESS;
 }
 

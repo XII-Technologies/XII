@@ -245,10 +245,10 @@ void xiiShaderExplorerApp::AfterCoreSystemsStartup()
 #endif
 
   constexpr const char* szDefaultLibraryName = "xiiRendererDiligent";
-  xiiGALDeviceFactory::ConfigureLibraryName("DX11", "xiiRendererDX11");
-  xiiGALDeviceFactory::ConfigureLibraryName("D3D11", szDefaultLibraryName);
-  xiiGALDeviceFactory::ConfigureLibraryName("D3D12", szDefaultLibraryName);
-  xiiGALDeviceFactory::ConfigureLibraryName("Vulkan", szDefaultLibraryName);
+  xiiGALDeviceFactory::RegisterLibraryName("DX11", "xiiRendererDX11");
+  xiiGALDeviceFactory::RegisterLibraryName("D3D11", szDefaultLibraryName);
+  xiiGALDeviceFactory::RegisterLibraryName("D3D12", szDefaultLibraryName);
+  xiiGALDeviceFactory::RegisterLibraryName("Vulkan", szDefaultLibraryName);
 
   const char* szRendererName   = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
   const char* szShaderModel    = "";
@@ -397,6 +397,11 @@ void xiiShaderExplorerApp::BeforeHighLevelSystemsShutdown()
 
   m_pCamera.Clear();
   m_pDirectoryWatcher.Clear();
+
+  xiiGALDeviceFactory::UnregisterLibraryName("DX11");
+  xiiGALDeviceFactory::UnregisterLibraryName("D3D11");
+  xiiGALDeviceFactory::UnregisterLibraryName("D3D12");
+  xiiGALDeviceFactory::UnregisterLibraryName("Vulkan");
 }
 
 void xiiShaderExplorerApp::UpdateSwapChain()

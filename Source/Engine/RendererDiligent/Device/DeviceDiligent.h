@@ -139,8 +139,6 @@ protected:
 
   xiiGALFormatLookupTableDiligent m_FormatLookupTable;
 
-  std::unique_ptr<xiiDiligentMemoryAllocator> m_pMemoryAllocator;
-
   xiiUniquePtr<xiiGALPassDiligent> m_pDefaultPass;
 
 #if XII_ENABLED(XII_USE_PROFILING)

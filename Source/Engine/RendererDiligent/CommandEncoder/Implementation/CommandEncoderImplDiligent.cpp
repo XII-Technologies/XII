@@ -546,7 +546,7 @@ void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* 
     }
     break;
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 
@@ -805,7 +805,7 @@ void xiiGALCommandEncoderImplDiligent::GenerateMipMapsPlatform(const xiiGALResou
 
 void xiiGALCommandEncoderImplDiligent::FlushPlatform()
 {
-  m_pContext->Flush();
+  FlushDeferredStateChangesGraphics();
 }
 
 // Debug helper functions
