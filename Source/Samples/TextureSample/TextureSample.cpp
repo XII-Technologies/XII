@@ -120,10 +120,10 @@ public:
 #endif
 
     constexpr const char* szDefaultLibraryName = "xiiRendererDiligent";
-    xiiGALDeviceFactory::ConfigureLibraryName("DX11", "xiiRendererDX11");
-    xiiGALDeviceFactory::ConfigureLibraryName("D3D11", szDefaultLibraryName);
-    xiiGALDeviceFactory::ConfigureLibraryName("D3D12", szDefaultLibraryName);
-    xiiGALDeviceFactory::ConfigureLibraryName("Vulkan", szDefaultLibraryName);
+    xiiGALDeviceFactory::RegisterLibraryName("DX11", "xiiRendererDX11");
+    xiiGALDeviceFactory::RegisterLibraryName("D3D11", szDefaultLibraryName);
+    xiiGALDeviceFactory::RegisterLibraryName("D3D12", szDefaultLibraryName);
+    xiiGALDeviceFactory::RegisterLibraryName("Vulkan", szDefaultLibraryName);
 
     const char* szRendererName   = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
     const char* szShaderModel    = "";
@@ -423,6 +423,11 @@ public:
     XII_DEFAULT_DELETE(m_pWindow);
 
     xiiTelemetry::CloseConnection();
+
+    xiiGALDeviceFactory::UnregisterLibraryName("DX11");
+    xiiGALDeviceFactory::UnregisterLibraryName("D3D11");
+    xiiGALDeviceFactory::UnregisterLibraryName("D3D12");
+    xiiGALDeviceFactory::UnregisterLibraryName("Vulkan");
   }
 
   void CreateSquareMesh()
