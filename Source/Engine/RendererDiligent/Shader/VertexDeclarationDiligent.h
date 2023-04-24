@@ -5,8 +5,6 @@
 
 #include <RendererFoundation/Shader/VertexDeclaration.h>
 
-XII_DEFINE_AS_POD_TYPE(Diligent::LayoutElement);
-
 class XII_RENDERERDILIGENT_DLL xiiGALVertexDeclarationDiligent : public xiiGALVertexDeclaration
 {
 public:
