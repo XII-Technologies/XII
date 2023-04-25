@@ -79,7 +79,7 @@ public:
   /// to actually get an objects into an xiiWorld.
   /// By default, the method will warn if it skips bytes in the stream that are of unknown
   /// types. The warnings can be suppressed by setting warningOnUnkownSkip to false.
-  xiiResult ReadWorldDescription(xiiStreamReader& stream, bool warningOnUnkownSkip = true);
+  xiiResult ReadWorldDescription(xiiStreamReader& inout_stream, bool bWarningOnUnkownSkip = true);
 
   /// \brief Creates one instance of the world that was previously read by ReadWorldDescription().
   ///
@@ -95,7 +95,7 @@ public:
   ///
   /// If pProgress is a valid pointer it is used to track the progress of the instantiation. The xiiProgress object
   /// has to be valid as long as the instantiation is in progress.
-  xiiUniquePtr<InstantiationContextBase> InstantiateWorld(xiiWorld& world, const xiiUInt16* pOverrideTeamID = nullptr, xiiTime maxStepTime = xiiTime::Zero(), xiiProgress* pProgress = nullptr);
+  xiiUniquePtr<InstantiationContextBase> InstantiateWorld(xiiWorld& ref_world, const xiiUInt16* pOverrideTeamID = nullptr, xiiTime maxStepTime = xiiTime::Zero(), xiiProgress* pProgress = nullptr);
 
   /// \brief Creates one instance of the world that was previously read by ReadWorldDescription().
   ///
@@ -112,7 +112,7 @@ public:
   ///
   /// If pProgress is a valid pointer it is used to track the progress of the instantiation. The xiiProgress object
   /// has to be valid as long as the instantiation is in progress.
-  xiiUniquePtr<InstantiationContextBase> InstantiatePrefab(xiiWorld& world, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options);
+  xiiUniquePtr<InstantiationContextBase> InstantiatePrefab(xiiWorld& ref_world, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options);
 
   /// \brief Gives access to the stream of data. Use this inside component deserialization functions to read data.
   xiiStreamReader& GetStream() const { return *m_pStream; }
@@ -149,8 +149,8 @@ public:
   xiiUInt32 GetRootObjectCount() const;
   xiiUInt32 GetChildObjectCount() const;
 
-  static void    SetMaxStepTime(InstantiationContextBase* context, xiiTime maxStepTime);
-  static xiiTime GetMaxStepTime(InstantiationContextBase* context);
+  static void    SetMaxStepTime(InstantiationContextBase* pContext, xiiTime maxStepTime);
+  static xiiTime GetMaxStepTime(InstantiationContextBase* pContext);
 
 private:
   struct GameObjectToCreate
@@ -193,14 +193,14 @@ private:
   class InstantiationContext : public InstantiationContextBase
   {
   public:
-    InstantiationContext(xiiWorldReader& worldReader, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options);
+    InstantiationContext(xiiWorldReader& ref_worldReader, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options);
     ~InstantiationContext();
 
     virtual StepResult Step() override;
     virtual void       Cancel() override;
 
     template <bool UseTransform>
-    bool CreateGameObjects(const xiiDynamicArray<GameObjectToCreate>& objects, xiiGameObjectHandle hParent, xiiDynamicArray<xiiGameObject*>* out_CreatedObjects, xiiTime endTime);
+    bool CreateGameObjects(const xiiDynamicArray<GameObjectToCreate>& objects, xiiGameObjectHandle hParent, xiiDynamicArray<xiiGameObject*>* out_pCreatedObjects, xiiTime endTime);
 
     bool CreateComponents(xiiTime endTime);
     bool DeserializeComponents(xiiTime endTime);

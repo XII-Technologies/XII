@@ -23,7 +23,7 @@ public:
 
   /// \brief Attempts to create a new semaphore with an initial number of available tokens.
   ///
-  /// If szSharedName is a non-empty string, a 'named' semaphore is created, which can be opened on other processes as well.
+  /// If sSharedName is a non-empty string, a 'named' semaphore is created, which can be opened on other processes as well.
   ///
   /// This call can fail, if a semaphore with the same name already exists. Use xiiSemaphore::Open() instead.
   xiiResult Create(xiiUInt32 uiInitialTokenCount = 0, xiiStringView sSharedName = xiiStringView());

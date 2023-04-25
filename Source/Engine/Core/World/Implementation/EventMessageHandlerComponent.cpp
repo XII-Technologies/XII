@@ -53,10 +53,10 @@ XII_END_ABSTRACT_COMPONENT_TYPE;
 xiiEventMessageHandlerComponent::xiiEventMessageHandlerComponent()  = default;
 xiiEventMessageHandlerComponent::~xiiEventMessageHandlerComponent() = default;
 
-void xiiEventMessageHandlerComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiEventMessageHandlerComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(inout_stream);
+  auto& s = inout_stream.GetStream();
 
   // version 2
   s << m_bIsGlobalEventHandler;
@@ -65,11 +65,11 @@ void xiiEventMessageHandlerComponent::SerializeComponent(xiiWorldWriter& stream)
   s << m_bPassThroughUnhandledEvents;
 }
 
-void xiiEventMessageHandlerComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiEventMessageHandlerComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = inout_stream.GetStream();
 
   if (uiVersion >= 2)
   {
@@ -92,9 +92,9 @@ void xiiEventMessageHandlerComponent::Deinitialize()
   SUPER::Deinitialize();
 }
 
-void xiiEventMessageHandlerComponent::SetDebugOutput(bool enable)
+void xiiEventMessageHandlerComponent::SetDebugOutput(bool bEnable)
 {
-  m_bDebugOutput = enable;
+  m_bDebugOutput = bEnable;
 }
 
 bool xiiEventMessageHandlerComponent::GetDebugOutput() const
@@ -102,14 +102,14 @@ bool xiiEventMessageHandlerComponent::GetDebugOutput() const
   return m_bDebugOutput;
 }
 
-void xiiEventMessageHandlerComponent::SetGlobalEventHandlerMode(bool enable)
+void xiiEventMessageHandlerComponent::SetGlobalEventHandlerMode(bool bEnable)
 {
-  if (m_bIsGlobalEventHandler == enable)
+  if (m_bIsGlobalEventHandler == bEnable)
     return;
 
-  m_bIsGlobalEventHandler = enable;
+  m_bIsGlobalEventHandler = bEnable;
 
-  if (enable)
+  if (bEnable)
   {
     RegisterGlobalEventHandler(this);
   }

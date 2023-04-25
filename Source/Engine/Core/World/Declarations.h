@@ -53,12 +53,12 @@ struct xiiGameObjectId
 
   static_assert(XII_WORLD_INDEX_BITS > 0 && XII_WORLD_INDEX_BITS <= 24);
 
-  XII_FORCE_INLINE xiiGameObjectId(StorageType instanceIndex, xiiUInt8 generation, xiiUInt8 worldIndex = 0)
+  XII_FORCE_INLINE xiiGameObjectId(StorageType instanceIndex, xiiUInt8 uiGeneration, xiiUInt8 uiWorldIndex = 0)
   {
     m_Data          = 0;
     m_InstanceIndex = static_cast<xiiUInt32>(instanceIndex);
-    m_Generation    = generation;
-    m_WorldIndex    = worldIndex;
+    m_Generation    = uiGeneration;
+    m_WorldIndex    = uiWorldIndex;
   }
 
   union
@@ -96,8 +96,8 @@ struct xiiHashHelper<xiiGameObjectHandle>
 };
 
 /// \brief Currently not implemented as it is not needed for game object handles.
-XII_CORE_DLL void operator<<(xiiStreamWriter& Stream, const xiiGameObjectHandle& Value);
-XII_CORE_DLL void operator>>(xiiStreamReader& Stream, xiiGameObjectHandle& Value);
+XII_CORE_DLL void operator<<(xiiStreamWriter& inout_stream, const xiiGameObjectHandle& hValue);
+XII_CORE_DLL void operator>>(xiiStreamReader& inout_stream, xiiGameObjectHandle& ref_hValue);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiGameObjectHandle);
 XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiGameObjectHandle);
@@ -113,13 +113,13 @@ struct xiiComponentId
 
   static_assert(XII_COMPONENT_TYPE_INDEX_BITS > 0 && XII_COMPONENT_TYPE_INDEX_BITS <= 16);
 
-  XII_ALWAYS_INLINE xiiComponentId(StorageType instanceIndex, xiiUInt8 generation, xiiUInt16 typeId = 0, xiiUInt8 worldIndex = 0)
+  XII_ALWAYS_INLINE xiiComponentId(StorageType instanceIndex, xiiUInt8 uiGeneration, xiiUInt16 uiTypeId = 0, xiiUInt8 uiWorldIndex = 0)
   {
     m_Data          = 0;
     m_InstanceIndex = static_cast<xiiUInt32>(instanceIndex);
-    m_Generation    = generation;
-    m_TypeId        = typeId;
-    m_WorldIndex    = worldIndex;
+    m_Generation    = uiGeneration;
+    m_TypeId        = uiTypeId;
+    m_WorldIndex    = uiWorldIndex;
   }
 
   union
@@ -164,8 +164,8 @@ struct xiiHashHelper<xiiComponentHandle>
 };
 
 /// \brief Currently not implemented as it is not needed for component handles.
-XII_CORE_DLL void operator<<(xiiStreamWriter& Stream, const xiiComponentHandle& Value);
-XII_CORE_DLL void operator>>(xiiStreamReader& Stream, xiiComponentHandle& Value);
+XII_CORE_DLL void operator<<(xiiStreamWriter& inout_stream, const xiiComponentHandle& hValue);
+XII_CORE_DLL void operator>>(xiiStreamReader& inout_stream, xiiComponentHandle& ref_hValue);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiComponentHandle);
 XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiComponentHandle);
@@ -308,7 +308,7 @@ struct XII_CORE_DLL xiiOnComponentFinishedAction
   /// xiiOnComponentFinishedAction mechanism.
   /// Depending on the state of this component, the function will either execute the object deletion,
   /// or delay it, until its own work is done.
-  static void HandleDeleteObjectMsg(xiiMsgDeleteGameObject& msg, xiiEnum<xiiOnComponentFinishedAction>& action);
+  static void HandleDeleteObjectMsg(xiiMsgDeleteGameObject& ref_msg, xiiEnum<xiiOnComponentFinishedAction>& ref_action);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiOnComponentFinishedAction);
@@ -332,7 +332,7 @@ struct XII_CORE_DLL xiiOnComponentFinishedAction2
   static void HandleFinishedAction(xiiComponent* pComponent, xiiOnComponentFinishedAction2::Enum action);
 
   /// \brief See xiiOnComponentFinishedAction::HandleDeleteObjectMsg()
-  static void HandleDeleteObjectMsg(xiiMsgDeleteGameObject& msg, xiiEnum<xiiOnComponentFinishedAction2>& action);
+  static void HandleDeleteObjectMsg(xiiMsgDeleteGameObject& ref_msg, xiiEnum<xiiOnComponentFinishedAction2>& ref_action);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiOnComponentFinishedAction2);

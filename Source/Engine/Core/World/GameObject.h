@@ -137,7 +137,7 @@ public:
   void          SetName(xiiStringView sName);
   void          SetName(const xiiHashedString& sName);
   xiiStringView GetName() const;
-  bool          HasName(const xiiTempHashedString& name) const;
+  bool          HasName(const xiiTempHashedString& sName) const;
 
   /// \brief Sets the global key to identify this object. Global keys must be unique within a world.
   void          SetGlobalKey(xiiStringView sGlobalKey);
@@ -160,7 +160,7 @@ public:
   };
 
   /// \brief Sets the parent of this object to the given.
-  void SetParent(const xiiGameObjectHandle& parent, xiiGameObject::TransformPreservation preserve = TransformPreservation::PreserveGlobal);
+  void SetParent(const xiiGameObjectHandle& hParent, xiiGameObject::TransformPreservation preserve = TransformPreservation::PreserveGlobal);
 
   /// \brief Gets the parent of this object or nullptr if this is a top-level object.
   xiiGameObject* GetParent();
@@ -169,13 +169,13 @@ public:
   const xiiGameObject* GetParent() const;
 
   /// \brief Adds the given object as a child object.
-  void AddChild(const xiiGameObjectHandle& child, xiiGameObject::TransformPreservation preserve = TransformPreservation::PreserveGlobal);
+  void AddChild(const xiiGameObjectHandle& hChild, xiiGameObject::TransformPreservation preserve = TransformPreservation::PreserveGlobal);
 
   /// \brief Adds the given objects as child objects.
   void AddChildren(const xiiArrayPtr<const xiiGameObjectHandle>& children, xiiGameObject::TransformPreservation preserve = TransformPreservation::PreserveGlobal);
 
   /// \brief Detaches the given child object from this object and makes it a top-level object.
-  void DetachChild(const xiiGameObjectHandle& child, xiiGameObject::TransformPreservation preserve = TransformPreservation::PreserveGlobal);
+  void DetachChild(const xiiGameObjectHandle& hChild, xiiGameObject::TransformPreservation preserve = TransformPreservation::PreserveGlobal);
 
   /// \brief Detaches the given child objects from this object and makes them top-level objects.
   void DetachChildren(const xiiArrayPtr<const xiiGameObjectHandle>& children, xiiGameObject::TransformPreservation preserve = TransformPreservation::PreserveGlobal);
@@ -190,7 +190,7 @@ public:
   ConstChildIterator GetChildren() const;
 
   /// \brief Searches for a child object with the given name. Optionally traverses the entire hierarchy.
-  xiiGameObject* FindChildByName(const xiiTempHashedString& name, bool bRecursive = true);
+  xiiGameObject* FindChildByName(const xiiTempHashedString& sName, bool bRecursive = true);
 
   /// \brief Searches for a child using a path. Every path segment represents a child with a given name.
   ///
@@ -211,7 +211,7 @@ public:
   xiiGameObject* SearchForChildByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent = nullptr);
 
   /// \brief Same as SearchForChildByNameSequence but returns ALL matches, in case the given path could mean multiple objects
-  void SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiHybridArray<xiiGameObject*, 8>& out_Objects);
+  void SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiHybridArray<xiiGameObject*, 8>& out_objects);
 
   xiiWorld*       GetWorld();
   const xiiWorld* GetWorld() const;
@@ -228,54 +228,54 @@ public:
   /// \note The rotation of the object itself does not affect the final global position!
   /// The local position is always in the space of the parent object. If there is no parent, local position and global position are
   /// identical.
-  void    SetLocalPosition(xiiVec3 position);
+  void    SetLocalPosition(xiiVec3 vPosition);
   xiiVec3 GetLocalPosition() const;
 
-  void    SetLocalRotation(xiiQuat rotation);
+  void    SetLocalRotation(xiiQuat qRotation);
   xiiQuat GetLocalRotation() const;
 
-  void    SetLocalScaling(xiiVec3 scaling);
+  void    SetLocalScaling(xiiVec3 vScaling);
   xiiVec3 GetLocalScaling() const;
 
-  void  SetLocalUniformScaling(float scaling);
+  void  SetLocalUniformScaling(float fScaling);
   float GetLocalUniformScaling() const;
 
   xiiTransform GetLocalTransform() const;
 
-  void    SetGlobalPosition(const xiiVec3& position);
+  void    SetGlobalPosition(const xiiVec3& vPosition);
   xiiVec3 GetGlobalPosition() const;
 
-  void    SetGlobalRotation(const xiiQuat rotation);
+  void    SetGlobalRotation(const xiiQuat qRotation);
   xiiQuat GetGlobalRotation() const;
 
-  void    SetGlobalScaling(const xiiVec3 scaling);
+  void    SetGlobalScaling(const xiiVec3 vScaling);
   xiiVec3 GetGlobalScaling() const;
 
   void         SetGlobalTransform(const xiiTransform& transform);
   xiiTransform GetGlobalTransform() const;
 
   // Simd variants of above methods
-  void                SetLocalPosition(const xiiSimdVec4f& position, UpdateBehaviorIfStatic updateBehavior = UpdateBehaviorIfStatic::UpdateImmediately);
+  void                SetLocalPosition(const xiiSimdVec4f& vPosition, UpdateBehaviorIfStatic updateBehavior = UpdateBehaviorIfStatic::UpdateImmediately);
   const xiiSimdVec4f& GetLocalPositionSimd() const;
 
-  void               SetLocalRotation(const xiiSimdQuat& rotation, UpdateBehaviorIfStatic updateBehavior = UpdateBehaviorIfStatic::UpdateImmediately);
+  void               SetLocalRotation(const xiiSimdQuat& qRotation, UpdateBehaviorIfStatic updateBehavior = UpdateBehaviorIfStatic::UpdateImmediately);
   const xiiSimdQuat& GetLocalRotationSimd() const;
 
-  void                SetLocalScaling(const xiiSimdVec4f& scaling, UpdateBehaviorIfStatic updateBehavior = UpdateBehaviorIfStatic::UpdateImmediately);
+  void                SetLocalScaling(const xiiSimdVec4f& vScaling, UpdateBehaviorIfStatic updateBehavior = UpdateBehaviorIfStatic::UpdateImmediately);
   const xiiSimdVec4f& GetLocalScalingSimd() const;
 
-  void         SetLocalUniformScaling(const xiiSimdFloat& scaling, UpdateBehaviorIfStatic updateBehavior = UpdateBehaviorIfStatic::UpdateImmediately);
+  void         SetLocalUniformScaling(const xiiSimdFloat& fScaling, UpdateBehaviorIfStatic updateBehavior = UpdateBehaviorIfStatic::UpdateImmediately);
   xiiSimdFloat GetLocalUniformScalingSimd() const;
 
   xiiSimdTransform GetLocalTransformSimd() const;
 
-  void                SetGlobalPosition(const xiiSimdVec4f& position);
+  void                SetGlobalPosition(const xiiSimdVec4f& vPosition);
   const xiiSimdVec4f& GetGlobalPositionSimd() const;
 
-  void               SetGlobalRotation(const xiiSimdQuat& rotation);
+  void               SetGlobalRotation(const xiiSimdQuat& qRotation);
   const xiiSimdQuat& GetGlobalRotationSimd() const;
 
-  void                SetGlobalScaling(const xiiSimdVec4f& scaling);
+  void                SetGlobalScaling(const xiiSimdVec4f& vScaling);
   const xiiSimdVec4f& GetGlobalScalingSimd() const;
 
   void                    SetGlobalTransform(const xiiSimdTransform& transform);
@@ -374,16 +374,16 @@ public:
 
 
   /// \brief Sends a message to all components of this object.
-  bool SendMessage(xiiMessage& msg);
+  bool SendMessage(xiiMessage& ref_msg);
 
   /// \brief Sends a message to all components of this object.
-  bool SendMessage(xiiMessage& msg) const;
+  bool SendMessage(xiiMessage& ref_msg) const;
 
   /// \brief Sends a message to all components of this object and then recursively to all children.
-  bool SendMessageRecursive(xiiMessage& msg);
+  bool SendMessageRecursive(xiiMessage& ref_msg);
 
   /// \brief Sends a message to all components of this object and then recursively to all children.
-  bool SendMessageRecursive(xiiMessage& msg) const;
+  bool SendMessageRecursive(xiiMessage& ref_msg) const;
 
 
   /// \brief Queues the message for the given phase. The message is processed after the given delay in the corresponding phase.
@@ -415,16 +415,16 @@ public:
   ///        A projectile component sending a 'take damage event' to the hit object, would pass through itself (the projectile)
   ///        such that the handling code can detect which object was responsible for the damage (and using the xiiGameObject's team-ID,
   ///        it can detect which player fired the projectile).
-  void SendEventMessage(xiiMessage& msg, const xiiComponent* senderComponent);
+  void SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent);
 
   /// \copydoc xiiGameObject::SendEventMessage()
-  void SendEventMessage(xiiMessage& msg, const xiiComponent* senderComponent) const;
+  void SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent) const;
 
   /// \copydoc xiiGameObject::SendEventMessage()
   ///
   /// \param queueType In which update phase to deliver the message.
   /// \param delay An optional delay before delivering the message.
-  void PostEventMessage(xiiMessage& msg, const xiiComponent* pSenderComponent, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
+  void PostEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
 
 
   /// \brief Returns the tag set associated with this object.
@@ -446,7 +446,7 @@ public:
   const xiiUInt16& GetTeamID() const { return m_uiTeamID; }
 
   /// \brief Changes the team ID for this object and all children recursively.
-  void SetTeamID(xiiUInt16 id);
+  void SetTeamID(xiiUInt16 uiId);
 
   /// \brief Returns a random value that is chosen once during object creation and remains stable even throughout serialization.
   ///
@@ -466,7 +466,7 @@ public:
   /// See \a GetStableRandomSeed() for details.
   ///
   /// It should not be necessary to manually change this value, unless you want to make the seed deterministic according to a custom rule.
-  void SetStableRandomSeed(xiiUInt32 seed);
+  void SetStableRandomSeed(xiiUInt32 uiSeed);
 
   /// \brief Returns the number of frames since this object was last visible in any view.
   ///
@@ -477,7 +477,7 @@ private:
   friend class xiiComponentManagerBase;
   friend class xiiGameObjectTest;
 
-  // Only needed until reflection can deal with xiiStringView
+  // only needed until reflection can deal with xiiStringView
   void        SetNameInternal(const char* szName);
   const char* GetNameInternal() const;
   void        SetGlobalKeyInternal(const char* szKey);
@@ -572,11 +572,11 @@ private:
 
     void UpdateGlobalBounds(xiiSpatialSystem* pSpatialSystem);
     void UpdateGlobalBounds();
-    void UpdateGlobalBoundsAndSpatialData(xiiSpatialSystem& spatialSystem);
+    void UpdateGlobalBoundsAndSpatialData(xiiSpatialSystem& ref_spatialSystem);
 
     void UpdateVelocity(const xiiSimdFloat& fInvDeltaSeconds);
 
-    void RecreateSpatialData(xiiSpatialSystem& spatialSystem);
+    void RecreateSpatialData(xiiSpatialSystem& ref_spatialSystem);
   };
 
   xiiGameObjectId m_InternalId;

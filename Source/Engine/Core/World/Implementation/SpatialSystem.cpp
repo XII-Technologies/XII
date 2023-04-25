@@ -19,36 +19,36 @@ void xiiSpatialSystem::StartNewFrame()
   ++m_uiFrameCounter;
 }
 
-void xiiSpatialSystem::FindObjectsInSphere(const xiiBoundingSphere& sphere, const QueryParams& queryParams, xiiDynamicArray<xiiGameObject*>& out_Objects) const
+void xiiSpatialSystem::FindObjectsInSphere(const xiiBoundingSphere& sphere, const QueryParams& queryParams, xiiDynamicArray<xiiGameObject*>& out_objects) const
 {
-  out_Objects.Clear();
+  out_objects.Clear();
 
   FindObjectsInSphere(
     sphere, queryParams,
     [&](xiiGameObject* pObject) {
-      out_Objects.PushBack(pObject);
+      out_objects.PushBack(pObject);
 
       return xiiVisitorExecution::Continue;
     });
 }
 
-void xiiSpatialSystem::FindObjectsInBox(const xiiBoundingBox& box, const QueryParams& queryParams, xiiDynamicArray<xiiGameObject*>& out_Objects) const
+void xiiSpatialSystem::FindObjectsInBox(const xiiBoundingBox& box, const QueryParams& queryParams, xiiDynamicArray<xiiGameObject*>& out_objects) const
 {
-  out_Objects.Clear();
+  out_objects.Clear();
 
   FindObjectsInBox(
     box, queryParams,
     [&](xiiGameObject* pObject) {
-      out_Objects.PushBack(pObject);
+      out_objects.PushBack(pObject);
 
       return xiiVisitorExecution::Continue;
     });
 }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-void xiiSpatialSystem::GetInternalStats(xiiStringBuilder& sb) const
+void xiiSpatialSystem::GetInternalStats(xiiStringBuilder& ref_sSb) const
 {
-  sb.Clear();
+  ref_sSb.Clear();
 }
 #endif
 

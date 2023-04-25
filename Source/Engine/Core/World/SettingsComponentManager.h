@@ -25,8 +25,8 @@ public:
   static xiiWorldModuleTypeId TypeId();
 
   // xiiComponentManagerBase implementation
-  virtual void CollectAllComponents(xiiDynamicArray<xiiComponentHandle>& out_AllComponents, bool bOnlyActive) override;
-  virtual void CollectAllComponents(xiiDynamicArray<xiiComponent*>& out_AllComponents, bool bOnlyActive) override;
+  virtual void CollectAllComponents(xiiDynamicArray<xiiComponentHandle>& out_allComponents, bool bOnlyActive) override;
+  virtual void CollectAllComponents(xiiDynamicArray<xiiComponent*>& out_allComponents, bool bOnlyActive) override;
 
 private:
   friend class xiiComponentManagerFactory;

@@ -1,18 +1,18 @@
 
-XII_FORCE_INLINE bool xiiComponentManagerBase::IsValidComponent(const xiiComponentHandle& component) const
+XII_FORCE_INLINE bool xiiComponentManagerBase::IsValidComponent(const xiiComponentHandle& hComponent) const
 {
-  return m_Components.Contains(component);
+  return m_Components.Contains(hComponent);
 }
 
-XII_FORCE_INLINE bool xiiComponentManagerBase::TryGetComponent(const xiiComponentHandle& component, xiiComponent*& out_pComponent)
+XII_FORCE_INLINE bool xiiComponentManagerBase::TryGetComponent(const xiiComponentHandle& hComponent, xiiComponent*& out_pComponent)
 {
-  return m_Components.TryGetValue(component, out_pComponent);
+  return m_Components.TryGetValue(hComponent, out_pComponent);
 }
 
-XII_FORCE_INLINE bool xiiComponentManagerBase::TryGetComponent(const xiiComponentHandle& component, const xiiComponent*& out_pComponent) const
+XII_FORCE_INLINE bool xiiComponentManagerBase::TryGetComponent(const xiiComponentHandle& hComponent, const xiiComponent*& out_pComponent) const
 {
   xiiComponent* pComponent = nullptr;
-  bool          res        = m_Components.TryGetValue(component, pComponent);
+  bool          res        = m_Components.TryGetValue(hComponent, pComponent);
   out_pComponent           = pComponent;
   return res;
 }
@@ -52,33 +52,33 @@ xiiComponentManager<T, StorageType>::~xiiComponentManager()
 }
 
 template <typename T, xiiBlockStorageType::Enum StorageType>
-XII_FORCE_INLINE bool xiiComponentManager<T, StorageType>::TryGetComponent(const xiiComponentHandle& component, ComponentType*& out_pComponent)
+XII_FORCE_INLINE bool xiiComponentManager<T, StorageType>::TryGetComponent(const xiiComponentHandle& hComponent, ComponentType*& out_pComponent)
 {
-  XII_ASSERT_DEV(ComponentType::TypeId() == component.GetInternalID().m_TypeId,
+  XII_ASSERT_DEV(ComponentType::TypeId() == hComponent.GetInternalID().m_TypeId,
                  "The given component handle is not of the expected type. Expected type id {0}, got type id {1}", ComponentType::TypeId(),
-                 component.GetInternalID().m_TypeId);
-  XII_ASSERT_DEV(component.GetInternalID().m_WorldIndex == GetWorldIndex(),
-                 "Component does not belong to this world. Expected world id {0} got id {1}", GetWorldIndex(), component.GetInternalID().m_WorldIndex);
+                 hComponent.GetInternalID().m_TypeId);
+  XII_ASSERT_DEV(hComponent.GetInternalID().m_WorldIndex == GetWorldIndex(),
+                 "Component does not belong to this world. Expected world id {0} got id {1}", GetWorldIndex(), hComponent.GetInternalID().m_WorldIndex);
 
   xiiComponent* pComponent = nullptr;
-  bool          bResult    = xiiComponentManagerBase::TryGetComponent(component, pComponent);
+  bool          bResult    = xiiComponentManagerBase::TryGetComponent(hComponent, pComponent);
   out_pComponent           = static_cast<ComponentType*>(pComponent);
   return bResult;
 }
 
 template <typename T, xiiBlockStorageType::Enum StorageType>
 XII_FORCE_INLINE bool xiiComponentManager<T, StorageType>::TryGetComponent(
-  const xiiComponentHandle& component,
+  const xiiComponentHandle& hComponent,
   const ComponentType*&     out_pComponent) const
 {
-  XII_ASSERT_DEV(ComponentType::TypeId() == component.GetInternalID().m_TypeId,
+  XII_ASSERT_DEV(ComponentType::TypeId() == hComponent.GetInternalID().m_TypeId,
                  "The given component handle is not of the expected type. Expected type id {0}, got type id {1}", ComponentType::TypeId(),
-                 component.GetInternalID().m_TypeId);
-  XII_ASSERT_DEV(component.GetInternalID().m_WorldIndex == GetWorldIndex(),
-                 "Component does not belong to this world. Expected world id {0} got id {1}", GetWorldIndex(), component.GetInternalID().m_WorldIndex);
+                 hComponent.GetInternalID().m_TypeId);
+  XII_ASSERT_DEV(hComponent.GetInternalID().m_WorldIndex == GetWorldIndex(),
+                 "Component does not belong to this world. Expected world id {0} got id {1}", GetWorldIndex(), hComponent.GetInternalID().m_WorldIndex);
 
   const xiiComponent* pComponent = nullptr;
-  bool                bResult    = xiiComponentManagerBase::TryGetComponent(component, pComponent);
+  bool                bResult    = xiiComponentManagerBase::TryGetComponent(hComponent, pComponent);
   out_pComponent                 = static_cast<const ComponentType*>(pComponent);
   return bResult;
 }
@@ -104,29 +104,29 @@ XII_ALWAYS_INLINE xiiWorldModuleTypeId xiiComponentManager<T, StorageType>::Type
 }
 
 template <typename T, xiiBlockStorageType::Enum StorageType>
-void xiiComponentManager<T, StorageType>::CollectAllComponents(xiiDynamicArray<xiiComponentHandle>& out_AllComponents, bool bOnlyActive)
+void xiiComponentManager<T, StorageType>::CollectAllComponents(xiiDynamicArray<xiiComponentHandle>& out_allComponents, bool bOnlyActive)
 {
-  out_AllComponents.Reserve(out_AllComponents.GetCount() + m_ComponentStorage.GetCount());
+  out_allComponents.Reserve(out_allComponents.GetCount() + m_ComponentStorage.GetCount());
 
   for (auto it = GetComponents(); it.IsValid(); it.Next())
   {
     if (!bOnlyActive || it->IsActive())
     {
-      out_AllComponents.PushBack(it->GetHandle());
+      out_allComponents.PushBack(it->GetHandle());
     }
   }
 }
 
 template <typename T, xiiBlockStorageType::Enum StorageType>
-void xiiComponentManager<T, StorageType>::CollectAllComponents(xiiDynamicArray<xiiComponent*>& out_AllComponents, bool bOnlyActive)
+void xiiComponentManager<T, StorageType>::CollectAllComponents(xiiDynamicArray<xiiComponent*>& out_allComponents, bool bOnlyActive)
 {
-  out_AllComponents.Reserve(out_AllComponents.GetCount() + m_ComponentStorage.GetCount());
+  out_allComponents.Reserve(out_allComponents.GetCount() + m_ComponentStorage.GetCount());
 
   for (auto it = GetComponents(); it.IsValid(); it.Next())
   {
     if (!bOnlyActive || it->IsActive())
     {
-      out_AllComponents.PushBack(it);
+      out_allComponents.PushBack(it);
     }
   }
 }

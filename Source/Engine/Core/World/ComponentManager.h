@@ -27,13 +27,13 @@ protected:
 
 public:
   /// \brief Checks whether the given handle references a valid component.
-  bool IsValidComponent(const xiiComponentHandle& component) const;
+  bool IsValidComponent(const xiiComponentHandle& hComponent) const;
 
   /// \brief Returns if a component with the given handle exists and if so writes out the corresponding pointer to out_pComponent.
-  bool TryGetComponent(const xiiComponentHandle& component, xiiComponent*& out_pComponent);
+  bool TryGetComponent(const xiiComponentHandle& hComponent, xiiComponent*& out_pComponent);
 
   /// \brief Returns if a component with the given handle exists and if so writes out the corresponding pointer to out_pComponent.
-  bool TryGetComponent(const xiiComponentHandle& component, const xiiComponent*& out_pComponent) const;
+  bool TryGetComponent(const xiiComponentHandle& hComponent, const xiiComponent*& out_pComponent) const;
 
   /// \brief Returns the number of components managed by this manager.
   xiiUInt32 GetComponentCount() const;
@@ -46,18 +46,18 @@ public:
   xiiComponentHandle CreateComponent(xiiGameObject* pOwnerObject, ComponentType*& out_pComponent);
 
   /// \brief Deletes the given component. Note that the component will be invalidated first and the actual deletion is postponed.
-  void DeleteComponent(const xiiComponentHandle& component);
+  void DeleteComponent(const xiiComponentHandle& hComponent);
 
   /// \brief Deletes the given component. Note that the component will be invalidated first and the actual deletion is postponed.
   void DeleteComponent(xiiComponent* pComponent);
 
   /// \brief Adds all components that this manager handles to the given array (array is not cleared).
   /// Prefer to use more efficient methods on derived classes, only use this if you need to go through a xiiComponentManagerBase pointer.
-  virtual void CollectAllComponents(xiiDynamicArray<xiiComponentHandle>& out_AllComponents, bool bOnlyActive) = 0;
+  virtual void CollectAllComponents(xiiDynamicArray<xiiComponentHandle>& out_allComponents, bool bOnlyActive) = 0;
 
   /// \brief Adds all components that this manager handles to the given array (array is not cleared).
   /// Prefer to use more efficient methods on derived classes, only use this if you need to go through a xiiComponentManagerBase pointer.
-  virtual void CollectAllComponents(xiiDynamicArray<xiiComponent*>& out_AllComponents, bool bOnlyActive) = 0;
+  virtual void CollectAllComponents(xiiDynamicArray<xiiComponent*>& out_allComponents, bool bOnlyActive) = 0;
 
 protected:
   /// \cond
@@ -95,10 +95,10 @@ public:
   virtual ~xiiComponentManager();
 
   /// \brief Returns if a component with the given handle exists and if so writes out the corresponding pointer to out_pComponent.
-  bool TryGetComponent(const xiiComponentHandle& component, ComponentType*& out_pComponent);
+  bool TryGetComponent(const xiiComponentHandle& hComponent, ComponentType*& out_pComponent);
 
   /// \brief Returns if a component with the given handle exists and if so writes out the corresponding pointer to out_pComponent.
-  bool TryGetComponent(const xiiComponentHandle& component, const ComponentType*& out_pComponent) const;
+  bool TryGetComponent(const xiiComponentHandle& hComponent, const ComponentType*& out_pComponent) const;
 
   /// \brief Returns an iterator over all components.
   typename xiiBlockStorage<ComponentType, xiiInternal::DEFAULT_BLOCK_SIZE, StorageType>::Iterator GetComponents(xiiUInt32 uiStartIndex = 0);
@@ -109,8 +109,8 @@ public:
   /// \brief Returns the type id corresponding to the component type managed by this manager.
   static xiiWorldModuleTypeId TypeId();
 
-  virtual void CollectAllComponents(xiiDynamicArray<xiiComponentHandle>& out_AllComponents, bool bOnlyActive) override;
-  virtual void CollectAllComponents(xiiDynamicArray<xiiComponent*>& out_AllComponents, bool bOnlyActive) override;
+  virtual void CollectAllComponents(xiiDynamicArray<xiiComponentHandle>& out_allComponents, bool bOnlyActive) override;
+  virtual void CollectAllComponents(xiiDynamicArray<xiiComponent*>& out_allComponents, bool bOnlyActive) override;
 
 protected:
   friend ComponentType;

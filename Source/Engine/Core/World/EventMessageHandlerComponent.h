@@ -19,8 +19,8 @@ class XII_CORE_DLL xiiEventMessageHandlerComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 protected:
   virtual void Deinitialize() override;
@@ -35,13 +35,13 @@ public:
   ~xiiEventMessageHandlerComponent();
 
   /// \brief Sets the debug output object flag. The effect is type specific, most components will not do anything different.
-  void SetDebugOutput(bool enable);
+  void SetDebugOutput(bool bEnable);
 
   /// \brief Gets the debug output object flag.
   bool GetDebugOutput() const;
 
   /// \brief Registers or de-registers this component as a global event handler.
-  void SetGlobalEventHandlerMode(bool enable); // [ property ]
+  void SetGlobalEventHandlerMode(bool bEnable); // [ property ]
 
   /// \brief Returns whether this component is registered as a global event handler.
   bool GetGlobalEventHandlerMode() const { return m_bIsGlobalEventHandler; } // [ property ]

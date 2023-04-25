@@ -53,10 +53,10 @@ public:
 #endif
   };
 
-  virtual void FindObjectsInSphere(const xiiBoundingSphere& sphere, const QueryParams& queryParams, xiiDynamicArray<xiiGameObject*>& out_Objects) const;
+  virtual void FindObjectsInSphere(const xiiBoundingSphere& sphere, const QueryParams& queryParams, xiiDynamicArray<xiiGameObject*>& out_objects) const;
   virtual void FindObjectsInSphere(const xiiBoundingSphere& sphere, const QueryParams& queryParams, QueryCallback callback) const = 0;
 
-  virtual void FindObjectsInBox(const xiiBoundingBox& box, const QueryParams& queryParams, xiiDynamicArray<xiiGameObject*>& out_Objects) const;
+  virtual void FindObjectsInBox(const xiiBoundingBox& box, const QueryParams& queryParams, xiiDynamicArray<xiiGameObject*>& out_objects) const;
   virtual void FindObjectsInBox(const xiiBoundingBox& box, const QueryParams& queryParams, QueryCallback callback) const = 0;
 
   ///@}
@@ -65,14 +65,14 @@ public:
 
   using IsOccludedFunc = xiiDelegate<bool(const xiiSimdBBox&)>;
 
-  virtual void FindVisibleObjects(const xiiFrustum& frustum, const QueryParams& queryParams, xiiDynamicArray<const xiiGameObject*>& out_Objects, IsOccludedFunc IsOccluded) const = 0;
+  virtual void FindVisibleObjects(const xiiFrustum& frustum, const QueryParams& queryParams, xiiDynamicArray<const xiiGameObject*>& out_objects, IsOccludedFunc isOccluded) const = 0;
 
   virtual xiiUInt64 GetNumFramesSinceVisible(const xiiSpatialDataHandle& hData) const = 0;
 
   ///@}
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  virtual void GetInternalStats(xiiStringBuilder& sb) const;
+  virtual void GetInternalStats(xiiStringBuilder& ref_sSb) const;
 #endif
 
 protected:

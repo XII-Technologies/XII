@@ -57,10 +57,10 @@ protected:
       };
     };
 
-    UpdateFunctionDesc(const UpdateFunction& function, xiiStringView szFunctionName)
+    UpdateFunctionDesc(const UpdateFunction& function, xiiStringView sFunctionName)
     {
       m_Function = function;
-      m_sFunctionName.Assign(szFunctionName);
+      m_sFunctionName.Assign(sFunctionName);
     }
 
     UpdateFunction  m_Function;                     ///< Delegate to the actual update function.
@@ -125,7 +125,7 @@ public:
   xiiWorldModuleTypeId GetTypeId(const xiiRTTI* pRtti);
 
   /// \brief Creates a new instance of the world module with the given type id and world.
-  xiiWorldModule* CreateWorldModule(xiiUInt16 typeId, xiiWorld* pWorld);
+  xiiWorldModule* CreateWorldModule(xiiUInt16 uiTypeId, xiiWorld* pWorld);
 
   /// \brief Register explicit a mapping of a world module interface to a specific implementation.
   ///

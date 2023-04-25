@@ -10,7 +10,7 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneExportModifier_JoltStaticMeshConversion, 1, xiiRTTIDefaultAllocator<xiiSceneExportModifier_JoltStaticMeshConversion>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-void xiiSceneExportModifier_JoltStaticMeshConversion::ModifyWorld(xiiWorld& world, xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport)
+void xiiSceneExportModifier_JoltStaticMeshConversion::ModifyWorld(xiiWorld& ref_world, xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport)
 {
   if (sDocumentType == "Prefab")
   {
@@ -25,7 +25,7 @@ void xiiSceneExportModifier_JoltStaticMeshConversion::ModifyWorld(xiiWorld& worl
     }
   }
 
-  XII_LOCK(world.GetWriteMarker());
+  XII_LOCK(ref_world.GetWriteMarker());
 
   xiiSmcDescription desc;
   desc.m_Surfaces.PushBack(); // add a dummy empty material
@@ -33,7 +33,7 @@ void xiiSceneExportModifier_JoltStaticMeshConversion::ModifyWorld(xiiWorld& worl
   xiiMsgBuildStaticMesh msg;
   msg.m_pStaticMeshDescription = &desc;
 
-  for (auto it = world.GetObjects(); it.IsValid(); ++it)
+  for (auto it = ref_world.GetObjects(); it.IsValid(); ++it)
   {
     if (!it->IsStatic())
       continue;
@@ -119,9 +119,9 @@ void xiiSceneExportModifier_JoltStaticMeshConversion::ModifyWorld(xiiWorld& worl
     xiiGameObject*    pGo;
     xiiGameObjectDesc god;
     god.m_sName.Assign("Greybox Collision Mesh");
-    world.CreateObject(god, pGo);
+    ref_world.CreateObject(god, pGo);
 
-    auto* pCompMan = world.GetOrCreateComponentManager<xiiJoltStaticActorComponentManager>();
+    auto* pCompMan = ref_world.GetOrCreateComponentManager<xiiJoltStaticActorComponentManager>();
 
     xiiJoltStaticActorComponent* pComp;
     pCompMan->CreateComponent(pGo, pComp);

@@ -36,13 +36,13 @@ namespace
     return (sx << 42) | (sy << 21) | sz;
   }
 
-  XII_ALWAYS_INLINE xiiSimdBBox ComputeCellBoundingBox(const xiiSimdVec4i& cellIndex, const xiiSimdVec4i& iCellSize)
+  XII_ALWAYS_INLINE xiiSimdBBox ComputeCellBoundingBox(const xiiSimdVec4i& vCellIndex, const xiiSimdVec4i& vCellSize)
   {
-    xiiSimdVec4i overlapSize = iCellSize >> 2;
-    xiiSimdVec4i minPos      = cellIndex.CompMul(iCellSize);
+    xiiSimdVec4i overlapSize = vCellSize >> 2;
+    xiiSimdVec4i minPos      = vCellIndex.CompMul(vCellSize);
 
     xiiSimdVec4f bmin = ToVec3(minPos - overlapSize);
-    xiiSimdVec4f bmax = ToVec3(minPos + overlapSize + iCellSize);
+    xiiSimdVec4f bmax = ToVec3(minPos + overlapSize + vCellSize);
 
     return xiiSimdBBox(bmin, bmax);
   }
@@ -68,22 +68,22 @@ namespace
     return xiiSpatialData::GetCategoryFlags(category).IsSet(xiiSpatialData::Flags::FrequentChanges) == false;
   }
 
-  void TagsToString(const xiiTagSet& tags, xiiStringBuilder& out_sb)
+  void TagsToString(const xiiTagSet& tags, xiiStringBuilder& out_sSb)
   {
-    out_sb.Append("{ ");
+    out_sSb.Append("{ ");
 
     bool first = true;
     for (auto it = tags.GetIterator(); it.IsValid(); ++it)
     {
       if (!first)
       {
-        out_sb.Append(", ");
+        out_sSb.Append(", ");
         first = false;
       }
-      out_sb.Append(it->GetTagString().GetView());
+      out_sSb.Append(it->GetTagString().GetView());
     }
 
-    out_sb.Append(" }");
+    out_sSb.Append(" }");
   }
 
   struct PlaneData
@@ -241,11 +241,11 @@ struct CellKeyHashHelper
 
 struct xiiSpatialSystem_RegularGrid::Grid
 {
-  Grid(xiiSpatialSystem_RegularGrid& system, xiiSpatialData::Category category) :
-    m_System(system), m_Cells(&system.m_Allocator), m_CellKeyToCellIndex(&system.m_Allocator), m_Category(category), m_bCanBeCached(CanBeCached(category))
+  Grid(xiiSpatialSystem_RegularGrid& ref_system, xiiSpatialData::Category category) :
+    m_System(ref_system), m_Cells(&ref_system.m_Allocator), m_CellKeyToCellIndex(&ref_system.m_Allocator), m_Category(category), m_bCanBeCached(CanBeCached(category))
   {
     xiiSimdBBox overflowBox;
-    overflowBox.SetCenterAndHalfExtents(xiiSimdVec4f::ZeroVector(), xiiSimdVec4f((float)(system.m_vCellSize.x() * MAX_CELL_INDEX)));
+    overflowBox.SetCenterAndHalfExtents(xiiSimdVec4f::ZeroVector(), xiiSimdVec4f((float)(ref_system.m_vCellSize.x() * MAX_CELL_INDEX)));
 
     auto pOverflowCell      = XII_NEW(&m_System.m_AlignedAllocator, Cell, &m_System.m_AlignedAllocator, &m_System.m_Allocator);
     pOverflowCell->m_Bounds = overflowBox;
@@ -426,7 +426,7 @@ namespace xiiInternal
     };
 
     template <typename T, bool UseTagsFilter>
-    static xiiVisitorExecution::Enum ShapeQueryCallback(const xiiSpatialSystem_RegularGrid::Cell& cell, const xiiSpatialSystem::QueryParams& queryParams, xiiSpatialSystem_RegularGrid::Stats& stats, void* pUserData)
+    static xiiVisitorExecution::Enum ShapeQueryCallback(const xiiSpatialSystem_RegularGrid::Cell& cell, const xiiSpatialSystem::QueryParams& queryParams, xiiSpatialSystem_RegularGrid::Stats& ref_stats, void* pUserData)
     {
       auto pQueryData = static_cast<const ShapeQueryData<T>*>(pUserData);
       T    shape      = pQueryData->m_Shape;
@@ -440,7 +440,7 @@ namespace xiiInternal
       auto objectPointers  = cell.m_ObjectPointers.GetData();
 
       const xiiUInt32 numSpheres = cell.m_BoundingSpheres.GetCount();
-      stats.m_uiNumObjectsTested += numSpheres;
+      ref_stats.m_uiNumObjectsTested += numSpheres;
 
       for (xiiUInt32 i = 0; i < numSpheres; ++i)
       {
@@ -451,12 +451,12 @@ namespace xiiInternal
         {
           if (FilterByTags(tagSets[i], queryParams.m_IncludeTags, queryParams.m_ExcludeTags))
           {
-            stats.m_uiNumObjectsFiltered++;
+            ref_stats.m_uiNumObjectsFiltered++;
             continue;
           }
         }
 
-        stats.m_uiNumObjectsPassed++;
+        ref_stats.m_uiNumObjectsPassed++;
 
         if (pQueryData->m_Callback(objectPointers[i]) == xiiVisitorExecution::Stop)
           return xiiVisitorExecution::Stop;
@@ -474,7 +474,7 @@ namespace xiiInternal
     };
 
     template <bool UseTagsFilter, bool UseOcclusionCallback>
-    static xiiVisitorExecution::Enum FrustumQueryCallback(const xiiSpatialSystem_RegularGrid::Cell& cell, const xiiSpatialSystem::QueryParams& queryParams, xiiSpatialSystem_RegularGrid::Stats& stats, void* pUserData)
+    static xiiVisitorExecution::Enum FrustumQueryCallback(const xiiSpatialSystem_RegularGrid::Cell& cell, const xiiSpatialSystem::QueryParams& queryParams, xiiSpatialSystem_RegularGrid::Stats& ref_stats, void* pUserData)
     {
       auto      pQueryData = static_cast<FrustumQueryData*>(pUserData);
       PlaneData planeData  = pQueryData->m_PlaneData;
@@ -499,7 +499,7 @@ namespace xiiInternal
       auto        lastVisibleFrames      = cell.m_LastVisibleFrames.GetData();
 
       const xiiUInt32 numSpheres = cell.m_BoundingSpheres.GetCount();
-      stats.m_uiNumObjectsTested += numSpheres;
+      ref_stats.m_uiNumObjectsTested += numSpheres;
 
       xiiUInt32 currentIndex = 0;
 
@@ -526,7 +526,7 @@ namespace xiiInternal
             {
               if (FilterByTags(tagSets[i], queryParams.m_IncludeTags, queryParams.m_ExcludeTags))
               {
-                stats.m_uiNumObjectsFiltered++;
+                ref_stats.m_uiNumObjectsFiltered++;
                 continue;
               }
             }
@@ -543,7 +543,7 @@ namespace xiiInternal
             lastVisibleFrames[i] = pQueryData->m_uiFrameCounter;
             pQueryData->m_pOutObjects->PushBack(objectPointers[i]);
 
-            stats.m_uiNumObjectsPassed++;
+            ref_stats.m_uiNumObjectsPassed++;
           }
 
           currentIndex += 32;
@@ -560,7 +560,7 @@ namespace xiiInternal
           {
             if (FilterByTags(tagSets[i], queryParams.m_IncludeTags, queryParams.m_ExcludeTags))
             {
-              stats.m_uiNumObjectsFiltered++;
+              ref_stats.m_uiNumObjectsFiltered++;
               continue;
             }
           }
@@ -578,7 +578,7 @@ namespace xiiInternal
           lastVisibleFrames[i] = pQueryData->m_uiFrameCounter;
           pQueryData->m_pOutObjects->PushBack(objectPointers[i]);
 
-          stats.m_uiNumObjectsPassed++;
+          ref_stats.m_uiNumObjectsPassed++;
         }
       }
 
@@ -608,17 +608,17 @@ xiiSpatialSystem_RegularGrid::xiiSpatialSystem_RegularGrid(xiiUInt32 uiCellSize 
 
 xiiSpatialSystem_RegularGrid::~xiiSpatialSystem_RegularGrid() = default;
 
-xiiResult xiiSpatialSystem_RegularGrid::GetCellBoxForSpatialData(const xiiSpatialDataHandle& hData, xiiBoundingBox& out_BoundingBox) const
+xiiResult xiiSpatialSystem_RegularGrid::GetCellBoxForSpatialData(const xiiSpatialDataHandle& hData, xiiBoundingBox& out_boundingBox) const
 {
   Data* pData = nullptr;
   if (!m_DataTable.TryGetValue(hData.GetInternalID(), pData))
     return XII_FAILURE;
 
   ForEachGrid(*pData, hData,
-              [&](Grid& grid, const CellDataMapping& mapping) {
-                auto& pCell = grid.m_Cells[mapping.m_uiCellIndex];
+              [&](Grid& ref_grid, const CellDataMapping& mapping) {
+                auto& pCell = ref_grid.m_Cells[mapping.m_uiCellIndex];
 
-                out_BoundingBox = pCell->GetBoundingBox();
+                out_boundingBox = pCell->GetBoundingBox();
                 return xiiVisitorExecution::Stop;
               });
 
@@ -633,7 +633,7 @@ struct xiiHashHelper<xiiBoundingBox>
   XII_ALWAYS_INLINE static bool Equal(const xiiBoundingBox& a, const xiiBoundingBox& b) { return a == b; }
 };
 
-void xiiSpatialSystem_RegularGrid::GetAllCellBoxes(xiiDynamicArray<xiiBoundingBox>& out_BoundingBoxes, xiiSpatialData::Category filterCategory /*= xiiInvalidSpatialDataCategory*/) const
+void xiiSpatialSystem_RegularGrid::GetAllCellBoxes(xiiDynamicArray<xiiBoundingBox>& out_boundingBoxes, xiiSpatialData::Category filterCategory /*= xiiInvalidSpatialDataCategory*/) const
 {
   if (filterCategory != xiiInvalidSpatialDataCategory)
   {
@@ -643,7 +643,7 @@ void xiiSpatialSystem_RegularGrid::GetAllCellBoxes(xiiDynamicArray<xiiBoundingBo
     {
       for (auto& pCell : pGrid->m_Cells)
       {
-        out_BoundingBoxes.ExpandAndGetRef() = pCell->GetBoundingBox();
+        out_boundingBoxes.ExpandAndGetRef() = pCell->GetBoundingBox();
       }
     }
   }
@@ -664,7 +664,7 @@ void xiiSpatialSystem_RegularGrid::GetAllCellBoxes(xiiDynamicArray<xiiBoundingBo
 
     for (auto boundingBox : boundingBoxes)
     {
-      out_BoundingBoxes.PushBack(boundingBox);
+      out_boundingBoxes.PushBack(boundingBox);
     }
   }
 }
@@ -733,8 +733,8 @@ void xiiSpatialSystem_RegularGrid::DeleteSpatialData(const xiiSpatialDataHandle&
   XII_VERIFY(m_DataTable.Remove(hData.GetInternalID(), &oldData), "Invalid spatial data handle");
 
   ForEachGrid(oldData, hData,
-              [&](Grid& grid, const CellDataMapping& mapping) {
-                grid.RemoveSpatialData(hData);
+              [&](Grid& ref_grid, const CellDataMapping& mapping) {
+                ref_grid.RemoveSpatialData(hData);
                 return xiiVisitorExecution::Continue;
               });
 }
@@ -749,8 +749,8 @@ void xiiSpatialSystem_RegularGrid::UpdateSpatialDataBounds(const xiiSpatialDataH
     return;
 
   ForEachGrid(*pData, hData,
-              [&](Grid& grid, const CellDataMapping& mapping) {
-                auto& pOldCell = grid.m_Cells[mapping.m_uiCellIndex];
+              [&](Grid& ref_grid, const CellDataMapping& mapping) {
+                auto& pOldCell = ref_grid.m_Cells[mapping.m_uiCellIndex];
 
                 if (pOldCell->m_Bounds.GetBox().Contains(bounds.GetBox()))
                 {
@@ -763,9 +763,9 @@ void xiiSpatialSystem_RegularGrid::UpdateSpatialDataBounds(const xiiSpatialDataH
                   xiiGameObject*  objectPointer      = pOldCell->m_ObjectPointers[mapping.m_uiCellDataIndex];
                   xiiUInt64       uiLastVisibleFrame = pOldCell->m_LastVisibleFrames[mapping.m_uiCellDataIndex];
 
-                  grid.RemoveSpatialData(hData);
+                  ref_grid.RemoveSpatialData(hData);
 
-                  grid.AddSpatialData(bounds, tags, objectPointer, uiLastVisibleFrame, hData);
+                  ref_grid.AddSpatialData(bounds, tags, objectPointer, uiLastVisibleFrame, hData);
                 }
 
                 return xiiVisitorExecution::Continue;
@@ -778,8 +778,8 @@ void xiiSpatialSystem_RegularGrid::UpdateSpatialDataObject(const xiiSpatialDataH
   XII_VERIFY(m_DataTable.TryGetValue(hData.GetInternalID(), pData), "Invalid spatial data handle");
 
   ForEachGrid(*pData, hData,
-              [&](Grid& grid, const CellDataMapping& mapping) {
-                auto& pCell                                        = grid.m_Cells[mapping.m_uiCellIndex];
+              [&](Grid& ref_grid, const CellDataMapping& mapping) {
+                auto& pCell                                        = ref_grid.m_Cells[mapping.m_uiCellIndex];
                 pCell->m_ObjectPointers[mapping.m_uiCellDataIndex] = pObject;
                 return xiiVisitorExecution::Continue;
               });

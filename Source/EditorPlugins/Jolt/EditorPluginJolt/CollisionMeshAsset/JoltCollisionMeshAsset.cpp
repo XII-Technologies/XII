@@ -301,7 +301,7 @@ xiiStatus xiiJoltCollisionMeshAssetDocument::CreateMeshFromGeom(xiiGeometry& geo
   return xiiStatus(XII_SUCCESS);
 }
 
-xiiStatus xiiJoltCollisionMeshAssetDocument::WriteToStream(xiiChunkStreamWriter& stream, const xiiJoltCookingMesh& mesh, const xiiJoltCollisionMeshAssetProperties* pProp)
+xiiStatus xiiJoltCollisionMeshAssetDocument::WriteToStream(xiiChunkStreamWriter& inout_stream, const xiiJoltCookingMesh& mesh, const xiiJoltCollisionMeshAssetProperties* pProp)
 {
   xiiHybridArray<xiiString, 32> surfaces;
 
@@ -324,7 +324,7 @@ xiiStatus xiiJoltCollisionMeshAssetDocument::WriteToStream(xiiChunkStreamWriter&
     }
   }
 
-  return xiiJoltCooking::WriteResourceToStream(stream, mesh, surfaces, meshType, pProp->m_uiMaxConvexPieces);
+  return xiiJoltCooking::WriteResourceToStream(inout_stream, mesh, surfaces, meshType, pProp->m_uiMaxConvexPieces);
 }
 
 xiiTransformStatus xiiJoltCollisionMeshAssetDocument::InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo)
@@ -360,13 +360,13 @@ xiiJoltCollisionMeshAssetDocumentGenerator::xiiJoltCollisionMeshAssetDocumentGen
 
 xiiJoltCollisionMeshAssetDocumentGenerator::~xiiJoltCollisionMeshAssetDocumentGenerator() = default;
 
-void xiiJoltCollisionMeshAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiJoltCollisionMeshAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_modes) const
 {
   xiiStringBuilder baseOutputFile = sParentDirRelativePath;
   baseOutputFile.ChangeFileExtension("xiiJoltCollisionMeshAsset");
 
   {
-    xiiAssetDocumentGenerator::Info& info = out_Modes.ExpandAndGetRef();
+    xiiAssetDocumentGenerator::Info& info = out_modes.ExpandAndGetRef();
     info.m_Priority                       = xiiAssetDocGeneratorPriority::DefaultPriority;
     info.m_sName                          = "Jolt_Colmesh_Triangle";
     info.m_sOutputFileParentRelative      = baseOutputFile;
@@ -408,13 +408,13 @@ xiiJoltConvexCollisionMeshAssetDocumentGenerator::xiiJoltConvexCollisionMeshAsse
 
 xiiJoltConvexCollisionMeshAssetDocumentGenerator::~xiiJoltConvexCollisionMeshAssetDocumentGenerator() = default;
 
-void xiiJoltConvexCollisionMeshAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiJoltConvexCollisionMeshAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_modes) const
 {
   xiiStringBuilder baseOutputFile = sParentDirRelativePath;
   baseOutputFile.ChangeFileExtension("xiiJoltConvexCollisionMeshAsset");
 
   {
-    xiiAssetDocumentGenerator::Info& info = out_Modes.ExpandAndGetRef();
+    xiiAssetDocumentGenerator::Info& info = out_modes.ExpandAndGetRef();
     info.m_Priority                       = xiiAssetDocGeneratorPriority::LowPriority;
     info.m_sName                          = "Jolt_Colmesh_Convex";
     info.m_sOutputFileParentRelative      = baseOutputFile;

@@ -19,7 +19,7 @@ XII_ALWAYS_INLINE ComponentType* xiiSettingsComponentManager<ComponentType>::Get
 {
   for (const auto& pComponent : m_Components)
   {
-    // Retrieve the first component that is active.
+    // retrieve the first component that is active
     if (pComponent->IsActive())
       return pComponent.Borrow();
   }
@@ -32,7 +32,7 @@ XII_ALWAYS_INLINE const ComponentType* xiiSettingsComponentManager<ComponentType
 {
   for (const auto& pComponent : m_Components)
   {
-    // Retrieve the first component that is active.
+    // retrieve the first component that is active
     if (pComponent->IsActive())
       return pComponent.Borrow();
   }
@@ -48,25 +48,25 @@ XII_ALWAYS_INLINE xiiWorldModuleTypeId xiiSettingsComponentManager<ComponentType
 }
 
 template <typename ComponentType>
-void xiiSettingsComponentManager<ComponentType>::CollectAllComponents(xiiDynamicArray<xiiComponentHandle>& out_AllComponents, bool bOnlyActive)
+void xiiSettingsComponentManager<ComponentType>::CollectAllComponents(xiiDynamicArray<xiiComponentHandle>& out_allComponents, bool bOnlyActive)
 {
   for (auto& component : m_Components)
   {
     if (!bOnlyActive || component->IsActive())
     {
-      out_AllComponents.PushBack(component->GetHandle());
+      out_allComponents.PushBack(component->GetHandle());
     }
   }
 }
 
 template <typename ComponentType>
-void xiiSettingsComponentManager<ComponentType>::CollectAllComponents(xiiDynamicArray<xiiComponent*>& out_AllComponents, bool bOnlyActive)
+void xiiSettingsComponentManager<ComponentType>::CollectAllComponents(xiiDynamicArray<xiiComponent*>& out_allComponents, bool bOnlyActive)
 {
   for (auto& component : m_Components)
   {
     if (!bOnlyActive || component->IsActive())
     {
-      out_AllComponents.PushBack(component.Borrow());
+      out_allComponents.PushBack(component.Borrow());
     }
   }
 }
