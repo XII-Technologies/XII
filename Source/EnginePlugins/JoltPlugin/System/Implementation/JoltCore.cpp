@@ -427,8 +427,8 @@ void xiiJoltCore::Startup()
 
   xiiJoltCustomShapeInfo::sRegister();
 
-  // TODO: custom job system
-  s_pJobSystem = std::make_unique<JPH::JobSystemThreadPool>(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1);
+  ///\todo JoltPlugin: Add XII Custom Job System
+  s_pJobSystem = std::make_unique<JPH::JobSystemThreadPool>(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, 1 /* std::thread::hardware_concurrency() - 1 */);
 
   s_pDefaultMaterial = new xiiJoltMaterial;
   s_pDefaultMaterial->AddRef();
