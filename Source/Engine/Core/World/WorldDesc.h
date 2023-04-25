@@ -14,7 +14,7 @@ struct xiiWorldDesc
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiWorldDesc(xiiStringView szWorldName) { m_sName.Assign(szWorldName); }
+  xiiWorldDesc(xiiStringView sWorldName) { m_sName.Assign(sWorldName); }
 
   xiiHashedString m_sName;
   xiiUInt64       m_uiRandomNumberGeneratorSeed = 0;

@@ -20,32 +20,32 @@ XII_ALWAYS_INLINE const xiiEvent<const xiiGameObject*>& xiiWorld::GetObjectDelet
   return m_Data.m_ObjectDeletionEvent;
 }
 
-XII_FORCE_INLINE bool xiiWorld::IsValidObject(const xiiGameObjectHandle& object) const
+XII_FORCE_INLINE bool xiiWorld::IsValidObject(const xiiGameObjectHandle& hObject) const
 {
   CheckForReadAccess();
-  XII_ASSERT_DEV(object.IsInvalidated() || object.m_InternalId.m_WorldIndex == m_uiIndex,
-                 "Object does not belong to this world. Expected world id {0} got id {1}", m_uiIndex, object.m_InternalId.m_WorldIndex);
+  XII_ASSERT_DEV(hObject.IsInvalidated() || hObject.m_InternalId.m_WorldIndex == m_uiIndex,
+                 "Object does not belong to this world. Expected world id {0} got id {1}", m_uiIndex, hObject.m_InternalId.m_WorldIndex);
 
-  return m_Data.m_Objects.Contains(object);
+  return m_Data.m_Objects.Contains(hObject);
 }
 
-XII_FORCE_INLINE bool xiiWorld::TryGetObject(const xiiGameObjectHandle& object, xiiGameObject*& out_pObject)
+XII_FORCE_INLINE bool xiiWorld::TryGetObject(const xiiGameObjectHandle& hObject, xiiGameObject*& out_pObject)
 {
   CheckForReadAccess();
-  XII_ASSERT_DEV(object.IsInvalidated() || object.m_InternalId.m_WorldIndex == m_uiIndex,
-                 "Object does not belong to this world. Expected world id {0} got id {1}", m_uiIndex, object.m_InternalId.m_WorldIndex);
+  XII_ASSERT_DEV(hObject.IsInvalidated() || hObject.m_InternalId.m_WorldIndex == m_uiIndex,
+                 "Object does not belong to this world. Expected world id {0} got id {1}", m_uiIndex, hObject.m_InternalId.m_WorldIndex);
 
-  return m_Data.m_Objects.TryGetValue(object, out_pObject);
+  return m_Data.m_Objects.TryGetValue(hObject, out_pObject);
 }
 
-XII_FORCE_INLINE bool xiiWorld::TryGetObject(const xiiGameObjectHandle& object, const xiiGameObject*& out_pObject) const
+XII_FORCE_INLINE bool xiiWorld::TryGetObject(const xiiGameObjectHandle& hObject, const xiiGameObject*& out_pObject) const
 {
   CheckForReadAccess();
-  XII_ASSERT_DEV(object.IsInvalidated() || object.m_InternalId.m_WorldIndex == m_uiIndex,
-                 "Object does not belong to this world. Expected world id {0} got id {1}", m_uiIndex, object.m_InternalId.m_WorldIndex);
+  XII_ASSERT_DEV(hObject.IsInvalidated() || hObject.m_InternalId.m_WorldIndex == m_uiIndex,
+                 "Object does not belong to this world. Expected world id {0} got id {1}", m_uiIndex, hObject.m_InternalId.m_WorldIndex);
 
   xiiGameObject* pObject = nullptr;
-  bool           bResult = m_Data.m_Objects.TryGetValue(object, pObject);
+  bool           bResult = m_Data.m_Objects.TryGetValue(hObject, pObject);
   out_pObject            = pObject;
   return bResult;
 }
@@ -244,16 +244,16 @@ XII_ALWAYS_INLINE const xiiComponentManagerBase* xiiWorld::GetManagerForComponen
   return xiiStaticCast<const xiiComponentManagerBase*>(GetModule(pComponentRtti));
 }
 
-inline bool xiiWorld::IsValidComponent(const xiiComponentHandle& component) const
+inline bool xiiWorld::IsValidComponent(const xiiComponentHandle& hComponent) const
 {
   CheckForReadAccess();
-  const xiiWorldModuleTypeId uiTypeId = component.m_InternalId.m_TypeId;
+  const xiiWorldModuleTypeId uiTypeId = hComponent.m_InternalId.m_TypeId;
 
   if (uiTypeId < m_Data.m_Modules.GetCount())
   {
     if (const xiiWorldModule* pModule = m_Data.m_Modules[uiTypeId])
     {
-      return static_cast<const xiiComponentManagerBase*>(pModule)->IsValidComponent(component);
+      return static_cast<const xiiComponentManagerBase*>(pModule)->IsValidComponent(hComponent);
     }
   }
 
@@ -261,19 +261,19 @@ inline bool xiiWorld::IsValidComponent(const xiiComponentHandle& component) cons
 }
 
 template <typename ComponentType>
-inline bool xiiWorld::TryGetComponent(const xiiComponentHandle& component, ComponentType*& out_pComponent)
+inline bool xiiWorld::TryGetComponent(const xiiComponentHandle& hComponent, ComponentType*& out_pComponent)
 {
   CheckForWriteAccess();
   XII_CHECK_AT_COMPILETIME_MSG(XII_IS_DERIVED_FROM_STATIC(xiiComponent, ComponentType), "Not a valid component type");
 
-  const xiiWorldModuleTypeId uiTypeId = component.m_InternalId.m_TypeId;
+  const xiiWorldModuleTypeId uiTypeId = hComponent.m_InternalId.m_TypeId;
 
   if (uiTypeId < m_Data.m_Modules.GetCount())
   {
     if (xiiWorldModule* pModule = m_Data.m_Modules[uiTypeId])
     {
       xiiComponent* pComponent = nullptr;
-      bool          bResult    = static_cast<xiiComponentManagerBase*>(pModule)->TryGetComponent(component, pComponent);
+      bool          bResult    = static_cast<xiiComponentManagerBase*>(pModule)->TryGetComponent(hComponent, pComponent);
       out_pComponent           = xiiDynamicCast<ComponentType*>(pComponent);
       return bResult && out_pComponent != nullptr;
     }
@@ -283,19 +283,19 @@ inline bool xiiWorld::TryGetComponent(const xiiComponentHandle& component, Compo
 }
 
 template <typename ComponentType>
-inline bool xiiWorld::TryGetComponent(const xiiComponentHandle& component, const ComponentType*& out_pComponent) const
+inline bool xiiWorld::TryGetComponent(const xiiComponentHandle& hComponent, const ComponentType*& out_pComponent) const
 {
   CheckForReadAccess();
   XII_CHECK_AT_COMPILETIME_MSG(XII_IS_DERIVED_FROM_STATIC(xiiComponent, ComponentType), "Not a valid component type");
 
-  const xiiWorldModuleTypeId uiTypeId = component.m_InternalId.m_TypeId;
+  const xiiWorldModuleTypeId uiTypeId = hComponent.m_InternalId.m_TypeId;
 
   if (uiTypeId < m_Data.m_Modules.GetCount())
   {
     if (const xiiWorldModule* pModule = m_Data.m_Modules[uiTypeId])
     {
       const xiiComponent* pComponent = nullptr;
-      bool                bResult    = static_cast<const xiiComponentManagerBase*>(pModule)->TryGetComponent(component, pComponent);
+      bool                bResult    = static_cast<const xiiComponentManagerBase*>(pModule)->TryGetComponent(hComponent, pComponent);
       out_pComponent                 = xiiDynamicCast<const ComponentType*>(pComponent);
       return bResult && out_pComponent != nullptr;
     }
@@ -304,81 +304,81 @@ inline bool xiiWorld::TryGetComponent(const xiiComponentHandle& component, const
   return false;
 }
 
-XII_FORCE_INLINE void xiiWorld::SendMessage(const xiiGameObjectHandle& receiverObject, xiiMessage& msg)
+XII_FORCE_INLINE void xiiWorld::SendMessage(const xiiGameObjectHandle& hReceiverObject, xiiMessage& ref_msg)
 {
   CheckForWriteAccess();
 
   xiiGameObject* pReceiverObject = nullptr;
-  if (TryGetObject(receiverObject, pReceiverObject))
+  if (TryGetObject(hReceiverObject, pReceiverObject))
   {
-    pReceiverObject->SendMessage(msg);
+    pReceiverObject->SendMessage(ref_msg);
   }
   else
   {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-    if (msg.GetDebugMessageRouting())
+    if (ref_msg.GetDebugMessageRouting())
     {
-      xiiLog::Warning("xiiWorld::SendMessage: The receiver xiiGameObject for message of type '{0}' does not exist.", msg.GetId());
+      xiiLog::Warning("xiiWorld::SendMessage: The receiver xiiGameObject for message of type '{0}' does not exist.", ref_msg.GetId());
     }
 #endif
   }
 }
 
-XII_FORCE_INLINE void xiiWorld::SendMessageRecursive(const xiiGameObjectHandle& receiverObject, xiiMessage& msg)
+XII_FORCE_INLINE void xiiWorld::SendMessageRecursive(const xiiGameObjectHandle& hReceiverObject, xiiMessage& ref_msg)
 {
   CheckForWriteAccess();
 
   xiiGameObject* pReceiverObject = nullptr;
-  if (TryGetObject(receiverObject, pReceiverObject))
+  if (TryGetObject(hReceiverObject, pReceiverObject))
   {
-    pReceiverObject->SendMessageRecursive(msg);
+    pReceiverObject->SendMessageRecursive(ref_msg);
   }
   else
   {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-    if (msg.GetDebugMessageRouting())
+    if (ref_msg.GetDebugMessageRouting())
     {
-      xiiLog::Warning("xiiWorld::SendMessageRecursive: The receiver xiiGameObject for message of type '{0}' does not exist.", msg.GetId());
+      xiiLog::Warning("xiiWorld::SendMessageRecursive: The receiver xiiGameObject for message of type '{0}' does not exist.", ref_msg.GetId());
     }
 #endif
   }
 }
 
 XII_ALWAYS_INLINE void xiiWorld::PostMessage(
-  const xiiGameObjectHandle&  receiverObject,
+  const xiiGameObjectHandle&  hReceiverObject,
   const xiiMessage&           msg,
   xiiTime                     delay,
   xiiObjectMsgQueueType::Enum queueType) const
 {
   // This method is allowed to be called from multiple threads.
-  PostMessage(receiverObject, msg, queueType, delay, false);
+  PostMessage(hReceiverObject, msg, queueType, delay, false);
 }
 
 XII_ALWAYS_INLINE void xiiWorld::PostMessageRecursive(
-  const xiiGameObjectHandle&  receiverObject,
+  const xiiGameObjectHandle&  hReceiverObject,
   const xiiMessage&           msg,
   xiiTime                     delay,
   xiiObjectMsgQueueType::Enum queueType) const
 {
   // This method is allowed to be called from multiple threads.
-  PostMessage(receiverObject, msg, queueType, delay, true);
+  PostMessage(hReceiverObject, msg, queueType, delay, true);
 }
 
-XII_FORCE_INLINE void xiiWorld::SendMessage(const xiiComponentHandle& receiverComponent, xiiMessage& msg)
+XII_FORCE_INLINE void xiiWorld::SendMessage(const xiiComponentHandle& hReceiverComponent, xiiMessage& ref_msg)
 {
   CheckForWriteAccess();
 
   xiiComponent* pReceiverComponent = nullptr;
-  if (TryGetComponent(receiverComponent, pReceiverComponent))
+  if (TryGetComponent(hReceiverComponent, pReceiverComponent))
   {
-    pReceiverComponent->SendMessage(msg);
+    pReceiverComponent->SendMessage(ref_msg);
   }
   else
   {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-    if (msg.GetDebugMessageRouting())
+    if (ref_msg.GetDebugMessageRouting())
     {
-      xiiLog::Warning("xiiWorld::SendMessage: The receiver xiiComponent for message of type '{0}' does not exist.", msg.GetId());
+      xiiLog::Warning("xiiWorld::SendMessage: The receiver xiiComponent for message of type '{0}' does not exist.", ref_msg.GetId());
     }
 #endif
   }
@@ -413,9 +413,9 @@ XII_FORCE_INLINE const xiiSpatialSystem* xiiWorld::GetSpatialSystem() const
   return m_Data.m_pSpatialSystem.Borrow();
 }
 
-XII_ALWAYS_INLINE void xiiWorld::GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_CoordinateSystem) const
+XII_ALWAYS_INLINE void xiiWorld::GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_coordinateSystem) const
 {
-  m_Data.m_pCoordinateSystemProvider->GetCoordinateSystem(vGlobalPosition, out_CoordinateSystem);
+  m_Data.m_pCoordinateSystemProvider->GetCoordinateSystem(vGlobalPosition, out_coordinateSystem);
 }
 
 XII_ALWAYS_INLINE xiiCoordinateSystemProvider& xiiWorld::GetCoordinateSystemProvider()
@@ -525,15 +525,15 @@ XII_ALWAYS_INLINE xiiWorld* xiiWorld::GetWorld(xiiUInt32 uiIndex)
 }
 
 // static
-XII_ALWAYS_INLINE xiiWorld* xiiWorld::GetWorld(const xiiGameObjectHandle& object)
+XII_ALWAYS_INLINE xiiWorld* xiiWorld::GetWorld(const xiiGameObjectHandle& hObject)
 {
-  return s_Worlds[object.GetInternalID().m_WorldIndex];
+  return s_Worlds[hObject.GetInternalID().m_WorldIndex];
 }
 
 // static
-XII_ALWAYS_INLINE xiiWorld* xiiWorld::GetWorld(const xiiComponentHandle& component)
+XII_ALWAYS_INLINE xiiWorld* xiiWorld::GetWorld(const xiiComponentHandle& hComponent)
 {
-  return s_Worlds[component.GetInternalID().m_WorldIndex];
+  return s_Worlds[hComponent.GetInternalID().m_WorldIndex];
 }
 
 XII_ALWAYS_INLINE void xiiWorld::CheckForReadAccess() const

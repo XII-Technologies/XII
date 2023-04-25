@@ -162,10 +162,10 @@ namespace xiiInternal
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-  XII_FORCE_INLINE WorldData::InitBatch::InitBatch(xiiAllocatorBase* pAllocator, xiiStringView szName, bool bMustFinishWithinOneFrame) :
+  XII_FORCE_INLINE WorldData::InitBatch::InitBatch(xiiAllocatorBase* pAllocator, xiiStringView sName, bool bMustFinishWithinOneFrame) :
     m_bMustFinishWithinOneFrame(bMustFinishWithinOneFrame), m_ComponentsToInitialize(pAllocator), m_ComponentsToStartSimulation(pAllocator)
   {
-    m_sName.Assign(szName);
+    m_sName.Assign(sName);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////

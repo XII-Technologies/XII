@@ -122,9 +122,9 @@ XII_ALWAYS_INLINE void xiiGameObject::SetGlobalKeyInternal(const char* szName)
   SetGlobalKey(szName);
 }
 
-XII_ALWAYS_INLINE bool xiiGameObject::HasName(const xiiTempHashedString& name) const
+XII_ALWAYS_INLINE bool xiiGameObject::HasName(const xiiTempHashedString& sName) const
 {
-  return m_sName == name;
+  return m_sName == sName;
 }
 
 XII_ALWAYS_INLINE void xiiGameObject::EnableChildChangesNotifications()
@@ -169,9 +169,9 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGameObject::GetChildCount() const
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetLocalPosition(xiiVec3 position)
+XII_ALWAYS_INLINE void xiiGameObject::SetLocalPosition(xiiVec3 vPosition)
 {
-  SetLocalPosition(xiiSimdConversion::ToVec3(position));
+  SetLocalPosition(xiiSimdConversion::ToVec3(vPosition));
 }
 
 XII_ALWAYS_INLINE xiiVec3 xiiGameObject::GetLocalPosition() const
@@ -180,9 +180,9 @@ XII_ALWAYS_INLINE xiiVec3 xiiGameObject::GetLocalPosition() const
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetLocalRotation(xiiQuat rotation)
+XII_ALWAYS_INLINE void xiiGameObject::SetLocalRotation(xiiQuat qRotation)
 {
-  SetLocalRotation(xiiSimdConversion::ToQuat(rotation));
+  SetLocalRotation(xiiSimdConversion::ToQuat(qRotation));
 }
 
 XII_ALWAYS_INLINE xiiQuat xiiGameObject::GetLocalRotation() const
@@ -191,9 +191,9 @@ XII_ALWAYS_INLINE xiiQuat xiiGameObject::GetLocalRotation() const
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetLocalScaling(xiiVec3 scaling)
+XII_ALWAYS_INLINE void xiiGameObject::SetLocalScaling(xiiVec3 vScaling)
 {
-  SetLocalScaling(xiiSimdConversion::ToVec3(scaling));
+  SetLocalScaling(xiiSimdConversion::ToVec3(vScaling));
 }
 
 XII_ALWAYS_INLINE xiiVec3 xiiGameObject::GetLocalScaling() const
@@ -202,9 +202,9 @@ XII_ALWAYS_INLINE xiiVec3 xiiGameObject::GetLocalScaling() const
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetLocalUniformScaling(float scaling)
+XII_ALWAYS_INLINE void xiiGameObject::SetLocalUniformScaling(float fScaling)
 {
-  SetLocalUniformScaling(xiiSimdFloat(scaling));
+  SetLocalUniformScaling(xiiSimdFloat(fScaling));
 }
 
 XII_ALWAYS_INLINE float xiiGameObject::GetLocalUniformScaling() const
@@ -218,9 +218,9 @@ XII_ALWAYS_INLINE xiiTransform xiiGameObject::GetLocalTransform() const
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetGlobalPosition(const xiiVec3& position)
+XII_ALWAYS_INLINE void xiiGameObject::SetGlobalPosition(const xiiVec3& vPosition)
 {
-  SetGlobalPosition(xiiSimdConversion::ToVec3(position));
+  SetGlobalPosition(xiiSimdConversion::ToVec3(vPosition));
 }
 
 XII_ALWAYS_INLINE xiiVec3 xiiGameObject::GetGlobalPosition() const
@@ -229,9 +229,9 @@ XII_ALWAYS_INLINE xiiVec3 xiiGameObject::GetGlobalPosition() const
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetGlobalRotation(const xiiQuat rotation)
+XII_ALWAYS_INLINE void xiiGameObject::SetGlobalRotation(const xiiQuat qRotation)
 {
-  SetGlobalRotation(xiiSimdConversion::ToQuat(rotation));
+  SetGlobalRotation(xiiSimdConversion::ToQuat(qRotation));
 }
 
 XII_ALWAYS_INLINE xiiQuat xiiGameObject::GetGlobalRotation() const
@@ -240,9 +240,9 @@ XII_ALWAYS_INLINE xiiQuat xiiGameObject::GetGlobalRotation() const
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetGlobalScaling(const xiiVec3 scaling)
+XII_ALWAYS_INLINE void xiiGameObject::SetGlobalScaling(const xiiVec3 vScaling)
 {
-  SetGlobalScaling(xiiSimdConversion::ToVec3(scaling));
+  SetGlobalScaling(xiiSimdConversion::ToVec3(vScaling));
 }
 
 XII_ALWAYS_INLINE xiiVec3 xiiGameObject::GetGlobalScaling() const
@@ -262,9 +262,9 @@ XII_ALWAYS_INLINE xiiTransform xiiGameObject::GetGlobalTransform() const
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetLocalPosition(const xiiSimdVec4f& position, UpdateBehaviorIfStatic updateBehavior)
+XII_ALWAYS_INLINE void xiiGameObject::SetLocalPosition(const xiiSimdVec4f& vPosition, UpdateBehaviorIfStatic updateBehavior)
 {
-  m_pTransformationData->m_localPosition = position;
+  m_pTransformationData->m_localPosition = vPosition;
 
   if (IsStatic() && updateBehavior == UpdateBehaviorIfStatic::UpdateImmediately)
   {
@@ -278,9 +278,9 @@ XII_ALWAYS_INLINE const xiiSimdVec4f& xiiGameObject::GetLocalPositionSimd() cons
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetLocalRotation(const xiiSimdQuat& rotation, UpdateBehaviorIfStatic updateBehavior)
+XII_ALWAYS_INLINE void xiiGameObject::SetLocalRotation(const xiiSimdQuat& qRotation, UpdateBehaviorIfStatic updateBehavior)
 {
-  m_pTransformationData->m_localRotation = rotation;
+  m_pTransformationData->m_localRotation = qRotation;
 
   if (IsStatic() && updateBehavior == UpdateBehaviorIfStatic::UpdateImmediately)
   {
@@ -294,10 +294,10 @@ XII_ALWAYS_INLINE const xiiSimdQuat& xiiGameObject::GetLocalRotationSimd() const
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetLocalScaling(const xiiSimdVec4f& scaling, UpdateBehaviorIfStatic updateBehavior)
+XII_ALWAYS_INLINE void xiiGameObject::SetLocalScaling(const xiiSimdVec4f& vScaling, UpdateBehaviorIfStatic updateBehavior)
 {
   xiiSimdFloat uniformScale             = m_pTransformationData->m_localScaling.w();
-  m_pTransformationData->m_localScaling = scaling;
+  m_pTransformationData->m_localScaling = vScaling;
   m_pTransformationData->m_localScaling.SetW(uniformScale);
 
   if (IsStatic() && updateBehavior == UpdateBehaviorIfStatic::UpdateImmediately)
@@ -312,9 +312,9 @@ XII_ALWAYS_INLINE const xiiSimdVec4f& xiiGameObject::GetLocalScalingSimd() const
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetLocalUniformScaling(const xiiSimdFloat& scaling, UpdateBehaviorIfStatic updateBehavior)
+XII_ALWAYS_INLINE void xiiGameObject::SetLocalUniformScaling(const xiiSimdFloat& fScaling, UpdateBehaviorIfStatic updateBehavior)
 {
-  m_pTransformationData->m_localScaling.SetW(scaling);
+  m_pTransformationData->m_localScaling.SetW(fScaling);
 
   if (IsStatic() && updateBehavior == UpdateBehaviorIfStatic::UpdateImmediately)
   {
@@ -334,9 +334,9 @@ XII_ALWAYS_INLINE xiiSimdTransform xiiGameObject::GetLocalTransformSimd() const
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetGlobalPosition(const xiiSimdVec4f& position)
+XII_ALWAYS_INLINE void xiiGameObject::SetGlobalPosition(const xiiSimdVec4f& vPosition)
 {
-  m_pTransformationData->m_globalTransform.m_Position = position;
+  m_pTransformationData->m_globalTransform.m_Position = vPosition;
 
   m_pTransformationData->UpdateLocalTransform();
 
@@ -352,9 +352,9 @@ XII_ALWAYS_INLINE const xiiSimdVec4f& xiiGameObject::GetGlobalPositionSimd() con
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetGlobalRotation(const xiiSimdQuat& rotation)
+XII_ALWAYS_INLINE void xiiGameObject::SetGlobalRotation(const xiiSimdQuat& qRotation)
 {
-  m_pTransformationData->m_globalTransform.m_Rotation = rotation;
+  m_pTransformationData->m_globalTransform.m_Rotation = qRotation;
 
   m_pTransformationData->UpdateLocalTransform();
 
@@ -370,9 +370,9 @@ XII_ALWAYS_INLINE const xiiSimdQuat& xiiGameObject::GetGlobalRotationSimd() cons
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetGlobalScaling(const xiiSimdVec4f& scaling)
+XII_ALWAYS_INLINE void xiiGameObject::SetGlobalScaling(const xiiSimdVec4f& vScaling)
 {
-  m_pTransformationData->m_globalTransform.m_Scale = scaling;
+  m_pTransformationData->m_globalTransform.m_Scale = vScaling;
 
   m_pTransformationData->UpdateLocalTransform();
 
@@ -528,24 +528,24 @@ XII_ALWAYS_INLINE xiiUInt16 xiiGameObject::GetComponentVersion() const
   return m_Components.GetUserData<ComponentUserData>().m_uiVersion;
 }
 
-XII_ALWAYS_INLINE bool xiiGameObject::SendMessage(xiiMessage& msg)
+XII_ALWAYS_INLINE bool xiiGameObject::SendMessage(xiiMessage& ref_msg)
 {
-  return SendMessageInternal(msg, false);
+  return SendMessageInternal(ref_msg, false);
 }
 
-XII_ALWAYS_INLINE bool xiiGameObject::SendMessage(xiiMessage& msg) const
+XII_ALWAYS_INLINE bool xiiGameObject::SendMessage(xiiMessage& ref_msg) const
 {
-  return SendMessageInternal(msg, false);
+  return SendMessageInternal(ref_msg, false);
 }
 
-XII_ALWAYS_INLINE bool xiiGameObject::SendMessageRecursive(xiiMessage& msg)
+XII_ALWAYS_INLINE bool xiiGameObject::SendMessageRecursive(xiiMessage& ref_msg)
 {
-  return SendMessageRecursiveInternal(msg, false);
+  return SendMessageRecursiveInternal(ref_msg, false);
 }
 
-XII_ALWAYS_INLINE bool xiiGameObject::SendMessageRecursive(xiiMessage& msg) const
+XII_ALWAYS_INLINE bool xiiGameObject::SendMessageRecursive(xiiMessage& ref_msg) const
 {
-  return SendMessageRecursiveInternal(msg, false);
+  return SendMessageRecursiveInternal(ref_msg, false);
 }
 
 XII_ALWAYS_INLINE const xiiTagSet& xiiGameObject::GetTags() const
@@ -558,9 +558,9 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGameObject::GetStableRandomSeed() const
   return m_pTransformationData->m_uiStableRandomSeed;
 }
 
-XII_ALWAYS_INLINE void xiiGameObject::SetStableRandomSeed(xiiUInt32 seed)
+XII_ALWAYS_INLINE void xiiGameObject::SetStableRandomSeed(xiiUInt32 uiSeed)
 {
-  m_pTransformationData->m_uiStableRandomSeed = seed;
+  m_pTransformationData->m_uiStableRandomSeed = uiSeed;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -28,22 +28,22 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 //////////////////////////////////////////////////////////////////////////
 
-void operator<<(xiiStreamWriter& Stream, const xiiGameObjectHandle& Value)
+void operator<<(xiiStreamWriter& inout_stream, const xiiGameObjectHandle& hValue)
 {
   XII_ASSERT_DEV(false, "This function should not be called. Use xiiWorldWriter::WriteGameObjectHandle instead.");
 }
 
-void operator>>(xiiStreamReader& Stream, xiiGameObjectHandle& Value)
+void operator>>(xiiStreamReader& inout_stream, xiiGameObjectHandle& ref_hValue)
 {
   XII_ASSERT_DEV(false, "This function should not be called. Use xiiWorldReader::ReadGameObjectHandle instead.");
 }
 
-void operator<<(xiiStreamWriter& Stream, const xiiComponentHandle& Value)
+void operator<<(xiiStreamWriter& inout_stream, const xiiComponentHandle& hValue)
 {
   XII_ASSERT_DEV(false, "This function should not be called. Use xiiWorldWriter::WriteComponentHandle instead.");
 }
 
-void operator>>(xiiStreamReader& Stream, xiiComponentHandle& Value)
+void operator>>(xiiStreamReader& inout_stream, xiiComponentHandle& ref_hValue)
 {
   XII_ASSERT_DEV(false, "This function should not be called. Use xiiWorldReader::ReadComponentHandle instead.");
 }
@@ -89,16 +89,16 @@ namespace
   }
 
   template <typename T>
-  void HandleDeleteObjectMsgImpl(xiiMsgDeleteGameObject& msg, xiiEnum<T>& action)
+  void HandleDeleteObjectMsgImpl(xiiMsgDeleteGameObject& ref_msg, xiiEnum<T>& ref_action)
   {
-    if (action == T::DeleteComponent)
+    if (ref_action == T::DeleteComponent)
     {
-      msg.m_bCancel = true;
-      action        = T::DeleteGameObject;
+      ref_msg.m_bCancel = true;
+      ref_action        = T::DeleteGameObject;
     }
-    else if (action == T::DeleteGameObject)
+    else if (ref_action == T::DeleteGameObject)
     {
-      msg.m_bCancel = true;
+      ref_msg.m_bCancel = true;
     }
   }
 } // namespace
@@ -110,9 +110,9 @@ void xiiOnComponentFinishedAction::HandleFinishedAction(xiiComponent* pComponent
   HandleFinishedActionImpl<xiiOnComponentFinishedAction>(pComponent, action);
 }
 
-void xiiOnComponentFinishedAction::HandleDeleteObjectMsg(xiiMsgDeleteGameObject& msg, xiiEnum<xiiOnComponentFinishedAction>& action)
+void xiiOnComponentFinishedAction::HandleDeleteObjectMsg(xiiMsgDeleteGameObject& ref_msg, xiiEnum<xiiOnComponentFinishedAction>& ref_action)
 {
-  HandleDeleteObjectMsgImpl(msg, action);
+  HandleDeleteObjectMsgImpl(ref_msg, ref_action);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -122,9 +122,9 @@ void xiiOnComponentFinishedAction2::HandleFinishedAction(xiiComponent* pComponen
   HandleFinishedActionImpl<xiiOnComponentFinishedAction2>(pComponent, action);
 }
 
-void xiiOnComponentFinishedAction2::HandleDeleteObjectMsg(xiiMsgDeleteGameObject& msg, xiiEnum<xiiOnComponentFinishedAction2>& action)
+void xiiOnComponentFinishedAction2::HandleDeleteObjectMsg(xiiMsgDeleteGameObject& ref_msg, xiiEnum<xiiOnComponentFinishedAction2>& ref_action)
 {
-  HandleDeleteObjectMsgImpl(msg, action);
+  HandleDeleteObjectMsgImpl(ref_msg, ref_action);
 }
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_Declarations);

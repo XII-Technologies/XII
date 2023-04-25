@@ -34,13 +34,13 @@ static xiiGameObjectHandle DefaultGameObjectReferenceResolver(const void* pData,
   return xiiGameObjectHandle();
 }
 
-xiiWorld::xiiWorld(xiiWorldDesc& desc) :
-  m_Data(desc)
+xiiWorld::xiiWorld(xiiWorldDesc& ref_desc) :
+  m_Data(ref_desc)
 {
   m_pUpdateTask                                     = XII_DEFAULT_NEW(xiiDelegateTask<void>, "", xiiMakeDelegate(&xiiWorld::UpdateFromThread, this));
   m_Data.m_pCoordinateSystemProvider->m_pOwnerWorld = this;
 
-  xiiStringBuilder sb = desc.m_sName.GetString();
+  xiiStringBuilder sb = ref_desc.m_sName.GetString();
   sb.Append(".Update");
   m_pUpdateTask->ConfigureTask(sb, xiiTaskNesting::Maybe);
 
@@ -133,10 +133,10 @@ const xiiWorld::ReferenceResolver& xiiWorld::GetGameObjectReferenceResolver() co
 }
 
 // a super simple, but also efficient random number generator
-inline static xiiUInt32 NextStableRandomSeed(xiiUInt32& seed)
+inline static xiiUInt32 NextStableRandomSeed(xiiUInt32& ref_uiSeed)
 {
-  seed = 214013L * seed + 2531011L;
-  return ((seed >> 16) & 0x7FFFF);
+  ref_uiSeed = 214013L * ref_uiSeed + 2531011L;
+  return ((ref_uiSeed >> 16) & 0x7FFFF);
 }
 
 xiiGameObjectHandle xiiWorld::CreateObject(const xiiGameObjectDesc& desc, xiiGameObject*& out_pObject)
@@ -310,34 +310,34 @@ xiiComponentInitBatchHandle xiiWorld::CreateComponentInitBatch(xiiStringView sBa
   return xiiComponentInitBatchHandle(m_Data.m_InitBatches.Insert(pInitBatch));
 }
 
-void xiiWorld::DeleteComponentInitBatch(const xiiComponentInitBatchHandle& batch)
+void xiiWorld::DeleteComponentInitBatch(const xiiComponentInitBatchHandle& hBatch)
 {
-  auto& pInitBatch = m_Data.m_InitBatches[batch.GetInternalID()];
+  auto& pInitBatch = m_Data.m_InitBatches[hBatch.GetInternalID()];
   XII_ASSERT_DEV(pInitBatch->m_ComponentsToInitialize.IsEmpty() && pInitBatch->m_ComponentsToStartSimulation.IsEmpty(), "Init batch has not been completely processed");
-  m_Data.m_InitBatches.Remove(batch.GetInternalID());
+  m_Data.m_InitBatches.Remove(hBatch.GetInternalID());
 }
 
-void xiiWorld::BeginAddingComponentsToInitBatch(const xiiComponentInitBatchHandle& batch)
+void xiiWorld::BeginAddingComponentsToInitBatch(const xiiComponentInitBatchHandle& hBatch)
 {
   XII_ASSERT_DEV(m_Data.m_pCurrentInitBatch == m_Data.m_pDefaultInitBatch, "Nested init batches are not supported");
-  m_Data.m_pCurrentInitBatch = m_Data.m_InitBatches[batch.GetInternalID()].Borrow();
+  m_Data.m_pCurrentInitBatch = m_Data.m_InitBatches[hBatch.GetInternalID()].Borrow();
 }
 
-void xiiWorld::EndAddingComponentsToInitBatch(const xiiComponentInitBatchHandle& batch)
+void xiiWorld::EndAddingComponentsToInitBatch(const xiiComponentInitBatchHandle& hBatch)
 {
-  XII_ASSERT_DEV(m_Data.m_InitBatches[batch.GetInternalID()] == m_Data.m_pCurrentInitBatch, "Init batch with id {} is currently not active", batch.GetInternalID().m_Data);
+  XII_ASSERT_DEV(m_Data.m_InitBatches[hBatch.GetInternalID()] == m_Data.m_pCurrentInitBatch, "Init batch with id {} is currently not active", hBatch.GetInternalID().m_Data);
   m_Data.m_pCurrentInitBatch = m_Data.m_pDefaultInitBatch;
 }
 
-void xiiWorld::SubmitComponentInitBatch(const xiiComponentInitBatchHandle& batch)
+void xiiWorld::SubmitComponentInitBatch(const xiiComponentInitBatchHandle& hBatch)
 {
-  m_Data.m_InitBatches[batch.GetInternalID()]->m_bIsReady = true;
-  m_Data.m_pCurrentInitBatch                              = m_Data.m_pDefaultInitBatch;
+  m_Data.m_InitBatches[hBatch.GetInternalID()]->m_bIsReady = true;
+  m_Data.m_pCurrentInitBatch                               = m_Data.m_pDefaultInitBatch;
 }
 
-bool xiiWorld::IsComponentInitBatchCompleted(const xiiComponentInitBatchHandle& batch, double* pCompletionFactor /*= nullptr*/)
+bool xiiWorld::IsComponentInitBatchCompleted(const xiiComponentInitBatchHandle& hBatch, double* pCompletionFactor /*= nullptr*/)
 {
-  auto& pInitBatch = m_Data.m_InitBatches[batch.GetInternalID()];
+  auto& pInitBatch = m_Data.m_InitBatches[hBatch.GetInternalID()];
   XII_ASSERT_DEV(pInitBatch->m_bIsReady, "Batch is not submitted yet");
 
   if (pCompletionFactor != nullptr)
@@ -357,9 +357,9 @@ bool xiiWorld::IsComponentInitBatchCompleted(const xiiComponentInitBatchHandle& 
   return pInitBatch->m_ComponentsToInitialize.IsEmpty() && pInitBatch->m_ComponentsToStartSimulation.IsEmpty();
 }
 
-void xiiWorld::CancelComponentInitBatch(const xiiComponentInitBatchHandle& batch)
+void xiiWorld::CancelComponentInitBatch(const xiiComponentInitBatchHandle& hBatch)
 {
-  auto& pInitBatch = m_Data.m_InitBatches[batch.GetInternalID()];
+  auto& pInitBatch = m_Data.m_InitBatches[hBatch.GetInternalID()];
   pInitBatch->m_ComponentsToInitialize.Clear();
   pInitBatch->m_ComponentsToStartSimulation.Clear();
 }
@@ -389,14 +389,14 @@ void xiiWorld::PostMessage(const xiiGameObjectHandle& receiverObject, const xiiM
   }
 }
 
-void xiiWorld::PostMessage(const xiiComponentHandle& receiverComponent, const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType) const
+void xiiWorld::PostMessage(const xiiComponentHandle& hReceiverComponent, const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType) const
 {
   // This method is allowed to be called from multiple threads.
 
-  XII_ASSERT_DEBUG((receiverComponent.m_InternalId.m_Data >> 62) == 0, "Upper 2 bits in component id must not be set");
+  XII_ASSERT_DEBUG((hReceiverComponent.m_InternalId.m_Data >> 62) == 0, "Upper 2 bits in component id must not be set");
 
   QueuedMsgMetaData metaData;
-  metaData.m_uiReceiverObjectOrComponent = receiverComponent.m_InternalId.m_Data;
+  metaData.m_uiReceiverObjectOrComponent = hReceiverComponent.m_InternalId.m_Data;
   metaData.m_uiReceiverIsComponent       = true;
   metaData.m_uiRecursive                 = false;
 

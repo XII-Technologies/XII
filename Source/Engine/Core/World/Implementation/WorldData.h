@@ -154,7 +154,7 @@ namespace xiiInternal
 
     struct InitBatch
     {
-      InitBatch(xiiAllocatorBase* pAllocator, xiiStringView szName, bool bMustFinishWithinOneFrame);
+      InitBatch(xiiAllocatorBase* pAllocator, xiiStringView sName, bool bMustFinishWithinOneFrame);
 
       xiiHashedString m_sName;
       bool            m_bMustFinishWithinOneFrame = true;

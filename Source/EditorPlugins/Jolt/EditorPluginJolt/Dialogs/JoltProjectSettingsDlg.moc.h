@@ -11,7 +11,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtJoltProjectSettingsDlg(QWidget* parent);
+  xiiQtJoltProjectSettingsDlg(QWidget* pParent);
 
   static void EnsureConfigFileExists();
 

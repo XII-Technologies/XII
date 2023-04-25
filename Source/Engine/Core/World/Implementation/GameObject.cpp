@@ -338,15 +338,15 @@ xiiStringView xiiGameObject::GetGlobalKey() const
 
 const char* xiiGameObject::GetGlobalKeyInternal() const
 {
-  return GetWorld()->GetObjectGlobalKey(this).GetStartPointer(); // We know that it's zero terminated
+  return GetWorld()->GetObjectGlobalKey(this).GetStartPointer(); // we know that it's zero terminated
 }
 
-void xiiGameObject::SetParent(const xiiGameObjectHandle& parent, xiiGameObject::TransformPreservation preserve)
+void xiiGameObject::SetParent(const xiiGameObjectHandle& hParent, xiiGameObject::TransformPreservation preserve)
 {
   xiiWorld* pWorld = GetWorld();
 
   xiiGameObject* pParent = nullptr;
-  bool           _       = pWorld->TryGetObject(parent, pParent);
+  bool           _       = pWorld->TryGetObject(hParent, pParent);
   pWorld->SetParent(this, pParent, preserve);
 }
 
@@ -360,23 +360,23 @@ const xiiGameObject* xiiGameObject::GetParent() const
   return GetWorld()->GetObjectUnchecked(m_uiParentIndex);
 }
 
-void xiiGameObject::AddChild(const xiiGameObjectHandle& child, xiiGameObject::TransformPreservation preserve)
+void xiiGameObject::AddChild(const xiiGameObjectHandle& hChild, xiiGameObject::TransformPreservation preserve)
 {
   xiiWorld* pWorld = GetWorld();
 
   xiiGameObject* pChild = nullptr;
-  if (pWorld->TryGetObject(child, pChild))
+  if (pWorld->TryGetObject(hChild, pChild))
   {
     pWorld->SetParent(pChild, this, preserve);
   }
 }
 
-void xiiGameObject::DetachChild(const xiiGameObjectHandle& child, xiiGameObject::TransformPreservation preserve)
+void xiiGameObject::DetachChild(const xiiGameObjectHandle& hChild, xiiGameObject::TransformPreservation preserve)
 {
   xiiWorld* pWorld = GetWorld();
 
   xiiGameObject* pChild = nullptr;
-  if (pWorld->TryGetObject(child, pChild))
+  if (pWorld->TryGetObject(hChild, pChild))
   {
     if (pChild->GetParent() == this)
     {
@@ -397,13 +397,13 @@ xiiGameObject::ConstChildIterator xiiGameObject::GetChildren() const
   return ConstChildIterator(pWorld->GetObjectUnchecked(m_uiFirstChildIndex), pWorld);
 }
 
-xiiGameObject* xiiGameObject::FindChildByName(const xiiTempHashedString& name, bool bRecursive /*= true*/)
+xiiGameObject* xiiGameObject::FindChildByName(const xiiTempHashedString& sName, bool bRecursive /*= true*/)
 {
   /// \test Needs a unit test
 
   for (auto it = GetChildren(); it.IsValid(); ++it)
   {
-    if (it->m_sName == name)
+    if (it->m_sName == sName)
     {
       return &(*it);
     }
@@ -413,7 +413,7 @@ xiiGameObject* xiiGameObject::FindChildByName(const xiiTempHashedString& name, b
   {
     for (auto it = GetChildren(); it.IsValid(); ++it)
     {
-      xiiGameObject* pChild = it->FindChildByName(name, bRecursive);
+      xiiGameObject* pChild = it->FindChildByName(sName, bRecursive);
 
       if (pChild != nullptr)
         return pChild;
@@ -509,7 +509,7 @@ xiiGameObject* xiiGameObject::SearchForChildByNameSequence(xiiStringView sObject
 }
 
 
-void xiiGameObject::SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiHybridArray<xiiGameObject*, 8>& out_Objects)
+void xiiGameObject::SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiHybridArray<xiiGameObject*, 8>& out_objects)
 {
   /// \test Needs a unit test
 
@@ -523,7 +523,7 @@ void xiiGameObject::SearchForChildrenByNameSequence(xiiStringView sObjectSequenc
         return;
     }
 
-    out_Objects.PushBack(this);
+    out_objects.PushBack(this);
     return;
   }
 
@@ -549,7 +549,7 @@ void xiiGameObject::SearchForChildrenByNameSequence(xiiStringView sObjectSequenc
   {
     if (it->m_sName == name)
     {
-      it->SearchForChildrenByNameSequence(sNextSequence, pExpectedComponent, out_Objects);
+      it->SearchForChildrenByNameSequence(sNextSequence, pExpectedComponent, out_objects);
     }
   }
 
@@ -560,7 +560,7 @@ void xiiGameObject::SearchForChildrenByNameSequence(xiiStringView sObjectSequenc
   {
     if (it->m_sName != name) // TODO: in this function it is actually debatable whether to skip these or not
     {
-      it->SearchForChildrenByNameSequence(sObjectSequence, pExpectedComponent, out_Objects);
+      it->SearchForChildrenByNameSequence(sObjectSequence, pExpectedComponent, out_objects);
     }
   }
 }
@@ -709,13 +709,13 @@ void xiiGameObject::TryGetComponentsOfBaseType(const xiiRTTI* pType, xiiDynamicA
   }
 }
 
-void xiiGameObject::SetTeamID(xiiUInt16 id)
+void xiiGameObject::SetTeamID(xiiUInt16 uiId)
 {
-  m_uiTeamID = id;
+  m_uiTeamID = uiId;
 
   for (auto it = GetChildren(); it.IsValid(); ++it)
   {
-    it->SetTeamID(id);
+    it->SetTeamID(uiId);
   }
 }
 
@@ -895,61 +895,61 @@ void xiiGameObject::PostMessageRecursive(const xiiMessage& msg, xiiTime delay, x
   GetWorld()->PostMessageRecursive(GetHandle(), msg, delay, queueType);
 }
 
-void xiiGameObject::SendEventMessage(xiiMessage& msg, const xiiComponent* pSenderComponent)
+void xiiGameObject::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent)
 {
-  if (auto pEventMsg = xiiDynamicCast<xiiEventMessage*>(&msg))
+  if (auto pEventMsg = xiiDynamicCast<xiiEventMessage*>(&ref_msg))
   {
     pEventMsg->FillFromSenderComponent(pSenderComponent);
   }
 
   xiiHybridArray<xiiComponent*, 4> eventMsgHandlers;
-  GetWorld()->FindEventMsgHandlers(msg, this, eventMsgHandlers);
+  GetWorld()->FindEventMsgHandlers(ref_msg, this, eventMsgHandlers);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  if (msg.GetDebugMessageRouting())
+  if (ref_msg.GetDebugMessageRouting())
   {
     if (eventMsgHandlers.IsEmpty())
     {
-      xiiLog::Warning("xiiGameObject::SendEventMessage: None of the target object's components had a handler for messages of type {0}.", msg.GetId());
+      xiiLog::Warning("xiiGameObject::SendEventMessage: None of the target object's components had a handler for messages of type {0}.", ref_msg.GetId());
     }
   }
 #endif
 
   for (auto pEventMsgHandler : eventMsgHandlers)
   {
-    pEventMsgHandler->SendMessage(msg);
+    pEventMsgHandler->SendMessage(ref_msg);
   }
 }
 
-void xiiGameObject::SendEventMessage(xiiMessage& msg, const xiiComponent* pSenderComponent) const
+void xiiGameObject::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent) const
 {
-  if (auto pEventMsg = xiiDynamicCast<xiiEventMessage*>(&msg))
+  if (auto pEventMsg = xiiDynamicCast<xiiEventMessage*>(&ref_msg))
   {
     pEventMsg->FillFromSenderComponent(pSenderComponent);
   }
 
   xiiHybridArray<const xiiComponent*, 4> eventMsgHandlers;
-  GetWorld()->FindEventMsgHandlers(msg, this, eventMsgHandlers);
+  GetWorld()->FindEventMsgHandlers(ref_msg, this, eventMsgHandlers);
 
   for (auto pEventMsgHandler : eventMsgHandlers)
   {
-    pEventMsgHandler->SendMessage(msg);
+    pEventMsgHandler->SendMessage(ref_msg);
   }
 }
 
-void xiiGameObject::PostEventMessage(xiiMessage& msg, const xiiComponent* pSenderComponent, xiiTime delay, xiiObjectMsgQueueType::Enum queueType) const
+void xiiGameObject::PostEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent, xiiTime delay, xiiObjectMsgQueueType::Enum queueType) const
 {
-  if (auto pEventMsg = xiiDynamicCast<xiiEventMessage*>(&msg))
+  if (auto pEventMsg = xiiDynamicCast<xiiEventMessage*>(&ref_msg))
   {
     pEventMsg->FillFromSenderComponent(pSenderComponent);
   }
 
   xiiHybridArray<const xiiComponent*, 4> eventMsgHandlers;
-  GetWorld()->FindEventMsgHandlers(msg, this, eventMsgHandlers);
+  GetWorld()->FindEventMsgHandlers(ref_msg, this, eventMsgHandlers);
 
   for (auto pEventMsgHandler : eventMsgHandlers)
   {
-    pEventMsgHandler->PostMessage(msg);
+    pEventMsgHandler->PostMessage(ref_msg);
   }
 }
 
@@ -1077,7 +1077,7 @@ void xiiGameObject::TransformationData::UpdateGlobalBounds(xiiSpatialSystem* pSp
   }
 }
 
-void xiiGameObject::TransformationData::UpdateGlobalBoundsAndSpatialData(xiiSpatialSystem& spatialSystem)
+void xiiGameObject::TransformationData::UpdateGlobalBoundsAndSpatialData(xiiSpatialSystem& ref_spatialSystem)
 {
   xiiSimdBBoxSphere oldGlobalBounds = m_globalBounds;
 
@@ -1086,27 +1086,27 @@ void xiiGameObject::TransformationData::UpdateGlobalBoundsAndSpatialData(xiiSpat
   const bool bIsAlwaysVisible = m_localBounds.m_BoxHalfExtents.w() != xiiSimdFloat::Zero();
   if (m_hSpatialData.IsInvalidated() == false && bIsAlwaysVisible == false && m_globalBounds != oldGlobalBounds)
   {
-    spatialSystem.UpdateSpatialDataBounds(m_hSpatialData, m_globalBounds);
+    ref_spatialSystem.UpdateSpatialDataBounds(m_hSpatialData, m_globalBounds);
   }
 }
 
-void xiiGameObject::TransformationData::RecreateSpatialData(xiiSpatialSystem& spatialSystem)
+void xiiGameObject::TransformationData::RecreateSpatialData(xiiSpatialSystem& ref_spatialSystem)
 {
   if (m_hSpatialData.IsInvalidated() == false)
   {
-    spatialSystem.DeleteSpatialData(m_hSpatialData);
+    ref_spatialSystem.DeleteSpatialData(m_hSpatialData);
     m_hSpatialData.Invalidate();
   }
 
   const bool bIsAlwaysVisible = m_localBounds.m_BoxHalfExtents.w() != xiiSimdFloat::Zero();
   if (bIsAlwaysVisible)
   {
-    m_hSpatialData = spatialSystem.CreateSpatialDataAlwaysVisible(m_pObject, m_uiSpatialDataCategoryBitmask, m_pObject->m_Tags);
+    m_hSpatialData = ref_spatialSystem.CreateSpatialDataAlwaysVisible(m_pObject, m_uiSpatialDataCategoryBitmask, m_pObject->m_Tags);
   }
   else if (m_localBounds.IsValid())
   {
     UpdateGlobalBounds();
-    m_hSpatialData = spatialSystem.CreateSpatialData(m_globalBounds, m_pObject, m_uiSpatialDataCategoryBitmask, m_pObject->m_Tags);
+    m_hSpatialData = ref_spatialSystem.CreateSpatialData(m_globalBounds, m_pObject, m_uiSpatialDataCategoryBitmask, m_pObject->m_Tags);
   }
 }
 

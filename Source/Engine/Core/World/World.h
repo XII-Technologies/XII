@@ -22,7 +22,7 @@ class XII_CORE_DLL xiiWorld final
 {
 public:
   /// \brief Creates a new world with the given name.
-  xiiWorld(xiiWorldDesc& desc);
+  xiiWorld(xiiWorldDesc& ref_desc);
   ~xiiWorld();
 
   /// \brief Deletes all game objects in a world
@@ -49,26 +49,26 @@ public:
   /// Use DeleteObjectDelayed() instead for safe removal at the end of the frame.
   ///
   /// If bAlsoDeleteEmptyParents is set, any ancestor object that has no other children and no components, will also get deleted.
-  void DeleteObjectNow(const xiiGameObjectHandle& object, bool bAlsoDeleteEmptyParents = true);
+  void DeleteObjectNow(const xiiGameObjectHandle& hObject, bool bAlsoDeleteEmptyParents = true);
 
   /// \brief Deletes the given object at the beginning of the next world update. The object and its components and children stay completely
   /// valid until then.
   ///
   /// If bAlsoDeleteEmptyParents is set, any ancestor object that has no other children and no components, will also get deleted.
-  void DeleteObjectDelayed(const xiiGameObjectHandle& object, bool bAlsoDeleteEmptyParents = true);
+  void DeleteObjectDelayed(const xiiGameObjectHandle& hObject, bool bAlsoDeleteEmptyParents = true);
 
   /// \brief Returns the event that is triggered before an object is deleted. This can be used for external systems to cleanup data
   /// which is associated with the deleted object.
   const xiiEvent<const xiiGameObject*>& GetObjectDeletionEvent() const;
 
   /// \brief Returns whether the given handle corresponds to a valid object.
-  bool IsValidObject(const xiiGameObjectHandle& object) const;
+  bool IsValidObject(const xiiGameObjectHandle& hObject) const;
 
   /// \brief Returns whether an object with the given handle exists and if so writes out the corresponding pointer to out_pObject.
-  [[nodiscard]] bool TryGetObject(const xiiGameObjectHandle& object, xiiGameObject*& out_pObject);
+  [[nodiscard]] bool TryGetObject(const xiiGameObjectHandle& hObject, xiiGameObject*& out_pObject);
 
   /// \brief Returns whether an object with the given handle exists and if so writes out the corresponding pointer to out_pObject.
-  [[nodiscard]] bool TryGetObject(const xiiGameObjectHandle& object, const xiiGameObject*& out_pObject) const;
+  [[nodiscard]] bool TryGetObject(const xiiGameObjectHandle& hObject, const xiiGameObject*& out_pObject) const;
 
   /// \brief Returns whether an object with the given global key exists and if so writes out the corresponding pointer to out_pObject.
   [[nodiscard]] bool TryGetObjectWithGlobalKey(const xiiTempHashedString& sGlobalKey, xiiGameObject*& out_pObject);
@@ -167,15 +167,15 @@ public:
   const xiiComponentManagerBase* GetManagerForComponentType(const xiiRTTI* pComponentRtti) const;
 
   /// \brief Checks whether the given handle references a valid component.
-  bool IsValidComponent(const xiiComponentHandle& component) const;
+  bool IsValidComponent(const xiiComponentHandle& hComponent) const;
 
   /// \brief Returns whether a component with the given handle exists and if so writes out the corresponding pointer to out_pComponent.
   template <typename ComponentType>
-  [[nodiscard]] bool TryGetComponent(const xiiComponentHandle& component, ComponentType*& out_pComponent);
+  [[nodiscard]] bool TryGetComponent(const xiiComponentHandle& hComponent, ComponentType*& out_pComponent);
 
   /// \brief Returns whether a component with the given handle exists and if so writes out the corresponding pointer to out_pComponent.
   template <typename ComponentType>
-  [[nodiscard]] bool TryGetComponent(const xiiComponentHandle& component, const ComponentType*& out_pComponent) const;
+  [[nodiscard]] bool TryGetComponent(const xiiComponentHandle& hComponent, const ComponentType*& out_pComponent) const;
 
   /// \brief Creates a new component init batch.
   /// It is ensured that the Initialize function is called for all components in a batch before the OnSimulationStarted is called.
@@ -184,48 +184,48 @@ public:
   xiiComponentInitBatchHandle CreateComponentInitBatch(xiiStringView sBatchName, bool bMustFinishWithinOneFrame = true);
 
   /// \brief Deletes a component init batch. It must be completely processed before it can be deleted.
-  void DeleteComponentInitBatch(const xiiComponentInitBatchHandle& batch);
+  void DeleteComponentInitBatch(const xiiComponentInitBatchHandle& hBatch);
 
   /// \brief All components that are created between an BeginAddingComponentsToInitBatch/EndAddingComponentsToInitBatch scope are added to the
   /// given init batch.
-  void BeginAddingComponentsToInitBatch(const xiiComponentInitBatchHandle& batch);
+  void BeginAddingComponentsToInitBatch(const xiiComponentInitBatchHandle& hBatch);
 
   /// \brief End adding components to the given batch. Components created after this call are added to the default init batch.
-  void EndAddingComponentsToInitBatch(const xiiComponentInitBatchHandle& batch);
+  void EndAddingComponentsToInitBatch(const xiiComponentInitBatchHandle& hBatch);
 
   /// \brief After all components have been added to the init batch call submit to start processing the batch.
-  void SubmitComponentInitBatch(const xiiComponentInitBatchHandle& batch);
+  void SubmitComponentInitBatch(const xiiComponentInitBatchHandle& hBatch);
 
   /// \brief Returns whether the init batch has been completely processed and all corresponding components are initialized
   /// and their OnSimulationStarted function was called.
-  bool IsComponentInitBatchCompleted(const xiiComponentInitBatchHandle& batch, double* pCompletionFactor = nullptr);
+  bool IsComponentInitBatchCompleted(const xiiComponentInitBatchHandle& hBatch, double* pCompletionFactor = nullptr);
 
   /// \brief Cancel the init batch if it is still active. This might leave outstanding components in an inconsistent state,
   /// so this function has be used with care.
-  void CancelComponentInitBatch(const xiiComponentInitBatchHandle& batch);
+  void CancelComponentInitBatch(const xiiComponentInitBatchHandle& hBatch);
 
   ///@}
   /// \name Message Functions
   ///@{
 
   /// \brief Sends a message to all components of the receiverObject.
-  void SendMessage(const xiiGameObjectHandle& receiverObject, xiiMessage& msg);
+  void SendMessage(const xiiGameObjectHandle& hReceiverObject, xiiMessage& ref_msg);
 
   /// \brief Sends a message to all components of the receiverObject and all its children.
-  void SendMessageRecursive(const xiiGameObjectHandle& receiverObject, xiiMessage& msg);
+  void SendMessageRecursive(const xiiGameObjectHandle& hReceiverObject, xiiMessage& ref_msg);
 
   /// \brief Queues the message for the given phase. The message is send to the receiverObject after the given delay in the corresponding phase.
-  void PostMessage(const xiiGameObjectHandle& receiverObject, const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
+  void PostMessage(const xiiGameObjectHandle& hReceiverObject, const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
 
   /// \brief Queues the message for the given phase. The message is send to the receiverObject and all its children after the given delay in
   /// the corresponding phase.
-  void PostMessageRecursive(const xiiGameObjectHandle& receiverObject, const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
+  void PostMessageRecursive(const xiiGameObjectHandle& hReceiverObject, const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
 
   /// \brief Sends a message to the component.
-  void SendMessage(const xiiComponentHandle& receiverComponent, xiiMessage& msg);
+  void SendMessage(const xiiComponentHandle& hReceiverComponent, xiiMessage& ref_msg);
 
   /// \brief Queues the message for the given phase. The message is send to the receiverComponent after the given delay in the corresponding phase.
-  void PostMessage(const xiiComponentHandle& receiverComponent, const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
+  void PostMessage(const xiiComponentHandle& hReceiverComponent, const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
 
   /// \brief Finds the closest (parent) object, starting at pSearchObject, which has an xiiComponent that handles the given message and returns all
   /// matching components owned by that object. If a xiiEventMessageHandlerComponent is found the search is stopped even if it doesn't handle the given message.
@@ -263,7 +263,7 @@ public:
   /// \brief Returns the coordinate system for the given position.
   /// By default this always returns a coordinate system with forward = +X, right = +Y and up = +Z.
   /// This can be customized by setting a different coordinate system provider.
-  void GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_CoordinateSystem) const;
+  void GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_coordinateSystem) const;
 
   /// \brief Sets the coordinate system provider that should be used in this world.
   void SetCoordinateSystemProvider(const xiiSharedPtr<xiiCoordinateSystemProvider>& pProvider);
@@ -339,10 +339,10 @@ public:
   static xiiWorld* GetWorld(xiiUInt32 uiIndex);
 
   /// \brief Returns the world for the given game object handle.
-  static xiiWorld* GetWorld(const xiiGameObjectHandle& object);
+  static xiiWorld* GetWorld(const xiiGameObjectHandle& hObject);
 
   /// \brief Returns the world for the given component handle.
-  static xiiWorld* GetWorld(const xiiComponentHandle& component);
+  static xiiWorld* GetWorld(const xiiComponentHandle& hComponent);
 
 private:
   friend class xiiGameObject;

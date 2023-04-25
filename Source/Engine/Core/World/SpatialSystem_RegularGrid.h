@@ -19,10 +19,10 @@ public:
   ~xiiSpatialSystem_RegularGrid();
 
   /// \brief Returns the bounding box of the cell associated with the given spatial data. Useful for debug visualizations.
-  xiiResult GetCellBoxForSpatialData(const xiiSpatialDataHandle& hData, xiiBoundingBox& out_BoundingBox) const;
+  xiiResult GetCellBoxForSpatialData(const xiiSpatialDataHandle& hData, xiiBoundingBox& out_boundingBox) const;
 
   /// \brief Returns bounding boxes of all existing cells.
-  void GetAllCellBoxes(xiiDynamicArray<xiiBoundingBox>& out_BoundingBoxes, xiiSpatialData::Category filterCategory = xiiInvalidSpatialDataCategory) const;
+  void GetAllCellBoxes(xiiDynamicArray<xiiBoundingBox>& out_boundingBoxes, xiiSpatialData::Category filterCategory = xiiInvalidSpatialDataCategory) const;
 
 private:
   friend xiiInternal::QueryHelper;

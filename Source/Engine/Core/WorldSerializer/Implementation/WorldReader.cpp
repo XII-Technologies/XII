@@ -10,12 +10,12 @@ xiiWorldReader::FindComponentTypeCallback xiiWorldReader::s_FindComponentTypeCal
 xiiWorldReader::xiiWorldReader()  = default;
 xiiWorldReader::~xiiWorldReader() = default;
 
-xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& stream, bool warningOnUknownSkip)
+xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& inout_stream, bool bWarningOnUknownSkip)
 {
-  m_pStream = &stream;
+  m_pStream = &inout_stream;
 
   m_uiVersion = 0;
-  stream >> m_uiVersion;
+  inout_stream >> m_uiVersion;
 
   if (m_uiVersion < 8 || m_uiVersion > 10)
   {
@@ -25,22 +25,22 @@ xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& stream, bool war
 
   // destroy old context first
   m_pStringDedupReadContext = nullptr;
-  m_pStringDedupReadContext = XII_DEFAULT_NEW(xiiStringDeduplicationReadContext, stream);
+  m_pStringDedupReadContext = XII_DEFAULT_NEW(xiiStringDeduplicationReadContext, inout_stream);
 
   if (m_uiVersion == 8)
   {
     // add tags from the stream
-    XII_SUCCEED_OR_RETURN(xiiTagRegistry::GetGlobalRegistry().Load(stream));
+    XII_SUCCEED_OR_RETURN(xiiTagRegistry::GetGlobalRegistry().Load(inout_stream));
   }
 
   xiiUInt32 uiNumRootObjects = 0;
-  stream >> uiNumRootObjects;
+  inout_stream >> uiNumRootObjects;
 
   xiiUInt32 uiNumChildObjects = 0;
-  stream >> uiNumChildObjects;
+  inout_stream >> uiNumChildObjects;
 
   xiiUInt32 uiNumComponentTypes = 0;
-  stream >> uiNumComponentTypes;
+  inout_stream >> uiNumComponentTypes;
 
   if (uiNumComponentTypes > xiiMath::MaxValue<xiiUInt16>())
   {
@@ -71,13 +71,13 @@ xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& stream, bool war
   }
 
   // read all component data
-  ReadComponentDataToMemStream(warningOnUknownSkip);
+  ReadComponentDataToMemStream(bWarningOnUknownSkip);
   m_pStringDedupReadContext->SetActive(false);
 
   return XII_SUCCESS;
 }
 
-xiiUniquePtr<xiiWorldReader::InstantiationContextBase> xiiWorldReader::InstantiateWorld(xiiWorld& world, const xiiUInt16* pOverrideTeamID, xiiTime maxStepTime, xiiProgress* pProgress)
+xiiUniquePtr<xiiWorldReader::InstantiationContextBase> xiiWorldReader::InstantiateWorld(xiiWorld& ref_world, const xiiUInt16* pOverrideTeamID, xiiTime maxStepTime, xiiProgress* pProgress)
 {
   xiiPrefabInstantiationOptions options;
   options.m_pOverrideTeamID = pOverrideTeamID;
@@ -85,12 +85,12 @@ xiiUniquePtr<xiiWorldReader::InstantiationContextBase> xiiWorldReader::Instantia
   options.m_pProgress       = pProgress;
   options.m_RandomSeedMode  = xiiPrefabInstantiationOptions::RandomSeedMode::FixedFromSerialization;
 
-  return Instantiate(world, false, xiiTransform(), options);
+  return Instantiate(ref_world, false, xiiTransform(), options);
 }
 
-xiiUniquePtr<xiiWorldReader::InstantiationContextBase> xiiWorldReader::InstantiatePrefab(xiiWorld& world, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options)
+xiiUniquePtr<xiiWorldReader::InstantiationContextBase> xiiWorldReader::InstantiatePrefab(xiiWorld& ref_world, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options)
 {
-  return Instantiate(world, true, rootTransform, options);
+  return Instantiate(ref_world, true, rootTransform, options);
 }
 
 xiiGameObjectHandle xiiWorldReader::ReadGameObjectHandle()
@@ -170,14 +170,14 @@ xiiUInt32 xiiWorldReader::GetChildObjectCount() const
   return m_ChildObjectsToCreate.GetCount();
 }
 
-void xiiWorldReader::SetMaxStepTime(InstantiationContextBase* context, xiiTime maxStepTime)
+void xiiWorldReader::SetMaxStepTime(InstantiationContextBase* pContext, xiiTime maxStepTime)
 {
-  return static_cast<InstantiationContext*>(context)->SetMaxStepTime(maxStepTime);
+  return static_cast<InstantiationContext*>(pContext)->SetMaxStepTime(maxStepTime);
 }
 
-xiiTime xiiWorldReader::GetMaxStepTime(InstantiationContextBase* context)
+xiiTime xiiWorldReader::GetMaxStepTime(InstantiationContextBase* pContext)
 {
-  return static_cast<InstantiationContext*>(context)->GetMaxStepTime();
+  return static_cast<InstantiationContext*>(pContext)->GetMaxStepTime();
 }
 
 void xiiWorldReader::ReadGameObjectDesc(GameObjectToCreate& godesc)
@@ -243,7 +243,7 @@ void xiiWorldReader::ReadComponentTypeInfo(xiiUInt32 uiComponentTypeIdx)
 
 void xiiWorldReader::ReadComponentDataToMemStream(bool warningOnUnknownSkip)
 {
-  auto WriteToMemStream = [&](xiiMemoryStreamWriter& writer, bool bReadNumComponents) {
+  auto WriteToMemStream = [&](xiiMemoryStreamWriter& ref_writer, bool bReadNumComponents) {
     xiiUInt8 Temp[4096];
     for (auto& compTypeInfo : m_ComponentTypes)
     {
@@ -273,7 +273,7 @@ void xiiWorldReader::ReadComponentDataToMemStream(bool warningOnUnknownSkip)
         {
           const xiiUInt64 uiRead = m_pStream->ReadBytes(Temp, xiiMath::Min<xiiUInt32>(uiAllComponentsSize, XII_ARRAY_SIZE(Temp)));
 
-          writer.WriteBytes(Temp, uiRead).IgnoreResult();
+          ref_writer.WriteBytes(Temp, uiRead).IgnoreResult();
 
           uiAllComponentsSize -= (xiiUInt32)uiRead;
         }
@@ -323,8 +323,8 @@ xiiUniquePtr<xiiWorldReader::InstantiationContextBase> xiiWorldReader::Instantia
   return std::move(pContext);
 }
 
-xiiWorldReader::InstantiationContext::InstantiationContext(xiiWorldReader& worldReader, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options) :
-  m_WorldReader(worldReader), m_bUseTransform(bUseTransform), m_RootTransform(rootTransform), m_Options(options)
+xiiWorldReader::InstantiationContext::InstantiationContext(xiiWorldReader& ref_worldReader, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options) :
+  m_WorldReader(ref_worldReader), m_bUseTransform(bUseTransform), m_RootTransform(rootTransform), m_Options(options)
 {
   m_Phase = Phase::CreateRootObjects;
 
@@ -335,7 +335,7 @@ xiiWorldReader::InstantiationContext::InstantiationContext(xiiWorldReader& world
 
   if (options.m_MaxStepTime.IsPositive())
   {
-    m_hComponentInitBatch = worldReader.m_pWorld->CreateComponentInitBatch("WorldReaderBatch", options.m_MaxStepTime.IsPositive() ? false : true);
+    m_hComponentInitBatch = ref_worldReader.m_pWorld->CreateComponentInitBatch("WorldReaderBatch", options.m_MaxStepTime.IsPositive() ? false : true);
   }
 
   if (options.m_pProgress != nullptr)
@@ -480,14 +480,14 @@ void xiiWorldReader::InstantiationContext::Cancel()
 }
 
 // a super simple, but also efficient random number generator
-inline static xiiUInt32 NextStableRandomSeed(xiiUInt32& seed)
+inline static xiiUInt32 NextStableRandomSeed(xiiUInt32& ref_uiSeed)
 {
-  seed = 214013L * seed + 2531011L;
-  return ((seed >> 16) & 0x7FFFF);
+  ref_uiSeed = 214013L * ref_uiSeed + 2531011L;
+  return ((ref_uiSeed >> 16) & 0x7FFFF);
 }
 
 template <bool UseTransform>
-bool xiiWorldReader::InstantiationContext::CreateGameObjects(const xiiDynamicArray<GameObjectToCreate>& objects, xiiGameObjectHandle hParent, xiiDynamicArray<xiiGameObject*>* out_CreatedObjects, xiiTime endTime)
+bool xiiWorldReader::InstantiationContext::CreateGameObjects(const xiiDynamicArray<GameObjectToCreate>& objects, xiiGameObjectHandle hParent, xiiDynamicArray<xiiGameObject*>* out_pCreatedObjects, xiiTime endTime)
 {
   XII_PROFILE_SCOPE("xiiWorldReader::CreateGameObjects");
 
@@ -543,9 +543,9 @@ bool xiiWorldReader::InstantiationContext::CreateGameObjects(const xiiDynamicArr
       pObject->SetGlobalKey(godesc.m_sGlobalKey);
     }
 
-    if (out_CreatedObjects)
+    if (out_pCreatedObjects)
     {
-      out_CreatedObjects->PushBack(pObject);
+      out_pCreatedObjects->PushBack(pObject);
     }
 
     ++m_uiCurrentIndex;

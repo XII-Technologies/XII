@@ -8,5 +8,5 @@ class XII_ENGINEPLUGINJOLT_DLL xiiSceneExportModifier_JoltStaticMeshConversion :
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneExportModifier_JoltStaticMeshConversion, xiiSceneExportModifier);
 
 public:
-  virtual void ModifyWorld(xiiWorld& world, xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport) override;
+  virtual void ModifyWorld(xiiWorld& ref_world, xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport) override;
 };

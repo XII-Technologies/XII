@@ -84,7 +84,9 @@ void UpdateCollisionLayerDynamicEnumValues()
 
   xiiCollisionFilterConfig cfg;
   if (cfg.Load().Failed())
+  {
     return;
+  }
 
   // add all names and values that are valid (non-empty)
   for (xiiInt32 i = 0; i < 32; ++i)

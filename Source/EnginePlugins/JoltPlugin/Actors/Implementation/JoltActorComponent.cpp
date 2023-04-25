@@ -61,10 +61,9 @@ void xiiJoltActorComponent::OnSimulationStarted()
 {
   SUPER::OnSimulationStarted();
 
+  // Create a new filter ID, if none has been passed in manually.
   if (m_uiObjectFilterID == xiiInvalidIndex)
   {
-    // only create a new filter ID, if none has been passed in manually
-
     xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
     m_uiObjectFilterID          = pModule->CreateObjectFilterID();
   }
@@ -125,7 +124,7 @@ xiiResult xiiJoltActorComponent::CreateShape(JPH::BodyCreationSettings* pSetting
   CreateShapes(shapes, towner, fDensity, pMaterial);
   GatherShapes(shapes, GetOwner(), towner, fDensity, pMaterial);
 
-  auto cleanShapes = [&]() {
+  auto CleanShapes = [&]() {
     for (auto& s : shapes)
     {
       if (s.m_pShape)
@@ -135,7 +134,7 @@ xiiResult xiiJoltActorComponent::CreateShape(JPH::BodyCreationSettings* pSetting
     }
   };
 
-  XII_SCOPE_EXIT(cleanShapes());
+  XII_SCOPE_EXIT(CleanShapes());
 
   if (shapes.IsEmpty())
     return XII_FAILURE;

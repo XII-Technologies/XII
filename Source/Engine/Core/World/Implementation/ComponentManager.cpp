@@ -20,10 +20,10 @@ xiiComponentHandle xiiComponentManagerBase::CreateComponent(xiiGameObject* pOwne
   return CreateComponent(pOwnerObject, pDummy);
 }
 
-void xiiComponentManagerBase::DeleteComponent(const xiiComponentHandle& component)
+void xiiComponentManagerBase::DeleteComponent(const xiiComponentHandle& hComponent)
 {
   xiiComponent* pComponent = nullptr;
-  if (!m_Components.TryGetValue(component, pComponent))
+  if (!m_Components.TryGetValue(hComponent, pComponent))
     return;
 
   DeleteComponent(pComponent);

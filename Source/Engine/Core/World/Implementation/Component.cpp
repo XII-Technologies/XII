@@ -62,9 +62,9 @@ const xiiWorld* xiiComponent::GetWorld() const
   return m_pManager->GetWorld();
 }
 
-void xiiComponent::SerializeComponent(xiiWorldWriter& stream) const {}
+void xiiComponent::SerializeComponent(xiiWorldWriter& inout_stream) const {}
 
-void xiiComponent::DeserializeComponent(xiiWorldReader& stream) {}
+void xiiComponent::DeserializeComponent(xiiWorldReader& inout_stream) {}
 
 void xiiComponent::EnsureInitialized()
 {
@@ -206,18 +206,18 @@ bool xiiComponent::OnUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg) const
   return false;
 }
 
-void xiiComponent::SetUserFlag(xiiUInt8 flagIndex, bool set)
+void xiiComponent::SetUserFlag(xiiUInt8 uiFlagIndex, bool bSet)
 {
-  XII_ASSERT_DEBUG(flagIndex < 8, "Flag index {0} is out of the valid range [0 - 7]", flagIndex);
+  XII_ASSERT_DEBUG(uiFlagIndex < 8, "Flag index {0} is out of the valid range [0 - 7]", uiFlagIndex);
 
-  m_ComponentFlags.AddOrRemove(static_cast<xiiObjectFlags::Enum>(xiiObjectFlags::UserFlag0 << flagIndex), set);
+  m_ComponentFlags.AddOrRemove(static_cast<xiiObjectFlags::Enum>(xiiObjectFlags::UserFlag0 << uiFlagIndex), bSet);
 }
 
-bool xiiComponent::GetUserFlag(xiiUInt8 flagIndex) const
+bool xiiComponent::GetUserFlag(xiiUInt8 uiFlagIndex) const
 {
-  XII_ASSERT_DEBUG(flagIndex < 8, "Flag index {0} is out of the valid range [0 - 7]", flagIndex);
+  XII_ASSERT_DEBUG(uiFlagIndex < 8, "Flag index {0} is out of the valid range [0 - 7]", uiFlagIndex);
 
-  return m_ComponentFlags.IsSet(static_cast<xiiObjectFlags::Enum>(xiiObjectFlags::UserFlag0 << flagIndex));
+  return m_ComponentFlags.IsSet(static_cast<xiiObjectFlags::Enum>(xiiObjectFlags::UserFlag0 << uiFlagIndex));
 }
 
 

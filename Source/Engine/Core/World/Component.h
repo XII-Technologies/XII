@@ -96,13 +96,13 @@ public:
 
 
   /// \brief Override this to save the current state of the component to the given stream.
-  virtual void SerializeComponent(xiiWorldWriter& stream) const;
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const;
 
   /// \brief Override this to load the current state of the component from the given stream.
   ///
   /// The active state will be automatically serialized. The 'initialized' state is not serialized, all components
   /// will be initialized after creation, even if they were already in an initialized state when they were serialized.
-  virtual void DeserializeComponent(xiiWorldReader& stream);
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream);
 
 
   /// \brief Ensures that the component is initialized. Must only be called from another component's Initialize callback.
@@ -114,8 +114,8 @@ public:
 
 
   /// \brief Sends a message to this component.
-  XII_ALWAYS_INLINE bool SendMessage(xiiMessage& msg) { return SendMessageInternal(msg, false); }
-  XII_ALWAYS_INLINE bool SendMessage(xiiMessage& msg) const { return SendMessageInternal(msg, false); }
+  XII_ALWAYS_INLINE bool SendMessage(xiiMessage& ref_msg) { return SendMessageInternal(ref_msg, false); }
+  XII_ALWAYS_INLINE bool SendMessage(xiiMessage& ref_msg) const { return SendMessageInternal(ref_msg, false); }
 
   /// \brief Queues the message for the given phase. The message is processed after the given delay in the corresponding phase.
   void PostMessage(const xiiMessage& msg, xiiTime delay = xiiTime::Zero(), xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
@@ -124,10 +124,10 @@ public:
   virtual bool HandlesMessage(const xiiMessage& msg) const;
 
   /// Be careful to check which flags may already be in use by base classes.
-  void SetUserFlag(xiiUInt8 flagIndex, bool set);
+  void SetUserFlag(xiiUInt8 uiFlagIndex, bool bSet);
 
   /// \brief Retrieves a custom flag. Index must be between 0 and 7.
-  bool GetUserFlag(xiiUInt8 flagIndex) const;
+  bool GetUserFlag(xiiUInt8 uiFlagIndex) const;
 
 protected:
   friend class xiiWorld;
