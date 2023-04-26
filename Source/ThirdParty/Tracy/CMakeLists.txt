@@ -7,7 +7,7 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
 find_package(Threads REQUIRED)
 
-xii_create_target(LIBRARY TracyClient NO_XII_PREFIX MANUAL_SOURCE_FILES TracyClient.cpp)
+xii_create_target(LIBRARY TracyClient NO_XII_PREFIX NO_UNITY MANUAL_SOURCE_FILES TracyClient.cpp)
 
 target_compile_features(TracyClient PUBLIC cxx_std_11)
 
