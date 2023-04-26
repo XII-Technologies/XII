@@ -66,7 +66,7 @@ set_option(TRACY_FIBERS "Enable fibers support" OFF)
 set_option(TRACY_NO_CRASH_HANDLER "Disable crash handling" OFF)
 set_option(TRACY_TIMER_FALLBACK "Use lower resolution timers" OFF)
 
-if(NOT XII_COMPILE_ENGINE_AS_DLL)
+if(XII_COMPILE_ENGINE_AS_DLL)
     target_compile_definitions(TracyClient PRIVATE TRACY_EXPORTS)
     target_compile_definitions(TracyClient PUBLIC TRACY_IMPORTS)
 endif()
