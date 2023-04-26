@@ -35,6 +35,7 @@ add_library(Tracy::TracyClient ALIAS TracyClient)
 
 macro(set_option option help value)
     option(${option} ${help} ${value})
+    mark_as_advanced(${option})
     if(${option})
         message(STATUS "${option}: ON")
         target_compile_definitions(TracyClient PUBLIC ${option})
