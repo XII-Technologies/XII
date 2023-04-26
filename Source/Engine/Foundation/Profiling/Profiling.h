@@ -166,10 +166,26 @@ public:
 #if XII_ENABLED(XII_USE_PROFILING) || defined(XII_DOCS)
 
 #  if BUILDSYSTEM_ENABLE_TRACY_SUPPORT
+
+XII_ALWAYS_INLINE xiiUInt32 ___tracyGetStringLength(const char* szString)
+{
+  return xiiStringUtils::GetStringElementCount(szString);
+}
+
+XII_ALWAYS_INLINE xiiUInt32 ___tracyGetStringLength(xiiStringView szString)
+{
+  return szString.GetElementCount();
+}
+
+XII_ALWAYS_INLINE xiiUInt32 ___tracyGetStringLength(const xiiStringBuilder& szString)
+{
+  return szString.GetElementCount();
+}
+
 #    include <Tracy/tracy/Tracy.h>
 #    define TRACY_PROFILE_SCOPE_DYNAMIC(szScopeName) \
       ZoneScoped;                                    \
-      ZoneName(szScopeName, strlen(szScopeName))
+      ZoneName(szScopeName, ___tracyGetStringLength(szScopeName))
 #  else
 #    define TRACY_PROFILE_SCOPE_DYNAMIC(szScopeName)
 #  endif
