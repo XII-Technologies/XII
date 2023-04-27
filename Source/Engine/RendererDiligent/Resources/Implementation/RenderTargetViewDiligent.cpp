@@ -38,15 +38,7 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     viewFormat = m_Description.m_OverrideViewFormat;
 
   const bool bIsDepthFormat = xiiGALResourceFormat::IsDepthFormat(viewFormat);
-
-  if (bIsDepthFormat)
-  {
-    ViewFormat = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eDepthStencilType;
-  }
-  else
-  {
-    ViewFormat = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eRenderTarget;
-  }
+  ViewFormat                = bIsDepthFormat ? pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eDepthStencilType : pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eRenderTarget;
 
   if (ViewFormat == Diligent::TEX_FORMAT_UNKNOWN)
   {
@@ -70,15 +62,7 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     xiiGALTexture* pTex = const_cast<xiiGALTexture*>(pDevice->GetTexture(m_Description.m_hTexture));
     static_cast<xiiGALTextureDiligent*>(pTex)->GetTexture()->CreateView(DSViewDesc, &m_pDepthStencilView);
 
-    if (m_pDepthStencilView == nullptr)
-    {
-      xiiLog::Error("Failed to create depth stencil view!");
-      return XII_FAILURE;
-    }
-    else
-    {
-      return XII_SUCCESS;
-    }
+    return (m_pDepthStencilView != nullptr) ? XII_SUCCESS : XII_FAILURE;
   }
   else
   {
@@ -94,13 +78,7 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     xiiGALTexture* pTex = const_cast<xiiGALTexture*>(pDevice->GetTexture(m_Description.m_hTexture));
     static_cast<xiiGALTextureDiligent*>(pTex)->GetTexture()->CreateView(RTViewDesc, &m_pRenderTargetView);
 
-    if (m_pRenderTargetView == nullptr)
-    {
-      xiiLog::Error("Failed to create rendertarget view!");
-      return XII_FAILURE;
-    }
-
-    return XII_SUCCESS;
+    return (m_pRenderTargetView != nullptr) ? XII_SUCCESS : XII_FAILURE;
   }
 }
 

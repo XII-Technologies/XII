@@ -605,3 +605,29 @@ XII_ALWAYS_INLINE bool xiiDiligentUtils::IsDepthFormat(Diligent::TEXTURE_FORMAT 
   }
   return false;
 }
+
+XII_ALWAYS_INLINE Diligent::RESOURCE_DIMENSION xiiDiligentUtils::GetResourceDimension(xiiGALTextureType::Enum type)
+{
+  switch (type)
+  {
+    case xiiGALTextureType::Texture1D:
+      return Diligent::RESOURCE_DIM_TEX_1D;
+    case xiiGALTextureType::Texture1DArray:
+      return Diligent::RESOURCE_DIM_TEX_1D_ARRAY;
+    case xiiGALTextureType::Texture2D:
+      return Diligent::RESOURCE_DIM_TEX_2D;
+    case xiiGALTextureType::Texture2DArray:
+      return Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+    case xiiGALTextureType::TextureCube:
+      return Diligent::RESOURCE_DIM_TEX_CUBE;
+    case xiiGALTextureType::TextureCubeArray:
+      return Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
+    case xiiGALTextureType::Texture3D:
+      return Diligent::RESOURCE_DIM_TEX_3D;
+    case xiiGALTextureType::Texture2DProxy:
+      return Diligent::RESOURCE_DIM_TEX_2D;
+    case xiiGALTextureType::Texture2DProxyArray:
+      return Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+  }
+  return Diligent::RESOURCE_DIM_UNDEFINED;
+}

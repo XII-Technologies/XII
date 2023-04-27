@@ -1,5 +1,5 @@
 
-Diligent::IDeviceObject* xiiGALResourceViewDiligent::GetResourceView()
+XII_ALWAYS_INLINE Diligent::IDeviceObject* xiiGALResourceViewDiligent::GetResourceView()
 {
   if (m_pTextureView)
     return m_pTextureView;
@@ -10,12 +10,12 @@ Diligent::IDeviceObject* xiiGALResourceViewDiligent::GetResourceView()
   return nullptr;
 }
 
-Diligent::ITextureView* xiiGALResourceViewDiligent::GetTextureView()
+XII_ALWAYS_INLINE Diligent::ITextureView* xiiGALResourceViewDiligent::GetTextureView()
 {
   return m_pTextureView;
 }
 
-Diligent::IBufferView* xiiGALResourceViewDiligent::GetBufferView()
+XII_ALWAYS_INLINE Diligent::IBufferView* xiiGALResourceViewDiligent::GetBufferView()
 {
   return m_pBufferView;
 }

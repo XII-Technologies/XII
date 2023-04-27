@@ -24,6 +24,7 @@ public:
   static Diligent::COLOR_MASK ToDiligentColorWriteMask(xiiGALColorWriteMask::Enum mask);
 
   static bool IsDepthFormat(Diligent::TEXTURE_FORMAT format);
+  static Diligent::RESOURCE_DIMENSION GetResourceDimension(xiiGALTextureType::Enum type);
 };
 
 #include <RendererDiligent/Utilities/Implementation/DiligentConversions_inl.h>

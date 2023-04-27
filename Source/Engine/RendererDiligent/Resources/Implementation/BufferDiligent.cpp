@@ -23,20 +23,16 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
     case xiiGALBufferType::ConstantBuffer:
       BufferDesc.BindFlags = Diligent::BIND_UNIFORM_BUFFER;
       break;
-
     case xiiGALBufferType::IndexBuffer:
       BufferDesc.BindFlags = Diligent::BIND_INDEX_BUFFER;
       m_IndexFormat        = m_Description.m_uiStructSize == 2 ? Diligent::VT_UINT16 : Diligent::VT_UINT32;
       break;
-
     case xiiGALBufferType::VertexBuffer:
       BufferDesc.BindFlags = Diligent::BIND_VERTEX_BUFFER;
       break;
-
     case xiiGALBufferType::Generic:
       BufferDesc.BindFlags = Diligent::BIND_NONE;
       break;
-
     default:
       xiiLog::Error("Unknown buffer type supplied to CreateBuffer()!");
       return XII_FAILURE;
@@ -51,9 +47,8 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
   if (m_Description.m_bStreamOutputTarget)
     BufferDesc.BindFlags |= Diligent::BIND_STREAM_OUTPUT;
 
-  BufferDesc.Size           = m_Description.m_uiTotalSize;
-  BufferDesc.CPUAccessFlags = Diligent::CPU_ACCESS_NONE;
-  BufferDesc.MiscFlags      = Diligent::MISC_BUFFER_FLAG_NONE;
+  BufferDesc.Size      = m_Description.m_uiTotalSize;
+  BufferDesc.MiscFlags = Diligent::MISC_BUFFER_FLAG_NONE;
 
   if (m_Description.m_bUseForIndirectArguments)
     BufferDesc.BindFlags |= Diligent::BIND_INDIRECT_DRAW_ARGS;
@@ -90,7 +85,8 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
     {
       if (m_Description.m_bAllowUAV) // UAVs allow writing from the GPU which cannot be combined with CPU write access.
       {
-        BufferDesc.Usage = Diligent::USAGE_DEFAULT;
+        BufferDesc.Usage          = Diligent::USAGE_DEFAULT;
+        BufferDesc.CPUAccessFlags = Diligent::CPU_ACCESS_NONE;
       }
       else
       {
@@ -105,13 +101,7 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
   initialData.DataSize             = pInitialData.GetCount();
   pDeviceDiligent->GetDevice()->CreateBuffer(BufferDesc, pInitialData.IsEmpty() ? nullptr : &initialData, &m_pBuffer);
 
-  if (m_pBuffer == nullptr)
-  {
-    xiiLog::Error("Failed to create buffer for graphics device!");
-    return XII_FAILURE;
-  }
-
-  return XII_SUCCESS;
+  return (m_pBuffer != nullptr) ? XII_SUCCESS : XII_FAILURE;
 }
 
 xiiResult xiiGALBufferDiligent::DeInitPlatform(xiiGALDevice* pDevice)

@@ -63,43 +63,34 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
       case xiiGALTextureType::Texture1D:
         UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_1D;
         break;
-
       case xiiGALTextureType::Texture2D:
       case xiiGALTextureType::Texture2DProxy:
         UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_2D;
         break;
-
       case xiiGALTextureType::TextureCube:
         UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_CUBE;
         break;
-
       case xiiGALTextureType::Texture1DArray:
         UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_1D_ARRAY;
         UAVDesc.NumArraySlices  = m_Description.m_uiArraySize;
         UAVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
         break;
-
       case xiiGALTextureType::Texture2DArray:
       case xiiGALTextureType::Texture2DProxyArray:
         UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
         UAVDesc.NumArraySlices  = m_Description.m_uiArraySize;
         UAVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
         break;
-
       case xiiGALTextureType::TextureCubeArray:
         UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
         UAVDesc.NumArraySlices  = m_Description.m_uiArraySize;
         UAVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
         break;
-
       case xiiGALTextureType::Texture3D:
-      {
         UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_3D;
         UAVDesc.FirstDepthSlice = m_Description.m_uiFirstArraySlice;
         UAVDesc.NumDepthSlices  = m_Description.m_uiArraySize;
-      }
-      break;
-
+        break;
       default:
         XII_ASSERT_NOT_IMPLEMENTED;
         return XII_FAILURE;
@@ -107,10 +98,7 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
     pTextureDiligent->CreateView(UAVDesc, &m_pUnorderedAccessTextureView);
 
-    if (m_pUnorderedAccessTextureView == nullptr)
-    {
-      return XII_FAILURE;
-    }
+    return (m_pUnorderedAccessTextureView != nullptr) ? XII_SUCCESS : XII_FAILURE;
   }
   else if (pBuffer)
   {
@@ -170,10 +158,7 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
     pBufferDiligent->CreateView(UAVDesc, &m_pUnorderedAccessBufferView);
 
-    if (m_pUnorderedAccessBufferView == nullptr)
-    {
-      return XII_FAILURE;
-    }
+    return (m_pUnorderedAccessBufferView != nullptr) ? XII_SUCCESS : XII_FAILURE;
   }
 
   return XII_SUCCESS;

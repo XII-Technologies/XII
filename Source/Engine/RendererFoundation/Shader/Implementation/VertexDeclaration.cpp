@@ -10,5 +10,4 @@ xiiGALVertexDeclaration::xiiGALVertexDeclaration(const xiiGALVertexDeclarationCr
 xiiGALVertexDeclaration::~xiiGALVertexDeclaration() {}
 
 
-
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Shader_Implementation_VertexDeclaration);
