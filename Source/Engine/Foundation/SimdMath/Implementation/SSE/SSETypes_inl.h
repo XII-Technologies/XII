@@ -35,7 +35,7 @@
 #  include <immintrin.h>
 #endif
 
-#if XII_DISABLED(XII_COMPILER_GCC)
+#if XII_DISABLED(XII_COMPILER_GCC) && XII_DISABLED(XII_COMPILER_CLANG)
 #  if XII_SSE_LEVEL >= XII_SSE_AVX2
 #    include <zmmintrin.h>
 #  endif

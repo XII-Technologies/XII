@@ -16,7 +16,7 @@ target_include_directories(TracyClient SYSTEM PUBLIC
     $<INSTALL_INTERFACE:include>)
 
 target_link_libraries(TracyClient
-    PUBLIC
+    PRIVATE
     Threads::Threads
     ${CMAKE_DL_LIBS}
 )

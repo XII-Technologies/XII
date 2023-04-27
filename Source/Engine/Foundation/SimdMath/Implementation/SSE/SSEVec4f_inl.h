@@ -589,41 +589,25 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::ZeroVector()
 // static
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulAdd(const xiiSimdVec4f& a, const xiiSimdVec4f& b, const xiiSimdVec4f& c)
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX2
-  return _mm_fmadd_ps(a.m_v, b.m_v, c.m_v);
-#else
   return a.CompMul(b) + c;
-#endif
 }
 
 // static
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulAdd(const xiiSimdVec4f& a, const xiiSimdFloat& b, const xiiSimdVec4f& c)
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX2
-  return _mm_fmadd_ps(a.m_v, b.m_v, c.m_v);
-#else
   return a * b + c;
-#endif
 }
 
 // static
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulSub(const xiiSimdVec4f& a, const xiiSimdVec4f& b, const xiiSimdVec4f& c)
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX2
-  return _mm_fmsub_ps(a.m_v, b.m_v, c.m_v);
-#else
   return a.CompMul(b) - c;
-#endif
 }
 
 // static
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulSub(const xiiSimdVec4f& a, const xiiSimdFloat& b, const xiiSimdVec4f& c)
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX2
-  return _mm_fmsub_ps(a.m_v, b.m_v, c.m_v);
-#else
   return a * b - c;
-#endif
 }
 
 // static

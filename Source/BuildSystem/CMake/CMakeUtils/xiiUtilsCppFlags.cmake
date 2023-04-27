@@ -82,10 +82,10 @@ function(xii_set_build_flags_msvc TARGET_NAME)
 	# /Oi: Replace some functions with intrinsics or other special forms of the function
 	target_compile_options(${TARGET_NAME} PRIVATE "$<$<CONFIG:${XII_BUILDTYPENAME_RELEASE_UPPER}>:/Oi>")
 
-	# Enable SSE4.2 for Clang on Windows.
-	# Todo: In general we should make this configurable. As of writing SSE4.2 is always active for windows builds (independent of the compiler)
+	# Enable SSE4.1 for Clang on Windows.
+	# Todo: In general we should make this configurable. As of writing SSE4.1 is always active for windows builds (independent of the compiler)
 	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND XII_CMAKE_ARCHITECTURE_X86)
-		target_compile_options(${TARGET_NAME} PRIVATE "-msse4.2" "-mavx2")
+		target_compile_options(${TARGET_NAME} PRIVATE "-msse4.1")
 	endif()
 
 	set(LINKER_FLAGS_DEBUG "")
@@ -170,7 +170,7 @@ function(xii_set_build_flags_clang TARGET_NAME)
 	endif()
 
 	if(XII_CMAKE_ARCHITECTURE_X86)
-		target_compile_options(${TARGET_NAME} PRIVATE "-msse4.2")
+		target_compile_options(${TARGET_NAME} PRIVATE "-msse4.1")
 	endif()
 
 	if(XII_CMAKE_PLATFORM_LINUX)
@@ -244,7 +244,7 @@ function(xii_set_build_flags_gcc TARGET_NAME)
 	target_compile_options(${TARGET_NAME} PRIVATE -fPIC -Wno-enum-compare -gdwarf-3 -pthread)
 
 	if(XII_CMAKE_ARCHITECTURE_X86)
-		target_compile_options(${TARGET_NAME} PRIVATE -msse3 -mfpmath=sse)
+		target_compile_options(${TARGET_NAME} PRIVATE -mssse3 -mfpmath=sse)
 	endif()
 
 	# Dynamic linking will fail without fPIC (plugins)
@@ -253,7 +253,7 @@ function(xii_set_build_flags_gcc TARGET_NAME)
 	target_compile_options(${TARGET_NAME} PRIVATE -fPIC -gdwarf-3)
 
 	if(XII_CMAKE_ARCHITECTURE_X86)
-		target_compile_options(${TARGET_NAME} PRIVATE -msse4.2)
+		target_compile_options(${TARGET_NAME} PRIVATE -msse4.1)
 	endif()
 
 	# Disable warning: multi-character character constant
