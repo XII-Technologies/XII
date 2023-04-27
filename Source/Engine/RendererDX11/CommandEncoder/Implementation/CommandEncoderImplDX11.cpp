@@ -573,6 +573,8 @@ void xiiGALCommandEncoderImplDX11::DrawIndexedPlatform(xiiUInt32 uiIndexCount, x
   FlushDeferredStateChanges();
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+  m_pDXContext->DrawIndexed(uiIndexCount, uiStartIndex, 0);
+
   // In debug builds, with a debugger attached, the engine will break on D3D errors
   // this can be very annoying when an error happens repeatedly
   // you can disable it at runtime, by using the debugger to set bChangeBreakPolicy to 'true', or dragging the
@@ -595,8 +597,6 @@ void xiiGALCommandEncoderImplDX11::DrawIndexedPlatform(xiiUInt32 uiIndexCount, x
         pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, bBreakOnWarning);
       }
     }
-
-    m_pDXContext->DrawIndexed(uiIndexCount, uiStartIndex, 0);
   }
 #else
   m_pDXContext->DrawIndexed(uiIndexCount, uiStartIndex, 0);
