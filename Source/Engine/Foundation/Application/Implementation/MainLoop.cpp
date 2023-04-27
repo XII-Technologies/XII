@@ -3,22 +3,26 @@
 #include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/Startup.h>
 
+#if BUILDSYSTEM_ENABLE_TRACY_SUPPORT
+#  include <Tracy/tracy/Tracy.h>
+#endif
+
 xiiResult xiiRun_Startup(xiiApplication* pApplicationInstance)
 {
   XII_ASSERT_ALWAYS(pApplicationInstance != nullptr, "xiiRun() requires a valid non-null application instance pointer.");
   XII_ASSERT_ALWAYS(xiiApplication::s_pApplicationInstance == nullptr, "There can only be one xiiApplication.");
 
-  // Set application instance pointer to the supplied instance
+  // Set application instance pointer to the supplied instance.
   xiiApplication::s_pApplicationInstance = pApplicationInstance;
 
   XII_SUCCEED_OR_RETURN(pApplicationInstance->BeforeCoreSystemsStartup());
 
-  // this will startup all base and core systems
-  // 'StartupHighLevelSystems' must not be done before a window is available (if at all)
-  // so we don't do that here
+  // This will startup all Base and Core systems.
+  // 'StartupHighLevelSystems' must not be done before a window is available (if at all) so we don't do that here.
   xiiStartup::StartupCoreSystems();
 
   pApplicationInstance->AfterCoreSystemsStartup();
+
   return XII_SUCCESS;
 }
 
@@ -26,20 +30,23 @@ void xiiRun_MainLoop(xiiApplication* pApplicationInstance)
 {
   while (pApplicationInstance->Run() == xiiApplication::Execution::Continue)
   {
+#if BUILDSYSTEM_ENABLE_TRACY_SUPPORT
+    FrameMark;
+#endif
   }
 }
 
 void xiiRun_Shutdown(xiiApplication* pApplicationInstance)
 {
-  // high level systems shutdown
-  // may do nothing, if the high level systems were never initialized
+  // High Level Systems Shutdown.
+  // This may do nothing, if the high level systems were never initialized.
   {
     pApplicationInstance->BeforeHighLevelSystemsShutdown();
     xiiStartup::ShutdownHighLevelSystems();
     pApplicationInstance->AfterHighLevelSystemsShutdown();
   }
 
-  // core systems shutdown
+  // Core Systems Shutdown.
   {
     pApplicationInstance->BeforeCoreSystemsShutdown();
     xiiStartup::ShutdownCoreSystems();
@@ -54,8 +61,8 @@ void xiiRun_Shutdown(xiiApplication* pApplicationInstance)
   // Destructor is called by entry point function
   xiiApplication::s_pApplicationInstance = nullptr;
 
-  // memory leak reporting cannot be done here, because the application instance is still alive and may still hold on to memory that needs
-  // to be freed first
+  // Memory leak reporting cannot be done here, because the application instance is still alive and may still hold on to memory that needs
+  // to be freed first.
 }
 
 void xiiRun(xiiApplication* pApplicationInstance)
