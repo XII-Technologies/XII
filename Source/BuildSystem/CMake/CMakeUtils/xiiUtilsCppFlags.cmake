@@ -27,7 +27,7 @@ function(xii_set_build_flags_msvc TARGET_NAME)
 
 	# disable RTTI
 	if(${ARG_ENABLE_RTTI})
-	# message(STATUS "Enabling RTTI for target '${TARGET_NAME}'")
+		message(STATUS "Enabling RTTI for target '${TARGET_NAME}'")
 	else()
 		target_compile_options(${TARGET_NAME} PRIVATE "/GR-")
 	endif()
@@ -54,7 +54,7 @@ function(xii_set_build_flags_msvc TARGET_NAME)
 	target_compile_options(${TARGET_NAME} PRIVATE "/utf-8")
 
 	# set high warning level
-	# target_compile_options(${TARGET_NAME} PRIVATE "/W4") # too much work to fix all warnings in xii
+	# target_compile_options(${TARGET_NAME} PRIVATE "/W4") # too much work to fix all warnings in XII
 
 	# /WX: treat warnings as errors
 	if(NOT ${ARG_NO_WARNINGS_AS_ERRORS} AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
