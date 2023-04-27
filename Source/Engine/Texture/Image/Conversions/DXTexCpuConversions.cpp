@@ -2,11 +2,10 @@
 
 #if XII_ENABLED(XII_PLATFORM_LINUX)
 
-#  include <Texture/DirectXTex/BC.h>
-#  include <Texture/Image/ImageConversion.h>
-
 #  include <Foundation/Threading/TaskSystem.h>
 
+#  include <Texture/DirectXTex/BC.h>
+#  include <Texture/Image/ImageConversion.h>
 
 xiiImageConversionEntry g_DXTexCpuConversions[] = {
   xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_FLOAT, xiiImageFormat::BC6H_UF16, xiiImageConversionFlags::Default),
