@@ -35,8 +35,10 @@
 #  include <immintrin.h>
 #endif
 
-#if XII_SSE_LEVEL >= XII_SSE_AVX2
-#  include <zmmintrin.h>
+#if XII_DISABLED(XII_COMPILER_GCC)
+#  if XII_SSE_LEVEL >= XII_SSE_AVX2
+#    include <zmmintrin.h>
+#  endif
 #endif
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
