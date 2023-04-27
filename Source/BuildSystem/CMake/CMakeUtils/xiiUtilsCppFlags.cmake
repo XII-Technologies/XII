@@ -22,47 +22,47 @@ function(xii_set_build_flags_msvc TARGET_NAME)
 
 	# target_compile_options(${TARGET_NAME} PRIVATE "$<$<CONFIG:DEBUG>:${MY_DEBUG_OPTIONS}>")
 
-	# enable multi-threaded compilation
+	# Enable multi-threaded compilation
 	target_compile_options(${TARGET_NAME} PRIVATE "/MP")
 
-	# disable RTTI
+	# Disable RTTI
 	if(${ARG_ENABLE_RTTI})
-	# message(STATUS "Enabling RTTI for target '${TARGET_NAME}'")
+		message(STATUS "Enabling RTTI for target '${TARGET_NAME}'")
 	else()
 		target_compile_options(${TARGET_NAME} PRIVATE "/GR-")
 	endif()
 
-	# use precise floating point model
+	# Use precise floating point model
 	target_compile_options(${TARGET_NAME} PRIVATE "/fp:precise")
 
-	# enable floating point exceptions
+	# Enable floating point exceptions
 	# target_compile_options(${TARGET_NAME} PRIVATE "/fp:except")
 
-	# enable default exception handling
+	# Enable default exception handling
 	target_compile_options(${TARGET_NAME} PRIVATE "/EHsc")
 
-	# nothing in UWP headers is standard conform so have to skip this for UWP
+	# Nothing in UWP headers is standard conform so have to skip this for UWP
 	if(NOT CMAKE_SYSTEM_NAME MATCHES "WindowsStore")
-		# disable permissive mode
+		# Disable permissive mode
 		target_compile_options(${TARGET_NAME} PRIVATE "/permissive-")
 	endif()
 
-	# enable standard conform casting behavior - casting results always in rvalue
+	# Enable standard conform casting behavior - casting results always in rvalue
 	target_compile_options(${TARGET_NAME} PRIVATE "/Zc:rvalueCast")
 
-	# force the compiler to interpret code as utf8.
+	# Force the compiler to interpret code as utf8.
 	target_compile_options(${TARGET_NAME} PRIVATE "/utf-8")
 
-	# set high warning level
-	# target_compile_options(${TARGET_NAME} PRIVATE "/W4") # too much work to fix all warnings in xii
+	# Set high warning level
+	# target_compile_options(${TARGET_NAME} PRIVATE "/W4") # It is a lot of work to fix all warnings in XII
 
-	# /WX: treat warnings as errors
+	# /WX: Treat warnings as errors
 	if(NOT ${ARG_NO_WARNINGS_AS_ERRORS} AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		target_compile_options(${TARGET_NAME} PRIVATE "/WX")
 	endif()
 
 	if((CMAKE_SIZEOF_VOID_P EQUAL 4) AND XII_CMAKE_ARCHITECTURE_X86)
-		# enable SSE2 (incompatible with /fp:except)
+		# Enable SSE2 (incompatible with /fp:except)
 		target_compile_options(${TARGET_NAME} PRIVATE "/arch:SSE2")
 	endif()
 
@@ -73,7 +73,7 @@ function(xii_set_build_flags_msvc TARGET_NAME)
 	# /Ob1: Only consider functions for inlining that are marked with inline or forceinline
 	target_compile_options(${TARGET_NAME} PRIVATE "$<$<CONFIG:${XII_BUILDTYPENAME_DEBUG_UPPER}>:/Ob1>")
 
-	# /Ox: favor speed for optimizations
+	# /Ox: Favor speed for optimizations
 	target_compile_options(${TARGET_NAME} PRIVATE "$<$<CONFIG:${XII_BUILDTYPENAME_RELEASE_UPPER}>:/Ox>")
 
 	# /Ob2: Consider all functions for inlining
@@ -247,9 +247,9 @@ function(xii_set_build_flags_gcc TARGET_NAME)
 		target_compile_options(${TARGET_NAME} PRIVATE -mssse3 -mfpmath=sse)
 	endif()
 
-	# dynamic linking will fail without fPIC (plugins)
+	# Dynamic linking will fail without fPIC (plugins)
 	# gdwarf-3 will use the old debug info which is compatible with older gdb versions.
-	# these were previously set as CMAKE_C_FLAGS (not CPP)
+	# These were previously set as CMAKE_C_FLAGS (not CPP)
 	target_compile_options(${TARGET_NAME} PRIVATE -fPIC -gdwarf-3)
 
 	if(XII_CMAKE_ARCHITECTURE_X86)

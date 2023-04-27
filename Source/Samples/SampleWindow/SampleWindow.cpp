@@ -43,7 +43,7 @@ public:
 };
 
 xiiSampleWindowApp::xiiSampleWindowApp() :
-  xiiApplication("Sample Window")
+  xiiApplication("xiiSampleWindow")
 {
 }
 

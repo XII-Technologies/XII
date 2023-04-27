@@ -76,3 +76,10 @@ if (XII_3RDPARTY_SDL_SUPPORT)
     )
   endif()
 endif()
+
+if (XII_BUILD_TRACY)
+  target_link_libraries(${PROJECT_NAME}
+    PUBLIC
+    TracyClient
+  )
+endif()

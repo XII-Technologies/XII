@@ -47,7 +47,7 @@ void xiiTaskSystem::ParallelForInternal(xiiArrayPtr<ElemType> taskItems, xiiPara
     ArrayPtrTask<ElemType> arrayPtrTask(taskItems, std::move(taskCallback), taskItems.GetCount());
     arrayPtrTask.ConfigureTask(taskName ? taskName : "Generic ArrayPtr Task", params.m_NestingMode);
 
-    XII_PROFILE_SCOPE(arrayPtrTask.m_sTaskName);
+    XII_PROFILE_SCOPE(arrayPtrTask.m_sTaskName.GetData());
     arrayPtrTask.Execute();
   }
   else
