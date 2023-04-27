@@ -65,7 +65,7 @@ Issue=$(cat /etc/issue)
 
 UbuntuPattern="Ubuntu ([0-9][0-9])"
 MintPattern="Linux Mint ([0-9][0-9])"
-KaliPattern="Kali GNU/Linux Rolling"
+KaliPattern="Kali GNU/Linux Rolling(.+)"
 
 if [[ $Issue =~ $UbuntuPattern ]]; then
   Distribution="Ubuntu"
@@ -81,10 +81,11 @@ elif [[ $Issue =~ $KaliPattern ]]; then
   VersionPattern="([0-9]+)"
   if [[ $LsbRelease =~ $VersionPattern ]]; then
     Version=${BASH_REMATCH[0]}
+    echo ${Version}
   fi
 fi
 
-if [ "$Distribution" = "Ubuntu" -a "$Version" = "22" ] || [ "$Distribution" = "Mint" -a "$Version" = "21" ] || [ "$Distribution" = "Kali" -a "$Version" = "2022" ] ; then
+if [ "$Distribution" = "Ubuntu" -a "$Version" = "22" ] || [ "$Distribution" = "Mint" -a "$Version" = "21" ] || [ "$Distribution" = "Kali" -a "$Version" = "2023" ] ; then
   packages=(cmake build-essential ninja-build qt6-base-abi qt6-base-dev libqt6svg6-dev qt6-base-private-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev xcb libxcb-xkb-dev x11-xkb-utils libx11-xcb-dev libxkbcommon-x11-dev uuid-dev mold libfreetype-dev libtinfo5)
 
   if [ "$UseClang" = true ]; then
@@ -101,7 +102,7 @@ else
   >&2 echo "Currently supported are:"
   >&2 echo "  * Ubuntu 22"
   >&2 echo "  * Linux Mint 21"
-  >&2 echo "  * Kali GNU/Linux Rolling"
+  >&2 echo "  * Kali GNU/Linux Rolling 23"
   exit 1
 fi
 
