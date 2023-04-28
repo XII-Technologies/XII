@@ -841,18 +841,9 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
 
     const xiiUInt8 uiRenderTargetCount = m_RenderTargetSetup.GetRenderTargetCount();
 
-    bool bFlushNeeded = false;
-
     for (xiiUInt8 uiIndex = 0; uiIndex < uiRenderTargetCount; ++uiIndex)
     {
       const xiiGALRenderTargetView* pRenderTargetView = m_GALDeviceDiligent.GetRenderTargetView(m_RenderTargetSetup.GetRenderTarget(uiIndex));
-      if (pRenderTargetView != nullptr)
-      {
-        const xiiGALResourceBase* pTexture = pRenderTargetView->GetTexture()->GetParentResource();
-
-        bFlushNeeded |= m_pOwner->UnsetResourceViews(pTexture);
-        bFlushNeeded |= m_pOwner->UnsetUnorderedAccessViews(pTexture);
-      }
 
       pRenderTargetViews[uiIndex] = const_cast<xiiGALRenderTargetView*>(pRenderTargetView);
     }
@@ -861,14 +852,6 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
     if (pDepthStencilView != nullptr)
     {
       const xiiGALResourceBase* pTexture = pDepthStencilView->GetTexture()->GetParentResource();
-
-      bFlushNeeded |= m_pOwner->UnsetResourceViews(pTexture);
-      bFlushNeeded |= m_pOwner->UnsetUnorderedAccessViews(pTexture);
-    }
-
-    if (bFlushNeeded)
-    {
-      FlushPlatform();
     }
 
     for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; i++)
@@ -1293,6 +1276,9 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
     m_pContext->SetPipelineState(pCachedPipelineStateComputeKey.Value().m_pPipelineState);
     m_pContext->CommitShaderResources(pCachedPipelineStateComputeKey.Value().m_pShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
   }
+
+  // Set the amount of render targets. This must be rebound every render call.
+  m_pContext->SetRenderTargets(m_uiBoundRenderTargetCount, m_pBoundRenderTargets, m_pBoundDepthStencilTarget, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 /// \todo RendererDiligent: Use Pipeline Resource Signature From Shader in Pipeline State.
@@ -1359,6 +1345,9 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
     m_pContext->SetPipelineState(nullptr);
     return;
   }
+
+  if (!m_pCurrentShader->GetVertexShader())
+    return;
 
   Diligent::GraphicsPipelineStateCreateInfo graphicsPipelineStateDesc;
 
@@ -1434,6 +1423,9 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
     m_pContext->SetPipelineState(pCachedPipelineStateGraphicsKey.Value().m_pPipelineState);
     m_pContext->CommitShaderResources(pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
   }
+
+  // Set the amount of render targets. This must be rebound every render call.
+  m_pContext->SetRenderTargets(m_uiBoundRenderTargetCount, m_pBoundRenderTargets, m_pBoundDepthStencilTarget, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 void xiiGALCommandEncoderImplDiligent::FillPipelineDescriptorBindings(Diligent::IPipelineState* pPipelineState)
@@ -1567,7 +1559,7 @@ void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IS
               xiiLog::Error("Resource view pointer for '{}' returned null.", sData);
               continue;
             }
-            if (m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
+            if (!m_pBoundShaderResourceViews[stage].IsEmpty() && m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
               pResourceView->Set(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
             else
               pResourceView->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
@@ -1581,7 +1573,7 @@ void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IS
               xiiLog::Error("Resource view pointer for '{}' returned null.", sData);
               continue;
             }
-            if (m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
+            if (!m_pBoundShaderResourceViews[stage].IsEmpty() && m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
               pResourceView->Set(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetBufferView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
             else
               pResourceView->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
