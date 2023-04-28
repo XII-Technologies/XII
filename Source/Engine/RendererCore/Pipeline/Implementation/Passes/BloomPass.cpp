@@ -110,12 +110,12 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
     targetSizes.PushBack(xiiVec2((float)uiWidth, (float)uiHeight));
     auto uiSliceCount = pColorOutput->m_Desc.m_uiArraySize;
 
-    tempDownscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::RG11B10Float, xiiGALMSAASampleCount::None, uiSliceCount));
+    tempDownscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::RG11B10Float, xiiGALMSAASampleCount::None, uiSliceCount, true));
 
     // biggest upscale target is the output and lowest is not needed
     if (i > 0 && i < uiNumBlurPasses - 1)
     {
-      tempUpscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::RG11B10Float, xiiGALMSAASampleCount::None, uiSliceCount));
+      tempUpscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::RG11B10Float, xiiGALMSAASampleCount::None, uiSliceCount, true));
     }
     else
     {
@@ -270,7 +270,6 @@ void xiiBloomPass::UpdateConstantBuffer(xiiVec2 pixelSize, const xiiColor& tintC
 
   constants->TintColor = tintColor;
 }
-
 
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_Passes_BloomPass);

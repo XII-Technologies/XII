@@ -48,6 +48,7 @@ bool xiiMsaaUpscalePass::GetRenderTargetDescriptions(const xiiView& view, const 
 
     xiiGALTextureCreationDescription desc = *pInput;
     desc.m_SampleCount                    = m_MsaaMode;
+    desc.m_Type                           = xiiGALTextureType::Texture2DArray;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }

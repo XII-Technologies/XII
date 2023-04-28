@@ -97,10 +97,7 @@ void xiiTransparentForwardRenderPass::RenderObjects(const xiiRenderViewContext& 
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
 }
 
-void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(
-  const xiiRenderViewContext& renderViewContext,
-  xiiGALTextureHandle         hSceneColorTexture,
-  xiiGALTextureHandle         hCurrentColorTexture)
+void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(const xiiRenderViewContext& renderViewContext, xiiGALTextureHandle hSceneColorTexture, xiiGALTextureHandle hCurrentColorTexture)
 {
   xiiGALTextureSubresource subresource;
   subresource.m_uiMipLevel   = 0;
@@ -124,7 +121,6 @@ void xiiTransparentForwardRenderPass::CreateSamplerState()
     m_hSceneColorSamplerState = xiiGALDevice::GetDefaultDevice()->CreateSamplerState(desc);
   }
 }
-
 
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_Passes_TransparentForwardRenderPass);

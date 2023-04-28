@@ -147,4 +147,5 @@ void xiiForwardRenderPass::SetupLighting(const xiiRenderViewContext& renderViewC
   }
 }
 
+
 XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_Passes_ForwardRenderPass);

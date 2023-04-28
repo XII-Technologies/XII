@@ -107,5 +107,4 @@ xiiInt32 xiiBlurPass::GetRadius() const
 }
 
 
-
 XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_Passes_BlurPass);

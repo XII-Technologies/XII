@@ -1252,9 +1252,8 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
   computePipelineStateDesc.PSODesc.PipelineType = Diligent::PIPELINE_TYPE_COMPUTE;
   computePipelineStateDesc.pCS                  = m_pCurrentShader->GetComputeShader();
 
-  Diligent::IPipelineResourceSignature* ppResourceSignatures[]{m_pCurrentShader->GetPipelineResourceSignature()};
-  computePipelineStateDesc.ppResourceSignatures    = ppResourceSignatures;
-  computePipelineStateDesc.ResourceSignaturesCount = 1;
+  computePipelineStateDesc.ppResourceSignatures    = m_pCurrentShader->GetPipelineResourceSignatures();
+  computePipelineStateDesc.ResourceSignaturesCount = m_pCurrentShader->GetPipelineResourceSignatureCount();
 
   auto pCachedPipelineStateComputeKey = m_CachedComputePipelineStates.Find(computePipelineStateDesc);
 
@@ -1266,7 +1265,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
 
     XII_ASSERT_DEV(pipelineInfo.m_pPipelineState != nullptr, "Failed to create new compute pipeline state object.");
 
-    m_pCurrentShader->GetPipelineResourceSignature()->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
+    (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
 
     FillShaderDescriptorBindings(pipelineInfo.m_pShaderResourceBinding);
 
@@ -1287,7 +1286,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
   else
   {
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pCachedPipelineStateComputeKey.Value().m_pShaderResourceBinding);
-    m_pCurrentShader->GetPipelineResourceSignature()->CreateShaderResourceBinding(&pCachedPipelineStateComputeKey.Value().m_pShaderResourceBinding, true);
+    (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&pCachedPipelineStateComputeKey.Value().m_pShaderResourceBinding, true);
 
     FillShaderDescriptorBindings(pCachedPipelineStateComputeKey.Value().m_pShaderResourceBinding);
 
@@ -1371,9 +1370,8 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
   graphicsPipelineStateDesc.pAS = m_pCurrentShader->GetAmplificationShader();
   graphicsPipelineStateDesc.pMS = m_pCurrentShader->GetMeshShader();
 
-  Diligent::IPipelineResourceSignature* ppResourceSignatures[]{m_pCurrentShader->GetPipelineResourceSignature()};
-  graphicsPipelineStateDesc.ppResourceSignatures    = ppResourceSignatures;
-  graphicsPipelineStateDesc.ResourceSignaturesCount = 1;
+  graphicsPipelineStateDesc.ppResourceSignatures    = m_pCurrentShader->GetPipelineResourceSignatures();
+  graphicsPipelineStateDesc.ResourceSignaturesCount = m_pCurrentShader->GetPipelineResourceSignatureCount();
 
   graphicsPipelineStateDesc.GraphicsPipeline.PrimitiveTopology = m_PrimitiveTopology;
   graphicsPipelineStateDesc.GraphicsPipeline.NumViewports      = 1;
@@ -1408,7 +1406,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
 
     XII_ASSERT_DEV(pipelineInfo.m_pPipelineState != nullptr, "Failed to create new graphics pipeline state object.");
 
-    m_pCurrentShader->GetPipelineResourceSignature()->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
+    (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
 
     FillShaderDescriptorBindings(pipelineInfo.m_pShaderResourceBinding);
 
@@ -1429,7 +1427,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
   else
   {
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding);
-    m_pCurrentShader->GetPipelineResourceSignature()->CreateShaderResourceBinding(&pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding, true);
+    (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding, true);
 
     FillShaderDescriptorBindings(pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding);
 
@@ -1569,7 +1567,10 @@ void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IS
               xiiLog::Error("Resource view pointer for '{}' returned null.", sData);
               continue;
             }
-            pResourceView->Set(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+            if (m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
+              pResourceView->Set(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+            else
+              pResourceView->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
           }
           break;
           case xiiShaderDescriptorSetLayoutBinding::ResourceType::ResourceViewBuffer:
@@ -1580,7 +1581,10 @@ void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IS
               xiiLog::Error("Resource view pointer for '{}' returned null.", sData);
               continue;
             }
-            pResourceView->Set(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetBufferView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+            if (m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
+              pResourceView->Set(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetBufferView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+            else
+              pResourceView->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
           }
           break;
           case xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessViewTexture:

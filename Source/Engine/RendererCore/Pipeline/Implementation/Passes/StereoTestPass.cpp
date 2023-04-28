@@ -80,5 +80,4 @@ void xiiStereoTestPass::Execute(const xiiRenderViewContext& renderViewContext, c
 }
 
 
-
 XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_Passes_StereoTestPass);

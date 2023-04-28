@@ -56,7 +56,7 @@ bool xiiReflectionFilterPass::GetRenderTargetDescriptions(const xiiView& view, c
     desc.m_uiWidth                                 = xiiReflectionPool::GetReflectionCubeMapSize();
     desc.m_uiHeight                                = desc.m_uiWidth;
     desc.m_Format                                  = xiiGALResourceFormat::RGBAHalf;
-    desc.m_Type                                    = xiiGALTextureType::TextureCube;
+    desc.m_Type                                    = xiiGALTextureType::TextureCubeArray;
     desc.m_bAllowUAV                               = true;
     desc.m_uiMipLevelCount                         = xiiMath::Log2i(desc.m_uiWidth) - 1;
     outputs[m_PinFilteredSpecular.m_uiOutputIndex] = desc;

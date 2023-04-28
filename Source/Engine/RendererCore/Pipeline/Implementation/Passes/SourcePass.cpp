@@ -32,10 +32,7 @@ xiiSourcePass::xiiSourcePass(const char* szName) :
 
 xiiSourcePass::~xiiSourcePass() {}
 
-bool xiiSourcePass::GetRenderTargetDescriptions(
-  const xiiView&                                             view,
-  const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs,
-  xiiArrayPtr<xiiGALTextureCreationDescription>              outputs)
+bool xiiSourcePass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
   xiiUInt32 uiWidth  = static_cast<xiiUInt32>(view.GetViewport().width);
   xiiUInt32 uiHeight = static_cast<xiiUInt32>(view.GetViewport().height);
@@ -47,6 +44,7 @@ bool xiiSourcePass::GetRenderTargetDescriptions(
   desc.m_Format              = m_Format;
   desc.m_bCreateRenderTarget = true;
   desc.m_uiArraySize         = view.GetCamera()->IsStereoscopic() ? 2 : 1;
+  desc.m_Type                = m_MsaaMode != xiiGALMSAASampleCount::None ? xiiGALTextureType::Texture2DArray : xiiGALTextureType::Texture2D;
 
   outputs[m_PinOutput.m_uiOutputIndex] = desc;
 
@@ -89,8 +87,8 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-#include <Foundation/Serialization/GraphPatch.h>
 #include <Foundation/Serialization/AbstractObjectGraph.h>
+#include <Foundation/Serialization/GraphPatch.h>
 
 class xiiSourcePassPatch_1_2 : public xiiGraphPatch
 {

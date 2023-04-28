@@ -30,10 +30,7 @@ xiiSimpleRenderPass::xiiSimpleRenderPass(const char* szName) :
 
 xiiSimpleRenderPass::~xiiSimpleRenderPass() {}
 
-bool xiiSimpleRenderPass::GetRenderTargetDescriptions(
-  const xiiView&                                             view,
-  const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs,
-  xiiArrayPtr<xiiGALTextureCreationDescription>              outputs)
+bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
   xiiGALDevice*              pDevice       = xiiGALDevice::GetDefaultDevice();
   const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();
@@ -127,7 +124,6 @@ void xiiSimpleRenderPass::SetMessage(const char* szMessage)
 {
   m_sMessage = szMessage;
 }
-
 
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_Passes_SimpleRenderPass);

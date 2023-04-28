@@ -93,12 +93,12 @@ bool xiiLSAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArra
   // Depth
   if (!inputs[m_PinDepthInput.m_uiInputIndex])
   {
-    xiiLog::Error("No depth input connected to ssao pass!");
+    xiiLog::Error("No depth input connected to SSAO pass!");
     return false;
   }
   if (!inputs[m_PinDepthInput.m_uiInputIndex]->m_bAllowShaderResourceView)
   {
-    xiiLog::Error("All ssao pass inputs must allow shader resource view.");
+    xiiLog::Error("All SSAO pass inputs must allow shader resource view.");
     return false;
   }
   if (inputs[m_PinDepthInput.m_uiInputIndex]->m_SampleCount != xiiGALMSAASampleCount::None)
@@ -128,6 +128,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
     const xiiGALTextureCreationDescription& desc = inputs[m_PinDepthInput.m_uiInputIndex]->m_Desc;
     SetupLineSweepData(xiiVec3I32(desc.m_uiWidth, desc.m_uiHeight, desc.m_uiArraySize));
   }
+
   if (outputs[m_PinOutput.m_uiOutputIndex] == nullptr)
     return;
 

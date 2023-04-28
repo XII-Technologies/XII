@@ -26,7 +26,9 @@ public:
 
   XII_ALWAYS_INLINE Diligent::IShader* GetMeshShader();
 
-  XII_ALWAYS_INLINE Diligent::IPipelineResourceSignature* GetPipelineResourceSignature();
+  XII_ALWAYS_INLINE Diligent::IPipelineResourceSignature** GetPipelineResourceSignatures();
+
+  XII_ALWAYS_INLINE xiiUInt32 GetPipelineResourceSignatureCount();
 
   XII_ALWAYS_INLINE xiiDynamicArray<xiiShaderDescriptorSetLayout>& GetDescriptorSets(xiiGALShaderStage::Enum stage);
 
