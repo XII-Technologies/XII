@@ -170,12 +170,12 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
     {
       SpvReflectInterfaceVariable* pInputVariable = inputVariables[i];
 
-      xiiShaderVertexInputAttribute& attribute = vertexInputAttributes.ExpandAndGetRef();
-      attribute.m_uiSemanticIndex              = static_cast<xiiUInt8>(pInputVariable->location);
-
       xiiStringBuilder sSemanticName = pInputVariable->semantic;
       if (!sSemanticName.StartsWith_NoCase("SV_"))
       {
+        xiiShaderVertexInputAttribute& attribute = vertexInputAttributes.ExpandAndGetRef();
+        attribute.m_uiSemanticIndex              = static_cast<xiiUInt8>(pInputVariable->location);
+
         xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(sSemanticName);
         XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {0} in file {1}", sSemanticName, inout_Data.m_szSourceFile);
 
@@ -183,10 +183,10 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
           attribute.m_eSemantic = *pVAS;
         else
           xiiLog::Dev("Unknown vertex input semantic found: {}", pInputVariable->semantic);
-      }
 
-      attribute.m_eFormat = GetXIIFormat(pInputVariable->format);
-      XII_ASSERT_DEV(attribute.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", pInputVariable->format);
+        attribute.m_eFormat = GetXIIFormat(pInputVariable->format);
+        XII_ASSERT_DEV(attribute.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", pInputVariable->format);
+      }
     }
   }
 
