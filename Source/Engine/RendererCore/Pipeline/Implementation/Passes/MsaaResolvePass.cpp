@@ -50,6 +50,7 @@ bool xiiMsaaResolvePass::GetRenderTargetDescriptions(const xiiView& view, const 
 
     xiiGALTextureCreationDescription desc = *pInput;
     desc.m_SampleCount                    = xiiGALMSAASampleCount::None;
+    desc.m_Type                           = xiiGALTextureType::Texture2DArray;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }
