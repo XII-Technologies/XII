@@ -18,16 +18,9 @@ public:
   // xiiRenderer implementation
   virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const override;
   virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const override;
-  virtual void RenderBatch(
-    const xiiRenderViewContext&  renderContext,
-    const xiiRenderPipelinePass* pPass,
-    const xiiRenderDataBatch&    batch) const override;
+  virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
 
 protected:
   virtual void SetAdditionalData(const xiiRenderViewContext& renderViewContext, const xiiMeshRenderData* pRenderData) const;
-  virtual void FillPerInstanceData(
-    xiiArrayPtr<xiiPerInstanceData> instanceData,
-    const xiiRenderDataBatch&       batch,
-    xiiUInt32                       uiStartIndex,
-    xiiUInt32&                      out_uiFilteredCount) const;
+  virtual void FillPerInstanceData(xiiArrayPtr<xiiPerInstanceData> instanceData, const xiiRenderDataBatch& batch, xiiUInt32 uiStartIndex, xiiUInt32& out_uiFilteredCount) const;
 };
