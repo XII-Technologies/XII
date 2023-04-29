@@ -227,7 +227,7 @@ xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent
   TexDesc.m_bAllowShaderResourceView    = false;
   TexDesc.m_bCreateRenderTarget         = true;
   TexDesc.m_ResourceAccess.m_bImmutable = true;
-  TexDesc.m_ResourceAccess.m_bReadBack  = false;
+  TexDesc.m_ResourceAccess.m_bReadBack  = true;
   TexDesc.m_Format                      = ToGALRenderTargetFormat(rtvDesc.Format);
 
   xiiGALTextureHandle hBackbufferTexture = pDeviceDiligent->CreateTexture(TexDesc);
