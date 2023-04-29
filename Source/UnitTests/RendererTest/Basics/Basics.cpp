@@ -27,8 +27,6 @@ xiiResult xiiRendererTestBasics::InitializeSubTest(xiiInt32 iIdentifier)
   m_hLongBox = CreateBox(0.4f, 0.2f, 2.0f);
   m_hLineBox = CreateLineBox(0.4f, 0.2f, 2.0f);
 
-
-
   return XII_SUCCESS;
 }
 

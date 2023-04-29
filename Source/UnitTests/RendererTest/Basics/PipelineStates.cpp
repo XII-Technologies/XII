@@ -49,6 +49,7 @@ namespace
   struct ImgColor
   {
     XII_DECLARE_POD_TYPE();
+
     xiiUInt8 b;
     xiiUInt8 g;
     xiiUInt8 r;
@@ -121,6 +122,7 @@ xiiResult xiiRendererTestPipelineStates::InitializeSubTest(xiiInt32 iIdentifier)
   XII_SUCCEED_OR_RETURN(xiiGraphicsTest::InitializeSubTest(iIdentifier));
   XII_SUCCEED_OR_RETURN(SetupRenderer());
   XII_SUCCEED_OR_RETURN(CreateWindow(320, 240));
+
   m_hMostBasicTriangleShader = xiiResourceManager::LoadResource<xiiShaderResource>("RendererTest/Shaders/MostBasicTriangle.xiiShader");
   m_hNDCPositionOnlyShader   = xiiResourceManager::LoadResource<xiiShaderResource>("RendererTest/Shaders/NDCPositionOnly.xiiShader");
   m_hConstantBufferShader    = xiiResourceManager::LoadResource<xiiShaderResource>("RendererTest/Shaders/ConstantBuffer.xiiShader");
@@ -337,9 +339,8 @@ xiiResult xiiRendererTestPipelineStates::InitializeSubTest(xiiInt32 iIdentifier)
     case SubTests::ST_Timestamps:
       m_ImgCompFrames.PushBack(ImageCaptureFrames::Timestamps_MaxWaitTime);
       break;
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
-      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   return XII_SUCCESS;
