@@ -35,10 +35,9 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     xiiGALTextureDiligent* pGALTextureDiligent = nullptr;
     Diligent::ITexture*    pTextureDiligent    = nullptr;
     {
-
-      xiiGALTexture* pGALTexture = const_cast<xiiGALTexture*>(pTexture);
-      pGALTextureDiligent        = static_cast<xiiGALTextureDiligent*>(pGALTexture);
-      pTextureDiligent           = pGALTextureDiligent->GetTexture();
+      xiiGALResourceBase* pGALTexture = const_cast<xiiGALResourceBase*>(pTexture->GetParentResource());
+      pGALTextureDiligent             = static_cast<xiiGALTextureDiligent*>(pGALTexture);
+      pTextureDiligent                = pGALTextureDiligent->GetTexture();
     }
 
     const xiiGALTextureCreationDescription& texDesc        = pTexture->GetDescription();
