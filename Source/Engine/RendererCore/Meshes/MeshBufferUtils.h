@@ -16,7 +16,7 @@ struct xiiMeshNormalPrecision
     _16Bit,
     _32Bit,
 
-    Default = _10Bit
+    Default = _16Bit
   };
 
   /// \brief Convert mesh normal precision to actual resource format used for normals
