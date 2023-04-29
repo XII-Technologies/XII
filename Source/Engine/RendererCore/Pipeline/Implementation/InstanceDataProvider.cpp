@@ -29,7 +29,7 @@ void xiiInstanceData::BindResources(xiiRenderContext* pRenderContext)
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   pRenderContext->BindBuffer("perInstanceData", pDevice->GetDefaultResourceView(m_hInstanceDataBuffer));
-  pRenderContext->BindConstantBuffer("xiiObjectConstants", m_hConstantBuffer);
+  pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiObjectConstants), m_hConstantBuffer);
 }
 
 xiiArrayPtr<xiiPerInstanceData> xiiInstanceData::GetInstanceData(xiiUInt32 uiCount, xiiUInt32& out_uiOffset)

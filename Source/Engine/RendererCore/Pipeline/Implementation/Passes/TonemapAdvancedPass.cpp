@@ -140,7 +140,7 @@ void xiiTonemapAdvancedPass::Execute(const xiiRenderViewContext& renderViewConte
   }
 
   renderViewContext.m_pRenderContext->BindShader(m_hShader);
-  renderViewContext.m_pRenderContext->BindConstantBuffer("xiiAdvancedTonemapConstants", m_hConstantBuffer);
+  renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiAdvancedTonemapConstants), m_hConstantBuffer);
   renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, 1);
   renderViewContext.m_pRenderContext->BindTexture2D("SceneColorTexture", pDevice->GetDefaultResourceView(pColorInput->m_TextureHandle));
 

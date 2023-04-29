@@ -262,7 +262,7 @@ void xiiRendererTestAdvancedFeatures::VertexShaderRenderTargetArrayIndex()
     ObjectCB* ocb = xiiRenderContext::GetConstantBufferData<ObjectCB>(m_hObjectTransformCB);
     ocb->m_MVP    = mMVP;
     ocb->m_Color  = xiiColor(1, 1, 1, 1);
-    xiiRenderContext::GetDefaultInstance()->BindConstantBuffer("PerObject", m_hObjectTransformCB);
+    xiiRenderContext::GetDefaultInstance()->BindConstantBuffer(XII_STRINGIZE(PerObject), m_hObjectTransformCB);
     xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(m_hCubeUV);
     xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer(0xFFFFFFFF, 0, 2).IgnoreResult();
 

@@ -155,7 +155,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
   {
     XII_PROFILE_SCOPE("Line Sweep");
     auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginComputeScope(pGALPass, renderViewContext, "Line Sweep");
-    renderViewContext.m_pRenderContext->BindConstantBuffer("xiiLSAOConstants", m_hLineSweepCB);
+    renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiLSAOConstants), m_hLineSweepCB);
     renderViewContext.m_pRenderContext->BindTexture2D("DepthBuffer", pDevice->GetDefaultResourceView(inputs[m_PinDepthInput.m_uiInputIndex]->m_TextureHandle));
     renderViewContext.m_pRenderContext->BindShader(m_hShaderLineSweep);
     renderViewContext.m_pRenderContext->BindBuffer("LineInstructions", m_hLineSweepInfoSRV);
@@ -189,7 +189,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
         break;
     }
 
-    renderViewContext.m_pRenderContext->BindConstantBuffer("xiiLSAOConstants", m_hLineSweepCB);
+    renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiLSAOConstants), m_hLineSweepCB);
     renderViewContext.m_pRenderContext->BindTexture2D("DepthBuffer", pDevice->GetDefaultResourceView(inputs[m_PinDepthInput.m_uiInputIndex]->m_TextureHandle));
     renderViewContext.m_pRenderContext->BindShader(m_hShaderGather);
     renderViewContext.m_pRenderContext->BindBuffer("LineInstructions", m_hLineSweepInfoSRV);
@@ -220,7 +220,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
 
     auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALPass, renderViewContext, renderingSetup, "Averaging", renderViewContext.m_pCamera->IsStereoscopic());
 
-    renderViewContext.m_pRenderContext->BindConstantBuffer("xiiLSAOConstants", m_hLineSweepCB);
+    renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiLSAOConstants), m_hLineSweepCB);
     renderViewContext.m_pRenderContext->BindTexture2D("DepthBuffer", pDevice->GetDefaultResourceView(inputs[m_PinDepthInput.m_uiInputIndex]->m_TextureHandle));
     renderViewContext.m_pRenderContext->BindShader(m_hShaderAverage);
     renderViewContext.m_pRenderContext->BindTexture2D("SSAOGatherOutput", pDevice->GetDefaultResourceView(tempTexture));

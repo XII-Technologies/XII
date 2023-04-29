@@ -113,7 +113,7 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
     auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
     renderViewContext.m_pRenderContext->BindShader(m_hShader);
-    renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSelectionHighlightConstants", m_hConstantBuffer);
+    renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiSelectionHighlightConstants), m_hConstantBuffer);
     renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, 1);
     renderViewContext.m_pRenderContext->BindTexture2D("SelectionDepthTexture", pDevice->GetDefaultResourceView(hDepthTexture));
     renderViewContext.m_pRenderContext->BindTexture2D("SceneDepthTexture", pDevice->GetDefaultResourceView(pDepthInput->m_TextureHandle));

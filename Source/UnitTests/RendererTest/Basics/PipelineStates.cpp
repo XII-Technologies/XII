@@ -570,8 +570,8 @@ void xiiRendererTestPipelineStates::ConstantBufferTest()
     xiiGALRenderCommandEncoder* pCommandEncoder = BeginRendering(xiiColor::CornflowerBlue, 0xFFFFFFFF);
     xiiRenderContext*           pContext        = xiiRenderContext::GetDefaultInstance();
     {
-      pContext->BindConstantBuffer("xiiTestColors", m_hTestColorsConstantBuffer);
-      pContext->BindConstantBuffer("xiiTestPositions", m_hTestPositionsConstantBuffer);
+      pContext->BindConstantBuffer(XII_STRINGIZE(xiiTestColors), m_hTestColorsConstantBuffer);
+      pContext->BindConstantBuffer(XII_STRINGIZE(xiiTestPositions), m_hTestPositionsConstantBuffer);
       pContext->BindShader(m_hConstantBufferShader);
       pContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::Triangles, 1);
 

@@ -657,7 +657,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     if (pMaterial != nullptr)
     {
       pMaterial->UpdateConstantBuffer(pShaderPermutation);
-      BindConstantBuffer("xiiMaterialConstants", pMaterial->m_hConstantBufferStorage);
+      BindConstantBuffer(XII_STRINGIZE(xiiMaterialConstants), pMaterial->m_hConstantBufferStorage);
     }
 
     UploadConstants();
@@ -1020,7 +1020,7 @@ xiiResult xiiRenderContext::BuildVertexDeclaration(xiiGALShaderHandle hShader, c
 
 void xiiRenderContext::UploadConstants()
 {
-  BindConstantBuffer("xiiGlobalConstants", m_hGlobalConstantBufferStorage);
+  BindConstantBuffer(XII_STRINGIZE(xiiGlobalConstants), m_hGlobalConstantBufferStorage);
 
   for (auto it = m_BoundConstantBuffers.GetIterator(); it.IsValid(); ++it)
   {
@@ -1122,7 +1122,7 @@ xiiMaterialResource* xiiRenderContext::ApplyMaterialState()
 
     if (!pMaterial->m_hConstantBufferStorage.IsInvalidated())
     {
-      BindConstantBuffer("xiiMaterialConstants", pMaterial->m_hConstantBufferStorage);
+      BindConstantBuffer(XII_STRINGIZE(xiiMaterialConstants), pMaterial->m_hConstantBufferStorage);
     }
 
     for (auto it = pCachedValues->m_PermutationVars.GetIterator(); it.IsValid(); ++it)

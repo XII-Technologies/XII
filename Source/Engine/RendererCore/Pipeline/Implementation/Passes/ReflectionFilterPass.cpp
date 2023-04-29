@@ -103,7 +103,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
 
       auto pCommandEncoder = xiiRenderContext::BeginComputeScope(pGALPass, renderViewContext, "ReflectionFilter");
       renderViewContext.m_pRenderContext->BindTextureCube("InputCubemap", pDevice->GetDefaultResourceView(m_hInputCubemap));
-      renderViewContext.m_pRenderContext->BindConstantBuffer("xiiReflectionFilteredSpecularConstants", m_hFilteredSpecularConstantBuffer);
+      renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiReflectionFilteredSpecularConstants), m_hFilteredSpecularConstantBuffer);
       renderViewContext.m_pRenderContext->BindShader(m_hFilteredSpecularShader);
 
       for (xiiUInt32 uiMipMapIndex = 0; uiMipMapIndex < uiNumMipMaps; ++uiMipMapIndex)
@@ -151,7 +151,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
 
     UpdateIrradianceConstantBuffer();
 
-    renderViewContext.m_pRenderContext->BindConstantBuffer("xiiReflectionIrradianceConstants", m_hIrradianceConstantBuffer);
+    renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiReflectionIrradianceConstants), m_hIrradianceConstantBuffer);
     renderViewContext.m_pRenderContext->BindShader(m_hIrradianceShader);
 
     renderViewContext.m_pRenderContext->Dispatch(1).IgnoreResult();

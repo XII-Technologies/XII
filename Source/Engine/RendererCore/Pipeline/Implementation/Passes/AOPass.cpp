@@ -202,7 +202,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       constants->PixelSize                  = pixelSize;
       constants->LinearizeDepth             = (i == 0);
 
-      renderViewContext.m_pRenderContext->BindConstantBuffer("xiiDownscaleDepthConstants", m_hDownscaleConstantBuffer);
+      renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiDownscaleDepthConstants), m_hDownscaleConstantBuffer);
       renderViewContext.m_pRenderContext->BindShader(m_hDownscaleShader);
 
       renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", hInputView);
@@ -239,7 +239,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(tempSSAOTexture));
     auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALPass, renderViewContext, renderingSetup, "SSAO", renderViewContext.m_pCamera->IsStereoscopic());
 
-    renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
+    renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiSSAOConstants), m_hSSAOConstantBuffer);
     renderViewContext.m_pRenderContext->BindShader(m_hSSAOShader);
 
     renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", pDevice->GetDefaultResourceView(pDepthInput->m_TextureHandle));
@@ -259,7 +259,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(pOutput->m_TextureHandle));
     auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALPass, renderViewContext, renderingSetup, "Blur", renderViewContext.m_pCamera->IsStereoscopic());
 
-    renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
+    renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiSSAOConstants), m_hSSAOConstantBuffer);
     renderViewContext.m_pRenderContext->BindShader(m_hBlurShader);
 
     renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", pDevice->GetDefaultResourceView(tempSSAOTexture));

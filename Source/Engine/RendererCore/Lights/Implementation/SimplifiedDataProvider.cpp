@@ -32,7 +32,7 @@ void xiiSimplifiedDataGPU::BindResources(xiiRenderContext* pRenderContext)
   pRenderContext->BindTextureCube("ReflectionSpecularTexture", hReflectionSpecularTextureView);
   pRenderContext->BindTexture2D("SkyIrradianceTexture", hSkyIrradianceTextureView);
 
-  pRenderContext->BindConstantBuffer("xiiSimplifiedDataConstants", m_hConstantBuffer);
+  pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiSimplifiedDataConstants), m_hConstantBuffer);
 }
 
 //////////////////////////////////////////////////////////////////////////

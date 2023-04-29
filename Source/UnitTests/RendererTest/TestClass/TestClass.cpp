@@ -385,7 +385,7 @@ void xiiGraphicsTest::RenderObject(xiiMeshBufferResourceHandle hObject, const xi
   ocb->m_MVP    = mTransform;
   ocb->m_Color  = color;
 
-  xiiRenderContext::GetDefaultInstance()->BindConstantBuffer("PerObject", m_hObjectTransformCB);
+  xiiRenderContext::GetDefaultInstance()->BindConstantBuffer(XII_STRINGIZE(PerObject), m_hObjectTransformCB);
 
   xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(hObject);
   xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer().IgnoreResult();

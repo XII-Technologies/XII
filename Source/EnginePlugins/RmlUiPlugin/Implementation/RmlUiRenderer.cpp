@@ -91,7 +91,7 @@ void xiiRmlUiRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext
   xiiRenderContext* pRenderContext = renderViewContext.m_pRenderContext;
 
   pRenderContext->BindShader(m_hShader);
-  pRenderContext->BindConstantBuffer("xiiRmlUiConstants", m_hConstantBuffer);
+  pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiRmlUiConstants), m_hConstantBuffer);
 
   // reset cached state
   m_mLastTransform = xiiMat4::IdentityMatrix();

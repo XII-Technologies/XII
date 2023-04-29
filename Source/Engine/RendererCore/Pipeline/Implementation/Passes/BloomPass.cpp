@@ -123,7 +123,7 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
     }
   }
 
-  renderViewContext.m_pRenderContext->BindConstantBuffer("xiiBloomConstants", m_hConstantBuffer);
+  renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiBloomConstants), m_hConstantBuffer);
   renderViewContext.m_pRenderContext->BindShader(m_hShader);
 
   renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, 1);

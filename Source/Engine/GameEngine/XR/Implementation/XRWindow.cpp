@@ -119,7 +119,7 @@ void xiiWindowOutputTargetXR::RenderCompanionView(bool bThrottleCompanionView)
     m_pRenderContext->BeginRendering(pPass, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y));
 
     m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, 1);
-    m_pRenderContext->BindConstantBuffer("xiiVRCompanionViewConstants", m_hCompanionConstantBuffer);
+    m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiVRCompanionViewConstants), m_hCompanionConstantBuffer);
     m_pRenderContext->BindShader(m_hCompanionShader);
 
     auto* constants       = xiiRenderContext::GetConstantBufferData<xiiVRCompanionViewConstants>(m_hCompanionConstantBuffer);
