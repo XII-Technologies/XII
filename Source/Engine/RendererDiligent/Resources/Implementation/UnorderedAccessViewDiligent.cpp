@@ -58,6 +58,9 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     UAVDesc.Format          = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eResourceViewType;
     UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
 
+    if (pGALTextureDiligent->GetDescription().m_bAllowDynamicMipGeneration)
+      UAVDesc.Flags |= Diligent::TEXTURE_VIEW_FLAG_ALLOW_MIP_MAP_GENERATION;
+
     switch (texDesc.m_Type)
     {
       case xiiGALTextureType::Texture1D:
@@ -66,9 +69,6 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
       case xiiGALTextureType::Texture2D:
       case xiiGALTextureType::Texture2DProxy:
         UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_2D;
-        break;
-      case xiiGALTextureType::TextureCube:
-        UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_CUBE;
         break;
       case xiiGALTextureType::Texture1DArray:
         UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_1D_ARRAY;
@@ -81,8 +81,9 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
         UAVDesc.NumArraySlices  = m_Description.m_uiArraySize;
         UAVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
         break;
+      case xiiGALTextureType::TextureCube:
       case xiiGALTextureType::TextureCubeArray:
-        UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
+        UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
         UAVDesc.NumArraySlices  = m_Description.m_uiArraySize;
         UAVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
         break;

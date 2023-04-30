@@ -154,18 +154,11 @@ private:
   Diligent::TEXTURE_FORMAT m_RTVFormats[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
   Diligent::TEXTURE_FORMAT m_DSVFormat                                  = Diligent::TEX_FORMAT_UNKNOWN;
 
-  Diligent::Viewport m_Viewport;
-  Diligent::Rect     m_ScissorRect;
-  bool               m_bScissorEnabled = false;
-
   Diligent::PRIMITIVE_TOPOLOGY           m_PrimitiveTopology  = {};
   const xiiGALVertexDeclarationDiligent* m_pVertexDeclaration = nullptr;
   const xiiGALBlendStateDiligent*        m_pBlendStateState   = nullptr;
   const xiiGALDepthStencilStateDiligent* m_pDepthStencilState = nullptr;
   const xiiGALRasterizerStateDiligent*   m_pRasterizerState   = nullptr;
-
-  // Cache flags
-  bool m_bViewportModified = true;
 
   // Bound objects for deferred state flushes
   xiiGALBufferDiligent* m_pIndexBuffer = nullptr;

@@ -1116,7 +1116,7 @@ void xiiGALCommandEncoderImplDiligent::SetBlendStatePlatform(const xiiGALBlendSt
 
 void xiiGALCommandEncoderImplDiligent::SetDepthStencilStatePlatform(const xiiGALDepthStencilState* pDepthStencilState, xiiUInt8 uiStencilRefValue)
 {
-  /// \todo Diligent: Implement uiStenciValue
+  /// \todo RendererDiligent: Implement uiStenciValue
 
   if (m_pDepthStencilState != pDepthStencilState)
   {
@@ -1129,44 +1129,31 @@ void xiiGALCommandEncoderImplDiligent::SetRasterizerStatePlatform(const xiiGALRa
   if (m_pRasterizerState != pRasterizerState)
   {
     m_pRasterizerState = pRasterizerState != nullptr ? static_cast<const xiiGALRasterizerStateDiligent*>(pRasterizerState) : nullptr;
-
-    if (m_pRasterizerState != nullptr)
-    {
-      if (m_pRasterizerState->GetRasterizerStateDesc()->ScissorEnable != m_bScissorEnabled)
-      {
-        m_bScissorEnabled   = m_pRasterizerState->GetRasterizerStateDesc()->ScissorEnable;
-        m_bViewportModified = true;
-      }
-    }
   }
 }
 
 void xiiGALCommandEncoderImplDiligent::SetViewportPlatform(const xiiRectFloat& rect, float fMinDepth, float fMaxDepth)
 {
-  if (m_Viewport.TopLeftX != rect.x || m_Viewport.TopLeftY != rect.y || m_Viewport.Width != rect.width || m_Viewport.Height != rect.height || m_Viewport.MinDepth != fMinDepth || m_Viewport.MaxDepth != fMaxDepth)
-  {
-    m_Viewport.TopLeftX = rect.x;
-    m_Viewport.TopLeftY = rect.y;
-    m_Viewport.Width    = rect.width;
-    m_Viewport.Height   = rect.height;
-    m_Viewport.MinDepth = fMinDepth;
-    m_Viewport.MaxDepth = fMaxDepth;
+  Diligent::Viewport viewport;
+  viewport.TopLeftX = rect.x;
+  viewport.TopLeftY = rect.y;
+  viewport.Width    = rect.width;
+  viewport.Height   = rect.height;
+  viewport.MinDepth = fMinDepth;
+  viewport.MaxDepth = fMaxDepth;
 
-    m_bViewportModified = true;
-  }
+  m_pContext->SetViewports(1, &viewport, rect.width, rect.height);
 }
 
 void xiiGALCommandEncoderImplDiligent::SetScissorRectPlatform(const xiiRectU32& rect)
 {
-  if (m_ScissorRect.left != rect.x || m_ScissorRect.top != rect.y || m_ScissorRect.right != (rect.x + rect.width) || m_ScissorRect.bottom != (rect.y + rect.height))
-  {
-    m_ScissorRect.left   = rect.x;
-    m_ScissorRect.top    = rect.y;
-    m_ScissorRect.right  = rect.x + rect.width;
-    m_ScissorRect.bottom = rect.y + rect.height;
+  Diligent::Rect scissorRect;
+  scissorRect.left   = rect.x;
+  scissorRect.top    = rect.y;
+  scissorRect.right  = rect.x + rect.width;
+  scissorRect.bottom = rect.y + rect.height;
 
-    m_bViewportModified = true;
-  }
+  m_pContext->SetScissorRects(1, &scissorRect, rect.width, rect.height);
 }
 
 void xiiGALCommandEncoderImplDiligent::SetStreamOutBufferPlatform(xiiUInt32 uiSlot, const xiiGALBuffer* pBuffer, xiiUInt32 uiOffset)
@@ -1285,27 +1272,6 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
 
 void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
 {
-  if (m_bViewportModified)
-  {
-    m_pContext->SetViewports(1, &m_Viewport, static_cast<xiiUInt32>(m_Viewport.Width), static_cast<xiiUInt32>(m_Viewport.Height));
-
-    if (m_bScissorEnabled)
-    {
-      m_pContext->SetScissorRects(1, &m_ScissorRect, m_ScissorRect.right - m_ScissorRect.left, m_ScissorRect.bottom - m_ScissorRect.top);
-    }
-    else
-    {
-      Diligent::Rect ViewRectNoScissor;
-      ViewRectNoScissor.left   = (xiiUInt32)m_Viewport.TopLeftX;
-      ViewRectNoScissor.top    = (xiiUInt32)m_Viewport.TopLeftY;
-      ViewRectNoScissor.right  = (xiiUInt32)m_Viewport.Width;
-      ViewRectNoScissor.bottom = (xiiUInt32)m_Viewport.Height;
-
-      m_pContext->SetScissorRects(1, &ViewRectNoScissor, ViewRectNoScissor.right - ViewRectNoScissor.left, ViewRectNoScissor.bottom - ViewRectNoScissor.top);
-    }
-    m_bViewportModified = false;
-  }
-
   if (m_BoundVertexBuffersRange.IsValid())
   {
     const xiiUInt32 uiStartSlot = m_BoundVertexBuffersRange.m_uiMin;
@@ -1548,7 +1514,10 @@ void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IS
               xiiLog::Error("Constant buffer pointer for '{}' returned null.", sData);
               continue;
             }
-            pConstantBuffer->Set(static_cast<Diligent::IBuffer*>(m_pBoundConstantBuffers[currentBinding.m_uiVirtualBinding]->GetBuffer()), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+            if (m_pBoundConstantBuffers[currentBinding.m_uiVirtualBinding])
+              pConstantBuffer->Set(static_cast<Diligent::IBuffer*>(m_pBoundConstantBuffers[currentBinding.m_uiVirtualBinding]->GetBuffer()), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+            else
+              pConstantBuffer->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
           }
           break;
           case xiiShaderDescriptorSetLayoutBinding::ResourceType::ResourceViewTexture:
@@ -1559,7 +1528,7 @@ void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IS
               xiiLog::Error("Resource view pointer for '{}' returned null.", sData);
               continue;
             }
-            if (!m_pBoundShaderResourceViews[stage].IsEmpty() && m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
+            if (!m_pBoundShaderResourceViews[stage].IsEmpty() && m_pBoundShaderResourceViews[stage].GetCount() > currentBinding.m_uiVirtualBinding && m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
               pResourceView->Set(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
             else
               pResourceView->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
@@ -1573,7 +1542,7 @@ void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IS
               xiiLog::Error("Resource view pointer for '{}' returned null.", sData);
               continue;
             }
-            if (!m_pBoundShaderResourceViews[stage].IsEmpty() && m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
+            if (!m_pBoundShaderResourceViews[stage].IsEmpty() && m_pBoundShaderResourceViews[stage].GetCount() > currentBinding.m_uiVirtualBinding && m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
               pResourceView->Set(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetBufferView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
             else
               pResourceView->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
@@ -1587,7 +1556,10 @@ void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IS
               xiiLog::Error("Unordered access view pointer for '{}' returned null.", sData);
               continue;
             }
-            pUnorderedResourceView->Set(m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetTextureView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+            if (!m_pBoundUnoderedAccessViews.IsEmpty() && m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding])
+              pUnorderedResourceView->Set(m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetTextureView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+            else
+              pUnorderedResourceView->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
           }
           break;
           case xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessViewBuffer:
@@ -1598,7 +1570,10 @@ void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IS
               xiiLog::Error("Unordered access view pointer for '{}' returned null.", sData);
               continue;
             }
-            pUnorderedResourceView->Set(m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetBufferView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+            if (!m_pBoundUnoderedAccessViews.IsEmpty() && m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding])
+              pUnorderedResourceView->Set(m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetBufferView(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+            else
+              pUnorderedResourceView->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
           }
           break;
           case xiiShaderDescriptorSetLayoutBinding::ResourceType::Sampler:
@@ -1609,7 +1584,10 @@ void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IS
               xiiLog::Error("Sampler pointer for '{}' returned null.", sData);
               continue;
             }
-            pSampler->Set(m_pBoundSamplerStates[stage][currentBinding.m_uiVirtualBinding]->GetSamplerState(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+            if (m_pBoundSamplerStates[stage] && m_pBoundSamplerStates[stage][currentBinding.m_uiVirtualBinding])
+              pSampler->Set(m_pBoundSamplerStates[stage][currentBinding.m_uiVirtualBinding]->GetSamplerState(), Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
+            else
+              pSampler->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_NONE);
           }
           break;
         }

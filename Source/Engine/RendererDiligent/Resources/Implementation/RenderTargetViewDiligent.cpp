@@ -70,6 +70,9 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     DSViewDesc.ViewType = Diligent::TEXTURE_VIEW_DEPTH_STENCIL;
     DSViewDesc.Format   = ViewFormat;
 
+    if (pGALTextureDiligent->GetDescription().m_bAllowDynamicMipGeneration)
+      DSViewDesc.Flags |= Diligent::TEXTURE_VIEW_FLAG_ALLOW_MIP_MAP_GENERATION;
+
     if (texDesc.m_SampleCount == xiiGALMSAASampleCount::None)
     {
       if (!bIsArrayView)
@@ -110,6 +113,9 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     Diligent::TextureViewDesc RTViewDesc;
     RTViewDesc.ViewType = Diligent::TEXTURE_VIEW_RENDER_TARGET;
     RTViewDesc.Format   = ViewFormat;
+
+    if (pGALTextureDiligent->GetDescription().m_bAllowDynamicMipGeneration)
+      RTViewDesc.Flags |= Diligent::TEXTURE_VIEW_FLAG_ALLOW_MIP_MAP_GENERATION;
 
     if (texDesc.m_SampleCount == xiiGALMSAASampleCount::None)
     {
