@@ -49,7 +49,14 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
   xiiHybridArray<Diligent::PipelineResourceDesc, 2u> resources;
 
   Diligent::PipelineResourceSignatureDesc pipelineResourceSignatureDesc;
-  pipelineResourceSignatureDesc.Name = m_Description.m_szName;
+#if 0 // This is volatile and often gets invalidated.
+  {
+    xiiStringBuilder sResourceName    = m_Description.m_szName;
+    auto&            sResourceNameRef = m_StringStorage.ExpandAndGetRef();
+    sResourceNameRef                  = sResourceName;
+  }
+  pipelineResourceSignatureDesc.Name = m_StringStorage.PeekBack().GetData();
+#endif
 
   for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderStage::ENUM_COUNT; ++uiStage)
   {
@@ -63,17 +70,17 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
       {
         auto& currentBinding = bindings[j];
 
-        xiiStringBuilder sData;
-        currentBinding.m_sName.GetData(sData);
-
-        auto& storageData = m_StringStorage.ExpandAndGetRef();
-        storageData       = sData;
+        {
+          xiiStringBuilder sResourceName    = currentBinding.m_sName;
+          auto&            sResourceNameRef = m_StringStorage.ExpandAndGetRef();
+          sResourceNameRef                  = sResourceName;
+        }
 
         // Pipeline signature description
         {
           auto& resourceDesc = resources.ExpandAndGetRef();
 
-          resourceDesc.Name         = storageData;
+          resourceDesc.Name         = m_StringStorage.PeekBack().GetData();
           resourceDesc.ShaderStages = xiiDiligentUtils::GALToDiligentShaderStage((xiiGALShaderStage::Enum)uiStage);
           resourceDesc.ArraySize    = currentBinding.m_uiArraySize;
 
@@ -122,8 +129,6 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
       }
     }
   }
-
-  m_StringStorage.SetCount(resources.GetCount());
 
   pipelineResourceSignatureDesc.Resources                  = resources.GetData();
   pipelineResourceSignatureDesc.NumResources               = resources.GetCount();
