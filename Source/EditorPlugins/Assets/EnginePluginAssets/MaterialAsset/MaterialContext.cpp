@@ -208,11 +208,11 @@ void xiiMaterialContext::OnInitialize()
     }
   }
 
-  #if 0
+#if 0
   {
     m_hBallMesh = xiiResourceManager::LoadResource<xiiMeshResource>("Editor/Meshes/MaterialBall.xiiMesh");
   }
-  #endif
+#endif
 
   auto pWorld = m_pWorld;
   XII_LOCK(pWorld->GetWriteMarker());
