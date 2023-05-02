@@ -140,8 +140,10 @@ void xiiGameApplication::Init_SetupDefaultResources()
   {
     xiiResourceManager::AllowResourceTypeAcquireDuringUpdateContent<xiiMeshResource, xiiMeshBufferResource>();
 
+#if 0
     xiiMeshResourceHandle hMissingMesh = xiiResourceManager::LoadResource<xiiMeshResource>("Meshes/MissingMesh.xiiMesh");
     xiiResourceManager::SetResourceTypeMissingFallback<xiiMeshResource>(hMissingMesh);
+#endif
   }
 
   // Prefabs
@@ -150,8 +152,10 @@ void xiiGameApplication::Init_SetupDefaultResources()
     // xiiPrefabResourceHandle hMissingPrefab = xiiResourceManager::CreateResource<xiiPrefabResource>("MissingPrefabResource", emptyPrefab,
     // "MissingPrefabResource");
 
-    // xiiPrefabResourceHandle hMissingPrefab = xiiResourceManager::LoadResource<xiiPrefabResource>("Prefabs/MissingPrefab.xiiObjectGraph");
-    // xiiResourceManager::SetResourceTypeMissingFallback<xiiPrefabResource>(hMissingPrefab);
+#if 0
+    xiiPrefabResourceHandle hMissingPrefab = xiiResourceManager::LoadResource<xiiPrefabResource>("Prefabs/MissingPrefab.xiiObjectGraph");
+    xiiResourceManager::SetResourceTypeMissingFallback<xiiPrefabResource>(hMissingPrefab);
+#endif
   }
 
   // Collections

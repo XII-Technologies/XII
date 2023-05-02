@@ -43,5 +43,5 @@ private:
     Plane,
   };
 
-  PreviewModel m_PreviewModel = PreviewModel::Ball;
+  PreviewModel m_PreviewModel = PreviewModel::Sphere;
 };
