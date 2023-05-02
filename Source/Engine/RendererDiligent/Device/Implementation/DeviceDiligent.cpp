@@ -911,6 +911,8 @@ void xiiGALDeviceDiligent::EndFramePlatform()
 {
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
 
+  m_pDefaultPass->m_pCommandEncoderImpl->FlushPipelineStateCache();
+
 #if 0
 #  if XII_ENABLED(XII_USE_PROFILING)
   xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pFrameTimingScope);

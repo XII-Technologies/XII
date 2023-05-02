@@ -1210,6 +1210,25 @@ void xiiGALCommandEncoderImplDiligent::DispatchIndirectPlatform(const xiiGALBuff
 
 //////////////////////////////////////////////////////////////////////////
 
+void xiiGALCommandEncoderImplDiligent::FlushPipelineStateCache()
+{
+  for (auto iter : m_CachedGraphicsPipelineStates)
+  {
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pPipelineState);
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pShaderResourceBinding);
+  }
+  m_CachedGraphicsPipelineStates.Clear();
+  m_CachedGraphicsPipelineStates.Compact();
+
+  for (auto iter : m_CachedComputePipelineStates)
+  {
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pPipelineState);
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pShaderResourceBinding);
+  }
+  m_CachedComputePipelineStates.Clear();
+  m_CachedComputePipelineStates.Compact();
+}
+
 void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
 {
   if (!m_pCurrentShader)
