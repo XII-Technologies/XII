@@ -47,7 +47,7 @@ struct xiiMaterialAssetPreview
     Box,
     Plane,
 
-    Default = Ball
+    Default = Sphere
   };
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiMaterialAssetPreview);
