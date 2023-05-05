@@ -910,7 +910,6 @@ void xiiGALDeviceDiligent::EndFramePlatform()
   {
     pContext->Flush();
     pContext->FinishFrame();
-    pContext->InvalidateState();
   }
 
   m_pDevice->ReleaseStaleResources();
