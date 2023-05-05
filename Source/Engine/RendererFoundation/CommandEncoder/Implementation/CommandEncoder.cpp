@@ -267,12 +267,7 @@ void xiiGALCommandEncoder::CopyBuffer(xiiGALBufferHandle hDest, xiiGALBufferHand
   }
 }
 
-void xiiGALCommandEncoder::CopyBufferRegion(
-  xiiGALBufferHandle hDest,
-  xiiUInt32          uiDestOffset,
-  xiiGALBufferHandle hSource,
-  xiiUInt32          uiSourceOffset,
-  xiiUInt32          uiByteCount)
+void xiiGALCommandEncoder::CopyBufferRegion(xiiGALBufferHandle hDest, xiiUInt32 uiDestOffset, xiiGALBufferHandle hSource, xiiUInt32 uiSourceOffset, xiiUInt32 uiByteCount)
 {
   AssertRenderingThread();
 
@@ -295,11 +290,7 @@ void xiiGALCommandEncoder::CopyBufferRegion(
   }
 }
 
-void xiiGALCommandEncoder::UpdateBuffer(
-  xiiGALBufferHandle          hDest,
-  xiiUInt32                   uiDestOffset,
-  xiiArrayPtr<const xiiUInt8> pSourceData,
-  xiiGALUpdateMode::Enum      updateMode)
+void xiiGALCommandEncoder::UpdateBuffer(xiiGALBufferHandle hDest, xiiUInt32 uiDestOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiGALUpdateMode::Enum updateMode)
 {
   AssertRenderingThread();
 

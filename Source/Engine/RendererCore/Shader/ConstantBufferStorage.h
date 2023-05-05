@@ -48,7 +48,7 @@ public:
   }
 };
 
-typedef xiiGenericId<24, 8> xiiConstantBufferStorageId;
+using xiiConstantBufferStorageId = xiiGenericId<24, 8>;
 
 class xiiConstantBufferStorageHandle
 {
