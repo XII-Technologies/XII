@@ -86,7 +86,7 @@ xiiResult xiiGALSwapChainDiligent::UpdateSwapChain(xiiGALDevice* pDevice, xiiEnu
   DestroyBackBufferInternal(pDeviceDiligent);
 
   // Need to flush dead objects or ResizeBuffers will fail as the backbuffer is still referenced.
-  pDeviceDiligent->FlushDeadObjects();
+  pDevice->WaitIdle();
 
   m_pSwapChain->Resize(m_WindowDesc.m_pWindow->GetClientAreaSize().width, m_WindowDesc.m_pWindow->GetClientAreaSize().height);
 

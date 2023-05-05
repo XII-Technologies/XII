@@ -565,11 +565,6 @@ void xiiGALDeviceDiligent::ReportLiveGpuObjects()
   // \todo RendererDiligent: Implement detailed live GPU Object information
 }
 
-void xiiGALDeviceDiligent::FlushDeadObjects()
-{
-  DestroyDeadObjects();
-}
-
 // Pipeline & Pass functions
 
 void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapChain* pSwapChain)
@@ -911,6 +906,15 @@ void xiiGALDeviceDiligent::EndFramePlatform()
 {
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
 
+  for (auto pContext : m_pDeviceContexts)
+  {
+    pContext->Flush();
+    pContext->FinishFrame();
+    pContext->InvalidateState();
+  }
+
+  m_pDevice->ReleaseStaleResources();
+
 #if 0
 #  if XII_ENABLED(XII_USE_PROFILING)
   xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pFrameTimingScope);
@@ -965,9 +969,15 @@ void xiiGALDeviceDiligent::WaitIdlePlatform()
 {
   DestroyDeadObjects();
 
+  m_pDevice->ReleaseStaleResources();
+  // We must idle the GPU
   m_pDevice->IdleGPU();
-
-  m_pDevice->ReleaseStaleResources(false);
+  // And call FinishFrame() to release references to Swapchain resources
+  for (auto pContext : m_pDeviceContexts)
+  {
+    pContext->FinishFrame();
+  }
+  m_pDevice->ReleaseStaleResources();
 }
 
 void xiiGALDeviceDiligent::FillFormatLookupTable()
