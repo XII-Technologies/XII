@@ -1142,7 +1142,7 @@ void xiiGALCommandEncoderImplDiligent::SetViewportPlatform(const xiiRectFloat& r
   viewport.MinDepth = fMinDepth;
   viewport.MaxDepth = fMaxDepth;
 
-  m_pContext->SetViewports(1, &viewport, rect.width, rect.height);
+  m_pContext->SetViewports(1, &viewport, static_cast<xiiUInt32>(rect.width), static_cast<xiiUInt32>(rect.height));
 }
 
 void xiiGALCommandEncoderImplDiligent::SetScissorRectPlatform(const xiiRectU32& rect)

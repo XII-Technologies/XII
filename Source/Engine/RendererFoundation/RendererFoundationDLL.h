@@ -53,6 +53,8 @@ struct xiiGALSamplerStateCreationDescription;
 struct xiiGALResourceViewCreationDescription;
 struct xiiGALRenderTargetViewCreationDescription;
 struct xiiGALUnorderedAccessViewCreationDescription;
+struct xiiGALCommandEncoderState;
+struct xiiGALCommandEncoderRenderState;
 
 class xiiGALSwapChain;
 class xiiGALShader;

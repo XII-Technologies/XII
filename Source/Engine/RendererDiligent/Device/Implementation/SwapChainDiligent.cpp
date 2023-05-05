@@ -24,22 +24,6 @@
 #  include <Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
 #endif
 
-template <>
-struct xiiHashHelper<RenderTargetInfo>
-{
-  XII_ALWAYS_INLINE static xiiUInt32 Hash(const RenderTargetInfo& value)
-  {
-    const xiiUInt32 hashA = xiiHashHelper<const void*>::Hash(value.m_pTexture);
-    const xiiUInt32 hashB = xiiHashHelper<const void*>::Hash(value.m_pTextureView);
-    return xiiHashingUtils::CombineHashValues32(hashA, hashB);
-  }
-
-  XII_ALWAYS_INLINE static bool Equal(const RenderTargetInfo& a, const RenderTargetInfo& b)
-  {
-    return a.m_pTexture == b.m_pTexture && a.m_pTextureView == b.m_pTextureView;
-  }
-};
-
 xiiGALResourceFormat::Enum ToGALRenderTargetFormat(Diligent::TEXTURE_FORMAT format)
 {
   switch (format)
