@@ -928,8 +928,8 @@ void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
   {
     m_Capabilities.m_sAdapterName         = xiiStringUtf8(adapterInfo.Description).GetData();
     m_Capabilities.m_uiDedicatedVRAM      = adapterInfo.Memory.LocalMemory;
-    m_Capabilities.m_uiDedicatedSystemRAM = adapterInfo.Memory.HostVisibleMemory;
-    m_Capabilities.m_uiSharedSystemRAM    = adapterInfo.Memory.UnifiedMemory;
+    m_Capabilities.m_uiDedicatedSystemRAM = adapterInfo.Memory.UnifiedMemory;
+    m_Capabilities.m_uiSharedSystemRAM    = adapterInfo.Memory.HostVisibleMemory;
     m_Capabilities.m_bHardwareAccelerated = adapterInfo.Type == Diligent::ADAPTER_TYPE_DISCRETE;
   }
 
