@@ -272,9 +272,6 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
         binding.m_uiVirtualBinding                   = xiiBindings[descriptorToXIIBinding[i]].m_iSlot;
         binding.m_xiiType                            = xiiBindings[descriptorToXIIBinding[i]].m_Type;
 
-        if (xiiStringUtils::IsEqual(binding.m_sName.GetStartPointer(), "glyphData"))
-          XII_DEBUG_BREAK;
-
         switch (spirvInfo.descriptor_type)
         {
           case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER:
@@ -294,6 +291,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
             binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer;
             break;
 
+	  case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
           case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
             binding.m_Type = (spirvInfo.image.dim == SpvDim::SpvDimBuffer) ? xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer : xiiShaderDescriptorSetLayoutBinding::ResourceViewTexture;
             break;
