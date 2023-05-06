@@ -1,6 +1,5 @@
-
-
 #pragma once
+
 #include <RendererFoundation/RendererFoundationDLL.h>
 
 /// \brief This struct holds information about the rendering device capabilities (e.g. what shader stages are supported and more)
@@ -10,11 +9,12 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALDeviceCapabilities
   xiiGALDeviceCapabilities();
 
   // Device description
-  xiiString m_sAdapterName         = "Unknown";
-  xiiUInt64 m_uiDedicatedVRAM      = 0;
-  xiiUInt64 m_uiDedicatedSystemRAM = 0;
-  xiiUInt64 m_uiSharedSystemRAM    = 0;
-  bool      m_bHardwareAccelerated = false;
+  xiiGraphicsDeviceType::Enum m_DeviceType           = xiiGraphicsDeviceType::Undefined;
+  xiiString                   m_sAdapterName         = "Unknown";
+  xiiUInt64                   m_uiDedicatedVRAM      = 0;
+  xiiUInt64                   m_uiDedicatedSystemRAM = 0;
+  xiiUInt64                   m_uiSharedSystemRAM    = 0;
+  bool                        m_bHardwareAccelerated = false;
 
   // General capabilities
   bool m_bMultithreadedResourceCreation; ///< whether creating resources is allowed on other threads than the main thread

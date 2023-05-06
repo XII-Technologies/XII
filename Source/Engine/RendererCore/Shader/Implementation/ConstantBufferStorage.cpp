@@ -34,17 +34,24 @@ xiiArrayPtr<const xiiUInt8> xiiConstantBufferStorageBase::GetRawDataForReading()
 
 void xiiConstantBufferStorageBase::UploadData(xiiGALCommandEncoder* pCommandEncoder)
 {
-  if (!m_bHasBeenModified)
-    return;
+  if (pCommandEncoder->GetDevice().GetCapabilities().m_DeviceType == xiiGraphicsDeviceType::D3D11)
+  {
+    if (!m_bHasBeenModified)
+      return;
 
-  m_bHasBeenModified = false;
-
-  xiiUInt32 uiNewHash = xiiHashingUtils::xxHash32(m_Data.GetPtr(), m_Data.GetCount());
-  if (m_uiLastHash != uiNewHash)
+    xiiUInt32 uiNewHash = xiiHashingUtils::xxHash32(m_Data.GetPtr(), m_Data.GetCount());
+    if (m_uiLastHash != uiNewHash)
+    {
+      pCommandEncoder->UpdateBuffer(m_hGALConstantBuffer, 0, m_Data);
+      m_uiLastHash = uiNewHash;
+    }
+  }
+  else
   {
     pCommandEncoder->UpdateBuffer(m_hGALConstantBuffer, 0, m_Data);
-    m_uiLastHash = uiNewHash;
   }
+
+  m_bHasBeenModified = false;
 }
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_Shader_Implementation_ConstantBufferStorage);

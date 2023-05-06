@@ -812,6 +812,7 @@ void xiiGALDeviceDX11::FillCapabilitiesPlatform()
     DXGI_ADAPTER_DESC1 adapterDesc;
     m_pDXGIAdapter->GetDesc1(&adapterDesc);
 
+    m_Capabilities.m_DeviceType           = xiiGraphicsDeviceType::D3D11;
     m_Capabilities.m_sAdapterName         = xiiStringUtf8(adapterDesc.Description).GetData();
     m_Capabilities.m_uiDedicatedVRAM      = static_cast<xiiUInt64>(adapterDesc.DedicatedVideoMemory);
     m_Capabilities.m_uiDedicatedSystemRAM = static_cast<xiiUInt64>(adapterDesc.DedicatedSystemMemory);

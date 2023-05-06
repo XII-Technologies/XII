@@ -930,6 +930,31 @@ void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
     m_Capabilities.m_uiDedicatedSystemRAM = adapterInfo.Memory.UnifiedMemory;
     m_Capabilities.m_uiSharedSystemRAM    = adapterInfo.Memory.HostVisibleMemory;
     m_Capabilities.m_bHardwareAccelerated = adapterInfo.Type == Diligent::ADAPTER_TYPE_DISCRETE;
+
+    switch (m_DeviceType)
+    {
+      case Diligent::RENDER_DEVICE_TYPE_UNDEFINED:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::Undefined;
+        break;
+      case Diligent::RENDER_DEVICE_TYPE_D3D11:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::D3D11;
+        break;
+      case Diligent::RENDER_DEVICE_TYPE_D3D12:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::D3D12;
+        break;
+      case Diligent::RENDER_DEVICE_TYPE_GL:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::OpenGL;
+        break;
+      case Diligent::RENDER_DEVICE_TYPE_GLES:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::OpenGLES;
+        break;
+      case Diligent::RENDER_DEVICE_TYPE_VULKAN:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::Vulkan;
+        break;
+      case Diligent::RENDER_DEVICE_TYPE_METAL:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::Metal;
+        break;
+    }
   }
 
   const Diligent::RenderDeviceInfo& deviceInfo = GetDevice()->GetDeviceInfo();
