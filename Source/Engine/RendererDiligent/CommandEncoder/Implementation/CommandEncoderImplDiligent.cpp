@@ -812,20 +812,17 @@ void xiiGALCommandEncoderImplDiligent::FlushPlatform()
 
 void xiiGALCommandEncoderImplDiligent::PushMarkerPlatform(const char* szMarker)
 {
-  /// \todo Fix Debug Groups
-  // m_pContext->BeginDebugGroup(szMarker);
+  m_pContext->BeginDebugGroup(szMarker);
 }
 
 void xiiGALCommandEncoderImplDiligent::PopMarkerPlatform()
 {
-  /// \todo Fix Debug Groups
-  // m_pContext->EndDebugGroup();
+  m_pContext->EndDebugGroup();
 }
 
 void xiiGALCommandEncoderImplDiligent::InsertEventMarkerPlatform(const char* szMarker)
 {
-  /// \todo Fix Debug Groups
-  // m_pContext->InsertDebugLabel(szMarker);
+  m_pContext->InsertDebugLabel(szMarker);
 }
 
 //////////////////////////////////////////////////////////////////////////
