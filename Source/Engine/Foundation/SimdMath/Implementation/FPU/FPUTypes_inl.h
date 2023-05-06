@@ -4,9 +4,8 @@
 
 namespace xiiInternal
 {
-  typedef xiiVec4d   QuadDouble;
-  typedef xiiVec4    QuadFloat;
-  typedef xiiVec4U32 QuadUInt;
-  typedef xiiVec4I32 QuadInt;
-  typedef xiiVec4U32 QuadBool;
+  using QuadFloat = xiiVec4;
+  using QuadUInt  = xiiVec4U32;
+  using QuadInt   = xiiVec4I32;
+  using QuadBool  = xiiVec4U32;
 } // namespace xiiInternal
