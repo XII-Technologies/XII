@@ -272,52 +272,41 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
         binding.m_uiVirtualBinding                   = xiiBindings[descriptorToXIIBinding[i]].m_iSlot;
         binding.m_xiiType                            = xiiBindings[descriptorToXIIBinding[i]].m_Type;
 
-        if (spirvInfo.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
-        {
-          binding.m_Type = xiiShaderDescriptorSetLayoutBinding::AccelerationStructure;
-        }
-        else if (spirvInfo.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
-        {
-          binding.m_Type = xiiShaderDescriptorSetLayoutBinding::InputAttachment;
-        }
-        else
-        {
-          switch (spirvInfo.resource_type)
-          {
-            case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER:
-              binding.m_Type = xiiShaderDescriptorSetLayoutBinding::Sampler;
-              break;
+        if (xiiStringUtils::IsEqual(binding.m_sName.GetStartPointer(), "glyphData"))
+          XII_DEBUG_BREAK;
 
-            case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_CBV:
-              binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ConstantBuffer;
-              break;
-
-            case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV:
-            {
-              if (spirvInfo.image.dim == SpvDim::SpvDimBuffer)
-              {
-                binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer;
-              }
-              else
-              {
-                binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceViewTexture;
-              }
-            }
+        switch (spirvInfo.descriptor_type)
+        {
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER:
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::Sampler;
             break;
 
-            case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_UAV:
-            {
-              if (spirvInfo.image.dim == SpvDim::SpvDimBuffer)
-              {
-                binding.m_Type = xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer;
-              }
-              else
-              {
-                binding.m_Type = xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewTexture;
-              }
-            }
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ConstantBuffer;
             break;
-          }
+
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+            binding.m_Type = (spirvInfo.image.dim == SpvDim::SpvDimBuffer) ? xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer : xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewTexture;
+            break;
+
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer;
+            break;
+
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+            binding.m_Type = (spirvInfo.image.dim == SpvDim::SpvDimBuffer) ? xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer : xiiShaderDescriptorSetLayoutBinding::ResourceViewTexture;
+            break;
+
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::InputAttachment;
+            break;
+
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::AccelerationStructure;
+            break;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
         }
 
         binding.m_uiDescriptorType  = static_cast<xiiUInt32>(spirvInfo.descriptor_type);
