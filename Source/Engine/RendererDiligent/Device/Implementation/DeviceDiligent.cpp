@@ -138,6 +138,8 @@ xiiGALDeviceDiligent::~xiiGALDeviceDiligent() = default;
 
 xiiResult xiiGALDeviceDiligent::InitPlatform()
 {
+  using namespace Diligent;
+
   XII_LOG_BLOCK("xiiGALDeviceDiligent::InitPlatform");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)

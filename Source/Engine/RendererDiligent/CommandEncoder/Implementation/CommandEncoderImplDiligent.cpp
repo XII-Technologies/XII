@@ -82,8 +82,8 @@ xiiUInt32 xiiGALCommandEncoderImplDiligent::ResourceCacheHash::Hash(const Dilige
   xiiHashStreamWriter32 writer;
 
   writer << desc.PSODesc.PipelineType;
-  writer << desc.PSODesc.SRBAllocationGranularity;
-  writer << desc.PSODesc.ImmediateContextMask;
+  writer << static_cast<xiiUInt32>(desc.PSODesc.SRBAllocationGranularity);
+  writer << static_cast<xiiUInt64>(desc.PSODesc.ImmediateContextMask);
   writer << desc.PSODesc.ResourceLayout.DefaultVariableType;
   writer << desc.PSODesc.ResourceLayout.DefaultVariableMergeStages;
 
@@ -189,8 +189,8 @@ xiiUInt32 xiiGALCommandEncoderImplDiligent::ResourceCacheHash::Hash(const Dilige
   xiiHashStreamWriter32 writer;
 
   writer << desc.PSODesc.PipelineType;
-  writer << desc.PSODesc.SRBAllocationGranularity;
-  writer << desc.PSODesc.ImmediateContextMask;
+  writer << static_cast<xiiUInt32>(desc.PSODesc.SRBAllocationGranularity);
+  writer << static_cast<xiiUInt64>(desc.PSODesc.ImmediateContextMask);
   writer << desc.PSODesc.ResourceLayout.DefaultVariableType;
   writer << desc.PSODesc.ResourceLayout.DefaultVariableMergeStages;
 
