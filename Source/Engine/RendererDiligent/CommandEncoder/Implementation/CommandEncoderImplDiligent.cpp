@@ -535,7 +535,7 @@ void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* 
 
       if (pMapResult)
       {
-        memcpy(xiiMemoryUtils::AddByteOffset((xiiUInt8*)pMapResult, uiDestOffset), pSourceData.GetPtr(), pSourceData.GetCount());
+        std::memcpy(xiiMemoryUtils::AddByteOffset((xiiUInt8*)pMapResult, uiDestOffset), pSourceData.GetPtr(), pSourceData.GetCount());
 
         m_pContext->UnmapBuffer(pDestinationBuffer, Diligent::MAP_WRITE);
       }
@@ -662,7 +662,7 @@ void xiiGALCommandEncoderImplDiligent::UpdateTexturePlatform(const xiiGALTexture
 
       if (MapResult.Stride == uiRowPitch && MapResult.DepthStride == uiSlicePitch)
       {
-        memcpy(MapResult.pData, pSourceData.m_pData, uiSlicePitch * uiDepth);
+        std::memcpy(MapResult.pData, pSourceData.m_pData, uiSlicePitch * uiDepth);
       }
       else
       {
@@ -674,7 +674,7 @@ void xiiGALCommandEncoderImplDiligent::UpdateTexturePlatform(const xiiGALTexture
 
           for (xiiUInt32 y = 0; y < uiHeight; ++y)
           {
-            memcpy(pDest, pSource, uiRowPitch);
+            std::memcpy(pDest, pSource, uiRowPitch);
 
             pSource = xiiMemoryUtils::AddByteOffset(pSource, uiRowPitch);
             pDest   = xiiMemoryUtils::AddByteOffset(pDest, MapResult.Stride);
@@ -775,7 +775,7 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureReadbackResultPlatform(const x
       {
         const xiiUInt32 uiMemorySize = xiiGALResourceFormat::GetBitsPerElement(pTextureDiligent->GetDescription().m_Format) * GetMipSize(pTextureDiligent->GetDescription().m_uiWidth, subRes.m_uiMipLevel) * GetMipSize(pTextureDiligent->GetDescription().m_uiHeight, subRes.m_uiMipLevel) / 8;
 
-        memcpy(memDesc.m_pData, MappedSubRes.pData, uiMemorySize);
+        std::memcpy(memDesc.m_pData, MappedSubRes.pData, uiMemorySize);
       }
       else
       {
@@ -786,7 +786,7 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureReadbackResultPlatform(const x
           const void* pSource = xiiMemoryUtils::AddByteOffset(MappedSubRes.pData, y * MappedSubRes.Stride);
           void*       pDest   = xiiMemoryUtils::AddByteOffset(memDesc.m_pData, y * memDesc.m_uiRowPitch);
 
-          memcpy(pDest, pSource, xiiGALResourceFormat::GetBitsPerElement(pTextureDiligent->GetDescription().m_Format) * GetMipSize(pTextureDiligent->GetDescription().m_uiWidth, subRes.m_uiMipLevel) / 8);
+          std::memcpy(pDest, pSource, xiiGALResourceFormat::GetBitsPerElement(pTextureDiligent->GetDescription().m_Format) * GetMipSize(pTextureDiligent->GetDescription().m_uiWidth, subRes.m_uiMipLevel) / 8);
         }
       }
 
