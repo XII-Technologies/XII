@@ -13,51 +13,51 @@ public:
   xiiComPtr() {}
   ~xiiComPtr()
   {
-    if (m_ptr != nullptr)
+    if (m_pObject != nullptr)
     {
-      m_ptr->Release();
-      m_ptr = nullptr;
+      m_pObject->Release();
+      m_pObject = nullptr;
     }
   }
 
   xiiComPtr(const xiiComPtr& other) :
-    m_ptr(other.m_ptr)
+    m_pObject(other.m_pObject)
   {
-    if (m_ptr)
+    if (m_pObject)
     {
-      m_ptr->AddRef();
+      m_pObject->AddRef();
     }
   }
 
-  T*       operator->() { return m_ptr; }
-  T* const operator->() const { return m_ptr; }
+  T*       operator->() { return m_pObject; }
+  T* const operator->() const { return m_pObject; }
 
   T** Put()
   {
-    XII_ASSERT_DEV(m_ptr == nullptr, "Can only put into an empty xiiComPtr");
-    return &m_ptr;
+    XII_ASSERT_DEV(m_pObject == nullptr, "Can only put into an empty xiiComPtr");
+    return &m_pObject;
   }
 
   T* RawPtr()
   {
-    return m_ptr;
+    return m_pObject;
   }
 
   T** RawDblPtr()
   {
-    return &m_ptr;
+    return &m_pObject;
   }
 
   bool operator==(nullptr_t)
   {
-    return m_ptr == nullptr;
+    return m_pObject == nullptr;
   }
 
   bool operator!=(nullptr_t)
   {
-    return m_ptr != nullptr;
+    return m_pObject != nullptr;
   }
 
 private:
-  T* m_ptr = nullptr;
+  T* m_pObject = nullptr;
 };
