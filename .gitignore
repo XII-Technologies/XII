@@ -349,7 +349,7 @@ healthchecksdb
 # Backup folder for Package Reference Convert tool in Visual Studio 2017
 MigrationBackup/
 
-# xii specific
+# XII specific
 /Workspace
 /Output
 AssetCache
@@ -358,5 +358,9 @@ AssetCache
 Source/Engine/xiiBuildInfo.h
 build*/
 
+# Compile commands for use with YCM on Linux.
+compile-commands.json
+
+# Diligent Generated Files
 Source/ThirdParty/DiligentCore/Graphics/HLSL2GLSLConverterLib/include/GLSLDefinitions_inc.h
 Source/ThirdParty/DiligentCore/Graphics/ShaderTools/include/HLSLDefinitions_inc.fxh
