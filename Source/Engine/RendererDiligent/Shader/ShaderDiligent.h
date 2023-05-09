@@ -47,6 +47,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
   Diligent::IPipelineResourceSignature* m_pPipelineResourceSignature                   = nullptr;
+  xiiUInt32                             m_uiPipelineResourceSignatureCount             = 0u;
   Diligent::IShader*                    m_pShaderStages[xiiGALShaderStage::ENUM_COUNT] = {};
 
   xiiDynamicArray<xiiString> m_StringStorage;

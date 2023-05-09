@@ -33,7 +33,6 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
     ShaderCI.ByteCodeSize                 = byteCode[i].GetCount();
     ShaderCI.SourceLanguage               = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
     ShaderCI.LoadConstantBufferReflection = false;
-    // ShaderCI.CompileFlags                 = Diligent::SHADER_COMPILE_FLAG_SKIP_REFLECTION;
 
     pDeviceDiligent->GetDevice()->CreateShader(ShaderCI, &m_pShaderStages[i]);
 
@@ -43,8 +42,6 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
       return XII_FAILURE;
     }
   }
-
-  /// \todo RendererFoundation: Add interface for specifying resource type (dynamic, mutable, static), for choosing a resource variable type.
 
   xiiHybridArray<Diligent::PipelineResourceDesc, 2u> resources;
 
@@ -87,40 +84,26 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
           switch (currentBinding.m_Type)
           {
             case xiiShaderDescriptorSetLayoutBinding::ResourceType::ConstantBuffer:
-            {
               resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_CONSTANT_BUFFER;
-            }
-            break;
+              break;
             case xiiShaderDescriptorSetLayoutBinding::ResourceType::ResourceViewTexture:
-            {
               resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_TEXTURE_SRV;
-            }
-            break;
+              break;
             case xiiShaderDescriptorSetLayoutBinding::ResourceType::ResourceViewBuffer:
-            {
               resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_BUFFER_SRV;
-            }
-            break;
+              break;
             case xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessViewTexture:
-            {
               resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_TEXTURE_UAV;
-            }
-            break;
+              break;
             case xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessViewBuffer:
-            {
               resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_BUFFER_UAV;
-            }
-            break;
+              break;
             case xiiShaderDescriptorSetLayoutBinding::ResourceType::Sampler:
-            {
               resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_SAMPLER;
-            }
-            break;
+              break;
             case xiiShaderDescriptorSetLayoutBinding::ResourceType::AccelerationStructure:
-            {
               resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_ACCEL_STRUCT;
-            }
-            break;
+              break;
           }
 
           resourceDesc.VarType = Diligent::SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE; // Variables are always mutable for now.
@@ -146,6 +129,8 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
     return XII_FAILURE;
   }
 
+  m_uiPipelineResourceSignatureCount = 1u;
+
   return XII_SUCCESS;
 }
 
@@ -157,6 +142,7 @@ xiiResult xiiGALShaderDiligent::DeInitPlatform(xiiGALDevice* pDevice)
   }
 
   XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pPipelineResourceSignature);
+  m_uiPipelineResourceSignatureCount = 0u;
 
   m_StringStorage.Clear();
   m_DescriptorSets->Clear();

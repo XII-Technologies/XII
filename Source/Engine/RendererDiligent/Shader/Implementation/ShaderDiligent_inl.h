@@ -46,7 +46,7 @@ XII_ALWAYS_INLINE Diligent::IPipelineResourceSignature** xiiGALShaderDiligent::G
 
 XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderDiligent::GetPipelineResourceSignatureCount()
 {
-  return 1u;
+  return m_uiPipelineResourceSignatureCount;
 }
 
 XII_ALWAYS_INLINE xiiDynamicArray<xiiShaderDescriptorSetLayout>& xiiGALShaderDiligent::GetDescriptorSets(xiiGALShaderStage::Enum stage)
