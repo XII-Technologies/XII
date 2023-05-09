@@ -44,8 +44,6 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
     }
   }
 
-  /// \todo RendererFoundation: Add interface for specifying resource type (dynamic, mutable, static), for choosing a resource variable type.
-
   xiiHybridArray<Diligent::PipelineResourceDesc, 2u> resources;
 
   Diligent::PipelineResourceSignatureDesc pipelineResourceSignatureDesc;

@@ -1284,8 +1284,6 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
   m_pContext->SetRenderTargets(m_uiBoundRenderTargetCount, m_pBoundRenderTargets, m_pBoundDepthStencilTarget, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
-/// \todo RendererDiligent: Use Pipeline Resource Signature From Shader in Pipeline State.
-
 void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
 {
   if (m_BoundVertexBuffersRange.IsValid())
