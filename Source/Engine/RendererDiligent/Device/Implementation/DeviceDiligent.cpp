@@ -64,11 +64,7 @@ public:
   xiiProxyAllocator m_Allocator;
 };
 
-void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity,
-                    const Diligent::Char*                 Message,
-                    const Diligent::Char*                 Function,
-                    const Diligent::Char*                 File,
-                    int                                   Line)
+void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity, const Diligent::Char* Message, const Diligent::Char* Function, const Diligent::Char* File, xiiInt32 Line)
 {
   // Format Diligent string as it is in printf format
   switch (Severity)
@@ -125,7 +121,7 @@ ON_CORESYSTEMS_SHUTDOWN
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-std::unique_ptr<xiiDiligentMemoryAllocator> g_pMemoryAllocator = std::make_unique<xiiDiligentMemoryAllocator>("Diligent Engine Memory Allocator");
+std::unique_ptr<xiiDiligentMemoryAllocator> g_pMemoryAllocator;
 
 xiiGALDeviceDiligent::xiiGALDeviceDiligent(const xiiGALDeviceCreationDescription& Description, Diligent::RENDER_DEVICE_TYPE DeviceType) :
   xiiGALDevice(Description), m_pDevice(nullptr), m_pEngineFactory(nullptr), m_DeviceType(DeviceType)
@@ -141,6 +137,12 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
   using namespace Diligent;
 
   XII_LOG_BLOCK("xiiGALDeviceDiligent::InitPlatform");
+
+  // Initialize memory allocator outside the global scope.
+  if (g_pMemoryAllocator != nullptr)
+  {
+    g_pMemoryAllocator = std::make_unique<xiiDiligentMemoryAllocator>("Diligent Engine Memory Allocator");
+  }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   m_iValidationLevel = Diligent::VALIDATION_LEVEL_2;
