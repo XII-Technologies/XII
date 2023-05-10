@@ -34,6 +34,22 @@
 #  include <Graphics/GraphicsEngineD3D12/interface/TextureViewD3D12.h>
 #endif
 
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+#  include <vulkan/vulkan.hpp>
+
+// Some of the functionality we need has moved from vulkan.hpp to vulkan_format_traits.hpp in later versions of the vulkan SDK.
+#  if __has_include(<vulkan/vulkan_format_traits.hpp>)
+#    include <vulkan/vulkan_format_traits.hpp>
+#  endif
+
+#  include <Graphics/GraphicsEngineVulkan/interface/BufferViewVk.h>
+#  include <Graphics/GraphicsEngineVulkan/interface/BufferVk.h>
+#  include <Graphics/GraphicsEngineVulkan/interface/DeviceContextVk.h>
+#  include <Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>
+#  include <Graphics/GraphicsEngineVulkan/interface/TextureVk.h>
+#  include <Graphics/GraphicsEngineVulkan/interface/TextureViewVk.h>
+#endif
+
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #endif
@@ -378,7 +394,7 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
       {
         Diligent::ITextureViewD3D11* pTextureViewD3D11 = static_cast<Diligent::ITextureViewD3D11*>(pTextureView);
         pTextureView->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>(&pTextureViewD3D11));
-        XII_ASSERT_DEV(pTextureViewD3D11 != nullptr, "Failed to retrieve the D3D11 buffer view.");
+        XII_ASSERT_DEV(pTextureViewD3D11 != nullptr, "Failed to retrieve the D3D11 texture view.");
 
         pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewFloat(static_cast<ID3D11UnorderedAccessView*>(pTextureViewD3D11->GetD3D11View()), &clearValues.x);
 
@@ -403,7 +419,45 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
     case Diligent::RENDER_DEVICE_TYPE_VULKAN:
     {
       // \todo Implement unordered access view clearing in Vulkan
-      XII_ASSERT_NOT_IMPLEMENTED;
+
+      Diligent::IDeviceContextVk* pContextVk = static_cast<Diligent::IDeviceContextVk*>(m_pContext);
+      m_pContext->QueryInterface(Diligent::IID_DeviceContextVk, reinterpret_cast<Diligent::IObject**>(&pContextVk));
+      XII_ASSERT_DEV(pContextVk != nullptr, "Failed to retrieve the Vulkan context.");
+
+      if (Diligent::IBufferView* pBufferView = pUnorderedAccessViewDiligent->GetBufferView())
+      {
+        Diligent::IBufferVk* pBufferVk = static_cast<Diligent::IBufferVk*>(pBufferView->GetBuffer());
+        pBufferView->GetBuffer()->QueryInterface(Diligent::IID_BufferVk, reinterpret_cast<Diligent::IObject**>(&pBufferVk));
+        XII_ASSERT_DEV(pBufferVk != nullptr, "Failed to retrieve the Vulkan buffer view.");
+
+        xiiUInt32* pData = (xiiUInt32*)&clearValues;
+        vkCmdFillBuffer(pContextVk->GetVkCommandBuffer(), pBufferVk->GetVkBuffer(), 0, VK_WHOLE_SIZE, *pData);
+
+        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pBufferVk);
+      }
+
+      if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
+      {
+        Diligent::ITextureVk* pTextureVk = static_cast<Diligent::ITextureVk*>(pTextureView->GetTexture());
+        pTextureView->GetTexture()->QueryInterface(Diligent::IID_TextureVk, reinterpret_cast<Diligent::IObject**>(&pTextureVk));
+        XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture view.");
+
+        const bool bIsDepthFormat = xiiDiligentUtils::IsDepthFormat();
+        ;
+        vk::ImageSubresourceRange range;
+        range.aspectMask     = GetAspectMask();
+        range.baseArrayLayer = 0;
+        range.baseMipLevel   = 0;
+        range.layerCount     = m_Description.m_Type == ezGALTextureType::TextureCube ? m_Description.m_uiArraySize * 6 : m_Description.m_uiArraySize;
+        range.levelCount     = m_Description.m_uiMipLevelCount;
+
+        const VkClearColorValue clearColourValues{clearValues.x, clearValues.y, clearValues.z};
+        vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColourValues, 1, pTextureVk->getsi);
+
+        XII_GAL_DILIGENT_UNWRAPPED_RELEASvkCmdFillBufferE(pTextureViewVk);
+      }
+
+      XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pContextVk);
     }
     break;
 #endif
@@ -444,7 +498,7 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
       {
         Diligent::ITextureViewD3D11* pTextureViewD3D11 = static_cast<Diligent::ITextureViewD3D11*>(pTextureView);
         pTextureView->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>(&pTextureViewD3D11));
-        XII_ASSERT_DEV(pTextureViewD3D11 != nullptr, "Failed to retrieve the D3D11 buffer view.");
+        XII_ASSERT_DEV(pTextureViewD3D11 != nullptr, "Failed to retrieve the D3D11 texture view.");
 
         pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewUint(static_cast<ID3D11UnorderedAccessView*>(pTextureViewD3D11->GetD3D11View()), &clearValues.x);
 
