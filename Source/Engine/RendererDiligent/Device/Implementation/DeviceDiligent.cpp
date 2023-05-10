@@ -581,7 +581,9 @@ void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapC
   }
 
 #if XII_ENABLED(XII_USE_PROFILING)
-  m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), szName);
+  xiiStringBuilder sb;
+  sb.Format("{} - Frame {}", szName != nullptr ? szName : "Unavailable", GetImmediateContext()->GetFrameNumber());
+  m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), sb);
 #endif
 }
 
@@ -830,8 +832,6 @@ void xiiGALDeviceDiligent::DestroyUnorderedAccessViewPlatform(xiiGALUnorderedAcc
   XII_DELETE(&m_Allocator, pUnorderedAccessViewDiligent);
 }
 
-
-
 // Other rendering creation functions
 
 xiiGALQuery* xiiGALDeviceDiligent::CreateQueryPlatform(const xiiGALQueryCreationDescription& Description)
@@ -896,14 +896,6 @@ xiiResult xiiGALDeviceDiligent::GetTimestampResultPlatform(xiiGALTimestampHandle
 void xiiGALDeviceDiligent::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 {
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
-
-#if 0
-#  if XII_ENABLED(XII_USE_PROFILING)
-  xiiStringBuilder sb;
-  sb.Format("Frame {}", uiRenderFrame);
-  m_pFrameTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), sb);
-#  endif
-#endif
 }
 
 void xiiGALDeviceDiligent::EndFramePlatform()
@@ -917,12 +909,6 @@ void xiiGALDeviceDiligent::EndFramePlatform()
   }
 
   m_pDevice->ReleaseStaleResources();
-
-#if 0
-#  if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pFrameTimingScope);
-#  endif
-#endif
 }
 
 void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
