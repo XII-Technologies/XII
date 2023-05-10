@@ -46,8 +46,8 @@
 #  include <Graphics/GraphicsEngineVulkan/interface/BufferVk.h>
 #  include <Graphics/GraphicsEngineVulkan/interface/DeviceContextVk.h>
 #  include <Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>
-#  include <Graphics/GraphicsEngineVulkan/interface/TextureVk.h>
 #  include <Graphics/GraphicsEngineVulkan/interface/TextureViewVk.h>
+#  include <Graphics/GraphicsEngineVulkan/interface/TextureVk.h>
 #endif
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
