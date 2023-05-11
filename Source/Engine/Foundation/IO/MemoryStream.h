@@ -72,7 +72,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Templated implementation of xiiMemoryStreamStorageInterface that adapts most standard xii containers to the interface.
+/// \brief Templated implementation of xiiMemoryStreamStorageInterface that adapts most standard XII containers to the interface.
 ///
 /// Note that xiiMemoryStreamContainerStorage assumes contiguous storage, so using an xiiDeque for storage will not work.
 template <typename CONTAINER>
@@ -362,7 +362,7 @@ public:
   /// \brief Initialize the raw memory reader with the chunk of memory that is the data storage.
   xiiRawMemoryStreamReader(const void* pData, xiiUInt64 uiDataSize); // [tested]
 
-  /// \brief Initialize the raw memory reader with the chunk of memory from a standard xii container.
+  /// \brief Initialize the raw memory reader with the chunk of memory from a standard XII container.
   /// \note The container must store the data in a contiguous array.
   template <typename CONTAINER>
   xiiRawMemoryStreamReader(const CONTAINER& container) // [tested]
@@ -423,7 +423,7 @@ public:
   /// \brief Initialize the raw memory reader with the chunk of memory that is the data storage.
   xiiRawMemoryStreamWriter(void* pData, xiiUInt64 uiDataSize); // [tested]
 
-  /// \brief Initialize the raw memory reader with the chunk of memory from a standard xii container.
+  /// \brief Initialize the raw memory reader with the chunk of memory from a standard XII container.
   /// \note The container must store the data in a contiguous array.
   template <typename CONTAINER>
   xiiRawMemoryStreamWriter(CONTAINER& container) // [tested]

@@ -64,17 +64,17 @@ xiiCommandLineOptionFloat opt_HdrExposure("_TexConv", "-hdrExposure", "For scali
 
 xiiCommandLineOptionFloat opt_Clamp("_TexConv", "-clamp", "Input values will be clamped to [-value ; +value].", 64000.0f, -64000.0f, 64000.0f);
 
-xiiCommandLineOptionInt opt_AssetVersion("_TexConv", "-assetVersion", "Asset version number to embed in xii specific output formats", 0, 1, 0xFFFF);
+xiiCommandLineOptionInt opt_AssetVersion("_TexConv", "-assetVersion", "Asset version number to embed in XII specific output formats", 0, 1, 0xFFFF);
 
 xiiCommandLineOptionString opt_AssetHashLow("_TexConv", "-assetHashLow", "Low part of a 64 bit asset hash value.\n\
 Has to be specified as a HEX value.\n\
-Required to be non-zero when using xii specific output formats.\n\
+Required to be non-zero when using XII specific output formats.\n\
 Example: -assetHashLow 0xABCDABCD",
                                             "");
 
 xiiCommandLineOptionString opt_AssetHashHigh("_TexConv", "-assetHashHigh", "High part of a 64 bit asset hash value.\n\
 Has to be specified as a HEX value.\n\
-Required to be non-zero when using xii specific output formats.\n\
+Required to be non-zero when using XII specific output formats.\n\
 Example: -assetHashHigh 0xABCDABCD",
                                              "");
 

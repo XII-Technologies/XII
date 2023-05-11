@@ -12,7 +12,7 @@ namespace xiiRmlUiInternal
   {
     if (xiiFileSystem::ExistsFile(sPath.c_str()))
     {
-      // path is already a valid path for xii file system so don't join with document path
+      // path is already a valid path for XII file system so don't join with document path
       ref_sTranslated_path = sPath;
       return;
     }

@@ -212,7 +212,7 @@ public:
   /// The value typically depends on the directory from which the application was launched.
   /// Since this is a process wide global variable, other code can modify it at any time.
   ///
-  /// \note xii does not use the CWD for any file resolution. This function is provided to enable
+  /// \note XII does not use the CWD for any file resolution. This function is provided to enable
   /// tools to work with relative paths from the command-line, but every application has to implement
   /// such behavior individually.
   static const xiiString GetCurrentWorkingDirectory(); // [tested]
