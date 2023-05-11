@@ -10,7 +10,7 @@
 template <typename T>
 XII_ALWAYS_INLINE T xiiStaticCast(xiiReflectedClass* pObject)
 {
-  typedef typename xiiTypeTraits<T>::NonPointerType NonPointerT;
+  using NonPointerT = typename xiiTypeTraits<T>::NonPointerType;
   XII_ASSERT_DEV(pObject == nullptr || pObject->IsInstanceOf<NonPointerT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'",
                  pObject->GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonPointerT>()->GetTypeName());
   return static_cast<T>(pObject);
@@ -22,7 +22,7 @@ XII_ALWAYS_INLINE T xiiStaticCast(xiiReflectedClass* pObject)
 template <typename T>
 XII_ALWAYS_INLINE T xiiStaticCast(const xiiReflectedClass* pObject)
 {
-  typedef typename xiiTypeTraits<T>::NonConstReferencePointerType NonPointerT;
+  using NonPointerT = typename xiiTypeTraits<T>::NonConstReferencePointerType;
   XII_ASSERT_DEV(pObject == nullptr || pObject->IsInstanceOf<NonPointerT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'",
                  pObject->GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonPointerT>()->GetTypeName());
   return static_cast<T>(pObject);
@@ -34,7 +34,7 @@ XII_ALWAYS_INLINE T xiiStaticCast(const xiiReflectedClass* pObject)
 template <typename T>
 XII_ALWAYS_INLINE T xiiStaticCast(xiiReflectedClass& object)
 {
-  typedef typename xiiTypeTraits<T>::NonReferenceType NonReferenceT;
+  using NonReferenceT = typename xiiTypeTraits<T>::NonReferenceType;
   XII_ASSERT_DEV(object.IsInstanceOf<NonReferenceT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'",
                  object.GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonReferenceT>()->GetTypeName());
   return static_cast<T>(object);
@@ -46,7 +46,7 @@ XII_ALWAYS_INLINE T xiiStaticCast(xiiReflectedClass& object)
 template <typename T>
 XII_ALWAYS_INLINE T xiiStaticCast(const xiiReflectedClass& object)
 {
-  typedef typename xiiTypeTraits<T>::NonConstReferenceType NonReferenceT;
+  using NonReferenceT = typename xiiTypeTraits<T>::NonConstReferenceType;
   XII_ASSERT_DEV(object.IsInstanceOf<NonReferenceT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'",
                  object.GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonReferenceT>()->GetTypeName());
   return static_cast<T>(object);
@@ -60,7 +60,7 @@ XII_ALWAYS_INLINE T xiiDynamicCast(xiiReflectedClass* pObject)
 {
   if (pObject)
   {
-    typedef typename xiiTypeTraits<T>::NonPointerType NonPointerT;
+    using NonPointerT = typename xiiTypeTraits<T>::NonPointerType;
     if (pObject->IsInstanceOf<NonPointerT>())
     {
       return static_cast<T>(pObject);
@@ -77,7 +77,7 @@ XII_ALWAYS_INLINE T xiiDynamicCast(const xiiReflectedClass* pObject)
 {
   if (pObject)
   {
-    typedef typename xiiTypeTraits<T>::NonConstReferencePointerType NonPointerT;
+    using NonPointerT = typename xiiTypeTraits<T>::NonConstReferencePointerType;
     if (pObject->IsInstanceOf<NonPointerT>())
     {
       return static_cast<T>(pObject);

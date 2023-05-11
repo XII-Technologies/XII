@@ -23,10 +23,10 @@ template <typename ValueType, typename IteratorType>
 class xiiRangeView
 {
 public:
-  typedef xiiDelegate<IteratorType()>                 BeginCallback;
-  typedef xiiDelegate<IteratorType()>                 EndCallback;
-  typedef xiiDelegate<void(IteratorType&)>            NextCallback;
-  typedef xiiDelegate<ValueType(const IteratorType&)> ValueCallback;
+  using BeginCallback = xiiDelegate<IteratorType()>;
+  using EndCallback   = xiiDelegate<IteratorType()>;
+  using NextCallback  = xiiDelegate<void(IteratorType&)>;
+  using ValueCallback = xiiDelegate<ValueType(const IteratorType&)>;
 
   /// \brief Initializes the xiiRangeView with the delegates used to enumerate the range.
   XII_ALWAYS_INLINE xiiRangeView(BeginCallback begin, EndCallback end, NextCallback next, ValueCallback value);
@@ -36,10 +36,10 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    typedef std::forward_iterator_tag iterator_category;
-    typedef ConstIterator             value_type;
-    typedef ConstIterator*            pointer;
-    typedef ConstIterator&            reference;
+    using iterator_category = std::forward_iterator_tag;
+    using value_type        = ConstIterator;
+    using pointer           = ConstIterator*;
+    using reference         = ConstIterator&;
 
     XII_ALWAYS_INLINE           ConstIterator(const ConstIterator& rhs) = default;
     XII_FORCE_INLINE void       Next();
@@ -62,10 +62,10 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    typedef std::forward_iterator_tag iterator_category;
-    typedef Iterator                  value_type;
-    typedef Iterator*                 pointer;
-    typedef Iterator&                 reference;
+    using iterator_category = std::forward_iterator_tag;
+    using value_type        = Iterator;
+    using pointer           = Iterator*;
+    using reference         = Iterator&;
 
     using ConstIterator::Value;
     XII_ALWAYS_INLINE           Iterator(const Iterator& rhs) = default;

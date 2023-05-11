@@ -62,7 +62,7 @@ namespace
     BUFFER_SIZE_FRAMES = 120 * 60,
   };
 
-  typedef xiiStaticRingBuffer<xiiProfilingSystem::GPUScope, BUFFER_SIZE_OTHER_THREAD / sizeof(xiiProfilingSystem::GPUScope)> GPUScopesBuffer;
+  using GPUScopesBuffer = xiiStaticRingBuffer<xiiProfilingSystem::GPUScope, BUFFER_SIZE_OTHER_THREAD / sizeof(xiiProfilingSystem::GPUScope)>;
 
   static xiiUInt64 s_MainThreadId = 0;
 

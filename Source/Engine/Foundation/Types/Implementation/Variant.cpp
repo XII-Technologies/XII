@@ -64,7 +64,8 @@ xiiVariant::xiiVariant(const xiiDataBuffer& value)
 
 xiiVariant::xiiVariant(const xiiVariantArray& value)
 {
-  typedef typename TypeDeduction<xiiVariantArray>::StorageType StorageType;
+  using StorageType = typename TypeDeduction<xiiVariantArray>::StorageType;
+
   m_Data.shared = XII_DEFAULT_NEW(TypedSharedData<StorageType>, value, nullptr);
   m_uiType      = TypeDeduction<xiiVariantArray>::value;
   m_bIsShared   = true;
@@ -72,7 +73,8 @@ xiiVariant::xiiVariant(const xiiVariantArray& value)
 
 xiiVariant::xiiVariant(const xiiVariantDictionary& value)
 {
-  typedef typename TypeDeduction<xiiVariantDictionary>::StorageType StorageType;
+  using StorageType = typename TypeDeduction<xiiVariantDictionary>::StorageType;
+
   m_Data.shared = XII_DEFAULT_NEW(TypedSharedData<StorageType>, value, nullptr);
   m_uiType      = TypeDeduction<xiiVariantDictionary>::value;
   m_bIsShared   = true;
@@ -111,7 +113,7 @@ void xiiVariant::MoveTypedObject(void* value, const xiiRTTI* pType)
 template <typename T>
 XII_ALWAYS_INLINE void xiiVariant::InitShared(const T& value)
 {
-  typedef typename TypeDeduction<T>::StorageType StorageType;
+  using StorageType = typename TypeDeduction<T>::StorageType;
 
   XII_CHECK_AT_COMPILETIME_MSG((sizeof(StorageType) > sizeof(Data)) || TypeDeduction<T>::forceSharing, "value of this type should be stored inplace");
   XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value != Type::Invalid, "value of this type cannot be stored in a Variant");

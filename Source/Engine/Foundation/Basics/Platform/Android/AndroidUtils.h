@@ -1,25 +1,28 @@
 #pragma once
 
 #if XII_DISABLED(XII_PLATFORM_ANDROID)
-#  error "android util header should only be included in android builds!"
+#  error "The Android utility header should only be included in Android builds!"
 #endif
 
 struct android_app;
+using AndroidApplication = android_app;
+
 struct _JavaVM;
-typedef _JavaVM JavaVM;
+using JavaVM = _JavaVM;
+
 struct _JNIEnv;
-typedef _JNIEnv JNIEnv;
+using JNIEnv = _JNIEnv;
 
 class XII_FOUNDATION_DLL xiiAndroidUtils
 {
 public:
-  static void         SetAndroidApp(android_app* app);
-  static android_app* GetAndroidApp();
+  static void                SetAndroidAppplication(AndroidApplication* pAndroidApp);
+  static AndroidApplication* GetAndroidApplication();
 
-  static void    SetAndroidJavaVM(JavaVM* vm);
+  static void    SetAndroidJavaVM(JavaVM* pJavaVM);
   static JavaVM* GetAndroidJavaVM();
 
 private:
-  static android_app* s_app;
-  static JavaVM*      s_vm;
+  static AndroidApplication* s_pAndroidApplication;
+  static JavaVM*             s_pJavaVM;
 };

@@ -42,7 +42,7 @@ namespace xiiMinX11
   template <>
   struct ToNativeImpl<XID>
   {
-    typedef ::XID                  type;
+    using type = ::XID;
     static XII_ALWAYS_INLINE ::XID ToNative(XID xID) { return reinterpret_cast<::XID>(xID); }
   };
 

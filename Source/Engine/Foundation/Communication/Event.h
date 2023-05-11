@@ -7,7 +7,7 @@
 #include <Foundation/Types/Delegate.h>
 
 /// \brief Identifies an event subscription. Zero is always an invalid subscription ID.
-typedef xiiUInt32 xiiEventSubscriptionID;
+using xiiEventSubscriptionID = xiiUInt32;
 
 /// \brief Specifies the type of xiiEvent implementation to use
 enum class xiiEventType

@@ -91,7 +91,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::MoveConstruct(T* pDestination, T* pSource
 template <typename Destination, typename Source>
 XII_ALWAYS_INLINE void xiiMemoryUtils::CopyOrMoveConstruct(Destination* pDestination, Source&& source)
 {
-  typedef typename std::is_rvalue_reference<decltype(source)>::type IsRValueRef;
+  using IsRValueRef = typename std::is_rvalue_reference<decltype(source)>::type;
   CopyOrMoveConstruct<Destination, Source>(pDestination, std::forward<Source>(source), IsRValueRef());
 }
 

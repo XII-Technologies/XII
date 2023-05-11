@@ -19,9 +19,9 @@ class xiiStreamReader;
 /// of memory, which might be of concern when it is used as a member variable, in such cases you might want to use an
 /// xiiHybridString with a very small internal array (1 would basically make it into a completely dynamic string).
 /// On the other hand, creating xiiHybridString instances on the stack and working locally with them, is quite fast.
-/// Prefer to use the typedef'd string types \a xiiString, \a xiiDynamicString, \a xiiString32 etc.
+/// Prefer to use the aliased string types \a xiiString, \a xiiDynamicString, \a xiiString32 etc.
 /// Most strings in an application are rather short, typically shorter than 20 characters.
-/// Use \a xiiString, which is a typedef'd xiiHybridString to use a cache size that is sufficient for more than 90%
+/// Use \a xiiString, which is an aliased xiiHybridString to use a cache size that is sufficient for more than 90%
 /// of all use cases.
 template <xiiUInt16 Size>
 struct xiiHybridStringBase : public xiiStringBase<xiiHybridStringBase<Size>>

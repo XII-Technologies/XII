@@ -55,7 +55,7 @@ struct xiiVariantType
     Transform,   ///< The variant stores an xiiTransform. A heap allocation is required to store this data type.
     String,      ///< The variant stores a string. A heap allocation is required to store this data type.
     StringView,  ///< The variant stores an xiiStringView.
-    DataBuffer,  ///< The variant stores an xiiDataBuffer, a typedef to DynamicArray<xiiUInt8>. A heap allocation is required to store this data type.
+    DataBuffer,  ///< The variant stores an xiiDataBuffer, an alias to DynamicArray<xiiUInt8>. A heap allocation is required to store this data type.
     Time,        ///< The variant stores an xiiTime value.
     Uuid,        ///< The variant stores an xiiUuid value.
     Angle,       ///< The variant stores an xiiAngle value.

@@ -3,7 +3,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 #include <Foundation/Configuration/Plugin.h>
 
-typedef void* xiiPluginModule;
+using xiiPluginModule = void*;
 
 void xiiPlugin::GetPluginPaths(const char* szPluginName, xiiStringBuilder& sOriginalFile, xiiStringBuilder& sCopiedFile, xiiUInt8 uiFileCopyNumber)
 {
