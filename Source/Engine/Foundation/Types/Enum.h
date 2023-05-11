@@ -28,7 +28,7 @@
 ///     Default = Value1 // Default initialization value (required)
 ///   };
 /// };
-/// 
+///
 /// using xiiExampleEnum = xiiEnum<xiiExampleEnumBase>;
 ///
 /// This defines an "xiiExampleEnum" which is stored in an xiiUInt8 and is default initialized with Value1

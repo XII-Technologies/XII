@@ -136,7 +136,7 @@ public:
     xiiTime m_SmoothedTimeStep;
   };
 
-  using Event = xiiEvent<const EventData&, xiiMutex> ;
+  using Event = xiiEvent<const EventData&, xiiMutex>;
 
   /// \brief Allows to register a function as an event receiver. All receivers will be notified in the order that they registered.
   static void AddEventHandler(Event::Handler handler) { s_TimeEvents.AddEventHandler(handler); }

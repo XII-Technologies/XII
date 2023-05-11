@@ -11,7 +11,7 @@ class xiiStreamReader;
 
 struct XII_FOUNDATION_DLL xiiCurveTangentMode
 {
-  using StorageType = xiiUInt8 ;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {

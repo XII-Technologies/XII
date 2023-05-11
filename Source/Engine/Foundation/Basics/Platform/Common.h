@@ -55,7 +55,7 @@
 
 /// \brief Disallow the copy constructor and the assignment operator for this type.
 #define XII_DISALLOW_COPY_AND_ASSIGN(type) \
-  type(const type&)           = delete;    \
+  type(const type&) = delete;              \
   void operator=(const type&) = delete
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)

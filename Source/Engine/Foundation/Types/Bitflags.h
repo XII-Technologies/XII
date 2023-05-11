@@ -80,7 +80,7 @@ template <typename T>
 struct xiiBitflags
 {
 private:
-  using Enum = typename T::Enum ;
+  using Enum        = typename T::Enum;
   using Bits        = typename T::Bits;
   using StorageType = typename T::StorageType;
 
@@ -264,8 +264,8 @@ private:
 #define XII_DECLARE_FLAGS_WITH_DEFAULT(InternalStorageType, BitflagsTypeName, DefaultValue, ...) \
   struct BitflagsTypeName                                                                        \
   {                                                                                              \
-    static const xiiUInt32      Count = XII_VA_NUM_ARGS(__VA_ARGS__);                            \
-    using StorageType = InternalStorageType ;                                                     \
+    static const xiiUInt32 Count = XII_VA_NUM_ARGS(__VA_ARGS__);                                 \
+    using StorageType            = InternalStorageType;                                          \
     enum Enum                                                                                    \
     {                                                                                            \
       XII_EXPAND_ARGS_WITH_INDEX(XII_DECLARE_FLAGS_ENUM, ##__VA_ARGS__) Default = DefaultValue   \

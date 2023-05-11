@@ -492,7 +492,7 @@ XII_FORCE_INLINE void xiiVariant::InitTypedObject(const T& value, xiiTraitInt<0>
 template <typename T>
 XII_FORCE_INLINE void xiiVariant::InitTypedObject(const T& value, xiiTraitInt<1>)
 {
-  using StorageType = typename TypeDeduction<T>::StorageType ;
+  using StorageType = typename TypeDeduction<T>::StorageType;
   XII_CHECK_AT_COMPILETIME_MSG((sizeof(StorageType) <= InlinedStruct::DataSize) && !TypeDeduction<T>::forceSharing, "Value can't be stored inplace.");
   XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value == Type::TypedObject, "value of this type cannot be stored in a Variant");
   XII_CHECK_AT_COMPILETIME_MSG(xiiIsPodType<T>::value, "in place data needs to be POD");
@@ -555,7 +555,7 @@ T xiiVariant::Cast() const
   const xiiTypedPointer& ptr = *reinterpret_cast<const xiiTypedPointer*>(&m_Data);
 
   const xiiRTTI*                                                  pType = GetReflectedType();
-  using NonRefPtrT = typename xiiTypeTraits<T>::NonConstReferencePointerType;
+  using NonRefPtrT                                                      = typename xiiTypeTraits<T>::NonConstReferencePointerType;
   if constexpr (!std::is_same<T, void*>::value && !std::is_same<T, const void*>::value)
   {
     XII_ASSERT_DEV(pType == nullptr || IsDerivedFrom(pType, xiiGetStaticRTTI<NonRefPtrT>()), "Object of type '{0}' does not derive from '{}'", GetTypeName(pType), GetTypeName(xiiGetStaticRTTI<NonRefPtrT>()));
@@ -576,7 +576,7 @@ template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::clas
 const T& xiiVariant::Cast() const
 {
   const xiiRTTI*                                           pType = GetReflectedType();
-  using NonRefT = typename xiiTypeTraits<T>::NonConstReferenceType;
+  using NonRefT                                                  = typename xiiTypeTraits<T>::NonConstReferenceType;
   XII_ASSERT_DEV(IsDerivedFrom(pType, xiiGetStaticRTTI<NonRefT>()), "Object of type '{0}' does not derive from '{}'", GetTypeName(pType), GetTypeName(xiiGetStaticRTTI<NonRefT>()));
 
   return m_bIsShared ? *static_cast<const T*>(m_Data.shared->m_Ptr) : *reinterpret_cast<const T*>(&m_Data);
