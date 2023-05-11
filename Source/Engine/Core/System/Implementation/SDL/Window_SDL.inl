@@ -1,4 +1,6 @@
 
+#include "Foundation/Basics/Compiler/Clang/Clang.h"
+#include "Foundation/Types/Types.h"
 #include <Core/System/Window.h>
 #include <Foundation/Configuration/Startup.h>
 
@@ -51,14 +53,11 @@ namespace
 {
   xiiResult xiiSDLError(xiiInt32 iReturnCode, const char* file, xiiUInt64 uiLine)
   {
-    if (iReturnCode < 0)
-    {
-      const char* lastError = SDL_GetError();
-      xiiLog::Error("SDL error {} ({}): {} - {}", file, uiLine, iReturnCode, lastError);
-      return XII_FAILURE;
-    }
+    if (iReturnCode >= 0)
+      return XII_SUCCESS;
 
-    return XII_SUCCESS;
+    xiiLog::Error("SDL error {} ({}): {} - {}", file, uiLine, iReturnCode, SDL_GetError());
+    return XII_FAILURE;
   }
 } // namespace
 
@@ -78,8 +77,8 @@ xiiResult xiiWindow::Initialize()
 
   XII_ASSERT_RELEASE(m_CreationDescription.m_Resolution.HasNonZeroArea(), "The client area size can't be zero sized!");
 
-  // Initialize the video subsystem if not initialized
-  if (SDL_WasInit(SDL_INIT_VIDEO) != 1)
+  // Initialize the video subsystem if not initialized.
+  if (!SDL_WasInit(SDL_INIT_VIDEO))
   {
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0)
     {
@@ -88,8 +87,8 @@ xiiResult xiiWindow::Initialize()
     }
   }
 
-  // Initialize the event subsystem if not initialized
-  if (SDL_WasInit(SDL_INIT_EVENTS) != 1)
+  // Initialize the event subsystem if not initialized.
+  if (!SDL_WasInit(SDL_INIT_EVENTS))
   {
     if (SDL_InitSubSystem(SDL_INIT_EVENTS) != 0)
     {
@@ -104,39 +103,26 @@ xiiResult xiiWindow::Initialize()
   switch (m_CreationDescription.m_WindowMode)
   {
     case xiiWindowMode::WindowFixedResolution:
-    {
       windowFlags |= SDL_WINDOW_SHOWN;
-    }
-    break;
+      break;
 
     case xiiWindowMode::WindowResizable:
-    {
       windowFlags |= SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN;
-    }
-    break;
+      break;
 
     case xiiWindowMode::FullscreenBorderlessNativeResolution:
-    {
       windowFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_BORDERLESS | SDL_WINDOW_SHOWN;
-    }
-    break;
+      break;
 
     case xiiWindowMode::FullscreenFixedResolution:
-    {
       windowFlags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_SHOWN;
-    }
-    break;
+      break;
   }
 
   // If the Primary Monitor is selected, the display index will be -1 in which we will use 0 by default.
-  xiiInt8 iDisplayMonitor = 0;
+  xiiInt8 iDisplayMonitor = m_CreationDescription.m_iMonitor > 0 ? m_CreationDescription.m_iMonitor : 0;
   {
-    if (m_CreationDescription.m_iMonitor > 0)
-    {
-      iDisplayMonitor = m_CreationDescription.m_iMonitor;
-    }
-
-    // Verify Monitor
+    // Verify that the selected monitor can be used.
     xiiInt32 iDisplayMonitorsCount = SDL_GetNumVideoDisplays();
     XII_SDL_RETURN_FAILURE_ON_ERROR(iDisplayMonitorsCount);
 
@@ -147,7 +133,7 @@ xiiResult xiiWindow::Initialize()
     }
   }
 
-  // Setup fullscreen mode at fixed resolution
+  // Setup fullscreen mode at fixed resolution.
   if (m_CreationDescription.m_WindowMode == xiiWindowMode::FullscreenFixedResolution)
   {
     xiiLog::Dev("Changing display resolution for Fixed Resolution to {0}*{1}", m_CreationDescription.m_Resolution.width, m_CreationDescription.m_Resolution.height);
@@ -156,20 +142,20 @@ xiiResult xiiWindow::Initialize()
     xiiInt32 iNumDisplayModes = SDL_GetNumDisplayModes(iDisplayMonitor);
 
     // The maximum resolution is situated at the first display index.
-    xiiInt32 iMaxWidth                = m_CreationDescription.m_Resolution.width;
-    xiiInt32 iMaxHeight               = m_CreationDescription.m_Resolution.height;
-    bool     bSuitableResolutionFound = false;
+    xiiUInt32 uiMaxWidth               = m_CreationDescription.m_Resolution.width;
+    xiiUInt32 uiMaxHeight              = m_CreationDescription.m_Resolution.height;
+    bool      bSuitableResolutionFound = false;
 
     {
       SDL_DisplayMode displayMode = {SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0};
       XII_SDL_RETURN_FAILURE_ON_ERROR(SDL_GetDisplayMode(iDisplayMonitor, 0, &displayMode));
       {
-        iMaxWidth  = displayMode.w;
-        iMaxHeight = displayMode.h;
+        uiMaxWidth  = displayMode.w;
+        uiMaxHeight = displayMode.h;
       }
     }
 
-    // Check other resolutions and get the nearest resolution that is greater than the specified resolution
+    // Check other resolutions and get the nearest resolution that is greater than the specified resolution.
     // If a suitable resolution is found that matches the specified resolution, use that instead.
     for (xiiInt32 iResIndex = 1; iResIndex < iNumDisplayModes; ++iResIndex)
     {
@@ -178,8 +164,8 @@ xiiResult xiiWindow::Initialize()
       {
         if (displayMode.w >= static_cast<xiiInt32>(m_CreationDescription.m_Resolution.width) && displayMode.h >= static_cast<xiiInt32>(m_CreationDescription.m_Resolution.height))
         {
-          iMaxWidth  = displayMode.w;
-          iMaxHeight = displayMode.h;
+          uiMaxWidth  = displayMode.w;
+          uiMaxHeight = displayMode.h;
 
           if (static_cast<xiiInt32>(m_CreationDescription.m_Resolution.width) == displayMode.w && static_cast<xiiInt32>(m_CreationDescription.m_Resolution.height) == displayMode.h)
           {
@@ -192,9 +178,9 @@ xiiResult xiiWindow::Initialize()
 
     if (!bSuitableResolutionFound)
     {
-      xiiLog::Dev("Suitable display resolution not found with resolution {0}*{1}, using next higher display resolution {2}*{3}", m_CreationDescription.m_Resolution.width, m_CreationDescription.m_Resolution.height, iMaxWidth, iMaxHeight);
-      m_CreationDescription.m_Resolution.width  = iMaxWidth;
-      m_CreationDescription.m_Resolution.height = iMaxHeight;
+      xiiLog::Dev("Suitable display resolution not found with resolution {0}*{1}, using next higher display resolution {2}*{3}", m_CreationDescription.m_Resolution.width, m_CreationDescription.m_Resolution.height, uiMaxWidth, uiMaxHeight);
+      m_CreationDescription.m_Resolution.width  = uiMaxWidth;
+      m_CreationDescription.m_Resolution.height = uiMaxHeight;
     }
   }
 
@@ -239,7 +225,7 @@ xiiResult xiiWindow::Initialize()
   }
 
 #if XII_ENABLED(XII_PLATFORM_LINUX)
-  XII_ASSERT_DEV(m_hWindowHandle.type == xiiWindowHandle::Type::SDL, "Not a SDL handle");
+  XII_ASSERT_DEV(m_hWindowHandle.type == xiiWindowHandle::Type::SDL, "Not a SDL window handle");
   m_pInputDevice = XII_DEFAULT_NEW(xiiStandardInputDevice, m_CreationDescription.m_uiWindowNumber, m_hWindowHandle.sdlWindow);
 #else
   m_pInputDevice = XII_DEFAULT_NEW(xiiStandardInputDevice, m_CreationDescription.m_uiWindowNumber, m_hWindowHandle);
@@ -256,24 +242,24 @@ xiiResult xiiWindow::Initialize()
 
 xiiResult xiiWindow::Destroy()
 {
-  if (m_bInitialized)
-  {
-    XII_LOG_BLOCK("xiiWindow::Destroy");
+  if (!m_bInitialized)
+    return XII_SUCCESS;
 
-    m_pInputDevice.Clear();
-    m_pInputDevice = nullptr;
+  XII_LOG_BLOCK("xiiWindow::Destroy");
+
+  m_pInputDevice.Clear();
+  m_pInputDevice = nullptr;
 
 #if XII_ENABLED(XII_PLATFORM_LINUX)
-    XII_ASSERT_DEV(m_hWindowHandle.type == xiiWindowHandle::Type::SDL, "SDL Handle Expected");
-    SDL_DestroyWindow(m_hWindowHandle.sdlWindow);
-    m_hWindowHandle = INVALID_WINDOW_HANDLE_VALUE;
+  XII_ASSERT_DEV(m_hWindowHandle.type == xiiWindowHandle::Type::SDL, "SDL window handle Expected");
+  SDL_DestroyWindow(m_hWindowHandle.sdlWindow);
+  m_hWindowHandle = INVALID_WINDOW_HANDLE_VALUE;
 #else
-    SDL_DestroyWindow(m_hWindowHandle);
-    m_hWindowHandle = nullptr;
+  SDL_DestroyWindow(m_hWindowHandle);
+  m_hWindowHandle = nullptr;
 #endif
 
-    m_bInitialized = false;
-  }
+  m_bInitialized = false;
 
   return XII_SUCCESS;
 }
@@ -284,7 +270,7 @@ xiiResult xiiWindow::Resize(const xiiSizeU32& newWindowSize)
     return XII_FAILURE;
 
 #if XII_ENABLED(XII_PLATFORM_LINUX)
-  XII_ASSERT_DEV(m_hWindowHandle.type == xiiWindowHandle::Type::SDL, "SDL Handle Expected");
+  XII_ASSERT_DEV(m_hWindowHandle.type == xiiWindowHandle::Type::SDL, "SDL window handle expected");
   SDL_SetWindowSize(m_hWindowHandle.sdlWindow, newWindowSize.width, newWindowSize.height);
 #else
   SDL_SetWindowSize(m_hWindowHandle, newWindowSize.width, newWindowSize.height);
@@ -364,32 +350,30 @@ xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   xiiInt32 iReturnCode = SDL_GetWindowWMInfo(m_hWindowHandle, &wmInfo);
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-  xiiInt32 iReturnCode = SDL_GetWindowWMInfo(m_hWindowHandle.sdlWindow, &wmInfo);
+  xiiInt32        iReturnCode = SDL_GetWindowWMInfo(m_hWindowHandle.sdlWindow, &wmInfo);
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
   xiiInt32 iReturnCode = SDL_GetWindowWMInfo(m_hWindowHandle, &wmInfo);
 #else
 #  error Platform implementation not available
 #endif
 
-  if (iReturnCode == SDL_TRUE)
+  if (iReturnCode != SDL_TRUE)
   {
+    xiiSDLError(iReturnCode, XII_SOURCE_FILE, XII_SOURCE_LINE).IgnoreResult();
+    return INVALID_WINDOW_HANDLE_VALUE;
+  }
+
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-    return xiiMinWindows::FromNative<HWND>(wmInfo.info.win.window);
+  return xiiMinWindows::FromNative<HWND>(wmInfo.info.win.window);
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-    xiiWindowHandle hWindowHandle;
-    hWindowHandle.type                    = xiiWindowHandle::Type::XCB;
-    hWindowHandle.xcbWindow.m_hWindow     = wmInfo.info.x11.window;
-    hWindowHandle.xcbWindow.m_pConnection = xiiMinX11::FromNative<xcb_connection_t*>(XGetXCBConnection(wmInfo.info.x11.display));
-    return hWindowHandle;
+  xiiWindowHandle hWindowHandle;
+  hWindowHandle.type                    = xiiWindowHandle::Type::XCB;
+  hWindowHandle.xcbWindow.m_hWindow     = wmInfo.info.x11.window;
+  hWindowHandle.xcbWindow.m_pConnection = xiiMinX11::FromNative<xcb_connection_t*>(XGetXCBConnection(wmInfo.info.x11.display));
+  return hWindowHandle;
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
-    return wmInfo.info.android.window;
+  return wmInfo.info.android.window;
 #else
 #  error Platform implementation not available
 #endif
-  }
-  else
-  {
-    xiiSDLError(iReturnCode, __FILE__, __LINE__).IgnoreResult();
-    return INVALID_WINDOW_HANDLE_VALUE;
-  }
 }

@@ -7,14 +7,11 @@ namespace
 {
   xiiResult xiiSDLError(xiiInt32 iReturnCode, const char* file, xiiUInt64 uiLine)
   {
-    if (iReturnCode < 0)
-    {
-      const char* lastError = SDL_GetError();
-      xiiLog::Error("SDL error {} ({}): {} - {}", file, uiLine, iReturnCode, lastError);
-      return XII_FAILURE;
-    }
+    if (iReturnCode >= 0)
+      return XII_SUCCESS;
 
-    return XII_SUCCESS;
+    xiiLog::Error("SDL error {} ({}): {} - {}", file, uiLine, iReturnCode, SDL_GetError());
+    return XII_FAILURE;
   }
 } // namespace
 
@@ -45,8 +42,7 @@ xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Scre
     xiiInt32        diplayResult = SDL_GetDisplayMode(i, 0, &displayMode);
     XII_SDL_RETURN_FAILURE_ON_ERROR(diplayResult);
 
-    // In Windows screen coordinates are from top/left to bottom/right
-    // SDL also uses the same structure
+    // SDL reports screen coordinates from top/left to bottom/right.
     // ie. 0,0 is left/top , resx/resy is right/bottom
     screen.m_iOffsetX     = 0;
     screen.m_iOffsetY     = 0;
@@ -54,6 +50,9 @@ xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Scre
     screen.m_iResolutionY = displayMode.h;
     screen.m_bIsPrimary   = i == 0; // Primary Monitor at index 0
   }
+
+  if (out_Screens.IsEmpty())
+    return XII_FAILURE;
 
   return XII_SUCCESS;
 }

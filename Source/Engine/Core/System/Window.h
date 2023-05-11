@@ -204,7 +204,7 @@ struct XII_CORE_DLL xiiWindowCreationDesc
   xiiVec2I32 m_Position = xiiVec2I32(0x80000000, 0x80000000); // Magic number on windows that positions the window at a 'good default position'
 
   /// The pixel resolution of the window.
-  xiiSizeU32 m_Resolution = xiiSizeU32(1280, 720);
+  xiiSizeU32 m_Resolution = xiiSizeU32(1280u, 720u);
 
   /// The number of the window. This is mostly used for setting up the input system, which then reports
   /// different mouse positions for each window.
