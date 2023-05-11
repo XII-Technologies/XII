@@ -423,14 +423,14 @@ void xiiShaderExplorerApp::UpdateSwapChain()
   }
 
   // Do not destroy the texture if the swapchain is minimized
-  if (!m_hSwapChain.IsInvalidated() && !m_hDepthStencilTexture.IsInvalidated() && g_uiWindowWidth != 0 && g_uiWindowHeight != 0)
+  if (!m_hSwapChain.IsInvalidated() && !m_hDepthStencilTexture.IsInvalidated() && m_pWindow->GetClientAreaSize().HasNonZeroArea())
   {
     m_pDevice->DestroyTexture(m_hDepthStencilTexture);
     m_hDepthStencilTexture.Invalidate();
   }
 
   // Create depth texture
-  if (g_uiWindowWidth != 0 && g_uiWindowHeight != 0)
+  if (m_pWindow->GetClientAreaSize().HasNonZeroArea())
   {
     xiiGALTextureCreationDescription texDesc;
     texDesc.m_uiWidth             = g_uiWindowWidth;
