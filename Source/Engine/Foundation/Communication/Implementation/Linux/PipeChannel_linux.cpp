@@ -15,7 +15,7 @@
 xiiPipeChannel_linux::xiiPipeChannel_linux(const char* szAddress, Mode::Enum Mode) :
   xiiIpcChannel(szAddress, Mode)
 {
-  xiiStringBuilder pipePath = xiiOSFile::GetTempDataFolder("xii-pipes");
+  xiiStringBuilder pipePath = xiiOSFile::GetTempDataFolder("XII-Pipes");
 
   // Make sure the directory exists that we want to place the pipes in.
   xiiOSFile::CreateDirectoryStructure(pipePath).IgnoreResult();

@@ -18,7 +18,7 @@ public:
   xiiUInt32 m_uiShadowDataOffset;
 };
 
-/// \brief Base class for all xii light components containing shared properties
+/// \brief Base class for all XII light components containing shared properties
 class XII_RENDERERCORE_DLL xiiLightComponent : public xiiRenderComponent
 {
   XII_DECLARE_ABSTRACT_COMPONENT_TYPE(xiiLightComponent, xiiRenderComponent);

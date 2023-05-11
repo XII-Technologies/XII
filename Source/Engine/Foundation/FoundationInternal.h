@@ -6,4 +6,4 @@
 #  define XII_FOUNDATION_INTERNAL_HEADER_ALLOWED 0
 #endif
 
-#define XII_FOUNDATION_INTERNAL_HEADER static_assert(XII_FOUNDATION_INTERNAL_HEADER_ALLOWED, "This is an internal xii header. Please do not #include it directly.");
+#define XII_FOUNDATION_INTERNAL_HEADER static_assert(XII_FOUNDATION_INTERNAL_HEADER_ALLOWED, "This is an internal XII header. Please do not #include it directly.");

@@ -162,7 +162,7 @@ void xiiRecastNavMeshBuilder::GenerateTriangleMeshFromDescription(const xiiWorld
       continue;
     }
 
-    // convert from xii convention (Z up) to recast convention (Y up)
+    // convert from XII convention (Z up) to recast convention (Y up)
     xiiMat3 m;
     m.SetRow(0, xiiVec3(1, 0, 0));
     m.SetRow(1, xiiVec3(0, 0, 1));
