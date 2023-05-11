@@ -1144,7 +1144,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
     xiiInt32 m_iIndex = 0;
   };
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SortLargeArray (xii-sort)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SortLargeArray (XII-Sort)")
   {
     xiiDynamicArray<Item> list;
     list.Reserve(uiNumSortItems);
@@ -1161,7 +1161,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
 
     xiiTime          t = sw.GetRunningTotal();
     xiiStringBuilder s;
-    s.Format("xii-sort (random keys): {}", t);
+    s.Format("XII-Sort (random keys): {}", t);
     xiiTestFramework::Output(xiiTestOutput::Details, s);
 
     for (xiiUInt32 i = 1; i < list.GetCount(); i++)
@@ -1196,7 +1196,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
     }
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SortLargeArray (equal keys) (xii-sort)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SortLargeArray (equal keys) (XII-Sort)")
   {
     xiiDynamicArray<Item> list;
     list.Reserve(uiNumSortItems);
@@ -1213,7 +1213,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
 
     xiiTime          t = sw.GetRunningTotal();
     xiiStringBuilder s;
-    s.Format("xii-sort (equal keys): {}", t);
+    s.Format("XII-Sort (equal keys): {}", t);
     xiiTestFramework::Output(xiiTestOutput::Details, s);
 
     for (xiiUInt32 i = 1; i < list.GetCount(); i++)
