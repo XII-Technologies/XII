@@ -173,7 +173,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
   xiiRTTI GetRTTI(Type*)                                                                            \
   {                                                                                                 \
     using OwnType     = Type;                                                                       \
-    using OwnBaseType = BaseType                 ;                                     \
+    using OwnBaseType = BaseType;                                                                   \
     static AllocatorType                           Allocator;                                       \
     static xiiBitflags<xiiTypeFlags>               flags = xiiInternal::DetermineTypeFlags<Type>(); \
     static xiiArrayPtr<xiiAbstractProperty*>       Properties;                                      \
