@@ -16,7 +16,7 @@ void xiiStackTracer::OnPluginEvent(const xiiPluginEvent& e)
 // static
 xiiUInt32 xiiStackTracer::GetStackTrace(xiiArrayPtr<void*>& trace, void* pContext)
 {
-  int iSymbols = backtrace(trace.GetPtr(), trace.GetCount());
+  xiiInt32 iSymbols = backtrace(trace.GetPtr(), trace.GetCount());
 
   return iSymbols;
 }
@@ -32,7 +32,7 @@ void xiiStackTracer::ResolveStackTrace(const xiiArrayPtr<void*>& trace, PrintFun
   {
     for (xiiUInt32 i = 0; i < trace.GetCount(); i++)
     {
-      int iLen = xiiMath::Min(strlen(ppSymbols[i]), (size_t)XII_ARRAY_SIZE(szBuffer) - 2);
+      xiiInt32 iLen = xiiMath::Min(strlen(ppSymbols[i]), (size_t)XII_ARRAY_SIZE(szBuffer) - 2);
       memcpy(szBuffer, ppSymbols[i], iLen);
       szBuffer[iLen]     = '\n';
       szBuffer[iLen + 1] = '\0';
