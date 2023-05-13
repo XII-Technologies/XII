@@ -7,7 +7,7 @@
 
 struct duk_hthread;
 
-using duk_context = duk_hthread;
+using duk_context    = duk_hthread;
 using duk_c_function = xiiInt32 (*)(duk_context* ctx);
 
 class XII_CORE_DLL xiiDuktapeContext : public xiiDuktapeHelper
