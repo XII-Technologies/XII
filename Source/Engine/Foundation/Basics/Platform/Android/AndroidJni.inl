@@ -2,59 +2,59 @@ struct xiiJniModifiers
 {
   enum Enum
   {
-    PUBLIC = 1,
-    PRIVATE = 2,
-    PROTECTED = 4,
-    STATIC = 8,
-    FINAL = 16,
+    PUBLIC       = 1,
+    PRIVATE      = 2,
+    PROTECTED    = 4,
+    STATIC       = 8,
+    FINAL        = 16,
     SYNCHRONIZED = 32,
-    VOLATILE = 64,
-    TRANSIENT = 128,
-    NATIVE = 256,
-    INTERFACE = 512,
-    ABSTRACT = 1024,
-    STRICT = 2048,
+    VOLATILE     = 64,
+    TRANSIENT    = 128,
+    NATIVE       = 256,
+    INTERFACE    = 512,
+    ABSTRACT     = 1024,
+    STRICT       = 2048,
   };
 };
 
-xiiJniObject::xiiJniObject(jobject object, xiiJniOwnerShip ownerShip)
-  : m_class(nullptr)
+xiiJniObject::xiiJniObject(jobject object, xiiJniOwnerShip ownerShip) :
+  m_class(nullptr)
 {
   switch (ownerShip)
   {
     case xiiJniOwnerShip::OWN:
       m_object = object;
-      m_own = true;
+      m_own    = true;
       break;
 
     case xiiJniOwnerShip::COPY:
       m_object = xiiJniAttachment::GetEnv()->NewLocalRef(object);
-      m_own = true;
+      m_own    = true;
       break;
 
     case xiiJniOwnerShip::BORROW:
       m_object = object;
-      m_own = false;
+      m_own    = false;
       break;
   }
 }
 
-xiiJniObject::xiiJniObject(const xiiJniObject& other)
-  : m_class(nullptr)
+xiiJniObject::xiiJniObject(const xiiJniObject& other) :
+  m_class(nullptr)
 {
   m_object = xiiJniAttachment::GetEnv()->NewLocalRef(other.m_object);
-  m_own = true;
+  m_own    = true;
 }
 
 xiiJniObject::xiiJniObject(xiiJniObject&& other)
 {
   m_object = other.m_object;
-  m_class = other.m_class;
-  m_own = other.m_own;
+  m_class  = other.m_class;
+  m_own    = other.m_own;
 
   other.m_object = nullptr;
-  other.m_class = nullptr;
-  other.m_own = false;
+  other.m_class  = nullptr;
+  other.m_own    = false;
 }
 
 xiiJniObject& xiiJniObject::operator=(const xiiJniObject& other)
@@ -64,7 +64,7 @@ xiiJniObject& xiiJniObject::operator=(const xiiJniObject& other)
 
   Reset();
   m_object = xiiJniAttachment::GetEnv()->NewLocalRef(other.m_object);
-  m_own = true;
+  m_own    = true;
   return *this;
 }
 
@@ -76,12 +76,12 @@ xiiJniObject& xiiJniObject::operator=(xiiJniObject&& other)
   Reset();
 
   m_object = other.m_object;
-  m_class = other.m_class;
-  m_own = other.m_own;
+  m_class  = other.m_class;
+  m_own    = other.m_own;
 
   other.m_object = nullptr;
-  other.m_class = nullptr;
-  other.m_own = false;
+  other.m_class  = nullptr;
+  other.m_own    = false;
 
   return *this;
 }
@@ -97,7 +97,7 @@ void xiiJniObject::Reset()
   {
     xiiJniAttachment::GetEnv()->DeleteLocalRef(m_object);
     m_object = nullptr;
-    m_own = false;
+    m_own    = false;
   }
   if (m_class)
   {
@@ -149,14 +149,14 @@ struct xiiJniTraits
 
   // Sets/gets a field of the type.
   static void SetField(jobject self, jfieldID field, T);
-  static T GetField(jobject self, jfieldID field);
+  static T    GetField(jobject self, jfieldID field);
 
   // Sets/gets a static field of the type.
   static void SetStaticField(jclass clazz, jfieldID field, T);
-  static T GetStaticField(jclass clazz, jfieldID field);
+  static T    GetStaticField(jclass clazz, jfieldID field);
 
   // Appends the JNI type signature of this type to the string buf
-  static bool AppendSignature(const T& obj, xiiStringBuilder& str);
+  static bool        AppendSignature(const T& obj, xiiStringBuilder& str);
   static const char* GetSignatureStatic();
 };
 
@@ -183,7 +183,7 @@ struct xiiJniTraits<bool>
   static inline void SetStaticField(jclass clazz, jfieldID field, bool arg);
   static inline bool GetStaticField(jclass clazz, jfieldID field);
 
-  static inline bool AppendSignature(bool, xiiStringBuilder& str);
+  static inline bool        AppendSignature(bool, xiiStringBuilder& str);
   static inline const char* GetSignatureStatic();
 };
 
@@ -204,13 +204,13 @@ struct xiiJniTraits<jbyte>
   template <typename... Args>
   static jbyte CallStaticMethod(jclass clazz, jmethodID method, const Args&... args);
 
-  static inline void SetField(jobject self, jfieldID field, jbyte arg);
+  static inline void  SetField(jobject self, jfieldID field, jbyte arg);
   static inline jbyte GetField(jobject self, jfieldID field);
 
-  static inline void SetStaticField(jclass clazz, jfieldID field, jbyte arg);
+  static inline void  SetStaticField(jclass clazz, jfieldID field, jbyte arg);
   static inline jbyte GetStaticField(jclass clazz, jfieldID field);
 
-  static inline bool AppendSignature(jbyte, xiiStringBuilder& str);
+  static inline bool        AppendSignature(jbyte, xiiStringBuilder& str);
   static inline const char* GetSignatureStatic();
 };
 
@@ -231,13 +231,13 @@ struct xiiJniTraits<jchar>
   template <typename... Args>
   static jchar CallStaticMethod(jclass clazz, jmethodID method, const Args&... args);
 
-  static inline void SetField(jobject self, jfieldID field, jchar arg);
+  static inline void  SetField(jobject self, jfieldID field, jchar arg);
   static inline jchar GetField(jobject self, jfieldID field);
 
-  static inline void SetStaticField(jclass clazz, jfieldID field, jchar arg);
+  static inline void  SetStaticField(jclass clazz, jfieldID field, jchar arg);
   static inline jchar GetStaticField(jclass clazz, jfieldID field);
 
-  static inline bool AppendSignature(jchar, xiiStringBuilder& str);
+  static inline bool        AppendSignature(jchar, xiiStringBuilder& str);
   static inline const char* GetSignatureStatic();
 };
 
@@ -258,13 +258,13 @@ struct xiiJniTraits<jshort>
   template <typename... Args>
   static jshort CallStaticMethod(jclass clazz, jmethodID method, const Args&... args);
 
-  static inline void SetField(jobject self, jfieldID field, jshort arg);
+  static inline void   SetField(jobject self, jfieldID field, jshort arg);
   static inline jshort GetField(jobject self, jfieldID field);
 
-  static inline void SetStaticField(jclass clazz, jfieldID field, jshort arg);
+  static inline void   SetStaticField(jclass clazz, jfieldID field, jshort arg);
   static inline jshort GetStaticField(jclass clazz, jfieldID field);
 
-  static inline bool AppendSignature(jshort, xiiStringBuilder& str);
+  static inline bool        AppendSignature(jshort, xiiStringBuilder& str);
   static inline const char* GetSignatureStatic();
 };
 
@@ -291,7 +291,7 @@ struct xiiJniTraits<jint>
   static inline void SetStaticField(jclass clazz, jfieldID field, jint arg);
   static inline jint GetStaticField(jclass clazz, jfieldID field);
 
-  static inline bool AppendSignature(jint, xiiStringBuilder& str);
+  static inline bool        AppendSignature(jint, xiiStringBuilder& str);
   static inline const char* GetSignatureStatic();
 };
 
@@ -312,13 +312,13 @@ struct xiiJniTraits<jlong>
   template <typename... Args>
   static jlong CallStaticMethod(jclass clazz, jmethodID method, const Args&... args);
 
-  static inline void SetField(jobject self, jfieldID field, jlong arg);
+  static inline void  SetField(jobject self, jfieldID field, jlong arg);
   static inline jlong GetField(jobject self, jfieldID field);
 
-  static inline void SetStaticField(jclass clazz, jfieldID field, jlong arg);
+  static inline void  SetStaticField(jclass clazz, jfieldID field, jlong arg);
   static inline jlong GetStaticField(jclass clazz, jfieldID field);
 
-  static inline bool AppendSignature(jlong, xiiStringBuilder& str);
+  static inline bool        AppendSignature(jlong, xiiStringBuilder& str);
   static inline const char* GetSignatureStatic();
 };
 
@@ -339,13 +339,13 @@ struct xiiJniTraits<jfloat>
   template <typename... Args>
   static jfloat CallStaticMethod(jclass clazz, jmethodID method, const Args&... args);
 
-  static inline void SetField(jobject self, jfieldID field, jfloat arg);
+  static inline void   SetField(jobject self, jfieldID field, jfloat arg);
   static inline jfloat GetField(jobject self, jfieldID field);
 
-  static inline void SetStaticField(jclass clazz, jfieldID field, jfloat arg);
+  static inline void   SetStaticField(jclass clazz, jfieldID field, jfloat arg);
   static inline jfloat GetStaticField(jclass clazz, jfieldID field);
 
-  static inline bool AppendSignature(jfloat, xiiStringBuilder& str);
+  static inline bool        AppendSignature(jfloat, xiiStringBuilder& str);
   static inline const char* GetSignatureStatic();
 };
 
@@ -366,13 +366,13 @@ struct xiiJniTraits<jdouble>
   template <typename... Args>
   static jdouble CallStaticMethod(jclass clazz, jmethodID method, const Args&... args);
 
-  static inline void SetField(jobject self, jfieldID field, jdouble arg);
+  static inline void    SetField(jobject self, jfieldID field, jdouble arg);
   static inline jdouble GetField(jobject self, jfieldID field);
 
-  static inline void SetStaticField(jclass clazz, jfieldID field, jdouble arg);
+  static inline void    SetStaticField(jclass clazz, jfieldID field, jdouble arg);
   static inline jdouble GetStaticField(jclass clazz, jfieldID field);
 
-  static inline bool AppendSignature(jdouble, xiiStringBuilder& str);
+  static inline bool        AppendSignature(jdouble, xiiStringBuilder& str);
   static inline const char* GetSignatureStatic();
 };
 
@@ -393,13 +393,13 @@ struct xiiJniTraits<xiiJniObject>
   template <typename... Args>
   static xiiJniObject CallStaticMethod(jclass clazz, jmethodID method, const Args&... args);
 
-  static inline void SetField(jobject self, jfieldID field, const xiiJniObject& arg);
+  static inline void         SetField(jobject self, jfieldID field, const xiiJniObject& arg);
   static inline xiiJniObject GetField(jobject self, jfieldID field);
 
-  static inline void SetStaticField(jclass clazz, jfieldID field, const xiiJniObject& arg);
+  static inline void         SetStaticField(jclass clazz, jfieldID field, const xiiJniObject& arg);
   static inline xiiJniObject GetStaticField(jclass clazz, jfieldID field);
 
-  static inline bool AppendSignature(const xiiJniObject& obj, xiiStringBuilder& str);
+  static inline bool        AppendSignature(const xiiJniObject& obj, xiiStringBuilder& str);
   static inline const char* GetSignatureStatic();
 };
 
@@ -420,13 +420,13 @@ struct xiiJniTraits<xiiJniClass>
   template <typename... Args>
   static xiiJniClass CallStaticMethod(jclass clazz, jmethodID method, const Args&... args);
 
-  static inline void SetField(jobject self, jfieldID field, const xiiJniClass& arg);
+  static inline void        SetField(jobject self, jfieldID field, const xiiJniClass& arg);
   static inline xiiJniClass GetField(jobject self, jfieldID field);
 
-  static inline void SetStaticField(jclass clazz, jfieldID field, const xiiJniClass& arg);
+  static inline void        SetStaticField(jclass clazz, jfieldID field, const xiiJniClass& arg);
   static inline xiiJniClass GetStaticField(jclass clazz, jfieldID field);
 
-  static inline bool AppendSignature(const xiiJniClass& obj, xiiStringBuilder& str);
+  static inline bool        AppendSignature(const xiiJniClass& obj, xiiStringBuilder& str);
   static inline const char* GetSignatureStatic();
 };
 
@@ -447,13 +447,13 @@ struct xiiJniTraits<xiiJniString>
   template <typename... Args>
   static xiiJniString CallStaticMethod(jclass clazz, jmethodID method, const Args&... args);
 
-  static inline void SetField(jobject self, jfieldID field, const xiiJniString& arg);
+  static inline void         SetField(jobject self, jfieldID field, const xiiJniString& arg);
   static inline xiiJniString GetField(jobject self, jfieldID field);
 
-  static inline void SetStaticField(jclass clazz, jfieldID field, const xiiJniString& arg);
+  static inline void         SetStaticField(jclass clazz, jfieldID field, const xiiJniString& arg);
   static inline xiiJniString GetStaticField(jclass clazz, jfieldID field);
 
-  static inline bool AppendSignature(const xiiJniString& obj, xiiStringBuilder& str);
+  static inline bool        AppendSignature(const xiiJniString& obj, xiiStringBuilder& str);
   static inline const char* GetSignatureStatic();
 };
 
@@ -1534,7 +1534,7 @@ void xiiJniClass::SetStaticField(const char* name, const T& arg) const
   }
 
   xiiJniClass modifierClass("java/lang/reflect/Modifier");
-  jint modifiers = field.UnsafeCall<jint>("getModifiers", "()I");
+  jint        modifiers = field.UnsafeCall<jint>("getModifiers", "()I");
 
   if ((modifiers & xiiJniModifiers::STATIC) == 0)
   {
@@ -1704,7 +1704,7 @@ void xiiJniObject::SetField(const char* name, const T& arg) const
   }
 
   xiiJniClass modifierClass("java/lang/reflect/Modifier");
-  jint modifiers = field.UnsafeCall<jint>("getModifiers", "()I");
+  jint        modifiers = field.UnsafeCall<jint>("getModifiers", "()I");
 
   if ((modifiers & xiiJniModifiers::STATIC) != 0)
   {

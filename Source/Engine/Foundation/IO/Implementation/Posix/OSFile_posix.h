@@ -422,8 +422,8 @@ xiiString xiiOSFile::GetUserDataFolder(xiiStringView sSubFolder)
   if (s_sUserDataPath.IsEmpty())
   {
 #  if XII_ENABLED(XII_PLATFORM_ANDROID)
-    android_app* app = xiiAndroidUtils::GetAndroidApp();
-    s_sUserDataPath  = app->activity->internalDataPath;
+    android_app* pAndroidApp = xiiAndroidUtils::GetNativeAndroidApp();
+    s_sUserDataPath          = pAndroidApp->activity->internalDataPath;
 #  else
     s_sUserDataPath = getenv("HOME");
 

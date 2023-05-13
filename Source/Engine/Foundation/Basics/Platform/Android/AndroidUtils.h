@@ -5,7 +5,6 @@
 #endif
 
 struct android_app;
-using AndroidApplication = android_app;
 
 struct _JavaVM;
 using JavaVM = _JavaVM;
@@ -16,13 +15,13 @@ using JNIEnv = _JNIEnv;
 class XII_FOUNDATION_DLL xiiAndroidUtils
 {
 public:
-  static void                SetAndroidAppplication(AndroidApplication* pAndroidApp);
-  static AndroidApplication* GetAndroidApplication();
+  static void         SetNativeAndroidApp(android_app* pAndroidApp);
+  static android_app* GetNativeAndroidApp();
 
   static void    SetAndroidJavaVM(JavaVM* pJavaVM);
   static JavaVM* GetAndroidJavaVM();
 
 private:
-  static AndroidApplication* s_pAndroidApplication;
-  static JavaVM*             s_pJavaVM;
+  static android_app* s_pAndroidApplication;
+  static JavaVM*      s_pJavaVM;
 };
