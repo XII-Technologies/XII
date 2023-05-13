@@ -36,14 +36,14 @@ protected:
   };
 
   /// \brief Update function delegate.
-  typedef xiiDelegate<void(const UpdateContext&)> UpdateFunction;
+  using UpdateFunction = xiiDelegate<void(const UpdateContext&)>;
 
   /// \brief Description of an update function that can be registered at the world.
   struct UpdateFunctionDesc
   {
     struct Phase
     {
-      typedef xiiUInt8 StorageType;
+      using StorageType = xiiUInt8;
 
       enum Enum
       {
@@ -136,7 +136,7 @@ public:
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Core, WorldModuleFactory);
 
-  typedef xiiWorldModule* (*CreatorFunc)(xiiAllocatorBase*, xiiWorld*);
+  using CreatorFunc = xiiWorldModule* (*)(xiiAllocatorBase*, xiiWorld*);
 
   xiiWorldModuleFactory();
   xiiWorldModuleTypeId RegisterWorldModule(const xiiRTTI* pRtti, CreatorFunc creatorFunc);
@@ -162,11 +162,14 @@ private:
 };
 
 /// \brief Add this macro to the declaration of your module type.
-#define XII_DECLARE_WORLD_MODULE()                                            \
-public:                                                                       \
-  static XII_ALWAYS_INLINE xiiWorldModuleTypeId TypeId() { return s_TypeId; } \
-                                                                              \
-private:                                                                      \
+#define XII_DECLARE_WORLD_MODULE()                       \
+public:                                                  \
+  static XII_ALWAYS_INLINE xiiWorldModuleTypeId TypeId() \
+  {                                                      \
+    return s_TypeId;                                     \
+  }                                                      \
+                                                         \
+private:                                                 \
   static xiiWorldModuleTypeId s_TypeId;
 
 /// \brief Implements the given module type. Add this macro to a cpp outside of the type declaration.

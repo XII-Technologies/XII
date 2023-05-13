@@ -167,7 +167,7 @@ xiiComponentManagerSimple<ComponentType, UpdateType, StorageType>::xiiComponentM
 template <typename ComponentType, xiiComponentUpdateType::Enum UpdateType, xiiBlockStorageType::Enum StorageType>
 void xiiComponentManagerSimple<ComponentType, UpdateType, StorageType>::Initialize()
 {
-  typedef xiiComponentManagerSimple<ComponentType, UpdateType, StorageType> OwnType;
+  using OwnType = xiiComponentManagerSimple<ComponentType, UpdateType, StorageType>;
 
   xiiStringBuilder functionName;
   SimpleUpdateName(functionName);

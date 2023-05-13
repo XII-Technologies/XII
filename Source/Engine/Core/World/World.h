@@ -89,7 +89,7 @@ public:
   /// \brief Defines a visitor function that is called for every game-object when using the traverse method.
   /// The function takes a pointer to the game object as argument and returns a bool which indicates whether to continue (true) or abort
   /// (false) traversal.
-  typedef xiiInternal::WorldData::VisitorFunc VisitorFunc;
+  using VisitorFunc = xiiInternal::WorldData::VisitorFunc;
 
   enum TraversalMethod
   {
@@ -398,7 +398,7 @@ private:
 
   xiiInternal::WorldData m_Data;
 
-  typedef xiiInternal::WorldData::QueuedMsgMetaData QueuedMsgMetaData;
+  using QueuedMsgMetaData = xiiInternal::WorldData::QueuedMsgMetaData;
 
   xiiUInt32                                        m_uiIndex;
   static xiiStaticArray<xiiWorld*, XII_MAX_WORLDS> s_Worlds;

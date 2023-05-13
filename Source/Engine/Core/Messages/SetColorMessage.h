@@ -5,7 +5,7 @@
 
 struct xiiSetColorMode
 {
-  typedef xiiUInt32 StorageType;
+  using StorageType = xiiUInt32;
 
   enum Enum
   {

@@ -42,8 +42,8 @@ struct xiiResourceManagerEvent
 {
   enum class Type
   {
-    ManagerShuttingDown,      ///< Sent first thing by xiiResourceManager::OnEngineShutdown().
-    ReloadAllResources,       ///< Sent by xiiResourceManager::ReloadAllResources() if any resource got unloaded (not yet reloaded)
+    ManagerShuttingDown, ///< Sent first thing by xiiResourceManager::OnEngineShutdown().
+    ReloadAllResources,  ///< Sent by xiiResourceManager::ReloadAllResources() if any resource got unloaded (not yet reloaded)
   };
 
   Type m_Type;
@@ -52,14 +52,14 @@ struct xiiResourceManagerEvent
 /// \brief The flags of an xiiResource instance.
 struct xiiResourceFlags
 {
-  typedef xiiUInt16 StorageType;
+  using StorageType = xiiUInt16;
 
   /// \brief The flags of an xiiResource instance.
   enum Enum
   {
     UpdateOnMainThread      = XII_BIT(0),  ///< After loading the resource data on a thread, it must be uploaded on the main thread. Use this for resources which require a context that is only available on the main thread.
     NoFileAccessRequired    = XII_BIT(1),  ///< The resource 'loading' does not require file accesses and can therefore be done on one or several non-file-loading threads. Use this for procedurally generated data.
-    /// \todo implement NoFileAccessRequired
+    /// \todo Implement NoFileAccessRequired
     ResourceHasFallback     = XII_BIT(2),  ///< Specifies whether this resource has a valid fallback resource that could be used. Automatically updated in xiiResource::SetFallbackResource.
     ResourceHasTypeFallback = XII_BIT(3),  ///< Specifies whether this resource has a valid type fallback that could be used.
     IsReloadable            = XII_BIT(4),  ///< The resource was created, not loaded from file

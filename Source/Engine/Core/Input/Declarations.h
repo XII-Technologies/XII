@@ -31,7 +31,7 @@ struct XII_CORE_DLL xiiKeyState
 /// You an additionally also use the prefix of the input slot name, to filter out all touch input slots etc. if necessary.
 struct xiiInputSlotFlags
 {
-  typedef xiiUInt16 StorageType;
+  using StorageType = xiiUInt16;
 
   enum Enum
   {

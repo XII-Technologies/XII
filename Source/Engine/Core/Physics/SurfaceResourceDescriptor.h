@@ -12,10 +12,9 @@
 using xiiSurfaceResourceHandle = xiiTypedResourceHandle<class xiiSurfaceResource>;
 using xiiPrefabResourceHandle  = xiiTypedResourceHandle<class xiiPrefabResource>;
 
-
 struct xiiSurfaceInteractionAlignment
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {

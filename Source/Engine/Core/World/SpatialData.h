@@ -7,7 +7,7 @@ struct xiiSpatialData
 {
   struct Flags
   {
-    typedef xiiUInt8 StorageType;
+    using StorageType = xiiUInt8;
 
     enum Enum
     {

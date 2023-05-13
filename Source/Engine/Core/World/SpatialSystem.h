@@ -31,7 +31,7 @@ public:
   /// \name Simple Queries
   ///@{
 
-  typedef xiiDelegate<xiiVisitorExecution::Enum(xiiGameObject*)> QueryCallback;
+  using QueryCallback = xiiDelegate<xiiVisitorExecution::Enum(xiiGameObject*)>;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   struct QueryStats

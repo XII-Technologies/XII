@@ -36,10 +36,10 @@ namespace xiiInternal
       TRANSFORMATION_DATA_PER_BLOCK = xiiDataBlock<xiiGameObject::TransformationData, xiiInternal::DEFAULT_BLOCK_SIZE>::CAPACITY
     };
 
-    // object storage
-    typedef xiiBlockStorage<xiiGameObject, xiiInternal::DEFAULT_BLOCK_SIZE, xiiBlockStorageType::Compact> ObjectStorage;
-    xiiIdTable<xiiGameObjectId, xiiGameObject*, xiiLocalAllocatorWrapper>                                 m_Objects;
-    ObjectStorage                                                                                         m_ObjectStorage;
+    // Object Storage
+    using ObjectStorage = xiiBlockStorage<xiiGameObject, xiiInternal::DEFAULT_BLOCK_SIZE, xiiBlockStorageType::Compact>;
+    xiiIdTable<xiiGameObjectId, xiiGameObject*, xiiLocalAllocatorWrapper> m_Objects;
+    ObjectStorage                                                         m_ObjectStorage;
 
     xiiSet<xiiGameObject*, xiiCompareHelper<xiiGameObject*>, xiiLocalAllocatorWrapper> m_DeadObjects;
     xiiEvent<const xiiGameObject*>                                                     m_ObjectDeletionEvent;
@@ -99,8 +99,8 @@ namespace xiiInternal
     // hierarchy structures
     struct Hierarchy
     {
-      typedef xiiDataBlock<xiiGameObject::TransformationData, xiiInternal::DEFAULT_BLOCK_SIZE> DataBlock;
-      typedef xiiDynamicArray<DataBlock>                                                       DataBlockArray;
+      using DataBlock      = xiiDataBlock<xiiGameObject::TransformationData, xiiInternal::DEFAULT_BLOCK_SIZE>;
+      using DataBlockArray = xiiDynamicArray<DataBlock>;
 
       xiiHybridArray<DataBlockArray*, 8, xiiLocalAllocatorWrapper> m_Data;
     };
@@ -128,10 +128,10 @@ namespace xiiInternal
     template <typename VISITOR>
     xiiVisitorExecution::Enum TraverseHierarchyLevelMultiThreaded(Hierarchy::DataBlockArray& blocks, void* pUserData = nullptr);
 
-    typedef xiiDelegate<xiiVisitorExecution::Enum(xiiGameObject*)> VisitorFunc;
-    void                                                           TraverseBreadthFirst(VisitorFunc& func);
-    void                                                           TraverseDepthFirst(VisitorFunc& func);
-    static xiiVisitorExecution::Enum                               TraverseObjectDepthFirst(xiiGameObject* pObject, VisitorFunc& func);
+    using VisitorFunc = xiiDelegate<xiiVisitorExecution::Enum(xiiGameObject*)>;
+    void                             TraverseBreadthFirst(VisitorFunc& func);
+    void                             TraverseDepthFirst(VisitorFunc& func);
+    static xiiVisitorExecution::Enum TraverseObjectDepthFirst(xiiGameObject* pObject, VisitorFunc& func);
 
     static void UpdateGlobalTransform(xiiGameObject::TransformationData* pData, const xiiSimdFloat& fInvDeltaSeconds);
     static void UpdateGlobalTransformWithParent(xiiGameObject::TransformationData* pData, const xiiSimdFloat& fInvDeltaSeconds);
@@ -228,9 +228,9 @@ namespace xiiInternal
       xiiTime m_Due;
     };
 
-    typedef xiiMessageQueue<QueuedMsgMetaData, xiiLocalAllocatorWrapper> MessageQueue;
-    mutable MessageQueue                                                 m_MessageQueues[xiiObjectMsgQueueType::COUNT];
-    mutable MessageQueue                                                 m_TimedMessageQueues[xiiObjectMsgQueueType::COUNT];
+    using MessageQueue = xiiMessageQueue<QueuedMsgMetaData, xiiLocalAllocatorWrapper>;
+    mutable MessageQueue m_MessageQueues[xiiObjectMsgQueueType::COUNT];
+    mutable MessageQueue m_TimedMessageQueues[xiiObjectMsgQueueType::COUNT];
 
     xiiThreadID                m_WriteThreadID;
     xiiInt32                   m_iWriteCounter;
