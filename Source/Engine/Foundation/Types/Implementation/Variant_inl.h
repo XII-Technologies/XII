@@ -554,8 +554,8 @@ T xiiVariant::Cast() const
 {
   const xiiTypedPointer& ptr = *reinterpret_cast<const xiiTypedPointer*>(&m_Data);
 
-  const xiiRTTI*                                                  pType = GetReflectedType();
-  using NonRefPtrT                                                      = typename xiiTypeTraits<T>::NonConstReferencePointerType;
+  const xiiRTTI* pType = GetReflectedType();
+  using NonRefPtrT     = typename xiiTypeTraits<T>::NonConstReferencePointerType;
   if constexpr (!std::is_same<T, void*>::value && !std::is_same<T, const void*>::value)
   {
     XII_ASSERT_DEV(pType == nullptr || IsDerivedFrom(pType, xiiGetStaticRTTI<NonRefPtrT>()), "Object of type '{0}' does not derive from '{}'", GetTypeName(pType), GetTypeName(xiiGetStaticRTTI<NonRefPtrT>()));
@@ -575,8 +575,8 @@ const T xiiVariant::Cast() const
 template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, int>>
 const T& xiiVariant::Cast() const
 {
-  const xiiRTTI*                                           pType = GetReflectedType();
-  using NonRefT                                                  = typename xiiTypeTraits<T>::NonConstReferenceType;
+  const xiiRTTI* pType = GetReflectedType();
+  using NonRefT        = typename xiiTypeTraits<T>::NonConstReferenceType;
   XII_ASSERT_DEV(IsDerivedFrom(pType, xiiGetStaticRTTI<NonRefT>()), "Object of type '{0}' does not derive from '{}'", GetTypeName(pType), GetTypeName(xiiGetStaticRTTI<NonRefT>()));
 
   return m_bIsShared ? *static_cast<const T*>(m_Data.shared->m_Ptr) : *reinterpret_cast<const T*>(&m_Data);
