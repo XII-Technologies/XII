@@ -34,7 +34,7 @@ xiiResult FileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, 
 class Logger : public xiiLogInterface
 {
 public:
-  virtual void HandleLogMessage(const xiiLoggingEventData& le) override { m_sOutput.AppendFormat("Log: '{0}'\r\n", le.m_sText); }
+  virtual void HandleLogMessage(const xiiLoggingEventData& le) override { m_sOutput.AppendFormat("Log: '{0}'\n", le.m_sText); }
 
   void EventHandler(const xiiPreprocessor::ProcessingEvent& ed)
   {
@@ -79,7 +79,7 @@ public:
           break;
       }
 
-      m_sOutput.AppendFormat("{0}\r\n", event.m_szInfo);
+      m_sOutput.AppendFormat("{0}\n", event.m_szInfo);
     }
 
     m_EventStack.PopBack();
@@ -237,16 +237,16 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Preprocessor)
 
           if (pp.Process(fileName, sOutput) == XII_SUCCESS)
           {
-            xiiString sError = "Processing succeeded\r\n";
+            xiiString sError = "Processing succeeded\n";
             fout.WriteBytes(sError.GetData(), sError.GetElementCount()).IgnoreResult();
             fout.WriteBytes(sOutput.GetData(), sOutput.GetElementCount()).IgnoreResult();
 
             if (!log.m_sOutput.IsEmpty())
-              fout.WriteBytes("\r\n", 2).IgnoreResult();
+              fout.WriteBytes("\n", 1).IgnoreResult();
           }
           else
           {
-            xiiString sError = "Processing failed\r\n";
+            xiiString sError = "Processing failed\n";
             fout.WriteBytes(sError.GetData(), sError.GetElementCount()).IgnoreResult();
           }
 
