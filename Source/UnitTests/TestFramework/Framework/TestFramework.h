@@ -240,11 +240,11 @@ protected:
     int             xiiAndroidMain(int argc, char** argv);                                                                 \
     extern "C" void android_main(struct android_app* app)                                                                  \
     {                                                                                                                      \
-      xiiAndroidUtils::SetAndroidApp(app);                                                                                 \
+      xiiAndroidUtils::SetNativeAndroidApp(app);                                                                           \
       /* TODO: do something with the return value of xiiAndroidMain?  */                                                   \
       /* TODO: can we get somehow get the command line arguments to the android app? Is there even something like that? */ \
       int iReturnCode = xiiAndroidMain(0, nullptr);                                                                        \
-      __android_log_print(ANDROID_LOG_ERROR, "xiiEngine", "Test framework exited with return code: '%d'", iReturnCode);    \
+      __android_log_print(ANDROID_LOG_ERROR, "XII", "Test framework exited with return code: '%d'", iReturnCode);          \
     }                                                                                                                      \
                                                                                                                            \
     int xiiAndroidMain(int argc, char** argv)                                                                              \
@@ -268,7 +268,7 @@ protected:
 #if XII_ENABLED(XII_PLATFORM_ANDROID)
 #  define XII_TESTFRAMEWORK_ENTRY_POINT_END()                                      \
     /* TODO: This is too big for a macro now */                                    \
-    auto app  = xiiAndroidUtils::GetAndroidApp();                                  \
+    auto pApp = xiiAndroidUtils::GetNativeAndroidApp();                            \
     bool bRun = true;                                                              \
     while (true)                                                                   \
     {                                                                              \
@@ -278,14 +278,14 @@ protected:
       while ((ident = ALooper_pollAll(0, nullptr, &events, (void**)&source)) >= 0) \
       {                                                                            \
         if (source != nullptr)                                                     \
-          source->process(app, source);                                            \
+          source->process(pApp, source);                                           \
       }                                                                            \
       if (bRun && xiiTestSetup::RunTests() != xiiTestAppRun::Continue)             \
       {                                                                            \
         bRun = false;                                                              \
-        ANativeActivity_finish(app->activity);                                     \
+        ANativeActivity_finish(pApp->activity);                                    \
       }                                                                            \
-      if (app->destroyRequested)                                                   \
+      if (pApp->destroyRequested)                                                  \
       {                                                                            \
         const xiiInt32 iFailedTests = xiiTestSetup::GetFailedTestCount();          \
         xiiTestSetup::DeInitTestFramework();                                       \

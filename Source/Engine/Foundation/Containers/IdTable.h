@@ -17,8 +17,8 @@ template <typename IdType, typename ValueType>
 class xiiIdTableBase
 {
 public:
-  typedef typename IdType::StorageType IndexType;
-  typedef IdType                       TypeOfId;
+  using IndexType = typename IdType::StorageType;
+  using TypeOfId  = IdType;
 
   /// \brief Const iterator.
   class ConstIterator

@@ -4,28 +4,28 @@
 #  include <Foundation/Basics/Platform/Android/AndroidUtils.h>
 #  include <android_native_app_glue.h>
 
-android_app* xiiAndroidUtils::s_app;
-JavaVM*      xiiAndroidUtils::s_vm;
+android_app* xiiAndroidUtils::s_pAndroidApplication;
+JavaVM*      xiiAndroidUtils::s_pJavaVM;
 
-void xiiAndroidUtils::SetAndroidApp(android_app* app)
+void xiiAndroidUtils::SetNativeAndroidApp(android_app* pAndroidApp)
 {
-  s_app = app;
-  SetAndroidJavaVM(s_app->activity->vm);
+  s_pAndroidApplication = pAndroidApp;
+  SetAndroidJavaVM(pAndroidApp->activity->vm);
 }
 
-android_app* xiiAndroidUtils::GetAndroidApp()
+android_app* xiiAndroidUtils::GetNativeAndroidApp()
 {
-  return s_app;
+  return s_pAndroidApplication;
 }
 
-void xiiAndroidUtils::SetAndroidJavaVM(JavaVM* vm)
+void xiiAndroidUtils::SetAndroidJavaVM(JavaVM* pJavaVM)
 {
-  s_vm = vm;
+  s_pJavaVM = pJavaVM;
 }
 
 JavaVM* xiiAndroidUtils::GetAndroidJavaVM()
 {
-  return s_vm;
+  return s_pJavaVM;
 }
 
 #endif

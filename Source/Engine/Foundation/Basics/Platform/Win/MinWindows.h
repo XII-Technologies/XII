@@ -21,8 +21,8 @@ namespace xiiMinWindows
   using WPARAM = xiiUInt64;
   using LPARAM = xiiUInt64;
 #else
-  typedef xiiUInt32 WPARAM;
-  typedef xiiUInt32 LPARAM;
+  using WPARAM = xiiUInt32;
+  using LPARAM = xiiUInt32;
 #endif
 
   template <typename T>
@@ -51,6 +51,7 @@ namespace xiiMinWindows
     return FromNativeImpl<T>::FromNative(t);
   }
 } // namespace xiiMinWindows
+
 #define XII_WINDOWS_CALLBACK             __stdcall
 #define XII_WINDOWS_WINAPI               __stdcall
 #define XII_WINDOWS_INVALID_HANDLE_VALUE ((void*)(signed long long)-1)

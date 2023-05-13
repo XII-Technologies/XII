@@ -36,7 +36,7 @@ namespace xiiMinWindows
   template <>
   struct ToNativeImpl<HINSTANCE>
   {
-    typedef ::HINSTANCE                  type;
+    using type = ::HINSTANCE;
     static XII_ALWAYS_INLINE ::HINSTANCE ToNative(HINSTANCE hInstance) { return reinterpret_cast<::HINSTANCE>(hInstance); }
   };
 

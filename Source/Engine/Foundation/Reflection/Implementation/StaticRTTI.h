@@ -14,7 +14,7 @@ class xiiVariant;
 /// \brief Flags that describe a reflected type.
 struct xiiTypeFlags
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -127,23 +127,26 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 
 /// \brief Declares a type to be statically reflectable. Insert this into the header of a type to enable reflection on it.
 /// This is not needed if the type is already dynamically reflectable.
-#define XII_DECLARE_REFLECTABLE_TYPE(Linkage, TYPE)                                                     \
-  namespace xiiInternal                                                                                 \
-  {                                                                                                     \
-    template <>                                                                                         \
-    struct Linkage xiiStaticRTTIWrapper<TYPE>                                                           \
-    {                                                                                                   \
-      static xiiRTTI s_RTTI;                                                                            \
-    };                                                                                                  \
-                                                                                                        \
-    /* This specialization calls the function to get the RTTI data */                                   \
-    /* This code might get duplicated in different DLLs, but all   */                                   \
-    /* will call the same function, so the RTTI object is unique   */                                   \
-    template <>                                                                                         \
-    struct xiiStaticRTTI<TYPE>                                                                          \
-    {                                                                                                   \
-      XII_ALWAYS_INLINE static const xiiRTTI* GetRTTI() { return &xiiStaticRTTIWrapper<TYPE>::s_RTTI; } \
-    };                                                                                                  \
+#define XII_DECLARE_REFLECTABLE_TYPE(Linkage, TYPE)                   \
+  namespace xiiInternal                                               \
+  {                                                                   \
+    template <>                                                       \
+    struct Linkage xiiStaticRTTIWrapper<TYPE>                         \
+    {                                                                 \
+      static xiiRTTI s_RTTI;                                          \
+    };                                                                \
+                                                                      \
+    /* This specialization calls the function to get the RTTI data */ \
+    /* This code might get duplicated in different DLLs, but all   */ \
+    /* will call the same function, so the RTTI object is unique   */ \
+    template <>                                                       \
+    struct xiiStaticRTTI<TYPE>                                        \
+    {                                                                 \
+      XII_ALWAYS_INLINE static const xiiRTTI* GetRTTI()               \
+      {                                                               \
+        return &xiiStaticRTTIWrapper<TYPE>::s_RTTI;                   \
+      }                                                               \
+    };                                                                \
   }
 
 /// \brief Insert this into a class/struct to enable properties that are private members.
@@ -169,8 +172,8 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 #define XII_RTTIINFO_GETRTTI_IMPL_BEGIN(Type, BaseType, AllocatorType)                              \
   xiiRTTI GetRTTI(Type*)                                                                            \
   {                                                                                                 \
-    typedef Type                                   OwnType;                                         \
-    typedef BaseType                               OwnBaseType;                                     \
+    using OwnType     = Type;                                                                       \
+    using OwnBaseType = BaseType;                                                                   \
     static AllocatorType                           Allocator;                                       \
     static xiiBitflags<xiiTypeFlags>               flags = xiiInternal::DetermineTypeFlags<Type>(); \
     static xiiArrayPtr<xiiAbstractProperty*>       Properties;                                      \
@@ -568,7 +571,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 ///   The version of \a Type. Must be increased when the class changes.
 #define XII_BEGIN_STATIC_REFLECTED_ENUM(Type, Version)                             \
   XII_BEGIN_STATIC_REFLECTED_TYPE(Type, xiiEnumBase, Version, xiiRTTINoAllocator); \
-  typedef Type::StorageType Storage;                                               \
+  using Storage = Type::StorageType;                                               \
   XII_BEGIN_PROPERTIES                                                             \
   {                                                                                \
     XII_CONSTANT_PROPERTY(XII_STRINGIZE(Type::Default), (Storage)Type::Default),
@@ -589,7 +592,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 ///   The version of \a Type. Must be increased when the class changes.
 #define XII_BEGIN_STATIC_REFLECTED_BITFLAGS(Type, Version)                             \
   XII_BEGIN_STATIC_REFLECTED_TYPE(Type, xiiBitflagsBase, Version, xiiRTTINoAllocator); \
-  typedef Type::StorageType Storage;                                                   \
+  using Storage = Type::StorageType;                                                   \
   XII_BEGIN_PROPERTIES                                                                 \
   {                                                                                    \
     XII_CONSTANT_PROPERTY(XII_STRINGIZE(Type::Default), (Storage)Type::Default),

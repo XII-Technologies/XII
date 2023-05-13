@@ -79,7 +79,7 @@ protected:
 /// See class xiiEnumerable for more details.
 #define XII_DECLARE_ENUMERABLE_CLASS_WITH_BASE(self, base)                      \
 private:                                                                        \
-  typedef base xiiEnumerableBase;                                               \
+  using xiiEnumerableBase = base;                                               \
   friend class xiiEnumerable<self, base>;                                       \
   static xiiEnumerable<self, base>* s_pFirstInstance;                           \
   static xiiEnumerable<self, base>* s_pLastInstance;                            \

@@ -68,7 +68,7 @@ public:                                                                         
   XII_ALWAYS_INLINE void   Invalidate() { m_InternalId.Invalidate(); }                                       \
   XII_ALWAYS_INLINE bool   IsInvalidated() const { return m_InternalId.IsInvalidated(); }                    \
   XII_ALWAYS_INLINE idType GetInternalID() const { return m_InternalId; }                                    \
-  typedef idType           IdType;                                                                           \
+  using IdType = idType;                                                                                     \
                                                                                                              \
 protected:                                                                                                   \
   idType m_InternalId;                                                                                       \

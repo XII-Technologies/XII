@@ -9,28 +9,37 @@
 /// This macro extends a class, such that it is now able to return its own type information via GetDynamicRTTI(),
 /// which is a virtual function, that is reimplemented on each type. A class needs to be derived from xiiReflectedClass
 /// (at least indirectly) for this.
-#define XII_ADD_DYNAMIC_REFLECTION_NO_GETTER(SELF, BASE_TYPE)                       \
-  XII_ALLOW_PRIVATE_PROPERTIES(SELF);                                               \
-                                                                                    \
-public:                                                                             \
-  typedef BASE_TYPE                       SUPER;                                    \
-  XII_ALWAYS_INLINE static const xiiRTTI* GetStaticRTTI() { return &SELF::s_RTTI; } \
-                                                                                    \
-private:                                                                            \
-  static xiiRTTI s_RTTI;                                                            \
+#define XII_ADD_DYNAMIC_REFLECTION_NO_GETTER(SELF, BASE_TYPE) \
+  XII_ALLOW_PRIVATE_PROPERTIES(SELF);                         \
+                                                              \
+public:                                                       \
+  using SUPER = BASE_TYPE;                                    \
+  XII_ALWAYS_INLINE static const xiiRTTI* GetStaticRTTI()     \
+  {                                                           \
+    return &SELF::s_RTTI;                                     \
+  }                                                           \
+                                                              \
+private:                                                      \
+  static xiiRTTI s_RTTI;                                      \
   XII_REFLECTION_DEBUG_CODE
 
 
-#define XII_ADD_DYNAMIC_REFLECTION(SELF, BASE_TYPE)     \
-  XII_ADD_DYNAMIC_REFLECTION_NO_GETTER(SELF, BASE_TYPE) \
-public:                                                 \
-  virtual const xiiRTTI* GetDynamicRTTI() const override { return &SELF::s_RTTI; }
+#define XII_ADD_DYNAMIC_REFLECTION(SELF, BASE_TYPE)      \
+  XII_ADD_DYNAMIC_REFLECTION_NO_GETTER(SELF, BASE_TYPE)  \
+public:                                                  \
+  virtual const xiiRTTI* GetDynamicRTTI() const override \
+  {                                                      \
+    return &SELF::s_RTTI;                                \
+  }
 
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_ENABLED(XII_COMPILER_MSVC)
 
-#  define XII_REFLECTION_DEBUG_CODE \
-    static const xiiRTTI* ReflectionDebug_GetParentType() { return __super::GetStaticRTTI(); }
+#  define XII_REFLECTION_DEBUG_CODE                       \
+    static const xiiRTTI* ReflectionDebug_GetParentType() \
+    {                                                     \
+      return __super::GetStaticRTTI();                    \
+    }
 
 #  define XII_REFLECTION_DEBUG_GETPARENTFUNC &OwnType::ReflectionDebug_GetParentType
 

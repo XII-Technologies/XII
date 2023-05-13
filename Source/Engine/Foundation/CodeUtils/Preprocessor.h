@@ -72,23 +72,23 @@ public:
 
   /// \brief This type of callback is used to read an #include file. \a szAbsoluteFile is the path that the FileLocatorCB reported, the result needs
   /// to be stored in \a FileContent.
-  typedef xiiDelegate<xiiResult(const char* szAbsoluteFile, xiiDynamicArray<xiiUInt8>& FileContent, xiiTimestamp& out_FileModification)> FileOpenCB;
+  using FileOpenCB = xiiDelegate<xiiResult(const char* szAbsoluteFile, xiiDynamicArray<xiiUInt8>& FileContent, xiiTimestamp& out_FileModification)>;
 
   /// \brief This type of callback is used to retrieve the absolute path of the \a szIncludeFile when #included inside \a szCurAbsoluteFile.
   ///
   /// Note that you should ensure that \a out_sAbsoluteFilePath is always identical (including casing and path slashes) when it is supposed to point
   /// to the same file, as this exact name is used for file lookup (and therefore also file caching).
   /// If it is not identical, file caching will not work, and on different OSes the file may be found or not.
-  typedef xiiDelegate<xiiResult(const char* szCurAbsoluteFile, const char* szIncludeFile, IncludeType IncType, xiiStringBuilder& out_sAbsoluteFilePath)> FileLocatorCB;
+  using FileLocatorCB = xiiDelegate<xiiResult(const char* szCurAbsoluteFile, const char* szIncludeFile, IncludeType IncType, xiiStringBuilder& out_sAbsoluteFilePath)>;
 
   /// \brief Every time an unknown command (e.g. '#version') is encountered, this callback is used to determine whether the command shall be passed
   /// through.
   ///
   /// If the callback returns false, an error is generated and parsing fails. The callback thus acts as a whitelist for all commands that shall be
   /// passed through.
-  typedef xiiDelegate<bool(const char* szUnknownCommand)> PassThroughUnknownCmdCB;
+  using PassThroughUnknownCmdCB = xiiDelegate<bool(const char* szUnknownCommand)>;
 
-  typedef xiiDeque<xiiTokenParseUtils::TokenStream> MacroParameters;
+  using MacroParameters = xiiDeque<xiiTokenParseUtils::TokenStream>;
 
   /// \brief The event data that the processor broadcasts
   ///

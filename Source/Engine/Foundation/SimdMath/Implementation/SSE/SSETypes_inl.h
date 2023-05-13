@@ -51,11 +51,13 @@
 
 namespace xiiInternal
 {
-  typedef __m256d QuadDouble;
-  typedef __m128  QuadFloat;
-  typedef __m128i QuadUInt;
-  typedef __m128i QuadInt;
-  typedef __m128  QuadBool;
+  using QuadDouble = __m256d;
+  using QuadUInt64 = __m256i;
+  using QuadInt64  = __m256i;
+  using QuadFloat  = __m128;
+  using QuadUInt   = __m128i;
+  using QuadInt    = __m128i;
+  using QuadBool   = __m128;
 } // namespace xiiInternal
 
 #include <Foundation/SimdMath/SimdSwizzle.h>

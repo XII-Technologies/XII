@@ -7,7 +7,7 @@ template <typename T>
 class xiiDelegateTask final : public xiiTask
 {
 public:
-  typedef xiiDelegate<void(const T&)> FunctionType;
+  using FunctionType = xiiDelegate<void(const T&)>;
 
   xiiDelegateTask(const char* szTaskName, FunctionType func, const T& param)
   {
@@ -27,7 +27,7 @@ template <>
 class xiiDelegateTask<void> final : public xiiTask
 {
 public:
-  typedef xiiDelegate<void()> FunctionType;
+  using FunctionType = xiiDelegate<void()>;
 
   xiiDelegateTask(const char* szTaskName, FunctionType func)
   {

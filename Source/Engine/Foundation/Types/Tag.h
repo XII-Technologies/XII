@@ -3,7 +3,7 @@
 
 #include <Foundation/Strings/HashedString.h>
 
-typedef xiiUInt64 xiiTagSetBlockStorage;
+using xiiTagSetBlockStorage = xiiUInt64;
 
 /// \brief The tag class stores the necessary lookup information for a single tag which can be used in conjunction with the tag set.
 ///

@@ -10,15 +10,14 @@
 #include <Foundation/Memory/Policies/HeapAllocation.h>
 #include <Foundation/Memory/Policies/ProxyAllocation.h>
 
+/// \brief Default Aligned Heap Allocator.
+using xiiAlignedHeapAllocator = xiiAllocator<xiiMemoryPolicies::xiiAlignedHeapAllocation>;
 
-/// \brief Default heap allocator
-typedef xiiAllocator<xiiMemoryPolicies::xiiAlignedHeapAllocation> xiiAlignedHeapAllocator;
+/// \brief Default Heap Allocator.
+using xiiHeapAllocator = xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation>;
 
-/// \brief Default heap allocator
-typedef xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation> xiiHeapAllocator;
+/// \brief Guarded Allocator.
+using xiiGuardedAllocator = xiiAllocator<xiiMemoryPolicies::xiiGuardedAllocation>;
 
-/// \brief Guarded allocator
-typedef xiiAllocator<xiiMemoryPolicies::xiiGuardedAllocation> xiiGuardedAllocator;
-
-/// \brief Proxy allocator
-typedef xiiAllocator<xiiMemoryPolicies::xiiProxyAllocation> xiiProxyAllocator;
+/// \brief Proxy Allocator.
+using xiiProxyAllocator = xiiAllocator<xiiMemoryPolicies::xiiProxyAllocation>;

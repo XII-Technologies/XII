@@ -10,7 +10,7 @@
 /// 3) Definition of the enum itself, the storage type and the default init value is in one place
 /// 4) It makes function definitions shorter, instead of:
 ///      void function(xiiExampleEnumBase::Enum value)
-///    you can write:
+///    You can write:
 ///      void function(xiiExampleEnum value)
 /// 5) In all other ways it works exactly like a C++ enum
 ///
@@ -18,7 +18,7 @@
 ///
 /// struct xiiExampleEnumBase
 /// {
-///   typedef xiiUInt8 StorageType;
+///   using StorageType = xiiUInt8;
 ///
 ///   enum Enum
 ///   {
@@ -28,7 +28,8 @@
 ///     Default = Value1 // Default initialization value (required)
 ///   };
 /// };
-/// typedef xiiEnum<xiiExampleEnumBase> xiiExampleEnum;
+///
+/// using xiiExampleEnum = xiiEnum<xiiExampleEnumBase>;
 ///
 /// This defines an "xiiExampleEnum" which is stored in an xiiUInt8 and is default initialized with Value1
 /// For more examples see the enum test.

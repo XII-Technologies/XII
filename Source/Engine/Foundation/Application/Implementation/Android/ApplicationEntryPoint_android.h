@@ -14,7 +14,7 @@ namespace xiiApplicationDetails
   void EntryFunc(struct android_app* pAndroidApp, Args&&... arguments)
   {
     alignas(XII_ALIGNMENT_OF(AppClass)) static char appBuffer[sizeof(AppClass)]; // Not on the stack to cope with smaller stacks.
-    xiiAndroidUtils::SetAndroidApp(pAndroidApp);
+    xiiAndroidUtils::SetNativeAndroidApp(pAndroidApp);
     AppClass* pApp = new (appBuffer) AppClass(std::forward<Args>(arguments)...);
 
     xiiAndroidRun(pAndroidApp, pApp);
