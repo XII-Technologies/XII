@@ -31,7 +31,7 @@ class xiiOpenDdlReaderElement;
 #if XII_ENABLED(XII_SUPPORTS_SDL)
 extern "C"
 {
-  typedef struct SDL_Window SDL_Window;
+  using SDL_Window = struct SDL_Window;
 }
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #    include <Foundation/Basics/Platform/Win/MinWindows.h>
@@ -87,7 +87,7 @@ using xiiWindowInternalHandle = xiiWindowHandle;
 #  elif XII_ENABLED(XII_PLATFORM_ANDROID)
 extern "C"
 {
-  typedef struct ANativeWindow ANativeWindow;
+  using ANativeWindow = struct ANativeWindow;
 }
 using xiiWindowHandle         = ANativeWindow*;
 using xiiWindowInternalHandle = SDL_Window*;

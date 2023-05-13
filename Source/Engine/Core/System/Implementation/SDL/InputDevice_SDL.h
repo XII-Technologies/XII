@@ -4,7 +4,7 @@
 
 extern "C"
 {
-  typedef struct SDL_Window SDL_Window;
+  using SDL_Window = struct SDL_Window;
 }
 
 class XII_CORE_DLL xiiStandardInputDevice : public xiiInputDeviceMouseKeyboard

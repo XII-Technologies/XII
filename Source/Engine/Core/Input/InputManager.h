@@ -266,7 +266,7 @@ public:
     }
   };
 
-  typedef xiiEvent<const InputEventData&> xiiEventInput;
+  using xiiEventInput = xiiEvent<const InputEventData&>;
 
   /// \brief Adds an event handler that is called for input events.
   static xiiEventSubscriptionID AddEventHandler(xiiEventInput::Handler handler) { return s_InputEvents.AddEventHandler(handler); }
@@ -310,9 +310,9 @@ private:
     xiiInt8 m_iTriggeredViaAlternative;
   };
 
-  typedef xiiMap<xiiString, xiiActionData> xiiActionMap;     ///< Maps input action names to their data.
-  typedef xiiMap<xiiString, xiiActionMap>  xiiInputSetMap;   ///< Maps input set names to their data.
-  typedef xiiMap<xiiString, xiiInputSlot>  xiiInputSlotsMap; ///< Maps input slot names to their data.
+  using xiiActionMap     = xiiMap<xiiString, xiiActionData>; ///< Maps input action names to their data.
+  using xiiInputSetMap   = xiiMap<xiiString, xiiActionMap>;  ///< Maps input set names to their data.
+  using xiiInputSlotsMap = xiiMap<xiiString, xiiInputSlot>;  ///< Maps input slot names to their data.
 
   /// \brief The internal data of the xiiInputManager. Not allocated until it is actually required.
   struct InternalData

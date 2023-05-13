@@ -5,7 +5,7 @@
 #include <Core/World/Component.h>
 #include <Core/World/World.h>
 
-typedef xiiComponentManager<class xiiCollectionComponent, xiiBlockStorageType::Compact> xiiCollectionComponentManager;
+using xiiCollectionComponentManager = xiiComponentManager<class xiiCollectionComponent, xiiBlockStorageType::Compact>;
 
 /// \brief An xiiCollectionComponent references an xiiCollectionResource and triggers resource preloading when needed
 ///

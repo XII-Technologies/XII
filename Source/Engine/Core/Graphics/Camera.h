@@ -10,7 +10,7 @@
 /// \brief Specifies in which mode this camera is configured.
 struct XII_CORE_DLL xiiCameraMode
 {
-  typedef xiiInt8 StorageType;
+  using StorageType = xiiInt8;
 
   enum Enum
   {
@@ -20,6 +20,7 @@ struct XII_CORE_DLL xiiCameraMode
     OrthoFixedWidth,      ///< Orthographic camera, the width is fixed, the height depends on the aspect ratio
     OrthoFixedHeight,     ///< Orthographic camera, the height is fixed, the width depends on the aspect ratio
     Stereo,               ///< A stereo camera with view/projection matrices provided by an HMD.
+
     Default = PerspectiveFixedFovY
   };
 };
