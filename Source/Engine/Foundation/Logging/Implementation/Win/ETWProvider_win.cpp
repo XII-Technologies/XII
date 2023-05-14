@@ -19,7 +19,7 @@
 
 TRACELOGGING_DECLARE_PROVIDER(g_xiiETWLogProvider);
 
-// Define the GUID to use for the xii ETW Logger
+// Define the GUID to use for the XII ETW Logger
 // {BFD4350A-BA77-463D-B4BE-E30374E42494}
 #  define XII_LOGGER_GUID (0xbfd4350a, 0xba77, 0x463d, 0xb4, 0xbe, 0xe3, 0x3, 0x74, 0xe4, 0x24, 0x94)
 

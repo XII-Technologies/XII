@@ -28,7 +28,7 @@ xiiResult TranformProject(const char* szProjectPath, xiiUInt32 uiCleanVersion)
   }
   else
   {
-    // Assume to be relative to xii root.
+    // Assume to be relative to XII root.
     sProjectDir = sBinPath;
     sProjectDir.PathParentDirectory(3);
     sProjectDir.AppendPath(szProjectPath);

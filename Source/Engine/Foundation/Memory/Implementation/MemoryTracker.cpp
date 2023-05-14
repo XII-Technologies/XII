@@ -16,8 +16,8 @@
 
 namespace
 {
-  // No tracking for the tracker data itself
-  typedef xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, 0> TrackerDataAllocator;
+  // There is no tracking for the tracker data itself.
+  using TrackerDataAllocator = xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, 0>;
 
   static TrackerDataAllocator* s_pTrackerDataAllocator;
 
@@ -48,8 +48,8 @@ namespace
 
     xiiMutex m_Mutex;
 
-    typedef xiiIdTable<xiiAllocatorId, AllocatorData, TrackerDataAllocatorWrapper> AllocatorTable;
-    AllocatorTable                                                                 m_AllocatorData;
+    using AllocatorTable = xiiIdTable<xiiAllocatorId, AllocatorData, TrackerDataAllocatorWrapper>;
+    AllocatorTable m_AllocatorData;
 
     xiiAllocatorId m_StaticAllocatorId;
   };

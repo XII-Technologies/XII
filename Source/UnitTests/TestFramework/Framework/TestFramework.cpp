@@ -143,7 +143,7 @@ void xiiTestFramework::Initialize()
   // this path
   xiiFileSystem::SetSpecialDirectory("xiitest", xiiTestFramework::GetInstance()->GetAbsOutputPath());
 
-  // Setting xii assert handler
+  // Setting XII assert handler
   m_PreviousAssertHandler = xiiGetAssertHandler();
   xiiSetAssertHandler(TestAssertHandler);
 

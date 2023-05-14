@@ -39,7 +39,7 @@ private:
 template <typename IndexType, typename Callback>
 void ParallelForIndexedInternal(IndexType uiStartIndex, IndexType uiNumItems, const Callback& taskCallback, const char* taskName, const xiiParallelForParams& params)
 {
-  typedef IndexedTask<IndexType, Callback> Task;
+  using Task = IndexedTask<IndexType, Callback>;
 
   if (!taskName)
   {

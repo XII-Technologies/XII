@@ -7,11 +7,10 @@ namespace
 {
   xiiResult xiiSDLError(xiiInt32 iReturnCode, const char* file, xiiUInt64 uiLine)
   {
-    if (iReturnCode > -1)
+    if (iReturnCode >= 0)
       return XII_SUCCESS;
 
-    const char* lastError = SDL_GetError();
-    xiiLog::Error("SDL error {} ({}): {} - {}", file, uiLine, iReturnCode, lastError);
+    xiiLog::Error("SDL error {} ({}): {} - {}", file, uiLine, iReturnCode, SDL_GetError());
     return XII_FAILURE;
   }
 } // namespace

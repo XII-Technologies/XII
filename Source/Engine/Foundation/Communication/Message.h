@@ -135,10 +135,9 @@ public:                                                                         
 /// \brief Implements the given message type. Add this macro to a cpp outside of the type declaration.
 #define XII_IMPLEMENT_MESSAGE_TYPE(messageType) xiiMessageId messageType::MSG_ID = messageType::GetTypeMsgId();
 
-
 /// \brief Base class for all message senders.
 template <typename T>
 struct xiiMessageSenderBase
 {
-  typedef T MessageType;
+  using MessageType = T;
 };

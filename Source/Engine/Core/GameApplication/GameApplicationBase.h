@@ -45,12 +45,12 @@ struct xiiGameApplicationExecutionEvent
   Type m_Type;
 };
 
-// TODO: document this and update xiiGameApplication comments
+// TODO: Document this and update xiiGameApplication comments
 
 class XII_CORE_DLL xiiGameApplicationBase : public xiiApplication
 {
 public:
-  typedef xiiApplication SUPER;
+  using SUPER = xiiApplication;
 
   xiiGameApplicationBase(const char* szAppName);
   ~xiiGameApplicationBase();

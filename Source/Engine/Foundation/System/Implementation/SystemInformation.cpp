@@ -44,7 +44,7 @@ namespace cpu_x86
 
     BOOL bIsWow64 = FALSE;
 
-    typedef BOOL(WINAPI * LPFN_ISWOW64PROCESS)(HANDLE, PBOOL);
+    using LPFN_ISWOW64PROCESS            = BOOL(WINAPI*)(HANDLE, PBOOL);
     LPFN_ISWOW64PROCESS fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(GetModuleHandle(TEXT("kernel32")), "IsWow64Process");
 
     if (NULL != fnIsWow64Process)

@@ -19,6 +19,10 @@
 *.ui text eol=lf
 CMakeLists.txt text eol=lf
 
+# Unit Test Preprocess text files should be in LF
+Data/UnitTests/FoundationTest/Preprocessor/*.txt text eol=lf
+Data/UnitTests/FoundationTest/Preprocessor/Includes/*.txt text eol=lf
+
 # Windows specific files should use CR/LF
 *.bat     text eol=crlf
 *.cmd     text eol=crlf

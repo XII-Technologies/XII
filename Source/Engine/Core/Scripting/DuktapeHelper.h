@@ -7,12 +7,13 @@
 #ifdef BUILDSYSTEM_ENABLE_DUKTAPE_SUPPORT
 
 struct duk_hthread;
-typedef duk_hthread duk_context;
-typedef int (*duk_c_function)(duk_context* ctx);
+
+using duk_context    = duk_hthread;
+using duk_c_function = xiiInt32 (*)(duk_context* ctx);
 
 struct xiiDuktapeTypeMask
 {
-  typedef xiiUInt32 StorageType;
+  using StorageType = xiiUInt32;
 
   enum Enum
   {
@@ -25,7 +26,6 @@ struct xiiDuktapeTypeMask
     Object    = XII_BIT(6), ///< ECMAScript object: includes objects, arrays, functions, threads
     Buffer    = XII_BIT(7), ///< fixed or dynamic, garbage collected byte buffer
     Pointer   = XII_BIT(8)  ///< raw void pointer
-
   };
 
   struct Bits

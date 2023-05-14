@@ -9,7 +9,7 @@
 template <typename T>
 struct xiiContainerSubTypeResolver<xiiTagSetTemplate<T>>
 {
-  typedef const char* Type;
+  using Type = const char*;
 };
 
 // Template specialization to be able to use xiiTagSet properties as XII_SET_MEMBER_PROPERTY.
@@ -17,11 +17,11 @@ template <typename Class>
 class xiiMemberSetProperty<Class, xiiTagSet, const char*> : public xiiTypedSetProperty<typename xiiTypeTraits<const char*>::NonConstReferenceType>
 {
 public:
-  typedef xiiTagSet                                           Container;
-  typedef xiiConstCharPtr                                     Type;
-  typedef typename xiiTypeTraits<Type>::NonConstReferenceType RealType;
-  typedef const Container& (*GetConstContainerFunc)(const Class* pInstance);
-  typedef Container& (*GetContainerFunc)(Class* pInstance);
+  using Container             = xiiTagSet;
+  using Type                  = xiiConstCharPtr;
+  using RealType              = typename xiiTypeTraits<Type>::NonConstReferenceType;
+  using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
+  using GetContainerFunc      = Container& (*)(Class* pInstance);
 
   xiiMemberSetProperty(const char* szPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
     xiiTypedSetProperty<RealType>(szPropertyName)
@@ -79,8 +79,8 @@ template <typename Class>
 class xiiAccessorSetProperty<Class, const char*, const xiiTagSet&> : public xiiTypedSetProperty<const char*>
 {
 public:
-  typedef const xiiTagSet& Container;
-  typedef xiiConstCharPtr  Type;
+  using Container = const xiiTagSet&;
+  using Type      = xiiConstCharPtr;
 
   using ContainerType = typename xiiTypeTraits<Container>::NonConstReferenceType;
   using RealType      = typename xiiTypeTraits<Type>::NonConstReferenceType;

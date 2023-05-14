@@ -10,7 +10,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 #  include <Foundation/Logging/Log.h>
 #  include <Foundation/Strings/StringBuilder.h>
 
-typedef HMODULE xiiPluginModule;
+using xiiPluginModule = HMODULE;
 
 void xiiPlugin::GetPluginPaths(const char* szPluginName, xiiStringBuilder& sOriginalFile, xiiStringBuilder& sCopiedFile, xiiUInt8 uiFileCopyNumber)
 {

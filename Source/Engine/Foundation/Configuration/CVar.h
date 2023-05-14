@@ -25,7 +25,7 @@ struct xiiCVarType
 /// \brief The flags that can be used on an xiiCVar.
 struct xiiCVarFlags
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -243,19 +243,19 @@ private:
 };
 
 /// \brief A CVar that stores a float value.
-typedef xiiTypedCVar<float, xiiCVarType::Float> xiiCVarFloat;
+using xiiCVarFloat = xiiTypedCVar<float, xiiCVarType::Float>;
 
 /// \brief A CVar that stores a double value.
-typedef xiiTypedCVar<double, xiiCVarType::Double> xiiCVarDouble;
+using xiiCVarDouble = xiiTypedCVar<double, xiiCVarType::Double>;
 
 /// \brief A CVar that stores a bool value.
-typedef xiiTypedCVar<bool, xiiCVarType::Bool> xiiCVarBool;
+using xiiCVarBool = xiiTypedCVar<bool, xiiCVarType::Bool>;
 
 /// \brief A CVar that stores an int value.
-typedef xiiTypedCVar<int, xiiCVarType::Int> xiiCVarInt;
+using xiiCVarInt = xiiTypedCVar<int, xiiCVarType::Int>;
 
 /// \brief A CVar that stores a string.
-typedef xiiTypedCVar<xiiHybridString<32>, xiiCVarType::String> xiiCVarString;
+using xiiCVarString = xiiTypedCVar<xiiHybridString<32>, xiiCVarType::String>;
 
 
 #include <Foundation/Configuration/Implementation/CVar_inl.h>

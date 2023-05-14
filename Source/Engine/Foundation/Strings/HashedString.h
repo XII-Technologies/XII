@@ -33,8 +33,8 @@ public:
   };
 
   // Do NOT use a hash-table! The map does not relocate memory when it resizes, which is a vital aspect for the hashed strings to work.
-  typedef xiiMap<xiiUInt64, HashedData, xiiCompareHelper<xiiUInt64>, xiiStaticAllocatorWrapper> StringStorage;
-  typedef StringStorage::Iterator                                                               HashedType;
+  using StringStorage = xiiMap<xiiUInt64, HashedData, xiiCompareHelper<xiiUInt64>, xiiStaticAllocatorWrapper>;
+  using HashedType    = StringStorage::Iterator;
 
 #if XII_ENABLED(XII_HASHED_STRING_REF_COUNTING)
   /// \brief This will remove all hashed strings from the central storage, that are not referenced anymore.

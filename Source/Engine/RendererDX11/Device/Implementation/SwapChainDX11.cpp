@@ -240,7 +240,7 @@ xiiResult xiiGALSwapChainDX11::CreateBackBufferInternal(xiiGALDeviceDX11* pDXDev
 
   TexDesc.m_ResourceAccess.m_bReadBack = m_WindowDesc.m_bAllowScreenshots && m_bCanMakeDirectScreenshots;
 
-  // And create the xii texture object wrapping the backbuffer texture
+  // And create the XII texture object wrapping the backbuffer texture
   m_hBackBufferTexture = pDXDevice->CreateTexture(TexDesc);
   XII_ASSERT_RELEASE(!m_hBackBufferTexture.IsInvalidated(), "Couldn't create native backbuffer texture object!");
 

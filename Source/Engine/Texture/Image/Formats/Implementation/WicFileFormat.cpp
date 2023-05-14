@@ -16,7 +16,7 @@
 
 using namespace DirectX;
 
-XII_DEFINE_AS_POD_TYPE(DirectX::Image); // Allow for storing this struct in xii containers
+XII_DEFINE_AS_POD_TYPE(DirectX::Image); // Allow for storing this struct in XII containers
 
 xiiWicFileFormat g_wicFormat;
 

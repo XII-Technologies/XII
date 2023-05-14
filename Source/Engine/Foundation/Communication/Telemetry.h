@@ -144,7 +144,7 @@ public:
   /// In that case it might also make sense to use GetTelemetryMutex() to lock the entire section while waiting for the message.
   static void UpdateNetwork();
 
-  typedef void (*ProcessMessagesCallback)(void* pPassThrough);
+  using ProcessMessagesCallback = void (*)(void* pPassThrough);
 
   static void AcceptMessagesForSystem(xiiUInt32 uiSystemID, bool bAccept, ProcessMessagesCallback Callback = nullptr, void* pPassThrough = nullptr);
 
@@ -179,7 +179,7 @@ public:
     EventType m_EventType;
   };
 
-  typedef xiiEvent<const TelemetryEventData&, xiiMutex> xiiEventTelemetry;
+  using xiiEventTelemetry = xiiEvent<const TelemetryEventData&, xiiMutex>;
 
   /// \brief Adds an event handler that is called for every xiiTelemetry event.
   static void AddEventHandler(xiiEventTelemetry::Handler handler) { s_TelemetryEvents.AddEventHandler(handler); }
@@ -224,7 +224,7 @@ private:
 
   static xiiTime s_PingToServer;
 
-  typedef xiiDeque<xiiTelemetryMessage> MessageDeque;
+  using MessageDeque = xiiDeque<xiiTelemetryMessage>;
 
   struct MessageQueue
   {

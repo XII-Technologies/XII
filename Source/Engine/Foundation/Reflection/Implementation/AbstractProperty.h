@@ -46,7 +46,7 @@ struct xiiIsEnum<xiiEnum<T>>
 /// \brief Flags used to describe a property and its type.
 struct xiiPropertyFlags
 {
-  typedef xiiUInt16 StorageType;
+  using StorageType = xiiUInt16;
 
   enum Enum : xiiUInt16
   {

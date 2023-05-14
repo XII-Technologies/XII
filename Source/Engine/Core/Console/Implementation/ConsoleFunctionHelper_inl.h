@@ -4,7 +4,7 @@ template <typename R XII_COMMA_IF(ARG_COUNT) XII_LIST(typename P, ARG_COUNT)>
 class xiiConsoleFunction<R(XII_LIST(P, ARG_COUNT))> : public xiiConsoleFunctionBase
 {
 public:
-  typedef xiiDelegate<R(XII_LIST(P, ARG_COUNT))> FUNC;
+  using FUNC = xiiDelegate<R(XII_LIST(P, ARG_COUNT))>;
 
   FUNC m_Func;
 

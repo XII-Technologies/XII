@@ -87,7 +87,7 @@ struct XII_FOUNDATION_DLL xiiAbstractGraphDiffOperation
 
 struct XII_FOUNDATION_DLL xiiObjectChangeType
 {
-  typedef xiiInt8 StorageType;
+  using StorageType = xiiInt8;
 
   enum Enum : xiiInt8
   {

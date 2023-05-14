@@ -39,9 +39,9 @@ public:
     Collapsed,
   };
 
-  typedef xiiUInt32 NodeId;
-  typedef xiiUInt32 PropertyId;
-  typedef xiiUInt32 ConnectionId;
+  using NodeId       = xiiUInt32;
+  using PropertyId   = xiiUInt32;
+  using ConnectionId = xiiUInt32;
 
   struct NodeDesc
   {

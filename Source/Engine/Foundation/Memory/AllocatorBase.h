@@ -7,7 +7,6 @@
 #include <Foundation/Types/Id.h>
 #include <utility>
 
-
 #ifdef new
 #  undef new
 #endif
@@ -16,7 +15,7 @@
 #  undef delete
 #endif
 
-typedef xiiGenericId<24, 8> xiiAllocatorId;
+using xiiAllocatorId = xiiGenericId<24, 8>;
 
 /// \brief Base class for all memory allocators.
 class XII_FOUNDATION_DLL xiiAllocatorBase
@@ -26,12 +25,12 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    xiiUInt64 m_uiNumAllocations   = 0; ///< total number of allocations
-    xiiUInt64 m_uiNumDeallocations = 0; ///< total number of deallocations
-    xiiUInt64 m_uiAllocationSize   = 0; ///< total allocation size in bytes
+    xiiUInt64 m_uiNumAllocations   = 0u; ///< total number of allocations
+    xiiUInt64 m_uiNumDeallocations = 0u; ///< total number of deallocations
+    xiiUInt64 m_uiAllocationSize   = 0u; ///< total allocation size in bytes
 
-    xiiUInt64 m_uiPerFrameAllocationSize = 0; ///< allocation size in bytes in this frame
-    xiiTime   m_PerFrameAllocationTime;       ///< time spend on allocations in this frame
+    xiiUInt64 m_uiPerFrameAllocationSize = 0u; ///< allocation size in bytes in this frame
+    xiiTime   m_PerFrameAllocationTime;        ///< time spend on allocations in this frame
   };
 
   xiiAllocatorBase();
@@ -92,7 +91,6 @@ private:
 
 /// \brief extends a given raw buffer to the new size, taking care of calling constructors / assignment operators.
 #define XII_EXTEND_RAW_BUFFER(allocator, ptr, oldSize, newSize) xiiInternal::ExtendRawBuffer(ptr, allocator, oldSize, newSize)
-
 
 
 /// \brief creates a new instance of type using the default allocator

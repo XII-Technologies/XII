@@ -9,8 +9,8 @@
 ///
 /// This class provides an interface to work with single bits, to store true/false values.
 /// The underlying container is configurable, though it must support random access and a 'SetCount' function and it must use elements of type
-/// xiiUInt32. In most cases a dynamic array should be used. For this case the xiiDynamicBitfield typedef is already available. There is also an
-/// xiiHybridBitfield typedef.
+/// xiiUInt32. In most cases a dynamic array should be used. For this case the xiiDynamicBitfield alias is already available. There is also a
+/// xiiHybridBitfield alias.
 template <class Container>
 class xiiBitfield
 {

@@ -41,7 +41,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiLogEntry);
 class XII_FOUNDATION_DLL xiiLogEntryDelegate : public xiiLogInterface
 {
 public:
-  typedef xiiDelegate<void(xiiLogEntry&)> Callback;
+  using Callback = xiiDelegate<void(xiiLogEntry&)>;
+
   /// \brief Log events will be delegated to the given callback.
   xiiLogEntryDelegate(Callback callback, xiiLogMsgType::Enum LogLevel = xiiLogMsgType::All);
   virtual void HandleLogMessage(const xiiLoggingEventData& le) override;

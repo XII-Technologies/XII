@@ -6,9 +6,9 @@
 #ifdef BUILDSYSTEM_ENABLE_DUKTAPE_SUPPORT
 
 struct duk_hthread;
-typedef duk_hthread duk_context;
-typedef int (*duk_c_function)(duk_context* ctx);
 
+using duk_context    = duk_hthread;
+using duk_c_function = xiiInt32 (*)(duk_context* ctx);
 
 class XII_CORE_DLL xiiDuktapeContext : public xiiDuktapeHelper
 {

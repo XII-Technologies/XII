@@ -118,7 +118,7 @@
 
 struct xiiStaticLinkHelper
 {
-  typedef void (*Func)(bool);
+  using Func = void (*)(bool);
   xiiStaticLinkHelper(Func f) { f(true); }
 };
 
@@ -127,9 +127,10 @@ struct xiiStaticLinkHelper
 /// The macros create functions that reference each other, which means the linker is forced to look at all files in the library.
 /// This in turn will drag all global variables into the visibility of the linker, and since it mustn't optimize them away,
 /// they then end up in the final application, where they will do what they are meant for.
-#  define XII_STATICLINK_FILE(LibraryName, UniqueName)                            \
-    void                       xiiReferenceFunction_##UniqueName(bool bReturn) {} \
-    void                       xiiReferenceFunction_##LibraryName(bool bReturn);  \
+#  define XII_STATICLINK_FILE(LibraryName, UniqueName)                           \
+    void xiiReferenceFunction_##UniqueName(bool bReturn)                         \
+    {}                                                                           \
+    void                       xiiReferenceFunction_##LibraryName(bool bReturn); \
     static xiiStaticLinkHelper StaticLinkHelper_##UniqueName(xiiReferenceFunction_##LibraryName);
 
 /// \brief Used by the tool 'StaticLinkUtil' to generate the block after XII_STATICLINK_LIBRARY, to create references to all

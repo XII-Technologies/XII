@@ -43,7 +43,7 @@ struct XII_FOUNDATION_DLL xiiRemoteEvent
   xiiUInt32 m_uiOtherAppID;
 };
 
-typedef xiiDelegate<void(xiiRemoteMessage&)> xiiRemoteMessageHandler;
+using xiiRemoteMessageHandler = xiiDelegate<void(xiiRemoteMessage&)>;
 
 struct XII_FOUNDATION_DLL xiiRemoteMessageQueue
 {

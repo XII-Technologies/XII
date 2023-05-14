@@ -3,13 +3,13 @@
 #include <Foundation/Memory/CommonAllocators.h>
 
 #if XII_ENABLED(XII_USE_GUARDED_ALLOCATIONS)
-typedef xiiGuardedAllocator DefaultHeapType;
-typedef xiiGuardedAllocator DefaultAlignedHeapType;
-typedef xiiGuardedAllocator DefaultStaticHeapType;
+using DefaultHeapType        = xiiGuardedAllocator;
+using DefaultAlignedHeapType = xiiGuardedAllocator;
+using DefaultStaticHeapType  = xiiGuardedAllocator;
 #else
-typedef xiiHeapAllocator        DefaultHeapType;
-typedef xiiAlignedHeapAllocator DefaultAlignedHeapType;
-typedef xiiHeapAllocator        DefaultStaticHeapType;
+using DefaultHeapType        = xiiHeapAllocator;
+using DefaultAlignedHeapType = xiiAlignedHeapAllocator;
+using DefaultStaticHeapType  = xiiHeapAllocator;
 #endif
 
 enum
@@ -64,7 +64,7 @@ xiiAllocatorBase* xiiFoundation::GetStaticAllocator()
 #  if XII_ENABLED(XII_COMPILE_ENGINE_AS_DLL)
 
 #    if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    typedef xiiAllocatorBase* (*GetStaticAllocatorFunc)();
+    using GetStaticAllocatorFunc = xiiAllocatorBase* (*)();
 
     HMODULE                hThisModule = GetModuleHandle(nullptr);
     GetStaticAllocatorFunc func        = (GetStaticAllocatorFunc)GetProcAddress(hThisModule, XII_CUSTOM_STATIC_ALLOCATOR_FUNC);

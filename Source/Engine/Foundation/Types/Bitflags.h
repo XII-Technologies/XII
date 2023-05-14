@@ -41,7 +41,7 @@
 /// \code{.cpp}
 ///   struct SimpleRenderFlags
 ///   {
-///     typedef xiiUInt32 StorageType;
+///     using StorageType = xiiUInt32;
 ///
 ///     enum Enum
 ///     {
@@ -71,7 +71,7 @@
 /// The Bits struct should contain one named entry for each individual bit. E.g. here only the flags 'EnableEffects', 'EnableLighting'
 /// and 'EnableShadows' actually map to single bits, the other flags are combinations of those. Therefore the Bits struct only
 /// specifies names for those first three Bits.\n
-/// The typedef 'StorageType' is also mandatory, such that xiiBitflags can access it.\n
+/// The alias 'StorageType' is also mandatory, such that xiiBitflags can access it.\n
 /// Finally the macro XII_DECLARE_FLAGS_OPERATORS will define the required operator to be able to combine bitflags of your type.
 /// I.e. it enables to write xiiBitflags<SimpleRenderFlags> f = EnableEffects | EnableLighting;\n
 ///
@@ -80,7 +80,7 @@ template <typename T>
 struct xiiBitflags
 {
 private:
-  typedef typename T::Enum Enum;
+  using Enum        = typename T::Enum;
   using Bits        = typename T::Bits;
   using StorageType = typename T::StorageType;
 
@@ -264,8 +264,8 @@ private:
 #define XII_DECLARE_FLAGS_WITH_DEFAULT(InternalStorageType, BitflagsTypeName, DefaultValue, ...) \
   struct BitflagsTypeName                                                                        \
   {                                                                                              \
-    static const xiiUInt32      Count = XII_VA_NUM_ARGS(__VA_ARGS__);                            \
-    typedef InternalStorageType StorageType;                                                     \
+    static const xiiUInt32 Count = XII_VA_NUM_ARGS(__VA_ARGS__);                                 \
+    using StorageType            = InternalStorageType;                                          \
     enum Enum                                                                                    \
     {                                                                                            \
       XII_EXPAND_ARGS_WITH_INDEX(XII_DECLARE_FLAGS_ENUM, ##__VA_ARGS__) Default = DefaultValue   \

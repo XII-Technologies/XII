@@ -265,7 +265,7 @@ void xiiRcAgentComponent::PlanNextSteps()
   m_iFirstNextStep = 0;
   m_iNumNextSteps  = m_pCorridor->findCorners(&m_vNextSteps[0].x, stepFlags, stepPolys, 4, m_pQuery.Borrow(), &m_QueryFilter);
 
-  // convert from Recast convention (Y up) to xii (Z up)
+  // convert from Recast convention (Y up) to XII (Z up)
   for (xiiInt32 i = 0; i < m_iNumNextSteps; ++i)
   {
     xiiMath::Swap(m_vNextSteps[i].y, m_vNextSteps[i].z);

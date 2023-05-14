@@ -60,7 +60,7 @@ public:
 
   // Mipmaps / filtering
   xiiEnum<xiiTexConvMipmapMode>    m_MipmapMode;
-  xiiEnum<xiiTextureFilterSetting> m_FilterMode; // only used when writing to xii specific formats
+  xiiEnum<xiiTextureFilterSetting> m_FilterMode; // only used when writing to XII specific formats
   xiiEnum<xiiImageAddressMode>     m_AddressModeU;
   xiiEnum<xiiImageAddressMode>     m_AddressModeV;
   xiiEnum<xiiImageAddressMode>     m_AddressModeW;

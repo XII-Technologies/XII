@@ -14,7 +14,7 @@
 class XII_FOUNDATION_DLL xiiStats
 {
 public:
-  typedef xiiMap<xiiString, xiiVariant> MapType;
+  using MapType = xiiMap<xiiString, xiiVariant>;
 
   /// \brief Removes the stat with the given name.
   ///
@@ -51,7 +51,7 @@ public:
     xiiVariant  m_NewStatValue;
   };
 
-  typedef xiiEvent<const StatsEventData&, xiiMutex> xiiEventStats;
+  using xiiEventStats = xiiEvent<const StatsEventData&, xiiMutex>;
 
   /// \brief Adds an event handler that is called every time a stat is changed.
   static void AddEventHandler(xiiEventStats::Handler handler) { s_StatsEvents.AddEventHandler(handler); }

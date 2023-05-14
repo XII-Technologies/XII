@@ -45,11 +45,11 @@ public:
     xiiUInt16 m_uiNumEventHandlersOnce;
   };
 
-  typedef xiiMap<xiiString, EventData> EventMap;
+  using EventMap = xiiMap<xiiString, EventData>;
 
 public:
   /// \brief [internal] Use the macro XII_ON_GLOBAL_EVENT or XII_ON_GLOBAL_EVENT_ONCE to create an event handler.
-  typedef void (*XII_GLOBAL_EVENT_HANDLER)(const xiiVariant& param0, const xiiVariant& param1, const xiiVariant& param2, const xiiVariant& param3);
+  using XII_GLOBAL_EVENT_HANDLER = void (*)(const xiiVariant& param0, const xiiVariant& param1, const xiiVariant& param2, const xiiVariant& param3);
 
   /// \brief [internal] Use the macro XII_ON_GLOBAL_EVENT or XII_ON_GLOBAL_EVENT_ONCE to create an event handler.
   xiiGlobalEvent(const char* szEventName, XII_GLOBAL_EVENT_HANDLER EventHandler, bool bOnlyOnce); // [tested]

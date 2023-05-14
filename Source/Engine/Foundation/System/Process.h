@@ -8,8 +8,8 @@
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/UniquePtr.h>
 
-typedef void*     xiiOsProcessHandle;
-typedef xiiUInt32 xiiOsProcessID;
+using xiiOsProcessHandle = void*;
+using xiiOsProcessID     = xiiUInt32;
 
 #if XII_ENABLED(XII_SUPPORTS_PROCESSES)
 enum class xiiProcessState
@@ -66,7 +66,7 @@ struct XII_FOUNDATION_DLL xiiProcessOptions
 /// \brief Flags for xiiProcess::Launch()
 struct xiiProcessLaunchFlags
 {
-  typedef xiiUInt32 StorageType;
+  using StorageType = xiiUInt32;
 
   enum Enum
   {

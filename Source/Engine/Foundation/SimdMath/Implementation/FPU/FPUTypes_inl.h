@@ -4,8 +4,11 @@
 
 namespace xiiInternal
 {
-  using QuadFloat = xiiVec4;
-  using QuadUInt  = xiiVec4U32;
-  using QuadInt   = xiiVec4I32;
-  using QuadBool  = xiiVec4U32;
+  using QuadDouble = xiiVec4d;
+  using QuadUInt64 = xiiVec4U64;
+  using QuadInt64  = xiiVec4I64;
+  using QuadFloat  = xiiVec4;
+  using QuadUInt   = xiiVec4U32;
+  using QuadInt    = xiiVec4I32;
+  using QuadBool   = xiiVec4U32;
 } // namespace xiiInternal

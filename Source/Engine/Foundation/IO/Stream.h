@@ -10,7 +10,7 @@
 #include <Foundation/Math/Math.h>
 #include <Foundation/Memory/EndianHelper.h>
 
-typedef xiiUInt16 xiiTypeVersion;
+using xiiTypeVersion = xiiUInt16;
 
 template <xiiUInt16 Size, typename AllocatorWrapper>
 struct xiiHybridString;

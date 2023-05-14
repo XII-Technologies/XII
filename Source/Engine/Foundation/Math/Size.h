@@ -38,7 +38,10 @@ bool operator!=(const xiiSizeTemplate<Type>& v1, const xiiSizeTemplate<Type>& v2
 
 #include <Foundation/Math/Implementation/Size_inl.h>
 
-typedef xiiSizeTemplate<xiiUInt32> xiiSizeU32;
-typedef xiiSizeTemplate<float>     xiiSizeFloat;
-typedef xiiSizeTemplate<double>    xiiSizeDouble;
-typedef xiiSizeTemplate<xiiReal>   xiiSizeReal;
+using xiiSizeU8     = xiiSizeTemplate<xiiUInt8>;
+using xiiSizeU16    = xiiSizeTemplate<xiiUInt16>;
+using xiiSizeU32    = xiiSizeTemplate<xiiUInt32>;
+using xiiSizeU64    = xiiSizeTemplate<xiiUInt64>;
+using xiiSizeFloat  = xiiSizeTemplate<float>;
+using xiiSizeDouble = xiiSizeTemplate<double>;
+using xiiSizeReal   = xiiSizeTemplate<xiiReal>;

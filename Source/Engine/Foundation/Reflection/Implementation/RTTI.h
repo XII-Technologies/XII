@@ -18,7 +18,8 @@ class xiiAbstractMessageHandler;
 struct xiiMessageSenderInfo;
 class xiiPropertyAttribute;
 class xiiMessage;
-typedef xiiUInt16 xiiMessageId;
+
+using xiiMessageId = xiiUInt16;
 
 /// \brief This enumerable class holds information about reflected types. Each instance represents one type that is known to the reflection
 /// system.

@@ -124,7 +124,7 @@ template <typename RESOURCE_TYPE>
 class xiiTypedResourceHandle
 {
 public:
-  typedef RESOURCE_TYPE ResourceType;
+  using ResourceType = RESOURCE_TYPE;
 
   /// \brief A default constructed handle is invalid and does not reference any resource.
   xiiTypedResourceHandle() {}

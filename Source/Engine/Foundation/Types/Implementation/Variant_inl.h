@@ -331,8 +331,8 @@ XII_ALWAYS_INLINE bool xiiVariant::IsA() const
     }
     else if (ptr.m_pType)
     {
-      typedef typename xiiTypeTraits<T>::NonConstReferencePointerType NonPointerT;
-      const xiiRTTI*                                                  pType = xiiGetStaticRTTI<NonPointerT>();
+      using NonPointerT    = typename xiiTypeTraits<T>::NonConstReferencePointerType;
+      const xiiRTTI* pType = xiiGetStaticRTTI<NonPointerT>();
       return IsDerivedFrom(ptr.m_pType, pType);
     }
     else if (!ptr.m_pObject)
@@ -353,7 +353,7 @@ XII_ALWAYS_INLINE bool xiiVariant::IsA() const
 template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, int>>
 XII_ALWAYS_INLINE bool xiiVariant::IsA() const
 {
-  typedef typename xiiTypeTraits<T>::NonConstReferenceType NonRefT;
+  using NonRefT = typename xiiTypeTraits<T>::NonConstReferenceType;
   if (m_uiType == TypeDeduction<T>::value)
   {
     if (const xiiRTTI* pType = GetReflectedType())
@@ -479,7 +479,7 @@ XII_FORCE_INLINE void xiiVariant::InitInplace(const T& value)
 template <typename T>
 XII_FORCE_INLINE void xiiVariant::InitTypedObject(const T& value, xiiTraitInt<0>)
 {
-  typedef typename TypeDeduction<T>::StorageType StorageType;
+  using StorageType = typename TypeDeduction<T>::StorageType;
 
   XII_CHECK_AT_COMPILETIME_MSG((sizeof(StorageType) > sizeof(InlinedStruct::DataSize)) || TypeDeduction<T>::forceSharing, "Value should be inplace instead.");
   XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value == Type::TypedObject, "value of this type cannot be stored in a Variant");
@@ -492,7 +492,7 @@ XII_FORCE_INLINE void xiiVariant::InitTypedObject(const T& value, xiiTraitInt<0>
 template <typename T>
 XII_FORCE_INLINE void xiiVariant::InitTypedObject(const T& value, xiiTraitInt<1>)
 {
-  typedef typename TypeDeduction<T>::StorageType StorageType;
+  using StorageType = typename TypeDeduction<T>::StorageType;
   XII_CHECK_AT_COMPILETIME_MSG((sizeof(StorageType) <= InlinedStruct::DataSize) && !TypeDeduction<T>::forceSharing, "Value can't be stored inplace.");
   XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value == Type::TypedObject, "value of this type cannot be stored in a Variant");
   XII_CHECK_AT_COMPILETIME_MSG(xiiIsPodType<T>::value, "in place data needs to be POD");
@@ -554,8 +554,8 @@ T xiiVariant::Cast() const
 {
   const xiiTypedPointer& ptr = *reinterpret_cast<const xiiTypedPointer*>(&m_Data);
 
-  const xiiRTTI*                                                  pType = GetReflectedType();
-  typedef typename xiiTypeTraits<T>::NonConstReferencePointerType NonRefPtrT;
+  const xiiRTTI* pType = GetReflectedType();
+  using NonRefPtrT     = typename xiiTypeTraits<T>::NonConstReferencePointerType;
   if constexpr (!std::is_same<T, void*>::value && !std::is_same<T, const void*>::value)
   {
     XII_ASSERT_DEV(pType == nullptr || IsDerivedFrom(pType, xiiGetStaticRTTI<NonRefPtrT>()), "Object of type '{0}' does not derive from '{}'", GetTypeName(pType), GetTypeName(xiiGetStaticRTTI<NonRefPtrT>()));
@@ -575,8 +575,8 @@ const T xiiVariant::Cast() const
 template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, int>>
 const T& xiiVariant::Cast() const
 {
-  const xiiRTTI*                                           pType = GetReflectedType();
-  typedef typename xiiTypeTraits<T>::NonConstReferenceType NonRefT;
+  const xiiRTTI* pType = GetReflectedType();
+  using NonRefT        = typename xiiTypeTraits<T>::NonConstReferenceType;
   XII_ASSERT_DEV(IsDerivedFrom(pType, xiiGetStaticRTTI<NonRefT>()), "Object of type '{0}' does not derive from '{}'", GetTypeName(pType), GetTypeName(xiiGetStaticRTTI<NonRefT>()));
 
   return m_bIsShared ? *static_cast<const T*>(m_Data.shared->m_Ptr) : *reinterpret_cast<const T*>(&m_Data);

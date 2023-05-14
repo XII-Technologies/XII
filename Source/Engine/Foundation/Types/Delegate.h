@@ -28,7 +28,7 @@ protected:
 /// Delegates have a rather strange syntax:
 ///
 /// \code{.cpp}
-///   typedef xiiDelegate<void (xiiUInt32, float)> SomeCallback;
+///   using SomeCallback = xiiDelegate<void (xiiUInt32, float)>;
 /// \endcode
 ///
 /// This defines a type 'SomeCallback' that can call any function that returns void and

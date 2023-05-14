@@ -14,7 +14,7 @@ class xiiRawMemoryStreamReader;
 /// \brief Utilities for working with xiiArchive files
 namespace xiiArchiveUtils
 {
-  typedef xiiDelegate<bool(xiiUInt64, xiiUInt64)> FileWriteProgressCallback;
+  using FileWriteProgressCallback = xiiDelegate<bool(xiiUInt64, xiiUInt64)>;
 
   /// \brief Returns a modifiable array of file extensions that the engine considers to be valid xiiArchive file extensions.
   ///

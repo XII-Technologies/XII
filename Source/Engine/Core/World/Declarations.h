@@ -33,7 +33,7 @@ namespace xiiInternal
     DEFAULT_BLOCK_SIZE = 1024 * 16
   };
 
-  typedef xiiLargeBlockAllocator<DEFAULT_BLOCK_SIZE> WorldLargeBlockAllocator;
+  using WorldLargeBlockAllocator = xiiLargeBlockAllocator<DEFAULT_BLOCK_SIZE>;
 } // namespace xiiInternal
 
 class xiiGameObject;
@@ -47,7 +47,7 @@ struct xiiMsgDeleteGameObject;
 /// \brief Internal game object id used by xiiGameObjectHandle.
 struct xiiGameObjectId
 {
-  typedef xiiUInt64 StorageType;
+  using StorageType = xiiUInt64;
 
   XII_DECLARE_ID_TYPE(xiiGameObjectId, 32, 8);
 
@@ -107,7 +107,7 @@ XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiGameObjectHandle);
 /// \brief Internal component id used by xiiComponentHandle.
 struct xiiComponentId
 {
-  typedef xiiUInt64 StorageType;
+  using StorageType = xiiUInt64;
 
   XII_DECLARE_ID_TYPE(xiiComponentId, 32, 8);
 
@@ -173,7 +173,7 @@ XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiComponentHandle);
 /// \brief Internal flags of game objects or components.
 struct xiiObjectFlags
 {
-  typedef xiiUInt32 StorageType;
+  using StorageType = xiiUInt32;
 
   enum Enum
   {
@@ -242,7 +242,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiObjectFlags);
 /// \sa xiiObjectFlags
 struct xiiObjectMode
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum : xiiUInt8
   {
@@ -316,7 +316,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiOnComponentFinishedAction);
 /// \brief Same as xiiOnComponentFinishedAction, but additionally includes 'Restart'
 struct XII_CORE_DLL xiiOnComponentFinishedAction2
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -348,17 +348,17 @@ struct xiiVisitorExecution
   };
 };
 
-typedef xiiGenericId<24, 8> xiiSpatialDataId;
+using xiiSpatialDataId = xiiGenericId<24, 8>;
 class xiiSpatialDataHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiSpatialDataHandle, xiiSpatialDataId);
 };
 
 #define XII_MAX_WORLD_MODULE_TYPES XII_MAX_COMPONENT_TYPES
-typedef xiiUInt16 xiiWorldModuleTypeId;
+using xiiWorldModuleTypeId = xiiUInt16;
 static_assert(xiiMath::MaxValue<xiiWorldModuleTypeId>() >= XII_MAX_WORLD_MODULE_TYPES - 1);
 
-typedef xiiGenericId<24, 8> xiiComponentInitBatchId;
+using xiiComponentInitBatchId = xiiGenericId<24, 8>;
 class xiiComponentInitBatchHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiComponentInitBatchHandle, xiiComponentInitBatchId);

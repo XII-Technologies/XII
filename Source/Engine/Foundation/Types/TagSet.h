@@ -6,7 +6,7 @@
 #include <Foundation/Types/TagRegistry.h>
 
 class xiiTag;
-typedef xiiUInt64 xiiTagSetBlockStorage;
+using xiiTagSetBlockStorage = xiiUInt64;
 
 /// \brief A dynamic collection of tags featuring fast lookups.
 ///
@@ -119,7 +119,7 @@ private:
 };
 
 /// Default tag set, uses xiiDefaultAllocatorWrapper for allocations.
-typedef xiiTagSetTemplate<> xiiTagSet;
+using xiiTagSet = xiiTagSetTemplate<>;
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiTagSet);
 
