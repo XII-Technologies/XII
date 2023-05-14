@@ -12,6 +12,16 @@ struct xiiMathFloatBits
   };
 };
 
+struct xiiMathDoubleBits
+{
+  enum Enum
+  {
+    FULL,
+    BITS_27,
+    BITS_14
+  };
+};
+
 #if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
 #  include <Foundation/SimdMath/Implementation/SSE/SSETypes_inl.h>
 #elif XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_FPU
