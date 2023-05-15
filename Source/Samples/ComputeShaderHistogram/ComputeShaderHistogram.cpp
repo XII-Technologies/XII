@@ -98,9 +98,7 @@ xiiApplication::Execution xiiComputeShaderHistogramApp::Run()
     {
       renderContext.BeginCompute(pGALPass, "ComputeHistogram");
 
-      // Reset first. UAV Clearing is currently only supported on D3D11.
-      if (device->GetCapabilities().m_DeviceType == xiiGraphicsDeviceType::D3D11)
-        renderContext.GetCommandEncoder()->ClearUnorderedAccessView(m_hHistogramUAV, xiiVec4U32(0, 0, 0, 0));
+      renderContext.GetCommandEncoder()->ClearUnorderedAccessView(m_hHistogramUAV, xiiVec4U32(0, 0, 0, 0));
 
       renderContext.BindShader(m_hHistogramComputeShader);
       renderContext.BindTexture2D("ScreenTexture", m_hScreenSRV);

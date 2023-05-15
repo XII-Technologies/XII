@@ -302,7 +302,6 @@ void xiiGALCommandEncoderImplDiligent::SetShaderPlatform(const xiiGALShader* pSh
 
 void xiiGALCommandEncoderImplDiligent::SetConstantBufferPlatform(xiiUInt32 uiSlot, const xiiGALBuffer* pBuffer)
 {
-  /// \todo Check if the device supports the stage / the slot index
   xiiGALBuffer* pGALBuffer = const_cast<xiiGALBuffer*>(pBuffer);
 
   m_pBoundConstantBuffers[uiSlot] = pBuffer != nullptr ? static_cast<xiiGALBufferDiligent*>(pGALBuffer) : nullptr;
@@ -310,7 +309,6 @@ void xiiGALCommandEncoderImplDiligent::SetConstantBufferPlatform(xiiUInt32 uiSlo
 
 void xiiGALCommandEncoderImplDiligent::SetSamplerStatePlatform(xiiGALShaderStage::Enum Stage, xiiUInt32 uiSlot, const xiiGALSamplerState* pSamplerState)
 {
-  /// \todo Check if the device supports the stage / the slot index
   xiiGALSamplerState* pGALSampler = const_cast<xiiGALSamplerState*>(pSamplerState);
 
   m_pBoundSamplerStates[Stage][uiSlot] = pSamplerState != nullptr ? static_cast<xiiGALSamplerStateDiligent*>(pGALSampler) : nullptr;
@@ -442,19 +440,11 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
         pTextureView->GetTexture()->QueryInterface(Diligent::IID_TextureVk, reinterpret_cast<Diligent::IObject**>(&pTextureVk));
         XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture view.");
 
-        const bool bIsDepthFormat = xiiDiligentUtils::IsDepthFormat();
-        ;
-        vk::ImageSubresourceRange range;
-        range.aspectMask     = GetAspectMask();
-        range.baseArrayLayer = 0;
-        range.baseMipLevel   = 0;
-        range.layerCount     = m_Description.m_Type == ezGALTextureType::TextureCube ? m_Description.m_uiArraySize * 6 : m_Description.m_uiArraySize;
-        range.levelCount     = m_Description.m_uiMipLevelCount;
+        const VkClearColorValue       clearColourValues{clearValues.x, clearValues.y, clearValues.z};
+        const VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+        vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColourValues, 1, &subresourceRange);
 
-        const VkClearColorValue clearColourValues{clearValues.x, clearValues.y, clearValues.z};
-        vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColourValues, 1, pTextureVk->getsi);
-
-        XII_GAL_DILIGENT_UNWRAPPED_RELEASvkCmdFillBufferE(pTextureViewVk);
+        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureVk);
       }
 
       XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pContextVk);
@@ -523,7 +513,36 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
     case Diligent::RENDER_DEVICE_TYPE_VULKAN:
     {
       // \todo Implement unordered access view clearing in Vulkan
-      XII_ASSERT_NOT_IMPLEMENTED;
+
+      Diligent::IDeviceContextVk* pContextVk = static_cast<Diligent::IDeviceContextVk*>(m_pContext);
+      m_pContext->QueryInterface(Diligent::IID_DeviceContextVk, reinterpret_cast<Diligent::IObject**>(&pContextVk));
+      XII_ASSERT_DEV(pContextVk != nullptr, "Failed to retrieve the Vulkan context.");
+
+      if (Diligent::IBufferView* pBufferView = pUnorderedAccessViewDiligent->GetBufferView())
+      {
+        Diligent::IBufferVk* pBufferVk = static_cast<Diligent::IBufferVk*>(pBufferView->GetBuffer());
+        pBufferView->GetBuffer()->QueryInterface(Diligent::IID_BufferVk, reinterpret_cast<Diligent::IObject**>(&pBufferVk));
+        XII_ASSERT_DEV(pBufferVk != nullptr, "Failed to retrieve the Vulkan buffer view.");
+
+        vkCmdFillBuffer(pContextVk->GetVkCommandBuffer(), pBufferVk->GetVkBuffer(), 0, VK_WHOLE_SIZE, clearValues.x);
+
+        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pBufferVk);
+      }
+
+      if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
+      {
+        Diligent::ITextureVk* pTextureVk = static_cast<Diligent::ITextureVk*>(pTextureView->GetTexture());
+        pTextureView->GetTexture()->QueryInterface(Diligent::IID_TextureVk, reinterpret_cast<Diligent::IObject**>(&pTextureVk));
+        XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture view.");
+
+        const VkClearColorValue       clearColourValues{clearValues.x, clearValues.y, clearValues.z};
+        const VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+        vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColourValues, 1, &subresourceRange);
+
+        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureVk);
+      }
+
+      XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pContextVk);
     }
     break;
 #endif

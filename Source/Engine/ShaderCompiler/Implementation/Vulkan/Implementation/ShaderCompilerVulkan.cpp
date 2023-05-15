@@ -283,6 +283,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
             binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ConstantBuffer;
             break;
 
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE:
           case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
             binding.m_Type = (spirvInfo.image.dim == SpvDim::SpvDimBuffer) ? xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer : xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewTexture;
             break;
