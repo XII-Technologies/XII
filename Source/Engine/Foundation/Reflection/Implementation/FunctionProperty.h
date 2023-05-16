@@ -58,7 +58,7 @@ class xiiFunctionProperty
   class xiiFunctionProperty<R (CLASS::*)(Args...) CONSTNESS> : public xiiTypedFunctionProperty<R, Args...>                                                   \
   {                                                                                                                                                          \
   public:                                                                                                                                                    \
-    using TargetFunction = R (CLASS::*)(Args...) CONSTNESS;                                                                                                  \
+    using TargetFunction = R (CLASS::*)(Args...);                                                                                                            \
                                                                                                                                                              \
     xiiFunctionProperty(const char* szPropertyName, TargetFunction func) : xiiTypedFunctionProperty<R, Args...>(szPropertyName)                              \
     {                                                                                                                                                        \
