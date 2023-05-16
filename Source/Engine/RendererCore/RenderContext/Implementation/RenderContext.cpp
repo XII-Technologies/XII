@@ -1280,8 +1280,8 @@ void xiiRenderContext::ApplyBufferBindings(xiiGALShaderStage::Enum stage, const 
 
 void xiiRenderContext::SetDefaultTextureFilter(xiiTextureFilterSetting::Enum filter)
 {
-  XII_ASSERT_DEBUG(
-    filter >= xiiTextureFilterSetting::FixedBilinear && filter <= xiiTextureFilterSetting::FixedAnisotropic16x, "Invalid default texture filter");
+  XII_ASSERT_DEBUG(filter >= xiiTextureFilterSetting::FixedBilinear && filter <= xiiTextureFilterSetting::FixedAnisotropic16x, "Invalid default texture filter");
+
   filter = xiiMath::Clamp(filter, xiiTextureFilterSetting::FixedBilinear, xiiTextureFilterSetting::FixedAnisotropic16x);
 
   if (m_DefaultTextureFilter == filter)

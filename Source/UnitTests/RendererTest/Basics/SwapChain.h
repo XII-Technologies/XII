@@ -50,9 +50,8 @@ private:
       case SubTests::ST_D32:
       case SubTests::ST_NoVSync:
         return BasicRenderLoop(iIdentifier, uiInvocationCount);
-      default:
-        XII_ASSERT_NOT_IMPLEMENTED;
-        break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
     return xiiTestAppRun::Quit;
   }

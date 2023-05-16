@@ -18,6 +18,7 @@ namespace
     xiiTransform t = xiiTransform::IdentityTransform();
     t.m_vScale     = xiiVec3(1.0f / float(uiColumns), 1.0f / float(uiRows), 1);
     t.m_vPosition  = xiiVec3(xiiMath::Lerp(-1.f, 1.f, (float(x) + 0.5f) / float(uiColumns)), xiiMath::Lerp(1.f, -1.f, (float(y) + 0.5f) / float(uiRows)), 0);
+
     if (xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped)
     {
       xiiTransform flipY = xiiTransform::IdentityTransform();
@@ -91,17 +92,18 @@ namespace
     xiiCamera cam;
     cam.SetCameraMode(xiiCameraMode::PerspectiveFixedFovX, 90, 0.5f, 1000.0f);
     cam.LookAt(xiiVec3(0, 0, 0), xiiVec3(0, 0, -1), xiiVec3(0, 1, 0));
+
     xiiMat4 mProj;
     cam.GetProjectionMatrix(fAspectRatio, mProj);
+
     xiiMat4 mView = cam.GetViewMatrix();
 
     xiiMat4 mTransform;
     mTransform.SetTranslationMatrix(xiiVec3(0.0f, 0.0f, -1.2f));
+
     return mProj * mView * mTransform;
   }
 } // namespace
-
-
 
 xiiResult xiiRendererTestPipelineStates::InitializeSubTest(xiiInt32 iIdentifier)
 {

@@ -79,7 +79,7 @@ void xiiRendererTestSwapChain::ResizeTest(xiiUInt32 uiInvocationCount)
 {
   if (uiInvocationCount == 4)
   {
-    // Not implemented on all platforms,  so we ignore the result here.
+    // Not implemented on all platforms, so we ignore the result here.
     m_pWindow->Resize(xiiSizeU32(640, 480)).IgnoreResult();
   }
 
