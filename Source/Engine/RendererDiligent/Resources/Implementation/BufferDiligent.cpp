@@ -71,6 +71,8 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
     BufferDesc.CPUAccessFlags = Diligent::CPU_ACCESS_WRITE;
     BufferDesc.Usage          = Diligent::USAGE_DYNAMIC;
 
+    XII_ASSERT_DEV(pInitialData.IsEmpty(), "The initial data must be empty when using dynamic buffers.");
+
     // If constant buffer: Patch size to be aligned to 64 bytes for easier usability
     BufferDesc.Size = xiiMemoryUtils::AlignSize(static_cast<xiiUInt32>(BufferDesc.Size), 64u);
   }
@@ -92,21 +94,15 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
       {
         BufferDesc.CPUAccessFlags = Diligent::CPU_ACCESS_WRITE;
         BufferDesc.Usage          = Diligent::USAGE_DYNAMIC;
+        XII_ASSERT_DEV(pInitialData.IsEmpty(), "The initial data must be empty when using dynamic buffers.");
       }
     }
   }
 
-  if (!pInitialData.IsEmpty() && BufferDesc.Usage != Diligent::USAGE_DYNAMIC)
-  {
-    Diligent::BufferData initialData = {};
-    initialData.pData                = pInitialData.GetPtr();
-    initialData.DataSize             = pInitialData.GetCount();
-    pDeviceDiligent->GetDevice()->CreateBuffer(BufferDesc, pInitialData.IsEmpty() ? nullptr : &initialData, &m_pBuffer);
-  }
-  else
-  {
-    pDeviceDiligent->GetDevice()->CreateBuffer(BufferDesc, nullptr, &m_pBuffer);
-  }
+  Diligent::BufferData initialData = {};
+  initialData.pData                = pInitialData.GetPtr();
+  initialData.DataSize             = pInitialData.GetCount();
+  pDeviceDiligent->GetDevice()->CreateBuffer(BufferDesc, pInitialData.IsEmpty() ? nullptr : &initialData, &m_pBuffer);
 
   return (m_pBuffer != nullptr) ? XII_SUCCESS : XII_FAILURE;
 }
