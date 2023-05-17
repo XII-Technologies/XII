@@ -66,16 +66,16 @@ namespace
     header.SetNumMipLevels(uiMipLevelCount);
 
     image.ResetAndAlloc(header);
-    for (xiiUInt32 m = 0; m < uiMipLevelCount; m++)
+    for (xiiUInt32 m = 0; m < uiMipLevelCount; ++m)
     {
       const xiiUInt32 uiHeight = image.GetHeight(m);
       const xiiUInt32 uiWidth  = image.GetWidth(m);
 
       const xiiUInt8 uiBlue = bMipLevelIsBlue ? static_cast<xiiUInt8>(255.0f * float(m) / (uiMipLevelCount - 1)) : uiFixedBlue;
-      for (xiiUInt32 y = 0; y < uiHeight; y++)
+      for (xiiUInt32 y = 0; y < uiHeight; ++y)
       {
         const xiiUInt8 uiGreen = static_cast<xiiUInt8>(255.0f * float(y) / (uiHeight - 1));
-        for (xiiUInt32 x = 0; x < uiWidth; x++)
+        for (xiiUInt32 x = 0; x < uiWidth; ++x)
         {
           ImgColor* pColor = image.GetPixelPointer<ImgColor>(m, 0u, 0u, x, y);
           pColor->a        = 255;
@@ -165,6 +165,7 @@ xiiResult xiiRendererTestPipelineStates::InitializeSubTest(xiiInt32 iIdentifier)
 
   {
     xiiGALBufferCreationDescription desc;
+    desc.m_szName                      = "Instancing buffer - xiiTestShaderData";
     desc.m_uiStructSize                = sizeof(xiiTestShaderData);
     desc.m_uiTotalSize                 = 16 * desc.m_uiStructSize;
     desc.m_BufferType                  = xiiGALBufferType::Generic;
@@ -251,7 +252,7 @@ xiiResult xiiRendererTestPipelineStates::InitializeSubTest(xiiInt32 iIdentifier)
     desc.m_uiHeight        = 8;
     desc.m_uiMipLevelCount = 4;
     desc.m_uiArraySize     = 2;
-    desc.m_Type            = xiiGALTextureType::Texture2D;
+    desc.m_Type            = xiiGALTextureType::Texture2DArray;
     desc.m_Format          = xiiGALResourceFormat::BGRAUByteNormalizedsRGB;
 
     xiiImage coloredMips[2];
@@ -320,11 +321,13 @@ xiiResult xiiRendererTestPipelineStates::InitializeSubTest(xiiInt32 iIdentifier)
       m_ImgCompFrames.PushBack(ImageCaptureFrames::DefaultCapture);
       break;
     case SubTests::ST_StructuredBuffer:
+    {
       m_ImgCompFrames.PushBack(ImageCaptureFrames::StructuredBuffer_InitialData);
       m_ImgCompFrames.PushBack(ImageCaptureFrames::StructuredBuffer_Discard);
       m_ImgCompFrames.PushBack(ImageCaptureFrames::StructuredBuffer_NoOverwrite);
       m_ImgCompFrames.PushBack(ImageCaptureFrames::StructuredBuffer_CopyToTempStorage);
-      break;
+    }
+    break;
     case SubTests::ST_GenerateMipMaps:
     case SubTests::ST_Texture2D:
     {
@@ -455,7 +458,6 @@ void xiiRendererTestPipelineStates::RenderBlock(xiiMeshBufferResourceHandle mesh
   {
     xiiGALRenderCommandEncoder* pCommandEncoder = BeginRendering(clearColor, uiRenderTargetClearMask, pViewport, pScissor);
     {
-
       if (mesh.IsValid())
       {
         xiiRenderContext::GetDefaultInstance()->BindShader(m_hNDCPositionOnlyShader);
@@ -489,12 +491,14 @@ xiiGALRenderCommandEncoder* xiiRendererTestPipelineStates::BeginRendering(xiiCol
   renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, m_pDevice->GetDefaultRenderTargetView(pPrimarySwapChain->GetBackBufferTexture()));
   renderingSetup.m_ClearColor              = clearColor;
   renderingSetup.m_uiRenderTargetClearMask = uiRenderTargetClearMask;
+
   if (!m_hDepthStencilTexture.IsInvalidated())
   {
     renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(m_pDevice->GetDefaultRenderTargetView(m_hDepthStencilTexture));
     renderingSetup.m_bClearDepth   = true;
     renderingSetup.m_bClearStencil = true;
   }
+
   xiiRectFloat viewport = xiiRectFloat(0.0f, 0.0f, (float)m_pWindow->GetClientAreaSize().width, (float)m_pWindow->GetClientAreaSize().height);
   if (pViewport)
   {
@@ -611,7 +615,6 @@ void xiiRendererTestPipelineStates::StructuredBufferTest()
 {
   m_pPass = m_pDevice->BeginPass("InstancingTest");
   {
-
     xiiGALRenderCommandEncoder* pCommandEncoder = BeginRendering(xiiColor::CornflowerBlue, 0xFFFFFFFF);
     if (m_iFrame == ImageCaptureFrames::StructuredBuffer_Discard)
     {
@@ -693,10 +696,13 @@ void xiiRendererTestPipelineStates::Texture2D()
   {
     xiiRectFloat viewport = xiiRectFloat(0, 0, fElementWidth, fElementHeight);
     RenderCube(viewport, mMVP, 0xFFFFFFFF, m_hTexture2D_Mip0);
+
     viewport = xiiRectFloat(fElementWidth, 0, fElementWidth, fElementHeight);
     RenderCube(viewport, mMVP, 0, m_hTexture2D_Mip1);
+
     viewport = xiiRectFloat(0, fElementHeight, fElementWidth, fElementHeight);
     RenderCube(viewport, mMVP, 0, m_hTexture2D_Mip2);
+
     m_bCaptureImage = true;
     viewport        = xiiRectFloat(fElementWidth, fElementHeight, fElementWidth, fElementHeight);
     RenderCube(viewport, mMVP, 0, m_hTexture2D_Mip3);
@@ -720,10 +726,13 @@ void xiiRendererTestPipelineStates::Texture2DArray()
   {
     xiiRectFloat viewport = xiiRectFloat(0, 0, fElementWidth, fElementHeight);
     RenderCube(viewport, mMVP, 0xFFFFFFFF, m_hTexture2DArray_Layer0_Mip0);
+
     viewport = xiiRectFloat(fElementWidth, 0, fElementWidth, fElementHeight);
     RenderCube(viewport, mMVP, 0, m_hTexture2DArray_Layer0_Mip1);
+
     viewport = xiiRectFloat(0, fElementHeight, fElementWidth, fElementHeight);
     RenderCube(viewport, mMVP, 0, m_hTexture2DArray_Layer1_Mip0);
+
     m_bCaptureImage = true;
     viewport        = xiiRectFloat(fElementWidth, fElementHeight, fElementWidth, fElementHeight);
     RenderCube(viewport, mMVP, 0, m_hTexture2DArray_Layer1_Mip1);
@@ -751,9 +760,12 @@ void xiiRendererTestPipelineStates::GenerateMipMaps()
 
     RenderCube(viewport, mMVP, 0xFFFFFFFF, m_hTexture2D_Mip0);
     viewport = xiiRectFloat(fElementWidth, 0, fElementWidth, fElementHeight);
+
     RenderCube(viewport, mMVP, 0, m_hTexture2D_Mip1);
     viewport = xiiRectFloat(0, fElementHeight, fElementWidth, fElementHeight);
+
     RenderCube(viewport, mMVP, 0, m_hTexture2D_Mip2);
+
     m_bCaptureImage = true;
     viewport        = xiiRectFloat(fElementWidth, fElementHeight, fElementWidth, fElementHeight);
     RenderCube(viewport, mMVP, 0, m_hTexture2D_Mip3);
@@ -773,12 +785,14 @@ void xiiRendererTestPipelineStates::Timestamps()
       m_CPUTime[0]    = xiiTime::Now();
       m_timestamps[0] = pCommandEncoder->InsertTimestamp();
     }
+
     xiiRenderContext::GetDefaultInstance()->BindShader(m_hNDCPositionOnlyShader);
     xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(m_hSphereMesh);
     xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer().AssertSuccess();
 
     if (m_iFrame == 2)
       m_timestamps[1] = pCommandEncoder->InsertTimestamp();
+
     EndRendering();
   }
   m_pDevice->EndPass(m_pPass);
@@ -789,14 +803,18 @@ void xiiRendererTestPipelineStates::Timestamps()
     if ((m_bTimestampsValid = m_pDevice->GetTimestampResult(m_timestamps[0], m_GPUTime[0]).Succeeded() && m_pDevice->GetTimestampResult(m_timestamps[1], m_GPUTime[1]).Succeeded()))
     {
       m_CPUTime[1] = xiiTime::Now();
+
       XII_TEST_BOOL_MSG(m_CPUTime[0] <= m_GPUTime[0], "%.6f < %.6f", m_CPUTime[0].GetSeconds(), m_GPUTime[0].GetSeconds());
       XII_TEST_BOOL_MSG(m_GPUTime[0] <= m_GPUTime[1], "%.6f < %.6f", m_GPUTime[0].GetSeconds(), m_GPUTime[1].GetSeconds());
       XII_TEST_BOOL_MSG(m_GPUTime[1] <= m_CPUTime[1], "%.6f < %.6f", m_GPUTime[1].GetSeconds(), m_CPUTime[1].GetSeconds());
+
       xiiTestFramework::GetInstance()->Output(xiiTestOutput::Message, "Timestamp results received after %d frames and %.3f seconds.", m_iFrame, (xiiTime::Now() - m_CPUTime[0]).AsFloatInSeconds());
       m_ImgCompFrames.Clear();
     }
   }
+
   xiiThreadUtils::Sleep(xiiTime::Milliseconds(16));
+
   if (m_iFrame > 2 && (xiiTime::Now() - m_CPUTime[0]).AsFloatInSeconds() > 10.0f)
   {
     XII_TEST_BOOL_MSG(m_bTimestampsValid, "Timestamp results are not present after 10 seconds.");

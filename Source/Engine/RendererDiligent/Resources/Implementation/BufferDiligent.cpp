@@ -96,10 +96,17 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
     }
   }
 
-  Diligent::BufferData initialData = {};
-  initialData.pData                = pInitialData.GetPtr();
-  initialData.DataSize             = pInitialData.GetCount();
-  pDeviceDiligent->GetDevice()->CreateBuffer(BufferDesc, pInitialData.IsEmpty() ? nullptr : &initialData, &m_pBuffer);
+  if (!pInitialData.IsEmpty() && BufferDesc.Usage != Diligent::USAGE_DYNAMIC)
+  {
+    Diligent::BufferData initialData = {};
+    initialData.pData                = pInitialData.GetPtr();
+    initialData.DataSize             = pInitialData.GetCount();
+    pDeviceDiligent->GetDevice()->CreateBuffer(BufferDesc, pInitialData.IsEmpty() ? nullptr : &initialData, &m_pBuffer);
+  }
+  else
+  {
+    pDeviceDiligent->GetDevice()->CreateBuffer(BufferDesc, nullptr, &m_pBuffer);
+  }
 
   return (m_pBuffer != nullptr) ? XII_SUCCESS : XII_FAILURE;
 }
