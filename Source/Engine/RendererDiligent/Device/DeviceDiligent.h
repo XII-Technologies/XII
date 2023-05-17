@@ -122,6 +122,12 @@ protected:
 
   void WaitForFencePlatform(Diligent::IDeviceContext* pContext, Diligent::IQuery* pFence);
 
+  Diligent::IBuffer* FindTempBuffer(xiiUInt32 uiSize);
+
+  Diligent::ITexture* FindTempTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiGALResourceFormat::Enum format);
+
+  void FreeTempResources(xiiUInt64 uiFrame);
+
   Diligent::RENDER_DEVICE_TYPE                  m_DeviceType     = Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
   Diligent::IEngineFactory*                     m_pEngineFactory = nullptr;
   Diligent::IRenderDevice*                      m_pDevice        = nullptr;
@@ -138,6 +144,29 @@ protected:
   xiiGALFormatLookupTableDiligent m_FormatLookupTable;
 
   xiiUniquePtr<xiiGALPassDiligent> m_pDefaultPass;
+
+  struct UsedTempResource
+  {
+    XII_DECLARE_POD_TYPE();
+
+    Diligent::IDeviceObject* m_pResource;
+    xiiUInt64                m_uiFrame;
+    xiiUInt32                m_uiHash;
+  };
+
+  struct TempResourceType
+  {
+    enum Enum
+    {
+      Buffer,
+      Texture,
+
+      ENUM_COUNT
+    };
+  };
+
+  xiiMap<xiiUInt32, xiiDynamicArray<Diligent::IDeviceObject*>, xiiCompareHelper<xiiUInt32>, xiiLocalAllocatorWrapper> m_FreeTempResources[TempResourceType::ENUM_COUNT];
+  xiiDeque<UsedTempResource, xiiLocalAllocatorWrapper>                                                                m_UsedTempResources[TempResourceType::ENUM_COUNT];
 
 #if XII_ENABLED(XII_USE_PROFILING)
   struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
