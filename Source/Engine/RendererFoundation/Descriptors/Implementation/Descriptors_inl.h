@@ -49,7 +49,7 @@ XII_FORCE_INLINE void xiiGALTextureCreationDescription::SetAsRenderTarget(
   m_uiArraySize                 = 1;
   m_SampleCount                 = sampleCount;
   m_Format                      = format;
-  m_Type                        = sampleCount != xiiGALMSAASampleCount::None ? xiiGALTextureType::Texture2DArray : xiiGALTextureType::Texture2D;
+  m_Type                        = xiiGALTextureType::Texture2D;
   m_bAllowShaderResourceView    = true;
   m_bAllowUAV                   = false;
   m_bCreateRenderTarget         = true;

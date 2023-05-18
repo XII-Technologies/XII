@@ -183,6 +183,7 @@ xiiResult xiiRendererTestPipelineStates::InitializeSubTest(xiiInt32 iIdentifier)
   {
     // Texture2D
     xiiGALTextureCreationDescription desc;
+    desc.m_Type            = xiiGALTextureType::Texture2D;
     desc.m_uiWidth         = 8;
     desc.m_uiHeight        = 8;
     desc.m_uiMipLevelCount = 4;
@@ -426,9 +427,8 @@ xiiTestAppRun xiiRendererTestPipelineStates::RunSubTest(xiiInt32 iIdentifier, xi
     case SubTests::ST_Timestamps:
       Timestamps();
       break;
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
-      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   xiiRenderContext::GetDefaultInstance()->ResetContextState();

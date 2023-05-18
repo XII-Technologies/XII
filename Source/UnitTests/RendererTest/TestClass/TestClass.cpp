@@ -54,7 +54,7 @@ xiiResult xiiGraphicsTest::SetupRenderer()
     xiiStringBuilder sReadDir(">sdk/", xiiTestFramework::GetInstance()->GetRelTestDataPath());
     sReadDir.PathParentDirectory();
 
-    XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(">appdir/", "ShaderCache", "shadercache", xiiFileSystem::AllowWrites)); // for shader files
+    XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(">appdir/", "ShaderCache", "shadercache", xiiFileSystem::AllowWrites)); // For shader files
 
     XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(sBaseDir, "Base"));
 
@@ -101,7 +101,7 @@ xiiResult xiiGraphicsTest::SetupRenderer()
 
   if (xiiStringUtils::IsEqual_NoCase(szRendererName, "DX11") || xiiStringUtils::IsEqual_NoCase(szRendererName, "D3D11") || xiiStringUtils::IsEqual_NoCase(szRendererName, "D3D12"))
   {
-    if (m_pDevice->GetCapabilities().m_sAdapterName == "Microsoft Basic Render Driver" || m_pDevice->GetCapabilities().m_sAdapterName.StartsWith_NoCase("Intel(R) UHD Graphics"))
+    if (m_pDevice->GetCapabilities().m_sAdapterName == "Microsoft Basic Render Driver" || m_pDevice->GetCapabilities().m_sAdapterName.StartsWith_NoCase("Intel(R) UHD Graphics") || m_pDevice->GetCapabilities().m_sAdapterName.StartsWith("NVIDIA"))
     {
       // Use different images for comparison when running the D3D Reference Device
       xiiTestFramework::GetInstance()->SetImageReferenceOverrideFolderName("Images_Reference_D3D11Ref");

@@ -93,9 +93,8 @@ xiiResult xiiRendererTestAdvancedFeatures::InitializeSubTest(xiiInt32 iIdentifie
     case SubTests::ST_VertexShaderRenderTargetArrayIndex:
       m_ImgCompFrames.PushBack(ImageCaptureFrames::DefaultCapture);
       break;
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
-      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   return XII_SUCCESS;
