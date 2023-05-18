@@ -173,18 +173,11 @@ xiiResult xiiRendererTestPipelineStates::InitializeSubTest(xiiInt32 iIdentifier)
     desc.m_bAllowShaderResourceView    = true;
     desc.m_ResourceAccess.m_bImmutable = false;
 
-    // We only fill the first 8 elements with data. The rest is dynamically updated during testing.
+    // \todo RendererCore: The first 8 elements of the data can be filled and the rest updated dynamically during testing through a streaming buffer object.
     xiiHybridArray<xiiTestShaderData, 16> instanceData;
     FillStructuredBuffer(instanceData);
-    m_hInstancingData = m_pDevice->CreateBuffer(desc, instanceData.GetByteArrayPtr());
-
-    xiiGALResourceViewCreationDescription viewDesc;
-    viewDesc.m_hBuffer         = m_hInstancingData;
-    viewDesc.m_uiFirstElement  = 8;
-    viewDesc.m_uiNumElements   = 4;
-    m_hInstancingDataView_8_4  = m_pDevice->CreateResourceView(viewDesc);
-    viewDesc.m_uiFirstElement  = 12;
-    m_hInstancingDataView_12_4 = m_pDevice->CreateResourceView(viewDesc);
+    m_hInstancingData     = m_pDevice->CreateBuffer(desc);
+    m_hInstancingDataView = m_pDevice->GetDefaultResourceView(m_hInstancingData);
   }
 
   {
@@ -369,8 +362,7 @@ xiiResult xiiRendererTestPipelineStates::DeInitializeSubTest(xiiInt32 iIdentifie
     m_pDevice->DestroyBuffer(m_hInstancingData);
     m_hInstancingData.Invalidate();
   }
-  m_hInstancingDataView_8_4.Invalidate();
-  m_hInstancingDataView_12_4.Invalidate();
+  m_hInstancingDataView.Invalidate();
 
   if (!m_hTexture2D.IsInvalidated())
   {
@@ -625,19 +617,48 @@ void xiiRendererTestPipelineStates::StructuredBufferTest()
     }
     else if (m_iFrame == ImageCaptureFrames::StructuredBuffer_NoOverwrite)
     {
+      // First update the first half of the buffer.
+      {
+        xiiHybridArray<xiiTestShaderData, 16> instanceData;
+        FillStructuredBuffer(instanceData);
+
+        pCommandEncoder->UpdateBuffer(m_hInstancingData, 0, instanceData.GetByteArrayPtr().ToByteArray(), xiiGALUpdateMode::NoOverWrite);
+      }
+
       // Nothing has touched the second half of the new buffer yet. Fill it with the original data of the first 8 elements.
-      xiiHybridArray<xiiTestShaderData, 16> instanceData;
-      FillStructuredBuffer(instanceData);
-      instanceData.SetCount(8);
-      pCommandEncoder->UpdateBuffer(m_hInstancingData, 8 * sizeof(xiiTestShaderData), instanceData.GetArrayPtr().ToByteArray(), xiiGALUpdateMode::NoOverWrite);
+      {
+        xiiHybridArray<xiiTestShaderData, 16> instanceData;
+        FillStructuredBuffer(instanceData);
+        instanceData.SetCount(8);
+        pCommandEncoder->UpdateBuffer(m_hInstancingData, 8 * sizeof(xiiTestShaderData), instanceData.GetArrayPtr().ToByteArray(), xiiGALUpdateMode::NoOverWrite);
+      }
     }
     else if (m_iFrame == ImageCaptureFrames::StructuredBuffer_CopyToTempStorage)
     {
+      // First update the first half of the buffer.
+      {
+        xiiHybridArray<xiiTestShaderData, 16> instanceData;
+        FillStructuredBuffer(instanceData);
+
+        pCommandEncoder->UpdateBuffer(m_hInstancingData, 0, instanceData.GetByteArrayPtr().ToByteArray(), xiiGALUpdateMode::NoOverWrite);
+      }
+
       // Now we replace the first 4 elements of the second half of the buffer.
+      {
+        xiiHybridArray<xiiTestShaderData, 16> instanceData;
+        FillStructuredBuffer(instanceData, 16);
+        instanceData.SetCount(4);
+
+        pCommandEncoder->UpdateBuffer(m_hInstancingData, 8 * sizeof(xiiTestShaderData), instanceData.GetArrayPtr().ToByteArray(), xiiGALUpdateMode::CopyToTempStorage);
+      }
+    }
+    else
+    {
+      // Update the first half of the buffer.
       xiiHybridArray<xiiTestShaderData, 16> instanceData;
-      FillStructuredBuffer(instanceData, 16);
-      instanceData.SetCount(4);
-      pCommandEncoder->UpdateBuffer(m_hInstancingData, 8 * sizeof(xiiTestShaderData), instanceData.GetArrayPtr().ToByteArray(), xiiGALUpdateMode::CopyToTempStorage);
+      FillStructuredBuffer(instanceData);
+
+      pCommandEncoder->UpdateBuffer(m_hInstancingData, 0, instanceData.GetByteArrayPtr().ToByteArray(), xiiGALUpdateMode::NoOverWrite);
     }
 
     xiiRenderContext* pContext = xiiRenderContext::GetDefaultInstance();
@@ -652,10 +673,8 @@ void xiiRendererTestPipelineStates::StructuredBufferTest()
       }
       else if (m_iFrame >= ImageCaptureFrames::StructuredBuffer_NoOverwrite)
       {
-        pContext->BindBuffer("instancingData", m_hInstancingDataView_8_4);
-        pContext->DrawMeshBuffer(1, 0, 4).AssertSuccess();
-        pContext->BindBuffer("instancingData", m_hInstancingDataView_12_4);
-        pContext->DrawMeshBuffer(1, 0, 4).AssertSuccess();
+        pContext->BindBuffer("instancingData", m_hInstancingDataView);
+        pContext->DrawMeshBuffer(1, 0, 8).AssertSuccess();
       }
     }
     if (m_ImgCompFrames.Contains(m_iFrame))

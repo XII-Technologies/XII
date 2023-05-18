@@ -86,8 +86,7 @@ private:
   xiiConstantBufferStorageHandle m_hTestPositionsConstantBuffer;
 
   xiiGALBufferHandle       m_hInstancingData;
-  xiiGALResourceViewHandle m_hInstancingDataView_8_4;
-  xiiGALResourceViewHandle m_hInstancingDataView_12_4;
+  xiiGALResourceViewHandle m_hInstancingDataView;
 
   xiiGALTextureHandle         m_hTexture2D;
   xiiGALResourceViewHandle    m_hTexture2D_Mip0;

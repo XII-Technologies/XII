@@ -10,7 +10,7 @@ struct XII_SHADER_STRUCT xiiTestShaderData
   TRANSFORM(InstanceTransform);
 };
 
-// this is only defined during shader compilation
+// This is only defined during shader compilation
 #if XII_ENABLED(PLATFORM_SHADER)
 
 StructuredBuffer<xiiTestShaderData> instancingData;
