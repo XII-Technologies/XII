@@ -996,15 +996,9 @@ xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const SwapChainFactoryFuncti
 {
   XII_GALDEVICE_LOCK_AND_CHECK();
 
-  ///// \todo Platform independent validation
-  //if (desc.m_pWindow == nullptr)
-  //{
-  //  xiiLog::Error("The desc for the swap chain creation contained an invalid (nullptr) window handle!");
-  //  return xiiGALSwapChainHandle();
-  //}
+  /// \todo Platform independent validation
 
   xiiGALSwapChain* pSwapChain = func(&m_Allocator);
-  //xiiGALSwapChainDX11* pSwapChain = XII_NEW(&m_Allocator, xiiGALSwapChainDX11, Description);
 
   if (!pSwapChain->InitPlatform(this).Succeeded())
   {

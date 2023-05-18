@@ -666,16 +666,8 @@ void xiiRendererTestPipelineStates::StructuredBufferTest()
       pContext->BindShader(m_hInstancingShader);
       pContext->BindMeshBuffer(m_hTriangleMesh);
 
-      if (m_iFrame < ImageCaptureFrames::StructuredBuffer_NoOverwrite)
-      {
-        pContext->BindBuffer("instancingData", m_pDevice->GetDefaultResourceView(m_hInstancingData));
-        pContext->DrawMeshBuffer(1, 0, 8).AssertSuccess();
-      }
-      else if (m_iFrame >= ImageCaptureFrames::StructuredBuffer_NoOverwrite)
-      {
-        pContext->BindBuffer("instancingData", m_hInstancingDataView);
-        pContext->DrawMeshBuffer(1, 0, 8).AssertSuccess();
-      }
+      pContext->BindBuffer("instancingData", m_hInstancingDataView);
+      pContext->DrawMeshBuffer(1, 0, 8).AssertSuccess();
     }
     if (m_ImgCompFrames.Contains(m_iFrame))
     {
