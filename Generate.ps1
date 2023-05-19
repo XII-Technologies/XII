@@ -59,9 +59,6 @@ if ($BuildDiligentGraphics) {
     $CMAKE_ARGS += "-DXII_BUILD_D3D12:BOOL=ON"
     $CMAKE_ARGS += "-DXII_BUILD_VULKAN:BOOL=ON"
 }
-else {
-    $CMAKE_ARGS += "-DXII_BUILD_D3D11:BOOL=ON"
-}
 
 $CMAKE_ARGS += "-G"
 

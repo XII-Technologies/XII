@@ -319,7 +319,6 @@ xiiResult xiiRendererTestPipelineStates::InitializeSubTest(xiiInt32 iIdentifier)
       m_ImgCompFrames.PushBack(ImageCaptureFrames::StructuredBuffer_InitialData);
       m_ImgCompFrames.PushBack(ImageCaptureFrames::StructuredBuffer_Discard);
       m_ImgCompFrames.PushBack(ImageCaptureFrames::StructuredBuffer_NoOverwrite);
-      m_ImgCompFrames.PushBack(ImageCaptureFrames::StructuredBuffer_CopyToTempStorage);
     }
     break;
     case SubTests::ST_GenerateMipMaps:
@@ -631,25 +630,6 @@ void xiiRendererTestPipelineStates::StructuredBufferTest()
         FillStructuredBuffer(instanceData);
         instanceData.SetCount(8);
         pCommandEncoder->UpdateBuffer(m_hInstancingData, 8 * sizeof(xiiTestShaderData), instanceData.GetArrayPtr().ToByteArray(), xiiGALUpdateMode::NoOverWrite);
-      }
-    }
-    else if (m_iFrame == ImageCaptureFrames::StructuredBuffer_CopyToTempStorage)
-    {
-      // First update the first half of the buffer.
-      {
-        xiiHybridArray<xiiTestShaderData, 16> instanceData;
-        FillStructuredBuffer(instanceData);
-
-        pCommandEncoder->UpdateBuffer(m_hInstancingData, 0, instanceData.GetByteArrayPtr().ToByteArray(), xiiGALUpdateMode::NoOverWrite);
-      }
-
-      // Now we replace the first 4 elements of the second half of the buffer.
-      {
-        xiiHybridArray<xiiTestShaderData, 16> instanceData;
-        FillStructuredBuffer(instanceData, 16);
-        instanceData.SetCount(4);
-
-        pCommandEncoder->UpdateBuffer(m_hInstancingData, 8 * sizeof(xiiTestShaderData), instanceData.GetArrayPtr().ToByteArray(), xiiGALUpdateMode::CopyToTempStorage);
       }
     }
     else

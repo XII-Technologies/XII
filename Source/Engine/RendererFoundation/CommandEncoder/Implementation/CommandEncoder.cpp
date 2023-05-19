@@ -300,11 +300,6 @@ void xiiGALCommandEncoder::UpdateBuffer(xiiGALBufferHandle hDest, xiiUInt32 uiDe
 
   if (pDest != nullptr)
   {
-    if (updateMode == xiiGALUpdateMode::NoOverWrite && !(GetDevice().GetCapabilities().m_bNoOverwriteBufferUpdate))
-    {
-      updateMode = xiiGALUpdateMode::CopyToTempStorage;
-    }
-
     XII_ASSERT_DEV(pDest->GetSize() >= (uiDestOffset + pSourceData.GetCount()), "Buffer {} is too small (or offset {} too big) for {} bytes", pDest->GetSize(), uiDestOffset, pSourceData.GetCount());
     m_CommonImpl.UpdateBufferPlatform(pDest, uiDestOffset, pSourceData, updateMode);
   }

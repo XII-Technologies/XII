@@ -29,7 +29,6 @@ private:
     StructuredBuffer_InitialData       = 5,
     StructuredBuffer_Discard           = 6,
     StructuredBuffer_NoOverwrite       = 8,
-    StructuredBuffer_CopyToTempStorage = 9,
     Timestamps_MaxWaitTime             = xiiMath::MaxValue<xiiUInt32>(),
   };
 

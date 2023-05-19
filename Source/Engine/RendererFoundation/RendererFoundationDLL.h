@@ -419,7 +419,6 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALUpdateMode
     DoNotWait         = XII_BIT(0), ///< Do not wait another previous command using the resource completes. Map returns null pointer if the resource is still in use.
     Discard           = XII_BIT(1), ///< Discard the previous contents of the resource. Thus, making its contents undefined.
     NoOverWrite       = XII_BIT(2), ///< The system will not synchronize pending operations before mapping the buffer.
-    CopyToTempStorage = XII_BIT(3), ///< Use a temporary staging resource to upload data to the GPU.
 
     ENUM_COUNT = 5,
 

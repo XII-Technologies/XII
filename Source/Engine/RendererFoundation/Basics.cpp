@@ -182,8 +182,7 @@ XII_ENUM_CONSTANTS(
   xiiGALUpdateMode::Undefined,
   xiiGALUpdateMode::DoNotWait,
   xiiGALUpdateMode::Discard,
-  xiiGALUpdateMode::NoOverWrite,
-  xiiGALUpdateMode::CopyToTempStorage)
+  xiiGALUpdateMode::NoOverWrite)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALUpdateType, 1)
