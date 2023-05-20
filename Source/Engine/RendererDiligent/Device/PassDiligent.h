@@ -41,11 +41,23 @@ private:
     Diligent::IFramebuffer* m_pFramebuffer = nullptr;
   };
 
+  struct RenderPassDesc
+  {
+    xiiHybridArray<Diligent::RenderPassAttachmentDesc, XII_GAL_MAX_RENDERTARGET_COUNT> m_Attachments;
+  };
+
   struct ResourceCacheHash
   {
     static xiiUInt32 Hash(const xiiGALRenderingSetup& renderingSetup);
     static bool      Equal(const xiiGALRenderingSetup& a, const xiiGALRenderingSetup& b);
   };
+
+  Diligent::IRenderPass*  RequestRenderPass(const xiiGALRenderingSetup& renderingSetup);
+  Diligent::IFramebuffer* RequestFrameBuffer(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup, xiiVec2U32 out_Size, xiiEnum<xiiGALMSAASampleCount> out_MSAA);
+
+  Diligent::IRenderPass* RequestRenderPassInternal(const xiiGALRenderingSetup& renderingSetup, RenderPassDesc& desc);
+  void                   GetRenderPassDesc(const xiiGALRenderingSetup& renderingSetup, RenderPassDesc& out_Desc);
+  void                   GetFrameBufferDesc(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup, Diligent::FramebufferDesc out_Desc);
 
   void CreateRenderPass(const xiiGALRenderingSetup& renderingSetup, const char* szName);
   void CreateFramebuffer(const xiiGALRenderingSetup& renderingSetup, const char* szName);

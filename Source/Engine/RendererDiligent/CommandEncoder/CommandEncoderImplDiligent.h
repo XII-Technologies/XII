@@ -139,7 +139,9 @@ public:
 protected:
   void FlushDeferredStateChangesCompute();
   void FlushDeferredStateChangesGraphics();
-  void FillPipelineDescriptorBindings(Diligent::IPipelineState* pPipelineState);
+
+  void TransitionResources();
+
   void FillShaderDescriptorBindings(Diligent::IShaderResourceBinding* pResourceBinding);
 
 private:

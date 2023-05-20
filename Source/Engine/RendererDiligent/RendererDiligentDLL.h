@@ -211,3 +211,5 @@ XII_DEFINE_AS_POD_TYPE(Diligent::BufferData);
 XII_DEFINE_AS_POD_TYPE(Diligent::TextureData);
 XII_DEFINE_AS_POD_TYPE(Diligent::TextureSubResData);
 XII_DEFINE_AS_POD_TYPE(Diligent::LayoutElement);
+XII_DEFINE_AS_POD_TYPE(Diligent::RenderPassAttachmentDesc);
+XII_DEFINE_AS_POD_TYPE(Diligent::AttachmentReference);

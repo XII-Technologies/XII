@@ -80,18 +80,112 @@ void xiiGALPassDiligent::ReleaseRenderPassResources()
   m_Framebuffers.Compact();
 }
 
-void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingSetup, const char* szName)
+Diligent::IRenderPass* xiiGALPassDiligent::RequestRenderPass(const xiiGALRenderingSetup& renderingSetup)
 {
-  // Populate Render Pass Description
+  RenderPassDesc renderPassDesc;
+  GetRenderPassDesc(renderingSetup, renderPassDesc);
+
+  Diligent::IRenderPass* pRenderPass = RequestRenderPassInternal(renderingSetup, renderPassDesc);
+
+  return pRenderPass;
+}
+
+Diligent::IFramebuffer* xiiGALPassDiligent::RequestFrameBuffer(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup, xiiVec2U32 out_Size, xiiEnum<xiiGALMSAASampleCount> out_MSAA)
+{
+  return nullptr;
+}
+
+Diligent::IRenderPass* xiiGALPassDiligent::RequestRenderPassInternal(const xiiGALRenderingSetup& renderingSetup, RenderPassDesc& desc)
+{
+  if (const RenderPassInfo* pRenderPassInfo = m_RenderPasses.GetValue(renderingSetup))
+  {
+    return pRenderPassInfo->m_pRenderPass;
+  }
+
+  xiiLog::Dev("Creating RenderPass #{}", m_RenderPasses.GetCount());
+
+  xiiHybridArray<Diligent::AttachmentReference, 1> depthAttachmentRefs;
+  xiiHybridArray<Diligent::AttachmentReference, 4> colorAttachmentRefs;
+
+  const xiiUInt32 uiAttachmentCount = desc.m_Attachments.GetCount();
+  for (xiiUInt32 i = 0; uiAttachmentCount; ++i)
+  {
+    auto& attachment = desc.m_Attachments[i];
+
+    const bool bIsDepthAttachment = xiiDiligentUtils::IsDepthFormat(attachment.Format);
+    if (bIsDepthAttachment)
+    {
+      attachment.FinalState = Diligent::RESOURCE_STATE_DEPTH_WRITE | Diligent::RESOURCE_STATE_DEPTH_READ;
+
+      Diligent::AttachmentReference& attachmentRef = depthAttachmentRefs.ExpandAndGetRef();
+      attachmentRef.AttachmentIndex                = i;
+      attachmentRef.State                          = Diligent::RESOURCE_STATE_DEPTH_WRITE | Diligent::RESOURCE_STATE_DEPTH_READ;
+    }
+    else
+    {
+      attachment.FinalState = Diligent::RESOURCE_STATE_RENDER_TARGET;
+
+      Diligent::AttachmentReference& attachmentRef = colorAttachmentRefs.ExpandAndGetRef();
+      attachmentRef.AttachmentIndex                = i;
+      attachmentRef.State                          = Diligent::RESOURCE_STATE_RENDER_TARGET;
+    }
+  }
+
+  XII_ASSERT_DEV(depthAttachmentRefs.GetCount() <= 1u, "There can only be a maximum of 1 bound depth attachment.");
+
+  const bool bHasDepthAttachment = !depthAttachmentRefs.IsEmpty();
+  const bool bHasColorAttachment = !colorAttachmentRefs.IsEmpty();
+
+  Diligent::SubpassDesc subpassDesc;
+  subpassDesc.pDepthStencilAttachment     = bHasDepthAttachment ? depthAttachmentRefs.GetData() : nullptr;
+  subpassDesc.pRenderTargetAttachments    = bHasColorAttachment ? colorAttachmentRefs.GetData() : nullptr;
+  subpassDesc.RenderTargetAttachmentCount = colorAttachmentRefs.GetCount();
+
+  Diligent::SubpassDependencyDesc subpassDependencyDesc;
+  subpassDependencyDesc.DstSubpass = 0u;
+
+  if (bHasColorAttachment)
+    subpassDependencyDesc.DstAccessMask |= Diligent::ACCESS_FLAG_RENDER_TARGET_WRITE;
+
+  if (bHasDepthAttachment)
+    subpassDependencyDesc.DstAccessMask |= Diligent::ACCESS_FLAG_DEPTH_STENCIL_WRITE;
+
+  subpassDependencyDesc.DstStageMask  = Diligent::PIPELINE_STAGE_FLAG_RENDER_TARGET | Diligent::PIPELINE_STAGE_FLAG_EARLY_FRAGMENT_TESTS;
+  subpassDependencyDesc.SrcSubpass    = Diligent::SUBPASS_EXTERNAL;
+  subpassDependencyDesc.SrcAccessMask = Diligent::ACCESS_FLAG_NONE;
+  subpassDependencyDesc.SrcStageMask  = Diligent::PIPELINE_STAGE_FLAG_RENDER_TARGET | Diligent::PIPELINE_STAGE_FLAG_EARLY_FRAGMENT_TESTS;
+
+  Diligent::RenderPassDesc renderPassDescription;
+  renderPassDescription.pAttachments    = desc.m_Attachments.GetData();
+  renderPassDescription.AttachmentCount = desc.m_Attachments.GetCount();
+  renderPassDescription.pSubpasses      = &subpassDesc;
+  renderPassDescription.SubpassCount    = 1u;
+  renderPassDescription.pDependencies   = &subpassDependencyDesc;
+  renderPassDescription.DependencyCount = 1u;
+
+  Diligent::IRenderPass* pRenderPass = nullptr;
+  m_GALDeviceDiligent.GetDevice()->CreateRenderPass(renderPassDescription, &pRenderPass);
+
+  if (pRenderPass == nullptr)
+  {
+    xiiLog::Error("Failed to create RenderPass.");
+  }
+
+  RenderPassInfo renderPassInfo{pRenderPass};
+  m_RenderPasses.Insert(renderingSetup, renderPassInfo);
+
+  return pRenderPass;
+}
+
+void xiiGALPassDiligent::GetRenderPassDesc(const xiiGALRenderingSetup& renderingSetup, RenderPassDesc& out_Desc)
+{
   const bool      bHasDepthTarget        = !renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
   const xiiUInt32 uiColorAttachmentCount = renderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
-
-  xiiHybridArray<Diligent::RenderPassAttachmentDesc, 2> Attachments;
+  out_Desc.m_Attachments.Clear();
 
   if (bHasDepthTarget)
   {
-    const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent =
-      static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
+    const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
 
     xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
     const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_GALDeviceDiligent.GetTexture(hTexture)->GetParentResource());
@@ -100,23 +194,20 @@ void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingS
     xiiEnum<xiiGALResourceFormat>           format             = textureDescription.m_Format;
     const auto&                             formatInfo         = m_GALDeviceDiligent.GetFormatLookupTable().GetFormatInfo(format);
 
-    Diligent::RenderPassAttachmentDesc& depthAttachment = Attachments.ExpandAndGetRef();
-    depthAttachment.Format                              = formatInfo.m_eDepthStencilType;
-    // \todo Handle format overrides
-
-    depthAttachment.SampleCount = xiiDiligentUtils::ToDiligentMSAACount(textureDescription.m_SampleCount);
+    Diligent::RenderPassAttachmentDesc& depthAttachment = out_Desc.m_Attachments.ExpandAndGetRef();
+    depthAttachment.Format                              = formatInfo.m_eRenderTarget;
+    depthAttachment.SampleCount                         = xiiDiligentUtils::ToDiligentMSAACount(textureDescription.m_SampleCount);
 
     if (renderingSetup.m_bDiscardDepth)
     {
-      depthAttachment.InitialState = Diligent::RESOURCE_STATE_DEPTH_WRITE;
+      depthAttachment.InitialState = Diligent::RESOURCE_STATE_UNDEFINED;
       depthAttachment.LoadOp       = Diligent::ATTACHMENT_LOAD_OP_DISCARD;
     }
     else
     {
-      depthAttachment.InitialState = Diligent::RESOURCE_STATE_DEPTH_WRITE;
+      depthAttachment.InitialState = renderingSetup.m_bClearDepth ? Diligent::RESOURCE_STATE_UNDEFINED : Diligent::RESOURCE_STATE_RENDER_TARGET;
       depthAttachment.LoadOp       = renderingSetup.m_bClearDepth ? Diligent::ATTACHMENT_LOAD_OP_CLEAR : Diligent::ATTACHMENT_LOAD_OP_LOAD;
     }
-
     depthAttachment.StoreOp = Diligent::ATTACHMENT_STORE_OP_STORE;
 
     if (format == xiiGALResourceFormat::D24S8)
@@ -143,22 +234,20 @@ void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingS
     xiiEnum<xiiGALResourceFormat>           format             = textureDescription.m_Format;
     const auto&                             formatInfo         = m_GALDeviceDiligent.GetFormatLookupTable().GetFormatInfo(format);
 
-    Diligent::RenderPassAttachmentDesc& colorAttachment = Attachments.ExpandAndGetRef();
+    Diligent::RenderPassAttachmentDesc& colorAttachment = out_Desc.m_Attachments.ExpandAndGetRef();
     colorAttachment.Format                              = formatInfo.m_eRenderTarget;
-    // \todo Handle format overrides
-
-    colorAttachment.SampleCount = xiiDiligentUtils::ToDiligentMSAACount(textureDescription.m_SampleCount);
+    colorAttachment.SampleCount                         = xiiDiligentUtils::ToDiligentMSAACount(textureDescription.m_SampleCount);
 
     if (renderingSetup.m_bDiscardColor)
     {
-      colorAttachment.InitialState = Diligent::RESOURCE_STATE_RENDER_TARGET;
+      colorAttachment.InitialState = Diligent::RESOURCE_STATE_UNDEFINED;
       colorAttachment.LoadOp       = Diligent::ATTACHMENT_LOAD_OP_DISCARD;
     }
     else
     {
-      if (renderingSetup.m_uiRenderTargetClearMask & (1u << i))
+      if (renderingSetup.m_uiRenderTargetClearMask & XII_BIT(i))
       {
-        colorAttachment.InitialState = Diligent::RESOURCE_STATE_RENDER_TARGET;
+        colorAttachment.InitialState = Diligent::RESOURCE_STATE_UNDEFINED;
         colorAttachment.LoadOp       = Diligent::ATTACHMENT_LOAD_OP_CLEAR;
       }
       else
@@ -172,82 +261,10 @@ void xiiGALPassDiligent::CreateRenderPass(const xiiGALRenderingSetup& renderingS
     colorAttachment.StencilLoadOp  = Diligent::ATTACHMENT_LOAD_OP_DISCARD;
     colorAttachment.StencilStoreOp = Diligent::ATTACHMENT_STORE_OP_DISCARD;
   }
+}
 
-  // Create Render Pass References
-  xiiHybridArray<Diligent::AttachmentReference, 1> depthAttachmentReferences;
-  xiiHybridArray<Diligent::AttachmentReference, 4> colorAttachmentReferences;
-
-  const xiiUInt32 uiAttachmentCount = Attachments.GetCount();
-  for (xiiUInt32 uiAttachmentIndex = 0; uiAttachmentIndex < uiAttachmentCount; ++uiAttachmentIndex)
-  {
-    Diligent::RenderPassAttachmentDesc& attachment = Attachments[uiAttachmentIndex];
-
-    const bool bIsDepthFormat = xiiDiligentUtils::IsDepthFormat(attachment.Format);
-    if (bIsDepthFormat)
-    {
-      attachment.FinalState = Diligent::RESOURCE_STATE_DEPTH_WRITE;
-
-      Diligent::AttachmentReference& depthAttachmentRef = depthAttachmentReferences.ExpandAndGetRef();
-      depthAttachmentRef.State                          = Diligent::RESOURCE_STATE_DEPTH_WRITE;
-      depthAttachmentRef.AttachmentIndex                = uiAttachmentIndex;
-    }
-    else
-    {
-      attachment.FinalState = Diligent::RESOURCE_STATE_RENDER_TARGET;
-
-      Diligent::AttachmentReference& colorAttachmentRef = colorAttachmentReferences.ExpandAndGetRef();
-      colorAttachmentRef.State                          = Diligent::RESOURCE_STATE_RENDER_TARGET;
-      colorAttachmentRef.AttachmentIndex                = uiAttachmentIndex;
-    }
-  }
-
-  XII_ASSERT_DEV(depthAttachmentReferences.GetCount() <= 1u, "There must be at most one depth attachment.");
-
-  const bool bHasColorAttachment = !colorAttachmentReferences.IsEmpty();
-  const bool bHasDepthAttachment = !depthAttachmentReferences.IsEmpty();
-
-  Diligent::SubpassDesc subpassDescription       = {};
-  subpassDescription.pRenderTargetAttachments    = bHasColorAttachment ? colorAttachmentReferences.GetData() : nullptr;
-  subpassDescription.pDepthStencilAttachment     = bHasDepthAttachment ? depthAttachmentReferences.GetData() : nullptr;
-  subpassDescription.RenderTargetAttachmentCount = colorAttachmentReferences.GetCount();
-
-  Diligent::SubpassDependencyDesc subpassDependency = {};
-  subpassDependency.SrcSubpass                      = 0u;
-  subpassDependency.DstSubpass                      = 0u;
-
-  if (bHasColorAttachment)
-    subpassDependency.DstAccessMask |= Diligent::ACCESS_FLAG_RENDER_TARGET_WRITE;
-
-  if (bHasDepthAttachment)
-    subpassDependency.DstAccessMask |= Diligent::ACCESS_FLAG_DEPTH_STENCIL_WRITE;
-
-  subpassDependency.DstStageMask  = Diligent::PIPELINE_STAGE_FLAG_RENDER_TARGET | Diligent::PIPELINE_STAGE_FLAG_EARLY_FRAGMENT_TESTS;
-  subpassDependency.SrcSubpass    = Diligent::SUBPASS_EXTERNAL;
-  subpassDependency.SrcAccessMask = {};
-  subpassDependency.SrcStageMask  = Diligent::PIPELINE_STAGE_FLAG_RENDER_TARGET | Diligent::PIPELINE_STAGE_FLAG_EARLY_FRAGMENT_TESTS;
-
-  Diligent::RenderPassDesc renderPassDesc = {};
-  renderPassDesc.Name                     = szName;
-  renderPassDesc.AttachmentCount          = Attachments.GetCount();
-  renderPassDesc.pAttachments             = Attachments.GetData();
-  renderPassDesc.SubpassCount             = 1u;
-  renderPassDesc.pSubpasses               = &subpassDescription;
-  renderPassDesc.DependencyCount          = 1u;
-  renderPassDesc.pDependencies            = &subpassDependency;
-
-  Diligent::IRenderPass* pRenderPass = nullptr;
-
-  m_GALDeviceDiligent.GetDevice()->CreateRenderPass(renderPassDesc, &pRenderPass);
-
-  RenderPassInfo wrapper{pRenderPass};
-  m_RenderPasses.Insert(renderingSetup, wrapper);
-
-  XII_ASSERT_DEV(pRenderPass != nullptr, "Failed to create render pass for {0}", szName);
-
-  if (pRenderPass == nullptr)
-  {
-    xiiLog::Error("Failed to create render pass for '{0}'", szName);
-  }
+void xiiGALPassDiligent::GetFrameBufferDesc(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup, Diligent::FramebufferDesc desc)
+{
 }
 
 void xiiGALPassDiligent::CreateFramebuffer(const xiiGALRenderingSetup& renderingSetup, const char* szName)
