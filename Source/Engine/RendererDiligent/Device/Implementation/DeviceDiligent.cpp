@@ -144,13 +144,18 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
     g_pMemoryAllocator = std::make_unique<xiiDiligentMemoryAllocator>("Diligent Engine Memory Allocator");
   }
 
+  if (m_Description.m_bDebugDevice)
+  {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  m_iValidationLevel = Diligent::VALIDATION_LEVEL_2;
-#elif XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  m_iValidationLevel = Diligent::VALIDATION_LEVEL_1;
+    m_iValidationLevel = Diligent::VALIDATION_LEVEL_2;
 #else
-  m_iValidationLevel = Diligent::VALIDATION_LEVEL_DISABLED;
+    m_iValidationLevel = Diligent::VALIDATION_LEVEL_1;
 #endif
+  }
+  else
+  {
+    m_iValidationLevel = Diligent::VALIDATION_LEVEL_DISABLED;
+  }
 
   xiiUInt32 NumImmediateContexts = 0;
 
