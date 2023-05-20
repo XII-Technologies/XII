@@ -67,14 +67,14 @@ void xiiGALPassDiligent::ReleaseRenderPassResources()
 {
   for (auto iter : m_RenderPasses)
   {
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pRenderPass);
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value());
   }
   m_RenderPasses.Clear();
   m_RenderPasses.Compact();
 
   for (auto iter : m_Framebuffers)
   {
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pFramebuffer);
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value());
   }
   m_Framebuffers.Clear();
   m_Framebuffers.Compact();
@@ -90,16 +90,34 @@ Diligent::IRenderPass* xiiGALPassDiligent::RequestRenderPass(const xiiGALRenderi
   return pRenderPass;
 }
 
-Diligent::IFramebuffer* xiiGALPassDiligent::RequestFrameBuffer(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup, xiiVec2U32 out_Size, xiiEnum<xiiGALMSAASampleCount> out_MSAA)
+Diligent::IFramebuffer* xiiGALPassDiligent::RequestFrameBuffer(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup, xiiEnum<xiiGALMSAASampleCount> out_MSAA)
 {
-  return nullptr;
+  FramebufferKey key;
+  key.m_pRenderPass       = pRenderPass;
+  key.m_RenderTargetSetup = renderTargetSetup;
+
+  if (Diligent::IFramebuffer** ppFramebuffer = m_Framebuffers.GetValue(key))
+  {
+    return *ppFramebuffer;
+  }
+
+  xiiLog::Dev("Creating Framebuffer #{}", m_Framebuffers.GetCount());
+
+  Diligent::IFramebuffer* pFramebuffer = nullptr;
+  FramebufferDesc         framebufferDesc;
+  GetFrameBufferDesc(pRenderPass, renderTargetSetup, framebufferDesc);
+  m_GALDeviceDiligent.GetDevice()->CreateFramebuffer(framebufferDesc.m_FramebufferDesc, &pFramebuffer);
+
+  m_Framebuffers.Insert(key, pFramebuffer);
+
+  return pFramebuffer;
 }
 
 Diligent::IRenderPass* xiiGALPassDiligent::RequestRenderPassInternal(const xiiGALRenderingSetup& renderingSetup, RenderPassDesc& desc)
 {
-  if (const RenderPassInfo* pRenderPassInfo = m_RenderPasses.GetValue(renderingSetup))
+  if (Diligent::IRenderPass** ppRenderPass = m_RenderPasses.GetValue(renderingSetup))
   {
-    return pRenderPassInfo->m_pRenderPass;
+    return *ppRenderPass;
   }
 
   xiiLog::Dev("Creating RenderPass #{}", m_RenderPasses.GetCount());
@@ -171,8 +189,7 @@ Diligent::IRenderPass* xiiGALPassDiligent::RequestRenderPassInternal(const xiiGA
     xiiLog::Error("Failed to create RenderPass.");
   }
 
-  RenderPassInfo renderPassInfo{pRenderPass};
-  m_RenderPasses.Insert(renderingSetup, renderPassInfo);
+  m_RenderPasses.Insert(renderingSetup, pRenderPass);
 
   return pRenderPass;
 }
@@ -263,46 +280,32 @@ void xiiGALPassDiligent::GetRenderPassDesc(const xiiGALRenderingSetup& rendering
   }
 }
 
-void xiiGALPassDiligent::GetFrameBufferDesc(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup, Diligent::FramebufferDesc desc)
+void xiiGALPassDiligent::GetFrameBufferDesc(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup, FramebufferDesc out_Desc)
 {
-}
+  const bool      bHasDepthAttachment    = !renderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+  const xiiUInt32 uiColorAttachmentCount = renderTargetSetup.GetRenderTargetCount();
 
-void xiiGALPassDiligent::CreateFramebuffer(const xiiGALRenderingSetup& renderingSetup, const char* szName)
-{
-  Diligent::IRenderPass*          pRenderPass    = GetRenderPass(renderingSetup);
-  const Diligent::RenderPassDesc& renderPassDesc = pRenderPass->GetDesc();
-
-  Diligent::FramebufferDesc framebufferDesc = {};
-  framebufferDesc.Name                      = szName;
-  framebufferDesc.pRenderPass               = pRenderPass;
-  framebufferDesc.AttachmentCount           = renderPassDesc.AttachmentCount;
-
-  const bool      bHasDepth              = !renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
-  const xiiUInt32 uiColorAttachmentCount = renderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
-
-  xiiHybridArray<Diligent::ITextureView*, 2> framebufferAttachments;
-
-  if (bHasDepth)
+  out_Desc.m_FramebufferDesc.pRenderPass = pRenderPass;
+  if (bHasDepthAttachment)
   {
-    const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent =
-      static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
+    const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(renderTargetSetup.GetDepthStencilTarget()));
 
     xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
     const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_GALDeviceDiligent.GetTexture(hTexture)->GetParentResource());
 
     const xiiGALTextureCreationDescription& textureDescription = pTextureDiligent->GetDescription();
 
-    xiiVec3U32 size                = pTextureDiligent->GetMipLevelSize(pRenderTargetViewDiligent->GetDescription().m_uiMipLevel);
-    framebufferDesc.Width          = size.x;
-    framebufferDesc.Height         = size.y;
-    framebufferDesc.NumArraySlices = textureDescription.m_uiArraySize;
+    xiiVec3U32 size                           = pTextureDiligent->GetMipLevelSize(pRenderTargetViewDiligent->GetDescription().m_uiMipLevel);
+    out_Desc.m_FramebufferDesc.Width          = size.x;
+    out_Desc.m_FramebufferDesc.Height         = size.y;
+    out_Desc.m_FramebufferDesc.NumArraySlices = textureDescription.m_uiArraySize;
 
-    framebufferAttachments.PushBack(const_cast<xiiGALRenderTargetViewDiligent*>(pRenderTargetViewDiligent)->GetDepthStencilView());
+    out_Desc.m_Attachments.PushBack(const_cast<xiiGALRenderTargetViewDiligent*>(pRenderTargetViewDiligent)->GetDepthStencilView());
   }
 
-  for (xiiUInt32 uiColorAttachmentIndex = 0; uiColorAttachmentIndex < uiColorAttachmentCount; ++uiColorAttachmentIndex)
+  for (xiiUInt32 i = 0; i < uiColorAttachmentCount; ++i)
   {
-    xiiGALRenderTargetViewHandle          hColorRenderTarget        = renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(uiColorAttachmentIndex));
+    xiiGALRenderTargetViewHandle          hColorRenderTarget        = renderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i));
     const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(hColorRenderTarget));
 
     xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
@@ -310,38 +313,24 @@ void xiiGALPassDiligent::CreateFramebuffer(const xiiGALRenderingSetup& rendering
 
     const xiiGALTextureCreationDescription& textureDescription = pTextureDiligent->GetDescription();
 
-    xiiVec3U32 size                = pTextureDiligent->GetMipLevelSize(pRenderTargetViewDiligent->GetDescription().m_uiMipLevel);
-    framebufferDesc.Width          = size.x;
-    framebufferDesc.Height         = size.y;
-    framebufferDesc.NumArraySlices = textureDescription.m_uiArraySize;
+    xiiVec3U32 size                           = pTextureDiligent->GetMipLevelSize(pRenderTargetViewDiligent->GetDescription().m_uiMipLevel);
+    out_Desc.m_FramebufferDesc.Width          = size.x;
+    out_Desc.m_FramebufferDesc.Height         = size.y;
+    out_Desc.m_FramebufferDesc.NumArraySlices = textureDescription.m_uiArraySize;
 
-    framebufferAttachments.PushBack(const_cast<xiiGALRenderTargetViewDiligent*>(pRenderTargetViewDiligent)->GetRenderTargetView());
+    out_Desc.m_Attachments.PushBack(const_cast<xiiGALRenderTargetViewDiligent*>(pRenderTargetViewDiligent)->GetRenderTargetView());
   }
+
+  out_Desc.m_FramebufferDesc.ppAttachments   = out_Desc.m_Attachments.GetData();
+  out_Desc.m_FramebufferDesc.AttachmentCount = out_Desc.m_Attachments.GetCount();
 
   // In some places rendering is started with an empty xiiGALRenderTargetSetup just to be able to run GPU commands.
-  // An empty size is invalid in Vulkan so we just set it so 1,1.
-  if (xiiVec2U32(framebufferDesc.Width, framebufferDesc.Height) == xiiVec2U32(0, 0))
+  // An empty size is invalid in Vulkan so we just set it so (1, 1).
+  if (xiiVec2U32(out_Desc.m_FramebufferDesc.Width, out_Desc.m_FramebufferDesc.Height) == xiiVec2U32(0, 0))
   {
-    framebufferDesc.Width          = 1;
-    framebufferDesc.Height         = 1;
-    framebufferDesc.NumArraySlices = 1;
-  }
-
-  framebufferDesc.ppAttachments   = framebufferAttachments.GetData();
-  framebufferDesc.AttachmentCount = framebufferAttachments.GetCount();
-
-  Diligent::IFramebuffer* pFramebuffer = nullptr;
-
-  m_GALDeviceDiligent.GetDevice()->CreateFramebuffer(framebufferDesc, &pFramebuffer);
-
-  FramebufferInfo wrapper{pFramebuffer};
-  m_Framebuffers.Insert(renderingSetup, wrapper);
-
-  XII_ASSERT_DEV(pFramebuffer != nullptr, "Failed to create frame buffer for {0}", szName);
-
-  if (pFramebuffer == nullptr)
-  {
-    xiiLog::Error("Failed to create frame buffer for '{0}'", szName);
+    out_Desc.m_FramebufferDesc.Width          = 1;
+    out_Desc.m_FramebufferDesc.Height         = 1;
+    out_Desc.m_FramebufferDesc.NumArraySlices = 1;
   }
 }
 
@@ -371,6 +360,25 @@ xiiUInt32 xiiGALPassDiligent::ResourceCacheHash::Hash(const xiiGALRenderingSetup
 bool xiiGALPassDiligent::ResourceCacheHash::Equal(const xiiGALRenderingSetup& a, const xiiGALRenderingSetup& b)
 {
   return a == b;
+}
+
+xiiUInt32 xiiGALPassDiligent::ResourceCacheHash::Hash(const FramebufferKey& key)
+{
+  xiiHashStreamWriter32 writer;
+  writer << key.m_pRenderPass;
+  writer << key.m_RenderTargetSetup.GetDepthStencilTarget();
+
+  xiiUInt8 uiCount = static_cast<xiiUInt8>(key.m_RenderTargetSetup.GetRenderTargetCount());
+  for (xiiUInt8 i = 0; i < uiCount; ++i)
+  {
+    writer << key.m_RenderTargetSetup.GetRenderTarget(i);
+  }
+  return writer.GetHashValue();
+}
+
+bool xiiGALPassDiligent::ResourceCacheHash::Equal(const FramebufferKey& a, const FramebufferKey& b)
+{
+  return a.m_pRenderPass == b.m_pRenderPass && a.m_RenderTargetSetup == b.m_RenderTargetSetup;
 }
 
 XII_STATICLINK_FILE(RendererDiligent, RendererDiligent_Device_Implementation_PassDiligent);

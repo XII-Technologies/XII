@@ -993,20 +993,41 @@ void xiiGALCommandEncoderImplDiligent::EndRendering()
 
 void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor, xiiUInt32 uiRenderTargetClearMask, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
-  for (xiiUInt32 i = 0; i < m_uiBoundRenderTargetCount; ++i)
+  /// \todo RendererDiligent: Clear through Render Pass.
+
+  const bool      bHasDepthAttachment    = !m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+  const xiiUInt32 uiColorAttachmentCount = m_RenderTargetSetup.GetRenderTargetCount();
+
+  if (uiRenderTargetClearMask != 0)
   {
-    if (uiRenderTargetClearMask & (1u << i) && m_pBoundRenderTargets[i])
+    for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
     {
-      m_pContext->ClearRenderTarget(m_pBoundRenderTargets[i], ClearColor.GetData(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+      if (uiRenderTargetClearMask & XII_BIT(i) && i < uiColorAttachmentCount)
+      {
+        xiiGALRenderTargetViewHandle hColorRenderTarget = m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i));
+
+        xiiGALRenderTargetView*         pGALRenderTargetView      = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(hColorRenderTarget));
+        xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<xiiGALRenderTargetViewDiligent*>(pGALRenderTargetView);
+
+        m_pContext->ClearRenderTarget(pRenderTargetViewDiligent->GetRenderTargetView(), ClearColor.GetData(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+      }
     }
   }
 
-  if (m_pBoundDepthStencilTarget && (bClearDepth || bClearStencil))
+  if (bHasDepthAttachment && (bClearDepth || bClearStencil))
   {
-    xiiUInt32 uiClearFlags = bClearDepth ? Diligent::CLEAR_DEPTH_FLAG : 0u;
-    uiClearFlags |= bClearStencil ? Diligent::CLEAR_STENCIL_FLAG : 0u;
+    xiiGALRenderTargetView*         pGALDepthStencilView      = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderTargetSetup.GetDepthStencilTarget()));
+    xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<xiiGALRenderTargetViewDiligent*>(pGALDepthStencilView);
 
-    m_pContext->ClearDepthStencil(m_pBoundDepthStencilTarget, (Diligent::CLEAR_DEPTH_STENCIL_FLAGS)uiClearFlags, fDepthClear, uiStencilClear, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    Diligent::CLEAR_DEPTH_STENCIL_FLAGS flags = Diligent::CLEAR_DEPTH_FLAG_NONE;
+
+    if (bClearDepth)
+      flags |= Diligent::CLEAR_DEPTH_FLAG;
+
+    if (bClearStencil)
+      flags |= Diligent::CLEAR_STENCIL_FLAG;
+
+    m_pContext->ClearDepthStencil(pRenderTargetViewDiligent->GetDepthStencilView(), flags, fDepthClear, uiStencilClear, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
   }
 }
 
