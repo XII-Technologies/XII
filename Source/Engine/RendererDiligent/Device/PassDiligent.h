@@ -10,7 +10,7 @@ class XII_RENDERERDILIGENT_DLL xiiGALPassDiligent : public xiiGALPass
 {
 public:
   Diligent::IRenderPass*  RequestRenderPass(const xiiGALRenderingSetup& renderingSetup);
-  Diligent::IFramebuffer* RequestFrameBuffer(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup, xiiEnum<xiiGALMSAASampleCount> out_MSAA);
+  Diligent::IFramebuffer* RequestFrameBuffer(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup);
 
 protected:
   friend class xiiGALDeviceDiligent;
@@ -60,8 +60,6 @@ private:
 
   xiiHashTable<xiiGALRenderingSetup, Diligent::IRenderPass*, xiiGALPassDiligent::ResourceCacheHash> m_RenderPasses;
   xiiHashTable<FramebufferKey, Diligent::IFramebuffer*, xiiGALPassDiligent::ResourceCacheHash>      m_Framebuffers;
-
-  xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_ClearValues;
 
   xiiUniquePtr<xiiGALCommandEncoderRenderState>  m_pCommandEncoderState;
   xiiUniquePtr<xiiGALCommandEncoderImplDiligent> m_pCommandEncoderImpl;

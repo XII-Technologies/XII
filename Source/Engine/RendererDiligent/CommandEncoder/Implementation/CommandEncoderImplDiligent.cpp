@@ -2,6 +2,7 @@
 
 #include <RendererDiligent/CommandEncoder/CommandEncoderImplDiligent.h>
 #include <RendererDiligent/Device/DeviceDiligent.h>
+#include <RendererDiligent/Device/PassDiligent.h>
 #include <RendererDiligent/Resources/BufferDiligent.h>
 #include <RendererDiligent/Resources/QueryDiligent.h>
 #include <RendererDiligent/Resources/RenderTargetViewDiligent.h>
@@ -907,86 +908,60 @@ void xiiGALCommandEncoderImplDiligent::InsertEventMarkerPlatform(const char* szM
 
 void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup& renderingSetup)
 {
-  if (m_RenderTargetSetup != renderingSetup.m_RenderTargetSetup)
+  m_RenderingSetup = renderingSetup;
+
+  m_pRenderPass  = m_GALDeviceDiligent.m_pDefaultPass->RequestRenderPass(renderingSetup);
+  m_pFramebuffer = m_GALDeviceDiligent.m_pDefaultPass->RequestFrameBuffer(m_pRenderPass, renderingSetup.m_RenderTargetSetup);
+
+  m_ClearValues.Clear();
+
+  const bool     bHasDepthAttachment    = !m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+  const xiiUInt8 uiColorAttachmentCount = m_RenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+
+  m_bClearSubmitted = !(renderingSetup.m_bClearDepth || renderingSetup.m_bClearStencil || renderingSetup.m_uiRenderTargetClearMask);
+
+  if (bHasDepthAttachment)
   {
-    m_RenderTargetSetup = renderingSetup.m_RenderTargetSetup;
+    const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
 
-    xiiGALRenderTargetView* pRenderTargetViews[XII_GAL_MAX_RENDERTARGET_COUNT] = {nullptr};
-    xiiGALRenderTargetView* pDepthStencilView                                  = nullptr;
+    xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
+    const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_GALDeviceDiligent.GetTexture(hTexture)->GetParentResource());
 
-    const xiiUInt8 uiRenderTargetCount = m_RenderTargetSetup.GetRenderTargetCount();
+    const xiiGALTextureCreationDescription& textureDescription = pTextureDiligent->GetDescription();
+    xiiEnum<xiiGALResourceFormat>           format             = textureDescription.m_Format;
+    const auto&                             formatInfo         = m_GALDeviceDiligent.GetFormatLookupTable().GetFormatInfo(format);
 
-    for (xiiUInt8 uiIndex = 0; uiIndex < uiRenderTargetCount; ++uiIndex)
-    {
-      const xiiGALRenderTargetView* pRenderTargetView = m_GALDeviceDiligent.GetRenderTargetView(m_RenderTargetSetup.GetRenderTarget(uiIndex));
-
-      pRenderTargetViews[uiIndex] = const_cast<xiiGALRenderTargetView*>(pRenderTargetView);
-    }
-
-    pDepthStencilView = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderTargetSetup.GetDepthStencilTarget()));
-    if (pDepthStencilView != nullptr)
-    {
-      const xiiGALResourceBase* pTexture = pDepthStencilView->GetTexture()->GetParentResource();
-    }
-
-    for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; i++)
-    {
-      m_pBoundRenderTargets[i] = nullptr;
-      m_RTVFormats[i]          = Diligent::TEX_FORMAT_UNKNOWN;
-    }
-
-    m_pBoundDepthStencilTarget = nullptr;
-    m_DSVFormat                = Diligent::TEX_FORMAT_UNKNOWN;
-
-    if (uiRenderTargetCount != 0 || pDepthStencilView != nullptr)
-    {
-      for (xiiUInt32 i = 0; i < uiRenderTargetCount; ++i)
-      {
-        if (pRenderTargetViews[i] != nullptr)
-        {
-          m_pBoundRenderTargets[i] = static_cast<xiiGALRenderTargetViewDiligent*>(pRenderTargetViews[i])->GetRenderTargetView();
-          m_RTVFormats[i]          = m_pBoundRenderTargets[i]->GetDesc().Format;
-        }
-      }
-
-      if (pDepthStencilView != nullptr)
-      {
-        m_pBoundDepthStencilTarget = static_cast<xiiGALRenderTargetViewDiligent*>(pDepthStencilView)->GetDepthStencilView();
-        m_DSVFormat                = m_pBoundDepthStencilTarget->GetDesc().Format;
-      }
-
-      // Bind rendertargets, bind max(new rt count, old rt count) to overwrite bound rts if new count < old count
-      m_pContext->SetRenderTargets(xiiMath::Max(uiRenderTargetCount, m_uiBoundRenderTargetCount), m_pBoundRenderTargets, m_pBoundDepthStencilTarget, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-
-      m_uiBoundRenderTargetCount = uiRenderTargetCount;
-    }
-    else
-    {
-      for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
-      {
-        m_pBoundRenderTargets[i] = nullptr;
-        m_RTVFormats[i]          = Diligent::TEX_FORMAT_UNKNOWN;
-      }
-
-      m_uiBoundRenderTargetCount = 0;
-
-      m_pBoundDepthStencilTarget = nullptr;
-      m_DSVFormat                = Diligent::TEX_FORMAT_UNKNOWN;
-
-      m_pContext->SetRenderTargets(0, nullptr, nullptr, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-    }
-  }
-  else
-  {
-    // Set the amount of render targets. This must be rebound every render call.
-    m_pContext->SetRenderTargets(m_uiBoundRenderTargetCount, m_pBoundRenderTargets, m_pBoundDepthStencilTarget, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    Diligent::OptimizedClearValue& depthClear = m_ClearValues.ExpandAndGetRef();
+    depthClear.SetDepthStencil(formatInfo.m_eRenderTarget, 1.0f, 0);
   }
 
-  ClearPlatform(renderingSetup.m_ClearColor, renderingSetup.m_uiRenderTargetClearMask, renderingSetup.m_bClearDepth, renderingSetup.m_bClearStencil, renderingSetup.m_fDepthClear, renderingSetup.m_uiStencilClear);
+  for (xiiUInt8 i = 0; i < uiColorAttachmentCount; ++i)
+  {
+    xiiGALRenderTargetViewHandle          hColorRenderTarget        = m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(i);
+    const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(hColorRenderTarget));
+
+    xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
+    const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_GALDeviceDiligent.GetTexture(hTexture)->GetParentResource());
+
+    const xiiGALTextureCreationDescription& textureDescription = pTextureDiligent->GetDescription();
+    xiiEnum<xiiGALResourceFormat>           format             = textureDescription.m_Format;
+    const auto&                             formatInfo         = m_GALDeviceDiligent.GetFormatLookupTable().GetFormatInfo(format);
+
+    Diligent::OptimizedClearValue& colorClear = m_ClearValues.ExpandAndGetRef();
+    colorClear.SetColor(formatInfo.m_eRenderTarget, m_RenderingSetup.m_ClearColor.GetData());
+  }
+
+  Diligent::BeginRenderPassAttribs renderPassBeginInfo;
+  renderPassBeginInfo.pRenderPass     = m_pRenderPass;
+  renderPassBeginInfo.pFramebuffer    = m_pFramebuffer;
+  renderPassBeginInfo.pClearValues    = m_ClearValues.GetData();
+  renderPassBeginInfo.ClearValueCount = m_ClearValues.GetCount();
 }
 
 void xiiGALCommandEncoderImplDiligent::EndRendering()
 {
+  m_pRenderPass  = nullptr;
+  m_pFramebuffer = nullptr;
 }
 
 // Draw functions
@@ -995,8 +970,8 @@ void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor,
 {
   /// \todo RendererDiligent: Clear through Render Pass.
 
-  const bool      bHasDepthAttachment    = !m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
-  const xiiUInt32 uiColorAttachmentCount = m_RenderTargetSetup.GetRenderTargetCount();
+  const bool      bHasDepthAttachment    = !m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+  const xiiUInt32 uiColorAttachmentCount = m_RenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
 
   if (uiRenderTargetClearMask != 0)
   {
@@ -1004,7 +979,7 @@ void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor,
     {
       if (uiRenderTargetClearMask & XII_BIT(i) && i < uiColorAttachmentCount)
       {
-        xiiGALRenderTargetViewHandle hColorRenderTarget = m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i));
+        xiiGALRenderTargetViewHandle hColorRenderTarget = m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i));
 
         xiiGALRenderTargetView*         pGALRenderTargetView      = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(hColorRenderTarget));
         xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<xiiGALRenderTargetViewDiligent*>(pGALRenderTargetView);
@@ -1016,7 +991,7 @@ void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor,
 
   if (bHasDepthAttachment && (bClearDepth || bClearStencil))
   {
-    xiiGALRenderTargetView*         pGALDepthStencilView      = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderTargetSetup.GetDepthStencilTarget()));
+    xiiGALRenderTargetView*         pGALDepthStencilView      = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
     xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<xiiGALRenderTargetViewDiligent*>(pGALDepthStencilView);
 
     Diligent::CLEAR_DEPTH_STENCIL_FLAGS flags = Diligent::CLEAR_DEPTH_FLAG_NONE;
@@ -1260,7 +1235,7 @@ void xiiGALCommandEncoderImplDiligent::SetStreamOutBufferPlatform(xiiUInt32 uiSl
 
 void xiiGALCommandEncoderImplDiligent::BeginCompute()
 {
-  m_RenderTargetSetup = xiiGALRenderTargetSetup();
+  m_RenderingSetup = xiiGALRenderingSetup();
   m_pContext->SetRenderTargets(0, nullptr, nullptr, Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE);
 }
 
@@ -1505,6 +1480,133 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
 
   // Set the amount of render targets. This must be rebound every render call.
   m_pContext->SetRenderTargets(m_uiBoundRenderTargetCount, m_pBoundRenderTargets, m_pBoundDepthStencilTarget, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+}
+
+void xiiGALCommandEncoderImplDiligent::TransitionResources()
+{
+  xiiHybridArray<Diligent::StateTransitionDesc, 2u> stateTransitions;
+
+  bool bVertexBufferSet = false;
+
+  for (xiiUInt32 i = 0; i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
+  {
+    if (m_pBoundVertexBuffers[i] == nullptr)
+      continue;
+
+    Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+    transitionDesc.pResource                      = m_pBoundVertexBuffers[i];
+    transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
+    transitionDesc.NewState                       = Diligent::RESOURCE_STATE_VERTEX_BUFFER;
+    transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+    transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+
+    bVertexBufferSet = true;
+  }
+
+  if (m_pIndexBuffer != nullptr)
+  {
+    Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+    transitionDesc.pResource                      = m_pIndexBuffer->GetBuffer();
+    transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
+    transitionDesc.NewState                       = Diligent::RESOURCE_STATE_INDEX_BUFFER;
+    transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+    transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+  }
+
+  if (m_pCurrentShader != nullptr)
+  {
+    for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+    {
+      auto& bindings = m_pCurrentShader->GetDescriptorSets((xiiGALShaderStage::Enum)stage);
+      for (xiiUInt32 i = 0; i < bindings.GetCount(); ++i)
+      {
+        auto& binding = bindings[i].Bindings;
+
+        for (xiiUInt32 j = 0; j < binding.GetCount(); ++j)
+        {
+          auto& currentBinding = binding[j];
+
+          xiiStringBuilder sData;
+          currentBinding.m_sName.GetData(sData);
+
+          switch (currentBinding.m_Type)
+          {
+            case xiiShaderDescriptorSetLayoutBinding::ResourceType::ConstantBuffer:
+            {
+              Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+              transitionDesc.pResource                      = m_pBoundConstantBuffers[currentBinding.m_uiVirtualBinding]->GetBuffer();
+              transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
+              transitionDesc.NewState                       = Diligent::RESOURCE_STATE_CONSTANT_BUFFER;
+              transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+              transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+            }
+            break;
+            case xiiShaderDescriptorSetLayoutBinding::ResourceType::ResourceView:
+            {
+              if (Diligent::ITextureView* pTextureView = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView())
+              {
+                auto& description = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
+
+                Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+                transitionDesc.pResource                      = pTextureView->GetTexture();
+                transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
+                transitionDesc.NewState                       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+                transitionDesc.FirstMipLevel                  = description.m_uiMostDetailedMipLevel;
+                transitionDesc.MipLevelsCount                 = description.m_uiMipLevelsToUse;
+                transitionDesc.FirstArraySlice                = description.m_uiFirstArraySlice;
+                transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+                transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+              }
+
+              if (Diligent::IBufferView* pBufferView = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetBufferView())
+              {
+                auto& description = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
+
+                Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+                transitionDesc.pResource                      = pBufferView->GetBuffer();
+                transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
+                transitionDesc.NewState                       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+                transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+                transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+              }
+            }
+            break;
+            case xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessView:
+            {
+              if (Diligent::ITextureView* pTextureView = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetTextureView())
+              {
+                auto& description = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetDescription();
+
+                Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+                transitionDesc.pResource                      = pTextureView->GetTexture();
+                transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
+                transitionDesc.NewState                       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+                transitionDesc.FirstMipLevel                  = description.m_uiMipLevelToUse;
+                transitionDesc.FirstArraySlice                = description.m_uiFirstArraySlice;
+                transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+                transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+              }
+
+              if (Diligent::IBufferView* pBufferView = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetBufferView())
+              {
+                auto& description = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetDescription();
+
+                Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+                transitionDesc.pResource                      = pBufferView->GetBuffer();
+                transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
+                transitionDesc.NewState                       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+                transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+                transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  m_pContext->TransitionResourceStates(stateTransitions.GetCount(), stateTransitions.GetData());
 }
 
 void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IShaderResourceBinding* pResourceBinding)

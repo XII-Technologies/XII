@@ -1041,6 +1041,8 @@ void xiiGALDeviceDiligent::WaitIdlePlatform()
 {
   DestroyDeadObjects();
 
+  m_pDefaultPass->ReleaseRenderPassResources();
+
   m_pDevice->ReleaseStaleResources();
   // We must idle the GPU
   m_pDevice->IdleGPU();

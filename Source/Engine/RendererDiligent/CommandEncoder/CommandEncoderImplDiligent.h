@@ -156,6 +156,10 @@ private:
   xiiHashTable<Diligent::GraphicsPipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash> m_CachedGraphicsPipelineStates;
   xiiHashTable<Diligent::ComputePipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash>  m_CachedComputePipelineStates;
 
+  Diligent::IRenderPass*                                                            m_pRenderPass  = nullptr;
+  Diligent::IFramebuffer*                                                           m_pFramebuffer = nullptr;
+  xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_ClearValues;
+
   Diligent::TEXTURE_FORMAT m_RTVFormats[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
   Diligent::TEXTURE_FORMAT m_DSVFormat                                  = Diligent::TEX_FORMAT_UNKNOWN;
 
@@ -164,6 +168,11 @@ private:
   const xiiGALBlendStateDiligent*        m_pBlendStateState   = nullptr;
   const xiiGALDepthStencilStateDiligent* m_pDepthStencilState = nullptr;
   const xiiGALRasterizerStateDiligent*   m_pRasterizerState   = nullptr;
+
+  // Cache flags
+  bool m_bRenderpassActive   = false;
+  bool m_bIsComputeRequested = false;
+  bool m_bClearSubmitted     = false;
 
   // Bound objects for deferred state flushes
   xiiGALBufferDiligent* m_pIndexBuffer = nullptr;
@@ -178,7 +187,7 @@ private:
 
   xiiGALShaderDiligent* m_pCurrentShader = nullptr;
 
-  xiiGALRenderTargetSetup m_RenderTargetSetup;
+  xiiGALRenderingSetup m_RenderingSetup                                   = {};
   Diligent::ITextureView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {nullptr};
   xiiUInt8                m_uiBoundRenderTargetCount                            = 0;
   Diligent::ITextureView* m_pBoundDepthStencilTarget                            = nullptr;

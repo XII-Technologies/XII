@@ -90,7 +90,7 @@ Diligent::IRenderPass* xiiGALPassDiligent::RequestRenderPass(const xiiGALRenderi
   return pRenderPass;
 }
 
-Diligent::IFramebuffer* xiiGALPassDiligent::RequestFrameBuffer(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup, xiiEnum<xiiGALMSAASampleCount> out_MSAA)
+Diligent::IFramebuffer* xiiGALPassDiligent::RequestFrameBuffer(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup)
 {
   FramebufferKey key;
   key.m_pRenderPass       = pRenderPass;
