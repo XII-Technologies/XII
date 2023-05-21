@@ -187,7 +187,7 @@ private:
 
   xiiGALShaderDiligent* m_pCurrentShader = nullptr;
 
-  xiiGALRenderingSetup m_RenderingSetup                                   = {};
+  xiiGALRenderingSetup    m_RenderingSetup                                      = {};
   Diligent::ITextureView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {nullptr};
   xiiUInt8                m_uiBoundRenderTargetCount                            = 0;
   Diligent::ITextureView* m_pBoundDepthStencilTarget                            = nullptr;
