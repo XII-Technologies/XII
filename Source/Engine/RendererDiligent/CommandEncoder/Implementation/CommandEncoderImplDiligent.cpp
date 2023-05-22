@@ -1495,7 +1495,7 @@ void xiiGALCommandEncoderImplDiligent::TransitionResources()
 
     Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
     transitionDesc.pResource                      = m_pBoundVertexBuffers[i];
-    transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
+    transitionDesc.OldState                       = m_pBoundVertexBuffers[i]->GetState();
     transitionDesc.NewState                       = Diligent::RESOURCE_STATE_VERTEX_BUFFER;
     transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
     transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
@@ -1507,7 +1507,7 @@ void xiiGALCommandEncoderImplDiligent::TransitionResources()
   {
     Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
     transitionDesc.pResource                      = m_pIndexBuffer->GetBuffer();
-    transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
+    transitionDesc.OldState                       = m_pIndexBuffer->GetBuffer()->GetState();
     transitionDesc.NewState                       = Diligent::RESOURCE_STATE_INDEX_BUFFER;
     transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
     transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
@@ -1533,71 +1533,71 @@ void xiiGALCommandEncoderImplDiligent::TransitionResources()
           {
             case xiiShaderDescriptorSetLayoutBinding::ResourceType::ConstantBuffer:
             {
+              auto pBufferDiligent = m_pBoundConstantBuffers[currentBinding.m_uiVirtualBinding]->GetBuffer();
+
               Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
-              transitionDesc.pResource                      = m_pBoundConstantBuffers[currentBinding.m_uiVirtualBinding]->GetBuffer();
-              transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
+              transitionDesc.pResource                      = pBufferDiligent;
+              transitionDesc.OldState                       = pBufferDiligent->GetState();
               transitionDesc.NewState                       = Diligent::RESOURCE_STATE_CONSTANT_BUFFER;
               transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
               transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
             }
             break;
-            case xiiShaderDescriptorSetLayoutBinding::ResourceType::ResourceView:
+            case xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer:
             {
-              if (Diligent::ITextureView* pTextureView = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView())
-              {
-                auto& description = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
+              auto& description  = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
+              auto  pSRVDiligent = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetBufferView();
 
-                Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
-                transitionDesc.pResource                      = pTextureView->GetTexture();
-                transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
-                transitionDesc.NewState                       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
-                transitionDesc.FirstMipLevel                  = description.m_uiMostDetailedMipLevel;
-                transitionDesc.MipLevelsCount                 = description.m_uiMipLevelsToUse;
-                transitionDesc.FirstArraySlice                = description.m_uiFirstArraySlice;
-                transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
-                transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
-              }
-
-              if (Diligent::IBufferView* pBufferView = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetBufferView())
-              {
-                auto& description = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
-
-                Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
-                transitionDesc.pResource                      = pBufferView->GetBuffer();
-                transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
-                transitionDesc.NewState                       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
-                transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
-                transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
-              }
+              Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+              transitionDesc.pResource                      = pSRVDiligent->GetBuffer();
+              transitionDesc.OldState                       = pSRVDiligent->GetBuffer()->GetState();
+              transitionDesc.NewState                       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+              transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+              transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
             }
             break;
-            case xiiShaderDescriptorSetLayoutBinding::ResourceType::UnorderedAccessView:
+            case xiiShaderDescriptorSetLayoutBinding::ResourceViewTexture:
             {
-              if (Diligent::ITextureView* pTextureView = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetTextureView())
-              {
-                auto& description = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetDescription();
+              auto& description  = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
+              auto  pSRVDiligent = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView();
 
-                Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
-                transitionDesc.pResource                      = pTextureView->GetTexture();
-                transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
-                transitionDesc.NewState                       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
-                transitionDesc.FirstMipLevel                  = description.m_uiMipLevelToUse;
-                transitionDesc.FirstArraySlice                = description.m_uiFirstArraySlice;
-                transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
-                transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
-              }
+              Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+              transitionDesc.pResource                      = pSRVDiligent->GetTexture();
+              transitionDesc.OldState                       = pSRVDiligent->GetTexture()->GetState();
+              transitionDesc.NewState                       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+              transitionDesc.FirstMipLevel                  = description.m_uiMostDetailedMipLevel;
+              transitionDesc.MipLevelsCount                 = description.m_uiMipLevelsToUse;
+              transitionDesc.FirstArraySlice                = description.m_uiFirstArraySlice;
+              transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+              transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+            }
+            break;
+            case xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer:
+            {
+              auto& description  = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetDescription();
+              auto  pUAVDiligent = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetBufferView();
 
-              if (Diligent::IBufferView* pBufferView = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetBufferView())
-              {
-                auto& description = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetDescription();
+              Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+              transitionDesc.pResource                      = pUAVDiligent->GetBuffer();
+              transitionDesc.OldState                       = pUAVDiligent->GetBuffer()->GetState();
+              transitionDesc.NewState                       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+              transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+              transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+            }
+            break;
+            case xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewTexture:
+            {
+              auto& description  = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetDescription();
+              auto  pUAVDiligent = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetTextureView();
 
-                Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
-                transitionDesc.pResource                      = pBufferView->GetBuffer();
-                transitionDesc.OldState                       = Diligent::RESOURCE_STATE_UNKNOWN;
-                transitionDesc.NewState                       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
-                transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
-                transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
-              }
+              Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+              transitionDesc.pResource                      = pUAVDiligent->GetTexture();
+              transitionDesc.OldState                       = pUAVDiligent->GetTexture()->GetState();
+              transitionDesc.NewState                       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+              transitionDesc.FirstMipLevel                  = description.m_uiMipLevelToUse;
+              transitionDesc.FirstArraySlice                = description.m_uiFirstArraySlice;
+              transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+              transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
             }
             break;
           }
