@@ -126,18 +126,18 @@ Diligent::IRenderPass* xiiGALPassDiligent::RequestRenderPassInternal(const xiiGA
   xiiHybridArray<Diligent::AttachmentReference, 4> colorAttachmentRefs;
 
   const xiiUInt32 uiAttachmentCount = desc.m_Attachments.GetCount();
-  for (xiiUInt32 i = 0; uiAttachmentCount; ++i)
+  for (xiiUInt32 i = 0; i < uiAttachmentCount; ++i)
   {
     auto& attachment = desc.m_Attachments[i];
 
     const bool bIsDepthAttachment = xiiDiligentUtils::IsDepthFormat(attachment.Format);
     if (bIsDepthAttachment)
     {
-      attachment.FinalState = Diligent::RESOURCE_STATE_DEPTH_WRITE | Diligent::RESOURCE_STATE_DEPTH_READ;
+      attachment.FinalState = Diligent::RESOURCE_STATE_DEPTH_WRITE;
 
       Diligent::AttachmentReference& attachmentRef = depthAttachmentRefs.ExpandAndGetRef();
       attachmentRef.AttachmentIndex                = i;
-      attachmentRef.State                          = Diligent::RESOURCE_STATE_DEPTH_WRITE | Diligent::RESOURCE_STATE_DEPTH_READ;
+      attachmentRef.State                          = Diligent::RESOURCE_STATE_DEPTH_WRITE;
     }
     else
     {
@@ -212,7 +212,7 @@ void xiiGALPassDiligent::GetRenderPassDesc(const xiiGALRenderingSetup& rendering
     const auto&                             formatInfo         = m_GALDeviceDiligent.GetFormatLookupTable().GetFormatInfo(format);
 
     Diligent::RenderPassAttachmentDesc& depthAttachment = out_Desc.m_Attachments.ExpandAndGetRef();
-    depthAttachment.Format                              = formatInfo.m_eRenderTarget;
+    depthAttachment.Format                              = formatInfo.m_eDepthStencilType;
     depthAttachment.SampleCount                         = xiiDiligentUtils::ToDiligentMSAACount(textureDescription.m_SampleCount);
 
     if (renderingSetup.m_bDiscardDepth)
@@ -280,8 +280,10 @@ void xiiGALPassDiligent::GetRenderPassDesc(const xiiGALRenderingSetup& rendering
   }
 }
 
-void xiiGALPassDiligent::GetFrameBufferDesc(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup, FramebufferDesc out_Desc)
+void xiiGALPassDiligent::GetFrameBufferDesc(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup, FramebufferDesc& out_Desc)
 {
+  XII_ASSERT_DEV(pRenderPass != nullptr, "pRenderPass cannot be nullptr");
+
   const bool      bHasDepthAttachment    = !renderTargetSetup.GetDepthStencilTarget().IsInvalidated();
   const xiiUInt32 uiColorAttachmentCount = renderTargetSetup.GetRenderTargetCount();
 

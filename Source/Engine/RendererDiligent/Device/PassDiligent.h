@@ -56,7 +56,7 @@ private:
 
   Diligent::IRenderPass* RequestRenderPassInternal(const xiiGALRenderingSetup& renderingSetup, RenderPassDesc& desc);
   void                   GetRenderPassDesc(const xiiGALRenderingSetup& renderingSetup, RenderPassDesc& out_Desc);
-  void                   GetFrameBufferDesc(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup, FramebufferDesc out_Desc);
+  void                   GetFrameBufferDesc(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup, FramebufferDesc& out_Desc);
 
   xiiHashTable<xiiGALRenderingSetup, Diligent::IRenderPass*, xiiGALPassDiligent::ResourceCacheHash> m_RenderPasses;
   xiiHashTable<FramebufferKey, Diligent::IFramebuffer*, xiiGALPassDiligent::ResourceCacheHash>      m_Framebuffers;
