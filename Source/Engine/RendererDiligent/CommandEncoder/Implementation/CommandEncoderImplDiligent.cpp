@@ -920,6 +920,8 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
 
   m_bClearSubmitted = !(renderingSetup.m_bClearDepth || renderingSetup.m_bClearStencil || renderingSetup.m_uiRenderTargetClearMask);
 
+  xiiHybridArray<Diligent::StateTransitionDesc, 2u> stateTransitions;
+
   if (bHasDepthAttachment)
   {
     const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
@@ -933,6 +935,13 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
 
     Diligent::OptimizedClearValue& depthClear = m_ClearValues.ExpandAndGetRef();
     depthClear.SetDepthStencil(formatInfo.m_eRenderTarget, 1.0f, 0);
+
+    Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+    transitionDesc.pResource                      = const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture();
+    transitionDesc.OldState                       = const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture()->GetState();
+    transitionDesc.NewState                       = Diligent::RESOURCE_STATE_DEPTH_WRITE;
+    transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+    transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
   }
 
   for (xiiUInt8 i = 0; i < uiColorAttachmentCount; ++i)
@@ -949,7 +958,16 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
 
     Diligent::OptimizedClearValue& colorClear = m_ClearValues.ExpandAndGetRef();
     colorClear.SetColor(formatInfo.m_eRenderTarget, m_RenderingSetup.m_ClearColor.GetData());
+
+    Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
+    transitionDesc.pResource                      = const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture();
+    transitionDesc.OldState                       = const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture()->GetState();
+    transitionDesc.NewState                       = Diligent::RESOURCE_STATE_RENDER_TARGET;
+    transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+    transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
   }
+
+  m_pContext->TransitionResourceStates(stateTransitions.GetCount(), stateTransitions.GetData());
 }
 
 void xiiGALCommandEncoderImplDiligent::EndRendering()
@@ -1527,8 +1545,6 @@ void xiiGALCommandEncoderImplDiligent::TransitionResources()
 {
   xiiHybridArray<Diligent::StateTransitionDesc, 2u> stateTransitions;
 
-  bool bVertexBufferSet = false;
-
   for (xiiUInt32 i = 0; i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
   {
     if (m_pBoundVertexBuffers[i] == nullptr)
@@ -1540,8 +1556,6 @@ void xiiGALCommandEncoderImplDiligent::TransitionResources()
     transitionDesc.NewState                       = Diligent::RESOURCE_STATE_VERTEX_BUFFER;
     transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
     transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
-
-    bVertexBufferSet = true;
   }
 
   if (m_pIndexBuffer != nullptr)
