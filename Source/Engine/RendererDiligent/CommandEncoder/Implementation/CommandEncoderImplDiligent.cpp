@@ -631,6 +631,13 @@ void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* 
 
 void xiiGALCommandEncoderImplDiligent::CopyTexturePlatform(const xiiGALTexture* pDestination, const xiiGALTexture* pSource)
 {
+  if (m_bRenderpassActive)
+  {
+    m_pContext->EndRenderPass();
+
+    m_bRenderpassActive = false;
+  }
+
   xiiGALTexture*      pSrc                = const_cast<xiiGALTexture*>(pSource);
   xiiGALTexture*      pDst                = const_cast<xiiGALTexture*>(pDestination);
   Diligent::ITexture* pSourceTexture      = static_cast<xiiGALTextureDiligent*>(pSrc)->GetTexture();
@@ -794,6 +801,13 @@ void xiiGALCommandEncoderImplDiligent::ResolveTexturePlatform(const xiiGALTextur
 
 void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTexture* pTexture)
 {
+  if (m_bRenderpassActive)
+  {
+    m_pContext->EndRenderPass();
+
+    m_bRenderpassActive = false;
+  }
+
   xiiGALTexture*         pTex             = const_cast<xiiGALTexture*>(pTexture);
   xiiGALTextureDiligent* pTextureDiligent = static_cast<xiiGALTextureDiligent*>(pTex);
 
@@ -876,6 +890,13 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureReadbackResultPlatform(const x
 
 void xiiGALCommandEncoderImplDiligent::GenerateMipMapsPlatform(const xiiGALResourceView* pResourceView)
 {
+  if (m_bRenderpassActive)
+  {
+    m_pContext->EndRenderPass();
+
+    m_bRenderpassActive = false;
+  }
+
   xiiGALResourceView*         pResource             = const_cast<xiiGALResourceView*>(pResourceView);
   xiiGALResourceViewDiligent* pResourceViewDiligent = static_cast<xiiGALResourceViewDiligent*>(pResource);
 
@@ -1405,14 +1426,23 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesCompute()
 
 void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
 {
-  if (m_bRenderpassActive)
+  // Begin renderpass
+  if (!m_bRenderpassActive)
   {
-    m_pContext->EndRenderPass();
+    TransitionResources();
 
-    m_bRenderpassActive = false;
-    m_bClearSubmitted   = false;
+    Diligent::BeginRenderPassAttribs renderPassBeginInfo;
+    renderPassBeginInfo.pRenderPass         = m_pRenderPass;
+    renderPassBeginInfo.pFramebuffer        = m_pFramebuffer;
+    renderPassBeginInfo.pClearValues        = m_ClearValues.GetData();
+    renderPassBeginInfo.ClearValueCount     = m_ClearValues.GetCount();
+    renderPassBeginInfo.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+
+    m_pContext->BeginRenderPass(renderPassBeginInfo);
+
+    m_bRenderpassActive = true;
+    m_bClearSubmitted   = true;
   }
-  TransitionResources();
 
   if (m_BoundVertexBuffersRange.IsValid())
   {
@@ -1520,24 +1550,6 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChangesGraphics()
 
     m_pContext->SetPipelineState(pCachedPipelineStateGraphicsKey.Value().m_pPipelineState);
     m_pContext->CommitShaderResources(pCachedPipelineStateGraphicsKey.Value().m_pShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
-  }
-
-  // Set the amount of render targets. This must be rebound every render call.
-  m_pContext->SetRenderTargets(m_uiBoundRenderTargetCount, m_pBoundRenderTargets, m_pBoundDepthStencilTarget, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
-
-  // Begin renderpass
-  {
-    Diligent::BeginRenderPassAttribs renderPassBeginInfo;
-    renderPassBeginInfo.pRenderPass         = m_pRenderPass;
-    renderPassBeginInfo.pFramebuffer        = m_pFramebuffer;
-    renderPassBeginInfo.pClearValues        = m_ClearValues.GetData();
-    renderPassBeginInfo.ClearValueCount     = m_ClearValues.GetCount();
-    renderPassBeginInfo.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
-
-    m_pContext->BeginRenderPass(renderPassBeginInfo);
-
-    m_bRenderpassActive = true;
-    m_bClearSubmitted   = true;
   }
 }
 

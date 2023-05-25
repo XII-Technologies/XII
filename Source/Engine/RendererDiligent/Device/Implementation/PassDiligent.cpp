@@ -160,7 +160,10 @@ Diligent::IRenderPass* xiiGALPassDiligent::RequestRenderPassInternal(const xiiGA
   subpassDesc.RenderTargetAttachmentCount = colorAttachmentRefs.GetCount();
 
   Diligent::SubpassDependencyDesc subpassDependencyDesc;
-  subpassDependencyDesc.DstSubpass = 0u;
+  subpassDependencyDesc.SrcSubpass    = Diligent::SUBPASS_EXTERNAL;
+  subpassDependencyDesc.SrcAccessMask = Diligent::ACCESS_FLAG_NONE;
+  subpassDependencyDesc.SrcStageMask  = Diligent::PIPELINE_STAGE_FLAG_RENDER_TARGET | Diligent::PIPELINE_STAGE_FLAG_EARLY_FRAGMENT_TESTS;
+  subpassDependencyDesc.DstSubpass    = 0u;
 
   if (bHasColorAttachment)
     subpassDependencyDesc.DstAccessMask |= Diligent::ACCESS_FLAG_RENDER_TARGET_WRITE;
@@ -168,10 +171,7 @@ Diligent::IRenderPass* xiiGALPassDiligent::RequestRenderPassInternal(const xiiGA
   if (bHasDepthAttachment)
     subpassDependencyDesc.DstAccessMask |= Diligent::ACCESS_FLAG_DEPTH_STENCIL_WRITE;
 
-  subpassDependencyDesc.DstStageMask  = Diligent::PIPELINE_STAGE_FLAG_RENDER_TARGET | Diligent::PIPELINE_STAGE_FLAG_EARLY_FRAGMENT_TESTS;
-  subpassDependencyDesc.SrcSubpass    = Diligent::SUBPASS_EXTERNAL;
-  subpassDependencyDesc.SrcAccessMask = Diligent::ACCESS_FLAG_NONE;
-  subpassDependencyDesc.SrcStageMask  = Diligent::PIPELINE_STAGE_FLAG_RENDER_TARGET | Diligent::PIPELINE_STAGE_FLAG_EARLY_FRAGMENT_TESTS;
+  subpassDependencyDesc.DstStageMask = Diligent::PIPELINE_STAGE_FLAG_RENDER_TARGET | Diligent::PIPELINE_STAGE_FLAG_EARLY_FRAGMENT_TESTS;
 
   Diligent::RenderPassDesc renderPassDescription;
   renderPassDescription.pAttachments    = desc.m_Attachments.GetData();
@@ -262,7 +262,7 @@ void xiiGALPassDiligent::GetRenderPassDesc(const xiiGALRenderingSetup& rendering
     }
     else
     {
-      if (renderingSetup.m_uiRenderTargetClearMask & XII_BIT(i))
+      if (renderingSetup.m_uiRenderTargetClearMask & (1u << i))
       {
         colorAttachment.InitialState = Diligent::RESOURCE_STATE_RENDER_TARGET;
         colorAttachment.LoadOp       = Diligent::ATTACHMENT_LOAD_OP_CLEAR;
