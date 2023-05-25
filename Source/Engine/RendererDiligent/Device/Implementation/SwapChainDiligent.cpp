@@ -70,7 +70,19 @@ void xiiGALSwapChainDiligent::PresentRenderTarget(xiiGALDevice* pDevice)
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");
 
-  // xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+
+  // Ensure that the current Swapchain image is in the PRESENT state.
+  {
+    Diligent::StateTransitionDesc transitionDesc;
+    transitionDesc.pResource      = m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture();
+    transitionDesc.OldState       = m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture()->GetState();
+    transitionDesc.NewState       = Diligent::RESOURCE_STATE_PRESENT;
+    transitionDesc.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+    transitionDesc.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+
+    pDeviceDiligent->GetImmediateContext()->TransitionResourceStates(1u, &transitionDesc);
+  }
 
   m_pSwapChain->Present(m_CurrentPresentMode == xiiGALPresentMode::VSync ? 1u : 0u);
 }

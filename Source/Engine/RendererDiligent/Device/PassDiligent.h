@@ -12,6 +12,8 @@ public:
   Diligent::IRenderPass*  RequestRenderPass(const xiiGALRenderingSetup& renderingSetup);
   Diligent::IFramebuffer* RequestFrameBuffer(Diligent::IRenderPass* pRenderPass, const xiiGALRenderTargetSetup& renderTargetSetup);
 
+  void ReleaseRenderPassResources();
+
 protected:
   friend class xiiGALDeviceDiligent;
   friend class xiiMemoryUtils;
@@ -24,8 +26,6 @@ protected:
 
   virtual xiiGALComputeCommandEncoder* BeginComputePlatform(const char* szName) override;
   virtual void                         EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder) override;
-
-  void ReleaseRenderPassResources();
 
 private:
   struct FramebufferKey

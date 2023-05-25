@@ -934,7 +934,7 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
     const auto&                             formatInfo         = m_GALDeviceDiligent.GetFormatLookupTable().GetFormatInfo(format);
 
     Diligent::OptimizedClearValue& depthClear = m_ClearValues.ExpandAndGetRef();
-    depthClear.SetDepthStencil(formatInfo.m_eRenderTarget, 1.0f, 0);
+    depthClear.SetDepthStencil(formatInfo.m_eDepthStencilType, 1.0f, 0);
 
     Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
     transitionDesc.pResource                      = const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture();

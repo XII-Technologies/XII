@@ -960,6 +960,11 @@ void xiiGALDeviceDiligent::EndFramePlatform()
 
   FreeTempResources(GetImmediateContext()->GetFrameNumber());
 
+#if 0
+  m_pDefaultPass->ReleaseRenderPassResources();
+  m_pDefaultPass->m_pCommandEncoderImpl->FlushPipelineStateCache();
+#endif
+
   for (auto pContext : m_pDeviceContexts)
   {
     pContext->Flush();

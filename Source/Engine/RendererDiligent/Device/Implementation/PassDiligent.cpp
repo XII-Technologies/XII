@@ -217,12 +217,12 @@ void xiiGALPassDiligent::GetRenderPassDesc(const xiiGALRenderingSetup& rendering
 
     if (renderingSetup.m_bDiscardDepth)
     {
-      depthAttachment.InitialState = Diligent::RESOURCE_STATE_UNDEFINED;
+      depthAttachment.InitialState = Diligent::RESOURCE_STATE_DEPTH_WRITE;
       depthAttachment.LoadOp       = Diligent::ATTACHMENT_LOAD_OP_DISCARD;
     }
     else
     {
-      depthAttachment.InitialState = renderingSetup.m_bClearDepth ? Diligent::RESOURCE_STATE_UNDEFINED : Diligent::RESOURCE_STATE_RENDER_TARGET;
+      depthAttachment.InitialState = Diligent::RESOURCE_STATE_DEPTH_WRITE;
       depthAttachment.LoadOp       = renderingSetup.m_bClearDepth ? Diligent::ATTACHMENT_LOAD_OP_CLEAR : Diligent::ATTACHMENT_LOAD_OP_LOAD;
     }
     depthAttachment.StoreOp = Diligent::ATTACHMENT_STORE_OP_STORE;
@@ -257,14 +257,14 @@ void xiiGALPassDiligent::GetRenderPassDesc(const xiiGALRenderingSetup& rendering
 
     if (renderingSetup.m_bDiscardColor)
     {
-      colorAttachment.InitialState = Diligent::RESOURCE_STATE_UNDEFINED;
+      colorAttachment.InitialState = Diligent::RESOURCE_STATE_RENDER_TARGET;
       colorAttachment.LoadOp       = Diligent::ATTACHMENT_LOAD_OP_DISCARD;
     }
     else
     {
       if (renderingSetup.m_uiRenderTargetClearMask & XII_BIT(i))
       {
-        colorAttachment.InitialState = Diligent::RESOURCE_STATE_UNDEFINED;
+        colorAttachment.InitialState = Diligent::RESOURCE_STATE_RENDER_TARGET;
         colorAttachment.LoadOp       = Diligent::ATTACHMENT_LOAD_OP_CLEAR;
       }
       else
