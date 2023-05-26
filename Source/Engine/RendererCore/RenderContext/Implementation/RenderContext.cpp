@@ -1255,7 +1255,7 @@ void xiiRenderContext::ApplySamplerBindings(xiiGALShaderStage::Enum stage, const
     xiiGALSamplerStateHandle hSamplerState;
     if (!m_BoundSamplers.TryGetValue(uiResourceHash, hSamplerState))
     {
-      hSamplerState = GetDefaultSamplerState(xiiDefaultSamplerFlags::LinearFiltering); // Bind a default state to avoid DX11 errors.
+      hSamplerState = GetDefaultSamplerState(xiiDefaultSamplerFlags::LinearFiltering); // Bind a default state to avoid D3D11 errors.
     }
 
     m_pGALCommandEncoder->SetSamplerState(stage, binding.m_iSlot, hSamplerState);

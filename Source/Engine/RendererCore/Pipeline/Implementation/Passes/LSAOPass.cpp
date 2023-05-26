@@ -371,7 +371,7 @@ void xiiLSAOPass::SetupLineSweepData(const xiiVec3I32& imageResolution)
     DestroyLineSweepData();
 
     // Output UAV for line sweep pass.
-    // DX11 allows only float and int for writing RWBuffer, so we need to do manual packing.
+    // D3D11 allows only float and int for writing RWBuffer, so we need to do manual packing.
     {
       xiiGALBufferCreationDescription bufferDesc;
       bufferDesc.m_uiStructSize                = 4;

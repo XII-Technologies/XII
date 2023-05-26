@@ -655,7 +655,7 @@ xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(const char* 
           arguments << QString::fromUtf8(sAutoGenShader.GetData());
 
           arguments << "-platform";
-          arguments << "DX11_SM50"; /// \todo Rendering platform is currently hardcoded
+          arguments << "D3D11_SM50"; /// \todo Rendering platform is currently hardcoded
 
           // determine the permutation variables that should get fixed values
           {

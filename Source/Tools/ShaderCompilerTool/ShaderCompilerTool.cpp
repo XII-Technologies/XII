@@ -28,7 +28,7 @@ Examples:\n\
   -platform D3D_SM60\n\
   -platform VK_SM60\n\
   -platform ALL",
-"DX11_SM50");
+"D3D_SM50");
 
 xiiCommandLineOptionBool opt_IgnoreErrors("_ShaderCompiler", "-IgnoreErrors", "If set, a compile error won't stop other shaders from being compiled.", false);
 

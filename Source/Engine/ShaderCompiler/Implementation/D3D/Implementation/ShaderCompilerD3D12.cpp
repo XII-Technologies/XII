@@ -220,7 +220,7 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::x
       if (FillResourceBinding(inout_Data.m_StageBinary[Stage], shaderResourceBinding, pReflector, inputDesc).Failed())
         continue;
 
-      // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the DX11-based high level render interface.
+      // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the D3D11-based high level render interface.
 
       // clang-format off
       if (inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED

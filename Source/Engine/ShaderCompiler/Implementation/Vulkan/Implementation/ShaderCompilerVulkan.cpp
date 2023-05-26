@@ -226,7 +226,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
       if (FillResourceBinding(inout_Data.m_StageBinary[Stage], shaderResourceBinding, descriptorBinding).Failed())
         continue;
 
-      // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the DX11-based high level render interface.
+      // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the D3D11-based high level render interface.
       if (descriptorBinding.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV)
       {
         shaderResourceBinding.m_iSlot = uiVirtualResourceView;

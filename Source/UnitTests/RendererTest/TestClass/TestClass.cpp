@@ -67,7 +67,7 @@ xiiResult xiiGraphicsTest::SetupRenderer()
   }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  constexpr const char* szDefaultRenderer = "DX11";
+  constexpr const char* szDefaultRenderer = "D3D11";
 #elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
   constexpr const char* szDefaultRenderer = "Vulkan";
 #else
@@ -75,7 +75,6 @@ xiiResult xiiGraphicsTest::SetupRenderer()
 #endif
 
   constexpr const char* szDefaultLibraryName = "xiiRendererDiligent";
-  xiiGALDeviceFactory::RegisterLibraryName("DX11", "xiiRendererDX11");
   xiiGALDeviceFactory::RegisterLibraryName("D3D11", szDefaultLibraryName);
   xiiGALDeviceFactory::RegisterLibraryName("D3D12", szDefaultLibraryName);
   xiiGALDeviceFactory::RegisterLibraryName("Vulkan", szDefaultLibraryName);
@@ -99,7 +98,7 @@ xiiResult xiiGraphicsTest::SetupRenderer()
     xiiGALDevice::SetDefaultDevice(m_pDevice);
   }
 
-  if (xiiStringUtils::IsEqual_NoCase(szRendererName, "DX11") || xiiStringUtils::IsEqual_NoCase(szRendererName, "D3D11") || xiiStringUtils::IsEqual_NoCase(szRendererName, "D3D12"))
+  if (xiiStringUtils::IsEqual_NoCase(szRendererName, "D3D11"))
   {
     if (m_pDevice->GetCapabilities().m_sAdapterName == "Microsoft Basic Render Driver" || m_pDevice->GetCapabilities().m_sAdapterName.StartsWith_NoCase("Intel(R) UHD Graphics") || m_pDevice->GetCapabilities().m_sAdapterName.StartsWith("NVIDIA"))
     {
@@ -197,7 +196,6 @@ void xiiGraphicsTest::ShutdownRenderer()
     XII_DEFAULT_DELETE(m_pDevice);
   }
 
-  xiiGALDeviceFactory::UnregisterLibraryName("DX11");
   xiiGALDeviceFactory::UnregisterLibraryName("D3D11");
   xiiGALDeviceFactory::UnregisterLibraryName("D3D12");
   xiiGALDeviceFactory::UnregisterLibraryName("Vulkan");

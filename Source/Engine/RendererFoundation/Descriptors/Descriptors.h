@@ -143,7 +143,7 @@ struct xiiGALDepthStencilStateCreationDescription : public xiiHashableStruct<xii
 
   xiiEnum<xiiGALCompareFunc> m_DepthTestFunc = xiiGALCompareFunc::Less;
 
-  bool m_bSeparateFrontAndBack = false; ///< If false, DX11 will use front face values for both front & back face values, GL will not call
+  bool m_bSeparateFrontAndBack = false; ///< If false, D3D11 will use front face values for both front & back face values, GL will not call
                                         ///< gl*Separate() funcs
   bool     m_bDepthTest         = true;
   bool     m_bDepthWrite        = true;

@@ -44,7 +44,7 @@ public:
           if (warnOnRingBufferOverun && endTime < beginTime)
           {
             warnOnRingBufferOverun = false;
-            xiiLog::Error("Profiling end is before start, the DX11 timestamp ring buffer was probably overrun.");
+            xiiLog::Error("Profiling end is before start, the timestamp ring buffer was probably overrun.");
           }
 #  endif
           xiiProfilingSystem::AddGPUScope(timingScope.m_szName, beginTime, endTime);
