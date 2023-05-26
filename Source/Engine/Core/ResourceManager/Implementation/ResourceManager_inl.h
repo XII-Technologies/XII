@@ -11,7 +11,7 @@ ResourceType* xiiResourceManager::GetResource(xiiStringView sResourceID, bool bI
 template <typename ResourceType>
 xiiTypedResourceHandle<ResourceType> xiiResourceManager::LoadResource(xiiStringView sResourceID)
 {
-  // the mutex here is necessary to prevent a race between resource unloading and storing the pointer in the handle
+  // The mutex here is necessary to prevent a race between resource unloading and storing the pointer in the handle.
   XII_LOCK(s_ResourceMutex);
   return xiiTypedResourceHandle<ResourceType>(GetResource<ResourceType>(sResourceID, true));
 }
@@ -21,7 +21,7 @@ xiiTypedResourceHandle<ResourceType> xiiResourceManager::LoadResource(xiiStringV
 {
   xiiTypedResourceHandle<ResourceType> hResource;
   {
-    // the mutex here is necessary to prevent a race between resource unloading and storing the pointer in the handle
+    // The mutex here is necessary to prevent a race between resource unloading and storing the pointer in the handle.
     XII_LOCK(s_ResourceMutex);
     hResource = xiiTypedResourceHandle<ResourceType>(GetResource<ResourceType>(sResourceID, true));
   }

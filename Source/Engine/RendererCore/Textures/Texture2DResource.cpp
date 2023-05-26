@@ -175,14 +175,13 @@ xiiResourceLoadDesc xiiTexture2DResource::UpdateContent(xiiStreamReader* Stream)
     {
       if (m_uiLoadedTextures == 0)
       {
-        // only upload fallback textures, if we don't have any texture data at all, yet
+        // Upload fallback textures if we do not yet have any texture data.
         bCouldLoadMore       = true;
         uiUploadNumMipLevels = uiNumMipmapsLowRes;
       }
       else if (m_uiLoadedTextures == 1)
       {
-        // ignore this texture entirely, if we already have low res data
-        // but assume we could load a higher resolution version
+        // Ignore this texture if we already have a low resolution data, assume we could load a higher resolution version.
         bCouldLoadMore = true;
         xiiLog::Debug("Ignoring fallback texture data, low-res resource data is already loaded.");
       }
@@ -204,7 +203,7 @@ xiiResourceLoadDesc xiiTexture2DResource::UpdateContent(xiiStreamReader* Stream)
       }
       else
       {
-        // ignore the texture, if we already have fully loaded data
+        // Ignore the texture if we have fully loaded the data.
         xiiLog::Debug("Ignoring texture data, resource is already fully loaded.");
       }
     }
@@ -218,7 +217,7 @@ xiiResourceLoadDesc xiiTexture2DResource::UpdateContent(xiiStreamReader* Stream)
 
       xiiTextureUtils::ConfigureSampler(static_cast<xiiTextureFilterSetting::Enum>(texFormat.m_TextureFilter.GetValue()), td.m_SamplerDesc);
 
-      // ignore its return value here, we build our own
+      // Ignore its return value here, we build our own.
       CreateResource(std::move(td));
     }
 
@@ -293,8 +292,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(RendererCore, Texture2D)
   ON_CORESYSTEMS_STARTUP 
   {
     xiiResourceManager::RegisterResourceOverrideType(xiiGetStaticRTTI<xiiRenderToTexture2DResource>(), [](const xiiStringBuilder& sResourceID) -> bool  {
-        return sResourceID.HasExtension(".xiiRenderTarget");
-      });
+      return sResourceID.HasExtension(".xiiRenderTarget");
+    });
   }
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -393,7 +392,7 @@ static xiiUInt16 GetNextBestResolution(float res)
 {
   res = xiiMath::Clamp(res, 8.0f, 4096.0f);
 
-  int mulEight = (int)xiiMath::Floor((res + 7.9f) / 8.0f);
+  xiiInt32 mulEight = (xiiInt32)xiiMath::Floor((res + 7.9f) / 8.0f);
 
   return static_cast<xiiUInt16>(mulEight * 8);
 }
@@ -415,7 +414,7 @@ xiiResourceLoadDesc xiiRenderToTexture2DResource::UpdateContent(xiiStreamReader*
   bool                                   bIsFallback = false;
   xiiTexFormat                           texFormat;
 
-  // load image data
+  // Load Image Data
   {
     Stream->ReadBytes(&pImage, sizeof(xiiImage*));
     *Stream >> bIsFallback;
@@ -447,8 +446,7 @@ xiiResourceLoadDesc xiiRenderToTexture2DResource::UpdateContent(xiiStreamReader*
       }
       else
       {
-        XII_REPORT_FAILURE(
-          "Invalid render target configuration: {0} x {1}", texFormat.m_iRenderTargetResolutionX, texFormat.m_iRenderTargetResolutionY);
+        XII_REPORT_FAILURE("Invalid render target configuration: {0} x {1}", texFormat.m_iRenderTargetResolutionX, texFormat.m_iRenderTargetResolutionY);
       }
     }
 

@@ -160,9 +160,6 @@ private:
   Diligent::IFramebuffer*                                                           m_pFramebuffer = nullptr;
   xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_ClearValues;
 
-  Diligent::TEXTURE_FORMAT m_RTVFormats[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
-  Diligent::TEXTURE_FORMAT m_DSVFormat                                  = Diligent::TEX_FORMAT_UNKNOWN;
-
   Diligent::PRIMITIVE_TOPOLOGY           m_PrimitiveTopology  = {};
   const xiiGALVertexDeclarationDiligent* m_pVertexDeclaration = nullptr;
   const xiiGALBlendStateDiligent*        m_pBlendStateState   = nullptr;
@@ -170,9 +167,13 @@ private:
   const xiiGALRasterizerStateDiligent*   m_pRasterizerState   = nullptr;
 
   // Cache flags
-  bool m_bRenderpassActive   = false;
-  bool m_bIsComputeRequested = false;
-  bool m_bClearSubmitted     = false;
+  bool m_bPipelineStateModified = true;
+  bool m_bViewportModified      = true;
+  bool m_bIndexBufferModified   = false;
+  bool m_bDescriptorsModified   = false;
+  bool m_bRenderpassActive      = false;
+  bool m_bIsComputeRequested    = false;
+  bool m_bClearSubmitted        = false;
 
   // Bound objects for deferred state flushes
   xiiGALBufferDiligent* m_pIndexBuffer = nullptr;
@@ -189,7 +190,6 @@ private:
 
   xiiGALRenderingSetup    m_RenderingSetup                                      = {};
   Diligent::ITextureView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {nullptr};
-  xiiUInt8                m_uiBoundRenderTargetCount                            = 0;
   Diligent::ITextureView* m_pBoundDepthStencilTarget                            = nullptr;
 
   Diligent::IBuffer*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {nullptr};
