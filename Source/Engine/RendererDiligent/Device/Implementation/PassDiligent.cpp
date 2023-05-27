@@ -262,7 +262,7 @@ void xiiGALPassDiligent::GetRenderPassDesc(const xiiGALRenderingSetup& rendering
     }
     else
     {
-      if (renderingSetup.m_uiRenderTargetClearMask & (1u << i))
+      if (renderingSetup.m_uiRenderTargetClearMask & XII_BIT(i))
       {
         colorAttachment.InitialState = Diligent::RESOURCE_STATE_RENDER_TARGET;
         colorAttachment.LoadOp       = Diligent::ATTACHMENT_LOAD_OP_CLEAR;

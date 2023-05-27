@@ -137,8 +137,7 @@ public:
   void FlushPipelineStateCache();
 
 protected:
-  void FlushDeferredStateChangesCompute();
-  void FlushDeferredStateChangesGraphics();
+  void FlushDeferredStateChanges();
 
   void TransitionResources();
 
@@ -167,13 +166,18 @@ private:
   const xiiGALRasterizerStateDiligent*   m_pRasterizerState   = nullptr;
 
   // Cache flags
-  bool m_bPipelineStateModified = true;
-  bool m_bViewportModified      = true;
-  bool m_bIndexBufferModified   = false;
-  bool m_bDescriptorsModified   = false;
-  bool m_bRenderpassActive      = false;
-  bool m_bIsComputeRequested    = false;
-  bool m_bClearSubmitted        = false;
+  bool m_bPipelineStateModified   = true;
+  bool m_bViewportModified        = true;
+  bool m_bIndexBufferModified     = false;
+  bool m_bDescriptorsModified     = false;
+  bool m_bRenderpassActive        = false;
+  bool m_bIsComputeRequested      = false;
+  bool m_bClearSubmitted          = false;
+  bool m_bTransitionStateModified = true;
+
+  Diligent::Viewport m_Viewport;
+  Diligent::Rect     m_ScissorRect;
+  bool               m_bScissorEnabled = false;
 
   // Bound objects for deferred state flushes
   xiiGALBufferDiligent* m_pIndexBuffer = nullptr;
