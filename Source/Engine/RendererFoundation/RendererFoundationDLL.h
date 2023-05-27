@@ -415,14 +415,14 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALUpdateMode
 
   enum Enum : xiiUInt8
   {
-    Undefined         = 0x0,        ///< Undefined update mode.
-    DoNotWait         = XII_BIT(0), ///< Do not wait another previous command using the resource completes. Map returns null pointer if the resource is still in use.
-    Discard           = XII_BIT(1), ///< Discard the previous contents of the resource. Thus, making its contents undefined.
-    NoOverWrite       = XII_BIT(2), ///< The system will not synchronize pending operations before mapping the buffer.
+    Undefined   = 0x0,        ///< Undefined update mode.
+    DoNotWait   = XII_BIT(0), ///< Do not wait another previous command using the resource completes. Map returns null pointer if the resource is still in use.
+    Discard     = XII_BIT(1), ///< Discard the previous contents of the resource. Thus, making its contents undefined.
+    NoOverWrite = XII_BIT(2), ///< The system will not synchronize pending operations before mapping the buffer.
 
-    ENUM_COUNT = 5,
+    ENUM_COUNT = 4,
 
-    Default = Undefined
+    Default = Discard
   };
 };
 
