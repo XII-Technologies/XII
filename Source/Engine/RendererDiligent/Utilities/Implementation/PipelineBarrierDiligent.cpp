@@ -33,12 +33,12 @@ void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* p
   }
 
   Diligent::StateTransitionDesc transitionDesc;
-  transitionDesc.pResource      = pBuffer;
-  transitionDesc.pResourceBefore      = pResourceBefore;
-  transitionDesc.OldState       = pBuffer->GetState();
-  transitionDesc.NewState       = transitionState;
-  transitionDesc.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
-  transitionDesc.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+  transitionDesc.pResource       = pBuffer;
+  transitionDesc.pResourceBefore = pResourceBefore;
+  transitionDesc.OldState        = pBuffer->GetState();
+  transitionDesc.NewState        = transitionState;
+  transitionDesc.TransitionType  = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+  transitionDesc.Flags           = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
 
   StateTransitionInfo transitionInfo;
   transitionInfo.m_pContext                               = pContext;
@@ -90,12 +90,12 @@ void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* p
   }
 
   Diligent::StateTransitionDesc transitionDesc;
-  transitionDesc.pResource      = pTexture;
-  transitionDesc.pResourceBefore      = pResourceBefore;
-  transitionDesc.OldState       = pTexture->GetState();
-  transitionDesc.NewState       = transitionState;
-  transitionDesc.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
-  transitionDesc.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+  transitionDesc.pResource       = pTexture;
+  transitionDesc.pResourceBefore = pResourceBefore;
+  transitionDesc.OldState        = pTexture->GetState();
+  transitionDesc.NewState        = transitionState;
+  transitionDesc.TransitionType  = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+  transitionDesc.Flags           = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
 
   StateTransitionInfo transitionInfo;
   transitionInfo.m_pContext                               = pContext;
