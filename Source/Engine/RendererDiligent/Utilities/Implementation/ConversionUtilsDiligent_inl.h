@@ -692,5 +692,5 @@ XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentUtils::GetDefaultResourceS
   if (bindFlags & Diligent::BIND_SHADING_RATE)
     defaultResourceState |= Diligent::RESOURCE_STATE_SHADING_RATE;
 
-    return defaultResourceState;
+  return defaultResourceState;
 }
