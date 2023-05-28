@@ -16,8 +16,8 @@ public:
   /// \brief Restores resources to their default state.
   void FlushBarriers();
 
-  void EnsureResourceState(Diligent::IDeviceContext* pContext, Diligent::IBuffer* pBuffer, Diligent::RESOURCE_STATE transitionState, Diligent::RESOURCE_STATE defaultState, Diligent::IDeviceObject* pResourceBefore = nullptr);
-  void EnsureResourceState(Diligent::IDeviceContext* pContext, Diligent::ITexture* pTexture, Diligent::RESOURCE_STATE transitionState, Diligent::RESOURCE_STATE defaultState, Diligent::IDeviceObject* pResourceBefore = nullptr);
+  void EnsureResourceState(Diligent::IDeviceContext* pContext, Diligent::IBuffer* pBuffer, Diligent::RESOURCE_STATE transitionState, Diligent::RESOURCE_STATE defaultState, bool bIsDeferred = false, Diligent::IDeviceObject* pResourceBefore = nullptr);
+  void EnsureResourceState(Diligent::IDeviceContext* pContext, Diligent::ITexture* pTexture, Diligent::RESOURCE_STATE transitionState, Diligent::RESOURCE_STATE defaultState, bool bIsDeferred = false, Diligent::IDeviceObject* pResourceBefore = nullptr);
 
 private:
   struct PipelineBarrierHash
@@ -32,7 +32,7 @@ private:
     Diligent::StateTransitionDesc m_DefaultStateTransition = {};
   };
 
-  bool m_bTransitionStatesRequested = false;
+  bool m_bTransitionStatesModified = false;
 
   // Stores the requested state transition, as well as a default state to be transitioned into when flushing barriers.
   xiiHashTable<Diligent::StateTransitionDesc, StateTransitionInfo, PipelineBarrierHash> m_RequestedBarriers;
