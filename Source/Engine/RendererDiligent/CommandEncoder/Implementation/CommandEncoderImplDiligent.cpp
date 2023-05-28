@@ -1526,26 +1526,6 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
   if (!m_bIsComputeRequested && m_BoundVertexBuffersRange.IsValid())
   {
-    // Transition vertex buffer states.
-    {
-      xiiHybridArray<Diligent::StateTransitionDesc, 2u> stateTransitions;
-
-      for (xiiUInt32 i = 0; i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
-      {
-        if (m_pBoundVertexBuffers[i] == nullptr)
-          continue;
-
-        Diligent::StateTransitionDesc& transitionDesc = stateTransitions.ExpandAndGetRef();
-        transitionDesc.pResource                      = m_pBoundVertexBuffers[i];
-        transitionDesc.OldState                       = m_pBoundVertexBuffers[i]->GetState();
-        transitionDesc.NewState                       = Diligent::RESOURCE_STATE_VERTEX_BUFFER;
-        transitionDesc.TransitionType                 = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
-        transitionDesc.Flags                          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
-      }
-
-      m_pContext->TransitionResourceStates(stateTransitions.GetCount(), stateTransitions.GetData());
-    }
-
     const xiiUInt32 uiStartSlot = m_BoundVertexBuffersRange.m_uiMin;
     const xiiUInt32 uiNumSlots  = m_BoundVertexBuffersRange.GetCount();
 
