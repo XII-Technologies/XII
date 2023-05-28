@@ -45,6 +45,7 @@ void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* p
     transitionInfo.m_pContext                        = pContext;
     transitionInfo.m_DefaultStateTransition          = transitionDesc;
     transitionInfo.m_DefaultStateTransition.NewState = defaultState;
+    transitionInfo.m_DefaultStateTransition.OldState = Diligent::RESOURCE_STATE_UNKNOWN;
 
     pContext->TransitionResourceStates(1u, &transitionDesc);
 
@@ -85,6 +86,7 @@ void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* p
     transitionInfo.m_pContext                        = pContext;
     transitionInfo.m_DefaultStateTransition          = transitionDesc;
     transitionInfo.m_DefaultStateTransition.NewState = defaultState;
+    transitionInfo.m_DefaultStateTransition.OldState = Diligent::RESOURCE_STATE_UNKNOWN;
 
     pContext->TransitionResourceStates(1u, &transitionDesc);
 

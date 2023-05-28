@@ -158,6 +158,9 @@ private:
   xiiHashTable<Diligent::GraphicsPipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash> m_CachedGraphicsPipelineStates;
   xiiHashTable<Diligent::ComputePipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash>  m_CachedComputePipelineStates;
 
+  Diligent::IPipelineState*         m_pCurrentPipelineState         = nullptr;
+  Diligent::IShaderResourceBinding* m_pCurrentShaderResourceBinding = nullptr;
+
   Diligent::IRenderPass*                                                            m_pRenderPass  = nullptr;
   Diligent::IFramebuffer*                                                           m_pFramebuffer = nullptr;
   xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_ClearValues;
