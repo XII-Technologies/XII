@@ -45,4 +45,5 @@
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #endif
 
-#include <RendererDiligent/Utilities/DiligentConversions.h>
+#include <RendererDiligent/Utilities/ConversionUtilsDiligent.h>
+#include <RendererDiligent/Utilities/PipelineBarrierDiligent.h>

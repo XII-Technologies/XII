@@ -19,7 +19,6 @@
 #include <RendererDiligent/Shader/ShaderDiligent.h>
 #include <RendererDiligent/Shader/VertexDeclarationDiligent.h>
 #include <RendererDiligent/State/StateDiligent.h>
-#include <RendererDiligent/Utilities/DiligentConversions.h>
 
 #include <Graphics/GraphicsTools/interface/DurationQueryHelper.hpp>
 #include <Graphics/GraphicsTools/interface/ScopedQueryHelper.hpp>
@@ -518,6 +517,8 @@ CreateRenderDevice:
   for (xiiUInt32 i = 0; i < ppContexts.GetCount(); ++i)
     m_pDeviceContexts[i] = ppContexts[i];
 
+  m_pPipelineBarrier = XII_NEW(&m_Allocator, xiiPipelineBarrierDiligent);
+
   // Create default pass
   m_pDefaultPass = XII_NEW(&m_Allocator, xiiGALPassDiligent, *this);
 
@@ -608,6 +609,8 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
   m_uiNumImmediateContexts = 0;
 
   m_pDefaultPass = nullptr;
+
+  m_pPipelineBarrier = nullptr;
 
   m_pDevice->ReleaseStaleResources(true);
 

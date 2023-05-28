@@ -12,6 +12,8 @@ struct xiiDiligentMemoryAllocator;
 using xiiGALFormatLookupEntryDiligent = xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, Diligent::TEX_FORMAT_UNKNOWN>;
 using xiiGALFormatLookupTableDiligent = xiiGALFormatLookupTable<xiiGALFormatLookupEntryDiligent>;
 
+class xiiPipelineBarrierDiligent;
+
 /// \brief The Diligent device implementation of the graphics abstraction layer.
 class XII_RENDERERDILIGENT_DLL xiiGALDeviceDiligent : public xiiGALDevice
 {
@@ -143,7 +145,8 @@ protected:
 
   xiiGALFormatLookupTableDiligent m_FormatLookupTable;
 
-  xiiUniquePtr<xiiGALPassDiligent> m_pDefaultPass;
+  xiiUniquePtr<xiiGALPassDiligent>         m_pDefaultPass;
+  xiiUniquePtr<xiiPipelineBarrierDiligent> m_pPipelineBarrier;
 
   struct UsedTempResource
   {

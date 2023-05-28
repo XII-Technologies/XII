@@ -242,6 +242,7 @@ bool xiiGALCommandEncoderImplDiligent::ResourceCacheHash::Equal(const Diligent::
 xiiGALCommandEncoderImplDiligent::xiiGALCommandEncoderImplDiligent(xiiGALDeviceDiligent& deviceDiligent) :
   m_GALDeviceDiligent(deviceDiligent), m_pContext(m_GALDeviceDiligent.GetImmediateContext())
 {
+  m_pPipelineBarrier = m_GALDeviceDiligent.m_pPipelineBarrier.Borrow();
 }
 
 xiiGALCommandEncoderImplDiligent::~xiiGALCommandEncoderImplDiligent()
@@ -272,7 +273,7 @@ xiiGALCommandEncoderImplDiligent::~xiiGALCommandEncoderImplDiligent()
 
   xiiMemoryUtils::ZeroFill(&m_pBoundSamplerStates[0][0], xiiGALShaderStage::ENUM_COUNT * XII_GAL_MAX_SAMPLER_COUNT);
 
-  for (auto iter : m_CachedGraphicsPipelineStates)
+  for (auto& iter : m_CachedGraphicsPipelineStates)
   {
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pPipelineState);
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pShaderResourceBinding);
@@ -280,7 +281,7 @@ xiiGALCommandEncoderImplDiligent::~xiiGALCommandEncoderImplDiligent()
   m_CachedGraphicsPipelineStates.Clear();
   m_CachedGraphicsPipelineStates.Compact();
 
-  for (auto iter : m_CachedComputePipelineStates)
+  for (auto& iter : m_CachedComputePipelineStates)
   {
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pPipelineState);
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pShaderResourceBinding);
@@ -559,9 +560,10 @@ void xiiGALCommandEncoderImplDiligent::CopyBufferPlatform(const xiiGALBuffer* pD
   Diligent::IBuffer* pDestinationBuffer = static_cast<xiiGALBufferDiligent*>(pDst)->GetBuffer();
   Diligent::IBuffer* pSourceBuffer      = static_cast<xiiGALBufferDiligent*>(pSrc)->GetBuffer();
 
-  m_pContext->CopyBuffer(pSourceBuffer, 0u, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, pDestinationBuffer, 0u, pDestination->GetSize(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceBuffer, Diligent::RESOURCE_STATE_COPY_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pSourceBuffer));
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationBuffer, Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationBuffer));
 
-  m_bTransitionStateModified = true;
+  m_pContext->CopyBuffer(pSourceBuffer, 0u, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY, pDestinationBuffer, 0u, pDestination->GetSize(), Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 }
 
 void xiiGALCommandEncoderImplDiligent::CopyBufferRegionPlatform(const xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, const xiiGALBuffer* pSource, xiiUInt32 uiSourceOffset, xiiUInt32 uiByteCount)
@@ -571,9 +573,10 @@ void xiiGALCommandEncoderImplDiligent::CopyBufferRegionPlatform(const xiiGALBuff
   Diligent::IBuffer* pDestinationBuffer = static_cast<xiiGALBufferDiligent*>(pDst)->GetBuffer();
   Diligent::IBuffer* pSourceBuffer      = static_cast<xiiGALBufferDiligent*>(pSrc)->GetBuffer();
 
-  m_pContext->CopyBuffer(pSourceBuffer, uiSourceOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, pDestinationBuffer, uiDestOffset, uiByteCount, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceBuffer, Diligent::RESOURCE_STATE_COPY_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pSourceBuffer));
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationBuffer, Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationBuffer));
 
-  m_bTransitionStateModified = true;
+  m_pContext->CopyBuffer(pSourceBuffer, uiSourceOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY, pDestinationBuffer, uiDestOffset, uiByteCount, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 }
 
 void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiGALUpdateMode::Enum updateMode)
@@ -607,12 +610,11 @@ void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* 
   {
     case Diligent::USAGE_DEFAULT:
     {
-      m_pContext->UpdateBuffer(pDestinationBuffer, uiDestOffset, pSourceData.GetCount(), reinterpret_cast<const void*>(pSourceData.GetPtr()), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+      m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationBuffer, Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationBuffer));
 
-      m_bTransitionStateModified = true;
+      m_pContext->UpdateBuffer(pDestinationBuffer, uiDestOffset, pSourceData.GetCount(), reinterpret_cast<const void*>(pSourceData.GetPtr()), Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
     }
     break;
-
     case Diligent::USAGE_DYNAMIC:
     {
       Diligent::PVoid pMapResult;
@@ -649,15 +651,16 @@ void xiiGALCommandEncoderImplDiligent::CopyTexturePlatform(const xiiGALTexture* 
   Diligent::ITexture* pSourceTexture      = static_cast<xiiGALTextureDiligent*>(pSrc)->GetTexture();
   Diligent::ITexture* pDestinationTexture = static_cast<xiiGALTextureDiligent*>(pDst)->GetTexture();
 
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceTexture, Diligent::RESOURCE_STATE_COPY_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pSourceTexture));
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationTexture, Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationTexture));
+
   Diligent::CopyTextureAttribs CopyTexAttribs = {};
   CopyTexAttribs.pSrcTexture                  = pSourceTexture;
   CopyTexAttribs.pDstTexture                  = pDestinationTexture;
-  CopyTexAttribs.SrcTextureTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
-  CopyTexAttribs.DstTextureTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  CopyTexAttribs.SrcTextureTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+  CopyTexAttribs.DstTextureTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
 
   m_pContext->CopyTexture(CopyTexAttribs);
-
-  m_bTransitionStateModified = true;
 }
 
 void xiiGALCommandEncoderImplDiligent::CopyTextureRegionPlatform(const xiiGALTexture* pDestination, const xiiGALTextureSubresource& DestinationSubResource, const xiiVec3U32& DestinationPoint, const xiiGALTexture* pSource, const xiiGALTextureSubresource& SourceSubResource, const xiiBoundingBoxu32& Box)
@@ -666,6 +669,9 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureRegionPlatform(const xiiGALTex
   xiiGALTexture*      pDst                = const_cast<xiiGALTexture*>(pDestination);
   Diligent::ITexture* pSourceTexture      = static_cast<xiiGALTextureDiligent*>(pSrc)->GetTexture();
   Diligent::ITexture* pDestinationTexture = static_cast<xiiGALTextureDiligent*>(pDst)->GetTexture();
+
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceTexture, Diligent::RESOURCE_STATE_COPY_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pSourceTexture));
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationTexture, Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationTexture));
 
   Diligent::Box srcBox = {};
   srcBox.MinX          = Box.m_vMin.x;
@@ -682,18 +688,16 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureRegionPlatform(const xiiGALTex
 
   CopyTexAttribs.SrcMipLevel              = SourceSubResource.m_uiMipLevel;
   CopyTexAttribs.SrcSlice                 = SourceSubResource.m_uiArraySlice;
-  CopyTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  CopyTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
 
   CopyTexAttribs.DstMipLevel              = DestinationSubResource.m_uiMipLevel;
   CopyTexAttribs.DstSlice                 = DestinationSubResource.m_uiArraySlice;
-  CopyTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  CopyTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
   CopyTexAttribs.DstX                     = DestinationPoint.x;
   CopyTexAttribs.DstY                     = DestinationPoint.y;
   CopyTexAttribs.DstZ                     = DestinationPoint.z;
 
   m_pContext->CopyTexture(CopyTexAttribs);
-
-  m_bTransitionStateModified = true;
 }
 
 void xiiGALCommandEncoderImplDiligent::UpdateTexturePlatform(const xiiGALTexture* pDestination, const xiiGALTextureSubresource& DestinationSubResource, const xiiBoundingBoxu32& DestinationBox, const xiiGALSystemMemoryDescription& pSourceData)
@@ -720,6 +724,8 @@ void xiiGALCommandEncoderImplDiligent::UpdateTexturePlatform(const xiiGALTexture
       XII_ASSERT_DEV(pSourceData.m_uiSlicePitch == 0 || pSourceData.m_uiSlicePitch == uiSlicePitch, "Invalid slice pitch. Expected {0} got {1}",
                      uiSlicePitch, pSourceData.m_uiSlicePitch);
 
+      m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationTexture, Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationTexture));
+
       Diligent::Box SubRegion = {};
       SubRegion.MinX          = DestinationBox.m_vMin.x;
       SubRegion.MinY          = DestinationBox.m_vMin.y;
@@ -733,12 +739,9 @@ void xiiGALCommandEncoderImplDiligent::UpdateTexturePlatform(const xiiGALTexture
       SubResData.Stride                      = uiRowPitch;
       SubResData.DepthStride                 = uiSlicePitch;
 
-      m_pContext->UpdateTexture(pDestinationTexture, DestinationSubResource.m_uiMipLevel, DestinationSubResource.m_uiArraySlice, SubRegion, SubResData, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-
-      m_bTransitionStateModified = true;
+      m_pContext->UpdateTexture(pDestinationTexture, DestinationSubResource.m_uiMipLevel, DestinationSubResource.m_uiArraySlice, SubRegion, SubResData, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
     }
     break;
-
     case Diligent::USAGE_DYNAMIC:
     {
       Diligent::Box SubRegion = {};
@@ -795,6 +798,9 @@ void xiiGALCommandEncoderImplDiligent::ResolveTexturePlatform(const xiiGALTextur
   Diligent::ITexture* pSourceTexture      = static_cast<xiiGALTextureDiligent*>(pSrc)->GetTexture();
   Diligent::ITexture* pDestinationTexture = static_cast<xiiGALTextureDiligent*>(pDst)->GetTexture();
 
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceTexture, Diligent::RESOURCE_STATE_RESOLVE_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pSourceTexture));
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationTexture, Diligent::RESOURCE_STATE_RESOLVE_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationTexture));
+
   Diligent::TEXTURE_FORMAT Format = m_GALDeviceDiligent.GetFormatLookupTable().GetFormatInfo(pDestination->GetDescription().m_Format).m_eResourceViewType;
 
   Diligent::ResolveTextureSubresourceAttribs ResolveTexAttribs;
@@ -802,15 +808,13 @@ void xiiGALCommandEncoderImplDiligent::ResolveTexturePlatform(const xiiGALTextur
 
   ResolveTexAttribs.SrcMipLevel              = SourceSubResource.m_uiMipLevel;
   ResolveTexAttribs.SrcSlice                 = SourceSubResource.m_uiArraySlice;
-  ResolveTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  ResolveTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
 
   ResolveTexAttribs.DstMipLevel              = DestinationSubResource.m_uiMipLevel;
   ResolveTexAttribs.DstSlice                 = DestinationSubResource.m_uiArraySlice;
-  ResolveTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  ResolveTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
 
   m_pContext->ResolveTextureSubresource(pSourceTexture, pDestinationTexture, ResolveTexAttribs);
-
-  m_bTransitionStateModified = true;
 }
 
 void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTexture* pTexture)
@@ -831,11 +835,14 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
   XII_ASSERT_DEV(pTextureDiligent->GetStagingTexture() != nullptr, "No staging resource available for read-back");
   XII_ASSERT_DEV(pTextureDiligent->GetTexture() != nullptr, "Texture object is invalid");
 
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetTexture(), Diligent::RESOURCE_STATE_RESOLVE_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pTextureDiligent->GetTexture()));
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetStagingTexture(), Diligent::RESOURCE_STATE_RESOLVE_DEST, xiiDiligentUtils::GetDefaultResourceState(pTextureDiligent->GetStagingTexture()));
+
   if (bMSAASourceTexture)
   {
     Diligent::ResolveTextureSubresourceAttribs ResolveTexAttribs;
-    ResolveTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
-    ResolveTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+    ResolveTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+    ResolveTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
 
     m_pContext->ResolveTextureSubresource(pTextureDiligent->GetTexture(), pTextureDiligent->GetStagingTexture(), ResolveTexAttribs);
   }
@@ -844,13 +851,11 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
     Diligent::CopyTextureAttribs CopyTexAttribs;
     CopyTexAttribs.pSrcTexture              = pTextureDiligent->GetTexture();
     CopyTexAttribs.pDstTexture              = pTextureDiligent->GetStagingTexture();
-    CopyTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
-    CopyTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+    CopyTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+    CopyTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
 
     m_pContext->CopyTexture(CopyTexAttribs);
   }
-
-  m_bTransitionStateModified = true;
 }
 
 xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel)
@@ -1041,7 +1046,7 @@ void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor,
         xiiGALRenderTargetView*         pGALRenderTargetView      = const_cast<xiiGALRenderTargetView*>(m_GALDeviceDiligent.GetRenderTargetView(hColorRenderTarget));
         xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<xiiGALRenderTargetViewDiligent*>(pGALRenderTargetView);
 
-        m_pContext->ClearRenderTarget(pRenderTargetViewDiligent->GetRenderTargetView(), ClearColor.GetData(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+        m_pContext->ClearRenderTarget(pRenderTargetViewDiligent->GetRenderTargetView(), ClearColor.GetData(), Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
       }
     }
   }
@@ -1059,7 +1064,7 @@ void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor,
     if (bClearStencil)
       flags |= Diligent::CLEAR_STENCIL_FLAG;
 
-    m_pContext->ClearDepthStencil(pRenderTargetViewDiligent->GetDepthStencilView(), flags, fDepthClear, uiStencilClear, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pContext->ClearDepthStencil(pRenderTargetViewDiligent->GetDepthStencilView(), flags, fDepthClear, uiStencilClear, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
   }
 #endif
 }
@@ -1414,6 +1419,11 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
           xiiLog::Dev("Created new Compute pipeline state object.");
         }
+        else
+        {
+          XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pipelineInfo.m_pShaderResourceBinding);
+          (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
+        }
       }
       else
       {
@@ -1453,6 +1463,11 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
           m_CachedGraphicsPipelineStates.Insert(graphicsPipelineStateDesc, pipelineInfo);
 
           xiiLog::Dev("Created new Compute pipeline state object.");
+        }
+        else
+        {
+          XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pipelineInfo.m_pShaderResourceBinding);
+          (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
         }
       }
     }
@@ -1553,15 +1568,20 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     m_bIndexBufferModified = false;
   }
 
-  if (m_bRenderpassActive && m_bTransitionStateModified)
+  if (m_bRenderpassActive && m_pPipelineBarrier->IsBarrierModified())
   {
     m_pContext->EndRenderPass();
 
     m_bRenderpassActive = false;
+  }
 
+  if (!m_bRenderpassActive)
+  {
+    if (m_pPipelineBarrier->IsBarrierModified())
+    {
+      m_pPipelineBarrier->FlushBarriers();
+    }
     TransitionResources();
-
-    m_bTransitionStateModified = false;
   }
 
   // Begin renderpass

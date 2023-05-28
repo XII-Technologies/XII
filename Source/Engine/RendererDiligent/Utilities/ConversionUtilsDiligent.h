@@ -25,6 +25,9 @@ public:
 
   static bool IsDepthFormat(Diligent::TEXTURE_FORMAT format);
   static Diligent::RESOURCE_DIMENSION GetResourceDimension(xiiGALTextureType::Enum type);
+
+  static Diligent::RESOURCE_STATE GetDefaultResourceState(Diligent::IBuffer* pBuffer);
+  static Diligent::RESOURCE_STATE GetDefaultResourceState(Diligent::ITexture* pTexture);
 };
 
-#include <RendererDiligent/Utilities/Implementation/DiligentConversions_inl.h>
+#include <RendererDiligent/Utilities/Implementation/ConversionUtilsDiligent_inl.h>

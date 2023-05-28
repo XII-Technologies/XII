@@ -9,6 +9,8 @@
 #include <RendererFoundation/CommandEncoder/CommandEncoderPlatformInterface.h>
 #include <RendererFoundation/Resources/RenderTargetSetup.h>
 
+class xiiPipelineBarrierDiligent;
+
 class XII_RENDERERDILIGENT_DLL xiiGALCommandEncoderImplDiligent : public xiiGALCommandEncoderCommonPlatformInterface, public xiiGALCommandEncoderRenderPlatformInterface, public xiiGALCommandEncoderComputePlatformInterface
 {
 public:
@@ -152,6 +154,7 @@ private:
   Diligent::IDeviceContext* m_pContext = nullptr;
 
   // Pipeline State
+  xiiPipelineBarrierDiligent*                                                      m_pPipelineBarrier;
   xiiHashTable<Diligent::GraphicsPipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash> m_CachedGraphicsPipelineStates;
   xiiHashTable<Diligent::ComputePipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash>  m_CachedComputePipelineStates;
 
@@ -173,7 +176,6 @@ private:
   bool m_bRenderpassActive        = false;
   bool m_bIsComputeRequested      = false;
   bool m_bClearSubmitted          = false;
-  bool m_bTransitionStateModified = true;
 
   Diligent::Viewport m_Viewport;
   Diligent::Rect     m_ScissorRect;

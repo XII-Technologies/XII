@@ -631,3 +631,66 @@ XII_ALWAYS_INLINE Diligent::RESOURCE_DIMENSION xiiDiligentUtils::GetResourceDime
   }
   return Diligent::RESOURCE_DIM_UNDEFINED;
 }
+
+XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentUtils::GetDefaultResourceState(Diligent::IBuffer* pBuffer)
+{
+  Diligent::RESOURCE_STATE defaultSourceResourceState = {};
+
+  const Diligent::BIND_FLAGS& bindFlags = pBuffer->GetDesc().BindFlags;
+
+  if (bindFlags & Diligent::BIND_UNIFORM_BUFFER)
+  {
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_CONSTANT_BUFFER;
+    return defaultSourceResourceState;
+  }
+
+  if (bindFlags & Diligent::BIND_VERTEX_BUFFER)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_VERTEX_BUFFER;
+
+  if (bindFlags & Diligent::BIND_INDEX_BUFFER)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_INDEX_BUFFER;
+
+  if (bindFlags & Diligent::BIND_SHADER_RESOURCE)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+
+  if (bindFlags & Diligent::BIND_STREAM_OUTPUT)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_STREAM_OUT;
+
+  if (bindFlags & Diligent::BIND_UNORDERED_ACCESS)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_UNORDERED_ACCESS;
+
+  if (bindFlags & Diligent::BIND_INDIRECT_DRAW_ARGS)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_INDIRECT_ARGUMENT;
+
+  if (bindFlags & Diligent::BIND_RAY_TRACING)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_RAY_TRACING;
+
+  return defaultSourceResourceState;
+}
+
+XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentUtils::GetDefaultResourceState(Diligent::ITexture* pTexture)
+{
+  Diligent::RESOURCE_STATE defaultResourceState = {};
+
+  const Diligent::BIND_FLAGS& bindFlags = pTexture->GetDesc().BindFlags;
+
+  if (bindFlags & Diligent::BIND_RENDER_TARGET)
+    defaultResourceState |= Diligent::RESOURCE_STATE_RENDER_TARGET;
+
+  if (bindFlags & Diligent::BIND_DEPTH_STENCIL)
+    defaultResourceState |= Diligent::RESOURCE_STATE_DEPTH_WRITE;
+
+  if (bindFlags & Diligent::BIND_SHADER_RESOURCE)
+    defaultResourceState |= Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+
+  if (bindFlags & Diligent::BIND_UNORDERED_ACCESS)
+    defaultResourceState |= Diligent::RESOURCE_STATE_UNORDERED_ACCESS;
+
+  if (bindFlags & Diligent::BIND_INPUT_ATTACHMENT)
+    defaultResourceState |= Diligent::RESOURCE_STATE_INPUT_ATTACHMENT;
+
+  if (bindFlags & Diligent::BIND_SHADING_RATE)
+    defaultResourceState |= Diligent::RESOURCE_STATE_SHADING_RATE;
+
+    return defaultResourceState;
+}

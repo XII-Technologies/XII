@@ -245,7 +245,7 @@ xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent
 
 void xiiGALSwapChainDiligent::DestroyBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent)
 {
-  for (auto iter : m_BackbufferTextures)
+  for (auto& iter : m_BackbufferTextures)
   {
     pDeviceDiligent->DestroyTexture(iter.Value());
 
