@@ -424,7 +424,7 @@ XII_ALWAYS_INLINE bool xiiDiligentUtils::GALIsFormatNormalized(Diligent::TEXTURE
   return false;
 }
 
-XII_ALWAYS_INLINE xiiInt32 xiiDiligentUtils::GALToDiligentNumComponent(Diligent::TEXTURE_FORMAT format)
+XII_ALWAYS_INLINE xiiUInt8 xiiDiligentUtils::GALToDiligentNumComponent(Diligent::TEXTURE_FORMAT format)
 {
   switch (format)
   {

@@ -19,7 +19,7 @@ public:
   static Diligent::SHADER_TYPE GALToDiligentShaderStage(xiiGALShaderStage::Enum e);
   static Diligent::VALUE_TYPE  GALNumBitsToDiligentValueType(xiiUInt32 value);
   static bool                  GALIsFormatNormalized(Diligent::TEXTURE_FORMAT format);
-  static xiiInt32              GALToDiligentNumComponent(Diligent::TEXTURE_FORMAT format);
+  static xiiUInt8              GALToDiligentNumComponent(Diligent::TEXTURE_FORMAT format);
 
   static Diligent::COLOR_MASK ToDiligentColorWriteMask(xiiGALColorWriteMask::Enum mask);
 
