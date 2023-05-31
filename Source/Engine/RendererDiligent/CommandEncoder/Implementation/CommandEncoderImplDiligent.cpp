@@ -839,11 +839,11 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
   XII_ASSERT_DEV(pTextureDiligent->GetStagingTexture() != nullptr, "No staging resource available for read-back");
   XII_ASSERT_DEV(pTextureDiligent->GetTexture() != nullptr, "Texture object is invalid");
 
-  m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetTexture(), Diligent::RESOURCE_STATE_RESOLVE_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pTextureDiligent->GetTexture()));
-  m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetStagingTexture(), Diligent::RESOURCE_STATE_RESOLVE_DEST, xiiDiligentUtils::GetDefaultResourceState(pTextureDiligent->GetStagingTexture()));
-
   if (bMSAASourceTexture)
   {
+    m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetTexture(), Diligent::RESOURCE_STATE_RESOLVE_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pTextureDiligent->GetTexture()));
+    m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetStagingTexture(), Diligent::RESOURCE_STATE_RESOLVE_DEST, xiiDiligentUtils::GetDefaultResourceState(pTextureDiligent->GetStagingTexture()));
+
     Diligent::ResolveTextureSubresourceAttribs ResolveTexAttribs;
     ResolveTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
     ResolveTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
@@ -852,6 +852,9 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
   }
   else
   {
+    m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetTexture(), Diligent::RESOURCE_STATE_COPY_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pTextureDiligent->GetTexture()));
+    m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetStagingTexture(), Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pTextureDiligent->GetStagingTexture()));
+
     Diligent::CopyTextureAttribs CopyTexAttribs;
     CopyTexAttribs.pSrcTexture              = pTextureDiligent->GetTexture();
     CopyTexAttribs.pDstTexture              = pTextureDiligent->GetStagingTexture();
