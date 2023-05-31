@@ -72,7 +72,7 @@ void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* p
   }
   else
   {
-    if (bIsExclusive ? pBuffer->GetState() != defaultState : (pBuffer->GetState() & defaultState) == 0u)
+    if (bIsExclusive ? transitionDesc.OldState != defaultState : (transitionDesc.OldState & defaultState) == 0u)
     {
       m_bTransitionStatesModified = true;
     }
@@ -128,7 +128,7 @@ void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* p
   }
   else
   {
-    if (bIsExclusive ? pTexture->GetState() != defaultState : (pTexture->GetState() & defaultState) == 0u)
+    if (bIsExclusive ? transitionDesc.OldState != defaultState : (transitionDesc.OldState & defaultState) == 0u)
     {
       m_bTransitionStatesModified = true;
     }
