@@ -1022,7 +1022,7 @@ void xiiGALCommandEncoderImplDiligent::EndRendering()
 
 void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor, xiiUInt32 uiRenderTargetClearMask, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
-  // Render target clears not are while the Renderpass is active are not supported in D3D12 
+  // Render target clears not are while the Renderpass is active are not supported in D3D12
   if (!m_bIsComputeRequested && !m_bRenderpassActive && m_GALDeviceDiligent.GetCapabilities().m_DeviceType != xiiGraphicsDeviceType::D3D12)
   {
     Diligent::BeginRenderPassAttribs renderPassBeginInfo;
