@@ -72,6 +72,8 @@ void xiiGALSwapChainDiligent::PresentRenderTarget(xiiGALDevice* pDevice)
 
   xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
+  XII_ASSERT_DEV(m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture() == static_cast<xiiGALTextureDiligent*>(const_cast<xiiGALTexture*>(pDeviceDiligent->GetTexture(m_RenderTargets.m_hRTs[0])))->GetTexture(), "Invalid Swapchain texture. Did you forget to call xiiGALSwapChain::AcquireNextRenderTarget?");
+
   // Ensure that the current Swapchain image is in the PRESENT state.
   {
     Diligent::StateTransitionDesc transitionDesc;

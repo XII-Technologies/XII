@@ -1501,7 +1501,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
       ViewRectNoScissor.right  = (xiiUInt32)m_Viewport.Width;
       ViewRectNoScissor.bottom = (xiiUInt32)m_Viewport.Height;
 
-      m_pContext->SetScissorRects(1, &ViewRectNoScissor, ViewRectNoScissor.right - ViewRectNoScissor.left, ViewRectNoScissor.bottom - ViewRectNoScissor.top);
+      m_pContext->SetScissorRects(1u, &ViewRectNoScissor, ViewRectNoScissor.right - ViewRectNoScissor.left, ViewRectNoScissor.bottom - ViewRectNoScissor.top);
     }
 
     m_bViewportModified = false;
