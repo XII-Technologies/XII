@@ -980,7 +980,7 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
     Diligent::OptimizedClearValue& depthClear = m_ClearValues.ExpandAndGetRef();
     depthClear.SetDepthStencil(formatInfo.m_eDepthStencilType, 1.0f, 0);
 
-    m_pPipelineBarrier->EnsureResourceState(m_pContext, const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture(), Diligent::RESOURCE_STATE_DEPTH_WRITE, xiiDiligentUtils::GetDefaultResourceState(const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture()));
+    m_pPipelineBarrier->EnsureResourceState(m_pContext, const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture(), Diligent::RESOURCE_STATE_DEPTH_WRITE, Diligent::RESOURCE_STATE_DEPTH_WRITE, false, true);
   }
 
   for (xiiUInt8 i = 0; i < uiColorAttachmentCount; ++i)
@@ -998,7 +998,7 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
     Diligent::OptimizedClearValue& colorClear = m_ClearValues.ExpandAndGetRef();
     colorClear.SetColor(formatInfo.m_eRenderTarget, m_RenderingSetup.m_ClearColor.GetData());
 
-    m_pPipelineBarrier->EnsureResourceState(m_pContext, const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture(), Diligent::RESOURCE_STATE_RENDER_TARGET, xiiDiligentUtils::GetDefaultResourceState(const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture()));
+    m_pPipelineBarrier->EnsureResourceState(m_pContext, const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture(), Diligent::RESOURCE_STATE_RENDER_TARGET, Diligent::RESOURCE_STATE_RENDER_TARGET, false, true);
   }
 }
 

@@ -674,6 +674,8 @@ XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentUtils::GetDefaultResourceS
 
   const Diligent::BIND_FLAGS& bindFlags = pTexture->GetDesc().BindFlags;
 
+// These are exclusive
+#if 0
   if (bindFlags & Diligent::BIND_RENDER_TARGET)
     defaultResourceState |= Diligent::RESOURCE_STATE_RENDER_TARGET;
 
@@ -684,6 +686,7 @@ XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentUtils::GetDefaultResourceS
     else
       defaultResourceState |= Diligent::RESOURCE_STATE_DEPTH_WRITE;
   }
+#endif
 
   if (bindFlags & Diligent::BIND_SHADER_RESOURCE)
     defaultResourceState |= Diligent::RESOURCE_STATE_SHADER_RESOURCE;

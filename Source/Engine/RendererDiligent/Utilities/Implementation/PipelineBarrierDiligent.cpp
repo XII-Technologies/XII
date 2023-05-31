@@ -23,14 +23,13 @@ void xiiPipelineBarrierDiligent::FlushBarriers()
   m_bTransitionStatesModified = false;
 }
 
-void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* pContext, Diligent::IBuffer* pBuffer, Diligent::RESOURCE_STATE transitionState, Diligent::RESOURCE_STATE defaultState, bool bIsDeferred /* = false */, Diligent::IDeviceObject* pResourceBefore)
+void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* pContext, Diligent::IBuffer* pBuffer, Diligent::RESOURCE_STATE transitionState, Diligent::RESOURCE_STATE defaultState, bool bIsDeferred /* = false */, bool bIsExclusive /* = false */, Diligent::IDeviceObject* pResourceBefore /* = nullptr*/)
 {
   XII_ASSERT_DEV(pContext != nullptr, "pContext cannot be nullptr");
   XII_ASSERT_DEV(pBuffer != nullptr, "pBuffer cannot be nullptr");
   XII_ASSERT_DEV(transitionState != Diligent::RESOURCE_STATE_UNDEFINED, "The transition state cannot be undefined");
 
-  // Early exit
-  if (pBuffer->GetState() & transitionState)
+  if (bIsExclusive ? pBuffer->GetState() == transitionState : pBuffer->GetState() & transitionState)
   {
     return;
   }
@@ -66,28 +65,27 @@ void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* p
 
   if (bIsDeferred)
   {
-    if ((pBuffer->GetState() & transitionState) == 0u)
+    if (bIsExclusive ? pBuffer->GetState() != transitionState : (pBuffer->GetState() & transitionState) == 0u)
     {
       m_bTransitionStatesModified = true;
     }
   }
   else
   {
-    if ((pBuffer->GetState() & defaultState) == 0u)
+    if (bIsExclusive ? pBuffer->GetState() != defaultState : (pBuffer->GetState() & defaultState) == 0u)
     {
       m_bTransitionStatesModified = true;
     }
   }
 }
 
-void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* pContext, Diligent::ITexture* pTexture, Diligent::RESOURCE_STATE transitionState, Diligent::RESOURCE_STATE defaultState, bool bIsDeferred /* = false */, Diligent::IDeviceObject* pResourceBefore)
+void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* pContext, Diligent::ITexture* pTexture, Diligent::RESOURCE_STATE transitionState, Diligent::RESOURCE_STATE defaultState, bool bIsDeferred /* = false */, bool bIsExclusive /* = false */, Diligent::IDeviceObject* pResourceBefore /* = nullptr*/)
 {
   XII_ASSERT_DEV(pContext != nullptr, "pContext cannot be nullptr");
   XII_ASSERT_DEV(pTexture != nullptr, "pTexture cannot be nullptr");
   XII_ASSERT_DEV(transitionState != Diligent::RESOURCE_STATE_UNDEFINED, "The transition state cannot be undefined");
 
-  // Early exit
-  if (pTexture->GetState() & transitionState)
+  if (bIsExclusive ? pTexture->GetState() == transitionState : pTexture->GetState() & transitionState)
   {
     return;
   }
@@ -121,13 +119,16 @@ void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* p
 
   m_RequestedBarriers.Insert(transitionDesc, transitionInfo);
 
-  if (bIsDeferred && (pTexture->GetState() & transitionState) == 0u)
+  if (bIsDeferred)
   {
-    m_bTransitionStatesModified = true;
+    if (bIsExclusive ? pTexture->GetState() != transitionState : (pTexture->GetState() & transitionState) == 0u)
+    {
+      m_bTransitionStatesModified = true;
+    }
   }
   else
   {
-    if ((pTexture->GetState() & defaultState) == 0u)
+    if (bIsExclusive ? pTexture->GetState() != defaultState : (pTexture->GetState() & defaultState) == 0u)
     {
       m_bTransitionStatesModified = true;
     }
