@@ -9,6 +9,9 @@ bool xiiPipelineBarrierDiligent::IsBarrierModified() const
 
 void xiiPipelineBarrierDiligent::FlushBarriers()
 {
+  if (!m_bTransitionStatesModified)
+    return;
+
   for (auto& pBarrier : m_RequestedBarriers)
   {
     pBarrier.Value().m_pContext->TransitionResourceStates(1u, &pBarrier.Value().m_DefaultStateTransition);
