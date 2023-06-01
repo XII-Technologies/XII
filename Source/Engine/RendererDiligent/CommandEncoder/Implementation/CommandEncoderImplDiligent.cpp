@@ -440,6 +440,8 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 
       if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
       {
+        m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureView->GetTexture(), Diligent::RESOURCE_STATE_COPY_DEST, pTextureView->GetTexture()->GetState());
+
         Diligent::ITextureVk* pTextureVk = static_cast<Diligent::ITextureVk*>(pTextureView->GetTexture());
         pTextureView->GetTexture()->QueryInterface(Diligent::IID_TextureVk, reinterpret_cast<Diligent::IObject**>(&pTextureVk));
         XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture view.");
@@ -449,6 +451,8 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
         vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColourValues, 1, &subresourceRange);
 
         XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureVk);
+
+        m_pPipelineBarrier->FlushBarriers();
       }
 
       XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pContextVk);
@@ -533,6 +537,8 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 
       if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
       {
+        m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureView->GetTexture(), Diligent::RESOURCE_STATE_COPY_DEST, pTextureView->GetTexture()->GetState());
+
         Diligent::ITextureVk* pTextureVk = static_cast<Diligent::ITextureVk*>(pTextureView->GetTexture());
         pTextureView->GetTexture()->QueryInterface(Diligent::IID_TextureVk, reinterpret_cast<Diligent::IObject**>(&pTextureVk));
         XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture view.");
@@ -542,6 +548,8 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
         vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColourValues, 1, &subresourceRange);
 
         XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureVk);
+
+        m_pPipelineBarrier->FlushBarriers();
       }
 
       XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pContextVk);
@@ -1411,10 +1419,6 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
       return;
     }
 
-    // Pipeline may not be begun without a vertex shader.
-    if (!m_pCurrentShader->GetVertexShader())
-      return;
-
     // Pipeline information for either the Graphics or Compute pipeline state.
     PipelineStateInfo pipelineInfo;
     {
@@ -1621,12 +1625,12 @@ void xiiGALCommandEncoderImplDiligent::TransitionResources()
     if (m_pBoundVertexBuffers[i] == nullptr)
       continue;
 
-    m_pPipelineBarrier->EnsureResourceState(m_pContext, m_pBoundVertexBuffers[i], Diligent::RESOURCE_STATE_VERTEX_BUFFER, xiiDiligentUtils::GetDefaultResourceState(m_pBoundVertexBuffers[i]), m_bRenderpassActive);
+    m_pPipelineBarrier->EnsureResourceState(m_pContext, m_pBoundVertexBuffers[i], Diligent::RESOURCE_STATE_VERTEX_BUFFER, Diligent::RESOURCE_STATE_VERTEX_BUFFER, m_bRenderpassActive);
   }
 
   if (m_pIndexBuffer != nullptr)
   {
-    m_pPipelineBarrier->EnsureResourceState(m_pContext, m_pIndexBuffer->GetBuffer(), Diligent::RESOURCE_STATE_INDEX_BUFFER, xiiDiligentUtils::GetDefaultResourceState(m_pIndexBuffer->GetBuffer()), m_bRenderpassActive);
+    m_pPipelineBarrier->EnsureResourceState(m_pContext, m_pIndexBuffer->GetBuffer(), Diligent::RESOURCE_STATE_INDEX_BUFFER, Diligent::RESOURCE_STATE_INDEX_BUFFER, m_bRenderpassActive);
   }
 
   if (m_pCurrentShader != nullptr)
@@ -1649,44 +1653,59 @@ void xiiGALCommandEncoderImplDiligent::TransitionResources()
           {
             case xiiShaderDescriptorSetLayoutBinding::ResourceType::ConstantBuffer:
             {
-              auto pBufferDiligent = m_pBoundConstantBuffers[currentBinding.m_uiVirtualBinding]->GetBuffer();
+              if (m_pBoundConstantBuffers[currentBinding.m_uiVirtualBinding])
+              {
+                auto pBufferDiligent = m_pBoundConstantBuffers[currentBinding.m_uiVirtualBinding]->GetBuffer();
 
-              m_pPipelineBarrier->EnsureResourceState(m_pContext, pBufferDiligent, Diligent::RESOURCE_STATE_CONSTANT_BUFFER, xiiDiligentUtils::GetDefaultResourceState(pBufferDiligent), m_bRenderpassActive);
+                m_pPipelineBarrier->EnsureResourceState(m_pContext, pBufferDiligent, Diligent::RESOURCE_STATE_CONSTANT_BUFFER, Diligent::RESOURCE_STATE_CONSTANT_BUFFER, m_bRenderpassActive);
+              }
             }
             break;
             case xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer:
             {
-              auto& description  = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
-              auto  pSRVDiligent = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetBufferView();
+              if (!m_pBoundShaderResourceViews[stage].IsEmpty() && m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
+              {
+                auto& description  = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
+                auto  pSRVDiligent = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetBufferView();
 
-              m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetBuffer(), Diligent::RESOURCE_STATE_SHADER_RESOURCE, xiiDiligentUtils::GetDefaultResourceState(pSRVDiligent->GetBuffer()), m_bRenderpassActive);
+                m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetBuffer(), Diligent::RESOURCE_STATE_SHADER_RESOURCE, Diligent::RESOURCE_STATE_SHADER_RESOURCE, m_bRenderpassActive);
+              }
             }
             break;
             case xiiShaderDescriptorSetLayoutBinding::ResourceViewTexture:
             {
-              auto& description  = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
-              auto  pSRVDiligent = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView();
+              if (!m_pBoundShaderResourceViews[stage].IsEmpty() && m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
+              {
+                auto& description  = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
+                auto  pSRVDiligent = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView();
 
-              const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetResource()->GetParentResource());
-              const bool                   bIsDepthFormat   = xiiGALResourceFormat::IsDepthFormat(pTextureDiligent->GetDescription().m_Format);
+                const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetResource()->GetParentResource());
+                const bool                   bIsDepthFormat   = xiiGALResourceFormat::IsDepthFormat(pTextureDiligent->GetDescription().m_Format);
 
-              m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetTexture(), bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ : Diligent::RESOURCE_STATE_SHADER_RESOURCE, bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ : xiiDiligentUtils::GetDefaultResourceState(pSRVDiligent->GetTexture()), m_bRenderpassActive);
+                m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetTexture(), bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ : Diligent::RESOURCE_STATE_SHADER_RESOURCE, bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ : Diligent::RESOURCE_STATE_SHADER_RESOURCE, m_bRenderpassActive);
+              }
             }
             break;
             case xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer:
             {
-              auto& description  = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetDescription();
-              auto  pUAVDiligent = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetBufferView();
+              if (!m_pBoundUnoderedAccessViews.IsEmpty() && m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding])
+              {
+                auto& description  = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetDescription();
+                auto  pUAVDiligent = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetBufferView();
 
-              m_pPipelineBarrier->EnsureResourceState(m_pContext, pUAVDiligent->GetBuffer(), Diligent::RESOURCE_STATE_SHADER_RESOURCE, xiiDiligentUtils::GetDefaultResourceState(pUAVDiligent->GetBuffer()), m_bRenderpassActive);
+                m_pPipelineBarrier->EnsureResourceState(m_pContext, pUAVDiligent->GetBuffer(), Diligent::RESOURCE_STATE_UNORDERED_ACCESS, Diligent::RESOURCE_STATE_UNORDERED_ACCESS, m_bRenderpassActive);
+              }
             }
             break;
             case xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewTexture:
             {
-              auto& description  = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetDescription();
-              auto  pUAVDiligent = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetTextureView();
+              if (!m_pBoundUnoderedAccessViews.IsEmpty() && m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding])
+              {
+                auto& description  = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetDescription();
+                auto  pUAVDiligent = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetTextureView();
 
-              m_pPipelineBarrier->EnsureResourceState(m_pContext, pUAVDiligent->GetTexture(), Diligent::RESOURCE_STATE_SHADER_RESOURCE, xiiDiligentUtils::GetDefaultResourceState(pUAVDiligent->GetTexture()), m_bRenderpassActive);
+                m_pPipelineBarrier->EnsureResourceState(m_pContext, pUAVDiligent->GetTexture(), Diligent::RESOURCE_STATE_UNORDERED_ACCESS, Diligent::RESOURCE_STATE_UNORDERED_ACCESS, m_bRenderpassActive);
+              }
             }
             break;
           }
