@@ -1609,7 +1609,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     m_bClearSubmitted   = true;
   }
 
-  #undef END_RENDERPASS_IF_MODIFIED
+#undef END_RENDERPASS_IF_MODIFIED
 }
 
 void xiiGALCommandEncoderImplDiligent::TransitionResources()
