@@ -990,8 +990,7 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
 
   for (xiiUInt8 i = 0; i < uiColorAttachmentCount; ++i)
   {
-    xiiGALRenderTargetViewHandle          hColorRenderTarget        = m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(i);
-    const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(hColorRenderTarget));
+    const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(i)));
 
     xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
     const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_GALDeviceDiligent.GetTexture(hTexture)->GetParentResource());
@@ -1394,6 +1393,16 @@ void xiiGALCommandEncoderImplDiligent::FlushPipelineStateCache()
 
 void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 {
+#define END_RENDERPASS_IF_MODIFIED                                      \
+  do                                                                    \
+  {                                                                     \
+    if (m_bRenderpassActive && m_pPipelineBarrier->IsBarrierModified()) \
+    {                                                                   \
+      m_pContext->EndRenderPass();                                      \
+      m_bRenderpassActive = false;                                      \
+    }                                                                   \
+  } while (false)
+
   if (m_bPipelineStateModified)
   {
     if (!m_pCurrentShader)
@@ -1499,13 +1508,17 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     m_bViewportModified = false;
   }
 
+  TransitionResources();
+
+  END_RENDERPASS_IF_MODIFIED;
+
+  m_pPipelineBarrier->FlushBarriers();
+
   if (m_bDescriptorsModified)
   {
     // Always create a new shader resource binding as it we are unable to determine if (and which) resources were modified since the last draw call.
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pCurrentShaderResourceBinding);
     (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&m_pCurrentShaderResourceBinding, true);
-
-    TransitionResources();
 
     FillShaderDescriptorBindings(m_pCurrentShaderResourceBinding);
 
@@ -1549,16 +1562,37 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     m_bIndexBufferModified = false;
   }
 
-  if (m_bRenderpassActive && m_pPipelineBarrier->IsBarrierModified())
-  {
-    m_pContext->EndRenderPass();
-
-    m_bRenderpassActive = false;
-  }
-
-  m_pPipelineBarrier->FlushBarriers();
-
   m_pContext->CommitShaderResources(m_pCurrentShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+
+  if (!m_bIsComputeRequested)
+  {
+    const bool     bHasDepthAttachment    = !m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+    const xiiUInt8 uiColorAttachmentCount = m_RenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+
+    if (bHasDepthAttachment)
+    {
+      const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
+
+      xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
+      const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_GALDeviceDiligent.GetTexture(hTexture)->GetParentResource());
+
+      m_pPipelineBarrier->EnsureResourceState(m_pContext, const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture(), Diligent::RESOURCE_STATE_DEPTH_WRITE, Diligent::RESOURCE_STATE_DEPTH_WRITE, m_bRenderpassActive, true);
+    }
+
+    for (xiiUInt8 i = 0; i < uiColorAttachmentCount; ++i)
+    {
+      const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(i)));
+
+      xiiGALTextureHandle          hTexture         = pRenderTargetViewDiligent->GetDescription().m_hTexture;
+      const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_GALDeviceDiligent.GetTexture(hTexture)->GetParentResource());
+
+      m_pPipelineBarrier->EnsureResourceState(m_pContext, const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture(), Diligent::RESOURCE_STATE_RENDER_TARGET, Diligent::RESOURCE_STATE_RENDER_TARGET, m_bRenderpassActive, true);
+    }
+
+    END_RENDERPASS_IF_MODIFIED;
+
+    m_pPipelineBarrier->FlushBarriers();
+  }
 
   if (!m_bIsComputeRequested && !m_bRenderpassActive)
   {
@@ -1567,13 +1601,15 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     renderPassBeginInfo.pFramebuffer        = m_pFramebuffer;
     renderPassBeginInfo.pClearValues        = m_ClearValues.GetData();
     renderPassBeginInfo.ClearValueCount     = m_ClearValues.GetCount();
-    renderPassBeginInfo.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+    renderPassBeginInfo.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
 
     m_pContext->BeginRenderPass(renderPassBeginInfo);
 
     m_bRenderpassActive = true;
     m_bClearSubmitted   = true;
   }
+
+  #undef END_RENDERPASS_IF_MODIFIED
 }
 
 void xiiGALCommandEncoderImplDiligent::TransitionResources()
