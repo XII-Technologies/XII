@@ -130,7 +130,7 @@ public:
 
   struct PipelineStateInfo
   {
-    Diligent::IPipelineState*              m_pPipelineState                    = nullptr;
+    Diligent::IPipelineState* m_pPipelineState = nullptr;
   };
 
   void FlushPipelineStateCache();
