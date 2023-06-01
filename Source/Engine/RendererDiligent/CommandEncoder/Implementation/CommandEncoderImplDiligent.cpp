@@ -560,8 +560,8 @@ void xiiGALCommandEncoderImplDiligent::CopyBufferPlatform(const xiiGALBuffer* pD
   Diligent::IBuffer* pDestinationBuffer = static_cast<xiiGALBufferDiligent*>(pDst)->GetBuffer();
   Diligent::IBuffer* pSourceBuffer      = static_cast<xiiGALBufferDiligent*>(pSrc)->GetBuffer();
 
-  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceBuffer, Diligent::RESOURCE_STATE_COPY_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pSourceBuffer));
-  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationBuffer, Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationBuffer));
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceBuffer, Diligent::RESOURCE_STATE_COPY_SOURCE, pSourceBuffer->GetState());
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationBuffer, Diligent::RESOURCE_STATE_COPY_DEST, pDestinationBuffer->GetState());
 
   m_pContext->CopyBuffer(pSourceBuffer, 0u, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY, pDestinationBuffer, 0u, pDestination->GetSize(), Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 }
@@ -573,8 +573,8 @@ void xiiGALCommandEncoderImplDiligent::CopyBufferRegionPlatform(const xiiGALBuff
   Diligent::IBuffer* pDestinationBuffer = static_cast<xiiGALBufferDiligent*>(pDst)->GetBuffer();
   Diligent::IBuffer* pSourceBuffer      = static_cast<xiiGALBufferDiligent*>(pSrc)->GetBuffer();
 
-  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceBuffer, Diligent::RESOURCE_STATE_COPY_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pSourceBuffer));
-  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationBuffer, Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationBuffer));
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceBuffer, Diligent::RESOURCE_STATE_COPY_SOURCE, pSourceBuffer->GetState());
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationBuffer, Diligent::RESOURCE_STATE_COPY_DEST, pDestinationBuffer->GetState());
 
   m_pContext->CopyBuffer(pSourceBuffer, uiSourceOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY, pDestinationBuffer, uiDestOffset, uiByteCount, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 }
@@ -610,7 +610,7 @@ void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* 
   {
     case Diligent::USAGE_DEFAULT:
     {
-      m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationBuffer, Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationBuffer));
+      m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationBuffer, Diligent::RESOURCE_STATE_COPY_DEST, pDestinationBuffer->GetState());
 
       m_pContext->UpdateBuffer(pDestinationBuffer, uiDestOffset, pSourceData.GetCount(), reinterpret_cast<const void*>(pSourceData.GetPtr()), Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
     }
@@ -653,8 +653,8 @@ void xiiGALCommandEncoderImplDiligent::CopyTexturePlatform(const xiiGALTexture* 
   Diligent::ITexture* pSourceTexture      = static_cast<xiiGALTextureDiligent*>(pSrc)->GetTexture();
   Diligent::ITexture* pDestinationTexture = static_cast<xiiGALTextureDiligent*>(pDst)->GetTexture();
 
-  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceTexture, Diligent::RESOURCE_STATE_COPY_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pSourceTexture));
-  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationTexture, Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationTexture));
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceTexture, Diligent::RESOURCE_STATE_COPY_SOURCE, pSourceTexture->GetState());
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationTexture, Diligent::RESOURCE_STATE_COPY_DEST, pDestinationTexture->GetState());
 
   Diligent::CopyTextureAttribs CopyTexAttribs = {};
   CopyTexAttribs.pSrcTexture                  = pSourceTexture;
@@ -672,8 +672,8 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureRegionPlatform(const xiiGALTex
   Diligent::ITexture* pSourceTexture      = static_cast<xiiGALTextureDiligent*>(pSrc)->GetTexture();
   Diligent::ITexture* pDestinationTexture = static_cast<xiiGALTextureDiligent*>(pDst)->GetTexture();
 
-  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceTexture, Diligent::RESOURCE_STATE_COPY_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pSourceTexture));
-  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationTexture, Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationTexture));
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceTexture, Diligent::RESOURCE_STATE_COPY_SOURCE, pSourceTexture->GetState());
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationTexture, Diligent::RESOURCE_STATE_COPY_DEST, pDestinationTexture->GetState());
 
   Diligent::Box srcBox = {};
   srcBox.MinX          = Box.m_vMin.x;
@@ -726,7 +726,7 @@ void xiiGALCommandEncoderImplDiligent::UpdateTexturePlatform(const xiiGALTexture
       XII_ASSERT_DEV(pSourceData.m_uiSlicePitch == 0 || pSourceData.m_uiSlicePitch == uiSlicePitch, "Invalid slice pitch. Expected {0} got {1}",
                      uiSlicePitch, pSourceData.m_uiSlicePitch);
 
-      m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationTexture, Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationTexture));
+      m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationTexture, Diligent::RESOURCE_STATE_COPY_DEST, pDestinationTexture->GetState());
 
       Diligent::Box SubRegion = {};
       SubRegion.MinX          = DestinationBox.m_vMin.x;
@@ -802,8 +802,8 @@ void xiiGALCommandEncoderImplDiligent::ResolveTexturePlatform(const xiiGALTextur
   Diligent::ITexture* pSourceTexture      = static_cast<xiiGALTextureDiligent*>(pSrc)->GetTexture();
   Diligent::ITexture* pDestinationTexture = static_cast<xiiGALTextureDiligent*>(pDst)->GetTexture();
 
-  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceTexture, Diligent::RESOURCE_STATE_RESOLVE_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pSourceTexture));
-  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationTexture, Diligent::RESOURCE_STATE_RESOLVE_DEST, xiiDiligentUtils::GetDefaultResourceState(pDestinationTexture));
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSourceTexture, Diligent::RESOURCE_STATE_RESOLVE_SOURCE, pSourceTexture->GetState());
+  m_pPipelineBarrier->EnsureResourceState(m_pContext, pDestinationTexture, Diligent::RESOURCE_STATE_RESOLVE_DEST, pDestinationTexture->GetState());
 
   Diligent::TEXTURE_FORMAT Format = m_GALDeviceDiligent.GetFormatLookupTable().GetFormatInfo(pDestination->GetDescription().m_Format).m_eResourceViewType;
 
@@ -843,8 +843,8 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
 
   if (bMSAASourceTexture)
   {
-    m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetTexture(), Diligent::RESOURCE_STATE_RESOLVE_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pTextureDiligent->GetTexture()));
-    m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetStagingTexture(), Diligent::RESOURCE_STATE_RESOLVE_DEST, xiiDiligentUtils::GetDefaultResourceState(pTextureDiligent->GetStagingTexture()));
+    m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetTexture(), Diligent::RESOURCE_STATE_RESOLVE_SOURCE, pTextureDiligent->GetTexture()->GetState());
+    m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetStagingTexture(), Diligent::RESOURCE_STATE_RESOLVE_DEST, pTextureDiligent->GetStagingTexture()->GetState());
 
     Diligent::ResolveTextureSubresourceAttribs ResolveTexAttribs;
     ResolveTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
@@ -854,8 +854,8 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
   }
   else
   {
-    m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetTexture(), Diligent::RESOURCE_STATE_COPY_SOURCE, xiiDiligentUtils::GetDefaultResourceState(pTextureDiligent->GetTexture()));
-    m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetStagingTexture(), Diligent::RESOURCE_STATE_COPY_DEST, xiiDiligentUtils::GetDefaultResourceState(pTextureDiligent->GetStagingTexture()));
+    m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetTexture(), Diligent::RESOURCE_STATE_COPY_SOURCE, pTextureDiligent->GetTexture()->GetState());
+    m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureDiligent->GetStagingTexture(), Diligent::RESOURCE_STATE_COPY_DEST, pTextureDiligent->GetStagingTexture()->GetState());
 
     Diligent::CopyTextureAttribs CopyTexAttribs;
     CopyTexAttribs.pSrcTexture              = pTextureDiligent->GetTexture();
