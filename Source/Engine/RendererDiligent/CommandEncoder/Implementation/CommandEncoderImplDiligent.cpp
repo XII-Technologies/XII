@@ -819,6 +819,8 @@ void xiiGALCommandEncoderImplDiligent::ResolveTexturePlatform(const xiiGALTextur
   ResolveTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
 
   m_pContext->ResolveTextureSubresource(pSourceTexture, pDestinationTexture, ResolveTexAttribs);
+
+  m_pPipelineBarrier->FlushBarriers();
 }
 
 void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTexture* pTexture)
@@ -1033,7 +1035,7 @@ void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor,
     renderPassBeginInfo.pFramebuffer        = m_pFramebuffer;
     renderPassBeginInfo.pClearValues        = m_ClearValues.GetData();
     renderPassBeginInfo.ClearValueCount     = m_ClearValues.GetCount();
-    renderPassBeginInfo.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+    renderPassBeginInfo.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
     m_pContext->BeginRenderPass(renderPassBeginInfo);
 
@@ -1567,7 +1569,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     renderPassBeginInfo.pFramebuffer        = m_pFramebuffer;
     renderPassBeginInfo.pClearValues        = m_ClearValues.GetData();
     renderPassBeginInfo.ClearValueCount     = m_ClearValues.GetCount();
-    renderPassBeginInfo.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+    renderPassBeginInfo.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
     m_pContext->BeginRenderPass(renderPassBeginInfo);
 
@@ -1631,7 +1633,10 @@ void xiiGALCommandEncoderImplDiligent::TransitionResources()
               auto& description  = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
               auto  pSRVDiligent = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView();
 
-              m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetTexture(), Diligent::RESOURCE_STATE_SHADER_RESOURCE, xiiDiligentUtils::GetDefaultResourceState(pSRVDiligent->GetTexture()), m_bRenderpassActive);
+              const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetResource()->GetParentResource());
+              const bool                   bIsDepthFormat   = xiiGALResourceFormat::IsDepthFormat(pTextureDiligent->GetDescription().m_Format);
+
+              m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetTexture(), bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ : Diligent::RESOURCE_STATE_SHADER_RESOURCE, bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ : xiiDiligentUtils::GetDefaultResourceState(pSRVDiligent->GetTexture()), m_bRenderpassActive);
             }
             break;
             case xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer:

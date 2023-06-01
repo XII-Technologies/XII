@@ -271,6 +271,7 @@ void xiiGALPassDiligent::GetRenderPassDesc(const xiiGALRenderingSetup& rendering
       {
         colorAttachment.InitialState = Diligent::RESOURCE_STATE_RENDER_TARGET;
         colorAttachment.LoadOp       = Diligent::ATTACHMENT_LOAD_OP_LOAD;
+        colorAttachment.LoadOp       = Diligent::ATTACHMENT_LOAD_OP_CLEAR;
       }
     }
 
