@@ -333,13 +333,20 @@ void xiiAOPass::CreateSamplerState()
   if (m_hSSAOSamplerState.IsInvalidated())
   {
     xiiGALSamplerStateCreationDescription desc;
-    desc.m_MinFilter   = xiiGALTextureFilterMode::Point;
-    desc.m_MagFilter   = xiiGALTextureFilterMode::Point;
-    desc.m_MipFilter   = xiiGALTextureFilterMode::Point;
-    desc.m_AddressU    = xiiImageAddressMode::ClampBorder;
-    desc.m_AddressV    = xiiImageAddressMode::ClampBorder;
-    desc.m_AddressW    = xiiImageAddressMode::ClampBorder;
-    desc.m_BorderColor = xiiColor::White * m_fFadeOutEnd;
+    desc.m_MinFilter = xiiGALTextureFilterMode::Point;
+    desc.m_MagFilter = xiiGALTextureFilterMode::Point;
+    desc.m_MipFilter = xiiGALTextureFilterMode::Point;
+    desc.m_AddressU  = xiiImageAddressMode::ClampBorder;
+    desc.m_AddressV  = xiiImageAddressMode::ClampBorder;
+    desc.m_AddressW  = xiiImageAddressMode::ClampBorder;
+    if (xiiGALDevice::GetDefaultDevice()->GetCapabilities().m_DeviceType == xiiGraphicsDeviceType::Vulkan)
+    {
+      desc.m_BorderColor = xiiColor::White;
+    }
+    else
+    {
+      desc.m_BorderColor = xiiColor::White * m_fFadeOutEnd;
+    }
 
     m_hSSAOSamplerState = xiiGALDevice::GetDefaultDevice()->CreateSamplerState(desc);
   }
