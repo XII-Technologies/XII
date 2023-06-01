@@ -131,9 +131,6 @@ public:
   struct PipelineStateInfo
   {
     Diligent::IPipelineState*              m_pPipelineState                    = nullptr;
-    Diligent::IShaderResourceBinding*      m_pShaderResourceBinding            = nullptr;
-    Diligent::IPipelineResourceSignature** m_pPipelineResourceSignatures       = nullptr;
-    xiiUInt32                              m_uiPipelineResourceSignaturesCount = 0u;
   };
 
   void FlushPipelineStateCache();

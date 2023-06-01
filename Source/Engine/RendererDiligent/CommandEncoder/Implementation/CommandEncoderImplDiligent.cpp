@@ -273,10 +273,11 @@ xiiGALCommandEncoderImplDiligent::~xiiGALCommandEncoderImplDiligent()
 
   xiiMemoryUtils::ZeroFill(&m_pBoundSamplerStates[0][0], xiiGALShaderStage::ENUM_COUNT * XII_GAL_MAX_SAMPLER_COUNT);
 
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pCurrentShaderResourceBinding);
+
   for (auto& iter : m_CachedGraphicsPipelineStates)
   {
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pPipelineState);
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pShaderResourceBinding);
   }
   m_CachedGraphicsPipelineStates.Clear();
   m_CachedGraphicsPipelineStates.Compact();
@@ -284,7 +285,6 @@ xiiGALCommandEncoderImplDiligent::~xiiGALCommandEncoderImplDiligent()
   for (auto& iter : m_CachedComputePipelineStates)
   {
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pPipelineState);
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pShaderResourceBinding);
   }
   m_CachedComputePipelineStates.Clear();
   m_CachedComputePipelineStates.Compact();
@@ -1326,11 +1326,13 @@ void xiiGALCommandEncoderImplDiligent::SetStreamOutBufferPlatform(xiiUInt32 uiSl
 
 void xiiGALCommandEncoderImplDiligent::BeginCompute()
 {
-  m_RenderingSetup = xiiGALRenderingSetup();
+  m_bIsComputeRequested    = true;
+  m_bPipelineStateModified = true;
 }
 
 void xiiGALCommandEncoderImplDiligent::EndCompute()
 {
+  m_bIsComputeRequested = false;
 }
 
 void xiiGALCommandEncoderImplDiligent::DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
@@ -1373,10 +1375,11 @@ void xiiGALCommandEncoderImplDiligent::DispatchIndirectPlatform(const xiiGALBuff
 
 void xiiGALCommandEncoderImplDiligent::FlushPipelineStateCache()
 {
+  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pCurrentShaderResourceBinding);
+
   for (auto iter : m_CachedGraphicsPipelineStates)
   {
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pPipelineState);
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pShaderResourceBinding);
   }
   m_CachedGraphicsPipelineStates.Clear();
   m_CachedGraphicsPipelineStates.Compact();
@@ -1384,7 +1387,6 @@ void xiiGALCommandEncoderImplDiligent::FlushPipelineStateCache()
   for (auto iter : m_CachedComputePipelineStates)
   {
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pPipelineState);
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(iter.Value().m_pShaderResourceBinding);
   }
   m_CachedComputePipelineStates.Clear();
   m_CachedComputePipelineStates.Compact();
@@ -1392,20 +1394,6 @@ void xiiGALCommandEncoderImplDiligent::FlushPipelineStateCache()
 
 void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 {
-  TransitionResources();
-
-  if (m_bRenderpassActive && m_pPipelineBarrier->IsBarrierModified())
-  {
-    m_pContext->EndRenderPass();
-
-    m_bRenderpassActive = false;
-  }
-
-  if (!m_bRenderpassActive)
-  {
-    m_pPipelineBarrier->FlushBarriers();
-  }
-
   if (m_bPipelineStateModified)
   {
     if (!m_pCurrentShader)
@@ -1435,16 +1423,9 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
           XII_ASSERT_DEV(pipelineInfo.m_pPipelineState != nullptr, "Failed to create new Compute pipeline state object.");
 
-          (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
-
           m_CachedComputePipelineStates.Insert(computePipelineStateDesc, pipelineInfo);
 
           xiiLog::Dev("Created new Compute pipeline state object.");
-        }
-        else
-        {
-          XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pipelineInfo.m_pShaderResourceBinding);
-          (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
         }
       }
       else
@@ -1480,28 +1461,21 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
           XII_ASSERT_DEV(pipelineInfo.m_pPipelineState != nullptr, "Failed to create new Graphics pipeline state object.");
 
-          (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
-
           m_CachedGraphicsPipelineStates.Insert(graphicsPipelineStateDesc, pipelineInfo);
 
           xiiLog::Dev("Created new Graphics pipeline state object.");
         }
-        else
-        {
-          XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pipelineInfo.m_pShaderResourceBinding);
-          (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
-        }
       }
     }
 
-    FillShaderDescriptorBindings(pipelineInfo.m_pShaderResourceBinding);
+    m_pCurrentPipelineState  = pipelineInfo.m_pPipelineState;
+    m_bPipelineStateModified = false;
 
-    m_pCurrentPipelineState         = pipelineInfo.m_pPipelineState;
-    m_pCurrentShaderResourceBinding = pipelineInfo.m_pShaderResourceBinding;
-
-    m_pContext->SetPipelineState(pipelineInfo.m_pPipelineState);
-    m_pContext->CommitShaderResources(pipelineInfo.m_pShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+    // Changes to the descriptor layout always require the descriptor set to be recreated.
+    m_bDescriptorsModified = true;
   }
+
+  m_pContext->SetPipelineState(m_pCurrentPipelineState);
 
   if (!m_bIsComputeRequested && m_bViewportModified)
   {
@@ -1523,6 +1497,19 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     }
 
     m_bViewportModified = false;
+  }
+
+  if (m_bDescriptorsModified)
+  {
+    // Always create a new shader resource binding as it we are unable to determine if (and which) resources were modified since the last draw call.
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pCurrentShaderResourceBinding);
+    (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&m_pCurrentShaderResourceBinding, true);
+
+    TransitionResources();
+
+    FillShaderDescriptorBindings(m_pCurrentShaderResourceBinding);
+
+    m_bDescriptorsModified = false;
   }
 
   if (!m_bIsComputeRequested && m_BoundVertexBuffersRange.IsValid())
@@ -1561,6 +1548,17 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
     m_bIndexBufferModified = false;
   }
+
+  if (m_bRenderpassActive && m_pPipelineBarrier->IsBarrierModified())
+  {
+    m_pContext->EndRenderPass();
+
+    m_bRenderpassActive = false;
+  }
+
+  m_pPipelineBarrier->FlushBarriers();
+
+  m_pContext->CommitShaderResources(m_pCurrentShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 
   if (!m_bIsComputeRequested && !m_bRenderpassActive)
   {

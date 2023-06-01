@@ -495,7 +495,7 @@ CreateRenderDevice:
           "UNASSIGNED-CoreValidation-Shader-OutputNotConsumed" //
         };
       EngineCI.ppIgnoreDebugMessageNames = ppIgnoreDebugMessages;
-      EngineCI.IgnoreDebugMessageCount   = _countof(ppIgnoreDebugMessages);
+      EngineCI.IgnoreDebugMessageCount   = XII_ARRAY_SIZE(ppIgnoreDebugMessages);
 
       EngineCI.AdapterId = FindAdapter(pFactoryVk, EngineCI.GraphicsAPIVersion, m_AdapterAttribs);
 
