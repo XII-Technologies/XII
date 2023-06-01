@@ -138,7 +138,7 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
   XII_LOG_BLOCK("xiiGALDeviceDiligent::InitPlatform");
 
   // Initialize memory allocator outside the global scope.
-  if (g_pMemoryAllocator != nullptr)
+  if (g_pMemoryAllocator == nullptr)
   {
     g_pMemoryAllocator = std::make_unique<xiiDiligentMemoryAllocator>("Diligent Engine Memory Allocator");
   }
