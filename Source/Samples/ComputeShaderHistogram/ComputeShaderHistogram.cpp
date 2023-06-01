@@ -73,6 +73,7 @@ xiiApplication::Execution xiiComputeShaderHistogramApp::Run()
     {
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, m_hScreenRTV);
+      renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
       renderContext.BeginRendering(pGALPass, renderingSetup, viewport, "Background");
 
       renderContext.BindShader(m_hScreenShader);
