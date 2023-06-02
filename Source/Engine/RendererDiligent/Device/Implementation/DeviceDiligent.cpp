@@ -620,6 +620,8 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 
   ReportLiveGpuObjects();
 
+  g_pMemoryAllocator.reset();
+
   return XII_SUCCESS;
 }
 

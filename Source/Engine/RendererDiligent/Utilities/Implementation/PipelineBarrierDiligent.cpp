@@ -16,8 +16,8 @@ void xiiPipelineBarrierDiligent::FlushBarriers()
   {
     Diligent::StateTransitionDesc& transitionDesc = pBarrier.Value().m_DefaultStateTransition;
 
-    // An unknown default state signifies that this resource should not be transitioned during a flush.
-    if (transitionDesc.NewState != Diligent::RESOURCE_STATE_UNKNOWN)
+    // An unknown or undefined new state signifies that this resource should not be transitioned during a flush.
+    if (transitionDesc.NewState != Diligent::RESOURCE_STATE_UNKNOWN && transitionDesc.NewState != Diligent::RESOURCE_STATE_UNDEFINED)
     {
       pBarrier.Value().m_pContext->TransitionResourceStates(1u, &transitionDesc);
     }
