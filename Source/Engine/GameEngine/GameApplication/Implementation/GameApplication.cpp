@@ -140,7 +140,7 @@ void xiiGameApplication::Run_Present()
 
   for (xiiActor* pActor : allActors)
   {
-    XII_PROFILE_SCOPE(pActor->GetName().GetStartPointer());
+    XII_PROFILE_SCOPE(pActor->GetName());
 
     xiiActorPluginWindow* pWindowPlugin = pActor->GetPlugin<xiiActorPluginWindow>();
 

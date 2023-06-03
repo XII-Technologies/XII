@@ -1037,7 +1037,7 @@ void xiiWorld::UpdateSynchronous(const xiiArrayPtr<xiiInternal::WorldData::Regis
       continue;
 
     {
-      XII_PROFILE_SCOPE(updateFunction.m_sFunctionName.GetData());
+      XII_PROFILE_SCOPE(updateFunction.m_sFunctionName);
       updateFunction.m_Function(context);
     }
   }

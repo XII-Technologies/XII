@@ -165,31 +165,6 @@ public:
 
 #if XII_ENABLED(XII_USE_PROFILING) || defined(XII_DOCS)
 
-#  if BUILDSYSTEM_ENABLE_TRACY_SUPPORT
-
-XII_ALWAYS_INLINE xiiUInt32 ___tracyGetStringLength(const char* szString)
-{
-  return xiiStringUtils::GetStringElementCount(szString);
-}
-
-XII_ALWAYS_INLINE xiiUInt32 ___tracyGetStringLength(xiiStringView szString)
-{
-  return szString.GetElementCount();
-}
-
-XII_ALWAYS_INLINE xiiUInt32 ___tracyGetStringLength(const xiiStringBuilder& szString)
-{
-  return szString.GetElementCount();
-}
-
-#    include <Tracy/tracy/Tracy.h>
-#    define TRACY_PROFILE_SCOPE_DYNAMIC(szScopeName) \
-      ZoneScoped;                                    \
-      ZoneName(szScopeName, ___tracyGetStringLength(szScopeName))
-#  else
-#    define TRACY_PROFILE_SCOPE_DYNAMIC(szScopeName)
-#  endif
-
 /// \brief Profiles the current scope using the given name.
 ///
 /// It is allowed to nest XII_PROFILE_SCOPE, also with XII_PROFILE_LIST_SCOPE. However XII_PROFILE_SCOPE should start and end within the same list scope
@@ -199,9 +174,8 @@ XII_ALWAYS_INLINE xiiUInt32 ___tracyGetStringLength(const xiiStringBuilder& szSt
 ///
 /// \sa xiiProfilingScope
 /// \sa XII_PROFILE_LIST_SCOPE
-#  define XII_PROFILE_SCOPE(szScopeName)                                                                                  \
-    xiiProfilingScope XII_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(szScopeName, XII_SOURCE_FUNCTION, xiiTime::Zero()); \
-    TRACY_PROFILE_SCOPE_DYNAMIC(szScopeName)
+#  define XII_PROFILE_SCOPE(szScopeName) \
+    xiiProfilingScope XII_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(szScopeName, XII_SOURCE_FUNCTION, xiiTime::Zero());
 
 /// \brief Same as XII_PROFILE_SCOPE but if the scope takes longer than 'Timeout', the xiiProfilingSystem's timeout callback is executed.
 ///

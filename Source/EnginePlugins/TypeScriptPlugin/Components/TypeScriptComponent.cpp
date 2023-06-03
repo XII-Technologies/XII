@@ -294,7 +294,7 @@ void xiiTypeScriptComponent::Update(xiiTypeScriptBinding& binding)
   if (m_LastUpdate + m_UpdateInterval > tNow)
     return;
 
-  XII_PROFILE_SCOPE(GetOwner()->GetName().GetStartPointer());
+  XII_PROFILE_SCOPE(GetOwner()->GetName());
 
   m_LastUpdate = tNow;
 
