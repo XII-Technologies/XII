@@ -1684,7 +1684,18 @@ void xiiGALCommandEncoderImplDiligent::TransitionResources()
                 const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetResource()->GetParentResource());
                 const bool                   bIsDepthFormat   = xiiGALResourceFormat::IsDepthFormat(pTextureDiligent->GetDescription().m_Format);
 
-                m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetTexture(), bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ : Diligent::RESOURCE_STATE_SHADER_RESOURCE, bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ : Diligent::RESOURCE_STATE_SHADER_RESOURCE, m_bRenderpassActive);
+                Diligent::RESOURCE_STATE stateFlags = {};
+                if (m_GALDeviceDiligent.GetCapabilities().m_DeviceType != xiiGraphicsDeviceType::Vulkan)
+                {
+                  stateFlags |= bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ | Diligent::RESOURCE_STATE_SHADER_RESOURCE : Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+                }
+                else
+                {
+                  // Only a single bit must be set
+                  stateFlags |= bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ : Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+                }
+
+                m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetTexture(), stateFlags, stateFlags, m_bRenderpassActive);
               }
             }
             break;
