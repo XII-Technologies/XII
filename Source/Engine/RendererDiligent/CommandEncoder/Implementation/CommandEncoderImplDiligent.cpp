@@ -446,8 +446,8 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
         pTextureView->GetTexture()->QueryInterface(Diligent::IID_TextureVk, reinterpret_cast<Diligent::IObject**>(&pTextureVk));
         XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture view.");
 
-        const VkClearColorValue clearColourValues = {.float32 = {clearValues.x, clearValues.y, clearValues.z, clearValues.w}};
-        const VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+        const VkClearColorValue       clearColourValues = {.float32 = {clearValues.x, clearValues.y, clearValues.z, clearValues.w}};
+        const VkImageSubresourceRange subresourceRange  = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
         vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColourValues, 1, &subresourceRange);
 
         XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureVk);
@@ -543,8 +543,8 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
         pTextureView->GetTexture()->QueryInterface(Diligent::IID_TextureVk, reinterpret_cast<Diligent::IObject**>(&pTextureVk));
         XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture view.");
 
-        const VkClearColorValue clearColourValues = {.uint32 = {clearValues.x, clearValues.y, clearValues.z, clearValues.w}};
-        const VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+        const VkClearColorValue       clearColourValues = {.uint32 = {clearValues.x, clearValues.y, clearValues.z, clearValues.w}};
+        const VkImageSubresourceRange subresourceRange  = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
         vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColourValues, 1, &subresourceRange);
 
         XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureVk);
