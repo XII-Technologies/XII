@@ -374,11 +374,7 @@ void xiiStandardInputDevice::SetClipMouseCursor(xiiMouseCursorClipMode::Enum mod
 // When this is enabled, mouse clicks are retrieved via standard WM_LBUTTONDOWN.
 #define XII_MOUSEBUTTON_COMPATIBILTY_MODE XII_ON
 
-void xiiStandardInputDevice::WindowMessage(
-  xiiMinWindows::HWND   hWnd,
-  xiiMinWindows::UINT   Msg,
-  xiiMinWindows::WPARAM wParam,
-  xiiMinWindows::LPARAM lParam)
+void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindows::UINT Msg, xiiMinWindows::WPARAM wParam, xiiMinWindows::LPARAM lParam)
 {
 #if XII_ENABLED(XII_MOUSEBUTTON_COMPATIBILTY_MODE)
   static xiiInt32 s_iMouseCaptureCount = 0;
@@ -445,23 +441,25 @@ void xiiStandardInputDevice::WindowMessage(
     // see https://docs.microsoft.com/windows/win32/inputdev/wm-lbuttondblclk
     // this would add lag and hide single clicks when the user double clicks
     // therefore it is not used
-    //case WM_LBUTTONDBLCLK:
-    // {
-    //  m_InputSlotValues[xiiInputSlot_MouseDblClick0] = 1.0f;
-    //  return;
-    // }
-    //
-    //case WM_RBUTTONDBLCLK:
-    // {
-    //  m_InputSlotValues[xiiInputSlot_MouseDblClick1] = 1.0f;
-    //  return;
-    // }
-    //
-    //case WM_MBUTTONDBLCLK:
-    // {
-    //  m_InputSlotValues[xiiInputSlot_MouseDblClick2] = 1.0f;
-    //  return;
-    // }
+#if 0
+    case WM_LBUTTONDBLCLK:
+     {
+      m_InputSlotValues[xiiInputSlot_MouseDblClick0] = 1.0f;
+      return;
+     }
+    
+    case WM_RBUTTONDBLCLK:
+     {
+      m_InputSlotValues[xiiInputSlot_MouseDblClick1] = 1.0f;
+      return;
+     }
+    
+    case WM_MBUTTONDBLCLK:
+     {
+      m_InputSlotValues[xiiInputSlot_MouseDblClick2] = 1.0f;
+      return;
+     }
+#endif
 
 #if XII_ENABLED(XII_MOUSEBUTTON_COMPATIBILTY_MODE)
 
@@ -675,11 +673,11 @@ void xiiStandardInputDevice::WindowMessage(
           m_InputSlotValues[xiiInputSlot_MouseMovePosY] +=
             ((raw->data.mouse.lLastY > 0) ? (float)raw->data.mouse.lLastY : 0.0f) * GetMouseSpeed().y;
 
-// Mouse input does not always work via WM_INPUT
-// e.g. some VMs don't send mouse click input via WM_INPUT when the mouse cursor is visible
-// therefore in 'compatibility mode' it is just queried via standard WM_LBUTTONDOWN etc.
-// to get 'high performance' mouse clicks, this code would work fine though
-// but I doubt it makes much difference in latency
+          // Mouse input does not always work via WM_INPUT
+          // e.g. some VMs don't send mouse click input via WM_INPUT when the mouse cursor is visible
+          // therefore in 'compatibility mode' it is just queried via standard WM_LBUTTONDOWN etc.
+          // to get 'high performance' mouse clicks, this code would work fine though
+          // but I doubt it makes much difference in latency
 #if XII_DISABLED(XII_MOUSEBUTTON_COMPATIBILTY_MODE)
           for (xiiInt32 mb = 0; mb < 5; ++mb)
           {
