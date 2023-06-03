@@ -8,7 +8,7 @@ public:
   static Diligent::RENDER_DEVICE_TYPE GetDiligentRenderDeviceType(const xiiGraphicsDeviceType::Enum type);
 
   static xiiEnum<xiiGALMSAASampleCount> ToGALMSAASampleCount(xiiUInt32 uiSampleCount);
-  static xiiUInt32                      ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount);
+  static xiiUInt8                      ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount);
 
   static Diligent::BLEND_FACTOR    ToDiligentBlendFactor(xiiGALBlendFactor::Enum e);
   static Diligent::BLEND_OPERATION ToDiligentBlendOperation(xiiGALBlendOperation::Enum e);

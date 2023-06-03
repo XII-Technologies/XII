@@ -24,9 +24,9 @@ XII_ALWAYS_INLINE Diligent::RENDER_DEVICE_TYPE xiiDiligentUtils::GetDiligentRend
   return Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
 }
 
-XII_ALWAYS_INLINE xiiUInt32 xiiDiligentUtils::ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount)
+XII_ALWAYS_INLINE xiiUInt8 xiiDiligentUtils::ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount)
 {
-  return static_cast<xiiUInt32>(sampleCount.GetValue());
+  return static_cast<xiiUInt8>(sampleCount.GetValue());
 }
 
 XII_ALWAYS_INLINE xiiEnum<xiiGALMSAASampleCount> xiiDiligentUtils::ToGALMSAASampleCount(xiiUInt32 uiSampleCount)
