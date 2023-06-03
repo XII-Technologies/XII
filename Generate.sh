@@ -51,7 +51,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [ "$BuildType" != "Debug" -a "$BuildType" != "Dev" -a "$BuildType" != "Release" ]; then
+if [ "$BuildType" != "Debug" -a "$BuildType" != "Dev" -a "$BuildType" != "Shipping" ]; then
   >&2 echo "The build-type '${BuildType}' is not supported. Only Debug, Dev and Release are supported values."
   exit 1
 fi
