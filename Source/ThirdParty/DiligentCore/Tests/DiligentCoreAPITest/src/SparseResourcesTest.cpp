@@ -13,14 +13,14 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *
- *  In no event and under no legal theory, whether in tort (including negligence), 
- *  contract, or otherwise, unless required by applicable law (such as deliberate 
+ *  In no event and under no legal theory, whether in tort (including negligence),
+ *  contract, or otherwise, unless required by applicable law (such as deliberate
  *  and grossly negligent acts) or agreed to in writing, shall any Contributor be
- *  liable for any damages, including any direct, indirect, special, incidental, 
- *  or consequential damages of any character arising as a result of this License or 
- *  out of the use or inability to use the software (including but not limited to damages 
- *  for loss of goodwill, work stoppage, computer failure or malfunction, or any and 
- *  all other commercial damages or losses), even if such Contributor has been advised 
+ *  liable for any damages, including any direct, indirect, special, incidental,
+ *  or consequential damages of any character arising as a result of this License or
+ *  out of the use or inability to use the software (including but not limited to damages
+ *  for loss of goodwill, work stoppage, computer failure or malfunction, or any and
+ *  all other commercial damages or losses), even if such Contributor has been advised
  *  of the possibility of such damages.
  */
 
@@ -33,21 +33,7 @@
 #include "MapHelper.hpp"
 #include "Align.hpp"
 #include "BasicMath.hpp"
-
-#if METAL_SUPPORTED
-namespace Diligent
-{
-namespace Testing
-{
-
-extern void CreateSparseTextureMtl(IRenderDevice*     pDevice,
-                                   const TextureDesc& TexDesc,
-                                   IDeviceMemory*     pMemory,
-                                   ITexture**         ppTexture);
-
-} // namespace Testing
-} // namespace Diligent
-#endif
+#include "GraphicsUtilities.h"
 
 #include "InlineShaders/SparseResourcesTest.h"
 
@@ -363,7 +349,6 @@ protected:
         Desc.MiscFlags   = (Aliasing ? MISC_TEXTURE_FLAG_SPARSE_ALIASING : MISC_TEXTURE_FLAG_NONE);
 
         TextureAndMemory Result;
-#if METAL_SUPPORTED
         if (pDevice->GetDeviceInfo().IsMetalDevice())
         {
             Result.pMemory = CreateMemory(AlignUp(64u << 10, BlockSize), NumMemoryPages, nullptr);
@@ -373,7 +358,6 @@ protected:
             CreateSparseTextureMtl(pDevice, Desc, Result.pMemory, &Result.pTexture);
         }
         else
-#endif
         {
             pDevice->CreateTexture(Desc, nullptr, &Result.pTexture);
             if (Result.pTexture == nullptr)

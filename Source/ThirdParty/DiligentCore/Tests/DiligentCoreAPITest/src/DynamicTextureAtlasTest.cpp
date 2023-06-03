@@ -40,6 +40,24 @@ using namespace Diligent::Testing;
 namespace
 {
 
+TEST(DynamicTextureAtlas, ComputeTextureAtlasSuballocationAlignment)
+{
+    EXPECT_EQ(ComputeTextureAtlasSuballocationAlignment(31, 65, 0), 1u);
+    EXPECT_EQ(ComputeTextureAtlasSuballocationAlignment(31, 65, 1), 32u);
+    EXPECT_EQ(ComputeTextureAtlasSuballocationAlignment(65, 31, 2), 32u);
+    EXPECT_EQ(ComputeTextureAtlasSuballocationAlignment(31, 65, 16), 32u);
+    EXPECT_EQ(ComputeTextureAtlasSuballocationAlignment(65, 31, 16), 32u);
+    EXPECT_EQ(ComputeTextureAtlasSuballocationAlignment(65, 31, 32), 32u);
+    EXPECT_EQ(ComputeTextureAtlasSuballocationAlignment(65, 31, 64), 64u);
+    EXPECT_EQ(ComputeTextureAtlasSuballocationAlignment(31, 65, 64), 64u);
+    EXPECT_EQ(ComputeTextureAtlasSuballocationAlignment(31, 65, 128), 128u);
+
+    EXPECT_EQ(ComputeTextureAtlasSuballocationAlignment(16, 32, 64), 64u);
+    EXPECT_EQ(ComputeTextureAtlasSuballocationAlignment(48, 96, 64), 64u);
+    EXPECT_EQ(ComputeTextureAtlasSuballocationAlignment(96, 192, 64), 128u);
+    EXPECT_EQ(ComputeTextureAtlasSuballocationAlignment(2048, 1024, 64), 1024u);
+}
+
 TEST(DynamicTextureAtlas, Create)
 {
     auto* const pEnv    = GPUTestingEnvironment::GetInstance();
@@ -72,7 +90,7 @@ TEST(DynamicTextureAtlas, Create)
     EXPECT_EQ(Stats.TotalArea, CI.Desc.Width * CI.Desc.Height);
     EXPECT_EQ(Stats.AllocatedArea, 128u * 128u);
     EXPECT_EQ(Stats.UsedArea, 128u * 128u);
-    EXPECT_GE(Stats.Size, 0u);
+    EXPECT_GE(Stats.CommittedSize, 0u);
 }
 
 TEST(DynamicTextureAtlas, CreateArray)
@@ -114,7 +132,7 @@ TEST(DynamicTextureAtlas, CreateArray)
         EXPECT_EQ(Stats.TotalArea, CI.Desc.Width * CI.Desc.Height * 2u);
         EXPECT_EQ(Stats.AllocatedArea, 128u * 128u);
         EXPECT_EQ(Stats.UsedArea, 128u * 128u);
-        EXPECT_GE(Stats.Size, 0u);
+        EXPECT_GE(Stats.CommittedSize, 0u);
     }
 
     CI.Desc.ArraySize = 2;

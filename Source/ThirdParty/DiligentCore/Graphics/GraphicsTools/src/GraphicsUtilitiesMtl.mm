@@ -1,6 +1,5 @@
 /*
  *  Copyright 2019-2023 Diligent Graphics LLC
- *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -25,48 +24,34 @@
  *  of the possibility of such damages.
  */
 
-#pragma once
+#include "GraphicsUtilities.h"
 
-/// \file
-/// Implementation of the MemoryFileStream class
+#include <Metal/Metal.h>
 
-#include "../../Primitives/interface/FileStream.h"
-#include "../../Primitives/interface/DataBlob.h"
-#include "ObjectBase.hpp"
+#include "RenderDeviceMtl.h"
 #include "RefCntAutoPtr.hpp"
 
 namespace Diligent
 {
 
-/// Memory file stream implementation
-class MemoryFileStream final : public ObjectBase<IFileStream>
+void CreateSparseTextureMtl(IRenderDevice*     pDevice,
+                            const TextureDesc& TexDesc,
+                            IDeviceMemory*     pMemory,
+                            ITexture**         ppTexture)
 {
-public:
-    typedef ObjectBase<IFileStream> TBase;
-
-    MemoryFileStream(IReferenceCounters* pRefCounters,
-                     IDataBlob*          pData);
-
-    virtual void DILIGENT_CALL_TYPE QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface) override final;
-
-    /// Reads data from the stream
-    virtual void DILIGENT_CALL_TYPE ReadBlob(IDataBlob* pData) override final;
-
-    /// Reads data from the stream
-    virtual bool DILIGENT_CALL_TYPE Read(void* Data, size_t Size) override final;
-
-    /// Writes data to the stream
-    virtual bool DILIGENT_CALL_TYPE Write(const void* Data, size_t Size) override final;
-
-    virtual size_t DILIGENT_CALL_TYPE GetSize() override final;
-
-    virtual bool DILIGENT_CALL_TYPE IsValid() override final;
-
-    static RefCntAutoPtr<MemoryFileStream> Create(IDataBlob* pData);
-
-private:
-    RefCntAutoPtr<IDataBlob> m_DataBlob;
-    size_t                   m_CurrentOffset = 0;
-};
+    RefCntAutoPtr<IRenderDeviceMtl> pDeviceMtl{pDevice, IID_RenderDeviceMtl};
+    if (!pDeviceMtl)
+        return;
+        
+    if (pMemory == nullptr)
+    {
+        UNEXPECTED("Device memory must not be null");
+        return;
+    }
+    
+    DEV_CHECK_ERR(TexDesc.Usage == USAGE_SPARSE, "This function should be used to create sparse textures.");
+    
+    pDeviceMtl->CreateSparseTexture(TexDesc, pMemory, ppTexture);
+}
 
 } // namespace Diligent

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -24,9 +24,4 @@
  *  of the possibility of such damages.
  */
 
-#include "GraphicsUtilities.h"
-
-namespace Diligent
-{
-
-} // namespace Diligent
+#include "DiligentCore/Graphics/GraphicsTools/interface/VertexPool.h"
