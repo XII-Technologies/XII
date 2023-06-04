@@ -447,7 +447,7 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
         XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture view.");
 
         const VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-        vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, reinterpret_cast<VkClearColorValue*>(clearValues.GetData()), 1, &subresourceRange);
+        vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, reinterpret_cast<const VkClearColorValue*>(clearValues.GetData()), 1, &subresourceRange);
 
         XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureVk);
 
@@ -543,7 +543,7 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
         XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture view.");
 
         const VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-        vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, reinterpret_cast<VkClearColorValue*>(clearValues.GetData()), 1, &subresourceRange);
+        vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, reinterpret_cast<const VkClearColorValue*>(clearValues.GetData()), 1, &subresourceRange);
 
         XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureVk);
 
