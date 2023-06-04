@@ -361,6 +361,9 @@ build*/
 # Compile commands for use with YCM on Linux.
 compile-commands.json
 
+# Tags file for code navigation.
+**/tags
+
 # Diligent Generated Files
 Source/ThirdParty/DiligentCore/Graphics/HLSL2GLSLConverterLib/include/GLSLDefinitions_inc.h
 Source/ThirdParty/DiligentCore/Graphics/ShaderTools/include/HLSLDefinitions_inc.fxh
