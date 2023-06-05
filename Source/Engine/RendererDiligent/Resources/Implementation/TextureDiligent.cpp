@@ -132,8 +132,10 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
       if (m_Description.m_bAllowShaderResourceView)
         Tex3DDesc.BindFlags |= Diligent::BIND_SHADER_RESOURCE;
+
       if (m_Description.m_bAllowUAV)
         Tex3DDesc.BindFlags |= Diligent::BIND_UNORDERED_ACCESS;
+
       if (m_Description.m_bCreateRenderTarget)
         Tex3DDesc.BindFlags |= xiiGALResourceFormat::IsDepthFormat(m_Description.m_Format) ? Diligent::BIND_DEPTH_STENCIL : Diligent::BIND_RENDER_TARGET;
 
