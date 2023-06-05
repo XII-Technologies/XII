@@ -320,6 +320,12 @@ struct xiiGALTextureCreationDescription : public xiiHashableStruct<xiiGALTexture
   xiiGALResourceAccess m_ResourceAccess;
 
   void* m_pExisitingNativeObject = nullptr; ///< Can be used to encapsulate existing native textures in objects usable by the GAL
+
+  bool IsArray() const;
+  bool Is1D() const;
+  bool Is2D() const;
+  bool Is3D() const;
+  bool IsCube() const;
 };
 
 struct xiiGALResourceViewCreationDescription : public xiiHashableStruct<xiiGALResourceViewCreationDescription>
