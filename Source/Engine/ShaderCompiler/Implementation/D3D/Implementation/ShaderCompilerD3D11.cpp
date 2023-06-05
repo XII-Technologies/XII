@@ -134,10 +134,11 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramCompiler::x
     xiiUInt32                    uiVirtualSampler      = 0;
 
     xiiDynamicArray<D3D11_SHADER_INPUT_BIND_DESC> boundResources;
+    boundResources.SetCount(uiNumBoundResources);
 
     for (xiiUInt32 i = 0; i < uiNumBoundResources; ++i)
     {
-      D3D11_SHADER_INPUT_BIND_DESC& inputDesc = boundResources.ExpandAndGetRef();
+      D3D11_SHADER_INPUT_BIND_DESC& inputDesc = boundResources[i];
       if (FAILED(pReflector->GetResourceBindingDesc(i, &inputDesc)))
       {
         xiiLog::Error("Failed to retrieve shader input descriptor");
