@@ -45,31 +45,53 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     xiiGALResourceFormat::Enum              viewFormat     = m_Description.m_OverrideViewFormat == xiiGALResourceFormat::Invalid ? texDesc.m_Format : m_Description.m_OverrideViewFormat;
 
     Diligent::TextureViewDesc SRVDesc;
-    SRVDesc.Format          = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eResourceViewType;
-    SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
-    SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
-
-    if (pGALTextureDiligent->GetDescription().m_bAllowShaderResourceView)
-      SRVDesc.ViewType = Diligent::TEXTURE_VIEW_SHADER_RESOURCE;
-    else
-      SRVDesc.ViewType = Diligent::TEXTURE_VIEW_UNDEFINED;
-
-    if (pGALTextureDiligent->GetDescription().m_bAllowDynamicMipGeneration)
-      SRVDesc.Flags |= Diligent::TEXTURE_VIEW_FLAG_ALLOW_MIP_MAP_GENERATION;
+    SRVDesc.ViewType = Diligent::TEXTURE_VIEW_SHADER_RESOURCE;
+    SRVDesc.Format   = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eResourceViewType;
 
     switch (texDesc.m_Type)
     {
       case xiiGALTextureType::Texture1D:
-        SRVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_1D;
-        break;
+      {
+        SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_1D;
+        SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
+        SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
+      }
+      break;
+      case xiiGALTextureType::Texture1DArray:
+      {
+        SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_1D_ARRAY;
+        SRVDesc.NumArraySlices  = m_Description.m_uiArraySize;
+        SRVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
+        SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
+        SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
+      }
+      break;
       case xiiGALTextureType::Texture2D:
       case xiiGALTextureType::Texture2DProxy:
-        SRVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_2D;
-        break;
-      case xiiGALTextureType::TextureCube:
       {
-        if (pGALTextureDiligent->GetDescription().m_bAllowShaderResourceView)
-          SRVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_CUBE;
+        if (texDesc.m_SampleCount == xiiGALMSAASampleCount::None)
+        {
+          SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D;
+          SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
+          SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
+        }
+        else
+        {
+          SRVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_2D;
+        }
+      }
+      break;
+      case xiiGALTextureType::Texture2DArray:
+      case xiiGALTextureType::Texture2DProxyArray:
+      {
+        if (texDesc.m_SampleCount == xiiGALMSAASampleCount::None)
+        {
+          SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+          SRVDesc.NumArraySlices  = m_Description.m_uiArraySize;
+          SRVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
+          SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
+          SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
+        }
         else
         {
           SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
@@ -78,35 +100,37 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
         }
       }
       break;
-      case xiiGALTextureType::Texture1DArray:
-        SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_1D_ARRAY;
-        SRVDesc.NumArraySlices  = m_Description.m_uiArraySize;
-        SRVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
-        break;
-      case xiiGALTextureType::Texture2DArray:
-      case xiiGALTextureType::Texture2DProxyArray:
-        SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
-        SRVDesc.NumArraySlices  = m_Description.m_uiArraySize;
-        SRVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
-        break;
-      case xiiGALTextureType::TextureCubeArray:
+      case xiiGALTextureType::Texture3D:
       {
-        if (pGALTextureDiligent->GetDescription().m_bAllowShaderResourceView)
-          SRVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
-        else
-          SRVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
-
-        SRVDesc.NumArraySlices  = m_Description.m_uiArraySize;
-        SRVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
+        SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_3D;
+        SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
+        SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
       }
       break;
-      case xiiGALTextureType::Texture3D:
-        SRVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_3D;
-        break;
-      default:
-        XII_ASSERT_NOT_IMPLEMENTED;
-        return XII_FAILURE;
+      case xiiGALTextureType::TextureCube:
+      {
+        SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_CUBE;
+        SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
+        SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
+      }
+      break;
+      case xiiGALTextureType::TextureCubeArray:
+      {
+        SRVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
+        SRVDesc.NumArraySlices  = m_Description.m_uiArraySize * 6u;
+        SRVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
+        SRVDesc.NumMipLevels    = m_Description.m_uiMipLevelsToUse;
+        SRVDesc.MostDetailedMip = m_Description.m_uiMostDetailedMipLevel;
+      }
+      break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
+
+    if (pGALTextureDiligent->GetDescription().m_bAllowDynamicMipGeneration)
+      SRVDesc.Flags |= Diligent::TEXTURE_VIEW_FLAG_ALLOW_MIP_MAP_GENERATION;
+
+    SRVDesc.AccessFlags = Diligent::UAV_ACCESS_UNSPECIFIED;
 
     pTextureDiligent->CreateView(SRVDesc, &m_pTextureView);
 
