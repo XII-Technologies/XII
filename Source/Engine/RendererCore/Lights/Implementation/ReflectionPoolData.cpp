@@ -350,8 +350,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
   {
     const xiiUInt32 uiMipLevelCount = GetMipLevels();
 
-    xiiMaterialResourceHandle hDebugMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(
-      "{ 6f8067d0-ece8-44e1-af46-79b49266de41 }"); // ReflectionProbeVisualization.xiiMaterialAsset
+    xiiMaterialResourceHandle hDebugMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("{ 6f8067d0-ece8-44e1-af46-79b49266de41 }"); // ReflectionProbeVisualization.xiiMaterialAsset
     xiiResourceLock<xiiMaterialResource> pMaterial(hDebugMaterial, xiiResourceAcquireMode::BlockTillLoaded);
     if (pMaterial->GetLoadingState() != xiiResourceState::Loaded)
       return;

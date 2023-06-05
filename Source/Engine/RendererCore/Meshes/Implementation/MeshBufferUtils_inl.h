@@ -42,17 +42,17 @@ XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTexCoord(const xiiVec2& te
 // static
 XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeNormal(const xiiVec3& normal, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat)
 {
-  // we store normals in unsigned formats thus we need to map from -1..1 to 0..1 here
+  // Normals are stored in unsigned formats thus we need to map from -1..1 to 0..1 here.
   return EncodeFromVec3(normal * 0.5f + xiiVec3(0.5f), dest, destFormat);
 }
 
 // static
 XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTangent(const xiiVec3& tangent, float biTangentSign, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat)
 {
-  // make sure biTangentSign is either -1 or 1
+  // Ensure the biTangentSign is either -1 or 1.
   biTangentSign = (biTangentSign < 0.0f) ? -1.0f : 1.0f;
 
-  // we store tangents in unsigned formats thus we need to map from -1..1 to 0..1 here
+  // Tangents are stored in unsigned formats thus we need to map from -1..1 to 0..1 here.
   return EncodeFromVec4(tangent.GetAsVec4(biTangentSign) * 0.5f + xiiVec4(0.5f), dest, destFormat);
 }
 

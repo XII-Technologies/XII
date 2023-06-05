@@ -44,7 +44,7 @@ bool xiiSourcePass::GetRenderTargetDescriptions(const xiiView& view, const xiiAr
   desc.m_Format              = m_Format;
   desc.m_bCreateRenderTarget = true;
   desc.m_uiArraySize         = view.GetCamera()->IsStereoscopic() ? 2 : 1;
-  desc.m_Type                = m_MsaaMode != xiiGALMSAASampleCount::None ? xiiGALTextureType::Texture2DArray : xiiGALTextureType::Texture2D;
+  desc.m_Type                = (m_MsaaMode != xiiGALMSAASampleCount::None || desc.m_uiArraySize > 1) ? xiiGALTextureType::Texture2DArray : xiiGALTextureType::Texture2D;
 
   outputs[m_PinOutput.m_uiOutputIndex] = desc;
 

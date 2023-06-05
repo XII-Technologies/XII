@@ -19,9 +19,9 @@ xiiReflectionProbeMapping::xiiReflectionProbeMapping(xiiUInt32 uiAtlasSize) :
   desc.m_uiWidth                     = s_uiReflectionCubeMapSize;
   desc.m_uiHeight                    = s_uiReflectionCubeMapSize;
   desc.m_uiMipLevelCount             = GetMipLevels();
-  desc.m_uiArraySize                 = s_uiNumReflectionProbeCubeMaps;
+  desc.m_uiArraySize                 = s_uiNumReflectionProbeCubeMaps * 6;
   desc.m_Format                      = xiiGALResourceFormat::RGBAHalf;
-  desc.m_Type                        = xiiGALTextureType::TextureCubeArray;
+  desc.m_Type                        = xiiGALTextureType::Texture2DArray;
   desc.m_bCreateRenderTarget         = true;
   desc.m_bAllowUAV                   = true;
   desc.m_ResourceAccess.m_bReadBack  = true;

@@ -82,6 +82,7 @@ bool xiiTonemapPass::GetRenderTargetDescriptions(const xiiView& view, const xiiA
 
       outputs[m_PinOutput.m_uiOutputIndex].SetAsRenderTarget(pColorInput->m_uiWidth, pColorInput->m_uiHeight, desc.m_Format);
       outputs[m_PinOutput.m_uiOutputIndex].m_uiArraySize = pColorInput->m_uiArraySize;
+      outputs[m_PinOutput.m_uiOutputIndex].m_Type        = xiiGALTextureType::Texture2DArray;
     }
     else
     {

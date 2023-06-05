@@ -164,8 +164,7 @@ void xiiBakedProbesComponentManager::CreateDebugResources()
 
   if (!m_hDebugMaterial.IsValid())
   {
-    m_hDebugMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(
-      "{ 4d15c716-a8e9-43d4-9424-43174403fb94 }"); // IrradianceProbeVisualization.xiiMaterialAsset
+    m_hDebugMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("{ 4d15c716-a8e9-43d4-9424-43174403fb94 }"); // IrradianceProbeVisualization.xiiMaterialAsset
   }
 }
 
