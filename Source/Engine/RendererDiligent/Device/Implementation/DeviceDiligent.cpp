@@ -1049,6 +1049,8 @@ void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
 
 void xiiGALDeviceDiligent::WaitIdlePlatform()
 {
+  m_pPipelineBarrier->FlushBarriers(true);
+
   DestroyDeadObjects();
 
   m_pDefaultPass->ReleaseRenderPassResources();

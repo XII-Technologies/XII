@@ -7,13 +7,19 @@ bool xiiPipelineBarrierDiligent::IsBarrierModified() const
   return m_bTransitionStatesModified;
 }
 
-void xiiPipelineBarrierDiligent::FlushBarriers()
+void xiiPipelineBarrierDiligent::FlushBarriers(const bool bClearOnly /* = false */)
 {
   if (!m_bTransitionStatesModified)
     return;
 
+  if (bClearOnly)
+    goto ClearAll;
+
   for (auto& pBarrier : m_RequestedBarriers)
   {
+    if (pBarrier.Value().m_DefaultStateTransition.pResource == nullptr)
+      continue;
+
     Diligent::StateTransitionDesc& transitionDesc = pBarrier.Value().m_DefaultStateTransition;
 
     // An unknown or undefined new state signifies that this resource should not be transitioned during a flush.
@@ -23,6 +29,7 @@ void xiiPipelineBarrierDiligent::FlushBarriers()
     }
   }
 
+ClearAll:
   m_RequestedBarriers.Clear();
   m_RequestedBarriers.Compact();
 
@@ -62,25 +69,46 @@ void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* p
     transitionInfo.m_pContext->TransitionResourceStates(1u, &transitionDesc);
   }
 
-  if (m_RequestedBarriers.Contains(transitionDesc))
-  {
-    m_RequestedBarriers.Remove(transitionDesc);
-  }
-
-  m_RequestedBarriers.Insert(transitionDesc, transitionInfo);
-
   if (bIsDeferred)
   {
     if (bIsExclusive ? pBuffer->GetState() != transitionState : (pBuffer->GetState() & transitionState) == 0u)
     {
+      if (m_RequestedBarriers.Contains(transitionDesc))
+      {
+        m_RequestedBarriers.Remove(transitionDesc);
+      }
+
+      m_RequestedBarriers.Insert(transitionDesc, transitionInfo);
+
       m_bTransitionStatesModified = true;
+    }
+    else
+    {
+      if (m_RequestedBarriers.Contains(transitionDesc))
+      {
+        m_RequestedBarriers.Remove(transitionDesc);
+      }
     }
   }
   else
   {
     if (bIsExclusive ? transitionDesc.OldState != defaultState : (transitionDesc.OldState & defaultState) == 0u)
     {
+      if (m_RequestedBarriers.Contains(transitionDesc))
+      {
+        m_RequestedBarriers.Remove(transitionDesc);
+      }
+
+      m_RequestedBarriers.Insert(transitionDesc, transitionInfo);
+
       m_bTransitionStatesModified = true;
+    }
+    else
+    {
+      if (m_RequestedBarriers.Contains(transitionDesc))
+      {
+        m_RequestedBarriers.Remove(transitionDesc);
+      }
     }
   }
 }
@@ -118,25 +146,46 @@ void xiiPipelineBarrierDiligent::EnsureResourceState(Diligent::IDeviceContext* p
     transitionInfo.m_pContext->TransitionResourceStates(1u, &transitionDesc);
   }
 
-  if (m_RequestedBarriers.Contains(transitionDesc))
-  {
-    m_RequestedBarriers.Remove(transitionDesc);
-  }
-
-  m_RequestedBarriers.Insert(transitionDesc, transitionInfo);
-
   if (bIsDeferred)
   {
     if (bIsExclusive ? pTexture->GetState() != transitionState : (pTexture->GetState() & transitionState) == 0u)
     {
+      if (m_RequestedBarriers.Contains(transitionDesc))
+      {
+        m_RequestedBarriers.Remove(transitionDesc);
+      }
+
+      m_RequestedBarriers.Insert(transitionDesc, transitionInfo);
+
       m_bTransitionStatesModified = true;
+    }
+    else
+    {
+      if (m_RequestedBarriers.Contains(transitionDesc))
+      {
+        m_RequestedBarriers.Remove(transitionDesc);
+      }
     }
   }
   else
   {
     if (bIsExclusive ? transitionDesc.OldState != defaultState : (transitionDesc.OldState & defaultState) == 0u)
     {
+      if (m_RequestedBarriers.Contains(transitionDesc))
+      {
+        m_RequestedBarriers.Remove(transitionDesc);
+      }
+
+      m_RequestedBarriers.Insert(transitionDesc, transitionInfo);
+
       m_bTransitionStatesModified = true;
+    }
+    else
+    {
+      if (m_RequestedBarriers.Contains(transitionDesc))
+      {
+        m_RequestedBarriers.Remove(transitionDesc);
+      }
     }
   }
 }
