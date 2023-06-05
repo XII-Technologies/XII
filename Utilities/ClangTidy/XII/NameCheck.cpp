@@ -131,10 +131,10 @@ namespace clang
 
       std::string AddPrefix(const std::string& baseName, const Type* type, bool* prefixAdded = nullptr)
       {
-        std::string newName = baseName;
-        auto oldPrefix = StripPrefix(newName);
+        std::string newName   = baseName;
+        auto        oldPrefix = StripPrefix(newName);
 
-        auto templateParamType = dyn_cast<TemplateTypeParmType>(type);
+        auto templateParamType  = dyn_cast<TemplateTypeParmType>(type);
         auto templateParamType2 = dyn_cast<SubstTemplateTypeParmType>(type);
         if (templateParamType || templateParamType2)
         {
@@ -209,9 +209,9 @@ namespace clang
           auto recordDecl = type->getAsCXXRecordDecl();
           if (recordDecl)
           {
-            auto recordName = recordDecl->getName();
+            auto recordName       = recordDecl->getName();
             bool localPrefixAdded = false;
-            newName = AddPrefixForType(recordName, std::move(newName), &localPrefixAdded);
+            newName               = AddPrefixForType(recordName, std::move(newName), &localPrefixAdded);
             if (localPrefixAdded)
             {
               return newName;
@@ -269,7 +269,7 @@ namespace clang
                                         .getAsTemplateDecl()
                                         ->getName();
                   bool localPrefixAdded = false;
-                  newName = AddPrefixForType(templateName, std::move(newName), &localPrefixAdded);
+                  newName               = AddPrefixForType(templateName, std::move(newName), &localPrefixAdded);
                   if (localPrefixAdded)
                   {
                     return newName;
@@ -293,17 +293,17 @@ namespace clang
         return newName;
       }
 
-      NameCheck::NameCheck(StringRef Name, ClangTidyContext* Context)
-        : RenamerClangTidyCheck(Name, Context)
+      NameCheck::NameCheck(StringRef Name, ClangTidyContext* Context) :
+        RenamerClangTidyCheck(Name, Context)
       {
       }
 
       llvm::Optional<RenamerClangTidyCheck::FailureInfo>
-      NameCheck::getDeclFailureInfo(const NamedDecl* Decl,
-        const SourceManager& SM) const
+      NameCheck::getDeclFailureInfo(const NamedDecl*     Decl,
+                                    const SourceManager& SM) const
       {
-        const FieldDecl* field = dyn_cast<FieldDecl>(Decl);
-        const VarDecl* var = dyn_cast<VarDecl>(Decl);
+        const FieldDecl*   field = dyn_cast<FieldDecl>(Decl);
+        const VarDecl*     var   = dyn_cast<VarDecl>(Decl);
         const ParmVarDecl* param = dyn_cast<ParmVarDecl>(Decl);
         if (field && field->getIdentifier()) // struct / class members
         {
@@ -323,7 +323,7 @@ namespace clang
           // context.
           if (field->isTemplated())
           {
-            type = nullptr;
+            type                = nullptr;
             auto lexicalContext = field->getLexicalDeclContext();
             for (auto& decl : lexicalContext->decls())
             {
@@ -349,8 +349,8 @@ namespace clang
         }
         else if (param && param->getIdentifier()) // function / method parameters
         {
-          const DeclContext* declContext = param->getDeclContext();
-          const FunctionDecl* owningFunc = dyn_cast<FunctionDecl>(declContext);
+          const DeclContext*  declContext = param->getDeclContext();
+          const FunctionDecl* owningFunc  = dyn_cast<FunctionDecl>(declContext);
 
           if (!owningFunc || (owningFunc->getAccess() != AS_public && owningFunc->getAccess() != AS_none))
           {
@@ -379,8 +379,8 @@ namespace clang
           // If the var is templated, all types have already been substituted. E.g.
           // "T*" -> "int*". We need the original type "T*" so find it in the lexcial
           // context.
-          const clang::Type* type = param->getType().getTypePtr();
-          std::string typeString = param->getType().getAsString();
+          const clang::Type* type       = param->getType().getTypePtr();
+          std::string        typeString = param->getType().getAsString();
           if (!param->isTemplated())
           {
             FunctionDecl* templatedFuncDecl = owningFunc->getInstantiatedFromMemberFunction();
@@ -397,32 +397,32 @@ namespace clang
                 return llvm::None;
               }
               clang::ParmVarDecl* templatedParamDecl = templatedFuncDecl->getParamDecl(paramIndex);
-              type = templatedParamDecl->getType().getTypePtr();
-              typeString = templatedParamDecl->getType().getAsString();
+              type                                   = templatedParamDecl->getType().getTypePtr();
+              typeString                             = templatedParamDecl->getType().getAsString();
             }
           }
 
-          const char* refPrefix = "ref_";
-          bool refPrefixFound = false;
+          const char* refPrefix      = "ref_";
+          bool        refPrefixFound = false;
 
           {
             llvm::StringRef newNameRef = newName;
             if (newNameRef.startswith("out_"))
             {
               newName.erase(0, 4);
-              refPrefix = "out_";
+              refPrefix      = "out_";
               refPrefixFound = true;
             }
             else if (newNameRef.startswith("inout_"))
             {
               newName.erase(0, 6);
-              refPrefix = "inout_";
+              refPrefix      = "inout_";
               refPrefixFound = true;
             }
             else if (newNameRef.startswith("in_"))
             {
               newName.erase(0, 3);
-              refPrefix = "in_";
+              refPrefix      = "in_";
               refPrefixFound = true;
             }
             else if (newNameRef.startswith("ref_"))
@@ -453,7 +453,7 @@ namespace clang
             prefixType = type->getPointeeType().getTypePtr();
           }
           bool prefixAdded = false;
-          newName = AddPrefix(newName, prefixType, &prefixAdded);
+          newName          = AddPrefix(newName, prefixType, &prefixAdded);
           if (!prefixAdded)
           {
             newName[0] = toLowercase(newName[0]);
@@ -513,7 +513,7 @@ namespace clang
           if (enumType && enumType->getDecl()->getName() == "Enum")
           {
 
-            auto varContext = var->getDeclContext();
+            auto varContext  = var->getDeclContext();
             auto enumContext = enumType->getDecl()->getDeclContext();
             if (varContext && varContext == enumContext)
             {
@@ -527,7 +527,7 @@ namespace clang
           const clang::Type* type = var->getType().getTypePtr();
           if (var->isTemplated())
           {
-            type = nullptr;
+            type                = nullptr;
             auto lexicalContext = var->getLexicalDeclContext();
             for (auto& decl : lexicalContext->decls())
             {
@@ -559,33 +559,39 @@ namespace clang
       }
 
       llvm::Optional<clang::tidy::RenamerClangTidyCheck::FailureInfo>
-      NameCheck::getMacroFailureInfo(const Token& MacroNameTok,
-        const SourceManager& SM) const
+      NameCheck::getMacroFailureInfo(const Token&         MacroNameTok,
+                                     const SourceManager& SM) const
       {
         return llvm::None;
       }
 
       RenamerClangTidyCheck::DiagInfo
-      NameCheck::getDiagInfo(const NamingCheckId& ID,
-        const NamingCheckFailure& Failure) const
+      NameCheck::getDiagInfo(const NamingCheckId&      ID,
+                             const NamingCheckFailure& Failure) const
       {
         if (Failure.Info.KindName == "field")
         {
           return DiagInfo{
             "class / struct member '%0' does not follow the naming convention",
-            [&](DiagnosticBuilder& Diag) { Diag << ID.second; }};
+            [&](DiagnosticBuilder& Diag) {
+              Diag << ID.second;
+            }};
         }
         else if (Failure.Info.KindName == "param")
         {
           return DiagInfo{
             "parameter '%0' does not follow the naming convention (%1)",
-            [&](DiagnosticBuilder& Diag) { Diag << ID.second << Failure.Info.Fixup; }};
+            [&](DiagnosticBuilder& Diag) {
+              Diag << ID.second << Failure.Info.Fixup;
+            }};
         }
         else if (Failure.Info.KindName == "paramRef")
         {
           return DiagInfo{
             "non const reference parameter '%0' does not follow the naming convention. non-const reference parameters should start with 'in_', 'out_' or 'inout_'.",
-            [&](DiagnosticBuilder& Diag) { Diag << ID.second; }};
+            [&](DiagnosticBuilder& Diag) {
+              Diag << ID.second;
+            }};
         }
         return {};
       }
