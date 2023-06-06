@@ -21,7 +21,7 @@ jobs:
 
           git checkout --track "origin/${env:GITHUB_HEAD_REF}"
 
-          git submodule update --remote Data/Tools/Precompiled
+          git submodule update --init --remote Data/Tools/Precompiled
 
           echo "Download LLVM and CMake"
 
