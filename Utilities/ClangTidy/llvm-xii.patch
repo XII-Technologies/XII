@@ -83,7 +83,7 @@ index 2691d90fa521..874e1eee4a82 100644
      MiscModuleAnchorSource;
 
 +// This anchor is used to force the linker to link the MiscModule.
-+extern volatile int ModuleAnchorSource;
++extern volatile int XIIModuleAnchorSource;
 +static int LLVM_ATTRIBUTE_UNUSED XIIModuleAnchorDestination =
 +    XIIModuleAnchorSource;
 +
