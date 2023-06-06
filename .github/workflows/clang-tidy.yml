@@ -35,7 +35,7 @@ jobs:
           $clangCppExe = "$pwd\llvm\bin\clang++.exe" -replace "\\","/"
           $clangExe = "$pwd\llvm\bin\clang.exe" -replace "\\","/"
 
-          ${env:GITHUB_WORKSPACE}/Data/Tools/Precompiled/cmake/bin/cmake.exe -G Ninja -B workspace-clang -S . "-DCMAKE_CXX_COMPILER=$clangCppExe" "-DCMAKE_C_COMPILER=$clangExe" "-DCMAKE_RC_COMPILER=$srcExe" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DXII_USE_PCH=OFF -DXII_ENABLE_FOLDER_UNITY_FILES=OFF
+          & ${env:GITHUB_WORKSPACE}/Data/Tools/Precompiled/cmake/bin/cmake.exe -G Ninja -B workspace-clang -S . "-DCMAKE_CXX_COMPILER=$clangCppExe" "-DCMAKE_C_COMPILER=$clangExe" "-DCMAKE_RC_COMPILER=$srcExe" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DXII_USE_PCH=OFF -DXII_ENABLE_FOLDER_UNITY_FILES=OFF
 
           echo "Running ClangTidy"
 
