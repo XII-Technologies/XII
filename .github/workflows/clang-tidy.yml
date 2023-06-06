@@ -46,7 +46,7 @@ jobs:
           git checkout "Source/Engine/Foundation/Reflection/Implementation/MemberProperty.h"
           if(@(git status -s --untracked-files=no).Length -gt 0)
           {
-            echo "ClangTidy suggested changes. ClangTidy check failed! See artifact 'clangTidy.patch' for suggested changes. Apply patch with: git apply clangTidy.patch"
+            Write-Host "##vso[task.logissue type=error]ClangTidy suggested changes. ClangTidy check failed! See artifact 'clangTidy.patch' for suggested changes. Apply patch with: git apply clangTidy.patch" -foreground red
             git diff | Out-File -Encoding utf8NoBOM -FilePath "${env:GITHUB_WORKSPACE}/clangTidy.patch"
 
             echo "::set-output name=push::true"
