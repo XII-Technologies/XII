@@ -39,14 +39,14 @@ jobs:
 
           echo "Running ClangTidy"
 
-          & ${env:GITHUB_WORKSPACE}/Utilities/RunClangTidy.ps1 -DiffTo "origin/$(system.pullRequest.targetBranch)" -LlvmInstallDir "$pwd\llvm" -Workspace "workspace-clang"'
+          & ${env:GITHUB_WORKSPACE}/Utilities/RunClangTidy.ps1 -DiffTo "origin/$(system.pullRequest.targetBranch)" -LlvmInstallDir "$pwd\llvm" -Workspace "workspace-clang"
 
           # Write out patch file.
           # Changes done by ClangTidy on MemberProperty.h are always incorrect.
           git checkout "Source/Engine/Foundation/Reflection/Implementation/MemberProperty.h"
           if(@(git status -s --untracked-files=no).Length -gt 0)
           {
-            Write-Host "##vso[task.logissue type=error]ClangTidy suggested changes. ClangTidy check failed! See artifact clangTidy.patch for suggested changes. Apply patch with: git apply clangTidy.patch" -foreground red
+            Write-Host "##vso[task.logissue type=error]ClangTidy suggested changes. ClangTidy check failed! See artifact 'clangTidy.patch' for suggested changes. Apply patch with: git apply clangTidy.patch" -foreground red
             git diff | Out-File -Encoding utf8NoBOM -FilePath "${env:GITHUB_WORKSPACE}/clangTidy.patch"
 
             echo "::set-output name=push::true"
