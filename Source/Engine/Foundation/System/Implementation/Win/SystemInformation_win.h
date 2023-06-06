@@ -70,7 +70,7 @@ void xiiSystemInformation::Initialize()
 #if defined BUILDSYSTEM_BUILDTYPE
   s_SystemInformation.m_szBuildConfiguration = BUILDSYSTEM_BUILDTYPE;
 #else
-  s_SystemInformation.m_szBuildConfiguration = "undefined";
+  s_SystemInformation.m_szBuildConfiguration = "Undefined";
 #endif
 
   // Retrieve host name

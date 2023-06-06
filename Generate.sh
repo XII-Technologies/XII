@@ -44,14 +44,14 @@ while [[ $# -gt 0 ]]; do
       BuildType=$2
       shift 2
       ;;
-	  
+
     *)
       break
       ;;
   esac
 done
 
-if [ "$BuildType" != "Debug" -a "$BuildType" != "Dev" -a "$BuildType" != "Release" ]; then
+if [ "$BuildType" != "Debug" -a "$BuildType" != "Dev" -a "$BuildType" != "Shipping" ]; then
   >&2 echo "The build-type '${BuildType}' is not supported. Only Debug, Dev and Release are supported values."
   exit 1
 fi
@@ -75,7 +75,7 @@ elif [[ $Issue =~ $MintPattern ]]; then
   Version=${BASH_REMATCH[1]}
 elif [[ $Issue =~ $KaliPattern ]]; then
   Distribution="Kali"
-  
+
   LsbRelease=$(lsb_release -r)
   # VersionPattern="(^Release:+\s+[0-9]+.+[0-9])"
   VersionPattern="([0-9]+)"
