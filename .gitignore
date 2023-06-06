@@ -349,7 +349,7 @@ healthchecksdb
 # Backup folder for Package Reference Convert tool in Visual Studio 2017
 MigrationBackup/
 
-# xii specific
+# XII specific
 /Workspace
 /Output
 AssetCache
@@ -358,5 +358,12 @@ AssetCache
 Source/Engine/xiiBuildInfo.h
 build*/
 
+# CMake generated compile commands
+compile-commands.json
+
+# Tags file for code navigation
+**/tags
+
+# Diligent-Core generated files
 Source/ThirdParty/DiligentCore/Graphics/HLSL2GLSLConverterLib/include/GLSLDefinitions_inc.h
 Source/ThirdParty/DiligentCore/Graphics/ShaderTools/include/HLSLDefinitions_inc.fxh
