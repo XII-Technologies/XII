@@ -21,6 +21,8 @@ jobs:
 
           git checkout --track "origin/${env:GITHUB_HEAD_REF}"
 
+          git submodule update --remote Data/Tools/Precompiled
+
           echo "Download LLVM and CMake"
 
           Invoke-WebRequest https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.3/LLVM-15.0.3-win64.exe -OutFile "LLVM-15.0.3-win64.exe"
