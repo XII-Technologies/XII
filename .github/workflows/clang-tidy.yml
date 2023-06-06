@@ -15,8 +15,9 @@ jobs:
         id: lint_files
         shell: pwsh
         run: |
-          echo "::set-output name=push::false"
+          echo "push=false" >> $GITHUB_OUTPUT
 
+          git fetch origin "${env:GITHUB_BASE_REF}:refs/remotes/origin/${env:GITHUB_BASE_REF}"
           git fetch origin "${env:GITHUB_HEAD_REF}:refs/remotes/origin/${env:GITHUB_HEAD_REF}"
 
           git checkout --track "origin/${env:GITHUB_HEAD_REF}"
@@ -41,7 +42,7 @@ jobs:
 
           echo "Running ClangTidy"
 
-          & ${env:GITHUB_WORKSPACE}/Utilities/RunClangTidy.ps1 -DiffTo "${env:GITHUB_BASE_REF}" -LlvmInstallDir "$pwd\llvm" -Workspace "workspace-clang"
+          & ${env:GITHUB_WORKSPACE}/Utilities/RunClangTidy.ps1 -DiffTo "origin/${env:GITHUB_BASE_REF}" -LlvmInstallDir "$pwd\llvm" -Workspace "workspace-clang"
 
           # Write out patch file.
           # Changes done by ClangTidy on MemberProperty.h are always incorrect.
@@ -51,7 +52,7 @@ jobs:
             Write-Host "##vso[task.logissue type=error]ClangTidy suggested changes. ClangTidy check failed! See artifact 'clangTidy.patch' for suggested changes. Apply patch with: git apply clangTidy.patch" -foreground red
             git diff | Out-File -Encoding utf8NoBOM -FilePath "${env:GITHUB_WORKSPACE}/clangTidy.patch"
 
-            echo "::set-output name=push::true"
+            echo "push=true" >> $GITHUB_OUTPUT
           }
           else
           {
