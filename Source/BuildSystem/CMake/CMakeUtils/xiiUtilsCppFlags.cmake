@@ -85,7 +85,7 @@ function(xii_set_build_flags_msvc TARGET_NAME)
 	# Enable AVX2 for Clang on Windows.
 	# Todo: In general we should make this configurable. As of writing AVX2 is always active for windows builds (independent of the compiler)
 	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND XII_CMAKE_ARCHITECTURE_X86)
-		target_compile_options(${TARGET_NAME} PRIVATE "-mavx2" "-mfma")
+		target_compile_options(${TARGET_NAME} PRIVATE "-mavx2" "-mfma" "-mf16c" "-mbmi" "-mlzcnt")
 	endif()
 
 	set(LINKER_FLAGS_DEBUG "")
@@ -147,7 +147,7 @@ function(xii_set_build_flags_msvc TARGET_NAME)
 
 	# 'nodiscard': attribute is ignored in this syntactic position
 	target_compile_options(${TARGET_NAME} PRIVATE /wd5240)
-    
+
   # Disable deprecation warnings (qt, etc)
 	target_compile_options(${TARGET_NAME} PRIVATE /wd4996)
 
@@ -170,7 +170,7 @@ function(xii_set_build_flags_clang TARGET_NAME)
 	endif()
 
 	if(XII_CMAKE_ARCHITECTURE_X86)
-		target_compile_options(${TARGET_NAME} PRIVATE "-mavx2" "-mfma")
+		target_compile_options(${TARGET_NAME} PRIVATE "-mavx2" "-mfma" "-mf16c" "-mbmi" "-mlzcnt")
 	endif()
 
 	if(XII_CMAKE_PLATFORM_LINUX)
@@ -253,7 +253,7 @@ function(xii_set_build_flags_gcc TARGET_NAME)
 	target_compile_options(${TARGET_NAME} PRIVATE -fPIC -gdwarf-3)
 
 	if(XII_CMAKE_ARCHITECTURE_X86)
-		target_compile_options(${TARGET_NAME} PRIVATE -mavx2 -mfma -mf16c)
+		target_compile_options(${TARGET_NAME} PRIVATE -mavx2 -mfma -mf16c -mbmi -mlzcnt)
 	endif()
 
 	# Disable warning: multi-character character constant

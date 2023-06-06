@@ -16,13 +16,13 @@ BOOL CALLBACK xiiMonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcM
   // In Windows screen coordinates are from top/left to bottom/right
   // ie. 0,0 is left/top , resx/resy is right/bottom
 
-  auto& mon = pScreens->ExpandAndGetRef();
-  mon.m_iOffsetX = info.rcMonitor.left;
-  mon.m_iOffsetY = info.rcMonitor.top;
+  auto& mon          = pScreens->ExpandAndGetRef();
+  mon.m_iOffsetX     = info.rcMonitor.left;
+  mon.m_iOffsetY     = info.rcMonitor.top;
   mon.m_iResolutionX = info.rcMonitor.right - info.rcMonitor.left;
   mon.m_iResolutionY = info.rcMonitor.bottom - info.rcMonitor.top;
   mon.m_sDisplayName = info.szDevice;
-  mon.m_bIsPrimary = (info.dwFlags & MONITORINFOF_PRIMARY) != 0;
+  mon.m_bIsPrimary   = (info.dwFlags & MONITORINFOF_PRIMARY) != 0;
 
   DISPLAY_DEVICEW ddev;
   ddev.cb = sizeof(ddev);
