@@ -48,7 +48,7 @@ void xiiPlaneTemplate<Type>::SetFromNormalAndPoint(const xiiVec3Template<Type>& 
 {
   XII_ASSERT_DEBUG(vNormal.IsNormalized(), "Normal must be normalized.");
 
-  m_vNormal = vNormal;
+  m_vNormal      = vNormal;
   m_fNegDistance = -m_vNormal.Dot(vPointOnPlane);
 }
 
@@ -76,9 +76,9 @@ template <typename Type>
 xiiResult xiiPlaneTemplate<Type>::SetFromDirections(const xiiVec3Template<Type>& vTangent1, const xiiVec3Template<Type>& vTangent2, const xiiVec3Template<Type>& vPointOnPlane)
 {
   xiiVec3Template<Type> vNormal = vTangent1.CrossRH(vTangent2);
-  xiiResult res = vNormal.NormalizeIfNotZero();
+  xiiResult             res     = vNormal.NormalizeIfNotZero();
 
-  m_vNormal = vNormal;
+  m_vNormal      = vNormal;
   m_fNegDistance = -vNormal.Dot(vPointOnPlane);
   return res;
 }
@@ -100,7 +100,7 @@ void xiiPlaneTemplate<Type>::Transform(const xiiMat3Template<Type>& m)
   else
   {
     SetFromNormalAndPoint(vTransformedNormal, m * vPointOnPlane);
-  } 
+  }
 }
 
 template <typename Type>
@@ -127,7 +127,7 @@ template <typename Type>
 XII_FORCE_INLINE void xiiPlaneTemplate<Type>::Flip()
 {
   m_fNegDistance = -m_fNegDistance;
-  m_vNormal = -m_vNormal;
+  m_vNormal      = -m_vNormal;
 }
 
 template <typename Type>
@@ -305,7 +305,7 @@ template <typename Type>
 xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiVec3Template<Type>* const pPoints, xiiUInt32 uiVertices) const
 {
   bool bFront = false;
-  bool bBack = false;
+  bool bBack  = false;
 
   for (xiiUInt32 i = 0; i < uiVertices; ++i)
   {
@@ -334,7 +334,7 @@ template <typename Type>
 xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiVec3Template<Type>* const pPoints, xiiUInt32 uiVertices, Type fPlaneHalfWidth) const
 {
   bool bFront = false;
-  bool bBack = false;
+  bool bBack  = false;
 
   for (xiiUInt32 i = 0; i < uiVertices; ++i)
   {
@@ -371,7 +371,7 @@ bool xiiPlaneTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type>& vRa
   XII_ASSERT_DEBUG(vRayDir.IsValid(), "Ray direction must be valid.");
 
   const Type fPlaneSide = GetDistanceTo(vRayStartPos);
-  const Type fCosAlpha = m_vNormal.Dot(vRayDir);
+  const Type fCosAlpha  = m_vNormal.Dot(vRayDir);
 
   if (fCosAlpha == 0) // ray is orthogonal to plane
     return false;
@@ -397,7 +397,7 @@ bool xiiPlaneTemplate<Type>::GetRayIntersectionBiDirectional(const xiiVec3Templa
   XII_ASSERT_DEBUG(vRayDir.IsValid(), "Ray direction must be valid.");
 
   const Type fPlaneSide = GetDistanceTo(vRayStartPos);
-  const Type fCosAlpha = m_vNormal.Dot(vRayDir);
+  const Type fCosAlpha  = m_vNormal.Dot(vRayDir);
 
   if (fCosAlpha == 0) // ray is orthogonal to plane
     return false;
