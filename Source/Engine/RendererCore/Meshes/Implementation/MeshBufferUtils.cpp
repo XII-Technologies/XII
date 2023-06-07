@@ -47,21 +47,21 @@ XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 // static
-xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat)
-{
-  XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALResourceFormat::GetBitsPerElement(destFormat) / 8, "Destination buffer is too small");
-
-  switch (destFormat)
+  xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat)
   {
-    case xiiGALResourceFormat::RFloat:
-      *reinterpret_cast<float*>(dest.GetPtr()) = fSource;
-      return XII_SUCCESS;
-    case xiiGALResourceFormat::RHalf:
-      *reinterpret_cast<xiiFloat16*>(dest.GetPtr()) = fSource;
-      return XII_SUCCESS;
-    default:
-      return XII_FAILURE;
-  }
+    XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALResourceFormat::GetBitsPerElement(destFormat) / 8, "Destination buffer is too small");
+
+    switch (destFormat)
+    {
+      case xiiGALResourceFormat::RFloat:
+        *reinterpret_cast<float*>(dest.GetPtr()) = fSource;
+        return XII_SUCCESS;
+      case xiiGALResourceFormat::RHalf:
+        *reinterpret_cast<xiiFloat16*>(dest.GetPtr()) = fSource;
+        return XII_SUCCESS;
+      default:
+        return XII_FAILURE;
+    }
 }
 
 // static
