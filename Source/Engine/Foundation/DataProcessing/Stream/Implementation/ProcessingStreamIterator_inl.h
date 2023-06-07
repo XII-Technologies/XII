@@ -32,5 +32,5 @@ XII_ALWAYS_INLINE void xiiProcessingStreamIterator<Type>::Advance()
 template <typename Type>
 XII_ALWAYS_INLINE void xiiProcessingStreamIterator<Type>::Advance(xiiUInt32 uiNumElements)
 {
-  m_pCurrentPtr = xiiMemoryUtils::AddByteOffset(m_pCurrentPtr, static_cast<ptrdiff_t>(m_uiElementStride * numElements));
+  m_pCurrentPtr = xiiMemoryUtils::AddByteOffset(m_pCurrentPtr, static_cast<ptrdiff_t>(m_uiElementStride * uiNumElements));
 }

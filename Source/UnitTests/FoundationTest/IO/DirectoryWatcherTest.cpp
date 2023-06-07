@@ -8,11 +8,9 @@
 
 namespace DirectoryWatcherTestHelpers
 {
-
   struct ExpectedEvent
   {
-    ~ExpectedEvent() = default;
-    ; // To make it non-pod
+    ~ExpectedEvent(){}; // NOLINT: Ensure that the structure is non POD.
 
     const char*               path;
     xiiDirectoryWatcherAction action;

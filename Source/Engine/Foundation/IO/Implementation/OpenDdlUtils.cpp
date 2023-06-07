@@ -2249,5 +2249,4 @@ void xiiOpenDdlUtils::StoreUInt64(xiiOpenDdlWriter& ref_writer, xiiUInt64 value,
 }
 
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_OpenDdlUtils);

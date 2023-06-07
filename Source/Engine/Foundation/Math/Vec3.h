@@ -23,10 +23,10 @@ public:
   xiiVec3Template(); // [tested]
 
   /// \brief Initializes the vector with x,y,z
-  xiiVec3Template(Type x, Type y, Type z); // [tested]
+  xiiVec3Template(Type inX, Type inY, Type inZ); // [tested]
 
   /// \brief Initializes all 3 components with xyz
-  explicit xiiVec3Template(Type v); // [tested]
+  explicit xiiVec3Template(Type inV); // [tested]
   // no copy-constructor and operator= since the default-generated ones will be faster
 
   /// \brief Returns a vector with all components set to zero.
@@ -55,7 +55,7 @@ public:
   const xiiVec2Template<Type> GetAsVec2() const; // [tested]
 
   /// \brief Returns an xiiVec4Template with x,y,z from this vector and w set to the parameter.
-  const xiiVec4Template<Type> GetAsVec4(Type w) const; // [tested]
+  const xiiVec4Template<Type> GetAsVec4(Type inW) const; // [tested]
 
   /// \brief Returns an xiiVec4Template with x,y,z from this vector and w set 1.
   const xiiVec4Template<Type> GetAsPositionVec4() const; // [tested]
@@ -75,7 +75,7 @@ public:
   void Set(Type xyz); // [tested]
 
   /// \brief Sets the vector to these values.
-  void Set(Type x, Type y, Type z); // [tested]
+  void Set(Type inX, Type inY, Type inZ); // [tested]
 
   /// \brief Sets the vector to all zero.
   void SetZero(); // [tested]

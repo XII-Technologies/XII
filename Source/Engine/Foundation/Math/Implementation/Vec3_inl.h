@@ -13,14 +13,14 @@ XII_FORCE_INLINE xiiVec3Template<Type>::xiiVec3Template()
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec3Template<Type>::xiiVec3Template(Type x, Type y, Type z) :
-  x(x), y(y), z(z)
+XII_ALWAYS_INLINE xiiVec3Template<Type>::xiiVec3Template(Type inX, Type inY, Type inZ) :
+  x(inX), y(inY), z(inZ)
 {
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec3Template<Type>::xiiVec3Template(Type v) :
-  x(v), y(v), z(v)
+XII_ALWAYS_INLINE xiiVec3Template<Type>::xiiVec3Template(Type inV) :
+  x(inV), y(inV), z(inV)
 {
 }
 
@@ -33,11 +33,11 @@ XII_ALWAYS_INLINE void xiiVec3Template<Type>::Set(Type xyz)
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE void xiiVec3Template<Type>::Set(Type x, Type y, Type z)
+XII_ALWAYS_INLINE void xiiVec3Template<Type>::Set(Type inX, Type inY, Type inZ)
 {
-  x = x;
-  y = y;
-  z = z;
+  x = inX;
+  y = inY;
+  z = inZ;
 }
 
 template <typename Type>

@@ -18,7 +18,6 @@ public:
 
   using ComponentType = Type;
 
-
   // *** Data ***
 public:
   Type x;
@@ -30,10 +29,10 @@ public:
   xiiVec2Template(); // [tested]
 
   /// \brief Initializes the vector with x,y
-  xiiVec2Template(Type x, Type y); // [tested]
+  xiiVec2Template(Type inX, Type inY); // [tested]
 
   /// \brief Initializes all components with xy
-  explicit xiiVec2Template(Type v); // [tested]
+  explicit xiiVec2Template(Type inV); // [tested]
 
   // no copy-constructor and operator= since the default-generated ones will be faster
 
@@ -51,10 +50,10 @@ public:
   // *** Conversions ***
 public:
   /// \brief Returns an xiiVec3Template with x,y from this vector and z set by the parameter.
-  const xiiVec3Template<Type> GetAsVec3(Type z) const; // [tested]
+  const xiiVec3Template<Type> GetAsVec3(Type inZ) const; // [tested]
 
   /// \brief Returns an xiiVec4Template with x,y from this vector and z and w set by the parameters.
-  const xiiVec4Template<Type> GetAsVec4(Type z, Type w) const; // [tested]
+  const xiiVec4Template<Type> GetAsVec4(Type inZ, Type inW) const; // [tested]
 
   /// \brief Returns the data as an array.
   const Type* GetData() const { return &x; }
@@ -68,7 +67,7 @@ public:
   void Set(Type xy); // [tested]
 
   /// \brief Sets the vector to these values.
-  void Set(Type x, Type y); // [tested]
+  void Set(Type inX, Type inY); // [tested]
 
   /// \brief Sets the vector to all zero.
   void SetZero(); // [tested]

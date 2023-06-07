@@ -7,19 +7,19 @@
 // Cannot put this into the Vec3_inl.h file, that would result in circular dependencies
 
 template <typename Type>
-XII_FORCE_INLINE const xiiVec3Template<Type> xiiVec2Template<Type>::GetAsVec3(Type z) const
+XII_FORCE_INLINE const xiiVec3Template<Type> xiiVec2Template<Type>::GetAsVec3(Type inZ) const
 {
   XII_NAN_ASSERT(this);
 
-  return xiiVec3Template<Type>(x, y, z);
+  return xiiVec3Template<Type>(x, y, inZ);
 }
 
 template <typename Type>
-XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec2Template<Type>::GetAsVec4(Type z, Type w) const
+XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec2Template<Type>::GetAsVec4(Type inZ, Type inW) const
 {
   XII_NAN_ASSERT(this);
 
-  return xiiVec4Template<Type>(x, y, z, w);
+  return xiiVec4Template<Type>(x, y, inZ, inW);
 }
 
 template <typename Type>
@@ -32,11 +32,11 @@ XII_FORCE_INLINE const xiiVec2Template<Type> xiiVec3Template<Type>::GetAsVec2() 
 }
 
 template <typename Type>
-XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec3Template<Type>::GetAsVec4(Type w) const
+XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec3Template<Type>::GetAsVec4(Type inW) const
 {
   XII_NAN_ASSERT(this);
 
-  return xiiVec4Template<Type>(x, y, z, w);
+  return xiiVec4Template<Type>(x, y, z, inW);
 }
 
 template <typename Type>
@@ -73,14 +73,14 @@ XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template()
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type x, Type y, Type z, Type w) :
-  x(x), y(y), z(z), w(w)
+XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type inX, Type inY, Type inZ, Type inW) :
+  x(inX), y(inY), z(inZ), w(inW)
 {
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type v) :
-  x(v), y(v), z(v), w(v)
+XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type inV) :
+  x(inV), y(inV), z(inV), w(inV)
 {
 }
 
@@ -112,12 +112,12 @@ XII_ALWAYS_INLINE void xiiVec4Template<Type>::Set(Type xyzw)
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE void xiiVec4Template<Type>::Set(Type x, Type y, Type z, Type w)
+XII_ALWAYS_INLINE void xiiVec4Template<Type>::Set(Type inX, Type inY, Type inZ, Type inW)
 {
-  x = x;
-  y = y;
-  z = z;
-  w = w;
+  x = inX;
+  y = inY;
+  z = inZ;
+  w = inW;
 }
 
 template <typename Type>

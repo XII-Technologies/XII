@@ -2,10 +2,10 @@
 
 XII_ALWAYS_INLINE xiiColorBaseUB::xiiColorBaseUB(xiiUInt8 r, xiiUInt8 g, xiiUInt8 b, xiiUInt8 a /* = 255*/)
 {
-  r = r;
-  g = g;
-  b = b;
-  a = a;
+  this->r = r;
+  this->g = g;
+  this->b = b;
+  this->a = a;
 }
 
 XII_ALWAYS_INLINE xiiColorLinearUB::xiiColorLinearUB(xiiUInt8 r, xiiUInt8 g, xiiUInt8 b, xiiUInt8 a /* = 255*/) :

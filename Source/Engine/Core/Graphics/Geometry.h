@@ -58,7 +58,7 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    GeoOptions()            = default;
+    GeoOptions(){};                                      // NOLINT: This struct is used before the sourrounding class ends, so it needs a default constructor. "= default" does not work here.
     xiiColor  m_Color       = xiiColor(1, 1, 1, 1);      ///< The color of the entire geometric object
     xiiMat4   m_Transform   = xiiMat4::IdentityMatrix(); ///< An additional transform to apply to the geometry while adding it
     xiiUInt16 m_uiBoneIndex = 0;                         ///< Which bone should influence this geometry, for single-bone skinning.

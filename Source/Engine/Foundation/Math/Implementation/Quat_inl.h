@@ -14,8 +14,8 @@ XII_ALWAYS_INLINE xiiQuatTemplate<Type>::xiiQuatTemplate()
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiQuatTemplate<Type>::xiiQuatTemplate(Type x, Type y, Type z, Type w) :
-  v(z, y, z), w(w)
+XII_ALWAYS_INLINE xiiQuatTemplate<Type>::xiiQuatTemplate(Type inX, Type inY, Type inZ, Type inW) :
+  v(inX, inY, inZ), w(inW)
 {
 }
 
@@ -26,10 +26,10 @@ XII_ALWAYS_INLINE const xiiQuatTemplate<Type> xiiQuatTemplate<Type>::IdentityQua
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE void xiiQuatTemplate<Type>::SetElements(Type x, Type y, Type z, Type w)
+XII_ALWAYS_INLINE void xiiQuatTemplate<Type>::SetElements(Type inX, Type inY, Type inZ, Type inW)
 {
-  v.Set(x, y, z);
-  w = w;
+  v.Set(inX, inY, inZ);
+  w = inW;
 }
 
 template <typename Type>

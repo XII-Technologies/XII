@@ -33,7 +33,7 @@ public:
   xiiQuatTemplate(); // [tested]
 
   /// \brief For internal use. You should never construct quaternions this way.
-  xiiQuatTemplate(Type x, Type y, Type z, Type w); // [tested]
+  xiiQuatTemplate(Type inX, Type inY, Type inZ, Type inW); // [tested]
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
@@ -55,7 +55,7 @@ public:
   /// angle.
   ///
   /// Use this function only if you have good understanding of quaternion math and know exactly what you are doing.
-  void SetElements(Type x, Type y, Type z, Type w); // [tested]
+  void SetElements(Type inX, Type inY, Type inZ, Type inW); // [tested]
 
   /// \brief Creates a quaternion from a rotation-axis and an angle.
   void SetFromAxisAndAngle(const xiiVec3Template<Type>& vRotationAxis, xiiAngleTemplate<Type> angle); // [tested]

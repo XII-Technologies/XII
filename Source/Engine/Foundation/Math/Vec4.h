@@ -23,10 +23,10 @@ public:
   xiiVec4Template(); // [tested]
 
   /// \brief Initializes the vector with x,y,z,w
-  xiiVec4Template(Type x, Type y, Type z, Type w); // [tested]
+  xiiVec4Template(Type inX, Type inY, Type inZ, Type inW); // [tested]
 
   /// \brief Initializes all 4 components with xyzw
-  explicit xiiVec4Template(Type v); // [tested]
+  explicit xiiVec4Template(Type inV); // [tested]
   // no copy-constructor and operator= since the default-generated ones will be faster
 
   /// \brief Returns a vector with all components set to zero.
@@ -73,7 +73,7 @@ public:
   void Set(Type xyzw); // [tested]
 
   /// \brief Sets the vector to these values.
-  void Set(Type x, Type y, Type z, Type w); // [tested]
+  void Set(Type inX, Type inY, Type inZ, Type inW); // [tested]
 
   /// \brief Sets the vector to all zero.
   void SetZero(); // [tested]
@@ -171,8 +171,6 @@ public:
   /// brief Returns the component-wise absolute of *this.
   const xiiVec4Template<Type> Abs() const; // [tested]
 };
-
-
 
 // *** Operators ***
 
