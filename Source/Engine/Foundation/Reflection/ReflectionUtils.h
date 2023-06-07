@@ -120,7 +120,7 @@ public:
   {
     xiiInt64   value;
     const auto retval = StringToEnumeration(xiiGetStaticRTTI<T>(), szValue, value);
-    out_iValue        = static_cast<typename T::Enum>(value);
+    out_value        = static_cast<typename T::Enum>(value);
     return retval;
   }
 

@@ -233,23 +233,23 @@ bool xiiTagSetTemplate<BlockStorageAllocator>::operator!=(const xiiTagSetTemplat
 template <typename BlockStorageAllocator>
 void xiiTagSetTemplate<BlockStorageAllocator>::Set(const xiiTag& tag)
 {
-  XII_ASSERT_DEV(Tag.IsValid(), "Only valid tags can be set in a tag set!");
+  XII_ASSERT_DEV(tag.IsValid(), "Only valid tags can be set in a tag set!");
 
   if (m_TagBlocks.IsEmpty())
   {
-    Reallocate(Tag.m_uiBlockIndex, Tag.m_uiBlockIndex);
+    Reallocate(tag.m_uiBlockIndex, tag.m_uiBlockIndex);
   }
-  else if (IsTagInAllocatedRange(Tag) == false)
+  else if (IsTagInAllocatedRange(tag) == false)
   {
-    const xiiUInt32 uiNewBlockStart = xiiMath::Min<xiiUInt32>(Tag.m_uiBlockIndex, GetTagBlockStart());
-    const xiiUInt32 uiNewBlockEnd   = xiiMath::Max<xiiUInt32>(Tag.m_uiBlockIndex, GetTagBlockEnd());
+    const xiiUInt32 uiNewBlockStart = xiiMath::Min<xiiUInt32>(tag.m_uiBlockIndex, GetTagBlockStart());
+    const xiiUInt32 uiNewBlockEnd   = xiiMath::Max<xiiUInt32>(tag.m_uiBlockIndex, GetTagBlockEnd());
 
     Reallocate(uiNewBlockStart, uiNewBlockEnd);
   }
 
-  xiiUInt64& tagBlock = m_TagBlocks[Tag.m_uiBlockIndex - GetTagBlockStart()];
+  xiiUInt64& tagBlock = m_TagBlocks[tag.m_uiBlockIndex - GetTagBlockStart()];
 
-  const xiiUInt64 bitMask    = XII_BIT(Tag.m_uiBitIndex);
+  const xiiUInt64 bitMask    = XII_BIT(tag.m_uiBitIndex);
   const bool      bBitWasSet = ((tagBlock & bitMask) != 0);
 
   tagBlock |= bitMask;
@@ -263,13 +263,13 @@ void xiiTagSetTemplate<BlockStorageAllocator>::Set(const xiiTag& tag)
 template <typename BlockStorageAllocator>
 void xiiTagSetTemplate<BlockStorageAllocator>::Remove(const xiiTag& tag)
 {
-  XII_ASSERT_DEV(Tag.IsValid(), "Only valid tags can be cleared from a tag set!");
+  XII_ASSERT_DEV(tag.IsValid(), "Only valid tags can be cleared from a tag set!");
 
-  if (IsTagInAllocatedRange(Tag))
+  if (IsTagInAllocatedRange(tag))
   {
-    xiiUInt64& tagBlock = m_TagBlocks[Tag.m_uiBlockIndex - GetTagBlockStart()];
+    xiiUInt64& tagBlock = m_TagBlocks[tag.m_uiBlockIndex - GetTagBlockStart()];
 
-    const xiiUInt64 bitMask    = XII_BIT(Tag.m_uiBitIndex);
+    const xiiUInt64 bitMask    = XII_BIT(tag.m_uiBitIndex);
     const bool      bBitWasSet = ((tagBlock & bitMask) != 0);
 
     tagBlock &= ~bitMask;
@@ -284,11 +284,11 @@ void xiiTagSetTemplate<BlockStorageAllocator>::Remove(const xiiTag& tag)
 template <typename BlockStorageAllocator>
 bool xiiTagSetTemplate<BlockStorageAllocator>::IsSet(const xiiTag& tag) const
 {
-  XII_ASSERT_DEV(Tag.IsValid(), "Only valid tags can be checked!");
+  XII_ASSERT_DEV(tag.IsValid(), "Only valid tags can be checked!");
 
-  if (IsTagInAllocatedRange(Tag))
+  if (IsTagInAllocatedRange(tag))
   {
-    return (m_TagBlocks[Tag.m_uiBlockIndex - GetTagBlockStart()] & XII_BIT(Tag.m_uiBitIndex)) != 0;
+    return (m_TagBlocks[tag.m_uiBlockIndex - GetTagBlockStart()] & XII_BIT(tag.m_uiBitIndex)) != 0;
   }
   else
   {
@@ -300,12 +300,12 @@ template <typename BlockStorageAllocator>
 bool xiiTagSetTemplate<BlockStorageAllocator>::IsAnySet(const xiiTagSetTemplate& otherSet) const
 {
   // If any of the sets is empty nothing can match
-  if (IsEmpty() || OtherSet.IsEmpty())
+  if (IsEmpty() || otherSet.IsEmpty())
     return false;
 
   // Calculate range to compare
-  const xiiUInt32 uiMaxBlockStart = xiiMath::Max(GetTagBlockStart(), OtherSet.GetTagBlockStart());
-  const xiiUInt32 uiMinBlockEnd   = xiiMath::Min(GetTagBlockEnd(), OtherSet.GetTagBlockEnd());
+  const xiiUInt32 uiMaxBlockStart = xiiMath::Max(GetTagBlockStart(), otherSet.GetTagBlockStart());
+  const xiiUInt32 uiMinBlockEnd   = xiiMath::Min(GetTagBlockEnd(), otherSet.GetTagBlockEnd());
 
   if (uiMaxBlockStart > uiMinBlockEnd)
     return false;
@@ -313,9 +313,9 @@ bool xiiTagSetTemplate<BlockStorageAllocator>::IsAnySet(const xiiTagSetTemplate&
   for (xiiUInt32 i = uiMaxBlockStart; i < uiMinBlockEnd; ++i)
   {
     const xiiUInt32 uiThisBlockStorageIndex  = i - GetTagBlockStart();
-    const xiiUInt32 uiOtherBlockStorageIndex = i - OtherSet.GetTagBlockStart();
+    const xiiUInt32 uiOtherBlockStorageIndex = i - otherSet.GetTagBlockStart();
 
-    if ((m_TagBlocks[uiThisBlockStorageIndex] & OtherSet.m_TagBlocks[uiOtherBlockStorageIndex]) != 0)
+    if ((m_TagBlocks[uiThisBlockStorageIndex] & otherSet.m_TagBlocks[uiOtherBlockStorageIndex]) != 0)
     {
       return true;
     }
@@ -455,15 +455,15 @@ template <typename BlockStorageAllocator /*= xiiDefaultAllocatorWrapper*/>
 void xiiTagSetTemplate<BlockStorageAllocator>::Save(xiiStreamWriter& ref_stream) const
 {
   const xiiUInt16 uiNumTags = static_cast<xiiUInt16>(GetNumTagsSet());
-  stream << uiNumTags;
+  ref_stream << uiNumTags;
 
-  stream.WriteVersion(s_TagSetVersion);
+  ref_stream.WriteVersion(s_TagSetVersion);
 
   for (Iterator it = GetIterator(); it.IsValid(); ++it)
   {
     const xiiTag& tag = *it;
 
-    stream << tag.m_sTagString;
+    ref_stream << tag.m_sTagString;
   }
 }
 
@@ -471,20 +471,20 @@ template <typename BlockStorageAllocator /*= xiiDefaultAllocatorWrapper*/>
 void xiiTagSetTemplate<BlockStorageAllocator>::Load(xiiStreamReader& ref_stream, xiiTagRegistry& ref_registry)
 {
   xiiUInt16 uiNumTags = 0;
-  stream >> uiNumTags;
+  ref_stream >> uiNumTags;
 
   // Manually read version value since 0 can be a valid version here
   xiiTypeVersion version;
-  stream.ReadWordValue(&version).IgnoreResult();
+  ref_stream.ReadWordValue(&version).IgnoreResult();
 
   if (version == 0)
   {
     for (xiiUInt32 i = 0; i < uiNumTags; ++i)
     {
       xiiUInt32 uiTagMurmurHash = 0;
-      stream >> uiTagMurmurHash;
+      ref_stream >> uiTagMurmurHash;
 
-      if (const xiiTag* pTag = registry.GetTagByMurmurHash(uiTagMurmurHash))
+      if (const xiiTag* pTag = ref_registry.GetTagByMurmurHash(uiTagMurmurHash))
       {
         Set(*pTag);
       }
@@ -495,9 +495,9 @@ void xiiTagSetTemplate<BlockStorageAllocator>::Load(xiiStreamReader& ref_stream,
     for (xiiUInt32 i = 0; i < uiNumTags; ++i)
     {
       xiiHashedString tagString;
-      stream >> tagString;
+      ref_stream >> tagString;
 
-      const xiiTag& tag = registry.RegisterTag(tagString);
+      const xiiTag& tag = ref_registry.RegisterTag(tagString);
       Set(tag);
     }
   }

@@ -661,7 +661,7 @@ XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::SetCount(xiiUIn
 template <typename T, xiiUInt16 Size, typename AllocatorWrapper /*= xiiDefaultAllocatorWrapper*/>
 XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::SetCount(xiiUInt16 uiCount, const T& fillValue)
 {
-  SUPER::SetCount(uiCount, FillValue, AllocatorWrapper::GetAllocator());
+  SUPER::SetCount(uiCount, fillValue, AllocatorWrapper::GetAllocator());
 }
 
 template <typename T, xiiUInt16 Size, typename AllocatorWrapper /*= xiiDefaultAllocatorWrapper*/>

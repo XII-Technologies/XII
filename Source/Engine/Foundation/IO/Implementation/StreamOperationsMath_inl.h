@@ -205,14 +205,14 @@ inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiTransformTemp
 template <typename Type>
 inline xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiPlaneTemplate<Type>& value)
 {
-  ref_stream.WriteBytes(&Value, sizeof(xiiPlaneTemplate<Type>)).AssertSuccess();
+  ref_stream.WriteBytes(&value, sizeof(xiiPlaneTemplate<Type>)).AssertSuccess();
   return ref_stream;
 }
 
 template <typename Type>
 inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiPlaneTemplate<Type>& ref_value)
 {
-  XII_VERIFY(ref_stream.ReadBytes(&Value, sizeof(xiiPlaneTemplate<Type>)) == sizeof(xiiPlaneTemplate<Type>), "End of stream reached.");
+  XII_VERIFY(ref_stream.ReadBytes(&ref_value, sizeof(xiiPlaneTemplate<Type>)) == sizeof(xiiPlaneTemplate<Type>), "End of stream reached.");
   return ref_stream;
 }
 
@@ -271,16 +271,16 @@ xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiQuatTemplate<Type>* p
 template <typename Type>
 inline xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiBoundingBoxTemplate<Type>& value)
 {
-  ref_stream << Value.m_vMax;
-  ref_stream << Value.m_vMin;
+  ref_stream << value.m_vMax;
+  ref_stream << value.m_vMin;
   return ref_stream;
 }
 
 template <typename Type>
 inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiBoundingBoxTemplate<Type>& ref_value)
 {
-  ref_stream >> Value.m_vMax;
-  ref_stream >> Value.m_vMin;
+  ref_stream >> ref_value.m_vMax;
+  ref_stream >> ref_value.m_vMin;
   return ref_stream;
 }
 
@@ -289,16 +289,16 @@ inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiBoundingBoxTe
 template <typename Type>
 inline xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiBoundingSphereTemplate<Type>& value)
 {
-  ref_stream << Value.m_vCenter;
-  ref_stream << Value.m_fRadius;
+  ref_stream << value.m_vCenter;
+  ref_stream << value.m_fRadius;
   return ref_stream;
 }
 
 template <typename Type>
 inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiBoundingSphereTemplate<Type>& ref_value)
 {
-  ref_stream >> Value.m_vCenter;
-  ref_stream >> Value.m_fRadius;
+  ref_stream >> ref_value.m_vCenter;
+  ref_stream >> ref_value.m_fRadius;
   return ref_stream;
 }
 

@@ -161,19 +161,19 @@ xiiUInt32 xiiArrayMapBase<KEY, VALUE>::UpperBound(const CompatibleKeyType& key) 
 template <typename KEY, typename VALUE>
 XII_ALWAYS_INLINE const KEY& xiiArrayMapBase<KEY, VALUE>::GetKey(xiiUInt32 uiIndex) const
 {
-  return m_Data[index].key;
+  return m_Data[uiIndex].key;
 }
 
 template <typename KEY, typename VALUE>
 XII_ALWAYS_INLINE const VALUE& xiiArrayMapBase<KEY, VALUE>::GetValue(xiiUInt32 uiIndex) const
 {
-  return m_Data[index].value;
+  return m_Data[uiIndex].value;
 }
 
 template <typename KEY, typename VALUE>
 VALUE& xiiArrayMapBase<KEY, VALUE>::GetValue(xiiUInt32 uiIndex)
 {
-  return m_Data[index].value;
+  return m_Data[uiIndex].value;
 }
 
 template <typename KEY, typename VALUE>
@@ -193,17 +193,17 @@ template <typename KEY, typename VALUE>
 template <typename CompatibleKeyType>
 VALUE& xiiArrayMapBase<KEY, VALUE>::FindOrAdd(const CompatibleKeyType& key, bool* pExisted)
 {
-  xiiUInt32 index = Find<CompatibleKeyType>(key);
+  xiiUInt32 uiIndex = Find<CompatibleKeyType>(key);
 
-  if (bExisted)
-    *bExisted = index != xiiInvalidIndex;
+  if (pExisted)
+    *pExisted = uiIndex != xiiInvalidIndex;
 
-  if (index == xiiInvalidIndex)
+  if (uiIndex == xiiInvalidIndex)
   {
-    index = Insert(key, VALUE());
+    uiIndex = Insert(key, VALUE());
   }
 
-  return GetValue(index);
+  return GetValue(uiIndex);
 }
 
 template <typename KEY, typename VALUE>
@@ -216,7 +216,7 @@ XII_ALWAYS_INLINE VALUE& xiiArrayMapBase<KEY, VALUE>::operator[](const Compatibl
 template <typename KEY, typename VALUE>
 XII_ALWAYS_INLINE const typename xiiArrayMapBase<KEY, VALUE>::Pair& xiiArrayMapBase<KEY, VALUE>::GetPair(xiiUInt32 uiIndex) const
 {
-  return m_Data[index];
+  return m_Data[uiIndex];
 }
 
 template <typename KEY, typename VALUE>
@@ -224,11 +224,11 @@ void xiiArrayMapBase<KEY, VALUE>::RemoveAtAndCopy(xiiUInt32 uiIndex, bool bKeepS
 {
   if (bKeepSorted && m_bSorted)
   {
-    m_Data.RemoveAtAndCopy(index);
+    m_Data.RemoveAtAndCopy(uiIndex);
   }
   else
   {
-    m_Data.RemoveAtAndSwap(index);
+    m_Data.RemoveAtAndSwap(uiIndex);
     m_bSorted = false;
   }
 }
@@ -280,7 +280,7 @@ bool xiiArrayMapBase<KEY, VALUE>::Contains(const CompatibleKeyType& key, const V
 template <typename KEY, typename VALUE>
 XII_ALWAYS_INLINE void xiiArrayMapBase<KEY, VALUE>::Reserve(xiiUInt32 uiSize)
 {
-  m_Data.Reserve(size);
+  m_Data.Reserve(uiSize);
 }
 
 template <typename KEY, typename VALUE>

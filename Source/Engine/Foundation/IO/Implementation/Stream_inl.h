@@ -180,7 +180,7 @@ namespace xiiStreamWriterUtil
   template <class T>
   XII_ALWAYS_INLINE auto SerializeImpl(xiiStreamWriter& ref_stream, const T& obj, float) -> decltype(obj.serialize(ref_stream).IgnoreResult(), xiiResult(XII_SUCCESS))
   {
-    return xiiToResult(Obj.serialize(ref_stream));
+    return xiiToResult(obj.serialize(ref_stream));
   }
 
   template <class T>
@@ -241,7 +241,7 @@ xiiResult xiiStreamWriter::WriteArray(const ValueType (&array)[uiSize])
   const xiiUInt64 uiWriteSize = uiSize;
   XII_SUCCEED_OR_RETURN(WriteQWordValue(&uiWriteSize));
 
-  return xiiStreamWriterUtil::SerializeArray<ValueType>(*this, Array, uiSize);
+  return xiiStreamWriterUtil::SerializeArray<ValueType>(*this, array, uiSize);
 }
 
 template <typename KeyType, typename Comparer>
@@ -307,7 +307,7 @@ namespace xiiStreamReaderUtil
   template <class T>
   XII_ALWAYS_INLINE auto DeserializeImpl(xiiStreamReader& ref_stream, T& ref_obj, float) -> decltype(ref_obj.deserialize(ref_stream).IgnoreResult(), xiiResult(XII_SUCCESS))
   {
-    return xiiToResult(Obj.deserialize(stream));
+    return xiiToResult(ref_obj.deserialize(ref_stream));
   }
 
   template <class T>
@@ -408,7 +408,7 @@ xiiResult xiiStreamReader::ReadArray(ValueType (&array)[uiSize])
 
   if (uiCount < xiiMath::MaxValue<xiiUInt32>())
   {
-    XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::DeserializeArray<ValueType>(*this, Array, uiCount));
+    XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::DeserializeArray<ValueType>(*this, array, uiCount));
 
     return XII_SUCCESS;
   }

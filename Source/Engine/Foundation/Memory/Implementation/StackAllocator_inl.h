@@ -36,14 +36,14 @@ void xiiStackAllocator<TrackingFlags>::Deallocate(void* pPtr)
   XII_LOCK(m_Mutex);
 
   xiiUInt32 uiIndex;
-  if (m_PtrToDestructDataIndexTable.Remove(ptr, &uiIndex))
+  if (m_PtrToDestructDataIndexTable.Remove(pPtr, &uiIndex))
   {
     auto& data  = m_DestructData[uiIndex];
     data.m_Func = nullptr;
     data.m_Ptr  = nullptr;
   }
 
-  xiiAllocator<xiiMemoryPolicies::xiiStackAllocation, TrackingFlags>::Deallocate(ptr);
+  xiiAllocator<xiiMemoryPolicies::xiiStackAllocation, TrackingFlags>::Deallocate(pPtr);
 }
 
 XII_MSVC_ANALYSIS_WARNING_PUSH

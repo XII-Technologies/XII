@@ -201,7 +201,7 @@ using xiiConstByteBlobPtr = xiiBlobPtr<const xiiUInt8>;
 template <typename T>
 XII_ALWAYS_INLINE xiiBlobPtr<T> xiiMakeBlobPtr(T* pPtr, xiiUInt64 uiCount)
 {
-  return xiiBlobPtr<T>(ptr, uiCount);
+  return xiiBlobPtr<T>(pPtr, uiCount);
 }
 
 /// \brief Helper function to create xiiBlobPtr from a static array the a size known at compile-time.
@@ -215,14 +215,14 @@ XII_ALWAYS_INLINE xiiBlobPtr<T> xiiMakeBlobPtr(T (&staticArray)[N])
 template <typename T>
 XII_ALWAYS_INLINE xiiConstByteBlobPtr xiiMakeByteBlobPtr(const T* pPtr, xiiUInt32 uiCount)
 {
-  return xiiConstByteBlobPtr(static_cast<const xiiUInt8*>(ptr), uiCount * sizeof(T));
+  return xiiConstByteBlobPtr(static_cast<const xiiUInt8*>(pPtr), uiCount * sizeof(T));
 }
 
 /// \brief Helper function to create xiiByteBlobPtr from a pointer of some type and a count.
 template <typename T>
 XII_ALWAYS_INLINE xiiByteBlobPtr xiiMakeByteBlobPtr(T* pPtr, xiiUInt32 uiCount)
 {
-  return xiiByteBlobPtr(reinterpret_cast<xiiUInt8*>(ptr), uiCount * sizeof(T));
+  return xiiByteBlobPtr(reinterpret_cast<xiiUInt8*>(pPtr), uiCount * sizeof(T));
 }
 
 /// \brief Helper function to create xiiByteBlobPtr from a void pointer and a count.
@@ -260,7 +260,7 @@ typename xiiBlobPtr<T>::const_iterator cbegin(const xiiBlobPtr<T>& container)
 template <typename T>
 typename xiiBlobPtr<T>::reverse_iterator rbegin(xiiBlobPtr<T>& ref_container)
 {
-  return typename xiiBlobPtr<T>::reverse_iterator(container.GetPtr() + container.GetCount() - 1);
+  return typename xiiBlobPtr<T>::reverse_iterator(ref_container.GetPtr() + ref_container.GetCount() - 1);
 }
 
 template <typename T>
@@ -296,7 +296,7 @@ typename xiiBlobPtr<T>::const_iterator cend(const xiiBlobPtr<T>& container)
 template <typename T>
 typename xiiBlobPtr<T>::reverse_iterator rend(xiiBlobPtr<T>& ref_container)
 {
-  return typename xiiBlobPtr<T>::reverse_iterator(container.GetPtr() - 1);
+  return typename xiiBlobPtr<T>::reverse_iterator(ref_container.GetPtr() - 1);
 }
 
 template <typename T>

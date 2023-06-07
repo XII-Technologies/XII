@@ -74,18 +74,18 @@ void* xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::Allocate(size_t uiSize, s
 
   xiiTime fAllocationTime = xiiTime::Now();
 
-  void* ptr = m_allocator.Allocate(uiSize, uiAlign);
-  XII_ASSERT_DEV(ptr != nullptr, "Could not allocate {0} bytes. Out of memory?", uiSize);
+  void* pPtr = m_allocator.Allocate(uiSize, uiAlign);
+  XII_ASSERT_DEV(pPtr != nullptr, "Could not allocate {0} bytes. Out of memory?", uiSize);
 
   if ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
   {
     xiiBitflags<xiiMemoryTrackingFlags> flags;
     flags.SetValue(TrackingFlags);
 
-    xiiMemoryTracker::AddAllocation(this->m_Id, flags, ptr, uiSize, uiAlign, xiiTime::Now() - fAllocationTime);
+    xiiMemoryTracker::AddAllocation(this->m_Id, flags, pPtr, uiSize, uiAlign, xiiTime::Now() - fAllocationTime);
   }
 
-  return ptr;
+  return pPtr;
 }
 
 template <typename A, xiiUInt32 TrackingFlags>
@@ -93,10 +93,10 @@ void xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::Deallocate(void* pPtr)
 {
   if ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
   {
-    xiiMemoryTracker::RemoveAllocation(this->m_Id, ptr);
+    xiiMemoryTracker::RemoveAllocation(this->m_Id, pPtr);
   }
 
-  m_allocator.Deallocate(ptr);
+  m_allocator.Deallocate(pPtr);
 }
 
 template <typename A, xiiUInt32 TrackingFlags>
@@ -104,7 +104,7 @@ size_t xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::AllocatedSize(const void
 {
   if ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
   {
-    return xiiMemoryTracker::GetAllocationInfo(this->m_Id, ptr).m_uiSize;
+    return xiiMemoryTracker::GetAllocationInfo(this->m_Id, pPtr).m_uiSize;
   }
 
   return 0;
@@ -155,7 +155,7 @@ void* xiiInternal::xiiAllocatorMixinReallocate<A, TrackingFlags, true>::Realloca
 
   xiiTime fAllocationTime = xiiTime::Now();
 
-  void* pNewMem = this->m_allocator.Reallocate(ptr, uiCurrentSize, uiNewSize, uiAlign);
+  void* pNewMem = this->m_allocator.Reallocate(pPtr, uiCurrentSize, uiNewSize, uiAlign);
 
   if ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
   {

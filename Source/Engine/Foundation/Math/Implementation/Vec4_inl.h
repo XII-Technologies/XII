@@ -410,7 +410,7 @@ XII_FORCE_INLINE const xiiVec4Template<Type> operator/(const xiiVec4Template<Typ
 {
   XII_NAN_ASSERT(&v);
 
-  // multiplication is much faster than division
+  // Multiplication is much faster than division
   const Type f_inv = xiiMath::Invert(f);
   return xiiVec4Template<Type>(v.x * f_inv, v.y * f_inv, v.z * f_inv, v.w * f_inv);
 }

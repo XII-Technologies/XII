@@ -92,9 +92,9 @@ template <xiiUInt32 BlockSize>
 template <typename T>
 XII_FORCE_INLINE void xiiLargeBlockAllocator<BlockSize>::DeallocateBlock(xiiDataBlock<T, BlockSize>& ref_block)
 {
-  Deallocate(block.m_pData);
-  block.m_pData   = nullptr;
-  block.m_uiCount = 0;
+  Deallocate(ref_block.m_pData);
+  ref_block.m_pData   = nullptr;
+  ref_block.m_uiCount = 0;
 }
 
 template <xiiUInt32 BlockSize>

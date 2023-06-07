@@ -12,12 +12,12 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomPointInSphere(xiiRandom
 
   do
   {
-    px = rng.DoubleMinMax(-1, 1);
-    py = rng.DoubleMinMax(-1, 1);
-    pz = rng.DoubleMinMax(-1, 1);
+    px = ref_rng.DoubleMinMax(-1, 1);
+    py = ref_rng.DoubleMinMax(-1, 1);
+    pz = ref_rng.DoubleMinMax(-1, 1);
 
     len = (px * px) + (py * py) + (pz * pz);
-  } while (len > 1.0 || len <= 0.000001); // prevent the exact center
+  } while (len > 1.0 || len <= 0.000001); // Prevent from being the exact center
 
   return xiiVec3Template<Type>((Type)px, (Type)py, (Type)pz);
 }
@@ -25,7 +25,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomPointInSphere(xiiRandom
 template <typename Type>
 xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDirection(xiiRandom& ref_rng)
 {
-  xiiVec3Template<Type> vec = CreateRandomPointInSphere(rng);
+  xiiVec3Template<Type> vec = CreateRandomPointInSphere(ref_rng);
   vec.Normalize();
   return vec;
 }
@@ -37,8 +37,8 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationX(xiiRandom& r
 
   const double cosAngle = xiiMath::Cos(maxDeviation);
 
-  const double   x       = rng.DoubleZeroToOneInclusive() * (1 - cosAngle) + cosAngle;
-  const xiiAngle phi     = xiiAngle::Radian((float)(rng.DoubleZeroToOneInclusive() * twoPi));
+  const double   x       = ref_rng.DoubleZeroToOneInclusive() * (1 - cosAngle) + cosAngle;
+  const xiiAngle phi     = xiiAngle::Radian((float)(ref_rng.DoubleZeroToOneInclusive() * twoPi));
   const double   invSqrt = xiiMath::Sqrt(1 - (x * x));
   const double   y       = invSqrt * xiiMath::Cos(phi);
   const double   z       = invSqrt * xiiMath::Sin(phi);
@@ -49,7 +49,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationX(xiiRandom& r
 template <typename Type>
 xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationY(xiiRandom& ref_rng, const xiiAngle& maxDeviation)
 {
-  xiiVec3Template<Type> vec = CreateRandomDeviationX(rng, maxDeviation);
+  xiiVec3Template<Type> vec = CreateRandomDeviationX(ref_rng, maxDeviation);
   xiiMath::Swap(vec.x, vec.y);
   return vec;
 }
@@ -57,7 +57,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationY(xiiRandom& r
 template <typename Type>
 xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationZ(xiiRandom& ref_rng, const xiiAngle& maxDeviation)
 {
-  xiiVec3Template<Type> vec = CreateRandomDeviationX(rng, maxDeviation);
+  xiiVec3Template<Type> vec = CreateRandomDeviationX(ref_rng, maxDeviation);
   xiiMath::Swap(vec.x, vec.z);
   return vec;
 }
@@ -75,7 +75,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviation(xiiRandom& re
   // *** Then call this with the precomputed value as often as needed: ***
 
   // create a random vector along X
-  xiiVec3Template<Type> vec = CreateRandomDeviationX(rng, maxDeviation);
+  xiiVec3Template<Type> vec = CreateRandomDeviationX(ref_rng, maxDeviation);
   // rotate from X to our basis
   return qRotXtoDir * vec;
 }

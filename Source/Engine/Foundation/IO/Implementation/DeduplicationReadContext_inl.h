@@ -4,7 +4,7 @@
 template <typename T>
 XII_ALWAYS_INLINE xiiResult xiiDeduplicationReadContext::ReadObjectInplace(xiiStreamReader& ref_stream, T& ref_obj)
 {
-  return ReadObject(stream, obj, nullptr);
+  return ReadObject(ref_stream, ref_obj, nullptr);
 }
 
 template <typename T>

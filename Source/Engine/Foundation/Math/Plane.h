@@ -174,8 +174,7 @@ public:
   ///
   /// Intersections with \a out_fIntersection less than zero will be discarded and not reported as intersections.
   /// If such intersections are desired, use GetRayIntersectionBiDirectional instead.
-  [[nodiscard]] bool GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_pIntersection = nullptr,
-                                        xiiVec3Template<Type>* out_pIntersection = nullptr) const; // [tested]
+  [[nodiscard]] bool GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_pIntersection = nullptr, xiiVec3Template<Type>* out_pIntersectionDistance = nullptr) const; // [tested]
 
   /// \brief Returns true, if the ray intersects the plane. Intersection time and point are stored in the out-parameters. Allows for intersections at
   /// negative times (shooting into the opposite direction).

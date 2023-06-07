@@ -94,12 +94,12 @@ const xiiBoundingBoxTemplate<Type> xiiBoundingSphereTemplate<Type>::GetBoundingB
 template <typename Type>
 xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiBoundingSphereTemplate<Type>& sphere) const
 {
-  const Type fDist = GetDistanceTo(Sphere.m_vCenter);
+  const Type fDist = GetDistanceTo(sphere.m_vCenter);
 
-  if (fDist >= Sphere.m_fRadius)
+  if (fDist >= sphere.m_fRadius)
     return xiiPositionOnPlane::Front;
 
-  if (-fDist >= Sphere.m_fRadius)
+  if (-fDist >= sphere.m_fRadius)
     return xiiPositionOnPlane::Back;
 
   return xiiPositionOnPlane::Spanning;

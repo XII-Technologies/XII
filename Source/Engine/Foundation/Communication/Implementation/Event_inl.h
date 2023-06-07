@@ -109,11 +109,11 @@ void xiiEventBase<EventData, MutexType, EventType>::RemoveEventHandler(const Han
 template <typename EventData, typename MutexType, xiiEventType EventType>
 void xiiEventBase<EventData, MutexType, EventType>::RemoveEventHandler(xiiEventSubscriptionID& ref_id) const
 {
-  if (id == 0)
+  if (ref_id == 0)
     return;
 
-  const xiiEventSubscriptionID subId = id;
-  id                                 = 0;
+  const xiiEventSubscriptionID subId = ref_id;
+  ref_id                                 = 0;
 
   XII_LOCK(m_Mutex);
 

@@ -66,7 +66,7 @@ void xiiHybridStringBase<Size>::ReadAll(xiiStreamReader& ref_stream)
 
   while (true)
   {
-    const xiiUInt32 uiRead = (xiiUInt32)Stream.ReadBytes(Temp, 1024);
+    const xiiUInt32 uiRead = (xiiUInt32)ref_stream.ReadBytes(Temp, 1024);
 
     if (uiRead == 0)
       break;

@@ -4,12 +4,12 @@
 
 template <typename Type, xiiCVarType::Enum CVarType>
 xiiTypedCVar<Type, CVarType>::xiiTypedCVar(xiiStringView sName, const Type& value, xiiBitflags<xiiCVarFlags> flags, xiiStringView sDescription) :
-  xiiCVar(sName, Flags, sDescription)
+  xiiCVar(sName, flags, sDescription)
 {
   XII_ASSERT_DEBUG(sName.FindSubString(" ") == nullptr, "CVar names must not contain whitespace");
 
   for (xiiUInt32 i = 0; i < xiiCVarValue::ENUM_COUNT; ++i)
-    m_Values[i] = Value;
+    m_Values[i] = value;
 }
 
 template <typename Type, xiiCVarType::Enum CVarType>
