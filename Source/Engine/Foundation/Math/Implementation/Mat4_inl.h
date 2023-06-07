@@ -28,7 +28,7 @@ xiiMat4Template<Type>::xiiMat4Template(Type c1r1, Type c2r1, Type c3r1, Type c4r
 template <typename Type>
 xiiMat4Template<Type>::xiiMat4Template(const xiiMat3Template<Type>& mRotation, const xiiVec3Template<Type>& vTranslation)
 {
-  SetTransformationMatrix(Rotation, vTranslation);
+  SetTransformationMatrix(mRotation, vTranslation);
 }
 
 template <typename Type>
@@ -213,10 +213,10 @@ void xiiMat4Template<Type>::SetRow(xiiUInt32 uiRow, const xiiVec4Template<Type>&
 {
   XII_ASSERT_DEBUG(uiRow <= 3, "Invalid Row Index {0}", uiRow);
 
-  Element(0, uiRow) = row.x;
-  Element(1, uiRow) = row.y;
-  Element(2, uiRow) = row.z;
-  Element(3, uiRow) = row.w;
+  Element(0, uiRow) = vRow.x;
+  Element(1, uiRow) = vRow.y;
+  Element(2, uiRow) = vRow.z;
+  Element(3, uiRow) = vRow.w;
 }
 
 template <typename Type>
@@ -239,10 +239,10 @@ void xiiMat4Template<Type>::SetColumn(xiiUInt32 uiColumn, const xiiVec4Template<
 {
   XII_ASSERT_DEBUG(uiColumn <= 3, "Invalid Column Index {0}", uiColumn);
 
-  Element(uiColumn, 0) = column.x;
-  Element(uiColumn, 1) = column.y;
-  Element(uiColumn, 2) = column.z;
-  Element(uiColumn, 3) = column.w;
+  Element(uiColumn, 0) = vColumn.x;
+  Element(uiColumn, 1) = vColumn.y;
+  Element(uiColumn, 2) = vColumn.z;
+  Element(uiColumn, 3) = vColumn.w;
 }
 
 template <typename Type>
@@ -256,10 +256,10 @@ xiiVec4Template<Type> xiiMat4Template<Type>::GetDiagonal() const
 template <typename Type>
 void xiiMat4Template<Type>::SetDiagonal(const xiiVec4Template<Type>& vDiag)
 {
-  Element(0, 0) = diag.x;
-  Element(1, 1) = diag.y;
-  Element(2, 2) = diag.z;
-  Element(3, 3) = diag.w;
+  Element(0, 0) = vDiag.x;
+  Element(1, 1) = vDiag.y;
+  Element(2, 2) = vDiag.z;
+  Element(3, 3) = vDiag.w;
 }
 
 template <typename Type>
@@ -280,10 +280,10 @@ void xiiMat4Template<Type>::TransformPosition(
   xiiUInt32              uiNumVectors,
   xiiUInt32              uiStride /* = sizeof(xiiVec3Template) */) const
 {
-  XII_ASSERT_DEBUG(inout_v != nullptr, "Array must not be nullptr.");
+  XII_ASSERT_DEBUG(pV != nullptr, "Array must not be nullptr.");
   XII_ASSERT_DEBUG(uiStride >= sizeof(xiiVec3Template<Type>), "Data must not overlap.");
 
-  xiiVec3Template<Type>* pCur = inout_v;
+  xiiVec3Template<Type>* pCur = pV;
 
   for (xiiUInt32 i = 0; i < uiNumVectors; ++i)
   {
@@ -305,15 +305,12 @@ const xiiVec3Template<Type> xiiMat4Template<Type>::TransformDirection(const xiiV
 }
 
 template <typename Type>
-void xiiMat4Template<Type>::TransformDirection(
-  xiiVec3Template<Type>* pV,
-  xiiUInt32              uiNumVectors,
-  xiiUInt32              uiStride /* = sizeof(xiiVec3Template<Type>) */) const
+void xiiMat4Template<Type>::TransformDirection(xiiVec3Template<Type>* pV, xiiUInt32 uiNumVectors, xiiUInt32 uiStride /* = sizeof(xiiVec3Template<Type>) */) const
 {
-  XII_ASSERT_DEBUG(inout_v != nullptr, "Array must not be nullptr.");
+  XII_ASSERT_DEBUG(pV != nullptr, "Array must not be nullptr.");
   XII_ASSERT_DEBUG(uiStride >= sizeof(xiiVec3Template<Type>), "Data must not overlap.");
 
-  xiiVec3Template<Type>* pCur = inout_v;
+  xiiVec3Template<Type>* pCur = pV;
 
   for (xiiUInt32 i = 0; i < uiNumVectors; ++i)
   {
@@ -338,10 +335,10 @@ const xiiVec4Template<Type> xiiMat4Template<Type>::Transform(const xiiVec4Templa
 template <typename Type>
 void xiiMat4Template<Type>::Transform(xiiVec4Template<Type>* pV, xiiUInt32 uiNumVectors, xiiUInt32 uiStride /* = sizeof(xiiVec4Template) */) const
 {
-  XII_ASSERT_DEBUG(inout_v != nullptr, "Array must not be nullptr.");
+  XII_ASSERT_DEBUG(pV != nullptr, "Array must not be nullptr.");
   XII_ASSERT_DEBUG(uiStride >= sizeof(xiiVec4Template<Type>), "Data must not overlap.");
 
-  xiiVec4Template<Type>* pCur = inout_v;
+  xiiVec4Template<Type>* pCur = pV;
 
   for (xiiUInt32 i = 0; i < uiNumVectors; ++i)
   {
@@ -373,7 +370,7 @@ void xiiMat4Template<Type>::SetRotationalPart(const xiiMat3Template<Type>& mRota
   {
     for (xiiUInt32 row = 0; row < 3; ++row)
     {
-      Element(col, row) = Rotation.Element(col, row);
+      Element(col, row) = mRotation.Element(col, row);
     }
   }
 }

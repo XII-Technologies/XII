@@ -32,14 +32,14 @@ inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiVec2Template<
 template <typename Type>
 xiiResult SerializeArray(xiiStreamWriter& ref_stream, const xiiVec2Template<Type>* pArray, xiiUInt64 uiCount)
 {
-  return stream.WriteBytes(pArray, sizeof(xiiVec2Template<Type>) * uiCount);
+  return ref_stream.WriteBytes(pArray, sizeof(xiiVec2Template<Type>) * uiCount);
 }
 
 template <typename Type>
 xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiVec2Template<Type>* pArray, xiiUInt64 uiCount)
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiVec2Template<Type>) * uiCount;
-  if (stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
     return XII_SUCCESS;
 
   return XII_FAILURE;
@@ -98,14 +98,14 @@ inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiVec4Template<
 template <typename Type>
 xiiResult SerializeArray(xiiStreamWriter& ref_stream, const xiiVec4Template<Type>* pArray, xiiUInt64 uiCount)
 {
-  return stream.WriteBytes(pArray, sizeof(xiiVec4Template<Type>) * uiCount);
+  return ref_stream.WriteBytes(pArray, sizeof(xiiVec4Template<Type>) * uiCount);
 }
 
 template <typename Type>
 xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiVec4Template<Type>* pArray, xiiUInt64 uiCount)
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiVec4Template<Type>) * uiCount;
-  if (stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
     return XII_SUCCESS;
 
   return XII_FAILURE;
@@ -131,14 +131,14 @@ inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiMat3Template<
 template <typename Type>
 xiiResult SerializeArray(xiiStreamWriter& ref_stream, const xiiMat3Template<Type>* pArray, xiiUInt64 uiCount)
 {
-  return stream.WriteBytes(pArray, sizeof(xiiMat3Template<Type>) * uiCount);
+  return ref_stream.WriteBytes(pArray, sizeof(xiiMat3Template<Type>) * uiCount);
 }
 
 template <typename Type>
 xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiMat3Template<Type>* pArray, xiiUInt64 uiCount)
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiMat3Template<Type>) * uiCount;
-  if (stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
     return XII_SUCCESS;
 
   return XII_FAILURE;
@@ -164,14 +164,14 @@ inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiMat4Template<
 template <typename Type>
 xiiResult SerializeArray(xiiStreamWriter& ref_stream, const xiiMat4Template<Type>* pArray, xiiUInt64 uiCount)
 {
-  return stream.WriteBytes(pArray, sizeof(xiiMat4Template<Type>) * uiCount);
+  return ref_stream.WriteBytes(pArray, sizeof(xiiMat4Template<Type>) * uiCount);
 }
 
 template <typename Type>
 xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiMat4Template<Type>* pArray, xiiUInt64 uiCount)
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiMat4Template<Type>) * uiCount;
-  if (stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
     return XII_SUCCESS;
 
   return XII_FAILURE;
@@ -205,28 +205,28 @@ inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiTransformTemp
 template <typename Type>
 inline xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiPlaneTemplate<Type>& value)
 {
-  stream.WriteBytes(&Value, sizeof(xiiPlaneTemplate<Type>)).AssertSuccess();
-  return stream;
+  ref_stream.WriteBytes(&Value, sizeof(xiiPlaneTemplate<Type>)).AssertSuccess();
+  return ref_stream;
 }
 
 template <typename Type>
 inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiPlaneTemplate<Type>& ref_value)
 {
-  XII_VERIFY(stream.ReadBytes(&Value, sizeof(xiiPlaneTemplate<Type>)) == sizeof(xiiPlaneTemplate<Type>), "End of stream reached.");
-  return stream;
+  XII_VERIFY(ref_stream.ReadBytes(&Value, sizeof(xiiPlaneTemplate<Type>)) == sizeof(xiiPlaneTemplate<Type>), "End of stream reached.");
+  return ref_stream;
 }
 
 template <typename Type>
 xiiResult SerializeArray(xiiStreamWriter& ref_stream, const xiiPlaneTemplate<Type>* pArray, xiiUInt64 uiCount)
 {
-  return stream.WriteBytes(pArray, sizeof(xiiPlaneTemplate<Type>) * uiCount);
+  return ref_stream.WriteBytes(pArray, sizeof(xiiPlaneTemplate<Type>) * uiCount);
 }
 
 template <typename Type>
 xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiPlaneTemplate<Type>* pArray, xiiUInt64 uiCount)
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiPlaneTemplate<Type>) * uiCount;
-  if (stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
     return XII_SUCCESS;
 
   return XII_FAILURE;
@@ -252,14 +252,14 @@ inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiQuatTemplate<
 template <typename Type>
 xiiResult SerializeArray(xiiStreamWriter& ref_stream, const xiiQuatTemplate<Type>* pArray, xiiUInt64 uiCount)
 {
-  return stream.WriteBytes(pArray, sizeof(xiiQuatTemplate<Type>) * uiCount);
+  return ref_stream.WriteBytes(pArray, sizeof(xiiQuatTemplate<Type>) * uiCount);
 }
 
 template <typename Type>
 xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiQuatTemplate<Type>* pArray, xiiUInt64 uiCount)
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiQuatTemplate<Type>) * uiCount;
-  if (stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
     return XII_SUCCESS;
 
   return XII_FAILURE;
@@ -271,17 +271,17 @@ xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiQuatTemplate<Type>* p
 template <typename Type>
 inline xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiBoundingBoxTemplate<Type>& value)
 {
-  stream << Value.m_vMax;
-  stream << Value.m_vMin;
-  return stream;
+  ref_stream << Value.m_vMax;
+  ref_stream << Value.m_vMin;
+  return ref_stream;
 }
 
 template <typename Type>
 inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiBoundingBoxTemplate<Type>& ref_value)
 {
-  stream >> Value.m_vMax;
-  stream >> Value.m_vMin;
-  return stream;
+  ref_stream >> Value.m_vMax;
+  ref_stream >> Value.m_vMin;
+  return ref_stream;
 }
 
 // xiiBoundingSphereTemplate
@@ -289,17 +289,17 @@ inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiBoundingBoxTe
 template <typename Type>
 inline xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiBoundingSphereTemplate<Type>& value)
 {
-  stream << Value.m_vCenter;
-  stream << Value.m_fRadius;
-  return stream;
+  ref_stream << Value.m_vCenter;
+  ref_stream << Value.m_fRadius;
+  return ref_stream;
 }
 
 template <typename Type>
 inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiBoundingSphereTemplate<Type>& ref_value)
 {
-  stream >> Value.m_vCenter;
-  stream >> Value.m_fRadius;
-  return stream;
+  ref_stream >> Value.m_vCenter;
+  ref_stream >> Value.m_fRadius;
+  return ref_stream;
 }
 
 // xiiBoundingBoxSphereTemplate
@@ -344,7 +344,7 @@ template <typename Type>
 xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiColor* pArray, xiiUInt64 uiCount)
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiColor) * uiCount;
-  if (stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
     return XII_SUCCESS;
 
   return XII_FAILURE;
@@ -367,14 +367,14 @@ inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiColorGammaUB&
 template <typename Type>
 xiiResult SerializeArray(xiiStreamWriter& ref_stream, const xiiColorGammaUB* pArray, xiiUInt64 uiCount)
 {
-  return stream.WriteBytes(pArray, sizeof(xiiColorGammaUB) * uiCount);
+  return ref_stream.WriteBytes(pArray, sizeof(xiiColorGammaUB) * uiCount);
 }
 
 template <typename Type>
 xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiColorGammaUB* pArray, xiiUInt64 uiCount)
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiColorGammaUB) * uiCount;
-  if (stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
     return XII_SUCCESS;
 
   return XII_FAILURE;
@@ -401,14 +401,14 @@ inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiAngleTemplate
 template <typename Type>
 xiiResult SerializeArray(xiiStreamWriter& ref_stream, const xiiAngleTemplate<Type>* pArray, xiiUInt64 uiCount)
 {
-  return stream.WriteBytes(pArray, sizeof(xiiAngleTemplate<Type>) * uiCount);
+  return ref_stream.WriteBytes(pArray, sizeof(xiiAngleTemplate<Type>) * uiCount);
 }
 
 template <typename Type>
 xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiAngleTemplate<Type>* pArray, xiiUInt64 uiCount)
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiAngleTemplate<Type>) * uiCount;
-  if (stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
     return XII_SUCCESS;
 
   return XII_FAILURE;
@@ -431,14 +431,14 @@ inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiColorLinearUB
 template <typename Type>
 xiiResult SerializeArray(xiiStreamWriter& ref_stream, const xiiColorLinearUB* pArray, xiiUInt64 uiCount)
 {
-  return stream.WriteBytes(pArray, sizeof(xiiColorLinearUB) * uiCount);
+  return ref_stream.WriteBytes(pArray, sizeof(xiiColorLinearUB) * uiCount);
 }
 
 template <typename Type>
 xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiColorLinearUB* pArray, xiiUInt64 uiCount)
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiColorLinearUB) * uiCount;
-  if (stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
     return XII_SUCCESS;
 
   return XII_FAILURE;

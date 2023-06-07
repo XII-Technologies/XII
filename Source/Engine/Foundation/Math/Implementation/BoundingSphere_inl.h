@@ -139,7 +139,7 @@ void xiiBoundingSphereTemplate<Type>::ScaleFromOrigin(const xiiVec3Template<Type
 
   // Scale the radius by the maximum scaling factor (the sphere cannot become an ellipsoid,
   // so to be a 'bounding' sphere, it should be as large as possible.
-  m_fRadius *= xiiMath::Max(vScale.x, vScale.y, vScale.z);b
+  m_fRadius *= xiiMath::Max(vScale.x, vScale.y, vScale.z);
 }
 
 template <typename Type>
