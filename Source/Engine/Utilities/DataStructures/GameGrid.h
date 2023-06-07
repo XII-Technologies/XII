@@ -66,32 +66,32 @@ public:
   const CellData& GetCell(xiiUInt32 uiIndex) const { return m_Cells[uiIndex]; }
 
   /// \brief Gives access to a cell by cell coordinates.
-  CellData& GetCell(const xiiVec2I32& Coord) { return m_Cells[ConvertCellCoordinateToIndex(Coord)]; }
+  CellData& GetCell(const xiiVec2I32& vCoord) { return m_Cells[ConvertCellCoordinateToIndex(vCoord)]; }
 
   /// \brief Gives access to a cell by cell coordinates.
-  const CellData& GetCell(const xiiVec2I32& Coord) const { return m_Cells[ConvertCellCoordinateToIndex(Coord)]; }
+  const CellData& GetCell(const xiiVec2I32& vCoord) const { return m_Cells[ConvertCellCoordinateToIndex(vCoord)]; }
 
   /// \brief Converts a cell index into a 2D cell coordinate.
   xiiVec2I32 ConvertCellIndexToCoordinate(xiiUInt32 uiIndex) const { return xiiVec2I32(uiIndex % m_uiGridSizeX, uiIndex / m_uiGridSizeX); }
 
   /// \brief Converts a cell coordinate into a cell index.
-  xiiUInt32 ConvertCellCoordinateToIndex(const xiiVec2I32& Coord) const { return Coord.y * m_uiGridSizeX + Coord.x; }
+  xiiUInt32 ConvertCellCoordinateToIndex(const xiiVec2I32& vCoord) const { return vCoord.y * m_uiGridSizeX + vCoord.x; }
 
   /// \brief Returns the lower left world space position of the cell with the given coordinates.
-  xiiVec3 GetCellWorldSpaceOrigin(const xiiVec2I32& Coord) const;
-  xiiVec3 GetCellLocalSpaceOrigin(const xiiVec2I32& Coord) const;
+  xiiVec3 GetCellWorldSpaceOrigin(const xiiVec2I32& vCoord) const;
+  xiiVec3 GetCellLocalSpaceOrigin(const xiiVec2I32& vCoord) const;
 
   /// \brief Returns the center world space position of the cell with the given coordinates.
-  xiiVec3 GetCellWorldSpaceCenter(const xiiVec2I32& Coord) const;
-  xiiVec3 GetCellLocalSpaceCenter(const xiiVec2I32& Coord) const;
+  xiiVec3 GetCellWorldSpaceCenter(const xiiVec2I32& vCoord) const;
+  xiiVec3 GetCellLocalSpaceCenter(const xiiVec2I32& vCoord) const;
 
   /// \brief Checks whether the given cell coordinate is inside valid ranges.
-  bool IsValidCellCoordinate(const xiiVec2I32& Coord) const;
+  bool IsValidCellCoordinate(const xiiVec2I32& vCoord) const;
 
   /// \brief Casts a world space ray through the grid and determines which cell is hit (if any).
   /// \note The picked cell is determined from where the ray hits the 'ground plane', ie. the plane that goes through the world space
   /// origin.
-  bool PickCell(const xiiVec3& vRayStartPos, const xiiVec3& vRayDirNorm, xiiVec2I32* out_CellCoord, xiiVec3* out_vIntersection = nullptr) const;
+  bool PickCell(const xiiVec3& vRayStartPos, const xiiVec3& vRayDirNorm, xiiVec2I32* out_pCellCoord, xiiVec3* out_pIntersection = nullptr) const;
 
   /// \brief Returns the lower left corner position in world space of the grid
   const xiiVec3& GetWorldSpaceOrigin() const { return m_vWorldSpaceOrigin; }
@@ -103,7 +103,7 @@ public:
   const xiiMat3& GetRotationToGridSpace() const { return m_mRotateToGridspace; }
 
   /// \brief Tests where and at which cell the given world space ray intersects the grids bounding box
-  bool GetRayIntersection(const xiiVec3& vRayStartWorldSpace, const xiiVec3& vRayDirNormalizedWorldSpace, float fMaxLength, float& out_fIntersection, xiiVec2I32& out_CellCoord) const;
+  bool GetRayIntersection(const xiiVec3& vRayStartWorldSpace, const xiiVec3& vRayDirNormalizedWorldSpace, float fMaxLength, float& out_fIntersection, xiiVec2I32& out_vCellCoord) const;
 
   /// \brief Tests whether a ray would hit the grid bounding box, if it were expanded by a constant.
   bool GetRayIntersectionExpandedBBox(const xiiVec3& vRayStartWorldSpace, const xiiVec3& vRayDirNormalizedWorldSpace, float fMaxLength, float& out_fIntersection, const xiiVec3& vExpandBBoxByThis) const;

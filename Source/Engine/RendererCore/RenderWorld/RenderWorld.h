@@ -56,7 +56,7 @@ public:
   static void                                                 DeleteCachedRenderData(const xiiGameObjectHandle& hOwnerObject, const xiiComponentHandle& hOwnerComponent);
   static void                                                 DeleteCachedRenderDataForObject(const xiiGameObject* pOwnerObject);
   static void                                                 DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* pOwnerObject);
-  static void                                                 ResetRenderDataCache(xiiView& view);
+  static void                                                 ResetRenderDataCache(xiiView& ref_view);
   static xiiArrayPtr<const xiiInternal::RenderDataCacheEntry> GetCachedRenderData(const xiiView& view, const xiiGameObjectHandle& hOwner, xiiUInt16 uiComponentVersion);
 
   static void AddViewToRender(const xiiViewHandle& hView);

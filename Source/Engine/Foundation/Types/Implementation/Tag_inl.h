@@ -1,7 +1,7 @@
 #pragma once
 
-xiiTag::xiiTag() :
-  m_uiBlockIndex(0xFFFFFFFEu)
+xiiTag::xiiTag()
+
 {
 }
 

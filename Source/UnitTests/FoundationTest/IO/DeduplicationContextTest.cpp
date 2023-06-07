@@ -15,15 +15,15 @@ namespace
     {
     }
 
-    xiiResult Serialize(xiiStreamWriter& stream) const
+    xiiResult Serialize(xiiStreamWriter& ref_stream) const
     {
-      stream << m_v;
+      ref_stream << m_v;
       return XII_SUCCESS;
     }
 
-    xiiResult Deserialize(xiiStreamReader& stream)
+    xiiResult Deserialize(xiiStreamReader& ref_stream)
     {
-      stream >> m_v;
+      ref_stream >> m_v;
       return XII_SUCCESS;
     }
 
@@ -37,23 +37,23 @@ namespace
     xiiSharedPtr<RefCountedVec3> m_pScale;
     xiiUInt32                    m_uiIndex = xiiInvalidIndex;
 
-    xiiResult Serialize(xiiStreamWriter& stream) const
+    xiiResult Serialize(xiiStreamWriter& ref_stream) const
     {
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteObject(stream, m_pTransform));
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteObject(stream, m_pPosition));
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteObject(stream, m_pScale));
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteObject(ref_stream, m_pTransform));
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteObject(ref_stream, m_pPosition));
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteObject(ref_stream, m_pScale));
 
-      stream << m_uiIndex;
+      ref_stream << m_uiIndex;
       return XII_SUCCESS;
     }
 
-    xiiResult Deserialize(xiiStreamReader& stream)
+    xiiResult Deserialize(xiiStreamReader& ref_stream)
     {
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadObject(stream, m_pTransform));
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadObject(stream, m_pPosition));
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadObject(stream, m_pScale));
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadObject(ref_stream, m_pTransform));
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadObject(ref_stream, m_pPosition));
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadObject(ref_stream, m_pScale));
 
-      stream >> m_uiIndex;
+      ref_stream >> m_uiIndex;
       return XII_SUCCESS;
     }
   };
@@ -69,28 +69,28 @@ namespace
     xiiMap<xiiUInt32, xiiTransform*> m_TransformMap;
     xiiSet<xiiVec3*>                 m_UniquePositions;
 
-    xiiResult Serialize(xiiStreamWriter& stream) const
+    xiiResult Serialize(xiiStreamWriter& ref_stream) const
     {
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteArray(stream, m_Transforms));
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteArray(stream, m_Positions));
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteArray(stream, m_Scales));
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteArray(ref_stream, m_Transforms));
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteArray(ref_stream, m_Positions));
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteArray(ref_stream, m_Scales));
       XII_SUCCEED_OR_RETURN(
-        xiiDeduplicationWriteContext::GetContext()->WriteMap(stream, m_TransformMap, xiiDeduplicationWriteContext::WriteMapMode::DedupValue));
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteSet(stream, m_UniquePositions));
-      XII_SUCCEED_OR_RETURN(stream.WriteArray(m_Components));
+        xiiDeduplicationWriteContext::GetContext()->WriteMap(ref_stream, m_TransformMap, xiiDeduplicationWriteContext::WriteMapMode::DedupValue));
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteSet(ref_stream, m_UniquePositions));
+      XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(m_Components));
       return XII_SUCCESS;
     }
 
-    xiiResult Deserialize(xiiStreamReader& stream)
+    xiiResult Deserialize(xiiStreamReader& ref_stream)
     {
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadArray(stream, m_Transforms));
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadArray(stream, m_Positions,
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadArray(ref_stream, m_Transforms));
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadArray(ref_stream, m_Positions,
                                                                                  nullptr)); // should not allocate anything
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadArray(stream, m_Scales));
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadArray(ref_stream, m_Scales));
       XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadMap(
-        stream, m_TransformMap, xiiDeduplicationReadContext::ReadMapMode::DedupValue, nullptr, nullptr));            // should not allocate anything
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadSet(stream, m_UniquePositions, nullptr)); // should not allocate anything
-      XII_SUCCEED_OR_RETURN(stream.ReadArray(m_Components));
+        ref_stream, m_TransformMap, xiiDeduplicationReadContext::ReadMapMode::DedupValue, nullptr, nullptr));            // should not allocate anything
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadSet(ref_stream, m_UniquePositions, nullptr)); // should not allocate anything
+      XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(m_Components));
       return XII_SUCCESS;
     }
   };

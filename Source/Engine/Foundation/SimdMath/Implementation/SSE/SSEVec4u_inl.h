@@ -9,11 +9,11 @@ XII_ALWAYS_INLINE xiiSimdVec4u::xiiSimdVec4u()
 #endif
 }
 
-XII_ALWAYS_INLINE xiiSimdVec4u::xiiSimdVec4u(xiiUInt32 xyzw)
+XII_ALWAYS_INLINE xiiSimdVec4u::xiiSimdVec4u(xiiUInt32 uiXyzw)
 {
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
-  m_v = _mm_set1_epi32(xyzw);
+  m_v = _mm_set1_epi32(uiXyzw);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4u::xiiSimdVec4u(xiiUInt32 x, xiiUInt32 y, xiiUInt32 z, xiiUInt32 w)
@@ -28,9 +28,9 @@ XII_ALWAYS_INLINE xiiSimdVec4u::xiiSimdVec4u(xiiInternal::QuadInt v)
   m_v = v;
 }
 
-XII_ALWAYS_INLINE void xiiSimdVec4u::Set(xiiUInt32 xyzw)
+XII_ALWAYS_INLINE void xiiSimdVec4u::Set(xiiUInt32 uiXyzw)
 {
-  m_v = _mm_set1_epi32(xyzw);
+  m_v = _mm_set1_epi32(uiXyzw);
 }
 
 XII_ALWAYS_INLINE void xiiSimdVec4u::Set(xiiUInt32 x, xiiUInt32 y, xiiUInt32 z, xiiUInt32 w)

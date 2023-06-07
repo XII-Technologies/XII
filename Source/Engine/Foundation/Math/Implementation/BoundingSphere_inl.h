@@ -9,15 +9,15 @@ XII_FORCE_INLINE xiiBoundingSphereTemplate<Type>::xiiBoundingSphereTemplate()
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   // m_vCenter is already initialized to NaN by its own constructor.
   const Type TypeNaN = xiiMath::NaN<Type>();
-  m_fRadius          = TypeNaN;
+  m_fRadius = TypeNaN;
 #endif
 }
 
 template <typename Type>
 XII_FORCE_INLINE xiiBoundingSphereTemplate<Type>::xiiBoundingSphereTemplate(const xiiVec3Template<Type>& vCenter, Type fRadius)
+  : m_vCenter(vCenter)
+  , m_fRadius(fRadius)
 {
-  m_vCenter = vCenter;
-  m_fRadius = fRadius;
 }
 
 template <typename Type>
@@ -137,9 +137,9 @@ void xiiBoundingSphereTemplate<Type>::ScaleFromOrigin(const xiiVec3Template<Type
 
   m_vCenter = m_vCenter.CompMul(vScale);
 
-  // scale the radius by the maximum scaling factor (the sphere cannot become an ellipsoid,
-  // so to be a 'bounding' sphere, it should be as large as possible
-  m_fRadius *= xiiMath::Max(vScale.x, vScale.y, vScale.z);
+  // Scale the radius by the maximum scaling factor (the sphere cannot become an ellipsoid,
+  // so to be a 'bounding' sphere, it should be as large as possible.
+  m_fRadius *= xiiMath::Max(vScale.x, vScale.y, vScale.z);b
 }
 
 template <typename Type>
@@ -193,8 +193,8 @@ bool xiiBoundingSphereTemplate<Type>::Overlaps(const xiiBoundingSphereTemplate<T
 template <typename Type>
 const xiiVec3Template<Type> xiiBoundingSphereTemplate<Type>::GetClampedPoint(const xiiVec3Template<Type>& vPoint)
 {
-  const xiiVec3Template<Type> vDir     = vPoint - m_vCenter;
-  const Type                  fDistSQR = vDir.GetLengthSquared();
+  const xiiVec3Template<Type> vDir = vPoint - m_vCenter;
+  const Type fDistSQR = vDir.GetLengthSquared();
 
   // return the point, if it is already inside the sphere
   if (fDistSQR <= xiiMath::Square(m_fRadius))
@@ -209,9 +209,7 @@ const xiiVec3Template<Type> xiiBoundingSphereTemplate<Type>::GetClampedPoint(con
 
 template <typename Type>
 bool xiiBoundingSphereTemplate<Type>::Contains(
-  const xiiVec3Template<Type>* pPoints,
-  xiiUInt32                    uiNumPoints,
-  xiiUInt32                    uiStride /* = sizeof(xiiVec3Template) */) const
+  const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /* = sizeof(xiiVec3Template) */) const
 {
   XII_ASSERT_DEBUG(pPoints != nullptr, "The array must not be empty.");
   XII_ASSERT_DEBUG(uiNumPoints > 0, "The array must contain at least one point.");
@@ -234,9 +232,7 @@ bool xiiBoundingSphereTemplate<Type>::Contains(
 
 template <typename Type>
 bool xiiBoundingSphereTemplate<Type>::Overlaps(
-  const xiiVec3Template<Type>* pPoints,
-  xiiUInt32                    uiNumPoints,
-  xiiUInt32                    uiStride /* = sizeof(xiiVec3Template) */) const
+  const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /* = sizeof(xiiVec3Template) */) const
 {
   XII_ASSERT_DEBUG(pPoints != nullptr, "The array must not be empty.");
   XII_ASSERT_DEBUG(uiNumPoints > 0, "The array must contain at least one point.");
@@ -259,9 +255,7 @@ bool xiiBoundingSphereTemplate<Type>::Overlaps(
 
 template <typename Type>
 void xiiBoundingSphereTemplate<Type>::SetFromPoints(
-  const xiiVec3Template<Type>* pPoints,
-  xiiUInt32                    uiNumPoints,
-  xiiUInt32                    uiStride /* = sizeof(xiiVec3Template) */)
+  const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /* = sizeof(xiiVec3Template) */)
 {
   XII_ASSERT_DEBUG(pPoints != nullptr, "The array must not be empty.");
   XII_ASSERT_DEBUG(uiStride >= sizeof(xiiVec3Template<Type>), "The data must not overlap.");
@@ -285,7 +279,7 @@ void xiiBoundingSphereTemplate<Type>::SetFromPoints(
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
   {
     const Type fDistSQR = (*pCur - vCenter).GetLengthSquared();
-    fMaxDistSQR         = xiiMath::Max(fMaxDistSQR, fDistSQR);
+    fMaxDistSQR = xiiMath::Max(fMaxDistSQR, fDistSQR);
 
     pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
   }
@@ -298,9 +292,7 @@ void xiiBoundingSphereTemplate<Type>::SetFromPoints(
 
 template <typename Type>
 void xiiBoundingSphereTemplate<Type>::ExpandToInclude(
-  const xiiVec3Template<Type>* pPoints,
-  xiiUInt32                    uiNumPoints,
-  xiiUInt32                    uiStride /* = sizeof(xiiVec3Template) */)
+  const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /* = sizeof(xiiVec3Template) */)
 {
   XII_ASSERT_DEBUG(pPoints != nullptr, "The array must not be empty.");
   XII_ASSERT_DEBUG(uiStride >= sizeof(xiiVec3Template<Type>), "The data must not overlap.");
@@ -312,7 +304,7 @@ void xiiBoundingSphereTemplate<Type>::ExpandToInclude(
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
   {
     const Type fDistSQR = (*pCur - m_vCenter).GetLengthSquared();
-    fMaxDistSQR         = xiiMath::Max(fMaxDistSQR, fDistSQR);
+    fMaxDistSQR = xiiMath::Max(fMaxDistSQR, fDistSQR);
 
     pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
   }
@@ -323,9 +315,7 @@ void xiiBoundingSphereTemplate<Type>::ExpandToInclude(
 
 template <typename Type>
 Type xiiBoundingSphereTemplate<Type>::GetDistanceTo(
-  const xiiVec3Template<Type>* pPoints,
-  xiiUInt32                    uiNumPoints,
-  xiiUInt32                    uiStride /* = sizeof(xiiVec3Template) */) const
+  const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /* = sizeof(xiiVec3Template) */) const
 {
   XII_ASSERT_DEBUG(pPoints != nullptr, "The array must not be empty.");
   XII_ASSERT_DEBUG(uiNumPoints > 0, "The array must contain at least one point.");
@@ -348,16 +338,17 @@ Type xiiBoundingSphereTemplate<Type>::GetDistanceTo(
 }
 
 template <typename Type>
-bool xiiBoundingSphereTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDirNormalized, Type* out_fIntersection /* = nullptr */, xiiVec3Template<Type>* out_vIntersection /* = nullptr */) const
+bool xiiBoundingSphereTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDirNormalized,
+  Type* out_pIntersectionDistance /* = nullptr */, xiiVec3Template<Type>* out_pIntersection /* = nullptr */) const
 {
   XII_ASSERT_DEBUG(vRayDirNormalized.IsNormalized(), "The ray direction must be normalized.");
 
   // Ugly Code taken from 'Real Time Rendering First Edition' Page 299
 
-  const Type                  fRadiusSQR = xiiMath::Square(m_fRadius);
-  const xiiVec3Template<Type> vRelPos    = m_vCenter - vRayStartPos;
+  const Type fRadiusSQR = xiiMath::Square(m_fRadius);
+  const xiiVec3Template<Type> vRelPos = m_vCenter - vRayStartPos;
 
-  const Type d             = vRelPos.Dot(vRayDirNormalized);
+  const Type d = vRelPos.Dot(vRayDirNormalized);
   const Type fRelPosLenSQR = vRelPos.GetLengthSquared();
 
   if (d < 0.0f && fRelPosLenSQR > fRadiusSQR)
@@ -377,22 +368,23 @@ bool xiiBoundingSphereTemplate<Type>::GetRayIntersection(const xiiVec3Template<T
   else
     fIntersectionTime = d + q;
 
-  if (out_fIntersection)
-    *out_fIntersection = fIntersectionTime;
-  if (out_vIntersection)
-    *out_vIntersection = vRayStartPos + vRayDirNormalized * fIntersectionTime;
+  if (out_pIntersectionDistance)
+    *out_pIntersectionDistance = fIntersectionTime;
+  if (out_pIntersection)
+    *out_pIntersection = vRayStartPos + vRayDirNormalized * fIntersectionTime;
 
   return true;
 }
 
 template <typename Type>
-bool xiiBoundingSphereTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos, Type* out_fHitFraction /* = nullptr */, xiiVec3Template<Type>* out_vIntersection /* = nullptr */) const
+bool xiiBoundingSphereTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos,
+  Type* out_pHitFraction /* = nullptr */, xiiVec3Template<Type>* out_pIntersection /* = nullptr */) const
 {
   Type fIntersection = 0.0f;
 
-  const xiiVec3Template<Type> vDir     = vLineEndPos - vLineStartPos;
-  xiiVec3Template<Type>       vDirNorm = vDir;
-  const Type                  fLen     = vDirNorm.GetLengthAndNormalize();
+  const xiiVec3Template<Type> vDir = vLineEndPos - vLineStartPos;
+  xiiVec3Template<Type> vDirNorm = vDir;
+  const Type fLen = vDirNorm.GetLengthAndNormalize();
 
   if (!GetRayIntersection(vLineStartPos, vDirNorm, &fIntersection))
     return false;
@@ -400,11 +392,11 @@ bool xiiBoundingSphereTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Te
   if (fIntersection > fLen)
     return false;
 
-  if (out_fHitFraction)
-    *out_fHitFraction = fIntersection / fLen;
+  if (out_pHitFraction)
+    *out_pHitFraction = fIntersection / fLen;
 
-  if (out_vIntersection)
-    *out_vIntersection = vLineStartPos + vDirNorm * fIntersection;
+  if (out_pIntersection)
+    *out_pIntersection = vLineStartPos + vDirNorm * fIntersection;
 
   return true;
 }

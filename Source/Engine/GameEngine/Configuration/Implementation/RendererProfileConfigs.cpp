@@ -25,43 +25,43 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 1, xiiRTTIDefau
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiRenderPipelineProfileConfig::SaveRuntimeData(xiiChunkStreamWriter& stream) const
+void xiiRenderPipelineProfileConfig::SaveRuntimeData(xiiChunkStreamWriter& ref_stream) const
 {
-  stream.BeginChunk("xiiRenderPipelineProfileConfig", 2);
+  ref_stream.BeginChunk("xiiRenderPipelineProfileConfig", 2);
 
-  stream << m_sMainRenderPipeline;
+  ref_stream << m_sMainRenderPipeline;
 
-  stream << m_CameraPipelines.GetCount();
+  ref_stream << m_CameraPipelines.GetCount();
   for (auto it = m_CameraPipelines.GetIterator(); it.IsValid(); ++it)
   {
-    stream << it.Key();
-    stream << it.Value();
+    ref_stream << it.Key();
+    ref_stream << it.Value();
   }
 
-  stream.EndChunk();
+  ref_stream.EndChunk();
 }
 
-void xiiRenderPipelineProfileConfig::LoadRuntimeData(xiiChunkStreamReader& stream)
+void xiiRenderPipelineProfileConfig::LoadRuntimeData(xiiChunkStreamReader& ref_stream)
 {
-  const auto& chunk = stream.GetCurrentChunk();
+  const auto& chunk = ref_stream.GetCurrentChunk();
 
   if (chunk.m_sChunkName == "xiiRenderPipelineProfileConfig" && chunk.m_uiChunkVersion == 2)
   {
     xiiRenderWorld::BeginModifyCameraConfigs();
     xiiRenderWorld::ClearCameraConfigs();
 
-    stream >> m_sMainRenderPipeline;
+    ref_stream >> m_sMainRenderPipeline;
 
     m_CameraPipelines.Clear();
 
     xiiUInt32 uiNumCamPipes = 0;
-    stream >> uiNumCamPipes;
+    ref_stream >> uiNumCamPipes;
     for (xiiUInt32 i = 0; i < uiNumCamPipes; ++i)
     {
       xiiString sPipeName, sPipeAsset;
 
-      stream >> sPipeName;
-      stream >> sPipeAsset;
+      ref_stream >> sPipeName;
+      ref_stream >> sPipeAsset;
 
       m_CameraPipelines[sPipeName] = sPipeAsset;
 

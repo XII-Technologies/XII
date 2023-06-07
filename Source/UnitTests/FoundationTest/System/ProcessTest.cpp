@@ -122,9 +122,9 @@ XII_CREATE_SIMPLE_TEST(System, Process)
     xiiDynamicArray<xiiStringBuilder> lines;
     xiiStringBuilder                  out;
     xiiProcessOptions                 opt;
-    opt.m_onStdOut = [&](xiiStringView view) {
-      out.Append(view);
-      lines.PushBack(view);
+    opt.m_onStdOut = [&](xiiStringView sView) {
+      out.Append(sView);
+      lines.PushBack(sView);
     };
 
     opt.m_sProcess = pathToSelf;
@@ -155,8 +155,8 @@ XII_CREATE_SIMPLE_TEST(System, Process)
   {
     xiiStringBuilder  err;
     xiiProcessOptions opt;
-    opt.m_onStdError = [&err](xiiStringView view) {
-      err.Append(view);
+    opt.m_onStdError = [&err](xiiStringView sView) {
+      err.Append(sView);
     };
 
     opt.m_sProcess = pathToSelf;
@@ -181,12 +181,12 @@ XII_CREATE_SIMPLE_TEST(System, Process)
     xiiStringBuilder                  out;
     xiiStringBuilder                  err;
     xiiProcessOptions                 opt;
-    opt.m_onStdOut = [&](xiiStringView view) {
-      out.Append(view);
-      lines.PushBack(view);
+    opt.m_onStdOut = [&](xiiStringView sView) {
+      out.Append(sView);
+      lines.PushBack(sView);
     };
-    opt.m_onStdError = [&err](xiiStringView view) {
-      err.Append(view);
+    opt.m_onStdError = [&err](xiiStringView sView) {
+      err.Append(sView);
     };
     opt.m_sProcess = pathToSelf;
     opt.m_Arguments.PushBack("-cmd");

@@ -101,6 +101,6 @@ private:
 class XII_TOOLSFOUNDATION_DLL xiiNodeCommands
 {
 public:
-  static xiiStatus AddAndConnectCommand(xiiCommandHistory* history, const xiiRTTI* pConnectionType, const xiiPin& sourcePin, const xiiPin& targetPin);
-  static xiiStatus DisconnectAndRemoveCommand(xiiCommandHistory* history, const xiiUuid& connectionObject);
+  static xiiStatus AddAndConnectCommand(xiiCommandHistory* pHistory, const xiiRTTI* pConnectionType, const xiiPin& sourcePin, const xiiPin& targetPin);
+  static xiiStatus DisconnectAndRemoveCommand(xiiCommandHistory* pHistory, const xiiUuid& connectionObject);
 };

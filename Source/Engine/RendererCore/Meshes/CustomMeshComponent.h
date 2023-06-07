@@ -20,14 +20,14 @@ class XII_RENDERERCORE_DLL xiiCustomMeshComponent : public xiiRenderComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg) override;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiCustomMeshComponent
@@ -80,8 +80,8 @@ public:
   /// \brief Returns the mesh instance color.
   const xiiColor& GetColor() const; // [ property ]
 
-  void OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& msg); // [ msg handler ]
-  void OnMsgSetColor(xiiMsgSetColor& msg);               // [ msg handler ]
+  void OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& ref_msg); // [ msg handler ]
+  void OnMsgSetColor(xiiMsgSetColor& ref_msg);               // [ msg handler ]
 
 protected:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const;
@@ -129,7 +129,7 @@ public:
   xiiCustomMeshRenderer();
   ~xiiCustomMeshRenderer();
 
-  virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const override;
-  virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const override;
+  virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const override;
+  virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const override;
   virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
 };

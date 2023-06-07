@@ -95,7 +95,7 @@ bool xiiAnimState::WillStateBeOff(bool bTriggerActive) const
   return m_State == State::Off && !bTriggerActive;
 }
 
-void xiiAnimState::UpdateState(xiiTime tDiff)
+void xiiAnimState::UpdateState(xiiTime diff)
 {
   XII_ASSERT_DEV(!m_Duration.IsZeroOrNegative(), "Invalid animation clip duration");
 
@@ -104,7 +104,7 @@ void xiiAnimState::UpdateState(xiiTime tDiff)
   m_bHasLoopedEnd    = false;
 
   // how much time delta to apply to the weight ramp
-  xiiTime tRampUpDownDiff = tDiff;
+  xiiTime tRampUpDownDiff = diff;
 
   // first update the state machine transitions
 
@@ -179,7 +179,7 @@ void xiiAnimState::UpdateState(xiiTime tDiff)
   const float fSpeed = m_fPlaybackSpeed * m_fPlaybackSpeedFactor;
 
   float fInvDuration    = 1.0f / m_Duration.AsFloatInSeconds();
-  float fNormalizedStep = tDiff.AsFloatInSeconds() * fInvDuration;
+  float fNormalizedStep = diff.AsFloatInSeconds() * fInvDuration;
 
   // calculate the new playback position
   {
@@ -191,11 +191,11 @@ void xiiAnimState::UpdateState(xiiTime tDiff)
 
       m_bHasTransitioned = true;
 
-      tDiff = m_fNormalizedPlaybackPosition * m_Duration;
+      diff = m_fNormalizedPlaybackPosition * m_Duration;
 
       m_Duration      = m_DurationOfQueued;
       fInvDuration    = 1.0f / m_Duration.AsFloatInSeconds();
-      fNormalizedStep = tDiff.AsFloatInSeconds() * fInvDuration;
+      fNormalizedStep = diff.AsFloatInSeconds() * fInvDuration;
     }
   }
 
@@ -296,34 +296,34 @@ void xiiAnimState::UpdateState(xiiTime tDiff)
   }
 }
 
-xiiResult xiiAnimState::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiAnimState::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(1);
+  ref_stream.WriteVersion(1);
 
-  stream << m_FadeIn;
-  stream << m_FadeOut;
+  ref_stream << m_FadeIn;
+  ref_stream << m_FadeOut;
 
-  stream << m_bImmediateFadeIn;
-  stream << m_bImmediateFadeOut;
-  stream << m_bLoop;
-  stream << m_fPlaybackSpeed;
-  stream << m_bApplyRootMotion;
+  ref_stream << m_bImmediateFadeIn;
+  ref_stream << m_bImmediateFadeOut;
+  ref_stream << m_bLoop;
+  ref_stream << m_fPlaybackSpeed;
+  ref_stream << m_bApplyRootMotion;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiAnimState::Deserialize(xiiStreamReader& stream)
+xiiResult xiiAnimState::Deserialize(xiiStreamReader& ref_stream)
 {
-  stream.ReadVersion(1);
+  ref_stream.ReadVersion(1);
 
-  stream >> m_FadeIn;
-  stream >> m_FadeOut;
+  ref_stream >> m_FadeIn;
+  ref_stream >> m_FadeOut;
 
-  stream >> m_bImmediateFadeIn;
-  stream >> m_bImmediateFadeOut;
-  stream >> m_bLoop;
-  stream >> m_fPlaybackSpeed;
-  stream >> m_bApplyRootMotion;
+  ref_stream >> m_bImmediateFadeIn;
+  ref_stream >> m_bImmediateFadeOut;
+  ref_stream >> m_bLoop;
+  ref_stream >> m_fPlaybackSpeed;
+  ref_stream >> m_bApplyRootMotion;
 
   return XII_SUCCESS;
 }

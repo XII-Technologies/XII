@@ -4,8 +4,8 @@
 #include <GuiFoundation/NodeEditor/NodeView.moc.h>
 #include <QMouseEvent>
 
-xiiQtNodeView::xiiQtNodeView(QWidget* parent) :
-  QGraphicsView(parent), m_pScene(nullptr), m_bPanning(false), m_iPanCounter(0)
+xiiQtNodeView::xiiQtNodeView(QWidget* pParent) :
+  QGraphicsView(pParent)
 {
   setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
   setDragMode(QGraphicsView::DragMode::RubberBandDrag);
@@ -16,7 +16,7 @@ xiiQtNodeView::xiiQtNodeView(QWidget* parent) :
   m_ViewScale = QPointF(1, 1);
 }
 
-xiiQtNodeView::~xiiQtNodeView() {}
+xiiQtNodeView::~xiiQtNodeView() = default;
 
 void xiiQtNodeView::SetScene(xiiQtNodeScene* pScene)
 {

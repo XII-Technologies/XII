@@ -71,14 +71,14 @@ xiiVolumePosition::Enum xiiFrustum::GetObjectPosition(const xiiVec3* pVertices, 
   return xiiVolumePosition::Inside;
 }
 
-static xiiPositionOnPlane::Enum GetPlaneObjectPosition(const xiiPlane& p, const xiiVec3* const vPoints, xiiUInt32 iVertices, const xiiMat4& mTransform)
+static xiiPositionOnPlane::Enum GetPlaneObjectPosition(const xiiPlane& p, const xiiVec3* const pPoints, xiiUInt32 uiVertices, const xiiMat4& mTransform)
 {
   bool bFront = false;
   bool bBack  = false;
 
-  for (xiiUInt32 i = 0; i < iVertices; ++i)
+  for (xiiUInt32 i = 0; i < uiVertices; ++i)
   {
-    switch (p.GetPointPosition(mTransform * vPoints[i]))
+    switch (p.GetPointPosition(mTransform * pPoints[i]))
     {
       case xiiPositionOnPlane::Front:
       {
@@ -132,7 +132,7 @@ xiiVolumePosition::Enum xiiFrustum::GetObjectPosition(const xiiVec3* pVertices, 
   return xiiVolumePosition::Inside;
 }
 
-xiiVolumePosition::Enum xiiFrustum::GetObjectPosition(const xiiBoundingSphere& Sphere) const
+xiiVolumePosition::Enum xiiFrustum::GetObjectPosition(const xiiBoundingSphere& sphere) const
 {
   /// \test Not yet tested
 
@@ -140,7 +140,7 @@ xiiVolumePosition::Enum xiiFrustum::GetObjectPosition(const xiiBoundingSphere& S
 
   for (xiiUInt32 i = 0; i < PLANE_COUNT; ++i)
   {
-    const xiiPositionOnPlane::Enum pos = m_Planes[i].GetObjectPosition(Sphere);
+    const xiiPositionOnPlane::Enum pos = m_Planes[i].GetObjectPosition(sphere);
 
     if (pos == xiiPositionOnPlane::Back)
       continue;
@@ -157,7 +157,7 @@ xiiVolumePosition::Enum xiiFrustum::GetObjectPosition(const xiiBoundingSphere& S
   return xiiVolumePosition::Inside;
 }
 
-xiiVolumePosition::Enum xiiFrustum::GetObjectPosition(const xiiBoundingBox& Box) const
+xiiVolumePosition::Enum xiiFrustum::GetObjectPosition(const xiiBoundingBox& box) const
 {
   /// \test Not yet tested
 
@@ -165,7 +165,7 @@ xiiVolumePosition::Enum xiiFrustum::GetObjectPosition(const xiiBoundingBox& Box)
 
   for (xiiUInt32 i = 0; i < PLANE_COUNT; ++i)
   {
-    const xiiPositionOnPlane::Enum pos = m_Planes[i].GetObjectPosition(Box);
+    const xiiPositionOnPlane::Enum pos = m_Planes[i].GetObjectPosition(box);
 
     if (pos == xiiPositionOnPlane::Back)
       continue;
@@ -188,29 +188,29 @@ void xiiFrustum::InvertFrustum()
     m_Planes[i].Flip();
 }
 
-void xiiFrustum::ComputeCornerPoints(xiiVec3 out_Points[FrustumCorner::CORNER_COUNT]) const
+void xiiFrustum::ComputeCornerPoints(xiiVec3 out_pPoints[FrustumCorner::CORNER_COUNT]) const
 {
   // clang-format off
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[TopPlane], m_Planes[LeftPlane], out_Points[FrustumCorner::NearTopLeft]).IgnoreResult();
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[TopPlane], m_Planes[RightPlane], out_Points[FrustumCorner::NearTopRight]).IgnoreResult();
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[BottomPlane], m_Planes[LeftPlane], out_Points[FrustumCorner::NearBottomLeft]).IgnoreResult();
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[BottomPlane], m_Planes[RightPlane], out_Points[FrustumCorner::NearBottomRight]).IgnoreResult();
+  xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[TopPlane], m_Planes[LeftPlane], out_pPoints[FrustumCorner::NearTopLeft]).IgnoreResult();
+  xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[TopPlane], m_Planes[RightPlane], out_pPoints[FrustumCorner::NearTopRight]).IgnoreResult();
+  xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[BottomPlane], m_Planes[LeftPlane], out_pPoints[FrustumCorner::NearBottomLeft]).IgnoreResult();
+  xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[BottomPlane], m_Planes[RightPlane], out_pPoints[FrustumCorner::NearBottomRight]).IgnoreResult();
 
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[TopPlane], m_Planes[LeftPlane], out_Points[FrustumCorner::FarTopLeft]).IgnoreResult();
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[TopPlane], m_Planes[RightPlane], out_Points[FrustumCorner::FarTopRight]).IgnoreResult();
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[BottomPlane], m_Planes[LeftPlane], out_Points[FrustumCorner::FarBottomLeft]).IgnoreResult();
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[BottomPlane], m_Planes[RightPlane], out_Points[FrustumCorner::FarBottomRight]).IgnoreResult();
+  xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[TopPlane], m_Planes[LeftPlane], out_pPoints[FrustumCorner::FarTopLeft]).IgnoreResult();
+  xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[TopPlane], m_Planes[RightPlane], out_pPoints[FrustumCorner::FarTopRight]).IgnoreResult();
+  xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[BottomPlane], m_Planes[LeftPlane], out_pPoints[FrustumCorner::FarBottomLeft]).IgnoreResult();
+  xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[BottomPlane], m_Planes[RightPlane], out_pPoints[FrustumCorner::FarBottomRight]).IgnoreResult();
   // clang-format on
 }
 
-void xiiFrustum::SetFrustum(const xiiMat4& ModelViewProjection0, xiiClipSpaceDepthRange::Enum DepthRange, xiiHandedness::Enum Handedness)
+void xiiFrustum::SetFrustum(const xiiMat4& mModelViewProjection0, xiiClipSpaceDepthRange::Enum depthRange, xiiHandedness::Enum handedness)
 {
-  xiiMat4 ModelViewProjection = ModelViewProjection0;
-  xiiGraphicsUtils::ConvertProjectionMatrixDepthRange(ModelViewProjection, DepthRange, xiiClipSpaceDepthRange::MinusOneToOne);
+  xiiMat4 ModelViewProjection = mModelViewProjection0;
+  xiiGraphicsUtils::ConvertProjectionMatrixDepthRange(ModelViewProjection, depthRange, xiiClipSpaceDepthRange::MinusOneToOne);
 
   xiiVec4 planes[6];
 
-  if (Handedness == xiiHandedness::LeftHanded)
+  if (handedness == xiiHandedness::LeftHanded)
   {
     ModelViewProjection.SetRow(0, -ModelViewProjection.GetRow(0));
   }
@@ -259,7 +259,7 @@ void xiiFrustum::SetFrustum(const xiiMat4& ModelViewProjection0, xiiClipSpaceDep
   xiiMemoryUtils::Copy(m_Planes, (xiiPlane*)planes, 6);
 }
 
-void xiiFrustum::SetFrustum(const xiiVec3& vPosition, const xiiVec3& vForwards, const xiiVec3& vUp, xiiAngle FovX, xiiAngle FovY, float fNearPlane, float fFarPlane)
+void xiiFrustum::SetFrustum(const xiiVec3& vPosition, const xiiVec3& vForwards, const xiiVec3& vUp, xiiAngle fovX, xiiAngle fovY, float fNearPlane, float fFarPlane)
 {
   XII_ASSERT_DEBUG(xiiMath::Abs(vForwards.GetNormalized().Dot(vUp.GetNormalized())) < 0.999f, "Up dir must be different from forward direction");
 
@@ -284,11 +284,11 @@ void xiiFrustum::SetFrustum(const xiiVec3& vPosition, const xiiVec3& vForwards, 
   mLocalFrame.SetColumn(1, vUpNorm);
   mLocalFrame.SetColumn(2, -vForwardsNorm);
 
-  const float fCosFovX = xiiMath::Cos(FovX * 0.5f);
-  const float fSinFovX = xiiMath::Sin(FovX * 0.5f);
+  const float fCosFovX = xiiMath::Cos(fovX * 0.5f);
+  const float fSinFovX = xiiMath::Sin(fovX * 0.5f);
 
-  const float fCosFovY = xiiMath::Cos(FovY * 0.5f);
-  const float fSinFovY = xiiMath::Sin(FovY * 0.5f);
+  const float fCosFovY = xiiMath::Cos(fovY * 0.5f);
+  const float fSinFovY = xiiMath::Sin(fovY * 0.5f);
 
   // Left Plane
   {

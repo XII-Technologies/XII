@@ -16,7 +16,7 @@ public:
 
   const xiiSharedPtr<const xiiStateMachineDescription>& GetDescription() const { return m_pDescription; }
 
-  xiiUniquePtr<xiiStateMachineInstance> CreateInstance(xiiReflectedClass& owner);
+  xiiUniquePtr<xiiStateMachineInstance> CreateInstance(xiiReflectedClass& ref_owner);
 
 private:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;

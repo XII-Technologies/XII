@@ -11,10 +11,10 @@ public:
   xiiAssetFileHeader();
 
   /// \brief Reads the hash from file. If the file is outdated, the hash is set to 0xFFFFFFFFFFFFFFFF.
-  xiiResult Read(xiiStreamReader& stream);
+  xiiResult Read(xiiStreamReader& ref_stream);
 
   /// \brief Writes the asset hash to file (plus a little version info)
-  xiiResult Write(xiiStreamWriter& stream) const;
+  xiiResult Write(xiiStreamWriter& ref_stream) const;
 
   /// \brief Checks whether the stored file contains the same hash.
   bool IsFileUpToDate(xiiUInt64 uiExpectedHash, xiiUInt16 uiVersion) const { return (m_uiHash == uiExpectedHash && m_uiVersion == uiVersion); }
@@ -23,9 +23,9 @@ public:
   xiiUInt64 GetFileHash() const { return m_uiHash; }
 
   /// \brief Sets the asset file hash
-  void SetFileHashAndVersion(xiiUInt64 hash, xiiUInt16 v)
+  void SetFileHashAndVersion(xiiUInt64 uiHash, xiiUInt16 v)
   {
-    m_uiHash    = hash;
+    m_uiHash    = uiHash;
     m_uiVersion = v;
   }
 
@@ -36,7 +36,7 @@ public:
   const xiiHashedString& GetGenerator() { return m_sGenerator; }
 
   /// \brief Allows to set the generator string
-  void SetGenerator(xiiStringView szGenerator) { m_sGenerator.Assign(szGenerator); }
+  void SetGenerator(xiiStringView sGenerator) { m_sGenerator.Assign(sGenerator); }
 
 private:
   xiiUInt64       m_uiHash;

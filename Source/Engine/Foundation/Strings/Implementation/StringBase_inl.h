@@ -98,25 +98,25 @@ inline const char* xiiStringBase<Derived>::FindLastSubString_NoCase(xiiStringVie
 }
 
 template <typename Derived>
-inline const char* xiiStringBase<Derived>::FindWholeWord(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB, const char* szStartSearchAt /* = nullptr */) const
+inline const char* xiiStringBase<Derived>::FindWholeWord(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB, const char* szStartSearchAt /* = nullptr */) const
 {
   if (szStartSearchAt == nullptr)
     szStartSearchAt = InternalGetData();
 
   XII_ASSERT_DEV((szStartSearchAt >= InternalGetData()) && (szStartSearchAt <= InternalGetDataEnd()), "The given pointer to start searching at is not inside this strings valid range.");
 
-  return xiiStringUtils::FindWholeWord(szStartSearchAt, szSearchFor, IsDelimiterCB, InternalGetDataEnd());
+  return xiiStringUtils::FindWholeWord(szStartSearchAt, szSearchFor, isDelimiterCB, InternalGetDataEnd());
 }
 
 template <typename Derived>
-inline const char* xiiStringBase<Derived>::FindWholeWord_NoCase(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB, const char* szStartSearchAt /* = nullptr */) const
+inline const char* xiiStringBase<Derived>::FindWholeWord_NoCase(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB, const char* szStartSearchAt /* = nullptr */) const
 {
   if (szStartSearchAt == nullptr)
     szStartSearchAt = InternalGetData();
 
   XII_ASSERT_DEV((szStartSearchAt >= InternalGetData()) && (szStartSearchAt <= InternalGetDataEnd()), "The given pointer to start searching at is not inside this strings valid range.");
 
-  return xiiStringUtils::FindWholeWord_NoCase(szStartSearchAt, szSearchFor, IsDelimiterCB, InternalGetDataEnd());
+  return xiiStringUtils::FindWholeWord_NoCase(szStartSearchAt, szSearchFor, isDelimiterCB, InternalGetDataEnd());
 }
 
 template <typename Derived>
@@ -309,9 +309,9 @@ XII_ALWAYS_INLINE xiiStringView xiiStringBase<Derived>::GetView() const
 
 template <typename Derived>
 template <typename Container>
-void xiiStringBase<Derived>::Split(bool bReturnEmptyStrings, Container& Output, const char* szSeparator1, const char* szSeparator2 /*= nullptr*/, const char* szSeparator3 /*= nullptr*/, const char* szSeparator4 /*= nullptr*/, const char* szSeparator5 /*= nullptr*/, const char* szSeparator6 /*= nullptr*/) const
+void xiiStringBase<Derived>::Split(bool bReturnEmptyStrings, Container& ref_output, const char* szSeparator1, const char* szSeparator2 /*= nullptr*/, const char* szSeparator3 /*= nullptr*/, const char* szSeparator4 /*= nullptr*/, const char* szSeparator5 /*= nullptr*/, const char* szSeparator6 /*= nullptr*/) const
 {
-  GetView().Split(bReturnEmptyStrings, Output, szSeparator1, szSeparator2, szSeparator3, szSeparator4, szSeparator5, szSeparator6);
+  GetView().Split(bReturnEmptyStrings, ref_output, szSeparator1, szSeparator2, szSeparator3, szSeparator4, szSeparator5, szSeparator6);
 }
 
 template <typename Derived>

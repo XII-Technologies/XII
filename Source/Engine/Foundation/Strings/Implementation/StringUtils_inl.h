@@ -33,12 +33,12 @@ XII_ALWAYS_INLINE bool xiiStringUtils::IsNullOrEmpty(const T* pString, const T* 
 }
 
 template <typename T>
-XII_ALWAYS_INLINE void xiiStringUtils::UpdateStringEnd(const T* szStringStart, const T*& szStringEnd)
+XII_ALWAYS_INLINE void xiiStringUtils::UpdateStringEnd(const T* pStringStart, const T*& ref_pStringEnd)
 {
-  if (szStringEnd != xiiUnicodeUtils::GetMaxStringEnd<T>())
+  if (ref_pStringEnd != xiiUnicodeUtils::GetMaxStringEnd<T>())
     return;
 
-  szStringEnd = szStringStart + GetStringElementCount(szStringStart, xiiUnicodeUtils::GetMaxStringEnd<T>());
+  ref_pStringEnd = pStringStart + GetStringElementCount(pStringStart, xiiUnicodeUtils::GetMaxStringEnd<T>());
 }
 
 template <typename T>
@@ -97,12 +97,12 @@ inline xiiUInt32 xiiStringUtils::GetCharacterCount(const char* szUtf8, const cha
 
 inline void xiiStringUtils::GetCharacterAndElementCount(
   const char* szUtf8,
-  xiiUInt32&  uiCharacterCount,
-  xiiUInt32&  uiElementCount,
+  xiiUInt32&  ref_uiCharacterCount,
+  xiiUInt32&  ref_uiElementCount,
   const char* pStringEnd)
 {
-  uiCharacterCount = 0;
-  uiElementCount   = 0;
+  ref_uiCharacterCount = 0;
+  ref_uiElementCount   = 0;
 
   if (IsNullOrEmpty(szUtf8))
     return;
@@ -117,10 +117,10 @@ inline void xiiStringUtils::GetCharacterAndElementCount(
 
     // skip all the Utf8 continuation bytes
     if (!xiiUnicodeUtils::IsUtf8ContinuationByte(uiByte))
-      ++uiCharacterCount;
+      ++ref_uiCharacterCount;
 
     ++szUtf8;
-    ++uiElementCount;
+    ++ref_uiElementCount;
   }
 }
 

@@ -8,7 +8,7 @@ namespace
 {
   struct TestType
   {
-    TestType() {}
+    TestType() = default;
 
     xiiInt32 MethodWithManyParams(xiiInt32 a, xiiInt32 b, xiiInt32 c, xiiInt32 d, xiiInt32 e, xiiInt32 f) { return m_iA + a + b + c + d + e + f; }
 
@@ -30,7 +30,7 @@ namespace
 
   struct BaseA
   {
-    virtual ~BaseA() {}
+    virtual ~BaseA() = default;
     virtual void bar() {}
 
     int m_i1;
@@ -38,7 +38,7 @@ namespace
 
   struct BaseB
   {
-    virtual ~BaseB() {}
+    virtual ~BaseB() = default;
     virtual void foo() {}
     int          m_i2;
   };

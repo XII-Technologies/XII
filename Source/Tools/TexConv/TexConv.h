@@ -7,12 +7,12 @@ class xiiStreamWriter;
 class xiiTexConv : public xiiApplication
 {
 public:
-  typedef xiiApplication SUPER;
+  using SUPER = xiiApplication;
 
   struct KeyEnumValuePair
   {
-    KeyEnumValuePair(const char* key, xiiInt32 val) :
-      m_szKey(key), m_iEnumValue(val)
+    KeyEnumValuePair(const char* szKey, xiiInt32 iVal) :
+      m_szKey(szKey), m_iEnumValue(iVal)
     {
     }
 
@@ -35,7 +35,7 @@ public:
   xiiResult ParseOutputFiles();
   xiiResult ParseChannelMappings();
   xiiResult ParseChannelSliceMapping(xiiInt32 iSlice);
-  xiiResult ParseChannelMappingConfig(xiiTexConvChannelMapping& out_Mapping, const char* cfg, xiiInt32 iChannelIndex, bool bSingleChannel);
+  xiiResult ParseChannelMappingConfig(xiiTexConvChannelMapping& out_mapping, const char* szCfg, xiiInt32 iChannelIndex, bool bSingleChannel);
   xiiResult ParseUsage();
   xiiResult ParseMipmapMode();
   xiiResult ParseTargetPlatform();
@@ -47,14 +47,14 @@ public:
   xiiResult ParseAssetHeader();
   xiiResult ParseBumpMapFilter();
 
-  xiiResult ParseUIntOption(const char* szOption, xiiInt32 iMinValue, xiiInt32 iMaxValue, xiiUInt32& uiResult) const;
-  xiiResult ParseStringOption(const char* szOption, const xiiDynamicArray<KeyEnumValuePair>& allowed, xiiInt32& iResult) const;
+  xiiResult ParseUIntOption(const char* szOption, xiiInt32 iMinValue, xiiInt32 iMaxValue, xiiUInt32& ref_uiResult) const;
+  xiiResult ParseStringOption(const char* szOption, const xiiDynamicArray<KeyEnumValuePair>& allowed, xiiInt32& ref_iResult) const;
   void      PrintOptionValues(const char* szOption, const xiiDynamicArray<KeyEnumValuePair>& allowed) const;
   void      PrintOptionValuesHelp(const char* szOption, const xiiDynamicArray<KeyEnumValuePair>& allowed) const;
-  bool      ParseFile(const char* szOption, xiiString& result) const;
+  bool      ParseFile(const char* szOption, xiiString& ref_sResult) const;
 
   bool      IsTexFormat() const;
-  xiiResult WriteTexFile(xiiStreamWriter& stream, const xiiImage& image);
+  xiiResult WriteTexFile(xiiStreamWriter& ref_stream, const xiiImage& image);
   xiiResult WriteOutputFile(const char* szFile, const xiiImage& image);
 
 private:

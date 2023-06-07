@@ -7,7 +7,7 @@ class xiiPhysicsWorldModuleInterface;
 
 struct XII_PARTICLEPLUGIN_DLL xiiParticleRaycastHitReaction
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {

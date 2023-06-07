@@ -461,9 +461,9 @@ xiiResult xiiQtContainerWindow::EnsureVisibleAnyContainer(xiiDocument* pDocument
   return XII_FAILURE;
 }
 
-void xiiQtContainerWindow::GetDocumentWindows(xiiHybridArray<xiiQtDocumentWindow*, 16>& windows)
+void xiiQtContainerWindow::GetDocumentWindows(xiiHybridArray<xiiQtDocumentWindow*, 16>& ref_windows)
 {
-  windows = m_DocumentWindows;
+  ref_windows = m_DocumentWindows;
 }
 
 bool xiiQtContainerWindow::eventFilter(QObject* obj, QEvent* e)

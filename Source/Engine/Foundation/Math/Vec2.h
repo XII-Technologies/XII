@@ -30,10 +30,10 @@ public:
   xiiVec2Template(); // [tested]
 
   /// \brief Initializes the vector with x,y
-  xiiVec2Template(Type X, Type Y); // [tested]
+  xiiVec2Template(Type x, Type y); // [tested]
 
   /// \brief Initializes all components with xy
-  explicit xiiVec2Template(Type xy); // [tested]
+  explicit xiiVec2Template(Type v); // [tested]
 
   // no copy-constructor and operator= since the default-generated ones will be faster
 
@@ -118,11 +118,11 @@ public:
   bool IsValid() const; // [tested]
 
   /// \brief Returns the distance between two 2D Vectors.
-  Type Distance(const xiiVec2Template<Type>& point) const; // [tested]
+  Type Distance(const xiiVec2Template<Type>& vPoint) const; // [tested]
 
   /// \brief Returns the squared distance between two 2D Vectors. Faster, since no square-root is taken. Useful, if one only wants to compare the distance of two
   /// vectors regardless of the magnitude.
-  Type DistanceSquared(const xiiVec2Template<Type>& point) const; // [tested]
+  Type DistanceSquared(const xiiVec2Template<Type>& vPoint) const; // [tested]
 
 
   // *** Operators ***
@@ -131,10 +131,10 @@ public:
   const xiiVec2Template<Type> operator-() const; // [tested]
 
   /// \brief Adds cc component-wise to this vector
-  void operator+=(const xiiVec2Template<Type>& cc); // [tested]
+  void operator+=(const xiiVec2Template<Type>& vCc); // [tested]
 
   /// \brief Subtracts cc component-wise from this vector
-  void operator-=(const xiiVec2Template<Type>& cc); // [tested]
+  void operator-=(const xiiVec2Template<Type>& vCc); // [tested]
 
   /// \brief Multiplies all components of this vector with f
   void operator*=(Type f); // [tested]
@@ -164,7 +164,7 @@ public:
   const xiiVec2Template<Type> CompMax(const xiiVec2Template<Type>& rhs) const; // [tested]
 
   /// \brief Returns the component-wise clamped value of *this between low and high.
-  const xiiVec2Template<Type> CompClamp(const xiiVec2Template<Type>& low, const xiiVec2Template<Type>& high) const; // [tested]
+  const xiiVec2Template<Type> CompClamp(const xiiVec2Template<Type>& vLow, const xiiVec2Template<Type>& vHigh) const; // [tested]
 
   /// \brief Returns the component-wise multiplication of *this and rhs
   const xiiVec2Template<Type> CompMul(const xiiVec2Template<Type>& rhs) const; // [tested]

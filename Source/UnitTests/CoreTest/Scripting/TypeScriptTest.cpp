@@ -11,20 +11,20 @@
 #  include <Foundation/IO/FileSystem/FileWriter.h>
 #  include <TestFramework/Utilities/TestLogInterface.h>
 
-static xiiResult TranspileString(const char* szSource, xiiDuktapeContext& script, xiiStringBuilder& result)
+static xiiResult TranspileString(const char* szSource, xiiDuktapeContext& ref_script, xiiStringBuilder& ref_sResult)
 {
-  script.PushGlobalObject();                                            // [ global ]
-  script.PushLocalObject("ts").IgnoreResult();                          // [ global ts ]
-  XII_SUCCEED_OR_RETURN(script.PrepareObjectFunctionCall("transpile")); // [ global ts transpile ]
-  script.PushString(szSource);                                          // [ global ts transpile source ]
-  XII_SUCCEED_OR_RETURN(script.CallPreparedFunction());                 // [ global ts result ]
-  result = script.GetStringValue(-1);                                   // [ global ts result ]
-  script.PopStack(3);                                                   // [ ]
+  ref_script.PushGlobalObject();                                            // [ global ]
+  ref_script.PushLocalObject("ts").IgnoreResult();                          // [ global ts ]
+  XII_SUCCEED_OR_RETURN(ref_script.PrepareObjectFunctionCall("transpile")); // [ global ts transpile ]
+  ref_script.PushString(szSource);                                          // [ global ts transpile source ]
+  XII_SUCCEED_OR_RETURN(ref_script.CallPreparedFunction());                 // [ global ts result ]
+  ref_sResult = ref_script.GetStringValue(-1);                              // [ global ts result ]
+  ref_script.PopStack(3);                                                   // [ ]
 
   return XII_SUCCESS;
 }
 
-static xiiResult TranspileFile(const char* szFile, xiiDuktapeContext& script, xiiStringBuilder& result)
+static xiiResult TranspileFile(const char* szFile, xiiDuktapeContext& ref_script, xiiStringBuilder& ref_sResult)
 {
   xiiFileReader file;
   XII_SUCCEED_OR_RETURN(file.Open(szFile));
@@ -32,12 +32,12 @@ static xiiResult TranspileFile(const char* szFile, xiiDuktapeContext& script, xi
   xiiStringBuilder source;
   source.ReadAll(file);
 
-  return TranspileString(source, script, result);
+  return TranspileString(source, ref_script, ref_sResult);
 }
 
-static xiiResult TranspileFileToJS(const char* szFile, xiiDuktapeContext& script, xiiStringBuilder& result)
+static xiiResult TranspileFileToJS(const char* szFile, xiiDuktapeContext& ref_script, xiiStringBuilder& ref_sResult)
 {
-  XII_SUCCEED_OR_RETURN(TranspileFile(szFile, script, result));
+  XII_SUCCEED_OR_RETURN(TranspileFile(szFile, ref_script, ref_sResult));
 
   xiiStringBuilder sFile(":TypeScriptTest/", szFile);
   sFile.ChangeFileExtension("js");
@@ -45,7 +45,7 @@ static xiiResult TranspileFileToJS(const char* szFile, xiiDuktapeContext& script
   xiiFileWriter file;
   XII_SUCCEED_OR_RETURN(file.Open(sFile));
 
-  XII_SUCCEED_OR_RETURN(file.WriteBytes(result.GetData(), result.GetElementCount()));
+  XII_SUCCEED_OR_RETURN(file.WriteBytes(ref_sResult.GetData(), ref_sResult.GetElementCount()));
   return XII_SUCCESS;
 }
 
@@ -58,9 +58,9 @@ static int Duk_Print(duk_context* pContext)
   return duk.ReturnVoid();
 }
 
-static duk_ret_t ModuleSearchFunction2(duk_context* ctx)
+static duk_ret_t ModuleSearchFunction2(duk_context* pCtx)
 {
-  xiiDuktapeFunction script(ctx);
+  xiiDuktapeFunction script(pCtx);
 
   /* Nargs was given as 4 and we get the following stack arguments:
    *   index 0: id

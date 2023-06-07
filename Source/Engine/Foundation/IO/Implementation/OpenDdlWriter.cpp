@@ -286,7 +286,7 @@ void xiiOpenDdlWriter::OutputObjectBeginning()
   m_iIndentation++;
 }
 
-bool IsDdlIdentifierCharacter(xiiUInt8 byte);
+bool IsDdlIdentifierCharacter(xiiUInt8 uiByte);
 
 void xiiOpenDdlWriter::OutputObjectName(const char* szName, bool bGlobalName)
 {
@@ -453,10 +453,10 @@ void xiiOpenDdlWriter::WriteBinaryAsHex(const void* pData, xiiUInt32 uiBytes)
   }
 }
 
-void xiiOpenDdlWriter::WriteBool(const bool* pValues, xiiUInt32 count /*= 1*/)
+void xiiOpenDdlWriter::WriteBool(const bool* pValues, xiiUInt32 uiCount /*= 1*/)
 {
   XII_ASSERT_DEBUG(pValues != nullptr, "Invalid value array");
-  XII_ASSERT_DEBUG(count > 0, "This is pointless");
+  XII_ASSERT_DEBUG(uiCount > 0, "This is pointless");
 
   WritePrimitiveType(State::PrimitivesBool);
 
@@ -469,7 +469,7 @@ void xiiOpenDdlWriter::WriteBool(const bool* pValues, xiiUInt32 count /*= 1*/)
     else
       OutputString("0", 1);
 
-    for (xiiUInt32 i = 1; i < count; ++i)
+    for (xiiUInt32 i = 1; i < uiCount; ++i)
     {
       if (pValues[i])
         OutputString(",1", 2);
@@ -484,7 +484,7 @@ void xiiOpenDdlWriter::WriteBool(const bool* pValues, xiiUInt32 count /*= 1*/)
     else
       OutputString("false", 5);
 
-    for (xiiUInt32 i = 1; i < count; ++i)
+    for (xiiUInt32 i = 1; i < uiCount; ++i)
     {
       if (pValues[i])
         OutputString(",true", 5);
@@ -494,68 +494,68 @@ void xiiOpenDdlWriter::WriteBool(const bool* pValues, xiiUInt32 count /*= 1*/)
   }
 }
 
-void xiiOpenDdlWriter::WriteInt8(const xiiInt8* pValues, xiiUInt32 count /*= 1*/)
+void xiiOpenDdlWriter::WriteInt8(const xiiInt8* pValues, xiiUInt32 uiCount /*= 1*/)
 {
   XII_ASSERT_DEBUG(pValues != nullptr, "Invalid value array");
-  XII_ASSERT_DEBUG(count > 0, "This is pointless");
+  XII_ASSERT_DEBUG(uiCount > 0, "This is pointless");
 
   WritePrimitiveType(State::PrimitivesInt8);
 
   m_sTemp.Format("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
-  for (xiiUInt32 i = 1; i < count; ++i)
+  for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
     m_sTemp.Format(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
 
-void xiiOpenDdlWriter::WriteInt16(const xiiInt16* pValues, xiiUInt32 count /*= 1*/)
+void xiiOpenDdlWriter::WriteInt16(const xiiInt16* pValues, xiiUInt32 uiCount /*= 1*/)
 {
   XII_ASSERT_DEBUG(pValues != nullptr, "Invalid value array");
-  XII_ASSERT_DEBUG(count > 0, "This is pointless");
+  XII_ASSERT_DEBUG(uiCount > 0, "This is pointless");
 
   WritePrimitiveType(State::PrimitivesInt16);
 
   m_sTemp.Format("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
-  for (xiiUInt32 i = 1; i < count; ++i)
+  for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
     m_sTemp.Format(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
 
-void xiiOpenDdlWriter::WriteInt32(const xiiInt32* pValues, xiiUInt32 count /*= 1*/)
+void xiiOpenDdlWriter::WriteInt32(const xiiInt32* pValues, xiiUInt32 uiCount /*= 1*/)
 {
   XII_ASSERT_DEBUG(pValues != nullptr, "Invalid value array");
-  XII_ASSERT_DEBUG(count > 0, "This is pointless");
+  XII_ASSERT_DEBUG(uiCount > 0, "This is pointless");
 
   WritePrimitiveType(State::PrimitivesInt32);
 
   m_sTemp.Format("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
-  for (xiiUInt32 i = 1; i < count; ++i)
+  for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
     m_sTemp.Format(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
 
-void xiiOpenDdlWriter::WriteInt64(const xiiInt64* pValues, xiiUInt32 count /*= 1*/)
+void xiiOpenDdlWriter::WriteInt64(const xiiInt64* pValues, xiiUInt32 uiCount /*= 1*/)
 {
   XII_ASSERT_DEBUG(pValues != nullptr, "Invalid value array");
-  XII_ASSERT_DEBUG(count > 0, "This is pointless");
+  XII_ASSERT_DEBUG(uiCount > 0, "This is pointless");
 
   WritePrimitiveType(State::PrimitivesInt64);
 
   m_sTemp.Format("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
-  for (xiiUInt32 i = 1; i < count; ++i)
+  for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
     m_sTemp.Format(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
@@ -563,78 +563,78 @@ void xiiOpenDdlWriter::WriteInt64(const xiiInt64* pValues, xiiUInt32 count /*= 1
 }
 
 
-void xiiOpenDdlWriter::WriteUInt8(const xiiUInt8* pValues, xiiUInt32 count /*= 1*/)
+void xiiOpenDdlWriter::WriteUInt8(const xiiUInt8* pValues, xiiUInt32 uiCount /*= 1*/)
 {
   XII_ASSERT_DEBUG(pValues != nullptr, "Invalid value array");
-  XII_ASSERT_DEBUG(count > 0, "This is pointless");
+  XII_ASSERT_DEBUG(uiCount > 0, "This is pointless");
 
   WritePrimitiveType(State::PrimitivesUInt8);
 
   m_sTemp.Format("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
-  for (xiiUInt32 i = 1; i < count; ++i)
+  for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
     m_sTemp.Format(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
 
-void xiiOpenDdlWriter::WriteUInt16(const xiiUInt16* pValues, xiiUInt32 count /*= 1*/)
+void xiiOpenDdlWriter::WriteUInt16(const xiiUInt16* pValues, xiiUInt32 uiCount /*= 1*/)
 {
   XII_ASSERT_DEBUG(pValues != nullptr, "Invalid value array");
-  XII_ASSERT_DEBUG(count > 0, "This is pointless");
+  XII_ASSERT_DEBUG(uiCount > 0, "This is pointless");
 
   WritePrimitiveType(State::PrimitivesUInt16);
 
   m_sTemp.Format("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
-  for (xiiUInt32 i = 1; i < count; ++i)
+  for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
     m_sTemp.Format(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
 
-void xiiOpenDdlWriter::WriteUInt32(const xiiUInt32* pValues, xiiUInt32 count /*= 1*/)
+void xiiOpenDdlWriter::WriteUInt32(const xiiUInt32* pValues, xiiUInt32 uiCount /*= 1*/)
 {
   XII_ASSERT_DEBUG(pValues != nullptr, "Invalid value array");
-  XII_ASSERT_DEBUG(count > 0, "This is pointless");
+  XII_ASSERT_DEBUG(uiCount > 0, "This is pointless");
 
   WritePrimitiveType(State::PrimitivesUInt32);
 
   m_sTemp.Format("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
-  for (xiiUInt32 i = 1; i < count; ++i)
+  for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
     m_sTemp.Format(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
 
-void xiiOpenDdlWriter::WriteUInt64(const xiiUInt64* pValues, xiiUInt32 count /*= 1*/)
+void xiiOpenDdlWriter::WriteUInt64(const xiiUInt64* pValues, xiiUInt32 uiCount /*= 1*/)
 {
   XII_ASSERT_DEBUG(pValues != nullptr, "Invalid value array");
-  XII_ASSERT_DEBUG(count > 0, "This is pointless");
+  XII_ASSERT_DEBUG(uiCount > 0, "This is pointless");
 
   WritePrimitiveType(State::PrimitivesUInt64);
 
   m_sTemp.Format("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
-  for (xiiUInt32 i = 1; i < count; ++i)
+  for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
     m_sTemp.Format(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
 
-void xiiOpenDdlWriter::WriteFloat(const float* pValues, xiiUInt32 count /*= 1*/)
+void xiiOpenDdlWriter::WriteFloat(const float* pValues, xiiUInt32 uiCount /*= 1*/)
 {
   XII_ASSERT_DEBUG(pValues != nullptr, "Invalid value array");
-  XII_ASSERT_DEBUG(count > 0, "This is pointless");
+  XII_ASSERT_DEBUG(uiCount > 0, "This is pointless");
 
   WritePrimitiveType(State::PrimitivesFloat);
 
@@ -643,7 +643,7 @@ void xiiOpenDdlWriter::WriteFloat(const float* pValues, xiiUInt32 count /*= 1*/)
     m_sTemp.Format("{0}", pValues[0]);
     OutputString(m_sTemp.GetData());
 
-    for (xiiUInt32 i = 1; i < count; ++i)
+    for (xiiUInt32 i = 1; i < uiCount; ++i)
     {
       m_sTemp.Format(",{0}", pValues[i]);
       OutputString(m_sTemp.GetData());
@@ -663,7 +663,7 @@ void xiiOpenDdlWriter::WriteFloat(const float* pValues, xiiUInt32 count /*= 1*/)
       WriteBinaryAsHex(&pValues[0], 4);
     }
 
-    for (xiiUInt32 i = 1; i < count; ++i)
+    for (xiiUInt32 i = 1; i < uiCount; ++i)
     {
       if (pValues[i] == 0)
       {
@@ -678,10 +678,10 @@ void xiiOpenDdlWriter::WriteFloat(const float* pValues, xiiUInt32 count /*= 1*/)
   }
 }
 
-void xiiOpenDdlWriter::WriteDouble(const double* pValues, xiiUInt32 count /*= 1*/)
+void xiiOpenDdlWriter::WriteDouble(const double* pValues, xiiUInt32 uiCount /*= 1*/)
 {
   XII_ASSERT_DEBUG(pValues != nullptr, "Invalid value array");
-  XII_ASSERT_DEBUG(count > 0, "This is pointless");
+  XII_ASSERT_DEBUG(uiCount > 0, "This is pointless");
 
   WritePrimitiveType(State::PrimitivesDouble);
 
@@ -690,7 +690,7 @@ void xiiOpenDdlWriter::WriteDouble(const double* pValues, xiiUInt32 count /*= 1*
     m_sTemp.Format("{0}", pValues[0]);
     OutputString(m_sTemp.GetData());
 
-    for (xiiUInt32 i = 1; i < count; ++i)
+    for (xiiUInt32 i = 1; i < uiCount; ++i)
     {
       m_sTemp.Format(",{0}", pValues[i]);
       OutputString(m_sTemp.GetData());
@@ -710,7 +710,7 @@ void xiiOpenDdlWriter::WriteDouble(const double* pValues, xiiUInt32 count /*= 1*
       WriteBinaryAsHex(&pValues[0], 8);
     }
 
-    for (xiiUInt32 i = 1; i < count; ++i)
+    for (xiiUInt32 i = 1; i < uiCount; ++i)
     {
       if (pValues[i] == 0)
       {
@@ -725,11 +725,11 @@ void xiiOpenDdlWriter::WriteDouble(const double* pValues, xiiUInt32 count /*= 1*
   }
 }
 
-void xiiOpenDdlWriter::WriteString(const xiiStringView& string)
+void xiiOpenDdlWriter::WriteString(const xiiStringView& sString)
 {
   WritePrimitiveType(State::PrimitivesString);
 
-  OutputEscapedString(string);
+  OutputEscapedString(sString);
 }
 
 void xiiOpenDdlWriter::WriteBinaryAsString(const void* pData, xiiUInt32 uiBytes)

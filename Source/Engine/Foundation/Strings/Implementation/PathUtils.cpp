@@ -161,10 +161,10 @@ bool xiiPathUtils::IsRootedPath(xiiStringView sPath)
   return !sPath.IsEmpty() && *sPath.GetStartPointer() == ':';
 }
 
-void xiiPathUtils::GetRootedPathParts(xiiStringView sPath, xiiStringView& root, xiiStringView& relPath)
+void xiiPathUtils::GetRootedPathParts(xiiStringView sPath, xiiStringView& ref_sRoot, xiiStringView& ref_sRelPath)
 {
-  root    = xiiStringView();
-  relPath = sPath;
+  ref_sRoot    = xiiStringView();
+  ref_sRelPath = sPath;
 
   if (!IsRootedPath(sPath))
     return;
@@ -187,16 +187,16 @@ void xiiPathUtils::GetRootedPathParts(xiiStringView sPath, xiiStringView& root, 
   while (*szEnd != '\0' && !IsPathSeparator(*szEnd))
     xiiUnicodeUtils::MoveToNextUtf8(szEnd, szPathEnd);
 
-  root = xiiStringView(szStart, szEnd);
+  ref_sRoot = xiiStringView(szStart, szEnd);
   if (*szEnd == '\0')
   {
-    relPath = xiiStringView();
+    ref_sRelPath = xiiStringView();
   }
   else
   {
     // skip path separator for the relative path
     xiiUnicodeUtils::MoveToNextUtf8(szEnd, szPathEnd);
-    relPath = xiiStringView(szEnd, szPathEnd);
+    ref_sRelPath = xiiStringView(szEnd, szPathEnd);
   }
 }
 
@@ -207,7 +207,7 @@ xiiStringView xiiPathUtils::GetRootedPathRootName(xiiStringView sPath)
   return root;
 }
 
-bool xiiPathUtils::IsValidFilenameChar(xiiUInt32 character)
+bool xiiPathUtils::IsValidFilenameChar(xiiUInt32 uiCharacter)
 {
   /// \test Not tested yet
 
@@ -219,7 +219,7 @@ bool xiiPathUtils::IsValidFilenameChar(xiiUInt32 character)
 
   for (int i = 0; i < XII_ARRAY_SIZE(forbiddenFilenameChars); ++i)
   {
-    if (forbiddenFilenameChars[i] == character)
+    if (forbiddenFilenameChars[i] == uiCharacter)
       return false;
   }
 
@@ -241,20 +241,20 @@ bool xiiPathUtils::ContainsInvalidFilenameChars(xiiStringView sPath)
   return false;
 }
 
-void xiiPathUtils::MakeValidFilename(xiiStringView sFilename, xiiUInt32 replacementCharacter, xiiStringBuilder& outFilename)
+void xiiPathUtils::MakeValidFilename(xiiStringView sFilename, xiiUInt32 uiReplacementCharacter, xiiStringBuilder& out_sFilename)
 {
-  XII_ASSERT_DEBUG(IsValidFilenameChar(replacementCharacter), "Given replacement character is not allowed for filenames.");
+  XII_ASSERT_DEBUG(IsValidFilenameChar(uiReplacementCharacter), "Given replacement character is not allowed for filenames.");
 
-  outFilename.Clear();
+  out_sFilename.Clear();
 
   for (auto it = sFilename.GetIteratorFront(); it.IsValid(); ++it)
   {
     xiiUInt32 currentChar = it.GetCharacter();
 
     if (IsValidFilenameChar(currentChar) == false)
-      outFilename.Append(replacementCharacter);
+      out_sFilename.Append(uiReplacementCharacter);
     else
-      outFilename.Append(currentChar);
+      out_sFilename.Append(currentChar);
   }
 }
 

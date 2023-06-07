@@ -7,7 +7,7 @@
 
 struct XII_JOLTPLUGIN_DLL xiiJoltSteppingMode
 {
-  typedef xiiUInt32 StorageType;
+  using StorageType = xiiUInt32;
 
   enum Enum
   {
@@ -25,7 +25,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_JOLTPLUGIN_DLL, xiiJoltSteppingMode);
 
 struct xiiOnJoltContact
 {
-  typedef xiiUInt32 StorageType;
+  using StorageType = xiiUInt32;
 
   enum Enum
   {

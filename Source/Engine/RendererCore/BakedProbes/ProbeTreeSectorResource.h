@@ -4,7 +4,7 @@
 #include <Core/ResourceManager/Resource.h>
 #include <RendererCore/BakedProbes/BakingUtils.h>
 
-typedef xiiTypedResourceHandle<class xiiProbeTreeSectorResource> xiiProbeTreeSectorResourceHandle;
+using xiiProbeTreeSectorResourceHandle = xiiTypedResourceHandle<class xiiProbeTreeSectorResource>;
 
 struct XII_RENDERERCORE_DLL xiiProbeTreeSectorResourceDescriptor
 {
@@ -24,8 +24,8 @@ struct XII_RENDERERCORE_DLL xiiProbeTreeSectorResourceDescriptor
   void      Clear();
   xiiUInt64 GetHeapMemoryUsage() const;
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 };
 
 class XII_RENDERERCORE_DLL xiiProbeTreeSectorResource : public xiiResource

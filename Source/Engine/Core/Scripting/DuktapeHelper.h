@@ -118,12 +118,12 @@ public:
 
   bool HasProperty(const char* szPropertyName, xiiInt32 iParentObjectIndex = -1) const;
 
-  bool        GetBoolProperty(const char* szPropertyName, bool fallback, xiiInt32 iParentObjectIndex = -1) const;
-  xiiInt32    GetIntProperty(const char* szPropertyName, xiiInt32 fallback, xiiInt32 iParentObjectIndex = -1) const;
-  xiiUInt32   GetUIntProperty(const char* szPropertyName, xiiUInt32 fallback, xiiInt32 iParentObjectIndex = -1) const;
-  float       GetFloatProperty(const char* szPropertyName, float fallback, xiiInt32 iParentObjectIndex = -1) const;
-  double      GetNumberProperty(const char* szPropertyName, double fallback, xiiInt32 iParentObjectIndex = -1) const;
-  const char* GetStringProperty(const char* szPropertyName, const char* fallback, xiiInt32 iParentObjectIndex = -1) const;
+  bool        GetBoolProperty(const char* szPropertyName, bool bFallback, xiiInt32 iParentObjectIndex = -1) const;
+  xiiInt32    GetIntProperty(const char* szPropertyName, xiiInt32 iFallback, xiiInt32 iParentObjectIndex = -1) const;
+  xiiUInt32   GetUIntProperty(const char* szPropertyName, xiiUInt32 uiFallback, xiiInt32 iParentObjectIndex = -1) const;
+  float       GetFloatProperty(const char* szPropertyName, float fFallback, xiiInt32 iParentObjectIndex = -1) const;
+  double      GetNumberProperty(const char* szPropertyName, double fFallback, xiiInt32 iParentObjectIndex = -1) const;
+  const char* GetStringProperty(const char* szPropertyName, const char* szFallback, xiiInt32 iParentObjectIndex = -1) const;
 
   void SetBoolProperty(const char* szPropertyName, bool value, xiiInt32 iParentObjectIndex = -1) const;
   void SetNumberProperty(const char* szPropertyName, double value, xiiInt32 iParentObjectIndex = -1) const;
@@ -162,12 +162,12 @@ public:
   /// \name C Functions
   ///@{
 
-  void RegisterGlobalFunction(const char* szFunctionName, duk_c_function pFunction, xiiUInt8 uiNumArguments, xiiInt16 iMagicValue = 0);
-  void RegisterGlobalFunctionWithVarArgs(const char* szFunctionName, duk_c_function pFunction, xiiInt16 iMagicValue = 0);
+  void RegisterGlobalFunction(const char* szFunctionName, duk_c_function function, xiiUInt8 uiNumArguments, xiiInt16 iMagicValue = 0);
+  void RegisterGlobalFunctionWithVarArgs(const char* szFunctionName, duk_c_function function, xiiInt16 iMagicValue = 0);
 
   void RegisterObjectFunction(
     const char*    szFunctionName,
-    duk_c_function pFunction,
+    duk_c_function function,
     xiiUInt8       uiNumArguments,
     xiiInt32       iParentObjectIndex = -1,
     xiiInt16       iMagicValue        = 0);
@@ -191,14 +191,14 @@ public:
   void PushString(const xiiStringView& sParam);
   void PushNull();
   void PushUndefined();
-  void PushCustom(xiiUInt32 num = 1);
+  void PushCustom(xiiUInt32 uiNum = 1);
 
-  bool        GetBoolValue(xiiInt32 iStackElement, bool fallback = false) const;
-  xiiInt32    GetIntValue(xiiInt32 iStackElement, xiiInt32 fallback = 0) const;
-  xiiUInt32   GetUIntValue(xiiInt32 iStackElement, xiiUInt32 fallback = 0) const;
-  float       GetFloatValue(xiiInt32 iStackElement, float fallback = 0) const;
-  double      GetNumberValue(xiiInt32 iStackElement, double fallback = 0) const;
-  const char* GetStringValue(xiiInt32 iStackElement, const char* fallback = "") const;
+  bool        GetBoolValue(xiiInt32 iStackElement, bool bFallback = false) const;
+  xiiInt32    GetIntValue(xiiInt32 iStackElement, xiiInt32 iFallback = 0) const;
+  xiiUInt32   GetUIntValue(xiiInt32 iStackElement, xiiUInt32 uiFallback = 0) const;
+  float       GetFloatValue(xiiInt32 iStackElement, float fFallback = 0) const;
+  double      GetNumberValue(xiiInt32 iStackElement, double fFallback = 0) const;
+  const char* GetStringValue(xiiInt32 iStackElement, const char* szFallback = "") const;
 
   ///@}
   /// \name Executing Scripts
@@ -206,7 +206,7 @@ public:
 
   xiiResult ExecuteString(const char* szString, const char* szDebugName = "eval");
 
-  xiiResult ExecuteStream(xiiStreamReader& stream, const char* szDebugName);
+  xiiResult ExecuteStream(xiiStreamReader& ref_stream, const char* szDebugName);
 
   xiiResult ExecuteFile(const char* szFile);
 

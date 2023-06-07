@@ -17,7 +17,7 @@ xiiPipeChannel_win::State::State(xiiPipeChannel_win* pChannel) :
   IsPending        = false;
 }
 
-xiiPipeChannel_win::State::~State() {}
+xiiPipeChannel_win::State::~State() = default;
 
 xiiPipeChannel_win::xiiPipeChannel_win(const char* szAddress, Mode::Enum mode) :
   xiiIpcChannel(szAddress, mode), m_InputState(this), m_OutputState(this)

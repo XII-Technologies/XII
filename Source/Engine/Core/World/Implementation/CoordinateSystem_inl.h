@@ -50,7 +50,7 @@ XII_ALWAYS_INLINE xiiVec3Template<Type> xiiCoordinateSystemConversionTemplate<Ty
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiQuatTemplate<Type> xiiCoordinateSystemConversionTemplate<Type>::ConvertSourceRotation(const xiiQuatTemplate<Type>& vOrientation) const
+XII_ALWAYS_INLINE xiiQuatTemplate<Type> xiiCoordinateSystemConversionTemplate<Type>::ConvertSourceRotation(const xiiQuatTemplate<Type>& qOrientation) const
 {
   xiiVec3Template<Type> axis = m_mSourceToTarget * vOrientation.v;
   xiiQuatTemplate<Type> rr(axis.x, axis.y, axis.z, vOrientation.w * m_fWindingSwap);
@@ -70,7 +70,7 @@ XII_ALWAYS_INLINE xiiVec3Template<Type> xiiCoordinateSystemConversionTemplate<Ty
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiQuatTemplate<Type> xiiCoordinateSystemConversionTemplate<Type>::ConvertTargetRotation(const xiiQuatTemplate<Type>& vOrientation) const
+XII_ALWAYS_INLINE xiiQuatTemplate<Type> xiiCoordinateSystemConversionTemplate<Type>::ConvertTargetRotation(const xiiQuatTemplate<Type>& qOrientation) const
 {
   xiiVec3Template<Type> axis = m_mTargetToSource * vOrientation.v;
   xiiQuatTemplate<Type> rr(axis.x, axis.y, axis.z, vOrientation.w * m_fWindingSwap);

@@ -18,7 +18,7 @@ class XII_GUIFOUNDATION_DLL xiiQtCurveEditWidget : public QWidget
   Q_OBJECT
 
 public:
-  xiiQtCurveEditWidget(QWidget* parent);
+  xiiQtCurveEditWidget(QWidget* pParent);
 
   double m_fLowerRange       = -xiiMath::HighValue<double>();
   double m_fUpperRange       = xiiMath::HighValue<double>();
@@ -37,12 +37,12 @@ public:
 
   void FrameCurve();
   void FrameSelection();
-  void Frame(double offsetX, double offsetY, double width, double height);
+  void Frame(double fOffsetX, double fOffsetY, double fWidth, double fHeight);
 
   QPoint  MapFromScene(const QPointF& pos) const;
-  QPoint  MapFromScene(const xiiVec2d& pos) const { return MapFromScene(QPointF(pos.x, pos.y)); }
+  QPoint  MapFromScene(const xiiVec2d& vPos) const { return MapFromScene(QPointF(vPos.x, vPos.y)); }
   QPointF MapToScene(const QPoint& pos) const;
-  xiiVec2 MapDirFromScene(const xiiVec2& pos) const;
+  xiiVec2 MapDirFromScene(const xiiVec2& vPos) const;
 
   void                                       ClearSelection();
   void                                       SelectAll();
@@ -50,21 +50,21 @@ public:
   bool                                       IsSelected(const xiiSelectedCurveCP& cp) const;
   void                                       SetSelection(const xiiSelectedCurveCP& cp);
   void                                       ToggleSelected(const xiiSelectedCurveCP& cp);
-  void                                       SetSelected(const xiiSelectedCurveCP& cp, bool set);
+  void                                       SetSelected(const xiiSelectedCurveCP& cp, bool bSet);
 
   bool GetSelectedTangent(xiiInt32& out_iCurve, xiiInt32& out_iPoint, bool& out_bLeftTangent) const;
 
 Q_SIGNALS:
   void DoubleClickEvent(const QPointF& scenePos, const QPointF& epsilon);
   void DeleteControlPointsEvent();
-  void MoveControlPointsEvent(double moveX, double moveY);
-  void MoveTangentsEvent(double moveX, double moveY);
-  void BeginOperationEvent(QString name);
+  void MoveControlPointsEvent(double fMoveX, double fMoveY);
+  void MoveTangentsEvent(double fMoveX, double fMoveY);
+  void BeginOperationEvent(QString sName);
   void EndOperationEvent(bool bCommit);
-  void ScaleControlPointsEvent(const QPointF& centerPos, double scaleX, double scaleY);
+  void ScaleControlPointsEvent(const QPointF& centerPos, double fScaleX, double fScaleY);
   void ContextMenuEvent(QPoint pos, QPointF scenePos);
   void SelectionChangedEvent();
-  void MoveCurveEvent(xiiInt32 iCurve, double moveY);
+  void MoveCurveEvent(xiiInt32 iCurve, double fMoveY);
 
 protected:
   virtual void paintEvent(QPaintEvent* e) override;

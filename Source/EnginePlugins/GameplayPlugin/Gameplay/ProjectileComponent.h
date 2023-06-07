@@ -7,7 +7,7 @@
 
 struct xiiMsgComponentInternalTrigger;
 
-typedef xiiComponentManagerSimple<class xiiProjectileComponent, xiiComponentUpdateType::WhenSimulating> xiiProjectileComponentManager;
+using xiiProjectileComponentManager = class xiiProjectileComponent;
 
 /// \brief Defines what a projectile will do when it hits a surface
 struct XII_GAMEPLAYPLUGIN_DLL xiiProjectileReaction
@@ -59,8 +59,8 @@ class XII_GAMEPLAYPLUGIN_DLL xiiProjectileComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnSimulationStarted() override;

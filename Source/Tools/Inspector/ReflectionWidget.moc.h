@@ -13,7 +13,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtReflectionWidget(QWidget* parent = 0);
+  xiiQtReflectionWidget(QWidget* pParent = 0);
 
   static xiiQtReflectionWidget* s_pWidget;
 

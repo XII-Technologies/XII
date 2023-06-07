@@ -122,10 +122,10 @@ public:
   ///
   /// If the entry already exists, it will add the entry flags that hadn't been set before, but NOT change the value.
   /// Thus you can use it to make sure that a value exists with a given start value, but keep it unchanged, if it already existed.
-  void RegisterEntry(const xiiHashedString& name, const xiiVariant& initialValue, xiiBitflags<xiiBlackboardEntryFlags> flags = xiiBlackboardEntryFlags::None);
+  void RegisterEntry(const xiiHashedString& sName, const xiiVariant& initialValue, xiiBitflags<xiiBlackboardEntryFlags> flags = xiiBlackboardEntryFlags::None);
 
   /// \brief Removes the named entry. Does nothing, if no such entry exists.
-  void UnregisterEntry(const xiiHashedString& name);
+  void UnregisterEntry(const xiiHashedString& sName);
 
   ///  \brief Removes all entries.
   void UnregisterAllEntries();
@@ -138,16 +138,16 @@ public:
   /// However, if the new value is no different to the old, no event will be broadcast, unless 'force' is set to true.
   ///
   /// Returns XII_FAILURE, if the named entry hasn't been registered before.
-  xiiResult SetEntryValue(const xiiTempHashedString& name, const xiiVariant& value, bool force = false);
+  xiiResult SetEntryValue(const xiiTempHashedString& sName, const xiiVariant& value, bool bForce = false);
 
   /// \brief Returns a pointer to the named entry, or nullptr if no such entry was registered.
-  const Entry* GetEntry(const xiiTempHashedString& name) const;
+  const Entry* GetEntry(const xiiTempHashedString& sName) const;
 
   /// \brief Returns the flags of the named entry, or xiiBlackboardEntryFlags::Invalid, if no such entry was registered.
-  xiiBitflags<xiiBlackboardEntryFlags> GetEntryFlags(const xiiTempHashedString& name) const;
+  xiiBitflags<xiiBlackboardEntryFlags> GetEntryFlags(const xiiTempHashedString& sName) const;
 
   /// \brief Returns the value of the named entry, or the fallback xiiVariant, if no such entry was registered.
-  xiiVariant GetEntryValue(const xiiTempHashedString& name, xiiVariant fallback = {}) const;
+  xiiVariant GetEntryValue(const xiiTempHashedString& sName, xiiVariant fallback = {}) const;
 
   /// \brief Grants read access to the entire map of entries.
   const xiiHashTable<xiiHashedString, Entry>& GetAllEntries() const { return m_Entries; }
@@ -166,13 +166,13 @@ public:
   xiiUInt32 GetBlackboardEntryChangeCounter() const { return m_uiBlackboardEntryChangeCounter; }
 
   /// \brief Stores all entries that have the 'Save' flag in the stream.
-  xiiResult Serialize(xiiStreamWriter& stream) const;
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
 
   /// \brief Restores entries from the stream.
   ///
   /// If the blackboard already contains entries, the deserialized data is ADDED to the blackboard.
   /// If deserialized entries overlap with existing ones, the deserialized entries will overwrite the existing ones (both values and flags).
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 
 private:
   xiiHashedString                      m_sName;
@@ -196,8 +196,8 @@ struct XII_CORE_DLL xiiBlackboardCondition
 
   bool IsConditionMet(const xiiBlackboard& blackboard) const;
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 
   const char* GetEntryName() const { return m_sEntryName; }
   void        SetEntryName(const char* szName) { m_sEntryName.Assign(szName); }

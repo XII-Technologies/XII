@@ -69,8 +69,8 @@ const xiiRangeView<const char*, xiiUInt32> xiiSurfaceInteraction::GetParameters(
 {
   return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; },
                                               [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
-                                              [](xiiUInt32& it) { ++it; },
-                                              [this](const xiiUInt32& it) -> const char* { return m_Parameters.GetKey(it).GetString().GetData(); });
+                                              [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                              [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
 }
 
 void xiiSurfaceInteraction::SetParameter(const char* szKey, const xiiVariant& value)
@@ -101,33 +101,33 @@ bool xiiSurfaceInteraction::GetParameter(const char* szKey, xiiVariant& out_valu
   return true;
 }
 
-void xiiSurfaceResourceDescriptor::Load(xiiStreamReader& stream)
+void xiiSurfaceResourceDescriptor::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt8 uiVersion = 0;
 
-  stream >> uiVersion;
+  ref_stream >> uiVersion;
   XII_ASSERT_DEV(uiVersion <= 7, "Invalid version {0} for surface resource", uiVersion);
 
-  stream >> m_fPhysicsRestitution;
-  stream >> m_fPhysicsFrictionStatic;
-  stream >> m_fPhysicsFrictionDynamic;
-  stream >> m_hBaseSurface;
+  ref_stream >> m_fPhysicsRestitution;
+  ref_stream >> m_fPhysicsFrictionStatic;
+  ref_stream >> m_fPhysicsFrictionDynamic;
+  ref_stream >> m_hBaseSurface;
 
   if (uiVersion >= 4)
   {
-    stream >> m_sOnCollideInteraction;
+    ref_stream >> m_sOnCollideInteraction;
   }
 
   if (uiVersion >= 7)
   {
-    stream >> m_sSlideInteractionPrefab;
-    stream >> m_sRollInteractionPrefab;
+    ref_stream >> m_sSlideInteractionPrefab;
+    ref_stream >> m_sRollInteractionPrefab;
   }
 
   if (uiVersion > 2)
   {
     xiiUInt32 count = 0;
-    stream >> count;
+    ref_stream >> count;
     m_Interactions.SetCount(count);
 
     xiiStringBuilder sTemp;
@@ -135,27 +135,27 @@ void xiiSurfaceResourceDescriptor::Load(xiiStreamReader& stream)
     {
       auto& ia = m_Interactions[i];
 
-      stream >> sTemp;
+      ref_stream >> sTemp;
       ia.m_sInteractionType = sTemp;
 
-      stream >> ia.m_hPrefab;
-      stream >> ia.m_Alignment;
-      stream >> ia.m_Deviation;
+      ref_stream >> ia.m_hPrefab;
+      ref_stream >> ia.m_Alignment;
+      ref_stream >> ia.m_Deviation;
 
       if (uiVersion >= 4)
       {
-        stream >> ia.m_fImpulseThreshold;
+        ref_stream >> ia.m_fImpulseThreshold;
       }
 
       if (uiVersion >= 5)
       {
-        stream >> ia.m_fImpulseScale;
+        ref_stream >> ia.m_fImpulseScale;
       }
 
       if (uiVersion >= 6)
       {
         xiiUInt8 uiNumParams;
-        stream >> uiNumParams;
+        ref_stream >> uiNumParams;
 
         ia.m_Parameters.Clear();
         ia.m_Parameters.Reserve(uiNumParams);
@@ -165,8 +165,8 @@ void xiiSurfaceResourceDescriptor::Load(xiiStreamReader& stream)
 
         for (xiiUInt32 i2 = 0; i2 < uiNumParams; ++i2)
         {
-          stream >> key;
-          stream >> value;
+          ref_stream >> key;
+          ref_stream >> value;
 
           ia.m_Parameters.Insert(key, value);
         }
@@ -175,44 +175,44 @@ void xiiSurfaceResourceDescriptor::Load(xiiStreamReader& stream)
   }
 }
 
-void xiiSurfaceResourceDescriptor::Save(xiiStreamWriter& stream) const
+void xiiSurfaceResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
   const xiiUInt8 uiVersion = 7;
 
-  stream << uiVersion;
-  stream << m_fPhysicsRestitution;
-  stream << m_fPhysicsFrictionStatic;
-  stream << m_fPhysicsFrictionDynamic;
-  stream << m_hBaseSurface;
+  ref_stream << uiVersion;
+  ref_stream << m_fPhysicsRestitution;
+  ref_stream << m_fPhysicsFrictionStatic;
+  ref_stream << m_fPhysicsFrictionDynamic;
+  ref_stream << m_hBaseSurface;
 
   // version 4
-  stream << m_sOnCollideInteraction;
+  ref_stream << m_sOnCollideInteraction;
 
   // version 7
-  stream << m_sSlideInteractionPrefab;
-  stream << m_sRollInteractionPrefab;
+  ref_stream << m_sSlideInteractionPrefab;
+  ref_stream << m_sRollInteractionPrefab;
 
-  stream << m_Interactions.GetCount();
+  ref_stream << m_Interactions.GetCount();
   for (const auto& ia : m_Interactions)
   {
-    stream << ia.m_sInteractionType;
-    stream << ia.m_hPrefab;
-    stream << ia.m_Alignment;
-    stream << ia.m_Deviation;
+    ref_stream << ia.m_sInteractionType;
+    ref_stream << ia.m_hPrefab;
+    ref_stream << ia.m_Alignment;
+    ref_stream << ia.m_Deviation;
 
     // version 4
-    stream << ia.m_fImpulseThreshold;
+    ref_stream << ia.m_fImpulseThreshold;
 
     // version 5
-    stream << ia.m_fImpulseScale;
+    ref_stream << ia.m_fImpulseScale;
 
     // version 6
     const xiiUInt8 uiNumParams = static_cast<xiiUInt8>(ia.m_Parameters.GetCount());
-    stream << uiNumParams;
+    ref_stream << uiNumParams;
     for (xiiUInt32 i = 0; i < uiNumParams; ++i)
     {
-      stream << ia.m_Parameters.GetKey(i);
-      stream << ia.m_Parameters.GetValue(i);
+      ref_stream << ia.m_Parameters.GetKey(i);
+      ref_stream << ia.m_Parameters.GetValue(i);
     }
   }
 }
@@ -237,9 +237,9 @@ const char* xiiSurfaceResourceDescriptor::GetBaseSurfaceFile() const
   return m_hBaseSurface.GetResourceID();
 }
 
-void xiiSurfaceResourceDescriptor::SetCollisionInteraction(const char* name)
+void xiiSurfaceResourceDescriptor::SetCollisionInteraction(const char* szName)
 {
-  m_sOnCollideInteraction.Assign(name);
+  m_sOnCollideInteraction.Assign(szName);
 }
 
 const char* xiiSurfaceResourceDescriptor::GetCollisionInteraction() const
@@ -281,7 +281,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->RenameProperty("Base Surface", "BaseSurface");
     pNode->RenameProperty("Static Friction", "StaticFriction");

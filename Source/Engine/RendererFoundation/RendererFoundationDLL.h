@@ -466,8 +466,8 @@ template <typename CreationDescription>
 class xiiGALObject : public xiiRefCounted
 {
 public:
-  xiiGALObject(const CreationDescription& Description) :
-    m_Description(Description)
+  xiiGALObject(const CreationDescription& description) :
+    m_Description(description)
   {
   }
 
@@ -480,9 +480,9 @@ protected:
 // Handles
 namespace xiiGAL
 {
-  typedef xiiGenericId<16, 16> xii16_16Id;
-  typedef xiiGenericId<18, 14> xii18_14Id;
-  typedef xiiGenericId<20, 12> xii20_12Id;
+  using xii16_16Id = xiiGenericId<16, 16>;
+  using xii18_14Id = xiiGenericId<18, 14>;
+  using xii20_12Id = xiiGenericId<20, 12>;
 } // namespace xiiGAL
 
 class xiiGALSwapChainHandle

@@ -13,8 +13,8 @@ enum class xiiCompressionMethod : xiiUInt16
 namespace xiiCompressionUtils
 {
   ///\brief Compresses the given data using the compression method eMethod into the dynamic array given in out_Data.
-  XII_FOUNDATION_DLL xiiResult Compress(xiiArrayPtr<const xiiUInt8> pUncompressedData, xiiCompressionMethod eMethod, xiiDynamicArray<xiiUInt8>& out_Data);
+  XII_FOUNDATION_DLL xiiResult Compress(xiiArrayPtr<const xiiUInt8> uncompressedData, xiiCompressionMethod method, xiiDynamicArray<xiiUInt8>& out_data);
 
   ///\brief Decompresses the given data using the compression method eMethod into the dynamic array given in out_Data.
-  XII_FOUNDATION_DLL xiiResult Decompress(xiiArrayPtr<const xiiUInt8> pCompressedData, xiiCompressionMethod eMethod, xiiDynamicArray<xiiUInt8>& out_Data);
+  XII_FOUNDATION_DLL xiiResult Decompress(xiiArrayPtr<const xiiUInt8> compressedData, xiiCompressionMethod method, xiiDynamicArray<xiiUInt8>& out_data);
 } // namespace xiiCompressionUtils

@@ -5,7 +5,7 @@
 
 namespace
 {
-  typedef xiiComponentManagerSimple<class TestComponentBase, xiiComponentUpdateType::Always> TestComponentBaseManager;
+  using TestComponentBaseManager = class TestComponentBase;
 
   class TestComponentBase : public xiiComponent
   {
@@ -24,7 +24,7 @@ namespace
 
   //////////////////////////////////////////////////////////////////////////
 
-  typedef xiiComponentManagerSimple<class TestComponentDerived1, xiiComponentUpdateType::Always> TestComponentDerived1Manager;
+  using TestComponentDerived1Manager = class TestComponentDerived1;
 
   class TestComponentDerived1 : public TestComponentBase
   {

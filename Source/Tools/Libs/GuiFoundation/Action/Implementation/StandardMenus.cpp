@@ -42,32 +42,32 @@ void xiiStandardMenus::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hReportProblem);
 }
 
-void xiiStandardMenus::MapActions(const char* szMapping, const xiiBitflags<xiiStandardMenuTypes>& Menus)
+void xiiStandardMenus::MapActions(const char* szMapping, const xiiBitflags<xiiStandardMenuTypes>& menus)
 {
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(szMapping);
   XII_ASSERT_DEV(pMap != nullptr, "'{0}' does not exist", szMapping);
 
   xiiActionMapDescriptor md;
 
-  if (Menus.IsAnySet(xiiStandardMenuTypes::File))
+  if (menus.IsAnySet(xiiStandardMenuTypes::File))
     pMap->MapAction(s_hMenuFile, "", 1.0f);
 
-  if (Menus.IsAnySet(xiiStandardMenuTypes::Edit))
+  if (menus.IsAnySet(xiiStandardMenuTypes::Edit))
     pMap->MapAction(s_hMenuEdit, "", 2.0f);
 
-  if (Menus.IsAnySet(xiiStandardMenuTypes::Project))
+  if (menus.IsAnySet(xiiStandardMenuTypes::Project))
     pMap->MapAction(s_hMenuProject, "", 3.0f);
 
-  if (Menus.IsAnySet(xiiStandardMenuTypes::Scene))
+  if (menus.IsAnySet(xiiStandardMenuTypes::Scene))
     pMap->MapAction(s_hMenuScene, "", 4.0f);
 
-  if (Menus.IsAnySet(xiiStandardMenuTypes::View))
+  if (menus.IsAnySet(xiiStandardMenuTypes::View))
     pMap->MapAction(s_hMenuView, "", 5.0f);
 
-  if (Menus.IsAnySet(xiiStandardMenuTypes::Panels))
+  if (menus.IsAnySet(xiiStandardMenuTypes::Panels))
     pMap->MapAction(s_hMenuPanels, "", 6.0f);
 
-  if (Menus.IsAnySet(xiiStandardMenuTypes::Help))
+  if (menus.IsAnySet(xiiStandardMenuTypes::Help))
   {
     pMap->MapAction(s_hMenuHelp, "", 7.0f);
     pMap->MapAction(s_hReportProblem, "Menu.Help", 3.0f);
@@ -97,9 +97,9 @@ struct xiiComparePanels
 };
 
 
-void xiiApplicationPanelsMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_Entries)
+void xiiApplicationPanelsMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries)
 {
-  out_Entries.Clear();
+  out_entries.Clear();
 
   for (auto* pPanel : xiiQtApplicationPanel::GetAllApplicationPanels())
   {
@@ -109,12 +109,12 @@ void xiiApplicationPanelsMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAct
     item.m_Icon       = pPanel->icon();
     item.m_CheckState = pPanel->isClosed() ? xiiDynamicMenuAction::Item::CheckMark::Unchecked : xiiDynamicMenuAction::Item::CheckMark::Checked;
 
-    out_Entries.PushBack(item);
+    out_entries.PushBack(item);
   }
 
   // make sure the panels appear in alphabetical order in the menu
   xiiComparePanels cp;
-  out_Entries.Sort<xiiComparePanels>(cp);
+  out_entries.Sort<xiiComparePanels>(cp);
 }
 
 void xiiApplicationPanelsMenuAction::Execute(const xiiVariant& value)

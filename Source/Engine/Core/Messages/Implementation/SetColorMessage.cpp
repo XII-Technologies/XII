@@ -26,54 +26,54 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgSetColor, 1, xiiRTTIDefaultAllocator<xiiM
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiMsgSetColor::ModifyColor(xiiColor& color) const
+void xiiMsgSetColor::ModifyColor(xiiColor& ref_color) const
 {
   switch (m_Mode)
   {
     case xiiSetColorMode::SetRGB:
-      color.SetRGB(m_Color.r, m_Color.g, m_Color.b);
+      ref_color.SetRGB(m_Color.r, m_Color.g, m_Color.b);
       break;
 
     case xiiSetColorMode::SetAlpha:
-      color.a = m_Color.a;
+      ref_color.a = m_Color.a;
       break;
 
     case xiiSetColorMode::AlphaBlend:
-      color = xiiMath::Lerp(color, m_Color, m_Color.a);
+      ref_color = xiiMath::Lerp(ref_color, m_Color, m_Color.a);
       break;
 
     case xiiSetColorMode::Additive:
-      color += m_Color;
+      ref_color += m_Color;
       break;
 
     case xiiSetColorMode::Modulate:
-      color *= m_Color;
+      ref_color *= m_Color;
       break;
 
     case xiiSetColorMode::SetRGBA:
     default:
-      color = m_Color;
+      ref_color = m_Color;
       break;
   }
 }
 
-void xiiMsgSetColor::ModifyColor(xiiColorGammaUB& color) const
+void xiiMsgSetColor::ModifyColor(xiiColorGammaUB& ref_color) const
 {
-  xiiColor temp = color;
+  xiiColor temp = ref_color;
   ModifyColor(temp);
-  color = temp;
+  ref_color = temp;
 }
 
-void xiiMsgSetColor::Serialize(xiiStreamWriter& stream) const
+void xiiMsgSetColor::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream << m_Color;
-  stream << m_Mode;
+  ref_stream << m_Color;
+  ref_stream << m_Mode;
 }
 
-void xiiMsgSetColor::Deserialize(xiiStreamReader& stream, xiiUInt8 uiTypeVersion)
+void xiiMsgSetColor::Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiTypeVersion)
 {
-  stream >> m_Color;
-  stream >> m_Mode;
+  ref_stream >> m_Color;
+  ref_stream >> m_Mode;
 }
 
 

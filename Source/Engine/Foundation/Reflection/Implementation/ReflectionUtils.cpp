@@ -16,47 +16,47 @@ namespace
 #endif
 
   template <typename Functor, class... Args>
-  void DispatchTo(Functor& functor, const xiiAbstractProperty* pProp, Args&&... args)
+  void DispatchTo(Functor& ref_functor, const xiiAbstractProperty* pProp, Args&&... args)
   {
     const bool bIsPtr = pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer);
     if (bIsPtr)
     {
-      CALL_FUNCTOR(functor, xiiTypedPointer);
+      CALL_FUNCTOR(ref_functor, xiiTypedPointer);
       return;
     }
     else if (pProp->GetSpecificType() == xiiGetStaticRTTI<const char*>())
     {
-      CALL_FUNCTOR(functor, const char*);
+      CALL_FUNCTOR(ref_functor, const char*);
       return;
     }
     else if (pProp->GetSpecificType() == xiiGetStaticRTTI<xiiUntrackedString>())
     {
-      CALL_FUNCTOR(functor, xiiUntrackedString);
+      CALL_FUNCTOR(ref_functor, xiiUntrackedString);
       return;
     }
     else if (pProp->GetSpecificType() == xiiGetStaticRTTI<xiiVariant>())
     {
-      CALL_FUNCTOR(functor, xiiVariant);
+      CALL_FUNCTOR(ref_functor, xiiVariant);
       return;
     }
     else if (pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType))
     {
-      xiiVariant::DispatchTo(functor, pProp->GetSpecificType()->GetVariantType(), std::forward<Args>(args)...);
+      xiiVariant::DispatchTo(ref_functor, pProp->GetSpecificType()->GetVariantType(), std::forward<Args>(args)...);
       return;
     }
     else if (pProp->GetFlags().IsSet(xiiPropertyFlags::IsEnum))
     {
-      CALL_FUNCTOR(functor, xiiEnumBase);
+      CALL_FUNCTOR(ref_functor, xiiEnumBase);
       return;
     }
     else if (pProp->GetFlags().IsSet(xiiPropertyFlags::Bitflags))
     {
-      CALL_FUNCTOR(functor, xiiBitflagsBase);
+      CALL_FUNCTOR(ref_functor, xiiBitflagsBase);
       return;
     }
     else if (pProp->GetSpecificType()->GetVariantType() == xiiVariantType::TypedObject)
     {
-      CALL_FUNCTOR(functor, xiiTypedObject);
+      CALL_FUNCTOR(ref_functor, xiiTypedObject);
       return;
     }
 
@@ -425,16 +425,16 @@ namespace
   template <typename T>
   struct SetComponentValueImpl
   {
-    XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 iComponent, double fValue) { XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType()); }
+    XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue) { XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType()); }
   };
 
   template <typename T>
   struct SetComponentValueImpl<xiiVec2Template<T>>
   {
-    XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 iComponent, double fValue)
+    XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue)
     {
       auto vec = pVector->Get<xiiVec2Template<T>>();
-      switch (iComponent)
+      switch (uiComponent)
       {
         case 0:
           vec.x = static_cast<T>(fValue);
@@ -450,10 +450,10 @@ namespace
   template <typename T>
   struct SetComponentValueImpl<xiiVec3Template<T>>
   {
-    XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 iComponent, double fValue)
+    XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue)
     {
       auto vec = pVector->Get<xiiVec3Template<T>>();
-      switch (iComponent)
+      switch (uiComponent)
       {
         case 0:
           vec.x = static_cast<T>(fValue);
@@ -472,10 +472,10 @@ namespace
   template <typename T>
   struct SetComponentValueImpl<xiiVec4Template<T>>
   {
-    XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 iComponent, double fValue)
+    XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue)
     {
       auto vec = pVector->Get<xiiVec4Template<T>>();
-      switch (iComponent)
+      switch (uiComponent)
       {
         case 0:
           vec.x = static_cast<T>(fValue);
@@ -509,22 +509,22 @@ namespace
   template <typename T>
   struct GetComponentValueImpl
   {
-    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 iComponent, double& fValue) { XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType()); }
+    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& ref_fValue) { XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType()); }
   };
 
   template <typename T>
   struct GetComponentValueImpl<xiiVec2Template<T>>
   {
-    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 iComponent, double& fValue)
+    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& ref_fValue)
     {
       const auto& vec = pVector->Get<xiiVec2Template<T>>();
-      switch (iComponent)
+      switch (uiComponent)
       {
         case 0:
-          fValue = static_cast<double>(vec.x);
+          ref_fValue = static_cast<double>(vec.x);
           break;
         case 1:
-          fValue = static_cast<double>(vec.y);
+          ref_fValue = static_cast<double>(vec.y);
           break;
       }
     }
@@ -533,19 +533,19 @@ namespace
   template <typename T>
   struct GetComponentValueImpl<xiiVec3Template<T>>
   {
-    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 iComponent, double& fValue)
+    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& ref_fValue)
     {
       const auto& vec = pVector->Get<xiiVec3Template<T>>();
-      switch (iComponent)
+      switch (uiComponent)
       {
         case 0:
-          fValue = static_cast<double>(vec.x);
+          ref_fValue = static_cast<double>(vec.x);
           break;
         case 1:
-          fValue = static_cast<double>(vec.y);
+          ref_fValue = static_cast<double>(vec.y);
           break;
         case 2:
-          fValue = static_cast<double>(vec.z);
+          ref_fValue = static_cast<double>(vec.z);
           break;
       }
     }
@@ -554,22 +554,22 @@ namespace
   template <typename T>
   struct GetComponentValueImpl<xiiVec4Template<T>>
   {
-    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 iComponent, double& fValue)
+    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& ref_fValue)
     {
       const auto& vec = pVector->Get<xiiVec4Template<T>>();
-      switch (iComponent)
+      switch (uiComponent)
       {
         case 0:
-          fValue = static_cast<double>(vec.x);
+          ref_fValue = static_cast<double>(vec.x);
           break;
         case 1:
-          fValue = static_cast<double>(vec.y);
+          ref_fValue = static_cast<double>(vec.y);
           break;
         case 2:
-          fValue = static_cast<double>(vec.z);
+          ref_fValue = static_cast<double>(vec.z);
           break;
         case 3:
-          fValue = static_cast<double>(vec.w);
+          ref_fValue = static_cast<double>(vec.w);
           break;
       }
     }
@@ -668,20 +668,20 @@ xiiUInt32 xiiReflectionUtils::GetComponentCount(xiiVariantType::Enum type)
   }
 }
 
-void xiiReflectionUtils::SetComponent(xiiVariant& vector, xiiUInt32 iComponent, double fValue)
+void xiiReflectionUtils::SetComponent(xiiVariant& ref_vector, xiiUInt32 uiComponent, double fValue)
 {
   SetComponentValueFunc func;
-  func.m_pVector    = &vector;
-  func.m_iComponent = iComponent;
+  func.m_pVector    = &ref_vector;
+  func.m_iComponent = uiComponent;
   func.m_fValue     = fValue;
-  xiiVariant::DispatchTo(func, vector.GetType());
+  xiiVariant::DispatchTo(func, ref_vector.GetType());
 }
 
-double xiiReflectionUtils::GetComponent(const xiiVariant& vector, xiiUInt32 iComponent)
+double xiiReflectionUtils::GetComponent(const xiiVariant& vector, xiiUInt32 uiComponent)
 {
   GetComponentValueFunc func;
   func.m_pVector    = &vector;
-  func.m_iComponent = iComponent;
+  func.m_iComponent = uiComponent;
   xiiVariant::DispatchTo(func, vector.GetType());
   return func.m_fValue;
 }
@@ -1008,11 +1008,11 @@ bool xiiReflectionUtils::EnumerationToString(const xiiRTTI* pEnumerationRtti, xi
   }
 }
 
-void xiiReflectionUtils::GetEnumKeysAndValues(const xiiRTTI* pEnumerationRtti, xiiDynamicArray<EnumKeyValuePair>& entries, xiiEnum<EnumConversionMode> conversionMode)
+void xiiReflectionUtils::GetEnumKeysAndValues(const xiiRTTI* pEnumerationRtti, xiiDynamicArray<EnumKeyValuePair>& ref_entries, xiiEnum<EnumConversionMode> conversionMode)
 {
   /// \test This is new.
 
-  entries.Clear();
+  ref_entries.Clear();
 
   if (pEnumerationRtti->IsDerivedFrom<xiiEnumBase>())
   {
@@ -1022,7 +1022,7 @@ void xiiReflectionUtils::GetEnumKeysAndValues(const xiiRTTI* pEnumerationRtti, x
       {
         xiiVariant value = static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant();
 
-        auto& e    = entries.ExpandAndGetRef();
+        auto& e    = ref_entries.ExpandAndGetRef();
         e.m_sKey   = conversionMode == EnumConversionMode::FullyQualifiedName ? pProp->GetPropertyName() : xiiStringUtils::FindLastSubString(pProp->GetPropertyName(), "::") + 2;
         e.m_iValue = value.ConvertTo<xiiInt32>();
       }

@@ -238,13 +238,13 @@ struct XII_TEXTURE_DLL xiiImageFormat
 
   /// \brief Returns the number of bits per pixel of the given format. If the format's bpp is non-integral, the returned value rounded up to
   /// to the next integer.
-  static xiiUInt32 GetBitsPerPixel(Enum format, xiiUInt32 planeIndex = 0);
+  static xiiUInt32 GetBitsPerPixel(Enum format, xiiUInt32 uiPlaneIndex = 0);
 
   /// \brief Exact pixel size in bits. May be non-integral for some compressed formats.
-  static float GetExactBitsPerPixel(Enum format, xiiUInt32 planeIndex = 0);
+  static float GetExactBitsPerPixel(Enum format, xiiUInt32 uiPlaneIndex = 0);
 
   /// \brief Returns the block size in bits. For uncompressed formats, a block is considered a single pixel.
-  static xiiUInt32 GetBitsPerBlock(Enum format, xiiUInt32 planeIndex = 0);
+  static xiiUInt32 GetBitsPerBlock(Enum format, xiiUInt32 uiPlaneIndex = 0);
 
   /// \brief Number of channels (r, g, b, a, depth, stencil) supported by this format.
   static xiiUInt32 GetNumChannels(Enum format);
@@ -268,13 +268,13 @@ struct XII_TEXTURE_DLL xiiImageFormat
   static xiiUInt32 GetAlphaMask(Enum format);
 
   /// \brief Block width of a compressed format. Defaults to 1 for uncompressed formats.
-  static xiiUInt32 GetBlockWidth(Enum format, xiiUInt32 planeIndex = 0);
+  static xiiUInt32 GetBlockWidth(Enum format, xiiUInt32 uiPlaneIndex = 0);
 
   /// \brief Block height of a compressed format. Defaults to 1 for uncompressed formats.
-  static xiiUInt32 GetBlockHeight(Enum format, xiiUInt32 planeIndex = 0);
+  static xiiUInt32 GetBlockHeight(Enum format, xiiUInt32 uiPlaneIndex = 0);
 
   /// \brief Block depth of a compressed format. Defaults to 1 for uncompressed formats.
-  static xiiUInt32 GetBlockDepth(Enum format, xiiUInt32 planeIndex = 0);
+  static xiiUInt32 GetBlockDepth(Enum format, xiiUInt32 uiPlaneIndex = 0);
 
   /// \brief Returns the data type represented by a format.
   static xiiImageFormatDataType::Enum GetDataType(Enum format);
@@ -298,19 +298,19 @@ struct XII_TEXTURE_DLL xiiImageFormat
   static Enum AsLinear(Enum format);
 
   /// \brief Computes the number of blocks in X direction (compressed) or pixels (if uncompressed) for a given width (in pixels).
-  static xiiUInt32 GetNumBlocksX(Enum format, xiiUInt32 width, xiiUInt32 planeIndex = 0);
+  static xiiUInt32 GetNumBlocksX(Enum format, xiiUInt32 uiWidth, xiiUInt32 uiPlaneIndex = 0);
 
   /// \brief Computes the number of blocks in Y direction (compressed) or pixels (if uncompressed) for a given height (in pixels).
-  static xiiUInt32 GetNumBlocksY(Enum format, xiiUInt32 height, xiiUInt32 planeIndex = 0);
+  static xiiUInt32 GetNumBlocksY(Enum format, xiiUInt32 uiHeight, xiiUInt32 uiPlaneIndex = 0);
 
   /// \brief Computes the number of blocks in Z direction (compressed) or pixels (if uncompressed) for a given height (in pixels).
-  static xiiUInt32 GetNumBlocksZ(Enum format, xiiUInt32 depth, xiiUInt32 planeIndex = 0);
+  static xiiUInt32 GetNumBlocksZ(Enum format, xiiUInt32 uiDepth, xiiUInt32 uiPlaneIndex = 0);
 
   /// \brief Computes the size in bytes of a row of blocks (compressed) or pixels (if uncompressed) of the given width.
-  static xiiUInt64 GetRowPitch(Enum format, xiiUInt32 width, xiiUInt32 planeIndex = 0);
+  static xiiUInt64 GetRowPitch(Enum format, xiiUInt32 uiWidth, xiiUInt32 uiPlaneIndex = 0);
 
   /// \brief Computes the size in bytes of a 2D slice of blocks (compressed) or pixels (if uncompressed) of the given width and height.
-  static xiiUInt64 GetDepthPitch(Enum format, xiiUInt32 width, xiiUInt32 height, xiiUInt32 planeIndex = 0);
+  static xiiUInt64 GetDepthPitch(Enum format, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiPlaneIndex = 0);
 
   /// \brief Returns the type of the image format.
   static xiiImageFormatType::Enum GetType(Enum format);

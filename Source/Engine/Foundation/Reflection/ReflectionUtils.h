@@ -26,8 +26,8 @@ public:
   ///
   /// vector's type needs to be in between xiiVariant::Type::Vector2 and xiiVariant::Type::Vector4U.
   static xiiUInt32 GetComponentCount(xiiVariantType::Enum type);
-  static void      SetComponent(xiiVariant& vector, xiiUInt32 iComponent, double fValue); // [tested]
-  static double    GetComponent(const xiiVariant& vector, xiiUInt32 iComponent);
+  static void      SetComponent(xiiVariant& ref_vector, xiiUInt32 uiComponent, double fValue); // [tested]
+  static double    GetComponent(const xiiVariant& vector, xiiUInt32 uiComponent);
 
   static xiiVariant GetMemberPropertyValue(const xiiAbstractMemberProperty* pProp, const void* pObject);              // [tested] via ToolsFoundation
   static void       SetMemberPropertyValue(xiiAbstractMemberProperty* pProp, void* pObject, const xiiVariant& value); // [tested] via ToolsFoundation
@@ -107,7 +107,7 @@ public:
   };
 
   /// \brief If the given type is an enum, \a entries will be filled with all available keys (strings) and values (integers).
-  static void GetEnumKeysAndValues(const xiiRTTI* pEnumerationRtti, xiiDynamicArray<EnumKeyValuePair>& entries, xiiEnum<EnumConversionMode> conversionMode = EnumConversionMode::Default);
+  static void GetEnumKeysAndValues(const xiiRTTI* pEnumerationRtti, xiiDynamicArray<EnumKeyValuePair>& ref_entries, xiiEnum<EnumConversionMode> conversionMode = EnumConversionMode::Default);
 
   /// \brief Converts an enum or bitfield in its string representation to its value.
   ///
@@ -116,7 +116,7 @@ public:
 
   /// \brief Helper template to shorten the call for xiiEnums
   template <typename T>
-  static bool StringToEnumeration(const char* szValue, xiiEnum<T>& out_iValue)
+  static bool StringToEnumeration(const char* szValue, xiiEnum<T>& out_value)
   {
     xiiInt64   value;
     const auto retval = StringToEnumeration(xiiGetStaticRTTI<T>(), szValue, value);

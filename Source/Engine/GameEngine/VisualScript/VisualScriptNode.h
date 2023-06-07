@@ -58,7 +58,7 @@ private:
 
 struct XII_GAMEENGINE_DLL xiiVisualScriptDataPinType
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -81,7 +81,7 @@ struct XII_GAMEENGINE_DLL xiiVisualScriptDataPinType
   XII_ALWAYS_INLINE static bool IsTypeSupported(const xiiRTTI* pType) { return GetDataPinTypeForType(pType) != None; }
 
   /// \brief Enforces the given variant to be a supported type, ie. mostly doubles for number types
-  static void EnforceSupportedType(xiiVariant& var);
+  static void EnforceSupportedType(xiiVariant& ref_var);
 
   /// \brief Returns how much storage an object of the given type would need
   static xiiUInt32 GetStorageByteSize(Enum dataPinType);

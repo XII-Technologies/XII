@@ -15,7 +15,7 @@ public:
   /// \brief Constructor.
   xiiJSONParser();
 
-  virtual ~xiiJSONParser() {}
+  virtual ~xiiJSONParser() = default;
 
   /// \brief Allows to specify an xiiLogInterface through which errors and warnings are reported.
   void SetLogInterface(xiiLogInterface* pLog) { m_pLogInterface = pLog; }

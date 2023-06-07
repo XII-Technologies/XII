@@ -267,9 +267,9 @@ void xiiBakedProbesComponent::SetUseTestPosition(bool bUse)
   }
 }
 
-void xiiBakedProbesComponent::SetTestPosition(const xiiVec3& pos)
+void xiiBakedProbesComponent::SetTestPosition(const xiiVec3& vPos)
 {
-  m_vTestPosition = pos;
+  m_vTestPosition = vPos;
 
   if (IsActiveAndInitialized())
   {
@@ -277,19 +277,19 @@ void xiiBakedProbesComponent::SetTestPosition(const xiiVec3& pos)
   }
 }
 
-void xiiBakedProbesComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)
+void xiiBakedProbesComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg)
 {
-  msg.SetAlwaysVisible(GetOwner()->IsDynamic() ? xiiDefaultSpatialDataCategories::RenderDynamic : xiiDefaultSpatialDataCategories::RenderStatic);
+  ref_msg.SetAlwaysVisible(GetOwner()->IsDynamic() ? xiiDefaultSpatialDataCategories::RenderDynamic : xiiDefaultSpatialDataCategories::RenderStatic);
 }
 
-void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg) const
+void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& ref_msg) const
 {
   if (!m_bShowDebugProbes)
     return;
 
   // Don't trigger probe rendering in shadow or reflection views.
-  if (msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow ||
-      msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Reflection)
+  if (ref_msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow ||
+      ref_msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Reflection)
     return;
 
   auto pModule = GetWorld()->GetModule<xiiBakedProbesWorldModule>();
@@ -299,9 +299,9 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg) 
   const xiiGameObject* pOwner   = GetOwner();
   auto                 pManager = static_cast<const xiiBakedProbesComponentManager*>(GetOwningManager());
 
-  auto addProbeRenderData = [&](const xiiVec3& position, xiiCompressedSkyVisibility skyVisibility, xiiRenderData::Caching::Enum caching) {
+  auto addProbeRenderData = [ref_msg](const xiiVec3& vPosition, xiiCompressedSkyVisibility skyVisibility, xiiRenderData::Caching::Enum caching) {
     xiiTransform transform = xiiTransform::IdentityTransform();
-    transform.m_vPosition  = position;
+    transform.m_vPosition  = vPosition;
 
     xiiColor encodedSkyVisibility = xiiColor::Black;
     encodedSkyVisibility.r        = *reinterpret_cast<const float*>(&skyVisibility);
@@ -319,7 +319,7 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg) 
       pRenderData->FillBatchIdAndSortingKey();
     }
 
-    msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::SimpleOpaque, caching);
+    ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::SimpleOpaque, caching);
   };
 
   if (m_bUseTestPosition)
@@ -337,10 +337,10 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg) 
       for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(indexData.m_probeIndices); ++i)
       {
         xiiVec3 pos = pProbeTree->GetProbePositions()[indexData.m_probeIndices[i]];
-        xiiDebugRenderer::DrawCross(msg.m_pView->GetHandle(), pos, 0.5f, xiiColor::Yellow);
+        xiiDebugRenderer::DrawCross(ref_msg.m_pView->GetHandle(), pos, 0.5f, xiiColor::Yellow);
 
         pos.z += 0.5f;
-        xiiDebugRenderer::Draw3DText(msg.m_pView->GetHandle(), xiiFmt("Weight: {}", indexData.m_probeWeights[i]), pos, xiiColor::Yellow);
+        xiiDebugRenderer::Draw3DText(ref_msg.m_pView->GetHandle(), xiiFmt("Weight: {}", indexData.m_probeWeights[i]), pos, xiiColor::Yellow);
       }
     }
 
@@ -364,11 +364,11 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg) 
   }
 }
 
-void xiiBakedProbesComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiBakedProbesComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   if (m_Settings.Serialize(s).Failed())
     return;
@@ -380,11 +380,11 @@ void xiiBakedProbesComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_vTestPosition;
 }
 
-void xiiBakedProbesComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiBakedProbesComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   if (m_Settings.Deserialize(s).Failed())
     return;

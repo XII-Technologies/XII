@@ -12,14 +12,14 @@ xiiHashTable<xiiString, xiiSharedPtr<xiiAnimGraphSharedBoneWeights>> xiiAnimGrap
 xiiAnimGraph::xiiAnimGraph()  = default;
 xiiAnimGraph::~xiiAnimGraph() = default;
 
-void xiiAnimGraph::Configure(const xiiSkeletonResourceHandle& hSkeleton, xiiAnimPoseGenerator& poseGenerator, const xiiSharedPtr<xiiBlackboard>& pBlackboard /*= nullptr*/)
+void xiiAnimGraph::Configure(const xiiSkeletonResourceHandle& hSkeleton, xiiAnimPoseGenerator& ref_poseGenerator, const xiiSharedPtr<xiiBlackboard>& pBlackboard /*= nullptr*/)
 {
   m_hSkeleton      = hSkeleton;
-  m_pPoseGenerator = &poseGenerator;
+  m_pPoseGenerator = &ref_poseGenerator;
   m_pBlackboard    = pBlackboard;
 }
 
-void xiiAnimGraph::Update(xiiTime tDiff, xiiGameObject* pTarget)
+void xiiAnimGraph::Update(xiiTime diff, xiiGameObject* pTarget)
 {
   if (!m_hSkeleton.IsValid())
     return;
@@ -74,7 +74,7 @@ void xiiAnimGraph::Update(xiiTime tDiff, xiiGameObject* pTarget)
 
   for (const auto& pNode : m_Nodes)
   {
-    pNode->Step(*this, tDiff, pSkeleton.GetPointer(), pTarget);
+    pNode->Step(*this, diff, pSkeleton.GetPointer(), pTarget);
   }
 
   if (auto newPose = GetPoseGenerator().GeneratePose(pTarget); !newPose.IsEmpty())
@@ -88,73 +88,73 @@ void xiiAnimGraph::Update(xiiTime tDiff, xiiGameObject* pTarget)
   }
 }
 
-void xiiAnimGraph::GetRootMotion(xiiVec3& translation, xiiAngle& rotationX, xiiAngle& rotationY, xiiAngle& rotationZ) const
+void xiiAnimGraph::GetRootMotion(xiiVec3& ref_vTranslation, xiiAngle& ref_rotationX, xiiAngle& ref_rotationY, xiiAngle& ref_rotationZ) const
 {
-  translation = m_vRootMotion;
-  rotationX   = m_RootRotationX;
-  rotationY   = m_RootRotationY;
-  rotationZ   = m_RootRotationZ;
+  ref_vTranslation = m_vRootMotion;
+  ref_rotationX    = m_RootRotationX;
+  ref_rotationY    = m_RootRotationY;
+  ref_rotationZ    = m_RootRotationZ;
 }
 
-xiiResult xiiAnimGraph::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiAnimGraph::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(5);
+  ref_stream.WriteVersion(5);
 
   const xiiUInt32 uiNumNodes = m_Nodes.GetCount();
-  stream << uiNumNodes;
+  ref_stream << uiNumNodes;
 
   for (const auto& node : m_Nodes)
   {
-    stream << node->GetDynamicRTTI()->GetTypeName();
+    ref_stream << node->GetDynamicRTTI()->GetTypeName();
 
-    XII_SUCCEED_OR_RETURN(node->SerializeNode(stream));
+    XII_SUCCEED_OR_RETURN(node->SerializeNode(ref_stream));
   }
 
-  stream << m_hSkeleton;
+  ref_stream << m_hSkeleton;
 
   {
-    XII_SUCCEED_OR_RETURN(stream.WriteArray(m_TriggerInputPinStates));
+    XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(m_TriggerInputPinStates));
 
-    stream << m_OutputPinToInputPinMapping[xiiAnimGraphPin::Trigger].GetCount();
+    ref_stream << m_OutputPinToInputPinMapping[xiiAnimGraphPin::Trigger].GetCount();
     for (const auto& ar : m_OutputPinToInputPinMapping[xiiAnimGraphPin::Trigger])
     {
-      XII_SUCCEED_OR_RETURN(stream.WriteArray(ar));
+      XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(ar));
     }
   }
   {
-    XII_SUCCEED_OR_RETURN(stream.WriteArray(m_NumberInputPinStates));
+    XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(m_NumberInputPinStates));
 
-    stream << m_OutputPinToInputPinMapping[xiiAnimGraphPin::Number].GetCount();
+    ref_stream << m_OutputPinToInputPinMapping[xiiAnimGraphPin::Number].GetCount();
     for (const auto& ar : m_OutputPinToInputPinMapping[xiiAnimGraphPin::Number])
     {
-      XII_SUCCEED_OR_RETURN(stream.WriteArray(ar));
+      XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(ar));
     }
   }
   {
-    stream << m_BoneWeightInputPinStates.GetCount();
+    ref_stream << m_BoneWeightInputPinStates.GetCount();
 
-    stream << m_OutputPinToInputPinMapping[xiiAnimGraphPin::BoneWeights].GetCount();
+    ref_stream << m_OutputPinToInputPinMapping[xiiAnimGraphPin::BoneWeights].GetCount();
     for (const auto& ar : m_OutputPinToInputPinMapping[xiiAnimGraphPin::BoneWeights])
     {
-      XII_SUCCEED_OR_RETURN(stream.WriteArray(ar));
+      XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(ar));
     }
   }
   {
-    stream << m_LocalPoseInputPinStates.GetCount();
+    ref_stream << m_LocalPoseInputPinStates.GetCount();
 
-    stream << m_OutputPinToInputPinMapping[xiiAnimGraphPin::LocalPose].GetCount();
+    ref_stream << m_OutputPinToInputPinMapping[xiiAnimGraphPin::LocalPose].GetCount();
     for (const auto& ar : m_OutputPinToInputPinMapping[xiiAnimGraphPin::LocalPose])
     {
-      XII_SUCCEED_OR_RETURN(stream.WriteArray(ar));
+      XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(ar));
     }
   }
   {
-    stream << m_ModelPoseInputPinStates.GetCount();
+    ref_stream << m_ModelPoseInputPinStates.GetCount();
 
-    stream << m_OutputPinToInputPinMapping[xiiAnimGraphPin::ModelPose].GetCount();
+    ref_stream << m_OutputPinToInputPinMapping[xiiAnimGraphPin::ModelPose].GetCount();
     for (const auto& ar : m_OutputPinToInputPinMapping[xiiAnimGraphPin::ModelPose])
     {
-      XII_SUCCEED_OR_RETURN(stream.WriteArray(ar));
+      XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(ar));
     }
   }
   // EXTEND THIS if a new type is introduced
@@ -162,90 +162,90 @@ xiiResult xiiAnimGraph::Serialize(xiiStreamWriter& stream) const
   return XII_SUCCESS;
 }
 
-xiiResult xiiAnimGraph::Deserialize(xiiStreamReader& stream)
+xiiResult xiiAnimGraph::Deserialize(xiiStreamReader& ref_stream)
 {
-  const auto uiVersion = stream.ReadVersion(5);
+  const auto uiVersion = ref_stream.ReadVersion(5);
 
   xiiUInt32 uiNumNodes = 0;
-  stream >> uiNumNodes;
+  ref_stream >> uiNumNodes;
   m_Nodes.SetCount(uiNumNodes);
 
   xiiStringBuilder sTypeName;
 
   for (auto& node : m_Nodes)
   {
-    stream >> sTypeName;
+    ref_stream >> sTypeName;
     node = std::move(xiiRTTI::FindTypeByName(sTypeName)->GetAllocator()->Allocate<xiiAnimGraphNode>());
 
-    XII_SUCCEED_OR_RETURN(node->DeserializeNode(stream));
+    XII_SUCCEED_OR_RETURN(node->DeserializeNode(ref_stream));
   }
 
-  stream >> m_hSkeleton;
+  ref_stream >> m_hSkeleton;
 
   if (uiVersion >= 2)
   {
-    XII_SUCCEED_OR_RETURN(stream.ReadArray(m_TriggerInputPinStates));
+    XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(m_TriggerInputPinStates));
 
     xiiUInt32 sar = 0;
-    stream >> sar;
+    ref_stream >> sar;
     m_OutputPinToInputPinMapping[xiiAnimGraphPin::Trigger].SetCount(sar);
     for (auto& ar : m_OutputPinToInputPinMapping[xiiAnimGraphPin::Trigger])
     {
-      XII_SUCCEED_OR_RETURN(stream.ReadArray(ar));
+      XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(ar));
     }
   }
   if (uiVersion >= 3)
   {
-    XII_SUCCEED_OR_RETURN(stream.ReadArray(m_NumberInputPinStates));
+    XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(m_NumberInputPinStates));
 
     xiiUInt32 sar = 0;
-    stream >> sar;
+    ref_stream >> sar;
     m_OutputPinToInputPinMapping[xiiAnimGraphPin::Number].SetCount(sar);
     for (auto& ar : m_OutputPinToInputPinMapping[xiiAnimGraphPin::Number])
     {
-      XII_SUCCEED_OR_RETURN(stream.ReadArray(ar));
+      XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(ar));
     }
   }
   if (uiVersion >= 4)
   {
     xiiUInt32 sar = 0;
 
-    stream >> sar;
+    ref_stream >> sar;
     m_BoneWeightInputPinStates.SetCount(sar);
 
-    stream >> sar;
+    ref_stream >> sar;
     m_OutputPinToInputPinMapping[xiiAnimGraphPin::BoneWeights].SetCount(sar);
     for (auto& ar : m_OutputPinToInputPinMapping[xiiAnimGraphPin::BoneWeights])
     {
-      XII_SUCCEED_OR_RETURN(stream.ReadArray(ar));
+      XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(ar));
     }
   }
   if (uiVersion >= 5)
   {
     xiiUInt32 sar = 0;
 
-    stream >> sar;
+    ref_stream >> sar;
     m_LocalPoseInputPinStates.SetCount(sar);
 
-    stream >> sar;
+    ref_stream >> sar;
     m_OutputPinToInputPinMapping[xiiAnimGraphPin::LocalPose].SetCount(sar);
     for (auto& ar : m_OutputPinToInputPinMapping[xiiAnimGraphPin::LocalPose])
     {
-      XII_SUCCEED_OR_RETURN(stream.ReadArray(ar));
+      XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(ar));
     }
   }
   if (uiVersion >= 5)
   {
     xiiUInt32 sar = 0;
 
-    stream >> sar;
+    ref_stream >> sar;
     m_ModelPoseInputPinStates.SetCount(sar);
 
-    stream >> sar;
+    ref_stream >> sar;
     m_OutputPinToInputPinMapping[xiiAnimGraphPin::ModelPose].SetCount(sar);
     for (auto& ar : m_OutputPinToInputPinMapping[xiiAnimGraphPin::ModelPose])
     {
-      XII_SUCCEED_OR_RETURN(stream.ReadArray(ar));
+      XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(ar));
     }
   }
   // EXTEND THIS if a new type is introduced
@@ -279,9 +279,9 @@ void xiiAnimGraph::SetOutputModelTransform(xiiAnimGraphPinDataModelTransforms* p
   m_pCurrentModelTransforms = pModelTransform;
 }
 
-void xiiAnimGraph::SetRootMotion(const xiiVec3& translation, xiiAngle rotationX, xiiAngle rotationY, xiiAngle rotationZ)
+void xiiAnimGraph::SetRootMotion(const xiiVec3& vTranslation, xiiAngle rotationX, xiiAngle rotationY, xiiAngle rotationZ)
 {
-  m_vRootMotion   = translation;
+  m_vRootMotion   = vTranslation;
   m_RootRotationX = rotationX;
   m_RootRotationY = rotationY;
   m_RootRotationZ = rotationZ;

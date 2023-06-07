@@ -109,7 +109,7 @@ public:
   /// \internal struct used by xiiPlugin macros
   struct XII_FOUNDATION_DLL Init
   {
-    Init(xiiPluginInitCallback OnLoadOrUnloadCB, bool bOnLoad);
+    Init(xiiPluginInitCallback onLoadOrUnloadCB, bool bOnLoad);
     Init(const char* szAddPluginDependency);
   };
 
@@ -122,10 +122,10 @@ public:
   };
 
   /// \brief Returns information about all currently loaded plugins.
-  static void GetAllPluginInfos(xiiDynamicArray<PluginInfo>& infos);
+  static void GetAllPluginInfos(xiiDynamicArray<PluginInfo>& ref_infos);
 
   /// \internal Determines the plugin paths.
-  static void GetPluginPaths(const char* szPluginName, xiiStringBuilder& sOriginalFile, xiiStringBuilder& sCopiedFile, xiiUInt8 uiFileCopyNumber);
+  static void GetPluginPaths(const char* szPluginName, xiiStringBuilder& ref_sOriginalFile, xiiStringBuilder& ref_sCopiedFile, xiiUInt8 uiFileCopyNumber);
 
 private:
   xiiPlugin() = delete;

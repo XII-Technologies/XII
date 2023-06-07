@@ -45,7 +45,7 @@ public:
 
   virtual void      Present(bool bEnableVSync) override;
   void              RenderCompanionView(bool bThrottleCompanionView = true);
-  virtual xiiResult CaptureImage(xiiImage& out_Image) override;
+  virtual xiiResult CaptureImage(xiiImage& out_image) override;
 
   /// \brief Returns the companion window output target if present.
   const xiiWindowOutputTargetBase* GetCompanionWindowOutputTarget() const;
@@ -64,7 +64,7 @@ class XII_GAMEENGINE_DLL xiiActorPluginWindowXR : public xiiActorPluginWindow
   XII_ADD_DYNAMIC_REFLECTION(xiiActorPluginWindowXR, xiiActorPluginWindow);
 
 public:
-  xiiActorPluginWindowXR(xiiXRInterface* pVrInterface, xiiUniquePtr<xiiWindowBase> companionWindow, xiiUniquePtr<xiiWindowOutputTargetGAL> companionWindowOutput);
+  xiiActorPluginWindowXR(xiiXRInterface* pVrInterface, xiiUniquePtr<xiiWindowBase> pCompanionWindow, xiiUniquePtr<xiiWindowOutputTargetGAL> pCompanionWindowOutput);
   ~xiiActorPluginWindowXR();
   void Initialize();
 

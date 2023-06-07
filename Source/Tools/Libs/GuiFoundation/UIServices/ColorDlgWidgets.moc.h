@@ -8,16 +8,16 @@ class XII_GUIFOUNDATION_DLL xiiQtColorAreaWidget : public QWidget
 {
   Q_OBJECT
 public:
-  xiiQtColorAreaWidget(QWidget* parent);
+  xiiQtColorAreaWidget(QWidget* pParent);
 
   float GetHue() const { return m_fHue; }
-  void  SetHue(float hue);
+  void  SetHue(float fHue);
 
   float GetSaturation() const { return m_fSaturation; }
-  void  SetSaturation(float sat);
+  void  SetSaturation(float fSat);
 
   float GetValue() const { return m_fValue; }
-  void  SetValue(float val);
+  void  SetValue(float fVal);
 
 Q_SIGNALS:
   void valueChanged(double x, double y);
@@ -39,10 +39,10 @@ class XII_GUIFOUNDATION_DLL xiiQtColorRangeWidget : public QWidget
 {
   Q_OBJECT
 public:
-  xiiQtColorRangeWidget(QWidget* parent);
+  xiiQtColorRangeWidget(QWidget* pParent);
 
   float GetHue() const { return m_fHue; }
-  void  SetHue(float hue);
+  void  SetHue(float fHue);
 
 Q_SIGNALS:
   void valueChanged(double x);
@@ -62,7 +62,7 @@ class XII_GUIFOUNDATION_DLL xiiQtColorCompareWidget : public QWidget
 {
   Q_OBJECT
 public:
-  xiiQtColorCompareWidget(QWidget* parent);
+  xiiQtColorCompareWidget(QWidget* pParent);
 
   void SetNewColor(const xiiColor& color);
   void SetInitialColor(const xiiColor& color);

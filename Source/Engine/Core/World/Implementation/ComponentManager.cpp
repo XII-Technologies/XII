@@ -12,7 +12,7 @@ xiiComponentManagerBase::xiiComponentManagerBase(xiiWorld* pWorld) :
 {
 }
 
-xiiComponentManagerBase::~xiiComponentManagerBase() {}
+xiiComponentManagerBase::~xiiComponentManagerBase() = default;
 
 xiiComponentHandle xiiComponentManagerBase::CreateComponent(xiiGameObject* pOwnerObject)
 {

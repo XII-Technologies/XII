@@ -75,12 +75,12 @@ void xiiBlackboard::SetName(xiiStringView sName)
   m_sName.Assign(sName);
 }
 
-void xiiBlackboard::RegisterEntry(const xiiHashedString& name, const xiiVariant& initialValue, xiiBitflags<xiiBlackboardEntryFlags> flags /*= xiiBlackboardEntryFlags::None*/)
+void xiiBlackboard::RegisterEntry(const xiiHashedString& sName, const xiiVariant& initialValue, xiiBitflags<xiiBlackboardEntryFlags> flags /*= xiiBlackboardEntryFlags::None*/)
 {
   XII_ASSERT_ALWAYS(!flags.IsSet(xiiBlackboardEntryFlags::Invalid), "The invalid flag is reserved for internal use.");
 
   bool   bExisted = false;
-  Entry& entry    = m_Entries.FindOrAdd(name, &bExisted);
+  Entry& entry    = m_Entries.FindOrAdd(sName, &bExisted);
 
   if (!bExisted || entry.m_Flags != flags)
   {
@@ -91,13 +91,13 @@ void xiiBlackboard::RegisterEntry(const xiiHashedString& name, const xiiVariant&
   if (!bExisted && entry.m_Value != initialValue)
   {
     // broadcasts the change event, in case we overwrite an existing entry
-    SetEntryValue(name, initialValue).IgnoreResult();
+    SetEntryValue(sName, initialValue).IgnoreResult();
   }
 }
 
-void xiiBlackboard::UnregisterEntry(const xiiHashedString& name)
+void xiiBlackboard::UnregisterEntry(const xiiHashedString& sName)
 {
-  if (m_Entries.Remove(name))
+  if (m_Entries.Remove(sName))
   {
     ++m_uiBlackboardChangeCounter;
   }
@@ -113,9 +113,9 @@ void xiiBlackboard::UnregisterAllEntries()
   m_Entries.Clear();
 }
 
-xiiResult xiiBlackboard::SetEntryValue(const xiiTempHashedString& name, const xiiVariant& value, bool force /*= false*/)
+xiiResult xiiBlackboard::SetEntryValue(const xiiTempHashedString& sName, const xiiVariant& value, bool bForce /*= false*/)
 {
-  auto itEntry = m_Entries.Find(name);
+  auto itEntry = m_Entries.Find(sName);
 
   if (!itEntry.IsValid())
   {
@@ -124,7 +124,7 @@ xiiResult xiiBlackboard::SetEntryValue(const xiiTempHashedString& name, const xi
 
   Entry& entry = itEntry.Value();
 
-  if (!force && entry.m_Value == value)
+  if (!bForce && entry.m_Value == value)
     return XII_SUCCESS;
 
   ++m_uiBlackboardEntryChangeCounter;
@@ -149,9 +149,9 @@ xiiResult xiiBlackboard::SetEntryValue(const xiiTempHashedString& name, const xi
   return XII_SUCCESS;
 }
 
-const xiiBlackboard::Entry* xiiBlackboard::GetEntry(const xiiTempHashedString& name) const
+const xiiBlackboard::Entry* xiiBlackboard::GetEntry(const xiiTempHashedString& sName) const
 {
-  auto itEntry = m_Entries.Find(name);
+  auto itEntry = m_Entries.Find(sName);
 
   if (!itEntry.IsValid())
     return nullptr;
@@ -159,15 +159,15 @@ const xiiBlackboard::Entry* xiiBlackboard::GetEntry(const xiiTempHashedString& n
   return &itEntry.Value();
 }
 
-xiiVariant xiiBlackboard::GetEntryValue(const xiiTempHashedString& name, xiiVariant fallback) const
+xiiVariant xiiBlackboard::GetEntryValue(const xiiTempHashedString& sName, xiiVariant fallback) const
 {
-  auto value = m_Entries.GetValue(name);
+  auto value = m_Entries.GetValue(sName);
   return value != nullptr ? value->m_Value : fallback;
 }
 
-xiiBitflags<xiiBlackboardEntryFlags> xiiBlackboard::GetEntryFlags(const xiiTempHashedString& name) const
+xiiBitflags<xiiBlackboardEntryFlags> xiiBlackboard::GetEntryFlags(const xiiTempHashedString& sName) const
 {
-  auto itEntry = m_Entries.Find(name);
+  auto itEntry = m_Entries.Find(sName);
 
   if (!itEntry.IsValid())
   {
@@ -177,9 +177,9 @@ xiiBitflags<xiiBlackboardEntryFlags> xiiBlackboard::GetEntryFlags(const xiiTempH
   return itEntry.Value().m_Flags;
 }
 
-xiiResult xiiBlackboard::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiBlackboard::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(1);
+  ref_stream.WriteVersion(1);
 
   xiiUInt32 uiEntries = 0;
 
@@ -191,7 +191,7 @@ xiiResult xiiBlackboard::Serialize(xiiStreamWriter& stream) const
     }
   }
 
-  stream << uiEntries;
+  ref_stream << uiEntries;
 
   for (auto it : m_Entries)
   {
@@ -199,32 +199,32 @@ xiiResult xiiBlackboard::Serialize(xiiStreamWriter& stream) const
 
     if (e.m_Flags.IsSet(xiiBlackboardEntryFlags::Save))
     {
-      stream << it.Key();
-      stream << e.m_Flags;
-      stream << e.m_Value;
+      ref_stream << it.Key();
+      ref_stream << e.m_Flags;
+      ref_stream << e.m_Value;
     }
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiBlackboard::Deserialize(xiiStreamReader& stream)
+xiiResult xiiBlackboard::Deserialize(xiiStreamReader& ref_stream)
 {
-  stream.ReadVersion(1);
+  ref_stream.ReadVersion(1);
 
   xiiUInt32 uiEntries = 0;
-  stream >> uiEntries;
+  ref_stream >> uiEntries;
 
   for (xiiUInt32 e = 0; e < uiEntries; ++e)
   {
     xiiHashedString name;
-    stream >> name;
+    ref_stream >> name;
 
     xiiBitflags<xiiBlackboardEntryFlags> flags;
-    stream >> flags;
+    ref_stream >> flags;
 
     xiiVariant value;
-    stream >> value;
+    ref_stream >> value;
 
     RegisterEntry(name, value, flags);
   }
@@ -262,23 +262,23 @@ bool xiiBlackboardCondition::IsConditionMet(const xiiBlackboard& blackboard) con
 
 constexpr xiiTypeVersion s_BlackboardConditionVersion = 1;
 
-xiiResult xiiBlackboardCondition::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiBlackboardCondition::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(s_BlackboardConditionVersion);
+  ref_stream.WriteVersion(s_BlackboardConditionVersion);
 
-  stream << m_sEntryName;
-  stream << m_Operator;
-  stream << m_fComparisonValue;
+  ref_stream << m_sEntryName;
+  ref_stream << m_Operator;
+  ref_stream << m_fComparisonValue;
   return XII_SUCCESS;
 }
 
-xiiResult xiiBlackboardCondition::Deserialize(xiiStreamReader& stream)
+xiiResult xiiBlackboardCondition::Deserialize(xiiStreamReader& ref_stream)
 {
-  const xiiTypeVersion uiVersion = stream.ReadVersion(s_BlackboardConditionVersion);
+  const xiiTypeVersion uiVersion = ref_stream.ReadVersion(s_BlackboardConditionVersion);
 
-  stream >> m_sEntryName;
-  stream >> m_Operator;
-  stream >> m_fComparisonValue;
+  ref_stream >> m_sEntryName;
+  ref_stream >> m_Operator;
+  ref_stream >> m_fComparisonValue;
   return XII_SUCCESS;
 }
 

@@ -41,8 +41,8 @@ public:
   /// All cloth nodes.
   xiiDynamicArray<Node, xiiAlignedAllocatorWrapper> m_Nodes;
 
-  void SimulateCloth(const xiiTime& tDiff);
-  void SimulateStep(const xiiSimdFloat tDiffSqr, xiiUInt32 uiMaxIterations, xiiSimdFloat fAllowedError);
+  void SimulateCloth(const xiiTime& diff);
+  void SimulateStep(const xiiSimdFloat fDiffSqr, xiiUInt32 uiMaxIterations, xiiSimdFloat fAllowedError);
   bool HasEquilibrium(xiiSimdFloat fAllowedMovement) const;
 
 private:

@@ -42,9 +42,9 @@ xiiOccluderComponentManager::xiiOccluderComponentManager(xiiWorld* pWorld) :
 xiiOccluderComponent::xiiOccluderComponent()  = default;
 xiiOccluderComponent::~xiiOccluderComponent() = default;
 
-void xiiOccluderComponent::SetExtents(const xiiVec3& extents)
+void xiiOccluderComponent::SetExtents(const xiiVec3& vExtents)
 {
-  m_vExtents = extents;
+  m_vExtents = vExtents;
   m_pOccluderObject.Clear();
 
   if (IsActiveAndInitialized())
@@ -74,20 +74,20 @@ void xiiOccluderComponent::OnMsgExtractOccluderData(xiiMsgExtractOccluderData& m
   }
 }
 
-void xiiOccluderComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiOccluderComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_vExtents;
 }
 
-void xiiOccluderComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiOccluderComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32  uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32  uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  xiiStreamReader& s         = ref_stream.GetStream();
 
   s >> m_vExtents;
 }

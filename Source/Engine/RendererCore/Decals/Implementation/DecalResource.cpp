@@ -105,7 +105,7 @@ xiiResourceLoadData xiiDecalResourceLoader::OpenDataStream(const xiiResource* pR
   return res;
 }
 
-void xiiDecalResourceLoader::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& LoaderData)
+void xiiDecalResourceLoader::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData)
 {
   // nothing to do
 }

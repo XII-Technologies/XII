@@ -16,22 +16,22 @@ xiiCommandLineUtils* xiiCommandLineUtils::GetGlobalInstance()
   return &g_pCmdLineInstance;
 }
 
-void xiiCommandLineUtils::SplitCommandLineString(const char* commandString, bool addExecutableDir, xiiDynamicArray<xiiString>& outArgs, xiiDynamicArray<const char*>& outArgsV)
+void xiiCommandLineUtils::SplitCommandLineString(const char* szCommandString, bool bAddExecutableDir, xiiDynamicArray<xiiString>& out_args, xiiDynamicArray<const char*>& out_argsV)
 {
   // Add application dir as first argument as customary on other platforms.
-  if (addExecutableDir)
+  if (bAddExecutableDir)
   {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
     wchar_t moduleFilename[256];
     GetModuleFileNameW(nullptr, moduleFilename, 256);
-    outArgs.PushBack(xiiStringUtf8(moduleFilename).GetData());
+    out_args.PushBack(xiiStringUtf8(moduleFilename).GetData());
 #else
     XII_ASSERT_NOT_IMPLEMENTED;
 #endif
   }
 
   // Simple args splitting. Not as powerful as Win32's CommandLineToArgvW.
-  const char* currentChar = commandString;
+  const char* currentChar = szCommandString;
   const char* lastEnd     = currentChar;
   bool        inQuotes    = false;
   while (*currentChar != '\0')
@@ -42,18 +42,18 @@ void xiiCommandLineUtils::SplitCommandLineString(const char* commandString, bool
     {
       xiiStringBuilder path = xiiStringView(lastEnd, currentChar);
       path.Trim(" \"");
-      outArgs.PushBack(path);
+      out_args.PushBack(path);
       lastEnd = currentChar + 1;
     }
     xiiUnicodeUtils::MoveToNextUtf8(currentChar);
   }
 
-  outArgsV.Reserve(outArgsV.GetCount());
-  for (xiiString& str : outArgs)
-    outArgsV.PushBack(str.GetData());
+  out_argsV.Reserve(out_argsV.GetCount());
+  for (xiiString& str : out_args)
+    out_argsV.PushBack(str.GetData());
 }
 
-void xiiCommandLineUtils::SetCommandLine(xiiUInt32 argc, const char** argv, ArgMode mode /*= UseArgcArgv*/)
+void xiiCommandLineUtils::SetCommandLine(xiiUInt32 uiArgc, const char** pArgv, ArgMode mode /*= UseArgcArgv*/)
 {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   if (mode == ArgMode::PreferOsArgs)
@@ -64,10 +64,10 @@ void xiiCommandLineUtils::SetCommandLine(xiiUInt32 argc, const char** argv, ArgM
 #endif
 
   m_Commands.Clear();
-  m_Commands.Reserve(argc);
+  m_Commands.Reserve(uiArgc);
 
-  for (xiiUInt32 i = 0; i < argc; ++i)
-    m_Commands.PushBack(argv[i]);
+  for (xiiUInt32 i = 0; i < uiArgc; ++i)
+    m_Commands.PushBack(pArgv[i]);
 }
 
 void xiiCommandLineUtils::SetCommandLine(xiiArrayPtr<xiiString> commands)

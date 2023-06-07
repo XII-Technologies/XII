@@ -8,13 +8,13 @@ xiiJSONReader::xiiJSONReader()
   m_bParsingError = false;
 }
 
-xiiResult xiiJSONReader::Parse(xiiStreamReader& InputStream, xiiUInt32 uiFirstLineOffset)
+xiiResult xiiJSONReader::Parse(xiiStreamReader& ref_inputStream, xiiUInt32 uiFirstLineOffset)
 {
   m_bParsingError = false;
   m_Stack.Clear();
   m_sLastName.Clear();
 
-  SetInputStream(InputStream, uiFirstLineOffset);
+  SetInputStream(ref_inputStream, uiFirstLineOffset);
 
   while (!m_bParsingError && ContinueParsing())
   {

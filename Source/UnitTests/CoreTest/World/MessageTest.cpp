@@ -44,28 +44,27 @@ namespace
   // clang-format on
 
   class TestComponentMsg;
-  typedef xiiComponentManager<TestComponentMsg, xiiBlockStorageType::FreeList> TestComponentMsgManager;
+  using TestComponentMsgManager = xiiComponentManager<TestComponentMsg, xiiBlockStorageType::FreeList>;
 
   class TestComponentMsg : public xiiComponent
   {
     XII_DECLARE_COMPONENT_TYPE(TestComponentMsg, xiiComponent, TestComponentMsgManager);
 
   public:
-    TestComponentMsg() :
-      m_iSomeData(1), m_iSomeData2(2)
+    TestComponentMsg()
     {
     }
-    ~TestComponentMsg() {}
+    ~TestComponentMsg() = default;
 
-    virtual void SerializeComponent(xiiWorldWriter& stream) const override {}
-    virtual void DeserializeComponent(xiiWorldReader& stream) override {}
+    virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override {}
+    virtual void DeserializeComponent(xiiWorldReader& ref_stream) override {}
 
-    void OnTestMessage(TestMessage1& msg) { m_iSomeData += msg.m_iValue; }
+    void OnTestMessage(TestMessage1& ref_msg) { m_iSomeData += ref_msg.m_iValue; }
 
-    void OnTestMessage2(TestMessage2& msg) { m_iSomeData2 += 2 * msg.m_iValue; }
+    void OnTestMessage2(TestMessage2& ref_msg) { m_iSomeData2 += 2 * ref_msg.m_iValue; }
 
-    xiiInt32 m_iSomeData;
-    xiiInt32 m_iSomeData2;
+    xiiInt32 m_iSomeData  = 1;
+    xiiInt32 m_iSomeData2 = 2;
   };
 
   // clang-format off
@@ -81,16 +80,16 @@ namespace
   XII_END_COMPONENT_TYPE;
   // clang-format on
 
-  void ResetComponents(xiiGameObject& object)
+  void ResetComponents(xiiGameObject& ref_object)
   {
     TestComponentMsg* pComponent = nullptr;
-    if (object.TryGetComponentOfBaseType(pComponent))
+    if (ref_object.TryGetComponentOfBaseType(pComponent))
     {
       pComponent->m_iSomeData  = 1;
       pComponent->m_iSomeData2 = 2;
     }
 
-    for (auto it = object.GetChildren(); it.IsValid(); ++it)
+    for (auto it = ref_object.GetChildren(); it.IsValid(); ++it)
     {
       ResetComponents(*it);
     }

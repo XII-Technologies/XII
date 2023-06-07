@@ -52,151 +52,151 @@ void xiiStringUtils::PrintStringLengthStatistics()
 //  License: $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 //  Authors: $(WEB digitalmars.com, Walter Bright), Jonathan M Davis, and Kenji Hara
 //  Source: $(PHOBOSSRC std/_uni.d)
-xiiUInt32 xiiStringUtils::ToUpperChar(xiiUInt32 wc)
+xiiUInt32 xiiStringUtils::ToUpperChar(xiiUInt32 uiWc)
 {
-  if (wc >= 'a' && wc <= 'z')
+  if (uiWc >= 'a' && uiWc <= 'z')
   {
-    wc -= 'a' - 'A';
+    uiWc -= 'a' - 'A';
   }
-  else if (wc >= 0x00E0)
+  else if (uiWc >= 0x00E0)
   {
-    if ((/*wc >= 0x00E0 &&*/ wc <= 0x00F6) || (wc >= 0x00F8 && wc <= 0x00FE))
+    if ((/*wc >= 0x00E0 &&*/ uiWc <= 0x00F6) || (uiWc >= 0x00F8 && uiWc <= 0x00FE))
     {
-      wc -= 32;
+      uiWc -= 32;
     }
-    else if (wc == 0x00FF)
-      wc = 0x0178;
-    else if ((wc >= 0x0100 && wc < 0x0138) || (wc > 0x0149 && wc < 0x0178))
+    else if (uiWc == 0x00FF)
+      uiWc = 0x0178;
+    else if ((uiWc >= 0x0100 && uiWc < 0x0138) || (uiWc > 0x0149 && uiWc < 0x0178))
     {
-      if (wc == 0x0131)
+      if (uiWc == 0x0131)
       {
         // note:
         // this  maps the character into the ASCII range and thus changes its size in UTF-8 from
         // 2 bytes to 1 bytes, and this mapping is irreversible
-        wc = 0x0049; // 'I'
+        uiWc = 0x0049; // 'I'
       }
-      else if (wc == 0x0130)
+      else if (uiWc == 0x0130)
       {
         // note:
         // the character 0x130 maps to 'i' in ToLower, but usually would note get changed in ToUpper
         // however that means ToUpper(ToLower(0x130)) != ToUpper(0x130)
         // therefore, although this might "break the language", we ALWAYS convert it to the ASCII character
         // that would result if we would to ToUpper(ToLower(0x130))
-        wc = 0x0049; // 'I'
+        uiWc = 0x0049; // 'I'
       }
-      else if (wc & 1)
-        --wc;
+      else if (uiWc & 1)
+        --uiWc;
     }
-    else if ((wc >= 0x0139 && wc < 0x0149) || (wc > 0x0178 && wc < 0x017F))
+    else if ((uiWc >= 0x0139 && uiWc < 0x0149) || (uiWc > 0x0178 && uiWc < 0x017F))
     {
-      if ((wc & 1) == 0)
-        --wc;
+      if ((uiWc & 1) == 0)
+        --uiWc;
     }
-    else if (wc == 0x017F)
+    else if (uiWc == 0x017F)
     {
       // note:
       // this  maps the character into the ASCII range and thus changes its size in UTF-8 from
       // 2 bytes to 1 bytes, and this mapping is irreversible
-      wc = 0x0053; // 'S'
+      uiWc = 0x0053; // 'S'
 
       // this one character means, that for case-insensitive comparisons we always need to use ToUpper
       // and NOT ToLower, as ToLower will not convert this one character, such that two strings, one with 0x017f
       // and one with 0x0053, will not compare equal
     }
-    else if (wc >= 0x0200 && wc <= 0x0217)
+    else if (uiWc >= 0x0200 && uiWc <= 0x0217)
     {
-      if (wc & 1)
-        --wc;
+      if (uiWc & 1)
+        --uiWc;
     }
-    else if (wc >= 0x0430 && wc <= 0x044F)
-      wc -= 32;
-    else if ((wc >= 0x0451 && wc <= 0x045C) || (wc >= 0x045E && wc <= 0x045F))
+    else if (uiWc >= 0x0430 && uiWc <= 0x044F)
+      uiWc -= 32;
+    else if ((uiWc >= 0x0451 && uiWc <= 0x045C) || (uiWc >= 0x045E && uiWc <= 0x045F))
     {
-      wc -= 80;
+      uiWc -= 80;
     }
-    else if (wc >= 0x0460 && wc <= 0x047F)
+    else if (uiWc >= 0x0460 && uiWc <= 0x047F)
     {
-      if (wc & 1)
-        --wc;
+      if (uiWc & 1)
+        --uiWc;
     }
-    else if (wc >= 0x0561 && wc < 0x0587)
-      wc -= 48;
-    else if (wc >= 0xFF41 && wc <= 0xFF5A)
-      wc -= 32;
+    else if (uiWc >= 0x0561 && uiWc < 0x0587)
+      uiWc -= 48;
+    else if (uiWc >= 0xFF41 && uiWc <= 0xFF5A)
+      uiWc -= 32;
   }
 
-  return wc;
+  return uiWc;
 }
 
 // Unicode ToUpper / ToLower character conversion
 //  License: $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 //  Authors: $(WEB digitalmars.com, Walter Bright), Jonathan M Davis, and Kenji Hara
 //  Source: $(PHOBOSSRC std/_uni.d)
-xiiUInt32 xiiStringUtils::ToLowerChar(xiiUInt32 wc)
+xiiUInt32 xiiStringUtils::ToLowerChar(xiiUInt32 uiWc)
 {
-  if (wc >= 'A' && wc <= 'Z')
+  if (uiWc >= 'A' && uiWc <= 'Z')
   {
-    wc += 'a' - 'A';
+    uiWc += 'a' - 'A';
   }
-  else if (wc >= 0x00C0)
+  else if (uiWc >= 0x00C0)
   {
-    if ((/*wc >= 0x00C0 &&*/ wc <= 0x00D6) || (wc >= 0x00D8 && wc <= 0x00DE))
+    if ((/*wc >= 0x00C0 &&*/ uiWc <= 0x00D6) || (uiWc >= 0x00D8 && uiWc <= 0x00DE))
     {
-      wc += 32;
+      uiWc += 32;
     }
-    else if ((wc >= 0x0100 && wc < 0x0138) || (wc > 0x0149 && wc < 0x0178))
+    else if ((uiWc >= 0x0100 && uiWc < 0x0138) || (uiWc > 0x0149 && uiWc < 0x0178))
     {
-      if (wc == 0x0130)
+      if (uiWc == 0x0130)
       {
         // note:
         // this  maps the character into the ASCII range and thus changes its size in UTF-8 from
         // 2 bytes to 1 bytes, and this mapping is irreversible
-        wc = 0x0069; // 'i'
+        uiWc = 0x0069; // 'i'
       }
-      else if (wc == 0x0131)
+      else if (uiWc == 0x0131)
       {
         // note:
         // the character 0x131 maps to 'I' in ToUpper, but usually would note get changed in ToLower
         // however that means ToLower(ToUpper(0x131)) != ToLower(0x131)
         // therefore, although this might "break the language", we ALWAYS convert it to the ASCII character
         // that would result if we would to ToLower(ToUpper(0x131))
-        wc = 0x0069; // 'i'
+        uiWc = 0x0069; // 'i'
       }
-      else if ((wc & 1) == 0)
-        ++wc;
+      else if ((uiWc & 1) == 0)
+        ++uiWc;
     }
-    else if (wc == 0x0178)
-      wc = 0x00FF;
-    else if ((wc >= 0x0139 && wc < 0x0149) || (wc > 0x0178 && wc < 0x017F))
+    else if (uiWc == 0x0178)
+      uiWc = 0x00FF;
+    else if ((uiWc >= 0x0139 && uiWc < 0x0149) || (uiWc > 0x0178 && uiWc < 0x017F))
     {
-      if (wc & 1)
-        ++wc;
+      if (uiWc & 1)
+        ++uiWc;
     }
-    else if (wc >= 0x0200 && wc <= 0x0217)
+    else if (uiWc >= 0x0200 && uiWc <= 0x0217)
     {
-      if ((wc & 1) == 0)
-        ++wc;
+      if ((uiWc & 1) == 0)
+        ++uiWc;
     }
-    else if ((wc >= 0x0401 && wc <= 0x040C) || (wc >= 0x040E && wc <= 0x040F))
+    else if ((uiWc >= 0x0401 && uiWc <= 0x040C) || (uiWc >= 0x040E && uiWc <= 0x040F))
     {
-      wc += 80;
+      uiWc += 80;
     }
-    else if (wc >= 0x0410 && wc <= 0x042F)
-      wc += 32;
-    else if (wc >= 0x0460 && wc <= 0x047F)
+    else if (uiWc >= 0x0410 && uiWc <= 0x042F)
+      uiWc += 32;
+    else if (uiWc >= 0x0460 && uiWc <= 0x047F)
     {
-      if ((wc & 1) == 0)
-        ++wc;
+      if ((uiWc & 1) == 0)
+        ++uiWc;
     }
-    else if (wc >= 0x0531 && wc <= 0x0556)
-      wc += 48;
-    else if (wc >= 0x10A0 && wc <= 0x10C5)
-      wc += 48;
-    else if (wc >= 0xFF21 && wc <= 0xFF3A)
-      wc += 32;
+    else if (uiWc >= 0x0531 && uiWc <= 0x0556)
+      uiWc += 48;
+    else if (uiWc >= 0x10A0 && uiWc <= 0x10C5)
+      uiWc += 48;
+    else if (uiWc >= 0xFF21 && uiWc <= 0xFF3A)
+      uiWc += 32;
   }
 
-  return wc;
+  return uiWc;
 }
 
 
@@ -692,7 +692,7 @@ const char* xiiStringUtils::FindLastSubString_NoCase(const char* szSource, const
 }
 
 
-const char* xiiStringUtils::FindWholeWord(const char* szString, const char* szSearchFor, XII_CHARACTER_FILTER IsDelimiterCB, const char* pStringEnd)
+const char* xiiStringUtils::FindWholeWord(const char* szString, const char* szSearchFor, XII_CHARACTER_FILTER isDelimiterCB, const char* pStringEnd)
 {
   // Handle nullptr-pointer strings
   if ((IsNullOrEmpty(szString)) || (IsNullOrEmpty(szSearchFor)))
@@ -708,10 +708,10 @@ const char* xiiStringUtils::FindWholeWord(const char* szString, const char* szSe
     if (StartsWith(pCurPos, szSearchFor, pStringEnd)) // yay, we found a substring, now make sure it is a 'whole word'
     {
       if (((szString == pCurPos) || // the start of the string is always a word delimiter
-           (IsDelimiterCB(
+           (isDelimiterCB(
              xiiUnicodeUtils::ConvertUtf8ToUtf32(pPrevPos) /* front */))) &&                                 // make sure the character before this substring is a word delimiter
           ((pCurPos + uiSearchedWordLength >= pStringEnd) ||                                                 // the end of the string is also always a delimiter
-           (IsDelimiterCB(xiiUnicodeUtils::ConvertUtf8ToUtf32(pCurPos + uiSearchedWordLength) /* back */)))) // and the character after it, as well
+           (isDelimiterCB(xiiUnicodeUtils::ConvertUtf8ToUtf32(pCurPos + uiSearchedWordLength) /* back */)))) // and the character after it, as well
         return pCurPos;
     }
 
@@ -725,7 +725,7 @@ const char* xiiStringUtils::FindWholeWord(const char* szString, const char* szSe
 const char* xiiStringUtils::FindWholeWord_NoCase(
   const char*          szString,
   const char*          szSearchFor,
-  XII_CHARACTER_FILTER IsDelimiterCB,
+  XII_CHARACTER_FILTER isDelimiterCB,
   const char*          pStringEnd)
 {
   // Handle nullptr-pointer strings
@@ -742,9 +742,9 @@ const char* xiiStringUtils::FindWholeWord_NoCase(
     if (StartsWith_NoCase(pCurPos, szSearchFor, pStringEnd)) // yay, we found a substring, now make sure it is a 'whole word'
     {
       if (((szString == pCurPos) || // the start of the string is always a word delimiter
-           (IsDelimiterCB(
+           (isDelimiterCB(
              xiiUnicodeUtils::ConvertUtf8ToUtf32(pPrevPos) /* front */))) &&                               // make sure the character before this substring is a word delimiter
-          (IsDelimiterCB(xiiUnicodeUtils::ConvertUtf8ToUtf32(pCurPos + uiSearchedWordLength) /* back */))) // and the character after it, as well
+          (isDelimiterCB(xiiUnicodeUtils::ConvertUtf8ToUtf32(pCurPos + uiSearchedWordLength) /* back */))) // and the character after it, as well
         return pCurPos;
     }
 
@@ -805,13 +805,13 @@ xiiResult xiiStringUtils::FindUIntAtTheEnd(const char* szString, xiiUInt32& out_
   }
 }
 
-const char* xiiStringUtils::SkipCharacters(const char* szString, XII_CHARACTER_FILTER SkipCharacterCB, bool bAlwaysSkipFirst)
+const char* xiiStringUtils::SkipCharacters(const char* szString, XII_CHARACTER_FILTER skipCharacterCB, bool bAlwaysSkipFirst)
 {
   XII_ASSERT_DEBUG(szString != nullptr, "Invalid string");
 
   while (*szString != '\0')
   {
-    if (!bAlwaysSkipFirst && !SkipCharacterCB(xiiUnicodeUtils::ConvertUtf8ToUtf32(szString)))
+    if (!bAlwaysSkipFirst && !skipCharacterCB(xiiUnicodeUtils::ConvertUtf8ToUtf32(szString)))
       break;
 
     bAlwaysSkipFirst = false;
@@ -821,13 +821,13 @@ const char* xiiStringUtils::SkipCharacters(const char* szString, XII_CHARACTER_F
   return szString;
 }
 
-const char* xiiStringUtils::FindWordEnd(const char* szString, XII_CHARACTER_FILTER IsDelimiterCB, bool bAlwaysSkipFirst)
+const char* xiiStringUtils::FindWordEnd(const char* szString, XII_CHARACTER_FILTER isDelimiterCB, bool bAlwaysSkipFirst)
 {
   XII_ASSERT_DEBUG(szString != nullptr, "Invalid string");
 
   while (*szString != '\0')
   {
-    if (!bAlwaysSkipFirst && IsDelimiterCB(xiiUnicodeUtils::ConvertUtf8ToUtf32(szString)))
+    if (!bAlwaysSkipFirst && isDelimiterCB(xiiUnicodeUtils::ConvertUtf8ToUtf32(szString)))
       break;
 
     bAlwaysSkipFirst = false;
@@ -837,11 +837,11 @@ const char* xiiStringUtils::FindWordEnd(const char* szString, XII_CHARACTER_FILT
   return szString;
 }
 
-void xiiStringUtils::Trim(const char*& pString, const char*& pStringEnd, const char* szTrimCharsStart, const char* szTrimCharsEnd)
+void xiiStringUtils::Trim(const char*& ref_pString, const char*& ref_pStringEnd, const char* szTrimCharsStart, const char* szTrimCharsEnd)
 {
   bool bTrimmed = false;
-  UpdateStringEnd(pString, pStringEnd);
-  xiiStringView view(pString, pStringEnd);
+  UpdateStringEnd(ref_pString, ref_pStringEnd);
+  xiiStringView view(ref_pString, ref_pStringEnd);
   xiiStringView trimFront(szTrimCharsStart);
   xiiStringView trimEnd(szTrimCharsEnd);
 
@@ -862,8 +862,8 @@ void xiiStringUtils::Trim(const char*& pString, const char*& pStringEnd, const c
       }
     }
   } while (bTrimmed && itStart.IsValid());
-  pString = itStart.GetData();
-  view.SetStartPosition(pString);
+  ref_pString = itStart.GetData();
+  view.SetStartPosition(ref_pString);
 
   // Trim end
   auto itEnd = rbegin(view);
@@ -877,7 +877,7 @@ void xiiStringUtils::Trim(const char*& pString, const char*& pStringEnd, const c
     {
       while (itEnd.GetCharacter() == needle)
       {
-        pStringEnd = itEnd.GetData();
+        ref_pStringEnd = itEnd.GetData();
         ++itEnd;
         bTrimmed = true;
       }

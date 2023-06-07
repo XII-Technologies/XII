@@ -51,7 +51,7 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE float Round(float f) { return Floor(f + 0.5f); }
 
-  XII_ALWAYS_INLINE float RoundToMultiple(float f, float multiple) { return Round(f / multiple) * multiple; }
+  XII_ALWAYS_INLINE float RoundToMultiple(float f, float fMultiple) { return Round(f / fMultiple) * fMultiple; }
 
 
   inline float RoundDown(float f, float fMultiple)
@@ -80,16 +80,16 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE float Pow2(float f) { return exp2f(f); }
 
-  XII_ALWAYS_INLINE float Pow(float base, float exp) { return powf(base, exp); }
+  XII_ALWAYS_INLINE float Pow(float fBase, float fExp) { return powf(fBase, fExp); }
 
-  XII_ALWAYS_INLINE float Root(float f, float NthRoot) { return powf(f, 1.0f / NthRoot); }
+  XII_ALWAYS_INLINE float Root(float f, float fNthRoot) { return powf(f, 1.0f / fNthRoot); }
 
   XII_ALWAYS_INLINE float Sqrt(float f) { return sqrtf(f); }
 
-  XII_ALWAYS_INLINE float Mod(float f, float div) { return fmodf(f, div); }
+  XII_ALWAYS_INLINE float Mod(float f, float fDiv) { return fmodf(f, fDiv); }
 
   XII_ALWAYS_INLINE float Hypot(float x, float y) { return sqrtf(powf(x, 2.0f) + powf(y, 2.0f)); }
 
-  XII_ALWAYS_INLINE float NormalizeToRange(float value, float min, float max) { return (value - min) / (max - min); }
+  XII_ALWAYS_INLINE float NormalizeToRange(float value, float fMin, float fMax) { return (value - fMin) / (fMax - fMin); }
 
 } // namespace xiiMath

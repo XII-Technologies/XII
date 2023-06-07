@@ -32,7 +32,7 @@ class xiiParticleFinalizerFactory;
 
 using xiiParticleEffectResourceHandle = xiiTypedResourceHandle<class xiiParticleEffectResource>;
 
-typedef xiiGenericId<22, 10> xiiParticleEffectId;
+using xiiParticleEffectId = xiiGenericId<22, 10>;
 
 /// \brief A handle to a particle effect
 class XII_PARTICLEPLUGIN_DLL xiiParticleEffectHandle
@@ -74,7 +74,7 @@ private:
 
 struct XII_PARTICLEPLUGIN_DLL xiiParticleTypeRenderMode
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -96,7 +96,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_PARTICLEPLUGIN_DLL, xiiParticleTypeRenderMode);
 /// \brief What to do when an effect is not visible.
 struct XII_PARTICLEPLUGIN_DLL xiiEffectInvisibleUpdateRate
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -117,7 +117,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_PARTICLEPLUGIN_DLL, xiiEffectInvisibleUpdateRat
 
 struct XII_PARTICLEPLUGIN_DLL xiiParticleTextureAtlasType
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -137,7 +137,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_PARTICLEPLUGIN_DLL, xiiParticleTextureAtlasType
 
 struct XII_PARTICLEPLUGIN_DLL xiiParticleColorGradientMode
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -155,7 +155,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_PARTICLEPLUGIN_DLL, xiiParticleColorGradientMod
 
 struct XII_PARTICLEPLUGIN_DLL xiiParticleOutOfBoundsMode
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {

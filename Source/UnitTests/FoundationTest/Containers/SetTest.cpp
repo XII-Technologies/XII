@@ -494,7 +494,7 @@ XII_CREATE_SIMPLE_TEST(Containers, Set)
 
     XII_TEST_INT(std::find(begin(m), end(m), 500).Key(), 500);
 
-    auto itfound = std::find_if(begin(m), end(m), [](xiiUInt32 val) { return val == 500; });
+    auto itfound = std::find_if(begin(m), end(m), [](xiiUInt32 uiVal) { return uiVal == 500; });
 
     XII_TEST_BOOL(std::find(begin(m), end(m), 500) == itfound);
 

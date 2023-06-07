@@ -155,7 +155,7 @@ public:
 
   /// \brief Will set the command line arguments that were passed to the app by the OS.
   /// This is automatically called by XII_APPLICATION_ENTRY_POINT() and XII_CONSOLEAPP_ENTRY_POINT().
-  void SetCommandLineArguments(xiiUInt32 uiArgumentCount, const char** ppArguments);
+  void SetCommandLineArguments(xiiUInt32 uiArgumentCount, const char** pArguments);
 
   /// \brief Returns the one instance of xiiApplication that is available.
   static xiiApplication* GetApplicationInstance() { return s_pApplicationInstance; }
@@ -190,13 +190,13 @@ protected:
   bool m_bWasQuitRequested = false;
 
 private:
-  xiiInt32 m_iReturnCode;
+  xiiInt32 m_iReturnCode = 0;
 
-  xiiUInt32 m_uiArgumentCount;
+  xiiUInt32 m_uiArgumentCount = 0;
 
-  const char** m_pArguments;
+  const char** m_pArguments = nullptr;
 
-  bool m_bReportMemoryLeaks;
+  bool m_bReportMemoryLeaks = true;
 
   xiiString m_sAppName;
 

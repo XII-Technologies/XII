@@ -33,10 +33,10 @@ public:
   virtual void EnableLogOutput(bool bEnable);
 
   /// \brief Writes the state of the console (history, bound keys) to the stream.
-  virtual void SaveState(xiiStreamWriter& Stream) const;
+  virtual void SaveState(xiiStreamWriter& ref_stream) const;
 
   /// \brief Reads the state of the console (history, bound keys) from the stream.
-  virtual void LoadState(xiiStreamReader& Stream);
+  virtual void LoadState(xiiStreamReader& ref_stream);
 
   /// @}
 
@@ -46,7 +46,7 @@ public:
 
 
   /// \brief Executes the given command using the current command interpreter.
-  virtual void ExecuteCommand(xiiStringView input) override;
+  virtual void ExecuteCommand(xiiStringView sInput) override;
 
   /// \brief Binds \a szCommand to \a szKey. Calling ExecuteBoundKey() with this key will then run that command.
   ///
@@ -114,7 +114,7 @@ public:
   /// @{
 
   /// \brief Adds a string to the console.
-  virtual void AddConsoleString(xiiStringView text, xiiConsoleString::Type type = xiiConsoleString::Type::Default) override;
+  virtual void AddConsoleString(xiiStringView sText, xiiConsoleString::Type type = xiiConsoleString::Type::Default) override;
 
   /// \brief Returns all current console strings. Use GetScrollPosition() to know which one should be displayed as the first one.
   const xiiDeque<xiiConsoleString>& GetConsoleStrings() const;

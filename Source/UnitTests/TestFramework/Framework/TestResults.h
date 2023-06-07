@@ -35,15 +35,15 @@ struct xiiTestOutput
 /// \brief A message of type xiiTestOutput::Enum, stored in xiiResult.
 struct xiiTestErrorMessage
 {
-  xiiTestErrorMessage() :
-    m_iLine(-1)
+  xiiTestErrorMessage()
+
   {
   }
 
   std::string m_sError;
   std::string m_sBlock;
   std::string m_sFile;
-  xiiInt32    m_iLine;
+  xiiInt32    m_iLine = -1;
   std::string m_sFunction;
   std::string m_sMessage;
 };
@@ -51,14 +51,13 @@ struct xiiTestErrorMessage
 /// \brief A message of type xiiTestOutput::Enum, stored in xiiResult.
 struct xiiTestOutputMessage
 {
-  xiiTestOutputMessage() :
-    m_Type(xiiTestOutput::ImportantInfo), m_iErrorIndex(-1)
+  xiiTestOutputMessage()
   {
   }
 
-  xiiTestOutput::Enum m_Type;
+  xiiTestOutput::Enum m_Type = xiiTestOutput::ImportantInfo;
   std::string         m_sMessage;
-  xiiInt32            m_iErrorIndex;
+  xiiInt32            m_iErrorIndex = -1;
 };
 
 struct xiiTestResultQuery
@@ -76,43 +75,42 @@ struct xiiTestResultQuery
 /// \brief Stores the results of a test run. Used by both xiiTestEntry and xiiSubTestEntry.
 struct xiiTestResultData
 {
-  xiiTestResultData() :
-    m_bExecuted(false), m_bSuccess(false), m_iTestAsserts(0), m_fTestDuration(0.0), m_iFirstOutput(-1), m_iLastOutput(-1)
+  xiiTestResultData()
   {
   }
   void Reset();
   void AddOutput(xiiInt32 iOutputIndex);
 
   std::string m_sName;
-  bool        m_bExecuted;  ///< Whether the test was executed. If false, the test was either deactivated or the test process crashed before
-                            ///< executing it.
-  bool     m_bSuccess;      ///< Whether the test succeeded or not.
-  int      m_iTestAsserts;  ///< Asserts that were checked. For tests this includes the count of all of their sub-tests as well.
-  double   m_fTestDuration; ///< Duration of the test/sub-test. For tests, this includes the duration of all their sub-tests as well.
-  xiiInt32 m_iFirstOutput;  ///< First output message. For tests, this range includes all messages of their sub-tests as well.
-  xiiInt32 m_iLastOutput;   ///< Last output message. For tests, this range includes all messages of their sub-tests as well.
+  bool        m_bExecuted = false;  ///< Whether the test was executed. If false, the test was either deactivated or the test process crashed before
+                                    ///< executing it.
+  bool     m_bSuccess      = false; ///< Whether the test succeeded or not.
+  int      m_iTestAsserts  = 0;     ///< Asserts that were checked. For tests this includes the count of all of their sub-tests as well.
+  double   m_fTestDuration = 0.0;   ///< Duration of the test/sub-test. For tests, this includes the duration of all their sub-tests as well.
+  xiiInt32 m_iFirstOutput  = -1;    ///< First output message. For tests, this range includes all messages of their sub-tests as well.
+  xiiInt32 m_iLastOutput   = -1;    ///< Last output message. For tests, this range includes all messages of their sub-tests as well.
 };
 
 struct xiiTestConfiguration
 {
   xiiTestConfiguration();
 
-  xiiUInt64   m_uiInstalledMainMemory;
-  xiiUInt32   m_uiMemoryPageSize;
-  xiiUInt32   m_uiCPUCoreCount;
-  bool        m_b64BitOS;
-  bool        m_b64BitApplication;
+  xiiUInt64   m_uiInstalledMainMemory = 0;
+  xiiUInt32   m_uiMemoryPageSize      = 0;
+  xiiUInt32   m_uiCPUCoreCount        = 0;
+  bool        m_b64BitOS              = false;
+  bool        m_b64BitApplication     = false;
   std::string m_sPlatformName;
   std::string m_sBuildConfiguration; ///< Debug, Release, etc
-  xiiInt64    m_iDateTime;           ///< in seconds since Linux epoch
-  xiiInt32    m_iRCSRevision;
+  xiiInt64    m_iDateTime    = 0;    ///< in seconds since Linux epoch
+  xiiInt32    m_iRCSRevision = -1;
   std::string m_sHostName;
 };
 
 class xiiTestFrameworkResult
 {
 public:
-  xiiTestFrameworkResult() {}
+  xiiTestFrameworkResult() = default;
 
   // Manage tests
   void Clear();
@@ -129,13 +127,13 @@ public:
   const xiiTestResultData& GetTestResultData(xiiUInt32 uiTestIndex, xiiInt32 iSubTestIndex) const;
 
   // Test output
-  void TestOutput(xiiUInt32 uiTestIndex, xiiInt32 iSubTestIndex, xiiTestOutput::Enum Type, const char* szMsg);
+  void TestOutput(xiiUInt32 uiTestIndex, xiiInt32 iSubTestIndex, xiiTestOutput::Enum type, const char* szMsg);
   void TestError(xiiUInt32 uiTestIndex, xiiInt32 iSubTestIndex, const char* szError, const char* szBlock, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg);
   void TestResult(xiiUInt32 uiTestIndex, xiiInt32 iSubTestIndex, bool bSuccess, double fDuration);
   void AddAsserts(xiiUInt32 uiTestIndex, xiiInt32 iSubTestIndex, int iCount);
 
   // Messages / Errors
-  xiiUInt32                   GetOutputMessageCount(xiiInt32 iTestIndex = -1, xiiInt32 iSubTestIndex = -1, xiiTestOutput::Enum Type = xiiTestOutput::AllOutputTypes) const;
+  xiiUInt32                   GetOutputMessageCount(xiiInt32 iTestIndex = -1, xiiInt32 iSubTestIndex = -1, xiiTestOutput::Enum type = xiiTestOutput::AllOutputTypes) const;
   const xiiTestOutputMessage* GetOutputMessage(xiiUInt32 uiOutputMessageIdx) const;
 
   xiiUInt32                  GetErrorMessageCount(xiiInt32 iTestIndex = -1, xiiInt32 iSubTestIndex = -1) const;
@@ -144,7 +142,7 @@ public:
 private:
   struct xiiSubTestResult
   {
-    xiiSubTestResult() {}
+    xiiSubTestResult() = default;
     xiiSubTestResult(const char* szName) { m_Result.m_sName = szName; }
 
     xiiTestResultData m_Result;
@@ -152,7 +150,7 @@ private:
 
   struct xiiTestResult
   {
-    xiiTestResult() {}
+    xiiTestResult() = default;
     xiiTestResult(const char* szName) { m_Result.m_sName = szName; }
 
     void Reset();

@@ -225,14 +225,14 @@ void xiiRTTI::UnregisterType()
   pTable->m_Table.Remove(m_szTypeName);
 }
 
-void xiiRTTI::GetAllProperties(xiiHybridArray<xiiAbstractProperty*, 32>& out_Properties) const
+void xiiRTTI::GetAllProperties(xiiHybridArray<xiiAbstractProperty*, 32>& out_properties) const
 {
-  out_Properties.Clear();
+  out_properties.Clear();
 
   if (m_pParentType)
-    m_pParentType->GetAllProperties(out_Properties);
+    m_pParentType->GetAllProperties(out_properties);
 
-  out_Properties.PushBackRange(GetProperties());
+  out_properties.PushBackRange(GetProperties());
 }
 
 xiiRTTI* xiiRTTI::FindTypeByName(const char* szName)
@@ -320,13 +320,13 @@ xiiAbstractProperty* xiiRTTI::FindPropertyByName(const char* szName, bool bSearc
   return nullptr;
 }
 
-bool xiiRTTI::DispatchMessage(void* pInstance, xiiMessage& msg) const
+bool xiiRTTI::DispatchMessage(void* pInstance, xiiMessage& ref_msg) const
 {
   XII_ASSERT_DEBUG(m_bGatheredDynamicMessageHandlers, "Message handler table should have been gathered at this point.\n"
                                                       "If this assert is triggered for a type loaded from a dynamic plugin,\n"
                                                       "you may have forgotten to instantiate an xiiPlugin object inside your plugin DLL.");
 
-  const xiiUInt32 uiIndex = msg.GetId() - m_uiMsgIdOffset;
+  const xiiUInt32 uiIndex = ref_msg.GetId() - m_uiMsgIdOffset;
 
   // m_DynamicMessageHandlers contains all message handlers of this type and all base types
   if (uiIndex < m_DynamicMessageHandlers.GetCount())
@@ -334,7 +334,7 @@ bool xiiRTTI::DispatchMessage(void* pInstance, xiiMessage& msg) const
     xiiAbstractMessageHandler* pHandler = m_DynamicMessageHandlers[uiIndex];
     if (pHandler != nullptr)
     {
-      (*pHandler)(pInstance, msg);
+      (*pHandler)(pInstance, ref_msg);
       return true;
     }
   }
@@ -342,13 +342,13 @@ bool xiiRTTI::DispatchMessage(void* pInstance, xiiMessage& msg) const
   return false;
 }
 
-bool xiiRTTI::DispatchMessage(const void* pInstance, xiiMessage& msg) const
+bool xiiRTTI::DispatchMessage(const void* pInstance, xiiMessage& ref_msg) const
 {
   XII_ASSERT_DEBUG(m_bGatheredDynamicMessageHandlers, "Message handler table should have been gathered at this point.\n"
                                                       "If this assert is triggered for a type loaded from a dynamic plugin,\n"
                                                       "you may have forgotten to instantiate an xiiPlugin object inside your plugin DLL.");
 
-  const xiiUInt32 uiIndex = msg.GetId() - m_uiMsgIdOffset;
+  const xiiUInt32 uiIndex = ref_msg.GetId() - m_uiMsgIdOffset;
 
   // m_DynamicMessageHandlers contains all message handlers of this type and all base types
   if (uiIndex < m_DynamicMessageHandlers.GetCount())
@@ -356,7 +356,7 @@ bool xiiRTTI::DispatchMessage(const void* pInstance, xiiMessage& msg) const
     xiiAbstractMessageHandler* pHandler = m_DynamicMessageHandlers[uiIndex];
     if (pHandler != nullptr && pHandler->IsConst())
     {
-      (*pHandler)(pInstance, msg);
+      (*pHandler)(pInstance, ref_msg);
       return true;
     }
   }
@@ -366,7 +366,7 @@ bool xiiRTTI::DispatchMessage(const void* pInstance, xiiMessage& msg) const
 
 const xiiDynamicArray<const xiiRTTI*>& xiiRTTI::GetAllTypesDerivedFrom(
   const xiiRTTI*                   pBaseType,
-  xiiDynamicArray<const xiiRTTI*>& out_DerivedTypes,
+  xiiDynamicArray<const xiiRTTI*>& out_derivedTypes,
   bool                             bSortByName)
 {
   for (auto pRtti = xiiRTTI::GetFirstInstance(); pRtti != nullptr; pRtti = pRtti->GetNextInstance())
@@ -374,16 +374,16 @@ const xiiDynamicArray<const xiiRTTI*>& xiiRTTI::GetAllTypesDerivedFrom(
     if (!pRtti->IsDerivedFrom(pBaseType))
       continue;
 
-    out_DerivedTypes.PushBack(pRtti);
+    out_derivedTypes.PushBack(pRtti);
   }
 
   if (bSortByName)
   {
-    out_DerivedTypes.Sort(
-      [](const xiiRTTI* r1, const xiiRTTI* r2) -> bool { return xiiStringUtils::Compare(r1->GetTypeName(), r2->GetTypeName()) < 0; });
+    out_derivedTypes.Sort(
+      [](const xiiRTTI* p1, const xiiRTTI* p2) -> bool { return xiiStringUtils::Compare(p1->GetTypeName(), p2->GetTypeName()) < 0; });
   }
 
-  return out_DerivedTypes;
+  return out_derivedTypes;
 }
 
 void xiiRTTI::AssignPlugin(const char* szPluginName)

@@ -66,20 +66,20 @@ public:
   xiiPropertyMetaState();
 
   /// \brief Queries the property meta state for a single xiiDocumentObject
-  void GetTypePropertiesState(const xiiDocumentObject* pObject, xiiMap<xiiString, xiiPropertyUiState>& out_PropertyStates);
+  void GetTypePropertiesState(const xiiDocumentObject* pObject, xiiMap<xiiString, xiiPropertyUiState>& out_propertyStates);
 
   /// \brief Queries the property meta state for a multi selection of xiiDocumentObject's
   ///
   /// This will query the information for every single selected object and then merge the result into one.
-  void GetTypePropertiesState(const xiiHybridArray<xiiPropertySelection, 8>& items, xiiMap<xiiString, xiiPropertyUiState>& out_PropertyStates);
+  void GetTypePropertiesState(const xiiHybridArray<xiiPropertySelection, 8>& items, xiiMap<xiiString, xiiPropertyUiState>& out_propertyStates);
 
   /// \brief Queries the meta state for the elements of a single container property on one xiiDocumentObject.
-  void GetContainerElementsState(const xiiDocumentObject* pObject, const char* szProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_PropertyStates);
+  void GetContainerElementsState(const xiiDocumentObject* pObject, const char* szProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates);
 
   /// \brief Queries the meta state for the elements of a single container property on a multi selection of xiiDocumentObjects.
   ///
   /// This will query the information for every single selected object and then merge the result into one.
-  void GetContainerElementsState(const xiiHybridArray<xiiPropertySelection, 8>& items, const char* szProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_PropertyStates);
+  void GetContainerElementsState(const xiiHybridArray<xiiPropertySelection, 8>& items, const char* szProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates);
 
   /// Attach to this event to get notified of property state queries.
   /// Add information to xiiPropertyMetaStateEvent::m_pPropertyStates to return data.

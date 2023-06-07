@@ -130,50 +130,50 @@ void xiiAnimationClipResourceDescriptor::operator=(xiiAnimationClipResourceDescr
   m_Duration            = rhs.m_Duration;
 }
 
-xiiResult xiiAnimationClipResourceDescriptor::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiAnimationClipResourceDescriptor::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(9);
+  ref_stream.WriteVersion(9);
 
   const xiiUInt16 uiNumJoints = static_cast<xiiUInt16>(m_JointInfos.GetCount());
-  stream << uiNumJoints;
+  ref_stream << uiNumJoints;
   for (xiiUInt32 i = 0; i < m_JointInfos.GetCount(); ++i)
   {
     const auto& val = m_JointInfos.GetValue(i);
 
-    stream << m_JointInfos.GetKey(i);
-    stream << val.m_uiPositionIdx;
-    stream << val.m_uiPositionCount;
-    stream << val.m_uiRotationIdx;
-    stream << val.m_uiRotationCount;
-    stream << val.m_uiScaleIdx;
-    stream << val.m_uiScaleCount;
+    ref_stream << m_JointInfos.GetKey(i);
+    ref_stream << val.m_uiPositionIdx;
+    ref_stream << val.m_uiPositionCount;
+    ref_stream << val.m_uiRotationIdx;
+    ref_stream << val.m_uiRotationCount;
+    ref_stream << val.m_uiScaleIdx;
+    ref_stream << val.m_uiScaleCount;
   }
 
-  stream << m_Duration;
-  stream << m_uiNumTotalPositions;
-  stream << m_uiNumTotalRotations;
-  stream << m_uiNumTotalScales;
+  ref_stream << m_Duration;
+  ref_stream << m_uiNumTotalPositions;
+  ref_stream << m_uiNumTotalRotations;
+  ref_stream << m_uiNumTotalScales;
 
-  XII_SUCCEED_OR_RETURN(stream.WriteArray(m_Transforms));
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(m_Transforms));
 
-  stream << m_vConstantRootMotion;
+  ref_stream << m_vConstantRootMotion;
 
-  m_EventTrack.Save(stream);
+  m_EventTrack.Save(ref_stream);
 
-  stream << m_bAdditive;
+  ref_stream << m_bAdditive;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiAnimationClipResourceDescriptor::Deserialize(xiiStreamReader& stream)
+xiiResult xiiAnimationClipResourceDescriptor::Deserialize(xiiStreamReader& ref_stream)
 {
-  const xiiTypeVersion uiVersion = stream.ReadVersion(9);
+  const xiiTypeVersion uiVersion = ref_stream.ReadVersion(9);
 
   if (uiVersion < 6)
     return XII_FAILURE;
 
   xiiUInt16 uiNumJoints = 0;
-  stream >> uiNumJoints;
+  ref_stream >> uiNumJoints;
 
   m_JointInfos.Reserve(uiNumJoints);
 
@@ -181,41 +181,41 @@ xiiResult xiiAnimationClipResourceDescriptor::Deserialize(xiiStreamReader& strea
 
   for (xiiUInt16 i = 0; i < uiNumJoints; ++i)
   {
-    stream >> hs;
+    ref_stream >> hs;
 
     JointInfo ji;
-    stream >> ji.m_uiPositionIdx;
-    stream >> ji.m_uiPositionCount;
-    stream >> ji.m_uiRotationIdx;
-    stream >> ji.m_uiRotationCount;
-    stream >> ji.m_uiScaleIdx;
-    stream >> ji.m_uiScaleCount;
+    ref_stream >> ji.m_uiPositionIdx;
+    ref_stream >> ji.m_uiPositionCount;
+    ref_stream >> ji.m_uiRotationIdx;
+    ref_stream >> ji.m_uiRotationCount;
+    ref_stream >> ji.m_uiScaleIdx;
+    ref_stream >> ji.m_uiScaleCount;
 
     m_JointInfos.Insert(hs, ji);
   }
 
   m_JointInfos.Sort();
 
-  stream >> m_Duration;
-  stream >> m_uiNumTotalPositions;
-  stream >> m_uiNumTotalRotations;
-  stream >> m_uiNumTotalScales;
+  ref_stream >> m_Duration;
+  ref_stream >> m_uiNumTotalPositions;
+  ref_stream >> m_uiNumTotalRotations;
+  ref_stream >> m_uiNumTotalScales;
 
-  XII_SUCCEED_OR_RETURN(stream.ReadArray(m_Transforms));
+  XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(m_Transforms));
 
   if (uiVersion >= 7)
   {
-    stream >> m_vConstantRootMotion;
+    ref_stream >> m_vConstantRootMotion;
   }
 
   if (uiVersion >= 8)
   {
-    m_EventTrack.Load(stream);
+    m_EventTrack.Load(ref_stream);
   }
 
   if (uiVersion >= 9)
   {
-    stream >> m_bAdditive;
+    ref_stream >> m_bAdditive;
   }
 
   return XII_SUCCESS;
@@ -241,19 +241,19 @@ void xiiAnimationClipResourceDescriptor::SetDuration(xiiTime duration)
   m_Duration = duration;
 }
 
-XII_FORCE_INLINE void xii2ozz(const xiiVec3& in, ozz::math::Float3& out)
+XII_FORCE_INLINE void xii2ozz(const xiiVec3& vIn, ozz::math::Float3& ref_out)
 {
-  out.x = in.x;
-  out.y = in.y;
-  out.z = in.z;
+  ref_out.x = vIn.x;
+  ref_out.y = vIn.y;
+  ref_out.z = vIn.z;
 }
 
-XII_FORCE_INLINE void xii2ozz(const xiiQuat& in, ozz::math::Quaternion& out)
+XII_FORCE_INLINE void xii2ozz(const xiiQuat& qIn, ozz::math::Quaternion& ref_out)
 {
-  out.x = in.v.x;
-  out.y = in.v.y;
-  out.z = in.v.z;
-  out.w = in.w;
+  ref_out.x = qIn.v.x;
+  ref_out.y = qIn.v.y;
+  ref_out.z = qIn.v.z;
+  ref_out.w = qIn.w;
 }
 
 const ozz::animation::Animation& xiiAnimationClipResourceDescriptor::GetMappedOzzAnimation(const xiiSkeletonResource& skeleton) const

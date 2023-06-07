@@ -57,14 +57,14 @@ constexpr XII_ALWAYS_INLINE void xiiTime::operator+=(const xiiTime& other)
   m_fTime += other.m_fTime;
 }
 
-constexpr XII_ALWAYS_INLINE void xiiTime::operator*=(double factor)
+constexpr XII_ALWAYS_INLINE void xiiTime::operator*=(double fFactor)
 {
-  m_fTime *= factor;
+  m_fTime *= fFactor;
 }
 
-constexpr XII_ALWAYS_INLINE void xiiTime::operator/=(double factor)
+constexpr XII_ALWAYS_INLINE void xiiTime::operator/=(double fFactor)
 {
-  m_fTime /= factor;
+  m_fTime /= fFactor;
 }
 
 constexpr XII_ALWAYS_INLINE xiiTime xiiTime::operator-() const

@@ -51,8 +51,8 @@ public:
   xiiClothSheetRenderer();
   ~xiiClothSheetRenderer();
 
-  virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const override;
-  virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const override;
+  virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const override;
+  virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const override;
   virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
 
 
@@ -103,8 +103,8 @@ class XII_GAMEPLAYPLUGIN_DLL xiiClothSheetComponent : public xiiRenderComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   virtual void OnActivated() override;
   virtual void OnSimulationStarted() override;
@@ -114,7 +114,7 @@ public:
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg) override;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
 private:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const;
@@ -126,13 +126,13 @@ public:
   xiiClothSheetComponent();
   ~xiiClothSheetComponent();
 
-  void    SetSize(xiiVec2 val);               // [ property ]
+  void    SetSize(xiiVec2 vVal);              // [ property ]
   xiiVec2 GetSize() const { return m_vSize; } // [ property ]
 
-  void    SetSlack(xiiVec2 val);                // [ property ]
+  void    SetSlack(xiiVec2 vVal);               // [ property ]
   xiiVec2 GetSlack() const { return m_vSlack; } // [ property ]
 
-  void       SetSegments(xiiVec2U32 val);                // [ property ]
+  void       SetSegments(xiiVec2U32 vVal);               // [ property ]
   xiiVec2U32 GetSegments() const { return m_vSegments; } // [ property ]
 
   float    m_fWindInfluence = 0.3f;            // [ property ]

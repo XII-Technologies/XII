@@ -20,7 +20,7 @@ class QGraphicsDropShadowEffect;
 
 struct xiiNodeFlags
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -57,15 +57,15 @@ public:
   xiiBitflags<xiiNodeFlags> GetFlags() const;
   void                      ResetFlags();
 
-  void         EnableDropShadow(bool enable);
+  void         EnableDropShadow(bool bEnable);
   virtual void UpdateState();
 
   const xiiHybridArray<xiiQtPin*, 6>& GetInputPins() const { return m_Inputs; }
   const xiiHybridArray<xiiQtPin*, 6>& GetOutputPins() const { return m_Outputs; }
 
-  void SetActive(bool active);
+  void SetActive(bool bActive);
 
-  virtual void ExtendContextMenu(QMenu& menu) {}
+  virtual void ExtendContextMenu(QMenu& ref_menu) {}
 
 protected:
   virtual void     paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;

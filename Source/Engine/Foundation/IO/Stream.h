@@ -47,33 +47,33 @@ public:
 
   /// \brief Reads an array of elements from the stream.
   template <typename ArrayType, typename ValueType>
-  xiiResult ReadArray(xiiArrayBase<ValueType, ArrayType>& Array); // [tested]
+  xiiResult ReadArray(xiiArrayBase<ValueType, ArrayType>& ref_array); // [tested]
 
   /// \brief Reads a small array of elements from the stream.
   template <typename ValueType, xiiUInt16 uiSize, typename AllocatorWrapper>
-  xiiResult ReadArray(xiiSmallArray<ValueType, uiSize, AllocatorWrapper>& Array);
+  xiiResult ReadArray(xiiSmallArray<ValueType, uiSize, AllocatorWrapper>& ref_array);
 
   /// \brief Writes a C style fixed array.
   template <typename ValueType, xiiUInt32 uiSize>
-  xiiResult ReadArray(ValueType (&Array)[uiSize]);
+  xiiResult ReadArray(ValueType (&array)[uiSize]);
 
   /// \brief Reads a set.
   template <typename KeyType, typename Comparer>
-  xiiResult ReadSet(xiiSetBase<KeyType, Comparer>& Set); // [tested]
+  xiiResult ReadSet(xiiSetBase<KeyType, Comparer>& ref_set); // [tested]
 
   /// \brief Reads a map.
   template <typename KeyType, typename ValueType, typename Comparer>
-  xiiResult ReadMap(xiiMapBase<KeyType, ValueType, Comparer>& Map); // [tested]
+  xiiResult ReadMap(xiiMapBase<KeyType, ValueType, Comparer>& ref_map); // [tested]
 
   /// \brief Read a hash table (note that the entry order is not stable).
   template <typename KeyType, typename ValueType, typename Hasher>
-  xiiResult ReadHashTable(xiiHashTableBase<KeyType, ValueType, Hasher>& HashTable); // [tested]
+  xiiResult ReadHashTable(xiiHashTableBase<KeyType, ValueType, Hasher>& ref_hashTable); // [tested]
 
   /// \brief Reads a string into an xiiStringBuilder.
-  xiiResult ReadString(xiiStringBuilder& builder); // [tested]
+  xiiResult ReadString(xiiStringBuilder& ref_sBuilder); // [tested]
 
   /// \brief Reads a string into an xiiString.
-  xiiResult ReadString(xiiString& string);
+  xiiResult ReadString(xiiString& ref_sString);
 
 
   /// \brief Helper method to skip a number of bytes (implementations of the stream reader may implement this more efficiently for example).
@@ -99,7 +99,7 @@ public:
     return uiBytesSkipped;
   }
 
-  XII_ALWAYS_INLINE xiiTypeVersion ReadVersion(xiiTypeVersion uiExpectedMaxVersion);
+  XII_ALWAYS_INLINE xiiTypeVersion ReadVersion(xiiTypeVersion expectedMaxVersion);
 };
 
 /// \brief Interface for binary out (write) streams.
@@ -138,34 +138,34 @@ public:
   xiiResult WriteQWordValue(const T* pQWordValue); // [tested]
 
   /// \brief Writes a type version to the stream.
-  XII_ALWAYS_INLINE void WriteVersion(xiiTypeVersion uiVersion);
+  XII_ALWAYS_INLINE void WriteVersion(xiiTypeVersion version);
 
   /// \brief Writes an array of elements to the stream.
   template <typename ArrayType, typename ValueType>
-  xiiResult WriteArray(const xiiArrayBase<ValueType, ArrayType>& Array); // [tested]
+  xiiResult WriteArray(const xiiArrayBase<ValueType, ArrayType>& array); // [tested]
 
   /// \brief Writes a small array of elements to the stream.
   template <typename ValueType, xiiUInt16 uiSize>
-  xiiResult WriteArray(const xiiSmallArrayBase<ValueType, uiSize>& Array);
+  xiiResult WriteArray(const xiiSmallArrayBase<ValueType, uiSize>& array);
 
   /// \brief Writes a C style fixed array
   template <typename ValueType, xiiUInt32 uiSize>
-  xiiResult WriteArray(const ValueType (&Array)[uiSize]);
+  xiiResult WriteArray(const ValueType (&array)[uiSize]);
 
   /// \brief Writes a set
   template <typename KeyType, typename Comparer>
-  xiiResult WriteSet(const xiiSetBase<KeyType, Comparer>& Set); // [tested]
+  xiiResult WriteSet(const xiiSetBase<KeyType, Comparer>& set); // [tested]
 
   /// \brief Writes a map
   template <typename KeyType, typename ValueType, typename Comparer>
-  xiiResult WriteMap(const xiiMapBase<KeyType, ValueType, Comparer>& Map); // [tested]
+  xiiResult WriteMap(const xiiMapBase<KeyType, ValueType, Comparer>& map); // [tested]
 
   /// \brief Writes a hash table (note that the entry order might change on read)
   template <typename KeyType, typename ValueType, typename Hasher>
-  xiiResult WriteHashTable(const xiiHashTableBase<KeyType, ValueType, Hasher>& HashTable); // [tested]
+  xiiResult WriteHashTable(const xiiHashTableBase<KeyType, ValueType, Hasher>& hashTable); // [tested]
 
   /// \brief Writes a string
-  xiiResult WriteString(const xiiStringView szStringView); // [tested]
+  xiiResult WriteString(const xiiStringView sStringView); // [tested]
 };
 
 // Contains the helper methods of both interfaces

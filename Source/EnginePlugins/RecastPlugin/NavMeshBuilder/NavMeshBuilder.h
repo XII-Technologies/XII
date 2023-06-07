@@ -30,8 +30,8 @@ struct XII_RECASTPLUGIN_DLL xiiRecastConfig
   float    m_fDetailMeshSampleDistanceFactor = 1.0f;
   float    m_fDetailMeshSampleErrorFactor    = 1.0f;
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_RECASTPLUGIN_DLL, xiiRecastConfig);
@@ -46,7 +46,7 @@ public:
 
   static xiiResult ExtractWorldGeometry(const xiiWorld& world, xiiWorldGeoExtractionUtil::MeshObjectList& out_worldGeo);
 
-  xiiResult Build(const xiiRecastConfig& config, const xiiWorldGeoExtractionUtil::MeshObjectList& worldGeo, xiiRecastNavMeshResourceDescriptor& out_NavMeshDesc, xiiProgress& progress);
+  xiiResult Build(const xiiRecastConfig& config, const xiiWorldGeoExtractionUtil::MeshObjectList& worldGeo, xiiRecastNavMeshResourceDescriptor& out_navMeshDesc, xiiProgress& ref_progress);
 
 private:
   static void FillOutConfig(struct rcConfig& cfg, const xiiRecastConfig& config, const xiiBoundingBox& bbox);
@@ -59,7 +59,7 @@ private:
 
   struct Triangle
   {
-    Triangle() {}
+    Triangle() = default;
     Triangle(xiiInt32 a, xiiInt32 b, xiiInt32 c)
     {
       m_VertexIdx[0] = a;

@@ -5,10 +5,10 @@
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
-xiiQtModifiedDocumentsDlg::xiiQtModifiedDocumentsDlg(QWidget* parent, const xiiHybridArray<xiiDocument*, 32>& ModifiedDocs) :
-  QDialog(parent)
+xiiQtModifiedDocumentsDlg::xiiQtModifiedDocumentsDlg(QWidget* pParent, const xiiHybridArray<xiiDocument*, 32>& modifiedDocs) :
+  QDialog(pParent)
 {
-  m_ModifiedDocs = ModifiedDocs;
+  m_ModifiedDocs = modifiedDocs;
 
   setupUi(this);
 

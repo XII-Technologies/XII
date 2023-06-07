@@ -25,9 +25,9 @@ xiiResult xiiLuaWrapper::OpenTable(const char* szName)
   return XII_SUCCESS;
 }
 
-xiiResult xiiLuaWrapper::OpenTableFromParameter(xiiUInt32 iFunctionParameter)
+xiiResult xiiLuaWrapper::OpenTableFromParameter(xiiUInt32 uiFunctionParameter)
 {
-  lua_pushvalue(m_pState, iFunctionParameter + s_iParamOffset);
+  lua_pushvalue(m_pState, uiFunctionParameter + s_iParamOffset);
 
   // failed, it's no table
   if (lua_istable(m_pState, -1) == 0)

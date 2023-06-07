@@ -9,7 +9,7 @@ class XII_TOOLSFOUNDATION_DLL xiiDocumentManager : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiDocumentManager, xiiReflectedClass);
 
 public:
-  virtual ~xiiDocumentManager() {}
+  virtual ~xiiDocumentManager() = default;
 
   static const xiiHybridArray<xiiDocumentManager*, 16>& GetAllDocumentManagers() { return s_AllDocumentManagers; }
 
@@ -104,7 +104,7 @@ public:
   static const xiiDocumentTypeDescriptor*                           GetDescriptorForDocumentType(const char* szDocumentType);
   static const xiiMap<xiiString, const xiiDocumentTypeDescriptor*>& GetAllDocumentDescriptors();
 
-  void GetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const;
+  void GetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_documentTypes) const;
 
   using CustomAction = xiiVariant (*)(const xiiDocument*);
   static xiiMap<xiiString, CustomAction> s_CustomActions;

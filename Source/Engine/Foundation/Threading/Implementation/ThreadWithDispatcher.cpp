@@ -10,10 +10,10 @@ xiiThreadWithDispatcher::xiiThreadWithDispatcher(const char* szName /*= "xiiThre
 
 xiiThreadWithDispatcher::~xiiThreadWithDispatcher() = default;
 
-void xiiThreadWithDispatcher::Dispatch(DispatchFunction&& pDelegate)
+void xiiThreadWithDispatcher::Dispatch(DispatchFunction&& delegate)
 {
   XII_LOCK(m_QueueMutex);
-  m_ActiveQueue.PushBack(std::move(pDelegate));
+  m_ActiveQueue.PushBack(std::move(delegate));
 }
 
 void xiiThreadWithDispatcher::DispatchQueue()

@@ -10,7 +10,7 @@
 class xiiJoltVisColMeshComponentManager : public xiiComponentManager<class xiiJoltVisColMeshComponent, xiiBlockStorageType::Compact>
 {
 public:
-  typedef xiiComponentManager<xiiJoltVisColMeshComponent, xiiBlockStorageType::Compact> SUPER;
+  using SUPER = xiiComponentManager<xiiJoltVisColMeshComponent, xiiBlockStorageType::Compact>;
 
   xiiJoltVisColMeshComponentManager(xiiWorld* pWorld) :
     SUPER(pWorld)

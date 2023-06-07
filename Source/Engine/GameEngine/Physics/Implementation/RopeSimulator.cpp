@@ -6,9 +6,9 @@
 xiiRopeSimulator::xiiRopeSimulator()  = default;
 xiiRopeSimulator::~xiiRopeSimulator() = default;
 
-void xiiRopeSimulator::SimulateRope(const xiiTime& tDiff)
+void xiiRopeSimulator::SimulateRope(const xiiTime& diff)
 {
-  m_LeftOverTimeStep += tDiff;
+  m_LeftOverTimeStep += diff;
 
   constexpr xiiTime  tStep         = xiiTime::Seconds(1.0 / 60.0);
   const xiiSimdFloat tStepSqr      = static_cast<float>(tStep.GetSeconds() * tStep.GetSeconds());
@@ -22,12 +22,12 @@ void xiiRopeSimulator::SimulateRope(const xiiTime& tDiff)
   }
 }
 
-void xiiRopeSimulator::SimulateStep(const xiiSimdFloat tDiffSqr, xiiUInt32 uiMaxIterations, xiiSimdFloat fAllowedError)
+void xiiRopeSimulator::SimulateStep(const xiiSimdFloat fDiffSqr, xiiUInt32 uiMaxIterations, xiiSimdFloat fAllowedError)
 {
   if (m_Nodes.GetCount() < 2)
     return;
 
-  UpdateNodePositions(tDiffSqr);
+  UpdateNodePositions(fDiffSqr);
 
   // repeatedly apply the distance constraint, until the overall error is low enough
   for (xiiUInt32 i = 0; i < uiMaxIterations; ++i)

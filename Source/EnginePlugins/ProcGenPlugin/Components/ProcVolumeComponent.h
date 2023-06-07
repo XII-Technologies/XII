@@ -30,10 +30,10 @@ public:
   void                         SetBlendMode(xiiEnum<xiiProcGenBlendMode> blendMode);
   xiiEnum<xiiProcGenBlendMode> GetBlendMode() const { return m_BlendMode; }
 
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
-  void OnTransformChanged(xiiMsgTransformChanged& msg);
+  void OnTransformChanged(xiiMsgTransformChanged& ref_msg);
 
   static const xiiEvent<const xiiProcGenInternal::InvalidatedArea&>& GetAreaInvalidatedEvent() { return s_AreaInvalidatedEvent; }
 
@@ -66,11 +66,11 @@ public:
   float GetFadeOutStart() const { return m_fFadeOutStart; }
   void  SetFadeOutStart(float fFadeOutStart);
 
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
-  void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) const;
-  void OnExtractVolumes(xiiMsgExtractVolumes& msg) const;
+  void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg) const;
+  void OnExtractVolumes(xiiMsgExtractVolumes& ref_msg) const;
 
 protected:
   float m_fRadius       = 5.0f;
@@ -90,16 +90,16 @@ public:
   ~xiiProcVolumeBoxComponent();
 
   const xiiVec3& GetExtents() const { return m_vExtents; }
-  void           SetExtents(const xiiVec3& extents);
+  void           SetExtents(const xiiVec3& vExtents);
 
   const xiiVec3& GetFadeOutStart() const { return m_vFadeOutStart; }
-  void           SetFadeOutStart(const xiiVec3& fadeOutStart);
+  void           SetFadeOutStart(const xiiVec3& vFadeOutStart);
 
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
-  void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) const;
-  void OnExtractVolumes(xiiMsgExtractVolumes& msg) const;
+  void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg) const;
+  void OnExtractVolumes(xiiMsgExtractVolumes& ref_msg) const;
 
 protected:
   xiiVec3 m_vExtents      = xiiVec3(10.0f);
@@ -118,10 +118,10 @@ public:
   xiiProcVolumeImageComponent();
   ~xiiProcVolumeImageComponent();
 
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
-  void OnExtractVolumes(xiiMsgExtractVolumes& msg) const;
+  void OnExtractVolumes(xiiMsgExtractVolumes& ref_msg) const;
 
   void        SetImageFile(const char* szFile); // [ property ]
   const char* GetImageFile() const;             // [ property ]

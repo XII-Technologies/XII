@@ -50,12 +50,12 @@ void xiiGALCommandEncoder::SetConstantBuffer(xiiUInt32 uiSlot, xiiGALBufferHandl
   CountStateChange();
 }
 
-void xiiGALCommandEncoder::SetSamplerState(xiiGALShaderStage::Enum Stage, xiiUInt32 uiSlot, xiiGALSamplerStateHandle hSamplerState)
+void xiiGALCommandEncoder::SetSamplerState(xiiGALShaderStage::Enum stage, xiiUInt32 uiSlot, xiiGALSamplerStateHandle hSamplerState)
 {
   AssertRenderingThread();
   XII_ASSERT_RELEASE(uiSlot < XII_GAL_MAX_SAMPLER_COUNT, "Sampler state slot index too big!");
 
-  if (m_State.m_hSamplerStates[Stage][uiSlot] == hSamplerState)
+  if (m_State.m_hSamplerStates[stage][uiSlot] == hSamplerState)
   {
     CountRedundantStateChange();
     return;
@@ -63,20 +63,20 @@ void xiiGALCommandEncoder::SetSamplerState(xiiGALShaderStage::Enum Stage, xiiUIn
 
   const xiiGALSamplerState* pSamplerState = m_Device.GetSamplerState(hSamplerState);
 
-  m_CommonImpl.SetSamplerStatePlatform(Stage, uiSlot, pSamplerState);
+  m_CommonImpl.SetSamplerStatePlatform(stage, uiSlot, pSamplerState);
 
-  m_State.m_hSamplerStates[Stage][uiSlot] = hSamplerState;
+  m_State.m_hSamplerStates[stage][uiSlot] = hSamplerState;
 
   CountStateChange();
 }
 
-void xiiGALCommandEncoder::SetResourceView(xiiGALShaderStage::Enum Stage, xiiUInt32 uiSlot, xiiGALResourceViewHandle hResourceView)
+void xiiGALCommandEncoder::SetResourceView(xiiGALShaderStage::Enum stage, xiiUInt32 uiSlot, xiiGALResourceViewHandle hResourceView)
 {
   AssertRenderingThread();
 
   /// \todo Check if the device supports the stage / the slot index
 
-  auto& boundResourceViews = m_State.m_hResourceViews[Stage];
+  auto& boundResourceViews = m_State.m_hResourceViews[stage];
   if (uiSlot < boundResourceViews.GetCount() && boundResourceViews[uiSlot] == hResourceView)
   {
     CountRedundantStateChange();
@@ -92,12 +92,12 @@ void xiiGALCommandEncoder::SetResourceView(xiiGALShaderStage::Enum Stage, xiiUIn
     }
   }
 
-  m_CommonImpl.SetResourceViewPlatform(Stage, uiSlot, pResourceView);
+  m_CommonImpl.SetResourceViewPlatform(stage, uiSlot, pResourceView);
 
   boundResourceViews.EnsureCount(uiSlot + 1);
   boundResourceViews[uiSlot] = hResourceView;
 
-  auto& boundResources = m_State.m_pResourcesForResourceViews[Stage];
+  auto& boundResources = m_State.m_pResourcesForResourceViews[stage];
   boundResources.EnsureCount(uiSlot + 1);
   boundResources[uiSlot] = pResourceView != nullptr ? pResourceView->GetResource()->GetParentResource() : nullptr;
 
@@ -203,14 +203,14 @@ void xiiGALCommandEncoder::EndQuery(xiiGALQueryHandle hQuery)
   m_CommonImpl.EndQueryPlatform(query);
 }
 
-xiiResult xiiGALCommandEncoder::GetQueryResult(xiiGALQueryHandle hQuery, xiiUInt64& uiQueryResult)
+xiiResult xiiGALCommandEncoder::GetQueryResult(xiiGALQueryHandle hQuery, xiiUInt64& ref_uiQueryResult)
 {
   AssertRenderingThread();
 
   auto query = m_Device.GetQuery(hQuery);
   XII_ASSERT_DEV(!query->m_bStarted, "Can't retrieve data from xiiGALQuery while query is still running.");
 
-  return m_CommonImpl.GetQueryResultPlatform(query, uiQueryResult);
+  return m_CommonImpl.GetQueryResultPlatform(query, ref_uiQueryResult);
 }
 
 xiiGALTimestampHandle xiiGALCommandEncoder::InsertTimestamp()
@@ -222,7 +222,7 @@ xiiGALTimestampHandle xiiGALCommandEncoder::InsertTimestamp()
   return hTimestamp;
 }
 
-void xiiGALCommandEncoder::ClearUnorderedAccessView(xiiGALUnorderedAccessViewHandle hUnorderedAccessView, xiiVec4 clearValues)
+void xiiGALCommandEncoder::ClearUnorderedAccessView(xiiGALUnorderedAccessViewHandle hUnorderedAccessView, xiiVec4 vClearValues)
 {
   AssertRenderingThread();
 
@@ -233,10 +233,10 @@ void xiiGALCommandEncoder::ClearUnorderedAccessView(xiiGALUnorderedAccessViewHan
     return;
   }
 
-  m_CommonImpl.ClearUnorderedAccessViewPlatform(pUnorderedAccessView, clearValues);
+  m_CommonImpl.ClearUnorderedAccessViewPlatform(pUnorderedAccessView, vClearValues);
 }
 
-void xiiGALCommandEncoder::ClearUnorderedAccessView(xiiGALUnorderedAccessViewHandle hUnorderedAccessView, xiiVec4U32 clearValues)
+void xiiGALCommandEncoder::ClearUnorderedAccessView(xiiGALUnorderedAccessViewHandle hUnorderedAccessView, xiiVec4U32 vClearValues)
 {
   AssertRenderingThread();
 
@@ -247,7 +247,7 @@ void xiiGALCommandEncoder::ClearUnorderedAccessView(xiiGALUnorderedAccessViewHan
     return;
   }
 
-  m_CommonImpl.ClearUnorderedAccessViewPlatform(pUnorderedAccessView, clearValues);
+  m_CommonImpl.ClearUnorderedAccessViewPlatform(pUnorderedAccessView, vClearValues);
 }
 
 void xiiGALCommandEncoder::CopyBuffer(xiiGALBufferHandle hDest, xiiGALBufferHandle hSource)
@@ -298,12 +298,12 @@ void xiiGALCommandEncoder::CopyBufferRegion(
 void xiiGALCommandEncoder::UpdateBuffer(
   xiiGALBufferHandle          hDest,
   xiiUInt32                   uiDestOffset,
-  xiiArrayPtr<const xiiUInt8> pSourceData,
+  xiiArrayPtr<const xiiUInt8> sourceData,
   xiiGALUpdateMode::Enum      updateMode)
 {
   AssertRenderingThread();
 
-  XII_ASSERT_DEV(!pSourceData.IsEmpty(), "Source data for buffer update is invalid!");
+  XII_ASSERT_DEV(!sourceData.IsEmpty(), "Source data for buffer update is invalid!");
 
   const xiiGALBuffer* pDest = m_Device.GetBuffer(hDest);
 
@@ -314,8 +314,8 @@ void xiiGALCommandEncoder::UpdateBuffer(
       updateMode = xiiGALUpdateMode::CopyToTempStorage;
     }
 
-    XII_ASSERT_DEV(pDest->GetSize() >= (uiDestOffset + pSourceData.GetCount()), "Buffer {} is too small (or offset {} too big) for {} bytes", pDest->GetSize(), uiDestOffset, pSourceData.GetCount());
-    m_CommonImpl.UpdateBufferPlatform(pDest, uiDestOffset, pSourceData, updateMode);
+    XII_ASSERT_DEV(pDest->GetSize() >= (uiDestOffset + sourceData.GetCount()), "Buffer {} is too small (or offset {} too big) for {} bytes", pDest->GetSize(), uiDestOffset, sourceData.GetCount());
+    m_CommonImpl.UpdateBufferPlatform(pDest, uiDestOffset, sourceData, updateMode);
   }
   else
   {
@@ -340,7 +340,7 @@ void xiiGALCommandEncoder::CopyTexture(xiiGALTextureHandle hDest, xiiGALTextureH
   }
 }
 
-void xiiGALCommandEncoder::CopyTextureRegion(xiiGALTextureHandle hDest, const xiiGALTextureSubresource& DestinationSubResource, const xiiVec3U32& DestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureSubresource& SourceSubResource, const xiiBoundingBoxu32& Box)
+void xiiGALCommandEncoder::CopyTextureRegion(xiiGALTextureHandle hDest, const xiiGALTextureSubresource& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureSubresource& sourceSubResource, const xiiBoundingBoxu32& box)
 {
   AssertRenderingThread();
 
@@ -349,7 +349,7 @@ void xiiGALCommandEncoder::CopyTextureRegion(xiiGALTextureHandle hDest, const xi
 
   if (pDest != nullptr && pSource != nullptr)
   {
-    m_CommonImpl.CopyTextureRegionPlatform(pDest, DestinationSubResource, DestinationPoint, pSource, SourceSubResource, Box);
+    m_CommonImpl.CopyTextureRegionPlatform(pDest, destinationSubResource, vDestinationPoint, pSource, sourceSubResource, box);
   }
   else
   {
@@ -357,7 +357,7 @@ void xiiGALCommandEncoder::CopyTextureRegion(xiiGALTextureHandle hDest, const xi
   }
 }
 
-void xiiGALCommandEncoder::UpdateTexture(xiiGALTextureHandle hDest, const xiiGALTextureSubresource& DestinationSubResource, const xiiBoundingBoxu32& DestinationBox, const xiiGALSystemMemoryDescription& pSourceData)
+void xiiGALCommandEncoder::UpdateTexture(xiiGALTextureHandle hDest, const xiiGALTextureSubresource& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALSystemMemoryDescription& sourceData)
 {
   AssertRenderingThread();
 
@@ -365,7 +365,7 @@ void xiiGALCommandEncoder::UpdateTexture(xiiGALTextureHandle hDest, const xiiGAL
 
   if (pDest != nullptr)
   {
-    m_CommonImpl.UpdateTexturePlatform(pDest, DestinationSubResource, DestinationBox, pSourceData);
+    m_CommonImpl.UpdateTexturePlatform(pDest, destinationSubResource, destinationBox, sourceData);
   }
   else
   {
@@ -373,7 +373,7 @@ void xiiGALCommandEncoder::UpdateTexture(xiiGALTextureHandle hDest, const xiiGAL
   }
 }
 
-void xiiGALCommandEncoder::ResolveTexture(xiiGALTextureHandle hDest, const xiiGALTextureSubresource& DestinationSubResource, xiiGALTextureHandle hSource, const xiiGALTextureSubresource& SourceSubResource)
+void xiiGALCommandEncoder::ResolveTexture(xiiGALTextureHandle hDest, const xiiGALTextureSubresource& destinationSubResource, xiiGALTextureHandle hSource, const xiiGALTextureSubresource& sourceSubResource)
 {
   AssertRenderingThread();
 
@@ -382,7 +382,7 @@ void xiiGALCommandEncoder::ResolveTexture(xiiGALTextureHandle hDest, const xiiGA
 
   if (pDest != nullptr && pSource != nullptr)
   {
-    m_CommonImpl.ResolveTexturePlatform(pDest, DestinationSubResource, pSource, SourceSubResource);
+    m_CommonImpl.ResolveTexturePlatform(pDest, destinationSubResource, pSource, sourceSubResource);
   }
   else
   {
@@ -405,7 +405,7 @@ void xiiGALCommandEncoder::ReadbackTexture(xiiGALTextureHandle hTexture)
   }
 }
 
-void xiiGALCommandEncoder::CopyTextureReadbackResult(xiiGALTextureHandle hTexture, xiiArrayPtr<xiiGALTextureSubresource> SourceSubResource, xiiArrayPtr<xiiGALSystemMemoryDescription> TargetData)
+void xiiGALCommandEncoder::CopyTextureReadbackResult(xiiGALTextureHandle hTexture, xiiArrayPtr<xiiGALTextureSubresource> sourceSubResource, xiiArrayPtr<xiiGALSystemMemoryDescription> targetData)
 {
   AssertRenderingThread();
 
@@ -416,7 +416,7 @@ void xiiGALCommandEncoder::CopyTextureReadbackResult(xiiGALTextureHandle hTextur
     XII_ASSERT_RELEASE(pTexture->GetDescription().m_ResourceAccess.m_bReadBack,
                        "A texture supplied to read-back needs to be created with the correct resource usage (m_bReadBack = true)!");
 
-    m_CommonImpl.CopyTextureReadbackResultPlatform(pTexture, SourceSubResource, TargetData);
+    m_CommonImpl.CopyTextureReadbackResultPlatform(pTexture, sourceSubResource, targetData);
   }
 }
 
@@ -445,13 +445,13 @@ void xiiGALCommandEncoder::Flush()
 
 // Debug helper functions
 
-void xiiGALCommandEncoder::PushMarker(const char* Marker)
+void xiiGALCommandEncoder::PushMarker(const char* szMarker)
 {
   AssertRenderingThread();
 
-  XII_ASSERT_DEV(Marker != nullptr, "Invalid marker!");
+  XII_ASSERT_DEV(szMarker != nullptr, "Invalid marker!");
 
-  m_CommonImpl.PushMarkerPlatform(Marker);
+  m_CommonImpl.PushMarkerPlatform(szMarker);
 }
 
 void xiiGALCommandEncoder::PopMarker()
@@ -461,13 +461,13 @@ void xiiGALCommandEncoder::PopMarker()
   m_CommonImpl.PopMarkerPlatform();
 }
 
-void xiiGALCommandEncoder::InsertEventMarker(const char* Marker)
+void xiiGALCommandEncoder::InsertEventMarker(const char* szMarker)
 {
   AssertRenderingThread();
 
-  XII_ASSERT_DEV(Marker != nullptr, "Invalid marker!");
+  XII_ASSERT_DEV(szMarker != nullptr, "Invalid marker!");
 
-  m_CommonImpl.InsertEventMarkerPlatform(Marker);
+  m_CommonImpl.InsertEventMarkerPlatform(szMarker);
 }
 
 void xiiGALCommandEncoder::ClearStatisticsCounters()

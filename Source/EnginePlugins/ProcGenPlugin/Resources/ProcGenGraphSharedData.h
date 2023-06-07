@@ -13,8 +13,8 @@ namespace xiiProcGenInternal
 
     const xiiTagSet& GetTagSet(xiiUInt32 uiIndex) const;
 
-    void      Save(xiiStreamWriter& stream) const;
-    xiiResult Load(xiiStreamReader& stream);
+    void      Save(xiiStreamWriter& ref_stream) const;
+    xiiResult Load(xiiStreamReader& ref_stream);
 
   private:
     xiiDynamicArray<xiiTagSet> m_TagSets;

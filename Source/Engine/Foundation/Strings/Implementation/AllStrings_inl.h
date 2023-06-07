@@ -57,7 +57,7 @@ XII_ALWAYS_INLINE void xiiHybridString<Size, A>::operator=(xiiStringBuilder&& rh
 }
 
 template <xiiUInt16 Size>
-void xiiHybridStringBase<Size>::ReadAll(xiiStreamReader& Stream)
+void xiiHybridStringBase<Size>::ReadAll(xiiStreamReader& ref_stream)
 {
   Clear();
 

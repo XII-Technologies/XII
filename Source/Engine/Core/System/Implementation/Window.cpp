@@ -76,46 +76,46 @@ xiiResult xiiWindowCreationDesc::AdjustWindowSizeAndPosition()
   return XII_SUCCESS;
 }
 
-void xiiWindowCreationDesc::SaveToDDL(xiiOpenDdlWriter& writer)
+void xiiWindowCreationDesc::SaveToDDL(xiiOpenDdlWriter& ref_writer)
 {
-  writer.BeginObject("WindowDesc");
+  ref_writer.BeginObject("WindowDesc");
 
-  xiiOpenDdlUtils::StoreString(writer, m_Title, "Title");
+  xiiOpenDdlUtils::StoreString(ref_writer, m_Title, "Title");
 
   switch (m_WindowMode.GetValue())
   {
     case xiiWindowMode::FullscreenBorderlessNativeResolution:
-      xiiOpenDdlUtils::StoreString(writer, "Borderless", "Mode");
+      xiiOpenDdlUtils::StoreString(ref_writer, "Borderless", "Mode");
       break;
     case xiiWindowMode::FullscreenFixedResolution:
-      xiiOpenDdlUtils::StoreString(writer, "Fullscreen", "Mode");
+      xiiOpenDdlUtils::StoreString(ref_writer, "Fullscreen", "Mode");
       break;
     case xiiWindowMode::WindowFixedResolution:
-      xiiOpenDdlUtils::StoreString(writer, "Window", "Mode");
+      xiiOpenDdlUtils::StoreString(ref_writer, "Window", "Mode");
       break;
     case xiiWindowMode::WindowResizable:
-      xiiOpenDdlUtils::StoreString(writer, "ResizableWindow", "Mode");
+      xiiOpenDdlUtils::StoreString(ref_writer, "ResizableWindow", "Mode");
       break;
   }
 
   if (m_uiWindowNumber != 0)
-    xiiOpenDdlUtils::StoreUInt8(writer, m_uiWindowNumber, "Index");
+    xiiOpenDdlUtils::StoreUInt8(ref_writer, m_uiWindowNumber, "Index");
 
   if (m_iMonitor >= 0)
-    xiiOpenDdlUtils::StoreInt8(writer, m_iMonitor, "Monitor");
+    xiiOpenDdlUtils::StoreInt8(ref_writer, m_iMonitor, "Monitor");
 
   if (m_Position != xiiVec2I32(0x80000000, 0x80000000))
   {
-    xiiOpenDdlUtils::StoreVec2I(writer, m_Position, "Position");
+    xiiOpenDdlUtils::StoreVec2I(ref_writer, m_Position, "Position");
   }
 
-  xiiOpenDdlUtils::StoreVec2U(writer, xiiVec2U32(m_Resolution.width, m_Resolution.height), "Resolution");
+  xiiOpenDdlUtils::StoreVec2U(ref_writer, xiiVec2U32(m_Resolution.width, m_Resolution.height), "Resolution");
 
-  xiiOpenDdlUtils::StoreBool(writer, m_bClipMouseCursor, "ClipMouseCursor");
-  xiiOpenDdlUtils::StoreBool(writer, m_bShowMouseCursor, "ShowMouseCursor");
-  xiiOpenDdlUtils::StoreBool(writer, m_bSetForegroundOnInit, "SetForegroundOnInit");
+  xiiOpenDdlUtils::StoreBool(ref_writer, m_bClipMouseCursor, "ClipMouseCursor");
+  xiiOpenDdlUtils::StoreBool(ref_writer, m_bShowMouseCursor, "ShowMouseCursor");
+  xiiOpenDdlUtils::StoreBool(ref_writer, m_bSetForegroundOnInit, "SetForegroundOnInit");
 
-  writer.EndObject();
+  ref_writer.EndObject();
 }
 
 
@@ -216,7 +216,7 @@ xiiWindow::~xiiWindow()
 }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-void xiiWindow::OnWindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindows::UINT Msg, xiiMinWindows::WPARAM WParam, xiiMinWindows::LPARAM LParam)
+void xiiWindow::OnWindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM wParam, xiiMinWindows::LPARAM lParam)
 {}
 #endif
 

@@ -17,24 +17,24 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiMeshRenderer::xiiMeshRenderer()  = default;
 xiiMeshRenderer::~xiiMeshRenderer() = default;
 
-void xiiMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const
+void xiiMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {
-  types.PushBack(xiiGetStaticRTTI<xiiMeshRenderData>());
-  types.PushBack(xiiGetStaticRTTI<xiiInstancedMeshRenderData>());
+  ref_types.PushBack(xiiGetStaticRTTI<xiiMeshRenderData>());
+  ref_types.PushBack(xiiGetStaticRTTI<xiiInstancedMeshRenderData>());
 }
 
-void xiiMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const
+void xiiMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
-  categories.PushBack(xiiDefaultRenderDataCategories::Sky);
-  categories.PushBack(xiiDefaultRenderDataCategories::LitOpaque);
-  categories.PushBack(xiiDefaultRenderDataCategories::LitMasked);
-  categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
-  categories.PushBack(xiiDefaultRenderDataCategories::LitForeground);
-  categories.PushBack(xiiDefaultRenderDataCategories::SimpleOpaque);
-  categories.PushBack(xiiDefaultRenderDataCategories::SimpleTransparent);
-  categories.PushBack(xiiDefaultRenderDataCategories::SimpleForeground);
-  categories.PushBack(xiiDefaultRenderDataCategories::Selection);
-  categories.PushBack(xiiDefaultRenderDataCategories::GUI);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Sky);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitOpaque);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitMasked);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitForeground);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleOpaque);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleTransparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleForeground);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
 }
 
 void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const

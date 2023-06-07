@@ -7,7 +7,7 @@
 
 using xiiSkeletonResourceHandle = xiiTypedResourceHandle<class xiiSkeletonResource>;
 
-typedef xiiComponentManager<class xiiAnimatedMeshComponent, xiiBlockStorageType::FreeList> xiiAnimatedMeshComponentManager;
+using xiiAnimatedMeshComponentManager = class xiiAnimatedMeshComponent;
 
 class XII_GAMEENGINE_DLL xiiAnimatedMeshComponent : public xiiMeshComponentBase
 {
@@ -18,8 +18,8 @@ class XII_GAMEENGINE_DLL xiiAnimatedMeshComponent : public xiiMeshComponentBase
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;
@@ -66,7 +66,7 @@ struct xiiRootMotionMode
     Default = Ignore
   };
 
-  XII_GAMEENGINE_DLL static void Apply(xiiRootMotionMode::Enum mode, xiiGameObject* pObject, const xiiVec3& translation, xiiAngle rotationX, xiiAngle rotationY, xiiAngle rotationZ);
+  XII_GAMEENGINE_DLL static void Apply(xiiRootMotionMode::Enum mode, xiiGameObject* pObject, const xiiVec3& vTranslation, xiiAngle rotationX, xiiAngle rotationY, xiiAngle rotationZ);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiRootMotionMode);

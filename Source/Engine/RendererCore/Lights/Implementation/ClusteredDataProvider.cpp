@@ -147,9 +147,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiClusteredDataProvider, 1, xiiRTTIDefaultAllo
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiClusteredDataProvider::xiiClusteredDataProvider() {}
+xiiClusteredDataProvider::xiiClusteredDataProvider() = default;
 
-xiiClusteredDataProvider::~xiiClusteredDataProvider() {}
+xiiClusteredDataProvider::~xiiClusteredDataProvider() = default;
 
 void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
 {

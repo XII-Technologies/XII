@@ -6,8 +6,8 @@ template <typename T, typename O>
 class xiiLockedObject
 {
 public:
-  XII_ALWAYS_INLINE explicit xiiLockedObject(T& lock, O* pObject) :
-    m_pLock(&lock), m_pObject(pObject)
+  XII_ALWAYS_INLINE explicit xiiLockedObject(T& ref_lock, O* pObject) :
+    m_pLock(&ref_lock), m_pObject(pObject)
   {
     m_pLock->Lock();
   }

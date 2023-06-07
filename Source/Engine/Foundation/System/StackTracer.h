@@ -13,7 +13,7 @@ public:
   /// The trace will contain not more than ref_trace.GetCount() entries.
   /// [Windows] If called in an exception handler, set pContext to PEXCEPTION_POINTERS::ContextRecord.
   /// Returns the actual number of captured entries.
-  static xiiUInt32 GetStackTrace(xiiArrayPtr<void*>& trace, void* pContext = nullptr);
+  static xiiUInt32 GetStackTrace(xiiArrayPtr<void*>& ref_trace, void* pContext = nullptr);
 
   /// \brief Callback-function to print a text somewhere
   using PrintFunc = xiiDelegate<void(const char* szText)>;

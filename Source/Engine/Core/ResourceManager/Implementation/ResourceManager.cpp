@@ -720,14 +720,14 @@ xiiResource* xiiResourceManager::GetResource(const xiiRTTI* pRtti, xiiStringView
   return pNewResource;
 }
 
-void xiiResourceManager::RegisterResourceOverrideType(const xiiRTTI* pDerivedTypeToUse, xiiDelegate<bool(const xiiStringBuilder&)> OverrideDecider)
+void xiiResourceManager::RegisterResourceOverrideType(const xiiRTTI* pDerivedTypeToUse, xiiDelegate<bool(const xiiStringBuilder&)> overrideDecider)
 {
   const xiiRTTI* pParentType = pDerivedTypeToUse->GetParentType();
   while (pParentType != nullptr && pParentType != xiiGetStaticRTTI<xiiResource>())
   {
     auto& info          = s_pState->m_DerivedTypeInfos[pParentType].ExpandAndGetRef();
     info.m_pDerivedType = pDerivedTypeToUse;
-    info.m_Decider      = OverrideDecider;
+    info.m_Decider      = overrideDecider;
 
     pParentType = pParentType->GetParentType();
   }
@@ -805,7 +805,7 @@ xiiTypelessResourceHandle xiiResourceManager::GetExistingResourceByType(const xi
   return xiiTypelessResourceHandle();
 }
 
-xiiTypelessResourceHandle xiiResourceManager::GetExistingResourceOrCreateAsync(const xiiRTTI* pResourceType, xiiStringView sResourceID, xiiUniquePtr<xiiResourceTypeLoader>&& loader)
+xiiTypelessResourceHandle xiiResourceManager::GetExistingResourceOrCreateAsync(const xiiRTTI* pResourceType, xiiStringView sResourceID, xiiUniquePtr<xiiResourceTypeLoader>&& pLoader)
 {
   XII_LOCK(s_ResourceMutex);
 
@@ -818,7 +818,7 @@ xiiTypelessResourceHandle xiiResourceManager::GetExistingResourceOrCreateAsync(c
   xiiResource* pResource = hResource.m_pResource;
 
   pResource->m_Flags.Add(xiiResourceFlags::HasCustomDataLoader | xiiResourceFlags::IsCreatedResource);
-  s_pState->m_CustomLoaders[pResource] = std::move(loader);
+  s_pState->m_CustomLoaders[pResource] = std::move(pLoader);
 
   return hResource;
 }
@@ -903,11 +903,11 @@ xiiResourceTypeLoader* xiiResourceManager::GetDefaultResourceLoader()
   return s_pState->m_pDefaultResourceLoader;
 }
 
-void xiiResourceManager::EnableExportMode(bool enable)
+void xiiResourceManager::EnableExportMode(bool bEnable)
 {
   XII_ASSERT_DEV(s_pState != nullptr, "xiiStartup::StartupCoreSystems() must be called before using the xiiResourceManager.");
 
-  s_pState->m_bExportMode = enable;
+  s_pState->m_bExportMode = bEnable;
 }
 
 bool xiiResourceManager::IsExportModeEnabled()

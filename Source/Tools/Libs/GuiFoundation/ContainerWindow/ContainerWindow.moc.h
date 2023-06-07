@@ -42,7 +42,7 @@ public:
 
   static xiiResult EnsureVisibleAnyContainer(xiiDocument* pDocument);
 
-  void GetDocumentWindows(xiiHybridArray<xiiQtDocumentWindow*, 16>& windows);
+  void GetDocumentWindows(xiiHybridArray<xiiQtDocumentWindow*, 16>& ref_windows);
 
   void SaveWindowLayout();
   void SaveDocumentLayouts();

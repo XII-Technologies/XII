@@ -4,8 +4,8 @@
 #include <RendererFoundation/Device/Device.h>
 #include <RendererFoundation/Resources/Buffer.h>
 
-xiiGALComputeCommandEncoder::xiiGALComputeCommandEncoder(xiiGALDevice& device, xiiGALCommandEncoderState& state, xiiGALCommandEncoderCommonPlatformInterface& commonImpl, xiiGALCommandEncoderComputePlatformInterface& computeImpl) :
-  xiiGALCommandEncoder(device, state, commonImpl), m_ComputeImpl(computeImpl)
+xiiGALComputeCommandEncoder::xiiGALComputeCommandEncoder(xiiGALDevice& ref_device, xiiGALCommandEncoderState& ref_state, xiiGALCommandEncoderCommonPlatformInterface& ref_commonImpl, xiiGALCommandEncoderComputePlatformInterface& ref_computeImpl) :
+  xiiGALCommandEncoder(ref_device, ref_state, ref_commonImpl), m_ComputeImpl(ref_computeImpl)
 {
 }
 

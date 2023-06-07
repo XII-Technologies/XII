@@ -24,7 +24,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleBehavior_PullAlong, 1, xiiRTTIDefaul
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiParticleBehaviorFactory_PullAlong::xiiParticleBehaviorFactory_PullAlong() {}
+xiiParticleBehaviorFactory_PullAlong::xiiParticleBehaviorFactory_PullAlong() = default;
 
 const xiiRTTI* xiiParticleBehaviorFactory_PullAlong::GetBehaviorType() const
 {

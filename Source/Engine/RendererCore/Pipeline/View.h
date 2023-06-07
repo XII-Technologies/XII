@@ -93,7 +93,7 @@ public:
   ///
   /// fScreenPosX and fScreenPosY are expected to be in [0; 1] range (normalized pixel coordinates).
   /// If no ray can be computed, XII_FAILURE is returned.
-  xiiResult ComputePickingRay(float fScreenPosX, float fScreenPosY, xiiVec3& out_RayStartPos, xiiVec3& out_RayDir) const;
+  xiiResult ComputePickingRay(float fScreenPosX, float fScreenPosY, xiiVec3& out_vRayStartPos, xiiVec3& out_vRayDir) const;
 
   xiiResult ComputeScreenSpacePos(const xiiVec3& vPoint, xiiVec3& out_vScreenPos) const;
 
@@ -116,7 +116,7 @@ public:
   const xiiMat4& GetInverseViewProjectionMatrix(xiiCameraEye eye) const;
 
   /// \brief Returns the frustum that should be used for determine visible objects for this view.
-  void ComputeCullingFrustum(xiiFrustum& out_Frustum) const;
+  void ComputeCullingFrustum(xiiFrustum& out_frustum) const;
 
   void SetShaderPermutationVariable(const char* szName, const char* szValue);
 

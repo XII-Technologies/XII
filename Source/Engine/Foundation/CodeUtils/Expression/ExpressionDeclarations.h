@@ -16,7 +16,7 @@ namespace xiiExpression
   {
     XII_DECLARE_POD_TYPE();
 
-    Register() {}
+    Register() = default;
 
     union
     {
@@ -63,8 +63,8 @@ namespace xiiExpression
       return m_sName == other.m_sName && m_DataType == other.m_DataType;
     }
 
-    xiiResult Serialize(xiiStreamWriter& stream) const;
-    xiiResult Deserialize(xiiStreamReader& stream);
+    xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+    xiiResult Deserialize(xiiStreamReader& ref_stream);
   };
 
   /// \brief Describes an expression function and its signature, e.g. how many input parameter it has and their type
@@ -85,8 +85,8 @@ namespace xiiExpression
 
     bool operator<(const FunctionDesc& other) const;
 
-    xiiResult Serialize(xiiStreamWriter& stream) const;
-    xiiResult Deserialize(xiiStreamReader& stream);
+    xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+    xiiResult Deserialize(xiiStreamReader& ref_stream);
 
     xiiHashedString GetMangledName() const;
   };

@@ -18,12 +18,12 @@ class XII_GUIFOUNDATION_DLL xiiQtToolBarActionMapView : public QToolBar
   XII_DISALLOW_COPY_AND_ASSIGN(xiiQtToolBarActionMapView);
 
 public:
-  explicit xiiQtToolBarActionMapView(QString title, QWidget* parent);
+  explicit xiiQtToolBarActionMapView(QString sTitle, QWidget* pParent);
   ~xiiQtToolBarActionMapView();
 
   void SetActionContext(const xiiActionContext& context);
 
-  virtual void setVisible(bool visible) override;
+  virtual void setVisible(bool bVisible) override;
 
 private:
   void TreeEventHandler(const xiiDocumentObjectStructureEvent& e);

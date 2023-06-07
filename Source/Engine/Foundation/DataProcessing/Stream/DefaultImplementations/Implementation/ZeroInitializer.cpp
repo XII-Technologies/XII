@@ -13,8 +13,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProcessingStreamSpawnerZeroInitialized, 1, x
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiProcessingStreamSpawnerZeroInitialized::xiiProcessingStreamSpawnerZeroInitialized() :
-  m_pStream(nullptr)
+xiiProcessingStreamSpawnerZeroInitialized::xiiProcessingStreamSpawnerZeroInitialized()
+
 {
 }
 

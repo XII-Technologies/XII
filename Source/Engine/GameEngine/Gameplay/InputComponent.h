@@ -6,12 +6,12 @@
 #include <Core/World/World.h>
 #include <GameEngine/GameEngineDLL.h>
 
-typedef xiiComponentManagerSimple<class xiiInputComponent, xiiComponentUpdateType::WhenSimulating> xiiInputComponentManager;
+using xiiInputComponentManager = class xiiInputComponent;
 
 /// \brief Which types of input events are broadcast
 struct XII_GAMEENGINE_DLL xiiInputMessageGranularity
 {
-  typedef xiiInt8 StorageType;
+  using StorageType = xiiInt8;
 
   /// \brief Which types of input events are broadcast
   enum Enum
@@ -60,8 +60,8 @@ class XII_GAMEENGINE_DLL xiiInputComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////

@@ -302,7 +302,7 @@ private:
   {
     XII_DECLARE_POD_TYPE();
 
-    BoundConstantBuffer() {}
+    BoundConstantBuffer() = default;
     BoundConstantBuffer(xiiGALBufferHandle hConstantBuffer) :
       m_hConstantBuffer(hConstantBuffer)
     {

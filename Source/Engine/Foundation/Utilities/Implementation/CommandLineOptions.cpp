@@ -8,15 +8,15 @@
 
 XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiCommandLineOption);
 
-void xiiCommandLineOption::GetSortingGroup(xiiStringBuilder& out) const
+void xiiCommandLineOption::GetSortingGroup(xiiStringBuilder& ref_sOut) const
 {
-  out = m_szSortingGroup;
+  ref_sOut = m_szSortingGroup;
 }
 
-void xiiCommandLineOption::GetSplitOptions(xiiStringBuilder& outAll, xiiDynamicArray<xiiStringView>& splitOptions) const
+void xiiCommandLineOption::GetSplitOptions(xiiStringBuilder& out_sAll, xiiDynamicArray<xiiStringView>& ref_splitOptions) const
 {
-  GetOptions(outAll);
-  outAll.Split(false, splitOptions, ";", "|");
+  GetOptions(out_sAll);
+  out_sAll.Split(false, ref_splitOptions, ";", "|");
 }
 
 bool xiiCommandLineOption::IsHelpRequested(const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
@@ -24,10 +24,10 @@ bool xiiCommandLineOption::IsHelpRequested(const xiiCommandLineUtils* pUtils /*=
   return pUtils->GetBoolOption("-help") || pUtils->GetBoolOption("--help") || pUtils->GetBoolOption("-h") || pUtils->GetBoolOption("-?");
 }
 
-xiiResult xiiCommandLineOption::RequireOptions(const char* requiredOptions, xiiString* pMissingOption /*= nullptr*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
+xiiResult xiiCommandLineOption::RequireOptions(const char* szRequiredOptions, xiiString* pMissingOption /*= nullptr*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
 {
   xiiStringBuilder                  tmp;
-  xiiStringBuilder                  allOpts = requiredOptions;
+  xiiStringBuilder                  allOpts = szRequiredOptions;
   xiiHybridArray<xiiStringView, 16> options;
   allOpts.Split(false, options, ";");
 
@@ -157,14 +157,14 @@ bool xiiCommandLineOption::LogAvailableOptions(LogAvailableModes mode, const cha
 }
 
 
-bool xiiCommandLineOption::LogAvailableOptionsToBuffer(xiiStringBuilder& out_Buffer, LogAvailableModes mode, const char* szGroupFilter /*= nullptr*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
+bool xiiCommandLineOption::LogAvailableOptionsToBuffer(xiiStringBuilder& out_sBuffer, LogAvailableModes mode, const char* szGroupFilter /*= nullptr*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
 {
   xiiLogSystemToBuffer log;
   xiiLogSystemScope    ls(&log);
 
   const bool res = xiiCommandLineOption::LogAvailableOptions(mode, szGroupFilter, pUtils);
 
-  out_Buffer = log.m_sBuffer;
+  out_sBuffer = log.m_sBuffer;
 
   return res;
 }
@@ -183,27 +183,27 @@ xiiCommandLineOptionDoc::xiiCommandLineOptionDoc(const char* szSortingGroup, con
   m_bCaseSensitive      = bCaseSensitive;
 }
 
-void xiiCommandLineOptionDoc::GetOptions(xiiStringBuilder& out) const
+void xiiCommandLineOptionDoc::GetOptions(xiiStringBuilder& ref_sOut) const
 {
-  out = m_szArgument;
+  ref_sOut = m_szArgument;
 }
 
-void xiiCommandLineOptionDoc::GetParamShortDesc(xiiStringBuilder& out) const
+void xiiCommandLineOptionDoc::GetParamShortDesc(xiiStringBuilder& ref_sOut) const
 {
-  out = m_szParamShortDesc;
+  ref_sOut = m_szParamShortDesc;
 }
 
-void xiiCommandLineOptionDoc::GetParamDefaultValueDesc(xiiStringBuilder& out) const
+void xiiCommandLineOptionDoc::GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const
 {
-  out = m_szParamDefaultValue;
+  ref_sOut = m_szParamDefaultValue;
 }
 
-void xiiCommandLineOptionDoc::GetLongDesc(xiiStringBuilder& out) const
+void xiiCommandLineOptionDoc::GetLongDesc(xiiStringBuilder& ref_sOut) const
 {
-  out = m_szLongDesc;
+  ref_sOut = m_szLongDesc;
 }
 
-bool xiiCommandLineOptionDoc::IsOptionSpecified(xiiStringBuilder* out_which, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/) const
+bool xiiCommandLineOptionDoc::IsOptionSpecified(xiiStringBuilder* out_pWhich, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/) const
 {
   xiiStringBuilder                 sOptions, tmp;
   xiiHybridArray<xiiStringView, 4> eachOption;
@@ -213,18 +213,18 @@ bool xiiCommandLineOptionDoc::IsOptionSpecified(xiiStringBuilder* out_which, con
   {
     if (pUtils->GetOptionIndex(o.GetData(tmp), m_bCaseSensitive) >= 0)
     {
-      if (out_which)
+      if (out_pWhich)
       {
-        *out_which = tmp;
+        *out_pWhich = tmp;
       }
 
       return true;
     }
   }
 
-  if (out_which)
+  if (out_pWhich)
   {
-    *out_which = m_szArgument;
+    *out_pWhich = m_szArgument;
   }
 
   return false;
@@ -303,21 +303,21 @@ xiiCommandLineOptionInt::xiiCommandLineOptionInt(const char* szSortingGroup, con
   XII_ASSERT_DEV(m_iMinValue < m_iMaxValue, "Invalid min/max value");
 }
 
-void xiiCommandLineOptionInt::GetParamDefaultValueDesc(xiiStringBuilder& out) const
+void xiiCommandLineOptionInt::GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const
 {
-  out.Format("{}", m_iDefaultValue);
+  ref_sOut.Format("{}", m_iDefaultValue);
 }
 
 
-void xiiCommandLineOptionInt::GetParamShortDesc(xiiStringBuilder& out) const
+void xiiCommandLineOptionInt::GetParamShortDesc(xiiStringBuilder& ref_sOut) const
 {
   if (m_iMinValue == xiiMath::MinValue<int>() && m_iMaxValue == xiiMath::MaxValue<int>())
   {
-    out = "<int>";
+    ref_sOut = "<int>";
   }
   else
   {
-    out.Format("<int> [{} .. {}]", m_iMinValue, m_iMaxValue);
+    ref_sOut.Format("<int> [{} .. {}]", m_iMinValue, m_iMaxValue);
   }
 }
 
@@ -366,20 +366,20 @@ xiiCommandLineOptionFloat::xiiCommandLineOptionFloat(const char* szSortingGroup,
   XII_ASSERT_DEV(m_fMinValue < m_fMaxValue, "Invalid min/max value");
 }
 
-void xiiCommandLineOptionFloat::GetParamDefaultValueDesc(xiiStringBuilder& out) const
+void xiiCommandLineOptionFloat::GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const
 {
-  out.Format("{}", m_fDefaultValue);
+  ref_sOut.Format("{}", m_fDefaultValue);
 }
 
-void xiiCommandLineOptionFloat::GetParamShortDesc(xiiStringBuilder& out) const
+void xiiCommandLineOptionFloat::GetParamShortDesc(xiiStringBuilder& ref_sOut) const
 {
   if (m_fMinValue == xiiMath::MinValue<float>() && m_fMaxValue == xiiMath::MaxValue<float>())
   {
-    out = "<float>";
+    ref_sOut = "<float>";
   }
   else
   {
-    out.Format("<float> [{} .. {}]", m_fMinValue, m_fMaxValue);
+    ref_sOut.Format("<float> [{} .. {}]", m_fMinValue, m_fMaxValue);
   }
 }
 
@@ -531,21 +531,21 @@ found:
   return result;
 }
 
-void xiiCommandLineOptionEnum::GetParamShortDesc(xiiStringBuilder& out) const
+void xiiCommandLineOptionEnum::GetParamShortDesc(xiiStringBuilder& ref_sOut) const
 {
   xiiHybridArray<EnumKeyValue, 16> keysAndValues;
   GetEnumKeysAndValues(keysAndValues);
 
   for (const auto& e : keysAndValues)
   {
-    out.AppendWithSeparator(" | ", e.m_Key);
+    ref_sOut.AppendWithSeparator(" | ", e.m_Key);
   }
 
-  out.Prepend("<");
-  out.Append(">");
+  ref_sOut.Prepend("<");
+  ref_sOut.Append(">");
 }
 
-void xiiCommandLineOptionEnum::GetParamDefaultValueDesc(xiiStringBuilder& out) const
+void xiiCommandLineOptionEnum::GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const
 {
   xiiHybridArray<EnumKeyValue, 16> keysAndValues;
   GetEnumKeysAndValues(keysAndValues);
@@ -554,20 +554,20 @@ void xiiCommandLineOptionEnum::GetParamDefaultValueDesc(xiiStringBuilder& out) c
   {
     if (m_iDefaultValue == e.m_iValue)
     {
-      out = e.m_Key;
+      ref_sOut = e.m_Key;
       return;
     }
   }
 }
 
-void xiiCommandLineOptionEnum::GetEnumKeysAndValues(xiiDynamicArray<EnumKeyValue>& out_KeysAndValues) const
+void xiiCommandLineOptionEnum::GetEnumKeysAndValues(xiiDynamicArray<EnumKeyValue>& out_keysAndValues) const
 {
   xiiStringBuilder tmp = m_szEnumKeysAndValues;
 
   xiiHybridArray<xiiStringView, 16> enums;
   tmp.Split(false, enums, ";", "|");
 
-  out_KeysAndValues.SetCount(enums.GetCount());
+  out_keysAndValues.SetCount(enums.GetCount());
 
   xiiInt32 eVal = 0;
   for (xiiUInt32 e = 0; e < enums.GetCount(); ++e)
@@ -591,8 +591,8 @@ void xiiCommandLineOptionEnum::GetEnumKeysAndValues(xiiDynamicArray<EnumKeyValue
     pStart += (xiiInt64)eName.GetStartPointer();
     pStart -= (xiiInt64)tmp.GetData();
 
-    out_KeysAndValues[e].m_iValue = eVal;
-    out_KeysAndValues[e].m_Key    = xiiStringView(pStart, eName.GetElementCount());
+    out_keysAndValues[e].m_iValue = eVal;
+    out_keysAndValues[e].m_Key    = xiiStringView(pStart, eName.GetElementCount());
 
     eVal++;
   }

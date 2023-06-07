@@ -430,23 +430,23 @@ xiiStatus xiiQtDocumentWindow::SaveDocument()
   return xiiStatus(XII_SUCCESS);
 }
 
-void xiiQtDocumentWindow::ShowTemporaryStatusBarMsg(const xiiFormatString& sMsg, xiiTime duration)
+void xiiQtDocumentWindow::ShowTemporaryStatusBarMsg(const xiiFormatString& msg, xiiTime duration)
 {
   xiiStringBuilder tmp;
-  statusBar()->showMessage(QString::fromUtf8(sMsg.GetText(tmp)), (int)duration.GetMilliseconds());
+  statusBar()->showMessage(QString::fromUtf8(msg.GetText(tmp)), (int)duration.GetMilliseconds());
 }
 
 
-void xiiQtDocumentWindow::SetPermanentStatusBarMsg(const xiiFormatString& sText)
+void xiiQtDocumentWindow::SetPermanentStatusBarMsg(const xiiFormatString& text)
 {
-  if (!sText.IsEmpty())
+  if (!text.IsEmpty())
   {
     // clear temporary message
     statusBar()->clearMessage();
   }
 
   xiiStringBuilder tmp;
-  m_pPermanentDocumentStatusText->setText(QString::fromUtf8(sText.GetText(tmp)));
+  m_pPermanentDocumentStatusText->setText(QString::fromUtf8(text.GetText(tmp)));
 }
 
 void xiiQtDocumentWindow::CreateImageCapture(const char* szOutputPath)
@@ -560,7 +560,7 @@ void xiiQtDocumentWindow::EnsureVisible()
   m_pContainerWindow->EnsureVisible(this).IgnoreResult();
 }
 
-void xiiQtDocumentWindow::RequestWindowTabContextMenu(const QPoint& GlobalPos)
+void xiiQtDocumentWindow::RequestWindowTabContextMenu(const QPoint& globalPos)
 {
   xiiQtMenuActionMapView menu(nullptr);
 
@@ -570,7 +570,7 @@ void xiiQtDocumentWindow::RequestWindowTabContextMenu(const QPoint& GlobalPos)
   context.m_pWindow   = this;
   menu.SetActionContext(context);
 
-  menu.exec(GlobalPos);
+  menu.exec(globalPos);
 }
 
 xiiQtDocumentWindow* xiiQtDocumentWindow::FindWindowByDocument(const xiiDocument* pDocument)

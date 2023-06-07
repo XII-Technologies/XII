@@ -26,10 +26,10 @@ class xiiCommandLineUtils;
 class XII_TEST_DLL xiiTestFramework
 {
 public:
-  xiiTestFramework(const char* szTestName, const char* szAbsTestOutputDir, const char* szRelTestDataDir, int argc, const char** argv);
+  xiiTestFramework(const char* szTestName, const char* szAbsTestOutputDir, const char* szRelTestDataDir, int iArgc, const char** pArgv);
   virtual ~xiiTestFramework();
 
-  typedef void (*OutputHandler)(xiiTestOutput::Enum Type, const char* szMsg);
+  using OutputHandler = void (*)(xiiTestOutput::Enum, const char*);
 
   // Test management
   void        CreateOutputFolder();
@@ -39,18 +39,18 @@ public:
   const char* GetRelTestDataPath() const;
   const char* GetAbsTestOrderFilePath() const;
   const char* GetAbsTestSettingsFilePath() const;
-  void        RegisterOutputHandler(OutputHandler Handler);
+  void        RegisterOutputHandler(OutputHandler handler);
   void        GatherAllTests();
   void        LoadTestOrder();
   void        ApplyTestOrderFromCommandLine(const xiiCommandLineUtils& cmd);
   void        LoadTestSettings();
   void        AutoSaveTestOrder();
-  void        SaveTestOrder(const char* const filePath);
-  void        SaveTestSettings(const char* const filePath);
+  void        SaveTestOrder(const char* const szFilePath);
+  void        SaveTestSettings(const char* const szFilePath);
   void        SetAllTestsEnabledStatus(bool bEnable);
   void        SetAllFailedTestsEnabledStatus();
   // Each function on a test must not take longer than the given time or the test process will be terminated.
-  void      SetTestTimeout(xiiUInt32 testTimeoutMS);
+  void      SetTestTimeout(xiiUInt32 uiTestTimeoutMS);
   xiiUInt32 GetTestTimeout() const;
   void      GetTestSettingsFromCommandLine(const xiiCommandLineUtils& cmd);
 
@@ -98,27 +98,27 @@ public:
   void ScheduleDepthImageComparison(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError);
   bool IsImageComparisonScheduled() const { return m_bImageComparisonScheduled; }
   bool IsDepthImageComparisonScheduled() const { return m_bDepthImageComparisonScheduled; }
-  void GenerateComparisonImageName(xiiUInt32 uiImageNumber, xiiStringBuilder& sImgName);
-  void GetCurrentComparisonImageName(xiiStringBuilder& sImgName);
+  void GenerateComparisonImageName(xiiUInt32 uiImageNumber, xiiStringBuilder& ref_sImgName);
+  void GetCurrentComparisonImageName(xiiStringBuilder& ref_sImgName);
   void SetImageReferenceFolderName(const char* szFolderName);
   void SetImageReferenceOverrideFolderName(const char* szFolderName);
 
   /// \brief Writes an Html file that contains test information and an image diff view for failed image comparisons.
-  void WriteImageDiffHtml(const char* fileName, xiiImage& referenceImgRgb, xiiImage& referenceImgAlpha, xiiImage& capturedImgRgb, xiiImage& capturedImgAlpha, xiiImage& diffImgRgb, xiiImage& diffImgAlpha, xiiUInt32 uiError, xiiUInt32 uiThreshold, xiiUInt8 uiMinDiffRgb, xiiUInt8 uiMaxDiffRgb, xiiUInt8 uiMinDiffAlpha, xiiUInt8 uiMaxDiffAlpha);
+  void WriteImageDiffHtml(const char* szFileName, xiiImage& ref_referenceImgRgb, xiiImage& ref_referenceImgAlpha, xiiImage& ref_capturedImgRgb, xiiImage& ref_capturedImgAlpha, xiiImage& ref_diffImgRgb, xiiImage& ref_diffImgAlpha, xiiUInt32 uiError, xiiUInt32 uiThreshold, xiiUInt8 uiMinDiffRgb, xiiUInt8 uiMaxDiffRgb, xiiUInt8 uiMinDiffAlpha, xiiUInt8 uiMaxDiffAlpha);
 
   bool PerformImageComparison(xiiStringBuilder sImgName, const xiiImage& img, xiiUInt32 uiMaxError, char* szErrorMsg);
-  bool CompareImages(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, char* szErrorMsg, bool isDepthImage = false);
+  bool CompareImages(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, char* szErrorMsg, bool bIsDepthImage = false);
 
   /// \brief A function to be called to add extra info to image diff output, that is not available from here.
   /// E.g. device specific info like driver version.
-  typedef std::function<xiiDynamicArray<std::pair<xiiString, xiiString>>()> ImageDiffExtraInfoCallback;
-  void                                                                      SetImageDiffExtraInfoCallback(ImageDiffExtraInfoCallback provider);
+  using ImageDiffExtraInfoCallback = std::function<xiiDynamicArray<std::pair<xiiString, xiiString>>()>;
+  void SetImageDiffExtraInfoCallback(ImageDiffExtraInfoCallback provider);
 
-  typedef std::function<void(bool)> ImageComparisonCallback; /// \brief A function to be called after every image comparison with a bool
+  using ImageComparisonCallback = std::function<void(bool)>; /// \brief A function to be called after every image comparison with a bool
                                                              /// indicating if the images matched or not.
   void SetImageComparisonCallback(const ImageComparisonCallback& callback);
 
-  static xiiResult CaptureRegressionStat(xiiStringView testName, xiiStringView name, xiiStringView unit, float value, xiiInt32 testId = -1);
+  static xiiResult CaptureRegressionStat(xiiStringView sTestName, xiiStringView sName, xiiStringView sUnit, float value, xiiInt32 iTestId = -1);
 
 protected:
   void Initialize();
@@ -148,10 +148,10 @@ public:
   /// \brief Returns whether to asset on test failure.
   static bool GetAssertOnTestFail();
 
-  static void Output(xiiTestOutput::Enum Type, const char* szMsg, ...);
-  static void OutputArgs(xiiTestOutput::Enum Type, const char* szMsg, va_list args);
+  static void Output(xiiTestOutput::Enum type, const char* szMsg, ...);
+  static void OutputArgs(xiiTestOutput::Enum type, const char* szMsg, va_list szArgs);
   static void Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, xiiStringView sMsg, ...);
-  static void Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, xiiStringView sMsg, va_list args);
+  static void Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, xiiStringView sMsg, va_list szArgs);
   static void TestResult(xiiInt32 iSubTestIndex, bool bSuccess, double fDuration);
 
   // static members
@@ -377,7 +377,7 @@ XII_TEST_DLL bool xiiTestBool(
 //////////////////////////////////////////////////////////////////////////
 
 XII_TEST_DLL bool xiiTestResult(
-  xiiResult   bCondition,
+  xiiResult   condition,
   const char* szErrorText,
   const char* szFile,
   xiiInt32    iLine,
@@ -395,7 +395,7 @@ XII_TEST_DLL bool xiiTestResult(
 //////////////////////////////////////////////////////////////////////////
 
 XII_TEST_DLL bool xiiTestResult(
-  xiiResult   bCondition,
+  xiiResult   condition,
   const char* szErrorText,
   const char* szFile,
   xiiInt32    iLine,
@@ -584,7 +584,7 @@ XII_TEST_DLL bool xiiTestTextFiles(
 XII_TEST_DLL bool xiiTestImage(
   xiiUInt32   uiImageNumber,
   xiiUInt32   uiMaxError,
-  bool        isDepthImage,
+  bool        bIsDepthImage,
   const char* szFile,
   xiiInt32    iLine,
   const char* szFunction,

@@ -2,8 +2,8 @@
 
 #include <Core/GameState/StateMap.h>
 
-xiiStateMap::xiiStateMap() {}
-xiiStateMap::~xiiStateMap() {}
+xiiStateMap::xiiStateMap()  = default;
+xiiStateMap::~xiiStateMap() = default;
 
 
 void xiiStateMap::Clear()
@@ -16,94 +16,94 @@ void xiiStateMap::Clear()
   m_Strings.Clear();
 }
 
-void xiiStateMap::StoreBool(const xiiTempHashedString& name, bool value)
+void xiiStateMap::StoreBool(const xiiTempHashedString& sName, bool value)
 {
-  m_Bools[name] = value;
+  m_Bools[sName] = value;
 }
 
-void xiiStateMap::StoreInteger(const xiiTempHashedString& name, xiiInt64 value)
+void xiiStateMap::StoreInteger(const xiiTempHashedString& sName, xiiInt64 value)
 {
-  m_Integers[name] = value;
+  m_Integers[sName] = value;
 }
 
-void xiiStateMap::StoreDouble(const xiiTempHashedString& name, double value)
+void xiiStateMap::StoreDouble(const xiiTempHashedString& sName, double value)
 {
-  m_Doubles[name] = value;
+  m_Doubles[sName] = value;
 }
 
-void xiiStateMap::StoreVec3(const xiiTempHashedString& name, const xiiVec3& value)
+void xiiStateMap::StoreVec3(const xiiTempHashedString& sName, const xiiVec3& value)
 {
-  m_Vec3s[name] = value;
+  m_Vec3s[sName] = value;
 }
 
-void xiiStateMap::StoreVec3d(const xiiTempHashedString& name, const xiiVec3d& value)
+void xiiStateMap::StoreVec3d(const xiiTempHashedString& sName, const xiiVec3d& value)
 {
-  m_Vec3ds[name] = value;
+  m_Vec3ds[sName] = value;
 }
 
-void xiiStateMap::StoreColor(const xiiTempHashedString& name, const xiiColor& value)
+void xiiStateMap::StoreColor(const xiiTempHashedString& sName, const xiiColor& value)
 {
-  m_Colors[name] = value;
+  m_Colors[sName] = value;
 }
 
-void xiiStateMap::StoreString(const xiiTempHashedString& name, const xiiString& value)
+void xiiStateMap::StoreString(const xiiTempHashedString& sName, const xiiString& value)
 {
-  m_Strings[name] = value;
+  m_Strings[sName] = value;
 }
 
-void xiiStateMap::RetrieveBool(const xiiTempHashedString& name, bool& out_Value, bool defaultValue /*= false*/)
+void xiiStateMap::RetrieveBool(const xiiTempHashedString& sName, bool& out_bValue, bool bDefaultValue /*= false*/)
 {
-  if (!m_Bools.TryGetValue(name, out_Value))
+  if (!m_Bools.TryGetValue(sName, out_bValue))
   {
-    out_Value = defaultValue;
+    out_bValue = bDefaultValue;
   }
 }
 
-void xiiStateMap::RetrieveInteger(const xiiTempHashedString& name, xiiInt64& out_Value, xiiInt64 defaultValue /*= 0*/)
+void xiiStateMap::RetrieveInteger(const xiiTempHashedString& sName, xiiInt64& out_iValue, xiiInt64 iDefaultValue /*= 0*/)
 {
-  if (!m_Integers.TryGetValue(name, out_Value))
+  if (!m_Integers.TryGetValue(sName, out_iValue))
   {
-    out_Value = defaultValue;
+    out_iValue = iDefaultValue;
   }
 }
 
-void xiiStateMap::RetrieveDouble(const xiiTempHashedString& name, double& out_Value, double defaultValue /*= 0*/)
+void xiiStateMap::RetrieveDouble(const xiiTempHashedString& sName, double& out_fValue, double fDefaultValue /*= 0*/)
 {
-  if (!m_Doubles.TryGetValue(name, out_Value))
+  if (!m_Doubles.TryGetValue(sName, out_fValue))
   {
-    out_Value = defaultValue;
+    out_fValue = fDefaultValue;
   }
 }
 
-void xiiStateMap::RetrieveVec3(const xiiTempHashedString& name, xiiVec3& out_Value, xiiVec3 defaultValue /*= xiiVec3(0)*/)
+void xiiStateMap::RetrieveVec3(const xiiTempHashedString& sName, xiiVec3& out_vValue, xiiVec3 vDefaultValue /*= xiiVec3(0)*/)
 {
-  if (!m_Vec3s.TryGetValue(name, out_Value))
+  if (!m_Vec3s.TryGetValue(sName, out_vValue))
   {
-    out_Value = defaultValue;
+    out_vValue = vDefaultValue;
   }
 }
 
-void xiiStateMap::RetrieveVec3d(const xiiTempHashedString& name, xiiVec3d& out_Value, xiiVec3d defaultValue /*= xiiVec3d(0)*/)
+void xiiStateMap::RetrieveVec3d(const xiiTempHashedString& sName, xiiVec3d& out_vValue, xiiVec3d vDefaultValue /*= xiiVec3d(0)*/)
 {
-  if (!m_Vec3ds.TryGetValue(name, out_Value))
+  if (!m_Vec3ds.TryGetValue(sName, out_vValue))
   {
-    out_Value = defaultValue;
+    out_vValue = vDefaultValue;
   }
 }
 
-void xiiStateMap::RetrieveColor(const xiiTempHashedString& name, xiiColor& out_Value, xiiColor defaultValue /*= xiiColor::White*/)
+void xiiStateMap::RetrieveColor(const xiiTempHashedString& sName, xiiColor& out_value, xiiColor defaultValue /*= xiiColor::White*/)
 {
-  if (!m_Colors.TryGetValue(name, out_Value))
+  if (!m_Colors.TryGetValue(sName, out_value))
   {
-    out_Value = defaultValue;
+    out_value = defaultValue;
   }
 }
 
-void xiiStateMap::RetrieveString(const xiiTempHashedString& name, xiiString& out_Value, const char* defaultValue /*= nullptr*/)
+void xiiStateMap::RetrieveString(const xiiTempHashedString& sName, xiiString& out_sValue, const char* szDefaultValue /*= nullptr*/)
 {
-  if (!m_Strings.TryGetValue(name, out_Value))
+  if (!m_Strings.TryGetValue(sName, out_sValue))
   {
-    out_Value = defaultValue;
+    out_sValue = szDefaultValue;
   }
 }
 

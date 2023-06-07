@@ -2,15 +2,15 @@
 
 #include <RendererCore/BakedProbes/BakingUtils.h>
 
-xiiVec3 xiiBakingUtils::FibonacciSphere(xiiUInt32 sampleIndex, xiiUInt32 numSamples)
+xiiVec3 xiiBakingUtils::FibonacciSphere(xiiUInt32 uiSampleIndex, xiiUInt32 uiNumSamples)
 {
-  float offset    = 2.0f / numSamples;
+  float offset    = 2.0f / uiNumSamples;
   float increment = xiiMath::Pi<float>() * (3.0f - xiiMath::Sqrt(5.0f));
 
-  float y = ((sampleIndex * offset) - 1) + (offset / 2);
+  float y = ((uiSampleIndex * offset) - 1) + (offset / 2);
   float r = xiiMath::Sqrt(1 - y * y);
 
-  xiiAngle phi = xiiAngle::Radian(((sampleIndex + 1) % numSamples) * increment);
+  xiiAngle phi = xiiAngle::Radian(((uiSampleIndex + 1) % uiNumSamples) * increment);
 
   float x = xiiMath::Cos(phi) * r;
   float z = xiiMath::Sin(phi) * r;
@@ -35,13 +35,13 @@ xiiCompressedSkyVisibility xiiBakingUtils::CompressSkyVisibility(const xiiAmbien
   return result;
 }
 
-void xiiBakingUtils::DecompressSkyVisibility(xiiCompressedSkyVisibility compressedSkyVisibility, xiiAmbientCube<float>& out_SkyVisibility)
+void xiiBakingUtils::DecompressSkyVisibility(xiiCompressedSkyVisibility compressedSkyVisibility, xiiAmbientCube<float>& out_skyVisibility)
 {
   xiiUInt32 uiOffset = 0;
   for (xiiUInt32 i = 0; i < xiiAmbientCubeBasis::NumDirs; ++i)
   {
     xiiUInt32 maxValue            = (1u << s_BitsPerDir[i]) - 1u;
-    out_SkyVisibility.m_Values[i] = static_cast<float>((compressedSkyVisibility >> uiOffset) & maxValue) * (1.0f / maxValue);
+    out_skyVisibility.m_Values[i] = static_cast<float>((compressedSkyVisibility >> uiOffset) & maxValue) * (1.0f / maxValue);
     uiOffset += s_BitsPerDir[i];
   }
 }

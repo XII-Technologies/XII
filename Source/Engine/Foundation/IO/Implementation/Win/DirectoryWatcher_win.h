@@ -307,8 +307,8 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
               {
                 if (mirror && whatToWatch.IsSet(Watch::Subdirectories))
                 {
-                  mirror->Enumerate(eventFilePath, [&](const xiiStringBuilder& path, xiiFileSystemMirrorType::Type type) {
-                          func(path, xiiDirectoryWatcherAction::Removed, (type == xiiFileSystemMirrorType::Type::File) ? xiiDirectoryWatcherType::File : xiiDirectoryWatcherType::Directory);
+                  mirror->Enumerate(eventFilePath, [&](const xiiStringBuilder& sPath, xiiFileSystemMirrorType::Type type) {
+                          func(sPath, xiiDirectoryWatcherAction::Removed, (type == xiiFileSystemMirrorType::Type::File) ? xiiDirectoryWatcherType::File : xiiDirectoryWatcherType::Directory);
                         })
                     .AssertSuccess();
                 }

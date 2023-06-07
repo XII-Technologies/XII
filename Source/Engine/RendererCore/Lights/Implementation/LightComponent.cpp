@@ -48,9 +48,9 @@ XII_END_ABSTRACT_COMPONENT_TYPE
 xiiLightComponent::xiiLightComponent()  = default;
 xiiLightComponent::~xiiLightComponent() = default;
 
-void xiiLightComponent::SetLightColor(xiiColorGammaUB LightColor)
+void xiiLightComponent::SetLightColor(xiiColorGammaUB lightColor)
 {
-  m_LightColor = LightColor;
+  m_LightColor = lightColor;
 
   InvalidateCachedRenderData();
 }
@@ -120,10 +120,10 @@ float xiiLightComponent::GetConstantBias() const
   return m_fConstantBias;
 }
 
-void xiiLightComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiLightComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  xiiStreamWriter& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_LightColor;
   s << m_fIntensity;
@@ -133,12 +133,12 @@ void xiiLightComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_bCastShadows;
 }
 
-void xiiLightComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiLightComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   s >> m_LightColor;
   s >> m_fIntensity;
@@ -157,9 +157,9 @@ void xiiLightComponent::DeserializeComponent(xiiWorldReader& stream)
   s >> m_bCastShadows;
 }
 
-void xiiLightComponent::OnMsgSetColor(xiiMsgSetColor& msg)
+void xiiLightComponent::OnMsgSetColor(xiiMsgSetColor& ref_msg)
 {
-  msg.ModifyColor(m_LightColor);
+  ref_msg.ModifyColor(m_LightColor);
 
   InvalidateCachedRenderData();
 }
@@ -211,7 +211,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override { pNode->RenameProperty("Light Color", "LightColor"); }
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override { pNode->RenameProperty("Light Color", "LightColor"); }
 };
 
 xiiLightComponentPatch_1_2 g_xiiLightComponentPatch_1_2;

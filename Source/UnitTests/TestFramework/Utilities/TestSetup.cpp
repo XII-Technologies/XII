@@ -22,10 +22,10 @@
 int          xiiTestSetup::s_iArgc = 0;
 const char** xiiTestSetup::s_pArgv = nullptr;
 
-xiiTestFramework* xiiTestSetup::InitTestFramework(const char* szTestName, const char* szNiceTestName, int argc, const char** argv)
+xiiTestFramework* xiiTestSetup::InitTestFramework(const char* szTestName, const char* szNiceTestName, int iArgc, const char** pArgv)
 {
-  s_iArgc = argc;
-  s_pArgv = argv;
+  s_iArgc = iArgc;
+  s_pArgv = pArgv;
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
   if (FAILED(RoInitialize(RO_INIT_MULTITHREADED)))
@@ -45,7 +45,7 @@ xiiTestFramework* xiiTestSetup::InitTestFramework(const char* szTestName, const 
   sTestDataSubFolder.append(szTestName);
 
 #ifdef XII_USE_QT
-  xiiTestFramework* pTestFramework = new xiiQtTestFramework(szNiceTestName, sTestFolder.c_str(), sTestDataSubFolder.c_str(), argc, argv);
+  xiiTestFramework* pTestFramework = new xiiQtTestFramework(szNiceTestName, sTestFolder.c_str(), sTestDataSubFolder.c_str(), iArgc, pArgv);
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
   // Command line args in UWP are handled differently and can't be retrieved from the main function.
   xiiTestFramework* pTestFramework = new xiiUwpTestFramework(szNiceTestName, sTestFolder.c_str(), sTestDataSubFolder.c_str(), 0, nullptr);

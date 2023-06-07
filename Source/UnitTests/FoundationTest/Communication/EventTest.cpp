@@ -25,9 +25,9 @@ namespace
       }
     }
 
-    typedef xiiEvent<xiiUInt32> Event;
-    Event                       m_Event;
-    xiiUInt32                   m_uiRecursionCount;
+    using Event = xiiEvent<xiiUInt32>;
+    Event     m_Event;
+    xiiUInt32 m_uiRecursionCount;
   };
 } // namespace
 

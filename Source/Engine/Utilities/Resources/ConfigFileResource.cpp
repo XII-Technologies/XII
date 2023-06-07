@@ -47,98 +47,98 @@ xiiConfigFileResource::xiiConfigFileResource() :
 
 xiiConfigFileResource::~xiiConfigFileResource() = default;
 
-xiiInt32 xiiConfigFileResource::GetInt(xiiTempHashedString szName, xiiInt32 fallback) const
+xiiInt32 xiiConfigFileResource::GetInt(xiiTempHashedString sName, xiiInt32 iFallback) const
 {
-  auto it = m_IntData.Find(szName);
+  auto it = m_IntData.Find(sName);
   if (it.IsValid())
     return it.Value();
 
-  return fallback;
+  return iFallback;
 }
 
-xiiInt32 xiiConfigFileResource::GetInt(xiiTempHashedString szName) const
+xiiInt32 xiiConfigFileResource::GetInt(xiiTempHashedString sName) const
 {
-  auto it = m_IntData.Find(szName);
+  auto it = m_IntData.Find(sName);
   if (it.IsValid())
     return it.Value();
 
-  xiiLog::Error("{}: 'int' config variable (name hash = {}) doesn't exist.", this->GetResourceDescription(), szName.GetHash());
+  xiiLog::Error("{}: 'int' config variable (name hash = {}) doesn't exist.", this->GetResourceDescription(), sName.GetHash());
   return 0;
 }
 
-float xiiConfigFileResource::GetFloat(xiiTempHashedString szName, float fallback) const
+float xiiConfigFileResource::GetFloat(xiiTempHashedString sName, float fFallback) const
 {
-  auto it = m_FloatData.Find(szName);
+  auto it = m_FloatData.Find(sName);
   if (it.IsValid())
     return it.Value();
 
-  return fallback;
+  return fFallback;
 }
 
-double xiiConfigFileResource::GetDouble(xiiTempHashedString szName, double fallback) const
+double xiiConfigFileResource::GetDouble(xiiTempHashedString sName, double fFallback) const
 {
-  auto it = m_DoubleData.Find(szName);
+  auto it = m_DoubleData.Find(sName);
   if (it.IsValid())
     return it.Value();
 
-  return fallback;
+  return fFallback;
 }
 
-float xiiConfigFileResource::GetFloat(xiiTempHashedString szName) const
+float xiiConfigFileResource::GetFloat(xiiTempHashedString sName) const
 {
-  auto it = m_FloatData.Find(szName);
+  auto it = m_FloatData.Find(sName);
   if (it.IsValid())
     return it.Value();
 
-  xiiLog::Error("{}: 'float' config variable (name hash = {}) doesn't exist.", this->GetResourceDescription(), szName.GetHash());
+  xiiLog::Error("{}: 'float' config variable (name hash = {}) doesn't exist.", this->GetResourceDescription(), sName.GetHash());
   return 0;
 }
 
-double xiiConfigFileResource::GetDouble(xiiTempHashedString szName) const
+double xiiConfigFileResource::GetDouble(xiiTempHashedString sName) const
 {
-  auto it = m_DoubleData.Find(szName);
+  auto it = m_DoubleData.Find(sName);
   if (it.IsValid())
     return it.Value();
 
-  xiiLog::Error("{}: 'double' config variable (name hash = {}) doesn't exist.", this->GetResourceDescription(), szName.GetHash());
+  xiiLog::Error("{}: 'double' config variable (name hash = {}) doesn't exist.", this->GetResourceDescription(), sName.GetHash());
   return 0;
 }
 
-bool xiiConfigFileResource::GetBool(xiiTempHashedString szName, bool fallback) const
+bool xiiConfigFileResource::GetBool(xiiTempHashedString sName, bool bFallback) const
 {
-  auto it = m_BoolData.Find(szName);
+  auto it = m_BoolData.Find(sName);
   if (it.IsValid())
     return it.Value();
 
-  return fallback;
+  return bFallback;
 }
 
-bool xiiConfigFileResource::GetBool(xiiTempHashedString szName) const
+bool xiiConfigFileResource::GetBool(xiiTempHashedString sName) const
 {
-  auto it = m_BoolData.Find(szName);
+  auto it = m_BoolData.Find(sName);
   if (it.IsValid())
     return it.Value();
 
-  xiiLog::Error("{}: 'float' config variable (name hash = {}) doesn't exist.", this->GetResourceDescription(), szName.GetHash());
+  xiiLog::Error("{}: 'float' config variable (name hash = {}) doesn't exist.", this->GetResourceDescription(), sName.GetHash());
   return false;
 }
 
-const char* xiiConfigFileResource::GetString(xiiTempHashedString szName, const char* fallback) const
+const char* xiiConfigFileResource::GetString(xiiTempHashedString sName, const char* szFallback) const
 {
-  auto it = m_StringData.Find(szName);
+  auto it = m_StringData.Find(sName);
   if (it.IsValid())
     return it.Value();
 
-  return fallback;
+  return szFallback;
 }
 
-const char* xiiConfigFileResource::GetString(xiiTempHashedString szName) const
+const char* xiiConfigFileResource::GetString(xiiTempHashedString sName) const
 {
-  auto it = m_StringData.Find(szName);
+  auto it = m_StringData.Find(sName);
   if (it.IsValid())
     return it.Value();
 
-  xiiLog::Error("{}: 'string' config variable '(name hash = {}) doesn't exist.", this->GetResourceDescription(), szName.GetHash());
+  xiiLog::Error("{}: 'string' config variable '(name hash = {}) doesn't exist.", this->GetResourceDescription(), sName.GetHash());
   return "";
 }
 
@@ -188,9 +188,9 @@ void xiiConfigFileResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiResult xiiConfigFileResourceLoader::LoadedData::PrePropFileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType IncType, xiiStringBuilder& out_sAbsoluteFilePath)
+xiiResult xiiConfigFileResourceLoader::LoadedData::PrePropFileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath)
 {
-  xiiResult res = xiiPreprocessor::DefaultFileLocator(szCurAbsoluteFile, szIncludeFile, IncType, out_sAbsoluteFilePath);
+  xiiResult res = xiiPreprocessor::DefaultFileLocator(szCurAbsoluteFile, szIncludeFile, incType, out_sAbsoluteFilePath);
 
   m_RequiredFiles.AddFileDependency(out_sAbsoluteFilePath);
 
@@ -398,9 +398,9 @@ xiiResourceLoadData xiiConfigFileResourceLoader::OpenDataStream(const xiiResourc
   return res;
 }
 
-void xiiConfigFileResourceLoader::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& LoaderData)
+void xiiConfigFileResourceLoader::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData)
 {
-  LoadedData* pData = static_cast<LoadedData*>(LoaderData.m_pCustomLoaderData);
+  LoadedData* pData = static_cast<LoadedData*>(loaderData.m_pCustomLoaderData);
 
   XII_DEFAULT_DELETE(pData);
 }

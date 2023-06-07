@@ -47,9 +47,9 @@ const char* xiiMarkerComponent::GetMarkerType() const
   return m_sMarkerType;
 }
 
-void xiiMarkerComponent::SetRadius(float radius)
+void xiiMarkerComponent::SetRadius(float fRadius)
 {
-  m_fRadius = radius;
+  m_fRadius = fRadius;
 
   UpdateMarker();
 }
@@ -81,20 +81,20 @@ void xiiMarkerComponent::UpdateMarker()
   }
 }
 
-void xiiMarkerComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiMarkerComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_sMarkerType;
   s << m_fRadius;
 }
 
-void xiiMarkerComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiMarkerComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_sMarkerType;
   s >> m_fRadius;

@@ -10,7 +10,7 @@ class XII_FOUNDATION_DLL xiiHashStreamWriter32 : public xiiStreamWriter
 {
 public:
   /// \brief Pass an initial seed for the hash calculation.
-  xiiHashStreamWriter32(xiiUInt32 seed = 0);
+  xiiHashStreamWriter32(xiiUInt32 uiSeed = 0);
   ~xiiHashStreamWriter32();
 
   /// \brief Writes bytes directly to the stream.
@@ -32,7 +32,7 @@ class XII_FOUNDATION_DLL xiiHashStreamWriter64 : public xiiStreamWriter
 {
 public:
   /// \brief Pass an initial seed for the hash calculation.
-  xiiHashStreamWriter64(xiiUInt64 seed = 0);
+  xiiHashStreamWriter64(xiiUInt64 uiSeed = 0);
   ~xiiHashStreamWriter64();
 
   /// \brief Writes bytes directly to the stream.

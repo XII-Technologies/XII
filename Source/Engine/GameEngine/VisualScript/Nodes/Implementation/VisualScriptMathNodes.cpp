@@ -29,8 +29,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_MultiplyAdd, 1, xiiRTTIDefa
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_MultiplyAdd::xiiVisualScriptNode_MultiplyAdd() {}
-xiiVisualScriptNode_MultiplyAdd::~xiiVisualScriptNode_MultiplyAdd() {}
+xiiVisualScriptNode_MultiplyAdd::xiiVisualScriptNode_MultiplyAdd()  = default;
+xiiVisualScriptNode_MultiplyAdd::~xiiVisualScriptNode_MultiplyAdd() = default;
 
 void xiiVisualScriptNode_MultiplyAdd::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -82,8 +82,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_Div, 1, xiiRTTIDefaultAlloc
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_Div::xiiVisualScriptNode_Div() {}
-xiiVisualScriptNode_Div::~xiiVisualScriptNode_Div() {}
+xiiVisualScriptNode_Div::xiiVisualScriptNode_Div()  = default;
+xiiVisualScriptNode_Div::~xiiVisualScriptNode_Div() = default;
 
 void xiiVisualScriptNode_Div::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -131,8 +131,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_Min, 1, xiiRTTIDefaultAlloc
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_Min::xiiVisualScriptNode_Min() {}
-xiiVisualScriptNode_Min::~xiiVisualScriptNode_Min() {}
+xiiVisualScriptNode_Min::xiiVisualScriptNode_Min()  = default;
+xiiVisualScriptNode_Min::~xiiVisualScriptNode_Min() = default;
 
 void xiiVisualScriptNode_Min::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -180,8 +180,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_Max, 1, xiiRTTIDefaultAlloc
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_Max::xiiVisualScriptNode_Max() {}
-xiiVisualScriptNode_Max::~xiiVisualScriptNode_Max() {}
+xiiVisualScriptNode_Max::xiiVisualScriptNode_Max()  = default;
+xiiVisualScriptNode_Max::~xiiVisualScriptNode_Max() = default;
 
 void xiiVisualScriptNode_Max::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -230,8 +230,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_Clamp, 1, xiiRTTIDefaultAll
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_Clamp::xiiVisualScriptNode_Clamp() {}
-xiiVisualScriptNode_Clamp::~xiiVisualScriptNode_Clamp() {}
+xiiVisualScriptNode_Clamp::xiiVisualScriptNode_Clamp()  = default;
+xiiVisualScriptNode_Clamp::~xiiVisualScriptNode_Clamp() = default;
 
 void xiiVisualScriptNode_Clamp::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -279,8 +279,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_Abs, 1, xiiRTTIDefaultAlloc
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_Abs::xiiVisualScriptNode_Abs() {}
-xiiVisualScriptNode_Abs::~xiiVisualScriptNode_Abs() {}
+xiiVisualScriptNode_Abs::xiiVisualScriptNode_Abs()  = default;
+xiiVisualScriptNode_Abs::~xiiVisualScriptNode_Abs() = default;
 
 void xiiVisualScriptNode_Abs::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -324,8 +324,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_Sign, 1, xiiRTTIDefaultAllo
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_Sign::xiiVisualScriptNode_Sign() {}
-xiiVisualScriptNode_Sign::~xiiVisualScriptNode_Sign() {}
+xiiVisualScriptNode_Sign::xiiVisualScriptNode_Sign()  = default;
+xiiVisualScriptNode_Sign::~xiiVisualScriptNode_Sign() = default;
 
 void xiiVisualScriptNode_Sign::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {

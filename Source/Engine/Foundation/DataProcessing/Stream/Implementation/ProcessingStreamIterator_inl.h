@@ -1,7 +1,6 @@
 
 template <typename Type>
-xiiProcessingStreamIterator<Type>::xiiProcessingStreamIterator(const xiiProcessingStream* pStream, xiiUInt64 uiNumElements, xiiUInt64 uiStartIndex) :
-  m_pCurrentPtr(nullptr), m_pEndPtr(nullptr), m_uiElementStride(0)
+xiiProcessingStreamIterator<Type>::xiiProcessingStreamIterator(const xiiProcessingStream* pStream, xiiUInt64 uiNumElements, xiiUInt64 uiStartIndex)
 {
   XII_ASSERT_DEV(pStream != nullptr, "Stream pointer may not be null!");
   XII_ASSERT_DEV(pStream->GetElementSize() == sizeof(Type), "Data size missmatch");
@@ -31,7 +30,7 @@ XII_ALWAYS_INLINE void xiiProcessingStreamIterator<Type>::Advance()
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE void xiiProcessingStreamIterator<Type>::Advance(xiiUInt32 numElements)
+XII_ALWAYS_INLINE void xiiProcessingStreamIterator<Type>::Advance(xiiUInt32 uiNumElements)
 {
   m_pCurrentPtr = xiiMemoryUtils::AddByteOffset(m_pCurrentPtr, static_cast<ptrdiff_t>(m_uiElementStride * numElements));
 }

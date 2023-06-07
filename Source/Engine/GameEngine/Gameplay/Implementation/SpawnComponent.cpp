@@ -140,10 +140,10 @@ void xiiSpawnComponent::ScheduleSpawn()
   PostMessage(msg, tKill);
 }
 
-void xiiSpawnComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSpawnComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_SpawnFlags.GetValue();
   s << m_hPrefab;
@@ -153,15 +153,15 @@ void xiiSpawnComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_MaxDeviation;
   s << m_LastManualSpawn;
 
-  xiiPrefabReferenceComponent::SerializePrefabParameters(*GetWorld(), stream, m_Parameters);
+  xiiPrefabReferenceComponent::SerializePrefabParameters(*GetWorld(), ref_stream, m_Parameters);
 }
 
-void xiiSpawnComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSpawnComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   xiiSpawnComponentFlags::StorageType flags;
   s >> flags;
@@ -176,7 +176,7 @@ void xiiSpawnComponent::DeserializeComponent(xiiWorldReader& stream)
 
   if (uiVersion >= 3)
   {
-    xiiPrefabReferenceComponent::DeserializePrefabParameters(m_Parameters, stream);
+    xiiPrefabReferenceComponent::DeserializePrefabParameters(m_Parameters, ref_stream);
   }
 }
 
@@ -275,7 +275,7 @@ void xiiSpawnComponent::OnTriggered(xiiMsgComponentInternalTrigger& msg)
 
 const xiiRangeView<const char*, xiiUInt32> xiiSpawnComponent::GetParameters() const
 {
-  return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Parameters.GetCount(); }, [](xiiUInt32& it) { ++it; }, [this](const xiiUInt32& it) -> const char* { return m_Parameters.GetKey(it).GetString().GetData(); });
+  return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Parameters.GetCount(); }, [](xiiUInt32& ref_uiIt) { ++ref_uiIt; }, [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
 }
 
 void xiiSpawnComponent::SetParameter(const char* szKey, const xiiVariant& value)
@@ -320,7 +320,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->RenameProperty("Attach as Child", "AttachAsChild");
     pNode->RenameProperty("Spawn at Start", "SpawnAtStart");

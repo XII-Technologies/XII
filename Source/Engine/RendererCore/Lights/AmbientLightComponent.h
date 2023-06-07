@@ -6,7 +6,7 @@
 
 struct xiiMsgUpdateLocalBounds;
 
-typedef xiiSettingsComponentManager<class xiiAmbientLightComponent> xiiAmbientLightComponentManager;
+using xiiAmbientLightComponentManager = class xiiAmbientLightComponent;
 
 class XII_RENDERERCORE_DLL xiiAmbientLightComponent : public xiiSettingsComponent
 {
@@ -16,8 +16,8 @@ class XII_RENDERERCORE_DLL xiiAmbientLightComponent : public xiiSettingsComponen
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void Deinitialize() override;

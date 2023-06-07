@@ -172,14 +172,14 @@ XII_ALWAYS_INLINE xiiUInt32 ___tracyGetStringLength(const char* szString)
   return xiiStringUtils::GetStringElementCount(szString);
 }
 
-XII_ALWAYS_INLINE xiiUInt32 ___tracyGetStringLength(xiiStringView szString)
+XII_ALWAYS_INLINE xiiUInt32 ___tracyGetStringLength(xiiStringView sString)
 {
-  return szString.GetElementCount();
+  return sString.GetElementCount();
 }
 
-XII_ALWAYS_INLINE xiiUInt32 ___tracyGetStringLength(const xiiStringBuilder& szString)
+XII_ALWAYS_INLINE xiiUInt32 ___tracyGetStringLength(const xiiStringBuilder& sString)
 {
-  return szString.GetElementCount();
+  return sString.GetElementCount();
 }
 
 #    include <Tracy/tracy/Tracy.h>

@@ -12,7 +12,7 @@ xiiObjectMetaData<KEY, VALUE>::xiiObjectMetaData()
 }
 
 template <typename KEY, typename VALUE>
-const VALUE* xiiObjectMetaData<KEY, VALUE>::BeginReadMetaData(const KEY ObjectKey) const
+const VALUE* xiiObjectMetaData<KEY, VALUE>::BeginReadMetaData(const KEY objectKey) const
 {
   m_pMetaStorage->m_Mutex.Lock();
   XII_ASSERT_DEV(m_pMetaStorage->m_AccessMode == Storage::AccessMode::Nothing, "Already accessing some data");
@@ -27,7 +27,7 @@ const VALUE* xiiObjectMetaData<KEY, VALUE>::BeginReadMetaData(const KEY ObjectKe
 }
 
 template <typename KEY, typename VALUE>
-void xiiObjectMetaData<KEY, VALUE>::ClearMetaData(const KEY ObjectKey)
+void xiiObjectMetaData<KEY, VALUE>::ClearMetaData(const KEY objectKey)
 {
   XII_LOCK(m_pMetaStorage->m_Mutex);
   XII_ASSERT_DEV(m_pMetaStorage->m_AccessMode == Storage::AccessMode::Nothing, "Already accessing some data");
@@ -45,7 +45,7 @@ void xiiObjectMetaData<KEY, VALUE>::ClearMetaData(const KEY ObjectKey)
 }
 
 template <typename KEY, typename VALUE>
-bool xiiObjectMetaData<KEY, VALUE>::HasMetaData(const KEY ObjectKey) const
+bool xiiObjectMetaData<KEY, VALUE>::HasMetaData(const KEY objectKey) const
 {
   XII_LOCK(m_pMetaStorage->m_Mutex);
   const VALUE* pValue = nullptr;
@@ -53,7 +53,7 @@ bool xiiObjectMetaData<KEY, VALUE>::HasMetaData(const KEY ObjectKey) const
 }
 
 template <typename KEY, typename VALUE>
-VALUE* xiiObjectMetaData<KEY, VALUE>::BeginModifyMetaData(const KEY ObjectKey)
+VALUE* xiiObjectMetaData<KEY, VALUE>::BeginModifyMetaData(const KEY objectKey)
 {
   m_pMetaStorage->m_Mutex.Lock();
   XII_ASSERT_DEV(m_pMetaStorage->m_AccessMode == Storage::AccessMode::Nothing, "Already accessing some data");
@@ -94,7 +94,7 @@ void xiiObjectMetaData<KEY, VALUE>::EndModifyMetaData(xiiUInt32 uiModifiedFlags 
 
 
 template <typename KEY, typename VALUE>
-void xiiObjectMetaData<KEY, VALUE>::AttachMetaDataToAbstractGraph(xiiAbstractObjectGraph& graph) const
+void xiiObjectMetaData<KEY, VALUE>::AttachMetaDataToAbstractGraph(xiiAbstractObjectGraph& ref_graph) const
 {
   auto& AllNodes = graph.GetAllNodes();
 

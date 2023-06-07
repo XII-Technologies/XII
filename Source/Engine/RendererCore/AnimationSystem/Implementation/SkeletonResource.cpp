@@ -104,58 +104,58 @@ xiiUInt64 xiiSkeletonResourceDescriptor::GetHeapMemoryUsage() const
   return m_Geometry.GetHeapMemoryUsage() + m_Skeleton.GetHeapMemoryUsage();
 }
 
-xiiResult xiiSkeletonResourceDescriptor::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiSkeletonResourceDescriptor::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(6);
+  ref_stream.WriteVersion(6);
 
-  m_Skeleton.Save(stream);
-  stream << m_RootTransform;
+  m_Skeleton.Save(ref_stream);
+  ref_stream << m_RootTransform;
 
   const xiiUInt16 uiNumGeom = static_cast<xiiUInt16>(m_Geometry.GetCount());
-  stream << uiNumGeom;
+  ref_stream << uiNumGeom;
 
   for (xiiUInt32 i = 0; i < uiNumGeom; ++i)
   {
     const auto& geo = m_Geometry[i];
 
-    stream << geo.m_uiAttachedToJoint;
-    stream << geo.m_Type;
-    stream << geo.m_Transform;
-    stream << geo.m_sName;
-    stream << geo.m_hSurface;
-    stream << geo.m_uiCollisionLayer;
+    ref_stream << geo.m_uiAttachedToJoint;
+    ref_stream << geo.m_Type;
+    ref_stream << geo.m_Transform;
+    ref_stream << geo.m_sName;
+    ref_stream << geo.m_hSurface;
+    ref_stream << geo.m_uiCollisionLayer;
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiSkeletonResourceDescriptor::Deserialize(xiiStreamReader& stream)
+xiiResult xiiSkeletonResourceDescriptor::Deserialize(xiiStreamReader& ref_stream)
 {
-  const xiiTypeVersion version = stream.ReadVersion(6);
+  const xiiTypeVersion version = ref_stream.ReadVersion(6);
 
   if (version != 6)
     return XII_FAILURE;
 
-  m_Skeleton.Load(stream);
+  m_Skeleton.Load(ref_stream);
 
-  stream >> m_RootTransform;
+  ref_stream >> m_RootTransform;
 
   m_Geometry.Clear();
 
   xiiUInt16 uiNumGeom = 0;
-  stream >> uiNumGeom;
+  ref_stream >> uiNumGeom;
   m_Geometry.Reserve(uiNumGeom);
 
   for (xiiUInt32 i = 0; i < uiNumGeom; ++i)
   {
     auto& geo = m_Geometry.ExpandAndGetRef();
 
-    stream >> geo.m_uiAttachedToJoint;
-    stream >> geo.m_Type;
-    stream >> geo.m_Transform;
-    stream >> geo.m_sName;
-    stream >> geo.m_hSurface;
-    stream >> geo.m_uiCollisionLayer;
+    ref_stream >> geo.m_uiAttachedToJoint;
+    ref_stream >> geo.m_Type;
+    ref_stream >> geo.m_Transform;
+    ref_stream >> geo.m_sName;
+    ref_stream >> geo.m_hSurface;
+    ref_stream >> geo.m_uiCollisionLayer;
   }
 
   return XII_SUCCESS;

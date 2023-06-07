@@ -10,7 +10,7 @@ xiiSkyRenderPass::xiiSkyRenderPass(const char* szName) :
 {
 }
 
-xiiSkyRenderPass::~xiiSkyRenderPass() {}
+xiiSkyRenderPass::~xiiSkyRenderPass() = default;
 
 void xiiSkyRenderPass::RenderObjects(const xiiRenderViewContext& renderViewContext)
 {

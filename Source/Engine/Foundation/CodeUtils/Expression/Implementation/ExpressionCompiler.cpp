@@ -149,15 +149,15 @@ namespace
 xiiExpressionCompiler::xiiExpressionCompiler()  = default;
 xiiExpressionCompiler::~xiiExpressionCompiler() = default;
 
-xiiResult xiiExpressionCompiler::Compile(xiiExpressionAST& ast, xiiExpressionByteCode& out_byteCode, xiiStringView sDebugAstOutputPath /*= xiiStringView()*/)
+xiiResult xiiExpressionCompiler::Compile(xiiExpressionAST& ref_ast, xiiExpressionByteCode& out_byteCode, xiiStringView sDebugAstOutputPath /*= xiiStringView()*/)
 {
   out_byteCode.Clear();
 
-  XII_SUCCEED_OR_RETURN(TransformAndOptimizeAST(ast, sDebugAstOutputPath));
-  XII_SUCCEED_OR_RETURN(BuildNodeInstructions(ast));
-  XII_SUCCEED_OR_RETURN(UpdateRegisterLifetime(ast));
+  XII_SUCCEED_OR_RETURN(TransformAndOptimizeAST(ref_ast, sDebugAstOutputPath));
+  XII_SUCCEED_OR_RETURN(BuildNodeInstructions(ref_ast));
+  XII_SUCCEED_OR_RETURN(UpdateRegisterLifetime(ref_ast));
   XII_SUCCEED_OR_RETURN(AssignRegisters());
-  XII_SUCCEED_OR_RETURN(GenerateByteCode(ast, out_byteCode));
+  XII_SUCCEED_OR_RETURN(GenerateByteCode(ref_ast, out_byteCode));
 
   return XII_SUCCESS;
 }

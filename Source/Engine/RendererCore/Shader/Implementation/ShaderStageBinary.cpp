@@ -100,41 +100,41 @@ xiiShaderConstantBufferLayout::xiiShaderConstantBufferLayout()
   m_uiTotalSize = 0;
 }
 
-xiiShaderConstantBufferLayout::~xiiShaderConstantBufferLayout() {}
+xiiShaderConstantBufferLayout::~xiiShaderConstantBufferLayout() = default;
 
-xiiResult xiiShaderConstantBufferLayout::Write(xiiStreamWriter& stream) const
+xiiResult xiiShaderConstantBufferLayout::Write(xiiStreamWriter& ref_stream) const
 {
-  stream << m_uiTotalSize;
+  ref_stream << m_uiTotalSize;
 
   xiiUInt16 uiConstants = static_cast<xiiUInt16>(m_Constants.GetCount());
-  stream << uiConstants;
+  ref_stream << uiConstants;
 
   for (auto& constant : m_Constants)
   {
-    stream << constant.m_sName;
-    stream << constant.m_Type;
-    stream << constant.m_uiArrayElements;
-    stream << constant.m_uiOffset;
+    ref_stream << constant.m_sName;
+    ref_stream << constant.m_Type;
+    ref_stream << constant.m_uiArrayElements;
+    ref_stream << constant.m_uiOffset;
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderConstantBufferLayout::Read(xiiStreamReader& stream)
+xiiResult xiiShaderConstantBufferLayout::Read(xiiStreamReader& ref_stream)
 {
-  stream >> m_uiTotalSize;
+  ref_stream >> m_uiTotalSize;
 
   xiiUInt16 uiConstants = 0;
-  stream >> uiConstants;
+  ref_stream >> uiConstants;
 
   m_Constants.SetCount(uiConstants);
 
   for (auto& constant : m_Constants)
   {
-    stream >> constant.m_sName;
-    stream >> constant.m_Type;
-    stream >> constant.m_uiArrayElements;
-    stream >> constant.m_uiOffset;
+    ref_stream >> constant.m_sName;
+    ref_stream >> constant.m_Type;
+    ref_stream >> constant.m_uiArrayElements;
+    ref_stream >> constant.m_uiOffset;
   }
 
   return XII_SUCCESS;
@@ -149,7 +149,7 @@ xiiShaderResourceBinding::xiiShaderResourceBinding()
   m_pLayout = nullptr;
 }
 
-xiiShaderResourceBinding::~xiiShaderResourceBinding() {}
+xiiShaderResourceBinding::~xiiShaderResourceBinding() = default;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -181,82 +181,82 @@ xiiShaderStageBinary::~xiiShaderStageBinary()
   }
 }
 
-xiiResult xiiShaderStageBinary::Write(xiiStreamWriter& stream) const
+xiiResult xiiShaderStageBinary::Write(xiiStreamWriter& ref_stream) const
 {
   const xiiUInt8 uiVersion = xiiShaderStageBinary::VersionCurrent;
 
-  if (stream.WriteBytes(&uiVersion, sizeof(xiiUInt8)).Failed())
+  if (ref_stream.WriteBytes(&uiVersion, sizeof(xiiUInt8)).Failed())
     return XII_FAILURE;
 
-  if (stream.WriteDWordValue(&m_uiSourceHash).Failed())
+  if (ref_stream.WriteDWordValue(&m_uiSourceHash).Failed())
     return XII_FAILURE;
 
   const xiiUInt8 uiStage = (xiiUInt8)m_Stage;
 
-  if (stream.WriteBytes(&uiStage, sizeof(xiiUInt8)).Failed())
+  if (ref_stream.WriteBytes(&uiStage, sizeof(xiiUInt8)).Failed())
     return XII_FAILURE;
 
   const xiiUInt32 uiByteCodeSize = m_ByteCode.GetCount();
 
-  if (stream.WriteDWordValue(&uiByteCodeSize).Failed())
+  if (ref_stream.WriteDWordValue(&uiByteCodeSize).Failed())
     return XII_FAILURE;
 
-  if (!m_ByteCode.IsEmpty() && stream.WriteBytes(&m_ByteCode[0], uiByteCodeSize).Failed())
+  if (!m_ByteCode.IsEmpty() && ref_stream.WriteBytes(&m_ByteCode[0], uiByteCodeSize).Failed())
     return XII_FAILURE;
 
   xiiUInt16 uiResources = static_cast<xiiUInt16>(m_ShaderResourceBindings.GetCount());
-  stream << uiResources;
+  ref_stream << uiResources;
 
   for (const auto& r : m_ShaderResourceBindings)
   {
-    stream << r.m_sName.GetData();
-    stream << r.m_iSlot;
-    stream << (xiiUInt8)r.m_Type;
+    ref_stream << r.m_sName.GetData();
+    ref_stream << r.m_iSlot;
+    ref_stream << (xiiUInt8)r.m_Type;
 
     if (r.m_Type == xiiShaderResourceType::ConstantBuffer)
     {
-      XII_SUCCEED_OR_RETURN(r.m_pLayout->Write(stream));
+      XII_SUCCEED_OR_RETURN(r.m_pLayout->Write(ref_stream));
     }
   }
 
-  stream << m_bWasCompiledWithDebug;
+  ref_stream << m_bWasCompiledWithDebug;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderStageBinary::Read(xiiStreamReader& stream)
+xiiResult xiiShaderStageBinary::Read(xiiStreamReader& ref_stream)
 {
   xiiUInt8 uiVersion = 0;
 
-  if (stream.ReadBytes(&uiVersion, sizeof(xiiUInt8)) != sizeof(xiiUInt8))
+  if (ref_stream.ReadBytes(&uiVersion, sizeof(xiiUInt8)) != sizeof(xiiUInt8))
     return XII_FAILURE;
 
   XII_ASSERT_DEV(uiVersion <= xiiShaderStageBinary::VersionCurrent, "Wrong Version {0}", uiVersion);
 
-  if (stream.ReadDWordValue(&m_uiSourceHash).Failed())
+  if (ref_stream.ReadDWordValue(&m_uiSourceHash).Failed())
     return XII_FAILURE;
 
   xiiUInt8 uiStage = xiiGALShaderStage::ENUM_COUNT;
 
-  if (stream.ReadBytes(&uiStage, sizeof(xiiUInt8)) != sizeof(xiiUInt8))
+  if (ref_stream.ReadBytes(&uiStage, sizeof(xiiUInt8)) != sizeof(xiiUInt8))
     return XII_FAILURE;
 
   m_Stage = (xiiGALShaderStage::Enum)uiStage;
 
   xiiUInt32 uiByteCodeSize = 0;
 
-  if (stream.ReadDWordValue(&uiByteCodeSize).Failed())
+  if (ref_stream.ReadDWordValue(&uiByteCodeSize).Failed())
     return XII_FAILURE;
 
   m_ByteCode.SetCountUninitialized(uiByteCodeSize);
 
-  if (!m_ByteCode.IsEmpty() && stream.ReadBytes(&m_ByteCode[0], uiByteCodeSize) != uiByteCodeSize)
+  if (!m_ByteCode.IsEmpty() && ref_stream.ReadBytes(&m_ByteCode[0], uiByteCodeSize) != uiByteCodeSize)
     return XII_FAILURE;
 
   if (uiVersion >= xiiShaderStageBinary::Version2)
   {
     xiiUInt16 uiResources = 0;
-    stream >> uiResources;
+    ref_stream >> uiResources;
 
     m_ShaderResourceBindings.SetCount(uiResources);
 
@@ -264,18 +264,18 @@ xiiResult xiiShaderStageBinary::Read(xiiStreamReader& stream)
 
     for (auto& r : m_ShaderResourceBindings)
     {
-      stream >> sTemp;
+      ref_stream >> sTemp;
       r.m_sName.Assign(sTemp.GetData());
-      stream >> r.m_iSlot;
+      ref_stream >> r.m_iSlot;
 
       xiiUInt8 uiType = 0;
-      stream >> uiType;
+      ref_stream >> uiType;
       r.m_Type = (xiiShaderResourceType::Enum)uiType;
 
       if (r.m_Type == xiiShaderResourceType::ConstantBuffer && uiVersion >= xiiShaderStageBinary::Version4)
       {
         auto pLayout = XII_DEFAULT_NEW(xiiShaderConstantBufferLayout);
-        XII_SUCCEED_OR_RETURN(pLayout->Read(stream));
+        XII_SUCCEED_OR_RETURN(pLayout->Read(ref_stream));
 
         r.m_pLayout = pLayout;
       }
@@ -284,7 +284,7 @@ xiiResult xiiShaderStageBinary::Read(xiiStreamReader& stream)
 
   if (uiVersion >= xiiShaderStageBinary::Version5)
   {
-    stream >> m_bWasCompiledWithDebug;
+    ref_stream >> m_bWasCompiledWithDebug;
   }
 
   return XII_SUCCESS;

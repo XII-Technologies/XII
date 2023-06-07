@@ -14,7 +14,7 @@ class XII_RENDERERFOUNDATION_DLL xiiGALShaderByteCode : public xiiRefCounted
 public:
   xiiGALShaderByteCode();
 
-  xiiGALShaderByteCode(const xiiArrayPtr<const xiiUInt8>& pByteCode);
+  xiiGALShaderByteCode(const xiiArrayPtr<const xiiUInt8>& byteCode);
 
   inline const void* GetByteCode() const;
 

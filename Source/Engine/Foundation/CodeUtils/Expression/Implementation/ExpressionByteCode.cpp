@@ -244,8 +244,8 @@ void xiiExpressionByteCode::Disassemble(xiiStringBuilder& out_sDisassembly) cons
   out_sDisassembly.AppendFormat("\n// Temp Registers: {}\n", m_uiNumTempRegisters);
   out_sDisassembly.AppendFormat("// Instructions: {}\n\n", m_uiNumInstructions);
 
-  auto AppendConstant = [](xiiUInt32 x, xiiStringBuilder& out_String) {
-    out_String.AppendFormat("0x{}({})", xiiArgU(x, 8, true, 16), xiiArgF(*reinterpret_cast<float*>(&x), 6));
+  auto AppendConstant = [](xiiUInt32 x, xiiStringBuilder& out_sString) {
+    out_sString.AppendFormat("0x{}({})", xiiArgU(x, 8, true, 16), xiiArgF(*reinterpret_cast<float*>(&x), 6));
   };
 
   const StorageType* pByteCode    = GetByteCode();
@@ -360,9 +360,9 @@ void xiiExpressionByteCode::Disassemble(xiiStringBuilder& out_sDisassembly) cons
 static constexpr xiiUInt32 s_uiMetaDataVersion = 4;
 static constexpr xiiUInt32 s_uiCodeVersion     = 3;
 
-void xiiExpressionByteCode::Save(xiiStreamWriter& stream) const
+void xiiExpressionByteCode::Save(xiiStreamWriter& ref_stream) const
 {
-  xiiChunkStreamWriter chunk(stream);
+  xiiChunkStreamWriter chunk(ref_stream);
 
   chunk.BeginStream(1);
 
@@ -390,9 +390,9 @@ void xiiExpressionByteCode::Save(xiiStreamWriter& stream) const
   chunk.EndStream();
 }
 
-xiiResult xiiExpressionByteCode::Load(xiiStreamReader& stream)
+xiiResult xiiExpressionByteCode::Load(xiiStreamReader& ref_stream)
 {
-  xiiChunkStreamReader chunk(stream);
+  xiiChunkStreamReader chunk(ref_stream);
   chunk.SetEndChunkFileMode(xiiChunkStreamReader::EndChunkFileMode::SkipToEnd);
 
   chunk.BeginStream();

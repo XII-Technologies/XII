@@ -9,8 +9,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProcessingStreamProcessor, 1, xiiRTTINoAlloc
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiProcessingStreamProcessor::xiiProcessingStreamProcessor() :
-  m_pStreamGroup(nullptr)
+xiiProcessingStreamProcessor::xiiProcessingStreamProcessor()
+
 {
 }
 

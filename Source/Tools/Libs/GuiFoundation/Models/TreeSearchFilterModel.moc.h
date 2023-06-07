@@ -11,9 +11,9 @@ class XII_GUIFOUNDATION_DLL xiiQtTreeSearchFilterModel : public QSortFilterProxy
   Q_OBJECT
 
 public:
-  xiiQtTreeSearchFilterModel(QWidget* parent);
+  xiiQtTreeSearchFilterModel(QWidget* pParent);
 
-  void SetFilterText(const QString& text);
+  void SetFilterText(const QString& sText);
 
   /// \brief By default only nodes (and their parents) are shown that fit the search criterion.
   /// If this is enabled, all child nodes of nodes that fit the criterion are included as well.

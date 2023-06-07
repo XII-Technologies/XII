@@ -44,14 +44,14 @@ xiiManipulatorManager::~xiiManipulatorManager()
 
 const xiiManipulatorAttribute* xiiManipulatorManager::GetActiveManipulator(
   const xiiDocument*                              pDoc,
-  const xiiHybridArray<xiiPropertySelection, 8>*& out_Selection) const
+  const xiiHybridArray<xiiPropertySelection, 8>*& out_pSelection) const
 {
-  out_Selection = nullptr;
-  auto it       = m_ActiveManipulator.Find(pDoc);
+  out_pSelection = nullptr;
+  auto it        = m_ActiveManipulator.Find(pDoc);
 
   if (it.IsValid())
   {
-    out_Selection = &(it.Value().m_Selection);
+    out_pSelection = &(it.Value().m_Selection);
 
     return it.Value().m_pAttribute;
   }

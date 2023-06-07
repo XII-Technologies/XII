@@ -32,12 +32,12 @@ XII_ALWAYS_INLINE T xiiStaticCast(const xiiReflectedClass* pObject)
 /// This function will assert when the object is not an instance of the given type.
 /// E.g. DerivedType& d = xiiStaticCast<DerivedType&>(obj);
 template <typename T>
-XII_ALWAYS_INLINE T xiiStaticCast(xiiReflectedClass& object)
+XII_ALWAYS_INLINE T xiiStaticCast(xiiReflectedClass& ref_object)
 {
   using NonReferenceT = typename xiiTypeTraits<T>::NonReferenceType;
-  XII_ASSERT_DEV(object.IsInstanceOf<NonReferenceT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'",
-                 object.GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonReferenceT>()->GetTypeName());
-  return static_cast<T>(object);
+  XII_ASSERT_DEV(ref_object.IsInstanceOf<NonReferenceT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'",
+                 ref_object.GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonReferenceT>()->GetTypeName());
+  return static_cast<T>(ref_object);
 }
 
 /// \brief Casts the given object to the given type with no runtime cost (like C++ static_cast).

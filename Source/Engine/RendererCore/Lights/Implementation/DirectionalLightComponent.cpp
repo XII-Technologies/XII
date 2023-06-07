@@ -38,9 +38,9 @@ XII_END_COMPONENT_TYPE
 xiiDirectionalLightComponent::xiiDirectionalLightComponent()  = default;
 xiiDirectionalLightComponent::~xiiDirectionalLightComponent() = default;
 
-xiiResult xiiDirectionalLightComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiDirectionalLightComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
-  bAlwaysVisible = true;
+  ref_bAlwaysVisible = true;
   return XII_SUCCESS;
 }
 
@@ -126,10 +126,10 @@ void xiiDirectionalLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderDat
   msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Light, caching);
 }
 
-void xiiDirectionalLightComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiDirectionalLightComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  xiiStreamWriter& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_uiNumCascades;
   s << m_fMinShadowRange;
@@ -138,11 +138,11 @@ void xiiDirectionalLightComponent::SerializeComponent(xiiWorldWriter& stream) co
   s << m_fNearPlaneOffset;
 }
 
-void xiiDirectionalLightComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiDirectionalLightComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32  uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32  uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  xiiStreamReader& s         = ref_stream.GetStream();
 
   if (uiVersion >= 3)
   {
@@ -169,9 +169,9 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
-    context.PatchBaseClass("xiiLightComponent", 2, true);
+    ref_context.PatchBaseClass("xiiLightComponent", 2, true);
   }
 };
 

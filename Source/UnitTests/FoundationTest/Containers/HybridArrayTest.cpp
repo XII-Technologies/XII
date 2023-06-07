@@ -21,18 +21,10 @@ namespace HybridArrayTestDetail
       a(a), s("Test")
     {
     }
-    Dummy(const Dummy& other) :
-      a(other.a), s(other.s)
-    {
-    }
-    ~Dummy() {}
+    Dummy(const Dummy& other) = default;
+    ~Dummy()                  = default;
 
-    Dummy& operator=(const Dummy& other)
-    {
-      a = other.a;
-      s = other.s;
-      return *this;
-    }
+    Dummy& operator=(const Dummy& other) = default;
 
     bool operator<=(const Dummy& dummy) const { return a <= dummy.a; }
     bool operator>=(const Dummy& dummy) const { return a >= dummy.a; }
@@ -44,9 +36,9 @@ namespace HybridArrayTestDetail
   class NonMovableClass
   {
   public:
-    NonMovableClass(int val)
+    NonMovableClass(int iVal)
     {
-      m_val  = val;
+      m_val  = iVal;
       m_pVal = &m_val;
     }
 
@@ -80,8 +72,8 @@ namespace HybridArrayTestDetail
 
     ExternalCounter() = default;
 
-    ExternalCounter(int& counter) :
-      m_counter{&counter}
+    ExternalCounter(int& ref_iCounter) :
+      m_counter{&ref_iCounter}
     {
     }
 
@@ -95,7 +87,7 @@ namespace HybridArrayTestDetail
   };
 } // namespace HybridArrayTestDetail
 
-static void TakesDynamicArray(xiiDynamicArray<int>& ar, int num, int start);
+static void TakesDynamicArray(xiiDynamicArray<int>& ref_ar, int iNum, int iStart);
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
 static_assert(sizeof(xiiHybridArray<xiiInt32, 1>) == 32);
@@ -1147,10 +1139,10 @@ XII_CREATE_SIMPLE_TEST(Containers, HybridArray)
   }
 }
 
-void TakesDynamicArray(xiiDynamicArray<int>& ar, int num, int start)
+void TakesDynamicArray(xiiDynamicArray<int>& ref_ar, int iNum, int iStart)
 {
-  for (int i = 0; i < num; ++i)
+  for (int i = 0; i < iNum; ++i)
   {
-    ar.PushBack(start + i);
+    ref_ar.PushBack(iStart + i);
   }
 }

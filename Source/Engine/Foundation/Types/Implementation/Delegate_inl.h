@@ -2,9 +2,9 @@
 #include <Foundation/Types/Implementation/DelegateHelper_inl.h>
 
 template <typename Function>
-XII_ALWAYS_INLINE xiiDelegate<Function> xiiMakeDelegate(Function* function)
+XII_ALWAYS_INLINE xiiDelegate<Function> xiiMakeDelegate(Function* pFunction)
 {
-  return xiiDelegate<Function>(function);
+  return xiiDelegate<Function>(pFunction);
 }
 
 template <typename Method, typename Class>

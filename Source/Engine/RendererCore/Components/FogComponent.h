@@ -6,7 +6,7 @@
 
 struct xiiMsgUpdateLocalBounds;
 
-typedef xiiSettingsComponentManager<class xiiFogComponent> xiiFogComponentManager;
+using xiiFogComponentManager = class xiiFogComponent;
 
 /// \brief The render data object for ambient light.
 class XII_RENDERERCORE_DLL xiiFogRenderData : public xiiRenderData
@@ -28,8 +28,8 @@ class XII_RENDERERCORE_DLL xiiFogComponent : public xiiSettingsComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void Deinitialize() override;

@@ -17,32 +17,32 @@ public:
 
   void SetScrubberPosition(double fPosition);
 
-  void setColorGradientData(const xiiColorGradient* gradient);
+  void setColorGradientData(const xiiColorGradient* pGradient);
 
-  void setEditMode(bool edit);
-  void setShowColorCPs(bool show);
-  void setShowAlphaCPs(bool show);
-  void setShowIntensityCPs(bool show);
-  void setShowCoords(bool top, bool bottom);
+  void setEditMode(bool bEdit);
+  void setShowColorCPs(bool bShow);
+  void setShowAlphaCPs(bool bShow);
+  void setShowIntensityCPs(bool bShow);
+  void setShowCoords(bool bTop, bool bBottom);
 
   void FrameExtents();
   void ClearSelectedCP();
-  void SelectCP(xiiInt32 colorCP, xiiInt32 alphaCP, xiiInt32 intensityCP);
+  void SelectCP(xiiInt32 iColorCP, xiiInt32 iAlphaCP, xiiInt32 iIntensityCP);
 
 Q_SIGNALS:
   void GradientClicked();
-  void addColorCp(double posX, const xiiColorGammaUB& color);
-  void addAlphaCp(double posX, xiiUInt8 value);
-  void addIntensityCp(double posX, float intensity);
-  void moveColorCpToPos(xiiInt32 index, double newPosX);
-  void moveAlphaCpToPos(xiiInt32 index, double newPosX);
-  void moveIntensityCpToPos(xiiInt32 index, double newPosX);
-  void deleteColorCp(xiiInt32 index);
-  void deleteAlphaCp(xiiInt32 index);
-  void deleteIntensityCp(xiiInt32 index);
-  void selectionChanged(xiiInt32 colorCP, xiiInt32 alphaCP, xiiInt32 intensityCP);
+  void addColorCp(double fPosX, const xiiColorGammaUB& color);
+  void addAlphaCp(double fPosX, xiiUInt8 value);
+  void addIntensityCp(double fPosX, float fIntensity);
+  void moveColorCpToPos(xiiInt32 iIndex, double fNewPosX);
+  void moveAlphaCpToPos(xiiInt32 iIndex, double fNewPosX);
+  void moveIntensityCpToPos(xiiInt32 iIndex, double fNewPosX);
+  void deleteColorCp(xiiInt32 iIndex);
+  void deleteAlphaCp(xiiInt32 iIndex);
+  void deleteIntensityCp(xiiInt32 iIndex);
+  void selectionChanged(xiiInt32 iColorCP, xiiInt32 iAlphaCP, xiiInt32 iIntensityCP);
   void beginOperation();
-  void endOperation(bool commit);
+  void endOperation(bool bCommit);
   void triggerPickColor();
 
 private:

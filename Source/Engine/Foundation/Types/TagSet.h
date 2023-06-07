@@ -28,16 +28,16 @@ public:
   bool operator!=(const xiiTagSetTemplate& other) const;
 
   /// \brief Adds the given tag to the set.
-  void Set(const xiiTag& Tag); // [tested]
+  void Set(const xiiTag& tag); // [tested]
 
   /// \brief Removes the given tag.
-  void Remove(const xiiTag& Tag); // [tested]
+  void Remove(const xiiTag& tag); // [tested]
 
   /// \brief Returns true, if the given tag is in the set.
-  bool IsSet(const xiiTag& Tag) const; // [tested]
+  bool IsSet(const xiiTag& tag) const; // [tested]
 
   /// \brief Returns true if this tag set contains any tag set in the given other tag set.
-  bool IsAnySet(const xiiTagSetTemplate& OtherSet) const; // [tested]
+  bool IsAnySet(const xiiTagSetTemplate& otherSet) const; // [tested]
 
   /// \brief Returns how many tags are in this set.
   xiiUInt32 GetNumTagsSet() const;
@@ -81,17 +81,17 @@ public:
     bool IsBitSet() const;
 
     const xiiTagSetTemplate<BlockStorageAllocator>* m_pTagSet;
-    xiiUInt32                                       m_uiIndex;
+    xiiUInt32                                       m_uiIndex = 0;
   };
 
   /// \brief Returns an iterator to list all tags in this set
   Iterator GetIterator() const { return Iterator(this); }
 
   /// \brief Writes the tag set state to a stream. Tags itself are serialized as strings.
-  void Save(xiiStreamWriter& stream) const;
+  void Save(xiiStreamWriter& ref_stream) const;
 
   /// \brief Reads the tag set state from a stream and registers the tags with the given registry.
-  void Load(xiiStreamReader& stream, xiiTagRegistry& registry);
+  void Load(xiiStreamReader& ref_stream, xiiTagRegistry& ref_registry);
 
 private:
   friend class Iterator;

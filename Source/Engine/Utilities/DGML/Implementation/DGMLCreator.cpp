@@ -5,7 +5,7 @@
 #include <Foundation/Utilities/DGMLWriter.h>
 #include <Utilities/DGML/DGMLCreator.h>
 
-void xiiDGMLGraphCreator::FillGraphFromWorld(xiiWorld* pWorld, xiiDGMLGraph& Graph)
+void xiiDGMLGraphCreator::FillGraphFromWorld(xiiWorld* pWorld, xiiDGMLGraph& ref_graph)
 {
   if (!pWorld)
   {
@@ -16,13 +16,13 @@ void xiiDGMLGraphCreator::FillGraphFromWorld(xiiWorld* pWorld, xiiDGMLGraph& Gra
 
   struct GraphVisitor
   {
-    GraphVisitor(xiiDGMLGraph& Graph) :
-      m_Graph(Graph)
+    GraphVisitor(xiiDGMLGraph& ref_graph) :
+      m_Graph(ref_graph)
     {
       xiiDGMLGraph::NodeDesc nd;
       nd.m_Color    = xiiColor::DarkRed;
       nd.m_Shape    = xiiDGMLGraph::NodeShape::Button;
-      m_WorldNodeId = Graph.AddNode("World", &nd);
+      m_WorldNodeId = ref_graph.AddNode("World", &nd);
     }
 
     xiiVisitorExecution::Enum Visit(xiiGameObject* pObject)
@@ -78,7 +78,7 @@ void xiiDGMLGraphCreator::FillGraphFromWorld(xiiWorld* pWorld, xiiDGMLGraph& Gra
     xiiMap<const xiiGameObject*, xiiDGMLGraph::NodeId> m_VisitedObjects;
   };
 
-  GraphVisitor visitor(Graph);
+  GraphVisitor visitor(ref_graph);
   pWorld->Traverse(xiiWorld::VisitorFunc(&GraphVisitor::Visit, &visitor), xiiWorld::BreadthFirst);
 }
 

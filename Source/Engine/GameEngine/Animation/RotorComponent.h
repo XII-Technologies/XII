@@ -4,7 +4,7 @@
 
 #include <GameEngine/Animation/TransformComponent.h>
 
-typedef xiiComponentManagerSimple<class xiiRotorComponent, xiiComponentUpdateType::WhenSimulating> xiiRotorComponentManager;
+using xiiRotorComponentManager = class xiiRotorComponent;
 
 class XII_GAMEENGINE_DLL xiiRotorComponent : public xiiTransformComponent
 {
@@ -14,8 +14,8 @@ class XII_GAMEENGINE_DLL xiiRotorComponent : public xiiTransformComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnSimulationStarted() override;

@@ -21,7 +21,7 @@ public:
   void ExtractInterestPointsFromMesh(const rcPolyMesh& mesh, bool bReinitialize = true /* bad interface design */);
 
   xiiUInt32 GetCheckVisibilityTimeStamp() const { return m_uiCheckVisibilityTimeStamp; }
-  void      IncreaseCheckVisibiblityTimeStamp(xiiTime tNow);
+  void      IncreaseCheckVisibiblityTimeStamp(xiiTime now);
 
   xiiPointOfInterestGraph<xiiNavMeshPointsOfInterest>&       GetGraph() { return m_NavMeshPointGraph; }
   const xiiPointOfInterestGraph<xiiNavMeshPointsOfInterest>& GetGraph() const { return m_NavMeshPointGraph; }

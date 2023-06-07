@@ -138,11 +138,11 @@ void xiiWindowOutputTargetXR::RenderCompanionView(bool bThrottleCompanionView)
   }
 }
 
-xiiResult xiiWindowOutputTargetXR::CaptureImage(xiiImage& out_Image)
+xiiResult xiiWindowOutputTargetXR::CaptureImage(xiiImage& out_image)
 {
   if (m_pCompanionWindowOutputTarget)
   {
-    return m_pCompanionWindowOutputTarget->CaptureImage(out_Image);
+    return m_pCompanionWindowOutputTarget->CaptureImage(out_image);
   }
   return XII_FAILURE;
 }
@@ -154,11 +154,11 @@ const xiiWindowOutputTargetBase* xiiWindowOutputTargetXR::GetCompanionWindowOutp
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiActorPluginWindowXR::xiiActorPluginWindowXR(xiiXRInterface* pVrInterface, xiiUniquePtr<xiiWindowBase> companionWindow, xiiUniquePtr<xiiWindowOutputTargetGAL> companionWindowOutput) :
+xiiActorPluginWindowXR::xiiActorPluginWindowXR(xiiXRInterface* pVrInterface, xiiUniquePtr<xiiWindowBase> pCompanionWindow, xiiUniquePtr<xiiWindowOutputTargetGAL> pCompanionWindowOutput) :
   m_pVrInterface(pVrInterface)
 {
-  m_pWindow             = XII_DEFAULT_NEW(xiiWindowXR, pVrInterface, std::move(companionWindow));
-  m_pWindowOutputTarget = XII_DEFAULT_NEW(xiiWindowOutputTargetXR, pVrInterface, std::move(companionWindowOutput));
+  m_pWindow             = XII_DEFAULT_NEW(xiiWindowXR, pVrInterface, std::move(pCompanionWindow));
+  m_pWindowOutputTarget = XII_DEFAULT_NEW(xiiWindowOutputTargetXR, pVrInterface, std::move(pCompanionWindowOutput));
 }
 
 xiiActorPluginWindowXR::~xiiActorPluginWindowXR()

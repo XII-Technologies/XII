@@ -3,7 +3,7 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <RendererCore/Pipeline/ExtractedRenderData.h>
 
-xiiExtractedRenderData::xiiExtractedRenderData() {}
+xiiExtractedRenderData::xiiExtractedRenderData() = default;
 
 void xiiExtractedRenderData::AddRenderData(const xiiRenderData* pRenderData, xiiRenderData::Category category)
 {

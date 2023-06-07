@@ -54,8 +54,8 @@ struct XII_RENDERERCORE_DLL xiiMsgSetMeshMaterial : public xiiMessage
   xiiMaterialResourceHandle m_hMaterial;
   xiiUInt32                 m_uiMaterialSlot = 0xFFFFFFFFu;
 
-  virtual void Serialize(xiiStreamWriter& stream) const override;
-  virtual void Deserialize(xiiStreamReader& stream, xiiUInt8 uiTypeVersion) override;
+  virtual void Serialize(xiiStreamWriter& ref_stream) const override;
+  virtual void Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiTypeVersion) override;
 };
 
 class XII_RENDERERCORE_DLL xiiMeshComponentBase : public xiiRenderComponent
@@ -66,14 +66,14 @@ class XII_RENDERERCORE_DLL xiiMeshComponentBase : public xiiRenderComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg) override;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiRenderMeshComponent
@@ -96,8 +96,8 @@ public:
   void            SetColor(const xiiColor& color); // [ property ]
   const xiiColor& GetColor() const;                // [ property ]
 
-  void OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& msg); // [ msg handler ]
-  void OnMsgSetColor(xiiMsgSetColor& msg);               // [ msg handler ]
+  void OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& ref_msg); // [ msg handler ]
+  void OnMsgSetColor(xiiMsgSetColor& ref_msg);               // [ msg handler ]
 
 protected:
   virtual xiiMeshRenderData* CreateRenderData() const;

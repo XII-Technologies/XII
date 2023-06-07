@@ -114,12 +114,12 @@ void xiiRaycastComponent::OnSimulationStarted()
   }
 }
 
-void xiiRaycastComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiRaycastComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
-  stream.WriteGameObjectHandle(m_hRaycastEndObject);
+  ref_stream.WriteGameObjectHandle(m_hRaycastEndObject);
   s << m_fMaxDistance;
   s << m_bDisableTargetObjectOnNoHit;
   s << m_uiCollisionLayerEndPoint;
@@ -129,13 +129,13 @@ void xiiRaycastComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_ShapeTypesToHit;
 }
 
-void xiiRaycastComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiRaycastComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
-  m_hRaycastEndObject = stream.ReadGameObjectHandle();
+  m_hRaycastEndObject = ref_stream.ReadGameObjectHandle();
   s >> m_fMaxDistance;
   s >> m_bDisableTargetObjectOnNoHit;
   s >> m_uiCollisionLayerEndPoint;
@@ -153,9 +153,9 @@ void xiiRaycastComponent::DeserializeComponent(xiiWorldReader& stream)
   }
 }
 
-void xiiRaycastComponent::SetTriggerMessage(const char* sz)
+void xiiRaycastComponent::SetTriggerMessage(const char* szSz)
 {
-  m_sTriggerMessage.Assign(sz);
+  m_sTriggerMessage.Assign(szSz);
 }
 
 const char* xiiRaycastComponent::GetTriggerMessage() const

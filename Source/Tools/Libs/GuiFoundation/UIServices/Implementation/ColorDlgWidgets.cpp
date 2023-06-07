@@ -5,39 +5,39 @@
 #include <QPainter>
 #include <qevent.h>
 
-xiiQtColorAreaWidget::xiiQtColorAreaWidget(QWidget* parent) :
-  QWidget(parent)
+xiiQtColorAreaWidget::xiiQtColorAreaWidget(QWidget* pParent) :
+  QWidget(pParent)
 {
   setAutoFillBackground(false);
 
   m_fHue = -1.0f;
 }
 
-void xiiQtColorAreaWidget::SetHue(float hue)
+void xiiQtColorAreaWidget::SetHue(float fHue)
 {
-  if (m_fHue == hue)
+  if (m_fHue == fHue)
     return;
 
-  m_fHue = hue;
+  m_fHue = fHue;
   UpdateImage();
   update();
 }
 
-void xiiQtColorAreaWidget::SetSaturation(float sat)
+void xiiQtColorAreaWidget::SetSaturation(float fSat)
 {
-  if (m_fSaturation == sat)
+  if (m_fSaturation == fSat)
     return;
 
-  m_fSaturation = sat;
+  m_fSaturation = fSat;
   update();
 }
 
-void xiiQtColorAreaWidget::SetValue(float val)
+void xiiQtColorAreaWidget::SetValue(float fVal)
 {
-  if (m_fValue == val)
+  if (m_fValue == fVal)
     return;
 
-  m_fValue = val;
+  m_fValue = fVal;
   update();
 }
 
@@ -108,18 +108,18 @@ void xiiQtColorAreaWidget::mousePressEvent(QMouseEvent* event)
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiQtColorRangeWidget::xiiQtColorRangeWidget(QWidget* parent) :
-  QWidget(parent)
+xiiQtColorRangeWidget::xiiQtColorRangeWidget(QWidget* pParent) :
+  QWidget(pParent)
 {
   setAutoFillBackground(false);
 }
 
-void xiiQtColorRangeWidget::SetHue(float hue)
+void xiiQtColorRangeWidget::SetHue(float fHue)
 {
-  if (m_fHue == hue)
+  if (m_fHue == fHue)
     return;
 
-  m_fHue = hue;
+  m_fHue = fHue;
   update();
 }
 
@@ -210,7 +210,7 @@ void xiiQtColorRangeWidget::mousePressEvent(QMouseEvent* event)
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiQtColorCompareWidget::xiiQtColorCompareWidget(QWidget* parent)
+xiiQtColorCompareWidget::xiiQtColorCompareWidget(QWidget* pParent)
 {
   setAutoFillBackground(false);
 }

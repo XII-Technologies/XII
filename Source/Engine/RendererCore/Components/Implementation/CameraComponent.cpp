@@ -189,10 +189,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiCameraComponent::xiiCameraComponent()  = default;
 xiiCameraComponent::~xiiCameraComponent() = default;
 
-void xiiCameraComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiCameraComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_UsageHint.GetValue();
   s << m_Mode.GetValue();
@@ -228,11 +228,11 @@ void xiiCameraComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_bShowStats;
 }
 
-void xiiCameraComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiCameraComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   xiiCameraUsageHint::StorageType usage;
   s >> usage;
@@ -427,41 +427,41 @@ void xiiCameraComponent::SetCameraMode(xiiEnum<xiiCameraMode> val)
 }
 
 
-void xiiCameraComponent::SetNearPlane(float val)
+void xiiCameraComponent::SetNearPlane(float fVal)
 {
-  if (val == m_fNearPlane)
+  if (fVal == m_fNearPlane)
     return;
-  m_fNearPlane = val;
+  m_fNearPlane = fVal;
 
   MarkAsModified();
 }
 
 
-void xiiCameraComponent::SetFarPlane(float val)
+void xiiCameraComponent::SetFarPlane(float fVal)
 {
-  if (val == m_fFarPlane)
+  if (fVal == m_fFarPlane)
     return;
-  m_fFarPlane = val;
+  m_fFarPlane = fVal;
 
   MarkAsModified();
 }
 
 
-void xiiCameraComponent::SetFieldOfView(float val)
+void xiiCameraComponent::SetFieldOfView(float fVal)
 {
-  if (val == m_fPerspectiveFieldOfView)
+  if (fVal == m_fPerspectiveFieldOfView)
     return;
-  m_fPerspectiveFieldOfView = val;
+  m_fPerspectiveFieldOfView = fVal;
 
   MarkAsModified();
 }
 
 
-void xiiCameraComponent::SetOrthoDimension(float val)
+void xiiCameraComponent::SetOrthoDimension(float fVal)
 {
-  if (val == m_fOrthoDimension)
+  if (fVal == m_fOrthoDimension)
     return;
-  m_fOrthoDimension = val;
+  m_fOrthoDimension = fVal;
 
   MarkAsModified();
 }
@@ -496,11 +496,11 @@ void xiiCameraComponent::SetAperture(float fAperture)
   MarkAsModified();
 }
 
-void xiiCameraComponent::SetShutterTime(xiiTime ShutterTime)
+void xiiCameraComponent::SetShutterTime(xiiTime shutterTime)
 {
-  if (m_ShutterTime == ShutterTime)
+  if (m_ShutterTime == shutterTime)
     return;
-  m_ShutterTime = ShutterTime;
+  m_ShutterTime = shutterTime;
 
   MarkAsModified();
 }
@@ -735,7 +735,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->RenameProperty("Usage Hint", "UsageHint");
     pNode->RenameProperty("Near Plane", "NearPlane");
@@ -760,7 +760,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     // convert the "ShutterTime" property from float to xiiTime
     if (auto pProp = pNode->FindProperty("ShutterTime"))

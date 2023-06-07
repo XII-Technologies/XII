@@ -17,29 +17,29 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiXRConfig, 2, xiiRTTIDefaultAllocator<xiiXRCo
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiXRConfig::SaveRuntimeData(xiiChunkStreamWriter& stream) const
+void xiiXRConfig::SaveRuntimeData(xiiChunkStreamWriter& ref_stream) const
 {
-  stream.BeginChunk("xiiXRConfig", 2);
+  ref_stream.BeginChunk("xiiXRConfig", 2);
 
-  stream << m_bEnableXR;
-  stream << m_sXRRenderPipeline;
+  ref_stream << m_bEnableXR;
+  ref_stream << m_sXRRenderPipeline;
 
-  stream.EndChunk();
+  ref_stream.EndChunk();
 }
 
-void xiiXRConfig::LoadRuntimeData(xiiChunkStreamReader& stream)
+void xiiXRConfig::LoadRuntimeData(xiiChunkStreamReader& ref_stream)
 {
-  const auto& chunk = stream.GetCurrentChunk();
+  const auto& chunk = ref_stream.GetCurrentChunk();
 
   if (chunk.m_sChunkName == "xiiVRConfig" && chunk.m_uiChunkVersion == 1)
   {
-    stream >> m_bEnableXR;
-    stream >> m_sXRRenderPipeline;
+    ref_stream >> m_bEnableXR;
+    ref_stream >> m_sXRRenderPipeline;
   }
   else if (chunk.m_sChunkName == "xiiXRConfig" && chunk.m_uiChunkVersion == 2)
   {
-    stream >> m_bEnableXR;
-    stream >> m_sXRRenderPipeline;
+    ref_stream >> m_bEnableXR;
+    ref_stream >> m_sXRRenderPipeline;
   }
 }
 
@@ -56,9 +56,9 @@ public:
     xiiGraphPatch("xiiVRConfig", 5)
   {
   }
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
-    context.RenameClass("xiiXRConfig");
+    ref_context.RenameClass("xiiXRConfig");
     pNode->RenameProperty("EnableVR", "EnableXR");
     pNode->RenameProperty("VRRenderPipeline", "XRRenderPipeline");
   }

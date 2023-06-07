@@ -124,7 +124,7 @@ namespace
   };
 
   template <typename T>
-  void Compile(xiiStringView code, xiiExpressionByteCode& out_ByteCode, xiiStringView sDumpAstOutputName = xiiStringView())
+  void Compile(xiiStringView sCode, xiiExpressionByteCode& out_byteCode, xiiStringView sDumpAstOutputName = xiiStringView())
   {
     xiiExpression::StreamDesc inputs[] = {
       {s_sA, StreamDataTypeDeduction<T>::Type},
@@ -138,14 +138,14 @@ namespace
     };
 
     xiiExpressionAST ast;
-    XII_TEST_BOOL(s_pParser->Parse(code, inputs, outputs, {}, ast).Succeeded());
+    XII_TEST_BOOL(s_pParser->Parse(sCode, inputs, outputs, {}, ast).Succeeded());
 
     xiiStringBuilder sOutputPath;
     if (sDumpAstOutputName.IsEmpty() == false)
     {
       MakeASTOutputPath(sDumpAstOutputName, sOutputPath);
     }
-    XII_TEST_BOOL(s_pCompiler->Compile(ast, out_ByteCode, sOutputPath).Succeeded());
+    XII_TEST_BOOL(s_pCompiler->Compile(ast, out_byteCode, sOutputPath).Succeeded());
   }
 
   template <typename T>
@@ -169,18 +169,18 @@ namespace
   };
 
   template <typename T>
-  T TestInstruction(xiiStringView code, T a = T(0), T b = T(0), T c = T(0), T d = T(0), bool dumpASTs = false)
+  T TestInstruction(xiiStringView sCode, T a = T(0), T b = T(0), T c = T(0), T d = T(0), bool bDumpASTs = false)
   {
     xiiExpressionByteCode byteCode;
-    Compile<T>(code, byteCode, dumpASTs ? "TestInstruction" : "");
+    Compile<T>(sCode, byteCode, bDumpASTs ? "TestInstruction" : "");
     return Execute<T>(byteCode, a, b, c, d);
   }
 
   template <typename T>
-  T TestConstant(xiiStringView code, bool dumpASTs = false)
+  T TestConstant(xiiStringView sCode, bool bDumpASTs = false)
   {
     xiiExpressionByteCode byteCode;
-    Compile<T>(code, byteCode, dumpASTs ? "TestConstant" : "");
+    Compile<T>(sCode, byteCode, bDumpASTs ? "TestConstant" : "");
     XII_TEST_INT(byteCode.GetNumInstructions(), 2); // MovX_C, StoreX
     XII_TEST_INT(byteCode.GetNumTempRegisters(), 1);
     return Execute<T>(byteCode);
@@ -193,7 +193,7 @@ namespace
   };
 
   template <typename R, typename T, xiiUInt32 flags>
-  void TestBinaryInstruction(xiiStringView op, T a, T b, T expectedResult, bool dumpASTs = false)
+  void TestBinaryInstruction(xiiStringView sOp, T a, T b, T expectedResult, bool bDumpASTs = false)
   {
     constexpr bool boolInputs = std::is_same<T, bool>::value;
     using U                   = typename std::conditional<boolInputs, int, T>::type;
@@ -245,7 +245,7 @@ namespace
       }
     };
 
-    const bool  functionStyleSyntax = op.FindSubString("(");
+    const bool  functionStyleSyntax = sOp.FindSubString("(");
     const char* formatString        = functionStyleSyntax ? "output = {0}{1}, {2})" : "output = {1} {0} {2}";
     const char* aInput              = boolInputs ? "(a != 0)" : "a";
     const char* bInput              = boolInputs ? "(b != 0)" : "b";
@@ -294,12 +294,12 @@ namespace
     xiiStringBuilder      code;
     xiiExpressionByteCode byteCode;
 
-    code.Format(formatString, op, aInput, bInput);
-    Compile<U>(code, byteCode, dumpASTs ? "BinaryNoConstants" : "");
+    code.Format(formatString, sOp, aInput, bInput);
+    Compile<U>(code, byteCode, bDumpASTs ? "BinaryNoConstants" : "");
     TestRes(Execute<U>(byteCode, aAsU, bAsU), expectedResultAsU, code, aValue, bValue);
 
-    code.Format(formatString, op, aValue, bInput);
-    Compile<U>(code, byteCode, dumpASTs ? "BinaryLeftConstant" : "");
+    code.Format(formatString, sOp, aValue, bInput);
+    Compile<U>(code, byteCode, bDumpASTs ? "BinaryLeftConstant" : "");
     if constexpr ((flags & NoInstructionsCountCheck) == 0)
     {
       int leftConstantInstructions = oneConstantInstructions;
@@ -319,8 +319,8 @@ namespace
     }
     TestRes(Execute<U>(byteCode, aAsU, bAsU), expectedResultAsU, code, aValue, bValue);
 
-    code.Format(formatString, op, aInput, bValue);
-    Compile<U>(code, byteCode, dumpASTs ? "BinaryRightConstant" : "");
+    code.Format(formatString, sOp, aInput, bValue);
+    Compile<U>(code, byteCode, bDumpASTs ? "BinaryRightConstant" : "");
     if constexpr ((flags & NoInstructionsCountCheck) == 0)
     {
       if (byteCode.GetNumInstructions() != oneConstantInstructions || byteCode.GetNumTempRegisters() != oneConstantRegisters)
@@ -332,8 +332,8 @@ namespace
     }
     TestRes(Execute<U>(byteCode, aAsU, bAsU), expectedResultAsU, code, aValue, bValue);
 
-    code.Format(formatString, op, aValue, bValue);
-    Compile<U>(code, byteCode, dumpASTs ? "BinaryConstant" : "");
+    code.Format(formatString, sOp, aValue, bValue);
+    Compile<U>(code, byteCode, bDumpASTs ? "BinaryConstant" : "");
     if (hasDifferentOutputElements == false)
     {
       int bothConstantsInstructions = 1 + numOutputElements; // MovX_C + StoreX * numOutputElements
@@ -349,12 +349,12 @@ namespace
   }
 
   template <typename T>
-  bool CompareCode(xiiStringView testCode, xiiStringView referenceCode, xiiExpressionByteCode& out_testByteCode, bool dumpASTs = false)
+  bool CompareCode(xiiStringView sTestCode, xiiStringView sReferenceCode, xiiExpressionByteCode& out_testByteCode, bool bDumpASTs = false)
   {
-    Compile<T>(testCode, out_testByteCode, dumpASTs ? "Test" : "");
+    Compile<T>(sTestCode, out_testByteCode, bDumpASTs ? "Test" : "");
 
     xiiExpressionByteCode referenceByteCode;
-    Compile<T>(referenceCode, referenceByteCode, dumpASTs ? "Reference" : "");
+    Compile<T>(sReferenceCode, referenceByteCode, bDumpASTs ? "Reference" : "");
 
     return CompareByteCode(out_testByteCode, referenceByteCode);
   }

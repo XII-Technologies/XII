@@ -10,24 +10,24 @@ void xiiUuid::SetInvalid()
   m_uiLow  = 0;
 }
 
-bool xiiUuid::operator==(const xiiUuid& Other) const
+bool xiiUuid::operator==(const xiiUuid& other) const
 {
-  return m_uiHigh == Other.m_uiHigh && m_uiLow == Other.m_uiLow;
+  return m_uiHigh == other.m_uiHigh && m_uiLow == other.m_uiLow;
 }
 
-bool xiiUuid::operator!=(const xiiUuid& Other) const
+bool xiiUuid::operator!=(const xiiUuid& other) const
 {
-  return m_uiHigh != Other.m_uiHigh || m_uiLow != Other.m_uiLow;
+  return m_uiHigh != other.m_uiHigh || m_uiLow != other.m_uiLow;
 }
 
-bool xiiUuid::operator<(const xiiUuid& Other) const
+bool xiiUuid::operator<(const xiiUuid& other) const
 {
-  if (m_uiHigh < Other.m_uiHigh)
+  if (m_uiHigh < other.m_uiHigh)
     return true;
-  if (m_uiHigh > Other.m_uiHigh)
+  if (m_uiHigh > other.m_uiHigh)
     return false;
 
-  return m_uiLow < Other.m_uiLow;
+  return m_uiLow < other.m_uiLow;
 }
 
 bool xiiUuid::IsValid() const

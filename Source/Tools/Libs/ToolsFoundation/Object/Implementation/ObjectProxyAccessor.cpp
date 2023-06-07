@@ -7,7 +7,7 @@ xiiObjectProxyAccessor::xiiObjectProxyAccessor(xiiObjectAccessorBase* pSource) :
 {
 }
 
-xiiObjectProxyAccessor::~xiiObjectProxyAccessor() {}
+xiiObjectProxyAccessor::~xiiObjectProxyAccessor() = default;
 
 void xiiObjectProxyAccessor::StartTransaction(const char* szDisplayString)
 {

@@ -25,8 +25,8 @@ void xiiQtImageScene::SetImage(QPixmap pixmap)
 
 
 
-xiiQtImageWidget::xiiQtImageWidget(QWidget* parent, bool bShowButtons) :
-  QWidget(parent)
+xiiQtImageWidget::xiiQtImageWidget(QWidget* pParent, bool bShowButtons) :
+  QWidget(pParent)
 {
   setupUi(this);
   m_pScene = new xiiQtImageScene(GraphicsView);
@@ -38,7 +38,7 @@ xiiQtImageWidget::xiiQtImageWidget(QWidget* parent, bool bShowButtons) :
     ButtonBar->setVisible(false);
 }
 
-xiiQtImageWidget::~xiiQtImageWidget() {}
+xiiQtImageWidget::~xiiQtImageWidget() = default;
 
 void xiiQtImageWidget::SetImageSize(float fScale)
 {

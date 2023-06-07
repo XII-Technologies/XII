@@ -57,7 +57,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiCVarFlags);
 struct xiiCVarEvent
 {
   xiiCVarEvent(xiiCVar* pCVar) :
-    m_EventType(ValueChanged), m_pCVar(pCVar)
+    m_pCVar(pCVar)
   {
   }
 
@@ -69,7 +69,7 @@ struct xiiCVarEvent
   };
 
   /// \brief The type of this event.
-  Type m_EventType;
+  Type m_EventType = ValueChanged;
 
   /// \brief Which CVar is involved. This is only for convenience, it is always the CVar on which the event is triggered.
   xiiCVar* m_pCVar;
@@ -219,7 +219,7 @@ template <typename Type, xiiCVarType::Enum CVarType>
 class xiiTypedCVar : public xiiCVar
 {
 public:
-  xiiTypedCVar(xiiStringView sName, const Type& Value, xiiBitflags<xiiCVarFlags> Flags, xiiStringView sDescription);
+  xiiTypedCVar(xiiStringView sName, const Type& value, xiiBitflags<xiiCVarFlags> flags, xiiStringView sDescription);
 
   /// \brief Returns the 'current' value of the CVar. Same as 'GetValue(xiiCVarValue::Current)'
   operator const Type&() const; // [tested]

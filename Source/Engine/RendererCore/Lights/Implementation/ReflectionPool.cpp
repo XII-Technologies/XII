@@ -71,7 +71,7 @@ void xiiReflectionPool::UpdateReflectionProbe(const xiiWorld* pWorld, xiiReflect
   data.m_mapping.UpdateProbe(id, probeData.m_Flags);
 }
 
-void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, xiiMsgExtractRenderData& msg, xiiReflectionProbeRenderData* pRenderData0, const xiiWorld* pWorld, xiiReflectionProbeId id, float fPriority)
+void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, xiiMsgExtractRenderData& ref_msg, xiiReflectionProbeRenderData* pRenderData0, const xiiWorld* pWorld, xiiReflectionProbeId id, float fPriority)
 {
   XII_LOCK(s_pData->m_Mutex);
   s_pData->m_ReflectionProbeUpdater.ScheduleUpdateSteps();
@@ -98,14 +98,14 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
   {
     // Index and flags are stored in m_uiIndex so we can't just overwrite it.
     pRenderData0->m_uiIndex |= (xiiUInt32)iMappedIndex;
-    msg.AddRenderData(pRenderData0, xiiDefaultRenderDataCategories::ReflectionProbe, xiiRenderData::Caching::Never);
+    ref_msg.AddRenderData(pRenderData0, xiiDefaultRenderDataCategories::ReflectionProbe, xiiRenderData::Caching::Never);
   }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiUInt32 uiMipLevels = GetMipLevels();
   if (probeData.m_desc.m_bShowDebugInfo && s_pData->m_hDebugMaterial.GetCount() == uiMipLevels * s_uiNumReflectionProbeCubeMaps)
   {
-    if (msg.m_OverrideCategory == xiiInvalidRenderDataCategory)
+    if (ref_msg.m_OverrideCategory == xiiInvalidRenderDataCategory)
     {
       xiiInt32 activeIndex = 0;
       if (s_pData->m_ActiveDynamicUpdate.Contains(xiiReflectionProbeRef{uiWorldIndex, id}))
@@ -146,7 +146,7 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
       pRenderData->m_uiUniqueID     = xiiRenderComponent::GetUniqueIdForRendering(pComponent, 0);
 
       pRenderData->FillBatchIdAndSortingKey();
-      msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::LitOpaque, xiiRenderData::Caching::Never);
+      ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::LitOpaque, xiiRenderData::Caching::Never);
     }
   }
 #endif
@@ -155,7 +155,7 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
 //////////////////////////////////////////////////////////////////////////
 /// SkyLight
 
-xiiReflectionProbeId xiiReflectionPool::RegisterSkyLight(const xiiWorld* pWorld, xiiReflectionProbeDesc& desc, const xiiSkyLightComponent* pComponent)
+xiiReflectionProbeId xiiReflectionPool::RegisterSkyLight(const xiiWorld* pWorld, xiiReflectionProbeDesc& ref_desc, const xiiSkyLightComponent* pComponent)
 {
   XII_LOCK(s_pData->m_Mutex);
   const xiiUInt32 uiWorldIndex = pWorld->GetIndex();
@@ -163,7 +163,7 @@ xiiReflectionProbeId xiiReflectionPool::RegisterSkyLight(const xiiWorld* pWorld,
   s_pData->m_uiSkyIrradianceChanged |= XII_BIT(uiWorldIndex);
 
   Data::ProbeData probe;
-  s_pData->UpdateSkyLightData(probe, desc, pComponent);
+  s_pData->UpdateSkyLightData(probe, ref_desc, pComponent);
 
   xiiReflectionProbeId id = s_pData->AddProbe(pWorld, std::move(probe));
   return id;

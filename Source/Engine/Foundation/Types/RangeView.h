@@ -94,7 +94,7 @@ private:
 };
 
 template <typename V, typename I>
-typename xiiRangeView<V, I>::Iterator begin(xiiRangeView<V, I>& container)
+typename xiiRangeView<V, I>::Iterator begin(xiiRangeView<V, I>& ref_container)
 {
   return container.begin();
 }
@@ -112,7 +112,7 @@ typename xiiRangeView<V, I>::ConstIterator cbegin(const xiiRangeView<V, I>& cont
 }
 
 template <typename V, typename I>
-typename xiiRangeView<V, I>::Iterator end(xiiRangeView<V, I>& container)
+typename xiiRangeView<V, I>::Iterator end(xiiRangeView<V, I>& ref_container)
 {
   return container.end();
 }

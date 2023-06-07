@@ -12,7 +12,7 @@ struct XII_PROCGENPLUGIN_DLL xiiProcGenExpressionFunctions
 
 namespace xiiProcGenInternal
 {
-  void ExtractVolumeCollections(const xiiWorld& world, const xiiBoundingBox& box, const Output& output, xiiDeque<xiiVolumeCollection>& volumeCollections, xiiExpression::GlobalData& globalData);
+  void ExtractVolumeCollections(const xiiWorld& world, const xiiBoundingBox& box, const Output& output, xiiDeque<xiiVolumeCollection>& ref_volumeCollections, xiiExpression::GlobalData& ref_globalData);
 
-  void SetInstanceSeed(xiiUInt32 uiSeed, xiiExpression::GlobalData& globalData);
+  void SetInstanceSeed(xiiUInt32 uiSeed, xiiExpression::GlobalData& ref_globalData);
 } // namespace xiiProcGenInternal

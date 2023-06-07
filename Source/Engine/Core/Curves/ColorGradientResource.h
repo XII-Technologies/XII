@@ -7,8 +7,8 @@ struct XII_CORE_DLL xiiColorGradientResourceDescriptor
 {
   xiiColorGradient m_Gradient;
 
-  void Save(xiiStreamWriter& stream) const;
-  void Load(xiiStreamReader& stream);
+  void Save(xiiStreamWriter& ref_stream) const;
+  void Load(xiiStreamReader& ref_stream);
 };
 
 using xiiColorGradientResourceHandle = xiiTypedResourceHandle<class xiiColorGradientResource>;

@@ -68,11 +68,11 @@ pfnSetThreadDescription GetSetThreadDescriptionProcAddr()
 
 #endif
 
-void SetThreadNameViaException(HANDLE hThread, LPCSTR szThreadName)
+void SetThreadNameViaException(HANDLE hThread, LPCSTR pThreadName)
 {
   THREADNAME_INFO info;
   info.dwType     = 0x1000;
-  info.szName     = szThreadName;
+  info.szName     = pThreadName;
   info.dwThreadID = GetThreadId(hThread);
   info.dwFlags    = 0;
 
@@ -86,19 +86,19 @@ void SetThreadNameViaException(HANDLE hThread, LPCSTR szThreadName)
   }
 }
 
-void SetThreadName(HANDLE hThread, LPCSTR szThreadName)
+void SetThreadName(HANDLE hThread, LPCSTR pThreadName)
 {
 #if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
   static pfnSetThreadDescription s_pSetThreadDescriptionFnPtr = GetSetThreadDescriptionProcAddr();
 
   if (s_pSetThreadDescriptionFnPtr)
   {
-    xiiStringWChar threadName(szThreadName);
+    xiiStringWChar threadName(pThreadName);
     s_pSetThreadDescriptionFnPtr(hThread, threadName.GetData());
   }
   else
   {
-    SetThreadNameViaException(hThread, szThreadName);
+    SetThreadNameViaException(hThread, pThreadName);
   }
 #else
   SetThreadNameViaException(hThread, szThreadName);
@@ -113,22 +113,22 @@ void SetThreadName(HANDLE hThread, LPCSTR szThreadName)
 // Windows specific implementation of the thread class
 
 xiiOSThread::xiiOSThread(
-  xiiOSThreadEntryPoint pThreadEntryPoint,
+  xiiOSThreadEntryPoint threadEntryPoint,
   void*                 pUserData /*= nullptr*/,
   const char*           szName /*= "xiiThread"*/,
   xiiUInt32             uiStackSize /*= 128 * 1024*/)
 {
   s_iThreadCount.Increment();
 
-  XII_ASSERT_ALWAYS(pThreadEntryPoint != nullptr, "Thread entry point is invalid.");
+  XII_ASSERT_ALWAYS(threadEntryPoint != nullptr, "Thread entry point is invalid.");
 
-  m_hHandle = CreateThread(nullptr, uiStackSize, pThreadEntryPoint, pUserData, CREATE_SUSPENDED, nullptr);
+  m_hHandle = CreateThread(nullptr, uiStackSize, threadEntryPoint, pUserData, CREATE_SUSPENDED, nullptr);
   XII_ASSERT_RELEASE(m_hHandle != INVALID_HANDLE_VALUE, "Thread creation failed!");
   XII_ASSERT_RELEASE(m_hHandle != nullptr, "Thread creation failed!"); // makes the static code analysis happy
 
   m_ThreadID = GetThreadId(m_hHandle);
 
-  m_EntryPoint  = pThreadEntryPoint;
+  m_EntryPoint  = threadEntryPoint;
   m_pUserData   = pUserData;
   m_szName      = szName;
   m_uiStackSize = uiStackSize;

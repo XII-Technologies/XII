@@ -28,7 +28,7 @@ struct XII_TEXTURE_DLL xiiTexFormat
   // version 5
   int m_GalRenderTargetFormat = 0;
 
-  void WriteTextureHeader(xiiStreamWriter& stream) const;
-  void WriteRenderTargetHeader(xiiStreamWriter& stream) const;
-  void ReadHeader(xiiStreamReader& stream);
+  void WriteTextureHeader(xiiStreamWriter& ref_stream) const;
+  void WriteRenderTargetHeader(xiiStreamWriter& ref_stream) const;
+  void ReadHeader(xiiStreamReader& ref_stream);
 };

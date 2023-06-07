@@ -69,7 +69,7 @@ struct xiiXRDeviceType
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiXRDeviceType);
 
-typedef xiiInt8 xiiXRDeviceID;
+using xiiXRDeviceID = xiiInt8;
 
 /// \brief A device's pose state.
 ///
@@ -145,4 +145,4 @@ struct xiiXRDeviceEventData
   xiiXRDeviceID uiDeviceID = 0;
 };
 
-typedef xiiEvent<const xiiXRDeviceEventData&> xiiXRDeviceEvent;
+using xiiXRDeviceEvent = xiiEvent<const xiiXRDeviceEventData&>;

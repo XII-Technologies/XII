@@ -21,12 +21,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiOpaqueForwardRenderPass::xiiOpaqueForwardRenderPass(const char* szName) :
-  xiiForwardRenderPass(szName), m_bWriteDepth(true)
+  xiiForwardRenderPass(szName)
 {
   m_hWhiteTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>("White.color");
 }
 
-xiiOpaqueForwardRenderPass::~xiiOpaqueForwardRenderPass() {}
+xiiOpaqueForwardRenderPass::~xiiOpaqueForwardRenderPass() = default;
 
 bool xiiOpaqueForwardRenderPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {

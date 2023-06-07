@@ -114,7 +114,7 @@ xiiBitflags<xiiPropertyFlags> xiiPhantomFunctionProperty::GetArgumentFlags(xiiUI
   return m_Arguments[uiParamIndex].m_Flags;
 }
 
-void xiiPhantomFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xiiVariant> values, xiiVariant& returnValue) const
+void xiiPhantomFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xiiVariant> values, xiiVariant& ref_returnValue) const
 {
   XII_ASSERT_NOT_IMPLEMENTED;
 }

@@ -54,15 +54,15 @@ public:
   xiiAnimGraph();
   ~xiiAnimGraph();
 
-  void Configure(const xiiSkeletonResourceHandle& hSkeleton, xiiAnimPoseGenerator& poseGenerator, const xiiSharedPtr<xiiBlackboard>& pBlackboard = nullptr);
+  void Configure(const xiiSkeletonResourceHandle& hSkeleton, xiiAnimPoseGenerator& ref_poseGenerator, const xiiSharedPtr<xiiBlackboard>& pBlackboard = nullptr);
 
-  void Update(xiiTime tDiff, xiiGameObject* pTarget);
-  void GetRootMotion(xiiVec3& translation, xiiAngle& rotationX, xiiAngle& rotationY, xiiAngle& rotationZ) const;
+  void Update(xiiTime diff, xiiGameObject* pTarget);
+  void GetRootMotion(xiiVec3& ref_vTranslation, xiiAngle& ref_rotationX, xiiAngle& ref_rotationY, xiiAngle& ref_rotationZ) const;
 
   const xiiSharedPtr<xiiBlackboard>& GetBlackboard() { return m_pBlackboard; }
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 
   xiiAnimPoseGenerator& GetPoseGenerator() { return *m_pPoseGenerator; }
 
@@ -73,7 +73,7 @@ public:
   xiiAnimGraphPinDataModelTransforms* AddPinDataModelTransforms();
 
   void SetOutputModelTransform(xiiAnimGraphPinDataModelTransforms* pModelTransform);
-  void SetRootMotion(const xiiVec3& translation, xiiAngle rotationX, xiiAngle rotationY, xiiAngle rotationZ);
+  void SetRootMotion(const xiiVec3& vTranslation, xiiAngle rotationX, xiiAngle rotationY, xiiAngle rotationZ);
 
 private:
   xiiDynamicArray<xiiUniquePtr<xiiAnimGraphNode>> m_Nodes;

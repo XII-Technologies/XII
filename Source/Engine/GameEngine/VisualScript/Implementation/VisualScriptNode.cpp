@@ -8,8 +8,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode::xiiVisualScriptNode() {}
-xiiVisualScriptNode::~xiiVisualScriptNode() {}
+xiiVisualScriptNode::xiiVisualScriptNode()  = default;
+xiiVisualScriptNode::~xiiVisualScriptNode() = default;
 
 
 xiiInt32 xiiVisualScriptNode::HandlesMessagesWithID() const
@@ -71,9 +71,9 @@ xiiVisualScriptDataPinType::Enum xiiVisualScriptDataPinType::GetDataPinTypeForTy
 }
 
 // static
-void xiiVisualScriptDataPinType::EnforceSupportedType(xiiVariant& var)
+void xiiVisualScriptDataPinType::EnforceSupportedType(xiiVariant& ref_var)
 {
-  switch (var.GetType())
+  switch (ref_var.GetType())
   {
     case xiiVariantType::Int8:
     case xiiVariantType::UInt8:
@@ -86,8 +86,8 @@ void xiiVisualScriptDataPinType::EnforceSupportedType(xiiVariant& var)
     case xiiVariantType::Float:
     case xiiVariantType::Double:
     {
-      const double value = var.ConvertTo<double>();
-      var                = value;
+      const double value = ref_var.ConvertTo<double>();
+      ref_var            = value;
       return;
     }
 

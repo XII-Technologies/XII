@@ -13,7 +13,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtSubsystemsWidget(QWidget* parent = 0);
+  xiiQtSubsystemsWidget(QWidget* pParent = 0);
 
   static xiiQtSubsystemsWidget* s_pWidget;
 

@@ -14,9 +14,9 @@ xiiUInt32 xiiSkinnedMeshRenderer::s_uiSkinningBufferUpdates = 0;
 xiiSkinnedMeshRenderer::xiiSkinnedMeshRenderer()  = default;
 xiiSkinnedMeshRenderer::~xiiSkinnedMeshRenderer() = default;
 
-void xiiSkinnedMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const
+void xiiSkinnedMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {
-  types.PushBack(xiiGetStaticRTTI<xiiSkinnedMeshRenderData>());
+  ref_types.PushBack(xiiGetStaticRTTI<xiiSkinnedMeshRenderData>());
 }
 
 void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, const xiiMeshRenderData* pRenderData) const

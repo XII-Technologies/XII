@@ -20,7 +20,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiXRPoseLocation);
 
 //////////////////////////////////////////////////////////////////////////
 
-typedef xiiComponentManagerSimple<class xiiDeviceTrackingComponent, xiiComponentUpdateType::WhenSimulating> xiiDeviceTrackingComponentManager;
+using xiiDeviceTrackingComponentManager = class xiiDeviceTrackingComponent;
 
 /// \brief Tracks the position of a XR device and applies it to the owner.
 class XII_GAMEENGINE_DLL xiiDeviceTrackingComponent : public xiiComponent

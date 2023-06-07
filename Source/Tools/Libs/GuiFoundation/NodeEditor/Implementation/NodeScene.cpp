@@ -16,8 +16,8 @@ xiiRttiMappedObjectFactory<xiiQtPin>        xiiQtNodeScene::s_PinFactory;
 xiiRttiMappedObjectFactory<xiiQtConnection> xiiQtNodeScene::s_ConnectionFactory;
 xiiVec2                                     xiiQtNodeScene::s_vLastMouseInteraction(0);
 
-xiiQtNodeScene::xiiQtNodeScene(QObject* parent) :
-  QGraphicsScene(parent)
+xiiQtNodeScene::xiiQtNodeScene(QObject* pParent) :
+  QGraphicsScene(pParent)
 {
   setItemIndexMethod(QGraphicsScene::NoIndex);
 

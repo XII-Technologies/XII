@@ -10,8 +10,8 @@ struct XII_RENDERERCORE_DLL xiiBakingSettings
   xiiUInt32 m_uiNumSamplesPerProbe = 128;
   float     m_fMaxRayDistance      = 1000.0f;
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiBakingSettings);
@@ -22,5 +22,5 @@ class xiiBakingInterface
 {
 public:
   /// \brief Renders a debug view of the baking scene
-  virtual xiiResult RenderDebugView(const xiiWorld& world, const xiiMat4& InverseViewProjection, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiDynamicArray<xiiColorGammaUB>& out_Pixels, xiiProgress& progress) const = 0;
+  virtual xiiResult RenderDebugView(const xiiWorld& world, const xiiMat4& mInverseViewProjection, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiDynamicArray<xiiColorGammaUB>& out_pixels, xiiProgress& ref_progress) const = 0;
 };

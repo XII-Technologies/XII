@@ -41,7 +41,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_TOOLSFOUNDATION_DLL, xiiAttributeHolder);
 /// \brief Stores the description of a reflected property in a serializable form, used by xiiReflectedTypeDescriptor.
 struct XII_TOOLSFOUNDATION_DLL xiiReflectedPropertyDescriptor : public xiiAttributeHolder
 {
-  xiiReflectedPropertyDescriptor() {}
+  xiiReflectedPropertyDescriptor() = default;
   xiiReflectedPropertyDescriptor(xiiPropertyCategory::Enum category, const char* szName, const char* szType, xiiBitflags<xiiPropertyFlags> flags);
   xiiReflectedPropertyDescriptor(xiiPropertyCategory::Enum category, const char* szName, const char* szType, xiiBitflags<xiiPropertyFlags> flags,
                                  const xiiArrayPtr<xiiPropertyAttribute* const> attributes); // [tested]

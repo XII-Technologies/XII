@@ -168,7 +168,7 @@ void xiiSmallArrayBase<T, Size>::SetCount(xiiUInt16 uiCount, xiiAllocatorBase* p
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::SetCount(xiiUInt16 uiCount, const T& FillValue, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::SetCount(xiiUInt16 uiCount, const T& fillValue, xiiAllocatorBase* pAllocator)
 {
   const xiiUInt32 uiOldCount = m_uiCount;
   const xiiUInt32 uiNewCount = uiCount;
@@ -176,7 +176,7 @@ void xiiSmallArrayBase<T, Size>::SetCount(xiiUInt16 uiCount, const T& FillValue,
   if (uiNewCount > uiOldCount)
   {
     Reserve(uiCount, pAllocator);
-    xiiMemoryUtils::CopyConstruct(GetElementsPtr() + uiOldCount, FillValue, uiNewCount - uiOldCount);
+    xiiMemoryUtils::CopyConstruct(GetElementsPtr() + uiOldCount, fillValue, uiNewCount - uiOldCount);
   }
   else if (uiNewCount < uiOldCount)
   {
@@ -659,7 +659,7 @@ XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::SetCount(xiiUIn
 }
 
 template <typename T, xiiUInt16 Size, typename AllocatorWrapper /*= xiiDefaultAllocatorWrapper*/>
-XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::SetCount(xiiUInt16 uiCount, const T& FillValue)
+XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::SetCount(xiiUInt16 uiCount, const T& fillValue)
 {
   SUPER::SetCount(uiCount, FillValue, AllocatorWrapper::GetAllocator());
 }
@@ -728,9 +728,9 @@ XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::Compact()
 //////////////////////////////////////////////////////////////////////////
 
 template <typename T, xiiUInt16 Size>
-typename xiiSmallArrayBase<T, Size>::iterator begin(xiiSmallArrayBase<T, Size>& container)
+typename xiiSmallArrayBase<T, Size>::iterator begin(xiiSmallArrayBase<T, Size>& ref_container)
 {
-  return container.GetData();
+  return ref_container.GetData();
 }
 
 template <typename T, xiiUInt16 Size>
@@ -746,9 +746,9 @@ typename xiiSmallArrayBase<T, Size>::const_iterator cbegin(const xiiSmallArrayBa
 }
 
 template <typename T, xiiUInt16 Size>
-typename xiiSmallArrayBase<T, Size>::reverse_iterator rbegin(xiiSmallArrayBase<T, Size>& container)
+typename xiiSmallArrayBase<T, Size>::reverse_iterator rbegin(xiiSmallArrayBase<T, Size>& ref_container)
 {
-  return typename xiiSmallArrayBase<T, Size>::reverse_iterator(container.GetData() + container.GetCount() - 1);
+  return typename xiiSmallArrayBase<T, Size>::reverse_iterator(ref_container.GetData() + ref_container.GetCount() - 1);
 }
 
 template <typename T, xiiUInt16 Size>
@@ -764,9 +764,9 @@ typename xiiSmallArrayBase<T, Size>::const_reverse_iterator crbegin(const xiiSma
 }
 
 template <typename T, xiiUInt16 Size>
-typename xiiSmallArrayBase<T, Size>::iterator end(xiiSmallArrayBase<T, Size>& container)
+typename xiiSmallArrayBase<T, Size>::iterator end(xiiSmallArrayBase<T, Size>& ref_container)
 {
-  return container.GetData() + container.GetCount();
+  return ref_container.GetData() + ref_container.GetCount();
 }
 
 template <typename T, xiiUInt16 Size>
@@ -782,9 +782,9 @@ typename xiiSmallArrayBase<T, Size>::const_iterator cend(const xiiSmallArrayBase
 }
 
 template <typename T, xiiUInt16 Size>
-typename xiiSmallArrayBase<T, Size>::reverse_iterator rend(xiiSmallArrayBase<T, Size>& container)
+typename xiiSmallArrayBase<T, Size>::reverse_iterator rend(xiiSmallArrayBase<T, Size>& ref_container)
 {
-  return typename xiiSmallArrayBase<T, Size>::reverse_iterator(container.GetData() - 1);
+  return typename xiiSmallArrayBase<T, Size>::reverse_iterator(ref_container.GetData() - 1);
 }
 
 template <typename T, xiiUInt16 Size>

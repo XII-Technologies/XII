@@ -20,8 +20,8 @@ struct XII_KRAUTPLUGIN_DLL xiiKrautTreeResourceDetails
 
 struct XII_KRAUTPLUGIN_DLL xiiKrautTreeResourceDescriptor
 {
-  void      Save(xiiStreamWriter& stream) const;
-  xiiResult Load(xiiStreamReader& stream);
+  void      Save(xiiStreamWriter& ref_stream) const;
+  xiiResult Load(xiiStreamReader& ref_stream);
 
   struct VertexData
   {

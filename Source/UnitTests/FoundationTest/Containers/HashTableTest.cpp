@@ -7,17 +7,17 @@
 
 namespace HashTableTestDetail
 {
-  typedef xiiConstructionCounter st;
+  using st = xiiConstructionCounter;
 
   struct Collision
   {
     xiiUInt32 hash;
     int       key;
 
-    inline Collision(xiiUInt32 hash, int key)
+    inline Collision(xiiUInt32 uiHash, int iKey)
     {
-      this->hash = hash;
-      this->key  = key;
+      this->hash = uiHash;
+      this->key  = iKey;
     }
 
     inline bool operator==(const Collision& other) const { return key == other.key; }
@@ -28,8 +28,8 @@ namespace HashTableTestDetail
   class OnlyMovable
   {
   public:
-    OnlyMovable(xiiUInt32 hash) :
-      hash(hash), m_NumTimesMoved(0)
+    OnlyMovable(xiiUInt32 uiHash) :
+      hash(uiHash)
     {
     }
     OnlyMovable(OnlyMovable&& other) { *this = std::move(other); }
@@ -43,7 +43,7 @@ namespace HashTableTestDetail
 
     bool operator==(const OnlyMovable& other) const { return hash == other.hash; }
 
-    int       m_NumTimesMoved;
+    int       m_NumTimesMoved = 0;
     xiiUInt32 hash;
 
   private:

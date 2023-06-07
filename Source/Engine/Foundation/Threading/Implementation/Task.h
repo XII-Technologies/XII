@@ -24,7 +24,7 @@ public:
   /// \param Callback
   /// A callback to execute when the task is finished (or canceled).
   /// The most common use case for this is to deallocate the task at that time.
-  void ConfigureTask(const char* szTaskName, xiiTaskNesting nestingMode, xiiOnTaskFinishedCallback Callback = xiiOnTaskFinishedCallback()); // [tested]
+  void ConfigureTask(const char* szTaskName, xiiTaskNesting nestingMode, xiiOnTaskFinishedCallback callback = xiiOnTaskFinishedCallback()); // [tested]
 
   /// \brief Changes the multiplicity of this task.
   ///

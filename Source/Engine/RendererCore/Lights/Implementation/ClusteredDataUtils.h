@@ -171,49 +171,49 @@ namespace
     }
   }
 
-  XII_ALWAYS_INLINE void FillLightData(xiiPerLightData& perLightData, const xiiLightRenderData* pLightRenderData, xiiUInt8 uiType)
+  XII_ALWAYS_INLINE void FillLightData(xiiPerLightData& ref_perLightData, const xiiLightRenderData* pLightRenderData, xiiUInt8 uiType)
   {
-    xiiMemoryUtils::ZeroFill(&perLightData, 1);
+    xiiMemoryUtils::ZeroFill(&ref_perLightData, 1);
 
     xiiColorLinearUB lightColor = pLightRenderData->m_LightColor;
     lightColor.a                = uiType;
 
-    perLightData.colorAndType     = *reinterpret_cast<xiiUInt32*>(&lightColor.r);
-    perLightData.intensity        = pLightRenderData->m_fIntensity;
-    perLightData.shadowDataOffset = pLightRenderData->m_uiShadowDataOffset;
+    ref_perLightData.colorAndType     = *reinterpret_cast<xiiUInt32*>(&lightColor.r);
+    ref_perLightData.intensity        = pLightRenderData->m_fIntensity;
+    ref_perLightData.shadowDataOffset = pLightRenderData->m_uiShadowDataOffset;
   }
 
-  void FillPointLightData(xiiPerLightData& perLightData, const xiiPointLightRenderData* pPointLightRenderData)
+  void FillPointLightData(xiiPerLightData& ref_perLightData, const xiiPointLightRenderData* pPointLightRenderData)
   {
-    FillLightData(perLightData, pPointLightRenderData, LIGHT_TYPE_POINT);
+    FillLightData(ref_perLightData, pPointLightRenderData, LIGHT_TYPE_POINT);
 
-    perLightData.position        = pPointLightRenderData->m_GlobalTransform.m_vPosition;
-    perLightData.invSqrAttRadius = 1.0f / (pPointLightRenderData->m_fRange * pPointLightRenderData->m_fRange);
+    ref_perLightData.position        = pPointLightRenderData->m_GlobalTransform.m_vPosition;
+    ref_perLightData.invSqrAttRadius = 1.0f / (pPointLightRenderData->m_fRange * pPointLightRenderData->m_fRange);
   }
 
-  void FillSpotLightData(xiiPerLightData& perLightData, const xiiSpotLightRenderData* pSpotLightRenderData)
+  void FillSpotLightData(xiiPerLightData& ref_perLightData, const xiiSpotLightRenderData* pSpotLightRenderData)
   {
-    FillLightData(perLightData, pSpotLightRenderData, LIGHT_TYPE_SPOT);
+    FillLightData(ref_perLightData, pSpotLightRenderData, LIGHT_TYPE_SPOT);
 
-    perLightData.direction       = xiiShaderUtils::Float3ToRGB10(pSpotLightRenderData->m_GlobalTransform.m_qRotation * xiiVec3(-1, 0, 0));
-    perLightData.position        = pSpotLightRenderData->m_GlobalTransform.m_vPosition;
-    perLightData.invSqrAttRadius = 1.0f / (pSpotLightRenderData->m_fRange * pSpotLightRenderData->m_fRange);
+    ref_perLightData.direction       = xiiShaderUtils::Float3ToRGB10(pSpotLightRenderData->m_GlobalTransform.m_qRotation * xiiVec3(-1, 0, 0));
+    ref_perLightData.position        = pSpotLightRenderData->m_GlobalTransform.m_vPosition;
+    ref_perLightData.invSqrAttRadius = 1.0f / (pSpotLightRenderData->m_fRange * pSpotLightRenderData->m_fRange);
 
     const float fCosInner        = xiiMath::Cos(pSpotLightRenderData->m_InnerSpotAngle * 0.5f);
     const float fCosOuter        = xiiMath::Cos(pSpotLightRenderData->m_OuterSpotAngle * 0.5f);
     const float fSpotParamScale  = 1.0f / xiiMath::Max(0.001f, (fCosInner - fCosOuter));
     const float fSpotParamOffset = -fCosOuter * fSpotParamScale;
-    perLightData.spotParams      = xiiShaderUtils::Float2ToRG16F(xiiVec2(fSpotParamScale, fSpotParamOffset));
+    ref_perLightData.spotParams  = xiiShaderUtils::Float2ToRG16F(xiiVec2(fSpotParamScale, fSpotParamOffset));
   }
 
-  void FillDirLightData(xiiPerLightData& perLightData, const xiiDirectionalLightRenderData* pDirLightRenderData)
+  void FillDirLightData(xiiPerLightData& ref_perLightData, const xiiDirectionalLightRenderData* pDirLightRenderData)
   {
-    FillLightData(perLightData, pDirLightRenderData, LIGHT_TYPE_DIR);
+    FillLightData(ref_perLightData, pDirLightRenderData, LIGHT_TYPE_DIR);
 
-    perLightData.direction = xiiShaderUtils::Float3ToRGB10(pDirLightRenderData->m_GlobalTransform.m_qRotation * xiiVec3(-1, 0, 0));
+    ref_perLightData.direction = xiiShaderUtils::Float3ToRGB10(pDirLightRenderData->m_GlobalTransform.m_qRotation * xiiVec3(-1, 0, 0));
   }
 
-  void FillDecalData(xiiPerDecalData& perDecalData, const xiiDecalRenderData* pDecalRenderData)
+  void FillDecalData(xiiPerDecalData& ref_perDecalData, const xiiDecalRenderData* pDecalRenderData)
   {
     xiiVec3 position    = pDecalRenderData->m_GlobalTransform.m_vPosition;
     xiiVec3 dirForwards = pDecalRenderData->m_GlobalTransform.m_qRotation * xiiVec3(1.0f, 0.0, 0.0f);
@@ -228,22 +228,22 @@ namespace
     xiiMat4       scaleMat;
     scaleMat.SetScalingMatrix(xiiVec3(scale.y, -scale.z, scale.x));
 
-    perDecalData.worldToDecalMatrix   = scaleMat * lookAt;
-    perDecalData.applyOnlyToId        = pDecalRenderData->m_uiApplyOnlyToId;
-    perDecalData.decalFlags           = pDecalRenderData->m_uiFlags;
-    perDecalData.angleFadeParams      = pDecalRenderData->m_uiAngleFadeParams;
-    perDecalData.baseColor            = *reinterpret_cast<const xiiUInt32*>(&pDecalRenderData->m_BaseColor.r);
-    perDecalData.emissiveColorRG      = xiiShaderUtils::PackFloat16intoUint(pDecalRenderData->m_EmissiveColor.r, pDecalRenderData->m_EmissiveColor.g);
-    perDecalData.emissiveColorBA      = xiiShaderUtils::PackFloat16intoUint(pDecalRenderData->m_EmissiveColor.b, pDecalRenderData->m_EmissiveColor.a);
-    perDecalData.baseColorAtlasScale  = pDecalRenderData->m_uiBaseColorAtlasScale;
-    perDecalData.baseColorAtlasOffset = pDecalRenderData->m_uiBaseColorAtlasOffset;
-    perDecalData.normalAtlasScale     = pDecalRenderData->m_uiNormalAtlasScale;
-    perDecalData.normalAtlasOffset    = pDecalRenderData->m_uiNormalAtlasOffset;
-    perDecalData.ormAtlasScale        = pDecalRenderData->m_uiORMAtlasScale;
-    perDecalData.ormAtlasOffset       = pDecalRenderData->m_uiORMAtlasOffset;
+    ref_perDecalData.worldToDecalMatrix   = scaleMat * lookAt;
+    ref_perDecalData.applyOnlyToId        = pDecalRenderData->m_uiApplyOnlyToId;
+    ref_perDecalData.decalFlags           = pDecalRenderData->m_uiFlags;
+    ref_perDecalData.angleFadeParams      = pDecalRenderData->m_uiAngleFadeParams;
+    ref_perDecalData.baseColor            = *reinterpret_cast<const xiiUInt32*>(&pDecalRenderData->m_BaseColor.r);
+    ref_perDecalData.emissiveColorRG      = xiiShaderUtils::PackFloat16intoUint(pDecalRenderData->m_EmissiveColor.r, pDecalRenderData->m_EmissiveColor.g);
+    ref_perDecalData.emissiveColorBA      = xiiShaderUtils::PackFloat16intoUint(pDecalRenderData->m_EmissiveColor.b, pDecalRenderData->m_EmissiveColor.a);
+    ref_perDecalData.baseColorAtlasScale  = pDecalRenderData->m_uiBaseColorAtlasScale;
+    ref_perDecalData.baseColorAtlasOffset = pDecalRenderData->m_uiBaseColorAtlasOffset;
+    ref_perDecalData.normalAtlasScale     = pDecalRenderData->m_uiNormalAtlasScale;
+    ref_perDecalData.normalAtlasOffset    = pDecalRenderData->m_uiNormalAtlasOffset;
+    ref_perDecalData.ormAtlasScale        = pDecalRenderData->m_uiORMAtlasScale;
+    ref_perDecalData.ormAtlasOffset       = pDecalRenderData->m_uiORMAtlasOffset;
   }
 
-  void FillReflectionProbeData(xiiPerReflectionProbeData& perReflectionProbeData, const xiiReflectionProbeRenderData* pReflectionProbeRenderData)
+  void FillReflectionProbeData(xiiPerReflectionProbeData& ref_perReflectionProbeData, const xiiReflectionProbeRenderData* pReflectionProbeRenderData)
   {
     xiiVec3 position = pReflectionProbeRenderData->m_GlobalTransform.m_vPosition;
     xiiVec3 scale    = pReflectionProbeRenderData->m_GlobalTransform.m_vScale.CompMul(pReflectionProbeRenderData->m_vHalfExtents);
@@ -255,24 +255,24 @@ namespace
 
     // the CompMax prevents division by zero (thus inf, thus NaN later, then crash)
     // if negative scaling should be allowed, this would need to be changed
-    scale                                               = xiiVec3(1.0f).CompDiv(scale.CompMax(xiiVec3(0.00001f)));
-    perReflectionProbeData.WorldToProbeProjectionMatrix = inverse;
+    scale                                                   = xiiVec3(1.0f).CompDiv(scale.CompMax(xiiVec3(0.00001f)));
+    ref_perReflectionProbeData.WorldToProbeProjectionMatrix = inverse;
 
-    perReflectionProbeData.ProbePosition = pReflectionProbeRenderData->m_vProbePosition.GetAsVec4(1.0f); // W isn't used.
-    perReflectionProbeData.Scale         = scale.GetAsVec4(0.0f);                                        // W isn't used.
+    ref_perReflectionProbeData.ProbePosition = pReflectionProbeRenderData->m_vProbePosition.GetAsVec4(1.0f); // W isn't used.
+    ref_perReflectionProbeData.Scale         = scale.GetAsVec4(0.0f);                                        // W isn't used.
 
-    perReflectionProbeData.InfluenceScale = pReflectionProbeRenderData->m_vInfluenceScale.GetAsVec4(0.0f);
-    perReflectionProbeData.InfluenceShift = pReflectionProbeRenderData->m_vInfluenceShift.CompMul(xiiVec3(1.0f) - pReflectionProbeRenderData->m_vInfluenceScale).GetAsVec4(0.0f);
+    ref_perReflectionProbeData.InfluenceScale = pReflectionProbeRenderData->m_vInfluenceScale.GetAsVec4(0.0f);
+    ref_perReflectionProbeData.InfluenceShift = pReflectionProbeRenderData->m_vInfluenceShift.CompMul(xiiVec3(1.0f) - pReflectionProbeRenderData->m_vInfluenceScale).GetAsVec4(0.0f);
 
-    perReflectionProbeData.PositiveFalloff = pReflectionProbeRenderData->m_vPositiveFalloff.GetAsVec4(0.0f);
-    perReflectionProbeData.NegativeFalloff = pReflectionProbeRenderData->m_vNegativeFalloff.GetAsVec4(0.0f);
-    perReflectionProbeData.Index           = pReflectionProbeRenderData->m_uiIndex;
+    ref_perReflectionProbeData.PositiveFalloff = pReflectionProbeRenderData->m_vPositiveFalloff.GetAsVec4(0.0f);
+    ref_perReflectionProbeData.NegativeFalloff = pReflectionProbeRenderData->m_vNegativeFalloff.GetAsVec4(0.0f);
+    ref_perReflectionProbeData.Index           = pReflectionProbeRenderData->m_uiIndex;
   }
 
 
-  XII_FORCE_INLINE xiiSimdBBox GetScreenSpaceBounds(const xiiSimdBSphere& sphere, const xiiSimdMat4f& viewMatrix, const xiiSimdMat4f& projectionMatrix)
+  XII_FORCE_INLINE xiiSimdBBox GetScreenSpaceBounds(const xiiSimdBSphere& sphere, const xiiSimdMat4f& mViewMatrix, const xiiSimdMat4f& mProjectionMatrix)
   {
-    xiiSimdVec4f viewSpaceCenter = viewMatrix.TransformPosition(sphere.GetCenter());
+    xiiSimdVec4f viewSpaceCenter = mViewMatrix.TransformPosition(sphere.GetCenter());
     xiiSimdFloat depth           = viewSpaceCenter.z();
     xiiSimdFloat radius          = sphere.GetRadius();
 
@@ -292,7 +292,7 @@ namespace
       xiiSimdVec4f nom   = (pRadius2.CompMul(xxyy.CompMul(xxyy) - pRadius2 + one)).GetSqrt() - xxyy.CompMul(oneNegOne);
       xiiSimdVec4f denom = pRadius2 - one;
 
-      xiiSimdVec4f projection        = projectionMatrix.m_col0.GetCombined<xiiSwizzle::XXYY>(projectionMatrix.m_col1);
+      xiiSimdVec4f projection        = mProjectionMatrix.m_col0.GetCombined<xiiSwizzle::XXYY>(mProjectionMatrix.m_col1);
       xiiSimdVec4f minXmaxX_minYmaxY = nom.CompDiv(denom).CompMul(oneNegOne).CompMul(projection);
 
       mi = minXmaxX_minYmaxY.Get<xiiSwizzle::XZXX>();
@@ -315,7 +315,7 @@ namespace
     const xiiSimdBBox& screenSpaceBounds,
     xiiUInt32          uiBlockIndex,
     xiiUInt32          uiMask,
-    Cluster*           clusters,
+    Cluster*           pClusters,
     IntersectionFunc   func)
   {
     xiiSimdVec4f scale = xiiSimdVec4f(0.5f * NUM_CLUSTERS_X, -0.5f * NUM_CLUSTERS_Y, 1.0f, 1.0f);
@@ -348,7 +348,7 @@ namespace
           xiiUInt32 uiClusterIndex = GetClusterIndexFromCoord(x, y, z);
           if (func(uiClusterIndex))
           {
-            clusters[uiClusterIndex].m_BitMask[uiBlockIndex] |= uiMask;
+            pClusters[uiClusterIndex].m_BitMask[uiBlockIndex] |= uiMask;
           }
         }
       }
@@ -356,15 +356,15 @@ namespace
   }
 
   template <typename Cluster>
-  void RasterizeSphere(const xiiSimdBSphere& pointLightSphere, xiiUInt32 uiLightIndex, const xiiSimdMat4f& viewMatrix, const xiiSimdMat4f& projectionMatrix, Cluster* clusters, xiiSimdBSphere* clusterBoundingSpheres)
+  void RasterizeSphere(const xiiSimdBSphere& pointLightSphere, xiiUInt32 uiLightIndex, const xiiSimdMat4f& mViewMatrix, const xiiSimdMat4f& mProjectionMatrix, Cluster* pClusters, xiiSimdBSphere* pClusterBoundingSpheres)
   {
-    xiiSimdBBox screenSpaceBounds = GetScreenSpaceBounds(pointLightSphere, viewMatrix, projectionMatrix);
+    xiiSimdBBox screenSpaceBounds = GetScreenSpaceBounds(pointLightSphere, mViewMatrix, mProjectionMatrix);
 
     const xiiUInt32 uiBlockIndex = uiLightIndex / 32;
     const xiiUInt32 uiMask       = 1 << (uiLightIndex - uiBlockIndex * 32);
 
-    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, clusters,
-                [&](xiiUInt32 uiClusterIndex) { return pointLightSphere.Overlaps(clusterBoundingSpheres[uiClusterIndex]); });
+    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, pClusters,
+                [pClusterBoundingSpheres](xiiUInt32 uiClusterIndex) { return pointLightSphere.Overlaps(pClusterBoundingSpheres[uiClusterIndex]); });
   }
 
   struct BoundingCone
@@ -376,7 +376,7 @@ namespace
   };
 
   template <typename Cluster>
-  void RasterizeSpotLight(const BoundingCone& spotLightCone, xiiUInt32 uiLightIndex, const xiiSimdMat4f& viewMatrix, const xiiSimdMat4f& projectionMatrix, Cluster* clusters, xiiSimdBSphere* clusterBoundingSpheres)
+  void RasterizeSpotLight(const BoundingCone& spotLightCone, xiiUInt32 uiLightIndex, const xiiSimdMat4f& mViewMatrix, const xiiSimdMat4f& mProjectionMatrix, Cluster* pClusters, xiiSimdBSphere* pClusterBoundingSpheres)
   {
     xiiSimdVec4f position   = spotLightCone.m_PositionAndRange;
     xiiSimdFloat range      = spotLightCone.m_PositionAndRange.w();
@@ -399,13 +399,13 @@ namespace
     }
 
     xiiSimdBSphere spotLightSphere(bSphereCenter, bSphereRadius);
-    xiiSimdBBox    screenSpaceBounds = GetScreenSpaceBounds(spotLightSphere, viewMatrix, projectionMatrix);
+    xiiSimdBBox    screenSpaceBounds = GetScreenSpaceBounds(spotLightSphere, mViewMatrix, mProjectionMatrix);
 
     const xiiUInt32 uiBlockIndex = uiLightIndex / 32;
     const xiiUInt32 uiMask       = 1 << (uiLightIndex - uiBlockIndex * 32);
 
-    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, clusters, [&](xiiUInt32 uiClusterIndex) {
-      xiiSimdBSphere clusterSphere = clusterBoundingSpheres[uiClusterIndex];
+    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, pClusters, [pClusterBoundingSpheres](xiiUInt32 uiClusterIndex) {
+      xiiSimdBSphere clusterSphere = pClusterBoundingSpheres[uiClusterIndex];
       xiiSimdFloat   clusterRadius = clusterSphere.GetRadius();
 
       xiiSimdVec4f toConePos    = clusterSphere.m_CenterAndRadius - position;
@@ -434,7 +434,7 @@ namespace
   }
 
   template <typename Cluster>
-  void RasterizeBox(const xiiTransform& transform, xiiUInt32 uiDecalIndex, const xiiSimdMat4f& viewProjectionMatrix, Cluster* clusters, xiiSimdBSphere* clusterBoundingSpheres)
+  void RasterizeBox(const xiiTransform& transform, xiiUInt32 uiDecalIndex, const xiiSimdMat4f& mViewProjectionMatrix, Cluster* pClusters, xiiSimdBSphere* pClusterBoundingSpheres)
   {
     xiiSimdMat4f decalToWorld = xiiSimdConversion::ToTransform(transform).GetAsMat4();
     xiiSimdMat4f worldToDecal = decalToWorld.GetInverse();
@@ -442,7 +442,7 @@ namespace
     xiiVec3 corners[8];
     xiiBoundingBox(xiiVec3(-1), xiiVec3(1)).GetCorners(corners);
 
-    xiiSimdMat4f decalToScreen = viewProjectionMatrix * decalToWorld;
+    xiiSimdMat4f decalToScreen = mViewProjectionMatrix * decalToWorld;
     xiiSimdBBox  screenSpaceBounds;
     screenSpaceBounds.SetInvalid();
     bool bInsideBox = false;
@@ -472,8 +472,8 @@ namespace
     const xiiUInt32 uiBlockIndex = uiDecalIndex / 32;
     const xiiUInt32 uiMask       = 1 << (uiDecalIndex - uiBlockIndex * 32);
 
-    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, clusters, [&](xiiUInt32 uiClusterIndex) {
-      xiiSimdBSphere clusterSphere = clusterBoundingSpheres[uiClusterIndex];
+    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, pClusters, [pClusterBoundingSpheres](xiiUInt32 uiClusterIndex) {
+      xiiSimdBSphere clusterSphere = pClusterBoundingSpheres[uiClusterIndex];
       clusterSphere.Transform(worldToDecal);
 
       return localDecalBounds.Overlaps(clusterSphere);

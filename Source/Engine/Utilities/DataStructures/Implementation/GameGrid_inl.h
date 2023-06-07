@@ -67,37 +67,37 @@ xiiVec2I32 xiiGameGrid<CellData>::GetCellAtWorldPosition(const xiiVec3& vWorldSp
 }
 
 template <class CellData>
-xiiVec3 xiiGameGrid<CellData>::GetCellWorldSpaceOrigin(const xiiVec2I32& Coord) const
+xiiVec3 xiiGameGrid<CellData>::GetCellWorldSpaceOrigin(const xiiVec2I32& vCoord) const
 {
   return m_vWorldSpaceOrigin + m_mRotateToWorldspace * GetCellLocalSpaceOrigin(Coord);
 }
 
 template <class CellData>
-xiiVec3 xiiGameGrid<CellData>::GetCellLocalSpaceOrigin(const xiiVec2I32& Coord) const
+xiiVec3 xiiGameGrid<CellData>::GetCellLocalSpaceOrigin(const xiiVec2I32& vCoord) const
 {
   return m_vLocalSpaceCellSize.CompMul(xiiVec3((float)Coord.x, (float)Coord.y, 0.0f));
 }
 
 template <class CellData>
-xiiVec3 xiiGameGrid<CellData>::GetCellWorldSpaceCenter(const xiiVec2I32& Coord) const
+xiiVec3 xiiGameGrid<CellData>::GetCellWorldSpaceCenter(const xiiVec2I32& vCoord) const
 {
   return m_vWorldSpaceOrigin + m_mRotateToWorldspace * GetCellLocalSpaceCenter(Coord);
 }
 
 template <class CellData>
-xiiVec3 xiiGameGrid<CellData>::GetCellLocalSpaceCenter(const xiiVec2I32& Coord) const
+xiiVec3 xiiGameGrid<CellData>::GetCellLocalSpaceCenter(const xiiVec2I32& vCoord) const
 {
   return m_vLocalSpaceCellSize.CompMul(xiiVec3((float)Coord.x + 0.5f, (float)Coord.y + 0.5f, 0.5f));
 }
 
 template <class CellData>
-bool xiiGameGrid<CellData>::IsValidCellCoordinate(const xiiVec2I32& Coord) const
+bool xiiGameGrid<CellData>::IsValidCellCoordinate(const xiiVec2I32& vCoord) const
 {
   return (Coord.x >= 0 && Coord.x < m_uiGridSizeX && Coord.y >= 0 && Coord.y < m_uiGridSizeY);
 }
 
 template <class CellData>
-bool xiiGameGrid<CellData>::PickCell(const xiiVec3& vRayStartPos, const xiiVec3& vRayDirNorm, xiiVec2I32* out_CellCoord, xiiVec3* out_vIntersection) const
+bool xiiGameGrid<CellData>::PickCell(const xiiVec3& vRayStartPos, const xiiVec3& vRayDirNorm, xiiVec2I32* out_pCellCoord, xiiVec3* out_pIntersection) const
 {
   xiiPlane p;
   p.SetFromNormalAndPoint(m_mRotateToWorldspace * xiiVec3(0, 0, -1), m_vWorldSpaceOrigin);
@@ -127,7 +127,7 @@ xiiBoundingBox xiiGameGrid<CellData>::GetWorldBoundingBox() const
 }
 
 template <class CellData>
-bool xiiGameGrid<CellData>::GetRayIntersection(const xiiVec3& vRayStartWorldSpace, const xiiVec3& vRayDirNormalizedWorldSpace, float fMaxLength, float& out_fIntersection, xiiVec2I32& out_CellCoord) const
+bool xiiGameGrid<CellData>::GetRayIntersection(const xiiVec3& vRayStartWorldSpace, const xiiVec3& vRayDirNormalizedWorldSpace, float fMaxLength, float& out_fIntersection, xiiVec2I32& out_vCellCoord) const
 {
   const xiiVec3 vRayStart = m_mRotateToGridspace * (vRayStartWorldSpace - m_vWorldSpaceOrigin);
   const xiiVec3 vRayDir   = m_mRotateToGridspace * vRayDirNormalizedWorldSpace;

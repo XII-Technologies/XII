@@ -4,8 +4,8 @@
 #include <ToolsFoundation/Document/Document.h>
 #include <ToolsFoundation/Object/DocumentObjectManager.h>
 
-xiiQtPickDocumentObjectDlg::xiiQtPickDocumentObjectDlg(QWidget* parent, const xiiArrayPtr<Element>& objects, const xiiUuid& currentObject) :
-  QDialog(parent), m_Objects(objects), m_CurrentObject(currentObject)
+xiiQtPickDocumentObjectDlg::xiiQtPickDocumentObjectDlg(QWidget* pParent, const xiiArrayPtr<Element>& objects, const xiiUuid& currentObject) :
+  QDialog(pParent), m_Objects(objects), m_CurrentObject(currentObject)
 {
   setupUi(this);
 

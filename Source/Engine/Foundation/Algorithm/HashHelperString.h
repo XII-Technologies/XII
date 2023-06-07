@@ -10,7 +10,7 @@
 /// \brief Hash helper to be used as a template argument to xiiHashTable / xiiHashSet for case insensitive string keys.
 struct XII_FOUNDATION_DLL xiiHashHelperString_NoCase
 {
-  inline static xiiUInt32 Hash(xiiStringView szValue); // [tested]
+  inline static xiiUInt32 Hash(xiiStringView sValue); // [tested]
 
   XII_ALWAYS_INLINE static bool Equal(xiiStringView lhs, xiiStringView rhs); // [tested]
 };

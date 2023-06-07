@@ -9,8 +9,8 @@
 #include <QRubberBand>
 #include <qevent.h>
 
-xiiQtCurveEditWidget::xiiQtCurveEditWidget(QWidget* parent) :
-  QWidget(parent)
+xiiQtCurveEditWidget::xiiQtCurveEditWidget(QWidget* pParent) :
+  QWidget(pParent)
 {
   setFocusPolicy(Qt::FocusPolicy::ClickFocus);
   setMouseTracking(true);
@@ -203,10 +203,10 @@ QPointF xiiQtCurveEditWidget::MapToScene(const QPoint& pos) const
   return QPointF(x, y) + m_SceneTranslation;
 }
 
-xiiVec2 xiiQtCurveEditWidget::MapDirFromScene(const xiiVec2& pos) const
+xiiVec2 xiiQtCurveEditWidget::MapDirFromScene(const xiiVec2& vPos) const
 {
-  const float x = pos.x * m_SceneToPixelScale.x();
-  const float y = pos.y * m_SceneToPixelScale.y();
+  const float x = vPos.x * m_SceneToPixelScale.x();
+  const float y = vPos.y * m_SceneToPixelScale.y();
 
   return xiiVec2(x, y);
 }
@@ -276,9 +276,9 @@ void xiiQtCurveEditWidget::ToggleSelected(const xiiSelectedCurveCP& cp)
   Q_EMIT SelectionChangedEvent();
 }
 
-void xiiQtCurveEditWidget::SetSelected(const xiiSelectedCurveCP& cp, bool set)
+void xiiQtCurveEditWidget::SetSelected(const xiiSelectedCurveCP& cp, bool bSet)
 {
-  if (!set)
+  if (!bSet)
   {
     for (xiiUInt32 i = 0; i < m_SelectedCPs.GetCount(); ++i)
     {

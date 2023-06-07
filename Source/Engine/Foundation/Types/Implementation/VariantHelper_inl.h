@@ -8,207 +8,207 @@
 #endif
 
 template <typename Functor, class... Args>
-auto xiiVariant::DispatchTo(Functor& functor, Type::Enum type, Args&&... args)
+auto xiiVariant::DispatchTo(Functor& ref_functor, Type::Enum type, Args&&... args)
 {
   switch (type)
   {
     case Type::Bool:
-      CALL_FUNCTOR(functor, bool);
+      CALL_FUNCTOR(ref_functor, bool);
       break;
 
     case Type::Int8:
-      CALL_FUNCTOR(functor, xiiInt8);
+      CALL_FUNCTOR(ref_functor, xiiInt8);
       break;
 
     case Type::UInt8:
-      CALL_FUNCTOR(functor, xiiUInt8);
+      CALL_FUNCTOR(ref_functor, xiiUInt8);
       break;
 
     case Type::Int16:
-      CALL_FUNCTOR(functor, xiiInt16);
+      CALL_FUNCTOR(ref_functor, xiiInt16);
       break;
 
     case Type::UInt16:
-      CALL_FUNCTOR(functor, xiiUInt16);
+      CALL_FUNCTOR(ref_functor, xiiUInt16);
       break;
 
     case Type::Int32:
-      CALL_FUNCTOR(functor, xiiInt32);
+      CALL_FUNCTOR(ref_functor, xiiInt32);
       break;
 
     case Type::UInt32:
-      CALL_FUNCTOR(functor, xiiUInt32);
+      CALL_FUNCTOR(ref_functor, xiiUInt32);
       break;
 
     case Type::Int64:
-      CALL_FUNCTOR(functor, xiiInt64);
+      CALL_FUNCTOR(ref_functor, xiiInt64);
       break;
 
     case Type::UInt64:
-      CALL_FUNCTOR(functor, xiiUInt64);
+      CALL_FUNCTOR(ref_functor, xiiUInt64);
       break;
 
     case Type::Float:
-      CALL_FUNCTOR(functor, float);
+      CALL_FUNCTOR(ref_functor, float);
       break;
 
     case Type::Double:
-      CALL_FUNCTOR(functor, double);
+      CALL_FUNCTOR(ref_functor, double);
       break;
 
     case Type::Color:
-      CALL_FUNCTOR(functor, xiiColor);
+      CALL_FUNCTOR(ref_functor, xiiColor);
       break;
 
     case Type::ColorGamma:
-      CALL_FUNCTOR(functor, xiiColorGammaUB);
+      CALL_FUNCTOR(ref_functor, xiiColorGammaUB);
       break;
 
     case Type::Vector2:
-      CALL_FUNCTOR(functor, xiiVec2);
+      CALL_FUNCTOR(ref_functor, xiiVec2);
       break;
 
     case Type::Vector2d:
-      CALL_FUNCTOR(functor, xiiVec2d);
+      CALL_FUNCTOR(ref_functor, xiiVec2d);
       break;
 
     case Type::Vector3:
-      CALL_FUNCTOR(functor, xiiVec3);
+      CALL_FUNCTOR(ref_functor, xiiVec3);
       break;
 
     case Type::Vector3d:
-      CALL_FUNCTOR(functor, xiiVec3d);
+      CALL_FUNCTOR(ref_functor, xiiVec3d);
       break;
 
     case Type::Vector4:
-      CALL_FUNCTOR(functor, xiiVec4);
+      CALL_FUNCTOR(ref_functor, xiiVec4);
       break;
 
     case Type::Vector4d:
-      CALL_FUNCTOR(functor, xiiVec4d);
+      CALL_FUNCTOR(ref_functor, xiiVec4d);
       break;
 
     case Type::Vector2I:
-      CALL_FUNCTOR(functor, xiiVec2I32);
+      CALL_FUNCTOR(ref_functor, xiiVec2I32);
       break;
 
     case Type::Vector2I64:
-      CALL_FUNCTOR(functor, xiiVec2I64);
+      CALL_FUNCTOR(ref_functor, xiiVec2I64);
       break;
 
     case Type::Vector3I:
-      CALL_FUNCTOR(functor, xiiVec3I32);
+      CALL_FUNCTOR(ref_functor, xiiVec3I32);
       break;
 
     case Type::Vector3I64:
-      CALL_FUNCTOR(functor, xiiVec3I64);
+      CALL_FUNCTOR(ref_functor, xiiVec3I64);
       break;
 
     case Type::Vector4I:
-      CALL_FUNCTOR(functor, xiiVec4I32);
+      CALL_FUNCTOR(ref_functor, xiiVec4I32);
       break;
 
     case Type::Vector4I64:
-      CALL_FUNCTOR(functor, xiiVec4I64);
+      CALL_FUNCTOR(ref_functor, xiiVec4I64);
       break;
 
     case Type::Vector2U:
-      CALL_FUNCTOR(functor, xiiVec2U32);
+      CALL_FUNCTOR(ref_functor, xiiVec2U32);
       break;
 
     case Type::Vector2U64:
-      CALL_FUNCTOR(functor, xiiVec2U64);
+      CALL_FUNCTOR(ref_functor, xiiVec2U64);
       break;
 
     case Type::Vector3U:
-      CALL_FUNCTOR(functor, xiiVec3U32);
+      CALL_FUNCTOR(ref_functor, xiiVec3U32);
       break;
 
     case Type::Vector3U64:
-      CALL_FUNCTOR(functor, xiiVec3U64);
+      CALL_FUNCTOR(ref_functor, xiiVec3U64);
       break;
 
     case Type::Vector4U:
-      CALL_FUNCTOR(functor, xiiVec4U32);
+      CALL_FUNCTOR(ref_functor, xiiVec4U32);
       break;
 
     case Type::Vector4U64:
-      CALL_FUNCTOR(functor, xiiVec4U64);
+      CALL_FUNCTOR(ref_functor, xiiVec4U64);
       break;
 
     case Type::Quaternion:
-      CALL_FUNCTOR(functor, xiiQuat);
+      CALL_FUNCTOR(ref_functor, xiiQuat);
       break;
 
     case Type::Quaterniond:
-      CALL_FUNCTOR(functor, xiiQuatd);
+      CALL_FUNCTOR(ref_functor, xiiQuatd);
       break;
 
     case Type::Matrix3:
-      CALL_FUNCTOR(functor, xiiMat3);
+      CALL_FUNCTOR(ref_functor, xiiMat3);
       break;
 
     case Type::Matrix3d:
-      CALL_FUNCTOR(functor, xiiMat3d);
+      CALL_FUNCTOR(ref_functor, xiiMat3d);
       break;
 
     case Type::Matrix4:
-      CALL_FUNCTOR(functor, xiiMat4);
+      CALL_FUNCTOR(ref_functor, xiiMat4);
       break;
 
     case Type::Matrix4d:
-      CALL_FUNCTOR(functor, xiiMat4d);
+      CALL_FUNCTOR(ref_functor, xiiMat4d);
       break;
 
     case Type::Transform:
-      CALL_FUNCTOR(functor, xiiTransform);
+      CALL_FUNCTOR(ref_functor, xiiTransform);
       break;
 
     case Type::Transformd:
-      CALL_FUNCTOR(functor, xiiTransformd);
+      CALL_FUNCTOR(ref_functor, xiiTransformd);
       break;
 
     case Type::String:
-      CALL_FUNCTOR(functor, xiiString);
+      CALL_FUNCTOR(ref_functor, xiiString);
       break;
 
     case Type::StringView:
-      CALL_FUNCTOR(functor, xiiStringView);
+      CALL_FUNCTOR(ref_functor, xiiStringView);
       break;
 
     case Type::DataBuffer:
-      CALL_FUNCTOR(functor, xiiDataBuffer);
+      CALL_FUNCTOR(ref_functor, xiiDataBuffer);
       break;
 
     case Type::Time:
-      CALL_FUNCTOR(functor, xiiTime);
+      CALL_FUNCTOR(ref_functor, xiiTime);
       break;
 
     case Type::Uuid:
-      CALL_FUNCTOR(functor, xiiUuid);
+      CALL_FUNCTOR(ref_functor, xiiUuid);
       break;
 
     case Type::Angle:
-      CALL_FUNCTOR(functor, xiiAngle);
+      CALL_FUNCTOR(ref_functor, xiiAngle);
       break;
 
     case Type::VariantArray:
-      CALL_FUNCTOR(functor, xiiVariantArray);
+      CALL_FUNCTOR(ref_functor, xiiVariantArray);
       break;
 
     case Type::VariantDictionary:
-      CALL_FUNCTOR(functor, xiiVariantDictionary);
+      CALL_FUNCTOR(ref_functor, xiiVariantDictionary);
       break;
 
     case Type::TypedObject:
-      CALL_FUNCTOR(functor, xiiTypedObject);
+      CALL_FUNCTOR(ref_functor, xiiTypedObject);
       break;
 
     default:
       XII_REPORT_FAILURE("Could not dispatch type '{0}'", type);
       // Intended fall through to disable warning.
     case Type::TypedPointer:
-      CALL_FUNCTOR(functor, xiiTypedPointer);
+      CALL_FUNCTOR(ref_functor, xiiTypedPointer);
       break;
   }
 }

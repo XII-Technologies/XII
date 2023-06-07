@@ -36,9 +36,9 @@ namespace JSONReaderTestDetail
     xiiUInt64   m_uiLength;
   };
 
-  void TraverseTree(const xiiVariant& var, xiiDeque<xiiString>& Compare)
+  void TraverseTree(const xiiVariant& var, xiiDeque<xiiString>& ref_compare)
   {
-    if (Compare.IsEmpty())
+    if (ref_compare.IsEmpty())
       return;
 
     switch (var.GetType())
@@ -46,64 +46,64 @@ namespace JSONReaderTestDetail
       case xiiVariant::Type::VariantDictionary:
       {
         // xiiLog::Printf("Expect: %s - Is: %s\n", "<object>", Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), "<object>");
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), "<object>");
+        ref_compare.PopFront();
 
         const xiiVariantDictionary& vd = var.Get<xiiVariantDictionary>();
 
         for (auto it = vd.GetIterator(); it.IsValid(); ++it)
         {
-          if (Compare.IsEmpty())
+          if (ref_compare.IsEmpty())
             return;
 
           // xiiLog::Printf("Expect: %s - Is: %s\n", it.Key().GetData(), Compare.PeekFront().GetData());
-          XII_TEST_STRING(Compare.PeekFront().GetData(), it.Key().GetData());
-          Compare.PopFront();
+          XII_TEST_STRING(ref_compare.PeekFront().GetData(), it.Key().GetData());
+          ref_compare.PopFront();
 
-          TraverseTree(it.Value(), Compare);
+          TraverseTree(it.Value(), ref_compare);
         }
 
-        if (Compare.IsEmpty())
+        if (ref_compare.IsEmpty())
           return;
 
-        XII_TEST_STRING(Compare.PeekFront().GetData(), "</object>");
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), "</object>");
         // xiiLog::Printf("Expect: %s - Is: %s\n", "</object>", Compare.PeekFront().GetData());
-        Compare.PopFront();
+        ref_compare.PopFront();
       }
       break;
 
       case xiiVariant::Type::VariantArray:
       {
         // xiiLog::Printf("Expect: %s - Is: %s\n", "<array>", Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), "<array>");
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), "<array>");
+        ref_compare.PopFront();
 
         const xiiVariantArray& va = var.Get<xiiVariantArray>();
 
         for (xiiUInt32 i = 0; i < va.GetCount(); ++i)
         {
-          TraverseTree(va[i], Compare);
+          TraverseTree(va[i], ref_compare);
         }
 
-        if (Compare.IsEmpty())
+        if (ref_compare.IsEmpty())
           return;
 
         // xiiLog::Printf("Expect: %s - Is: %s\n", "</array>", Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), "</array>");
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), "</array>");
+        ref_compare.PopFront();
       }
       break;
 
       case xiiVariant::Type::Invalid:
         // xiiLog::Printf("Expect: %s - Is: %s\n", "null", Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), "null");
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), "null");
+        ref_compare.PopFront();
         break;
 
       case xiiVariant::Type::Bool:
         // xiiLog::Printf("Expect: %s - Is: %s\n", var.Get<bool>() ? "bool true" : "bool false", Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), var.Get<bool>() ? "bool true" : "bool false");
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), var.Get<bool>() ? "bool true" : "bool false");
+        ref_compare.PopFront();
         break;
 
       case xiiVariant::Type::Int8:
@@ -111,8 +111,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("int8 {0}", var.Get<xiiInt8>());
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -121,8 +121,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("uint8 {0}", var.Get<xiiUInt8>());
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -131,8 +131,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("int16 {0}", var.Get<xiiInt16>());
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -141,8 +141,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("uint16 {0}", var.Get<xiiUInt16>());
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -151,8 +151,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("int32 {0}", var.Get<xiiInt32>());
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -161,8 +161,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("uint32 {0}", var.Get<xiiUInt32>());
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -171,8 +171,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("int64 {0}", var.Get<xiiInt64>());
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -181,8 +181,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("uint64 {0}", var.Get<xiiUInt64>());
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -191,8 +191,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("float {0}", xiiArgF(var.Get<float>(), 4));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -201,8 +201,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("double {0}", xiiArgF(var.Get<double>(), 4));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -211,8 +211,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("time {0}", xiiArgF(var.Get<xiiTime>().GetSeconds(), 4));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -221,15 +221,15 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("angle {0}", xiiArgF(var.Get<xiiAngle>().GetDegree(), 4));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
       case xiiVariant::Type::String:
         // xiiLog::Printf("Expect: %s - Is: %s\n", var.Get<xiiString>().GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), var.Get<xiiString>().GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), var.Get<xiiString>().GetData());
+        ref_compare.PopFront();
         break;
 
       case xiiVariant::Type::Vector2:
@@ -237,8 +237,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("vec2 ({0}, {1})", xiiArgF(var.Get<xiiVec2>().x, 4), xiiArgF(var.Get<xiiVec2>().y, 4));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -247,8 +247,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("vec2d ({0}, {1})", xiiArgF(var.Get<xiiVec2d>().x, 8), xiiArgF(var.Get<xiiVec2d>().y, 8));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -257,8 +257,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("vec3 ({0}, {1}, {2})", xiiArgF(var.Get<xiiVec3>().x, 4), xiiArgF(var.Get<xiiVec3>().y, 4), xiiArgF(var.Get<xiiVec3>().z, 4));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -267,8 +267,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("vec3d ({0}, {1}, {2})", xiiArgF(var.Get<xiiVec3d>().x, 8), xiiArgF(var.Get<xiiVec3d>().y, 8), xiiArgF(var.Get<xiiVec3d>().z, 8));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -277,8 +277,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("vec4 ({0}, {1}, {2}, {3})", xiiArgF(var.Get<xiiVec4>().x, 4), xiiArgF(var.Get<xiiVec4>().y, 4), xiiArgF(var.Get<xiiVec4>().z, 4), xiiArgF(var.Get<xiiVec4>().w, 4));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -287,8 +287,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("vec4d ({0}, {1}, {2}, {3})", xiiArgF(var.Get<xiiVec4d>().x, 8), xiiArgF(var.Get<xiiVec4d>().y, 8), xiiArgF(var.Get<xiiVec4d>().z, 8), xiiArgF(var.Get<xiiVec4d>().w, 8));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -297,8 +297,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("vec2i ({0}, {1})", var.Get<xiiVec2I32>().x, var.Get<xiiVec2I32>().y);
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -307,8 +307,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("vec3i ({0}, {1}, {2})", var.Get<xiiVec3I32>().x, var.Get<xiiVec3I32>().y, var.Get<xiiVec3I32>().z);
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -317,8 +317,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("vec4i ({0}, {1}, {2}, {3})", var.Get<xiiVec4I32>().x, var.Get<xiiVec4I32>().y, var.Get<xiiVec4I32>().z, var.Get<xiiVec4I32>().w);
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -327,8 +327,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("vec2i64 ({0}, {1})", var.Get<xiiVec2I64>().x, var.Get<xiiVec2I64>().y);
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -337,8 +337,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("vec3i64 ({0}, {1}, {2})", var.Get<xiiVec3I64>().x, var.Get<xiiVec3I64>().y, var.Get<xiiVec3I64>().z);
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -347,8 +347,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("vec4i64 ({0}, {1}, {2}, {3})", var.Get<xiiVec4I64>().x, var.Get<xiiVec4I64>().y, var.Get<xiiVec4I64>().z, var.Get<xiiVec4I64>().w);
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -357,8 +357,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("color ({0}, {1}, {2}, {3})", xiiArgF(var.Get<xiiColor>().r, 4), xiiArgF(var.Get<xiiColor>().g, 4), xiiArgF(var.Get<xiiColor>().b, 4), xiiArgF(var.Get<xiiColor>().a, 4));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -369,8 +369,8 @@ namespace JSONReaderTestDetail
 
         sTemp.Format("gamma ({0}, {1}, {2}, {3})", c.r, c.g, c.b, c.a);
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -379,8 +379,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("quat ({0}, {1}, {2}, {3})", xiiArgF(var.Get<xiiQuat>().v.x, 4), xiiArgF(var.Get<xiiQuat>().v.y, 4), xiiArgF(var.Get<xiiQuat>().v.z, 4), xiiArgF(var.Get<xiiQuat>().w, 4));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -389,8 +389,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("quatd ({0}, {1}, {2}, {3})", xiiArgF(var.Get<xiiQuatd>().v.x, 8), xiiArgF(var.Get<xiiQuatd>().v.y, 8), xiiArgF(var.Get<xiiQuatd>().v.z, 8), xiiArgF(var.Get<xiiQuatd>().w, 8));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -401,8 +401,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("mat3 ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})", xiiArgF(m.m_fElementsCM[0], 4), xiiArgF(m.m_fElementsCM[1], 4), xiiArgF(m.m_fElementsCM[2], 4), xiiArgF(m.m_fElementsCM[3], 4), xiiArgF(m.m_fElementsCM[4], 4), xiiArgF(m.m_fElementsCM[5], 4), xiiArgF(m.m_fElementsCM[6], 4), xiiArgF(m.m_fElementsCM[7], 4), xiiArgF(m.m_fElementsCM[8], 4));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -413,8 +413,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Format("mat3d ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})", xiiArgF(m.m_fElementsCM[0], 8), xiiArgF(m.m_fElementsCM[1], 8), xiiArgF(m.m_fElementsCM[2], 8), xiiArgF(m.m_fElementsCM[3], 8), xiiArgF(m.m_fElementsCM[4], 8), xiiArgF(m.m_fElementsCM[5], 8), xiiArgF(m.m_fElementsCM[6], 8), xiiArgF(m.m_fElementsCM[7], 8), xiiArgF(m.m_fElementsCM[8], 8));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -425,8 +425,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Printf("mat4 (%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f)", m.m_fElementsCM[0], m.m_fElementsCM[1], m.m_fElementsCM[2], m.m_fElementsCM[3], m.m_fElementsCM[4], m.m_fElementsCM[5], m.m_fElementsCM[6], m.m_fElementsCM[7], m.m_fElementsCM[8], m.m_fElementsCM[9], m.m_fElementsCM[10], m.m_fElementsCM[11], m.m_fElementsCM[12], m.m_fElementsCM[13], m.m_fElementsCM[14], m.m_fElementsCM[15]);
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -437,8 +437,8 @@ namespace JSONReaderTestDetail
         xiiStringBuilder sTemp;
         sTemp.Printf("mat4d (%.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f)", m.m_fElementsCM[0], m.m_fElementsCM[1], m.m_fElementsCM[2], m.m_fElementsCM[3], m.m_fElementsCM[4], m.m_fElementsCM[5], m.m_fElementsCM[6], m.m_fElementsCM[7], m.m_fElementsCM[8], m.m_fElementsCM[9], m.m_fElementsCM[10], m.m_fElementsCM[11], m.m_fElementsCM[12], m.m_fElementsCM[13], m.m_fElementsCM[14], m.m_fElementsCM[15]);
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 
@@ -461,8 +461,8 @@ namespace JSONReaderTestDetail
         xiiConversionUtils::ToString(uuid, sTemp);
         sTemp.Prepend("uuid ");
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
-        XII_TEST_STRING(Compare.PeekFront().GetData(), sTemp.GetData());
-        Compare.PopFront();
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
       }
       break;
 

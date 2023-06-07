@@ -168,7 +168,7 @@ xiiQtMainWindow::~xiiQtMainWindow()
   }
 }
 
-void xiiQtMainWindow::closeEvent(QCloseEvent* event)
+void xiiQtMainWindow::closeEvent(QCloseEvent* pEvent)
 {
   const bool bMaximized = isMaximized();
   if (bMaximized)

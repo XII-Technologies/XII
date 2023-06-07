@@ -9,8 +9,8 @@
 
 xiiQtFileWidget* xiiQtFileWidget::s_pWidget = nullptr;
 
-xiiQtFileWidget::xiiQtFileWidget(QWidget* parent) :
-  ads::CDockWidget("File Operations", parent)
+xiiQtFileWidget::xiiQtFileWidget(QWidget* pParent) :
+  ads::CDockWidget("File Operations", pParent)
 {
   s_pWidget = this;
 
@@ -21,7 +21,7 @@ xiiQtFileWidget::xiiQtFileWidget(QWidget* parent) :
 }
 
 
-xiiQtFileWidget::~xiiQtFileWidget() {}
+xiiQtFileWidget::~xiiQtFileWidget() = default;
 
 void xiiQtFileWidget::ResetStats()
 {

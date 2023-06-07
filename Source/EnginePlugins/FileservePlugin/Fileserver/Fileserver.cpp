@@ -453,7 +453,7 @@ void xiiFileserver::HandleUploadFileFinished(xiiFileserveClientContext& client, 
 }
 
 
-xiiResult xiiFileserver::SendConnectionInfo(const char* szClientAddress, xiiUInt16 uiMyPort, const xiiArrayPtr<xiiStringBuilder>& MyIPs, xiiTime timeout)
+xiiResult xiiFileserver::SendConnectionInfo(const char* szClientAddress, xiiUInt16 uiMyPort, const xiiArrayPtr<xiiStringBuilder>& myIPs, xiiTime timeout)
 {
   xiiStringBuilder sAddress = szClientAddress;
   sAddress.Append(":2042"); // hard-coded port
@@ -467,13 +467,13 @@ xiiResult xiiFileserver::SendConnectionInfo(const char* szClientAddress, xiiUInt
     return XII_FAILURE;
   }
 
-  const xiiUInt8 uiCount = static_cast<xiiUInt8>(MyIPs.GetCount());
+  const xiiUInt8 uiCount = static_cast<xiiUInt8>(myIPs.GetCount());
 
   xiiRemoteMessage msg('FSRV', 'MYIP');
   msg.GetWriter() << uiMyPort;
   msg.GetWriter() << uiCount;
 
-  for (const auto& info : MyIPs)
+  for (const auto& info : myIPs)
   {
     msg.GetWriter() << info;
   }

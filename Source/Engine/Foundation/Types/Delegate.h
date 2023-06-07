@@ -86,7 +86,7 @@ struct xiiMakeDelegateHelper;
 ///   auto delegate = xiiMakeDelegate(&foo);
 /// \endcode
 template <typename Function>
-xiiDelegate<Function> xiiMakeDelegate(Function* function);
+xiiDelegate<Function> xiiMakeDelegate(Function* pFunction);
 
 /// \brief A helper function to create delegates from methods.
 ///

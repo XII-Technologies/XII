@@ -17,8 +17,8 @@ class XII_RENDERERCORE_DLL xiiSkeletonComponent : public xiiRenderComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;
@@ -28,7 +28,7 @@ protected:
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg) override;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiSkeletonComponent

@@ -37,19 +37,19 @@ public:
   };
 
   static void ParseMaterialParameterSection(
-    xiiStreamReader&                         stream,
-    xiiHybridArray<ParameterDefinition, 16>& out_Parameter,
-    xiiHybridArray<EnumDefinition, 4>&       out_EnumDefinitions);
+    xiiStreamReader&                         ref_stream,
+    xiiHybridArray<ParameterDefinition, 16>& out_parameter,
+    xiiHybridArray<EnumDefinition, 4>&       out_enumDefinitions);
 
   static void ParsePermutationSection(
-    xiiStreamReader&                       stream,
-    xiiHybridArray<xiiHashedString, 16>&   out_PermVars,
-    xiiHybridArray<xiiPermutationVar, 16>& out_FixedPermVars);
+    xiiStreamReader&                       ref_stream,
+    xiiHybridArray<xiiHashedString, 16>&   out_permVars,
+    xiiHybridArray<xiiPermutationVar, 16>& out_fixedPermVars);
 
   static void ParsePermutationSection(
     xiiStringView                          sPermutationSection,
-    xiiHybridArray<xiiHashedString, 16>&   out_PermVars,
-    xiiHybridArray<xiiPermutationVar, 16>& out_FixedPermVars);
+    xiiHybridArray<xiiHashedString, 16>&   out_permVars,
+    xiiHybridArray<xiiPermutationVar, 16>& out_fixedPermVars);
 
-  static void ParsePermutationVarConfig(xiiStringView sPermutationVarConfig, xiiVariant& out_DefaultValue, EnumDefinition& out_EnumDefinition);
+  static void ParsePermutationVarConfig(xiiStringView sPermutationVarConfig, xiiVariant& out_defaultValue, EnumDefinition& out_enumDefinition);
 };

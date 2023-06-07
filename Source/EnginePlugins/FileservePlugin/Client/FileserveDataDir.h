@@ -31,7 +31,7 @@ namespace xiiDataDirectory
   {
   public:
     /// \brief The factory that can be registered at xiiFileSystem to create data directories of this type.
-    static xiiDataDirectoryType* Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage Usage);
+    static xiiDataDirectoryType* Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage usage);
 
     /// \brief [internal] Makes sure the redirection config files are up to date and then reloads them.
     virtual void ReloadExternalConfigs() override;

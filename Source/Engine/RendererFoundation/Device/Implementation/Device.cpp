@@ -499,7 +499,7 @@ void xiiGALDevice::DestroyShader(xiiGALShaderHandle hShader)
 }
 
 
-xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescription& desc, xiiArrayPtr<const xiiUInt8> pInitialData)
+xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescription& desc, xiiArrayPtr<const xiiUInt8> initialData)
 {
   XII_GALDEVICE_LOCK_AND_CHECK();
 
@@ -511,14 +511,14 @@ xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescript
 
   if (desc.m_ResourceAccess.IsImmutable())
   {
-    if (pInitialData.IsEmpty())
+    if (initialData.IsEmpty())
     {
       xiiLog::Error("Trying to create an immutable buffer but not supplying initial data is not possible!");
       return xiiGALBufferHandle();
     }
 
     xiiUInt32 uiBufferSize = desc.m_uiTotalSize;
-    if (uiBufferSize != pInitialData.GetCount())
+    if (uiBufferSize != initialData.GetCount())
     {
       xiiLog::Error("Trying to create a buffer with invalid initial data!");
       return xiiGALBufferHandle();
@@ -527,7 +527,7 @@ xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescript
 
   /// \todo Platform independent validation (buffer type supported)
 
-  xiiGALBuffer* pBuffer = CreateBufferPlatform(desc, pInitialData);
+  xiiGALBuffer* pBuffer = CreateBufferPlatform(desc, initialData);
 
   return FinalizeBufferInternal(desc, pBuffer);
 }
@@ -572,28 +572,28 @@ void xiiGALDevice::DestroyBuffer(xiiGALBufferHandle hBuffer)
 }
 
 // Helper functions for buffers (for common, simple use cases)
-xiiGALBufferHandle xiiGALDevice::CreateVertexBuffer(xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, const char* szName, xiiArrayPtr<const xiiUInt8> pInitialData, bool bDataIsMutable /*= false */)
+xiiGALBufferHandle xiiGALDevice::CreateVertexBuffer(xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, const char* szName, xiiArrayPtr<const xiiUInt8> initialData, bool bDataIsMutable /*= false */)
 {
   xiiGALBufferCreationDescription desc;
   desc.m_uiStructSize                = uiVertexSize;
   desc.m_uiTotalSize                 = uiVertexSize * uiVertexCount;
   desc.m_BufferType                  = xiiGALBufferType::VertexBuffer;
-  desc.m_ResourceAccess.m_bImmutable = !pInitialData.IsEmpty() && !bDataIsMutable;
+  desc.m_ResourceAccess.m_bImmutable = !initialData.IsEmpty() && !bDataIsMutable;
   desc.m_szName                      = szName;
 
-  return CreateBuffer(desc, pInitialData);
+  return CreateBuffer(desc, initialData);
 }
 
-xiiGALBufferHandle xiiGALDevice::CreateIndexBuffer(xiiGALIndexType::Enum IndexType, xiiUInt32 uiIndexCount, const char* szName, xiiArrayPtr<const xiiUInt8> pInitialData, bool bDataIsMutable /*= false*/)
+xiiGALBufferHandle xiiGALDevice::CreateIndexBuffer(xiiGALIndexType::Enum indexType, xiiUInt32 uiIndexCount, const char* szName, xiiArrayPtr<const xiiUInt8> initialData, bool bDataIsMutable /*= false*/)
 {
   xiiGALBufferCreationDescription desc;
-  desc.m_uiStructSize                = xiiGALIndexType::GetSize(IndexType);
+  desc.m_uiStructSize                = xiiGALIndexType::GetSize(indexType);
   desc.m_uiTotalSize                 = desc.m_uiStructSize * uiIndexCount;
   desc.m_BufferType                  = xiiGALBufferType::IndexBuffer;
-  desc.m_ResourceAccess.m_bImmutable = !bDataIsMutable && !pInitialData.IsEmpty();
+  desc.m_ResourceAccess.m_bImmutable = !bDataIsMutable && !initialData.IsEmpty();
   desc.m_szName                      = szName;
 
-  return CreateBuffer(desc, pInitialData);
+  return CreateBuffer(desc, initialData);
 }
 
 xiiGALBufferHandle xiiGALDevice::CreateConstantBuffer(xiiUInt32 uiBufferSize, const char* szName)
@@ -609,13 +609,13 @@ xiiGALBufferHandle xiiGALDevice::CreateConstantBuffer(xiiUInt32 uiBufferSize, co
 }
 
 
-xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& desc, xiiArrayPtr<xiiGALSystemMemoryDescription> pInitialData)
+xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& desc, xiiArrayPtr<xiiGALSystemMemoryDescription> initialData)
 {
   XII_GALDEVICE_LOCK_AND_CHECK();
 
   /// \todo Platform independent validation (desc width & height < platform maximum, format, etc.)
 
-  if (desc.m_ResourceAccess.IsImmutable() && (pInitialData.IsEmpty() || pInitialData.GetCount() < desc.m_uiMipLevelCount) &&
+  if (desc.m_ResourceAccess.IsImmutable() && (initialData.IsEmpty() || initialData.GetCount() < desc.m_uiMipLevelCount) &&
       !desc.m_bCreateRenderTarget)
   {
     xiiLog::Error("Trying to create an immutable texture but not supplying initial data (or not enough data pointers) is not possible!");
@@ -628,7 +628,7 @@ xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescr
     return xiiGALTextureHandle();
   }
 
-  xiiGALTexture* pTexture = CreateTexturePlatform(desc, pInitialData);
+  xiiGALTexture* pTexture = CreateTexturePlatform(desc, initialData);
 
   return FinalizeTextureInternal(desc, pTexture);
 }

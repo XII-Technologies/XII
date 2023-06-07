@@ -41,7 +41,7 @@ public:
   // xiiAnimGraphNode
 
   const char* GetCustomNodeTitle() const { return m_sCustomNodeTitle.GetString(); }
-  void        SetCustomNodeTitle(const char* sz) { m_sCustomNodeTitle.Assign(sz); }
+  void        SetCustomNodeTitle(const char* szSz) { m_sCustomNodeTitle.Assign(szSz); }
 
 protected:
   friend class xiiAnimGraph;
@@ -88,7 +88,7 @@ struct XII_RENDERERCORE_DLL xiiAnimState
   xiiTime m_DurationOfQueued;
 
   bool  WillStateBeOff(bool bTriggerActive) const;
-  void  UpdateState(xiiTime tDiff);
+  void  UpdateState(xiiTime diff);
   State GetCurrentState() const { return m_State; }
   float GetWeight() const { return m_fCurWeight; }
   float GetNormalizedPlaybackPosition() const { return m_fNormalizedPlaybackPosition; }
@@ -97,8 +97,8 @@ struct XII_RENDERERCORE_DLL xiiAnimState
   bool  HasLoopedEnd() const { return m_bHasLoopedEnd; }
   float GetFinalSpeed() const { return m_fPlaybackSpeed * m_fPlaybackSpeedFactor; }
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 
 private:
   void RampWeightUpOrDown(float& inout_fWeight, float fTargetWeight, xiiTime tDiff) const;

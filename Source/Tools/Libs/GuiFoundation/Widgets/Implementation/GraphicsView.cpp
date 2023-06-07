@@ -7,8 +7,8 @@
 #include <QTextOption>
 #include <qevent.h>
 
-xiiQtGraphicsView::xiiQtGraphicsView(QWidget* parent /*= nullptr*/) :
-  QGraphicsView(parent)
+xiiQtGraphicsView::xiiQtGraphicsView(QWidget* pParent /*= nullptr*/) :
+  QGraphicsView(pParent)
 {
   m_fZoom               = 50.0f;
   m_fMinZoom            = 10.0f;
@@ -127,16 +127,16 @@ void xiiQtGraphicsView::keyPressEvent(QKeyEvent* e)
   }
 }
 
-void xiiQtGraphicsView::SetZoom(float zoom)
+void xiiQtGraphicsView::SetZoom(float fZoom)
 {
-  m_fZoom = zoom;
+  m_fZoom = fZoom;
   UpdateTransform();
 }
 
-void xiiQtGraphicsView::SetZoomLimits(float minZoom, float maxZoom)
+void xiiQtGraphicsView::SetZoomLimits(float fMinZoom, float fMaxZoom)
 {
-  m_fMinZoom = xiiMath::Min(minZoom, maxZoom);
-  m_fMaxZoom = xiiMath::Max(minZoom, maxZoom);
+  m_fMinZoom = xiiMath::Min(fMinZoom, fMaxZoom);
+  m_fMaxZoom = xiiMath::Max(fMinZoom, fMaxZoom);
 
   UpdateTransform();
 }

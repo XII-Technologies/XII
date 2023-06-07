@@ -132,10 +132,10 @@ void xiiAreaDamageComponent::OnSimulationStarted()
   }
 }
 
-void xiiAreaDamageComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiAreaDamageComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_bTriggerOnCreation;
   s << m_fRadius;
@@ -144,11 +144,11 @@ void xiiAreaDamageComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_fImpulse;
 }
 
-void xiiAreaDamageComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiAreaDamageComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_bTriggerOnCreation;
   s >> m_fRadius;
@@ -160,7 +160,7 @@ void xiiAreaDamageComponent::DeserializeComponent(xiiWorldReader& stream)
 //////////////////////////////////////////////////////////////////////////
 
 xiiAreaDamageComponentManager::xiiAreaDamageComponentManager(xiiWorld* pWorld) :
-  SUPER(pWorld), m_pPhysicsInterface(nullptr)
+  SUPER(pWorld)
 {
 }
 

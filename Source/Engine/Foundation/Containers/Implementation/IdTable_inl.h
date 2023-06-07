@@ -144,7 +144,7 @@ void xiiIdTableBase<IdType, ValueType>::operator=(const xiiIdTableBase<IdType, V
 }
 
 template <typename IdType, typename ValueType>
-void xiiIdTableBase<IdType, ValueType>::Reserve(IndexType uiCapacity)
+void xiiIdTableBase<IdType, ValueType>::Reserve(IndexType capacity)
 {
   if (m_Capacity >= uiCapacity + CAPACITY_ALIGNMENT)
     return;
@@ -232,7 +232,7 @@ IdType xiiIdTableBase<IdType, ValueType>::Insert(ValueType&& value)
 }
 
 template <typename IdType, typename ValueType>
-bool xiiIdTableBase<IdType, ValueType>::Remove(const IdType id, ValueType* out_oldValue /*= nullptr*/)
+bool xiiIdTableBase<IdType, ValueType>::Remove(const IdType id, ValueType* out_pOldValue /*= nullptr*/)
 {
   if (m_Capacity <= id.m_InstanceIndex)
     return false;

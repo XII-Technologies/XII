@@ -7,8 +7,7 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFrameDataProviderBase, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiFrameDataProviderBase::xiiFrameDataProviderBase() :
-  m_pOwnerPipeline(nullptr), m_pData(nullptr), m_uiLastUpdateFrame(0)
+xiiFrameDataProviderBase::xiiFrameDataProviderBase()
 {
 }
 

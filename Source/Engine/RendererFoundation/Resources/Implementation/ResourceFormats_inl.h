@@ -39,28 +39,28 @@ xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>::xiiGALFormatLookupEntr
 
 
 template <typename NativeFormatType, NativeFormatType InvalidFormat>
-xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>::xiiGALFormatLookupEntry(NativeFormatType Storage) :
+xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>::xiiGALFormatLookupEntry(NativeFormatType storage) :
   m_eStorage(Storage), m_eRenderTarget(InvalidFormat), m_eDepthOnlyType(InvalidFormat), m_eStencilOnlyType(InvalidFormat), m_eDepthStencilType(InvalidFormat), m_eVertexAttributeType(InvalidFormat), m_eResourceViewType(InvalidFormat)
 {
 }
 
 template <typename NativeFormatType, NativeFormatType InvalidFormat>
 xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>::RT(
-  NativeFormatType RenderTargetType)
+  NativeFormatType renderTargetType)
 {
   m_eRenderTarget = RenderTargetType;
   return *this;
 }
 
 template <typename NativeFormatType, NativeFormatType InvalidFormat>
-xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>::D(NativeFormatType DepthOnlyType)
+xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>::D(NativeFormatType depthOnlyType)
 {
   m_eDepthOnlyType = DepthOnlyType;
   return *this;
 }
 
 template <typename NativeFormatType, NativeFormatType InvalidFormat>
-xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>::S(NativeFormatType StencilOnlyType)
+xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>::S(NativeFormatType stencilOnlyType)
 {
   m_eStencilOnlyType = StencilOnlyType;
   return *this;
@@ -68,7 +68,7 @@ xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& xiiGALFormatLookupEntr
 
 template <typename NativeFormatType, NativeFormatType InvalidFormat>
 xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>::DS(
-  NativeFormatType DepthStencilType)
+  NativeFormatType depthStencilType)
 {
   m_eDepthStencilType = DepthStencilType;
   return *this;
@@ -76,7 +76,7 @@ xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& xiiGALFormatLookupEntr
 
 template <typename NativeFormatType, NativeFormatType InvalidFormat>
 xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>::VA(
-  NativeFormatType VertexAttributeType)
+  NativeFormatType vertexAttributeType)
 {
   m_eVertexAttributeType = VertexAttributeType;
   return *this;
@@ -84,7 +84,7 @@ xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& xiiGALFormatLookupEntr
 
 template <typename NativeFormatType, NativeFormatType InvalidFormat>
 xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>::RV(
-  NativeFormatType ResourceViewType)
+  NativeFormatType resourceViewType)
 {
   m_eResourceViewType = ResourceViewType;
   return *this;
@@ -101,13 +101,13 @@ xiiGALFormatLookupTable<FormatClass>::xiiGALFormatLookupTable()
 }
 
 template <typename FormatClass>
-const FormatClass& xiiGALFormatLookupTable<FormatClass>::GetFormatInfo(xiiGALResourceFormat::Enum eFormat) const
+const FormatClass& xiiGALFormatLookupTable<FormatClass>::GetFormatInfo(xiiGALResourceFormat::Enum format) const
 {
   return m_Formats[eFormat];
 }
 
 template <typename FormatClass>
-void xiiGALFormatLookupTable<FormatClass>::SetFormatInfo(xiiGALResourceFormat::Enum eFormat, const FormatClass& NewFormatInfo)
+void xiiGALFormatLookupTable<FormatClass>::SetFormatInfo(xiiGALResourceFormat::Enum format, const FormatClass& newFormatInfo)
 {
   m_Formats[eFormat] = NewFormatInfo;
 }

@@ -85,13 +85,13 @@ void xiiDocumentObject::RemoveSubObject(xiiDocumentObject* pObject)
   pObject->m_pParent = nullptr;
 }
 
-void xiiDocumentObject::ComputeObjectHash(xiiUInt64& uiHash) const
+void xiiDocumentObject::ComputeObjectHash(xiiUInt64& ref_uiHash) const
 {
   const xiiIReflectedTypeAccessor& acc   = GetTypeAccessor();
   auto                             pType = acc.GetType();
 
-  uiHash = xiiHashingUtils::xxHash64(&m_Guid, sizeof(xiiUuid), uiHash);
-  HashPropertiesRecursive(acc, uiHash, pType);
+  ref_uiHash = xiiHashingUtils::xxHash64(&m_Guid, sizeof(xiiUuid), ref_uiHash);
+  HashPropertiesRecursive(acc, ref_uiHash, pType);
 }
 
 

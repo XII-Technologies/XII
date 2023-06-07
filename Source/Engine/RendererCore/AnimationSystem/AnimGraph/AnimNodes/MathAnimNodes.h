@@ -24,7 +24,7 @@ public:
   xiiMathExpressionAnimNode();
   ~xiiMathExpressionAnimNode();
 
-  void        SetExpression(const char* sz);
+  void        SetExpression(const char* szSz);
   const char* GetExpression() const;
 
 private:

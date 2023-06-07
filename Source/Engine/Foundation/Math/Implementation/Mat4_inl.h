@@ -26,7 +26,7 @@ xiiMat4Template<Type>::xiiMat4Template(Type c1r1, Type c2r1, Type c3r1, Type c4r
 }
 
 template <typename Type>
-xiiMat4Template<Type>::xiiMat4Template(const xiiMat3Template<Type>& Rotation, const xiiVec3Template<Type>& vTranslation)
+xiiMat4Template<Type>::xiiMat4Template(const xiiMat3Template<Type>& mRotation, const xiiVec3Template<Type>& vTranslation)
 {
   SetTransformationMatrix(Rotation, vTranslation);
 }
@@ -63,9 +63,9 @@ void xiiMat4Template<Type>::SetFromArray(const Type* const pData, xiiMatrixLayou
 }
 
 template <typename Type>
-void xiiMat4Template<Type>::SetTransformationMatrix(const xiiMat3Template<Type>& Rotation, const xiiVec3Template<Type>& vTranslation)
+void xiiMat4Template<Type>::SetTransformationMatrix(const xiiMat3Template<Type>& mRotation, const xiiVec3Template<Type>& vTranslation)
 {
-  SetRotationalPart(Rotation);
+  SetRotationalPart(mRotation);
   SetTranslationVector(vTranslation);
   SetRow(3, xiiVec4Template<Type>(0, 0, 0, 1));
 }
@@ -209,7 +209,7 @@ xiiVec4Template<Type> xiiMat4Template<Type>::GetRow(xiiUInt32 uiRow) const
 }
 
 template <typename Type>
-void xiiMat4Template<Type>::SetRow(xiiUInt32 uiRow, const xiiVec4Template<Type>& row)
+void xiiMat4Template<Type>::SetRow(xiiUInt32 uiRow, const xiiVec4Template<Type>& vRow)
 {
   XII_ASSERT_DEBUG(uiRow <= 3, "Invalid Row Index {0}", uiRow);
 
@@ -235,7 +235,7 @@ xiiVec4Template<Type> xiiMat4Template<Type>::GetColumn(xiiUInt32 uiColumn) const
 }
 
 template <typename Type>
-void xiiMat4Template<Type>::SetColumn(xiiUInt32 uiColumn, const xiiVec4Template<Type>& column)
+void xiiMat4Template<Type>::SetColumn(xiiUInt32 uiColumn, const xiiVec4Template<Type>& vColumn)
 {
   XII_ASSERT_DEBUG(uiColumn <= 3, "Invalid Column Index {0}", uiColumn);
 
@@ -254,7 +254,7 @@ xiiVec4Template<Type> xiiMat4Template<Type>::GetDiagonal() const
 }
 
 template <typename Type>
-void xiiMat4Template<Type>::SetDiagonal(const xiiVec4Template<Type>& diag)
+void xiiMat4Template<Type>::SetDiagonal(const xiiVec4Template<Type>& vDiag)
 {
   Element(0, 0) = diag.x;
   Element(1, 1) = diag.y;
@@ -276,7 +276,7 @@ const xiiVec3Template<Type> xiiMat4Template<Type>::TransformPosition(const xiiVe
 
 template <typename Type>
 void xiiMat4Template<Type>::TransformPosition(
-  xiiVec3Template<Type>* inout_v,
+  xiiVec3Template<Type>* pV,
   xiiUInt32              uiNumVectors,
   xiiUInt32              uiStride /* = sizeof(xiiVec3Template) */) const
 {
@@ -306,7 +306,7 @@ const xiiVec3Template<Type> xiiMat4Template<Type>::TransformDirection(const xiiV
 
 template <typename Type>
 void xiiMat4Template<Type>::TransformDirection(
-  xiiVec3Template<Type>* inout_v,
+  xiiVec3Template<Type>* pV,
   xiiUInt32              uiNumVectors,
   xiiUInt32              uiStride /* = sizeof(xiiVec3Template<Type>) */) const
 {
@@ -336,7 +336,7 @@ const xiiVec4Template<Type> xiiMat4Template<Type>::Transform(const xiiVec4Templa
 }
 
 template <typename Type>
-void xiiMat4Template<Type>::Transform(xiiVec4Template<Type>* inout_v, xiiUInt32 uiNumVectors, xiiUInt32 uiStride /* = sizeof(xiiVec4Template) */) const
+void xiiMat4Template<Type>::Transform(xiiVec4Template<Type>* pV, xiiUInt32 uiNumVectors, xiiUInt32 uiStride /* = sizeof(xiiVec4Template) */) const
 {
   XII_ASSERT_DEBUG(inout_v != nullptr, "Array must not be nullptr.");
   XII_ASSERT_DEBUG(uiStride >= sizeof(xiiVec4Template<Type>), "Data must not overlap.");
@@ -367,7 +367,7 @@ XII_ALWAYS_INLINE void xiiMat4Template<Type>::SetTranslationVector(const xiiVec3
 }
 
 template <typename Type>
-void xiiMat4Template<Type>::SetRotationalPart(const xiiMat3Template<Type>& Rotation)
+void xiiMat4Template<Type>::SetRotationalPart(const xiiMat3Template<Type>& mRotation)
 {
   for (xiiUInt32 col = 0; col < 3; ++col)
   {

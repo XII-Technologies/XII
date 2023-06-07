@@ -7,12 +7,12 @@
 xiiNavMeshPointOfInterestGraph::xiiNavMeshPointOfInterestGraph()  = default;
 xiiNavMeshPointOfInterestGraph::~xiiNavMeshPointOfInterestGraph() = default;
 
-void xiiNavMeshPointOfInterestGraph::IncreaseCheckVisibiblityTimeStamp(xiiTime tNow)
+void xiiNavMeshPointOfInterestGraph::IncreaseCheckVisibiblityTimeStamp(xiiTime now)
 {
-  if (tNow - m_LastTimeStampStep < xiiTime::Seconds(0.5f))
+  if (now - m_LastTimeStampStep < xiiTime::Seconds(0.5f))
     return;
 
-  m_LastTimeStampStep = tNow;
+  m_LastTimeStampStep = now;
   m_uiCheckVisibilityTimeStamp += 4;
 }
 
@@ -37,30 +37,30 @@ struct PotentialPoI
   xiiVec3 m_vLineDir;
 };
 
-XII_ALWAYS_INLINE static void AddToInterestPoints(xiiDeque<PotentialPoI>& interestPoints, xiiInt32 iVertexIdx, const xiiVec3& pos, const xiiVec3& vPolyCenter, xiiVec3 vLineDir)
+XII_ALWAYS_INLINE static void AddToInterestPoints(xiiDeque<PotentialPoI>& ref_interestPoints, xiiInt32 iVertexIdx, const xiiVec3& vPos, const xiiVec3& vPolyCenter, xiiVec3 vLineDir)
 {
-  xiiVec3 toCenter = vPolyCenter - pos;
+  xiiVec3 toCenter = vPolyCenter - vPos;
   toCenter.SetLength(toCenterOffset).IgnoreResult();
 
-  const xiiVec3 posWithOffset = pos + toCenter + vLineDir * alongLineOffset;
+  const xiiVec3 posWithOffset = vPos + toCenter + vLineDir * alongLineOffset;
 
   if (iVertexIdx < 0)
   {
-    auto& poi       = interestPoints.ExpandAndGetRef();
+    auto& poi       = ref_interestPoints.ExpandAndGetRef();
     poi.m_bUsed     = true;
     poi.m_vPosition = posWithOffset;
     poi.m_vLineDir  = vLineDir;
   }
-  else if (!interestPoints[iVertexIdx].m_bUsed)
+  else if (!ref_interestPoints[iVertexIdx].m_bUsed)
   {
-    auto& poi       = interestPoints[iVertexIdx];
+    auto& poi       = ref_interestPoints[iVertexIdx];
     poi.m_bUsed     = true;
     poi.m_vPosition = posWithOffset;
     poi.m_vLineDir  = vLineDir;
   }
   else
   {
-    auto& poi = interestPoints[iVertexIdx];
+    auto& poi = ref_interestPoints[iVertexIdx];
 
     xiiPlane plane;
     plane.SetFromPoints(poi.m_vVertexPos, poi.m_vVertexPos + poi.m_vLineDir, poi.m_vVertexPos + xiiVec3(0, 0, 1.0f)).IgnoreResult();
@@ -78,7 +78,7 @@ XII_ALWAYS_INLINE static void AddToInterestPoints(xiiDeque<PotentialPoI>& intere
     {
       // different sides, keep both points
 
-      auto& poi2       = interestPoints.ExpandAndGetRef();
+      auto& poi2       = ref_interestPoints.ExpandAndGetRef();
       poi2.m_bUsed     = true;
       poi2.m_vPosition = posWithOffset;
       poi2.m_vLineDir  = vLineDir;

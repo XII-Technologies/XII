@@ -17,7 +17,7 @@
 class xiiFileserverApp : public xiiApplication
 {
 public:
-  typedef xiiApplication SUPER;
+  using SUPER = xiiApplication;
 
   xiiFileserverApp() :
     xiiApplication("Fileserve")

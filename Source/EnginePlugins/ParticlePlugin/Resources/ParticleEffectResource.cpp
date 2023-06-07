@@ -15,7 +15,7 @@ xiiParticleEffectResource::xiiParticleEffectResource() :
 {
 }
 
-xiiParticleEffectResource::~xiiParticleEffectResource() {}
+xiiParticleEffectResource::~xiiParticleEffectResource() = default;
 
 xiiResourceLoadDesc xiiParticleEffectResource::UnloadData(Unload WhatToUnload)
 {

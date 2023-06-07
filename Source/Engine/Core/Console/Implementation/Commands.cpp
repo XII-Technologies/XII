@@ -3,15 +3,15 @@
 #include <Core/Console/QuakeConsole.h>
 #include <Foundation/Configuration/CVar.h>
 
-void xiiQuakeConsole::ExecuteCommand(xiiStringView input)
+void xiiQuakeConsole::ExecuteCommand(xiiStringView sInput)
 {
-  const bool bBind   = input.StartsWith_NoCase("bind ");
-  const bool bUnbind = input.StartsWith_NoCase("unbind ");
+  const bool bBind   = sInput.StartsWith_NoCase("bind ");
+  const bool bUnbind = sInput.StartsWith_NoCase("unbind ");
 
   if (bBind || bUnbind)
   {
     xiiStringBuilder tmp;
-    const char*      szAfterCmd = xiiStringUtils::FindWordEnd(input.GetData(tmp), xiiStringUtils::IsWhiteSpace); // skip the word 'bind' or 'unbind'
+    const char*      szAfterCmd = xiiStringUtils::FindWordEnd(sInput.GetData(tmp), xiiStringUtils::IsWhiteSpace); // skip the word 'bind' or 'unbind'
 
     const char* szKeyNameStart = xiiStringUtils::SkipCharacters(szAfterCmd, xiiStringUtils::IsWhiteSpace);                  // go to the next word
     const char* szKeyNameEnd   = xiiStringUtils::FindWordEnd(szKeyNameStart, xiiStringUtils::IsIdentifierDelimiter_C_Code); // find its end
@@ -31,7 +31,7 @@ void xiiQuakeConsole::ExecuteCommand(xiiStringView input)
     return;
   }
 
-  xiiConsole::ExecuteCommand(input);
+  xiiConsole::ExecuteCommand(sInput);
 }
 
 void xiiQuakeConsole::BindKey(const char* szKey, const char* szCommand)

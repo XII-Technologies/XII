@@ -112,7 +112,7 @@ XII_FORCE_INLINE xiiResource* xiiResourceManager::BeginAcquireResourcePointer(co
 }
 
 template <typename ResourceType>
-ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHandle<ResourceType>& hResource, xiiResourceAcquireMode mode, const xiiTypedResourceHandle<ResourceType>& hFallbackResource, xiiResourceAcquireResult* out_AcquireResult /*= nullptr*/)
+ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHandle<ResourceType>& hResource, xiiResourceAcquireMode mode, const xiiTypedResourceHandle<ResourceType>& hFallbackResource, xiiResourceAcquireResult* out_pAcquireResult /*= nullptr*/)
 {
   XII_ASSERT_DEV(hResource.IsValid(), "Cannot acquire a resource through an invalid handle!");
 
@@ -143,8 +143,8 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
 
   if (mode == xiiResourceAcquireMode::PointerOnly)
   {
-    if (out_AcquireResult)
-      *out_AcquireResult = xiiResourceAcquireResult::Final;
+    if (out_pAcquireResult)
+      *out_pAcquireResult = xiiResourceAcquireResult::Final;
 
     // pResource->m_iLockCount.Increment();
     return pResource;
@@ -165,8 +165,8 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
           (pResource->m_hLoadingFallback.IsValid() || hFallbackResource.IsValid() || GetResourceTypeLoadingFallback<ResourceType>().IsValid()))
       {
         // return the fallback resource for now, if there is one
-        if (out_AcquireResult)
-          *out_AcquireResult = xiiResourceAcquireResult::LoadingFallback;
+        if (out_pAcquireResult)
+          *out_pAcquireResult = xiiResourceAcquireResult::LoadingFallback;
 
         // Fallback order is as follows:
         //  1) Prefer any resource specific fallback resource
@@ -200,8 +200,8 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
 
     if (xiiResourceManager::GetResourceTypeMissingFallback<ResourceType>().IsValid())
     {
-      if (out_AcquireResult)
-        *out_AcquireResult = xiiResourceAcquireResult::MissingFallback;
+      if (out_pAcquireResult)
+        *out_pAcquireResult = xiiResourceAcquireResult::MissingFallback;
 
       return (ResourceType*)BeginAcquireResource(
         xiiResourceManager::GetResourceTypeMissingFallback<ResourceType>(), xiiResourceAcquireMode::BlockTillLoaded);
@@ -213,14 +213,14 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
                          xiiGetStaticRTTI<ResourceType>()->GetTypeName());
     }
 
-    if (out_AcquireResult)
-      *out_AcquireResult = xiiResourceAcquireResult::None;
+    if (out_pAcquireResult)
+      *out_pAcquireResult = xiiResourceAcquireResult::None;
 
     return nullptr;
   }
 
-  if (out_AcquireResult)
-    *out_AcquireResult = xiiResourceAcquireResult::Final;
+  if (out_pAcquireResult)
+    *out_pAcquireResult = xiiResourceAcquireResult::Final;
 
   // pResource->m_iLockCount.Increment();
   return pResource;
@@ -305,11 +305,11 @@ xiiUInt32 xiiResourceManager::ReloadResourcesOfType(bool bForce)
 }
 
 template <typename ResourceType>
-void xiiResourceManager::SetResourceTypeLoader(xiiResourceTypeLoader* creator)
+void xiiResourceManager::SetResourceTypeLoader(xiiResourceTypeLoader* pCreator)
 {
   XII_LOCK(s_ResourceMutex);
 
-  GetResourceTypeLoaders()[xiiGetStaticRTTI<ResourceType>()] = creator;
+  GetResourceTypeLoaders()[xiiGetStaticRTTI<ResourceType>()] = pCreator;
 }
 
 template <typename ResourceType>

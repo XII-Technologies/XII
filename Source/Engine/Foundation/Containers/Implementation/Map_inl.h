@@ -438,7 +438,7 @@ ValueType& xiiMapBase<KeyType, ValueType, Comparer>::operator[](const Compatible
 
 template <typename KeyType, typename ValueType, typename Comparer>
 template <typename CompatibleKeyType>
-typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, ValueType, Comparer>::FindOrAdd(CompatibleKeyType&& key, bool* bExisted)
+typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, ValueType, Comparer>::FindOrAdd(CompatibleKeyType&& key, bool* pExisted)
 {
   Node* pNilNode      = reinterpret_cast<Node*>(&m_NilNode);
   Node* pInsertedNode = nullptr;

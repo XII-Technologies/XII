@@ -11,7 +11,7 @@ inline xiiTransformTemplate<Type>::xiiTransformTemplate(const xiiVec3Template<Ty
 }
 
 template <typename Type>
-void xiiTransformTemplate<Type>::SetFromMat4(const xiiMat4Template<Type>& mat)
+void xiiTransformTemplate<Type>::SetFromMat4(const xiiMat4Template<Type>& mMat)
 {
   xiiMat3Template<Type> mRot = mat.GetRotationalPart();
 
@@ -69,7 +69,7 @@ inline bool xiiTransformTemplate<Type>::IsEqual(const xiiTransformTemplate<Type>
 }
 
 template <typename Type>
-inline void xiiTransformTemplate<Type>::SetLocalTransform(const xiiTransformTemplate<Type>& GlobalTransformParent, const xiiTransformTemplate<Type>& GlobalTransformChild)
+inline void xiiTransformTemplate<Type>::SetLocalTransform(const xiiTransformTemplate<Type>& globalTransformParent, const xiiTransformTemplate<Type>& globalTransformChild)
 {
   const auto invRot   = -GlobalTransformParent.m_qRotation;
   const auto invScale = xiiVec3Template<Type>(1).CompDiv(GlobalTransformParent.m_vScale);
@@ -80,7 +80,7 @@ inline void xiiTransformTemplate<Type>::SetLocalTransform(const xiiTransformTemp
 }
 
 template <typename Type>
-inline void xiiTransformTemplate<Type>::SetGlobalTransform(const xiiTransformTemplate<Type>& GlobalTransformParent, const xiiTransformTemplate<Type>& LocalTransformChild)
+inline void xiiTransformTemplate<Type>::SetGlobalTransform(const xiiTransformTemplate<Type>& globalTransformParent, const xiiTransformTemplate<Type>& localTransformChild)
 {
   *this = GlobalTransformParent * LocalTransformChild;
 }

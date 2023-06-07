@@ -23,8 +23,8 @@ class XII_RENDERERCORE_DLL xiiOccluderComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;
@@ -42,7 +42,7 @@ public:
     return m_vExtents;
   }
 
-  void SetExtents(const xiiVec3& extents);
+  void SetExtents(const xiiVec3& vExtents);
 
 private:
   xiiVec3 m_vExtents = xiiVec3(5.0f);

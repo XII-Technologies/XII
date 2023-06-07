@@ -4,14 +4,14 @@
 #include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Types/Status.h>
 
-void xiiResult::AssertSuccess(const char* msg /*= nullptr*/, const char* details /*= nullptr*/) const
+void xiiResult::AssertSuccess(const char* szMsg /*= nullptr*/, const char* szDetails /*= nullptr*/) const
 {
   if (Succeeded())
     return;
 
-  if (msg)
+  if (szMsg)
   {
-    XII_REPORT_FAILURE(msg, details);
+    XII_REPORT_FAILURE(szMsg, szDetails);
   }
   else
   {

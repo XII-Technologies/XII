@@ -133,9 +133,9 @@ inline bool xiiColor::IsIdenticalRGBA(const xiiColor& rhs) const
   return r == rhs.r && g == rhs.g && b == rhs.b && a == rhs.a;
 }
 
-inline xiiColor xiiColor::WithAlpha(float alpha) const
+inline xiiColor xiiColor::WithAlpha(float fAlpha) const
 {
-  return xiiColor(r, g, b, alpha);
+  return xiiColor(r, g, b, fAlpha);
 }
 
 inline const xiiColor operator+(const xiiColor& c1, const xiiColor& c2)

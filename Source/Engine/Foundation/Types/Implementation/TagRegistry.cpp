@@ -6,7 +6,7 @@
 
 static xiiTagRegistry s_GlobalRegistry;
 
-xiiTagRegistry::xiiTagRegistry() {}
+xiiTagRegistry::xiiTagRegistry() = default;
 
 xiiTagRegistry& xiiTagRegistry::GetGlobalRegistry()
 {
@@ -21,12 +21,12 @@ const xiiTag& xiiTagRegistry::RegisterTag(xiiStringView sTagString)
   return RegisterTag(TagString);
 }
 
-const xiiTag& xiiTagRegistry::RegisterTag(const xiiHashedString& TagString)
+const xiiTag& xiiTagRegistry::RegisterTag(const xiiHashedString& sTagString)
 {
   XII_LOCK(m_TagRegistryMutex);
 
   // Early out if the tag is already registered
-  const xiiTag* pResult = GetTagByName(TagString);
+  const xiiTag* pResult = GetTagByName(sTagString);
 
   if (pResult != nullptr)
     return *pResult;
@@ -37,22 +37,22 @@ const xiiTag& xiiTagRegistry::RegisterTag(const xiiHashedString& TagString)
   xiiTag TempTag;
   TempTag.m_uiBlockIndex = uiNextTagIndex / (sizeof(xiiTagSetBlockStorage) * 8);
   TempTag.m_uiBitIndex   = uiNextTagIndex - (TempTag.m_uiBlockIndex * sizeof(xiiTagSetBlockStorage) * 8);
-  TempTag.m_sTagString   = TagString;
+  TempTag.m_sTagString   = sTagString;
 
   // Store the tag
-  auto it = m_RegisteredTags.Insert(TagString, TempTag);
+  auto it = m_RegisteredTags.Insert(sTagString, TempTag);
 
   m_TagsByIndex.PushBack(&it.Value());
 
-  xiiLog::Debug("Registered Tag '{0}'", TagString);
+  xiiLog::Debug("Registered Tag '{0}'", sTagString);
   return *m_TagsByIndex.PeekBack();
 }
 
-const xiiTag* xiiTagRegistry::GetTagByName(const xiiTempHashedString& TagString) const
+const xiiTag* xiiTagRegistry::GetTagByName(const xiiTempHashedString& sTagString) const
 {
   XII_LOCK(m_TagRegistryMutex);
 
-  auto It = m_RegisteredTags.Find(TagString);
+  auto It = m_RegisteredTags.Find(sTagString);
   if (It.IsValid())
   {
     return &It.Value();
@@ -88,12 +88,12 @@ xiiUInt32 xiiTagRegistry::GetNumTags() const
   return m_TagsByIndex.GetCount();
 }
 
-xiiResult xiiTagRegistry::Load(xiiStreamReader& stream)
+xiiResult xiiTagRegistry::Load(xiiStreamReader& ref_stream)
 {
   XII_LOCK(m_TagRegistryMutex);
 
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  ref_stream >> uiVersion;
 
   if (uiVersion != 1)
   {
@@ -102,7 +102,7 @@ xiiResult xiiTagRegistry::Load(xiiStreamReader& stream)
   }
 
   xiiUInt32 uiNumTags = 0;
-  stream >> uiNumTags;
+  ref_stream >> uiNumTags;
 
   if (uiNumTags > 16 * 1024)
   {
@@ -113,7 +113,7 @@ xiiResult xiiTagRegistry::Load(xiiStreamReader& stream)
   xiiStringBuilder temp;
   for (xiiUInt32 i = 0; i < uiNumTags; ++i)
   {
-    stream >> temp;
+    ref_stream >> temp;
 
     RegisterTag(temp);
   }

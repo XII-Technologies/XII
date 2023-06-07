@@ -5,7 +5,7 @@
 
 struct XII_GAMEENGINE_DLL xiiLogicOperator
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {

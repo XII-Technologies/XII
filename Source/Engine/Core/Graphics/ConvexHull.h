@@ -40,16 +40,16 @@ public:
   /// \note The length is not in 'mesh space' coordinates, but instead in 'unit cube space'.
   /// That means, every mesh is scaled to fit into a cube of size [-1; +1] for each axis. Thus the exact scale of the mesh does not matter
   /// when setting this value. Default is 0.05.
-  void SetSimplificationMinTriangleEdgeLength(double len) { m_fMinTriangleEdgeLength = len; }
+  void SetSimplificationMinTriangleEdgeLength(double fLen) { m_fMinTriangleEdgeLength = fLen; }
 
   /// \brief Generates the convex hull. Simplifies the mesh according to the previously specified parameters.
   xiiResult Build(const xiiArrayPtr<const xiiVec3> vertices);
 
   /// \brief When Build() was successful this can be called to retrieve the resulting vertices and triangles.
-  void Retrieve(xiiDynamicArray<xiiVec3>& out_Vertices, xiiDynamicArray<Face>& out_Faces);
+  void Retrieve(xiiDynamicArray<xiiVec3>& out_vertices, xiiDynamicArray<Face>& out_faces);
 
   /// \brief Same as Retrieve() but only returns the vertices.
-  void RetrieveVertices(xiiDynamicArray<xiiVec3>& out_Vertices);
+  void RetrieveVertices(xiiDynamicArray<xiiVec3>& out_vertices);
 
 private:
   xiiResult ComputeCenterAndScale(const xiiArrayPtr<const xiiVec3> vertices);

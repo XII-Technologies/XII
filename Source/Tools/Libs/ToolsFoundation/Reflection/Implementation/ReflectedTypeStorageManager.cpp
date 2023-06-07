@@ -58,12 +58,12 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddProperties(
 
 void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertiesRecursive(
   const xiiRTTI*                    pType,
-  xiiSet<const xiiDocumentObject*>& requiresPatchingEmbeddedClass)
+  xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass)
 {
   // Parse parent class
   const xiiRTTI* pParent = pType->GetParentType();
   if (pParent != nullptr)
-    AddPropertiesRecursive(pParent, requiresPatchingEmbeddedClass);
+    AddPropertiesRecursive(pParent, ref_requiresPatchingEmbeddedClass);
 
   // Parse properties
   const xiiUInt32 uiPropertyCount = pType->GetProperties().GetCount();
@@ -79,7 +79,7 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertiesR
       // Value already present, update type and instances
       storageInfo->m_Type         = GetStorageType(pProperty);
       storageInfo->m_DefaultValue = xiiToolsReflectionUtils::GetStorageDefault(pProperty);
-      UpdateInstances(storageInfo->m_uiIndex, pProperty, requiresPatchingEmbeddedClass);
+      UpdateInstances(storageInfo->m_uiIndex, pProperty, ref_requiresPatchingEmbeddedClass);
     }
     else
     {
@@ -87,7 +87,7 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertiesR
 
       // Add value, new entries are appended
       m_PathToStorageInfoTable.Insert(path, StorageInfo(uiIndex, GetStorageType(pProperty), xiiToolsReflectionUtils::GetStorageDefault(pProperty)));
-      AddPropertyToInstances(uiIndex, pProperty, requiresPatchingEmbeddedClass);
+      AddPropertyToInstances(uiIndex, pProperty, ref_requiresPatchingEmbeddedClass);
     }
   }
 }
@@ -95,7 +95,7 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertiesR
 void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::UpdateInstances(
   xiiUInt32                         uiIndex,
   const xiiAbstractProperty*        pProperty,
-  xiiSet<const xiiDocumentObject*>& requiresPatchingEmbeddedClass)
+  xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass)
 {
   for (auto it = m_Instances.GetIterator(); it.IsValid(); ++it)
   {
@@ -116,13 +116,13 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::UpdateInstance
           {
             if (!value.Get<xiiUuid>().IsValid())
             {
-              requiresPatchingEmbeddedClass.Insert(it.Key()->GetOwner());
+              ref_requiresPatchingEmbeddedClass.Insert(it.Key()->GetOwner());
             }
           }
           else
           {
             value = xiiToolsReflectionUtils::GetStorageDefault(pProperty);
-            requiresPatchingEmbeddedClass.Insert(it.Key()->GetOwner());
+            ref_requiresPatchingEmbeddedClass.Insert(it.Key()->GetOwner());
           }
           continue;
         }
@@ -225,7 +225,7 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::UpdateInstance
 void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertyToInstances(
   xiiUInt32                         uiIndex,
   const xiiAbstractProperty*        pProperty,
-  xiiSet<const xiiDocumentObject*>& requiresPatchingEmbeddedClass)
+  xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass)
 {
   if (pProperty->GetCategory() != xiiPropertyCategory::Member)
     return;
@@ -237,7 +237,7 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertyToI
     data.PushBack(xiiToolsReflectionUtils::GetStorageDefault(pProperty));
     if (pProperty->GetFlags().IsSet(xiiPropertyFlags::Class) && !pProperty->GetFlags().IsSet(xiiPropertyFlags::Pointer))
     {
-      requiresPatchingEmbeddedClass.Insert(it.Key()->GetOwner());
+      ref_requiresPatchingEmbeddedClass.Insert(it.Key()->GetOwner());
     }
   }
 }

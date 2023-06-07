@@ -24,8 +24,8 @@ public:
   ~xiiOzzArchiveData();
 
   xiiResult FetchRegularFile(const char* szFile);
-  xiiResult FetchEmbeddedArchive(xiiStreamReader& stream);
-  xiiResult StoreEmbeddedArchive(xiiStreamWriter& stream) const;
+  xiiResult FetchEmbeddedArchive(xiiStreamReader& ref_stream);
+  xiiResult StoreEmbeddedArchive(xiiStreamWriter& ref_stream) const;
 
   xiiDefaultMemoryStreamStorage m_Storage;
 };
@@ -40,11 +40,11 @@ public:
 
   virtual bool opened() const override;
 
-  virtual size_t Read(void* _buffer, size_t _size) override;
+  virtual size_t Read(void* p_buffer, size_t ui_size) override;
 
-  virtual size_t Write(const void* _buffer, size_t _size) override;
+  virtual size_t Write(const void* p_buffer, size_t ui_size) override;
 
-  virtual int Seek(int _offset, Origin _origin) override;
+  virtual int Seek(int i_offset, Origin _origin) override;
 
   virtual int Tell() const override;
 
@@ -60,15 +60,15 @@ private:
 class XII_RENDERERCORE_DLL xiiOzzStreamWriter : public ozz::io::Stream
 {
 public:
-  xiiOzzStreamWriter(xiiOzzArchiveData& data);
+  xiiOzzStreamWriter(xiiOzzArchiveData& ref_data);
 
   virtual bool opened() const override;
 
-  virtual size_t Read(void* _buffer, size_t _size) override;
+  virtual size_t Read(void* p_buffer, size_t ui_size) override;
 
-  virtual size_t Write(const void* _buffer, size_t _size) override;
+  virtual size_t Write(const void* p_buffer, size_t ui_size) override;
 
-  virtual int Seek(int _offset, Origin _origin) override;
+  virtual int Seek(int i_offset, Origin _origin) override;
 
   virtual int Tell() const override;
 

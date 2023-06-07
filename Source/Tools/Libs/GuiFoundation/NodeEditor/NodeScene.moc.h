@@ -23,7 +23,7 @@ public:
     Connection
   };
 
-  explicit xiiQtNodeScene(QObject* parent = nullptr);
+  explicit xiiQtNodeScene(QObject* pParent = nullptr);
   ~xiiQtNodeScene();
 
   void                          SetDocumentNodeManager(const xiiDocumentNodeManager* pManager);

@@ -22,7 +22,8 @@ class XII_FOUNDATION_DLL xiiMessageLoop
 
 public:
   xiiMessageLoop();
-  virtual ~xiiMessageLoop(){};
+  virtual ~xiiMessageLoop() = default;
+  ;
 
   /// \brief Needs to be called by newly created channels' constructors.
   void AddChannel(xiiIpcChannel* pChannel);

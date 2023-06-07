@@ -33,7 +33,7 @@ xiiVirtualThumbStick::~xiiVirtualThumbStick()
   xiiInputManager::RemoveInputAction(GetDynamicRTTI()->GetTypeName(), m_sName.GetData());
 }
 
-void xiiVirtualThumbStick::SetTriggerInputSlot(xiiVirtualThumbStick::Input::Enum Input, const xiiInputActionConfig* pCustomConfig)
+void xiiVirtualThumbStick::SetTriggerInputSlot(xiiVirtualThumbStick::Input::Enum input, const xiiInputActionConfig* pCustomConfig)
 {
   for (xiiInt32 i = 0; i < xiiInputActionConfig::MaxInputSlotAlternatives; ++i)
   {
@@ -42,7 +42,7 @@ void xiiVirtualThumbStick::SetTriggerInputSlot(xiiVirtualThumbStick::Input::Enum
     m_ActionConfig.m_sInputSlotTrigger[i]   = xiiInputSlot_None;
   }
 
-  switch (Input)
+  switch (input)
   {
     case xiiVirtualThumbStick::Input::Touchpoint:
     {
@@ -84,13 +84,13 @@ void xiiVirtualThumbStick::SetTriggerInputSlot(xiiVirtualThumbStick::Input::Enum
 }
 
 void xiiVirtualThumbStick::SetThumbstickOutput(
-  xiiVirtualThumbStick::Output::Enum Output,
+  xiiVirtualThumbStick::Output::Enum output,
   const char*                        szOutputLeft,
   const char*                        szOutputRight,
   const char*                        szOutputUp,
   const char*                        szOutputDown)
 {
-  switch (Output)
+  switch (output)
   {
     case xiiVirtualThumbStick::Output::Controller0_LeftStick:
     {
@@ -169,12 +169,12 @@ void xiiVirtualThumbStick::SetThumbstickOutput(
   m_bConfigChanged = true;
 }
 
-void xiiVirtualThumbStick::SetAreaFocusMode(xiiInputActionConfig::OnEnterArea OnEnter, xiiInputActionConfig::OnLeaveArea OnLeave)
+void xiiVirtualThumbStick::SetAreaFocusMode(xiiInputActionConfig::OnEnterArea onEnter, xiiInputActionConfig::OnLeaveArea onLeave)
 {
   m_bConfigChanged = true;
 
-  m_ActionConfig.m_OnEnterArea = OnEnter;
-  m_ActionConfig.m_OnLeaveArea = OnLeave;
+  m_ActionConfig.m_OnEnterArea = onEnter;
+  m_ActionConfig.m_OnLeaveArea = onLeave;
 }
 
 void xiiVirtualThumbStick::SetInputArea(

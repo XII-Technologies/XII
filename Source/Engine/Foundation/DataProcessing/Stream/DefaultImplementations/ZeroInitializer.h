@@ -17,7 +17,7 @@ public:
   xiiProcessingStreamSpawnerZeroInitialized();
 
   /// \brief Which stream to zero initialize
-  void SetStreamName(xiiStringView szStreamName);
+  void SetStreamName(xiiStringView sStreamName);
 
 protected:
   virtual xiiResult UpdateStreamBindings() override;
@@ -27,5 +27,5 @@ protected:
 
   xiiHashedString m_sStreamName;
 
-  xiiProcessingStream* m_pStream;
+  xiiProcessingStream* m_pStream = nullptr;
 };

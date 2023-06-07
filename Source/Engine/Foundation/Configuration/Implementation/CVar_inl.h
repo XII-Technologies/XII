@@ -3,7 +3,7 @@
 #include <Foundation/Configuration/CVar.h>
 
 template <typename Type, xiiCVarType::Enum CVarType>
-xiiTypedCVar<Type, CVarType>::xiiTypedCVar(xiiStringView sName, const Type& Value, xiiBitflags<xiiCVarFlags> Flags, xiiStringView sDescription) :
+xiiTypedCVar<Type, CVarType>::xiiTypedCVar(xiiStringView sName, const Type& value, xiiBitflags<xiiCVarFlags> flags, xiiStringView sDescription) :
   xiiCVar(sName, Flags, sDescription)
 {
   XII_ASSERT_DEBUG(sName.FindSubString(" ") == nullptr, "CVar names must not contain whitespace");

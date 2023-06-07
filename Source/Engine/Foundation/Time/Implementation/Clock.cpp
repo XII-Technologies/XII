@@ -100,34 +100,34 @@ void xiiClock::SetAccumulatedTime(xiiTime t)
   m_LastTimeDiff   = xiiTime::Seconds(0.01);
 }
 
-void xiiClock::Save(xiiStreamWriter& Stream) const
+void xiiClock::Save(xiiStreamWriter& ref_stream) const
 {
   const xiiUInt8 uiVersion = 1;
 
-  Stream << uiVersion;
-  Stream << m_AccumulatedTime;
-  Stream << m_LastTimeDiff;
-  Stream << m_FixedTimeStep;
-  Stream << m_MinTimeStep;
-  Stream << m_MaxTimeStep;
-  Stream << m_fSpeed;
-  Stream << m_bPaused;
+  ref_stream << uiVersion;
+  ref_stream << m_AccumulatedTime;
+  ref_stream << m_LastTimeDiff;
+  ref_stream << m_FixedTimeStep;
+  ref_stream << m_MinTimeStep;
+  ref_stream << m_MaxTimeStep;
+  ref_stream << m_fSpeed;
+  ref_stream << m_bPaused;
 }
 
-void xiiClock::Load(xiiStreamReader& Stream)
+void xiiClock::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt8 uiVersion = 0;
-  Stream >> uiVersion;
+  ref_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion == 1, "Wrong version for xiiClock: {0}", uiVersion);
 
-  Stream >> m_AccumulatedTime;
-  Stream >> m_LastTimeDiff;
-  Stream >> m_FixedTimeStep;
-  Stream >> m_MinTimeStep;
-  Stream >> m_MaxTimeStep;
-  Stream >> m_fSpeed;
-  Stream >> m_bPaused;
+  ref_stream >> m_AccumulatedTime;
+  ref_stream >> m_LastTimeDiff;
+  ref_stream >> m_FixedTimeStep;
+  ref_stream >> m_MinTimeStep;
+  ref_stream >> m_MaxTimeStep;
+  ref_stream >> m_fSpeed;
+  ref_stream >> m_bPaused;
 
   // make sure we continue properly
   m_LastTimeUpdate = xiiTime::Now() - m_MinTimeStep;

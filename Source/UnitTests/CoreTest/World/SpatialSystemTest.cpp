@@ -13,7 +13,7 @@ namespace
 {
   static xiiSpatialData::Category s_SpecialTestCategory = xiiSpatialData::RegisterCategory("SpecialTestCategory", xiiSpatialData::Flags::None);
 
-  typedef xiiComponentManager<class TestBoundsComponent, xiiBlockStorageType::Compact> TestBoundsComponentManager;
+  using TestBoundsComponentManager = class TestBoundsComponent;
 
   class TestBoundsComponent : public xiiComponent
   {
@@ -22,7 +22,7 @@ namespace
   public:
     virtual void Initialize() override { GetOwner()->UpdateLocalBounds(); }
 
-    void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)
+    void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg)
     {
       auto& rng = GetWorld()->GetRandomNumberGenerator();
 
@@ -39,7 +39,7 @@ namespace
         category = GetOwner()->IsDynamic() ? xiiDefaultSpatialDataCategories::RenderDynamic : xiiDefaultSpatialDataCategories::RenderStatic;
       }
 
-      msg.AddBounds(bounds, category);
+      ref_msg.AddBounds(bounds, category);
     }
 
     xiiSpatialData::Category m_SpecialCategory = xiiInvalidSpatialDataCategory;

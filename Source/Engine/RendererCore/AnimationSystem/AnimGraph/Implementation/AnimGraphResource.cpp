@@ -19,11 +19,11 @@ xiiAnimGraphResource::xiiAnimGraphResource() :
 
 xiiAnimGraphResource::~xiiAnimGraphResource() = default;
 
-void xiiAnimGraphResource::DeserializeAnimGraphState(xiiAnimGraph& out)
+void xiiAnimGraphResource::DeserializeAnimGraphState(xiiAnimGraph& ref_out)
 {
   xiiMemoryStreamContainerWrapperStorage<xiiDataBuffer> wrapper(&m_Storage);
   xiiMemoryStreamReader                                 reader(&wrapper);
-  out.Deserialize(reader).IgnoreResult();
+  ref_out.Deserialize(reader).IgnoreResult();
 }
 
 xiiResourceLoadDesc xiiAnimGraphResource::UnloadData(Unload WhatToUnload)

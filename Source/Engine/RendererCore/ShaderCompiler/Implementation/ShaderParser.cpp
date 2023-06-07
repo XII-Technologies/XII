@@ -48,21 +48,21 @@ namespace
     return pType;
   }
 
-  xiiVariant ParseValue(const TokenStream& Tokens, xiiUInt32& uiCurToken)
+  xiiVariant ParseValue(const TokenStream& tokens, xiiUInt32& ref_uiCurToken)
   {
-    xiiUInt32 uiValueToken = uiCurToken;
+    xiiUInt32 uiValueToken = ref_uiCurToken;
 
-    if (Accept(Tokens, uiCurToken, xiiTokenType::String1, &uiValueToken) || Accept(Tokens, uiCurToken, xiiTokenType::String2, &uiValueToken))
+    if (Accept(tokens, ref_uiCurToken, xiiTokenType::String1, &uiValueToken) || Accept(tokens, ref_uiCurToken, xiiTokenType::String2, &uiValueToken))
     {
-      xiiStringBuilder sValue = Tokens[uiValueToken]->m_DataView;
+      xiiStringBuilder sValue = tokens[uiValueToken]->m_DataView;
       sValue.Trim("\"'");
 
       return xiiVariant(sValue.GetData());
     }
 
-    if (Accept(Tokens, uiCurToken, xiiTokenType::Integer, &uiValueToken))
+    if (Accept(tokens, ref_uiCurToken, xiiTokenType::Integer, &uiValueToken))
     {
-      xiiString sValue = Tokens[uiValueToken]->m_DataView;
+      xiiString sValue = tokens[uiValueToken]->m_DataView;
 
       xiiInt64 iValue = 0;
       if (sValue.StartsWith_NoCase("0x"))
@@ -80,9 +80,9 @@ namespace
       return xiiVariant(iValue);
     }
 
-    if (Accept(Tokens, uiCurToken, xiiTokenType::Float, &uiValueToken))
+    if (Accept(tokens, ref_uiCurToken, xiiTokenType::Float, &uiValueToken))
     {
-      xiiString sValue = Tokens[uiValueToken]->m_DataView;
+      xiiString sValue = tokens[uiValueToken]->m_DataView;
 
       double fValue = 0;
       xiiConversionUtils::StringToFloat(sValue, fValue).IgnoreResult();
@@ -90,14 +90,14 @@ namespace
       return xiiVariant(fValue);
     }
 
-    if (Accept(Tokens, uiCurToken, "true", &uiValueToken) || Accept(Tokens, uiCurToken, "false", &uiValueToken))
+    if (Accept(tokens, ref_uiCurToken, "true", &uiValueToken) || Accept(tokens, ref_uiCurToken, "false", &uiValueToken))
     {
-      bool bValue = Tokens[uiValueToken]->m_DataView == "true";
+      bool bValue = tokens[uiValueToken]->m_DataView == "true";
       return xiiVariant(bValue);
     }
 
-    auto& dataView = Tokens[uiCurToken]->m_DataView;
-    if (Tokens[uiCurToken]->m_iType == xiiTokenType::Identifier && xiiStringUtils::IsValidIdentifierName(dataView.GetStartPointer(), dataView.GetEndPointer()))
+    auto& dataView = tokens[ref_uiCurToken]->m_DataView;
+    if (tokens[ref_uiCurToken]->m_iType == xiiTokenType::Identifier && xiiStringUtils::IsValidIdentifierName(dataView.GetStartPointer(), dataView.GetEndPointer()))
     {
       // complex type constructor
       const xiiRTTI* pType = nullptr;
@@ -107,14 +107,14 @@ namespace
         return xiiVariant();
       }
 
-      ++uiCurToken;
-      Accept(Tokens, uiCurToken, "(");
+      ++ref_uiCurToken;
+      Accept(tokens, ref_uiCurToken, "(");
 
       xiiHybridArray<xiiVariant, 8> constructorArgs;
 
-      while (!Accept(Tokens, uiCurToken, ")"))
+      while (!Accept(tokens, ref_uiCurToken, ")"))
       {
-        xiiVariant value = ParseValue(Tokens, uiCurToken);
+        xiiVariant value = ParseValue(tokens, ref_uiCurToken);
         if (value.IsValid())
         {
           constructorArgs.PushBack(value);
@@ -125,7 +125,7 @@ namespace
           return XII_FAILURE;
         }
 
-        Accept(Tokens, uiCurToken, ",");
+        Accept(tokens, ref_uiCurToken, ",");
       }
 
       // find matching constructor
@@ -166,27 +166,27 @@ namespace
     return xiiVariant();
   }
 
-  xiiResult ParseAttribute(const TokenStream& Tokens, xiiUInt32& uiCurToken, xiiShaderParser::ParameterDefinition& out_ParameterDefinition)
+  xiiResult ParseAttribute(const TokenStream& tokens, xiiUInt32& ref_uiCurToken, xiiShaderParser::ParameterDefinition& out_parameterDefinition)
   {
-    if (!Accept(Tokens, uiCurToken, "@"))
+    if (!Accept(tokens, ref_uiCurToken, "@"))
     {
       return XII_FAILURE;
     }
 
-    xiiUInt32 uiTypeToken = uiCurToken;
-    if (!Accept(Tokens, uiCurToken, xiiTokenType::Identifier, &uiTypeToken))
+    xiiUInt32 uiTypeToken = ref_uiCurToken;
+    if (!Accept(tokens, ref_uiCurToken, xiiTokenType::Identifier, &uiTypeToken))
     {
       return XII_FAILURE;
     }
 
-    xiiShaderParser::AttributeDefinition& attributeDef = out_ParameterDefinition.m_Attributes.ExpandAndGetRef();
-    attributeDef.m_sType                               = Tokens[uiTypeToken]->m_DataView;
+    xiiShaderParser::AttributeDefinition& attributeDef = out_parameterDefinition.m_Attributes.ExpandAndGetRef();
+    attributeDef.m_sType                               = tokens[uiTypeToken]->m_DataView;
 
-    Accept(Tokens, uiCurToken, "(");
+    Accept(tokens, ref_uiCurToken, "(");
 
-    while (!Accept(Tokens, uiCurToken, ")"))
+    while (!Accept(tokens, ref_uiCurToken, ")"))
     {
-      xiiVariant value = ParseValue(Tokens, uiCurToken);
+      xiiVariant value = ParseValue(tokens, ref_uiCurToken);
       if (value.IsValid())
       {
         attributeDef.m_Values.PushBack(value);
@@ -197,34 +197,34 @@ namespace
         return XII_FAILURE;
       }
 
-      Accept(Tokens, uiCurToken, ",");
+      Accept(tokens, ref_uiCurToken, ",");
     }
 
     return XII_SUCCESS;
   }
 
-  xiiResult ParseParameter(const TokenStream& Tokens, xiiUInt32& uiCurToken, xiiShaderParser::ParameterDefinition& out_ParameterDefinition)
+  xiiResult ParseParameter(const TokenStream& tokens, xiiUInt32& ref_uiCurToken, xiiShaderParser::ParameterDefinition& out_parameterDefinition)
   {
-    xiiUInt32 uiTypeToken = uiCurToken;
-    if (!Accept(Tokens, uiCurToken, xiiTokenType::Identifier, &uiTypeToken))
+    xiiUInt32 uiTypeToken = ref_uiCurToken;
+    if (!Accept(tokens, ref_uiCurToken, xiiTokenType::Identifier, &uiTypeToken))
     {
       return XII_FAILURE;
     }
 
-    out_ParameterDefinition.m_sType = Tokens[uiTypeToken]->m_DataView;
-    out_ParameterDefinition.m_pType = GetType(out_ParameterDefinition.m_sType);
+    out_parameterDefinition.m_sType = tokens[uiTypeToken]->m_DataView;
+    out_parameterDefinition.m_pType = GetType(out_parameterDefinition.m_sType);
 
-    xiiUInt32 uiNameToken = uiCurToken;
-    if (!Accept(Tokens, uiCurToken, xiiTokenType::Identifier, &uiNameToken))
+    xiiUInt32 uiNameToken = ref_uiCurToken;
+    if (!Accept(tokens, ref_uiCurToken, xiiTokenType::Identifier, &uiNameToken))
     {
       return XII_FAILURE;
     }
 
-    out_ParameterDefinition.m_sName = Tokens[uiNameToken]->m_DataView;
+    out_parameterDefinition.m_sName = tokens[uiNameToken]->m_DataView;
 
-    while (!Accept(Tokens, uiCurToken, ";"))
+    while (!Accept(tokens, ref_uiCurToken, ";"))
     {
-      if (ParseAttribute(Tokens, uiCurToken, out_ParameterDefinition).Failed())
+      if (ParseAttribute(tokens, ref_uiCurToken, out_parameterDefinition).Failed())
       {
         return XII_FAILURE;
       }
@@ -233,23 +233,23 @@ namespace
     return XII_SUCCESS;
   }
 
-  xiiResult ParseEnum(const TokenStream& Tokens, xiiUInt32& uiCurToken, xiiShaderParser::EnumDefinition& out_EnumDefinition, bool bCheckPrefix)
+  xiiResult ParseEnum(const TokenStream& tokens, xiiUInt32& ref_uiCurToken, xiiShaderParser::EnumDefinition& out_enumDefinition, bool bCheckPrefix)
   {
-    if (!Accept(Tokens, uiCurToken, "enum"))
+    if (!Accept(tokens, ref_uiCurToken, "enum"))
     {
       return XII_FAILURE;
     }
 
-    xiiUInt32 uiNameToken = uiCurToken;
-    if (!Accept(Tokens, uiCurToken, xiiTokenType::Identifier, &uiNameToken))
+    xiiUInt32 uiNameToken = ref_uiCurToken;
+    if (!Accept(tokens, ref_uiCurToken, xiiTokenType::Identifier, &uiNameToken))
     {
       return XII_FAILURE;
     }
 
-    out_EnumDefinition.m_sName = Tokens[uiNameToken]->m_DataView;
-    xiiStringBuilder sEnumPrefix(out_EnumDefinition.m_sName, "_");
+    out_enumDefinition.m_sName = tokens[uiNameToken]->m_DataView;
+    xiiStringBuilder sEnumPrefix(out_enumDefinition.m_sName, "_");
 
-    if (!Accept(Tokens, uiCurToken, "{"))
+    if (!Accept(tokens, ref_uiCurToken, "{"))
     {
       xiiLog::Error("Opening bracket expected for enum definition.");
       return XII_FAILURE;
@@ -260,27 +260,27 @@ namespace
 
     while (true)
     {
-      xiiUInt32 uiValueNameToken = uiCurToken;
-      if (!Accept(Tokens, uiCurToken, xiiTokenType::Identifier, &uiValueNameToken))
+      xiiUInt32 uiValueNameToken = ref_uiCurToken;
+      if (!Accept(tokens, ref_uiCurToken, xiiTokenType::Identifier, &uiValueNameToken))
       {
         return XII_FAILURE;
       }
 
-      xiiStringView sValueName = Tokens[uiValueNameToken]->m_DataView;
+      xiiStringView sValueName = tokens[uiValueNameToken]->m_DataView;
 
-      if (Accept(Tokens, uiCurToken, "="))
+      if (Accept(tokens, ref_uiCurToken, "="))
       {
-        xiiUInt32 uiValueToken = uiCurToken;
-        Accept(Tokens, uiCurToken, xiiTokenType::Integer, &uiValueToken);
+        xiiUInt32 uiValueToken = ref_uiCurToken;
+        Accept(tokens, ref_uiCurToken, xiiTokenType::Integer, &uiValueToken);
 
         xiiInt32 iValue = 0;
-        if (xiiConversionUtils::StringToInt(Tokens[uiValueToken]->m_DataView.GetStartPointer(), iValue).Succeeded() && iValue >= 0)
+        if (xiiConversionUtils::StringToInt(tokens[uiValueToken]->m_DataView.GetStartPointer(), iValue).Succeeded() && iValue >= 0)
         {
           uiCurrentValue = iValue;
         }
         else
         {
-          xiiLog::Error("Invalid enum value '{0}'. Only positive numbers are allowed.", Tokens[uiValueToken]->m_DataView);
+          xiiLog::Error("Invalid enum value '{0}'. Only positive numbers are allowed.", tokens[uiValueToken]->m_DataView);
         }
       }
 
@@ -295,14 +295,14 @@ namespace
           xiiLog::Error("Enum value does not start with the expected enum name as prefix: '{0}'", sEnumPrefix);
         }
 
-        auto& ev = out_EnumDefinition.m_Values.ExpandAndGetRef();
+        auto& ev = out_enumDefinition.m_Values.ExpandAndGetRef();
 
         const xiiStringBuilder sFinalName = sValueName;
         ev.m_sValueName.Assign(sFinalName.GetData());
         ev.m_iValueValue = static_cast<xiiInt32>(uiCurrentValue);
       }
 
-      if (Accept(Tokens, uiCurToken, ","))
+      if (Accept(tokens, ref_uiCurToken, ","))
       {
         ++uiCurrentValue;
       }
@@ -311,11 +311,11 @@ namespace
         break;
       }
 
-      if (Accept(Tokens, uiCurToken, "}"))
+      if (Accept(tokens, ref_uiCurToken, "}"))
         goto after_braces;
     }
 
-    if (!Accept(Tokens, uiCurToken, "}"))
+    if (!Accept(tokens, ref_uiCurToken, "}"))
     {
       xiiLog::Error("Closing bracket expected for enum definition.");
       return XII_FAILURE;
@@ -323,9 +323,9 @@ namespace
 
   after_braces:
 
-    out_EnumDefinition.m_uiDefaultValue = uiDefaultValue;
+    out_enumDefinition.m_uiDefaultValue = uiDefaultValue;
 
-    Accept(Tokens, uiCurToken, ";");
+    Accept(tokens, ref_uiCurToken, ";");
 
     return XII_SUCCESS;
   }
@@ -340,10 +340,10 @@ namespace
 } // namespace
 
 // static
-void xiiShaderParser::ParseMaterialParameterSection(xiiStreamReader& stream, xiiHybridArray<ParameterDefinition, 16>& out_Parameter, xiiHybridArray<EnumDefinition, 4>& out_EnumDefinitions)
+void xiiShaderParser::ParseMaterialParameterSection(xiiStreamReader& ref_stream, xiiHybridArray<ParameterDefinition, 16>& out_parameter, xiiHybridArray<EnumDefinition, 4>& out_enumDefinitions)
 {
   xiiString sContent;
-  sContent.ReadAll(stream);
+  sContent.ReadAll(ref_stream);
 
   xiiShaderHelper::xiiTextSectionizer Sections;
   xiiShaderHelper::GetShaderSections(sContent.GetData(), Sections);
@@ -366,14 +366,14 @@ void xiiShaderParser::ParseMaterialParameterSection(xiiStreamReader& stream, xii
     {
       XII_ASSERT_DEV(!enumDef.m_sName.IsEmpty(), "");
 
-      out_EnumDefinitions.PushBack(std::move(enumDef));
+      out_enumDefinitions.PushBack(std::move(enumDef));
       continue;
     }
 
     ParameterDefinition paramDef;
     if (ParseParameter(tokens, uiCurToken, paramDef).Succeeded())
     {
-      out_Parameter.PushBack(std::move(paramDef));
+      out_parameter.PushBack(std::move(paramDef));
       continue;
     }
 
@@ -383,24 +383,24 @@ void xiiShaderParser::ParseMaterialParameterSection(xiiStreamReader& stream, xii
 }
 
 // static
-void xiiShaderParser::ParsePermutationSection(xiiStreamReader& stream, xiiHybridArray<xiiHashedString, 16>& out_PermVars, xiiHybridArray<xiiPermutationVar, 16>& out_FixedPermVars)
+void xiiShaderParser::ParsePermutationSection(xiiStreamReader& ref_stream, xiiHybridArray<xiiHashedString, 16>& out_permVars, xiiHybridArray<xiiPermutationVar, 16>& out_fixedPermVars)
 {
   xiiString sContent;
-  sContent.ReadAll(stream);
+  sContent.ReadAll(ref_stream);
 
   xiiShaderHelper::xiiTextSectionizer Sections;
   xiiShaderHelper::GetShaderSections(sContent.GetData(), Sections);
 
   xiiUInt32     uiFirstLine   = 0;
   xiiStringView sPermutations = Sections.GetSectionContent(xiiShaderHelper::xiiShaderSections::PERMUTATIONS, uiFirstLine);
-  ParsePermutationSection(sPermutations, out_PermVars, out_FixedPermVars);
+  ParsePermutationSection(sPermutations, out_permVars, out_fixedPermVars);
 }
 
 // static
-void xiiShaderParser::ParsePermutationSection(xiiStringView s, xiiHybridArray<xiiHashedString, 16>& out_PermVars, xiiHybridArray<xiiPermutationVar, 16>& out_FixedPermVars)
+void xiiShaderParser::ParsePermutationSection(xiiStringView s, xiiHybridArray<xiiHashedString, 16>& out_permVars, xiiHybridArray<xiiPermutationVar, 16>& out_fixedPermVars)
 {
-  out_PermVars.Clear();
-  out_FixedPermVars.Clear();
+  out_permVars.Clear();
+  out_fixedPermVars.Clear();
 
   xiiTokenizer tokenizer;
   tokenizer.Tokenize(xiiArrayPtr<const xiiUInt8>((const xiiUInt8*)s.GetStartPointer(), s.GetElementCount()), xiiLog::GetThreadLocalLogSystem());
@@ -438,7 +438,7 @@ void xiiShaderParser::ParsePermutationSection(xiiStringView s, xiiHybridArray<xi
 
       if (state == State::HasName)
       {
-        out_PermVars.ExpandAndGetRef().Assign(sVarName.GetData());
+        out_permVars.ExpandAndGetRef().Assign(sVarName.GetData());
       }
 
       state = State::Idle;
@@ -466,7 +466,7 @@ void xiiShaderParser::ParsePermutationSection(xiiStringView s, xiiHybridArray<xi
 
       if (state == State::HasEqual)
       {
-        auto& res = out_FixedPermVars.ExpandAndGetRef();
+        auto& res = out_fixedPermVars.ExpandAndGetRef();
         res.m_sName.Assign(sVarName.GetData());
         res.m_sValue.Assign(sToken.GetData());
         state = State::HasValue;
@@ -479,7 +479,7 @@ void xiiShaderParser::ParsePermutationSection(xiiStringView s, xiiHybridArray<xi
 }
 
 // static
-void xiiShaderParser::ParsePermutationVarConfig(xiiStringView s, xiiVariant& out_DefaultValue, EnumDefinition& out_EnumDefinition)
+void xiiShaderParser::ParsePermutationVarConfig(xiiStringView s, xiiVariant& out_defaultValue, EnumDefinition& out_enumDefinition)
 {
   SkipWhitespace(s);
 
@@ -503,8 +503,8 @@ void xiiShaderParser::ParsePermutationVarConfig(xiiStringView s, xiiVariant& out
     }
 
     name.Trim(" \t\r\n");
-    out_EnumDefinition.m_sName = name;
-    out_DefaultValue           = bDefaultValue;
+    out_enumDefinition.m_sName = name;
+    out_defaultValue           = bDefaultValue;
   }
   else if (s.StartsWith("enum"))
   {
@@ -515,15 +515,15 @@ void xiiShaderParser::ParsePermutationVarConfig(xiiStringView s, xiiVariant& out
     tokenizer.GetAllLines(tokens);
 
     xiiUInt32 uiCurToken = 0;
-    if (ParseEnum(tokens, uiCurToken, out_EnumDefinition, true).Failed())
+    if (ParseEnum(tokens, uiCurToken, out_enumDefinition, true).Failed())
     {
       xiiLog::Error("Invalid enum PermutationVar definition.");
     }
     else
     {
-      XII_ASSERT_DEV(!out_EnumDefinition.m_sName.IsEmpty(), "");
+      XII_ASSERT_DEV(!out_enumDefinition.m_sName.IsEmpty(), "");
 
-      out_DefaultValue = out_EnumDefinition.m_uiDefaultValue;
+      out_defaultValue = out_enumDefinition.m_uiDefaultValue;
     }
   }
   else

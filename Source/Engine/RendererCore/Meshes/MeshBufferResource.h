@@ -38,7 +38,7 @@ public:
   void Clear();
 
   /// \brief Use this function to add vertex streams to the mesh buffer. The return value is the index of the just added stream.
-  xiiUInt32 AddStream(xiiGALVertexAttributeSemantic::Enum Semantic, xiiGALResourceFormat::Enum Format);
+  xiiUInt32 AddStream(xiiGALVertexAttributeSemantic::Enum semantic, xiiGALResourceFormat::Enum format);
 
   /// \brief Adds common vertex streams to the mesh buffer.
   ///

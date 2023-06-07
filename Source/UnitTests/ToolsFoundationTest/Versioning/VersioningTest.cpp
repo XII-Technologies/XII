@@ -69,7 +69,7 @@ namespace
       xiiGraphPatch("xiiPatchTestP", 2)
     {
     }
-    virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+    virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
     {
       pNode->RenameProperty("Int", "IntRenamed");
       pNode->ChangeProperty("IntRenamed", 2);
@@ -85,7 +85,7 @@ namespace
       xiiGraphPatch("xiiPatchTestBaseBP", 2)
     {
     }
-    virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+    virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
     {
       pNode->ChangeProperty("String", "BaseClassPatched");
     }
@@ -100,9 +100,9 @@ namespace
       xiiGraphPatch("xiiPatchTestRN", 2)
     {
     }
-    virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+    virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
     {
-      context.RenameClass("xiiPatchTestRN2");
+      ref_context.RenameClass("xiiPatchTestRN2");
       pNode->ChangeProperty("String", "RenameExecuted");
     }
   };
@@ -116,7 +116,7 @@ namespace
       xiiGraphPatch("xiiPatchTestRN2", 3)
     {
     }
-    virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+    virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
     {
       pNode->ChangeProperty("String2", "Patched");
     }
@@ -131,18 +131,18 @@ namespace
       xiiGraphPatch("xiiPatchTestCB", 2)
     {
     }
-    virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+    virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
     {
       xiiVersionKey bases[] = {{"xiiPatchTestBaseBP", 1}};
-      context.ChangeBaseClass(bases);
+      ref_context.ChangeBaseClass(bases);
       pNode->ChangeProperty("String2", "ChangedBase");
     }
   };
   xiiPatchTestCB g_xiiPatchTestCB;
 
-  void ReplaceTypeName(xiiAbstractObjectGraph& graph, xiiAbstractObjectGraph& typesGraph, const char* szOldName, const char* szNewName)
+  void ReplaceTypeName(xiiAbstractObjectGraph& ref_graph, xiiAbstractObjectGraph& ref_typesGraph, const char* szOldName, const char* szNewName)
   {
-    for (auto it : graph.GetAllNodes())
+    for (auto it : ref_graph.GetAllNodes())
     {
       auto* pNode = it.Value();
 
@@ -150,7 +150,7 @@ namespace
         pNode->SetType(szNewName);
     }
 
-    for (auto it : typesGraph.GetAllNodes())
+    for (auto it : ref_typesGraph.GetAllNodes())
     {
       auto* pNode = it.Value();
 
@@ -170,13 +170,13 @@ namespace
     }
   }
 
-  xiiAbstractObjectNode* SerializeObject(xiiAbstractObjectGraph& graph, xiiAbstractObjectGraph& typesGraph, const xiiRTTI* pRtti, void* pObject)
+  xiiAbstractObjectNode* SerializeObject(xiiAbstractObjectGraph& ref_graph, xiiAbstractObjectGraph& ref_typesGraph, const xiiRTTI* pRtti, void* pObject)
   {
     xiiAbstractObjectNode* pNode = nullptr;
     {
       // Object
       xiiRttiConverterContext context;
-      xiiRttiConverterWriter  rttiConverter(&graph, &context, true, true);
+      xiiRttiConverterWriter  rttiConverter(&ref_graph, &context, true, true);
       context.RegisterObject(xiiUuid::StableUuidForString(pRtti->GetTypeName()), pRtti, pObject);
       pNode = rttiConverter.AddObjectToGraph(pRtti, pObject, "ROOT");
     }
@@ -185,15 +185,15 @@ namespace
       xiiSet<const xiiRTTI*> types;
       types.Insert(pRtti);
       xiiReflectionUtils::GatherDependentTypes(pRtti, types);
-      xiiToolsSerializationUtils::SerializeTypes(types, typesGraph);
+      xiiToolsSerializationUtils::SerializeTypes(types, ref_typesGraph);
     }
     return pNode;
   }
 
-  void PatchGraph(xiiAbstractObjectGraph& graph, xiiAbstractObjectGraph& typesGraph)
+  void PatchGraph(xiiAbstractObjectGraph& ref_graph, xiiAbstractObjectGraph& ref_typesGraph)
   {
-    xiiGraphVersioning::GetSingleton()->PatchGraph(&typesGraph);
-    xiiGraphVersioning::GetSingleton()->PatchGraph(&graph, &typesGraph);
+    xiiGraphVersioning::GetSingleton()->PatchGraph(&ref_typesGraph);
+    xiiGraphVersioning::GetSingleton()->PatchGraph(&ref_graph, &ref_typesGraph);
   }
 } // namespace
 

@@ -49,7 +49,7 @@ public:
   void SetCoordinateSystem(xiiBasisAxis::Enum forwardAxis, xiiBasisAxis::Enum rightAxis, xiiBasisAxis::Enum upAxis);
 
   /// \brief Allows to specify a full xiiCoordinateSystemProvider to determine forward/right/up vectors for camera movement
-  void SetCoordinateSystem(const xiiSharedPtr<xiiCoordinateSystemProvider>& provider);
+  void SetCoordinateSystem(const xiiSharedPtr<xiiCoordinateSystemProvider>& pProvider);
 
   /// \brief Returns the position of the camera that should be used for rendering etc.
   xiiVec3 GetPosition(xiiCameraEye eye = xiiCameraEye::Left) const;
@@ -113,7 +113,7 @@ public:
   ///
   /// \param fFovOrDim
   ///   Fov X/Y in degree or width/height (depending on Mode).
-  void SetCameraMode(xiiCameraMode::Enum Mode, float fFovOrDim, float fNearPlane, float fFarPlane);
+  void SetCameraMode(xiiCameraMode::Enum mode, float fFovOrDim, float fNearPlane, float fFarPlane);
 
   /// Sets the camera mode to stereo and specifies projection matrices directly.
   ///
@@ -175,7 +175,7 @@ public:
   ///
   /// If the camera is stereo and the given aspect ratio is close to the aspect ratio passed in SetStereoProjection,
   /// the matrix set in SetStereoProjection will be used.
-  void GetProjectionMatrix(float fAspectRatioWidthDivHeight, xiiMat4& out_projectionMatrix, xiiCameraEye eye = xiiCameraEye::Left, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default) const;
+  void GetProjectionMatrix(float fAspectRatioWidthDivHeight, xiiMat4& out_mProjectionMatrix, xiiCameraEye eye = xiiCameraEye::Left, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default) const;
 
   float GetExposure() const;
 

@@ -45,16 +45,16 @@ xiiCurve1D::ControlPoint& xiiCurve1D::AddControlPoint(double x)
   return cp;
 }
 
-void xiiCurve1D::QueryExtents(double& minx, double& maxx) const
+void xiiCurve1D::QueryExtents(double& ref_fMinx, double& ref_fMaxx) const
 {
-  minx = m_fMinX;
-  maxx = m_fMaxX;
+  ref_fMinx = m_fMinX;
+  ref_fMaxx = m_fMaxX;
 }
 
-void xiiCurve1D::QueryExtremeValues(double& minVal, double& maxVal) const
+void xiiCurve1D::QueryExtremeValues(double& ref_fMinVal, double& ref_fMaxVal) const
 {
-  minVal = m_fMinY;
-  maxVal = m_fMaxY;
+  ref_fMinVal = m_fMinY;
+  ref_fMaxVal = m_fMaxY;
 }
 
 xiiUInt32 xiiCurve1D::GetNumControlPoints() const
@@ -144,12 +144,12 @@ double xiiCurve1D::Evaluate(double x) const
   return 0;
 }
 
-double xiiCurve1D::ConvertNormalizedPos(double pos) const
+double xiiCurve1D::ConvertNormalizedPos(double fPos) const
 {
   double fMin, fMax;
   QueryExtents(fMin, fMax);
 
-  return xiiMath::Lerp(fMin, fMax, pos);
+  return xiiMath::Lerp(fMin, fMax, fPos);
 }
 
 
@@ -169,36 +169,36 @@ xiiUInt64 xiiCurve1D::GetHeapMemoryUsage() const
   return m_ControlPoints.GetHeapMemoryUsage();
 }
 
-void xiiCurve1D::Save(xiiStreamWriter& stream) const
+void xiiCurve1D::Save(xiiStreamWriter& ref_stream) const
 {
   const xiiUInt8 uiVersion = 4;
 
-  stream << uiVersion;
+  ref_stream << uiVersion;
 
   const xiiUInt32 numCp = m_ControlPoints.GetCount();
 
-  stream << numCp;
+  ref_stream << numCp;
 
   for (const auto& cp : m_ControlPoints)
   {
-    stream << cp.m_Position;
-    stream << cp.m_LeftTangent;
-    stream << cp.m_RightTangent;
-    stream << cp.m_TangentModeRight;
-    stream << cp.m_TangentModeLeft;
+    ref_stream << cp.m_Position;
+    ref_stream << cp.m_LeftTangent;
+    ref_stream << cp.m_RightTangent;
+    ref_stream << cp.m_TangentModeRight;
+    ref_stream << cp.m_TangentModeLeft;
   }
 }
 
-void xiiCurve1D::Load(xiiStreamReader& stream)
+void xiiCurve1D::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt8 uiVersion = 0;
 
-  stream >> uiVersion;
+  ref_stream >> uiVersion;
   XII_ASSERT_DEV(uiVersion <= 4, "Incorrect version '{0}' for xiiCurve1D", uiVersion);
 
   xiiUInt32 numCp = 0;
 
-  stream >> numCp;
+  ref_stream >> numCp;
 
   m_ControlPoints.SetCountUninitialized(numCp);
 
@@ -207,13 +207,13 @@ void xiiCurve1D::Load(xiiStreamReader& stream)
     for (auto& cp : m_ControlPoints)
     {
       xiiVec2 pos;
-      stream >> pos;
+      ref_stream >> pos;
       cp.m_Position.Set(pos.x, pos.y);
 
       if (uiVersion >= 2)
       {
-        stream >> cp.m_LeftTangent;
-        stream >> cp.m_RightTangent;
+        ref_stream >> cp.m_LeftTangent;
+        ref_stream >> cp.m_RightTangent;
       }
     }
   }
@@ -221,14 +221,14 @@ void xiiCurve1D::Load(xiiStreamReader& stream)
   {
     for (auto& cp : m_ControlPoints)
     {
-      stream >> cp.m_Position;
-      stream >> cp.m_LeftTangent;
-      stream >> cp.m_RightTangent;
+      ref_stream >> cp.m_Position;
+      ref_stream >> cp.m_LeftTangent;
+      ref_stream >> cp.m_RightTangent;
 
       if (uiVersion >= 4)
       {
-        stream >> cp.m_TangentModeRight;
-        stream >> cp.m_TangentModeLeft;
+        ref_stream >> cp.m_TangentModeRight;
+        ref_stream >> cp.m_TangentModeLeft;
       }
     }
   }

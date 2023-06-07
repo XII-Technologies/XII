@@ -15,26 +15,26 @@ const char* xiiTestBaseClass::GetSubTestName(xiiInt32 iIdentifier) const
   return m_Entries[iIdentifier].m_szName;
 }
 
-void xiiTestBaseClass::UpdateConfiguration(xiiTestConfiguration& config) const
+void xiiTestBaseClass::UpdateConfiguration(xiiTestConfiguration& ref_config) const
 {
   // If the configuration hasn't been set yet this is the first instance of xiiTestBaseClass being called
   // to fill in the configuration and we thus have to do so.
   // Derived classes can have more information (e.g.GPU info) and there is no way to know which instance
   // of xiiTestBaseClass may have additional information so we ask all of them and each one early outs
   // if the information it knows about is already present.
-  if (config.m_uiInstalledMainMemory == 0)
+  if (ref_config.m_uiInstalledMainMemory == 0)
   {
     const xiiSystemInformation& pSysInfo = xiiSystemInformation::Get();
-    config.m_uiInstalledMainMemory       = pSysInfo.GetInstalledMainMemory();
-    config.m_uiMemoryPageSize            = pSysInfo.GetMemoryPageSize();
-    config.m_uiCPUCoreCount              = pSysInfo.GetCPUCoreCount();
-    config.m_sPlatformName               = pSysInfo.GetPlatformName();
-    config.m_b64BitOS                    = pSysInfo.Is64BitOS();
-    config.m_b64BitApplication           = XII_ENABLED(XII_PLATFORM_64BIT);
-    config.m_sBuildConfiguration         = pSysInfo.GetBuildConfiguration();
-    config.m_iDateTime                   = xiiTimestamp::CurrentTimestamp().GetInt64(xiiSIUnitOfTime::Second);
-    config.m_iRCSRevision                = xiiTestFramework::GetInstance()->GetSettings().m_iRevision;
-    config.m_sHostName                   = pSysInfo.GetHostName();
+    ref_config.m_uiInstalledMainMemory   = pSysInfo.GetInstalledMainMemory();
+    ref_config.m_uiMemoryPageSize        = pSysInfo.GetMemoryPageSize();
+    ref_config.m_uiCPUCoreCount          = pSysInfo.GetCPUCoreCount();
+    ref_config.m_sPlatformName           = pSysInfo.GetPlatformName();
+    ref_config.m_b64BitOS                = pSysInfo.Is64BitOS();
+    ref_config.m_b64BitApplication       = XII_ENABLED(XII_PLATFORM_64BIT);
+    ref_config.m_sBuildConfiguration     = pSysInfo.GetBuildConfiguration();
+    ref_config.m_iDateTime               = xiiTimestamp::CurrentTimestamp().GetInt64(xiiSIUnitOfTime::Second);
+    ref_config.m_iRCSRevision            = xiiTestFramework::GetInstance()->GetSettings().m_iRevision;
+    ref_config.m_sHostName               = pSysInfo.GetHostName();
   }
 }
 
@@ -42,10 +42,10 @@ void xiiTestBaseClass::MapImageNumberToString(
   const char*       szTestName,
   const char*       szSubTestName,
   xiiUInt32         uiImageNumber,
-  xiiStringBuilder& out_String) const
+  xiiStringBuilder& out_sString) const
 {
-  out_String.Format("{0}_{1}_{2}", szTestName, szSubTestName, xiiArgI(uiImageNumber, 3, true));
-  out_String.ReplaceAll(" ", "_");
+  out_sString.Format("{0}_{1}_{2}", szTestName, szSubTestName, xiiArgI(uiImageNumber, 3, true));
+  out_sString.ReplaceAll(" ", "_");
 }
 
 void xiiTestBaseClass::ClearSubTests()

@@ -37,11 +37,11 @@ struct xiiDynamicTree
   };
 };
 
-typedef xiiMap<xiiDynamicTree::xiiMultiMapKey, xiiDynamicTree::xiiObjectData>::Iterator      xiiDynamicTreeObject;
-typedef xiiMap<xiiDynamicTree::xiiMultiMapKey, xiiDynamicTree::xiiObjectData>::ConstIterator xiiDynamicTreeObjectConst;
+using xiiDynamicTreeObject      = xiiMap<xiiDynamicTree::xiiMultiMapKey, xiiDynamicTree::xiiObjectData>::Iterator;
+using xiiDynamicTreeObjectConst = xiiMap<xiiDynamicTree::xiiMultiMapKey, xiiDynamicTree::xiiObjectData>::ConstIterator;
 
 /// \brief Callback type for object queries. Return "false" to abort a search (e.g. when the desired element has been found).
-typedef bool (*XII_VISIBLE_OBJ_CALLBACK)(void* pPassThrough, xiiDynamicTreeObjectConst Object);
+using XII_VISIBLE_OBJ_CALLBACK = bool (*)(void*, xiiDynamicTreeObjectConst);
 
 class xiiDynamicOctree;
 class xiiDynamicQuadtree;

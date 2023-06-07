@@ -22,20 +22,20 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiBlackboardEntry, xiiNoBase, 1, xiiRTTIDefault
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiResult xiiBlackboardEntry::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiBlackboardEntry::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream << m_sName;
-  stream << m_InitialValue;
-  stream << m_Flags;
+  ref_stream << m_sName;
+  ref_stream << m_InitialValue;
+  ref_stream << m_Flags;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiBlackboardEntry::Deserialize(xiiStreamReader& stream)
+xiiResult xiiBlackboardEntry::Deserialize(xiiStreamReader& ref_stream)
 {
-  stream >> m_sName;
-  stream >> m_InitialValue;
-  stream >> m_Flags;
+  ref_stream >> m_sName;
+  ref_stream >> m_InitialValue;
+  ref_stream >> m_Flags;
 
   return XII_SUCCESS;
 }
@@ -159,21 +159,21 @@ void xiiBlackboardComponent::OnDeactivated()
   }
 }
 
-void xiiBlackboardComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiBlackboardComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  xiiStreamWriter& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_pBoard->GetName();
   s.WriteArray(m_InitialEntries).IgnoreResult();
 }
 
-void xiiBlackboardComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiBlackboardComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   xiiStringBuilder sb;
   s >> sb;

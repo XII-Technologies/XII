@@ -23,13 +23,13 @@ public:
   }
 
   /// \brief Comparison operator. [tested]
-  XII_ALWAYS_INLINE bool operator==(const xiiUuid& Other) const;
+  XII_ALWAYS_INLINE bool operator==(const xiiUuid& other) const;
 
   /// \brief Comparison operator. [tested]
-  XII_ALWAYS_INLINE bool operator!=(const xiiUuid& Other) const;
+  XII_ALWAYS_INLINE bool operator!=(const xiiUuid& other) const;
 
   /// \brief Comparison operator.
-  XII_ALWAYS_INLINE bool operator<(const xiiUuid& Other) const;
+  XII_ALWAYS_INLINE bool operator<(const xiiUuid& other) const;
 
   /// \brief Returns true if this is a valid Uuid.
   XII_ALWAYS_INLINE bool IsValid() const;
@@ -41,10 +41,10 @@ public:
   void CreateNewUuid();
 
   /// \brief Returns the internal 128 Bit of data
-  void GetValues(xiiUInt64& uiLow, xiiUInt64& uiHigh) const
+  void GetValues(xiiUInt64& ref_uiLow, xiiUInt64& ref_uiHigh) const
   {
-    uiHigh = m_uiHigh;
-    uiLow  = m_uiLow;
+    ref_uiHigh = m_uiHigh;
+    ref_uiLow  = m_uiLow;
   }
 
   /// \brief Creates a uuid from a string. The result is always the same for the same string.
@@ -63,8 +63,8 @@ public:
   XII_ALWAYS_INLINE void HashCombine(const xiiUuid& hash);
 
 private:
-  friend XII_FOUNDATION_DLL_FRIEND void operator>>(xiiStreamReader& Stream, xiiUuid& Value);
-  friend XII_FOUNDATION_DLL_FRIEND void operator<<(xiiStreamWriter& Stream, const xiiUuid& Value);
+  friend XII_FOUNDATION_DLL_FRIEND void operator>>(xiiStreamReader& ref_stream, xiiUuid& ref_value);
+  friend XII_FOUNDATION_DLL_FRIEND void operator<<(xiiStreamWriter& ref_stream, const xiiUuid& value);
 
   xiiUInt64 m_uiHigh;
   xiiUInt64 m_uiLow;

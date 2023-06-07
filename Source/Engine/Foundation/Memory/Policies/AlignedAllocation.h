@@ -33,14 +33,14 @@ namespace xiiMemoryPolicies
       return pAlignedMemory;
     }
 
-    void Deallocate(void* ptr)
+    void Deallocate(void* pPtr)
     {
       const xiiUInt32 uiOffset = UnpackOffset(GetMetadata(ptr));
       xiiUInt8*       pMemory  = static_cast<xiiUInt8*>(ptr) - uiOffset;
       m_allocator.Deallocate(pMemory);
     }
 
-    size_t AllocatedSize(const void* ptr)
+    size_t AllocatedSize(const void* pPtr)
     {
       const xiiUInt32 uiMetadata = GetMetadata(ptr);
       const xiiUInt32 uiOffset   = UnpackOffset(uiMetadata);
@@ -51,7 +51,7 @@ namespace xiiMemoryPolicies
       return m_allocator.AllocatedSize(pMemory) - uiPadding;
     }
 
-    size_t UsedMemorySize(const void* ptr)
+    size_t UsedMemorySize(const void* pPtr)
     {
       const xiiUInt32 uiOffset = UnpackOffset(GetMetadata(ptr));
       const xiiUInt8* pMemory  = static_cast<const xiiUInt8*>(ptr) - uiOffset;

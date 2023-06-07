@@ -51,9 +51,9 @@ struct FileStats
   xiiUInt32 m_uiWords;
 };
 
-xiiResult ReadCompleteFile(const char* szFile, xiiDynamicArray<xiiUInt8>& out_FileContent)
+xiiResult ReadCompleteFile(const char* szFile, xiiDynamicArray<xiiUInt8>& out_fileContent)
 {
-  out_FileContent.Clear();
+  out_fileContent.Clear();
 
   xiiFileReader File;
   if (File.Open(szFile) == XII_FAILURE)
@@ -67,14 +67,14 @@ xiiResult ReadCompleteFile(const char* szFile, xiiDynamicArray<xiiUInt8>& out_Fi
     if (uiRead == 0)
       return XII_SUCCESS; // file is automatically closed here
 
-    out_FileContent.PushBackRange(xiiArrayPtr<xiiUInt8>(uiTemp, (xiiUInt32)uiRead));
+    out_fileContent.PushBackRange(xiiArrayPtr<xiiUInt8>(uiTemp, (xiiUInt32)uiRead));
   }
 
   return XII_SUCCESS; // file is automatically closed here
 }
 
 // Removes all spaces and tabs from the front and end of a line
-void TrimWhitespaces(xiiStringBuilder& sLine)
+void TrimWhitespaces(xiiStringBuilder& ref_sLine)
 {
   bool b = true;
 
@@ -82,25 +82,25 @@ void TrimWhitespaces(xiiStringBuilder& sLine)
   {
     b = false;
 
-    if (sLine.EndsWith(" "))
+    if (ref_sLine.EndsWith(" "))
     {
       b = true;
-      sLine.Shrink(0, 1);
+      ref_sLine.Shrink(0, 1);
     }
-    if (sLine.EndsWith("\t"))
+    if (ref_sLine.EndsWith("\t"))
     {
       b = true;
-      sLine.Shrink(0, 1);
+      ref_sLine.Shrink(0, 1);
     }
-    if (sLine.StartsWith(" "))
+    if (ref_sLine.StartsWith(" "))
     {
       b = true;
-      sLine.Shrink(1, 0);
+      ref_sLine.Shrink(1, 0);
     }
-    if (sLine.StartsWith("\t"))
+    if (ref_sLine.StartsWith("\t"))
     {
       b = true;
-      sLine.Shrink(1, 0);
+      ref_sLine.Shrink(1, 0);
     }
   }
 }
@@ -180,7 +180,7 @@ private:
   xiiString m_sSearchDir;
 
 public:
-  typedef xiiApplication SUPER;
+  using SUPER = xiiApplication;
 
   xiiLineCountApp() :
     xiiApplication("LineCountApp")

@@ -14,7 +14,7 @@ struct xiiRenderWorldRenderEvent;
 struct xiiMsgExtractRenderData;
 struct xiiReflectionProbeDesc;
 class xiiReflectionProbeRenderData;
-typedef xiiGenericId<24, 8> xiiReflectionProbeId;
+using xiiReflectionProbeId = xiiGenericId<24, 8>;
 class xiiReflectionProbeComponentBase;
 class xiiSkyLightComponent;
 
@@ -25,10 +25,10 @@ public:
   static xiiReflectionProbeId RegisterReflectionProbe(const xiiWorld* pWorld, const xiiReflectionProbeDesc& desc, const xiiReflectionProbeComponentBase* pComponent);
   static void                 DeregisterReflectionProbe(const xiiWorld* pWorld, xiiReflectionProbeId id);
   static void                 UpdateReflectionProbe(const xiiWorld* pWorld, xiiReflectionProbeId id, const xiiReflectionProbeDesc& desc, const xiiReflectionProbeComponentBase* pComponent);
-  static void                 ExtractReflectionProbe(const xiiComponent* pComponent, xiiMsgExtractRenderData& msg, xiiReflectionProbeRenderData* pRenderData, const xiiWorld* pWorld, xiiReflectionProbeId id, float fPriority);
+  static void                 ExtractReflectionProbe(const xiiComponent* pComponent, xiiMsgExtractRenderData& ref_msg, xiiReflectionProbeRenderData* pRenderData, const xiiWorld* pWorld, xiiReflectionProbeId id, float fPriority);
 
   // SkyLight
-  static xiiReflectionProbeId RegisterSkyLight(const xiiWorld* pWorld, xiiReflectionProbeDesc& desc, const xiiSkyLightComponent* pComponent);
+  static xiiReflectionProbeId RegisterSkyLight(const xiiWorld* pWorld, xiiReflectionProbeDesc& ref_desc, const xiiSkyLightComponent* pComponent);
   static void                 DeregisterSkyLight(const xiiWorld* pWorld, xiiReflectionProbeId id);
   static void                 UpdateSkyLight(const xiiWorld* pWorld, xiiReflectionProbeId id, const xiiReflectionProbeDesc& desc, const xiiSkyLightComponent* pComponent);
 

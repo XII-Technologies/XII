@@ -35,7 +35,7 @@ public:
   void SetOutputStream(xiiStreamWriter* pOutput) { m_pOutput = pOutput; } // [tested]
 
   /// \brief Configures how much whitespace is output.
-  void SetCompactMode(bool compact) { m_bCompactMode = compact; } // [tested]
+  void SetCompactMode(bool bCompact) { m_bCompactMode = bCompact; } // [tested]
 
   /// \brief Configures how verbose the type strings are going to be written.
   void SetPrimitiveTypeStringMode(TypeStringMode mode) { m_TypeStringMode = mode; }
@@ -63,40 +63,40 @@ public:
   void EndPrimitiveList(); // [tested]
 
   /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
-  void WriteBool(const bool* pValues, xiiUInt32 count = 1); // [tested]
+  void WriteBool(const bool* pValues, xiiUInt32 uiCount = 1); // [tested]
 
   /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
-  void WriteInt8(const xiiInt8* pValues, xiiUInt32 count = 1); // [tested]
+  void WriteInt8(const xiiInt8* pValues, xiiUInt32 uiCount = 1); // [tested]
 
   /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
-  void WriteInt16(const xiiInt16* pValues, xiiUInt32 count = 1); // [tested]
+  void WriteInt16(const xiiInt16* pValues, xiiUInt32 uiCount = 1); // [tested]
 
   /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
-  void WriteInt32(const xiiInt32* pValues, xiiUInt32 count = 1); // [tested]
+  void WriteInt32(const xiiInt32* pValues, xiiUInt32 uiCount = 1); // [tested]
 
   /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
-  void WriteInt64(const xiiInt64* pValues, xiiUInt32 count = 1); // [tested]
+  void WriteInt64(const xiiInt64* pValues, xiiUInt32 uiCount = 1); // [tested]
 
   /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
-  void WriteUInt8(const xiiUInt8* pValues, xiiUInt32 count = 1); // [tested]
+  void WriteUInt8(const xiiUInt8* pValues, xiiUInt32 uiCount = 1); // [tested]
 
   /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
-  void WriteUInt16(const xiiUInt16* pValues, xiiUInt32 count = 1); // [tested]
+  void WriteUInt16(const xiiUInt16* pValues, xiiUInt32 uiCount = 1); // [tested]
 
   /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
-  void WriteUInt32(const xiiUInt32* pValues, xiiUInt32 count = 1); // [tested]
+  void WriteUInt32(const xiiUInt32* pValues, xiiUInt32 uiCount = 1); // [tested]
 
   /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
-  void WriteUInt64(const xiiUInt64* pValues, xiiUInt32 count = 1); // [tested]
+  void WriteUInt64(const xiiUInt64* pValues, xiiUInt32 uiCount = 1); // [tested]
 
   /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
-  void WriteFloat(const float* pValues, xiiUInt32 count = 1); // [tested]
+  void WriteFloat(const float* pValues, xiiUInt32 uiCount = 1); // [tested]
 
   /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
-  void WriteDouble(const double* pValues, xiiUInt32 count = 1); // [tested]
+  void WriteDouble(const double* pValues, xiiUInt32 uiCount = 1); // [tested]
 
   /// \brief Writes a single string to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
-  void WriteString(const xiiStringView& string); // [tested]
+  void WriteString(const xiiStringView& sString); // [tested]
 
   /// \brief Writes a single string to the primitive list, but the value is a HEX representation of the given binary data.
   void WriteBinaryAsString(const void* pData, xiiUInt32 uiBytes);
@@ -126,13 +126,13 @@ protected:
 
   struct DdlState
   {
-    DdlState() :
-      m_State(Empty)
+    DdlState()
+
     {
       m_bPrimitivesWritten = false;
     }
 
-    State m_State;
+    State m_State = Empty;
     bool  m_bPrimitivesWritten;
   };
 

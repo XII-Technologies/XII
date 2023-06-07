@@ -49,35 +49,35 @@ void xiiHeadBoneComponent::Update()
   m_CurVerticalRotation = m_NewVerticalRotation;
 }
 
-void xiiHeadBoneComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiHeadBoneComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   // Version 1
   s << m_MaxVerticalRotation;
   s << m_CurVerticalRotation;
 }
 
-void xiiHeadBoneComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiHeadBoneComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   // Version 1
   s >> m_MaxVerticalRotation;
   s >> m_CurVerticalRotation;
 }
 
-void xiiHeadBoneComponent::SetVerticalRotation(float radians)
+void xiiHeadBoneComponent::SetVerticalRotation(float fRadians)
 {
-  m_NewVerticalRotation = xiiAngle::Radian(radians);
+  m_NewVerticalRotation = xiiAngle::Radian(fRadians);
 }
 
-void xiiHeadBoneComponent::ChangeVerticalRotation(float radians)
+void xiiHeadBoneComponent::ChangeVerticalRotation(float fRadians)
 {
-  m_NewVerticalRotation += xiiAngle::Radian(radians);
+  m_NewVerticalRotation += xiiAngle::Radian(fRadians);
 }

@@ -157,7 +157,7 @@ private:
 
 template <typename BlockStorageAllocator>
 xiiTagSetTemplate<BlockStorageAllocator>::Iterator::Iterator(const xiiTagSetTemplate<BlockStorageAllocator>* pSet, bool bEnd) :
-  m_pTagSet(pSet), m_uiIndex(0)
+  m_pTagSet(pSet)
 {
   if (!bEnd)
   {
@@ -231,7 +231,7 @@ bool xiiTagSetTemplate<BlockStorageAllocator>::operator!=(const xiiTagSetTemplat
 }
 
 template <typename BlockStorageAllocator>
-void xiiTagSetTemplate<BlockStorageAllocator>::Set(const xiiTag& Tag)
+void xiiTagSetTemplate<BlockStorageAllocator>::Set(const xiiTag& tag)
 {
   XII_ASSERT_DEV(Tag.IsValid(), "Only valid tags can be set in a tag set!");
 
@@ -261,7 +261,7 @@ void xiiTagSetTemplate<BlockStorageAllocator>::Set(const xiiTag& Tag)
 }
 
 template <typename BlockStorageAllocator>
-void xiiTagSetTemplate<BlockStorageAllocator>::Remove(const xiiTag& Tag)
+void xiiTagSetTemplate<BlockStorageAllocator>::Remove(const xiiTag& tag)
 {
   XII_ASSERT_DEV(Tag.IsValid(), "Only valid tags can be cleared from a tag set!");
 
@@ -282,7 +282,7 @@ void xiiTagSetTemplate<BlockStorageAllocator>::Remove(const xiiTag& Tag)
 }
 
 template <typename BlockStorageAllocator>
-bool xiiTagSetTemplate<BlockStorageAllocator>::IsSet(const xiiTag& Tag) const
+bool xiiTagSetTemplate<BlockStorageAllocator>::IsSet(const xiiTag& tag) const
 {
   XII_ASSERT_DEV(Tag.IsValid(), "Only valid tags can be checked!");
 
@@ -297,7 +297,7 @@ bool xiiTagSetTemplate<BlockStorageAllocator>::IsSet(const xiiTag& Tag) const
 }
 
 template <typename BlockStorageAllocator>
-bool xiiTagSetTemplate<BlockStorageAllocator>::IsAnySet(const xiiTagSetTemplate& OtherSet) const
+bool xiiTagSetTemplate<BlockStorageAllocator>::IsAnySet(const xiiTagSetTemplate& otherSet) const
 {
   // If any of the sets is empty nothing can match
   if (IsEmpty() || OtherSet.IsEmpty())
@@ -452,7 +452,7 @@ XII_ALWAYS_INLINE void xiiTagSetTemplate<BlockStorageAllocator>::DecreaseTagCoun
 static xiiTypeVersion s_TagSetVersion = 1;
 
 template <typename BlockStorageAllocator /*= xiiDefaultAllocatorWrapper*/>
-void xiiTagSetTemplate<BlockStorageAllocator>::Save(xiiStreamWriter& stream) const
+void xiiTagSetTemplate<BlockStorageAllocator>::Save(xiiStreamWriter& ref_stream) const
 {
   const xiiUInt16 uiNumTags = static_cast<xiiUInt16>(GetNumTagsSet());
   stream << uiNumTags;
@@ -468,7 +468,7 @@ void xiiTagSetTemplate<BlockStorageAllocator>::Save(xiiStreamWriter& stream) con
 }
 
 template <typename BlockStorageAllocator /*= xiiDefaultAllocatorWrapper*/>
-void xiiTagSetTemplate<BlockStorageAllocator>::Load(xiiStreamReader& stream, xiiTagRegistry& registry)
+void xiiTagSetTemplate<BlockStorageAllocator>::Load(xiiStreamReader& ref_stream, xiiTagRegistry& ref_registry)
 {
   xiiUInt16 uiNumTags = 0;
   stream >> uiNumTags;

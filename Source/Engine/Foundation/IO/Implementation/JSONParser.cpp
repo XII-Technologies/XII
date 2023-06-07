@@ -608,8 +608,8 @@ void xiiJSONParser::ReadString()
         case 'u':
         {
           xiiUInt16 cpt[2];
-          auto      ReadUtf16CodePoint = [&](xiiUInt16& uiCodePoint) -> bool {
-            uiCodePoint = 0;
+          auto      ReadUtf16CodePoint = [&](xiiUInt16& ref_uiCodePoint) -> bool {
+            ref_uiCodePoint = 0;
 
             // Unicode literal are utf16 in the format \uFFFF. The hex number FFFF can be upper or lower case but must be 4 characters long.
             xiiUInt8  unicodeLiteral[5] = {0, 0, 0, 0, 0};
@@ -634,7 +634,7 @@ void xiiJSONParser::ReadString()
             xiiUInt32 uiHexValue = 0;
             if (xiiConversionUtils::ConvertHexStringToUInt32((const char*)&unicodeLiteral[0], uiHexValue).Succeeded())
             {
-              uiCodePoint = static_cast<xiiUInt16>(uiHexValue);
+              ref_uiCodePoint = static_cast<xiiUInt16>(uiHexValue);
             }
             else
             {

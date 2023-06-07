@@ -36,21 +36,21 @@ XII_END_COMPONENT_TYPE
 xiiJointAttachmentComponent::xiiJointAttachmentComponent()  = default;
 xiiJointAttachmentComponent::~xiiJointAttachmentComponent() = default;
 
-void xiiJointAttachmentComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJointAttachmentComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_sJointToAttachTo;
   s << m_vLocalPositionOffset;
   s << m_vLocalRotationOffset;
 }
 
-void xiiJointAttachmentComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJointAttachmentComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_sJointToAttachTo;
   s >> m_vLocalPositionOffset;

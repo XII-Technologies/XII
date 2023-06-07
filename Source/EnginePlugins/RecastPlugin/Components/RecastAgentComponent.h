@@ -17,7 +17,7 @@ struct xiiResourceEvent;
 
 class XII_RECASTPLUGIN_DLL xiiRcAgentComponentManager : public xiiComponentManager<class xiiRcAgentComponent, xiiBlockStorageType::FreeList>
 {
-  typedef xiiComponentManager<class xiiRcAgentComponent, xiiBlockStorageType::FreeList> SUPER;
+  using SUPER = xiiComponentManager<class xiiRcAgentComponent, xiiBlockStorageType::FreeList>;
 
 public:
   xiiRcAgentComponentManager(xiiWorld* pWorld);
@@ -65,10 +65,10 @@ public:
   // Helper Functions
 
 public:
-  xiiResult FindNavMeshPolyAt(const xiiVec3& vPosition, dtPolyRef& out_PolyRef, xiiVec3* out_vAdjustedPosition = nullptr, float fPlaneEpsilon = 0.01f, float fHeightEpsilon = 1.0f) const;
-  bool      HasReachedPosition(const xiiVec3& pos, float fMaxDistance) const;
+  xiiResult FindNavMeshPolyAt(const xiiVec3& vPosition, dtPolyRef& out_polyRef, xiiVec3* out_pAdjustedPosition = nullptr, float fPlaneEpsilon = 0.01f, float fHeightEpsilon = 1.0f) const;
+  bool      HasReachedPosition(const xiiVec3& vPos, float fMaxDistance) const;
   bool      HasReachedGoal(float fMaxDistance) const;
-  bool      IsPositionVisible(const xiiVec3& pos) const;
+  bool      IsPositionVisible(const xiiVec3& vPos) const;
 
   //////////////////////////////////////////////////////////////////////////
   // Debug Visualization Functions

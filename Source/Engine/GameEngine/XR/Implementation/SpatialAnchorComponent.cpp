@@ -34,17 +34,17 @@ xiiSpatialAnchorComponent::~xiiSpatialAnchorComponent()
   }
 }
 
-void xiiSpatialAnchorComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSpatialAnchorComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  xiiStreamWriter& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  xiiStreamWriter& s = ref_stream.GetStream();
 }
 
-void xiiSpatialAnchorComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSpatialAnchorComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32  uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32  uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  xiiStreamReader& s         = ref_stream.GetStream();
   if (uiVersion == 1)
   {
     xiiString sAnchorName;

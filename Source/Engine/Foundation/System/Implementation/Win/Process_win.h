@@ -51,11 +51,11 @@ struct xiiPipeWin
     }
   }
 
-  static void ReportString(xiiDelegate<void(xiiStringView)> func, xiiHybridArray<char, 256>& temp)
+  static void ReportString(xiiDelegate<void(xiiStringView)> func, xiiHybridArray<char, 256>& ref_temp)
   {
     xiiStringBuilder result;
 
-    xiiUnicodeUtils::RepairNonUtf8Text(temp.GetData(), temp.GetData() + temp.GetCount(), result);
+    xiiUnicodeUtils::RepairNonUtf8Text(ref_temp.GetData(), ref_temp.GetData() + ref_temp.GetCount(), result);
     func(result);
   }
 
@@ -211,22 +211,22 @@ xiiOsProcessID xiiProcess::GetCurrentProcessID()
 
 // Taken from "Programmatically controlling which handles are inherited by new processes in Win32" by Raymond Chen
 // https://devblogs.microsoft.com/oldnewthing/20111216-00/?p=8873
-static BOOL CreateProcessWithExplicitHandles(LPCWSTR lpApplicationName, LPWSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCWSTR lpCurrentDirectory, LPSTARTUPINFOW lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation,
+static BOOL CreateProcessWithExplicitHandles(LPCWSTR pLpApplicationName, LPWSTR pLpCommandLine, LPSECURITY_ATTRIBUTES pLpProcessAttributes, LPSECURITY_ATTRIBUTES pLpThreadAttributes, BOOL inheritHandles, DWORD uiDwCreationFlags, LPVOID pLpEnvironment, LPCWSTR pLpCurrentDirectory, LPSTARTUPINFOW pLpStartupInfo, LPPROCESS_INFORMATION pLpProcessInformation,
                                              // here is the new stuff
-                                             DWORD   cHandlesToInherit,
-                                             HANDLE* rgHandlesToInherit)
+                                             DWORD   uiHandlesToInherit,
+                                             HANDLE* pRgHandlesToInherit)
 {
   BOOL                         fSuccess;
   BOOL                         fInitialized    = FALSE;
   SIZE_T                       size            = 0;
   LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList = nullptr;
-  fSuccess                                     = cHandlesToInherit < 0xFFFFFFFF / sizeof(HANDLE) && lpStartupInfo->cb == sizeof(*lpStartupInfo);
+  fSuccess                                     = uiHandlesToInherit < 0xFFFFFFFF / sizeof(HANDLE) && pLpStartupInfo->cb == sizeof(*pLpStartupInfo);
   if (!fSuccess)
   {
     SetLastError(ERROR_INVALID_PARAMETER);
   }
 
-  if (cHandlesToInherit > 0)
+  if (uiHandlesToInherit > 0)
   {
     if (fSuccess)
     {
@@ -245,7 +245,7 @@ static BOOL CreateProcessWithExplicitHandles(LPCWSTR lpApplicationName, LPWSTR l
     {
       fInitialized = TRUE;
       fSuccess     = UpdateProcThreadAttribute(
-        lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, rgHandlesToInherit, cHandlesToInherit * sizeof(HANDLE), nullptr, nullptr);
+        lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, pRgHandlesToInherit, uiHandlesToInherit * sizeof(HANDLE), nullptr, nullptr);
     }
   }
 
@@ -253,13 +253,13 @@ static BOOL CreateProcessWithExplicitHandles(LPCWSTR lpApplicationName, LPWSTR l
   {
     STARTUPINFOEXW info;
     ZeroMemory(&info, sizeof(info));
-    info.StartupInfo     = *lpStartupInfo;
+    info.StartupInfo     = *pLpStartupInfo;
     info.StartupInfo.cb  = sizeof(info);
     info.lpAttributeList = lpAttributeList;
 
     // It is both possible to pass in (STARTUPINFOW*)&info OR info.StartupInfo ...
-    fSuccess = CreateProcessW(lpApplicationName, lpCommandLine, lpProcessAttributes, lpThreadAttributes, bInheritHandles,
-                              dwCreationFlags | EXTENDED_STARTUPINFO_PRESENT, lpEnvironment, lpCurrentDirectory, &info.StartupInfo, lpProcessInformation);
+    fSuccess = CreateProcessW(pLpApplicationName, pLpCommandLine, pLpProcessAttributes, pLpThreadAttributes, inheritHandles,
+                              uiDwCreationFlags | EXTENDED_STARTUPINFO_PRESENT, pLpEnvironment, pLpCurrentDirectory, &info.StartupInfo, pLpProcessInformation);
   }
   if (fInitialized)
     DeleteProcThreadAttributeList(lpAttributeList);
@@ -419,16 +419,16 @@ xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
   return XII_SUCCESS;
 }
 
-xiiResult xiiProcess::Execute(const xiiProcessOptions& opt, xiiInt32* out_iExitCode /*= nullptr*/)
+xiiResult xiiProcess::Execute(const xiiProcessOptions& opt, xiiInt32* out_pExitCode /*= nullptr*/)
 {
   xiiProcess proc;
 
   XII_SUCCEED_OR_RETURN(proc.Launch(opt));
   XII_SUCCEED_OR_RETURN(proc.WaitToFinish());
 
-  if (out_iExitCode != nullptr)
+  if (out_pExitCode != nullptr)
   {
-    *out_iExitCode = proc.GetExitCode();
+    *out_pExitCode = proc.GetExitCode();
   }
 
   return XII_SUCCESS;

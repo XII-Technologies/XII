@@ -73,13 +73,13 @@ public:
   }
 
   /// \brief Constructor that appends all the given strings.
-  xiiStringBuilder(xiiStringView pData1, xiiStringView pData2, xiiStringView pData3 = {}, xiiStringView pData4 = {}, xiiStringView pData5 = {}, xiiStringView pData6 = {}); // [tested]
+  xiiStringBuilder(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3 = {}, xiiStringView sData4 = {}, xiiStringView sData5 = {}, xiiStringView sData6 = {}); // [tested]
 
   /// \brief Copies the given Utf8 string into this one.
   /* implicit */ xiiStringBuilder(const char* szUTF8, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// \brief Copies the given wchar_t string into this one.
-  /* implicit */ xiiStringBuilder(const wchar_t* szWChar, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
+  /* implicit */ xiiStringBuilder(const wchar_t* pWChar, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// \brief Copies the given substring into this one. The xiiStringView might actually be a substring of this very string.
   /* implicit */ xiiStringBuilder(xiiStringView rhs, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
@@ -94,7 +94,7 @@ public:
   void operator=(const char* szUTF8); // [tested]
 
   /// \brief Copies the given wchar_t string into this one.
-  void operator=(const wchar_t* szWChar); // [tested]
+  void operator=(const wchar_t* pWChar); // [tested]
 
   /// \brief Copies the given substring into this one. The xiiStringView might actually be a substring of this very string.
   void operator=(xiiStringView rhs); // [tested]
@@ -166,10 +166,10 @@ public:
   /// This can be a very costly operation (unless this string is pure ASCII).
   /// It is only provided for the few rare cases where it is more convenient and performance is not of concern.
   /// If possible, do not use this function, at all.
-  void ChangeCharacter(iterator& it, xiiUInt32 uiCharacter); // [tested]
+  void ChangeCharacter(iterator& ref_it, xiiUInt32 uiCharacter); // [tested]
 
   /// \brief Sets the string by concatenating all given strings.
-  void Set(xiiStringView pData1, xiiStringView pData2 = {}, xiiStringView pData3 = {}, xiiStringView pData4 = {}, xiiStringView pData5 = {}, xiiStringView pData6 = {});
+  void Set(xiiStringView sData1, xiiStringView sData2 = {}, xiiStringView sData3 = {}, xiiStringView sData4 = {}, xiiStringView sData5 = {}, xiiStringView sData6 = {});
 
   /// \brief Copies the string starting at \a pStart up to \a pEnd (exclusive).
   void SetSubString_FromTo(const char* pStart, const char* pEnd);
@@ -187,7 +187,7 @@ public:
   void Append(const wchar_t* pData1, const wchar_t* pData2 = nullptr, const wchar_t* pData3 = nullptr, const wchar_t* pData4 = nullptr, const wchar_t* pData5 = nullptr, const wchar_t* pData6 = nullptr); // [tested]
 
   /// \brief Appends all the given strings at the back of this string in one operation.
-  void Append(xiiStringView pData1, xiiStringView pData2 = {}, xiiStringView pData3 = {}, xiiStringView pData4 = {}, xiiStringView pData5 = {}, xiiStringView pData6 = {}); // [tested]
+  void Append(xiiStringView sData1, xiiStringView sData2 = {}, xiiStringView sData3 = {}, xiiStringView sData4 = {}, xiiStringView sData5 = {}, xiiStringView sData6 = {}); // [tested]
 
   /// \brief Prepends a single Utf32 character.
   void Prepend(xiiUInt32 uiChar); // [tested]
@@ -196,13 +196,13 @@ public:
   void Prepend(const wchar_t* pData1, const wchar_t* pData2 = nullptr, const wchar_t* pData3 = nullptr, const wchar_t* pData4 = nullptr, const wchar_t* pData5 = nullptr, const wchar_t* pData6 = nullptr); // [tested]
 
   /// \brief Prepends all the given strings to the front of this string in one operation.
-  void Prepend(xiiStringView pData1, xiiStringView pData2 = {}, xiiStringView pData3 = {}, xiiStringView pData4 = {}, xiiStringView pData5 = {}, xiiStringView pData6 = {}); // [tested]
+  void Prepend(xiiStringView sData1, xiiStringView sData2 = {}, xiiStringView sData3 = {}, xiiStringView sData4 = {}, xiiStringView sData5 = {}, xiiStringView sData6 = {}); // [tested]
 
   /// \brief Sets this string to the formatted string, uses printf-style formatting.
   void Printf(const char* szUtf8Format, ...); // [tested]
 
   /// \brief Sets this string to the formatted string, uses printf-style formatting.
-  void PrintfArgs(const char* szUtf8Format, va_list args); // [tested]
+  void PrintfArgs(const char* szUtf8Format, va_list szArgs); // [tested]
 
   /// \brief Replaces this with a formatted string. Uses '{}' formatting placeholders, see xiiFormatString for details.
   void Format(const xiiFormatString& string);
@@ -246,10 +246,10 @@ public:
 
 
   /// \brief Replaces the string that starts at szStartPos and ends at szEndPos with the string szReplaceWith.
-  void ReplaceSubString(const char* szStartPos, const char* szEndPos, xiiStringView szReplaceWith); // [tested]
+  void ReplaceSubString(const char* szStartPos, const char* szEndPos, xiiStringView sReplaceWith); // [tested]
 
   /// \brief A wrapper around ReplaceSubString. Will insert the given string at szInsertAtPos.
-  void Insert(const char* szInsertAtPos, xiiStringView szTextToInsert); // [tested]
+  void Insert(const char* szInsertAtPos, xiiStringView sTextToInsert); // [tested]
 
   /// \brief A wrapper around ReplaceSubString. Will remove the substring which starts at szRemoveFromPos and ends at szRemoveToPos.
   void Remove(const char* szRemoveFromPos, const char* szRemoveToPos); // [tested]
@@ -281,26 +281,26 @@ public:
   /// the delimiter function IsDelimiterCB.
   ///
   /// Returns the start position of where the word was replaced or nullptr if nothing got replaced.
-  const char* ReplaceWholeWord(const char* szSearchFor, xiiStringView szReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB); // [tested]
+  const char* ReplaceWholeWord(const char* szSearchFor, xiiStringView sReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB); // [tested]
 
   /// \brief Case-insensitive version of ReplaceWholeWord.
   ///
   /// Returns the start position of where the word was replaced or nullptr if nothing got replaced.
-  const char* ReplaceWholeWord_NoCase(const char* szSearchFor, xiiStringView szReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB); // [tested]
+  const char* ReplaceWholeWord_NoCase(const char* szSearchFor, xiiStringView sReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB); // [tested]
 
   /// \brief Replaces all occurrences of szSearchFor by szReplaceWith, if szSearchFor was found to be a 'whole word', as indicated by the
   /// delimiter function IsDelimiterCB.
   ///
   /// Returns how many words got replaced.
-  xiiUInt32 ReplaceWholeWordAll(const char* szSearchFor, xiiStringView szReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB); // [tested]
+  xiiUInt32 ReplaceWholeWordAll(const char* szSearchFor, xiiStringView sReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB); // [tested]
 
   /// \brief Case-insensitive version of ReplaceWholeWordAll.
   ///
   /// Returns how many words got replaced.
-  xiiUInt32 ReplaceWholeWordAll_NoCase(const char* szSearchFor, xiiStringView szReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB); // [tested]
+  xiiUInt32 ReplaceWholeWordAll_NoCase(const char* szSearchFor, xiiStringView sReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB); // [tested]
 
   /// \brief Replaces the current string with the content from the stream. Reads the stream to its end.
-  void ReadAll(xiiStreamReader& Stream);
+  void ReadAll(xiiStreamReader& ref_stream);
 
   // ******* Path Functions ********
 
@@ -333,7 +333,7 @@ public:
   /// AppendWithSeparator(", ", "a", "b");
   /// AppendWithSeparator(", ", "c", "d");
   /// results in the string "ab, cd"
-  void AppendWithSeparator(xiiStringView separator, xiiStringView sText1, xiiStringView sText2 = xiiStringView(), xiiStringView sText3 = xiiStringView(), xiiStringView sText4 = xiiStringView(), xiiStringView sText5 = xiiStringView(), xiiStringView sText6 = xiiStringView());
+  void AppendWithSeparator(xiiStringView sSeparator, xiiStringView sText1, xiiStringView sText2 = xiiStringView(), xiiStringView sText3 = xiiStringView(), xiiStringView sText4 = xiiStringView(), xiiStringView sText5 = xiiStringView(), xiiStringView sText6 = xiiStringView());
 
   /// \brief Changes the file name part of the path, keeps the extension intact (if there is any).
   void ChangeFileName(xiiStringView sNewFileName); // [tested]

@@ -40,11 +40,11 @@ xiiPointLightComponent::xiiPointLightComponent()
 
 xiiPointLightComponent::~xiiPointLightComponent() = default;
 
-xiiResult xiiPointLightComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiPointLightComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   m_fEffectiveRange = CalculateEffectiveRange(m_fRange, m_fIntensity);
 
-  bounds = xiiBoundingSphere(xiiVec3::ZeroVector(), m_fEffectiveRange);
+  ref_bounds = xiiBoundingSphere(xiiVec3::ZeroVector(), m_fEffectiveRange);
   return XII_SUCCESS;
 }
 
@@ -125,21 +125,21 @@ void xiiPointLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
   msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Light, caching);
 }
 
-void xiiPointLightComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiPointLightComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_fRange;
   s << m_hProjectedTexture;
 }
 
-void xiiPointLightComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiPointLightComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   s >> m_fRange;
   s >> m_hProjectedTexture;
@@ -177,9 +177,9 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
-    context.PatchBaseClass("xiiLightComponent", 2, true);
+    ref_context.PatchBaseClass("xiiLightComponent", 2, true);
   }
 };
 

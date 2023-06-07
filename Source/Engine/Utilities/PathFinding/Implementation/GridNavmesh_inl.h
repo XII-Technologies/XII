@@ -2,10 +2,10 @@
 
 template <class CellData>
 void xiiGridNavmesh::CreateFromGrid(
-  const xiiGameGrid<CellData>& Grid,
-  CellComparator               IsSameCellType,
+  const xiiGameGrid<CellData>& grid,
+  CellComparator               isSameCellType,
   void*                        pPassThrough,
-  CellBlocked                  IsCellBlocked,
+  CellBlocked                  isCellBlocked,
   void*                        pPassThrough2)
 {
   m_NodesGrid.CreateGrid(Grid.GetGridSizeX(), Grid.GetGridSizeY());

@@ -73,24 +73,24 @@ void xiiColorGradientResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage
   out_NewMemoryUsage.m_uiMemoryCPU = static_cast<xiiUInt32>(m_Descriptor.m_Gradient.GetHeapMemoryUsage()) + static_cast<xiiUInt32>(sizeof(m_Descriptor));
 }
 
-void xiiColorGradientResourceDescriptor::Save(xiiStreamWriter& stream) const
+void xiiColorGradientResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
   const xiiUInt8 uiVersion = 1;
 
-  stream << uiVersion;
+  ref_stream << uiVersion;
 
-  m_Gradient.Save(stream);
+  m_Gradient.Save(ref_stream);
 }
 
-void xiiColorGradientResourceDescriptor::Load(xiiStreamReader& stream)
+void xiiColorGradientResourceDescriptor::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt8 uiVersion = 0;
 
-  stream >> uiVersion;
+  ref_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion == 1, "Invalid file version {0}", uiVersion);
 
-  m_Gradient.Load(stream);
+  m_Gradient.Load(ref_stream);
 }
 
 

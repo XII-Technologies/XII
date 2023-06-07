@@ -81,7 +81,7 @@ public:
 
   /// \brief LogLevel is between xiiLogEventType::None and xiiLogEventType::All and defines which messages will be logged and which will be
   /// filtered out.
-  XII_ALWAYS_INLINE void SetLogLevel(xiiLogMsgType::Enum LogLevel) { m_LogLevel = LogLevel; }
+  XII_ALWAYS_INLINE void SetLogLevel(xiiLogMsgType::Enum logLevel) { m_LogLevel = logLevel; }
 
   /// \brief Returns the currently set log level.
   XII_ALWAYS_INLINE xiiLogMsgType::Enum GetLogLevel() { return m_LogLevel; }
@@ -126,10 +126,10 @@ public:
   static void RemoveLogWriter(xiiLoggingEvent::Handler handler);
 
   /// \brief Unregisters a previously registered receiver. It is an error to unregister a receiver that was not registered.
-  static void RemoveLogWriter(xiiEventSubscriptionID& subscriptionID);
+  static void RemoveLogWriter(xiiEventSubscriptionID& ref_subscriptionID);
 
   /// \brief Returns how many message of the given type occurred.
-  static xiiUInt32 GetMessageCount(xiiLogMsgType::Enum MessageType) { return s_uiMessageCount[MessageType]; }
+  static xiiUInt32 GetMessageCount(xiiLogMsgType::Enum messageType) { return s_uiMessageCount[messageType]; }
 
   /// xiiLogInterfaces are thread_local and therefore a dedicated xiiGlobalLog is created per thread.
   /// Especially during testing one may want to replace the log system everywhere, to catch certain messages, no matter on which thread they
@@ -176,7 +176,7 @@ public:
   static xiiLogInterface* GetThreadLocalLogSystem();
 
   /// \brief Sets the default log level which is used by all xiiLogInterface's that have their log level set to xiiLogMsgType::GlobalDefault
-  static void SetDefaultLogLevel(xiiLogMsgType::Enum LogLevel);
+  static void SetDefaultLogLevel(xiiLogMsgType::Enum logLevel);
 
   /// \brief Returns the currently set default log level.
   static xiiLogMsgType::Enum GetDefaultLogLevel();
@@ -363,7 +363,7 @@ public:
     TimeOnly = 3, ///< A short timestamp (time only, no timxiione indicator) is added. Ex: [13:40:30.345] Log message.
   };
 
-  static void GenerateFormattedTimestamp(TimestampMode mode, xiiStringBuilder& sTimestampOut);
+  static void GenerateFormattedTimestamp(TimestampMode mode, xiiStringBuilder& ref_sTimestampOut);
 
 private:
   // Needed to call 'EndLogBlock'

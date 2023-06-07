@@ -35,22 +35,22 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiTimedDeathComponent::xiiTimedDeathComponent()  = default;
 xiiTimedDeathComponent::~xiiTimedDeathComponent() = default;
 
-void xiiTimedDeathComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiTimedDeathComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_MinDelay;
   s << m_DelayRange;
   s << m_hTimeoutPrefab;
 }
 
-void xiiTimedDeathComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiTimedDeathComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_MinDelay;
   s >> m_DelayRange;
@@ -129,7 +129,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->RenameProperty("Min Delay", "MinDelay");
     pNode->RenameProperty("Delay Range", "DelayRange");

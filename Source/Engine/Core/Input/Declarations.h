@@ -17,7 +17,7 @@ struct XII_CORE_DLL xiiKeyState
   };
 
   /// \brief Computes the new key state from a previous key state and whether it is currently pressed or not.
-  static xiiKeyState::Enum GetNewKeyState(xiiKeyState::Enum PrevState, bool bKeyDown);
+  static xiiKeyState::Enum GetNewKeyState(xiiKeyState::Enum prevState, bool bKeyDown);
 };
 
 // clang-format off

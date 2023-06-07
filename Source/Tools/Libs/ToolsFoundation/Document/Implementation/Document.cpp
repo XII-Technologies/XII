@@ -143,7 +143,7 @@ xiiStatus xiiDocument::SaveDocument(bool bForce)
     m_ActiveSaveTask.Invalidate();
   }
   xiiStatus result;
-  m_ActiveSaveTask = InternalSaveDocument([&result](xiiDocument* doc, xiiStatus res) { result = res; });
+  m_ActiveSaveTask = InternalSaveDocument([&result](xiiDocument* pDoc, xiiStatus res) { result = res; });
   xiiTaskSystem::WaitForGroup(m_ActiveSaveTask);
   m_ActiveSaveTask.Invalidate();
   return result;
@@ -223,7 +223,7 @@ xiiTaskGroupID xiiDocument::InternalSaveDocument(AfterSaveCallback callback)
   return afterSaveID;
 }
 
-xiiStatus xiiDocument::ReadDocument(const char* sDocumentPath, xiiUniquePtr<xiiAbstractObjectGraph>& header, xiiUniquePtr<xiiAbstractObjectGraph>& objects, xiiUniquePtr<xiiAbstractObjectGraph>& types)
+xiiStatus xiiDocument::ReadDocument(const char* szDocumentPath, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pHeader, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pObjects, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pTypes)
 {
   xiiDefaultMemoryStreamStorage storage;
   xiiMemoryStreamReader         memreader(&storage);
@@ -231,7 +231,7 @@ xiiStatus xiiDocument::ReadDocument(const char* sDocumentPath, xiiUniquePtr<xiiA
   {
     XII_PROFILE_SCOPE("Read File");
     xiiFileReader file;
-    if (file.Open(sDocumentPath) == XII_FAILURE)
+    if (file.Open(szDocumentPath) == XII_FAILURE)
     {
       return xiiStatus("Unable to open file for reading!");
     }
@@ -243,7 +243,7 @@ xiiStatus xiiDocument::ReadDocument(const char* sDocumentPath, xiiUniquePtr<xiiA
     {
       XII_PROFILE_SCOPE("parse DDL graph");
       xiiStopwatch sw;
-      if (xiiAbstractGraphDdlSerializer::ReadDocument(memreader, header, objects, types, true).Failed())
+      if (xiiAbstractGraphDdlSerializer::ReadDocument(memreader, ref_pHeader, ref_pObjects, ref_pTypes, true).Failed())
         return xiiStatus("Failed to parse DDL graph");
 
       xiiTime t = sw.GetRunningTotal();
@@ -420,9 +420,9 @@ void xiiDocument::ShowDocumentStatus(const xiiFormatString& msg) const
 }
 
 
-xiiResult xiiDocument::ComputeObjectTransformation(const xiiDocumentObject* pObject, xiiTransform& out_Result) const
+xiiResult xiiDocument::ComputeObjectTransformation(const xiiDocumentObject* pObject, xiiTransform& out_result) const
 {
-  out_Result.SetIdentity();
+  out_result.SetIdentity();
   return XII_FAILURE;
 }
 

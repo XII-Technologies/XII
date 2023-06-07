@@ -29,7 +29,7 @@ namespace
 
   struct AllocatorData
   {
-    XII_ALWAYS_INLINE AllocatorData() {}
+    XII_ALWAYS_INLINE AllocatorData() = default;
 
     xiiHybridString<32, TrackerDataAllocatorWrapper> m_sName;
     xiiBitflags<xiiMemoryTrackingFlags>              m_Flags;
@@ -186,7 +186,7 @@ void xiiMemoryTracker::DeregisterAllocator(xiiAllocatorId allocatorId)
 }
 
 // static
-void xiiMemoryTracker::AddAllocation(xiiAllocatorId allocatorId, xiiBitflags<xiiMemoryTrackingFlags> flags, const void* ptr, size_t uiSize, size_t uiAlign, xiiTime allocationTime)
+void xiiMemoryTracker::AddAllocation(xiiAllocatorId allocatorId, xiiBitflags<xiiMemoryTrackingFlags> flags, const void* pPtr, size_t uiSize, size_t uiAlign, xiiTime allocationTime)
 {
   XII_ASSERT_DEV((flags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0, "Allocation tracking is turned off, but xiiMemoryTracker::AddAllocation() is called anyway.");
 
@@ -213,7 +213,7 @@ void xiiMemoryTracker::AddAllocation(xiiAllocatorId allocatorId, xiiBitflags<xii
     data.m_Stats.m_PerFrameAllocationTime += allocationTime;
 
     XII_ASSERT_DEBUG(data.m_Flags == flags, "Given flags have to be identical to allocator flags");
-    auto pInfo           = &data.m_Allocations[ptr];
+    auto pInfo           = &data.m_Allocations[pPtr];
     pInfo->m_uiSize      = uiSize;
     pInfo->m_uiAlignment = (xiiUInt16)uiAlign;
     pInfo->SetStackTrace(stackTrace);
@@ -221,7 +221,7 @@ void xiiMemoryTracker::AddAllocation(xiiAllocatorId allocatorId, xiiBitflags<xii
 }
 
 // static
-void xiiMemoryTracker::RemoveAllocation(xiiAllocatorId allocatorId, const void* ptr)
+void xiiMemoryTracker::RemoveAllocation(xiiAllocatorId allocatorId, const void* pPtr)
 {
   xiiArrayPtr<void*> stackTrace;
 
@@ -231,7 +231,7 @@ void xiiMemoryTracker::RemoveAllocation(xiiAllocatorId allocatorId, const void* 
     AllocatorData& data = s_pTrackerData->m_AllocatorData[allocatorId];
 
     AllocationInfo info;
-    if (data.m_Allocations.Remove(ptr, &info))
+    if (data.m_Allocations.Remove(pPtr, &info))
     {
       data.m_Stats.m_uiNumDeallocations++;
       data.m_Stats.m_uiAllocationSize -= info.m_uiSize;
@@ -240,7 +240,7 @@ void xiiMemoryTracker::RemoveAllocation(xiiAllocatorId allocatorId, const void* 
     }
     else
     {
-      XII_REPORT_FAILURE("Invalid Allocation '{0}'. Memory corruption?", xiiArgP(ptr));
+      XII_REPORT_FAILURE("Invalid Allocation '{0}'. Memory corruption?", xiiArgP(pPtr));
     }
   }
 
@@ -309,20 +309,20 @@ xiiAllocatorId xiiMemoryTracker::GetAllocatorParentId(xiiAllocatorId allocatorId
 }
 
 // static
-const xiiMemoryTracker::AllocationInfo& xiiMemoryTracker::GetAllocationInfo(xiiAllocatorId allocatorId, const void* ptr)
+const xiiMemoryTracker::AllocationInfo& xiiMemoryTracker::GetAllocationInfo(xiiAllocatorId allocatorId, const void* pPtr)
 {
   XII_LOCK(*s_pTrackerData);
 
   const AllocatorData&  data = s_pTrackerData->m_AllocatorData[allocatorId];
   const AllocationInfo* info = nullptr;
-  if (data.m_Allocations.TryGetValue(ptr, info))
+  if (data.m_Allocations.TryGetValue(pPtr, info))
   {
     return *info;
   }
 
   static AllocationInfo invalidInfo;
 
-  XII_REPORT_FAILURE("Could not find info for allocation {0}", xiiArgP(ptr));
+  XII_REPORT_FAILURE("Could not find info for allocation {0}", xiiArgP(pPtr));
   return invalidInfo;
 }
 

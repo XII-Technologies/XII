@@ -22,8 +22,8 @@ public:
   XII_ALWAYS_INLINE xiiGALBufferHandle GetGALBufferHandle() const { return m_hGALConstantBuffer; }
 
 protected:
-  bool               m_bHasBeenModified;
-  xiiUInt32          m_uiLastHash;
+  bool               m_bHasBeenModified = false;
+  xiiUInt32          m_uiLastHash       = 0;
   xiiGALBufferHandle m_hGALConstantBuffer;
 
   xiiArrayPtr<xiiUInt8> m_Data;
@@ -48,7 +48,7 @@ public:
   }
 };
 
-typedef xiiGenericId<24, 8> xiiConstantBufferStorageId;
+using xiiConstantBufferStorageId = xiiGenericId<24, 8>;
 
 class xiiConstantBufferStorageHandle
 {

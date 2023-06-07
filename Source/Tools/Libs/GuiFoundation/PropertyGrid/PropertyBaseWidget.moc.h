@@ -45,26 +45,26 @@ public:
   virtual bool HasLabel() const { return true; }
 
   /// \brief The return value is used to display a label, if HasLabel() returns true.
-  virtual const char* GetLabel(xiiStringBuilder& temp) const;
+  virtual const char* GetLabel(xiiStringBuilder& ref_sTemp) const;
 
-  virtual void ExtendContextMenu(QMenu& menu);
+  virtual void ExtendContextMenu(QMenu& ref_menu);
 
   /// \brief Whether the variable that the widget represents is currently set to the default value or has been modified.
-  virtual void SetIsDefault(bool isDefault) { m_bIsDefault = isDefault; }
+  virtual void SetIsDefault(bool bIsDefault) { m_bIsDefault = bIsDefault; }
 
   /// \brief If the property is of type xiiVariant this function returns whether all items have the same type.
   /// If true is returned, out_Type contains the common type. Note that 'invalid' can be a common type.
   bool GetCommonVariantSubType(
     const xiiHybridArray<xiiPropertySelection, 8>& items,
     const xiiAbstractProperty*                     pProperty,
-    xiiVariantType::Enum&                          out_Type);
+    xiiVariantType::Enum&                          out_type);
 
   xiiVariant GetCommonValue(const xiiHybridArray<xiiPropertySelection, 8>& items, const xiiAbstractProperty* pProperty);
   void       PrepareToDie();
 
 public:
   static const xiiRTTI* GetCommonBaseType(const xiiHybridArray<xiiPropertySelection, 8>& items);
-  static QColor         SetPaletteBackgroundColor(xiiColorGammaUB inputColor, QPalette& palette);
+  static QColor         SetPaletteBackgroundColor(xiiColorGammaUB inputColor, QPalette& ref_palette);
 
 public Q_SLOTS:
   void OnCustomContextMenu(const QPoint& pt);
@@ -158,8 +158,8 @@ private:
   void FlushQueuedChanges();
 
 protected:
-  bool                                    m_bTemporaryCommand;
-  const xiiRTTI*                          m_pResolvedType;
+  bool                                    m_bTemporaryCommand = false;
+  const xiiRTTI*                          m_pResolvedType     = nullptr;
   xiiHybridArray<xiiPropertySelection, 8> m_ResolvedObjects;
 
   xiiHybridArray<xiiString, 1> m_QueuedChanges;
@@ -179,7 +179,7 @@ public:
 
   virtual void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
   virtual bool HasLabel() const override { return false; }
-  virtual void SetIsDefault(bool isDefault) override;
+  virtual void SetIsDefault(bool bIsDefault) override;
 
 protected:
   virtual void OnInit() override;
@@ -235,11 +235,11 @@ public:
 
   virtual void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
   virtual bool HasLabel() const override { return false; }
-  virtual void SetIsDefault(bool isDefault) override;
+  virtual void SetIsDefault(bool bIsDefault) override;
 
 public Q_SLOTS:
   void OnElementButtonClicked();
-  void OnDragStarted(QMimeData& mimeData);
+  void OnDragStarted(QMimeData& ref_mimeData);
   void OnContainerContextMenu(const QPoint& pt);
   void OnCustomElementContextMenu(const QPoint& pt);
 
@@ -287,7 +287,7 @@ protected:
   QHBoxLayout*              m_pLayout;
   xiiQtGroupBoxBase*        m_pGroup;
   QVBoxLayout*              m_pGroupLayout;
-  xiiQtAddSubElementButton* m_pAddButton;
+  xiiQtAddSubElementButton* m_pAddButton = nullptr;
   QPalette                  m_Pal;
 
   mutable xiiHybridArray<xiiVariant, 16> m_Keys;
@@ -329,7 +329,7 @@ protected:
   void CommandHistoryEventHandler(const xiiCommandHistoryEvent& e);
 
 private:
-  bool m_bNeedsUpdate;
+  bool m_bNeedsUpdate = false;
 };
 
 class XII_GUIFOUNDATION_DLL xiiQtVariantPropertyWidget : public xiiQtStandardPropertyWidget
@@ -341,7 +341,7 @@ public:
   virtual ~xiiQtVariantPropertyWidget();
 
   virtual void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
-  virtual void ExtendContextMenu(QMenu& menu) override;
+  virtual void ExtendContextMenu(QMenu& ref_menu) override;
 
 protected:
   virtual void OnInit() override{};

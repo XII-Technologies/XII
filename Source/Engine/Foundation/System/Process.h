@@ -103,7 +103,7 @@ public:
   ~xiiProcess();
 
   /// \brief Launches the specified process and waits for it to finish.
-  static xiiResult Execute(const xiiProcessOptions& opt, xiiInt32* out_iExitCode = nullptr);
+  static xiiResult Execute(const xiiProcessOptions& opt, xiiInt32* out_pExitCode = nullptr);
 
   /// \brief Launches the specified process asynchronously.
   ///

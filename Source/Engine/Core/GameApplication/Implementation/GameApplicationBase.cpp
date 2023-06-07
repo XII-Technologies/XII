@@ -31,11 +31,11 @@ xiiGameApplicationBase::~xiiGameApplicationBase()
   s_pGameApplicationBaseInstance = nullptr;
 }
 
-void AppendCurrentTimestamp(xiiStringBuilder& out_String)
+void AppendCurrentTimestamp(xiiStringBuilder& out_sString)
 {
   const xiiDateTime dt = xiiTimestamp::CurrentTimestamp();
 
-  out_String.AppendFormat("_{0}-{1}-{2}_{3}-{4}-{5}-{6}", dt.GetYear(), xiiArgU(dt.GetMonth(), 2, true), xiiArgU(dt.GetDay(), 2, true), xiiArgU(dt.GetHour(), 2, true), xiiArgU(dt.GetMinute(), 2, true), xiiArgU(dt.GetSecond(), 2, true), xiiArgU(dt.GetMicroseconds() / 1000, 3, true));
+  out_sString.AppendFormat("_{0}-{1}-{2}_{3}-{4}-{5}-{6}", dt.GetYear(), xiiArgU(dt.GetMonth(), 2, true), xiiArgU(dt.GetDay(), 2, true), xiiArgU(dt.GetHour(), 2, true), xiiArgU(dt.GetMinute(), 2, true), xiiArgU(dt.GetSecond(), 2, true), xiiArgU(dt.GetMicroseconds() / 1000, 3, true));
 }
 
 void xiiGameApplicationBase::TakeProfilingCapture()
@@ -141,9 +141,9 @@ void xiiGameApplicationBase::CaptureFrame()
   m_bCaptureFrame = true;
 }
 
-void xiiGameApplicationBase::SetContinuousFrameCapture(bool enable)
+void xiiGameApplicationBase::SetContinuousFrameCapture(bool bEnable)
 {
-  m_bContinuousFrameCapture = enable;
+  m_bContinuousFrameCapture = bEnable;
 }
 
 bool xiiGameApplicationBase::GetContinousFrameCapture() const
@@ -152,11 +152,11 @@ bool xiiGameApplicationBase::GetContinousFrameCapture() const
 }
 
 
-xiiResult xiiGameApplicationBase::GetAbsFrameCaptureOutputPath(xiiStringBuilder& sOutputPath)
+xiiResult xiiGameApplicationBase::GetAbsFrameCaptureOutputPath(xiiStringBuilder& ref_sOutputPath)
 {
   xiiStringBuilder sPath = ":appdata/FrameCaptures/Capture_";
   AppendCurrentTimestamp(sPath);
-  return xiiFileSystem::ResolvePath(sPath, &sOutputPath, nullptr);
+  return xiiFileSystem::ResolvePath(sPath, &ref_sOutputPath, nullptr);
 }
 
 void xiiGameApplicationBase::ExecuteFrameCapture(xiiWindowHandle targetWindowHandle, const char* szContext /*= nullptr*/)

@@ -11,7 +11,7 @@ class xiiShaderMat3
 public:
   XII_DECLARE_POD_TYPE();
 
-  XII_ALWAYS_INLINE xiiShaderMat3() {}
+  XII_ALWAYS_INLINE xiiShaderMat3() = default;
 
   XII_ALWAYS_INLINE xiiShaderMat3(const xiiMat3& m) { *this = m; }
 
@@ -36,7 +36,7 @@ class xiiShaderTransform
 public:
   XII_DECLARE_POD_TYPE();
 
-  XII_ALWAYS_INLINE xiiShaderTransform() {}
+  XII_ALWAYS_INLINE xiiShaderTransform() = default;
 
   inline void operator=(const xiiTransform& t) { *this = t.GetAsMat4(); }
 
@@ -98,7 +98,7 @@ class xiiShaderBool
 public:
   XII_DECLARE_POD_TYPE();
 
-  XII_ALWAYS_INLINE xiiShaderBool() {}
+  XII_ALWAYS_INLINE xiiShaderBool() = default;
 
   XII_ALWAYS_INLINE xiiShaderBool(bool b) { m_uiData = b ? 0xFFFFFFFF : 0; }
 

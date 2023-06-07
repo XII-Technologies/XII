@@ -17,7 +17,7 @@ public:
 
   /// \brief Reads the entire stream and creates the internal data structure that represents the JSON document. Returns XII_FAILURE if any parsing
   /// error occurred.
-  xiiResult Parse(xiiStreamReader& pInput, xiiUInt32 uiFirstLineOffset = 0);
+  xiiResult Parse(xiiStreamReader& ref_input, xiiUInt32 uiFirstLineOffset = 0);
 
   /// \brief Returns the top-level object of the JSON document.
   const xiiVariantDictionary& GetTopLevelObject() const { return m_Stack.PeekBack().m_Dictionary; }

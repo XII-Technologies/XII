@@ -65,7 +65,7 @@ void xiiWindowOutputTargetGAL::Present(bool bEnableVSync)
   }
 }
 
-xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_Image)
+xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -103,8 +103,8 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_Image)
   header.SetWidth(uiWidth);
   header.SetHeight(uiHeight);
   header.SetImageFormat(xiiTextureUtils::GalFormatToImageFormat(format, true));
-  out_Image.ResetAndAlloc(header);
-  xiiUInt8* pData = out_Image.GetPixelPointer<xiiUInt8>();
+  out_image.ResetAndAlloc(header);
+  xiiUInt8* pData = out_image.GetPixelPointer<xiiUInt8>();
 
   xiiMemoryUtils::Copy(pData, backbufferData.GetData(), backbufferData.GetCount());
 

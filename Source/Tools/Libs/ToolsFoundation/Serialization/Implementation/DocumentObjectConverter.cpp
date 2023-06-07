@@ -205,11 +205,11 @@ void xiiDocumentObjectConverterReader::ApplyPropertiesToObject(const xiiAbstract
 void xiiDocumentObjectConverterReader::ApplyDiffToObject(
   xiiObjectAccessorBase*                   pObjectAccessor,
   const xiiDocumentObject*                 pObject,
-  xiiDeque<xiiAbstractGraphDiffOperation>& diff)
+  xiiDeque<xiiAbstractGraphDiffOperation>& ref_diff)
 {
   xiiHybridArray<xiiAbstractGraphDiffOperation*, 4> change;
 
-  for (auto& op : diff)
+  for (auto& op : ref_diff)
   {
     if (op.m_Operation == xiiAbstractGraphDiffOperation::Op::PropertyChanged && pObject->GetGuid() == op.m_Node)
       change.PushBack(&op);
@@ -221,13 +221,13 @@ void xiiDocumentObjectConverterReader::ApplyDiffToObject(
     if (!pProp)
       continue;
 
-    ApplyDiff(pObjectAccessor, pObject, pProp, *op, diff);
+    ApplyDiff(pObjectAccessor, pObject, pProp, *op, ref_diff);
   }
 
   // Recurse into owned sub objects (old or new)
   for (const xiiDocumentObject* pSubObject : pObject->GetChildren())
   {
-    ApplyDiffToObject(pObjectAccessor, pSubObject, diff);
+    ApplyDiffToObject(pObjectAccessor, pSubObject, ref_diff);
   }
 }
 

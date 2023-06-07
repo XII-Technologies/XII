@@ -5,7 +5,7 @@
 
 namespace DequeTestDetail
 {
-  typedef xiiConstructionCounter st;
+  using st = xiiConstructionCounter;
 
   static xiiDeque<st> CreateArray(xiiUInt32 uiSize, xiiUInt32 uiOffset)
   {

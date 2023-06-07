@@ -6,7 +6,7 @@
 class XII_RENDERERFOUNDATION_DLL xiiGALComputeCommandEncoder : public xiiGALCommandEncoder
 {
 public:
-  xiiGALComputeCommandEncoder(xiiGALDevice& device, xiiGALCommandEncoderState& state, xiiGALCommandEncoderCommonPlatformInterface& commonImpl, xiiGALCommandEncoderComputePlatformInterface& computeImpl);
+  xiiGALComputeCommandEncoder(xiiGALDevice& ref_device, xiiGALCommandEncoderState& ref_state, xiiGALCommandEncoderCommonPlatformInterface& ref_commonImpl, xiiGALCommandEncoderComputePlatformInterface& ref_computeImpl);
   virtual ~xiiGALComputeCommandEncoder();
 
   // Dispatch

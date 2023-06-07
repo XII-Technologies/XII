@@ -17,9 +17,9 @@ xiiRcPos::xiiRcPos(const xiiVec3& v)
   *this = v;
 }
 
-xiiRcPos::xiiRcPos(const float* pos)
+xiiRcPos::xiiRcPos(const float* pPos)
 {
-  *this = pos;
+  *this = pPos;
 }
 
 xiiRcPos::operator const float*() const
@@ -37,11 +37,11 @@ xiiRcPos::operator xiiVec3() const
   return xiiVec3(m_Pos[0], m_Pos[2], m_Pos[1]);
 }
 
-void xiiRcPos::operator=(const float* pos)
+void xiiRcPos::operator=(const float* pPos)
 {
-  m_Pos[0] = pos[0];
-  m_Pos[1] = pos[1];
-  m_Pos[2] = pos[2];
+  m_Pos[0] = pPos[0];
+  m_Pos[1] = pPos[1];
+  m_Pos[2] = pPos[2];
 }
 
 void xiiRcPos::operator=(const xiiVec3& v)

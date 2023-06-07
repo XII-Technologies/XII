@@ -8,8 +8,8 @@
 
 QByteArray xiiQtCurveEditDlg::s_LastDialogGeometry;
 
-xiiQtCurveEditDlg::xiiQtCurveEditDlg(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pCurveObject, QWidget* parent) :
-  QDialog(parent)
+xiiQtCurveEditDlg::xiiQtCurveEditDlg(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pCurveObject, QWidget* pParent) :
+  QDialog(pParent)
 {
   m_pObjectAccessor = pObjectAccessor;
   m_pCurveObject    = pCurveObject;

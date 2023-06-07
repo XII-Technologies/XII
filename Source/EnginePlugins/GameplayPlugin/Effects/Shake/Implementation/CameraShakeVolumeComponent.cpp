@@ -65,32 +65,32 @@ void xiiCameraShakeVolumeComponent::OnSimulationStarted()
   }
 }
 
-void xiiCameraShakeVolumeComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiCameraShakeVolumeComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_BurstDuration;
   s << m_OnFinishedAction;
   s << m_fStrength;
 }
 
-void xiiCameraShakeVolumeComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiCameraShakeVolumeComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_BurstDuration;
   s >> m_OnFinishedAction;
   s >> m_fStrength;
 }
 
-float xiiCameraShakeVolumeComponent::ComputeForceAtGlobalPosition(const xiiSimdVec4f& globalPos) const
+float xiiCameraShakeVolumeComponent::ComputeForceAtGlobalPosition(const xiiSimdVec4f& vGlobalPos) const
 {
   const xiiSimdTransform t        = GetOwner()->GetGlobalTransformSimd();
   const xiiSimdTransform tInv     = t.GetInverse();
-  const xiiSimdVec4f     localPos = tInv.TransformPosition(globalPos);
+  const xiiSimdVec4f     localPos = tInv.TransformPosition(vGlobalPos);
 
   return ComputeForceAtLocalPosition(localPos);
 }
@@ -142,27 +142,27 @@ XII_END_COMPONENT_TYPE;
 xiiCameraShakeVolumeSphereComponent::xiiCameraShakeVolumeSphereComponent()  = default;
 xiiCameraShakeVolumeSphereComponent::~xiiCameraShakeVolumeSphereComponent() = default;
 
-void xiiCameraShakeVolumeSphereComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiCameraShakeVolumeSphereComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_fRadius;
 }
 
-void xiiCameraShakeVolumeSphereComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiCameraShakeVolumeSphereComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_fRadius;
   m_fOneDivRadius = 1.0f / m_fRadius;
 }
 
-float xiiCameraShakeVolumeSphereComponent::ComputeForceAtLocalPosition(const xiiSimdVec4f& localPos) const
+float xiiCameraShakeVolumeSphereComponent::ComputeForceAtLocalPosition(const xiiSimdVec4f& vLocalPos) const
 {
-  xiiSimdFloat lenScaled = localPos.GetLength<3>() * m_fOneDivRadius;
+  xiiSimdFloat lenScaled = vLocalPos.GetLength<3>() * m_fOneDivRadius;
 
   // inverse quadratic falloff to have sharper edges
   xiiSimdFloat forceFactor = xiiSimdFloat(1.0f) - lenScaled;
@@ -172,9 +172,9 @@ float xiiCameraShakeVolumeSphereComponent::ComputeForceAtLocalPosition(const xii
   return m_fStrength * force;
 }
 
-void xiiCameraShakeVolumeSphereComponent::SetRadius(float val)
+void xiiCameraShakeVolumeSphereComponent::SetRadius(float fVal)
 {
-  m_fRadius       = xiiMath::Max(val, 0.1f);
+  m_fRadius       = xiiMath::Max(fVal, 0.1f);
   m_fOneDivRadius = 1.0f / m_fRadius;
 
   if (IsActiveAndInitialized())

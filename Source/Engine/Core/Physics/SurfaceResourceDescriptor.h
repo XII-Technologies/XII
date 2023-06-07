@@ -60,13 +60,13 @@ struct XII_CORE_DLL xiiSurfaceResourceDescriptor : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiSurfaceResourceDescriptor, xiiReflectedClass);
 
 public:
-  void Load(xiiStreamReader& stream);
-  void Save(xiiStreamWriter& stream) const;
+  void Load(xiiStreamReader& ref_stream);
+  void Save(xiiStreamWriter& ref_stream) const;
 
   void        SetBaseSurfaceFile(const char* szFile);
   const char* GetBaseSurfaceFile() const;
 
-  void        SetCollisionInteraction(const char* name);
+  void        SetCollisionInteraction(const char* szName);
   const char* GetCollisionInteraction() const;
 
   void        SetSlideReactionPrefabFile(const char* szFile);

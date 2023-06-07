@@ -57,21 +57,21 @@ void xiiSimpleWindComponent::Update()
   pWindModule->SetFallbackWind(vCurWind);
 }
 
-void xiiSimpleWindComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSimpleWindComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_MinWindStrength;
   s << m_MaxWindStrength;
   s << m_Deviation;
 }
 
-void xiiSimpleWindComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSimpleWindComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   if (uiVersion == 1)
   {

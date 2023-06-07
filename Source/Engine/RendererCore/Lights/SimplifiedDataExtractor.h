@@ -25,5 +25,5 @@ public:
   virtual void PostSortAndBatch(
     const xiiView&                               view,
     const xiiDynamicArray<const xiiGameObject*>& visibleObjects,
-    xiiExtractedRenderData&                      extractedRenderData) override;
+    xiiExtractedRenderData&                      ref_extractedRenderData) override;
 };

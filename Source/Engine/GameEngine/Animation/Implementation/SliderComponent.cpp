@@ -9,7 +9,7 @@ float CalculateAcceleratedMovement(
   float    fAcceleration,
   float    fMaxVelocity,
   float    fDeceleration,
-  xiiTime& fTimeSinceStartInSec);
+  xiiTime& ref_timeSinceStartInSec);
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiSliderComponent, 3, xiiComponentMode::Dynamic)
@@ -121,11 +121,11 @@ void xiiSliderComponent::OnSimulationStarted()
   }
 }
 
-void xiiSliderComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSliderComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s << m_fDistanceToTravel;
   s << m_fAcceleration;
@@ -136,12 +136,12 @@ void xiiSliderComponent::SerializeComponent(xiiWorldWriter& stream) const
 }
 
 
-void xiiSliderComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSliderComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_fDistanceToTravel;
   s >> m_fAcceleration;
@@ -169,10 +169,10 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     // Base class
-    context.PatchBaseClass("xiiTransformComponent", 2, true);
+    ref_context.PatchBaseClass("xiiTransformComponent", 2, true);
   }
 };
 

@@ -26,9 +26,9 @@ xiiQtDoubleSpinBox::xiiQtDoubleSpinBox(QWidget* pParent, bool bIntMode) :
   connect(this, &QWidget::customContextMenuRequested, this, &xiiQtDoubleSpinBox::onCustomContextMenuRequested);
 }
 
-void xiiQtDoubleSpinBox::SetIntMode(bool enable)
+void xiiQtDoubleSpinBox::SetIntMode(bool bEnable)
 {
-  m_bIntMode = enable;
+  m_bIntMode = bEnable;
 }
 
 void xiiQtDoubleSpinBox::setDisplaySuffix(const char* szSuffix)
@@ -64,17 +64,17 @@ void xiiQtDoubleSpinBox::setMaximum(const xiiVariant& val)
     setMaximum(fValue);
 }
 
-QString xiiQtDoubleSpinBox::textFromValue(double val) const
+QString xiiQtDoubleSpinBox::textFromValue(double fVal) const
 {
   if (m_bInvalid)
     return QString();
 
-  if (hasFocus() && val == m_fDisplayedValue && !xiiMath::IsNaN(m_fDisplayedValue))
+  if (hasFocus() && fVal == m_fDisplayedValue && !xiiMath::IsNaN(m_fDisplayedValue))
   {
     return m_sDisplayedText;
   }
 
-  if (val == 0.0)
+  if (fVal == 0.0)
   {
     m_fDisplayedValue = 0;
     m_sDisplayedText  = "0";
@@ -84,9 +84,9 @@ QString xiiQtDoubleSpinBox::textFromValue(double val) const
   }
 
   if (m_bIntMode)
-    val = xiiMath::Round(QDoubleSpinBox::value());
+    fVal = xiiMath::Round(QDoubleSpinBox::value());
 
-  QString sText = QDoubleSpinBox::textFromValue(val);
+  QString sText = QDoubleSpinBox::textFromValue(fVal);
 
   while (sText.startsWith('0'))
     sText.remove(0, 1);
@@ -101,7 +101,7 @@ QString xiiQtDoubleSpinBox::textFromValue(double val) const
       sText.insert(0, '0');
   }
 
-  m_fDisplayedValue = val;
+  m_fDisplayedValue = fVal;
   m_sDisplayedText  = sText;
 
   if (!hasFocus())
@@ -112,14 +112,14 @@ QString xiiQtDoubleSpinBox::textFromValue(double val) const
   return sText;
 }
 
-double xiiQtDoubleSpinBox::valueFromText(const QString& text) const
+double xiiQtDoubleSpinBox::valueFromText(const QString& sText) const
 {
   if (m_bInvalid)
   {
     m_bInvalid = false;
   }
 
-  QString sFixedText = text;
+  QString sFixedText = sText;
 
   if (sFixedText.isEmpty())
   {
@@ -138,7 +138,7 @@ double xiiQtDoubleSpinBox::valueFromText(const QString& text) const
 
   if (hasFocus())
   {
-    m_sDisplayedText  = text;
+    m_sDisplayedText  = sText;
     m_fDisplayedValue = val;
   }
 
@@ -153,12 +153,12 @@ void xiiQtDoubleSpinBox::setValueInvalid()
   QDoubleSpinBox::setValue(minimum());
 }
 
-void xiiQtDoubleSpinBox::setValue(double val)
+void xiiQtDoubleSpinBox::setValue(double fVal)
 {
-  XII_ASSERT_DEBUG(xiiMath::IsFinite(val), "Spin box value must be finite!");
+  XII_ASSERT_DEBUG(xiiMath::IsFinite(fVal), "Spin box value must be finite!");
   m_bInvalid        = false;
   m_fDisplayedValue = xiiMath::NaN<float>();
-  QDoubleSpinBox::setValue(val);
+  QDoubleSpinBox::setValue(fVal);
 }
 
 void xiiQtDoubleSpinBox::setValue(const xiiVariant& val)

@@ -84,11 +84,11 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiVisualScriptResource, xiiVisualScriptResour
 /// xiiVisualScriptResourceDescriptor
 //////////////////////////////////////////////////////////////////////////
 
-void xiiVisualScriptResourceDescriptor::Load(xiiStreamReader& stream)
+void xiiVisualScriptResourceDescriptor::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt8 uiVersion = 0;
 
-  stream >> uiVersion;
+  ref_stream >> uiVersion;
   XII_ASSERT_DEV(uiVersion >= 4 && uiVersion <= 8, "Incorrect version {0} for visual script", uiVersion);
 
   if (uiVersion < 7)
@@ -99,10 +99,10 @@ void xiiVisualScriptResourceDescriptor::Load(xiiStreamReader& stream)
   xiiUInt32 uiNumDataCon = 0;
   xiiUInt32 uiNumProps   = 0;
 
-  stream >> uiNumNodes;
-  stream >> uiNumExecCon;
-  stream >> uiNumDataCon;
-  stream >> uiNumProps;
+  ref_stream >> uiNumNodes;
+  ref_stream >> uiNumExecCon;
+  ref_stream >> uiNumDataCon;
+  ref_stream >> uiNumProps;
 
   m_Nodes.SetCount(uiNumNodes);
   m_ExecutionPaths.SetCountUninitialized(uiNumExecCon);
@@ -112,7 +112,7 @@ void xiiVisualScriptResourceDescriptor::Load(xiiStreamReader& stream)
   xiiStringBuilder sType;
   for (auto& node : m_Nodes)
   {
-    stream >> sType;
+    ref_stream >> sType;
 
     node.m_isMsgSender    = 0;
     node.m_isMsgHandler   = 0;
@@ -148,36 +148,36 @@ void xiiVisualScriptResourceDescriptor::Load(xiiStreamReader& stream)
       node.m_pType     = xiiRTTI::FindTypeByName(sType);
     }
 
-    stream >> node.m_uiFirstProperty;
-    stream >> node.m_uiNumProperties;
+    ref_stream >> node.m_uiFirstProperty;
+    ref_stream >> node.m_uiNumProperties;
   }
 
   for (auto& con : m_ExecutionPaths)
   {
-    stream >> con.m_uiSourceNode;
-    stream >> con.m_uiTargetNode;
-    stream >> con.m_uiOutputPin;
-    stream >> con.m_uiInputPin;
+    ref_stream >> con.m_uiSourceNode;
+    ref_stream >> con.m_uiTargetNode;
+    ref_stream >> con.m_uiOutputPin;
+    ref_stream >> con.m_uiInputPin;
   }
 
   for (auto& con : m_DataPaths)
   {
-    stream >> con.m_uiSourceNode;
-    stream >> con.m_uiTargetNode;
-    stream >> con.m_uiOutputPin;
-    stream >> con.m_uiOutputPinType;
-    stream >> con.m_uiInputPin;
-    stream >> con.m_uiInputPinType;
+    ref_stream >> con.m_uiSourceNode;
+    ref_stream >> con.m_uiTargetNode;
+    ref_stream >> con.m_uiOutputPin;
+    ref_stream >> con.m_uiOutputPinType;
+    ref_stream >> con.m_uiInputPin;
+    ref_stream >> con.m_uiInputPinType;
   }
 
   for (auto& prop : m_Properties)
   {
-    stream >> prop.m_sName;
-    stream >> prop.m_Value;
+    ref_stream >> prop.m_sName;
+    ref_stream >> prop.m_Value;
 
     if (uiVersion >= 6)
     {
-      stream >> prop.m_iMappingIndex;
+      ref_stream >> prop.m_iMappingIndex;
     }
   }
 
@@ -186,22 +186,22 @@ void xiiVisualScriptResourceDescriptor::Load(xiiStreamReader& stream)
   {
     xiiUInt32 num;
 
-    stream >> num;
+    ref_stream >> num;
     m_BoolParameters.SetCount(num);
 
     for (xiiUInt32 i = 0; i < num; ++i)
     {
-      stream >> m_BoolParameters[i].m_sName;
-      stream >> m_BoolParameters[i].m_Value;
+      ref_stream >> m_BoolParameters[i].m_sName;
+      ref_stream >> m_BoolParameters[i].m_Value;
     }
 
-    stream >> num;
+    ref_stream >> num;
     m_NumberParameters.SetCount(num);
 
     for (xiiUInt32 i = 0; i < num; ++i)
     {
-      stream >> m_NumberParameters[i].m_sName;
-      stream >> m_NumberParameters[i].m_Value;
+      ref_stream >> m_NumberParameters[i].m_sName;
+      ref_stream >> m_NumberParameters[i].m_Value;
     }
   }
 
@@ -210,34 +210,34 @@ void xiiVisualScriptResourceDescriptor::Load(xiiStreamReader& stream)
   {
     xiiUInt32 num;
 
-    stream >> num;
+    ref_stream >> num;
     m_StringParameters.SetCount(num);
 
     for (xiiUInt32 i = 0; i < num; ++i)
     {
-      stream >> m_StringParameters[i].m_sName;
-      stream >> m_StringParameters[i].m_sValue;
+      ref_stream >> m_StringParameters[i].m_sName;
+      ref_stream >> m_StringParameters[i].m_sValue;
     }
   }
 
   PrecomputeMessageHandlers();
 }
 
-void xiiVisualScriptResourceDescriptor::Save(xiiStreamWriter& stream) const
+void xiiVisualScriptResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
   const xiiUInt8 uiVersion = 8;
 
-  stream << uiVersion;
+  ref_stream << uiVersion;
 
   const xiiUInt32 uiNumNodes   = m_Nodes.GetCount();
   const xiiUInt32 uiNumExecCon = m_ExecutionPaths.GetCount();
   const xiiUInt32 uiNumDataCon = m_DataPaths.GetCount();
   const xiiUInt32 uiNumProps   = m_Properties.GetCount();
 
-  stream << uiNumNodes;
-  stream << uiNumExecCon;
-  stream << uiNumDataCon;
-  stream << uiNumProps;
+  ref_stream << uiNumNodes;
+  ref_stream << uiNumExecCon;
+  ref_stream << uiNumDataCon;
+  ref_stream << uiNumProps;
 
   xiiStringBuilder sType;
 
@@ -259,63 +259,63 @@ void xiiVisualScriptResourceDescriptor::Save(xiiStreamWriter& stream) const
     else if (node.m_isFunctionCall)
       sType.Append("<call>");
 
-    stream << sType;
+    ref_stream << sType;
 
-    stream << node.m_uiFirstProperty;
-    stream << node.m_uiNumProperties;
+    ref_stream << node.m_uiFirstProperty;
+    ref_stream << node.m_uiNumProperties;
   }
 
   for (const auto& con : m_ExecutionPaths)
   {
-    stream << con.m_uiSourceNode;
-    stream << con.m_uiTargetNode;
-    stream << con.m_uiOutputPin;
-    stream << con.m_uiInputPin;
+    ref_stream << con.m_uiSourceNode;
+    ref_stream << con.m_uiTargetNode;
+    ref_stream << con.m_uiOutputPin;
+    ref_stream << con.m_uiInputPin;
   }
 
   for (const auto& con : m_DataPaths)
   {
-    stream << con.m_uiSourceNode;
-    stream << con.m_uiTargetNode;
-    stream << con.m_uiOutputPin;
-    stream << con.m_uiOutputPinType;
-    stream << con.m_uiInputPin;
-    stream << con.m_uiInputPinType;
+    ref_stream << con.m_uiSourceNode;
+    ref_stream << con.m_uiTargetNode;
+    ref_stream << con.m_uiOutputPin;
+    ref_stream << con.m_uiOutputPinType;
+    ref_stream << con.m_uiInputPin;
+    ref_stream << con.m_uiInputPinType;
   }
 
   for (const auto& prop : m_Properties)
   {
-    stream << prop.m_sName;
-    stream << prop.m_Value;
+    ref_stream << prop.m_sName;
+    ref_stream << prop.m_Value;
 
     // Version 6
-    stream << prop.m_iMappingIndex;
+    ref_stream << prop.m_iMappingIndex;
   }
 
   // Version 5
   {
-    stream << m_BoolParameters.GetCount();
+    ref_stream << m_BoolParameters.GetCount();
     for (const auto& param : m_BoolParameters)
     {
-      stream << param.m_sName;
-      stream << param.m_Value;
+      ref_stream << param.m_sName;
+      ref_stream << param.m_Value;
     }
 
-    stream << m_NumberParameters.GetCount();
+    ref_stream << m_NumberParameters.GetCount();
     for (const auto& param : m_NumberParameters)
     {
-      stream << param.m_sName;
-      stream << param.m_Value;
+      ref_stream << param.m_sName;
+      ref_stream << param.m_Value;
     }
   }
 
   // Version 8
   {
-    stream << m_StringParameters.GetCount();
+    ref_stream << m_StringParameters.GetCount();
     for (const auto& param : m_StringParameters)
     {
-      stream << param.m_sName;
-      stream << param.m_sValue;
+      ref_stream << param.m_sName;
+      ref_stream << param.m_sValue;
     }
   }
 }
@@ -359,19 +359,19 @@ void xiiVisualScriptResourceDescriptor::PrecomputeMessageHandlers()
   }
 }
 
-void xiiVisualScriptResourceDescriptor::AssignNodeProperties(xiiVisualScriptNode& vsNode, const Node& properties) const
+void xiiVisualScriptResourceDescriptor::AssignNodeProperties(xiiVisualScriptNode& ref_vsNode, const Node& properties) const
 {
   for (xiiUInt32 i = 0; i < properties.m_uiNumProperties; ++i)
   {
     const xiiUInt32 uiProp = properties.m_uiFirstProperty + i;
     const auto&     prop   = m_Properties[uiProp];
 
-    xiiAbstractProperty* pAbstract = vsNode.GetDynamicRTTI()->FindPropertyByName(prop.m_sName);
+    xiiAbstractProperty* pAbstract = ref_vsNode.GetDynamicRTTI()->FindPropertyByName(prop.m_sName);
     if (pAbstract->GetCategory() != xiiPropertyCategory::Member)
       continue;
 
     xiiAbstractMemberProperty* pMember = static_cast<xiiAbstractMemberProperty*>(pAbstract);
-    xiiReflectionUtils::SetMemberPropertyValue(pMember, &vsNode, prop.m_Value);
+    xiiReflectionUtils::SetMemberPropertyValue(pMember, &ref_vsNode, prop.m_Value);
   }
 }
 

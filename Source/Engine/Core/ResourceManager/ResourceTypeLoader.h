@@ -28,8 +28,8 @@ struct XII_CORE_DLL xiiResourceLoadData
 class XII_CORE_DLL xiiResourceTypeLoader
 {
 public:
-  xiiResourceTypeLoader() {}
-  virtual ~xiiResourceTypeLoader() {}
+  xiiResourceTypeLoader()          = default;
+  virtual ~xiiResourceTypeLoader() = default;
 
   /// \brief Override this function to implement the resource loading.
   ///
@@ -42,7 +42,7 @@ public:
 
   /// \brief This function is called when the resource has been updated with the data from the resource loader and the loader can deallocate
   /// any temporary memory.
-  virtual void CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& LoaderData) = 0;
+  virtual void CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData) = 0;
 
   /// \brief If this function returns true, a resource is unloaded and loaded again to update its content.
   ///
@@ -60,7 +60,7 @@ class XII_CORE_DLL xiiResourceLoaderFromFile : public xiiResourceTypeLoader
 {
 public:
   virtual xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;
-  virtual void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& LoaderData) override;
+  virtual void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData) override;
   virtual bool                IsResourceOutdated(const xiiResource* pResource) const override;
 };
 
@@ -79,7 +79,7 @@ class XII_CORE_DLL xiiResourceLoaderFromMemory : public xiiResourceTypeLoader
 {
 public:
   virtual xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;
-  virtual void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& LoaderData) override;
+  virtual void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData) override;
   virtual bool                IsResourceOutdated(const xiiResource* pResource) const override;
 
   xiiString                     m_sResourceDescription;

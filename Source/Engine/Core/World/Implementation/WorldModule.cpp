@@ -12,7 +12,7 @@ xiiWorldModule::xiiWorldModule(xiiWorld* pWorld) :
 {
 }
 
-xiiWorldModule::~xiiWorldModule() {}
+xiiWorldModule::~xiiWorldModule() = default;
 
 xiiUInt32 xiiWorldModule::GetWorldIndex() const
 {

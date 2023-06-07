@@ -5,10 +5,10 @@
 #define XXH_INLINE_ALL
 #include <Foundation/ThirdParty/xxHash/xxhash.h>
 
-xiiHashStreamWriter32::xiiHashStreamWriter32(xiiUInt32 seed)
+xiiHashStreamWriter32::xiiHashStreamWriter32(xiiUInt32 uiSeed)
 {
   m_pState = XXH32_createState();
-  XII_VERIFY(XXH_OK == XXH32_reset((XXH32_state_t*)m_pState, seed), "");
+  XII_VERIFY(XXH_OK == XXH32_reset((XXH32_state_t*)m_pState, uiSeed), "");
 }
 
 xiiHashStreamWriter32::~xiiHashStreamWriter32()
@@ -33,10 +33,10 @@ xiiUInt32 xiiHashStreamWriter32::GetHashValue() const
 }
 
 
-xiiHashStreamWriter64::xiiHashStreamWriter64(xiiUInt64 seed)
+xiiHashStreamWriter64::xiiHashStreamWriter64(xiiUInt64 uiSeed)
 {
   m_pState = XXH64_createState();
-  XII_VERIFY(XXH_OK == XXH64_reset((XXH64_state_t*)m_pState, seed), "");
+  XII_VERIFY(XXH_OK == XXH64_reset((XXH64_state_t*)m_pState, uiSeed), "");
 }
 
 xiiHashStreamWriter64::~xiiHashStreamWriter64()

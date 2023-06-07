@@ -14,7 +14,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleFinalizer_ApplyVelocity, 1, xiiRTTID
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiParticleFinalizerFactory_ApplyVelocity::xiiParticleFinalizerFactory_ApplyVelocity() {}
+xiiParticleFinalizerFactory_ApplyVelocity::xiiParticleFinalizerFactory_ApplyVelocity() = default;
 
 const xiiRTTI* xiiParticleFinalizerFactory_ApplyVelocity::GetFinalizerType() const
 {
@@ -32,7 +32,7 @@ xiiParticleFinalizer_ApplyVelocity::xiiParticleFinalizer_ApplyVelocity()
   m_fPriority = 525.0f;
 }
 
-xiiParticleFinalizer_ApplyVelocity::~xiiParticleFinalizer_ApplyVelocity() {}
+xiiParticleFinalizer_ApplyVelocity::~xiiParticleFinalizer_ApplyVelocity() = default;
 
 void xiiParticleFinalizer_ApplyVelocity::CreateRequiredStreams()
 {

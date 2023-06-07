@@ -44,7 +44,7 @@ xiiEventSubscriptionID xiiEventBase<EventData, MutexType, EventType>::AddEventHa
 }
 
 template <typename EventData, typename MutexType, xiiEventType EventType>
-void xiiEventBase<EventData, MutexType, EventType>::AddEventHandler(Handler handler, Unsubscriber& unsubscriber) const
+void xiiEventBase<EventData, MutexType, EventType>::AddEventHandler(Handler handler, Unsubscriber& ref_unsubscriber) const
 {
   XII_LOCK(m_Mutex);
 
@@ -56,9 +56,9 @@ void xiiEventBase<EventData, MutexType, EventType>::AddEventHandler(Handler hand
     }
   }
 
-  unsubscriber.Unsubscribe();
-  unsubscriber.m_pEvent         = this;
-  unsubscriber.m_SubscriptionID = AddEventHandler(std::move(handler));
+  ref_unsubscriber.Unsubscribe();
+  ref_unsubscriber.m_pEvent         = this;
+  ref_unsubscriber.m_SubscriptionID = AddEventHandler(std::move(handler));
 }
 
 
@@ -107,7 +107,7 @@ void xiiEventBase<EventData, MutexType, EventType>::RemoveEventHandler(const Han
 }
 
 template <typename EventData, typename MutexType, xiiEventType EventType>
-void xiiEventBase<EventData, MutexType, EventType>::RemoveEventHandler(xiiEventSubscriptionID& id) const
+void xiiEventBase<EventData, MutexType, EventType>::RemoveEventHandler(xiiEventSubscriptionID& ref_id) const
 {
   if (id == 0)
     return;

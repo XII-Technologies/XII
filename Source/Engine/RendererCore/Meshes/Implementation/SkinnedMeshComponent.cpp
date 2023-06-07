@@ -63,9 +63,9 @@ void xiiSkinningState::TransformsChanged()
   }
 }
 
-void xiiSkinningState::FillSkinnedMeshRenderData(xiiSkinnedMeshRenderData& renderData) const
+void xiiSkinningState::FillSkinnedMeshRenderData(xiiSkinnedMeshRenderData& ref_renderData) const
 {
-  renderData.m_hSkinningTransforms = m_hGpuBuffer;
+  ref_renderData.m_hSkinningTransforms = m_hGpuBuffer;
 
   const xiiUInt32 uiExIdx = xiiRenderWorld::GetDataIndexForExtraction();
 
@@ -74,8 +74,8 @@ void xiiSkinningState::FillSkinnedMeshRenderData(xiiSkinnedMeshRenderData& rende
     auto pSkinningMatrices = XII_NEW_ARRAY(xiiFrameAllocator::GetCurrentAllocator(), xiiShaderTransform, m_Transforms.GetCount());
     pSkinningMatrices.CopyFrom(m_Transforms);
 
-    renderData.m_pNewSkinningTransformData = pSkinningMatrices.ToByteArray();
-    renderData.m_bTransformsUpdated        = m_bTransformsUpdated[uiExIdx];
+    ref_renderData.m_pNewSkinningTransformData = pSkinningMatrices.ToByteArray();
+    ref_renderData.m_bTransformsUpdated        = m_bTransformsUpdated[uiExIdx];
   }
 }
 

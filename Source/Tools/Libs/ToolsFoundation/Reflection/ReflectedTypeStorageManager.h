@@ -40,10 +40,10 @@ private:
     /// The functions first adds all parent class properties and then adds its own properties.
     /// POD type properties are added under the current path.
     void AddProperties(const xiiRTTI* pType);
-    void AddPropertiesRecursive(const xiiRTTI* pType, xiiSet<const xiiDocumentObject*>& requiresPatchingEmbeddedClass);
+    void AddPropertiesRecursive(const xiiRTTI* pType, xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass);
 
-    void UpdateInstances(xiiUInt32 uiIndex, const xiiAbstractProperty* pProperty, xiiSet<const xiiDocumentObject*>& requiresPatchingEmbeddedClass);
-    void AddPropertyToInstances(xiiUInt32 uiIndex, const xiiAbstractProperty* pProperty, xiiSet<const xiiDocumentObject*>& requiresPatchingEmbeddedClass);
+    void UpdateInstances(xiiUInt32 uiIndex, const xiiAbstractProperty* pProperty, xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass);
+    void AddPropertyToInstances(xiiUInt32 uiIndex, const xiiAbstractProperty* pProperty, xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass);
 
     xiiVariantType::Enum GetStorageType(const xiiAbstractProperty* pProperty);
 

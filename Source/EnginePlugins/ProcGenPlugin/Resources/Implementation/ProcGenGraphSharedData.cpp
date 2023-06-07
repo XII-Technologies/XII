@@ -20,32 +20,32 @@ namespace xiiProcGenInternal
 
   static xiiTypeVersion s_GraphSharedDataVersion = 1;
 
-  void GraphSharedData::Save(xiiStreamWriter& stream) const
+  void GraphSharedData::Save(xiiStreamWriter& ref_stream) const
   {
-    stream.WriteVersion(s_GraphSharedDataVersion);
+    ref_stream.WriteVersion(s_GraphSharedDataVersion);
 
     {
       const xiiUInt32 uiCount = m_TagSets.GetCount();
-      stream << uiCount;
+      ref_stream << uiCount;
 
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        m_TagSets[i].Save(stream);
+        m_TagSets[i].Save(ref_stream);
       }
     }
   }
 
-  xiiResult GraphSharedData::Load(xiiStreamReader& stream)
+  xiiResult GraphSharedData::Load(xiiStreamReader& ref_stream)
   {
-    auto version = stream.ReadVersion(s_GraphSharedDataVersion);
+    auto version = ref_stream.ReadVersion(s_GraphSharedDataVersion);
 
     {
       xiiUInt32 uiCount = 0;
-      stream >> uiCount;
+      ref_stream >> uiCount;
 
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        m_TagSets.ExpandAndGetRef().Load(stream, xiiTagRegistry::GetGlobalRegistry());
+        m_TagSets.ExpandAndGetRef().Load(ref_stream, xiiTagRegistry::GetGlobalRegistry());
       }
     }
 

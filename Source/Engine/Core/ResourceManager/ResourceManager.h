@@ -99,9 +99,9 @@ public:
   static xiiTypelessResourceHandle GetExistingResourceByType(const xiiRTTI* pResourceType, xiiStringView sResourceID);
 
   template <typename ResourceType>
-  static xiiTypedResourceHandle<ResourceType> GetExistingResourceOrCreateAsync(xiiStringView sResourceID, xiiUniquePtr<xiiResourceTypeLoader>&& loader, xiiTypedResourceHandle<ResourceType> hLoadingFallback = {})
+  static xiiTypedResourceHandle<ResourceType> GetExistingResourceOrCreateAsync(xiiStringView sResourceID, xiiUniquePtr<xiiResourceTypeLoader>&& pLoader, xiiTypedResourceHandle<ResourceType> hLoadingFallback = {})
   {
-    xiiTypelessResourceHandle hTypeless = GetExistingResourceOrCreateAsync(xiiGetStaticRTTI<ResourceType>(), sResourceID, std::move(loader));
+    xiiTypelessResourceHandle hTypeless = GetExistingResourceOrCreateAsync(xiiGetStaticRTTI<ResourceType>(), sResourceID, std::move(pLoader));
 
     auto hTyped = xiiTypedResourceHandle<ResourceType>((ResourceType*)hTypeless.m_pResource);
 
@@ -113,7 +113,7 @@ public:
     return hTyped;
   }
 
-  static xiiTypelessResourceHandle GetExistingResourceOrCreateAsync(const xiiRTTI* pResourceType, xiiStringView sResourceID, xiiUniquePtr<xiiResourceTypeLoader>&& loader);
+  static xiiTypelessResourceHandle GetExistingResourceOrCreateAsync(const xiiRTTI* pResourceType, xiiStringView sResourceID, xiiUniquePtr<xiiResourceTypeLoader>&& pLoader);
 
   /// \brief Triggers loading of the given resource. tShouldBeAvailableIn specifies how long the resource is not yet needed, thus allowing
   /// other resources to be loaded first. This is only a hint and there are no guarantees when the resource is available.
@@ -157,7 +157,7 @@ public:
   /// Using this function will set the 'PreventFileReload' flag on the resource and thus prevent further reload actions.
   ///
   /// \sa RestoreResource()
-  static void UpdateResourceWithCustomLoader(const xiiTypelessResourceHandle& hResource, xiiUniquePtr<xiiResourceTypeLoader>&& loader);
+  static void UpdateResourceWithCustomLoader(const xiiTypelessResourceHandle& hResource, xiiUniquePtr<xiiResourceTypeLoader>&& pLoader);
 
   /// \brief Removes the 'PreventFileReload' flag and forces a reload on the resource.
   ///
@@ -179,7 +179,7 @@ public:
   /// the resource is loaded, in case it is not yet available.
   /// \param out_AcquireResult Returns how successful the acquisition was. See xiiResourceAcquireResult for details.
   template <typename ResourceType>
-  static ResourceType* BeginAcquireResource(const xiiTypedResourceHandle<ResourceType>& hResource, xiiResourceAcquireMode mode, const xiiTypedResourceHandle<ResourceType>& hLoadingFallback = xiiTypedResourceHandle<ResourceType>(), xiiResourceAcquireResult* out_AcquireResult = nullptr);
+  static ResourceType* BeginAcquireResource(const xiiTypedResourceHandle<ResourceType>& hResource, xiiResourceAcquireMode mode, const xiiTypedResourceHandle<ResourceType>& hLoadingFallback = xiiTypedResourceHandle<ResourceType>(), xiiResourceAcquireResult* out_pAcquireResult = nullptr);
 
   /// \brief Same as BeginAcquireResource but only for the base resource pointer.
   static xiiResource* BeginAcquireResourcePointer(const xiiRTTI* pType, const xiiTypelessResourceHandle& hResource);
@@ -320,7 +320,7 @@ public:
 public:
   /// \brief Enables export mode. In this mode the resource manager will assert when it actually tries to load a resource.
   /// This can be useful when exporting resource handles but the actual resource content is not needed.
-  static void EnableExportMode(bool enable);
+  static void EnableExportMode(bool bEnable);
 
   /// \brief Returns whether export mode is active.
   static bool IsExportModeEnabled();
@@ -349,7 +349,7 @@ public:
   /// The override is registered for all base classes of \a pDerivedTypeToUse, in case the derivation hierarchy is longer.
   ///
   /// Without calling this at startup, a derived resource type has to be manually requested in code.
-  static void RegisterResourceOverrideType(const xiiRTTI* pDerivedTypeToUse, xiiDelegate<bool(const xiiStringBuilder&)> OverrideDecider);
+  static void RegisterResourceOverrideType(const xiiRTTI* pDerivedTypeToUse, xiiDelegate<bool(const xiiStringBuilder&)> overrideDecider);
 
   /// \brief Unregisters \a pDerivedTypeToUse as an override resource
   ///

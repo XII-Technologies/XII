@@ -31,7 +31,7 @@ void* xiiStackAllocator<TrackingFlags>::Allocate(size_t uiSize, size_t uiAlign, 
 }
 
 template <xiiUInt32 TrackingFlags>
-void xiiStackAllocator<TrackingFlags>::Deallocate(void* ptr)
+void xiiStackAllocator<TrackingFlags>::Deallocate(void* pPtr)
 {
   XII_LOCK(m_Mutex);
 

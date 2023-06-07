@@ -25,7 +25,7 @@ xiiDepthOnlyPass::xiiDepthOnlyPass(const char* szName) :
 {
 }
 
-xiiDepthOnlyPass::~xiiDepthOnlyPass() {}
+xiiDepthOnlyPass::~xiiDepthOnlyPass() = default;
 
 bool xiiDepthOnlyPass::GetRenderTargetDescriptions(
   const xiiView&                                             view,

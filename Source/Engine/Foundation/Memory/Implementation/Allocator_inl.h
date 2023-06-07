@@ -9,8 +9,8 @@ namespace xiiInternal
 
     // xiiAllocatorBase implementation
     virtual void*          Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc = nullptr) override;
-    virtual void           Deallocate(void* ptr) override;
-    virtual size_t         AllocatedSize(const void* ptr) override;
+    virtual void           Deallocate(void* pPtr) override;
+    virtual size_t         AllocatedSize(const void* pPtr) override;
     virtual xiiAllocatorId GetId() const override;
     virtual Stats          GetStats() const override;
 
@@ -35,7 +35,7 @@ namespace xiiInternal
   {
   public:
     xiiAllocatorMixinReallocate(const char* szName, xiiAllocatorBase* pParent);
-    virtual void* Reallocate(void* ptr, size_t uiCurrentSize, size_t uiNewSize, size_t uiAlign) override;
+    virtual void* Reallocate(void* pPtr, size_t uiCurrentSize, size_t uiNewSize, size_t uiAlign) override;
   };
 }; // namespace xiiInternal
 
@@ -89,7 +89,7 @@ void* xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::Allocate(size_t uiSize, s
 }
 
 template <typename A, xiiUInt32 TrackingFlags>
-void xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::Deallocate(void* ptr)
+void xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::Deallocate(void* pPtr)
 {
   if ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
   {
@@ -100,7 +100,7 @@ void xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::Deallocate(void* ptr)
 }
 
 template <typename A, xiiUInt32 TrackingFlags>
-size_t xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::AllocatedSize(const void* ptr)
+size_t xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::AllocatedSize(const void* pPtr)
 {
   if ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
   {
@@ -146,11 +146,11 @@ xiiInternal::xiiAllocatorMixinReallocate<A, TrackingFlags, true>::xiiAllocatorMi
 }
 
 template <typename A, xiiUInt32 TrackingFlags>
-void* xiiInternal::xiiAllocatorMixinReallocate<A, TrackingFlags, true>::Reallocate(void* ptr, size_t uiCurrentSize, size_t uiNewSize, size_t uiAlign)
+void* xiiInternal::xiiAllocatorMixinReallocate<A, TrackingFlags, true>::Reallocate(void* pPtr, size_t uiCurrentSize, size_t uiNewSize, size_t uiAlign)
 {
   if ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
   {
-    xiiMemoryTracker::RemoveAllocation(this->m_Id, ptr);
+    xiiMemoryTracker::RemoveAllocation(this->m_Id, pPtr);
   }
 
   xiiTime fAllocationTime = xiiTime::Now();

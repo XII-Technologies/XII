@@ -6,8 +6,8 @@
 
 namespace
 {
-  typedef xiiGenericId<32, 16>   Id;
-  typedef xiiConstructionCounter st;
+  using Id = xiiGenericId<32, 16>;
+  using st = xiiConstructionCounter;
 
   struct TestObject
   {

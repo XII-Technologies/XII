@@ -33,9 +33,9 @@ void xiiPrefabUtils::LoadGraph(xiiAbstractObjectGraph& out_graph, const char* sz
 }
 
 
-xiiAbstractObjectNode* xiiPrefabUtils::GetFirstRootNode(xiiAbstractObjectGraph& graph)
+xiiAbstractObjectNode* xiiPrefabUtils::GetFirstRootNode(xiiAbstractObjectGraph& ref_graph)
 {
-  auto& nodes = graph.GetAllNodes();
+  auto& nodes = ref_graph.GetAllNodes();
   for (auto it = nodes.GetIterator(); it.IsValid(); ++it)
   {
     auto* pNode = it.Value();
@@ -54,7 +54,7 @@ xiiAbstractObjectNode* xiiPrefabUtils::GetFirstRootNode(xiiAbstractObjectGraph& 
 
             const xiiUuid& rootObjectGuid = childGuid.Get<xiiUuid>();
 
-            return graph.GetNode(rootObjectGuid);
+            return ref_graph.GetNode(rootObjectGuid);
           }
         }
       }
@@ -63,9 +63,9 @@ xiiAbstractObjectNode* xiiPrefabUtils::GetFirstRootNode(xiiAbstractObjectGraph& 
   return nullptr;
 }
 
-void xiiPrefabUtils::GetRootNodes(xiiAbstractObjectGraph& graph, xiiHybridArray<xiiAbstractObjectNode*, 4>& out_Nodes)
+void xiiPrefabUtils::GetRootNodes(xiiAbstractObjectGraph& ref_graph, xiiHybridArray<xiiAbstractObjectNode*, 4>& out_nodes)
 {
-  auto& nodes = graph.GetAllNodes();
+  auto& nodes = ref_graph.GetAllNodes();
   for (auto it = nodes.GetIterator(); it.IsValid(); ++it)
   {
     auto* pNode = it.Value();
@@ -84,7 +84,7 @@ void xiiPrefabUtils::GetRootNodes(xiiAbstractObjectGraph& graph, xiiHybridArray<
 
             const xiiUuid& rootObjectGuid = childGuid.Get<xiiUuid>();
 
-            out_Nodes.PushBack(graph.GetNode(rootObjectGuid));
+            out_nodes.PushBack(ref_graph.GetNode(rootObjectGuid));
           }
 
           return;
@@ -244,7 +244,7 @@ void xiiPrefabUtils::Merge(const xiiAbstractObjectGraph& baseGraph, const xiiAbs
   }
 }
 
-void xiiPrefabUtils::Merge(const char* szBase, const char* szLeft, xiiDocumentObject* pRight, bool bRightIsNotPartOfPrefab, const xiiUuid& PrefabSeed, xiiStringBuilder& out_sNewGraph)
+void xiiPrefabUtils::Merge(const char* szBase, const char* szLeft, xiiDocumentObject* pRight, bool bRightIsNotPartOfPrefab, const xiiUuid& prefabSeed, xiiStringBuilder& out_sNewGraph)
 {
   // prepare the original prefab as a graph
   xiiAbstractObjectGraph baseGraph;
@@ -283,7 +283,7 @@ void xiiPrefabUtils::Merge(const char* szBase, const char* szLeft, xiiDocumentOb
         children.PushBack(pRight->GetGuid());
       }
 
-      rightGraph.ReMapNodeGuids(PrefabSeed, true);
+      rightGraph.ReMapNodeGuids(prefabSeed, true);
       // just take the entire ObjectTree node as is TODO: this may cause a crash if the root object is replaced
       xiiAbstractObjectNode* pRightObjectTree = rightGraph.CopyNodeIntoGraph(leftGraph.GetNodeByName("ObjectTree"));
       // The root node should always have a property 'children' where all the root objects are attached to. We need to replace that property's value as the prefab instance graph can have less or more objects than the template.

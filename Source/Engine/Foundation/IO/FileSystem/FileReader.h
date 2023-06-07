@@ -14,8 +14,7 @@ class XII_FOUNDATION_DLL xiiFileReader : public xiiFileReaderBase
 
 public:
   /// \brief Constructor, does nothing.
-  xiiFileReader() :
-    m_uiBytesCached(0), m_uiCacheReadPosition(0), m_bEOF(true)
+  xiiFileReader()
   {
   }
 
@@ -26,7 +25,7 @@ public:
   ///
   /// You should typically not disable bAllowFileEvents, unless you need to prevent recursive file events,
   /// which is only the case, if you are doing file accesses from within a File Event Handler.
-  xiiResult Open(xiiStringView sFile, xiiUInt32 uiCacheSize = 1024 * 64, xiiFileShareMode::Enum FileShareMode = xiiFileShareMode::Default, bool bAllowFileEvents = true);
+  xiiResult Open(xiiStringView sFile, xiiUInt32 uiCacheSize = 1024 * 64, xiiFileShareMode::Enum fileShareMode = xiiFileShareMode::Default, bool bAllowFileEvents = true);
 
   /// \brief Closes the file, if it is open.
   void Close();
@@ -35,8 +34,8 @@ public:
   virtual xiiUInt64 ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead) override;
 
 private:
-  xiiUInt64                 m_uiBytesCached;
-  xiiUInt64                 m_uiCacheReadPosition;
+  xiiUInt64                 m_uiBytesCached       = 0;
+  xiiUInt64                 m_uiCacheReadPosition = 0;
   xiiDynamicArray<xiiUInt8> m_Cache;
-  bool                      m_bEOF;
+  bool                      m_bEOF = true;
 };

@@ -9,7 +9,7 @@
 #include <Foundation/Utilities/CommandLineOptions.h>
 
 xiiApplication::xiiApplication(const char* szAppName) :
-  m_iReturnCode(0), m_uiArgumentCount(0), m_pArguments(nullptr), m_bReportMemoryLeaks(true), m_sAppName(szAppName)
+  m_sAppName(szAppName)
 {
 }
 
@@ -47,12 +47,12 @@ xiiResult xiiApplication::BeforeCoreSystemsStartup()
 }
 
 
-void xiiApplication::SetCommandLineArguments(xiiUInt32 uiArgumentCount, const char** ppArguments)
+void xiiApplication::SetCommandLineArguments(xiiUInt32 uiArgumentCount, const char** pArguments)
 {
   m_uiArgumentCount = uiArgumentCount;
-  m_pArguments      = ppArguments;
+  m_pArguments      = pArguments;
 
-  xiiCommandLineUtils::GetGlobalInstance()->SetCommandLine(uiArgumentCount, ppArguments, xiiCommandLineUtils::PreferOsArgs);
+  xiiCommandLineUtils::GetGlobalInstance()->SetCommandLine(uiArgumentCount, pArguments, xiiCommandLineUtils::PreferOsArgs);
 }
 
 

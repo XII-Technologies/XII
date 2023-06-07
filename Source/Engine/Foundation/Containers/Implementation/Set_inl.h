@@ -112,7 +112,7 @@ void xiiSetBase<KeyType, Comparer>::Iterator::Prev()
 
 template <typename KeyType, typename Comparer>
 XII_ALWAYS_INLINE xiiSetBase<KeyType, Comparer>::NilNode::NilNode() :
-  m_uiLevel(0), m_pParent(nullptr)
+  m_pParent(nullptr)
 {
   m_pLink[0] = nullptr;
   m_pLink[1] = nullptr;

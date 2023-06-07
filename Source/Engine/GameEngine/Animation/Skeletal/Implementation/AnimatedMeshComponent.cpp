@@ -51,17 +51,17 @@ XII_END_STATIC_REFLECTED_ENUM;
 xiiAnimatedMeshComponent::xiiAnimatedMeshComponent()  = default;
 xiiAnimatedMeshComponent::~xiiAnimatedMeshComponent() = default;
 
-void xiiAnimatedMeshComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiAnimatedMeshComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 }
 
-void xiiAnimatedMeshComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiAnimatedMeshComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   XII_ASSERT_DEV(uiVersion >= 13, "Unsupported version, delete the file and reexport it");
 }
@@ -224,7 +224,7 @@ xiiResult xiiAnimatedMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds,
   return XII_SUCCESS;
 }
 
-void xiiRootMotionMode::Apply(xiiRootMotionMode::Enum mode, xiiGameObject* pObject, const xiiVec3& translation, xiiAngle rotationX, xiiAngle rotationY, xiiAngle rotationZ)
+void xiiRootMotionMode::Apply(xiiRootMotionMode::Enum mode, xiiGameObject* pObject, const xiiVec3& vTranslation, xiiAngle rotationX, xiiAngle rotationY, xiiAngle rotationZ)
 {
   switch (mode)
   {
@@ -234,7 +234,7 @@ void xiiRootMotionMode::Apply(xiiRootMotionMode::Enum mode, xiiGameObject* pObje
     case xiiRootMotionMode::ApplyToOwner:
     {
       xiiVec3 vNewPos = pObject->GetLocalPosition();
-      vNewPos += pObject->GetLocalRotation() * translation;
+      vNewPos += pObject->GetLocalRotation() * vTranslation;
       pObject->SetLocalPosition(vNewPos);
 
       // not tested whether this is actually correct
@@ -249,7 +249,7 @@ void xiiRootMotionMode::Apply(xiiRootMotionMode::Enum mode, xiiGameObject* pObje
     case xiiRootMotionMode::SendMoveCharacterMsg:
     {
       xiiMsgApplyRootMotion msg;
-      msg.m_vTranslation = translation;
+      msg.m_vTranslation = vTranslation;
       msg.m_RotationX    = rotationX;
       msg.m_RotationY    = rotationY;
       msg.m_RotationZ    = rotationZ;

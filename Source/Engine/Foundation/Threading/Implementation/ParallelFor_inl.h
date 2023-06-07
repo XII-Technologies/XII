@@ -68,7 +68,7 @@ void xiiTaskSystem::ParallelForInternal(xiiArrayPtr<ElemType> taskItems, xiiPara
 }
 
 template <typename ElemType, typename Callback>
-void xiiTaskSystem::ParallelFor(xiiArrayPtr<ElemType> taskItems, Callback taskCallback, const char* taskName, const xiiParallelForParams& params)
+void xiiTaskSystem::ParallelFor(xiiArrayPtr<ElemType> taskItems, Callback taskCallback, const char* szTaskName, const xiiParallelForParams& params)
 {
   auto wrappedCallback = [taskCallback = std::move(taskCallback)](
                            xiiUInt32 /*uiBaseIndex*/, xiiArrayPtr<ElemType> taskSlice) {
@@ -76,11 +76,11 @@ void xiiTaskSystem::ParallelFor(xiiArrayPtr<ElemType> taskItems, Callback taskCa
   };
 
   ParallelForInternal<ElemType>(
-    taskItems, xiiParallelForFunction<ElemType>(std::move(wrappedCallback), xiiFrameAllocator::GetCurrentAllocator()), taskName, params);
+    taskItems, xiiParallelForFunction<ElemType>(std::move(wrappedCallback), xiiFrameAllocator::GetCurrentAllocator()), szTaskName, params);
 }
 
 template <typename ElemType, typename Callback>
-void xiiTaskSystem::ParallelForSingle(xiiArrayPtr<ElemType> taskItems, Callback taskCallback, const char* taskName, const xiiParallelForParams& params)
+void xiiTaskSystem::ParallelForSingle(xiiArrayPtr<ElemType> taskItems, Callback taskCallback, const char* szTaskName, const xiiParallelForParams& params)
 {
   auto wrappedCallback = [taskCallback = std::move(taskCallback)](xiiUInt32 /*uiBaseIndex*/, xiiArrayPtr<ElemType> taskSlice) {
     // Handing in by non-const& allows to use callbacks with (non-)const& as well as value parameters.
@@ -91,14 +91,14 @@ void xiiTaskSystem::ParallelForSingle(xiiArrayPtr<ElemType> taskItems, Callback 
   };
 
   ParallelForInternal<ElemType>(
-    taskItems, xiiParallelForFunction<ElemType>(std::move(wrappedCallback), xiiFrameAllocator::GetCurrentAllocator()), taskName, params);
+    taskItems, xiiParallelForFunction<ElemType>(std::move(wrappedCallback), xiiFrameAllocator::GetCurrentAllocator()), szTaskName, params);
 }
 
 template <typename ElemType, typename Callback>
 void xiiTaskSystem::ParallelForSingleIndex(
   xiiArrayPtr<ElemType>       taskItems,
   Callback                    taskCallback,
-  const char*                 taskName,
+  const char*                 szTaskName,
   const xiiParallelForParams& params)
 {
   auto wrappedCallback = [taskCallback = std::move(taskCallback)](xiiUInt32 uiBaseIndex, xiiArrayPtr<ElemType> taskSlice) {
@@ -110,5 +110,5 @@ void xiiTaskSystem::ParallelForSingleIndex(
   };
 
   ParallelForInternal<ElemType>(
-    taskItems, xiiParallelForFunction<ElemType>(std::move(wrappedCallback), xiiFrameAllocator::GetCurrentAllocator()), taskName, params);
+    taskItems, xiiParallelForFunction<ElemType>(std::move(wrappedCallback), xiiFrameAllocator::GetCurrentAllocator()), szTaskName, params);
 }

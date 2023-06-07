@@ -8,6 +8,6 @@ xiiGALUnorderedAccessView::xiiGALUnorderedAccessView(xiiGALResourceBase* pResour
   XII_ASSERT_DEV(m_pResource != nullptr, "Resource must not be null");
 }
 
-xiiGALUnorderedAccessView::~xiiGALUnorderedAccessView() {}
+xiiGALUnorderedAccessView::~xiiGALUnorderedAccessView() = default;
 
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Resources_Implementation_UnorderedAccessView);

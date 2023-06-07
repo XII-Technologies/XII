@@ -156,7 +156,7 @@ XII_ALWAYS_INLINE xiiAtomicBool::operator bool() const
   return static_cast<xiiInt32>(m_iAtomicInt) != 0;
 }
 
-XII_ALWAYS_INLINE bool xiiAtomicBool::TestAndSet(bool expected, bool newValue)
+XII_ALWAYS_INLINE bool xiiAtomicBool::TestAndSet(bool bExpected, bool bNewValue)
 {
-  return m_iAtomicInt.TestAndSet(expected ? 1 : 0, newValue ? 1 : 0) != 0;
+  return m_iAtomicInt.TestAndSet(bExpected ? 1 : 0, bNewValue ? 1 : 0) != 0;
 }

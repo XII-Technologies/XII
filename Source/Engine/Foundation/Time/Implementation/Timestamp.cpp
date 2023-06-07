@@ -85,12 +85,12 @@ xiiDateTime::xiiDateTime(xiiTimestamp timestamp) :
   SetTimestamp(timestamp);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiDateTime& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiDateTime& arg)
 {
-  xiiStringUtils::snprintf(tmp, uiLength, "%04u-%02u-%02u_%02u-%02u-%02u-%03u", arg.GetYear(), arg.GetMonth(), arg.GetDay(), arg.GetHour(),
+  xiiStringUtils::snprintf(szTmp, uiLength, "%04u-%02u-%02u_%02u-%02u-%02u-%03u", arg.GetYear(), arg.GetMonth(), arg.GetDay(), arg.GetHour(),
                            arg.GetMinute(), arg.GetSecond(), arg.GetMicroseconds() / 1000);
 
-  return tmp;
+  return szTmp;
 }
 
 namespace
@@ -160,7 +160,7 @@ namespace
   }
 } // namespace
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgDateTime& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgDateTime& arg)
 {
   const xiiDateTime& dateTime = arg.m_Value;
 
@@ -171,12 +171,12 @@ xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgDateTime& a
     if ((arg.m_uiFormattingFlags & xiiArgDateTime::TextualDate) == xiiArgDateTime::TextualDate)
     {
       offset += xiiStringUtils::snprintf(
-        tmp + offset, uiLength - offset, "%04u %s %02u", dateTime.GetYear(), ::GetMonthShortName(dateTime), dateTime.GetDay());
+        szTmp + offset, uiLength - offset, "%04u %s %02u", dateTime.GetYear(), ::GetMonthShortName(dateTime), dateTime.GetDay());
     }
     else
     {
       offset +=
-        xiiStringUtils::snprintf(tmp + offset, uiLength - offset, "%04u-%02u-%02u", dateTime.GetYear(), dateTime.GetMonth(), dateTime.GetDay());
+        xiiStringUtils::snprintf(szTmp + offset, uiLength - offset, "%04u-%02u-%02u", dateTime.GetYear(), dateTime.GetMonth(), dateTime.GetDay());
     }
   }
 
@@ -185,12 +185,12 @@ xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgDateTime& a
     // add a space
     if (offset != 0)
     {
-      tmp[offset] = ' ';
+      szTmp[offset] = ' ';
       ++offset;
-      tmp[offset] = '\0';
+      szTmp[offset] = '\0';
     }
 
-    offset += xiiStringUtils::snprintf(tmp + offset, uiLength - offset, "(%s)", ::GetDayOfWeekShortName(dateTime));
+    offset += xiiStringUtils::snprintf(szTmp + offset, uiLength - offset, "(%s)", ::GetDayOfWeekShortName(dateTime));
   }
 
   if ((arg.m_uiFormattingFlags & xiiArgDateTime::ShowTime) == xiiArgDateTime::ShowTime)
@@ -198,32 +198,32 @@ xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgDateTime& a
     // add a space
     if (offset != 0)
     {
-      tmp[offset]     = ' ';
-      tmp[offset + 1] = '-';
-      tmp[offset + 2] = ' ';
-      tmp[offset + 3] = '\0';
+      szTmp[offset]     = ' ';
+      szTmp[offset + 1] = '-';
+      szTmp[offset + 2] = ' ';
+      szTmp[offset + 3] = '\0';
       offset += 3;
     }
 
-    offset += xiiStringUtils::snprintf(tmp + offset, uiLength - offset, "%02u:%02u", dateTime.GetHour(), dateTime.GetMinute());
+    offset += xiiStringUtils::snprintf(szTmp + offset, uiLength - offset, "%02u:%02u", dateTime.GetHour(), dateTime.GetMinute());
 
     if ((arg.m_uiFormattingFlags & xiiArgDateTime::ShowSeconds) == xiiArgDateTime::ShowSeconds)
     {
-      offset += xiiStringUtils::snprintf(tmp + offset, uiLength - offset, ":%02u", dateTime.GetSecond());
+      offset += xiiStringUtils::snprintf(szTmp + offset, uiLength - offset, ":%02u", dateTime.GetSecond());
     }
 
     if ((arg.m_uiFormattingFlags & xiiArgDateTime::ShowMilliseconds) == xiiArgDateTime::ShowMilliseconds)
     {
-      offset += xiiStringUtils::snprintf(tmp + offset, uiLength - offset, ".%03u", dateTime.GetMicroseconds() / 1000);
+      offset += xiiStringUtils::snprintf(szTmp + offset, uiLength - offset, ".%03u", dateTime.GetMicroseconds() / 1000);
     }
 
     if ((arg.m_uiFormattingFlags & xiiArgDateTime::ShowTimeZone) == xiiArgDateTime::ShowTimeZone)
     {
-      offset += xiiStringUtils::snprintf(tmp + offset, uiLength - offset, " (UTC)");
+      offset += xiiStringUtils::snprintf(szTmp + offset, uiLength - offset, " (UTC)");
     }
   }
 
-  return tmp;
+  return szTmp;
 }
 
 // Include inline file

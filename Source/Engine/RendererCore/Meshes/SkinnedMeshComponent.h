@@ -30,7 +30,7 @@ struct XII_RENDERERCORE_DLL xiiSkinningState
   /// \brief Call this, after modifying m_Transforms, to make the renderer apply the update.
   void TransformsChanged();
 
-  void FillSkinnedMeshRenderData(xiiSkinnedMeshRenderData& renderData) const;
+  void FillSkinnedMeshRenderData(xiiSkinnedMeshRenderData& ref_renderData) const;
 
 private:
   xiiGALBufferHandle    m_hGpuBuffer;

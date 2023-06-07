@@ -9,7 +9,7 @@
 #include <Foundation/Threading/TaskSystem.h>
 
 
-xiiTaskGroupID xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::Enum Priority, xiiOnTaskGroupFinishedCallback callback)
+xiiTaskGroupID xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::Enum priority, xiiOnTaskGroupFinishedCallback callback)
 {
   XII_LOCK(s_TaskSystemMutex);
 
@@ -30,7 +30,7 @@ xiiTaskGroupID xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::Enum Priority, xi
 
 foundtaskgroup:
 
-  s_pState->m_TaskGroups[i].Reuse(Priority, callback);
+  s_pState->m_TaskGroups[i].Reuse(priority, callback);
 
   xiiTaskGroupID id;
   id.m_pTaskGroup     = &s_pState->m_TaskGroups[i];
@@ -51,14 +51,14 @@ void xiiTaskSystem::AddTaskToGroup(xiiTaskGroupID groupID, const xiiSharedPtr<xi
   groupID.m_pTaskGroup->m_Tasks.PushBack(pTask);
 }
 
-void xiiTaskSystem::AddTaskGroupDependency(xiiTaskGroupID groupID, xiiTaskGroupID DependsOn)
+void xiiTaskSystem::AddTaskGroupDependency(xiiTaskGroupID groupID, xiiTaskGroupID dependsOn)
 {
-  XII_ASSERT_DEBUG(DependsOn.IsValid(), "Invalid dependency");
-  XII_ASSERT_DEBUG(groupID.m_pTaskGroup != DependsOn.m_pTaskGroup || groupID.m_uiGroupCounter != DependsOn.m_uiGroupCounter, "Group cannot depend on itselfs");
+  XII_ASSERT_DEBUG(dependsOn.IsValid(), "Invalid dependency");
+  XII_ASSERT_DEBUG(groupID.m_pTaskGroup != dependsOn.m_pTaskGroup || groupID.m_uiGroupCounter != dependsOn.m_uiGroupCounter, "Group cannot depend on itselfs");
 
   xiiTaskGroup::DebugCheckTaskGroup(groupID, s_TaskSystemMutex);
 
-  groupID.m_pTaskGroup->m_DependsOnGroups.PushBack(DependsOn);
+  groupID.m_pTaskGroup->m_DependsOnGroups.PushBack(dependsOn);
 }
 
 void xiiTaskSystem::AddTaskGroupDependencyBatch(xiiArrayPtr<const xiiTaskGroupDependency> batch)
@@ -126,10 +126,10 @@ void xiiTaskSystem::StartTaskGroupBatch(xiiArrayPtr<const xiiTaskGroupID> batch)
   }
 }
 
-bool xiiTaskSystem::IsTaskGroupFinished(xiiTaskGroupID Group)
+bool xiiTaskSystem::IsTaskGroupFinished(xiiTaskGroupID group)
 {
   // if the counters differ, the task group has been reused since the GroupID was created, so that group has finished
-  return (Group.m_pTaskGroup == nullptr) || (Group.m_pTaskGroup->m_uiGroupCounter != Group.m_uiGroupCounter);
+  return (group.m_pTaskGroup == nullptr) || (group.m_pTaskGroup->m_uiGroupCounter != group.m_uiGroupCounter);
 }
 
 void xiiTaskSystem::ScheduleGroupTasks(xiiTaskGroup* pGroup, bool bHighPriority)
@@ -235,9 +235,9 @@ void xiiTaskSystem::DependencyHasFinished(xiiTaskGroup* pGroup)
   }
 }
 
-xiiResult xiiTaskSystem::CancelGroup(xiiTaskGroupID Group, xiiOnTaskRunning::Enum OnTaskRunning)
+xiiResult xiiTaskSystem::CancelGroup(xiiTaskGroupID group, xiiOnTaskRunning::Enum onTaskRunning)
 {
-  if (xiiTaskSystem::IsTaskGroupFinished(Group))
+  if (xiiTaskSystem::IsTaskGroupFinished(group))
     return XII_SUCCESS;
 
   XII_PROFILE_SCOPE("CancelGroup");
@@ -246,7 +246,7 @@ xiiResult xiiTaskSystem::CancelGroup(xiiTaskGroupID Group, xiiOnTaskRunning::Enu
 
   xiiResult res = XII_SUCCESS;
 
-  auto TasksCopy = Group.m_pTaskGroup->m_Tasks;
+  auto TasksCopy = group.m_pTaskGroup->m_Tasks;
 
   // first cancel ALL the tasks in the group, without waiting for anything
   for (xiiUInt32 task = 0; task < TasksCopy.GetCount(); ++task)
@@ -259,7 +259,7 @@ xiiResult xiiTaskSystem::CancelGroup(xiiTaskGroupID Group, xiiOnTaskRunning::Enu
 
   // if all tasks could be removed without problems, we do not need to try it again with blocking
 
-  if (OnTaskRunning == xiiOnTaskRunning::WaitTillFinished && res == XII_FAILURE)
+  if (onTaskRunning == xiiOnTaskRunning::WaitTillFinished && res == XII_FAILURE)
   {
     // now cancel the tasks in the group again, this time wait for those that are already running
     for (xiiUInt32 task = 0; task < TasksCopy.GetCount(); ++task)
@@ -271,7 +271,7 @@ xiiResult xiiTaskSystem::CancelGroup(xiiTaskGroupID Group, xiiOnTaskRunning::Enu
   return res;
 }
 
-void xiiTaskSystem::WaitForGroup(xiiTaskGroupID Group)
+void xiiTaskSystem::WaitForGroup(xiiTaskGroupID group)
 {
   XII_PROFILE_SCOPE("WaitForGroup");
 
@@ -280,9 +280,9 @@ void xiiTaskSystem::WaitForGroup(xiiTaskGroupID Group)
   const auto ThreadTaskType = tl_TaskWorkerInfo.m_WorkerType;
   const bool bAllowSleep    = ThreadTaskType != xiiWorkerThreadType::MainThread;
 
-  while (!xiiTaskSystem::IsTaskGroupFinished(Group))
+  while (!xiiTaskSystem::IsTaskGroupFinished(group))
   {
-    if (!HelpExecutingTasks(Group))
+    if (!HelpExecutingTasks(group))
     {
       if (bAllowSleep)
       {
@@ -295,7 +295,7 @@ void xiiTaskSystem::WaitForGroup(xiiTaskGroupID Group)
 
         WakeUpThreads(typeToWakeUp, 1);
 
-        Group.m_pTaskGroup->WaitForFinish(Group);
+        group.m_pTaskGroup->WaitForFinish(group);
 
         if (tl_TaskWorkerInfo.m_pWorkerState)
         {

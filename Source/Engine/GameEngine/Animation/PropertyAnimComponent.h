@@ -9,7 +9,7 @@
 #include <GameEngine/GameEngineDLL.h>
 struct xiiMsgSetPlaying;
 
-typedef xiiComponentManagerSimple<class xiiPropertyAnimComponent, xiiComponentUpdateType::WhenSimulating> xiiPropertyAnimComponentManager;
+using xiiPropertyAnimComponentManager = class xiiPropertyAnimComponent;
 
 /// \brief Animates properties on other objects and components according to the property animation resource
 ///
@@ -23,8 +23,8 @@ class XII_GAMEENGINE_DLL xiiPropertyAnimComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnSimulationStarted() override;
@@ -43,10 +43,10 @@ public:
   XII_ALWAYS_INLINE const xiiPropertyAnimResourceHandle& GetPropertyAnim() const { return m_hPropertyAnim; } // [ property ]
 
   /// \brief Sets the animation playback range and resets the playing position to the range start position. Also activates the component if it isn't.
-  void PlayAnimationRange(xiiTime RangeLow, xiiTime RangeHigh); // [ scriptable ]
+  void PlayAnimationRange(xiiTime rangeLow, xiiTime rangeHigh); // [ scriptable ]
 
   /// \brief Pauses or resumes animation playback. Does not reset any state.
-  void OnMsgSetPlaying(xiiMsgSetPlaying& msg); // [ msg handler ]
+  void OnMsgSetPlaying(xiiMsgSetPlaying& ref_msg); // [ msg handler ]
 
   xiiEnum<xiiPropertyAnimMode> m_AnimationMode;      // [ property ]
   xiiTime                      m_RandomOffset;       // [ property ]

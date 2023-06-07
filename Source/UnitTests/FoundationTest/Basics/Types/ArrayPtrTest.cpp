@@ -3,9 +3,9 @@
 #include <Foundation/Containers/DynamicArray.h>
 
 template <typename T>
-static void testArrayPtr(xiiArrayPtr<T> arrayPtr, typename xiiArrayPtr<T>::PointerType pExtectedPtr, xiiUInt32 uiExpectedCount)
+static void testArrayPtr(xiiArrayPtr<T> arrayPtr, typename xiiArrayPtr<T>::PointerType extectedPtr, xiiUInt32 uiExpectedCount)
 {
-  XII_TEST_BOOL(arrayPtr.GetPtr() == pExtectedPtr);
+  XII_TEST_BOOL(arrayPtr.GetPtr() == extectedPtr);
   XII_TEST_INT(arrayPtr.GetCount(), uiExpectedCount);
 }
 

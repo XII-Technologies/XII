@@ -58,17 +58,17 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiCharacterControllerComponent, 1)
 XII_END_ABSTRACT_COMPONENT_TYPE;
 // clang-format on
 
-xiiCharacterControllerComponent::xiiCharacterControllerComponent() {}
+xiiCharacterControllerComponent::xiiCharacterControllerComponent() = default;
 
-void xiiCharacterControllerComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiCharacterControllerComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
   // auto& s = stream.GetStream();
 }
 
-void xiiCharacterControllerComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiCharacterControllerComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
   // auto& s = stream.GetStream();
 }

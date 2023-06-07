@@ -47,7 +47,7 @@ public:
   XII_ALWAYS_INLINE xiiUInt32                  GetHeight() const { return m_uiHeight; }
   XII_ALWAYS_INLINE xiiGALTextureType::Enum GetType() const { return m_Type; }
 
-  static void FillOutDescriptor(xiiTexture2DResourceDescriptor& td, const xiiImage* pImage, bool bSRGB, xiiUInt32 uiNumMipLevels, xiiUInt32& out_MemoryUsed, xiiHybridArray<xiiGALSystemMemoryDescription, 32>& initData);
+  static void FillOutDescriptor(xiiTexture2DResourceDescriptor& ref_td, const xiiImage* pImage, bool bSRGB, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALSystemMemoryDescription, 32>& ref_initData);
 
   const xiiGALTextureHandle&      GetGALTexture() const { return m_hGALTexture[m_uiLoadedTextures - 1]; }
   const xiiGALSamplerStateHandle& GetGALSamplerState() const { return m_hSamplerState; }

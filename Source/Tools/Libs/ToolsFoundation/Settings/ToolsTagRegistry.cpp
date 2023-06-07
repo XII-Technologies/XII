@@ -41,10 +41,10 @@ void xiiToolsTagRegistry::Clear()
   }
 }
 
-void xiiToolsTagRegistry::WriteToDDL(xiiStreamWriter& stream)
+void xiiToolsTagRegistry::WriteToDDL(xiiStreamWriter& ref_stream)
 {
   xiiOpenDdlWriter writer;
-  writer.SetOutputStream(&stream);
+  writer.SetOutputStream(&ref_stream);
   writer.SetCompactMode(false);
   writer.SetPrimitiveTypeStringMode(xiiOpenDdlWriter::TypeStringMode::ShortenedUnsignedInt);
 
@@ -64,10 +64,10 @@ void xiiToolsTagRegistry::WriteToDDL(xiiStreamWriter& stream)
   }
 }
 
-xiiStatus xiiToolsTagRegistry::ReadFromDDL(xiiStreamReader& stream)
+xiiStatus xiiToolsTagRegistry::ReadFromDDL(xiiStreamReader& ref_stream)
 {
   xiiOpenDdlReader reader;
-  if (reader.ParseDocument(stream).Failed())
+  if (reader.ParseDocument(ref_stream).Failed())
   {
     return xiiStatus("Failed to read data from ToolsTagRegistry stream!");
   }
@@ -157,7 +157,7 @@ void xiiToolsTagRegistry::GetTagsByCategory(const xiiArrayPtr<xiiStringView>& ca
   out_tags.Clear();
   for (auto it = s_NameToTags.GetIterator(); it.IsValid(); ++it)
   {
-    if (std::any_of(cbegin(categories), cend(categories), [&it](const xiiStringView& cat) { return it.Value().m_sCategory == cat; }))
+    if (std::any_of(cbegin(categories), cend(categories), [&it](const xiiStringView& sCat) { return it.Value().m_sCategory == sCat; }))
     {
       out_tags.PushBack(&it.Value());
     }

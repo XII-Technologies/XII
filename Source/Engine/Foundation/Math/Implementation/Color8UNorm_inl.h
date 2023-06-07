@@ -1,15 +1,15 @@
 #pragma once
 
-XII_ALWAYS_INLINE xiiColorBaseUB::xiiColorBaseUB(xiiUInt8 R, xiiUInt8 G, xiiUInt8 B, xiiUInt8 A /* = 255*/)
+XII_ALWAYS_INLINE xiiColorBaseUB::xiiColorBaseUB(xiiUInt8 r, xiiUInt8 g, xiiUInt8 b, xiiUInt8 a /* = 255*/)
 {
-  r = R;
-  g = G;
-  b = B;
-  a = A;
+  r = r;
+  g = g;
+  b = b;
+  a = a;
 }
 
-XII_ALWAYS_INLINE xiiColorLinearUB::xiiColorLinearUB(xiiUInt8 R, xiiUInt8 G, xiiUInt8 B, xiiUInt8 A /* = 255*/) :
-  xiiColorBaseUB(R, G, B, A)
+XII_ALWAYS_INLINE xiiColorLinearUB::xiiColorLinearUB(xiiUInt8 r, xiiUInt8 g, xiiUInt8 b, xiiUInt8 a /* = 255*/) :
+  xiiColorBaseUB(r, g, b, a)
 {
 }
 
@@ -33,8 +33,8 @@ inline xiiColor xiiColorLinearUB::ToLinearFloat() const
 
 // *****************
 
-XII_ALWAYS_INLINE xiiColorGammaUB::xiiColorGammaUB(xiiUInt8 R, xiiUInt8 G, xiiUInt8 B, xiiUInt8 A) :
-  xiiColorBaseUB(R, G, B, A)
+XII_ALWAYS_INLINE xiiColorGammaUB::xiiColorGammaUB(xiiUInt8 r, xiiUInt8 g, xiiUInt8 b, xiiUInt8 a) :
+  xiiColorBaseUB(r, g, b, a)
 {
 }
 

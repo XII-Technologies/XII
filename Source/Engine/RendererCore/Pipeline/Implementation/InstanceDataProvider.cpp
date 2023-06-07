@@ -7,8 +7,7 @@
 
 #include <RendererCore/../../../Data/Base/Shaders/Common/ObjectConstants.h>
 
-xiiInstanceData::xiiInstanceData(xiiUInt32 uiMaxInstanceCount /*= 1024*/) :
-  m_uiBufferSize(0), m_uiBufferOffset(0)
+xiiInstanceData::xiiInstanceData(xiiUInt32 uiMaxInstanceCount /*= 1024*/)
 {
   CreateBuffer(uiMaxInstanceCount);
 
@@ -93,9 +92,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInstanceDataProvider, 1, xiiRTTIDefaultAlloc
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiInstanceDataProvider::xiiInstanceDataProvider() {}
+xiiInstanceDataProvider::xiiInstanceDataProvider() = default;
 
-xiiInstanceDataProvider::~xiiInstanceDataProvider() {}
+xiiInstanceDataProvider::~xiiInstanceDataProvider() = default;
 
 void* xiiInstanceDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
 {

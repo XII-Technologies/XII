@@ -337,7 +337,7 @@ xiiArrayPtr<const T> xiiMakeArrayPtr(const xiiDynamicArray<T, AllocatorWrapper>&
 }
 
 template <typename T, typename AllocatorWrapper>
-xiiArrayPtr<T> xiiMakeArrayPtr(xiiDynamicArray<T, AllocatorWrapper>& dynArray)
+xiiArrayPtr<T> xiiMakeArrayPtr(xiiDynamicArray<T, AllocatorWrapper>& ref_dynArray)
 {
   return xiiArrayPtr<T>(dynArray.GetData(), dynArray.GetCount());
 }

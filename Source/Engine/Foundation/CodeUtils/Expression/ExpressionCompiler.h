@@ -11,7 +11,7 @@ public:
   xiiExpressionCompiler();
   ~xiiExpressionCompiler();
 
-  xiiResult Compile(xiiExpressionAST& ast, xiiExpressionByteCode& out_byteCode, xiiStringView sDebugAstOutputPath = xiiStringView());
+  xiiResult Compile(xiiExpressionAST& ref_ast, xiiExpressionByteCode& out_byteCode, xiiStringView sDebugAstOutputPath = xiiStringView());
 
 private:
   xiiResult TransformAndOptimizeAST(xiiExpressionAST& ast, xiiStringView sDebugAstOutputPath);

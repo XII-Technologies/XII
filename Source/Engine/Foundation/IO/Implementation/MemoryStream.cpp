@@ -9,7 +9,7 @@ xiiMemoryStreamReader::xiiMemoryStreamReader(const xiiMemoryStreamStorageInterfa
 {
 }
 
-xiiMemoryStreamReader::~xiiMemoryStreamReader() {}
+xiiMemoryStreamReader::~xiiMemoryStreamReader() = default;
 
 xiiUInt64 xiiMemoryStreamReader::ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead)
 {
@@ -88,7 +88,7 @@ void xiiMemoryStreamReader::SetDebugSourceInformation(xiiStringView sDebugSource
 
 // Writer implementation
 xiiMemoryStreamWriter::xiiMemoryStreamWriter(xiiMemoryStreamStorageInterface* pStreamStorage) :
-  m_pStreamStorage(pStreamStorage), m_uiWritePosition(0)
+  m_pStreamStorage(pStreamStorage)
 {
 }
 
@@ -153,7 +153,7 @@ xiiUInt64 xiiMemoryStreamWriter::GetByteCount64() const
 xiiMemoryStreamStorageInterface::xiiMemoryStreamStorageInterface()  = default;
 xiiMemoryStreamStorageInterface::~xiiMemoryStreamStorageInterface() = default;
 
-void xiiMemoryStreamStorageInterface::ReadAll(xiiStreamReader& Stream, xiiUInt64 uiMaxBytes /*= 0xFFFFFFFFFFFFFFFFllu*/)
+void xiiMemoryStreamStorageInterface::ReadAll(xiiStreamReader& ref_stream, xiiUInt64 uiMaxBytes /*= 0xFFFFFFFFFFFFFFFFllu*/)
 {
   Clear();
   xiiMemoryStreamWriter w(this);
@@ -164,7 +164,7 @@ void xiiMemoryStreamStorageInterface::ReadAll(xiiStreamReader& Stream, xiiUInt64
   {
     const xiiUInt64 uiToRead = xiiMath::Min<xiiUInt64>(uiMaxBytes, XII_ARRAY_SIZE(uiTemp));
 
-    const xiiUInt64 uiRead = Stream.ReadBytes(uiTemp, uiToRead);
+    const xiiUInt64 uiRead = ref_stream.ReadBytes(uiTemp, uiToRead);
     uiMaxBytes -= uiRead;
 
     w.WriteBytes(uiTemp, uiRead).IgnoreResult();
@@ -300,7 +300,7 @@ xiiDefaultMemoryStreamStorage::~xiiDefaultMemoryStreamStorage()
   Clear();
 }
 
-void xiiDefaultMemoryStreamStorage::Reserve(xiiUInt64 bytes)
+void xiiDefaultMemoryStreamStorage::Reserve(xiiUInt64 uiBytes)
 {
   if (m_Chunks.IsEmpty())
   {
@@ -310,9 +310,9 @@ void xiiDefaultMemoryStreamStorage::Reserve(xiiUInt64 bytes)
     m_uiCapacity          = m_Chunks[0].m_Bytes.GetCount();
   }
 
-  while (m_uiCapacity < bytes)
+  while (m_uiCapacity < uiBytes)
   {
-    AddChunk(static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(bytes - m_uiCapacity, xiiMath::MaxValue<xiiUInt32>())));
+    AddChunk(static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(uiBytes - m_uiCapacity, xiiMath::MaxValue<xiiUInt32>())));
   }
 }
 
@@ -353,7 +353,7 @@ xiiUInt64 xiiDefaultMemoryStreamStorage::GetHeapMemoryUsage() const
   return m_Chunks.GetHeapMemoryUsage() + m_uiCapacity - m_Chunks[0].m_Bytes.GetCount();
 }
 
-xiiResult xiiDefaultMemoryStreamStorage::CopyToStream(xiiStreamWriter& stream) const
+xiiResult xiiDefaultMemoryStreamStorage::CopyToStream(xiiStreamWriter& ref_stream) const
 {
   xiiUInt64 uiBytesLeft    = m_uiInternalSize;
   xiiUInt64 uiReadPosition = 0;
@@ -364,7 +364,7 @@ xiiResult xiiDefaultMemoryStreamStorage::CopyToStream(xiiStreamWriter& stream) c
 
     XII_ASSERT_DEV(!data.IsEmpty(), "MemoryStreamStorage returned an empty contiguous memory block.");
 
-    XII_SUCCEED_OR_RETURN(stream.WriteBytes(data.GetPtr(), data.GetCount()));
+    XII_SUCCEED_OR_RETURN(ref_stream.WriteBytes(data.GetPtr(), data.GetCount()));
 
     uiReadPosition += data.GetCount();
     uiBytesLeft -= data.GetCount();

@@ -77,8 +77,8 @@ struct xiiProcVertexColorOutputDesc
   void        SetName(const char* szName);
   const char* GetName() const { return m_sName; }
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_PROCGENPLUGIN_DLL, xiiProcVertexColorOutputDesc);
@@ -107,10 +107,10 @@ public:
   const xiiProcVertexColorOutputDesc& GetOutputDesc(xiiUInt32 uiIndex) const;
   void                                SetOutputDesc(xiiUInt32 uiIndex, const xiiProcVertexColorOutputDesc& outputDesc);
 
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
-  void OnTransformChanged(xiiMsgTransformChanged& msg);
+  void OnTransformChanged(xiiMsgTransformChanged& ref_msg);
 
 protected:
   virtual xiiMeshRenderData* CreateRenderData() const override;

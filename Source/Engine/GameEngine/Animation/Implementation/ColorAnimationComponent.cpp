@@ -29,10 +29,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiColorAnimationComponent::xiiColorAnimationComponent() = default;
 
-void xiiColorAnimationComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiColorAnimationComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_hGradient;
   s << m_Duration;
@@ -44,11 +44,11 @@ void xiiColorAnimationComponent::SerializeComponent(xiiWorldWriter& stream) cons
   s << GetApplyRecursive();
 }
 
-void xiiColorAnimationComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiColorAnimationComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_hGradient;
   s >> m_Duration;

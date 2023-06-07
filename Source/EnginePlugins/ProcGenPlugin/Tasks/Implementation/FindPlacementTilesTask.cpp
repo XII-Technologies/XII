@@ -145,7 +145,7 @@ void FindPlacementTilesTask::Execute()
 
     if (m_TilesByAge.GetCount() > uiMaxOldTiles)
     {
-      m_TilesByAge.Sort([](auto& tileA, auto& tileB) { return tileA.m_uiLastSeenFrame < tileB.m_uiLastSeenFrame; });
+      m_TilesByAge.Sort([](auto& ref_tileA, auto& ref_tileB) { return ref_tileA.m_uiLastSeenFrame < ref_tileB.m_uiLastSeenFrame; });
 
       xiiUInt32 uiOldTileCount = m_TilesByAge.GetCount() - uiMaxOldTiles;
       for (xiiUInt32 i = 0; i < uiOldTileCount; ++i)

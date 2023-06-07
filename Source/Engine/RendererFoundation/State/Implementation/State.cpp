@@ -10,7 +10,7 @@ xiiGALBlendState::xiiGALBlendState(const xiiGALBlendStateCreationDescription& De
 {
 }
 
-xiiGALBlendState::~xiiGALBlendState() {}
+xiiGALBlendState::~xiiGALBlendState() = default;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -19,7 +19,7 @@ xiiGALDepthStencilState::xiiGALDepthStencilState(const xiiGALDepthStencilStateCr
 {
 }
 
-xiiGALDepthStencilState::~xiiGALDepthStencilState() {}
+xiiGALDepthStencilState::~xiiGALDepthStencilState() = default;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -28,7 +28,7 @@ xiiGALRasterizerState::xiiGALRasterizerState(const xiiGALRasterizerStateCreation
 {
 }
 
-xiiGALRasterizerState::~xiiGALRasterizerState() {}
+xiiGALRasterizerState::~xiiGALRasterizerState() = default;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -37,7 +37,7 @@ xiiGALSamplerState::xiiGALSamplerState(const xiiGALSamplerStateCreationDescripti
 {
 }
 
-xiiGALSamplerState::~xiiGALSamplerState() {}
+xiiGALSamplerState::~xiiGALSamplerState() = default;
 
 //////////////////////////////////////////////////////////////////////////
 

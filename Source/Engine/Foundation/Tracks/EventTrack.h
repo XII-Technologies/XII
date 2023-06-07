@@ -31,10 +31,10 @@ public:
   /// Note that the range is inclusive for the start time, and exclusive for the end time.
   ///
   /// If rangeStart is larger than rangeEnd, the events are returned in reverse order (backwards traversal).
-  void Sample(xiiTime rangeStart, xiiTime rangeEnd, xiiDynamicArray<xiiHashedString>& out_Events) const;
+  void Sample(xiiTime rangeStart, xiiTime rangeEnd, xiiDynamicArray<xiiHashedString>& out_events) const;
 
-  void Save(xiiStreamWriter& stream) const;
-  void Load(xiiStreamReader& stream);
+  void Save(xiiStreamWriter& ref_stream) const;
+  void Load(xiiStreamReader& ref_stream);
 
 private:
   struct ControlPoint

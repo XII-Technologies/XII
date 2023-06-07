@@ -4,7 +4,7 @@
 #include <Foundation/Math/Math.h>
 #include <Foundation/Math/Plane.h>
 
-bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3& vRayStartPos, const xiiVec3& vRayDir, const xiiVec3* pPolygonVertices, xiiUInt32 uiNumVertices, float* out_fIntersectionTime, xiiVec3* out_vIntersectionPoint, xiiUInt32 uiVertexStride)
+bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3& vRayStartPos, const xiiVec3& vRayDir, const xiiVec3* pPolygonVertices, xiiUInt32 uiNumVertices, float* out_pIntersectionTime, xiiVec3* out_pIntersectionPoint, xiiUInt32 uiVertexStride)
 {
   XII_ASSERT_DEBUG(uiNumVertices >= 3, "A polygon must have at least three vertices.");
   XII_ASSERT_DEBUG(uiVertexStride >= sizeof(xiiVec3), "The vertex stride is invalid.");
@@ -16,11 +16,11 @@ bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3& vRayStartPos, c
 
   xiiVec3 vIntersection;
 
-  if (!p.GetRayIntersection(vRayStartPos, vRayDir, out_fIntersectionTime, &vIntersection))
+  if (!p.GetRayIntersection(vRayStartPos, vRayDir, out_pIntersectionTime, &vIntersection))
     return false;
 
-  if (out_vIntersectionPoint)
-    *out_vIntersectionPoint = vIntersection;
+  if (out_pIntersectionPoint)
+    *out_pIntersectionPoint = vIntersection;
 
   // start with the last point as the 'wrap around' position
   xiiVec3 vPrevPoint = *xiiMemoryUtils::AddByteOffset(pPolygonVertices, xiiMath::SafeMultiply32(uiVertexStride, (uiNumVertices - 1)));
@@ -43,7 +43,7 @@ bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3& vRayStartPos, c
   return true;
 }
 
-bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3d& vRayStartPos, const xiiVec3d& vRayDir, const xiiVec3d* pPolygonVertices, xiiUInt32 uiNumVertices, double* out_fIntersectionTime, xiiVec3d* out_vIntersectionPoint, xiiUInt32 uiVertexStride)
+bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3d& vRayStartPos, const xiiVec3d& vRayDir, const xiiVec3d* pPolygonVertices, xiiUInt32 uiNumVertices, double* out_pIntersectionTime, xiiVec3d* out_pIntersectionPoint, xiiUInt32 uiVertexStride)
 {
   XII_ASSERT_DEBUG(uiNumVertices >= 3, "A polygon must have at least three vertices.");
   XII_ASSERT_DEBUG(uiVertexStride >= sizeof(xiiVec3d), "The vertex stride is invalid.");
@@ -55,11 +55,11 @@ bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3d& vRayStartPos, 
 
   xiiVec3d vIntersection;
 
-  if (!p.GetRayIntersection(vRayStartPos, vRayDir, out_fIntersectionTime, &vIntersection))
+  if (!p.GetRayIntersection(vRayStartPos, vRayDir, out_pIntersectionTime, &vIntersection))
     return false;
 
-  if (out_vIntersectionPoint)
-    *out_vIntersectionPoint = vIntersection;
+  if (out_pIntersectionPoint)
+    *out_pIntersectionPoint = vIntersection;
 
   // start with the last point as the 'wrap around' position
   xiiVec3d vPrevPoint = *xiiMemoryUtils::AddByteOffset(pPolygonVertices, xiiMath::SafeMultiply32(uiVertexStride, (uiNumVertices - 1)));
@@ -86,7 +86,7 @@ xiiVec3 xiiIntersectionUtils::ClosestPoint_PointLineSegment(
   const xiiVec3& vStartPoint,
   const xiiVec3& vLineSegmentPos0,
   const xiiVec3& vLineSegmentPos1,
-  float*         out_fFractionAlongSegment)
+  float*         out_pFractionAlongSegment)
 {
   const xiiVec3 vLineDir      = vLineSegmentPos1 - vLineSegmentPos0;
   const xiiVec3 vToStartPoint = vStartPoint - vLineSegmentPos0;
@@ -114,8 +114,8 @@ xiiVec3 xiiIntersectionUtils::ClosestPoint_PointLineSegment(
     }
   }
 
-  if (out_fFractionAlongSegment)
-    *out_fFractionAlongSegment = fPosAlongSegment;
+  if (out_pFractionAlongSegment)
+    *out_pFractionAlongSegment = fPosAlongSegment;
 
   return vLineSegmentPos0 + fPosAlongSegment * vLineDir;
 }
@@ -124,7 +124,7 @@ xiiVec3d xiiIntersectionUtils::ClosestPoint_PointLineSegment(
   const xiiVec3d& vStartPoint,
   const xiiVec3d& vLineSegmentPos0,
   const xiiVec3d& vLineSegmentPos1,
-  double*         out_fFractionAlongSegment)
+  double*         out_pFractionAlongSegment)
 {
   const xiiVec3d vLineDir      = vLineSegmentPos1 - vLineSegmentPos0;
   const xiiVec3d vToStartPoint = vStartPoint - vLineSegmentPos0;
@@ -152,13 +152,13 @@ xiiVec3d xiiIntersectionUtils::ClosestPoint_PointLineSegment(
     }
   }
 
-  if (out_fFractionAlongSegment)
-    *out_fFractionAlongSegment = fPosAlongSegment;
+  if (out_pFractionAlongSegment)
+    *out_pFractionAlongSegment = fPosAlongSegment;
 
   return vLineSegmentPos0 + fPosAlongSegment * vLineDir;
 }
 
-bool xiiIntersectionUtils::Ray2DLine2D(const xiiVec2& vRayStartPos, const xiiVec2& vRayDir, const xiiVec2& vLineSegmentPos0, const xiiVec2& vLineSegmentPos1, float* out_fIntersectionTime, xiiVec2* out_vIntersectionPoint)
+bool xiiIntersectionUtils::Ray2DLine2D(const xiiVec2& vRayStartPos, const xiiVec2& vRayDir, const xiiVec2& vLineSegmentPos0, const xiiVec2& vLineSegmentPos1, float* out_pIntersectionTime, xiiVec2* out_pIntersectionPoint)
 {
   const xiiVec2 vLineDir = vLineSegmentPos1 - vLineSegmentPos0;
 
@@ -195,16 +195,16 @@ bool xiiIntersectionUtils::Ray2DLine2D(const xiiVec2& vRayStartPos, const xiiVec
   if (fProjected > vLineDir.GetLengthSquared())
     return false;
 
-  if (out_fIntersectionTime)
-    *out_fIntersectionTime = fIntersectionTime;
+  if (out_pIntersectionTime)
+    *out_pIntersectionTime = fIntersectionTime;
 
-  if (out_vIntersectionPoint)
-    *out_vIntersectionPoint = vIntersection;
+  if (out_pIntersectionPoint)
+    *out_pIntersectionPoint = vIntersection;
 
   return true;
 }
 
-bool xiiIntersectionUtils::Ray2DLine2D(const xiiVec2d& vRayStartPos, const xiiVec2d& vRayDir, const xiiVec2d& vLineSegmentPos0, const xiiVec2d& vLineSegmentPos1, double* out_fIntersectionTime, xiiVec2d* out_vIntersectionPoint)
+bool xiiIntersectionUtils::Ray2DLine2D(const xiiVec2d& vRayStartPos, const xiiVec2d& vRayDir, const xiiVec2d& vLineSegmentPos0, const xiiVec2d& vLineSegmentPos1, double* out_pIntersectionTime, xiiVec2d* out_pIntersectionPoint)
 {
   const xiiVec2d vLineDir = vLineSegmentPos1 - vLineSegmentPos0;
 
@@ -241,11 +241,11 @@ bool xiiIntersectionUtils::Ray2DLine2D(const xiiVec2d& vRayStartPos, const xiiVe
   if (fProjected > vLineDir.GetLengthSquared())
     return false;
 
-  if (out_fIntersectionTime)
-    *out_fIntersectionTime = fIntersectionTime;
+  if (out_pIntersectionTime)
+    *out_pIntersectionTime = fIntersectionTime;
 
-  if (out_vIntersectionPoint)
-    *out_vIntersectionPoint = vIntersection;
+  if (out_pIntersectionPoint)
+    *out_pIntersectionPoint = vIntersection;
 
   return true;
 }

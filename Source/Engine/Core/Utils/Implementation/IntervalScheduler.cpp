@@ -30,16 +30,16 @@ xiiTime xiiUpdateRate::GetInterval(Enum updateRate)
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_ALWAYS_INLINE float GetRandomZeroToOne(int pos, xiiUInt32& seed)
+XII_ALWAYS_INLINE float GetRandomZeroToOne(int iPos, xiiUInt32& ref_uiSeed)
 {
-  return xiiSimdRandom::FloatZeroToOne(xiiSimdVec4i(pos), xiiSimdVec4u(seed++)).x();
+  return xiiSimdRandom::FloatZeroToOne(xiiSimdVec4i(iPos), xiiSimdVec4u(ref_uiSeed++)).x();
 }
 
 constexpr xiiTime s_JitterRange = xiiTime::Microseconds(10);
 
-XII_ALWAYS_INLINE xiiTime GetRandomTimeJitter(int pos, xiiUInt32& seed)
+XII_ALWAYS_INLINE xiiTime GetRandomTimeJitter(int iPos, xiiUInt32& ref_uiSeed)
 {
-  const float x = xiiSimdRandom::FloatZeroToOne(xiiSimdVec4i(pos), xiiSimdVec4u(seed++)).x();
+  const float x = xiiSimdRandom::FloatZeroToOne(xiiSimdVec4i(iPos), xiiSimdVec4u(ref_uiSeed++)).x();
   return s_JitterRange * (x * 2.0f - 1.0f);
 }
 

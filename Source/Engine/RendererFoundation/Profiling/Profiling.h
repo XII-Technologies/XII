@@ -10,7 +10,7 @@ class XII_RENDERERFOUNDATION_DLL xiiProfilingScopeAndMarker : public xiiProfilin
 {
 public:
   static GPUTimingScope* Start(xiiGALCommandEncoder* pCommandEncoder, const char* szName);
-  static void            Stop(xiiGALCommandEncoder* pCommandEncoder, GPUTimingScope*& pTimingScope);
+  static void            Stop(xiiGALCommandEncoder* pCommandEncoder, GPUTimingScope*& ref_pTimingScope);
 
   xiiProfilingScopeAndMarker(xiiGALCommandEncoder* pCommandEncoder, const char* szName);
 

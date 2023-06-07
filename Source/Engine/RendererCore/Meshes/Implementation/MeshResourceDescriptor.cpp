@@ -111,22 +111,22 @@ xiiResult xiiMeshResourceDescriptor::Save(const char* szFile)
   return XII_SUCCESS;
 }
 
-void xiiMeshResourceDescriptor::Save(xiiStreamWriter& stream)
+void xiiMeshResourceDescriptor::Save(xiiStreamWriter& ref_stream)
 {
   xiiUInt8 uiVersion = 7;
-  stream << uiVersion;
+  ref_stream << uiVersion;
 
   xiiUInt8 uiCompressionMode = 0;
 
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
   uiCompressionMode = 1;
-  xiiCompressedStreamWriterZstd compressor(&stream, xiiCompressedStreamWriterZstd::Compression::Average);
+  xiiCompressedStreamWriterZstd compressor(&ref_stream, xiiCompressedStreamWriterZstd::Compression::Average);
   xiiChunkStreamWriter          chunk(compressor);
 #else
   xiiChunkStreamWriter chunk(stream);
 #endif
 
-  stream << uiCompressionMode;
+  ref_stream << uiCompressionMode;
 
   chunk.BeginStream(1);
 
@@ -285,10 +285,10 @@ xiiResult xiiMeshResourceDescriptor::Load(const char* szFile)
   return Load(file);
 }
 
-xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& stream)
+xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  ref_stream >> uiVersion;
 
   // version 4 and below is broken
   if (uiVersion <= 4)
@@ -297,10 +297,10 @@ xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& stream)
   xiiUInt8 uiCompressionMode = 0;
   if (uiVersion >= 6)
   {
-    stream >> uiCompressionMode;
+    ref_stream >> uiCompressionMode;
   }
 
-  xiiStreamReader* pCompressor = &stream;
+  xiiStreamReader* pCompressor = &ref_stream;
 
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
   xiiCompressedStreamReaderZstd decompressorZstd;
@@ -313,7 +313,7 @@ xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& stream)
 
     case 1:
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-      decompressorZstd.SetInputStream(&stream);
+      decompressorZstd.SetInputStream(&ref_stream);
       pCompressor = &decompressorZstd;
       break;
 #else
@@ -532,18 +532,18 @@ void xiiMeshResourceDescriptor::ComputeBounds()
   }
 }
 
-xiiResult xiiMeshResourceDescriptor::BoneData::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiMeshResourceDescriptor::BoneData::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream << m_GlobalInverseBindPoseMatrix;
-  stream << m_uiBoneIndex;
+  ref_stream << m_GlobalInverseBindPoseMatrix;
+  ref_stream << m_uiBoneIndex;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiMeshResourceDescriptor::BoneData::Deserialize(xiiStreamReader& stream)
+xiiResult xiiMeshResourceDescriptor::BoneData::Deserialize(xiiStreamReader& ref_stream)
 {
-  stream >> m_GlobalInverseBindPoseMatrix;
-  stream >> m_uiBoneIndex;
+  ref_stream >> m_GlobalInverseBindPoseMatrix;
+  ref_stream >> m_uiBoneIndex;
 
   return XII_SUCCESS;
 }

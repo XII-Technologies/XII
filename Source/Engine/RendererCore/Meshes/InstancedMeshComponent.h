@@ -12,17 +12,17 @@ class xiiStreamReader;
 
 struct XII_RENDERERCORE_DLL xiiMeshInstanceData
 {
-  void    SetLocalPosition(xiiVec3 position);
+  void    SetLocalPosition(xiiVec3 vPosition);
   xiiVec3 GetLocalPosition() const;
 
-  void    SetLocalRotation(xiiQuat rotation);
+  void    SetLocalRotation(xiiQuat qRotation);
   xiiQuat GetLocalRotation() const;
 
-  void    SetLocalScaling(xiiVec3 scaling);
+  void    SetLocalScaling(xiiVec3 vScaling);
   xiiVec3 GetLocalScaling() const;
 
-  xiiResult Serialize(xiiStreamWriter& writer) const;
-  xiiResult Deserialize(xiiStreamReader& reader);
+  xiiResult Serialize(xiiStreamWriter& ref_writer) const;
+  xiiResult Deserialize(xiiStreamReader& ref_reader);
 
   xiiTransform m_transform;
 
@@ -49,7 +49,7 @@ public:
 class XII_RENDERERCORE_DLL xiiInstancedMeshComponentManager : public xiiComponentManager<class xiiInstancedMeshComponent, xiiBlockStorageType::Compact>
 {
 public:
-  typedef xiiComponentManager<xiiInstancedMeshComponent, xiiBlockStorageType::Compact> SUPER;
+  using SUPER = xiiComponentManager<xiiInstancedMeshComponent, xiiBlockStorageType::Compact>;
 
   xiiInstancedMeshComponentManager(xiiWorld* pWorld);
 
@@ -80,8 +80,8 @@ class XII_RENDERERCORE_DLL xiiInstancedMeshComponent : public xiiMeshComponentBa
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;
@@ -92,7 +92,7 @@ protected:
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg) override;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiMeshComponentBase
@@ -109,7 +109,7 @@ public:
   ~xiiInstancedMeshComponent();
 
   /// \brief Extracts the render geometry for export etc.
-  void OnMsgExtractGeometry(xiiMsgExtractGeometry& msg); // [ msg handler ]
+  void OnMsgExtractGeometry(xiiMsgExtractGeometry& ref_msg); // [ msg handler ]
 
 protected:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const;

@@ -9,7 +9,7 @@
 
 struct XII_RENDERERCORE_DLL xiiShaderBindFlags
 {
-  typedef xiiUInt32 StorageType;
+  using StorageType = xiiUInt32;
 
   enum Enum
   {
@@ -41,7 +41,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiShaderBindFlags);
 
 struct XII_RENDERERCORE_DLL xiiRenderContextFlags
 {
-  typedef xiiUInt32 StorageType;
+  using StorageType = xiiUInt32;
 
   enum Enum
   {
@@ -81,7 +81,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiRenderContextFlags);
 
 struct XII_RENDERERCORE_DLL xiiDefaultSamplerFlags
 {
-  typedef xiiUInt32 StorageType;
+  using StorageType = xiiUInt32;
 
   enum Enum
   {

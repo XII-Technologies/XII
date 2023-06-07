@@ -42,8 +42,7 @@ jobs:
 
           echo "Running ClangTidy"
 
-          # & ${env:GITHUB_WORKSPACE}/Utilities/RunClangTidy.ps1 -DiffTo "origin/${env:GITHUB_BASE_REF}" -LlvmInstallDir "$pwd\llvm" -Workspace "workspace-clang"
-          & ${env:GITHUB_WORKSPACE}/Utilities/RunClangTidy.ps1 -LlvmInstallDir "$pwd\llvm" -Workspace "workspace-clang"
+          & ${env:GITHUB_WORKSPACE}/Utilities/RunClangTidy.ps1 -DiffTo "origin/${env:GITHUB_BASE_REF}" -LlvmInstallDir "$pwd\llvm" -Workspace "workspace-clang"
 
           # Write out patch file.
           # Changes done by ClangTidy on MemberProperty.h are always incorrect.

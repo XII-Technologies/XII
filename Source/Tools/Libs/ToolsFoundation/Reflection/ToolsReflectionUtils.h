@@ -25,5 +25,5 @@ public:
 
   static void GatherObjectTypes(const xiiDocumentObject* pObject, xiiSet<const xiiRTTI*>& inout_types);
 
-  static bool DependencySortTypeDescriptorArray(xiiDynamicArray<xiiReflectedTypeDescriptor*>& descriptors);
+  static bool DependencySortTypeDescriptorArray(xiiDynamicArray<xiiReflectedTypeDescriptor*>& ref_descriptors);
 };

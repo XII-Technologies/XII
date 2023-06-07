@@ -12,7 +12,7 @@ public:
   ~xiiStandardInputDevice();
 
   /// \brief This function needs to be called by all Windows functions, to pass the input information through to this input device.
-  void WindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindows::UINT Msg, xiiMinWindows::WPARAM wParam, xiiMinWindows::LPARAM lParam);
+  void WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM param, xiiMinWindows::LPARAM param);
 
   /// \brief Calling this function will 'translate' most key names from English to the OS language, by querying that information
   /// from the OS.

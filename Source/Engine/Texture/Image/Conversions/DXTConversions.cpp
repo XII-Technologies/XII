@@ -48,11 +48,11 @@ void xiiDecompressBlockBC1(const xiiUInt8* pSource, xiiColorBaseUB* pTarget, boo
   }
 }
 
-void xiiDecompressBlockBC4(const xiiUInt8* pSource, xiiUInt8* pTarget, xiiUInt32 uiStride, xiiUInt8 bias)
+void xiiDecompressBlockBC4(const xiiUInt8* pSource, xiiUInt8* pTarget, xiiUInt32 uiStride, xiiUInt8 uiBias)
 {
   xiiUInt8 inputPalette[2];
-  inputPalette[0] = pSource[0] + bias;
-  inputPalette[1] = pSource[1] + bias;
+  inputPalette[0] = pSource[0] + uiBias;
+  inputPalette[1] = pSource[1] + uiBias;
 
   xiiUInt32 alphas[8];
 
@@ -60,7 +60,7 @@ void xiiDecompressBlockBC4(const xiiUInt8* pSource, xiiUInt8* pTarget, xiiUInt32
 
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(alphas); ++i)
   {
-    alphas[i] = xiiUInt8(alphas[i] - bias);
+    alphas[i] = xiiUInt8(alphas[i] - uiBias);
   }
 
   for (xiiUInt32 uiTripleIdx = 0; uiTripleIdx < 2; uiTripleIdx++)
@@ -78,45 +78,45 @@ void xiiDecompressBlockBC4(const xiiUInt8* pSource, xiiUInt8* pTarget, xiiUInt32
   }
 }
 
-void xiiUnpackPaletteBC4(xiiUInt32 a0, xiiUInt32 a1, xiiUInt32* alphas)
+void xiiUnpackPaletteBC4(xiiUInt32 ui0, xiiUInt32 ui1, xiiUInt32* pAlphas)
 {
-  alphas[0] = a0;
-  alphas[1] = a1;
+  pAlphas[0] = ui0;
+  pAlphas[1] = ui1;
 
-  if (a0 > a1)
+  if (ui0 > ui1)
   {
     // Implement division by 7 in range [0, 7 * 255] as (x * 2341) >> 14
-    xiiUInt32 f0 = a0 * 2341;
-    xiiUInt32 f1 = a1 * 2341;
+    xiiUInt32 f0 = ui0 * 2341;
+    xiiUInt32 f1 = ui1 * 2341;
 
-    alphas[2] = (6 * f0 + 1 * f1 + 3 * 2341) >> 14;
-    alphas[3] = (5 * f0 + 2 * f1 + 3 * 2341) >> 14;
-    alphas[4] = (4 * f0 + 3 * f1 + 3 * 2341) >> 14;
-    alphas[5] = (3 * f0 + 4 * f1 + 3 * 2341) >> 14;
-    alphas[6] = (2 * f0 + 5 * f1 + 3 * 2341) >> 14;
-    alphas[7] = (1 * f0 + 6 * f1 + 3 * 2341) >> 14;
+    pAlphas[2] = (6 * f0 + 1 * f1 + 3 * 2341) >> 14;
+    pAlphas[3] = (5 * f0 + 2 * f1 + 3 * 2341) >> 14;
+    pAlphas[4] = (4 * f0 + 3 * f1 + 3 * 2341) >> 14;
+    pAlphas[5] = (3 * f0 + 4 * f1 + 3 * 2341) >> 14;
+    pAlphas[6] = (2 * f0 + 5 * f1 + 3 * 2341) >> 14;
+    pAlphas[7] = (1 * f0 + 6 * f1 + 3 * 2341) >> 14;
   }
   else
   {
     // Implement division by 5 in range [0, 5 * 255] as (x * 1639) >> 13
-    xiiUInt32 f0 = a0 * 1639;
-    xiiUInt32 f1 = a1 * 1639;
+    xiiUInt32 f0 = ui0 * 1639;
+    xiiUInt32 f1 = ui1 * 1639;
 
-    alphas[2] = (4 * f0 + 1 * f1 + 2 * 1639) >> 13;
-    alphas[3] = (3 * f0 + 2 * f1 + 2 * 1639) >> 13;
-    alphas[4] = (2 * f0 + 3 * f1 + 2 * 1639) >> 13;
-    alphas[5] = (1 * f0 + 4 * f1 + 2 * 1639) >> 13;
-    alphas[6] = 0x00;
-    alphas[7] = 0xFF;
+    pAlphas[2] = (4 * f0 + 1 * f1 + 2 * 1639) >> 13;
+    pAlphas[3] = (3 * f0 + 2 * f1 + 2 * 1639) >> 13;
+    pAlphas[4] = (2 * f0 + 3 * f1 + 2 * 1639) >> 13;
+    pAlphas[5] = (1 * f0 + 4 * f1 + 2 * 1639) >> 13;
+    pAlphas[6] = 0x00;
+    pAlphas[7] = 0xFF;
   }
 }
 
 namespace
 {
 #if defined(XII_SUPPORTS_BC4_COMPRESSOR)
-  xiiUInt32 findBestPaletteIndexBC4(xiiInt32 sourceValue, __m128i p0, __m128i p1)
+  xiiUInt32 findBestPaletteIndexBC4(xiiInt32 iSourceValue, __m128i p0, __m128i p1)
   {
-    __m128i source = _mm_set1_epi32(sourceValue);
+    __m128i source = _mm_set1_epi32(iSourceValue);
 
     __m128i e0 = _mm_abs_epi32(_mm_sub_epi32(p0, source));
     __m128i e1 = _mm_abs_epi32(_mm_sub_epi32(p1, source));
@@ -150,13 +150,13 @@ namespace
     return xiiMath::FirstBitLow(mask) + offset;
   }
 
-  void packBlockBC4(const xiiUInt8* sourceData, xiiUInt32 a0, xiiUInt32 a1, xiiUInt8* targetData)
+  void packBlockBC4(const xiiUInt8* pSourceData, xiiUInt32 ui0, xiiUInt32 ui1, xiiUInt8* pTargetData)
   {
-    targetData[0] = xiiUInt8(a0);
-    targetData[1] = xiiUInt8(a1);
+    pTargetData[0] = xiiUInt8(ui0);
+    pTargetData[1] = xiiUInt8(ui1);
 
     xiiUInt32 palette[8];
-    xiiUnpackPaletteBC4(a0, a1, palette);
+    xiiUnpackPaletteBC4(ui0, ui1, palette);
 
     __m128i p0, p1;
     p0 = _mm_loadu_si128(reinterpret_cast<__m128i*>(palette + 0));
@@ -165,13 +165,13 @@ namespace
     xiiUInt64 indices = 0;
     for (xiiUInt32 idx = 0; idx < 16; ++idx)
     {
-      indices |= xiiUInt64(findBestPaletteIndexBC4(sourceData[idx], p0, p1)) << (3 * idx);
+      indices |= xiiUInt64(findBestPaletteIndexBC4(pSourceData[idx], p0, p1)) << (3 * idx);
     }
 
-    memcpy(targetData + 2, &indices, 6);
+    memcpy(pTargetData + 2, &indices, 6);
   }
 
-  xiiUInt32 getSquaredErrorBC4_SSE(const xiiUInt8* sourceData, const __m128i* paletteAndCopy)
+  xiiUInt32 getSquaredErrorBC4_SSE(const xiiUInt8* pSourceData, const __m128i* pPaletteAndCopy)
   {
     // See getSquaredErrorBC4() for what we want to achieve (sum of lowest squared errors).
     // Instead of converting to 32bit ints and actually computing squares, this function finds lowest absolute differences
@@ -182,8 +182,8 @@ namespace
     // If we'll perform a vector op between src and pal0, src[0] will correspond to color[0] from the palette, src[1] to color[1], etc.
     // Since the palette is stored twice, src[8] will correspond to color[0] again, etc.
     // Below we generate 7 more rotations of this palette so that each input will correspond to each of 8 colors of palettes.
-    const __m128i pal0 = _mm_loadu_si128(paletteAndCopy);
-    const __m128i src  = _mm_loadu_si128((__m128i*)sourceData);
+    const __m128i pal0 = _mm_loadu_si128(pPaletteAndCopy);
+    const __m128i src  = _mm_loadu_si128((__m128i*)pSourceData);
 
     auto makeDiff = [&](__m128i pal) {
       // Absolute difference is a difference between max and min of two numbers.
@@ -253,11 +253,11 @@ namespace
   // Does the same thing as unpackPaletteBC4(), but stores the 8 result numbers twice as bytes
   // (low 8 bytes of alphasAndAlphasCopy will be equal to high 8 bytes)
   // See unpackPaletteBC4 for the explanation regarding magic numbers
-  void unpackPaletteBC4AsBytesTwice(xiiUInt32 a0, xiiUInt32 a1, __m128i* alphasAndAlphasCopy)
+  void unpackPaletteBC4AsBytesTwice(xiiUInt32 ui0, xiiUInt32 ui1, __m128i* pAlphasAndAlphasCopy)
   {
-    const __m128i v0 = _mm_set1_epi32(a0);
-    const __m128i v1 = _mm_set1_epi32(a1);
-    if (a0 > a1)
+    const __m128i v0 = _mm_set1_epi32(ui0);
+    const __m128i v1 = _mm_set1_epi32(ui1);
+    if (ui0 > ui1)
     {
       __m128i sumLo0      = _mm_mullo_epi32(v0, div7_a0LoMultiplier);
       __m128i sumLo1      = _mm_mullo_epi32(v1, div7_a1LoMultiplier);
@@ -271,7 +271,7 @@ namespace
       const __m128i resHi = _mm_srli_epi32(sumHi, 14);
 
       const __m128i res16 = _mm_packs_epi32(resLo, resHi);
-      _mm_storeu_si128(alphasAndAlphasCopy, _mm_packus_epi16(res16, res16));
+      _mm_storeu_si128(pAlphasAndAlphasCopy, _mm_packus_epi16(res16, res16));
     }
     else
     {
@@ -288,18 +288,18 @@ namespace
       const __m128i resHi           = _mm_add_epi32(resHiIncomplete, lastTwoAlphas_0_255);
 
       const __m128i res16 = _mm_packs_epi32(resLo, resHi);
-      _mm_storeu_si128(alphasAndAlphasCopy, _mm_packus_epi16(res16, res16));
+      _mm_storeu_si128(pAlphasAndAlphasCopy, _mm_packus_epi16(res16, res16));
     }
   }
 
-  xiiUInt32 getSquaredErrorBC4_SSE(xiiUInt32 a0, xiiUInt32 a1, const xiiUInt8* sourceData)
+  xiiUInt32 getSquaredErrorBC4_SSE(xiiUInt32 ui0, xiiUInt32 ui1, const xiiUInt8* pSourceData)
   {
     __m128i paletteAndCopy;
-    unpackPaletteBC4AsBytesTwice(xiiUInt8(a0), xiiUInt8(a1), &paletteAndCopy);
-    return getSquaredErrorBC4_SSE(sourceData, &paletteAndCopy);
+    unpackPaletteBC4AsBytesTwice(xiiUInt8(ui0), xiiUInt8(ui1), &paletteAndCopy);
+    return getSquaredErrorBC4_SSE(pSourceData, &paletteAndCopy);
   }
 
-  void findBestPaletteBC4(const xiiUInt8* sourceData, xiiUInt32& bestA0, xiiUInt32& bestA1)
+  void findBestPaletteBC4(const xiiUInt8* pSourceData, xiiUInt32& ref_uiBestA0, xiiUInt32& ref_uiBestA1)
   {
     xiiInt32 minA = 255;
     xiiInt32 maxA = 0;
@@ -309,7 +309,7 @@ namespace
 
     for (xiiUInt32 idx = 0; idx < 16; ++idx)
     {
-      xiiUInt32 value = sourceData[idx];
+      xiiUInt32 value = pSourceData[idx];
       minA            = xiiMath::Min<xiiUInt32>(minA, value);
       maxA            = xiiMath::Max<xiiUInt32>(maxA, value);
 
@@ -323,14 +323,14 @@ namespace
     // Palette covers range perfectly
     if (maxA - minA < 8)
     {
-      bestA0 = maxA;
-      bestA1 = minA;
+      ref_uiBestA0 = maxA;
+      ref_uiBestA1 = minA;
       return;
     }
 
     xiiUInt32 bestError = xiiUInt32(-1);
-    bestA0              = xiiUInt32(-1);
-    bestA1              = xiiUInt32(-1);
+    ref_uiBestA0        = xiiUInt32(-1);
+    ref_uiBestA1        = xiiUInt32(-1);
 
     // Try to find optimal values by searching around min and max
     {
@@ -342,13 +342,13 @@ namespace
         xiiInt32 maxA1 = xiiMath::Min(a0, minA + 4);
         for (xiiInt32 a1 = minA1; a1 < maxA1; ++a1)
         {
-          xiiUInt32 error = getSquaredErrorBC4_SSE(a0, a1, sourceData);
+          xiiUInt32 error = getSquaredErrorBC4_SSE(a0, a1, pSourceData);
 
           if (error < bestError)
           {
-            bestError = error;
-            bestA0    = a0;
-            bestA1    = a1;
+            bestError    = error;
+            ref_uiBestA0 = a0;
+            ref_uiBestA1 = a1;
 
             if (error == 0)
             {
@@ -370,13 +370,13 @@ namespace
         xiiInt32 maxA0 = xiiMath::Min(a1, minA_greater8 + 4);
         for (xiiInt32 a0 = minA0; a0 < maxA0; ++a0)
         {
-          xiiUInt32 error = getSquaredErrorBC4_SSE(a0, a1, sourceData);
+          xiiUInt32 error = getSquaredErrorBC4_SSE(a0, a1, pSourceData);
 
           if (error < bestError)
           {
-            bestError = error;
-            bestA0    = a0;
-            bestA1    = a1;
+            bestError    = error;
+            ref_uiBestA0 = a0;
+            ref_uiBestA1 = a1;
 
             if (error == 0)
             {
@@ -2139,47 +2139,47 @@ namespace
     // Mode 7: Color+Alpha, 2 Subsets, RGBAP 55551 (unique P-bit), 2-bit indices, 64 partitions
     {1, 6, 4, 0, 0, 2, 0, xiiColorBaseUB(5, 5, 5, 5), xiiColorBaseUB(6, 6, 6, 6)}};
 
-  xiiUInt8 getBit(const xiiUInt8* bits, xiiUInt32& startBit)
+  xiiUInt8 getBit(const xiiUInt8* pBits, xiiUInt32& ref_uiStartBit)
   {
-    XII_ASSERT_DEV(startBit < 128, "");
+    XII_ASSERT_DEV(ref_uiStartBit < 128, "");
 
-    xiiUInt32 index = startBit >> 3;
-    xiiUInt8  ret   = (bits[index] >> (startBit - (index << 3))) & 0x01;
-    ++startBit;
+    xiiUInt32 index = ref_uiStartBit >> 3;
+    xiiUInt8  ret   = (pBits[index] >> (ref_uiStartBit - (index << 3))) & 0x01;
+    ++ref_uiStartBit;
     return ret;
   }
 
-  xiiUInt8 getBits(const xiiUInt8* bits, xiiUInt32& startBit, xiiUInt32 numBits)
+  xiiUInt8 getBits(const xiiUInt8* pBits, xiiUInt32& ref_uiStartBit, xiiUInt32 uiNumBits)
   {
-    if (numBits == 0)
+    if (uiNumBits == 0)
       return 0;
-    XII_ASSERT_DEV(startBit + numBits <= 128 && numBits <= 8, "");
+    XII_ASSERT_DEV(ref_uiStartBit + uiNumBits <= 128 && uiNumBits <= 8, "");
 
     xiiUInt8  ret;
-    xiiUInt32 index = startBit >> 3;
-    xiiUInt32 base  = startBit - (index << 3);
-    if (base + numBits > 8)
+    xiiUInt32 index = ref_uiStartBit >> 3;
+    xiiUInt32 base  = ref_uiStartBit - (index << 3);
+    if (base + uiNumBits > 8)
     {
       xiiUInt32 firstIndexBits = 8 - base;
-      xiiUInt32 nextIndexBits  = numBits - firstIndexBits;
-      ret                      = (bits[index] >> base) | ((bits[index + 1] & ((1 << nextIndexBits) - 1)) << firstIndexBits);
+      xiiUInt32 nextIndexBits  = uiNumBits - firstIndexBits;
+      ret                      = (pBits[index] >> base) | ((pBits[index + 1] & ((1 << nextIndexBits) - 1)) << firstIndexBits);
     }
     else
     {
-      ret = (bits[index] >> base) & ((1 << numBits) - 1);
+      ret = (pBits[index] >> base) & ((1 << uiNumBits) - 1);
     }
-    XII_ASSERT_DEV(ret < (1 << numBits), "");
-    startBit += numBits;
+    XII_ASSERT_DEV(ret < (1 << uiNumBits), "");
+    ref_uiStartBit += uiNumBits;
     return ret;
   }
 
-  inline bool isFixUpOffset(xiiUInt32 partitions, xiiUInt32 shape, xiiUInt32 offset)
+  inline bool isFixUpOffset(xiiUInt32 uiPartitions, xiiUInt32 uiShape, xiiUInt32 uiOffset)
   {
-    XII_ASSERT_DEV(partitions < 3 && shape < 64 && offset < 16, "");
+    XII_ASSERT_DEV(uiPartitions < 3 && uiShape < 64 && uiOffset < 16, "");
 
-    for (xiiUInt32 p = 0; p <= partitions; ++p)
+    for (xiiUInt32 p = 0; p <= uiPartitions; ++p)
     {
-      if (offset == s_bc67FixUp[partitions][shape][p])
+      if (uiOffset == s_bc67FixUp[uiPartitions][uiShape][p])
       {
         return true;
       }
@@ -2187,79 +2187,79 @@ namespace
     return false;
   }
 
-  void interpolateRGB(const xiiColorBaseUB& c0, const xiiColorBaseUB& c1, xiiUInt32 wc, xiiUInt32 wcprec, xiiColorBaseUB& out)
+  void interpolateRGB(const xiiColorBaseUB& c0, const xiiColorBaseUB& c1, xiiUInt32 uiWc, xiiUInt32 uiWcprec, xiiColorBaseUB& ref_out)
   {
     const int* weights = nullptr;
-    switch (wcprec)
+    switch (uiWcprec)
     {
       case 2:
         weights = s_bc67InterpolationWeights2;
-        XII_ASSERT_DEV(wc < 4, "");
+        XII_ASSERT_DEV(uiWc < 4, "");
 
         break;
       case 3:
         weights = s_bc67InterpolationWeights3;
-        XII_ASSERT_DEV(wc < 8, "");
+        XII_ASSERT_DEV(uiWc < 8, "");
 
         break;
       case 4:
         weights = s_bc67InterpolationWeights4;
-        XII_ASSERT_DEV(wc < 16, "");
+        XII_ASSERT_DEV(uiWc < 16, "");
 
         break;
       default:
         XII_ASSERT_NOT_IMPLEMENTED;
-        out.r = out.g = out.b = 0;
+        ref_out.r = ref_out.g = ref_out.b = 0;
         return;
     }
-    out.r = xiiUInt8(
-      (xiiUInt32(c0.r) * xiiUInt32(s_bc67WeightMax - weights[wc]) + xiiUInt32(c1.r) * xiiUInt32(weights[wc]) + s_bc67WeightRound) >> s_bc67WeightShift);
-    out.g = xiiUInt8(
-      (xiiUInt32(c0.g) * xiiUInt32(s_bc67WeightMax - weights[wc]) + xiiUInt32(c1.g) * xiiUInt32(weights[wc]) + s_bc67WeightRound) >> s_bc67WeightShift);
-    out.b = xiiUInt8(
-      (xiiUInt32(c0.b) * xiiUInt32(s_bc67WeightMax - weights[wc]) + xiiUInt32(c1.b) * xiiUInt32(weights[wc]) + s_bc67WeightRound) >> s_bc67WeightShift);
+    ref_out.r = xiiUInt8(
+      (xiiUInt32(c0.r) * xiiUInt32(s_bc67WeightMax - weights[uiWc]) + xiiUInt32(c1.r) * xiiUInt32(weights[uiWc]) + s_bc67WeightRound) >> s_bc67WeightShift);
+    ref_out.g = xiiUInt8(
+      (xiiUInt32(c0.g) * xiiUInt32(s_bc67WeightMax - weights[uiWc]) + xiiUInt32(c1.g) * xiiUInt32(weights[uiWc]) + s_bc67WeightRound) >> s_bc67WeightShift);
+    ref_out.b = xiiUInt8(
+      (xiiUInt32(c0.b) * xiiUInt32(s_bc67WeightMax - weights[uiWc]) + xiiUInt32(c1.b) * xiiUInt32(weights[uiWc]) + s_bc67WeightRound) >> s_bc67WeightShift);
   }
 
-  static void interpolateA(const xiiColorBaseUB& c0, const xiiColorBaseUB& c1, xiiUInt32 wa, xiiUInt32 waprec, xiiColorBaseUB& out)
+  static void interpolateA(const xiiColorBaseUB& c0, const xiiColorBaseUB& c1, xiiUInt32 uiWa, xiiUInt32 uiWaprec, xiiColorBaseUB& ref_out)
   {
     const int* weights = nullptr;
-    switch (waprec)
+    switch (uiWaprec)
     {
       case 2:
         weights = s_bc67InterpolationWeights2;
-        XII_ASSERT_DEV(wa < 4, "");
+        XII_ASSERT_DEV(uiWa < 4, "");
 
         break;
       case 3:
         weights = s_bc67InterpolationWeights3;
-        XII_ASSERT_DEV(wa < 8, "");
+        XII_ASSERT_DEV(uiWa < 8, "");
 
         break;
       case 4:
         weights = s_bc67InterpolationWeights4;
-        XII_ASSERT_DEV(wa < 16, "");
+        XII_ASSERT_DEV(uiWa < 16, "");
 
         break;
       default:
         XII_ASSERT_NOT_IMPLEMENTED;
-        out.a = 0;
+        ref_out.a = 0;
         return;
     }
-    out.a = xiiUInt8(
-      (xiiUInt32(c0.a) * xiiUInt32(s_bc67WeightMax - weights[wa]) + xiiUInt32(c1.a) * xiiUInt32(weights[wa]) + s_bc67WeightRound) >> s_bc67WeightShift);
+    ref_out.a = xiiUInt8(
+      (xiiUInt32(c0.a) * xiiUInt32(s_bc67WeightMax - weights[uiWa]) + xiiUInt32(c1.a) * xiiUInt32(weights[uiWa]) + s_bc67WeightRound) >> s_bc67WeightShift);
   }
 
   static void interpolate(
     const xiiColorBaseUB& c0,
     const xiiColorBaseUB& c1,
-    xiiUInt32             wc,
-    xiiUInt32             wa,
-    xiiUInt32             wcprec,
-    xiiUInt32             waprec,
-    xiiColorBaseUB&       out)
+    xiiUInt32             uiWc,
+    xiiUInt32             uiWa,
+    xiiUInt32             uiWcprec,
+    xiiUInt32             uiWaprec,
+    xiiColorBaseUB&       ref_out)
   {
-    interpolateRGB(c0, c1, wc, wcprec, out);
-    interpolateA(c0, c1, wa, waprec, out);
+    interpolateRGB(c0, c1, uiWc, uiWcprec, ref_out);
+    interpolateA(c0, c1, uiWa, uiWaprec, ref_out);
   }
 
   static const xiiUInt16 s_bc6Float16Sign_Mask = 0x8000; // f16 sign mask
@@ -2273,11 +2273,11 @@ namespace
 
   public:
     BC6IntColor() = default;
-    BC6IntColor(xiiInt32 nr, xiiInt32 ng, xiiInt32 nb)
+    BC6IntColor(xiiInt32 iNr, xiiInt32 iNg, xiiInt32 iNb)
     {
-      r = nr;
-      g = ng;
-      b = nb;
+      r = iNr;
+      g = iNg;
+      b = iNb;
     }
 
     BC6IntColor& operator+=(const BC6IntColor& c)
@@ -2296,11 +2296,11 @@ namespace
       return *this;
     }
 
-    BC6IntColor& clamp(xiiInt32 min, xiiInt32 max)
+    BC6IntColor& clamp(xiiInt32 iMin, xiiInt32 iMax)
     {
-      r = xiiMath::Min(max, xiiMath::Max(min, r));
-      g = xiiMath::Min(max, xiiMath::Max(min, g));
-      b = xiiMath::Min(max, xiiMath::Max(min, b));
+      r = xiiMath::Min(iMax, xiiMath::Max(iMin, r));
+      g = xiiMath::Min(iMax, xiiMath::Max(iMin, g));
+      b = xiiMath::Min(iMax, xiiMath::Max(iMin, b));
       return *this;
     }
 
@@ -2312,12 +2312,12 @@ namespace
       return *this;
     }
 
-    void toF16(xiiFloat16 f16[4], bool isSigned) const
+    void toF16(xiiFloat16 p16[4], bool bIsSigned) const
     {
-      f16[0] = intToF16(r, isSigned);
-      f16[1] = intToF16(g, isSigned);
-      f16[2] = intToF16(b, isSigned);
-      f16[3] = 1.0f;
+      p16[0] = intToF16(r, bIsSigned);
+      p16[1] = intToF16(g, bIsSigned);
+      p16[2] = intToF16(b, bIsSigned);
+      p16[3] = 1.0f;
     }
 
   private:
@@ -2356,46 +2356,46 @@ namespace
     BC6IntColor B;
   };
 
-  inline void bc6TransformInverse(BC6IntEndPntPair endPts[], const xiiColorBaseUB& prec, bool isSigned)
+  inline void bc6TransformInverse(BC6IntEndPntPair pEndPts[], const xiiColorBaseUB& prec, bool bIsSigned)
   {
     BC6IntColor wrapMask((1 << prec.r) - 1, (1 << prec.g) - 1, (1 << prec.b) - 1);
-    endPts[0].B += endPts[0].A;
-    endPts[0].B &= wrapMask;
-    endPts[1].A += endPts[0].A;
-    endPts[1].A &= wrapMask;
-    endPts[1].B += endPts[0].A;
-    endPts[1].B &= wrapMask;
-    if (isSigned)
+    pEndPts[0].B += pEndPts[0].A;
+    pEndPts[0].B &= wrapMask;
+    pEndPts[1].A += pEndPts[0].A;
+    pEndPts[1].A &= wrapMask;
+    pEndPts[1].B += pEndPts[0].A;
+    pEndPts[1].B &= wrapMask;
+    if (bIsSigned)
     {
-      endPts[0].B.signExtend(prec);
-      endPts[1].A.signExtend(prec);
-      endPts[1].B.signExtend(prec);
+      pEndPts[0].B.signExtend(prec);
+      pEndPts[1].A.signExtend(prec);
+      pEndPts[1].B.signExtend(prec);
     }
   }
 
-  static xiiInt32 bc6Unquantize(xiiInt32 comp, xiiUInt8 bitsPerComp, bool isSigned)
+  static xiiInt32 bc6Unquantize(xiiInt32 iComp, xiiUInt8 uiBitsPerComp, bool bIsSigned)
   {
     xiiInt32 unq = 0, s = 0;
-    if (isSigned)
+    if (bIsSigned)
     {
-      if (bitsPerComp >= 16)
+      if (uiBitsPerComp >= 16)
       {
-        unq = comp;
+        unq = iComp;
       }
       else
       {
-        if (comp < 0)
+        if (iComp < 0)
         {
-          s    = 1;
-          comp = -comp;
+          s     = 1;
+          iComp = -iComp;
         }
 
-        if (comp == 0)
+        if (iComp == 0)
           unq = 0;
-        else if (comp >= ((1 << (bitsPerComp - 1)) - 1))
+        else if (iComp >= ((1 << (uiBitsPerComp - 1)) - 1))
           unq = 0x7FFF;
         else
-          unq = ((comp << 15) + 0x4000) >> (bitsPerComp - 1);
+          unq = ((iComp << 15) + 0x4000) >> (uiBitsPerComp - 1);
 
         if (s)
           unq = -unq;
@@ -2403,66 +2403,66 @@ namespace
     }
     else
     {
-      if (bitsPerComp >= 15)
-        unq = comp;
-      else if (comp == 0)
+      if (uiBitsPerComp >= 15)
+        unq = iComp;
+      else if (iComp == 0)
         unq = 0;
-      else if (comp == ((1 << bitsPerComp) - 1))
+      else if (iComp == ((1 << uiBitsPerComp) - 1))
         unq = 0xFFFF;
       else
-        unq = ((comp << 16) + 0x8000) >> bitsPerComp;
+        unq = ((iComp << 16) + 0x8000) >> uiBitsPerComp;
     }
 
     return unq;
   }
 
-  static xiiInt32 bc6FinishUnquantize(xiiInt32 comp, bool isSigned)
+  static xiiInt32 bc6FinishUnquantize(xiiInt32 iComp, bool bIsSigned)
   {
-    if (isSigned)
+    if (bIsSigned)
     {
-      return (comp < 0) ? -(((-comp) * 31) >> 5) : (comp * 31) >> 5; // scale the magnitude by 31/32
+      return (iComp < 0) ? -(((-iComp) * 31) >> 5) : (iComp * 31) >> 5; // scale the magnitude by 31/32
     }
     else
     {
-      return (comp * 31) >> 6; // scale the magnitude by 31/64
+      return (iComp * 31) >> 6; // scale the magnitude by 31/64
     }
   }
 
-  xiiUInt8 bc7Unquantize(xiiUInt8 comp, xiiUInt32 prec)
+  xiiUInt8 bc7Unquantize(xiiUInt8 uiComp, xiiUInt32 uiPrec)
   {
-    XII_ASSERT_DEV(0 < prec && prec <= 8, "");
-    comp = comp << (8 - prec);
-    return comp | (comp >> prec);
+    XII_ASSERT_DEV(0 < uiPrec && uiPrec <= 8, "");
+    uiComp = uiComp << (8 - uiPrec);
+    return uiComp | (uiComp >> uiPrec);
   }
 
-  xiiColorBaseUB bc7Unquantize(const xiiColorBaseUB& c, const xiiColorBaseUB& RGBAPrec)
+  xiiColorBaseUB bc7Unquantize(const xiiColorBaseUB& c, const xiiColorBaseUB& rGBAPrec)
   {
     xiiColorBaseUB q;
-    q.r = bc7Unquantize(c.r, RGBAPrec.r);
-    q.g = bc7Unquantize(c.g, RGBAPrec.g);
-    q.b = bc7Unquantize(c.b, RGBAPrec.b);
-    q.a = RGBAPrec.a > 0 ? bc7Unquantize(c.a, RGBAPrec.a) : 255;
+    q.r = bc7Unquantize(c.r, rGBAPrec.r);
+    q.g = bc7Unquantize(c.g, rGBAPrec.g);
+    q.b = bc7Unquantize(c.b, rGBAPrec.b);
+    q.a = rGBAPrec.a > 0 ? bc7Unquantize(c.a, rGBAPrec.a) : 255;
     return q;
   }
 
-  void fillWithErrorColors(xiiColorLinear16f* outputRGBA)
+  void fillWithErrorColors(xiiColorLinear16f* pOutputRGBA)
   {
     for (xiiUInt32 i = 0; i < s_bc67NumPixelsPerBlock; ++i)
     {
-      outputRGBA[i] = xiiColorLinear16f(0.0f, 0.0f, 0.0f, 1.0f);
+      pOutputRGBA[i] = xiiColorLinear16f(0.0f, 0.0f, 0.0f, 1.0f);
     }
   }
 
-  void fillWithErrorColors(xiiColorBaseUB* outputRGBA)
+  void fillWithErrorColors(xiiColorBaseUB* pOutputRGBA)
   {
     for (xiiUInt32 i = 0; i < s_bc67NumPixelsPerBlock; ++i)
     {
-      outputRGBA[i] = xiiColorBaseUB(0, 0, 0, 255);
+      pOutputRGBA[i] = xiiColorBaseUB(0, 0, 0, 255);
     }
   }
 } // namespace
 
-void xiiDecompressBlockBC6(const xiiUInt8* pSource, xiiColorLinear16f* pTarget, bool isSigned)
+void xiiDecompressBlockBC6(const xiiUInt8* pSource, xiiColorLinear16f* pTarget, bool bIsSigned)
 {
   XII_ASSERT_DEV(pTarget, "");
 
@@ -2550,11 +2550,11 @@ void xiiDecompressBlockBC6(const xiiUInt8* pSource, xiiColorLinear16f* pTarget, 
 
 
     // Sign extend necessary end points
-    if (isSigned)
+    if (bIsSigned)
     {
       endPts[0].A.signExtend(info.rgbaPrec[0][0]);
     }
-    if (isSigned || info.transformed)
+    if (bIsSigned || info.transformed)
     {
       XII_ASSERT_DEV(info.partitions < s_bc6MaxRegions, "");
 
@@ -2571,7 +2571,7 @@ void xiiDecompressBlockBC6(const xiiUInt8* pSource, xiiColorLinear16f* pTarget, 
     // Inverse transform the end points
     if (info.transformed)
     {
-      bc6TransformInverse(endPts, info.rgbaPrec[0][0], isSigned);
+      bc6TransformInverse(endPts, info.rgbaPrec[0][0], bIsSigned);
     }
 
     // Read indices
@@ -2598,20 +2598,20 @@ void xiiDecompressBlockBC6(const xiiUInt8* pSource, xiiColorLinear16f* pTarget, 
 
 
       // Unquantize endpoints and interpolate
-      int         r1      = bc6Unquantize(endPts[region].A.r, info.rgbaPrec[0][0].r, isSigned);
-      int         g1      = bc6Unquantize(endPts[region].A.g, info.rgbaPrec[0][0].g, isSigned);
-      int         b1      = bc6Unquantize(endPts[region].A.b, info.rgbaPrec[0][0].b, isSigned);
-      int         r2      = bc6Unquantize(endPts[region].B.r, info.rgbaPrec[0][0].r, isSigned);
-      int         g2      = bc6Unquantize(endPts[region].B.g, info.rgbaPrec[0][0].g, isSigned);
-      int         b2      = bc6Unquantize(endPts[region].B.b, info.rgbaPrec[0][0].b, isSigned);
+      int         r1      = bc6Unquantize(endPts[region].A.r, info.rgbaPrec[0][0].r, bIsSigned);
+      int         g1      = bc6Unquantize(endPts[region].A.g, info.rgbaPrec[0][0].g, bIsSigned);
+      int         b1      = bc6Unquantize(endPts[region].A.b, info.rgbaPrec[0][0].b, bIsSigned);
+      int         r2      = bc6Unquantize(endPts[region].B.r, info.rgbaPrec[0][0].r, bIsSigned);
+      int         g2      = bc6Unquantize(endPts[region].B.g, info.rgbaPrec[0][0].g, bIsSigned);
+      int         b2      = bc6Unquantize(endPts[region].B.b, info.rgbaPrec[0][0].b, bIsSigned);
       const int*  weights = info.partitions > 0 ? s_bc67InterpolationWeights3 : s_bc67InterpolationWeights4;
       BC6IntColor fc;
-      fc.r = bc6FinishUnquantize((r1 * (s_bc67WeightMax - weights[index]) + r2 * weights[index] + s_bc67WeightRound) >> s_bc67WeightShift, isSigned);
-      fc.g = bc6FinishUnquantize((g1 * (s_bc67WeightMax - weights[index]) + g2 * weights[index] + s_bc67WeightRound) >> s_bc67WeightShift, isSigned);
-      fc.b = bc6FinishUnquantize((b1 * (s_bc67WeightMax - weights[index]) + b2 * weights[index] + s_bc67WeightRound) >> s_bc67WeightShift, isSigned);
+      fc.r = bc6FinishUnquantize((r1 * (s_bc67WeightMax - weights[index]) + r2 * weights[index] + s_bc67WeightRound) >> s_bc67WeightShift, bIsSigned);
+      fc.g = bc6FinishUnquantize((g1 * (s_bc67WeightMax - weights[index]) + g2 * weights[index] + s_bc67WeightRound) >> s_bc67WeightShift, bIsSigned);
+      fc.b = bc6FinishUnquantize((b1 * (s_bc67WeightMax - weights[index]) + b2 * weights[index] + s_bc67WeightRound) >> s_bc67WeightShift, bIsSigned);
 
       xiiColorLinear16f outColor;
-      fc.toF16(outColor.GetData(), isSigned);
+      fc.toF16(outColor.GetData(), bIsSigned);
       pTarget[i] = outColor;
     }
   }
@@ -2853,7 +2853,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     const xiiUInt32 elementsPerBlock = 16;
 
@@ -2863,7 +2863,7 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < numBlocks; blockIndex++)
+    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; blockIndex++)
     {
       xiiDecompressBlockBC1(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiColorBaseUB*>(targetPointer), false);
 
@@ -2887,7 +2887,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     const xiiUInt32 elementsPerBlock = 16;
 
@@ -2897,7 +2897,7 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < numBlocks; blockIndex++)
+    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; blockIndex++)
     {
       decompressBlock(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiColorBaseUB*>(targetPointer));
 
@@ -2908,16 +2908,16 @@ public:
     return XII_SUCCESS;
   }
 
-  static void decompressBlock(const xiiUInt8* sourcePointer, xiiColorBaseUB* targetPointer)
+  static void decompressBlock(const xiiUInt8* pSourcePointer, xiiColorBaseUB* pTargetPointer)
   {
-    xiiDecompressBlockBC1(sourcePointer + 8, targetPointer, true);
+    xiiDecompressBlockBC1(pSourcePointer + 8, pTargetPointer, true);
 
     for (xiiUInt32 uiByteIdx = 0; uiByteIdx < 8; uiByteIdx++)
     {
-      xiiUInt8 uiIndices = sourcePointer[uiByteIdx];
+      xiiUInt8 uiIndices = pSourcePointer[uiByteIdx];
 
-      targetPointer[2 * uiByteIdx + 0].a = (uiIndices & 0x0F) | (uiIndices << 4);
-      targetPointer[2 * uiByteIdx + 1].a = (uiIndices & 0xF0) | (uiIndices >> 4);
+      pTargetPointer[2 * uiByteIdx + 0].a = (uiIndices & 0x0F) | (uiIndices << 4);
+      pTargetPointer[2 * uiByteIdx + 1].a = (uiIndices & 0xF0) | (uiIndices >> 4);
     }
   }
 };
@@ -2934,7 +2934,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     const xiiUInt32 elementsPerBlock = 16;
 
@@ -2944,7 +2944,7 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < numBlocks; blockIndex++)
+    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; blockIndex++)
     {
       decompressBlock(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiColorBaseUB*>(targetPointer));
 
@@ -2955,10 +2955,10 @@ public:
     return XII_SUCCESS;
   }
 
-  static void decompressBlock(const xiiUInt8* sourcePointer, xiiColorBaseUB* targetPointer)
+  static void decompressBlock(const xiiUInt8* pSourcePointer, xiiColorBaseUB* pTargetPointer)
   {
-    xiiDecompressBlockBC1(sourcePointer + 8, targetPointer, true);
-    xiiDecompressBlockBC4(sourcePointer, reinterpret_cast<xiiUInt8*>(targetPointer) + 3, 4, 0);
+    xiiDecompressBlockBC1(pSourcePointer + 8, pTargetPointer, true);
+    xiiDecompressBlockBC4(pSourcePointer, reinterpret_cast<xiiUInt8*>(pTargetPointer) + 3, 4, 0);
   }
 };
 
@@ -2974,7 +2974,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     const xiiUInt32 elementsPerBlock = 16;
 
@@ -2991,7 +2991,7 @@ public:
       bias = 128;
     }
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < numBlocks; blockIndex++)
+    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; blockIndex++)
     {
       decompressBlock(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiUInt8*>(targetPointer), bias);
 
@@ -3002,9 +3002,9 @@ public:
     return XII_SUCCESS;
   }
 
-  static void decompressBlock(const xiiUInt8* sourcePointer, xiiUInt8* targetPointer, xiiUInt8 bias)
+  static void decompressBlock(const xiiUInt8* pSourcePointer, xiiUInt8* pTargetPointer, xiiUInt8 uiBias)
   {
-    xiiDecompressBlockBC4(sourcePointer, targetPointer, 1, bias);
+    xiiDecompressBlockBC4(pSourcePointer, pTargetPointer, 1, uiBias);
   }
 };
 
@@ -3020,7 +3020,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     const xiiUInt32 elementsPerBlock = 16;
 
@@ -3037,7 +3037,7 @@ public:
       bias = 128;
     }
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < numBlocks; blockIndex++)
+    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; blockIndex++)
     {
       decompressBlock(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiUInt8*>(targetPointer), bias);
 
@@ -3048,10 +3048,10 @@ public:
     return XII_SUCCESS;
   }
 
-  static void decompressBlock(const xiiUInt8* sourcePointer, xiiUInt8* targetPointer, xiiUInt8 bias)
+  static void decompressBlock(const xiiUInt8* pSourcePointer, xiiUInt8* pTargetPointer, xiiUInt8 uiBias)
   {
-    xiiDecompressBlockBC4(sourcePointer + 0, targetPointer + 0, 2, bias);
-    xiiDecompressBlockBC4(sourcePointer + 8, targetPointer + 1, 2, bias);
+    xiiDecompressBlockBC4(pSourcePointer + 0, pTargetPointer + 0, 2, uiBias);
+    xiiDecompressBlockBC4(pSourcePointer + 8, pTargetPointer + 1, 2, uiBias);
   }
 };
 
@@ -3068,7 +3068,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     const xiiUInt32 targetFormatByteSize = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
     XII_ASSERT_DEV(targetFormatByteSize == sizeof(xiiColorLinear16f), "");
@@ -3081,7 +3081,7 @@ public:
 
     const bool isSourceFormatSigned = sourceFormat == xiiImageFormat::BC6H_SF16;
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < numBlocks; ++blockIndex)
+    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; ++blockIndex)
     {
       xiiDecompressBlockBC6(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiColorLinear16f*>(targetPointer), isSourceFormatSigned);
 
@@ -3104,7 +3104,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     const xiiUInt32 sourceStride = s_bc67NumPixelsPerBlock * xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     const xiiUInt32 targetStride = s_bc67NumPixelsPerBlock * xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -3112,7 +3112,7 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < numBlocks; ++blockIndex)
+    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; ++blockIndex)
     {
       xiiDecompressBlockBC7(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiColorBaseUB*>(targetPointer));
 

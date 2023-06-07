@@ -135,9 +135,9 @@ xiiResult xiiCompressedStreamReaderZstd::RefillReadCache()
 
 xiiCompressedStreamWriterZstd::xiiCompressedStreamWriterZstd() = default;
 
-xiiCompressedStreamWriterZstd::xiiCompressedStreamWriterZstd(xiiStreamWriter* pOutputStream, Compression Ratio)
+xiiCompressedStreamWriterZstd::xiiCompressedStreamWriterZstd(xiiStreamWriter* pOutputStream, Compression ratio)
 {
-  SetOutputStream(pOutputStream, Ratio);
+  SetOutputStream(pOutputStream, ratio);
 }
 
 xiiCompressedStreamWriterZstd::~xiiCompressedStreamWriterZstd()
@@ -159,7 +159,7 @@ xiiCompressedStreamWriterZstd::~xiiCompressedStreamWriterZstd()
   }
 }
 
-void xiiCompressedStreamWriterZstd::SetOutputStream(xiiStreamWriter* pOutputStream, Compression Ratio /*= Compression::Default*/, xiiUInt32 uiCompressionCacheSizeKB /*= 4*/)
+void xiiCompressedStreamWriterZstd::SetOutputStream(xiiStreamWriter* pOutputStream, Compression ratio /*= Compression::Default*/, xiiUInt32 uiCompressionCacheSizeKB /*= 4*/)
 {
   if (m_pOutputStream == pOutputStream)
     return;
@@ -187,7 +187,7 @@ void xiiCompressedStreamWriterZstd::SetOutputStream(xiiStreamWriter* pOutputStre
 
     ZSTD_CCtx_reset(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), ZSTD_reset_session_only);
     ZSTD_CCtx_refCDict(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), nullptr);
-    ZSTD_CCtx_setParameter(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), ZSTD_c_compressionLevel, (int)Ratio);
+    ZSTD_CCtx_setParameter(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), ZSTD_c_compressionLevel, (int)ratio);
     ZSTD_CCtx_setParameter(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), ZSTD_c_nbWorkers, uiCoreCount);
 
     m_CompressedCache.SetCountUninitialized(xiiMath::Max(1U, uiCompressionCacheSizeKB) * 1024);

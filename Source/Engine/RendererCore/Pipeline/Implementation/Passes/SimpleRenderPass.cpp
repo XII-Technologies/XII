@@ -28,7 +28,7 @@ xiiSimpleRenderPass::xiiSimpleRenderPass(const char* szName) :
 {
 }
 
-xiiSimpleRenderPass::~xiiSimpleRenderPass() {}
+xiiSimpleRenderPass::~xiiSimpleRenderPass() = default;
 
 bool xiiSimpleRenderPass::GetRenderTargetDescriptions(
   const xiiView&                                             view,

@@ -12,8 +12,8 @@ struct XII_RENDERERCORE_DLL xiiShaderStateResourceDescriptor
   xiiGALRasterizerStateCreationDescription   m_RasterizerDesc;
 
   xiiResult Load(const char* szSource);
-  void      Load(xiiStreamReader& stream);
-  void      Save(xiiStreamWriter& stream) const;
+  void      Load(xiiStreamReader& ref_stream);
+  void      Save(xiiStreamWriter& ref_stream) const;
 
   xiiUInt32 CalculateHash() const;
 };
@@ -23,8 +23,8 @@ class XII_RENDERERCORE_DLL xiiShaderPermutationBinary
 public:
   xiiShaderPermutationBinary();
 
-  xiiResult Write(xiiStreamWriter& Stream);
-  xiiResult Read(xiiStreamReader& Stream, bool& out_bOldVersion);
+  xiiResult Write(xiiStreamWriter& ref_stream);
+  xiiResult Read(xiiStreamReader& ref_stream, bool& out_bOldVersion);
 
   xiiUInt32 m_uiShaderStageHashes[xiiGALShaderStage::ENUM_COUNT];
 

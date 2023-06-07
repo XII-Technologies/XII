@@ -14,13 +14,13 @@ void xiiTask::Reset()
   m_bUsesMultiplicity = m_uiMultiplicity > 0;
 }
 
-void xiiTask::ConfigureTask(const char* szTaskName, xiiTaskNesting nestingMode, xiiOnTaskFinishedCallback Callback /*= xiiOnTaskFinishedCallback()*/)
+void xiiTask::ConfigureTask(const char* szTaskName, xiiTaskNesting nestingMode, xiiOnTaskFinishedCallback callback /*= xiiOnTaskFinishedCallback()*/)
 {
   XII_ASSERT_DEV(IsTaskFinished(), "This function must be called before the task is started.");
 
   m_sTaskName      = szTaskName;
   m_NestingMode    = nestingMode;
-  m_OnTaskFinished = Callback;
+  m_OnTaskFinished = callback;
 }
 
 void xiiTask::SetMultiplicity(xiiUInt32 uiMultiplicity)

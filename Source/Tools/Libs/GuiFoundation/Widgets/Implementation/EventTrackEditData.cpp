@@ -31,9 +31,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEventTrackData, 3, xiiRTTIDefaultAllocator<x
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiEventTrackControlPointData::SetTickFromTime(xiiTime time, xiiInt64 fps)
+void xiiEventTrackControlPointData::SetTickFromTime(xiiTime time, xiiInt64 iFps)
 {
-  const xiiUInt32 uiTicksPerStep = 4800 / fps;
+  const xiiUInt32 uiTicksPerStep = 4800 / iFps;
   m_iTick                        = (xiiInt64)xiiMath::RoundToMultiple(time.GetSeconds() * 4800.0, (double)uiTicksPerStep);
 }
 
@@ -43,13 +43,13 @@ xiiInt64 xiiEventTrackData::TickFromTime(xiiTime time) const
   return (xiiInt64)xiiMath::RoundToMultiple(time.GetSeconds() * 4800.0, (double)uiTicksPerStep);
 }
 
-void xiiEventTrackData::ConvertToRuntimeData(xiiEventTrack& out_Result) const
+void xiiEventTrackData::ConvertToRuntimeData(xiiEventTrack& out_result) const
 {
-  out_Result.Clear();
+  out_result.Clear();
 
   for (const auto& cp : m_ControlPoints)
   {
-    out_Result.AddControlPoint(cp.GetTickAsTime(), cp.m_sEvent);
+    out_result.AddControlPoint(cp.GetTickAsTime(), cp.m_sEvent);
   }
 }
 

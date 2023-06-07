@@ -2,38 +2,38 @@
 
 #include <Core/World/CoordinateSystem.h>
 
-void TestLength(const xiiCoordinateSystemConversion& AtoB, const xiiCoordinateSystemConversion& BtoA, float fSourceLength, float fTargetLength)
+void TestLength(const xiiCoordinateSystemConversion& atoB, const xiiCoordinateSystemConversion& btoA, float fSourceLength, float fTargetLength)
 {
-  XII_TEST_FLOAT(AtoB.ConvertSourceLength(fSourceLength), fTargetLength, xiiMath::DefaultEpsilon<float>());
-  XII_TEST_FLOAT(AtoB.ConvertTargetLength(fTargetLength), fSourceLength, xiiMath::DefaultEpsilon<float>());
+  XII_TEST_FLOAT(atoB.ConvertSourceLength(fSourceLength), fTargetLength, xiiMath::DefaultEpsilon<float>());
+  XII_TEST_FLOAT(atoB.ConvertTargetLength(fTargetLength), fSourceLength, xiiMath::DefaultEpsilon<float>());
 
-  XII_TEST_FLOAT(BtoA.ConvertTargetLength(fSourceLength), fTargetLength, xiiMath::DefaultEpsilon<float>());
-  XII_TEST_FLOAT(BtoA.ConvertSourceLength(fTargetLength), fSourceLength, xiiMath::DefaultEpsilon<float>());
+  XII_TEST_FLOAT(btoA.ConvertTargetLength(fSourceLength), fTargetLength, xiiMath::DefaultEpsilon<float>());
+  XII_TEST_FLOAT(btoA.ConvertSourceLength(fTargetLength), fSourceLength, xiiMath::DefaultEpsilon<float>());
 }
 
 void TestPosition(
-  const xiiCoordinateSystemConversion& AtoB,
-  const xiiCoordinateSystemConversion& BtoA,
+  const xiiCoordinateSystemConversion& atoB,
+  const xiiCoordinateSystemConversion& btoA,
   const xiiVec3&                       vSourcePos,
   const xiiVec3&                       vTargetPos)
 {
-  TestLength(AtoB, BtoA, vSourcePos.GetLength(), vTargetPos.GetLength());
+  TestLength(atoB, btoA, vSourcePos.GetLength(), vTargetPos.GetLength());
 
-  XII_TEST_VEC3(AtoB.ConvertSourcePosition(vSourcePos), vTargetPos, xiiMath::DefaultEpsilon<float>());
-  XII_TEST_VEC3(AtoB.ConvertTargetPosition(vTargetPos), vSourcePos, xiiMath::DefaultEpsilon<float>());
-  XII_TEST_VEC3(BtoA.ConvertSourcePosition(vTargetPos), vSourcePos, xiiMath::DefaultEpsilon<float>());
-  XII_TEST_VEC3(BtoA.ConvertTargetPosition(vSourcePos), vTargetPos, xiiMath::DefaultEpsilon<float>());
+  XII_TEST_VEC3(atoB.ConvertSourcePosition(vSourcePos), vTargetPos, xiiMath::DefaultEpsilon<float>());
+  XII_TEST_VEC3(atoB.ConvertTargetPosition(vTargetPos), vSourcePos, xiiMath::DefaultEpsilon<float>());
+  XII_TEST_VEC3(btoA.ConvertSourcePosition(vTargetPos), vSourcePos, xiiMath::DefaultEpsilon<float>());
+  XII_TEST_VEC3(btoA.ConvertTargetPosition(vSourcePos), vTargetPos, xiiMath::DefaultEpsilon<float>());
 }
 
-void TestRotation(const xiiCoordinateSystemConversion& AtoB, const xiiCoordinateSystemConversion& BtoA, const xiiVec3& vSourceStartDir, const xiiVec3& vSourceEndDir, const xiiQuat& qSourceRot, const xiiVec3& vTargetStartDir, const xiiVec3& vTargetEndDir, const xiiQuat& qTargetRot)
+void TestRotation(const xiiCoordinateSystemConversion& atoB, const xiiCoordinateSystemConversion& btoA, const xiiVec3& vSourceStartDir, const xiiVec3& vSourceEndDir, const xiiQuat& qSourceRot, const xiiVec3& vTargetStartDir, const xiiVec3& vTargetEndDir, const xiiQuat& qTargetRot)
 {
-  TestPosition(AtoB, BtoA, vSourceStartDir, vTargetStartDir);
-  TestPosition(AtoB, BtoA, vSourceEndDir, vTargetEndDir);
+  TestPosition(atoB, btoA, vSourceStartDir, vTargetStartDir);
+  TestPosition(atoB, btoA, vSourceEndDir, vTargetEndDir);
 
-  XII_TEST_BOOL(AtoB.ConvertSourceRotation(qSourceRot).IsEqualRotation(qTargetRot, xiiMath::DefaultEpsilon<float>()));
-  XII_TEST_BOOL(AtoB.ConvertTargetRotation(qTargetRot).IsEqualRotation(qSourceRot, xiiMath::DefaultEpsilon<float>()));
-  XII_TEST_BOOL(BtoA.ConvertSourceRotation(qTargetRot).IsEqualRotation(qSourceRot, xiiMath::DefaultEpsilon<float>()));
-  XII_TEST_BOOL(BtoA.ConvertTargetRotation(qSourceRot).IsEqualRotation(qTargetRot, xiiMath::DefaultEpsilon<float>()));
+  XII_TEST_BOOL(atoB.ConvertSourceRotation(qSourceRot).IsEqualRotation(qTargetRot, xiiMath::DefaultEpsilon<float>()));
+  XII_TEST_BOOL(atoB.ConvertTargetRotation(qTargetRot).IsEqualRotation(qSourceRot, xiiMath::DefaultEpsilon<float>()));
+  XII_TEST_BOOL(btoA.ConvertSourceRotation(qTargetRot).IsEqualRotation(qSourceRot, xiiMath::DefaultEpsilon<float>()));
+  XII_TEST_BOOL(btoA.ConvertTargetRotation(qSourceRot).IsEqualRotation(qTargetRot, xiiMath::DefaultEpsilon<float>()));
 
   XII_TEST_VEC3(qSourceRot * vSourceStartDir, vSourceEndDir, xiiMath::DefaultEpsilon<float>());
   XII_TEST_VEC3(qTargetRot * vTargetStartDir, vTargetEndDir, xiiMath::DefaultEpsilon<float>());
@@ -53,29 +53,29 @@ bool IsRightHanded(const xiiCoordinateSystem& cs)
   return vF.Dot(cs.m_vForwardDir) > 0;
 }
 
-void TestCoordinateSystemConversion(const xiiCoordinateSystem& A, const xiiCoordinateSystem& B)
+void TestCoordinateSystemConversion(const xiiCoordinateSystem& a, const xiiCoordinateSystem& b)
 {
-  const bool     bAisRH  = IsRightHanded(A);
-  const bool     bBisRH  = IsRightHanded(B);
+  const bool     bAisRH  = IsRightHanded(a);
+  const bool     bBisRH  = IsRightHanded(b);
   const xiiAngle A_CWRot = bAisRH ? xiiAngle::Degree(-90.0f) : xiiAngle::Degree(90.0f);
   const xiiAngle B_CWRot = bBisRH ? xiiAngle::Degree(-90.0f) : xiiAngle::Degree(90.0f);
 
   xiiCoordinateSystemConversion AtoB;
-  AtoB.SetConversion(A, B);
+  AtoB.SetConversion(a, b);
 
   xiiCoordinateSystemConversion BtoA;
-  BtoA.SetConversion(B, A);
+  BtoA.SetConversion(b, a);
 
-  TestPosition(AtoB, BtoA, A.m_vForwardDir, B.m_vForwardDir);
-  TestPosition(AtoB, BtoA, A.m_vRightDir, B.m_vRightDir);
-  TestPosition(AtoB, BtoA, A.m_vUpDir, B.m_vUpDir);
+  TestPosition(AtoB, BtoA, a.m_vForwardDir, b.m_vForwardDir);
+  TestPosition(AtoB, BtoA, a.m_vRightDir, b.m_vRightDir);
+  TestPosition(AtoB, BtoA, a.m_vUpDir, b.m_vUpDir);
 
-  TestRotation(AtoB, BtoA, A.m_vForwardDir, A.m_vRightDir, FromAxisAndAngle(A.m_vUpDir, A_CWRot), B.m_vForwardDir, B.m_vRightDir,
-               FromAxisAndAngle(B.m_vUpDir, B_CWRot));
-  TestRotation(AtoB, BtoA, A.m_vUpDir, A.m_vForwardDir, FromAxisAndAngle(A.m_vRightDir, A_CWRot), B.m_vUpDir, B.m_vForwardDir,
-               FromAxisAndAngle(B.m_vRightDir, B_CWRot));
-  TestRotation(AtoB, BtoA, A.m_vUpDir, A.m_vRightDir, FromAxisAndAngle(A.m_vForwardDir, -A_CWRot), B.m_vUpDir, B.m_vRightDir,
-               FromAxisAndAngle(B.m_vForwardDir, -B_CWRot));
+  TestRotation(AtoB, BtoA, a.m_vForwardDir, a.m_vRightDir, FromAxisAndAngle(a.m_vUpDir, A_CWRot), b.m_vForwardDir, b.m_vRightDir,
+               FromAxisAndAngle(b.m_vUpDir, B_CWRot));
+  TestRotation(AtoB, BtoA, a.m_vUpDir, a.m_vForwardDir, FromAxisAndAngle(a.m_vRightDir, A_CWRot), b.m_vUpDir, b.m_vForwardDir,
+               FromAxisAndAngle(b.m_vRightDir, B_CWRot));
+  TestRotation(AtoB, BtoA, a.m_vUpDir, a.m_vRightDir, FromAxisAndAngle(a.m_vForwardDir, -A_CWRot), b.m_vUpDir, b.m_vRightDir,
+               FromAxisAndAngle(b.m_vForwardDir, -B_CWRot));
 }
 
 

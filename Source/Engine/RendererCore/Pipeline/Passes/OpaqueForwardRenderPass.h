@@ -23,7 +23,7 @@ protected:
   // xiiRenderPipelineNodeOutputPin m_PinNormal;
   // xiiRenderPipelineNodeOutputPin m_PinSpecularColorRoughness;
 
-  bool m_bWriteDepth;
+  bool m_bWriteDepth = true;
 
   xiiTexture2DResourceHandle m_hWhiteTexture;
 };

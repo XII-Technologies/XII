@@ -47,15 +47,14 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    XII_FORCE_INLINE AllocationInfo() :
-      m_pStackTrace(nullptr), m_uiSize(0), m_uiAlignment(0), m_uiStackTraceLength(0)
+    XII_FORCE_INLINE AllocationInfo()
     {
     }
 
-    void**    m_pStackTrace;
-    size_t    m_uiSize;
-    xiiUInt16 m_uiAlignment;
-    xiiUInt16 m_uiStackTraceLength;
+    void**    m_pStackTrace        = nullptr;
+    size_t    m_uiSize             = 0;
+    xiiUInt16 m_uiAlignment        = 0;
+    xiiUInt16 m_uiStackTraceLength = 0;
 
     XII_ALWAYS_INLINE const xiiArrayPtr<void*> GetStackTrace() const { return xiiArrayPtr<void*>(m_pStackTrace, (xiiUInt32)m_uiStackTraceLength); }
 
@@ -101,11 +100,11 @@ public:
   static void AddAllocation(
     xiiAllocatorId                      allocatorId,
     xiiBitflags<xiiMemoryTrackingFlags> flags,
-    const void*                         ptr,
+    const void*                         pPtr,
     size_t                              uiSize,
     size_t                              uiAlign,
     xiiTime                             allocationTime);
-  static void RemoveAllocation(xiiAllocatorId allocatorId, const void* ptr);
+  static void RemoveAllocation(xiiAllocatorId allocatorId, const void* pPtr);
   static void RemoveAllAllocations(xiiAllocatorId allocatorId);
   static void SetAllocatorStats(xiiAllocatorId allocatorId, const xiiAllocatorBase::Stats& stats);
 
@@ -114,7 +113,7 @@ public:
   static const char*                    GetAllocatorName(xiiAllocatorId allocatorId);
   static const xiiAllocatorBase::Stats& GetAllocatorStats(xiiAllocatorId allocatorId);
   static xiiAllocatorId                 GetAllocatorParentId(xiiAllocatorId allocatorId);
-  static const AllocationInfo&          GetAllocationInfo(xiiAllocatorId allocatorId, const void* ptr);
+  static const AllocationInfo&          GetAllocationInfo(xiiAllocatorId allocatorId, const void* pPtr);
 
   static void DumpMemoryLeaks();
 

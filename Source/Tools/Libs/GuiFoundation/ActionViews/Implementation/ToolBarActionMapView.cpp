@@ -10,8 +10,8 @@
 #include <QMenu>
 #include <QToolButton>
 
-xiiQtToolBarActionMapView::xiiQtToolBarActionMapView(QString title, QWidget* parent) :
-  QToolBar(title, parent)
+xiiQtToolBarActionMapView::xiiQtToolBarActionMapView(QString sTitle, QWidget* pParent) :
+  QToolBar(sTitle, pParent)
 {
   setIconSize(QSize(16, 16));
   setFloatable(false);
@@ -36,7 +36,7 @@ void xiiQtToolBarActionMapView::SetActionContext(const xiiActionContext& context
   CreateView();
 }
 
-void xiiQtToolBarActionMapView::setVisible(bool visible)
+void xiiQtToolBarActionMapView::setVisible(bool bVisible)
 {
   QToolBar::setVisible(true);
 }

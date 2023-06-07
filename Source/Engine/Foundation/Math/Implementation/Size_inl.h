@@ -1,12 +1,10 @@
 #pragma once
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiSizeTemplate<Type>::xiiSizeTemplate()
-{
-}
+XII_ALWAYS_INLINE xiiSizeTemplate<Type>::xiiSizeTemplate() = default;
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiSizeTemplate<Type>::xiiSizeTemplate(Type Width, Type Height) :
+XII_ALWAYS_INLINE xiiSizeTemplate<Type>::xiiSizeTemplate(Type width, Type height) :
   width(Width), height(Height)
 {
 }

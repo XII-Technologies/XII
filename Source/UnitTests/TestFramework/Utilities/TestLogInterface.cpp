@@ -46,17 +46,17 @@ void xiiTestLogInterface::HandleLogMessage(const xiiLoggingEventData& le)
   }
 }
 
-void xiiTestLogInterface::ExpectMessage(const char* msg, xiiLogMsgType::Enum type /*= xiiLogMsgType::All*/, xiiInt32 count /*= 1*/)
+void xiiTestLogInterface::ExpectMessage(const char* szMsg, xiiLogMsgType::Enum type /*= xiiLogMsgType::All*/, xiiInt32 iCount /*= 1*/)
 {
   XII_LOCK(m_Mutex);
 
   // Do not allow initial count to be less than 1, but use signed int to keep track
   // of error messages that were encountered more often than expected.
-  XII_ASSERT_DEV(count >= 1, "Message needs to be expected at least once");
+  XII_ASSERT_DEV(iCount >= 1, "Message needs to be expected at least once");
 
   ExpectedMsg& em    = m_ExpectedMessages.ExpandAndGetRef();
-  em.m_sMsgSubString = msg;
-  em.m_iCount        = count;
+  em.m_sMsgSubString = szMsg;
+  em.m_iCount        = iCount;
   em.m_Type          = type;
 }
 

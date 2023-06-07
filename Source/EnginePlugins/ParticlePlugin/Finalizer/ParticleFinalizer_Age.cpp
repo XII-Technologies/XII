@@ -17,7 +17,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleFinalizer_Age, 1, xiiRTTIDefaultAllo
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiParticleFinalizerFactory_Age::xiiParticleFinalizerFactory_Age() {}
+xiiParticleFinalizerFactory_Age::xiiParticleFinalizerFactory_Age() = default;
 
 const xiiRTTI* xiiParticleFinalizerFactory_Age::GetFinalizerType() const
 {

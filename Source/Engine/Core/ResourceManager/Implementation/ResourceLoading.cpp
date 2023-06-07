@@ -393,12 +393,12 @@ xiiUInt32 xiiResourceManager::ReloadAllResources(bool bForce)
   return count;
 }
 
-void xiiResourceManager::UpdateResourceWithCustomLoader(const xiiTypelessResourceHandle& hResource, xiiUniquePtr<xiiResourceTypeLoader>&& loader)
+void xiiResourceManager::UpdateResourceWithCustomLoader(const xiiTypelessResourceHandle& hResource, xiiUniquePtr<xiiResourceTypeLoader>&& pLoader)
 {
   XII_LOCK(s_ResourceMutex);
 
   hResource.m_pResource->m_Flags.Add(xiiResourceFlags::HasCustomDataLoader);
-  s_pState->m_CustomLoaders[hResource.m_pResource] = std::move(loader);
+  s_pState->m_CustomLoaders[hResource.m_pResource] = std::move(pLoader);
   // if there was already a custom loader set, but it got no action yet, it is deleted here and replaced with the newer loader
 
   ReloadResource(hResource.m_pResource, true);

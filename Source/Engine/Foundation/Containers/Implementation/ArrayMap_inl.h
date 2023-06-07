@@ -159,19 +159,19 @@ xiiUInt32 xiiArrayMapBase<KEY, VALUE>::UpperBound(const CompatibleKeyType& key) 
 }
 
 template <typename KEY, typename VALUE>
-XII_ALWAYS_INLINE const KEY& xiiArrayMapBase<KEY, VALUE>::GetKey(xiiUInt32 index) const
+XII_ALWAYS_INLINE const KEY& xiiArrayMapBase<KEY, VALUE>::GetKey(xiiUInt32 uiIndex) const
 {
   return m_Data[index].key;
 }
 
 template <typename KEY, typename VALUE>
-XII_ALWAYS_INLINE const VALUE& xiiArrayMapBase<KEY, VALUE>::GetValue(xiiUInt32 index) const
+XII_ALWAYS_INLINE const VALUE& xiiArrayMapBase<KEY, VALUE>::GetValue(xiiUInt32 uiIndex) const
 {
   return m_Data[index].value;
 }
 
 template <typename KEY, typename VALUE>
-VALUE& xiiArrayMapBase<KEY, VALUE>::GetValue(xiiUInt32 index)
+VALUE& xiiArrayMapBase<KEY, VALUE>::GetValue(xiiUInt32 uiIndex)
 {
   return m_Data[index].value;
 }
@@ -191,7 +191,7 @@ XII_ALWAYS_INLINE const xiiDynamicArray<typename xiiArrayMapBase<KEY, VALUE>::Pa
 
 template <typename KEY, typename VALUE>
 template <typename CompatibleKeyType>
-VALUE& xiiArrayMapBase<KEY, VALUE>::FindOrAdd(const CompatibleKeyType& key, bool* bExisted)
+VALUE& xiiArrayMapBase<KEY, VALUE>::FindOrAdd(const CompatibleKeyType& key, bool* pExisted)
 {
   xiiUInt32 index = Find<CompatibleKeyType>(key);
 
@@ -214,13 +214,13 @@ XII_ALWAYS_INLINE VALUE& xiiArrayMapBase<KEY, VALUE>::operator[](const Compatibl
 }
 
 template <typename KEY, typename VALUE>
-XII_ALWAYS_INLINE const typename xiiArrayMapBase<KEY, VALUE>::Pair& xiiArrayMapBase<KEY, VALUE>::GetPair(xiiUInt32 index) const
+XII_ALWAYS_INLINE const typename xiiArrayMapBase<KEY, VALUE>::Pair& xiiArrayMapBase<KEY, VALUE>::GetPair(xiiUInt32 uiIndex) const
 {
   return m_Data[index];
 }
 
 template <typename KEY, typename VALUE>
-void xiiArrayMapBase<KEY, VALUE>::RemoveAtAndCopy(xiiUInt32 index, bool bKeepSorted)
+void xiiArrayMapBase<KEY, VALUE>::RemoveAtAndCopy(xiiUInt32 uiIndex, bool bKeepSorted)
 {
   if (bKeepSorted && m_bSorted)
   {
@@ -278,7 +278,7 @@ bool xiiArrayMapBase<KEY, VALUE>::Contains(const CompatibleKeyType& key, const V
 
 
 template <typename KEY, typename VALUE>
-XII_ALWAYS_INLINE void xiiArrayMapBase<KEY, VALUE>::Reserve(xiiUInt32 size)
+XII_ALWAYS_INLINE void xiiArrayMapBase<KEY, VALUE>::Reserve(xiiUInt32 uiSize)
 {
   m_Data.Reserve(size);
 }

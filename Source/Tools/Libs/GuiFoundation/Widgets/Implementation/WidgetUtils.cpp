@@ -36,18 +36,18 @@ QScreen& xiiWidgetUtils::GetClosestScreen(const QPoint& point)
 }
 
 void xiiWidgetUtils::AdjustGridDensity(
-  double&   fFinestDensity,
-  double&   fRoughDensity,
+  double&   ref_fFinestDensity,
+  double&   ref_fRoughDensity,
   xiiUInt32 uiWindowWidth,
   double    fViewportSceneWidth,
   xiiUInt32 uiMinPixelsForStep)
 {
   const double fMaxStepsFitInWindow = (double)uiWindowWidth / (double)uiMinPixelsForStep;
 
-  const double fStartDensity = fFinestDensity;
+  const double fStartDensity = ref_fFinestDensity;
 
   xiiInt32 iFactor     = 1;
-  double   fNewDensity = fFinestDensity;
+  double   fNewDensity = ref_fFinestDensity;
   xiiInt32 iFactors[2] = {5, 2};
   xiiInt32 iLastFactor = 0;
 
@@ -64,10 +64,10 @@ void xiiWidgetUtils::AdjustGridDensity(
     iLastFactor = (iLastFactor + 1) % 2;
   }
 
-  fFinestDensity = fStartDensity * iFactor;
+  ref_fFinestDensity = fStartDensity * iFactor;
 
   iFactor *= iFactors[iLastFactor];
-  fRoughDensity = fStartDensity * iFactor;
+  ref_fRoughDensity = fStartDensity * iFactor;
 }
 
 void xiiWidgetUtils::ComputeGridExtentsX(const QRectF& viewportSceneRect, double fGridStops, double& out_fMinX, double& out_fMaxX)

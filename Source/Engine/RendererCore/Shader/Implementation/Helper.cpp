@@ -69,32 +69,32 @@ namespace xiiShaderHelper
     return m_Sections[uiSection].m_Content;
   }
 
-  void GetShaderSections(const char* szContent, xiiTextSectionizer& out_Sections)
+  void GetShaderSections(const char* szContent, xiiTextSectionizer& out_sections)
   {
-    out_Sections.Clear();
+    out_sections.Clear();
 
-    out_Sections.AddSection("[PLATFORMS]");
-    out_Sections.AddSection("[PERMUTATIONS]");
-    out_Sections.AddSection("[MATERIALPARAMETER]");
-    out_Sections.AddSection("[RENDERSTATE]");
-    out_Sections.AddSection("[SHADER]");
-    out_Sections.AddSection("[VERTEXSHADER]");
-    out_Sections.AddSection("[PIXELSHADER]");
-    out_Sections.AddSection("[GEOMETRYSHADER]");
-    out_Sections.AddSection("[HULLSHADER]");
-    out_Sections.AddSection("[DOMAINSHADER]");
-    out_Sections.AddSection("[COMPUTESHADER]");
-    out_Sections.AddSection("[AMPLIFICATIONSHADER]");
-    out_Sections.AddSection("[MESHSHADER]");
-    out_Sections.AddSection("[RAYGENSHADER]");
-    out_Sections.AddSection("[RAYMISSSHADER]");
-    out_Sections.AddSection("[RAYANYHITSHADER]");
-    out_Sections.AddSection("[RAYCLOSESTHITSHADER]");
-    out_Sections.AddSection("[RAYINTERSECTIONSHADER]");
-    out_Sections.AddSection("[CALLABLESHADER]");
-    out_Sections.AddSection("[TEMPLATE_VARS]");
+    out_sections.AddSection("[PLATFORMS]");
+    out_sections.AddSection("[PERMUTATIONS]");
+    out_sections.AddSection("[MATERIALPARAMETER]");
+    out_sections.AddSection("[RENDERSTATE]");
+    out_sections.AddSection("[SHADER]");
+    out_sections.AddSection("[VERTEXSHADER]");
+    out_sections.AddSection("[PIXELSHADER]");
+    out_sections.AddSection("[GEOMETRYSHADER]");
+    out_sections.AddSection("[HULLSHADER]");
+    out_sections.AddSection("[DOMAINSHADER]");
+    out_sections.AddSection("[COMPUTESHADER]");
+    out_sections.AddSection("[AMPLIFICATIONSHADER]");
+    out_sections.AddSection("[MESHSHADER]");
+    out_sections.AddSection("[RAYGENSHADER]");
+    out_sections.AddSection("[RAYMISSSHADER]");
+    out_sections.AddSection("[RAYANYHITSHADER]");
+    out_sections.AddSection("[RAYCLOSESTHITSHADER]");
+    out_sections.AddSection("[RAYINTERSECTIONSHADER]");
+    out_sections.AddSection("[CALLABLESHADER]");
+    out_sections.AddSection("[TEMPLATE_VARS]");
 
-    out_Sections.Process(szContent);
+    out_sections.Process(szContent);
   }
 
   xiiUInt32 CalculateHash(const xiiArrayPtr<xiiPermutationVar>& vars)

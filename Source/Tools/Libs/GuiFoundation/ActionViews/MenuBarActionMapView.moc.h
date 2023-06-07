@@ -17,7 +17,7 @@ class XII_GUIFOUNDATION_DLL xiiQtMenuBarActionMapView : public QMenuBar
   XII_DISALLOW_COPY_AND_ASSIGN(xiiQtMenuBarActionMapView);
 
 public:
-  explicit xiiQtMenuBarActionMapView(QWidget* parent);
+  explicit xiiQtMenuBarActionMapView(QWidget* pParent);
   ~xiiQtMenuBarActionMapView();
 
   void SetActionContext(const xiiActionContext& context);

@@ -13,9 +13,9 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtLogDockWidget(QWidget* parent = 0);
+  xiiQtLogDockWidget(QWidget* pParent = 0);
 
-  void Log(const xiiFormatString& sText);
+  void Log(const xiiFormatString& text);
 
   static xiiQtLogDockWidget* s_pWidget;
 

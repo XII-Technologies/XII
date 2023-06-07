@@ -42,9 +42,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimplifiedDataProvider, 1, xiiRTTIDefaultAll
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiSimplifiedDataProvider::xiiSimplifiedDataProvider() {}
+xiiSimplifiedDataProvider::xiiSimplifiedDataProvider() = default;
 
-xiiSimplifiedDataProvider::~xiiSimplifiedDataProvider() {}
+xiiSimplifiedDataProvider::~xiiSimplifiedDataProvider() = default;
 
 void* xiiSimplifiedDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
 {

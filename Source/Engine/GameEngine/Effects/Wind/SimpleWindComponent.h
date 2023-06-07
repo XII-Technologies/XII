@@ -5,7 +5,7 @@
 #include <Core/World/World.h>
 #include <GameEngine/GameEngineDLL.h>
 
-typedef xiiComponentManagerSimple<class xiiSimpleWindComponent, xiiComponentUpdateType::WhenSimulating> xiiSimpleWindComponentManager;
+using xiiSimpleWindComponentManager = class xiiSimpleWindComponent;
 
 class XII_GAMEENGINE_DLL xiiSimpleWindComponent : public xiiComponent
 {
@@ -15,8 +15,8 @@ class XII_GAMEENGINE_DLL xiiSimpleWindComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void Initialize() override;

@@ -28,7 +28,7 @@ class XII_TEST_DLL xiiQtTestGUI : public QMainWindow, public Ui_qtTestGUI
 {
   Q_OBJECT
 public:
-  xiiQtTestGUI(xiiQtTestFramework& testFramework);
+  xiiQtTestGUI(xiiQtTestFramework& ref_testFramework);
   ~xiiQtTestGUI();
 
 private:

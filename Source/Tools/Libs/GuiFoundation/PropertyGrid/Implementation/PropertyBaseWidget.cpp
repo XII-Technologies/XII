@@ -41,14 +41,14 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 /// *** BASE ***
 xiiQtPropertyWidget::xiiQtPropertyWidget() :
-  QWidget(nullptr), m_pGrid(nullptr), m_pProp(nullptr)
+  QWidget(nullptr)
 {
   m_bUndead    = false;
   m_bIsDefault = true;
   setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
 }
 
-xiiQtPropertyWidget::~xiiQtPropertyWidget() {}
+xiiQtPropertyWidget::~xiiQtPropertyWidget() = default;
 
 void xiiQtPropertyWidget::Init(
   xiiQtPropertyGridWidget*   pGrid,
@@ -73,10 +73,10 @@ void xiiQtPropertyWidget::SetSelection(const xiiHybridArray<xiiPropertySelection
   m_Items = items;
 }
 
-const char* xiiQtPropertyWidget::GetLabel(xiiStringBuilder& tmp) const
+const char* xiiQtPropertyWidget::GetLabel(xiiStringBuilder& ref_sTmp) const
 {
-  tmp.Set(m_pType->GetTypeName(), "::", m_pProp->GetPropertyName());
-  return tmp;
+  ref_sTmp.Set(m_pType->GetTypeName(), "::", m_pProp->GetPropertyName());
+  return ref_sTmp;
 }
 
 void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
@@ -325,7 +325,7 @@ const xiiRTTI* xiiQtPropertyWidget::GetCommonBaseType(const xiiHybridArray<xiiPr
   return pSubtype;
 }
 
-QColor xiiQtPropertyWidget::SetPaletteBackgroundColor(xiiColorGammaUB inputColor, QPalette& palette)
+QColor xiiQtPropertyWidget::SetPaletteBackgroundColor(xiiColorGammaUB inputColor, QPalette& ref_palette)
 {
   QColor qColor = qApp->palette().color(QPalette::Window);
   if (inputColor.a != 0)
@@ -338,14 +338,14 @@ QColor xiiQtPropertyWidget::SetPaletteBackgroundColor(xiiColorGammaUB inputColor
     qColor                = xiiToQtColor(blendedColor);
   }
 
-  palette.setBrush(QPalette::Window, QBrush(qColor, Qt::SolidPattern));
+  ref_palette.setBrush(QPalette::Window, QBrush(qColor, Qt::SolidPattern));
   return qColor;
 }
 
 bool xiiQtPropertyWidget::GetCommonVariantSubType(
   const xiiHybridArray<xiiPropertySelection, 8>& items,
   const xiiAbstractProperty*                     pProperty,
-  xiiVariantType::Enum&                          out_Type)
+  xiiVariantType::Enum&                          out_type)
 {
   bool bFirst = true;
   // check if we have multiple values
@@ -356,15 +356,15 @@ bool xiiQtPropertyWidget::GetCommonVariantSubType(
       bFirst = false;
       xiiVariant value;
       m_pObjectAccessor->GetValue(item.m_pObject, pProperty, value, item.m_Index);
-      out_Type = value.GetType();
+      out_type = value.GetType();
     }
     else
     {
       xiiVariant valueNext;
       m_pObjectAccessor->GetValue(item.m_pObject, pProperty, valueNext, item.m_Index);
-      if (valueNext.GetType() != out_Type)
+      if (valueNext.GetType() != out_type)
       {
-        out_Type = xiiVariantType::Invalid;
+        out_type = xiiVariantType::Invalid;
         return false;
       }
     }
@@ -752,7 +752,7 @@ void xiiQtPropertyPointerWidget::StructureEventHandler(const xiiDocumentObjectSt
 /// *** xiiQtEmbeddedClassPropertyWidget ***
 
 xiiQtEmbeddedClassPropertyWidget::xiiQtEmbeddedClassPropertyWidget() :
-  xiiQtPropertyWidget(), m_bTemporaryCommand(false), m_pResolvedType(nullptr)
+  xiiQtPropertyWidget()
 {
 }
 
@@ -886,7 +886,7 @@ xiiQtPropertyTypeWidget::xiiQtPropertyTypeWidget(bool bAddCollapsibleGroup) :
   m_pTypeWidget = nullptr;
 }
 
-xiiQtPropertyTypeWidget::~xiiQtPropertyTypeWidget() {}
+xiiQtPropertyTypeWidget::~xiiQtPropertyTypeWidget() = default;
 
 void xiiQtPropertyTypeWidget::OnInit()
 {
@@ -943,7 +943,7 @@ void xiiQtPropertyTypeWidget::SetSelection(const xiiHybridArray<xiiPropertySelec
 }
 
 
-void xiiQtPropertyTypeWidget::SetIsDefault(bool isDefault)
+void xiiQtPropertyTypeWidget::SetIsDefault(bool bIsDefault)
 {
   // The default state set by the parent object / container only refers to the element's correct position in the container but the entire state of the object. As recursively checking an entire object if is has any non-default values is quite costly, we just pretend the object is never in its default state the the user can click revert to default on any object at any time.
   m_bIsDefault = false;
@@ -960,7 +960,7 @@ void xiiQtPropertyTypeWidget::DoPrepareToDie()
 /// *** xiiQtPropertyContainerWidget ***
 
 xiiQtPropertyContainerWidget::xiiQtPropertyContainerWidget() :
-  xiiQtPropertyWidget(), m_pAddButton(nullptr)
+  xiiQtPropertyWidget()
 {
   m_Pal = palette();
   setAutoFillBackground(true);
@@ -998,7 +998,7 @@ void xiiQtPropertyContainerWidget::SetSelection(const xiiHybridArray<xiiProperty
   }
 }
 
-void xiiQtPropertyContainerWidget::SetIsDefault(bool isDefault)
+void xiiQtPropertyContainerWidget::SetIsDefault(bool bIsDefault)
 {
   // This is called from the type widget which we ignore as we have a tighter scoped default value provider for containers.
 }
@@ -1159,14 +1159,14 @@ void xiiQtPropertyContainerWidget::OnElementButtonClicked()
   }
 }
 
-void xiiQtPropertyContainerWidget::OnDragStarted(QMimeData& mimeData)
+void xiiQtPropertyContainerWidget::OnDragStarted(QMimeData& ref_mimeData)
 {
   xiiQtGroupBoxBase* pGroup = qobject_cast<xiiQtGroupBoxBase*>(sender());
   Element*           pDragElement =
     std::find_if(begin(m_Elements), end(m_Elements), [pGroup](const Element& elem) -> bool { return elem.m_pSubGroup == pGroup; });
   if (pDragElement)
   {
-    mimeData.setData("application/x-groupBoxDragProperty", QByteArray());
+    ref_mimeData.setData("application/x-groupBoxDragProperty", QByteArray());
   }
 }
 
@@ -1513,7 +1513,7 @@ xiiQtPropertyStandardTypeContainerWidget::xiiQtPropertyStandardTypeContainerWidg
 {
 }
 
-xiiQtPropertyStandardTypeContainerWidget::~xiiQtPropertyStandardTypeContainerWidget() {}
+xiiQtPropertyStandardTypeContainerWidget::~xiiQtPropertyStandardTypeContainerWidget() = default;
 
 xiiQtGroupBoxBase* xiiQtPropertyStandardTypeContainerWidget::CreateElement(QWidget* pParent)
 {
@@ -1567,8 +1567,8 @@ void xiiQtPropertyStandardTypeContainerWidget::UpdateElement(xiiUInt32 index)
 
 /// *** xiiQtPropertyTypeContainerWidget ***
 
-xiiQtPropertyTypeContainerWidget::xiiQtPropertyTypeContainerWidget() :
-  m_bNeedsUpdate(false)
+xiiQtPropertyTypeContainerWidget::xiiQtPropertyTypeContainerWidget()
+
 {
 }
 
@@ -1720,18 +1720,18 @@ xiiQtVariantPropertyWidget::xiiQtVariantPropertyWidget()
 }
 
 
-xiiQtVariantPropertyWidget::~xiiQtVariantPropertyWidget() {}
+xiiQtVariantPropertyWidget::~xiiQtVariantPropertyWidget() = default;
 
 void xiiQtVariantPropertyWidget::SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items)
 {
   xiiQtStandardPropertyWidget::SetSelection(items);
 }
 
-void xiiQtVariantPropertyWidget::ExtendContextMenu(QMenu& menu)
+void xiiQtVariantPropertyWidget::ExtendContextMenu(QMenu& ref_menu)
 {
-  xiiQtStandardPropertyWidget::ExtendContextMenu(menu);
+  xiiQtStandardPropertyWidget::ExtendContextMenu(ref_menu);
 
-  QMenu* ctm = menu.addMenu(QStringLiteral("Change Type"));
+  QMenu* ctm = ref_menu.addMenu(QStringLiteral("Change Type"));
   for (int i = xiiVariantType::FirstStandardType + 1; i < xiiVariantType::LastStandardType; ++i)
   {
     if (i == xiiVariantType::StringView || i == xiiVariantType::DataBuffer)

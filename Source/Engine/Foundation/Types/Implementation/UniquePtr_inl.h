@@ -1,8 +1,6 @@
 
 template <typename T>
-XII_ALWAYS_INLINE xiiUniquePtr<T>::xiiUniquePtr()
-{
-}
+XII_ALWAYS_INLINE xiiUniquePtr<T>::xiiUniquePtr() = default;
 
 template <typename T>
 template <typename U>

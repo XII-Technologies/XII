@@ -87,9 +87,9 @@ void xiiExpressionParser::UnregisterFunction(const xiiExpression::FunctionDesc& 
   }
 }
 
-xiiResult xiiExpressionParser::Parse(xiiStringView code, xiiArrayPtr<xiiExpression::StreamDesc> inputs, xiiArrayPtr<xiiExpression::StreamDesc> outputs, const Options& options, xiiExpressionAST& out_ast)
+xiiResult xiiExpressionParser::Parse(xiiStringView sCode, xiiArrayPtr<xiiExpression::StreamDesc> inputs, xiiArrayPtr<xiiExpression::StreamDesc> outputs, const Options& options, xiiExpressionAST& out_ast)
 {
-  if (code.IsEmpty())
+  if (sCode.IsEmpty())
     return XII_FAILURE;
 
   m_Options = options;
@@ -98,7 +98,7 @@ xiiResult xiiExpressionParser::Parse(xiiStringView code, xiiArrayPtr<xiiExpressi
   SetupInAndOutputs(inputs, outputs);
 
   xiiTokenizer tokenizer;
-  tokenizer.Tokenize(xiiArrayPtr<const xiiUInt8>((const xiiUInt8*)code.GetStartPointer(), code.GetElementCount()), xiiLog::GetThreadLocalLogSystem());
+  tokenizer.Tokenize(xiiArrayPtr<const xiiUInt8>((const xiiUInt8*)sCode.GetStartPointer(), sCode.GetElementCount()), xiiLog::GetThreadLocalLogSystem());
 
   xiiUInt32 readTokens = 0;
   while (tokenizer.GetNextLine(readTokens, m_TokenStream).Succeeded())

@@ -10,7 +10,7 @@ class XII_GUIFOUNDATION_DLL xiiQtNodeView : public QGraphicsView
 {
   Q_OBJECT
 public:
-  explicit xiiQtNodeView(QWidget* parent = nullptr);
+  explicit xiiQtNodeView(QWidget* pParent = nullptr);
   ~xiiQtNodeView();
 
   void            SetScene(xiiQtNodeScene* pScene);
@@ -28,9 +28,9 @@ private:
   void UpdateView();
 
 private:
-  xiiQtNodeScene* m_pScene;
-  bool            m_bPanning;
-  xiiInt32        m_iPanCounter;
+  xiiQtNodeScene* m_pScene      = nullptr;
+  bool            m_bPanning    = false;
+  xiiInt32        m_iPanCounter = 0;
 
   QPointF m_ViewPos;
   QPointF m_ViewScale;

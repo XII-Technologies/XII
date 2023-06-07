@@ -14,7 +14,7 @@
 // xiiReflectionSerializer public static functions
 ////////////////////////////////////////////////////////////////////////
 
-void xiiReflectionSerializer::WriteObjectToDDL(xiiStreamWriter& stream, const xiiRTTI* pRtti, const void* pObject, bool bCompactMmode /*= true*/, xiiOpenDdlWriter::TypeStringMode typeMode /*= xiiOpenDdlWriter::TypeStringMode::Shortest*/)
+void xiiReflectionSerializer::WriteObjectToDDL(xiiStreamWriter& ref_stream, const xiiRTTI* pRtti, const void* pObject, bool bCompactMmode /*= true*/, xiiOpenDdlWriter::TypeStringMode typeMode /*= xiiOpenDdlWriter::TypeStringMode::Shortest*/)
 {
   xiiAbstractObjectGraph  graph;
   xiiRttiConverterContext context;
@@ -26,10 +26,10 @@ void xiiReflectionSerializer::WriteObjectToDDL(xiiStreamWriter& stream, const xi
   context.RegisterObject(guid, pRtti, const_cast<void*>(pObject));
   conv.AddObjectToGraph(pRtti, const_cast<void*>(pObject), "root");
 
-  xiiAbstractGraphDdlSerializer::Write(stream, &graph, nullptr, bCompactMmode, typeMode);
+  xiiAbstractGraphDdlSerializer::Write(ref_stream, &graph, nullptr, bCompactMmode, typeMode);
 }
 
-void xiiReflectionSerializer::WriteObjectToDDL(xiiOpenDdlWriter& ddl, const xiiRTTI* pRtti, const void* pObject, xiiUuid guid /*= xiiUuid()*/)
+void xiiReflectionSerializer::WriteObjectToDDL(xiiOpenDdlWriter& ref_ddl, const xiiRTTI* pRtti, const void* pObject, xiiUuid guid /*= xiiUuid()*/)
 {
   xiiAbstractObjectGraph  graph;
   xiiRttiConverterContext context;
@@ -41,10 +41,10 @@ void xiiReflectionSerializer::WriteObjectToDDL(xiiOpenDdlWriter& ddl, const xiiR
   context.RegisterObject(guid, pRtti, const_cast<void*>(pObject));
   conv.AddObjectToGraph(pRtti, const_cast<void*>(pObject), "root");
 
-  xiiAbstractGraphDdlSerializer::Write(ddl, &graph, nullptr);
+  xiiAbstractGraphDdlSerializer::Write(ref_ddl, &graph, nullptr);
 }
 
-void xiiReflectionSerializer::WriteObjectToBinary(xiiStreamWriter& stream, const xiiRTTI* pRtti, const void* pObject)
+void xiiReflectionSerializer::WriteObjectToBinary(xiiStreamWriter& ref_stream, const xiiRTTI* pRtti, const void* pObject)
 {
   xiiAbstractObjectGraph  graph;
   xiiRttiConverterContext context;
@@ -56,22 +56,22 @@ void xiiReflectionSerializer::WriteObjectToBinary(xiiStreamWriter& stream, const
   context.RegisterObject(guid, pRtti, const_cast<void*>(pObject));
   conv.AddObjectToGraph(pRtti, const_cast<void*>(pObject), "root");
 
-  xiiAbstractGraphBinarySerializer::Write(stream, &graph);
+  xiiAbstractGraphBinarySerializer::Write(ref_stream, &graph);
 }
 
-void* xiiReflectionSerializer::ReadObjectFromDDL(xiiStreamReader& stream, const xiiRTTI*& pRtti)
+void* xiiReflectionSerializer::ReadObjectFromDDL(xiiStreamReader& ref_stream, const xiiRTTI*& ref_pRtti)
 {
   xiiOpenDdlReader reader;
-  if (reader.ParseDocument(stream, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
+  if (reader.ParseDocument(ref_stream, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
   {
     xiiLog::Error("Failed to parse DDL graph");
     return nullptr;
   }
 
-  return ReadObjectFromDDL(reader.GetRootElement(), pRtti);
+  return ReadObjectFromDDL(reader.GetRootElement(), ref_pRtti);
 }
 
-void* xiiReflectionSerializer::ReadObjectFromDDL(const xiiOpenDdlReaderElement* pRootElement, const xiiRTTI*& pRtti)
+void* xiiReflectionSerializer::ReadObjectFromDDL(const xiiOpenDdlReaderElement* pRootElement, const xiiRTTI*& ref_pRtti)
 {
   xiiAbstractObjectGraph  graph;
   xiiRttiConverterContext context;
@@ -83,42 +83,42 @@ void* xiiReflectionSerializer::ReadObjectFromDDL(const xiiOpenDdlReaderElement* 
 
   XII_ASSERT_DEV(pRootNode != nullptr, "invalid document");
 
-  pRtti = xiiRTTI::FindTypeByName(pRootNode->GetType());
+  ref_pRtti = xiiRTTI::FindTypeByName(pRootNode->GetType());
 
-  void* pTarget = context.CreateObject(pRootNode->GetGuid(), pRtti);
+  void* pTarget = context.CreateObject(pRootNode->GetGuid(), ref_pRtti);
 
-  convRead.ApplyPropertiesToObject(pRootNode, pRtti, pTarget);
+  convRead.ApplyPropertiesToObject(pRootNode, ref_pRtti, pTarget);
 
   return pTarget;
 }
 
-void* xiiReflectionSerializer::ReadObjectFromBinary(xiiStreamReader& stream, const xiiRTTI*& pRtti)
+void* xiiReflectionSerializer::ReadObjectFromBinary(xiiStreamReader& ref_stream, const xiiRTTI*& ref_pRtti)
 {
   xiiAbstractObjectGraph  graph;
   xiiRttiConverterContext context;
 
-  xiiAbstractGraphBinarySerializer::Read(stream, &graph);
+  xiiAbstractGraphBinarySerializer::Read(ref_stream, &graph);
 
   xiiRttiConverterReader convRead(&graph, &context);
   auto*                  pRootNode = graph.GetNodeByName("root");
 
   XII_ASSERT_DEV(pRootNode != nullptr, "invalid document");
 
-  pRtti = xiiRTTI::FindTypeByName(pRootNode->GetType());
+  ref_pRtti = xiiRTTI::FindTypeByName(pRootNode->GetType());
 
-  void* pTarget = context.CreateObject(pRootNode->GetGuid(), pRtti);
+  void* pTarget = context.CreateObject(pRootNode->GetGuid(), ref_pRtti);
 
-  convRead.ApplyPropertiesToObject(pRootNode, pRtti, pTarget);
+  convRead.ApplyPropertiesToObject(pRootNode, ref_pRtti, pTarget);
 
   return pTarget;
 }
 
-void xiiReflectionSerializer::ReadObjectPropertiesFromDDL(xiiStreamReader& stream, const xiiRTTI& rtti, void* pObject)
+void xiiReflectionSerializer::ReadObjectPropertiesFromDDL(xiiStreamReader& ref_stream, const xiiRTTI& rtti, void* pObject)
 {
   xiiAbstractObjectGraph  graph;
   xiiRttiConverterContext context;
 
-  xiiAbstractGraphDdlSerializer::Read(stream, &graph).IgnoreResult();
+  xiiAbstractGraphDdlSerializer::Read(ref_stream, &graph).IgnoreResult();
 
   xiiRttiConverterReader convRead(&graph, &context);
   auto*                  pRootNode = graph.GetNodeByName("root");
@@ -131,12 +131,12 @@ void xiiReflectionSerializer::ReadObjectPropertiesFromDDL(xiiStreamReader& strea
   convRead.ApplyPropertiesToObject(pRootNode, &rtti, pObject);
 }
 
-void xiiReflectionSerializer::ReadObjectPropertiesFromBinary(xiiStreamReader& stream, const xiiRTTI& rtti, void* pObject)
+void xiiReflectionSerializer::ReadObjectPropertiesFromBinary(xiiStreamReader& ref_stream, const xiiRTTI& rtti, void* pObject)
 {
   xiiAbstractObjectGraph  graph;
   xiiRttiConverterContext context;
 
-  xiiAbstractGraphBinarySerializer::Read(stream, &graph);
+  xiiAbstractGraphBinarySerializer::Read(ref_stream, &graph);
 
   xiiRttiConverterReader convRead(&graph, &context);
   auto*                  pRootNode = graph.GetNodeByName("root");

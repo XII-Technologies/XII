@@ -23,25 +23,25 @@ class xiiFixedPoint
 {
 public:
   /// \brief Default constructor does not do any initialization.
-  XII_ALWAYS_INLINE xiiFixedPoint() {} // [tested]
+  XII_ALWAYS_INLINE xiiFixedPoint() = default; // [tested]
 
   /// \brief Construct from an integer.
-  /* implicit */ xiiFixedPoint(xiiInt32 IntVal) { *this = IntVal; } // [tested]
+  /* implicit */ xiiFixedPoint(xiiInt32 iIntVal) { *this = iIntVal; } // [tested]
 
   /// \brief Construct from a float.
-  /* implicit */ xiiFixedPoint(float FloatVal) { *this = FloatVal; } // [tested]
+  /* implicit */ xiiFixedPoint(float fVal) { *this = fVal; } // [tested]
 
   /// \brief Construct from a double.
-  /* implicit */ xiiFixedPoint(double FloatVal) { *this = FloatVal; } // [tested]
+  /* implicit */ xiiFixedPoint(double fVal) { *this = fVal; } // [tested]
 
   /// \brief Assignment from an integer.
-  const xiiFixedPoint<DecimalBits>& operator=(xiiInt32 IntVal); // [tested]
+  const xiiFixedPoint<DecimalBits>& operator=(xiiInt32 iVal); // [tested]
 
   /// \brief Assignment from a float.
-  const xiiFixedPoint<DecimalBits>& operator=(float FloatVal); // [tested]
+  const xiiFixedPoint<DecimalBits>& operator=(float fVal); // [tested]
 
   /// \brief Assignment from a double.
-  const xiiFixedPoint<DecimalBits>& operator=(double FloatVal); // [tested]
+  const xiiFixedPoint<DecimalBits>& operator=(double fVal); // [tested]
 
   /// \brief Implicit conversion to int (the fractional part is dropped).
   xiiInt32 ToInt() const; // [tested]
@@ -95,7 +95,7 @@ public:
   xiiInt32 GetRawValue() const { return m_iValue; }
 
   /// \brief Sets the underlying integer value. Mostly useful for serialization (or tests).
-  void SetRawValue(xiiInt32 val) { m_iValue = val; }
+  void SetRawValue(xiiInt32 iVal) { m_iValue = iVal; }
 
 private:
   xiiInt32 m_iValue;

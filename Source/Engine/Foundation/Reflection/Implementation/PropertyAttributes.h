@@ -59,7 +59,7 @@ public:
   };
 
   xiiInDevelopmentAttribute() = default;
-  xiiInDevelopmentAttribute(xiiInt32 phase) { m_Phase = phase; }
+  xiiInDevelopmentAttribute(xiiInt32 iPhase) { m_Phase = iPhase; }
 
   const char* GetString() const;
 
@@ -695,7 +695,7 @@ class XII_FOUNDATION_DLL xiiBoxVisualizerAttribute : public xiiVisualizerAttribu
 
 public:
   xiiBoxVisualizerAttribute();
-  xiiBoxVisualizerAttribute(const char* szSizeProperty, float fSizeScale = 1.0f, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 offsetOrScale = xiiVec3::ZeroVector(), const char* szOffsetProperty = nullptr, const char* szRotationProperty = nullptr);
+  xiiBoxVisualizerAttribute(const char* szSizeProperty, float fSizeScale = 1.0f, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), const char* szOffsetProperty = nullptr, const char* szRotationProperty = nullptr);
 
   const xiiUntrackedString& GetSizeProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetColorProperty() const { return m_sProperty2; }
@@ -715,7 +715,7 @@ class XII_FOUNDATION_DLL xiiSphereVisualizerAttribute : public xiiVisualizerAttr
 
 public:
   xiiSphereVisualizerAttribute();
-  xiiSphereVisualizerAttribute(const char* szRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 offsetOrScale = xiiVec3::ZeroVector(), const char* szOffsetProperty = nullptr);
+  xiiSphereVisualizerAttribute(const char* szRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), const char* szOffsetProperty = nullptr);
 
   const xiiUntrackedString& GetRadiusProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetColorProperty() const { return m_sProperty2; }
@@ -751,8 +751,8 @@ class XII_FOUNDATION_DLL xiiCylinderVisualizerAttribute : public xiiVisualizerAt
 
 public:
   xiiCylinderVisualizerAttribute();
-  xiiCylinderVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 offsetOrScale = xiiVec3::ZeroVector(), const char* szOffsetProperty = nullptr);
-  xiiCylinderVisualizerAttribute(const char* szAxisProperty, const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 offsetOrScale = xiiVec3::ZeroVector(), const char* szOffsetProperty = nullptr);
+  xiiCylinderVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), const char* szOffsetProperty = nullptr);
+  xiiCylinderVisualizerAttribute(const char* szAxisProperty, const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), const char* szOffsetProperty = nullptr);
 
   const xiiUntrackedString& GetAxisProperty() const { return m_sProperty5; }
   const xiiUntrackedString& GetHeightProperty() const { return m_sProperty1; }
@@ -916,11 +916,11 @@ class XII_FOUNDATION_DLL xiiScriptableFunctionAttribute : public xiiPropertyAttr
     Inout
   };
 
-  xiiScriptableFunctionAttribute(ArgType ArgType1 = In, const char* szArg1 = nullptr, ArgType ArgType2 = In, const char* szArg2 = nullptr, ArgType ArgType3 = In, const char* szArg3 = nullptr, ArgType ArgType4 = In, const char* szArg4 = nullptr, ArgType ArgType5 = In, const char* szArg5 = nullptr, ArgType ArgType6 = In, const char* szArg6 = nullptr);
+  xiiScriptableFunctionAttribute(ArgType argType1 = In, const char* szArg1 = nullptr, ArgType argType2 = In, const char* szArg2 = nullptr, ArgType argType3 = In, const char* szArg3 = nullptr, ArgType argType4 = In, const char* szArg4 = nullptr, ArgType argType5 = In, const char* szArg5 = nullptr, ArgType argType6 = In, const char* szArg6 = nullptr);
 
-  const char* GetArgumentName(xiiUInt32 index) const;
+  const char* GetArgumentName(xiiUInt32 uiIndex) const;
 
-  ArgType GetArgumentType(xiiUInt32 index) const;
+  ArgType GetArgumentType(xiiUInt32 uiIndex) const;
 
   xiiUntrackedString m_sArg1;
   xiiUntrackedString m_sArg2;
@@ -943,8 +943,8 @@ class XII_FOUNDATION_DLL xiiVisScriptMappingAttribute : public xiiPropertyAttrib
   XII_ADD_DYNAMIC_REFLECTION(xiiVisScriptMappingAttribute, xiiPropertyAttribute);
 
   xiiVisScriptMappingAttribute() = default;
-  xiiVisScriptMappingAttribute(xiiInt32 mapping) :
-    m_iMapping(mapping)
+  xiiVisScriptMappingAttribute(xiiInt32 iMapping) :
+    m_iMapping(iMapping)
   {
   }
 

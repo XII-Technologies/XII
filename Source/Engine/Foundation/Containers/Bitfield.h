@@ -136,17 +136,17 @@ public:
   /// \brief Modifies \a this to only contain the bits that were set in \a this and \a rhs.
   XII_ALWAYS_INLINE void operator&=(const xiiStaticBitfield<T>& rhs) { m_Storage &= rhs.m_Storage; }
 
-  xiiResult Serialize(xiiStreamWriter& writer) const
+  xiiResult Serialize(xiiStreamWriter& ref_writer) const
   {
-    writer.WriteVersion(s_Version);
-    writer << m_Storage;
+    ref_writer.WriteVersion(s_Version);
+    ref_writer << m_Storage;
     return XII_SUCCESS;
   }
 
-  xiiResult Deserialize(xiiStreamReader& reader)
+  xiiResult Deserialize(xiiStreamReader& ref_reader)
   {
-    /*auto version =*/reader.ReadVersion(s_Version);
-    reader >> m_Storage;
+    /*auto version =*/ref_reader.ReadVersion(s_Version);
+    ref_reader >> m_Storage;
     return XII_SUCCESS;
   }
 

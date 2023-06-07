@@ -51,11 +51,11 @@ namespace
     XII_DECLARE_COMPONENT_TYPE(TestComponent, xiiComponent, TestComponentManager);
 
   public:
-    TestComponent() :
-      m_iSomeData(1)
+    TestComponent()
+
     {
     }
-    ~TestComponent() {}
+    ~TestComponent() = default;
 
     virtual void Initialize() override { ++s_iInitCounter; }
 
@@ -78,7 +78,7 @@ namespace
 
     void SpawnOther();
 
-    xiiInt32 m_iSomeData;
+    xiiInt32 m_iSomeData = 1;
 
     static xiiInt32 s_iInitCounter;
     static xiiInt32 s_iActivateCounter;
@@ -126,7 +126,7 @@ namespace
     }
   }
 
-  typedef xiiComponentManager<class TestComponent2, xiiBlockStorageType::FreeList> TestComponent2Manager;
+  using TestComponent2Manager = class TestComponent2;
 
   class TestComponent2 : public xiiComponent
   {

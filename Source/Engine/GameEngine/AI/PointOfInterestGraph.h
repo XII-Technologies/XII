@@ -8,11 +8,11 @@ template <typename POINTTYPE>
 class xiiPointOfInterestGraph
 {
 public:
-  void Initialize(const xiiVec3& center, const xiiVec3& halfExtents, float cellSize = 1.0f);
+  void Initialize(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, float fCellSize = 1.0f);
 
-  POINTTYPE& AddPoint(const xiiVec3& position);
+  POINTTYPE& AddPoint(const xiiVec3& vPosition);
 
-  void FindPointsOfInterest(const xiiVec3& position, float radius, xiiDynamicArray<xiiUInt32>& out_Points) const;
+  void FindPointsOfInterest(const xiiVec3& vPosition, float fRadius, xiiDynamicArray<xiiUInt32>& out_points) const;
 
   const xiiDeque<POINTTYPE>& GetPoints() const { return m_Points; }
   xiiDeque<POINTTYPE>&       AccessPoints() { return m_Points; }

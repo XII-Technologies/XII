@@ -13,7 +13,7 @@ public:
   ~xiiSkinnedMeshRenderer();
 
   // xiiRenderer implementation
-  virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const override;
+  virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const override;
 
 protected:
   virtual void SetAdditionalData(const xiiRenderViewContext& renderViewContext, const xiiMeshRenderData* pRenderData) const override;

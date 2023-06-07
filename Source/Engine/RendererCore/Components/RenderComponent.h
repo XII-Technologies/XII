@@ -28,7 +28,7 @@ public:
   /// \brief Called by xiiRenderComponent::OnUpdateLocalBounds().
   /// If XII_SUCCESS is returned, \a bounds and \a bAlwaysVisible will be integrated into the xiiMsgUpdateLocalBounds result,
   /// otherwise the out values are simply ignored.
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg) = 0;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) = 0;
 
   void TriggerLocalBoundsUpdate();
 

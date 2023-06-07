@@ -19,12 +19,12 @@ public:
   virtual void OnDeactivated() override;
 
   const xiiVec3& GetExtents() const { return m_vExtents; }
-  void           SetExtents(const xiiVec3& extents);
+  void           SetExtents(const xiiVec3& vExtents);
 
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
-  void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) const;
+  void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg) const;
 
 private:
   xiiVec3 m_vExtents = xiiVec3(10.0f);

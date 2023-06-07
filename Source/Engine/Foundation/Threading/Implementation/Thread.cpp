@@ -6,7 +6,7 @@
 xiiEvent<const xiiThreadEvent&, xiiMutex> xiiThread::s_ThreadEvents;
 
 xiiThread::xiiThread(const char* szName /*= "xiiThread"*/, xiiUInt32 uiStackSize /*= 128 * 1024*/) :
-  xiiOSThread(xiiThreadClassEntryPoint, this, szName, uiStackSize), m_ThreadStatus(Created), m_sName(szName)
+  xiiOSThread(xiiThreadClassEntryPoint, this, szName, uiStackSize), m_sName(szName)
 {
   xiiThreadEvent e;
   e.m_pThread = this;

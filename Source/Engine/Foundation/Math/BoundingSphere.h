@@ -134,12 +134,10 @@ public:
   /// \brief Computes the intersection of a ray with this sphere. Returns true if there was an intersection. May optionally return the intersection
   /// time and position. The ray's direction must be normalized. The function will also return true, if the ray already starts inside the sphere, but
   /// it will still compute the intersection with the surface of the sphere.
-  bool GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_fIntersection = nullptr,
-                          xiiVec3Template<Type>* out_vIntersection = nullptr) const; // [tested]
+  bool GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_pIntersectionDistance = nullptr,xiiVec3Template<Type>* out_pIntersection = nullptr) const; // [tested]
 
   /// \brief Returns true if the line segment intersects the sphere.
-  bool GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos, Type* out_fHitFraction = nullptr, xiiVec3Template<Type>* out_vIntersection = nullptr) const; // [tested]
-
+  bool GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos, Type* out_pHitFraction = nullptr, xiiVec3Template<Type>* out_pIntersection = nullptr) const; // [tested]
 
 public:
   xiiVec3Template<Type> m_vCenter;

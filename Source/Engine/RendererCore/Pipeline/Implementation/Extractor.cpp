@@ -257,12 +257,12 @@ void xiiExtractor::ExtractRenderData(const xiiView& view, const xiiGameObject* p
   }
 }
 
-void xiiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& extractedRenderData)
+void xiiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
 {
 }
 
 void xiiExtractor::PostSortAndBatch(
-  const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& extractedRenderData)
+  const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
 {
 }
 
@@ -279,7 +279,7 @@ xiiVisibleObjectsExtractor::xiiVisibleObjectsExtractor(const char* szName)
 xiiVisibleObjectsExtractor::~xiiVisibleObjectsExtractor() = default;
 
 void xiiVisibleObjectsExtractor::Extract(
-  const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& extractedRenderData)
+  const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
 {
   xiiMsgExtractRenderData msg;
   msg.m_pView = &view;
@@ -295,7 +295,7 @@ void xiiVisibleObjectsExtractor::Extract(
 
   for (auto pObject : visibleObjects)
   {
-    ExtractRenderData(view, pObject, msg, extractedRenderData);
+    ExtractRenderData(view, pObject, msg, ref_extractedRenderData);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     if (cvar_SpatialVisBounds || cvar_SpatialVisLocalBBox || cvar_SpatialVisData)
@@ -344,7 +344,7 @@ xiiSelectedObjectsExtractorBase::xiiSelectedObjectsExtractorBase(const char* szN
 xiiSelectedObjectsExtractorBase::~xiiSelectedObjectsExtractorBase() = default;
 
 void xiiSelectedObjectsExtractorBase::Extract(
-  const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& extractedRenderData)
+  const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
 {
   const xiiDeque<xiiGameObjectHandle>* pSelection = GetSelection();
   if (pSelection == nullptr)
@@ -362,7 +362,7 @@ void xiiSelectedObjectsExtractorBase::Extract(
     if (!view.GetWorld()->TryGetObject(hObj, pObject))
       continue;
 
-    ExtractRenderData(view, pObject, msg, extractedRenderData);
+    ExtractRenderData(view, pObject, msg, ref_extractedRenderData);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     if (cvar_SpatialVisBounds || cvar_SpatialVisLocalBBox || cvar_SpatialVisData)
