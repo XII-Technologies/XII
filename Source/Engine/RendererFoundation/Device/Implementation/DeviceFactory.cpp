@@ -2,6 +2,8 @@
 
 #include <RendererFoundation/Device/DeviceFactory.h>
 
+#include <Foundation/Logging/Log.h>
+
 struct CreatorFuncInfo
 {
   xiiGALDeviceFactory::CreatorFunc m_Func;
