@@ -5,7 +5,7 @@
 
 namespace
 {
-  using TestComponentBaseManager = class TestComponentBase;
+  using TestComponentBaseManager = xiiComponentManagerSimple<class TestComponentBase, xiiComponentUpdateType::Always>;
 
   class TestComponentBase : public xiiComponent
   {
@@ -24,7 +24,7 @@ namespace
 
   //////////////////////////////////////////////////////////////////////////
 
-  using TestComponentDerived1Manager = class TestComponentDerived1;
+  using TestComponentDerived1Manager = xiiComponentManagerSimple<class TestComponentDerived1, xiiComponentUpdateType::Always>;
 
   class TestComponentDerived1 : public TestComponentBase
   {

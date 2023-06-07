@@ -126,7 +126,7 @@ namespace
     }
   }
 
-  using TestComponent2Manager = class TestComponent2;
+  using TestComponent2Manager = xiiComponentManager<class TestComponent2, xiiBlockStorageType::FreeList>;
 
   class TestComponent2 : public xiiComponent
   {

@@ -13,7 +13,7 @@ namespace
 {
   static xiiSpatialData::Category s_SpecialTestCategory = xiiSpatialData::RegisterCategory("SpecialTestCategory", xiiSpatialData::Flags::None);
 
-  using TestBoundsComponentManager = class TestBoundsComponent;
+  using TestBoundsComponentManager = xiiComponentManager<class TestBoundsComponent, xiiBlockStorageType::Compact>;
 
   class TestBoundsComponent : public xiiComponent
   {
