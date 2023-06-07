@@ -113,7 +113,7 @@ void xiiEventBase<EventData, MutexType, EventType>::RemoveEventHandler(xiiEventS
     return;
 
   const xiiEventSubscriptionID subId = ref_id;
-  ref_id                                 = 0;
+  ref_id                             = 0;
 
   XII_LOCK(m_Mutex);
 

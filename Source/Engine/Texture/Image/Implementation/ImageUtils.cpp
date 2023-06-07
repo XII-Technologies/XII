@@ -534,8 +534,8 @@ xiiResult xiiImageUtils::ExtractLowerMipChain(const xiiImageView& srcImg, xiiIma
   dstImgHeader.SetNumArrayIndices(srcImgHeader.GetNumArrayIndices());
   dstImgHeader.SetNumMipLevels(uiNumMips);
 
-  const xiiUInt8*  pDataBegin = srcImg.GetPixelPointer<xiiUInt8>(startMipLevel);
-  const xiiUInt8*  pDataEnd   = srcImg.GetByteBlobPtr().GetEndPtr();
+  const xiiUInt8* pDataBegin = srcImg.GetPixelPointer<xiiUInt8>(startMipLevel);
+  const xiiUInt8* pDataEnd   = srcImg.GetByteBlobPtr().GetEndPtr();
   const ptrdiff_t dataSize   = reinterpret_cast<ptrdiff_t>(pDataEnd) - reinterpret_cast<ptrdiff_t>(pDataBegin);
 
   const xiiConstByteBlobPtr lowResData(pDataBegin, static_cast<xiiUInt64>(dataSize));
@@ -612,7 +612,7 @@ inline static void FilterLine(
   xiiSimdVec4f* __restrict pTargetBegin,
   xiiUInt32                    uiStride,
   const xiiImageFilterWeights& weights,
-  xiiArrayPtr<const xiiInt32>   firstSampleIndices,
+  xiiArrayPtr<const xiiInt32>  firstSampleIndices,
   xiiImageAddressMode::Enum    addressMode,
   const xiiSimdVec4f&          vBorderColor)
 {
@@ -623,8 +623,8 @@ inline static void FilterLine(
   // we can fetch all numWeights inputs without taking addressMode into consideration,
   // which makes the inner loop a lot faster.
   const xiiInt32 trivialSourceIndicesEnd = static_cast<xiiInt32>(uiNumSourceElements) - static_cast<xiiInt32>(numWeights);
-  const auto    weightsView             = weights.ViewWeights();
-  const float* __restrict nextWeightPtr = weightsView.GetPtr();
+  const auto     weightsView             = weights.ViewWeights();
+  const float* __restrict nextWeightPtr  = weightsView.GetPtr();
   XII_ASSERT_DEBUG((static_cast<xiiUInt32>(weightsView.GetCount()) % numWeights) == 0, "");
   for (xiiInt32 firstSourceIdx : firstSampleIndices)
   {
@@ -789,7 +789,7 @@ static void NormalizeCoverage(xiiBlobPtr<xiiColor> colors, float fAlphaThreshold
     }
   }
 
-  coverageCount        = targetCount;
+  coverageCount         = targetCount;
   xiiInt32 minThreshold = 0;
   for (; minThreshold < 256; minThreshold++)
   {
@@ -883,8 +883,8 @@ xiiResult xiiImageUtils::Scale3D(const xiiImageView& source, xiiImage& ref_targe
   // Manage scratch images for intermediate conversion or filtering
   const xiiUInt32 maxNumScratchImages = 2;
   xiiImage        scratch[maxNumScratchImages];
-  bool           scratchUsed[maxNumScratchImages] = {};
-  auto           allocateScratch                  = [&]() -> xiiImage& {
+  bool            scratchUsed[maxNumScratchImages] = {};
+  auto            allocateScratch                  = [&]() -> xiiImage& {
     for (xiiUInt32 i = 0;; ++i)
     {
       XII_ASSERT_DEV(i < maxNumScratchImages, "Failed to allocate scratch image");
@@ -1114,11 +1114,11 @@ void xiiImageUtils::GenerateMipMaps(const xiiImageView& source, xiiImage& ref_ta
         nextMipMapHeader.SetHeight(xiiMath::Max(1u, nextMipMapHeader.GetHeight() / 2));
         nextMipMapHeader.SetDepth(xiiMath::Max(1u, nextMipMapHeader.GetDepth() / 2));
 
-        auto    sourceData = ref_target.GetSubImageView(mipMapLevel, face, arrayIndex).GetByteBlobPtr();
+        auto     sourceData = ref_target.GetSubImageView(mipMapLevel, face, arrayIndex).GetByteBlobPtr();
         xiiImage currentMipMap;
         currentMipMap.ResetAndUseExternalStorage(currentMipMapHeader, sourceData);
 
-        auto    dstData = ref_target.GetSubImageView(mipMapLevel + 1, face, arrayIndex).GetByteBlobPtr();
+        auto     dstData = ref_target.GetSubImageView(mipMapLevel + 1, face, arrayIndex).GetByteBlobPtr();
         xiiImage nextMipMap;
         nextMipMap.ResetAndUseExternalStorage(nextMipMapHeader, dstData);
 
@@ -1439,7 +1439,7 @@ xiiResult xiiImageUtils::CreateCubemapFromSingleFile(xiiImage& ref_dstImg, const
       const xiiUInt64 faceRowPitch = ref_dstImg.GetRowPitch() / sizeof(xiiColor);
 
       const xiiColor* srcData = srcImg.GetPixelPointer<xiiColor>();
-      const float    InvPi   = 1.0f / xiiMath::Pi<float>();
+      const float     InvPi   = 1.0f / xiiMath::Pi<float>();
 
       for (xiiUInt32 faceIndex = 0; faceIndex < 6; faceIndex++)
       {
@@ -1450,7 +1450,7 @@ xiiResult xiiImageUtils::CreateCubemapFromSingleFile(xiiImage& ref_dstImg, const
 
           for (xiiUInt32 x = 0; x < faceSize; x++)
           {
-            const float  dstU          = (float)x * fPixel + fHalfPixel;
+            const float   dstU          = (float)x * fPixel + fHalfPixel;
             const xiiVec3 modelSpacePos = faceCorners[faceIndex] + dstU * faceAxis[faceIndex * 2] + dstV * faceAxis[faceIndex * 2 + 1];
             const xiiVec3 modelSpaceDir = modelSpacePos.GetNormalized();
 
@@ -1482,7 +1482,7 @@ xiiResult xiiImageUtils::CreateCubemapFromSingleFile(xiiImage& ref_dstImg, const
             xiiColor C = srcData[x1 + y2 * srcRowPitch];
             xiiColor D = srcData[x2 + y2 * srcRowPitch];
 
-            xiiColor interpolated           = A * (1 - fracX) * (1 - fracY) + B * (fracX) * (1 - fracY) + C * (1 - fracX) * fracY + D * fracX * fracY;
+            xiiColor interpolated          = A * (1 - fracX) * (1 - fracY) + B * (fracX) * (1 - fracY) + C * (1 - fracX) * fracY + D * fracX * fracY;
             faceData[x + y * faceRowPitch] = interpolated;
           }
         }
@@ -1577,7 +1577,7 @@ xiiColor xiiImageUtils::NearestSample(const xiiColor* pPixelPointer, xiiUInt32 u
   const xiiInt32 w = uiWidth;
   const xiiInt32 h = uiHeight;
 
-  vUv                = vUv.CompMul(xiiVec2(static_cast<float>(w), static_cast<float>(h)));
+  vUv                 = vUv.CompMul(xiiVec2(static_cast<float>(w), static_cast<float>(h)));
   const xiiInt32 intX = (xiiInt32)xiiMath::Floor(vUv.x);
   const xiiInt32 intY = (xiiInt32)xiiMath::Floor(vUv.y);
 
@@ -1617,11 +1617,11 @@ xiiColor xiiImageUtils::BilinearSample(const xiiColor* pData, xiiUInt32 uiWidth,
   xiiInt32 w = uiWidth;
   xiiInt32 h = uiHeight;
 
-  vUv                     = vUv.CompMul(xiiVec2(static_cast<float>(w), static_cast<float>(h))) - xiiVec2(0.5f);
-  const float   floorX    = xiiMath::Floor(vUv.x);
-  const float   floorY    = xiiMath::Floor(vUv.y);
-  const float   fractionX = vUv.x - floorX;
-  const float   fractionY = vUv.y - floorY;
+  vUv                      = vUv.CompMul(xiiVec2(static_cast<float>(w), static_cast<float>(h))) - xiiVec2(0.5f);
+  const float    floorX    = xiiMath::Floor(vUv.x);
+  const float    floorY    = xiiMath::Floor(vUv.y);
+  const float    fractionX = vUv.x - floorX;
+  const float    fractionY = vUv.y - floorY;
   const xiiInt32 intX      = (xiiInt32)floorX;
   const xiiInt32 intY      = (xiiInt32)floorY;
 
@@ -1677,8 +1677,8 @@ xiiResult xiiImageUtils::CopyChannel(xiiImage& ref_dstImg, xiiUInt8 uiDstChannel
     return XII_FAILURE;
 
   const xiiUInt32 uiNumPixels = srcImg.GetWidth() * srcImg.GetHeight();
-  const float*   pSrcPixel   = srcImg.GetPixelPointer<float>();
-  float*         pDstPixel   = ref_dstImg.GetPixelPointer<float>();
+  const float*    pSrcPixel   = srcImg.GetPixelPointer<float>();
+  float*          pDstPixel   = ref_dstImg.GetPixelPointer<float>();
 
   pSrcPixel += uiSrcChannelIdx;
   pDstPixel += uiDstChannelIdx;
