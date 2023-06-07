@@ -51,9 +51,9 @@ public:
   {
     if constexpr (XII_IS_DERIVED_FROM_STATIC(xiiEventMessage, EventMessageType))
     {
-      msg.FillFromSenderComponent(pSenderComponent);
+      ref_msg.FillFromSenderComponent(pSenderComponent);
     }
-    xiiInternal::EventMessageSenderHelper::SendEventMessage(msg, pSenderComponent, pSearchObject, m_CachedReceivers);
+    xiiInternal::EventMessageSenderHelper::SendEventMessage(ref_msg, pSenderComponent, pSearchObject, m_CachedReceivers);
   }
 
   XII_ALWAYS_INLINE void PostEventMessage(EventMessageType& ref_msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame)

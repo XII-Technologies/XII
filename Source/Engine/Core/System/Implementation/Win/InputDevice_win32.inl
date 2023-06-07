@@ -374,7 +374,7 @@ void xiiStandardInputDevice::SetClipMouseCursor(xiiMouseCursorClipMode::Enum mod
 // When this is enabled, mouse clicks are retrieved via standard WM_LBUTTONDOWN.
 #define XII_MOUSEBUTTON_COMPATIBILTY_MODE XII_ON
 
-void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM param, xiiMinWindows::LPARAM param)
+void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM wparam, xiiMinWindows::LPARAM lparam)
 {
 #if XII_ENABLED(XII_MOUSEBUTTON_COMPATIBILTY_MODE)
   static xiiInt32 s_iMouseCaptureCount = 0;
@@ -387,7 +387,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
       // The mousewheel does not work with rawinput over touchpads (at least not all)
       // So we handle that one individually
 
-      const xiiInt32 iRotated = (xiiInt16)HIWORD(param);
+      const xiiInt32 iRotated = (xiiInt16)HIWORD(wparam);
 
       if (iRotated > 0)
         m_InputSlotValues[xiiInputSlot_MouseWheelUp] = iRotated / 120.0f;
@@ -404,8 +404,8 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
       const xiiUInt32 uiResX = area.right - area.left;
       const xiiUInt32 uiResY = area.bottom - area.top;
 
-      const float fPosX = (float)((xiiInt16)LOWORD(param));
-      const float fPosY = (float)((xiiInt16)HIWORD(param));
+      const float fPosX = (float)((xiiInt16)LOWORD(lparam));
+      const float fPosY = (float)((xiiInt16)HIWORD(lparam));
 
       s_iMouseIsOverWindowNumber                     = m_uiWindowNumber;
       m_InputSlotValues[xiiInputSlot_MousePositionX] = (fPosX / uiResX);
@@ -433,7 +433,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
 
     case WM_CHAR:
     {
-      m_uiLastCharacter = (wchar_t)param;
+      m_uiLastCharacter = (wchar_t)wparam;
       return;
     }
 
@@ -533,9 +533,9 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
 
     case WM_XBUTTONDOWN:
     {
-      if (GET_XBUTTON_WPARAM(param) == XBUTTON1)
+      if (GET_XBUTTON_WPARAM(wparam) == XBUTTON1)
         m_uiMouseButtonReceivedDown[3]++;
-      if (GET_XBUTTON_WPARAM(param) == XBUTTON2)
+      if (GET_XBUTTON_WPARAM(wparam) == XBUTTON2)
         m_uiMouseButtonReceivedDown[4]++;
 
       if (s_iMouseCaptureCount == 0)
@@ -547,9 +547,9 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
 
     case WM_XBUTTONUP:
     {
-      if (GET_XBUTTON_WPARAM(param) == XBUTTON1)
+      if (GET_XBUTTON_WPARAM(wparam) == XBUTTON1)
         m_uiMouseButtonReceivedUp[3]++;
-      if (GET_XBUTTON_WPARAM(param) == XBUTTON2)
+      if (GET_XBUTTON_WPARAM(wparam) == XBUTTON2)
         m_uiMouseButtonReceivedUp[4]++;
 
       --s_iMouseCaptureCount;
@@ -579,7 +579,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
     {
       xiiUInt32 uiSize = 0;
 
-      GetRawInputData((HRAWINPUT)param, RID_INPUT, nullptr, &uiSize, sizeof(RAWINPUTHEADER));
+      GetRawInputData((HRAWINPUT)lparam, RID_INPUT, nullptr, &uiSize, sizeof(RAWINPUTHEADER));
 
       if (uiSize == 0)
         return;
@@ -587,7 +587,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
       xiiHybridArray<xiiUInt8, sizeof(RAWINPUT)> InputData;
       InputData.SetCountUninitialized(uiSize);
 
-      if (GetRawInputData((HRAWINPUT)param, RID_INPUT, &InputData[0], &uiSize, sizeof(RAWINPUTHEADER)) != uiSize)
+      if (GetRawInputData((HRAWINPUT)lparam, RID_INPUT, &InputData[0], &uiSize, sizeof(RAWINPUTHEADER)) != uiSize)
         return;
 
       RAWINPUT* raw = (RAWINPUT*)&InputData[0];
