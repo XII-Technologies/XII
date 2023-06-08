@@ -15,7 +15,7 @@ jobs:
         id: lint_files
         shell: pwsh
         run: |
-          echo "push=false" >> $GITHUB_OUTPUT
+          echo "push=false" >> "$GITHUB_OUTPUT"
 
           git fetch origin "${env:GITHUB_BASE_REF}:refs/remotes/origin/${env:GITHUB_BASE_REF}"
           git fetch origin "${env:GITHUB_HEAD_REF}:refs/remotes/origin/${env:GITHUB_HEAD_REF}"
@@ -49,10 +49,11 @@ jobs:
           git checkout "Source/Engine/Foundation/Reflection/Implementation/MemberProperty.h"
           if(@(git status -s --untracked-files=no).Length -gt 0)
           {
-            Write-Host "##vso[task.logissue type=error]ClangTidy suggested changes. ClangTidy check failed! See artifact 'clangTidy.patch' for suggested changes. Apply patch with: git apply clangTidy.patch" -foreground red
-            git diff | Out-File -Encoding utf8NoBOM -FilePath "${env:GITHUB_WORKSPACE}/clangTidy.patch"
+            Write-Host "ClangTidy suggested changes. ClangTidy check failed! See artifact 'clangTidy.patch' for suggested changes. Apply patch with: git apply clangTidy.patch"
 
-            echo "push=true" >> $GITHUB_OUTPUT
+            git diff | Out-File -Encoding utf8 -FilePath "${env:GITHUB_WORKSPACE}/clangTidy.patch"
+
+            echo "push=true" >> "$GITHUB_OUTPUT"
           }
           else
           {
@@ -60,15 +61,19 @@ jobs:
           }
 
       - name: Content of Patch
-        if: ${{ steps.lint_files.outputs.push == 'true' }}
+        env:
+          shouldPush: ${{ steps.lint_files.outputs.push }}
+        if: ${{ env.shouldPush == 'true' }}
         shell: pwsh
         run: |
           Get-Content -Path "${env:GITHUB_WORKSPACE}/clangTidy.patch"
 
       - name: Upload Patch File
-        if: ${{ steps.lint_files.outputs.push == 'true' }}
+        env:
+          shouldPush: ${{ steps.lint_files.outputs.push }}
+        if: ${{ env.shouldPush == 'true' }}
         uses: actions/upload-artifact@v2
         with:
-          name: ClangFormatPatch
+          name: ClangTidyPatch
           path: ${{github.workspace}}/clangTidy.patch
           retention-days: 3
