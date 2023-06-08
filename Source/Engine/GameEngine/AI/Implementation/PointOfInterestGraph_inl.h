@@ -6,7 +6,7 @@ template <typename POINTTYPE>
 void xiiPointOfInterestGraph<POINTTYPE>::Initialize(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, float fCellSize)
 {
   m_Points.Clear();
-  m_Octree.CreateTree(center, halfExtents, cellSize);
+  m_Octree.CreateTree(vCenter, vHalfExtents, fCellSize);
 }
 
 template <typename POINTTYPE>
@@ -15,7 +15,7 @@ POINTTYPE& xiiPointOfInterestGraph<POINTTYPE>::AddPoint(const xiiVec3& vPosition
   const xiiUInt32 id = m_Points.GetCount();
   auto&           pt = m_Points.ExpandAndGetRef();
 
-  m_Octree.InsertObject(position, xiiVec3::ZeroVector(), 0, id, nullptr, true).IgnoreResult();
+  m_Octree.InsertObject(vPosition, xiiVec3::ZeroVector(), 0, id, nullptr, true).IgnoreResult();
 
   return pt;
 }
@@ -32,7 +32,7 @@ void xiiPointOfInterestGraph<POINTTYPE>::FindPointsOfInterest(const xiiVec3& vPo
   };
 
   Data data;
-  data.m_pResults = &out_Points;
+  data.m_pResults = &out_points;
 
   auto cb = [](void* pPassThrough, xiiDynamicTreeObjectConst object) -> bool {
     auto pData = static_cast<Data*>(pPassThrough);
@@ -43,5 +43,5 @@ void xiiPointOfInterestGraph<POINTTYPE>::FindPointsOfInterest(const xiiVec3& vPo
     return true;
   };
 
-  m_Octree.FindObjectsInRange(position, radius, cb, &data);
+  m_Octree.FindObjectsInRange(vPosition, fRadius, cb, &data);
 }

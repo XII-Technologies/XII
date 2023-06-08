@@ -5,7 +5,7 @@
 #include <Core/World/World.h>
 #include <GameEngine/GameEngineDLL.h>
 
-using xiiSimpleWindComponentManager = class xiiSimpleWindComponent;
+using xiiSimpleWindComponentManager = xiiComponentManagerSimple<class xiiSimpleWindComponent, xiiComponentUpdateType::WhenSimulating>;
 
 class XII_GAMEENGINE_DLL xiiSimpleWindComponent : public xiiComponent
 {

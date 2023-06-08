@@ -6,7 +6,7 @@
 #include <Core/World/World.h>
 #include <GameEngine/GameEngineDLL.h>
 
-using xiiInputComponentManager = class xiiInputComponent;
+using xiiInputComponentManager = xiiComponentManagerSimple<class xiiInputComponent, xiiComponentUpdateType::WhenSimulating>;
 
 /// \brief Which types of input events are broadcast
 struct XII_GAMEENGINE_DLL xiiInputMessageGranularity

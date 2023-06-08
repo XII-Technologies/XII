@@ -10,7 +10,7 @@
 
 using xiiPrefabResourceHandle = xiiTypedResourceHandle<class xiiPrefabResource>;
 
-using xiiPlayerStartPointComponentManager = class xiiPlayerStartPointComponent;
+using xiiPlayerStartPointComponentManager = xiiComponentManager<class xiiPlayerStartPointComponent, xiiBlockStorageType::Compact>;
 
 class XII_GAMEENGINE_DLL xiiPlayerStartPointComponent : public xiiComponent
 {

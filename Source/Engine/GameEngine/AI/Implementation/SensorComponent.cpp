@@ -235,7 +235,7 @@ void xiiSensorSphereComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameO
   xiiSimdMat4f toLocalSpace  = pOwner->GetGlobalTransformSimd().GetAsMat4().GetInverse();
   xiiSimdFloat radiusSquared = m_fRadius * m_fRadius;
 
-  GetWorld()->GetSpatialSystem()->FindObjectsInSphere(sphere, params, [out_objects](xiiGameObject* pObject) {
+  GetWorld()->GetSpatialSystem()->FindObjectsInSphere(sphere, params, [&](xiiGameObject* pObject) {
     xiiSimdVec4f localSpacePos = toLocalSpace.TransformPosition(pObject->GetGlobalPositionSimd());
     const bool bInRadius = localSpacePos.GetLengthSquared<3>() <= radiusSquared;
 
@@ -313,7 +313,7 @@ void xiiSensorCylinderComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGam
   xiiSimdFloat radiusSquared = m_fRadius * m_fRadius;
   xiiSimdFloat halfHeight    = m_fHeight * 0.5f;
 
-  GetWorld()->GetSpatialSystem()->FindObjectsInSphere(sphere, params, [out_objects](xiiGameObject* pObject) {
+  GetWorld()->GetSpatialSystem()->FindObjectsInSphere(sphere, params, [&](xiiGameObject* pObject) {
     xiiSimdVec4f localSpacePos = toLocalSpace.TransformPosition(pObject->GetGlobalPositionSimd());
     const bool bInRadius = localSpacePos.GetLengthSquared<2>() <= radiusSquared;
     const bool bInHeight = localSpacePos.Abs().z() <= halfHeight;
@@ -396,7 +396,7 @@ void xiiSensorConeComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObj
   const xiiSimdFloat farSquared   = m_fFarDistance * m_fFarDistance;
   const xiiSimdFloat cosAngle     = xiiMath::Cos(m_Angle * 0.5f);
 
-  GetWorld()->GetSpatialSystem()->FindObjectsInSphere(sphere, params, [out_objects](xiiGameObject* pObject) {
+  GetWorld()->GetSpatialSystem()->FindObjectsInSphere(sphere, params, [&](xiiGameObject* pObject) {
     xiiSimdVec4f localSpacePos = toLocalSpace.TransformPosition(pObject->GetGlobalPositionSimd());
     const xiiSimdFloat fDistanceSquared = localSpacePos.GetLengthSquared<3>();
     const bool bInDistance = fDistanceSquared >= nearSquared && fDistanceSquared <= farSquared;
