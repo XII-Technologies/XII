@@ -79,9 +79,9 @@ public:
 
   virtual void mousePressEvent(QMouseEvent* pEvent) override
   {
-    QPoint      pos   = event->pos();
+    QPoint      pos   = pEvent->pos();
     QModelIndex index = this->indexAt(pos);
-    if (ForwardEvent(index, event))
+    if (ForwardEvent(index, pEvent))
     {
       if (!m_Focused.isValid())
       {
@@ -91,7 +91,7 @@ public:
     }
     else
     {
-      Base::mousePressEvent(event);
+      Base::mousePressEvent(pEvent);
     }
   }
 
@@ -99,8 +99,8 @@ public:
   {
     if (m_Focused.isValid())
     {
-      ForwardEvent(m_Focused, event);
-      if (event->buttons() == Qt::NoButton)
+      ForwardEvent(m_Focused, pEvent);
+      if (pEvent->buttons() == Qt::NoButton)
       {
         m_Focused = QModelIndex();
         this->viewport()->releaseMouse();
@@ -108,27 +108,27 @@ public:
     }
     else
     {
-      Base::mouseReleaseEvent(event);
+      Base::mouseReleaseEvent(pEvent);
     }
   }
 
   virtual void mouseDoubleClickEvent(QMouseEvent* pEvent) override
   {
-    QPoint      pos   = event->pos();
+    QPoint      pos   = pEvent->pos();
     QModelIndex index = this->indexAt(pos);
-    if (!ForwardEvent(index, event))
+    if (!ForwardEvent(index, pEvent))
     {
-      Base::mouseDoubleClickEvent(event);
+      Base::mouseDoubleClickEvent(pEvent);
     }
   }
 
   virtual void mouseMoveEvent(QMouseEvent* pEvent) override
   {
-    QPoint      pos   = event->pos();
+    QPoint      pos   = pEvent->pos();
     QModelIndex index = this->indexAt(pos);
-    if (!ForwardEvent(index, event))
+    if (!ForwardEvent(index, pEvent))
     {
-      Base::mouseMoveEvent(event);
+      Base::mouseMoveEvent(pEvent);
     }
   }
 
