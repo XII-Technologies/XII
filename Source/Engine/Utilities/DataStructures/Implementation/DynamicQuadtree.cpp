@@ -4,9 +4,7 @@
 
 const float xiiDynamicQuadtree::s_fLooseOctreeFactor = 1.1f;
 
-xiiDynamicQuadtree::xiiDynamicQuadtree()
-{
-}
+xiiDynamicQuadtree::xiiDynamicQuadtree() = default;
 
 void xiiDynamicQuadtree::CreateTree(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, float fMinNodeSize)
 {

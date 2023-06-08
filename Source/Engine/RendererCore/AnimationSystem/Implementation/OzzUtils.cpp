@@ -71,29 +71,29 @@ bool xiiOzzStreamReader::opened() const
   return true;
 }
 
-size_t xiiOzzStreamReader::Read(void* p_buffer, size_t ui_size)
+size_t xiiOzzStreamReader::Read(void* pP_buffer, size_t uiUi_size)
 {
-  return static_cast<size_t>(m_Reader.ReadBytes(p_buffer, ui_size));
+  return static_cast<size_t>(m_Reader.ReadBytes(pP_buffer, uiUi_size));
 }
 
-size_t xiiOzzStreamReader::Write(const void* p_buffer, size_t ui_size)
+size_t xiiOzzStreamReader::Write(const void* pP_buffer, size_t uiUi_size)
 {
   XII_ASSERT_NOT_IMPLEMENTED;
   return 0;
 }
 
-int xiiOzzStreamReader::Seek(int i_offset, Origin _origin)
+int xiiOzzStreamReader::Seek(int iI_offset, Origin _origin)
 {
   switch (_origin)
   {
     case ozz::io::Stream::kCurrent:
-      m_Reader.SetReadPosition(m_Reader.GetReadPosition() + i_offset);
+      m_Reader.SetReadPosition(m_Reader.GetReadPosition() + iI_offset);
       break;
     case ozz::io::Stream::kEnd:
-      m_Reader.SetReadPosition(m_Reader.GetByteCount64() - i_offset);
+      m_Reader.SetReadPosition(m_Reader.GetByteCount64() - iI_offset);
       break;
     case ozz::io::Stream::kSet:
-      m_Reader.SetReadPosition(i_offset);
+      m_Reader.SetReadPosition(iI_offset);
       break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
@@ -122,32 +122,32 @@ bool xiiOzzStreamWriter::opened() const
   return true;
 }
 
-size_t xiiOzzStreamWriter::Read(void* p_buffer, size_t ui_size)
+size_t xiiOzzStreamWriter::Read(void* pP_buffer, size_t uiUi_size)
 {
   XII_ASSERT_NOT_IMPLEMENTED;
   return 0;
 }
 
-size_t xiiOzzStreamWriter::Write(const void* p_buffer, size_t ui_size)
+size_t xiiOzzStreamWriter::Write(const void* pP_buffer, size_t uiUi_size)
 {
-  if (m_Writer.WriteBytes(p_buffer, ui_size).Failed())
+  if (m_Writer.WriteBytes(pP_buffer, uiUi_size).Failed())
     return 0;
 
-  return ui_size;
+  return uiUi_size;
 }
 
-int xiiOzzStreamWriter::Seek(int i_offset, Origin _origin)
+int xiiOzzStreamWriter::Seek(int iI_offset, Origin _origin)
 {
   switch (_origin)
   {
     case ozz::io::Stream::kCurrent:
-      m_Writer.SetWritePosition(m_Writer.GetWritePosition() + i_offset);
+      m_Writer.SetWritePosition(m_Writer.GetWritePosition() + iI_offset);
       break;
     case ozz::io::Stream::kEnd:
-      m_Writer.SetWritePosition(m_Writer.GetByteCount64() - i_offset);
+      m_Writer.SetWritePosition(m_Writer.GetByteCount64() - iI_offset);
       break;
     case ozz::io::Stream::kSet:
-      m_Writer.SetWritePosition(i_offset);
+      m_Writer.SetWritePosition(iI_offset);
       break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;

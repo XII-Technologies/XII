@@ -51,9 +51,7 @@ namespace
     XII_DECLARE_COMPONENT_TYPE(TestComponentMsg, xiiComponent, TestComponentMsgManager);
 
   public:
-    TestComponentMsg()
-    {
-    }
+    TestComponentMsg()  = default;
     ~TestComponentMsg() = default;
 
     virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override {}

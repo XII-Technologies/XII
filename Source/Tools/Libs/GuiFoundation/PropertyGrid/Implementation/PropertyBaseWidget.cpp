@@ -50,11 +50,7 @@ xiiQtPropertyWidget::xiiQtPropertyWidget() :
 
 xiiQtPropertyWidget::~xiiQtPropertyWidget() = default;
 
-void xiiQtPropertyWidget::Init(
-  xiiQtPropertyGridWidget*   pGrid,
-  xiiObjectAccessorBase*     pObjectAccessor,
-  const xiiRTTI*             pType,
-  const xiiAbstractProperty* pProp)
+void xiiQtPropertyWidget::Init(xiiQtPropertyGridWidget* pGrid, xiiObjectAccessorBase* pObjectAccessor, const xiiRTTI* pType, const xiiAbstractProperty* pProp)
 {
   m_pGrid           = pGrid;
   m_pObjectAccessor = pObjectAccessor;
@@ -342,10 +338,7 @@ QColor xiiQtPropertyWidget::SetPaletteBackgroundColor(xiiColorGammaUB inputColor
   return qColor;
 }
 
-bool xiiQtPropertyWidget::GetCommonVariantSubType(
-  const xiiHybridArray<xiiPropertySelection, 8>& items,
-  const xiiAbstractProperty*                     pProperty,
-  xiiVariantType::Enum&                          out_type)
+bool xiiQtPropertyWidget::GetCommonVariantSubType(const xiiHybridArray<xiiPropertySelection, 8>& items, const xiiAbstractProperty* pProperty, xiiVariantType::Enum& out_type)
 {
   bool bFirst = true;
   // check if we have multiple values
@@ -1567,10 +1560,7 @@ void xiiQtPropertyStandardTypeContainerWidget::UpdateElement(xiiUInt32 index)
 
 /// *** xiiQtPropertyTypeContainerWidget ***
 
-xiiQtPropertyTypeContainerWidget::xiiQtPropertyTypeContainerWidget()
-
-{
-}
+xiiQtPropertyTypeContainerWidget::xiiQtPropertyTypeContainerWidget() = default;
 
 xiiQtPropertyTypeContainerWidget::~xiiQtPropertyTypeContainerWidget()
 {
@@ -1784,8 +1774,8 @@ void xiiQtVariantPropertyWidget::InternalSetValue(const xiiVariant& value)
 
 void xiiQtVariantPropertyWidget::ChangeVariantType(xiiVariantType::Enum type)
 {
-
   m_pObjectAccessor->StartTransaction("Change variant type");
+
   // check if we have multiple values
   for (const auto& item : m_Items)
   {
@@ -1797,8 +1787,7 @@ void xiiQtVariantPropertyWidget::ChangeVariantType(xiiVariantType::Enum type)
     }
     else
     {
-      XII_VERIFY(
-        m_pObjectAccessor->SetValue(item.m_pObject, m_pProp, xiiReflectionUtils::GetDefaultVariantFromType(type), item.m_Index).Succeeded(), "");
+      XII_VERIFY(m_pObjectAccessor->SetValue(item.m_pObject, m_pProp, xiiReflectionUtils::GetDefaultVariantFromType(type), item.m_Index).Succeeded(), "");
     }
   }
   m_pObjectAccessor->FinishTransaction();

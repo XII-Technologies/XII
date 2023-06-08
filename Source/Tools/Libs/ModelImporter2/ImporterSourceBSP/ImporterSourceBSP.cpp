@@ -141,8 +141,8 @@ namespace SourceBSP
     {
     }
 
-    Vertex_t(float f_x, float f_y, float f_z) :
-      x(f_x), y(f_y), z(f_z)
+    Vertex_t(float fF_x, float fF_y, float fF_z) :
+      x(fF_x), y(fF_y), z(fF_z)
     {
     }
 

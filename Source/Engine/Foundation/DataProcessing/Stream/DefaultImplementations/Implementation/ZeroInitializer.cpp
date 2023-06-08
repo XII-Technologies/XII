@@ -13,10 +13,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProcessingStreamSpawnerZeroInitialized, 1, x
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiProcessingStreamSpawnerZeroInitialized::xiiProcessingStreamSpawnerZeroInitialized()
-
-{
-}
+xiiProcessingStreamSpawnerZeroInitialized::xiiProcessingStreamSpawnerZeroInitialized() = default;
 
 void xiiProcessingStreamSpawnerZeroInitialized::SetStreamName(xiiStringView sStreamName)
 {
@@ -39,12 +36,9 @@ void xiiProcessingStreamSpawnerZeroInitialized::InitializeElements(xiiUInt64 uiS
 
   for (xiiUInt64 i = uiStartIndex; i < uiStartIndex + uiNumElements; ++i)
   {
-    xiiMemoryUtils::ZeroFill<xiiUInt8>(
-      static_cast<xiiUInt8*>(xiiMemoryUtils::AddByteOffset(m_pStream->GetWritableData(), static_cast<ptrdiff_t>(i * uiElementStride))),
-      static_cast<size_t>(uiElementSize));
+    xiiMemoryUtils::ZeroFill<xiiUInt8>(static_cast<xiiUInt8*>(xiiMemoryUtils::AddByteOffset(m_pStream->GetWritableData(), static_cast<ptrdiff_t>(i * uiElementStride))), static_cast<size_t>(uiElementSize));
   }
 }
-
 
 
 XII_STATICLINK_FILE(Foundation, Foundation_DataProcessing_Stream_DefaultImplementations_Implementation_ZeroInitializer);

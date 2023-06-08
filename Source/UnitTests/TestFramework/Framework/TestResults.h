@@ -35,10 +35,7 @@ struct xiiTestOutput
 /// \brief A message of type xiiTestOutput::Enum, stored in xiiResult.
 struct xiiTestErrorMessage
 {
-  xiiTestErrorMessage()
-
-  {
-  }
+  xiiTestErrorMessage() = default;
 
   std::string m_sError;
   std::string m_sBlock;
@@ -51,9 +48,7 @@ struct xiiTestErrorMessage
 /// \brief A message of type xiiTestOutput::Enum, stored in xiiResult.
 struct xiiTestOutputMessage
 {
-  xiiTestOutputMessage()
-  {
-  }
+  xiiTestOutputMessage() = default;
 
   xiiTestOutput::Enum m_Type = xiiTestOutput::ImportantInfo;
   std::string         m_sMessage;
@@ -75,9 +70,8 @@ struct xiiTestResultQuery
 /// \brief Stores the results of a test run. Used by both xiiTestEntry and xiiSubTestEntry.
 struct xiiTestResultData
 {
-  xiiTestResultData()
-  {
-  }
+  xiiTestResultData() = default;
+
   void Reset();
   void AddOutput(xiiInt32 iOutputIndex);
 

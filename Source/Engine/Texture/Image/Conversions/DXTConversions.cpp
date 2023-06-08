@@ -2435,13 +2435,13 @@ namespace
     return uiComp | (uiComp >> uiPrec);
   }
 
-  xiiColorBaseUB bc7Unquantize(const xiiColorBaseUB& c, const xiiColorBaseUB& rGBAPrec)
+  xiiColorBaseUB bc7Unquantize(const xiiColorBaseUB& c, const xiiColorBaseUB& gBAPrec)
   {
     xiiColorBaseUB q;
-    q.r = bc7Unquantize(c.r, rGBAPrec.r);
-    q.g = bc7Unquantize(c.g, rGBAPrec.g);
-    q.b = bc7Unquantize(c.b, rGBAPrec.b);
-    q.a = rGBAPrec.a > 0 ? bc7Unquantize(c.a, rGBAPrec.a) : 255;
+    q.r = bc7Unquantize(c.r, gBAPrec.r);
+    q.g = bc7Unquantize(c.g, gBAPrec.g);
+    q.b = bc7Unquantize(c.b, gBAPrec.b);
+    q.a = gBAPrec.a > 0 ? bc7Unquantize(c.a, gBAPrec.a) : 255;
     return q;
   }
 

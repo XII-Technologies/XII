@@ -65,8 +65,7 @@ public:
   /// \param pLogInterface
   ///   An optional log interface where error messages are written to. If nullptr is passed in, error messages are written to the global
   ///   log.
-  xiiResult ExecuteString(const char* szString, const char* szDebugChunkName = "chunk",
-                          xiiLogInterface* pLogInterface = nullptr) const; // [tested]
+  xiiResult ExecuteString(const char* szString, const char* szDebugChunkName = "chunk", xiiLogInterface* pLogInterface = nullptr) const; // [tested]
 
   /// @}
 
@@ -342,9 +341,7 @@ private:
 
   struct xiiScriptStates
   {
-    xiiScriptStates()
-    {
-    }
+    xiiScriptStates() = default;
 
     /// How many Parameters were pushed for the next function-call.
     xiiInt32 m_iParametersPushed = 0;

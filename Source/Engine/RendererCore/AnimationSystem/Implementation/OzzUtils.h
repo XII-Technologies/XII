@@ -40,11 +40,11 @@ public:
 
   virtual bool opened() const override;
 
-  virtual size_t Read(void* p_buffer, size_t ui_size) override;
+  virtual size_t Read(void* pP_buffer, size_t uiUi_size) override;
 
-  virtual size_t Write(const void* p_buffer, size_t ui_size) override;
+  virtual size_t Write(const void* pP_buffer, size_t uiUi_size) override;
 
-  virtual int Seek(int i_offset, Origin _origin) override;
+  virtual int Seek(int iI_offset, Origin _origin) override;
 
   virtual int Tell() const override;
 
@@ -64,11 +64,11 @@ public:
 
   virtual bool opened() const override;
 
-  virtual size_t Read(void* p_buffer, size_t ui_size) override;
+  virtual size_t Read(void* pP_buffer, size_t uiUi_size) override;
 
-  virtual size_t Write(const void* p_buffer, size_t ui_size) override;
+  virtual size_t Write(const void* pP_buffer, size_t uiUi_size) override;
 
-  virtual int Seek(int i_offset, Origin _origin) override;
+  virtual int Seek(int iI_offset, Origin _origin) override;
 
   virtual int Tell() const override;
 

@@ -15,9 +15,7 @@ struct xiiPhantomRttiManagerEvent
     TypeChanged,
   };
 
-  xiiPhantomRttiManagerEvent()
-  {
-  }
+  xiiPhantomRttiManagerEvent() = default;
 
   Type           m_Type         = Type::TypeAdded;
   const xiiRTTI* m_pChangedType = nullptr;

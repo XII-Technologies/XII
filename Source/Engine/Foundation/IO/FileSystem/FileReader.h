@@ -14,9 +14,7 @@ class XII_FOUNDATION_DLL xiiFileReader : public xiiFileReaderBase
 
 public:
   /// \brief Constructor, does nothing.
-  xiiFileReader()
-  {
-  }
+  xiiFileReader() = default;
 
   /// \brief Destructor, closes the file, if it is still open (RAII).
   ~xiiFileReader() { Close(); }

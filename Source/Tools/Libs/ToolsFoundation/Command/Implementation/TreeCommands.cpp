@@ -155,9 +155,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // xiiAddObjectCommand
 ////////////////////////////////////////////////////////////////////////
 
-xiiAddObjectCommand::xiiAddObjectCommand()
-{
-}
+xiiAddObjectCommand::xiiAddObjectCommand() = default;
 
 const char* xiiAddObjectCommand::GetType() const
 {
@@ -564,9 +562,7 @@ xiiStatus xiiUnlinkPrefabCommand::UndoInternal(bool bFireEvents)
 // xiiRemoveObjectCommand
 ////////////////////////////////////////////////////////////////////////
 
-xiiRemoveObjectCommand::xiiRemoveObjectCommand()
-{
-}
+xiiRemoveObjectCommand::xiiRemoveObjectCommand() = default;
 
 xiiStatus xiiRemoveObjectCommand::DoInternal(bool bRedo)
 {

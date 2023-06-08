@@ -43,9 +43,7 @@ public:
 /// \brief Used by xiiDocumentObjectManager::m_StructureEvents.
 struct xiiDocumentObjectStructureEvent
 {
-  xiiDocumentObjectStructureEvent()
-  {
-  }
+  xiiDocumentObjectStructureEvent() = default;
 
   const xiiAbstractProperty* GetProperty() const;
   xiiVariant                 getInsertIndex() const;

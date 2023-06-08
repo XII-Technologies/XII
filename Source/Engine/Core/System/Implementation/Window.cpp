@@ -216,7 +216,7 @@ xiiWindow::~xiiWindow()
 }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-void xiiWindow::OnWindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM wParam, xiiMinWindows::LPARAM lParam)
+void xiiWindow::OnWindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM wparam, xiiMinWindows::LPARAM lparam)
 {}
 #endif
 

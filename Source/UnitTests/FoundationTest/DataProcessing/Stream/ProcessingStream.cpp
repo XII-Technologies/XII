@@ -16,10 +16,7 @@ class AddOneStreamProcessor : public xiiProcessingStreamProcessor
   XII_ADD_DYNAMIC_REFLECTION(AddOneStreamProcessor, xiiProcessingStreamProcessor);
 
 public:
-  AddOneStreamProcessor()
-
-  {
-  }
+  AddOneStreamProcessor() = default;
 
   void SetStreamName(xiiHashedString sStreamName) { m_sStreamName = sStreamName; }
 

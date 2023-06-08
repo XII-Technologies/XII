@@ -4,9 +4,7 @@
 
 const float xiiDynamicOctree::s_fLooseOctreeFactor = 1.1f;
 
-xiiDynamicOctree::xiiDynamicOctree()
-{
-}
+xiiDynamicOctree::xiiDynamicOctree() = default;
 
 void xiiDynamicOctree::CreateTree(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, float fMinNodeSize)
 {

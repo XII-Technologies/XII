@@ -9,7 +9,6 @@
 
 namespace
 {
-
   struct xiiMsgTest : public xiiMessage
   {
     XII_DECLARE_MESSAGE_TYPE(xiiMsgTest, xiiMessage);
@@ -65,10 +64,7 @@ class BaseHandler : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(BaseHandler, xiiReflectedClass);
 
 public:
-  BaseHandler()
-
-  {
-  }
+  BaseHandler() = default;
 
   void OnAddMessage(AddMessage& ref_msg) { m_iValue += ref_msg.m_iValue; }
 

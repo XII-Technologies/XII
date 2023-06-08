@@ -11,9 +11,7 @@ class xiiTestBaseClass;
 /// \brief Stores the identification of a sub-test.
 struct xiiSubTestEntry
 {
-  xiiSubTestEntry()
-  {
-  }
+  xiiSubTestEntry() = default;
 
   xiiInt32    m_iSubTestIdentifier = -1;
   const char* m_szSubTestName      = "";
@@ -23,9 +21,7 @@ struct xiiSubTestEntry
 /// \brief Stores the identification of a test.
 struct xiiTestEntry
 {
-  xiiTestEntry()
-  {
-  }
+  xiiTestEntry() = default;
 
   xiiTestBaseClass*           m_pTest      = nullptr;
   const char*                 m_szTestName = "";
@@ -40,6 +36,7 @@ enum class AssertOnTestFail
   AssertIfDebuggerAttached,
   AlwaysAssert,
 };
+
 struct TestSettings
 {
   // The following settings are stored in the settings file.

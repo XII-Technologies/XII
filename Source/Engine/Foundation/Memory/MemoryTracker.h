@@ -47,9 +47,7 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    XII_FORCE_INLINE AllocationInfo()
-    {
-    }
+    XII_FORCE_INLINE AllocationInfo() = default;
 
     void**    m_pStackTrace        = nullptr;
     size_t    m_uiSize             = 0;

@@ -51,10 +51,7 @@ namespace
     XII_DECLARE_COMPONENT_TYPE(TestComponent, xiiComponent, TestComponentManager);
 
   public:
-    TestComponent()
-
-    {
-    }
+    TestComponent()  = default;
     ~TestComponent() = default;
 
     virtual void Initialize() override { ++s_iInitCounter; }

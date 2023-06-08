@@ -22,9 +22,7 @@ public:
     xiiVariant  m_Value;
   };
 
-  xiiAbstractObjectNode()
-  {
-  }
+  xiiAbstractObjectNode() = default;
 
   const xiiHybridArray<Property, 16>& GetProperties() const { return m_Properties; }
 

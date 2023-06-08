@@ -15,10 +15,7 @@ struct XII_RENDERERCORE_DLL xiiRenderPipelineResourceLoader
 class XII_RENDERERCORE_DLL xiiRenderPipelineRttiConverterContext : public xiiRttiConverterContext
 {
 public:
-  xiiRenderPipelineRttiConverterContext()
-
-  {
-  }
+  xiiRenderPipelineRttiConverterContext() = default;
 
   virtual void Clear() override;
 

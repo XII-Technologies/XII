@@ -1,6 +1,5 @@
 
-XII_ALWAYS_INLINE xiiRational::xiiRational()
-{}
+XII_ALWAYS_INLINE xiiRational::xiiRational() = default;
 
 XII_ALWAYS_INLINE xiiRational::xiiRational(xiiUInt32 uiNumerator, xiiUInt32 uiDenominator) :
   m_uiNumerator(uiNumerator), m_uiDenominator(uiDenominator)

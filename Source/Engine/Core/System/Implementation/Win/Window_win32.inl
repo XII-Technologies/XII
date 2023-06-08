@@ -4,14 +4,14 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Logging/Log.h>
 
-static LRESULT CALLBACK xiiWindowsMessageFuncTrampoline(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK xiiWindowsMessageFuncTrampoline(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
   xiiWindow* pWindow = reinterpret_cast<xiiWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
 
   if (pWindow != nullptr && pWindow->IsInitialized())
   {
     if (pWindow->GetInputDevice())
-      pWindow->GetInputDevice()->WindowMessage(xiiMinWindows::FromNative(hWnd), msg, wParam, lParam);
+      pWindow->GetInputDevice()->WindowMessage(xiiMinWindows::FromNative(hWnd), msg, wparam, lparam);
 
     switch (msg)
     {
@@ -29,7 +29,7 @@ static LRESULT CALLBACK xiiWindowsMessageFuncTrampoline(HWND hWnd, UINT msg, WPA
 
       case WM_SIZE:
       {
-        xiiSizeU32 size(LOWORD(lParam), HIWORD(lParam));
+        xiiSizeU32 size(LOWORD(lparam), HIWORD(lparam));
         pWindow->OnResize(size);
       }
       break;
@@ -43,15 +43,15 @@ static LRESULT CALLBACK xiiWindowsMessageFuncTrampoline(HWND hWnd, UINT msg, WPA
 
       case WM_MOVE:
       {
-        pWindow->OnWindowMove((xiiInt32)(xiiInt16)LOWORD(lParam), (xiiInt32)(xiiInt16)HIWORD(lParam));
+        pWindow->OnWindowMove((xiiInt32)(xiiInt16)LOWORD(lparam), (xiiInt32)(xiiInt16)HIWORD(lparam));
       }
       break;
     }
 
-    pWindow->OnWindowMessage(xiiMinWindows::FromNative(hWnd), msg, wParam, lParam);
+    pWindow->OnWindowMessage(xiiMinWindows::FromNative(hWnd), msg, wparam, lparam);
   }
 
-  return DefWindowProcW(hWnd, msg, wParam, lParam);
+  return DefWindowProcW(hWnd, msg, wparam, lparam);
 }
 
 xiiResult xiiWindow::Initialize()

@@ -58,9 +58,7 @@ void xiiTestResultData::AddOutput(xiiInt32 iOutputIndex)
 // xiiTestResultData public functions
 ////////////////////////////////////////////////////////////////////////
 
-xiiTestConfiguration::xiiTestConfiguration()
-{
-}
+xiiTestConfiguration::xiiTestConfiguration() = default;
 
 
 ////////////////////////////////////////////////////////////////////////

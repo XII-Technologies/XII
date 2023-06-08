@@ -10,9 +10,7 @@ class xiiDocumentObjectManager;
 class XII_TOOLSFOUNDATION_DLL xiiDocumentObject
 {
 public:
-  xiiDocumentObject()
-  {
-  }
+  xiiDocumentObject()          = default;
   virtual ~xiiDocumentObject() = default;
 
   // Accessors
