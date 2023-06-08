@@ -355,7 +355,7 @@ namespace xiiModelImporter2
   }
 
   static int MikkGetNumVerticesOfFace(const SMikkTSpaceContext* pContext, int iFace)
-  { //
+  {
     return 3;
   }
 
@@ -364,10 +364,10 @@ namespace xiiModelImporter2
     MikkData*       pMikkData   = static_cast<MikkData*>(pContext->m_pUserData);
     const xiiUInt32 uiVertexIdx = pMikkData->m_pIndices16[iFace * 3 + iVert];
 
-    const xiiVec3* pData = reinterpret_cast<const xiiVec3*>(pMikkData->m_pPositions + (uiVertexIdx * pMikkData->m_uiVertexSize));
-    pData[0]             = pData->x;
-    pData[1]             = pData->y;
-    pData[2]             = pData->z;
+    const xiiVec3* pSrcData = reinterpret_cast<const xiiVec3*>(pMikkData->m_pPositions + (uiVertexIdx * pMikkData->m_uiVertexSize));
+    pData[0]                = pSrcData->x;
+    pData[1]                = pSrcData->y;
+    pData[2]                = pSrcData->z;
   }
 
   static void MikkGetPosition32(const SMikkTSpaceContext* pContext, float pData[], int iFace, int iVert)
@@ -376,10 +376,10 @@ namespace xiiModelImporter2
 
     const xiiUInt32 uiVertexIdx = pMikkData->m_pIndices32[iFace * 3 + iVert];
 
-    const xiiVec3* pData = reinterpret_cast<const xiiVec3*>(pMikkData->m_pPositions + (uiVertexIdx * pMikkData->m_uiVertexSize));
-    pData[0]             = pData->x;
-    pData[1]             = pData->y;
-    pData[2]             = pData->z;
+    const xiiVec3* pSrcData = reinterpret_cast<const xiiVec3*>(pMikkData->m_pPositions + (uiVertexIdx * pMikkData->m_uiVertexSize));
+    pData[0]                = pSrcData->x;
+    pData[1]                = pSrcData->y;
+    pData[2]                = pSrcData->z;
   }
 
   static void MikkGetNormal16(const SMikkTSpaceContext* pContext, float pData[], int iFace, int iVert)

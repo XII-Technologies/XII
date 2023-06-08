@@ -17,10 +17,10 @@ const VALUE* xiiObjectMetaData<KEY, VALUE>::BeginReadMetaData(const KEY objectKe
   m_pMetaStorage->m_Mutex.Lock();
   XII_ASSERT_DEV(m_pMetaStorage->m_AccessMode == Storage::AccessMode::Nothing, "Already accessing some data");
   m_pMetaStorage->m_AccessMode  = Storage::AccessMode::Read;
-  m_pMetaStorage->m_AcessingKey = ObjectKey;
+  m_pMetaStorage->m_AcessingKey = objectKey;
 
   const VALUE* pRes = nullptr;
-  if (m_pMetaStorage->m_MetaData.TryGetValue(ObjectKey, pRes)) // TryGetValue is not const correct with the second parameter
+  if (m_pMetaStorage->m_MetaData.TryGetValue(objectKey, pRes)) // TryGetValue is not const correct with the second parameter
     return pRes;
 
   return &m_DefaultValue;
@@ -32,12 +32,12 @@ void xiiObjectMetaData<KEY, VALUE>::ClearMetaData(const KEY objectKey)
   XII_LOCK(m_pMetaStorage->m_Mutex);
   XII_ASSERT_DEV(m_pMetaStorage->m_AccessMode == Storage::AccessMode::Nothing, "Already accessing some data");
 
-  if (HasMetaData(ObjectKey))
+  if (HasMetaData(objectKey))
   {
-    m_pMetaStorage->m_MetaData.Remove(ObjectKey);
+    m_pMetaStorage->m_MetaData.Remove(objectKey);
 
     EventData e;
-    e.m_ObjectKey = ObjectKey;
+    e.m_ObjectKey = objectKey;
     e.m_pValue    = &m_DefaultValue;
 
     m_pMetaStorage->m_DataModifiedEvent.Broadcast(e);
@@ -49,7 +49,7 @@ bool xiiObjectMetaData<KEY, VALUE>::HasMetaData(const KEY objectKey) const
 {
   XII_LOCK(m_pMetaStorage->m_Mutex);
   const VALUE* pValue = nullptr;
-  return m_pMetaStorage->m_MetaData.TryGetValue(ObjectKey, pValue);
+  return m_pMetaStorage->m_MetaData.TryGetValue(objectKey, pValue);
 }
 
 template <typename KEY, typename VALUE>
@@ -58,9 +58,9 @@ VALUE* xiiObjectMetaData<KEY, VALUE>::BeginModifyMetaData(const KEY objectKey)
   m_pMetaStorage->m_Mutex.Lock();
   XII_ASSERT_DEV(m_pMetaStorage->m_AccessMode == Storage::AccessMode::Nothing, "Already accessing some data");
   m_pMetaStorage->m_AccessMode  = Storage::AccessMode::Write;
-  m_pMetaStorage->m_AcessingKey = ObjectKey;
+  m_pMetaStorage->m_AcessingKey = objectKey;
 
-  return &m_pMetaStorage->m_MetaData[ObjectKey];
+  return &m_pMetaStorage->m_MetaData[objectKey];
 }
 
 template <typename KEY, typename VALUE>
@@ -96,7 +96,7 @@ void xiiObjectMetaData<KEY, VALUE>::EndModifyMetaData(xiiUInt32 uiModifiedFlags 
 template <typename KEY, typename VALUE>
 void xiiObjectMetaData<KEY, VALUE>::AttachMetaDataToAbstractGraph(xiiAbstractObjectGraph& ref_graph) const
 {
-  auto& AllNodes = graph.GetAllNodes();
+  auto& AllNodes = ref_graph.GetAllNodes();
 
   XII_LOCK(m_pMetaStorage->m_Mutex);
 

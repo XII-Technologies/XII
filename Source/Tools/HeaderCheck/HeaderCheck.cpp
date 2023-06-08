@@ -119,7 +119,6 @@ public:
     jsonReader.SetLogInterface(xiiLog::GetThreadLocalLogSystem());
 
     xiiFileReader reader;
-    xiiString     sIgnoreFilePath = sIgnoreFilePath;
     if (reader.Open(sIgnoreFilePath).Failed())
     {
       xiiLog::Error("Failed to open ignore file {0}", sIgnoreFilePath);

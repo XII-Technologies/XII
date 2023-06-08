@@ -37,14 +37,13 @@ public:
 
   virtual bool event(QEvent* pEv) override
   {
-    switch (ev->type())
+    switch (pEv->type())
     {
       case QEvent::HoverEnter:
       case QEvent::HoverMove:
       case QEvent::HoverLeave:
       {
-        QHoverEvent* pHoeverEvent = static_cast<QHoverEvent*>(ev);
-
+        QHoverEvent* pHoeverEvent = static_cast<QHoverEvent*>(pEv);
 
 #if QT_VERSION <= QT_VERSION_CHECK(5, 14, 0)
         QPoint pos = pHoeverEvent->pos();
@@ -52,13 +51,13 @@ public:
         QPoint pos = pHoeverEvent->position().toPoint();
 #endif
         QModelIndex index = this->indexAt(pos);
-        if (m_Hovered.isValid() && (ev->type() == QEvent::HoverLeave || index != m_Hovered))
+        if (m_Hovered.isValid() && (pEv->type() == QEvent::HoverLeave || index != m_Hovered))
         {
           QHoverEvent hoverEvent(QEvent::HoverLeave, pos, pHoeverEvent->oldPos(), pHoeverEvent->modifiers());
           ForwardEvent(m_Hovered, &hoverEvent);
           m_Hovered = QModelIndex();
         }
-        if (index.isValid() && ev->type() != QEvent::HoverLeave && !m_Hovered.isValid())
+        if (index.isValid() && pEv->type() != QEvent::HoverLeave && !m_Hovered.isValid())
         {
           QHoverEvent hoverEvent(QEvent::HoverEnter, pos, pHoeverEvent->oldPos(), pHoeverEvent->modifiers());
           m_Hovered = index;
@@ -69,13 +68,13 @@ public:
           QHoverEvent hoverEvent(QEvent::HoverMove, pos, pHoeverEvent->oldPos(), pHoeverEvent->modifiers());
           ForwardEvent(m_Hovered, &hoverEvent);
         }
-        break;
       }
+      break;
       default:
         break;
     }
 
-    return Base::event(ev);
+    return Base::event(pEv);
   }
 
   virtual void mousePressEvent(QMouseEvent* pEvent) override

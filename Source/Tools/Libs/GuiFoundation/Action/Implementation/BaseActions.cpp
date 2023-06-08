@@ -78,7 +78,7 @@ void xiiEnumerationMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::I
 
   xiiHybridArray<ItemWithOrder, 16> unsortedItems;
 
-  auto appendToOutput = [out_entries]() {
+  auto appendToOutput = [&]() {
     if (unsortedItems.IsEmpty())
       return;
 
