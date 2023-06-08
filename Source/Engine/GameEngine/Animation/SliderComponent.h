@@ -4,7 +4,7 @@
 
 #include <GameEngine/Animation/TransformComponent.h>
 
-using xiiSliderComponentManager = class xiiSliderComponent;
+using xiiSliderComponentManager = xiiComponentManagerSimple<class xiiSliderComponent, xiiComponentUpdateType::WhenSimulating>;
 
 class XII_GAMEENGINE_DLL xiiSliderComponent : public xiiTransformComponent
 {

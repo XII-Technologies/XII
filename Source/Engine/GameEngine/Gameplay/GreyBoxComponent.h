@@ -19,7 +19,7 @@ class xiiMeshResourceDescriptor;
 using xiiMeshResourceHandle     = xiiTypedResourceHandle<class xiiMeshResource>;
 using xiiMaterialResourceHandle = xiiTypedResourceHandle<class xiiMaterialResource>;
 
-using xiiGreyBoxComponentManager = class xiiGreyBoxComponent;
+using xiiGreyBoxComponentManager = xiiComponentManager<class xiiGreyBoxComponent, xiiBlockStorageType::Compact>;
 
 struct XII_GAMEENGINE_DLL xiiGreyBoxShape
 {

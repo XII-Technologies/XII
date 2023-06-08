@@ -7,9 +7,10 @@
 #include <Foundation/Types/SharedPtr.h>
 #include <GameEngine/Animation/PropertyAnimResource.h>
 #include <GameEngine/GameEngineDLL.h>
+
 struct xiiMsgSetPlaying;
 
-using xiiPropertyAnimComponentManager = class xiiPropertyAnimComponent;
+using xiiPropertyAnimComponentManager = xiiComponentManagerSimple<class xiiPropertyAnimComponent, xiiComponentUpdateType::WhenSimulating>;
 
 /// \brief Animates properties on other objects and components according to the property animation resource
 ///

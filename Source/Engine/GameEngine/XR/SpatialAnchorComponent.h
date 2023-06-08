@@ -7,7 +7,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 
-using xiiSpatialAnchorComponentManager = class xiiSpatialAnchorComponent;
+using xiiSpatialAnchorComponentManager = xiiComponentManagerSimple<class xiiSpatialAnchorComponent, xiiComponentUpdateType::WhenSimulating>;
 
 class XII_GAMEENGINE_DLL xiiSpatialAnchorComponent : public xiiComponent
 {

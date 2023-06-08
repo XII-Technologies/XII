@@ -34,7 +34,7 @@ struct xiiSpawnComponentFlags
 
 XII_DECLARE_FLAGS_OPERATORS(xiiSpawnComponentFlags);
 
-using xiiSpawnComponentManager = class xiiSpawnComponent;
+using xiiSpawnComponentManager = xiiComponentManager<class xiiSpawnComponent, xiiBlockStorageType::Compact>;
 
 class XII_GAMEENGINE_DLL xiiSpawnComponent : public xiiComponent
 {

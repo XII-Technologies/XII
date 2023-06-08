@@ -4,7 +4,7 @@
 #include <Core/World/World.h>
 #include <GameEngine/GameEngineDLL.h>
 
-using xiiVisualizeHandComponentManager = class xiiVisualizeHandComponent;
+using xiiVisualizeHandComponentManager = xiiComponentManagerSimple<class xiiVisualizeHandComponent, xiiComponentUpdateType::WhenSimulating>;
 
 class XII_GAMEENGINE_DLL xiiVisualizeHandComponent : public xiiComponent
 {

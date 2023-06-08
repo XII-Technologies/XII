@@ -8,7 +8,7 @@
 #include <Core/World/World.h>
 #include <GameEngine/Animation/PropertyAnimResource.h>
 
-using xiiColorAnimationComponentManager = class xiiColorAnimationComponent;
+using xiiColorAnimationComponentManager = xiiComponentManagerSimple<class xiiColorAnimationComponent, xiiComponentUpdateType::WhenSimulating>;
 
 /// \brief Samples a color gradient and sends an xiiMsgSetColor to the object it is attached to
 ///

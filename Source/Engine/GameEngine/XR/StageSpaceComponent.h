@@ -6,7 +6,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 
-using xiiStageSpaceComponentManager = class xiiStageSpaceComponent;
+using xiiStageSpaceComponentManager = xiiSettingsComponentManager<class xiiStageSpaceComponent>;
 
 /// \brief Singleton to set the type of stage space and its global transform in the world.
 ///

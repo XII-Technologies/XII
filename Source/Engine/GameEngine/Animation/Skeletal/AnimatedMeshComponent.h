@@ -7,7 +7,7 @@
 
 using xiiSkeletonResourceHandle = xiiTypedResourceHandle<class xiiSkeletonResource>;
 
-using xiiAnimatedMeshComponentManager = class xiiAnimatedMeshComponent;
+using xiiAnimatedMeshComponentManager = xiiComponentManager<class xiiAnimatedMeshComponent, xiiBlockStorageType::FreeList>;
 
 class XII_GAMEENGINE_DLL xiiAnimatedMeshComponent : public xiiMeshComponentBase
 {

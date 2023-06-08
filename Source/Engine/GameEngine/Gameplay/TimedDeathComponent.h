@@ -7,7 +7,7 @@
 #include <GameEngine/GameEngineDLL.h>
 
 struct xiiMsgComponentInternalTrigger;
-using xiiTimedDeathComponentManager = class xiiTimedDeathComponent;
+using xiiTimedDeathComponentManager = xiiComponentManager<class xiiTimedDeathComponent, xiiBlockStorageType::Compact>;
 using xiiPrefabResourceHandle       = xiiTypedResourceHandle<class xiiPrefabResource>;
 
 /// \brief This component deletes the object it is attached to after a timeout.

@@ -4,7 +4,7 @@
 
 #include <GameEngine/Animation/TransformComponent.h>
 
-using xiiRotorComponentManager = class xiiRotorComponent;
+using xiiRotorComponentManager = xiiComponentManagerSimple<class xiiRotorComponent, xiiComponentUpdateType::WhenSimulating>;
 
 class XII_GAMEENGINE_DLL xiiRotorComponent : public xiiTransformComponent
 {
