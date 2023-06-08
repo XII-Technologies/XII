@@ -7,7 +7,7 @@
 #include <RendererCore/Material/MaterialResource.h>
 #include <RendererCore/Meshes/MeshResource.h>
 
-using xiiBeamComponentManager = class xiiBeamComponent;
+using xiiBeamComponentManager = xiiComponentManagerSimple<class xiiBeamComponent, xiiComponentUpdateType::Always>;
 
 struct xiiMsgExtractRenderData;
 class xiiGeometry;

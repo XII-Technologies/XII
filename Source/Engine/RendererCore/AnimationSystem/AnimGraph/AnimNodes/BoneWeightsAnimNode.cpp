@@ -129,7 +129,7 @@ void xiiBoneWeightsAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const xiiS
 
         const float fBoneWeight = 1.0f;
 
-        auto setBoneWeight = [ref_bw](int iCurrentBone, int) {
+        auto setBoneWeight = [&](int iCurrentBone, int) {
           const int iJointIdx0 = iCurrentBone / 4;
           const int iJointIdx1 = iCurrentBone % 4;
 

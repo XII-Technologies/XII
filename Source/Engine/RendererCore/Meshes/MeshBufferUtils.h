@@ -57,22 +57,14 @@ struct XII_RENDERERCORE_DLL xiiMeshBufferUtils
   static xiiResult EncodeTexCoord(const xiiVec2& vTexCoord, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat);
 
   static xiiResult DecodeNormal(xiiArrayPtr<const xiiUInt8> source, xiiVec3& ref_vDestNormal, xiiMeshNormalPrecision::Enum normalPrecision);
-  static xiiResult DecodeTangent(
-    xiiArrayPtr<const xiiUInt8>  source,
-    xiiVec3&                     ref_vDestTangent,
-    float&                       ref_fDestBiTangentSign,
-    xiiMeshNormalPrecision::Enum tangentPrecision);
+  static xiiResult DecodeTangent(xiiArrayPtr<const xiiUInt8> source, xiiVec3& ref_vDestTangent, float& ref_fDestBiTangentSign, xiiMeshNormalPrecision::Enum tangentPrecision);
   static xiiResult DecodeTexCoord(xiiArrayPtr<const xiiUInt8> source, xiiVec2& ref_vDestTexCoord, xiiMeshTexCoordPrecision::Enum texCoordPrecision);
 
   static xiiResult DecodeNormal(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec3& ref_vDestNormal);
-  static xiiResult DecodeTangent(
-    xiiArrayPtr<const xiiUInt8> source,
-    xiiGALResourceFormat::Enum  sourceFormat,
-    xiiVec3&                    ref_vDestTangent,
-    float&                      ref_fDestBiTangentSign);
+  static xiiResult DecodeTangent(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec3& ref_vDestTangent, float& ref_fDestBiTangentSign);
   static xiiResult DecodeTexCoord(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec2& ref_vDestTexCoord);
 
-  // low level conversion functions
+  // Low level conversion functions.
   static xiiResult EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat);
   static xiiResult EncodeFromVec2(const xiiVec2& vSource, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat);
   static xiiResult EncodeFromVec3(const xiiVec3& vSource, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat);

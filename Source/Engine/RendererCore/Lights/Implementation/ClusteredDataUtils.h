@@ -363,8 +363,7 @@ namespace
     const xiiUInt32 uiBlockIndex = uiLightIndex / 32;
     const xiiUInt32 uiMask       = 1 << (uiLightIndex - uiBlockIndex * 32);
 
-    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, pClusters,
-                [pClusterBoundingSpheres](xiiUInt32 uiClusterIndex) { return pointLightSphere.Overlaps(pClusterBoundingSpheres[uiClusterIndex]); });
+    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, pClusters, [&](xiiUInt32 uiClusterIndex) { return pointLightSphere.Overlaps(pClusterBoundingSpheres[uiClusterIndex]); });
   }
 
   struct BoundingCone
@@ -404,7 +403,7 @@ namespace
     const xiiUInt32 uiBlockIndex = uiLightIndex / 32;
     const xiiUInt32 uiMask       = 1 << (uiLightIndex - uiBlockIndex * 32);
 
-    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, pClusters, [pClusterBoundingSpheres](xiiUInt32 uiClusterIndex) {
+    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, pClusters, [&](xiiUInt32 uiClusterIndex) {
       xiiSimdBSphere clusterSphere = pClusterBoundingSpheres[uiClusterIndex];
       xiiSimdFloat   clusterRadius = clusterSphere.GetRadius();
 
@@ -472,7 +471,7 @@ namespace
     const xiiUInt32 uiBlockIndex = uiDecalIndex / 32;
     const xiiUInt32 uiMask       = 1 << (uiDecalIndex - uiBlockIndex * 32);
 
-    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, pClusters, [pClusterBoundingSpheres](xiiUInt32 uiClusterIndex) {
+    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, pClusters, [&](xiiUInt32 uiClusterIndex) {
       xiiSimdBSphere clusterSphere = pClusterBoundingSpheres[uiClusterIndex];
       clusterSphere.Transform(worldToDecal);
 

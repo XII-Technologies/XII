@@ -932,7 +932,7 @@ void xiiDebugRenderer::DrawInfoText(const xiiDebugRendererContext& context, Scre
 
 xiiUInt32 xiiDebugRenderer::Draw3DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec3& vGlobalPosition, const xiiColor& color, xiiUInt32 uiSizeInPixel /*= 16*/, HorizontalAlignment horizontalAlignment /*= HorizontalAlignment::Center*/, VerticalAlignment verticalAlignment /*= VerticalAlignment::Bottom*/)
 {
-  return AddTextLines(context, text, xiiVec2I32(0), (float)uiSizeInPixel, horizontalAlignment, verticalAlignment, [vGlobalPosition](PerContextData& ref_data, xiiStringView sLine, xiiVec2 vTopLeftCorner) {
+  return AddTextLines(context, text, xiiVec2I32(0), (float)uiSizeInPixel, horizontalAlignment, verticalAlignment, [&](PerContextData& ref_data, xiiStringView sLine, xiiVec2 vTopLeftCorner) {
     auto& textLine           = ref_data.m_textLines3D.ExpandAndGetRef();
     textLine.m_text          = sLine;
     textLine.m_topLeftCorner = vTopLeftCorner;

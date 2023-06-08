@@ -48,7 +48,7 @@ public:
   xiiUInt32 m_uiUniqueID;
 };
 
-using xiiSpriteComponentManager = class xiiSpriteComponent;
+using xiiSpriteComponentManager = xiiComponentManager<class xiiSpriteComponent, xiiBlockStorageType::Compact>;
 
 class XII_RENDERERCORE_DLL xiiSpriteComponent : public xiiRenderComponent
 {

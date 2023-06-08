@@ -299,7 +299,7 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& ref_m
   const xiiGameObject* pOwner   = GetOwner();
   auto                 pManager = static_cast<const xiiBakedProbesComponentManager*>(GetOwningManager());
 
-  auto addProbeRenderData = [ref_msg](const xiiVec3& vPosition, xiiCompressedSkyVisibility skyVisibility, xiiRenderData::Caching::Enum caching) {
+  auto addProbeRenderData = [&](const xiiVec3& vPosition, xiiCompressedSkyVisibility skyVisibility, xiiRenderData::Caching::Enum caching) {
     xiiTransform transform = xiiTransform::IdentityTransform();
     transform.m_vPosition  = vPosition;
 

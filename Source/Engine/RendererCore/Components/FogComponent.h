@@ -6,7 +6,7 @@
 
 struct xiiMsgUpdateLocalBounds;
 
-using xiiFogComponentManager = class xiiFogComponent;
+using xiiFogComponentManager =  xiiSettingsComponentManager<class xiiFogComponent>;
 
 /// \brief The render data object for ambient light.
 class XII_RENDERERCORE_DLL xiiFogRenderData : public xiiRenderData

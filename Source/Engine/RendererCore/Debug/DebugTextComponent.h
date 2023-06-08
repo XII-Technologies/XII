@@ -5,7 +5,7 @@
 
 struct xiiMsgExtractRenderData;
 
-using xiiDebugTextComponentManager = class xiiDebugTextComponent;
+using xiiDebugTextComponentManager =  xiiComponentManager<class xiiDebugTextComponent, xiiBlockStorageType::Compact>;
 
 /// \brief This component prints debug text at the owner object's position.
 class XII_RENDERERCORE_DLL xiiDebugTextComponent : public xiiComponent

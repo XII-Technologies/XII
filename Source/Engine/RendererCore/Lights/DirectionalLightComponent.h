@@ -3,7 +3,7 @@
 #include <RendererCore/Lights/LightComponent.h>
 #include <RendererCore/Textures/Texture2DResource.h>
 
-using xiiDirectionalLightComponentManager = class xiiDirectionalLightComponent;
+using xiiDirectionalLightComponentManager = xiiComponentManager<class xiiDirectionalLightComponent, xiiBlockStorageType::Compact>;
 
 /// \brief The render data object for directional lights.
 class XII_RENDERERCORE_DLL xiiDirectionalLightRenderData : public xiiLightRenderData

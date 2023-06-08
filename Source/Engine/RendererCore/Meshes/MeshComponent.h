@@ -3,7 +3,7 @@
 #include <RendererCore/Meshes/MeshComponentBase.h>
 
 struct xiiMsgExtractGeometry;
-using xiiMeshComponentManager = class xiiMeshComponent;
+using xiiMeshComponentManager = xiiComponentManager<class xiiMeshComponent, xiiBlockStorageType::Compact>;
 
 class XII_RENDERERCORE_DLL xiiMeshComponent : public xiiMeshComponentBase
 {
