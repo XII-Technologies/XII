@@ -3,10 +3,6 @@
 #include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/Startup.h>
 
-#if BUILDSYSTEM_ENABLE_TRACY_SUPPORT
-#  include <Tracy/tracy/Tracy.h>
-#endif
-
 xiiResult xiiRun_Startup(xiiApplication* pApplicationInstance)
 {
   XII_ASSERT_ALWAYS(pApplicationInstance != nullptr, "xiiRun() requires a valid non-null application instance pointer.");
@@ -30,9 +26,6 @@ void xiiRun_MainLoop(xiiApplication* pApplicationInstance)
 {
   while (pApplicationInstance->Run() == xiiApplication::Execution::Continue)
   {
-#if BUILDSYSTEM_ENABLE_TRACY_SUPPORT
-    FrameMark;
-#endif
   }
 }
 
