@@ -7,7 +7,7 @@ class xiiRecastWorldModule;
 class xiiPhysicsWorldModuleInterface;
 struct xiiAgentSteeringEvent;
 
-using xiiSoldierComponentManager = class xiiSoldierComponent;
+using xiiSoldierComponentManager = xiiComponentManagerSimple<class xiiSoldierComponent, xiiComponentUpdateType::WhenSimulating>;
 
 class XII_RECASTPLUGIN_DLL xiiSoldierComponent : public xiiNpcComponent
 {

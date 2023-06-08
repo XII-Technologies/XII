@@ -7,7 +7,7 @@
 
 struct xiiMsgComponentInternalTrigger;
 
-using xiiProjectileComponentManager = class xiiProjectileComponent;
+using xiiProjectileComponentManager = xiiComponentManagerSimple<class xiiProjectileComponent, xiiComponentUpdateType::WhenSimulating>;
 
 /// \brief Defines what a projectile will do when it hits a surface
 struct XII_GAMEPLAYPLUGIN_DLL xiiProjectileReaction

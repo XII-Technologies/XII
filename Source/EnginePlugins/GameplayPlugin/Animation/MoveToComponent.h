@@ -24,7 +24,7 @@ struct xiiMoveToComponentFlags
   };
 };
 
-using xiiMoveToComponentManager = class xiiMoveToComponent;
+using xiiMoveToComponentManager = xiiComponentManagerSimple<class xiiMoveToComponent, xiiComponentUpdateType::WhenSimulating>;
 
 XII_DECLARE_FLAGS_OPERATORS(xiiMoveToComponentFlags);
 

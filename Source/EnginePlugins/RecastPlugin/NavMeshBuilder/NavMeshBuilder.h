@@ -37,7 +37,6 @@ struct XII_RECASTPLUGIN_DLL xiiRecastConfig
 XII_DECLARE_REFLECTABLE_TYPE(XII_RECASTPLUGIN_DLL, xiiRecastConfig);
 
 
-
 class XII_RECASTPLUGIN_DLL xiiRecastNavMeshBuilder
 {
 public:
@@ -59,6 +58,8 @@ private:
 
   struct Triangle
   {
+    XII_DECLARE_POD_TYPE();
+
     Triangle() = default;
     Triangle(xiiInt32 a, xiiInt32 b, xiiInt32 c)
     {

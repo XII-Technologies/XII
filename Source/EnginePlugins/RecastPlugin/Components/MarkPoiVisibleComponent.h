@@ -10,7 +10,7 @@ class xiiPhysicsWorldModuleInterface;
 
 //////////////////////////////////////////////////////////////////////////
 
-using xiiRcMarkPoiVisibleComponentManager = class xiiRcMarkPoiVisibleComponent;
+using xiiRcMarkPoiVisibleComponentManager = xiiComponentManagerSimple<class xiiRcMarkPoiVisibleComponent, xiiComponentUpdateType::WhenSimulating>;
 
 class XII_RECASTPLUGIN_DLL xiiRcMarkPoiVisibleComponent : public xiiRcComponent
 {

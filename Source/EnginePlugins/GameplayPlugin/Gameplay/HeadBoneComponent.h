@@ -3,7 +3,7 @@
 #include <GameEngine/Animation/TransformComponent.h>
 #include <GameplayPlugin/GameplayPluginDLL.h>
 
-using xiiHeadBoneComponentManager = class xiiHeadBoneComponent;
+using xiiHeadBoneComponentManager = xiiComponentManagerSimple<class xiiHeadBoneComponent, xiiComponentUpdateType::WhenSimulating>;
 
 class XII_GAMEPLAYPLUGIN_DLL xiiHeadBoneComponent : public xiiComponent
 {
