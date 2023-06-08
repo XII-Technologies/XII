@@ -67,7 +67,7 @@ jobs:
           Get-Content -Path "${env:GITHUB_WORKSPACE}/clangTidy.patch"
 
       - name: Upload Patch File
-        if: if: ${{ steps.lint_files.outputs.push == 'true' }}
+        if: ${{ steps.lint_files.outputs.push == 'true' }}
         uses: actions/upload-artifact@v2
         with:
           name: ClangTidyPatch
