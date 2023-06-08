@@ -22,14 +22,14 @@ public:
 
   /// \brief Initializes the xiiBlobPtr to be empty.
   XII_ALWAYS_INLINE xiiBlobPtr() :
-    m_pPtr(nullptr), m_uiCount(0u)
+    m_pPtr(nullptr)
   {
   }
 
   /// \brief Initializes the xiiBlobPtr with the given pointer and number of elements. No memory is allocated or copied.
   template <typename U>
-  inline xiiBlobPtr(U* ptr, xiiUInt64 uiCount) :
-    m_pPtr(ptr), m_uiCount(uiCount)
+  inline xiiBlobPtr(U* pPtr, xiiUInt64 uiCount) :
+    m_pPtr(pPtr), m_uiCount(uiCount)
   {
     // If any of the arguments is invalid, we invalidate ourself.
     if (m_pPtr == nullptr || m_uiCount == 0)
@@ -187,7 +187,7 @@ public:
 
 private:
   PointerType m_pPtr;
-  xiiUInt64   m_uiCount;
+  xiiUInt64   m_uiCount = 0u;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -199,9 +199,9 @@ using xiiConstByteBlobPtr = xiiBlobPtr<const xiiUInt8>;
 
 /// \brief Helper function to create xiiBlobPtr from a pointer of some type and a count.
 template <typename T>
-XII_ALWAYS_INLINE xiiBlobPtr<T> xiiMakeBlobPtr(T* ptr, xiiUInt64 uiCount)
+XII_ALWAYS_INLINE xiiBlobPtr<T> xiiMakeBlobPtr(T* pPtr, xiiUInt64 uiCount)
 {
-  return xiiBlobPtr<T>(ptr, uiCount);
+  return xiiBlobPtr<T>(pPtr, uiCount);
 }
 
 /// \brief Helper function to create xiiBlobPtr from a static array the a size known at compile-time.
@@ -213,36 +213,36 @@ XII_ALWAYS_INLINE xiiBlobPtr<T> xiiMakeBlobPtr(T (&staticArray)[N])
 
 /// \brief Helper function to create xiiConstByteBlobPtr from a pointer of some type and a count.
 template <typename T>
-XII_ALWAYS_INLINE xiiConstByteBlobPtr xiiMakeByteBlobPtr(const T* ptr, xiiUInt32 uiCount)
+XII_ALWAYS_INLINE xiiConstByteBlobPtr xiiMakeByteBlobPtr(const T* pPtr, xiiUInt32 uiCount)
 {
-  return xiiConstByteBlobPtr(static_cast<const xiiUInt8*>(ptr), uiCount * sizeof(T));
+  return xiiConstByteBlobPtr(static_cast<const xiiUInt8*>(pPtr), uiCount * sizeof(T));
 }
 
 /// \brief Helper function to create xiiByteBlobPtr from a pointer of some type and a count.
 template <typename T>
-XII_ALWAYS_INLINE xiiByteBlobPtr xiiMakeByteBlobPtr(T* ptr, xiiUInt32 uiCount)
+XII_ALWAYS_INLINE xiiByteBlobPtr xiiMakeByteBlobPtr(T* pPtr, xiiUInt32 uiCount)
 {
-  return xiiByteBlobPtr(reinterpret_cast<xiiUInt8*>(ptr), uiCount * sizeof(T));
+  return xiiByteBlobPtr(reinterpret_cast<xiiUInt8*>(pPtr), uiCount * sizeof(T));
 }
 
 /// \brief Helper function to create xiiByteBlobPtr from a void pointer and a count.
-XII_ALWAYS_INLINE xiiByteBlobPtr xiiMakeByteBlobPtr(void* ptr, xiiUInt32 uiBytes)
+XII_ALWAYS_INLINE xiiByteBlobPtr xiiMakeByteBlobPtr(void* pPtr, xiiUInt32 uiBytes)
 {
-  return xiiByteBlobPtr(reinterpret_cast<xiiUInt8*>(ptr), uiBytes);
+  return xiiByteBlobPtr(reinterpret_cast<xiiUInt8*>(pPtr), uiBytes);
 }
 
 /// \brief Helper function to create xiiConstByteBlobPtr from a const void pointer and a count.
-XII_ALWAYS_INLINE xiiConstByteBlobPtr xiiMakeByteBlobPtr(const void* ptr, xiiUInt32 uiBytes)
+XII_ALWAYS_INLINE xiiConstByteBlobPtr xiiMakeByteBlobPtr(const void* pPtr, xiiUInt32 uiBytes)
 {
-  return xiiConstByteBlobPtr(static_cast<const xiiUInt8*>(ptr), uiBytes);
+  return xiiConstByteBlobPtr(static_cast<const xiiUInt8*>(pPtr), uiBytes);
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-typename xiiBlobPtr<T>::iterator begin(xiiBlobPtr<T>& container)
+typename xiiBlobPtr<T>::iterator begin(xiiBlobPtr<T>& ref_container)
 {
-  return container.GetPtr();
+  return ref_container.GetPtr();
 }
 
 template <typename T>
@@ -258,9 +258,9 @@ typename xiiBlobPtr<T>::const_iterator cbegin(const xiiBlobPtr<T>& container)
 }
 
 template <typename T>
-typename xiiBlobPtr<T>::reverse_iterator rbegin(xiiBlobPtr<T>& container)
+typename xiiBlobPtr<T>::reverse_iterator rbegin(xiiBlobPtr<T>& ref_container)
 {
-  return typename xiiBlobPtr<T>::reverse_iterator(container.GetPtr() + container.GetCount() - 1);
+  return typename xiiBlobPtr<T>::reverse_iterator(ref_container.GetPtr() + ref_container.GetCount() - 1);
 }
 
 template <typename T>
@@ -276,9 +276,9 @@ typename xiiBlobPtr<T>::const_reverse_iterator crbegin(const xiiBlobPtr<T>& cont
 }
 
 template <typename T>
-typename xiiBlobPtr<T>::iterator end(xiiBlobPtr<T>& container)
+typename xiiBlobPtr<T>::iterator end(xiiBlobPtr<T>& ref_container)
 {
-  return container.GetPtr() + container.GetCount();
+  return ref_container.GetPtr() + ref_container.GetCount();
 }
 
 template <typename T>
@@ -294,9 +294,9 @@ typename xiiBlobPtr<T>::const_iterator cend(const xiiBlobPtr<T>& container)
 }
 
 template <typename T>
-typename xiiBlobPtr<T>::reverse_iterator rend(xiiBlobPtr<T>& container)
+typename xiiBlobPtr<T>::reverse_iterator rend(xiiBlobPtr<T>& ref_container)
 {
-  return typename xiiBlobPtr<T>::reverse_iterator(container.GetPtr() - 1);
+  return typename xiiBlobPtr<T>::reverse_iterator(ref_container.GetPtr() - 1);
 }
 
 template <typename T>

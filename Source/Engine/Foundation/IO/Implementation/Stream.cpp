@@ -7,11 +7,11 @@
 xiiStreamReader::xiiStreamReader()  = default;
 xiiStreamReader::~xiiStreamReader() = default;
 
-xiiResult xiiStreamReader::ReadString(xiiStringBuilder& builder)
+xiiResult xiiStreamReader::ReadString(xiiStringBuilder& ref_sBuilder)
 {
   if (auto context = xiiStringDeduplicationReadContext::GetContext())
   {
-    builder = context->DeserializeString(*this);
+    ref_sBuilder = context->DeserializeString(*this);
   }
   else
   {
@@ -22,26 +22,26 @@ xiiResult xiiStreamReader::ReadString(xiiStringBuilder& builder)
     {
       // We access the string builder directly here to
       // read the string efficiently with one allocation
-      builder.m_Data.Reserve(uiCount + 1);
-      builder.m_Data.SetCountUninitialized(uiCount);
-      ReadBytes(builder.m_Data.GetData(), uiCount);
-      builder.m_uiCharacterCount = uiCount;
-      builder.AppendTerminator();
+      ref_sBuilder.m_Data.Reserve(uiCount + 1);
+      ref_sBuilder.m_Data.SetCountUninitialized(uiCount);
+      ReadBytes(ref_sBuilder.m_Data.GetData(), uiCount);
+      ref_sBuilder.m_uiCharacterCount = uiCount;
+      ref_sBuilder.AppendTerminator();
     }
     else
     {
-      builder.Clear();
+      ref_sBuilder.Clear();
     }
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiStreamReader::ReadString(xiiString& string)
+xiiResult xiiStreamReader::ReadString(xiiString& ref_sString)
 {
   xiiStringBuilder tmp;
   const xiiResult  res = ReadString(tmp);
-  string               = tmp;
+  ref_sString          = tmp;
 
   return res;
 }
@@ -49,20 +49,20 @@ xiiResult xiiStreamReader::ReadString(xiiString& string)
 xiiStreamWriter::xiiStreamWriter()  = default;
 xiiStreamWriter::~xiiStreamWriter() = default;
 
-xiiResult xiiStreamWriter::WriteString(const xiiStringView szStringView)
+xiiResult xiiStreamWriter::WriteString(const xiiStringView sStringView)
 {
-  const xiiUInt32 uiCount = szStringView.GetElementCount();
+  const xiiUInt32 uiCount = sStringView.GetElementCount();
 
   if (auto context = xiiStringDeduplicationWriteContext::GetContext())
   {
-    context->SerializeString(szStringView, *this);
+    context->SerializeString(sStringView, *this);
   }
   else
   {
     XII_SUCCEED_OR_RETURN(WriteDWordValue(&uiCount));
     if (uiCount > 0)
     {
-      XII_SUCCEED_OR_RETURN(WriteBytes(szStringView.GetStartPointer(), uiCount));
+      XII_SUCCEED_OR_RETURN(WriteBytes(sStringView.GetStartPointer(), uiCount));
     }
   }
 

@@ -44,7 +44,7 @@ public:
   using Callback = xiiDelegate<void(xiiLogEntry&)>;
 
   /// \brief Log events will be delegated to the given callback.
-  xiiLogEntryDelegate(Callback callback, xiiLogMsgType::Enum LogLevel = xiiLogMsgType::All);
+  xiiLogEntryDelegate(Callback callback, xiiLogMsgType::Enum logLevel = xiiLogMsgType::All);
   virtual void HandleLogMessage(const xiiLoggingEventData& le) override;
 
 private:

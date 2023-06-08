@@ -233,10 +233,10 @@ namespace xiiInternal
     mutable MessageQueue m_TimedMessageQueues[xiiObjectMsgQueueType::COUNT];
 
     xiiThreadID                m_WriteThreadID;
-    xiiInt32                   m_iWriteCounter;
+    xiiInt32                   m_iWriteCounter = 0;
     mutable xiiAtomicInteger32 m_iReadCounter;
 
-    bool m_bSimulateWorld;
+    bool m_bSimulateWorld = true;
     bool m_bReportErrorWhenStaticObjectMoves;
 
     /// \brief Maps some data (given as void*) to an xiiGameObjectHandle. Only available in special situations (e.g. editor use cases).
@@ -273,7 +273,7 @@ namespace xiiInternal
     mutable ReadMarker m_ReadMarker;
     WriteMarker        m_WriteMarker;
 
-    void* m_pUserData;
+    void* m_pUserData = nullptr;
   };
 } // namespace xiiInternal
 

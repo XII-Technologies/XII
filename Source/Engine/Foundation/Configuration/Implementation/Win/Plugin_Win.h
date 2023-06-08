@@ -12,49 +12,49 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 using xiiPluginModule = HMODULE;
 
-void xiiPlugin::GetPluginPaths(const char* szPluginName, xiiStringBuilder& sOriginalFile, xiiStringBuilder& sCopiedFile, xiiUInt8 uiFileCopyNumber)
+void xiiPlugin::GetPluginPaths(const char* szPluginName, xiiStringBuilder& ref_sOriginalFile, xiiStringBuilder& ref_sCopiedFile, xiiUInt8 uiFileCopyNumber)
 {
   auto sPluginName = xiiStringView(szPluginName);
 
-  sOriginalFile = xiiOSFile::GetApplicationDirectory();
-  sOriginalFile.AppendPath(sPluginName);
-  sOriginalFile.Append(".dll");
+  ref_sOriginalFile = xiiOSFile::GetApplicationDirectory();
+  ref_sOriginalFile.AppendPath(sPluginName);
+  ref_sOriginalFile.Append(".dll");
 
-  sCopiedFile = xiiOSFile::GetApplicationDirectory();
-  sCopiedFile.AppendPath(sPluginName);
+  ref_sCopiedFile = xiiOSFile::GetApplicationDirectory();
+  ref_sCopiedFile.AppendPath(sPluginName);
 
-  if (!xiiOSFile::ExistsFile(sOriginalFile))
+  if (!xiiOSFile::ExistsFile(ref_sOriginalFile))
   {
-    sOriginalFile = xiiOSFile::GetCurrentWorkingDirectory();
-    sOriginalFile.AppendPath(sPluginName);
-    sOriginalFile.Append(".dll");
+    ref_sOriginalFile = xiiOSFile::GetCurrentWorkingDirectory();
+    ref_sOriginalFile.AppendPath(sPluginName);
+    ref_sOriginalFile.Append(".dll");
 
-    sCopiedFile = xiiOSFile::GetCurrentWorkingDirectory();
-    sCopiedFile.AppendPath(sPluginName);
+    ref_sCopiedFile = xiiOSFile::GetCurrentWorkingDirectory();
+    ref_sCopiedFile.AppendPath(sPluginName);
   }
 
   if (uiFileCopyNumber > 0)
-    sCopiedFile.AppendFormat("{0}", uiFileCopyNumber);
+    ref_sCopiedFile.AppendFormat("{0}", uiFileCopyNumber);
 
-  sCopiedFile.Append(".loaded");
+  ref_sCopiedFile.Append(".loaded");
 }
 
-xiiResult UnloadPluginModule(xiiPluginModule& Module, const char* szPluginFile)
+xiiResult UnloadPluginModule(xiiPluginModule& ref_pModule, const char* szPluginFile)
 {
   // reset last error code
   SetLastError(ERROR_SUCCESS);
 
-  if (FreeLibrary(Module) == FALSE)
+  if (FreeLibrary(ref_pModule) == FALSE)
   {
     xiiLog::Error("Could not unload plugin '{0}'. Error-Code {1}", szPluginFile, xiiArgErrorCode(GetLastError()));
     return XII_FAILURE;
   }
 
-  Module = nullptr;
+  ref_pModule = nullptr;
   return XII_SUCCESS;
 }
 
-xiiResult LoadPluginModule(const char* szFileToLoad, xiiPluginModule& Module, const char* szPluginFile)
+xiiResult LoadPluginModule(const char* szFileToLoad, xiiPluginModule& ref_pModule, const char* szPluginFile)
 {
   // reset last error code
   SetLastError(ERROR_SUCCESS);
@@ -64,10 +64,10 @@ xiiResult LoadPluginModule(const char* szFileToLoad, xiiPluginModule& Module, co
   XII_SUCCEED_OR_RETURN(relativePath.MakeRelativeTo(xiiOSFile::GetApplicationDirectory()));
   Module = LoadPackagedLibrary(xiiStringWChar(relativePath).GetData(), 0);
 #  else
-  Module = LoadLibraryW(xiiStringWChar(szFileToLoad).GetData());
+  ref_pModule = LoadLibraryW(xiiStringWChar(szFileToLoad).GetData());
 #  endif
 
-  if (Module == nullptr)
+  if (ref_pModule == nullptr)
   {
     const DWORD err = GetLastError();
     xiiLog::Error("Could not load plugin '{0}'. Error-Code {1}", szPluginFile, xiiArgErrorCode(err));

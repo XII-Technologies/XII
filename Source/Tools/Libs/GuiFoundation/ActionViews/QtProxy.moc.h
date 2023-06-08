@@ -41,10 +41,10 @@ public:
   /// \param pDocument The document for which matching actions should be searched for. If null, only global actions are searched.
   /// \param event The key event that should be converted into a shortcut.
   /// \return Whether the key event was consumed and an action executed.
-  static bool TriggerDocumentAction(xiiDocument* pDocument, QKeyEvent* event);
+  static bool TriggerDocumentAction(xiiDocument* pDocument, QKeyEvent* pEvent);
 
   static xiiRttiMappedObjectFactory<xiiQtProxy>& GetFactory();
-  static QSharedPointer<xiiQtProxy>              GetProxy(xiiActionContext& context, xiiActionDescriptorHandle hAction);
+  static QSharedPointer<xiiQtProxy>              GetProxy(xiiActionContext& ref_context, xiiActionDescriptorHandle hAction);
 
 protected:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GuiFoundation, QtProxies);
@@ -157,7 +157,7 @@ class XII_GUIFOUNDATION_DLL xiiQtLabeledSlider : public QWidget
   Q_OBJECT
 
 public:
-  xiiQtLabeledSlider(QWidget* parent);
+  xiiQtLabeledSlider(QWidget* pParent);
 
   QLabel*  m_pLabel;
   QSlider* m_pSlider;
@@ -169,7 +169,7 @@ class XII_GUIFOUNDATION_DLL xiiQtSliderWidgetAction : public QWidgetAction
   Q_OBJECT
 
 public:
-  xiiQtSliderWidgetAction(QWidget* parent);
+  xiiQtSliderWidgetAction(QWidget* pParent);
   void setMinimum(int value);
   void setMaximum(int value);
   void setValue(int value);

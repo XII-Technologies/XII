@@ -16,14 +16,14 @@ xiiCVarInt cvar_SpatialCullingOcclusionMaxOccluders("Spatial.Occlusion.MaxOcclud
 xiiRasterizerView::xiiRasterizerView()  = default;
 xiiRasterizerView::~xiiRasterizerView() = default;
 
-void xiiRasterizerView::SetResolution(xiiUInt32 width, xiiUInt32 height, float fAspectRatio)
+void xiiRasterizerView::SetResolution(xiiUInt32 uiWidth, xiiUInt32 uiHeight, float fAspectRatio)
 {
-  if (m_uiResolutionX != width || m_uiResolutionY != height)
+  if (m_uiResolutionX != uiWidth || m_uiResolutionY != uiHeight)
   {
-    m_uiResolutionX = width;
-    m_uiResolutionY = height;
+    m_uiResolutionX = uiWidth;
+    m_uiResolutionY = uiHeight;
 
-    m_pRasterizer = XII_DEFAULT_NEW(Rasterizer, width, height);
+    m_pRasterizer = XII_DEFAULT_NEW(Rasterizer, uiWidth, uiHeight);
   }
 
   if (fAspectRatio == 0.0f)
@@ -158,43 +158,43 @@ bool xiiRasterizerView::IsVisible(const xiiSimdBBox& aabb) const
 #endif
 }
 
-xiiRasterizerView* xiiRasterizerViewPool::GetRasterizerView(xiiUInt32 width, xiiUInt32 height, float fAspectRatio)
+xiiRasterizerView* xiiRasterizerViewPool::GetRasterizerView(xiiUInt32 uiWidth, xiiUInt32 uiHeight, float fAspectRatio)
 {
   XII_PROFILE_SCOPE("Occlusion::GetViewFromPool");
 
   XII_LOCK(m_Mutex);
 
-  const float divX = (float)width / (float)cvar_SpatialCullingOcclusionMaxResolution;
-  const float divY = (float)height / (float)cvar_SpatialCullingOcclusionMaxResolution;
+  const float divX = (float)uiWidth / (float)cvar_SpatialCullingOcclusionMaxResolution;
+  const float divY = (float)uiHeight / (float)cvar_SpatialCullingOcclusionMaxResolution;
   const float div  = xiiMath::Max(divX, divY);
 
   if (div > 1.0)
   {
-    width  = (xiiUInt32)(width / div);
-    height = (xiiUInt32)(height / div);
+    uiWidth  = (xiiUInt32)(uiWidth / div);
+    uiHeight = (xiiUInt32)(uiHeight / div);
   }
 
-  width  = xiiMath::RoundDown(width, 8);
-  height = xiiMath::RoundDown(height, 8);
+  uiWidth  = xiiMath::RoundDown(uiWidth, 8);
+  uiHeight = xiiMath::RoundDown(uiHeight, 8);
 
-  width  = xiiMath::Clamp<xiiUInt32>(width, 32u, cvar_SpatialCullingOcclusionMaxResolution);
-  height = xiiMath::Clamp<xiiUInt32>(height, 32u, cvar_SpatialCullingOcclusionMaxResolution);
+  uiWidth  = xiiMath::Clamp<xiiUInt32>(uiWidth, 32u, cvar_SpatialCullingOcclusionMaxResolution);
+  uiHeight = xiiMath::Clamp<xiiUInt32>(uiHeight, 32u, cvar_SpatialCullingOcclusionMaxResolution);
 
   for (PoolEntry& entry : m_Entries)
   {
     if (entry.m_bInUse)
       continue;
 
-    if (entry.m_RasterizerView.GetResolutionX() == width && entry.m_RasterizerView.GetResolutionY() == height)
+    if (entry.m_RasterizerView.GetResolutionX() == uiWidth && entry.m_RasterizerView.GetResolutionY() == uiHeight)
     {
       entry.m_bInUse = true;
-      entry.m_RasterizerView.SetResolution(width, height, fAspectRatio);
+      entry.m_RasterizerView.SetResolution(uiWidth, uiHeight, fAspectRatio);
       return &entry.m_RasterizerView;
     }
   }
 
   auto& ne = m_Entries.ExpandAndGetRef();
-  ne.m_RasterizerView.SetResolution(width, height, fAspectRatio);
+  ne.m_RasterizerView.SetResolution(uiWidth, uiHeight, fAspectRatio);
   ne.m_bInUse = true;
 
   return &ne.m_RasterizerView;

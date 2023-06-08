@@ -6,7 +6,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 
-typedef xiiSettingsComponentManager<class xiiStageSpaceComponent> xiiStageSpaceComponentManager;
+using xiiStageSpaceComponentManager = xiiSettingsComponentManager<class xiiStageSpaceComponent>;
 
 /// \brief Singleton to set the type of stage space and its global transform in the world.
 ///

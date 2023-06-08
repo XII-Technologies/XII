@@ -10,13 +10,13 @@ public:
 
   xiiSimdVec4u(); // [tested]
 
-  explicit xiiSimdVec4u(xiiUInt32 xyzw); // [tested]
+  explicit xiiSimdVec4u(xiiUInt32 uiXyzw); // [tested]
 
   xiiSimdVec4u(xiiUInt32 x, xiiUInt32 y, xiiUInt32 z, xiiUInt32 w = 1); // [tested]
 
   xiiSimdVec4u(xiiInternal::QuadUInt v); // [tested]
 
-  void Set(xiiUInt32 xyzw); // [tested]
+  void Set(xiiUInt32 uiXyzw); // [tested]
 
   void Set(xiiUInt32 x, xiiUInt32 y, xiiUInt32 z, xiiUInt32 w); // [tested]
 

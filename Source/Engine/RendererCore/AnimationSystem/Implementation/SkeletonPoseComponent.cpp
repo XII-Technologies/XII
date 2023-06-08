@@ -60,11 +60,11 @@ void xiiSkeletonPoseComponent::Update()
   }
 }
 
-void xiiSkeletonPoseComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSkeletonPoseComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s << m_hSkeleton;
   s << m_PoseMode;
@@ -82,12 +82,12 @@ void xiiSkeletonPoseComponent::SerializeComponent(xiiWorldWriter& stream) const
   }
 }
 
-void xiiSkeletonPoseComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSkeletonPoseComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_hSkeleton;
   s >> m_PoseMode;
@@ -173,8 +173,8 @@ const xiiRangeView<const char*, xiiUInt32> xiiSkeletonPoseComponent::GetBones() 
 {
   return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; },
                                               [this]() -> xiiUInt32 { return m_Bones.GetCount(); },
-                                              [](xiiUInt32& it) { ++it; },
-                                              [this](const xiiUInt32& it) -> const char* { return m_Bones.GetKey(it).GetString().GetData(); });
+                                              [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                              [this](const xiiUInt32& uiIt) -> const char* { return m_Bones.GetKey(uiIt).GetString().GetData(); });
 }
 
 void xiiSkeletonPoseComponent::SetBone(const char* szKey, const xiiVariant& value)

@@ -3,7 +3,7 @@
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/SimdMath/SimdMat4f.h>
 
-///\todo optimize
+///\todo Optimize
 
 xiiResult xiiSimdMat4f::Invert(const xiiSimdFloat& fEpsilon)
 {

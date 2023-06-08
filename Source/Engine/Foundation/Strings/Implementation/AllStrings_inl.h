@@ -57,7 +57,7 @@ XII_ALWAYS_INLINE void xiiHybridString<Size, A>::operator=(xiiStringBuilder&& rh
 }
 
 template <xiiUInt16 Size>
-void xiiHybridStringBase<Size>::ReadAll(xiiStreamReader& Stream)
+void xiiHybridStringBase<Size>::ReadAll(xiiStreamReader& ref_stream)
 {
   Clear();
 
@@ -66,7 +66,7 @@ void xiiHybridStringBase<Size>::ReadAll(xiiStreamReader& Stream)
 
   while (true)
   {
-    const xiiUInt32 uiRead = (xiiUInt32)Stream.ReadBytes(Temp, 1024);
+    const xiiUInt32 uiRead = (xiiUInt32)ref_stream.ReadBytes(Temp, 1024);
 
     if (uiRead == 0)
       break;

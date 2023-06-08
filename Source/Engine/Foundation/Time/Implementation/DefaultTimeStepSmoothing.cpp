@@ -12,21 +12,21 @@ void xiiDefaultTimeStepSmoothing::Reset(const xiiClock* pClock)
   m_LastTimeSteps.Clear();
 }
 
-xiiTime xiiDefaultTimeStepSmoothing::GetSmoothedTimeStep(xiiTime RawTimeStep, const xiiClock* pClock)
+xiiTime xiiDefaultTimeStepSmoothing::GetSmoothedTimeStep(xiiTime rawTimeStep, const xiiClock* pClock)
 {
-  RawTimeStep = xiiMath::Clamp(RawTimeStep * pClock->GetSpeed(), pClock->GetMinimumTimeStep(), pClock->GetMaximumTimeStep());
+  rawTimeStep = xiiMath::Clamp(rawTimeStep * pClock->GetSpeed(), pClock->GetMinimumTimeStep(), pClock->GetMaximumTimeStep());
 
   if (m_LastTimeSteps.GetCount() < 10)
   {
-    m_LastTimeSteps.PushBack(RawTimeStep);
-    m_LastTimeStepTaken = RawTimeStep;
+    m_LastTimeSteps.PushBack(rawTimeStep);
+    m_LastTimeStepTaken = rawTimeStep;
     return m_LastTimeStepTaken;
   }
 
   if (!m_LastTimeSteps.CanAppend(1))
     m_LastTimeSteps.PopFront(1);
 
-  m_LastTimeSteps.PushBack(RawTimeStep);
+  m_LastTimeSteps.PushBack(rawTimeStep);
 
   xiiStaticArray<xiiTime, 11> Sorted;
   Sorted.SetCountUninitialized(m_LastTimeSteps.GetCount());

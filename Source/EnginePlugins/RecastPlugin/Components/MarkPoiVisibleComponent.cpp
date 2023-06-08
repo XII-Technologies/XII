@@ -25,20 +25,20 @@ XII_END_COMPONENT_TYPE
 xiiRcMarkPoiVisibleComponent::xiiRcMarkPoiVisibleComponent()  = default;
 xiiRcMarkPoiVisibleComponent::~xiiRcMarkPoiVisibleComponent() = default;
 
-void xiiRcMarkPoiVisibleComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiRcMarkPoiVisibleComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  xiiStreamWriter& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_fRadius;
   s << m_uiCollisionLayer;
 }
 
-void xiiRcMarkPoiVisibleComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiRcMarkPoiVisibleComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   s >> m_fRadius;
   s >> m_uiCollisionLayer;

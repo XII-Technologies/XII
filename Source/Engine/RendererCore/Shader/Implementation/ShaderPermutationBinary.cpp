@@ -25,43 +25,43 @@ xiiShaderPermutationBinary::xiiShaderPermutationBinary()
     m_uiShaderStageHashes[stage] = 0;
 }
 
-xiiResult xiiShaderPermutationBinary::Write(xiiStreamWriter& Stream)
+xiiResult xiiShaderPermutationBinary::Write(xiiStreamWriter& ref_stream)
 {
   // write this at the beginning so that the file can be read as an xiiDependencyFile
   m_DependencyFile.StoreCurrentTimeStamp();
-  XII_SUCCEED_OR_RETURN(m_DependencyFile.WriteDependencyFile(Stream));
+  XII_SUCCEED_OR_RETURN(m_DependencyFile.WriteDependencyFile(ref_stream));
 
   const xiiUInt8 uiVersion = xiiShaderPermutationBinaryVersion::Current;
 
-  if (Stream.WriteBytes(&uiVersion, sizeof(xiiUInt8)).Failed())
+  if (ref_stream.WriteBytes(&uiVersion, sizeof(xiiUInt8)).Failed())
     return XII_FAILURE;
 
   for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
   {
-    if (Stream.WriteDWordValue(&m_uiShaderStageHashes[stage]).Failed())
+    if (ref_stream.WriteDWordValue(&m_uiShaderStageHashes[stage]).Failed())
       return XII_FAILURE;
   }
 
-  m_StateDescriptor.Save(Stream);
+  m_StateDescriptor.Save(ref_stream);
 
-  Stream << m_PermutationVars.GetCount();
+  ref_stream << m_PermutationVars.GetCount();
 
   for (auto& var : m_PermutationVars)
   {
-    Stream << var.m_sName.GetString();
-    Stream << var.m_sValue.GetString();
+    ref_stream << var.m_sName.GetString();
+    ref_stream << var.m_sValue.GetString();
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderPermutationBinary::Read(xiiStreamReader& Stream, bool& out_bOldVersion)
+xiiResult xiiShaderPermutationBinary::Read(xiiStreamReader& ref_stream, bool& out_bOldVersion)
 {
-  XII_SUCCEED_OR_RETURN(m_DependencyFile.ReadDependencyFile(Stream));
+  XII_SUCCEED_OR_RETURN(m_DependencyFile.ReadDependencyFile(ref_stream));
 
   xiiUInt8 uiVersion = 0;
 
-  if (Stream.ReadBytes(&uiVersion, sizeof(xiiUInt8)) != sizeof(xiiUInt8))
+  if (ref_stream.ReadBytes(&uiVersion, sizeof(xiiUInt8)) != sizeof(xiiUInt8))
     return XII_FAILURE;
 
   XII_ASSERT_DEV(uiVersion <= xiiShaderPermutationBinaryVersion::Current, "Wrong Version {0}", uiVersion);
@@ -70,16 +70,16 @@ xiiResult xiiShaderPermutationBinary::Read(xiiStreamReader& Stream, bool& out_bO
 
   for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
   {
-    if (Stream.ReadDWordValue(&m_uiShaderStageHashes[stage]).Failed())
+    if (ref_stream.ReadDWordValue(&m_uiShaderStageHashes[stage]).Failed())
       return XII_FAILURE;
   }
 
-  m_StateDescriptor.Load(Stream);
+  m_StateDescriptor.Load(ref_stream);
 
   if (uiVersion >= xiiShaderPermutationBinaryVersion::Version2)
   {
     xiiUInt32 uiPermutationCount;
-    Stream >> uiPermutationCount;
+    ref_stream >> uiPermutationCount;
 
     m_PermutationVars.SetCount(uiPermutationCount);
 
@@ -88,9 +88,9 @@ xiiResult xiiShaderPermutationBinary::Read(xiiStreamReader& Stream, bool& out_bO
     {
       auto& var = m_PermutationVars[i];
 
-      Stream >> tmp;
+      ref_stream >> tmp;
       var.m_sName.Assign(tmp.GetData());
-      Stream >> tmp;
+      ref_stream >> tmp;
       var.m_sValue.Assign(tmp.GetData());
     }
   }

@@ -20,7 +20,7 @@ xiiSimdPerlinNoise::xiiSimdPerlinNoise(xiiUInt32 uiSeed)
   }
 }
 
-xiiSimdVec4f xiiSimdPerlinNoise::NoiseZeroToOne(const xiiSimdVec4f& inX, const xiiSimdVec4f& inY, const xiiSimdVec4f& inZ, xiiUInt32 uiNumOctaves /*= 1*/)
+xiiSimdVec4f xiiSimdPerlinNoise::NoiseZeroToOne(const xiiSimdVec4f& vX, const xiiSimdVec4f& vY, const xiiSimdVec4f& vZ, xiiUInt32 uiNumOctaves /*= 1*/)
 {
   xiiSimdVec4f result    = xiiSimdVec4f::ZeroVector();
   xiiSimdFloat amplitude = 1.0f;
@@ -31,9 +31,9 @@ xiiSimdVec4f xiiSimdPerlinNoise::NoiseZeroToOne(const xiiSimdVec4f& inX, const x
   {
     xiiSimdFloat scale  = static_cast<float>(XII_BIT(i));
     xiiSimdVec4f offset = Permute(xiiSimdVec4i(uiOffset) + xiiSimdVec4i(0, 1, 2, 3)).ToFloat();
-    xiiSimdVec4f x      = inX * scale + offset.Get<xiiSwizzle::XXXX>();
-    xiiSimdVec4f y      = inY * scale + offset.Get<xiiSwizzle::YYYY>();
-    xiiSimdVec4f z      = inZ * scale + offset.Get<xiiSwizzle::ZZZZ>();
+    xiiSimdVec4f x      = vX * scale + offset.Get<xiiSwizzle::XXXX>();
+    xiiSimdVec4f y      = vY * scale + offset.Get<xiiSwizzle::YYYY>();
+    xiiSimdVec4f z      = vZ * scale + offset.Get<xiiSwizzle::ZZZZ>();
 
     result += Noise(x, y, z) * amplitude;
 
@@ -51,10 +51,10 @@ namespace
     return t.CompMul(t).CompMul(t).CompMul(t.CompMul(t * 6.0f - xiiSimdVec4f(15.0f)) + xiiSimdVec4f(10.0f));
   }
 
-  XII_FORCE_INLINE xiiSimdVec4f Grad(xiiSimdVec4i hash, const xiiSimdVec4f& x, const xiiSimdVec4f& y, const xiiSimdVec4f& z)
+  XII_FORCE_INLINE xiiSimdVec4f Grad(xiiSimdVec4i vHash, const xiiSimdVec4f& x, const xiiSimdVec4f& y, const xiiSimdVec4f& z)
   {
     // convert low 4 bits of hash code into 12 gradient directions.
-    const xiiSimdVec4i h = hash & xiiSimdVec4i(15);
+    const xiiSimdVec4i h = vHash & xiiSimdVec4i(15);
     const xiiSimdVec4f u = xiiSimdVec4f::Select(h < xiiSimdVec4i(8), x, y);
     const xiiSimdVec4f v = xiiSimdVec4f::Select(h < xiiSimdVec4i(4), y, xiiSimdVec4f::Select(h == xiiSimdVec4i(12) || h == xiiSimdVec4i(14), x, z));
     return xiiSimdVec4f::Select((h & xiiSimdVec4i(1)) == xiiSimdVec4i::ZeroVector(), u, -u) +

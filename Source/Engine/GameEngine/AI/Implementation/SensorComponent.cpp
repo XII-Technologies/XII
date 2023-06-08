@@ -45,10 +45,10 @@ XII_END_ABSTRACT_COMPONENT_TYPE
 xiiSensorComponent::xiiSensorComponent()  = default;
 xiiSensorComponent::~xiiSensorComponent() = default;
 
-void xiiSensorComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSensorComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_sSpatialCategory;
   s << m_bTestVisibility;
@@ -58,11 +58,11 @@ void xiiSensorComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_Color;
 }
 
-void xiiSensorComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSensorComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_sSpatialCategory;
   s >> m_bTestVisibility;
@@ -205,24 +205,24 @@ XII_END_COMPONENT_TYPE
 xiiSensorSphereComponent::xiiSensorSphereComponent()  = default;
 xiiSensorSphereComponent::~xiiSensorSphereComponent() = default;
 
-void xiiSensorSphereComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSensorSphereComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_fRadius;
 }
 
-void xiiSensorSphereComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSensorSphereComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_fRadius;
 }
 
-void xiiSensorSphereComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_Objects) const
+void xiiSensorSphereComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_objects) const
 {
   const xiiGameObject* pOwner = GetOwner();
 
@@ -241,7 +241,7 @@ void xiiSensorSphereComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameO
 
     if (bInRadius)
     {
-      out_Objects.PushBack(pObject);
+      out_objects.PushBack(pObject);
     }
 
     return xiiVisitorExecution::Continue; });
@@ -277,26 +277,26 @@ XII_END_COMPONENT_TYPE
 xiiSensorCylinderComponent::xiiSensorCylinderComponent()  = default;
 xiiSensorCylinderComponent::~xiiSensorCylinderComponent() = default;
 
-void xiiSensorCylinderComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSensorCylinderComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_fRadius;
   s << m_fHeight;
 }
 
-void xiiSensorCylinderComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSensorCylinderComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_fRadius;
   s >> m_fHeight;
 }
 
-void xiiSensorCylinderComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_Objects) const
+void xiiSensorCylinderComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_objects) const
 {
   const xiiGameObject* pOwner = GetOwner();
 
@@ -320,7 +320,7 @@ void xiiSensorCylinderComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGam
 
     if (bInRadius && bInHeight)
     {
-      out_Objects.PushBack(pObject);
+      out_objects.PushBack(pObject);
     }
 
     return xiiVisitorExecution::Continue; });
@@ -360,28 +360,28 @@ XII_END_COMPONENT_TYPE
 xiiSensorConeComponent::xiiSensorConeComponent()  = default;
 xiiSensorConeComponent::~xiiSensorConeComponent() = default;
 
-void xiiSensorConeComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSensorConeComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_fNearDistance;
   s << m_fFarDistance;
   s << m_Angle;
 }
 
-void xiiSensorConeComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSensorConeComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_fNearDistance;
   s >> m_fFarDistance;
   s >> m_Angle;
 }
 
-void xiiSensorConeComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_Objects) const
+void xiiSensorConeComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_objects) const
 {
   const xiiGameObject* pOwner = GetOwner();
 
@@ -406,7 +406,7 @@ void xiiSensorConeComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObj
 
     if (bInDistance && bInAngle)
     {
-      out_Objects.PushBack(pObject);
+      out_objects.PushBack(pObject);
     }
 
     return xiiVisitorExecution::Continue; });

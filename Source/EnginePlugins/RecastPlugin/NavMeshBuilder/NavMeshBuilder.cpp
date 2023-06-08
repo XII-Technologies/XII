@@ -40,7 +40,7 @@ XII_END_STATIC_REFLECTED_TYPE;
 class xiiRcBuildContext : public rcContext
 {
 public:
-  xiiRcBuildContext() {}
+  xiiRcBuildContext() = default;
 
 protected:
   virtual void doLog(const rcLogCategory category, const char* msg, const int len)
@@ -83,18 +83,18 @@ xiiResult xiiRecastNavMeshBuilder::ExtractWorldGeometry(const xiiWorld& world, x
   return XII_SUCCESS;
 }
 
-xiiResult xiiRecastNavMeshBuilder::Build(const xiiRecastConfig& config, const xiiWorldGeoExtractionUtil::MeshObjectList& geo, xiiRecastNavMeshResourceDescriptor& out_NavMeshDesc, xiiProgress& progress)
+xiiResult xiiRecastNavMeshBuilder::Build(const xiiRecastConfig& config, const xiiWorldGeoExtractionUtil::MeshObjectList& geo, xiiRecastNavMeshResourceDescriptor& out_navMeshDesc, xiiProgress& ref_progress)
 {
   XII_LOG_BLOCK("xiiRecastNavMeshBuilder::Build");
 
-  xiiProgressRange pg("Generating NavMesh", 4, true, &progress);
+  xiiProgressRange pg("Generating NavMesh", 4, true, &ref_progress);
   pg.SetStepWeighting(0, 0.1f);
   pg.SetStepWeighting(1, 0.1f);
   pg.SetStepWeighting(2, 0.6f);
   pg.SetStepWeighting(3, 0.2f);
 
   Clear();
-  out_NavMeshDesc.Clear();
+  out_navMeshDesc.Clear();
 
   xiiUniquePtr<xiiRcBuildContext> recastContext = XII_DEFAULT_NEW(xiiRcBuildContext);
   m_pRecastContext                              = recastContext.Borrow();
@@ -118,15 +118,15 @@ xiiResult xiiRecastNavMeshBuilder::Build(const xiiRecastConfig& config, const xi
   if (!pg.BeginNextStep("Build Poly Mesh"))
     return XII_FAILURE;
 
-  out_NavMeshDesc.m_pNavMeshPolygons = XII_DEFAULT_NEW(rcPolyMesh);
+  out_navMeshDesc.m_pNavMeshPolygons = XII_DEFAULT_NEW(rcPolyMesh);
 
-  if (BuildRecastPolyMesh(config, *out_NavMeshDesc.m_pNavMeshPolygons, progress).Failed())
+  if (BuildRecastPolyMesh(config, *out_navMeshDesc.m_pNavMeshPolygons, ref_progress).Failed())
     return XII_FAILURE;
 
   if (!pg.BeginNextStep("Build NavMesh"))
     return XII_FAILURE;
 
-  if (BuildDetourNavMeshData(config, *out_NavMeshDesc.m_pNavMeshPolygons, out_NavMeshDesc.m_DetourNavmeshData).Failed())
+  if (BuildDetourNavMeshData(config, *out_navMeshDesc.m_pNavMeshPolygons, out_navMeshDesc.m_DetourNavmeshData).Failed())
     return XII_FAILURE;
 
   return XII_SUCCESS;
@@ -487,42 +487,42 @@ xiiResult xiiRecastNavMeshBuilder::BuildDetourNavMeshData(const xiiRecastConfig&
   return XII_SUCCESS;
 }
 
-xiiResult xiiRecastConfig::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiRecastConfig::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(1);
+  ref_stream.WriteVersion(1);
 
-  stream << m_fAgentHeight;
-  stream << m_fAgentRadius;
-  stream << m_fAgentClimbHeight;
-  stream << m_WalkableSlope;
-  stream << m_fCellSize;
-  stream << m_fCellHeight;
-  stream << m_fMaxEdgeLength;
-  stream << m_fMaxSimplificationError;
-  stream << m_fMinRegionSize;
-  stream << m_fRegionMergeSize;
-  stream << m_fDetailMeshSampleDistanceFactor;
-  stream << m_fDetailMeshSampleErrorFactor;
+  ref_stream << m_fAgentHeight;
+  ref_stream << m_fAgentRadius;
+  ref_stream << m_fAgentClimbHeight;
+  ref_stream << m_WalkableSlope;
+  ref_stream << m_fCellSize;
+  ref_stream << m_fCellHeight;
+  ref_stream << m_fMaxEdgeLength;
+  ref_stream << m_fMaxSimplificationError;
+  ref_stream << m_fMinRegionSize;
+  ref_stream << m_fRegionMergeSize;
+  ref_stream << m_fDetailMeshSampleDistanceFactor;
+  ref_stream << m_fDetailMeshSampleErrorFactor;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiRecastConfig::Deserialize(xiiStreamReader& stream)
+xiiResult xiiRecastConfig::Deserialize(xiiStreamReader& ref_stream)
 {
-  stream.ReadVersion(1);
+  ref_stream.ReadVersion(1);
 
-  stream >> m_fAgentHeight;
-  stream >> m_fAgentRadius;
-  stream >> m_fAgentClimbHeight;
-  stream >> m_WalkableSlope;
-  stream >> m_fCellSize;
-  stream >> m_fCellHeight;
-  stream >> m_fMaxEdgeLength;
-  stream >> m_fMaxSimplificationError;
-  stream >> m_fMinRegionSize;
-  stream >> m_fRegionMergeSize;
-  stream >> m_fDetailMeshSampleDistanceFactor;
-  stream >> m_fDetailMeshSampleErrorFactor;
+  ref_stream >> m_fAgentHeight;
+  ref_stream >> m_fAgentRadius;
+  ref_stream >> m_fAgentClimbHeight;
+  ref_stream >> m_WalkableSlope;
+  ref_stream >> m_fCellSize;
+  ref_stream >> m_fCellHeight;
+  ref_stream >> m_fMaxEdgeLength;
+  ref_stream >> m_fMaxSimplificationError;
+  ref_stream >> m_fMinRegionSize;
+  ref_stream >> m_fRegionMergeSize;
+  ref_stream >> m_fDetailMeshSampleDistanceFactor;
+  ref_stream >> m_fDetailMeshSampleErrorFactor;
 
   return XII_SUCCESS;
 }

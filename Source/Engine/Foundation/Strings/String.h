@@ -110,7 +110,7 @@ public:
   xiiStringView GetLast(xiiUInt32 uiNumCharacters) const; // [tested]
 
   /// \brief Replaces the current string with the content from the stream. Reads the stream to its end.
-  void ReadAll(xiiStreamReader& Stream);
+  void ReadAll(xiiStreamReader& ref_stream);
 
   /// \brief Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const { return m_Data.GetHeapMemoryUsage(); }
@@ -148,7 +148,7 @@ public:
   void operator=(const xiiHybridString<Size, AllocatorWrapper>& rhs);
   void operator=(const xiiHybridStringBase<Size>& rhs);
   void operator=(const char* szString);
-  void operator=(const wchar_t* szString);
+  void operator=(const wchar_t* pString);
   void operator=(const xiiStringView& rhs);
   void operator=(const xiiStringBuilder& rhs);
   void operator=(xiiStringBuilder&& rhs);
@@ -208,7 +208,7 @@ struct CompareConstChar
 };
 
 // For xiiFormatString
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiString& arg);
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiUntrackedString& arg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiString& sArg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiUntrackedString& sArg);
 
 #include <Foundation/Strings/Implementation/String_inl.h>

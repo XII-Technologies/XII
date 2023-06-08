@@ -14,7 +14,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtResourceWidget(QWidget* parent = 0);
+  xiiQtResourceWidget(QWidget* pParent = 0);
 
   static xiiQtResourceWidget* s_pWidget;
 

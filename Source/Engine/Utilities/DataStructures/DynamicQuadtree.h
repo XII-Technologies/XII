@@ -68,23 +68,23 @@ public:
   /// is set to true. Through out_Object the exact identifier for the object in the tree is returned, which allows for removing the object
   /// with O(1) complexity later. iObjectType and iObjectInstance are the two user values that will be stored for the object. With
   /// RemoveObjectsOfType() one can also remove all objects with the same iObjectType value, if needed.
-  xiiResult InsertObject(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, xiiInt32 iObjectType, xiiInt32 iObjectInstance, xiiDynamicTreeObject* out_Object = nullptr, bool bOnlyIfInside = false); // [tested]
+  xiiResult InsertObject(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, xiiInt32 iObjectType, xiiInt32 iObjectInstance, xiiDynamicTreeObject* out_pObject = nullptr, bool bOnlyIfInside = false); // [tested]
 
   /// \brief Returns all objects in the visible nodes through the callback.
-  void FindVisibleObjects(const xiiFrustum& Viewfrustum, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough = nullptr) const;
+  void FindVisibleObjects(const xiiFrustum& viewfrustum, XII_VISIBLE_OBJ_CALLBACK callback, void* pPassThrough = nullptr) const;
 
   /// \brief Returns all objects that are located in a node that overlaps with the given point.
   ///
   /// \note This function will most likely also return objects that do not overlap with the point itself, because they are located
   /// in a node that overlaps with the point. You might need to do more thorough overlap checks to filter those out.
-  void FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough = nullptr) const; // [tested]
+  void FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_OBJ_CALLBACK callback, void* pPassThrough = nullptr) const; // [tested]
 
   /// \brief Returns all objects that are located in a node that overlaps with the rectangle with center vPoint and half edge length
   /// fRadius.
   ///
   /// \note This function will most likely also return objects that do not overlap with the rectangle itself, because they are located
   /// in a node that overlaps with the rectangle. You might need to do more thorough overlap checks to filter those out.
-  void FindObjectsInRange(const xiiVec3& vPoint, float fRadius, XII_VISIBLE_OBJ_CALLBACK Callback,
+  void FindObjectsInRange(const xiiVec3& vPoint, float fRadius, XII_VISIBLE_OBJ_CALLBACK callback,
                           void* pPassThrough = nullptr) const; // [tested]
 
   /// \brief Removes the given Object. Attention: This is an O(n) operation.
@@ -120,10 +120,10 @@ private:
   bool FindObjectsInRange(const xiiVec3& vPoint, float fRadius, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough, float minx, float maxx, float minz, float maxz, xiiUInt32 uiNodeID, xiiUInt32 uiAddID, xiiUInt32 uiSubAddID, xiiUInt32 uiNextNodeID) const;
 
   /// \brief The tree depth, used for finding a nodes unique ID
-  xiiUInt32 m_uiMaxTreeDepth;
+  xiiUInt32 m_uiMaxTreeDepth = 0;
 
   /// \brief Also used for finding a nodes unique ID
-  xiiUInt32 m_uiAddIDTopLevel;
+  xiiUInt32 m_uiAddIDTopLevel = 0;
 
   /// \brief The square bounding Box (to prevent long thin nodes)
   xiiBoundingBox m_BBox;

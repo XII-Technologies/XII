@@ -34,7 +34,7 @@ public:
   ///
   //// The file content is tokenized first and all #line directives are evaluated, to update the line number and file origin for each token.
   /// Any errors are written to the given log.
-  const xiiTokenizer* Tokenize(const xiiString& sFileName, xiiArrayPtr<const xiiUInt8> FileContent, const xiiTimestamp& FileTimeStamp, xiiLogInterface* pLog);
+  const xiiTokenizer* Tokenize(const xiiString& sFileName, xiiArrayPtr<const xiiUInt8> fileContent, const xiiTimestamp& fileTimeStamp, xiiLogInterface* pLog);
 
 private:
   void SkipWhitespace(xiiDeque<xiiToken>& Tokens, xiiUInt32& uiCurToken);
@@ -157,13 +157,13 @@ public:
   /// \brief Sets the callback that is needed to read input data.
   ///
   /// The default file open function will just try to open files via xiiFileReader.
-  void SetFileOpenFunction(FileOpenCB OpenAbsFileCB);
+  void SetFileOpenFunction(FileOpenCB openAbsFileCB);
 
   /// \brief Sets the callback that is needed to locate an input file
   ///
   /// The default file locator will assume that the main source file and all files #included in angle brackets can be opened without modification.
   /// Files #included in "" will be appended as relative paths to the path of the file they appeared in.
-  void SetFileLocatorFunction(FileLocatorCB LocateAbsFileCB);
+  void SetFileLocatorFunction(FileLocatorCB locateAbsFileCB);
 
   /// \brief Adds a #define to the preprocessor, even before any file is processed.
   ///
@@ -178,13 +178,13 @@ public:
   /// \brief Processes the given file and returns the result as a stream of tokens.
   ///
   /// This function is useful when you want to further process the output afterwards and thus need it in a tokenized form anyway.
-  xiiResult Process(const char* szMainFile, xiiTokenParseUtils::TokenStream& TokenOutput);
+  xiiResult Process(const char* szMainFile, xiiTokenParseUtils::TokenStream& ref_tokenOutput);
 
   /// \brief Processes the given file and returns the result as a string.
   ///
   /// This function creates a string from the tokenized result. If \a bKeepComments is true, all block and line comments
   /// are included in the output string, otherwise they are removed.
-  xiiResult Process(const char* szMainFile, xiiStringBuilder& sOutput, bool bKeepComments = true, bool bRemoveRedundantWhitespace = false, bool bInsertLine = false);
+  xiiResult Process(const char* szMainFile, xiiStringBuilder& ref_sOutput, bool bKeepComments = true, bool bRemoveRedundantWhitespace = false, bool bInsertLine = false);
 
 
 private:
@@ -240,13 +240,13 @@ private:
 
   struct IfDefState
   {
-    IfDefState(IfDefActivity ActiveState = IfDefActivity::IsActive) :
-      m_ActiveState(ActiveState), m_bIsInElseClause(false)
+    IfDefState(IfDefActivity activeState = IfDefActivity::IsActive) :
+      m_ActiveState(activeState)
     {
     }
 
     IfDefActivity m_ActiveState;
-    bool          m_bIsInElseClause;
+    bool          m_bIsInElseClause = false;
   };
 
   xiiDeque<IfDefState> m_IfdefActiveStack;
@@ -255,8 +255,8 @@ private:
   xiiResult ProcessCmd(const xiiTokenParseUtils::TokenStream& Tokens, xiiTokenParseUtils::TokenStream& TokenOutput);
 
 public:
-  static xiiResult DefaultFileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType IncType, xiiStringBuilder& out_sAbsoluteFilePath);
-  static xiiResult DefaultFileOpen(const char* szAbsoluteFile, xiiDynamicArray<xiiUInt8>& FileContent, xiiTimestamp& out_FileModification);
+  static xiiResult DefaultFileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath);
+  static xiiResult DefaultFileOpen(const char* szAbsoluteFile, xiiDynamicArray<xiiUInt8>& ref_fileContent, xiiTimestamp& out_fileModification);
 
 private: // *** File Handling ***
   xiiResult OpenFile(const char* szFile, const xiiTokenizer** pTokenizer);

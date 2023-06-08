@@ -159,9 +159,9 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::Prepend(T* pDestination, T&& source, size
 }
 
 template <typename T>
-XII_ALWAYS_INLINE void xiiMemoryUtils::Prepend(T* pDestination, const T* source, size_t uiSourceCount, size_t uiCount)
+XII_ALWAYS_INLINE void xiiMemoryUtils::Prepend(T* pDestination, const T* pSource, size_t uiSourceCount, size_t uiCount)
 {
-  Prepend(pDestination, source, uiSourceCount, uiCount, xiiGetTypeClass<T>());
+  Prepend(pDestination, pSource, uiSourceCount, uiCount, xiiGetTypeClass<T>());
 }
 
 template <typename T>
@@ -206,21 +206,21 @@ XII_ALWAYS_INLINE xiiInt32 xiiMemoryUtils::RawByteCompare(const void* a, const v
 }
 
 template <typename T>
-XII_ALWAYS_INLINE T* xiiMemoryUtils::AddByteOffset(T* ptr, ptrdiff_t iOffset)
+XII_ALWAYS_INLINE T* xiiMemoryUtils::AddByteOffset(T* pPtr, ptrdiff_t iOffset)
 {
-  return reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(ptr) + iOffset);
+  return reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(pPtr) + iOffset);
 }
 
 template <typename T>
-XII_ALWAYS_INLINE T* xiiMemoryUtils::AlignBackwards(T* ptr, size_t uiAlignment)
+XII_ALWAYS_INLINE T* xiiMemoryUtils::AlignBackwards(T* pPtr, size_t uiAlignment)
 {
-  return reinterpret_cast<T*>(reinterpret_cast<size_t>(ptr) & ~(uiAlignment - 1));
+  return reinterpret_cast<T*>(reinterpret_cast<size_t>(pPtr) & ~(uiAlignment - 1));
 }
 
 template <typename T>
-XII_ALWAYS_INLINE T* xiiMemoryUtils::AlignForwards(T* ptr, size_t uiAlignment)
+XII_ALWAYS_INLINE T* xiiMemoryUtils::AlignForwards(T* pPtr, size_t uiAlignment)
 {
-  return reinterpret_cast<T*>((reinterpret_cast<size_t>(ptr) + uiAlignment - 1) & ~(uiAlignment - 1));
+  return reinterpret_cast<T*>((reinterpret_cast<size_t>(pPtr) + uiAlignment - 1) & ~(uiAlignment - 1));
 }
 
 template <typename T>
@@ -230,9 +230,9 @@ XII_ALWAYS_INLINE T xiiMemoryUtils::AlignSize(T uiSize, T uiAlignment)
 }
 
 template <typename T>
-XII_ALWAYS_INLINE bool xiiMemoryUtils::IsAligned(const T* ptr, size_t uiAlignment)
+XII_ALWAYS_INLINE bool xiiMemoryUtils::IsAligned(const T* pPtr, size_t uiAlignment)
 {
-  return (reinterpret_cast<size_t>(ptr) & (uiAlignment - 1)) == 0;
+  return (reinterpret_cast<size_t>(pPtr) & (uiAlignment - 1)) == 0;
 }
 
 template <typename T>

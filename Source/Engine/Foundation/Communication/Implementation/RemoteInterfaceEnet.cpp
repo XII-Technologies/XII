@@ -29,9 +29,9 @@ private:
   static bool s_bEnetInitialized;
 };
 
-xiiInternal::NewInstance<xiiRemoteInterfaceEnet> xiiRemoteInterfaceEnet::Make(xiiAllocatorBase* allocator /*= xiiFoundation::GetDefaultAllocator()*/)
+xiiInternal::NewInstance<xiiRemoteInterfaceEnet> xiiRemoteInterfaceEnet::Make(xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
 {
-  return XII_NEW(allocator, xiiRemoteInterfaceEnetImpl);
+  return XII_NEW(pAllocator, xiiRemoteInterfaceEnetImpl);
 }
 
 xiiRemoteInterfaceEnet::xiiRemoteInterfaceEnet()  = default;

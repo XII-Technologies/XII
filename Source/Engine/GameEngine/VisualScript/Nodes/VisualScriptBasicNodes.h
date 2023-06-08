@@ -124,7 +124,7 @@ public:
   virtual void* GetInputPinDataPointer(xiiUInt8 uiPin) override;
   virtual bool  IsManuallyStepped() const override { return true; }
 
-  static xiiResult ConvertArgumentToRequiredType(xiiVariant& var, xiiVariantType::Enum type);
+  static xiiResult ConvertArgumentToRequiredType(xiiVariant& ref_var, xiiVariantType::Enum type);
 
   const xiiRTTI*                     m_pExpectedType   = nullptr;
   const xiiAbstractFunctionProperty* m_pFunctionToCall = nullptr;

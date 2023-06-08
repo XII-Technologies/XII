@@ -114,7 +114,7 @@ void xiiBoneWeightsAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const xiiS
       name.AppendFormat("-{}", rootBone);
     }
 
-    m_pSharedBoneWeights = graph.CreateBoneWeights(name, *pSkeleton, [this, pOzzSkeleton](xiiAnimGraphSharedBoneWeights& bw) {
+    m_pSharedBoneWeights = graph.CreateBoneWeights(name, *pSkeleton, [this, pOzzSkeleton](xiiAnimGraphSharedBoneWeights& ref_bw) {
       for (const auto& rootBone : m_RootBones)
       {
         int iRootBone = -1;
@@ -129,11 +129,11 @@ void xiiBoneWeightsAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const xiiS
 
         const float fBoneWeight = 1.0f;
 
-        auto setBoneWeight = [&](int currentBone, int) {
-          const int iJointIdx0 = currentBone / 4;
-          const int iJointIdx1 = currentBone % 4;
+        auto setBoneWeight = [&](int iCurrentBone, int) {
+          const int iJointIdx0 = iCurrentBone / 4;
+          const int iJointIdx1 = iCurrentBone % 4;
 
-          ozz::math::SimdFloat4& soa_weight = bw.m_Weights[iJointIdx0];
+          ozz::math::SimdFloat4& soa_weight = ref_bw.m_Weights[iJointIdx0];
           soa_weight                        = ozz::math::SetI(soa_weight, ozz::math::simd_float4::Load1(fBoneWeight), iJointIdx1);
         };
 
@@ -145,12 +145,12 @@ void xiiBoneWeightsAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const xiiS
     {
       name.Append("-inv");
 
-      m_pSharedInverseBoneWeights = graph.CreateBoneWeights(name, *pSkeleton, [this](xiiAnimGraphSharedBoneWeights& bw) {
+      m_pSharedInverseBoneWeights = graph.CreateBoneWeights(name, *pSkeleton, [this](xiiAnimGraphSharedBoneWeights& ref_bw) {
         const ozz::math::SimdFloat4 oneBone = ozz::math::simd_float4::one();
 
-        for (xiiUInt32 b = 0; b < bw.m_Weights.GetCount(); ++b)
+        for (xiiUInt32 b = 0; b < ref_bw.m_Weights.GetCount(); ++b)
         {
-          bw.m_Weights[b] = ozz::math::MSub(oneBone, oneBone, m_pSharedBoneWeights->m_Weights[b]);
+          ref_bw.m_Weights[b] = ozz::math::MSub(oneBone, oneBone, m_pSharedBoneWeights->m_Weights[b]);
         }
       });
     }

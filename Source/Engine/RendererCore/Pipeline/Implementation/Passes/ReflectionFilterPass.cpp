@@ -30,7 +30,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiReflectionFilterPass::xiiReflectionFilterPass() :
-  xiiRenderPipelinePass("ReflectionFilterPass"), m_fIntensity(1.0f), m_fSaturation(1.0f), m_uiIrradianceOutputIndex(0)
+  xiiRenderPipelinePass("ReflectionFilterPass")
 {
   {
     m_hFilteredSpecularConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiReflectionFilteredSpecularConstants>(XII_STRINGIZE(xiiReflectionFilteredSpecularConstants));

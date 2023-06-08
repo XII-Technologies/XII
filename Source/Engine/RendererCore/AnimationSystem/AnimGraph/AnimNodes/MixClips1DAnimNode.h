@@ -7,7 +7,7 @@ struct XII_RENDERERCORE_DLL xiiAnimClip1D
   xiiAnimationClipResourceHandle m_hAnimation;
   float                          m_fPosition;
 
-  void        SetAnimationFile(const char* sz);
+  void        SetAnimationFile(const char* szSz);
   const char* GetAnimationFile() const;
 };
 

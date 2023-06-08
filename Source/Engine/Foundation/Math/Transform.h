@@ -44,7 +44,8 @@ public:
   // *** Constructors ***
 public:
   /// \brief Default constructor: Does not do any initialization.
-  xiiTransformTemplate(){}; // [tested]
+  xiiTransformTemplate() = default;
+  ; // [tested]
 
   /// \brief Sets position and rotation.
   explicit xiiTransformTemplate(const xiiVec3Template<Type>& vPosition,
@@ -52,7 +53,7 @@ public:
                                 const xiiVec3Template<Type>& vScale    = xiiVec3Template<Type>(1)); // [tested]
 
   /// \brief Attempts to extract position, scale and rotation from the matrix. Negative scaling and shearing will get lost in the process.
-  void SetFromMat4(const xiiMat4Template<Type>& mat);
+  void SetFromMat4(const xiiMat4Template<Type>& mMat);
 
   /// \brief Sets the position to be zero and the rotation to identity.
   void SetIdentity(); // [tested]
@@ -94,10 +95,10 @@ public:
   // *** Conversion operations ***
 public:
   /// \brief Sets this transform to be the local transformation needed to get from the parent's transform to the child's.
-  void SetLocalTransform(const xiiTransformTemplate& GlobalTransformParent, const xiiTransformTemplate& GlobalTransformChild); // [tested]
+  void SetLocalTransform(const xiiTransformTemplate& globalTransformParent, const xiiTransformTemplate& globalTransformChild); // [tested]
 
   /// \brief Sets this transform to the global transform, that is reached by applying the child's local transform to the parent's global one.
-  void SetGlobalTransform(const xiiTransformTemplate& GlobalTransformParent, const xiiTransformTemplate& LocalTransformChild); // [tested]
+  void SetGlobalTransform(const xiiTransformTemplate& globalTransformParent, const xiiTransformTemplate& localTransformChild); // [tested]
 
   /// \brief Returns the transformation as a matrix.
   const xiiMat4Template<Type> GetAsMat4() const; // [tested]

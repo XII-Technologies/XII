@@ -171,13 +171,13 @@ xiiVec3Template<Type> xiiMat3Template<Type>::GetRow(xiiUInt32 uiRow) const
 }
 
 template <typename Type>
-void xiiMat3Template<Type>::SetRow(xiiUInt32 uiRow, const xiiVec3Template<Type>& row)
+void xiiMat3Template<Type>::SetRow(xiiUInt32 uiRow, const xiiVec3Template<Type>& vRow)
 {
   XII_ASSERT_DEBUG(uiRow <= 2, "Invalid Row Index {0}", uiRow);
 
-  Element(0, uiRow) = row.x;
-  Element(1, uiRow) = row.y;
-  Element(2, uiRow) = row.z;
+  Element(0, uiRow) = vRow.x;
+  Element(1, uiRow) = vRow.y;
+  Element(2, uiRow) = vRow.z;
 }
 
 template <typename Type>
@@ -195,13 +195,13 @@ xiiVec3Template<Type> xiiMat3Template<Type>::GetColumn(xiiUInt32 uiColumn) const
 }
 
 template <typename Type>
-void xiiMat3Template<Type>::SetColumn(xiiUInt32 uiColumn, const xiiVec3Template<Type>& column)
+void xiiMat3Template<Type>::SetColumn(xiiUInt32 uiColumn, const xiiVec3Template<Type>& vColumn)
 {
   XII_ASSERT_DEBUG(uiColumn <= 2, "Invalid Column Index {0}", uiColumn);
 
-  Element(uiColumn, 0) = column.x;
-  Element(uiColumn, 1) = column.y;
-  Element(uiColumn, 2) = column.z;
+  Element(uiColumn, 0) = vColumn.x;
+  Element(uiColumn, 1) = vColumn.y;
+  Element(uiColumn, 2) = vColumn.z;
 }
 
 template <typename Type>
@@ -213,11 +213,11 @@ xiiVec3Template<Type> xiiMat3Template<Type>::GetDiagonal() const
 }
 
 template <typename Type>
-void xiiMat3Template<Type>::SetDiagonal(const xiiVec3Template<Type>& diag)
+void xiiMat3Template<Type>::SetDiagonal(const xiiVec3Template<Type>& vDiag)
 {
-  Element(0, 0) = diag.x;
-  Element(1, 1) = diag.y;
-  Element(2, 2) = diag.z;
+  Element(0, 0) = vDiag.x;
+  Element(1, 1) = vDiag.y;
+  Element(2, 2) = vDiag.z;
 }
 
 template <typename Type>

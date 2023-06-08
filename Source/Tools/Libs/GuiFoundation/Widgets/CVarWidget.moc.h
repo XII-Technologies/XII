@@ -23,14 +23,14 @@ class xiiQtCVarItemDelegate : public QItemDelegate
   Q_OBJECT
 
 public:
-  explicit xiiQtCVarItemDelegate(QObject* parent = nullptr) :
-    QItemDelegate(parent)
+  explicit xiiQtCVarItemDelegate(QObject* pParent = nullptr) :
+    QItemDelegate(pParent)
   {
   }
 
-  virtual QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
-  virtual void     setEditorData(QWidget* editor, const QModelIndex& index) const override;
-  virtual void     setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override;
+  virtual QWidget* createEditor(QWidget* pParent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+  virtual void     setEditorData(QWidget* pEditor, const QModelIndex& index) const override;
+  virtual void     setModelData(QWidget* pEditor, QAbstractItemModel* pModel, const QModelIndex& index) const override;
 
   xiiQtCVarModel* m_pModel = nullptr;
 
@@ -45,18 +45,18 @@ class xiiQtCVarModel : public QAbstractItemModel
 {
   Q_OBJECT
 public:
-  xiiQtCVarModel(xiiQtCVarWidget* owner);
+  xiiQtCVarModel(xiiQtCVarWidget* pOwner);
   ~xiiQtCVarModel();
 
   void BeginResetModel();
   void EndResetModel();
 
 public: // QAbstractItemModel interface
-  virtual QVariant      headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-  virtual QVariant      data(const QModelIndex& index, int role) const override;
-  virtual bool          setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
+  virtual QVariant      headerData(int iSection, Qt::Orientation orientation, int iRole = Qt::DisplayRole) const override;
+  virtual QVariant      data(const QModelIndex& index, int iRole) const override;
+  virtual bool          setData(const QModelIndex& index, const QVariant& value, int iRole = Qt::EditRole) override;
   virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
-  virtual QModelIndex   index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
+  virtual QModelIndex   index(int iRow, int iColumn, const QModelIndex& parent = QModelIndex()) const override;
   virtual QModelIndex   parent(const QModelIndex& index) const override;
   virtual int           rowCount(const QModelIndex& parent = QModelIndex()) const override;
   virtual int           columnCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -74,7 +74,7 @@ public:
     xiiVariant m_Value;
   };
 
-  Entry* CreateEntry(const char* name);
+  Entry* CreateEntry(const char* szName);
 
   xiiQtCVarWidget*        m_pOwner = nullptr;
   xiiDynamicArray<Entry*> m_RootEntries;
@@ -104,7 +104,7 @@ class XII_GUIFOUNDATION_DLL xiiQtCVarWidget : public QWidget, public Ui_CVarWidg
   Q_OBJECT
 
 public:
-  xiiQtCVarWidget(QWidget* parent);
+  xiiQtCVarWidget(QWidget* pParent);
   ~xiiQtCVarWidget();
 
   /// \brief Clears the table
@@ -116,16 +116,16 @@ public:
   /// \brief Updates the existing UI. This is sufficient if values changed only.
   void UpdateCVarUI(const xiiMap<xiiString, xiiCVarWidgetData>& cvars);
 
-  void AddConsoleStrings(const xiiStringBuilder& encoded);
+  void AddConsoleStrings(const xiiStringBuilder& sEncoded);
 
   xiiConsole& GetConsole() { return m_Console; }
 
 Q_SIGNALS:
-  void onBoolChanged(const char* szCVar, bool newValue);
-  void onFloatChanged(const char* szCVar, float newValue);
-  void onDoubleChanged(const char* szCVar, double newValue);
-  void onIntChanged(const char* szCVar, int newValue);
-  void onStringChanged(const char* szCVar, const char* newValue);
+  void onBoolChanged(const char* szCVar, bool bNewValue);
+  void onFloatChanged(const char* szCVar, float fNewValue);
+  void onDoubleChanged(const char* szCVar, double fNewValue);
+  void onIntChanged(const char* szCVar, int iNewValue);
+  void onStringChanged(const char* szCVar, const char* szNewValue);
 
 private Q_SLOTS:
   void SearchTextChanged(const QString& text);

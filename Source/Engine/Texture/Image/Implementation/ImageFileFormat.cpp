@@ -6,11 +6,11 @@
 
 XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiImageFileFormat);
 
-xiiImageFileFormat* xiiImageFileFormat::GetReaderFormat(const char* extension)
+xiiImageFileFormat* xiiImageFileFormat::GetReaderFormat(const char* szExtension)
 {
   for (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetFirstInstance(); pFormat; pFormat = pFormat->GetNextInstance())
   {
-    if (pFormat->CanReadFileType(extension))
+    if (pFormat->CanReadFileType(szExtension))
     {
       return pFormat;
     }
@@ -19,11 +19,11 @@ xiiImageFileFormat* xiiImageFileFormat::GetReaderFormat(const char* extension)
   return nullptr;
 }
 
-xiiImageFileFormat* xiiImageFileFormat::GetWriterFormat(const char* extension)
+xiiImageFileFormat* xiiImageFileFormat::GetWriterFormat(const char* szExtension)
 {
   for (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetFirstInstance(); pFormat; pFormat = pFormat->GetNextInstance())
   {
-    if (pFormat->CanWriteFileType(extension))
+    if (pFormat->CanWriteFileType(szExtension))
     {
       return pFormat;
     }
@@ -32,7 +32,7 @@ xiiImageFileFormat* xiiImageFileFormat::GetWriterFormat(const char* extension)
   return nullptr;
 }
 
-xiiResult xiiImageFileFormat::ReadImageHeader(const char* szFileName, xiiImageHeader& header)
+xiiResult xiiImageFileFormat::ReadImageHeader(const char* szFileName, xiiImageHeader& ref_header)
 {
   XII_LOG_BLOCK("Read Image Header", szFileName);
 
@@ -49,7 +49,7 @@ xiiResult xiiImageFileFormat::ReadImageHeader(const char* szFileName, xiiImageHe
 
   if (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetReaderFormat(it.GetStartPointer()))
   {
-    if (pFormat->ReadImageHeader(reader, header, it.GetStartPointer()) != XII_SUCCESS)
+    if (pFormat->ReadImageHeader(reader, ref_header, it.GetStartPointer()) != XII_SUCCESS)
     {
       xiiLog::Warning("Failed to read image file '{0}'", xiiArgSensitive(szFileName, "File"));
       return XII_FAILURE;

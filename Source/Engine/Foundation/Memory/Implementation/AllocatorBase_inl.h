@@ -61,12 +61,12 @@ namespace xiiInternal
   }
 
   template <typename T>
-  XII_FORCE_INLINE void Delete(xiiAllocatorBase* pAllocator, T* ptr)
+  XII_FORCE_INLINE void Delete(xiiAllocatorBase* pAllocator, T* pPtr)
   {
-    if (ptr != nullptr)
+    if (pPtr != nullptr)
     {
-      xiiMemoryUtils::Destruct(ptr, 1);
-      pAllocator->Deallocate(ptr);
+      xiiMemoryUtils::Destruct(pPtr, 1);
+      pAllocator->Deallocate(pPtr);
     }
   }
 
@@ -77,11 +77,11 @@ namespace xiiInternal
     return static_cast<T*>(pAllocator->Allocate(static_cast<size_t>(safeAllocationSize), XII_ALIGNMENT_OF(T))); // Down-cast to size_t for 32-bit
   }
 
-  XII_FORCE_INLINE void DeleteRawBuffer(xiiAllocatorBase* pAllocator, void* ptr)
+  XII_FORCE_INLINE void DeleteRawBuffer(xiiAllocatorBase* pAllocator, void* pPtr)
   {
-    if (ptr != nullptr)
+    if (pPtr != nullptr)
     {
-      pAllocator->Deallocate(ptr);
+      pAllocator->Deallocate(pPtr);
     }
   }
 
@@ -106,40 +106,40 @@ namespace xiiInternal
   }
 
   template <typename T>
-  XII_FORCE_INLINE T* ExtendRawBuffer(T* ptr, xiiAllocatorBase* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsPod)
+  XII_FORCE_INLINE T* ExtendRawBuffer(T* pPtr, xiiAllocatorBase* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsPod)
   {
-    return (T*)pAllocator->Reallocate(ptr, uiCurrentCount * sizeof(T), uiNewCount * sizeof(T), XII_ALIGNMENT_OF(T));
+    return (T*)pAllocator->Reallocate(pPtr, uiCurrentCount * sizeof(T), uiNewCount * sizeof(T), XII_ALIGNMENT_OF(T));
   }
 
   template <typename T>
-  XII_FORCE_INLINE T* ExtendRawBuffer(T* ptr, xiiAllocatorBase* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsMemRelocatable)
+  XII_FORCE_INLINE T* ExtendRawBuffer(T* pPtr, xiiAllocatorBase* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsMemRelocatable)
   {
-    return (T*)pAllocator->Reallocate(ptr, uiCurrentCount * sizeof(T), uiNewCount * sizeof(T), XII_ALIGNMENT_OF(T));
+    return (T*)pAllocator->Reallocate(pPtr, uiCurrentCount * sizeof(T), uiNewCount * sizeof(T), XII_ALIGNMENT_OF(T));
   }
 
   template <typename T>
-  XII_FORCE_INLINE T* ExtendRawBuffer(T* ptr, xiiAllocatorBase* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsClass)
+  XII_FORCE_INLINE T* ExtendRawBuffer(T* pPtr, xiiAllocatorBase* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsClass)
   {
     XII_CHECK_AT_COMPILETIME_MSG(!std::is_trivial<T>::value,
                                  "POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.");
 
     T* pNewMem = CreateRawBuffer<T>(pAllocator, uiNewCount);
-    xiiMemoryUtils::RelocateConstruct(pNewMem, ptr, uiCurrentCount);
-    DeleteRawBuffer(pAllocator, ptr);
+    xiiMemoryUtils::RelocateConstruct(pNewMem, pPtr, uiCurrentCount);
+    DeleteRawBuffer(pAllocator, pPtr);
     return pNewMem;
   }
 
   template <typename T>
-  XII_FORCE_INLINE T* ExtendRawBuffer(T* ptr, xiiAllocatorBase* pAllocator, size_t uiCurrentCount, size_t uiNewCount)
+  XII_FORCE_INLINE T* ExtendRawBuffer(T* pPtr, xiiAllocatorBase* pAllocator, size_t uiCurrentCount, size_t uiNewCount)
   {
     XII_ASSERT_DEV(uiCurrentCount < uiNewCount, "Shrinking of a buffer is not implemented yet");
     XII_ASSERT_DEV(!(uiCurrentCount == uiNewCount), "Same size passed in twice.");
-    if (ptr == nullptr)
+    if (pPtr == nullptr)
     {
       XII_ASSERT_DEV(uiCurrentCount == 0, "current count must be 0 if ptr is nullptr");
 
       return CreateRawBuffer<T>(pAllocator, uiNewCount);
     }
-    return ExtendRawBuffer(ptr, pAllocator, uiCurrentCount, uiNewCount, xiiGetTypeClass<T>());
+    return ExtendRawBuffer(pPtr, pAllocator, uiCurrentCount, uiNewCount, xiiGetTypeClass<T>());
   }
 } // namespace xiiInternal

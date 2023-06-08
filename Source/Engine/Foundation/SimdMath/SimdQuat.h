@@ -19,7 +19,7 @@ public:
   void SetIdentity(); // [tested]
 
   /// \brief Creates a quaternion from a rotation-axis and an angle (angle is given in Radians or as an xiiAngle)
-  void SetFromAxisAndAngle(const xiiSimdVec4f& vRotationAxis, const xiiSimdFloat& angle); // [tested]
+  void SetFromAxisAndAngle(const xiiSimdVec4f& vRotationAxis, const xiiSimdFloat& fAngle); // [tested]
 
   /// \brief Creates a quaternion, that rotates through the shortest arc from "vDirFrom" to "vDirTo".
   void SetShortestRotation(const xiiSimdVec4f& vDirFrom, const xiiSimdVec4f& vDirTo); // [tested]
@@ -33,8 +33,8 @@ public:
 
   /// \brief Returns the rotation-axis and angle (in Radians), that this quaternion rotates around.
   xiiResult GetRotationAxisAndAngle(
-    xiiSimdVec4f&       vAxis,
-    xiiSimdFloat&       angle,
+    xiiSimdVec4f&       ref_vAxis,
+    xiiSimdFloat&       ref_fAngle,
     const xiiSimdFloat& fEpsilon = xiiMath::DefaultEpsilon<float>()) const; // [tested]
 
   /// \brief Returns the Quaternion as a matrix.

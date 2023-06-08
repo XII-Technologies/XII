@@ -24,8 +24,8 @@ public:
   xiiUInt32                 m_uiPathStringOffset     = 0; ///< Byte offset into xiiArchiveTOC::m_AllPathStrings where the path string for this entry resides.
   xiiArchiveCompressionMode m_CompressionMode        = xiiArchiveCompressionMode::Uncompressed;
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 };
 
 /// \brief Helper class to store a hashed string for quick lookup in the archive TOC
@@ -50,8 +50,8 @@ public:
   xiiUInt32 m_uiSrcStringOffset;
 };
 
-void operator<<(xiiStreamWriter& stream, const xiiArchiveStoredString& value);
-void operator>>(xiiStreamReader& stream, xiiArchiveStoredString& value);
+void operator<<(xiiStreamWriter& ref_stream, const xiiArchiveStoredString& value);
+void operator>>(xiiStreamReader& ref_stream, xiiArchiveStoredString& value);
 
 /// \brief Helper class for looking up path strings in xiiArchiveTOC::FindEntry()
 ///
@@ -63,8 +63,8 @@ class xiiArchiveLookupString
 public:
   XII_DECLARE_POD_TYPE();
 
-  xiiArchiveLookupString(xiiUInt64 uiLowerCaseHash, const char* string, const xiiDynamicArray<xiiUInt8>& ArchiveAllPathStrings) :
-    m_uiLowerCaseHash(xiiHashingUtils::StringHashTo32(uiLowerCaseHash)), m_szString(string), m_ArchiveAllPathStrings(ArchiveAllPathStrings)
+  xiiArchiveLookupString(xiiUInt64 uiLowerCaseHash, const char* szString, const xiiDynamicArray<xiiUInt8>& archiveAllPathStrings) :
+    m_uiLowerCaseHash(xiiHashingUtils::StringHashTo32(uiLowerCaseHash)), m_szString(szString), m_ArchiveAllPathStrings(archiveAllPathStrings)
   {
   }
 
@@ -106,6 +106,6 @@ public:
 
   const char* GetEntryPathString(xiiUInt32 uiEntryIdx) const;
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream, xiiUInt8 uiArchiveVersion);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiArchiveVersion);
 };

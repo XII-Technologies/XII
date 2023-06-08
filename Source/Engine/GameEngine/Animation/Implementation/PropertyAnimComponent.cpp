@@ -43,10 +43,10 @@ xiiPropertyAnimComponent::xiiPropertyAnimComponent()
 
 xiiPropertyAnimComponent::~xiiPropertyAnimComponent() = default;
 
-void xiiPropertyAnimComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiPropertyAnimComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_hPropertyAnim;
   s << m_AnimationMode;
@@ -62,11 +62,11 @@ void xiiPropertyAnimComponent::SerializeComponent(xiiWorldWriter& stream) const
   /// \todo Somehow store the animation state (not necessary for new scenes, but for quicksaves)
 }
 
-void xiiPropertyAnimComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiPropertyAnimComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_hPropertyAnim;
 
@@ -112,10 +112,10 @@ void xiiPropertyAnimComponent::SetPropertyAnim(const xiiPropertyAnimResourceHand
   m_hPropertyAnim = hPropertyAnim;
 }
 
-void xiiPropertyAnimComponent::PlayAnimationRange(xiiTime RangeLow, xiiTime RangeHigh)
+void xiiPropertyAnimComponent::PlayAnimationRange(xiiTime rangeLow, xiiTime rangeHigh)
 {
-  m_AnimationRangeLow  = RangeLow;
-  m_AnimationRangeHigh = RangeHigh;
+  m_AnimationRangeLow  = rangeLow;
+  m_AnimationRangeHigh = rangeHigh;
 
   m_bPlaying = true;
 
@@ -123,9 +123,9 @@ void xiiPropertyAnimComponent::PlayAnimationRange(xiiTime RangeLow, xiiTime Rang
 }
 
 
-void xiiPropertyAnimComponent::OnMsgSetPlaying(xiiMsgSetPlaying& msg)
+void xiiPropertyAnimComponent::OnMsgSetPlaying(xiiMsgSetPlaying& ref_msg)
 {
-  m_bPlaying = msg.m_bPlay;
+  m_bPlaying = ref_msg.m_bPlay;
 }
 
 void xiiPropertyAnimComponent::CreatePropertyBindings()

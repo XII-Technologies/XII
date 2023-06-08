@@ -13,14 +13,14 @@ XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgExtractGeometry);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgExtractGeometry, 1, xiiRTTIDefaultAllocator<xiiMsgExtractGeometry>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-void xiiWorldGeoExtractionUtil::ExtractWorldGeometry(MeshObjectList& objects, const xiiWorld& world, ExtractionMode mode, xiiTagSet* pExcludeTags /*= nullptr*/)
+void xiiWorldGeoExtractionUtil::ExtractWorldGeometry(MeshObjectList& ref_objects, const xiiWorld& world, ExtractionMode mode, xiiTagSet* pExcludeTags /*= nullptr*/)
 {
   XII_PROFILE_SCOPE("ExtractWorldGeometry");
   XII_LOG_BLOCK("ExtractWorldGeometry", world.GetName());
 
   xiiMsgExtractGeometry msg;
   msg.m_Mode         = mode;
-  msg.m_pMeshObjects = &objects;
+  msg.m_pMeshObjects = &ref_objects;
 
   XII_LOCK(world.GetReadMarker());
 
@@ -33,14 +33,14 @@ void xiiWorldGeoExtractionUtil::ExtractWorldGeometry(MeshObjectList& objects, co
   }
 }
 
-void xiiWorldGeoExtractionUtil::ExtractWorldGeometry(MeshObjectList& objects, const xiiWorld& world, ExtractionMode mode, const xiiDeque<xiiGameObjectHandle>& selection)
+void xiiWorldGeoExtractionUtil::ExtractWorldGeometry(MeshObjectList& ref_objects, const xiiWorld& world, ExtractionMode mode, const xiiDeque<xiiGameObjectHandle>& selection)
 {
   XII_PROFILE_SCOPE("ExtractWorldGeometry");
   XII_LOG_BLOCK("ExtractWorldGeometry", world.GetName());
 
   xiiMsgExtractGeometry msg;
   msg.m_Mode         = mode;
-  msg.m_pMeshObjects = &objects;
+  msg.m_pMeshObjects = &ref_objects;
 
   XII_LOCK(world.GetReadMarker());
 

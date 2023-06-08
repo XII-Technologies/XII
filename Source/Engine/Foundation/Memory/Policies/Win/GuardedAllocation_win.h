@@ -71,7 +71,7 @@ namespace xiiMemoryPolicies
   XII_MSVC_ANALYSIS_WARNING_PUSH
   XII_MSVC_ANALYSIS_WARNING_DISABLE(6250)
 
-  void xiiGuardedAllocation::Deallocate(void* ptr)
+  void xiiGuardedAllocation::Deallocate(void* pPtr)
   {
     xiiLock<xiiMutex> lock(m_Mutex);
 
@@ -84,7 +84,7 @@ namespace xiiMemoryPolicies
     }
 
     // Retrieve info from meta data first.
-    AlloctionMetaData* metaData      = xiiMemoryUtils::AddByteOffset(static_cast<AlloctionMetaData*>(ptr), -((ptrdiff_t)sizeof(AlloctionMetaData)));
+    AlloctionMetaData* metaData      = xiiMemoryUtils::AddByteOffset(static_cast<AlloctionMetaData*>(pPtr), -((ptrdiff_t)sizeof(AlloctionMetaData)));
     size_t             uiAlignedSize = metaData->m_uiSize;
 
     xiiMemoryUtils::Destruct(metaData, 1);
@@ -93,13 +93,13 @@ namespace xiiMemoryPolicies
     size_t uiPageSize     = m_uiPageSize;
     size_t uiTotalSize    = uiAlignedSize + sizeof(AlloctionMetaData);
     size_t uiFullPageSize = xiiMemoryUtils::AlignSize(uiTotalSize, uiPageSize);
-    ptr                   = xiiMemoryUtils::AddByteOffset(ptr, ((ptrdiff_t)uiAlignedSize) - uiFullPageSize);
+    pPtr                  = xiiMemoryUtils::AddByteOffset(pPtr, ((ptrdiff_t)uiAlignedSize) - uiFullPageSize);
 
     XII_VERIFY(
-      ::VirtualFree(ptr, uiFullPageSize, MEM_DECOMMIT), "Could not decommit memory pages. Error Code '{0}'", xiiArgErrorCode(::GetLastError()));
+      ::VirtualFree(pPtr, uiFullPageSize, MEM_DECOMMIT), "Could not decommit memory pages. Error Code '{0}'", xiiArgErrorCode(::GetLastError()));
 
     // Finally store the allocation so we can release it later
-    void* pMemory = xiiMemoryUtils::AddByteOffset(ptr, -((ptrdiff_t)uiPageSize));
+    void* pMemory = xiiMemoryUtils::AddByteOffset(pPtr, -((ptrdiff_t)uiPageSize));
     m_AllocationsToFreeLater.PushBack(pMemory);
   }
 

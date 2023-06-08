@@ -74,28 +74,28 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiClothSheetComponent::xiiClothSheetComponent()  = default;
 xiiClothSheetComponent::~xiiClothSheetComponent() = default;
 
-void xiiClothSheetComponent::SetSize(xiiVec2 val)
+void xiiClothSheetComponent::SetSize(xiiVec2 vVal)
 {
-  m_vSize = val;
+  m_vSize = vVal;
   SetupCloth();
 }
 
-void xiiClothSheetComponent::SetSlack(xiiVec2 val)
+void xiiClothSheetComponent::SetSlack(xiiVec2 vVal)
 {
-  m_vSlack = val;
+  m_vSlack = vVal;
   SetupCloth();
 }
 
-void xiiClothSheetComponent::SetSegments(xiiVec2U32 val)
+void xiiClothSheetComponent::SetSegments(xiiVec2U32 vVal)
 {
-  m_vSegments = val;
+  m_vSegments = vVal;
   SetupCloth();
 }
 
-void xiiClothSheetComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiClothSheetComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_vSize;
   s << m_vSegments;
@@ -107,11 +107,11 @@ void xiiClothSheetComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_Color;
 }
 
-void xiiClothSheetComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiClothSheetComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_vSize;
   s >> m_vSegments;
@@ -237,11 +237,11 @@ void xiiClothSheetComponent::OnDeactivated()
   SUPER::OnDeactivated();
 }
 
-xiiResult xiiClothSheetComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiClothSheetComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   if (m_Bbox.IsValid())
   {
-    bounds.ExpandToInclude(m_Bbox);
+    ref_bounds.ExpandToInclude(m_Bbox);
   }
   else
   {
@@ -252,7 +252,7 @@ xiiResult xiiClothSheetComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, b
     box.ExpandToInclude(xiiVec3(0, m_vSize.y, +0.1f));
     box.ExpandToInclude(xiiVec3(m_vSize.x, m_vSize.y, 0));
 
-    bounds.ExpandToInclude(box);
+    ref_bounds.ExpandToInclude(box);
   }
 
   return XII_SUCCESS;
@@ -473,17 +473,17 @@ xiiClothSheetRenderer::xiiClothSheetRenderer()
 
 xiiClothSheetRenderer::~xiiClothSheetRenderer() = default;
 
-void xiiClothSheetRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const
+void xiiClothSheetRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
-  categories.PushBack(xiiDefaultRenderDataCategories::LitOpaque);
-  categories.PushBack(xiiDefaultRenderDataCategories::LitMasked);
-  categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
-  categories.PushBack(xiiDefaultRenderDataCategories::Selection);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitOpaque);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitMasked);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
 }
 
-void xiiClothSheetRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const
+void xiiClothSheetRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {
-  types.PushBack(xiiGetStaticRTTI<xiiClothSheetRenderData>());
+  ref_types.PushBack(xiiGetStaticRTTI<xiiClothSheetRenderData>());
 }
 
 void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const

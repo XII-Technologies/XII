@@ -61,7 +61,7 @@ public:
 
   void ExtractSystemRenderData(xiiMsgExtractRenderData& ref_msg, const xiiTransform& instanceTransform) const;
 
-  typedef xiiEvent<const xiiStreamGroupElementRemovedEvent&>::Handler ParticleDeathHandler;
+  using ParticleDeathHandler = xiiEvent<const xiiStreamGroupElementRemovedEvent&>::Handler;
 
   void AddParticleDeathEventHandler(ParticleDeathHandler handler);
   void RemoveParticleDeathEventHandler(ParticleDeathHandler handler);

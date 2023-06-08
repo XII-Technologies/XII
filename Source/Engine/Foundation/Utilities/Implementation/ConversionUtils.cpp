@@ -12,13 +12,13 @@ namespace xiiConversionUtils
     return (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v' || c == '\f' || c == '\a');
   }
 
-  static void SkipWhitespace(xiiStringView& sText)
+  static void SkipWhitespace(xiiStringView& ref_sText)
   {
     // we are only looking at ASCII characters here, so no need to decode Utf8 sequences
 
-    while (!sText.IsEmpty() && IsWhitespace(*sText.GetStartPointer()))
+    while (!ref_sText.IsEmpty() && IsWhitespace(*ref_sText.GetStartPointer()))
     {
-      sText.ChopAwayFirstCharacterAscii();
+      ref_sText.ChopAwayFirstCharacterAscii();
     }
   }
 
@@ -84,31 +84,31 @@ namespace xiiConversionUtils
     return XII_SUCCESS;
   }
 
-  xiiResult StringToInt(xiiStringView sText, xiiInt32& out_Res, const char** out_LastParsePosition)
+  xiiResult StringToInt(xiiStringView sText, xiiInt32& out_iRes, const char** out_pLastParsePosition)
   {
-    xiiInt64 tmp = out_Res;
-    if (StringToInt64(sText, tmp, out_LastParsePosition) == XII_SUCCESS && tmp <= (xiiInt32)0x7FFFFFFF && tmp >= (xiiInt32)0x80000000)
+    xiiInt64 tmp = out_iRes;
+    if (StringToInt64(sText, tmp, out_pLastParsePosition) == XII_SUCCESS && tmp <= (xiiInt32)0x7FFFFFFF && tmp >= (xiiInt32)0x80000000)
     {
-      out_Res = (xiiInt32)tmp;
+      out_iRes = (xiiInt32)tmp;
       return XII_SUCCESS;
     }
 
     return XII_FAILURE;
   }
 
-  xiiResult StringToUInt(xiiStringView sText, xiiUInt32& out_Res, const char** out_LastParsePosition)
+  xiiResult StringToUInt(xiiStringView sText, xiiUInt32& out_uiRes, const char** out_pLastParsePosition)
   {
-    xiiInt64 tmp = out_Res;
-    if (StringToInt64(sText, tmp, out_LastParsePosition) == XII_SUCCESS && tmp <= (xiiUInt32)0xFFFFFFFF && tmp >= 0)
+    xiiInt64 tmp = out_uiRes;
+    if (StringToInt64(sText, tmp, out_pLastParsePosition) == XII_SUCCESS && tmp <= (xiiUInt32)0xFFFFFFFF && tmp >= 0)
     {
-      out_Res = (xiiUInt32)tmp;
+      out_uiRes = (xiiUInt32)tmp;
       return XII_SUCCESS;
     }
 
     return XII_FAILURE;
   }
 
-  xiiResult StringToInt64(xiiStringView sText, xiiInt64& out_Res, const char** out_LastParsePosition)
+  xiiResult StringToInt64(xiiStringView sText, xiiInt64& out_iRes, const char** out_pLastParsePosition)
   {
     if (sText.IsEmpty())
       return XII_FAILURE;
@@ -144,15 +144,15 @@ namespace xiiConversionUtils
       sText.ChopAwayFirstCharacterAscii();
     }
 
-    out_Res = iCurRes;
+    out_iRes = iCurRes;
 
-    if (out_LastParsePosition != nullptr)
-      *out_LastParsePosition = sText.GetStartPointer();
+    if (out_pLastParsePosition != nullptr)
+      *out_pLastParsePosition = sText.GetStartPointer();
 
     return XII_SUCCESS;
   }
 
-  xiiResult StringToFloat(xiiStringView sText, double& out_Res, const char** out_LastParsePosition)
+  xiiResult StringToFloat(xiiStringView sText, double& out_fRes, const char** out_pLastParsePosition)
   {
     if (sText.IsEmpty())
       return XII_FAILURE;
@@ -274,26 +274,26 @@ namespace xiiConversionUtils
     }
 
     // we might lose some precision here, but at least up to this point no precision loss was accumulated yet
-    out_Res = (double)uiIntegerPart + (double)uiFractionalPart / (double)uiFractionDivisor;
+    out_fRes = (double)uiIntegerPart + (double)uiFractionalPart / (double)uiFractionDivisor;
 
     if (!bSignIsPos)
-      out_Res = -out_Res;
+      out_fRes = -out_fRes;
 
-    if (out_LastParsePosition)
-      *out_LastParsePosition = sText.GetStartPointer();
+    if (out_pLastParsePosition)
+      *out_pLastParsePosition = sText.GetStartPointer();
 
     if (Part == Exponent)
     {
       if (bExponentIsPositive)
-        out_Res *= xiiMath::Pow(10.0, (double)uiExponentPart);
+        out_fRes *= xiiMath::Pow(10.0, (double)uiExponentPart);
       else
-        out_Res /= xiiMath::Pow(10.0, (double)uiExponentPart);
+        out_fRes /= xiiMath::Pow(10.0, (double)uiExponentPart);
     }
 
     return XII_SUCCESS;
   }
 
-  xiiResult StringToBool(xiiStringView sText, bool& out_Res, const char** out_LastParsePosition)
+  xiiResult StringToBool(xiiStringView sText, bool& out_bRes, const char** out_pLastParsePosition)
   {
     SkipWhitespace(sText);
 
@@ -304,100 +304,100 @@ namespace xiiConversionUtils
 
     if (sText.StartsWith("1"))
     {
-      out_Res = true;
+      out_bRes = true;
 
-      if (out_LastParsePosition)
-        *out_LastParsePosition = sText.GetStartPointer() + 1;
+      if (out_pLastParsePosition)
+        *out_pLastParsePosition = sText.GetStartPointer() + 1;
 
       return XII_SUCCESS;
     }
 
     if (sText.StartsWith("0"))
     {
-      out_Res = false;
+      out_bRes = false;
 
-      if (out_LastParsePosition)
-        *out_LastParsePosition = sText.GetStartPointer() + 1;
+      if (out_pLastParsePosition)
+        *out_pLastParsePosition = sText.GetStartPointer() + 1;
 
       return XII_SUCCESS;
     }
 
     if (sText.StartsWith_NoCase("true"))
     {
-      out_Res = true;
+      out_bRes = true;
 
-      if (out_LastParsePosition)
-        *out_LastParsePosition = sText.GetStartPointer() + 4;
+      if (out_pLastParsePosition)
+        *out_pLastParsePosition = sText.GetStartPointer() + 4;
 
       return XII_SUCCESS;
     }
 
     if (sText.StartsWith_NoCase("false"))
     {
-      out_Res = false;
+      out_bRes = false;
 
-      if (out_LastParsePosition)
-        *out_LastParsePosition = sText.GetStartPointer() + 5;
+      if (out_pLastParsePosition)
+        *out_pLastParsePosition = sText.GetStartPointer() + 5;
 
       return XII_SUCCESS;
     }
 
     if (sText.StartsWith_NoCase("on"))
     {
-      out_Res = true;
+      out_bRes = true;
 
-      if (out_LastParsePosition)
-        *out_LastParsePosition = sText.GetStartPointer() + 2;
+      if (out_pLastParsePosition)
+        *out_pLastParsePosition = sText.GetStartPointer() + 2;
 
       return XII_SUCCESS;
     }
 
     if (sText.StartsWith_NoCase("off"))
     {
-      out_Res = false;
+      out_bRes = false;
 
-      if (out_LastParsePosition)
-        *out_LastParsePosition = sText.GetStartPointer() + 3;
+      if (out_pLastParsePosition)
+        *out_pLastParsePosition = sText.GetStartPointer() + 3;
 
       return XII_SUCCESS;
     }
 
     if (sText.StartsWith_NoCase("yes"))
     {
-      out_Res = true;
+      out_bRes = true;
 
-      if (out_LastParsePosition)
-        *out_LastParsePosition = sText.GetStartPointer() + 3;
+      if (out_pLastParsePosition)
+        *out_pLastParsePosition = sText.GetStartPointer() + 3;
 
       return XII_SUCCESS;
     }
 
     if (sText.StartsWith_NoCase("no"))
     {
-      out_Res = false;
+      out_bRes = false;
 
-      if (out_LastParsePosition)
-        *out_LastParsePosition = sText.GetStartPointer() + 2;
+      if (out_pLastParsePosition)
+        *out_pLastParsePosition = sText.GetStartPointer() + 2;
 
       return XII_SUCCESS;
     }
 
     if (sText.StartsWith_NoCase("enable"))
     {
-      out_Res = true;
+      out_bRes = true;
 
-      if (out_LastParsePosition)
-        *out_LastParsePosition = sText.GetStartPointer() + 6;
+      if (out_pLastParsePosition)
+        *out_pLastParsePosition = sText.GetStartPointer() + 6;
 
       return XII_SUCCESS;
     }
 
     if (sText.StartsWith_NoCase("disable"))
     {
-      out_Res = false;
+      out_bRes = false;
 
-      if (out_LastParsePosition)
-        *out_LastParsePosition = sText.GetStartPointer() + 7;
+      if (out_pLastParsePosition)
+        *out_pLastParsePosition = sText.GetStartPointer() + 7;
 
       return XII_SUCCESS;
     }
@@ -405,7 +405,7 @@ namespace xiiConversionUtils
     return XII_FAILURE;
   }
 
-  xiiUInt32 ExtractFloatsFromString(xiiStringView sText, xiiUInt32 uiNumFloats, float* out_pFloats, const char** out_LastParsePosition)
+  xiiUInt32 ExtractFloatsFromString(xiiStringView sText, xiiUInt32 uiNumFloats, float* out_pFloats, const char** out_pLastParsePosition)
   {
     xiiUInt32 uiFloatsFound = 0;
 
@@ -431,22 +431,22 @@ namespace xiiConversionUtils
       }
     }
 
-    if (out_LastParsePosition != nullptr)
-      *out_LastParsePosition = sText.GetStartPointer();
+    if (out_pLastParsePosition != nullptr)
+      *out_pLastParsePosition = sText.GetStartPointer();
 
     return uiFloatsFound;
   }
 
-  xiiInt8 HexCharacterToIntValue(xiiUInt32 Character)
+  xiiInt8 HexCharacterToIntValue(xiiUInt32 uiCharacter)
   {
-    if (Character >= '0' && Character <= '9')
-      return static_cast<xiiInt8>(Character - '0');
+    if (uiCharacter >= '0' && uiCharacter <= '9')
+      return static_cast<xiiInt8>(uiCharacter - '0');
 
-    if (Character >= 'a' && Character <= 'f')
-      return static_cast<xiiInt8>(Character - 'a' + 10);
+    if (uiCharacter >= 'a' && uiCharacter <= 'f')
+      return static_cast<xiiInt8>(uiCharacter - 'a' + 10);
 
-    if (Character >= 'A' && Character <= 'F')
-      return static_cast<xiiInt8>(Character - 'A' + 10);
+    if (uiCharacter >= 'A' && uiCharacter <= 'F')
+      return static_cast<xiiInt8>(uiCharacter - 'A' + 10);
 
     return -1;
   }
@@ -465,7 +465,7 @@ namespace xiiConversionUtils
     return ConvertHexStringToUInt(sHex, out_uiResult, 16, nullptr);
   }
 
-  xiiResult ConvertHexStringToUInt(xiiStringView sHex, xiiUInt64& out_uiResult, xiiUInt32 uiMaxHexCharacters, xiiUInt32* outTotalCharactersParsed)
+  xiiResult ConvertHexStringToUInt(xiiStringView sHex, xiiUInt64& out_uiResult, xiiUInt32 uiMaxHexCharacters, xiiUInt32* pTotalCharactersParsed)
   {
     XII_ASSERT_DEBUG(uiMaxHexCharacters <= 16, "Only HEX strings of up to 16 character can be parsed into a 64-bit integer");
     const xiiUInt32 origStringElementsCount = sHex.GetElementCount();
@@ -491,9 +491,9 @@ namespace xiiConversionUtils
       {
         // invalid HEX character
         out_uiResult = 0;
-        if (outTotalCharactersParsed)
+        if (pTotalCharactersParsed)
         {
-          *outTotalCharactersParsed = 0;
+          *pTotalCharactersParsed = 0;
         }
         return XII_FAILURE;
       }
@@ -504,10 +504,10 @@ namespace xiiConversionUtils
       sHex.ChopAwayFirstCharacterAscii();
     }
 
-    if (outTotalCharactersParsed)
+    if (pTotalCharactersParsed)
     {
       XII_ASSERT_DEBUG(sHex.GetElementCount() <= origStringElementsCount, "");
-      *outTotalCharactersParsed = origStringElementsCount - sHex.GetElementCount();
+      *pTotalCharactersParsed = origStringElementsCount - sHex.GetElementCount();
     }
 
     return XII_SUCCESS;
@@ -538,286 +538,286 @@ namespace xiiConversionUtils
     }
   }
 
-  const xiiStringBuilder& ToString(xiiInt8 value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(xiiInt8 value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{0}", (xiiInt32)value);
-    return out_Result;
+    out_sResult.Format("{0}", (xiiInt32)value);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(xiiUInt8 value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(xiiUInt8 value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{0}", (xiiUInt32)value);
-    return out_Result;
+    out_sResult.Format("{0}", (xiiUInt32)value);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(xiiInt16 value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(xiiInt16 value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{0}", (xiiInt32)value);
-    return out_Result;
+    out_sResult.Format("{0}", (xiiInt32)value);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(xiiUInt16 value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(xiiUInt16 value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{0}", (xiiUInt32)value);
-    return out_Result;
+    out_sResult.Format("{0}", (xiiUInt32)value);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(xiiInt32 value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(xiiInt32 value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{0}", value);
-    return out_Result;
+    out_sResult.Format("{0}", value);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(xiiUInt32 value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(xiiUInt32 value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{0}", value);
-    return out_Result;
+    out_sResult.Format("{0}", value);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(xiiInt64 value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(xiiInt64 value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{0}", value);
-    return out_Result;
+    out_sResult.Format("{0}", value);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(xiiUInt64 value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(xiiUInt64 value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{0}", value);
-    return out_Result;
+    out_sResult.Format("{0}", value);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(float value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(float value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{0}", value);
-    return out_Result;
+    out_sResult.Format("{0}", value);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(double value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(double value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{0}", value);
-    return out_Result;
+    out_sResult.Format("{0}", value);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiColor& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiColor& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ r={0}, g={1}, b={2}, a={3} }", value.r, value.g, value.b, value.a);
-    return out_Result;
+    out_sResult.Format("{ r={0}, g={1}, b={2}, a={3} }", value.r, value.g, value.b, value.a);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiColorGammaUB& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiColorGammaUB& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ r={0}, g={1}, b={2}, a={3} }", value.r, value.g, value.b, value.a);
-    return out_Result;
+    out_sResult.Format("{ r={0}, g={1}, b={2}, a={3} }", value.r, value.g, value.b, value.a);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec2& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec2& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1} }", value.x, value.y);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1} }", value.x, value.y);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec2d& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec2d& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1} }", value.x, value.y);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1} }", value.x, value.y);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec3& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec3& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2} }", value.x, value.y, value.z);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2} }", value.x, value.y, value.z);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec3d& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec3d& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2} }", value.x, value.y, value.z);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2} }", value.x, value.y, value.z);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec4& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec4& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec4d& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec4d& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec2I32& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec2I32& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1} }", value.x, value.y);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1} }", value.x, value.y);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec2I64& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec2I64& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1} }", value.x, value.y);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1} }", value.x, value.y);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec3I32& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec3I32& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2} }", value.x, value.y, value.z);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2} }", value.x, value.y, value.z);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec3I64& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec3I64& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2} }", value.x, value.y, value.z);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2} }", value.x, value.y, value.z);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec4I32& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec4I32& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec4I64& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec4I64& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec2U32& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec2U32& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1} }", value.x, value.y);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1} }", value.x, value.y);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec2U64& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec2U64& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1} }", value.x, value.y);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1} }", value.x, value.y);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec3U32& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec3U32& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2} }", value.x, value.y, value.z);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2} }", value.x, value.y, value.z);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec3U64& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec3U64& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2} }", value.x, value.y, value.z);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2} }", value.x, value.y, value.z);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec4U32& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec4U32& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiVec4U64& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiVec4U64& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiQuat& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiQuat& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2}, w={3} }", value.v.x, value.v.y, value.v.z, value.w);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2}, w={3} }", value.v.x, value.v.y, value.v.z, value.w);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiQuatd& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiQuatd& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{ x={0}, y={1}, z={2}, w={3} }", value.v.x, value.v.y, value.v.z, value.w);
-    return out_Result;
+    out_sResult.Format("{ x={0}, y={1}, z={2}, w={3} }", value.v.x, value.v.y, value.v.z, value.w);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiMat3& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiMat3& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Printf("{ c1r1=%f, c2r1=%f, c3r1=%f, "
-                      "c1r2=%f, c2r2=%f, c3r2=%f, "
-                      "c1r3=%f, c2r3=%f, c3r3=%f }",
-                      value.Element(0, 0), value.Element(1, 0), value.Element(2, 0), value.Element(0, 1), value.Element(1, 1), value.Element(2, 1),
-                      value.Element(0, 2), value.Element(1, 2), value.Element(2, 2));
-    return out_Result;
+    out_sResult.Printf("{ c1r1=%f, c2r1=%f, c3r1=%f, "
+                       "c1r2=%f, c2r2=%f, c3r2=%f, "
+                       "c1r3=%f, c2r3=%f, c3r3=%f }",
+                       value.Element(0, 0), value.Element(1, 0), value.Element(2, 0), value.Element(0, 1), value.Element(1, 1), value.Element(2, 1),
+                       value.Element(0, 2), value.Element(1, 2), value.Element(2, 2));
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiMat3d& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiMat3d& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Printf("{ c1r1=%f, c2r1=%f, c3r1=%f, "
-                      "c1r2=%f, c2r2=%f, c3r2=%f, "
-                      "c1r3=%f, c2r3=%f, c3r3=%f }",
-                      value.Element(0, 0), value.Element(1, 0), value.Element(2, 0), value.Element(0, 1), value.Element(1, 1), value.Element(2, 1),
-                      value.Element(0, 2), value.Element(1, 2), value.Element(2, 2));
-    return out_Result;
+    out_sResult.Printf("{ c1r1=%f, c2r1=%f, c3r1=%f, "
+                       "c1r2=%f, c2r2=%f, c3r2=%f, "
+                       "c1r3=%f, c2r3=%f, c3r3=%f }",
+                       value.Element(0, 0), value.Element(1, 0), value.Element(2, 0), value.Element(0, 1), value.Element(1, 1), value.Element(2, 1),
+                       value.Element(0, 2), value.Element(1, 2), value.Element(2, 2));
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiMat4& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiMat4& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Printf("{ c1r1=%f, c2r1=%f, c3r1=%f, c4r1=%f, "
-                      "c1r2=%f, c2r2=%f, c3r2=%f, c4r2=%f, "
-                      "c1r3=%f, c2r3=%f, c3r3=%f, c4r3=%f, "
-                      "c1r4=%f, c2r4=%f, c3r4=%f, c4r4=%f }",
-                      value.Element(0, 0), value.Element(1, 0), value.Element(2, 0), value.Element(3, 0), value.Element(0, 1), value.Element(1, 1),
-                      value.Element(2, 1), value.Element(3, 1), value.Element(0, 2), value.Element(1, 2), value.Element(2, 2), value.Element(3, 2),
-                      value.Element(0, 3), value.Element(1, 3), value.Element(2, 3), value.Element(3, 3));
-    return out_Result;
+    out_sResult.Printf("{ c1r1=%f, c2r1=%f, c3r1=%f, c4r1=%f, "
+                       "c1r2=%f, c2r2=%f, c3r2=%f, c4r2=%f, "
+                       "c1r3=%f, c2r3=%f, c3r3=%f, c4r3=%f, "
+                       "c1r4=%f, c2r4=%f, c3r4=%f, c4r4=%f }",
+                       value.Element(0, 0), value.Element(1, 0), value.Element(2, 0), value.Element(3, 0), value.Element(0, 1), value.Element(1, 1),
+                       value.Element(2, 1), value.Element(3, 1), value.Element(0, 2), value.Element(1, 2), value.Element(2, 2), value.Element(3, 2),
+                       value.Element(0, 3), value.Element(1, 3), value.Element(2, 3), value.Element(3, 3));
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiMat4d& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiMat4d& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Printf("{ c1r1=%f, c2r1=%f, c3r1=%f, c4r1=%f, "
-                      "c1r2=%f, c2r2=%f, c3r2=%f, c4r2=%f, "
-                      "c1r3=%f, c2r3=%f, c3r3=%f, c4r3=%f, "
-                      "c1r4=%f, c2r4=%f, c3r4=%f, c4r4=%f }",
-                      value.Element(0, 0), value.Element(1, 0), value.Element(2, 0), value.Element(3, 0), value.Element(0, 1), value.Element(1, 1),
-                      value.Element(2, 1), value.Element(3, 1), value.Element(0, 2), value.Element(1, 2), value.Element(2, 2), value.Element(3, 2),
-                      value.Element(0, 3), value.Element(1, 3), value.Element(2, 3), value.Element(3, 3));
-    return out_Result;
+    out_sResult.Printf("{ c1r1=%f, c2r1=%f, c3r1=%f, c4r1=%f, "
+                       "c1r2=%f, c2r2=%f, c3r2=%f, c4r2=%f, "
+                       "c1r3=%f, c2r3=%f, c3r3=%f, c4r3=%f, "
+                       "c1r4=%f, c2r4=%f, c3r4=%f, c4r4=%f }",
+                       value.Element(0, 0), value.Element(1, 0), value.Element(2, 0), value.Element(3, 0), value.Element(0, 1), value.Element(1, 1),
+                       value.Element(2, 1), value.Element(3, 1), value.Element(0, 2), value.Element(1, 2), value.Element(2, 2), value.Element(3, 2),
+                       value.Element(0, 3), value.Element(1, 3), value.Element(2, 3), value.Element(3, 3));
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiTransform& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiTransform& value, xiiStringBuilder& out_sResult)
   {
     xiiStringBuilder tmp1, tmp2, tmp3;
-    out_Result.Format("{ position={0}, rotation={1}, scale={2} }", ToString(value.m_vPosition, tmp1), ToString(value.m_qRotation, tmp2),
-                      ToString(value.m_vScale, tmp3));
-    return out_Result;
+    out_sResult.Format("{ position={0}, rotation={1}, scale={2} }", ToString(value.m_vPosition, tmp1), ToString(value.m_qRotation, tmp2),
+                       ToString(value.m_vScale, tmp3));
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiTransformd& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiTransformd& value, xiiStringBuilder& out_sResult)
   {
     xiiStringBuilder tmp1, tmp2, tmp3;
-    out_Result.Format("{ position={0}, rotation={1}, scale={2} }", ToString(value.m_vPosition, tmp1), ToString(value.m_qRotation, tmp2),
-                      ToString(value.m_vScale, tmp3));
-    return out_Result;
+    out_sResult.Format("{ position={0}, rotation={1}, scale={2} }", ToString(value.m_vPosition, tmp1), ToString(value.m_qRotation, tmp2),
+                       ToString(value.m_vScale, tmp3));
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiAngle& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiAngle& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{0}", value);
-    return out_Result;
+    out_sResult.Format("{0}", value);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiTime& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiTime& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Format("{0}", value);
-    return out_Result;
+    out_sResult.Format("{0}", value);
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiDynamicArray<xiiVariant>& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiDynamicArray<xiiVariant>& value, xiiStringBuilder& out_sResult)
   {
-    out_Result.Append("[");
+    out_sResult.Append("[");
     for (const xiiVariant& var : value)
     {
-      out_Result.Append(var.ConvertTo<xiiString>(), ", ");
+      out_sResult.Append(var.ConvertTo<xiiString>(), ", ");
     }
     if (!value.IsEmpty())
-      out_Result.Shrink(0, 2);
-    out_Result.Append("]");
-    return out_Result;
+      out_sResult.Shrink(0, 2);
+    out_sResult.Append("]");
+    return out_sResult;
   }
 
   xiiUuid ConvertStringToUuid(xiiStringView sText);
 
-  const xiiStringBuilder& ToString(const xiiUuid& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiUuid& value, xiiStringBuilder& out_sResult)
   {
     // Windows GUID formatting.
     struct GUID
@@ -830,16 +830,16 @@ namespace xiiConversionUtils
 
     const GUID* pGuid = reinterpret_cast<const GUID*>(&value);
 
-    out_Result.Printf("{ %08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x }", pGuid->Data1, pGuid->Data2, pGuid->Data3, pGuid->Data4[0],
-                      pGuid->Data4[1], pGuid->Data4[2], pGuid->Data4[3], pGuid->Data4[4], pGuid->Data4[5], pGuid->Data4[6], pGuid->Data4[7]);
+    out_sResult.Printf("{ %08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x }", pGuid->Data1, pGuid->Data2, pGuid->Data3, pGuid->Data4[0],
+                       pGuid->Data4[1], pGuid->Data4[2], pGuid->Data4[3], pGuid->Data4[4], pGuid->Data4[5], pGuid->Data4[6], pGuid->Data4[7]);
 
-    return out_Result;
+    return out_sResult;
   }
 
-  const xiiStringBuilder& ToString(const xiiStringView& value, xiiStringBuilder& out_Result)
+  const xiiStringBuilder& ToString(const xiiStringView& value, xiiStringBuilder& out_sResult)
   {
-    out_Result = value;
-    return out_Result;
+    out_sResult = value;
+    return out_sResult;
   }
 
   bool IsStringUuid(xiiStringView sText)
@@ -937,10 +937,10 @@ namespace xiiConversionUtils
   if (sColorName.IsEqual_NoCase(XII_STRINGIZE(name))) \
   return xiiColor::name
 
-  xiiColor GetColorByName(xiiStringView sColorName, bool* out_ValidColorName)
+  xiiColor GetColorByName(xiiStringView sColorName, bool* out_pValidColorName)
   {
-    if (out_ValidColorName)
-      *out_ValidColorName = false;
+    if (out_pValidColorName)
+      *out_pValidColorName = false;
 
     if (sColorName.IsEmpty())
       return xiiColor::Black; // considered not to be a valid color name
@@ -962,8 +962,8 @@ namespace xiiConversionUtils
         if (uiLen == 9)
           cv[3] = static_cast<xiiUInt8>((HexCharacterToIntValue(*(szColorName + 7)) << 4) | HexCharacterToIntValue(*(szColorName + 8)));
 
-        if (out_ValidColorName)
-          *out_ValidColorName = true;
+        if (out_pValidColorName)
+          *out_pValidColorName = true;
 
         return xiiColorGammaUB(cv[0], cv[1], cv[2], cv[3]);
       }
@@ -972,8 +972,8 @@ namespace xiiConversionUtils
     }
     else
     {
-      if (out_ValidColorName)
-        *out_ValidColorName = true;
+      if (out_pValidColorName)
+        *out_pValidColorName = true;
 
       Check(AliceBlue);
       Check(AntiqueWhite);
@@ -1125,8 +1125,8 @@ namespace xiiConversionUtils
       Check(YellowGreen);
     }
 
-    if (out_ValidColorName)
-      *out_ValidColorName = false;
+    if (out_pValidColorName)
+      *out_pValidColorName = false;
 
     return xiiColor::RebeccaPurple;
   }

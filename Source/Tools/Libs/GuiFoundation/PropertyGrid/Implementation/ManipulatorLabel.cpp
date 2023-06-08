@@ -6,14 +6,14 @@
 #include <QFont>
 #include <qevent.h>
 
-xiiQtManipulatorLabel::xiiQtManipulatorLabel(QWidget* parent, Qt::WindowFlags f) :
-  QLabel(parent, f), m_pItems(nullptr), m_pManipulator(nullptr), m_bActive(false)
+xiiQtManipulatorLabel::xiiQtManipulatorLabel(QWidget* pParent, Qt::WindowFlags f) :
+  QLabel(pParent, f), m_pItems(nullptr), m_pManipulator(nullptr), m_bActive(false)
 {
   setCursor(Qt::WhatsThisCursor);
 }
 
-xiiQtManipulatorLabel::xiiQtManipulatorLabel(const QString& text, QWidget* parent, Qt::WindowFlags f) :
-  QLabel(text, parent, f), m_pItems(nullptr), m_pManipulator(nullptr), m_bActive(false), m_bIsDefault(true)
+xiiQtManipulatorLabel::xiiQtManipulatorLabel(const QString& sText, QWidget* pParent, Qt::WindowFlags f) :
+  QLabel(sText, pParent, f), m_pItems(nullptr), m_pManipulator(nullptr), m_bActive(false), m_bIsDefault(true)
 {
 }
 

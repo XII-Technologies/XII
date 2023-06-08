@@ -35,7 +35,7 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorCheckboxWidget : public xiiQtStan
 public:
   xiiQtPropertyEditorCheckboxWidget();
 
-  virtual void mousePressEvent(QMouseEvent* ev) override;
+  virtual void mousePressEvent(QMouseEvent* pEv) override;
 
 private Q_SLOTS:
   void on_StateChanged_triggered(int state);
@@ -197,7 +197,7 @@ class XII_GUIFOUNDATION_DLL xiiQtColorButtonWidget : public QFrame
   Q_OBJECT
 
 public:
-  explicit xiiQtColorButtonWidget(QWidget* parent);
+  explicit xiiQtColorButtonWidget(QWidget* pParent);
   void SetColor(const xiiVariant& color);
 
 Q_SIGNALS:
@@ -293,7 +293,7 @@ class XII_GUIFOUNDATION_DLL xiiQtCurve1DButtonWidget : public QLabel
   Q_OBJECT
 
 public:
-  explicit xiiQtCurve1DButtonWidget(QWidget* parent);
+  explicit xiiQtCurve1DButtonWidget(QWidget* pParent);
 
   void UpdatePreview(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pCurveObject, QColor color, double fLowerExtents, bool bLowerFixed, double fUpperExtents, bool bUpperFixed, double fDefaultValue, double fLowerRange, double fUpperRange);
 

@@ -177,9 +177,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGroupAttribute, 1, xiiRTTIDefaultAllocator<x
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGroupAttribute::xiiGroupAttribute()
-{
-
-}
+= default;
 
 xiiGroupAttribute::xiiGroupAttribute(const char* szGroup, float fOrder)
 {
@@ -673,11 +671,11 @@ xiiBoxVisualizerAttribute::xiiBoxVisualizerAttribute() :
 {
 }
 
-xiiBoxVisualizerAttribute::xiiBoxVisualizerAttribute(const char* szSizeProperty, float fSizeScale, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 offsetOrScale /*= xiiVec3::ZeroVector*/, const char* szOffsetProperty /*= nullptr*/, const char* szRotationProperty /*= nullptr*/) :
+xiiBoxVisualizerAttribute::xiiBoxVisualizerAttribute(const char* szSizeProperty, float fSizeScale, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::ZeroVector*/, const char* szOffsetProperty /*= nullptr*/, const char* szRotationProperty /*= nullptr*/) :
   xiiVisualizerAttribute(szSizeProperty, szColorProperty, szOffsetProperty, szRotationProperty)
 {
   m_Color          = fixedColor;
-  m_vOffsetOrScale = offsetOrScale;
+  m_vOffsetOrScale = vOffsetOrScale;
   m_Anchor         = anchor;
   m_fSizeScale     = fSizeScale;
 }
@@ -712,11 +710,11 @@ xiiSphereVisualizerAttribute::xiiSphereVisualizerAttribute() :
 {
 }
 
-xiiSphereVisualizerAttribute::xiiSphereVisualizerAttribute(const char* szRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 offsetOrScale /*= xiiVec3::ZeroVector*/, const char* szOffsetProperty /*= nullptr*/) :
+xiiSphereVisualizerAttribute::xiiSphereVisualizerAttribute(const char* szRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::ZeroVector*/, const char* szOffsetProperty /*= nullptr*/) :
   xiiVisualizerAttribute(szRadiusProperty, szColorProperty, szOffsetProperty)
 {
   m_Color          = fixedColor;
-  m_vOffsetOrScale = offsetOrScale;
+  m_vOffsetOrScale = vOffsetOrScale;
   m_Anchor         = anchor;
 }
 
@@ -791,20 +789,20 @@ xiiCylinderVisualizerAttribute::xiiCylinderVisualizerAttribute() :
 {
 }
 
-xiiCylinderVisualizerAttribute::xiiCylinderVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 offsetOrScale /*= xiiVec3::ZeroVector*/, const char* szOffsetProperty /*= nullptr*/) :
+xiiCylinderVisualizerAttribute::xiiCylinderVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::ZeroVector*/, const char* szOffsetProperty /*= nullptr*/) :
   xiiVisualizerAttribute(szHeightProperty, szRadiusProperty, szColorProperty, szOffsetProperty)
 {
   m_Color          = fixedColor;
-  m_vOffsetOrScale = offsetOrScale;
+  m_vOffsetOrScale = vOffsetOrScale;
   m_Axis           = axis;
   m_Anchor         = anchor;
 }
 
-xiiCylinderVisualizerAttribute::xiiCylinderVisualizerAttribute(const char* szAxisProperty, const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 offsetOrScale /*= xiiVec3::ZeroVector()*/, const char* szOffsetProperty /*= nullptr*/) :
+xiiCylinderVisualizerAttribute::xiiCylinderVisualizerAttribute(const char* szAxisProperty, const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::ZeroVector()*/, const char* szOffsetProperty /*= nullptr*/) :
   xiiVisualizerAttribute(szHeightProperty, szRadiusProperty, szColorProperty, szOffsetProperty, szAxisProperty)
 {
   m_Color          = fixedColor;
-  m_vOffsetOrScale = offsetOrScale;
+  m_vOffsetOrScale = vOffsetOrScale;
   m_Axis           = xiiBasisAxis::Default;
   m_Anchor         = anchor;
 }
@@ -992,7 +990,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScriptableFunctionAttribute, 1, xiiRTTIDefau
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiScriptableFunctionAttribute::xiiScriptableFunctionAttribute(ArgType ArgType1 /*= In*/, const char* szArg1 /*= nullptr*/, ArgType ArgType2 /*= In*/, const char* szArg2 /*= nullptr*/, ArgType ArgType3 /*= In*/, const char* szArg3 /*= nullptr*/, ArgType ArgType4 /*= In*/, const char* szArg4 /*= nullptr*/, ArgType ArgType5 /*= In*/, const char* szArg5 /*= nullptr*/, ArgType ArgType6 /*= In*/, const char* szArg6 /*= nullptr*/)
+xiiScriptableFunctionAttribute::xiiScriptableFunctionAttribute(ArgType argType1 /*= In*/, const char* szArg1 /*= nullptr*/, ArgType argType2 /*= In*/, const char* szArg2 /*= nullptr*/, ArgType argType3 /*= In*/, const char* szArg3 /*= nullptr*/, ArgType argType4 /*= In*/, const char* szArg4 /*= nullptr*/, ArgType argType5 /*= In*/, const char* szArg5 /*= nullptr*/, ArgType argType6 /*= In*/, const char* szArg6 /*= nullptr*/)
 {
   m_sArg1 = szArg1;
   m_sArg2 = szArg2;
@@ -1001,17 +999,17 @@ xiiScriptableFunctionAttribute::xiiScriptableFunctionAttribute(ArgType ArgType1 
   m_sArg5 = szArg5;
   m_sArg6 = szArg6;
 
-  m_ArgType1 = ArgType1;
-  m_ArgType2 = ArgType2;
-  m_ArgType3 = ArgType3;
-  m_ArgType4 = ArgType4;
-  m_ArgType5 = ArgType5;
-  m_ArgType6 = ArgType6;
+  m_ArgType1 = argType1;
+  m_ArgType2 = argType2;
+  m_ArgType3 = argType3;
+  m_ArgType4 = argType4;
+  m_ArgType5 = argType5;
+  m_ArgType6 = argType6;
 }
 
-const char* xiiScriptableFunctionAttribute::GetArgumentName(xiiUInt32 index) const
+const char* xiiScriptableFunctionAttribute::GetArgumentName(xiiUInt32 uiIndex) const
 {
-  switch (index)
+  switch (uiIndex)
   {
     case 0:
       return m_sArg1;
@@ -1031,9 +1029,9 @@ const char* xiiScriptableFunctionAttribute::GetArgumentName(xiiUInt32 index) con
   return nullptr;
 }
 
-xiiScriptableFunctionAttribute::ArgType xiiScriptableFunctionAttribute::GetArgumentType(xiiUInt32 index) const
+xiiScriptableFunctionAttribute::ArgType xiiScriptableFunctionAttribute::GetArgumentType(xiiUInt32 uiIndex) const
 {
-  switch (index)
+  switch (uiIndex)
   {
     case 0:
       return (ArgType)m_ArgType1;

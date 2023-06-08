@@ -45,7 +45,7 @@ public:
   xiiSimdDouble& operator*=(const xiiSimdDouble& f); // [tested]
   xiiSimdDouble& operator/=(const xiiSimdDouble& f); // [tested]
 
-  bool IsEqual(const xiiSimdDouble& rhs, const xiiSimdDouble& fEpsilon) const;
+  bool IsEqual(const xiiSimdDouble& rhs, const xiiSimdDouble& epsilon) const;
 
   bool operator==(const xiiSimdDouble& f) const; // [tested]
   bool operator!=(const xiiSimdDouble& f) const; // [tested]

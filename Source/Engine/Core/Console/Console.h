@@ -46,18 +46,18 @@ struct XII_CORE_DLL xiiCommandInterpreterState
 class XII_CORE_DLL xiiCommandInterpreter : public xiiRefCounted
 {
 public:
-  virtual void Interpret(xiiCommandInterpreterState& inout_State) = 0;
+  virtual void Interpret(xiiCommandInterpreterState& inout_state) = 0;
 
-  virtual void AutoComplete(xiiCommandInterpreterState& inout_State);
+  virtual void AutoComplete(xiiCommandInterpreterState& inout_state);
 
   /// \brief Iterates over all cvars and finds all that start with the string \a szVariable.
-  static void FindPossibleCVars(xiiStringView sVariable, xiiDeque<xiiString>& CommonStrings, xiiDeque<xiiConsoleString>& ConsoleStrings);
+  static void FindPossibleCVars(xiiStringView sVariable, xiiDeque<xiiString>& ref_commonStrings, xiiDeque<xiiConsoleString>& ref_consoleStrings);
 
   /// \brief Iterates over all console functions and finds all that start with the string \a szVariable.
-  static void FindPossibleFunctions(xiiStringView sVariable, xiiDeque<xiiString>& CommonStrings, xiiDeque<xiiConsoleString>& ConsoleStrings);
+  static void FindPossibleFunctions(xiiStringView sVariable, xiiDeque<xiiString>& ref_commonStrings, xiiDeque<xiiConsoleString>& ref_consoleStrings);
 
   /// \brief Returns the prefix string that is common to all strings in the \a vStrings array.
-  static const xiiString FindCommonString(const xiiDeque<xiiString>& vStrings);
+  static const xiiString FindCommonString(const xiiDeque<xiiString>& strings);
 };
 
 /// \brief The event data that is broadcast by the console
@@ -118,7 +118,7 @@ public:
   /// \brief Replaces the current command interpreter.
   ///
   /// This base class doesn't set any default interpreter, but derived classes may do so.
-  void SetCommandInterpreter(const xiiSharedPtr<xiiCommandInterpreter>& interpreter) { m_pCommandInterpreter = interpreter; }
+  void SetCommandInterpreter(const xiiSharedPtr<xiiCommandInterpreter>& pInterpreter) { m_pCommandInterpreter = pInterpreter; }
 
   /// \brief Returns the currently used command interpreter.
   const xiiSharedPtr<xiiCommandInterpreter>& GetCommandInterpreter() const { return m_pCommandInterpreter; }
@@ -127,12 +127,12 @@ public:
   ///
   /// Returns true, if the string was modified in any way.
   /// Adds additional strings to the console output, if there are further auto-completion suggestions.
-  virtual bool AutoComplete(xiiStringBuilder& text);
+  virtual bool AutoComplete(xiiStringBuilder& ref_sText);
 
   /// \brief Executes the given input string.
   ///
   /// The command is forwarded to the set command interpreter.
-  virtual void ExecuteCommand(xiiStringView input);
+  virtual void ExecuteCommand(xiiStringView sInput);
 
 protected:
   xiiSharedPtr<xiiCommandInterpreter> m_pCommandInterpreter;
@@ -146,7 +146,7 @@ public:
   /// \brief Adds a string to the console.
   ///
   /// The base class only broadcasts an event, but does not store the string anywhere.
-  virtual void AddConsoleString(xiiStringView text, xiiConsoleString::Type type = xiiConsoleString::Type::Default);
+  virtual void AddConsoleString(xiiStringView sText, xiiConsoleString::Type type = xiiConsoleString::Type::Default);
 
   /// @}
 
@@ -155,7 +155,7 @@ public:
 
 public:
   /// \brief Adds an item to the input history.
-  void AddToInputHistory(xiiStringView text);
+  void AddToInputHistory(xiiStringView sText);
 
   /// \brief Returns the current input history.
   ///
@@ -163,7 +163,7 @@ public:
   const xiiStaticArray<xiiString, 16>& GetInputHistory() const { return m_InputHistory; }
 
   /// \brief Replaces the input line by the next (or previous) history item.
-  void RetrieveInputHistory(xiiInt32 iHistoryUp, xiiStringBuilder& result);
+  void RetrieveInputHistory(xiiInt32 iHistoryUp, xiiStringBuilder& ref_sResult);
 
   /// \brief Writes the current input history to a text file.
   xiiResult SaveInputHistory(xiiStringView sFile);

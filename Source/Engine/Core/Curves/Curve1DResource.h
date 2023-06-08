@@ -8,8 +8,8 @@ struct XII_CORE_DLL xiiCurve1DResourceDescriptor
 {
   xiiDynamicArray<xiiCurve1D> m_Curves;
 
-  void Save(xiiStreamWriter& stream) const;
-  void Load(xiiStreamReader& stream);
+  void Save(xiiStreamWriter& ref_stream) const;
+  void Load(xiiStreamReader& ref_stream);
 };
 
 using xiiCurve1DResourceHandle = xiiTypedResourceHandle<class xiiCurve1DResource>;

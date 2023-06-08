@@ -32,17 +32,17 @@ xiiGPUResourcePool::~xiiGPUResourcePool()
   RunGC(0);
 }
 
-xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreationDescription& TextureDesc)
+xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreationDescription& textureDesc)
 {
   XII_LOCK(m_Lock);
 
-  if (!TextureDesc.m_bCreateRenderTarget)
+  if (!textureDesc.m_bCreateRenderTarget)
   {
     xiiLog::Error("Texture description for render target usage has not set bCreateRenderTarget!");
     return xiiGALTextureHandle();
   }
 
-  const xiiUInt32 uiTextureDescHash = TextureDesc.CalculateHash();
+  const xiiUInt32 uiTextureDescHash = textureDesc.CalculateHash();
 
   // Check if there is a fitting texture available
   auto it = m_AvailableTextures.Find(uiTextureDescHash);
@@ -66,12 +66,12 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
   // first since we need to allocate memory now
   CheckAndPotentiallyRunGC();
 
-  xiiGALTextureHandle hNewTexture = m_pDevice->CreateTexture(TextureDesc);
+  xiiGALTextureHandle hNewTexture = m_pDevice->CreateTexture(textureDesc);
 
   if (hNewTexture.IsInvalidated())
   {
-    xiiLog::Error("GPU resource pool couldn't create new texture for given desc (size: {0} x {1}, format: {2})", TextureDesc.m_uiWidth,
-                  TextureDesc.m_uiHeight, TextureDesc.m_Format);
+    xiiLog::Error("GPU resource pool couldn't create new texture for given desc (size: {0} x {1}, format: {2})", textureDesc.m_uiWidth,
+                  textureDesc.m_uiHeight, textureDesc.m_Format);
     return xiiGALTextureHandle();
   }
 
@@ -79,7 +79,7 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
   m_TexturesInUse.Insert(hNewTexture);
 
   m_uiNumAllocationsSinceLastGC++;
-  m_uiCurrentlyAllocatedMemory += m_pDevice->GetMemoryConsumptionForTexture(TextureDesc);
+  m_uiCurrentlyAllocatedMemory += m_pDevice->GetMemoryConsumptionForTexture(textureDesc);
 
   UpdateMemoryStats();
 
@@ -89,14 +89,14 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
 xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(
   xiiUInt32                   uiWidth,
   xiiUInt32                   uiHeight,
-  xiiGALResourceFormat::Enum  eFormat,
+  xiiGALResourceFormat::Enum  format,
   xiiGALMSAASampleCount::Enum sampleCount,
   xiiUInt32                   uiSliceColunt)
 {
   xiiGALTextureCreationDescription TextureDesc;
   TextureDesc.m_bCreateRenderTarget      = true;
   TextureDesc.m_bAllowShaderResourceView = true;
-  TextureDesc.m_Format                   = eFormat;
+  TextureDesc.m_Format                   = format;
   TextureDesc.m_Type                     = xiiGALTextureType::Texture2D;
   TextureDesc.m_uiWidth                  = uiWidth;
   TextureDesc.m_uiHeight                 = uiHeight;
@@ -137,11 +137,11 @@ void xiiGPUResourcePool::ReturnRenderTarget(xiiGALTextureHandle hRenderTarget)
   }
 }
 
-xiiGALBufferHandle xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreationDescription& BufferDesc)
+xiiGALBufferHandle xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreationDescription& bufferDesc)
 {
   XII_LOCK(m_Lock);
 
-  const xiiUInt32 uiBufferDescHash = BufferDesc.CalculateHash();
+  const xiiUInt32 uiBufferDescHash = bufferDesc.CalculateHash();
 
   // Check if there is a fitting buffer available
   auto it = m_AvailableBuffers.Find(uiBufferDescHash);
@@ -165,11 +165,11 @@ xiiGALBufferHandle xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreationDescr
   // first since we need to allocate memory now
   CheckAndPotentiallyRunGC();
 
-  xiiGALBufferHandle hNewBuffer = m_pDevice->CreateBuffer(BufferDesc);
+  xiiGALBufferHandle hNewBuffer = m_pDevice->CreateBuffer(bufferDesc);
 
   if (hNewBuffer.IsInvalidated())
   {
-    xiiLog::Error("GPU resource pool couldn't create new buffer for given desc (size: {0})", BufferDesc.m_uiTotalSize);
+    xiiLog::Error("GPU resource pool couldn't create new buffer for given desc (size: {0})", bufferDesc.m_uiTotalSize);
     return xiiGALBufferHandle();
   }
 
@@ -177,7 +177,7 @@ xiiGALBufferHandle xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreationDescr
   m_BuffersInUse.Insert(hNewBuffer);
 
   m_uiNumAllocationsSinceLastGC++;
-  m_uiCurrentlyAllocatedMemory += m_pDevice->GetMemoryConsumptionForBuffer(BufferDesc);
+  m_uiCurrentlyAllocatedMemory += m_pDevice->GetMemoryConsumptionForBuffer(bufferDesc);
 
   UpdateMemoryStats();
 

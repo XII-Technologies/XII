@@ -19,9 +19,7 @@ xiiDummyXR::xiiDummyXR() :
 {
 }
 
-xiiDummyXR::~xiiDummyXR()
-{
-}
+xiiDummyXR::~xiiDummyXR() = default;
 
 bool xiiDummyXR::IsHmdPresent() const
 {
@@ -76,7 +74,7 @@ bool xiiDummyXR::SupportsCompanionView()
   return true;
 }
 
-xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiGALMSAASampleCount::Enum msaaCount, xiiUniquePtr<xiiWindowBase> companionWindow, xiiUniquePtr<xiiWindowOutputTargetGAL> companionWindowOutput)
+xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiGALMSAASampleCount::Enum msaaCount, xiiUniquePtr<xiiWindowBase> pCompanionWindow, xiiUniquePtr<xiiWindowOutputTargetGAL> pCompanionWindowOutput)
 {
   XII_ASSERT_DEV(IsInitialized(), "Need to call 'Initialize' first.");
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
@@ -101,9 +99,9 @@ xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiGALMSAASampleC
   }
 
   xiiUniquePtr<xiiActor> pActor = XII_DEFAULT_NEW(xiiActor, "DummyXR", this);
-  XII_ASSERT_DEV((companionWindow != nullptr) == (companionWindowOutput != nullptr), "Both companionWindow and companionWindowOutput must either be null or valid.");
+  XII_ASSERT_DEV((pCompanionWindow != nullptr) == (pCompanionWindowOutput != nullptr), "Both companionWindow and companionWindowOutput must either be null or valid.");
 
-  xiiUniquePtr<xiiActorPluginWindowXR> pActorPlugin = XII_DEFAULT_NEW(xiiActorPluginWindowXR, this, std::move(companionWindow), std::move(companionWindowOutput));
+  xiiUniquePtr<xiiActorPluginWindowXR> pActorPlugin = XII_DEFAULT_NEW(xiiActorPluginWindowXR, this, std::move(pCompanionWindow), std::move(pCompanionWindowOutput));
   m_pCompanion                                      = static_cast<xiiWindowOutputTargetXR*>(pActorPlugin->GetOutputTarget());
 
   pActor->AddPlugin(std::move(pActorPlugin));
@@ -270,9 +268,9 @@ void xiiDummyXR::GameApplicationEventHandler(const xiiGameApplicationExecutionEv
 
 //////////////////////////////////////////////////////////////////////////
 
-void xiiDummyXRInput::GetDeviceList(xiiHybridArray<xiiXRDeviceID, 64>& out_Devices) const
+void xiiDummyXRInput::GetDeviceList(xiiHybridArray<xiiXRDeviceID, 64>& out_devices) const
 {
-  out_Devices.PushBack(0);
+  out_devices.PushBack(0);
 }
 
 xiiXRDeviceID xiiDummyXRInput::GetDeviceIDByType(xiiXRDeviceType::Enum type) const
@@ -290,21 +288,21 @@ xiiXRDeviceID xiiDummyXRInput::GetDeviceIDByType(xiiXRDeviceType::Enum type) con
   return deviceID;
 }
 
-const xiiXRDeviceState& xiiDummyXRInput::GetDeviceState(xiiXRDeviceID iDeviceID) const
+const xiiXRDeviceState& xiiDummyXRInput::GetDeviceState(xiiXRDeviceID deviceID) const
 {
-  XII_ASSERT_DEV(iDeviceID < 1 && iDeviceID >= 0, "Invalid device ID.");
-  return m_DeviceState[iDeviceID];
+  XII_ASSERT_DEV(deviceID < 1 && deviceID >= 0, "Invalid device ID.");
+  return m_DeviceState[deviceID];
 }
 
-xiiString xiiDummyXRInput::GetDeviceName(xiiXRDeviceID iDeviceID) const
+xiiString xiiDummyXRInput::GetDeviceName(xiiXRDeviceID deviceID) const
 {
-  XII_ASSERT_DEV(iDeviceID < 1 && iDeviceID >= 0, "Invalid device ID.");
+  XII_ASSERT_DEV(deviceID < 1 && deviceID >= 0, "Invalid device ID.");
   return "Dummy HMD";
 }
 
-xiiBitflags<xiiXRDeviceFeatures> xiiDummyXRInput::GetDeviceFeatures(xiiXRDeviceID iDeviceID) const
+xiiBitflags<xiiXRDeviceFeatures> xiiDummyXRInput::GetDeviceFeatures(xiiXRDeviceID deviceID) const
 {
-  XII_ASSERT_DEV(iDeviceID < 1 && iDeviceID >= 0, "Invalid device ID.");
+  XII_ASSERT_DEV(deviceID < 1 && deviceID >= 0, "Invalid device ID.");
   return xiiXRDeviceFeatures::AimPose | xiiXRDeviceFeatures::GripPose;
 }
 

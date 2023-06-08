@@ -9,75 +9,75 @@
 
 // xiiAllocatorBase::Stats
 
-void operator<<(xiiStreamWriter& Stream, const xiiAllocatorBase::Stats& rhs)
+void operator<<(xiiStreamWriter& ref_stream, const xiiAllocatorBase::Stats& rhs)
 {
-  Stream << rhs.m_uiNumAllocations;
-  Stream << rhs.m_uiNumDeallocations;
-  Stream << rhs.m_uiAllocationSize;
+  ref_stream << rhs.m_uiNumAllocations;
+  ref_stream << rhs.m_uiNumDeallocations;
+  ref_stream << rhs.m_uiAllocationSize;
 }
 
-void operator>>(xiiStreamReader& Stream, xiiAllocatorBase::Stats& rhs)
+void operator>>(xiiStreamReader& ref_stream, xiiAllocatorBase::Stats& rhs)
 {
-  Stream >> rhs.m_uiNumAllocations;
-  Stream >> rhs.m_uiNumDeallocations;
-  Stream >> rhs.m_uiAllocationSize;
+  ref_stream >> rhs.m_uiNumAllocations;
+  ref_stream >> rhs.m_uiNumDeallocations;
+  ref_stream >> rhs.m_uiAllocationSize;
 }
 
 // xiiTime
 
-void operator<<(xiiStreamWriter& Stream, xiiTime Value)
+void operator<<(xiiStreamWriter& ref_stream, xiiTime value)
 {
-  Stream << Value.GetSeconds();
+  ref_stream << value.GetSeconds();
 }
 
-void operator>>(xiiStreamReader& Stream, xiiTime& Value)
+void operator>>(xiiStreamReader& ref_stream, xiiTime& ref_value)
 {
   double d = 0;
-  Stream.ReadQWordValue(&d).IgnoreResult();
+  ref_stream.ReadQWordValue(&d).IgnoreResult();
 
-  Value = xiiTime::Seconds(d);
+  ref_value = xiiTime::Seconds(d);
 }
 
 // xiiUuid
 
-void operator<<(xiiStreamWriter& Stream, const xiiUuid& Value)
+void operator<<(xiiStreamWriter& ref_stream, const xiiUuid& value)
 {
-  Stream << Value.m_uiHigh;
-  Stream << Value.m_uiLow;
+  ref_stream << value.m_uiHigh;
+  ref_stream << value.m_uiLow;
 }
 
-void operator>>(xiiStreamReader& Stream, xiiUuid& Value)
+void operator>>(xiiStreamReader& ref_stream, xiiUuid& ref_value)
 {
-  Stream >> Value.m_uiHigh;
-  Stream >> Value.m_uiLow;
+  ref_stream >> ref_value.m_uiHigh;
+  ref_stream >> ref_value.m_uiLow;
 }
 
 // xiiHashedString
 
-void operator<<(xiiStreamWriter& Stream, const xiiHashedString& Value)
+void operator<<(xiiStreamWriter& ref_stream, const xiiHashedString& sValue)
 {
-  Stream.WriteString(Value.GetView()).AssertSuccess();
+  ref_stream.WriteString(sValue.GetView()).AssertSuccess();
 }
 
-void operator>>(xiiStreamReader& Stream, xiiHashedString& Value)
+void operator>>(xiiStreamReader& ref_stream, xiiHashedString& ref_sValue)
 {
   xiiStringBuilder sTemp;
-  Stream >> sTemp;
-  Value.Assign(sTemp);
+  ref_stream >> sTemp;
+  ref_sValue.Assign(sTemp);
 }
 
 // xiiTempHashedString
 
-void operator<<(xiiStreamWriter& Stream, const xiiTempHashedString& Value)
+void operator<<(xiiStreamWriter& ref_stream, const xiiTempHashedString& sValue)
 {
-  Stream << (xiiUInt64)Value.GetHash();
+  ref_stream << (xiiUInt64)sValue.GetHash();
 }
 
-void operator>>(xiiStreamReader& Stream, xiiTempHashedString& Value)
+void operator>>(xiiStreamReader& ref_stream, xiiTempHashedString& ref_sValue)
 {
   xiiUInt64 hash;
-  Stream >> hash;
-  Value = xiiTempHashedString(hash);
+  ref_stream >> hash;
+  ref_sValue = xiiTempHashedString(hash);
 }
 
 // xiiVariant
@@ -241,114 +241,114 @@ XII_FORCE_INLINE void ReadValueFunc::operator()<xiiDataBuffer>()
   *m_pValue = data;
 }
 
-void operator<<(xiiStreamWriter& Stream, const xiiVariant& Value)
+void operator<<(xiiStreamWriter& ref_stream, const xiiVariant& value)
 {
   xiiUInt8 variantVersion = (xiiUInt8)xiiGetStaticRTTI<xiiVariant>()->GetTypeVersion();
-  Stream << variantVersion;
-  xiiVariant::Type::Enum type        = Value.GetType();
+  ref_stream << variantVersion;
+  xiiVariant::Type::Enum type        = value.GetType();
   xiiUInt8               typeStorage = type;
   if (typeStorage == xiiVariantType::StringView)
     typeStorage = xiiVariantType::String;
-  Stream << typeStorage;
+  ref_stream << typeStorage;
 
   if (type != xiiVariant::Type::Invalid)
   {
     WriteValueFunc func;
-    func.m_pStream = &Stream;
-    func.m_pValue  = &Value;
+    func.m_pStream = &ref_stream;
+    func.m_pValue  = &value;
 
     xiiVariant::DispatchTo(func, type);
   }
 }
 
-void operator>>(xiiStreamReader& Stream, xiiVariant& Value)
+void operator>>(xiiStreamReader& ref_stream, xiiVariant& ref_value)
 {
   xiiUInt8 variantVersion;
-  Stream >> variantVersion;
+  ref_stream >> variantVersion;
   XII_ASSERT_DEBUG(xiiGetStaticRTTI<xiiVariant>()->GetTypeVersion() == variantVersion, "Older variant serialization not supported!");
 
   xiiUInt8 typeStorage;
-  Stream >> typeStorage;
+  ref_stream >> typeStorage;
   xiiVariant::Type::Enum type = (xiiVariant::Type::Enum)typeStorage;
 
   if (type != xiiVariant::Type::Invalid)
   {
     ReadValueFunc func;
-    func.m_pStream = &Stream;
-    func.m_pValue  = &Value;
+    func.m_pStream = &ref_stream;
+    func.m_pValue  = &ref_value;
 
     xiiVariant::DispatchTo(func, type);
   }
   else
   {
-    Value = xiiVariant();
+    ref_value = xiiVariant();
   }
 }
 
 // xiiTimestamp
 
-void operator<<(xiiStreamWriter& Stream, xiiTimestamp Value)
+void operator<<(xiiStreamWriter& ref_stream, xiiTimestamp value)
 {
-  Stream << Value.GetInt64(xiiSIUnitOfTime::Microsecond);
+  ref_stream << value.GetInt64(xiiSIUnitOfTime::Microsecond);
 }
 
-void operator>>(xiiStreamReader& Stream, xiiTimestamp& Value)
+void operator>>(xiiStreamReader& ref_stream, xiiTimestamp& ref_value)
 {
   xiiInt64 value;
-  Stream >> value;
+  ref_stream >> value;
 
-  Value.SetInt64(value, xiiSIUnitOfTime::Microsecond);
+  ref_value.SetInt64(value, xiiSIUnitOfTime::Microsecond);
 }
 
 // xiiVarianceTypeFloat
 
-void operator<<(xiiStreamWriter& Stream, const xiiVarianceTypeFloat& Value)
+void operator<<(xiiStreamWriter& ref_stream, const xiiVarianceTypeFloat& value)
 {
-  Stream << Value.m_fVariance;
-  Stream << Value.m_Value;
+  ref_stream << value.m_fVariance;
+  ref_stream << value.m_Value;
 }
-void operator>>(xiiStreamReader& Stream, xiiVarianceTypeFloat& Value)
+void operator>>(xiiStreamReader& ref_stream, xiiVarianceTypeFloat& ref_value)
 {
-  Stream >> Value.m_fVariance;
-  Stream >> Value.m_Value;
+  ref_stream >> ref_value.m_fVariance;
+  ref_stream >> ref_value.m_Value;
 }
 
 // xiiVarianceTypeDouble
 
-void operator<<(xiiStreamWriter& Stream, const xiiVarianceTypeDouble& Value)
+void operator<<(xiiStreamWriter& ref_stream, const xiiVarianceTypeDouble& value)
 {
-  Stream << Value.m_fVariance;
-  Stream << Value.m_Value;
+  ref_stream << value.m_fVariance;
+  ref_stream << value.m_Value;
 }
-void operator>>(xiiStreamReader& Stream, xiiVarianceTypeDouble& Value)
+void operator>>(xiiStreamReader& ref_stream, xiiVarianceTypeDouble& ref_value)
 {
-  Stream >> Value.m_fVariance;
-  Stream >> Value.m_Value;
+  ref_stream >> ref_value.m_fVariance;
+  ref_stream >> ref_value.m_Value;
 }
 
 // xiiVarianceTypeTime
 
-void operator<<(xiiStreamWriter& Stream, const xiiVarianceTypeTime& Value)
+void operator<<(xiiStreamWriter& ref_stream, const xiiVarianceTypeTime& value)
 {
-  Stream << Value.m_fVariance;
-  Stream << Value.m_Value;
+  ref_stream << value.m_fVariance;
+  ref_stream << value.m_Value;
 }
-void operator>>(xiiStreamReader& Stream, xiiVarianceTypeTime& Value)
+void operator>>(xiiStreamReader& ref_stream, xiiVarianceTypeTime& ref_value)
 {
-  Stream >> Value.m_fVariance;
-  Stream >> Value.m_Value;
+  ref_stream >> ref_value.m_fVariance;
+  ref_stream >> ref_value.m_Value;
 }
 
 // xiiVarianceTypeAngle
 
-void operator<<(xiiStreamWriter& Stream, const xiiVarianceTypeAngle& Value)
+void operator<<(xiiStreamWriter& ref_stream, const xiiVarianceTypeAngle& value)
 {
-  Stream << Value.m_fVariance;
-  Stream << Value.m_Value;
+  ref_stream << value.m_fVariance;
+  ref_stream << value.m_Value;
 }
-void operator>>(xiiStreamReader& Stream, xiiVarianceTypeAngle& Value)
+void operator>>(xiiStreamReader& ref_stream, xiiVarianceTypeAngle& ref_value)
 {
-  Stream >> Value.m_fVariance;
-  Stream >> Value.m_Value;
+  ref_stream >> ref_value.m_fVariance;
+  ref_stream >> ref_value.m_Value;
 }
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_StreamOperationsOther);

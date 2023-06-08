@@ -54,8 +54,8 @@ void SetApplicationDarkTheme()
   QApplication::setPalette(palette);
 }
 
-xiiQtFileserveMainWnd::xiiQtFileserveMainWnd(xiiApplication* pApp, QWidget* parent) :
-  QMainWindow(parent), m_pApp(pApp)
+xiiQtFileserveMainWnd::xiiQtFileserveMainWnd(xiiApplication* pApp, QWidget* pParent) :
+  QMainWindow(pParent), m_pApp(pApp)
 {
   OnServerStopped();
 

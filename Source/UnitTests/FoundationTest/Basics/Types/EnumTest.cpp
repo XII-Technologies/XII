@@ -6,7 +6,7 @@
 // but it could be encapsulated into an preprocessor macro if wanted
 struct xiiTestEnumBase
 {
-  typedef xiiUInt8 StorageType; // The storage type for the enum
+  using StorageType = xiiUInt8; // The storage type for the enum
 
   enum Enum
   {
@@ -16,15 +16,13 @@ struct xiiTestEnumBase
   };
 };
 
-typedef xiiEnum<xiiTestEnumBase // The base for the enum
-                >
-  xiiTestEnum; // The name of the final enum
+using xiiTestEnum = xiiEnum<xiiTestEnumBase>; // The name of the final enum
 // End of the definition of a example enum
 ///////////////////////////////////////////////////////////////////////
 
 struct xiiTestEnum2Base
 {
-  typedef xiiUInt16 StorageType;
+  using StorageType = xiiUInt16;
 
   enum Enum
   {
@@ -34,7 +32,7 @@ struct xiiTestEnum2Base
   };
 };
 
-typedef xiiEnum<xiiTestEnum2Base> xiiTestEnum2;
+using xiiTestEnum2 = xiiEnum<xiiTestEnum2Base>;
 
 // Test if the type actually has the requested size
 XII_CHECK_AT_COMPILETIME(sizeof(xiiTestEnum) == sizeof(xiiUInt8));

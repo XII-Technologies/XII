@@ -18,8 +18,8 @@ class XII_GAMEENGINE_DLL xiiWindVolumeComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;
@@ -39,9 +39,9 @@ public:
   xiiEnum<xiiWindStrength> m_Strength;                  // [ property ]
   bool                     m_bReverseDirection = false; // [ property ]
 
-  xiiSimdVec4f ComputeForceAtGlobalPosition(const xiiSimdVec4f& globalPos) const;
+  xiiSimdVec4f ComputeForceAtGlobalPosition(const xiiSimdVec4f& vGlobalPos) const;
 
-  virtual xiiSimdVec4f ComputeForceAtLocalPosition(const xiiSimdVec4f& localPos) const = 0;
+  virtual xiiSimdVec4f ComputeForceAtLocalPosition(const xiiSimdVec4f& vLocalPos) const = 0;
 
   xiiEnum<xiiOnComponentFinishedAction> m_OnFinishedAction; // [ property ]
 
@@ -66,8 +66,8 @@ class XII_GAMEENGINE_DLL xiiWindVolumeSphereComponent : public xiiWindVolumeComp
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiWindVolumeSphereComponent
@@ -76,10 +76,10 @@ public:
   xiiWindVolumeSphereComponent();
   ~xiiWindVolumeSphereComponent();
 
-  virtual xiiSimdVec4f ComputeForceAtLocalPosition(const xiiSimdVec4f& localPos) const override;
+  virtual xiiSimdVec4f ComputeForceAtLocalPosition(const xiiSimdVec4f& vLocalPos) const override;
 
   float GetRadius() const { return m_fRadius; } // [ property ]
-  void  SetRadius(float val);                   // [ property ]
+  void  SetRadius(float fVal);                  // [ property ]
 
 private:
   void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg);
@@ -117,8 +117,8 @@ class XII_GAMEENGINE_DLL xiiWindVolumeCylinderComponent : public xiiWindVolumeCo
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiWindVolumeCylinderComponent
@@ -127,13 +127,13 @@ public:
   xiiWindVolumeCylinderComponent();
   ~xiiWindVolumeCylinderComponent();
 
-  virtual xiiSimdVec4f ComputeForceAtLocalPosition(const xiiSimdVec4f& localPos) const override;
+  virtual xiiSimdVec4f ComputeForceAtLocalPosition(const xiiSimdVec4f& vLocalPos) const override;
 
   float GetRadius() const { return m_fRadius; } // [ property ]
-  void  SetRadius(float val);                   // [ property ]
+  void  SetRadius(float fVal);                  // [ property ]
 
   float GetLength() const { return m_fLength; } // [ property ]
-  void  SetLength(float val);                   // [ property ]
+  void  SetLength(float fVal);                  // [ property ]
 
   xiiEnum<xiiWindVolumeCylinderMode> m_Mode; // [ property ]
 
@@ -159,8 +159,8 @@ class XII_GAMEENGINE_DLL xiiWindVolumeConeComponent : public xiiWindVolumeCompon
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiWindVolumeCylinderComponent
@@ -169,10 +169,10 @@ public:
   xiiWindVolumeConeComponent();
   ~xiiWindVolumeConeComponent();
 
-  virtual xiiSimdVec4f ComputeForceAtLocalPosition(const xiiSimdVec4f& localPos) const override;
+  virtual xiiSimdVec4f ComputeForceAtLocalPosition(const xiiSimdVec4f& vLocalPos) const override;
 
   float GetLength() const { return m_fLength; } // [ property ]
-  void  SetLength(float val);                   // [ property ]
+  void  SetLength(float fVal);                  // [ property ]
 
   xiiAngle GetAngle() const { return m_Angle; } // [ property ]
   void     SetAngle(xiiAngle val);              // [ property ]

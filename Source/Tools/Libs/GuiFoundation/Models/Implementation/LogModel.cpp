@@ -5,8 +5,8 @@
 #include <QThread>
 
 
-xiiQtLogModel::xiiQtLogModel(QObject* parent) :
-  QAbstractItemModel(parent)
+xiiQtLogModel::xiiQtLogModel(QObject* pParent) :
+  QAbstractItemModel(pParent)
 {
   m_bIsValid = true;
   m_LogLevel = xiiLogMsgType::InfoMsg;
@@ -44,12 +44,12 @@ void xiiQtLogModel::Clear()
   Q_EMIT NewErrorsOrWarnings(nullptr, false);
 }
 
-void xiiQtLogModel::SetLogLevel(xiiLogMsgType::Enum LogLevel)
+void xiiQtLogModel::SetLogLevel(xiiLogMsgType::Enum logLevel)
 {
-  if (m_LogLevel == LogLevel)
+  if (m_LogLevel == logLevel)
     return;
 
-  m_LogLevel = LogLevel;
+  m_LogLevel = logLevel;
   Invalidate();
 }
 
@@ -97,7 +97,7 @@ bool xiiQtLogModel::IsFiltered(const xiiLogEntry& lm) const
 // xiiQtLogModel QAbstractItemModel functions
 ////////////////////////////////////////////////////////////////////////
 
-QVariant xiiQtLogModel::data(const QModelIndex& index, int role) const
+QVariant xiiQtLogModel::data(const QModelIndex& index, int iRole) const
 {
   if (!index.isValid() || index.column() != 0)
     return QVariant();
@@ -110,7 +110,7 @@ QVariant xiiQtLogModel::data(const QModelIndex& index, int role) const
 
   const xiiLogEntry& msg = *m_VisibleMessages[iRow];
 
-  switch (role)
+  switch (iRole)
   {
     case Qt::DisplayRole:
     case Qt::ToolTipRole:
@@ -155,17 +155,17 @@ Qt::ItemFlags xiiQtLogModel::flags(const QModelIndex& index) const
   return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 }
 
-QVariant xiiQtLogModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant xiiQtLogModel::headerData(int iSection, Qt::Orientation orientation, int iRole) const
 {
   return QVariant();
 }
 
-QModelIndex xiiQtLogModel::index(int row, int column, const QModelIndex& parent) const
+QModelIndex xiiQtLogModel::index(int iRow, int iColumn, const QModelIndex& parent) const
 {
-  if (parent.isValid() || column != 0)
+  if (parent.isValid() || iColumn != 0)
     return QModelIndex();
 
-  return createIndex(row, column, row);
+  return createIndex(iRow, iColumn, iRow);
 }
 
 QModelIndex xiiQtLogModel::parent(const QModelIndex& index) const

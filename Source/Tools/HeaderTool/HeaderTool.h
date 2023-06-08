@@ -5,7 +5,7 @@
 class xiiHeaderTool : public xiiApplication
 {
 public:
-  typedef xiiApplication SUPER;
+  using SUPER = xiiApplication;
 
   xiiHeaderTool();
 

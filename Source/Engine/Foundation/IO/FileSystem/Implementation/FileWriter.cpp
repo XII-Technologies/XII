@@ -2,11 +2,11 @@
 
 #include <Foundation/IO/FileSystem/FileWriter.h>
 
-xiiResult xiiFileWriter::Open(xiiStringView sFile, xiiUInt32 uiCacheSize /*= 1024 * 1024*/, xiiFileShareMode::Enum FileShareMode /*= xiiFileShareMode::Exclusive*/, bool bAllowFileEvents /*= true*/)
+xiiResult xiiFileWriter::Open(xiiStringView sFile, xiiUInt32 uiCacheSize /*= 1024 * 1024*/, xiiFileShareMode::Enum fileShareMode /*= xiiFileShareMode::Exclusive*/, bool bAllowFileEvents /*= true*/)
 {
   uiCacheSize = xiiMath::Clamp<xiiUInt32>(uiCacheSize, 1024, 1024 * 1024 * 32);
 
-  m_pDataDirWriter = GetFileWriter(sFile, FileShareMode, bAllowFileEvents);
+  m_pDataDirWriter = GetFileWriter(sFile, fileShareMode, bAllowFileEvents);
 
   if (!m_pDataDirWriter)
     return XII_FAILURE;

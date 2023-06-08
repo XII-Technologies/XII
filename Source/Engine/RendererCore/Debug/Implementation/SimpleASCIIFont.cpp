@@ -1000,7 +1000,7 @@ static void CopyCharacter(xiiUInt32* pImage, xiiInt32 c, const char* szChar)
 
 #endif
 
-void xiiGraphicsUtils::CreateSimpleASCIIFontTexture(xiiImage& Img, bool bSetEmptyToUnknown)
+void xiiGraphicsUtils::CreateSimpleASCIIFontTexture(xiiImage& ref_img, bool bSetEmptyToUnknown)
 {
 #if XII_DISABLED(XII_EMBED_FONT_FILE)
   Img.SetWidth(256);
@@ -1180,15 +1180,15 @@ void xiiGraphicsUtils::CreateSimpleASCIIFontTexture(xiiImage& Img, bool bSetEmpt
   reader.m_pData  = g_FontFileTGA;
 
   xiiTgaFileFormat tga;
-  tga.ReadImage(reader, Img, "tga").IgnoreResult();
+  tga.ReadImage(reader, ref_img, "tga").IgnoreResult();
 
-  xiiImageConversion::Convert(Img, Img, xiiImageFormat::R8G8B8A8_UNORM).IgnoreResult();
+  xiiImageConversion::Convert(ref_img, ref_img, xiiImageFormat::R8G8B8A8_UNORM).IgnoreResult();
 
-  for (xiiUInt32 y = 0; y < Img.GetHeight(); ++y)
+  for (xiiUInt32 y = 0; y < ref_img.GetHeight(); ++y)
   {
-    for (xiiUInt32 x = 0; x < Img.GetWidth(); ++x)
+    for (xiiUInt32 x = 0; x < ref_img.GetWidth(); ++x)
     {
-      xiiUInt8* pPixel = Img.GetPixelPointer<xiiUInt8>(0, 0, 0, x, y, 0);
+      xiiUInt8* pPixel = ref_img.GetPixelPointer<xiiUInt8>(0, 0, 0, x, y, 0);
       pPixel[1] = pPixel[2] = pPixel[3] = pPixel[0]; // copy R into GBA
     }
   }

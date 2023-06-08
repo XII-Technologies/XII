@@ -46,7 +46,7 @@ public:
   xiiDataBlock<T, BlockSizeInByte> AllocateBlock();
 
   template <typename T>
-  void DeallocateBlock(xiiDataBlock<T, BlockSizeInByte>& block);
+  void DeallocateBlock(xiiDataBlock<T, BlockSizeInByte>& ref_block);
 
 
   const char* GetName() const;

@@ -2,8 +2,8 @@
 
 #include <Foundation/IO/ChunkStream.h>
 
-xiiChunkStreamWriter::xiiChunkStreamWriter(xiiStreamWriter& pStream) :
-  m_Stream(pStream)
+xiiChunkStreamWriter::xiiChunkStreamWriter(xiiStreamWriter& ref_stream) :
+  m_Stream(ref_stream)
 {
   m_bWritingFile  = false;
   m_bWritingChunk = false;
@@ -87,8 +87,8 @@ xiiResult xiiChunkStreamWriter::WriteBytes(const void* pWriteBuffer, xiiUInt64 u
 
 
 
-xiiChunkStreamReader::xiiChunkStreamReader(xiiStreamReader& stream) :
-  m_Stream(stream)
+xiiChunkStreamReader::xiiChunkStreamReader(xiiStreamReader& ref_stream) :
+  m_Stream(ref_stream)
 {
   m_ChunkInfo.m_bValid = false;
   m_EndChunkFileMode   = EndChunkFileMode::JustClose;

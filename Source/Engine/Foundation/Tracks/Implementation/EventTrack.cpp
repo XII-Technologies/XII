@@ -2,9 +2,9 @@
 
 #include <Foundation/Tracks/EventTrack.h>
 
-xiiEventTrack::xiiEventTrack() {}
+xiiEventTrack::xiiEventTrack() = default;
 
-xiiEventTrack::~xiiEventTrack() {}
+xiiEventTrack::~xiiEventTrack() = default;
 
 void xiiEventTrack::Clear()
 {
@@ -117,7 +117,7 @@ xiiInt32 xiiEventTrack::FindControlPointBefore(xiiTime x) const
   return -1;
 }
 
-void xiiEventTrack::Sample(xiiTime rangeStart, xiiTime rangeEnd, xiiDynamicArray<xiiHashedString>& out_Events) const
+void xiiEventTrack::Sample(xiiTime rangeStart, xiiTime rangeEnd, xiiDynamicArray<xiiHashedString>& out_events) const
 {
   if (m_ControlPoints.IsEmpty())
     return;
@@ -137,7 +137,7 @@ void xiiEventTrack::Sample(xiiTime rangeStart, xiiTime rangeEnd, xiiDynamicArray
     {
       const xiiHashedString& sEvent = m_Events[m_ControlPoints[curCpIdx].m_uiEvent];
 
-      out_Events.PushBack(sEvent);
+      out_events.PushBack(sEvent);
 
       ++curCpIdx;
     }
@@ -150,14 +150,14 @@ void xiiEventTrack::Sample(xiiTime rangeStart, xiiTime rangeEnd, xiiDynamicArray
     {
       const xiiHashedString& sEvent = m_Events[m_ControlPoints[curCpIdx].m_uiEvent];
 
-      out_Events.PushBack(sEvent);
+      out_events.PushBack(sEvent);
 
       --curCpIdx;
     }
   }
 }
 
-void xiiEventTrack::Save(xiiStreamWriter& stream) const
+void xiiEventTrack::Save(xiiStreamWriter& ref_stream) const
 {
   if (m_bSort)
   {
@@ -166,49 +166,49 @@ void xiiEventTrack::Save(xiiStreamWriter& stream) const
   }
 
   xiiUInt8 uiVersion = 1;
-  stream << uiVersion;
+  ref_stream << uiVersion;
 
-  stream << m_Events.GetCount();
+  ref_stream << m_Events.GetCount();
   for (const xiiHashedString& name : m_Events)
   {
-    stream << name.GetString();
+    ref_stream << name.GetString();
   }
 
-  stream << m_ControlPoints.GetCount();
+  ref_stream << m_ControlPoints.GetCount();
   for (const ControlPoint& cp : m_ControlPoints)
   {
-    stream << cp.m_Time;
-    stream << cp.m_uiEvent;
+    ref_stream << cp.m_Time;
+    ref_stream << cp.m_uiEvent;
   }
 }
 
-void xiiEventTrack::Load(xiiStreamReader& stream)
+void xiiEventTrack::Load(xiiStreamReader& ref_stream)
 {
   // don't rely on the data being sorted
   m_bSort = true;
 
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  ref_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion == 1, "Invalid event track version {0}", uiVersion);
 
   xiiUInt32        count = 0;
   xiiStringBuilder tmp;
 
-  stream >> count;
+  ref_stream >> count;
   m_Events.SetCount(count);
   for (xiiHashedString& name : m_Events)
   {
-    stream >> tmp;
+    ref_stream >> tmp;
     name.Assign(tmp);
   }
 
-  stream >> count;
+  ref_stream >> count;
   m_ControlPoints.SetCount(count);
   for (ControlPoint& cp : m_ControlPoints)
   {
-    stream >> cp.m_Time;
-    stream >> cp.m_uiEvent;
+    ref_stream >> cp.m_Time;
+    ref_stream >> cp.m_uiEvent;
   }
 }
 

@@ -3,7 +3,7 @@
 #include <Core/World/World.h>
 #include <RendererCore/Meshes/MeshComponent.h>
 
-typedef xiiComponentManager<class xiiSkyBoxComponent, xiiBlockStorageType::Compact> xiiSkyBoxComponentManager;
+using xiiSkyBoxComponentManager    = xiiComponentManager<class xiiSkyBoxComponent, xiiBlockStorageType::Compact>;
 using xiiTextureCubeResourceHandle = xiiTypedResourceHandle<class xiiTextureCubeResource>;
 
 class XII_RENDERERCORE_DLL xiiSkyBoxComponent : public xiiRenderComponent
@@ -14,8 +14,8 @@ class XII_RENDERERCORE_DLL xiiSkyBoxComponent : public xiiRenderComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void Initialize() override;
@@ -26,7 +26,7 @@ protected:
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg) override;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
 
   //////////////////////////////////////////////////////////////////////////

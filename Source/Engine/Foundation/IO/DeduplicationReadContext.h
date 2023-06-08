@@ -21,33 +21,33 @@ public:
 
   /// \brief Reads a single object inplace.
   template <typename T>
-  xiiResult ReadObjectInplace(xiiStreamReader& stream, T& obj); // [tested]
+  xiiResult ReadObjectInplace(xiiStreamReader& ref_stream, T& ref_obj); // [tested]
 
   /// \brief Reads a single object and sets the pointer to it. The given allocator is used to create the object if it doesn't exist yet.
   template <typename T>
-  xiiResult ReadObject(xiiStreamReader& stream, T*& pObject,
+  xiiResult ReadObject(xiiStreamReader& ref_stream, T*& ref_pObject,
                        xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// \brief Reads a single object and sets the shared pointer to it. The given allocator is used to create the object if it doesn't exist
   /// yet.
   template <typename T>
-  xiiResult ReadObject(xiiStreamReader& stream, xiiSharedPtr<T>& pObject,
+  xiiResult ReadObject(xiiStreamReader& ref_stream, xiiSharedPtr<T>& ref_pObject,
                        xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// \brief Reads a single object and sets the unique pointer to it. The given allocator is used to create the object if it doesn't exist
   /// yet.
   template <typename T>
-  xiiResult ReadObject(xiiStreamReader& stream, xiiUniquePtr<T>& pObject,
+  xiiResult ReadObject(xiiStreamReader& ref_stream, xiiUniquePtr<T>& ref_pObject,
                        xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// \brief Reads an array of de-duplicated objects.
   template <typename ArrayType, typename ValueType>
-  xiiResult ReadArray(xiiStreamReader& stream, xiiArrayBase<ValueType, ArrayType>& Array,
+  xiiResult ReadArray(xiiStreamReader& ref_stream, xiiArrayBase<ValueType, ArrayType>& ref_array,
                       xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// \brief Reads a set of de-duplicated objects.
   template <typename KeyType, typename Comparer>
-  xiiResult ReadSet(xiiStreamReader& stream, xiiSetBase<KeyType, Comparer>& Set,
+  xiiResult ReadSet(xiiStreamReader& ref_stream, xiiSetBase<KeyType, Comparer>& ref_set,
                     xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   enum class ReadMapMode
@@ -59,7 +59,7 @@ public:
 
   /// \brief Reads a map. Mode controls whether key or value or both should de-duplicated.
   template <typename KeyType, typename ValueType, typename Comparer>
-  xiiResult ReadMap(xiiStreamReader& stream, xiiMapBase<KeyType, ValueType, Comparer>& Map, ReadMapMode mode, xiiAllocatorBase* pKeyAllocator = xiiFoundation::GetDefaultAllocator(),
+  xiiResult ReadMap(xiiStreamReader& ref_stream, xiiMapBase<KeyType, ValueType, Comparer>& ref_map, ReadMapMode mode, xiiAllocatorBase* pKeyAllocator = xiiFoundation::GetDefaultAllocator(),
                     xiiAllocatorBase* pValueAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
 private:

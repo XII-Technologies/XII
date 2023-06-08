@@ -5,8 +5,8 @@ template <typename T>
 class xiiLock
 {
 public:
-  XII_ALWAYS_INLINE explicit xiiLock(T& lock) :
-    m_Lock(lock)
+  XII_ALWAYS_INLINE explicit xiiLock(T& ref_lock) :
+    m_Lock(ref_lock)
   {
     m_Lock.Lock();
   }

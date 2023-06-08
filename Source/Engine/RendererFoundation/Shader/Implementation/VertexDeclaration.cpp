@@ -7,7 +7,7 @@ xiiGALVertexDeclaration::xiiGALVertexDeclaration(const xiiGALVertexDeclarationCr
 {
 }
 
-xiiGALVertexDeclaration::~xiiGALVertexDeclaration() {}
+xiiGALVertexDeclaration::~xiiGALVertexDeclaration() = default;
 
 
 

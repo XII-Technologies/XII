@@ -20,8 +20,8 @@ static QColor s_Colors[xiiQtTimeWidget::s_uiMaxColors] = {
   QColor(72, 0, 255),  // lilac
 };
 
-xiiQtTimeWidget::xiiQtTimeWidget(QWidget* parent) :
-  ads::CDockWidget("Time Widget", parent)
+xiiQtTimeWidget::xiiQtTimeWidget(QWidget* pParent) :
+  ads::CDockWidget("Time Widget", pParent)
 {
   s_pWidget = this;
 

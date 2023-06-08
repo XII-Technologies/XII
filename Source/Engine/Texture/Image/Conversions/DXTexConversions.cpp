@@ -68,9 +68,9 @@ namespace
   };
 
   /// Tries to create a hardware device, but falls back to a software device if there is one.
-  TypeOfDeviceCreated CreateDevice(ComPtr<ID3D11Device>& pDevice)
+  TypeOfDeviceCreated CreateDevice(ComPtr<ID3D11Device>& ref_device)
   {
-    pDevice = nullptr;
+    ref_device = nullptr;
 
     // Find a hardware adapter if possible, otherwise find any adapter.
     ComPtr<IDXGIAdapter1> pHardwareAdapter1;
@@ -162,13 +162,13 @@ namespace
 
     D3D_FEATURE_LEVEL fl;
     HRESULT           hr = s_DynamicD3D11CreateDevice(pAdapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, createDeviceFlags, featureLevels,
-                                            _countof(featureLevels), D3D11_SDK_VERSION, &pDevice, &fl, nullptr);
+                                            _countof(featureLevels), D3D11_SDK_VERSION, &ref_device, &fl, nullptr);
 
     if (FAILED(hr) && (createDeviceFlags & D3D11_CREATE_DEVICE_DEBUG))
     {
       createDeviceFlags = createDeviceFlags & ~D3D11_CREATE_DEVICE_DEBUG;
       hr                = s_DynamicD3D11CreateDevice(pAdapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, createDeviceFlags, featureLevels,
-                                      _countof(featureLevels), D3D11_SDK_VERSION, &pDevice, &fl, nullptr);
+                                      _countof(featureLevels), D3D11_SDK_VERSION, &ref_device, &fl, nullptr);
     }
 
     if (SUCCEEDED(hr))
@@ -176,14 +176,14 @@ namespace
       if (fl < D3D_FEATURE_LEVEL_11_0)
       {
         D3D11_FEATURE_DATA_D3D10_X_HARDWARE_OPTIONS hwopts;
-        hr = pDevice->CheckFeatureSupport(D3D11_FEATURE_D3D10_X_HARDWARE_OPTIONS, &hwopts, sizeof(hwopts));
+        hr = ref_device->CheckFeatureSupport(D3D11_FEATURE_D3D10_X_HARDWARE_OPTIONS, &hwopts, sizeof(hwopts));
         if (FAILED(hr))
           memset(&hwopts, 0, sizeof(hwopts));
 
         if (!hwopts.ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x)
         {
-          pDevice = nullptr;
-          hr      = HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+          ref_device = nullptr;
+          hr         = HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
         }
       }
     }
@@ -214,10 +214,10 @@ namespace
     class ScopedAccess
     {
     public:
-      ScopedAccess(DeviceAndConversionTable& table) :
-        m_Lock(table.m_Mutex), m_Table(table)
+      ScopedAccess(DeviceAndConversionTable& ref_table) :
+        m_Lock(ref_table.m_Mutex), m_Table(ref_table)
       {
-        table.Init();
+        ref_table.Init();
       }
 
       DeviceAndConversionTable* operator->() { return &m_Table; }
@@ -320,10 +320,10 @@ public:
     return DeviceAndConversionTable::getDeviceAndConversionTable()->getConvertors();
   }
 
-  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocksX, xiiUInt32 numBlocksY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocksX, xiiUInt32 uiNumBlocksY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
-    const xiiUInt32 targetWidth  = numBlocksX * xiiImageFormat::GetBlockWidth(targetFormat);
-    const xiiUInt32 targetHeight = numBlocksY * xiiImageFormat::GetBlockHeight(targetFormat);
+    const xiiUInt32 targetWidth  = uiNumBlocksX * xiiImageFormat::GetBlockWidth(targetFormat);
+    const xiiUInt32 targetHeight = uiNumBlocksY * xiiImageFormat::GetBlockHeight(targetFormat);
 
     Image srcImg;
     srcImg.width      = targetWidth;

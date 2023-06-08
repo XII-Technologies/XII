@@ -43,11 +43,11 @@ void xiiBakedProbesVolumeComponent::OnDeactivated()
   GetOwner()->UpdateLocalBounds();
 }
 
-void xiiBakedProbesVolumeComponent::SetExtents(const xiiVec3& extents)
+void xiiBakedProbesVolumeComponent::SetExtents(const xiiVec3& vExtents)
 {
-  if (m_vExtents != extents)
+  if (m_vExtents != vExtents)
   {
-    m_vExtents = extents;
+    m_vExtents = vExtents;
 
     if (IsActiveAndInitialized())
     {
@@ -56,27 +56,27 @@ void xiiBakedProbesVolumeComponent::SetExtents(const xiiVec3& extents)
   }
 }
 
-void xiiBakedProbesVolumeComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiBakedProbesVolumeComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_vExtents;
 }
 
-void xiiBakedProbesVolumeComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiBakedProbesVolumeComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   s >> m_vExtents;
 }
 
-void xiiBakedProbesVolumeComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) const
+void xiiBakedProbesVolumeComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg) const
 {
-  msg.AddBounds(xiiBoundingBox(-m_vExtents * 0.5f, m_vExtents * 0.5f), xiiInvalidSpatialDataCategory);
+  ref_msg.AddBounds(xiiBoundingBox(-m_vExtents * 0.5f, m_vExtents * 0.5f), xiiInvalidSpatialDataCategory);
 }
 
 

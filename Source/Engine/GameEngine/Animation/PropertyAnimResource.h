@@ -9,7 +9,7 @@
 
 struct XII_GAMEENGINE_DLL xiiPropertyAnimTarget
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -33,7 +33,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiPropertyAnimTarget);
 
 struct XII_GAMEENGINE_DLL xiiPropertyAnimMode
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -78,8 +78,8 @@ struct XII_GAMEENGINE_DLL xiiPropertyAnimResourceDescriptor : public xiiRefCount
   xiiDynamicArray<xiiColorPropertyAnimEntry> m_ColorAnimations;
   xiiEventTrack                              m_EventTrack;
 
-  void Save(xiiStreamWriter& stream) const;
-  void Load(xiiStreamReader& stream);
+  void Save(xiiStreamWriter& ref_stream) const;
+  void Load(xiiStreamReader& ref_stream);
 };
 
 //////////////////////////////////////////////////////////////////////////

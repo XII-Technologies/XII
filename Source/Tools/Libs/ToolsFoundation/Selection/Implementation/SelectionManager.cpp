@@ -131,36 +131,36 @@ void xiiSelectionManager::SetSelection(const xiiDocumentObject* pSingleObject)
   SetSelection(objs);
 }
 
-void xiiSelectionManager::SetSelection(const xiiDeque<const xiiDocumentObject*>& Selection)
+void xiiSelectionManager::SetSelection(const xiiDeque<const xiiDocumentObject*>& selection)
 {
-  if (Selection.IsEmpty())
+  if (selection.IsEmpty())
   {
     Clear();
     return;
   }
 
-  if (m_pSelectionStorage->m_SelectionList == Selection)
+  if (m_pSelectionStorage->m_SelectionList == selection)
     return;
 
   m_pSelectionStorage->m_SelectionList.Clear();
   m_pSelectionStorage->m_SelectionSet.Clear();
 
-  m_pSelectionStorage->m_SelectionList.Reserve(Selection.GetCount());
+  m_pSelectionStorage->m_SelectionList.Reserve(selection.GetCount());
 
-  for (xiiUInt32 i = 0; i < Selection.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < selection.GetCount(); ++i)
   {
-    if (Selection[i] != nullptr)
+    if (selection[i] != nullptr)
     {
-      XII_ASSERT_DEV(Selection[i]->GetDocumentObjectManager() == m_pSelectionStorage->m_pObjectManager, "Passed in object does not belong to same object manager.");
-      xiiStatus res = m_pSelectionStorage->m_pObjectManager->CanSelect(Selection[i]);
+      XII_ASSERT_DEV(selection[i]->GetDocumentObjectManager() == m_pSelectionStorage->m_pObjectManager, "Passed in object does not belong to same object manager.");
+      xiiStatus res = m_pSelectionStorage->m_pObjectManager->CanSelect(selection[i]);
       if (res.m_Result.Failed())
       {
         xiiLog::Error("{0}", res.m_sMessage);
         continue;
       }
       // actually == nullptr should never happen, unless we have an error somewhere else
-      m_pSelectionStorage->m_SelectionList.PushBack(Selection[i]);
-      m_pSelectionStorage->m_SelectionSet.Insert(Selection[i]->GetGuid());
+      m_pSelectionStorage->m_SelectionList.PushBack(selection[i]);
+      m_pSelectionStorage->m_SelectionSet.Insert(selection[i]->GetGuid());
     }
   }
 
@@ -232,9 +232,9 @@ xiiSharedPtr<xiiSelectionManager::Storage> xiiSelectionManager::SwapStorage(xiiS
 struct xiiObjectHierarchyComparor
 {
   using Tree = xiiHybridArray<const xiiDocumentObject*, 4>;
-  xiiObjectHierarchyComparor(xiiDeque<const xiiDocumentObject*>& items)
+  xiiObjectHierarchyComparor(xiiDeque<const xiiDocumentObject*>& ref_items)
   {
-    for (const xiiDocumentObject* pObject : items)
+    for (const xiiDocumentObject* pObject : ref_items)
     {
       Tree& tree = lookup[pObject];
       while (pObject)

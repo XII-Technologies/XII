@@ -364,23 +364,23 @@ void xiiVisualScriptInstance::ExecuteScript(xiiVisualScriptInstanceActivity* pAc
   }
 }
 
-bool xiiVisualScriptInstance::HandleMessage(xiiMessage& msg)
+bool xiiVisualScriptInstance::HandleMessage(xiiMessage& ref_msg)
 {
   if (m_pMessageHandlers == nullptr)
     return false;
 
-  xiiUInt32 uiFirstHandler = m_pMessageHandlers->LowerBound(msg.GetId());
+  xiiUInt32 uiFirstHandler = m_pMessageHandlers->LowerBound(ref_msg.GetId());
 
   bool bHandled = false;
 
   while (uiFirstHandler < m_pMessageHandlers->GetCount())
   {
     const auto& data = (*m_pMessageHandlers).GetPair(uiFirstHandler);
-    if (data.key != msg.GetId())
+    if (data.key != ref_msg.GetId())
       break;
 
     const xiiUInt32 uiNodeId = data.value;
-    m_Nodes[uiNodeId]->HandleMessage(&msg);
+    m_Nodes[uiNodeId]->HandleMessage(&ref_msg);
 
     bHandled = true;
     ++uiFirstHandler;

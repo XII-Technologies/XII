@@ -14,7 +14,7 @@ public:
 
   /// \brief Add expected message. Will fail the test when the expected message is not
   /// encountered. Can take an optional count, if messages are expected multiple times
-  void ExpectMessage(const char* msg, xiiLogMsgType::Enum type = xiiLogMsgType::All, xiiInt32 count = 1);
+  void ExpectMessage(const char* szMsg, xiiLogMsgType::Enum type = xiiLogMsgType::All, xiiInt32 iCount = 1);
 
   /// \brief Set the log interface that unhandled messages are forwarded to.
   void SetParentLog(xiiLogInterface* pInterface) { m_pParentLog = pInterface; }

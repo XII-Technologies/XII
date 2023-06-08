@@ -30,16 +30,16 @@ xiiPropertyMetaState::xiiPropertyMetaState() :
 {
 }
 
-void xiiPropertyMetaState::GetTypePropertiesState(const xiiDocumentObject* pObject, xiiMap<xiiString, xiiPropertyUiState>& out_PropertyStates)
+void xiiPropertyMetaState::GetTypePropertiesState(const xiiDocumentObject* pObject, xiiMap<xiiString, xiiPropertyUiState>& out_propertyStates)
 {
   xiiPropertyMetaStateEvent eventData;
-  eventData.m_pPropertyStates = &out_PropertyStates;
+  eventData.m_pPropertyStates = &out_propertyStates;
   eventData.m_pObject         = pObject;
 
   m_Events.Broadcast(eventData);
 }
 
-void xiiPropertyMetaState::GetTypePropertiesState(const xiiHybridArray<xiiPropertySelection, 8>& items, xiiMap<xiiString, xiiPropertyUiState>& out_PropertyStates)
+void xiiPropertyMetaState::GetTypePropertiesState(const xiiHybridArray<xiiPropertySelection, 8>& items, xiiMap<xiiString, xiiPropertyUiState>& out_propertyStates)
 {
   for (const auto& sel : items)
   {
@@ -48,7 +48,7 @@ void xiiPropertyMetaState::GetTypePropertiesState(const xiiHybridArray<xiiProper
 
     for (auto it = m_Temp.GetIterator(); it.IsValid(); ++it)
     {
-      auto& curState = out_PropertyStates[it.Key()];
+      auto& curState = out_propertyStates[it.Key()];
 
       curState.m_Visibility    = xiiMath::Max(curState.m_Visibility, it.Value().m_Visibility);
       curState.m_sNewLabelText = it.Value().m_sNewLabelText;
@@ -56,17 +56,17 @@ void xiiPropertyMetaState::GetTypePropertiesState(const xiiHybridArray<xiiProper
   }
 }
 
-void xiiPropertyMetaState::GetContainerElementsState(const xiiDocumentObject* pObject, const char* szProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_PropertyStates)
+void xiiPropertyMetaState::GetContainerElementsState(const xiiDocumentObject* pObject, const char* szProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates)
 {
   xiiContainerElementMetaStateEvent eventData;
-  eventData.m_pContainerElementStates = &out_PropertyStates;
+  eventData.m_pContainerElementStates = &out_propertyStates;
   eventData.m_pObject                 = pObject;
   eventData.m_szProperty              = szProperty;
 
   m_ContainerEvents.Broadcast(eventData);
 }
 
-void xiiPropertyMetaState::GetContainerElementsState(const xiiHybridArray<xiiPropertySelection, 8>& items, const char* szProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_PropertyStates)
+void xiiPropertyMetaState::GetContainerElementsState(const xiiHybridArray<xiiPropertySelection, 8>& items, const char* szProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates)
 {
   for (const auto& sel : items)
   {
@@ -75,7 +75,7 @@ void xiiPropertyMetaState::GetContainerElementsState(const xiiHybridArray<xiiPro
 
     for (auto it = m_Temp2.GetIterator(); it.IsValid(); ++it)
     {
-      auto& curState = out_PropertyStates[it.Key()];
+      auto& curState = out_propertyStates[it.Key()];
 
       curState.m_Visibility    = xiiMath::Max(curState.m_Visibility, it.Value().m_Visibility);
       curState.m_sNewLabelText = it.Value().m_sNewLabelText;

@@ -198,16 +198,16 @@ public:
   xiiArrayPtr<const xiiExpression::StreamDesc>   GetOutputs() const;
   xiiArrayPtr<const xiiExpression::FunctionDesc> GetFunctions() const;
 
-  static OpCode::Enum            GetOpCode(const StorageType*& pByteCode);
-  static xiiUInt32               GetRegisterIndex(const StorageType*& pByteCode);
-  static xiiExpression::Register GetConstant(const StorageType*& pByteCode);
-  static xiiUInt32               GetFunctionIndex(const StorageType*& pByteCode);
-  static xiiUInt32               GetFunctionArgCount(const StorageType*& pByteCode);
+  static OpCode::Enum            GetOpCode(const StorageType*& ref_pByteCode);
+  static xiiUInt32               GetRegisterIndex(const StorageType*& ref_pByteCode);
+  static xiiExpression::Register GetConstant(const StorageType*& ref_pByteCode);
+  static xiiUInt32               GetFunctionIndex(const StorageType*& ref_pByteCode);
+  static xiiUInt32               GetFunctionArgCount(const StorageType*& ref_pByteCode);
 
   void Disassemble(xiiStringBuilder& out_sDisassembly) const;
 
-  void      Save(xiiStreamWriter& stream) const;
-  xiiResult Load(xiiStreamReader& stream);
+  void      Save(xiiStreamWriter& ref_stream) const;
+  xiiResult Load(xiiStreamReader& ref_stream);
 
 private:
   friend class xiiExpressionCompiler;

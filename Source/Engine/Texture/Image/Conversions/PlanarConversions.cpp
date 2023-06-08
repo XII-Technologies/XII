@@ -5,22 +5,22 @@
 namespace
 {
   // https://docs.microsoft.com/en-us/windows/win32/medfound/recommended-8-bit-yuv-formats-for-video-rendering#converting-8-bit-yuv-to-rgb888
-  xiiVec3I32 RGB2YUV(xiiVec3I32 rgb)
+  xiiVec3I32 RGB2YUV(xiiVec3I32 vRgb)
   {
     xiiVec3I32 yuv;
-    yuv.x = ((66 * rgb.x + 129 * rgb.y + 25 * rgb.z + 128) >> 8) + 16;
-    yuv.y = ((-38 * rgb.x - 74 * rgb.y + 112 * rgb.z + 128) >> 8) + 128;
-    yuv.z = ((112 * rgb.x - 94 * rgb.y - 18 * rgb.z + 128) >> 8) + 128;
+    yuv.x = ((66 * vRgb.x + 129 * vRgb.y + 25 * vRgb.z + 128) >> 8) + 16;
+    yuv.y = ((-38 * vRgb.x - 74 * vRgb.y + 112 * vRgb.z + 128) >> 8) + 128;
+    yuv.z = ((112 * vRgb.x - 94 * vRgb.y - 18 * vRgb.z + 128) >> 8) + 128;
     return yuv;
   }
 
-  xiiVec3I32 YUV2RGB(xiiVec3I32 yuv)
+  xiiVec3I32 YUV2RGB(xiiVec3I32 vYuv)
   {
     xiiVec3I32 rgb;
 
-    xiiInt32 C = yuv.x - 16;
-    xiiInt32 D = yuv.y - 128;
-    xiiInt32 E = yuv.z - 128;
+    xiiInt32 C = vYuv.x - 16;
+    xiiInt32 D = vYuv.y - 128;
+    xiiInt32 E = vYuv.z - 128;
 
     rgb.x = xiiMath::Clamp((298 * C + 409 * E + 128) >> 8, 0, 255);
     rgb.y = xiiMath::Clamp((298 * C - 100 * D - 208 * E + 128) >> 8, 0, 255);
@@ -39,9 +39,9 @@ struct xiiImageConversion_NV12_sRGB : public xiiImageConversionStepDeplanarize
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiArrayPtr<xiiImageView> source, xiiImage target, xiiUInt32 numPixelsX, xiiUInt32 numPixelsY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiArrayPtr<xiiImageView> source, xiiImage target, xiiUInt32 uiNumPixelsX, xiiUInt32 uiNumPixelsY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
-    for (xiiUInt32 y = 0; y < numPixelsY; y += 2)
+    for (xiiUInt32 y = 0; y < uiNumPixelsY; y += 2)
     {
       const xiiUInt8* luma0  = source[0].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y);
       const xiiUInt8* luma1  = source[0].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y + 1);
@@ -50,7 +50,7 @@ struct xiiImageConversion_NV12_sRGB : public xiiImageConversionStepDeplanarize
       xiiUInt8* rgba0 = target.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y);
       xiiUInt8* rgba1 = target.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y + 1);
 
-      for (xiiUInt32 x = 0; x < numPixelsX; x += 2)
+      for (xiiUInt32 x = 0; x < uiNumPixelsX; x += 2)
       {
         xiiVec3I32 p00 = YUV2RGB(xiiVec3I32(luma0[0], chroma[0], chroma[1]));
         xiiVec3I32 p01 = YUV2RGB(xiiVec3I32(luma0[1], chroma[0], chroma[1]));
@@ -98,9 +98,9 @@ struct xiiImageConversion_sRGB_NV12 : public xiiImageConversionStepPlanarize
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(const xiiImageView& source, xiiArrayPtr<xiiImage> target, xiiUInt32 numPixelsX, xiiUInt32 numPixelsY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(const xiiImageView& source, xiiArrayPtr<xiiImage> target, xiiUInt32 uiNumPixelsX, xiiUInt32 uiNumPixelsY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
-    for (xiiUInt32 y = 0; y < numPixelsY; y += 2)
+    for (xiiUInt32 y = 0; y < uiNumPixelsY; y += 2)
     {
       const xiiUInt8* rgba0 = source.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y);
       const xiiUInt8* rgba1 = source.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y + 1);
@@ -109,7 +109,7 @@ struct xiiImageConversion_sRGB_NV12 : public xiiImageConversionStepPlanarize
       xiiUInt8* luma1  = target[0].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y + 1);
       xiiUInt8* chroma = target[1].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y / 2);
 
-      for (xiiUInt32 x = 0; x < numPixelsX; x += 2)
+      for (xiiUInt32 x = 0; x < uiNumPixelsX; x += 2)
       {
         xiiVec3I32 p00 = RGB2YUV(xiiVec3I32(rgba0[0], rgba0[1], rgba0[2]));
         xiiVec3I32 p01 = RGB2YUV(xiiVec3I32(rgba0[4], rgba0[5], rgba0[6]));

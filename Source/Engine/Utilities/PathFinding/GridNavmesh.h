@@ -36,23 +36,23 @@ public:
 
   /// \brief Callback that determines whether the cell with index \a uiCell1 and the cell with index \a uiCell2 represent the same type of
   /// terrain.
-  typedef bool (*CellComparator)(xiiUInt32 uiCell1, xiiUInt32 uiCell2, void* pPassThrough);
+  using CellComparator = bool (*)(xiiUInt32, xiiUInt32, void*);
 
   /// \brief Callback that determines whether the cell with index \a uiCell is blocked entirely (for every type of unit) and therefore can
   /// be optimized away.
-  typedef bool (*CellBlocked)(xiiUInt32 uiCell, void* pPassThrough);
+  using CellBlocked = bool (*)(xiiUInt32, void*);
 
   /// \brief Creates the navmesh from the given xiiGameGrid.
   template <class CellData>
   void CreateFromGrid(
-    const xiiGameGrid<CellData>& Grid,
-    CellComparator               IsSameCellType,
+    const xiiGameGrid<CellData>& grid,
+    CellComparator               isSameCellType,
     void*                        pPassThroughSame,
-    CellBlocked                  IsCellBlocked,
+    CellBlocked                  isCellBlocked,
     void*                        pPassThroughBlocked);
 
   /// \brief Returns the index of the ConvexArea at the given cell coordinates. Negative, if the cell is blocked.
-  xiiInt32 GetAreaAt(const xiiVec2I32& Coord) const { return m_NodesGrid.GetCell(Coord); }
+  xiiInt32 GetAreaAt(const xiiVec2I32& vCoord) const { return m_NodesGrid.GetCell(vCoord); }
 
   /// \brief Returns the number of convex areas that this navmesh consists of.
   xiiUInt32 GetNumConvexAreas() const { return m_ConvexAreas.GetCount(); }

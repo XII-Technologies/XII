@@ -17,15 +17,15 @@ XII_END_COMPONENT_TYPE
 xiiSoldierComponent::xiiSoldierComponent()  = default;
 xiiSoldierComponent::~xiiSoldierComponent() = default;
 
-void xiiSoldierComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSoldierComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
   // xiiStreamWriter& s = stream.GetStream();
 }
 
-void xiiSoldierComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSoldierComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
   // xiiStreamReader& s = stream.GetStream();
 }

@@ -11,9 +11,9 @@ namespace xiiInternal
   template <typename T>
   struct HashHelperImpl<T, true>
   {
-    XII_ALWAYS_INLINE static xiiUInt32 Hash(xiiStringView string)
+    XII_ALWAYS_INLINE static xiiUInt32 Hash(xiiStringView sString)
     {
-      return xiiHashingUtils::StringHashTo32(xiiHashingUtils::StringHash(string));
+      return xiiHashingUtils::StringHashTo32(xiiHashingUtils::StringHash(sString));
     }
   };
 
@@ -119,19 +119,19 @@ constexpr XII_ALWAYS_INLINE xiiUInt64 xiiHashingUtils::StringHash(const char (&s
   return xxHash64String(str, uiSeed);
 }
 
-XII_ALWAYS_INLINE xiiUInt64 xiiHashingUtils::StringHash(xiiStringView str, xiiUInt64 uiSeed)
+XII_ALWAYS_INLINE xiiUInt64 xiiHashingUtils::StringHash(xiiStringView sStr, xiiUInt64 uiSeed)
 {
-  return xxHash64String(str, uiSeed);
+  return xxHash64String(sStr, uiSeed);
 }
 
-constexpr XII_ALWAYS_INLINE xiiUInt32 xiiHashingUtils::StringHashTo32(xiiUInt64 hash)
+constexpr XII_ALWAYS_INLINE xiiUInt32 xiiHashingUtils::StringHashTo32(xiiUInt64 uiHash)
 {
   // just throw away the upper bits
-  return static_cast<xiiUInt32>(hash);
+  return static_cast<xiiUInt32>(uiHash);
 }
 
-constexpr XII_ALWAYS_INLINE xiiUInt32 xiiHashingUtils::CombineHashValues32(xiiUInt32 h0, xiiUInt32 h1)
+constexpr XII_ALWAYS_INLINE xiiUInt32 xiiHashingUtils::CombineHashValues32(xiiUInt32 ui0, xiiUInt32 ui1)
 {
   // See boost::hash_combine
-  return h0 ^ (h1 + 0x9e3779b9 + (h0 << 6) + (h1 >> 2));
+  return ui0 ^ (ui1 + 0x9e3779b9 + (ui0 << 6) + (ui1 >> 2));
 }

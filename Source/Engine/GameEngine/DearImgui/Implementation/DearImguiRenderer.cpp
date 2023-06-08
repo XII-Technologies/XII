@@ -28,7 +28,7 @@ xiiImguiExtractor::xiiImguiExtractor(const char* szName) :
 {
 }
 
-void xiiImguiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& extractedRenderData)
+void xiiImguiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
 {
   xiiImgui* pImGui = xiiImgui::GetSingleton();
   if (pImGui == nullptr)
@@ -110,7 +110,7 @@ void xiiImguiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const
         }
       }
 
-      extractedRenderData.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::GUI);
+      ref_extractedRenderData.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::GUI);
     }
   }
 }
@@ -139,14 +139,14 @@ xiiImguiRenderer::~xiiImguiRenderer()
   }
 }
 
-void xiiImguiRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const
+void xiiImguiRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {
-  types.PushBack(xiiGetStaticRTTI<xiiImguiRenderData>());
+  ref_types.PushBack(xiiGetStaticRTTI<xiiImguiRenderData>());
 }
 
-void xiiImguiRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const
+void xiiImguiRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
-  categories.PushBack(xiiDefaultRenderDataCategories::GUI);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
 }
 
 void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const

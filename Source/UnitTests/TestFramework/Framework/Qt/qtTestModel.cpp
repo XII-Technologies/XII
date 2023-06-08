@@ -11,7 +11,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 xiiQtTestModelEntry::xiiQtTestModelEntry(const xiiTestFrameworkResult* pResult, xiiInt32 iTestIndex, xiiInt32 iSubTestIndex) :
-  m_pResult(pResult), m_iTestIndex(iTestIndex), m_iSubTestIndex(iSubTestIndex), m_pParentEntry(nullptr), m_uiIndexInParent(0)
+  m_pResult(pResult), m_iTestIndex(iTestIndex), m_iSubTestIndex(iSubTestIndex)
 {
 }
 
@@ -131,7 +131,7 @@ void xiiQtTestModel::TestDataChanged(xiiInt32 iTestIndex, xiiInt32 iSubTestIndex
 // xiiQtTestModel QAbstractItemModel functions
 ////////////////////////////////////////////////////////////////////////
 
-QVariant xiiQtTestModel::data(const QModelIndex& index, int role) const
+QVariant xiiQtTestModel::data(const QModelIndex& index, int iRole) const
 {
   if (!index.isValid())
     return QVariant();
@@ -160,7 +160,7 @@ QVariant xiiQtTestModel::data(const QModelIndex& index, int role) const
   // Name
   if (index.column() == Columns::Name)
   {
-    switch (role)
+    switch (iRole)
     {
       case Qt::DisplayRole:
       {
@@ -196,7 +196,7 @@ QVariant xiiQtTestModel::data(const QModelIndex& index, int role) const
   // Status
   else if (index.column() == Columns::Status)
   {
-    switch (role)
+    switch (iRole)
     {
       case Qt::DisplayRole:
       {
@@ -240,7 +240,7 @@ QVariant xiiQtTestModel::data(const QModelIndex& index, int role) const
   // Duration
   else if (index.column() == Columns::Duration)
   {
-    switch (role)
+    switch (iRole)
     {
       case Qt::DisplayRole:
       {
@@ -282,7 +282,7 @@ QVariant xiiQtTestModel::data(const QModelIndex& index, int role) const
   // Errors
   else if (index.column() == Columns::Errors)
   {
-    switch (role)
+    switch (iRole)
     {
       case Qt::DisplayRole:
       {
@@ -315,7 +315,7 @@ QVariant xiiQtTestModel::data(const QModelIndex& index, int role) const
   // Assert Count
   else if (index.column() == Columns::Asserts)
   {
-    switch (role)
+    switch (iRole)
     {
       case Qt::DisplayRole:
       {
@@ -338,7 +338,7 @@ QVariant xiiQtTestModel::data(const QModelIndex& index, int role) const
   // Progress
   else if (index.column() == Columns::Progress)
   {
-    switch (role)
+    switch (iRole)
     {
       case Qt::DisplayRole:
       {
@@ -425,11 +425,11 @@ Qt::ItemFlags xiiQtTestModel::flags(const QModelIndex& index) const
   return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
 }
 
-QVariant xiiQtTestModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant xiiQtTestModel::headerData(int iSection, Qt::Orientation orientation, int iRole) const
 {
-  if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
+  if (orientation == Qt::Horizontal && iRole == Qt::DisplayRole)
   {
-    switch (section)
+    switch (iSection)
     {
       case Columns::Name:
         return QString("Name");
@@ -448,9 +448,9 @@ QVariant xiiQtTestModel::headerData(int section, Qt::Orientation orientation, in
   return QVariant();
 }
 
-QModelIndex xiiQtTestModel::index(int row, int column, const QModelIndex& parent) const
+QModelIndex xiiQtTestModel::index(int iRow, int iColumn, const QModelIndex& parent) const
 {
-  if (!hasIndex(row, column, parent))
+  if (!hasIndex(iRow, iColumn, parent))
     return QModelIndex();
 
   const xiiQtTestModelEntry* pParent = nullptr;
@@ -460,8 +460,8 @@ QModelIndex xiiQtTestModel::index(int row, int column, const QModelIndex& parent
   else
     pParent = static_cast<xiiQtTestModelEntry*>(parent.internalPointer());
 
-  xiiQtTestModelEntry* pEntry = pParent->GetSubEntry(row);
-  return pEntry ? createIndex(row, column, pEntry) : QModelIndex();
+  xiiQtTestModelEntry* pEntry = pParent->GetSubEntry(iRow);
+  return pEntry ? createIndex(iRow, iColumn, pEntry) : QModelIndex();
 }
 
 QModelIndex xiiQtTestModel::parent(const QModelIndex& index) const
@@ -498,10 +498,10 @@ int xiiQtTestModel::columnCount(const QModelIndex& parent) const
   return Columns::ColumnCount;
 }
 
-bool xiiQtTestModel::setData(const QModelIndex& index, const QVariant& value, int role)
+bool xiiQtTestModel::setData(const QModelIndex& index, const QVariant& value, int iRole)
 {
   xiiQtTestModelEntry* pEntry = static_cast<xiiQtTestModelEntry*>(index.internalPointer());
-  if (pEntry == nullptr || index.column() != Columns::Name || role != Qt::CheckStateRole)
+  if (pEntry == nullptr || index.column() != Columns::Name || iRole != Qt::CheckStateRole)
     return false;
 
   if (pEntry->GetNodeType() == xiiQtTestModelEntry::TestNode)

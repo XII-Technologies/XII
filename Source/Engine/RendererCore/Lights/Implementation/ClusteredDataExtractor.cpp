@@ -170,12 +170,12 @@ xiiClusteredDataExtractor::xiiClusteredDataExtractor(const char* szName) :
   m_ClusterBoundingSpheres.SetCountUninitialized(NUM_CLUSTERS);
 }
 
-xiiClusteredDataExtractor::~xiiClusteredDataExtractor() {}
+xiiClusteredDataExtractor::~xiiClusteredDataExtractor() = default;
 
 void xiiClusteredDataExtractor::PostSortAndBatch(
   const xiiView&                               view,
   const xiiDynamicArray<const xiiGameObject*>& visibleObjects,
-  xiiExtractedRenderData&                      extractedRenderData)
+  xiiExtractedRenderData&                      ref_extractedRenderData)
 {
   XII_PROFILE_SCOPE("PostSortAndBatch");
 
@@ -200,7 +200,7 @@ void xiiClusteredDataExtractor::PostSortAndBatch(
     m_TempLightData.Clear();
     xiiMemoryUtils::ZeroFill(m_TempLightsClusters.GetData(), NUM_CLUSTERS);
 
-    auto            batchList    = extractedRenderData.GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::Light);
+    auto            batchList    = ref_extractedRenderData.GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::Light);
     const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
     for (xiiUInt32 i = 0; i < uiBatchCount; ++i)
     {
@@ -295,7 +295,7 @@ void xiiClusteredDataExtractor::PostSortAndBatch(
     m_TempDecalData.Clear();
     xiiMemoryUtils::ZeroFill(m_TempDecalsClusters.GetData(), NUM_CLUSTERS);
 
-    auto            batchList    = extractedRenderData.GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::Decal);
+    auto            batchList    = ref_extractedRenderData.GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::Decal);
     const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
     for (xiiUInt32 i = 0; i < uiBatchCount; ++i)
     {
@@ -334,7 +334,7 @@ void xiiClusteredDataExtractor::PostSortAndBatch(
     m_TempReflectionProbeData.Clear();
     xiiMemoryUtils::ZeroFill(m_TempReflectionProbeClusters.GetData(), NUM_CLUSTERS);
 
-    auto            batchList    = extractedRenderData.GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::ReflectionProbe);
+    auto            batchList    = ref_extractedRenderData.GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::ReflectionProbe);
     const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
     for (xiiUInt32 i = 0; i < uiBatchCount; ++i)
     {
@@ -403,7 +403,7 @@ void xiiClusteredDataExtractor::PostSortAndBatch(
 
   FillItemListAndClusterData(pData);
 
-  extractedRenderData.AddFrameData(pData);
+  ref_extractedRenderData.AddFrameData(pData);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   VisualizeClusteredData(view, pData, m_ClusterBoundingSpheres);

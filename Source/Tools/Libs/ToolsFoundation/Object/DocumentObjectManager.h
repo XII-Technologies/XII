@@ -43,10 +43,7 @@ public:
 /// \brief Used by xiiDocumentObjectManager::m_StructureEvents.
 struct xiiDocumentObjectStructureEvent
 {
-  xiiDocumentObjectStructureEvent() :
-    m_pObject(nullptr), m_pPreviousParent(nullptr), m_pNewParent(nullptr)
-  {
-  }
+  xiiDocumentObjectStructureEvent() = default;
 
   const xiiAbstractProperty* GetProperty() const;
   xiiVariant                 getInsertIndex() const;
@@ -146,7 +143,7 @@ public:
 
   void         DestroyObject(xiiDocumentObject* pObject);
   virtual void DestroyAllObjects();
-  virtual void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& Types) const {};
+  virtual void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const {};
 
   /// \brief Allows to annotate types with a category (group), such that things like creator menus can use this to present the types in a more user
   /// friendly way

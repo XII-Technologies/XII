@@ -26,19 +26,19 @@ xiiObjectChange::xiiObjectChange(const xiiObjectChange&)
   XII_REPORT_FAILURE("Not supported!");
 }
 
-void xiiObjectChange::GetGraph(xiiAbstractObjectGraph& graph) const
+void xiiObjectChange::GetGraph(xiiAbstractObjectGraph& ref_graph) const
 {
-  graph.Clear();
+  ref_graph.Clear();
 
   xiiRawMemoryStreamReader reader(m_GraphData);
-  xiiAbstractGraphBinarySerializer::Read(reader, &graph);
+  xiiAbstractGraphBinarySerializer::Read(reader, &ref_graph);
 }
 
-void xiiObjectChange::SetGraph(xiiAbstractObjectGraph& graph)
+void xiiObjectChange::SetGraph(xiiAbstractObjectGraph& ref_graph)
 {
   xiiContiguousMemoryStreamStorage storage;
   xiiMemoryStreamWriter            writer(&storage);
-  xiiAbstractGraphBinarySerializer::Write(writer, &graph);
+  xiiAbstractGraphBinarySerializer::Write(writer, &ref_graph);
 
   m_GraphData = {storage.GetData(), storage.GetStorageSize32()};
 }
@@ -445,7 +445,7 @@ void xiiDocumentObjectMirror::ApplyOp(xiiObjectChange& change)
     return;
   }
   propPath.WriteToLeafObject(
-            object.m_pObject, *object.m_pType, [this, &change](void* pLeaf, const xiiRTTI& pType) { ApplyOp(xiiRttiConverterObject(&pType, pLeaf), change); })
+            object.m_pObject, *object.m_pType, [this, &change](void* pLeaf, const xiiRTTI& type) { ApplyOp(xiiRttiConverterObject(&type, pLeaf), change); })
     .IgnoreResult();
 }
 

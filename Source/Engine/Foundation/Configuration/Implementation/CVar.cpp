@@ -239,20 +239,20 @@ void xiiCVar::LoadCVars(bool bOnlyNewOnes /*= true*/, bool bSetAsCurrentValue /*
   LoadCVarsFromFile(bOnlyNewOnes, bSetAsCurrentValue);
 }
 
-static xiiResult ReadLine(xiiStreamReader& Stream, xiiStringBuilder& sLine)
+static xiiResult ReadLine(xiiStreamReader& ref_stream, xiiStringBuilder& ref_sLine)
 {
-  sLine.Clear();
+  ref_sLine.Clear();
 
   char c[2];
   c[0] = '\0';
   c[1] = '\0';
 
   // Read the first character
-  if (Stream.ReadBytes(c, 1) == 0)
+  if (ref_stream.ReadBytes(c, 1) == 0)
     return XII_FAILURE;
 
   // Skip all white-spaces at the beginning, also skip all empty lines
-  while ((c[0] == '\n' || c[0] == '\r' || c[0] == ' ' || c[0] == '\t') && (Stream.ReadBytes(c, 1) > 0))
+  while ((c[0] == '\n' || c[0] == '\r' || c[0] == ' ' || c[0] == '\t') && (ref_stream.ReadBytes(c, 1) > 0))
   {
   }
 
@@ -262,21 +262,21 @@ static xiiResult ReadLine(xiiStreamReader& Stream, xiiStringBuilder& sLine)
     // Skip all tabs and carriage returns.
     if (c[0] != '\r' && c[0] != '\t')
     {
-      sLine.Append(c);
+      ref_sLine.Append(c);
     }
 
     // Stop if we reached the end of the file.
-    if (Stream.ReadBytes(c, 1) == 0)
+    if (ref_stream.ReadBytes(c, 1) == 0)
       break;
   }
 
-  if (sLine.IsEmpty())
+  if (ref_sLine.IsEmpty())
     return XII_FAILURE;
 
   return XII_SUCCESS;
 }
 
-static xiiResult ParseLine(const xiiStringBuilder& sLine, xiiStringBuilder& VarName, xiiStringBuilder& VarValue)
+static xiiResult ParseLine(const xiiStringBuilder& sLine, xiiStringBuilder& ref_sVarName, xiiStringBuilder& ref_sVarValue)
 {
   const char* szSign = sLine.FindSubString("=");
 
@@ -290,7 +290,7 @@ static xiiResult ParseLine(const xiiStringBuilder& sLine, xiiStringBuilder& VarN
     while (sSubString.EndsWith(" "))
       sSubString.Shrink(0, 1);
 
-    VarName = sSubString;
+    ref_sVarName = sSubString;
   }
 
   {
@@ -313,7 +313,7 @@ static xiiResult ParseLine(const xiiStringBuilder& sLine, xiiStringBuilder& VarN
     if (sSubString.EndsWith("\""))
       sSubString.Shrink(0, 1);
 
-    VarValue = sSubString;
+    ref_sVarValue = sSubString;
   }
 
   return XII_SUCCESS;

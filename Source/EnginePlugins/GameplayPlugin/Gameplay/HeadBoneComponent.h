@@ -3,7 +3,7 @@
 #include <GameEngine/Animation/TransformComponent.h>
 #include <GameplayPlugin/GameplayPluginDLL.h>
 
-typedef xiiComponentManagerSimple<class xiiHeadBoneComponent, xiiComponentUpdateType::WhenSimulating> xiiHeadBoneComponentManager;
+using xiiHeadBoneComponentManager = xiiComponentManagerSimple<class xiiHeadBoneComponent, xiiComponentUpdateType::WhenSimulating>;
 
 class XII_GAMEPLAYPLUGIN_DLL xiiHeadBoneComponent : public xiiComponent
 {
@@ -13,8 +13,8 @@ class XII_GAMEPLAYPLUGIN_DLL xiiHeadBoneComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiHeadBoneComponent
@@ -24,8 +24,8 @@ public:
   ~xiiHeadBoneComponent();
 
 
-  void SetVerticalRotation(float radians);    // [ scriptable ]
-  void ChangeVerticalRotation(float radians); // [ scriptable ]
+  void SetVerticalRotation(float fRadians);    // [ scriptable ]
+  void ChangeVerticalRotation(float fRadians); // [ scriptable ]
 
   xiiAngle m_NewVerticalRotation;                        // [ property ]
   xiiAngle m_MaxVerticalRotation = xiiAngle::Degree(80); // [ property ]

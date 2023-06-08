@@ -32,18 +32,18 @@ public:
   void MirrorVertically(xiiUInt32 uiActiveCurve);
 
 Q_SIGNALS:
-  void CpMovedEvent(xiiUInt32 curveIdx, xiiUInt32 cpIdx, xiiInt64 iTickX, double newPosY);
-  void CpDeletedEvent(xiiUInt32 curveIdx, xiiUInt32 cpIdx);
-  void TangentMovedEvent(xiiUInt32 curveIdx, xiiUInt32 cpIdx, float newPosX, float newPosY, bool rightTangent);
-  void InsertCpEvent(xiiUInt32 uiCurveIdx, xiiInt64 tickX, double value);
-  void TangentLinkEvent(xiiUInt32 curveIdx, xiiUInt32 cpIdx, bool bLink);
-  void CpTangentModeEvent(xiiUInt32 curveIdx, xiiUInt32 cpIdx, bool rightTangent, int mode); // xiiCurveTangentMode
+  void CpMovedEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiCpIdx, xiiInt64 iTickX, double fNewPosY);
+  void CpDeletedEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiCpIdx);
+  void TangentMovedEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiCpIdx, float fNewPosX, float fNewPosY, bool bRightTangent);
+  void InsertCpEvent(xiiUInt32 uiCurveIdx, xiiInt64 iTickX, double value);
+  void TangentLinkEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiCpIdx, bool bLink);
+  void CpTangentModeEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiCpIdx, bool bRightTangent, int iMode); // xiiCurveTangentMode
 
-  void BeginCpChangesEvent(QString name);
+  void BeginCpChangesEvent(QString sName);
   void EndCpChangesEvent();
 
-  void BeginOperationEvent(QString name);
-  void EndOperationEvent(bool commit);
+  void BeginOperationEvent(QString sName);
+  void EndOperationEvent(bool bCommit);
 
 private Q_SLOTS:
   void on_LinePosition_editingFinished();

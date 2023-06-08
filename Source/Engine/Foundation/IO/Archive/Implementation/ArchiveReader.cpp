@@ -99,9 +99,9 @@ xiiResult xiiArchiveReader::ExtractAllFiles(xiiStringView sTargetFolder) const
   return XII_SUCCESS;
 }
 
-void xiiArchiveReader::ConfigureRawMemoryStreamReader(xiiUInt32 uiEntryIdx, xiiRawMemoryStreamReader& memReader) const
+void xiiArchiveReader::ConfigureRawMemoryStreamReader(xiiUInt32 uiEntryIdx, xiiRawMemoryStreamReader& ref_memReader) const
 {
-  xiiArchiveUtils::ConfigureRawMemoryStreamReader(m_ArchiveTOC.m_Entries[uiEntryIdx], m_pDataStart, memReader);
+  xiiArchiveUtils::ConfigureRawMemoryStreamReader(m_ArchiveTOC.m_Entries[uiEntryIdx], m_pDataStart, ref_memReader);
 }
 
 xiiUniquePtr<xiiStreamReader> xiiArchiveReader::CreateEntryReader(xiiUInt32 uiEntryIdx) const

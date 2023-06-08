@@ -4,9 +4,9 @@
 
 namespace
 {
-  xiiSimdVec4f SimdDegree(float degree)
+  xiiSimdVec4f SimdDegree(float fDegree)
   {
-    return xiiSimdVec4f(xiiAngle::Degree(degree));
+    return xiiSimdVec4f(xiiAngle::Degree(fDegree));
   }
 } // namespace
 

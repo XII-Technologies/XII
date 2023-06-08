@@ -11,10 +11,10 @@ namespace xiiMemoryPolicies
   {
   public:
     XII_ALWAYS_INLINE xiiAlignedHeapAllocation(xiiAllocatorBase* pParent) {}
-    XII_ALWAYS_INLINE ~xiiAlignedHeapAllocation() {}
+    XII_ALWAYS_INLINE ~xiiAlignedHeapAllocation() = default;
 
     void* Allocate(size_t uiSize, size_t uiAlign);
-    void  Deallocate(void* ptr);
+    void  Deallocate(void* pPtr);
 
     XII_ALWAYS_INLINE xiiAllocatorBase* GetParent() const { return nullptr; }
   };

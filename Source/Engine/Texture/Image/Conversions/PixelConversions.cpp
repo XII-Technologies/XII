@@ -246,9 +246,9 @@ class xiiImageConversionStep_Compress16bpp : xiiImageConversionStepLinear
 
 #if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
 
-static bool IsAligned(const void* pointer)
+static bool IsAligned(const void* pPointer)
 {
-  return reinterpret_cast<size_t>(pointer) % 16 == 0;
+  return reinterpret_cast<size_t>(pPointer) % 16 == 0;
 }
 
 #endif
@@ -268,7 +268,7 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     xiiUInt32 sourceStride = 4;
     xiiUInt32 targetStride = 4;
@@ -285,7 +285,7 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
       __m128i shuffleMask = _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2);
 
       // Intel optimization manual, Color Pixel Format Conversion Using SSE3
-      while (numElements >= elementsPerBatch)
+      while (uiNumElements >= elementsPerBatch)
       {
         __m128i in0 = reinterpret_cast<const __m128i*>(sourcePointer)[0];
         __m128i in1 = reinterpret_cast<const __m128i*>(sourcePointer)[1];
@@ -295,7 +295,7 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
 
         sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride * elementsPerBatch);
         targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride * elementsPerBatch);
-        numElements -= elementsPerBatch;
+        uiNumElements -= elementsPerBatch;
       }
 #  else
       const xiiUInt32 elementsPerBatch = 8;
@@ -322,7 +322,7 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
     }
 #endif
 
-    while (numElements)
+    while (uiNumElements)
     {
       xiiUInt8 a, b, c, d;
       a                                             = reinterpret_cast<const xiiUInt8*>(sourcePointer)[2];
@@ -336,7 +336,7 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -354,7 +354,7 @@ struct xiiImageConversion_BGRX_BGRA : public xiiImageConversionStepLinear
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     xiiUInt32 sourceStride = 4;
     xiiUInt32 targetStride = 4;
@@ -369,7 +369,7 @@ struct xiiImageConversion_BGRX_BGRA : public xiiImageConversionStepLinear
 
       __m128i mask = _mm_set1_epi32(0xFF000000);
 
-      while (numElements >= elementsPerBatch)
+      while (uiNumElements >= elementsPerBatch)
       {
         const __m128i* pSource = reinterpret_cast<const __m128i*>(sourcePointer);
         __m128i*       pTarget = reinterpret_cast<__m128i*>(targetPointer);
@@ -378,12 +378,12 @@ struct xiiImageConversion_BGRX_BGRA : public xiiImageConversionStepLinear
 
         sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride * elementsPerBatch);
         targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride * elementsPerBatch);
-        numElements -= elementsPerBatch;
+        uiNumElements -= elementsPerBatch;
       }
     }
 #endif
 
-    while (numElements)
+    while (uiNumElements)
     {
       xiiUInt32 x = *(reinterpret_cast<const xiiUInt32*>(sourcePointer));
 
@@ -397,7 +397,7 @@ struct xiiImageConversion_BGRX_BGRA : public xiiImageConversionStepLinear
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -418,10 +418,10 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     // Work with single channels instead of pixels
-    numElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
 
     xiiUInt32 sourceStride = 4;
     xiiUInt32 targetStride = 1;
@@ -438,7 +438,7 @@ public:
       __m128 scale = _mm_set1_ps(255.0f);
       __m128 half  = _mm_set1_ps(0.5f);
 
-      while (numElements >= elementsPerBatch)
+      while (uiNumElements >= elementsPerBatch)
       {
         __m128 float0 = _mm_loadu_ps(static_cast<const float*>(sourcePointer) + 0);
         __m128 float1 = _mm_loadu_ps(static_cast<const float*>(sourcePointer) + 4);
@@ -480,19 +480,19 @@ public:
 
         sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride * elementsPerBatch);
         targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride * elementsPerBatch);
-        numElements -= elementsPerBatch;
+        uiNumElements -= elementsPerBatch;
       }
     }
 #endif
 
-    while (numElements)
+    while (uiNumElements)
     {
 
       *reinterpret_cast<xiiUInt8*>(targetPointer) = xiiMath::ColorFloatToByte(*reinterpret_cast<const float*>(sourcePointer));
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -510,7 +510,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     xiiUInt32 sourceStride = 16;
     xiiUInt32 targetStride = 4;
@@ -518,13 +518,13 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    while (numElements)
+    while (uiNumElements)
     {
       *reinterpret_cast<xiiColorGammaUB*>(targetPointer) = *reinterpret_cast<const xiiColor*>(sourcePointer);
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -545,10 +545,10 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     // Work with single channels instead of pixels
-    numElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 16;
+    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 16;
 
     xiiUInt32 sourceStride = 4;
     xiiUInt32 targetStride = 2;
@@ -556,14 +556,14 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    while (numElements)
+    while (uiNumElements)
     {
 
       *reinterpret_cast<xiiUInt16*>(targetPointer) = xiiMath::ColorFloatToShort(*reinterpret_cast<const float*>(sourcePointer));
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -583,10 +583,10 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     // Work with single channels instead of pixels
-    numElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 16;
+    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 16;
 
     xiiUInt32 sourceStride = 4;
     xiiUInt32 targetStride = 2;
@@ -594,14 +594,14 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    while (numElements)
+    while (uiNumElements)
     {
 
       *reinterpret_cast<xiiFloat16*>(targetPointer) = *reinterpret_cast<const float*>(sourcePointer);
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -622,10 +622,10 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     // Work with single channels instead of pixels
-    numElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
 
     xiiUInt32 sourceStride = 4;
     xiiUInt32 targetStride = 1;
@@ -633,14 +633,14 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    while (numElements)
+    while (uiNumElements)
     {
 
       *reinterpret_cast<xiiInt8*>(targetPointer) = xiiMath::ColorFloatToSignedByte(*reinterpret_cast<const float*>(sourcePointer));
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -661,10 +661,10 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     // Work with single channels instead of pixels
-    numElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
+    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
 
     xiiUInt32 sourceStride = 1;
     xiiUInt32 targetStride = 4;
@@ -672,13 +672,13 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    while (numElements)
+    while (uiNumElements)
     {
       *reinterpret_cast<float*>(targetPointer) = xiiMath::ColorByteToFloat(*reinterpret_cast<const xiiUInt8*>(sourcePointer));
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -696,7 +696,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     xiiUInt32 sourceStride = 4;
     xiiUInt32 targetStride = 16;
@@ -704,13 +704,13 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    while (numElements)
+    while (uiNumElements)
     {
       *reinterpret_cast<xiiColor*>(targetPointer) = *reinterpret_cast<const xiiColorGammaUB*>(sourcePointer);
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -731,10 +731,10 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     // Work with single channels instead of pixels
-    numElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
+    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
 
     xiiUInt32 sourceStride = 2;
     xiiUInt32 targetStride = 4;
@@ -742,13 +742,13 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    while (numElements)
+    while (uiNumElements)
     {
       *reinterpret_cast<float*>(targetPointer) = xiiMath::ColorShortToFloat(*reinterpret_cast<const xiiUInt16*>(sourcePointer));
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -768,10 +768,10 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     // Work with single channels instead of pixels
-    numElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
+    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
 
     xiiUInt32 sourceStride = 2;
     xiiUInt32 targetStride = 4;
@@ -779,13 +779,13 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    while (numElements)
+    while (uiNumElements)
     {
       *reinterpret_cast<float*>(targetPointer) = *reinterpret_cast<const xiiFloat16*>(sourcePointer);
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -805,10 +805,10 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     // Work with single channels instead of pixels
-    numElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
+    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
 
     xiiUInt32 sourceStride = 1;
     xiiUInt32 targetStride = 4;
@@ -816,13 +816,13 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    while (numElements)
+    while (uiNumElements)
     {
       *reinterpret_cast<float*>(targetPointer) = xiiMath::ColorSignedByteToFloat(*reinterpret_cast<const xiiInt8*>(sourcePointer));
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -845,7 +845,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -861,7 +861,7 @@ public:
       // Fast path for RGB -> RGBA
       const xiiUInt32 elementsPerBatch = 4;
 
-      while (numElements >= elementsPerBatch)
+      while (uiNumElements >= elementsPerBatch)
       {
         xiiUInt32 source0 = reinterpret_cast<const xiiUInt32*>(sourcePointer)[0];
         xiiUInt32 source1 = reinterpret_cast<const xiiUInt32*>(sourcePointer)[1];
@@ -879,13 +879,13 @@ public:
 
         sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride * elementsPerBatch);
         targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride * elementsPerBatch);
-        numElements -= elementsPerBatch;
+        uiNumElements -= elementsPerBatch;
       }
     }
 #endif
 
 
-    while (numElements)
+    while (uiNumElements)
     {
       // Copy existing channels
       memcpy(targetPointer, sourcePointer, numChannels);
@@ -898,7 +898,7 @@ public:
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -918,7 +918,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -928,7 +928,7 @@ public:
 
     const xiiUInt32 numChannels = sourceStride / sizeof(float);
 
-    while (numElements)
+    while (uiNumElements)
     {
       // Copy existing channels
       memcpy(targetPointer, sourcePointer, numChannels * sizeof(float));
@@ -941,7 +941,7 @@ public:
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -1015,7 +1015,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -1026,7 +1026,7 @@ public:
     if (xiiImageFormat::GetBitsPerPixel(sourceFormat) == 32 && xiiImageFormat::GetBitsPerPixel(targetFormat) == 24)
     {
       // Fast path for RGBA -> RGB
-      while (numElements)
+      while (uiNumElements)
       {
         const xiiUInt8* src = static_cast<const xiiUInt8*>(sourcePointer);
         xiiUInt8*       dst = static_cast<xiiUInt8*>(targetPointer);
@@ -1037,17 +1037,17 @@ public:
 
         sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
         targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-        numElements--;
+        uiNumElements--;
       }
     }
 
-    while (numElements)
+    while (uiNumElements)
     {
       memcpy(targetPointer, sourcePointer, targetStride);
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -1066,7 +1066,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -1074,7 +1074,7 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    while (numElements)
+    while (uiNumElements)
     {
       // Adapted from DirectXMath's XMStoreFloat3PK
       xiiUInt32 IValue[3];
@@ -1182,7 +1182,7 @@ public:
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -1202,7 +1202,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -1210,7 +1210,7 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    while (numElements)
+    while (uiNumElements)
     {
       const R11G11B10* pSource  = reinterpret_cast<const R11G11B10*>(sourcePointer);
       xiiUInt32*       targetUi = reinterpret_cast<xiiUInt32*>(targetPointer);
@@ -1327,7 +1327,7 @@ public:
       }
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;
@@ -1344,7 +1344,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
     xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -1352,7 +1352,7 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-    while (numElements)
+    while (uiNumElements)
     {
       xiiUInt16*       result    = reinterpret_cast<xiiUInt16*>(targetPointer);
       const R11G11B10* r11g11b10 = reinterpret_cast<const R11G11B10*>(sourcePointer);
@@ -1366,7 +1366,7 @@ public:
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      uiNumElements--;
     }
 
     return XII_SUCCESS;

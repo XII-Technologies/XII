@@ -6,7 +6,7 @@
 
 struct xiiExampleEnum
 {
-  typedef xiiInt8 StorageType;
+  using StorageType = xiiInt8;
   enum Enum
   {
     Value1  = 1,     // normal value
@@ -21,7 +21,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiExampleEnum);
 
 struct xiiExampleBitflags
 {
-  typedef xiiUInt64 StorageType;
+  using StorageType = xiiUInt64;
   enum Enum : xiiUInt64
   {
     Value1  = XII_BIT(0),  // normal value
@@ -217,7 +217,7 @@ public:
   bool operator==(const xiiTestClass2& rhs) const { return m_Time == rhs.m_Time && m_enumClass == rhs.m_enumClass && m_bitflagsClass == rhs.m_bitflagsClass && m_array == rhs.m_array && m_Variant == rhs.m_Variant && m_sText == rhs.m_sText; }
 
   const char* GetText() const { return m_sText.GetData(); }
-  void        SetText(const char* sz) { m_sText = sz; }
+  void        SetText(const char* szSz) { m_sText = szSz; }
 
   xiiTime                         m_Time;
   xiiEnum<xiiExampleEnum>         m_enumClass;
@@ -260,7 +260,7 @@ public:
   xiiTestClass2b() { m_sText = "Tut"; }
 
   const char* GetText() const { return m_sText.GetData(); }
-  void        SetText(const char* sz) { m_sText = sz; }
+  void        SetText(const char* szSz) { m_sText = szSz; }
 
   xiiTestStruct3 m_Struct;
   xiiColor       m_Color;
@@ -275,7 +275,7 @@ class xiiTestArrays : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiTestArrays, xiiReflectedClass);
 
 public:
-  xiiTestArrays() {}
+  xiiTestArrays() = default;
 
   bool operator==(const xiiTestArrays& rhs) const
   {
@@ -327,7 +327,7 @@ class xiiTestSets : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiTestSets, xiiReflectedClass);
 
 public:
-  xiiTestSets() {}
+  xiiTestSets() = default;
 
   bool operator==(const xiiTestSets& rhs) const
   {
@@ -376,7 +376,7 @@ class xiiTestMaps : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiTestMaps, xiiReflectedClass);
 
 public:
-  xiiTestMaps() {}
+  xiiTestMaps() = default;
 
   bool operator==(const xiiTestMaps& rhs) const;
 
@@ -460,7 +460,7 @@ public:
     return *m_SetPtr.GetIterator().Key() == *rhs.m_SetPtr.GetIterator().Key();
   }
 
-  void        SetString(const char* pzValue) { m_sString = pzValue; }
+  void        SetString(const char* szPzValue) { m_sString = szPzValue; }
   const char* GetString() const { return m_sString; }
 
   void           SetArrays(xiiTestArrays* pValue) { m_pArrays = pValue; }

@@ -15,7 +15,7 @@ class xiiTaskWorkerThread final : public xiiThread
 
 public:
   /// \brief Tells the worker thread what tasks to execute and which thread index it has.
-  xiiTaskWorkerThread(xiiWorkerThreadType::Enum ThreadType, xiiUInt32 uiThreadNumber);
+  xiiTaskWorkerThread(xiiWorkerThreadType::Enum threadType, xiiUInt32 uiThreadNumber);
   ~xiiTaskWorkerThread();
 
   /// \brief Deactivates the thread. Returns failure, if the thread is currently still running.
@@ -41,7 +41,7 @@ public:
   double GetThreadUtilization(xiiUInt32* pNumTasksExecuted = nullptr);
 
   /// \brief Computes the thread utilization by dividing the thread active time by the time that has passed since the last update.
-  void UpdateThreadUtilization(xiiTime TimePassed);
+  void UpdateThreadUtilization(xiiTime timePassed);
 
 private:
   bool      m_bExecutingTask         = false;

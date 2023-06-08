@@ -55,21 +55,21 @@ xiiDynamicArray<xiiUInt8, xiiAlignedAllocatorWrapper>& xiiMeshBufferResourceDesc
   return m_IndexBufferData;
 }
 
-xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiGALVertexAttributeSemantic::Enum Semantic, xiiGALResourceFormat::Enum Format)
+xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiGALVertexAttributeSemantic::Enum semantic, xiiGALResourceFormat::Enum format)
 {
   XII_ASSERT_DEV(m_VertexStreamData.IsEmpty(), "This function can only be called before 'AllocateStreams' is called");
 
   for (xiiUInt32 i = 0; i < m_VertexDeclaration.m_VertexStreams.GetCount(); ++i)
   {
-    XII_ASSERT_DEV(m_VertexDeclaration.m_VertexStreams[i].m_Semantic != Semantic, "The given semantic {0} is already used by a previous stream", Semantic);
+    XII_ASSERT_DEV(m_VertexDeclaration.m_VertexStreams[i].m_Semantic != semantic, "The given semantic {0} is already used by a previous stream", semantic);
   }
 
   xiiVertexStreamInfo si;
 
-  si.m_Semantic      = Semantic;
-  si.m_Format        = Format;
+  si.m_Semantic      = semantic;
+  si.m_Format        = format;
   si.m_uiOffset      = 0;
-  si.m_uiElementSize = static_cast<xiiUInt16>(xiiGALResourceFormat::GetBitsPerElement(Format) / 8);
+  si.m_uiElementSize = static_cast<xiiUInt16>(xiiGALResourceFormat::GetBitsPerElement(format) / 8);
   m_uiVertexSize += si.m_uiElementSize;
 
   XII_ASSERT_DEV(si.m_uiElementSize > 0, "Invalid Element Size. Format not supported?");

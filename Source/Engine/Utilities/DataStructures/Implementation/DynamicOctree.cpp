@@ -4,10 +4,7 @@
 
 const float xiiDynamicOctree::s_fLooseOctreeFactor = 1.1f;
 
-xiiDynamicOctree::xiiDynamicOctree() :
-  m_uiMaxTreeDepth(0), m_uiAddIDTopLevel(0)
-{
-}
+xiiDynamicOctree::xiiDynamicOctree() = default;
 
 void xiiDynamicOctree::CreateTree(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, float fMinNodeSize)
 {
@@ -48,10 +45,10 @@ void xiiDynamicOctree::CreateTree(const xiiVec3& vCenter, const xiiVec3& vHalfEx
 /// \note In such a case it is inserted at the root-node and thus ALWAYS returned in range/view-frustum queries.
 ///
 /// If bOnlyIfInside is true, the object is discarded, if it is not inside the actual bounding box of the tree.
-xiiResult xiiDynamicOctree::InsertObject(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, xiiInt32 iObjectType, xiiInt32 iObjectInstance, xiiDynamicTreeObject* out_Object, bool bOnlyIfInside)
+xiiResult xiiDynamicOctree::InsertObject(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, xiiInt32 iObjectType, xiiInt32 iObjectInstance, xiiDynamicTreeObject* out_pObject, bool bOnlyIfInside)
 {
-  if (out_Object)
-    *out_Object = xiiDynamicTreeObject();
+  if (out_pObject)
+    *out_pObject = xiiDynamicTreeObject();
 
   if (bOnlyIfInside)
   {
@@ -80,7 +77,7 @@ xiiResult xiiDynamicOctree::InsertObject(const xiiVec3& vCenter, const xiiVec3& 
 
   // insert the object into the best child
   if (!InsertObject(vCenter, vHalfExtents, oData, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z,
-                    m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(8, m_uiMaxTreeDepth - 1), out_Object))
+                    m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(8, m_uiMaxTreeDepth - 1), out_pObject))
   {
     if (!bOnlyIfInside)
     {
@@ -90,8 +87,8 @@ xiiResult xiiDynamicOctree::InsertObject(const xiiVec3& vCenter, const xiiVec3& 
 
       auto key = m_NodeMap.Insert(mmk, oData);
 
-      if (out_Object)
-        *out_Object = key;
+      if (out_pObject)
+        *out_pObject = key;
 
       return XII_SUCCESS;
     }
@@ -165,7 +162,7 @@ bool xiiDynamicOctree::InsertObject(const xiiVec3& vCenter, const xiiVec3& vHalf
   return true;
 }
 
-void xiiDynamicOctree::FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough) const
+void xiiDynamicOctree::FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_OBJ_CALLBACK callback, void* pPassThrough) const
 {
   if (m_NodeMap.IsEmpty())
     return;
@@ -173,18 +170,18 @@ void xiiDynamicOctree::FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_OBJ
   if (!m_BBox.Contains(vPoint))
     return;
 
-  FindObjectsInRange(vPoint, Callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z,
+  FindObjectsInRange(vPoint, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z,
                      m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(8, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
 }
 
-void xiiDynamicOctree::FindVisibleObjects(const xiiFrustum& Viewfrustum, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough) const
+void xiiDynamicOctree::FindVisibleObjects(const xiiFrustum& viewfrustum, XII_VISIBLE_OBJ_CALLBACK callback, void* pPassThrough) const
 {
   XII_ASSERT_DEV(m_uiMaxTreeDepth > 0, "xiiDynamicOctree::FindVisibleObjects: You have to first create the tree.");
 
   if (m_NodeMap.IsEmpty())
     return;
 
-  FindVisibleObjects(Viewfrustum, Callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z,
+  FindVisibleObjects(viewfrustum, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z,
                      m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(4, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
 }
 
@@ -387,14 +384,14 @@ bool xiiDynamicOctree::FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_OBJ
   return true;
 }
 
-void xiiDynamicOctree::FindObjectsInRange(const xiiVec3& vPoint, float fRadius, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough) const
+void xiiDynamicOctree::FindObjectsInRange(const xiiVec3& vPoint, float fRadius, XII_VISIBLE_OBJ_CALLBACK callback, void* pPassThrough) const
 {
   XII_ASSERT_DEV(m_uiMaxTreeDepth > 0, "xiiDynamicOctree::FindObjectsInRange: You have to first create the tree.");
 
   if (m_NodeMap.IsEmpty())
     return;
 
-  FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z,
+  FindObjectsInRange(vPoint, fRadius, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z,
                      m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(8, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
 }
 

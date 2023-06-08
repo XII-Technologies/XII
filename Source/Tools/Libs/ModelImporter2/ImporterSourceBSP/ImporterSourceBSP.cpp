@@ -141,8 +141,8 @@ namespace SourceBSP
     {
     }
 
-    Vertex_t(float _x, float _y, float _z) :
-      x(_x), y(_y), z(_z)
+    Vertex_t(float fF_x, float fF_y, float fF_z) :
+      x(fF_x), y(fF_y), z(fF_z)
     {
     }
 
@@ -317,7 +317,7 @@ namespace SourceBSP
     DispVertex_t* dispVertices    = nullptr;
     xiiUInt32     numDispVertices = 0;
 
-    const char* getTexDataString(xiiUInt32 index) const;
+    const char* getTexDataString(xiiUInt32 uiIndex) const;
 
     bool m_valid = false;
   };
@@ -388,11 +388,11 @@ namespace SourceBSP
     m_valid = true;
   }
 
-  const char* File::getTexDataString(xiiUInt32 index) const
+  const char* File::getTexDataString(xiiUInt32 uiIndex) const
   {
-    XII_ASSERT_ALWAYS(index < numTexDataStringOffsets, "BSP file tex data string out of bounds.");
+    XII_ASSERT_ALWAYS(uiIndex < numTexDataStringOffsets, "BSP file tex data string out of bounds.");
 
-    return texDataStrings + texDataStringOffsets[index];
+    return texDataStrings + texDataStringOffsets[uiIndex];
   }
 
 

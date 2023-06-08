@@ -81,9 +81,9 @@ void xiiSkyBoxComponent::Initialize()
   UpdateMaterials();
 }
 
-xiiResult xiiSkyBoxComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiSkyBoxComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
-  bAlwaysVisible = true;
+  ref_bAlwaysVisible = true;
   return XII_SUCCESS;
 }
 
@@ -109,10 +109,10 @@ void xiiSkyBoxComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
   msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Sky, xiiRenderData::Caching::Never);
 }
 
-void xiiSkyBoxComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSkyBoxComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  xiiStreamWriter& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_fExposureBias;
   s << m_bInverseTonemap;
@@ -121,12 +121,12 @@ void xiiSkyBoxComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_hCubeMap;
 }
 
-void xiiSkyBoxComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSkyBoxComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   s >> m_fExposureBias;
   s >> m_bInverseTonemap;
@@ -244,7 +244,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->RenameProperty("Exposure Bias", "ExposureBias");
     pNode->RenameProperty("Inverse Tonemap", "InverseTonemap");

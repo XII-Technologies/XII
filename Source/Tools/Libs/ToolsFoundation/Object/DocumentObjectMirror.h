@@ -14,13 +14,13 @@
 class XII_TOOLSFOUNDATION_DLL xiiObjectChange
 {
 public:
-  xiiObjectChange() {}
+  xiiObjectChange() = default;
   xiiObjectChange(const xiiObjectChange&);
   xiiObjectChange(xiiObjectChange&& rhs);
   void operator=(xiiObjectChange&& rhs);
   void operator=(xiiObjectChange& rhs);
-  void GetGraph(xiiAbstractObjectGraph& graph) const;
-  void SetGraph(xiiAbstractObjectGraph& graph);
+  void GetGraph(xiiAbstractObjectGraph& ref_graph) const;
+  void SetGraph(xiiAbstractObjectGraph& ref_graph);
 
   xiiUuid                                m_Root;      //< The object that is the parent of the op, namely the parent heap object we can store a pointer to.
   xiiHybridArray<xiiPropertyPathStep, 2> m_Steps;     //< Path from root to target of change.
@@ -40,7 +40,7 @@ public:
   void InitReceiver(xiiRttiConverterContext* pContext);
   void DeInit();
 
-  typedef xiiDelegate<bool(const xiiDocumentObject* pObject, const char* szProperty)> FilterFunction;
+  using FilterFunction = xiiDelegate<bool(const xiiDocumentObject*, const char*)>;
   /// \brief
   ///
   /// \param filter

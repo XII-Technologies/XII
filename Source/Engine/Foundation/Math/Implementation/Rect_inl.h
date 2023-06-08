@@ -1,19 +1,17 @@
 #pragma once
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiRectTemplate<Type>::xiiRectTemplate()
+XII_ALWAYS_INLINE xiiRectTemplate<Type>::xiiRectTemplate() = default;
+
+template <typename Type>
+XII_ALWAYS_INLINE xiiRectTemplate<Type>::xiiRectTemplate(Type x, Type y, Type width, Type height) :
+  x(x), y(y), width(width), height(height)
 {
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiRectTemplate<Type>::xiiRectTemplate(Type X, Type Y, Type Width, Type Height) :
-  x(X), y(Y), width(Width), height(Height)
-{
-}
-
-template <typename Type>
-XII_ALWAYS_INLINE xiiRectTemplate<Type>::xiiRectTemplate(Type Width, Type Height) :
-  x(0), y(0), width(Width), height(Height)
+XII_ALWAYS_INLINE xiiRectTemplate<Type>::xiiRectTemplate(Type width, Type height) :
+  x(0), y(0), width(width), height(height)
 {
 }
 
@@ -36,11 +34,11 @@ XII_ALWAYS_INLINE bool xiiRectTemplate<Type>::HasNonZeroArea() const
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE bool xiiRectTemplate<Type>::Contains(const xiiVec2Template<Type>& point) const
+XII_ALWAYS_INLINE bool xiiRectTemplate<Type>::Contains(const xiiVec2Template<Type>& vPoint) const
 {
-  if (point.x >= x && point.x <= Right())
+  if (vPoint.x >= x && vPoint.x <= Right())
   {
-    if (point.y >= y && point.y <= Bottom())
+    if (vPoint.y >= y && vPoint.y <= Bottom())
       return true;
   }
 

@@ -21,25 +21,25 @@ void xiiStateMachineState::SetName(xiiStringView sName)
   m_sName.Assign(sName);
 }
 
-void xiiStateMachineState::OnExit(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pToState) const
+void xiiStateMachineState::OnExit(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pToState) const
 {
 }
 
-void xiiStateMachineState::Update(xiiStateMachineInstance& instance, void* pInstanceData, xiiTime deltaTime) const
+void xiiStateMachineState::Update(xiiStateMachineInstance& ref_instance, void* pInstanceData, xiiTime deltaTime) const
 {
 }
 
-xiiResult xiiStateMachineState::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiStateMachineState::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream << m_sName;
+  ref_stream << m_sName;
   return XII_SUCCESS;
 }
 
-xiiResult xiiStateMachineState::Deserialize(xiiStreamReader& stream)
+xiiResult xiiStateMachineState::Deserialize(xiiStreamReader& ref_stream)
 {
   const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
 
-  stream >> m_sName;
+  ref_stream >> m_sName;
   return XII_SUCCESS;
 }
 
@@ -55,12 +55,12 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStateMachineTransition, 1, xiiRTTINoAllocato
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiResult xiiStateMachineTransition::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiStateMachineTransition::Serialize(xiiStreamWriter& ref_stream) const
 {
   return XII_SUCCESS;
 }
 
-xiiResult xiiStateMachineTransition::Deserialize(xiiStreamReader& stream)
+xiiResult xiiStateMachineTransition::Deserialize(xiiStreamReader& ref_stream)
 {
   return XII_SUCCESS;
 }
@@ -130,11 +130,11 @@ void xiiStateMachineDescription::AddTransition(xiiUInt32 uiFromStateIndex, xiiUI
 
 constexpr xiiTypeVersion s_StateMachineDescriptionVersion = 1;
 
-xiiResult xiiStateMachineDescription::Serialize(xiiStreamWriter& originalStream) const
+xiiResult xiiStateMachineDescription::Serialize(xiiStreamWriter& ref_originalStream) const
 {
-  originalStream.WriteVersion(s_StateMachineDescriptionVersion);
+  ref_originalStream.WriteVersion(s_StateMachineDescriptionVersion);
 
-  xiiStringDeduplicationWriteContext stringDeduplicationWriteContext(originalStream);
+  xiiStringDeduplicationWriteContext stringDeduplicationWriteContext(ref_originalStream);
   xiiTypeVersionWriteContext         typeVersionWriteContext;
   auto&                              stream = typeVersionWriteContext.Begin(stringDeduplicationWriteContext.Begin());
 
@@ -195,27 +195,27 @@ xiiResult xiiStateMachineDescription::Serialize(xiiStreamWriter& originalStream)
   return XII_SUCCESS;
 }
 
-xiiResult xiiStateMachineDescription::Deserialize(xiiStreamReader& stream)
+xiiResult xiiStateMachineDescription::Deserialize(xiiStreamReader& ref_stream)
 {
-  const auto uiVersion = stream.ReadVersion(s_StateMachineDescriptionVersion);
+  const auto uiVersion = ref_stream.ReadVersion(s_StateMachineDescriptionVersion);
 
-  xiiStringDeduplicationReadContext stringDeduplicationReadContext(stream);
-  xiiTypeVersionReadContext         typeVersionReadContext(stream);
+  xiiStringDeduplicationReadContext stringDeduplicationReadContext(ref_stream);
+  xiiTypeVersionReadContext         typeVersionReadContext(ref_stream);
 
   xiiStringBuilder sTypeName;
 
   // states
   {
     xiiUInt32 uiNumStates = 0;
-    stream >> uiNumStates;
+    ref_stream >> uiNumStates;
 
     for (xiiUInt32 i = 0; i < uiNumStates; ++i)
     {
-      stream >> sTypeName;
+      ref_stream >> sTypeName;
       if (const xiiRTTI* pType = xiiRTTI::FindTypeByName(sTypeName))
       {
         xiiUniquePtr<xiiStateMachineState> pState = pType->GetAllocator()->Allocate<xiiStateMachineState>();
-        XII_SUCCEED_OR_RETURN(pState->Deserialize(stream));
+        XII_SUCCEED_OR_RETURN(pState->Deserialize(ref_stream));
 
         XII_VERIFY(AddState(std::move(pState)) == i, "Implementation error");
       }
@@ -230,21 +230,21 @@ xiiResult xiiStateMachineDescription::Deserialize(xiiStreamReader& stream)
   // transitions
   {
     xiiUInt32 uiNumTransitions = 0;
-    stream >> uiNumTransitions;
+    ref_stream >> uiNumTransitions;
 
     for (xiiUInt32 i = 0; i < uiNumTransitions; ++i)
     {
       xiiUInt32 uiFromStateIndex = 0;
       xiiUInt32 uiToStateIndex   = 0;
 
-      stream >> uiFromStateIndex;
-      stream >> uiToStateIndex;
+      ref_stream >> uiFromStateIndex;
+      ref_stream >> uiToStateIndex;
 
-      stream >> sTypeName;
+      ref_stream >> sTypeName;
       if (xiiRTTI* pType = xiiRTTI::FindTypeByName(sTypeName))
       {
         xiiUniquePtr<xiiStateMachineTransition> pTransition = pType->GetAllocator()->Allocate<xiiStateMachineTransition>();
-        XII_SUCCEED_OR_RETURN(pTransition->Deserialize(stream));
+        XII_SUCCEED_OR_RETURN(pTransition->Deserialize(ref_stream));
 
         AddTransition(uiFromStateIndex, uiToStateIndex, std::move(pTransition));
       }
@@ -261,8 +261,8 @@ xiiResult xiiStateMachineDescription::Deserialize(xiiStreamReader& stream)
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiStateMachineInstance::xiiStateMachineInstance(xiiReflectedClass& owner, const xiiSharedPtr<const xiiStateMachineDescription>& pDescription /*= nullptr*/) :
-  m_Owner(owner), m_pDescription(pDescription)
+xiiStateMachineInstance::xiiStateMachineInstance(xiiReflectedClass& ref_owner, const xiiSharedPtr<const xiiStateMachineDescription>& pDescription /*= nullptr*/) :
+  m_Owner(ref_owner), m_pDescription(pDescription)
 {
   if (pDescription != nullptr)
   {
@@ -358,9 +358,9 @@ void xiiStateMachineInstance::Update(xiiTime deltaTime)
   m_TimeInCurrentState += deltaTime;
 }
 
-void xiiStateMachineInstance::SetBlackboard(const xiiSharedPtr<xiiBlackboard>& blackboard)
+void xiiStateMachineInstance::SetBlackboard(const xiiSharedPtr<xiiBlackboard>& pBlackboard)
 {
-  m_pBlackboard = blackboard;
+  m_pBlackboard = pBlackboard;
 }
 
 void xiiStateMachineInstance::SetStateInternal(xiiUInt32 uiStateIndex)

@@ -19,11 +19,11 @@ class xiiMeshResourceDescriptor;
 using xiiMeshResourceHandle     = xiiTypedResourceHandle<class xiiMeshResource>;
 using xiiMaterialResourceHandle = xiiTypedResourceHandle<class xiiMaterialResource>;
 
-typedef xiiComponentManager<class xiiGreyBoxComponent, xiiBlockStorageType::Compact> xiiGreyBoxComponentManager;
+using xiiGreyBoxComponentManager = xiiComponentManager<class xiiGreyBoxComponent, xiiBlockStorageType::Compact>;
 
 struct XII_GAMEENGINE_DLL xiiGreyBoxShape
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {

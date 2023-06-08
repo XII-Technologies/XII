@@ -27,8 +27,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_GetNumberProperty, 1, xiiRT
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_GetNumberProperty::xiiVisualScriptNode_GetNumberProperty() {}
-xiiVisualScriptNode_GetNumberProperty::~xiiVisualScriptNode_GetNumberProperty() {}
+xiiVisualScriptNode_GetNumberProperty::xiiVisualScriptNode_GetNumberProperty()  = default;
+xiiVisualScriptNode_GetNumberProperty::~xiiVisualScriptNode_GetNumberProperty() = default;
 
 void xiiVisualScriptNode_GetNumberProperty::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -88,8 +88,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_SetNumberProperty, 1, xiiRT
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_SetNumberProperty::xiiVisualScriptNode_SetNumberProperty() {}
-xiiVisualScriptNode_SetNumberProperty::~xiiVisualScriptNode_SetNumberProperty() {}
+xiiVisualScriptNode_SetNumberProperty::xiiVisualScriptNode_SetNumberProperty()  = default;
+xiiVisualScriptNode_SetNumberProperty::~xiiVisualScriptNode_SetNumberProperty() = default;
 
 void xiiVisualScriptNode_SetNumberProperty::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -144,8 +144,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_GetBoolProperty, 1, xiiRTTI
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_GetBoolProperty::xiiVisualScriptNode_GetBoolProperty() {}
-xiiVisualScriptNode_GetBoolProperty::~xiiVisualScriptNode_GetBoolProperty() {}
+xiiVisualScriptNode_GetBoolProperty::xiiVisualScriptNode_GetBoolProperty()  = default;
+xiiVisualScriptNode_GetBoolProperty::~xiiVisualScriptNode_GetBoolProperty() = default;
 
 void xiiVisualScriptNode_GetBoolProperty::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -204,8 +204,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_SetBoolProperty, 1, xiiRTTI
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_SetBoolProperty::xiiVisualScriptNode_SetBoolProperty() {}
-xiiVisualScriptNode_SetBoolProperty::~xiiVisualScriptNode_SetBoolProperty() {}
+xiiVisualScriptNode_SetBoolProperty::xiiVisualScriptNode_SetBoolProperty()  = default;
+xiiVisualScriptNode_SetBoolProperty::~xiiVisualScriptNode_SetBoolProperty() = default;
 
 void xiiVisualScriptNode_SetBoolProperty::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -260,8 +260,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_GetStringProperty, 1, xiiRT
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_GetStringProperty::xiiVisualScriptNode_GetStringProperty() {}
-xiiVisualScriptNode_GetStringProperty::~xiiVisualScriptNode_GetStringProperty() {}
+xiiVisualScriptNode_GetStringProperty::xiiVisualScriptNode_GetStringProperty()  = default;
+xiiVisualScriptNode_GetStringProperty::~xiiVisualScriptNode_GetStringProperty() = default;
 
 void xiiVisualScriptNode_GetStringProperty::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -320,8 +320,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_SetStringProperty, 1, xiiRT
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_SetStringProperty::xiiVisualScriptNode_SetStringProperty() {}
-xiiVisualScriptNode_SetStringProperty::~xiiVisualScriptNode_SetStringProperty() {}
+xiiVisualScriptNode_SetStringProperty::xiiVisualScriptNode_SetStringProperty()  = default;
+xiiVisualScriptNode_SetStringProperty::~xiiVisualScriptNode_SetStringProperty() = default;
 
 void xiiVisualScriptNode_SetStringProperty::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -375,8 +375,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_Number, 1, xiiRTTIDefaultAl
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_Number::xiiVisualScriptNode_Number() {}
-xiiVisualScriptNode_Number::~xiiVisualScriptNode_Number() {}
+xiiVisualScriptNode_Number::xiiVisualScriptNode_Number()  = default;
+xiiVisualScriptNode_Number::~xiiVisualScriptNode_Number() = default;
 
 void xiiVisualScriptNode_Number::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -409,8 +409,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_StoreNumber, 1, xiiRTTIDefa
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_StoreNumber::xiiVisualScriptNode_StoreNumber() {}
-xiiVisualScriptNode_StoreNumber::~xiiVisualScriptNode_StoreNumber() {}
+xiiVisualScriptNode_StoreNumber::xiiVisualScriptNode_StoreNumber()  = default;
+xiiVisualScriptNode_StoreNumber::~xiiVisualScriptNode_StoreNumber() = default;
 
 void xiiVisualScriptNode_StoreNumber::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -445,8 +445,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_Bool, 1, xiiRTTIDefaultAllo
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_Bool::xiiVisualScriptNode_Bool() {}
-xiiVisualScriptNode_Bool::~xiiVisualScriptNode_Bool() {}
+xiiVisualScriptNode_Bool::xiiVisualScriptNode_Bool()  = default;
+xiiVisualScriptNode_Bool::~xiiVisualScriptNode_Bool() = default;
 
 void xiiVisualScriptNode_Bool::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -479,8 +479,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_StoreBool, 1, xiiRTTIDefaul
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_StoreBool::xiiVisualScriptNode_StoreBool() {}
-xiiVisualScriptNode_StoreBool::~xiiVisualScriptNode_StoreBool() {}
+xiiVisualScriptNode_StoreBool::xiiVisualScriptNode_StoreBool()  = default;
+xiiVisualScriptNode_StoreBool::~xiiVisualScriptNode_StoreBool() = default;
 
 void xiiVisualScriptNode_StoreBool::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -518,8 +518,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_ToggleBool, 1, xiiRTTIDefau
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_ToggleBool::xiiVisualScriptNode_ToggleBool() {}
-xiiVisualScriptNode_ToggleBool::~xiiVisualScriptNode_ToggleBool() {}
+xiiVisualScriptNode_ToggleBool::xiiVisualScriptNode_ToggleBool()  = default;
+xiiVisualScriptNode_ToggleBool::~xiiVisualScriptNode_ToggleBool() = default;
 
 void xiiVisualScriptNode_ToggleBool::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -554,8 +554,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_String, 1, xiiRTTIDefaultAl
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_String::xiiVisualScriptNode_String() {}
-xiiVisualScriptNode_String::~xiiVisualScriptNode_String() {}
+xiiVisualScriptNode_String::xiiVisualScriptNode_String()  = default;
+xiiVisualScriptNode_String::~xiiVisualScriptNode_String() = default;
 
 void xiiVisualScriptNode_String::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -588,8 +588,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_StoreString, 1, xiiRTTIDefa
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_StoreString::xiiVisualScriptNode_StoreString() {}
-xiiVisualScriptNode_StoreString::~xiiVisualScriptNode_StoreString() {}
+xiiVisualScriptNode_StoreString::xiiVisualScriptNode_StoreString()  = default;
+xiiVisualScriptNode_StoreString::~xiiVisualScriptNode_StoreString() = default;
 
 void xiiVisualScriptNode_StoreString::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {

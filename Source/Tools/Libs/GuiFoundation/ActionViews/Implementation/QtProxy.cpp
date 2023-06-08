@@ -88,10 +88,10 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, QtProxies)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-bool xiiQtProxy::TriggerDocumentAction(xiiDocument* pDocument, QKeyEvent* event)
+bool xiiQtProxy::TriggerDocumentAction(xiiDocument* pDocument, QKeyEvent* pEvent)
 {
-  auto CheckActions = [](QKeyEvent* event, xiiMap<xiiActionDescriptorHandle, QWeakPointer<xiiQtProxy>>& actions) -> bool {
-    for (auto weakActionProxy : actions)
+  auto CheckActions = [](QKeyEvent* pEvent, xiiMap<xiiActionDescriptorHandle, QWeakPointer<xiiQtProxy>>& ref_actions) -> bool {
+    for (auto weakActionProxy : ref_actions)
     {
       if (auto pProxy = weakActionProxy.Value().toStrongRef())
       {
@@ -108,10 +108,10 @@ bool xiiQtProxy::TriggerDocumentAction(xiiDocument* pDocument, QKeyEvent* event)
         if (pQAction)
         {
           QKeySequence ks = pQAction->shortcut();
-          if (pQAction->isEnabled() && QKeySequence(event->key() | event->modifiers()) == ks)
+          if (pQAction->isEnabled() && QKeySequence(pEvent->key() | pEvent->modifiers()) == ks)
           {
             pQAction->trigger();
-            event->accept();
+            pEvent->accept();
             return true;
           }
         }
@@ -123,27 +123,27 @@ bool xiiQtProxy::TriggerDocumentAction(xiiDocument* pDocument, QKeyEvent* event)
   if (pDocument)
   {
     xiiMap<xiiActionDescriptorHandle, QWeakPointer<xiiQtProxy>>& actions = s_DocumentActions[pDocument];
-    if (CheckActions(event, actions))
+    if (CheckActions(pEvent, actions))
       return true;
   }
-  return CheckActions(event, s_GlobalActions);
+  return CheckActions(pEvent, s_GlobalActions);
 }
 
 xiiRttiMappedObjectFactory<xiiQtProxy>& xiiQtProxy::GetFactory()
 {
   return s_Factory;
 }
-QSharedPointer<xiiQtProxy> xiiQtProxy::GetProxy(xiiActionContext& context, xiiActionDescriptorHandle hDesc)
+QSharedPointer<xiiQtProxy> xiiQtProxy::GetProxy(xiiActionContext& ref_context, xiiActionDescriptorHandle hDesc)
 {
   QSharedPointer<xiiQtProxy> pProxy;
   const xiiActionDescriptor* pDesc = hDesc.GetDescriptor();
   if (pDesc->m_Type != xiiActionType::Action && pDesc->m_Type != xiiActionType::ActionAndMenu)
   {
-    auto pAction = pDesc->CreateAction(context);
+    auto pAction = pDesc->CreateAction(ref_context);
     pProxy       = QSharedPointer<xiiQtProxy>(xiiQtProxy::GetFactory().CreateObject(pAction->GetDynamicRTTI()));
     XII_ASSERT_DEBUG(pProxy != nullptr, "No proxy assigned to action '{0}'", pDesc->m_sActionName);
     pProxy->SetAction(pAction);
-    XII_ASSERT_DEV(pProxy->GetAction()->GetContext().m_pDocument == context.m_pDocument, "invalid document pointer");
+    XII_ASSERT_DEV(pProxy->GetAction()->GetContext().m_pDocument == ref_context.m_pDocument, "invalid document pointer");
     return pProxy;
   }
 
@@ -155,7 +155,7 @@ QSharedPointer<xiiQtProxy> xiiQtProxy::GetProxy(xiiActionContext& context, xiiAc
       QWeakPointer<xiiQtProxy> pTemp = s_GlobalActions[hDesc];
       if (pTemp.isNull())
       {
-        auto pAction = pDesc->CreateAction(context);
+        auto pAction = pDesc->CreateAction(ref_context);
         pProxy       = QSharedPointer<xiiQtProxy>(xiiQtProxy::GetFactory().CreateObject(pAction->GetDynamicRTTI()));
         XII_ASSERT_DEBUG(pProxy != nullptr, "No proxy assigned to action '{0}'", pDesc->m_sActionName);
         pProxy->SetAction(pAction);
@@ -171,12 +171,12 @@ QSharedPointer<xiiQtProxy> xiiQtProxy::GetProxy(xiiActionContext& context, xiiAc
 
     case xiiActionScope::Document:
     {
-      const xiiDocument* pDocument = context.m_pDocument; // may be null
+      const xiiDocument* pDocument = ref_context.m_pDocument; // may be null
 
       QWeakPointer<xiiQtProxy> pTemp = s_DocumentActions[pDocument][hDesc];
       if (pTemp.isNull())
       {
-        auto pAction = pDesc->CreateAction(context);
+        auto pAction = pDesc->CreateAction(ref_context);
         pProxy       = QSharedPointer<xiiQtProxy>(xiiQtProxy::GetFactory().CreateObject(pAction->GetDynamicRTTI()));
         XII_ASSERT_DEBUG(pProxy != nullptr, "No proxy assigned to action '{0}'", pDesc->m_sActionName);
         pProxy->SetAction(pAction);
@@ -193,15 +193,15 @@ QSharedPointer<xiiQtProxy> xiiQtProxy::GetProxy(xiiActionContext& context, xiiAc
     case xiiActionScope::Window:
     {
       bool bExisted = true;
-      auto it       = s_WindowActions.FindOrAdd(context.m_pWindow, &bExisted);
+      auto it       = s_WindowActions.FindOrAdd(ref_context.m_pWindow, &bExisted);
       if (!bExisted)
       {
-        s_pSignalProxy->connect(context.m_pWindow, &QObject::destroyed, s_pSignalProxy, [=]() { s_WindowActions.Remove(context.m_pWindow); });
+        s_pSignalProxy->connect(ref_context.m_pWindow, &QObject::destroyed, s_pSignalProxy, [ref_context]() { s_WindowActions.Remove(ref_context.m_pWindow); });
       }
       QWeakPointer<xiiQtProxy> pTemp = it.Value()[hDesc];
       if (pTemp.isNull())
       {
-        auto pAction = pDesc->CreateAction(context);
+        auto pAction = pDesc->CreateAction(ref_context);
         pProxy       = QSharedPointer<xiiQtProxy>(xiiQtProxy::GetFactory().CreateObject(pAction->GetDynamicRTTI()));
         XII_ASSERT_DEBUG(pProxy != nullptr, "No proxy assigned to action '{0}'", pDesc->m_sActionName);
         pProxy->SetAction(pAction);
@@ -223,7 +223,7 @@ QSharedPointer<xiiQtProxy> xiiQtProxy::GetProxy(xiiActionContext& context, xiiAc
     xiiAction*              pAction = pProxy->GetAction();
     const xiiActionContext& ctxt    = pAction->GetContext();
     xiiDocument*            pDoc    = ctxt.m_pDocument;
-    XII_ASSERT_DEV(pDoc == context.m_pDocument, "invalid document pointer");
+    XII_ASSERT_DEV(pDoc == ref_context.m_pDocument, "invalid document pointer");
   }
   return pProxy;
 }
@@ -341,22 +341,22 @@ void xiiQtButtonProxy::Update()
 }
 
 
-void SetupQAction(xiiAction* pAction, QPointer<QAction>& pQtAction, QObject* pTarget)
+void SetupQAction(xiiAction* pAction, QPointer<QAction>& ref_pQtAction, QObject* pTarget)
 {
   xiiActionDescriptorHandle  hDesc = pAction->GetDescriptorHandle();
   const xiiActionDescriptor* pDesc = hDesc.GetDescriptor();
 
-  if (pQtAction == nullptr)
+  if (ref_pQtAction == nullptr)
   {
-    pQtAction = new QAction(nullptr);
-    XII_VERIFY(QObject::connect(pQtAction, SIGNAL(triggered(bool)), pTarget, SLOT(OnTriggered())) != nullptr, "connection failed");
+    ref_pQtAction = new QAction(nullptr);
+    XII_VERIFY(QObject::connect(ref_pQtAction, SIGNAL(triggered(bool)), pTarget, SLOT(OnTriggered())) != nullptr, "connection failed");
 
     switch (pDesc->m_Scope)
     {
       case xiiActionScope::Global:
       {
         // Parent is null so the global actions don't get deleted.
-        pQtAction->setShortcutContext(Qt::ShortcutContext::ApplicationShortcut);
+        ref_pQtAction->setShortcutContext(Qt::ShortcutContext::ApplicationShortcut);
       }
       break;
       case xiiActionScope::Document:
@@ -364,14 +364,14 @@ void SetupQAction(xiiAction* pAction, QPointer<QAction>& pQtAction, QObject* pTa
         // Parent is set to the window belonging to the document.
         xiiQtDocumentWindow* pWindow = xiiQtDocumentWindow::FindWindowByDocument(pAction->GetContext().m_pDocument);
         XII_ASSERT_DEBUG(pWindow != nullptr, "You can't map a xiiActionScope::Document action without that document existing!");
-        pQtAction->setParent(pWindow);
-        pQtAction->setShortcutContext(Qt::ShortcutContext::WidgetWithChildrenShortcut);
+        ref_pQtAction->setParent(pWindow);
+        ref_pQtAction->setShortcutContext(Qt::ShortcutContext::WidgetWithChildrenShortcut);
       }
       break;
       case xiiActionScope::Window:
       {
-        pQtAction->setParent(pAction->GetContext().m_pWindow);
-        pQtAction->setShortcutContext(Qt::ShortcutContext::WidgetWithChildrenShortcut);
+        ref_pQtAction->setParent(pAction->GetContext().m_pWindow);
+        ref_pQtAction->setShortcutContext(Qt::ShortcutContext::WidgetWithChildrenShortcut);
       }
       break;
     }
@@ -573,13 +573,13 @@ void xiiQtDynamicActionAndMenuProxy::StatusUpdateEventHandler(xiiAction* pAction
 //////////////////// xiiQtSliderProxy /////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiQtSliderWidgetAction::xiiQtSliderWidgetAction(QWidget* parent) :
-  QWidgetAction(parent)
+xiiQtSliderWidgetAction::xiiQtSliderWidgetAction(QWidget* pParent) :
+  QWidgetAction(pParent)
 {
 }
 
-xiiQtLabeledSlider::xiiQtLabeledSlider(QWidget* parent) :
-  QWidget(parent)
+xiiQtLabeledSlider::xiiQtLabeledSlider(QWidget* pParent) :
+  QWidget(pParent)
 {
   m_pLabel  = new QLabel(this);
   m_pSlider = new QSlider(this);

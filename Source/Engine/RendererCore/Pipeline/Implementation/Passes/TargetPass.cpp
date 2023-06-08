@@ -30,7 +30,7 @@ xiiTargetPass::xiiTargetPass(const char* szName) :
 {
 }
 
-xiiTargetPass::~xiiTargetPass() {}
+xiiTargetPass::~xiiTargetPass() = default;
 
 const xiiGALTextureHandle* xiiTargetPass::GetTextureHandle(const xiiGALRenderTargets& renderTargets, const xiiRenderPipelineNodePin* pPin)
 {

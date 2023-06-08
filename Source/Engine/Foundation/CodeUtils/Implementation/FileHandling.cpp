@@ -32,15 +32,15 @@ void xiiTokenizedFileCache::SkipWhitespace(xiiDeque<xiiToken>& Tokens, xiiUInt32
     ++uiCurToken;
 }
 
-const xiiTokenizer* xiiTokenizedFileCache::Tokenize(const xiiString& sFileName, xiiArrayPtr<const xiiUInt8> FileContent, const xiiTimestamp& FileTimeStamp, xiiLogInterface* pLog)
+const xiiTokenizer* xiiTokenizedFileCache::Tokenize(const xiiString& sFileName, xiiArrayPtr<const xiiUInt8> fileContent, const xiiTimestamp& fileTimeStamp, xiiLogInterface* pLog)
 {
   XII_LOCK(m_Mutex);
 
   auto& data = m_Cache[sFileName];
 
-  data.m_Timestamp         = FileTimeStamp;
+  data.m_Timestamp         = fileTimeStamp;
   xiiTokenizer* pTokenizer = &data.m_Tokens;
-  pTokenizer->Tokenize(FileContent, pLog);
+  pTokenizer->Tokenize(fileContent, pLog);
 
   xiiDeque<xiiToken>& Tokens = pTokenizer->GetTokens();
 
@@ -104,21 +104,21 @@ void xiiPreprocessor::SetLogInterface(xiiLogInterface* pLog)
   m_pLog = pLog;
 }
 
-void xiiPreprocessor::SetFileOpenFunction(FileOpenCB OpenAbsFileCB)
+void xiiPreprocessor::SetFileOpenFunction(FileOpenCB openAbsFileCB)
 {
-  m_FileOpenCallback = OpenAbsFileCB;
+  m_FileOpenCallback = openAbsFileCB;
 }
 
-void xiiPreprocessor::SetFileLocatorFunction(FileLocatorCB LocateAbsFileCB)
+void xiiPreprocessor::SetFileLocatorFunction(FileLocatorCB locateAbsFileCB)
 {
-  m_FileLocatorCallback = LocateAbsFileCB;
+  m_FileLocatorCallback = locateAbsFileCB;
 }
 
-xiiResult xiiPreprocessor::DefaultFileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType IncType, xiiStringBuilder& out_sAbsoluteFilePath)
+xiiResult xiiPreprocessor::DefaultFileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath)
 {
   xiiStringBuilder& s = out_sAbsoluteFilePath;
 
-  if (IncType == xiiPreprocessor::RelativeInclude)
+  if (incType == xiiPreprocessor::RelativeInclude)
   {
     s = szCurAbsoluteFile;
     s.PathParentDirectory();
@@ -134,7 +134,7 @@ xiiResult xiiPreprocessor::DefaultFileLocator(const char* szCurAbsoluteFile, con
   return XII_SUCCESS;
 }
 
-xiiResult xiiPreprocessor::DefaultFileOpen(const char* szAbsoluteFile, xiiDynamicArray<xiiUInt8>& FileContent, xiiTimestamp& out_FileModification)
+xiiResult xiiPreprocessor::DefaultFileOpen(const char* szAbsoluteFile, xiiDynamicArray<xiiUInt8>& ref_fileContent, xiiTimestamp& out_fileModification)
 {
   xiiFileReader r;
   if (r.Open(szAbsoluteFile).Failed())
@@ -143,14 +143,14 @@ xiiResult xiiPreprocessor::DefaultFileOpen(const char* szAbsoluteFile, xiiDynami
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
   xiiFileStats stats;
   if (xiiFileSystem::GetFileStats(szAbsoluteFile, stats).Succeeded())
-    out_FileModification = stats.m_LastModificationTime;
+    out_fileModification = stats.m_LastModificationTime;
 #endif
 
   xiiUInt8 Temp[4096];
 
   while (xiiUInt64 uiRead = r.ReadBytes(Temp, 4096))
   {
-    FileContent.PushBackRange(xiiArrayPtr<xiiUInt8>(Temp, (xiiUInt32)uiRead));
+    ref_fileContent.PushBackRange(xiiArrayPtr<xiiUInt8>(Temp, (xiiUInt32)uiRead));
   }
 
   return XII_SUCCESS;

@@ -6,15 +6,15 @@
 
 namespace xiiInternal
 {
-  XII_FORCE_INLINE void FillPerInstanceData(xiiPerInstanceData& perInstanceData, const xiiMeshRenderData* pRenderData)
+  XII_FORCE_INLINE void FillPerInstanceData(xiiPerInstanceData& ref_perInstanceData, const xiiMeshRenderData* pRenderData)
   {
     xiiMat4 objectToWorld = pRenderData->m_GlobalTransform.GetAsMat4();
 
-    perInstanceData.ObjectToWorld = objectToWorld;
+    ref_perInstanceData.ObjectToWorld = objectToWorld;
 
     if (pRenderData->m_uiUniformScale)
     {
-      perInstanceData.ObjectToWorldNormal = objectToWorld;
+      ref_perInstanceData.ObjectToWorldNormal = objectToWorld;
     }
     else
     {
@@ -24,13 +24,13 @@ namespace xiiInternal
       // because when we have a scale of 0 (which happens temporarily during editing) that would be annoying
 
       xiiShaderTransform shaderT;
-      shaderT                             = mInverse.GetTranspose();
-      perInstanceData.ObjectToWorldNormal = shaderT;
+      shaderT                                 = mInverse.GetTranspose();
+      ref_perInstanceData.ObjectToWorldNormal = shaderT;
     }
 
-    perInstanceData.BoundingSphereRadius  = pRenderData->m_GlobalBounds.m_fSphereRadius;
-    perInstanceData.GameObjectID          = pRenderData->m_uiUniqueID;
-    perInstanceData.VertexColorAccessData = 0;
-    perInstanceData.Color                 = pRenderData->m_Color;
+    ref_perInstanceData.BoundingSphereRadius  = pRenderData->m_GlobalBounds.m_fSphereRadius;
+    ref_perInstanceData.GameObjectID          = pRenderData->m_uiUniqueID;
+    ref_perInstanceData.VertexColorAccessData = 0;
+    ref_perInstanceData.Color                 = pRenderData->m_Color;
   }
 } // namespace xiiInternal

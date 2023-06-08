@@ -33,8 +33,8 @@ class XII_CORE_DLL xiiPrefabReferenceComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;
@@ -62,8 +62,8 @@ public:
   void                                       RemoveParameter(const char* szKey);                           // [ property ] (exposed parameter)
   bool                                       GetParameter(const char* szKey, xiiVariant& out_value) const; // [ property ] (exposed parameter)
 
-  static void SerializePrefabParameters(const xiiWorld& world, xiiWorldWriter& stream, xiiArrayMap<xiiHashedString, xiiVariant> parameters);
-  static void DeserializePrefabParameters(xiiArrayMap<xiiHashedString, xiiVariant>& out_parameters, xiiWorldReader& stream);
+  static void SerializePrefabParameters(const xiiWorld& world, xiiWorldWriter& ref_stream, xiiArrayMap<xiiHashedString, xiiVariant> parameters);
+  static void DeserializePrefabParameters(xiiArrayMap<xiiHashedString, xiiVariant>& out_parameters, xiiWorldReader& ref_stream);
 
 private:
   void InstantiatePrefab();

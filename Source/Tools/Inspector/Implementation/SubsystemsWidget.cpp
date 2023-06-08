@@ -8,8 +8,8 @@
 
 xiiQtSubsystemsWidget* xiiQtSubsystemsWidget::s_pWidget = nullptr;
 
-xiiQtSubsystemsWidget::xiiQtSubsystemsWidget(QWidget* parent) :
-  ads::CDockWidget("Subsystem Widget", parent)
+xiiQtSubsystemsWidget::xiiQtSubsystemsWidget(QWidget* pParent) :
+  ads::CDockWidget("Subsystem Widget", pParent)
 {
   s_pWidget = this;
 

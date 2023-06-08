@@ -18,10 +18,10 @@ public:
 
   /// \brief Returns a render target handle for the given texture description
   /// Note that you should return the handle to the pool and never destroy it directly with the device.
-  xiiGALTextureHandle GetRenderTarget(const xiiGALTextureCreationDescription& TextureDesc);
+  xiiGALTextureHandle GetRenderTarget(const xiiGALTextureCreationDescription& textureDesc);
 
   /// \brief Convenience functions which creates a texture description fit for a 2d render target without a mip chains.
-  xiiGALTextureHandle GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiGALResourceFormat::Enum eFormat, xiiGALMSAASampleCount::Enum sampleCount = xiiGALMSAASampleCount::None, xiiUInt32 uiSliceColunt = 1);
+  xiiGALTextureHandle GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiGALResourceFormat::Enum format, xiiGALMSAASampleCount::Enum sampleCount = xiiGALMSAASampleCount::None, xiiUInt32 uiSliceColunt = 1);
 
   /// \brief Returns a render target to the pool so other consumers can use it.
   /// Note that targets which are returned to the pool are susceptible to destruction due to garbage collection.
@@ -29,7 +29,7 @@ public:
 
 
   /// \brief Returns a buffer handle for the given buffer description
-  xiiGALBufferHandle GetBuffer(const xiiGALBufferCreationDescription& BufferDesc);
+  xiiGALBufferHandle GetBuffer(const xiiGALBufferCreationDescription& bufferDesc);
 
   /// \brief Returns a buffer to the pool so other consumers can use it.
   void ReturnBuffer(xiiGALBufferHandle hBuffer);

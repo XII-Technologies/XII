@@ -45,12 +45,12 @@ namespace xiiModelImporter2
     xiiMap<xiiUInt32, xiiHybridArray<MeshInstance, 4>> m_MeshInstances;
   };
 
-  extern xiiColor ConvertAssimpType(const aiColor3D& value, bool invert = false);
-  extern xiiColor ConvertAssimpType(const aiColor4D& value, bool invert = false);
-  extern xiiMat4  ConvertAssimpType(const aiMatrix4x4& value, bool dummy = false);
-  extern xiiVec3  ConvertAssimpType(const aiVector3D& value, bool dummy = false);
-  extern xiiQuat  ConvertAssimpType(const aiQuaternion& value, bool dummy = false);
-  extern float    ConvertAssimpType(float value, bool dummy = false);
-  extern int      ConvertAssimpType(int value, bool dummy = false);
+  extern xiiColor ConvertAssimpType(const aiColor3D& value, bool bInvert = false);
+  extern xiiColor ConvertAssimpType(const aiColor4D& value, bool bInvert = false);
+  extern xiiMat4  ConvertAssimpType(const aiMatrix4x4& value, bool bDummy = false);
+  extern xiiVec3  ConvertAssimpType(const aiVector3D& value, bool bDummy = false);
+  extern xiiQuat  ConvertAssimpType(const aiQuaternion& value, bool bDummy = false);
+  extern float    ConvertAssimpType(float value, bool bDummy = false);
+  extern int      ConvertAssimpType(int value, bool bDummy = false);
 
 } // namespace xiiModelImporter2

@@ -12,13 +12,13 @@ public:
 
   xiiSimdVec4i(); // [tested]
 
-  explicit xiiSimdVec4i(xiiInt32 xyzw); // [tested]
+  explicit xiiSimdVec4i(xiiInt32 iXyzw); // [tested]
 
   xiiSimdVec4i(xiiInt32 x, xiiInt32 y, xiiInt32 z, xiiInt32 w = 1); // [tested]
 
   xiiSimdVec4i(xiiInternal::QuadInt v); // [tested]
 
-  void Set(xiiInt32 xyzw); // [tested]
+  void Set(xiiInt32 iXyzw); // [tested]
 
   void Set(xiiInt32 x, xiiInt32 y, xiiInt32 z, xiiInt32 w); // [tested]
 
@@ -91,7 +91,7 @@ public:
 
   static xiiSimdVec4i ZeroVector(); // [tested]
 
-  static xiiSimdVec4i Select(const xiiSimdVec4b& cmp, const xiiSimdVec4i& ifTrue, const xiiSimdVec4i& ifFalse); // [tested]
+  static xiiSimdVec4i Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4i& vIfTrue, const xiiSimdVec4i& vIfFalse); // [tested]
 
 public:
   xiiInternal::QuadInt m_v;

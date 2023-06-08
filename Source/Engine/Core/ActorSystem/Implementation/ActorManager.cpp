@@ -139,15 +139,15 @@ void xiiActorManager::DestroyAllActors(const void* pCreatedBy, DestructionMode m
   }
 }
 
-void xiiActorManager::GetAllActors(xiiHybridArray<xiiActor*, 8>& out_AllActors)
+void xiiActorManager::GetAllActors(xiiHybridArray<xiiActor*, 8>& out_allActors)
 {
   XII_LOCK(m_pImpl->m_Mutex);
 
-  out_AllActors.Clear();
+  out_allActors.Clear();
 
   for (auto& pActor : m_pImpl->m_AllActors)
   {
-    out_AllActors.PushBack(pActor.Borrow());
+    out_allActors.PushBack(pActor.Borrow());
   }
 }
 

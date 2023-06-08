@@ -20,14 +20,14 @@ class XII_FOUNDATION_DLL xiiStringWChar
 {
 public:
   xiiStringWChar(xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringWChar(const xiiUInt16* szUtf16, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringWChar(const xiiUInt32* szUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringWChar(const wchar_t* szUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringWChar(const xiiUInt16* pUtf16, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringWChar(const xiiUInt32* pUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringWChar(const wchar_t* pUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
   xiiStringWChar(xiiStringView sUtf8, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
 
-  void operator=(const xiiUInt16* szUtf16);
-  void operator=(const xiiUInt32* szUtf32);
-  void operator=(const wchar_t* szUtf32);
+  void operator=(const xiiUInt16* pUtf16);
+  void operator=(const xiiUInt32* pUtf32);
+  void operator=(const wchar_t* pUtf32);
   void operator=(xiiStringView sUtf8);
 
   XII_ALWAYS_INLINE       operator const wchar_t*() const { return &m_Data[0]; }
@@ -48,9 +48,9 @@ class XII_FOUNDATION_DLL xiiStringUtf8
 public:
   xiiStringUtf8(xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
   xiiStringUtf8(const char* szUtf8, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf8(const xiiUInt16* szUtf16, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf8(const xiiUInt32* szUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf8(const wchar_t* szWChar, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf8(const xiiUInt16* pUtf16, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf8(const xiiUInt32* pUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf8(const wchar_t* pWChar, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
   xiiStringUtf8(const Microsoft::WRL::Wrappers::HString& hstring, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
@@ -58,9 +58,9 @@ public:
 #endif
 
   void operator=(const char* szUtf8);
-  void operator=(const xiiUInt16* szUtf16);
-  void operator=(const xiiUInt32* szUtf32);
-  void operator=(const wchar_t* szWChar);
+  void operator=(const xiiUInt16* pUtf16);
+  void operator=(const xiiUInt32* pUtf32);
+  void operator=(const wchar_t* pWChar);
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
   void operator=(const Microsoft::WRL::Wrappers::HString& hstring);
@@ -105,14 +105,14 @@ class XII_FOUNDATION_DLL xiiStringUtf16
 public:
   xiiStringUtf16(xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
   xiiStringUtf16(const char* szUtf8, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf16(const xiiUInt16* szUtf16, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf16(const xiiUInt32* szUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf16(const wchar_t* szUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf16(const xiiUInt16* pUtf16, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf16(const xiiUInt32* pUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf16(const wchar_t* pUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
 
   void operator=(const char* szUtf8);
-  void operator=(const xiiUInt16* szUtf16);
-  void operator=(const xiiUInt32* szUtf32);
-  void operator=(const wchar_t* szUtf32);
+  void operator=(const xiiUInt16* pUtf16);
+  void operator=(const xiiUInt32* pUtf32);
+  void operator=(const wchar_t* pUtf32);
 
   XII_ALWAYS_INLINE const xiiUInt16* GetData() const { return &m_Data[0]; }
   XII_ALWAYS_INLINE xiiUInt32        GetElementCount() const { return m_Data.GetCount() - 1; /* exclude the '\0' terminator */ }
@@ -132,14 +132,14 @@ class XII_FOUNDATION_DLL xiiStringUtf32
 public:
   xiiStringUtf32(xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
   xiiStringUtf32(const char* szUtf8, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf32(const xiiUInt16* szUtf16, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf32(const xiiUInt32* szUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf32(const wchar_t* szWChar, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf32(const xiiUInt16* pUtf16, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf32(const xiiUInt32* pUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf32(const wchar_t* pWChar, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
 
   void operator=(const char* szUtf8);
-  void operator=(const xiiUInt16* szUtf16);
-  void operator=(const xiiUInt32* szUtf32);
-  void operator=(const wchar_t* szWChar);
+  void operator=(const xiiUInt16* pUtf16);
+  void operator=(const xiiUInt32* pUtf32);
+  void operator=(const wchar_t* pWChar);
 
   XII_ALWAYS_INLINE const xiiUInt32* GetData() const { return &m_Data[0]; }
   XII_ALWAYS_INLINE xiiUInt32        GetElementCount() const { return m_Data.GetCount() - 1; /* exclude the '\0' terminator */ }

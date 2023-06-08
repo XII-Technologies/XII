@@ -58,23 +58,23 @@ XII_BEGIN_COMPONENT_TYPE(xiiRcNavMeshComponent, 2, xiiComponentMode::Static)
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiRcNavMeshComponent::xiiRcNavMeshComponent() {}
-xiiRcNavMeshComponent::~xiiRcNavMeshComponent() {}
+xiiRcNavMeshComponent::xiiRcNavMeshComponent()  = default;
+xiiRcNavMeshComponent::~xiiRcNavMeshComponent() = default;
 
-void xiiRcNavMeshComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiRcNavMeshComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  xiiStreamWriter& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_bShowNavMesh;
   s << m_hNavMesh;
 }
 
-void xiiRcNavMeshComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiRcNavMeshComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32  uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32  uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  xiiStreamReader& s         = ref_stream.GetStream();
 
   s >> m_bShowNavMesh;
 
@@ -273,7 +273,7 @@ void xiiRcNavMeshComponent::VisualizePointsOfInterest()
 //////////////////////////////////////////////////////////////////////////
 
 xiiRcNavMeshComponentManager::xiiRcNavMeshComponentManager(xiiWorld* pWorld) :
-  SUPER(pWorld), m_pWorldModule(nullptr)
+  SUPER(pWorld)
 {
 }
 

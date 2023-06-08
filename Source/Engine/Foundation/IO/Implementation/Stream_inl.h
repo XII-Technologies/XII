@@ -140,22 +140,22 @@ xiiResult xiiStreamWriter::WriteQWordValue(const T* pQWordValue)
 
 #endif
 
-xiiTypeVersion xiiStreamReader::ReadVersion(xiiTypeVersion uiExpectedMaxVersion)
+xiiTypeVersion xiiStreamReader::ReadVersion(xiiTypeVersion expectedMaxVersion)
 {
   xiiTypeVersion v = 0;
   ReadWordValue(&v).IgnoreResult();
 
-  XII_ASSERT_ALWAYS(v <= uiExpectedMaxVersion, "Read version ({0}) is larger than expected max version ({1}).", v, uiExpectedMaxVersion);
+  XII_ASSERT_ALWAYS(v <= expectedMaxVersion, "Read version ({0}) is larger than expected max version ({1}).", v, expectedMaxVersion);
   XII_ASSERT_ALWAYS(v > 0, "Invalid version.");
 
   return v;
 }
 
-void xiiStreamWriter::WriteVersion(xiiTypeVersion uiVersion)
+void xiiStreamWriter::WriteVersion(xiiTypeVersion version)
 {
-  XII_ASSERT_ALWAYS(uiVersion > 0, "Version cannot be zero.");
+  XII_ASSERT_ALWAYS(version > 0, "Version cannot be zero.");
 
-  WriteWordValue(&uiVersion).IgnoreResult();
+  WriteWordValue(&version).IgnoreResult();
 }
 
 
@@ -164,93 +164,93 @@ namespace xiiStreamWriterUtil
   // single element serialization
 
   template <class T>
-  XII_ALWAYS_INLINE auto SerializeImpl(xiiStreamWriter& stream, const T& Obj, int) -> decltype(stream << Obj, xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto SerializeImpl(xiiStreamWriter& ref_stream, const T& obj, int) -> decltype(ref_stream << obj, xiiResult(XII_SUCCESS))
   {
-    stream << Obj;
+    ref_stream << obj;
 
     return XII_SUCCESS;
   }
 
   template <class T>
-  XII_ALWAYS_INLINE auto SerializeImpl(xiiStreamWriter& stream, const T& Obj, long) -> decltype(Obj.Serialize(stream).IgnoreResult(), xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto SerializeImpl(xiiStreamWriter& ref_stream, const T& obj, long) -> decltype(obj.Serialize(ref_stream).IgnoreResult(), xiiResult(XII_SUCCESS))
   {
-    return xiiToResult(Obj.Serialize(stream));
+    return xiiToResult(obj.Serialize(ref_stream));
   }
 
   template <class T>
-  XII_ALWAYS_INLINE auto SerializeImpl(xiiStreamWriter& stream, const T& Obj, float) -> decltype(Obj.serialize(stream).IgnoreResult(), xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto SerializeImpl(xiiStreamWriter& ref_stream, const T& obj, float) -> decltype(obj.serialize(ref_stream).IgnoreResult(), xiiResult(XII_SUCCESS))
   {
-    return xiiToResult(Obj.serialize(stream));
+    return xiiToResult(obj.serialize(ref_stream));
   }
 
   template <class T>
-  XII_ALWAYS_INLINE auto Serialize(xiiStreamWriter& stream, const T& Obj) -> decltype(SerializeImpl(stream, Obj, 0).IgnoreResult(), xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto Serialize(xiiStreamWriter& ref_stream, const T& obj) -> decltype(SerializeImpl(ref_stream, obj, 0).IgnoreResult(), xiiResult(XII_SUCCESS))
   {
-    return SerializeImpl(stream, Obj, 0);
+    return SerializeImpl(ref_stream, obj, 0);
   }
 
   // serialization of array
 
 #if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
   template <class T>
-  XII_ALWAYS_INLINE auto SerializeArrayImpl(xiiStreamWriter& stream, const T* pArray, xiiUInt64 uiCount, int) -> decltype(SerializeArray(stream, pArray, uiCount), xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto SerializeArrayImpl(xiiStreamWriter& ref_stream, const T* pArray, xiiUInt64 uiCount, int) -> decltype(SerializeArray(ref_stream, pArray, uiCount), xiiResult(XII_SUCCESS))
   {
-    return SerializeArray(stream, pArray, uiCount);
+    return SerializeArray(ref_stream, pArray, uiCount);
   }
 #endif
 
   template <class T>
-  xiiResult SerializeArrayImpl(xiiStreamWriter& stream, const T* pArray, xiiUInt64 uiCount, long)
+  xiiResult SerializeArrayImpl(xiiStreamWriter& ref_stream, const T* pArray, xiiUInt64 uiCount, long)
   {
     for (xiiUInt64 i = 0; i < uiCount; ++i)
     {
-      XII_SUCCEED_OR_RETURN(xiiStreamWriterUtil::Serialize<T>(stream, pArray[i]));
+      XII_SUCCEED_OR_RETURN(xiiStreamWriterUtil::Serialize<T>(ref_stream, pArray[i]));
     }
 
     return XII_SUCCESS;
   }
 
   template <class T>
-  XII_ALWAYS_INLINE xiiResult SerializeArray(xiiStreamWriter& stream, const T* pArray, xiiUInt64 uiCount)
+  XII_ALWAYS_INLINE xiiResult SerializeArray(xiiStreamWriter& ref_stream, const T* pArray, xiiUInt64 uiCount)
   {
-    return SerializeArrayImpl(stream, pArray, uiCount, 0);
+    return SerializeArrayImpl(ref_stream, pArray, uiCount, 0);
   }
 } // namespace xiiStreamWriterUtil
 
 template <typename ArrayType, typename ValueType>
-xiiResult xiiStreamWriter::WriteArray(const xiiArrayBase<ValueType, ArrayType>& Array)
+xiiResult xiiStreamWriter::WriteArray(const xiiArrayBase<ValueType, ArrayType>& array)
 {
-  const xiiUInt64 uiCount = Array.GetCount();
+  const xiiUInt64 uiCount = array.GetCount();
   XII_SUCCEED_OR_RETURN(WriteQWordValue(&uiCount));
 
-  return xiiStreamWriterUtil::SerializeArray<ValueType>(*this, Array.GetArrayPtr().GetPtr(), Array.GetCount());
+  return xiiStreamWriterUtil::SerializeArray<ValueType>(*this, array.GetArrayPtr().GetPtr(), array.GetCount());
 }
 
 template <typename ValueType, xiiUInt16 uiSize>
-xiiResult xiiStreamWriter::WriteArray(const xiiSmallArrayBase<ValueType, uiSize>& Array)
+xiiResult xiiStreamWriter::WriteArray(const xiiSmallArrayBase<ValueType, uiSize>& array)
 {
-  const xiiUInt32 uiCount = Array.GetCount();
+  const xiiUInt32 uiCount = array.GetCount();
   XII_SUCCEED_OR_RETURN(WriteDWordValue(&uiCount));
 
-  return xiiStreamWriterUtil::SerializeArray<ValueType>(*this, Array.GetData(), Array.GetCount());
+  return xiiStreamWriterUtil::SerializeArray<ValueType>(*this, array.GetData(), array.GetCount());
 }
 
 template <typename ValueType, xiiUInt32 uiSize>
-xiiResult xiiStreamWriter::WriteArray(const ValueType (&Array)[uiSize])
+xiiResult xiiStreamWriter::WriteArray(const ValueType (&array)[uiSize])
 {
   const xiiUInt64 uiWriteSize = uiSize;
   XII_SUCCEED_OR_RETURN(WriteQWordValue(&uiWriteSize));
 
-  return xiiStreamWriterUtil::SerializeArray<ValueType>(*this, Array, uiSize);
+  return xiiStreamWriterUtil::SerializeArray<ValueType>(*this, array, uiSize);
 }
 
 template <typename KeyType, typename Comparer>
-xiiResult xiiStreamWriter::WriteSet(const xiiSetBase<KeyType, Comparer>& Set)
+xiiResult xiiStreamWriter::WriteSet(const xiiSetBase<KeyType, Comparer>& set)
 {
-  const xiiUInt64 uiWriteSize = Set.GetCount();
+  const xiiUInt64 uiWriteSize = set.GetCount();
   XII_SUCCEED_OR_RETURN(WriteQWordValue(&uiWriteSize));
 
-  for (const auto& item : Set)
+  for (const auto& item : set)
   {
     XII_SUCCEED_OR_RETURN(xiiStreamWriterUtil::Serialize<KeyType>(*this, item));
   }
@@ -259,12 +259,12 @@ xiiResult xiiStreamWriter::WriteSet(const xiiSetBase<KeyType, Comparer>& Set)
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
-xiiResult xiiStreamWriter::WriteMap(const xiiMapBase<KeyType, ValueType, Comparer>& Map)
+xiiResult xiiStreamWriter::WriteMap(const xiiMapBase<KeyType, ValueType, Comparer>& map)
 {
-  const xiiUInt64 uiWriteSize = Map.GetCount();
+  const xiiUInt64 uiWriteSize = map.GetCount();
   XII_SUCCEED_OR_RETURN(WriteQWordValue(&uiWriteSize));
 
-  for (auto It = Map.GetIterator(); It.IsValid(); ++It)
+  for (auto It = map.GetIterator(); It.IsValid(); ++It)
   {
     XII_SUCCEED_OR_RETURN(xiiStreamWriterUtil::Serialize<KeyType>(*this, It.Key()));
     XII_SUCCEED_OR_RETURN(xiiStreamWriterUtil::Serialize<ValueType>(*this, It.Value()));
@@ -274,12 +274,12 @@ xiiResult xiiStreamWriter::WriteMap(const xiiMapBase<KeyType, ValueType, Compare
 }
 
 template <typename KeyType, typename ValueType, typename Hasher>
-xiiResult xiiStreamWriter::WriteHashTable(const xiiHashTableBase<KeyType, ValueType, Hasher>& HashTable)
+xiiResult xiiStreamWriter::WriteHashTable(const xiiHashTableBase<KeyType, ValueType, Hasher>& hashTable)
 {
-  const xiiUInt64 uiWriteSize = HashTable.GetCount();
+  const xiiUInt64 uiWriteSize = hashTable.GetCount();
   XII_SUCCEED_OR_RETURN(WriteQWordValue(&uiWriteSize));
 
-  for (auto It = HashTable.GetIterator(); It.IsValid(); ++It)
+  for (auto It = hashTable.GetIterator(); It.IsValid(); ++It)
   {
     XII_SUCCEED_OR_RETURN(xiiStreamWriterUtil::Serialize<KeyType>(*this, It.Key()));
     XII_SUCCEED_OR_RETURN(xiiStreamWriterUtil::Serialize<ValueType>(*this, It.Value()));
@@ -291,75 +291,75 @@ xiiResult xiiStreamWriter::WriteHashTable(const xiiHashTableBase<KeyType, ValueT
 namespace xiiStreamReaderUtil
 {
   template <class T>
-  XII_ALWAYS_INLINE auto DeserializeImpl(xiiStreamReader& stream, T& Obj, int) -> decltype(stream >> Obj, xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto DeserializeImpl(xiiStreamReader& ref_stream, T& ref_obj, int) -> decltype(ref_stream >> ref_obj, xiiResult(XII_SUCCESS))
   {
-    stream >> Obj;
+    ref_stream >> ref_obj;
 
     return XII_SUCCESS;
   }
 
   template <class T>
-  XII_ALWAYS_INLINE auto DeserializeImpl(xiiStreamReader& stream, T& Obj, long) -> decltype(Obj.Deserialize(stream).IgnoreResult(), xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto DeserializeImpl(xiiStreamReader& ref_stream, T& ref_obj, long) -> decltype(ref_obj.Deserialize(ref_stream).IgnoreResult(), xiiResult(XII_SUCCESS))
   {
-    return xiiToResult(Obj.Deserialize(stream));
+    return xiiToResult(ref_obj.Deserialize(ref_stream));
   }
 
   template <class T>
-  XII_ALWAYS_INLINE auto DeserializeImpl(xiiStreamReader& stream, T& Obj, float) -> decltype(Obj.deserialize(stream).IgnoreResult(), xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto DeserializeImpl(xiiStreamReader& ref_stream, T& ref_obj, float) -> decltype(ref_obj.deserialize(ref_stream).IgnoreResult(), xiiResult(XII_SUCCESS))
   {
-    return xiiToResult(Obj.deserialize(stream));
+    return xiiToResult(ref_obj.deserialize(ref_stream));
   }
 
   template <class T>
-  XII_ALWAYS_INLINE auto Deserialize(xiiStreamReader& stream, T& Obj) -> decltype(DeserializeImpl(stream, Obj, 0).IgnoreResult(), xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto Deserialize(xiiStreamReader& ref_stream, T& ref_obj) -> decltype(DeserializeImpl(ref_stream, ref_obj, 0).IgnoreResult(), xiiResult(XII_SUCCESS))
   {
-    return DeserializeImpl(stream, Obj, 0);
+    return DeserializeImpl(ref_stream, ref_obj, 0);
   }
 
   // serialization of array
 
 #if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
   template <class T>
-  XII_ALWAYS_INLINE auto DeserializeArrayImpl(xiiStreamReader& stream, T* pArray, xiiUInt64 uiCount, int) -> decltype(DeserializeArray(stream, pArray, uiCount), xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto DeserializeArrayImpl(xiiStreamReader& ref_stream, T* pArray, xiiUInt64 uiCount, int) -> decltype(DeserializeArray(ref_stream, pArray, uiCount), xiiResult(XII_SUCCESS))
   {
-    return DeserializeArray(stream, pArray, uiCount);
+    return DeserializeArray(ref_stream, pArray, uiCount);
   }
 #endif
 
   template <class T>
-  xiiResult DeserializeArrayImpl(xiiStreamReader& stream, T* pArray, xiiUInt64 uiCount, long)
+  xiiResult DeserializeArrayImpl(xiiStreamReader& ref_stream, T* pArray, xiiUInt64 uiCount, long)
   {
     for (xiiUInt64 i = 0; i < uiCount; ++i)
     {
-      XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::Deserialize<T>(stream, pArray[i]));
+      XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::Deserialize<T>(ref_stream, pArray[i]));
     }
 
     return XII_SUCCESS;
   }
 
   template <class T>
-  XII_ALWAYS_INLINE xiiResult DeserializeArray(xiiStreamReader& stream, T* pArray, xiiUInt64 uiCount)
+  XII_ALWAYS_INLINE xiiResult DeserializeArray(xiiStreamReader& ref_stream, T* pArray, xiiUInt64 uiCount)
   {
-    return DeserializeArrayImpl(stream, pArray, uiCount, 0);
+    return DeserializeArrayImpl(ref_stream, pArray, uiCount, 0);
   }
 
 } // namespace xiiStreamReaderUtil
 
 template <typename ArrayType, typename ValueType>
-xiiResult xiiStreamReader::ReadArray(xiiArrayBase<ValueType, ArrayType>& Array)
+xiiResult xiiStreamReader::ReadArray(xiiArrayBase<ValueType, ArrayType>& ref_array)
 {
   xiiUInt64 uiCount = 0;
   XII_SUCCEED_OR_RETURN(ReadQWordValue(&uiCount));
 
   if (uiCount < xiiMath::MaxValue<xiiUInt32>())
   {
-    Array.Clear();
+    ref_array.Clear();
 
     if (uiCount > 0)
     {
-      static_cast<ArrayType&>(Array).SetCount(static_cast<xiiUInt32>(uiCount));
+      static_cast<ArrayType&>(ref_array).SetCount(static_cast<xiiUInt32>(uiCount));
 
-      XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::DeserializeArray<ValueType>(*this, Array.GetData(), uiCount));
+      XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::DeserializeArray<ValueType>(*this, ref_array.GetData(), uiCount));
     }
 
     return XII_SUCCESS;
@@ -372,20 +372,20 @@ xiiResult xiiStreamReader::ReadArray(xiiArrayBase<ValueType, ArrayType>& Array)
 }
 
 template <typename ValueType, xiiUInt16 uiSize, typename AllocatorWrapper>
-xiiResult xiiStreamReader::ReadArray(xiiSmallArray<ValueType, uiSize, AllocatorWrapper>& Array)
+xiiResult xiiStreamReader::ReadArray(xiiSmallArray<ValueType, uiSize, AllocatorWrapper>& ref_array)
 {
   xiiUInt32 uiCount = 0;
   XII_SUCCEED_OR_RETURN(ReadDWordValue(&uiCount));
 
   if (uiCount < xiiMath::MaxValue<xiiUInt16>())
   {
-    Array.Clear();
+    ref_array.Clear();
 
     if (uiCount > 0)
     {
-      Array.SetCount(static_cast<xiiUInt16>(uiCount));
+      ref_array.SetCount(static_cast<xiiUInt16>(uiCount));
 
-      XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::DeserializeArray<ValueType>(*this, Array.GetData(), uiCount));
+      XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::DeserializeArray<ValueType>(*this, ref_array.GetData(), uiCount));
     }
 
     return XII_SUCCESS;
@@ -398,7 +398,7 @@ xiiResult xiiStreamReader::ReadArray(xiiSmallArray<ValueType, uiSize, AllocatorW
 }
 
 template <typename ValueType, xiiUInt32 uiSize>
-xiiResult xiiStreamReader::ReadArray(ValueType (&Array)[uiSize])
+xiiResult xiiStreamReader::ReadArray(ValueType (&array)[uiSize])
 {
   xiiUInt64 uiCount = 0;
   XII_SUCCEED_OR_RETURN(ReadQWordValue(&uiCount));
@@ -408,7 +408,7 @@ xiiResult xiiStreamReader::ReadArray(ValueType (&Array)[uiSize])
 
   if (uiCount < xiiMath::MaxValue<xiiUInt32>())
   {
-    XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::DeserializeArray<ValueType>(*this, Array, uiCount));
+    XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::DeserializeArray<ValueType>(*this, array, uiCount));
 
     return XII_SUCCESS;
   }
@@ -418,21 +418,21 @@ xiiResult xiiStreamReader::ReadArray(ValueType (&Array)[uiSize])
 }
 
 template <typename KeyType, typename Comparer>
-xiiResult xiiStreamReader::ReadSet(xiiSetBase<KeyType, Comparer>& Set)
+xiiResult xiiStreamReader::ReadSet(xiiSetBase<KeyType, Comparer>& ref_set)
 {
   xiiUInt64 uiCount = 0;
   XII_SUCCEED_OR_RETURN(ReadQWordValue(&uiCount));
 
   if (uiCount < xiiMath::MaxValue<xiiUInt32>())
   {
-    Set.Clear();
+    ref_set.Clear();
 
     for (xiiUInt32 i = 0; i < static_cast<xiiUInt32>(uiCount); ++i)
     {
       KeyType Item;
       XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::Deserialize(*this, Item));
 
-      Set.Insert(std::move(Item));
+      ref_set.Insert(std::move(Item));
     }
 
     return XII_SUCCESS;
@@ -445,14 +445,14 @@ xiiResult xiiStreamReader::ReadSet(xiiSetBase<KeyType, Comparer>& Set)
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
-xiiResult xiiStreamReader::ReadMap(xiiMapBase<KeyType, ValueType, Comparer>& Map)
+xiiResult xiiStreamReader::ReadMap(xiiMapBase<KeyType, ValueType, Comparer>& ref_map)
 {
   xiiUInt64 uiCount = 0;
   XII_SUCCEED_OR_RETURN(ReadQWordValue(&uiCount));
 
   if (uiCount < xiiMath::MaxValue<xiiUInt32>())
   {
-    Map.Clear();
+    ref_map.Clear();
 
     for (xiiUInt32 i = 0; i < static_cast<xiiUInt32>(uiCount); ++i)
     {
@@ -461,7 +461,7 @@ xiiResult xiiStreamReader::ReadMap(xiiMapBase<KeyType, ValueType, Comparer>& Map
       XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::Deserialize(*this, Key));
       XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::Deserialize(*this, Value));
 
-      Map.Insert(std::move(Key), std::move(Value));
+      ref_map.Insert(std::move(Key), std::move(Value));
     }
 
     return XII_SUCCESS;
@@ -474,15 +474,15 @@ xiiResult xiiStreamReader::ReadMap(xiiMapBase<KeyType, ValueType, Comparer>& Map
 }
 
 template <typename KeyType, typename ValueType, typename Hasher>
-xiiResult xiiStreamReader::ReadHashTable(xiiHashTableBase<KeyType, ValueType, Hasher>& HashTable)
+xiiResult xiiStreamReader::ReadHashTable(xiiHashTableBase<KeyType, ValueType, Hasher>& ref_hashTable)
 {
   xiiUInt64 uiCount = 0;
   XII_SUCCEED_OR_RETURN(ReadQWordValue(&uiCount));
 
   if (uiCount < xiiMath::MaxValue<xiiUInt32>())
   {
-    HashTable.Clear();
-    HashTable.Reserve(static_cast<xiiUInt32>(uiCount));
+    ref_hashTable.Clear();
+    ref_hashTable.Reserve(static_cast<xiiUInt32>(uiCount));
 
     for (xiiUInt32 i = 0; i < static_cast<xiiUInt32>(uiCount); ++i)
     {
@@ -491,7 +491,7 @@ xiiResult xiiStreamReader::ReadHashTable(xiiHashTableBase<KeyType, ValueType, Ha
       XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::Deserialize(*this, Key));
       XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::Deserialize(*this, Value));
 
-      HashTable.Insert(std::move(Key), std::move(Value));
+      ref_hashTable.Insert(std::move(Key), std::move(Value));
     }
 
     return XII_SUCCESS;

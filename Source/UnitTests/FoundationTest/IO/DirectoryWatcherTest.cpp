@@ -8,10 +8,9 @@
 
 namespace DirectoryWatcherTestHelpers
 {
-
   struct ExpectedEvent
   {
-    ~ExpectedEvent(){}; // To make it non-pod
+    ~ExpectedEvent(){}; // NOLINT: Ensure that the structure is non POD.
 
     const char*               path;
     xiiDirectoryWatcherAction action;
@@ -30,11 +29,11 @@ namespace DirectoryWatcherTestHelpers
     xiiDirectoryWatcherType   type;
   };
 
-  void TickWatcher(xiiDirectoryWatcher& watcher)
+  void TickWatcher(xiiDirectoryWatcher& ref_watcher)
   {
-    watcher.EnumerateChanges([&](const char* path, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
+    ref_watcher.EnumerateChanges([&](const char* szPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
     },
-                             xiiTime::Milliseconds(100));
+                                 xiiTime::Milliseconds(100));
   }
 } // namespace DirectoryWatcherTestHelpers
 
@@ -46,11 +45,11 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
   xiiStringBuilder sTestRootPath = xiiTestFramework::GetInstance()->GetAbsOutputPath();
   sTestRootPath.AppendPath("DirectoryWatcher/");
 
-  auto CheckExpectedEvents = [&](xiiDirectoryWatcher& watcher, xiiArrayPtr<ExpectedEvent> events) {
+  auto CheckExpectedEvents = [&](xiiDirectoryWatcher& ref_watcher, xiiArrayPtr<ExpectedEvent> events) {
     xiiDynamicArray<ExpectedEventStorage> firedEvents;
     xiiUInt32                             i = 0;
-    watcher.EnumerateChanges([&](const char* path, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
-      tmp = path;
+    ref_watcher.EnumerateChanges([&](const char* szPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
+      tmp = szPath;
       tmp.Shrink(sTestRootPath.GetCharacterCount(), 0);
       firedEvents.PushBack({tmp, action, type});
       if (i < events.GetCount())
@@ -61,17 +60,17 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
       }
       i++;
     },
-                             xiiTime::Milliseconds(100));
+                                 xiiTime::Milliseconds(100));
     XII_TEST_BOOL_MSG(firedEvents.GetCount() == events.GetCount(), "Directory watcher did not fire expected amount of events");
   };
 
-  auto CheckExpectedEventsUnordered = [&](xiiDirectoryWatcher& watcher, xiiArrayPtr<ExpectedEvent> events) {
+  auto CheckExpectedEventsUnordered = [&](xiiDirectoryWatcher& ref_watcher, xiiArrayPtr<ExpectedEvent> events) {
     xiiDynamicArray<ExpectedEventStorage> firedEvents;
     xiiUInt32                             i = 0;
     xiiDynamicArray<bool>                 eventFired;
     eventFired.SetCount(events.GetCount());
-    watcher.EnumerateChanges([&](const char* path, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
-      tmp = path;
+    ref_watcher.EnumerateChanges([&](const char* szPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
+      tmp = szPath;
       tmp.Shrink(sTestRootPath.GetCharacterCount(), 0);
       firedEvents.PushBack({tmp, action, type});
       auto index = events.IndexOf({tmp, action, type});
@@ -82,7 +81,7 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
       }
       i++;
     },
-                             xiiTime::Milliseconds(100));
+                                 xiiTime::Milliseconds(100));
     for (auto& fired : eventFired)
     {
       XII_TEST_BOOL(fired);
@@ -94,8 +93,8 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
     xiiDynamicArray<ExpectedEventStorage> firedEvents;
     xiiUInt32                             i = 0;
     xiiDirectoryWatcher::EnumerateChanges(
-      watchers, [&](const char* path, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
-        tmp = path;
+      watchers, [&](const char* szPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
+        tmp = szPath;
         tmp.Shrink(sTestRootPath.GetCharacterCount(), 0);
         firedEvents.PushBack({tmp, action, type});
         if (i < events.GetCount())
@@ -110,52 +109,52 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
     XII_TEST_BOOL_MSG(firedEvents.GetCount() == events.GetCount(), "Directory watcher did not fire expected amount of events");
   };
 
-  auto CreateFile = [&](const char* relPath) {
+  auto CreateFile = [&](const char* szRelPath) {
     tmp = sTestRootPath;
-    tmp.AppendPath(relPath);
+    tmp.AppendPath(szRelPath);
 
     xiiOSFile file;
     XII_TEST_BOOL(file.Open(tmp, xiiFileOpenMode::Write).Succeeded());
     XII_TEST_BOOL(file.Write("Hello World", 11).Succeeded());
   };
 
-  auto ModifyFile = [&](const char* relPath) {
+  auto ModifyFile = [&](const char* szRelPath) {
     tmp = sTestRootPath;
-    tmp.AppendPath(relPath);
+    tmp.AppendPath(szRelPath);
 
     xiiOSFile file;
     XII_TEST_BOOL(file.Open(tmp, xiiFileOpenMode::Append).Succeeded());
     XII_TEST_BOOL(file.Write("Hello World", 11).Succeeded());
   };
 
-  auto DeleteFile = [&](const char* relPath) {
+  auto DeleteFile = [&](const char* szRelPath) {
     tmp = sTestRootPath;
-    tmp.AppendPath(relPath);
+    tmp.AppendPath(szRelPath);
     XII_TEST_BOOL(xiiOSFile::DeleteFile(tmp).Succeeded());
   };
 
-  auto CreateDirectory = [&](const char* relPath) {
+  auto CreateDirectory = [&](const char* szRelPath) {
     tmp = sTestRootPath;
-    tmp.AppendPath(relPath);
+    tmp.AppendPath(szRelPath);
     XII_TEST_BOOL(xiiOSFile::CreateDirectoryStructure(tmp).Succeeded());
   };
 
-  auto Rename = [&](const char* from, const char* to) {
+  auto Rename = [&](const char* szFrom, const char* szTo) {
     tmp = sTestRootPath;
-    tmp.AppendPath(from);
+    tmp.AppendPath(szFrom);
 
     tmp2 = sTestRootPath;
-    tmp2.AppendPath(to);
+    tmp2.AppendPath(szTo);
 
     XII_TEST_BOOL(xiiOSFile::MoveFileOrDirectory(tmp, tmp2).Succeeded());
   };
 
-  auto DeleteDirectory = [&](const char* relPath, bool test = true) {
+  auto DeleteDirectory = [&](const char* szRelPath, bool bTest = true) {
     tmp = sTestRootPath;
-    tmp.AppendPath(relPath);
+    tmp.AppendPath(szRelPath);
     tmp.MakeCleanPath();
 
-    if (test)
+    if (bTest)
     {
       XII_TEST_BOOL(xiiOSFile::DeleteFolder(tmp).Succeeded());
     }

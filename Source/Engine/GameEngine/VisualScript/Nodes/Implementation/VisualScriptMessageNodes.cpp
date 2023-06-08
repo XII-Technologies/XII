@@ -31,7 +31,7 @@ xiiVisualScriptNode_ScriptStartEvent::xiiVisualScriptNode_ScriptStartEvent()
   m_bStepNode = true;
 }
 
-xiiVisualScriptNode_ScriptStartEvent::~xiiVisualScriptNode_ScriptStartEvent() {}
+xiiVisualScriptNode_ScriptStartEvent::~xiiVisualScriptNode_ScriptStartEvent() = default;
 
 void xiiVisualScriptNode_ScriptStartEvent::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -63,7 +63,7 @@ xiiVisualScriptNode_ScriptUpdateEvent::xiiVisualScriptNode_ScriptUpdateEvent()
   m_bStepNode = true;
 }
 
-xiiVisualScriptNode_ScriptUpdateEvent::~xiiVisualScriptNode_ScriptUpdateEvent() {}
+xiiVisualScriptNode_ScriptUpdateEvent::~xiiVisualScriptNode_ScriptUpdateEvent() = default;
 
 void xiiVisualScriptNode_ScriptUpdateEvent::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -145,8 +145,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_PhysicsTriggerEvent, 1, xii
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_PhysicsTriggerEvent::xiiVisualScriptNode_PhysicsTriggerEvent() {}
-xiiVisualScriptNode_PhysicsTriggerEvent::~xiiVisualScriptNode_PhysicsTriggerEvent() {}
+xiiVisualScriptNode_PhysicsTriggerEvent::xiiVisualScriptNode_PhysicsTriggerEvent()  = default;
+xiiVisualScriptNode_PhysicsTriggerEvent::~xiiVisualScriptNode_PhysicsTriggerEvent() = default;
 
 void xiiVisualScriptNode_PhysicsTriggerEvent::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -204,8 +204,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_InputState, 1, xiiRTTIDefau
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_InputState::xiiVisualScriptNode_InputState() {}
-xiiVisualScriptNode_InputState::~xiiVisualScriptNode_InputState() {}
+xiiVisualScriptNode_InputState::xiiVisualScriptNode_InputState()  = default;
+xiiVisualScriptNode_InputState::~xiiVisualScriptNode_InputState() = default;
 
 void xiiVisualScriptNode_InputState::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -260,8 +260,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_InputEvent, 1, xiiRTTIDefau
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_InputEvent::xiiVisualScriptNode_InputEvent() {}
-xiiVisualScriptNode_InputEvent::~xiiVisualScriptNode_InputEvent() {}
+xiiVisualScriptNode_InputEvent::xiiVisualScriptNode_InputEvent()  = default;
+xiiVisualScriptNode_InputEvent::~xiiVisualScriptNode_InputEvent() = default;
 
 void xiiVisualScriptNode_InputEvent::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {

@@ -8,18 +8,18 @@
 
 XII_CREATE_SIMPLE_TEST_GROUP(CodeUtils);
 
-xiiResult FileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType IncType, xiiStringBuilder& out_sAbsoluteFilePath)
+xiiResult FileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath)
 {
   xiiStringBuilder& s = out_sAbsoluteFilePath;
 
-  if (IncType == xiiPreprocessor::RelativeInclude)
+  if (incType == xiiPreprocessor::RelativeInclude)
   {
     s = szCurAbsoluteFile;
     s.PathParentDirectory();
     s.AppendPath(szIncludeFile);
     s.MakeCleanPath();
   }
-  else if (IncType == xiiPreprocessor::GlobalInclude)
+  else if (incType == xiiPreprocessor::GlobalInclude)
   {
     s = "Preprocessor";
     s.AppendPath(szIncludeFile);

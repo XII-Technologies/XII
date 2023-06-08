@@ -8,9 +8,9 @@
 #include <FoundationTest/Reflection/ReflectionTestClasses.h>
 
 template <typename T>
-static void SetComponentTest(xiiVec2Template<T> vector, T value)
+static void SetComponentTest(xiiVec2Template<T> vVector, T value)
 {
-  xiiVariant var = vector;
+  xiiVariant var = vVector;
   xiiReflectionUtils::SetComponent(var, 0, value);
   XII_TEST_BOOL(var.Get<xiiVec2Template<T>>().x == value);
   xiiReflectionUtils::SetComponent(var, 1, value);
@@ -18,9 +18,9 @@ static void SetComponentTest(xiiVec2Template<T> vector, T value)
 }
 
 template <typename T>
-static void SetComponentTest(xiiVec3Template<T> vector, T value)
+static void SetComponentTest(xiiVec3Template<T> vVector, T value)
 {
-  xiiVariant var = vector;
+  xiiVariant var = vVector;
   xiiReflectionUtils::SetComponent(var, 0, value);
   XII_TEST_BOOL(var.Get<xiiVec3Template<T>>().x == value);
   xiiReflectionUtils::SetComponent(var, 1, value);
@@ -30,9 +30,9 @@ static void SetComponentTest(xiiVec3Template<T> vector, T value)
 }
 
 template <typename T>
-static void SetComponentTest(xiiVec4Template<T> vector, T value)
+static void SetComponentTest(xiiVec4Template<T> vVector, T value)
 {
-  xiiVariant var = vector;
+  xiiVariant var = vVector;
   xiiReflectionUtils::SetComponent(var, 0, value);
   XII_TEST_BOOL(var.Get<xiiVec4Template<T>>().x == value);
   xiiReflectionUtils::SetComponent(var, 1, value);

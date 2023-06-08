@@ -14,10 +14,9 @@ XII_FORCE_INLINE xiiBoundingSphereTemplate<Type>::xiiBoundingSphereTemplate()
 }
 
 template <typename Type>
-XII_FORCE_INLINE xiiBoundingSphereTemplate<Type>::xiiBoundingSphereTemplate(const xiiVec3Template<Type>& vCenter, Type fRadius)
+XII_FORCE_INLINE xiiBoundingSphereTemplate<Type>::xiiBoundingSphereTemplate(const xiiVec3Template<Type>& vCenter, Type fRadius) :
+  m_vCenter(vCenter), m_fRadius(fRadius)
 {
-  m_vCenter = vCenter;
-  m_fRadius = fRadius;
 }
 
 template <typename Type>
@@ -137,8 +136,8 @@ void xiiBoundingSphereTemplate<Type>::ScaleFromOrigin(const xiiVec3Template<Type
 
   m_vCenter = m_vCenter.CompMul(vScale);
 
-  // scale the radius by the maximum scaling factor (the sphere cannot become an ellipsoid,
-  // so to be a 'bounding' sphere, it should be as large as possible
+  // Scale the radius by the maximum scaling factor (the sphere cannot become an ellipsoid,
+  // so to be a 'bounding' sphere, it should be as large as possible.
   m_fRadius *= xiiMath::Max(vScale.x, vScale.y, vScale.z);
 }
 
@@ -348,7 +347,7 @@ Type xiiBoundingSphereTemplate<Type>::GetDistanceTo(
 }
 
 template <typename Type>
-bool xiiBoundingSphereTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDirNormalized, Type* out_fIntersection /* = nullptr */, xiiVec3Template<Type>* out_vIntersection /* = nullptr */) const
+bool xiiBoundingSphereTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDirNormalized, Type* out_pIntersectionDistance /* = nullptr */, xiiVec3Template<Type>* out_pIntersection /* = nullptr */) const
 {
   XII_ASSERT_DEBUG(vRayDirNormalized.IsNormalized(), "The ray direction must be normalized.");
 
@@ -377,16 +376,16 @@ bool xiiBoundingSphereTemplate<Type>::GetRayIntersection(const xiiVec3Template<T
   else
     fIntersectionTime = d + q;
 
-  if (out_fIntersection)
-    *out_fIntersection = fIntersectionTime;
-  if (out_vIntersection)
-    *out_vIntersection = vRayStartPos + vRayDirNormalized * fIntersectionTime;
+  if (out_pIntersectionDistance)
+    *out_pIntersectionDistance = fIntersectionTime;
+  if (out_pIntersection)
+    *out_pIntersection = vRayStartPos + vRayDirNormalized * fIntersectionTime;
 
   return true;
 }
 
 template <typename Type>
-bool xiiBoundingSphereTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos, Type* out_fHitFraction /* = nullptr */, xiiVec3Template<Type>* out_vIntersection /* = nullptr */) const
+bool xiiBoundingSphereTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos, Type* out_pHitFraction /* = nullptr */, xiiVec3Template<Type>* out_pIntersection /* = nullptr */) const
 {
   Type fIntersection = 0.0f;
 
@@ -400,11 +399,11 @@ bool xiiBoundingSphereTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Te
   if (fIntersection > fLen)
     return false;
 
-  if (out_fHitFraction)
-    *out_fHitFraction = fIntersection / fLen;
+  if (out_pHitFraction)
+    *out_pHitFraction = fIntersection / fLen;
 
-  if (out_vIntersection)
-    *out_vIntersection = vLineStartPos + vDirNorm * fIntersection;
+  if (out_pIntersection)
+    *out_pIntersection = vLineStartPos + vDirNorm * fIntersection;
 
   return true;
 }

@@ -13,15 +13,15 @@
 
 xiiExrFileFormat g_ExrFileFormat;
 
-xiiResult ReadImageData(xiiStreamReader& stream, xiiDynamicArray<xiiUInt8>& fileBuffer, xiiImageHeader& header, EXRHeader& exrHeader, EXRImage& exrImage)
+xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& ref_fileBuffer, xiiImageHeader& ref_header, EXRHeader& ref_exrHeader, EXRImage& ref_exrImage)
 {
   // read the entire file to memory
-  xiiStreamUtils::ReadAllAndAppend(stream, fileBuffer);
+  xiiStreamUtils::ReadAllAndAppend(ref_stream, ref_fileBuffer);
 
   // read the EXR version
   EXRVersion exrVersion;
 
-  if (ParseEXRVersionFromMemory(&exrVersion, fileBuffer.GetData(), fileBuffer.GetCount()) != 0)
+  if (ParseEXRVersionFromMemory(&exrVersion, ref_fileBuffer.GetData(), ref_fileBuffer.GetCount()) != 0)
   {
     xiiLog::Error("Invalid EXR file: Cannot read version.");
     return XII_FAILURE;
@@ -35,38 +35,38 @@ xiiResult ReadImageData(xiiStreamReader& stream, xiiDynamicArray<xiiUInt8>& file
 
   // read the EXR header
   const char* err = nullptr;
-  if (ParseEXRHeaderFromMemory(&exrHeader, &exrVersion, fileBuffer.GetData(), fileBuffer.GetCount(), &err) != 0)
+  if (ParseEXRHeaderFromMemory(&ref_exrHeader, &exrVersion, ref_fileBuffer.GetData(), ref_fileBuffer.GetCount(), &err) != 0)
   {
     xiiLog::Error("Invalid EXR file: '{0}'", err);
     FreeEXRErrorMessage(err);
     return XII_FAILURE;
   }
 
-  for (int c = 1; c < exrHeader.num_channels; ++c)
+  for (int c = 1; c < ref_exrHeader.num_channels; ++c)
   {
-    if (exrHeader.pixel_types[c - 1] != exrHeader.pixel_types[c])
+    if (ref_exrHeader.pixel_types[c - 1] != ref_exrHeader.pixel_types[c])
     {
       xiiLog::Error("Unsupported EXR file: all channels should have the same size.");
       break;
     }
   }
 
-  if (LoadEXRImageFromMemory(&exrImage, &exrHeader, fileBuffer.GetData(), fileBuffer.GetCount(), &err) != 0)
+  if (LoadEXRImageFromMemory(&ref_exrImage, &ref_exrHeader, ref_fileBuffer.GetData(), ref_fileBuffer.GetCount(), &err) != 0)
   {
     xiiLog::Error("Invalid EXR file: '{0}'", err);
 
-    FreeEXRHeader(&exrHeader);
+    FreeEXRHeader(&ref_exrHeader);
     FreeEXRErrorMessage(err);
     return XII_FAILURE;
   }
 
   xiiImageFormat::Enum imageFormat = xiiImageFormat::UNKNOWN;
 
-  switch (exrHeader.num_channels)
+  switch (ref_exrHeader.num_channels)
   {
     case 1:
     {
-      switch (exrHeader.pixel_types[0])
+      switch (ref_exrHeader.pixel_types[0])
       {
         case TINYEXR_PIXELTYPE_FLOAT:
           imageFormat = xiiImageFormat::R32_FLOAT;
@@ -86,7 +86,7 @@ xiiResult ReadImageData(xiiStreamReader& stream, xiiDynamicArray<xiiUInt8>& file
 
     case 2:
     {
-      switch (exrHeader.pixel_types[0])
+      switch (ref_exrHeader.pixel_types[0])
       {
         case TINYEXR_PIXELTYPE_FLOAT:
           imageFormat = xiiImageFormat::R32G32_FLOAT;
@@ -106,7 +106,7 @@ xiiResult ReadImageData(xiiStreamReader& stream, xiiDynamicArray<xiiUInt8>& file
 
     case 3:
     {
-      switch (exrHeader.pixel_types[0])
+      switch (ref_exrHeader.pixel_types[0])
       {
         case TINYEXR_PIXELTYPE_FLOAT:
           imageFormat = xiiImageFormat::R32G32B32_FLOAT;
@@ -126,7 +126,7 @@ xiiResult ReadImageData(xiiStreamReader& stream, xiiDynamicArray<xiiUInt8>& file
 
     case 4:
     {
-      switch (exrHeader.pixel_types[0])
+      switch (ref_exrHeader.pixel_types[0])
       {
         case TINYEXR_PIXELTYPE_FLOAT:
           imageFormat = xiiImageFormat::R32G32B32A32_FLOAT;
@@ -147,23 +147,23 @@ xiiResult ReadImageData(xiiStreamReader& stream, xiiDynamicArray<xiiUInt8>& file
 
   if (imageFormat == xiiImageFormat::UNKNOWN)
   {
-    xiiLog::Error("Unsupported EXR file: {}-channel files with format '{}' are unsupported.", exrHeader.num_channels, exrHeader.pixel_types[0]);
+    xiiLog::Error("Unsupported EXR file: {}-channel files with format '{}' are unsupported.", ref_exrHeader.num_channels, ref_exrHeader.pixel_types[0]);
     return XII_FAILURE;
   }
 
-  header.SetWidth(exrImage.width);
-  header.SetHeight(exrImage.height);
-  header.SetImageFormat(imageFormat);
+  ref_header.SetWidth(ref_exrImage.width);
+  ref_header.SetHeight(ref_exrImage.height);
+  ref_header.SetImageFormat(imageFormat);
 
-  header.SetNumMipLevels(1);
-  header.SetNumArrayIndices(1);
-  header.SetNumFaces(1);
-  header.SetDepth(1);
+  ref_header.SetNumMipLevels(1);
+  ref_header.SetNumArrayIndices(1);
+  ref_header.SetNumFaces(1);
+  ref_header.SetDepth(1);
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiExrFileFormat::ReadImageHeader(xiiStreamReader& stream, xiiImageHeader& header, const char* szFileExtension) const
+xiiResult xiiExrFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiExrFileFormat::ReadImageHeader");
 
@@ -176,7 +176,7 @@ xiiResult xiiExrFileFormat::ReadImageHeader(xiiStreamReader& stream, xiiImageHea
   XII_SCOPE_EXIT(FreeEXRImage(&exrImage));
 
   xiiDynamicArray<xiiUInt8> fileBuffer;
-  return ReadImageData(stream, fileBuffer, header, exrHeader, exrImage);
+  return ReadImageData(ref_stream, fileBuffer, ref_header, exrHeader, exrImage);
 }
 
 static void CopyChannel(xiiUInt8* pDst, const xiiUInt8* pSrc, xiiUInt32 uiNumElements, xiiUInt32 uiElementSize, xiiUInt32 uiDstStride)
@@ -199,7 +199,7 @@ static void CopyChannel(xiiUInt8* pDst, const xiiUInt8* pSrc, xiiUInt32 uiNumEle
   }
 }
 
-xiiResult xiiExrFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, const char* szFileExtension) const
+xiiResult xiiExrFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, const char* szFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiExrFileFormat::ReadImage");
 
@@ -214,9 +214,9 @@ xiiResult xiiExrFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
   xiiImageHeader            header;
   xiiDynamicArray<xiiUInt8> fileBuffer;
 
-  XII_SUCCEED_OR_RETURN(ReadImageData(stream, fileBuffer, header, exrHeader, exrImage));
+  XII_SUCCEED_OR_RETURN(ReadImageData(ref_stream, fileBuffer, header, exrHeader, exrImage));
 
-  image.ResetAndAlloc(header);
+  ref_image.ResetAndAlloc(header);
 
   const xiiUInt32 uiPixelCount     = header.GetWidth() * header.GetHeight();
   const xiiUInt32 uiNumDstChannels = xiiImageFormat::GetNumChannels(header.GetImageFormat());
@@ -245,7 +245,7 @@ xiiResult xiiExrFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
   // however data is interleaved in dst, but not interleaved in src
 
   const xiiUInt32 uiDstStride = uiSrcStride * uiNumDstChannels;
-  xiiUInt8*       pDstBytes   = image.GetBlobPtr<xiiUInt8>().GetPtr();
+  xiiUInt8*       pDstBytes   = ref_image.GetBlobPtr<xiiUInt8>().GetPtr();
 
   if (uiNumDstChannels > uiNumSrcChannels)
   {
@@ -302,7 +302,7 @@ xiiResult xiiExrFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
   return XII_SUCCESS;
 }
 
-xiiResult xiiExrFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageView& image, const char* szFileExtension) const
+xiiResult xiiExrFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, const char* szFileExtension) const
 {
   XII_ASSERT_NOT_IMPLEMENTED;
   return XII_FAILURE;

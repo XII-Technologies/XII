@@ -33,7 +33,7 @@ public:
     xiiUInt64 m_uiFileSize = 0;
   };
 
-  xiiFileserveFileState GetFileStatus(xiiUInt16& inout_uiDataDirID, const char* szRequestedFile, FileStatus& inout_Status, xiiDynamicArray<xiiUInt8>& out_FileContent, bool bForceThisDataDir) const;
+  xiiFileserveFileState GetFileStatus(xiiUInt16& inout_uiDataDirID, const char* szRequestedFile, FileStatus& inout_status, xiiDynamicArray<xiiUInt8>& out_fileContent, bool bForceThisDataDir) const;
 
   bool                       m_bLostConnection = false;
   xiiUInt32                  m_uiApplicationID = 0;

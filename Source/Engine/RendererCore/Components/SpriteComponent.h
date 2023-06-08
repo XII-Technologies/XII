@@ -10,7 +10,7 @@ using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DReso
 
 struct xiiSpriteBlendMode
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -48,7 +48,7 @@ public:
   xiiUInt32 m_uiUniqueID;
 };
 
-typedef xiiComponentManager<class xiiSpriteComponent, xiiBlockStorageType::Compact> xiiSpriteComponentManager;
+using xiiSpriteComponentManager = xiiComponentManager<class xiiSpriteComponent, xiiBlockStorageType::Compact>;
 
 class XII_RENDERERCORE_DLL xiiSpriteComponent : public xiiRenderComponent
 {
@@ -58,15 +58,15 @@ class XII_RENDERERCORE_DLL xiiSpriteComponent : public xiiRenderComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg) override;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -91,7 +91,7 @@ public:
   void  SetMaxScreenSize(float fSize); // [ property ]
   float GetMaxScreenSize() const;      // [ property ]
 
-  void OnMsgSetColor(xiiMsgSetColor& msg); // [ property ]
+  void OnMsgSetColor(xiiMsgSetColor& ref_msg); // [ property ]
 
 private:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const;

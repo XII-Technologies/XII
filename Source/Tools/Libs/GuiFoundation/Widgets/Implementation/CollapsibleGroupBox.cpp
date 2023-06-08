@@ -7,7 +7,7 @@
 #include <QScrollArea>
 
 xiiQtCollapsibleGroupBox::xiiQtCollapsibleGroupBox(QWidget* pParent) :
-  xiiQtGroupBoxBase(pParent, true), m_bCollapsed(false)
+  xiiQtGroupBoxBase(pParent, true)
 {
   setupUi(this);
 

@@ -23,10 +23,10 @@ public:
   xiiVec4Template(); // [tested]
 
   /// \brief Initializes the vector with x,y,z,w
-  xiiVec4Template(Type X, Type Y, Type Z, Type W); // [tested]
+  xiiVec4Template(Type inX, Type inY, Type inZ, Type inW); // [tested]
 
   /// \brief Initializes all 4 components with xyzw
-  explicit xiiVec4Template(Type xyzw); // [tested]
+  explicit xiiVec4Template(Type inV); // [tested]
   // no copy-constructor and operator= since the default-generated ones will be faster
 
   /// \brief Returns a vector with all components set to zero.
@@ -73,7 +73,7 @@ public:
   void Set(Type xyzw); // [tested]
 
   /// \brief Sets the vector to these values.
-  void Set(Type x, Type y, Type z, Type w); // [tested]
+  void Set(Type inX, Type inY, Type inZ, Type inW); // [tested]
 
   /// \brief Sets the vector to all zero.
   void SetZero(); // [tested]
@@ -117,11 +117,11 @@ public:
   bool IsValid() const; // [tested]
 
   /// \brief Returns the distance between two 3D Vectors.
-  Type Distance(const xiiVec4Template<Type>& point) const; // [tested]
+  Type Distance(const xiiVec4Template<Type>& vPoint) const; // [tested]
 
   /// \brief Returns the squared distance between two 3D Vectors. Faster, since no square-root is taken. Useful, if one only wants to compare the distance of two
   /// vectors regardless of the magnitude.
-  Type DistanceSquared(const xiiVec4Template<Type>& point) const; // [tested]
+  Type DistanceSquared(const xiiVec4Template<Type>& vPoint) const; // [tested]
 
 
   // *** Operators ***
@@ -130,10 +130,10 @@ public:
   const xiiVec4Template<Type> operator-() const; // [tested]
 
   /// \brief Adds cc component-wise to this vector.
-  void operator+=(const xiiVec4Template<Type>& cc); // [tested]
+  void operator+=(const xiiVec4Template<Type>& vCc); // [tested]
 
   /// \brief Subtracts cc component-wise from this vector.
-  void operator-=(const xiiVec4Template<Type>& cc); // [tested]
+  void operator-=(const xiiVec4Template<Type>& vCc); // [tested]
 
   /// \brief Multiplies all components of this vector with f.
   void operator*=(Type f); // [tested]
@@ -160,7 +160,7 @@ public:
   const xiiVec4Template<Type> CompMax(const xiiVec4Template<Type>& rhs) const; // [tested]
 
   /// \brief Returns the component-wise clamped value of *this between low and high.
-  const xiiVec4Template<Type> CompClamp(const xiiVec4Template<Type>& low, const xiiVec4Template<Type>& high) const; // [tested]
+  const xiiVec4Template<Type> CompClamp(const xiiVec4Template<Type>& vLow, const xiiVec4Template<Type>& vHigh) const; // [tested]
 
   /// \brief Returns the component-wise multiplication of *this and rhs.
   const xiiVec4Template<Type> CompMul(const xiiVec4Template<Type>& rhs) const; // [tested]
@@ -171,8 +171,6 @@ public:
   /// brief Returns the component-wise absolute of *this.
   const xiiVec4Template<Type> Abs() const; // [tested]
 };
-
-
 
 // *** Operators ***
 

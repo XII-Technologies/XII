@@ -22,7 +22,7 @@ public:
   xiiSizeTemplate();
 
   /// \brief Constructor to set all values.
-  xiiSizeTemplate(Type Width, Type Height);
+  xiiSizeTemplate(Type width, Type height);
 
   // *** Common Functions ***
 public:

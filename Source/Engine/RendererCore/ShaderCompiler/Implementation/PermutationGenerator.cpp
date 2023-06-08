@@ -33,9 +33,9 @@ xiiUInt32 xiiPermutationGenerator::GetPermutationCount() const
   return uiPermutations;
 }
 
-void xiiPermutationGenerator::GetPermutation(xiiUInt32 uiPerm, xiiHybridArray<xiiPermutationVar, 16>& out_PermVars) const
+void xiiPermutationGenerator::GetPermutation(xiiUInt32 uiPerm, xiiHybridArray<xiiPermutationVar, 16>& out_permVars) const
 {
-  out_PermVars.Clear();
+  out_permVars.Clear();
 
   for (auto itVariable = m_Permutations.GetIterator(); itVariable.IsValid(); ++itVariable)
   {
@@ -51,7 +51,7 @@ void xiiPermutationGenerator::GetPermutation(xiiUInt32 uiPerm, xiiHybridArray<xi
       ++itValue;
     }
 
-    xiiPermutationVar& pv = out_PermVars.ExpandAndGetRef();
+    xiiPermutationVar& pv = out_permVars.ExpandAndGetRef();
     pv.m_sName            = itVariable.Key();
     pv.m_sValue           = itValue.Key();
   }

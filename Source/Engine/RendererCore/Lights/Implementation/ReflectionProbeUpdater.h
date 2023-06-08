@@ -46,7 +46,7 @@ public:
   /// \param sourceTexture Cube map that should be filtered into a reflection probe.
   /// \param target Where the probe should be rendered into.
   /// \return Returns XII_FAILURE if no more free slots are available.
-  xiiResult StartFilterUpdate(const xiiReflectionProbeRef& probe, const xiiReflectionProbeDesc& desc, xiiTextureCubeResourceHandle sourceTexture, const TargetSlot& target);
+  xiiResult StartFilterUpdate(const xiiReflectionProbeRef& probe, const xiiReflectionProbeDesc& desc, xiiTextureCubeResourceHandle hSourceTexture, const TargetSlot& target);
 
   /// \brief Cancel a previously started update.
   void CancelUpdate(const xiiReflectionProbeRef& probe);
@@ -66,7 +66,7 @@ private:
 
   struct UpdateStep
   {
-    typedef xiiUInt8 StorageType;
+    using StorageType = xiiUInt8;
 
     enum Enum
     {

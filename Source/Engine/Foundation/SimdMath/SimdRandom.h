@@ -9,13 +9,13 @@
 struct xiiSimdRandom
 {
   /// \brief Returns 4 random uint32 values at position, ie. ranging from 0 to (2 ^ 32) - 1
-  static xiiSimdVec4u UInt(const xiiSimdVec4i& position, const xiiSimdVec4u& seed = xiiSimdVec4u::ZeroVector());
+  static xiiSimdVec4u UInt(const xiiSimdVec4i& vPosition, const xiiSimdVec4u& vSeed = xiiSimdVec4u::ZeroVector());
 
   /// \brief Returns 4 random float values in range [0.0 ; 1.0], ie. including zero and one
-  static xiiSimdVec4f FloatZeroToOne(const xiiSimdVec4i& position, const xiiSimdVec4u& seed = xiiSimdVec4u::ZeroVector());
+  static xiiSimdVec4f FloatZeroToOne(const xiiSimdVec4i& vPosition, const xiiSimdVec4u& vSeed = xiiSimdVec4u::ZeroVector());
 
   /// \brief Returns 4 random float values in range [fMinValue ; fMaxValue]
-  static xiiSimdVec4f FloatMinMax(const xiiSimdVec4i& position, const xiiSimdVec4f& minValue, const xiiSimdVec4f& maxValue, const xiiSimdVec4u& seed = xiiSimdVec4u::ZeroVector());
+  static xiiSimdVec4f FloatMinMax(const xiiSimdVec4i& vPosition, const xiiSimdVec4f& vMinValue, const xiiSimdVec4f& vMaxValue, const xiiSimdVec4u& vSeed = xiiSimdVec4u::ZeroVector());
 };
 
 #include <Foundation/SimdMath/Implementation/SimdRandom_inl.h>

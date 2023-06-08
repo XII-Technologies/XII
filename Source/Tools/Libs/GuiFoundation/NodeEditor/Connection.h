@@ -9,7 +9,7 @@ class xiiPin;
 class XII_GUIFOUNDATION_DLL xiiQtConnection : public QGraphicsPathItem
 {
 public:
-  explicit xiiQtConnection(QGraphicsItem* parent = 0);
+  explicit xiiQtConnection(QGraphicsItem* pParent = 0);
   ~xiiQtConnection();
   virtual int type() const override { return xiiQtNodeScene::Connection; }
 
@@ -30,7 +30,7 @@ public:
 
   bool m_bAdjacentNodeSelected = false;
 
-  virtual void ExtendContextMenu(QMenu& menu) {}
+  virtual void ExtendContextMenu(QMenu& ref_menu) {}
 
 protected:
   virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;

@@ -63,13 +63,13 @@ void xiiGraphPatchContext::RenameClass(const char* szTypeName)
 }
 
 
-void xiiGraphPatchContext::RenameClass(const char* szTypeName, xiiUInt32 version)
+void xiiGraphPatchContext::RenameClass(const char* szTypeName, xiiUInt32 uiVersion)
 {
   m_pNode->SetType(m_pGraph->RegisterString(szTypeName));
   m_BaseClasses[m_uiBaseClassIndex].m_sType.Assign(szTypeName);
   // After a Patch is applied, the version is always increased. So if we want to change the version we need to reduce it by one so that in the next patch loop the requested version is not skipped.
-  XII_ASSERT_DEV(version > 0, "Cannot change the version of a class to 0, target version must be at least 1.");
-  m_BaseClasses[m_uiBaseClassIndex].m_uiTypeVersion = version - 1;
+  XII_ASSERT_DEV(uiVersion > 0, "Cannot change the version of a class to 0, target version must be at least 1.");
+  m_BaseClasses[m_uiBaseClassIndex].m_uiTypeVersion = uiVersion - 1;
 }
 
 void xiiGraphPatchContext::ChangeBaseClass(xiiArrayPtr<xiiVersionKey> baseClasses)

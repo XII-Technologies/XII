@@ -155,9 +155,9 @@ xiiResourceLoadData xiiTextureResourceLoader::OpenDataStream(const xiiResource* 
   return res;
 }
 
-void xiiTextureResourceLoader::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& LoaderData)
+void xiiTextureResourceLoader::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData)
 {
-  LoadedData* pData = (LoadedData*)LoaderData.m_pCustomLoaderData;
+  LoadedData* pData = (LoadedData*)loaderData.m_pCustomLoaderData;
 
   XII_DEFAULT_DELETE(pData);
 }
@@ -189,18 +189,18 @@ bool xiiTextureResourceLoader::IsResourceOutdated(const xiiResource* pResource) 
   return true;
 }
 
-xiiResult xiiTextureResourceLoader::LoadTexFile(xiiStreamReader& stream, LoadedData& data)
+xiiResult xiiTextureResourceLoader::LoadTexFile(xiiStreamReader& ref_stream, LoadedData& ref_data)
 {
   // read the hash, ignore it
   xiiAssetFileHeader AssetHash;
-  XII_SUCCEED_OR_RETURN(AssetHash.Read(stream));
+  XII_SUCCEED_OR_RETURN(AssetHash.Read(ref_stream));
 
-  data.m_TexFormat.ReadHeader(stream);
+  ref_data.m_TexFormat.ReadHeader(ref_stream);
 
-  if (data.m_TexFormat.m_iRenderTargetResolutionX == 0)
+  if (ref_data.m_TexFormat.m_iRenderTargetResolutionX == 0)
   {
     xiiDdsFileFormat fmt;
-    return fmt.ReadImage(stream, data.m_Image, "dds");
+    return fmt.ReadImage(ref_stream, ref_data.m_Image, "dds");
   }
   else
   {

@@ -5,7 +5,7 @@
 
 struct xiiStandardMenuTypes
 {
-  typedef xiiUInt32 StorageType;
+  using StorageType = xiiUInt32;
 
   enum Enum
   {
@@ -41,7 +41,7 @@ public:
   static void RegisterActions();
   static void UnregisterActions();
 
-  static void MapActions(const char* szMapping, const xiiBitflags<xiiStandardMenuTypes>& Menus);
+  static void MapActions(const char* szMapping, const xiiBitflags<xiiStandardMenuTypes>& menus);
 
   static xiiActionDescriptorHandle s_hMenuFile;
   static xiiActionDescriptorHandle s_hMenuEdit;
@@ -64,7 +64,7 @@ public:
     xiiDynamicMenuAction(context, szName, szIconPath)
   {
   }
-  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_Entries) override;
+  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries) override;
   virtual void Execute(const xiiVariant& value) override;
 };
 

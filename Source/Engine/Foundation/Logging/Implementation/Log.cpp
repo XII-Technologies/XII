@@ -42,9 +42,9 @@ void xiiGlobalLog::RemoveLogWriter(xiiLoggingEvent::Handler handler)
   s_LoggingEvent.RemoveEventHandler(handler);
 }
 
-void xiiGlobalLog::RemoveLogWriter(xiiEventSubscriptionID& subscriptionID)
+void xiiGlobalLog::RemoveLogWriter(xiiEventSubscriptionID& ref_subscriptionID)
 {
-  s_LoggingEvent.RemoveEventHandler(subscriptionID);
+  s_LoggingEvent.RemoveEventHandler(ref_subscriptionID);
 }
 
 void xiiGlobalLog::SetGlobalLogOverride(xiiLogInterface* pInterface)
@@ -293,7 +293,7 @@ void xiiLog::OsMessageBox(const xiiFormatString& text)
 #endif
 }
 
-void xiiLog::GenerateFormattedTimestamp(TimestampMode mode, xiiStringBuilder& sTimestampOut)
+void xiiLog::GenerateFormattedTimestamp(TimestampMode mode, xiiStringBuilder& ref_sTimestampOut)
 {
   // if mode is 'None', early out to not even retrieve a timestamp
   if (mode == TimestampMode::None)
@@ -306,13 +306,13 @@ void xiiLog::GenerateFormattedTimestamp(TimestampMode mode, xiiStringBuilder& sT
   switch (mode)
   {
     case TimestampMode::Numeric:
-      sTimestampOut.Format("[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::ShowDate | xiiArgDateTime::ShowMilliseconds | xiiArgDateTime::ShowTimeZone));
+      ref_sTimestampOut.Format("[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::ShowDate | xiiArgDateTime::ShowMilliseconds | xiiArgDateTime::ShowTimeZone));
       break;
     case TimestampMode::TimeOnly:
-      sTimestampOut.Format("[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::ShowMilliseconds));
+      ref_sTimestampOut.Format("[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::ShowMilliseconds));
       break;
     case TimestampMode::Textual:
-      sTimestampOut.Format(
+      ref_sTimestampOut.Format(
         "[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::TextualDate | xiiArgDateTime::ShowMilliseconds | xiiArgDateTime::ShowTimeZone));
       break;
     default:
@@ -340,11 +340,11 @@ xiiLogInterface* xiiLog::GetThreadLocalLogSystem()
   return s_DefaultLogSystem;
 }
 
-void xiiLog::SetDefaultLogLevel(xiiLogMsgType::Enum LogLevel)
+void xiiLog::SetDefaultLogLevel(xiiLogMsgType::Enum logLevel)
 {
-  XII_ASSERT_DEV(LogLevel >= xiiLogMsgType::None && LogLevel <= xiiLogMsgType::All, "Invalid default log level {}", (int)LogLevel);
+  XII_ASSERT_DEV(logLevel >= xiiLogMsgType::None && logLevel <= xiiLogMsgType::All, "Invalid default log level {}", (int)logLevel);
 
-  s_DefaultLogLevel = LogLevel;
+  s_DefaultLogLevel = logLevel;
 }
 
 xiiLogMsgType::Enum xiiLog::GetDefaultLogLevel()

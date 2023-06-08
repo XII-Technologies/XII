@@ -7,7 +7,7 @@
 class XII_FOUNDATION_DLL xiiApplyNativePropertyChangesContext : public xiiRttiConverterContext
 {
 public:
-  xiiApplyNativePropertyChangesContext(xiiRttiConverterContext& source, const xiiAbstractObjectGraph& originalGraph);
+  xiiApplyNativePropertyChangesContext(xiiRttiConverterContext& ref_source, const xiiAbstractObjectGraph& originalGraph);
 
   virtual xiiUuid GenerateObjectGuid(const xiiUuid& parentGuid, const xiiAbstractProperty* pProp, xiiVariant index, void* pObject) const override;
 

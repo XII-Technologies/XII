@@ -8,7 +8,7 @@ struct XII_RENDERERCORE_DLL xiiAnimClip2D
   xiiAnimationClipResourceHandle m_hAnimation;
   xiiVec2                        m_vPosition;
 
-  void        SetAnimationFile(const char* sz);
+  void        SetAnimationFile(const char* szSz);
   const char* GetAnimationFile() const;
 };
 
@@ -31,7 +31,7 @@ protected:
   // xiiMixClips2DAnimNode
 
 public:
-  void        SetCenterClipFile(const char* sz);
+  void        SetCenterClipFile(const char* szSz);
   const char* GetCenterClipFile() const;
 
   xiiAnimationClipResourceHandle   m_hCenterClip;   // [ property ]

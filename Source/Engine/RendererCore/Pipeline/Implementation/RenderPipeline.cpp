@@ -36,8 +36,8 @@ xiiCVarBool  cvar_SpatialCullingOcclusionVisView("Spatial.Occlusion.VisView", fa
 xiiCVarFloat cvar_SpatialCullingOcclusionBoundsInlation("Spatial.Occlusion.BoundsInflation", 0.5f, xiiCVarFlags::Default, "How much to inflate bounds during occlusion check.");
 xiiCVarFloat cvar_SpatialCullingOcclusionFarPlane("Spatial.Occlusion.FarPlane", 50.0f, xiiCVarFlags::Default, "Far plane distance for finding occluders.");
 
-xiiRenderPipeline::xiiRenderPipeline() :
-  m_PipelineState(PipelineState::Uninitialized)
+xiiRenderPipeline::xiiRenderPipeline()
+
 {
   m_CurrentExtractThread  = (xiiThreadID)0;
   m_CurrentRenderThread   = (xiiThreadID)0;
@@ -98,23 +98,23 @@ void xiiRenderPipeline::RemovePass(xiiRenderPipelinePass* pPass)
   }
 }
 
-void xiiRenderPipeline::GetPasses(xiiHybridArray<const xiiRenderPipelinePass*, 16>& passes) const
+void xiiRenderPipeline::GetPasses(xiiHybridArray<const xiiRenderPipelinePass*, 16>& ref_passes) const
 {
-  passes.Reserve(m_Passes.GetCount());
+  ref_passes.Reserve(m_Passes.GetCount());
 
   for (auto& pPass : m_Passes)
   {
-    passes.PushBack(pPass.Borrow());
+    ref_passes.PushBack(pPass.Borrow());
   }
 }
 
-void xiiRenderPipeline::GetPasses(xiiHybridArray<xiiRenderPipelinePass*, 16>& passes)
+void xiiRenderPipeline::GetPasses(xiiHybridArray<xiiRenderPipelinePass*, 16>& ref_passes)
 {
-  passes.Reserve(m_Passes.GetCount());
+  ref_passes.Reserve(m_Passes.GetCount());
 
   for (auto& pPass : m_Passes)
   {
-    passes.PushBack(pPass.Borrow());
+    ref_passes.PushBack(pPass.Borrow());
   }
 }
 
@@ -598,8 +598,8 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
   // Sort first and last usage arrays, these will determine the lifetime of the pool textures.
   struct FirstUsageComparer
   {
-    FirstUsageComparer(xiiDynamicArray<TextureUsageData>& textureUsage) :
-      m_TextureUsage(textureUsage)
+    FirstUsageComparer(xiiDynamicArray<TextureUsageData>& ref_textureUsage) :
+      m_TextureUsage(ref_textureUsage)
     {
     }
 
@@ -610,8 +610,8 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
 
   struct LastUsageComparer
   {
-    LastUsageComparer(xiiDynamicArray<TextureUsageData>& textureUsage) :
-      m_TextureUsage(textureUsage)
+    LastUsageComparer(xiiDynamicArray<TextureUsageData>& ref_textureUsage) :
+      m_TextureUsage(ref_textureUsage)
     {
     }
 
@@ -726,23 +726,23 @@ void xiiRenderPipeline::RemoveExtractor(xiiExtractor* pExtractor)
   }
 }
 
-void xiiRenderPipeline::GetExtractors(xiiHybridArray<const xiiExtractor*, 16>& extractors) const
+void xiiRenderPipeline::GetExtractors(xiiHybridArray<const xiiExtractor*, 16>& ref_extractors) const
 {
-  extractors.Reserve(m_Extractors.GetCount());
+  ref_extractors.Reserve(m_Extractors.GetCount());
 
   for (auto& pExtractor : m_Extractors)
   {
-    extractors.PushBack(pExtractor.Borrow());
+    ref_extractors.PushBack(pExtractor.Borrow());
   }
 }
 
-void xiiRenderPipeline::GetExtractors(xiiHybridArray<xiiExtractor*, 16>& extractors)
+void xiiRenderPipeline::GetExtractors(xiiHybridArray<xiiExtractor*, 16>& ref_extractors)
 {
-  extractors.Reserve(m_Extractors.GetCount());
+  ref_extractors.Reserve(m_Extractors.GetCount());
 
   for (auto& pExtractor : m_Extractors)
   {
-    extractors.PushBack(pExtractor.Borrow());
+    ref_extractors.PushBack(pExtractor.Borrow());
   }
 }
 
@@ -1277,7 +1277,7 @@ xiiRenderDataBatchList xiiRenderPipeline::GetRenderDataBatchesWithCategory(xiiRe
   return data.GetRenderDataBatchesWithCategory(category, filter);
 }
 
-void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& graph)
+void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
 {
   xiiStringBuilder                                      sTmp;
   xiiHashTable<const xiiRenderPipelineNode*, xiiUInt32> nodeMap;
@@ -1290,7 +1290,7 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& graph)
     xiiDGMLGraph::NodeDesc nd;
     nd.m_Color            = xiiColor::Gray;
     nd.m_Shape            = xiiDGMLGraph::NodeShape::Rectangle;
-    xiiUInt32 uiGraphNode = graph.AddNode(sTmp, &nd);
+    xiiUInt32 uiGraphNode = ref_graph.AddNode(sTmp, &nd);
     nodeMap.Insert(pPass.Borrow(), uiGraphNode);
   }
 
@@ -1310,14 +1310,14 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& graph)
         sFormat.Format("Unknown Format {}", (int)pCon->m_Desc.m_Format);
       }
       sTmp.Format("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_iTargetTextureIndex != -1 ? "RenderTarget" : "PoolTexture", i, pCon->m_Desc.m_uiWidth, pCon->m_Desc.m_uiHeight, pCon->m_Desc.m_uiArraySize, (int)pCon->m_Desc.m_SampleCount, xiiGALResourceFormat::IsDepthFormat(pCon->m_Desc.m_Format) ? "Depth" : "Color", sFormat);
-      xiiUInt32 uiTextureNode = graph.AddNode(sTmp, &nd);
+      xiiUInt32 uiTextureNode = ref_graph.AddNode(sTmp, &nd);
 
       xiiUInt32 uiOutputNode = *nodeMap.GetValue(pCon->m_pOutput->m_pParent);
-      graph.AddConnection(uiOutputNode, uiTextureNode, pCon->m_pOutput->m_pParent->GetPinName(pCon->m_pOutput));
+      ref_graph.AddConnection(uiOutputNode, uiTextureNode, pCon->m_pOutput->m_pParent->GetPinName(pCon->m_pOutput));
       for (const xiiRenderPipelineNodePin* pInput : pCon->m_Inputs)
       {
         xiiUInt32 uiInputNode = *nodeMap.GetValue(pInput->m_pParent);
-        graph.AddConnection(uiTextureNode, uiInputNode, pInput->m_pParent->GetPinName(pInput));
+        ref_graph.AddConnection(uiTextureNode, uiInputNode, pInput->m_pParent->GetPinName(pInput));
       }
     }
   }

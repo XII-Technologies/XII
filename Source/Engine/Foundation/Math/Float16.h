@@ -20,7 +20,7 @@ public:
   void operator=(float f); // [tested]
 
   /// \brief Create float16 from raw data.
-  void SetRawData(xiiUInt16 data) { m_uiData = data; } // [tested]
+  void SetRawData(xiiUInt16 uiData) { m_uiData = uiData; } // [tested]
 
   /// \brief Returns the raw 16 Bit data.
   xiiUInt16 GetRawData() const { return m_uiData; } // [tested]
@@ -47,9 +47,9 @@ public:
   XII_DECLARE_POD_TYPE();
 
   xiiFloat16Vec2() = default;
-  xiiFloat16Vec2(const xiiVec2& vec);
+  xiiFloat16Vec2(const xiiVec2& vVec);
 
-  void operator=(const xiiVec2& vec);
+  void operator=(const xiiVec2& vVec);
   operator xiiVec2() const;
 
   xiiFloat16 x, y;
@@ -63,9 +63,9 @@ public:
   XII_DECLARE_POD_TYPE();
 
   xiiFloat16Vec3() = default;
-  xiiFloat16Vec3(const xiiVec3& vec);
+  xiiFloat16Vec3(const xiiVec3& vVec);
 
-  void operator=(const xiiVec3& vec);
+  void operator=(const xiiVec3& vVec);
   operator xiiVec3() const;
 
   xiiFloat16 x, y, z;
@@ -79,9 +79,9 @@ public:
   XII_DECLARE_POD_TYPE();
 
   xiiFloat16Vec4() = default;
-  xiiFloat16Vec4(const xiiVec4& vec);
+  xiiFloat16Vec4(const xiiVec4& vVec);
 
-  void operator=(const xiiVec4& vec);
+  void operator=(const xiiVec4& vVec);
   operator xiiVec4() const;
 
   xiiFloat16 x, y, z, w;

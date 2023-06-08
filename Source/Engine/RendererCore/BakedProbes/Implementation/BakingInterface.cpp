@@ -17,24 +17,24 @@ XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
 static xiiTypeVersion s_BakingSettingsVersion = 1;
-xiiResult             xiiBakingSettings::Serialize(xiiStreamWriter& stream) const
+xiiResult             xiiBakingSettings::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(s_BakingSettingsVersion);
+  ref_stream.WriteVersion(s_BakingSettingsVersion);
 
-  stream << m_vProbeSpacing;
-  stream << m_uiNumSamplesPerProbe;
-  stream << m_fMaxRayDistance;
+  ref_stream << m_vProbeSpacing;
+  ref_stream << m_uiNumSamplesPerProbe;
+  ref_stream << m_fMaxRayDistance;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiBakingSettings::Deserialize(xiiStreamReader& stream)
+xiiResult xiiBakingSettings::Deserialize(xiiStreamReader& ref_stream)
 {
-  const xiiTypeVersion version = stream.ReadVersion(s_BakingSettingsVersion);
+  const xiiTypeVersion version = ref_stream.ReadVersion(s_BakingSettingsVersion);
 
-  stream >> m_vProbeSpacing;
-  stream >> m_uiNumSamplesPerProbe;
-  stream >> m_fMaxRayDistance;
+  ref_stream >> m_vProbeSpacing;
+  ref_stream >> m_uiNumSamplesPerProbe;
+  ref_stream >> m_fMaxRayDistance;
 
   return XII_SUCCESS;
 }

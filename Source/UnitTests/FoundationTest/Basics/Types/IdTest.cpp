@@ -7,7 +7,7 @@
 
 struct TestId
 {
-  typedef xiiUInt32 StorageType;
+  using StorageType = xiiUInt32;
 
   XII_DECLARE_ID_TYPE(TestId, 20, 6);
 
@@ -31,7 +31,7 @@ struct TestId
   };
 };
 
-typedef xiiGenericId<32, 10> LargeTestId;
+using LargeTestId = xiiGenericId<32, 10>;
 
 XII_CREATE_SIMPLE_TEST(Basics, Id)
 {

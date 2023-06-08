@@ -7,7 +7,7 @@ class xiiAbstractObjectGraph;
 
 struct xiiDocumentFlags
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {

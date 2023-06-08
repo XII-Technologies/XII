@@ -60,9 +60,9 @@ xiiResourceLoadData xiiResourceLoaderFromFile::OpenDataStream(const xiiResource*
   return res;
 }
 
-void xiiResourceLoaderFromFile::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& LoaderData)
+void xiiResourceLoaderFromFile::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData)
 {
-  FileResourceLoadData* pData = static_cast<FileResourceLoadData*>(LoaderData.m_pCustomLoaderData);
+  FileResourceLoadData* pData = static_cast<FileResourceLoadData*>(loaderData.m_pCustomLoaderData);
 
   XII_DEFAULT_DELETE(pData);
 }
@@ -106,7 +106,7 @@ xiiResourceLoadData xiiResourceLoaderFromMemory::OpenDataStream(const xiiResourc
   return res;
 }
 
-void xiiResourceLoaderFromMemory::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& LoaderData)
+void xiiResourceLoaderFromMemory::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData)
 {
   m_Reader.SetStorage(nullptr);
 }

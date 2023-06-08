@@ -51,14 +51,14 @@ namespace xiiMinWindows
   struct FromNativeImpl<::HWND>
   {
     using type = HWND;
-    static XII_ALWAYS_INLINE HWND FromNative(::HWND hWnd) { return reinterpret_cast<HWND>(hWnd); }
+    static XII_ALWAYS_INLINE HWND FromNative(::HWND pWnd) { return reinterpret_cast<HWND>(pWnd); }
   };
 
   template <>
   struct FromNativeImpl<::HINSTANCE>
   {
     using type = HINSTANCE;
-    static XII_ALWAYS_INLINE HINSTANCE FromNative(::HINSTANCE hInstance) { return reinterpret_cast<HINSTANCE>(hInstance); }
+    static XII_ALWAYS_INLINE HINSTANCE FromNative(::HINSTANCE pInstance) { return reinterpret_cast<HINSTANCE>(pInstance); }
   };
 } // namespace xiiMinWindows
 #endif

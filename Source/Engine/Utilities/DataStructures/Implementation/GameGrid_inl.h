@@ -67,37 +67,37 @@ xiiVec2I32 xiiGameGrid<CellData>::GetCellAtWorldPosition(const xiiVec3& vWorldSp
 }
 
 template <class CellData>
-xiiVec3 xiiGameGrid<CellData>::GetCellWorldSpaceOrigin(const xiiVec2I32& Coord) const
+xiiVec3 xiiGameGrid<CellData>::GetCellWorldSpaceOrigin(const xiiVec2I32& vCoord) const
 {
-  return m_vWorldSpaceOrigin + m_mRotateToWorldspace * GetCellLocalSpaceOrigin(Coord);
+  return m_vWorldSpaceOrigin + m_mRotateToWorldspace * GetCellLocalSpaceOrigin(vCoord);
 }
 
 template <class CellData>
-xiiVec3 xiiGameGrid<CellData>::GetCellLocalSpaceOrigin(const xiiVec2I32& Coord) const
+xiiVec3 xiiGameGrid<CellData>::GetCellLocalSpaceOrigin(const xiiVec2I32& vCoord) const
 {
-  return m_vLocalSpaceCellSize.CompMul(xiiVec3((float)Coord.x, (float)Coord.y, 0.0f));
+  return m_vLocalSpaceCellSize.CompMul(xiiVec3((float)vCoord.x, (float)vCoord.y, 0.0f));
 }
 
 template <class CellData>
-xiiVec3 xiiGameGrid<CellData>::GetCellWorldSpaceCenter(const xiiVec2I32& Coord) const
+xiiVec3 xiiGameGrid<CellData>::GetCellWorldSpaceCenter(const xiiVec2I32& vCoord) const
 {
-  return m_vWorldSpaceOrigin + m_mRotateToWorldspace * GetCellLocalSpaceCenter(Coord);
+  return m_vWorldSpaceOrigin + m_mRotateToWorldspace * GetCellLocalSpaceCenter(vCoord);
 }
 
 template <class CellData>
-xiiVec3 xiiGameGrid<CellData>::GetCellLocalSpaceCenter(const xiiVec2I32& Coord) const
+xiiVec3 xiiGameGrid<CellData>::GetCellLocalSpaceCenter(const xiiVec2I32& vCoord) const
 {
-  return m_vLocalSpaceCellSize.CompMul(xiiVec3((float)Coord.x + 0.5f, (float)Coord.y + 0.5f, 0.5f));
+  return m_vLocalSpaceCellSize.CompMul(xiiVec3((float)vCoord.x + 0.5f, (float)vCoord.y + 0.5f, 0.5f));
 }
 
 template <class CellData>
-bool xiiGameGrid<CellData>::IsValidCellCoordinate(const xiiVec2I32& Coord) const
+bool xiiGameGrid<CellData>::IsValidCellCoordinate(const xiiVec2I32& vCoord) const
 {
-  return (Coord.x >= 0 && Coord.x < m_uiGridSizeX && Coord.y >= 0 && Coord.y < m_uiGridSizeY);
+  return (vCoord.x >= 0 && vCoord.x < m_uiGridSizeX && vCoord.y >= 0 && vCoord.y < m_uiGridSizeY);
 }
 
 template <class CellData>
-bool xiiGameGrid<CellData>::PickCell(const xiiVec3& vRayStartPos, const xiiVec3& vRayDirNorm, xiiVec2I32* out_CellCoord, xiiVec3* out_vIntersection) const
+bool xiiGameGrid<CellData>::PickCell(const xiiVec3& vRayStartPos, const xiiVec3& vRayDirNorm, xiiVec2I32* out_pCellCoord, xiiVec3* out_pIntersection) const
 {
   xiiPlane p;
   p.SetFromNormalAndPoint(m_mRotateToWorldspace * xiiVec3(0, 0, -1), m_vWorldSpaceOrigin);
@@ -107,11 +107,11 @@ bool xiiGameGrid<CellData>::PickCell(const xiiVec3& vRayStartPos, const xiiVec3&
   if (!p.GetRayIntersection(vRayStartPos, vRayDirNorm, nullptr, &vPos))
     return false;
 
-  if (out_vIntersection)
-    *out_vIntersection = vPos;
+  if (out_pIntersection)
+    *out_pIntersection = vPos;
 
-  if (out_CellCoord)
-    *out_CellCoord = GetCellAtWorldPosition(vPos);
+  if (out_pCellCoord)
+    *out_pCellCoord = GetCellAtWorldPosition(vPos);
 
   return true;
 }
@@ -127,7 +127,7 @@ xiiBoundingBox xiiGameGrid<CellData>::GetWorldBoundingBox() const
 }
 
 template <class CellData>
-bool xiiGameGrid<CellData>::GetRayIntersection(const xiiVec3& vRayStartWorldSpace, const xiiVec3& vRayDirNormalizedWorldSpace, float fMaxLength, float& out_fIntersection, xiiVec2I32& out_CellCoord) const
+bool xiiGameGrid<CellData>::GetRayIntersection(const xiiVec3& vRayStartWorldSpace, const xiiVec3& vRayDirNormalizedWorldSpace, float fMaxLength, float& out_fIntersection, xiiVec2I32& out_vCellCoord) const
 {
   const xiiVec3 vRayStart = m_mRotateToGridspace * (vRayStartWorldSpace - m_vWorldSpaceOrigin);
   const xiiVec3 vRayDir   = m_mRotateToGridspace * vRayDirNormalizedWorldSpace;
@@ -155,9 +155,9 @@ bool xiiGameGrid<CellData>::GetRayIntersection(const xiiVec3& vRayStartWorldSpac
   const xiiVec3 vCell = vEnterPos.CompMul(m_vInverseLocalSpaceCellSize);
 
   // Without the Floor, the border case when the position is outside (-1 / -1) is not immediately detected
-  out_CellCoord   = xiiVec2I32((xiiInt32)xiiMath::Floor(vCell.x), (xiiInt32)xiiMath::Floor(vCell.y));
-  out_CellCoord.x = xiiMath::Clamp(out_CellCoord.x, 0, m_uiGridSizeX - 1);
-  out_CellCoord.y = xiiMath::Clamp(out_CellCoord.y, 0, m_uiGridSizeY - 1);
+  out_vCellCoord   = xiiVec2I32((xiiInt32)xiiMath::Floor(vCell.x), (xiiInt32)xiiMath::Floor(vCell.y));
+  out_vCellCoord.x = xiiMath::Clamp(out_vCellCoord.x, 0, m_uiGridSizeX - 1);
+  out_vCellCoord.y = xiiMath::Clamp(out_vCellCoord.y, 0, m_uiGridSizeY - 1);
 
   return true;
 }

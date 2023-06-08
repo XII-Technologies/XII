@@ -8,7 +8,7 @@ using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DReso
 
 struct XII_PARTICLEPLUGIN_DLL xiiQuadParticleOrientation
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {

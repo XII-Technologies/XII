@@ -27,8 +27,8 @@ class XII_RENDERERCORE_DLL xiiLightComponent : public xiiRenderComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -38,7 +38,7 @@ public:
   xiiLightComponent();
   ~xiiLightComponent();
 
-  void            SetLightColor(xiiColorGammaUB LightColor); // [ property ]
+  void            SetLightColor(xiiColorGammaUB lightColor); // [ property ]
   xiiColorGammaUB GetLightColor() const;                     // [ property ]
 
   void  SetIntensity(float fIntensity); // [ property ]
@@ -56,7 +56,7 @@ public:
   void  SetConstantBias(float fShadowBias); // [ property ]
   float GetConstantBias() const;            // [ property ]
 
-  void OnMsgSetColor(xiiMsgSetColor& msg); // [ msg handler ]
+  void OnMsgSetColor(xiiMsgSetColor& ref_msg); // [ msg handler ]
 
   static float CalculateEffectiveRange(float fRange, float fIntensity);
   static float CalculateScreenSpaceSize(const xiiBoundingSphere& sphere, const xiiCamera& camera);

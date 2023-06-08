@@ -31,8 +31,8 @@ namespace
   struct UniqueInt
   {
     int i, id;
-    UniqueInt(int i, int id) :
-      i(i), id(id)
+    UniqueInt(int i, int iId) :
+      i(i), id(iId)
     {
     }
 

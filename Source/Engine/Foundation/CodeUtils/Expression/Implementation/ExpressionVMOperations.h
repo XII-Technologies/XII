@@ -222,22 +222,22 @@ namespace
   }
 
   template <typename ValueType, typename StreamType>
-  XII_ALWAYS_INLINE ValueType ReadInputData(const xiiUInt8*& pData, xiiUInt32 uiStride)
+  XII_ALWAYS_INLINE ValueType ReadInputData(const xiiUInt8*& ref_pData, xiiUInt32 uiStride)
   {
-    ValueType value = *reinterpret_cast<const StreamType*>(pData);
-    pData += uiStride;
+    ValueType value = *reinterpret_cast<const StreamType*>(ref_pData);
+    ref_pData += uiStride;
     return value;
   }
 
   template <typename RegisterType, typename ValueType, typename StreamType>
-  void LoadInput(RegisterType* r, RegisterType* re, const xiiProcessingStream& input, xiiUInt32 uiNumRemainderInstances)
+  void LoadInput(RegisterType* r, RegisterType* pRe, const xiiProcessingStream& input, xiiUInt32 uiNumRemainderInstances)
   {
     const xiiUInt8* pInputData   = input.GetData<xiiUInt8>();
     const xiiUInt32 uiByteStride = input.GetElementStride();
 
     if (uiByteStride == sizeof(ValueType) && std::is_same<ValueType, StreamType>::value)
     {
-      while (r != re)
+      while (r != pRe)
       {
         r->template Load<4>(reinterpret_cast<const ValueType*>(pInputData));
 
@@ -248,7 +248,7 @@ namespace
     else
     {
       ValueType x[4] = {};
-      while (r != re)
+      while (r != pRe)
       {
         x[0] = ReadInputData<ValueType, StreamType>(pInputData, uiByteStride);
         x[1] = ReadInputData<ValueType, StreamType>(pInputData, uiByteStride);
@@ -273,21 +273,21 @@ namespace
   }
 
   template <typename ValueType, typename StreamType>
-  XII_ALWAYS_INLINE void StoreOutputData(xiiUInt8*& pData, xiiUInt32 uiStride, ValueType value)
+  XII_ALWAYS_INLINE void StoreOutputData(xiiUInt8*& ref_pData, xiiUInt32 uiStride, ValueType value)
   {
-    *reinterpret_cast<StreamType*>(pData) = static_cast<StreamType>(value);
-    pData += uiStride;
+    *reinterpret_cast<StreamType*>(ref_pData) = static_cast<StreamType>(value);
+    ref_pData += uiStride;
   }
 
   template <typename RegisterType, typename ValueType, typename StreamType>
-  void StoreOutput(RegisterType* r, RegisterType* re, xiiProcessingStream& output, xiiUInt32 uiNumRemainderInstances)
+  void StoreOutput(RegisterType* r, RegisterType* pRe, xiiProcessingStream& ref_output, xiiUInt32 uiNumRemainderInstances)
   {
-    xiiUInt8*       pOutputData  = output.GetWritableData<xiiUInt8>();
-    const xiiUInt32 uiByteStride = output.GetElementStride();
+    xiiUInt8*       pOutputData  = ref_output.GetWritableData<xiiUInt8>();
+    const xiiUInt32 uiByteStride = ref_output.GetElementStride();
 
     if (uiByteStride == sizeof(ValueType) && std::is_same<ValueType, StreamType>::value)
     {
-      while (r != re)
+      while (r != pRe)
       {
         r->template Store<4>(reinterpret_cast<ValueType*>(pOutputData));
 
@@ -298,7 +298,7 @@ namespace
     else
     {
       ValueType x[4] = {};
-      while (r != re)
+      while (r != pRe)
       {
         r->template Store<4>(x);
 

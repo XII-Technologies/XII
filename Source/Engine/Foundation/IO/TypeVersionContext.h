@@ -23,7 +23,7 @@ public:
 
   /// \brief Call this method to begin collecting type version info. You need to use the returned stream writer for subsequent serialization operations until
   /// End() is called.
-  xiiStreamWriter& Begin(xiiStreamWriter& originalStream);
+  xiiStreamWriter& Begin(xiiStreamWriter& ref_originalStream);
 
   /// \brief Ends the type version collection and writes the data to the original stream.
   xiiResult End();
@@ -33,7 +33,7 @@ public:
 
   /// \brief Manually write the version table to the given stream.
   /// Can be used instead of Begin()/End() if all necessary types are available in one place anyways.
-  void WriteTypeVersions(xiiStreamWriter& stream) const;
+  void WriteTypeVersions(xiiStreamWriter& ref_stream) const;
 
   /// \brief Returns the original stream that was passed to Begin().
   xiiStreamWriter& GetOriginalStream() { return *m_pOriginalStream; }
@@ -54,7 +54,7 @@ class XII_FOUNDATION_DLL xiiTypeVersionReadContext : public xiiSerializationCont
 
 public:
   /// \brief Reads the type version table from the stream
-  xiiTypeVersionReadContext(xiiStreamReader& stream);
+  xiiTypeVersionReadContext(xiiStreamReader& ref_stream);
   ~xiiTypeVersionReadContext();
 
   xiiUInt32 GetTypeVersion(const xiiRTTI* pRtti) const;

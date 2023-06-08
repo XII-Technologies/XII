@@ -79,7 +79,7 @@ public:
 
     struct ItemFlags
     {
-      typedef xiiUInt8 StorageType;
+      using StorageType = xiiUInt8;
 
       enum Enum
       {
@@ -105,7 +105,7 @@ public:
     xiiMenuAction(context, szName, szIconPath)
   {
   }
-  virtual void GetEntries(xiiHybridArray<Item, 16>& out_Entries) = 0;
+  virtual void GetEntries(xiiHybridArray<Item, 16>& out_entries) = 0;
 };
 
 ///
@@ -145,7 +145,7 @@ class XII_GUIFOUNDATION_DLL xiiEnumerationMenuAction : public xiiDynamicMenuActi
 public:
   xiiEnumerationMenuAction(const xiiActionContext& context, const char* szName, const char* szIconPath);
   void             InitEnumerationType(const xiiRTTI* pEnumerationType);
-  virtual void     GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_Entries) override;
+  virtual void     GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries) override;
   virtual xiiInt64 GetValue() const = 0;
 
 protected:
@@ -232,7 +232,7 @@ public:
   void SetRange(xiiInt32 iMin, xiiInt32 iMax, bool bTriggerUpdate = true);
 
   xiiInt32 GetValue() const { return m_iCurValue; }
-  void     SetValue(xiiInt32 val, bool bTriggerUpdate = true);
+  void     SetValue(xiiInt32 iVal, bool bTriggerUpdate = true);
 
 protected:
   bool     m_bEnabled;

@@ -46,20 +46,20 @@ bool xiiInputDeviceController::IsVibrationEnabled(xiiUInt8 uiVirtual) const
   return m_bVibrationEnabled[uiVirtual];
 }
 
-void xiiInputDeviceController::SetVibrationStrength(xiiUInt8 uiVirtual, Motor::Enum eMotor, float fValue)
+void xiiInputDeviceController::SetVibrationStrength(xiiUInt8 uiVirtual, Motor::Enum motor, float fValue)
 {
   XII_ASSERT_DEV(uiVirtual < MaxControllers, "Controller Index {0} is larger than allowed ({1}).", uiVirtual, MaxControllers);
-  XII_ASSERT_DEV(eMotor < Motor::ENUM_COUNT, "Invalid Vibration Motor Index.");
+  XII_ASSERT_DEV(motor < Motor::ENUM_COUNT, "Invalid Vibration Motor Index.");
 
-  m_fVibrationStrength[uiVirtual][eMotor] = xiiMath::Clamp(fValue, 0.0f, 1.0f);
+  m_fVibrationStrength[uiVirtual][motor] = xiiMath::Clamp(fValue, 0.0f, 1.0f);
 }
 
-float xiiInputDeviceController::GetVibrationStrength(xiiUInt8 uiVirtual, Motor::Enum eMotor)
+float xiiInputDeviceController::GetVibrationStrength(xiiUInt8 uiVirtual, Motor::Enum motor)
 {
   XII_ASSERT_DEV(uiVirtual < MaxControllers, "Controller Index {0} is larger than allowed ({1}).", uiVirtual, MaxControllers);
-  XII_ASSERT_DEV(eMotor < Motor::ENUM_COUNT, "Invalid Vibration Motor Index.");
+  XII_ASSERT_DEV(motor < Motor::ENUM_COUNT, "Invalid Vibration Motor Index.");
 
-  return m_fVibrationStrength[uiVirtual][eMotor];
+  return m_fVibrationStrength[uiVirtual][motor];
 }
 
 void xiiInputDeviceController::SetControllerMapping(xiiUInt8 uiVirtualController, xiiInt8 iTakeInputFromPhysical)
@@ -100,8 +100,8 @@ xiiInt8 xiiInputDeviceController::GetControllerMapping(xiiUInt8 uiVirtual) const
 
 void xiiInputDeviceController::AddVibrationTrack(
   xiiUInt8    uiVirtual,
-  Motor::Enum eMotor,
-  float*      fVibrationTrackValue,
+  Motor::Enum motor,
+  float*      pVibrationTrackValue,
   xiiUInt32   uiSamples,
   float       fScalingFactor)
 {
@@ -109,9 +109,9 @@ void xiiInputDeviceController::AddVibrationTrack(
 
   for (xiiUInt32 s = 0; s < uiSamples; ++s)
   {
-    float& fVal = m_fVibrationTracks[uiVirtual][eMotor][(m_uiVibrationTrackPos + 1 + s) % MaxVibrationSamples];
+    float& fVal = m_fVibrationTracks[uiVirtual][motor][(m_uiVibrationTrackPos + 1 + s) % MaxVibrationSamples];
 
-    fVal = xiiMath::Max(fVal, fVibrationTrackValue[s] * fScalingFactor);
+    fVal = xiiMath::Max(fVal, pVibrationTrackValue[s] * fScalingFactor);
     fVal = xiiMath::Clamp(fVal, 0.0f, 1.0f);
   }
 }

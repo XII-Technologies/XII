@@ -3,7 +3,7 @@
 #include <FileservePlugin/Fileserver/ClientContext.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 
-xiiFileserveFileState xiiFileserveClientContext::GetFileStatus(xiiUInt16& inout_uiDataDirID, const char* szRequestedFile, FileStatus& inout_Status, xiiDynamicArray<xiiUInt8>& out_FileContent, bool bForceThisDataDir) const
+xiiFileserveFileState xiiFileserveClientContext::GetFileStatus(xiiUInt16& inout_uiDataDirID, const char* szRequestedFile, FileStatus& inout_status, xiiDynamicArray<xiiUInt8>& out_fileContent, bool bForceThisDataDir) const
 {
   for (xiiUInt16 i = static_cast<xiiUInt16>(m_MountedDataDirs.GetCount()); i > 0; --i)
   {
@@ -27,14 +27,14 @@ xiiFileserveFileState xiiFileserveClientContext::GetFileStatus(xiiUInt16& inout_
     if (xiiOSFile::GetFileStats(sAbsPath, stat).Failed())
       continue;
 
-    inout_Status.m_uiFileSize = stat.m_uiFileSize;
+    inout_status.m_uiFileSize = stat.m_uiFileSize;
 
     const xiiInt64 iNewTimestamp = stat.m_LastModificationTime.GetInt64(xiiSIUnitOfTime::Microsecond);
 
-    if (inout_Status.m_iTimestamp == iNewTimestamp && inout_uiDataDirID == uiDataDirID)
+    if (inout_status.m_iTimestamp == iNewTimestamp && inout_uiDataDirID == uiDataDirID)
       return xiiFileserveFileState::SameTimestamp;
 
-    inout_Status.m_iTimestamp = iNewTimestamp;
+    inout_status.m_iTimestamp = iNewTimestamp;
 
     // read the entire file
     {
@@ -43,33 +43,33 @@ xiiFileserveFileState xiiFileserveClientContext::GetFileStatus(xiiUInt16& inout_
         continue;
 
       xiiUInt64 uiNewHash = 1;
-      out_FileContent.SetCountUninitialized((xiiUInt32)inout_Status.m_uiFileSize);
+      out_fileContent.SetCountUninitialized((xiiUInt32)inout_status.m_uiFileSize);
 
-      if (!out_FileContent.IsEmpty())
+      if (!out_fileContent.IsEmpty())
       {
-        file.ReadBytes(out_FileContent.GetData(), out_FileContent.GetCount());
-        uiNewHash = xiiHashingUtils::xxHash64(out_FileContent.GetData(), (size_t)out_FileContent.GetCount(), uiNewHash);
+        file.ReadBytes(out_fileContent.GetData(), out_fileContent.GetCount());
+        uiNewHash = xiiHashingUtils::xxHash64(out_fileContent.GetData(), (size_t)out_fileContent.GetCount(), uiNewHash);
 
         // if the file is empty, the hash will be zero, which could lead to an incorrect assumption that the hash is the same
         // instead always transfer the empty file, so that it properly exists on the client
-        if (inout_Status.m_uiHash == uiNewHash && inout_uiDataDirID == uiDataDirID)
+        if (inout_status.m_uiHash == uiNewHash && inout_uiDataDirID == uiDataDirID)
           return xiiFileserveFileState::SameHash;
       }
 
-      inout_Status.m_uiHash = uiNewHash;
+      inout_status.m_uiHash = uiNewHash;
     }
 
     inout_uiDataDirID = uiDataDirID;
     return xiiFileserveFileState::Different;
   }
 
-  inout_Status.m_iTimestamp = 0;
-  inout_Status.m_uiFileSize = 0;
-  inout_Status.m_uiHash     = 0;
+  inout_status.m_iTimestamp = 0;
+  inout_status.m_uiFileSize = 0;
+  inout_status.m_uiHash     = 0;
 
   // the client doesn't have the file either
   // this is an optimization to prevent redundant file deletions on the client
-  if (inout_Status.m_iTimestamp == 0 && inout_Status.m_uiHash == 0)
+  if (inout_status.m_iTimestamp == 0 && inout_status.m_uiHash == 0)
     return xiiFileserveFileState::NonExistantEither;
 
   return xiiFileserveFileState::NonExistant;

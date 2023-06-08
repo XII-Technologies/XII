@@ -11,11 +11,11 @@ inline xiiTransformTemplate<Type>::xiiTransformTemplate(const xiiVec3Template<Ty
 }
 
 template <typename Type>
-void xiiTransformTemplate<Type>::SetFromMat4(const xiiMat4Template<Type>& mat)
+void xiiTransformTemplate<Type>::SetFromMat4(const xiiMat4Template<Type>& mMat)
 {
-  xiiMat3Template<Type> mRot = mat.GetRotationalPart();
+  xiiMat3Template<Type> mRot = mMat.GetRotationalPart();
 
-  m_vPosition = mat.GetTranslationVector();
+  m_vPosition = mMat.GetTranslationVector();
   m_vScale    = mRot.GetScalingFactors();
   mRot.SetScalingFactors(xiiVec3Template<Type>(1)).IgnoreResult();
   m_qRotation.SetFromMat3(mRot);
@@ -69,20 +69,20 @@ inline bool xiiTransformTemplate<Type>::IsEqual(const xiiTransformTemplate<Type>
 }
 
 template <typename Type>
-inline void xiiTransformTemplate<Type>::SetLocalTransform(const xiiTransformTemplate<Type>& GlobalTransformParent, const xiiTransformTemplate<Type>& GlobalTransformChild)
+inline void xiiTransformTemplate<Type>::SetLocalTransform(const xiiTransformTemplate<Type>& globalTransformParent, const xiiTransformTemplate<Type>& globalTransformChild)
 {
-  const auto invRot   = -GlobalTransformParent.m_qRotation;
-  const auto invScale = xiiVec3Template<Type>(1).CompDiv(GlobalTransformParent.m_vScale);
+  const auto invRot   = -globalTransformParent.m_qRotation;
+  const auto invScale = xiiVec3Template<Type>(1).CompDiv(globalTransformParent.m_vScale);
 
-  m_vPosition = (invRot * (GlobalTransformChild.m_vPosition - GlobalTransformParent.m_vPosition)).CompMul(invScale);
-  m_qRotation = invRot * GlobalTransformChild.m_qRotation;
-  m_vScale    = invScale.CompMul(GlobalTransformChild.m_vScale);
+  m_vPosition = (invRot * (globalTransformChild.m_vPosition - globalTransformParent.m_vPosition)).CompMul(invScale);
+  m_qRotation = invRot * globalTransformChild.m_qRotation;
+  m_vScale    = invScale.CompMul(globalTransformChild.m_vScale);
 }
 
 template <typename Type>
-inline void xiiTransformTemplate<Type>::SetGlobalTransform(const xiiTransformTemplate<Type>& GlobalTransformParent, const xiiTransformTemplate<Type>& LocalTransformChild)
+inline void xiiTransformTemplate<Type>::SetGlobalTransform(const xiiTransformTemplate<Type>& globalTransformParent, const xiiTransformTemplate<Type>& localTransformChild)
 {
-  *this = GlobalTransformParent * LocalTransformChild;
+  *this = globalTransformParent * localTransformChild;
 }
 
 template <typename Type>

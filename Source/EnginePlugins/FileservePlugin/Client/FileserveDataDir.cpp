@@ -121,7 +121,7 @@ bool xiiDataDirectory::FileserveType::ExistsFile(xiiStringView sFile, bool bOneS
   return xiiFileserveClient::GetSingleton()->DownloadFile(m_uiDataDirID, sRedirected, bOneSpecificDataDir, nullptr).Succeeded();
 }
 
-xiiDataDirectoryType* xiiDataDirectory::FileserveType::Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage Usage)
+xiiDataDirectoryType* xiiDataDirectory::FileserveType::Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage usage)
 {
   if (!xiiFileserveClient::s_bEnableFileserve || xiiFileserveClient::GetSingleton() == nullptr)
     return nullptr; // this would only happen if the functionality is switched off, but not before the factory was added

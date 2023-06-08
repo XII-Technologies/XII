@@ -11,9 +11,9 @@ XII_IMPLEMENT_SERIALIZATION_CONTEXT(xiiTypeVersionWriteContext)
 xiiTypeVersionWriteContext::xiiTypeVersionWriteContext()  = default;
 xiiTypeVersionWriteContext::~xiiTypeVersionWriteContext() = default;
 
-xiiStreamWriter& xiiTypeVersionWriteContext::Begin(xiiStreamWriter& originalStream)
+xiiStreamWriter& xiiTypeVersionWriteContext::Begin(xiiStreamWriter& ref_originalStream)
 {
-  m_pOriginalStream = &originalStream;
+  m_pOriginalStream = &ref_originalStream;
 
   XII_ASSERT_DEV(m_TempStreamStorage.GetStorageSize64() == 0, "Begin() can only be called once on a type version context.");
   m_TempStreamWriter.SetStorage(&m_TempStreamStorage);
@@ -44,12 +44,12 @@ void xiiTypeVersionWriteContext::AddType(const xiiRTTI* pRtti)
   }
 }
 
-void xiiTypeVersionWriteContext::WriteTypeVersions(xiiStreamWriter& stream) const
+void xiiTypeVersionWriteContext::WriteTypeVersions(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(s_uiTypeVersionContextVersion);
+  ref_stream.WriteVersion(s_uiTypeVersionContextVersion);
 
   const xiiUInt32 uiNumTypes = m_KnownTypes.GetCount();
-  stream << uiNumTypes;
+  ref_stream << uiNumTypes;
 
   xiiMap<xiiString, const xiiRTTI*> sortedTypes;
   for (auto pType : m_KnownTypes)
@@ -59,8 +59,8 @@ void xiiTypeVersionWriteContext::WriteTypeVersions(xiiStreamWriter& stream) cons
 
   for (const auto& it : sortedTypes)
   {
-    stream << it.Key();
-    stream << it.Value()->GetTypeVersion();
+    ref_stream << it.Key();
+    ref_stream << it.Value()->GetTypeVersion();
   }
 }
 
@@ -68,20 +68,20 @@ void xiiTypeVersionWriteContext::WriteTypeVersions(xiiStreamWriter& stream) cons
 
 XII_IMPLEMENT_SERIALIZATION_CONTEXT(xiiTypeVersionReadContext)
 
-xiiTypeVersionReadContext::xiiTypeVersionReadContext(xiiStreamReader& stream)
+xiiTypeVersionReadContext::xiiTypeVersionReadContext(xiiStreamReader& ref_stream)
 {
-  auto version = stream.ReadVersion(s_uiTypeVersionContextVersion);
+  auto version = ref_stream.ReadVersion(s_uiTypeVersionContextVersion);
 
   xiiUInt32 uiNumTypes = 0;
-  stream >> uiNumTypes;
+  ref_stream >> uiNumTypes;
 
   xiiStringBuilder sTypeName;
   xiiUInt32        uiTypeVersion;
 
   for (xiiUInt32 i = 0; i < uiNumTypes; ++i)
   {
-    stream >> sTypeName;
-    stream >> uiTypeVersion;
+    ref_stream >> sTypeName;
+    ref_stream >> uiTypeVersion;
 
     if (const xiiRTTI* pType = xiiRTTI::FindTypeByName(sTypeName))
     {

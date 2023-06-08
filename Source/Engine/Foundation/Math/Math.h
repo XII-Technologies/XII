@@ -75,7 +75,7 @@ namespace xiiMath
   double Log2(double f); // [tested]
 
   /// \brief Returns the integral logarithm to the base 2, that comes closest to the given integer.
-  xiiUInt32 Log2i(xiiUInt32 val); // [tested]
+  xiiUInt32 Log2i(xiiUInt32 uiVal); // [tested]
 
   /// \brief Returns log (f), to the base 10
   float Log10(float f); // [tested]
@@ -96,16 +96,16 @@ namespace xiiMath
   double Pow2(double f); // [tested]
 
   /// \brief Returns base^exp
-  float Pow(float base, float exp); // [tested]
+  float Pow(float fBase, float fExp); // [tested]
 
   /// \brief Returns base^exp
-  double Pow(double base, double exp); // [tested]
+  double Pow(double fBase, double fExp); // [tested]
 
   /// \brief Returns 2^f
   constexpr xiiInt32 Pow2(xiiInt32 i); // [tested]
 
   /// \brief Returns base^exp
-  xiiInt32 Pow(xiiInt32 base, xiiInt32 exp); // [tested]
+  xiiInt32 Pow(xiiInt32 iBase, xiiInt32 iExp); // [tested]
 
   /// \brief Returns f * f
   template <typename T>
@@ -118,7 +118,7 @@ namespace xiiMath
   double Sqrt(double f); // [tested]
 
   /// \brief Returns the n-th root of f.
-  float Root(float f, float NthRoot); // [tested]
+  float Root(float f, float fNthRoot); // [tested]
 
   /// \brief Returns the sign of f (i.e: -1, 1 or 0)
   template <typename T>
@@ -205,36 +205,36 @@ namespace xiiMath
   double Round(double f); // [tested]
 
   /// \brief Rounds f to the closest value of multiple.
-  float RoundToMultiple(float f, float multiple);
+  float RoundToMultiple(float f, float fMultiple);
 
   /// \brief Rounds f to the closest value of multiple.
-  double RoundToMultiple(double f, double multiple);
+  double RoundToMultiple(double f, double fMultiple);
 
   /// \brief Returns the fraction-part of f.
   template <typename Type>
   Type Fraction(Type f); // [tested]
 
   /// \brief Returns "value mod div" for floats. This also works with negative numbers, both for value and for div.
-  float Mod(float value, float div); // [tested]
+  float Mod(float value, float fDiv); // [tested]
 
   /// \brief Returns "value mod div" for doubles. This also works with negative numbers, both for value and for div.
-  double Mod(double f, double div); // [tested]
+  double Mod(double f, double fDiv); // [tested]
 
   /// \brief Returns 1 / f
   template <typename Type>
   constexpr Type Invert(Type f); // [tested]
 
   /// \brief Returns a multiple of the given multiple that is larger than or equal to value.
-  constexpr xiiInt32 RoundUp(xiiInt32 value, xiiUInt16 multiple); // [tested]
+  constexpr xiiInt32 RoundUp(xiiInt32 value, xiiUInt16 uiMultiple); // [tested]
 
   /// \brief Returns a multiple of the given multiple that is smaller than or equal to value.
-  constexpr xiiInt32 RoundDown(xiiInt32 value, xiiUInt16 multiple); // [tested]
+  constexpr xiiInt32 RoundDown(xiiInt32 value, xiiUInt16 uiMultiple); // [tested]
 
   /// \brief Returns a multiple of the given multiple that is greater than or equal to value.
-  constexpr xiiUInt32 RoundUp(xiiUInt32 value, xiiUInt16 multiple); // [tested]
+  constexpr xiiUInt32 RoundUp(xiiUInt32 value, xiiUInt16 uiMultiple); // [tested]
 
   /// \brief Returns a multiple of the given multiple that is smaller than or equal to value.
-  constexpr xiiUInt32 RoundDown(xiiUInt32 value, xiiUInt16 multiple); // [tested]
+  constexpr xiiUInt32 RoundDown(xiiUInt32 value, xiiUInt16 uiMultiple); // [tested]
 
   /// \brief Returns true, if i is an odd number
   constexpr bool IsOdd(xiiInt32 i); // [tested]
@@ -245,22 +245,22 @@ namespace xiiMath
   /// \brief Returns the index of the least significant bit set
   ///
   /// Asserts that bitmask is not 0.
-  xiiUInt32 FirstBitLow(xiiUInt32 bitmask); // [tested]
+  xiiUInt32 FirstBitLow(xiiUInt32 uiBitmask); // [tested]
 
   /// \brief Returns the index of the least significant bit set
   ///
   /// Asserts that bitmask is not 0.
-  xiiUInt32 FirstBitLow(xiiUInt64 bitmask); // [tested]
+  xiiUInt32 FirstBitLow(xiiUInt64 uiBitmask); // [tested]
 
   /// \brief Returns the index of the most significant bit set
   ///
   /// Asserts that bitmask is not 0.
-  xiiUInt32 FirstBitHigh(xiiUInt32 bitmask); // [tested]
+  xiiUInt32 FirstBitHigh(xiiUInt32 uiBitmask); // [tested]
 
   /// \brief Returns the index of the most significant bit set
   ///
   /// Asserts that bitmask is not 0.
-  xiiUInt32 FirstBitHigh(xiiUInt64 bitmask); // [tested]
+  xiiUInt32 FirstBitHigh(xiiUInt64 uiBitmask); // [tested]
 
   /// Returns the number of zeros at the end (least significant part) of a bitmask.
   ///
@@ -269,10 +269,10 @@ namespace xiiMath
   /// 0b0110 -> 1
   /// 0b0100 -> 2
   /// Returns 32 when the input is 0
-  xiiUInt32 CountTrailingZeros(xiiUInt32 bitmask); // [tested]
+  xiiUInt32 CountTrailingZeros(xiiUInt32 uiBitmask); // [tested]
 
   /// \brief 64 bit overload for CountTrailingZeros()
-  xiiUInt32 CountTrailingZeros(xiiUInt64 bitmask); // [tested]
+  xiiUInt32 CountTrailingZeros(xiiUInt64 uiBitmask); // [tested]
 
   /// Returns the number of zeros at the start (most significant part) of a bitmask.
   ///
@@ -282,7 +282,7 @@ namespace xiiMath
   /// 0b0001 -> 31
   /// 0b0000 -> 32
   /// Returns 32 when the input is 0
-  xiiUInt32 CountLeadingZeros(xiiUInt32 bitmask); // [tested]
+  xiiUInt32 CountLeadingZeros(xiiUInt32 uiBitmask); // [tested]
 
   /// \brief Returns the number of bits set
   xiiUInt32 CountBits(xiiUInt32 value);
@@ -292,15 +292,15 @@ namespace xiiMath
 
   /// \brief Swaps the values in the two variables f1 and f2
   template <typename T>
-  void Swap(T& f1, T& f2); // [tested]
+  void Swap(T& ref_f1, T& ref_f2); // [tested]
 
   /// \brief Returns the linear interpolation of f1 and f2. factor is a value between 0 and 1.
   template <typename T>
-  T Lerp(T f1, T f2, float factor); // [tested]
+  T Lerp(T f1, T f2, float fFactor); // [tested]
 
   /// \brief Returns the linear interpolation of f1 and f2. factor is a value between 0 and 1.
   template <typename T>
-  T Lerp(T f1, T f2, double factor); // [tested]
+  T Lerp(T f1, T f2, double fFactor); // [tested]
 
   /// \brief Returns 0, if value < edge, and 1, if value >= edge.
   template <typename T>
@@ -311,7 +311,7 @@ namespace xiiMath
   Type SmoothStep(Type value, Type edge1, Type edge2); // [tested]
 
   /// \brief Returns true, if there exists some x with base^x == value
-  XII_FOUNDATION_DLL bool IsPowerOf(xiiInt32 value, xiiInt32 base); // [tested]
+  XII_FOUNDATION_DLL bool IsPowerOf(xiiInt32 value, xiiInt32 iBase); // [tested]
 
   /// \brief Returns true, if there exists some x with 2^x == value
   constexpr bool IsPowerOf2(xiiInt32 value); // [tested]
@@ -334,7 +334,7 @@ namespace xiiMath
 
   /// \brief Checks whether the value of the first parameter lies between the value of the second and third.
   template <typename T>
-  constexpr bool IsInRange(T Value, T MinVal, T MaxVal); // [tested]
+  constexpr bool IsInRange(T value, T minVal, T maxVal); // [tested]
 
   /// \brief Checks whether the given number is close to zero.
   template <typename Type>
@@ -370,19 +370,19 @@ namespace xiiMath
   T EvaluateBezierCurve(T2 t, const T& startPoint, const T& controlPoint1, const T& controlPoint2, const T& endPoint);
 
   /// \brief out_Result = \a a * \a b. If an overflow happens, XII_FAILURE is returned.
-  XII_FOUNDATION_DLL xiiResult TryMultiply32(xiiUInt32& out_Result, xiiUInt32 a, xiiUInt32 b, xiiUInt32 c = 1, xiiUInt32 d = 1); // [tested]
+  XII_FOUNDATION_DLL xiiResult TryMultiply32(xiiUInt32& out_uiResult, xiiUInt32 a, xiiUInt32 b, xiiUInt32 c = 1, xiiUInt32 d = 1); // [tested]
 
   /// \brief returns \a a * \a b. If an overflow happens, the program is terminated.
   XII_FOUNDATION_DLL xiiUInt32 SafeMultiply32(xiiUInt32 a, xiiUInt32 b, xiiUInt32 c = 1, xiiUInt32 d = 1);
 
   /// \brief out_Result = \a a * \a b. If an overflow happens, XII_FAILURE is returned.
-  XII_FOUNDATION_DLL xiiResult TryMultiply64(xiiUInt64& out_Result, xiiUInt64 a, xiiUInt64 b, xiiUInt64 c = 1, xiiUInt64 d = 1); // [tested]
+  XII_FOUNDATION_DLL xiiResult TryMultiply64(xiiUInt64& out_uiResult, xiiUInt64 a, xiiUInt64 b, xiiUInt64 c = 1, xiiUInt64 d = 1); // [tested]
 
   /// \brief returns \a a * \a b. If an overflow happens, the program is terminated.
   XII_FOUNDATION_DLL xiiUInt64 SafeMultiply64(xiiUInt64 a, xiiUInt64 b, xiiUInt64 c = 1, xiiUInt64 d = 1);
 
   /// \brief Checks whether the given 64bit value actually fits into size_t, If it doesn't XII_FAILURE is returned.
-  xiiResult TryConvertToSizeT(size_t& out_Result, xiiUInt64 uiValue); // [tested]
+  xiiResult TryConvertToSizeT(size_t& out_uiResult, xiiUInt64 uiValue); // [tested]
 
   /// \brief Checks whether the given 64bit value actually fits into size_t, If it doesn't the program is terminated.
   XII_FOUNDATION_DLL size_t SafeConvertToSizeT(xiiUInt64 uiValue);
@@ -394,10 +394,10 @@ namespace xiiMath
   double Hypot(double x, double y);
 
   /// \brief Calculates a value between 0 and 1, given the precondition that the value is between the min and the max. 0 means value = min and 1 means value = max.
-  float NormalizeToRange(float value, float min, float max);
+  float NormalizeToRange(float value, float fMin, float fMax);
 
   /// \brief Calculates a value between 0 and 1, given the precondition that the value is between the min and the max. 0 means value = min and 1 means value = max.
-  double NormalizeToRange(double value, double min, double max);
+  double NormalizeToRange(double value, double fMin, double fMax);
 
 } // namespace xiiMath
 

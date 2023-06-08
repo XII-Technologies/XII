@@ -160,7 +160,7 @@ xiiObjectAccessorBase::xiiObjectAccessorBase(const xiiDocumentObjectManager* pMa
 {
 }
 
-xiiObjectAccessorBase::~xiiObjectAccessorBase() {}
+xiiObjectAccessorBase::~xiiObjectAccessorBase() = default;
 
 const xiiDocumentObjectManager* xiiObjectAccessorBase::GetObjectManager() const
 {

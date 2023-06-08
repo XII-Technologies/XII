@@ -24,7 +24,7 @@ xiiStateMachineState_NestedStateMachine::xiiStateMachineState_NestedStateMachine
 
 xiiStateMachineState_NestedStateMachine::~xiiStateMachineState_NestedStateMachine() = default;
 
-void xiiStateMachineState_NestedStateMachine::OnEnter(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pFromState) const
+void xiiStateMachineState_NestedStateMachine::OnEnter(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pFromState) const
 {
   auto& pStateMachineInstance = static_cast<InstanceData*>(pInstanceData)->m_pStateMachineInstance;
 
@@ -40,8 +40,8 @@ void xiiStateMachineState_NestedStateMachine::OnEnter(xiiStateMachineInstance& i
       return;
     }
 
-    pStateMachineInstance = pStateMachineResource->CreateInstance(instance.GetOwner());
-    pStateMachineInstance->SetBlackboard(instance.GetBlackboard());
+    pStateMachineInstance = pStateMachineResource->CreateInstance(ref_instance.GetOwner());
+    pStateMachineInstance->SetBlackboard(ref_instance.GetBlackboard());
   }
 
   if (pStateMachineInstance->GetCurrentState() == nullptr)
@@ -50,7 +50,7 @@ void xiiStateMachineState_NestedStateMachine::OnEnter(xiiStateMachineInstance& i
   }
 }
 
-void xiiStateMachineState_NestedStateMachine::OnExit(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pToState) const
+void xiiStateMachineState_NestedStateMachine::OnExit(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pToState) const
 {
   if (m_bKeepCurrentStateOnExit == false)
   {
@@ -62,7 +62,7 @@ void xiiStateMachineState_NestedStateMachine::OnExit(xiiStateMachineInstance& in
   }
 }
 
-void xiiStateMachineState_NestedStateMachine::Update(xiiStateMachineInstance& instance, void* pInstanceData, xiiTime deltaTime) const
+void xiiStateMachineState_NestedStateMachine::Update(xiiStateMachineInstance& ref_instance, void* pInstanceData, xiiTime deltaTime) const
 {
   auto& pStateMachineInstance = static_cast<InstanceData*>(pInstanceData)->m_pStateMachineInstance;
   if (pStateMachineInstance != nullptr)
@@ -71,24 +71,24 @@ void xiiStateMachineState_NestedStateMachine::Update(xiiStateMachineInstance& in
   }
 }
 
-xiiResult xiiStateMachineState_NestedStateMachine::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiStateMachineState_NestedStateMachine::Serialize(xiiStreamWriter& ref_stream) const
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Serialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Serialize(ref_stream));
 
-  stream << m_hResource;
-  stream << m_sInitialState;
-  stream << m_bKeepCurrentStateOnExit;
+  ref_stream << m_hResource;
+  ref_stream << m_sInitialState;
+  ref_stream << m_bKeepCurrentStateOnExit;
   return XII_SUCCESS;
 }
 
-xiiResult xiiStateMachineState_NestedStateMachine::Deserialize(xiiStreamReader& stream)
+xiiResult xiiStateMachineState_NestedStateMachine::Deserialize(xiiStreamReader& ref_stream)
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(ref_stream));
   const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
 
-  stream >> m_hResource;
-  stream >> m_sInitialState;
-  stream >> m_bKeepCurrentStateOnExit;
+  ref_stream >> m_hResource;
+  ref_stream >> m_sInitialState;
+  ref_stream >> m_bKeepCurrentStateOnExit;
   return XII_SUCCESS;
 }
 
@@ -157,7 +157,7 @@ xiiStateMachineState_Compound::~xiiStateMachineState_Compound()
   }
 }
 
-void xiiStateMachineState_Compound::OnEnter(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pFromState) const
+void xiiStateMachineState_Compound::OnEnter(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pFromState) const
 {
   auto pData = static_cast<xiiStateMachineInternal::Compound::InstanceData*>(pInstanceData);
   m_Compound.Initialize(pData);
@@ -165,68 +165,68 @@ void xiiStateMachineState_Compound::OnEnter(xiiStateMachineInstance& instance, v
   for (xiiUInt32 i = 0; i < m_SubStates.GetCount(); ++i)
   {
     void* pSubInstanceData = m_Compound.GetSubInstanceData(pData, i);
-    m_SubStates[i]->OnEnter(instance, pSubInstanceData, pFromState);
+    m_SubStates[i]->OnEnter(ref_instance, pSubInstanceData, pFromState);
   }
 }
 
-void xiiStateMachineState_Compound::OnExit(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pToState) const
+void xiiStateMachineState_Compound::OnExit(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pToState) const
 {
   auto pData = static_cast<xiiStateMachineInternal::Compound::InstanceData*>(pInstanceData);
 
   for (xiiUInt32 i = 0; i < m_SubStates.GetCount(); ++i)
   {
     void* pSubInstanceData = m_Compound.GetSubInstanceData(pData, i);
-    m_SubStates[i]->OnExit(instance, pSubInstanceData, pToState);
+    m_SubStates[i]->OnExit(ref_instance, pSubInstanceData, pToState);
   }
 }
 
-void xiiStateMachineState_Compound::Update(xiiStateMachineInstance& instance, void* pInstanceData, xiiTime deltaTime) const
+void xiiStateMachineState_Compound::Update(xiiStateMachineInstance& ref_instance, void* pInstanceData, xiiTime deltaTime) const
 {
   auto pData = static_cast<xiiStateMachineInternal::Compound::InstanceData*>(pInstanceData);
 
   for (xiiUInt32 i = 0; i < m_SubStates.GetCount(); ++i)
   {
     void* pSubInstanceData = m_Compound.GetSubInstanceData(pData, i);
-    m_SubStates[i]->Update(instance, pSubInstanceData, deltaTime);
+    m_SubStates[i]->Update(ref_instance, pSubInstanceData, deltaTime);
   }
 }
 
-xiiResult xiiStateMachineState_Compound::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiStateMachineState_Compound::Serialize(xiiStreamWriter& ref_stream) const
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Serialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Serialize(ref_stream));
 
   const xiiUInt32 uiNumSubStates = m_SubStates.GetCount();
-  stream << uiNumSubStates;
+  ref_stream << uiNumSubStates;
 
   for (auto pSubState : m_SubStates)
   {
     auto pStateType = pSubState->GetDynamicRTTI();
     xiiTypeVersionWriteContext::GetContext()->AddType(pStateType);
 
-    stream << pStateType->GetTypeName();
-    XII_SUCCEED_OR_RETURN(pSubState->Serialize(stream));
+    ref_stream << pStateType->GetTypeName();
+    XII_SUCCEED_OR_RETURN(pSubState->Serialize(ref_stream));
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiStateMachineState_Compound::Deserialize(xiiStreamReader& stream)
+xiiResult xiiStateMachineState_Compound::Deserialize(xiiStreamReader& ref_stream)
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(ref_stream));
   const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
 
   xiiUInt32 uiNumSubStates = 0;
-  stream >> uiNumSubStates;
+  ref_stream >> uiNumSubStates;
   m_SubStates.Reserve(uiNumSubStates);
 
   xiiStringBuilder sTypeName;
   for (xiiUInt32 i = 0; i < uiNumSubStates; ++i)
   {
-    stream >> sTypeName;
+    ref_stream >> sTypeName;
     if (const xiiRTTI* pType = xiiRTTI::FindTypeByName(sTypeName))
     {
       xiiUniquePtr<xiiStateMachineState> pSubState = pType->GetAllocator()->Allocate<xiiStateMachineState>();
-      XII_SUCCEED_OR_RETURN(pSubState->Deserialize(stream));
+      XII_SUCCEED_OR_RETURN(pSubState->Deserialize(ref_stream));
 
       m_SubStates.PushBack(pSubState.Release());
     }
@@ -271,12 +271,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiStateMachineTransition_BlackboardConditions::xiiStateMachineTransition_BlackboardConditions()  = default;
 xiiStateMachineTransition_BlackboardConditions::~xiiStateMachineTransition_BlackboardConditions() = default;
 
-bool xiiStateMachineTransition_BlackboardConditions::IsConditionMet(xiiStateMachineInstance& instance, void* pInstanceData) const
+bool xiiStateMachineTransition_BlackboardConditions::IsConditionMet(xiiStateMachineInstance& ref_instance, void* pInstanceData) const
 {
   if (m_Conditions.IsEmpty())
     return true;
 
-  auto pBlackboard = instance.GetBlackboard();
+  auto pBlackboard = ref_instance.GetBlackboard();
   if (pBlackboard == nullptr)
     return false;
 
@@ -290,20 +290,20 @@ bool xiiStateMachineTransition_BlackboardConditions::IsConditionMet(xiiStateMach
   return !bCheckFor;
 }
 
-xiiResult xiiStateMachineTransition_BlackboardConditions::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiStateMachineTransition_BlackboardConditions::Serialize(xiiStreamWriter& ref_stream) const
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Serialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Serialize(ref_stream));
 
-  stream << m_Operator;
-  return stream.WriteArray(m_Conditions);
+  ref_stream << m_Operator;
+  return ref_stream.WriteArray(m_Conditions);
 }
 
-xiiResult xiiStateMachineTransition_BlackboardConditions::Deserialize(xiiStreamReader& stream)
+xiiResult xiiStateMachineTransition_BlackboardConditions::Deserialize(xiiStreamReader& ref_stream)
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(ref_stream));
 
-  stream >> m_Operator;
-  return stream.ReadArray(m_Conditions);
+  ref_stream >> m_Operator;
+  return ref_stream.ReadArray(m_Conditions);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -323,24 +323,24 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiStateMachineTransition_Timeout::xiiStateMachineTransition_Timeout()  = default;
 xiiStateMachineTransition_Timeout::~xiiStateMachineTransition_Timeout() = default;
 
-bool xiiStateMachineTransition_Timeout::IsConditionMet(xiiStateMachineInstance& instance, void* pInstanceData) const
+bool xiiStateMachineTransition_Timeout::IsConditionMet(xiiStateMachineInstance& ref_instance, void* pInstanceData) const
 {
-  return instance.GetTimeInCurrentState() >= m_Timeout;
+  return ref_instance.GetTimeInCurrentState() >= m_Timeout;
 }
 
-xiiResult xiiStateMachineTransition_Timeout::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiStateMachineTransition_Timeout::Serialize(xiiStreamWriter& ref_stream) const
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Serialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Serialize(ref_stream));
 
-  stream << m_Timeout;
+  ref_stream << m_Timeout;
   return XII_SUCCESS;
 }
 
-xiiResult xiiStateMachineTransition_Timeout::Deserialize(xiiStreamReader& stream)
+xiiResult xiiStateMachineTransition_Timeout::Deserialize(xiiStreamReader& ref_stream)
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(ref_stream));
 
-  stream >> m_Timeout;
+  ref_stream >> m_Timeout;
   return XII_SUCCESS;
 }
 
@@ -370,7 +370,7 @@ xiiStateMachineTransition_Compound::~xiiStateMachineTransition_Compound()
   }
 }
 
-bool xiiStateMachineTransition_Compound::IsConditionMet(xiiStateMachineInstance& instance, void* pInstanceData) const
+bool xiiStateMachineTransition_Compound::IsConditionMet(xiiStateMachineInstance& ref_instance, void* pInstanceData) const
 {
   auto pData = static_cast<xiiStateMachineInternal::Compound::InstanceData*>(pInstanceData);
   m_Compound.Initialize(pData);
@@ -379,53 +379,53 @@ bool xiiStateMachineTransition_Compound::IsConditionMet(xiiStateMachineInstance&
   for (xiiUInt32 i = 0; i < m_SubTransitions.GetCount(); ++i)
   {
     void* pSubInstanceData = m_Compound.GetSubInstanceData(pData, i);
-    if (m_SubTransitions[i]->IsConditionMet(instance, pSubInstanceData) == bCheckFor)
+    if (m_SubTransitions[i]->IsConditionMet(ref_instance, pSubInstanceData) == bCheckFor)
       return bCheckFor;
   }
 
   return !bCheckFor;
 }
 
-xiiResult xiiStateMachineTransition_Compound::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiStateMachineTransition_Compound::Serialize(xiiStreamWriter& ref_stream) const
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Serialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Serialize(ref_stream));
 
-  stream << m_Operator;
+  ref_stream << m_Operator;
 
   const xiiUInt32 uiNumSubTransitions = m_SubTransitions.GetCount();
-  stream << uiNumSubTransitions;
+  ref_stream << uiNumSubTransitions;
 
   for (auto pSubTransition : m_SubTransitions)
   {
     auto pStateType = pSubTransition->GetDynamicRTTI();
     xiiTypeVersionWriteContext::GetContext()->AddType(pStateType);
 
-    stream << pStateType->GetTypeName();
-    XII_SUCCEED_OR_RETURN(pSubTransition->Serialize(stream));
+    ref_stream << pStateType->GetTypeName();
+    XII_SUCCEED_OR_RETURN(pSubTransition->Serialize(ref_stream));
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiStateMachineTransition_Compound::Deserialize(xiiStreamReader& stream)
+xiiResult xiiStateMachineTransition_Compound::Deserialize(xiiStreamReader& ref_stream)
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(ref_stream));
   const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
 
-  stream >> m_Operator;
+  ref_stream >> m_Operator;
 
   xiiUInt32 uiNumSubTransitions = 0;
-  stream >> uiNumSubTransitions;
+  ref_stream >> uiNumSubTransitions;
   m_SubTransitions.Reserve(uiNumSubTransitions);
 
   xiiStringBuilder sTypeName;
   for (xiiUInt32 i = 0; i < uiNumSubTransitions; ++i)
   {
-    stream >> sTypeName;
+    ref_stream >> sTypeName;
     if (const xiiRTTI* pType = xiiRTTI::FindTypeByName(sTypeName))
     {
       xiiUniquePtr<xiiStateMachineTransition> pSubTransition = pType->GetAllocator()->Allocate<xiiStateMachineTransition>();
-      XII_SUCCEED_OR_RETURN(pSubTransition->Deserialize(stream));
+      XII_SUCCEED_OR_RETURN(pSubTransition->Deserialize(ref_stream));
 
       m_SubTransitions.PushBack(pSubTransition.Release());
     }

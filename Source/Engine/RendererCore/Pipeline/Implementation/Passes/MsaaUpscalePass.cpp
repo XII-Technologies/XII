@@ -22,7 +22,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiMsaaUpscalePass::xiiMsaaUpscalePass() :
-  xiiRenderPipelinePass("MsaaUpscalePass"), m_MsaaMode(xiiGALMSAASampleCount::None)
+  xiiRenderPipelinePass("MsaaUpscalePass")
 {
   {
     // Load shader.
@@ -31,7 +31,7 @@ xiiMsaaUpscalePass::xiiMsaaUpscalePass() :
   }
 }
 
-xiiMsaaUpscalePass::~xiiMsaaUpscalePass() {}
+xiiMsaaUpscalePass::~xiiMsaaUpscalePass() = default;
 
 bool xiiMsaaUpscalePass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
@@ -102,7 +102,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override { pNode->RenameProperty("MSAA Mode", "MSAA_Mode"); }
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override { pNode->RenameProperty("MSAA Mode", "MSAA_Mode"); }
 };
 
 xiiMsaaUpscalePassPatch_1_2 g_xiiMsaaUpscalePassPatch_1_2;

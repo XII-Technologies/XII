@@ -4,7 +4,7 @@
 #include <RendererCore/Pipeline/Declarations.h>
 #include <RendererCore/Textures/Texture2DResource.h>
 
-typedef xiiComponentManager<class xiiSpotLightComponent, xiiBlockStorageType::Compact> xiiSpotLightComponentManager;
+using xiiSpotLightComponentManager = xiiComponentManager<class xiiSpotLightComponent, xiiBlockStorageType::Compact>;
 
 /// \brief The render data object for spot lights.
 class XII_RENDERERCORE_DLL xiiSpotLightRenderData : public xiiLightRenderData
@@ -28,15 +28,15 @@ class XII_RENDERERCORE_DLL xiiSpotLightComponent : public xiiLightComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg) override;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -51,11 +51,11 @@ public:
 
   float GetEffectiveRange() const;
 
-  void     SetInnerSpotAngle(xiiAngle fSpotAngle); // [ property ]
-  xiiAngle GetInnerSpotAngle() const;              // [ property ]
+  void     SetInnerSpotAngle(xiiAngle spotAngle); // [ property ]
+  xiiAngle GetInnerSpotAngle() const;             // [ property ]
 
-  void     SetOuterSpotAngle(xiiAngle fSpotAngle); // [ property ]
-  xiiAngle GetOuterSpotAngle() const;              // [ property ]
+  void     SetOuterSpotAngle(xiiAngle spotAngle); // [ property ]
+  xiiAngle GetOuterSpotAngle() const;             // [ property ]
 
   void        SetProjectedTextureFile(const char* szFile); // [ property ]
   const char* GetProjectedTextureFile() const;             // [ property ]

@@ -60,7 +60,7 @@ public:
   void SetCount(xiiUInt16 uiCount, xiiAllocatorBase* pAllocator); // [tested]
 
   /// \brief Resizes the array to have exactly uiCount elements. Constructs all new elements by copying the FillValue.
-  void SetCount(xiiUInt16 uiCount, const T& FillValue, xiiAllocatorBase* pAllocator); // [tested]
+  void SetCount(xiiUInt16 uiCount, const T& fillValue, xiiAllocatorBase* pAllocator); // [tested]
 
   /// \brief Resizes the array to have exactly uiCount elements. Extra elements might be uninitialized.
   template <typename = void>                                                   // Template is used to only conditionally compile this function in when it is actually used.
@@ -234,7 +234,7 @@ public:
   void operator=(xiiSmallArray<T, Size, AllocatorWrapper>&& rhs) noexcept;
 
   void SetCount(xiiUInt16 uiCount);                     // [tested]
-  void SetCount(xiiUInt16 uiCount, const T& FillValue); // [tested]
+  void SetCount(xiiUInt16 uiCount, const T& fillValue); // [tested]
   void EnsureCount(xiiUInt16 uiCount);                  // [tested]
 
   template <typename = void>

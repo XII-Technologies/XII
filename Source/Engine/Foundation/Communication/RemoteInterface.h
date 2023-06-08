@@ -170,7 +170,7 @@ public:
   /// \brief Sends an xiiRemoteMessage
   /// If it is a server, the message is broadcast to all clients.
   /// If it is a client, the message is only sent to the server.
-  void Send(xiiRemoteTransmitMode tm, xiiRemoteMessage& msg);
+  void Send(xiiRemoteTransmitMode tm, xiiRemoteMessage& ref_msg);
 
   ///@}
 

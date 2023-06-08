@@ -33,18 +33,18 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMeshInstanceData, xiiNoBase, 1, xiiRTTIDefaul
 XII_END_STATIC_REFLECTED_TYPE
 // clang-format on
 
-void xiiMeshInstanceData::SetLocalPosition(xiiVec3 position)
+void xiiMeshInstanceData::SetLocalPosition(xiiVec3 vPosition)
 {
-  m_transform.m_vPosition = position;
+  m_transform.m_vPosition = vPosition;
 }
 xiiVec3 xiiMeshInstanceData::GetLocalPosition() const
 {
   return m_transform.m_vPosition;
 }
 
-void xiiMeshInstanceData::SetLocalRotation(xiiQuat rotation)
+void xiiMeshInstanceData::SetLocalRotation(xiiQuat qRotation)
 {
-  m_transform.m_qRotation = rotation;
+  m_transform.m_qRotation = qRotation;
 }
 
 xiiQuat xiiMeshInstanceData::GetLocalRotation() const
@@ -52,9 +52,9 @@ xiiQuat xiiMeshInstanceData::GetLocalRotation() const
   return m_transform.m_qRotation;
 }
 
-void xiiMeshInstanceData::SetLocalScaling(xiiVec3 scaling)
+void xiiMeshInstanceData::SetLocalScaling(xiiVec3 vScaling)
 {
-  m_transform.m_vScale = scaling;
+  m_transform.m_vScale = vScaling;
 }
 
 xiiVec3 xiiMeshInstanceData::GetLocalScaling() const
@@ -63,22 +63,22 @@ xiiVec3 xiiMeshInstanceData::GetLocalScaling() const
 }
 
 static const xiiTypeVersion s_MeshInstanceDataVersion = 1;
-xiiResult                   xiiMeshInstanceData::Serialize(xiiStreamWriter& writer) const
+xiiResult                   xiiMeshInstanceData::Serialize(xiiStreamWriter& ref_writer) const
 {
-  writer.WriteVersion(s_MeshInstanceDataVersion);
+  ref_writer.WriteVersion(s_MeshInstanceDataVersion);
 
-  writer << m_transform;
-  writer << m_color;
+  ref_writer << m_transform;
+  ref_writer << m_color;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiMeshInstanceData::Deserialize(xiiStreamReader& reader)
+xiiResult xiiMeshInstanceData::Deserialize(xiiStreamReader& ref_reader)
 {
-  /*auto version = */ reader.ReadVersion(s_MeshInstanceDataVersion);
+  /*auto version = */ ref_reader.ReadVersion(s_MeshInstanceDataVersion);
 
-  reader >> m_transform;
-  reader >> m_color;
+  ref_reader >> m_transform;
+  ref_reader >> m_color;
 
   return XII_SUCCESS;
 }
@@ -199,18 +199,18 @@ XII_END_COMPONENT_TYPE
 xiiInstancedMeshComponent::xiiInstancedMeshComponent()  = default;
 xiiInstancedMeshComponent::~xiiInstancedMeshComponent() = default;
 
-void xiiInstancedMeshComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiInstancedMeshComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  stream.GetStream().WriteArray(m_RawInstancedData).IgnoreResult();
+  ref_stream.GetStream().WriteArray(m_RawInstancedData).IgnoreResult();
 }
 
-void xiiInstancedMeshComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiInstancedMeshComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
 
-  stream.GetStream().ReadArray(m_RawInstancedData).IgnoreResult();
+  ref_stream.GetStream().ReadArray(m_RawInstancedData).IgnoreResult();
 }
 
 void xiiInstancedMeshComponent::OnActivated()
@@ -229,9 +229,9 @@ void xiiInstancedMeshComponent::OnDeactivated()
   SUPER::OnDeactivated();
 }
 
-void xiiInstancedMeshComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& msg) {}
+void xiiInstancedMeshComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& ref_msg) {}
 
-xiiResult xiiInstancedMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiInstancedMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   xiiBoundingBoxSphere singleBounds;
   if (m_hMesh.IsValid())
@@ -244,7 +244,7 @@ xiiResult xiiInstancedMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds
       auto instanceBounds = singleBounds;
       instanceBounds.Transform(instance.m_transform.GetAsMat4());
 
-      bounds.ExpandToInclude(instanceBounds);
+      ref_bounds.ExpandToInclude(instanceBounds);
     }
 
     return XII_SUCCESS;

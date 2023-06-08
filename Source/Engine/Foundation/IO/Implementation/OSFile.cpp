@@ -11,10 +11,10 @@ xiiOSFile::Event   xiiOSFile::s_FileEvents;
 xiiFileStats::xiiFileStats()  = default;
 xiiFileStats::~xiiFileStats() = default;
 
-void xiiFileStats::GetFullPath(xiiStringBuilder& path) const
+void xiiFileStats::GetFullPath(xiiStringBuilder& ref_sPath) const
 {
-  path.Set(m_sParentPath, "/", m_sName);
-  path.MakeCleanPath();
+  ref_sPath.Set(m_sParentPath, "/", m_sName);
+  ref_sPath.MakeCleanPath();
 }
 
 xiiOSFile::xiiOSFile()
@@ -28,11 +28,11 @@ xiiOSFile::~xiiOSFile()
   Close();
 }
 
-xiiResult xiiOSFile::Open(xiiStringView sFile, xiiFileOpenMode::Enum OpenMode, xiiFileShareMode::Enum FileShareMode)
+xiiResult xiiOSFile::Open(xiiStringView sFile, xiiFileOpenMode::Enum openMode, xiiFileShareMode::Enum fileShareMode)
 {
   m_iFileID = s_iFileCounter.Increment();
 
-  XII_ASSERT_DEV(OpenMode >= xiiFileOpenMode::Read && OpenMode <= xiiFileOpenMode::Append, "Invalid Mode");
+  XII_ASSERT_DEV(openMode >= xiiFileOpenMode::Read && openMode <= xiiFileOpenMode::Append, "Invalid Mode");
   XII_ASSERT_DEV(!IsOpen(), "The file has already been opened.");
 
   const xiiTime t0 = xiiTime::Now();
@@ -49,15 +49,15 @@ xiiResult xiiOSFile::Open(xiiStringView sFile, xiiFileOpenMode::Enum OpenMode, x
   {
     xiiStringBuilder sFolder = m_sFileName.GetFileDirectory();
 
-    if (OpenMode == xiiFileOpenMode::Write || OpenMode == xiiFileOpenMode::Append)
+    if (openMode == xiiFileOpenMode::Write || openMode == xiiFileOpenMode::Append)
     {
       XII_SUCCEED_OR_RETURN(CreateDirectoryStructure(sFolder.GetData()));
     }
   }
 
-  if (InternalOpen(m_sFileName.GetData(), OpenMode, FileShareMode) == XII_SUCCESS)
+  if (InternalOpen(m_sFileName.GetData(), openMode, fileShareMode) == XII_SUCCESS)
   {
-    m_FileMode = OpenMode;
+    m_FileMode = openMode;
     Res        = XII_SUCCESS;
     goto done;
   }
@@ -73,7 +73,7 @@ done:
   EventData e;
   e.m_bSuccess  = Res == XII_SUCCESS;
   e.m_Duration  = tdiff;
-  e.m_FileMode  = OpenMode;
+  e.m_FileMode  = openMode;
   e.m_iFileID   = m_iFileID;
   e.m_sFile     = m_sFileName;
   e.m_EventType = EventType::FileOpen;
@@ -163,19 +163,19 @@ xiiUInt64 xiiOSFile::Read(void* pBuffer, xiiUInt64 uiBytes)
   return Res;
 }
 
-xiiUInt64 xiiOSFile::ReadAll(xiiDynamicArray<xiiUInt8>& out_FileContent)
+xiiUInt64 xiiOSFile::ReadAll(xiiDynamicArray<xiiUInt8>& out_fileContent)
 {
   XII_ASSERT_DEV(m_FileMode == xiiFileOpenMode::Read, "The file is not opened for reading.");
 
-  out_FileContent.Clear();
-  out_FileContent.SetCountUninitialized((xiiUInt32)GetFileSize());
+  out_fileContent.Clear();
+  out_fileContent.SetCountUninitialized((xiiUInt32)GetFileSize());
 
-  if (!out_FileContent.IsEmpty())
+  if (!out_fileContent.IsEmpty())
   {
-    Read(out_FileContent.GetData(), out_FileContent.GetCount());
+    Read(out_fileContent.GetData(), out_fileContent.GetCount());
   }
 
-  return out_FileContent.GetCount();
+  return out_fileContent.GetCount();
 }
 
 xiiUInt64 xiiOSFile::GetFilePosition() const
@@ -185,12 +185,12 @@ xiiUInt64 xiiOSFile::GetFilePosition() const
   return InternalGetFilePosition();
 }
 
-void xiiOSFile::SetFilePosition(xiiInt64 iDistance, xiiFileSeekMode::Enum Pos) const
+void xiiOSFile::SetFilePosition(xiiInt64 iDistance, xiiFileSeekMode::Enum pos) const
 {
   XII_ASSERT_DEV(IsOpen(), "The file must be open to tell the file pointer position.");
   XII_ASSERT_DEV(m_FileMode != xiiFileOpenMode::Append, "SetFilePosition is not possible on files that were opened for appending.");
 
-  return InternalSetFilePosition(iDistance, Pos);
+  return InternalSetFilePosition(iDistance, pos);
 }
 
 xiiUInt64 xiiOSFile::GetFileSize() const
@@ -421,7 +421,7 @@ done:
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
 
-xiiResult xiiOSFile::GetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_Stats)
+xiiResult xiiOSFile::GetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_stats)
 {
   const xiiTime t0 = xiiTime::Now();
 
@@ -431,7 +431,7 @@ xiiResult xiiOSFile::GetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out
 
   XII_ASSERT_DEV(s.IsAbsolutePath(), "The path '{0}' is not absolute.", s);
 
-  const xiiResult Res = InternalGetFileStats(s.GetData(), out_Stats);
+  const xiiResult Res = InternalGetFileStats(s.GetData(), out_stats);
 
   const xiiTime t1    = xiiTime::Now();
   const xiiTime tdiff = t1 - t0;
@@ -513,9 +513,9 @@ xiiResult xiiOSFile::GetFileCasing(xiiStringView sFileOrFolder, xiiStringBuilder
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS) && XII_ENABLED(XII_SUPPORTS_FILE_STATS)
 
-void xiiOSFile::GatherAllItemsInFolder(xiiDynamicArray<xiiFileStats>& out_ItemList, xiiStringView sFolder, xiiBitflags<xiiFileSystemIteratorFlags> flags /*= xiiFileSystemIteratorFlags::All*/)
+void xiiOSFile::GatherAllItemsInFolder(xiiDynamicArray<xiiFileStats>& out_itemList, xiiStringView sFolder, xiiBitflags<xiiFileSystemIteratorFlags> flags /*= xiiFileSystemIteratorFlags::All*/)
 {
-  out_ItemList.Clear();
+  out_itemList.Clear();
 
   xiiFileSystemIterator iterator;
   iterator.StartSearch(sFolder, flags);
@@ -523,17 +523,17 @@ void xiiOSFile::GatherAllItemsInFolder(xiiDynamicArray<xiiFileStats>& out_ItemLi
   if (!iterator.IsValid())
     return;
 
-  out_ItemList.Reserve(128);
+  out_itemList.Reserve(128);
 
   while (iterator.IsValid())
   {
-    out_ItemList.PushBack(iterator.GetStats());
+    out_itemList.PushBack(iterator.GetStats());
 
     iterator.Next();
   }
 }
 
-xiiResult xiiOSFile::CopyFolder(xiiStringView sSourceFolder, xiiStringView sDestinationFolder, xiiDynamicArray<xiiString>* out_FilesCopied /*= nullptr*/)
+xiiResult xiiOSFile::CopyFolder(xiiStringView sSourceFolder, xiiStringView sDestinationFolder, xiiDynamicArray<xiiString>* out_pFilesCopied /*= nullptr*/)
 {
   xiiDynamicArray<xiiFileStats> items;
   GatherAllItemsInFolder(items, sSourceFolder);
@@ -565,9 +565,9 @@ xiiResult xiiOSFile::CopyFolder(xiiStringView sSourceFolder, xiiStringView sDest
       if (xiiOSFile::CopyFile(srcPath, dstPath).Failed())
         return XII_FAILURE;
 
-      if (out_FilesCopied)
+      if (out_pFilesCopied)
       {
-        out_FilesCopied->PushBack(dstPath);
+        out_pFilesCopied->PushBack(dstPath);
       }
     }
 

@@ -134,11 +134,11 @@ void xiiDocumentManager::UpdatedAfterLoadingPlugins()
   }
 }
 
-void xiiDocumentManager::GetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const
+void xiiDocumentManager::GetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_documentTypes) const
 {
-  InternalGetSupportedDocumentTypes(inout_DocumentTypes);
+  InternalGetSupportedDocumentTypes(inout_documentTypes);
 
-  for (auto& dt : inout_DocumentTypes)
+  for (auto& dt : inout_documentTypes)
   {
     XII_ASSERT_DEBUG(dt->m_pDocumentType != nullptr, "No document type is set");
     XII_ASSERT_DEBUG(!dt->m_sFileExtension.IsEmpty(), "File extension must be valid");

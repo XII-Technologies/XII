@@ -14,7 +14,7 @@ xiiCollectionResource::xiiCollectionResource() :
 {
 }
 
-bool xiiCollectionResource::PreloadResources(xiiUInt32 numResourcesToPreload)
+bool xiiCollectionResource::PreloadResources(xiiUInt32 uiNumResourcesToPreload)
 {
   XII_LOCK(m_PreloadMutex);
   XII_PROFILE_SCOPE("Inject Resources to Preload");
@@ -31,7 +31,7 @@ bool xiiCollectionResource::PreloadResources(xiiUInt32 numResourcesToPreload)
   m_PreloadedResources.Reserve(m_Collection.m_Resources.GetCount());
 
   const xiiUInt32 remainingResources = m_Collection.m_Resources.GetCount() - m_PreloadedResources.GetCount();
-  const xiiUInt32 end                = xiiMath::Min(remainingResources, numResourcesToPreload) + m_PreloadedResources.GetCount();
+  const xiiUInt32 end                = xiiMath::Min(remainingResources, uiNumResourcesToPreload) + m_PreloadedResources.GetCount();
   for (xiiUInt32 i = m_PreloadedResources.GetCount(); i < end; ++i)
   {
     const xiiCollectionEntry& e = m_Collection.m_Resources[i];
@@ -66,7 +66,7 @@ bool xiiCollectionResource::PreloadResources(xiiUInt32 numResourcesToPreload)
   return m_PreloadedResources.GetCount() < m_Collection.m_Resources.GetCount();
 }
 
-bool xiiCollectionResource::IsLoadingFinished(float* out_progress) const
+bool xiiCollectionResource::IsLoadingFinished(float* out_pProgress) const
 {
   XII_LOCK(m_PreloadMutex);
 
@@ -94,16 +94,16 @@ bool xiiCollectionResource::IsLoadingFinished(float* out_progress) const
     }
   }
 
-  if (out_progress != nullptr)
+  if (out_pProgress != nullptr)
   {
     const float maxLoadedFraction = m_Collection.m_Resources.GetCount() == 0 ? 1.f : (float)m_PreloadedResources.GetCount() / m_Collection.m_Resources.GetCount();
     if (totalWeight != 0 && totalWeight != loadedWeight)
     {
-      *out_progress = static_cast<float>(static_cast<double>(loadedWeight) / totalWeight) * maxLoadedFraction;
+      *out_pProgress = static_cast<float>(static_cast<double>(loadedWeight) / totalWeight) * maxLoadedFraction;
     }
     else
     {
-      *out_progress = maxLoadedFraction;
+      *out_pProgress = maxLoadedFraction;
     }
   }
 
@@ -229,43 +229,43 @@ void xiiCollectionResource::UnregisterNames()
   }
 }
 
-void xiiCollectionResourceDescriptor::Save(xiiStreamWriter& stream) const
+void xiiCollectionResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
   const xiiUInt8  uiVersion      = 3;
   const xiiUInt8  uiIdentifier   = 0xC0;
   const xiiUInt32 uiNumResources = m_Resources.GetCount();
 
-  stream << uiVersion;
-  stream << uiIdentifier;
-  stream << uiNumResources;
+  ref_stream << uiVersion;
+  ref_stream << uiIdentifier;
+  ref_stream << uiNumResources;
 
   for (xiiUInt32 i = 0; i < uiNumResources; ++i)
   {
-    stream << m_Resources[i].m_sAssetTypeName;
-    stream << m_Resources[i].m_sOptionalNiceLookupName;
-    stream << m_Resources[i].m_sResourceID;
-    stream << m_Resources[i].m_uiFileSize;
+    ref_stream << m_Resources[i].m_sAssetTypeName;
+    ref_stream << m_Resources[i].m_sOptionalNiceLookupName;
+    ref_stream << m_Resources[i].m_sResourceID;
+    ref_stream << m_Resources[i].m_uiFileSize;
   }
 }
 
-void xiiCollectionResourceDescriptor::Load(xiiStreamReader& stream)
+void xiiCollectionResourceDescriptor::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt8  uiVersion      = 0;
   xiiUInt8  uiIdentifier   = 0;
   xiiUInt32 uiNumResources = 0;
 
-  stream >> uiVersion;
-  stream >> uiIdentifier;
+  ref_stream >> uiVersion;
+  ref_stream >> uiIdentifier;
 
   if (uiVersion == 1)
   {
     xiiUInt16 uiNumResourcesShort;
-    stream >> uiNumResourcesShort;
+    ref_stream >> uiNumResourcesShort;
     uiNumResources = uiNumResourcesShort;
   }
   else
   {
-    stream >> uiNumResources;
+    ref_stream >> uiNumResources;
   }
 
   XII_ASSERT_DEV(uiIdentifier == 0xC0, "File does not contain a valid xiiCollectionResourceDescriptor");
@@ -275,12 +275,12 @@ void xiiCollectionResourceDescriptor::Load(xiiStreamReader& stream)
 
   for (xiiUInt32 i = 0; i < uiNumResources; ++i)
   {
-    stream >> m_Resources[i].m_sAssetTypeName;
-    stream >> m_Resources[i].m_sOptionalNiceLookupName;
-    stream >> m_Resources[i].m_sResourceID;
+    ref_stream >> m_Resources[i].m_sAssetTypeName;
+    ref_stream >> m_Resources[i].m_sOptionalNiceLookupName;
+    ref_stream >> m_Resources[i].m_sResourceID;
     if (uiVersion >= 3)
     {
-      stream >> m_Resources[i].m_uiFileSize;
+      ref_stream >> m_Resources[i].m_uiFileSize;
     }
   }
 }

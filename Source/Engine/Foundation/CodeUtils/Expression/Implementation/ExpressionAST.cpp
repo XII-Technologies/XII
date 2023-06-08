@@ -818,7 +818,7 @@ namespace
   };
 } // namespace
 
-void xiiExpressionAST::PrintGraph(xiiDGMLGraph& graph) const
+void xiiExpressionAST::PrintGraph(xiiDGMLGraph& ref_graph) const
 {
   xiiHybridArray<NodeInfo, 64> nodeStack;
 
@@ -834,7 +834,7 @@ void xiiExpressionAST::PrintGraph(xiiDGMLGraph& graph) const
 
     xiiDGMLGraph::NodeDesc nd;
     nd.m_Color            = xiiColorScheme::LightUI(xiiColorScheme::Blue);
-    xiiUInt32 uiGraphNode = graph.AddNode(sTmp, &nd);
+    xiiUInt32 uiGraphNode = ref_graph.AddNode(sTmp, &nd);
 
     nodeStack.PushBack({pOutputNode->m_pExpression, uiGraphNode});
   }
@@ -892,7 +892,7 @@ void xiiExpressionAST::PrintGraph(xiiDGMLGraph& graph) const
 
         xiiDGMLGraph::NodeDesc nd;
         nd.m_Color  = color;
-        uiGraphNode = graph.AddNode(sTmp, &nd);
+        uiGraphNode = ref_graph.AddNode(sTmp, &nd);
         nodeCache.Insert(currentNodeInfo.m_pNode, uiGraphNode);
 
         // push children
@@ -907,10 +907,10 @@ void xiiExpressionAST::PrintGraph(xiiDGMLGraph& graph) const
     {
       xiiDGMLGraph::NodeDesc nd;
       nd.m_Color  = xiiColor::OrangeRed;
-      uiGraphNode = graph.AddNode("Invalid", &nd);
+      uiGraphNode = ref_graph.AddNode("Invalid", &nd);
     }
 
-    graph.AddConnection(uiGraphNode, currentNodeInfo.m_uiParentGraphNode);
+    ref_graph.AddConnection(uiGraphNode, currentNodeInfo.m_uiParentGraphNode);
   }
 }
 
@@ -930,14 +930,14 @@ void xiiExpressionAST::ResolveOverloads(Node* pNode)
     return;
   }
 
-  auto CalculateMatchDistance = [](xiiArrayPtr<Node*> children, xiiArrayPtr<const xiiEnum<xiiExpression::RegisterType>> expectedTypes, xiiUInt32 uiNumRequiredArgs, xiiUInt32& uiMaxNumElements) {
+  auto CalculateMatchDistance = [](xiiArrayPtr<Node*> children, xiiArrayPtr<const xiiEnum<xiiExpression::RegisterType>> expectedTypes, xiiUInt32 uiNumRequiredArgs, xiiUInt32& ref_uiMaxNumElements) {
     if (children.GetCount() < uiNumRequiredArgs)
     {
       return xiiInvalidIndex;
     }
 
     xiiUInt32 uiMatchDistance = 0;
-    uiMaxNumElements          = 1;
+    ref_uiMaxNumElements      = 1;
     for (xiiUInt32 i = 0; i < xiiMath::Min(children.GetCount(), expectedTypes.GetCount()); ++i)
     {
       auto& pChildNode = children[i];
@@ -951,7 +951,7 @@ void xiiExpressionAST::ResolveOverloads(Node* pNode)
         iDistance *= -xiiExpression::RegisterType::Count;
       }
       uiMatchDistance += iDistance;
-      uiMaxNumElements = xiiMath::Max(uiMaxNumElements, DataType::GetElementCount(pChildNode->m_ReturnType));
+      ref_uiMaxNumElements = xiiMath::Max(ref_uiMaxNumElements, DataType::GetElementCount(pChildNode->m_ReturnType));
     }
     return uiMatchDistance;
   };

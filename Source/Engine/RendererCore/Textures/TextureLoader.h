@@ -27,9 +27,9 @@ public:
   };
 
   virtual xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;
-  virtual void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& LoaderData) override;
+  virtual void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData) override;
   virtual bool                IsResourceOutdated(const xiiResource* pResource) const override;
 
-  static xiiResult LoadTexFile(xiiStreamReader& stream, LoadedData& data);
-  static void      WriteTextureLoadStream(xiiStreamWriter& stream, const LoadedData& data);
+  static xiiResult LoadTexFile(xiiStreamReader& ref_stream, LoadedData& ref_data);
+  static void      WriteTextureLoadStream(xiiStreamWriter& ref_stream, const LoadedData& data);
 };

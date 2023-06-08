@@ -12,12 +12,12 @@ class xiiCurve1D;
 XII_DECLARE_REFLECTABLE_TYPE(XII_GUIFOUNDATION_DLL, xiiCurveTangentMode);
 
 template <typename T>
-void FindNearestControlPoints(xiiArrayPtr<T> cps, xiiInt64 iTick, T*& llhs, T*& lhs, T*& rhs, T*& rrhs)
+void FindNearestControlPoints(xiiArrayPtr<T> cps, xiiInt64 iTick, T*& ref_pLlhs, T*& lhs, T*& rhs, T*& ref_pRrhs)
 {
-  llhs              = nullptr;
+  ref_pLlhs         = nullptr;
   lhs               = nullptr;
   rhs               = nullptr;
-  rrhs              = nullptr;
+  ref_pRrhs         = nullptr;
   xiiInt64 lhsTick  = xiiMath::MinValue<xiiInt64>();
   xiiInt64 llhsTick = xiiMath::MinValue<xiiInt64>();
   xiiInt64 rhsTick  = xiiMath::MaxValue<xiiInt64>();
@@ -29,16 +29,16 @@ void FindNearestControlPoints(xiiArrayPtr<T> cps, xiiInt64 iTick, T*& llhs, T*& 
     {
       if (cp.m_iTick > lhsTick)
       {
-        llhs     = lhs;
-        llhsTick = lhsTick;
+        ref_pLlhs = lhs;
+        llhsTick  = lhsTick;
 
         lhs     = &cp;
         lhsTick = cp.m_iTick;
       }
       else if (cp.m_iTick > llhsTick)
       {
-        llhs     = &cp;
-        llhsTick = cp.m_iTick;
+        ref_pLlhs = &cp;
+        llhsTick  = cp.m_iTick;
       }
     }
 
@@ -46,16 +46,16 @@ void FindNearestControlPoints(xiiArrayPtr<T> cps, xiiInt64 iTick, T*& llhs, T*& 
     {
       if (cp.m_iTick < rhsTick)
       {
-        rrhs     = rhs;
-        rrhsTick = rhsTick;
+        ref_pRrhs = rhs;
+        rrhsTick  = rhsTick;
 
         rhs     = &cp;
         rhsTick = cp.m_iTick;
       }
       else if (cp.m_iTick < rrhsTick)
       {
-        rrhs     = &cp;
-        rrhsTick = cp.m_iTick;
+        ref_pRrhs = &cp;
+        rrhsTick  = cp.m_iTick;
       }
     }
   }
@@ -67,7 +67,7 @@ class XII_GUIFOUNDATION_DLL xiiCurveControlPointData : public xiiReflectedClass
 
 public:
   xiiTime GetTickAsTime() const { return xiiTime::Seconds(m_iTick / 4800.0); }
-  void    SetTickFromTime(xiiTime time, xiiInt64 fps);
+  void    SetTickFromTime(xiiTime time, xiiInt64 iFps);
 
   xiiInt64                     m_iTick; // 4800 ticks per second
   double                       m_fValue;
@@ -86,8 +86,8 @@ public:
   xiiColorGammaUB                           m_CurveColor;
   xiiDynamicArray<xiiCurveControlPointData> m_ControlPoints;
 
-  void   ConvertToRuntimeData(xiiCurve1D& out_Result) const;
-  double Evaluate(xiiInt64 uiTick) const;
+  void   ConvertToRuntimeData(xiiCurve1D& out_result) const;
+  double Evaluate(xiiInt64 iTick) const;
 };
 
 class XII_GUIFOUNDATION_DLL xiiCurveExtentsAttribute : public xiiPropertyAttribute
@@ -128,7 +128,7 @@ public:
 
   xiiInt64 TickFromTime(xiiTime time) const;
 
-  void ConvertToRuntimeData(xiiUInt32 uiCurveIdx, xiiCurve1D& out_Result) const;
+  void ConvertToRuntimeData(xiiUInt32 uiCurveIdx, xiiCurve1D& out_result) const;
 };
 
 struct XII_GUIFOUNDATION_DLL xiiSelectedCurveCP

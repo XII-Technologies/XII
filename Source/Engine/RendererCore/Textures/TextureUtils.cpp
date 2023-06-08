@@ -310,50 +310,50 @@ xiiImageFormat::Enum xiiTextureUtils::GalFormatToImageFormat(xiiGALResourceForma
   return imageFormat;
 }
 
-void xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::Enum filter, xiiGALSamplerStateCreationDescription& out_Sampler)
+void xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::Enum filter, xiiGALSamplerStateCreationDescription& out_sampler)
 {
   const xiiTextureFilterSetting::Enum thisFilter = xiiRenderContext::GetDefaultInstance()->GetSpecificTextureFilter(filter);
 
-  out_Sampler.m_MinFilter       = xiiGALTextureFilterMode::Linear;
-  out_Sampler.m_MagFilter       = xiiGALTextureFilterMode::Linear;
-  out_Sampler.m_MipFilter       = xiiGALTextureFilterMode::Linear;
-  out_Sampler.m_uiMaxAnisotropy = 1;
+  out_sampler.m_MinFilter       = xiiGALTextureFilterMode::Linear;
+  out_sampler.m_MagFilter       = xiiGALTextureFilterMode::Linear;
+  out_sampler.m_MipFilter       = xiiGALTextureFilterMode::Linear;
+  out_sampler.m_uiMaxAnisotropy = 1;
 
   switch (thisFilter)
   {
     case xiiTextureFilterSetting::FixedNearest:
-      out_Sampler.m_MinFilter = xiiGALTextureFilterMode::Point;
-      out_Sampler.m_MagFilter = xiiGALTextureFilterMode::Point;
-      out_Sampler.m_MipFilter = xiiGALTextureFilterMode::Point;
+      out_sampler.m_MinFilter = xiiGALTextureFilterMode::Point;
+      out_sampler.m_MagFilter = xiiGALTextureFilterMode::Point;
+      out_sampler.m_MipFilter = xiiGALTextureFilterMode::Point;
       break;
     case xiiTextureFilterSetting::FixedBilinear:
-      out_Sampler.m_MipFilter = xiiGALTextureFilterMode::Point;
+      out_sampler.m_MipFilter = xiiGALTextureFilterMode::Point;
       break;
     case xiiTextureFilterSetting::FixedTrilinear:
       break;
     case xiiTextureFilterSetting::FixedAnisotropic2x:
-      out_Sampler.m_MinFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_Sampler.m_MagFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_Sampler.m_MipFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_Sampler.m_uiMaxAnisotropy = 2;
+      out_sampler.m_MinFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_MagFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_MipFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_uiMaxAnisotropy = 2;
       break;
     case xiiTextureFilterSetting::FixedAnisotropic4x:
-      out_Sampler.m_MinFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_Sampler.m_MagFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_Sampler.m_MipFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_Sampler.m_uiMaxAnisotropy = 4;
+      out_sampler.m_MinFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_MagFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_MipFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_uiMaxAnisotropy = 4;
       break;
     case xiiTextureFilterSetting::FixedAnisotropic8x:
-      out_Sampler.m_MinFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_Sampler.m_MagFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_Sampler.m_MipFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_Sampler.m_uiMaxAnisotropy = 8;
+      out_sampler.m_MinFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_MagFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_MipFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_uiMaxAnisotropy = 8;
       break;
     case xiiTextureFilterSetting::FixedAnisotropic16x:
-      out_Sampler.m_MinFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_Sampler.m_MagFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_Sampler.m_MipFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_Sampler.m_uiMaxAnisotropy = 16;
+      out_sampler.m_MinFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_MagFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_MipFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_uiMaxAnisotropy = 16;
       break;
     default:
       break;

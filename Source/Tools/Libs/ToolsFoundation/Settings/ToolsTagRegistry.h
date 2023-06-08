@@ -7,7 +7,7 @@
 
 struct XII_TOOLSFOUNDATION_DLL xiiToolsTag
 {
-  xiiToolsTag() {}
+  xiiToolsTag() = default;
   xiiToolsTag(const char* szCategory, const char* szName, bool bBuiltIn = false) :
     m_sCategory(szCategory), m_sName(szName), m_bBuiltInTag(bBuiltIn)
   {
@@ -24,8 +24,8 @@ public:
   /// \brief Removes all tags that are not specified as 'built-in'
   static void Clear();
 
-  static void      WriteToDDL(xiiStreamWriter& stream);
-  static xiiStatus ReadFromDDL(xiiStreamReader& stream);
+  static void      WriteToDDL(xiiStreamWriter& ref_stream);
+  static xiiStatus ReadFromDDL(xiiStreamReader& ref_stream);
 
   static bool AddTag(const xiiToolsTag& tag);
   static bool RemoveTag(const char* szName);

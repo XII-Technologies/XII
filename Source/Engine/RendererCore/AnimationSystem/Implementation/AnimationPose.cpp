@@ -44,23 +44,23 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgRetrieveBoneState, 1, xiiRTTIDefaultAlloc
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(xiiUInt32 uiJointIndex, xiiMat4& fullTransform) const
+void xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(xiiUInt32 uiJointIndex, xiiMat4& ref_mFullTransform) const
 {
-  fullTransform = m_pRootTransform->GetAsMat4() * m_ModelTransforms[uiJointIndex];
+  ref_mFullTransform = m_pRootTransform->GetAsMat4() * m_ModelTransforms[uiJointIndex];
 }
 
-void xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(const xiiMat4& rootTransform, const xiiMat4& modelTransform, xiiMat4& fullTransform, xiiQuat& rotationOnly)
+void xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(const xiiMat4& mRootTransform, const xiiMat4& mModelTransform, xiiMat4& ref_mFullTransform, xiiQuat& ref_qRotationOnly)
 {
-  fullTransform = rootTransform * modelTransform;
+  ref_mFullTransform = mRootTransform * mModelTransform;
 
   // the bone might contain (non-uniform) scaling and mirroring, which the quaternion can't represent
   // so reconstruct a representable rotation matrix
-  rotationOnly.ReconstructFromMat4(fullTransform);
+  ref_qRotationOnly.ReconstructFromMat4(ref_mFullTransform);
 }
 
-void xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(xiiUInt32 uiJointIndex, xiiMat4& fullTransform, xiiQuat& rotationOnly) const
+void xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(xiiUInt32 uiJointIndex, xiiMat4& ref_mFullTransform, xiiQuat& ref_qRotationOnly) const
 {
-  ComputeFullBoneTransform(m_pRootTransform->GetAsMat4(), m_ModelTransforms[uiJointIndex], fullTransform, rotationOnly);
+  ComputeFullBoneTransform(m_pRootTransform->GetAsMat4(), m_ModelTransforms[uiJointIndex], ref_mFullTransform, ref_qRotationOnly);
 }
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_Implementation_AnimationPose);

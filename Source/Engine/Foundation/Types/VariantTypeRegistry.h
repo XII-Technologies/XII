@@ -40,11 +40,11 @@ class XII_FOUNDATION_DLL xiiVariantTypeInfo : public xiiEnumerable<xiiVariantTyp
 {
 public:
   xiiVariantTypeInfo();
-  virtual const xiiRTTI* GetType() const                                               = 0;
-  virtual xiiUInt32      Hash(const void* pObject) const                               = 0;
-  virtual bool           Equal(const void* pObjectA, const void* pObjectB) const       = 0;
-  virtual void           Serialize(xiiStreamWriter& writer, const void* pObject) const = 0;
-  virtual void           Deserialize(xiiStreamReader& reader, void* pObject) const     = 0;
+  virtual const xiiRTTI* GetType() const                                                   = 0;
+  virtual xiiUInt32      Hash(const void* pObject) const                                   = 0;
+  virtual bool           Equal(const void* pObjectA, const void* pObjectB) const           = 0;
+  virtual void           Serialize(xiiStreamWriter& ref_writer, const void* pObject) const = 0;
+  virtual void           Deserialize(xiiStreamReader& ref_reader, void* pObject) const     = 0;
 
   XII_DECLARE_ENUMERABLE_CLASS(xiiVariantTypeInfo);
 };

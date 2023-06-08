@@ -1,6 +1,6 @@
 #pragma once
 
-XII_ALWAYS_INLINE xiiSimdBSphere::xiiSimdBSphere() {}
+XII_ALWAYS_INLINE xiiSimdBSphere::xiiSimdBSphere() = default;
 
 XII_ALWAYS_INLINE xiiSimdBSphere::xiiSimdBSphere(const xiiSimdVec4f& vCenter, const xiiSimdFloat& fRadius)
 {
@@ -106,14 +106,14 @@ inline void xiiSimdBSphere::Transform(const xiiSimdTransform& t)
   m_CenterAndRadius = newCenterAndRadius;
 }
 
-inline void xiiSimdBSphere::Transform(const xiiSimdMat4f& mat)
+inline void xiiSimdBSphere::Transform(const xiiSimdMat4f& mMat)
 {
   xiiSimdFloat radius = m_CenterAndRadius.w();
-  m_CenterAndRadius   = mat.TransformPosition(m_CenterAndRadius);
+  m_CenterAndRadius   = mMat.TransformPosition(m_CenterAndRadius);
 
-  xiiSimdFloat maxRadius = mat.m_col0.Dot<3>(mat.m_col0);
-  maxRadius              = maxRadius.Max(mat.m_col1.Dot<3>(mat.m_col1));
-  maxRadius              = maxRadius.Max(mat.m_col2.Dot<3>(mat.m_col2));
+  xiiSimdFloat maxRadius = mMat.m_col0.Dot<3>(mMat.m_col0);
+  maxRadius              = maxRadius.Max(mMat.m_col1.Dot<3>(mMat.m_col1));
+  maxRadius              = maxRadius.Max(mMat.m_col2.Dot<3>(mMat.m_col2));
   radius *= maxRadius.GetSqrt();
 
   m_CenterAndRadius.SetW(radius);

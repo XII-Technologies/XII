@@ -65,33 +65,33 @@ public:
   void AddColorControlPoint(double x, const xiiColorGammaUB& rgb);
 
   /// \brief Appends an alpha control point. SortControlPoints() must be called to before evaluating the curve.
-  void AddAlphaControlPoint(double x, xiiUInt8 alpha);
+  void AddAlphaControlPoint(double x, xiiUInt8 uiAlpha);
 
   /// \brief Appends an intensity control point. SortControlPoints() must be called to before evaluating the curve.
-  void AddIntensityControlPoint(double x, float intensity);
+  void AddIntensityControlPoint(double x, float fIntensity);
 
   /// \brief Determines the min and max x-coordinate value across all control points.
-  bool GetExtents(double& minx, double& maxx) const;
+  bool GetExtents(double& ref_fMinx, double& ref_fMaxx) const;
 
   /// \brief Returns the number of control points of each type.
-  void GetNumControlPoints(xiiUInt32& rgb, xiiUInt32& alpha, xiiUInt32& intensity) const;
+  void GetNumControlPoints(xiiUInt32& ref_uiRgb, xiiUInt32& ref_uiAlpha, xiiUInt32& ref_uiIntensity) const;
 
   /// \brief Const access to a control point.
-  const ColorCP& GetColorControlPoint(xiiUInt32 idx) const { return m_ColorCPs[idx]; }
+  const ColorCP& GetColorControlPoint(xiiUInt32 uiIdx) const { return m_ColorCPs[uiIdx]; }
   /// \brief Const access to a control point.
-  const AlphaCP& GetAlphaControlPoint(xiiUInt32 idx) const { return m_AlphaCPs[idx]; }
+  const AlphaCP& GetAlphaControlPoint(xiiUInt32 uiIdx) const { return m_AlphaCPs[uiIdx]; }
   /// \brief Const access to a control point.
-  const IntensityCP& GetIntensityControlPoint(xiiUInt32 idx) const { return m_IntensityCPs[idx]; }
+  const IntensityCP& GetIntensityControlPoint(xiiUInt32 uiIdx) const { return m_IntensityCPs[uiIdx]; }
 
   /// \brief Non-const access to a control point. If you modify the x coordinate, SortControlPoints() has to be called before evaluating the
   /// curve.
-  ColorCP& ModifyColorControlPoint(xiiUInt32 idx) { return m_ColorCPs[idx]; }
+  ColorCP& ModifyColorControlPoint(xiiUInt32 uiIdx) { return m_ColorCPs[uiIdx]; }
   /// \brief Non-const access to a control point. If you modify the x coordinate, SortControlPoints() has to be called before evaluating the
   /// curve.
-  AlphaCP& ModifyAlphaControlPoint(xiiUInt32 idx) { return m_AlphaCPs[idx]; }
+  AlphaCP& ModifyAlphaControlPoint(xiiUInt32 uiIdx) { return m_AlphaCPs[uiIdx]; }
   /// \brief Non-const access to a control point. If you modify the x coordinate, SortControlPoints() has to be called before evaluating the
   /// curve.
-  IntensityCP& ModifyIntensityControlPoint(xiiUInt32 idx) { return m_IntensityCPs[idx]; }
+  IntensityCP& ModifyIntensityControlPoint(xiiUInt32 uiIdx) { return m_IntensityCPs[uiIdx]; }
 
   /// \brief Sorts the control point arrays by their x-coordinate. The CPs have to be sorted before calling Evaluate(), otherwise the result
   /// will be wrong.
@@ -100,28 +100,28 @@ public:
   /// \brief Evaluates the curve at the given x-coordinate and returns RGBA and intensity separately.
   ///
   /// The control points have to be sorted, so call SortControlPoints() before, if any modifications where done.
-  void Evaluate(double x, xiiColorGammaUB& rgba, float& intensity) const;
+  void Evaluate(double x, xiiColorGammaUB& ref_rgba, float& ref_fIntensity) const;
 
   /// \brief Evaluates the curve and returns RGBA and intensity in one combined xiiColor value.
-  void Evaluate(double x, xiiColor& hdr) const;
+  void Evaluate(double x, xiiColor& ref_hdr) const;
 
   /// \brief Evaluates only the color curve.
-  void EvaluateColor(double x, xiiColorGammaUB& rgb) const;
+  void EvaluateColor(double x, xiiColorGammaUB& ref_rgb) const;
   /// \brief Evaluates only the color curve.
-  void EvaluateColor(double x, xiiColor& rgb) const;
+  void EvaluateColor(double x, xiiColor& ref_rgb) const;
   /// \brief Evaluates only the alpha curve.
-  void EvaluateAlpha(double x, xiiUInt8& alpha) const;
+  void EvaluateAlpha(double x, xiiUInt8& ref_uiAlpha) const;
   /// \brief Evaluates only the intensity curve.
-  void EvaluateIntensity(double x, float& intensity) const;
+  void EvaluateIntensity(double x, float& ref_fIntensity) const;
 
   /// \brief How much heap memory the curve uses.
   xiiUInt64 GetHeapMemoryUsage() const;
 
   /// \brief Stores the current state in a stream.
-  void Save(xiiStreamWriter& stream) const;
+  void Save(xiiStreamWriter& ref_stream) const;
 
   /// \brief Restores the state from a stream.
-  void Load(xiiStreamReader& stream);
+  void Load(xiiStreamReader& ref_stream);
 
 private:
   void PrecomputeLerpNormalizer();

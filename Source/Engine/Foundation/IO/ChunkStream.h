@@ -12,7 +12,7 @@ class XII_FOUNDATION_DLL xiiChunkStreamWriter : public xiiStreamWriter
 {
 public:
   /// \brief Pass the underlying stream writer to the constructor.
-  xiiChunkStreamWriter(xiiStreamWriter& stream); // [tested]
+  xiiChunkStreamWriter(xiiStreamWriter& ref_stream); // [tested]
 
   /// \brief Writes bytes directly to the stream. Only allowed when a chunk is open (between BeginChunk / EndChunk).
   virtual xiiResult WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite) override; // [tested]
@@ -47,7 +47,7 @@ class XII_FOUNDATION_DLL xiiChunkStreamReader : public xiiStreamReader
 {
 public:
   /// \brief Pass the underlying stream writer to the constructor.
-  xiiChunkStreamReader(xiiStreamReader& stream); // [tested]
+  xiiChunkStreamReader(xiiStreamReader& ref_stream); // [tested]
 
   /// \brief Reads bytes directly from the stream. Only allowed while a valid chunk is available.
   /// Returns 0 bytes when the end of a chunk is reached, even if there are more chunks to come.

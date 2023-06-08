@@ -9,7 +9,7 @@
 /// \brief Specifies in which mode the tonemap is configured.
 struct XII_RENDERERCORE_DLL xiiTonemapMode
 {
-  typedef xiiInt8 StorageType;
+  using StorageType = xiiInt8;
 
   enum Enum
   {

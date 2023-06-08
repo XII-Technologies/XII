@@ -70,7 +70,7 @@ namespace xiiDataDirectory
     return m_File.GetFileSize();
   }
 
-  xiiDataDirectoryType* FolderType::Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage Usage)
+  xiiDataDirectoryType* FolderType::Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage usage)
   {
     FolderType* pDataDir = XII_DEFAULT_NEW(FolderType);
 

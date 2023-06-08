@@ -3,7 +3,7 @@
 #include <RendererCore/Lights/LightComponent.h>
 #include <RendererCore/Textures/Texture2DResource.h>
 
-typedef xiiComponentManager<class xiiDirectionalLightComponent, xiiBlockStorageType::Compact> xiiDirectionalLightComponentManager;
+using xiiDirectionalLightComponentManager = xiiComponentManager<class xiiDirectionalLightComponent, xiiBlockStorageType::Compact>;
 
 /// \brief The render data object for directional lights.
 class XII_RENDERERCORE_DLL xiiDirectionalLightRenderData : public xiiLightRenderData
@@ -23,14 +23,14 @@ class XII_RENDERERCORE_DLL xiiDirectionalLightComponent : public xiiLightCompone
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg) override;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiDirectionalLightComponent

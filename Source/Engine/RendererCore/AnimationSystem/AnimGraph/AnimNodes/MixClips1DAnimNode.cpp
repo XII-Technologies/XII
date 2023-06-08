@@ -45,13 +45,13 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMixClips1DAnimNode, 1, xiiRTTIDefaultAllocat
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiAnimClip1D::SetAnimationFile(const char* sz)
+void xiiAnimClip1D::SetAnimationFile(const char* szSz)
 {
   xiiAnimationClipResourceHandle hResource;
 
-  if (!xiiStringUtils::IsNullOrEmpty(sz))
+  if (!xiiStringUtils::IsNullOrEmpty(szSz))
   {
-    hResource = xiiResourceManager::LoadResource<xiiAnimationClipResource>(sz);
+    hResource = xiiResourceManager::LoadResource<xiiAnimationClipResource>(szSz);
   }
 
   m_hAnimation = hResource;

@@ -23,12 +23,12 @@ xiiSimplifiedDataExtractor::xiiSimplifiedDataExtractor(const char* szName) :
   m_DependsOn.PushBack(xiiMakeHashedString("xiiVisibleObjectsExtractor"));
 }
 
-xiiSimplifiedDataExtractor::~xiiSimplifiedDataExtractor() {}
+xiiSimplifiedDataExtractor::~xiiSimplifiedDataExtractor() = default;
 
 void xiiSimplifiedDataExtractor::PostSortAndBatch(
   const xiiView&                               view,
   const xiiDynamicArray<const xiiGameObject*>& visibleObjects,
-  xiiExtractedRenderData&                      extractedRenderData)
+  xiiExtractedRenderData&                      ref_extractedRenderData)
 {
   const xiiCamera* pCamera      = view.GetCullingCamera();
   const float      fAspectRatio = view.GetViewport().width / view.GetViewport().height;
@@ -38,7 +38,7 @@ void xiiSimplifiedDataExtractor::PostSortAndBatch(
   pData->m_uiSkyIrradianceIndex = view.GetWorld()->GetIndex();
   pData->m_cameraUsageHint      = view.GetCameraUsageHint();
 
-  extractedRenderData.AddFrameData(pData);
+  ref_extractedRenderData.AddFrameData(pData);
 }
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_Lights_Implementation_SimplifiedDataExtractor);

@@ -122,13 +122,13 @@ void xiiSetAssertHandler(xiiAssertHandler handler)
   g_AssertHandler = handler;
 }
 
-bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* msg)
+bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szMsg)
 {
   // always do a debug-break if no assert handler is installed
   if (g_AssertHandler == nullptr)
     return true;
 
-  return (*g_AssertHandler)(szSourceFile, uiLine, szFunction, szExpression, msg);
+  return (*g_AssertHandler)(szSourceFile, uiLine, szFunction, szExpression, szMsg);
 }
 
 bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const class xiiFormatString& msg)

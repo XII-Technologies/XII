@@ -39,7 +39,7 @@ public:
   {
   }
 
-  virtual ~xiiMessage() {}
+  virtual ~xiiMessage() = default;
 
   /// \brief Derived message types can override this method to influence sorting order. Smaller keys are processed first.
   virtual xiiInt32 GetSortingKey() const { return 0; }
@@ -60,15 +60,15 @@ public:
   ///
   /// Note that PackageForTransfer() will automatically include the xiiRTTI type version into the stream
   /// and ReplicatePackedMessage() will pass this into Deserialize(). Use this if the serialization changes.
-  virtual void Serialize(xiiStreamWriter& stream) const { XII_ASSERT_NOT_IMPLEMENTED; }
+  virtual void Serialize(xiiStreamWriter& ref_stream) const { XII_ASSERT_NOT_IMPLEMENTED; }
 
   /// \see Serialize()
-  virtual void Deserialize(xiiStreamReader& stream, xiiUInt8 uiTypeVersion) { XII_ASSERT_NOT_IMPLEMENTED; }
+  virtual void Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiTypeVersion) { XII_ASSERT_NOT_IMPLEMENTED; }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   /// set to true while debugging a message routing problem
   /// if the message is not delivered to any recipient at all, information about why that is will be written to xiiLog
-  XII_ALWAYS_INLINE void SetDebugMessageRouting(bool debug) { m_uiDebugMessageRouting = debug; }
+  XII_ALWAYS_INLINE void SetDebugMessageRouting(bool bDebug) { m_uiDebugMessageRouting = bDebug; }
 
   XII_ALWAYS_INLINE bool GetDebugMessageRouting() const { return m_uiDebugMessageRouting; }
 #endif
@@ -98,13 +98,13 @@ public:
   /// For this to work the message type has to have the Serialize and Deserialize functions implemented.
   ///
   /// \note This is NOT used by xiiWorld. Within the same process messages can be dispatched more efficiently.
-  static void PackageForTransfer(const xiiMessage& msg, xiiStreamWriter& stream);
+  static void PackageForTransfer(const xiiMessage& msg, xiiStreamWriter& ref_stream);
 
   /// \brief Restores a message that was written by PackageForTransfer()
   ///
   /// If the message type is unknown, nullptr is returned.
   /// \see PackageForTransfer()
-  static xiiUniquePtr<xiiMessage> ReplicatePackedMessage(xiiStreamReader& stream);
+  static xiiUniquePtr<xiiMessage> ReplicatePackedMessage(xiiStreamReader& ref_stream);
 
 private:
 };

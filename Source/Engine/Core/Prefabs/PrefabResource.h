@@ -20,9 +20,9 @@ struct XII_CORE_DLL xiiExposedPrefabParameterDesc
   xiiHashedString m_sProperty;          // which property to override
   xiiPropertyPath m_CachedPropertyPath; // cached xiiPropertyPath to apply a value to the specified property
 
-  void Save(xiiStreamWriter& stream) const;
-  void Load(xiiStreamReader& stream);
-  void LoadOld(xiiStreamReader& stream);
+  void Save(xiiStreamWriter& ref_stream) const;
+  void Load(xiiStreamReader& ref_stream);
+  void LoadOld(xiiStreamReader& ref_stream);
 };
 
 class XII_CORE_DLL xiiPrefabResource : public xiiResource
@@ -35,7 +35,7 @@ public:
   xiiPrefabResource();
 
   /// \brief Creates an instance of this prefab in the given world.
-  void InstantiatePrefab(xiiWorld& world, const xiiTransform& rootTransform, xiiPrefabInstantiationOptions options, const xiiArrayMap<xiiHashedString, xiiVariant>* pExposedParamValues = nullptr);
+  void InstantiatePrefab(xiiWorld& ref_world, const xiiTransform& rootTransform, xiiPrefabInstantiationOptions options, const xiiArrayMap<xiiHashedString, xiiVariant>* pExposedParamValues = nullptr);
 
   void ApplyExposedParameterValues(const xiiArrayMap<xiiHashedString, xiiVariant>* pExposedParamValues, const xiiDynamicArray<xiiGameObject*>& createdChildObjects, const xiiDynamicArray<xiiGameObject*>& createdRootObjects) const;
 

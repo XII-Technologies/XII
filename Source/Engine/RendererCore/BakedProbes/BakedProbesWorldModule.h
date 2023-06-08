@@ -27,7 +27,7 @@ public:
     float                      m_probeWeights[NumProbes];
   };
 
-  xiiResult GetProbeIndexData(const xiiVec3& globalPosition, const xiiVec3& normal, ProbeIndexData& out_ProbeIndexData) const;
+  xiiResult GetProbeIndexData(const xiiVec3& vGlobalPosition, const xiiVec3& vNormal, ProbeIndexData& out_probeIndexData) const;
 
   xiiAmbientCube<float> GetSkyVisibility(const ProbeIndexData& indexData) const;
 

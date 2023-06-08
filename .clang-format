@@ -69,7 +69,7 @@ AlignTrailingComments: true
 
 # If a function call or braced initializer list doesn't fit on a line,
 # allow putting all arguments onto the next line, even if BinPackArguments is false.
-AllowAllArgumentsOnNextLine: true
+AllowAllArgumentsOnNextLine: false
 # true:
 # callFunction(a,
 #              b,
@@ -133,7 +133,7 @@ BinPackArguments: true
 
 # If false, a function declaration's or function definition's parameters will
 # either all be on the same line or will have one line each.
-BinPackParameters: true
+BinPackParameters: false
 # false:
 # void f(int aaaaaaaaaaaaaaaaaaaa,
 #        int aaaaaaaaaaaaaaaaaaaa,

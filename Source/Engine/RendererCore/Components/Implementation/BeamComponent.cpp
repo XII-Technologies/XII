@@ -80,12 +80,12 @@ void xiiBeamComponent::Update()
   }
 }
 
-void xiiBeamComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiBeamComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  auto& s = stream.GetStream();
-  stream.WriteGameObjectHandle(m_hTargetObject);
+  auto& s = ref_stream.GetStream();
+  ref_stream.WriteGameObjectHandle(m_hTargetObject);
 
   s << m_fWidth;
   s << m_fUVUnitsPerWorldUnit;
@@ -93,12 +93,12 @@ void xiiBeamComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_Color;
 }
 
-void xiiBeamComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiBeamComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
 
-  auto& s         = stream.GetStream();
-  m_hTargetObject = stream.ReadGameObjectHandle();
+  auto& s         = ref_stream.GetStream();
+  m_hTargetObject = ref_stream.ReadGameObjectHandle();
 
   s >> m_fWidth;
   s >> m_fUVUnitsPerWorldUnit;
@@ -106,7 +106,7 @@ void xiiBeamComponent::DeserializeComponent(xiiWorldReader& stream)
   s >> m_Color;
 }
 
-xiiResult xiiBeamComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiBeamComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   xiiGameObject* pTargetObject = nullptr;
   if (GetWorld()->TryGetObject(m_hTargetObject, pTargetObject))
@@ -121,7 +121,7 @@ xiiResult xiiBeamComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& b
     const float fHalfWidth = m_fWidth * 0.5f;
     box.m_vMin -= xiiVec3(0, fHalfWidth, fHalfWidth);
     box.m_vMax += xiiVec3(0, fHalfWidth, fHalfWidth);
-    bounds = box;
+    ref_bounds = box;
 
     return XII_SUCCESS;
   }

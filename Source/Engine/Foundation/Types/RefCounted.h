@@ -77,9 +77,9 @@ public:
     AddReferenceIfValid();
   }
 
-  xiiScopedRefPointer(const xiiScopedRefPointer<T>& Other)
+  xiiScopedRefPointer(const xiiScopedRefPointer<T>& other)
   {
-    m_pReferencedObject = Other.m_pReferencedObject;
+    m_pReferencedObject = other.m_pReferencedObject;
 
     AddReferenceIfValid();
   }
@@ -103,14 +103,14 @@ public:
 
   /// \brief Assignment operator, decreases the ref count of the currently referenced object and increases the ref count of the newly
   /// assigned object.
-  void operator=(const xiiScopedRefPointer<T>& Other)
+  void operator=(const xiiScopedRefPointer<T>& other)
   {
-    if (Other.m_pReferencedObject == m_pReferencedObject)
+    if (other.m_pReferencedObject == m_pReferencedObject)
       return;
 
     ReleaseReferenceIfValid();
 
-    m_pReferencedObject = Other.m_pReferencedObject;
+    m_pReferencedObject = other.m_pReferencedObject;
 
     AddReferenceIfValid();
   }

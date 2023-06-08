@@ -7,8 +7,8 @@
 #include <GameEngine/GameEngineDLL.h>
 
 struct xiiMsgComponentInternalTrigger;
-typedef xiiComponentManager<class xiiTimedDeathComponent, xiiBlockStorageType::Compact> xiiTimedDeathComponentManager;
-using xiiPrefabResourceHandle = xiiTypedResourceHandle<class xiiPrefabResource>;
+using xiiTimedDeathComponentManager = xiiComponentManager<class xiiTimedDeathComponent, xiiBlockStorageType::Compact>;
+using xiiPrefabResourceHandle       = xiiTypedResourceHandle<class xiiPrefabResource>;
 
 /// \brief This component deletes the object it is attached to after a timeout.
 ///
@@ -23,8 +23,8 @@ class XII_GAMEENGINE_DLL xiiTimedDeathComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   /// \brief Once this function has been executed, the timeout for deletion is fixed and cannot be reset.

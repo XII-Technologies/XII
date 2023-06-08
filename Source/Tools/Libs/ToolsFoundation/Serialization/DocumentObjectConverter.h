@@ -51,7 +51,7 @@ public:
   xiiUInt32                GetNumUnknownObjectCreations() const { return m_uiUnknownTypeInstances; }
   const xiiSet<xiiString>& GetUnknownObjectTypes() const { return m_UnknownTypes; }
 
-  static void ApplyDiffToObject(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pObject, xiiDeque<xiiAbstractGraphDiffOperation>& diff);
+  static void ApplyDiffToObject(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pObject, xiiDeque<xiiAbstractGraphDiffOperation>& ref_diff);
 
 private:
   void        AddObject(xiiDocumentObject* pObject, xiiDocumentObject* pParent, const char* szParentProperty, xiiVariant index);

@@ -48,11 +48,11 @@ enum PrefabComponentFlags
 xiiPrefabReferenceComponent::xiiPrefabReferenceComponent()  = default;
 xiiPrefabReferenceComponent::~xiiPrefabReferenceComponent() = default;
 
-void xiiPrefabReferenceComponent::SerializePrefabParameters(const xiiWorld& world, xiiWorldWriter& stream, xiiArrayMap<xiiHashedString, xiiVariant> parameters)
+void xiiPrefabReferenceComponent::SerializePrefabParameters(const xiiWorld& world, xiiWorldWriter& ref_stream, xiiArrayMap<xiiHashedString, xiiVariant> parameters)
 {
   // we need a copy of the parameters here, therefore we don't take it by reference
 
-  auto&           s         = stream.GetStream();
+  auto&           s         = ref_stream.GetStream();
   const xiiUInt32 numParams = parameters.GetCount();
 
   xiiHybridArray<xiiGameObjectHandle, 8> GoReferences;
@@ -98,7 +98,7 @@ void xiiPrefabReferenceComponent::SerializePrefabParameters(const xiiWorld& worl
 
     for (xiiUInt8 i = 0; i < numRefs; ++i)
     {
-      stream.WriteGameObjectHandle(GoReferences[i]);
+      ref_stream.WriteGameObjectHandle(GoReferences[i]);
     }
   }
 
@@ -111,13 +111,13 @@ void xiiPrefabReferenceComponent::SerializePrefabParameters(const xiiWorld& worl
   }
 }
 
-void xiiPrefabReferenceComponent::DeserializePrefabParameters(xiiArrayMap<xiiHashedString, xiiVariant>& out_parameters, xiiWorldReader& stream)
+void xiiPrefabReferenceComponent::DeserializePrefabParameters(xiiArrayMap<xiiHashedString, xiiVariant>& out_parameters, xiiWorldReader& ref_stream)
 {
   out_parameters.Clear();
 
   // versioning of this stuff is tied to the version number of xiiPrefabReferenceComponent
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(xiiGetStaticRTTI<xiiPrefabReferenceComponent>());
-  auto&           s         = stream.GetStream();
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(xiiGetStaticRTTI<xiiPrefabReferenceComponent>());
+  auto&           s         = ref_stream.GetStream();
 
   // temp array to hold (and remap) the serialized game object handles
   xiiHybridArray<xiiGameObjectHandle, 8> GoReferences;
@@ -131,7 +131,7 @@ void xiiPrefabReferenceComponent::DeserializePrefabParameters(xiiArrayMap<xiiHas
     // just read them all, this will remap as necessary to the xiiWorldReader
     for (xiiUInt8 i = 0; i < numRefs; ++i)
     {
-      GoReferences[i] = stream.ReadGameObjectHandle();
+      GoReferences[i] = ref_stream.ReadGameObjectHandle();
     }
   }
 
@@ -180,21 +180,21 @@ void xiiPrefabReferenceComponent::DeserializePrefabParameters(xiiArrayMap<xiiHas
   }
 }
 
-void xiiPrefabReferenceComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiPrefabReferenceComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_hPrefab;
 
-  xiiPrefabReferenceComponent::SerializePrefabParameters(*GetWorld(), stream, m_Parameters);
+  xiiPrefabReferenceComponent::SerializePrefabParameters(*GetWorld(), ref_stream, m_Parameters);
 }
 
-void xiiPrefabReferenceComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiPrefabReferenceComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_hPrefab;
 
@@ -204,7 +204,7 @@ void xiiPrefabReferenceComponent::DeserializeComponent(xiiWorldReader& stream)
     s >> bDummy;
   }
 
-  xiiPrefabReferenceComponent::DeserializePrefabParameters(m_Parameters, stream);
+  xiiPrefabReferenceComponent::DeserializePrefabParameters(m_Parameters, ref_stream);
 }
 
 void xiiPrefabReferenceComponent::SetPrefabFile(const char* szFile)
@@ -357,7 +357,7 @@ void xiiPrefabReferenceComponent::OnSimulationStarted()
 
 const xiiRangeView<const char*, xiiUInt32> xiiPrefabReferenceComponent::GetParameters() const
 {
-  return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Parameters.GetCount(); }, [](xiiUInt32& it) { ++it; }, [this](const xiiUInt32& it) -> const char* { return m_Parameters.GetKey(it).GetString().GetData(); });
+  return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Parameters.GetCount(); }, [](xiiUInt32& ref_uiIt) { ++ref_uiIt; }, [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
 }
 
 void xiiPrefabReferenceComponent::SetParameter(const char* szKey, const xiiVariant& value)

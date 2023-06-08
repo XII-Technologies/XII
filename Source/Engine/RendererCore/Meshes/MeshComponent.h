@@ -3,7 +3,7 @@
 #include <RendererCore/Meshes/MeshComponentBase.h>
 
 struct xiiMsgExtractGeometry;
-typedef xiiComponentManager<class xiiMeshComponent, xiiBlockStorageType::Compact> xiiMeshComponentManager;
+using xiiMeshComponentManager = xiiComponentManager<class xiiMeshComponent, xiiBlockStorageType::Compact>;
 
 class XII_RENDERERCORE_DLL xiiMeshComponent : public xiiMeshComponentBase
 {
@@ -17,5 +17,5 @@ public:
   ~xiiMeshComponent();
 
   /// \brief Extracts the render geometry for export etc.
-  void OnMsgExtractGeometry(xiiMsgExtractGeometry& msg) const; // [ msg handler ]
+  void OnMsgExtractGeometry(xiiMsgExtractGeometry& ref_msg) const; // [ msg handler ]
 };

@@ -21,18 +21,10 @@ namespace SmallArrayTestDetail
       a(a), s("Test")
     {
     }
-    Dummy(const Dummy& other) :
-      a(other.a), s(other.s)
-    {
-    }
-    ~Dummy() {}
+    Dummy(const Dummy& other) = default;
+    ~Dummy()                  = default;
 
-    Dummy& operator=(const Dummy& other)
-    {
-      a = other.a;
-      s = other.s;
-      return *this;
-    }
+    Dummy& operator=(const Dummy& other) = default;
 
     bool operator<=(const Dummy& dummy) const { return a <= dummy.a; }
     bool operator>=(const Dummy& dummy) const { return a >= dummy.a; }
@@ -44,9 +36,9 @@ namespace SmallArrayTestDetail
   class NonMovableClass
   {
   public:
-    NonMovableClass(int val)
+    NonMovableClass(int iVal)
     {
-      m_val  = val;
+      m_val  = iVal;
       m_pVal = &m_val;
     }
 
@@ -84,8 +76,8 @@ namespace SmallArrayTestDetail
 
     ExternalCounter() = default;
 
-    ExternalCounter(int& counter) :
-      m_counter{&counter}
+    ExternalCounter(int& ref_iCounter) :
+      m_counter{&ref_iCounter}
     {
     }
 
@@ -99,7 +91,7 @@ namespace SmallArrayTestDetail
   };
 } // namespace SmallArrayTestDetail
 
-static void TakesDynamicArray(xiiDynamicArray<int>& ar, int num, int start);
+static void TakesDynamicArray(xiiDynamicArray<int>& ref_ar, int iNum, int iStart);
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
 static_assert(sizeof(xiiSmallArray<xiiInt32, 1>) == 16);

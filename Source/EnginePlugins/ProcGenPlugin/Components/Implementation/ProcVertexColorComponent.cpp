@@ -326,20 +326,20 @@ void xiiProcVertexColorOutputDesc::SetName(const char* szName)
 }
 
 static xiiTypeVersion s_ProcVertexColorOutputDescVersion = 1;
-xiiResult             xiiProcVertexColorOutputDesc::Serialize(xiiStreamWriter& stream) const
+xiiResult             xiiProcVertexColorOutputDesc::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(s_ProcVertexColorOutputDescVersion);
-  stream << m_sName;
-  XII_SUCCEED_OR_RETURN(m_Mapping.Serialize(stream));
+  ref_stream.WriteVersion(s_ProcVertexColorOutputDescVersion);
+  ref_stream << m_sName;
+  XII_SUCCEED_OR_RETURN(m_Mapping.Serialize(ref_stream));
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiProcVertexColorOutputDesc::Deserialize(xiiStreamReader& stream)
+xiiResult xiiProcVertexColorOutputDesc::Deserialize(xiiStreamReader& ref_stream)
 {
-  /*xiiTypeVersion version =*/stream.ReadVersion(s_ProcVertexColorOutputDescVersion);
-  stream >> m_sName;
-  XII_SUCCEED_OR_RETURN(m_Mapping.Deserialize(stream));
+  /*xiiTypeVersion version =*/ref_stream.ReadVersion(s_ProcVertexColorOutputDescVersion);
+  ref_stream >> m_sName;
+  XII_SUCCEED_OR_RETURN(m_Mapping.Deserialize(ref_stream));
 
   return XII_SUCCESS;
 }
@@ -442,21 +442,21 @@ void xiiProcVertexColorComponent::SetOutputDesc(xiiUInt32 uiIndex, const xiiProc
   }
 }
 
-void xiiProcVertexColorComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiProcVertexColorComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_hResource;
   s.WriteArray(m_OutputDescs).IgnoreResult();
 }
 
-void xiiProcVertexColorComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiProcVertexColorComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32  uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32  uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  xiiStreamReader& s         = ref_stream.GetStream();
 
   s >> m_hResource;
   if (uiVersion >= 2)
@@ -476,7 +476,7 @@ void xiiProcVertexColorComponent::DeserializeComponent(xiiWorldReader& stream)
   }
 }
 
-void xiiProcVertexColorComponent::OnTransformChanged(xiiMsgTransformChanged& msg)
+void xiiProcVertexColorComponent::OnTransformChanged(xiiMsgTransformChanged& ref_msg)
 {
   auto pManager = static_cast<xiiProcVertexColorComponentManager*>(GetOwningManager());
   pManager->EnqueueUpdate(this);

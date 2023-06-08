@@ -7,19 +7,19 @@
 // Cannot put this into the Vec3_inl.h file, that would result in circular dependencies
 
 template <typename Type>
-XII_FORCE_INLINE const xiiVec3Template<Type> xiiVec2Template<Type>::GetAsVec3(Type z) const
+XII_FORCE_INLINE const xiiVec3Template<Type> xiiVec2Template<Type>::GetAsVec3(Type inZ) const
 {
   XII_NAN_ASSERT(this);
 
-  return xiiVec3Template<Type>(x, y, z);
+  return xiiVec3Template<Type>(x, y, inZ);
 }
 
 template <typename Type>
-XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec2Template<Type>::GetAsVec4(Type z, Type w) const
+XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec2Template<Type>::GetAsVec4(Type inZ, Type inW) const
 {
   XII_NAN_ASSERT(this);
 
-  return xiiVec4Template<Type>(x, y, z, w);
+  return xiiVec4Template<Type>(x, y, inZ, inW);
 }
 
 template <typename Type>
@@ -32,11 +32,11 @@ XII_FORCE_INLINE const xiiVec2Template<Type> xiiVec3Template<Type>::GetAsVec2() 
 }
 
 template <typename Type>
-XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec3Template<Type>::GetAsVec4(Type w) const
+XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec3Template<Type>::GetAsVec4(Type inW) const
 {
   XII_NAN_ASSERT(this);
 
-  return xiiVec4Template<Type>(x, y, z, w);
+  return xiiVec4Template<Type>(x, y, z, inW);
 }
 
 template <typename Type>
@@ -73,21 +73,21 @@ XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template()
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type X, Type Y, Type Z, Type W) :
-  x(X), y(Y), z(Z), w(W)
+XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type inX, Type inY, Type inZ, Type inW) :
+  x(inX), y(inY), z(inZ), w(inW)
 {
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type V) :
-  x(V), y(V), z(V), w(V)
+XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type inV) :
+  x(inV), y(inV), z(inV), w(inV)
 {
 }
 
 template <typename Type>
 XII_FORCE_INLINE const xiiVec2Template<Type> xiiVec4Template<Type>::GetAsVec2() const
 {
-  // Do not assert here, as the 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes
+  // Do not assert here, as the 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes.
   // XII_NAN_ASSERT(this);
 
   return xiiVec2Template<Type>(x, y);
@@ -96,7 +96,7 @@ XII_FORCE_INLINE const xiiVec2Template<Type> xiiVec4Template<Type>::GetAsVec2() 
 template <typename Type>
 XII_FORCE_INLINE const xiiVec3Template<Type> xiiVec4Template<Type>::GetAsVec3() const
 {
-  // Do not assert here, as the 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes
+  // Do not assert here, as the 4th component may be NaN when this is fine, e.g. during interop with the SIMD classes.
   // XII_NAN_ASSERT(this);
 
   return xiiVec3Template<Type>(x, y, z);
@@ -112,12 +112,12 @@ XII_ALWAYS_INLINE void xiiVec4Template<Type>::Set(Type xyzw)
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE void xiiVec4Template<Type>::Set(Type X, Type Y, Type Z, Type W)
+XII_ALWAYS_INLINE void xiiVec4Template<Type>::Set(Type inX, Type inY, Type inZ, Type inW)
 {
-  x = X;
-  y = Y;
-  z = Z;
-  w = W;
+  x = inX;
+  y = inY;
+  z = inZ;
+  w = inW;
 }
 
 template <typename Type>
@@ -237,18 +237,18 @@ inline bool xiiVec4Template<Type>::IsValid() const
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE Type xiiVec4Template<Type>::Distance(const xiiVec4Template<Type>& point) const
+XII_ALWAYS_INLINE Type xiiVec4Template<Type>::Distance(const xiiVec4Template<Type>& vPoint) const
 {
-  return (xiiMath::Sqrt(DistanceSquared(point)));
+  return (xiiMath::Sqrt(DistanceSquared(vPoint)));
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE Type xiiVec4Template<Type>::DistanceSquared(const xiiVec4Template<Type>& point) const
+XII_ALWAYS_INLINE Type xiiVec4Template<Type>::DistanceSquared(const xiiVec4Template<Type>& vPoint) const
 {
-  XII_NAN_ASSERT(&point);
+  XII_NAN_ASSERT(&vPoint);
   XII_NAN_ASSERT(this);
 
-  return (xiiMath::Square(point.x - x) + xiiMath::Square(point.y - y) + xiiMath::Square(point.z - z)) + xiiMath::Square(point.w - w);
+  return (xiiMath::Square(vPoint.x - x) + xiiMath::Square(vPoint.y - y) + xiiMath::Square(vPoint.z - z)) + xiiMath::Square(vPoint.w - w);
 }
 
 template <typename Type>
@@ -260,23 +260,23 @@ XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec4Template<Type>::operator-() 
 }
 
 template <typename Type>
-XII_FORCE_INLINE void xiiVec4Template<Type>::operator+=(const xiiVec4Template<Type>& cc)
+XII_FORCE_INLINE void xiiVec4Template<Type>::operator+=(const xiiVec4Template<Type>& vCc)
 {
-  x += cc.x;
-  y += cc.y;
-  z += cc.z;
-  w += cc.w;
+  x += vCc.x;
+  y += vCc.y;
+  z += vCc.z;
+  w += vCc.w;
 
   XII_NAN_ASSERT(this);
 }
 
 template <typename Type>
-XII_FORCE_INLINE void xiiVec4Template<Type>::operator-=(const xiiVec4Template<Type>& cc)
+XII_FORCE_INLINE void xiiVec4Template<Type>::operator-=(const xiiVec4Template<Type>& vCc)
 {
-  x -= cc.x;
-  y -= cc.y;
-  z -= cc.z;
-  w -= cc.w;
+  x -= vCc.x;
+  y -= vCc.y;
+  z -= vCc.z;
+  w -= vCc.w;
 
   XII_NAN_ASSERT(this);
 }
@@ -333,13 +333,13 @@ inline const xiiVec4Template<Type> xiiVec4Template<Type>::CompMax(const xiiVec4T
 }
 
 template <typename Type>
-inline const xiiVec4Template<Type> xiiVec4Template<Type>::CompClamp(const xiiVec4Template& low, const xiiVec4Template& high) const
+inline const xiiVec4Template<Type> xiiVec4Template<Type>::CompClamp(const xiiVec4Template& vLow, const xiiVec4Template& vHigh) const
 {
   XII_NAN_ASSERT(this);
-  XII_NAN_ASSERT(&low);
-  XII_NAN_ASSERT(&high);
+  XII_NAN_ASSERT(&vLow);
+  XII_NAN_ASSERT(&vHigh);
 
-  return xiiVec4Template<Type>(xiiMath::Clamp(x, low.x, high.x), xiiMath::Clamp(y, low.y, high.y), xiiMath::Clamp(z, low.z, high.z), xiiMath::Clamp(w, low.w, high.w));
+  return xiiVec4Template<Type>(xiiMath::Clamp(x, vLow.x, vHigh.x), xiiMath::Clamp(y, vLow.y, vHigh.y), xiiMath::Clamp(z, vLow.z, vHigh.z), xiiMath::Clamp(w, vLow.w, vHigh.w));
 }
 
 template <typename Type>
@@ -410,7 +410,7 @@ XII_FORCE_INLINE const xiiVec4Template<Type> operator/(const xiiVec4Template<Typ
 {
   XII_NAN_ASSERT(&v);
 
-  // multiplication is much faster than division
+  // Multiplication is much faster than division
   const Type f_inv = xiiMath::Invert(f);
   return xiiVec4Template<Type>(v.x * f_inv, v.y * f_inv, v.z * f_inv, v.w * f_inv);
 }

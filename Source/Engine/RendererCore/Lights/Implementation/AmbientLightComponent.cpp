@@ -105,22 +105,22 @@ void xiiAmbientLightComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)
   msg.SetAlwaysVisible(GetOwner()->IsDynamic() ? xiiDefaultSpatialDataCategories::RenderDynamic : xiiDefaultSpatialDataCategories::RenderStatic);
 }
 
-void xiiAmbientLightComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiAmbientLightComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_TopColor;
   s << m_BottomColor;
   s << m_fIntensity;
 }
 
-void xiiAmbientLightComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiAmbientLightComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   s >> m_TopColor;
   s >> m_BottomColor;
@@ -159,7 +159,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->RenameProperty("Top Color", "TopColor");
     pNode->RenameProperty("Bottom Color", "BottomColor");

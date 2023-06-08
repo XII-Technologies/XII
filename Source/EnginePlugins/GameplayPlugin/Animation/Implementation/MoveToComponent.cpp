@@ -33,11 +33,11 @@ XII_END_COMPONENT_TYPE;
 xiiMoveToComponent::xiiMoveToComponent()  = default;
 xiiMoveToComponent::~xiiMoveToComponent() = default;
 
-void xiiMoveToComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiMoveToComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s << m_Flags.GetValue();
   s << m_fCurTranslationSpeed;
@@ -48,11 +48,11 @@ void xiiMoveToComponent::SerializeComponent(xiiWorldWriter& stream) const
 }
 
 
-void xiiMoveToComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiMoveToComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
 
   s >> m_Flags;
@@ -73,9 +73,9 @@ bool xiiMoveToComponent::IsRunning() const
   return m_Flags.IsSet(xiiMoveToComponentFlags::Running);
 }
 
-void xiiMoveToComponent::SetTargetPosition(const xiiVec3& pos)
+void xiiMoveToComponent::SetTargetPosition(const xiiVec3& vPos)
 {
-  m_vTargetPosition = pos;
+  m_vTargetPosition = vPos;
 }
 
 static float CalculateNewSpeed(float fRemainingDistance, float fCurSpeed, float fMaxSpeed, float fAcceleration, float fDeceleration, float fTimeStep)

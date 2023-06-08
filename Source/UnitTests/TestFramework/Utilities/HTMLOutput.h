@@ -14,9 +14,9 @@ struct xiiOutputToHTML
 {
   static std::ofstream htmlFile;
 
-  static void OutputToHTML(xiiTestOutput::Enum Type, const char* szMsg)
+  static void OutputToHTML(xiiTestOutput::Enum type, const char* szMsg)
   {
-    if (Type != xiiTestOutput::StartOutput && !htmlFile.is_open())
+    if (type != xiiTestOutput::StartOutput && !htmlFile.is_open())
       return;
 
     static xiiInt32           iIndentation = 0;
@@ -35,7 +35,7 @@ struct xiiOutputToHTML
       details.str("");
     };
 
-    switch (Type)
+    switch (type)
     {
       case xiiTestOutput::StartOutput:
       {

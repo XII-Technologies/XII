@@ -11,23 +11,23 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiMessageId xiiMessage::s_NextMsgId = 0;
 
 
-void xiiMessage::PackageForTransfer(const xiiMessage& msg, xiiStreamWriter& stream)
+void xiiMessage::PackageForTransfer(const xiiMessage& msg, xiiStreamWriter& ref_stream)
 {
   const xiiRTTI* pRtti = msg.GetDynamicRTTI();
 
-  stream << pRtti->GetTypeNameHash();
-  stream << (xiiUInt8)pRtti->GetTypeVersion();
+  ref_stream << pRtti->GetTypeNameHash();
+  ref_stream << (xiiUInt8)pRtti->GetTypeVersion();
 
-  msg.Serialize(stream);
+  msg.Serialize(ref_stream);
 }
 
-xiiUniquePtr<xiiMessage> xiiMessage::ReplicatePackedMessage(xiiStreamReader& stream)
+xiiUniquePtr<xiiMessage> xiiMessage::ReplicatePackedMessage(xiiStreamReader& ref_stream)
 {
   xiiUInt64 uiTypeHash = 0;
-  stream >> uiTypeHash;
+  ref_stream >> uiTypeHash;
 
   xiiUInt8 uiTypeVersion = 0;
-  stream >> uiTypeVersion;
+  ref_stream >> uiTypeVersion;
 
   static xiiHashTable<xiiUInt64, const xiiRTTI*, xiiHashHelper<xiiUInt64>, xiiStaticAllocatorWrapper> MessageTypes;
 
@@ -49,7 +49,7 @@ xiiUniquePtr<xiiMessage> xiiMessage::ReplicatePackedMessage(xiiStreamReader& str
 
   auto pMsg = pRtti->GetAllocator()->Allocate<xiiMessage>();
 
-  pMsg->Deserialize(stream, uiTypeVersion);
+  pMsg->Deserialize(ref_stream, uiTypeVersion);
 
   return pMsg;
 }

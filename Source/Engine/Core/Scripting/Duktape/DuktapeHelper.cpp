@@ -131,15 +131,15 @@ bool xiiDuktapeHelper::HasProperty(const char* szPropertyName, xiiInt32 iParentO
   return duk_is_object(m_pContext, iParentObjectIndex) && duk_has_prop_string(m_pContext, iParentObjectIndex, szPropertyName);
 }
 
-bool xiiDuktapeHelper::GetBoolProperty(const char* szPropertyName, bool fallback, xiiInt32 iParentObjectIndex /*= -1*/) const
+bool xiiDuktapeHelper::GetBoolProperty(const char* szPropertyName, bool bFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
-  bool result = fallback;
+  bool result = bFallback;
 
   if (duk_is_object(m_pContext, iParentObjectIndex))
   {
     if (duk_get_prop_string(m_pContext, iParentObjectIndex, szPropertyName)) // [ value/undef ]
     {
-      result = duk_get_boolean_default(m_pContext, -1, fallback); // [ value ]
+      result = duk_get_boolean_default(m_pContext, -1, bFallback); // [ value ]
     }
 
     duk_pop(m_pContext); // [ ]
@@ -148,15 +148,15 @@ bool xiiDuktapeHelper::GetBoolProperty(const char* szPropertyName, bool fallback
   return result;
 }
 
-xiiInt32 xiiDuktapeHelper::GetIntProperty(const char* szPropertyName, xiiInt32 fallback, xiiInt32 iParentObjectIndex /*= -1*/) const
+xiiInt32 xiiDuktapeHelper::GetIntProperty(const char* szPropertyName, xiiInt32 iFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
-  xiiInt32 result = fallback;
+  xiiInt32 result = iFallback;
 
   if (duk_is_object(m_pContext, iParentObjectIndex))
   {
     if (duk_get_prop_string(m_pContext, iParentObjectIndex, szPropertyName)) // [ value/undef ]
     {
-      result = duk_get_int_default(m_pContext, -1, fallback); // [ value ]
+      result = duk_get_int_default(m_pContext, -1, iFallback); // [ value ]
     }
 
     duk_pop(m_pContext); // [ ]
@@ -165,15 +165,15 @@ xiiInt32 xiiDuktapeHelper::GetIntProperty(const char* szPropertyName, xiiInt32 f
   return result;
 }
 
-xiiUInt32 xiiDuktapeHelper::GetUIntProperty(const char* szPropertyName, xiiUInt32 fallback, xiiInt32 iParentObjectIndex /*= -1*/) const
+xiiUInt32 xiiDuktapeHelper::GetUIntProperty(const char* szPropertyName, xiiUInt32 uiFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
-  xiiUInt32 result = fallback;
+  xiiUInt32 result = uiFallback;
 
   if (duk_is_object(m_pContext, iParentObjectIndex))
   {
     if (duk_get_prop_string(m_pContext, iParentObjectIndex, szPropertyName)) // [ value/undef ]
     {
-      result = duk_get_uint_default(m_pContext, -1, fallback); // [ value ]
+      result = duk_get_uint_default(m_pContext, -1, uiFallback); // [ value ]
     }
 
     duk_pop(m_pContext); // [ ]
@@ -182,20 +182,20 @@ xiiUInt32 xiiDuktapeHelper::GetUIntProperty(const char* szPropertyName, xiiUInt3
   return result;
 }
 
-float xiiDuktapeHelper::GetFloatProperty(const char* szPropertyName, float fallback, xiiInt32 iParentObjectIndex /*= -1*/) const
+float xiiDuktapeHelper::GetFloatProperty(const char* szPropertyName, float fFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
-  return static_cast<float>(GetNumberProperty(szPropertyName, fallback, iParentObjectIndex));
+  return static_cast<float>(GetNumberProperty(szPropertyName, fFallback, iParentObjectIndex));
 }
 
-double xiiDuktapeHelper::GetNumberProperty(const char* szPropertyName, double fallback, xiiInt32 iParentObjectIndex /*= -1*/) const
+double xiiDuktapeHelper::GetNumberProperty(const char* szPropertyName, double fFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
-  double result = fallback;
+  double result = fFallback;
 
   if (duk_is_object(m_pContext, iParentObjectIndex))
   {
     if (duk_get_prop_string(m_pContext, iParentObjectIndex, szPropertyName)) // [ value/undef ]
     {
-      result = duk_get_number_default(m_pContext, -1, fallback); // [ value ]
+      result = duk_get_number_default(m_pContext, -1, fFallback); // [ value ]
     }
 
     duk_pop(m_pContext); // [ ]
@@ -204,15 +204,15 @@ double xiiDuktapeHelper::GetNumberProperty(const char* szPropertyName, double fa
   return result;
 }
 
-const char* xiiDuktapeHelper::GetStringProperty(const char* szPropertyName, const char* fallback, xiiInt32 iParentObjectIndex /*= -1*/) const
+const char* xiiDuktapeHelper::GetStringProperty(const char* szPropertyName, const char* szFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
-  const char* result = fallback;
+  const char* result = szFallback;
 
   if (duk_is_object(m_pContext, iParentObjectIndex))
   {
     if (duk_get_prop_string(m_pContext, iParentObjectIndex, szPropertyName)) // [ value/undef ]
     {
-      result = duk_get_string_default(m_pContext, -1, fallback); // [ value ]
+      result = duk_get_string_default(m_pContext, -1, szFallback); // [ value ]
     }
 
     duk_pop(m_pContext); // [ ]
@@ -377,39 +377,39 @@ bool xiiDuktapeHelper::IsNullOrUndefined(xiiInt32 iStackElement /*= -1*/) const
 
 void xiiDuktapeHelper::RegisterGlobalFunction(
   const char*    szFunctionName,
-  duk_c_function pFunction,
+  duk_c_function function,
   xiiUInt8       uiNumArguments,
   xiiInt16       iMagicValue /*= 0*/)
 {
   // TODO: could store iFuncIdx for faster function calls
 
-  duk_push_global_object(m_pContext);                                                 // [ global ]
-  /*const int iFuncIdx =*/duk_push_c_function(m_pContext, pFunction, uiNumArguments); // [ global func ]
-  duk_set_magic(m_pContext, -1, iMagicValue);                                         // [ global func ]
-  duk_put_prop_string(m_pContext, -2, szFunctionName);                                // [ global ]
-  duk_pop(m_pContext);                                                                // [ ]
+  duk_push_global_object(m_pContext);                                                // [ global ]
+  /*const int iFuncIdx =*/duk_push_c_function(m_pContext, function, uiNumArguments); // [ global func ]
+  duk_set_magic(m_pContext, -1, iMagicValue);                                        // [ global func ]
+  duk_put_prop_string(m_pContext, -2, szFunctionName);                               // [ global ]
+  duk_pop(m_pContext);                                                               // [ ]
 }
 
-void xiiDuktapeHelper::RegisterGlobalFunctionWithVarArgs(const char* szFunctionName, duk_c_function pFunction, xiiInt16 iMagicValue /*= 0*/)
+void xiiDuktapeHelper::RegisterGlobalFunctionWithVarArgs(const char* szFunctionName, duk_c_function function, xiiInt16 iMagicValue /*= 0*/)
 {
   // TODO: could store iFuncIdx for faster function calls
 
-  duk_push_global_object(m_pContext);                                              // [ global ]
-  /*const int iFuncIdx =*/duk_push_c_function(m_pContext, pFunction, DUK_VARARGS); // [ global func ]
-  duk_set_magic(m_pContext, -1, iMagicValue);                                      // [ global func ]
-  duk_put_prop_string(m_pContext, -2, szFunctionName);                             // [ global ]
-  duk_pop(m_pContext);                                                             // [ ]
+  duk_push_global_object(m_pContext);                                             // [ global ]
+  /*const int iFuncIdx =*/duk_push_c_function(m_pContext, function, DUK_VARARGS); // [ global func ]
+  duk_set_magic(m_pContext, -1, iMagicValue);                                     // [ global func ]
+  duk_put_prop_string(m_pContext, -2, szFunctionName);                            // [ global ]
+  duk_pop(m_pContext);                                                            // [ ]
 }
 
 void xiiDuktapeHelper::RegisterObjectFunction(
   const char*    szFunctionName,
-  duk_c_function pFunction,
+  duk_c_function function,
   xiiUInt8       uiNumArguments,
   xiiInt32       iParentObjectIndex /*= -1*/,
   xiiInt16       iMagicValue /*= 0*/)
 {
-  /*const int iFuncIdx =*/duk_push_c_function(m_pContext, pFunction, uiNumArguments); // [ func ]
-  duk_set_magic(m_pContext, -1, iMagicValue);                                         // [ func ]
+  /*const int iFuncIdx =*/duk_push_c_function(m_pContext, function, uiNumArguments); // [ func ]
+  duk_set_magic(m_pContext, -1, iMagicValue);                                        // [ func ]
 
   if (iParentObjectIndex < 0)
   {
@@ -554,39 +554,39 @@ void xiiDuktapeHelper::PushUndefined()
   ++m_iPushedValues;
 }
 
-void xiiDuktapeHelper::PushCustom(xiiUInt32 num)
+void xiiDuktapeHelper::PushCustom(xiiUInt32 uiNum)
 {
-  m_iPushedValues += num;
+  m_iPushedValues += uiNum;
 }
 
-bool xiiDuktapeHelper::GetBoolValue(xiiInt32 iStackElement, bool fallback /*= false*/) const
+bool xiiDuktapeHelper::GetBoolValue(xiiInt32 iStackElement, bool bFallback /*= false*/) const
 {
-  return duk_get_boolean_default(m_pContext, iStackElement, fallback);
+  return duk_get_boolean_default(m_pContext, iStackElement, bFallback);
 }
 
-xiiInt32 xiiDuktapeHelper::GetIntValue(xiiInt32 iStackElement, xiiInt32 fallback /*= 0*/) const
+xiiInt32 xiiDuktapeHelper::GetIntValue(xiiInt32 iStackElement, xiiInt32 iFallback /*= 0*/) const
 {
-  return duk_get_int_default(m_pContext, iStackElement, fallback);
+  return duk_get_int_default(m_pContext, iStackElement, iFallback);
 }
 
-xiiUInt32 xiiDuktapeHelper::GetUIntValue(xiiInt32 iStackElement, xiiUInt32 fallback /*= 0*/) const
+xiiUInt32 xiiDuktapeHelper::GetUIntValue(xiiInt32 iStackElement, xiiUInt32 uiFallback /*= 0*/) const
 {
-  return duk_get_uint_default(m_pContext, iStackElement, fallback);
+  return duk_get_uint_default(m_pContext, iStackElement, uiFallback);
 }
 
-float xiiDuktapeHelper::GetFloatValue(xiiInt32 iStackElement, float fallback /*= 0*/) const
+float xiiDuktapeHelper::GetFloatValue(xiiInt32 iStackElement, float fFallback /*= 0*/) const
 {
-  return static_cast<float>(duk_get_number_default(m_pContext, iStackElement, fallback));
+  return static_cast<float>(duk_get_number_default(m_pContext, iStackElement, fFallback));
 }
 
-double xiiDuktapeHelper::GetNumberValue(xiiInt32 iStackElement, double fallback /*= 0*/) const
+double xiiDuktapeHelper::GetNumberValue(xiiInt32 iStackElement, double fFallback /*= 0*/) const
 {
-  return duk_get_number_default(m_pContext, iStackElement, fallback);
+  return duk_get_number_default(m_pContext, iStackElement, fFallback);
 }
 
-const char* xiiDuktapeHelper::GetStringValue(xiiInt32 iStackElement, const char* fallback /*= ""*/) const
+const char* xiiDuktapeHelper::GetStringValue(xiiInt32 iStackElement, const char* szFallback /*= ""*/) const
 {
-  return duk_get_string_default(m_pContext, iStackElement, fallback);
+  return duk_get_string_default(m_pContext, iStackElement, szFallback);
 }
 
 xiiResult xiiDuktapeHelper::ExecuteString(const char* szString, const char* szDebugName /*= "eval"*/)
@@ -628,10 +628,10 @@ xiiResult xiiDuktapeHelper::ExecuteString(const char* szString, const char* szDe
   return XII_SUCCESS;
 }
 
-xiiResult xiiDuktapeHelper::ExecuteStream(xiiStreamReader& stream, const char* szDebugName)
+xiiResult xiiDuktapeHelper::ExecuteStream(xiiStreamReader& ref_stream, const char* szDebugName)
 {
   xiiStringBuilder source;
-  source.ReadAll(stream);
+  source.ReadAll(ref_stream);
 
   return ExecuteString(source, szDebugName);
 }

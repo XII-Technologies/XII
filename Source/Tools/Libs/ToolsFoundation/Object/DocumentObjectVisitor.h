@@ -24,7 +24,7 @@ public:
     const char*                     szChildrenProperty = "Children",
     const char*                     szRootProperty     = "Children");
 
-  typedef xiiDelegate<bool(const xiiDocumentObject*)> VisitorFunction;
+  using VisitorFunction = xiiDelegate<bool(const xiiDocumentObject*)>;
   /// \brief Executes depth first traversal starting at the given node.
   ///
   /// \param pObject

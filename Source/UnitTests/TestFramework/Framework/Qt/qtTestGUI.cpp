@@ -15,11 +15,11 @@
 // xiiQtTestGUI public functions
 ////////////////////////////////////////////////////////////////////////
 
-xiiQtTestGUI::xiiQtTestGUI(xiiQtTestFramework& testFramework) :
-  QMainWindow(), m_pTestFramework(&testFramework)
+xiiQtTestGUI::xiiQtTestGUI(xiiQtTestFramework& ref_testFramework) :
+  QMainWindow(), m_pTestFramework(&ref_testFramework)
 {
   this->setupUi(this);
-  this->setWindowTitle(testFramework.GetTestName());
+  this->setWindowTitle(ref_testFramework.GetTestName());
 
   QCoreApplication::setOrganizationDomain("www.xiitechnologies.com");
   QCoreApplication::setOrganizationName("XII Technologies");
@@ -89,7 +89,7 @@ xiiQtTestGUI::xiiQtTestGUI(xiiQtTestFramework& testFramework) :
   UpdateButtonStates();
   LoadGUILayout();
 
-  if (testFramework.GetSettings().m_bRunTests)
+  if (ref_testFramework.GetSettings().m_bRunTests)
   {
     QTimer::singleShot(10, this, SLOT(on_actionRunTests_triggered()));
   }

@@ -409,9 +409,9 @@ void xiiMaterialResource::ResetResource()
   }
 }
 
-const char* xiiMaterialResource::GetDefaultMaterialFileName(DefaultMaterialType MaterialType)
+const char* xiiMaterialResource::GetDefaultMaterialFileName(DefaultMaterialType materialType)
 {
-  switch (MaterialType)
+  switch (materialType)
   {
     case DefaultMaterialType::Fullbright:
       return "Base/Materials/BaseMaterials/Fullbright.xiiMaterialAsset";

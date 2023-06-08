@@ -48,7 +48,7 @@ public:
   void SetCount(xiiUInt32 uiCount); // [tested]
 
   /// \brief Resizes the array to have exactly uiCount elements. Constructs all new elements by copying the FillValue.
-  void SetCount(xiiUInt32 uiCount, const T& FillValue); // [tested]
+  void SetCount(xiiUInt32 uiCount, const T& fillValue); // [tested]
 
   /// \brief Resizes the array to have exactly uiCount elements. Extra elements might be uninitialized.
   template <typename = void>                     // Template is used to only conditionally compile this function in when it is actually used.
@@ -101,7 +101,7 @@ public:
   T& ExpandAndGetRef(); // [tested]
 
   /// \brief Expands the array by N new items and returns a pointer to the first new one.
-  T* ExpandBy(xiiUInt32 numNewItems);
+  T* ExpandBy(xiiUInt32 uiNumNewItems);
 
   /// \brief Pushes value at the end of the array.
   void PushBack(const T& value); // [tested]
@@ -174,9 +174,9 @@ protected:
 };
 
 template <typename T, typename Derived>
-typename xiiArrayBase<T, Derived>::iterator begin(xiiArrayBase<T, Derived>& container)
+typename xiiArrayBase<T, Derived>::iterator begin(xiiArrayBase<T, Derived>& ref_container)
 {
-  return container.GetData();
+  return ref_container.GetData();
 }
 
 template <typename T, typename Derived>
@@ -192,9 +192,9 @@ typename xiiArrayBase<T, Derived>::const_iterator cbegin(const xiiArrayBase<T, D
 }
 
 template <typename T, typename Derived>
-typename xiiArrayBase<T, Derived>::reverse_iterator rbegin(xiiArrayBase<T, Derived>& container)
+typename xiiArrayBase<T, Derived>::reverse_iterator rbegin(xiiArrayBase<T, Derived>& ref_container)
 {
-  return typename xiiArrayBase<T, Derived>::reverse_iterator(container.GetData() + container.GetCount() - 1);
+  return typename xiiArrayBase<T, Derived>::reverse_iterator(ref_container.GetData() + ref_container.GetCount() - 1);
 }
 
 template <typename T, typename Derived>
@@ -210,9 +210,9 @@ typename xiiArrayBase<T, Derived>::const_reverse_iterator crbegin(const xiiArray
 }
 
 template <typename T, typename Derived>
-typename xiiArrayBase<T, Derived>::iterator end(xiiArrayBase<T, Derived>& container)
+typename xiiArrayBase<T, Derived>::iterator end(xiiArrayBase<T, Derived>& ref_container)
 {
-  return container.GetData() + container.GetCount();
+  return ref_container.GetData() + ref_container.GetCount();
 }
 
 template <typename T, typename Derived>
@@ -228,9 +228,9 @@ typename xiiArrayBase<T, Derived>::const_iterator cend(const xiiArrayBase<T, Der
 }
 
 template <typename T, typename Derived>
-typename xiiArrayBase<T, Derived>::reverse_iterator rend(xiiArrayBase<T, Derived>& container)
+typename xiiArrayBase<T, Derived>::reverse_iterator rend(xiiArrayBase<T, Derived>& ref_container)
 {
-  return typename xiiArrayBase<T, Derived>::reverse_iterator(container.GetData() - 1);
+  return typename xiiArrayBase<T, Derived>::reverse_iterator(ref_container.GetData() - 1);
 }
 
 template <typename T, typename Derived>

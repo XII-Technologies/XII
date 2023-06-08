@@ -17,7 +17,7 @@ public:
   virtual ~xiiQtTestDelegate();
 
 public: // QStyledItemDelegate interface
-  virtual void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+  virtual void paint(QPainter* pPainter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 };
 
 #endif

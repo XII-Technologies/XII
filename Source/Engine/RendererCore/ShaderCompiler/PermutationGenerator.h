@@ -27,7 +27,7 @@ public:
   xiiUInt32 GetPermutationCount() const;
 
   /// \brief Returns the n-th permutation.
-  void GetPermutation(xiiUInt32 uiPerm, xiiHybridArray<xiiPermutationVar, 16>& out_PermVars) const;
+  void GetPermutation(xiiUInt32 uiPerm, xiiHybridArray<xiiPermutationVar, 16>& out_permVars) const;
 
 private:
   xiiMap<xiiHashedString, xiiHashSet<xiiHashedString>> m_Permutations;

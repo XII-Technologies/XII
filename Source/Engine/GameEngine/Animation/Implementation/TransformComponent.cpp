@@ -34,27 +34,27 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransformComponent, 3, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiTransformComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiTransformComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  stream.GetStream() << m_Flags.GetValue();
-  stream.GetStream() << m_AnimationTime;
-  stream.GetStream() << m_fAnimationSpeed;
+  ref_stream.GetStream() << m_Flags.GetValue();
+  ref_stream.GetStream() << m_AnimationTime;
+  ref_stream.GetStream() << m_fAnimationSpeed;
 }
 
 
-void xiiTransformComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiTransformComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
 
   xiiTransformComponentFlags::StorageType flags;
-  stream.GetStream() >> flags;
+  ref_stream.GetStream() >> flags;
   m_Flags.SetValue(flags);
 
-  stream.GetStream() >> m_AnimationTime;
-  stream.GetStream() >> m_fAnimationSpeed;
+  ref_stream.GetStream() >> m_AnimationTime;
+  ref_stream.GetStream() >> m_fAnimationSpeed;
 }
 
 bool xiiTransformComponent::IsRunning(void) const
@@ -116,16 +116,16 @@ float CalculateAcceleratedMovement(
   float    fAcceleration,
   float    fMaxVelocity,
   float    fDeceleration,
-  xiiTime& fTimeSinceStartInSec)
+  xiiTime& ref_timeSinceStartInSec)
 {
   // linear motion, if no acceleration or deceleration is present
   if ((fAcceleration <= 0.0f) && (fDeceleration <= 0.0f))
   {
-    const float fDist = fMaxVelocity * (float)fTimeSinceStartInSec.GetSeconds();
+    const float fDist = fMaxVelocity * (float)ref_timeSinceStartInSec.GetSeconds();
 
     if (fDist > fDistanceInMeters)
     {
-      fTimeSinceStartInSec = xiiTime::Seconds(fDistanceInMeters / fMaxVelocity);
+      ref_timeSinceStartInSec = xiiTime::Seconds(fDistanceInMeters / fMaxVelocity);
       return fDistanceInMeters;
     }
 
@@ -133,7 +133,7 @@ float CalculateAcceleratedMovement(
   }
 
   // do some sanity-checks
-  if ((fTimeSinceStartInSec.GetSeconds() <= 0.0) || (fMaxVelocity <= 0.0f) || (fDistanceInMeters <= 0.0f))
+  if ((ref_timeSinceStartInSec.GetSeconds() <= 0.0) || (fMaxVelocity <= 0.0f) || (fDistanceInMeters <= 0.0f))
     return 0.0f;
 
   // calculate the duration and distance of accelerated movement
@@ -169,26 +169,26 @@ float CalculateAcceleratedMovement(
   }
 
   // if the time is still within the acceleration phase, return accelerated distance
-  if (fTimeSinceStartInSec.GetSeconds() <= fAccTime)
-    return static_cast<float>(0.5 * fAcceleration * xiiMath::Square(fTimeSinceStartInSec.GetSeconds()));
+  if (ref_timeSinceStartInSec.GetSeconds() <= fAccTime)
+    return static_cast<float>(0.5 * fAcceleration * xiiMath::Square(ref_timeSinceStartInSec.GetSeconds()));
 
   // calculate duration and length of the path, that has maximum velocity
   const double fMaxVelDistance = fDistanceInMeters - (fAccDist + fDecDist);
   const double fMaxVelTime     = fMaxVelDistance / fMaxVelocity;
 
   // if the time is within this phase, return the accelerated path plus the constant velocity path
-  if (fTimeSinceStartInSec.GetSeconds() <= fAccTime + fMaxVelTime)
-    return static_cast<float>(fAccDist + (fTimeSinceStartInSec.GetSeconds() - fAccTime) * fMaxVelocity);
+  if (ref_timeSinceStartInSec.GetSeconds() <= fAccTime + fMaxVelTime)
+    return static_cast<float>(fAccDist + (ref_timeSinceStartInSec.GetSeconds() - fAccTime) * fMaxVelocity);
 
   // if the time is, however, outside the whole path, just return the upper end
-  if (fTimeSinceStartInSec.GetSeconds() >= fAccTime + fMaxVelTime + fDecTime)
+  if (ref_timeSinceStartInSec.GetSeconds() >= fAccTime + fMaxVelTime + fDecTime)
   {
-    fTimeSinceStartInSec = xiiTime::Seconds(fAccTime + fMaxVelTime + fDecTime); // clamp the time
+    ref_timeSinceStartInSec = xiiTime::Seconds(fAccTime + fMaxVelTime + fDecTime); // clamp the time
     return fDistanceInMeters;
   }
 
   // calculate the time into the decelerated movement
-  const double fDecTime2 = fTimeSinceStartInSec.GetSeconds() - (fAccTime + fMaxVelTime);
+  const double fDecTime2 = ref_timeSinceStartInSec.GetSeconds() - (fAccTime + fMaxVelTime);
 
   // return the distance with the decelerated movement
   return static_cast<float>(fDistanceInMeters - 0.5 * fDeceleration * xiiMath::Square(fDecTime - fDecTime2));
@@ -209,7 +209,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->RenameProperty("Run at Startup", "RunAtStartup");
     pNode->RenameProperty("Reverse at Start", "ReverseAtStart");
@@ -229,7 +229,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->RenameProperty("RunAtStartup", "Running");
   }

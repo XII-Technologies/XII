@@ -11,11 +11,11 @@ public:
   xiiSimdTransform(); // [tested]
 
   /// \brief Sets position, rotation and scale.
-  explicit xiiSimdTransform(const xiiSimdVec4f& position, const xiiSimdQuat& rotation = xiiSimdQuat::IdentityQuaternion(),
-                            const xiiSimdVec4f& scale = xiiSimdVec4f(1.0f)); // [tested]
+  explicit xiiSimdTransform(const xiiSimdVec4f& vPosition, const xiiSimdQuat& qRotation = xiiSimdQuat::IdentityQuaternion(),
+                            const xiiSimdVec4f& vScale = xiiSimdVec4f(1.0f)); // [tested]
 
   /// \brief Sets rotation.
-  explicit xiiSimdTransform(const xiiSimdQuat& rotation); // [tested]
+  explicit xiiSimdTransform(const xiiSimdQuat& qRotation); // [tested]
 
   /// \brief Sets the position to be zero and the rotation to identity.
   void SetIdentity(); // [tested]
@@ -45,11 +45,11 @@ public:
 
 public:
   /// \brief Sets this transform to be the local transformation needed to get from the parent's transform to the child's.
-  void SetLocalTransform(const xiiSimdTransform& GlobalTransformParent, const xiiSimdTransform& GlobalTransformChild); // [tested]
+  void SetLocalTransform(const xiiSimdTransform& globalTransformParent, const xiiSimdTransform& globalTransformChild); // [tested]
 
   /// \brief Sets this transform to the global transform, that is reached by applying the child's local transform to the parent's global
   /// one.
-  void SetGlobalTransform(const xiiSimdTransform& GlobalTransformParent, const xiiSimdTransform& LocalTransformChild); // [tested]
+  void SetGlobalTransform(const xiiSimdTransform& globalTransformParent, const xiiSimdTransform& localTransformChild); // [tested]
 
   /// \brief Returns the transformation as a matrix.
   xiiSimdMat4f GetAsMat4() const; // [tested]

@@ -11,7 +11,7 @@
 #  include <Foundation/IO/FileSystem/FileSystem.h>
 #  include <TestFramework/Utilities/TestLogInterface.h>
 
-static duk_ret_t ModuleSearchFunction(duk_context* ctx);
+static duk_ret_t ModuleSearchFunction(duk_context* pCtx);
 
 static int CFuncPrint(duk_context* pContext)
 {
@@ -286,9 +286,9 @@ XII_CREATE_SIMPLE_TEST(Scripting, DuktapeWrapper)
   xiiFileSystem::RemoveDataDirectoryGroup("DuktapeTest");
 }
 
-static duk_ret_t ModuleSearchFunction(duk_context* ctx)
+static duk_ret_t ModuleSearchFunction(duk_context* pCtx)
 {
-  xiiDuktapeFunction script(ctx);
+  xiiDuktapeFunction script(pCtx);
 
   /* Nargs was given as 4 and we get the following stack arguments:
    *   index 0: id

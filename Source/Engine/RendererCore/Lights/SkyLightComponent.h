@@ -9,7 +9,7 @@ struct xiiMsgUpdateLocalBounds;
 struct xiiMsgExtractRenderData;
 struct xiiMsgTransformChanged;
 
-typedef xiiSettingsComponentManager<class xiiSkyLightComponent> xiiSkyLightComponentManager;
+using xiiSkyLightComponentManager = xiiSettingsComponentManager<class xiiSkyLightComponent>;
 
 class XII_RENDERERCORE_DLL xiiSkyLightComponent : public xiiSettingsComponent
 {
@@ -19,8 +19,8 @@ class XII_RENDERERCORE_DLL xiiSkyLightComponent : public xiiSettingsComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;

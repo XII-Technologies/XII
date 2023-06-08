@@ -95,7 +95,7 @@ struct xiiWorkerThreadType
     ENUM_COUNT
   };
 
-  static const char* GetThreadTypeName(xiiWorkerThreadType::Enum ThreadType);
+  static const char* GetThreadTypeName(xiiWorkerThreadType::Enum threadType);
 };
 
 /// \brief Given out by xiiTaskSystem::CreateTaskGroup to identify a task group.
@@ -165,7 +165,7 @@ enum class xiiTaskNesting
 /// \brief Settings for xiiTaskSystem::ParallelFor invocations.
 struct XII_FOUNDATION_DLL xiiParallelForParams
 {
-  xiiParallelForParams() {} // do not remove, needed for Clang
+  xiiParallelForParams() = default; // do not remove, needed for Clang
 
   /// The minimum number of items that must be processed by a task instance.
   /// If the overall number of tasks lies below this value, all work will be executed purely serially

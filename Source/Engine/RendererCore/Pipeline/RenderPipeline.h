@@ -31,8 +31,8 @@ public:
 
   void                   AddPass(xiiUniquePtr<xiiRenderPipelinePass>&& pPass);
   void                   RemovePass(xiiRenderPipelinePass* pPass);
-  void                   GetPasses(xiiHybridArray<const xiiRenderPipelinePass*, 16>& passes) const;
-  void                   GetPasses(xiiHybridArray<xiiRenderPipelinePass*, 16>& passes);
+  void                   GetPasses(xiiHybridArray<const xiiRenderPipelinePass*, 16>& ref_passes) const;
+  void                   GetPasses(xiiHybridArray<xiiRenderPipelinePass*, 16>& ref_passes);
   xiiRenderPipelinePass* GetPassByName(const xiiStringView& sPassName);
   xiiHashedString        GetViewName() const;
 
@@ -45,8 +45,8 @@ public:
 
   void          AddExtractor(xiiUniquePtr<xiiExtractor>&& pExtractor);
   void          RemoveExtractor(xiiExtractor* pExtractor);
-  void          GetExtractors(xiiHybridArray<const xiiExtractor*, 16>& extractors) const;
-  void          GetExtractors(xiiHybridArray<xiiExtractor*, 16>& extractors);
+  void          GetExtractors(xiiHybridArray<const xiiExtractor*, 16>& ref_extractors) const;
+  void          GetExtractors(xiiHybridArray<xiiExtractor*, 16>& ref_extractors);
   xiiExtractor* GetExtractorByName(const xiiStringView& sExtractorName);
 
   template <typename T>
@@ -61,7 +61,7 @@ public:
            xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter()) const;
 
   /// \brief Creates a DGML graph of all passes and textures. Can be used to verify that no accidental temp textures are created due to poorly constructed pipelines or errors in code.
-  void CreateDgmlGraph(xiiDGMLGraph& graph);
+  void CreateDgmlGraph(xiiDGMLGraph& ref_graph);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   static xiiCVarBool cvar_SpatialCullingVis;
@@ -116,7 +116,7 @@ private: // Member data
   xiiUInt64       m_uiLastRenderFrame;
 
   // Render pass graph data
-  PipelineState m_PipelineState;
+  PipelineState m_PipelineState = PipelineState::Uninitialized;
 
   struct ConnectionData
   {

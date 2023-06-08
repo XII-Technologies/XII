@@ -500,19 +500,19 @@ const xiiVariant xiiVariant::operator[](xiiUInt32 uiIndex) const
   return xiiVariant();
 }
 
-const xiiVariant xiiVariant::operator[](StringWrapper szKey) const
+const xiiVariant xiiVariant::operator[](StringWrapper key) const
 {
   if (m_uiType == Type::VariantDictionary)
   {
     xiiVariant result;
-    Cast<xiiVariantDictionary>().TryGetValue(szKey.m_str, result);
+    Cast<xiiVariantDictionary>().TryGetValue(key.m_str, result);
     return result;
   }
   else if (IsValid())
   {
     KeyFunc func;
     func.m_pThis = this;
-    func.m_szKey = szKey.m_str;
+    func.m_szKey = key.m_str;
 
     DispatchTo(func, GetType());
 

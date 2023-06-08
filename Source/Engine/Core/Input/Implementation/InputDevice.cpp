@@ -9,9 +9,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInputDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiKeyState::Enum xiiKeyState::GetNewKeyState(xiiKeyState::Enum PrevState, bool bKeyDown)
+xiiKeyState::Enum xiiKeyState::GetNewKeyState(xiiKeyState::Enum prevState, bool bKeyDown)
 {
-  switch (PrevState)
+  switch (prevState)
   {
     case xiiKeyState::Down:
     case xiiKeyState::Pressed:
@@ -101,9 +101,9 @@ xiiUInt32 xiiInputDevice::RetrieveLastCharacterFromAllDevices()
   return '\0';
 }
 
-float xiiInputDevice::GetInputSlotState(const char* slot) const
+float xiiInputDevice::GetInputSlotState(const char* szSlot) const
 {
-  return m_InputSlotValues.GetValueOrDefault(slot, 0.f);
+  return m_InputSlotValues.GetValueOrDefault(szSlot, 0.f);
 }
 
 bool xiiInputDevice::HasDeviceBeenUsedLastFrame() const

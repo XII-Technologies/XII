@@ -25,12 +25,12 @@ public:
   xiiStringView          GetName() const { return m_sName; }
   const xiiHashedString& GetNameHashed() const { return m_sName; }
 
-  virtual void OnEnter(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pFromState) const = 0;
-  virtual void OnExit(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pToState) const;
-  virtual void Update(xiiStateMachineInstance& instance, void* pInstanceData, xiiTime deltaTime) const;
+  virtual void OnEnter(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pFromState) const = 0;
+  virtual void OnExit(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pToState) const;
+  virtual void Update(xiiStateMachineInstance& ref_instance, void* pInstanceData, xiiTime deltaTime) const;
 
-  virtual xiiResult Serialize(xiiStreamWriter& stream) const;
-  virtual xiiResult Deserialize(xiiStreamReader& stream);
+  virtual xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  virtual xiiResult Deserialize(xiiStreamReader& ref_stream);
 
   /// \brief Returns whether this state needs additional instance data and if so fills the out_desc.
   ///
@@ -51,10 +51,10 @@ class XII_GAMEENGINE_DLL xiiStateMachineTransition : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiStateMachineTransition, xiiReflectedClass);
 
-  virtual bool IsConditionMet(xiiStateMachineInstance& instance, void* pInstanceData) const = 0;
+  virtual bool IsConditionMet(xiiStateMachineInstance& ref_instance, void* pInstanceData) const = 0;
 
-  virtual xiiResult Serialize(xiiStreamWriter& stream) const;
-  virtual xiiResult Deserialize(xiiStreamReader& stream);
+  virtual xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  virtual xiiResult Deserialize(xiiStreamReader& ref_stream);
 
   /// \brief Returns whether this transition needs additional instance data and if so fills the out_desc.
   ///
@@ -79,8 +79,8 @@ public:
   /// \brief Adds the given transition between the two given states. A uiFromStateIndex of xiiInvalidIndex generates a transition that can be done from any other possible state.
   void AddTransition(xiiUInt32 uiFromStateIndex, xiiUInt32 uiToStateIndex, xiiUniquePtr<xiiStateMachineTransition>&& pTransistion);
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 
 private:
   friend class xiiStateMachineInstance;
@@ -115,7 +115,7 @@ class XII_GAMEENGINE_DLL xiiStateMachineInstance
   XII_DISALLOW_COPY_AND_ASSIGN(xiiStateMachineInstance);
 
 public:
-  xiiStateMachineInstance(xiiReflectedClass& owner, const xiiSharedPtr<const xiiStateMachineDescription>& pDescription = nullptr);
+  xiiStateMachineInstance(xiiReflectedClass& ref_owner, const xiiSharedPtr<const xiiStateMachineDescription>& pDescription = nullptr);
   ~xiiStateMachineInstance();
 
   xiiResult             SetState(xiiStateMachineState* pState);
@@ -128,7 +128,7 @@ public:
 
   xiiReflectedClass& GetOwner() { return m_Owner; }
 
-  void                               SetBlackboard(const xiiSharedPtr<xiiBlackboard>& blackboard);
+  void                               SetBlackboard(const xiiSharedPtr<xiiBlackboard>& pBlackboard);
   const xiiSharedPtr<xiiBlackboard>& GetBlackboard() const { return m_pBlackboard; }
 
   /// \brief Returns how long the state machine is in its current state

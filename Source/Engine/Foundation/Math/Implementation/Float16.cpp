@@ -106,15 +106,15 @@ xiiFloat16::operator float() const
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiFloat16Vec2::xiiFloat16Vec2(const xiiVec2& vec)
+xiiFloat16Vec2::xiiFloat16Vec2(const xiiVec2& vVec)
 {
-  operator=(vec);
+  operator=(vVec);
 }
 
-void xiiFloat16Vec2::operator=(const xiiVec2& vec)
+void xiiFloat16Vec2::operator=(const xiiVec2& vVec)
 {
-  x = vec.x;
-  y = vec.y;
+  x = vVec.x;
+  y = vVec.y;
 }
 
 xiiFloat16Vec2::operator xiiVec2() const
@@ -124,16 +124,16 @@ xiiFloat16Vec2::operator xiiVec2() const
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiFloat16Vec3::xiiFloat16Vec3(const xiiVec3& vec)
+xiiFloat16Vec3::xiiFloat16Vec3(const xiiVec3& vVec)
 {
-  operator=(vec);
+  operator=(vVec);
 }
 
-void xiiFloat16Vec3::operator=(const xiiVec3& vec)
+void xiiFloat16Vec3::operator=(const xiiVec3& vVec)
 {
-  x = vec.x;
-  y = vec.y;
-  z = vec.z;
+  x = vVec.x;
+  y = vVec.y;
+  z = vVec.z;
 }
 
 xiiFloat16Vec3::operator xiiVec3() const
@@ -143,17 +143,17 @@ xiiFloat16Vec3::operator xiiVec3() const
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiFloat16Vec4::xiiFloat16Vec4(const xiiVec4& vec)
+xiiFloat16Vec4::xiiFloat16Vec4(const xiiVec4& vVec)
 {
-  operator=(vec);
+  operator=(vVec);
 }
 
-void xiiFloat16Vec4::operator=(const xiiVec4& vec)
+void xiiFloat16Vec4::operator=(const xiiVec4& vVec)
 {
-  x = vec.x;
-  y = vec.y;
-  z = vec.z;
-  w = vec.w;
+  x = vVec.x;
+  y = vVec.y;
+  z = vVec.z;
+  w = vVec.w;
 }
 
 xiiFloat16Vec4::operator xiiVec4() const

@@ -21,24 +21,24 @@ xiiResult xiiOzzArchiveData::FetchRegularFile(const char* szFile)
   return XII_SUCCESS;
 }
 
-xiiResult xiiOzzArchiveData::FetchEmbeddedArchive(xiiStreamReader& stream)
+xiiResult xiiOzzArchiveData::FetchEmbeddedArchive(xiiStreamReader& ref_stream)
 {
   char szTag[8] = "";
 
-  stream.ReadBytes(szTag, 8);
+  ref_stream.ReadBytes(szTag, 8);
   szTag[7] = '\0';
 
   if (!xiiStringUtils::IsEqual(szTag, "xiiOzzAr"))
     return XII_FAILURE;
 
-  /*const xiiTypeVersion version =*/stream.ReadVersion(1);
+  /*const xiiTypeVersion version =*/ref_stream.ReadVersion(1);
 
   xiiUInt64 uiArchiveSize = 0;
-  stream >> uiArchiveSize;
+  ref_stream >> uiArchiveSize;
 
   m_Storage.Clear();
   m_Storage.Reserve(uiArchiveSize);
-  m_Storage.ReadAll(stream, uiArchiveSize);
+  m_Storage.ReadAll(ref_stream, uiArchiveSize);
 
   if (m_Storage.GetStorageSize64() != uiArchiveSize)
     return XII_FAILURE;
@@ -46,19 +46,19 @@ xiiResult xiiOzzArchiveData::FetchEmbeddedArchive(xiiStreamReader& stream)
   return XII_SUCCESS;
 }
 
-xiiResult xiiOzzArchiveData::StoreEmbeddedArchive(xiiStreamWriter& stream) const
+xiiResult xiiOzzArchiveData::StoreEmbeddedArchive(xiiStreamWriter& ref_stream) const
 {
   const char szTag[8] = "xiOzzAr";
 
-  XII_SUCCEED_OR_RETURN(stream.WriteBytes(szTag, 8));
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteBytes(szTag, 8));
 
-  stream.WriteVersion(1);
+  ref_stream.WriteVersion(1);
 
   const xiiUInt64 uiArchiveSize = m_Storage.GetStorageSize64();
 
-  stream << uiArchiveSize;
+  ref_stream << uiArchiveSize;
 
-  return m_Storage.CopyToStream(stream);
+  return m_Storage.CopyToStream(ref_stream);
 }
 
 xiiOzzStreamReader::xiiOzzStreamReader(const xiiOzzArchiveData& data) :
@@ -71,29 +71,29 @@ bool xiiOzzStreamReader::opened() const
   return true;
 }
 
-size_t xiiOzzStreamReader::Read(void* _buffer, size_t _size)
+size_t xiiOzzStreamReader::Read(void* pP_buffer, size_t uiUi_size)
 {
-  return static_cast<size_t>(m_Reader.ReadBytes(_buffer, _size));
+  return static_cast<size_t>(m_Reader.ReadBytes(pP_buffer, uiUi_size));
 }
 
-size_t xiiOzzStreamReader::Write(const void* _buffer, size_t _size)
+size_t xiiOzzStreamReader::Write(const void* pP_buffer, size_t uiUi_size)
 {
   XII_ASSERT_NOT_IMPLEMENTED;
   return 0;
 }
 
-int xiiOzzStreamReader::Seek(int _offset, Origin _origin)
+int xiiOzzStreamReader::Seek(int iI_offset, Origin _origin)
 {
   switch (_origin)
   {
     case ozz::io::Stream::kCurrent:
-      m_Reader.SetReadPosition(m_Reader.GetReadPosition() + _offset);
+      m_Reader.SetReadPosition(m_Reader.GetReadPosition() + iI_offset);
       break;
     case ozz::io::Stream::kEnd:
-      m_Reader.SetReadPosition(m_Reader.GetByteCount64() - _offset);
+      m_Reader.SetReadPosition(m_Reader.GetByteCount64() - iI_offset);
       break;
     case ozz::io::Stream::kSet:
-      m_Reader.SetReadPosition(_offset);
+      m_Reader.SetReadPosition(iI_offset);
       break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
@@ -112,8 +112,8 @@ size_t xiiOzzStreamReader::Size() const
   return static_cast<size_t>(m_Reader.GetByteCount64());
 }
 
-xiiOzzStreamWriter::xiiOzzStreamWriter(xiiOzzArchiveData& data) :
-  m_Writer(&data.m_Storage)
+xiiOzzStreamWriter::xiiOzzStreamWriter(xiiOzzArchiveData& ref_data) :
+  m_Writer(&ref_data.m_Storage)
 {
 }
 
@@ -122,32 +122,32 @@ bool xiiOzzStreamWriter::opened() const
   return true;
 }
 
-size_t xiiOzzStreamWriter::Read(void* _buffer, size_t _size)
+size_t xiiOzzStreamWriter::Read(void* pP_buffer, size_t uiUi_size)
 {
   XII_ASSERT_NOT_IMPLEMENTED;
   return 0;
 }
 
-size_t xiiOzzStreamWriter::Write(const void* _buffer, size_t _size)
+size_t xiiOzzStreamWriter::Write(const void* pP_buffer, size_t uiUi_size)
 {
-  if (m_Writer.WriteBytes(_buffer, _size).Failed())
+  if (m_Writer.WriteBytes(pP_buffer, uiUi_size).Failed())
     return 0;
 
-  return _size;
+  return uiUi_size;
 }
 
-int xiiOzzStreamWriter::Seek(int _offset, Origin _origin)
+int xiiOzzStreamWriter::Seek(int iI_offset, Origin _origin)
 {
   switch (_origin)
   {
     case ozz::io::Stream::kCurrent:
-      m_Writer.SetWritePosition(m_Writer.GetWritePosition() + _offset);
+      m_Writer.SetWritePosition(m_Writer.GetWritePosition() + iI_offset);
       break;
     case ozz::io::Stream::kEnd:
-      m_Writer.SetWritePosition(m_Writer.GetByteCount64() - _offset);
+      m_Writer.SetWritePosition(m_Writer.GetByteCount64() - iI_offset);
       break;
     case ozz::io::Stream::kSet:
-      m_Writer.SetWritePosition(_offset);
+      m_Writer.SetWritePosition(iI_offset);
       break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;

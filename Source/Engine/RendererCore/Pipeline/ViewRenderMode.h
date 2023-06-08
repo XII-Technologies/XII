@@ -5,7 +5,7 @@
 
 struct XII_RENDERERCORE_DLL xiiViewRenderMode
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {

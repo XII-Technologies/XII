@@ -21,7 +21,7 @@ class xiiGraphVersioning;
 /// \brief Tuple used for identifying patches and tracking patch progression.
 struct xiiVersionKey
 {
-  xiiVersionKey() {}
+  xiiVersionKey() = default;
   xiiVersionKey(xiiStringView sType, xiiUInt32 uiTypeVersion)
   {
     m_sType.Assign(sType);
@@ -78,7 +78,7 @@ public:
   void RenameClass(const char* szTypeName); // [tested]
 
   /// \brief Renames current class type.
-  void RenameClass(const char* szTypeName, xiiUInt32 version);
+  void RenameClass(const char* szTypeName, xiiUInt32 uiVersion);
 
   /// \brief Changes the base class hierarchy to the given one.
   void ChangeBaseClass(xiiArrayPtr<xiiVersionKey> baseClasses); // [tested]

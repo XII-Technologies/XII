@@ -17,18 +17,18 @@ namespace
 
     XII_DECLARE_POD_TYPE();
 
-    xiiResult Serialize(xiiStreamWriter& Stream) const
+    xiiResult Serialize(xiiStreamWriter& ref_stream) const
     {
-      Stream << m_uiMember1;
-      Stream << m_uiMember2;
+      ref_stream << m_uiMember1;
+      ref_stream << m_uiMember2;
 
       return XII_SUCCESS;
     }
 
-    xiiResult Deserialize(xiiStreamReader& Stream)
+    xiiResult Deserialize(xiiStreamReader& ref_stream)
     {
-      Stream >> m_uiMember1;
-      Stream >> m_uiMember2;
+      ref_stream >> m_uiMember1;
+      ref_stream >> m_uiMember2;
 
       return XII_SUCCESS;
     }

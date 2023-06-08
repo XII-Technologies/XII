@@ -17,11 +17,11 @@ xiiStateMachineResource::xiiStateMachineResource() :
 
 xiiStateMachineResource::~xiiStateMachineResource() = default;
 
-xiiUniquePtr<xiiStateMachineInstance> xiiStateMachineResource::CreateInstance(xiiReflectedClass& owner)
+xiiUniquePtr<xiiStateMachineInstance> xiiStateMachineResource::CreateInstance(xiiReflectedClass& ref_owner)
 {
   if (m_pDescription != nullptr)
   {
-    return XII_DEFAULT_NEW(xiiStateMachineInstance, owner, m_pDescription);
+    return XII_DEFAULT_NEW(xiiStateMachineInstance, ref_owner, m_pDescription);
   }
 
   return nullptr;

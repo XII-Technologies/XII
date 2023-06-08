@@ -20,7 +20,7 @@ class XII_FOUNDATION_DLL xiiStringDeduplicationWriteContext : public xiiSerializ
 
 public:
   /// \brief Setup the write context to perform string deduplication.
-  xiiStringDeduplicationWriteContext(xiiStreamWriter& OriginalStream);
+  xiiStringDeduplicationWriteContext(xiiStreamWriter& ref_originalStream);
   ~xiiStringDeduplicationWriteContext();
 
   /// \brief Call this method to begin string deduplicaton. You need to use the returned stream writer for subsequent serialization operations until
@@ -31,7 +31,7 @@ public:
   xiiResult End();
 
   /// \brief Internal method to serialize a string.
-  void SerializeString(const xiiStringView& String, xiiStreamWriter& Writer);
+  void SerializeString(const xiiStringView& sString, xiiStreamWriter& ref_writer);
 
   /// \brief Returns the number of unique strings which were serialized with this instance.
   xiiUInt32 GetUniqueStringCount() const;
@@ -55,11 +55,11 @@ class XII_FOUNDATION_DLL xiiStringDeduplicationReadContext : public xiiSerializa
 
 public:
   /// \brief Setup the string table used internally.
-  xiiStringDeduplicationReadContext(xiiStreamReader& Stream);
+  xiiStringDeduplicationReadContext(xiiStreamReader& ref_stream);
   ~xiiStringDeduplicationReadContext();
 
   /// \brief Internal method to deserialize a string.
-  xiiStringView DeserializeString(xiiStreamReader& Reader);
+  xiiStringView DeserializeString(xiiStreamReader& ref_reader);
 
 protected:
   xiiDynamicArray<xiiHybridString<64>> m_DeduplicatedStrings;

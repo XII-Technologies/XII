@@ -27,7 +27,7 @@ public:
 
 class XII_RECASTPLUGIN_DLL xiiRcNavMeshComponentManager : public xiiComponentManager<class xiiRcNavMeshComponent, xiiBlockStorageType::Compact>
 {
-  typedef xiiComponentManager<class xiiRcNavMeshComponent, xiiBlockStorageType::Compact> SUPER;
+  using SUPER = xiiComponentManager<class xiiRcNavMeshComponent, xiiBlockStorageType::Compact>;
 
 public:
   xiiRcNavMeshComponentManager(xiiWorld* pWorld);
@@ -40,7 +40,7 @@ public:
   void Update(const xiiWorldModule::UpdateContext& context);
 
 private:
-  xiiRecastWorldModule* m_pWorldModule;
+  xiiRecastWorldModule* m_pWorldModule = nullptr;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -53,8 +53,8 @@ class XII_RECASTPLUGIN_DLL xiiRcNavMeshComponent : public xiiRcComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;

@@ -3,14 +3,14 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 #include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 
-BOOL CALLBACK xiiMonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+BOOL CALLBACK xiiMonitorEnumProc(HMONITOR pMonitor, HDC pHdcMonitor, LPRECT pLprcMonitor, LPARAM dwData)
 {
   xiiHybridArray<xiiScreenInfo, 2>* pScreens = (xiiHybridArray<xiiScreenInfo, 2>*)dwData;
 
   MONITORINFOEXW info;
   info.cbSize = sizeof(info);
 
-  if (!GetMonitorInfoW(hMonitor, &info))
+  if (!GetMonitorInfoW(pMonitor, &info))
     return TRUE;
 
   // In Windows screen coordinates are from top/left to bottom/right
@@ -35,13 +35,13 @@ BOOL CALLBACK xiiMonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcM
   return TRUE;
 }
 
-xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Screens)
+xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_screens)
 {
-  out_Screens.Clear();
-  if (EnumDisplayMonitors(nullptr, nullptr, xiiMonitorEnumProc, (LPARAM)&out_Screens) == FALSE)
+  out_screens.Clear();
+  if (EnumDisplayMonitors(nullptr, nullptr, xiiMonitorEnumProc, (LPARAM)&out_screens) == FALSE)
     return XII_FAILURE;
 
-  if (out_Screens.IsEmpty())
+  if (out_screens.IsEmpty())
     return XII_FAILURE;
 
   return XII_SUCCESS;

@@ -2,8 +2,8 @@
 
 #include <EditorPluginFileserve/FileserveUI/ActivityModel.moc.h>
 
-xiiQtFileserveActivityModel::xiiQtFileserveActivityModel(QWidget* parent) :
-  QAbstractListModel(parent)
+xiiQtFileserveActivityModel::xiiQtFileserveActivityModel(QWidget* pParent) :
+  QAbstractListModel(pParent)
 {
 }
 
@@ -17,14 +17,14 @@ int xiiQtFileserveActivityModel::columnCount(const QModelIndex& parent /*= QMode
   return 2;
 }
 
-QVariant xiiQtFileserveActivityModel::data(const QModelIndex& index, int role /*= Qt::DisplayRole*/) const
+QVariant xiiQtFileserveActivityModel::data(const QModelIndex& index, int iRole /*= Qt::DisplayRole*/) const
 {
   if (!index.isValid())
     return QVariant();
 
   const auto& item = m_Items[index.row()];
 
-  if (role == Qt::ToolTipRole)
+  if (iRole == Qt::ToolTipRole)
   {
     if (item.m_Type == xiiFileserveActivityType::ReadFile)
     {
@@ -36,7 +36,7 @@ QVariant xiiQtFileserveActivityModel::data(const QModelIndex& index, int role /*
 
   if (index.column() == 0)
   {
-    if (role == Qt::DisplayRole)
+    if (iRole == Qt::DisplayRole)
     {
       switch (item.m_Type)
       {
@@ -68,7 +68,7 @@ QVariant xiiQtFileserveActivityModel::data(const QModelIndex& index, int role /*
       }
     }
 
-    if (role == Qt::ForegroundRole)
+    if (iRole == Qt::ForegroundRole)
     {
       switch (item.m_Type)
       {
@@ -105,7 +105,7 @@ QVariant xiiQtFileserveActivityModel::data(const QModelIndex& index, int role /*
 
   if (index.column() == 1)
   {
-    if (role == Qt::DisplayRole)
+    if (iRole == Qt::DisplayRole)
     {
       return item.m_Text;
     }
@@ -115,16 +115,16 @@ QVariant xiiQtFileserveActivityModel::data(const QModelIndex& index, int role /*
 }
 
 
-QVariant xiiQtFileserveActivityModel::headerData(int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole*/) const
+QVariant xiiQtFileserveActivityModel::headerData(int iSection, Qt::Orientation orientation, int iRole /*= Qt::DisplayRole*/) const
 {
-  if (role == Qt::DisplayRole)
+  if (iRole == Qt::DisplayRole)
   {
-    if (section == 0)
+    if (iSection == 0)
     {
       return "Type";
     }
 
-    if (section == 1)
+    if (iSection == 1)
     {
       return "Action";
     }

@@ -107,7 +107,7 @@ template <typename T, xiiUInt32 BlockSize, xiiBlockStorageType::Enum StorageType
 XII_FORCE_INLINE xiiBlockStorage<T, BlockSize, StorageType>::xiiBlockStorage(
   xiiLargeBlockAllocator<BlockSize>* pBlockAllocator,
   xiiAllocatorBase*                  pAllocator) :
-  m_pBlockAllocator(pBlockAllocator), m_Blocks(pAllocator), m_uiCount(0), m_uiFreelistStart(xiiInvalidIndex)
+  m_pBlockAllocator(pBlockAllocator), m_Blocks(pAllocator)
 {
 }
 

@@ -31,9 +31,9 @@ XII_FORCE_INLINE xiiGALShaderCreationDescription::~xiiGALShaderCreationDescripti
   }
 }
 
-XII_FORCE_INLINE bool xiiGALShaderCreationDescription::HasByteCodeForStage(xiiGALShaderStage::Enum Stage) const
+XII_FORCE_INLINE bool xiiGALShaderCreationDescription::HasByteCodeForStage(xiiGALShaderStage::Enum stage) const
 {
-  return m_ByteCodes[Stage] != nullptr && m_ByteCodes[Stage]->IsValid();
+  return m_ByteCodes[stage] != nullptr && m_ByteCodes[stage]->IsValid();
 }
 
 XII_FORCE_INLINE void xiiGALTextureCreationDescription::SetAsRenderTarget(
@@ -60,11 +60,11 @@ XII_FORCE_INLINE void xiiGALTextureCreationDescription::SetAsRenderTarget(
 }
 
 XII_FORCE_INLINE xiiGALVertexAttribute::xiiGALVertexAttribute(
-  xiiGALVertexAttributeSemantic::Enum eSemantic,
-  xiiGALResourceFormat::Enum          eFormat,
+  xiiGALVertexAttributeSemantic::Enum semantic,
+  xiiGALResourceFormat::Enum          format,
   xiiUInt16                           uiOffset,
   xiiUInt8                            uiVertexBufferSlot,
   bool                                bInstanceData) :
-  m_eSemantic(eSemantic), m_eFormat(eFormat), m_uiOffset(uiOffset), m_uiVertexBufferSlot(uiVertexBufferSlot), m_bInstanceData(bInstanceData)
+  m_eSemantic(semantic), m_eFormat(format), m_uiOffset(uiOffset), m_uiVertexBufferSlot(uiVertexBufferSlot), m_bInstanceData(bInstanceData)
 {
 }

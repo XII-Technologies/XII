@@ -41,8 +41,8 @@ struct XII_KRAUTPLUGIN_DLL xiiKrautGeneratorResourceDescriptor
   xiiUInt16                     m_uiDefaultDisplaySeed = 0;
   xiiHybridArray<xiiUInt16, 16> m_GoodRandomSeeds;
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 };
 
 class XII_KRAUTPLUGIN_DLL xiiKrautGeneratorResource : public xiiResource
@@ -56,7 +56,7 @@ public:
   xiiKrautTreeResourceHandle GenerateTree(xiiUInt32 uiRandomSeed) const;
   xiiKrautTreeResourceHandle GenerateTreeWithGoodSeed(xiiUInt16 uiGoodSeedIndex) const;
 
-  void GenerateTreeDescriptor(xiiKrautTreeResourceDescriptor& dstDesc, xiiUInt32 uiRandomSeed) const;
+  void GenerateTreeDescriptor(xiiKrautTreeResourceDescriptor& ref_dstDesc, xiiUInt32 uiRandomSeed) const;
 
 private:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;

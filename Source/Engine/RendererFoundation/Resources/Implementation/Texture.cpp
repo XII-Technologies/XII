@@ -10,7 +10,7 @@ xiiGALTexture::xiiGALTexture(const xiiGALTextureCreationDescription& Description
 #endif
 }
 
-xiiGALTexture::~xiiGALTexture() {}
+xiiGALTexture::~xiiGALTexture() = default;
 
 
 

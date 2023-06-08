@@ -17,7 +17,7 @@ public:
   XII_DECLARE_POD_TYPE();
 
   /// \brief This function should return true if the given render data should be filtered and not rendered.
-  typedef xiiDelegate<bool(const xiiRenderData*)> Filter;
+  using Filter = xiiDelegate<bool(const xiiRenderData*)>;
 
   template <typename T>
   class Iterator

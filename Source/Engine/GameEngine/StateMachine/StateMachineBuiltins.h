@@ -12,12 +12,12 @@ public:
   xiiStateMachineState_NestedStateMachine(xiiStringView sName = xiiStringView());
   ~xiiStateMachineState_NestedStateMachine();
 
-  virtual void OnEnter(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pFromState) const override;
-  virtual void OnExit(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pToState) const override;
-  virtual void Update(xiiStateMachineInstance& instance, void* pInstanceData, xiiTime deltaTime) const override;
+  virtual void OnEnter(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pFromState) const override;
+  virtual void OnExit(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pToState) const override;
+  virtual void Update(xiiStateMachineInstance& ref_instance, void* pInstanceData, xiiTime deltaTime) const override;
 
-  virtual xiiResult Serialize(xiiStreamWriter& stream) const override;
-  virtual xiiResult Deserialize(xiiStreamReader& stream) override;
+  virtual xiiResult Serialize(xiiStreamWriter& ref_stream) const override;
+  virtual xiiResult Deserialize(xiiStreamReader& ref_stream) override;
 
   virtual bool GetInstanceDataDesc(xiiStateMachineInstanceDataDesc& out_desc) override;
 
@@ -59,12 +59,12 @@ public:
   xiiStateMachineState_Compound(xiiStringView sName = xiiStringView());
   ~xiiStateMachineState_Compound();
 
-  virtual void OnEnter(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pFromState) const override;
-  virtual void OnExit(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pToState) const override;
-  virtual void Update(xiiStateMachineInstance& instance, void* pInstanceData, xiiTime deltaTime) const override;
+  virtual void OnEnter(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pFromState) const override;
+  virtual void OnExit(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pToState) const override;
+  virtual void Update(xiiStateMachineInstance& ref_instance, void* pInstanceData, xiiTime deltaTime) const override;
 
-  virtual xiiResult Serialize(xiiStreamWriter& stream) const override;
-  virtual xiiResult Deserialize(xiiStreamReader& stream) override;
+  virtual xiiResult Serialize(xiiStreamWriter& ref_stream) const override;
+  virtual xiiResult Deserialize(xiiStreamReader& ref_stream) override;
 
   virtual bool GetInstanceDataDesc(xiiStateMachineInstanceDataDesc& out_desc) override;
 
@@ -103,10 +103,10 @@ public:
   xiiStateMachineTransition_BlackboardConditions();
   ~xiiStateMachineTransition_BlackboardConditions();
 
-  virtual bool IsConditionMet(xiiStateMachineInstance& instance, void* pInstanceData) const override;
+  virtual bool IsConditionMet(xiiStateMachineInstance& ref_instance, void* pInstanceData) const override;
 
-  virtual xiiResult Serialize(xiiStreamWriter& stream) const override;
-  virtual xiiResult Deserialize(xiiStreamReader& stream) override;
+  virtual xiiResult Serialize(xiiStreamWriter& ref_stream) const override;
+  virtual xiiResult Deserialize(xiiStreamReader& ref_stream) override;
 
   xiiEnum<xiiStateMachineLogicOperator>     m_Operator;
   xiiHybridArray<xiiBlackboardCondition, 2> m_Conditions;
@@ -123,10 +123,10 @@ public:
   xiiStateMachineTransition_Timeout();
   ~xiiStateMachineTransition_Timeout();
 
-  virtual bool IsConditionMet(xiiStateMachineInstance& instance, void* pInstanceData) const override;
+  virtual bool IsConditionMet(xiiStateMachineInstance& ref_instance, void* pInstanceData) const override;
 
-  virtual xiiResult Serialize(xiiStreamWriter& stream) const override;
-  virtual xiiResult Deserialize(xiiStreamReader& stream) override;
+  virtual xiiResult Serialize(xiiStreamWriter& ref_stream) const override;
+  virtual xiiResult Deserialize(xiiStreamReader& ref_stream) override;
 
   xiiTime m_Timeout;
 };
@@ -145,10 +145,10 @@ public:
   xiiStateMachineTransition_Compound();
   ~xiiStateMachineTransition_Compound();
 
-  virtual bool IsConditionMet(xiiStateMachineInstance& instance, void* pInstanceData) const override;
+  virtual bool IsConditionMet(xiiStateMachineInstance& ref_instance, void* pInstanceData) const override;
 
-  virtual xiiResult Serialize(xiiStreamWriter& stream) const override;
-  virtual xiiResult Deserialize(xiiStreamReader& stream) override;
+  virtual xiiResult Serialize(xiiStreamWriter& ref_stream) const override;
+  virtual xiiResult Deserialize(xiiStreamReader& ref_stream) override;
 
   virtual bool GetInstanceDataDesc(xiiStateMachineInstanceDataDesc& out_desc) override;
 

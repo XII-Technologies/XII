@@ -104,7 +104,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     if (xiiAbstractObjectNode::Property* pProp = pNode->FindProperty("Flags"))
     {
@@ -187,7 +187,7 @@ void xiiReflectedPropertyDescriptor::operator=(const xiiReflectedPropertyDescrip
   xiiAttributeHolder::operator=(rhs);
 }
 
-xiiReflectedPropertyDescriptor::~xiiReflectedPropertyDescriptor() {}
+xiiReflectedPropertyDescriptor::~xiiReflectedPropertyDescriptor() = default;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -207,7 +207,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiFunctionArgumentDescriptor, xiiNoBase, 1, xii
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiFunctionArgumentDescriptor::xiiFunctionArgumentDescriptor() {}
+xiiFunctionArgumentDescriptor::xiiFunctionArgumentDescriptor() = default;
 
 xiiFunctionArgumentDescriptor::xiiFunctionArgumentDescriptor(const char* szType, xiiBitflags<xiiPropertyFlags> flags) :
   m_sType(szType), m_Flags(flags)
@@ -235,7 +235,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiReflectedFunctionDescriptor, xiiAttributeHold
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiReflectedFunctionDescriptor::xiiReflectedFunctionDescriptor() {}
+xiiReflectedFunctionDescriptor::xiiReflectedFunctionDescriptor() = default;
 
 xiiReflectedFunctionDescriptor::xiiReflectedFunctionDescriptor(
   const char*                                    szName,
@@ -252,7 +252,7 @@ xiiReflectedFunctionDescriptor::xiiReflectedFunctionDescriptor(const xiiReflecte
   operator=(rhs);
 }
 
-xiiReflectedFunctionDescriptor::~xiiReflectedFunctionDescriptor() {}
+xiiReflectedFunctionDescriptor::~xiiReflectedFunctionDescriptor() = default;
 
 void xiiReflectedFunctionDescriptor::operator=(const xiiReflectedFunctionDescriptor& rhs)
 {
@@ -285,4 +285,4 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiReflectedTypeDescriptor, xiiAttributeHolder, 
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiReflectedTypeDescriptor::~xiiReflectedTypeDescriptor() {}
+xiiReflectedTypeDescriptor::~xiiReflectedTypeDescriptor() = default;

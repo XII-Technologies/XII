@@ -50,13 +50,13 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMixClips2DAnimNode, 1, xiiRTTIDefaultAllocat
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiAnimClip2D::SetAnimationFile(const char* sz)
+void xiiAnimClip2D::SetAnimationFile(const char* szSz)
 {
   xiiAnimationClipResourceHandle hResource;
 
-  if (!xiiStringUtils::IsNullOrEmpty(sz))
+  if (!xiiStringUtils::IsNullOrEmpty(szSz))
   {
-    hResource = xiiResourceManager::LoadResource<xiiAnimationClipResource>(sz);
+    hResource = xiiResourceManager::LoadResource<xiiAnimationClipResource>(szSz);
   }
 
   m_hAnimation = hResource;
@@ -279,13 +279,13 @@ void xiiMixClips2DAnimNode::ComputeClipsAndWeights(const xiiVec2& p, xiiDynamicA
   }
 }
 
-void xiiMixClips2DAnimNode::SetCenterClipFile(const char* sz)
+void xiiMixClips2DAnimNode::SetCenterClipFile(const char* szSz)
 {
   xiiAnimationClipResourceHandle hResource;
 
-  if (!xiiStringUtils::IsNullOrEmpty(sz))
+  if (!xiiStringUtils::IsNullOrEmpty(szSz))
   {
-    hResource = xiiResourceManager::LoadResource<xiiAnimationClipResource>(sz);
+    hResource = xiiResourceManager::LoadResource<xiiAnimationClipResource>(szSz);
   }
 
   m_hCenterClip = hResource;

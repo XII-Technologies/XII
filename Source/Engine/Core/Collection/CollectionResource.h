@@ -17,8 +17,8 @@ struct XII_CORE_DLL xiiCollectionResourceDescriptor
 {
   xiiDynamicArray<xiiCollectionEntry> m_Resources;
 
-  void Save(xiiStreamWriter& stream) const;
-  void Load(xiiStreamReader& stream);
+  void Save(xiiStreamWriter& ref_stream) const;
+  void Load(xiiStreamReader& ref_stream);
 };
 
 using xiiCollectionResourceHandle = xiiTypedResourceHandle<class xiiCollectionResource>;
@@ -70,7 +70,7 @@ public:
   /// This has to be called manually. It will return false if no more resources can be queued for preloading. This can be used
   /// as a workflow where PreloadResources and IsLoadingFinished are called repeadedly in tandem, so only a smaller fraction
   /// of resources gets queued and waited for, to allow simple resource load-balancing.
-  bool PreloadResources(xiiUInt32 numResourcesToPreload = xiiMath::MaxValue<xiiUInt32>());
+  bool PreloadResources(xiiUInt32 uiNumResourcesToPreload = xiiMath::MaxValue<xiiUInt32>());
 
   /// \brief Returns true if all resources added for preloading via PreloadResources have finished loading.
   /// if `out_progress` is defined:
@@ -79,7 +79,7 @@ public:
   ///     * Always assigns 1.0 if the collection contains no resources, or PreloadResources() was not triggered previously.
   /// Note: the progress can reach at maximum the fraction of resources that have been queued for preloading via PreloadResources.
   /// The progress will only reach 1.0 if all resources of this collection have been queued via PreloadResources and finished loading.
-  bool IsLoadingFinished(float* out_progress = nullptr) const;
+  bool IsLoadingFinished(float* out_pProgress = nullptr) const;
 
   /// \brief Returns the resource descriptor for this resource.
   const xiiCollectionResourceDescriptor& GetDescriptor() const;

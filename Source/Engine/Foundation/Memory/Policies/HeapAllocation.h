@@ -11,7 +11,7 @@ namespace xiiMemoryPolicies
   {
   public:
     XII_ALWAYS_INLINE xiiHeapAllocation(xiiAllocatorBase* pParent) {}
-    XII_ALWAYS_INLINE ~xiiHeapAllocation() {}
+    XII_ALWAYS_INLINE ~xiiHeapAllocation() = default;
 
     XII_FORCE_INLINE void* Allocate(size_t uiSize, size_t uiAlign)
     {
@@ -30,15 +30,15 @@ namespace xiiMemoryPolicies
       return OffsetPtr(ptr);
     }
 
-    XII_FORCE_INLINE void* Reallocate(void* currentPtr, size_t uiCurrentSize, size_t uiNewSize, size_t uiAlign)
+    XII_FORCE_INLINE void* Reallocate(void* pCurrentPtr, size_t uiCurrentSize, size_t uiNewSize, size_t uiAlign)
     {
-      void* ptr = realloc(RestorePtr(currentPtr), PadSize(uiNewSize));
+      void* ptr = realloc(RestorePtr(pCurrentPtr), PadSize(uiNewSize));
       XII_CHECK_ALIGNMENT(ptr, uiAlign);
 
       return OffsetPtr(ptr);
     }
 
-    XII_ALWAYS_INLINE void Deallocate(void* ptr) { free(RestorePtr(ptr)); }
+    XII_ALWAYS_INLINE void Deallocate(void* pPtr) { free(RestorePtr(pPtr)); }
 
     XII_ALWAYS_INLINE xiiAllocatorBase* GetParent() const { return nullptr; }
 

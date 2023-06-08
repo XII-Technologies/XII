@@ -58,8 +58,8 @@ namespace
 
   static xiiProxyAllocator* s_pCacheAllocator;
 
-  static xiiMutex                                                       s_CachedRenderDataMutex;
-  typedef xiiHybridArray<const xiiRenderData*, 4>                       CachedRenderDataPerComponent;
+  static xiiMutex s_CachedRenderDataMutex;
+  using CachedRenderDataPerComponent = xiiHybridArray<const xiiRenderData*, 4>;
   static xiiHashTable<xiiComponentHandle, CachedRenderDataPerComponent> s_CachedRenderData;
   static xiiDynamicArray<const xiiRenderData*>                          s_DeletedRenderData;
 
@@ -87,7 +87,7 @@ namespace xiiInternal
 
     struct PerObjectCache
     {
-      PerObjectCache() {}
+      PerObjectCache() = default;
 
       PerObjectCache(xiiAllocatorBase* pAllocator) :
         m_Entries(pAllocator)
@@ -329,16 +329,16 @@ void xiiRenderWorld::DeleteCachedRenderData(const xiiGameObjectHandle& hOwnerObj
   }
 }
 
-void xiiRenderWorld::ResetRenderDataCache(xiiView& view)
+void xiiRenderWorld::ResetRenderDataCache(xiiView& ref_view)
 {
-  view.m_pRenderDataCache->m_PerObjectCaches.Clear();
-  view.m_pRenderDataCache->m_NewEntriesCount = 0;
+  ref_view.m_pRenderDataCache->m_PerObjectCaches.Clear();
+  ref_view.m_pRenderDataCache->m_NewEntriesCount = 0;
 
-  if (view.GetWorld() != nullptr)
+  if (ref_view.GetWorld() != nullptr)
   {
-    if (view.GetWorld()->GetObjectDeletionEvent().HasEventHandler(&xiiRenderWorld::DeleteCachedRenderDataForObject) == false)
+    if (ref_view.GetWorld()->GetObjectDeletionEvent().HasEventHandler(&xiiRenderWorld::DeleteCachedRenderDataForObject) == false)
     {
-      view.GetWorld()->GetObjectDeletionEvent().AddEventHandler(&xiiRenderWorld::DeleteCachedRenderDataForObject);
+      ref_view.GetWorld()->GetObjectDeletionEvent().AddEventHandler(&xiiRenderWorld::DeleteCachedRenderDataForObject);
     }
   }
 }

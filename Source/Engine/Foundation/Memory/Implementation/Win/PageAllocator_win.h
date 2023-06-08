@@ -24,12 +24,12 @@ void* xiiPageAllocator::AllocatePage(size_t uiSize)
 }
 
 // static
-void xiiPageAllocator::DeallocatePage(void* ptr)
+void xiiPageAllocator::DeallocatePage(void* pPtr)
 {
   if ((xiiMemoryTrackingFlags::Default & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
   {
-    xiiMemoryTracker::RemoveAllocation(GetPageAllocatorId(), ptr);
+    xiiMemoryTracker::RemoveAllocation(GetPageAllocatorId(), pPtr);
   }
 
-  XII_VERIFY(::VirtualFree(ptr, 0, MEM_RELEASE), "Could not free memory pages. Error Code '{0}'", xiiArgErrorCode(::GetLastError()));
+  XII_VERIFY(::VirtualFree(pPtr, 0, MEM_RELEASE), "Could not free memory pages. Error Code '{0}'", xiiArgErrorCode(::GetLastError()));
 }

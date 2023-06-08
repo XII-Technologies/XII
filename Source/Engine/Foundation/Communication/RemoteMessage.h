@@ -65,5 +65,5 @@ class XII_FOUNDATION_DLL xiiProcessMessage : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiProcessMessage, xiiReflectedClass);
 
 public:
-  xiiProcessMessage() {}
+  xiiProcessMessage() = default;
 };

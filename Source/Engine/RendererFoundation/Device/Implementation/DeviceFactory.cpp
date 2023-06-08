@@ -2,6 +2,8 @@
 
 #include <RendererFoundation/Device/DeviceFactory.h>
 
+#include <Foundation/Logging/Log.h>
+
 struct CreatorFuncInfo
 {
   xiiGALDeviceFactory::CreatorFunc m_Func;
@@ -40,12 +42,12 @@ xiiInternal::NewInstance<xiiGALDevice> xiiGALDeviceFactory::CreateDevice(const c
   return xiiInternal::NewInstance<xiiGALDevice>(nullptr, pAllocator);
 }
 
-void xiiGALDeviceFactory::GetShaderModelAndCompiler(const char* szRendererName, const char*& szShaderModel, const char*& szShaderCompiler)
+void xiiGALDeviceFactory::GetShaderModelAndCompiler(const char* szRendererName, const char*& ref_szShaderModel, const char*& ref_szShaderCompiler)
 {
   if (auto pFuncInfo = GetCreatorFuncInfo(szRendererName))
   {
-    szShaderModel    = pFuncInfo->m_sShaderModel;
-    szShaderCompiler = pFuncInfo->m_sShaderCompiler;
+    ref_szShaderModel    = pFuncInfo->m_sShaderModel;
+    ref_szShaderCompiler = pFuncInfo->m_sShaderCompiler;
   }
 }
 

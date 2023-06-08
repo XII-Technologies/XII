@@ -21,7 +21,7 @@ class XII_PARTICLEPLUGIN_DLL xiiParticleTypePoint final : public xiiParticleType
   XII_ADD_DYNAMIC_REFLECTION(xiiParticleTypePoint, xiiParticleType);
 
 public:
-  xiiParticleTypePoint() {}
+  xiiParticleTypePoint() = default;
 
   virtual void CreateRequiredStreams() override;
 

@@ -10,7 +10,7 @@
 using namespace xiiProcGenInternal;
 
 PlacementTile::PlacementTile() :
-  m_pOutput(nullptr), m_State(State::Invalid)
+  m_pOutput(nullptr)
 {
 }
 
@@ -30,19 +30,19 @@ PlacementTile::~PlacementTile()
   XII_ASSERT_DEV(m_State == State::Invalid, "Implementation error");
 }
 
-void PlacementTile::Initialize(const PlacementTileDesc& desc, xiiSharedPtr<const PlacementOutput>& pOutput)
+void PlacementTile::Initialize(const PlacementTileDesc& desc, xiiSharedPtr<const PlacementOutput>& ref_pOutput)
 {
   m_Desc    = desc;
-  m_pOutput = pOutput;
+  m_pOutput = ref_pOutput;
 
   m_State = State::Initialized;
 }
 
-void PlacementTile::Deinitialize(xiiWorld& world)
+void PlacementTile::Deinitialize(xiiWorld& ref_world)
 {
   for (auto hObject : m_PlacedObjects)
   {
-    world.DeleteObjectDelayed(hObject);
+    ref_world.DeleteObjectDelayed(hObject);
   }
   m_PlacedObjects.Clear();
 
@@ -91,7 +91,7 @@ xiiColor PlacementTile::GetDebugColor() const
   }
 }
 
-void PlacementTile::PreparePlacementData(const xiiWorld* pWorld, const xiiPhysicsWorldModuleInterface* pPhysicsModule, PlacementData& placementData)
+void PlacementTile::PreparePlacementData(const xiiWorld* pWorld, const xiiPhysicsWorldModuleInterface* pPhysicsModule, PlacementData& ref_placementData)
 {
   const xiiUInt64 uiOutputNameHash = m_pOutput->m_sName.GetHash();
   xiiUInt32       hashData[]       = {
@@ -101,17 +101,17 @@ void PlacementTile::PreparePlacementData(const xiiWorld* pWorld, const xiiPhysic
     static_cast<xiiUInt32>(uiOutputNameHash >> 32),
   };
 
-  placementData.m_pPhysicsModule             = pPhysicsModule;
-  placementData.m_pWorld                     = pWorld;
-  placementData.m_pOutput                    = m_pOutput;
-  placementData.m_uiTileSeed                 = xiiHashingUtils::xxHash32(hashData, sizeof(hashData));
-  placementData.m_TileBoundingBox            = GetBoundingBox();
-  placementData.m_GlobalToLocalBoxTransforms = m_Desc.m_GlobalToLocalBoxTransforms;
+  ref_placementData.m_pPhysicsModule             = pPhysicsModule;
+  ref_placementData.m_pWorld                     = pWorld;
+  ref_placementData.m_pOutput                    = m_pOutput;
+  ref_placementData.m_uiTileSeed                 = xiiHashingUtils::xxHash32(hashData, sizeof(hashData));
+  ref_placementData.m_TileBoundingBox            = GetBoundingBox();
+  ref_placementData.m_GlobalToLocalBoxTransforms = m_Desc.m_GlobalToLocalBoxTransforms;
 
   m_State = State::Scheduled;
 }
 
-xiiUInt32 PlacementTile::PlaceObjects(xiiWorld& world, xiiArrayPtr<const PlacementTransform> objectTransforms)
+xiiUInt32 PlacementTile::PlaceObjects(xiiWorld& ref_world, xiiArrayPtr<const PlacementTransform> objectTransforms)
 {
   XII_PROFILE_SCOPE("PlacementTile::PlaceObjects");
 
@@ -140,7 +140,7 @@ xiiUInt32 PlacementTile::PlaceObjects(xiiWorld& world, xiiArrayPtr<const Placeme
     xiiPrefabInstantiationOptions options;
     options.m_pCreatedRootObjectsOut = &rootObjects;
 
-    pPrefab->InstantiatePrefab(world, transform, options);
+    pPrefab->InstantiatePrefab(ref_world, transform, options);
 
     // only send the color message, if we actually have a custom color
     if (objectTransform.m_bHasValidColor)

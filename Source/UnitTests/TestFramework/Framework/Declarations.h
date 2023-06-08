@@ -11,29 +11,23 @@ class xiiTestBaseClass;
 /// \brief Stores the identification of a sub-test.
 struct xiiSubTestEntry
 {
-  xiiSubTestEntry() :
-    m_iSubTestIdentifier(-1), m_szSubTestName(""), m_bEnableTest(true)
-  {
-  }
+  xiiSubTestEntry() = default;
 
-  xiiInt32    m_iSubTestIdentifier;
-  const char* m_szSubTestName;
-  bool        m_bEnableTest;
+  xiiInt32    m_iSubTestIdentifier = -1;
+  const char* m_szSubTestName      = "";
+  bool        m_bEnableTest        = true;
 };
 
 /// \brief Stores the identification of a test.
 struct xiiTestEntry
 {
-  xiiTestEntry() :
-    m_pTest(nullptr), m_szTestName(""), m_bEnableTest(true)
-  {
-  }
+  xiiTestEntry() = default;
 
-  xiiTestBaseClass*           m_pTest;
-  const char*                 m_szTestName;
+  xiiTestBaseClass*           m_pTest      = nullptr;
+  const char*                 m_szTestName = "";
   std::deque<xiiSubTestEntry> m_SubTests;
   std::string                 m_sNotAvailableReason;
-  bool                        m_bEnableTest;
+  bool                        m_bEnableTest = true;
 };
 
 enum class AssertOnTestFail
@@ -42,6 +36,7 @@ enum class AssertOnTestFail
   AssertIfDebuggerAttached,
   AlwaysAssert,
 };
+
 struct TestSettings
 {
   // The following settings are stored in the settings file.

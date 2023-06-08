@@ -18,14 +18,14 @@ public:
   /// or might also be read by humans.
   ///
   /// Read-only properties are not written out, as they cannot be restored anyway.
-  static void WriteObjectToDDL(xiiStreamWriter& stream, const xiiRTTI* pRtti, const void* pObject, bool bCompactMmode = true,
+  static void WriteObjectToDDL(xiiStreamWriter& ref_stream, const xiiRTTI* pRtti, const void* pObject, bool bCompactMmode = true,
                                xiiOpenDdlWriter::TypeStringMode typeMode = xiiOpenDdlWriter::TypeStringMode::Shortest); // [tested]
 
   /// \brief Overload of WriteObjectToDDL that takes an existing DDL writer to output to.
-  static void WriteObjectToDDL(xiiOpenDdlWriter& ddl, const xiiRTTI* pRtti, const void* pObject, xiiUuid guid = xiiUuid()); // [tested]
+  static void WriteObjectToDDL(xiiOpenDdlWriter& ref_ddl, const xiiRTTI* pRtti, const void* pObject, xiiUuid guid = xiiUuid()); // [tested]
 
   /// \brief Same as WriteObjectToDDL but binary.
-  static void WriteObjectToBinary(xiiStreamWriter& stream, const xiiRTTI* pRtti, const void* pObject); // [tested]
+  static void WriteObjectToBinary(xiiStreamWriter& ref_stream, const xiiRTTI* pRtti, const void* pObject); // [tested]
 
   /// \brief Reads the entire DDL data in the stream and restores a reflected object.
   ///
@@ -33,12 +33,12 @@ public:
   /// or, if none is provided, the default allocator for the type is used.
   ///
   /// All properties are set to the values as described in the DDL data, as long as the properties can be matched to the runtime type.
-  static void* ReadObjectFromDDL(xiiStreamReader& stream, const xiiRTTI*& pRtti); // [tested]
+  static void* ReadObjectFromDDL(xiiStreamReader& ref_stream, const xiiRTTI*& ref_pRtti); // [tested]
 
-  static void* ReadObjectFromDDL(const xiiOpenDdlReaderElement* pRootElement, const xiiRTTI*& pRtti); // [tested]
+  static void* ReadObjectFromDDL(const xiiOpenDdlReaderElement* pRootElement, const xiiRTTI*& ref_pRtti); // [tested]
 
   /// \brief Same as ReadObjectFromDDL but binary.
-  static void* ReadObjectFromBinary(xiiStreamReader& stream, const xiiRTTI*& pRtti); // [tested]
+  static void* ReadObjectFromBinary(xiiStreamReader& ref_stream, const xiiRTTI*& ref_pRtti); // [tested]
 
   /// \brief Reads the entire DDL data in the stream and sets all properties of the given object.
   ///
@@ -48,10 +48,10 @@ public:
   ///
   /// The object itself will not be reset to the default state before the properties are set, so properties that do not appear
   /// in the DDL data, or cannot be matched, will not be affected.
-  static void ReadObjectPropertiesFromDDL(xiiStreamReader& stream, const xiiRTTI& rtti, void* pObject); // [tested]
+  static void ReadObjectPropertiesFromDDL(xiiStreamReader& ref_stream, const xiiRTTI& rtti, void* pObject); // [tested]
 
   /// \brief Same as ReadObjectPropertiesFromDDL but binary.
-  static void ReadObjectPropertiesFromBinary(xiiStreamReader& stream, const xiiRTTI& rtti, void* pObject); // [tested]
+  static void ReadObjectPropertiesFromBinary(xiiStreamReader& ref_stream, const xiiRTTI& rtti, void* pObject); // [tested]
 
   /// \brief Clones pObject of type pType and returns it.
   ///

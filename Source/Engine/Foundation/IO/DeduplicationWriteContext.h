@@ -22,23 +22,23 @@ public:
 
   /// \brief Writes a single object to the stream. Can be either a reference or a pointer to the object.
   template <typename T>
-  xiiResult WriteObject(xiiStreamWriter& stream, const T& obj); // [tested]
+  xiiResult WriteObject(xiiStreamWriter& ref_stream, const T& obj); // [tested]
 
   /// \brief Writes a single object to the stream.
   template <typename T>
-  xiiResult WriteObject(xiiStreamWriter& stream, const xiiSharedPtr<T>& pObject); // [tested]
+  xiiResult WriteObject(xiiStreamWriter& ref_stream, const xiiSharedPtr<T>& pObject); // [tested]
 
   /// \brief Writes a single object to the stream.
   template <typename T>
-  xiiResult WriteObject(xiiStreamWriter& stream, const xiiUniquePtr<T>& pObject); // [tested]
+  xiiResult WriteObject(xiiStreamWriter& ref_stream, const xiiUniquePtr<T>& pObject); // [tested]
 
   /// \brief Writes an array of de-duplicated objects.
   template <typename ArrayType, typename ValueType>
-  xiiResult WriteArray(xiiStreamWriter& stream, const xiiArrayBase<ValueType, ArrayType>& Array); // [tested]
+  xiiResult WriteArray(xiiStreamWriter& ref_stream, const xiiArrayBase<ValueType, ArrayType>& array); // [tested]
 
   /// \brief Writes a set of de-duplicated objects.
   template <typename KeyType, typename Comparer>
-  xiiResult WriteSet(xiiStreamWriter& stream, const xiiSetBase<KeyType, Comparer>& Set); // [tested]
+  xiiResult WriteSet(xiiStreamWriter& ref_stream, const xiiSetBase<KeyType, Comparer>& set); // [tested]
 
   enum class WriteMapMode
   {
@@ -49,7 +49,7 @@ public:
 
   /// \brief Writes a map. Mode controls whether key or value or both should de-duplicated.
   template <typename KeyType, typename ValueType, typename Comparer>
-  xiiResult WriteMap(xiiStreamWriter& stream, const xiiMapBase<KeyType, ValueType, Comparer>& Map, WriteMapMode mode); // [tested]
+  xiiResult WriteMap(xiiStreamWriter& ref_stream, const xiiMapBase<KeyType, ValueType, Comparer>& map, WriteMapMode mode); // [tested]
 
 private:
   template <typename T>

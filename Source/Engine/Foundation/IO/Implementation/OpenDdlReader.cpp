@@ -13,13 +13,13 @@ xiiOpenDdlReader::~xiiOpenDdlReader()
   ClearDataChunks();
 }
 
-xiiResult xiiOpenDdlReader::ParseDocument(xiiStreamReader& stream, xiiUInt32 uiFirstLineOffset, xiiLogInterface* pLog, xiiUInt32 uiCacheSizeInKB)
+xiiResult xiiOpenDdlReader::ParseDocument(xiiStreamReader& ref_stream, xiiUInt32 uiFirstLineOffset, xiiLogInterface* pLog, xiiUInt32 uiCacheSizeInKB)
 {
   XII_ASSERT_DEBUG(m_ObjectStack.IsEmpty(), "A reader can only be used once.");
 
   SetLogInterface(pLog);
   SetCacheSize(uiCacheSizeInKB);
-  SetInputStream(stream, uiFirstLineOffset);
+  SetInputStream(ref_stream, uiFirstLineOffset);
 
   m_TempCache.Reserve(s_uiChunkSize);
 

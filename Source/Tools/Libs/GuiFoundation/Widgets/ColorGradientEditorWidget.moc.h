@@ -26,25 +26,25 @@ public:
   void FrameGradient();
 
 Q_SIGNALS:
-  void ColorCpAdded(double posX, const xiiColorGammaUB& color);
-  void ColorCpMoved(xiiInt32 index, float newPosX);
-  void ColorCpDeleted(xiiInt32 index);
-  void ColorCpChanged(xiiInt32 index, const xiiColorGammaUB& color);
+  void ColorCpAdded(double fPosX, const xiiColorGammaUB& color);
+  void ColorCpMoved(xiiInt32 iIndex, float fNewPosX);
+  void ColorCpDeleted(xiiInt32 iIndex);
+  void ColorCpChanged(xiiInt32 iIndex, const xiiColorGammaUB& color);
 
-  void AlphaCpAdded(double posX, xiiUInt8 alpha);
-  void AlphaCpMoved(xiiInt32 index, double newPosX);
-  void AlphaCpDeleted(xiiInt32 index);
-  void AlphaCpChanged(xiiInt32 index, xiiUInt8 alpha);
+  void AlphaCpAdded(double fPosX, xiiUInt8 uiAlpha);
+  void AlphaCpMoved(xiiInt32 iIndex, double fNewPosX);
+  void AlphaCpDeleted(xiiInt32 iIndex);
+  void AlphaCpChanged(xiiInt32 iIndex, xiiUInt8 uiAlpha);
 
-  void IntensityCpAdded(double posX, float intensity);
-  void IntensityCpMoved(xiiInt32 index, double newPosX);
-  void IntensityCpDeleted(xiiInt32 index);
-  void IntensityCpChanged(xiiInt32 index, float intensity);
+  void IntensityCpAdded(double fPosX, float fIntensity);
+  void IntensityCpMoved(xiiInt32 iIndex, double fNewPosX);
+  void IntensityCpDeleted(xiiInt32 iIndex);
+  void IntensityCpChanged(xiiInt32 iIndex, float fIntensity);
 
   void NormalizeRange();
 
   void BeginOperation();
-  void EndOperation(bool commit);
+  void EndOperation(bool bCommit);
 
 private Q_SLOTS:
   void on_ButtonFrame_clicked();

@@ -15,8 +15,8 @@
 #  error "Plugins not implemented on this Platform."
 #endif
 
-xiiResult UnloadPluginModule(xiiPluginModule& Module, const char* szPluginFile);
-xiiResult LoadPluginModule(const char* szFileToLoad, xiiPluginModule& Module, const char* szPluginFile);
+xiiResult UnloadPluginModule(xiiPluginModule& ref_pModule, const char* szPluginFile);
+xiiResult LoadPluginModule(const char* szFileToLoad, xiiPluginModule& ref_pModule, const char* szPluginFile);
 
 struct ModuleData
 {
@@ -51,15 +51,15 @@ void xiiPlugin::InitializeStaticallyLinkedPlugins()
   g_StaticModule.Initialize();
 }
 
-void xiiPlugin::GetAllPluginInfos(xiiDynamicArray<PluginInfo>& infos)
+void xiiPlugin::GetAllPluginInfos(xiiDynamicArray<PluginInfo>& ref_infos)
 {
-  infos.Clear();
+  ref_infos.Clear();
 
-  infos.Reserve(g_LoadedModules.GetCount());
+  ref_infos.Reserve(g_LoadedModules.GetCount());
 
   for (auto mod : g_LoadedModules)
   {
-    auto& pi           = infos.ExpandAndGetRef();
+    auto& pi           = ref_infos.ExpandAndGetRef();
     pi.m_sName         = mod.Key();
     pi.m_sDependencies = mod.Value().m_sPluginDependencies;
     pi.m_LoadFlags     = mod.Value().m_LoadFlags;
@@ -358,14 +358,14 @@ const xiiCopyOnBroadcastEvent<const xiiPluginEvent&>& xiiPlugin::Events()
   return s_PluginEvents;
 }
 
-xiiPlugin::Init::Init(xiiPluginInitCallback OnLoadOrUnloadCB, bool bOnLoad)
+xiiPlugin::Init::Init(xiiPluginInitCallback onLoadOrUnloadCB, bool bOnLoad)
 {
   ModuleData* pMD = g_pCurrentlyLoadingModule ? g_pCurrentlyLoadingModule : &g_StaticModule;
 
   if (bOnLoad)
-    pMD->m_OnLoadCB.PushBack(OnLoadOrUnloadCB);
+    pMD->m_OnLoadCB.PushBack(onLoadOrUnloadCB);
   else
-    pMD->m_OnUnloadCB.PushBack(OnLoadOrUnloadCB);
+    pMD->m_OnUnloadCB.PushBack(onLoadOrUnloadCB);
 }
 
 xiiPlugin::Init::Init(const char* szAddPluginDependency)

@@ -26,7 +26,7 @@ public:
   xiiManipulatorManager();
   ~xiiManipulatorManager();
 
-  const xiiManipulatorAttribute* GetActiveManipulator(const xiiDocument* pDoc, const xiiHybridArray<xiiPropertySelection, 8>*& out_Selection) const;
+  const xiiManipulatorAttribute* GetActiveManipulator(const xiiDocument* pDoc, const xiiHybridArray<xiiPropertySelection, 8>*& out_pSelection) const;
 
   void SetActiveManipulator(
     const xiiDocument*                             pDoc,

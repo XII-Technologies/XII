@@ -53,7 +53,7 @@ public:
   ~xiiEditableSkeletonJoint();
 
   const char* GetName() const;
-  void        SetName(const char* sz);
+  void        SetName(const char* szSz);
 
   void ClearJoints();
 
@@ -90,10 +90,10 @@ public:
   ~xiiEditableSkeleton();
 
   void ClearJoints();
-  void FillResourceDescriptor(xiiSkeletonResourceDescriptor& desc) const;
-  void GenerateRawOzzSkeleton(ozz::animation::offline::RawSkeleton& out_Skeleton) const;
-  void GenerateOzzSkeleton(ozz::animation::Skeleton& out_Skeleton) const;
-  void CreateJointsRecursive(xiiSkeletonBuilder& sb, xiiSkeletonResourceDescriptor& desc, const xiiEditableSkeletonJoint* pParentJoint, const xiiEditableSkeletonJoint* pThisJoint, xiiUInt16 uiThisJointIdx, const xiiQuat& qParentAccuRot, const xiiMat4& rootTransform) const;
+  void FillResourceDescriptor(xiiSkeletonResourceDescriptor& ref_desc) const;
+  void GenerateRawOzzSkeleton(ozz::animation::offline::RawSkeleton& out_skeleton) const;
+  void GenerateOzzSkeleton(ozz::animation::Skeleton& out_skeleton) const;
+  void CreateJointsRecursive(xiiSkeletonBuilder& ref_sb, xiiSkeletonResourceDescriptor& ref_desc, const xiiEditableSkeletonJoint* pParentJoint, const xiiEditableSkeletonJoint* pThisJoint, xiiUInt16 uiThisJointIdx, const xiiQuat& qParentAccuRot, const xiiMat4& mRootTransform) const;
 
   xiiString m_sSourceFile;
   xiiString m_sSurfaceFile;
@@ -119,8 +119,8 @@ struct XII_RENDERERCORE_DLL xiiExposedBone
 
 XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiExposedBone);
 
-XII_RENDERERCORE_DLL void operator<<(xiiStreamWriter& stream, const xiiExposedBone& bone);
-XII_RENDERERCORE_DLL void operator>>(xiiStreamReader& stream, xiiExposedBone& bone);
+XII_RENDERERCORE_DLL void operator<<(xiiStreamWriter& ref_stream, const xiiExposedBone& bone);
+XII_RENDERERCORE_DLL void operator>>(xiiStreamReader& ref_stream, xiiExposedBone& ref_bone);
 XII_RENDERERCORE_DLL bool operator==(const xiiExposedBone& lhs, const xiiExposedBone& rhs);
 
 template <>

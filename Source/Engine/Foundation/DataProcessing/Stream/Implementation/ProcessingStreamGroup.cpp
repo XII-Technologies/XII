@@ -70,7 +70,7 @@ void xiiProcessingStreamGroup::ClearProcessors()
   m_Processors.Clear();
 }
 
-xiiProcessingStream* xiiProcessingStreamGroup::AddStream(xiiStringView sName, xiiProcessingStream::DataType Type)
+xiiProcessingStream* xiiProcessingStreamGroup::AddStream(xiiStringView sName, xiiProcessingStream::DataType type)
 {
   // Treat adding a stream two times as an error (return null)
   if (GetStreamByName(sName))
@@ -78,7 +78,7 @@ xiiProcessingStream* xiiProcessingStreamGroup::AddStream(xiiStringView sName, xi
 
   xiiHashedString Name;
   Name.Assign(sName);
-  xiiProcessingStream* pStream = XII_DEFAULT_NEW(xiiProcessingStream, Name, Type, xiiProcessingStream::GetDataTypeSize(Type), 16);
+  xiiProcessingStream* pStream = XII_DEFAULT_NEW(xiiProcessingStream, Name, type, xiiProcessingStream::GetDataTypeSize(type), 16);
 
   m_DataStreams.PushBack(pStream);
 

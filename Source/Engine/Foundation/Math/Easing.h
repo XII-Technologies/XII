@@ -83,7 +83,7 @@ namespace xiiMath
   ///
   /// If \a inverse is true, the value (1-Y) is returned.
   template <typename Type>
-  Type GetEasingValue(xiiEasingFunctions easingFunction, Type input, bool inverse);
+  Type GetEasingValue(xiiEasingFunctions easingFunction, Type input, bool bInverse);
 
   template <typename Type>
   Type EaseConstantZero(Type t);

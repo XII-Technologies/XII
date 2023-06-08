@@ -26,7 +26,7 @@ xiiToolsProject::xiiToolsProject(const char* szProjectPath) :
   XII_ASSERT_DEV(!m_sProjectPath.IsEmpty(), "Path cannot be empty.");
 }
 
-xiiToolsProject::~xiiToolsProject() {}
+xiiToolsProject::~xiiToolsProject() = default;
 
 xiiStatus xiiToolsProject::Create()
 {
@@ -230,7 +230,7 @@ void xiiToolsProject::AddAllowedDocumentRoot(const char* szPath)
 }
 
 
-bool xiiToolsProject::IsDocumentInAllowedRoot(const char* szDocumentPath, xiiString* out_RelativePath) const
+bool xiiToolsProject::IsDocumentInAllowedRoot(const char* szDocumentPath, xiiString* out_pRelativePath) const
 {
   for (xiiUInt32 i = m_AllowedDocumentRoots.GetCount(); i > 0; --i)
   {
@@ -240,12 +240,12 @@ bool xiiToolsProject::IsDocumentInAllowedRoot(const char* szDocumentPath, xiiStr
     if (!s.IsPathBelowFolder(root))
       continue;
 
-    if (out_RelativePath)
+    if (out_pRelativePath)
     {
       xiiStringBuilder sText = szDocumentPath;
       sText.MakeRelativeTo(root).IgnoreResult();
 
-      *out_RelativePath = sText;
+      *out_pRelativePath = sText;
     }
 
     return true;

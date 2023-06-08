@@ -11,21 +11,21 @@
 XII_CREATE_SIMPLE_TEST_GROUP(Reflection);
 
 
-void VariantToPropertyTest(void* intStruct, const xiiRTTI* pRttiInt, const char* szPropName, xiiVariant::Type::Enum type)
+void VariantToPropertyTest(void* pIntStruct, const xiiRTTI* pRttiInt, const char* szPropName, xiiVariant::Type::Enum type)
 {
   xiiAbstractMemberProperty* pProp = xiiReflectionUtils::GetMemberProperty(pRttiInt, szPropName);
   XII_TEST_BOOL(pProp != nullptr);
   if (pProp)
   {
-    xiiVariant oldValue = xiiReflectionUtils::GetMemberPropertyValue(pProp, intStruct);
+    xiiVariant oldValue = xiiReflectionUtils::GetMemberPropertyValue(pProp, pIntStruct);
     XII_TEST_BOOL(oldValue.IsValid());
     XII_TEST_BOOL(oldValue.GetType() == type);
 
     xiiVariant defaultValue = xiiReflectionUtils::GetDefaultValue(pProp);
     XII_TEST_BOOL(defaultValue.GetType() == type);
-    xiiReflectionUtils::SetMemberPropertyValue(pProp, intStruct, defaultValue);
+    xiiReflectionUtils::SetMemberPropertyValue(pProp, pIntStruct, defaultValue);
 
-    xiiVariant newValue = xiiReflectionUtils::GetMemberPropertyValue(pProp, intStruct);
+    xiiVariant newValue = xiiReflectionUtils::GetMemberPropertyValue(pProp, pIntStruct);
     XII_TEST_BOOL(newValue.IsValid());
     XII_TEST_BOOL(newValue.GetType() == type);
     XII_TEST_BOOL(newValue == defaultValue);
@@ -135,25 +135,25 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectionUtils)
   }
 }
 
-void AccessorPropertyTest(xiiIReflectedTypeAccessor& accessor, const char* szProperty, xiiVariant::Type::Enum type)
+void AccessorPropertyTest(xiiIReflectedTypeAccessor& ref_accessor, const char* szProperty, xiiVariant::Type::Enum type)
 {
-  xiiVariant oldValue = accessor.GetValue(szProperty);
+  xiiVariant oldValue = ref_accessor.GetValue(szProperty);
   XII_TEST_BOOL(oldValue.IsValid());
   XII_TEST_BOOL(oldValue.GetType() == type);
 
-  xiiAbstractProperty* pProp        = accessor.GetType()->FindPropertyByName(szProperty);
+  xiiAbstractProperty* pProp        = ref_accessor.GetType()->FindPropertyByName(szProperty);
   xiiVariant           defaultValue = xiiReflectionUtils::GetDefaultValue(pProp);
   XII_TEST_BOOL(defaultValue.GetType() == type);
-  bool bSetSuccess = accessor.SetValue(szProperty, defaultValue);
+  bool bSetSuccess = ref_accessor.SetValue(szProperty, defaultValue);
   XII_TEST_BOOL(bSetSuccess);
 
-  xiiVariant newValue = accessor.GetValue(szProperty);
+  xiiVariant newValue = ref_accessor.GetValue(szProperty);
   XII_TEST_BOOL(newValue.IsValid());
   XII_TEST_BOOL(newValue.GetType() == type);
   XII_TEST_BOOL(newValue == defaultValue);
 }
 
-xiiUInt32 AccessorPropertiesTest(xiiIReflectedTypeAccessor& accessor, const xiiRTTI* pType)
+xiiUInt32 AccessorPropertiesTest(xiiIReflectedTypeAccessor& ref_accessor, const xiiRTTI* pType)
 {
   xiiUInt32 uiPropertiesSet = 0;
   XII_TEST_BOOL(pType != nullptr);
@@ -161,7 +161,7 @@ xiiUInt32 AccessorPropertiesTest(xiiIReflectedTypeAccessor& accessor, const xiiR
   // Call for base class
   if (pType->GetParentType() != nullptr)
   {
-    uiPropertiesSet += AccessorPropertiesTest(accessor, pType->GetParentType());
+    uiPropertiesSet += AccessorPropertiesTest(ref_accessor, pType->GetParentType());
   }
 
   // Test properties
@@ -178,24 +178,24 @@ xiiUInt32 AccessorPropertiesTest(xiiIReflectedTypeAccessor& accessor, const xiiR
         xiiAbstractMemberProperty* pProp3 = static_cast<xiiAbstractMemberProperty*>(pProp);
         if (pProp->GetFlags().IsSet(xiiPropertyFlags::IsEnum))
         {
-          AccessorPropertyTest(accessor, pProp->GetPropertyName(), xiiVariant::Type::Int64);
+          AccessorPropertyTest(ref_accessor, pProp->GetPropertyName(), xiiVariant::Type::Int64);
           uiPropertiesSet++;
         }
         else if (pProp->GetFlags().IsSet(xiiPropertyFlags::Bitflags))
         {
-          AccessorPropertyTest(accessor, pProp->GetPropertyName(), xiiVariant::Type::Int64);
+          AccessorPropertyTest(ref_accessor, pProp->GetPropertyName(), xiiVariant::Type::Int64);
           uiPropertiesSet++;
         }
         else if (bIsValueType)
         {
-          AccessorPropertyTest(accessor, pProp->GetPropertyName(), pProp3->GetSpecificType()->GetVariantType());
+          AccessorPropertyTest(ref_accessor, pProp->GetPropertyName(), pProp3->GetSpecificType()->GetVariantType());
           uiPropertiesSet++;
         }
         else // xiiPropertyFlags::Class
         {
           // Recurs into sub-classes
-          const xiiUuid&     subObjectGuid        = accessor.GetValue(pProp->GetPropertyName()).Get<xiiUuid>();
-          xiiDocumentObject* pEmbeddedClassObject = const_cast<xiiDocumentObject*>(accessor.GetOwner()->GetChild(subObjectGuid));
+          const xiiUuid&     subObjectGuid        = ref_accessor.GetValue(pProp->GetPropertyName()).Get<xiiUuid>();
+          xiiDocumentObject* pEmbeddedClassObject = const_cast<xiiDocumentObject*>(ref_accessor.GetOwner()->GetChild(subObjectGuid));
           uiPropertiesSet += AccessorPropertiesTest(pEmbeddedClassObject->GetTypeAccessor(), pProp3->GetSpecificType());
         }
       }
@@ -215,10 +215,10 @@ xiiUInt32 AccessorPropertiesTest(xiiIReflectedTypeAccessor& accessor, const xiiR
   return uiPropertiesSet;
 }
 
-xiiUInt32 AccessorPropertiesTest(xiiIReflectedTypeAccessor& accessor)
+xiiUInt32 AccessorPropertiesTest(xiiIReflectedTypeAccessor& ref_accessor)
 {
-  const xiiRTTI* handle = accessor.GetType();
-  return AccessorPropertiesTest(accessor, handle);
+  const xiiRTTI* handle = ref_accessor.GetType();
+  return AccessorPropertiesTest(ref_accessor, handle);
 }
 
 static xiiUInt32 GetTypeCount()

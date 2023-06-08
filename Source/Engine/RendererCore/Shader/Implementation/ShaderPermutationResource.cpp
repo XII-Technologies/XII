@@ -349,9 +349,9 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
   return res;
 }
 
-void xiiShaderPermutationResourceLoader::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& LoaderData)
+void xiiShaderPermutationResourceLoader::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData)
 {
-  ShaderPermutationResourceLoadData* pData = static_cast<ShaderPermutationResourceLoadData*>(LoaderData.m_pCustomLoaderData);
+  ShaderPermutationResourceLoadData* pData = static_cast<ShaderPermutationResourceLoadData*>(loaderData.m_pCustomLoaderData);
 
   XII_DEFAULT_DELETE(pData);
 }

@@ -24,8 +24,8 @@ protected:
 };
 
 
-xiiQtSearchableMenu::xiiQtSearchableMenu(QObject* parent) :
-  QWidgetAction(parent)
+xiiQtSearchableMenu::xiiQtSearchableMenu(QObject* pParent) :
+  QWidgetAction(pParent)
 {
   m_pGroup = new QNullWidget();
   m_pGroup->setLayout(new QVBoxLayout(m_pGroup));

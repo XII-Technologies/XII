@@ -78,37 +78,37 @@ void xiiCurve1DResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
   }
 }
 
-void xiiCurve1DResourceDescriptor::Save(xiiStreamWriter& stream) const
+void xiiCurve1DResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
   const xiiUInt8 uiVersion = 1;
 
-  stream << uiVersion;
+  ref_stream << uiVersion;
 
   const xiiUInt8 uiCurves = static_cast<xiiUInt8>(m_Curves.GetCount());
-  stream << uiCurves;
+  ref_stream << uiCurves;
 
   for (xiiUInt32 i = 0; i < uiCurves; ++i)
   {
-    m_Curves[i].Save(stream);
+    m_Curves[i].Save(ref_stream);
   }
 }
 
-void xiiCurve1DResourceDescriptor::Load(xiiStreamReader& stream)
+void xiiCurve1DResourceDescriptor::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt8 uiVersion = 0;
 
-  stream >> uiVersion;
+  ref_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion == 1, "Invalid file version {0}", uiVersion);
 
   xiiUInt8 uiCurves = 0;
-  stream >> uiCurves;
+  ref_stream >> uiCurves;
 
   m_Curves.SetCount(uiCurves);
 
   for (xiiUInt32 i = 0; i < uiCurves; ++i)
   {
-    m_Curves[i].Load(stream);
+    m_Curves[i].Load(ref_stream);
 
     /// \todo We can do this on load, or somehow ensure this is always already correctly saved
     m_Curves[i].SortControlPoints();

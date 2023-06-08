@@ -114,10 +114,10 @@ public:
 
   XII_ALWAYS_INLINE void Update(xiiTime deltaTime, RunWorkCallback runWorkCallback)
   {
-    SUPER::Update(deltaTime, [&](xiiUInt64 workId, xiiTime deltaTime) {
+    SUPER::Update(deltaTime, [&](xiiUInt64 uiWorkId, xiiTime deltaTime) {
       if (runWorkCallback.IsValid())
       {
-        runWorkCallback(*reinterpret_cast<T*>(&workId), deltaTime);
+        runWorkCallback(*reinterpret_cast<T*>(&uiWorkId), deltaTime);
       }
     });
   }

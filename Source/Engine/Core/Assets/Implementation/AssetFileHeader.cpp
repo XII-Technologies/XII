@@ -23,33 +23,33 @@ enum xiiAssetFileHeaderVersion : xiiUInt8
   VersionCurrent = VersionCount - 1
 };
 
-xiiResult xiiAssetFileHeader::Write(xiiStreamWriter& stream) const
+xiiResult xiiAssetFileHeader::Write(xiiStreamWriter& ref_stream) const
 {
   XII_ASSERT_DEBUG(m_uiHash != 0xFFFFFFFFFFFFFFFF, "Cannot write an invalid hash to file");
 
   // 9 Bytes for identification + version
-  XII_SUCCEED_OR_RETURN(stream.WriteBytes(g_szAssetTag, 8));
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteBytes(g_szAssetTag, 8));
 
   const xiiUInt8 uiVersion = xiiAssetFileHeaderVersion::VersionCurrent;
-  stream << uiVersion;
+  ref_stream << uiVersion;
 
   // 8 Bytes for the hash
-  stream << m_uiHash;
+  ref_stream << m_uiHash;
   // 2 for the type version
-  stream << m_uiVersion;
+  ref_stream << m_uiVersion;
 
-  stream << m_sGenerator;
+  ref_stream << m_sGenerator;
   return XII_SUCCESS;
 }
 
-xiiResult xiiAssetFileHeader::Read(xiiStreamReader& stream)
+xiiResult xiiAssetFileHeader::Read(xiiStreamReader& ref_stream)
 {
   // initialize to 'invalid'
   m_uiHash    = 0xFFFFFFFFFFFFFFFF;
   m_uiVersion = 0;
 
   char szTag[9] = {0};
-  if (stream.ReadBytes(szTag, 8) < 8)
+  if (ref_stream.ReadBytes(szTag, 8) < 8)
   {
     XII_REPORT_FAILURE("The stream does not contain a valid asset file header");
     return XII_FAILURE;
@@ -64,22 +64,22 @@ xiiResult xiiAssetFileHeader::Read(xiiStreamReader& stream)
     return XII_FAILURE;
 
   xiiUInt8 uiVersion = 0;
-  stream >> uiVersion;
+  ref_stream >> uiVersion;
 
   xiiUInt64 uiHash = 0;
-  stream >> uiHash;
+  ref_stream >> uiHash;
 
   // future version?
   XII_ASSERT_DEV(uiVersion <= xiiAssetFileHeaderVersion::VersionCurrent, "Unknown asset header version {0}", uiVersion);
 
   if (uiVersion >= xiiAssetFileHeaderVersion::Version2)
   {
-    stream >> m_uiVersion;
+    ref_stream >> m_uiVersion;
   }
 
   if (uiVersion >= xiiAssetFileHeaderVersion::Version3)
   {
-    stream >> m_sGenerator;
+    ref_stream >> m_sGenerator;
   }
 
   // older version? set the hash to 'invalid'

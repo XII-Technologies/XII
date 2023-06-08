@@ -88,7 +88,7 @@ public:
   const Type* GetAttributeByType() const;
 
   /// \brief Returns the list of properties that this type has, including derived properties from all base classes.
-  void GetAllProperties(xiiHybridArray<xiiAbstractProperty*, 32>& out_Properties) const; // [tested]
+  void GetAllProperties(xiiHybridArray<xiiAbstractProperty*, 32>& out_properties) const; // [tested]
 
   /// \brief Returns the size (in bytes) of an instance of this type.
   XII_ALWAYS_INLINE xiiUInt32 GetTypeSize() const { return m_uiTypeSize; } // [tested]
@@ -117,11 +117,11 @@ public:
 
   /// \brief Dispatches the given message to the proper message handler, if there is one available. Returns true if so, false if no message
   /// handler for this type exists.
-  bool DispatchMessage(void* pInstance, xiiMessage& msg) const;
+  bool DispatchMessage(void* pInstance, xiiMessage& ref_msg) const;
 
   /// \brief Dispatches the given message to the proper message handler, if there is one available. Returns true if so, false if no message
   /// handler for this type exists.
-  bool DispatchMessage(const void* pInstance, xiiMessage& msg) const;
+  bool DispatchMessage(const void* pInstance, xiiMessage& ref_msg) const;
 
   /// \brief Returns whether this type can handle the given message type.
   template <typename MessageType>
@@ -148,7 +148,7 @@ public:
   /// Returns the provided array, such that the function can be used in a foreach loop right away.
   static const xiiDynamicArray<const xiiRTTI*>& GetAllTypesDerivedFrom(
     const xiiRTTI*                   pBaseType,
-    xiiDynamicArray<const xiiRTTI*>& out_DerivedTypes,
+    xiiDynamicArray<const xiiRTTI*>& out_derivedTypes,
     bool                             bSortByName);
 
 protected:

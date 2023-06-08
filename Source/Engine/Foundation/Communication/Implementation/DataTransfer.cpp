@@ -5,13 +5,13 @@
 bool                     xiiDataTransfer::s_bInitialized = false;
 xiiSet<xiiDataTransfer*> xiiDataTransfer::s_AllTransfers;
 
-xiiDataTransferObject::xiiDataTransferObject(xiiDataTransfer& BelongsTo, const char* szObjectName, const char* szMimeType, const char* szFileExtension) :
-  m_BelongsTo(BelongsTo)
+xiiDataTransferObject::xiiDataTransferObject(xiiDataTransfer& ref_belongsTo, const char* szObjectName, const char* szMimeType, const char* szFileExtension) :
+  m_BelongsTo(ref_belongsTo)
 {
   m_bHasBeenTransferred = false;
 
   m_Msg.SetMessageID('TRAN', 'DATA');
-  m_Msg.GetWriter() << BelongsTo.m_sDataName;
+  m_Msg.GetWriter() << ref_belongsTo.m_sDataName;
   m_Msg.GetWriter() << szObjectName;
   m_Msg.GetWriter() << szMimeType;
   m_Msg.GetWriter() << szFileExtension;

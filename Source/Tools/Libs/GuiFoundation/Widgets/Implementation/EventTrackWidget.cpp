@@ -9,8 +9,8 @@
 #include <QRubberBand>
 #include <qevent.h>
 
-xiiQtEventTrackWidget::xiiQtEventTrackWidget(QWidget* parent) :
-  QWidget(parent)
+xiiQtEventTrackWidget::xiiQtEventTrackWidget(QWidget* pParent) :
+  QWidget(pParent)
 {
   setFocusPolicy(Qt::FocusPolicy::ClickFocus);
   setMouseTracking(true);
@@ -189,13 +189,13 @@ void xiiQtEventTrackWidget::ClearSelection()
 }
 
 
-void xiiQtEventTrackWidget::GetSelection(xiiHybridArray<xiiUInt32, 32>& out_Selection) const
+void xiiQtEventTrackWidget::GetSelection(xiiHybridArray<xiiUInt32, 32>& out_selection) const
 {
-  out_Selection.Clear();
+  out_selection.Clear();
 
   for (const auto& pt : m_SelectedPoints)
   {
-    out_Selection.PushBack(m_Categories[pt.m_uiCategory].m_SortedPoints[pt.m_uiSortedIdx].m_uiOrgIndex);
+    out_selection.PushBack(m_Categories[pt.m_uiCategory].m_SortedPoints[pt.m_uiSortedIdx].m_uiOrgIndex);
   }
 }
 

@@ -9,7 +9,7 @@ xiiGALResourceView::xiiGALResourceView(xiiGALResourceBase* pResource, const xiiG
   XII_ASSERT_DEV(m_pResource != nullptr, "Resource must not be null");
 }
 
-xiiGALResourceView::~xiiGALResourceView() {}
+xiiGALResourceView::~xiiGALResourceView() = default;
 
 
 

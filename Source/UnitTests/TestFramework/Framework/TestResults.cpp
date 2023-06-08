@@ -58,10 +58,7 @@ void xiiTestResultData::AddOutput(xiiInt32 iOutputIndex)
 // xiiTestResultData public functions
 ////////////////////////////////////////////////////////////////////////
 
-xiiTestConfiguration::xiiTestConfiguration() :
-  m_uiInstalledMainMemory(0), m_uiMemoryPageSize(0), m_uiCPUCoreCount(0), m_b64BitOS(false), m_b64BitApplication(false), m_iDateTime(0), m_iRCSRevision(-1)
-{
-}
+xiiTestConfiguration::xiiTestConfiguration() = default;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -352,7 +349,7 @@ const xiiTestResultData& xiiTestFrameworkResult::GetTestResultData(xiiUInt32 uiT
   return (iSubTestIndex == -1) ? m_Tests[uiTestIndex].m_Result : m_Tests[uiTestIndex].m_SubTests[iSubTestIndex].m_Result;
 }
 
-void xiiTestFrameworkResult::TestOutput(xiiUInt32 uiTestIndex, xiiInt32 iSubTestIndex, xiiTestOutput::Enum Type, const char* szMsg)
+void xiiTestFrameworkResult::TestOutput(xiiUInt32 uiTestIndex, xiiInt32 iSubTestIndex, xiiTestOutput::Enum type, const char* szMsg)
 {
   if (uiTestIndex != -1)
   {
@@ -365,7 +362,7 @@ void xiiTestFrameworkResult::TestOutput(xiiUInt32 uiTestIndex, xiiInt32 iSubTest
 
   m_TestOutput.push_back(xiiTestOutputMessage());
   xiiTestOutputMessage& outputMessage = *m_TestOutput.rbegin();
-  outputMessage.m_Type                = Type;
+  outputMessage.m_Type                = type;
   outputMessage.m_sMessage.assign(szMsg);
 }
 
@@ -415,9 +412,9 @@ void xiiTestFrameworkResult::AddAsserts(xiiUInt32 uiTestIndex, xiiInt32 iSubTest
   }
 }
 
-xiiUInt32 xiiTestFrameworkResult::GetOutputMessageCount(xiiInt32 iTestIndex, xiiInt32 iSubTestIndex, xiiTestOutput::Enum Type) const
+xiiUInt32 xiiTestFrameworkResult::GetOutputMessageCount(xiiInt32 iTestIndex, xiiInt32 iSubTestIndex, xiiTestOutput::Enum type) const
 {
-  if (iTestIndex == -1 && Type == xiiTestOutput::AllOutputTypes)
+  if (iTestIndex == -1 && type == xiiTestOutput::AllOutputTypes)
     return (xiiUInt32)m_TestOutput.size();
 
   xiiInt32 iStartIdx = 0;
@@ -434,14 +431,14 @@ xiiUInt32 xiiTestFrameworkResult::GetOutputMessageCount(xiiInt32 iTestIndex, xii
       return 0;
 
     // If all message types should be counted we can simply return the range.
-    if (Type == xiiTestOutput::AllOutputTypes)
+    if (type == xiiTestOutput::AllOutputTypes)
       return iEndIdx - iStartIdx + 1;
   }
 
   xiiUInt32 uiAccumulator = 0;
   for (xiiInt32 uiOutputMessageIdx = iStartIdx; uiOutputMessageIdx <= iEndIdx; ++uiOutputMessageIdx)
   {
-    if (m_TestOutput[uiOutputMessageIdx].m_Type == Type)
+    if (m_TestOutput[uiOutputMessageIdx].m_Type == type)
       uiAccumulator++;
   }
   return uiAccumulator;

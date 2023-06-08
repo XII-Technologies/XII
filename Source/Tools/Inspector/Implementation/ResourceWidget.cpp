@@ -17,8 +17,8 @@ void FormatSize(xiiStringBuilder& s, const char* szPrefix, xiiUInt64 uiSize);
 
 xiiQtResourceWidget* xiiQtResourceWidget::s_pWidget = nullptr;
 
-xiiQtResourceWidget::xiiQtResourceWidget(QWidget* parent) :
-  ads::CDockWidget("Resource Widget", parent)
+xiiQtResourceWidget::xiiQtResourceWidget(QWidget* pParent) :
+  ads::CDockWidget("Resource Widget", pParent)
 {
   s_pWidget = this;
 

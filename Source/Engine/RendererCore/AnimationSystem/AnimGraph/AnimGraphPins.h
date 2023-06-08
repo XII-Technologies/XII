@@ -47,8 +47,8 @@ public:
     return m_iPinIndex != -1;
   }
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 
 protected:
   xiiInt16 m_iPinIndex        = -1;
@@ -76,8 +76,8 @@ class XII_RENDERERCORE_DLL xiiAnimGraphTriggerInputPin : public xiiAnimGraphInpu
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimGraphTriggerInputPin, xiiAnimGraphInputPin);
 
 public:
-  bool IsTriggered(xiiAnimGraph& graph) const;
-  bool AreAllTriggered(xiiAnimGraph& graph) const;
+  bool IsTriggered(xiiAnimGraph& ref_graph) const;
+  bool AreAllTriggered(xiiAnimGraph& ref_graph) const;
 };
 
 class XII_RENDERERCORE_DLL xiiAnimGraphTriggerOutputPin : public xiiAnimGraphOutputPin
@@ -89,7 +89,7 @@ public:
   ///
   /// All pin states are reset before every graph update, so this only needs to be called
   /// when a pin should be set to the triggered state, but then it must be called every frame.
-  void SetTriggered(xiiAnimGraph& graph, bool triggered);
+  void SetTriggered(xiiAnimGraph& ref_graph, bool bTriggered);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ class XII_RENDERERCORE_DLL xiiAnimGraphNumberInputPin : public xiiAnimGraphInput
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimGraphNumberInputPin, xiiAnimGraphInputPin);
 
 public:
-  double GetNumber(xiiAnimGraph& graph, double fFallback = 0.0) const;
+  double GetNumber(xiiAnimGraph& ref_graph, double fFallback = 0.0) const;
 };
 
 class XII_RENDERERCORE_DLL xiiAnimGraphNumberOutputPin : public xiiAnimGraphOutputPin
@@ -107,7 +107,7 @@ class XII_RENDERERCORE_DLL xiiAnimGraphNumberOutputPin : public xiiAnimGraphOutp
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimGraphNumberOutputPin, xiiAnimGraphOutputPin);
 
 public:
-  void SetNumber(xiiAnimGraph& graph, double value);
+  void SetNumber(xiiAnimGraph& ref_graph, double value);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -117,7 +117,7 @@ class XII_RENDERERCORE_DLL xiiAnimGraphBoneWeightsInputPin : public xiiAnimGraph
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimGraphBoneWeightsInputPin, xiiAnimGraphInputPin);
 
 public:
-  xiiAnimGraphPinDataBoneWeights* GetWeights(xiiAnimGraph& graph) const;
+  xiiAnimGraphPinDataBoneWeights* GetWeights(xiiAnimGraph& ref_graph) const;
 };
 
 class XII_RENDERERCORE_DLL xiiAnimGraphBoneWeightsOutputPin : public xiiAnimGraphOutputPin
@@ -125,7 +125,7 @@ class XII_RENDERERCORE_DLL xiiAnimGraphBoneWeightsOutputPin : public xiiAnimGrap
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimGraphBoneWeightsOutputPin, xiiAnimGraphOutputPin);
 
 public:
-  void SetWeights(xiiAnimGraph& graph, xiiAnimGraphPinDataBoneWeights* pWeights);
+  void SetWeights(xiiAnimGraph& ref_graph, xiiAnimGraphPinDataBoneWeights* pWeights);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -135,7 +135,7 @@ class XII_RENDERERCORE_DLL xiiAnimGraphLocalPoseInputPin : public xiiAnimGraphIn
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimGraphLocalPoseInputPin, xiiAnimGraphInputPin);
 
 public:
-  xiiAnimGraphPinDataLocalTransforms* GetPose(xiiAnimGraph& graph) const;
+  xiiAnimGraphPinDataLocalTransforms* GetPose(xiiAnimGraph& ref_graph) const;
 };
 
 class XII_RENDERERCORE_DLL xiiAnimGraphLocalPoseMultiInputPin : public xiiAnimGraphInputPin
@@ -143,7 +143,7 @@ class XII_RENDERERCORE_DLL xiiAnimGraphLocalPoseMultiInputPin : public xiiAnimGr
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimGraphLocalPoseMultiInputPin, xiiAnimGraphInputPin);
 
 public:
-  void GetPoses(xiiAnimGraph& graph, xiiDynamicArray<xiiAnimGraphPinDataLocalTransforms*>& out_Poses) const;
+  void GetPoses(xiiAnimGraph& ref_graph, xiiDynamicArray<xiiAnimGraphPinDataLocalTransforms*>& out_poses) const;
 };
 
 class XII_RENDERERCORE_DLL xiiAnimGraphLocalPoseOutputPin : public xiiAnimGraphOutputPin
@@ -151,7 +151,7 @@ class XII_RENDERERCORE_DLL xiiAnimGraphLocalPoseOutputPin : public xiiAnimGraphO
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimGraphLocalPoseOutputPin, xiiAnimGraphOutputPin);
 
 public:
-  void SetPose(xiiAnimGraph& graph, xiiAnimGraphPinDataLocalTransforms* pPose);
+  void SetPose(xiiAnimGraph& ref_graph, xiiAnimGraphPinDataLocalTransforms* pPose);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -161,7 +161,7 @@ class XII_RENDERERCORE_DLL xiiAnimGraphModelPoseInputPin : public xiiAnimGraphIn
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimGraphModelPoseInputPin, xiiAnimGraphInputPin);
 
 public:
-  xiiAnimGraphPinDataModelTransforms* GetPose(xiiAnimGraph& graph) const;
+  xiiAnimGraphPinDataModelTransforms* GetPose(xiiAnimGraph& ref_graph) const;
 };
 
 class XII_RENDERERCORE_DLL xiiAnimGraphModelPoseOutputPin : public xiiAnimGraphOutputPin
@@ -169,5 +169,5 @@ class XII_RENDERERCORE_DLL xiiAnimGraphModelPoseOutputPin : public xiiAnimGraphO
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimGraphModelPoseOutputPin, xiiAnimGraphOutputPin);
 
 public:
-  void SetPose(xiiAnimGraph& graph, xiiAnimGraphPinDataModelTransforms* pPose);
+  void SetPose(xiiAnimGraph& ref_graph, xiiAnimGraphPinDataModelTransforms* pPose);
 };

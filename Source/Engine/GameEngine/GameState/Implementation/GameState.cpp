@@ -32,9 +32,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_STATICLINK_FILE(GameEngine, GameEngine_GameState_Implementation_GameState);
 // clang-format on
 
-xiiGameState::xiiGameState() {}
+xiiGameState::xiiGameState() = default;
 
-xiiGameState::~xiiGameState() {}
+xiiGameState::~xiiGameState() = default;
 
 void xiiGameState::OnActivation(xiiWorld* pWorld, const xiiTransform* pStartPosition)
 {

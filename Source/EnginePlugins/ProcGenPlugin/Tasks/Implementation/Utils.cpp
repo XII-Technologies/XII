@@ -144,14 +144,14 @@ xiiExpressionFunction xiiProcGenExpressionFunctions::s_GetInstanceSeedFunc = {
 
 //////////////////////////////////////////////////////////////////////////
 
-void xiiProcGenInternal::ExtractVolumeCollections(const xiiWorld& world, const xiiBoundingBox& box, const Output& output, xiiDeque<xiiVolumeCollection>& volumeCollections, xiiExpression::GlobalData& globalData)
+void xiiProcGenInternal::ExtractVolumeCollections(const xiiWorld& world, const xiiBoundingBox& box, const Output& output, xiiDeque<xiiVolumeCollection>& ref_volumeCollections, xiiExpression::GlobalData& ref_globalData)
 {
   auto& volumeTagSetIndices = output.m_VolumeTagSetIndices;
   if (volumeTagSetIndices.IsEmpty())
     return;
 
   xiiVariantArray volumes;
-  if (xiiVariant* volumesVar = globalData.GetValue(s_sVolumes))
+  if (xiiVariant* volumesVar = ref_globalData.GetValue(s_sVolumes))
   {
     volumes = volumesVar->Get<xiiVariantArray>();
   }
@@ -166,17 +166,17 @@ void xiiProcGenInternal::ExtractVolumeCollections(const xiiWorld& world, const x
     auto  pGraphSharedData = static_cast<const xiiProcGenInternal::GraphSharedData*>(output.m_pGraphSharedData.Borrow());
     auto& includeTags      = pGraphSharedData->GetTagSet(tagSetIndex);
 
-    auto& volumeCollection = volumeCollections.ExpandAndGetRef();
+    auto& volumeCollection = ref_volumeCollections.ExpandAndGetRef();
     xiiVolumeCollection::ExtractVolumesInBox(world, box, s_ProcVolumeCategory, includeTags, volumeCollection, xiiGetStaticRTTI<xiiProcVolumeComponent>());
 
     volumes.EnsureCount(tagSetIndex + 1);
     volumes[tagSetIndex] = xiiVariant(&volumeCollection);
   }
 
-  globalData.Insert(s_sVolumes, volumes);
+  ref_globalData.Insert(s_sVolumes, volumes);
 }
 
-void xiiProcGenInternal::SetInstanceSeed(xiiUInt32 uiSeed, xiiExpression::GlobalData& globalData)
+void xiiProcGenInternal::SetInstanceSeed(xiiUInt32 uiSeed, xiiExpression::GlobalData& ref_globalData)
 {
-  globalData.Insert(s_sInstanceSeed, (int)uiSeed);
+  ref_globalData.Insert(s_sInstanceSeed, (int)uiSeed);
 }

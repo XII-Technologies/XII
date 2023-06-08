@@ -25,7 +25,7 @@ private:
 
   struct PrefabData
   {
-    PrefabData() {}
+    PrefabData() = default;
 
     xiiUuid   m_documentGuid;
     xiiString m_sAbsPath;

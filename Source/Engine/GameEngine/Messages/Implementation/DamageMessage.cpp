@@ -46,8 +46,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_OnDamage, 1, xiiRTTIDefault
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_OnDamage::xiiVisualScriptNode_OnDamage() {}
-xiiVisualScriptNode_OnDamage::~xiiVisualScriptNode_OnDamage() {}
+xiiVisualScriptNode_OnDamage::xiiVisualScriptNode_OnDamage()  = default;
+xiiVisualScriptNode_OnDamage::~xiiVisualScriptNode_OnDamage() = default;
 
 void xiiVisualScriptNode_OnDamage::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {

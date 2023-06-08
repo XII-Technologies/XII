@@ -202,9 +202,9 @@ bool xiiDocumentNodeManager::IsConnected(const xiiPin& source, const xiiPin& tar
   return false;
 }
 
-xiiStatus xiiDocumentNodeManager::CanConnect(const xiiRTTI* pObjectType, const xiiPin& source, const xiiPin& target, CanConnectResult& out_Result) const
+xiiStatus xiiDocumentNodeManager::CanConnect(const xiiRTTI* pObjectType, const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const
 {
-  out_Result = CanConnectResult::ConnectNever;
+  out_result = CanConnectResult::ConnectNever;
 
   if (pObjectType == nullptr || pObjectType->IsDerivedFrom(GetConnectionType()) == false)
     return xiiStatus("Invalid connection object type");
@@ -220,7 +220,7 @@ xiiStatus xiiDocumentNodeManager::CanConnect(const xiiRTTI* pObjectType, const x
   if (IsConnected(source, target))
     return xiiStatus("Pins already connected.");
 
-  return InternalCanConnect(source, target, out_Result);
+  return InternalCanConnect(source, target, out_result);
 }
 
 xiiStatus xiiDocumentNodeManager::CanDisconnect(const xiiConnection* pConnection) const
@@ -299,15 +299,15 @@ void xiiDocumentNodeManager::MoveNode(const xiiDocumentObject* pObject, const xi
   m_NodeEvents.Broadcast(e);
 }
 
-void xiiDocumentNodeManager::AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& graph) const
+void xiiDocumentNodeManager::AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& ref_graph) const
 {
   auto pNodeMetaDataType       = xiiGetStaticRTTI<DocumentNodeManager_NodeMetaData>();
   auto pConnectionMetaDataType = xiiGetStaticRTTI<DocumentNodeManager_ConnectionMetaData>();
 
   xiiRttiConverterContext context;
-  xiiRttiConverterWriter  rttiConverter(&graph, &context, true, true);
+  xiiRttiConverterWriter  rttiConverter(&ref_graph, &context, true, true);
 
-  for (auto it = graph.GetAllNodes().GetIterator(); it.IsValid(); ++it)
+  for (auto it = ref_graph.GetAllNodes().GetIterator(); it.IsValid(); ++it)
   {
     auto*          pAbstractObject = it.Value();
     const xiiUuid& guid            = pAbstractObject->GetGuid();
@@ -495,7 +495,7 @@ bool xiiDocumentNodeManager::CopySelectedObjects(xiiAbstractObjectGraph& out_obj
   return true;
 }
 
-bool xiiDocumentNodeManager::PasteObjects(const xiiArrayPtr<xiiDocument::PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec2& pickedPosition, bool bAllowPickedPosition)
+bool xiiDocumentNodeManager::PasteObjects(const xiiArrayPtr<xiiDocument::PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec2& vPickedPosition, bool bAllowPickedPosition)
 {
   bool                               bAddedAll = true;
   xiiDeque<const xiiDocumentObject*> AddedObjects;
@@ -532,7 +532,7 @@ bool xiiDocumentNodeManager::PasteObjects(const xiiArrayPtr<xiiDocument::PasteIn
     }
 
     vAvgPos /= (float)nodeCount;
-    const xiiVec2 vMoveNode = -vAvgPos + pickedPosition;
+    const xiiVec2 vMoveNode = -vAvgPos + vPickedPosition;
 
     for (const xiiDocumentObject* pObject : AddedObjects)
     {

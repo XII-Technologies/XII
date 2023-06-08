@@ -28,9 +28,9 @@ public:
   {
   }
 
-  virtual ~xiiCoordinateSystemProviderTemplate() {}
+  virtual ~xiiCoordinateSystemProviderTemplate() = default;
 
-  virtual void GetCoordinateSystem(const xiiVec3Template<Type>& vGlobalPosition, xiiCoordinateSystemTemplate<Type>& out_CoordinateSystem) const = 0;
+  virtual void GetCoordinateSystem(const xiiVec3Template<Type>& vGlobalPosition, xiiCoordinateSystemTemplate<Type>& out_coordinateSystem) const = 0;
 
 protected:
   friend class xiiWorld;
@@ -59,7 +59,7 @@ public:
   xiiVec3Template<Type> ConvertSourcePosition(const xiiVec3Template<Type>& vPos) const; // [tested]
 
   /// \brief Returns the equivalent rotation in the target coordinate system.
-  xiiQuatTemplate<Type> ConvertSourceRotation(const xiiQuatTemplate<Type>& vOrientation) const; // [tested]
+  xiiQuatTemplate<Type> ConvertSourceRotation(const xiiQuatTemplate<Type>& qOrientation) const; // [tested]
 
   /// \brief Returns the equivalent length in the target coordinate system.
   Type ConvertSourceLength(Type fLength) const; // [tested]
@@ -68,7 +68,7 @@ public:
   xiiVec3Template<Type> ConvertTargetPosition(const xiiVec3Template<Type>& vPos) const; // [tested]
 
   /// \brief Returns the equivalent rotation in the source coordinate system.
-  xiiQuatTemplate<Type> ConvertTargetRotation(const xiiQuatTemplate<Type>& vOrientation) const; // [tested]
+  xiiQuatTemplate<Type> ConvertTargetRotation(const xiiQuatTemplate<Type>& qOrientation) const; // [tested]
 
   /// \brief Returns the equivalent length in the source coordinate system.
   Type ConvertTargetLength(Type fLength) const; // [tested]

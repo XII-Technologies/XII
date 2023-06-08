@@ -42,20 +42,20 @@ xiiSpriteRenderer::xiiSpriteRenderer()
   m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Materials/SpriteMaterial.xiiShader");
 }
 
-xiiSpriteRenderer::~xiiSpriteRenderer() {}
+xiiSpriteRenderer::~xiiSpriteRenderer() = default;
 
-void xiiSpriteRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const
+void xiiSpriteRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {
-  types.PushBack(xiiGetStaticRTTI<xiiSpriteRenderData>());
+  ref_types.PushBack(xiiGetStaticRTTI<xiiSpriteRenderData>());
 }
 
-void xiiSpriteRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const
+void xiiSpriteRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
-  categories.PushBack(xiiDefaultRenderDataCategories::LitMasked);
-  categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
-  categories.PushBack(xiiDefaultRenderDataCategories::SimpleOpaque);
-  categories.PushBack(xiiDefaultRenderDataCategories::SimpleTransparent);
-  categories.PushBack(xiiDefaultRenderDataCategories::Selection);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitMasked);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleOpaque);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleTransparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
 }
 
 void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const

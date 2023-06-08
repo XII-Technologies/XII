@@ -160,9 +160,9 @@ void xiiRemoteInterface::Send(xiiRemoteTransmitMode tm, xiiUInt32 uiSystemID, xi
   Send(tm, uiSystemID, uiMsgID, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(pData), uiDataBytes));
 }
 
-void xiiRemoteInterface::Send(xiiRemoteTransmitMode tm, xiiRemoteMessage& msg)
+void xiiRemoteInterface::Send(xiiRemoteTransmitMode tm, xiiRemoteMessage& ref_msg)
 {
-  Send(tm, msg.GetSystemID(), msg.GetMessageID(), msg.m_Storage);
+  Send(tm, ref_msg.GetSystemID(), ref_msg.GetMessageID(), ref_msg.m_Storage);
 }
 
 void xiiRemoteInterface::Send(xiiRemoteTransmitMode tm, xiiUInt32 uiSystemID, xiiUInt32 uiMsgID, const xiiContiguousMemoryStreamStorage& data)

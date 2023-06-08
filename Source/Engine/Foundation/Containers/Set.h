@@ -19,7 +19,7 @@ private:
   {
     NilNode();
 
-    xiiUInt16 m_uiLevel;
+    xiiUInt16 m_uiLevel = 0;
     Node*     m_pParent;
     Node*     m_pLink[2];
   };
@@ -250,9 +250,9 @@ public:
 
 
 template <typename KeyType, typename Comparer>
-typename xiiSetBase<KeyType, Comparer>::Iterator begin(xiiSetBase<KeyType, Comparer>& container)
+typename xiiSetBase<KeyType, Comparer>::Iterator begin(xiiSetBase<KeyType, Comparer>& ref_container)
 {
-  return container.GetIterator();
+  return ref_container.GetIterator();
 }
 
 template <typename KeyType, typename Comparer>
@@ -268,7 +268,7 @@ typename xiiSetBase<KeyType, Comparer>::Iterator cbegin(const xiiSetBase<KeyType
 }
 
 template <typename KeyType, typename Comparer>
-typename xiiSetBase<KeyType, Comparer>::Iterator end(xiiSetBase<KeyType, Comparer>& container)
+typename xiiSetBase<KeyType, Comparer>::Iterator end(xiiSetBase<KeyType, Comparer>& ref_container)
 {
   return typename xiiSetBase<KeyType, Comparer>::Iterator();
 }

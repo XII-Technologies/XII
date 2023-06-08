@@ -9,7 +9,6 @@
 
 namespace
 {
-
   struct xiiMsgTest : public xiiMessage
   {
     XII_DECLARE_MESSAGE_TYPE(xiiMsgTest, xiiMessage);
@@ -65,18 +64,15 @@ class BaseHandler : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(BaseHandler, xiiReflectedClass);
 
 public:
-  BaseHandler() :
-    m_iValue(0)
-  {
-  }
+  BaseHandler() = default;
 
-  void OnAddMessage(AddMessage& msg) { m_iValue += msg.m_iValue; }
+  void OnAddMessage(AddMessage& ref_msg) { m_iValue += ref_msg.m_iValue; }
 
-  void OnMulMessage(MulMessage& msg) { m_iValue *= msg.m_iValue; }
+  void OnMulMessage(MulMessage& ref_msg) { m_iValue *= ref_msg.m_iValue; }
 
-  void OnGetMessage(GetMessage& msg) const { msg.m_iValue = m_iValue; }
+  void OnGetMessage(GetMessage& ref_msg) const { ref_msg.m_iValue = m_iValue; }
 
-  xiiInt32 m_iValue;
+  xiiInt32 m_iValue = 0;
 };
 
 // clang-format off
@@ -96,9 +92,9 @@ class DerivedHandler : public BaseHandler
   XII_ADD_DYNAMIC_REFLECTION(DerivedHandler, BaseHandler);
 
 public:
-  void OnAddMessage(AddMessage& msg) { m_iValue += msg.m_iValue * 2; }
+  void OnAddMessage(AddMessage& ref_msg) { m_iValue += ref_msg.m_iValue * 2; }
 
-  void OnSubMessage(SubMessage& msg) { m_iValue -= msg.m_iValue; }
+  void OnSubMessage(SubMessage& ref_msg) { m_iValue -= ref_msg.m_iValue; }
 };
 
 // clang-format off

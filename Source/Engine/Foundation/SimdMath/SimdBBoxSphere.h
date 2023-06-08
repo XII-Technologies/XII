@@ -48,7 +48,7 @@ public:
   void Transform(const xiiSimdTransform& t); // [tested]
 
   /// \brief Transforms the bounds in its local space.
-  void Transform(const xiiSimdMat4f& mat); // [tested]
+  void Transform(const xiiSimdMat4f& mMat); // [tested]
 
 
   bool operator==(const xiiSimdBBoxSphere& rhs) const; // [tested]

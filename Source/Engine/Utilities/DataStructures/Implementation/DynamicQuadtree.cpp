@@ -4,10 +4,7 @@
 
 const float xiiDynamicQuadtree::s_fLooseOctreeFactor = 1.1f;
 
-xiiDynamicQuadtree::xiiDynamicQuadtree() :
-  m_uiMaxTreeDepth(0), m_uiAddIDTopLevel(0)
-{
-}
+xiiDynamicQuadtree::xiiDynamicQuadtree() = default;
 
 void xiiDynamicQuadtree::CreateTree(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, float fMinNodeSize)
 {
@@ -57,12 +54,12 @@ void xiiDynamicQuadtree::CreateTree(const xiiVec3& vCenter, const xiiVec3& vHalf
 /// If bOnlyIfInside is true, the object is discarded, if it is not inside the actual bounding box of the tree.
 ///
 /// The min and max Y value of the tree's bounding box is updated, if the object lies above/below previously inserted objects.
-xiiResult xiiDynamicQuadtree::InsertObject(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, xiiInt32 iObjectType, xiiInt32 iObjectInstance, xiiDynamicTreeObject* out_Object, bool bOnlyIfInside)
+xiiResult xiiDynamicQuadtree::InsertObject(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, xiiInt32 iObjectType, xiiInt32 iObjectInstance, xiiDynamicTreeObject* out_pObject, bool bOnlyIfInside)
 {
   XII_ASSERT_DEV(m_uiMaxTreeDepth > 0, "xiiDynamicQuadtree::InsertObject: You have to first create the tree.");
 
-  if (out_Object)
-    *out_Object = xiiDynamicTreeObject();
+  if (out_pObject)
+    *out_pObject = xiiDynamicTreeObject();
 
   if (bOnlyIfInside)
   {
@@ -90,7 +87,7 @@ xiiResult xiiDynamicQuadtree::InsertObject(const xiiVec3& vCenter, const xiiVec3
 
   // insert the object into the best child
   if (!InsertObject(vCenter, vHalfExtents, oData, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel,
-                    xiiMath::Pow(4, m_uiMaxTreeDepth - 1), out_Object))
+                    xiiMath::Pow(4, m_uiMaxTreeDepth - 1), out_pObject))
   {
     if (!bOnlyIfInside)
     {
@@ -100,8 +97,8 @@ xiiResult xiiDynamicQuadtree::InsertObject(const xiiVec3& vCenter, const xiiVec3
 
       auto key = m_NodeMap.Insert(mmk, oData);
 
-      if (out_Object)
-        *out_Object = key;
+      if (out_pObject)
+        *out_pObject = key;
 
       return XII_SUCCESS;
     }
@@ -201,14 +198,14 @@ bool xiiDynamicQuadtree::InsertObject(const xiiVec3& vCenter, const xiiVec3& vHa
   return true;
 }
 
-void xiiDynamicQuadtree::FindVisibleObjects(const xiiFrustum& Viewfrustum, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough) const
+void xiiDynamicQuadtree::FindVisibleObjects(const xiiFrustum& viewfrustum, XII_VISIBLE_OBJ_CALLBACK callback, void* pPassThrough) const
 {
   XII_ASSERT_DEV(m_uiMaxTreeDepth > 0, "xiiDynamicQuadtree::FindVisibleObjects: You have to first create the tree.");
 
   if (m_NodeMap.IsEmpty())
     return;
 
-  FindVisibleObjects(Viewfrustum, Callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel,
+  FindVisibleObjects(viewfrustum, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel,
                      xiiMath::Pow(4, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
 }
 
@@ -297,7 +294,7 @@ void xiiDynamicQuadtree::FindVisibleObjects(const xiiFrustum& Viewfrustum, XII_V
 }
 
 
-void xiiDynamicQuadtree::FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough) const
+void xiiDynamicQuadtree::FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_OBJ_CALLBACK callback, void* pPassThrough) const
 {
   XII_ASSERT_DEV(m_uiMaxTreeDepth > 0, "xiiDynamicQuadtree::FindObjectsInRange: You have to first create the tree.");
 
@@ -307,7 +304,7 @@ void xiiDynamicQuadtree::FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_O
   if (!m_BBox.Contains(vPoint))
     return;
 
-  FindObjectsInRange(vPoint, Callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel,
+  FindObjectsInRange(vPoint, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel,
                      xiiMath::Pow(4, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
 }
 
@@ -380,7 +377,7 @@ bool xiiDynamicQuadtree::FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_O
 
 
 
-void xiiDynamicQuadtree::FindObjectsInRange(const xiiVec3& vPoint, float fRadius, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough) const
+void xiiDynamicQuadtree::FindObjectsInRange(const xiiVec3& vPoint, float fRadius, XII_VISIBLE_OBJ_CALLBACK callback, void* pPassThrough) const
 {
   XII_ASSERT_DEV(m_uiMaxTreeDepth > 0, "xiiDynamicQuadtree::FindObjectsInRange: You have to first create the tree.");
 
@@ -390,7 +387,7 @@ void xiiDynamicQuadtree::FindObjectsInRange(const xiiVec3& vPoint, float fRadius
   if (!m_BBox.Overlaps(xiiBoundingBox(vPoint - xiiVec3(fRadius), vPoint + xiiVec3(fRadius))))
     return;
 
-  FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0,
+  FindObjectsInRange(vPoint, fRadius, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0,
                      m_uiAddIDTopLevel, xiiMath::Pow(4, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
 }
 

@@ -11,8 +11,8 @@
 
 xiiQtMainWidget* xiiQtMainWidget::s_pWidget = nullptr;
 
-xiiQtMainWidget::xiiQtMainWidget(QWidget* parent) :
-  ads::CDockWidget("Main", parent)
+xiiQtMainWidget::xiiQtMainWidget(QWidget* pParent) :
+  ads::CDockWidget("Main", pParent)
 {
   s_pWidget = this;
 
@@ -226,7 +226,7 @@ void xiiQtMainWidget::UpdateStats()
 }
 
 
-void xiiQtMainWidget::closeEvent(QCloseEvent* event)
+void xiiQtMainWidget::closeEvent(QCloseEvent* pEvent)
 {
   QSettings Settings;
 

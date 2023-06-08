@@ -6,8 +6,8 @@
 #include <GuiFoundation/ActionViews/MenuBarActionMapView.moc.h>
 #include <GuiFoundation/ActionViews/QtProxy.moc.h>
 
-xiiQtMenuBarActionMapView::xiiQtMenuBarActionMapView(QWidget* parent) :
-  QMenuBar(parent)
+xiiQtMenuBarActionMapView::xiiQtMenuBarActionMapView(QWidget* pParent) :
+  QMenuBar(pParent)
 {
 }
 

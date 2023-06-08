@@ -7,7 +7,7 @@
 class XII_RMLUIPLUGIN_DLL xiiRmlUiDataBinding
 {
 public:
-  virtual ~xiiRmlUiDataBinding() {}
+  virtual ~xiiRmlUiDataBinding() = default;
 
   virtual xiiResult Initialize(Rml::Context& ref_context)   = 0;
   virtual void      Deinitialize(Rml::Context& ref_context) = 0;

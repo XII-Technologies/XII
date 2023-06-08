@@ -81,9 +81,9 @@ XII_END_COMPONENT_TYPE;
 xiiSpriteComponent::xiiSpriteComponent()  = default;
 xiiSpriteComponent::~xiiSpriteComponent() = default;
 
-xiiResult xiiSpriteComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiSpriteComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
-  bounds = xiiBoundingSphere(xiiVec3::ZeroVector(), m_fSize * 0.5f);
+  ref_bounds = xiiBoundingSphere(xiiVec3::ZeroVector(), m_fSize * 0.5f);
   return XII_SUCCESS;
 }
 
@@ -123,10 +123,10 @@ void xiiSpriteComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
   msg.AddRenderData(pRenderData, category, xiiRenderData::Caching::IfStatic);
 }
 
-void xiiSpriteComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSpriteComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  xiiStreamWriter& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_hTexture;
   s << m_fSize;
@@ -138,12 +138,12 @@ void xiiSpriteComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_BlendMode;
 }
 
-void xiiSpriteComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSpriteComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   s >> m_hTexture;
 
@@ -227,9 +227,9 @@ float xiiSpriteComponent::GetMaxScreenSize() const
   return m_fMaxScreenSize;
 }
 
-void xiiSpriteComponent::OnMsgSetColor(xiiMsgSetColor& msg)
+void xiiSpriteComponent::OnMsgSetColor(xiiMsgSetColor& ref_msg)
 {
-  msg.ModifyColor(m_Color);
+  ref_msg.ModifyColor(m_Color);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -247,7 +247,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override { pNode->RenameProperty("Max Screen Size", "MaxScreenSize"); }
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override { pNode->RenameProperty("Max Screen Size", "MaxScreenSize"); }
 };
 
 xiiSpriteComponentPatch_1_2 g_xiiSpriteComponentPatch_1_2;

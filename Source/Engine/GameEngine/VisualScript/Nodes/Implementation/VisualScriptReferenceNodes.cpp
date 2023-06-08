@@ -26,8 +26,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_GetScriptOwner, 2, xiiRTTID
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_GetScriptOwner::xiiVisualScriptNode_GetScriptOwner() {}
-xiiVisualScriptNode_GetScriptOwner::~xiiVisualScriptNode_GetScriptOwner() {}
+xiiVisualScriptNode_GetScriptOwner::xiiVisualScriptNode_GetScriptOwner()  = default;
+xiiVisualScriptNode_GetScriptOwner::~xiiVisualScriptNode_GetScriptOwner() = default;
 
 void xiiVisualScriptNode_GetScriptOwner::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -65,8 +65,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_GetComponentOwner, 1, xiiRT
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_GetComponentOwner::xiiVisualScriptNode_GetComponentOwner() {}
-xiiVisualScriptNode_GetComponentOwner::~xiiVisualScriptNode_GetComponentOwner() {}
+xiiVisualScriptNode_GetComponentOwner::xiiVisualScriptNode_GetComponentOwner()  = default;
+xiiVisualScriptNode_GetComponentOwner::~xiiVisualScriptNode_GetComponentOwner() = default;
 
 void xiiVisualScriptNode_GetComponentOwner::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -120,8 +120,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_FindChildObject, 1, xiiRTTI
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_FindChildObject::xiiVisualScriptNode_FindChildObject() {}
-xiiVisualScriptNode_FindChildObject::~xiiVisualScriptNode_FindChildObject() {}
+xiiVisualScriptNode_FindChildObject::xiiVisualScriptNode_FindChildObject()  = default;
+xiiVisualScriptNode_FindChildObject::~xiiVisualScriptNode_FindChildObject() = default;
 
 void xiiVisualScriptNode_FindChildObject::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -189,8 +189,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_FindComponent, 1, xiiRTTIDe
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_FindComponent::xiiVisualScriptNode_FindComponent() {}
-xiiVisualScriptNode_FindComponent::~xiiVisualScriptNode_FindComponent() {}
+xiiVisualScriptNode_FindComponent::xiiVisualScriptNode_FindComponent()  = default;
+xiiVisualScriptNode_FindComponent::~xiiVisualScriptNode_FindComponent() = default;
 
 void xiiVisualScriptNode_FindComponent::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -261,8 +261,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_QueryGlobalObject, 1, xiiRT
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_QueryGlobalObject::xiiVisualScriptNode_QueryGlobalObject() {}
-xiiVisualScriptNode_QueryGlobalObject::~xiiVisualScriptNode_QueryGlobalObject() {}
+xiiVisualScriptNode_QueryGlobalObject::xiiVisualScriptNode_QueryGlobalObject()  = default;
+xiiVisualScriptNode_QueryGlobalObject::~xiiVisualScriptNode_QueryGlobalObject() = default;
 
 void xiiVisualScriptNode_QueryGlobalObject::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -318,8 +318,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_FindParent, 1, xiiRTTIDefau
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_FindParent::xiiVisualScriptNode_FindParent() {}
-xiiVisualScriptNode_FindParent::~xiiVisualScriptNode_FindParent() {}
+xiiVisualScriptNode_FindParent::xiiVisualScriptNode_FindParent()  = default;
+xiiVisualScriptNode_FindParent::~xiiVisualScriptNode_FindParent() = default;
 
 void xiiVisualScriptNode_FindParent::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {

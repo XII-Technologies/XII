@@ -56,26 +56,26 @@ XII_FORCE_INLINE void xiiHashedString::operator=(xiiHashedString&& rhs)
 }
 
 template <size_t N>
-XII_FORCE_INLINE void xiiHashedString::Assign(const char (&szString)[N])
+XII_FORCE_INLINE void xiiHashedString::Assign(const char (&string)[N])
 {
 #if XII_ENABLED(XII_HASHED_STRING_REF_COUNTING)
   HashedType tmp = m_Data;
 #endif
   // this function will already increase the refcount as needed
-  m_Data = AddHashedString(szString, xiiHashingUtils::StringHash(szString));
+  m_Data = AddHashedString(string, xiiHashingUtils::StringHash(string));
 
 #if XII_ENABLED(XII_HASHED_STRING_REF_COUNTING)
   tmp.Value().m_iRefCount.Decrement();
 #endif
 }
 
-XII_FORCE_INLINE void xiiHashedString::Assign(xiiStringView szString)
+XII_FORCE_INLINE void xiiHashedString::Assign(xiiStringView sString)
 {
 #if XII_ENABLED(XII_HASHED_STRING_REF_COUNTING)
   HashedType tmp = m_Data;
 #endif
   // this function will already increase the refcount as needed
-  m_Data = AddHashedString(szString, xiiHashingUtils::StringHash(szString));
+  m_Data = AddHashedString(sString, xiiHashingUtils::StringHash(sString));
 
 #if XII_ENABLED(XII_HASHED_STRING_REF_COUNTING)
   tmp.Value().m_iRefCount.Decrement();
@@ -128,10 +128,10 @@ XII_ALWAYS_INLINE xiiUInt64 xiiHashedString::GetHash() const
 }
 
 template <size_t N>
-XII_FORCE_INLINE xiiHashedString xiiMakeHashedString(const char (&szString)[N])
+XII_FORCE_INLINE xiiHashedString xiiMakeHashedString(const char (&string)[N])
 {
   xiiHashedString sResult;
-  sResult.Assign(szString);
+  sResult.Assign(string);
   return sResult;
 }
 
@@ -144,14 +144,14 @@ XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString()
 }
 
 template <size_t N>
-XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString(const char (&szString)[N])
+XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString(const char (&string)[N])
 {
-  m_uiHash = xiiHashingUtils::StringHash<N>(szString);
+  m_uiHash = xiiHashingUtils::StringHash<N>(string);
 }
 
-XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString(xiiStringView szString)
+XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString(xiiStringView sString)
 {
-  m_uiHash = xiiHashingUtils::StringHash(szString);
+  m_uiHash = xiiHashingUtils::StringHash(sString);
 }
 
 XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString(const xiiTempHashedString& rhs)
@@ -170,14 +170,14 @@ XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString(xiiUInt64 uiHash)
 }
 
 template <size_t N>
-XII_ALWAYS_INLINE void xiiTempHashedString::operator=(const char (&szString)[N])
+XII_ALWAYS_INLINE void xiiTempHashedString::operator=(const char (&string)[N])
 {
-  m_uiHash = xiiHashingUtils::StringHash<N>(szString);
+  m_uiHash = xiiHashingUtils::StringHash<N>(string);
 }
 
-XII_ALWAYS_INLINE void xiiTempHashedString::operator=(xiiStringView szString)
+XII_ALWAYS_INLINE void xiiTempHashedString::operator=(xiiStringView sString)
 {
-  m_uiHash = xiiHashingUtils::StringHash(szString);
+  m_uiHash = xiiHashingUtils::StringHash(sString);
 }
 
 XII_ALWAYS_INLINE void xiiTempHashedString::operator=(const xiiTempHashedString& rhs)

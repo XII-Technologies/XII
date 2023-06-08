@@ -9,9 +9,9 @@
 
 namespace
 {
-  xiiSerializedBlock* FindBlock(xiiHybridArray<xiiSerializedBlock, 3>& blocks, const char* szName)
+  xiiSerializedBlock* FindBlock(xiiHybridArray<xiiSerializedBlock, 3>& ref_blocks, const char* szName)
   {
-    for (auto& block : blocks)
+    for (auto& block : ref_blocks)
     {
       if (block.m_Name == szName)
       {
@@ -21,11 +21,11 @@ namespace
     return nullptr;
   }
 
-  xiiSerializedBlock* FindHeaderBlock(xiiHybridArray<xiiSerializedBlock, 3>& blocks, xiiInt32& out_iVersion)
+  xiiSerializedBlock* FindHeaderBlock(xiiHybridArray<xiiSerializedBlock, 3>& ref_blocks, xiiInt32& out_iVersion)
   {
     xiiStringBuilder sHeaderName = "HeaderV";
     out_iVersion                 = 0;
-    for (auto& block : blocks)
+    for (auto& block : ref_blocks)
     {
       if (block.m_Name.StartsWith(sHeaderName))
       {
@@ -40,12 +40,12 @@ namespace
     return nullptr;
   }
 
-  xiiSerializedBlock* GetOrCreateBlock(xiiHybridArray<xiiSerializedBlock, 3>& blocks, const char* szName)
+  xiiSerializedBlock* GetOrCreateBlock(xiiHybridArray<xiiSerializedBlock, 3>& ref_blocks, const char* szName)
   {
-    xiiSerializedBlock* pBlock = FindBlock(blocks, szName);
+    xiiSerializedBlock* pBlock = FindBlock(ref_blocks, szName);
     if (!pBlock)
     {
-      pBlock         = &blocks.ExpandAndGetRef();
+      pBlock         = &ref_blocks.ExpandAndGetRef();
       pBlock->m_Name = szName;
     }
     if (!pBlock->m_Graph)
@@ -56,52 +56,52 @@ namespace
   }
 } // namespace
 
-static void WriteGraph(xiiOpenDdlWriter& writer, const xiiAbstractObjectGraph* pGraph, const char* szName)
+static void WriteGraph(xiiOpenDdlWriter& ref_writer, const xiiAbstractObjectGraph* pGraph, const char* szName)
 {
   xiiMap<const char*, const xiiVariant*, CompareConstChar> SortedProperties;
 
-  writer.BeginObject(szName);
+  ref_writer.BeginObject(szName);
 
   const auto& Nodes = pGraph->GetAllNodes();
   for (auto itNode = Nodes.GetIterator(); itNode.IsValid(); ++itNode)
   {
     const auto& node = *itNode.Value();
 
-    writer.BeginObject("o");
+    ref_writer.BeginObject("o");
 
     {
 
-      xiiOpenDdlUtils::StoreUuid(writer, node.GetGuid(), "id");
-      xiiOpenDdlUtils::StoreString(writer, node.GetType(), "t");
-      xiiOpenDdlUtils::StoreUInt32(writer, node.GetTypeVersion(), "v");
+      xiiOpenDdlUtils::StoreUuid(ref_writer, node.GetGuid(), "id");
+      xiiOpenDdlUtils::StoreString(ref_writer, node.GetType(), "t");
+      xiiOpenDdlUtils::StoreUInt32(ref_writer, node.GetTypeVersion(), "v");
 
       if (!xiiStringUtils::IsNullOrEmpty(node.GetNodeName()))
-        xiiOpenDdlUtils::StoreString(writer, node.GetNodeName(), "n");
+        xiiOpenDdlUtils::StoreString(ref_writer, node.GetNodeName(), "n");
 
-      writer.BeginObject("p");
+      ref_writer.BeginObject("p");
       {
         for (const auto& prop : node.GetProperties())
           SortedProperties[prop.m_szPropertyName] = &prop.m_Value;
 
         for (auto it = SortedProperties.GetIterator(); it.IsValid(); ++it)
         {
-          xiiOpenDdlUtils::StoreVariant(writer, *it.Value(), it.Key());
+          xiiOpenDdlUtils::StoreVariant(ref_writer, *it.Value(), it.Key());
         }
 
         SortedProperties.Clear();
       }
-      writer.EndObject();
+      ref_writer.EndObject();
     }
-    writer.EndObject();
+    ref_writer.EndObject();
   }
 
-  writer.EndObject();
+  ref_writer.EndObject();
 }
 
-void xiiAbstractGraphDdlSerializer::Write(xiiStreamWriter& stream, const xiiAbstractObjectGraph* pGraph, const xiiAbstractObjectGraph* pTypesGraph, bool bCompactMmode, xiiOpenDdlWriter::TypeStringMode typeMode)
+void xiiAbstractGraphDdlSerializer::Write(xiiStreamWriter& ref_stream, const xiiAbstractObjectGraph* pGraph, const xiiAbstractObjectGraph* pTypesGraph, bool bCompactMmode, xiiOpenDdlWriter::TypeStringMode typeMode)
 {
   xiiOpenDdlWriter writer;
-  writer.SetOutputStream(&stream);
+  writer.SetOutputStream(&ref_stream);
   writer.SetCompactMode(bCompactMmode);
   writer.SetFloatPrecisionMode(xiiOpenDdlWriter::FloatPrecisionMode::Exact);
   writer.SetPrimitiveTypeStringMode(typeMode);
@@ -114,14 +114,14 @@ void xiiAbstractGraphDdlSerializer::Write(xiiStreamWriter& stream, const xiiAbst
 
 
 void xiiAbstractGraphDdlSerializer::Write(
-  xiiOpenDdlWriter&             writer,
+  xiiOpenDdlWriter&             ref_writer,
   const xiiAbstractObjectGraph* pGraph,
   const xiiAbstractObjectGraph* pTypesGraph /*= nullptr*/)
 {
-  WriteGraph(writer, pGraph, "Objects");
+  WriteGraph(ref_writer, pGraph, "Objects");
   if (pTypesGraph)
   {
-    WriteGraph(writer, pTypesGraph, "Types");
+    WriteGraph(ref_writer, pTypesGraph, "Types");
   }
 }
 
@@ -180,13 +180,13 @@ static void ReadGraph(xiiAbstractObjectGraph* pGraph, const xiiOpenDdlReaderElem
 }
 
 xiiResult xiiAbstractGraphDdlSerializer::Read(
-  xiiStreamReader&        stream,
+  xiiStreamReader&        ref_stream,
   xiiAbstractObjectGraph* pGraph,
   xiiAbstractObjectGraph* pTypesGraph,
   bool                    bApplyPatches)
 {
   xiiOpenDdlReader reader;
-  if (reader.ParseDocument(stream, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
+  if (reader.ParseDocument(ref_stream, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
   {
     xiiLog::Error("Failed to parse DDL graph");
     return XII_FAILURE;
@@ -253,10 +253,10 @@ xiiResult xiiAbstractGraphDdlSerializer::ReadBlocks(xiiStreamReader& stream, xii
 
 #define XII_DOCUMENT_VERSION 2
 
-void xiiAbstractGraphDdlSerializer::WriteDocument(xiiStreamWriter& stream, const xiiAbstractObjectGraph* pHeader, const xiiAbstractObjectGraph* pGraph, const xiiAbstractObjectGraph* pTypes, bool bCompactMode, xiiOpenDdlWriter::TypeStringMode typeMode)
+void xiiAbstractGraphDdlSerializer::WriteDocument(xiiStreamWriter& ref_stream, const xiiAbstractObjectGraph* pHeader, const xiiAbstractObjectGraph* pGraph, const xiiAbstractObjectGraph* pTypes, bool bCompactMode, xiiOpenDdlWriter::TypeStringMode typeMode)
 {
   xiiOpenDdlWriter writer;
-  writer.SetOutputStream(&stream);
+  writer.SetOutputStream(&ref_stream);
   writer.SetCompactMode(bCompactMode);
   writer.SetFloatPrecisionMode(xiiOpenDdlWriter::FloatPrecisionMode::Exact);
   writer.SetPrimitiveTypeStringMode(typeMode);
@@ -271,10 +271,10 @@ void xiiAbstractGraphDdlSerializer::WriteDocument(xiiStreamWriter& stream, const
   WriteGraph(writer, pTypes, "Types");
 }
 
-xiiResult xiiAbstractGraphDdlSerializer::ReadDocument(xiiStreamReader& stream, xiiUniquePtr<xiiAbstractObjectGraph>& pHeader, xiiUniquePtr<xiiAbstractObjectGraph>& pGraph, xiiUniquePtr<xiiAbstractObjectGraph>& pTypes, bool bApplyPatches)
+xiiResult xiiAbstractGraphDdlSerializer::ReadDocument(xiiStreamReader& ref_stream, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pHeader, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pGraph, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pTypes, bool bApplyPatches)
 {
   xiiHybridArray<xiiSerializedBlock, 3> blocks;
-  if (ReadBlocks(stream, blocks).Failed())
+  if (ReadBlocks(ref_stream, blocks).Failed())
   {
     return XII_FAILURE;
   }
@@ -319,11 +319,11 @@ xiiResult xiiAbstractGraphDdlSerializer::ReadDocument(xiiStreamReader& stream, x
     xiiGraphVersioning::GetSingleton()->PatchGraph(pOB->m_Graph.Borrow(), pTB->m_Graph.Borrow());
   }
 
-  pHeader = std::move(pHB->m_Graph);
-  pGraph  = std::move(pOB->m_Graph);
+  ref_pHeader = std::move(pHB->m_Graph);
+  ref_pGraph  = std::move(pOB->m_Graph);
   if (pTB)
   {
-    pTypes = std::move(pTB->m_Graph);
+    ref_pTypes = std::move(pTB->m_Graph);
   }
 
   return XII_SUCCESS;
@@ -344,7 +344,7 @@ xiiResult xiiAbstractGraphDdlSerializer::ReadDocument(xiiStreamReader& stream, x
 class HeaderReader : public xiiOpenDdlReader
 {
 public:
-  HeaderReader() {}
+  HeaderReader() = default;
 
   bool     m_bHasHeader = false;
   xiiInt32 m_iDepth     = 0;
@@ -421,10 +421,10 @@ public:
   }
 };
 
-xiiResult xiiAbstractGraphDdlSerializer::ReadHeader(xiiStreamReader& stream, xiiAbstractObjectGraph* pGraph)
+xiiResult xiiAbstractGraphDdlSerializer::ReadHeader(xiiStreamReader& ref_stream, xiiAbstractObjectGraph* pGraph)
 {
   HeaderReader reader;
-  if (reader.ParseDocument(stream, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
+  if (reader.ParseDocument(ref_stream, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
   {
     XII_REPORT_FAILURE("Failed to parse DDL graph");
     return XII_FAILURE;

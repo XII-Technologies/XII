@@ -68,25 +68,25 @@ xiiResourceLoadDesc xiiTexture3DResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& td, const xiiImage* pImage, bool bSRGB, xiiUInt32 uiNumMipLevels, xiiUInt32& out_MemoryUsed, xiiHybridArray<xiiGALSystemMemoryDescription, 32>& initData)
+void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref_td, const xiiImage* pImage, bool bSRGB, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALSystemMemoryDescription, 32>& ref_initData)
 {
   const xiiUInt32 uiHighestMipLevel = pImage->GetNumMipLevels() - uiNumMipLevels;
 
   const xiiGALResourceFormat::Enum format = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
 
-  td.m_DescGAL.m_Format          = format;
-  td.m_DescGAL.m_uiWidth         = pImage->GetWidth(uiHighestMipLevel);
-  td.m_DescGAL.m_uiHeight        = pImage->GetHeight(uiHighestMipLevel);
-  td.m_DescGAL.m_uiDepth         = pImage->GetDepth(uiHighestMipLevel);
-  td.m_DescGAL.m_uiMipLevelCount = uiNumMipLevels;
-  td.m_DescGAL.m_uiArraySize     = pImage->GetNumArrayIndices();
+  ref_td.m_DescGAL.m_Format          = format;
+  ref_td.m_DescGAL.m_uiWidth         = pImage->GetWidth(uiHighestMipLevel);
+  ref_td.m_DescGAL.m_uiHeight        = pImage->GetHeight(uiHighestMipLevel);
+  ref_td.m_DescGAL.m_uiDepth         = pImage->GetDepth(uiHighestMipLevel);
+  ref_td.m_DescGAL.m_uiMipLevelCount = uiNumMipLevels;
+  ref_td.m_DescGAL.m_uiArraySize     = pImage->GetNumArrayIndices();
 
-  if (td.m_DescGAL.m_uiDepth > 1)
-    td.m_DescGAL.m_Type = xiiGALTextureType::Texture3D;
+  if (ref_td.m_DescGAL.m_uiDepth > 1)
+    ref_td.m_DescGAL.m_Type = xiiGALTextureType::Texture3D;
 
-  out_MemoryUsed = 0;
+  out_uiMemoryUsed = 0;
 
-  initData.Clear();
+  ref_initData.Clear();
 
   for (xiiUInt32 array_index = 0; array_index < pImage->GetNumArrayIndices(); ++array_index)
   {
@@ -94,7 +94,7 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& td,
     {
       for (xiiUInt32 mip = uiHighestMipLevel; mip < pImage->GetNumMipLevels(); ++mip)
       {
-        xiiGALSystemMemoryDescription& id = initData.ExpandAndGetRef();
+        xiiGALSystemMemoryDescription& id = ref_initData.ExpandAndGetRef();
 
         id.m_pData = const_cast<xiiUInt8*>(pImage->GetPixelPointer<xiiUInt8>(mip, face, array_index));
 
@@ -112,14 +112,14 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& td,
         XII_ASSERT_DEV(pImage->GetDepthPitch(mip) < xiiMath::MaxValue<xiiUInt32>(), "Depth pitch exceeds xiiGAL limits.");
         id.m_uiSlicePitch = static_cast<xiiUInt32>(pImage->GetDepthPitch(mip));
 
-        out_MemoryUsed += id.m_uiSlicePitch;
+        out_uiMemoryUsed += id.m_uiSlicePitch;
       }
     }
   }
 
-  const xiiArrayPtr<xiiGALSystemMemoryDescription> InitDataPtr(initData);
+  const xiiArrayPtr<xiiGALSystemMemoryDescription> InitDataPtr(ref_initData);
 
-  td.m_InitialContent = InitDataPtr;
+  ref_td.m_InitialContent = InitDataPtr;
 }
 
 

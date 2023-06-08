@@ -22,7 +22,7 @@ class XII_FOUNDATION_DLL xiiScreen
 {
 public:
   /// \brief Enumerates all available screens. When it returns XII_SUCCESS, at least one screen has been found.
-  static xiiResult EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Screens);
+  static xiiResult EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_screens);
 
   /// \brief Prints the available screen information to the provided log.
   static void PrintScreenInfo(const xiiHybridArray<xiiScreenInfo, 2>& screens, xiiLogInterface* pLog = xiiLog::GetThreadLocalLogSystem());

@@ -127,7 +127,7 @@ using xiiWindowInternalHandle = xiiWindowHandle;
 class XII_CORE_DLL xiiWindowBase
 {
 public:
-  virtual ~xiiWindowBase() {}
+  virtual ~xiiWindowBase() = default;
 
   virtual xiiSizeU32      GetClientAreaSize() const     = 0;
   virtual xiiWindowHandle GetNativeWindowHandle() const = 0;
@@ -178,7 +178,7 @@ struct XII_CORE_DLL xiiWindowCreationDesc
   xiiResult AdjustWindowSizeAndPosition();
 
   /// Serializes the configuration to DDL.
-  void SaveToDDL(xiiOpenDdlWriter& writer);
+  void SaveToDDL(xiiOpenDdlWriter& ref_writer);
 
   /// Serializes the configuration to DDL.
   xiiResult SaveToDDL(xiiStringView sFile);
@@ -307,7 +307,7 @@ public:
   virtual void OnResize(const xiiSizeU32& newWindowSize);
 
   /// \brief Called when the window position is changed. Not possible on all OSes.
-  virtual void OnWindowMove(const xiiInt32 newPosX, const xiiInt32 newPosY) {}
+  virtual void OnWindowMove(const xiiInt32 iNewPosX, const xiiInt32 iNewPosY) {}
 
   /// \brief Called when the window gets focus or loses focus.
   virtual void OnFocus(bool bHasFocus) {}
@@ -325,7 +325,7 @@ public:
   ///   Will be called <i>after</i> the On[...] callbacks!
   ///
   /// \see OnResizeMessage
-  virtual void OnWindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindows::UINT Msg, xiiMinWindows::WPARAM WParam, xiiMinWindows::LPARAM LParam);
+  virtual void OnWindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM wparam, xiiMinWindows::LPARAM lparam);
 
 #elif XII_ENABLED(XII_PLATFORM_OSX)
 

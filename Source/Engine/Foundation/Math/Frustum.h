@@ -71,8 +71,8 @@ public:
   /// If the matrix is just the projection matrix, the frustum will be in local space. Pass the full ModelViewProjection
   /// matrix to create the frustum in world-space. If the projection matrix contained in ModelViewProjection is an infinite
   /// plane projection matrix, the resulting frustum will yield a far plane with infinite distance.
-  void SetFrustum(const xiiMat4& ModelViewProjection, xiiClipSpaceDepthRange::Enum DepthRange = xiiClipSpaceDepthRange::Default,
-                  xiiHandedness::Enum Handedness = xiiHandedness::Default); // [tested]
+  void SetFrustum(const xiiMat4& mModelViewProjection, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default,
+                  xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
 
   /// \brief Creates a frustum from the given camera position, direction vectors and the field-of-view along X and Y.
   ///
@@ -82,8 +82,8 @@ public:
     const xiiVec3& vPosition,
     const xiiVec3& vForwards,
     const xiiVec3& vUp,
-    xiiAngle       FovX,
-    xiiAngle       FovY,
+    xiiAngle       fovX,
+    xiiAngle       fovY,
     float          fNearPlane,
     float          fFarPlane); // [tested]
 
@@ -107,7 +107,7 @@ public:
   ///
   /// Note: If the frustum contains an infinite far plane, the far plane corners (out_points[4..7])
   /// will be at infinity.
-  void ComputeCornerPoints(xiiVec3 out_Points[FrustumCorner::CORNER_COUNT]) const; // [tested]
+  void ComputeCornerPoints(xiiVec3 out_pPoints[FrustumCorner::CORNER_COUNT]) const; // [tested]
 
   /// \brief Checks whether the given object is inside or outside the frustum.
   ///
@@ -120,10 +120,10 @@ public:
   xiiVolumePosition::Enum GetObjectPosition(const xiiVec3* pVertices, xiiUInt32 uiNumVertices, const xiiMat4& mObjectTransform) const; // [tested]
 
   /// \brief Checks whether the given object is inside or outside the frustum.
-  xiiVolumePosition::Enum GetObjectPosition(const xiiBoundingSphere& Sphere) const; // [tested]
+  xiiVolumePosition::Enum GetObjectPosition(const xiiBoundingSphere& sphere) const; // [tested]
 
   /// \brief Checks whether the given object is inside or outside the frustum.
-  xiiVolumePosition::Enum GetObjectPosition(const xiiBoundingBox& Box) const; // [tested]
+  xiiVolumePosition::Enum GetObjectPosition(const xiiBoundingBox& box) const; // [tested]
 
   /// \brief Returns true if the object is fully inside the frustum or partially overlaps it. Returns false when the object is fully outside
   /// the frustum.

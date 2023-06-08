@@ -40,7 +40,7 @@ class XII_GUIFOUNDATION_DLL xiiActionManager
 {
 public:
   static xiiActionDescriptorHandle  RegisterAction(const xiiActionDescriptor& desc);
-  static bool                       UnregisterAction(xiiActionDescriptorHandle& hAction);
+  static bool                       UnregisterAction(xiiActionDescriptorHandle& ref_hAction);
   static const xiiActionDescriptor* GetActionDescriptor(xiiActionDescriptorHandle hAction);
   static xiiActionDescriptorHandle  GetActionHandle(const char* szCategory, const char* szActionName);
 

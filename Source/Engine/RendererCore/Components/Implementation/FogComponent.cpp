@@ -132,11 +132,11 @@ void xiiFogComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const
   msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Light, xiiRenderData::Caching::IfStatic);
 }
 
-void xiiFogComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiFogComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_Color;
   s << m_fDensity;
@@ -145,11 +145,11 @@ void xiiFogComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_bModulateWithSkyColor;
 }
 
-void xiiFogComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiFogComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32  uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32  uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  xiiStreamReader& s         = ref_stream.GetStream();
 
   s >> m_Color;
   s >> m_fDensity;

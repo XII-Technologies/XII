@@ -49,10 +49,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiRopeRenderComponent::xiiRopeRenderComponent()  = default;
 xiiRopeRenderComponent::~xiiRopeRenderComponent() = default;
 
-void xiiRopeRenderComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiRopeRenderComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_Color;
   s << m_hMaterial;
@@ -62,11 +62,11 @@ void xiiRopeRenderComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_fUScale;
 }
 
-void xiiRopeRenderComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiRopeRenderComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_Color;
   s >> m_hMaterial;
@@ -274,14 +274,14 @@ void xiiRopeRenderComponent::SetUScale(float fUScale)
   }
 }
 
-void xiiRopeRenderComponent::OnMsgSetColor(xiiMsgSetColor& msg)
+void xiiRopeRenderComponent::OnMsgSetColor(xiiMsgSetColor& ref_msg)
 {
-  msg.ModifyColor(m_Color);
+  ref_msg.ModifyColor(m_Color);
 }
 
-void xiiRopeRenderComponent::OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& msg)
+void xiiRopeRenderComponent::OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& ref_msg)
 {
-  SetMaterial(msg.m_hMaterial);
+  SetMaterial(ref_msg.m_hMaterial);
 }
 
 void xiiRopeRenderComponent::OnRopePoseUpdated(xiiMsgRopePoseUpdated& msg)
@@ -324,10 +324,10 @@ void xiiRopeRenderComponent::GenerateRenderMesh(xiiUInt32 uiNumRopePieces)
   const xiiAngle fDegStep = xiiAngle::Degree(360.0f / m_uiDetail);
   const float    fVStep   = 1.0f / m_uiDetail;
 
-  auto addCap = [&](float x, const xiiVec3& normal, xiiUInt16 boneIndex, bool flipWinding) {
-    xiiVec4U16 boneIndices(boneIndex, 0, 0, 0);
+  auto addCap = [&](float x, const xiiVec3& vNormal, xiiUInt16 uiBoneIndex, bool bFlipWinding) {
+    xiiVec4U16 boneIndices(uiBoneIndex, 0, 0, 0);
 
-    xiiUInt32 centerIndex = geom.AddVertex(xiiVec3(x, 0, 0), normal, xiiVec2(0.5f, 0.5f), xiiColor::White, boneIndices);
+    xiiUInt32 centerIndex = geom.AddVertex(xiiVec3(x, 0, 0), vNormal, xiiVec2(0.5f, 0.5f), xiiColor::White, boneIndices);
 
     xiiAngle deg = xiiAngle::Radian(0);
     for (xiiUInt32 s = 0; s < m_uiDetail; ++s)
@@ -335,7 +335,7 @@ void xiiRopeRenderComponent::GenerateRenderMesh(xiiUInt32 uiNumRopePieces)
       const float fY = xiiMath::Cos(deg);
       const float fZ = xiiMath::Sin(deg);
 
-      geom.AddVertex(xiiVec3(x, fY, fZ), normal, xiiVec2(fY, fZ), xiiColor::White, boneIndices);
+      geom.AddVertex(xiiVec3(x, fY, fZ), vNormal, xiiVec2(fY, fZ), xiiColor::White, boneIndices);
 
       deg += fDegStep;
     }
@@ -347,11 +347,11 @@ void xiiRopeRenderComponent::GenerateRenderMesh(xiiUInt32 uiNumRopePieces)
       triangle[1] = s + triangle[0] + 1;
       triangle[2] = ((s + 1) % m_uiDetail) + triangle[0] + 1;
 
-      geom.AddPolygon(triangle, flipWinding);
+      geom.AddPolygon(triangle, bFlipWinding);
     }
   };
 
-  auto addPiece = [&](float x, const xiiVec4U16& boneIndices, const xiiColorLinearUB& boneWeights, bool createPolygons) {
+  auto addPiece = [&](float x, const xiiVec4U16& vBoneIndices, const xiiColorLinearUB& boneWeights, bool bCreatePolygons) {
     xiiAngle deg = xiiAngle::Radian(0);
     float    fU  = x * m_fUScale;
     float    fV  = 0;
@@ -364,13 +364,13 @@ void xiiRopeRenderComponent::GenerateRenderMesh(xiiUInt32 uiNumRopePieces)
       const xiiVec3 pos(x, fY, fZ);
       const xiiVec3 normal(0, fY, fZ);
 
-      geom.AddVertex(pos, normal, xiiVec2(fU, fV), xiiColor::White, boneIndices, boneWeights);
+      geom.AddVertex(pos, normal, xiiVec2(fU, fV), xiiColor::White, vBoneIndices, boneWeights);
 
       deg += fDegStep;
       fV += fVStep;
     }
 
-    if (createPolygons)
+    if (bCreatePolygons)
     {
       xiiUInt32 endIndex   = geom.GetVertices().GetCount() - (m_uiDetail + 1);
       xiiUInt32 startIndex = endIndex - (m_uiDetail + 1);

@@ -1,7 +1,7 @@
 #include <Foundation/Logging/Log.h>
 
 XII_ALWAYS_INLINE xiiComponent::xiiComponent() :
-  m_pMessageDispatchType(nullptr), m_ComponentFlags(xiiObjectFlags::ActiveFlag), m_pManager(nullptr), m_pOwner(nullptr)
+  m_ComponentFlags(xiiObjectFlags::ActiveFlag)
 {
   m_uiUniqueID = xiiInvalidIndex;
 }

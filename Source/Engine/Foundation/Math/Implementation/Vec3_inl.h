@@ -13,14 +13,14 @@ XII_FORCE_INLINE xiiVec3Template<Type>::xiiVec3Template()
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec3Template<Type>::xiiVec3Template(Type X, Type Y, Type Z) :
-  x(X), y(Y), z(Z)
+XII_ALWAYS_INLINE xiiVec3Template<Type>::xiiVec3Template(Type inX, Type inY, Type inZ) :
+  x(inX), y(inY), z(inZ)
 {
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec3Template<Type>::xiiVec3Template(Type V) :
-  x(V), y(V), z(V)
+XII_ALWAYS_INLINE xiiVec3Template<Type>::xiiVec3Template(Type inV) :
+  x(inV), y(inV), z(inV)
 {
 }
 
@@ -33,11 +33,11 @@ XII_ALWAYS_INLINE void xiiVec3Template<Type>::Set(Type xyz)
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE void xiiVec3Template<Type>::Set(Type X, Type Y, Type Z)
+XII_ALWAYS_INLINE void xiiVec3Template<Type>::Set(Type inX, Type inY, Type inZ)
 {
-  x = X;
-  y = Y;
-  z = Z;
+  x = inX;
+  y = inY;
+  z = inZ;
 }
 
 template <typename Type>
@@ -171,18 +171,18 @@ bool xiiVec3Template<Type>::IsValid() const
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE Type xiiVec3Template<Type>::Distance(const xiiVec3Template<Type>& point) const
+XII_ALWAYS_INLINE Type xiiVec3Template<Type>::Distance(const xiiVec3Template<Type>& vPoint) const
 {
-  return (xiiMath::Sqrt(DistanceSquared(point)));
+  return (xiiMath::Sqrt(DistanceSquared(vPoint)));
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE Type xiiVec3Template<Type>::DistanceSquared(const xiiVec3Template<Type>& point) const
+XII_ALWAYS_INLINE Type xiiVec3Template<Type>::DistanceSquared(const xiiVec3Template<Type>& vPoint) const
 {
-  XII_NAN_ASSERT(&point);
+  XII_NAN_ASSERT(&vPoint);
   XII_NAN_ASSERT(this);
 
-  return (xiiMath::Square(point.x - x) + xiiMath::Square(point.y - y) + xiiMath::Square(point.z - z));
+  return (xiiMath::Square(vPoint.x - x) + xiiMath::Square(vPoint.y - y) + xiiMath::Square(vPoint.z - z));
 }
 
 template <typename Type>
@@ -343,13 +343,13 @@ XII_FORCE_INLINE const xiiVec3Template<Type> xiiVec3Template<Type>::CompMax(cons
 }
 
 template <typename Type>
-XII_FORCE_INLINE const xiiVec3Template<Type> xiiVec3Template<Type>::CompClamp(const xiiVec3Template& low, const xiiVec3Template& high) const
+XII_FORCE_INLINE const xiiVec3Template<Type> xiiVec3Template<Type>::CompClamp(const xiiVec3Template& vLow, const xiiVec3Template& vHigh) const
 {
   XII_NAN_ASSERT(this);
-  XII_NAN_ASSERT(&low);
-  XII_NAN_ASSERT(&high);
+  XII_NAN_ASSERT(&vLow);
+  XII_NAN_ASSERT(&vHigh);
 
-  return xiiVec3Template<Type>(xiiMath::Clamp(x, low.x, high.x), xiiMath::Clamp(y, low.y, high.y), xiiMath::Clamp(z, low.z, high.z));
+  return xiiVec3Template<Type>(xiiMath::Clamp(x, vLow.x, vHigh.x), xiiMath::Clamp(y, vLow.y, vHigh.y), xiiMath::Clamp(z, vLow.z, vHigh.z));
 }
 
 template <typename Type>

@@ -52,14 +52,14 @@ public:
   void SetUseTestPosition(bool bUse);                            // [ property ]
   bool GetUseTestPosition() const { return m_bUseTestPosition; } // [ property ]
 
-  void           SetTestPosition(const xiiVec3& pos);                // [ property ]
+  void           SetTestPosition(const xiiVec3& vPos);               // [ property ]
   const xiiVec3& GetTestPosition() const { return m_vTestPosition; } // [ property ]
 
-  void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg);
-  void OnExtractRenderData(xiiMsgExtractRenderData& msg) const;
+  void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg);
+  void OnExtractRenderData(xiiMsgExtractRenderData& ref_msg) const;
 
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 private:
   void RenderDebugOverlay();

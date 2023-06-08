@@ -12,7 +12,7 @@ struct xiiRenderPipelineNodePin
 
   struct Type
   {
-    typedef xiiUInt8 StorageType;
+    using StorageType = xiiUInt8;
 
     enum Enum
     {
@@ -57,7 +57,7 @@ class XII_RENDERERCORE_DLL xiiRenderPipelineNode : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineNode, xiiReflectedClass);
 
 public:
-  virtual ~xiiRenderPipelineNode() {}
+  virtual ~xiiRenderPipelineNode() = default;
 
   void InitializePins();
 

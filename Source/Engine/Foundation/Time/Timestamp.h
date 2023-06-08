@@ -92,7 +92,7 @@ private:
 };
 
 /// \brief Returns a timestamp that is "timeSpan" further into the future from "timestamp".
-const xiiTimestamp operator+(xiiTime& timeSpan, const xiiTimestamp& timestamp);
+const xiiTimestamp operator+(xiiTime& ref_timeSpan, const xiiTimestamp& timestamp);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiTimestamp);
 
@@ -194,7 +194,7 @@ private:
   xiiUInt8 m_uiSecond;
 };
 
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiDateTime& arg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiDateTime& arg);
 
 struct xiiArgDateTime
 {
@@ -226,6 +226,6 @@ struct xiiArgDateTime
   xiiUInt32   m_uiFormattingFlags;
 };
 
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgDateTime& arg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgDateTime& arg);
 
 #include <Foundation/Time/Implementation/Timestamp_inl.h>

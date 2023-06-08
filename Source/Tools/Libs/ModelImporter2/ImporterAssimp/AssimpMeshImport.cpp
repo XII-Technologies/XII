@@ -42,7 +42,7 @@ namespace xiiModelImporter2
     return XII_SUCCESS;
   }
 
-  static void SetMeshTriangleIndices(xiiMeshBufferResourceDescriptor& mb, const aiMesh* pMesh, xiiUInt32 uiTriangleIndexOffset, xiiUInt32 uiVertexIndexOffset, bool bFlipTriangles)
+  static void SetMeshTriangleIndices(xiiMeshBufferResourceDescriptor& ref_mb, const aiMesh* pMesh, xiiUInt32 uiTriangleIndexOffset, xiiUInt32 uiVertexIndexOffset, bool bFlipTriangles)
   {
     if (bFlipTriangles)
     {
@@ -54,7 +54,7 @@ namespace xiiModelImporter2
         const xiiUInt32 f1 = pMesh->mFaces[triIdx].mIndices[1];
         const xiiUInt32 f2 = pMesh->mFaces[triIdx].mIndices[2];
 
-        mb.SetTriangleIndices(finalTriIdx, uiVertexIndexOffset + f0, uiVertexIndexOffset + f2, uiVertexIndexOffset + f1);
+        ref_mb.SetTriangleIndices(finalTriIdx, uiVertexIndexOffset + f0, uiVertexIndexOffset + f2, uiVertexIndexOffset + f1);
       }
     }
     else
@@ -67,12 +67,12 @@ namespace xiiModelImporter2
         const xiiUInt32 f1 = pMesh->mFaces[triIdx].mIndices[1];
         const xiiUInt32 f2 = pMesh->mFaces[triIdx].mIndices[2];
 
-        mb.SetTriangleIndices(finalTriIdx, uiVertexIndexOffset + f0, uiVertexIndexOffset + f1, uiVertexIndexOffset + f2);
+        ref_mb.SetTriangleIndices(finalTriIdx, uiVertexIndexOffset + f0, uiVertexIndexOffset + f1, uiVertexIndexOffset + f2);
       }
     }
   }
 
-  static void SetMeshBoneData(xiiMeshBufferResourceDescriptor& mb, xiiMeshResourceDescriptor& mrd, float& inout_fMaxBoneOffset, const aiMesh* pMesh, xiiUInt32 uiVertexIndexOffset, const StreamIndices& streams, bool b8BitBoneIndices)
+  static void SetMeshBoneData(xiiMeshBufferResourceDescriptor& ref_mb, xiiMeshResourceDescriptor& ref_mrd, float& inout_fMaxBoneOffset, const aiMesh* pMesh, xiiUInt32 uiVertexIndexOffset, const StreamIndices& streams, bool b8BitBoneIndices)
   {
     if (!pMesh->HasBones())
       return;
@@ -84,7 +84,7 @@ namespace xiiModelImporter2
       const aiBone* pBone = pMesh->mBones[b];
 
       hs.Assign(pBone->mName.C_Str());
-      const xiiUInt32 uiBoneIndex = mrd.m_Bones[hs].m_uiBoneIndex;
+      const xiiUInt32 uiBoneIndex = ref_mrd.m_Bones[hs].m_uiBoneIndex;
 
       for (xiiUInt32 w = 0; w < pBone->mNumWeights; ++w)
       {
@@ -92,9 +92,9 @@ namespace xiiModelImporter2
 
         const xiiUInt32 finalVertIdx = uiVertexIndexOffset + weight.mVertexId;
 
-        xiiUInt8*  pBoneIndices8  = reinterpret_cast<xiiUInt8*>(mb.GetVertexData(streams.uiBoneIdx, finalVertIdx).GetPtr());
-        xiiUInt16* pBoneIndices16 = reinterpret_cast<xiiUInt16*>(mb.GetVertexData(streams.uiBoneIdx, finalVertIdx).GetPtr());
-        xiiUInt8*  pBoneWeights   = reinterpret_cast<xiiUInt8*>(mb.GetVertexData(streams.uiBoneWgt, finalVertIdx).GetPtr());
+        xiiUInt8*  pBoneIndices8  = reinterpret_cast<xiiUInt8*>(ref_mb.GetVertexData(streams.uiBoneIdx, finalVertIdx).GetPtr());
+        xiiUInt16* pBoneIndices16 = reinterpret_cast<xiiUInt16*>(ref_mb.GetVertexData(streams.uiBoneIdx, finalVertIdx).GetPtr());
+        xiiUInt8*  pBoneWeights   = reinterpret_cast<xiiUInt8*>(ref_mb.GetVertexData(streams.uiBoneWgt, finalVertIdx).GetPtr());
 
         xiiUInt32 uiLeastWeightIdx = 0;
 
@@ -124,12 +124,12 @@ namespace xiiModelImporter2
     // NOTE: This is absolutely crucial for some meshes to work right
     // On the other hand, it is also possible that some meshes don't like this
     // if we come across meshes where normalization breaks them, we may need to add a user-option to select whether bone weights should be normalized
-    for (xiiUInt32 vtx = 0; vtx < mb.GetVertexCount(); ++vtx)
+    for (xiiUInt32 vtx = 0; vtx < ref_mb.GetVertexCount(); ++vtx)
     {
-      const xiiVec3    vVertexPos     = *reinterpret_cast<const xiiVec3*>(mb.GetVertexData(streams.uiPositions, vtx).GetPtr());
-      const xiiUInt8*  pBoneIndices8  = reinterpret_cast<const xiiUInt8*>(mb.GetVertexData(streams.uiBoneIdx, vtx).GetPtr());
-      const xiiUInt16* pBoneIndices16 = reinterpret_cast<const xiiUInt16*>(mb.GetVertexData(streams.uiBoneIdx, vtx).GetPtr());
-      xiiUInt8*        pBoneWeights   = reinterpret_cast<xiiUInt8*>(mb.GetVertexData(streams.uiBoneWgt, vtx).GetPtr());
+      const xiiVec3    vVertexPos     = *reinterpret_cast<const xiiVec3*>(ref_mb.GetVertexData(streams.uiPositions, vtx).GetPtr());
+      const xiiUInt8*  pBoneIndices8  = reinterpret_cast<const xiiUInt8*>(ref_mb.GetVertexData(streams.uiBoneIdx, vtx).GetPtr());
+      const xiiUInt16* pBoneIndices16 = reinterpret_cast<const xiiUInt16*>(ref_mb.GetVertexData(streams.uiBoneIdx, vtx).GetPtr());
+      xiiUInt8*        pBoneWeights   = reinterpret_cast<xiiUInt8*>(ref_mb.GetVertexData(streams.uiBoneWgt, vtx).GetPtr());
 
       const xiiUInt32 len = pBoneWeights[0] + pBoneWeights[1] + pBoneWeights[2] + pBoneWeights[3];
 
@@ -172,7 +172,7 @@ namespace xiiModelImporter2
         uiBoneId[3] = pBoneIndices16[3];
       }
 
-      for (const auto& bone : mrd.m_Bones)
+      for (const auto& bone : ref_mrd.m_Bones)
       {
         for (int b = 0; b < 4; ++b)
         {
@@ -195,9 +195,9 @@ namespace xiiModelImporter2
     }
   }
 
-  static void SetMeshVertexData(xiiMeshBufferResourceDescriptor& mb, const aiMesh* pMesh, const xiiMat4& globalTransform, xiiUInt32 uiVertexIndexOffset, const StreamIndices& streams, xiiEnum<xiiMeshNormalPrecision> meshNormalsPrecision, xiiEnum<xiiMeshTexCoordPrecision> meshTexCoordsPrecision)
+  static void SetMeshVertexData(xiiMeshBufferResourceDescriptor& ref_mb, const aiMesh* pMesh, const xiiMat4& mGlobalTransform, xiiUInt32 uiVertexIndexOffset, const StreamIndices& streams, xiiEnum<xiiMeshNormalPrecision> meshNormalsPrecision, xiiEnum<xiiMeshTexCoordPrecision> meshTexCoordsPrecision)
   {
-    xiiMat3 normalsTransform = globalTransform.GetRotationalPart();
+    xiiMat3 normalsTransform = mGlobalTransform.GetRotationalPart();
     if (normalsTransform.Invert(0.0f).Failed())
     {
       xiiLog::Warning("Couldn't invert a mesh's transform matrix.");
@@ -210,41 +210,41 @@ namespace xiiModelImporter2
     {
       const xiiUInt32 finalVertIdx = uiVertexIndexOffset + vertIdx;
 
-      const xiiVec3 position = globalTransform * ConvertAssimpType(pMesh->mVertices[vertIdx]);
-      mb.SetVertexData(streams.uiPositions, finalVertIdx, position);
+      const xiiVec3 position = mGlobalTransform * ConvertAssimpType(pMesh->mVertices[vertIdx]);
+      ref_mb.SetVertexData(streams.uiPositions, finalVertIdx, position);
 
       if (streams.uiNormals != xiiInvalidIndex && pMesh->HasNormals())
       {
         xiiVec3 normal = normalsTransform * ConvertAssimpType(pMesh->mNormals[vertIdx]);
         normal.NormalizeIfNotZero(xiiVec3::ZeroVector()).IgnoreResult();
 
-        xiiMeshBufferUtils::EncodeNormal(normal, mb.GetVertexData(streams.uiNormals, finalVertIdx), meshNormalsPrecision).IgnoreResult();
+        xiiMeshBufferUtils::EncodeNormal(normal, ref_mb.GetVertexData(streams.uiNormals, finalVertIdx), meshNormalsPrecision).IgnoreResult();
       }
 
       if (streams.uiUV0 != xiiInvalidIndex && pMesh->HasTextureCoords(0))
       {
         const xiiVec2 texcoord = ConvertAssimpType(pMesh->mTextureCoords[0][vertIdx]).GetAsVec2();
 
-        xiiMeshBufferUtils::EncodeTexCoord(texcoord, mb.GetVertexData(streams.uiUV0, finalVertIdx), meshTexCoordsPrecision).IgnoreResult();
+        xiiMeshBufferUtils::EncodeTexCoord(texcoord, ref_mb.GetVertexData(streams.uiUV0, finalVertIdx), meshTexCoordsPrecision).IgnoreResult();
       }
 
       if (streams.uiUV1 != xiiInvalidIndex && pMesh->HasTextureCoords(1))
       {
         const xiiVec2 texcoord = ConvertAssimpType(pMesh->mTextureCoords[1][vertIdx]).GetAsVec2();
 
-        xiiMeshBufferUtils::EncodeTexCoord(texcoord, mb.GetVertexData(streams.uiUV1, finalVertIdx), meshTexCoordsPrecision).IgnoreResult();
+        xiiMeshBufferUtils::EncodeTexCoord(texcoord, ref_mb.GetVertexData(streams.uiUV1, finalVertIdx), meshTexCoordsPrecision).IgnoreResult();
       }
 
       if (streams.uiColor0 != xiiInvalidIndex && pMesh->HasVertexColors(0))
       {
         const xiiColorLinearUB color = ConvertAssimpType(pMesh->mColors[0][vertIdx]);
-        mb.SetVertexData(streams.uiColor0, finalVertIdx, color);
+        ref_mb.SetVertexData(streams.uiColor0, finalVertIdx, color);
       }
 
       if (streams.uiColor1 != xiiInvalidIndex && pMesh->HasVertexColors(1))
       {
         const xiiColorLinearUB color = ConvertAssimpType(pMesh->mColors[1][vertIdx]);
-        mb.SetVertexData(streams.uiColor1, finalVertIdx, color);
+        ref_mb.SetVertexData(streams.uiColor1, finalVertIdx, color);
       }
 
       if (streams.uiTangents != xiiInvalidIndex && pMesh->HasTangentsAndBitangents())
@@ -259,26 +259,26 @@ namespace xiiModelImporter2
 
         const float fBitangentSign = xiiMath::Abs(tangent.CrossRH(bitangent).Dot(normal));
 
-        xiiMeshBufferUtils::EncodeTangent(tangent, fBitangentSign, mb.GetVertexData(streams.uiTangents, finalVertIdx), meshNormalsPrecision).IgnoreResult();
+        xiiMeshBufferUtils::EncodeTangent(tangent, fBitangentSign, ref_mb.GetVertexData(streams.uiTangents, finalVertIdx), meshNormalsPrecision).IgnoreResult();
       }
     }
   }
 
-  static void AllocateMeshStreams(xiiMeshBufferResourceDescriptor& mb, xiiArrayPtr<aiMesh*> referenceMeshes, StreamIndices& streams, xiiUInt32 uiTotalMeshVertices, xiiUInt32 uiTotalMeshTriangles, xiiEnum<xiiMeshNormalPrecision> meshNormalsPrecision, xiiEnum<xiiMeshTexCoordPrecision> meshTexCoordsPrecision, bool bImportSkinningData, bool b8BitBoneIndices)
+  static void AllocateMeshStreams(xiiMeshBufferResourceDescriptor& ref_mb, xiiArrayPtr<aiMesh*> referenceMeshes, StreamIndices& ref_streams, xiiUInt32 uiTotalMeshVertices, xiiUInt32 uiTotalMeshTriangles, xiiEnum<xiiMeshNormalPrecision> meshNormalsPrecision, xiiEnum<xiiMeshTexCoordPrecision> meshTexCoordsPrecision, bool bImportSkinningData, bool b8BitBoneIndices)
   {
-    streams.uiPositions = mb.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALResourceFormat::XYZFloat);
-    streams.uiNormals   = mb.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(meshNormalsPrecision));
-    streams.uiUV0       = mb.AddStream(xiiGALVertexAttributeSemantic::TexCoord0, xiiMeshTexCoordPrecision::ToResourceFormat(meshTexCoordsPrecision));
-    streams.uiTangents  = mb.AddStream(xiiGALVertexAttributeSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(meshNormalsPrecision));
+    ref_streams.uiPositions = ref_mb.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALResourceFormat::XYZFloat);
+    ref_streams.uiNormals   = ref_mb.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(meshNormalsPrecision));
+    ref_streams.uiUV0       = ref_mb.AddStream(xiiGALVertexAttributeSemantic::TexCoord0, xiiMeshTexCoordPrecision::ToResourceFormat(meshTexCoordsPrecision));
+    ref_streams.uiTangents  = ref_mb.AddStream(xiiGALVertexAttributeSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(meshNormalsPrecision));
 
     if (bImportSkinningData)
     {
       if (b8BitBoneIndices)
-        streams.uiBoneIdx = mb.AddStream(xiiGALVertexAttributeSemantic::BoneIndices0, xiiGALResourceFormat::RGBAUByte);
+        ref_streams.uiBoneIdx = ref_mb.AddStream(xiiGALVertexAttributeSemantic::BoneIndices0, xiiGALResourceFormat::RGBAUByte);
       else
-        streams.uiBoneIdx = mb.AddStream(xiiGALVertexAttributeSemantic::BoneIndices0, xiiGALResourceFormat::RGBAUShort);
+        ref_streams.uiBoneIdx = ref_mb.AddStream(xiiGALVertexAttributeSemantic::BoneIndices0, xiiGALResourceFormat::RGBAUShort);
 
-      streams.uiBoneWgt = mb.AddStream(xiiGALVertexAttributeSemantic::BoneWeights0, xiiGALResourceFormat::RGBAUByteNormalized);
+      ref_streams.uiBoneWgt = ref_mb.AddStream(xiiGALVertexAttributeSemantic::BoneWeights0, xiiGALResourceFormat::RGBAUByteNormalized);
     }
 
     bool bTexCoords1    = false;
@@ -297,22 +297,22 @@ namespace xiiModelImporter2
 
     if (bTexCoords1)
     {
-      streams.uiUV1 = mb.AddStream(xiiGALVertexAttributeSemantic::TexCoord1, xiiMeshTexCoordPrecision::ToResourceFormat(meshTexCoordsPrecision));
+      ref_streams.uiUV1 = ref_mb.AddStream(xiiGALVertexAttributeSemantic::TexCoord1, xiiMeshTexCoordPrecision::ToResourceFormat(meshTexCoordsPrecision));
     }
 
     if (bVertexColors0)
     {
-      streams.uiColor0 = mb.AddStream(xiiGALVertexAttributeSemantic::Color0, xiiGALResourceFormat::RGBAUByteNormalized);
+      ref_streams.uiColor0 = ref_mb.AddStream(xiiGALVertexAttributeSemantic::Color0, xiiGALResourceFormat::RGBAUByteNormalized);
     }
     if (bVertexColors1)
     {
-      streams.uiColor1 = mb.AddStream(xiiGALVertexAttributeSemantic::Color1, xiiGALResourceFormat::RGBAUByteNormalized);
+      ref_streams.uiColor1 = ref_mb.AddStream(xiiGALVertexAttributeSemantic::Color1, xiiGALResourceFormat::RGBAUByteNormalized);
     }
 
-    mb.AllocateStreams(uiTotalMeshVertices, xiiGALPrimitiveTopology::Triangles, uiTotalMeshTriangles, true);
+    ref_mb.AllocateStreams(uiTotalMeshVertices, xiiGALPrimitiveTopology::Triangles, uiTotalMeshTriangles, true);
   }
 
-  static void SetMeshBindPoseData(xiiMeshResourceDescriptor& mrd, const aiMesh* pMesh, const xiiMat4& globalTransform)
+  static void SetMeshBindPoseData(xiiMeshResourceDescriptor& ref_mrd, const aiMesh* pMesh, const xiiMat4& mGlobalTransform)
   {
     if (!pMesh->HasBones())
       return;
@@ -325,11 +325,11 @@ namespace xiiModelImporter2
 
       auto invPose = ConvertAssimpType(pBone->mOffsetMatrix);
       XII_VERIFY(invPose.Invert(0.0f).Succeeded(), "Inverting the bind pose matrix failed");
-      invPose = globalTransform * invPose;
+      invPose = mGlobalTransform * invPose;
       XII_VERIFY(invPose.Invert(0.0f).Succeeded(), "Inverting the bind pose matrix failed");
 
       hs.Assign(pBone->mName.C_Str());
-      mrd.m_Bones[hs].m_GlobalInverseBindPoseMatrix = invPose;
+      ref_mrd.m_Bones[hs].m_GlobalInverseBindPoseMatrix = invPose;
     }
   }
 
@@ -355,85 +355,85 @@ namespace xiiModelImporter2
   }
 
   static int MikkGetNumVerticesOfFace(const SMikkTSpaceContext* pContext, int iFace)
-  { //
+  {
     return 3;
   }
 
-  static void MikkGetPosition16(const SMikkTSpaceContext* pContext, float outData[], int iFace, int iVert)
+  static void MikkGetPosition16(const SMikkTSpaceContext* pContext, float pData[], int iFace, int iVert)
   {
     MikkData*       pMikkData   = static_cast<MikkData*>(pContext->m_pUserData);
     const xiiUInt32 uiVertexIdx = pMikkData->m_pIndices16[iFace * 3 + iVert];
 
-    const xiiVec3* pData = reinterpret_cast<const xiiVec3*>(pMikkData->m_pPositions + (uiVertexIdx * pMikkData->m_uiVertexSize));
-    outData[0]           = pData->x;
-    outData[1]           = pData->y;
-    outData[2]           = pData->z;
+    const xiiVec3* pSrcData = reinterpret_cast<const xiiVec3*>(pMikkData->m_pPositions + (uiVertexIdx * pMikkData->m_uiVertexSize));
+    pData[0]                = pSrcData->x;
+    pData[1]                = pSrcData->y;
+    pData[2]                = pSrcData->z;
   }
 
-  static void MikkGetPosition32(const SMikkTSpaceContext* pContext, float outData[], int iFace, int iVert)
+  static void MikkGetPosition32(const SMikkTSpaceContext* pContext, float pData[], int iFace, int iVert)
   {
     MikkData* pMikkData = static_cast<MikkData*>(pContext->m_pUserData);
 
     const xiiUInt32 uiVertexIdx = pMikkData->m_pIndices32[iFace * 3 + iVert];
 
-    const xiiVec3* pData = reinterpret_cast<const xiiVec3*>(pMikkData->m_pPositions + (uiVertexIdx * pMikkData->m_uiVertexSize));
-    outData[0]           = pData->x;
-    outData[1]           = pData->y;
-    outData[2]           = pData->z;
+    const xiiVec3* pSrcData = reinterpret_cast<const xiiVec3*>(pMikkData->m_pPositions + (uiVertexIdx * pMikkData->m_uiVertexSize));
+    pData[0]                = pSrcData->x;
+    pData[1]                = pSrcData->y;
+    pData[2]                = pSrcData->z;
   }
 
-  static void MikkGetNormal16(const SMikkTSpaceContext* pContext, float outData[], int iFace, int iVert)
+  static void MikkGetNormal16(const SMikkTSpaceContext* pContext, float pData[], int iFace, int iVert)
   {
     MikkData*       pMikkData   = static_cast<MikkData*>(pContext->m_pUserData);
     const xiiUInt32 uiVertexIdx = pMikkData->m_pIndices16[iFace * 3 + iVert];
 
-    xiiVec3* pDest = reinterpret_cast<xiiVec3*>(outData);
+    xiiVec3* pDest = reinterpret_cast<xiiVec3*>(pData);
     xiiMeshBufferUtils::DecodeNormal(xiiConstByteArrayPtr(pMikkData->m_pNormals + (uiVertexIdx * pMikkData->m_uiVertexSize), 32), pMikkData->m_NormalsFormat, *pDest).IgnoreResult();
   }
 
-  static void MikkGetNormal32(const SMikkTSpaceContext* pContext, float outData[], int iFace, int iVert)
+  static void MikkGetNormal32(const SMikkTSpaceContext* pContext, float pData[], int iFace, int iVert)
   {
     MikkData*       pMikkData   = static_cast<MikkData*>(pContext->m_pUserData);
     const xiiUInt32 uiVertexIdx = pMikkData->m_pIndices32[iFace * 3 + iVert];
 
-    xiiVec3* pDest = reinterpret_cast<xiiVec3*>(outData);
+    xiiVec3* pDest = reinterpret_cast<xiiVec3*>(pData);
     xiiMeshBufferUtils::DecodeNormal(xiiConstByteArrayPtr(pMikkData->m_pNormals + (uiVertexIdx * pMikkData->m_uiVertexSize), 32), pMikkData->m_NormalsFormat, *pDest).IgnoreResult();
   }
 
-  static void MikkGetTexCoord16(const SMikkTSpaceContext* pContext, float outData[], int iFace, int iVert)
+  static void MikkGetTexCoord16(const SMikkTSpaceContext* pContext, float pData[], int iFace, int iVert)
   {
     MikkData*       pMikkData   = static_cast<MikkData*>(pContext->m_pUserData);
     const xiiUInt32 uiVertexIdx = pMikkData->m_pIndices16[iFace * 3 + iVert];
 
-    xiiVec2* pDest = reinterpret_cast<xiiVec2*>(outData);
+    xiiVec2* pDest = reinterpret_cast<xiiVec2*>(pData);
     xiiMeshBufferUtils::DecodeTexCoord(xiiConstByteArrayPtr(pMikkData->m_pTexCoords + (uiVertexIdx * pMikkData->m_uiVertexSize), 32), pMikkData->m_TexCoordsFormat, *pDest).IgnoreResult();
   }
 
-  static void MikkGetTexCoord32(const SMikkTSpaceContext* pContext, float outData[], int iFace, int iVert)
+  static void MikkGetTexCoord32(const SMikkTSpaceContext* pContext, float pData[], int iFace, int iVert)
   {
     MikkData*       pMikkData   = static_cast<MikkData*>(pContext->m_pUserData);
     const xiiUInt32 uiVertexIdx = pMikkData->m_pIndices32[iFace * 3 + iVert];
 
-    xiiVec2* pDest = reinterpret_cast<xiiVec2*>(outData);
+    xiiVec2* pDest = reinterpret_cast<xiiVec2*>(pData);
     xiiMeshBufferUtils::DecodeTexCoord(xiiConstByteArrayPtr(pMikkData->m_pTexCoords + (uiVertexIdx * pMikkData->m_uiVertexSize), 32), pMikkData->m_TexCoordsFormat, *pDest).IgnoreResult();
   }
 
-  static void MikkSetTangents16(const SMikkTSpaceContext* pContext, const float fvTangent[], const float fSign, const int iFace, const int iVert)
+  static void MikkSetTangents16(const SMikkTSpaceContext* pContext, const float pFvTangent[], const float fSign, const int iFace, const int iVert)
   {
     MikkData*       pMikkData   = static_cast<MikkData*>(pContext->m_pUserData);
     const xiiUInt32 uiVertexIdx = pMikkData->m_pIndices16[iFace * 3 + iVert];
 
-    const xiiVec3 tangent = *reinterpret_cast<const xiiVec3*>(fvTangent);
+    const xiiVec3 tangent = *reinterpret_cast<const xiiVec3*>(pFvTangent);
 
     xiiMeshBufferUtils::EncodeTangent(tangent, fSign, xiiByteArrayPtr(pMikkData->m_pTangents + (uiVertexIdx * pMikkData->m_uiVertexSize), 32), pMikkData->m_TangentsFormat).IgnoreResult();
   }
 
-  static void MikkSetTangents32(const SMikkTSpaceContext* pContext, const float fvTangent[], const float fSign, const int iFace, const int iVert)
+  static void MikkSetTangents32(const SMikkTSpaceContext* pContext, const float pFvTangent[], const float fSign, const int iFace, const int iVert)
   {
     MikkData*       pMikkData   = static_cast<MikkData*>(pContext->m_pUserData);
     const xiiUInt32 uiVertexIdx = pMikkData->m_pIndices32[iFace * 3 + iVert];
 
-    const xiiVec3 tangent = *reinterpret_cast<const xiiVec3*>(fvTangent);
+    const xiiVec3 tangent = *reinterpret_cast<const xiiVec3*>(pFvTangent);
 
     xiiMeshBufferUtils::EncodeTangent(tangent, fSign, xiiByteArrayPtr(pMikkData->m_pTangents + (uiVertexIdx * pMikkData->m_uiVertexSize), 32), pMikkData->m_TangentsFormat).IgnoreResult();
   }

@@ -13,7 +13,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtInputWidget(QWidget* parent = 0);
+  xiiQtInputWidget(QWidget* pParent = 0);
 
   static xiiQtInputWidget* s_pWidget;
 

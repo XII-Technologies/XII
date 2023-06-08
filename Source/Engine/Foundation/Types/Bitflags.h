@@ -163,9 +163,9 @@ public:
   }
 
   /// \brief Sets or clears the given flag.
-  XII_ALWAYS_INLINE void AddOrRemove(const xiiBitflags<T>& rhs, bool state) // [tested]
+  XII_ALWAYS_INLINE void AddOrRemove(const xiiBitflags<T>& rhs, bool bState) // [tested]
   {
-    m_Value = (state) ? m_Value | rhs.m_Value : m_Value & (~rhs.m_Value);
+    m_Value = (bState) ? m_Value | rhs.m_Value : m_Value & (~rhs.m_Value);
   }
 
   /// \brief Returns an object that has the flags of \a this and \a rhs combined.
@@ -368,9 +368,9 @@ public:
   }
 
   /// \brief Sets or clears the given flag.
-  XII_ALWAYS_INLINE void AddOrRemove(const xiiTypelessBitflags<StorageType>& rhs, bool state) // [tested]
+  XII_ALWAYS_INLINE void AddOrRemove(const xiiTypelessBitflags<StorageType>& rhs, bool bState) // [tested]
   {
-    m_Value = (state) ? m_Value | rhs.m_Value : m_Value & (~rhs.m_Value);
+    m_Value = (bState) ? m_Value | rhs.m_Value : m_Value & (~rhs.m_Value);
   }
 
   /// \brief Returns an object that has the flags of \a this and \a rhs combined.

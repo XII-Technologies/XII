@@ -47,7 +47,7 @@ public:
 
   /// \brief Creates the plane-equation from a set of unreliable points lying on the same plane. Some points might be equal or too close to each other
   /// for the typical algorithm.
-  xiiPlaneTemplate(const xiiVec3Template<Type>* const pVertices, xiiUInt32 iMaxVertices); // [tested]
+  xiiPlaneTemplate(const xiiVec3Template<Type>* const pVertices, xiiUInt32 uiMaxVertices); // [tested]
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
@@ -71,7 +71,7 @@ public:
 
   /// \brief Creates the plane-equation from a set of unreliable points lying on the same plane. Some points might be equal or too close to each other
   /// for the typical algorithm. Returns false, if no reliable set of points could be found. Does try to create a plane anyway.
-  xiiResult SetFromPoints(const xiiVec3Template<Type>* const pVertices, xiiUInt32 iMaxVertices); // [tested]
+  xiiResult SetFromPoints(const xiiVec3Template<Type>* const pVertices, xiiUInt32 uiMaxVertices); // [tested]
 
   /// \brief Creates a plane from two direction vectors that span the plane, and one point on it.
   xiiResult SetFromDirections(
@@ -94,10 +94,10 @@ public:
   Type GetMinimumDistanceTo(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride = sizeof(xiiVec3Template<Type>)) const; // [tested]
 
   /// \brief Returns the minimum distance between given box and a plane
-  Type GetMinimumDistanceTo(const xiiBoundingBoxTemplate<Type>& Box) const; // [tested]
+  Type GetMinimumDistanceTo(const xiiBoundingBoxTemplate<Type>& box) const; // [tested]
 
   /// \brief Returns the maximum distance between given box and a plane
-  Type GetMaximumDistanceTo(const xiiBoundingBoxTemplate<Type>& Box) const; // [tested]
+  Type GetMaximumDistanceTo(const xiiBoundingBoxTemplate<Type>& box) const; // [tested]
 
   /// \brief Returns the minimum and maximum distance that any of the given points had to the plane.
   ///
@@ -113,16 +113,16 @@ public:
   xiiPositionOnPlane::Enum GetPointPosition(const xiiVec3Template<Type>& vPoint, Type fPlaneHalfWidth) const; // [tested]
 
   /// \brief Returns on which side of the plane the set of points lies. Might be on both sides.
-  xiiPositionOnPlane::Enum GetObjectPosition(const xiiVec3Template<Type>* const vPoints, xiiUInt32 iVertices) const; // [tested]
+  xiiPositionOnPlane::Enum GetObjectPosition(const xiiVec3Template<Type>* const pPoints, xiiUInt32 uiVertices) const; // [tested]
 
   /// \brief Returns on which side of the plane the set of points lies. Might be on both sides.
-  xiiPositionOnPlane::Enum GetObjectPosition(const xiiVec3Template<Type>* const vPoints, xiiUInt32 iVertices, Type fPlaneHalfWidth) const; // [tested]
+  xiiPositionOnPlane::Enum GetObjectPosition(const xiiVec3Template<Type>* const pPoints, xiiUInt32 uiVertices, Type fPlaneHalfWidth) const; // [tested]
 
   /// \brief Returns on which side of the plane the sphere is located.
-  xiiPositionOnPlane::Enum GetObjectPosition(const xiiBoundingSphereTemplate<Type>& Sphere) const; // [tested]
+  xiiPositionOnPlane::Enum GetObjectPosition(const xiiBoundingSphereTemplate<Type>& sphere) const; // [tested]
 
   /// \brief Returns on which side of the plane the box is located.
-  xiiPositionOnPlane::Enum GetObjectPosition(const xiiBoundingBoxTemplate<Type>& Box) const; // [tested]
+  xiiPositionOnPlane::Enum GetObjectPosition(const xiiBoundingBoxTemplate<Type>& box) const; // [tested]
 
   /// \brief Projects a point onto a plane (along the planes normal).
   [[nodiscard]] const xiiVec3Template<Type> ProjectOntoPlane(const xiiVec3Template<Type>& vPoint) const; // [tested]
@@ -174,24 +174,23 @@ public:
   ///
   /// Intersections with \a out_fIntersection less than zero will be discarded and not reported as intersections.
   /// If such intersections are desired, use GetRayIntersectionBiDirectional instead.
-  [[nodiscard]] bool GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_fIntersection = nullptr,
-                                        xiiVec3Template<Type>* out_vIntersection = nullptr) const; // [tested]
+  [[nodiscard]] bool GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_pIntersection = nullptr, xiiVec3Template<Type>* out_pIntersectionDistance = nullptr) const; // [tested]
 
   /// \brief Returns true, if the ray intersects the plane. Intersection time and point are stored in the out-parameters. Allows for intersections at
   /// negative times (shooting into the opposite direction).
-  [[nodiscard]] bool GetRayIntersectionBiDirectional(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_fIntersection = nullptr, xiiVec3Template<Type>* out_vIntersection = nullptr) const; // [tested]
+  [[nodiscard]] bool GetRayIntersectionBiDirectional(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_pIntersectionDistance = nullptr, xiiVec3Template<Type>* out_pIntersection = nullptr) const; // [tested]
 
   /// \brief Returns true, if there is any intersection with the plane between the line's start and end position. Returns the fraction along the line
   /// and the actual intersection point.
-  [[nodiscard]] bool GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos, Type* out_fHitFraction = nullptr, xiiVec3Template<Type>* out_vIntersection = nullptr) const; // [tested]
+  [[nodiscard]] bool GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos, Type* out_pHitFraction = nullptr, xiiVec3Template<Type>* out_pIntersection = nullptr) const; // [tested]
 
   /// \brief Computes the one point where all three planes intersect. Returns XII_FAILURE if no such point exists.
-  static xiiResult GetPlanesIntersectionPoint(const xiiPlaneTemplate<Type>& p0, const xiiPlaneTemplate<Type>& p1, const xiiPlaneTemplate<Type>& p2, xiiVec3Template<Type>& out_Result); // [tested]
+  static xiiResult GetPlanesIntersectionPoint(const xiiPlaneTemplate<Type>& p0, const xiiPlaneTemplate<Type>& p1, const xiiPlaneTemplate<Type>& p2, xiiVec3Template<Type>& out_vResult); // [tested]
 
   // *** Helper Functions ***
 public:
   /// \brief Returns three points from an unreliable set of points, that reliably form a plane. Returns false, if there are none.
-  static xiiResult FindSupportPoints(const xiiVec3Template<Type>* const pVertices, xiiInt32 iMaxVertices, xiiInt32& out_v1, xiiInt32& out_v2, xiiInt32& out_v3); // [tested]
+  static xiiResult FindSupportPoints(const xiiVec3Template<Type>* const pVertices, xiiInt32 iMaxVertices, xiiInt32& out_i1, xiiInt32& out_i2, xiiInt32& out_i3); // [tested]
 };
 
 /// \brief Checks whether this plane and the other are identical.

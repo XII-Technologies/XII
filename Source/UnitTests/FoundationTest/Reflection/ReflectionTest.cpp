@@ -137,10 +137,10 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
     }
 
     // ground truth - traversing up the parent list
-    auto ManualIsDerivedFrom = [](const xiiRTTI* t, const xiiRTTI* baseType) -> bool {
+    auto ManualIsDerivedFrom = [](const xiiRTTI* t, const xiiRTTI* pBaseType) -> bool {
       while (t != nullptr)
       {
-        if (t == baseType)
+        if (t == pBaseType)
           return true;
 
         t = t->GetParentType();
@@ -460,7 +460,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Hierarchies)
 
 
 template <typename T, typename T2>
-void TestMemberProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti, xiiBitflags<xiiPropertyFlags> expectedFlags, T2 expectedValue, T2 testValue, bool testDefaultValue = true)
+void TestMemberProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti, xiiBitflags<xiiPropertyFlags> expectedFlags, T2 expectedValue, T2 testValue, bool bTestDefaultValue = true)
 {
   xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
   XII_TEST_BOOL(pProp != nullptr);
@@ -475,7 +475,7 @@ void TestMemberProperty(const char* szPropName, void* pObject, const xiiRTTI* pR
   T value = pMember->GetValue(pObject);
   XII_TEST_BOOL(expectedValue == value);
 
-  if (testDefaultValue)
+  if (bTestDefaultValue)
   {
     // Default value
     xiiVariant defaultValue = xiiReflectionUtils::GetDefaultValue(pProp);
@@ -991,7 +991,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Arrays)
 
 
 template <typename T>
-void TestSetProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti, T& value1, T& value2)
+void TestSetProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti, T& ref_value1, T& ref_value2)
 {
   xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
   if (!XII_TEST_BOOL(pProp != nullptr))
@@ -1006,14 +1006,14 @@ void TestSetProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti
   {
     pSetProp->Clear(pObject);
     XII_TEST_BOOL(pSetProp->IsEmpty(pObject));
-    pSetProp->Insert(pObject, &value1);
+    pSetProp->Insert(pObject, &ref_value1);
     XII_TEST_BOOL(!pSetProp->IsEmpty(pObject));
-    XII_TEST_BOOL(pSetProp->Contains(pObject, &value1));
-    XII_TEST_BOOL(!pSetProp->Contains(pObject, &value2));
-    pSetProp->Insert(pObject, &value2);
+    XII_TEST_BOOL(pSetProp->Contains(pObject, &ref_value1));
+    XII_TEST_BOOL(!pSetProp->Contains(pObject, &ref_value2));
+    pSetProp->Insert(pObject, &ref_value2);
     XII_TEST_BOOL(!pSetProp->IsEmpty(pObject));
-    XII_TEST_BOOL(pSetProp->Contains(pObject, &value1));
-    XII_TEST_BOOL(pSetProp->Contains(pObject, &value2));
+    XII_TEST_BOOL(pSetProp->Contains(pObject, &ref_value1));
+    XII_TEST_BOOL(pSetProp->Contains(pObject, &ref_value2));
 
     // Insert default init value
     if (!xiiIsPointer<T>::value)
@@ -1021,8 +1021,8 @@ void TestSetProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti
       T temp = T{};
       pSetProp->Insert(pObject, &temp);
       XII_TEST_BOOL(!pSetProp->IsEmpty(pObject));
-      XII_TEST_BOOL(pSetProp->Contains(pObject, &value1));
-      XII_TEST_BOOL(pSetProp->Contains(pObject, &value2));
+      XII_TEST_BOOL(pSetProp->Contains(pObject, &ref_value1));
+      XII_TEST_BOOL(pSetProp->Contains(pObject, &ref_value2));
       XII_TEST_BOOL(pSetProp->Contains(pObject, &temp));
 
       // Remove it again
@@ -1035,8 +1035,8 @@ void TestSetProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti
   // Assumes this function gets called first by a writeable property, and then immediately by the same data as a read-only property.
   // So the checks are valid for the read-only version, too.
   XII_TEST_BOOL(!pSetProp->IsEmpty(pObject));
-  XII_TEST_BOOL(pSetProp->Contains(pObject, &value1));
-  XII_TEST_BOOL(pSetProp->Contains(pObject, &value2));
+  XII_TEST_BOOL(pSetProp->Contains(pObject, &ref_value1));
+  XII_TEST_BOOL(pSetProp->Contains(pObject, &ref_value2));
 
 
   xiiHybridArray<xiiVariant, 16> keys;
@@ -1116,7 +1116,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Sets)
 }
 
 template <typename T>
-void TestMapProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti, T& value1, T& value2)
+void TestMapProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti, T& ref_value1, T& ref_value2)
 {
   xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
   XII_TEST_BOOL(pProp != nullptr);
@@ -1130,23 +1130,23 @@ void TestMapProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti
   {
     pMapProp->Clear(pObject);
     XII_TEST_BOOL(pMapProp->IsEmpty(pObject));
-    pMapProp->Insert(pObject, "value1", &value1);
+    pMapProp->Insert(pObject, "value1", &ref_value1);
     XII_TEST_BOOL(!pMapProp->IsEmpty(pObject));
     XII_TEST_BOOL(pMapProp->Contains(pObject, "value1"));
     XII_TEST_BOOL(!pMapProp->Contains(pObject, "value2"));
     T getValue;
     XII_TEST_BOOL(!pMapProp->GetValue(pObject, "value2", &getValue));
     XII_TEST_BOOL(pMapProp->GetValue(pObject, "value1", &getValue));
-    XII_TEST_BOOL(getValue == value1);
+    XII_TEST_BOOL(getValue == ref_value1);
 
-    pMapProp->Insert(pObject, "value2", &value2);
+    pMapProp->Insert(pObject, "value2", &ref_value2);
     XII_TEST_BOOL(!pMapProp->IsEmpty(pObject));
     XII_TEST_BOOL(pMapProp->Contains(pObject, "value1"));
     XII_TEST_BOOL(pMapProp->Contains(pObject, "value2"));
     XII_TEST_BOOL(pMapProp->GetValue(pObject, "value1", &getValue));
-    XII_TEST_BOOL(getValue == value1);
+    XII_TEST_BOOL(getValue == ref_value1);
     XII_TEST_BOOL(pMapProp->GetValue(pObject, "value2", &getValue));
-    XII_TEST_BOOL(getValue == value2);
+    XII_TEST_BOOL(getValue == ref_value2);
   }
 
   // Assumes this function gets called first by a writeable property, and then immediately by the same data as a read-only property.
@@ -1156,9 +1156,9 @@ void TestMapProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti
   XII_TEST_BOOL(pMapProp->Contains(pObject, "value1"));
   XII_TEST_BOOL(pMapProp->Contains(pObject, "value2"));
   XII_TEST_BOOL(pMapProp->GetValue(pObject, "value1", &getValue2));
-  XII_TEST_BOOL(getValue2 == value1);
+  XII_TEST_BOOL(getValue2 == ref_value1);
   XII_TEST_BOOL(pMapProp->GetValue(pObject, "value2", &getValue2));
-  XII_TEST_BOOL(getValue2 == value2);
+  XII_TEST_BOOL(getValue2 == ref_value2);
 
   xiiHybridArray<xiiString, 16> keys;
   pMapProp->GetKeys(pObject, keys);

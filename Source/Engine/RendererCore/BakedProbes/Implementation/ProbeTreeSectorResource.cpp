@@ -23,32 +23,32 @@ xiiUInt64 xiiProbeTreeSectorResourceDescriptor::GetHeapMemoryUsage() const
 }
 
 static xiiTypeVersion s_ProbeTreeResourceDescriptorVersion = 1;
-xiiResult             xiiProbeTreeSectorResourceDescriptor::Serialize(xiiStreamWriter& stream) const
+xiiResult             xiiProbeTreeSectorResourceDescriptor::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(s_ProbeTreeResourceDescriptorVersion);
+  ref_stream.WriteVersion(s_ProbeTreeResourceDescriptorVersion);
 
-  stream << m_vGridOrigin;
-  stream << m_vProbeSpacing;
-  stream << m_vProbeCount;
+  ref_stream << m_vGridOrigin;
+  ref_stream << m_vProbeSpacing;
+  ref_stream << m_vProbeCount;
 
-  XII_SUCCEED_OR_RETURN(stream.WriteArray(m_ProbePositions));
-  XII_SUCCEED_OR_RETURN(stream.WriteArray(m_SkyVisibility));
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(m_ProbePositions));
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(m_SkyVisibility));
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiProbeTreeSectorResourceDescriptor::Deserialize(xiiStreamReader& stream)
+xiiResult xiiProbeTreeSectorResourceDescriptor::Deserialize(xiiStreamReader& ref_stream)
 {
   Clear();
 
-  const xiiTypeVersion version = stream.ReadVersion(s_ProbeTreeResourceDescriptorVersion);
+  const xiiTypeVersion version = ref_stream.ReadVersion(s_ProbeTreeResourceDescriptorVersion);
 
-  stream >> m_vGridOrigin;
-  stream >> m_vProbeSpacing;
-  stream >> m_vProbeCount;
+  ref_stream >> m_vGridOrigin;
+  ref_stream >> m_vProbeSpacing;
+  ref_stream >> m_vProbeCount;
 
-  XII_SUCCEED_OR_RETURN(stream.ReadArray(m_ProbePositions));
-  XII_SUCCEED_OR_RETURN(stream.ReadArray(m_SkyVisibility));
+  XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(m_ProbePositions));
+  XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(m_SkyVisibility));
 
   return XII_SUCCESS;
 }

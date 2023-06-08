@@ -58,19 +58,19 @@ private:
 
 namespace
 {
-  void EnsureTrailingSlash(xiiStringBuilder& builder)
+  void EnsureTrailingSlash(xiiStringBuilder& ref_sBuilder)
   {
-    if (!builder.EndsWith("/"))
+    if (!ref_sBuilder.EndsWith("/"))
     {
-      builder.Append("/");
+      ref_sBuilder.Append("/");
     }
   }
 
-  void RemoveTrailingSlash(xiiStringBuilder& builder)
+  void RemoveTrailingSlash(xiiStringBuilder& ref_sBuilder)
   {
-    if (builder.EndsWith("/"))
+    if (ref_sBuilder.EndsWith("/"))
     {
-      builder.Shrink(0, 1);
+      ref_sBuilder.Shrink(0, 1);
     }
   }
 } // namespace

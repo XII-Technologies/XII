@@ -58,7 +58,7 @@ xiiQtColorGradientWidget::xiiQtColorGradientWidget(QWidget* pParent) :
 }
 
 
-xiiQtColorGradientWidget::~xiiQtColorGradientWidget() {}
+xiiQtColorGradientWidget::~xiiQtColorGradientWidget() = default;
 
 void xiiQtColorGradientWidget::SetScrubberPosition(double fPosition)
 {
@@ -68,45 +68,45 @@ void xiiQtColorGradientWidget::SetScrubberPosition(double fPosition)
   update();
 }
 
-void xiiQtColorGradientWidget::setColorGradientData(const xiiColorGradient* gradient)
+void xiiQtColorGradientWidget::setColorGradientData(const xiiColorGradient* pGradient)
 {
-  m_pColorGradientData = gradient;
+  m_pColorGradientData = pGradient;
   FrameExtents();
 
   update();
 }
 
 
-void xiiQtColorGradientWidget::setEditMode(bool edit)
+void xiiQtColorGradientWidget::setEditMode(bool bEdit)
 {
-  m_bEditMode = edit;
+  m_bEditMode = bEdit;
 
   setMouseTracking(m_bEditMode);
   setCursor(m_bEditMode ? Qt::ArrowCursor : Qt::PointingHandCursor);
 }
 
-void xiiQtColorGradientWidget::setShowColorCPs(bool show)
+void xiiQtColorGradientWidget::setShowColorCPs(bool bShow)
 {
-  m_bShowColorCPs = show;
+  m_bShowColorCPs = bShow;
 }
 
 
-void xiiQtColorGradientWidget::setShowAlphaCPs(bool show)
+void xiiQtColorGradientWidget::setShowAlphaCPs(bool bShow)
 {
-  m_bShowAlphaCPs = show;
+  m_bShowAlphaCPs = bShow;
 }
 
 
-void xiiQtColorGradientWidget::setShowIntensityCPs(bool show)
+void xiiQtColorGradientWidget::setShowIntensityCPs(bool bShow)
 {
-  m_bShowIntensityCPs = show;
+  m_bShowIntensityCPs = bShow;
 }
 
 
-void xiiQtColorGradientWidget::setShowCoords(bool top, bool bottom)
+void xiiQtColorGradientWidget::setShowCoords(bool bTop, bool bBottom)
 {
-  m_bShowCoordsTop    = top;
-  m_bShowCoordsBottom = bottom;
+  m_bShowCoordsTop    = bTop;
+  m_bShowCoordsBottom = bBottom;
 }
 
 void xiiQtColorGradientWidget::ClearSelectedCP()
@@ -114,7 +114,7 @@ void xiiQtColorGradientWidget::ClearSelectedCP()
   SelectCP(-1, -1, -1);
 }
 
-void xiiQtColorGradientWidget::SelectCP(xiiInt32 colorCP, xiiInt32 alphaCP, xiiInt32 intensityCP)
+void xiiQtColorGradientWidget::SelectCP(xiiInt32 iColorCP, xiiInt32 iAlphaCP, xiiInt32 iIntensityCP)
 {
   m_bDraggingCP = false;
 
@@ -126,21 +126,21 @@ void xiiQtColorGradientWidget::SelectCP(xiiInt32 colorCP, xiiInt32 alphaCP, xiiI
 
   bool changed = false;
 
-  if (colorCP != m_iSelectedColorCP)
+  if (iColorCP != m_iSelectedColorCP)
   {
-    m_iSelectedColorCP = colorCP;
+    m_iSelectedColorCP = iColorCP;
     changed            = true;
   }
 
-  if (alphaCP != m_iSelectedAlphaCP)
+  if (iAlphaCP != m_iSelectedAlphaCP)
   {
-    m_iSelectedAlphaCP = alphaCP;
+    m_iSelectedAlphaCP = iAlphaCP;
     changed            = true;
   }
 
-  if (intensityCP != m_iSelectedIntensityCP)
+  if (iIntensityCP != m_iSelectedIntensityCP)
   {
-    m_iSelectedIntensityCP = intensityCP;
+    m_iSelectedIntensityCP = iIntensityCP;
     changed                = true;
   }
 

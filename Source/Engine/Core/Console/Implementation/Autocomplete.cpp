@@ -3,7 +3,7 @@
 #include <Core/Console/Console.h>
 #include <Core/Console/QuakeConsole.h>
 
-void xiiCommandInterpreter::FindPossibleCVars(xiiStringView sVariable, xiiDeque<xiiString>& AutoCompleteOptions, xiiDeque<xiiConsoleString>& AutoCompleteDescriptions)
+void xiiCommandInterpreter::FindPossibleCVars(xiiStringView sVariable, xiiDeque<xiiString>& ref_autoCompleteOptions, xiiDeque<xiiConsoleString>& ref_autoCompleteDescriptions)
 {
   xiiStringBuilder sText;
 
@@ -17,16 +17,16 @@ void xiiCommandInterpreter::FindPossibleCVars(xiiStringView sVariable, xiiDeque<
       xiiConsoleString cs;
       cs.m_sText = sText;
       cs.m_Type  = xiiConsoleString::Type::VarName;
-      AutoCompleteDescriptions.PushBack(cs);
+      ref_autoCompleteDescriptions.PushBack(cs);
 
-      AutoCompleteOptions.PushBack(pCVar->GetName());
+      ref_autoCompleteOptions.PushBack(pCVar->GetName());
     }
 
     pCVar = pCVar->GetNextInstance();
   }
 }
 
-void xiiCommandInterpreter::FindPossibleFunctions(xiiStringView sVariable, xiiDeque<xiiString>& AutoCompleteOptions, xiiDeque<xiiConsoleString>& AutoCompleteDescriptions)
+void xiiCommandInterpreter::FindPossibleFunctions(xiiStringView sVariable, xiiDeque<xiiString>& ref_autoCompleteOptions, xiiDeque<xiiConsoleString>& ref_autoCompleteDescriptions)
 {
   xiiStringBuilder sText;
 
@@ -40,9 +40,9 @@ void xiiCommandInterpreter::FindPossibleFunctions(xiiStringView sVariable, xiiDe
       xiiConsoleString cs;
       cs.m_sText = sText;
       cs.m_Type  = xiiConsoleString::Type::FuncName;
-      AutoCompleteDescriptions.PushBack(cs);
+      ref_autoCompleteDescriptions.PushBack(cs);
 
-      AutoCompleteOptions.PushBack(pFunc->GetName());
+      ref_autoCompleteOptions.PushBack(pFunc->GetName());
     }
 
     pFunc = pFunc->GetNextInstance();
@@ -122,20 +122,20 @@ xiiString xiiQuakeConsole::GetFullInfoAsString(xiiCVar* pCVar)
   return s;
 }
 
-const xiiString xiiCommandInterpreter::FindCommonString(const xiiDeque<xiiString>& vStrings)
+const xiiString xiiCommandInterpreter::FindCommonString(const xiiDeque<xiiString>& strings)
 {
   xiiStringBuilder sCommon;
   xiiUInt32        c;
 
   xiiUInt32 uiPos = 0;
-  auto      it1   = vStrings[0].GetIteratorFront();
+  auto      it1   = strings[0].GetIteratorFront();
   while (it1.IsValid())
   {
     c = it1.GetCharacter();
 
-    for (int v = 1; v < (int)vStrings.GetCount(); v++)
+    for (int v = 1; v < (int)strings.GetCount(); v++)
     {
-      auto it2 = vStrings[v].GetIteratorFront();
+      auto it2 = strings[v].GetIteratorFront();
 
       it2 += uiPos;
 
@@ -152,11 +152,11 @@ const xiiString xiiCommandInterpreter::FindCommonString(const xiiDeque<xiiString
   return sCommon;
 }
 
-void xiiCommandInterpreter::AutoComplete(xiiCommandInterpreterState& inout_State)
+void xiiCommandInterpreter::AutoComplete(xiiCommandInterpreterState& inout_state)
 {
-  xiiString sVarName = inout_State.m_sInput;
+  xiiString sVarName = inout_state.m_sInput;
 
-  auto it = rbegin(inout_State.m_sInput);
+  auto it = rbegin(inout_state.m_sInput);
 
   // dots are allowed in CVar names
   while (it.IsValid() && (it.GetCharacter() == '.' || !xiiStringUtils::IsIdentifierDelimiter_C_Code(*it)))
@@ -179,24 +179,24 @@ void xiiCommandInterpreter::AutoComplete(xiiCommandInterpreterState& inout_State
   {
     AutoCompleteDescriptions.Sort();
 
-    inout_State.AddOutputLine("");
+    inout_state.AddOutputLine("");
 
     for (xiiUInt32 i = 0; i < AutoCompleteDescriptions.GetCount(); i++)
     {
-      inout_State.AddOutputLine(AutoCompleteDescriptions[i].m_sText.GetData(), AutoCompleteDescriptions[i].m_Type);
+      inout_state.AddOutputLine(AutoCompleteDescriptions[i].m_sText.GetData(), AutoCompleteDescriptions[i].m_Type);
     }
 
-    inout_State.AddOutputLine("");
+    inout_state.AddOutputLine("");
   }
 
   if (AutoCompleteOptions.GetCount() > 0)
   {
     if (szLastWordDelimiter != nullptr)
-      inout_State.m_sInput = xiiStringView(inout_State.m_sInput.GetData(), szLastWordDelimiter + 1);
+      inout_state.m_sInput = xiiStringView(inout_state.m_sInput.GetData(), szLastWordDelimiter + 1);
     else
-      inout_State.m_sInput.Clear();
+      inout_state.m_sInput.Clear();
 
-    inout_State.m_sInput.Append(FindCommonString(AutoCompleteOptions).GetData());
+    inout_state.m_sInput.Append(FindCommonString(AutoCompleteOptions).GetData());
   }
 }
 

@@ -13,7 +13,7 @@ class XII_GUIFOUNDATION_DLL xiiQtCurveEditDlg : public QDialog, Ui_CurveEditDlg
 {
   Q_OBJECT
 public:
-  xiiQtCurveEditDlg(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pCurveObject, QWidget* parent);
+  xiiQtCurveEditDlg(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pCurveObject, QWidget* pParent);
   ~xiiQtCurveEditDlg();
 
   static QByteArray GetLastDialogGeometry() { return s_LastDialogGeometry; }

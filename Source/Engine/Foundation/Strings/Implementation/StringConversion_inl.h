@@ -12,22 +12,22 @@ inline xiiStringWChar::xiiStringWChar(xiiAllocatorBase* pAllocator) :
   m_Data.PushBack('\0');
 }
 
-inline xiiStringWChar::xiiStringWChar(const xiiUInt16* szUtf16, xiiAllocatorBase* pAllocator) :
+inline xiiStringWChar::xiiStringWChar(const xiiUInt16* pUtf16, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
-  *this = szUtf16;
+  *this = pUtf16;
 }
 
-inline xiiStringWChar::xiiStringWChar(const xiiUInt32* szUtf32, xiiAllocatorBase* pAllocator) :
+inline xiiStringWChar::xiiStringWChar(const xiiUInt32* pUtf32, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
-  *this = szUtf32;
+  *this = pUtf32;
 }
 
-inline xiiStringWChar::xiiStringWChar(const wchar_t* szWChar, xiiAllocatorBase* pAllocator) :
+inline xiiStringWChar::xiiStringWChar(const wchar_t* pWChar, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
-  *this = szWChar;
+  *this = pWChar;
 }
 
 inline xiiStringWChar::xiiStringWChar(xiiStringView sUtf8, xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
@@ -50,22 +50,22 @@ inline xiiStringUtf8::xiiStringUtf8(const char* szUtf8, xiiAllocatorBase* pAlloc
   *this = szUtf8;
 }
 
-inline xiiStringUtf8::xiiStringUtf8(const xiiUInt16* szUtf16, xiiAllocatorBase* pAllocator) :
+inline xiiStringUtf8::xiiStringUtf8(const xiiUInt16* pUtf16, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
-  *this = szUtf16;
+  *this = pUtf16;
 }
 
-inline xiiStringUtf8::xiiStringUtf8(const xiiUInt32* szUtf32, xiiAllocatorBase* pAllocator) :
+inline xiiStringUtf8::xiiStringUtf8(const xiiUInt32* pUtf32, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
-  *this = szUtf32;
+  *this = pUtf32;
 }
 
-inline xiiStringUtf8::xiiStringUtf8(const wchar_t* szWChar, xiiAllocatorBase* pAllocator) :
+inline xiiStringUtf8::xiiStringUtf8(const wchar_t* pWChar, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
-  *this = szWChar;
+  *this = pWChar;
 }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
@@ -99,22 +99,22 @@ inline xiiStringUtf16::xiiStringUtf16(const char* szUtf8, xiiAllocatorBase* pAll
   *this = szUtf8;
 }
 
-inline xiiStringUtf16::xiiStringUtf16(const xiiUInt16* szUtf16, xiiAllocatorBase* pAllocator) :
+inline xiiStringUtf16::xiiStringUtf16(const xiiUInt16* pUtf16, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
-  *this = szUtf16;
+  *this = pUtf16;
 }
 
-inline xiiStringUtf16::xiiStringUtf16(const xiiUInt32* szUtf32, xiiAllocatorBase* pAllocator) :
+inline xiiStringUtf16::xiiStringUtf16(const xiiUInt32* pUtf32, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
-  *this = szUtf32;
+  *this = pUtf32;
 }
 
-inline xiiStringUtf16::xiiStringUtf16(const wchar_t* szWChar, xiiAllocatorBase* pAllocator) :
+inline xiiStringUtf16::xiiStringUtf16(const wchar_t* pWChar, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
-  *this = szWChar;
+  *this = pWChar;
 }
 
 
@@ -133,20 +133,20 @@ inline xiiStringUtf32::xiiStringUtf32(const char* szUtf8, xiiAllocatorBase* pAll
   *this = szUtf8;
 }
 
-inline xiiStringUtf32::xiiStringUtf32(const xiiUInt16* szUtf16, xiiAllocatorBase* pAllocator) :
+inline xiiStringUtf32::xiiStringUtf32(const xiiUInt16* pUtf16, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
-  *this = szUtf16;
+  *this = pUtf16;
 }
 
-inline xiiStringUtf32::xiiStringUtf32(const xiiUInt32* szUtf32, xiiAllocatorBase* pAllocator) :
+inline xiiStringUtf32::xiiStringUtf32(const xiiUInt32* pUtf32, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
-  *this = szUtf32;
+  *this = pUtf32;
 }
 
-inline xiiStringUtf32::xiiStringUtf32(const wchar_t* szWChar, xiiAllocatorBase* pAllocator) :
+inline xiiStringUtf32::xiiStringUtf32(const wchar_t* pWChar, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
-  *this = szWChar;
+  *this = pWChar;
 }

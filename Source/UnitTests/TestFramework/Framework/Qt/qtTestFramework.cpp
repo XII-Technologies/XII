@@ -7,14 +7,14 @@
 // xiiQtTestFramework public functions
 ////////////////////////////////////////////////////////////////////////
 
-xiiQtTestFramework::xiiQtTestFramework(const char* szTestName, const char* szAbsTestDir, const char* szRelTestDataDir, int argc, const char** argv) :
-  xiiTestFramework(szTestName, szAbsTestDir, szRelTestDataDir, argc, argv)
+xiiQtTestFramework::xiiQtTestFramework(const char* szTestName, const char* szAbsTestDir, const char* szRelTestDataDir, int iArgc, const char** pArgv) :
+  xiiTestFramework(szTestName, szAbsTestDir, szRelTestDataDir, iArgc, pArgv)
 {
   Q_INIT_RESOURCE(resources);
   Initialize();
 }
 
-xiiQtTestFramework::~xiiQtTestFramework() {}
+xiiQtTestFramework::~xiiQtTestFramework() = default;
 
 
 ////////////////////////////////////////////////////////////////////////

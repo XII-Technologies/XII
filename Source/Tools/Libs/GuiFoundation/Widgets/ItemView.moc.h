@@ -12,16 +12,16 @@ class XII_GUIFOUNDATION_DLL xiiQtItemDelegate : public QItemDelegate
 {
   Q_OBJECT
 public:
-  explicit xiiQtItemDelegate(QObject* parent = nullptr) :
-    QItemDelegate(parent)
+  explicit xiiQtItemDelegate(QObject* pParent = nullptr) :
+    QItemDelegate(pParent)
   {
   }
 
-  virtual bool mouseHoverEvent(QHoverEvent* event, const QStyleOptionViewItem& option, const QModelIndex& index) { return false; }
-  virtual bool mousePressEvent(QMouseEvent* event, const QStyleOptionViewItem& option, const QModelIndex& index) { return false; }
-  virtual bool mouseReleaseEvent(QMouseEvent* event, const QStyleOptionViewItem& option, const QModelIndex& index) { return false; }
-  virtual bool mouseDoubleClickEvent(QMouseEvent* event, const QStyleOptionViewItem& option, const QModelIndex& index) { return false; }
-  virtual bool mouseMoveEvent(QMouseEvent* event, const QStyleOptionViewItem& option, const QModelIndex& index) { return false; }
+  virtual bool mouseHoverEvent(QHoverEvent* pEvent, const QStyleOptionViewItem& option, const QModelIndex& index) { return false; }
+  virtual bool mousePressEvent(QMouseEvent* pEvent, const QStyleOptionViewItem& option, const QModelIndex& index) { return false; }
+  virtual bool mouseReleaseEvent(QMouseEvent* pEvent, const QStyleOptionViewItem& option, const QModelIndex& index) { return false; }
+  virtual bool mouseDoubleClickEvent(QMouseEvent* pEvent, const QStyleOptionViewItem& option, const QModelIndex& index) { return false; }
+  virtual bool mouseMoveEvent(QMouseEvent* pEvent, const QStyleOptionViewItem& option, const QModelIndex& index) { return false; }
 };
 
 /// \brief Template to be used with classes derived from QAbstractItemView. Allows the use of xiiQtItemDelegate.
@@ -35,16 +35,15 @@ public:
     this->setAttribute(Qt::WA_Hover, true);
   }
 
-  virtual bool event(QEvent* ev) override
+  virtual bool event(QEvent* pEv) override
   {
-    switch (ev->type())
+    switch (pEv->type())
     {
       case QEvent::HoverEnter:
       case QEvent::HoverMove:
       case QEvent::HoverLeave:
       {
-        QHoverEvent* pHoeverEvent = static_cast<QHoverEvent*>(ev);
-
+        QHoverEvent* pHoeverEvent = static_cast<QHoverEvent*>(pEv);
 
 #if QT_VERSION <= QT_VERSION_CHECK(5, 14, 0)
         QPoint pos = pHoeverEvent->pos();
@@ -52,13 +51,13 @@ public:
         QPoint pos = pHoeverEvent->position().toPoint();
 #endif
         QModelIndex index = this->indexAt(pos);
-        if (m_Hovered.isValid() && (ev->type() == QEvent::HoverLeave || index != m_Hovered))
+        if (m_Hovered.isValid() && (pEv->type() == QEvent::HoverLeave || index != m_Hovered))
         {
           QHoverEvent hoverEvent(QEvent::HoverLeave, pos, pHoeverEvent->oldPos(), pHoeverEvent->modifiers());
           ForwardEvent(m_Hovered, &hoverEvent);
           m_Hovered = QModelIndex();
         }
-        if (index.isValid() && ev->type() != QEvent::HoverLeave && !m_Hovered.isValid())
+        if (index.isValid() && pEv->type() != QEvent::HoverLeave && !m_Hovered.isValid())
         {
           QHoverEvent hoverEvent(QEvent::HoverEnter, pos, pHoeverEvent->oldPos(), pHoeverEvent->modifiers());
           m_Hovered = index;
@@ -69,20 +68,20 @@ public:
           QHoverEvent hoverEvent(QEvent::HoverMove, pos, pHoeverEvent->oldPos(), pHoeverEvent->modifiers());
           ForwardEvent(m_Hovered, &hoverEvent);
         }
-        break;
       }
+      break;
       default:
         break;
     }
 
-    return Base::event(ev);
+    return Base::event(pEv);
   }
 
-  virtual void mousePressEvent(QMouseEvent* event) override
+  virtual void mousePressEvent(QMouseEvent* pEvent) override
   {
-    QPoint      pos   = event->pos();
+    QPoint      pos   = pEvent->pos();
     QModelIndex index = this->indexAt(pos);
-    if (ForwardEvent(index, event))
+    if (ForwardEvent(index, pEvent))
     {
       if (!m_Focused.isValid())
       {
@@ -92,16 +91,16 @@ public:
     }
     else
     {
-      Base::mousePressEvent(event);
+      Base::mousePressEvent(pEvent);
     }
   }
 
-  virtual void mouseReleaseEvent(QMouseEvent* event) override
+  virtual void mouseReleaseEvent(QMouseEvent* pEvent) override
   {
     if (m_Focused.isValid())
     {
-      ForwardEvent(m_Focused, event);
-      if (event->buttons() == Qt::NoButton)
+      ForwardEvent(m_Focused, pEvent);
+      if (pEvent->buttons() == Qt::NoButton)
       {
         m_Focused = QModelIndex();
         this->viewport()->releaseMouse();
@@ -109,27 +108,27 @@ public:
     }
     else
     {
-      Base::mouseReleaseEvent(event);
+      Base::mouseReleaseEvent(pEvent);
     }
   }
 
-  virtual void mouseDoubleClickEvent(QMouseEvent* event) override
+  virtual void mouseDoubleClickEvent(QMouseEvent* pEvent) override
   {
-    QPoint      pos   = event->pos();
+    QPoint      pos   = pEvent->pos();
     QModelIndex index = this->indexAt(pos);
-    if (!ForwardEvent(index, event))
+    if (!ForwardEvent(index, pEvent))
     {
-      Base::mouseDoubleClickEvent(event);
+      Base::mouseDoubleClickEvent(pEvent);
     }
   }
 
-  virtual void mouseMoveEvent(QMouseEvent* event) override
+  virtual void mouseMoveEvent(QMouseEvent* pEvent) override
   {
-    QPoint      pos   = event->pos();
+    QPoint      pos   = pEvent->pos();
     QModelIndex index = this->indexAt(pos);
-    if (!ForwardEvent(index, event))
+    if (!ForwardEvent(index, pEvent))
     {
-      Base::mouseMoveEvent(event);
+      Base::mouseMoveEvent(pEvent);
     }
   }
 

@@ -117,7 +117,7 @@ public:
   virtual ~xiiDataDirectoryReaderWriterBase() = default;
 
   /// \brief Used by xiiDataDirectoryType's to try to open the given file. They need to pass along their own pointer.
-  xiiResult Open(xiiStringView sFile, xiiDataDirectoryType* pOwnerDataDirectory, xiiFileShareMode::Enum FileShareMode);
+  xiiResult Open(xiiStringView sFile, xiiDataDirectoryType* pOwnerDataDirectory, xiiFileShareMode::Enum fileShareMode);
 
   /// \brief Closes this data stream.
   void Close();

@@ -68,9 +68,7 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::~ProbeUpdateInfo()
 //////////////////////////////////////////////////////////////////////////
 /// xiiReflectionProbeUpdater
 
-xiiReflectionProbeUpdater::xiiReflectionProbeUpdater()
-{
-}
+xiiReflectionProbeUpdater::xiiReflectionProbeUpdater() = default;
 
 xiiReflectionProbeUpdater::~xiiReflectionProbeUpdater()
 {
@@ -121,7 +119,7 @@ xiiResult xiiReflectionProbeUpdater::StartDynamicUpdate(const xiiReflectionProbe
   return XII_FAILURE;
 }
 
-xiiResult xiiReflectionProbeUpdater::StartFilterUpdate(const xiiReflectionProbeRef& probe, const xiiReflectionProbeDesc& desc, xiiTextureCubeResourceHandle sourceTexture, const TargetSlot& target)
+xiiResult xiiReflectionProbeUpdater::StartFilterUpdate(const xiiReflectionProbeRef& probe, const xiiReflectionProbeDesc& desc, xiiTextureCubeResourceHandle hSourceTexture, const TargetSlot& target)
 {
   XII_ASSERT_DEBUG(target.m_hIrradianceOutputTexture.IsInvalidated() == (target.m_iIrradianceOutputIndex == -1), "Invalid irradiance output settings.");
   XII_ASSERT_DEBUG(!target.m_hSpecularOutputTexture.IsInvalidated() && target.m_iSpecularOutputIndex != -1, "Specular output invalid.");
@@ -137,7 +135,7 @@ xiiResult xiiReflectionProbeUpdater::StartFilterUpdate(const xiiReflectionProbeR
       slot->m_probe = probe;
       slot->m_desc  = desc;
       slot->m_globalTransform.SetIdentity();
-      slot->m_sourceTexture = sourceTexture;
+      slot->m_sourceTexture = hSourceTexture;
       slot->m_TargetSlot    = target;
       slot->m_bInUse        = true;
       return XII_SUCCESS;

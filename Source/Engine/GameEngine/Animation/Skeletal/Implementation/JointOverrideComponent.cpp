@@ -36,10 +36,10 @@ XII_END_COMPONENT_TYPE
 xiiJointOverrideComponent::xiiJointOverrideComponent()  = default;
 xiiJointOverrideComponent::~xiiJointOverrideComponent() = default;
 
-void xiiJointOverrideComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiJointOverrideComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_sJointToOverride;
   s << m_bOverridePosition;
@@ -47,11 +47,11 @@ void xiiJointOverrideComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_bOverrideScale;
 }
 
-void xiiJointOverrideComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiJointOverrideComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_sJointToOverride;
   s >> m_bOverridePosition;

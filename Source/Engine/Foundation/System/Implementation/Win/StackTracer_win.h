@@ -175,7 +175,7 @@ void xiiStackTracer::OnPluginEvent(const xiiPluginEvent& e)
 }
 
 // static
-xiiUInt32 xiiStackTracer::GetStackTrace(xiiArrayPtr<void*>& trace, void* pContext)
+xiiUInt32 xiiStackTracer::GetStackTrace(xiiArrayPtr<void*>& ref_trace, void* pContext)
 {
   Initialize();
 
@@ -228,12 +228,12 @@ xiiUInt32 xiiStackTracer::GetStackTrace(xiiArrayPtr<void*>& trace, void* pContex
     frame.AddrStack.Offset = context.Esp;
     machine_type           = IMAGE_FILE_MACHINE_I386;
 #endif
-    for (xiiInt32 i = 0; i < (xiiInt32)trace.GetCount(); i++)
+    for (xiiInt32 i = 0; i < (xiiInt32)ref_trace.GetCount(); i++)
     {
       if (s_pImplementation->stackWalk(machine_type, GetCurrentProcess(), GetCurrentThread(), &frame, &context, NULL,
                                        s_pImplementation->getFunctionTableAccess, s_pImplementation->getModuleBase, NULL))
       {
-        trace[i] = reinterpret_cast<void*>(frame.AddrPC.Offset);
+        ref_trace[i] = reinterpret_cast<void*>(frame.AddrPC.Offset);
       }
       else
       {
@@ -245,8 +245,8 @@ xiiUInt32 xiiStackTracer::GetStackTrace(xiiArrayPtr<void*>& trace, void* pContex
   else if (s_pImplementation->captureStackBackTrace != nullptr)
   {
     const xiiUInt32 uiSkip        = 1;
-    const xiiUInt32 uiMaxNumTrace = xiiMath::Min(62U, trace.GetCount());
-    xiiInt32        iNumTraces    = (*s_pImplementation->captureStackBackTrace)(uiSkip, uiMaxNumTrace, trace.GetPtr(), nullptr);
+    const xiiUInt32 uiMaxNumTrace = xiiMath::Min(62U, ref_trace.GetCount());
+    xiiInt32        iNumTraces    = (*s_pImplementation->captureStackBackTrace)(uiSkip, uiMaxNumTrace, ref_trace.GetPtr(), nullptr);
 
     // Skip the last three stack-frames since they are useless
     return xiiMath::Max(iNumTraces - 3, 0);

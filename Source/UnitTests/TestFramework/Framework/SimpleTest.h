@@ -8,14 +8,14 @@
 class XII_TEST_DLL xiiSimpleTestGroup : public xiiTestBaseClass
 {
 public:
-  typedef void (*SimpleTestFunc)();
+  using SimpleTestFunc = void (*)();
 
   xiiSimpleTestGroup(const char* szName) :
     m_szTestName(szName)
   {
   }
 
-  void AddSimpleTest(const char* szName, SimpleTestFunc TestFunc);
+  void AddSimpleTest(const char* szName, SimpleTestFunc testFunc);
 
   virtual const char* GetTestName() const override { return m_szTestName; }
 
@@ -41,11 +41,11 @@ class XII_TEST_DLL xiiRegisterSimpleTestHelper : public xiiEnumerable<xiiRegiste
   XII_DECLARE_ENUMERABLE_CLASS(xiiRegisterSimpleTestHelper);
 
 public:
-  xiiRegisterSimpleTestHelper(xiiSimpleTestGroup* pTestGroup, const char* szTestName, xiiSimpleTestGroup::SimpleTestFunc Func)
+  xiiRegisterSimpleTestHelper(xiiSimpleTestGroup* pTestGroup, const char* szTestName, xiiSimpleTestGroup::SimpleTestFunc func)
   {
     m_pTestGroup = pTestGroup;
     m_szTestName = szTestName;
-    m_Func       = Func;
+    m_Func       = func;
   }
 
   void RegisterTest() { m_pTestGroup->AddSimpleTest(m_szTestName, m_Func); }

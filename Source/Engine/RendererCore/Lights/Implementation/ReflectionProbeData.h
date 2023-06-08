@@ -7,7 +7,7 @@
 
 struct xiiReflectionProbeMode
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -39,7 +39,7 @@ struct XII_RENDERERCORE_DLL xiiReflectionProbeDesc
   xiiVec3 m_vCaptureOffset = xiiVec3::ZeroVector();
 };
 
-typedef xiiGenericId<24, 8> xiiReflectionProbeId;
+using xiiReflectionProbeId = xiiGenericId<24, 8>;
 
 template <>
 struct xiiHashHelper<xiiReflectionProbeId>
@@ -95,7 +95,7 @@ struct xiiHashHelper<xiiReflectionProbeRef>
 /// \brief Flags that describe a reflection probe.
 struct xiiProbeFlags
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {

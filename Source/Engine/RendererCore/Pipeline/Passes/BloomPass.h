@@ -24,9 +24,9 @@ protected:
   xiiRenderPipelineNodeInputPin  m_PinInput;
   xiiRenderPipelineNodeOutputPin m_PinOutput;
 
-  float                          m_fRadius;
-  float                          m_fThreshold;
-  float                          m_fIntensity;
+  float                          m_fRadius    = 0.2f;
+  float                          m_fThreshold = 1.0f;
+  float                          m_fIntensity = 0.3f;
   xiiColorGammaUB                m_InnerTintColor;
   xiiColorGammaUB                m_MidTintColor;
   xiiColorGammaUB                m_OuterTintColor;

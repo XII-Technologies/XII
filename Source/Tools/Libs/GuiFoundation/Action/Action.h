@@ -16,9 +16,10 @@ struct xiiActionDescriptor;
 class xiiAction;
 struct xiiActionContext;
 
-typedef xiiGenericId<24, 8> xiiActionId;
-typedef xiiAction* (*CreateActionFunc)(const xiiActionContext& context);
-typedef void (*DeleteActionFunc)(xiiAction* pAction);
+using xiiActionId      = xiiGenericId<24, 8>;
+using CreateActionFunc = xiiAction* (*)(const xiiActionContext&);
+typedef void;
+using DeleteActionFunc = void (*)(xiiAction*);
 
 /// \brief Handle for a xiiAction.
 ///
@@ -26,7 +27,7 @@ typedef void (*DeleteActionFunc)(xiiAction* pAction);
 class XII_GUIFOUNDATION_DLL xiiActionDescriptorHandle
 {
 public:
-  typedef xiiUInt32 StorageType;
+  using StorageType = xiiUInt32;
   XII_DECLARE_HANDLE_TYPE(xiiActionDescriptorHandle, xiiActionId);
   friend class xiiActionManager;
 
@@ -44,7 +45,7 @@ struct xiiActionScope
     Window,
     Default = Global
   };
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 };
 
 ///
@@ -58,14 +59,14 @@ struct xiiActionType
     ActionAndMenu,
     Default = Action
   };
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 };
 
 ///
 struct XII_GUIFOUNDATION_DLL xiiActionContext
 {
   xiiActionContext() = default;
-  xiiActionContext(xiiDocument* doc) { m_pDocument = doc; }
+  xiiActionContext(xiiDocument* pDoc) { m_pDocument = pDoc; }
 
   xiiDocument* m_pDocument = nullptr;
   xiiString    m_sMapping;
@@ -76,7 +77,8 @@ struct XII_GUIFOUNDATION_DLL xiiActionContext
 ///
 struct XII_GUIFOUNDATION_DLL xiiActionDescriptor
 {
-  xiiActionDescriptor(){};
+  xiiActionDescriptor() = default;
+  ;
   xiiActionDescriptor(xiiActionType::Enum type, xiiActionScope::Enum scope, const char* szName, const char* szCategoryPath, const char* szShortcut, CreateActionFunc createAction, DeleteActionFunc deleteAction = nullptr);
 
   xiiActionDescriptorHandle m_Handle;

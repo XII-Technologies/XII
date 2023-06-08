@@ -18,15 +18,15 @@ void TestFormat(const xiiFormatString& str, const char* szExpected)
   XII_TEST_STRING(szText, szExpected);
 }
 
-void TestFormatWChar(const xiiFormatString& str, const wchar_t* szExpected)
+void TestFormatWChar(const xiiFormatString& str, const wchar_t* pExpected)
 {
   xiiStringBuilder sb;
   const char*      szText = str.GetText(sb);
 
-  XII_TEST_WSTRING(xiiStringWChar(szText), szExpected);
+  XII_TEST_WSTRING(xiiStringWChar(szText), pExpected);
 }
 
-void CompareSnprintf(xiiStringBuilder& log, const xiiFormatString& str, const char* szFormat, ...)
+void CompareSnprintf(xiiStringBuilder& ref_sLog, const xiiFormatString& str, const char* szFormat, ...)
 {
   va_list args;
   va_start(args, szFormat);
@@ -75,8 +75,8 @@ void CompareSnprintf(xiiStringBuilder& log, const xiiFormatString& str, const ch
     t3 = sw.Checkpoint();
   }
 
-  log.AppendFormat("xii: {0} msec, std: {1} msec, xiiFmt: {2} msec : {3} -> {4}\n", xiiArgF(t1.GetMilliseconds(), 2), xiiArgF(t2.GetMilliseconds(), 2),
-                   xiiArgF(t3.GetMilliseconds(), 2), szFormat, Temp1);
+  ref_sLog.AppendFormat("xii: {0} msec, std: {1} msec, xiiFmt: {2} msec : {3} -> {4}\n", xiiArgF(t1.GetMilliseconds(), 2), xiiArgF(t2.GetMilliseconds(), 2),
+                        xiiArgF(t3.GetMilliseconds(), 2), szFormat, Temp1);
 
   va_end(args);
 }

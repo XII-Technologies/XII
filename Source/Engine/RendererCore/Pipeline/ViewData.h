@@ -46,8 +46,8 @@ struct XII_RENDERERCORE_DLL xiiViewData
   xiiResult ComputePickingRay(
     float        fScreenPosX,
     float        fScreenPosY,
-    xiiVec3&     out_RayStartPos,
-    xiiVec3&     out_RayDir,
+    xiiVec3&     out_vRayStartPos,
+    xiiVec3&     out_vRayDir,
     xiiCameraEye eye = xiiCameraEye::Left) const
   {
     xiiVec3 vScreenPos;
@@ -56,7 +56,7 @@ struct XII_RENDERERCORE_DLL xiiViewData
     vScreenPos.z = 0.0f;
 
     return xiiGraphicsUtils::ConvertScreenPosToWorldPos(
-      m_InverseViewProjectionMatrix[static_cast<int>(eye)], 0, 0, 1, 1, vScreenPos, out_RayStartPos, &out_RayDir);
+      m_InverseViewProjectionMatrix[static_cast<int>(eye)], 0, 0, 1, 1, vScreenPos, out_vRayStartPos, &out_vRayDir);
   }
 
   xiiResult ComputeScreenSpacePos(const xiiVec3& vPoint, xiiVec3& out_vScreenPos, xiiCameraEye eye = xiiCameraEye::Left) const

@@ -80,12 +80,12 @@ static bool TestAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const 
 // xiiTestFramework public functions
 ////////////////////////////////////////////////////////////////////////
 
-xiiTestFramework::xiiTestFramework(const char* szTestName, const char* szAbsTestOutputDir, const char* szRelTestDataDir, int argc, const char** argv) :
+xiiTestFramework::xiiTestFramework(const char* szTestName, const char* szAbsTestOutputDir, const char* szRelTestDataDir, int iArgc, const char** pArgv) :
   m_sTestName(szTestName), m_sAbsTestOutputDir(szAbsTestOutputDir), m_sRelTestDataDir(szRelTestDataDir)
 {
   s_pInstance = this;
 
-  xiiCommandLineUtils::GetGlobalInstance()->SetCommandLine(argc, argv, xiiCommandLineUtils::PreferOsArgs);
+  xiiCommandLineUtils::GetGlobalInstance()->SetCommandLine(iArgc, pArgv, xiiCommandLineUtils::PreferOsArgs);
 
   GetTestSettingsFromCommandLine(*xiiCommandLineUtils::GetGlobalInstance());
 }
@@ -210,16 +210,16 @@ const char* xiiTestFramework::GetAbsTestSettingsFilePath() const
   return m_sAbsTestSettingsFilePath.c_str();
 }
 
-void xiiTestFramework::RegisterOutputHandler(OutputHandler Handler)
+void xiiTestFramework::RegisterOutputHandler(OutputHandler handler)
 {
   // do not register a handler twice
   for (xiiUInt32 i = 0; i < m_OutputHandlers.size(); ++i)
   {
-    if (m_OutputHandlers[i] == Handler)
+    if (m_OutputHandlers[i] == handler)
       return;
   }
 
-  m_OutputHandlers.push_back(Handler);
+  m_OutputHandlers.push_back(handler);
 }
 
 
@@ -471,14 +471,14 @@ void xiiTestFramework::AutoSaveTestOrder()
   SaveTestSettings(m_sAbsTestSettingsFilePath.c_str());
 }
 
-void xiiTestFramework::SaveTestOrder(const char* const filePath)
+void xiiTestFramework::SaveTestOrder(const char* const szFilePath)
 {
-  ::SaveTestOrder(filePath, m_TestEntries);
+  ::SaveTestOrder(szFilePath, m_TestEntries);
 }
 
-void xiiTestFramework::SaveTestSettings(const char* const filePath)
+void xiiTestFramework::SaveTestSettings(const char* const szFilePath)
 {
-  ::SaveTestSettings(filePath, m_Settings);
+  ::SaveTestSettings(szFilePath, m_Settings);
 }
 
 void xiiTestFramework::SetAllTestsEnabledStatus(bool bEnable)
@@ -514,11 +514,11 @@ void xiiTestFramework::SetAllFailedTestsEnabledStatus()
   }
 }
 
-void xiiTestFramework::SetTestTimeout(xiiUInt32 testTimeoutMS)
+void xiiTestFramework::SetTestTimeout(xiiUInt32 uiTestTimeoutMS)
 {
   {
     std::scoped_lock<std::mutex> lock(m_TimeoutLock);
-    m_uiTimeoutMS = testTimeoutMS;
+    m_uiTimeoutMS = uiTestTimeoutMS;
   }
   UpdateTestTimeout();
 }
@@ -1170,16 +1170,16 @@ void xiiTestFramework::ScheduleDepthImageComparison(xiiUInt32 uiImageNumber, xii
   m_uiComparisonDepthImageNumber   = uiImageNumber;
 }
 
-void xiiTestFramework::GenerateComparisonImageName(xiiUInt32 uiImageNumber, xiiStringBuilder& sImgName)
+void xiiTestFramework::GenerateComparisonImageName(xiiUInt32 uiImageNumber, xiiStringBuilder& ref_sImgName)
 {
   const char* szTestName    = GetTest(GetCurrentTestIndex())->m_szTestName;
   const char* szSubTestName = GetTest(GetCurrentTestIndex())->m_SubTests[GetCurrentSubTestIndex()].m_szSubTestName;
-  GetTest(GetCurrentTestIndex())->m_pTest->MapImageNumberToString(szTestName, szSubTestName, uiImageNumber, sImgName);
+  GetTest(GetCurrentTestIndex())->m_pTest->MapImageNumberToString(szTestName, szSubTestName, uiImageNumber, ref_sImgName);
 }
 
-void xiiTestFramework::GetCurrentComparisonImageName(xiiStringBuilder& sImgName)
+void xiiTestFramework::GetCurrentComparisonImageName(xiiStringBuilder& ref_sImgName)
 {
-  GenerateComparisonImageName(m_uiComparisonImageNumber, sImgName);
+  GenerateComparisonImageName(m_uiComparisonImageNumber, ref_sImgName);
 }
 
 void xiiTestFramework::SetImageReferenceFolderName(const char* szFolderName)
@@ -1202,11 +1202,11 @@ static const xiiUInt8 s_Base64EncodingTable[64] = {'A', 'B', 'C', 'D', 'E', 'F',
 
 static const xiiUInt8 BASE64_CHARS_PER_LINE = 76;
 
-static xiiUInt32 GetBase64EncodedLength(xiiUInt32 inputLength, bool insertLineBreaks)
+static xiiUInt32 GetBase64EncodedLength(xiiUInt32 uiInputLength, bool bInsertLineBreaks)
 {
-  xiiUInt32 outputLength = (inputLength + 2) / 3 * 4;
+  xiiUInt32 outputLength = (uiInputLength + 2) / 3 * 4;
 
-  if (insertLineBreaks)
+  if (bInsertLineBreaks)
   {
     outputLength += outputLength / BASE64_CHARS_PER_LINE;
   }
@@ -1215,10 +1215,10 @@ static xiiUInt32 GetBase64EncodedLength(xiiUInt32 inputLength, bool insertLineBr
 }
 
 
-static xiiDynamicArray<char> ArrayToBase64(xiiArrayPtr<const xiiUInt8> in, bool insertLineBreaks = true)
+static xiiDynamicArray<char> ArrayToBase64(xiiArrayPtr<const xiiUInt8> in, bool bInsertLineBreaks = true)
 {
   xiiDynamicArray<char> out;
-  out.SetCountUninitialized(GetBase64EncodedLength(in.GetCount(), insertLineBreaks));
+  out.SetCountUninitialized(GetBase64EncodedLength(in.GetCount(), bInsertLineBreaks));
 
   xiiUInt32 offsetIn  = 0;
   xiiUInt32 offsetOut = 0;
@@ -1269,7 +1269,7 @@ static xiiDynamicArray<char> ArrayToBase64(xiiArrayPtr<const xiiUInt8> in, bool 
 
     if (--blocksTillNewline == 0)
     {
-      if (insertLineBreaks)
+      if (bInsertLineBreaks)
       {
         out[offsetOut++] = '\n';
       }
@@ -1281,7 +1281,7 @@ static xiiDynamicArray<char> ArrayToBase64(xiiArrayPtr<const xiiUInt8> in, bool 
   return out;
 }
 
-static void AppendImageData(xiiStringBuilder& output, xiiImage& img)
+static void AppendImageData(xiiStringBuilder& ref_sOutput, xiiImage& ref_img)
 {
   xiiImageFileFormat* format = xiiImageFileFormat::GetWriterFormat("png");
   XII_ASSERT_DEV(format != nullptr, "No PNG writer found");
@@ -1289,20 +1289,20 @@ static void AppendImageData(xiiStringBuilder& output, xiiImage& img)
   xiiDynamicArray<xiiUInt8>                                         imgData;
   xiiMemoryStreamContainerWrapperStorage<xiiDynamicArray<xiiUInt8>> storage(&imgData);
   xiiMemoryStreamWriter                                             writer(&storage);
-  format->WriteImage(writer, img, "png").IgnoreResult();
+  format->WriteImage(writer, ref_img, "png").IgnoreResult();
 
   xiiDynamicArray<char> imgDataBase64 = ArrayToBase64(imgData.GetArrayPtr());
   xiiStringView         imgDataBase64StringView(imgDataBase64.GetArrayPtr().GetPtr(), imgDataBase64.GetArrayPtr().GetEndPtr());
-  output.AppendFormat("data:image/png;base64,{0}", imgDataBase64StringView);
+  ref_sOutput.AppendFormat("data:image/png;base64,{0}", imgDataBase64StringView);
 }
 
-void xiiTestFramework::WriteImageDiffHtml(const char* fileName, xiiImage& referenceImgRgb, xiiImage& referenceImgAlpha, xiiImage& capturedImgRgb, xiiImage& capturedImgAlpha, xiiImage& diffImgRgb, xiiImage& diffImgAlpha, xiiUInt32 uiError, xiiUInt32 uiThreshold, xiiUInt8 uiMinDiffRgb, xiiUInt8 uiMaxDiffRgb, xiiUInt8 uiMinDiffAlpha, xiiUInt8 uiMaxDiffAlpha)
+void xiiTestFramework::WriteImageDiffHtml(const char* szFileName, xiiImage& ref_referenceImgRgb, xiiImage& ref_referenceImgAlpha, xiiImage& ref_capturedImgRgb, xiiImage& ref_capturedImgAlpha, xiiImage& ref_diffImgRgb, xiiImage& ref_diffImgAlpha, xiiUInt32 uiError, xiiUInt32 uiThreshold, xiiUInt8 uiMinDiffRgb, xiiUInt8 uiMaxDiffRgb, xiiUInt8 uiMinDiffAlpha, xiiUInt8 uiMaxDiffAlpha)
 {
 
   xiiFileWriter outputFile;
-  if (outputFile.Open(fileName).Failed())
+  if (outputFile.Open(szFileName).Failed())
   {
-    xiiTestFramework::Output(xiiTestOutput::Warning, "Could not open HTML diff file \"%s\" for writing.", fileName);
+    xiiTestFramework::Output(xiiTestOutput::Warning, "Could not open HTML diff file \"%s\" for writing.", szFileName);
     return;
   }
 
@@ -1404,41 +1404,41 @@ void xiiTestFramework::WriteImageDiffHtml(const char* fileName, xiiImage& refere
                 "Reference Image\n"
                 "</div>\n");
 
-  output.AppendFormat("<div style=\"width:{}px;display: inline-block;\">\n", capturedImgRgb.GetWidth());
+  output.AppendFormat("<div style=\"width:{}px;display: inline-block;\">\n", ref_capturedImgRgb.GetWidth());
 
   output.Append("<p id=\"image_caption_rgb\">Displaying: Current Image RGB</p>\n"
 
                 "<div style=\"block;\" onmouseover=\"imageover()\" onmouseout=\"imageout()\">\n"
                 "<img id=\"image_current_rgb\" alt=\"Captured Image RGB\" src=\"");
-  AppendImageData(output, capturedImgRgb);
+  AppendImageData(output, ref_capturedImgRgb);
   output.Append("\" />\n"
                 "<img id=\"image_reference_rgb\" style=\"display: none\" alt=\"Reference Image RGB\" src=\"");
-  AppendImageData(output, referenceImgRgb);
+  AppendImageData(output, ref_referenceImgRgb);
   output.Append("\" />\n"
                 "</div>\n"
                 "<div style=\"display: block;\">\n");
   output.AppendFormat("<p>RGB Difference (min: {}, max: {}):</p>\n", uiMinDiffRgb, uiMaxDiffRgb);
   output.Append("<img alt=\"Diff Image RGB\" src=\"");
-  AppendImageData(output, diffImgRgb);
+  AppendImageData(output, ref_diffImgRgb);
   output.Append("\" />\n"
                 "</div>\n"
                 "</div>\n");
 
-  output.AppendFormat("<div style=\"width:{}px;display: inline-block;\">\n", capturedImgAlpha.GetWidth());
+  output.AppendFormat("<div style=\"width:{}px;display: inline-block;\">\n", ref_capturedImgAlpha.GetWidth());
 
   output.Append("<p id=\"image_caption_a\">Displaying: Current Image Alpha</p>\n"
                 "<div style=\"display: block;\" onmouseover=\"imageover()\" onmouseout=\"imageout()\">\n"
                 "<img id=\"image_current_a\" alt=\"Captured Image Alpha\" src=\"");
-  AppendImageData(output, capturedImgAlpha);
+  AppendImageData(output, ref_capturedImgAlpha);
   output.Append("\" />\n"
                 "<img id=\"image_reference_a\" style=\"display: none\" alt=\"Reference Image Alpha\" src=\"");
-  AppendImageData(output, referenceImgAlpha);
+  AppendImageData(output, ref_referenceImgAlpha);
   output.Append("\" />\n"
                 "</div>\n"
                 "<div style=\"px;display: block;\">\n");
   output.AppendFormat("<p>Alpha Difference (min: {}, max: {}):</p>\n", uiMinDiffAlpha, uiMaxDiffAlpha);
   output.Append("<img alt=\"Diff Image Alpha\" src=\"");
-  AppendImageData(output, diffImgAlpha);
+  AppendImageData(output, ref_diffImgAlpha);
   output.Append("\" />\n"
                 "</div>\n"
                 "</div>\n"
@@ -1556,13 +1556,13 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
   return true;
 }
 
-bool xiiTestFramework::CompareImages(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, char* szErrorMsg, bool isDepthImage)
+bool xiiTestFramework::CompareImages(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, char* szErrorMsg, bool bIsDepthImage)
 {
   xiiStringBuilder sImgName;
   GenerateComparisonImageName(uiImageNumber, sImgName);
 
   xiiImage img;
-  if (isDepthImage)
+  if (bIsDepthImage)
   {
     sImgName.Append("-depth");
     if (GetTest(GetCurrentTestIndex())->m_pTest->GetDepthImage(img).Failed())
@@ -1617,26 +1617,26 @@ void xiiTestFramework::SetImageComparisonCallback(const ImageComparisonCallback&
   m_ImageComparisonCallback = callback;
 }
 
-xiiResult xiiTestFramework::CaptureRegressionStat(xiiStringView testName, xiiStringView name, xiiStringView unit, float value, xiiInt32 testId)
+xiiResult xiiTestFramework::CaptureRegressionStat(xiiStringView sTestName, xiiStringView sName, xiiStringView sUnit, float value, xiiInt32 iTestId)
 {
-  xiiStringBuilder strippedTestName = testName;
+  xiiStringBuilder strippedTestName = sTestName;
   strippedTestName.ReplaceAll(" ", "");
 
   xiiStringBuilder perTestName;
-  if (testId < 0)
+  if (iTestId < 0)
   {
-    perTestName.Format("{}_{}", strippedTestName, name);
+    perTestName.Format("{}_{}", strippedTestName, sName);
   }
   else
   {
-    perTestName.Format("{}_{}_{}", strippedTestName, name, testId);
+    perTestName.Format("{}_{}_{}", strippedTestName, sName, iTestId);
   }
 
   {
     xiiStringBuilder regression;
     // The 6 floating point digits are forced as per a requirement of the CI
     // feature that parses these values.
-    regression.Format("[test][REGRESSION:{}:{}:{}]", perTestName, unit, xiiArgF(value, 6));
+    regression.Format("[test][REGRESSION:{}:{}:{}]", perTestName, sUnit, xiiArgF(value, 6));
     xiiLog::Info(regression);
   }
 
@@ -1647,17 +1647,17 @@ xiiResult xiiTestFramework::CaptureRegressionStat(xiiStringView testName, xiiStr
 // xiiTestFramework static functions
 ////////////////////////////////////////////////////////////////////////
 
-void xiiTestFramework::Output(xiiTestOutput::Enum Type, const char* szMsg, ...)
+void xiiTestFramework::Output(xiiTestOutput::Enum type, const char* szMsg, ...)
 {
   va_list args;
   va_start(args, szMsg);
 
-  OutputArgs(Type, szMsg, args);
+  OutputArgs(type, szMsg, args);
 
   va_end(args);
 }
 
-void xiiTestFramework::OutputArgs(xiiTestOutput::Enum Type, const char* szMsg, va_list args)
+void xiiTestFramework::OutputArgs(xiiTestOutput::Enum type, const char* szMsg, va_list szArgs)
 {
   // format the output text
   char     szBuffer[1024 * 10];
@@ -1665,8 +1665,8 @@ void xiiTestFramework::OutputArgs(xiiTestOutput::Enum Type, const char* szMsg, v
 
   if (xiiTestFramework::s_LogTimestampMode != xiiLog::TimestampMode::None)
   {
-    if (Type == xiiTestOutput::BeginBlock || Type == xiiTestOutput::EndBlock || Type == xiiTestOutput::ImportantInfo || Type == xiiTestOutput::Details || Type == xiiTestOutput::Success || Type == xiiTestOutput::Message || Type == xiiTestOutput::Warning || Type == xiiTestOutput::Error ||
-        Type == xiiTestOutput::FinalResult)
+    if (type == xiiTestOutput::BeginBlock || type == xiiTestOutput::EndBlock || type == xiiTestOutput::ImportantInfo || type == xiiTestOutput::Details || type == xiiTestOutput::Success || type == xiiTestOutput::Message || type == xiiTestOutput::Warning || type == xiiTestOutput::Error ||
+        type == xiiTestOutput::FinalResult)
     {
       xiiStringBuilder timestamp;
 
@@ -1674,9 +1674,9 @@ void xiiTestFramework::OutputArgs(xiiTestOutput::Enum Type, const char* szMsg, v
       pos = xiiStringUtils::snprintf(szBuffer, XII_ARRAY_SIZE(szBuffer), "%s", timestamp.GetData());
     }
   }
-  xiiStringUtils::vsnprintf(szBuffer + pos, XII_ARRAY_SIZE(szBuffer) - pos, szMsg, args);
+  xiiStringUtils::vsnprintf(szBuffer + pos, XII_ARRAY_SIZE(szBuffer) - pos, szMsg, szArgs);
 
-  GetInstance()->OutputImpl(Type, szBuffer);
+  GetInstance()->OutputImpl(type, szBuffer);
 }
 
 void xiiTestFramework::Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, xiiStringView sMsg, ...)
@@ -1689,11 +1689,11 @@ void xiiTestFramework::Error(const char* szError, const char* szFile, xiiInt32 i
   va_end(args);
 }
 
-void xiiTestFramework::Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, xiiStringView sMsg, va_list args)
+void xiiTestFramework::Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, xiiStringView sMsg, va_list szArgs)
 {
   // format the output text
   char szBuffer[1024 * 10];
-  xiiStringUtils::vsnprintf(szBuffer, XII_ARRAY_SIZE(szBuffer), xiiString(sMsg).GetData(), args);
+  xiiStringUtils::vsnprintf(szBuffer, XII_ARRAY_SIZE(szBuffer), xiiString(sMsg).GetData(), szArgs);
 
   GetInstance()->ErrorImpl(szError, szFile, iLine, szFunction, szBuffer);
 }
@@ -1730,11 +1730,11 @@ bool xiiTestBool(bool bCondition, const char* szErrorText, const char* szFile, x
   return XII_SUCCESS;
 }
 
-bool xiiTestResult(xiiResult bCondition, const char* szErrorText, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...)
+bool xiiTestResult(xiiResult condition, const char* szErrorText, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...)
 {
   xiiTestFramework::s_iAssertCounter++;
 
-  if (bCondition.Failed())
+  if (condition.Failed())
   {
     // if the test breaks here, go one up in the callstack to see where it exactly failed
     OUTPUT_TEST_ERROR
@@ -1775,14 +1775,14 @@ bool xiiTestInt(xiiInt64 i1, xiiInt64 i2, const char* szI1, const char* szI2, co
   return XII_SUCCESS;
 }
 
-bool xiiTestWString(std::wstring ws1, std::wstring ws2, const char* szWString1, const char* szWString2, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...)
+bool xiiTestWString(std::wstring sWs1, std::wstring sWs2, const char* szWString1, const char* szWString2, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...)
 {
   xiiTestFramework::s_iAssertCounter++;
 
-  if (ws1 != ws2)
+  if (sWs1 != sWs2)
   {
     char szErrorText[2048];
-    safeprintf(szErrorText, 2048, "Failure: '%s' (%s) does not equal '%s' (%s)", szWString1, xiiStringUtf8(ws1.c_str()).GetData(), szWString2, xiiStringUtf8(ws2.c_str()).GetData());
+    safeprintf(szErrorText, 2048, "Failure: '%s' (%s) does not equal '%s' (%s)", szWString1, xiiStringUtf8(sWs1.c_str()).GetData(), szWString2, xiiStringUtf8(sWs2.c_str()).GetData());
 
     OUTPUT_TEST_ERROR
   }
@@ -1945,11 +1945,11 @@ bool xiiTestTextFiles(const char* szFile1, const char* szFile2, const char* szFi
   return XII_SUCCESS;
 }
 
-bool xiiTestImage(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, bool isDepthImage, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...)
+bool xiiTestImage(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, bool bIsDepthImage, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...)
 {
   char szErrorText[s_iMaxErrorMessageLength] = "";
 
-  if (!xiiTestFramework::GetInstance()->CompareImages(uiImageNumber, uiMaxError, szErrorText, isDepthImage))
+  if (!xiiTestFramework::GetInstance()->CompareImages(uiImageNumber, uiMaxError, szErrorText, bIsDepthImage))
   {
     OUTPUT_TEST_ERROR
   }

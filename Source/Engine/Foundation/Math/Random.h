@@ -18,10 +18,10 @@ public:
   void InitializeFromCurrentTime();
 
   /// \brief Serializes the current state
-  void Save(xiiStreamWriter& stream) const; // [tested]
+  void Save(xiiStreamWriter& ref_stream) const; // [tested]
 
   /// \brief Deserializes the current state
-  void Load(xiiStreamReader& stream); // [tested]
+  void Load(xiiStreamReader& ref_stream); // [tested]
 
   /// \brief Returns a uint32 value, ie. ranging from 0 to (2 ^ 32) - 1
   xiiUInt32 UInt(); // [tested]
@@ -105,10 +105,10 @@ public:
   xiiInt32 SignedValue(); // [tested]
 
   /// \brief Serializes the current state
-  void Save(xiiStreamWriter& stream) const; // [tested]
+  void Save(xiiStreamWriter& ref_stream) const; // [tested]
 
   /// \brief Deserializes the current state
-  void Load(xiiStreamReader& stream); // [tested]
+  void Load(xiiStreamReader& ref_stream); // [tested]
 
 private:
   void SetupTable(xiiUInt32 uiMaxValue, float fSigma);

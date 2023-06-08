@@ -83,7 +83,7 @@ class Base : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(Base, xiiReflectedClass);
 
 public:
-  virtual ~Base() {}
+  virtual ~Base() = default;
 
   virtual xiiInt32 Virtual() = 0;
 };
@@ -115,7 +115,7 @@ public:
   XII_NO_INLINE xiiInt32 XII_FASTCALL FastCall() { return 1; }
   XII_NO_INLINE xiiInt32              NonVirtual() { return 1; }
   XII_NO_INLINE virtual xiiInt32      Virtual() override { return 1; }
-  XII_NO_INLINE void                  OnGetValueMessage(GetValueMessage& msg) { msg.m_iValue = 1; }
+  XII_NO_INLINE void                  OnGetValueMessage(GetValueMessage& ref_msg) { ref_msg.m_iValue = 1; }
 };
 
 // clang-format off
@@ -138,7 +138,7 @@ public:
   XII_NO_INLINE xiiInt32 XII_FASTCALL FastCall() { return 2; }
   XII_NO_INLINE xiiInt32              NonVirtual() { return 2; }
   XII_NO_INLINE virtual xiiInt32      Virtual() override { return 2; }
-  XII_NO_INLINE void                  OnGetValueMessage(GetValueMessage& msg) { msg.m_iValue = 2; }
+  XII_NO_INLINE void                  OnGetValueMessage(GetValueMessage& ref_msg) { ref_msg.m_iValue = 2; }
 };
 
 // clang-format off

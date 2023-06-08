@@ -22,7 +22,7 @@ namespace ozz::animation
 
 struct xiiSkeletonJointGeometryType
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -56,9 +56,9 @@ struct XII_RENDERERCORE_DLL xiiMsgAnimationPoseUpdated : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgAnimationPoseUpdated, xiiMessage);
 
-  static void ComputeFullBoneTransform(const xiiMat4& rootTransform, const xiiMat4& modelTransform, xiiMat4& fullTransform, xiiQuat& rotationOnly);
-  void        ComputeFullBoneTransform(xiiUInt32 uiJointIndex, xiiMat4& fullTransform) const;
-  void        ComputeFullBoneTransform(xiiUInt32 uiJointIndex, xiiMat4& fullTransform, xiiQuat& rotationOnly) const;
+  static void ComputeFullBoneTransform(const xiiMat4& mRootTransform, const xiiMat4& mModelTransform, xiiMat4& ref_mFullTransform, xiiQuat& ref_qRotationOnly);
+  void        ComputeFullBoneTransform(xiiUInt32 uiJointIndex, xiiMat4& ref_mFullTransform) const;
+  void        ComputeFullBoneTransform(xiiUInt32 uiJointIndex, xiiMat4& ref_mFullTransform, xiiQuat& ref_qRotationOnly) const;
 
   const xiiTransform*        m_pRootTransform = nullptr;
   const xiiSkeleton*         m_pSkeleton      = nullptr;

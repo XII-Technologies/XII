@@ -31,7 +31,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleBehavior_Bounds, 1, xiiRTTIDefaultAl
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiParticleBehaviorFactory_Bounds::xiiParticleBehaviorFactory_Bounds() {}
+xiiParticleBehaviorFactory_Bounds::xiiParticleBehaviorFactory_Bounds() = default;
 
 const xiiRTTI* xiiParticleBehaviorFactory_Bounds::GetBehaviorType() const
 {

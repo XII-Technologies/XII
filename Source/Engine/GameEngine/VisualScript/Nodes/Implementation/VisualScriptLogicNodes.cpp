@@ -34,8 +34,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_Compare, 1, xiiRTTIDefaultA
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_Compare::xiiVisualScriptNode_Compare() {}
-xiiVisualScriptNode_Compare::~xiiVisualScriptNode_Compare() {}
+xiiVisualScriptNode_Compare::xiiVisualScriptNode_Compare()  = default;
+xiiVisualScriptNode_Compare::~xiiVisualScriptNode_Compare() = default;
 
 void xiiVisualScriptNode_Compare::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -116,8 +116,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_CompareExec, 1, xiiRTTIDefa
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_CompareExec::xiiVisualScriptNode_CompareExec() {}
-xiiVisualScriptNode_CompareExec::~xiiVisualScriptNode_CompareExec() {}
+xiiVisualScriptNode_CompareExec::xiiVisualScriptNode_CompareExec()  = default;
+xiiVisualScriptNode_CompareExec::~xiiVisualScriptNode_CompareExec() = default;
 
 void xiiVisualScriptNode_CompareExec::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -190,8 +190,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_If, 1, xiiRTTIDefaultAlloca
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_If::xiiVisualScriptNode_If() {}
-xiiVisualScriptNode_If::~xiiVisualScriptNode_If() {}
+xiiVisualScriptNode_If::xiiVisualScriptNode_If()  = default;
+xiiVisualScriptNode_If::~xiiVisualScriptNode_If() = default;
 
 void xiiVisualScriptNode_If::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -235,8 +235,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_Logic, 1, xiiRTTIDefaultAll
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_Logic::xiiVisualScriptNode_Logic() {}
-xiiVisualScriptNode_Logic::~xiiVisualScriptNode_Logic() {}
+xiiVisualScriptNode_Logic::xiiVisualScriptNode_Logic()  = default;
+xiiVisualScriptNode_Logic::~xiiVisualScriptNode_Logic() = default;
 
 void xiiVisualScriptNode_Logic::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {

@@ -11,7 +11,7 @@ class XII_TEST_DLL xiiQtTestFramework : public QObject, public xiiTestFramework
 {
   Q_OBJECT
 public:
-  xiiQtTestFramework(const char* szTestName, const char* szAbsTestDir, const char* szRelTestDataDir, int argc, const char** argv);
+  xiiQtTestFramework(const char* szTestName, const char* szAbsTestDir, const char* szRelTestDataDir, int iArgc, const char** pArgv);
   virtual ~xiiQtTestFramework();
 
 private:
@@ -19,7 +19,7 @@ private:
   void operator=(xiiQtTestFramework&);
 
 Q_SIGNALS:
-  void TestResultReceived(qint32 iTestIndex, qint32 iSubTestIndex);
+  void TestResultReceived(qint32 testIndex, qint32 subTestIndex);
 
 protected:
   virtual void OutputImpl(xiiTestOutput::Enum Type, const char* szMsg) override;

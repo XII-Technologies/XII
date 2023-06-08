@@ -75,7 +75,7 @@ public:
   /// The string will be copied to \a tempStorage and the pointer to that is returned.
   /// If you really need the raw pointer to the xiiStringView memory or are absolutely certain that the view points
   /// to a zero-terminated string, you can use
-  const char* GetData(xiiStringBuilder& tempStorage) const; // [tested]
+  const char* GetData(xiiStringBuilder& ref_sTempStorage) const; // [tested]
 
   /// \brief Returns the number of bytes from the start position up to its end.
   ///
@@ -159,11 +159,11 @@ public:
 
   /// Searches for the word szSearchFor. If IsDelimiterCB returns true for both characters in front and back of the word, the position is
   /// returned. Otherwise nullptr.
-  const char* FindWholeWord(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB, const char* szStartSearchAt = nullptr) const; // [tested]
+  const char* FindWholeWord(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB, const char* szStartSearchAt = nullptr) const; // [tested]
 
   /// Searches for the word szSearchFor. If IsDelimiterCB returns true for both characters in front and back of the word, the position is
   /// returned. Otherwise nullptr. Ignores case.
-  const char* FindWholeWord_NoCase(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB, const char* szStartSearchAt = nullptr) const; // [tested]
+  const char* FindWholeWord_NoCase(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB, const char* szStartSearchAt = nullptr) const; // [tested]
 
 
   /// \brief Shrinks the view range by uiShrinkCharsFront characters at the front and by uiShrinkCharsBack characters at the back.
@@ -204,7 +204,7 @@ public:
   /// szSeparator1 to szSeparator6 are strings which act as separators and indicate where to split the string.
   /// This string itself will not be modified.
   template <typename Container>
-  void Split(bool bReturnEmptyStrings, Container& Output, const char* szSeparator1, const char* szSeparator2 = nullptr, const char* szSeparator3 = nullptr, const char* szSeparator4 = nullptr, const char* szSeparator5 = nullptr, const char* szSeparator6 = nullptr) const; // [tested]
+  void Split(bool bReturnEmptyStrings, Container& ref_output, const char* szSeparator1, const char* szSeparator2 = nullptr, const char* szSeparator3 = nullptr, const char* szSeparator4 = nullptr, const char* szSeparator5 = nullptr, const char* szSeparator6 = nullptr) const; // [tested]
 
   /// \brief Returns an iterator to this string, which points to the very first character.
   ///
@@ -276,47 +276,47 @@ private:
 ///
 /// Example:
 /// "Hello World"
-constexpr xiiStringView operator"" _xiisv(const char* pString, size_t len);
+constexpr xiiStringView operator"" _xiisv(const char* pString, size_t uiLen);
 
-XII_ALWAYS_INLINE typename xiiStringView::iterator begin(xiiStringView container)
+XII_ALWAYS_INLINE typename xiiStringView::iterator begin(xiiStringView sContainer)
 {
-  return typename xiiStringView::iterator(container.GetStartPointer(), container.GetEndPointer(), container.GetStartPointer());
+  return typename xiiStringView::iterator(sContainer.GetStartPointer(), sContainer.GetEndPointer(), sContainer.GetStartPointer());
 }
 
-XII_ALWAYS_INLINE typename xiiStringView::const_iterator cbegin(xiiStringView container)
+XII_ALWAYS_INLINE typename xiiStringView::const_iterator cbegin(xiiStringView sContainer)
 {
-  return typename xiiStringView::const_iterator(container.GetStartPointer(), container.GetEndPointer(), container.GetStartPointer());
+  return typename xiiStringView::const_iterator(sContainer.GetStartPointer(), sContainer.GetEndPointer(), sContainer.GetStartPointer());
 }
 
-XII_ALWAYS_INLINE typename xiiStringView::iterator end(xiiStringView container)
+XII_ALWAYS_INLINE typename xiiStringView::iterator end(xiiStringView sContainer)
 {
-  return typename xiiStringView::iterator(container.GetStartPointer(), container.GetEndPointer(), container.GetEndPointer());
+  return typename xiiStringView::iterator(sContainer.GetStartPointer(), sContainer.GetEndPointer(), sContainer.GetEndPointer());
 }
 
-XII_ALWAYS_INLINE typename xiiStringView::const_iterator cend(xiiStringView container)
+XII_ALWAYS_INLINE typename xiiStringView::const_iterator cend(xiiStringView sContainer)
 {
-  return typename xiiStringView::const_iterator(container.GetStartPointer(), container.GetEndPointer(), container.GetEndPointer());
+  return typename xiiStringView::const_iterator(sContainer.GetStartPointer(), sContainer.GetEndPointer(), sContainer.GetEndPointer());
 }
 
 
-XII_ALWAYS_INLINE typename xiiStringView::reverse_iterator rbegin(xiiStringView container)
+XII_ALWAYS_INLINE typename xiiStringView::reverse_iterator rbegin(xiiStringView sContainer)
 {
-  return typename xiiStringView::reverse_iterator(container.GetStartPointer(), container.GetEndPointer(), container.GetEndPointer());
+  return typename xiiStringView::reverse_iterator(sContainer.GetStartPointer(), sContainer.GetEndPointer(), sContainer.GetEndPointer());
 }
 
-XII_ALWAYS_INLINE typename xiiStringView::const_reverse_iterator crbegin(xiiStringView container)
+XII_ALWAYS_INLINE typename xiiStringView::const_reverse_iterator crbegin(xiiStringView sContainer)
 {
-  return typename xiiStringView::const_reverse_iterator(container.GetStartPointer(), container.GetEndPointer(), container.GetEndPointer());
+  return typename xiiStringView::const_reverse_iterator(sContainer.GetStartPointer(), sContainer.GetEndPointer(), sContainer.GetEndPointer());
 }
 
-XII_ALWAYS_INLINE typename xiiStringView::reverse_iterator rend(xiiStringView container)
+XII_ALWAYS_INLINE typename xiiStringView::reverse_iterator rend(xiiStringView sContainer)
 {
-  return typename xiiStringView::reverse_iterator(container.GetStartPointer(), container.GetEndPointer(), nullptr);
+  return typename xiiStringView::reverse_iterator(sContainer.GetStartPointer(), sContainer.GetEndPointer(), nullptr);
 }
 
-XII_ALWAYS_INLINE typename xiiStringView::const_reverse_iterator crend(xiiStringView container)
+XII_ALWAYS_INLINE typename xiiStringView::const_reverse_iterator crend(xiiStringView sContainer)
 {
-  return typename xiiStringView::const_reverse_iterator(container.GetStartPointer(), container.GetEndPointer(), nullptr);
+  return typename xiiStringView::const_reverse_iterator(sContainer.GetStartPointer(), sContainer.GetEndPointer(), nullptr);
 }
 
 #include <Foundation/Strings/Implementation/StringView_inl.h>

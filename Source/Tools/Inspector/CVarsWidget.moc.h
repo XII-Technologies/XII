@@ -14,7 +14,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtCVarsWidget(QWidget* parent = 0);
+  xiiQtCVarsWidget(QWidget* pParent = 0);
 
   static xiiQtCVarsWidget* s_pWidget;
 

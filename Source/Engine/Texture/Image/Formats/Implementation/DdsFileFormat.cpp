@@ -122,46 +122,46 @@ struct xiiDdsCaps2
 static const xiiUInt32 xiiDdsMagic       = 0x20534444;
 static const xiiUInt32 xiiDdsDxt10FourCc = 0x30315844;
 
-static xiiResult ReadImageData(xiiStreamReader& stream, xiiImageHeader& imageHeader, xiiDdsHeader& ddsHeader)
+static xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiImageHeader& ref_imageHeader, xiiDdsHeader& ref_ddsHeader)
 {
-  if (stream.ReadBytes(&ddsHeader, sizeof(xiiDdsHeader)) != sizeof(xiiDdsHeader))
+  if (ref_stream.ReadBytes(&ref_ddsHeader, sizeof(xiiDdsHeader)) != sizeof(xiiDdsHeader))
   {
     xiiLog::Error("Failed to read file header.");
     return XII_FAILURE;
   }
 
-  if (ddsHeader.m_uiMagic != xiiDdsMagic)
+  if (ref_ddsHeader.m_uiMagic != xiiDdsMagic)
   {
     xiiLog::Error("The file is not a recognized DDS file.");
     return XII_FAILURE;
   }
 
-  if (ddsHeader.m_uiSize != 124)
+  if (ref_ddsHeader.m_uiSize != 124)
   {
-    xiiLog::Error("The file header size {0} doesn't match the expected size of 124.", ddsHeader.m_uiSize);
+    xiiLog::Error("The file header size {0} doesn't match the expected size of 124.", ref_ddsHeader.m_uiSize);
     return XII_FAILURE;
   }
 
   // Required in every .dds file. According to the spec, CAPS and PIXELFORMAT are also required, but D3DX outputs
   // files not conforming to this.
-  if ((ddsHeader.m_uiFlags & xiiDdsdFlags::WIDTH) == 0 || (ddsHeader.m_uiFlags & xiiDdsdFlags::HEIGHT) == 0)
+  if ((ref_ddsHeader.m_uiFlags & xiiDdsdFlags::WIDTH) == 0 || (ref_ddsHeader.m_uiFlags & xiiDdsdFlags::HEIGHT) == 0)
   {
     xiiLog::Error("The file header doesn't specify the mandatory WIDTH or HEIGHT flag.");
     return XII_FAILURE;
   }
 
-  if ((ddsHeader.m_uiCaps & xiiDdsCaps::TEXTURE) == 0)
+  if ((ref_ddsHeader.m_uiCaps & xiiDdsCaps::TEXTURE) == 0)
   {
     xiiLog::Error("The file header doesn't specify the mandatory TEXTURE flag.");
     return XII_FAILURE;
   }
 
-  imageHeader.SetWidth(ddsHeader.m_uiWidth);
-  imageHeader.SetHeight(ddsHeader.m_uiHeight);
+  ref_imageHeader.SetWidth(ref_ddsHeader.m_uiWidth);
+  ref_imageHeader.SetHeight(ref_ddsHeader.m_uiHeight);
 
-  if (ddsHeader.m_ddspf.m_uiSize != 32)
+  if (ref_ddsHeader.m_ddspf.m_uiSize != 32)
   {
-    xiiLog::Error("The pixel format size {0} doesn't match the expected value of 32.", ddsHeader.m_ddspf.m_uiSize);
+    xiiLog::Error("The pixel format size {0} doesn't match the expected value of 32.", ref_ddsHeader.m_ddspf.m_uiSize);
     return XII_FAILURE;
   }
 
@@ -170,34 +170,34 @@ static xiiResult ReadImageData(xiiStreamReader& stream, xiiImageHeader& imageHea
   xiiImageFormat::Enum format = xiiImageFormat::UNKNOWN;
 
   // Data format specified in RGBA masks
-  if ((ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHAPIXELS) != 0 || (ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::RGB) != 0 ||
-      (ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHA) != 0)
+  if ((ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHAPIXELS) != 0 || (ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::RGB) != 0 ||
+      (ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHA) != 0)
   {
-    format = xiiImageFormat::FromPixelMask(ddsHeader.m_ddspf.m_uiRBitMask, ddsHeader.m_ddspf.m_uiGBitMask, ddsHeader.m_ddspf.m_uiBBitMask,
-                                           ddsHeader.m_ddspf.m_uiABitMask, ddsHeader.m_ddspf.m_uiRGBBitCount);
+    format = xiiImageFormat::FromPixelMask(ref_ddsHeader.m_ddspf.m_uiRBitMask, ref_ddsHeader.m_ddspf.m_uiGBitMask, ref_ddsHeader.m_ddspf.m_uiBBitMask,
+                                           ref_ddsHeader.m_ddspf.m_uiABitMask, ref_ddsHeader.m_ddspf.m_uiRGBBitCount);
 
     if (format == xiiImageFormat::UNKNOWN)
     {
       xiiLog::Error("The pixel mask specified was not recognized (R: {0}, G: {1}, B: {2}, A: {3}, Bpp: {4}).",
-                    xiiArgU(ddsHeader.m_ddspf.m_uiRBitMask, 1, false, 16), xiiArgU(ddsHeader.m_ddspf.m_uiGBitMask, 1, false, 16),
-                    xiiArgU(ddsHeader.m_ddspf.m_uiBBitMask, 1, false, 16), xiiArgU(ddsHeader.m_ddspf.m_uiABitMask, 1, false, 16),
-                    ddsHeader.m_ddspf.m_uiRGBBitCount);
+                    xiiArgU(ref_ddsHeader.m_ddspf.m_uiRBitMask, 1, false, 16), xiiArgU(ref_ddsHeader.m_ddspf.m_uiGBitMask, 1, false, 16),
+                    xiiArgU(ref_ddsHeader.m_ddspf.m_uiBBitMask, 1, false, 16), xiiArgU(ref_ddsHeader.m_ddspf.m_uiABitMask, 1, false, 16),
+                    ref_ddsHeader.m_ddspf.m_uiRGBBitCount);
       return XII_FAILURE;
     }
 
     // Verify that the format we found is correct
-    if (xiiImageFormat::GetBitsPerPixel(format) != ddsHeader.m_ddspf.m_uiRGBBitCount)
+    if (xiiImageFormat::GetBitsPerPixel(format) != ref_ddsHeader.m_ddspf.m_uiRGBBitCount)
     {
       xiiLog::Error("The number of bits per pixel specified in the file ({0}) does not match the expected value of {1} for the format '{2}'.",
-                    ddsHeader.m_ddspf.m_uiRGBBitCount, xiiImageFormat::GetBitsPerPixel(format), xiiImageFormat::GetName(format));
+                    ref_ddsHeader.m_ddspf.m_uiRGBBitCount, xiiImageFormat::GetBitsPerPixel(format), xiiImageFormat::GetName(format));
       return XII_FAILURE;
     }
   }
-  else if ((ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::FOURCC) != 0)
+  else if ((ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::FOURCC) != 0)
   {
-    if (ddsHeader.m_ddspf.m_uiFourCC == xiiDdsDxt10FourCc)
+    if (ref_ddsHeader.m_ddspf.m_uiFourCC == xiiDdsDxt10FourCc)
     {
-      if (stream.ReadBytes(&headerDxt10, sizeof(xiiDdsHeaderDxt10)) != sizeof(xiiDdsHeaderDxt10))
+      if (ref_stream.ReadBytes(&headerDxt10, sizeof(xiiDdsHeaderDxt10)) != sizeof(xiiDdsHeaderDxt10))
       {
         xiiLog::Error("Failed to read file header.");
         return XII_FAILURE;
@@ -213,13 +213,13 @@ static xiiResult ReadImageData(xiiStreamReader& stream, xiiImageHeader& imageHea
     }
     else
     {
-      format = xiiImageFormatMappings::FromFourCc(ddsHeader.m_ddspf.m_uiFourCC);
+      format = xiiImageFormatMappings::FromFourCc(ref_ddsHeader.m_ddspf.m_uiFourCC);
 
       if (format == xiiImageFormat::UNKNOWN)
       {
-        xiiLog::Error("The FourCC code '{0}{1}{2}{3}' was not recognized.", xiiArgC((char)(ddsHeader.m_ddspf.m_uiFourCC >> 0)),
-                      xiiArgC((char)(ddsHeader.m_ddspf.m_uiFourCC >> 8)), xiiArgC((char)(ddsHeader.m_ddspf.m_uiFourCC >> 16)),
-                      xiiArgC((char)(ddsHeader.m_ddspf.m_uiFourCC >> 24)));
+        xiiLog::Error("The FourCC code '{0}{1}{2}{3}' was not recognized.", xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 0)),
+                      xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 8)), xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 16)),
+                      xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 24)));
         return XII_FAILURE;
       }
     }
@@ -230,16 +230,16 @@ static xiiResult ReadImageData(xiiStreamReader& stream, xiiImageHeader& imageHea
     return XII_FAILURE;
   }
 
-  imageHeader.SetImageFormat(format);
+  ref_imageHeader.SetImageFormat(format);
 
-  const bool bHasMipMaps = (ddsHeader.m_uiCaps & xiiDdsCaps::MIPMAP) != 0;
-  const bool bCubeMap    = (ddsHeader.m_uiCaps2 & xiiDdsCaps2::CUBEMAP) != 0;
-  const bool bVolume     = (ddsHeader.m_uiCaps2 & xiiDdsCaps2::VOLUME) != 0;
+  const bool bHasMipMaps = (ref_ddsHeader.m_uiCaps & xiiDdsCaps::MIPMAP) != 0;
+  const bool bCubeMap    = (ref_ddsHeader.m_uiCaps2 & xiiDdsCaps2::CUBEMAP) != 0;
+  const bool bVolume     = (ref_ddsHeader.m_uiCaps2 & xiiDdsCaps2::VOLUME) != 0;
 
 
   if (bHasMipMaps)
   {
-    imageHeader.SetNumMipLevels(ddsHeader.m_uiMipMapCount);
+    ref_imageHeader.SetNumMipLevels(ref_ddsHeader.m_uiMipMapCount);
   }
 
   // Cubemap and volume texture are mutually exclusive
@@ -251,46 +251,46 @@ static xiiResult ReadImageData(xiiStreamReader& stream, xiiImageHeader& imageHea
 
   if (bCubeMap)
   {
-    imageHeader.SetNumFaces(6);
+    ref_imageHeader.SetNumFaces(6);
   }
   else if (bVolume)
   {
-    imageHeader.SetDepth(ddsHeader.m_uiDepth);
+    ref_imageHeader.SetDepth(ref_ddsHeader.m_uiDepth);
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiDdsFileFormat::ReadImageHeader(xiiStreamReader& stream, xiiImageHeader& header, const char* szFileExtension) const
+xiiResult xiiDdsFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImageHeader");
 
   xiiDdsHeader ddsHeader;
-  return ReadImageData(stream, header, ddsHeader);
+  return ReadImageData(ref_stream, ref_header, ddsHeader);
 }
 
-xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, const char* szFileExtension) const
+xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, const char* szFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImage");
 
   xiiImageHeader imageHeader;
   xiiDdsHeader   ddsHeader;
-  XII_SUCCEED_OR_RETURN(ReadImageData(stream, imageHeader, ddsHeader));
+  XII_SUCCEED_OR_RETURN(ReadImageData(ref_stream, imageHeader, ddsHeader));
 
-  image.ResetAndAlloc(imageHeader);
+  ref_image.ResetAndAlloc(imageHeader);
 
   const bool bPitch = (ddsHeader.m_uiFlags & xiiDdsdFlags::PITCH) != 0;
 
   // If pitch is specified, it must match the computed value
-  if (bPitch && image.GetRowPitch(0) != ddsHeader.m_uiPitchOrLinearSize)
+  if (bPitch && ref_image.GetRowPitch(0) != ddsHeader.m_uiPitchOrLinearSize)
   {
     xiiLog::Error("The row pitch specified in the header doesn't match the expected pitch.");
     return XII_FAILURE;
   }
 
-  xiiUInt64 uiDataSize = image.GetByteBlobPtr().GetCount();
+  xiiUInt64 uiDataSize = ref_image.GetByteBlobPtr().GetCount();
 
-  if (stream.ReadBytes(image.GetByteBlobPtr().GetPtr(), uiDataSize) != uiDataSize)
+  if (ref_stream.ReadBytes(ref_image.GetByteBlobPtr().GetPtr(), uiDataSize) != uiDataSize)
   {
     xiiLog::Error("Failed to read image data.");
     return XII_FAILURE;
@@ -299,7 +299,7 @@ xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
   return XII_SUCCESS;
 }
 
-xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageView& image, const char* szFileExtension) const
+xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, const char* szFileExtension) const
 {
   const xiiImageFormat::Enum format = image.GetImageFormat();
   const xiiUInt32            uiBpp  = xiiImageFormat::GetBitsPerPixel(format);
@@ -488,7 +488,7 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageVi
     headerDxt10.m_uiMiscFlags2 = 0;
   }
 
-  if (stream.WriteBytes(&fileHeader, sizeof(fileHeader)) != XII_SUCCESS)
+  if (ref_stream.WriteBytes(&fileHeader, sizeof(fileHeader)) != XII_SUCCESS)
   {
     xiiLog::Error("Failed to write image header.");
     return XII_FAILURE;
@@ -496,14 +496,14 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageVi
 
   if (bDxt10)
   {
-    if (stream.WriteBytes(&headerDxt10, sizeof(headerDxt10)) != XII_SUCCESS)
+    if (ref_stream.WriteBytes(&headerDxt10, sizeof(headerDxt10)) != XII_SUCCESS)
     {
       xiiLog::Error("Failed to write image DX10 header.");
       return XII_FAILURE;
     }
   }
 
-  if (stream.WriteBytes(image.GetByteBlobPtr().GetPtr(), image.GetByteBlobPtr().GetCount()) != XII_SUCCESS)
+  if (ref_stream.WriteBytes(image.GetByteBlobPtr().GetPtr(), image.GetByteBlobPtr().GetCount()) != XII_SUCCESS)
   {
     xiiLog::Error("Failed to write image data.");
     return XII_FAILURE;

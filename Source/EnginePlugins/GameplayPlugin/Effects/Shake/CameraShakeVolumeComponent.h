@@ -17,8 +17,8 @@ class XII_GAMEPLAYPLUGIN_DLL xiiCameraShakeVolumeComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;
@@ -37,9 +37,9 @@ public:
   xiiTime m_BurstDuration; // [ property ]
   float   m_fStrength;     // [ property ]
 
-  float ComputeForceAtGlobalPosition(const xiiSimdVec4f& globalPos) const;
+  float ComputeForceAtGlobalPosition(const xiiSimdVec4f& vGlobalPos) const;
 
-  virtual float ComputeForceAtLocalPosition(const xiiSimdVec4f& localPos) const = 0;
+  virtual float ComputeForceAtLocalPosition(const xiiSimdVec4f& vLocalPos) const = 0;
 
   xiiEnum<xiiOnComponentFinishedAction> m_OnFinishedAction; // [ property ]
 
@@ -62,8 +62,8 @@ class XII_GAMEPLAYPLUGIN_DLL xiiCameraShakeVolumeSphereComponent : public xiiCam
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiCameraShakeVolumeSphereComponent
@@ -72,10 +72,10 @@ public:
   xiiCameraShakeVolumeSphereComponent();
   ~xiiCameraShakeVolumeSphereComponent();
 
-  virtual float ComputeForceAtLocalPosition(const xiiSimdVec4f& localPos) const override;
+  virtual float ComputeForceAtLocalPosition(const xiiSimdVec4f& vLocalPos) const override;
 
   float GetRadius() const { return m_fRadius; } // [ property ]
-  void  SetRadius(float val);                   // [ property ]
+  void  SetRadius(float fVal);                  // [ property ]
 
 private:
   void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg);

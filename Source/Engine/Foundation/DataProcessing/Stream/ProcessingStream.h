@@ -45,9 +45,9 @@ public:
   };
 
   xiiProcessingStream();
-  xiiProcessingStream(const xiiHashedString& sName, DataType Type, xiiUInt16 uiStride, xiiUInt16 uiAlignment);
-  xiiProcessingStream(const xiiHashedString& sName, xiiArrayPtr<xiiUInt8> data, DataType Type, xiiUInt16 uiStride);
-  xiiProcessingStream(const xiiHashedString& sName, xiiArrayPtr<xiiUInt8> data, DataType Type);
+  xiiProcessingStream(const xiiHashedString& sName, DataType type, xiiUInt16 uiStride, xiiUInt16 uiAlignment);
+  xiiProcessingStream(const xiiHashedString& sName, xiiArrayPtr<xiiUInt8> data, DataType type, xiiUInt16 uiStride);
+  xiiProcessingStream(const xiiHashedString& sName, xiiArrayPtr<xiiUInt8> data, DataType type);
   ~xiiProcessingStream();
 
   /// \brief Returns a const pointer to the data casted to the type T, note that no type check is done!
@@ -87,8 +87,8 @@ public:
   /// \brief Returns the stride between two elements of the stream in bytes.
   xiiUInt16 GetElementStride() const { return m_uiStride; }
 
-  static xiiUInt16     GetDataTypeSize(DataType Type);
-  static xiiStringView GetDataTypeName(DataType Type);
+  static xiiUInt16     GetDataTypeSize(DataType type);
+  static xiiStringView GetDataTypeName(DataType type);
 
 protected:
   friend class xiiProcessingStreamGroup;

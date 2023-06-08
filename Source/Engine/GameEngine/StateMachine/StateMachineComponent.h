@@ -33,11 +33,11 @@ public:
   xiiStateMachineState_SendMsg(xiiStringView sName = xiiStringView());
   ~xiiStateMachineState_SendMsg();
 
-  virtual void OnEnter(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pFromState) const override;
-  virtual void OnExit(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pToState) const override;
+  virtual void OnEnter(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pFromState) const override;
+  virtual void OnExit(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pToState) const override;
 
-  virtual xiiResult Serialize(xiiStreamWriter& stream) const override;
-  virtual xiiResult Deserialize(xiiStreamReader& stream) override;
+  virtual xiiResult Serialize(xiiStreamWriter& ref_stream) const override;
+  virtual xiiResult Deserialize(xiiStreamReader& ref_stream) override;
 
   xiiTime m_MessageDelay;
 
@@ -73,10 +73,10 @@ public:
   xiiStateMachineState_SwitchObject(xiiStringView sName = xiiStringView());
   ~xiiStateMachineState_SwitchObject();
 
-  virtual void OnEnter(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pFromState) const override;
+  virtual void OnEnter(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pFromState) const override;
 
-  virtual xiiResult Serialize(xiiStreamWriter& stream) const override;
-  virtual xiiResult Deserialize(xiiStreamReader& stream) override;
+  virtual xiiResult Serialize(xiiStreamWriter& ref_stream) const override;
+  virtual xiiResult Deserialize(xiiStreamReader& ref_stream) override;
 
   xiiString m_sGroupPath;
   xiiString m_sObjectToEnable;
@@ -112,8 +112,8 @@ class XII_GAMEENGINE_DLL xiiStateMachineComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;

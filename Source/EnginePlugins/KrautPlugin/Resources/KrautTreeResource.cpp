@@ -191,22 +191,22 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiKrautTreeResource, xiiKrautTreeResourceDesc
 
 //////////////////////////////////////////////////////////////////////////
 
-void xiiKrautTreeResourceDescriptor::Save(xiiStreamWriter& stream0) const
+void xiiKrautTreeResourceDescriptor::Save(xiiStreamWriter& ref_stream0) const
 {
   xiiUInt8 uiVersion = 15;
 
-  stream0 << uiVersion;
+  ref_stream0 << uiVersion;
 
   xiiUInt8 uiCompressionMode = 0;
 
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
   uiCompressionMode = 1;
-  xiiCompressedStreamWriterZstd stream(&stream0, xiiCompressedStreamWriterZstd::Compression::Average);
+  xiiCompressedStreamWriterZstd stream(&ref_stream0, xiiCompressedStreamWriterZstd::Compression::Average);
 #else
   xiiStreamWriter& stream = stream0;
 #endif
 
-  stream0 << uiCompressionMode;
+  ref_stream0 << uiCompressionMode;
 
   const xiiUInt8 uiNumLods = static_cast<xiiUInt8>(m_Lods.GetCount());
   stream << uiNumLods;
@@ -274,19 +274,19 @@ void xiiKrautTreeResourceDescriptor::Save(xiiStreamWriter& stream0) const
 #endif
 }
 
-xiiResult xiiKrautTreeResourceDescriptor::Load(xiiStreamReader& stream0)
+xiiResult xiiKrautTreeResourceDescriptor::Load(xiiStreamReader& ref_stream0)
 {
   xiiUInt8 uiVersion = 0;
 
-  stream0 >> uiVersion;
+  ref_stream0 >> uiVersion;
 
   if (uiVersion < 15)
     return XII_FAILURE;
 
   xiiUInt8 uiCompressionMode = 0;
-  stream0 >> uiCompressionMode;
+  ref_stream0 >> uiCompressionMode;
 
-  xiiStreamReader* pCompressor = &stream0;
+  xiiStreamReader* pCompressor = &ref_stream0;
 
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
   xiiCompressedStreamReaderZstd decompressorZstd;
@@ -299,7 +299,7 @@ xiiResult xiiKrautTreeResourceDescriptor::Load(xiiStreamReader& stream0)
 
     case 1:
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-      decompressorZstd.SetInputStream(&stream0);
+      decompressorZstd.SetInputStream(&ref_stream0);
       pCompressor = &decompressorZstd;
       break;
 #else

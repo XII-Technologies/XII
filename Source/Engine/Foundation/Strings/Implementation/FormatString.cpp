@@ -32,141 +32,141 @@ const char* xiiFormatString::SBReturn(xiiStringBuilder& sb)
   return sb.GetData();
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgI& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgI& arg)
 {
   xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedInt(tmp, uiLength, writepos, arg.m_Value, arg.m_uiWidth, arg.m_bPadWithZeros, arg.m_uiBase);
-  tmp[writepos] = '\0';
-  return xiiStringView(tmp, tmp + writepos);
+  xiiStringUtils::OutputFormattedInt(szTmp, uiLength, writepos, arg.m_Value, arg.m_uiWidth, arg.m_bPadWithZeros, arg.m_uiBase);
+  szTmp[writepos] = '\0';
+  return xiiStringView(szTmp, szTmp + writepos);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, xiiInt64 arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiInt64 iArg)
 {
   xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedInt(tmp, uiLength, writepos, arg, 1, false, 10);
-  tmp[writepos] = '\0';
-  return xiiStringView(tmp, tmp + writepos);
+  xiiStringUtils::OutputFormattedInt(szTmp, uiLength, writepos, iArg, 1, false, 10);
+  szTmp[writepos] = '\0';
+  return xiiStringView(szTmp, szTmp + writepos);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, xiiInt32 arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiInt32 iArg)
 {
-  return BuildString(tmp, uiLength, (xiiInt64)arg);
+  return BuildString(szTmp, uiLength, (xiiInt64)iArg);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgU& arg)
-{
-  xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedUInt(tmp, uiLength, writepos, arg.m_Value, arg.m_uiWidth, arg.m_bPadWithZeros, arg.m_uiBase, arg.m_bUpperCase);
-  tmp[writepos] = '\0';
-  return xiiStringView(tmp, tmp + writepos);
-}
-
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, xiiUInt64 arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgU& arg)
 {
   xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedUInt(tmp, uiLength, writepos, arg, 1, false, 10, false);
-  tmp[writepos] = '\0';
-  return xiiStringView(tmp, tmp + writepos);
+  xiiStringUtils::OutputFormattedUInt(szTmp, uiLength, writepos, arg.m_Value, arg.m_uiWidth, arg.m_bPadWithZeros, arg.m_uiBase, arg.m_bUpperCase);
+  szTmp[writepos] = '\0';
+  return xiiStringView(szTmp, szTmp + writepos);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, xiiUInt32 arg)
-{
-  return BuildString(tmp, uiLength, (xiiUInt64)arg);
-}
-
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgF& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiUInt64 uiArg)
 {
   xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedFloat(tmp, uiLength, writepos, arg.m_Value, arg.m_uiWidth, arg.m_bPadWithZeros, arg.m_iPrecision, arg.m_bScientific);
-  tmp[writepos] = '\0';
-  return xiiStringView(tmp, tmp + writepos);
+  xiiStringUtils::OutputFormattedUInt(szTmp, uiLength, writepos, uiArg, 1, false, 10, false);
+  szTmp[writepos] = '\0';
+  return xiiStringView(szTmp, szTmp + writepos);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, double arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiUInt32 uiArg)
+{
+  return BuildString(szTmp, uiLength, (xiiUInt64)uiArg);
+}
+
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgF& arg)
 {
   xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedFloat(tmp, uiLength, writepos, arg, 1, false, -1, false);
-  tmp[writepos] = '\0';
-  return xiiStringView(tmp, tmp + writepos);
+  xiiStringUtils::OutputFormattedFloat(szTmp, uiLength, writepos, arg.m_Value, arg.m_uiWidth, arg.m_bPadWithZeros, arg.m_iPrecision, arg.m_bScientific);
+  szTmp[writepos] = '\0';
+  return xiiStringView(szTmp, szTmp + writepos);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, bool arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, double fArg)
 {
-  if (arg)
+  xiiUInt32 writepos = 0;
+  xiiStringUtils::OutputFormattedFloat(szTmp, uiLength, writepos, fArg, 1, false, -1, false);
+  szTmp[writepos] = '\0';
+  return xiiStringView(szTmp, szTmp + writepos);
+}
+
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, bool bArg)
+{
+  if (bArg)
     return "true";
 
   return "false";
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const char* arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const char* szArg)
 {
-  return arg;
+  return szArg;
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const wchar_t* arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const wchar_t* pArg)
 {
-  const char* start = tmp;
-  if (arg != nullptr)
+  const char* start = szTmp;
+  if (pArg != nullptr)
   {
     // Code points in UTF-8 can be up to 4 byte, so the end pointer is 3 byte "earlier" than for
     // for a single byte character. One byte for trailing zero is already accounted for in uiLength.
-    const char* tmpEnd = tmp + uiLength - 3u;
-    while (*arg != '\0' && tmp < tmpEnd)
+    const char* tmpEnd = szTmp + uiLength - 3u;
+    while (*pArg != '\0' && szTmp < tmpEnd)
     {
       // decode utf8 to utf32
-      const xiiUInt32 uiUtf32 = xiiUnicodeUtils::DecodeWCharToUtf32(arg);
+      const xiiUInt32 uiUtf32 = xiiUnicodeUtils::DecodeWCharToUtf32(pArg);
 
       // encode utf32 to wchar_t
-      xiiUnicodeUtils::EncodeUtf32ToUtf8(uiUtf32, tmp);
+      xiiUnicodeUtils::EncodeUtf32ToUtf8(uiUtf32, szTmp);
     }
   }
 
   // Append terminator. As the extra byte for trailing zero is accounted for in uiLength, this is safe.
-  *tmp = '\0';
+  *szTmp = '\0';
 
   return start;
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiString& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiString& sArg)
 {
-  return xiiStringView(arg.GetData(), arg.GetData() + arg.GetElementCount());
+  return xiiStringView(sArg.GetData(), sArg.GetData() + sArg.GetElementCount());
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiHashedString& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiHashedString& sArg)
 {
-  return xiiStringView(arg.GetData(), arg.GetData() + arg.GetString().GetElementCount());
+  return xiiStringView(sArg.GetData(), sArg.GetData() + sArg.GetString().GetElementCount());
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiStringBuilder& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiStringBuilder& sArg)
 {
-  return xiiStringView(arg.GetData(), arg.GetData() + arg.GetElementCount());
+  return xiiStringView(sArg.GetData(), sArg.GetData() + sArg.GetElementCount());
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiUntrackedString& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiUntrackedString& sArg)
 {
-  return xiiStringView(arg.GetData(), arg.GetData() + arg.GetElementCount());
+  return xiiStringView(sArg.GetData(), sArg.GetData() + sArg.GetElementCount());
 }
 
-const xiiStringView& BuildString(char* tmp, xiiUInt32 uiLength, const xiiStringView& arg)
+const xiiStringView& BuildString(char* szTmp, xiiUInt32 uiLength, const xiiStringView& sArg)
 {
-  return arg;
+  return sArg;
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgC& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgC& arg)
 {
-  tmp[0] = arg.m_Value;
-  tmp[1] = '\0';
+  szTmp[0] = arg.m_Value;
+  szTmp[1] = '\0';
 
-  return xiiStringView(&tmp[0], &tmp[1]);
+  return xiiStringView(&szTmp[0], &szTmp[1]);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgP& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgP& arg)
 {
-  xiiStringUtils::snprintf(tmp, uiLength, "%p", arg.m_Value);
-  return xiiStringView(tmp);
+  xiiStringUtils::snprintf(szTmp, uiLength, "%p", arg.m_Value);
+  return xiiStringView(szTmp);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, xiiResult arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiResult arg)
 {
   if (arg.Failed())
     return "<failed>";
@@ -174,58 +174,58 @@ xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, xiiResult arg)
     return "<succeeded>";
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiVariant& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiVariant& arg)
 {
   xiiString sString = arg.ConvertTo<xiiString>();
-  xiiStringUtils::snprintf(tmp, uiLength, "%s", sString.GetData());
-  return xiiStringView(tmp);
+  xiiStringUtils::snprintf(szTmp, uiLength, "%s", sString.GetData());
+  return xiiStringView(szTmp);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiAngleTemplate<float>& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiAngleTemplate<float>& arg)
 {
   xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedFloat(tmp, uiLength - 2, writepos, arg.GetDegree(), 1, false, 1, false);
+  xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 2, writepos, arg.GetDegree(), 1, false, 1, false);
 
   // Utf-8 representation of the degree sign
-  tmp[writepos + 0] = (char)0xC2;
-  tmp[writepos + 1] = (char)0xB0;
-  tmp[writepos + 2] = '\0';
+  szTmp[writepos + 0] = (char)0xC2;
+  szTmp[writepos + 1] = (char)0xB0;
+  szTmp[writepos + 2] = '\0';
 
-  return xiiStringView(tmp, tmp + writepos + 2);
+  return xiiStringView(szTmp, szTmp + writepos + 2);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiAngleTemplate<double>& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiAngleTemplate<double>& arg)
 {
   xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedFloat(tmp, uiLength - 2, writepos, arg.GetDegree(), 1, false, 1, false);
+  xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 2, writepos, arg.GetDegree(), 1, false, 1, false);
 
   // Utf-8 representation of the degree sign
-  tmp[writepos + 0] = (char)0xC2;
-  tmp[writepos + 1] = (char)0xB0;
-  tmp[writepos + 2] = '\0';
+  szTmp[writepos + 0] = (char)0xC2;
+  szTmp[writepos + 1] = (char)0xB0;
+  szTmp[writepos + 2] = '\0';
 
-  return xiiStringView(tmp, tmp + writepos + 2);
+  return xiiStringView(szTmp, szTmp + writepos + 2);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiRational& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiRational& arg)
 {
   xiiUInt32 writepos = 0;
 
   if (arg.IsIntegral())
   {
-    xiiStringUtils::OutputFormattedInt(tmp, uiLength, writepos, arg.GetIntegralResult(), 1, false, 10);
+    xiiStringUtils::OutputFormattedInt(szTmp, uiLength, writepos, arg.GetIntegralResult(), 1, false, 10);
 
-    return xiiStringView(tmp, tmp + writepos);
+    return xiiStringView(szTmp, szTmp + writepos);
   }
   else
   {
-    xiiStringUtils::snprintf(tmp, uiLength, "%i/%i", arg.GetNumerator(), arg.GetDenominator());
+    xiiStringUtils::snprintf(szTmp, uiLength, "%i/%i", arg.GetNumerator(), arg.GetDenominator());
 
-    return xiiStringView(tmp);
+    return xiiStringView(szTmp);
   }
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiTime& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiTime& arg)
 {
   xiiUInt32 writepos = 0;
 
@@ -233,37 +233,37 @@ xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiTime& arg)
 
   if (fAbsSec < 0.000001)
   {
-    xiiStringUtils::OutputFormattedFloat(tmp, uiLength - 5, writepos, arg.GetNanoseconds(), 1, false, 1, false, true);
+    xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 5, writepos, arg.GetNanoseconds(), 1, false, 1, false, true);
     // tmp[writepos++] = ' ';
-    tmp[writepos++] = 'n';
-    tmp[writepos++] = 's';
+    szTmp[writepos++] = 'n';
+    szTmp[writepos++] = 's';
   }
   else if (fAbsSec < 0.001)
   {
-    xiiStringUtils::OutputFormattedFloat(tmp, uiLength - 5, writepos, arg.GetMicroseconds(), 1, false, 1, false, true);
+    xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 5, writepos, arg.GetMicroseconds(), 1, false, 1, false, true);
 
     // tmp[writepos++] = ' ';
     // Utf-8 representation of the microsecond (us) sign
-    tmp[writepos++] = (char)0xC2;
-    tmp[writepos++] = (char)0xB5;
-    tmp[writepos++] = 's';
+    szTmp[writepos++] = (char)0xC2;
+    szTmp[writepos++] = (char)0xB5;
+    szTmp[writepos++] = 's';
   }
   else if (fAbsSec < 1.0)
   {
-    xiiStringUtils::OutputFormattedFloat(tmp, uiLength - 5, writepos, arg.GetMilliseconds(), 1, false, 1, false, true);
+    xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 5, writepos, arg.GetMilliseconds(), 1, false, 1, false, true);
 
     // tmp[writepos++] = ' ';
-    tmp[writepos++] = 'm';
-    tmp[writepos++] = 's';
+    szTmp[writepos++] = 'm';
+    szTmp[writepos++] = 's';
   }
   else if (fAbsSec < 60.0)
   {
-    xiiStringUtils::OutputFormattedFloat(tmp, uiLength - 5, writepos, arg.GetSeconds(), 1, false, 1, false, true);
+    xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 5, writepos, arg.GetSeconds(), 1, false, 1, false, true);
 
     // tmp[writepos++] = ' ';
-    tmp[writepos++] = 's';
-    tmp[writepos++] = 'e';
-    tmp[writepos++] = 'c';
+    szTmp[writepos++] = 's';
+    szTmp[writepos++] = 'e';
+    szTmp[writepos++] = 'c';
   }
   else if (fAbsSec < 60.0 * 60.0)
   {
@@ -275,7 +275,7 @@ xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiTime& arg)
 
     const xiiInt32 iSec = static_cast<xiiInt32>(xiiMath::Trunc(tRem));
 
-    writepos = xiiStringUtils::snprintf(tmp, uiLength, "%imin %isec", iMin, iSec);
+    writepos = xiiStringUtils::snprintf(szTmp, uiLength, "%imin %isec", iMin, iSec);
   }
   else
   {
@@ -290,14 +290,14 @@ xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiTime& arg)
 
     const xiiInt32 iSec = static_cast<xiiInt32>(xiiMath::Trunc(tRem));
 
-    writepos = xiiStringUtils::snprintf(tmp, uiLength, "%ih %imin %isec", iHrs, iMin, iSec);
+    writepos = xiiStringUtils::snprintf(szTmp, uiLength, "%ih %imin %isec", iHrs, iMin, iSec);
   }
 
-  tmp[writepos] = '\0';
-  return xiiStringView(tmp, tmp + writepos);
+  szTmp[writepos] = '\0';
+  return xiiStringView(szTmp, szTmp + writepos);
 }
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgHumanReadable& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgHumanReadable& arg)
 {
   xiiUInt32 suffixIndex = 0;
   xiiUInt64 divider     = 1;
@@ -311,30 +311,30 @@ xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgHumanReadab
   xiiUInt32 writepos = 0;
   if (divider == 1 && xiiMath::Fraction(arg.m_Value) == 0.0)
   {
-    xiiStringUtils::OutputFormattedInt(tmp, uiLength, writepos, static_cast<xiiInt64>(arg.m_Value), 1, false, 10);
+    xiiStringUtils::OutputFormattedInt(szTmp, uiLength, writepos, static_cast<xiiInt64>(arg.m_Value), 1, false, 10);
   }
   else
   {
-    xiiStringUtils::OutputFormattedFloat(tmp, uiLength, writepos, arg.m_Value / divider, 1, false, 2, false);
+    xiiStringUtils::OutputFormattedFloat(szTmp, uiLength, writepos, arg.m_Value / divider, 1, false, 2, false);
   }
-  xiiStringUtils::Copy(tmp + writepos, uiLength - writepos, arg.m_Suffixes[suffixIndex]);
+  xiiStringUtils::Copy(szTmp + writepos, uiLength - writepos, arg.m_Suffixes[suffixIndex]);
 
-  return xiiStringView(tmp);
+  return xiiStringView(szTmp);
 }
 
 xiiArgSensitive::BuildStringCallback xiiArgSensitive::s_BuildStringCB = nullptr;
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgSensitive& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgSensitive& arg)
 {
   if (xiiArgSensitive::s_BuildStringCB)
   {
-    return xiiArgSensitive::s_BuildStringCB(tmp, uiLength, arg);
+    return xiiArgSensitive::s_BuildStringCB(szTmp, uiLength, arg);
   }
 
   return arg.m_sSensitiveInfo;
 }
 
-xiiStringView xiiArgSensitive::BuildString_SensitiveUserData_Hash(char* tmp, xiiUInt32 uiLength, const xiiArgSensitive& arg)
+xiiStringView xiiArgSensitive::BuildString_SensitiveUserData_Hash(char* szTmp, xiiUInt32 uiLength, const xiiArgSensitive& arg)
 {
   const xiiUInt32 len = arg.m_sSensitiveInfo.GetElementCount();
 
@@ -344,28 +344,28 @@ xiiStringView xiiArgSensitive::BuildString_SensitiveUserData_Hash(char* tmp, xii
   if (!xiiStringUtils::IsNullOrEmpty(arg.m_szContext))
   {
     xiiStringUtils::snprintf(
-      tmp, uiLength, "sud:%s#%08x($%u)", arg.m_szContext, xiiHashingUtils::xxHash32(arg.m_sSensitiveInfo.GetStartPointer(), len), len);
+      szTmp, uiLength, "sud:%s#%08x($%u)", arg.m_szContext, xiiHashingUtils::xxHash32(arg.m_sSensitiveInfo.GetStartPointer(), len), len);
   }
   else
   {
-    xiiStringUtils::snprintf(tmp, uiLength, "sud:#%08x($%u)", xiiHashingUtils::xxHash32(arg.m_sSensitiveInfo.GetStartPointer(), len), len);
+    xiiStringUtils::snprintf(szTmp, uiLength, "sud:#%08x($%u)", xiiHashingUtils::xxHash32(arg.m_sSensitiveInfo.GetStartPointer(), len), len);
   }
 
-  return tmp;
+  return szTmp;
 }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 
-xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgErrorCode& arg)
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode& arg)
 {
   LPVOID lpMsgBuf = nullptr;
   if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, arg.m_ErrorCode,
                      MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), (LPWSTR)&lpMsgBuf, 0, nullptr) == 0)
   {
     DWORD err = GetLastError();
-    xiiStringUtils::snprintf(tmp, uiLength, "%i (FormatMessageW failed with error code %i)", arg.m_ErrorCode, err);
-    return xiiStringView(tmp);
+    xiiStringUtils::snprintf(szTmp, uiLength, "%i (FormatMessageW failed with error code %i)", arg.m_ErrorCode, err);
+    return xiiStringView(szTmp);
   }
 
   LPWSTR pCRLF = wcschr((LPWSTR)lpMsgBuf, L'\r');

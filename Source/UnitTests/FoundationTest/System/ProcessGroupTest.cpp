@@ -21,9 +21,9 @@ XII_CREATE_SIMPLE_TEST(System, ProcessGroup)
     {
       xiiProcessOptions opt;
       opt.m_sProcess = pathToSelf;
-      opt.m_onStdOut = [&out, &mutex](xiiStringView view) {
+      opt.m_onStdOut = [&out, &mutex](xiiStringView sView) {
         XII_LOCK(mutex);
-        out.Append(view);
+        out.Append(sView);
       };
 
       opt.m_Arguments.PushBack("-cmd");

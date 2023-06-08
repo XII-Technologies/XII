@@ -89,12 +89,12 @@ void xiiTelemetry::CreateServer()
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT
 }
 
-void xiiTelemetry::AcceptMessagesForSystem(xiiUInt32 uiSystemID, bool bAccept, ProcessMessagesCallback Callback, void* pPassThrough)
+void xiiTelemetry::AcceptMessagesForSystem(xiiUInt32 uiSystemID, bool bAccept, ProcessMessagesCallback callback, void* pPassThrough)
 {
   XII_LOCK(GetTelemetryMutex());
 
   s_SystemMessages[uiSystemID].m_bAcceptMessages = bAccept;
-  s_SystemMessages[uiSystemID].m_Callback        = Callback;
+  s_SystemMessages[uiSystemID].m_Callback        = callback;
   s_SystemMessages[uiSystemID].m_pPassThrough    = pPassThrough;
 }
 
@@ -140,20 +140,20 @@ void xiiTelemetry::Broadcast(TransmitMode tm, xiiUInt32 uiSystemID, xiiUInt32 ui
   Send(tm, uiSystemID, uiMsgID, pData, uiDataBytes);
 }
 
-void xiiTelemetry::Broadcast(TransmitMode tm, xiiUInt32 uiSystemID, xiiUInt32 uiMsgID, xiiStreamReader& Stream, xiiInt32 iDataBytes)
+void xiiTelemetry::Broadcast(TransmitMode tm, xiiUInt32 uiSystemID, xiiUInt32 uiMsgID, xiiStreamReader& ref_stream, xiiInt32 iDataBytes)
 {
   if (s_ConnectionMode != xiiTelemetry::Server)
     return;
 
-  Send(tm, uiSystemID, uiMsgID, Stream, iDataBytes);
+  Send(tm, uiSystemID, uiMsgID, ref_stream, iDataBytes);
 }
 
-void xiiTelemetry::Broadcast(TransmitMode tm, xiiTelemetryMessage& Msg)
+void xiiTelemetry::Broadcast(TransmitMode tm, xiiTelemetryMessage& ref_msg)
 {
   if (s_ConnectionMode != xiiTelemetry::Server)
     return;
 
-  Send(tm, Msg);
+  Send(tm, ref_msg);
 }
 
 void xiiTelemetry::SendToServer(xiiUInt32 uiSystemID, xiiUInt32 uiMsgID, const void* pData, xiiUInt32 uiDataBytes)
@@ -164,20 +164,20 @@ void xiiTelemetry::SendToServer(xiiUInt32 uiSystemID, xiiUInt32 uiMsgID, const v
   Send(xiiTelemetry::Reliable, uiSystemID, uiMsgID, pData, uiDataBytes);
 }
 
-void xiiTelemetry::SendToServer(xiiUInt32 uiSystemID, xiiUInt32 uiMsgID, xiiStreamReader& Stream, xiiInt32 iDataBytes)
+void xiiTelemetry::SendToServer(xiiUInt32 uiSystemID, xiiUInt32 uiMsgID, xiiStreamReader& ref_stream, xiiInt32 iDataBytes)
 {
   if (s_ConnectionMode != xiiTelemetry::Client)
     return;
 
-  Send(xiiTelemetry::Reliable, uiSystemID, uiMsgID, Stream, iDataBytes);
+  Send(xiiTelemetry::Reliable, uiSystemID, uiMsgID, ref_stream, iDataBytes);
 }
 
-void xiiTelemetry::SendToServer(xiiTelemetryMessage& Msg)
+void xiiTelemetry::SendToServer(xiiTelemetryMessage& ref_msg)
 {
   if (s_ConnectionMode != xiiTelemetry::Client)
     return;
 
-  Send(xiiTelemetry::Reliable, Msg);
+  Send(xiiTelemetry::Reliable, ref_msg);
 }
 
 void xiiTelemetry::Send(TransmitMode tm, xiiTelemetryMessage& msg)

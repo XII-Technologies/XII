@@ -129,55 +129,55 @@ xiiResult xiiPropertyPath::InitializeFromPath(const xiiRTTI& rootObjectRtti, con
   return XII_SUCCESS;
 }
 
-xiiResult xiiPropertyPath::WriteToLeafObject(void* pRootObject, const xiiRTTI& pType, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const
+xiiResult xiiPropertyPath::WriteToLeafObject(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const
 {
   XII_ASSERT_DEBUG(
     m_PathSteps.IsEmpty() || m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetTypeFlags().IsSet(xiiTypeFlags::Class),
     "To resolve the leaf object the path needs to be empty or end in a class.");
-  return ResolvePath(pRootObject, &pType, m_PathSteps.GetArrayPtr(), true, func);
+  return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr(), true, func);
 }
 
-xiiResult xiiPropertyPath::ReadFromLeafObject(void* pRootObject, const xiiRTTI& pType, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const
+xiiResult xiiPropertyPath::ReadFromLeafObject(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const
 {
   XII_ASSERT_DEBUG(
     m_PathSteps.IsEmpty() || m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetTypeFlags().IsSet(xiiTypeFlags::Class),
     "To resolve the leaf object the path needs to be empty or end in a class.");
-  return ResolvePath(pRootObject, &pType, m_PathSteps.GetArrayPtr(), false, func);
+  return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr(), false, func);
 }
 
 xiiResult xiiPropertyPath::WriteProperty(
   void*                                                                                                               pRootObject,
-  const xiiRTTI&                                                                                                      pType,
+  const xiiRTTI&                                                                                                      type,
   xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, xiiAbstractProperty* pProp, const xiiVariant& index)> func) const
 {
   XII_ASSERT_DEBUG(!m_PathSteps.IsEmpty(), "Call InitializeFromPath before WriteToObject");
-  return ResolvePath(pRootObject, &pType, m_PathSteps.GetArrayPtr().GetSubArray(0, m_PathSteps.GetCount() - 1), true,
-                     [this, &func](void* pLeafObject, const xiiRTTI& pLeafType) {
+  return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr().GetSubArray(0, m_PathSteps.GetCount() - 1), true,
+                     [this, &func](void* pLeafObject, const xiiRTTI& leafType) {
                        auto& lastStep = m_PathSteps[m_PathSteps.GetCount() - 1];
-                       func(pLeafObject, pLeafType, lastStep.m_pProperty, lastStep.m_Index);
+                       func(pLeafObject, leafType, lastStep.m_pProperty, lastStep.m_Index);
                      });
 }
 
 xiiResult xiiPropertyPath::ReadProperty(
   void*                                                                                                                     pRootObject,
-  const xiiRTTI&                                                                                                            pType,
+  const xiiRTTI&                                                                                                            type,
   xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, const xiiAbstractProperty* pProp, const xiiVariant& index)> func) const
 {
   XII_ASSERT_DEBUG(m_bIsValid, "Call InitializeFromPath before WriteToObject");
-  return ResolvePath(pRootObject, &pType, m_PathSteps.GetArrayPtr().GetSubArray(0, m_PathSteps.GetCount() - 1), false,
-                     [this, &func](void* pLeafObject, const xiiRTTI& pLeafType) {
+  return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr().GetSubArray(0, m_PathSteps.GetCount() - 1), false,
+                     [this, &func](void* pLeafObject, const xiiRTTI& leafType) {
                        auto& lastStep = m_PathSteps[m_PathSteps.GetCount() - 1];
-                       func(pLeafObject, pLeafType, lastStep.m_pProperty, lastStep.m_Index);
+                       func(pLeafObject, leafType, lastStep.m_pProperty, lastStep.m_Index);
                      });
 }
 
-void xiiPropertyPath::SetValue(void* pRootObject, const xiiRTTI& pType, const xiiVariant& value) const
+void xiiPropertyPath::SetValue(void* pRootObject, const xiiRTTI& type, const xiiVariant& value) const
 {
   // XII_ASSERT_DEBUG(!m_PathSteps.IsEmpty() &&
   //                    value.CanConvertTo(m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetVariantType()),
   //                "The given value does not match the type at the given path.");
 
-  WriteProperty(pRootObject, pType, [&value](void* pLeaf, const xiiRTTI& pType, xiiAbstractProperty* pProp, const xiiVariant& index) {
+  WriteProperty(pRootObject, type, [&value](void* pLeaf, const xiiRTTI& type, xiiAbstractProperty* pProp, const xiiVariant& index) {
     switch (pProp->GetCategory())
     {
       case xiiPropertyCategory::Member:
@@ -196,14 +196,14 @@ void xiiPropertyPath::SetValue(void* pRootObject, const xiiRTTI& pType, const xi
   }).IgnoreResult();
 }
 
-void xiiPropertyPath::GetValue(void* pRootObject, const xiiRTTI& pType, xiiVariant& out_value) const
+void xiiPropertyPath::GetValue(void* pRootObject, const xiiRTTI& type, xiiVariant& out_value) const
 {
   // XII_ASSERT_DEBUG(!m_PathSteps.IsEmpty() &&
   //                    m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetVariantType() != xiiVariantType::Invalid,
   //                "The property path of value {} cannot be stored in an xiiVariant.", m_PathSteps[m_PathSteps.GetCount() -
   //                1].m_pProperty->GetSpecificType()->GetTypeName());
 
-  ReadProperty(pRootObject, pType, [&out_value](void* pLeaf, const xiiRTTI& pType, const xiiAbstractProperty* pProp, const xiiVariant& index) {
+  ReadProperty(pRootObject, type, [&out_value](void* pLeaf, const xiiRTTI& type, const xiiAbstractProperty* pProp, const xiiVariant& index) {
     switch (pProp->GetCategory())
     {
       case xiiPropertyCategory::Member:

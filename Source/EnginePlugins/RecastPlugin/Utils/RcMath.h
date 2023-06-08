@@ -11,11 +11,11 @@ struct XII_RECASTPLUGIN_DLL xiiRcPos
   float m_Pos[3];
 
   xiiRcPos();
-  xiiRcPos(const float* pos);
+  xiiRcPos(const float* pPos);
   xiiRcPos(const xiiVec3& v);
 
   void operator=(const xiiVec3& v);
-  void operator=(const float* pos);
+  void operator=(const float* pPos);
 
   operator const float*() const;
   operator float*();

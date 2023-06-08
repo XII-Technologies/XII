@@ -7,9 +7,9 @@ namespace xiiInternal
   template <size_t N, size_t Loop>
   struct CompileTimeMurmurHash
   {
-    constexpr XII_ALWAYS_INLINE xiiUInt32 operator()(xiiUInt32 hash, const char (&str)[N], size_t i) const
+    constexpr XII_ALWAYS_INLINE xiiUInt32 operator()(xiiUInt32 uiHash, const char (&str)[N], size_t i) const
     {
-      return CompileTimeMurmurHash<N, Loop - 4>()(CompileTimeMurmurHash<N, 4>()(hash, str, i), str, i + 4);
+      return CompileTimeMurmurHash<N, Loop - 4>()(CompileTimeMurmurHash<N, 4>()(uiHash, str, i), str, i + 4);
     }
   };
 
@@ -18,7 +18,7 @@ namespace xiiInternal
   {
     static constexpr XII_ALWAYS_INLINE xiiUInt32 helper(xiiUInt32 k) { return (k ^ (k >> MURMUR_R)) * MURMUR_M; }
 
-    constexpr XII_ALWAYS_INLINE xiiUInt32 operator()(xiiUInt32 hash, const char (&str)[N], size_t i) const
+    constexpr XII_ALWAYS_INLINE xiiUInt32 operator()(xiiUInt32 uiHash, const char (&str)[N], size_t i) const
     {
       // In C++11 constexpr local variables are not allowed. Need to express the following without "xiiUInt32 k"
       // (this restriction is lifted in C++14's generalized constexpr)
@@ -28,41 +28,41 @@ namespace xiiInternal
       // k *= MURMUR_M;
       // return (hash * MURMUR_M) ^ k;
 
-      return (hash * MURMUR_M) ^ helper(((str[i + 0]) | ((str[i + 1]) << 8) | ((str[i + 2]) << 16) | ((str[i + 3]) << 24)) * MURMUR_M);
+      return (uiHash * MURMUR_M) ^ helper(((str[i + 0]) | ((str[i + 1]) << 8) | ((str[i + 2]) << 16) | ((str[i + 3]) << 24)) * MURMUR_M);
     }
   };
 
   template <size_t N>
   struct CompileTimeMurmurHash<N, 3>
   {
-    constexpr XII_ALWAYS_INLINE xiiUInt32 operator()(xiiUInt32 hash, const char (&str)[N], size_t i) const
+    constexpr XII_ALWAYS_INLINE xiiUInt32 operator()(xiiUInt32 uiHash, const char (&str)[N], size_t i) const
     {
-      return (hash ^ (str[i + 2] << 16) ^ (str[i + 1] << 8) ^ (str[i + 0])) * MURMUR_M;
+      return (uiHash ^ (str[i + 2] << 16) ^ (str[i + 1] << 8) ^ (str[i + 0])) * MURMUR_M;
     }
   };
 
   template <size_t N>
   struct CompileTimeMurmurHash<N, 2>
   {
-    constexpr XII_ALWAYS_INLINE xiiUInt32 operator()(xiiUInt32 hash, const char (&str)[N], size_t i) const
+    constexpr XII_ALWAYS_INLINE xiiUInt32 operator()(xiiUInt32 uiHash, const char (&str)[N], size_t i) const
     {
-      return (hash ^ (str[i + 1] << 8) ^ (str[i])) * MURMUR_M;
+      return (uiHash ^ (str[i + 1] << 8) ^ (str[i])) * MURMUR_M;
     }
   };
 
   template <size_t N>
   struct CompileTimeMurmurHash<N, 1>
   {
-    constexpr XII_ALWAYS_INLINE xiiUInt32 operator()(xiiUInt32 hash, const char (&str)[N], size_t i) const { return (hash ^ (str[i])) * MURMUR_M; }
+    constexpr XII_ALWAYS_INLINE xiiUInt32 operator()(xiiUInt32 uiHash, const char (&str)[N], size_t i) const { return (uiHash ^ (str[i])) * MURMUR_M; }
   };
 
   template <size_t N>
   struct CompileTimeMurmurHash<N, 0>
   {
-    constexpr XII_ALWAYS_INLINE xiiUInt32 operator()(xiiUInt32 hash, const char (&str)[N], size_t i) const { return hash; }
+    constexpr XII_ALWAYS_INLINE xiiUInt32 operator()(xiiUInt32 uiHash, const char (&str)[N], size_t i) const { return uiHash; }
   };
 
-  constexpr xiiUInt32 rightShift_and_xorWithPrevSelf(xiiUInt32 h, xiiUInt32 shift) { return h ^ (h >> shift); }
+  constexpr xiiUInt32 rightShift_and_xorWithPrevSelf(xiiUInt32 h, xiiUInt32 uiShift) { return h ^ (h >> uiShift); }
 } // namespace xiiInternal
 
 template <size_t N>
@@ -83,7 +83,7 @@ constexpr XII_ALWAYS_INLINE xiiUInt32 xiiHashingUtils::MurmurHash32String(const 
     15);
 }
 
-XII_ALWAYS_INLINE xiiUInt32 xiiHashingUtils::MurmurHash32String(xiiStringView str, xiiUInt32 uiSeed)
+XII_ALWAYS_INLINE xiiUInt32 xiiHashingUtils::MurmurHash32String(xiiStringView sStr, xiiUInt32 uiSeed)
 {
-  return MurmurHash32(str.GetStartPointer(), str.GetElementCount(), uiSeed);
+  return MurmurHash32(sStr.GetStartPointer(), sStr.GetElementCount(), uiSeed);
 }

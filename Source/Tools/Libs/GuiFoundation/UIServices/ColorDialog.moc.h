@@ -16,11 +16,11 @@ class XII_GUIFOUNDATION_DLL xiiQtColorDialog : public QDialog, Ui_ColorDialog
 {
   Q_OBJECT
 public:
-  xiiQtColorDialog(const xiiColor& initial, QWidget* parent);
+  xiiQtColorDialog(const xiiColor& initial, QWidget* pParent);
   ~xiiQtColorDialog();
 
-  void ShowAlpha(bool enable);
-  void ShowHDR(bool enable);
+  void ShowAlpha(bool bEnable);
+  void ShowHDR(bool bEnable);
 
   static QByteArray GetLastDialogGeometry() { return s_LastDialogGeometry; }
 

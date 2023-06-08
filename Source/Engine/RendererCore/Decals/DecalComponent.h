@@ -53,8 +53,8 @@ class XII_RENDERERCORE_DLL xiiDecalComponent final : public xiiRenderComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnSimulationStarted() override;
@@ -87,11 +87,11 @@ public:
   void     SetEmissiveColor(xiiColor color); // [ property ]
   xiiColor GetEmissiveColor() const;         // [ property ]
 
-  void     SetInnerFadeAngle(xiiAngle fFadeAngle); // [ property ]
-  xiiAngle GetInnerFadeAngle() const;              // [ property ]
+  void     SetInnerFadeAngle(xiiAngle fadeAngle); // [ property ]
+  xiiAngle GetInnerFadeAngle() const;             // [ property ]
 
-  void     SetOuterFadeAngle(xiiAngle fFadeAngle); // [ property ]
-  xiiAngle GetOuterFadeAngle() const;              // [ property ]
+  void     SetOuterFadeAngle(xiiAngle fadeAngle); // [ property ]
+  xiiAngle GetOuterFadeAngle() const;             // [ property ]
 
   void  SetSortOrder(float fOrder); // [ property ]
   float GetSortOrder() const;       // [ property ]
@@ -109,7 +109,7 @@ public:
   xiiTime                               m_FadeOutDuration;  // [ property ]
   xiiEnum<xiiOnComponentFinishedAction> m_OnFinishedAction; // [ property ]
 
-  void                  SetProjectionAxis(xiiEnum<xiiBasisAxis> ProjectionAxis); // [ property ]
+  void                  SetProjectionAxis(xiiEnum<xiiBasisAxis> projectionAxis); // [ property ]
   xiiEnum<xiiBasisAxis> GetProjectionAxis() const;                               // [ property ]
 
   void                SetApplyOnlyTo(xiiGameObjectHandle hObject);

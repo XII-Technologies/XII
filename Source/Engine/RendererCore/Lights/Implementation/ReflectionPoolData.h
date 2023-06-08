@@ -56,8 +56,8 @@ struct xiiReflectionPool::Data
   xiiReflectionProbeId                          AddProbe(const xiiWorld* pWorld, ProbeData&& probeData);
   xiiReflectionPool::Data::WorldReflectionData& GetWorldData(const xiiWorld* pWorld);
   void                                          RemoveProbe(const xiiWorld* pWorld, xiiReflectionProbeId id);
-  void                                          UpdateProbeData(ProbeData& probeData, const xiiReflectionProbeDesc& desc, const xiiReflectionProbeComponentBase* pComponent);
-  bool                                          UpdateSkyLightData(ProbeData& probeData, const xiiReflectionProbeDesc& desc, const xiiSkyLightComponent* pComponent);
+  void                                          UpdateProbeData(ProbeData& ref_probeData, const xiiReflectionProbeDesc& desc, const xiiReflectionProbeComponentBase* pComponent);
+  bool                                          UpdateSkyLightData(ProbeData& ref_probeData, const xiiReflectionProbeDesc& desc, const xiiSkyLightComponent* pComponent);
   void                                          OnReflectionProbeMappingEvent(const xiiUInt32 uiWorldIndex, const xiiReflectionProbeMappingEvent& e);
 
   void PreExtraction();

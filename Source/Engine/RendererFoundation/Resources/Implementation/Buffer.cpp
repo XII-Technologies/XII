@@ -10,7 +10,7 @@ xiiGALBuffer::xiiGALBuffer(const xiiGALBufferCreationDescription& Description) :
 #endif
 }
 
-xiiGALBuffer::~xiiGALBuffer() {}
+xiiGALBuffer::~xiiGALBuffer() = default;
 
 
 

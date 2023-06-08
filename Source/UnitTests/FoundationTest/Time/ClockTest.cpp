@@ -6,7 +6,7 @@
 class xiiSimpleTimeStepSmoother : public xiiTimeStepSmoothing
 {
 public:
-  virtual xiiTime GetSmoothedTimeStep(xiiTime RawTimeStep, const xiiClock* pClock) override { return xiiTime::Seconds(0.42); }
+  virtual xiiTime GetSmoothedTimeStep(xiiTime rawTimeStep, const xiiClock* pClock) override { return xiiTime::Seconds(0.42); }
 
   virtual void Reset(const xiiClock* pClock) override {}
 };

@@ -19,14 +19,14 @@ class XII_EDITORPLUGINFILESERVE_DLL xiiQtFileserveWidget : public QWidget, publi
   Q_OBJECT
 
 public:
-  xiiQtFileserveWidget(QWidget* parent = nullptr);
+  xiiQtFileserveWidget(QWidget* pParent = nullptr);
 
-  void FindOwnIP(xiiStringBuilder& out_Display, xiiHybridArray<xiiStringBuilder, 4>* out_AllIPs = nullptr);
+  void FindOwnIP(xiiStringBuilder& out_sDisplay, xiiHybridArray<xiiStringBuilder, 4>* out_pAllIPs = nullptr);
 
   ~xiiQtFileserveWidget();
 
 Q_SIGNALS:
-  void ServerStarted(const QString& ip, xiiUInt16 uiPort);
+  void ServerStarted(const QString& sIp, xiiUInt16 uiPort);
   void ServerStopped();
 
 public Q_SLOTS:

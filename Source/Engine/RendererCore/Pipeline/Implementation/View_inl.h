@@ -95,10 +95,10 @@ XII_ALWAYS_INLINE const xiiSharedPtr<xiiTask>& xiiView::GetExtractTask()
   return m_pExtractTask;
 }
 
-XII_FORCE_INLINE xiiResult xiiView::ComputePickingRay(float fScreenPosX, float fScreenPosY, xiiVec3& out_RayStartPos, xiiVec3& out_RayDir) const
+XII_FORCE_INLINE xiiResult xiiView::ComputePickingRay(float fScreenPosX, float fScreenPosY, xiiVec3& out_vRayStartPos, xiiVec3& out_vRayDir) const
 {
   UpdateCachedMatrices();
-  return m_Data.ComputePickingRay(fScreenPosX, fScreenPosY, out_RayStartPos, out_RayDir);
+  return m_Data.ComputePickingRay(fScreenPosX, fScreenPosY, out_vRayStartPos, out_vRayDir);
 }
 
 XII_FORCE_INLINE xiiResult xiiView::ComputeScreenSpacePos(const xiiVec3& vPoint, xiiVec3& out_vScreenPos) const

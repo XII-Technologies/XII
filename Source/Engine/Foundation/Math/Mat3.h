@@ -21,8 +21,8 @@ public:
   /// \brief The matrix as a 9-element Type array (column-major)
   Type m_fElementsCM[9];
 
-  XII_ALWAYS_INLINE Type& Element(xiiInt32 column, xiiInt32 row) { return m_fElementsCM[column * 3 + row]; }
-  XII_ALWAYS_INLINE Type  Element(xiiInt32 column, xiiInt32 row) const { return m_fElementsCM[column * 3 + row]; }
+  XII_ALWAYS_INLINE Type& Element(xiiInt32 iColumn, xiiInt32 iRow) { return m_fElementsCM[iColumn * 3 + iRow]; }
+  XII_ALWAYS_INLINE Type  Element(xiiInt32 iColumn, xiiInt32 iRow) const { return m_fElementsCM[iColumn * 3 + iRow]; }
 
   // *** Constructors ***
 public:
@@ -128,19 +128,19 @@ public:
   xiiVec3Template<Type> GetRow(xiiUInt32 uiRow) const; // [tested]
 
   /// \brief Sets all 3 components of the i-th row.
-  void SetRow(xiiUInt32 uiRow, const xiiVec3Template<Type>& row); // [tested]
+  void SetRow(xiiUInt32 uiRow, const xiiVec3Template<Type>& vRow); // [tested]
 
   /// \brief Returns all 3 components of the i-th column.
   xiiVec3Template<Type> GetColumn(xiiUInt32 uiColumn) const; // [tested]
 
   /// \brief Sets all 3 components of the i-th column.
-  void SetColumn(xiiUInt32 uiColumn, const xiiVec3Template<Type>& column); // [tested]
+  void SetColumn(xiiUInt32 uiColumn, const xiiVec3Template<Type>& vColumn); // [tested]
 
   /// \brief Returns all 3 components on the diagonal of the matrix.
   xiiVec3Template<Type> GetDiagonal() const; // [tested]
 
   /// \brief Sets all 3 components on the diagonal of the matrix.
-  void SetDiagonal(const xiiVec3Template<Type>& diag); // [tested]
+  void SetDiagonal(const xiiVec3Template<Type>& vDiag); // [tested]
 
   /// \brief Returns the 3 scaling factors that are encoded in the matrix.
   const xiiVec3Template<Type> GetScalingFactors() const; // [tested]

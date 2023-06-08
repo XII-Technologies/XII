@@ -17,7 +17,7 @@ public:
   xiiRttiMappedObjectFactory();
   ~xiiRttiMappedObjectFactory();
 
-  typedef Object* (*CreateObjectFunc)(const xiiRTTI* pType);
+  using CreateObjectFunc = Object* (*)(const xiiRTTI*);
 
   void    RegisterCreator(const xiiRTTI* pType, CreateObjectFunc creator);
   void    UnregisterCreator(const xiiRTTI* pType);

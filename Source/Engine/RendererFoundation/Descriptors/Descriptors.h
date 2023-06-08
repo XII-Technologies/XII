@@ -49,7 +49,7 @@ struct XII_RENDERERFOUNDATION_DLL xiiShaderResourceType
 /// \sa xiiGALWindowSwapChainCreationDescription
 struct XII_RENDERERFOUNDATION_DLL xiiGALPresentMode
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -95,7 +95,7 @@ struct xiiGALShaderCreationDescription : public xiiHashableStruct<xiiGALShaderCr
   xiiGALShaderCreationDescription();
   ~xiiGALShaderCreationDescription();
 
-  bool HasByteCodeForStage(xiiGALShaderStage::Enum Stage) const;
+  bool HasByteCodeForStage(xiiGALShaderStage::Enum stage) const;
 
   const char* m_szName = nullptr;
 
@@ -227,7 +227,7 @@ struct xiiGALVertexAttribute
 {
   xiiGALVertexAttribute() = default;
 
-  xiiGALVertexAttribute(xiiGALVertexAttributeSemantic::Enum eSemantic, xiiGALResourceFormat::Enum eFormat, xiiUInt16 uiOffset, xiiUInt8 uiVertexBufferSlot, bool bInstanceData);
+  xiiGALVertexAttribute(xiiGALVertexAttributeSemantic::Enum semantic, xiiGALResourceFormat::Enum format, xiiUInt16 uiOffset, xiiUInt8 uiVertexBufferSlot, bool bInstanceData);
 
   xiiGALVertexAttributeSemantic::Enum m_eSemantic          = xiiGALVertexAttributeSemantic::Position;
   xiiGALResourceFormat::Enum          m_eFormat            = xiiGALResourceFormat::XYZFloat;
@@ -253,7 +253,7 @@ struct xiiGALResourceAccess
 
 struct xiiGALBufferType
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -379,7 +379,7 @@ struct xiiGALUnorderedAccessViewCreationDescription : public xiiHashableStruct<x
 
 struct xiiGALQueryType
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {

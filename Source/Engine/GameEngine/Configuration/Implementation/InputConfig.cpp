@@ -31,13 +31,13 @@ void xiiGameAppInputConfig::Apply() const
   xiiInputManager::SetInputActionConfig(m_sInputSet, m_sInputAction, cfg, true);
 }
 
-void xiiGameAppInputConfig::WriteToDDL(xiiStreamWriter& stream, const xiiArrayPtr<xiiGameAppInputConfig>& actions)
+void xiiGameAppInputConfig::WriteToDDL(xiiStreamWriter& ref_stream, const xiiArrayPtr<xiiGameAppInputConfig>& actions)
 {
   xiiOpenDdlWriter writer;
   writer.SetCompactMode(false);
   writer.SetFloatPrecisionMode(xiiOpenDdlWriter::FloatPrecisionMode::Readable);
   writer.SetPrimitiveTypeStringMode(xiiOpenDdlWriter::TypeStringMode::Compliant);
-  writer.SetOutputStream(&stream);
+  writer.SetOutputStream(&ref_stream);
 
   for (const xiiGameAppInputConfig& config : actions)
   {
@@ -45,35 +45,35 @@ void xiiGameAppInputConfig::WriteToDDL(xiiStreamWriter& stream, const xiiArrayPt
   }
 }
 
-void xiiGameAppInputConfig::WriteToDDL(xiiOpenDdlWriter& writer) const
+void xiiGameAppInputConfig::WriteToDDL(xiiOpenDdlWriter& ref_writer) const
 {
-  writer.BeginObject("InputAction");
+  ref_writer.BeginObject("InputAction");
   {
-    xiiOpenDdlUtils::StoreString(writer, m_sInputSet, "Set");
-    xiiOpenDdlUtils::StoreString(writer, m_sInputAction, "Action");
-    xiiOpenDdlUtils::StoreBool(writer, m_bApplyTimeScaling, "TimeScale");
+    xiiOpenDdlUtils::StoreString(ref_writer, m_sInputSet, "Set");
+    xiiOpenDdlUtils::StoreString(ref_writer, m_sInputAction, "Action");
+    xiiOpenDdlUtils::StoreBool(ref_writer, m_bApplyTimeScaling, "TimeScale");
 
     for (int i = 0; i < 3; ++i)
     {
       if (!m_sInputSlotTrigger[i].IsEmpty())
       {
-        writer.BeginObject("Slot");
+        ref_writer.BeginObject("Slot");
         {
-          xiiOpenDdlUtils::StoreString(writer, m_sInputSlotTrigger[i], "Key");
-          xiiOpenDdlUtils::StoreFloat(writer, m_fInputSlotScale[i], "Scale");
+          xiiOpenDdlUtils::StoreString(ref_writer, m_sInputSlotTrigger[i], "Key");
+          xiiOpenDdlUtils::StoreFloat(ref_writer, m_fInputSlotScale[i], "Scale");
         }
-        writer.EndObject();
+        ref_writer.EndObject();
       }
     }
   }
-  writer.EndObject();
+  ref_writer.EndObject();
 }
 
-void xiiGameAppInputConfig::ReadFromDDL(xiiStreamReader& stream, xiiHybridArray<xiiGameAppInputConfig, 32>& out_actions)
+void xiiGameAppInputConfig::ReadFromDDL(xiiStreamReader& ref_stream, xiiHybridArray<xiiGameAppInputConfig, 32>& out_actions)
 {
   xiiOpenDdlReader reader;
 
-  if (reader.ParseDocument(stream, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
+  if (reader.ParseDocument(ref_stream, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
     return;
 
   const xiiOpenDdlReaderElement* pRoot = reader.GetRootElement();
