@@ -63,6 +63,26 @@ namespace
     Stream << reinterpret_cast<const xiiUInt32&>(Value);
     return Stream;
   }
+
+  XII_ALWAYS_INLINE bool operator==(const Diligent::Rect& lhs, const Diligent::Rect& rhs)
+  {
+    return lhs.top == rhs.top && lhs.left == rhs.left && lhs.right == rhs.right && lhs.bottom == rhs.bottom;
+  };
+
+  XII_ALWAYS_INLINE bool operator!=(const Diligent::Rect& lhs, const Diligent::Rect& rhs)
+  {
+    return !(lhs == rhs);
+  };
+
+  XII_ALWAYS_INLINE bool operator==(const Diligent::Viewport& lhs, const Diligent::Viewport& rhs)
+  {
+    return lhs.TopLeftX == rhs.TopLeftX && lhs.TopLeftY == rhs.TopLeftY && lhs.Width == rhs.Width && lhs.Height == rhs.Height && lhs.MinDepth == rhs.MinDepth && lhs.MaxDepth == rhs.MaxDepth;
+  };
+
+  XII_ALWAYS_INLINE bool operator!=(const Diligent::Viewport& lhs, const Diligent::Viewport& rhs)
+  {
+    return !(lhs == rhs);
+  };
 } // namespace
 
 xiiUInt32 xiiGALCommandEncoderImplDiligent::ResourceCacheHash::Hash(const xiiGALRenderingSetup& renderingSetup)
@@ -970,6 +990,9 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
   m_pRenderPass  = m_GALDeviceDiligent.m_pDefaultPass->RequestRenderPass(renderingSetup);
   m_pFramebuffer = m_GALDeviceDiligent.m_pDefaultPass->RequestFrameBuffer(m_pRenderPass, renderingSetup.m_RenderTargetSetup);
 
+  // Unsure whether this needs to be set here.
+  // SetScissorRectPlatform(xiiRectU32(m_pFramebuffer->GetDesc().Width, m_pFramebuffer->GetDesc().Height));
+
   m_ClearValues.Clear();
 
   const bool     bHasDepthAttachment    = !m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
@@ -1297,28 +1320,32 @@ void xiiGALCommandEncoderImplDiligent::SetRasterizerStatePlatform(const xiiGALRa
 
 void xiiGALCommandEncoderImplDiligent::SetViewportPlatform(const xiiRectFloat& rect, float fMinDepth, float fMaxDepth)
 {
-  if (m_Viewport.TopLeftX != rect.x || m_Viewport.TopLeftY != rect.y || m_Viewport.Width != rect.width || m_Viewport.Height != rect.height || m_Viewport.MinDepth != fMinDepth || m_Viewport.MaxDepth != fMaxDepth)
-  {
-    m_Viewport.TopLeftX = rect.x;
-    m_Viewport.TopLeftY = rect.y;
-    m_Viewport.Width    = rect.width;
-    m_Viewport.Height   = rect.height;
-    m_Viewport.MinDepth = fMinDepth;
-    m_Viewport.MaxDepth = fMaxDepth;
+  Diligent::Viewport viewport;
+  viewport.TopLeftX = rect.x;
+  viewport.TopLeftY = rect.y;
+  viewport.Width    = rect.width;
+  viewport.Height   = rect.height;
+  viewport.MinDepth = fMinDepth;
+  viewport.MaxDepth = fMaxDepth;
 
+  if (m_Viewport != viewport)
+  {
+    m_Viewport          = viewport;
     m_bViewportModified = true;
   }
 }
 
 void xiiGALCommandEncoderImplDiligent::SetScissorRectPlatform(const xiiRectU32& rect)
 {
-  if (m_ScissorRect.left != rect.x || m_ScissorRect.top != rect.y || m_ScissorRect.right != (rect.x + rect.width) || m_ScissorRect.bottom != (rect.y + rect.height))
-  {
-    m_ScissorRect.left   = rect.x;
-    m_ScissorRect.top    = rect.y;
-    m_ScissorRect.right  = rect.x + rect.width;
-    m_ScissorRect.bottom = rect.y + rect.height;
+  Diligent::Rect scissorRect;
+  scissorRect.left   = rect.x;
+  scissorRect.top    = rect.y;
+  scissorRect.right  = rect.x + rect.width;
+  scissorRect.bottom = rect.y + rect.height;
 
+  if (m_ScissorRect != scissorRect)
+  {
+    m_ScissorRect       = scissorRect;
     m_bViewportModified = true;
   }
 }
@@ -1442,6 +1469,7 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
       else
       {
         Diligent::GraphicsPipelineStateCreateInfo graphicsPipelineStateDesc;
+        graphicsPipelineStateDesc.PSODesc.PipelineType    = Diligent::PIPELINE_TYPE_GRAPHICS;
         graphicsPipelineStateDesc.pVS                     = m_pCurrentShader->GetVertexShader();
         graphicsPipelineStateDesc.pPS                     = m_pCurrentShader->GetPixelShader();
         graphicsPipelineStateDesc.pDS                     = m_pCurrentShader->GetDomainShader();
