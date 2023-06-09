@@ -1516,28 +1516,6 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
   m_pContext->SetPipelineState(m_pCurrentPipelineState);
 
-  if (!m_bIsComputeRequested && m_bViewportModified)
-  {
-    m_pContext->SetViewports(1u, &m_Viewport, static_cast<xiiUInt32>(m_Viewport.Width), static_cast<xiiUInt32>(m_Viewport.Height));
-
-    if (m_bScissorEnabled)
-    {
-      m_pContext->SetScissorRects(1u, &m_ScissorRect, m_ScissorRect.right - m_ScissorRect.left, m_ScissorRect.bottom - m_ScissorRect.top);
-    }
-    else
-    {
-      Diligent::Rect ViewRectNoScissor;
-      ViewRectNoScissor.left   = (xiiUInt32)m_Viewport.TopLeftX;
-      ViewRectNoScissor.top    = (xiiUInt32)m_Viewport.TopLeftY;
-      ViewRectNoScissor.right  = (xiiUInt32)m_Viewport.Width;
-      ViewRectNoScissor.bottom = (xiiUInt32)m_Viewport.Height;
-
-      m_pContext->SetScissorRects(1u, &ViewRectNoScissor, ViewRectNoScissor.right - ViewRectNoScissor.left, ViewRectNoScissor.bottom - ViewRectNoScissor.top);
-    }
-
-    m_bViewportModified = false;
-  }
-
   TransitionResources();
 
   END_RENDERPASS_IF_MODIFIED;
@@ -1637,6 +1615,28 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
     m_bRenderpassActive = true;
     m_bClearSubmitted   = true;
+  }
+
+  if (!m_bIsComputeRequested && m_bViewportModified)
+  {
+    m_pContext->SetViewports(1u, &m_Viewport, static_cast<xiiUInt32>(m_Viewport.Width), static_cast<xiiUInt32>(m_Viewport.Height));
+
+    if (m_bScissorEnabled)
+    {
+      m_pContext->SetScissorRects(1u, &m_ScissorRect, m_ScissorRect.right - m_ScissorRect.left, m_ScissorRect.bottom - m_ScissorRect.top);
+    }
+    else
+    {
+      Diligent::Rect ViewRectNoScissor;
+      ViewRectNoScissor.left   = (xiiUInt32)m_Viewport.TopLeftX;
+      ViewRectNoScissor.top    = (xiiUInt32)m_Viewport.TopLeftY;
+      ViewRectNoScissor.right  = (xiiUInt32)m_Viewport.Width;
+      ViewRectNoScissor.bottom = (xiiUInt32)m_Viewport.Height;
+
+      m_pContext->SetScissorRects(1u, &ViewRectNoScissor, ViewRectNoScissor.right - ViewRectNoScissor.left, ViewRectNoScissor.bottom - ViewRectNoScissor.top);
+    }
+
+    m_bViewportModified = false;
   }
 
 #undef END_RENDERPASS_IF_MODIFIED
