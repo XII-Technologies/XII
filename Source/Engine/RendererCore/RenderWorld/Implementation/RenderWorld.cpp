@@ -580,11 +580,9 @@ void xiiRenderWorld::Render(xiiRenderContext* pRenderContext)
 
   filteredRenderPipelines.Clear();
 
-  {
-    renderEvent.m_Type = xiiRenderWorldRenderEvent::Type::EndRender;
-    XII_PROFILE_SCOPE("EndRender");
-    s_RenderEvent.Broadcast(renderEvent);
-  }
+  renderEvent.m_Type = xiiRenderWorldRenderEvent::Type::EndRender;
+  XII_PROFILE_SCOPE("EndRender");
+  s_RenderEvent.Broadcast(renderEvent);
 }
 
 void xiiRenderWorld::BeginFrame()

@@ -99,14 +99,10 @@ namespace
     {
       s_pImplementation->m_bInitDbgHelp = true;
 
-      // The Tracy profiler initializes this symbol before this is called, thus it is disabled when the engine is built with
-      // the Tracy profiler enabled.
-#ifndef BUILDSYSTEM_ENABLE_TRACY_SUPPORT
       if (!(*s_pImplementation->symbolInitialize)(GetCurrentProcess(), nullptr, TRUE))
       {
         xiiLog::Error("StackTracer could not initialize symbols. Error-Code {0}", xiiArgErrorCode(::GetLastError()));
       }
-#endif
     }
   }
 } // namespace
