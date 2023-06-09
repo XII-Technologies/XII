@@ -163,24 +163,24 @@ xiiResult xiiTexConv::ParseChannelSliceMapping(xiiInt32 iSlice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_Mapping, const char* cfg, xiiInt32 iChannelIndex, bool bSingleChannel)
+xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_mapping, const char* szCfg, xiiInt32 iChannelIndex, bool bSingleChannel)
 {
-  out_Mapping.m_iInputImageIndex = -1;
-  out_Mapping.m_ChannelValue     = xiiTexConvChannelValue::White;
+  out_mapping.m_iInputImageIndex = -1;
+  out_mapping.m_ChannelValue     = xiiTexConvChannelValue::White;
 
-  xiiStringBuilder tmp = cfg;
+  xiiStringBuilder tmp = szCfg;
 
   // '-r black' for setting it to zero
   if (tmp.IsEqual_NoCase("black"))
   {
-    out_Mapping.m_ChannelValue = xiiTexConvChannelValue::Black;
+    out_mapping.m_ChannelValue = xiiTexConvChannelValue::Black;
     return XII_SUCCESS;
   }
 
   // '-r white' for setting it to 255
   if (tmp.IsEqual_NoCase("white"))
   {
-    out_Mapping.m_ChannelValue = xiiTexConvChannelValue::White;
+    out_mapping.m_ChannelValue = xiiTexConvChannelValue::White;
     return XII_SUCCESS;
   }
 
@@ -194,7 +194,7 @@ xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_Ma
     // no index given, e.g. '-r in.r'
     // in is equal to in0
 
-    out_Mapping.m_iInputImageIndex = 0;
+    out_mapping.m_iInputImageIndex = 0;
   }
   else
   {
@@ -202,14 +202,14 @@ xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_Ma
     const char* szLastPos = nullptr;
     if (xiiConversionUtils::StringToInt(tmp, num, &szLastPos).Failed())
     {
-      xiiLog::Error("Could not parse channel mapping '{0}'", cfg);
+      xiiLog::Error("Could not parse channel mapping '{0}'", szCfg);
       return XII_FAILURE;
     }
 
     // valid index after the 'in'
     if (num >= 0 && num < (xiiInt32)m_Processor.m_Descriptor.m_InputFiles.GetCount())
     {
-      out_Mapping.m_iInputImageIndex = (xiiInt8)num;
+      out_mapping.m_iInputImageIndex = (xiiInt8)num;
     }
     else
     {
@@ -226,13 +226,13 @@ xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_Ma
   // no additional info, e.g. '-g in2' is identical to '-g in2.g' (same channel)
   if (tmp.IsEmpty())
   {
-    out_Mapping.m_ChannelValue = (xiiTexConvChannelValue::Enum)((xiiInt32)xiiTexConvChannelValue::Red + iChannelIndex);
+    out_mapping.m_ChannelValue = (xiiTexConvChannelValue::Enum)((xiiInt32)xiiTexConvChannelValue::Red + iChannelIndex);
     return XII_SUCCESS;
   }
 
   if (!tmp.StartsWith("."))
   {
-    xiiLog::Error("Invalid channel mapping: Expected '.' after input file index in '{0}'", cfg);
+    xiiLog::Error("Invalid channel mapping: Expected '.' after input file index in '{0}'", szCfg);
     return XII_FAILURE;
   }
 
@@ -249,7 +249,7 @@ xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_Ma
   // no additional info, e.g. '-rgb in2.rg'
   if (tmp.IsEmpty())
   {
-    xiiLog::Error("Invalid channel mapping: Too few channel identifiers '{0}'", cfg);
+    xiiLog::Error("Invalid channel mapping: Too few channel identifiers '{0}'", szCfg);
     return XII_FAILURE;
   }
 
@@ -258,23 +258,23 @@ xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_Ma
 
     if (uiChar == 'r')
     {
-      out_Mapping.m_ChannelValue = xiiTexConvChannelValue::Red;
+      out_mapping.m_ChannelValue = xiiTexConvChannelValue::Red;
     }
     else if (uiChar == 'g')
     {
-      out_Mapping.m_ChannelValue = xiiTexConvChannelValue::Green;
+      out_mapping.m_ChannelValue = xiiTexConvChannelValue::Green;
     }
     else if (uiChar == 'b')
     {
-      out_Mapping.m_ChannelValue = xiiTexConvChannelValue::Blue;
+      out_mapping.m_ChannelValue = xiiTexConvChannelValue::Blue;
     }
     else if (uiChar == 'a')
     {
-      out_Mapping.m_ChannelValue = xiiTexConvChannelValue::Alpha;
+      out_mapping.m_ChannelValue = xiiTexConvChannelValue::Alpha;
     }
     else
     {
-      xiiLog::Error("Invalid channel mapping: Unexpected channel identifier in '{}'", cfg);
+      xiiLog::Error("Invalid channel mapping: Unexpected channel identifier in '{}'", szCfg);
       return XII_FAILURE;
     }
 

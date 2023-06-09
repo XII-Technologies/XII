@@ -12,10 +12,10 @@ xiiUInt32 xiiStringView::GetCharacter() const
   return xiiUnicodeUtils::ConvertUtf8ToUtf32(m_pStart);
 }
 
-const char* xiiStringView::GetData(xiiStringBuilder& tempStorage) const
+const char* xiiStringView::GetData(xiiStringBuilder& ref_sTempStorage) const
 {
-  tempStorage = *this;
-  return tempStorage.GetData();
+  ref_sTempStorage = *this;
+  return ref_sTempStorage.GetData();
 }
 
 bool xiiStringView::IsEqualN(xiiStringView sOther, xiiUInt32 uiCharsToCompare) const
@@ -95,24 +95,24 @@ const char* xiiStringView::FindLastSubString_NoCase(xiiStringView sStringToFind,
   return xiiStringUtils::FindLastSubString_NoCase(GetStartPointer(), sStringToFind.GetStartPointer(), szStartSearchAt, GetEndPointer(), sStringToFind.GetEndPointer());
 }
 
-const char* xiiStringView::FindWholeWord(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB, const char* szStartSearchAt /*= nullptr*/) const
+const char* xiiStringView::FindWholeWord(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB, const char* szStartSearchAt /*= nullptr*/) const
 {
   if (szStartSearchAt == nullptr)
     szStartSearchAt = GetStartPointer();
 
   XII_ASSERT_DEV((szStartSearchAt >= GetStartPointer()) && (szStartSearchAt <= GetEndPointer()), "The given pointer to start searching at is not inside this strings valid range.");
 
-  return xiiStringUtils::FindWholeWord(szStartSearchAt, szSearchFor, IsDelimiterCB, GetEndPointer());
+  return xiiStringUtils::FindWholeWord(szStartSearchAt, szSearchFor, isDelimiterCB, GetEndPointer());
 }
 
-const char* xiiStringView::FindWholeWord_NoCase(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB, const char* szStartSearchAt /*= nullptr*/) const
+const char* xiiStringView::FindWholeWord_NoCase(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB, const char* szStartSearchAt /*= nullptr*/) const
 {
   if (szStartSearchAt == nullptr)
     szStartSearchAt = GetStartPointer();
 
   XII_ASSERT_DEV((szStartSearchAt >= GetStartPointer()) && (szStartSearchAt <= GetEndPointer()), "The given pointer to start searching at is not inside this strings valid range.");
 
-  return xiiStringUtils::FindWholeWord_NoCase(szStartSearchAt, szSearchFor, IsDelimiterCB, GetEndPointer());
+  return xiiStringUtils::FindWholeWord_NoCase(szStartSearchAt, szSearchFor, isDelimiterCB, GetEndPointer());
 }
 
 void xiiStringView::Shrink(xiiUInt32 uiShrinkCharsFront, xiiUInt32 uiShrinkCharsBack)

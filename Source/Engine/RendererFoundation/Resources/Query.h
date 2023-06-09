@@ -18,5 +18,5 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 
-  bool m_bStarted;
+  bool m_bStarted = false;
 };

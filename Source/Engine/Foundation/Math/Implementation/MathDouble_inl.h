@@ -63,7 +63,7 @@ namespace xiiMath
   template <>
   XII_ALWAYS_INLINE xiiAngleTemplate<double> ATan2(double y, double x) { return xiiAngleTemplate<double>::Radian(atan2(y, x)); }
 
-  XII_ALWAYS_INLINE double RoundToMultiple(double f, double multiple) { return Round(f / multiple) * multiple; }
+  XII_ALWAYS_INLINE double RoundToMultiple(double f, double fMultiple) { return Round(f / fMultiple) * fMultiple; }
 
   XII_ALWAYS_INLINE double Exp(double f) { return exp(f); }
 
@@ -77,16 +77,16 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE double Pow2(double f) { return pow(2.0, f); }
 
-  XII_ALWAYS_INLINE double Pow(double base, double exp) { return pow(base, exp); }
+  XII_ALWAYS_INLINE double Pow(double fBase, double fExp) { return pow(fBase, fExp); }
 
-  XII_ALWAYS_INLINE double Root(double f, double NthRoot) { return pow(f, 1.0 / NthRoot); }
+  XII_ALWAYS_INLINE double Root(double f, double fNthRoot) { return pow(f, 1.0 / fNthRoot); }
 
   XII_ALWAYS_INLINE double Sqrt(double f) { return sqrt(f); }
 
-  XII_ALWAYS_INLINE double Mod(double f, double div) { return fmod(f, div); }
+  XII_ALWAYS_INLINE double Mod(double f, double fDiv) { return fmod(f, fDiv); }
 
   XII_ALWAYS_INLINE double Hypot(double x, double y) { return sqrt(pow(x, 2.0) + pow(y, 2.0)); }
 
-  XII_ALWAYS_INLINE double NormalizeToRange(double value, double min, double max) { return (value - min) / (max - min); }
+  XII_ALWAYS_INLINE double NormalizeToRange(double value, double fMin, double fMax) { return (value - fMin) / (fMax - fMin); }
 
 } // namespace xiiMath

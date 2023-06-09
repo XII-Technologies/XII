@@ -32,7 +32,7 @@ xiiStereoTestPass::xiiStereoTestPass() :
   }
 }
 
-xiiStereoTestPass::~xiiStereoTestPass() {}
+xiiStereoTestPass::~xiiStereoTestPass() = default;
 
 bool xiiStereoTestPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {

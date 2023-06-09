@@ -4,7 +4,7 @@
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/OSFile.h>
 
-void xiiCollectionUtils::AddFiles(xiiCollectionResourceDescriptor& collection, xiiStringView sAssetTypeNameView, xiiStringView sAbsPathToFolder, xiiStringView sFileExtension, xiiStringView sStripPrefix, xiiStringView sPrependPrefix)
+void xiiCollectionUtils::AddFiles(xiiCollectionResourceDescriptor& ref_collection, xiiStringView sAssetTypeNameView, xiiStringView sAbsPathToFolder, xiiStringView sFileExtension, xiiStringView sStripPrefix, xiiStringView sPrependPrefix)
 {
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS)
 
@@ -32,7 +32,7 @@ void xiiCollectionUtils::AddFiles(xiiCollectionResourceDescriptor& collection, x
       sFullPath.Prepend(sPrependPrefix);
       sFullPath.MakeCleanPath();
 
-      auto& entry            = collection.m_Resources.ExpandAndGetRef();
+      auto& entry            = ref_collection.m_Resources.ExpandAndGetRef();
       entry.m_sAssetTypeName = sAssetTypeName;
       entry.m_sResourceID    = sFullPath;
       entry.m_uiFileSize     = stats.m_uiFileSize;
@@ -45,7 +45,7 @@ void xiiCollectionUtils::AddFiles(xiiCollectionResourceDescriptor& collection, x
 }
 
 
-XII_CORE_DLL void xiiCollectionUtils::MergeCollections(xiiCollectionResourceDescriptor& result, xiiArrayPtr<const xiiCollectionResourceDescriptor*> inputCollections)
+XII_CORE_DLL void xiiCollectionUtils::MergeCollections(xiiCollectionResourceDescriptor& ref_result, xiiArrayPtr<const xiiCollectionResourceDescriptor*> inputCollections)
 {
   xiiMap<xiiString, const xiiCollectionEntry*> firstEntryOfID;
 
@@ -56,27 +56,27 @@ XII_CORE_DLL void xiiCollectionUtils::MergeCollections(xiiCollectionResourceDesc
       if (!firstEntryOfID.Contains(inputEntry.m_sResourceID))
       {
         firstEntryOfID.Insert(inputEntry.m_sResourceID, &inputEntry);
-        result.m_Resources.PushBack(inputEntry);
+        ref_result.m_Resources.PushBack(inputEntry);
       }
     }
   }
 }
 
 
-XII_CORE_DLL void xiiCollectionUtils::DeDuplicateEntries(xiiCollectionResourceDescriptor& result, const xiiCollectionResourceDescriptor& input)
+XII_CORE_DLL void xiiCollectionUtils::DeDuplicateEntries(xiiCollectionResourceDescriptor& ref_result, const xiiCollectionResourceDescriptor& input)
 {
   const xiiCollectionResourceDescriptor* firstInput = &input;
-  MergeCollections(result, xiiArrayPtr<const xiiCollectionResourceDescriptor*>(&firstInput, 1));
+  MergeCollections(ref_result, xiiArrayPtr<const xiiCollectionResourceDescriptor*>(&firstInput, 1));
 }
 
-void xiiCollectionUtils::AddResourceHandle(xiiCollectionResourceDescriptor& collection, xiiTypelessResourceHandle handle, xiiStringView sAssetTypeName, xiiStringView sAbsFolderpath)
+void xiiCollectionUtils::AddResourceHandle(xiiCollectionResourceDescriptor& ref_collection, xiiTypelessResourceHandle hHandle, xiiStringView sAssetTypeName, xiiStringView sAbsFolderpath)
 {
-  if (!handle.IsValid())
+  if (!hHandle.IsValid())
     return;
 
-  const char* resID = handle.GetResourceID();
+  const char* resID = hHandle.GetResourceID();
 
-  auto& entry = collection.m_Resources.ExpandAndGetRef();
+  auto& entry = ref_collection.m_Resources.ExpandAndGetRef();
 
   entry.m_sAssetTypeName.Assign(sAssetTypeName);
   entry.m_sResourceID = resID;

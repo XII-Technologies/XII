@@ -2,9 +2,9 @@
 #include <Foundation/IO/Stream.h>
 
 template <typename T>
-XII_ALWAYS_INLINE xiiResult xiiDeduplicationReadContext::ReadObjectInplace(xiiStreamReader& stream, T& obj)
+XII_ALWAYS_INLINE xiiResult xiiDeduplicationReadContext::ReadObjectInplace(xiiStreamReader& ref_stream, T& ref_obj)
 {
-  return ReadObject(stream, obj, nullptr);
+  return ReadObject(ref_stream, ref_obj, nullptr);
 }
 
 template <typename T>
@@ -23,30 +23,30 @@ xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& stream, T& ob
 }
 
 template <typename T>
-xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& stream, T*& pObject, xiiAllocatorBase* pAllocator)
+xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& ref_stream, T*& ref_pObject, xiiAllocatorBase* pAllocator)
 {
   bool bIsRealObject;
-  stream >> bIsRealObject;
+  ref_stream >> bIsRealObject;
 
   if (bIsRealObject)
   {
-    pObject = XII_NEW(pAllocator, T);
-    XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::Deserialize<T>(stream, *pObject));
+    ref_pObject = XII_NEW(pAllocator, T);
+    XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::Deserialize<T>(ref_stream, *ref_pObject));
 
-    m_Objects.PushBack(pObject);
+    m_Objects.PushBack(ref_pObject);
   }
   else
   {
     xiiUInt32 uiIndex;
-    stream >> uiIndex;
+    ref_stream >> uiIndex;
 
     if (uiIndex < m_Objects.GetCount())
     {
-      pObject = static_cast<T*>(m_Objects[uiIndex]);
+      ref_pObject = static_cast<T*>(m_Objects[uiIndex]);
     }
     else if (uiIndex == xiiInvalidIndex)
     {
-      pObject = nullptr;
+      ref_pObject = nullptr;
     }
     else
     {
@@ -58,46 +58,46 @@ xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& stream, T*& p
 }
 
 template <typename T>
-xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& stream, xiiSharedPtr<T>& pObject, xiiAllocatorBase* pAllocator)
+xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& ref_stream, xiiSharedPtr<T>& ref_pObject, xiiAllocatorBase* pAllocator)
 {
   T* ptr = nullptr;
-  if (ReadObject(stream, ptr, pAllocator).Succeeded())
+  if (ReadObject(ref_stream, ptr, pAllocator).Succeeded())
   {
-    pObject = xiiSharedPtr<T>(ptr, pAllocator);
+    ref_pObject = xiiSharedPtr<T>(ptr, pAllocator);
     return XII_SUCCESS;
   }
   return XII_FAILURE;
 }
 
 template <typename T>
-xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& stream, xiiUniquePtr<T>& pObject, xiiAllocatorBase* pAllocator)
+xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& ref_stream, xiiUniquePtr<T>& ref_pObject, xiiAllocatorBase* pAllocator)
 {
   T* ptr = nullptr;
-  if (ReadObject(stream, ptr, pAllocator).Succeeded())
+  if (ReadObject(ref_stream, ptr, pAllocator).Succeeded())
   {
-    pObject = std::move(xiiUniquePtr<T>(ptr, pAllocator));
+    ref_pObject = std::move(xiiUniquePtr<T>(ptr, pAllocator));
     return XII_SUCCESS;
   }
   return XII_FAILURE;
 }
 
 template <typename ArrayType, typename ValueType>
-xiiResult xiiDeduplicationReadContext::ReadArray(xiiStreamReader& stream, xiiArrayBase<ValueType, ArrayType>& Array, xiiAllocatorBase* pAllocator)
+xiiResult xiiDeduplicationReadContext::ReadArray(xiiStreamReader& ref_stream, xiiArrayBase<ValueType, ArrayType>& ref_array, xiiAllocatorBase* pAllocator)
 {
   xiiUInt64 uiCount = 0;
-  XII_SUCCEED_OR_RETURN(stream.ReadQWordValue(&uiCount));
+  XII_SUCCEED_OR_RETURN(ref_stream.ReadQWordValue(&uiCount));
 
   XII_ASSERT_DEV(uiCount < std::numeric_limits<xiiUInt32>::max(), "Containers currently use 32 bit for counts internally. Value from file is too large.");
 
-  Array.Clear();
+  ref_array.Clear();
 
   if (uiCount > 0)
   {
-    static_cast<ArrayType&>(Array).Reserve(static_cast<xiiUInt32>(uiCount));
+    static_cast<ArrayType&>(ref_array).Reserve(static_cast<xiiUInt32>(uiCount));
 
     for (xiiUInt32 i = 0; i < static_cast<xiiUInt32>(uiCount); ++i)
     {
-      XII_SUCCEED_OR_RETURN(ReadObject(stream, Array.ExpandAndGetRef(), pAllocator));
+      XII_SUCCEED_OR_RETURN(ReadObject(ref_stream, ref_array.ExpandAndGetRef(), pAllocator));
     }
   }
 
@@ -105,21 +105,21 @@ xiiResult xiiDeduplicationReadContext::ReadArray(xiiStreamReader& stream, xiiArr
 }
 
 template <typename KeyType, typename Comparer>
-xiiResult xiiDeduplicationReadContext::ReadSet(xiiStreamReader& stream, xiiSetBase<KeyType, Comparer>& Set, xiiAllocatorBase* pAllocator)
+xiiResult xiiDeduplicationReadContext::ReadSet(xiiStreamReader& ref_stream, xiiSetBase<KeyType, Comparer>& ref_set, xiiAllocatorBase* pAllocator)
 {
   xiiUInt64 uiCount = 0;
-  XII_SUCCEED_OR_RETURN(stream.ReadQWordValue(&uiCount));
+  XII_SUCCEED_OR_RETURN(ref_stream.ReadQWordValue(&uiCount));
 
   XII_ASSERT_DEV(uiCount < std::numeric_limits<xiiUInt32>::max(), "Containers currently use 32 bit for counts internally. Value from file is too large.");
 
-  Set.Clear();
+  ref_set.Clear();
 
   for (xiiUInt32 i = 0; i < static_cast<xiiUInt32>(uiCount); ++i)
   {
     KeyType key;
-    XII_SUCCEED_OR_RETURN(ReadObject(stream, key, pAllocator));
+    XII_SUCCEED_OR_RETURN(ReadObject(ref_stream, key, pAllocator));
 
-    Set.Insert(std::move(key));
+    ref_set.Insert(std::move(key));
   }
 
   return XII_SUCCESS;
@@ -132,13 +132,13 @@ namespace xiiInternal
   struct DeserializeHelper
   {
     template <typename T>
-    static auto Deserialize(xiiStreamReader& stream, T& obj, int) -> decltype(xiiStreamReaderUtil::Deserialize(stream, obj))
+    static auto Deserialize(xiiStreamReader& ref_stream, T& ref_obj, int) -> decltype(xiiStreamReaderUtil::Deserialize(ref_stream, ref_obj))
     {
-      return xiiStreamReaderUtil::Deserialize(stream, obj);
+      return xiiStreamReaderUtil::Deserialize(ref_stream, ref_obj);
     }
 
     template <typename T>
-    static xiiResult Deserialize(xiiStreamReader& stream, T& obj, float)
+    static xiiResult Deserialize(xiiStreamReader& ref_stream, T& ref_obj, float)
     {
       XII_REPORT_FAILURE("No deserialize method available");
       return XII_FAILURE;
@@ -147,14 +147,14 @@ namespace xiiInternal
 } // namespace xiiInternal
 
 template <typename KeyType, typename ValueType, typename Comparer>
-xiiResult xiiDeduplicationReadContext::ReadMap(xiiStreamReader& stream, xiiMapBase<KeyType, ValueType, Comparer>& Map, ReadMapMode mode, xiiAllocatorBase* pKeyAllocator, xiiAllocatorBase* pValueAllocator)
+xiiResult xiiDeduplicationReadContext::ReadMap(xiiStreamReader& ref_stream, xiiMapBase<KeyType, ValueType, Comparer>& ref_map, ReadMapMode mode, xiiAllocatorBase* pKeyAllocator, xiiAllocatorBase* pValueAllocator)
 {
   xiiUInt64 uiCount = 0;
-  XII_SUCCEED_OR_RETURN(stream.ReadQWordValue(&uiCount));
+  XII_SUCCEED_OR_RETURN(ref_stream.ReadQWordValue(&uiCount));
 
   XII_ASSERT_DEV(uiCount < std::numeric_limits<xiiUInt32>::max(), "Containers currently use 32 bit for counts internally. Value from file is too large.");
 
-  Map.Clear();
+  ref_map.Clear();
 
   if (mode == ReadMapMode::DedupKey)
   {
@@ -162,10 +162,10 @@ xiiResult xiiDeduplicationReadContext::ReadMap(xiiStreamReader& stream, xiiMapBa
     {
       KeyType   key;
       ValueType value;
-      XII_SUCCEED_OR_RETURN(ReadObject(stream, key, pKeyAllocator));
-      XII_SUCCEED_OR_RETURN(xiiInternal::DeserializeHelper::Deserialize<ValueType>(stream, value, 0));
+      XII_SUCCEED_OR_RETURN(ReadObject(ref_stream, key, pKeyAllocator));
+      XII_SUCCEED_OR_RETURN(xiiInternal::DeserializeHelper::Deserialize<ValueType>(ref_stream, value, 0));
 
-      Map.Insert(std::move(key), std::move(value));
+      ref_map.Insert(std::move(key), std::move(value));
     }
   }
   else if (mode == ReadMapMode::DedupValue)
@@ -174,10 +174,10 @@ xiiResult xiiDeduplicationReadContext::ReadMap(xiiStreamReader& stream, xiiMapBa
     {
       KeyType   key;
       ValueType value;
-      XII_SUCCEED_OR_RETURN(xiiInternal::DeserializeHelper::Deserialize<KeyType>(stream, key, 0));
-      XII_SUCCEED_OR_RETURN(ReadObject(stream, value, pValueAllocator));
+      XII_SUCCEED_OR_RETURN(xiiInternal::DeserializeHelper::Deserialize<KeyType>(ref_stream, key, 0));
+      XII_SUCCEED_OR_RETURN(ReadObject(ref_stream, value, pValueAllocator));
 
-      Map.Insert(std::move(key), std::move(value));
+      ref_map.Insert(std::move(key), std::move(value));
     }
   }
   else
@@ -186,10 +186,10 @@ xiiResult xiiDeduplicationReadContext::ReadMap(xiiStreamReader& stream, xiiMapBa
     {
       KeyType   key;
       ValueType value;
-      XII_SUCCEED_OR_RETURN(ReadObject(stream, key, pKeyAllocator));
-      XII_SUCCEED_OR_RETURN(ReadObject(stream, value, pValueAllocator));
+      XII_SUCCEED_OR_RETURN(ReadObject(ref_stream, key, pKeyAllocator));
+      XII_SUCCEED_OR_RETURN(ReadObject(ref_stream, value, pValueAllocator));
 
-      Map.Insert(std::move(key), std::move(value));
+      ref_map.Insert(std::move(key), std::move(value));
     }
   }
 

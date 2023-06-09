@@ -28,7 +28,7 @@ public:
   xiiResult ExtractAllFiles(xiiStringView sTargetFolder) const;
 
   /// \brief Sets up \a memReader for reading the raw (potentially compressed) data that is stored for the given entry in the archive.
-  void ConfigureRawMemoryStreamReader(xiiUInt32 uiEntryIdx, xiiRawMemoryStreamReader& memReader) const;
+  void ConfigureRawMemoryStreamReader(xiiUInt32 uiEntryIdx, xiiRawMemoryStreamReader& ref_memReader) const;
 
   /// \brief Creates a reader that will decompress the given file entry.
   xiiUniquePtr<xiiStreamReader> CreateEntryReader(xiiUInt32 uiEntryIdx) const;

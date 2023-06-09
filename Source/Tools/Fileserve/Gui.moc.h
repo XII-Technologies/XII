@@ -13,7 +13,7 @@ class xiiQtFileserveMainWnd : public QMainWindow
 {
   Q_OBJECT
 public:
-  xiiQtFileserveMainWnd(xiiApplication* pApp, QWidget* parent = nullptr);
+  xiiQtFileserveMainWnd(xiiApplication* pApp, QWidget* pParent = nullptr);
 
 private Q_SLOTS:
   void UpdateNetworkSlot();

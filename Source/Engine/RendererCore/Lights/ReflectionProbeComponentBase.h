@@ -47,8 +47,8 @@ public:
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   float ComputePriority(xiiMsgExtractRenderData& msg, xiiReflectionProbeRenderData* pRenderData, float fVolume, const xiiVec3& vScale) const;

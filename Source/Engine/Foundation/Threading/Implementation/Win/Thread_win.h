@@ -5,11 +5,11 @@ XII_FOUNDATION_INTERNAL_HEADER
 /// \cond
 
 // Thread entry point used to launch xiiRunnable instances
-DWORD __stdcall xiiThreadClassEntryPoint(LPVOID lpThreadParameter)
+DWORD __stdcall xiiThreadClassEntryPoint(LPVOID pLpThreadParameter)
 {
-  XII_ASSERT_RELEASE(lpThreadParameter != nullptr, "thread parameter in thread entry point must not be nullptr!");
+  XII_ASSERT_RELEASE(pLpThreadParameter != nullptr, "thread parameter in thread entry point must not be nullptr!");
 
-  xiiThread* pThread = reinterpret_cast<xiiThread*>(lpThreadParameter);
+  xiiThread* pThread = reinterpret_cast<xiiThread*>(pLpThreadParameter);
 
   return RunThread(pThread);
 }

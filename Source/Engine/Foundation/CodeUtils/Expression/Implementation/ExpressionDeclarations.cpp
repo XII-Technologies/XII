@@ -40,20 +40,20 @@ const char* RegisterType::GetName(Enum registerType)
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiResult StreamDesc::Serialize(xiiStreamWriter& stream) const
+xiiResult StreamDesc::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream << m_sName;
-  stream << static_cast<xiiUInt8>(m_DataType);
+  ref_stream << m_sName;
+  ref_stream << static_cast<xiiUInt8>(m_DataType);
 
   return XII_SUCCESS;
 }
 
-xiiResult StreamDesc::Deserialize(xiiStreamReader& stream)
+xiiResult StreamDesc::Deserialize(xiiStreamReader& ref_stream)
 {
-  stream >> m_sName;
+  ref_stream >> m_sName;
 
   xiiUInt8 dataType = 0;
-  stream >> dataType;
+  ref_stream >> dataType;
   m_DataType = static_cast<xiiProcessingStream::DataType>(dataType);
 
   return XII_SUCCESS;
@@ -75,22 +75,22 @@ bool FunctionDesc::operator<(const FunctionDesc& other) const
   return m_InputTypes.GetArrayPtr() < other.m_InputTypes.GetArrayPtr();
 }
 
-xiiResult FunctionDesc::Serialize(xiiStreamWriter& stream) const
+xiiResult FunctionDesc::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream << m_sName;
-  XII_SUCCEED_OR_RETURN(stream.WriteArray(m_InputTypes));
-  stream << m_uiNumRequiredInputs;
-  stream << m_OutputType;
+  ref_stream << m_sName;
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(m_InputTypes));
+  ref_stream << m_uiNumRequiredInputs;
+  ref_stream << m_OutputType;
 
   return XII_SUCCESS;
 }
 
-xiiResult FunctionDesc::Deserialize(xiiStreamReader& stream)
+xiiResult FunctionDesc::Deserialize(xiiStreamReader& ref_stream)
 {
-  stream >> m_sName;
-  XII_SUCCEED_OR_RETURN(stream.ReadArray(m_InputTypes));
-  stream >> m_uiNumRequiredInputs;
-  stream >> m_OutputType;
+  ref_stream >> m_sName;
+  XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(m_InputTypes));
+  ref_stream >> m_uiNumRequiredInputs;
+  ref_stream >> m_OutputType;
 
   return XII_SUCCESS;
 }

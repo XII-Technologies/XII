@@ -7,10 +7,10 @@
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/TaskSystem.h>
 
-xiiTaskGroupID xiiTaskSystem::StartSingleTask(const xiiSharedPtr<xiiTask>& pTask, xiiTaskPriority::Enum Priority, xiiTaskGroupID Dependency, xiiOnTaskGroupFinishedCallback callback /*= xiiOnTaskGroupFinishedCallback()*/)
+xiiTaskGroupID xiiTaskSystem::StartSingleTask(const xiiSharedPtr<xiiTask>& pTask, xiiTaskPriority::Enum priority, xiiTaskGroupID dependency, xiiOnTaskGroupFinishedCallback callback /*= xiiOnTaskGroupFinishedCallback()*/)
 {
-  xiiTaskGroupID Group = CreateTaskGroup(Priority, callback);
-  AddTaskGroupDependency(Group, Dependency);
+  xiiTaskGroupID Group = CreateTaskGroup(priority, callback);
+  AddTaskGroupDependency(Group, dependency);
   AddTaskToGroup(Group, pTask);
   StartTaskGroup(Group);
   return Group;
@@ -18,10 +18,10 @@ xiiTaskGroupID xiiTaskSystem::StartSingleTask(const xiiSharedPtr<xiiTask>& pTask
 
 xiiTaskGroupID xiiTaskSystem::StartSingleTask(
   const xiiSharedPtr<xiiTask>&   pTask,
-  xiiTaskPriority::Enum          Priority,
+  xiiTaskPriority::Enum          priority,
   xiiOnTaskGroupFinishedCallback callback /*= xiiOnTaskGroupFinishedCallback()*/)
 {
-  xiiTaskGroupID Group = CreateTaskGroup(Priority, callback);
+  xiiTaskGroupID Group = CreateTaskGroup(priority, callback);
   AddTaskToGroup(Group, pTask);
   StartTaskGroup(Group);
   return Group;
@@ -144,7 +144,7 @@ bool xiiTaskSystem::ExecuteTask(xiiTaskPriority::Enum FirstPriority, xiiTaskPrio
 }
 
 
-xiiResult xiiTaskSystem::CancelTask(const xiiSharedPtr<xiiTask>& pTask, xiiOnTaskRunning::Enum OnTaskRunning)
+xiiResult xiiTaskSystem::CancelTask(const xiiSharedPtr<xiiTask>& pTask, xiiOnTaskRunning::Enum onTaskRunning)
 {
   if (pTask->IsTaskFinished())
     return XII_SUCCESS;
@@ -199,7 +199,7 @@ xiiResult xiiTaskSystem::CancelTask(const xiiSharedPtr<xiiTask>& pTask, xiiOnTas
   // if we made it here, the task was already running
   // thus we just wait for it to finish
 
-  if (OnTaskRunning == xiiOnTaskRunning::WaitTillFinished)
+  if (onTaskRunning == xiiOnTaskRunning::WaitTillFinished)
   {
     WaitForCondition([pTask]() { return pTask->IsTaskFinished(); });
   }

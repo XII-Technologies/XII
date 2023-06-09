@@ -23,7 +23,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLogEntry, xiiNoBase, 1, xiiRTTIDefaultAllocat
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiLogEntry::xiiLogEntry() {}
+xiiLogEntry::xiiLogEntry() = default;
 
 xiiLogEntry::xiiLogEntry(const xiiLoggingEventData& le)
 {
@@ -38,10 +38,10 @@ xiiLogEntry::xiiLogEntry(const xiiLoggingEventData& le)
 #endif
 }
 
-xiiLogEntryDelegate::xiiLogEntryDelegate(Callback callback, xiiLogMsgType::Enum LogLevel) :
+xiiLogEntryDelegate::xiiLogEntryDelegate(Callback callback, xiiLogMsgType::Enum logLevel) :
   m_Callback(callback)
 {
-  SetLogLevel(LogLevel);
+  SetLogLevel(logLevel);
 }
 
 void xiiLogEntryDelegate::HandleLogMessage(const xiiLoggingEventData& le)

@@ -19,8 +19,8 @@ class XII_RENDERERCORE_DLL xiiBoxReflectionProbeComponent : public xiiReflection
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;
@@ -34,8 +34,8 @@ public:
   xiiBoxReflectionProbeComponent();
   ~xiiBoxReflectionProbeComponent();
 
-  const xiiVec3& GetExtents() const;                 // [ property ]
-  void           SetExtents(const xiiVec3& extents); // [ property ]
+  const xiiVec3& GetExtents() const;                  // [ property ]
+  void           SetExtents(const xiiVec3& vExtents); // [ property ]
 
   const xiiVec3& GetInfluenceScale() const;                         // [ property ]
   void           SetInfluenceScale(const xiiVec3& vInfluenceScale); // [ property ]

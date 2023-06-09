@@ -12,27 +12,27 @@
 class xiiCommandInterpreterInspector : public xiiCommandInterpreter
 {
 public:
-  virtual void Interpret(xiiCommandInterpreterState& inout_State) override
+  virtual void Interpret(xiiCommandInterpreterState& inout_state) override
   {
     xiiTelemetryMessage Msg;
     Msg.SetMessageID('CMD', 'EXEC');
-    Msg.GetWriter() << inout_State.m_sInput;
+    Msg.GetWriter() << inout_state.m_sInput;
     xiiTelemetry::SendToServer(Msg);
   }
 
-  virtual void AutoComplete(xiiCommandInterpreterState& inout_State) override
+  virtual void AutoComplete(xiiCommandInterpreterState& inout_state) override
   {
     xiiTelemetryMessage Msg;
     Msg.SetMessageID('CMD', 'COMP');
-    Msg.GetWriter() << inout_State.m_sInput;
+    Msg.GetWriter() << inout_state.m_sInput;
     xiiTelemetry::SendToServer(Msg);
   }
 };
 
 xiiQtCVarsWidget* xiiQtCVarsWidget::s_pWidget = nullptr;
 
-xiiQtCVarsWidget::xiiQtCVarsWidget(QWidget* parent) :
-  ads::CDockWidget("CVars", parent)
+xiiQtCVarsWidget::xiiQtCVarsWidget(QWidget* pParent) :
+  ads::CDockWidget("CVars", pParent)
 {
   s_pWidget = this;
 

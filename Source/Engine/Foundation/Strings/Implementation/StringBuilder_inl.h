@@ -37,13 +37,13 @@ XII_FORCE_INLINE xiiStringBuilder::xiiStringBuilder(const char* szUTF8, xiiAlloc
   *this = szUTF8;
 }
 
-XII_FORCE_INLINE xiiStringBuilder::xiiStringBuilder(const wchar_t* szWChar, xiiAllocatorBase* pAllocator) :
+XII_FORCE_INLINE xiiStringBuilder::xiiStringBuilder(const wchar_t* pWChar, xiiAllocatorBase* pAllocator) :
   m_Data(pAllocator)
 {
   m_uiCharacterCount = 0;
   AppendTerminator();
 
-  *this = szWChar;
+  *this = pWChar;
 }
 
 XII_FORCE_INLINE xiiStringBuilder::xiiStringBuilder(xiiStringView rhs, xiiAllocatorBase* pAllocator) :
@@ -65,11 +65,11 @@ XII_ALWAYS_INLINE void xiiStringBuilder::operator=(const char* szUTF8)
   Set(szUTF8);
 }
 
-XII_FORCE_INLINE void xiiStringBuilder::operator=(const wchar_t* szWChar)
+XII_FORCE_INLINE void xiiStringBuilder::operator=(const wchar_t* pWChar)
 {
   // fine to do this, szWChar can never come from the stringbuilder's own data array
   Clear();
-  Append(szWChar);
+  Append(pWChar);
 }
 
 XII_ALWAYS_INLINE void xiiStringBuilder::operator=(const xiiStringBuilder& rhs)
@@ -198,23 +198,23 @@ XII_FORCE_INLINE void xiiStringBuilder::ToLower()
   m_Data.SetCountUninitialized(uiNewStringLength + 1);
 }
 
-XII_FORCE_INLINE void xiiStringBuilder::ChangeCharacter(iterator& it, xiiUInt32 uiCharacter)
+XII_FORCE_INLINE void xiiStringBuilder::ChangeCharacter(iterator& ref_it, xiiUInt32 uiCharacter)
 {
-  XII_ASSERT_DEV(it.IsValid(), "The given character iterator does not point to a valid character.");
-  XII_ASSERT_DEV(it.GetData() >= GetData() && it.GetData() < GetData() + GetElementCount(),
+  XII_ASSERT_DEV(ref_it.IsValid(), "The given character iterator does not point to a valid character.");
+  XII_ASSERT_DEV(ref_it.GetData() >= GetData() && ref_it.GetData() < GetData() + GetElementCount(),
                  "The given character iterator does not point into this string. It was either created from another string, or this string "
                  "has been reallocated in the mean time.");
 
   // this is only an optimization for pure ASCII strings
   // without it, the code below would still work
-  if (xiiUnicodeUtils::IsASCII(*it) && xiiUnicodeUtils::IsASCII(uiCharacter))
+  if (xiiUnicodeUtils::IsASCII(*ref_it) && xiiUnicodeUtils::IsASCII(uiCharacter))
   {
-    char* pPos = const_cast<char*>(it.GetData()); // yes, I know...
+    char* pPos = const_cast<char*>(ref_it.GetData()); // yes, I know...
     *pPos      = uiCharacter & 0xFF;
     return;
   }
 
-  ChangeCharacterNonASCII(it, uiCharacter);
+  ChangeCharacterNonASCII(ref_it, uiCharacter);
 }
 
 XII_ALWAYS_INLINE bool xiiStringBuilder::IsPureASCII() const
@@ -227,9 +227,9 @@ XII_ALWAYS_INLINE void xiiStringBuilder::Reserve(xiiUInt32 uiNumElements)
   m_Data.Reserve(uiNumElements);
 }
 
-XII_ALWAYS_INLINE void xiiStringBuilder::Insert(const char* szInsertAtPos, xiiStringView szTextToInsert)
+XII_ALWAYS_INLINE void xiiStringBuilder::Insert(const char* szInsertAtPos, xiiStringView sTextToInsert)
 {
-  ReplaceSubString(szInsertAtPos, szInsertAtPos, szTextToInsert);
+  ReplaceSubString(szInsertAtPos, szInsertAtPos, sTextToInsert);
 }
 
 XII_ALWAYS_INLINE void xiiStringBuilder::Remove(const char* szRemoveFromPos, const char* szRemoveToPos)
@@ -238,15 +238,15 @@ XII_ALWAYS_INLINE void xiiStringBuilder::Remove(const char* szRemoveFromPos, con
 }
 
 template <typename Container>
-bool xiiUnicodeUtils::RepairNonUtf8Text(const char* pStartData, const char* pEndData, Container& out_Result)
+bool xiiUnicodeUtils::RepairNonUtf8Text(const char* pStartData, const char* pEndData, Container& out_result)
 {
   if (xiiUnicodeUtils::IsValidUtf8(pStartData, pEndData))
   {
-    out_Result = xiiStringView(pStartData, pEndData);
+    out_result = xiiStringView(pStartData, pEndData);
     return false;
   }
 
-  out_Result.Clear();
+  out_result.Clear();
 
   xiiHybridArray<char, 1024>                              fixedText;
   xiiUnicodeUtils::UtfInserter<char, decltype(fixedText)> inserter(&fixedText);
@@ -259,7 +259,7 @@ bool xiiUnicodeUtils::RepairNonUtf8Text(const char* pStartData, const char* pEnd
 
   XII_ASSERT_DEV(xiiUnicodeUtils::IsValidUtf8(fixedText.GetData(), fixedText.GetData() + fixedText.GetCount()), "Repaired text is still not a valid Utf8 string.");
 
-  out_Result = xiiStringView(fixedText.GetData(), fixedText.GetCount());
+  out_result = xiiStringView(fixedText.GetData(), fixedText.GetCount());
   return true;
 }
 

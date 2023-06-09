@@ -40,13 +40,13 @@ public:
   virtual xiiUInt64 GetHeapMemoryUsage() const = 0;
 
   /// \brief Copies all data from the given stream into the storage.
-  void ReadAll(xiiStreamReader& Stream, xiiUInt64 uiMaxBytes = xiiMath::MaxValue<xiiUInt64>());
+  void ReadAll(xiiStreamReader& ref_stream, xiiUInt64 uiMaxBytes = xiiMath::MaxValue<xiiUInt64>());
 
   /// \brief Reserves N bytes of storage.
   virtual void Reserve(xiiUInt64 uiBytes) = 0;
 
   /// \brief Writes the entire content of the storage to the provided stream.
-  virtual xiiResult CopyToStream(xiiStreamWriter& stream) const = 0;
+  virtual xiiResult CopyToStream(xiiStreamWriter& ref_stream) const = 0;
 
   /// \brief Returns a read-only xiiArrayPtr that represents a contiguous area in memory which starts at the given first byte.
   ///
@@ -97,9 +97,9 @@ public:
     m_Storage.Reserve(static_cast<xiiUInt32>(uiBytes));
   }
 
-  virtual xiiResult CopyToStream(xiiStreamWriter& stream) const override
+  virtual xiiResult CopyToStream(xiiStreamWriter& ref_stream) const override
   {
-    return stream.WriteBytes(m_Storage.GetData(), m_Storage.GetCount());
+    return ref_stream.WriteBytes(m_Storage.GetData(), m_Storage.GetCount());
   }
 
   virtual xiiArrayPtr<const xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) const override
@@ -163,13 +163,13 @@ public:
   xiiDefaultMemoryStreamStorage(xiiUInt32 uiInitialCapacity = 0, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
   ~xiiDefaultMemoryStreamStorage();
 
-  virtual void Reserve(xiiUInt64 bytes) override; // [tested]
+  virtual void Reserve(xiiUInt64 uiBytes) override; // [tested]
 
   virtual xiiUInt64                   GetStorageSize64() const override; // [tested]
   virtual void                        Clear() override;
   virtual void                        Compact() override;
   virtual xiiUInt64                   GetHeapMemoryUsage() const override;
-  virtual xiiResult                   CopyToStream(xiiStreamWriter& stream) const override;
+  virtual xiiResult                   CopyToStream(xiiStreamWriter& ref_stream) const override;
   virtual xiiArrayPtr<const xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) const override; // [tested]
   virtual xiiArrayPtr<xiiUInt8>       GetContiguousMemoryRange(xiiUInt64 uiStartByte) override;       // [tested]
 
@@ -215,9 +215,9 @@ public:
     m_pStorage->Reserve(static_cast<xiiUInt32>(uiBytes));
   }
 
-  virtual xiiResult CopyToStream(xiiStreamWriter& stream) const override
+  virtual xiiResult CopyToStream(xiiStreamWriter& ref_stream) const override
   {
-    return stream.WriteBytes(m_pStorage->GetData(), m_pStorage->GetCount());
+    return ref_stream.WriteBytes(m_pStorage->GetData(), m_pStorage->GetCount());
   }
 
   virtual xiiArrayPtr<const xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) const override
@@ -426,9 +426,9 @@ public:
   /// \brief Initialize the raw memory reader with the chunk of memory from a standard XII container.
   /// \note The container must store the data in a contiguous array.
   template <typename CONTAINER>
-  xiiRawMemoryStreamWriter(CONTAINER& container) // [tested]
+  xiiRawMemoryStreamWriter(CONTAINER& ref_container) // [tested]
   {
-    Reset(container);
+    Reset(ref_container);
   }
 
   ~xiiRawMemoryStreamWriter(); // [tested]
@@ -436,9 +436,9 @@ public:
   void Reset(void* pData, xiiUInt64 uiDataSize); // [tested]
 
   template <typename CONTAINER>
-  void Reset(CONTAINER& container) // [tested]
+  void Reset(CONTAINER& ref_container) // [tested]
   {
-    Reset(static_cast<xiiUInt8*>(container.GetData()), container.GetCount());
+    Reset(static_cast<xiiUInt8*>(ref_container.GetData()), ref_container.GetCount());
   }
 
   /// \brief Returns the total available bytes in the memory stream

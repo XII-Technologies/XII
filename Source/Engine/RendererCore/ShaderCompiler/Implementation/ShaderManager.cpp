@@ -225,9 +225,9 @@ bool xiiShaderManager::IsPermutationValueAllowed(const xiiHashedString& sName, c
   return true;
 }
 
-void xiiShaderManager::GetPermutationValues(const xiiHashedString& sName, xiiDynamicArray<xiiHashedString>& out_Values)
+void xiiShaderManager::GetPermutationValues(const xiiHashedString& sName, xiiDynamicArray<xiiHashedString>& out_values)
 {
-  out_Values.Clear();
+  out_values.Clear();
 
   const PermutationVarConfig* pConfig = FindConfig(sName);
   if (pConfig == nullptr)
@@ -235,14 +235,14 @@ void xiiShaderManager::GetPermutationValues(const xiiHashedString& sName, xiiDyn
 
   if (pConfig->m_DefaultValue.IsA<bool>())
   {
-    out_Values.PushBack(s_sTrue);
-    out_Values.PushBack(s_sFalse);
+    out_values.PushBack(s_sTrue);
+    out_values.PushBack(s_sFalse);
   }
   else
   {
     for (const auto& val : pConfig->m_EnumValues)
     {
-      out_Values.PushBack(val.m_sValueName);
+      out_values.PushBack(val.m_sValueName);
     }
   }
 }
@@ -258,7 +258,7 @@ xiiArrayPtr<const xiiShaderParser::EnumValue> xiiShaderManager::GetPermutationEn
   return {};
 }
 
-void xiiShaderManager::PreloadPermutations(xiiShaderResourceHandle hShader, const xiiHashTable<xiiHashedString, xiiHashedString>& permVars, xiiTime tShouldBeAvailableIn)
+void xiiShaderManager::PreloadPermutations(xiiShaderResourceHandle hShader, const xiiHashTable<xiiHashedString, xiiHashedString>& permVars, xiiTime shouldBeAvailableIn)
 {
   XII_ASSERT_NOT_IMPLEMENTED;
 #if 0

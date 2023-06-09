@@ -45,23 +45,23 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiKrautTreeComponent::xiiKrautTreeComponent()  = default;
 xiiKrautTreeComponent::~xiiKrautTreeComponent() = default;
 
-void xiiKrautTreeComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiKrautTreeComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s << m_hKrautGenerator;
   s << m_uiVariationIndex;
   s << m_uiCustomRandomSeed;
 }
 
-void xiiKrautTreeComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiKrautTreeComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   if (uiVersion <= 1)
   {
@@ -451,7 +451,7 @@ void xiiKrautTreeComponent::ComputeWind() const
   }
 }
 
-void xiiKrautTreeComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& msg) const
+void xiiKrautTreeComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& ref_msg) const
 {
   xiiStringBuilder sResourceName;
   sResourceName.Format("KrautTreeCpu:{}", m_hKrautGenerator.GetResourceID());
@@ -460,7 +460,7 @@ void xiiKrautTreeComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& msg) con
   if (!hMesh.IsValid())
   {
     xiiGeometry geo;
-    if (CreateGeometry(geo, msg.m_Mode).Failed())
+    if (CreateGeometry(geo, ref_msg.m_Mode).Failed())
       return;
 
     xiiMeshResourceDescriptor desc;
@@ -475,17 +475,17 @@ void xiiKrautTreeComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& msg) con
     hMesh = xiiResourceManager::GetOrCreateResource<xiiCpuMeshResource>(sResourceName, std::move(desc), sResourceName);
   }
 
-  msg.AddMeshObject(GetOwner()->GetGlobalTransform(), hMesh);
+  ref_msg.AddMeshObject(GetOwner()->GetGlobalTransform(), hMesh);
 }
 
-void xiiKrautTreeComponent::OnBuildStaticMesh(xiiMsgBuildStaticMesh& msg) const
+void xiiKrautTreeComponent::OnBuildStaticMesh(xiiMsgBuildStaticMesh& ref_msg) const
 {
   xiiGeometry geo;
   if (CreateGeometry(geo, xiiWorldGeoExtractionUtil::ExtractionMode::CollisionMesh).Failed())
     return;
 
-  auto& desc    = *msg.m_pStaticMeshDescription;
-  auto& subMesh = msg.m_pStaticMeshDescription->m_SubMeshes.ExpandAndGetRef();
+  auto& desc    = *ref_msg.m_pStaticMeshDescription;
+  auto& subMesh = ref_msg.m_pStaticMeshDescription->m_SubMeshes.ExpandAndGetRef();
 
   {
     xiiResourceLock<xiiKrautTreeResource> pTree(m_hKrautTree, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);

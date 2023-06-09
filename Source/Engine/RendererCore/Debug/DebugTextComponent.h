@@ -5,7 +5,7 @@
 
 struct xiiMsgExtractRenderData;
 
-typedef xiiComponentManager<class xiiDebugTextComponent, xiiBlockStorageType::Compact> xiiDebugTextComponentManager;
+using xiiDebugTextComponentManager = xiiComponentManager<class xiiDebugTextComponent, xiiBlockStorageType::Compact>;
 
 /// \brief This component prints debug text at the owner object's position.
 class XII_RENDERERCORE_DLL xiiDebugTextComponent : public xiiComponent
@@ -15,8 +15,8 @@ class XII_RENDERERCORE_DLL xiiDebugTextComponent : public xiiComponent
   //////////////////////////////////////////////////////////////////////////
   // xiiComponent
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiDebugTextComponent
@@ -27,10 +27,10 @@ public:
   xiiString       m_sText; // [ property ]
   xiiColorGammaUB m_Color; // [ property ]
 
-  float m_fValue0; // [ property ]
-  float m_fValue1; // [ property ]
-  float m_fValue2; // [ property ]
-  float m_fValue3; // [ property ]
+  float m_fValue0 = 0.0f; // [ property ]
+  float m_fValue1 = 0.0f; // [ property ]
+  float m_fValue2 = 0.0f; // [ property ]
+  float m_fValue3 = 0.0f; // [ property ]
 
 protected:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const; // [ msg handler ]

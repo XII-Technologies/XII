@@ -16,14 +16,14 @@
 
 #include <Foundation/Math/Declarations.h>
 
-typedef float xiiMathTestType;
+using xiiMathTestType = float;
 
-typedef xiiVec2Template<xiiMathTestType>           xiiVec2T;           ///< This is only for testing purposes
-typedef xiiVec3Template<xiiMathTestType>           xiiVec3T;           ///< This is only for testing purposes
-typedef xiiVec4Template<xiiMathTestType>           xiiVec4T;           ///< This is only for testing purposes
-typedef xiiMat3Template<xiiMathTestType>           xiiMat3T;           ///< This is only for testing purposes
-typedef xiiMat4Template<xiiMathTestType>           xiiMat4T;           ///< This is only for testing purposes
-typedef xiiQuatTemplate<xiiMathTestType>           xiiQuatT;           ///< This is only for testing purposes
-typedef xiiPlaneTemplate<xiiMathTestType>          xiiPlaneT;          ///< This is only for testing purposes
-typedef xiiBoundingBoxTemplate<xiiMathTestType>    xiiBoundingBoxT;    ///< This is only for testing purposes
-typedef xiiBoundingSphereTemplate<xiiMathTestType> xiiBoundingSphereT; ///< This is only for testing purposes
+using xiiVec2T           = xiiVec2Template<xiiMathTestType>;           ///< This is only for testing purposes
+using xiiVec3T           = xiiVec3Template<xiiMathTestType>;           ///< This is only for testing purposes
+using xiiVec4T           = xiiVec4Template<xiiMathTestType>;           ///< This is only for testing purposes
+using xiiMat3T           = xiiMat3Template<xiiMathTestType>;           ///< This is only for testing purposes
+using xiiMat4T           = xiiMat4Template<xiiMathTestType>;           ///< This is only for testing purposes
+using xiiQuatT           = xiiQuatTemplate<xiiMathTestType>;           ///< This is only for testing purposes
+using xiiPlaneT          = xiiPlaneTemplate<xiiMathTestType>;          ///< This is only for testing purposes
+using xiiBoundingBoxT    = xiiBoundingBoxTemplate<xiiMathTestType>;    ///< This is only for testing purposes
+using xiiBoundingSphereT = xiiBoundingSphereTemplate<xiiMathTestType>; ///< This is only for testing purposes

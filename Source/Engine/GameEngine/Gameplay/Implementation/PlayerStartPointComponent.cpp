@@ -30,28 +30,28 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiPlayerStartPointComponent::xiiPlayerStartPointComponent()  = default;
 xiiPlayerStartPointComponent::~xiiPlayerStartPointComponent() = default;
 
-void xiiPlayerStartPointComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiPlayerStartPointComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_hPlayerPrefab;
 
-  xiiPrefabReferenceComponent::SerializePrefabParameters(*GetWorld(), stream, m_Parameters);
+  xiiPrefabReferenceComponent::SerializePrefabParameters(*GetWorld(), ref_stream, m_Parameters);
 }
 
-void xiiPlayerStartPointComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiPlayerStartPointComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_hPlayerPrefab;
 
   if (uiVersion >= 2)
   {
-    xiiPrefabReferenceComponent::DeserializePrefabParameters(m_Parameters, stream);
+    xiiPrefabReferenceComponent::DeserializePrefabParameters(m_Parameters, ref_stream);
   }
 }
 
@@ -87,7 +87,7 @@ const xiiPrefabResourceHandle& xiiPlayerStartPointComponent::GetPlayerPrefab() c
 
 const xiiRangeView<const char*, xiiUInt32> xiiPlayerStartPointComponent::GetParameters() const
 {
-  return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Parameters.GetCount(); }, [](xiiUInt32& it) { ++it; }, [this](const xiiUInt32& it) -> const char* { return m_Parameters.GetKey(it).GetString().GetData(); });
+  return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Parameters.GetCount(); }, [](xiiUInt32& ref_uiIt) { ++ref_uiIt; }, [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
 }
 
 void xiiPlayerStartPointComponent::SetParameter(const char* szKey, const xiiVariant& value)

@@ -14,7 +14,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleFinalizer_LastPosition, 1, xiiRTTIDe
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiParticleFinalizerFactory_LastPosition::xiiParticleFinalizerFactory_LastPosition() {}
+xiiParticleFinalizerFactory_LastPosition::xiiParticleFinalizerFactory_LastPosition() = default;
 
 const xiiRTTI* xiiParticleFinalizerFactory_LastPosition::GetFinalizerType() const
 {

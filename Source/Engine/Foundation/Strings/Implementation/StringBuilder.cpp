@@ -6,18 +6,18 @@
 
 #include <stdarg.h>
 
-xiiStringBuilder::xiiStringBuilder(xiiStringView pData1, xiiStringView pData2, xiiStringView pData3, xiiStringView pData4, xiiStringView pData5, xiiStringView pData6)
+xiiStringBuilder::xiiStringBuilder(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4, xiiStringView sData5, xiiStringView sData6)
 {
   m_uiCharacterCount = 0;
   AppendTerminator();
 
-  Append(pData1, pData2, pData3, pData4, pData5, pData6);
+  Append(sData1, sData2, sData3, sData4, sData5, sData6);
 }
 
-void xiiStringBuilder::Set(xiiStringView pData1, xiiStringView pData2, xiiStringView pData3, xiiStringView pData4, xiiStringView pData5, xiiStringView pData6)
+void xiiStringBuilder::Set(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4, xiiStringView sData5, xiiStringView sData6)
 {
   Clear();
-  Append(pData1, pData2, pData3, pData4, pData5, pData6);
+  Append(sData1, sData2, sData3, sData4, sData5, sData6);
 }
 
 void xiiStringBuilder::SetSubString_FromTo(const char* pStart, const char* pEnd)
@@ -46,14 +46,14 @@ void xiiStringBuilder::SetSubString_CharacterCount(const char* pStart, xiiUInt32
   *this = view;
 }
 
-void xiiStringBuilder::Append(xiiStringView pData1, xiiStringView pData2, xiiStringView pData3, xiiStringView pData4, xiiStringView pData5, xiiStringView pData6)
+void xiiStringBuilder::Append(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4, xiiStringView sData5, xiiStringView sData6)
 {
   // it is not possible to find out how many parameters were passed to a vararg function
   // with a fixed size of parameters we do not need to have a parameter that tells us how many strings will come
 
   const xiiUInt32 uiMaxParams = 6;
 
-  const xiiStringView pStrings[uiMaxParams] = {pData1, pData2, pData3, pData4, pData5, pData6};
+  const xiiStringView pStrings[uiMaxParams] = {sData1, sData2, sData3, sData4, sData5, sData6};
   xiiUInt32           uiStrLen[uiMaxParams] = {0};
 
   xiiUInt32 uiMoreBytes = 0;
@@ -94,14 +94,14 @@ void xiiStringBuilder::Append(xiiStringView pData1, xiiStringView pData2, xiiStr
   }
 }
 
-void xiiStringBuilder::Prepend(xiiStringView pData1, xiiStringView pData2, xiiStringView pData3, xiiStringView pData4, xiiStringView pData5, xiiStringView pData6)
+void xiiStringBuilder::Prepend(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4, xiiStringView sData5, xiiStringView sData6)
 {
   // it is not possible to find out how many parameters were passed to a vararg function
   // with a fixed size of parameters we do not need to have a parameter that tells us how many strings will come
 
   const xiiUInt32 uiMaxParams = 6;
 
-  const xiiStringView pStrings[uiMaxParams] = {pData1, pData2, pData3, pData4, pData5, pData6};
+  const xiiStringView pStrings[uiMaxParams] = {sData1, sData2, sData3, sData4, sData5, sData6};
   xiiUInt32           uiStrLen[uiMaxParams] = {0};
 
   xiiUInt32 uiMoreBytes = 0;
@@ -144,10 +144,10 @@ void xiiStringBuilder::Prepend(xiiStringView pData1, xiiStringView pData2, xiiSt
   }
 }
 
-void xiiStringBuilder::PrintfArgs(const char* szUtf8Format, va_list args0)
+void xiiStringBuilder::PrintfArgs(const char* szUtf8Format, va_list szArgs0)
 {
   va_list args;
-  va_copy(args, args0);
+  va_copy(args, szArgs0);
 
   Clear();
 
@@ -292,7 +292,7 @@ void xiiStringBuilder::Shrink(xiiUInt32 uiShrinkCharsFront, xiiUInt32 uiShrinkCh
   m_uiCharacterCount -= uiShrinkCharsBack;
 }
 
-void xiiStringBuilder::ReplaceSubString(const char* szStartPos, const char* szEndPos, xiiStringView szReplaceWith)
+void xiiStringBuilder::ReplaceSubString(const char* szStartPos, const char* szEndPos, xiiStringView sReplaceWith)
 {
   XII_ASSERT_DEV(xiiMath::IsInRange(szStartPos, GetData(), GetData() + m_Data.GetCount()), "szStartPos is not inside this string.");
   XII_ASSERT_DEV(xiiMath::IsInRange(szEndPos, GetData(), GetData() + m_Data.GetCount()), "szEndPos is not inside this string.");
@@ -300,12 +300,12 @@ void xiiStringBuilder::ReplaceSubString(const char* szStartPos, const char* szEn
 
   xiiUInt32 uiWordChars = 0;
   xiiUInt32 uiWordBytes = 0;
-  xiiStringUtils::GetCharacterAndElementCount(szReplaceWith.GetStartPointer(), uiWordChars, uiWordBytes, szReplaceWith.GetEndPointer());
+  xiiStringUtils::GetCharacterAndElementCount(sReplaceWith.GetStartPointer(), uiWordChars, uiWordBytes, sReplaceWith.GetEndPointer());
 
   const xiiUInt32 uiSubStringBytes = (xiiUInt32)(szEndPos - szStartPos);
 
   char*       szWritePos = const_cast<char*>(szStartPos); // szStartPos points into our own data anyway
-  const char* szReadPos  = szReplaceWith.GetStartPointer();
+  const char* szReadPos  = sReplaceWith.GetStartPointer();
 
   // most simple case, just replace characters
   if (uiSubStringBytes == uiWordBytes)
@@ -334,7 +334,7 @@ void xiiStringBuilder::ReplaceSubString(const char* szStartPos, const char* szEn
     m_uiCharacterCount += uiWordChars;
 
     // first copy the replacement to the correct position
-    xiiMemoryUtils::Copy(szWritePos, szReplaceWith.GetStartPointer(), uiWordBytes);
+    xiiMemoryUtils::Copy(szWritePos, sReplaceWith.GetStartPointer(), uiWordBytes);
 
     const xiiUInt32 uiDifference = uiSubStringBytes - uiWordBytes;
 
@@ -367,7 +367,7 @@ void xiiStringBuilder::ReplaceSubString(const char* szStartPos, const char* szEn
     xiiMemoryUtils::CopyOverlapped(szWritePos + uiWordBytes, szWritePos + uiSubStringBytes, szStringEnd - (szWritePos + uiSubStringBytes));
 
     // now copy the replacement to the correct position
-    xiiMemoryUtils::Copy(szWritePos, szReplaceWith.GetStartPointer(), uiWordBytes);
+    xiiMemoryUtils::Copy(szWritePos, sReplaceWith.GetStartPointer(), uiWordBytes);
   }
 }
 
@@ -520,37 +520,37 @@ xiiUInt32 xiiStringBuilder::ReplaceAll_NoCase(xiiStringView sSearchFor, xiiStrin
   return uiReplacements;
 }
 
-const char* xiiStringBuilder::ReplaceWholeWord(const char* szSearchFor, xiiStringView szReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB)
+const char* xiiStringBuilder::ReplaceWholeWord(const char* szSearchFor, xiiStringView sReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB)
 {
-  const char* szPos = FindWholeWord(szSearchFor, IsDelimiterCB);
+  const char* szPos = FindWholeWord(szSearchFor, isDelimiterCB);
 
   if (szPos == nullptr)
     return nullptr;
 
   const xiiUInt32 uiOffset = static_cast<xiiUInt32>(szPos - GetData());
 
-  ReplaceSubString(szPos, szPos + xiiStringUtils::GetStringElementCount(szSearchFor), szReplaceWith);
+  ReplaceSubString(szPos, szPos + xiiStringUtils::GetStringElementCount(szSearchFor), sReplaceWith);
   return GetData() + uiOffset;
 }
 
-const char* xiiStringBuilder::ReplaceWholeWord_NoCase(const char* szSearchFor, xiiStringView szReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB)
+const char* xiiStringBuilder::ReplaceWholeWord_NoCase(const char* szSearchFor, xiiStringView sReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB)
 {
-  const char* szPos = FindWholeWord_NoCase(szSearchFor, IsDelimiterCB);
+  const char* szPos = FindWholeWord_NoCase(szSearchFor, isDelimiterCB);
 
   if (szPos == nullptr)
     return nullptr;
 
   const xiiUInt32 uiOffset = static_cast<xiiUInt32>(szPos - GetData());
 
-  ReplaceSubString(szPos, szPos + xiiStringUtils::GetStringElementCount(szSearchFor), szReplaceWith);
+  ReplaceSubString(szPos, szPos + xiiStringUtils::GetStringElementCount(szSearchFor), sReplaceWith);
   return GetData() + uiOffset;
 }
 
 
-xiiUInt32 xiiStringBuilder::ReplaceWholeWordAll(const char* szSearchFor, xiiStringView szReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB)
+xiiUInt32 xiiStringBuilder::ReplaceWholeWordAll(const char* szSearchFor, xiiStringView sReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB)
 {
   const xiiUInt32 uiSearchBytes = xiiStringUtils::GetStringElementCount(szSearchFor);
-  const xiiUInt32 uiWordBytes   = xiiStringUtils::GetStringElementCount(szReplaceWith.GetStartPointer(), szReplaceWith.GetEndPointer());
+  const xiiUInt32 uiWordBytes   = xiiStringUtils::GetStringElementCount(sReplaceWith.GetStartPointer(), sReplaceWith.GetEndPointer());
 
   xiiUInt32 uiReplacements = 0;
   xiiUInt32 uiOffset       = 0;
@@ -559,7 +559,7 @@ xiiUInt32 xiiStringBuilder::ReplaceWholeWordAll(const char* szSearchFor, xiiStri
   {
     // during ReplaceSubString the string data might get reallocated and the memory addresses do not stay valid
     // so we need to work with offsets and recompute the pointers every time
-    const char* szFoundAt = xiiStringUtils::FindWholeWord(GetData() + uiOffset, szSearchFor, IsDelimiterCB, GetData() + m_Data.GetCount() - 1);
+    const char* szFoundAt = xiiStringUtils::FindWholeWord(GetData() + uiOffset, szSearchFor, isDelimiterCB, GetData() + m_Data.GetCount() - 1);
 
     if (szFoundAt == nullptr)
       return uiReplacements;
@@ -567,7 +567,7 @@ xiiUInt32 xiiStringBuilder::ReplaceWholeWordAll(const char* szSearchFor, xiiStri
     // do not search withing the replaced part, otherwise we get recursive replacement which will not end
     uiOffset = static_cast<xiiUInt32>(szFoundAt - GetData()) + uiWordBytes;
 
-    ReplaceSubString(szFoundAt, szFoundAt + uiSearchBytes, szReplaceWith);
+    ReplaceSubString(szFoundAt, szFoundAt + uiSearchBytes, sReplaceWith);
 
     ++uiReplacements;
   }
@@ -575,10 +575,10 @@ xiiUInt32 xiiStringBuilder::ReplaceWholeWordAll(const char* szSearchFor, xiiStri
   return uiReplacements;
 }
 
-xiiUInt32 xiiStringBuilder::ReplaceWholeWordAll_NoCase(const char* szSearchFor, xiiStringView szReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER IsDelimiterCB)
+xiiUInt32 xiiStringBuilder::ReplaceWholeWordAll_NoCase(const char* szSearchFor, xiiStringView sReplaceWith, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB)
 {
   const xiiUInt32 uiSearchBytes = xiiStringUtils::GetStringElementCount(szSearchFor);
-  const xiiUInt32 uiWordBytes   = xiiStringUtils::GetStringElementCount(szReplaceWith.GetStartPointer(), szReplaceWith.GetEndPointer());
+  const xiiUInt32 uiWordBytes   = xiiStringUtils::GetStringElementCount(sReplaceWith.GetStartPointer(), sReplaceWith.GetEndPointer());
 
   xiiUInt32 uiReplacements = 0;
   xiiUInt32 uiOffset       = 0;
@@ -587,7 +587,7 @@ xiiUInt32 xiiStringBuilder::ReplaceWholeWordAll_NoCase(const char* szSearchFor, 
   {
     // during ReplaceSubString the string data might get reallocated and the memory addresses do not stay valid
     // so we need to work with offsets and recompute the pointers every time
-    const char* szFoundAt = xiiStringUtils::FindWholeWord_NoCase(GetData() + uiOffset, szSearchFor, IsDelimiterCB, GetData() + m_Data.GetCount() - 1);
+    const char* szFoundAt = xiiStringUtils::FindWholeWord_NoCase(GetData() + uiOffset, szSearchFor, isDelimiterCB, GetData() + m_Data.GetCount() - 1);
 
     if (szFoundAt == nullptr)
       return uiReplacements;
@@ -595,7 +595,7 @@ xiiUInt32 xiiStringBuilder::ReplaceWholeWordAll_NoCase(const char* szSearchFor, 
     // do not search withing the replaced part, otherwise we get recursive replacement which will not end
     uiOffset = static_cast<xiiUInt32>(szFoundAt - GetData()) + uiWordBytes;
 
-    ReplaceSubString(szFoundAt, szFoundAt + uiSearchBytes, szReplaceWith);
+    ReplaceSubString(szFoundAt, szFoundAt + uiSearchBytes, sReplaceWith);
 
     ++uiReplacements;
   }
@@ -783,17 +783,17 @@ void xiiStringBuilder::AppendPath(xiiStringView sPath1, xiiStringView sPath2, xi
   }
 }
 
-void xiiStringBuilder::AppendWithSeparator(xiiStringView optional, xiiStringView sText1, xiiStringView sText2 /*= xiiStringView()*/, xiiStringView sText3 /*= xiiStringView()*/, xiiStringView sText4 /*= xiiStringView()*/, xiiStringView sText5 /*= xiiStringView()*/, xiiStringView sText6 /*= xiiStringView()*/)
+void xiiStringBuilder::AppendWithSeparator(xiiStringView sOptional, xiiStringView sText1, xiiStringView sText2 /*= xiiStringView()*/, xiiStringView sText3 /*= xiiStringView()*/, xiiStringView sText4 /*= xiiStringView()*/, xiiStringView sText5 /*= xiiStringView()*/, xiiStringView sText6 /*= xiiStringView()*/)
 {
   // if this string already ends with the optional string, reset it to be empty
-  if (IsEmpty() || xiiStringUtils::EndsWith(GetData(), optional.GetStartPointer(), GetData() + GetElementCount(), optional.GetEndPointer()))
+  if (IsEmpty() || xiiStringUtils::EndsWith(GetData(), sOptional.GetStartPointer(), GetData() + GetElementCount(), sOptional.GetEndPointer()))
   {
-    optional = xiiStringView();
+    sOptional = xiiStringView();
   }
 
   const xiiUInt32 uiMaxParams = 7;
 
-  const xiiStringView pStrings[uiMaxParams] = {optional, sText1, sText2, sText3, sText4, sText5, sText6};
+  const xiiStringView pStrings[uiMaxParams] = {sOptional, sText1, sText2, sText3, sText4, sText5, sText6};
   xiiUInt32           uiStrLen[uiMaxParams] = {0};
   xiiUInt32           uiMoreBytes           = 0;
 
@@ -1031,7 +1031,7 @@ void xiiStringBuilder::RemoveDoubleSlashesInPath()
 }
 
 
-void xiiStringBuilder::ReadAll(xiiStreamReader& Stream)
+void xiiStringBuilder::ReadAll(xiiStreamReader& ref_stream)
 {
   Clear();
 
@@ -1040,7 +1040,7 @@ void xiiStringBuilder::ReadAll(xiiStreamReader& Stream)
 
   while (true)
   {
-    const xiiUInt32 uiRead = (xiiUInt32)Stream.ReadBytes(Temp, 1024);
+    const xiiUInt32 uiRead = (xiiUInt32)ref_stream.ReadBytes(Temp, 1024);
 
     if (uiRead == 0)
       break;

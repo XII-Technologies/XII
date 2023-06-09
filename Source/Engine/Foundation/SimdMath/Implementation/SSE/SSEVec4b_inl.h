@@ -107,10 +107,10 @@ XII_ALWAYS_INLINE bool xiiSimdVec4b::NoneSet() const
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4b::Select(const xiiSimdVec4b& cmp, const xiiSimdVec4b& ifTrue, const xiiSimdVec4b& ifFalse)
+XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4b::Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4b& vIfTrue, const xiiSimdVec4b& vIfFalse)
 {
 #if XII_SSE_LEVEL >= XII_SSE_41
-  return _mm_blendv_ps(ifFalse.m_v, ifTrue.m_v, cmp.m_v);
+  return _mm_blendv_ps(vIfFalse.m_v, vIfTrue.m_v, vCmp.m_v);
 #else
   return _mm_or_ps(_mm_andnot_ps(cmp.m_v, ifFalse.m_v), _mm_and_ps(cmp.m_v, ifTrue.m_v));
 #endif

@@ -80,7 +80,7 @@ public:
   const char* GetUndoDisplayString() const;
   const char* GetRedoDisplayString() const;
 
-  void StartTransaction(const xiiFormatString& sDisplayString);
+  void StartTransaction(const xiiFormatString& displayString);
   void CancelTransaction() { EndTransaction(true); }
   void FinishTransaction() { EndTransaction(false); }
 
@@ -99,7 +99,7 @@ public:
   void SuspendTemporaryTransaction();
   void ResumeTemporaryTransaction();
 
-  xiiStatus AddCommand(xiiCommand& command);
+  xiiStatus AddCommand(xiiCommand& ref_command);
 
   void ClearUndoHistory();
   void ClearRedoHistory();
@@ -108,8 +108,8 @@ public:
 
   xiiUInt32                    GetUndoStackSize() const;
   xiiUInt32                    GetRedoStackSize() const;
-  const xiiCommandTransaction* GetUndoStackEntry(xiiUInt32 iIndex) const;
-  const xiiCommandTransaction* GetRedoStackEntry(xiiUInt32 iIndex) const;
+  const xiiCommandTransaction* GetUndoStackEntry(xiiUInt32 uiIndex) const;
+  const xiiCommandTransaction* GetRedoStackEntry(xiiUInt32 uiIndex) const;
 
   xiiSharedPtr<xiiCommandHistory::Storage> SwapStorage(xiiSharedPtr<xiiCommandHistory::Storage> pNewStorage);
   xiiSharedPtr<xiiCommandHistory::Storage> GetStorage() { return m_pHistoryStorage; }

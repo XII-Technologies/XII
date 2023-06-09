@@ -253,7 +253,7 @@ const char* xiiCommandHistory::GetRedoDisplayString() const
   return m_pHistoryStorage->m_RedoHistory.PeekBack()->m_sDisplayString;
 }
 
-void xiiCommandHistory::StartTransaction(const xiiFormatString& sDisplayString)
+void xiiCommandHistory::StartTransaction(const xiiFormatString& displayString)
 {
   XII_ASSERT_DEV(!m_bIsInUndoRedo, "Cannot start new transaction while redoing/undoing.");
 
@@ -275,7 +275,7 @@ void xiiCommandHistory::StartTransaction(const xiiFormatString& sDisplayString)
 
   pTransaction                   = xiiGetStaticRTTI<xiiCommandTransaction>()->GetAllocator()->Allocate<xiiCommandTransaction>();
   pTransaction->m_pDocument      = m_pHistoryStorage->m_pDocument;
-  pTransaction->m_sDisplayString = sDisplayString.GetText(tmp);
+  pTransaction->m_sDisplayString = displayString.GetText(tmp);
 
   if (!m_pHistoryStorage->m_TransactionStack.IsEmpty())
   {
@@ -363,12 +363,12 @@ void xiiCommandHistory::EndTransaction(bool bCancel)
   }
 }
 
-xiiStatus xiiCommandHistory::AddCommand(xiiCommand& command)
+xiiStatus xiiCommandHistory::AddCommand(xiiCommand& ref_command)
 {
   XII_ASSERT_DEV(!m_pHistoryStorage->m_TransactionStack.IsEmpty(), "Cannot add command while no transaction is started");
   XII_ASSERT_DEV(!m_pHistoryStorage->m_ActiveCommandStack.IsEmpty(), "Transaction stack is not synced anymore with m_ActiveCommandStack");
 
-  auto res = m_pHistoryStorage->m_ActiveCommandStack.PeekBack()->AddSubCommand(command);
+  auto res = m_pHistoryStorage->m_ActiveCommandStack.PeekBack()->AddSubCommand(ref_command);
 
   // Error handling should be on the caller side.
   // if (res.Failed() && !res.m_sMessage.IsEmpty())
@@ -435,14 +435,14 @@ xiiUInt32 xiiCommandHistory::GetRedoStackSize() const
   return m_pHistoryStorage->m_RedoHistory.GetCount();
 }
 
-const xiiCommandTransaction* xiiCommandHistory::GetUndoStackEntry(xiiUInt32 iIndex) const
+const xiiCommandTransaction* xiiCommandHistory::GetUndoStackEntry(xiiUInt32 uiIndex) const
 {
-  return m_pHistoryStorage->m_UndoHistory[GetUndoStackSize() - 1 - iIndex];
+  return m_pHistoryStorage->m_UndoHistory[GetUndoStackSize() - 1 - uiIndex];
 }
 
-const xiiCommandTransaction* xiiCommandHistory::GetRedoStackEntry(xiiUInt32 iIndex) const
+const xiiCommandTransaction* xiiCommandHistory::GetRedoStackEntry(xiiUInt32 uiIndex) const
 {
-  return m_pHistoryStorage->m_RedoHistory[GetRedoStackSize() - 1 - iIndex];
+  return m_pHistoryStorage->m_RedoHistory[GetRedoStackSize() - 1 - uiIndex];
 }
 
 xiiSharedPtr<xiiCommandHistory::Storage> xiiCommandHistory::SwapStorage(xiiSharedPtr<xiiCommandHistory::Storage> pNewStorage)

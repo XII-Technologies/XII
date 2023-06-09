@@ -59,12 +59,12 @@ public:
   ///@{
 
   /// \brief Fills out a list of valid (connected) device IDs.
-  virtual void GetDeviceList(xiiHybridArray<xiiXRDeviceID, 64>& out_Devices) const = 0;
+  virtual void GetDeviceList(xiiHybridArray<xiiXRDeviceID, 64>& out_devices) const = 0;
   /// \brief Returns the deviceID for a specific type of device.
   /// If the device is not connected, -1 is returned instead.
   virtual xiiXRDeviceID GetDeviceIDByType(xiiXRDeviceType::Enum type) const = 0;
   /// \brief Returns the current device state for a valid device ID.
-  virtual const xiiXRDeviceState& GetDeviceState(xiiXRDeviceID iDeviceID) const = 0;
+  virtual const xiiXRDeviceState& GetDeviceState(xiiXRDeviceID deviceID) const = 0;
   /// \brief Returns the device name for a valid device ID.
   ///
   /// This returns a human readable name to identify the device.
@@ -73,9 +73,9 @@ public:
   /// or mappings if a certain type of controller is used.
   /// Values could be for example:
   /// 'Simple Controller', 'Mixed Reality Motion Controller', 'Hand Interaction' etc.
-  virtual xiiString GetDeviceName(xiiXRDeviceID iDeviceID) const = 0;
+  virtual xiiString GetDeviceName(xiiXRDeviceID deviceID) const = 0;
   /// \brief Returns the device features for a valid device ID.
-  virtual xiiBitflags<xiiXRDeviceFeatures> GetDeviceFeatures(xiiXRDeviceID iDeviceID) const = 0;
+  virtual xiiBitflags<xiiXRDeviceFeatures> GetDeviceFeatures(xiiXRDeviceID deviceID) const = 0;
 
   /// \brief Returns the input event. Allows tracking device addition and removal.
   const xiiXRDeviceEvent& GetInputEvent() { return m_InputEvents; }

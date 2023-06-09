@@ -29,7 +29,7 @@ public:
   // TODO: clean up
   xiiSkeletonResourceHandle                                          m_hDefaultSkeleton;
   xiiHashTable<xiiHashedString, xiiMeshResourceDescriptor::BoneData> m_Bones;
-  float                                                              m_fMaxBoneVertexOffset = 0.0f; // the maximum distance between any vertex and its influencing bones, can be used for adjusting the bounding box of a pose
+  float                                                              m_fMaxBoneVertexOffset = 0.0f; // The maximum distance between any vertex and its influencing bones, can be used for adjusting the bounding box of a pose
 
 private:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;

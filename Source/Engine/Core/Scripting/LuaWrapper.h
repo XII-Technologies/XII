@@ -65,8 +65,7 @@ public:
   /// \param pLogInterface
   ///   An optional log interface where error messages are written to. If nullptr is passed in, error messages are written to the global
   ///   log.
-  xiiResult ExecuteString(const char* szString, const char* szDebugChunkName = "chunk",
-                          xiiLogInterface* pLogInterface = nullptr) const; // [tested]
+  xiiResult ExecuteString(const char* szString, const char* szDebugChunkName = "chunk", xiiLogInterface* pLogInterface = nullptr) const; // [tested]
 
   /// @}
 
@@ -81,7 +80,7 @@ public:
   xiiResult OpenTable(const char* szTable); // [tested]
 
   /// Opens the Table n, that was passed to a C-Function on its Parameter-Stack.
-  xiiResult OpenTableFromParameter(xiiUInt32 iFunctionParameter); // [tested]
+  xiiResult OpenTableFromParameter(xiiUInt32 uiFunctionParameter); // [tested]
 
   /// Closes the table that was opened last.
   void CloseTable(); // [tested]
@@ -147,7 +146,7 @@ public:
   void SetVariable(const char* szName, const char* szValue) const; // [tested]
 
   /// Sets the Variable with the given name (in scope) with the given value.
-  void SetVariable(const char* szName, const char* szValue, xiiUInt32 len) const; // [tested]
+  void SetVariable(const char* szName, const char* szValue, xiiUInt32 uiLen) const; // [tested]
 
   /// @}
 
@@ -155,7 +154,7 @@ public:
   /// @{
 
   /// Registers a C-Function to the Script under a certain Name.
-  void RegisterCFunction(const char* szFunctionName, lua_CFunction pFunction, void* pLightUserData = nullptr) const; // [tested]
+  void RegisterCFunction(const char* szFunctionName, lua_CFunction function, void* pLightUserData = nullptr) const; // [tested]
 
   /// Prepares a function to be called. After that the parameters can be pushed. Returns false if no function with the given name exists in
   /// the scope.
@@ -167,7 +166,7 @@ public:
   /// trigger. After you are finished inspecting the return values, you need to call DiscardReturnValues() to clean them up.
   ///
   /// Returns XII_FAILURE if anything went wrong during function execution. Reports errors via \a pLogInterface.
-  xiiResult CallPreparedFunction(xiiUInt32 iExpectedReturnValues = 0, xiiLogInterface* pLogInterface = nullptr); // [tested]
+  xiiResult CallPreparedFunction(xiiUInt32 uiExpectedReturnValues = 0, xiiLogInterface* pLogInterface = nullptr); // [tested]
 
   /// Call this after you called a prepared Lua-function, that returned some values. If zero values were returned, this function is
   /// optional.
@@ -213,7 +212,7 @@ public:
 
   /// Pushes a parameter on the stack to be passed to the next function called.
   /// Do this after PrepareFunctionCall() and before CallPreparedFunction().
-  void PushParameter(const char* szParam, xiiUInt32 length); // [tested]
+  void PushParameter(const char* szParam, xiiUInt32 uiLength); // [tested]
 
   /// Pushes a nil parameter on the stack to be passed to the next function called.
   /// Do this after PrepareFunctionCall() and before CallPreparedFunction().
@@ -231,40 +230,40 @@ public:
   xiiUInt32 GetNumberOfFunctionParameters() const; // [tested]
 
   /// Checks the nth Parameter passed to a C-Function for its type.
-  bool IsParameterInt(xiiUInt32 iParameter) const; // [tested]
+  bool IsParameterInt(xiiUInt32 uiParameter) const; // [tested]
 
   /// Checks the nth Parameter passed to a C-Function for its type.
-  bool IsParameterBool(xiiUInt32 iParameter) const; // [tested]
+  bool IsParameterBool(xiiUInt32 uiParameter) const; // [tested]
 
   /// Checks the nth Parameter passed to a C-Function for its type.
-  bool IsParameterFloat(xiiUInt32 iParameter) const; // [tested]
+  bool IsParameterFloat(xiiUInt32 uiParameter) const; // [tested]
 
   /// Checks the nth Parameter passed to a C-Function for its type.
-  bool IsParameterDouble(xiiUInt32 iParameter) const; // [tested]
+  bool IsParameterDouble(xiiUInt32 uiParameter) const; // [tested]
 
   /// Checks the nth Parameter passed to a C-Function for its type.
-  bool IsParameterTable(xiiUInt32 iParameter) const; // [tested]
+  bool IsParameterTable(xiiUInt32 uiParameter) const; // [tested]
 
   /// Checks the nth Parameter passed to a C-Function for its type.
-  bool IsParameterString(xiiUInt32 iParameter) const; // [tested]
+  bool IsParameterString(xiiUInt32 uiParameter) const; // [tested]
 
   /// Checks the nth Parameter passed to a C-Function for its type.
-  bool IsParameterNil(xiiUInt32 iParameter) const; // [tested]
+  bool IsParameterNil(xiiUInt32 uiParameter) const; // [tested]
 
   /// Returns the Value of the nth Parameter.
-  int GetIntParameter(xiiUInt32 iParameter) const; // [tested]
+  int GetIntParameter(xiiUInt32 uiParameter) const; // [tested]
 
   /// Returns the Value of the nth Parameter.
-  bool GetBoolParameter(xiiUInt32 iParameter) const; // [tested]
+  bool GetBoolParameter(xiiUInt32 uiParameter) const; // [tested]
 
   /// Returns the Value of the nth Parameter.
-  float GetFloatParameter(xiiUInt32 iParameter) const; // [tested]
+  float GetFloatParameter(xiiUInt32 uiParameter) const; // [tested]
 
   /// Returns the Value of the nth Parameter.
-  double GetDoubleParameter(xiiUInt32 iParameter) const; // [tested]
+  double GetDoubleParameter(xiiUInt32 uiParameter) const; // [tested]
 
   /// Returns the Value of the nth Parameter.
-  const char* GetStringParameter(xiiUInt32 iParameter) const; // [tested]
+  const char* GetStringParameter(xiiUInt32 uiParameter) const; // [tested]
 
   /// @}
 
@@ -287,45 +286,45 @@ public:
   void PushReturnValue(const char* szParam); // [tested]
 
   /// Pushes a value as a return value for a called C-Function
-  void PushReturnValue(const char* szParam, xiiUInt32 length); // [tested]
+  void PushReturnValue(const char* szParam, xiiUInt32 uiLength); // [tested]
 
   /// Pushes a value as a return value for a called C-Function
   void PushReturnValueNil(); // [tested]
 
 
   /// Checks the nth return-value passed to a C-Function for its type.
-  bool IsReturnValueInt(xiiUInt32 iReturnValue) const; // [tested]
+  bool IsReturnValueInt(xiiUInt32 uiReturnValue) const; // [tested]
 
   /// Checks the nth return-value passed to a C-Function for its type.
-  bool IsReturnValueBool(xiiUInt32 iReturnValue) const; // [tested]
+  bool IsReturnValueBool(xiiUInt32 uiReturnValue) const; // [tested]
 
   /// Checks the nth return-value passed to a C-Function for its type.
-  bool IsReturnValueFloat(xiiUInt32 iReturnValue) const; // [tested]
+  bool IsReturnValueFloat(xiiUInt32 uiReturnValue) const; // [tested]
 
   /// Checks the nth return-value passed to a C-Function for its type.
-  bool IsReturnValueDouble(xiiUInt32 iReturnValue) const; // [tested]
+  bool IsReturnValueDouble(xiiUInt32 uiReturnValue) const; // [tested]
 
   /// Checks the nth return-value passed to a C-Function for its type.
-  bool IsReturnValueString(xiiUInt32 iReturnValue) const; // [tested]
+  bool IsReturnValueString(xiiUInt32 uiReturnValue) const; // [tested]
 
   /// Checks the nth return-value passed to a C-Function for its type.
-  bool IsReturnValueNil(xiiUInt32 iReturnValue) const; // [tested]
+  bool IsReturnValueNil(xiiUInt32 uiReturnValue) const; // [tested]
 
 
   /// Returns the value of the nth return-value.
-  int GetIntReturnValue(xiiUInt32 iReturnValue) const; // [tested]
+  int GetIntReturnValue(xiiUInt32 uiReturnValue) const; // [tested]
 
   /// Returns the value of the nth return-value.
-  bool GetBoolReturnValue(xiiUInt32 iReturnValue) const; // [tested]
+  bool GetBoolReturnValue(xiiUInt32 uiReturnValue) const; // [tested]
 
   /// Returns the value of the nth return-value.
-  float GetFloatReturnValue(xiiUInt32 iReturnValue) const; // [tested]
+  float GetFloatReturnValue(xiiUInt32 uiReturnValue) const; // [tested]
 
   /// Returns the value of the nth return-value.
-  double GetDoubleReturnValue(xiiUInt32 iReturnValue) const; // [tested]
+  double GetDoubleReturnValue(xiiUInt32 uiReturnValue) const; // [tested]
 
   /// Returns the value of the nth return-value.
-  const char* GetStringReturnValue(xiiUInt32 iReturnValue) const; // [tested]
+  const char* GetStringReturnValue(xiiUInt32 uiReturnValue) const; // [tested]
 
   /// @}
 
@@ -342,19 +341,16 @@ private:
 
   struct xiiScriptStates
   {
-    xiiScriptStates() :
-      m_iParametersPushed(0), m_iOpenTables(0), m_iLuaReturnValues(0)
-    {
-    }
+    xiiScriptStates() = default;
 
     /// How many Parameters were pushed for the next function-call.
-    xiiInt32 m_iParametersPushed;
+    xiiInt32 m_iParametersPushed = 0;
 
     /// How many Tables have been opened inside the Lua-Script.
-    xiiInt32 m_iOpenTables;
+    xiiInt32 m_iOpenTables = 0;
 
     /// How many values the called Lua-function should return
-    xiiInt32 m_iLuaReturnValues;
+    xiiInt32 m_iLuaReturnValues = 0;
   };
 
   xiiScriptStates m_States;

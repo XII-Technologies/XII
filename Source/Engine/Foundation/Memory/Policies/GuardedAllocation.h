@@ -11,10 +11,10 @@ namespace xiiMemoryPolicies
   {
   public:
     xiiGuardedAllocation(xiiAllocatorBase* pParent);
-    XII_ALWAYS_INLINE ~xiiGuardedAllocation() {}
+    XII_ALWAYS_INLINE ~xiiGuardedAllocation() = default;
 
     void* Allocate(size_t uiSize, size_t uiAlign);
-    void  Deallocate(void* ptr);
+    void  Deallocate(void* pPtr);
 
     XII_ALWAYS_INLINE xiiAllocatorBase* GetParent() const { return nullptr; }
 

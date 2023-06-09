@@ -8,7 +8,7 @@
 #include <Foundation/Strings/StringUtils.h>
 #include <FoundationTest/IO/JSONTestHelpers.h>
 
-static xiiVariant CreateVariant(xiiVariant::Type::Enum t, const void* data);
+static xiiVariant CreateVariant(xiiVariant::Type::Enum t, const void* pData);
 
 XII_CREATE_SIMPLE_TEST(IO, DdlUtils)
 {
@@ -839,106 +839,106 @@ Angle $v12 { float { 45.23 } }\
   }
 }
 
-static xiiVariant CreateVariant(xiiVariant::Type::Enum t, const void* data)
+static xiiVariant CreateVariant(xiiVariant::Type::Enum t, const void* pData)
 {
   switch (t)
   {
     case xiiVariant::Type::Bool:
-      return xiiVariant(*((bool*)data));
+      return xiiVariant(*((bool*)pData));
     case xiiVariant::Type::Int8:
-      return xiiVariant(*((xiiInt8*)data));
+      return xiiVariant(*((xiiInt8*)pData));
     case xiiVariant::Type::UInt8:
-      return xiiVariant(*((xiiUInt8*)data));
+      return xiiVariant(*((xiiUInt8*)pData));
     case xiiVariant::Type::Int16:
-      return xiiVariant(*((xiiInt16*)data));
+      return xiiVariant(*((xiiInt16*)pData));
     case xiiVariant::Type::UInt16:
-      return xiiVariant(*((xiiUInt16*)data));
+      return xiiVariant(*((xiiUInt16*)pData));
     case xiiVariant::Type::Int32:
-      return xiiVariant(*((xiiInt32*)data));
+      return xiiVariant(*((xiiInt32*)pData));
     case xiiVariant::Type::UInt32:
-      return xiiVariant(*((xiiUInt32*)data));
+      return xiiVariant(*((xiiUInt32*)pData));
     case xiiVariant::Type::Int64:
-      return xiiVariant(*((xiiInt64*)data));
+      return xiiVariant(*((xiiInt64*)pData));
     case xiiVariant::Type::UInt64:
-      return xiiVariant(*((xiiUInt64*)data));
+      return xiiVariant(*((xiiUInt64*)pData));
     case xiiVariant::Type::Float:
-      return xiiVariant(*((float*)data));
+      return xiiVariant(*((float*)pData));
     case xiiVariant::Type::Double:
-      return xiiVariant(*((double*)data));
+      return xiiVariant(*((double*)pData));
     case xiiVariant::Type::Color:
-      return xiiVariant(*((xiiColor*)data));
+      return xiiVariant(*((xiiColor*)pData));
     case xiiVariant::Type::Vector2:
-      return xiiVariant(*((xiiVec2*)data));
+      return xiiVariant(*((xiiVec2*)pData));
     case xiiVariant::Type::Vector2d:
-      return xiiVariant(*((xiiVec2d*)data));
+      return xiiVariant(*((xiiVec2d*)pData));
     case xiiVariant::Type::Vector3:
-      return xiiVariant(*((xiiVec3*)data));
+      return xiiVariant(*((xiiVec3*)pData));
     case xiiVariant::Type::Vector3d:
-      return xiiVariant(*((xiiVec3d*)data));
+      return xiiVariant(*((xiiVec3d*)pData));
     case xiiVariant::Type::Vector4:
-      return xiiVariant(*((xiiVec4*)data));
+      return xiiVariant(*((xiiVec4*)pData));
     case xiiVariant::Type::Vector4d:
-      return xiiVariant(*((xiiVec4d*)data));
+      return xiiVariant(*((xiiVec4d*)pData));
     case xiiVariant::Type::Vector2I:
-      return xiiVariant(*((xiiVec2I32*)data));
+      return xiiVariant(*((xiiVec2I32*)pData));
     case xiiVariant::Type::Vector2I64:
-      return xiiVariant(*((xiiVec2I64*)data));
+      return xiiVariant(*((xiiVec2I64*)pData));
     case xiiVariant::Type::Vector3I:
-      return xiiVariant(*((xiiVec3I32*)data));
+      return xiiVariant(*((xiiVec3I32*)pData));
     case xiiVariant::Type::Vector3I64:
-      return xiiVariant(*((xiiVec3I64*)data));
+      return xiiVariant(*((xiiVec3I64*)pData));
     case xiiVariant::Type::Vector4I:
-      return xiiVariant(*((xiiVec4I32*)data));
+      return xiiVariant(*((xiiVec4I32*)pData));
     case xiiVariant::Type::Vector4I64:
-      return xiiVariant(*((xiiVec4I64*)data));
+      return xiiVariant(*((xiiVec4I64*)pData));
     case xiiVariant::Type::Vector2U:
-      return xiiVariant(*((xiiVec2U32*)data));
+      return xiiVariant(*((xiiVec2U32*)pData));
     case xiiVariant::Type::Vector2U64:
-      return xiiVariant(*((xiiVec2U64*)data));
+      return xiiVariant(*((xiiVec2U64*)pData));
     case xiiVariant::Type::Vector3U:
-      return xiiVariant(*((xiiVec3U32*)data));
+      return xiiVariant(*((xiiVec3U32*)pData));
     case xiiVariant::Type::Vector3U64:
-      return xiiVariant(*((xiiVec3U64*)data));
+      return xiiVariant(*((xiiVec3U64*)pData));
     case xiiVariant::Type::Vector4U:
-      return xiiVariant(*((xiiVec4U32*)data));
+      return xiiVariant(*((xiiVec4U32*)pData));
     case xiiVariant::Type::Vector4U64:
-      return xiiVariant(*((xiiVec4U64*)data));
+      return xiiVariant(*((xiiVec4U64*)pData));
     case xiiVariant::Type::Quaternion:
-      return xiiVariant(*((xiiQuat*)data));
+      return xiiVariant(*((xiiQuat*)pData));
     case xiiVariant::Type::Quaterniond:
-      return xiiVariant(*((xiiQuatd*)data));
+      return xiiVariant(*((xiiQuatd*)pData));
     case xiiVariant::Type::Matrix3:
-      return xiiVariant(*((xiiMat3*)data));
+      return xiiVariant(*((xiiMat3*)pData));
     case xiiVariant::Type::Matrix3d:
-      return xiiVariant(*((xiiMat3d*)data));
+      return xiiVariant(*((xiiMat3d*)pData));
     case xiiVariant::Type::Matrix4:
-      return xiiVariant(*((xiiMat4*)data));
+      return xiiVariant(*((xiiMat4*)pData));
     case xiiVariant::Type::Matrix4d:
-      return xiiVariant(*((xiiMat4d*)data));
+      return xiiVariant(*((xiiMat4d*)pData));
     case xiiVariant::Type::Transform:
-      return xiiVariant(*((xiiTransform*)data));
+      return xiiVariant(*((xiiTransform*)pData));
     case xiiVariant::Type::Transformd:
-      return xiiVariant(*((xiiTransformd*)data));
+      return xiiVariant(*((xiiTransformd*)pData));
     case xiiVariant::Type::String:
     case xiiVariant::Type::StringView: // String Views are stored as full strings as well
-      return xiiVariant((const char*)data);
+      return xiiVariant((const char*)pData);
     case xiiVariant::Type::DataBuffer:
     {
       xiiDataBuffer db;
       db.SetCountUninitialized(sizeof(float) * 16);
       for (xiiUInt32 i = 0; i < db.GetCount(); ++i)
-        db[i] = ((xiiUInt8*)data)[i];
+        db[i] = ((xiiUInt8*)pData)[i];
 
       return xiiVariant(db);
     }
     case xiiVariant::Type::Time:
-      return xiiVariant(*((xiiTime*)data));
+      return xiiVariant(*((xiiTime*)pData));
     case xiiVariant::Type::Uuid:
-      return xiiVariant(*((xiiUuid*)data));
+      return xiiVariant(*((xiiUuid*)pData));
     case xiiVariant::Type::Angle:
-      return xiiVariant(*((xiiAngle*)data));
+      return xiiVariant(*((xiiAngle*)pData));
     case xiiVariant::Type::ColorGamma:
-      return xiiVariant(*((xiiColorGammaUB*)data));
+      return xiiVariant(*((xiiColorGammaUB*)pData));
 
     default:
       XII_REPORT_FAILURE("Unknown type");

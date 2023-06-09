@@ -189,7 +189,7 @@ void xiiResource::CallUpdateContent(xiiStreamReader* Stream)
   xiiLog::Debug("Updated {0} - '{1}'", GetDynamicRTTI()->GetTypeName(), xiiArgSensitive(GetResourceDescription(), "ResourceDesc"));
 }
 
-float xiiResource::GetLoadingPriority(xiiTime tNow) const
+float xiiResource::GetLoadingPriority(xiiTime now) const
 {
   if (m_Priority == xiiResourcePriority::Critical)
     return 0.0f;
@@ -223,7 +223,7 @@ float xiiResource::GetLoadingPriority(xiiTime tNow) const
 
   // everything acquired in the last N seconds gets a higher priority
   // by getting the lowest penalty
-  const float secondsSinceAcquire = (float)(tNow - GetLastAcquireTime()).GetSeconds();
+  const float secondsSinceAcquire = (float)(now - GetLastAcquireTime()).GetSeconds();
   const float fTimePriority       = xiiMath::Min(10.0f, secondsSinceAcquire);
 
   return fPriority + fTimePriority;

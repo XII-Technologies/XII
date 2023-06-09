@@ -49,13 +49,13 @@ xiiStateMachineState_SendMsg::xiiStateMachineState_SendMsg(xiiStringView sName) 
 
 xiiStateMachineState_SendMsg::~xiiStateMachineState_SendMsg() = default;
 
-void xiiStateMachineState_SendMsg::OnEnter(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pFromState) const
+void xiiStateMachineState_SendMsg::OnEnter(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pFromState) const
 {
   xiiHashedString sFromState = (pFromState != nullptr) ? pFromState->GetNameHashed() : xiiHashedString();
 
   if (m_bSendMessageOnEnter)
   {
-    if (auto pOwner = xiiDynamicCast<xiiStateMachineComponent*>(&instance.GetOwner()))
+    if (auto pOwner = xiiDynamicCast<xiiStateMachineComponent*>(&ref_instance.GetOwner()))
     {
       xiiMsgStateMachineStateChanged msg;
       msg.m_sOldStateName = sFromState;
@@ -71,13 +71,13 @@ void xiiStateMachineState_SendMsg::OnEnter(xiiStateMachineInstance& instance, vo
   }
 }
 
-void xiiStateMachineState_SendMsg::OnExit(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pToState) const
+void xiiStateMachineState_SendMsg::OnExit(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pToState) const
 {
   xiiHashedString sToState = (pToState != nullptr) ? pToState->GetNameHashed() : xiiHashedString();
 
   if (m_bSendMessageOnExit)
   {
-    if (auto pOwner = xiiDynamicCast<xiiStateMachineComponent*>(&instance.GetOwner()))
+    if (auto pOwner = xiiDynamicCast<xiiStateMachineComponent*>(&ref_instance.GetOwner()))
     {
       xiiMsgStateMachineStateChanged msg;
       msg.m_sOldStateName = GetNameHashed();
@@ -93,27 +93,27 @@ void xiiStateMachineState_SendMsg::OnExit(xiiStateMachineInstance& instance, voi
   }
 }
 
-xiiResult xiiStateMachineState_SendMsg::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiStateMachineState_SendMsg::Serialize(xiiStreamWriter& ref_stream) const
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Serialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Serialize(ref_stream));
 
-  stream << m_MessageDelay;
-  stream << m_bSendMessageOnEnter;
-  stream << m_bSendMessageOnExit;
-  stream << m_bLogOnEnter;
-  stream << m_bLogOnExit;
+  ref_stream << m_MessageDelay;
+  ref_stream << m_bSendMessageOnEnter;
+  ref_stream << m_bSendMessageOnExit;
+  ref_stream << m_bLogOnEnter;
+  ref_stream << m_bLogOnExit;
   return XII_SUCCESS;
 }
 
-xiiResult xiiStateMachineState_SendMsg::Deserialize(xiiStreamReader& stream)
+xiiResult xiiStateMachineState_SendMsg::Deserialize(xiiStreamReader& ref_stream)
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(ref_stream));
 
-  stream >> m_MessageDelay;
-  stream >> m_bSendMessageOnEnter;
-  stream >> m_bSendMessageOnExit;
-  stream >> m_bLogOnEnter;
-  stream >> m_bLogOnExit;
+  ref_stream >> m_MessageDelay;
+  ref_stream >> m_bSendMessageOnEnter;
+  ref_stream >> m_bSendMessageOnExit;
+  ref_stream >> m_bLogOnEnter;
+  ref_stream >> m_bLogOnExit;
   return XII_SUCCESS;
 }
 
@@ -140,9 +140,9 @@ xiiStateMachineState_SwitchObject::xiiStateMachineState_SwitchObject(xiiStringVi
 
 xiiStateMachineState_SwitchObject::~xiiStateMachineState_SwitchObject() = default;
 
-void xiiStateMachineState_SwitchObject::OnEnter(xiiStateMachineInstance& instance, void* pInstanceData, const xiiStateMachineState* pFromState) const
+void xiiStateMachineState_SwitchObject::OnEnter(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pFromState) const
 {
-  if (auto pOwner = xiiDynamicCast<xiiStateMachineComponent*>(&instance.GetOwner()))
+  if (auto pOwner = xiiDynamicCast<xiiStateMachineComponent*>(&ref_instance.GetOwner()))
   {
     if (xiiGameObject* pOwnerGO = pOwner->GetOwner()->FindChildByPath(m_sGroupPath))
     {
@@ -161,23 +161,23 @@ void xiiStateMachineState_SwitchObject::OnEnter(xiiStateMachineInstance& instanc
   }
 }
 
-xiiResult xiiStateMachineState_SwitchObject::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiStateMachineState_SwitchObject::Serialize(xiiStreamWriter& ref_stream) const
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Serialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Serialize(ref_stream));
 
-  stream << m_sGroupPath;
-  stream << m_sObjectToEnable;
-  stream << m_bDeactivateOthers;
+  ref_stream << m_sGroupPath;
+  ref_stream << m_sObjectToEnable;
+  ref_stream << m_bDeactivateOthers;
   return XII_SUCCESS;
 }
 
-xiiResult xiiStateMachineState_SwitchObject::Deserialize(xiiStreamReader& stream)
+xiiResult xiiStateMachineState_SwitchObject::Deserialize(xiiStreamReader& ref_stream)
 {
-  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(stream));
+  XII_SUCCEED_OR_RETURN(SUPER::Deserialize(ref_stream));
 
-  stream >> m_sGroupPath;
-  stream >> m_sObjectToEnable;
-  stream >> m_bDeactivateOthers;
+  ref_stream >> m_sGroupPath;
+  ref_stream >> m_sObjectToEnable;
+  ref_stream >> m_bDeactivateOthers;
   return XII_SUCCESS;
 }
 
@@ -286,22 +286,22 @@ xiiStateMachineComponent::xiiStateMachineComponent(xiiStateMachineComponent&& ot
 xiiStateMachineComponent::~xiiStateMachineComponent()                                = default;
 xiiStateMachineComponent& xiiStateMachineComponent::operator=(xiiStateMachineComponent&& other) = default;
 
-void xiiStateMachineComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiStateMachineComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_hResource;
   s << m_sInitialState;
   s << m_sBlackboardName;
 }
 
-void xiiStateMachineComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiStateMachineComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32  uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32  uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  xiiStreamReader& s         = ref_stream.GetStream();
 
   s >> m_hResource;
   s >> m_sInitialState;

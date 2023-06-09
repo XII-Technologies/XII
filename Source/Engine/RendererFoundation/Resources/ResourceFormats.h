@@ -135,19 +135,19 @@ class xiiGALFormatLookupEntry
 public:
   inline xiiGALFormatLookupEntry();
 
-  inline xiiGALFormatLookupEntry(NativeFormatType Storage);
+  inline xiiGALFormatLookupEntry(NativeFormatType storage);
 
-  inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& RT(NativeFormatType RenderTargetType);
+  inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& RT(NativeFormatType renderTargetType);
 
-  inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& D(NativeFormatType DepthOnlyType);
+  inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& D(NativeFormatType depthOnlyType);
 
-  inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& S(NativeFormatType StencilOnlyType);
+  inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& S(NativeFormatType stencilOnlyType);
 
-  inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& DS(NativeFormatType DepthStencilType);
+  inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& DS(NativeFormatType depthStencilType);
 
-  inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& VA(NativeFormatType VertexAttributeType);
+  inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& VA(NativeFormatType vertexAttributeType);
 
-  inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& RV(NativeFormatType ResourceViewType);
+  inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& RV(NativeFormatType resourceViewType);
 
   NativeFormatType m_eStorage;
   NativeFormatType m_eRenderTarget;
@@ -165,9 +165,9 @@ class xiiGALFormatLookupTable
 public:
   xiiGALFormatLookupTable();
 
-  XII_ALWAYS_INLINE const FormatClass& GetFormatInfo(xiiGALResourceFormat::Enum eFormat) const;
+  XII_ALWAYS_INLINE const FormatClass& GetFormatInfo(xiiGALResourceFormat::Enum format) const;
 
-  XII_ALWAYS_INLINE void SetFormatInfo(xiiGALResourceFormat::Enum eFormat, const FormatClass& NewFormatInfo);
+  XII_ALWAYS_INLINE void SetFormatInfo(xiiGALResourceFormat::Enum format, const FormatClass& newFormatInfo);
 
 private:
   FormatClass m_Formats[xiiGALResourceFormat::ENUM_COUNT];

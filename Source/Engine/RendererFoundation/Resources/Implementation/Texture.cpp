@@ -10,7 +10,7 @@ xiiGALTexture::xiiGALTexture(const xiiGALTextureCreationDescription& Description
 #endif
 }
 
-xiiGALTexture::~xiiGALTexture() {}
+xiiGALTexture::~xiiGALTexture() = default;
 
 
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Resources_Implementation_Texture);

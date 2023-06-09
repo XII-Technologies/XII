@@ -47,10 +47,10 @@ void xiiEnumerationMenuAction::InitEnumerationType(const xiiRTTI* pEnumerationTy
   m_pEnumerationType = pEnumerationType;
 }
 
-void xiiEnumerationMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_Entries)
+void xiiEnumerationMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries)
 {
-  out_Entries.Clear();
-  out_Entries.Reserve(m_pEnumerationType->GetProperties().GetCount() - 1);
+  out_entries.Clear();
+  out_entries.Reserve(m_pEnumerationType->GetProperties().GetCount() - 1);
   xiiInt64 iCurrentValue = xiiReflectionUtils::MakeEnumerationValid(m_pEnumerationType, GetValue());
 
   // sort entries by group / category
@@ -84,15 +84,15 @@ void xiiEnumerationMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::I
 
     unsortedItems.Sort();
 
-    if (!out_Entries.IsEmpty())
+    if (!out_entries.IsEmpty())
     {
       // add a separator between groups
-      out_Entries.ExpandAndGetRef().m_ItemFlags.Add(xiiDynamicMenuAction::Item::ItemFlags::Separator);
+      out_entries.ExpandAndGetRef().m_ItemFlags.Add(xiiDynamicMenuAction::Item::ItemFlags::Separator);
     }
 
     for (const auto& sortedItem : unsortedItems)
     {
-      out_Entries.PushBack(sortedItem.m_Item);
+      out_entries.PushBack(sortedItem.m_Item);
     }
 
     unsortedItems.Clear();
@@ -172,9 +172,9 @@ void xiiSliderAction::SetRange(xiiInt32 iMin, xiiInt32 iMax, bool bTriggerUpdate
     TriggerUpdate();
 }
 
-void xiiSliderAction::SetValue(xiiInt32 val, bool bTriggerUpdate /*= true*/)
+void xiiSliderAction::SetValue(xiiInt32 iVal, bool bTriggerUpdate /*= true*/)
 {
-  m_iCurValue = xiiMath::Clamp(val, m_iMinValue, m_iMaxValue);
+  m_iCurValue = xiiMath::Clamp(iVal, m_iMinValue, m_iMaxValue);
   if (bTriggerUpdate)
     TriggerUpdate();
 }

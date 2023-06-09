@@ -76,25 +76,25 @@ xiiResult xiiWicFileFormat::ReadFileData(xiiStreamReader& stream, xiiDynamicArra
   return XII_SUCCESS;
 }
 
-static void SetHeader(xiiImageHeader& header, xiiImageFormat::Enum imageFormat, const TexMetadata& metadata)
+static void SetHeader(xiiImageHeader& ref_header, xiiImageFormat::Enum imageFormat, const TexMetadata& metadata)
 {
-  header.SetImageFormat(imageFormat);
+  ref_header.SetImageFormat(imageFormat);
 
-  header.SetWidth(xiiUInt32(metadata.width));
-  header.SetHeight(xiiUInt32(metadata.height));
-  header.SetDepth(xiiUInt32(metadata.depth));
+  ref_header.SetWidth(xiiUInt32(metadata.width));
+  ref_header.SetHeight(xiiUInt32(metadata.height));
+  ref_header.SetDepth(xiiUInt32(metadata.depth));
 
-  header.SetNumMipLevels(1);
-  header.SetNumArrayIndices(xiiUInt32(metadata.IsCubemap() ? (metadata.arraySize / 6) : metadata.arraySize));
-  header.SetNumFaces(metadata.IsCubemap() ? 6 : 1);
+  ref_header.SetNumMipLevels(1);
+  ref_header.SetNumArrayIndices(xiiUInt32(metadata.IsCubemap() ? (metadata.arraySize / 6) : metadata.arraySize));
+  ref_header.SetNumFaces(metadata.IsCubemap() ? 6 : 1);
 }
 
-xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& stream, xiiImageHeader& header, const char* szFileExtension) const
+xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiWicFileFormat::ReadImageHeader");
 
   xiiDynamicArray<xiiUInt8> storage;
-  XII_SUCCEED_OR_RETURN(ReadFileData(stream, storage));
+  XII_SUCCEED_OR_RETURN(ReadFileData(ref_stream, storage));
 
   TexMetadata  metadata;
   ScratchImage scratchImage;
@@ -123,17 +123,17 @@ xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& stream, xiiImageHea
     return XII_FAILURE;
   }
 
-  SetHeader(header, imageFormat, metadata);
+  SetHeader(ref_header, imageFormat, metadata);
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, const char* szFileExtension) const
+xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, const char* szFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiWicFileFormat::ReadImage");
 
   xiiDynamicArray<xiiUInt8> storage;
-  XII_SUCCEED_OR_RETURN(ReadFileData(stream, storage));
+  XII_SUCCEED_OR_RETURN(ReadFileData(ref_stream, storage));
 
   TexMetadata  metadata;
   ScratchImage scratchImage;
@@ -170,7 +170,7 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
   xiiImageHeader imageHeader;
   SetHeader(imageHeader, imageFormat, metadata);
 
-  image.ResetAndAlloc(imageHeader);
+  ref_image.ResetAndAlloc(imageHeader);
 
   // Read image data into destination image
   xiiUInt64 destRowPitch = imageHeader.GetRowPitch();
@@ -182,7 +182,7 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
       for (xiiUInt32 sliceIdx = 0; sliceIdx < imageHeader.GetDepth(); ++sliceIdx)
       {
         const Image* sourceImage = scratchImage.GetImage(0, itemIdx, sliceIdx);
-        xiiUInt8*    destPixels  = image.GetPixelPointer<xiiUInt8>(0, faceIdx, arrayIdx, 0, 0, sliceIdx);
+        xiiUInt8*    destPixels  = ref_image.GetPixelPointer<xiiUInt8>(0, faceIdx, arrayIdx, 0, 0, sliceIdx);
 
         if (sourceImage && destPixels && sourceImage->pixels)
         {
@@ -212,7 +212,7 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
   return XII_SUCCESS;
 }
 
-xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageView& image, const char* szFileExtension) const
+xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, const char* szFileExtension) const
 {
   if (m_bTryCoInit)
   {
@@ -253,7 +253,7 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageVi
       return XII_FAILURE;
     }
 
-    return WriteImage(stream, convertedImage, szFileExtension);
+    return WriteImage(ref_stream, convertedImage, szFileExtension);
   }
 
   // Store xiiImage data in DirectXTex images
@@ -289,7 +289,7 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageVi
     }
 
     // Push blob into output stream
-    if (stream.WriteBytes(targetBlob.GetBufferPointer(), targetBlob.GetBufferSize()) != XII_SUCCESS)
+    if (ref_stream.WriteBytes(targetBlob.GetBufferPointer(), targetBlob.GetBufferSize()) != XII_SUCCESS)
     {
       xiiLog::Error("Failed to write image data!");
       return XII_FAILURE;

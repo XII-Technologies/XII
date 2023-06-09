@@ -2,12 +2,12 @@
 
 #include <TexConv/TexConv.h>
 
-xiiResult xiiTexConv::ParseUIntOption(const char* szOption, xiiInt32 iMinValue, xiiInt32 iMaxValue, xiiUInt32& uiResult) const
+xiiResult xiiTexConv::ParseUIntOption(const char* szOption, xiiInt32 iMinValue, xiiInt32 iMaxValue, xiiUInt32& ref_uiResult) const
 {
   const auto      pCmd      = xiiCommandLineUtils::GetGlobalInstance();
-  const xiiUInt32 uiDefault = uiResult;
+  const xiiUInt32 uiDefault = ref_uiResult;
 
-  const xiiInt32 val = pCmd->GetIntOption(szOption, uiResult);
+  const xiiInt32 val = pCmd->GetIntOption(szOption, ref_uiResult);
 
   if (!xiiMath::IsInRange(val, iMinValue, iMaxValue))
   {
@@ -15,27 +15,27 @@ xiiResult xiiTexConv::ParseUIntOption(const char* szOption, xiiInt32 iMinValue, 
     return XII_FAILURE;
   }
 
-  uiResult = static_cast<xiiUInt32>(val);
+  ref_uiResult = static_cast<xiiUInt32>(val);
 
-  if (uiResult == uiDefault)
+  if (ref_uiResult == uiDefault)
   {
-    xiiLog::Info("Using default '{}': '{}'.", szOption, uiResult);
+    xiiLog::Info("Using default '{}': '{}'.", szOption, ref_uiResult);
     return XII_SUCCESS;
   }
 
-  xiiLog::Info("Selected '{}': '{}'.", szOption, uiResult);
+  xiiLog::Info("Selected '{}': '{}'.", szOption, ref_uiResult);
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseStringOption(const char* szOption, const xiiDynamicArray<KeyEnumValuePair>& allowed, xiiInt32& iResult) const
+xiiResult xiiTexConv::ParseStringOption(const char* szOption, const xiiDynamicArray<KeyEnumValuePair>& allowed, xiiInt32& ref_iResult) const
 {
   const auto             pCmd   = xiiCommandLineUtils::GetGlobalInstance();
   const xiiStringBuilder sValue = pCmd->GetStringOption(szOption, 0);
 
   if (sValue.IsEmpty())
   {
-    iResult = allowed[0].m_iEnumValue;
+    ref_iResult = allowed[0].m_iEnumValue;
 
     xiiLog::Info("Using default '{}': '{}'", szOption, allowed[0].m_szKey);
     return XII_SUCCESS;
@@ -45,7 +45,7 @@ xiiResult xiiTexConv::ParseStringOption(const char* szOption, const xiiDynamicAr
   {
     if (sValue.IsEqual_NoCase(allowed[i].m_szKey))
     {
-      iResult = allowed[i].m_iEnumValue;
+      ref_iResult = allowed[i].m_iEnumValue;
 
       xiiLog::Info("Selected '{}': '{}'", szOption, allowed[i].m_szKey);
       return XII_SUCCESS;
@@ -84,14 +84,14 @@ void xiiTexConv::PrintOptionValuesHelp(const char* szOption, const xiiDynamicArr
   xiiLog::Info(out);
 }
 
-bool xiiTexConv::ParseFile(const char* szOption, xiiString& result) const
+bool xiiTexConv::ParseFile(const char* szOption, xiiString& ref_sResult) const
 {
   const auto pCmd = xiiCommandLineUtils::GetGlobalInstance();
-  result          = pCmd->GetAbsolutePathOption(szOption);
+  ref_sResult     = pCmd->GetAbsolutePathOption(szOption);
 
-  if (!result.IsEmpty())
+  if (!ref_sResult.IsEmpty())
   {
-    xiiLog::Info("'{}' file: '{}'", szOption, result);
+    xiiLog::Info("'{}' file: '{}'", szOption, ref_sResult);
     return true;
   }
   else

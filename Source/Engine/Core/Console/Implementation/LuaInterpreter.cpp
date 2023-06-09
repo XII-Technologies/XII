@@ -6,14 +6,14 @@
 
 #ifdef BUILDSYSTEM_ENABLE_LUA_SUPPORT
 
-static void AllowScriptCVarAccess(xiiLuaWrapper& Script);
+static void AllowScriptCVarAccess(xiiLuaWrapper& ref_script);
 
-static const xiiString GetNextWord(xiiStringView& sString)
+static const xiiString GetNextWord(xiiStringView& ref_sString)
 {
-  const char* szStartWord = xiiStringUtils::SkipCharacters(sString.GetStartPointer(), xiiStringUtils::IsWhiteSpace, false);
+  const char* szStartWord = xiiStringUtils::SkipCharacters(ref_sString.GetStartPointer(), xiiStringUtils::IsWhiteSpace, false);
   const char* szEndWord   = xiiStringUtils::FindWordEnd(szStartWord, xiiStringUtils::IsIdentifierDelimiter_C_Code, true);
 
-  sString = xiiStringView(szEndWord);
+  ref_sString = xiiStringView(szEndWord);
 
   return xiiStringView(szStartWord, szEndWord);
 }
@@ -23,9 +23,9 @@ static xiiString GetRestWords(xiiStringView sString)
   return xiiStringUtils::SkipCharacters(sString.GetStartPointer(), xiiStringUtils::IsWhiteSpace, false);
 }
 
-static int LUAFUNC_ConsoleFunc(lua_State* state)
+static int LUAFUNC_ConsoleFunc(lua_State* pState)
 {
-  xiiLuaWrapper s(state);
+  xiiLuaWrapper s(pState);
 
   xiiConsoleFunctionBase* pFunc = (xiiConsoleFunctionBase*)s.GetFunctionLightUserData();
 
@@ -78,7 +78,7 @@ static int LUAFUNC_ConsoleFunc(lua_State* state)
   return s.ReturnToScript();
 }
 
-static void SanitizeCVarNames(xiiStringBuilder& sCommand)
+static void SanitizeCVarNames(xiiStringBuilder& ref_sCommand)
 {
   xiiStringBuilder sanitizedCVarName;
 
@@ -87,11 +87,11 @@ static void SanitizeCVarNames(xiiStringBuilder& sCommand)
     sanitizedCVarName = pCVar->GetName();
     sanitizedCVarName.ReplaceAll(".", "_");
 
-    sCommand.ReplaceAll(pCVar->GetName(), sanitizedCVarName);
+    ref_sCommand.ReplaceAll(pCVar->GetName(), sanitizedCVarName);
   }
 }
 
-static void UnSanitizeCVarName(xiiStringBuilder& cvarName)
+static void UnSanitizeCVarName(xiiStringBuilder& ref_sCvarName)
 {
   xiiStringBuilder sanitizedCVarName;
 
@@ -100,23 +100,23 @@ static void UnSanitizeCVarName(xiiStringBuilder& cvarName)
     sanitizedCVarName = pCVar->GetName();
     sanitizedCVarName.ReplaceAll(".", "_");
 
-    if (cvarName == sanitizedCVarName)
+    if (ref_sCvarName == sanitizedCVarName)
     {
-      cvarName = pCVar->GetName();
+      ref_sCvarName = pCVar->GetName();
       return;
     }
   }
 }
 
-void xiiCommandInterpreterLua::Interpret(xiiCommandInterpreterState& inout_State)
+void xiiCommandInterpreterLua::Interpret(xiiCommandInterpreterState& inout_state)
 {
-  inout_State.m_sOutput.Clear();
+  inout_state.m_sOutput.Clear();
 
-  xiiStringBuilder sRealCommand = inout_State.m_sInput;
+  xiiStringBuilder sRealCommand = inout_state.m_sInput;
 
   if (sRealCommand.IsEmpty())
   {
-    inout_State.AddOutputLine("");
+    inout_state.AddOutputLine("");
     return;
   }
 
@@ -163,7 +163,7 @@ void xiiCommandInterpreterLua::Interpret(xiiCommandInterpreterState& inout_State
 
   sTemp = "> ";
   sTemp.Append(sRealCommand);
-  inout_State.AddOutputLine(sTemp, xiiConsoleString::Type::Executed);
+  inout_state.AddOutputLine(sTemp, xiiConsoleString::Type::Executed);
 
   xiiCVar* pCVAR = xiiCVar::FindCVarByName(sRealVarName.GetData());
   if (pCVAR != nullptr)
@@ -183,32 +183,32 @@ void xiiCommandInterpreterLua::Interpret(xiiCommandInterpreterState& inout_State
 
       if (Script.ExecuteString(sSanitizedCommand, "console", &muteLog).Failed())
       {
-        inout_State.AddOutputLine("  Error Executing Command.", xiiConsoleString::Type::Error);
+        inout_state.AddOutputLine("  Error Executing Command.", xiiConsoleString::Type::Error);
         return;
       }
       else
       {
         if (pCVAR->GetFlags().IsAnySet(xiiCVarFlags::RequiresRestart))
         {
-          inout_State.AddOutputLine("  This change takes only effect after a restart.", xiiConsoleString::Type::Note);
+          inout_state.AddOutputLine("  This change takes only effect after a restart.", xiiConsoleString::Type::Note);
         }
 
         sTemp.Format("  {0} = {1}", sRealVarName, xiiQuakeConsole::GetFullInfoAsString(pCVAR));
-        inout_State.AddOutputLine(sTemp, xiiConsoleString::Type::Success);
+        inout_state.AddOutputLine(sTemp, xiiConsoleString::Type::Success);
       }
     }
     else
     {
       sTemp.Format("{0} = {1}", sRealVarName, xiiQuakeConsole::GetFullInfoAsString(pCVAR));
-      inout_State.AddOutputLine(sTemp);
+      inout_state.AddOutputLine(sTemp);
 
       if (!pCVAR->GetDescription().IsEmpty())
       {
         sTemp.Format("  Description: {0}", pCVAR->GetDescription());
-        inout_State.AddOutputLine(sTemp, xiiConsoleString::Type::Success);
+        inout_state.AddOutputLine(sTemp, xiiConsoleString::Type::Success);
       }
       else
-        inout_State.AddOutputLine("  No Description available.", xiiConsoleString::Type::Success);
+        inout_state.AddOutputLine("  No Description available.", xiiConsoleString::Type::Success);
     }
 
     return;
@@ -219,15 +219,15 @@ void xiiCommandInterpreterLua::Interpret(xiiCommandInterpreterState& inout_State
 
     if (Script.ExecuteString(sSanitizedCommand, "console", &muteLog).Failed())
     {
-      inout_State.AddOutputLine("  Error Executing Command.", xiiConsoleString::Type::Error);
+      inout_state.AddOutputLine("  Error Executing Command.", xiiConsoleString::Type::Error);
       return;
     }
   }
 }
 
-static int LUAFUNC_ReadCVAR(lua_State* state)
+static int LUAFUNC_ReadCVAR(lua_State* pState)
 {
-  xiiLuaWrapper s(state);
+  xiiLuaWrapper s(pState);
 
   xiiStringBuilder cvarName = s.GetStringParameter(0);
   UnSanitizeCVarName(cvarName);
@@ -280,9 +280,9 @@ static int LUAFUNC_ReadCVAR(lua_State* state)
 }
 
 
-static int LUAFUNC_WriteCVAR(lua_State* state)
+static int LUAFUNC_WriteCVAR(lua_State* pState)
 {
-  xiiLuaWrapper s(state);
+  xiiLuaWrapper s(pState);
 
   xiiStringBuilder cvarName = s.GetStringParameter(0);
   UnSanitizeCVarName(cvarName);
@@ -336,10 +336,10 @@ static int LUAFUNC_WriteCVAR(lua_State* state)
   return s.ReturnToScript();
 }
 
-static void AllowScriptCVarAccess(xiiLuaWrapper& Script)
+static void AllowScriptCVarAccess(xiiLuaWrapper& ref_script)
 {
-  Script.RegisterCFunction("ReadCVar", LUAFUNC_ReadCVAR);
-  Script.RegisterCFunction("WriteCVar", LUAFUNC_WriteCVAR);
+  ref_script.RegisterCFunction("ReadCVar", LUAFUNC_ReadCVAR);
+  ref_script.RegisterCFunction("WriteCVar", LUAFUNC_WriteCVAR);
 
   xiiStringBuilder sInit = "\
 function readcvar (t, key)\n\
@@ -358,7 +358,7 @@ __index = readcvar,\n\
 __metatable = \"Access Denied\",\n\
 })";
 
-  Script.ExecuteString(sInit.GetData()).IgnoreResult();
+  ref_script.ExecuteString(sInit.GetData()).IgnoreResult();
 }
 
 #endif // BUILDSYSTEM_ENABLE_LUA_SUPPORT

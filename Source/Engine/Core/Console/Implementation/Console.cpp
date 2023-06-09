@@ -27,20 +27,20 @@ xiiQuakeConsole::~xiiQuakeConsole()
   EnableLogOutput(false);
 }
 
-void xiiQuakeConsole::AddConsoleString(xiiStringView text, xiiConsoleString::Type type)
+void xiiQuakeConsole::AddConsoleString(xiiStringView sText, xiiConsoleString::Type type)
 {
   XII_LOCK(m_Mutex);
 
   m_ConsoleStrings.PushFront();
 
   xiiConsoleString& cs = m_ConsoleStrings.PeekFront();
-  cs.m_sText           = text;
+  cs.m_sText           = sText;
   cs.m_Type            = type;
 
   if (m_ConsoleStrings.GetCount() > m_uiMaxConsoleStrings)
     m_ConsoleStrings.PopBack(m_ConsoleStrings.GetCount() - m_uiMaxConsoleStrings);
 
-  xiiConsole::AddConsoleString(text, type);
+  xiiConsole::AddConsoleString(sText, type);
 }
 
 const xiiDeque<xiiConsoleString>& xiiQuakeConsole::GetConsoleStrings() const
@@ -150,54 +150,54 @@ void xiiQuakeConsole::EnableLogOutput(bool bEnable)
   }
 }
 
-void xiiQuakeConsole::SaveState(xiiStreamWriter& Stream) const
+void xiiQuakeConsole::SaveState(xiiStreamWriter& ref_stream) const
 {
   XII_LOCK(m_Mutex);
 
   const xiiUInt8 uiVersion = 1;
-  Stream << uiVersion;
+  ref_stream << uiVersion;
 
-  Stream << m_InputHistory.GetCount();
+  ref_stream << m_InputHistory.GetCount();
   for (xiiUInt32 i = 0; i < m_InputHistory.GetCount(); ++i)
   {
-    Stream << m_InputHistory[i];
+    ref_stream << m_InputHistory[i];
   }
 
-  Stream << m_BoundKeys.GetCount();
+  ref_stream << m_BoundKeys.GetCount();
   for (auto it = m_BoundKeys.GetIterator(); it.IsValid(); ++it)
   {
-    Stream << it.Key();
-    Stream << it.Value();
+    ref_stream << it.Key();
+    ref_stream << it.Value();
   }
 }
 
-void xiiQuakeConsole::LoadState(xiiStreamReader& Stream)
+void xiiQuakeConsole::LoadState(xiiStreamReader& ref_stream)
 {
   XII_LOCK(m_Mutex);
 
   xiiUInt8 uiVersion = 0;
-  Stream >> uiVersion;
+  ref_stream >> uiVersion;
 
   if (uiVersion == 1)
   {
     xiiUInt32 count = 0;
-    Stream >> count;
+    ref_stream >> count;
     m_InputHistory.SetCount(count);
 
     for (xiiUInt32 i = 0; i < m_InputHistory.GetCount(); ++i)
     {
-      Stream >> m_InputHistory[i];
+      ref_stream >> m_InputHistory[i];
     }
 
-    Stream >> count;
+    ref_stream >> count;
 
     xiiString sKey;
     xiiString sValue;
 
     for (xiiUInt32 i = 0; i < count; ++i)
     {
-      Stream >> sKey;
-      Stream >> sValue;
+      ref_stream >> sKey;
+      ref_stream >> sValue;
 
       m_BoundKeys[sKey] = sValue;
     }
@@ -261,9 +261,7 @@ xiiColor xiiConsoleString::GetColor() const
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiConsole::xiiConsole()
-{
-}
+xiiConsole::xiiConsole() = default;
 
 xiiConsole::~xiiConsole()
 {
@@ -285,14 +283,14 @@ xiiConsole* xiiConsole::GetMainConsole()
 
 xiiConsole* xiiConsole::s_pMainConsole = nullptr;
 
-bool xiiConsole::AutoComplete(xiiStringBuilder& text)
+bool xiiConsole::AutoComplete(xiiStringBuilder& ref_sText)
 {
   XII_LOCK(m_Mutex);
 
   if (m_pCommandInterpreter)
   {
     xiiCommandInterpreterState s;
-    s.m_sInput = text;
+    s.m_sInput = ref_sText;
 
     m_pCommandInterpreter->AutoComplete(s);
 
@@ -301,9 +299,9 @@ bool xiiConsole::AutoComplete(xiiStringBuilder& text)
       AddConsoleString(l.m_sText, l.m_Type);
     }
 
-    if (text != s.m_sInput)
+    if (ref_sText != s.m_sInput)
     {
-      text = s.m_sInput;
+      ref_sText = s.m_sInput;
       return true;
     }
   }
@@ -311,9 +309,9 @@ bool xiiConsole::AutoComplete(xiiStringBuilder& text)
   return false;
 }
 
-void xiiConsole::ExecuteCommand(xiiStringView input)
+void xiiConsole::ExecuteCommand(xiiStringView sInput)
 {
-  if (input.IsEmpty())
+  if (sInput.IsEmpty())
     return;
 
   XII_LOCK(m_Mutex);
@@ -321,7 +319,7 @@ void xiiConsole::ExecuteCommand(xiiStringView input)
   if (m_pCommandInterpreter)
   {
     xiiCommandInterpreterState s;
-    s.m_sInput = input;
+    s.m_sInput = sInput;
     m_pCommandInterpreter->Interpret(s);
 
     for (auto& l : s.m_sOutput)
@@ -331,14 +329,14 @@ void xiiConsole::ExecuteCommand(xiiStringView input)
   }
   else
   {
-    AddConsoleString(input);
+    AddConsoleString(sInput);
   }
 }
 
-void xiiConsole::AddConsoleString(xiiStringView text, xiiConsoleString::Type type /*= xiiConsoleString::Type::Default*/)
+void xiiConsole::AddConsoleString(xiiStringView sText, xiiConsoleString::Type type /*= xiiConsoleString::Type::Default*/)
 {
   xiiConsoleString cs;
-  cs.m_sText = text;
+  cs.m_sText = sText;
   cs.m_Type  = type;
 
   // Broadcast that we have added a string to the console
@@ -349,25 +347,25 @@ void xiiConsole::AddConsoleString(xiiStringView text, xiiConsoleString::Type typ
   m_Events.Broadcast(e);
 }
 
-void xiiConsole::AddToInputHistory(xiiStringView text)
+void xiiConsole::AddToInputHistory(xiiStringView sText)
 {
   XII_LOCK(m_Mutex);
 
   m_iCurrentInputHistoryElement = -1;
 
-  if (text.IsEmpty())
+  if (sText.IsEmpty())
     return;
 
   for (xiiInt32 i = 0; i < (xiiInt32)m_InputHistory.GetCount(); i++)
   {
-    if (m_InputHistory[i] == text) // already in the History
+    if (m_InputHistory[i] == sText) // already in the History
     {
       // just move it to the front
 
       for (xiiInt32 j = i - 1; j >= 0; j--)
         m_InputHistory[j + 1] = m_InputHistory[j];
 
-      m_InputHistory[0] = text;
+      m_InputHistory[0] = sText;
       return;
     }
   }
@@ -377,10 +375,10 @@ void xiiConsole::AddToInputHistory(xiiStringView text)
   for (xiiUInt32 i = m_InputHistory.GetCount() - 1; i > 0; i--)
     m_InputHistory[i] = m_InputHistory[i - 1];
 
-  m_InputHistory[0] = text;
+  m_InputHistory[0] = sText;
 }
 
-void xiiConsole::RetrieveInputHistory(xiiInt32 iHistoryUp, xiiStringBuilder& result)
+void xiiConsole::RetrieveInputHistory(xiiInt32 iHistoryUp, xiiStringBuilder& ref_sResult)
 {
   XII_LOCK(m_Mutex);
 
@@ -391,7 +389,7 @@ void xiiConsole::RetrieveInputHistory(xiiInt32 iHistoryUp, xiiStringBuilder& res
 
   if (!m_InputHistory[m_iCurrentInputHistoryElement].IsEmpty())
   {
-    result = m_InputHistory[m_iCurrentInputHistoryElement];
+    ref_sResult = m_InputHistory[m_iCurrentInputHistoryElement];
   }
 }
 

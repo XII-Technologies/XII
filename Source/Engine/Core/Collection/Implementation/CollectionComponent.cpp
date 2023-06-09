@@ -24,19 +24,19 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiCollectionComponent::xiiCollectionComponent()  = default;
 xiiCollectionComponent::~xiiCollectionComponent() = default;
 
-void xiiCollectionComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiCollectionComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_hCollection;
 }
 
-void xiiCollectionComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiCollectionComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_hCollection;
 }

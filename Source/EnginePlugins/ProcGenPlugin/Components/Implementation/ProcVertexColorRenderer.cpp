@@ -14,9 +14,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiProcVertexColorRenderer::xiiProcVertexColorRenderer()  = default;
 xiiProcVertexColorRenderer::~xiiProcVertexColorRenderer() = default;
 
-void xiiProcVertexColorRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const
+void xiiProcVertexColorRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {
-  types.PushBack(xiiGetStaticRTTI<xiiProcVertexColorRenderData>());
+  ref_types.PushBack(xiiGetStaticRTTI<xiiProcVertexColorRenderData>());
 }
 
 void xiiProcVertexColorRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, const xiiMeshRenderData* pRenderData) const

@@ -57,9 +57,9 @@ public:
     bool                                m_bWriteToDisk[xiiGALShaderStage::ENUM_COUNT];
   };
 
-  virtual void GetSupportedPlatforms(xiiHybridArray<xiiString, 4>& Platforms) = 0;
+  virtual void GetSupportedPlatforms(xiiHybridArray<xiiString, 4>& ref_platforms) = 0;
 
-  virtual xiiResult Compile(xiiShaderProgramData& inout_Data, xiiLogInterface* pLog) = 0;
+  virtual xiiResult Compile(xiiShaderProgramData& inout_data, xiiLogInterface* pLog) = 0;
 };
 
 class XII_RENDERERCORE_DLL xiiShaderCompiler

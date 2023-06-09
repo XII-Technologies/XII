@@ -19,16 +19,16 @@ void xiiDocument::UpdatePrefabs()
   SetModified(true);
 }
 
-void xiiDocument::RevertPrefabs(const xiiDeque<const xiiDocumentObject*>& Selection)
+void xiiDocument::RevertPrefabs(const xiiDeque<const xiiDocumentObject*>& selection)
 {
-  if (Selection.IsEmpty())
+  if (selection.IsEmpty())
     return;
 
   auto pHistory = GetCommandHistory();
 
   pHistory->StartTransaction("Revert Prefab");
 
-  for (auto pItem : Selection)
+  for (auto pItem : selection)
   {
     RevertPrefab(pItem);
   }
@@ -36,15 +36,15 @@ void xiiDocument::RevertPrefabs(const xiiDeque<const xiiDocumentObject*>& Select
   pHistory->FinishTransaction();
 }
 
-void xiiDocument::UnlinkPrefabs(const xiiDeque<const xiiDocumentObject*>& Selection)
+void xiiDocument::UnlinkPrefabs(const xiiDeque<const xiiDocumentObject*>& selection)
 {
-  if (Selection.IsEmpty())
+  if (selection.IsEmpty())
     return;
 
   auto pHistory = GetCommandHistory();
   pHistory->StartTransaction("Unlink Prefab");
 
-  for (auto pObject : Selection)
+  for (auto pObject : selection)
   {
     xiiUnlinkPrefabCommand cmd;
     cmd.m_Object = pObject->GetGuid();
@@ -55,7 +55,7 @@ void xiiDocument::UnlinkPrefabs(const xiiDeque<const xiiDocumentObject*>& Select
   pHistory->FinishTransaction();
 }
 
-xiiStatus xiiDocument::CreatePrefabDocumentFromSelection(const char* szFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> AdjustGraphNodeCB, xiiDelegate<void(xiiDocumentObject*)> AdjustNewNodesCB)
+xiiStatus xiiDocument::CreatePrefabDocumentFromSelection(const char* szFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB)
 {
   auto Selection = GetSelectionManager()->GetTopLevelSelection(pRootType);
 
@@ -71,7 +71,7 @@ xiiStatus xiiDocument::CreatePrefabDocumentFromSelection(const char* szFile, con
 
   xiiUuid PrefabGuid, SeedGuid;
   SeedGuid.CreateNewUuid();
-  xiiStatus res = CreatePrefabDocument(szFile, nodes, SeedGuid, PrefabGuid, AdjustGraphNodeCB, true);
+  xiiStatus res = CreatePrefabDocument(szFile, nodes, SeedGuid, PrefabGuid, adjustGraphNodeCB, true);
 
   if (res.m_Result.Succeeded())
   {
@@ -96,9 +96,9 @@ xiiStatus xiiDocument::CreatePrefabDocumentFromSelection(const char* szFile, con
 
     auto pObject = GetObjectManager()->GetObject(newObj);
 
-    if (AdjustNewNodesCB.IsValid())
+    if (adjustNewNodesCB.IsValid())
     {
-      AdjustNewNodesCB(pObject);
+      adjustNewNodesCB(pObject);
     }
 
     GetCommandHistory()->FinishTransaction();
@@ -108,7 +108,7 @@ xiiStatus xiiDocument::CreatePrefabDocumentFromSelection(const char* szFile, con
   return res;
 }
 
-xiiStatus xiiDocument::CreatePrefabDocument(const char* szFile, xiiArrayPtr<const xiiDocumentObject*> rootObjects, const xiiUuid& invPrefabSeed, xiiUuid& out_NewDocumentGuid, xiiDelegate<void(xiiAbstractObjectNode*)> AdjustGraphNodeCB, bool bKeepOpen)
+xiiStatus xiiDocument::CreatePrefabDocument(const char* szFile, xiiArrayPtr<const xiiDocumentObject*> rootObjects, const xiiUuid& invPrefabSeed, xiiUuid& out_newDocumentGuid, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB, bool bKeepOpen)
 {
   const xiiDocumentTypeDescriptor* pTypeDesc = nullptr;
   if (xiiDocumentManager::FindDocumentTypeFromPath(szFile, true, pTypeDesc).Failed())
@@ -134,9 +134,9 @@ xiiStatus xiiDocument::CreatePrefabDocument(const char* szFile, xiiArrayPtr<cons
     graphRootNodes[i]         = pPrefabGraphMainNode;
 
     // allow external adjustments
-    if (AdjustGraphNodeCB.IsValid())
+    if (adjustGraphNodeCB.IsValid())
     {
-      AdjustGraphNodeCB(pPrefabGraphMainNode);
+      adjustGraphNodeCB(pPrefabGraphMainNode);
     }
   }
 
@@ -146,7 +146,7 @@ xiiStatus xiiDocument::CreatePrefabDocument(const char* szFile, xiiArrayPtr<cons
 
   XII_SUCCEED_OR_RETURN(pTypeDesc->m_pManager->CreateDocument("Prefab", szFile, pSceneDocument, xiiDocumentFlags::RequestWindow | xiiDocumentFlags::AddToRecentFilesList));
 
-  out_NewDocumentGuid   = pSceneDocument->GetGuid();
+  out_newDocumentGuid   = pSceneDocument->GetGuid();
   auto pPrefabSceneRoot = pSceneDocument->GetObjectManager()->GetRootObject();
 
   xiiDocumentObjectConverterReader reader(
@@ -182,8 +182,8 @@ xiiStatus xiiDocument::CreatePrefabDocument(const char* szFile, xiiArrayPtr<cons
 xiiUuid xiiDocument::ReplaceByPrefab(
   const xiiDocumentObject* pRootObject,
   const char*              szPrefabFile,
-  const xiiUuid&           PrefabAsset,
-  const xiiUuid&           PrefabSeed,
+  const xiiUuid&           prefabAsset,
+  const xiiUuid&           prefabSeed,
   bool                     bEnginePrefab)
 {
   GetCommandHistory()->StartTransaction("Replace by Prefab");
@@ -195,11 +195,11 @@ xiiUuid xiiDocument::ReplaceByPrefab(
     xiiInstantiatePrefabCommand instCmd;
     instCmd.m_Index                = pRootObject->GetPropertyIndex().ConvertTo<xiiInt32>();
     instCmd.m_bAllowPickedPosition = false;
-    instCmd.m_CreateFromPrefab     = PrefabAsset;
+    instCmd.m_CreateFromPrefab     = prefabAsset;
     instCmd.m_Parent               = pRootObject->GetParent() == GetObjectManager()->GetRootObject() ? xiiUuid() : pRootObject->GetParent()->GetGuid();
     instCmd.m_sBasePrefabGraph     = xiiPrefabUtils::ReadDocumentAsString(
       szPrefabFile); // since the prefab might have been created just now, going through the cache (via GUID) will most likely fail
-    instCmd.m_RemapGuid = PrefabSeed;
+    instCmd.m_RemapGuid = prefabSeed;
 
     GetCommandHistory()->AddCommand(instCmd);
 
@@ -233,7 +233,7 @@ xiiUuid xiiDocument::ReplaceByPrefab(
     xiiSetObjectPropertyCommand cmd2;
     cmd2.m_Object    = CmpGuid;
     cmd2.m_sProperty = "Prefab";
-    cmd2.m_NewValue  = xiiConversionUtils::ToString(PrefabAsset, tmp).GetData();
+    cmd2.m_NewValue  = xiiConversionUtils::ToString(prefabAsset, tmp).GetData();
     XII_VERIFY(pHistory->AddCommand(cmd2).m_Result.Succeeded(), "AddCommand failed");
   }
 

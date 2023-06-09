@@ -18,12 +18,12 @@ class XII_GUIFOUNDATION_DLL xiiQtMenuActionMapView : public QMenu
   XII_DISALLOW_COPY_AND_ASSIGN(xiiQtMenuActionMapView);
 
 public:
-  explicit xiiQtMenuActionMapView(QWidget* parent);
+  explicit xiiQtMenuActionMapView(QWidget* pParent);
   ~xiiQtMenuActionMapView();
 
   void SetActionContext(const xiiActionContext& context);
 
-  static void AddDocumentObjectToMenu(xiiHashTable<xiiUuid, QSharedPointer<xiiQtProxy>>& Proxies, xiiActionContext& Context, xiiActionMap* pActionMap, QMenu* pCurrentRoot, const xiiActionMap::TreeNode* pObject);
+  static void AddDocumentObjectToMenu(xiiHashTable<xiiUuid, QSharedPointer<xiiQtProxy>>& ref_proxies, xiiActionContext& ref_context, xiiActionMap* pActionMap, QMenu* pCurrentRoot, const xiiActionMap::TreeNode* pObject);
 
 private:
   void ClearView();

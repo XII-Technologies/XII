@@ -136,12 +136,12 @@ bool xiiTexConv::IsTexFormat() const
   return ext.StartsWith_NoCase("xii");
 }
 
-xiiResult xiiTexConv::WriteTexFile(xiiStreamWriter& stream, const xiiImage& image)
+xiiResult xiiTexConv::WriteTexFile(xiiStreamWriter& ref_stream, const xiiImage& image)
 {
   xiiAssetFileHeader asset;
   asset.SetFileHashAndVersion(m_Processor.m_Descriptor.m_uiAssetHash, m_Processor.m_Descriptor.m_uiAssetVersion);
 
-  XII_SUCCEED_OR_RETURN(asset.Write(stream));
+  XII_SUCCEED_OR_RETURN(asset.Write(ref_stream));
 
   xiiTexFormat texFormat;
   texFormat.m_bSRGB         = xiiImageFormat::IsSrgb(image.GetImageFormat());
@@ -150,10 +150,10 @@ xiiResult xiiTexConv::WriteTexFile(xiiStreamWriter& stream, const xiiImage& imag
   texFormat.m_AddressModeW  = m_Processor.m_Descriptor.m_AddressModeW;
   texFormat.m_TextureFilter = m_Processor.m_Descriptor.m_FilterMode;
 
-  texFormat.WriteTextureHeader(stream);
+  texFormat.WriteTextureHeader(ref_stream);
 
   xiiDdsFileFormat ddsWriter;
-  if (ddsWriter.WriteImage(stream, image, "dds").Failed())
+  if (ddsWriter.WriteImage(ref_stream, image, "dds").Failed())
   {
     xiiLog::Error("Failed to write DDS image chunk to xiiTex file.");
     return XII_FAILURE;

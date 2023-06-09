@@ -138,22 +138,22 @@ void xiiSphereReflectionProbeComponent::OnTransformChanged(xiiMsgTransformChange
   m_bStatesDirty = true;
 }
 
-void xiiSphereReflectionProbeComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSphereReflectionProbeComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_fRadius;
   s << m_fFalloff;
   s << m_bSphereProjection;
 }
 
-void xiiSphereReflectionProbeComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSphereReflectionProbeComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32  uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32  uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  xiiStreamReader& s         = ref_stream.GetStream();
 
   s >> m_fRadius;
   s >> m_fFalloff;
@@ -182,7 +182,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->AddProperty("SphereProjection", false);
   }

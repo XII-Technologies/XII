@@ -47,7 +47,7 @@ public:
   virtual xiiUInt32                     GetArgumentCount() const override;
   virtual const xiiRTTI*                GetArgumentType(xiiUInt32 uiParamIndex) const override;
   virtual xiiBitflags<xiiPropertyFlags> GetArgumentFlags(xiiUInt32 uiParamIndex) const override;
-  virtual void                          Execute(void* pInstance, xiiArrayPtr<xiiVariant> values, xiiVariant& returnValue) const override;
+  virtual void                          Execute(void* pInstance, xiiArrayPtr<xiiVariant> values, xiiVariant& ref_returnValue) const override;
 
 private:
   xiiString                                      m_sPropertyNameStorage;

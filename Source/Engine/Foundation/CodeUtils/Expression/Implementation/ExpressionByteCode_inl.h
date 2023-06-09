@@ -35,42 +35,42 @@ XII_ALWAYS_INLINE xiiArrayPtr<const xiiExpression::FunctionDesc> xiiExpressionBy
 }
 
 // static
-XII_ALWAYS_INLINE xiiExpressionByteCode::OpCode::Enum xiiExpressionByteCode::GetOpCode(const StorageType*& pByteCode)
+XII_ALWAYS_INLINE xiiExpressionByteCode::OpCode::Enum xiiExpressionByteCode::GetOpCode(const StorageType*& ref_pByteCode)
 {
-  xiiUInt32 uiOpCode = *pByteCode;
-  ++pByteCode;
+  xiiUInt32 uiOpCode = *ref_pByteCode;
+  ++ref_pByteCode;
   return static_cast<OpCode::Enum>((uiOpCode >= 0 && uiOpCode < OpCode::Count) ? uiOpCode : 0);
 }
 
 // static
-XII_ALWAYS_INLINE xiiUInt32 xiiExpressionByteCode::GetRegisterIndex(const StorageType*& pByteCode)
+XII_ALWAYS_INLINE xiiUInt32 xiiExpressionByteCode::GetRegisterIndex(const StorageType*& ref_pByteCode)
 {
-  xiiUInt32 uiIndex = *pByteCode;
-  ++pByteCode;
+  xiiUInt32 uiIndex = *ref_pByteCode;
+  ++ref_pByteCode;
   return uiIndex;
 }
 
 // static
-XII_ALWAYS_INLINE xiiExpression::Register xiiExpressionByteCode::GetConstant(const StorageType*& pByteCode)
+XII_ALWAYS_INLINE xiiExpression::Register xiiExpressionByteCode::GetConstant(const StorageType*& ref_pByteCode)
 {
   xiiExpression::Register r;
-  r.i = xiiSimdVec4i(*pByteCode);
-  ++pByteCode;
+  r.i = xiiSimdVec4i(*ref_pByteCode);
+  ++ref_pByteCode;
   return r;
 }
 
 // static
-XII_ALWAYS_INLINE xiiUInt32 xiiExpressionByteCode::GetFunctionIndex(const StorageType*& pByteCode)
+XII_ALWAYS_INLINE xiiUInt32 xiiExpressionByteCode::GetFunctionIndex(const StorageType*& ref_pByteCode)
 {
-  xiiUInt32 uiIndex = *pByteCode;
-  ++pByteCode;
+  xiiUInt32 uiIndex = *ref_pByteCode;
+  ++ref_pByteCode;
   return uiIndex;
 }
 
 // static
-XII_ALWAYS_INLINE xiiUInt32 xiiExpressionByteCode::GetFunctionArgCount(const StorageType*& pByteCode)
+XII_ALWAYS_INLINE xiiUInt32 xiiExpressionByteCode::GetFunctionArgCount(const StorageType*& ref_pByteCode)
 {
-  xiiUInt32 uiArgCount = *pByteCode;
-  ++pByteCode;
+  xiiUInt32 uiArgCount = *ref_pByteCode;
+  ++ref_pByteCode;
   return uiArgCount;
 }

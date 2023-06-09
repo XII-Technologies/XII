@@ -9,7 +9,7 @@ struct xiiPhysicsOverlapResult;
 
 class XII_GAMEPLAYPLUGIN_DLL xiiAreaDamageComponentManager : public xiiComponentManager<class xiiAreaDamageComponent, xiiBlockStorageType::FreeList>
 {
-  typedef xiiComponentManager<xiiAreaDamageComponent, xiiBlockStorageType::FreeList> SUPER;
+  using SUPER = xiiComponentManager<xiiAreaDamageComponent, xiiBlockStorageType::FreeList>;
 
 public:
   xiiAreaDamageComponentManager(xiiWorld* pWorld);
@@ -18,7 +18,7 @@ public:
 
 private:
   friend class xiiAreaDamageComponent;
-  xiiPhysicsWorldModuleInterface* m_pPhysicsInterface;
+  xiiPhysicsWorldModuleInterface* m_pPhysicsInterface = nullptr;
 };
 
 class XII_GAMEPLAYPLUGIN_DLL xiiAreaDamageComponent : public xiiComponent
@@ -29,8 +29,8 @@ class XII_GAMEPLAYPLUGIN_DLL xiiAreaDamageComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnSimulationStarted() override;

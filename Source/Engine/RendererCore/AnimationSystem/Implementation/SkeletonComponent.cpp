@@ -43,13 +43,13 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiSkeletonComponent::xiiSkeletonComponent()  = default;
 xiiSkeletonComponent::~xiiSkeletonComponent() = default;
 
-xiiResult xiiSkeletonComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiSkeletonComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   if (m_MaxBounds.IsValid())
   {
     xiiBoundingBox bbox = m_MaxBounds;
-    bounds              = bbox;
-    bounds.Transform(m_RootTransform.GetAsMat4());
+    ref_bounds          = bbox;
+    ref_bounds.Transform(m_RootTransform.GetAsMat4());
     return XII_SUCCESS;
   }
 
@@ -108,11 +108,11 @@ void xiiSkeletonComponent::Update()
   }
 }
 
-void xiiSkeletonComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSkeletonComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s << m_hSkeleton;
   s << m_bVisualizeBones;
@@ -123,15 +123,15 @@ void xiiSkeletonComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_bVisualizeTwistLimits;
 }
 
-void xiiSkeletonComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSkeletonComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
   if (uiVersion <= 4)
     return;
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_hSkeleton;
   s >> m_bVisualizeBones;
@@ -258,22 +258,22 @@ void xiiSkeletonComponent::BuildSkeletonVisualization(xiiMsgAnimationPoseUpdated
 
   const xiiVec3 vBoneDir = xiiBasisAxis::GetBasisVectorFloat(msg.m_pSkeleton->m_BoneDirection);
 
-  auto renderBone = [&](int currentBone, int parentBone) {
-    if (parentBone == ozz::animation::Skeleton::kNoParent)
+  auto renderBone = [&](int iCurrentBone, int iParentBone) {
+    if (iParentBone == ozz::animation::Skeleton::kNoParent)
       return;
 
-    const xiiVec3 v0 = *msg.m_pRootTransform * msg.m_ModelTransforms[parentBone].GetTranslationVector();
-    const xiiVec3 v1 = *msg.m_pRootTransform * msg.m_ModelTransforms[currentBone].GetTranslationVector();
+    const xiiVec3 v0 = *msg.m_pRootTransform * msg.m_ModelTransforms[iParentBone].GetTranslationVector();
+    const xiiVec3 v1 = *msg.m_pRootTransform * msg.m_ModelTransforms[iCurrentBone].GetTranslationVector();
 
     xiiVec3 dirToBone = (v1 - v0);
 
-    auto& bone        = bones[currentBone];
+    auto& bone        = bones[iCurrentBone];
     bone.pos          = v1;
     bone.distToParent = dirToBone.GetLength();
-    bone.dir          = *msg.m_pRootTransform * msg.m_ModelTransforms[currentBone].TransformDirection(vBoneDir);
+    bone.dir          = *msg.m_pRootTransform * msg.m_ModelTransforms[iCurrentBone].TransformDirection(vBoneDir);
     bone.dir.NormalizeIfNotZero(xiiVec3::ZeroVector()).IgnoreResult();
 
-    auto& pb = bones[parentBone];
+    auto& pb = bones[iParentBone];
 
     if (!pb.dir.IsZero() && dirToBone.NormalizeIfNotZero(xiiVec3::ZeroVector()).Succeeded())
     {

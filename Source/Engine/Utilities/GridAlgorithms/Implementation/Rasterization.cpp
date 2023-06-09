@@ -7,7 +7,7 @@ xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnLine(
   xiiInt32                      iStartY,
   xiiInt32                      iEndX,
   xiiInt32                      iEndY,
-  XII_RASTERIZED_POINT_CALLBACK Callback,
+  XII_RASTERIZED_POINT_CALLBACK callback,
   void*                         pPassThrough /* = nullptr */)
 {
   // Implements Bresenham's line algorithm:
@@ -24,7 +24,7 @@ xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnLine(
   while (true)
   {
     // The user callback can stop the algorithm at any point, if no further points on the line are required
-    if (Callback(iStartX, iStartY, pPassThrough) == xiiCallbackResult::Stop)
+    if (callback(iStartX, iStartY, pPassThrough) == xiiCallbackResult::Stop)
       return xiiRasterizationResult::Aborted;
 
     if ((iStartX == iEndX) && (iStartY == iEndY))
@@ -46,7 +46,7 @@ xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnLine(
   }
 }
 
-xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnLineConservative(xiiInt32 iStartX, xiiInt32 iStartY, xiiInt32 iEndX, xiiInt32 iEndY, XII_RASTERIZED_POINT_CALLBACK Callback, void* pPassThrough /* = nullptr */, bool bVisitBothNeighbors /* = false */)
+xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnLineConservative(xiiInt32 iStartX, xiiInt32 iStartY, xiiInt32 iEndX, xiiInt32 iEndY, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough /* = nullptr */, bool bVisitBothNeighbors /* = false */)
 {
   xiiInt32 dx = xiiMath::Abs(iEndX - iStartX);
   xiiInt32 dy = xiiMath::Abs(iEndY - iStartY);
@@ -67,18 +67,18 @@ xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnLineConservative(xii
     {
       // This part is the difference to the non-conservative line algorithm
 
-      if (Callback(iLastX, iStartY, pPassThrough) == xiiCallbackResult::Continue)
+      if (callback(iLastX, iStartY, pPassThrough) == xiiCallbackResult::Continue)
       {
         // first one succeeded, going to continue
 
         // if this is true, the user still wants a callback for the alternative, even though it does not change the outcome anymore
         if (bVisitBothNeighbors)
-          Callback(iStartX, iLastY, pPassThrough);
+          callback(iStartX, iLastY, pPassThrough);
       }
       else
       {
         // first one failed, try the second
-        if (Callback(iStartX, iLastY, pPassThrough) == xiiCallbackResult::Stop)
+        if (callback(iStartX, iLastY, pPassThrough) == xiiCallbackResult::Stop)
           return xiiRasterizationResult::Aborted;
       }
     }
@@ -87,7 +87,7 @@ xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnLineConservative(xii
     iLastY = iStartY;
 
     // The user callback can stop the algorithm at any point, if no further points on the line are required
-    if (Callback(iStartX, iStartY, pPassThrough) == xiiCallbackResult::Stop)
+    if (callback(iStartX, iStartY, pPassThrough) == xiiCallbackResult::Stop)
       return xiiRasterizationResult::Aborted;
 
     if ((iStartX == iEndX) && (iStartY == iEndY))
@@ -114,7 +114,7 @@ xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnCircle(
   xiiInt32                      iStartX,
   xiiInt32                      iStartY,
   xiiUInt32                     uiRadius,
-  XII_RASTERIZED_POINT_CALLBACK Callback,
+  XII_RASTERIZED_POINT_CALLBACK callback,
   void*                         pPassThrough /* = nullptr */)
 {
   int f     = 1 - uiRadius;
@@ -124,13 +124,13 @@ xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnCircle(
   int y     = uiRadius;
 
   // report the four extremes
-  if (Callback(iStartX, iStartY + uiRadius, pPassThrough) == xiiCallbackResult::Stop)
+  if (callback(iStartX, iStartY + uiRadius, pPassThrough) == xiiCallbackResult::Stop)
     return xiiRasterizationResult::Aborted;
-  if (Callback(iStartX, iStartY - uiRadius, pPassThrough) == xiiCallbackResult::Stop)
+  if (callback(iStartX, iStartY - uiRadius, pPassThrough) == xiiCallbackResult::Stop)
     return xiiRasterizationResult::Aborted;
-  if (Callback(iStartX + uiRadius, iStartY, pPassThrough) == xiiCallbackResult::Stop)
+  if (callback(iStartX + uiRadius, iStartY, pPassThrough) == xiiCallbackResult::Stop)
     return xiiRasterizationResult::Aborted;
-  if (Callback(iStartX - uiRadius, iStartY, pPassThrough) == xiiCallbackResult::Stop)
+  if (callback(iStartX - uiRadius, iStartY, pPassThrough) == xiiCallbackResult::Stop)
     return xiiRasterizationResult::Aborted;
 
   // the loop iterates over an eighth of the circle (a 45 degree segment) and then mirrors each point 8 times to fill the entire circle
@@ -146,28 +146,28 @@ xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnCircle(
     ddF_x += 2;
     f += ddF_x;
 
-    if (Callback(iStartX + x, iStartY + y, pPassThrough) == xiiCallbackResult::Stop)
+    if (callback(iStartX + x, iStartY + y, pPassThrough) == xiiCallbackResult::Stop)
       return xiiRasterizationResult::Aborted;
-    if (Callback(iStartX - x, iStartY + y, pPassThrough) == xiiCallbackResult::Stop)
+    if (callback(iStartX - x, iStartY + y, pPassThrough) == xiiCallbackResult::Stop)
       return xiiRasterizationResult::Aborted;
-    if (Callback(iStartX + x, iStartY - y, pPassThrough) == xiiCallbackResult::Stop)
+    if (callback(iStartX + x, iStartY - y, pPassThrough) == xiiCallbackResult::Stop)
       return xiiRasterizationResult::Aborted;
-    if (Callback(iStartX - x, iStartY - y, pPassThrough) == xiiCallbackResult::Stop)
+    if (callback(iStartX - x, iStartY - y, pPassThrough) == xiiCallbackResult::Stop)
       return xiiRasterizationResult::Aborted;
-    if (Callback(iStartX + y, iStartY + x, pPassThrough) == xiiCallbackResult::Stop)
+    if (callback(iStartX + y, iStartY + x, pPassThrough) == xiiCallbackResult::Stop)
       return xiiRasterizationResult::Aborted;
-    if (Callback(iStartX - y, iStartY + x, pPassThrough) == xiiCallbackResult::Stop)
+    if (callback(iStartX - y, iStartY + x, pPassThrough) == xiiCallbackResult::Stop)
       return xiiRasterizationResult::Aborted;
-    if (Callback(iStartX + y, iStartY - x, pPassThrough) == xiiCallbackResult::Stop)
+    if (callback(iStartX + y, iStartY - x, pPassThrough) == xiiCallbackResult::Stop)
       return xiiRasterizationResult::Aborted;
-    if (Callback(iStartX - y, iStartY - x, pPassThrough) == xiiCallbackResult::Stop)
+    if (callback(iStartX - y, iStartY - x, pPassThrough) == xiiCallbackResult::Stop)
       return xiiRasterizationResult::Aborted;
   }
 
   return xiiRasterizationResult::Finished;
 }
 
-xiiUInt32 xii2DGridUtils::FloodFill(xiiInt32 iStartX, xiiInt32 iStartY, XII_RASTERIZED_POINT_CALLBACK Callback, void* pPassThrough /* = nullptr */, xiiDeque<xiiVec2I32>* pTempArray /* = nullptr */)
+xiiUInt32 xii2DGridUtils::FloodFill(xiiInt32 iStartX, xiiInt32 iStartY, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough /* = nullptr */, xiiDeque<xiiVec2I32>* pTempArray /* = nullptr */)
 {
   xiiUInt32 uiFilled = 0;
 
@@ -184,7 +184,7 @@ xiiUInt32 xii2DGridUtils::FloodFill(xiiInt32 iStartX, xiiInt32 iStartY, XII_RAST
     xiiVec2I32 v = pTempArray->PeekBack();
     pTempArray->PopBack();
 
-    if (Callback(v.x, v.y, pPassThrough) == xiiCallbackResult::Continue)
+    if (callback(v.x, v.y, pPassThrough) == xiiCallbackResult::Continue)
     {
       ++uiFilled;
 
@@ -199,7 +199,7 @@ xiiUInt32 xii2DGridUtils::FloodFill(xiiInt32 iStartX, xiiInt32 iStartY, XII_RAST
   return uiFilled;
 }
 
-xiiUInt32 xii2DGridUtils::FloodFillDiag(xiiInt32 iStartX, xiiInt32 iStartY, XII_RASTERIZED_POINT_CALLBACK Callback, void* pPassThrough /*= nullptr*/, xiiDeque<xiiVec2I32>* pTempArray /*= nullptr*/)
+xiiUInt32 xii2DGridUtils::FloodFillDiag(xiiInt32 iStartX, xiiInt32 iStartY, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough /*= nullptr*/, xiiDeque<xiiVec2I32>* pTempArray /*= nullptr*/)
 {
   xiiUInt32 uiFilled = 0;
 
@@ -216,7 +216,7 @@ xiiUInt32 xii2DGridUtils::FloodFillDiag(xiiInt32 iStartX, xiiInt32 iStartY, XII_
     xiiVec2I32 v = pTempArray->PeekBack();
     pTempArray->PopBack();
 
-    if (Callback(v.x, v.y, pPassThrough) == xiiCallbackResult::Continue)
+    if (callback(v.x, v.y, pPassThrough) == xiiCallbackResult::Continue)
     {
       ++uiFilled;
 
@@ -248,11 +248,11 @@ static const xiiUInt8 CircleAreaMax[9] = {7, 8, 8, 9, 10, 11, 12, 13, 14};
 xiiRasterizationResult::Enum xii2DGridUtils::RasterizeBlob(
   xiiInt32                      iPosX,
   xiiInt32                      iPosY,
-  xiiBlobType                   eType,
-  XII_RASTERIZED_POINT_CALLBACK Callback,
+  xiiBlobType                   type,
+  XII_RASTERIZED_POINT_CALLBACK callback,
   void*                         pPassThrough /* = nullptr */)
 {
-  const xiiUInt8 uiCircleType = xiiMath::Clamp<xiiUInt8>(eType, 0, 8);
+  const xiiUInt8 uiCircleType = xiiMath::Clamp<xiiUInt8>(type, 0, 8);
 
   const xiiInt32 iAreaMin = CircleAreaMin[uiCircleType];
   const xiiInt32 iAreaMax = CircleAreaMax[uiCircleType];
@@ -266,7 +266,7 @@ xiiRasterizationResult::Enum xii2DGridUtils::RasterizeBlob(
     {
       if (OverlapCircle[y][x] <= uiCircleType)
       {
-        if (Callback(iPosX + x, iPosY + y, pPassThrough) == xiiCallbackResult::Stop)
+        if (callback(iPosX + x, iPosY + y, pPassThrough) == xiiCallbackResult::Stop)
           return xiiRasterizationResult::Aborted;
       }
     }
@@ -278,11 +278,11 @@ xiiRasterizationResult::Enum xii2DGridUtils::RasterizeBlob(
 xiiRasterizationResult::Enum xii2DGridUtils::RasterizeBlobWithDistance(
   xiiInt32                     iPosX,
   xiiInt32                     iPosY,
-  xiiBlobType                  eType,
-  XII_RASTERIZED_BLOB_CALLBACK Callback,
+  xiiBlobType                  type,
+  XII_RASTERIZED_BLOB_CALLBACK callback,
   void*                        pPassThrough /*= nullptr*/)
 {
-  const xiiUInt8 uiCircleType = xiiMath::Clamp<xiiUInt8>(eType, 0, 8);
+  const xiiUInt8 uiCircleType = xiiMath::Clamp<xiiUInt8>(type, 0, 8);
 
   const xiiInt32 iAreaMin = CircleAreaMin[uiCircleType];
   const xiiInt32 iAreaMax = CircleAreaMax[uiCircleType];
@@ -298,7 +298,7 @@ xiiRasterizationResult::Enum xii2DGridUtils::RasterizeBlobWithDistance(
 
       if (uiDistance <= uiCircleType)
       {
-        if (Callback(iPosX + x, iPosY + y, pPassThrough, uiDistance) == xiiCallbackResult::Stop)
+        if (callback(iPosX + x, iPosY + y, pPassThrough, uiDistance) == xiiCallbackResult::Stop)
           return xiiRasterizationResult::Aborted;
       }
     }
@@ -311,7 +311,7 @@ xiiRasterizationResult::Enum xii2DGridUtils::RasterizeCircle(
   xiiInt32                      iPosX,
   xiiInt32                      iPosY,
   float                         fRadius,
-  XII_RASTERIZED_POINT_CALLBACK Callback,
+  XII_RASTERIZED_POINT_CALLBACK callback,
   void*                         pPassThrough /* = nullptr */)
 {
   const xiiVec2 vCenter((float)iPosX, (float)iPosY);
@@ -328,7 +328,7 @@ xiiRasterizationResult::Enum xii2DGridUtils::RasterizeCircle(
       if ((v - vCenter).GetLengthSquared() > fRadiusSqr)
         continue;
 
-      if (Callback(x, y, pPassThrough) == xiiCallbackResult::Stop)
+      if (callback(x, y, pPassThrough) == xiiCallbackResult::Stop)
         return xiiRasterizationResult::Aborted;
     }
   }
@@ -419,7 +419,7 @@ static xiiCallbackResult::Enum MarkPointsInCircleVisible(xiiInt32 x, xiiInt32 y,
   return xiiCallbackResult::Continue;
 }
 
-void xii2DGridUtils::ComputeVisibleArea(xiiInt32 iPosX, xiiInt32 iPosY, xiiUInt16 uiRadius, xiiUInt32 uiWidth, xiiUInt32 uiHeight, XII_RASTERIZED_POINT_CALLBACK Callback, void* pPassThrough /* = nullptr */, xiiDynamicArray<xiiUInt8>* pTempArray /* = nullptr */)
+void xii2DGridUtils::ComputeVisibleArea(xiiInt32 iPosX, xiiInt32 iPosY, xiiUInt16 uiRadius, xiiUInt32 uiWidth, xiiUInt32 uiHeight, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough /* = nullptr */, xiiDynamicArray<xiiUInt8>* pTempArray /* = nullptr */)
 {
   const xiiUInt32 uiSize = uiRadius * 2 + 1;
 
@@ -438,7 +438,7 @@ void xii2DGridUtils::ComputeVisibleArea(xiiInt32 iPosX, xiiInt32 iPosY, xiiUInt1
   ld.m_pVisible         = pTempArray;
   ld.m_iCenterX         = iPosX;
   ld.m_iCenterY         = iPosY;
-  ld.m_VisCallback      = Callback;
+  ld.m_VisCallback      = callback;
   ld.m_pUserPassThrough = pPassThrough;
   ld.m_uiWidth          = uiWidth;
   ld.m_uiHeight         = uiHeight;
@@ -465,7 +465,7 @@ static xiiCallbackResult::Enum MarkPointsInConeVisible(xiiInt32 x, xiiInt32 y, v
   return xiiCallbackResult::Continue;
 }
 
-void xii2DGridUtils::ComputeVisibleAreaInCone(xiiInt32 iPosX, xiiInt32 iPosY, xiiUInt16 uiRadius, const xiiVec2& vDirection, xiiAngle ConeAngle, xiiUInt32 uiWidth, xiiUInt32 uiHeight, XII_RASTERIZED_POINT_CALLBACK Callback, void* pPassThrough /* = nullptr */, xiiDynamicArray<xiiUInt8>* pTempArray /* = nullptr */)
+void xii2DGridUtils::ComputeVisibleAreaInCone(xiiInt32 iPosX, xiiInt32 iPosY, xiiUInt16 uiRadius, const xiiVec2& vDirection, xiiAngle coneAngle, xiiUInt32 uiWidth, xiiUInt32 uiHeight, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough /* = nullptr */, xiiDynamicArray<xiiUInt8>* pTempArray /* = nullptr */)
 {
   const xiiUInt32 uiSize = uiRadius * 2 + 1;
 
@@ -485,12 +485,12 @@ void xii2DGridUtils::ComputeVisibleAreaInCone(xiiInt32 iPosX, xiiInt32 iPosY, xi
   ld.m_pVisible         = pTempArray;
   ld.m_iCenterX         = iPosX;
   ld.m_iCenterY         = iPosY;
-  ld.m_VisCallback      = Callback;
+  ld.m_VisCallback      = callback;
   ld.m_pUserPassThrough = pPassThrough;
   ld.m_uiWidth          = uiWidth;
   ld.m_uiHeight         = uiHeight;
   ld.m_vDirection       = vDirection;
-  ld.m_ConeAngle        = ConeAngle;
+  ld.m_ConeAngle        = coneAngle;
 
   xii2DGridUtils::ComputePointsOnCircle(iPosX, iPosY, uiRadius, MarkPointsInConeVisible, &ld);
 }

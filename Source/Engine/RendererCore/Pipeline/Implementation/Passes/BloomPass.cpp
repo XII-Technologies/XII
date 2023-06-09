@@ -28,7 +28,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiBloomPass::xiiBloomPass() :
-  xiiRenderPipelinePass("BloomPass", true), m_fRadius(0.2f), m_fThreshold(1.0f), m_fIntensity(0.3f), m_InnerTintColor(xiiColor::White), m_MidTintColor(xiiColor::White), m_OuterTintColor(xiiColor::White)
+  xiiRenderPipelinePass("BloomPass", true), m_InnerTintColor(xiiColor::White), m_MidTintColor(xiiColor::White), m_OuterTintColor(xiiColor::White)
 {
   {
     // Load shader.

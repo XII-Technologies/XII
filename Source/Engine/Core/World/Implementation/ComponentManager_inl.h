@@ -47,9 +47,7 @@ xiiComponentManager<T, StorageType>::xiiComponentManager(xiiWorld* pWorld) :
 }
 
 template <typename T, xiiBlockStorageType::Enum StorageType>
-xiiComponentManager<T, StorageType>::~xiiComponentManager()
-{
-}
+xiiComponentManager<T, StorageType>::~xiiComponentManager() = default;
 
 template <typename T, xiiBlockStorageType::Enum StorageType>
 XII_FORCE_INLINE bool xiiComponentManager<T, StorageType>::TryGetComponent(const xiiComponentHandle& hComponent, ComponentType*& out_pComponent)

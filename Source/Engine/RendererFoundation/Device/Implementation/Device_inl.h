@@ -9,9 +9,9 @@ XII_ALWAYS_INLINE const xiiGALDeviceCreationDescription* xiiGALDevice::GetDescri
   return &m_Description;
 }
 
-XII_ALWAYS_INLINE xiiResult xiiGALDevice::GetTimestampResult(xiiGALTimestampHandle hTimestamp, xiiTime& result)
+XII_ALWAYS_INLINE xiiResult xiiGALDevice::GetTimestampResult(xiiGALTimestampHandle hTimestamp, xiiTime& ref_result)
 {
-  return GetTimestampResultPlatform(hTimestamp, result);
+  return GetTimestampResultPlatform(hTimestamp, ref_result);
 }
 
 XII_ALWAYS_INLINE xiiGALTimestampHandle xiiGALDevice::GetTimestamp()

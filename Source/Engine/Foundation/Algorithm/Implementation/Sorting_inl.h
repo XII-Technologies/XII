@@ -1,110 +1,110 @@
 
 template <typename Container, typename Comparer>
-void xiiSorting::QuickSort(Container& container, const Comparer& comparer)
+void xiiSorting::QuickSort(Container& ref_container, const Comparer& comparer)
 {
-  if (container.IsEmpty())
+  if (ref_container.IsEmpty())
     return;
 
-  QuickSort(container, 0, container.GetCount() - 1, comparer);
+  QuickSort(ref_container, 0, ref_container.GetCount() - 1, comparer);
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::QuickSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer)
+void xiiSorting::QuickSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer)
 {
-  if (arrayPtr.IsEmpty())
+  if (ref_arrayPtr.IsEmpty())
     return;
 
-  QuickSort(arrayPtr, 0, arrayPtr.GetCount() - 1, comparer);
+  QuickSort(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
 }
 
 template <typename Container, typename Comparer>
-void xiiSorting::InsertionSort(Container& container, const Comparer& comparer)
+void xiiSorting::InsertionSort(Container& ref_container, const Comparer& comparer)
 {
-  if (container.IsEmpty())
+  if (ref_container.IsEmpty())
     return;
 
-  InsertionSort(container, 0, container.GetCount() - 1, comparer);
+  InsertionSort(ref_container, 0, ref_container.GetCount() - 1, comparer);
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::InsertionSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer)
+void xiiSorting::InsertionSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer)
 {
-  if (arrayPtr.IsEmpty())
+  if (ref_arrayPtr.IsEmpty())
     return;
 
-  InsertionSort(arrayPtr, 0, arrayPtr.GetCount() - 1, comparer);
+  InsertionSort(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
 }
 
 template <typename Container, typename Comparer>
-void xiiSorting::BubbleSort(Container& container, const Comparer& comparer)
+void xiiSorting::BubbleSort(Container& ref_container, const Comparer& comparer)
 {
-  if (container.IsEmpty())
+  if (ref_container.IsEmpty())
     return;
 
-  BubbleSort(container, 0, container.GetCount() - 1, comparer);
+  BubbleSort(ref_container, 0, ref_container.GetCount() - 1, comparer);
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::BubbleSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer)
+void xiiSorting::BubbleSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer)
 {
-  if (arrayPtr.IsEmpty())
+  if (ref_arrayPtr.IsEmpty())
     return;
 
-  BubbleSort(arrayPtr, 0, arrayPtr.GetCount() - 1, comparer);
+  BubbleSort(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
 }
 
 template <typename Container, typename Comparer>
-void xiiSorting::SelectionSort(Container& container, const Comparer& comparer)
+void xiiSorting::SelectionSort(Container& ref_container, const Comparer& comparer)
 {
-  if (container.IsEmpty())
+  if (ref_container.IsEmpty())
     return;
 
-  SelectionSort(container, 0, container.GetCount() - 1, comparer);
+  SelectionSort(ref_container, 0, ref_container.GetCount() - 1, comparer);
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::SelectionSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer)
+void xiiSorting::SelectionSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer)
 {
-  if (arrayPtr.IsEmpty())
+  if (ref_arrayPtr.IsEmpty())
     return;
 
-  SelectionSort(arrayPtr, 0, arrayPtr.GetCount() - 1, comparer);
+  SelectionSort(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
 }
 
 template <typename Container, typename Comparer>
-void xiiSorting::SelectionSortStable(Container& container, const Comparer& comparer)
+void xiiSorting::SelectionSortStable(Container& ref_container, const Comparer& comparer)
 {
-  if (container.IsEmpty())
+  if (ref_container.IsEmpty())
     return;
 
-  SelectionSortStable(container, 0, container.GetCount() - 1, comparer);
+  SelectionSortStable(ref_container, 0, ref_container.GetCount() - 1, comparer);
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::SelectionSortStable(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer)
+void xiiSorting::SelectionSortStable(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer)
 {
-  if (arrayPtr.IsEmpty())
+  if (ref_arrayPtr.IsEmpty())
     return;
 
-  SelectionSortStable(arrayPtr, 0, arrayPtr.GetCount() - 1, comparer);
+  SelectionSortStable(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
 }
 
 template <typename Container, typename Comparer>
-void xiiSorting::MergeSort(Container& container, const Comparer& comparer)
+void xiiSorting::MergeSort(Container& ref_container, const Comparer& comparer)
 {
-  if (container.IsEmpty())
+  if (ref_container.IsEmpty())
     return;
 
-  MergeSort(container, 0, container.GetCount() - 1, comparer);
+  MergeSort(ref_container, 0, ref_container.GetCount() - 1, comparer);
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::MergeSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer)
+void xiiSorting::MergeSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer)
 {
-  if (arrayPtr.IsEmpty())
+  if (ref_arrayPtr.IsEmpty())
     return;
 
-  MergeSort(arrayPtr, 0, arrayPtr.GetCount() - 1, comparer);
+  MergeSort(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
 }
 
 template <typename Container, typename Comparer>

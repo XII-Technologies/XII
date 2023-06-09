@@ -44,7 +44,7 @@ namespace xiiStateMachineInternal
     void Destruct(const xiiByteBlobPtr& blobPtr) const;
 
     xiiBlob AllocateAndConstruct() const;
-    void    DestructAndDeallocate(xiiBlob& blob) const;
+    void    DestructAndDeallocate(xiiBlob& ref_blob) const;
 
     xiiUInt32 GetTotalDataSize() const { return m_uiTotalDataSize; }
 
@@ -85,9 +85,9 @@ namespace xiiStateMachineInternal
       }
     };
 
-    XII_ALWAYS_INLINE void* GetSubInstanceData(InstanceData* pData, xiiUInt32 index) const
+    XII_ALWAYS_INLINE void* GetSubInstanceData(InstanceData* pData, xiiUInt32 uiIndex) const
     {
-      return pData != nullptr ? m_InstanceDataAllocator.GetInstanceData(pData->GetBlobPtr(), m_InstanceDataOffsets[index]) : nullptr;
+      return pData != nullptr ? m_InstanceDataAllocator.GetInstanceData(pData->GetBlobPtr(), m_InstanceDataOffsets[uiIndex]) : nullptr;
     }
 
     XII_FORCE_INLINE void Initialize(InstanceData* pData) const

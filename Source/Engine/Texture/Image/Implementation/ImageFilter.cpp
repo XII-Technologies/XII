@@ -12,8 +12,8 @@ xiiImageFilter::xiiImageFilter(float width) :
 {
 }
 
-xiiImageFilterBox::xiiImageFilterBox(float width) :
-  xiiImageFilter(width)
+xiiImageFilterBox::xiiImageFilterBox(float fWidth) :
+  xiiImageFilter(fWidth)
 {
 }
 
@@ -31,8 +31,8 @@ xiiSimdFloat xiiImageFilterBox::SamplePoint(const xiiSimdFloat& x) const
   }
 }
 
-xiiImageFilterTriangle::xiiImageFilterTriangle(float width) :
-  xiiImageFilter(width)
+xiiImageFilterTriangle::xiiImageFilterTriangle(float fWidth) :
+  xiiImageFilter(fWidth)
 {
 }
 
@@ -88,8 +88,8 @@ static xiiSimdFloat modifiedBessel0(const xiiSimdFloat& x)
   return sum;
 }
 
-xiiImageFilterSincWithKaiserWindow::xiiImageFilterSincWithKaiserWindow(float width, float beta) :
-  xiiImageFilter(width), m_fBeta(beta), m_fInvBesselBeta(1.0f / modifiedBessel0(m_fBeta))
+xiiImageFilterSincWithKaiserWindow::xiiImageFilterSincWithKaiserWindow(float fWidth, float fBeta) :
+  xiiImageFilter(fWidth), m_fBeta(fBeta), m_fInvBesselBeta(1.0f / modifiedBessel0(m_fBeta))
 {
 }
 
@@ -109,22 +109,22 @@ xiiSimdFloat xiiImageFilterSincWithKaiserWindow::SamplePoint(const xiiSimdFloat&
   }
 }
 
-xiiImageFilterWeights::xiiImageFilterWeights(const xiiImageFilter& filter, xiiUInt32 srcSamples, xiiUInt32 dstSamples)
+xiiImageFilterWeights::xiiImageFilterWeights(const xiiImageFilter& filter, xiiUInt32 uiSrcSamples, xiiUInt32 uiDstSamples)
 {
   // Filter weights repeat after the common phase
-  xiiUInt32 commonPhase = xiiMath::GreatestCommonDivisor(srcSamples, dstSamples);
+  xiiUInt32 commonPhase = xiiMath::GreatestCommonDivisor(uiSrcSamples, uiDstSamples);
 
-  srcSamples /= commonPhase;
-  dstSamples /= commonPhase;
+  uiSrcSamples /= commonPhase;
+  uiDstSamples /= commonPhase;
 
-  m_uiDstSamplesReduced = dstSamples;
+  m_uiDstSamplesReduced = uiDstSamples;
 
-  m_fSourceToDestScale = float(dstSamples) / float(srcSamples);
-  m_fDestToSourceScale = float(srcSamples) / float(dstSamples);
+  m_fSourceToDestScale = float(uiDstSamples) / float(uiSrcSamples);
+  m_fDestToSourceScale = float(uiSrcSamples) / float(uiDstSamples);
 
   xiiSimdFloat filterScale, invFilterScale;
 
-  if (dstSamples > srcSamples)
+  if (uiDstSamples > uiSrcSamples)
   {
     // When upsampling, reconstruct the source by applying the filter in source space and resampling
     filterScale    = 1.0f;
@@ -142,9 +142,9 @@ xiiImageFilterWeights::xiiImageFilterWeights(const xiiImageFilter& filter, xiiUI
 
   m_uiNumWeights = xiiUInt32(xiiMath::Ceil(m_fWidthInSourceSpace * xiiSimdFloat(2.0f))) + 1;
 
-  m_Weights.SetCountUninitialized(dstSamples * m_uiNumWeights);
+  m_Weights.SetCountUninitialized(uiDstSamples * m_uiNumWeights);
 
-  for (xiiUInt32 dstSample = 0; dstSample < dstSamples; ++dstSample)
+  for (xiiUInt32 dstSample = 0; dstSample < uiDstSamples; ++dstSample)
   {
     xiiSimdFloat dstSampleInSourceSpace = (xiiSimdFloat(dstSample) + xiiSimdFloat(0.5f)) * m_fDestToSourceScale;
 
@@ -176,11 +176,11 @@ xiiUInt32 xiiImageFilterWeights::GetNumWeights() const
   return m_uiNumWeights;
 }
 
-xiiSimdFloat xiiImageFilterWeights::GetWeight(xiiUInt32 dstSampleIndex, xiiUInt32 weightIndex) const
+xiiSimdFloat xiiImageFilterWeights::GetWeight(xiiUInt32 uiDstSampleIndex, xiiUInt32 uiWeightIndex) const
 {
-  XII_ASSERT_DEBUG(weightIndex < m_uiNumWeights, "Invalid weight index {} (should be < {})", weightIndex, m_uiNumWeights);
+  XII_ASSERT_DEBUG(uiWeightIndex < m_uiNumWeights, "Invalid weight index {} (should be < {})", uiWeightIndex, m_uiNumWeights);
 
-  return xiiSimdFloat(m_Weights[(dstSampleIndex % m_uiDstSamplesReduced) * m_uiNumWeights + weightIndex]);
+  return xiiSimdFloat(m_Weights[(uiDstSampleIndex % m_uiDstSamplesReduced) * m_uiNumWeights + uiWeightIndex]);
 }
 
 

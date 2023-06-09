@@ -18,21 +18,21 @@ public:
 
   void Clear();
 
-  void StoreBool(const xiiTempHashedString& name, bool value);
-  void StoreInteger(const xiiTempHashedString& name, xiiInt64 value);
-  void StoreDouble(const xiiTempHashedString& name, double value);
-  void StoreVec3(const xiiTempHashedString& name, const xiiVec3& value);
-  void StoreVec3d(const xiiTempHashedString& name, const xiiVec3d& value);
-  void StoreColor(const xiiTempHashedString& name, const xiiColor& value);
-  void StoreString(const xiiTempHashedString& name, const xiiString& value);
+  void StoreBool(const xiiTempHashedString& sName, bool value);
+  void StoreInteger(const xiiTempHashedString& sName, xiiInt64 value);
+  void StoreDouble(const xiiTempHashedString& sName, double value);
+  void StoreVec3(const xiiTempHashedString& sName, const xiiVec3& value);
+  void StoreVec3d(const xiiTempHashedString& sName, const xiiVec3d& value);
+  void StoreColor(const xiiTempHashedString& sName, const xiiColor& value);
+  void StoreString(const xiiTempHashedString& sName, const xiiString& value);
 
-  void RetrieveBool(const xiiTempHashedString& name, bool& out_Value, bool defaultValue = false);
-  void RetrieveInteger(const xiiTempHashedString& name, xiiInt64& out_Value, xiiInt64 defaultValue = 0);
-  void RetrieveDouble(const xiiTempHashedString& name, double& out_Value, double defaultValue = 0);
-  void RetrieveVec3(const xiiTempHashedString& name, xiiVec3& out_Value, xiiVec3 defaultValue = xiiVec3(0));
-  void RetrieveVec3d(const xiiTempHashedString& name, xiiVec3d& out_Value, xiiVec3d defaultValue = xiiVec3d(0));
-  void RetrieveColor(const xiiTempHashedString& name, xiiColor& out_Value, xiiColor defaultValue = xiiColor::White);
-  void RetrieveString(const xiiTempHashedString& name, xiiString& out_Value, const char* defaultValue = nullptr);
+  void RetrieveBool(const xiiTempHashedString& sName, bool& out_bValue, bool bDefaultValue = false);
+  void RetrieveInteger(const xiiTempHashedString& sName, xiiInt64& out_iValue, xiiInt64 iDefaultValue = 0);
+  void RetrieveDouble(const xiiTempHashedString& sName, double& out_fValue, double fDefaultValue = 0);
+  void RetrieveVec3(const xiiTempHashedString& sName, xiiVec3& out_vValue, xiiVec3 vDefaultValue = xiiVec3(0));
+  void RetrieveVec3d(const xiiTempHashedString& sName, xiiVec3d& out_vValue, xiiVec3d vDefaultValue = xiiVec3d(0));
+  void RetrieveColor(const xiiTempHashedString& sName, xiiColor& out_value, xiiColor defaultValue = xiiColor::White);
+  void RetrieveString(const xiiTempHashedString& sName, xiiString& out_sValue, const char* szDefaultValue = nullptr);
 
 private:
   xiiHashTable<xiiTempHashedString, bool>      m_Bools;

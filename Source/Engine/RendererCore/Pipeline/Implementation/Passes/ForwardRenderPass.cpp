@@ -34,7 +34,7 @@ xiiForwardRenderPass::xiiForwardRenderPass(const char* szName) :
 {
 }
 
-xiiForwardRenderPass::~xiiForwardRenderPass() {}
+xiiForwardRenderPass::~xiiForwardRenderPass() = default;
 
 bool xiiForwardRenderPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {

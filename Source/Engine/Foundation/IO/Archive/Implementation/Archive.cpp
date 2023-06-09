@@ -3,16 +3,16 @@
 #include <Foundation/IO/Archive/Archive.h>
 #include <Foundation/Logging/Log.h>
 
-void operator<<(xiiStreamWriter& stream, const xiiArchiveStoredString& value)
+void operator<<(xiiStreamWriter& ref_stream, const xiiArchiveStoredString& value)
 {
-  stream << value.m_uiLowerCaseHash;
-  stream << value.m_uiSrcStringOffset;
+  ref_stream << value.m_uiLowerCaseHash;
+  ref_stream << value.m_uiSrcStringOffset;
 }
 
-void operator>>(xiiStreamReader& stream, xiiArchiveStoredString& value)
+void operator>>(xiiStreamReader& ref_stream, xiiArchiveStoredString& value)
 {
-  stream >> value.m_uiLowerCaseHash;
-  stream >> value.m_uiSrcStringOffset;
+  ref_stream >> value.m_uiLowerCaseHash;
+  ref_stream >> value.m_uiSrcStringOffset;
 }
 
 xiiUInt32 xiiArchiveTOC::FindEntry(const char* szFile) const
@@ -36,19 +36,19 @@ const char* xiiArchiveTOC::GetEntryPathString(xiiUInt32 uiEntryIdx) const
   return reinterpret_cast<const char*>(&m_AllPathStrings[m_Entries[uiEntryIdx].m_uiPathStringOffset]);
 }
 
-xiiResult xiiArchiveTOC::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiArchiveTOC::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(2);
+  ref_stream.WriteVersion(2);
 
-  XII_SUCCEED_OR_RETURN(stream.WriteArray(m_Entries));
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(m_Entries));
 
   // write the hash of a known string to the archive, to detect hash function changes
   xiiUInt64 uiStringHash = xiiHashingUtils::StringHash("xiiArchive");
-  stream << uiStringHash;
+  ref_stream << uiStringHash;
 
-  XII_SUCCEED_OR_RETURN(stream.WriteHashTable(m_PathToEntryIndex));
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteHashTable(m_PathToEntryIndex));
 
-  XII_SUCCEED_OR_RETURN(stream.WriteArray(m_AllPathStrings));
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(m_AllPathStrings));
 
   return XII_SUCCESS;
 }
@@ -80,14 +80,14 @@ struct xiiHashHelper<xiiOldTempHashedString>
   static bool Equal(const xiiOldTempHashedString& a, const xiiOldTempHashedString& b) { return a == b; }
 };
 
-xiiResult xiiArchiveTOC::Deserialize(xiiStreamReader& stream, xiiUInt8 uiArchiveVersion)
+xiiResult xiiArchiveTOC::Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiArchiveVersion)
 {
   XII_ASSERT_ALWAYS(uiArchiveVersion <= 4, "Unsupported archive version {}", uiArchiveVersion);
 
   // we don't use the TOC version anymore, but the archive version instead
-  const xiiTypeVersion version = stream.ReadVersion(2);
+  const xiiTypeVersion version = ref_stream.ReadVersion(2);
 
-  XII_SUCCEED_OR_RETURN(stream.ReadArray(m_Entries));
+  XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(m_Entries));
 
   bool bRecreateStringHashes = true;
 
@@ -95,7 +95,7 @@ xiiResult xiiArchiveTOC::Deserialize(xiiStreamReader& stream, xiiUInt8 uiArchive
   {
     // read and discard the data, it is regenerated below
     xiiHashTable<xiiOldTempHashedString, xiiUInt32> m_PathToIndex;
-    XII_SUCCEED_OR_RETURN(stream.ReadHashTable(m_PathToIndex));
+    XII_SUCCEED_OR_RETURN(ref_stream.ReadHashTable(m_PathToIndex));
   }
   else
   {
@@ -103,7 +103,7 @@ xiiResult xiiArchiveTOC::Deserialize(xiiStreamReader& stream, xiiUInt8 uiArchive
     {
       // read the hash of a known string from the archive, to detect hash function changes
       xiiUInt64 uiStringHash = 0;
-      stream >> uiStringHash;
+      ref_stream >> uiStringHash;
 
       if (uiStringHash == xiiHashingUtils::StringHash("xiiArchive"))
       {
@@ -111,10 +111,10 @@ xiiResult xiiArchiveTOC::Deserialize(xiiStreamReader& stream, xiiUInt8 uiArchive
       }
     }
 
-    XII_SUCCEED_OR_RETURN(stream.ReadHashTable(m_PathToEntryIndex));
+    XII_SUCCEED_OR_RETURN(ref_stream.ReadHashTable(m_PathToEntryIndex));
   }
 
-  XII_SUCCEED_OR_RETURN(stream.ReadArray(m_AllPathStrings));
+  XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(m_AllPathStrings));
 
   if (bRecreateStringHashes)
   {
@@ -162,26 +162,26 @@ xiiResult xiiArchiveTOC::Deserialize(xiiStreamReader& stream, xiiUInt8 uiArchive
   return XII_SUCCESS;
 }
 
-xiiResult xiiArchiveEntry::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiArchiveEntry::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream << m_uiDataStartOffset;
-  stream << m_uiUncompressedDataSize;
-  stream << m_uiStoredDataSize;
-  stream << (xiiUInt8)m_CompressionMode;
-  stream << m_uiPathStringOffset;
+  ref_stream << m_uiDataStartOffset;
+  ref_stream << m_uiUncompressedDataSize;
+  ref_stream << m_uiStoredDataSize;
+  ref_stream << (xiiUInt8)m_CompressionMode;
+  ref_stream << m_uiPathStringOffset;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiArchiveEntry::Deserialize(xiiStreamReader& stream)
+xiiResult xiiArchiveEntry::Deserialize(xiiStreamReader& ref_stream)
 {
-  stream >> m_uiDataStartOffset;
-  stream >> m_uiUncompressedDataSize;
-  stream >> m_uiStoredDataSize;
+  ref_stream >> m_uiDataStartOffset;
+  ref_stream >> m_uiUncompressedDataSize;
+  ref_stream >> m_uiStoredDataSize;
   xiiUInt8 uiCompressionMode = 0;
-  stream >> uiCompressionMode;
+  ref_stream >> uiCompressionMode;
   m_CompressionMode = (xiiArchiveCompressionMode)uiCompressionMode;
-  stream >> m_uiPathStringOffset;
+  ref_stream >> m_uiPathStringOffset;
 
   return XII_SUCCESS;
 }

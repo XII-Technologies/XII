@@ -28,8 +28,8 @@ struct XII_RENDERERCORE_DLL xiiSkeletonResourceDescriptor
   void operator=(xiiSkeletonResourceDescriptor&& rhs);
   void operator=(const xiiSkeletonResourceDescriptor& rhs) = delete;
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 
   xiiUInt64 GetHeapMemoryUsage() const;
 

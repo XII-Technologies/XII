@@ -266,19 +266,19 @@ void xiiToolsReflectionUtils::GatherObjectTypes(const xiiDocumentObject* pObject
   GatherObjectTypesInternal(pObject, inout_types);
 }
 
-bool xiiToolsReflectionUtils::DependencySortTypeDescriptorArray(xiiDynamicArray<xiiReflectedTypeDescriptor*>& descriptors)
+bool xiiToolsReflectionUtils::DependencySortTypeDescriptorArray(xiiDynamicArray<xiiReflectedTypeDescriptor*>& ref_descriptors)
 {
   xiiMap<xiiReflectedTypeDescriptor*, xiiSet<xiiString>> dependencies;
 
   xiiSet<xiiString> typesInArray;
   // Gather all types in array
-  for (xiiReflectedTypeDescriptor* desc : descriptors)
+  for (xiiReflectedTypeDescriptor* desc : ref_descriptors)
   {
     typesInArray.Insert(desc->m_sTypeName);
   }
 
   // Find all direct dependencies to types in the array for each type.
-  for (xiiReflectedTypeDescriptor* desc : descriptors)
+  for (xiiReflectedTypeDescriptor* desc : ref_descriptors)
   {
     auto it = dependencies.Insert(desc, xiiSet<xiiString>());
 
@@ -297,19 +297,19 @@ bool xiiToolsReflectionUtils::DependencySortTypeDescriptorArray(xiiDynamicArray<
 
   xiiSet<xiiString>                            accu;
   xiiDynamicArray<xiiReflectedTypeDescriptor*> sorted;
-  sorted.Reserve(descriptors.GetCount());
+  sorted.Reserve(ref_descriptors.GetCount());
   // Build new sorted types array.
-  while (!descriptors.IsEmpty())
+  while (!ref_descriptors.IsEmpty())
   {
     bool bDeadEnd = true;
-    for (xiiReflectedTypeDescriptor* desc : descriptors)
+    for (xiiReflectedTypeDescriptor* desc : ref_descriptors)
     {
       // Are the types dependencies met?
       if (accu.ContainsSet(dependencies[desc]))
       {
         sorted.PushBack(desc);
         bDeadEnd = false;
-        descriptors.RemoveAndCopy(desc);
+        ref_descriptors.RemoveAndCopy(desc);
         accu.Insert(desc->m_sTypeName);
         break;
       }
@@ -321,6 +321,6 @@ bool xiiToolsReflectionUtils::DependencySortTypeDescriptorArray(xiiDynamicArray<
     }
   }
 
-  descriptors = sorted;
+  ref_descriptors = sorted;
   return true;
 }

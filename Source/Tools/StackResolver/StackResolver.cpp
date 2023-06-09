@@ -61,8 +61,8 @@ public:
   xiiResult ParseCallstack();
 
   void ResolveStackFrames();
-  void FormatAsText(xiiStringBuilder& output);
-  void FormatAsJSON(xiiStringBuilder& output);
+  void FormatAsText(xiiStringBuilder& ref_sOutput);
+  void FormatAsJSON(xiiStringBuilder& ref_sOutput);
 
   HANDLE                      m_hProcess;
   xiiDynamicArray<Module>     m_Modules;
@@ -221,7 +221,7 @@ void xiiStackResolver::ResolveStackFrames()
   }
 }
 
-void xiiStackResolver::FormatAsText(xiiStringBuilder& output)
+void xiiStackResolver::FormatAsText(xiiStringBuilder& ref_sOutput)
 {
   xiiLog::Info("Formatting callstack as text.");
 
@@ -246,11 +246,11 @@ void xiiStackResolver::FormatAsText(xiiStringBuilder& output)
       szSymbol = frame.m_sSymbol;
     }
 
-    output.AppendFormat("[][{}] {}({}): '{}'\n", szModuleName, szFileName, frame.m_uiLineNumber, szSymbol);
+    ref_sOutput.AppendFormat("[][{}] {}({}): '{}'\n", szModuleName, szFileName, frame.m_uiLineNumber, szSymbol);
   }
 }
 
-void xiiStackResolver::FormatAsJSON(xiiStringBuilder& output)
+void xiiStackResolver::FormatAsJSON(xiiStringBuilder& ref_sOutput)
 {
   xiiLog::Info("Formatting callstack as JSON.");
 
@@ -298,7 +298,7 @@ void xiiStackResolver::FormatAsJSON(xiiStringBuilder& output)
 
   xiiStringView text((const char*)storage.GetData(), storage.GetStorageSize32());
 
-  output.Append(text);
+  ref_sOutput.Append(text);
 }
 
 xiiApplication::Execution xiiStackResolver::Run()

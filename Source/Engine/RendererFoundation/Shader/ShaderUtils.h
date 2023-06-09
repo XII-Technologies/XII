@@ -36,10 +36,10 @@ public:
     return r | (g << 16);
   }
 
-  XII_ALWAYS_INLINE static void Float4ToRGBA16F(xiiVec4 value, xiiUInt32& out_RG, xiiUInt32& out_BA)
+  XII_ALWAYS_INLINE static void Float4ToRGBA16F(xiiVec4 value, xiiUInt32& out_uiRG, xiiUInt32& out_uiBA)
   {
-    out_RG = Float2ToRG16F(xiiVec2(value.x, value.y));
-    out_BA = Float2ToRG16F(xiiVec2(value.z, value.w));
+    out_uiRG = Float2ToRG16F(xiiVec2(value.x, value.y));
+    out_uiBA = Float2ToRG16F(xiiVec2(value.z, value.w));
   }
 
   enum class xiiBuiltinShaderType

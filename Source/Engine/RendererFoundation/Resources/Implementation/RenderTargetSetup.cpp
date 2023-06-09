@@ -21,9 +21,7 @@ bool xiiGALRenderTargets::operator!=(const xiiGALRenderTargets& other) const
   return !(*this == other);
 }
 
-xiiGALRenderTargetSetup::xiiGALRenderTargetSetup()
-{
-}
+xiiGALRenderTargetSetup::xiiGALRenderTargetSetup() = default;
 
 xiiGALRenderTargetSetup& xiiGALRenderTargetSetup::SetRenderTarget(xiiUInt8 uiIndex, xiiGALRenderTargetViewHandle hRenderTarget)
 {

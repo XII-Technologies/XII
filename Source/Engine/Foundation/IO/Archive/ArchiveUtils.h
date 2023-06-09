@@ -23,29 +23,29 @@ namespace xiiArchiveUtils
   XII_FOUNDATION_DLL xiiHybridArray<xiiString, 4, xiiStaticAllocatorWrapper>& GetAcceptedArchiveFileExtensions();
 
   /// \brief Checks case insensitive, whether the given extension is in the list of GetAcceptedArchiveFileExtensions().
-  XII_FOUNDATION_DLL bool IsAcceptedArchiveFileExtensions(xiiStringView extension);
+  XII_FOUNDATION_DLL bool IsAcceptedArchiveFileExtensions(xiiStringView sExtension);
 
   /// \brief Writes the header that identifies the xiiArchive file and version to the stream
-  XII_FOUNDATION_DLL xiiResult WriteHeader(xiiStreamWriter& stream);
+  XII_FOUNDATION_DLL xiiResult WriteHeader(xiiStreamWriter& ref_stream);
 
   /// \brief Reads the xiiArchive header. Returns success and the version, if the stream is a valid xiiArchive file.
-  XII_FOUNDATION_DLL xiiResult ReadHeader(xiiStreamReader& stream, xiiUInt8& out_uiVersion);
+  XII_FOUNDATION_DLL xiiResult ReadHeader(xiiStreamReader& ref_stream, xiiUInt8& out_uiVersion);
 
   /// \brief Writes the archive TOC to the stream. This must be the last thing in the stream, if ExtractTOC() is supposed to work.
-  XII_FOUNDATION_DLL xiiResult AppendTOC(xiiStreamWriter& stream, const xiiArchiveTOC& toc);
+  XII_FOUNDATION_DLL xiiResult AppendTOC(xiiStreamWriter& ref_stream, const xiiArchiveTOC& toc);
 
   /// \brief Deserializes the TOC from the memory mapped file. Assumes the TOC is the very last data in the file and reads it from the back.
-  XII_FOUNDATION_DLL xiiResult ExtractTOC(xiiMemoryMappedFile& memFile, xiiArchiveTOC& toc, xiiUInt8 uiArchiveVersion);
+  XII_FOUNDATION_DLL xiiResult ExtractTOC(xiiMemoryMappedFile& ref_memFile, xiiArchiveTOC& ref_toc, xiiUInt8 uiArchiveVersion);
 
   /// \brief Writes a single file entry to an xiiArchive stream with the given compression level.
   ///
   /// Appends information to the TOC for finding the data in the stream. Reads and updates inout_uiCurrentStreamPosition with the data byte
   /// offset. The progress callback is executed for every couple of KB of data that were written.
-  XII_FOUNDATION_DLL xiiResult WriteEntry(xiiStreamWriter& stream, xiiStringView sAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiInt32 iCompressionLevel, xiiArchiveEntry& tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress = FileWriteProgressCallback());
+  XII_FOUNDATION_DLL xiiResult WriteEntry(xiiStreamWriter& ref_stream, xiiStringView sAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiInt32 iCompressionLevel, xiiArchiveEntry& ref_tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress = FileWriteProgressCallback());
 
   /// \brief Similar to WriteEntry, but if compression is enabled, checks that compression makes enough of a difference.
   /// If compression does not reduce file size enough, the file is stored uncompressed instead.
-  XII_FOUNDATION_DLL xiiResult WriteEntryOptimal(xiiStreamWriter& stream, xiiStringView sAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiInt32 iCompressionLevel, xiiArchiveEntry& tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress = FileWriteProgressCallback());
+  XII_FOUNDATION_DLL xiiResult WriteEntryOptimal(xiiStreamWriter& ref_stream, xiiStringView sAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiInt32 iCompressionLevel, xiiArchiveEntry& ref_tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress = FileWriteProgressCallback());
 
   /// \brief Configures \a memReader as a view into the data stored for \a entry in the archive file.
   ///
@@ -53,15 +53,15 @@ namespace xiiArchiveUtils
   XII_FOUNDATION_DLL void ConfigureRawMemoryStreamReader(
     const xiiArchiveEntry&    entry,
     const void*               pStartOfArchiveData,
-    xiiRawMemoryStreamReader& memReader);
+    xiiRawMemoryStreamReader& ref_memReader);
 
   /// \brief Creates a new stream reader which allows to read the uncompressed data for the given archive entry.
   ///
   /// Under the hood it may create different types of stream readers to uncompress or decode the data.
   XII_FOUNDATION_DLL xiiUniquePtr<xiiStreamReader> CreateEntryReader(const xiiArchiveEntry& entry, const void* pStartOfArchiveData);
 
-  XII_FOUNDATION_DLL xiiResult ReadZipHeader(xiiStreamReader& stream, xiiUInt8& out_uiVersion);
-  XII_FOUNDATION_DLL xiiResult ExtractZipTOC(xiiMemoryMappedFile& memFile, xiiArchiveTOC& toc);
+  XII_FOUNDATION_DLL xiiResult ReadZipHeader(xiiStreamReader& ref_stream, xiiUInt8& out_uiVersion);
+  XII_FOUNDATION_DLL xiiResult ExtractZipTOC(xiiMemoryMappedFile& ref_memFile, xiiArchiveTOC& ref_toc);
 
 
 } // namespace xiiArchiveUtils

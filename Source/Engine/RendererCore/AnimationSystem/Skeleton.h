@@ -81,10 +81,10 @@ public:
   // bool IsCompatibleWith(const xiiSkeleton& other) const;
 
   /// \brief Saves the skeleton in a given stream.
-  void Save(xiiStreamWriter& stream) const;
+  void Save(xiiStreamWriter& ref_stream) const;
 
   /// \brief Loads the skeleton from the given stream.
-  void Load(xiiStreamReader& stream);
+  void Load(xiiStreamReader& ref_stream);
 
   bool IsJointDescendantOf(xiiUInt16 uiJoint, xiiUInt16 uiExpectedParent) const;
 

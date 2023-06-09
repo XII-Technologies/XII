@@ -125,7 +125,7 @@ public:
   xiiArrayPtr<const xiiConnection* const> GetConnections(const xiiPin& pin) const;
   bool                                    HasConnections(const xiiPin& pin) const;
   bool                                    IsConnected(const xiiPin& source, const xiiPin& target) const;
-  xiiStatus                               CanConnect(const xiiRTTI* pObjectType, const xiiPin& source, const xiiPin& target, CanConnectResult& result) const;
+  xiiStatus                               CanConnect(const xiiRTTI* pObjectType, const xiiPin& source, const xiiPin& target, CanConnectResult& ref_result) const;
   xiiStatus                               CanDisconnect(const xiiConnection* pConnection) const;
   xiiStatus                               CanDisconnect(const xiiDocumentObject* pObject) const;
   xiiStatus                               CanMoveNode(const xiiDocumentObject* pObject, const xiiVec2& vPos) const;
@@ -134,12 +134,12 @@ public:
   void Disconnect(const xiiDocumentObject* pObject);
   void MoveNode(const xiiDocumentObject* pObject, const xiiVec2& vPos);
 
-  void AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& graph) const;
+  void AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& ref_graph) const;
   void RestoreMetaDataAfterLoading(const xiiAbstractObjectGraph& graph, bool bUndoable);
 
   void GetMetaDataHash(const xiiDocumentObject* pObject, xiiUInt64& inout_uiHash) const;
   bool CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph) const;
-  bool PasteObjects(const xiiArrayPtr<xiiDocument::PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec2& pickedPosition, bool bAllowPickedPosition);
+  bool PasteObjects(const xiiArrayPtr<xiiDocument::PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec2& vPickedPosition, bool bAllowPickedPosition);
 
 protected:
   /// \brief Tests whether pTarget can be reached from pSource by following the pin connections

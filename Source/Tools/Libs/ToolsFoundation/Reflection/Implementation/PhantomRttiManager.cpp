@@ -36,12 +36,12 @@ XII_END_SUBSYSTEM_DECLARATION;
 // xiiPhantomRttiManager public functions
 ////////////////////////////////////////////////////////////////////////
 
-const xiiRTTI* xiiPhantomRttiManager::RegisterType(xiiReflectedTypeDescriptor& desc)
+const xiiRTTI* xiiPhantomRttiManager::RegisterType(xiiReflectedTypeDescriptor& ref_desc)
 {
   XII_PROFILE_SCOPE("RegisterType");
-  xiiRTTI*        pType    = xiiRTTI::FindTypeByName(desc.m_sTypeName);
+  xiiRTTI*        pType    = xiiRTTI::FindTypeByName(ref_desc.m_sTypeName);
   xiiPhantomRTTI* pPhantom = nullptr;
-  s_NameToPhantom.TryGetValue(desc.m_sTypeName, pPhantom);
+  s_NameToPhantom.TryGetValue(ref_desc.m_sTypeName, pPhantom);
 
   // concrete type !
   if (pPhantom == nullptr && pType != nullptr)
@@ -49,17 +49,17 @@ const xiiRTTI* xiiPhantomRttiManager::RegisterType(xiiReflectedTypeDescriptor& d
     return pType;
   }
 
-  if (pPhantom != nullptr && pPhantom->IsEqualToDescriptor(desc))
+  if (pPhantom != nullptr && pPhantom->IsEqualToDescriptor(ref_desc))
     return pPhantom;
 
   if (pPhantom == nullptr)
   {
-    pPhantom = XII_DEFAULT_NEW(xiiPhantomRTTI, desc.m_sTypeName.GetData(), xiiRTTI::FindTypeByName(desc.m_sParentTypeName), 0,
-                               desc.m_uiTypeVersion, xiiVariantType::Invalid, desc.m_Flags, desc.m_sPluginName.GetData());
+    pPhantom = XII_DEFAULT_NEW(xiiPhantomRTTI, ref_desc.m_sTypeName.GetData(), xiiRTTI::FindTypeByName(ref_desc.m_sParentTypeName), 0,
+                               ref_desc.m_uiTypeVersion, xiiVariantType::Invalid, ref_desc.m_Flags, ref_desc.m_sPluginName.GetData());
 
-    pPhantom->SetProperties(desc.m_Properties);
-    pPhantom->SetAttributes(desc.m_Attributes);
-    pPhantom->SetFunctions(desc.m_Functions);
+    pPhantom->SetProperties(ref_desc.m_Properties);
+    pPhantom->SetAttributes(ref_desc.m_Attributes);
+    pPhantom->SetFunctions(ref_desc.m_Functions);
     pPhantom->SetupParentHierarchy();
 
     s_NameToPhantom[pPhantom->GetTypeName()] = pPhantom;
@@ -72,7 +72,7 @@ const xiiRTTI* xiiPhantomRttiManager::RegisterType(xiiReflectedTypeDescriptor& d
   }
   else
   {
-    pPhantom->UpdateType(desc);
+    pPhantom->UpdateType(ref_desc);
 
     xiiPhantomRttiManagerEvent msg;
     msg.m_pChangedType = pPhantom;

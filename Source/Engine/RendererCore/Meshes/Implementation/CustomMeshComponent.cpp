@@ -48,10 +48,10 @@ xiiCustomMeshComponent::xiiCustomMeshComponent()
 
 xiiCustomMeshComponent::~xiiCustomMeshComponent() = default;
 
-void xiiCustomMeshComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiCustomMeshComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  xiiStreamWriter& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_Color;
   s << m_hMaterial;
@@ -60,12 +60,12 @@ void xiiCustomMeshComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << uiCategory;
 }
 
-void xiiCustomMeshComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiCustomMeshComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   s >> m_Color;
   s >> m_hMaterial;
@@ -75,11 +75,11 @@ void xiiCustomMeshComponent::DeserializeComponent(xiiWorldReader& stream)
   m_RenderDataCategory.m_uiValue = static_cast<xiiUInt16>(uiCategory);
 }
 
-xiiResult xiiCustomMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiCustomMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   if (m_Bounds.IsValid())
   {
-    bounds = m_Bounds;
+    ref_bounds = m_Bounds;
     return XII_SUCCESS;
   }
 
@@ -160,14 +160,14 @@ const xiiColor& xiiCustomMeshComponent::GetColor() const
   return m_Color;
 }
 
-void xiiCustomMeshComponent::OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& msg)
+void xiiCustomMeshComponent::OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& ref_msg)
 {
-  SetMaterial(msg.m_hMaterial);
+  SetMaterial(ref_msg.m_hMaterial);
 }
 
-void xiiCustomMeshComponent::OnMsgSetColor(xiiMsgSetColor& msg)
+void xiiCustomMeshComponent::OnMsgSetColor(xiiMsgSetColor& ref_msg)
 {
-  msg.ModifyColor(m_Color);
+  ref_msg.ModifyColor(m_Color);
 
   InvalidateCachedRenderData();
 }
@@ -307,17 +307,17 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiCustomMeshRenderer::xiiCustomMeshRenderer()  = default;
 xiiCustomMeshRenderer::~xiiCustomMeshRenderer() = default;
 
-void xiiCustomMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const
+void xiiCustomMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
-  categories.PushBack(xiiDefaultRenderDataCategories::LitOpaque);
-  categories.PushBack(xiiDefaultRenderDataCategories::LitMasked);
-  categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
-  categories.PushBack(xiiDefaultRenderDataCategories::Selection);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitOpaque);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitMasked);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
 }
 
-void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const
+void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {
-  types.PushBack(xiiGetStaticRTTI<xiiCustomMeshRenderData>());
+  ref_types.PushBack(xiiGetStaticRTTI<xiiCustomMeshRenderData>());
 }
 
 void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const

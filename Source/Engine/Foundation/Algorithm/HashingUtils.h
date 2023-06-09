@@ -23,7 +23,7 @@ public:
   /// \brief Calculates the 32bit murmur hash of a string pointer during runtime. Encoding does not matter here.
   ///
   /// We cannot pass a string pointer directly since a string constant would be treated as pointer as well.
-  static xiiUInt32 MurmurHash32String(xiiStringView str, xiiUInt32 uiSeed = 0); // [tested]
+  static xiiUInt32 MurmurHash32String(xiiStringView sStr, xiiUInt32 uiSeed = 0); // [tested]
 
   /// \brief Calculates the 32bit xxHash of the given key.
   static xiiUInt32 xxHash32(const void* pKey, size_t uiSizeInByte, xiiUInt32 uiSeed = 0); // [tested]
@@ -42,12 +42,12 @@ public:
   /// \brief Calculates the 32bit xxHash of a string pointer during runtime.
   ///
   /// We cannot pass a string pointer directly since a string constant would be treated as pointer as well.
-  static xiiUInt32 xxHash32String(xiiStringView str, xiiUInt32 uiSeed = 0); // [tested]
+  static xiiUInt32 xxHash32String(xiiStringView sStr, xiiUInt32 uiSeed = 0); // [tested]
 
   /// \brief Calculates the 64bit xxHash of a string pointer during runtime.
   ///
   /// We cannot pass a string pointer directly since a string constant would be treated as pointer as well.
-  static xiiUInt64 xxHash64String(xiiStringView str, xiiUInt64 uiSeed = 0); // [tested]
+  static xiiUInt64 xxHash64String(xiiStringView sStr, xiiUInt64 uiSeed = 0); // [tested]
 
   /// \brief Calculates the hash of the given string literal at compile time.
   template <size_t N>
@@ -56,15 +56,15 @@ public:
   /// \brief Calculates the hash of a string pointer at runtime.
   ///
   /// We cannot pass a string pointer directly since a string constant would be treated as pointer as well.
-  static xiiUInt64 StringHash(xiiStringView str, xiiUInt64 uiSeed = 0); // [tested]
+  static xiiUInt64 StringHash(xiiStringView sStr, xiiUInt64 uiSeed = 0); // [tested]
 
   /// \brief Truncates a 64 bit string hash to 32 bit.
   ///
   /// This is necessary when a 64 bit string hash is used in a hash table (which only uses 32 bit indices).
-  constexpr static xiiUInt32 StringHashTo32(xiiUInt64 hash);
+  constexpr static xiiUInt32 StringHashTo32(xiiUInt64 uiHash);
 
   /// \brief Combines two 32 bit hash values into one.
-  constexpr static xiiUInt32 CombineHashValues32(xiiUInt32 h0, xiiUInt32 h1);
+  constexpr static xiiUInt32 CombineHashValues32(xiiUInt32 ui0, xiiUInt32 ui1);
 };
 
 /// \brief Helper struct to calculate the Hash of different types.

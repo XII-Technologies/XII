@@ -23,7 +23,7 @@
 class xiiInspectorApp : public xiiApplication
 {
 public:
-  typedef xiiApplication SUPER;
+  using SUPER = xiiApplication;
 
   xiiInspectorApp() :
     xiiApplication("xiiInspector")

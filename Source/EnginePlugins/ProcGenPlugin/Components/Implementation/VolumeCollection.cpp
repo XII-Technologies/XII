@@ -148,10 +148,10 @@ float xiiVolumeCollection::EvaluateAtGlobalPosition(const xiiSimdVec4f& vPositio
 }
 
 // static
-void xiiVolumeCollection::ExtractVolumesInBox(const xiiWorld& world, const xiiBoundingBox& box, xiiSpatialData::Category spatialCategory, const xiiTagSet& includeTags, xiiVolumeCollection& out_Collection, const xiiRTTI* pComponentBaseType)
+void xiiVolumeCollection::ExtractVolumesInBox(const xiiWorld& world, const xiiBoundingBox& box, xiiSpatialData::Category spatialCategory, const xiiTagSet& includeTags, xiiVolumeCollection& out_collection, const xiiRTTI* pComponentBaseType)
 {
   xiiMsgExtractVolumes msg;
-  msg.m_pCollection = &out_Collection;
+  msg.m_pCollection = &out_collection;
 
   xiiSpatialSystem::QueryParams queryParams;
   queryParams.m_uiCategoryBitmask = spatialCategory.GetBitmask();
@@ -176,15 +176,15 @@ void xiiVolumeCollection::ExtractVolumesInBox(const xiiWorld& world, const xiiBo
     return xiiVisitorExecution::Continue;
   });
 
-  out_Collection.m_Spheres.Sort();
-  out_Collection.m_Boxes.Sort();
-  out_Collection.m_Images.Sort();
+  out_collection.m_Spheres.Sort();
+  out_collection.m_Boxes.Sort();
+  out_collection.m_Images.Sort();
 
-  const xiiUInt32 uiNumSpheres = out_Collection.m_Spheres.GetCount();
-  const xiiUInt32 uiNumBoxes   = out_Collection.m_Boxes.GetCount();
-  const xiiUInt32 uiNumImages  = out_Collection.m_Images.GetCount();
+  const xiiUInt32 uiNumSpheres = out_collection.m_Spheres.GetCount();
+  const xiiUInt32 uiNumBoxes   = out_collection.m_Boxes.GetCount();
+  const xiiUInt32 uiNumImages  = out_collection.m_Images.GetCount();
 
-  out_Collection.m_SortedShapes.Reserve(uiNumSpheres + uiNumBoxes + uiNumImages);
+  out_collection.m_SortedShapes.Reserve(uiNumSpheres + uiNumBoxes + uiNumImages);
 
   xiiUInt32 uiCurrentSphere = 0;
   xiiUInt32 uiCurrentBox    = 0;
@@ -192,9 +192,9 @@ void xiiVolumeCollection::ExtractVolumesInBox(const xiiWorld& world, const xiiBo
 
   while (uiCurrentSphere < uiNumSpheres || uiCurrentBox < uiNumBoxes || uiCurrentImage < uiNumImages)
   {
-    Sphere* pSphere = uiCurrentSphere < uiNumSpheres ? &out_Collection.m_Spheres[uiCurrentSphere] : nullptr;
-    Box*    pBox    = uiCurrentBox < uiNumBoxes ? &out_Collection.m_Boxes[uiCurrentBox] : nullptr;
-    Image*  pImage  = uiCurrentImage < uiNumImages ? &out_Collection.m_Images[uiCurrentImage] : nullptr;
+    Sphere* pSphere = uiCurrentSphere < uiNumSpheres ? &out_collection.m_Spheres[uiCurrentSphere] : nullptr;
+    Box*    pBox    = uiCurrentBox < uiNumBoxes ? &out_collection.m_Boxes[uiCurrentBox] : nullptr;
+    Image*  pImage  = uiCurrentImage < uiNumImages ? &out_collection.m_Images[uiCurrentImage] : nullptr;
 
     Shape*    pSmallestShape = nullptr;
     xiiUInt32 uiSmallestKey  = 0xFFFFFFFF;
@@ -219,7 +219,7 @@ void xiiVolumeCollection::ExtractVolumesInBox(const xiiWorld& world, const xiiBo
 
     XII_ASSERT_DEBUG(pSmallestShape != nullptr, "Error sorting proc-gen volumes.");
 
-    out_Collection.m_SortedShapes.PushBack(pSmallestShape);
+    out_collection.m_SortedShapes.PushBack(pSmallestShape);
 
     if (pSmallestShape == pSphere)
     {
@@ -266,7 +266,7 @@ void xiiVolumeCollection::AddBox(const xiiSimdTransform& transform, const xiiVec
   box.m_vFadeOutBias  = -box.m_vFadeOutScale;
 }
 
-void xiiVolumeCollection::AddImage(const xiiSimdTransform& transform, const xiiVec3& vExtents, xiiEnum<xiiProcGenBlendMode> blendMode, float fSortOrder, float fValue, const xiiVec3& vFadeOutStart, const xiiImageDataResourceHandle& image)
+void xiiVolumeCollection::AddImage(const xiiSimdTransform& transform, const xiiVec3& vExtents, xiiEnum<xiiProcGenBlendMode> blendMode, float fSortOrder, float fValue, const xiiVec3& vFadeOutStart, const xiiImageDataResourceHandle& hImage)
 {
   xiiSimdTransform scaledTransform = transform;
   scaledTransform.m_Scale          = scaledTransform.m_Scale.CompMul(xiiSimdConversion::ToVec3(vExtents)) * 0.5f;
@@ -280,7 +280,7 @@ void xiiVolumeCollection::AddImage(const xiiSimdTransform& transform, const xiiV
   shape.m_vFadeOutScale = xiiVec3(-1.0f).CompDiv((xiiVec3(1.0f) - vFadeOutStart).CompMax(xiiVec3(0.0001f)));
   shape.m_vFadeOutBias  = -shape.m_vFadeOutScale;
 
-  shape.m_Image = image;
+  shape.m_Image = hImage;
 
   if (shape.m_Image.IsValid())
   {

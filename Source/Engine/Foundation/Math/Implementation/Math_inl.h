@@ -182,17 +182,17 @@ namespace xiiMath
 #endif
   }
 
-  XII_ALWAYS_INLINE xiiUInt32 CountTrailingZeros(xiiUInt32 bitmask) { return (bitmask == 0) ? 32 : FirstBitLow(bitmask); }
+  XII_ALWAYS_INLINE xiiUInt32 CountTrailingZeros(xiiUInt32 uiBitmask) { return (uiBitmask == 0) ? 32 : FirstBitLow(uiBitmask); }
 
-  XII_ALWAYS_INLINE xiiUInt32 CountTrailingZeros(xiiUInt64 bitmask)
+  XII_ALWAYS_INLINE xiiUInt32 CountTrailingZeros(xiiUInt64 uiBitmask)
   {
-    const xiiUInt32 numLow  = CountTrailingZeros(static_cast<xiiUInt32>(bitmask & 0xFFFFFFFF));
-    const xiiUInt32 numHigh = CountTrailingZeros(static_cast<xiiUInt32>((bitmask >> 32u) & 0xFFFFFFFF));
+    const xiiUInt32 numLow  = CountTrailingZeros(static_cast<xiiUInt32>(uiBitmask & 0xFFFFFFFF));
+    const xiiUInt32 numHigh = CountTrailingZeros(static_cast<xiiUInt32>((uiBitmask >> 32u) & 0xFFFFFFFF));
 
     return (numLow == 32) ? (32 + numHigh) : numLow;
   }
 
-  XII_ALWAYS_INLINE xiiUInt32 CountLeadingZeros(xiiUInt32 bitmask) { return (bitmask == 0) ? 32 : (31u - FirstBitHigh(bitmask)); }
+  XII_ALWAYS_INLINE xiiUInt32 CountLeadingZeros(xiiUInt32 uiBitmask) { return (uiBitmask == 0) ? 32 : (31u - FirstBitHigh(uiBitmask)); }
 
 
   XII_ALWAYS_INLINE xiiUInt32 CountBits(xiiUInt32 value)
@@ -221,27 +221,27 @@ namespace xiiMath
   }
 
   template <typename T>
-  XII_ALWAYS_INLINE void Swap(T& f1, T& f2)
+  XII_ALWAYS_INLINE void Swap(T& ref_f1, T& ref_f2)
   {
-    std::swap(f1, f2);
+    std::swap(ref_f1, ref_f2);
   }
 
   template <typename T>
-  XII_FORCE_INLINE T Lerp(T f1, T f2, float factor)
+  XII_FORCE_INLINE T Lerp(T f1, T f2, float fFactor)
   {
     // value is not included in format string, to prevent requirement on FormatString.h, to break #include cycles
-    XII_ASSERT_DEBUG((factor >= -0.00001f) && (factor <= 1.0f + 0.00001f), "lerp: factor is not in the range [0, 1]");
+    XII_ASSERT_DEBUG((fFactor >= -0.00001f) && (fFactor <= 1.0f + 0.00001f), "lerp: factor is not in the range [0, 1]");
 
-    return (T)(f1 + (factor * (f2 - f1)));
+    return (T)(f1 + (fFactor * (f2 - f1)));
   }
 
   template <typename T>
-  XII_FORCE_INLINE T Lerp(T f1, T f2, double factor)
+  XII_FORCE_INLINE T Lerp(T f1, T f2, double fFactor)
   {
     // value is not included in format string, to prevent requirement on FormatString.h, to break #include cycles
-    XII_ASSERT_DEBUG((factor >= -0.00001) && (factor <= 1.0 + 0.00001), "lerp: factor is not in the range [0, 1]");
+    XII_ASSERT_DEBUG((fFactor >= -0.00001) && (fFactor <= 1.0 + 0.00001), "lerp: factor is not in the range [0, 1]");
 
-    return (T)(f1 + (factor * (f2 - f1)));
+    return (T)(f1 + (fFactor * (f2 - f1)));
   }
 
   ///  Returns 0, if value < edge, and 1, if value >= edge.
@@ -262,9 +262,9 @@ namespace xiiMath
   }
 
   template <typename T>
-  constexpr inline bool IsInRange(T Value, T MinVal, T MaxVal)
+  constexpr inline bool IsInRange(T value, T minVal, T maxVal)
   {
-    return MinVal < MaxVal ? (Value >= MinVal) && (Value <= MaxVal) : (Value <= MinVal) && (Value >= MaxVal);
+    return minVal < maxVal ? (value >= minVal) && (value <= maxVal) : (value <= minVal) && (value >= maxVal);
   }
 
   template <typename Type>
@@ -447,7 +447,7 @@ constexpr XII_FORCE_INLINE xiiInt64 xiiMath::FloatToInt(double value)
 }
 #endif
 
-XII_ALWAYS_INLINE xiiResult xiiMath::TryConvertToSizeT(size_t& out_Result, xiiUInt64 uiValue)
+XII_ALWAYS_INLINE xiiResult xiiMath::TryConvertToSizeT(size_t& out_uiResult, xiiUInt64 uiValue)
 {
 #if XII_ENABLED(XII_PLATFORM_32BIT)
   if (uiValue <= MaxValue<size_t>())
@@ -458,7 +458,7 @@ XII_ALWAYS_INLINE xiiResult xiiMath::TryConvertToSizeT(size_t& out_Result, xiiUI
 
   return XII_FAILURE;
 #else
-  out_Result = static_cast<size_t>(uiValue);
+  out_uiResult = static_cast<size_t>(uiValue);
   return XII_SUCCESS;
 #endif
 }

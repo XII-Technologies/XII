@@ -53,7 +53,7 @@ void xiiInputManager::ClearInputMapping(const char* szInputSet, const char* szIn
 void xiiInputManager::SetInputActionConfig(
   const char*                 szInputSet,
   const char*                 szAction,
-  const xiiInputActionConfig& Config,
+  const xiiInputActionConfig& config,
   bool                        bClearPreviousInputMappings)
 {
   XII_ASSERT_DEV(!xiiStringUtils::IsNullOrEmpty(szInputSet), "The InputSet name must not be empty.");
@@ -62,12 +62,12 @@ void xiiInputManager::SetInputActionConfig(
   if (bClearPreviousInputMappings)
   {
     for (xiiUInt32 i1 = 0; i1 < xiiInputActionConfig::MaxInputSlotAlternatives; ++i1)
-      ClearInputMapping(szInputSet, Config.m_sInputSlotTrigger[i1].GetData());
+      ClearInputMapping(szInputSet, config.m_sInputSlotTrigger[i1].GetData());
   }
 
   // store the new action mapping
   xiiInputManager::xiiActionData& ad = GetInternals().s_ActionMapping[szInputSet][szAction];
-  ad.m_Config                        = Config;
+  ad.m_Config                        = config;
 
   InputEventData e;
   e.m_EventType     = InputEventData::InputActionChanged;
@@ -97,13 +97,13 @@ void xiiInputManager::RemoveInputAction(const char* szInputSet, const char* szAc
   GetInternals().s_ActionMapping[szInputSet].Remove(szAction);
 }
 
-xiiKeyState::Enum xiiInputManager::GetInputActionState(const char* szInputSet, const char* szAction, float* pValue, xiiInt8* iTriggeredSlot)
+xiiKeyState::Enum xiiInputManager::GetInputActionState(const char* szInputSet, const char* szAction, float* pValue, xiiInt8* pTriggeredSlot)
 {
   if (pValue)
     *pValue = 0.0f;
 
-  if (iTriggeredSlot)
-    *iTriggeredSlot = -1;
+  if (pTriggeredSlot)
+    *pTriggeredSlot = -1;
 
   if (!s_sExclusiveInputSet.IsEmpty() && s_sExclusiveInputSet != szInputSet)
     return xiiKeyState::Up;
@@ -121,8 +121,8 @@ xiiKeyState::Enum xiiInputManager::GetInputActionState(const char* szInputSet, c
   if (pValue)
     *pValue = ItAction.Value().m_fValue;
 
-  if (iTriggeredSlot)
-    *iTriggeredSlot = ItAction.Value().m_iTriggeredViaAlternative;
+  if (pTriggeredSlot)
+    *pTriggeredSlot = ItAction.Value().m_iTriggeredViaAlternative;
 
   return ItAction.Value().m_State;
 }
@@ -329,23 +329,23 @@ const xiiString xiiInputManager::GetActionDisplayName(const char* szAction)
   return GetInternals().s_ActionDisplayNames.GetValueOrDefault(szAction, szAction);
 }
 
-void xiiInputManager::GetAllInputSets(xiiDynamicArray<xiiString>& out_InputSetNames)
+void xiiInputManager::GetAllInputSets(xiiDynamicArray<xiiString>& out_inputSetNames)
 {
-  out_InputSetNames.Clear();
+  out_inputSetNames.Clear();
 
   for (xiiInputSetMap::Iterator it = GetInternals().s_ActionMapping.GetIterator(); it.IsValid(); ++it)
-    out_InputSetNames.PushBack(it.Key());
+    out_inputSetNames.PushBack(it.Key());
 }
 
-void xiiInputManager::GetAllInputActions(const char* szInputSetName, xiiDynamicArray<xiiString>& out_InputActions)
+void xiiInputManager::GetAllInputActions(const char* szInputSetName, xiiDynamicArray<xiiString>& out_inputActions)
 {
   const auto& map = GetInternals().s_ActionMapping[szInputSetName];
 
-  out_InputActions.Clear();
-  out_InputActions.Reserve(map.GetCount());
+  out_inputActions.Clear();
+  out_inputActions.Reserve(map.GetCount());
 
   for (xiiActionMap::ConstIterator it = map.GetIterator(); it.IsValid(); ++it)
-    out_InputActions.PushBack(it.Key());
+    out_inputActions.PushBack(it.Key());
 }
 
 

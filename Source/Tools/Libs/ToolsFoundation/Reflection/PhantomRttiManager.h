@@ -15,13 +15,10 @@ struct xiiPhantomRttiManagerEvent
     TypeChanged,
   };
 
-  xiiPhantomRttiManagerEvent() :
-    m_Type(Type::TypeAdded), m_pChangedType(nullptr)
-  {
-  }
+  xiiPhantomRttiManagerEvent() = default;
 
-  Type           m_Type;
-  const xiiRTTI* m_pChangedType;
+  Type           m_Type         = Type::TypeAdded;
+  const xiiRTTI* m_pChangedType = nullptr;
 };
 
 /// \brief Manages all xiiPhantomRTTI types that have been added to him.
@@ -41,7 +38,7 @@ public:
   /// m_TypeChangedEvent event will be called with the old and new xiiRTTI.
   ///
   /// \sa xiiReflectionUtils::GetReflectedTypeDescriptorFromRtti
-  static const xiiRTTI* RegisterType(xiiReflectedTypeDescriptor& desc);
+  static const xiiRTTI* RegisterType(xiiReflectedTypeDescriptor& ref_desc);
 
   /// \brief Removes a type from the list of accessible types.
   ///

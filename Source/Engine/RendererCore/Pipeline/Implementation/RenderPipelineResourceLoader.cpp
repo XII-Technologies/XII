@@ -183,7 +183,7 @@ xiiInternal::NewInstance<xiiRenderPipeline> xiiRenderPipelineResourceLoader::Cre
 }
 
 // static
-void xiiRenderPipelineResourceLoader::CreateRenderPipelineResourceDescriptor(const xiiRenderPipeline* pPipeline, xiiRenderPipelineResourceDescriptor& desc)
+void xiiRenderPipelineResourceLoader::CreateRenderPipelineResourceDescriptor(const xiiRenderPipeline* pPipeline, xiiRenderPipelineResourceDescriptor& ref_desc)
 {
   xiiRenderPipelineRttiConverterContext context;
 
@@ -250,7 +250,7 @@ void xiiRenderPipelineResourceLoader::CreateRenderPipelineResourceDescriptor(con
     }
   }
 
-  xiiMemoryStreamContainerWrapperStorage<xiiDynamicArray<xiiUInt8>> storage(&desc.m_SerializedPipeline);
+  xiiMemoryStreamContainerWrapperStorage<xiiDynamicArray<xiiUInt8>> storage(&ref_desc.m_SerializedPipeline);
 
   xiiMemoryStreamWriter memoryWriter(&storage);
   xiiAbstractGraphBinarySerializer::Write(memoryWriter, &graph);

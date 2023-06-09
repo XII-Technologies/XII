@@ -40,16 +40,16 @@ namespace xiiConversionUtils
   ///   XII_SUCCESS if any integer value could get properly extracted from szString (including 0). This includes that only some part of the
   ///   string was parsed until a non-digit character was encountered.
   ///   XII_FAILURE if the string starts with something that can not be interpreted as an integer.
-  XII_FOUNDATION_DLL xiiResult StringToInt(xiiStringView sText, xiiInt32& out_Res, const char** out_LastParsePosition = nullptr); // [tested]
+  XII_FOUNDATION_DLL xiiResult StringToInt(xiiStringView sText, xiiInt32& out_iRes, const char** out_pLastParsePosition = nullptr); // [tested]
 
   /// \brief Same as StringToInt() but expects the string to be a uint32.
   ///
   /// If the parsed value is a valid int but outside the uint32 value range, the function returns XII_FAILURE.
-  XII_FOUNDATION_DLL xiiResult StringToUInt(xiiStringView sText, xiiUInt32& out_Res, const char** out_LastParsePosition = nullptr); // [tested]
+  XII_FOUNDATION_DLL xiiResult StringToUInt(xiiStringView sText, xiiUInt32& out_uiRes, const char** out_pLastParsePosition = nullptr); // [tested]
 
   /// \brief Same as StringToInt but converts to a 64bit integer value instead.
-  XII_FOUNDATION_DLL xiiResult StringToInt64(xiiStringView sText, xiiInt64& out_Res,
-                                             const char** out_LastParsePosition = nullptr); // [tested]
+  XII_FOUNDATION_DLL xiiResult StringToInt64(xiiStringView sText, xiiInt64& out_iRes,
+                                             const char** out_pLastParsePosition = nullptr); // [tested]
 
   /// \brief Parses szString and converts it to a double value. Returns XII_FAILURE if the string contains no parseable floating point value.
   ///
@@ -84,7 +84,7 @@ namespace xiiConversionUtils
   ///   stopped. On the down-side StringToFloat() is probably not as precise as atof(), because of a very simplistic conversion algorithm.
   ///   If you require the features of StringToFloat() and the precision of atof(), you can let StringToFloat() handle the cases for
   ///   detecting the validity, the sign and where the value ends and then use atof to parse only that substring with maximum precision.
-  XII_FOUNDATION_DLL xiiResult StringToFloat(xiiStringView sText, double& out_Res, const char** out_LastParsePosition = nullptr); // [tested]
+  XII_FOUNDATION_DLL xiiResult StringToFloat(xiiStringView sText, double& out_fRes, const char** out_pLastParsePosition = nullptr); // [tested]
 
   /// \brief Parses szString and checks that the first word it finds starts with a phrase that can be interpreted as a boolean value.
   ///
@@ -105,7 +105,7 @@ namespace xiiConversionUtils
   /// \return
   ///   XII_SUCCESS if any phrase was encountered that can be interpreted as a boolean value.
   ///   XII_FAILURE otherwise.
-  XII_FOUNDATION_DLL xiiResult StringToBool(xiiStringView sText, bool& out_Res, const char** out_LastParsePosition = nullptr); // [tested]
+  XII_FOUNDATION_DLL xiiResult StringToBool(xiiStringView sText, bool& out_bRes, const char** out_pLastParsePosition = nullptr); // [tested]
 
 
   /// \brief Parses \a szText and tries to find up to \a uiNumFloats float values to extract. Skips all characters that cannot be
@@ -128,12 +128,12 @@ namespace xiiConversionUtils
   /// \return
   ///   The number of successfully extracted values (and thus valid values in out_pFloats).
   XII_FOUNDATION_DLL xiiUInt32 ExtractFloatsFromString(xiiStringView sText, xiiUInt32 uiNumFloats, float* out_pFloats,
-                                                       const char** out_LastParsePosition = nullptr); // [tested]
+                                                       const char** out_pLastParsePosition = nullptr); // [tested]
 
   /// \brief Converts a hex character ('0', '1', ... '9', 'A'/'a', ... 'F'/'f') to the corresponding int value 0 - 15.
   ///
   /// \note Returns -1 for invalid HEX characters.
-  XII_FOUNDATION_DLL xiiInt8 HexCharacterToIntValue(xiiUInt32 Character); // [tested]
+  XII_FOUNDATION_DLL xiiInt8 HexCharacterToIntValue(xiiUInt32 uiCharacter); // [tested]
 
   /// \brief Same as ConvertHexStringToUInt() with uiMaxHexCharacters set to 8.
   XII_FOUNDATION_DLL xiiResult ConvertHexStringToUInt32(xiiStringView sHex, xiiUInt32& out_uiResult); // [tested]
@@ -148,7 +148,7 @@ namespace xiiConversionUtils
   /// If the xiiStringView is shorter than uiMaxHexCharacters, this is interpreted as a valid HEX value with a smaller value.
   /// If the string is longer than uiMaxHexCharacters (after the '0x'), the additional characters are not parsed, at all.
   /// If the first uiMaxHexCharacters (after the '0x') contain any non-HEX characters, parsing is interrupted and XII_FAILURE is returned.
-  XII_FOUNDATION_DLL xiiResult ConvertHexStringToUInt(xiiStringView sHex, xiiUInt64& out_uiResult, xiiUInt32 uiMaxHexCharacters, xiiUInt32* outTotalCharactersParsed); // [tested]
+  XII_FOUNDATION_DLL xiiResult ConvertHexStringToUInt(xiiStringView sHex, xiiUInt64& out_uiResult, xiiUInt32 uiMaxHexCharacters, xiiUInt32* pTotalCharactersParsed); // [tested]
 
   /// \brief Converts a HEX string to a binary value.
   ///
@@ -180,154 +180,154 @@ namespace xiiConversionUtils
   XII_FOUNDATION_DLL bool IsStringUuid(xiiStringView sText); // [tested]
 
   /// \brief Converts a bool to a string
-  XII_ALWAYS_INLINE const xiiStringBuilder& ToString(bool value, xiiStringBuilder& out_Result) // [tested]
+  XII_ALWAYS_INLINE const xiiStringBuilder& ToString(bool value, xiiStringBuilder& out_sResult) // [tested]
   {
-    out_Result = value ? "true" : "false";
-    return out_Result;
+    out_sResult = value ? "true" : "false";
+    return out_sResult;
   }
 
   /// \brief Converts a 8bit signed integer to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiInt8 value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiInt8 value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a 8bit unsigned integer to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiUInt8 value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiUInt8 value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a 16bit signed integer to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiInt16 value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiInt16 value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a 16bit unsigned integer to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiUInt16 value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiUInt16 value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a 32bit signed integer to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiInt32 value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiInt32 value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a 32bit unsigned integer to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiUInt32 value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiUInt32 value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a 64bit signed integer to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiInt64 value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiInt64 value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a 64bit unsigned integer to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiUInt64 value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiUInt64 value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a float to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(float value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(float value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a double to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(double value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(double value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a color to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiColor& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiColor& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a color to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiColorGammaUB& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiColorGammaUB& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec2 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec2d to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2d& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2d& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec3 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec3d to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3d& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3d& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec4 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec4d to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4d& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4d& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec2I32 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2I32& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2I32& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec2I64 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2I64& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2I64& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec3I32 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3I32& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3I32& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec3I64 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3I64& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3I64& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec4I32 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4I32& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4I32& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec4I64 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4I64& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4I64& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec2U32 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2U32& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2U32& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec2U64 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2U64& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2U64& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec3U32 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3U32& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3U32& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec3U64 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3U64& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3U64& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec4U32 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4U32& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4U32& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a vec4U64 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4U64& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4U64& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a quat to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiQuat& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiQuat& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a quatd to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiQuatd& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiQuatd& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a mat3 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat3& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat3& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a mat3d to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat3d& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat3d& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a mat4 to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat4& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat4& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a mat4d to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat4d& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat4d& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a transform to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiTransform& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiTransform& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a transformd to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiTransformd& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiTransformd& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts a Uuid to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiUuid& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiUuid& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts an angle to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiAngle& value, xiiStringBuilder& out_Result); // [tested]
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiAngle& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts an angle to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiTime& value, xiiStringBuilder& out_Result);
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiTime& value, xiiStringBuilder& out_sResult);
 
   /// \brief Converts a xiiStringView to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiStringView& value, xiiStringBuilder& out_Result);
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiStringView& value, xiiStringBuilder& out_sResult);
 
   /// \brief Converts a xiiVariantArray to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiDynamicArray<xiiVariant, xiiDefaultAllocatorWrapper>& value, xiiStringBuilder& out_Result);
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiDynamicArray<xiiVariant, xiiDefaultAllocatorWrapper>& value, xiiStringBuilder& out_sResult);
 
   /// \brief Fallback ToString implementation for all types that don't have one
   template <typename T>
-  XII_ALWAYS_INLINE const xiiStringBuilder& ToString(const T& value, xiiStringBuilder& out_Result)
+  XII_ALWAYS_INLINE const xiiStringBuilder& ToString(const T& value, xiiStringBuilder& out_sResult)
   {
-    out_Result = "N/A";
-    return out_Result;
+    out_sResult = "N/A";
+    return out_sResult;
   }
 
   /// \brief Returns the color with the given name.
   ///
   /// Allowed are all predefined color names (case-insensitive), as well as Hex-Values in the form '#RRGGBB' and '#RRGGBBAA'
   /// If out_ValidColorName is a valid pointer, it contains true if the color name was known, otherwise false
-  XII_FOUNDATION_DLL xiiColor GetColorByName(xiiStringView sText, bool* out_ValidColorName = nullptr); // [tested]
+  XII_FOUNDATION_DLL xiiColor GetColorByName(xiiStringView sText, bool* out_pValidColorName = nullptr); // [tested]
 
   /// \brief The inverse of GetColorByName
   XII_FOUNDATION_DLL xiiString GetColorName(const xiiColor& col); // [tested]

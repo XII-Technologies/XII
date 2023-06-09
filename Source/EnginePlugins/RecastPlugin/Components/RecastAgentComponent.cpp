@@ -26,8 +26,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiRcAgentComponent, 2, xiiComponentMode::Dynamic)
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiRcAgentComponent::xiiRcAgentComponent() {}
-xiiRcAgentComponent::~xiiRcAgentComponent() {}
+xiiRcAgentComponent::xiiRcAgentComponent()  = default;
+xiiRcAgentComponent::~xiiRcAgentComponent() = default;
 
 void xiiRcAgentComponent::SerializeComponent(xiiWorldWriter& stream) const
 {
@@ -119,22 +119,22 @@ xiiVec3 xiiRcAgentComponent::GetTargetPosition() const
   return m_vTargetPosition;
 }
 
-xiiResult xiiRcAgentComponent::FindNavMeshPolyAt(const xiiVec3& vPosition, dtPolyRef& out_PolyRef, xiiVec3* out_vAdjustedPosition /*= nullptr*/, float fPlaneEpsilon /*= 0.01f*/, float fHeightEpsilon /*= 1.0f*/) const
+xiiResult xiiRcAgentComponent::FindNavMeshPolyAt(const xiiVec3& vPosition, dtPolyRef& out_polyRef, xiiVec3* out_pAdjustedPosition /*= nullptr*/, float fPlaneEpsilon /*= 0.01f*/, float fHeightEpsilon /*= 1.0f*/) const
 {
   xiiRcPos rcPos = vPosition;
   xiiVec3  vSize(fPlaneEpsilon, fHeightEpsilon, fPlaneEpsilon);
 
   xiiRcPos      resultPos;
   dtQueryFilter filter; /// \todo Hard-coded filter
-  if (dtStatusFailed(m_pQuery->findNearestPoly(rcPos, &vSize.x, &m_QueryFilter, &out_PolyRef, resultPos)))
+  if (dtStatusFailed(m_pQuery->findNearestPoly(rcPos, &vSize.x, &m_QueryFilter, &out_polyRef, resultPos)))
     return XII_FAILURE;
 
   if (!xiiMath::IsEqual(vPosition.x, resultPos.m_Pos[0], fPlaneEpsilon) || !xiiMath::IsEqual(vPosition.y, resultPos.m_Pos[2], fPlaneEpsilon) || !xiiMath::IsEqual(vPosition.z, resultPos.m_Pos[1], fHeightEpsilon))
     return XII_FAILURE;
 
-  if (out_vAdjustedPosition != nullptr)
+  if (out_pAdjustedPosition != nullptr)
   {
-    *out_vAdjustedPosition = resultPos;
+    *out_pAdjustedPosition = resultPos;
   }
 
   return XII_SUCCESS;
@@ -225,9 +225,9 @@ xiiResult xiiRcAgentComponent::ComputePathToTarget()
   return XII_SUCCESS;
 }
 
-bool xiiRcAgentComponent::HasReachedPosition(const xiiVec3& pos, float fMaxDistance) const
+bool xiiRcAgentComponent::HasReachedPosition(const xiiVec3& vPos, float fMaxDistance) const
 {
-  xiiVec3 vTargetPos = pos;
+  xiiVec3 vTargetPos = vPos;
   xiiVec3 vOwnPos    = GetOwner()->GetGlobalPosition();
 
   /// \todo The comment below may not always be true
@@ -272,9 +272,9 @@ void xiiRcAgentComponent::PlanNextSteps()
   }
 }
 
-bool xiiRcAgentComponent::IsPositionVisible(const xiiVec3& pos) const
+bool xiiRcAgentComponent::IsPositionVisible(const xiiVec3& vPos) const
 {
-  xiiRcPos endPos = pos;
+  xiiRcPos endPos = vPos;
 
   dtRaycastHit hit;
   if (dtStatusFailed(m_pQuery->raycast(m_pCorridor->getFirstPoly(), m_pCorridor->getPos(), endPos, &m_QueryFilter, 0, &hit)))
@@ -565,7 +565,7 @@ xiiRcAgentComponentManager::xiiRcAgentComponentManager(xiiWorld* pWorld) :
   SUPER(pWorld)
 {
 }
-xiiRcAgentComponentManager::~xiiRcAgentComponentManager() {}
+xiiRcAgentComponentManager::~xiiRcAgentComponentManager() = default;
 
 void xiiRcAgentComponentManager::Initialize()
 {

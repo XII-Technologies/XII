@@ -34,8 +34,8 @@ class XII_GAMEENGINE_DLL xiiCharacterControllerComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -54,7 +54,7 @@ public:
   /// \brief Instructs the CC to move in certain directions. An implementation can queue the request for later processing.
   ///
   /// It can also add further functionality, such as adding gravity, stair stepping, etc.
-  virtual void MoveCharacter(xiiMsgMoveCharacterController& msg) = 0; // [ msg handler ]
+  virtual void MoveCharacter(xiiMsgMoveCharacterController& ref_msg) = 0; // [ msg handler ]
 
   /// \brief Teleports the CC to the desired global position. Ignores obstacles on the path.
   ///

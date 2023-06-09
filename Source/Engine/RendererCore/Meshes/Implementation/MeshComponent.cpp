@@ -27,9 +27,9 @@ XII_END_COMPONENT_TYPE
 xiiMeshComponent::xiiMeshComponent()  = default;
 xiiMeshComponent::~xiiMeshComponent() = default;
 
-void xiiMeshComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& msg) const
+void xiiMeshComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& ref_msg) const
 {
-  if (msg.m_Mode != xiiWorldGeoExtractionUtil::ExtractionMode::RenderMesh)
+  if (ref_msg.m_Mode != xiiWorldGeoExtractionUtil::ExtractionMode::RenderMesh)
     return;
 
   // ignore invalid and created resources
@@ -43,7 +43,7 @@ void xiiMeshComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& msg) const
       return;
   }
 
-  msg.AddMeshObject(GetOwner()->GetGlobalTransform(), xiiResourceManager::LoadResource<xiiCpuMeshResource>(GetMeshFile()));
+  ref_msg.AddMeshObject(GetOwner()->GetGlobalTransform(), xiiResourceManager::LoadResource<xiiCpuMeshResource>(GetMeshFile()));
 }
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_Meshes_Implementation_MeshComponent);

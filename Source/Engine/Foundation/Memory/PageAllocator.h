@@ -7,7 +7,7 @@ class XII_FOUNDATION_DLL xiiPageAllocator
 {
 public:
   static void* AllocatePage(size_t uiSize);
-  static void  DeallocatePage(void* ptr);
+  static void  DeallocatePage(void* pPtr);
 
   static xiiAllocatorId GetId();
 };

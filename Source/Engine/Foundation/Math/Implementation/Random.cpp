@@ -39,19 +39,19 @@ void xiiRandom::InitializeFromCurrentTime()
   Initialize(static_cast<xiiUInt64>(ts.GetInt64(xiiSIUnitOfTime::Nanosecond)));
 }
 
-void xiiRandom::Save(xiiStreamWriter& stream) const
+void xiiRandom::Save(xiiStreamWriter& ref_stream) const
 {
-  stream << m_uiIndex;
+  ref_stream << m_uiIndex;
 
-  stream.WriteBytes(&m_uiState[0], sizeof(xiiUInt32) * 16).IgnoreResult();
+  ref_stream.WriteBytes(&m_uiState[0], sizeof(xiiUInt32) * 16).IgnoreResult();
 }
 
 
-void xiiRandom::Load(xiiStreamReader& stream)
+void xiiRandom::Load(xiiStreamReader& ref_stream)
 {
-  stream >> m_uiIndex;
+  ref_stream >> m_uiIndex;
 
-  stream.ReadBytes(&m_uiState[0], sizeof(xiiUInt32) * 16);
+  ref_stream.ReadBytes(&m_uiState[0], sizeof(xiiUInt32) * 16);
 }
 
 xiiUInt32 xiiRandom::UInt()
@@ -225,24 +225,24 @@ xiiInt32 xiiRandomGauss::SignedValue()
   }
 }
 
-void xiiRandomGauss::Save(xiiStreamWriter& stream) const
+void xiiRandomGauss::Save(xiiStreamWriter& ref_stream) const
 {
-  stream << m_GaussAreaSum.GetCount();
-  stream << m_fSigma;
-  m_Generator.Save(stream);
+  ref_stream << m_GaussAreaSum.GetCount();
+  ref_stream << m_fSigma;
+  m_Generator.Save(ref_stream);
 }
 
-void xiiRandomGauss::Load(xiiStreamReader& stream)
+void xiiRandomGauss::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt32 uiMax = 0;
-  stream >> uiMax;
+  ref_stream >> uiMax;
 
   float fVariance = 0.0f;
-  stream >> fVariance;
+  ref_stream >> fVariance;
 
   SetupTable(uiMax, fVariance);
 
-  m_Generator.Load(stream);
+  m_Generator.Load(ref_stream);
 }
 
 

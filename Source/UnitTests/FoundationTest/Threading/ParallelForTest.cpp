@@ -166,9 +166,9 @@ XII_CREATE_SIMPLE_TEST(Threading, ParallelFor)
     // - Modify the original array of numbers
     xiiTaskSystem::ParallelForSingle(
       numbers.GetArrayPtr(),
-      [&dataAccessMutex](xiiUInt32& uiNumber) {
+      [&dataAccessMutex](xiiUInt32& ref_uiNumber) {
         XII_LOCK(dataAccessMutex);
-        uiNumber = uiNumber * 3;
+        ref_uiNumber = ref_uiNumber * 3;
       },
       "ParallelFor Array Single Write Test (Write)", parallelForParams);
 
@@ -194,9 +194,9 @@ XII_CREATE_SIMPLE_TEST(Threading, ParallelFor)
     // - Modify the original array of numbers
     xiiTaskSystem::ParallelForSingleIndex(
       numbers.GetArrayPtr(),
-      [&dataAccessMutex](xiiUInt32, xiiUInt32& uiNumber) {
+      [&dataAccessMutex](xiiUInt32, xiiUInt32& ref_uiNumber) {
         XII_LOCK(dataAccessMutex);
-        uiNumber = uiNumber * 4;
+        ref_uiNumber = ref_uiNumber * 4;
       },
       "ParallelFor Array Single Write Test (Write)", parallelForParams);
 

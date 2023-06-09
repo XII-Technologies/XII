@@ -13,7 +13,7 @@ class XII_GUIFOUNDATION_DLL xiiQtWaitForOperationDlg : public QDialog, public Ui
   Q_OBJECT
 
 public:
-  xiiQtWaitForOperationDlg(QWidget* parent);
+  xiiQtWaitForOperationDlg(QWidget* pParent);
   ~xiiQtWaitForOperationDlg();
 
   xiiDelegate<bool()> m_OnIdle;

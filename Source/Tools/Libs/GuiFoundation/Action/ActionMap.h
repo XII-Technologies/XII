@@ -41,22 +41,22 @@ public:
   const xiiHybridArray<xiiTreeNode<T>*, 8>& GetChildren() const { return m_Children; }
   xiiHybridArray<xiiTreeNode<T>*, 8>&       GetChildren() { return m_Children; }
 
-  xiiTreeNode<T>* InsertChild(const T& data, xiiUInt32 iIndex)
+  xiiTreeNode<T>* InsertChild(const T& data, xiiUInt32 uiIndex)
   {
     xiiTreeNode<T>* pNode = XII_DEFAULT_NEW(xiiTreeNode<T>, data);
     pNode->m_Guid.CreateNewUuid();
-    m_Children.Insert(pNode, iIndex);
+    m_Children.Insert(pNode, uiIndex);
     pNode->m_pParent = this;
     return pNode;
   }
 
-  bool RemoveChild(xiiUInt32 iIndex)
+  bool RemoveChild(xiiUInt32 uiIndex)
   {
-    if (iIndex > m_Children.GetCount())
+    if (uiIndex > m_Children.GetCount())
       return false;
 
-    xiiTreeNode<T>* pChild = m_Children[iIndex];
-    m_Children.RemoveAtAndCopy(iIndex);
+    xiiTreeNode<T>* pChild = m_Children[uiIndex];
+    m_Children.RemoveAtAndCopy(uiIndex);
     XII_DEFAULT_DELETE(pChild);
     return true;
   }
@@ -85,11 +85,11 @@ private:
 class XII_GUIFOUNDATION_DLL xiiActionMap
 {
 public:
-  typedef xiiTreeNode<xiiActionMapDescriptor> TreeNode;
+  using TreeNode = xiiTreeNode<xiiActionMapDescriptor>;
   xiiActionMap();
   ~xiiActionMap();
 
-  void      MapAction(xiiActionDescriptorHandle hAction, const char* szPath, float m_fOrder);
+  void      MapAction(xiiActionDescriptorHandle hAction, const char* szPath, float fM_fOrder);
   xiiUuid   MapAction(const xiiActionMapDescriptor& desc);
   xiiResult UnmapAction(xiiActionDescriptorHandle hAction, const char* szPath);
   xiiResult UnmapAction(const xiiActionMapDescriptor& desc);

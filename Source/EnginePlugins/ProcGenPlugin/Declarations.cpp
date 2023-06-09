@@ -43,24 +43,24 @@ XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 static xiiTypeVersion s_ProcVertexColorMappingVersion = 1;
-xiiResult             xiiProcVertexColorMapping::Serialize(xiiStreamWriter& stream) const
+xiiResult             xiiProcVertexColorMapping::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(s_ProcVertexColorMappingVersion);
-  stream << m_R;
-  stream << m_G;
-  stream << m_B;
-  stream << m_A;
+  ref_stream.WriteVersion(s_ProcVertexColorMappingVersion);
+  ref_stream << m_R;
+  ref_stream << m_G;
+  ref_stream << m_B;
+  ref_stream << m_A;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiProcVertexColorMapping::Deserialize(xiiStreamReader& stream)
+xiiResult xiiProcVertexColorMapping::Deserialize(xiiStreamReader& ref_stream)
 {
-  /*xiiTypeVersion version =*/stream.ReadVersion(s_ProcVertexColorMappingVersion);
-  stream >> m_R;
-  stream >> m_G;
-  stream >> m_B;
-  stream >> m_A;
+  /*xiiTypeVersion version =*/ref_stream.ReadVersion(s_ProcVertexColorMappingVersion);
+  ref_stream >> m_R;
+  ref_stream >> m_G;
+  ref_stream >> m_B;
+  ref_stream >> m_A;
 
   return XII_SUCCESS;
 }

@@ -35,7 +35,7 @@ public:
   ~xiiCommandHistoryAction();
 
   virtual void Execute(const xiiVariant& value) override;
-  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_Entries) override;
+  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries) override;
 
 private:
   void UpdateState();

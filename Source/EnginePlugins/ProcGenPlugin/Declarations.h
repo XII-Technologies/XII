@@ -15,7 +15,7 @@ using xiiSurfaceResourceHandle       = xiiTypedResourceHandle<class xiiSurfaceRe
 
 struct xiiProcGenBinaryOperator
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -34,7 +34,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_PROCGENPLUGIN_DLL, xiiProcGenBinaryOperator);
 
 struct xiiProcGenBlendMode
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -54,7 +54,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_PROCGENPLUGIN_DLL, xiiProcGenBlendMode);
 
 struct xiiProcVertexColorChannelMapping
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -78,8 +78,8 @@ struct xiiProcVertexColorMapping
   xiiEnum<xiiProcVertexColorChannelMapping> m_B = xiiProcVertexColorChannelMapping::B;
   xiiEnum<xiiProcVertexColorChannelMapping> m_A = xiiProcVertexColorChannelMapping::A;
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_PROCGENPLUGIN_DLL, xiiProcVertexColorMapping);

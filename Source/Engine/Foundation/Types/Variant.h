@@ -52,8 +52,8 @@ public:
   /// \brief helper struct to wrap a string pointer
   struct StringWrapper
   {
-    XII_ALWAYS_INLINE StringWrapper(const char* str) :
-      m_str(str)
+    XII_ALWAYS_INLINE StringWrapper(const char* szStr) :
+      m_str(szStr)
     {
     }
     const char* m_str;
@@ -257,7 +257,7 @@ public:
   /// \brief Returns the sub value with szKey. This could be a value in a dictionary or a member property inside a reflected type.
   ///
   /// This function will return an invalid variant if no corresponding sub value is found.
-  const xiiVariant operator[](StringWrapper szKey) const; // [tested]
+  const xiiVariant operator[](StringWrapper key) const; // [tested]
 
   /// \brief Returns whether the stored type can generally be converted to the desired type.
   ///
@@ -297,7 +297,7 @@ public:
   /// store a pointer to a variant inside the functor object and then call DispatchTo to execute the function that will handle the given
   /// type of the variant.
   template <typename Functor, class... Args>
-  static auto DispatchTo(Functor& functor, Type::Enum type, Args&&... args); // [tested]
+  static auto DispatchTo(Functor& ref_functor, Type::Enum type, Args&&... args); // [tested]
 
   /// \brief Computes the hash value of the stored data. Returns uiSeed (unchanged) for an invalid Variant.
   xiiUInt64 ComputeHash(xiiUInt64 uiSeed = 0) const;
@@ -312,8 +312,8 @@ private:
     void*              m_Ptr;
     const xiiRTTI*     m_pType;
     xiiAtomicInteger32 m_uiRef = 1;
-    XII_ALWAYS_INLINE  SharedData(void* ptr, const xiiRTTI* pType) :
-      m_Ptr(ptr), m_pType(pType)
+    XII_ALWAYS_INLINE  SharedData(void* pPtr, const xiiRTTI* pType) :
+      m_Ptr(pPtr), m_pType(pType)
     {
     }
     virtual ~SharedData()             = default;

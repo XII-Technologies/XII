@@ -65,9 +65,9 @@ xiiCommandHistoryAction::~xiiCommandHistoryAction()
   m_Context.m_pDocument->GetCommandHistory()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiCommandHistoryAction::CommandHistoryEventHandler, this));
 }
 
-void xiiCommandHistoryAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_Entries)
+void xiiCommandHistoryAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries)
 {
-  out_Entries.Clear();
+  out_entries.Clear();
 
   xiiCommandHistory* pHistory = m_Context.m_pDocument->GetCommandHistory();
 
@@ -78,7 +78,7 @@ void xiiCommandHistoryAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::It
     xiiDynamicMenuAction::Item   entryItem;
     entryItem.m_sDisplay  = pTransaction->m_sDisplayString;
     entryItem.m_UserValue = (xiiUInt32)i + 1; // Number of steps to undo / redo.
-    out_Entries.PushBack(entryItem);
+    out_entries.PushBack(entryItem);
   }
 }
 

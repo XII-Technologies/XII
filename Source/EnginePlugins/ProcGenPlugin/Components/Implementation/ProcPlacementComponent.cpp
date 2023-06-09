@@ -28,7 +28,7 @@ xiiProcPlacementComponentManager::xiiProcPlacementComponentManager(xiiWorld* pWo
 {
 }
 
-xiiProcPlacementComponentManager::~xiiProcPlacementComponentManager() {}
+xiiProcPlacementComponentManager::~xiiProcPlacementComponentManager() = default;
 
 void xiiProcPlacementComponentManager::Initialize()
 {
@@ -205,7 +205,7 @@ void xiiProcPlacementComponentManager::PreparePlace(const xiiWorldModule::Update
       }
 
       // Sort by distance, larger distances come first since new tiles are processed in reverse order.
-      m_NewTiles.Sort([](auto& tileA, auto& tileB) { return tileA.m_fDistanceToCamera > tileB.m_fDistanceToCamera; });
+      m_NewTiles.Sort([](auto& ref_tileA, auto& ref_tileB) { return ref_tileA.m_fDistanceToCamera > ref_tileB.m_fDistanceToCamera; });
     }
 
     ClearVisibleComponents();
@@ -305,7 +305,7 @@ void xiiProcPlacementComponentManager::PlaceObjects(const xiiWorldModule::Update
     sortedTask.m_uiTaskIndex      = i;
   }
 
-  m_SortedProcessingTasks.Sort([](auto& taskA, auto& taskB) { return taskA.m_uiScheduledFrame < taskB.m_uiScheduledFrame; });
+  m_SortedProcessingTasks.Sort([](auto& ref_taskA, auto& ref_taskB) { return ref_taskA.m_uiScheduledFrame < ref_taskB.m_uiScheduledFrame; });
 
   xiiUInt32 uiTotalNumPlacedObjects = 0;
 
@@ -662,7 +662,7 @@ void xiiProcPlacementComponent::SetResource(const xiiProcGenGraphResourceHandle&
   }
 }
 
-void xiiProcPlacementComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)
+void xiiProcPlacementComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg)
 {
   if (m_BoxExtents.IsEmpty())
     return;
@@ -678,18 +678,18 @@ void xiiProcPlacementComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg
     bounds.ExpandToInclude(localBox);
   }
 
-  msg.AddBounds(bounds, GetOwner()->IsDynamic() ? xiiDefaultSpatialDataCategories::RenderDynamic : xiiDefaultSpatialDataCategories::RenderStatic);
+  ref_msg.AddBounds(bounds, GetOwner()->IsDynamic() ? xiiDefaultSpatialDataCategories::RenderDynamic : xiiDefaultSpatialDataCategories::RenderStatic);
 }
 
-void xiiProcPlacementComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const
+void xiiProcPlacementComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const
 {
   // Don't extract render data for selection or in shadow views.
-  if (msg.m_OverrideCategory != xiiInvalidRenderDataCategory)
+  if (ref_msg.m_OverrideCategory != xiiInvalidRenderDataCategory)
     return;
 
-  if (msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::MainView || msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::EditorView)
+  if (ref_msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::MainView || ref_msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::EditorView)
   {
-    const xiiCamera* pCamera = msg.m_pView->GetCullingCamera();
+    const xiiCamera* pCamera = ref_msg.m_pView->GetCullingCamera();
 
     xiiVec3 cameraPosition  = pCamera->GetCenterPosition();
     xiiVec3 cameraDirection = pCamera->GetCenterDirForwards();
@@ -702,21 +702,21 @@ void xiiProcPlacementComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& 
   }
 }
 
-void xiiProcPlacementComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiProcPlacementComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_hResource;
   s.WriteArray(m_BoxExtents).IgnoreResult();
 }
 
-void xiiProcPlacementComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiProcPlacementComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   s >> m_hResource;
   s.ReadArray(m_BoxExtents).IgnoreResult();
@@ -794,20 +794,20 @@ void xiiProcPlacementComponent::UpdateBoundsAndTiles()
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiResult xiiProcGenBoxExtents::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiProcGenBoxExtents::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream << m_vOffset;
-  stream << m_Rotation;
-  stream << m_vExtents;
+  ref_stream << m_vOffset;
+  ref_stream << m_Rotation;
+  ref_stream << m_vExtents;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiProcGenBoxExtents::Deserialize(xiiStreamReader& stream)
+xiiResult xiiProcGenBoxExtents::Deserialize(xiiStreamReader& ref_stream)
 {
-  stream >> m_vOffset;
-  stream >> m_Rotation;
-  stream >> m_vExtents;
+  ref_stream >> m_vOffset;
+  ref_stream >> m_Rotation;
+  ref_stream >> m_vExtents;
 
   return XII_SUCCESS;
 }

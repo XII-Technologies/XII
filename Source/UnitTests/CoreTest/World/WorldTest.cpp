@@ -20,7 +20,7 @@ namespace
     xiiGameObject* pObjects[4];
   };
 
-  TestWorldObjects CreateTestWorld(xiiWorld& world, bool bDynamic)
+  TestWorldObjects CreateTestWorld(xiiWorld& ref_world, bool bDynamic)
   {
     TestWorldObjects testWorldObjects;
     xiiMemoryUtils::ZeroFill(&testWorldObjects, 1);
@@ -35,23 +35,23 @@ namespace
     desc.m_LocalScaling  = xiiVec3(1.5f, 1.5f, 1.5f);
     desc.m_sName.Assign("Parent1");
 
-    world.CreateObject(desc, testWorldObjects.pParent1);
+    ref_world.CreateObject(desc, testWorldObjects.pParent1);
 
     desc.m_sName.Assign("Parent2");
-    world.CreateObject(desc, testWorldObjects.pParent2);
+    ref_world.CreateObject(desc, testWorldObjects.pParent2);
 
     desc.m_hParent = testWorldObjects.pParent1->GetHandle();
     desc.m_sName.Assign("Child11");
-    world.CreateObject(desc, testWorldObjects.pChild11);
+    ref_world.CreateObject(desc, testWorldObjects.pChild11);
 
     desc.m_hParent = testWorldObjects.pParent2->GetHandle();
     desc.m_sName.Assign("Child21");
-    world.CreateObject(desc, testWorldObjects.pChild21);
+    ref_world.CreateObject(desc, testWorldObjects.pChild21);
 
     return testWorldObjects;
   }
 
-  void TestTransforms(const TestWorldObjects& o, xiiVec3 offset = xiiVec3(100.0f, 0.0f, 0.0f))
+  void TestTransforms(const TestWorldObjects& o, xiiVec3 vOffset = xiiVec3(100.0f, 0.0f, 0.0f))
   {
     const float eps = xiiMath::DefaultEpsilon<float>();
     xiiQuat     q;
@@ -59,25 +59,25 @@ namespace
 
     for (xiiUInt32 i = 0; i < 2; ++i)
     {
-      XII_TEST_VEC3(o.pObjects[i]->GetGlobalPosition(), offset, 0);
+      XII_TEST_VEC3(o.pObjects[i]->GetGlobalPosition(), vOffset, 0);
       XII_TEST_BOOL(o.pObjects[i]->GetGlobalRotation().IsEqualRotation(q, eps * 10.0f));
       XII_TEST_VEC3(o.pObjects[i]->GetGlobalScaling(), xiiVec3(1.5f, 1.5f, 1.5f), 0);
     }
 
     for (xiiUInt32 i = 2; i < 4; ++i)
     {
-      XII_TEST_VEC3(o.pObjects[i]->GetGlobalPosition(), offset + xiiVec3(0.0f, 150.0f, 0.0f), eps * 2.0f);
+      XII_TEST_VEC3(o.pObjects[i]->GetGlobalPosition(), vOffset + xiiVec3(0.0f, 150.0f, 0.0f), eps * 2.0f);
       XII_TEST_BOOL(o.pObjects[i]->GetGlobalRotation().IsEqualRotation(q * q, eps * 10.0f));
       XII_TEST_VEC3(o.pObjects[i]->GetGlobalScaling(), xiiVec3(2.25f, 2.25f, 2.25f), 0);
     }
   }
 
-  void SanityCheckWorld(xiiWorld& world)
+  void SanityCheckWorld(xiiWorld& ref_world)
   {
     struct Traverser
     {
-      Traverser(xiiWorld& world) :
-        m_World(world)
+      Traverser(xiiWorld& ref_world) :
+        m_World(ref_world)
       {
       }
 
@@ -108,8 +108,8 @@ namespace
       }
     };
 
-    Traverser traverser(world);
-    world.Traverse(xiiWorld::VisitorFunc(&Traverser::Visit, &traverser), xiiWorld::TraversalMethod::BreadthFirst);
+    Traverser traverser(ref_world);
+    ref_world.Traverse(xiiWorld::VisitorFunc(&Traverser::Visit, &traverser), xiiWorld::TraversalMethod::BreadthFirst);
   }
 
   class CustomCoordinateSystemProvider : public xiiCoordinateSystemProvider
@@ -120,13 +120,13 @@ namespace
     {
     }
 
-    virtual void GetCoordinateSystem(const xiiVec3Real& vGlobalPosition, xiiCoordinateSystem& out_CoordinateSystem) const override
+    virtual void GetCoordinateSystem(const xiiVec3Real& vGlobalPosition, xiiCoordinateSystem& out_coordinateSystem) const override
     {
       const xiiMat3Real mTmp = xiiGraphicsUtils::CreateLookAtViewMatrix(-vGlobalPosition, xiiVec3Real(0, 0, 1), xiiHandedness::LeftHanded);
 
-      out_CoordinateSystem.m_vRightDir   = mTmp.GetRow(0);
-      out_CoordinateSystem.m_vUpDir      = mTmp.GetRow(1);
-      out_CoordinateSystem.m_vForwardDir = mTmp.GetRow(2);
+      out_coordinateSystem.m_vRightDir   = mTmp.GetRow(0);
+      out_coordinateSystem.m_vUpDir      = mTmp.GetRow(1);
+      out_coordinateSystem.m_vForwardDir = mTmp.GetRow(2);
     }
   };
 } // namespace

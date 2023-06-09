@@ -10,7 +10,7 @@
 /// \brief Defines the depth compare function to be used to decide sample weights.
 struct XII_RENDERERCORE_DLL xiiLSAODepthCompareFunction
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {
@@ -76,7 +76,7 @@ protected:
 
   xiiConstantBufferStorageHandle m_hLineSweepCB;
 
-  bool m_bSweepDataDirty;
+  bool m_bSweepDataDirty = true;
 
   /// Output of the line sweep pass.
   xiiGALBufferHandle              m_hLineSweepOutputBuffer;
@@ -90,10 +90,10 @@ protected:
   /// Total number of lines to be traced.
   xiiUInt32 m_uiNumSweepLines;
 
-  xiiInt32                             m_iLineToLinePixelOffset;
-  xiiInt32                             m_iLineSamplePixelOffsetFactor;
+  xiiInt32                             m_iLineToLinePixelOffset       = 2;
+  xiiInt32                             m_iLineSamplePixelOffsetFactor = 1;
   xiiEnum<xiiLSAODepthCompareFunction> m_DepthCompareFunction;
-  bool                                 m_bDistributedGathering;
+  bool                                 m_bDistributedGathering = true;
 
   xiiShaderResourceHandle m_hShaderLineSweep;
   xiiShaderResourceHandle m_hShaderGather;

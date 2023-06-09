@@ -66,10 +66,10 @@ void xiiWindVolumeComponent::OnSimulationStarted()
   }
 }
 
-void xiiWindVolumeComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiWindVolumeComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_BurstDuration;
   s << m_OnFinishedAction;
@@ -77,11 +77,11 @@ void xiiWindVolumeComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_bReverseDirection;
 }
 
-void xiiWindVolumeComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiWindVolumeComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_BurstDuration;
   s >> m_OnFinishedAction;
@@ -93,11 +93,11 @@ void xiiWindVolumeComponent::DeserializeComponent(xiiWorldReader& stream)
   }
 }
 
-xiiSimdVec4f xiiWindVolumeComponent::ComputeForceAtGlobalPosition(const xiiSimdVec4f& globalPos) const
+xiiSimdVec4f xiiWindVolumeComponent::ComputeForceAtGlobalPosition(const xiiSimdVec4f& vGlobalPos) const
 {
   const xiiSimdTransform t        = GetOwner()->GetGlobalTransformSimd();
   const xiiSimdTransform tInv     = t.GetInverse();
-  const xiiSimdVec4f     localPos = tInv.TransformPosition(globalPos);
+  const xiiSimdVec4f     localPos = tInv.TransformPosition(vGlobalPos);
 
   const xiiSimdVec4f force = ComputeForceAtLocalPosition(localPos);
 
@@ -156,44 +156,44 @@ XII_END_COMPONENT_TYPE;
 xiiWindVolumeSphereComponent::xiiWindVolumeSphereComponent()  = default;
 xiiWindVolumeSphereComponent::~xiiWindVolumeSphereComponent() = default;
 
-void xiiWindVolumeSphereComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiWindVolumeSphereComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_fRadius;
 }
 
-void xiiWindVolumeSphereComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiWindVolumeSphereComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_fRadius;
   m_fOneDivRadius = 1.0f / m_fRadius;
 }
 
-xiiSimdVec4f xiiWindVolumeSphereComponent::ComputeForceAtLocalPosition(const xiiSimdVec4f& localPos) const
+xiiSimdVec4f xiiWindVolumeSphereComponent::ComputeForceAtLocalPosition(const xiiSimdVec4f& vLocalPos) const
 {
   // TODO: could do this computation in global space
 
-  xiiSimdFloat lenScaled = localPos.GetLength<3>() * m_fOneDivRadius;
+  xiiSimdFloat lenScaled = vLocalPos.GetLength<3>() * m_fOneDivRadius;
 
   // inverse quadratic falloff to have sharper edges
   xiiSimdFloat forceFactor = xiiSimdFloat(1.0f) - (lenScaled * lenScaled);
 
   const xiiSimdFloat force = GetWindInMetersPerSecond() * forceFactor.Max(0.0f);
 
-  xiiSimdVec4f dir = localPos;
+  xiiSimdVec4f dir = vLocalPos;
   dir.NormalizeIfNotZero<3>();
 
   return dir * force;
 }
 
-void xiiWindVolumeSphereComponent::SetRadius(float val)
+void xiiWindVolumeSphereComponent::SetRadius(float fVal)
 {
-  m_fRadius       = xiiMath::Max(val, 0.1f);
+  m_fRadius       = xiiMath::Max(fVal, 0.1f);
   m_fOneDivRadius = 1.0f / m_fRadius;
 
   if (IsActiveAndInitialized())
@@ -243,21 +243,21 @@ XII_END_COMPONENT_TYPE;
 xiiWindVolumeCylinderComponent::xiiWindVolumeCylinderComponent()  = default;
 xiiWindVolumeCylinderComponent::~xiiWindVolumeCylinderComponent() = default;
 
-void xiiWindVolumeCylinderComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiWindVolumeCylinderComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_fRadius;
   s << m_fLength;
   s << m_Mode;
 }
 
-void xiiWindVolumeCylinderComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiWindVolumeCylinderComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_fRadius;
   m_fOneDivRadius = 1.0f / m_fRadius;
@@ -266,14 +266,14 @@ void xiiWindVolumeCylinderComponent::DeserializeComponent(xiiWorldReader& stream
   s >> m_Mode;
 }
 
-xiiSimdVec4f xiiWindVolumeCylinderComponent::ComputeForceAtLocalPosition(const xiiSimdVec4f& localPos) const
+xiiSimdVec4f xiiWindVolumeCylinderComponent::ComputeForceAtLocalPosition(const xiiSimdVec4f& vLocalPos) const
 {
-  const xiiSimdFloat fCylDist = localPos.x();
+  const xiiSimdFloat fCylDist = vLocalPos.x();
 
   if (fCylDist <= -m_fLength * 0.5f || fCylDist >= m_fLength * 0.5f)
     return xiiSimdVec4f::ZeroVector();
 
-  xiiSimdVec4f orthoDir = localPos;
+  xiiSimdVec4f orthoDir = vLocalPos;
   orthoDir.SetX(0.0f);
 
   if (orthoDir.GetLengthSquared<3>() >= xiiMath::Square(m_fRadius))
@@ -289,9 +289,9 @@ xiiSimdVec4f xiiWindVolumeCylinderComponent::ComputeForceAtLocalPosition(const x
   return xiiSimdVec4f(GetWindInMetersPerSecond(), 0, 0);
 }
 
-void xiiWindVolumeCylinderComponent::SetRadius(float val)
+void xiiWindVolumeCylinderComponent::SetRadius(float fVal)
 {
-  m_fRadius       = xiiMath::Max(val, 0.1f);
+  m_fRadius       = xiiMath::Max(fVal, 0.1f);
   m_fOneDivRadius = 1.0f / m_fRadius;
 
   if (IsActiveAndInitialized())
@@ -300,9 +300,9 @@ void xiiWindVolumeCylinderComponent::SetRadius(float val)
   }
 }
 
-void xiiWindVolumeCylinderComponent::SetLength(float val)
+void xiiWindVolumeCylinderComponent::SetLength(float fVal)
 {
-  m_fLength = xiiMath::Max(val, 0.1f);
+  m_fLength = xiiMath::Max(fVal, 0.1f);
 
   if (IsActiveAndInitialized())
   {
@@ -348,28 +348,28 @@ XII_END_COMPONENT_TYPE;
 xiiWindVolumeConeComponent::xiiWindVolumeConeComponent()  = default;
 xiiWindVolumeConeComponent::~xiiWindVolumeConeComponent() = default;
 
-void xiiWindVolumeConeComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiWindVolumeConeComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_fLength;
   s << m_Angle;
 }
 
-void xiiWindVolumeConeComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiWindVolumeConeComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_fLength;
   s >> m_Angle;
 }
 
-xiiSimdVec4f xiiWindVolumeConeComponent::ComputeForceAtLocalPosition(const xiiSimdVec4f& localPos) const
+xiiSimdVec4f xiiWindVolumeConeComponent::ComputeForceAtLocalPosition(const xiiSimdVec4f& vLocalPos) const
 {
-  const xiiSimdFloat fConeDist = localPos.x();
+  const xiiSimdFloat fConeDist = vLocalPos.x();
 
   if (fConeDist <= xiiSimdFloat::Zero() || fConeDist >= m_fLength)
     return xiiSimdVec4f::ZeroVector();
@@ -380,18 +380,18 @@ xiiSimdVec4f xiiWindVolumeConeComponent::ComputeForceAtLocalPosition(const xiiSi
   // TODO: precompute 1/length
   const xiiSimdFloat fConeRadius = (fConeDist / xiiSimdFloat(m_fLength)) * xiiSimdFloat(fBaseRadius);
 
-  xiiSimdVec4f orthoDir = localPos;
+  xiiSimdVec4f orthoDir = vLocalPos;
   orthoDir.SetX(0.0f);
 
   if (orthoDir.GetLengthSquared<3>() >= fConeRadius * fConeRadius)
     return xiiSimdVec4f::ZeroVector();
 
-  return localPos.GetNormalized<3>() * GetWindInMetersPerSecond();
+  return vLocalPos.GetNormalized<3>() * GetWindInMetersPerSecond();
 }
 
-void xiiWindVolumeConeComponent::SetLength(float val)
+void xiiWindVolumeConeComponent::SetLength(float fVal)
 {
-  m_fLength = xiiMath::Max(val, 0.1f);
+  m_fLength = xiiMath::Max(fVal, 0.1f);
 
   if (IsActiveAndInitialized())
   {

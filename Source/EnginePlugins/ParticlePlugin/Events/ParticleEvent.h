@@ -15,4 +15,4 @@ struct XII_PARTICLEPLUGIN_DLL xiiParticleEvent
   xiiVec3             m_vNormal;
 };
 
-typedef xiiArrayPtr<xiiParticleEvent> xiiParticleEventQueue;
+using xiiParticleEventQueue = xiiArrayPtr<xiiParticleEvent>;

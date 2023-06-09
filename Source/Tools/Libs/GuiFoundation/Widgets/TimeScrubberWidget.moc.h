@@ -53,21 +53,21 @@ class XII_GUIFOUNDATION_DLL xiiQtTimeScrubberToolbar : public QToolBar
   Q_OBJECT
 
 public:
-  explicit xiiQtTimeScrubberToolbar(QWidget* parent);
+  explicit xiiQtTimeScrubberToolbar(QWidget* pParent);
 
   /// \brief Sets the duration in 'ticks'. There are 4800 ticks per second.
-  void SetDuration(xiiUInt64 iNumTicks);
+  void SetDuration(xiiUInt64 uiNumTicks);
 
   /// \brief Sets the current position in 'ticks'. There are 4800 ticks per second.
   void SetScrubberPosition(xiiUInt64 uiTick);
 
-  void SetButtonState(bool playing, bool repeatEnabled);
+  void SetButtonState(bool bPlaying, bool bRepeatEnabled);
 
 Q_SIGNALS:
   void ScrubberPosChangedEvent(xiiUInt64 uiNewScrubberTickPos);
   void PlayPauseEvent();
   void RepeatEvent();
-  void DurationChangedEvent(double duration);
+  void DurationChangedEvent(double fDuration);
   void AdjustDurationEvent();
 
 private:

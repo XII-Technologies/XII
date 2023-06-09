@@ -12,56 +12,56 @@ class xiiSorting
 public:
   /// \brief Sorts the elements in container using a in-place quick sort implementation (not stable).
   template <typename Container, typename Comparer>
-  static void QuickSort(Container& container, const Comparer& comparer = Comparer()); // [tested]
+  static void QuickSort(Container& ref_container, const Comparer& comparer = Comparer()); // [tested]
 
   /// \brief Sorts the elements in the array using a in-place quick sort implementation (not stable).
   template <typename T, typename Comparer>
-  static void QuickSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer = Comparer()); // [tested]
+  static void QuickSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [tested]
 
 
   /// \brief Sorts the elements in container using insertion sort (stable and in-place).
   template <typename Container, typename Comparer>
-  static void InsertionSort(Container& container, const Comparer& comparer = Comparer()); // [tested]
+  static void InsertionSort(Container& ref_container, const Comparer& comparer = Comparer()); // [tested]
 
   /// \brief Sorts the elements in the array using insertion sort (stable and in-place).
   template <typename T, typename Comparer>
-  static void InsertionSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer = Comparer()); // [tested]
+  static void InsertionSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [tested]
 
 
   /// \brief Sorts the elements in container using bubble sort (stable and in-place).
   template <typename Container, typename Comparer>
-  static void BubbleSort(Container& container, const Comparer& comparer = Comparer()); // [tested]
+  static void BubbleSort(Container& ref_container, const Comparer& comparer = Comparer()); // [tested]
 
   /// \brief Sorts the elements in the array using bubble sort (stable and in-place).
   template <typename T, typename Comparer>
-  static void BubbleSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer = Comparer()); // [tested]
+  static void BubbleSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [tested]
 
 
   /// \brief Sorts the elements in container using selection sort (unstable and in-place).
   template <typename Container, typename Comparer>
-  static void SelectionSort(Container& container, const Comparer& comparer = Comparer()); // [tested]
+  static void SelectionSort(Container& ref_container, const Comparer& comparer = Comparer()); // [tested]
 
   /// \brief Sorts the elements in the array using selection sort (unstable and in-place).
   template <typename T, typename Comparer>
-  static void SelectionSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer = Comparer()); // [tested]
+  static void SelectionSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [tested]
 
 
   /// \brief Sorts the elements in container using selection sort (stable and in-place).
   template <typename Container, typename Comparer>
-  static void SelectionSortStable(Container& container, const Comparer& comparer = Comparer()); // [tested]
+  static void SelectionSortStable(Container& ref_container, const Comparer& comparer = Comparer()); // [tested]
 
   /// \brief Sorts the elements in the array using selection sort (stable and in-place).
   template <typename T, typename Comparer>
-  static void SelectionSortStable(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer = Comparer()); // [tested]
+  static void SelectionSortStable(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [tested]
 
 
   /// \brief Sorts the elements in container using merge sort (stable and not in-place).
   template <typename Container, typename Comparer>
-  static void MergeSort(Container& container, const Comparer& comparer = Comparer()); // [untested]
+  static void MergeSort(Container& ref_container, const Comparer& comparer = Comparer()); // [untested]
 
   /// \brief Sorts the elements in the array using merge sort (stable and not in-place).
   template <typename T, typename Comparer>
-  static void MergeSort(xiiArrayPtr<T>& arrayPtr, const Comparer& comparer = Comparer()); // [untested]
+  static void MergeSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [untested]
 
 private:
   enum

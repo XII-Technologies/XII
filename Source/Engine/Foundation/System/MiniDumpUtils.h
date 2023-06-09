@@ -37,7 +37,7 @@ struct XII_FOUNDATION_DLL xiiMiniDumpUtils
   /// \brief Windows-specific implementation for writing a mini-dump of another process.
   ///
   /// \sa WriteProcessMiniDump()
-  static xiiStatus WriteExternalProcessMiniDump(const char* szDumpFile, xiiUInt32 uiProcessID, xiiMinWindows::HANDLE hProcess);
+  static xiiStatus WriteExternalProcessMiniDump(const char* szDumpFile, xiiUInt32 uiProcessID, xiiMinWindows::HANDLE pProcess);
 
   /// \brief Windows-specific implementation for writing a mini-dump of the running process.
   ///
@@ -45,7 +45,7 @@ struct XII_FOUNDATION_DLL xiiMiniDumpUtils
   static xiiStatus WriteProcessMiniDump(
     const char*                 szDumpFile,
     xiiUInt32                   uiProcessID,
-    xiiMinWindows::HANDLE       hProcess,
+    xiiMinWindows::HANDLE       pProcess,
     struct _EXCEPTION_POINTERS* pExceptionInfo);
 
 #endif

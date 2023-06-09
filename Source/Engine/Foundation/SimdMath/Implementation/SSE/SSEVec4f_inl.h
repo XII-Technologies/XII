@@ -10,18 +10,18 @@ XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f()
 #endif
 }
 
-XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(float xyzw)
+XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(float fXyzw)
 {
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
-  m_v = _mm_set1_ps(xyzw);
+  m_v = _mm_set1_ps(fXyzw);
 }
 
-XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(const xiiSimdFloat& xyzw)
+XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(const xiiSimdFloat& fXyzw)
 {
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
-  m_v = xyzw.m_v;
+  m_v = fXyzw.m_v;
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(float x, float y, float z, float w)
@@ -31,9 +31,9 @@ XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(float x, float y, float z, float w)
   m_v = _mm_setr_ps(x, y, z, w);
 }
 
-XII_ALWAYS_INLINE void xiiSimdVec4f::Set(float xyzw)
+XII_ALWAYS_INLINE void xiiSimdVec4f::Set(float fXyzw)
 {
-  m_v = _mm_set1_ps(xyzw);
+  m_v = _mm_set1_ps(fXyzw);
 }
 
 XII_ALWAYS_INLINE void xiiSimdVec4f::Set(float x, float y, float z, float w)
@@ -388,16 +388,16 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Trunc() const
 #endif
 }
 
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::FlipSign(const xiiSimdVec4b& cmp) const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::FlipSign(const xiiSimdVec4b& vCmp) const
 {
-  return _mm_xor_ps(m_v, _mm_and_ps(cmp.m_v, _mm_set1_ps(-0.0f)));
+  return _mm_xor_ps(m_v, _mm_and_ps(vCmp.m_v, _mm_set1_ps(-0.0f)));
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Select(const xiiSimdVec4b& cmp, const xiiSimdVec4f& ifTrue, const xiiSimdVec4f& ifFalse)
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4f& vIfTrue, const xiiSimdVec4f& vIfFalse)
 {
 #if XII_SSE_LEVEL >= XII_SSE_41
-  return _mm_blendv_ps(ifFalse.m_v, ifTrue.m_v, cmp.m_v);
+  return _mm_blendv_ps(vIfFalse.m_v, vIfTrue.m_v, vCmp.m_v);
 #else
   return _mm_or_ps(_mm_andnot_ps(cmp.m_v, ifFalse.m_v), _mm_and_ps(cmp.m_v, ifTrue.m_v));
 #endif
@@ -627,8 +627,8 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulSub(const xiiSimdVec4f& a, const
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CopySign(const xiiSimdVec4f& magnitude, const xiiSimdVec4f& sign)
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CopySign(const xiiSimdVec4f& vMagnitude, const xiiSimdVec4f& vSign)
 {
   __m128 minusZero = _mm_set1_ps(-0.0f);
-  return _mm_or_ps(_mm_andnot_ps(minusZero, magnitude.m_v), _mm_and_ps(minusZero, sign.m_v));
+  return _mm_or_ps(_mm_andnot_ps(minusZero, vMagnitude.m_v), _mm_and_ps(minusZero, vSign.m_v));
 }

@@ -693,13 +693,13 @@ xiiResult xiiConvexHullGenerator::Build(const xiiArrayPtr<const xiiVec3> vertice
   return XII_SUCCESS;
 }
 
-void xiiConvexHullGenerator::Retrieve(xiiDynamicArray<xiiVec3>& out_Vertices, xiiDynamicArray<Face>& out_Faces)
+void xiiConvexHullGenerator::Retrieve(xiiDynamicArray<xiiVec3>& out_vertices, xiiDynamicArray<Face>& out_faces)
 {
-  out_Vertices.Clear();
-  out_Faces.Clear();
+  out_vertices.Clear();
+  out_faces.Clear();
 
-  out_Vertices.Reserve(m_Triangles.GetCount() * 2);
-  out_Faces.Reserve(m_Triangles.GetCount());
+  out_vertices.Reserve(m_Triangles.GetCount() * 2);
+  out_faces.Reserve(m_Triangles.GetCount());
 
   xiiMap<xiiUInt32, xiiUInt32> vtxMap;
 
@@ -707,7 +707,7 @@ void xiiConvexHullGenerator::Retrieve(xiiDynamicArray<xiiVec3>& out_Vertices, xi
 
   for (const auto& tri : m_Triangles)
   {
-    auto& face = out_Faces.ExpandAndGetRef();
+    auto& face = out_faces.ExpandAndGetRef();
 
     for (int v = 0; v < 3; ++v)
     {
@@ -717,11 +717,11 @@ void xiiConvexHullGenerator::Retrieve(xiiDynamicArray<xiiVec3>& out_Vertices, xi
       auto it       = vtxMap.FindOrAdd(orgIdx, &bExisted);
       if (!bExisted)
       {
-        it.Value() = out_Vertices.GetCount();
+        it.Value() = out_vertices.GetCount();
 
         const xiiVec3d pos = (m_Vertices[orgIdx] * fScaleBack) + m_vCenter;
 
-        xiiVec3& vtx = out_Vertices.ExpandAndGetRef();
+        xiiVec3& vtx = out_vertices.ExpandAndGetRef();
         vtx.Set((float)pos.x, (float)pos.y, (float)pos.z);
       }
 
@@ -735,10 +735,10 @@ void xiiConvexHullGenerator::Retrieve(xiiDynamicArray<xiiVec3>& out_Vertices, xi
   }
 }
 
-void xiiConvexHullGenerator::RetrieveVertices(xiiDynamicArray<xiiVec3>& out_Vertices)
+void xiiConvexHullGenerator::RetrieveVertices(xiiDynamicArray<xiiVec3>& out_vertices)
 {
-  out_Vertices.Clear();
-  out_Vertices.Reserve(m_Triangles.GetCount() * 2);
+  out_vertices.Clear();
+  out_vertices.Reserve(m_Triangles.GetCount() * 2);
 
   xiiMap<xiiUInt32, xiiUInt32> vtxMap;
 
@@ -754,11 +754,11 @@ void xiiConvexHullGenerator::RetrieveVertices(xiiDynamicArray<xiiVec3>& out_Vert
       auto it       = vtxMap.FindOrAdd(orgIdx, &bExisted);
       if (!bExisted)
       {
-        it.Value() = out_Vertices.GetCount();
+        it.Value() = out_vertices.GetCount();
 
         const xiiVec3d pos = (m_Vertices[orgIdx] * fScaleBack) + m_vCenter;
 
-        xiiVec3& vtx = out_Vertices.ExpandAndGetRef();
+        xiiVec3& vtx = out_vertices.ExpandAndGetRef();
         vtx.Set((float)pos.x, (float)pos.y, (float)pos.z);
       }
     }

@@ -36,7 +36,7 @@ struct XII_FOUNDATION_DLL xiiFileStats
   ~xiiFileStats();
 
   /// \brief Stores the concatenated m_sParentPath and m_sName in \a path.
-  void GetFullPath(xiiStringBuilder& path) const;
+  void GetFullPath(xiiStringBuilder& ref_sPath) const;
 
   /// \brief Path to the parent folder.
   /// Append m_sName to m_sParentPath to obtain the full path.
@@ -175,7 +175,7 @@ public:
   ~xiiOSFile();
 
   /// \brief Opens a file for reading or writing. Returns XII_SUCCESS if the file could be opened successfully.
-  xiiResult Open(xiiStringView sFile, xiiFileOpenMode::Enum OpenMode, xiiFileShareMode::Enum FileShareMode = xiiFileShareMode::Default); // [tested]
+  xiiResult Open(xiiStringView sFile, xiiFileOpenMode::Enum openMode, xiiFileShareMode::Enum fileShareMode = xiiFileShareMode::Default); // [tested]
 
   /// \brief Returns true if a file is currently open.
   bool IsOpen() const; // [tested]
@@ -190,7 +190,7 @@ public:
   xiiUInt64 Read(void* pBuffer, xiiUInt64 uiBytes); // [tested]
 
   /// \brief Reads the entire file content into the given array
-  xiiUInt64 ReadAll(xiiDynamicArray<xiiUInt8>& out_FileContent); // [tested]
+  xiiUInt64 ReadAll(xiiDynamicArray<xiiUInt8>& out_fileContent); // [tested]
 
   /// \brief Returns the name of the file that is currently opened. Returns an empty string, if no file is open.
   xiiStringView GetOpenFileName() const { return m_sFileName; } // [tested]
@@ -199,7 +199,7 @@ public:
   xiiUInt64 GetFilePosition() const; // [tested]
 
   /// \brief Sets the position where in the file to read/write next.
-  void SetFilePosition(xiiInt64 iDistance, xiiFileSeekMode::Enum Pos) const; // [tested]
+  void SetFilePosition(xiiInt64 iDistance, xiiFileSeekMode::Enum pos) const; // [tested]
 
   /// \brief Returns the current total size of the file.
   xiiUInt64 GetFileSize() const; // [tested]
@@ -244,7 +244,7 @@ public:
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS) || defined(XII_DOCS)
   /// \brief Gets the stats about the given file or folder. Returns false, if the stats could not be determined.
-  static xiiResult GetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_Stats); // [tested]
+  static xiiResult GetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_stats); // [tested]
 
 #  if (XII_ENABLED(XII_SUPPORTS_CASE_INSENSITIVE_PATHS) && XII_ENABLED(XII_SUPPORTS_UNRESTRICTED_FILE_ACCESS)) || defined(XII_DOCS)
   /// \brief Useful on systems that are not strict about the casing of file names. Determines the correct name of a file.
@@ -256,12 +256,12 @@ public:
 #if (XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS) && XII_ENABLED(XII_SUPPORTS_FILE_STATS)) || defined(XII_DOCS)
 
   /// \brief Returns the xiiFileStats for all files and folders in the given folder
-  static void GatherAllItemsInFolder(xiiDynamicArray<xiiFileStats>& out_ItemList, xiiStringView sFolder, xiiBitflags<xiiFileSystemIteratorFlags> flags = xiiFileSystemIteratorFlags::Default);
+  static void GatherAllItemsInFolder(xiiDynamicArray<xiiFileStats>& out_itemList, xiiStringView sFolder, xiiBitflags<xiiFileSystemIteratorFlags> flags = xiiFileSystemIteratorFlags::Default);
 
   /// \brief Copies \a szSourceFolder to \a szDestinationFolder. Overwrites existing files.
   ///
   /// If \a out_FilesCopied is provided, the destination path of every successfully copied file is appended to it.
-  static xiiResult CopyFolder(xiiStringView sSourceFolder, xiiStringView sDestinationFolder, xiiDynamicArray<xiiString>* out_FilesCopied = nullptr);
+  static xiiResult CopyFolder(xiiStringView sSourceFolder, xiiStringView sDestinationFolder, xiiDynamicArray<xiiString>* out_pFilesCopied = nullptr);
 
   /// \brief Deletes all files recursively in \a szFolder.
   ///

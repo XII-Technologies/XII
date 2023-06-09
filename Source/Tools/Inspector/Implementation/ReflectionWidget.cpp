@@ -7,8 +7,8 @@
 
 xiiQtReflectionWidget* xiiQtReflectionWidget::s_pWidget = nullptr;
 
-xiiQtReflectionWidget::xiiQtReflectionWidget(QWidget* parent) :
-  ads::CDockWidget("Reflection Widget", parent)
+xiiQtReflectionWidget::xiiQtReflectionWidget(QWidget* pParent) :
+  ads::CDockWidget("Reflection Widget", pParent)
 {
   s_pWidget = this;
 

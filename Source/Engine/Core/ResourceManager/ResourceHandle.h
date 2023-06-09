@@ -127,7 +127,7 @@ public:
   using ResourceType = RESOURCE_TYPE;
 
   /// \brief A default constructed handle is invalid and does not reference any resource.
-  xiiTypedResourceHandle() {}
+  xiiTypedResourceHandle() = default;
 
   /// \brief Increases the refcount of the given resource.
   explicit xiiTypedResourceHandle(ResourceType* pResource) :
@@ -236,15 +236,15 @@ class XII_CORE_DLL xiiResourceHandleStreamOperations
 {
 public:
   template <typename ResourceType>
-  static void WriteHandle(xiiStreamWriter& Stream, const xiiTypedResourceHandle<ResourceType>& hResource)
+  static void WriteHandle(xiiStreamWriter& ref_stream, const xiiTypedResourceHandle<ResourceType>& hResource)
   {
-    WriteHandle(Stream, hResource.m_hTypeless.m_pResource);
+    WriteHandle(ref_stream, hResource.m_hTypeless.m_pResource);
   }
 
   template <typename ResourceType>
-  static void ReadHandle(xiiStreamReader& Stream, xiiTypedResourceHandle<ResourceType>& ResourceHandle)
+  static void ReadHandle(xiiStreamReader& ref_stream, xiiTypedResourceHandle<ResourceType>& ref_hResourceHandle)
   {
-    ReadHandle(Stream, ResourceHandle.m_hTypeless);
+    ReadHandle(ref_stream, ref_hResourceHandle.m_hTypeless);
   }
 
 private:
@@ -254,14 +254,14 @@ private:
 
 /// \brief Operator to serialize resource handles
 template <typename ResourceType>
-void operator<<(xiiStreamWriter& Stream, const xiiTypedResourceHandle<ResourceType>& Value)
+void operator<<(xiiStreamWriter& ref_stream, const xiiTypedResourceHandle<ResourceType>& hValue)
 {
-  xiiResourceHandleStreamOperations::WriteHandle(Stream, Value);
+  xiiResourceHandleStreamOperations::WriteHandle(ref_stream, hValue);
 }
 
 /// \brief Operator to deserialize resource handles
 template <typename ResourceType>
-void operator>>(xiiStreamReader& Stream, xiiTypedResourceHandle<ResourceType>& Value)
+void operator>>(xiiStreamReader& ref_stream, xiiTypedResourceHandle<ResourceType>& ref_hValue)
 {
-  xiiResourceHandleStreamOperations::ReadHandle(Stream, Value);
+  xiiResourceHandleStreamOperations::ReadHandle(ref_stream, ref_hValue);
 }

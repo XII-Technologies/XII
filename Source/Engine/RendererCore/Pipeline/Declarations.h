@@ -58,7 +58,7 @@ struct xiiRenderViewContext
   const xiiDebugRendererContext* m_pViewDebugContext;
 };
 
-typedef xiiGenericId<24, 8> xiiViewId;
+using xiiViewId = xiiGenericId<24, 8>;
 
 class xiiViewHandle
 {
@@ -79,7 +79,7 @@ struct xiiHashHelper<xiiViewHandle>
 /// \brief Usage hint of a camera/view.
 struct XII_RENDERERCORE_DLL xiiCameraUsageHint
 {
-  typedef xiiUInt8 StorageType;
+  using StorageType = xiiUInt8;
 
   enum Enum
   {

@@ -25,7 +25,7 @@ private:
 class XII_TEXTURE_DLL xiiImageFilterBox : public xiiImageFilter
 {
 public:
-  xiiImageFilterBox(float width = 0.5f);
+  xiiImageFilterBox(float fWidth = 0.5f);
 
   virtual xiiSimdFloat SamplePoint(const xiiSimdFloat& x) const override;
 };
@@ -34,7 +34,7 @@ public:
 class XII_TEXTURE_DLL xiiImageFilterTriangle : public xiiImageFilter
 {
 public:
-  xiiImageFilterTriangle(float width = 1.0f);
+  xiiImageFilterTriangle(float fWidth = 1.0f);
 
   virtual xiiSimdFloat SamplePoint(const xiiSimdFloat& x) const override;
 };
@@ -46,7 +46,7 @@ public:
   /// \brief Construct a sinc filter with a Kaiser window of the given window width and beta parameter.
   /// Note that the beta parameter (equaling alpha * pi in the mathematical definition of the Kaiser window) is often incorrectly alpha by other
   /// filtering tools.
-  xiiImageFilterSincWithKaiserWindow(float windowWidth = 3.0f, float beta = 4.0f);
+  xiiImageFilterSincWithKaiserWindow(float fWindowWidth = 3.0f, float fBeta = 4.0f);
 
   virtual xiiSimdFloat SamplePoint(const xiiSimdFloat& x) const override;
 
@@ -60,16 +60,16 @@ class XII_TEXTURE_DLL xiiImageFilterWeights
 {
 public:
   /// \brief Pre-compute the weights for the given filter for scaling between the given number of samples.
-  xiiImageFilterWeights(const xiiImageFilter& filter, xiiUInt32 srcSamples, xiiUInt32 dstSamples);
+  xiiImageFilterWeights(const xiiImageFilter& filter, xiiUInt32 uiSrcSamples, xiiUInt32 uiDstSamples);
 
   /// \brief Returns the number of weights.
   xiiUInt32 GetNumWeights() const;
 
   /// \brief Returns the weight used for the source sample GetFirstSourceSampleIndex(dstSampleIndex) + weightIndex
-  xiiSimdFloat GetWeight(xiiUInt32 dstSampleIndex, xiiUInt32 weightIndex) const;
+  xiiSimdFloat GetWeight(xiiUInt32 uiDstSampleIndex, xiiUInt32 uiWeightIndex) const;
 
   /// \brief Returns the index of the first source sample that needs to be weighted to evaluate the destination sample
-  inline xiiInt32 GetFirstSourceSampleIndex(xiiUInt32 dstSampleIndex) const;
+  inline xiiInt32 GetFirstSourceSampleIndex(xiiUInt32 uiDstSampleIndex) const;
 
   xiiArrayPtr<const float> ViewWeights() const;
 

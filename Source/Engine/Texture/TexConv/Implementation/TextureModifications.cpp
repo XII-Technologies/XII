@@ -293,12 +293,12 @@ xiiResult xiiTexConvProcessor::ClampInputValues(xiiImage& image, float maxValue)
   return XII_SUCCESS;
 }
 
-static bool FillAvgImageColor(xiiImage& img)
+static bool FillAvgImageColor(xiiImage& ref_img)
 {
   xiiColor  avg          = xiiColor::ZeroColor();
   xiiUInt32 uiValidCount = 0;
 
-  for (const xiiColor& col : img.GetBlobPtr<xiiColor>())
+  for (const xiiColor& col : ref_img.GetBlobPtr<xiiColor>())
   {
     if (col.a > 0.0f)
     {
@@ -307,7 +307,7 @@ static bool FillAvgImageColor(xiiImage& img)
     }
   }
 
-  if (uiValidCount == 0 || uiValidCount == img.GetBlobPtr<xiiColor>().GetCount())
+  if (uiValidCount == 0 || uiValidCount == ref_img.GetBlobPtr<xiiColor>().GetCount())
   {
     // nothing to do
     return false;
@@ -317,7 +317,7 @@ static bool FillAvgImageColor(xiiImage& img)
   avg.NormalizeToLdrRange();
   avg.a = 0.0f;
 
-  for (xiiColor& col : img.GetBlobPtr<xiiColor>())
+  for (xiiColor& col : ref_img.GetBlobPtr<xiiColor>())
   {
     if (col.a == 0.0f)
     {
@@ -328,9 +328,9 @@ static bool FillAvgImageColor(xiiImage& img)
   return true;
 }
 
-static void ClearAlpha(xiiImage& img, float fAlphaThreshold)
+static void ClearAlpha(xiiImage& ref_img, float fAlphaThreshold)
 {
-  for (xiiColor& col : img.GetBlobPtr<xiiColor>())
+  for (xiiColor& col : ref_img.GetBlobPtr<xiiColor>())
   {
     if (col.a <= fAlphaThreshold)
     {

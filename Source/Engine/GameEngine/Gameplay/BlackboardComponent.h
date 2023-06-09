@@ -13,8 +13,8 @@ struct xiiBlackboardEntry
   void        SetName(const char* szName) { m_sName.Assign(szName); }
   const char* GetName() const { return m_sName; }
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiBlackboardEntry);
@@ -50,8 +50,8 @@ class XII_GAMEENGINE_DLL xiiBlackboardComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;

@@ -9,8 +9,8 @@
 
 xiiQtLogDockWidget* xiiQtLogDockWidget::s_pWidget = nullptr;
 
-xiiQtLogDockWidget::xiiQtLogDockWidget(QWidget* parent) :
-  ads::CDockWidget("Log", parent)
+xiiQtLogDockWidget::xiiQtLogDockWidget(QWidget* pParent) :
+  ads::CDockWidget("Log", pParent)
 {
   s_pWidget = this;
   setupUi(this);
@@ -24,12 +24,12 @@ void xiiQtLogDockWidget::ResetStats()
   LogWidget->GetLog()->Clear();
 }
 
-void xiiQtLogDockWidget::Log(const xiiFormatString& sText)
+void xiiQtLogDockWidget::Log(const xiiFormatString& text)
 {
   xiiStringBuilder tmp;
 
   xiiLogEntry lm;
-  lm.m_sMsg          = sText.GetText(tmp);
+  lm.m_sMsg          = text.GetText(tmp);
   lm.m_Type          = xiiLogMsgType::InfoMsg;
   lm.m_uiIndentation = 0;
   LogWidget->GetLog()->AddLogMsg(lm);

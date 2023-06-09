@@ -32,29 +32,29 @@ XII_END_COMPONENT_TYPE;
 xiiRenderTargetActivatorComponent::xiiRenderTargetActivatorComponent()  = default;
 xiiRenderTargetActivatorComponent::~xiiRenderTargetActivatorComponent() = default;
 
-void xiiRenderTargetActivatorComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiRenderTargetActivatorComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  xiiStreamWriter& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_hRenderTarget;
 }
 
-void xiiRenderTargetActivatorComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiRenderTargetActivatorComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   s >> m_hRenderTarget;
 }
 
-xiiResult xiiRenderTargetActivatorComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiRenderTargetActivatorComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   if (m_hRenderTarget.IsValid())
   {
-    bounds = xiiBoundingSphere(xiiVec3::ZeroVector(), 0.1f);
+    ref_bounds = xiiBoundingSphere(xiiVec3::ZeroVector(), 0.1f);
     return XII_SUCCESS;
   }
 

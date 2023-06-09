@@ -17,7 +17,7 @@ xiiPrefabResource::xiiPrefabResource() :
 {
 }
 
-void xiiPrefabResource::InstantiatePrefab(xiiWorld& world, const xiiTransform& rootTransform, xiiPrefabInstantiationOptions options, const xiiArrayMap<xiiHashedString, xiiVariant>* pExposedParamValues)
+void xiiPrefabResource::InstantiatePrefab(xiiWorld& ref_world, const xiiTransform& rootTransform, xiiPrefabInstantiationOptions options, const xiiArrayMap<xiiHashedString, xiiVariant>* pExposedParamValues)
 {
   if (GetLoadingState() != xiiResourceState::Loaded)
     return;
@@ -37,13 +37,13 @@ void xiiPrefabResource::InstantiatePrefab(xiiWorld& world, const xiiTransform& r
       options.m_pCreatedChildObjectsOut = &createdChildObjects;
     }
 
-    m_WorldReader.InstantiatePrefab(world, rootTransform, options);
+    m_WorldReader.InstantiatePrefab(ref_world, rootTransform, options);
 
     ApplyExposedParameterValues(pExposedParamValues, *options.m_pCreatedChildObjectsOut, *options.m_pCreatedRootObjectsOut);
   }
   else
   {
-    m_WorldReader.InstantiatePrefab(world, rootTransform, options);
+    m_WorldReader.InstantiatePrefab(ref_world, rootTransform, options);
   }
 }
 
@@ -228,39 +228,39 @@ xiiUInt32 xiiPrefabResource::FindFirstParamWithName(xiiUInt64 uiNameHash) const
   return lb;
 }
 
-void xiiExposedPrefabParameterDesc::Save(xiiStreamWriter& stream) const
+void xiiExposedPrefabParameterDesc::Save(xiiStreamWriter& ref_stream) const
 {
   xiiUInt32 comb = m_uiWorldReaderObjectIndex | (m_uiWorldReaderChildObject << 31);
 
-  stream << m_sExposeName;
-  stream << comb;
-  stream << m_sComponentType;
-  stream << m_sProperty;
+  ref_stream << m_sExposeName;
+  ref_stream << comb;
+  ref_stream << m_sComponentType;
+  ref_stream << m_sProperty;
 }
 
-void xiiExposedPrefabParameterDesc::Load(xiiStreamReader& stream)
+void xiiExposedPrefabParameterDesc::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt32 comb = 0;
 
-  stream >> m_sExposeName;
-  stream >> comb;
-  stream >> m_sComponentType;
-  stream >> m_sProperty;
+  ref_stream >> m_sExposeName;
+  ref_stream >> comb;
+  ref_stream >> m_sComponentType;
+  ref_stream >> m_sProperty;
 
   m_uiWorldReaderObjectIndex = comb & 0x7FFFFFFF;
   m_uiWorldReaderChildObject = (comb >> 31);
 }
 
-void xiiExposedPrefabParameterDesc::LoadOld(xiiStreamReader& stream)
+void xiiExposedPrefabParameterDesc::LoadOld(xiiStreamReader& ref_stream)
 {
   xiiUInt32 comb = 0;
 
   xiiUInt32 uiComponentTypeMurmurHash;
 
-  stream >> m_sExposeName;
-  stream >> comb;
-  stream >> uiComponentTypeMurmurHash;
-  stream >> m_sProperty;
+  ref_stream >> m_sExposeName;
+  ref_stream >> comb;
+  ref_stream >> uiComponentTypeMurmurHash;
+  ref_stream >> m_sProperty;
 
   m_sComponentType.Clear();
   if (uiComponentTypeMurmurHash != 0)

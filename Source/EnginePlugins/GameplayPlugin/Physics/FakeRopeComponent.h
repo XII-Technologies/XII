@@ -28,8 +28,8 @@ class XII_GAMEPLAYPLUGIN_DLL xiiFakeRopeComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   virtual void OnActivated() override;
   virtual void OnDeactivated() override;
@@ -46,12 +46,12 @@ public:
   void SetAnchorReference(const char* szReference); // [ property ]
   void SetAnchor(xiiGameObjectHandle hActor);
 
-  void  SetSlack(float val);
+  void  SetSlack(float fVal);
   float GetSlack() const { return m_fSlack; }
 
-  void SetAttachToOrigin(bool val);
+  void SetAttachToOrigin(bool bVal);
   bool GetAttachToOrigin() const;
-  void SetAttachToAnchor(bool val);
+  void SetAttachToAnchor(bool bVal);
   bool GetAttachToAnchor() const;
 
   float m_fSlack   = 0.0f;

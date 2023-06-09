@@ -17,18 +17,18 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
     return pAccessor->GetObject(objGuid);
   };
 
-  auto StoreOriginalState = [&doc](xiiAbstractObjectGraph& graph, const xiiDocumentObject* pRoot) {
-    xiiDocumentObjectConverterWriter writer(&graph, doc.GetObjectManager(), [](const xiiDocumentObject*, const xiiAbstractProperty* p) { return p->GetAttributeByType<xiiHiddenAttribute>() == nullptr; });
+  auto StoreOriginalState = [&doc](xiiAbstractObjectGraph& ref_graph, const xiiDocumentObject* pRoot) {
+    xiiDocumentObjectConverterWriter writer(&ref_graph, doc.GetObjectManager(), [](const xiiDocumentObject*, const xiiAbstractProperty* p) { return p->GetAttributeByType<xiiHiddenAttribute>() == nullptr; });
     xiiAbstractObjectNode*           pAbstractObj = writer.AddObjectToGraph(pRoot);
   };
 
-  auto CompareAgainstOriginalState = [&doc](xiiAbstractObjectGraph& original, const xiiDocumentObject* pRoot) {
+  auto CompareAgainstOriginalState = [&doc](xiiAbstractObjectGraph& ref_original, const xiiDocumentObject* pRoot) {
     xiiAbstractObjectGraph           graph;
     xiiDocumentObjectConverterWriter writer2(&graph, doc.GetObjectManager(), [](const xiiDocumentObject*, const xiiAbstractProperty* p) { return p->GetAttributeByType<xiiHiddenAttribute>() == nullptr; });
     xiiAbstractObjectNode*           pAbstractObj2 = writer2.AddObjectToGraph(pRoot);
 
     xiiDeque<xiiAbstractGraphDiffOperation> diff;
-    graph.CreateDiffWithBaseGraph(original, diff);
+    graph.CreateDiffWithBaseGraph(ref_original, diff);
     XII_TEST_BOOL(diff.GetCount() == 0);
   };
 

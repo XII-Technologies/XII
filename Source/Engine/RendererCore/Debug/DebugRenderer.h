@@ -29,8 +29,8 @@ public:
     XII_DECLARE_POD_TYPE();
 
     Line();
-    Line(const xiiVec3& start, const xiiVec3& end);
-    Line(const xiiVec3& start, const xiiVec3& end, const xiiColor& color);
+    Line(const xiiVec3& vStart, const xiiVec3& vEnd);
+    Line(const xiiVec3& vStart, const xiiVec3& vEnd, const xiiColor& color);
 
     xiiVec3 m_start;
     xiiVec3 m_end;
@@ -44,7 +44,7 @@ public:
     XII_DECLARE_POD_TYPE();
 
     Triangle();
-    Triangle(const xiiVec3& p0, const xiiVec3& p1, const xiiVec3& p2);
+    Triangle(const xiiVec3& v0, const xiiVec3& v1, const xiiVec3& v2);
 
     xiiVec3  m_position[3];
     xiiColor m_color = xiiColor::White;
@@ -92,7 +92,7 @@ public:
   static void Draw2DLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color);
 
   /// \brief Renders a cross for one frame.
-  static void DrawCross(const xiiDebugRendererContext& context, const xiiVec3& globalPosition, float fLineLength, const xiiColor& color, const xiiTransform& transform = xiiTransform::IdentityTransform());
+  static void DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, const xiiTransform& transform = xiiTransform::IdentityTransform());
 
   /// \brief Renders a wireframe box for one frame.
   static void DrawLineBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, const xiiTransform& transform = xiiTransform::IdentityTransform());
@@ -122,10 +122,10 @@ public:
   static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color);
 
   /// \brief Renders a textured 2D rectangle in screen-space for one frame.
-  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 uvScale = xiiVec2(1, 1));
+  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 vUvScale = xiiVec2(1, 1));
 
   /// \brief Renders a textured 2D rectangle in screen-space for one frame.
-  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiGALResourceViewHandle hResourceView, xiiVec2 uvScale = xiiVec2(1, 1));
+  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiGALResourceViewHandle hResourceView, xiiVec2 vUvScale = xiiVec2(1, 1));
 
   /// \brief Displays a string in screen-space for one frame.
   ///
@@ -137,7 +137,7 @@ public:
   /// "| Col 1\t| Col 2\t| Col 3\t|\n| abc\t| 42\t| 11.23\t|"
   ///
   /// Returns the number of lines that the text was split up into.
-  static xiiUInt32 Draw2DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec2I32& positionInPixel, const xiiColor& color, xiiUInt32 uiSizeInPixel = 16, HorizontalAlignment horizontalAlignment = HorizontalAlignment::Left, VerticalAlignment verticalAlignment = VerticalAlignment::Top);
+  static xiiUInt32 Draw2DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec2I32& vPositionInPixel, const xiiColor& color, xiiUInt32 uiSizeInPixel = 16, HorizontalAlignment horizontalAlignment = HorizontalAlignment::Left, VerticalAlignment verticalAlignment = VerticalAlignment::Top);
 
   /// \brief Draws a piece of text in one of the screen corners.
   ///
@@ -150,10 +150,10 @@ public:
   /// it is not displayed anywhere, though.
   ///
   /// Text size cannot be changed.
-  static void DrawInfoText(const xiiDebugRendererContext& context, ScreenPlacement placement, const char* groupName, const xiiFormatString& text, const xiiColor& color = xiiColor::White);
+  static void DrawInfoText(const xiiDebugRendererContext& context, ScreenPlacement placement, const char* szGroupName, const xiiFormatString& text, const xiiColor& color = xiiColor::White);
 
   /// \brief Displays a string in 3D space for one frame.
-  static xiiUInt32 Draw3DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec3& globalPosition, const xiiColor& color, xiiUInt32 uiSizeInPixel = 16, HorizontalAlignment horizontalAlignment = HorizontalAlignment::Center, VerticalAlignment verticalAlignment = VerticalAlignment::Bottom);
+  static xiiUInt32 Draw3DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec3& vGlobalPosition, const xiiColor& color, xiiUInt32 uiSizeInPixel = 16, HorizontalAlignment horizontalAlignment = HorizontalAlignment::Center, VerticalAlignment verticalAlignment = VerticalAlignment::Bottom);
 
   /// \brief Renders a cross at the given location for as many frames until \a duration has passed.
   static void AddPersistentCross(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
@@ -162,17 +162,17 @@ public:
   static void AddPersistentLineSphere(const xiiDebugRendererContext& context, float fRadius, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
 
   /// \brief Renders a wireframe box at the given location for as many frames until \a duration has passed.
-  static void AddPersistentLineBox(const xiiDebugRendererContext& context, const xiiVec3& halfSize, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
+  static void AddPersistentLineBox(const xiiDebugRendererContext& context, const xiiVec3& vHalfSize, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
 
   /// \brief Renders a solid 2D cone in a plane with a given angle.
   ///
   /// The rotation goes around the given \a rotationAxis.
   /// An angle of zero is pointing into forwardAxis direction.
   /// Both angles may be negative.
-  static void DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 forwardAxis = xiiVec3::UnitXAxis(), xiiVec3 rotationAxis = xiiVec3::UnitZAxis());
+  static void DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::UnitXAxis(), xiiVec3 vRotationAxis = xiiVec3::UnitZAxis());
 
   /// \brief Renders a cone with the tip at the center position, opening up with the given angle.
-  static void DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 forwardAxis = xiiVec3::UnitXAxis());
+  static void DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::UnitXAxis());
 
   /// \brief Renders a bent cone with the tip at the center position, pointing into the +X direction opening up with halfAngle1 and halfAngle2 along the Y and Z axis.
   ///
@@ -184,7 +184,7 @@ public:
   /// \brief Renders a cylinder starting at the center position, along the +X axis.
   ///
   /// If the start and end radius are different, a cone or arrow can be created.
-  static void DrawCylinder(const xiiDebugRendererContext& context, float radiusStart, float radiusEnd, float length, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, bool capStart = false, bool capEnd = false);
+  static void DrawCylinder(const xiiDebugRendererContext& context, float fRadiusStart, float fRadiusEnd, float fLength, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, bool bCapStart = false, bool bCapEnd = false);
 
 private:
   friend class xiiSimpleRenderPass;

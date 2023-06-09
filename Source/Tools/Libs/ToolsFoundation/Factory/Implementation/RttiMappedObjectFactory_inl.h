@@ -1,14 +1,10 @@
 
 
 template <typename Object>
-xiiRttiMappedObjectFactory<Object>::xiiRttiMappedObjectFactory()
-{
-}
+xiiRttiMappedObjectFactory<Object>::xiiRttiMappedObjectFactory() = default;
 
 template <typename Object>
-xiiRttiMappedObjectFactory<Object>::~xiiRttiMappedObjectFactory()
-{
-}
+xiiRttiMappedObjectFactory<Object>::~xiiRttiMappedObjectFactory() = default;
 
 template <typename Object>
 void xiiRttiMappedObjectFactory<Object>::RegisterCreator(const xiiRTTI* pType, CreateObjectFunc creator)

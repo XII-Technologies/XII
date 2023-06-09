@@ -24,8 +24,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE
 xiiProfileConfigData::xiiProfileConfigData()  = default;
 xiiProfileConfigData::~xiiProfileConfigData() = default;
 
-void xiiProfileConfigData::SaveRuntimeData(xiiChunkStreamWriter& stream) const {}
-void xiiProfileConfigData::LoadRuntimeData(xiiChunkStreamReader& stream) {}
+void xiiProfileConfigData::SaveRuntimeData(xiiChunkStreamWriter& ref_stream) const {}
+void xiiProfileConfigData::LoadRuntimeData(xiiChunkStreamReader& ref_stream) {}
 
 //////////////////////////////////////////////////////////////////////////
 

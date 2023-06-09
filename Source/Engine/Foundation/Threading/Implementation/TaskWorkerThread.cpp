@@ -6,19 +6,19 @@
 
 thread_local xiiTaskWorkerInfo tl_TaskWorkerInfo;
 
-static const char* GenerateThreadName(xiiWorkerThreadType::Enum ThreadType, xiiUInt32 uiThreadNumber)
+static const char* GenerateThreadName(xiiWorkerThreadType::Enum threadType, xiiUInt32 uiThreadNumber)
 {
   static xiiStringBuilder sTemp;
-  sTemp.Format("{} {}", xiiWorkerThreadType::GetThreadTypeName(ThreadType), uiThreadNumber);
+  sTemp.Format("{} {}", xiiWorkerThreadType::GetThreadTypeName(threadType), uiThreadNumber);
   return sTemp.GetData();
 }
 
-xiiTaskWorkerThread::xiiTaskWorkerThread(xiiWorkerThreadType::Enum ThreadType, xiiUInt32 uiThreadNumber)
+xiiTaskWorkerThread::xiiTaskWorkerThread(xiiWorkerThreadType::Enum threadType, xiiUInt32 uiThreadNumber)
   // We need at least 256 kb of stack size, otherwise the shader compilation tasks will run out of stack space.
   :
-  xiiThread(GenerateThreadName(ThreadType, uiThreadNumber), 256 * 1024)
+  xiiThread(GenerateThreadName(threadType, uiThreadNumber), 256 * 1024)
 {
-  m_WorkerType           = ThreadType;
+  m_WorkerType           = threadType;
   m_uiWorkerThreadNumber = uiThreadNumber & 0xFFFF;
 }
 
@@ -116,7 +116,7 @@ xiiTaskWorkerState xiiTaskWorkerThread::WakeUpIfIdle()
   return static_cast<xiiTaskWorkerState>(prev);
 }
 
-void xiiTaskWorkerThread::UpdateThreadUtilization(xiiTime TimePassed)
+void xiiTaskWorkerThread::UpdateThreadUtilization(xiiTime timePassed)
 {
   xiiTime tActive = m_ThreadActiveTime;
 
@@ -133,7 +133,7 @@ void xiiTaskWorkerThread::UpdateThreadUtilization(xiiTime TimePassed)
     }
   }
 
-  m_fLastThreadUtilization = tActive.GetSeconds() / TimePassed.GetSeconds();
+  m_fLastThreadUtilization = tActive.GetSeconds() / timePassed.GetSeconds();
   m_uiLastNumTasksExecuted = m_uiNumTasksExecuted;
   m_uiNumTasksExecuted     = 0;
 }

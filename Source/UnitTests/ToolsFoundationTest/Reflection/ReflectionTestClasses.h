@@ -96,7 +96,7 @@ public:
   void        SetColor(xiiColor c) { m_Color = c; }
   xiiColor    GetColor() const { return m_Color; }
   const char* GetString() const { return m_sString.GetData(); }
-  void        SetString(const char* sz) { m_sString = sz; }
+  void        SetString(const char* szSz) { m_sString = szSz; }
 
   const xiiDataBuffer& GetBuffer() const { return m_Buffer; }
   void                 SetBuffer(const xiiDataBuffer& data) { m_Buffer = data; }
@@ -161,7 +161,7 @@ private:
 
 struct xiiExampleEnum
 {
-  typedef xiiInt8 StorageType;
+  using StorageType = xiiInt8;
   enum Enum
   {
     Value1  = 0,     // normal value
@@ -175,7 +175,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiExampleEnum);
 
 struct xiiExampleBitflags
 {
-  typedef xiiUInt64 StorageType;
+  using StorageType = xiiUInt64;
   enum Enum : xiiUInt64
   {
     Value1  = XII_BIT(0),  // normal value
@@ -250,7 +250,7 @@ class xiiObjectTest : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiObjectTest, xiiReflectedClass);
 
 public:
-  xiiObjectTest() {}
+  xiiObjectTest() = default;
   ~xiiObjectTest()
   {
     for (OuterClass* pTest : m_ClassPtrArray)
@@ -291,7 +291,7 @@ class xiiMirrorTest : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiMirrorTest, xiiReflectedClass);
 
 public:
-  xiiMirrorTest() {}
+  xiiMirrorTest() = default;
 
   xiiMathClass  m_math;
   xiiObjectTest m_object;

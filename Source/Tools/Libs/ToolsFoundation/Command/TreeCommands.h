@@ -19,7 +19,7 @@ public: // Properties
   void        SetType(const char* szType);
   const char* GetType() const;
 
-  const xiiRTTI* m_pType;
+  const xiiRTTI* m_pType = nullptr;
   xiiUuid        m_Parent;
   xiiString      m_sParentProperty;
   xiiVariant     m_Index;
@@ -32,7 +32,7 @@ private:
   virtual void      CleanupInternal(CommandState state) override;
 
 private:
-  xiiDocumentObject* m_pObject;
+  xiiDocumentObject* m_pObject = nullptr;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -119,7 +119,7 @@ class XII_TOOLSFOUNDATION_DLL xiiUnlinkPrefabCommand : public xiiCommand
   XII_ADD_DYNAMIC_REFLECTION(xiiUnlinkPrefabCommand, xiiCommand);
 
 public:
-  xiiUnlinkPrefabCommand() {}
+  xiiUnlinkPrefabCommand() = default;
 
   xiiUuid m_Object;
 
@@ -155,10 +155,10 @@ private:
   virtual void      CleanupInternal(CommandState state) override;
 
 private:
-  xiiDocumentObject* m_pParent;
+  xiiDocumentObject* m_pParent = nullptr;
   xiiString          m_sParentProperty;
   xiiVariant         m_Index;
-  xiiDocumentObject* m_pObject;
+  xiiDocumentObject* m_pObject = nullptr;
 };
 
 //////////////////////////////////////////////////////////////////////////

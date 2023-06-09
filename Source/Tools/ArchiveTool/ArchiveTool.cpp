@@ -141,7 +141,7 @@ protected:
 class xiiArchiveTool : public xiiApplication
 {
 public:
-  typedef xiiApplication SUPER;
+  using SUPER = xiiApplication;
 
   enum class ArchiveMode
   {

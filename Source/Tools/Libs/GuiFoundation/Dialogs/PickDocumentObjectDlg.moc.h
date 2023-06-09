@@ -18,7 +18,7 @@ public:
     xiiString                m_sDisplayName;
   };
 
-  xiiQtPickDocumentObjectDlg(QWidget* parent, const xiiArrayPtr<Element>& objects, const xiiUuid& currentObject);
+  xiiQtPickDocumentObjectDlg(QWidget* pParent, const xiiArrayPtr<Element>& objects, const xiiUuid& currentObject);
 
   /// Stores the result that the user picked
   const xiiDocumentObject* m_pPickedObject = nullptr;

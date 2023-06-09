@@ -22,17 +22,17 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphOutputPin, 1, xiiRTTIDefaultAllocat
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiResult xiiAnimGraphPin::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiAnimGraphPin::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream << m_iPinIndex;
-  stream << m_uiNumConnections;
+  ref_stream << m_iPinIndex;
+  ref_stream << m_uiNumConnections;
   return XII_SUCCESS;
 }
 
-xiiResult xiiAnimGraphPin::Deserialize(xiiStreamReader& stream)
+xiiResult xiiAnimGraphPin::Deserialize(xiiStreamReader& ref_stream)
 {
-  stream >> m_iPinIndex;
-  stream >> m_uiNumConnections;
+  ref_stream >> m_iPinIndex;
+  ref_stream >> m_uiNumConnections;
   return XII_SUCCESS;
 }
 
@@ -46,37 +46,37 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphTriggerOutputPin, 1, xiiRTTIDefault
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiAnimGraphTriggerOutputPin::SetTriggered(xiiAnimGraph& graph, bool triggered)
+void xiiAnimGraphTriggerOutputPin::SetTriggered(xiiAnimGraph& ref_graph, bool bTriggered)
 {
   if (m_iPinIndex < 0)
     return;
 
-  if (!triggered)
+  if (!bTriggered)
     return;
 
-  const auto& map = graph.m_OutputPinToInputPinMapping[xiiAnimGraphPin::Trigger][m_iPinIndex];
+  const auto& map = ref_graph.m_OutputPinToInputPinMapping[xiiAnimGraphPin::Trigger][m_iPinIndex];
 
 
-  const xiiInt8 offset = triggered ? +1 : -1;
+  const xiiInt8 offset = bTriggered ? +1 : -1;
 
   // trigger or reset all input pins that are connected to this output pin
   for (xiiUInt16 idx : map)
   {
-    graph.m_TriggerInputPinStates[idx] += offset;
+    ref_graph.m_TriggerInputPinStates[idx] += offset;
   }
 }
 
-bool xiiAnimGraphTriggerInputPin::IsTriggered(xiiAnimGraph& graph) const
+bool xiiAnimGraphTriggerInputPin::IsTriggered(xiiAnimGraph& ref_graph) const
 {
   if (m_iPinIndex < 0)
     return false;
 
-  return graph.m_TriggerInputPinStates[m_iPinIndex] > 0;
+  return ref_graph.m_TriggerInputPinStates[m_iPinIndex] > 0;
 }
 
-bool xiiAnimGraphTriggerInputPin::AreAllTriggered(xiiAnimGraph& graph) const
+bool xiiAnimGraphTriggerInputPin::AreAllTriggered(xiiAnimGraph& ref_graph) const
 {
-  return graph.m_TriggerInputPinStates[m_iPinIndex] == m_uiNumConnections;
+  return ref_graph.m_TriggerInputPinStates[m_iPinIndex] == m_uiNumConnections;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -89,25 +89,25 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphNumberOutputPin, 1, xiiRTTIDefaultA
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-double xiiAnimGraphNumberInputPin::GetNumber(xiiAnimGraph& graph, double fFallback /*= 0.0*/) const
+double xiiAnimGraphNumberInputPin::GetNumber(xiiAnimGraph& ref_graph, double fFallback /*= 0.0*/) const
 {
   if (m_iPinIndex < 0)
     return fFallback;
 
-  return graph.m_NumberInputPinStates[m_iPinIndex];
+  return ref_graph.m_NumberInputPinStates[m_iPinIndex];
 }
 
-void xiiAnimGraphNumberOutputPin::SetNumber(xiiAnimGraph& graph, double value)
+void xiiAnimGraphNumberOutputPin::SetNumber(xiiAnimGraph& ref_graph, double value)
 {
   if (m_iPinIndex < 0)
     return;
 
-  const auto& map = graph.m_OutputPinToInputPinMapping[xiiAnimGraphPin::Number][m_iPinIndex];
+  const auto& map = ref_graph.m_OutputPinToInputPinMapping[xiiAnimGraphPin::Number][m_iPinIndex];
 
   // set all input pins that are connected to this output pin
   for (xiiUInt16 idx : map)
   {
-    graph.m_NumberInputPinStates[idx] = value;
+    ref_graph.m_NumberInputPinStates[idx] = value;
   }
 }
 
@@ -121,25 +121,25 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphBoneWeightsOutputPin, 1, xiiRTTIDef
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiAnimGraphPinDataBoneWeights* xiiAnimGraphBoneWeightsInputPin::GetWeights(xiiAnimGraph& graph) const
+xiiAnimGraphPinDataBoneWeights* xiiAnimGraphBoneWeightsInputPin::GetWeights(xiiAnimGraph& ref_graph) const
 {
-  if (m_iPinIndex < 0 || graph.m_BoneWeightInputPinStates[m_iPinIndex] == 0xFFFF)
+  if (m_iPinIndex < 0 || ref_graph.m_BoneWeightInputPinStates[m_iPinIndex] == 0xFFFF)
     return nullptr;
 
-  return &graph.m_PinDataBoneWeights[graph.m_BoneWeightInputPinStates[m_iPinIndex]];
+  return &ref_graph.m_PinDataBoneWeights[ref_graph.m_BoneWeightInputPinStates[m_iPinIndex]];
 }
 
-void xiiAnimGraphBoneWeightsOutputPin::SetWeights(xiiAnimGraph& graph, xiiAnimGraphPinDataBoneWeights* pWeights)
+void xiiAnimGraphBoneWeightsOutputPin::SetWeights(xiiAnimGraph& ref_graph, xiiAnimGraphPinDataBoneWeights* pWeights)
 {
   if (m_iPinIndex < 0)
     return;
 
-  const auto& map = graph.m_OutputPinToInputPinMapping[xiiAnimGraphPin::BoneWeights][m_iPinIndex];
+  const auto& map = ref_graph.m_OutputPinToInputPinMapping[xiiAnimGraphPin::BoneWeights][m_iPinIndex];
 
   // set all input pins that are connected to this output pin
   for (xiiUInt16 idx : map)
   {
-    graph.m_BoneWeightInputPinStates[idx] = pWeights->m_uiOwnIndex;
+    ref_graph.m_BoneWeightInputPinStates[idx] = pWeights->m_uiOwnIndex;
   }
 }
 
@@ -156,42 +156,42 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphLocalPoseOutputPin, 1, xiiRTTIDefau
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiAnimGraphPinDataLocalTransforms* xiiAnimGraphLocalPoseInputPin::GetPose(xiiAnimGraph& graph) const
+xiiAnimGraphPinDataLocalTransforms* xiiAnimGraphLocalPoseInputPin::GetPose(xiiAnimGraph& ref_graph) const
 {
   if (m_iPinIndex < 0)
     return nullptr;
 
-  if (graph.m_LocalPoseInputPinStates[m_iPinIndex].IsEmpty())
+  if (ref_graph.m_LocalPoseInputPinStates[m_iPinIndex].IsEmpty())
     return nullptr;
 
-  return &graph.m_PinDataLocalTransforms[graph.m_LocalPoseInputPinStates[m_iPinIndex][0]];
+  return &ref_graph.m_PinDataLocalTransforms[ref_graph.m_LocalPoseInputPinStates[m_iPinIndex][0]];
 }
 
-void xiiAnimGraphLocalPoseMultiInputPin::GetPoses(xiiAnimGraph& graph, xiiDynamicArray<xiiAnimGraphPinDataLocalTransforms*>& out_Poses) const
+void xiiAnimGraphLocalPoseMultiInputPin::GetPoses(xiiAnimGraph& ref_graph, xiiDynamicArray<xiiAnimGraphPinDataLocalTransforms*>& out_poses) const
 {
-  out_Poses.Clear();
+  out_poses.Clear();
 
   if (m_iPinIndex < 0)
     return;
 
-  out_Poses.SetCountUninitialized(graph.m_LocalPoseInputPinStates[m_iPinIndex].GetCount());
-  for (xiiUInt32 i = 0; i < graph.m_LocalPoseInputPinStates[m_iPinIndex].GetCount(); ++i)
+  out_poses.SetCountUninitialized(ref_graph.m_LocalPoseInputPinStates[m_iPinIndex].GetCount());
+  for (xiiUInt32 i = 0; i < ref_graph.m_LocalPoseInputPinStates[m_iPinIndex].GetCount(); ++i)
   {
-    out_Poses[i] = &graph.m_PinDataLocalTransforms[graph.m_LocalPoseInputPinStates[m_iPinIndex][i]];
+    out_poses[i] = &ref_graph.m_PinDataLocalTransforms[ref_graph.m_LocalPoseInputPinStates[m_iPinIndex][i]];
   }
 }
 
-void xiiAnimGraphLocalPoseOutputPin::SetPose(xiiAnimGraph& graph, xiiAnimGraphPinDataLocalTransforms* pPose)
+void xiiAnimGraphLocalPoseOutputPin::SetPose(xiiAnimGraph& ref_graph, xiiAnimGraphPinDataLocalTransforms* pPose)
 {
   if (m_iPinIndex < 0)
     return;
 
-  const auto& map = graph.m_OutputPinToInputPinMapping[xiiAnimGraphPin::LocalPose][m_iPinIndex];
+  const auto& map = ref_graph.m_OutputPinToInputPinMapping[xiiAnimGraphPin::LocalPose][m_iPinIndex];
 
   // set all input pins that are connected to this output pin
   for (xiiUInt16 idx : map)
   {
-    graph.m_LocalPoseInputPinStates[idx].PushBack(pPose->m_uiOwnIndex);
+    ref_graph.m_LocalPoseInputPinStates[idx].PushBack(pPose->m_uiOwnIndex);
   }
 }
 
@@ -205,25 +205,25 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphModelPoseOutputPin, 1, xiiRTTIDefau
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiAnimGraphPinDataModelTransforms* xiiAnimGraphModelPoseInputPin::GetPose(xiiAnimGraph& graph) const
+xiiAnimGraphPinDataModelTransforms* xiiAnimGraphModelPoseInputPin::GetPose(xiiAnimGraph& ref_graph) const
 {
-  if (m_iPinIndex < 0 || graph.m_ModelPoseInputPinStates[m_iPinIndex] == 0xFFFF)
+  if (m_iPinIndex < 0 || ref_graph.m_ModelPoseInputPinStates[m_iPinIndex] == 0xFFFF)
     return nullptr;
 
-  return &graph.m_PinDataModelTransforms[graph.m_ModelPoseInputPinStates[m_iPinIndex]];
+  return &ref_graph.m_PinDataModelTransforms[ref_graph.m_ModelPoseInputPinStates[m_iPinIndex]];
 }
 
-void xiiAnimGraphModelPoseOutputPin::SetPose(xiiAnimGraph& graph, xiiAnimGraphPinDataModelTransforms* pPose)
+void xiiAnimGraphModelPoseOutputPin::SetPose(xiiAnimGraph& ref_graph, xiiAnimGraphPinDataModelTransforms* pPose)
 {
   if (m_iPinIndex < 0)
     return;
 
-  const auto& map = graph.m_OutputPinToInputPinMapping[xiiAnimGraphPin::ModelPose][m_iPinIndex];
+  const auto& map = ref_graph.m_OutputPinToInputPinMapping[xiiAnimGraphPin::ModelPose][m_iPinIndex];
 
   // set all input pins that are connected to this output pin
   for (xiiUInt16 idx : map)
   {
-    graph.m_ModelPoseInputPinStates[idx] = pPose->m_uiOwnIndex;
+    ref_graph.m_ModelPoseInputPinStates[idx] = pPose->m_uiOwnIndex;
   }
 }
 

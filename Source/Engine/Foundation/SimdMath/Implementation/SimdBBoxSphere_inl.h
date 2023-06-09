@@ -1,6 +1,6 @@
 #pragma once
 
-XII_ALWAYS_INLINE xiiSimdBBoxSphere::xiiSimdBBoxSphere() {}
+XII_ALWAYS_INLINE xiiSimdBBoxSphere::xiiSimdBBoxSphere() = default;
 
 XII_ALWAYS_INLINE xiiSimdBBoxSphere::xiiSimdBBoxSphere(const xiiSimdVec4f& vCenter, const xiiSimdVec4f& vBoxHalfExtents, const xiiSimdFloat& fSphereRadius)
 {
@@ -96,21 +96,21 @@ XII_ALWAYS_INLINE void xiiSimdBBoxSphere::Transform(const xiiSimdTransform& t)
   Transform(t.GetAsMat4());
 }
 
-XII_ALWAYS_INLINE void xiiSimdBBoxSphere::Transform(const xiiSimdMat4f& mat)
+XII_ALWAYS_INLINE void xiiSimdBBoxSphere::Transform(const xiiSimdMat4f& mMat)
 {
   xiiSimdFloat radius = m_CenterAndRadius.w();
-  m_CenterAndRadius   = mat.TransformPosition(m_CenterAndRadius);
+  m_CenterAndRadius   = mMat.TransformPosition(m_CenterAndRadius);
 
-  xiiSimdFloat maxRadius = mat.m_col0.Dot<3>(mat.m_col0);
-  maxRadius              = maxRadius.Max(mat.m_col1.Dot<3>(mat.m_col1));
-  maxRadius              = maxRadius.Max(mat.m_col2.Dot<3>(mat.m_col2));
+  xiiSimdFloat maxRadius = mMat.m_col0.Dot<3>(mMat.m_col0);
+  maxRadius              = maxRadius.Max(mMat.m_col1.Dot<3>(mMat.m_col1));
+  maxRadius              = maxRadius.Max(mMat.m_col2.Dot<3>(mMat.m_col2));
   radius *= maxRadius.GetSqrt();
 
   m_CenterAndRadius.SetW(radius);
 
-  xiiSimdVec4f newHalfExtents = mat.m_col0.Abs() * m_BoxHalfExtents.x();
-  newHalfExtents += mat.m_col1.Abs() * m_BoxHalfExtents.y();
-  newHalfExtents += mat.m_col2.Abs() * m_BoxHalfExtents.z();
+  xiiSimdVec4f newHalfExtents = mMat.m_col0.Abs() * m_BoxHalfExtents.x();
+  newHalfExtents += mMat.m_col1.Abs() * m_BoxHalfExtents.y();
+  newHalfExtents += mMat.m_col2.Abs() * m_BoxHalfExtents.z();
 
   m_BoxHalfExtents = newHalfExtents.CompMin(xiiSimdVec4f(radius));
 }

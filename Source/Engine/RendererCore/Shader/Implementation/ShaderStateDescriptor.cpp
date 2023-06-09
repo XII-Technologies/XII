@@ -16,95 +16,95 @@ struct xiiShaderStateVersion
   };
 };
 
-void xiiShaderStateResourceDescriptor::Save(xiiStreamWriter& stream) const
+void xiiShaderStateResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
-  stream << (xiiUInt32)xiiShaderStateVersion::Current;
+  ref_stream << (xiiUInt32)xiiShaderStateVersion::Current;
 
   // Blend State
   {
-    stream << m_BlendDesc.m_bAlphaToCoverage;
-    stream << m_BlendDesc.m_bIndependentBlend;
+    ref_stream << m_BlendDesc.m_bAlphaToCoverage;
+    ref_stream << m_BlendDesc.m_bIndependentBlend;
 
     const xiiUInt8 iBlends = m_BlendDesc.m_bIndependentBlend ? XII_GAL_MAX_RENDERTARGET_COUNT : 1;
-    stream << iBlends; // in case XII_GAL_MAX_RENDERTARGET_COUNT ever changes
+    ref_stream << iBlends; // in case XII_GAL_MAX_RENDERTARGET_COUNT ever changes
 
     for (xiiUInt32 b = 0; b < iBlends; ++b)
     {
-      stream << m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_bBlendingEnabled;
-      stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_BlendOp;
-      stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_BlendOpAlpha;
-      stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_DestBlend;
-      stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_DestBlendAlpha;
-      stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlend;
-      stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlendAlpha;
-      stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_ColorWriteMask;
+      ref_stream << m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_bBlendingEnabled;
+      ref_stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_BlendOp;
+      ref_stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_BlendOpAlpha;
+      ref_stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_DestBlend;
+      ref_stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_DestBlendAlpha;
+      ref_stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlend;
+      ref_stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlendAlpha;
+      ref_stream << (xiiUInt8)m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_ColorWriteMask;
     }
   }
 
   // Depth Stencil State
   {
-    stream << (xiiUInt8)m_DepthStencilDesc.m_DepthTestFunc;
-    stream << m_DepthStencilDesc.m_bDepthTest;
-    stream << m_DepthStencilDesc.m_bDepthWrite;
-    stream << m_DepthStencilDesc.m_bSeparateFrontAndBack;
-    stream << m_DepthStencilDesc.m_bStencilTest;
-    stream << m_DepthStencilDesc.m_uiStencilReadMask;
-    stream << m_DepthStencilDesc.m_uiStencilWriteMask;
-    stream << (xiiUInt8)m_DepthStencilDesc.m_FrontFaceStencilOp.m_DepthFailOp;
-    stream << (xiiUInt8)m_DepthStencilDesc.m_FrontFaceStencilOp.m_FailOp;
-    stream << (xiiUInt8)m_DepthStencilDesc.m_FrontFaceStencilOp.m_PassOp;
-    stream << (xiiUInt8)m_DepthStencilDesc.m_FrontFaceStencilOp.m_StencilFunc;
-    stream << (xiiUInt8)m_DepthStencilDesc.m_BackFaceStencilOp.m_DepthFailOp;
-    stream << (xiiUInt8)m_DepthStencilDesc.m_BackFaceStencilOp.m_FailOp;
-    stream << (xiiUInt8)m_DepthStencilDesc.m_BackFaceStencilOp.m_PassOp;
-    stream << (xiiUInt8)m_DepthStencilDesc.m_BackFaceStencilOp.m_StencilFunc;
+    ref_stream << (xiiUInt8)m_DepthStencilDesc.m_DepthTestFunc;
+    ref_stream << m_DepthStencilDesc.m_bDepthTest;
+    ref_stream << m_DepthStencilDesc.m_bDepthWrite;
+    ref_stream << m_DepthStencilDesc.m_bSeparateFrontAndBack;
+    ref_stream << m_DepthStencilDesc.m_bStencilTest;
+    ref_stream << m_DepthStencilDesc.m_uiStencilReadMask;
+    ref_stream << m_DepthStencilDesc.m_uiStencilWriteMask;
+    ref_stream << (xiiUInt8)m_DepthStencilDesc.m_FrontFaceStencilOp.m_DepthFailOp;
+    ref_stream << (xiiUInt8)m_DepthStencilDesc.m_FrontFaceStencilOp.m_FailOp;
+    ref_stream << (xiiUInt8)m_DepthStencilDesc.m_FrontFaceStencilOp.m_PassOp;
+    ref_stream << (xiiUInt8)m_DepthStencilDesc.m_FrontFaceStencilOp.m_StencilFunc;
+    ref_stream << (xiiUInt8)m_DepthStencilDesc.m_BackFaceStencilOp.m_DepthFailOp;
+    ref_stream << (xiiUInt8)m_DepthStencilDesc.m_BackFaceStencilOp.m_FailOp;
+    ref_stream << (xiiUInt8)m_DepthStencilDesc.m_BackFaceStencilOp.m_PassOp;
+    ref_stream << (xiiUInt8)m_DepthStencilDesc.m_BackFaceStencilOp.m_StencilFunc;
   }
 
   // Rasterizer State
   {
-    stream << m_RasterizerDesc.m_bFrontCounterClockwise;
-    stream << m_RasterizerDesc.m_bScissorTest;
-    stream << m_RasterizerDesc.m_bWireFrame;
-    stream << (xiiUInt8)m_RasterizerDesc.m_CullMode;
-    stream << m_RasterizerDesc.m_fDepthBiasClamp;
-    stream << m_RasterizerDesc.m_fSlopeScaledDepthBias;
-    stream << m_RasterizerDesc.m_iDepthBias;
-    stream << m_RasterizerDesc.m_bConservativeRasterization;
+    ref_stream << m_RasterizerDesc.m_bFrontCounterClockwise;
+    ref_stream << m_RasterizerDesc.m_bScissorTest;
+    ref_stream << m_RasterizerDesc.m_bWireFrame;
+    ref_stream << (xiiUInt8)m_RasterizerDesc.m_CullMode;
+    ref_stream << m_RasterizerDesc.m_fDepthBiasClamp;
+    ref_stream << m_RasterizerDesc.m_fSlopeScaledDepthBias;
+    ref_stream << m_RasterizerDesc.m_iDepthBias;
+    ref_stream << m_RasterizerDesc.m_bConservativeRasterization;
   }
 }
 
-void xiiShaderStateResourceDescriptor::Load(xiiStreamReader& stream)
+void xiiShaderStateResourceDescriptor::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt32 uiVersion = 0;
-  stream >> uiVersion;
+  ref_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion >= xiiShaderStateVersion::Version1 && uiVersion <= xiiShaderStateVersion::Current, "Invalid version {0}", uiVersion);
 
   // Blend State
   {
-    stream >> m_BlendDesc.m_bAlphaToCoverage;
-    stream >> m_BlendDesc.m_bIndependentBlend;
+    ref_stream >> m_BlendDesc.m_bAlphaToCoverage;
+    ref_stream >> m_BlendDesc.m_bIndependentBlend;
 
     xiiUInt8 iBlends = 0;
-    stream >> iBlends; // in case XII_GAL_MAX_RENDERTARGET_COUNT ever changes
+    ref_stream >> iBlends; // in case XII_GAL_MAX_RENDERTARGET_COUNT ever changes
 
     for (xiiUInt32 b = 0; b < iBlends; ++b)
     {
       xiiUInt8 uiTemp;
-      stream >> m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_bBlendingEnabled;
-      stream >> uiTemp;
+      ref_stream >> m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_bBlendingEnabled;
+      ref_stream >> uiTemp;
       m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_BlendOp = (xiiGALBlendOperation::Enum)uiTemp;
-      stream >> uiTemp;
+      ref_stream >> uiTemp;
       m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_BlendOpAlpha = (xiiGALBlendOperation::Enum)uiTemp;
-      stream >> uiTemp;
+      ref_stream >> uiTemp;
       m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_DestBlend = (xiiGALBlendFactor::Enum)uiTemp;
-      stream >> uiTemp;
+      ref_stream >> uiTemp;
       m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_DestBlendAlpha = (xiiGALBlendFactor::Enum)uiTemp;
-      stream >> uiTemp;
+      ref_stream >> uiTemp;
       m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlend = (xiiGALBlendFactor::Enum)uiTemp;
-      stream >> uiTemp;
+      ref_stream >> uiTemp;
       m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_SourceBlendAlpha = (xiiGALBlendFactor::Enum)uiTemp;
-      stream >> uiTemp;
+      ref_stream >> uiTemp;
       m_BlendDesc.m_RenderTargetBlendDescriptions[b].m_ColorWriteMask = (xiiGALColorWriteMask::Enum)uiTemp;
     }
   }
@@ -112,29 +112,29 @@ void xiiShaderStateResourceDescriptor::Load(xiiStreamReader& stream)
   // Depth Stencil State
   {
     xiiUInt8 uiTemp = 0;
-    stream >> uiTemp;
+    ref_stream >> uiTemp;
     m_DepthStencilDesc.m_DepthTestFunc = (xiiGALCompareFunc::Enum)uiTemp;
-    stream >> m_DepthStencilDesc.m_bDepthTest;
-    stream >> m_DepthStencilDesc.m_bDepthWrite;
-    stream >> m_DepthStencilDesc.m_bSeparateFrontAndBack;
-    stream >> m_DepthStencilDesc.m_bStencilTest;
-    stream >> m_DepthStencilDesc.m_uiStencilReadMask;
-    stream >> m_DepthStencilDesc.m_uiStencilWriteMask;
-    stream >> uiTemp;
+    ref_stream >> m_DepthStencilDesc.m_bDepthTest;
+    ref_stream >> m_DepthStencilDesc.m_bDepthWrite;
+    ref_stream >> m_DepthStencilDesc.m_bSeparateFrontAndBack;
+    ref_stream >> m_DepthStencilDesc.m_bStencilTest;
+    ref_stream >> m_DepthStencilDesc.m_uiStencilReadMask;
+    ref_stream >> m_DepthStencilDesc.m_uiStencilWriteMask;
+    ref_stream >> uiTemp;
     m_DepthStencilDesc.m_FrontFaceStencilOp.m_DepthFailOp = (xiiGALStencilOperation::Enum)uiTemp;
-    stream >> uiTemp;
+    ref_stream >> uiTemp;
     m_DepthStencilDesc.m_FrontFaceStencilOp.m_FailOp = (xiiGALStencilOperation::Enum)uiTemp;
-    stream >> uiTemp;
+    ref_stream >> uiTemp;
     m_DepthStencilDesc.m_FrontFaceStencilOp.m_PassOp = (xiiGALStencilOperation::Enum)uiTemp;
-    stream >> uiTemp;
+    ref_stream >> uiTemp;
     m_DepthStencilDesc.m_FrontFaceStencilOp.m_StencilFunc = (xiiGALCompareFunc::Enum)uiTemp;
-    stream >> uiTemp;
+    ref_stream >> uiTemp;
     m_DepthStencilDesc.m_BackFaceStencilOp.m_DepthFailOp = (xiiGALStencilOperation::Enum)uiTemp;
-    stream >> uiTemp;
+    ref_stream >> uiTemp;
     m_DepthStencilDesc.m_BackFaceStencilOp.m_FailOp = (xiiGALStencilOperation::Enum)uiTemp;
-    stream >> uiTemp;
+    ref_stream >> uiTemp;
     m_DepthStencilDesc.m_BackFaceStencilOp.m_PassOp = (xiiGALStencilOperation::Enum)uiTemp;
-    stream >> uiTemp;
+    ref_stream >> uiTemp;
     m_DepthStencilDesc.m_BackFaceStencilOp.m_StencilFunc = (xiiGALCompareFunc::Enum)uiTemp;
   }
 
@@ -145,29 +145,29 @@ void xiiShaderStateResourceDescriptor::Load(xiiStreamReader& stream)
     if (uiVersion < xiiShaderStateVersion::Version2)
     {
       bool dummy;
-      stream >> dummy;
+      ref_stream >> dummy;
     }
 
-    stream >> m_RasterizerDesc.m_bFrontCounterClockwise;
+    ref_stream >> m_RasterizerDesc.m_bFrontCounterClockwise;
 
     if (uiVersion < xiiShaderStateVersion::Version2)
     {
       bool dummy;
-      stream >> dummy;
-      stream >> dummy;
+      ref_stream >> dummy;
+      ref_stream >> dummy;
     }
 
-    stream >> m_RasterizerDesc.m_bScissorTest;
-    stream >> m_RasterizerDesc.m_bWireFrame;
-    stream >> uiTemp;
+    ref_stream >> m_RasterizerDesc.m_bScissorTest;
+    ref_stream >> m_RasterizerDesc.m_bWireFrame;
+    ref_stream >> uiTemp;
     m_RasterizerDesc.m_CullMode = (xiiGALCullMode::Enum)uiTemp;
-    stream >> m_RasterizerDesc.m_fDepthBiasClamp;
-    stream >> m_RasterizerDesc.m_fSlopeScaledDepthBias;
-    stream >> m_RasterizerDesc.m_iDepthBias;
+    ref_stream >> m_RasterizerDesc.m_fDepthBiasClamp;
+    ref_stream >> m_RasterizerDesc.m_fSlopeScaledDepthBias;
+    ref_stream >> m_RasterizerDesc.m_iDepthBias;
 
     if (uiVersion >= xiiShaderStateVersion::Version3)
     {
-      stream >> m_RasterizerDesc.m_bConservativeRasterization;
+      ref_stream >> m_RasterizerDesc.m_bConservativeRasterization;
     }
   }
 }
@@ -177,17 +177,17 @@ xiiUInt32 xiiShaderStateResourceDescriptor::CalculateHash() const
   return m_BlendDesc.CalculateHash() + m_RasterizerDesc.CalculateHash() + m_DepthStencilDesc.CalculateHash();
 }
 
-static const char* InsertNumber(const char* szString, xiiUInt32 uiNumber, xiiStringBuilder& sTemp)
+static const char* InsertNumber(const char* szString, xiiUInt32 uiNumber, xiiStringBuilder& ref_sTemp)
 {
-  sTemp.Format(szString, uiNumber);
-  return sTemp.GetData();
+  ref_sTemp.Format(szString, uiNumber);
+  return ref_sTemp.GetData();
 }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
 static xiiSet<xiiString> s_AllAllowedVariables;
 #endif
 
-static bool GetBoolStateVariable(const xiiMap<xiiString, xiiString>& variables, const char* szVariable, bool defValue)
+static bool GetBoolStateVariable(const xiiMap<xiiString, xiiString>& variables, const char* szVariable, bool bDefValue)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   s_AllAllowedVariables.Insert(szVariable);
@@ -196,7 +196,7 @@ static bool GetBoolStateVariable(const xiiMap<xiiString, xiiString>& variables, 
   auto it = variables.Find(szVariable);
 
   if (!it.IsValid())
-    return defValue;
+    return bDefValue;
 
   if (it.Value() == "true")
     return true;
@@ -204,14 +204,14 @@ static bool GetBoolStateVariable(const xiiMap<xiiString, xiiString>& variables, 
     return false;
 
   xiiLog::Error("Shader state variable '{0}' is set to invalid value '{1}'. Should be 'true' or 'false'", szVariable, it.Value());
-  return defValue;
+  return bDefValue;
 }
 
 static xiiInt32 GetEnumStateVariable(
   const xiiMap<xiiString, xiiString>& variables,
   const xiiMap<xiiString, xiiInt32>&  values,
   const char*                         szVariable,
-  xiiInt32                            defValue)
+  xiiInt32                            iDefValue)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   s_AllAllowedVariables.Insert(szVariable);
@@ -220,7 +220,7 @@ static xiiInt32 GetEnumStateVariable(
   auto it = variables.Find(szVariable);
 
   if (!it.IsValid())
-    return defValue;
+    return iDefValue;
 
   auto itVal = values.Find(it.Value());
   if (!itVal.IsValid())
@@ -232,13 +232,13 @@ static xiiInt32 GetEnumStateVariable(
     }
 
     xiiLog::Error("Shader state variable '{0}' is set to invalid value '{1}'. Valid values are:{2}", szVariable, it.Value(), valid);
-    return defValue;
+    return iDefValue;
   }
 
   return itVal.Value();
 }
 
-static float GetFloatStateVariable(const xiiMap<xiiString, xiiString>& variables, const char* szVariable, float defValue)
+static float GetFloatStateVariable(const xiiMap<xiiString, xiiString>& variables, const char* szVariable, float fDefValue)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   s_AllAllowedVariables.Insert(szVariable);
@@ -247,19 +247,19 @@ static float GetFloatStateVariable(const xiiMap<xiiString, xiiString>& variables
   auto it = variables.Find(szVariable);
 
   if (!it.IsValid())
-    return defValue;
+    return fDefValue;
 
   double result = 0;
   if (xiiConversionUtils::StringToFloat(it.Value(), result).Failed())
   {
     xiiLog::Error("Shader state variable '{0}' is not a valid float value: '{1}'.", szVariable, it.Value());
-    return defValue;
+    return fDefValue;
   }
 
   return (float)result;
 }
 
-static xiiInt32 GetIntStateVariable(const xiiMap<xiiString, xiiString>& variables, const char* szVariable, xiiInt32 defValue)
+static xiiInt32 GetIntStateVariable(const xiiMap<xiiString, xiiString>& variables, const char* szVariable, xiiInt32 iDefValue)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   s_AllAllowedVariables.Insert(szVariable);
@@ -268,13 +268,13 @@ static xiiInt32 GetIntStateVariable(const xiiMap<xiiString, xiiString>& variable
   auto it = variables.Find(szVariable);
 
   if (!it.IsValid())
-    return defValue;
+    return iDefValue;
 
   xiiInt32 result = 0;
   if (xiiConversionUtils::StringToInt(it.Value(), result).Failed())
   {
     xiiLog::Error("Shader state variable '{0}' is not a valid int value: '{1}'.", szVariable, it.Value());
-    return defValue;
+    return iDefValue;
   }
 
   return result;

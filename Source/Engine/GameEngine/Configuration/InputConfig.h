@@ -17,12 +17,12 @@ public:
   xiiGameAppInputConfig();
 
   void Apply() const;
-  void WriteToDDL(xiiOpenDdlWriter& writer) const;
+  void WriteToDDL(xiiOpenDdlWriter& ref_writer) const;
   void ReadFromDDL(const xiiOpenDdlReaderElement* pAction);
 
   static void ApplyAll(const xiiArrayPtr<xiiGameAppInputConfig>& actions);
-  static void WriteToDDL(xiiStreamWriter& stream, const xiiArrayPtr<xiiGameAppInputConfig>& actions);
-  static void ReadFromDDL(xiiStreamReader& stream, xiiHybridArray<xiiGameAppInputConfig, 32>& out_actions);
+  static void WriteToDDL(xiiStreamWriter& ref_stream, const xiiArrayPtr<xiiGameAppInputConfig>& actions);
+  static void ReadFromDDL(xiiStreamReader& ref_stream, xiiHybridArray<xiiGameAppInputConfig, 32>& out_actions);
 
   xiiString m_sInputSet;
   xiiString m_sInputAction;

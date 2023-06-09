@@ -6,8 +6,8 @@ static const xiiTypeVersion s_uiStringDeduplicationVersion = 1;
 
 XII_IMPLEMENT_SERIALIZATION_CONTEXT(xiiStringDeduplicationWriteContext)
 
-xiiStringDeduplicationWriteContext::xiiStringDeduplicationWriteContext(xiiStreamWriter& OriginalStream) :
-  xiiSerializationContext(), m_OriginalStream(OriginalStream)
+xiiStringDeduplicationWriteContext::xiiStringDeduplicationWriteContext(xiiStreamWriter& ref_originalStream) :
+  xiiSerializationContext(), m_OriginalStream(ref_originalStream)
 {
 }
 
@@ -54,17 +54,17 @@ xiiResult xiiStringDeduplicationWriteContext::End()
   return XII_SUCCESS;
 }
 
-void xiiStringDeduplicationWriteContext::SerializeString(const xiiStringView& String, xiiStreamWriter& Writer)
+void xiiStringDeduplicationWriteContext::SerializeString(const xiiStringView& sString, xiiStreamWriter& ref_writer)
 {
   bool bAlreadDeduplicated = false;
-  auto it                  = m_DeduplicatedStrings.FindOrAdd(String, &bAlreadDeduplicated);
+  auto it                  = m_DeduplicatedStrings.FindOrAdd(sString, &bAlreadDeduplicated);
 
   if (!bAlreadDeduplicated)
   {
     it.Value() = m_DeduplicatedStrings.GetCount() - 1;
   }
 
-  Writer << it.Value();
+  ref_writer << it.Value();
 }
 
 xiiUInt32 xiiStringDeduplicationWriteContext::GetUniqueStringCount() const
@@ -75,22 +75,22 @@ xiiUInt32 xiiStringDeduplicationWriteContext::GetUniqueStringCount() const
 
 XII_IMPLEMENT_SERIALIZATION_CONTEXT(xiiStringDeduplicationReadContext)
 
-xiiStringDeduplicationReadContext::xiiStringDeduplicationReadContext(xiiStreamReader& Stream) :
+xiiStringDeduplicationReadContext::xiiStringDeduplicationReadContext(xiiStreamReader& ref_stream) :
   xiiSerializationContext()
 {
   // We set the context manually to nullptr to get the original string table
   SetContext(nullptr);
 
   // Read the string table first
-  /*auto version =*/Stream.ReadVersion(s_uiStringDeduplicationVersion);
+  /*auto version =*/ref_stream.ReadVersion(s_uiStringDeduplicationVersion);
 
   xiiUInt64 uiNumEntries = 0;
-  Stream >> uiNumEntries;
+  ref_stream >> uiNumEntries;
 
   for (xiiUInt64 i = 0; i < uiNumEntries; ++i)
   {
     xiiStringBuilder Builder;
-    Stream >> Builder;
+    ref_stream >> Builder;
 
     m_DeduplicatedStrings.ExpandAndGetRef() = std::move(Builder);
   }
@@ -100,10 +100,10 @@ xiiStringDeduplicationReadContext::xiiStringDeduplicationReadContext(xiiStreamRe
 
 xiiStringDeduplicationReadContext::~xiiStringDeduplicationReadContext() = default;
 
-xiiStringView xiiStringDeduplicationReadContext::DeserializeString(xiiStreamReader& Reader)
+xiiStringView xiiStringDeduplicationReadContext::DeserializeString(xiiStreamReader& ref_reader)
 {
   xiiUInt32 uiIndex;
-  Reader >> uiIndex;
+  ref_reader >> uiIndex;
 
   return m_DeduplicatedStrings[uiIndex].GetView();
 }

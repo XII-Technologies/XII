@@ -36,23 +36,23 @@ public:
   xiiResult InitializeFromPath(const xiiRTTI& rootObjectRtti, const xiiArrayPtr<const xiiPropertyPathStep> path);
 
   ///\brief Applies the entire path and allows writing to the target object.
-  xiiResult WriteToLeafObject(void* pRootObject, const xiiRTTI& pType, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const;
+  xiiResult WriteToLeafObject(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const;
   ///\brief Applies the entire path and allows reading from the target object.
-  xiiResult ReadFromLeafObject(void* pRootObject, const xiiRTTI& pType, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const;
+  xiiResult ReadFromLeafObject(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const;
 
   ///\brief Applies the path up to the last step and allows a functor to write to the final property.
   xiiResult WriteProperty(
     void*                                                                                                               pRootObject,
-    const xiiRTTI&                                                                                                      pType,
+    const xiiRTTI&                                                                                                      type,
     xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, xiiAbstractProperty* pProp, const xiiVariant& index)> func) const;
   ///\brief Applies the path up to the last step and allows a functor to read from the final property.
   xiiResult ReadProperty(
     void*                                                                                                                     pRootObject,
-    const xiiRTTI&                                                                                                            pType,
+    const xiiRTTI&                                                                                                            type,
     xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, const xiiAbstractProperty* pProp, const xiiVariant& index)> func) const;
 
   ///\brief Convenience function that writes 'value' to the 'pRootObject' at the current path.
-  void SetValue(void* pRootObject, const xiiRTTI& pType, const xiiVariant& value) const;
+  void SetValue(void* pRootObject, const xiiRTTI& type, const xiiVariant& value) const;
   ///\brief Convenience function that writes 'value' to the 'pRootObject' at the current path.
   template <typename T>
   XII_ALWAYS_INLINE void SetValue(T* pRootObject, const xiiVariant& value) const
@@ -61,7 +61,7 @@ public:
   }
 
   ///\brief Convenience function that reads the value from 'pRootObject' at the current path and stores it in 'out_value'.
-  void GetValue(void* pRootObject, const xiiRTTI& pType, xiiVariant& out_value) const;
+  void GetValue(void* pRootObject, const xiiRTTI& type, xiiVariant& out_value) const;
   ///\brief Convenience function that reads the value from 'pRootObject' at the current path and stores it in 'out_value'.
   template <typename T>
   XII_ALWAYS_INLINE void GetValue(T* pRootObject, xiiVariant& out_value) const

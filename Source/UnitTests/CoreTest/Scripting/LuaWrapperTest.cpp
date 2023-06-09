@@ -90,18 +90,18 @@ public:
 
 xiiInt32 ScriptLogIgnore::g_iErrors = 0;
 
-int MyFunc1(lua_State* state)
+int MyFunc1(lua_State* pState)
 {
-  xiiLuaWrapper s(state);
+  xiiLuaWrapper s(pState);
 
   XII_TEST_INT(s.GetNumberOfFunctionParameters(), 0);
 
   return s.ReturnToScript();
 }
 
-int MyFunc2(lua_State* state)
+int MyFunc2(lua_State* pState)
 {
-  xiiLuaWrapper s(state);
+  xiiLuaWrapper s(pState);
 
   XII_TEST_INT(s.GetNumberOfFunctionParameters(), 7);
   XII_TEST_BOOL(s.IsParameterBool(0));
@@ -122,9 +122,9 @@ int MyFunc2(lua_State* state)
   return s.ReturnToScript();
 }
 
-int MyFunc3(lua_State* state)
+int MyFunc3(lua_State* pState)
 {
-  xiiLuaWrapper s(state);
+  xiiLuaWrapper s(pState);
 
   XII_TEST_INT(s.GetNumberOfFunctionParameters(), 0);
 
@@ -139,9 +139,9 @@ int MyFunc3(lua_State* state)
   return s.ReturnToScript();
 }
 
-int MyFunc4(lua_State* state)
+int MyFunc4(lua_State* pState)
 {
-  xiiLuaWrapper s(state);
+  xiiLuaWrapper s(pState);
 
   XII_TEST_INT(s.GetNumberOfFunctionParameters(), 1);
 

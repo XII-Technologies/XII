@@ -23,7 +23,7 @@ class XII_GUIFOUNDATION_DLL xiiQtImageWidget : public QWidget, public Ui_ImageWi
   Q_OBJECT
 
 public:
-  xiiQtImageWidget(QWidget* parent, bool bShowButtons = true);
+  xiiQtImageWidget(QWidget* pParent, bool bShowButtons = true);
   ~xiiQtImageWidget();
 
   void SetImage(QPixmap pixmap);

@@ -12,8 +12,8 @@ namespace xiiWidgetUtils
   XII_GUIFOUNDATION_DLL QScreen& GetClosestScreen(const QPoint& point);
 
   XII_GUIFOUNDATION_DLL void AdjustGridDensity(
-    double&   fFinestDensity,
-    double&   fRoughDensity,
+    double&   ref_fFinestDensity,
+    double&   ref_fRoughDensity,
     xiiUInt32 uiWindowWidth,
     double    fViewportSceneWidth,
     xiiUInt32 uiMinPixelsForStep);

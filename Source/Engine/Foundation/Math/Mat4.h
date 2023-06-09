@@ -23,8 +23,8 @@ public:
   /// \brief The matrix as a 16-element Type array (column-major)
   Type m_fElementsCM[16];
 
-  XII_ALWAYS_INLINE Type& Element(xiiInt32 column, xiiInt32 row) { return m_fElementsCM[column * 4 + row]; }
-  XII_ALWAYS_INLINE Type  Element(xiiInt32 column, xiiInt32 row) const { return m_fElementsCM[column * 4 + row]; }
+  XII_ALWAYS_INLINE Type& Element(xiiInt32 iColumn, xiiInt32 iRow) { return m_fElementsCM[iColumn * 4 + iRow]; }
+  XII_ALWAYS_INLINE Type  Element(xiiInt32 iColumn, xiiInt32 iRow) const { return m_fElementsCM[iColumn * 4 + iRow]; }
 
   // *** Constructors ***
 public:
@@ -44,7 +44,7 @@ public:
   xiiMat4Template(Type c1r1, Type c2r1, Type c3r1, Type c4r1, Type c1r2, Type c2r2, Type c3r2, Type c4r2, Type c1r3, Type c2r3, Type c3r3, Type c4r3, Type c1r4, Type c2r4, Type c3r4, Type c4r4); // [tested]
 
   /// \brief Creates a transformation matrix from a rotation and a translation.
-  xiiMat4Template(const xiiMat3Template<Type>& Rotation, const xiiVec3Template<Type>& vTranslation); // [tested]
+  xiiMat4Template(const xiiMat3Template<Type>& mRotation, const xiiVec3Template<Type>& vTranslation); // [tested]
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
@@ -71,7 +71,7 @@ public:
   void SetElements(Type c1r1, Type c2r1, Type c3r1, Type c4r1, Type c1r2, Type c2r2, Type c3r2, Type c4r2, Type c1r3, Type c2r3, Type c3r3, Type c4r3, Type c1r4, Type c2r4, Type c3r4, Type c4r4); // [tested]
 
   /// \brief Sets a transformation matrix from a rotation and a translation.
-  void SetTransformationMatrix(const xiiMat3Template<Type>& Rotation, const xiiVec3Template<Type>& vTranslation); // [tested]
+  void SetTransformationMatrix(const xiiMat3Template<Type>& mRotation, const xiiVec3Template<Type>& vTranslation); // [tested]
 
   // *** Special matrix constructors ***
 public:
@@ -139,19 +139,19 @@ public:
   xiiVec4Template<Type> GetRow(xiiUInt32 uiRow) const; // [tested]
 
   /// \brief Sets all 4 components of the i-th row.
-  void SetRow(xiiUInt32 uiRow, const xiiVec4Template<Type>& row); // [tested]
+  void SetRow(xiiUInt32 uiRow, const xiiVec4Template<Type>& vRow); // [tested]
 
   /// \brief Returns all 4 components of the i-th column.
   xiiVec4Template<Type> GetColumn(xiiUInt32 uiColumn) const; // [tested]
 
   /// \brief Sets all 4 components of the i-th column.
-  void SetColumn(xiiUInt32 uiColumn, const xiiVec4Template<Type>& column); // [tested]
+  void SetColumn(xiiUInt32 uiColumn, const xiiVec4Template<Type>& vColumn); // [tested]
 
   /// \brief Returns all 4 components on the diagonal of the matrix.
   xiiVec4Template<Type> GetDiagonal() const; // [tested]
 
   /// \brief Sets all 4 components on the diagonal of the matrix.
-  void SetDiagonal(const xiiVec4Template<Type>& diag); // [tested]
+  void SetDiagonal(const xiiVec4Template<Type>& vDiag); // [tested]
 
   /// \brief Returns the first 3 components of the last column.
   const xiiVec3Template<Type> GetTranslationVector() const; // [tested]
@@ -160,7 +160,7 @@ public:
   void SetTranslationVector(const xiiVec3Template<Type>& v); // [tested]
 
   /// \brief Sets the 3x3 rotational part of the matrix.
-  void SetRotationalPart(const xiiMat3Template<Type>& Rotation); // [tested]
+  void SetRotationalPart(const xiiMat3Template<Type>& mRotation); // [tested]
 
   /// \brief Returns the 3x3 rotational and scaling part of the matrix.
   const xiiMat3Template<Type> GetRotationalPart() const; // [tested]
@@ -178,7 +178,7 @@ public:
   const xiiVec3Template<Type> TransformPosition(const xiiVec3Template<Type>& v) const; // [tested]
 
   /// \brief Matrix-vector multiplication, assuming the 4th component of the vector is one (default behavior).
-  void TransformPosition(xiiVec3Template<Type>* inout_v, xiiUInt32 uiNumVectors, xiiUInt32 uiStride = sizeof(xiiVec3Template<Type>)) const; // [tested]
+  void TransformPosition(xiiVec3Template<Type>* pV, xiiUInt32 uiNumVectors, xiiUInt32 uiStride = sizeof(xiiVec3Template<Type>)) const; // [tested]
 
   /// \brief Matrix-vector multiplication, assuming the 4th component of the vector is zero. So, rotation/scaling only. Useful as an
   /// optimization.
@@ -186,13 +186,13 @@ public:
 
   /// \brief Matrix-vector multiplication, assuming the 4th component of the vector is zero. So, rotation/scaling only. Useful as an
   /// optimization.
-  void TransformDirection(xiiVec3Template<Type>* inout_v, xiiUInt32 uiNumVectors, xiiUInt32 uiStride = sizeof(xiiVec3Template<Type>)) const; // [tested]
+  void TransformDirection(xiiVec3Template<Type>* pV, xiiUInt32 uiNumVectors, xiiUInt32 uiStride = sizeof(xiiVec3Template<Type>)) const; // [tested]
 
   /// \brief Matrix-vector multiplication.
   const xiiVec4Template<Type> Transform(const xiiVec4Template<Type>& v) const; // [tested]
 
   /// \brief Matrix-vector multiplication.
-  void Transform(xiiVec4Template<Type>* inout_v, xiiUInt32 uiNumVectors, xiiUInt32 uiStride = sizeof(xiiVec4Template<Type>)) const; // [tested]
+  void Transform(xiiVec4Template<Type>* pV, xiiUInt32 uiNumVectors, xiiUInt32 uiStride = sizeof(xiiVec4Template<Type>)) const; // [tested]
 
   /// \brief Component-wise multiplication (commutative)
   void operator*=(Type f); // [tested]

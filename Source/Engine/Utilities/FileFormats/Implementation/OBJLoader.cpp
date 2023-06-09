@@ -25,50 +25,50 @@ void xiiOBJLoader::Clear()
   m_Materials.Clear();
 }
 
-static xiiStringView ReadLine(xiiStringView& szPos)
+static xiiStringView ReadLine(xiiStringView& ref_sPos)
 {
-  while (szPos.GetCharacter() != '\0' && xiiStringUtils::IsWhiteSpace(szPos.GetCharacter()))
-    ++szPos;
+  while (ref_sPos.GetCharacter() != '\0' && xiiStringUtils::IsWhiteSpace(ref_sPos.GetCharacter()))
+    ++ref_sPos;
 
-  const char* szStart = szPos.GetStartPointer();
+  const char* szStart = ref_sPos.GetStartPointer();
 
-  while (szPos.GetCharacter() != '\0' && szPos.GetCharacter() != '\r' && szPos.GetCharacter() != '\n')
-    ++szPos;
+  while (ref_sPos.GetCharacter() != '\0' && ref_sPos.GetCharacter() != '\r' && ref_sPos.GetCharacter() != '\n')
+    ++ref_sPos;
 
-  const char* szEnd = szPos.GetStartPointer();
+  const char* szEnd = ref_sPos.GetStartPointer();
 
-  while (szPos.GetCharacter() != '\0' && xiiStringUtils::IsWhiteSpace(szPos.GetCharacter()))
-    ++szPos;
+  while (ref_sPos.GetCharacter() != '\0' && xiiStringUtils::IsWhiteSpace(ref_sPos.GetCharacter()))
+    ++ref_sPos;
 
   return xiiStringView(szStart, szEnd);
 }
 
-static xiiStringView ReadString(xiiStringView& szPos)
+static xiiStringView ReadString(xiiStringView& ref_sPos)
 {
-  while (szPos.GetCharacter() != '\0' && xiiStringUtils::IsWhiteSpace(szPos.GetCharacter()))
-    ++szPos;
+  while (ref_sPos.GetCharacter() != '\0' && xiiStringUtils::IsWhiteSpace(ref_sPos.GetCharacter()))
+    ++ref_sPos;
 
-  const char* szStart = szPos.GetStartPointer();
+  const char* szStart = ref_sPos.GetStartPointer();
 
-  while (szPos.GetCharacter() != '\0' && !xiiStringUtils::IsWhiteSpace(szPos.GetCharacter()))
-    ++szPos;
+  while (ref_sPos.GetCharacter() != '\0' && !xiiStringUtils::IsWhiteSpace(ref_sPos.GetCharacter()))
+    ++ref_sPos;
 
-  const char* szEnd = szPos.GetStartPointer();
+  const char* szEnd = ref_sPos.GetStartPointer();
 
-  while (szPos.GetCharacter() != '\0' && xiiStringUtils::IsWhiteSpace(szPos.GetCharacter()))
-    ++szPos;
+  while (ref_sPos.GetCharacter() != '\0' && xiiStringUtils::IsWhiteSpace(ref_sPos.GetCharacter()))
+    ++ref_sPos;
 
   return xiiStringView(szStart, szEnd);
 }
 
-static bool SkipSlash(xiiStringView& szPos)
+static bool SkipSlash(xiiStringView& ref_sPos)
 {
-  if (szPos.GetCharacter() != '/')
+  if (ref_sPos.GetCharacter() != '/')
     return false;
 
-  ++szPos;
+  ++ref_sPos;
 
-  return (szPos.GetCharacter() != ' ' && szPos.GetCharacter() != '\t');
+  return (ref_sPos.GetCharacter() != ' ' && ref_sPos.GetCharacter() != '\t');
 }
 
 xiiResult xiiOBJLoader::LoadOBJ(const char* szFile, bool bIgnoreMaterials)

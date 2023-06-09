@@ -25,7 +25,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 xiiDataDirectory::ArchiveType::ArchiveType()  = default;
 xiiDataDirectory::ArchiveType::~ArchiveType() = default;
 
-xiiDataDirectoryType* xiiDataDirectory::ArchiveType::Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage Usage)
+xiiDataDirectoryType* xiiDataDirectory::ArchiveType::Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiFileSystem::DataDirUsage usage)
 {
   ArchiveType* pDataDir = XII_DEFAULT_NEW(ArchiveType);
 

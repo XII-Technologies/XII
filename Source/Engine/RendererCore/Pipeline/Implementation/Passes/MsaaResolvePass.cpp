@@ -21,7 +21,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiMsaaResolvePass::xiiMsaaResolvePass() :
-  xiiRenderPipelinePass("MsaaResolvePass", true), m_bIsDepth(false), m_MsaaSampleCount(xiiGALMSAASampleCount::None)
+  xiiRenderPipelinePass("MsaaResolvePass", true)
 {
   {
     // Load shader.
@@ -30,7 +30,7 @@ xiiMsaaResolvePass::xiiMsaaResolvePass() :
   }
 }
 
-xiiMsaaResolvePass::~xiiMsaaResolvePass() {}
+xiiMsaaResolvePass::~xiiMsaaResolvePass() = default;
 
 bool xiiMsaaResolvePass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {

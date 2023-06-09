@@ -183,7 +183,7 @@ void xiiInputManager::PollHardware()
   GatherDeviceInputSlotValues();
 }
 
-void xiiInputManager::Update(xiiTime tTimeDifference)
+void xiiInputManager::Update(xiiTime timeDifference)
 {
   PollHardware();
 
@@ -191,11 +191,11 @@ void xiiInputManager::Update(xiiTime tTimeDifference)
 
   s_uiLastCharacter = xiiInputDevice::RetrieveLastCharacterFromAllDevices();
 
-  UpdateInputActions(tTimeDifference);
+  UpdateInputActions(timeDifference);
 
   xiiInputDevice::ResetAllDevices();
 
-  xiiInputDevice::UpdateAllHardwareStates(tTimeDifference);
+  xiiInputDevice::UpdateAllHardwareStates(timeDifference);
 
   s_bInputSlotResetRequired = true;
 }
@@ -269,15 +269,15 @@ void xiiInputManager::UpdateInputSlotStates()
   }
 }
 
-void xiiInputManager::RetrieveAllKnownInputSlots(xiiDynamicArray<const char*>& out_InputSlots)
+void xiiInputManager::RetrieveAllKnownInputSlots(xiiDynamicArray<const char*>& out_inputSlots)
 {
-  out_InputSlots.Clear();
-  out_InputSlots.Reserve(GetInternals().s_InputSlots.GetCount());
+  out_inputSlots.Clear();
+  out_inputSlots.Reserve(GetInternals().s_InputSlots.GetCount());
 
   // just copy all slot names into the given array
   for (xiiInputSlotsMap::Iterator it = GetInternals().s_InputSlots.GetIterator(); it.IsValid(); it.Next())
   {
-    out_InputSlots.PushBack(it.Key().GetData());
+    out_inputSlots.PushBack(it.Key().GetData());
   }
 }
 
@@ -296,26 +296,26 @@ void xiiInputManager::InjectInputSlotValue(const char* szInputSlot, float fValue
   GetInternals().s_InjectedInputSlots[szInputSlot] = xiiMath::Max(GetInternals().s_InjectedInputSlots[szInputSlot], fValue);
 }
 
-const char* xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::Enum MustHaveFlags, xiiInputSlotFlags::Enum MustNotHaveFlags)
+const char* xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::Enum mustHaveFlags, xiiInputSlotFlags::Enum mustNotHaveFlags)
 {
   for (xiiInputSlotsMap::Iterator it = GetInternals().s_InputSlots.GetIterator(); it.IsValid(); ++it)
   {
     if (it.Value().m_State != xiiKeyState::Pressed)
       continue;
 
-    if (it.Value().m_SlotFlags.IsAnySet(MustNotHaveFlags))
+    if (it.Value().m_SlotFlags.IsAnySet(mustNotHaveFlags))
       continue;
 
-    if (it.Value().m_SlotFlags.AreAllSet(MustHaveFlags))
+    if (it.Value().m_SlotFlags.AreAllSet(mustHaveFlags))
       return it.Key().GetData();
   }
 
   return xiiInputSlot_None;
 }
 
-const char* xiiInputManager::GetInputSlotTouchPoint(unsigned int index)
+const char* xiiInputManager::GetInputSlotTouchPoint(unsigned int uiIndex)
 {
-  switch (index)
+  switch (uiIndex)
   {
     case 0:
       return xiiInputSlot_TouchPoint0;
@@ -343,9 +343,9 @@ const char* xiiInputManager::GetInputSlotTouchPoint(unsigned int index)
   }
 }
 
-const char* xiiInputManager::GetInputSlotTouchPointPositionX(unsigned int index)
+const char* xiiInputManager::GetInputSlotTouchPointPositionX(unsigned int uiIndex)
 {
-  switch (index)
+  switch (uiIndex)
   {
     case 0:
       return xiiInputSlot_TouchPoint0_PositionX;
@@ -373,9 +373,9 @@ const char* xiiInputManager::GetInputSlotTouchPointPositionX(unsigned int index)
   }
 }
 
-const char* xiiInputManager::GetInputSlotTouchPointPositionY(unsigned int index)
+const char* xiiInputManager::GetInputSlotTouchPointPositionY(unsigned int uiIndex)
 {
-  switch (index)
+  switch (uiIndex)
   {
     case 0:
       return xiiInputSlot_TouchPoint0_PositionY;

@@ -21,18 +21,18 @@ static_assert(sizeof(xiiProcessingStream) == 32);
 
 xiiProcessingStream::xiiProcessingStream() = default;
 
-xiiProcessingStream::xiiProcessingStream(const xiiHashedString& sName, DataType Type, xiiUInt16 uiStride, xiiUInt16 uiAlignment) :
-  m_uiAlignment(uiAlignment), m_uiTypeSize(GetDataTypeSize(Type)), m_uiStride(uiStride), m_Type(Type), m_sName(sName)
+xiiProcessingStream::xiiProcessingStream(const xiiHashedString& sName, DataType type, xiiUInt16 uiStride, xiiUInt16 uiAlignment) :
+  m_uiAlignment(uiAlignment), m_uiTypeSize(GetDataTypeSize(type)), m_uiStride(uiStride), m_Type(type), m_sName(sName)
 {
 }
 
-xiiProcessingStream::xiiProcessingStream(const xiiHashedString& sName, xiiArrayPtr<xiiUInt8> data, DataType Type, xiiUInt16 uiStride) :
-  m_pData(data.GetPtr()), m_uiDataSize(data.GetCount()), m_uiTypeSize(GetDataTypeSize(Type)), m_uiStride(uiStride), m_Type(Type), m_bExternalMemory(true), m_sName(sName)
+xiiProcessingStream::xiiProcessingStream(const xiiHashedString& sName, xiiArrayPtr<xiiUInt8> data, DataType type, xiiUInt16 uiStride) :
+  m_pData(data.GetPtr()), m_uiDataSize(data.GetCount()), m_uiTypeSize(GetDataTypeSize(type)), m_uiStride(uiStride), m_Type(type), m_bExternalMemory(true), m_sName(sName)
 {
 }
 
-xiiProcessingStream::xiiProcessingStream(const xiiHashedString& sName, xiiArrayPtr<xiiUInt8> data, DataType Type) :
-  m_pData(data.GetPtr()), m_uiDataSize(data.GetCount()), m_uiTypeSize(GetDataTypeSize(Type)), m_uiStride(m_uiTypeSize), m_Type(Type), m_bExternalMemory(true), m_sName(sName)
+xiiProcessingStream::xiiProcessingStream(const xiiHashedString& sName, xiiArrayPtr<xiiUInt8> data, DataType type) :
+  m_pData(data.GetPtr()), m_uiDataSize(data.GetCount()), m_uiTypeSize(GetDataTypeSize(type)), m_uiStride(m_uiTypeSize), m_Type(type), m_bExternalMemory(true), m_sName(sName)
 {
 }
 
@@ -120,9 +120,9 @@ static xiiUInt16 s_TypeSize[] = {
 static_assert(XII_ARRAY_SIZE(s_TypeSize) == (size_t)xiiProcessingStream::DataType::Count);
 
 // static
-xiiUInt16 xiiProcessingStream::GetDataTypeSize(DataType Type)
+xiiUInt16 xiiProcessingStream::GetDataTypeSize(DataType type)
 {
-  return s_TypeSize[(xiiUInt32)Type];
+  return s_TypeSize[(xiiUInt32)type];
 }
 
 static xiiStringView s_TypeName[] = {
@@ -159,9 +159,9 @@ static xiiStringView s_TypeName[] = {
 static_assert(XII_ARRAY_SIZE(s_TypeName) == (size_t)xiiProcessingStream::DataType::Count);
 
 // static
-xiiStringView xiiProcessingStream::GetDataTypeName(DataType Type)
+xiiStringView xiiProcessingStream::GetDataTypeName(DataType type)
 {
-  return s_TypeName[(xiiUInt32)Type];
+  return s_TypeName[(xiiUInt32)type];
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_DataProcessing_Stream_Implementation_ProcessingStream);

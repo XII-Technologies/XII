@@ -11,7 +11,7 @@ class XII_GUIFOUNDATION_DLL xiiQGridBarWidget : public QWidget
   Q_OBJECT
 
 public:
-  xiiQGridBarWidget(QWidget* parent);
+  xiiQGridBarWidget(QWidget* pParent);
 
   void SetConfig(const QRectF& viewportSceneRect, double fTextGridStops, double fFineGridStops, xiiDelegate<QPointF(const QPointF&)> mapFromSceneFunc);
 

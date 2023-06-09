@@ -75,9 +75,9 @@ public:
     XII_TEST_INT(m_Results.GetCount(), 0);
   }
 
-  void ParseStream(xiiStreamReader& stream)
+  void ParseStream(xiiStreamReader& ref_stream)
   {
-    SetInputStream(stream);
+    SetInputStream(ref_stream);
     ParseAll();
   }
 

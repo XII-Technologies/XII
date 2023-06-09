@@ -99,71 +99,71 @@ void xiiReflectionPool::Data::RemoveProbe(const xiiWorld* pWorld, xiiReflectionP
   }
 }
 
-void xiiReflectionPool::Data::UpdateProbeData(ProbeData& probeData, const xiiReflectionProbeDesc& desc, const xiiReflectionProbeComponentBase* pComponent)
+void xiiReflectionPool::Data::UpdateProbeData(ProbeData& ref_probeData, const xiiReflectionProbeDesc& desc, const xiiReflectionProbeComponentBase* pComponent)
 {
-  probeData.m_desc            = desc;
-  probeData.m_GlobalTransform = pComponent->GetOwner()->GetGlobalTransform();
+  ref_probeData.m_desc            = desc;
+  ref_probeData.m_GlobalTransform = pComponent->GetOwner()->GetGlobalTransform();
 
   if (const xiiSphereReflectionProbeComponent* pSphere = xiiDynamicCast<const xiiSphereReflectionProbeComponent*>(pComponent))
   {
-    probeData.m_Flags = xiiProbeFlags::Sphere;
+    ref_probeData.m_Flags = xiiProbeFlags::Sphere;
   }
   else if (const xiiBoxReflectionProbeComponent* pBox = xiiDynamicCast<const xiiBoxReflectionProbeComponent*>(pComponent))
   {
-    probeData.m_Flags = xiiProbeFlags::Box;
+    ref_probeData.m_Flags = xiiProbeFlags::Box;
   }
 
-  if (probeData.m_desc.m_Mode == xiiReflectionProbeMode::Dynamic)
+  if (ref_probeData.m_desc.m_Mode == xiiReflectionProbeMode::Dynamic)
   {
-    probeData.m_Flags |= xiiProbeFlags::Dynamic;
+    ref_probeData.m_Flags |= xiiProbeFlags::Dynamic;
   }
   else
   {
     xiiStringBuilder sComponentGuid, sCubeMapFile;
-    xiiConversionUtils::ToString(probeData.m_desc.m_uniqueID, sComponentGuid);
+    xiiConversionUtils::ToString(ref_probeData.m_desc.m_uniqueID, sComponentGuid);
 
     // this is where the editor will put the file for this probe
     sCubeMapFile.Format(":project/AssetCache/Generated/{0}.xiiTexture", sComponentGuid);
 
-    probeData.m_hCubeMap = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sCubeMapFile);
+    ref_probeData.m_hCubeMap = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sCubeMapFile);
   }
 }
 
-bool xiiReflectionPool::Data::UpdateSkyLightData(ProbeData& probeData, const xiiReflectionProbeDesc& desc, const xiiSkyLightComponent* pComponent)
+bool xiiReflectionPool::Data::UpdateSkyLightData(ProbeData& ref_probeData, const xiiReflectionProbeDesc& desc, const xiiSkyLightComponent* pComponent)
 {
   bool bProbeTypeChanged = false;
-  if (probeData.m_desc.m_Mode != desc.m_Mode)
+  if (ref_probeData.m_desc.m_Mode != desc.m_Mode)
   {
     //#TODO any other reason to unmap a probe.
     bProbeTypeChanged = true;
   }
 
-  probeData.m_desc            = desc;
-  probeData.m_GlobalTransform = pComponent->GetOwner()->GetGlobalTransform();
+  ref_probeData.m_desc            = desc;
+  ref_probeData.m_GlobalTransform = pComponent->GetOwner()->GetGlobalTransform();
 
   if (auto pSkyLight = xiiDynamicCast<const xiiSkyLightComponent*>(pComponent))
   {
-    probeData.m_Flags    = xiiProbeFlags::SkyLight;
-    probeData.m_hCubeMap = pSkyLight->GetCubeMap();
-    if (probeData.m_desc.m_Mode == xiiReflectionProbeMode::Dynamic)
+    ref_probeData.m_Flags    = xiiProbeFlags::SkyLight;
+    ref_probeData.m_hCubeMap = pSkyLight->GetCubeMap();
+    if (ref_probeData.m_desc.m_Mode == xiiReflectionProbeMode::Dynamic)
     {
-      probeData.m_Flags |= xiiProbeFlags::Dynamic;
+      ref_probeData.m_Flags |= xiiProbeFlags::Dynamic;
     }
     else
     {
-      if (probeData.m_hCubeMap.IsValid())
+      if (ref_probeData.m_hCubeMap.IsValid())
       {
-        probeData.m_Flags |= xiiProbeFlags::HasCustomCubeMap;
+        ref_probeData.m_Flags |= xiiProbeFlags::HasCustomCubeMap;
       }
       else
       {
         xiiStringBuilder sComponentGuid, sCubeMapFile;
-        xiiConversionUtils::ToString(probeData.m_desc.m_uniqueID, sComponentGuid);
+        xiiConversionUtils::ToString(ref_probeData.m_desc.m_uniqueID, sComponentGuid);
 
         // this is where the editor will put the file for this probe
         sCubeMapFile.Format(":project/AssetCache/Generated/{0}.xiiTexture", sComponentGuid);
 
-        probeData.m_hCubeMap = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sCubeMapFile);
+        ref_probeData.m_hCubeMap = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sCubeMapFile);
       }
     }
   }

@@ -14,11 +14,11 @@ class XII_TOOLSFOUNDATION_DLL xiiReflectedTypeStorageAccessor : public xiiIRefle
   friend class xiiReflectedTypeStorageManager;
 
 public:
-  xiiReflectedTypeStorageAccessor(const xiiRTTI* hReflectedType, xiiDocumentObject* pOwner); // [tested]
+  xiiReflectedTypeStorageAccessor(const xiiRTTI* pReflectedType, xiiDocumentObject* pOwner); // [tested]
   ~xiiReflectedTypeStorageAccessor();
 
-  virtual const xiiVariant GetValue(const char* szProperty, xiiVariant index = xiiVariant(), xiiStatus* res = nullptr) const override; // [tested]
-  virtual bool             SetValue(const char* szProperty, const xiiVariant& value, xiiVariant index = xiiVariant()) override;        // [tested]
+  virtual const xiiVariant GetValue(const char* szProperty, xiiVariant index = xiiVariant(), xiiStatus* pRes = nullptr) const override; // [tested]
+  virtual bool             SetValue(const char* szProperty, const xiiVariant& value, xiiVariant index = xiiVariant()) override;         // [tested]
 
   virtual xiiInt32 GetCount(const char* szProperty) const override;
   virtual bool     GetKeys(const char* szProperty, xiiDynamicArray<xiiVariant>& out_keys) const override;

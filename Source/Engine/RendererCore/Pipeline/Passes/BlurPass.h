@@ -25,7 +25,7 @@ protected:
   xiiRenderPipelineNodeInputPin  m_PinInput;
   xiiRenderPipelineNodeOutputPin m_PinOutput;
 
-  xiiInt32                       m_iRadius;
+  xiiInt32                       m_iRadius = 15;
   xiiConstantBufferStorageHandle m_hBlurCB;
   xiiShaderResourceHandle        m_hShader;
 };

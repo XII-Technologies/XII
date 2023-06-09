@@ -468,10 +468,10 @@ namespace xiiMath
   }
 
   template <typename Type>
-  Type GetEasingValue(xiiEasingFunctions easingFunction, Type input, bool inverse)
+  Type GetEasingValue(xiiEasingFunctions easingFunction, Type input, bool bInverse)
   {
     Type value = xiiMath::GetEasingValue<Type>(easingFunction, input);
 
-    return inverse ? (1.0 - value) : value;
+    return bInverse ? (1.0 - value) : value;
   }
 } // namespace xiiMath

@@ -106,11 +106,11 @@ public:
   /// currently in progress. If continuous frame capture is disabled, CaptureFrame() will capture and persist the next frame.
   /// Note that continuous capture mode comes with a performance cost, but allows the user to decide on-the-fly if the current
   /// frame capture is to be persisted, e.g., when a unit test image comparison fails.
-  void SetContinuousFrameCapture(bool enable);
+  void SetContinuousFrameCapture(bool bEnable);
   bool GetContinousFrameCapture() const;
 
   /// \brief Get the absolute base output path for frame captures.
-  virtual xiiResult GetAbsFrameCaptureOutputPath(xiiStringBuilder& sOutputPath);
+  virtual xiiResult GetAbsFrameCaptureOutputPath(xiiStringBuilder& ref_sOutputPath);
 
 protected:
   void ExecuteFrameCapture(xiiWindowHandle targetWindowHandle, const char* szContext = nullptr);

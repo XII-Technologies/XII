@@ -763,8 +763,8 @@ xiiResult xiiFileserveClient::TryConnectWithFileserver(const char* szAddress, xi
     return XII_FAILURE;
 
   bool bServerFound = false;
-  network->SetMessageHandler('FSRV', [&bServerFound](xiiRemoteMessage& msg) {
-    switch (msg.GetMessageID())
+  network->SetMessageHandler('FSRV', [&bServerFound](xiiRemoteMessage& ref_msg) {
+    switch (ref_msg.GetMessageID())
     {
       case ' YES':
         bServerFound = true;
@@ -809,19 +809,19 @@ xiiResult xiiFileserveClient::WaitForServerInfo(xiiTime timeout /*= xiiTime::Sec
 
   {
     xiiUniquePtr<xiiRemoteInterfaceEnet> network = xiiRemoteInterfaceEnet::Make(); /// \todo Abstract this somehow ?
-    network->SetMessageHandler('FSRV', [&sServerIPs, &uiPort](xiiRemoteMessage& msg) {
-        switch (msg.GetMessageID())
+    network->SetMessageHandler('FSRV', [&sServerIPs, &uiPort](xiiRemoteMessage& ref_msg) {
+        switch (ref_msg.GetMessageID())
         {
           case 'MYIP':
-            msg.GetReader() >> uiPort;
+            ref_msg.GetReader() >> uiPort;
 
             xiiUInt8 uiCount = 0;
-            msg.GetReader() >> uiCount;
+            ref_msg.GetReader() >> uiCount;
 
             sServerIPs.SetCount(uiCount);
             for (xiiUInt32 i = 0; i < uiCount; ++i)
             {
-              msg.GetReader() >> sServerIPs[i];
+              ref_msg.GetReader() >> sServerIPs[i];
             }
 
             break;

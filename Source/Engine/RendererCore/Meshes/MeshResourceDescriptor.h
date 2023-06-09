@@ -38,10 +38,10 @@ public:
 
   void SetMaterial(xiiUInt32 uiMaterialIndex, const char* szPathToMaterial);
 
-  void      Save(xiiStreamWriter& stream);
+  void      Save(xiiStreamWriter& ref_stream);
   xiiResult Save(const char* szFile);
 
-  xiiResult Load(xiiStreamReader& stream);
+  xiiResult Load(xiiStreamReader& ref_stream);
   xiiResult Load(const char* szFile);
 
   const xiiMeshBufferResourceHandle& GetExistingMeshBuffer() const;
@@ -62,13 +62,13 @@ public:
     xiiMat4   m_GlobalInverseBindPoseMatrix;
     xiiUInt16 m_uiBoneIndex = xiiInvalidJointIndex;
 
-    xiiResult Serialize(xiiStreamWriter& stream) const;
-    xiiResult Deserialize(xiiStreamReader& stream);
+    xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+    xiiResult Deserialize(xiiStreamReader& ref_stream);
   };
 
   xiiSkeletonResourceHandle               m_hDefaultSkeleton;
   xiiHashTable<xiiHashedString, BoneData> m_Bones;
-  float                                   m_fMaxBoneVertexOffset = 0.0f; // the maximum distance between any vertex and its influencing bones, can be used for adjusting the bounding box of a pose
+  float                                   m_fMaxBoneVertexOffset = 0.0f; // The maximum distance between any vertex and its influencing bones, can be used for adjusting the bounding box of a pose
 
 private:
   xiiHybridArray<Material, 8>     m_Materials;

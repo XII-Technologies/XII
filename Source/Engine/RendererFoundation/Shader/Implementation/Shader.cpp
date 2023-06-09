@@ -8,7 +8,7 @@ xiiGALShader::xiiGALShader(const xiiGALShaderCreationDescription& Description) :
 {
 }
 
-xiiGALShader::~xiiGALShader() {}
+xiiGALShader::~xiiGALShader() = default;
 
 xiiDelegate<void(xiiShaderUtils::xiiBuiltinShaderType type, xiiShaderUtils::xiiBuiltinShader& out_shader)> xiiShaderUtils::g_RequestBuiltinShaderCallback;
 

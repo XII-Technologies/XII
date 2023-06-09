@@ -11,5 +11,5 @@ class XII_UTILITIES_DLL xiiDGMLGraphCreator
 {
 public:
   /// \brief Adds the world hierarchy (game objects and components) to the given graph object.
-  static void FillGraphFromWorld(xiiWorld* pWorld, xiiDGMLGraph& Graph);
+  static void FillGraphFromWorld(xiiWorld* pWorld, xiiDGMLGraph& ref_graph);
 };

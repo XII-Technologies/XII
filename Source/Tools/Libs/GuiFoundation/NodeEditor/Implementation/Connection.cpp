@@ -5,8 +5,8 @@
 #include <QApplication>
 #include <QPalette>
 
-xiiQtConnection::xiiQtConnection(QGraphicsItem* parent) :
-  QGraphicsPathItem(parent)
+xiiQtConnection::xiiQtConnection(QGraphicsItem* pParent) :
+  QGraphicsPathItem(pParent)
 {
   auto palette = QApplication::palette();
 

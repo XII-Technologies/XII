@@ -19,11 +19,11 @@ class xiiWorld;
 struct xiiVisualScriptInstanceActivity;
 struct xiiEventMessage;
 
-typedef xiiUInt32 xiiVisualScriptNodeConnectionID;
-typedef xiiUInt32 xiiVisualScriptPinConnectionID;
-using xiiVisualScriptResourceHandle = xiiTypedResourceHandle<class xiiVisualScriptResource>;
+using xiiVisualScriptNodeConnectionID = xiiUInt32;
+using xiiVisualScriptPinConnectionID  = xiiUInt32;
+using xiiVisualScriptResourceHandle   = xiiTypedResourceHandle<class xiiVisualScriptResource>;
 
-typedef bool (*xiiVisualScriptDataPinAssignFunc)(const void* src, void* dst);
+using xiiVisualScriptDataPinAssignFunc = bool (*)(const void*, void*);
 
 /// \brief An instance of a visual script resource. Stores the current script state and executes nodes.
 class XII_GAMEENGINE_DLL xiiVisualScriptInstance
@@ -40,7 +40,7 @@ public:
 
   /// \brief The message is dispatched to all nodes, which may react on it, for instance by tagging themselves for execution in the next
   /// ExecuteScript() call.
-  bool HandleMessage(xiiMessage& msg);
+  bool HandleMessage(xiiMessage& ref_msg);
 
   /// \brief Called by xiiVisualScriptNode classes to pass the new value of an output pin to all connected nodes.
   void SetOutputPinValue(const xiiVisualScriptNode* pNode, xiiUInt8 uiPin, const void* pValue);

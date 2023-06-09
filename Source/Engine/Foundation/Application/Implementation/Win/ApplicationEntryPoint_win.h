@@ -15,7 +15,7 @@ namespace xiiApplicationDetails
   XII_FOUNDATION_DLL xiiMutex& GetShutdownMutex();
 
   template <typename AppClass, typename... Args>
-  int ConsoleEntry(int argc, const char** argv, Args&&... arguments)
+  int ConsoleEntry(int iArgc, const char** pArgv, Args&&... arguments)
   {
 #if XII_ENABLED(XII_COMPILER_MSVC)           // Internal compiler error in MSVC. Can not align buffer otherwise the compiler will crash.
     static char appBuffer[sizeof(AppClass)]; // Not on the stack to cope with smaller stacks.
@@ -29,7 +29,7 @@ namespace xiiApplicationDetails
     XII_LOCK(GetShutdownMutex());
 
     static AppClass* pApp = new (appBuffer) AppClass(std::forward<Args>(arguments)...);
-    pApp->SetCommandLineArguments((xiiUInt32)argc, argv);
+    pApp->SetCommandLineArguments((xiiUInt32)iArgc, pArgv);
 
     // This handler overrides the default handler
     // (which would call ExitProcess, which leads to disorderly engine shutdowns)

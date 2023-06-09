@@ -161,7 +161,7 @@ void xiiView::ExtractData()
   xiiRenderWorld::s_ExtractionEvent.Broadcast(extractionEvent);
 }
 
-void xiiView::ComputeCullingFrustum(xiiFrustum& out_Frustum) const
+void xiiView::ComputeCullingFrustum(xiiFrustum& out_frustum) const
 {
   const xiiCamera* pCamera              = GetCullingCamera();
   const float      fViewportAspectRatio = m_Data.m_ViewPortRect.width / m_Data.m_ViewPortRect.height;
@@ -171,7 +171,7 @@ void xiiView::ComputeCullingFrustum(xiiFrustum& out_Frustum) const
   xiiMat4 projectionMatrix;
   pCamera->GetProjectionMatrix(fViewportAspectRatio, projectionMatrix);
 
-  out_Frustum.SetFrustum(projectionMatrix * viewMatrix);
+  out_frustum.SetFrustum(projectionMatrix * viewMatrix);
 }
 
 void xiiView::SetShaderPermutationVariable(const char* szName, const char* szValue)

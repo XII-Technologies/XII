@@ -93,7 +93,7 @@ void xiiPropertyAnimResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
   }
 }
 
-void xiiPropertyAnimResourceDescriptor::Save(xiiStreamWriter& stream) const
+void xiiPropertyAnimResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
   const xiiUInt8  uiVersion            = 6;
   const xiiUInt8  uiIdentifier         = 0x0A; // dummy to fill the header to 32 Bit
@@ -102,77 +102,77 @@ void xiiPropertyAnimResourceDescriptor::Save(xiiStreamWriter& stream) const
 
   XII_ASSERT_DEV(m_AnimationDuration.GetSeconds() > 0, "Animation duration must be positive");
 
-  stream << uiVersion;
-  stream << uiIdentifier;
-  stream << m_AnimationDuration;
-  stream << uiNumFloatAnimations;
+  ref_stream << uiVersion;
+  ref_stream << uiIdentifier;
+  ref_stream << m_AnimationDuration;
+  ref_stream << uiNumFloatAnimations;
 
   xiiCurve1D tmpCurve;
 
   for (xiiUInt32 i = 0; i < uiNumFloatAnimations; ++i)
   {
-    stream << m_FloatAnimations[i].m_sObjectSearchSequence;
-    stream << m_FloatAnimations[i].m_sComponentType;
-    stream << m_FloatAnimations[i].m_sPropertyPath;
-    stream << m_FloatAnimations[i].m_Target;
+    ref_stream << m_FloatAnimations[i].m_sObjectSearchSequence;
+    ref_stream << m_FloatAnimations[i].m_sComponentType;
+    ref_stream << m_FloatAnimations[i].m_sPropertyPath;
+    ref_stream << m_FloatAnimations[i].m_Target;
 
     tmpCurve = m_FloatAnimations[i].m_Curve;
     tmpCurve.SortControlPoints();
     tmpCurve.ApplyTangentModes();
     tmpCurve.ClampTangents();
-    tmpCurve.Save(stream);
+    tmpCurve.Save(ref_stream);
   }
 
   xiiColorGradient tmpGradient;
-  stream << uiNumColorAnimations;
+  ref_stream << uiNumColorAnimations;
   for (xiiUInt32 i = 0; i < uiNumColorAnimations; ++i)
   {
-    stream << m_ColorAnimations[i].m_sObjectSearchSequence;
-    stream << m_ColorAnimations[i].m_sComponentType;
-    stream << m_ColorAnimations[i].m_sPropertyPath;
-    stream << m_ColorAnimations[i].m_Target;
+    ref_stream << m_ColorAnimations[i].m_sObjectSearchSequence;
+    ref_stream << m_ColorAnimations[i].m_sComponentType;
+    ref_stream << m_ColorAnimations[i].m_sPropertyPath;
+    ref_stream << m_ColorAnimations[i].m_Target;
 
     tmpGradient = m_ColorAnimations[i].m_Gradient;
     tmpGradient.SortControlPoints();
-    tmpGradient.Save(stream);
+    tmpGradient.Save(ref_stream);
   }
 
   // Version 6
-  m_EventTrack.Save(stream);
+  m_EventTrack.Save(ref_stream);
 }
 
-void xiiPropertyAnimResourceDescriptor::Load(xiiStreamReader& stream)
+void xiiPropertyAnimResourceDescriptor::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt8  uiVersion       = 0;
   xiiUInt8  uiIdentifier    = 0;
   xiiUInt16 uiNumAnimations = 0;
 
-  stream >> uiVersion;
-  stream >> uiIdentifier;
+  ref_stream >> uiVersion;
+  ref_stream >> uiIdentifier;
 
   XII_ASSERT_DEV(uiIdentifier == 0x0A, "File does not contain a valid xiiPropertyAnimResourceDescriptor");
   XII_ASSERT_DEV(uiVersion == 4 || uiVersion == 5 || uiVersion == 6, "Invalid file version {0}", uiVersion);
 
-  stream >> m_AnimationDuration;
+  ref_stream >> m_AnimationDuration;
 
   if (uiVersion == 4)
   {
     xiiEnum<xiiPropertyAnimMode> mode;
-    stream >> mode;
+    ref_stream >> mode;
   }
 
-  stream >> uiNumAnimations;
+  ref_stream >> uiNumAnimations;
   m_FloatAnimations.SetCount(uiNumAnimations);
 
   for (xiiUInt32 i = 0; i < uiNumAnimations; ++i)
   {
     auto& anim = m_FloatAnimations[i];
 
-    stream >> anim.m_sObjectSearchSequence;
-    stream >> anim.m_sComponentType;
-    stream >> anim.m_sPropertyPath;
-    stream >> anim.m_Target;
-    anim.m_Curve.Load(stream);
+    ref_stream >> anim.m_sObjectSearchSequence;
+    ref_stream >> anim.m_sComponentType;
+    ref_stream >> anim.m_sPropertyPath;
+    ref_stream >> anim.m_Target;
+    anim.m_Curve.Load(ref_stream);
     anim.m_Curve.SortControlPoints();
     anim.m_Curve.CreateLinearApproximation();
 
@@ -180,18 +180,18 @@ void xiiPropertyAnimResourceDescriptor::Load(xiiStreamReader& stream)
       anim.m_pComponentRtti = xiiRTTI::FindTypeByName(anim.m_sComponentType);
   }
 
-  stream >> uiNumAnimations;
+  ref_stream >> uiNumAnimations;
   m_ColorAnimations.SetCount(uiNumAnimations);
 
   for (xiiUInt32 i = 0; i < uiNumAnimations; ++i)
   {
     auto& anim = m_ColorAnimations[i];
 
-    stream >> anim.m_sObjectSearchSequence;
-    stream >> anim.m_sComponentType;
-    stream >> anim.m_sPropertyPath;
-    stream >> anim.m_Target;
-    anim.m_Gradient.Load(stream);
+    ref_stream >> anim.m_sObjectSearchSequence;
+    ref_stream >> anim.m_sComponentType;
+    ref_stream >> anim.m_sPropertyPath;
+    ref_stream >> anim.m_Target;
+    anim.m_Gradient.Load(ref_stream);
 
     if (!anim.m_sComponentType.IsEmpty())
       anim.m_pComponentRtti = xiiRTTI::FindTypeByName(anim.m_sComponentType);
@@ -199,7 +199,7 @@ void xiiPropertyAnimResourceDescriptor::Load(xiiStreamReader& stream)
 
   if (uiVersion >= 6)
   {
-    m_EventTrack.Load(stream);
+    m_EventTrack.Load(ref_stream);
   }
 }
 

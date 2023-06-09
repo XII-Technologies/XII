@@ -12,52 +12,52 @@ xiiClipSpaceYMode::Enum      xiiClipSpaceYMode::RenderToTextureDefault = xiiClip
 
 xiiHandedness::Enum xiiHandedness::Default = xiiHandedness::LeftHanded;
 
-bool xiiMath::IsPowerOf(xiiInt32 value, xiiInt32 base)
+bool xiiMath::IsPowerOf(xiiInt32 value, xiiInt32 iBase)
 {
   if (value == 1)
     return true;
 
-  while (value > base)
+  while (value > iBase)
   {
-    if (value % base == 0)
-      value /= base;
+    if (value % iBase == 0)
+      value /= iBase;
     else
       return false;
   }
 
-  return (value == base);
+  return (value == iBase);
 }
 
-xiiUInt32 xiiMath::PowerOfTwo_Floor(xiiUInt32 npot)
+xiiUInt32 xiiMath::PowerOfTwo_Floor(xiiUInt32 uiNpot)
 {
-  if (IsPowerOf2(npot))
-    return (npot);
+  if (IsPowerOf2(uiNpot))
+    return (uiNpot);
 
-  for (xiiUInt32 i = 1; i <= (sizeof(npot) * 8); ++i)
+  for (xiiUInt32 i = 1; i <= (sizeof(uiNpot) * 8); ++i)
   {
-    npot >>= 1;
+    uiNpot >>= 1;
 
-    if (npot == 1)
-      return (npot << i);
+    if (uiNpot == 1)
+      return (uiNpot << i);
   }
 
   return (1);
 }
 
-xiiUInt32 xiiMath::PowerOfTwo_Ceil(xiiUInt32 npot)
+xiiUInt32 xiiMath::PowerOfTwo_Ceil(xiiUInt32 uiNpot)
 {
-  if (IsPowerOf2(npot))
-    return (npot);
+  if (IsPowerOf2(uiNpot))
+    return (uiNpot);
 
-  for (xiiUInt32 i = 1; i <= (sizeof(npot) * 8); ++i)
+  for (xiiUInt32 i = 1; i <= (sizeof(uiNpot) * 8); ++i)
   {
-    npot >>= 1;
+    uiNpot >>= 1;
 
-    if (npot == 1)
+    if (uiNpot == 1)
     {
       // note: left shift by 32 bits is undefined behavior and typically just returns the left operand unchanged
       // so for npot values larger than 1^31 we do run into this code path, but instead of returning 0, as one may expect, it will usually return 1
-      return npot << (i + 1u);
+      return uiNpot << (i + 1u);
     }
   }
 
@@ -91,7 +91,7 @@ xiiUInt32 xiiMath::GreatestCommonDivisor(xiiUInt32 a, xiiUInt32 b)
   return a << shift;
 }
 
-xiiResult xiiMath::TryMultiply32(xiiUInt32& out_Result, xiiUInt32 a, xiiUInt32 b, xiiUInt32 c, xiiUInt32 d)
+xiiResult xiiMath::TryMultiply32(xiiUInt32& out_uiResult, xiiUInt32 a, xiiUInt32 b, xiiUInt32 c, xiiUInt32 d)
 {
   xiiUInt64 result = static_cast<xiiUInt64>(a) * static_cast<xiiUInt64>(b);
 
@@ -114,7 +114,7 @@ xiiResult xiiMath::TryMultiply32(xiiUInt32& out_Result, xiiUInt32 a, xiiUInt32 b
     return XII_FAILURE;
   }
 
-  out_Result = static_cast<xiiUInt32>(result & 0xFFFFFFFFllu);
+  out_uiResult = static_cast<xiiUInt32>(result & 0xFFFFFFFFllu);
   return XII_SUCCESS;
 }
 
@@ -131,11 +131,11 @@ xiiUInt32 xiiMath::SafeMultiply32(xiiUInt32 a, xiiUInt32 b, xiiUInt32 c, xiiUInt
   return 0;
 }
 
-xiiResult xiiMath::TryMultiply64(xiiUInt64& out_Result, xiiUInt64 a, xiiUInt64 b, xiiUInt64 c, xiiUInt64 d)
+xiiResult xiiMath::TryMultiply64(xiiUInt64& out_uiResult, xiiUInt64 a, xiiUInt64 b, xiiUInt64 c, xiiUInt64 d)
 {
   if (a == 0 || b == 0 || c == 0 || d == 0)
   {
-    out_Result = 0;
+    out_uiResult = 0;
     return XII_SUCCESS;
   }
 
@@ -183,7 +183,7 @@ xiiResult xiiMath::TryMultiply64(xiiUInt64& out_Result, xiiUInt64 a, xiiUInt64 b
 
 #endif
 
-  out_Result = abcd;
+  out_uiResult = abcd;
   return XII_SUCCESS;
 }
 
@@ -563,14 +563,14 @@ xiiQuatReal xiiBasisAxis::GetBasisRotationReal(Enum identity, Enum axis)
   return rotAxis * rotId;
 }
 
-xiiBasisAxis::Enum xiiBasisAxis::GetOrthogonalAxis(Enum axis1, Enum axis2, bool flip)
+xiiBasisAxis::Enum xiiBasisAxis::GetOrthogonalAxis(Enum axis1, Enum axis2, bool bFlip)
 {
   const xiiVec3 a1 = xiiBasisAxis::GetBasisVectorFloat(axis1);
   const xiiVec3 a2 = xiiBasisAxis::GetBasisVectorFloat(axis2);
 
   xiiVec3 c = a1.CrossRH(a2);
 
-  if (flip)
+  if (bFlip)
     c = -c;
 
   if (c.IsEqual(xiiVec3::UnitXAxis(), 0.01f))

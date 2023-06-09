@@ -43,13 +43,13 @@ void xiiRecastNavMeshResourceDescriptor::Clear()
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiResult xiiRecastNavMeshResourceDescriptor::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiRecastNavMeshResourceDescriptor::Serialize(xiiStreamWriter& ref_stream) const
 {
-  stream.WriteVersion(1);
-  XII_SUCCEED_OR_RETURN(stream.WriteArray(m_DetourNavmeshData));
+  ref_stream.WriteVersion(1);
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(m_DetourNavmeshData));
 
   const bool hasPolygons = m_pNavMeshPolygons != nullptr;
-  stream << hasPolygons;
+  ref_stream << hasPolygons;
 
   if (hasPolygons)
   {
@@ -57,42 +57,42 @@ xiiResult xiiRecastNavMeshResourceDescriptor::Serialize(xiiStreamWriter& stream)
 
     const auto& mesh = *m_pNavMeshPolygons;
 
-    stream << (int)mesh.nverts;
-    stream << (int)mesh.npolys;
-    stream << (int)mesh.npolys; // do not use mesh.maxpolys
-    stream << (int)mesh.nvp;
-    stream << (float)mesh.bmin[0];
-    stream << (float)mesh.bmin[1];
-    stream << (float)mesh.bmin[2];
-    stream << (float)mesh.bmax[0];
-    stream << (float)mesh.bmax[1];
-    stream << (float)mesh.bmax[2];
-    stream << (float)mesh.cs;
-    stream << (float)mesh.ch;
-    stream << (int)mesh.borderSize;
-    stream << (float)mesh.maxEdgeError;
+    ref_stream << (int)mesh.nverts;
+    ref_stream << (int)mesh.npolys;
+    ref_stream << (int)mesh.npolys; // do not use mesh.maxpolys
+    ref_stream << (int)mesh.nvp;
+    ref_stream << (float)mesh.bmin[0];
+    ref_stream << (float)mesh.bmin[1];
+    ref_stream << (float)mesh.bmin[2];
+    ref_stream << (float)mesh.bmax[0];
+    ref_stream << (float)mesh.bmax[1];
+    ref_stream << (float)mesh.bmax[2];
+    ref_stream << (float)mesh.cs;
+    ref_stream << (float)mesh.ch;
+    ref_stream << (int)mesh.borderSize;
+    ref_stream << (float)mesh.maxEdgeError;
 
     XII_ASSERT_DEBUG(mesh.maxpolys >= mesh.npolys, "Invalid navmesh polygon count");
 
-    XII_SUCCEED_OR_RETURN(stream.WriteBytes(mesh.verts, sizeof(xiiUInt16) * mesh.nverts * 3));
-    XII_SUCCEED_OR_RETURN(stream.WriteBytes(mesh.polys, sizeof(xiiUInt16) * mesh.npolys * mesh.nvp * 2));
-    XII_SUCCEED_OR_RETURN(stream.WriteBytes(mesh.regs, sizeof(xiiUInt16) * mesh.npolys));
-    XII_SUCCEED_OR_RETURN(stream.WriteBytes(mesh.flags, sizeof(xiiUInt16) * mesh.npolys));
-    XII_SUCCEED_OR_RETURN(stream.WriteBytes(mesh.areas, sizeof(xiiUInt8) * mesh.npolys));
+    XII_SUCCEED_OR_RETURN(ref_stream.WriteBytes(mesh.verts, sizeof(xiiUInt16) * mesh.nverts * 3));
+    XII_SUCCEED_OR_RETURN(ref_stream.WriteBytes(mesh.polys, sizeof(xiiUInt16) * mesh.npolys * mesh.nvp * 2));
+    XII_SUCCEED_OR_RETURN(ref_stream.WriteBytes(mesh.regs, sizeof(xiiUInt16) * mesh.npolys));
+    XII_SUCCEED_OR_RETURN(ref_stream.WriteBytes(mesh.flags, sizeof(xiiUInt16) * mesh.npolys));
+    XII_SUCCEED_OR_RETURN(ref_stream.WriteBytes(mesh.areas, sizeof(xiiUInt8) * mesh.npolys));
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiRecastNavMeshResourceDescriptor::Deserialize(xiiStreamReader& stream)
+xiiResult xiiRecastNavMeshResourceDescriptor::Deserialize(xiiStreamReader& ref_stream)
 {
   Clear();
 
-  const xiiTypeVersion version = stream.ReadVersion(1);
-  XII_SUCCEED_OR_RETURN(stream.ReadArray(m_DetourNavmeshData));
+  const xiiTypeVersion version = ref_stream.ReadVersion(1);
+  XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(m_DetourNavmeshData));
 
   bool hasPolygons = false;
-  stream >> hasPolygons;
+  ref_stream >> hasPolygons;
 
   if (hasPolygons)
   {
@@ -102,20 +102,20 @@ xiiResult xiiRecastNavMeshResourceDescriptor::Deserialize(xiiStreamReader& strea
 
     auto& mesh = *m_pNavMeshPolygons;
 
-    stream >> mesh.nverts;
-    stream >> mesh.npolys;
-    stream >> mesh.maxpolys;
-    stream >> mesh.nvp;
-    stream >> mesh.bmin[0];
-    stream >> mesh.bmin[1];
-    stream >> mesh.bmin[2];
-    stream >> mesh.bmax[0];
-    stream >> mesh.bmax[1];
-    stream >> mesh.bmax[2];
-    stream >> mesh.cs;
-    stream >> mesh.ch;
-    stream >> mesh.borderSize;
-    stream >> mesh.maxEdgeError;
+    ref_stream >> mesh.nverts;
+    ref_stream >> mesh.npolys;
+    ref_stream >> mesh.maxpolys;
+    ref_stream >> mesh.nvp;
+    ref_stream >> mesh.bmin[0];
+    ref_stream >> mesh.bmin[1];
+    ref_stream >> mesh.bmin[2];
+    ref_stream >> mesh.bmax[0];
+    ref_stream >> mesh.bmax[1];
+    ref_stream >> mesh.bmax[2];
+    ref_stream >> mesh.cs;
+    ref_stream >> mesh.ch;
+    ref_stream >> mesh.borderSize;
+    ref_stream >> mesh.maxEdgeError;
 
     XII_ASSERT_DEBUG(mesh.maxpolys >= mesh.npolys, "Invalid navmesh polygon count");
 
@@ -124,11 +124,11 @@ xiiResult xiiRecastNavMeshResourceDescriptor::Deserialize(xiiStreamReader& strea
     mesh.regs  = (xiiUInt16*)rcAlloc(sizeof(xiiUInt16) * mesh.maxpolys, RC_ALLOC_PERM);
     mesh.areas = (xiiUInt8*)rcAlloc(sizeof(xiiUInt8) * mesh.maxpolys, RC_ALLOC_PERM);
 
-    stream.ReadBytes(mesh.verts, sizeof(xiiUInt16) * mesh.nverts * 3);
-    stream.ReadBytes(mesh.polys, sizeof(xiiUInt16) * mesh.maxpolys * mesh.nvp * 2);
-    stream.ReadBytes(mesh.regs, sizeof(xiiUInt16) * mesh.maxpolys);
-    stream.ReadBytes(mesh.flags, sizeof(xiiUInt16) * mesh.maxpolys);
-    stream.ReadBytes(mesh.areas, sizeof(xiiUInt8) * mesh.maxpolys);
+    ref_stream.ReadBytes(mesh.verts, sizeof(xiiUInt16) * mesh.nverts * 3);
+    ref_stream.ReadBytes(mesh.polys, sizeof(xiiUInt16) * mesh.maxpolys * mesh.nvp * 2);
+    ref_stream.ReadBytes(mesh.regs, sizeof(xiiUInt16) * mesh.maxpolys);
+    ref_stream.ReadBytes(mesh.flags, sizeof(xiiUInt16) * mesh.maxpolys);
+    ref_stream.ReadBytes(mesh.areas, sizeof(xiiUInt8) * mesh.maxpolys);
   }
 
   return XII_SUCCESS;

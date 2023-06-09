@@ -29,7 +29,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_DeleteObject, 1, xiiRTTIDef
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_DeleteObject::xiiVisualScriptNode_DeleteObject() {}
+xiiVisualScriptNode_DeleteObject::xiiVisualScriptNode_DeleteObject() = default;
 
 void xiiVisualScriptNode_DeleteObject::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -131,7 +131,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_ActivateComponent, 1, xiiRT
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_ActivateComponent::xiiVisualScriptNode_ActivateComponent() {}
+xiiVisualScriptNode_ActivateComponent::xiiVisualScriptNode_ActivateComponent() = default;
 
 void xiiVisualScriptNode_ActivateComponent::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -185,7 +185,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_HasName, 1, xiiRTTIDefaultA
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_HasName::xiiVisualScriptNode_HasName() {}
+xiiVisualScriptNode_HasName::xiiVisualScriptNode_HasName() = default;
 
 void xiiVisualScriptNode_HasName::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {

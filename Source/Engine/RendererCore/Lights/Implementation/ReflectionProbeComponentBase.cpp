@@ -48,9 +48,7 @@ xiiReflectionProbeComponentBase::xiiReflectionProbeComponentBase()
   m_Desc.m_uniqueID.CreateNewUuid();
 }
 
-xiiReflectionProbeComponentBase::~xiiReflectionProbeComponentBase()
-{
-}
+xiiReflectionProbeComponentBase::~xiiReflectionProbeComponentBase() = default;
 
 void xiiReflectionProbeComponentBase::SetReflectionProbeMode(xiiEnum<xiiReflectionProbeMode> mode)
 {
@@ -138,11 +136,11 @@ bool xiiReflectionProbeComponentBase::GetShowMipMaps() const
   return m_Desc.m_bShowMipMaps;
 }
 
-void xiiReflectionProbeComponentBase::SerializeComponent(xiiWorldWriter& stream) const
+void xiiReflectionProbeComponentBase::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   m_Desc.m_IncludeTags.Save(s);
   m_Desc.m_ExcludeTags.Save(s);
@@ -154,11 +152,11 @@ void xiiReflectionProbeComponentBase::SerializeComponent(xiiWorldWriter& stream)
   s << m_Desc.m_vCaptureOffset;
 }
 
-void xiiReflectionProbeComponentBase::DeserializeComponent(xiiWorldReader& stream)
+void xiiReflectionProbeComponentBase::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   //const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   m_Desc.m_IncludeTags.Load(s, xiiTagRegistry::GetGlobalRegistry());
   m_Desc.m_ExcludeTags.Load(s, xiiTagRegistry::GetGlobalRegistry());

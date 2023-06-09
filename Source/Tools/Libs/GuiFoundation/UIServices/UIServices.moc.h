@@ -77,9 +77,9 @@ public:
     bool            bAlpha,
     bool            bHDR,
     QWidget*        pParent,
-    const char*     slotCurColChanged,
-    const char*     slotAccept,
-    const char*     slotReject);
+    const char*     szSlotCurColChanged,
+    const char*     szSlotAccept,
+    const char*     szSlotReject);
 
   /// \brief Might show a message box depending on the given status. If the status is 'failure' the szFailureMsg is shown, including the message in
   /// xiiStatus. If the status is success a message box with text szSuccessMsg is shown, but only if the status message is not empty or if

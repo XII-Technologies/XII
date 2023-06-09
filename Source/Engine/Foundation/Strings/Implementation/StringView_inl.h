@@ -120,15 +120,15 @@ XII_ALWAYS_INLINE void xiiStringView::Trim(const char* szTrimCharsStart, const c
   }
 }
 
-constexpr XII_ALWAYS_INLINE xiiStringView operator"" _xiisv(const char* pString, size_t len)
+constexpr XII_ALWAYS_INLINE xiiStringView operator"" _xiisv(const char* pString, size_t uiLen)
 {
-  return xiiStringView(pString, static_cast<xiiUInt32>(len));
+  return xiiStringView(pString, static_cast<xiiUInt32>(uiLen));
 }
 
 template <typename Container>
-void xiiStringView::Split(bool bReturnEmptyStrings, Container& Output, const char* szSeparator1, const char* szSeparator2 /*= nullptr*/, const char* szSeparator3 /*= nullptr*/, const char* szSeparator4 /*= nullptr*/, const char* szSeparator5 /*= nullptr*/, const char* szSeparator6 /*= nullptr*/) const
+void xiiStringView::Split(bool bReturnEmptyStrings, Container& ref_output, const char* szSeparator1, const char* szSeparator2 /*= nullptr*/, const char* szSeparator3 /*= nullptr*/, const char* szSeparator4 /*= nullptr*/, const char* szSeparator5 /*= nullptr*/, const char* szSeparator6 /*= nullptr*/) const
 {
-  Output.Clear();
+  ref_output.Clear();
 
   if (IsEmpty())
     return;
@@ -161,13 +161,13 @@ void xiiStringView::Split(bool bReturnEmptyStrings, Container& Output, const cha
       const xiiUInt32 uiLen = xiiStringUtils::GetStringElementCount(szReadPos, GetEndPointer());
 
       if (bReturnEmptyStrings || (uiLen > 0))
-        Output.PushBack(xiiStringView(szReadPos, szReadPos + uiLen));
+        ref_output.PushBack(xiiStringView(szReadPos, szReadPos + uiLen));
 
       return;
     }
 
     if (bReturnEmptyStrings || (szFoundPos > szReadPos))
-      Output.PushBack(xiiStringView(szReadPos, szFoundPos));
+      ref_output.PushBack(xiiStringView(szReadPos, szFoundPos));
 
     szReadPos = szFoundPos + seps[iFoundSeparator].GetElementCount();
   }

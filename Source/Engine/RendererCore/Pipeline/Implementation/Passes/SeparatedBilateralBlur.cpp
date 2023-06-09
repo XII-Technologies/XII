@@ -28,7 +28,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiSeparatedBilateralBlurPass::xiiSeparatedBilateralBlurPass() :
-  xiiRenderPipelinePass("SeparatedBilateral"), m_uiRadius(7), m_fGaussianSigma(3.5f), m_fSharpness(120.0f)
+  xiiRenderPipelinePass("SeparatedBilateral")
 {
   {
     // Load shader.
@@ -155,9 +155,9 @@ xiiUInt32 xiiSeparatedBilateralBlurPass::GetRadius() const
   return m_uiRadius;
 }
 
-void xiiSeparatedBilateralBlurPass::SetGaussianSigma(const float sigma)
+void xiiSeparatedBilateralBlurPass::SetGaussianSigma(const float fSigma)
 {
-  m_fGaussianSigma = sigma;
+  m_fGaussianSigma = fSigma;
 
   xiiBilateralBlurConstants* cb = xiiRenderContext::GetConstantBufferData<xiiBilateralBlurConstants>(m_hBilateralBlurCB);
   cb->GaussianFalloff           = 1.0f / (2.0f * m_fGaussianSigma * m_fGaussianSigma);
@@ -198,7 +198,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->RenameProperty("Blur Radius", "BlurRadius");
     pNode->RenameProperty("Gaussian Standard Deviation", "GaussianSigma");

@@ -2,11 +2,11 @@
 
 #include <RendererFoundation/Shader/ShaderByteCode.h>
 
-xiiGALShaderByteCode::xiiGALShaderByteCode() {}
+xiiGALShaderByteCode::xiiGALShaderByteCode() = default;
 
-xiiGALShaderByteCode::xiiGALShaderByteCode(const xiiArrayPtr<const xiiUInt8>& pByteCode)
+xiiGALShaderByteCode::xiiGALShaderByteCode(const xiiArrayPtr<const xiiUInt8>& byteCode)
 {
-  CopyFrom(pByteCode);
+  CopyFrom(byteCode);
 }
 
 void xiiGALShaderByteCode::CopyFrom(const xiiArrayPtr<const xiiUInt8>& pByteCode)

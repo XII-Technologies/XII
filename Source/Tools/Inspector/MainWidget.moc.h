@@ -17,12 +17,12 @@ class xiiQtMainWidget : public ads::CDockWidget, public Ui_MainWidget
 public:
   static xiiQtMainWidget* s_pWidget;
 
-  xiiQtMainWidget(QWidget* parent = nullptr);
+  xiiQtMainWidget(QWidget* pParent = nullptr);
   ~xiiQtMainWidget();
 
   void         ResetStats();
   void         UpdateStats();
-  virtual void closeEvent(QCloseEvent* event) override;
+  virtual void closeEvent(QCloseEvent* pEvent) override;
 
   static void ProcessTelemetry(void* pUnuseed);
 

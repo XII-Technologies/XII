@@ -17,7 +17,7 @@ public:
 
     struct Type
     {
-      typedef xiiUInt8 StorageType;
+      using StorageType = xiiUInt8;
 
       enum Enum
       {
@@ -67,8 +67,8 @@ private:
   ~xiiShaderConstantBufferLayout();
 
 public:
-  xiiResult Write(xiiStreamWriter& stream) const;
-  xiiResult Read(xiiStreamReader& stream);
+  xiiResult Write(xiiStreamWriter& ref_stream) const;
+  xiiResult Read(xiiStreamReader& ref_stream);
 
   xiiUInt32                    m_uiTotalSize;
   xiiHybridArray<Constant, 16> m_Constants;
@@ -106,8 +106,8 @@ public:
   xiiShaderStageBinary();
   ~xiiShaderStageBinary();
 
-  xiiResult Write(xiiStreamWriter& Stream) const;
-  xiiResult Read(xiiStreamReader& Stream);
+  xiiResult Write(xiiStreamWriter& ref_stream) const;
+  xiiResult Read(xiiStreamReader& ref_stream);
 
   xiiDynamicArray<xiiUInt8>& GetByteCode();
 

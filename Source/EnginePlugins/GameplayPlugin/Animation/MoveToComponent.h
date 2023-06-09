@@ -9,7 +9,7 @@
 
 struct xiiMoveToComponentFlags
 {
-  typedef xiiUInt16 StorageType;
+  using StorageType = xiiUInt16;
 
   enum Enum
   {
@@ -24,7 +24,7 @@ struct xiiMoveToComponentFlags
   };
 };
 
-typedef xiiComponentManagerSimple<class xiiMoveToComponent, xiiComponentUpdateType::WhenSimulating> xiiMoveToComponentManager;
+using xiiMoveToComponentManager = xiiComponentManagerSimple<class xiiMoveToComponent, xiiComponentUpdateType::WhenSimulating>;
 
 XII_DECLARE_FLAGS_OPERATORS(xiiMoveToComponentFlags);
 
@@ -49,8 +49,8 @@ class XII_GAMEPLAYPLUGIN_DLL xiiMoveToComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -64,7 +64,7 @@ public:
   void SetRunning(bool bRunning); // [ property ]
   bool IsRunning() const;         // [ property ]
 
-  void SetTargetPosition(const xiiVec3& pos); // [ scriptable ]
+  void SetTargetPosition(const xiiVec3& vPos); // [ scriptable ]
 
 protected:
   void Update();

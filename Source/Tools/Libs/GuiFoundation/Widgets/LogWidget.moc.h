@@ -15,10 +15,10 @@ class XII_GUIFOUNDATION_DLL xiiQtLogWidget : public QWidget, public Ui_LogWidget
   Q_OBJECT
 
 public:
-  xiiQtLogWidget(QWidget* parent);
+  xiiQtLogWidget(QWidget* pParent);
   ~xiiQtLogWidget();
 
-  void ShowControls(bool show);
+  void ShowControls(bool bShow);
 
   xiiQtLogModel*      GetLog();
   xiiQtSearchWidget*  GetSearchWidget();

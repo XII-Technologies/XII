@@ -9,40 +9,40 @@
 
 namespace xiiModelImporter2
 {
-  static const void MakeValidMaterialName(xiiString& target, const char* source, xiiUInt32 matIdx, xiiSet<xiiString>& knownMaterialNames)
+  static const void MakeValidMaterialName(xiiString& ref_sTarget, const char* szSource, xiiUInt32 uiMatIdx, xiiSet<xiiString>& ref_knownMaterialNames)
   {
     xiiStringBuilder tmp;
-    xiiPathUtils::MakeValidFilename(source, '_', tmp);
+    xiiPathUtils::MakeValidFilename(szSource, '_', tmp);
 
-    if (knownMaterialNames.Contains(tmp))
+    if (ref_knownMaterialNames.Contains(tmp))
     {
       if (!tmp.IsEmpty())
         tmp.Prepend("-");
 
-      tmp.PrependFormat("Mat-{}", matIdx);
+      tmp.PrependFormat("Mat-{}", uiMatIdx);
     }
 
-    target = tmp;
-    knownMaterialNames.Insert(target);
+    ref_sTarget = tmp;
+    ref_knownMaterialNames.Insert(ref_sTarget);
   }
 
   template <typename assimpType>
-  static void TryReadAssimpProperty(xiiMap<PropertySemantic, xiiVariant>& inout_Properties, PropertySemantic targetSemantic, const aiMaterial& assimpMaterial, const char* aiKey, xiiUInt32 aiType, xiiUInt32 aiIdx, bool invert = false)
+  static void TryReadAssimpProperty(xiiMap<PropertySemantic, xiiVariant>& inout_properties, PropertySemantic targetSemantic, const aiMaterial& assimpMaterial, const char* szAiKey, xiiUInt32 uiAiType, xiiUInt32 uiAiIdx, bool bInvert = false)
   {
     assimpType value;
-    if (assimpMaterial.Get(aiKey, aiType, aiIdx, value) == AI_SUCCESS)
+    if (assimpMaterial.Get(szAiKey, uiAiType, uiAiIdx, value) == AI_SUCCESS)
     {
-      inout_Properties[targetSemantic] = ConvertAssimpType(value, invert);
+      inout_properties[targetSemantic] = ConvertAssimpType(value, bInvert);
     }
   }
 
-  void TryReadAssimpTextures(xiiMap<TextureSemantic, xiiString>& out_Textures, aiTextureType aiType, TextureSemantic targetSemantic, const aiMaterial& assimpMaterial)
+  void TryReadAssimpTextures(xiiMap<TextureSemantic, xiiString>& out_textures, aiTextureType aiType, TextureSemantic targetSemantic, const aiMaterial& assimpMaterial)
   {
     // there could be multiple textures of this type, but we can only handle one
     aiString path;
     if (assimpMaterial.GetTexture(aiType, 0, &path) == AI_SUCCESS)
     {
-      out_Textures[targetSemantic] = path.C_Str();
+      out_textures[targetSemantic] = path.C_Str();
     }
   }
 

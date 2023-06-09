@@ -4,10 +4,10 @@
 
 #ifdef BUILDSYSTEM_ENABLE_LUA_SUPPORT
 
-void xiiLuaWrapper::RegisterCFunction(const char* szFunctionName, lua_CFunction pFunction, void* pLightUserData) const
+void xiiLuaWrapper::RegisterCFunction(const char* szFunctionName, lua_CFunction function, void* pLightUserData) const
 {
   lua_pushlightuserdata(m_pState, pLightUserData);
-  lua_pushcclosure(m_pState, pFunction, 1);
+  lua_pushcclosure(m_pState, function, 1);
   lua_setglobal(m_pState, szFunctionName);
 }
 
@@ -42,9 +42,9 @@ bool xiiLuaWrapper::PrepareFunctionCall(const char* szFunctionName)
   return true;
 }
 
-xiiResult xiiLuaWrapper::CallPreparedFunction(xiiUInt32 iExpectedReturnValues, xiiLogInterface* pLogInterface)
+xiiResult xiiLuaWrapper::CallPreparedFunction(xiiUInt32 uiExpectedReturnValues, xiiLogInterface* pLogInterface)
 {
-  m_States.m_iLuaReturnValues = iExpectedReturnValues;
+  m_States.m_iLuaReturnValues = uiExpectedReturnValues;
 
   // save the current states on a cheap stack
   const xiiScriptStates StackedStates = m_States;
@@ -53,7 +53,7 @@ xiiResult xiiLuaWrapper::CallPreparedFunction(xiiUInt32 iExpectedReturnValues, x
   if (pLogInterface == nullptr)
     pLogInterface = xiiLog::GetThreadLocalLogSystem();
 
-  if (lua_pcall(m_pState, StackedStates.m_iParametersPushed, iExpectedReturnValues, 0) != 0)
+  if (lua_pcall(m_pState, StackedStates.m_iParametersPushed, uiExpectedReturnValues, 0) != 0)
   {
     // restore the states to their previous values
     m_States = StackedStates;
@@ -83,59 +83,59 @@ void xiiLuaWrapper::DiscardReturnValues()
   m_States.m_iLuaReturnValues = 0;
 }
 
-bool xiiLuaWrapper::IsReturnValueInt(xiiUInt32 iReturnValue) const
+bool xiiLuaWrapper::IsReturnValueInt(xiiUInt32 uiReturnValue) const
 {
-  return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1) == LUA_TNUMBER);
+  return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (uiReturnValue + s_iParamOffset) - 1) == LUA_TNUMBER);
 }
 
-bool xiiLuaWrapper::IsReturnValueBool(xiiUInt32 iReturnValue) const
+bool xiiLuaWrapper::IsReturnValueBool(xiiUInt32 uiReturnValue) const
 {
-  return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1) == LUA_TBOOLEAN);
+  return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (uiReturnValue + s_iParamOffset) - 1) == LUA_TBOOLEAN);
 }
 
-bool xiiLuaWrapper::IsReturnValueFloat(xiiUInt32 iReturnValue) const
+bool xiiLuaWrapper::IsReturnValueFloat(xiiUInt32 uiReturnValue) const
 {
-  return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1) == LUA_TNUMBER);
+  return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (uiReturnValue + s_iParamOffset) - 1) == LUA_TNUMBER);
 }
 
-bool xiiLuaWrapper::IsReturnValueDouble(xiiUInt32 iReturnValue) const
+bool xiiLuaWrapper::IsReturnValueDouble(xiiUInt32 uiReturnValue) const
 {
-  return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1) == LUA_TNUMBER);
+  return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (uiReturnValue + s_iParamOffset) - 1) == LUA_TNUMBER);
 }
 
-bool xiiLuaWrapper::IsReturnValueString(xiiUInt32 iReturnValue) const
+bool xiiLuaWrapper::IsReturnValueString(xiiUInt32 uiReturnValue) const
 {
-  return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1) == LUA_TSTRING);
+  return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (uiReturnValue + s_iParamOffset) - 1) == LUA_TSTRING);
 }
 
-bool xiiLuaWrapper::IsReturnValueNil(xiiUInt32 iReturnValue) const
+bool xiiLuaWrapper::IsReturnValueNil(xiiUInt32 uiReturnValue) const
 {
-  return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1) == LUA_TNIL);
+  return (lua_type(m_pState, -m_States.m_iLuaReturnValues + (uiReturnValue + s_iParamOffset) - 1) == LUA_TNIL);
 }
 
-xiiInt32 xiiLuaWrapper::GetIntReturnValue(xiiUInt32 iReturnValue) const
+xiiInt32 xiiLuaWrapper::GetIntReturnValue(xiiUInt32 uiReturnValue) const
 {
-  return ((int)(lua_tointeger(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1)));
+  return ((int)(lua_tointeger(m_pState, -m_States.m_iLuaReturnValues + (uiReturnValue + s_iParamOffset) - 1)));
 }
 
-bool xiiLuaWrapper::GetBoolReturnValue(xiiUInt32 iReturnValue) const
+bool xiiLuaWrapper::GetBoolReturnValue(xiiUInt32 uiReturnValue) const
 {
-  return (lua_toboolean(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1) != 0);
+  return (lua_toboolean(m_pState, -m_States.m_iLuaReturnValues + (uiReturnValue + s_iParamOffset) - 1) != 0);
 }
 
-float xiiLuaWrapper::GetFloatReturnValue(xiiUInt32 iReturnValue) const
+float xiiLuaWrapper::GetFloatReturnValue(xiiUInt32 uiReturnValue) const
 {
-  return ((float)(lua_tonumber(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1)));
+  return ((float)(lua_tonumber(m_pState, -m_States.m_iLuaReturnValues + (uiReturnValue + s_iParamOffset) - 1)));
 }
 
-double xiiLuaWrapper::GetDoubleReturnValue(xiiUInt32 iReturnValue) const
+double xiiLuaWrapper::GetDoubleReturnValue(xiiUInt32 uiReturnValue) const
 {
-  return (lua_tonumber(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1));
+  return (lua_tonumber(m_pState, -m_States.m_iLuaReturnValues + (uiReturnValue + s_iParamOffset) - 1));
 }
 
-const char* xiiLuaWrapper::GetStringReturnValue(xiiUInt32 iReturnValue) const
+const char* xiiLuaWrapper::GetStringReturnValue(xiiUInt32 uiReturnValue) const
 {
-  return (lua_tostring(m_pState, -m_States.m_iLuaReturnValues + (iReturnValue + s_iParamOffset) - 1));
+  return (lua_tostring(m_pState, -m_States.m_iLuaReturnValues + (uiReturnValue + s_iParamOffset) - 1));
 }
 
 

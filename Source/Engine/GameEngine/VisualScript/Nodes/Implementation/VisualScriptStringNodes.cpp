@@ -98,8 +98,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_Switch, 1, xiiRTTIDefaultAl
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_Switch::xiiVisualScriptNode_Switch() {}
-xiiVisualScriptNode_Switch::~xiiVisualScriptNode_Switch() {}
+xiiVisualScriptNode_Switch::xiiVisualScriptNode_Switch()  = default;
+xiiVisualScriptNode_Switch::~xiiVisualScriptNode_Switch() = default;
 
 void xiiVisualScriptNode_Switch::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -200,8 +200,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_Format, 1, xiiRTTIDefaultAl
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_Format::xiiVisualScriptNode_Format() {}
-xiiVisualScriptNode_Format::~xiiVisualScriptNode_Format() {}
+xiiVisualScriptNode_Format::xiiVisualScriptNode_Format()  = default;
+xiiVisualScriptNode_Format::~xiiVisualScriptNode_Format() = default;
 
 void xiiVisualScriptNode_Format::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {

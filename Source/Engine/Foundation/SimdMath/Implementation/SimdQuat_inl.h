@@ -1,6 +1,6 @@
 #pragma once
 
-XII_ALWAYS_INLINE xiiSimdQuat::xiiSimdQuat() {}
+XII_ALWAYS_INLINE xiiSimdQuat::xiiSimdQuat() = default;
 
 XII_ALWAYS_INLINE xiiSimdQuat::xiiSimdQuat(const xiiSimdVec4f& v)
 {
@@ -18,10 +18,10 @@ XII_ALWAYS_INLINE void xiiSimdQuat::SetIdentity()
   m_v.Set(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-XII_ALWAYS_INLINE void xiiSimdQuat::SetFromAxisAndAngle(const xiiSimdVec4f& vRotationAxis, const xiiSimdFloat& angle)
+XII_ALWAYS_INLINE void xiiSimdQuat::SetFromAxisAndAngle(const xiiSimdVec4f& vRotationAxis, const xiiSimdFloat& fAngle)
 {
   ///\todo optimize
-  const xiiAngle halfAngle = xiiAngle::Radian(angle) * 0.5f;
+  const xiiAngle halfAngle = xiiAngle::Radian(fAngle) * 0.5f;
   float          s         = xiiMath::Sin(halfAngle);
   float          c         = xiiMath::Cos(halfAngle);
 
@@ -34,7 +34,7 @@ XII_ALWAYS_INLINE void xiiSimdQuat::Normalize()
   m_v.Normalize<4>();
 }
 
-inline xiiResult xiiSimdQuat::GetRotationAxisAndAngle(xiiSimdVec4f& vAxis, xiiSimdFloat& angle, const xiiSimdFloat& fEpsilon) const
+inline xiiResult xiiSimdQuat::GetRotationAxisAndAngle(xiiSimdVec4f& ref_vAxis, xiiSimdFloat& ref_fAngle, const xiiSimdFloat& fEpsilon) const
 {
   ///\todo optimize
   const xiiAngle acos = xiiMath::ACos((float)m_v.w());
@@ -42,14 +42,14 @@ inline xiiResult xiiSimdQuat::GetRotationAxisAndAngle(xiiSimdVec4f& vAxis, xiiSi
 
   if (d < fEpsilon)
   {
-    vAxis.Set(1.0f, 0.0f, 0.0f, 0.0f);
+    ref_vAxis.Set(1.0f, 0.0f, 0.0f, 0.0f);
   }
   else
   {
-    vAxis = m_v / d;
+    ref_vAxis = m_v / d;
   }
 
-  angle = acos * 2.0f;
+  ref_fAngle = acos * 2.0f;
 
   return XII_SUCCESS;
 }

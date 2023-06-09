@@ -14,84 +14,84 @@ namespace xiiInternal
   template <typename T>
   struct WriteObjectHelper<T*>
   {
-    static const T* GetAddress(const T* obj) { return obj; }
+    static const T* GetAddress(const T* pObj) { return pObj; }
   };
 } // namespace xiiInternal
 
 template <typename T>
-XII_ALWAYS_INLINE xiiResult xiiDeduplicationWriteContext::WriteObject(xiiStreamWriter& stream, const T& obj)
+XII_ALWAYS_INLINE xiiResult xiiDeduplicationWriteContext::WriteObject(xiiStreamWriter& ref_stream, const T& obj)
 {
-  return WriteObjectInternal(stream, xiiInternal::WriteObjectHelper<T>::GetAddress(obj));
+  return WriteObjectInternal(ref_stream, xiiInternal::WriteObjectHelper<T>::GetAddress(obj));
 }
 
 template <typename T>
-XII_ALWAYS_INLINE xiiResult xiiDeduplicationWriteContext::WriteObject(xiiStreamWriter& stream, const xiiSharedPtr<T>& pObject)
+XII_ALWAYS_INLINE xiiResult xiiDeduplicationWriteContext::WriteObject(xiiStreamWriter& ref_stream, const xiiSharedPtr<T>& pObject)
 {
-  return WriteObjectInternal(stream, pObject.Borrow());
+  return WriteObjectInternal(ref_stream, pObject.Borrow());
 }
 
 template <typename T>
-XII_ALWAYS_INLINE xiiResult xiiDeduplicationWriteContext::WriteObject(xiiStreamWriter& stream, const xiiUniquePtr<T>& pObject)
+XII_ALWAYS_INLINE xiiResult xiiDeduplicationWriteContext::WriteObject(xiiStreamWriter& ref_stream, const xiiUniquePtr<T>& pObject)
 {
-  return WriteObjectInternal(stream, pObject.Borrow());
+  return WriteObjectInternal(ref_stream, pObject.Borrow());
 }
 
 template <typename ArrayType, typename ValueType>
-xiiResult xiiDeduplicationWriteContext::WriteArray(xiiStreamWriter& stream, const xiiArrayBase<ValueType, ArrayType>& Array)
+xiiResult xiiDeduplicationWriteContext::WriteArray(xiiStreamWriter& ref_stream, const xiiArrayBase<ValueType, ArrayType>& array)
 {
-  const xiiUInt64 uiCount = Array.GetCount();
-  XII_SUCCEED_OR_RETURN(stream.WriteQWordValue(&uiCount));
+  const xiiUInt64 uiCount = array.GetCount();
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteQWordValue(&uiCount));
 
   for (xiiUInt32 i = 0; i < static_cast<xiiUInt32>(uiCount); ++i)
   {
-    XII_SUCCEED_OR_RETURN(WriteObject(stream, Array[i]));
+    XII_SUCCEED_OR_RETURN(WriteObject(ref_stream, array[i]));
   }
 
   return XII_SUCCESS;
 }
 
 template <typename KeyType, typename Comparer>
-xiiResult xiiDeduplicationWriteContext::WriteSet(xiiStreamWriter& stream, const xiiSetBase<KeyType, Comparer>& Set)
+xiiResult xiiDeduplicationWriteContext::WriteSet(xiiStreamWriter& ref_stream, const xiiSetBase<KeyType, Comparer>& set)
 {
-  const xiiUInt64 uiWriteSize = Set.GetCount();
-  XII_SUCCEED_OR_RETURN(stream.WriteQWordValue(&uiWriteSize));
+  const xiiUInt64 uiWriteSize = set.GetCount();
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteQWordValue(&uiWriteSize));
 
-  for (const auto& item : Set)
+  for (const auto& item : set)
   {
-    XII_SUCCEED_OR_RETURN(WriteObject(stream, item));
+    XII_SUCCEED_OR_RETURN(WriteObject(ref_stream, item));
   }
 
   return XII_SUCCESS;
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
-xiiResult xiiDeduplicationWriteContext::WriteMap(xiiStreamWriter& stream, const xiiMapBase<KeyType, ValueType, Comparer>& Map, WriteMapMode mode)
+xiiResult xiiDeduplicationWriteContext::WriteMap(xiiStreamWriter& ref_stream, const xiiMapBase<KeyType, ValueType, Comparer>& map, WriteMapMode mode)
 {
-  const xiiUInt64 uiWriteSize = Map.GetCount();
-  XII_SUCCEED_OR_RETURN(stream.WriteQWordValue(&uiWriteSize));
+  const xiiUInt64 uiWriteSize = map.GetCount();
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteQWordValue(&uiWriteSize));
 
   if (mode == WriteMapMode::DedupKey)
   {
-    for (auto It = Map.GetIterator(); It.IsValid(); ++It)
+    for (auto It = map.GetIterator(); It.IsValid(); ++It)
     {
-      XII_SUCCEED_OR_RETURN(WriteObject(stream, It.Key()));
-      XII_SUCCEED_OR_RETURN(xiiStreamWriterUtil::Serialize<ValueType>(stream, It.Value()));
+      XII_SUCCEED_OR_RETURN(WriteObject(ref_stream, It.Key()));
+      XII_SUCCEED_OR_RETURN(xiiStreamWriterUtil::Serialize<ValueType>(ref_stream, It.Value()));
     }
   }
   else if (mode == WriteMapMode::DedupValue)
   {
-    for (auto It = Map.GetIterator(); It.IsValid(); ++It)
+    for (auto It = map.GetIterator(); It.IsValid(); ++It)
     {
-      XII_SUCCEED_OR_RETURN(xiiStreamWriterUtil::Serialize<KeyType>(stream, It.Key()));
-      XII_SUCCEED_OR_RETURN(WriteObject(stream, It.Value()));
+      XII_SUCCEED_OR_RETURN(xiiStreamWriterUtil::Serialize<KeyType>(ref_stream, It.Key()));
+      XII_SUCCEED_OR_RETURN(WriteObject(ref_stream, It.Value()));
     }
   }
   else
   {
-    for (auto It = Map.GetIterator(); It.IsValid(); ++It)
+    for (auto It = map.GetIterator(); It.IsValid(); ++It)
     {
-      XII_SUCCEED_OR_RETURN(WriteObject(stream, It.Key()));
-      XII_SUCCEED_OR_RETURN(WriteObject(stream, It.Value()));
+      XII_SUCCEED_OR_RETURN(WriteObject(ref_stream, It.Key()));
+      XII_SUCCEED_OR_RETURN(WriteObject(ref_stream, It.Value()));
     }
   }
 

@@ -67,10 +67,10 @@ public:
 private:
   friend class xiiRenderPipeline;
 
-  bool m_bActive;
+  bool m_bActive = true;
 
   const bool      m_bIsStereoAware;
   xiiHashedString m_sName;
 
-  xiiRenderPipeline* m_pPipeline;
+  xiiRenderPipeline* m_pPipeline = nullptr;
 };

@@ -30,13 +30,13 @@ struct XII_CORE_DLL xiiMsgSetColor : public xiiMessage
   xiiColor                 m_Color;
   xiiEnum<xiiSetColorMode> m_Mode;
 
-  void ModifyColor(xiiColor& color) const;
-  void ModifyColor(xiiColorGammaUB& color) const;
+  void ModifyColor(xiiColor& ref_color) const;
+  void ModifyColor(xiiColorGammaUB& ref_color) const;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiMessage interface
   //
 
-  virtual void Serialize(xiiStreamWriter& stream) const override;
-  virtual void Deserialize(xiiStreamReader& stream, xiiUInt8 uiTypeVersion) override;
+  virtual void Serialize(xiiStreamWriter& ref_stream) const override;
+  virtual void Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiTypeVersion) override;
 };

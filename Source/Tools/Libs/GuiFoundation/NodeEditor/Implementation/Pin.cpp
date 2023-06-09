@@ -165,9 +165,9 @@ void xiiQtPin::SetHighlightState(xiiQtPinHighlightState state)
   }
 }
 
-void xiiQtPin::SetActive(bool active)
+void xiiQtPin::SetActive(bool bActive)
 {
-  m_bIsActive = active;
+  m_bIsActive = bActive;
 
   if (AdjustRenderingForHighlight(m_HighlightState))
   {

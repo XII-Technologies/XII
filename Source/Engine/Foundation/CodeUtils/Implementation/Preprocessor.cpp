@@ -117,11 +117,11 @@ xiiResult xiiPreprocessor::ProcessFile(const char* szFile, TokenStream& TokenOut
   return XII_SUCCESS;
 }
 
-xiiResult xiiPreprocessor::Process(const char* szMainFile, TokenStream& TokenOutput)
+xiiResult xiiPreprocessor::Process(const char* szMainFile, TokenStream& ref_tokenOutput)
 {
   XII_ASSERT_DEV(m_FileLocatorCallback.IsValid(), "No file locator callback has been set.");
 
-  TokenOutput.Clear();
+  ref_tokenOutput.Clear();
 
   // Add a custom define for the __FILE__ macro
   {
@@ -161,7 +161,7 @@ xiiResult xiiPreprocessor::Process(const char* szMainFile, TokenStream& TokenOut
     return XII_FAILURE;
   }
 
-  if (ProcessFile(sFileToOpen, TokenOutput).Failed())
+  if (ProcessFile(sFileToOpen, ref_tokenOutput).Failed())
     return XII_FAILURE;
 
   m_IfdefActiveStack.PopBack();
@@ -181,16 +181,16 @@ xiiResult xiiPreprocessor::Process(const char* szMainFile, TokenStream& TokenOut
   return XII_SUCCESS;
 }
 
-xiiResult xiiPreprocessor::Process(const char* szMainFile, xiiStringBuilder& sOutput, bool bKeepComments, bool bRemoveRedundantWhitespace, bool bInsertLine)
+xiiResult xiiPreprocessor::Process(const char* szMainFile, xiiStringBuilder& ref_sOutput, bool bKeepComments, bool bRemoveRedundantWhitespace, bool bInsertLine)
 {
-  sOutput.Clear();
+  ref_sOutput.Clear();
 
   TokenStream TokenOutput;
   if (Process(szMainFile, TokenOutput).Failed())
     return XII_FAILURE;
 
   // generate the final text output
-  CombineTokensToString(TokenOutput, 0, sOutput, bKeepComments, bRemoveRedundantWhitespace, bInsertLine);
+  CombineTokensToString(TokenOutput, 0, ref_sOutput, bKeepComments, bRemoveRedundantWhitespace, bInsertLine);
 
   return XII_SUCCESS;
 }

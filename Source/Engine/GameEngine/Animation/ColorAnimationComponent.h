@@ -8,7 +8,7 @@
 #include <Core/World/World.h>
 #include <GameEngine/Animation/PropertyAnimResource.h>
 
-typedef xiiComponentManagerSimple<class xiiColorAnimationComponent, xiiComponentUpdateType::WhenSimulating> xiiColorAnimationComponentManager;
+using xiiColorAnimationComponentManager = xiiComponentManagerSimple<class xiiColorAnimationComponent, xiiComponentUpdateType::WhenSimulating>;
 
 /// \brief Samples a color gradient and sends an xiiMsgSetColor to the object it is attached to
 ///
@@ -25,8 +25,8 @@ class XII_GAMEENGINE_DLL xiiColorAnimationComponent : public xiiComponent
   //////////////////////////////////////////////////////////////////////////
   // xiiComponent
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnSimulationStarted() override;

@@ -30,7 +30,7 @@ xiiSourcePass::xiiSourcePass(const char* szName) :
   m_ClearColor = xiiColor::Black;
 }
 
-xiiSourcePass::~xiiSourcePass() {}
+xiiSourcePass::~xiiSourcePass() = default;
 
 bool xiiSourcePass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
@@ -98,7 +98,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     pNode->RenameProperty("MSAA Mode", "MSAA_Mode");
     pNode->RenameProperty("Clear Color", "ClearColor");

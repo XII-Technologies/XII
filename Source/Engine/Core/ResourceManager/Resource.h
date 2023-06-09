@@ -81,7 +81,7 @@ public:
   XII_ALWAYS_INLINE xiiUInt8 GetNumQualityLevelsLoadable() const { return m_uiQualityLevelsLoadable; }
 
   /// \brief Returns the priority that is used by the resource manager to determine which resource to load next.
-  float GetLoadingPriority(xiiTime tNow) const;
+  float GetLoadingPriority(xiiTime now) const;
 
   /// \brief Returns the current resource priority.
   xiiResourcePriority GetPriority() const { return m_Priority; }

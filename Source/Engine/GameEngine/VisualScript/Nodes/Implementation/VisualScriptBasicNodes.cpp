@@ -161,8 +161,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_Log, 1, xiiRTTIDefaultAlloc
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_Log::xiiVisualScriptNode_Log() {}
-xiiVisualScriptNode_Log::~xiiVisualScriptNode_Log() {}
+xiiVisualScriptNode_Log::xiiVisualScriptNode_Log()  = default;
+xiiVisualScriptNode_Log::~xiiVisualScriptNode_Log() = default;
 
 void xiiVisualScriptNode_Log::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -467,8 +467,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_MessageHandler, 1, xiiRTTID
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_MessageHandler::xiiVisualScriptNode_MessageHandler() {}
-xiiVisualScriptNode_MessageHandler::~xiiVisualScriptNode_MessageHandler() {}
+xiiVisualScriptNode_MessageHandler::xiiVisualScriptNode_MessageHandler()  = default;
+xiiVisualScriptNode_MessageHandler::~xiiVisualScriptNode_MessageHandler() = default;
 
 void xiiVisualScriptNode_MessageHandler::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -542,9 +542,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_FunctionCall, 1, xiiRTTIDef
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_FunctionCall::xiiVisualScriptNode_FunctionCall() {}
+xiiVisualScriptNode_FunctionCall::xiiVisualScriptNode_FunctionCall() = default;
 
-xiiVisualScriptNode_FunctionCall::~xiiVisualScriptNode_FunctionCall() {}
+xiiVisualScriptNode_FunctionCall::~xiiVisualScriptNode_FunctionCall() = default;
 
 void xiiVisualScriptNode_FunctionCall::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
 {
@@ -666,13 +666,13 @@ void* xiiVisualScriptNode_FunctionCall::GetInputPinDataPointer(xiiUInt8 uiPin)
   return m_Arguments[uiPin - 2].GetWriteAccess().m_pObject;
 }
 
-xiiResult xiiVisualScriptNode_FunctionCall::ConvertArgumentToRequiredType(xiiVariant& var, xiiVariantType::Enum type)
+xiiResult xiiVisualScriptNode_FunctionCall::ConvertArgumentToRequiredType(xiiVariant& ref_var, xiiVariantType::Enum type)
 {
-  if (var.GetType() == type)
+  if (ref_var.GetType() == type)
     return XII_SUCCESS;
 
   xiiResult couldConvert = XII_FAILURE;
-  var                    = var.ConvertTo(type, &couldConvert);
+  ref_var                = ref_var.ConvertTo(type, &couldConvert);
 
   return couldConvert;
 }

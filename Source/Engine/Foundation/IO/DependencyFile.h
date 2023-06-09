@@ -27,11 +27,11 @@ public:
 
   /// \brief Writes the current state to a stream. Note that you probably should call StoreCurrentTimeStamp() before this, to serialize the latest
   /// file stamp
-  xiiResult WriteDependencyFile(xiiStreamWriter& stream) const;
+  xiiResult WriteDependencyFile(xiiStreamWriter& ref_stream) const;
 
   /// \brief Reads the state from a stream. Call HasAnyFileChanged() afterwards to determine whether anything has changed since when the data was
   /// serialized.
-  xiiResult ReadDependencyFile(xiiStreamReader& stream);
+  xiiResult ReadDependencyFile(xiiStreamReader& ref_stream);
 
   /// \brief Writes the current state to a file. Note that you probably should call StoreCurrentTimeStamp() before this, to serialize the latest file
   /// stamp

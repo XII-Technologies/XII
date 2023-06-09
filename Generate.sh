@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
       BuildType=$2
       shift 2
       ;;
-	  
+
     *)
       break
       ;;
@@ -75,7 +75,7 @@ elif [[ $Issue =~ $MintPattern ]]; then
   Version=${BASH_REMATCH[1]}
 elif [[ $Issue =~ $KaliPattern ]]; then
   Distribution="Kali"
-  
+
   LsbRelease=$(lsb_release -r)
   # VersionPattern="(^Release:+\s+[0-9]+.+[0-9])"
   VersionPattern="([0-9]+)"

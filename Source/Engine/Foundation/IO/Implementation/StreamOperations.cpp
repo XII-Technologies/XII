@@ -8,33 +8,33 @@
 // C-style strings
 // No read equivalent for C-style strings (but can be read as xiiString & xiiStringBuilder instances)
 
-xiiStreamWriter& operator<<(xiiStreamWriter& Stream, const char* szValue)
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const char* szValue)
 {
   xiiStringView szView(szValue);
-  Stream.WriteString(szView).AssertSuccess();
+  ref_stream.WriteString(szView).AssertSuccess();
 
-  return Stream;
+  return ref_stream;
 }
 
-xiiStreamWriter& operator<<(xiiStreamWriter& Stream, xiiStringView sValue)
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, xiiStringView sValue)
 {
-  Stream.WriteString(sValue).AssertSuccess();
+  ref_stream.WriteString(sValue).AssertSuccess();
 
-  return Stream;
+  return ref_stream;
 }
 
 // xiiStringBuilder
 
-xiiStreamWriter& operator<<(xiiStreamWriter& Stream, const xiiStringBuilder& sValue)
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiStringBuilder& sValue)
 {
-  Stream.WriteString(sValue.GetView()).AssertSuccess();
-  return Stream;
+  ref_stream.WriteString(sValue.GetView()).AssertSuccess();
+  return ref_stream;
 }
 
-xiiStreamReader& operator>>(xiiStreamReader& Stream, xiiStringBuilder& sValue)
+xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiStringBuilder& ref_sValue)
 {
-  Stream.ReadString(sValue).AssertSuccess();
-  return Stream;
+  ref_stream.ReadString(ref_sValue).AssertSuccess();
+  return ref_stream;
 }
 
 

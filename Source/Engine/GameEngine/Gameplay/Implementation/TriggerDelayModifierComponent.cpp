@@ -40,20 +40,20 @@ void xiiTriggerDelayModifierComponent::Initialize()
   SUPER::Initialize();
 }
 
-void xiiTriggerDelayModifierComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiTriggerDelayModifierComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_ActivationDelay;
   s << m_DeactivationDelay;
 }
 
-void xiiTriggerDelayModifierComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiTriggerDelayModifierComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_ActivationDelay;
   s >> m_DeactivationDelay;

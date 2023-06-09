@@ -25,7 +25,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleEffectDescriptor, 2, xiiRTTIDefaultA
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiParticleEffectDescriptor::xiiParticleEffectDescriptor() {}
+xiiParticleEffectDescriptor::xiiParticleEffectDescriptor() = default;
 
 xiiParticleEffectDescriptor::~xiiParticleEffectDescriptor()
 {

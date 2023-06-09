@@ -3,73 +3,73 @@
 #include <Foundation/IO/Stream.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
-void xiiTexFormat::WriteTextureHeader(xiiStreamWriter& stream) const
+void xiiTexFormat::WriteTextureHeader(xiiStreamWriter& ref_stream) const
 {
   xiiUInt8 uiFileFormatVersion = 2;
-  stream << uiFileFormatVersion;
+  ref_stream << uiFileFormatVersion;
 
-  stream << m_bSRGB;
-  stream << m_AddressModeU;
-  stream << m_AddressModeV;
-  stream << m_AddressModeW;
-  stream << m_TextureFilter;
+  ref_stream << m_bSRGB;
+  ref_stream << m_AddressModeU;
+  ref_stream << m_AddressModeV;
+  ref_stream << m_AddressModeW;
+  ref_stream << m_TextureFilter;
 }
 
-void xiiTexFormat::WriteRenderTargetHeader(xiiStreamWriter& stream) const
+void xiiTexFormat::WriteRenderTargetHeader(xiiStreamWriter& ref_stream) const
 {
   xiiUInt8 uiFileFormatVersion = 5;
-  stream << uiFileFormatVersion;
+  ref_stream << uiFileFormatVersion;
 
   // version 2
-  stream << m_bSRGB;
-  stream << m_AddressModeU;
-  stream << m_AddressModeV;
-  stream << m_AddressModeW;
-  stream << m_TextureFilter;
+  ref_stream << m_bSRGB;
+  ref_stream << m_AddressModeU;
+  ref_stream << m_AddressModeV;
+  ref_stream << m_AddressModeW;
+  ref_stream << m_TextureFilter;
 
   // version 3
-  stream << m_iRenderTargetResolutionX;
-  stream << m_iRenderTargetResolutionY;
+  ref_stream << m_iRenderTargetResolutionX;
+  ref_stream << m_iRenderTargetResolutionY;
 
   // version 4
-  stream << m_fResolutionScale;
+  ref_stream << m_fResolutionScale;
 
   // version 5
-  stream << m_GalRenderTargetFormat;
+  ref_stream << m_GalRenderTargetFormat;
 }
 
-void xiiTexFormat::ReadHeader(xiiStreamReader& stream)
+void xiiTexFormat::ReadHeader(xiiStreamReader& ref_stream)
 {
   xiiUInt8 uiFileFormatVersion = 0;
-  stream >> uiFileFormatVersion;
+  ref_stream >> uiFileFormatVersion;
 
   // version 2
   if (uiFileFormatVersion >= 2)
   {
-    stream >> m_bSRGB;
-    stream >> m_AddressModeU;
-    stream >> m_AddressModeV;
-    stream >> m_AddressModeW;
-    stream >> m_TextureFilter;
+    ref_stream >> m_bSRGB;
+    ref_stream >> m_AddressModeU;
+    ref_stream >> m_AddressModeV;
+    ref_stream >> m_AddressModeW;
+    ref_stream >> m_TextureFilter;
   }
 
   // version 3
   if (uiFileFormatVersion >= 3)
   {
-    stream >> m_iRenderTargetResolutionX;
-    stream >> m_iRenderTargetResolutionY;
+    ref_stream >> m_iRenderTargetResolutionX;
+    ref_stream >> m_iRenderTargetResolutionY;
   }
 
   // version 4
   if (uiFileFormatVersion >= 4)
   {
-    stream >> m_fResolutionScale;
+    ref_stream >> m_fResolutionScale;
   }
 
   // version 5
   if (uiFileFormatVersion >= 5)
   {
-    stream >> m_GalRenderTargetFormat;
+    ref_stream >> m_GalRenderTargetFormat;
   }
 }
 

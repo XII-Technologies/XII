@@ -98,24 +98,24 @@ bool xiiDependencyFile::HasAnyFileChanged() const
   return false;
 }
 
-xiiResult xiiDependencyFile::WriteDependencyFile(xiiStreamWriter& stream) const
+xiiResult xiiDependencyFile::WriteDependencyFile(xiiStreamWriter& ref_stream) const
 {
-  stream << (xiiUInt8)xiiDependencyFileVersion::Current;
+  ref_stream << (xiiUInt8)xiiDependencyFileVersion::Current;
 
-  stream << m_iMaxTimeStampStored;
-  stream << m_uiSumTimeStampStored;
-  stream << m_AssetTransformDependencies.GetCount();
+  ref_stream << m_iMaxTimeStampStored;
+  ref_stream << m_uiSumTimeStampStored;
+  ref_stream << m_AssetTransformDependencies.GetCount();
 
   for (const auto& sFile : m_AssetTransformDependencies)
-    stream << sFile;
+    ref_stream << sFile;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiDependencyFile::ReadDependencyFile(xiiStreamReader& stream)
+xiiResult xiiDependencyFile::ReadDependencyFile(xiiStreamReader& ref_stream)
 {
   xiiUInt8 uiVersion = (xiiUInt8)xiiDependencyFileVersion::Version0;
-  stream >> uiVersion;
+  ref_stream >> uiVersion;
 
   if (uiVersion > (xiiUInt8)xiiDependencyFileVersion::Current)
   {
@@ -125,19 +125,19 @@ xiiResult xiiDependencyFile::ReadDependencyFile(xiiStreamReader& stream)
 
   XII_ASSERT_DEV(uiVersion <= (xiiUInt8)xiiDependencyFileVersion::Current, "Invalid file version {0}", uiVersion);
 
-  stream >> m_iMaxTimeStampStored;
+  ref_stream >> m_iMaxTimeStampStored;
 
   if (uiVersion >= (xiiUInt8)xiiDependencyFileVersion::Version2)
   {
-    stream >> m_uiSumTimeStampStored;
+    ref_stream >> m_uiSumTimeStampStored;
   }
 
   xiiUInt32 count = 0;
-  stream >> count;
+  ref_stream >> count;
   m_AssetTransformDependencies.SetCount(count);
 
   for (xiiUInt32 i = 0; i < m_AssetTransformDependencies.GetCount(); ++i)
-    stream >> m_AssetTransformDependencies[i];
+    ref_stream >> m_AssetTransformDependencies[i];
 
   return XII_SUCCESS;
 }

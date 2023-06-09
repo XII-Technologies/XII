@@ -1,6 +1,6 @@
-xiiInt32 xiiImageFilterWeights::GetFirstSourceSampleIndex(xiiUInt32 dstSampleIndex) const
+xiiInt32 xiiImageFilterWeights::GetFirstSourceSampleIndex(xiiUInt32 uiDstSampleIndex) const
 {
-  xiiSimdFloat dstSampleInSourceSpace = (xiiSimdFloat(dstSampleIndex) + xiiSimdFloat(0.5f)) * m_fDestToSourceScale;
+  xiiSimdFloat dstSampleInSourceSpace = (xiiSimdFloat(uiDstSampleIndex) + xiiSimdFloat(0.5f)) * m_fDestToSourceScale;
 
   return xiiInt32(xiiMath::Floor(dstSampleInSourceSpace - m_fWidthInSourceSpace));
 }

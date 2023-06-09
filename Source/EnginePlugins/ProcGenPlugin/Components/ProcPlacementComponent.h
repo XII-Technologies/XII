@@ -102,8 +102,8 @@ struct xiiProcGenBoxExtents
   xiiQuat m_Rotation = xiiQuat::IdentityQuaternion();
   xiiVec3 m_vExtents = xiiVec3(10);
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_PROCGENPLUGIN_DLL, xiiProcGenBoxExtents);
@@ -127,11 +127,11 @@ public:
   void                                 SetResource(const xiiProcGenGraphResourceHandle& hResource);
   const xiiProcGenGraphResourceHandle& GetResource() const { return m_hResource; }
 
-  void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg);
-  void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const;
+  void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg);
+  void OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const;
 
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 private:
   xiiUInt32                   BoxExtents_GetCount() const;

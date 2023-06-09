@@ -438,7 +438,7 @@ ValueType& xiiMapBase<KeyType, ValueType, Comparer>::operator[](const Compatible
 
 template <typename KeyType, typename ValueType, typename Comparer>
 template <typename CompatibleKeyType>
-typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, ValueType, Comparer>::FindOrAdd(CompatibleKeyType&& key, bool* bExisted)
+typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, ValueType, Comparer>::FindOrAdd(CompatibleKeyType&& key, bool* pExisted)
 {
   Node* pNilNode      = reinterpret_cast<Node*>(&m_NilNode);
   Node* pInsertedNode = nullptr;
@@ -458,8 +458,8 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, 
       {
         if (m_Comparer.Equal(it->m_Key, key))
         {
-          if (bExisted)
-            *bExisted = true;
+          if (pExisted)
+            *pExisted = true;
 
           return Iterator(it);
         }
@@ -508,8 +508,8 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, 
 
   XII_ASSERT_DEBUG(pInsertedNode != nullptr, "Implementation Error.");
 
-  if (bExisted)
-    *bExisted = false;
+  if (pExisted)
+    *pExisted = false;
 
   return Iterator(pInsertedNode);
 }

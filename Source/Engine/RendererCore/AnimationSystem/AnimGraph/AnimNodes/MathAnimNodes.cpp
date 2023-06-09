@@ -30,9 +30,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiMathExpressionAnimNode::xiiMathExpressionAnimNode()  = default;
 xiiMathExpressionAnimNode::~xiiMathExpressionAnimNode() = default;
 
-void xiiMathExpressionAnimNode::SetExpression(const char* sz)
+void xiiMathExpressionAnimNode::SetExpression(const char* szSz)
 {
-  m_mExpression.Reset(sz);
+  m_mExpression.Reset(szSz);
 }
 
 const char* xiiMathExpressionAnimNode::GetExpression() const

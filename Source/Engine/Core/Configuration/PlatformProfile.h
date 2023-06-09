@@ -33,8 +33,8 @@ public:
   xiiProfileConfigData();
   ~xiiProfileConfigData();
 
-  virtual void SaveRuntimeData(xiiChunkStreamWriter& stream) const;
-  virtual void LoadRuntimeData(xiiChunkStreamReader& stream);
+  virtual void SaveRuntimeData(xiiChunkStreamWriter& ref_stream) const;
+  virtual void LoadRuntimeData(xiiChunkStreamReader& ref_stream);
 };
 
 //////////////////////////////////////////////////////////////////////////

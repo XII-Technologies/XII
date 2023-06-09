@@ -66,7 +66,7 @@ static inline xiiColorLinearUB GetPixelColor(const xiiImageView& image, xiiUInt3
 }
 
 
-xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageView& image, const char* szFileExtension) const
+xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, const char* szFileExtension) const
 {
   // Technically almost arbitrary formats are supported, but we only use the common ones.
   xiiImageFormat::Enum compatibleFormats[] = {
@@ -96,7 +96,7 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageVi
       return XII_FAILURE;
     }
 
-    return WriteImage(stream, convertedImage, szFileExtension);
+    return WriteImage(ref_stream, convertedImage, szFileExtension);
   }
 
   const bool bCompress = true;
@@ -123,7 +123,7 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageVi
     uiHeader[14] = static_cast<xiiUInt8>(image.GetHeight(0) % 256);
     uiHeader[16] = static_cast<xiiUInt8>(xiiImageFormat::GetBitsPerPixel(image.GetImageFormat()));
 
-    stream.WriteBytes(uiHeader, 18).IgnoreResult();
+    ref_stream.WriteBytes(uiHeader, 18).IgnoreResult();
   }
 
   const bool bAlpha = image.GetImageFormat() != xiiImageFormat::B8G8R8_UNORM;
@@ -141,12 +141,12 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageVi
       {
         const xiiColorLinearUB c = GetPixelColor(image, x, y, uiHeight);
 
-        stream << c.b;
-        stream << c.g;
-        stream << c.r;
+        ref_stream << c.b;
+        ref_stream << c.g;
+        ref_stream << c.r;
 
         if (bAlpha)
-          stream << c.a;
+          ref_stream << c.a;
       }
     }
   }
@@ -194,13 +194,13 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageVi
           {
             xiiUInt8 uiRepeat = static_cast<xiiUInt8>(iEqual + 127);
 
-            stream << uiRepeat;
-            stream << pc.b;
-            stream << pc.g;
-            stream << pc.r;
+            ref_stream << uiRepeat;
+            ref_stream << pc.b;
+            ref_stream << pc.g;
+            ref_stream << pc.r;
 
             if (bAlpha)
-              stream << pc.a;
+              ref_stream << pc.a;
 
             pc   = c;
             iRLE = 1;
@@ -218,16 +218,16 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageVi
           else
           {
             xiiUInt8 uiRepeat = (unsigned char)(unequal.GetCount()) - 1;
-            stream << uiRepeat;
+            ref_stream << uiRepeat;
 
             for (xiiUInt32 i = 0; i < unequal.GetCount(); ++i)
             {
-              stream << unequal[i].b;
-              stream << unequal[i].g;
-              stream << unequal[i].r;
+              ref_stream << unequal[i].b;
+              ref_stream << unequal[i].g;
+              ref_stream << unequal[i].r;
 
               if (bAlpha)
-                stream << unequal[i].a;
+                ref_stream << unequal[i].a;
             }
 
             pc   = c;
@@ -244,39 +244,39 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageVi
     {
       xiiUInt8 uiRepeat = 0;
 
-      stream << uiRepeat;
-      stream << pc.b;
-      stream << pc.g;
-      stream << pc.r;
+      ref_stream << uiRepeat;
+      ref_stream << pc.b;
+      ref_stream << pc.g;
+      ref_stream << pc.r;
 
       if (bAlpha)
-        stream << pc.a;
+        ref_stream << pc.a;
     }
     else if (iRLE == 2) // equal values
     {
       xiiUInt8 uiRepeat = static_cast<xiiUInt8>(iEqual + 127);
 
-      stream << uiRepeat;
-      stream << pc.b;
-      stream << pc.g;
-      stream << pc.r;
+      ref_stream << uiRepeat;
+      ref_stream << pc.b;
+      ref_stream << pc.g;
+      ref_stream << pc.r;
 
       if (bAlpha)
-        stream << pc.a;
+        ref_stream << pc.a;
     }
     else if (iRLE == 3)
     {
       xiiUInt8 uiRepeat = (xiiUInt8)(unequal.GetCount()) - 1;
-      stream << uiRepeat;
+      ref_stream << uiRepeat;
 
       for (xiiUInt32 i = 0; i < unequal.GetCount(); ++i)
       {
-        stream << unequal[i].b;
-        stream << unequal[i].g;
-        stream << unequal[i].r;
+        ref_stream << unequal[i].b;
+        ref_stream << unequal[i].g;
+        ref_stream << unequal[i].r;
 
         if (bAlpha)
-          stream << unequal[i].a;
+          ref_stream << unequal[i].a;
       }
     }
   }
@@ -284,68 +284,68 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& stream, const xiiImageVi
   return XII_SUCCESS;
 }
 
-static xiiResult ReadImageHeaderImpl(xiiStreamReader& stream, xiiImageHeader& header, const char* szFileExtension, TgaHeader& tgaHeader)
+static xiiResult ReadImageHeaderImpl(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension, TgaHeader& ref_tgaHeader)
 {
-  stream >> tgaHeader.m_iImageIDLength;
-  stream >> tgaHeader.m_Ignored1;
-  stream >> tgaHeader.m_ImageType;
-  stream.ReadBytes(&tgaHeader.m_Ignored2, 9);
-  stream >> tgaHeader.m_iImageWidth;
-  stream >> tgaHeader.m_iImageHeight;
-  stream >> tgaHeader.m_iBitsPerPixel;
-  stream >> reinterpret_cast<xiiUInt8&>(tgaHeader.m_ImageDescriptor);
+  ref_stream >> ref_tgaHeader.m_iImageIDLength;
+  ref_stream >> ref_tgaHeader.m_Ignored1;
+  ref_stream >> ref_tgaHeader.m_ImageType;
+  ref_stream.ReadBytes(&ref_tgaHeader.m_Ignored2, 9);
+  ref_stream >> ref_tgaHeader.m_iImageWidth;
+  ref_stream >> ref_tgaHeader.m_iImageHeight;
+  ref_stream >> ref_tgaHeader.m_iBitsPerPixel;
+  ref_stream >> reinterpret_cast<xiiUInt8&>(ref_tgaHeader.m_ImageDescriptor);
 
   // ignore optional data
-  stream.SkipBytes(tgaHeader.m_iImageIDLength);
+  ref_stream.SkipBytes(ref_tgaHeader.m_iImageIDLength);
 
-  const xiiUInt32 uiBytesPerPixel = tgaHeader.m_iBitsPerPixel / 8;
+  const xiiUInt32 uiBytesPerPixel = ref_tgaHeader.m_iBitsPerPixel / 8;
 
   // check whether width, height an BitsPerPixel are valid
-  if ((tgaHeader.m_iImageWidth <= 0) || (tgaHeader.m_iImageHeight <= 0) || ((uiBytesPerPixel != 1) && (uiBytesPerPixel != 3) && (uiBytesPerPixel != 4)) || (tgaHeader.m_ImageType != 2 && tgaHeader.m_ImageType != 3 && tgaHeader.m_ImageType != 10 && tgaHeader.m_ImageType != 11))
+  if ((ref_tgaHeader.m_iImageWidth <= 0) || (ref_tgaHeader.m_iImageHeight <= 0) || ((uiBytesPerPixel != 1) && (uiBytesPerPixel != 3) && (uiBytesPerPixel != 4)) || (ref_tgaHeader.m_ImageType != 2 && ref_tgaHeader.m_ImageType != 3 && ref_tgaHeader.m_ImageType != 10 && ref_tgaHeader.m_ImageType != 11))
   {
-    xiiLog::Error("TGA has an invalid header: Width = {0}, Height = {1}, BPP = {2}, ImageType = {3}", tgaHeader.m_iImageWidth, tgaHeader.m_iImageHeight, tgaHeader.m_iBitsPerPixel, tgaHeader.m_ImageType);
+    xiiLog::Error("TGA has an invalid header: Width = {0}, Height = {1}, BPP = {2}, ImageType = {3}", ref_tgaHeader.m_iImageWidth, ref_tgaHeader.m_iImageHeight, ref_tgaHeader.m_iBitsPerPixel, ref_tgaHeader.m_ImageType);
     return XII_FAILURE;
   }
 
   // Set image data
 
   if (uiBytesPerPixel == 1)
-    header.SetImageFormat(xiiImageFormat::R8_UNORM);
+    ref_header.SetImageFormat(xiiImageFormat::R8_UNORM);
   else if (uiBytesPerPixel == 3)
-    header.SetImageFormat(xiiImageFormat::B8G8R8_UNORM);
+    ref_header.SetImageFormat(xiiImageFormat::B8G8R8_UNORM);
   else
-    header.SetImageFormat(xiiImageFormat::B8G8R8A8_UNORM);
+    ref_header.SetImageFormat(xiiImageFormat::B8G8R8A8_UNORM);
 
-  header.SetNumMipLevels(1);
-  header.SetNumArrayIndices(1);
-  header.SetNumFaces(1);
+  ref_header.SetNumMipLevels(1);
+  ref_header.SetNumArrayIndices(1);
+  ref_header.SetNumFaces(1);
 
-  header.SetWidth(tgaHeader.m_iImageWidth);
-  header.SetHeight(tgaHeader.m_iImageHeight);
-  header.SetDepth(1);
+  ref_header.SetWidth(ref_tgaHeader.m_iImageWidth);
+  ref_header.SetHeight(ref_tgaHeader.m_iImageHeight);
+  ref_header.SetDepth(1);
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiTgaFileFormat::ReadImageHeader(xiiStreamReader& stream, xiiImageHeader& header, const char* szFileExtension) const
+xiiResult xiiTgaFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiTgaFileFormat::ReadImageHeader");
 
   TgaHeader tgaHeader;
-  return ReadImageHeaderImpl(stream, header, szFileExtension, tgaHeader);
+  return ReadImageHeaderImpl(ref_stream, ref_header, szFileExtension, tgaHeader);
 }
 
-xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, const char* szFileExtension) const
+xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, const char* szFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiTgaFileFormat::ReadImage");
 
   xiiImageHeader imageHeader;
   TgaHeader      tgaHeader;
-  XII_SUCCEED_OR_RETURN(ReadImageHeaderImpl(stream, imageHeader, szFileExtension, tgaHeader));
+  XII_SUCCEED_OR_RETURN(ReadImageHeaderImpl(ref_stream, imageHeader, szFileExtension, tgaHeader));
 
   const xiiUInt32 uiBytesPerPixel = tgaHeader.m_iBitsPerPixel / 8;
 
-  image.ResetAndAlloc(imageHeader);
+  ref_image.ResetAndAlloc(imageHeader);
 
   if (tgaHeader.m_ImageType == 3)
   {
@@ -361,7 +361,7 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
         const auto row = tgaHeader.m_ImageDescriptor.m_bFlipV ? y : tgaHeader.m_iImageHeight - y - 1;
         for (xiiInt32 x = tgaHeader.m_iImageWidth - 1; x >= 0; --x)
         {
-          stream.ReadBytes(image.GetPixelPointer<void>(0, 0, 0, x, row, 0), uiBytesPerPixel);
+          ref_stream.ReadBytes(ref_image.GetPixelPointer<void>(0, 0, 0, x, row, 0), uiBytesPerPixel);
         }
       }
     }
@@ -371,7 +371,7 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
       for (xiiInt32 y = 0; y < tgaHeader.m_iImageHeight; ++y)
       {
         const auto row = tgaHeader.m_ImageDescriptor.m_bFlipV ? y : tgaHeader.m_iImageHeight - y - 1;
-        stream.ReadBytes(image.GetPixelPointer<void>(0, 0, 0, 0, row, 0), uiBytesPerRow);
+        ref_stream.ReadBytes(ref_image.GetPixelPointer<void>(0, 0, 0, 0, row, 0), uiBytesPerRow);
       }
     }
   }
@@ -389,7 +389,7 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
         const auto row = tgaHeader.m_ImageDescriptor.m_bFlipV ? y : tgaHeader.m_iImageHeight - y - 1;
         for (xiiInt32 x = tgaHeader.m_iImageWidth - 1; x >= 0; --x)
         {
-          stream.ReadBytes(image.GetPixelPointer<void>(0, 0, 0, x, row, 0), uiBytesPerPixel);
+          ref_stream.ReadBytes(ref_image.GetPixelPointer<void>(0, 0, 0, x, row, 0), uiBytesPerPixel);
         }
       }
     }
@@ -399,7 +399,7 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
       for (xiiInt32 y = 0; y < tgaHeader.m_iImageHeight; ++y)
       {
         const auto row = tgaHeader.m_ImageDescriptor.m_bFlipV ? y : tgaHeader.m_iImageHeight - y - 1;
-        stream.ReadBytes(image.GetPixelPointer<void>(0, 0, 0, 0, row, 0), uiBytesPerRow);
+        ref_stream.ReadBytes(ref_image.GetPixelPointer<void>(0, 0, 0, 0, row, 0), uiBytesPerRow);
       }
     }
   }
@@ -414,7 +414,7 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
     {
       xiiUInt8 uiChunkHeader = 0;
 
-      stream >> uiChunkHeader;
+      ref_stream >> uiChunkHeader;
 
       const xiiInt32 numToRead = (uiChunkHeader & 127) + 1;
 
@@ -438,7 +438,7 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
 
           const auto row = tgaHeader.m_ImageDescriptor.m_bFlipV ? y : tgaHeader.m_iImageHeight - y - 1;
           const auto col = tgaHeader.m_ImageDescriptor.m_bFlipH ? tgaHeader.m_iImageWidth - x - 1 : x;
-          stream.ReadBytes(image.GetPixelPointer<void>(0, 0, 0, col, row, 0), uiBytesPerPixel);
+          ref_stream.ReadBytes(ref_image.GetPixelPointer<void>(0, 0, 0, col, row, 0), uiBytesPerPixel);
 
           ++iCurrentPixel;
         }
@@ -448,7 +448,7 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
         xiiUInt8 uiBuffer[4] = {255, 255, 255, 255};
 
         // read the current color
-        stream.ReadBytes(uiBuffer, uiBytesPerPixel);
+        ref_stream.ReadBytes(uiBuffer, uiBytesPerPixel);
 
         // if it is a 24-Bit TGA (3 channels), the fourth channel stays at 255 all the time, since the 4th value in ucBuffer is never overwritten
 
@@ -460,7 +460,7 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& stream, xiiImage& image, 
 
           const auto row    = tgaHeader.m_ImageDescriptor.m_bFlipV ? y : tgaHeader.m_iImageHeight - y - 1;
           const auto col    = tgaHeader.m_ImageDescriptor.m_bFlipH ? tgaHeader.m_iImageWidth - x - 1 : x;
-          xiiUInt8*  pPixel = image.GetPixelPointer<xiiUInt8>(0, 0, 0, col, row, 0);
+          xiiUInt8*  pPixel = ref_image.GetPixelPointer<xiiUInt8>(0, 0, 0, col, row, 0);
 
           // BGR
           pPixel[0] = uiBuffer[0];

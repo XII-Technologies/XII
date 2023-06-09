@@ -14,7 +14,7 @@ class XII_PROCGENPLUGIN_DLL xiiVolumeCollection : public xiiReflectedClass
 public:
   struct ShapeType
   {
-    typedef xiiUInt8 StorageType;
+    using StorageType = xiiUInt8;
 
     enum Enum
     {
@@ -68,13 +68,13 @@ public:
 
   float EvaluateAtGlobalPosition(const xiiSimdVec4f& vPosition, float fInitialValue, xiiProcVolumeImageMode::Enum imgMode, const xiiColor& refColor) const;
 
-  static void ExtractVolumesInBox(const xiiWorld& world, const xiiBoundingBox& box, xiiSpatialData::Category spatialCategory, const xiiTagSet& includeTags, xiiVolumeCollection& out_Collection, const xiiRTTI* pComponentBaseType = nullptr);
+  static void ExtractVolumesInBox(const xiiWorld& world, const xiiBoundingBox& box, xiiSpatialData::Category spatialCategory, const xiiTagSet& includeTags, xiiVolumeCollection& out_collection, const xiiRTTI* pComponentBaseType = nullptr);
 
   void AddSphere(const xiiSimdTransform& transform, float fRadius, xiiEnum<xiiProcGenBlendMode> blendMode, float fSortOrder, float fValue, float fFadeOutStart);
 
   void AddBox(const xiiSimdTransform& transform, const xiiVec3& vExtents, xiiEnum<xiiProcGenBlendMode> blendMode, float fSortOrder, float fValue, const xiiVec3& vFadeOutStart);
 
-  void AddImage(const xiiSimdTransform& transform, const xiiVec3& vExtents, xiiEnum<xiiProcGenBlendMode> blendMode, float fSortOrder, float fValue, const xiiVec3& vFadeOutStart, const xiiImageDataResourceHandle& image);
+  void AddImage(const xiiSimdTransform& transform, const xiiVec3& vExtents, xiiEnum<xiiProcGenBlendMode> blendMode, float fSortOrder, float fValue, const xiiVec3& vFadeOutStart, const xiiImageDataResourceHandle& hImage);
 
 private:
   xiiDynamicArray<Sphere, xiiAlignedAllocatorWrapper> m_Spheres;

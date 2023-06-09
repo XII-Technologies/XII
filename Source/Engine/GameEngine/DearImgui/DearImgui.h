@@ -16,8 +16,8 @@ using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DReso
 
 struct ImGuiContext;
 
-typedef xiiDelegate<void(ImFontAtlas&)> xiiImguiConfigFontCallback;
-typedef xiiDelegate<void(ImGuiStyle&)>  xiiImguiConfigStyleCallback;
+using xiiImguiConfigFontCallback  = xiiDelegate<void(ImFontAtlas&)>;
+using xiiImguiConfigStyleCallback = xiiDelegate<void(ImGuiStyle&)>;
 
 /// \brief Singleton class through which one can control the third-party library 'Dear Imgui'
 ///

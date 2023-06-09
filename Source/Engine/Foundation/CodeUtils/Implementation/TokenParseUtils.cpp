@@ -5,178 +5,178 @@
 
 namespace xiiTokenParseUtils
 {
-  void SkipWhitespace(const TokenStream& Tokens, xiiUInt32& uiCurToken)
+  void SkipWhitespace(const TokenStream& tokens, xiiUInt32& ref_uiCurToken)
   {
-    while (uiCurToken < Tokens.GetCount() && ((Tokens[uiCurToken]->m_iType == xiiTokenType::Whitespace) || (Tokens[uiCurToken]->m_iType == xiiTokenType::BlockComment) || (Tokens[uiCurToken]->m_iType == xiiTokenType::LineComment)))
-      ++uiCurToken;
+    while (ref_uiCurToken < tokens.GetCount() && ((tokens[ref_uiCurToken]->m_iType == xiiTokenType::Whitespace) || (tokens[ref_uiCurToken]->m_iType == xiiTokenType::BlockComment) || (tokens[ref_uiCurToken]->m_iType == xiiTokenType::LineComment)))
+      ++ref_uiCurToken;
   }
 
-  void SkipWhitespaceAndNewline(const TokenStream& Tokens, xiiUInt32& uiCurToken)
+  void SkipWhitespaceAndNewline(const TokenStream& tokens, xiiUInt32& ref_uiCurToken)
   {
-    while (uiCurToken < Tokens.GetCount() && ((Tokens[uiCurToken]->m_iType == xiiTokenType::Whitespace) || (Tokens[uiCurToken]->m_iType == xiiTokenType::BlockComment) || (Tokens[uiCurToken]->m_iType == xiiTokenType::Newline) || (Tokens[uiCurToken]->m_iType == xiiTokenType::LineComment)))
-      ++uiCurToken;
+    while (ref_uiCurToken < tokens.GetCount() && ((tokens[ref_uiCurToken]->m_iType == xiiTokenType::Whitespace) || (tokens[ref_uiCurToken]->m_iType == xiiTokenType::BlockComment) || (tokens[ref_uiCurToken]->m_iType == xiiTokenType::Newline) || (tokens[ref_uiCurToken]->m_iType == xiiTokenType::LineComment)))
+      ++ref_uiCurToken;
   }
 
-  bool IsEndOfLine(const TokenStream& Tokens, xiiUInt32 uiCurToken, bool bIgnoreWhitespace)
+  bool IsEndOfLine(const TokenStream& tokens, xiiUInt32 uiCurToken, bool bIgnoreWhitespace)
   {
     if (bIgnoreWhitespace)
-      SkipWhitespace(Tokens, uiCurToken);
+      SkipWhitespace(tokens, uiCurToken);
 
-    if (uiCurToken >= Tokens.GetCount())
+    if (uiCurToken >= tokens.GetCount())
       return true;
 
-    return Tokens[uiCurToken]->m_iType == xiiTokenType::Newline || Tokens[uiCurToken]->m_iType == xiiTokenType::EndOfFile;
+    return tokens[uiCurToken]->m_iType == xiiTokenType::Newline || tokens[uiCurToken]->m_iType == xiiTokenType::EndOfFile;
   }
 
-  void CopyRelevantTokens(const TokenStream& Source, xiiUInt32 uiFirstSourceToken, TokenStream& Destination, bool bPreserveNewLines)
+  void CopyRelevantTokens(const TokenStream& source, xiiUInt32 uiFirstSourceToken, TokenStream& ref_destination, bool bPreserveNewLines)
   {
-    Destination.Reserve(Destination.GetCount() + Source.GetCount() - uiFirstSourceToken);
+    ref_destination.Reserve(ref_destination.GetCount() + source.GetCount() - uiFirstSourceToken);
 
     {
       // skip all whitespace at the start of the replacement string
       xiiUInt32 i = uiFirstSourceToken;
-      SkipWhitespace(Source, i);
+      SkipWhitespace(source, i);
 
       // add all the relevant tokens to the definition
-      for (; i < Source.GetCount(); ++i)
+      for (; i < source.GetCount(); ++i)
       {
-        if (Source[i]->m_iType == xiiTokenType::BlockComment || Source[i]->m_iType == xiiTokenType::LineComment || Source[i]->m_iType == xiiTokenType::EndOfFile || (!bPreserveNewLines && Source[i]->m_iType == xiiTokenType::Newline))
+        if (source[i]->m_iType == xiiTokenType::BlockComment || source[i]->m_iType == xiiTokenType::LineComment || source[i]->m_iType == xiiTokenType::EndOfFile || (!bPreserveNewLines && source[i]->m_iType == xiiTokenType::Newline))
           continue;
 
-        Destination.PushBack(Source[i]);
+        ref_destination.PushBack(source[i]);
       }
     }
 
     // remove whitespace at end of macro
-    while (!Destination.IsEmpty() && Destination.PeekBack()->m_iType == xiiTokenType::Whitespace)
-      Destination.PopBack();
+    while (!ref_destination.IsEmpty() && ref_destination.PeekBack()->m_iType == xiiTokenType::Whitespace)
+      ref_destination.PopBack();
   }
 
-  bool Accept(const TokenStream& Tokens, xiiUInt32& uiCurToken, const char* szToken, xiiUInt32* pAccepted)
+  bool Accept(const TokenStream& tokens, xiiUInt32& ref_uiCurToken, const char* szToken, xiiUInt32* pAccepted)
   {
-    SkipWhitespace(Tokens, uiCurToken);
+    SkipWhitespace(tokens, ref_uiCurToken);
 
-    if (uiCurToken >= Tokens.GetCount())
+    if (ref_uiCurToken >= tokens.GetCount())
       return false;
 
-    if (Tokens[uiCurToken]->m_DataView == szToken)
+    if (tokens[ref_uiCurToken]->m_DataView == szToken)
     {
       if (pAccepted)
-        *pAccepted = uiCurToken;
+        *pAccepted = ref_uiCurToken;
 
-      uiCurToken++;
+      ref_uiCurToken++;
       return true;
     }
 
     return false;
   }
 
-  bool Accept(const TokenStream& Tokens, xiiUInt32& uiCurToken, xiiTokenType::Enum Type, xiiUInt32* pAccepted)
+  bool Accept(const TokenStream& tokens, xiiUInt32& ref_uiCurToken, xiiTokenType::Enum type, xiiUInt32* pAccepted)
   {
-    SkipWhitespace(Tokens, uiCurToken);
+    SkipWhitespace(tokens, ref_uiCurToken);
 
-    if (uiCurToken >= Tokens.GetCount())
+    if (ref_uiCurToken >= tokens.GetCount())
       return false;
 
-    if (Tokens[uiCurToken]->m_iType == Type)
+    if (tokens[ref_uiCurToken]->m_iType == type)
     {
       if (pAccepted)
-        *pAccepted = uiCurToken;
+        *pAccepted = ref_uiCurToken;
 
-      uiCurToken++;
+      ref_uiCurToken++;
       return true;
     }
 
     return false;
   }
 
-  bool Accept(const TokenStream& Tokens, xiiUInt32& uiCurToken, const char* szToken1, const char* szToken2, xiiUInt32* pAccepted)
+  bool Accept(const TokenStream& tokens, xiiUInt32& ref_uiCurToken, const char* szToken1, const char* szToken2, xiiUInt32* pAccepted)
   {
-    SkipWhitespace(Tokens, uiCurToken);
+    SkipWhitespace(tokens, ref_uiCurToken);
 
-    if (uiCurToken + 1 >= Tokens.GetCount())
+    if (ref_uiCurToken + 1 >= tokens.GetCount())
       return false;
 
-    if (Tokens[uiCurToken]->m_DataView == szToken1 && Tokens[uiCurToken + 1]->m_DataView == szToken2)
+    if (tokens[ref_uiCurToken]->m_DataView == szToken1 && tokens[ref_uiCurToken + 1]->m_DataView == szToken2)
     {
       if (pAccepted)
-        *pAccepted = uiCurToken;
+        *pAccepted = ref_uiCurToken;
 
-      uiCurToken += 2;
+      ref_uiCurToken += 2;
       return true;
     }
 
     return false;
   }
 
-  bool AcceptUnless(const TokenStream& Tokens, xiiUInt32& uiCurToken, const char* szToken1, const char* szToken2, xiiUInt32* pAccepted)
+  bool AcceptUnless(const TokenStream& tokens, xiiUInt32& ref_uiCurToken, const char* szToken1, const char* szToken2, xiiUInt32* pAccepted)
   {
-    SkipWhitespace(Tokens, uiCurToken);
+    SkipWhitespace(tokens, ref_uiCurToken);
 
-    if (uiCurToken + 1 >= Tokens.GetCount())
+    if (ref_uiCurToken + 1 >= tokens.GetCount())
       return false;
 
-    if (Tokens[uiCurToken]->m_DataView == szToken1 && Tokens[uiCurToken + 1]->m_DataView != szToken2)
+    if (tokens[ref_uiCurToken]->m_DataView == szToken1 && tokens[ref_uiCurToken + 1]->m_DataView != szToken2)
     {
       if (pAccepted)
-        *pAccepted = uiCurToken;
+        *pAccepted = ref_uiCurToken;
 
-      uiCurToken += 1;
+      ref_uiCurToken += 1;
       return true;
     }
 
     return false;
   }
 
-  void CombineRelevantTokensToString(const TokenStream& Tokens, xiiUInt32 uiCurToken, xiiStringBuilder& sResult)
+  void CombineRelevantTokensToString(const TokenStream& tokens, xiiUInt32 uiCurToken, xiiStringBuilder& ref_sResult)
   {
-    sResult.Clear();
+    ref_sResult.Clear();
     xiiStringBuilder sTemp;
 
-    for (xiiUInt32 t = uiCurToken; t < Tokens.GetCount(); ++t)
+    for (xiiUInt32 t = uiCurToken; t < tokens.GetCount(); ++t)
     {
-      if ((Tokens[t]->m_iType == xiiTokenType::LineComment) || (Tokens[t]->m_iType == xiiTokenType::BlockComment) || (Tokens[t]->m_iType == xiiTokenType::Newline) || (Tokens[t]->m_iType == xiiTokenType::EndOfFile))
+      if ((tokens[t]->m_iType == xiiTokenType::LineComment) || (tokens[t]->m_iType == xiiTokenType::BlockComment) || (tokens[t]->m_iType == xiiTokenType::Newline) || (tokens[t]->m_iType == xiiTokenType::EndOfFile))
         continue;
 
-      sTemp = Tokens[t]->m_DataView;
-      sResult.Append(sTemp.GetView());
+      sTemp = tokens[t]->m_DataView;
+      ref_sResult.Append(sTemp.GetView());
     }
   }
 
-  void CreateCleanTokenStream(const TokenStream& Tokens, xiiUInt32 uiCurToken, TokenStream& Destination, bool bKeepComments)
+  void CreateCleanTokenStream(const TokenStream& tokens, xiiUInt32 uiCurToken, TokenStream& ref_destination, bool bKeepComments)
   {
-    SkipWhitespace(Tokens, uiCurToken);
+    SkipWhitespace(tokens, uiCurToken);
 
-    for (xiiUInt32 t = uiCurToken; t < Tokens.GetCount(); ++t)
+    for (xiiUInt32 t = uiCurToken; t < tokens.GetCount(); ++t)
     {
-      if (Tokens[t]->m_iType == xiiTokenType::Newline)
+      if (tokens[t]->m_iType == xiiTokenType::Newline)
       {
         // remove all whitespace before a newline
-        while (!Destination.IsEmpty() && Destination.PeekBack()->m_iType == xiiTokenType::Whitespace)
-          Destination.PopBack();
+        while (!ref_destination.IsEmpty() && ref_destination.PeekBack()->m_iType == xiiTokenType::Whitespace)
+          ref_destination.PopBack();
 
         // if there is already a newline stored, discard the new one
-        if (!Destination.IsEmpty() && Destination.PeekBack()->m_iType == xiiTokenType::Newline)
+        if (!ref_destination.IsEmpty() && ref_destination.PeekBack()->m_iType == xiiTokenType::Newline)
           continue;
       }
 
-      Destination.PushBack(Tokens[t]);
+      ref_destination.PushBack(tokens[t]);
     }
   }
 
-  void CombineTokensToString(const TokenStream& Tokens0, xiiUInt32 uiCurToken, xiiStringBuilder& sResult, bool bKeepComments, bool bRemoveRedundantWhitespace, bool bInsertLine)
+  void CombineTokensToString(const TokenStream& tokens0, xiiUInt32 uiCurToken, xiiStringBuilder& ref_sResult, bool bKeepComments, bool bRemoveRedundantWhitespace, bool bInsertLine)
   {
     TokenStream Tokens;
 
     if (bRemoveRedundantWhitespace)
     {
-      CreateCleanTokenStream(Tokens0, uiCurToken, Tokens, bKeepComments);
+      CreateCleanTokenStream(tokens0, uiCurToken, Tokens, bKeepComments);
       uiCurToken = 0;
     }
     else
-      Tokens = Tokens0;
+      Tokens = tokens0;
 
-    sResult.Clear();
+    ref_sResult.Clear();
     xiiStringBuilder sTemp;
 
     xiiUInt32       uiCurLine = 0xFFFFFFFF;
@@ -193,9 +193,9 @@ namespace xiiTokenParseUtils
 
       if (bInsertLine)
       {
-        if (sResult.IsEmpty())
+        if (ref_sResult.IsEmpty())
         {
-          sResult.AppendFormat("#line {0} \"{1}\"\n", Tokens[t]->m_uiLine, Tokens[t]->m_File);
+          ref_sResult.AppendFormat("#line {0} \"{1}\"\n", Tokens[t]->m_uiLine, Tokens[t]->m_File);
           uiCurLine = Tokens[t]->m_uiLine;
           sCurFile  = Tokens[t]->m_File;
         }
@@ -209,7 +209,7 @@ namespace xiiTokenParseUtils
         {
           if (Tokens[t]->m_uiLine != uiCurLine || Tokens[t]->m_File != sCurFile)
           {
-            sResult.AppendFormat("\n#line {0} \"{1}\"\n", Tokens[t]->m_uiLine, Tokens[t]->m_File);
+            ref_sResult.AppendFormat("\n#line {0} \"{1}\"\n", Tokens[t]->m_uiLine, Tokens[t]->m_File);
             uiCurLine = Tokens[t]->m_uiLine;
             sCurFile  = Tokens[t]->m_File;
           }
@@ -217,7 +217,7 @@ namespace xiiTokenParseUtils
       }
 
       sTemp = Tokens[t]->m_DataView;
-      sResult.Append(sTemp.GetView());
+      ref_sResult.Append(sTemp.GetView());
     }
   }
 } // namespace xiiTokenParseUtils

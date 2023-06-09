@@ -77,9 +77,7 @@ void xiiVariantTypeRegistry::UpdateTypes()
 
 XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiVariantTypeInfo);
 
-xiiVariantTypeInfo::xiiVariantTypeInfo()
-{
-}
+xiiVariantTypeInfo::xiiVariantTypeInfo() = default;
 
 
 XII_STATICLINK_FILE(Foundation, Foundation_Types_Implementation_VariantTypeRegistry);

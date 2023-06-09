@@ -65,29 +65,29 @@ void xiiGeometry::Clear()
   m_Lines.Clear();
 }
 
-xiiUInt32 xiiGeometry::AddVertex(const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord, const xiiColor& color, const xiiVec4U16& boneIndices /*= xiiVec4U16::ZeroVector()*/, const xiiColorLinearUB& boneWeights /*= xiiColorLinearUB(255, 0, 0, 0)*/)
+xiiUInt32 xiiGeometry::AddVertex(const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord, const xiiColor& color, const xiiVec4U16& vBoneIndices /*= xiiVec4U16::ZeroVector()*/, const xiiColorLinearUB& boneWeights /*= xiiColorLinearUB(255, 0, 0, 0)*/)
 {
   Vertex& v       = m_Vertices.ExpandAndGetRef();
   v.m_vPosition   = vPos;
   v.m_vNormal     = vNormal;
   v.m_vTexCoord   = vTexCoord;
   v.m_Color       = color;
-  v.m_BoneIndices = boneIndices;
+  v.m_BoneIndices = vBoneIndices;
   v.m_BoneWeights = boneWeights;
 
   return m_Vertices.GetCount() - 1;
 }
 
-void xiiGeometry::AddPolygon(const xiiArrayPtr<xiiUInt32>& Vertices, bool bFlipWinding)
+void xiiGeometry::AddPolygon(const xiiArrayPtr<xiiUInt32>& vertices, bool bFlipWinding)
 {
-  XII_ASSERT_DEV(Vertices.GetCount() >= 3, "Polygon must have at least 3 vertices, not {0}", Vertices.GetCount());
+  XII_ASSERT_DEV(vertices.GetCount() >= 3, "Polygon must have at least 3 vertices, not {0}", vertices.GetCount());
 
-  for (xiiUInt32 v = 0; v < Vertices.GetCount(); ++v)
+  for (xiiUInt32 v = 0; v < vertices.GetCount(); ++v)
   {
-    XII_ASSERT_DEV(Vertices[v] < m_Vertices.GetCount(), "Invalid vertex index {0}, geometry only has {1} vertices", Vertices[v], m_Vertices.GetCount());
+    XII_ASSERT_DEV(vertices[v] < m_Vertices.GetCount(), "Invalid vertex index {0}, geometry only has {1} vertices", vertices[v], m_Vertices.GetCount());
   }
 
-  m_Polygons.ExpandAndGetRef().m_Vertices = Vertices;
+  m_Polygons.ExpandAndGetRef().m_Vertices = vertices;
 
   if (bFlipWinding)
   {
@@ -195,40 +195,40 @@ struct TangentContext
     TangentContext& context = *static_cast<TangentContext*>(pContext->m_pUserData);
     return context.m_pGeom->GetPolygons()[iFace].m_Vertices.GetCount();
   }
-  static void getPosition(const SMikkTSpaceContext* pContext, float fvPosOut[], const int iFace, const int iVert)
+  static void getPosition(const SMikkTSpaceContext* pContext, float pFvPosOut[], const int iFace, const int iVert)
   {
     TangentContext& context      = *static_cast<TangentContext*>(pContext->m_pUserData);
     xiiUInt32       iVertexIndex = context.m_pGeom->GetPolygons()[iFace].m_Vertices[iVert];
     const xiiVec3&  pos          = context.m_pGeom->GetVertices()[iVertexIndex].m_vPosition;
-    fvPosOut[0]                  = pos.x;
-    fvPosOut[1]                  = pos.y;
-    fvPosOut[2]                  = pos.z;
+    pFvPosOut[0]                 = pos.x;
+    pFvPosOut[1]                 = pos.y;
+    pFvPosOut[2]                 = pos.z;
   }
-  static void getNormal(const SMikkTSpaceContext* pContext, float fvNormOut[], const int iFace, const int iVert)
+  static void getNormal(const SMikkTSpaceContext* pContext, float pFvNormOut[], const int iFace, const int iVert)
   {
     TangentContext& context      = *static_cast<TangentContext*>(pContext->m_pUserData);
     xiiUInt32       iVertexIndex = context.m_pGeom->GetPolygons()[iFace].m_Vertices[iVert];
     const xiiVec3&  normal       = context.m_pGeom->GetVertices()[iVertexIndex].m_vNormal;
-    fvNormOut[0]                 = normal.x;
-    fvNormOut[1]                 = normal.y;
-    fvNormOut[2]                 = normal.z;
+    pFvNormOut[0]                = normal.x;
+    pFvNormOut[1]                = normal.y;
+    pFvNormOut[2]                = normal.z;
   }
-  static void getTexCoord(const SMikkTSpaceContext* pContext, float fvTexcOut[], const int iFace, const int iVert)
+  static void getTexCoord(const SMikkTSpaceContext* pContext, float pFvTexcOut[], const int iFace, const int iVert)
   {
     TangentContext& context      = *static_cast<TangentContext*>(pContext->m_pUserData);
     xiiUInt32       iVertexIndex = context.m_pGeom->GetPolygons()[iFace].m_Vertices[iVert];
     const xiiVec2&  tex          = context.m_pGeom->GetVertices()[iVertexIndex].m_vTexCoord;
-    fvTexcOut[0]                 = tex.x;
-    fvTexcOut[1]                 = tex.y;
+    pFvTexcOut[0]                = tex.x;
+    pFvTexcOut[1]                = tex.y;
   }
-  static void setTSpaceBasic(const SMikkTSpaceContext* pContext, const float fvTangent[], const float fSign, const int iFace, const int iVert)
+  static void setTSpaceBasic(const SMikkTSpaceContext* pContext, const float pFvTangent[], const float fSign, const int iFace, const int iVert)
   {
     TangentContext&     context      = *static_cast<TangentContext*>(pContext->m_pUserData);
     xiiUInt32           iVertexIndex = context.m_pGeom->GetPolygons()[iFace].m_Vertices[iVert];
     xiiGeometry::Vertex v            = context.m_pGeom->GetVertices()[iVertexIndex];
-    v.m_vTangent.x                   = fvTangent[0];
-    v.m_vTangent.y                   = fvTangent[1];
-    v.m_vTangent.z                   = fvTangent[2];
+    v.m_vTangent.x                   = pFvTangent[0];
+    v.m_vTangent.y                   = pFvTangent[1];
+    v.m_vTangent.z                   = pFvTangent[2];
     v.m_fBiTangentSign               = fSign;
 
     bool existed = false;
@@ -242,7 +242,7 @@ struct TangentContext
     context.m_Polygons[iFace].m_Vertices[iVert] = iNewVertexIndex;
   }
 
-  static void setTSpace(const SMikkTSpaceContext* pContext, const float fvTangent[], const float fvBiTangent[], const float fMagS, const float fMagT, const tbool bIsOrientationPreserving, const int iFace, const int iVert)
+  static void setTSpace(const SMikkTSpaceContext* pContext, const float pFvTangent[], const float pFvBiTangent[], const float fMagS, const float fMagT, const tbool isOrientationPreserving, const int iFace, const int iVert)
   {
     int i = 0;
     (void)i;
@@ -284,12 +284,12 @@ void xiiGeometry::ComputeTangents()
   m_Vertices = std::move(context.m_Vertices);
 }
 
-void xiiGeometry::ValidateTangents(float epsilon)
+void xiiGeometry::ValidateTangents(float fEpsilon)
 {
   for (auto& vertex : m_Vertices)
   {
     // checking for orthogonality to the normal and for squared unit length (standard case) or 3 (magic number for binormal inversion)
-    if (!xiiMath::IsEqual(vertex.m_vNormal.GetLengthSquared(), 1.f, epsilon) || !xiiMath::IsEqual(vertex.m_vNormal.Dot(vertex.m_vTangent), 0.f, epsilon) || !(xiiMath::IsEqual(vertex.m_vTangent.GetLengthSquared(), 1.f, epsilon) || xiiMath::IsEqual(vertex.m_vTangent.GetLengthSquared(), 3.f, epsilon)))
+    if (!xiiMath::IsEqual(vertex.m_vNormal.GetLengthSquared(), 1.f, fEpsilon) || !xiiMath::IsEqual(vertex.m_vNormal.Dot(vertex.m_vTangent), 0.f, fEpsilon) || !(xiiMath::IsEqual(vertex.m_vTangent.GetLengthSquared(), 1.f, fEpsilon) || xiiMath::IsEqual(vertex.m_vTangent.GetLengthSquared(), 3.f, fEpsilon)))
     {
       vertex.m_vTangent.SetZero();
     }
@@ -309,10 +309,10 @@ xiiUInt32 xiiGeometry::CalculateTriangleCount() const
   return numTris;
 }
 
-void xiiGeometry::SetAllVertexBoneIndices(const xiiVec4U16& boneIndices, xiiUInt32 uiFirstVertex)
+void xiiGeometry::SetAllVertexBoneIndices(const xiiVec4U16& vBoneIndices, xiiUInt32 uiFirstVertex)
 {
   for (xiiUInt32 v = uiFirstVertex; v < m_Vertices.GetCount(); ++v)
-    m_Vertices[v].m_BoneIndices = boneIndices;
+    m_Vertices[v].m_BoneIndices = vBoneIndices;
 }
 
 void xiiGeometry::SetAllVertexColor(const xiiColor& color, xiiUInt32 uiFirstVertex)
@@ -322,10 +322,10 @@ void xiiGeometry::SetAllVertexColor(const xiiColor& color, xiiUInt32 uiFirstVert
 }
 
 
-void xiiGeometry::SetAllVertexTexCoord(const xiiVec2& texCoord, xiiUInt32 uiFirstVertex /*= 0*/)
+void xiiGeometry::SetAllVertexTexCoord(const xiiVec2& vTexCoord, xiiUInt32 uiFirstVertex /*= 0*/)
 {
   for (xiiUInt32 v = uiFirstVertex; v < m_Vertices.GetCount(); ++v)
-    m_Vertices[v].m_vTexCoord = texCoord;
+    m_Vertices[v].m_vTexCoord = vTexCoord;
 }
 
 void xiiGeometry::TransformVertices(const xiiMat4& mTransform, xiiUInt32 uiFirstVertex)
@@ -383,17 +383,17 @@ void xiiGeometry::Merge(const xiiGeometry& other)
   }
 }
 
-void xiiGeometry::AddRectXY(const xiiVec2& size, xiiUInt32 uiTesselationX, xiiUInt32 uiTesselationY, const GeoOptions& options)
+void xiiGeometry::AddRectXY(const xiiVec2& vSize, xiiUInt32 uiTesselationX, xiiUInt32 uiTesselationY, const GeoOptions& options)
 {
   if (uiTesselationX == 0)
     uiTesselationX = 1;
   if (uiTesselationY == 0)
     uiTesselationY = 1;
 
-  const xiiVec2 halfSize     = size * 0.5f;
+  const xiiVec2 halfSize     = vSize * 0.5f;
   const bool    bFlipWinding = options.IsFlipWindingNecessary();
 
-  const xiiVec2 sizeFraction = size.CompDiv(xiiVec2(static_cast<float>(uiTesselationX), static_cast<float>(uiTesselationY)));
+  const xiiVec2 sizeFraction = vSize.CompDiv(xiiVec2(static_cast<float>(uiTesselationX), static_cast<float>(uiTesselationY)));
 
   for (xiiUInt32 vy = 0; vy < uiTesselationY + 1; ++vy)
   {
@@ -539,9 +539,9 @@ void xiiGeometry::AddBox(const xiiVec3& vFullExtents, bool bExtraVerticesForText
   }
 }
 
-void xiiGeometry::AddLineBox(const xiiVec3& size, const GeoOptions& options)
+void xiiGeometry::AddLineBox(const xiiVec3& vSize, const GeoOptions& options)
 {
-  const xiiVec3 halfSize = size * 0.5f;
+  const xiiVec3 halfSize = vSize * 0.5f;
 
   AddVertex(xiiVec3(-halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
   AddVertex(xiiVec3(halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
@@ -569,12 +569,12 @@ void xiiGeometry::AddLineBox(const xiiVec3& size, const GeoOptions& options)
   AddLine(3, 7);
 }
 
-void xiiGeometry::AddLineBoxCorners(const xiiVec3& size, float fCornerFraction, const GeoOptions& options)
+void xiiGeometry::AddLineBoxCorners(const xiiVec3& vSize, float fCornerFraction, const GeoOptions& options)
 {
   XII_ASSERT_DEV(fCornerFraction >= 0.0f && fCornerFraction <= 1.0f, "A fraction value of {0} is invalid", xiiArgF(fCornerFraction, 2));
 
   fCornerFraction *= 0.5f;
-  const xiiVec3 halfSize = size * 0.5f;
+  const xiiVec3 halfSize = vSize * 0.5f;
 
   AddVertex(xiiVec3(-halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
   AddVertex(xiiVec3(halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
@@ -604,9 +604,9 @@ void xiiGeometry::AddLineBoxCorners(const xiiVec3& size, float fCornerFraction, 
   }
 }
 
-void xiiGeometry::AddPyramid(const xiiVec3& size, bool bCap, const GeoOptions& options)
+void xiiGeometry::AddPyramid(const xiiVec3& vSize, bool bCap, const GeoOptions& options)
 {
-  const xiiVec3 halfSize     = size * 0.5f;
+  const xiiVec3 halfSize     = vSize * 0.5f;
   const bool    bFlipWinding = options.IsFlipWindingNecessary();
   xiiUInt32     quad[4];
 
@@ -615,7 +615,7 @@ void xiiGeometry::AddPyramid(const xiiVec3& size, bool bCap, const GeoOptions& o
   quad[2] = AddVertex(xiiVec3(halfSize.x, -halfSize.y, 0), xiiVec3(1, -1, 0).GetNormalized(), xiiVec2(0), options);
   quad[3] = AddVertex(xiiVec3(-halfSize.x, -halfSize.y, 0), xiiVec3(-1, -1, 0).GetNormalized(), xiiVec2(0), options);
 
-  const xiiUInt32 tip = AddVertex(xiiVec3(0, 0, size.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
+  const xiiUInt32 tip = AddVertex(xiiVec3(0, 0, vSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
 
   if (bCap)
   {
@@ -650,11 +650,11 @@ void xiiGeometry::AddGeodesicSphere(float fRadius, xiiUInt8 uiSubDivisions, cons
   const bool bFlipWinding = options.IsFlipWindingNecessary();
   struct Triangle
   {
-    Triangle(xiiUInt32 i1, xiiUInt32 i2, xiiUInt32 i3)
+    Triangle(xiiUInt32 ui1, xiiUInt32 ui2, xiiUInt32 ui3)
     {
-      m_uiIndex[0] = i1;
-      m_uiIndex[1] = i2;
-      m_uiIndex[2] = i3;
+      m_uiIndex[0] = ui1;
+      m_uiIndex[1] = ui2;
+      m_uiIndex[2] = ui3;
     }
 
     xiiUInt32 m_uiIndex[3];
@@ -664,10 +664,10 @@ void xiiGeometry::AddGeodesicSphere(float fRadius, xiiUInt8 uiSubDivisions, cons
   {
     Edge() = default;
 
-    Edge(xiiUInt32 id1, xiiUInt32 id2)
+    Edge(xiiUInt32 uiId1, xiiUInt32 uiId2)
     {
-      m_uiVertex[0] = xiiMath::Min(id1, id2);
-      m_uiVertex[1] = xiiMath::Max(id1, id2);
+      m_uiVertex[0] = xiiMath::Min(uiId1, uiId2);
+      m_uiVertex[1] = xiiMath::Max(uiId1, uiId2);
     }
 
     bool operator<(const Edge& rhs) const
@@ -1444,9 +1444,9 @@ void xiiGeometry::AddTorus(float fInnerRadius, float fOuterRadius, xiiUInt16 uiS
   }
 }
 
-void xiiGeometry::AddTexturedRamp(const xiiVec3& size, const GeoOptions& options)
+void xiiGeometry::AddTexturedRamp(const xiiVec3& vSize, const GeoOptions& options)
 {
-  const xiiVec3 halfSize     = size * 0.5f;
+  const xiiVec3 halfSize     = vSize * 0.5f;
   const bool    bFlipWinding = options.IsFlipWindingNecessary();
   xiiUInt32     idx[4];
   xiiUInt32     idx3[3];
@@ -1491,7 +1491,7 @@ void xiiGeometry::AddTexturedRamp(const xiiVec3& size, const GeoOptions& options
   }
 }
 
-void xiiGeometry::AddStairs(const xiiVec3& size, xiiUInt32 uiNumSteps, xiiAngle curvature, bool bSmoothSloped, const GeoOptions& options)
+void xiiGeometry::AddStairs(const xiiVec3& vSize, xiiUInt32 uiNumSteps, xiiAngle curvature, bool bSmoothSloped, const GeoOptions& options)
 {
   const bool bFlipWinding = options.IsFlipWindingNecessary();
 
@@ -1499,15 +1499,15 @@ void xiiGeometry::AddStairs(const xiiVec3& size, xiiUInt32 uiNumSteps, xiiAngle 
   const xiiAngle curveStep = curvature / (float)uiNumSteps;
 
   const float fStepDiv    = 1.0f / uiNumSteps;
-  const float fStepDepth  = size.x / uiNumSteps;
-  const float fStepHeight = size.z / uiNumSteps;
+  const float fStepDepth  = vSize.x / uiNumSteps;
+  const float fStepHeight = vSize.z / uiNumSteps;
 
   xiiVec3       vMoveFwd(fStepDepth, 0, 0);
   const xiiVec3 vMoveUp(0, 0, fStepHeight);
   xiiVec3       vMoveUpFwd(fStepDepth, 0, fStepHeight);
 
-  xiiVec3 vBaseL0(-size.x * 0.5f, -size.y * 0.5f, -size.z * 0.5f);
-  xiiVec3 vBaseL1(-size.x * 0.5f, +size.y * 0.5f, -size.z * 0.5f);
+  xiiVec3 vBaseL0(-vSize.x * 0.5f, -vSize.y * 0.5f, -vSize.z * 0.5f);
+  xiiVec3 vBaseL1(-vSize.x * 0.5f, +vSize.y * 0.5f, -vSize.z * 0.5f);
   xiiVec3 vBaseR0 = vBaseL0 + vMoveFwd;
   xiiVec3 vBaseR1 = vBaseL1 + vMoveFwd;
 
@@ -1625,7 +1625,7 @@ void xiiGeometry::AddStairs(const xiiVec3& size, xiiUInt32 uiNumSteps, xiiAngle 
 }
 
 
-void xiiGeometry::AddArch(const xiiVec3& size, xiiUInt32 uiNumSegments, float fThickness, xiiAngle angle, bool bMakeSteps, bool bSmoothBottom, bool bSmoothTop, bool bCapTopAndBottom, const GeoOptions& options)
+void xiiGeometry::AddArch(const xiiVec3& vSize, xiiUInt32 uiNumSegments, float fThickness, xiiAngle angle, bool bMakeSteps, bool bSmoothBottom, bool bSmoothTop, bool bCapTopAndBottom, const GeoOptions& options)
 {
   // sanitize input values
   {
@@ -1634,7 +1634,7 @@ void xiiGeometry::AddArch(const xiiVec3& size, xiiUInt32 uiNumSegments, float fT
 
     angle = xiiMath::Clamp(angle, xiiAngle::Degree(-360.0f), xiiAngle::Degree(360.0f));
 
-    fThickness = xiiMath::Clamp(fThickness, 0.01f, xiiMath::Min(size.x, size.y) * 0.45f);
+    fThickness = xiiMath::Clamp(fThickness, 0.01f, xiiMath::Min(vSize.x, vSize.y) * 0.45f);
 
     bSmoothBottom = bMakeSteps && bSmoothBottom;
     bSmoothTop    = bMakeSteps && bSmoothTop;
@@ -1646,10 +1646,10 @@ void xiiGeometry::AddArch(const xiiVec3& size, xiiUInt32 uiNumSegments, float fT
     bFlipWinding = !bFlipWinding;
 
   const xiiAngle angleStep   = angle / (float)uiNumSegments;
-  const float    fScaleX     = size.x * 0.5f;
-  const float    fScaleY     = size.y * 0.5f;
-  const float    fHalfHeight = size.z * 0.5f;
-  const float    fStepHeight = size.z / (float)uiNumSegments;
+  const float    fScaleX     = vSize.x * 0.5f;
+  const float    fScaleY     = vSize.y * 0.5f;
+  const float    fHalfHeight = vSize.z * 0.5f;
+  const float    fStepHeight = vSize.z / (float)uiNumSegments;
 
   float fBottomZ = -fHalfHeight;
   float fTopZ    = +fHalfHeight;

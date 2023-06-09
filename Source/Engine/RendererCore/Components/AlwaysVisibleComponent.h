@@ -2,7 +2,7 @@
 
 #include <RendererCore/Components/RenderComponent.h>
 
-typedef xiiComponentManager<class xiiAlwaysVisibleComponent, xiiBlockStorageType::Compact> xiiAlwaysVisibleComponentManager;
+using xiiAlwaysVisibleComponentManager = xiiComponentManager<class xiiAlwaysVisibleComponent, xiiBlockStorageType::Compact>;
 
 /// \brief Attaching this component to a game object makes the renderer consider it always visible, ie. disables culling
 class XII_RENDERERCORE_DLL xiiAlwaysVisibleComponent : public xiiRenderComponent
@@ -13,7 +13,7 @@ class XII_RENDERERCORE_DLL xiiAlwaysVisibleComponent : public xiiRenderComponent
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg) override;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiAlwaysVisibleComponent

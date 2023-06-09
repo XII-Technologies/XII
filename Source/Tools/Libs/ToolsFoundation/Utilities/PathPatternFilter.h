@@ -24,10 +24,10 @@ struct XII_TOOLSFOUNDATION_DLL xiiPathPattern
   xiiString m_sString;
 
   /// \brief Sets up the pattern from the given text. Whitespace is trimmed.
-  void Configure(const xiiStringView text);
+  void Configure(const xiiStringView sText);
 
   /// \brief Returns true if the given text matches this path pattern.
-  bool Matches(const xiiStringView text) const;
+  bool Matches(const xiiStringView sText) const;
 };
 
 /// \brief A collection of xiiPathPatterns.
@@ -56,5 +56,5 @@ struct XII_TOOLSFOUNDATION_DLL xiiPathPatternFilter
   /// If the text matches any include pattern, it passes the filter.
   /// Otherwise, if it matches any exclude pattern, it does not pass the filter.
   /// Otherwise, if it doesn't match any include or exclude pattern, it passes the filter, since it isn't explicitely ruled out.
-  bool PassesFilters(xiiStringView text) const;
+  bool PassesFilters(xiiStringView sText) const;
 };

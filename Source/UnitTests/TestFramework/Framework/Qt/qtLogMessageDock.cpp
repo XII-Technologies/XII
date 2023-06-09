@@ -51,7 +51,7 @@ xiiQtLogMessageModel::xiiQtLogMessageModel(QObject* pParent, const xiiTestFramew
 {
 }
 
-xiiQtLogMessageModel::~xiiQtLogMessageModel() {}
+xiiQtLogMessageModel::~xiiQtLogMessageModel() = default;
 
 void xiiQtLogMessageModel::resetModel()
 {
@@ -108,7 +108,7 @@ void xiiQtLogMessageModel::currentTestSelectionChanged(const xiiTestResultData* 
 // xiiQtLogMessageModel QAbstractItemModel functions
 ////////////////////////////////////////////////////////////////////////
 
-QVariant xiiQtLogMessageModel::data(const QModelIndex& index, int role) const
+QVariant xiiQtLogMessageModel::data(const QModelIndex& index, int iRole) const
 {
   if (!index.isValid() || m_pTestResult == nullptr || index.column() != 0)
     return QVariant();
@@ -121,7 +121,7 @@ QVariant xiiQtLogMessageModel::data(const QModelIndex& index, int role) const
   const xiiUInt8              uiIndention = m_VisibleEntriesIndention[iRow];
   const xiiTestOutputMessage& Message     = *m_pTestResult->GetOutputMessage(uiLogIdx);
   const xiiTestErrorMessage*  pError      = (Message.m_iErrorIndex != -1) ? m_pTestResult->GetErrorMessage(Message.m_iErrorIndex) : nullptr;
-  switch (role)
+  switch (iRole)
   {
     case Qt::DisplayRole:
     {
@@ -191,11 +191,11 @@ Qt::ItemFlags xiiQtLogMessageModel::flags(const QModelIndex& index) const
   return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 }
 
-QVariant xiiQtLogMessageModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant xiiQtLogMessageModel::headerData(int iSection, Qt::Orientation orientation, int iRole) const
 {
-  if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
+  if (orientation == Qt::Horizontal && iRole == Qt::DisplayRole)
   {
-    switch (section)
+    switch (iSection)
     {
       case 0:
         return QString("Log Entry");
@@ -204,12 +204,12 @@ QVariant xiiQtLogMessageModel::headerData(int section, Qt::Orientation orientati
   return QVariant();
 }
 
-QModelIndex xiiQtLogMessageModel::index(int row, int column, const QModelIndex& parent) const
+QModelIndex xiiQtLogMessageModel::index(int iRow, int iColumn, const QModelIndex& parent) const
 {
-  if (parent.isValid() || m_pTestResult == nullptr || column != 0)
+  if (parent.isValid() || m_pTestResult == nullptr || iColumn != 0)
     return QModelIndex();
 
-  return createIndex(row, column, row);
+  return createIndex(iRow, iColumn, iRow);
 }
 
 QModelIndex xiiQtLogMessageModel::parent(const QModelIndex& index) const

@@ -4,8 +4,7 @@
 #include <RendererFoundation/CommandEncoder/CommandEncoder.h>
 #include <RendererFoundation/Device/Device.h>
 
-xiiConstantBufferStorageBase::xiiConstantBufferStorageBase(xiiUInt32 uiSizeInBytes, const char* szName) :
-  m_bHasBeenModified(false), m_uiLastHash(0)
+xiiConstantBufferStorageBase::xiiConstantBufferStorageBase(xiiUInt32 uiSizeInBytes, const char* szName)
 {
   m_Data = xiiMakeArrayPtr(static_cast<xiiUInt8*>(xiiFoundation::GetAlignedAllocator()->Allocate(uiSizeInBytes, 16)), uiSizeInBytes);
   xiiMemoryUtils::ZeroFill(m_Data.GetPtr(), m_Data.GetCount());

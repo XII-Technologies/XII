@@ -74,14 +74,14 @@ XII_BEGIN_COMPONENT_TYPE(xiiDecalComponent, 8, xiiComponentMode::Static)
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiDecalComponent::xiiDecalComponent() {}
+xiiDecalComponent::xiiDecalComponent() = default;
 
 xiiDecalComponent::~xiiDecalComponent() = default;
 
-void xiiDecalComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiDecalComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  xiiStreamWriter& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_vExtents;
   s << m_Color;
@@ -102,19 +102,19 @@ void xiiDecalComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_ProjectionAxis;
 
   // version 6
-  stream.WriteGameObjectHandle(m_hApplyOnlyToObject);
+  ref_stream.WriteGameObjectHandle(m_hApplyOnlyToObject);
 
   // version 7
   s << m_uiRandomDecalIdx;
   s.WriteArray(m_Decals).IgnoreResult();
 }
 
-void xiiDecalComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiDecalComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   s >> m_vExtents;
 
@@ -173,7 +173,7 @@ void xiiDecalComponent::DeserializeComponent(xiiWorldReader& stream)
 
   if (uiVersion >= 6)
   {
-    SetApplyOnlyTo(stream.ReadGameObjectHandle());
+    SetApplyOnlyTo(ref_stream.ReadGameObjectHandle());
   }
 
   if (uiVersion >= 7)
@@ -335,9 +335,9 @@ const xiiDecalResourceHandle& xiiDecalComponent::GetDecal(xiiUInt32 uiIndex) con
   return m_Decals[uiIndex];
 }
 
-void xiiDecalComponent::SetProjectionAxis(xiiEnum<xiiBasisAxis> ProjectionAxis)
+void xiiDecalComponent::SetProjectionAxis(xiiEnum<xiiBasisAxis> projectionAxis)
 {
-  m_ProjectionAxis = ProjectionAxis;
+  m_ProjectionAxis = projectionAxis;
 
   TriggerLocalBoundsUpdate();
 }
@@ -414,12 +414,12 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) con
       const auto& item = atlas.m_Items.GetValue(decalIdx);
       uiDecalFlags     = item.m_uiFlags;
 
-      auto layerRectToScaleOffset = [](xiiRectU32 layerRect, xiiVec2U32 textureSize) {
+      auto layerRectToScaleOffset = [](xiiRectU32 layerRect, xiiVec2U32 vTextureSize) {
         xiiVec4 result;
-        result.x = (float)layerRect.width / textureSize.x * 0.5f;
-        result.y = (float)layerRect.height / textureSize.y * 0.5f;
-        result.z = (float)layerRect.x / textureSize.x + result.x;
-        result.w = (float)layerRect.y / textureSize.y + result.y;
+        result.x = (float)layerRect.width / vTextureSize.x * 0.5f;
+        result.y = (float)layerRect.height / vTextureSize.y * 0.5f;
+        result.z = (float)layerRect.x / vTextureSize.x + result.x;
+        result.w = (float)layerRect.y / vTextureSize.y + result.y;
         return result;
       };
 
@@ -639,7 +639,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     auto* pDecal = pNode->FindProperty("Decal");
     if (pDecal && pDecal->m_Value.IsA<xiiString>())

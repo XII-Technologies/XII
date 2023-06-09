@@ -21,7 +21,7 @@ xiiJoltDynamicActorComponentManager::xiiJoltDynamicActorComponentManager(xiiWorl
 {
 }
 
-xiiJoltDynamicActorComponentManager::~xiiJoltDynamicActorComponentManager() {}
+xiiJoltDynamicActorComponentManager::~xiiJoltDynamicActorComponentManager() = default;
 
 void xiiJoltDynamicActorComponentManager::UpdateDynamicActors()
 {

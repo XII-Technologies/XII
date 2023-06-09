@@ -19,7 +19,7 @@ class xiiMiniDumpTool : public xiiApplication
   xiiStringBuilder m_sDumpFile;
 
 public:
-  typedef xiiApplication SUPER;
+  using SUPER = xiiApplication;
 
   xiiMiniDumpTool() :
     xiiApplication("MiniDumpTool")

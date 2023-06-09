@@ -11,12 +11,12 @@ class xiiMessage;
 class XII_FOUNDATION_DLL xiiAbstractMessageHandler
 {
 public:
-  XII_ALWAYS_INLINE void operator()(void* pInstance, xiiMessage& msg) { (*m_DispatchFunc)(pInstance, msg); }
+  XII_ALWAYS_INLINE void operator()(void* pInstance, xiiMessage& ref_msg) { (*m_DispatchFunc)(pInstance, ref_msg); }
 
-  XII_FORCE_INLINE void operator()(const void* pInstance, xiiMessage& msg)
+  XII_FORCE_INLINE void operator()(const void* pInstance, xiiMessage& ref_msg)
   {
     XII_ASSERT_DEV(m_bIsConst, "Calling a non const message handler with a const instance.");
-    (*m_ConstDispatchFunc)(pInstance, msg);
+    (*m_ConstDispatchFunc)(pInstance, ref_msg);
   }
 
   XII_ALWAYS_INLINE xiiMessageId GetMessageId() const { return m_Id; }
@@ -65,10 +65,10 @@ namespace xiiInternal
         m_bIsConst     = false;
       }
 
-      static void Dispatch(void* pInstance, xiiMessage& msg)
+      static void Dispatch(void* pInstance, xiiMessage& ref_msg)
       {
         Class* pTargetInstance = static_cast<Class*>(pInstance);
-        (pTargetInstance->*Method)(static_cast<MessageType&>(msg));
+        (pTargetInstance->*Method)(static_cast<MessageType&>(ref_msg));
       }
     };
   };
@@ -88,10 +88,10 @@ namespace xiiInternal
       }
 
       /// \brief Casts the given message to the type of this message handler, then passes that to the class instance.
-      static void Dispatch(const void* pInstance, xiiMessage& msg)
+      static void Dispatch(const void* pInstance, xiiMessage& ref_msg)
       {
         const Class* pTargetInstance = static_cast<const Class*>(pInstance);
-        (pTargetInstance->*Method)(static_cast<MessageType&>(msg));
+        (pTargetInstance->*Method)(static_cast<MessageType&>(ref_msg));
       }
     };
   };

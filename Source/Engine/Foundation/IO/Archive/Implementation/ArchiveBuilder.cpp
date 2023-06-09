@@ -92,9 +92,9 @@ xiiResult xiiArchiveBuilder::WriteArchive(xiiStringView sFile) const
   return WriteArchive(file);
 }
 
-xiiResult xiiArchiveBuilder::WriteArchive(xiiStreamWriter& stream) const
+xiiResult xiiArchiveBuilder::WriteArchive(xiiStreamWriter& ref_stream) const
 {
-  XII_SUCCEED_OR_RETURN(xiiArchiveUtils::WriteHeader(stream));
+  XII_SUCCEED_OR_RETURN(xiiArchiveUtils::WriteHeader(ref_stream));
 
   xiiArchiveTOC toc;
 
@@ -122,12 +122,12 @@ xiiResult xiiArchiveBuilder::WriteArchive(xiiStreamWriter& stream) const
 
     xiiArchiveEntry& tocEntry = toc.m_Entries.ExpandAndGetRef();
 
-    XII_SUCCEED_OR_RETURN(xiiArchiveUtils::WriteEntryOptimal(stream, e.m_sAbsSourcePath, uiPathStringOffset, e.m_CompressionMode, e.m_iCompressionLevel, tocEntry, uiStreamSize, xiiMakeDelegate(&xiiArchiveBuilder::WriteFileProgressCallback, this)));
+    XII_SUCCEED_OR_RETURN(xiiArchiveUtils::WriteEntryOptimal(ref_stream, e.m_sAbsSourcePath, uiPathStringOffset, e.m_CompressionMode, e.m_iCompressionLevel, tocEntry, uiStreamSize, xiiMakeDelegate(&xiiArchiveBuilder::WriteFileProgressCallback, this)));
 
     WriteFileResultCallback(i + 1, uiNumEntries, e.m_sAbsSourcePath, tocEntry.m_uiUncompressedDataSize, tocEntry.m_uiStoredDataSize, sw.Checkpoint());
   }
 
-  XII_SUCCEED_OR_RETURN(xiiArchiveUtils::AppendTOC(stream, toc));
+  XII_SUCCEED_OR_RETURN(xiiArchiveUtils::AppendTOC(ref_stream, toc));
 
   return XII_SUCCESS;
 }

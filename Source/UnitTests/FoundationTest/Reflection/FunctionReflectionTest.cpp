@@ -5,79 +5,79 @@
 
 struct FunctionTest
 {
-  int StandardTypeFunction(int v, const xiiVec2 cv, xiiVec3& rv, const xiiVec4& crv, xiiVec2U32* pv, const xiiVec3U32* cpv)
+  int StandardTypeFunction(int v, const xiiVec2 vCv, xiiVec3& ref_vRv, const xiiVec4& vCrv, xiiVec2U32* pPv, const xiiVec3U32* pCpv)
   {
     XII_TEST_BOOL(m_values[0] == v);
-    XII_TEST_BOOL(m_values[1] == cv);
-    XII_TEST_BOOL(m_values[2] == rv);
-    XII_TEST_BOOL(m_values[3] == crv);
+    XII_TEST_BOOL(m_values[1] == vCv);
+    XII_TEST_BOOL(m_values[2] == ref_vRv);
+    XII_TEST_BOOL(m_values[3] == vCrv);
     if (m_bPtrAreNull)
     {
-      XII_TEST_BOOL(!pv);
-      XII_TEST_BOOL(!cpv);
+      XII_TEST_BOOL(!pPv);
+      XII_TEST_BOOL(!pCpv);
     }
     else
     {
-      XII_TEST_BOOL(m_values[4] == *pv);
-      XII_TEST_BOOL(m_values[5] == *cpv);
+      XII_TEST_BOOL(m_values[4] == *pPv);
+      XII_TEST_BOOL(m_values[5] == *pCpv);
     }
-    rv.Set(1, 2, 3);
-    if (pv)
+    ref_vRv.Set(1, 2, 3);
+    if (pPv)
     {
-      pv->Set(1, 2);
+      pPv->Set(1, 2);
     }
     return 5;
   }
 
-  xiiVarianceTypeAngle CustomTypeFunction(xiiVarianceTypeAngle v, const xiiVarianceTypeAngle cv, xiiVarianceTypeAngle& rv, const xiiVarianceTypeAngle& crv, xiiVarianceTypeAngle* pv, const xiiVarianceTypeAngle* cpv)
+  xiiVarianceTypeAngle CustomTypeFunction(xiiVarianceTypeAngle v, const xiiVarianceTypeAngle cv, xiiVarianceTypeAngle& ref_rv, const xiiVarianceTypeAngle& crv, xiiVarianceTypeAngle* pPv, const xiiVarianceTypeAngle* pCpv)
   {
     XII_TEST_BOOL(m_values[0] == v);
     XII_TEST_BOOL(m_values[1] == cv);
-    XII_TEST_BOOL(m_values[2] == rv);
+    XII_TEST_BOOL(m_values[2] == ref_rv);
     XII_TEST_BOOL(m_values[3] == crv);
     if (m_bPtrAreNull)
     {
-      XII_TEST_BOOL(!pv);
-      XII_TEST_BOOL(!cpv);
+      XII_TEST_BOOL(!pPv);
+      XII_TEST_BOOL(!pCpv);
     }
     else
     {
-      XII_TEST_BOOL(m_values[4] == *pv);
-      XII_TEST_BOOL(m_values[5] == *cpv);
+      XII_TEST_BOOL(m_values[4] == *pPv);
+      XII_TEST_BOOL(m_values[5] == *pCpv);
     }
-    rv = {2.0f, xiiAngle::Degree(200.0f)};
-    if (pv)
+    ref_rv = {2.0f, xiiAngle::Degree(200.0f)};
+    if (pPv)
     {
-      *pv = {4.0f, xiiAngle::Degree(400.0f)};
+      *pPv = {4.0f, xiiAngle::Degree(400.0f)};
     }
     return {0.6f, xiiAngle::Degree(60.0f)};
   }
 
-  xiiVarianceTypeAngle CustomTypeFunction2(xiiVarianceTypeAngle v, const xiiVarianceTypeAngle cv, xiiVarianceTypeAngle& rv, const xiiVarianceTypeAngle& crv, xiiVarianceTypeAngle* pv, const xiiVarianceTypeAngle* cpv)
+  xiiVarianceTypeAngle CustomTypeFunction2(xiiVarianceTypeAngle v, const xiiVarianceTypeAngle cv, xiiVarianceTypeAngle& ref_rv, const xiiVarianceTypeAngle& crv, xiiVarianceTypeAngle* pPv, const xiiVarianceTypeAngle* pCpv)
   {
     XII_TEST_BOOL(*m_values[0].Get<xiiVarianceTypeAngle*>() == v);
     XII_TEST_BOOL(*m_values[1].Get<xiiVarianceTypeAngle*>() == cv);
-    XII_TEST_BOOL(*m_values[2].Get<xiiVarianceTypeAngle*>() == rv);
+    XII_TEST_BOOL(*m_values[2].Get<xiiVarianceTypeAngle*>() == ref_rv);
     XII_TEST_BOOL(*m_values[3].Get<xiiVarianceTypeAngle*>() == crv);
     if (m_bPtrAreNull)
     {
-      XII_TEST_BOOL(!pv);
-      XII_TEST_BOOL(!cpv);
+      XII_TEST_BOOL(!pPv);
+      XII_TEST_BOOL(!pCpv);
     }
     else
     {
-      XII_TEST_BOOL(*m_values[4].Get<xiiVarianceTypeAngle*>() == *pv);
-      XII_TEST_BOOL(*m_values[5].Get<xiiVarianceTypeAngle*>() == *cpv);
+      XII_TEST_BOOL(*m_values[4].Get<xiiVarianceTypeAngle*>() == *pPv);
+      XII_TEST_BOOL(*m_values[5].Get<xiiVarianceTypeAngle*>() == *pCpv);
     }
-    rv = {2.0f, xiiAngle::Degree(200.0f)};
-    if (pv)
+    ref_rv = {2.0f, xiiAngle::Degree(200.0f)};
+    if (pPv)
     {
-      *pv = {4.0f, xiiAngle::Degree(400.0f)};
+      *pPv = {4.0f, xiiAngle::Degree(400.0f)};
     }
     return {0.6f, xiiAngle::Degree(60.0f)};
   }
 
-  const char* StringTypeFunction(const char* szString, xiiString& sString, xiiStringView sView)
+  const char* StringTypeFunction(const char* szString, xiiString& ref_sString, xiiStringView sView)
   {
     if (m_bPtrAreNull)
     {
@@ -87,48 +87,48 @@ struct FunctionTest
     {
       XII_TEST_BOOL(m_values[0] == szString);
     }
-    XII_TEST_BOOL(m_values[1] == sString);
+    XII_TEST_BOOL(m_values[1] == ref_sString);
     XII_TEST_BOOL(m_values[2] == sView);
     return "StringRet";
   }
 
   xiiEnum<xiiExampleEnum> EnumFunction(
     xiiEnum<xiiExampleEnum>        e,
-    xiiEnum<xiiExampleEnum>&       re,
+    xiiEnum<xiiExampleEnum>&       ref_re,
     const xiiEnum<xiiExampleEnum>& cre,
-    xiiEnum<xiiExampleEnum>*       pe,
-    const xiiEnum<xiiExampleEnum>* cpe)
+    xiiEnum<xiiExampleEnum>*       pPe,
+    const xiiEnum<xiiExampleEnum>* pCpe)
   {
     XII_TEST_BOOL(m_values[0].Get<xiiInt64>() == e.GetValue());
-    XII_TEST_BOOL(m_values[1].Get<xiiInt64>() == re.GetValue());
+    XII_TEST_BOOL(m_values[1].Get<xiiInt64>() == ref_re.GetValue());
     XII_TEST_BOOL(m_values[2].Get<xiiInt64>() == cre.GetValue());
     if (m_bPtrAreNull)
     {
-      XII_TEST_BOOL(!pe);
-      XII_TEST_BOOL(!cpe);
+      XII_TEST_BOOL(!pPe);
+      XII_TEST_BOOL(!pCpe);
     }
     else
     {
-      XII_TEST_BOOL(m_values[3].Get<xiiInt64>() == pe->GetValue());
-      XII_TEST_BOOL(m_values[4].Get<xiiInt64>() == cpe->GetValue());
+      XII_TEST_BOOL(m_values[3].Get<xiiInt64>() == pPe->GetValue());
+      XII_TEST_BOOL(m_values[4].Get<xiiInt64>() == pCpe->GetValue());
     }
     return xiiExampleEnum::Value1;
   }
 
-  xiiBitflags<xiiExampleBitflags> BitflagsFunction(xiiBitflags<xiiExampleBitflags> e, xiiBitflags<xiiExampleBitflags>& re, const xiiBitflags<xiiExampleBitflags>& cre, xiiBitflags<xiiExampleBitflags>* pe, const xiiBitflags<xiiExampleBitflags>* cpe)
+  xiiBitflags<xiiExampleBitflags> BitflagsFunction(xiiBitflags<xiiExampleBitflags> e, xiiBitflags<xiiExampleBitflags>& ref_re, const xiiBitflags<xiiExampleBitflags>& cre, xiiBitflags<xiiExampleBitflags>* pPe, const xiiBitflags<xiiExampleBitflags>* pCpe)
   {
     XII_TEST_BOOL(e == m_values[0].Get<xiiInt64>());
-    XII_TEST_BOOL(re == m_values[1].Get<xiiInt64>());
+    XII_TEST_BOOL(ref_re == m_values[1].Get<xiiInt64>());
     XII_TEST_BOOL(cre == m_values[2].Get<xiiInt64>());
     if (m_bPtrAreNull)
     {
-      XII_TEST_BOOL(!pe);
-      XII_TEST_BOOL(!cpe);
+      XII_TEST_BOOL(!pPe);
+      XII_TEST_BOOL(!pCpe);
     }
     else
     {
-      XII_TEST_BOOL(*pe == m_values[3].Get<xiiInt64>());
-      XII_TEST_BOOL(*cpe == m_values[4].Get<xiiInt64>());
+      XII_TEST_BOOL(*pPe == m_values[3].Get<xiiInt64>());
+      XII_TEST_BOOL(*pCpe == m_values[4].Get<xiiInt64>());
     }
     return xiiExampleBitflags::Value1 | xiiExampleBitflags::Value2;
   }
@@ -136,31 +136,31 @@ struct FunctionTest
   xiiTestStruct3 StructFunction(
     xiiTestStruct3        s,
     const xiiTestStruct3  cs,
-    xiiTestStruct3&       rs,
+    xiiTestStruct3&       ref_rs,
     const xiiTestStruct3& crs,
-    xiiTestStruct3*       ps,
-    const xiiTestStruct3* cps)
+    xiiTestStruct3*       pPs,
+    const xiiTestStruct3* pCps)
   {
     XII_TEST_BOOL(*static_cast<xiiTestStruct3*>(m_values[0].Get<void*>()) == s);
     XII_TEST_BOOL(*static_cast<xiiTestStruct3*>(m_values[1].Get<void*>()) == cs);
-    XII_TEST_BOOL(*static_cast<xiiTestStruct3*>(m_values[2].Get<void*>()) == rs);
+    XII_TEST_BOOL(*static_cast<xiiTestStruct3*>(m_values[2].Get<void*>()) == ref_rs);
     XII_TEST_BOOL(*static_cast<xiiTestStruct3*>(m_values[3].Get<void*>()) == crs);
     if (m_bPtrAreNull)
     {
-      XII_TEST_BOOL(!ps);
-      XII_TEST_BOOL(!cps);
+      XII_TEST_BOOL(!pPs);
+      XII_TEST_BOOL(!pCps);
     }
     else
     {
-      XII_TEST_BOOL(*static_cast<xiiTestStruct3*>(m_values[4].Get<void*>()) == *ps);
-      XII_TEST_BOOL(*static_cast<xiiTestStruct3*>(m_values[5].Get<void*>()) == *cps);
+      XII_TEST_BOOL(*static_cast<xiiTestStruct3*>(m_values[4].Get<void*>()) == *pPs);
+      XII_TEST_BOOL(*static_cast<xiiTestStruct3*>(m_values[5].Get<void*>()) == *pCps);
     }
-    rs.m_fFloat1 = 999.0f;
-    rs.m_UInt8   = 666;
-    if (ps)
+    ref_rs.m_fFloat1 = 999.0f;
+    ref_rs.m_UInt8   = 666;
+    if (pPs)
     {
-      ps->m_fFloat1 = 666.0f;
-      ps->m_UInt8   = 999;
+      pPs->m_fFloat1 = 666.0f;
+      pPs->m_UInt8   = 999;
     }
     xiiTestStruct3 retS;
     retS.m_fFloat1 = 42;
@@ -171,31 +171,31 @@ struct FunctionTest
   xiiTestClass1 ReflectedClassFunction(
     xiiTestClass1        s,
     const xiiTestClass1  cs,
-    xiiTestClass1&       rs,
+    xiiTestClass1&       ref_rs,
     const xiiTestClass1& crs,
-    xiiTestClass1*       ps,
-    const xiiTestClass1* cps)
+    xiiTestClass1*       pPs,
+    const xiiTestClass1* pCps)
   {
     XII_TEST_BOOL(*static_cast<xiiTestClass1*>(m_values[0].ConvertTo<void*>()) == s);
     XII_TEST_BOOL(*static_cast<xiiTestClass1*>(m_values[1].ConvertTo<void*>()) == cs);
-    XII_TEST_BOOL(*static_cast<xiiTestClass1*>(m_values[2].ConvertTo<void*>()) == rs);
+    XII_TEST_BOOL(*static_cast<xiiTestClass1*>(m_values[2].ConvertTo<void*>()) == ref_rs);
     XII_TEST_BOOL(*static_cast<xiiTestClass1*>(m_values[3].ConvertTo<void*>()) == crs);
     if (m_bPtrAreNull)
     {
-      XII_TEST_BOOL(!ps);
-      XII_TEST_BOOL(!cps);
+      XII_TEST_BOOL(!pPs);
+      XII_TEST_BOOL(!pCps);
     }
     else
     {
-      XII_TEST_BOOL(*static_cast<xiiTestClass1*>(m_values[4].ConvertTo<void*>()) == *ps);
-      XII_TEST_BOOL(*static_cast<xiiTestClass1*>(m_values[5].ConvertTo<void*>()) == *cps);
+      XII_TEST_BOOL(*static_cast<xiiTestClass1*>(m_values[4].ConvertTo<void*>()) == *pPs);
+      XII_TEST_BOOL(*static_cast<xiiTestClass1*>(m_values[5].ConvertTo<void*>()) == *pCps);
     }
-    rs.m_Color.SetRGB(1, 2, 3);
-    rs.m_MyVector.Set(1, 2, 3);
-    if (ps)
+    ref_rs.m_Color.SetRGB(1, 2, 3);
+    ref_rs.m_MyVector.Set(1, 2, 3);
+    if (pPs)
     {
-      ps->m_Color.SetRGB(1, 2, 3);
-      ps->m_MyVector.Set(1, 2, 3);
+      pPs->m_Color.SetRGB(1, 2, 3);
+      pPs->m_MyVector.Set(1, 2, 3);
     }
     xiiTestClass1 retS;
     retS.m_Color.SetRGB(42, 42, 42);
@@ -203,28 +203,28 @@ struct FunctionTest
     return retS;
   }
 
-  xiiVariant VariantFunction(xiiVariant v, const xiiVariant cv, xiiVariant& rv, const xiiVariant& crv, xiiVariant* pv, const xiiVariant* cpv)
+  xiiVariant VariantFunction(xiiVariant v, const xiiVariant cv, xiiVariant& ref_rv, const xiiVariant& crv, xiiVariant* pPv, const xiiVariant* pCpv)
   {
     XII_TEST_BOOL(m_values[0] == v);
     XII_TEST_BOOL(m_values[1] == cv);
-    XII_TEST_BOOL(m_values[2] == rv);
+    XII_TEST_BOOL(m_values[2] == ref_rv);
     XII_TEST_BOOL(m_values[3] == crv);
     if (m_bPtrAreNull)
     {
       // Can't have variant as nullptr as it must exist in the array and there is no further
       // way of distinguishing a between a xiiVariant* and a xiiVariant that is invalid.
-      XII_TEST_BOOL(!pv->IsValid());
-      XII_TEST_BOOL(!cpv->IsValid());
+      XII_TEST_BOOL(!pPv->IsValid());
+      XII_TEST_BOOL(!pCpv->IsValid());
     }
     else
     {
-      XII_TEST_BOOL(m_values[4] == *pv);
-      XII_TEST_BOOL(m_values[5] == *cpv);
+      XII_TEST_BOOL(m_values[4] == *pPv);
+      XII_TEST_BOOL(m_values[5] == *pCpv);
     }
-    rv = xiiVec3(1, 2, 3);
-    if (pv)
+    ref_rv = xiiVec3(1, 2, 3);
+    if (pPv)
     {
-      *pv = xiiVec2U32(1, 2);
+      *pPv = xiiVec2U32(1, 2);
     }
     return 5;
   }
@@ -241,7 +241,7 @@ struct FunctionTest
   xiiDynamicArray<xiiVariant> m_values;
 };
 
-typedef std::tuple<const xiiRTTI*, xiiBitflags<xiiPropertyFlags>> ParamSig;
+using ParamSig = std::tuple<const xiiRTTI*, xiiBitflags<xiiPropertyFlags>>;
 
 void VerifyFunctionSignature(const xiiAbstractFunctionProperty* pFunc, xiiArrayPtr<ParamSig> params, ParamSig ret)
 {

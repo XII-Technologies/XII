@@ -57,7 +57,7 @@ XII_FOUNDATION_DLL bool xiiFailedCheck(
   const char*                  szFunction,
   const char*                  szExpression,
   const class xiiFormatString& msg);
-XII_FOUNDATION_DLL bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* msg);
+XII_FOUNDATION_DLL bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szMsg);
 
 /// \brief Dummy version of xiiFmt that only takes a single argument
 inline const char* xiiFmt(const char* szFormat)

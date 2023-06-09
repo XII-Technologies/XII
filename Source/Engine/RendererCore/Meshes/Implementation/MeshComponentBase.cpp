@@ -49,20 +49,20 @@ const char* xiiMsgSetMeshMaterial::GetMaterialFile() const
   return m_hMaterial.GetResourceID();
 }
 
-void xiiMsgSetMeshMaterial::Serialize(xiiStreamWriter& stream) const
+void xiiMsgSetMeshMaterial::Serialize(xiiStreamWriter& ref_stream) const
 {
   // has to be stringyfied for transfer
-  stream << GetMaterialFile();
-  stream << m_uiMaterialSlot;
+  ref_stream << GetMaterialFile();
+  ref_stream << m_uiMaterialSlot;
 }
 
-void xiiMsgSetMeshMaterial::Deserialize(xiiStreamReader& stream, xiiUInt8 uiTypeVersion)
+void xiiMsgSetMeshMaterial::Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiTypeVersion)
 {
   xiiStringBuilder file;
-  stream >> file;
+  ref_stream >> file;
   SetMaterialFile(file);
 
-  stream >> m_uiMaterialSlot;
+  ref_stream >> m_uiMaterialSlot;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -100,10 +100,10 @@ XII_END_ABSTRACT_COMPONENT_TYPE;
 xiiMeshComponentBase::xiiMeshComponentBase()  = default;
 xiiMeshComponentBase::~xiiMeshComponentBase() = default;
 
-void xiiMeshComponentBase::SerializeComponent(xiiWorldWriter& stream) const
+void xiiMeshComponentBase::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  xiiStreamWriter& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   // ignore components that have created meshes (?)
 
@@ -122,12 +122,12 @@ void xiiMeshComponentBase::SerializeComponent(xiiWorldWriter& stream) const
   s << m_Color;
 }
 
-void xiiMeshComponentBase::DeserializeComponent(xiiWorldReader& stream)
+void xiiMeshComponentBase::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   s >> m_hMesh;
 
@@ -148,12 +148,12 @@ void xiiMeshComponentBase::DeserializeComponent(xiiWorldReader& stream)
   s >> m_Color;
 }
 
-xiiResult xiiMeshComponentBase::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiMeshComponentBase::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   if (m_hMesh.IsValid())
   {
     xiiResourceLock<xiiMeshResource> pMesh(m_hMesh, xiiResourceAcquireMode::AllowLoadingFallback);
-    bounds = pMesh->GetBounds();
+    ref_bounds = pMesh->GetBounds();
     return XII_SUCCESS;
   }
 
@@ -292,14 +292,14 @@ const xiiColor& xiiMeshComponentBase::GetColor() const
   return m_Color;
 }
 
-void xiiMeshComponentBase::OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& msg)
+void xiiMeshComponentBase::OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& ref_msg)
 {
-  SetMaterial(msg.m_uiMaterialSlot, msg.m_hMaterial);
+  SetMaterial(ref_msg.m_uiMaterialSlot, ref_msg.m_hMaterial);
 }
 
-void xiiMeshComponentBase::OnMsgSetColor(xiiMsgSetColor& msg)
+void xiiMeshComponentBase::OnMsgSetColor(xiiMsgSetColor& ref_msg)
 {
-  msg.ModifyColor(m_Color);
+  ref_msg.ModifyColor(m_Color);
 
   InvalidateCachedRenderData();
 }

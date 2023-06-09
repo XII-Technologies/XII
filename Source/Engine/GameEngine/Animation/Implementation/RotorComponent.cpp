@@ -5,12 +5,7 @@
 #include <Foundation/Serialization/AbstractObjectGraph.h>
 #include <GameEngine/Animation/RotorComponent.h>
 
-float CalculateAcceleratedMovement(
-  float    fDistanceInMeters,
-  float    fAcceleration,
-  float    fMaxVelocity,
-  float    fDeceleration,
-  xiiTime& fTimeSinceStartInSec);
+float CalculateAcceleratedMovement(float fDistanceInMeters, float fAcceleration, float fMaxVelocity, float fDeceleration, xiiTime& ref_timeSinceStartInSec);
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiRotorComponent, 3, xiiComponentMode::Dynamic)
@@ -97,11 +92,11 @@ void xiiRotorComponent::Update()
   }
 }
 
-void xiiRotorComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiRotorComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s << m_iDegreeToRotate;
   s << m_fAcceleration;
@@ -112,12 +107,12 @@ void xiiRotorComponent::SerializeComponent(xiiWorldWriter& stream) const
 }
 
 
-void xiiRotorComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiRotorComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_iDegreeToRotate;
   s >> m_fAcceleration;
@@ -187,10 +182,10 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     // Base class
-    context.PatchBaseClass("xiiTransformComponent", 2, true);
+    ref_context.PatchBaseClass("xiiTransformComponent", 2, true);
 
     // this class
     pNode->RenameProperty("Degrees to Rotate", "DegreesToRotate");

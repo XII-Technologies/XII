@@ -59,18 +59,18 @@ inline double xiiClock::GetSpeed() const
   return m_fSpeed;
 }
 
-inline void xiiClock::SetMinimumTimeStep(xiiTime tMin)
+inline void xiiClock::SetMinimumTimeStep(xiiTime min)
 {
-  XII_ASSERT_DEV(tMin >= xiiTime::Seconds(0.0), "Time flows in one direction only.");
+  XII_ASSERT_DEV(min >= xiiTime::Seconds(0.0), "Time flows in one direction only.");
 
-  m_MinTimeStep = tMin;
+  m_MinTimeStep = min;
 }
 
-inline void xiiClock::SetMaximumTimeStep(xiiTime tMax)
+inline void xiiClock::SetMaximumTimeStep(xiiTime max)
 {
-  XII_ASSERT_DEV(tMax >= xiiTime::Seconds(0.0), "Time flows in one direction only.");
+  XII_ASSERT_DEV(max >= xiiTime::Seconds(0.0), "Time flows in one direction only.");
 
-  m_MaxTimeStep = tMax;
+  m_MaxTimeStep = max;
 }
 
 inline xiiTime xiiClock::GetMinimumTimeStep() const
@@ -83,11 +83,11 @@ inline xiiTime xiiClock::GetMaximumTimeStep() const
   return m_MaxTimeStep;
 }
 
-inline void xiiClock::SetFixedTimeStep(xiiTime tDiff)
+inline void xiiClock::SetFixedTimeStep(xiiTime diff)
 {
   XII_ASSERT_DEV(m_FixedTimeStep.GetSeconds() >= 0.0, "Fixed Time Stepping cannot reverse time!");
 
-  m_FixedTimeStep = tDiff;
+  m_FixedTimeStep = diff;
 }
 
 inline void xiiClock::SetSpeed(double fFactor)

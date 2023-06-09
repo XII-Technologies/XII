@@ -31,8 +31,8 @@ class XII_GAMEENGINE_DLL xiiSensorComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;
@@ -45,7 +45,7 @@ public:
   xiiSensorComponent();
   ~xiiSensorComponent();
 
-  virtual void GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_Objects) const = 0;
+  virtual void GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_objects) const = 0;
   virtual void DebugDrawSensorShape() const                                                 = 0;
 
   void        SetSpatialCategory(const char* szCategory); // [ property ]
@@ -98,13 +98,13 @@ class XII_GAMEENGINE_DLL xiiSensorSphereComponent : public xiiSensorComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiSensorComponent
 
-  virtual void GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_Objects) const override;
+  virtual void GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_objects) const override;
   virtual void DebugDrawSensorShape() const override;
 
   //////////////////////////////////////////////////////////////////////////
@@ -129,13 +129,13 @@ class XII_GAMEENGINE_DLL xiiSensorCylinderComponent : public xiiSensorComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiSensorComponent
 
-  virtual void GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_Objects) const override;
+  virtual void GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_objects) const override;
   virtual void DebugDrawSensorShape() const override;
 
   //////////////////////////////////////////////////////////////////////////
@@ -161,13 +161,13 @@ class XII_GAMEENGINE_DLL xiiSensorConeComponent : public xiiSensorComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiSensorComponent
 
-  virtual void GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_Objects) const override;
+  virtual void GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObject*>& out_objects) const override;
   virtual void DebugDrawSensorShape() const override;
 
   //////////////////////////////////////////////////////////////////////////

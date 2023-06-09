@@ -214,15 +214,15 @@ void xiiTelemetry::UpdateNetwork()
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT
 }
 
-void xiiTelemetry::SetServerName(const char* name)
+void xiiTelemetry::SetServerName(const char* szName)
 {
   if (s_ConnectionMode == ConnectionMode::Client)
     return;
 
-  if (s_sServerName == name)
+  if (s_sServerName == szName)
     return;
 
-  s_sServerName = name;
+  s_sServerName = szName;
 
   SendServerName();
 }
@@ -238,7 +238,7 @@ void xiiTelemetry::SendServerName()
   Broadcast(xiiTelemetry::Reliable, 'XIBC', 'NAME', data, XII_ARRAY_SIZE(data));
 }
 
-xiiResult xiiTelemetry::RetrieveMessage(xiiUInt32 uiSystemID, xiiTelemetryMessage& out_Message)
+xiiResult xiiTelemetry::RetrieveMessage(xiiUInt32 uiSystemID, xiiTelemetryMessage& out_message)
 {
   if (s_SystemMessages[uiSystemID].m_IncomingQueue.IsEmpty())
     return XII_FAILURE;
@@ -249,7 +249,7 @@ xiiResult xiiTelemetry::RetrieveMessage(xiiUInt32 uiSystemID, xiiTelemetryMessag
   if (s_SystemMessages[uiSystemID].m_IncomingQueue.IsEmpty())
     return XII_FAILURE;
 
-  out_Message = s_SystemMessages[uiSystemID].m_IncomingQueue.PeekFront();
+  out_message = s_SystemMessages[uiSystemID].m_IncomingQueue.PeekFront();
   s_SystemMessages[uiSystemID].m_IncomingQueue.PopFront();
 
   return XII_SUCCESS;

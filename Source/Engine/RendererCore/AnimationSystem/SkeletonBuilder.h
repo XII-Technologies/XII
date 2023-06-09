@@ -18,10 +18,10 @@ public:
   /// so that child joints always come after their parent joints
   xiiUInt16 AddJoint(const char* szName, const xiiTransform& localBindPose, xiiUInt16 uiParentIndex = xiiInvalidJointIndex);
 
-  void SetJointLimit(xiiUInt16 uiJointIndex, const xiiQuat& localOrientation, bool bLimitSwing, xiiAngle halfSwingLimitY, xiiAngle halfSwingLimitZ, bool bLimitTwist, xiiAngle twistLimitHalfAngle, xiiAngle twistLimitCenterAngle);
+  void SetJointLimit(xiiUInt16 uiJointIndex, const xiiQuat& qLocalOrientation, bool bLimitSwing, xiiAngle halfSwingLimitY, xiiAngle halfSwingLimitZ, bool bLimitTwist, xiiAngle twistLimitHalfAngle, xiiAngle twistLimitCenterAngle);
 
   /// \brief Creates a skeleton from the accumulated data.
-  void BuildSkeleton(xiiSkeleton& skeleton) const;
+  void BuildSkeleton(xiiSkeleton& ref_skeleton) const;
 
   /// \brief Returns true if there any joints have been added to the skeleton builder
   bool HasJoints() const;

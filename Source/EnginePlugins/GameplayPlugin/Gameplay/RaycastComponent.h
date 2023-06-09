@@ -47,8 +47,8 @@ class XII_GAMEPLAYPLUGIN_DLL xiiRaycastComponent : public xiiComponent
 public:
   virtual void OnSimulationStarted() override;
 
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   void Deinitialize() override;
@@ -63,8 +63,8 @@ public:
   xiiRaycastComponent();
   ~xiiRaycastComponent();
 
-  void        SetTriggerMessage(const char* sz); // [ property ]
-  const char* GetTriggerMessage() const;         // [ property ]
+  void        SetTriggerMessage(const char* szSz); // [ property ]
+  const char* GetTriggerMessage() const;           // [ property ]
 
   void SetRaycastEndObject(const char* szReference); // [ property ]
 

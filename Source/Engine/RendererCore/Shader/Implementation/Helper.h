@@ -70,7 +70,7 @@ namespace xiiShaderHelper
     };
   };
 
-  XII_RENDERERCORE_DLL void GetShaderSections(const char* szContent, xiiTextSectionizer& out_Sections);
+  XII_RENDERERCORE_DLL void GetShaderSections(const char* szContent, xiiTextSectionizer& out_sections);
 
   xiiUInt32 CalculateHash(const xiiArrayPtr<xiiPermutationVar>& vars);
 } // namespace xiiShaderHelper

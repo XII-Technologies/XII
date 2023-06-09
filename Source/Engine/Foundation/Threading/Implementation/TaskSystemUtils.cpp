@@ -8,9 +8,9 @@
 #include <Foundation/Time/Timestamp.h>
 #include <Foundation/Utilities/DGMLWriter.h>
 
-const char* xiiWorkerThreadType::GetThreadTypeName(xiiWorkerThreadType::Enum ThreadType)
+const char* xiiWorkerThreadType::GetThreadTypeName(xiiWorkerThreadType::Enum threadType)
 {
-  switch (ThreadType)
+  switch (threadType)
   {
     case xiiWorkerThreadType::ShortTasks:
       return "Short Task";
@@ -27,7 +27,7 @@ const char* xiiWorkerThreadType::GetThreadTypeName(xiiWorkerThreadType::Enum Thr
   }
 }
 
-void xiiTaskSystem::WriteStateSnapshotToDGML(xiiDGMLGraph& graph)
+void xiiTaskSystem::WriteStateSnapshotToDGML(xiiDGMLGraph& ref_graph)
 {
   XII_LOCK(s_TaskSystemMutex);
 
@@ -43,13 +43,13 @@ void xiiTaskSystem::WriteStateSnapshotToDGML(xiiDGMLGraph& graph)
   taskNodeND.m_Color = xiiColor::OrangeRed;
   taskNodeND.m_Shape = xiiDGMLGraph::NodeShape::RoundedRectangle;
 
-  const xiiDGMLGraph::PropertyId startedByUserId = graph.AddPropertyType("StartByUser");
-  const xiiDGMLGraph::PropertyId activeDepsId    = graph.AddPropertyType("ActiveDependencies");
-  const xiiDGMLGraph::PropertyId scheduledId     = graph.AddPropertyType("Scheduled");
-  const xiiDGMLGraph::PropertyId finishedId      = graph.AddPropertyType("Finished");
-  const xiiDGMLGraph::PropertyId multiplicityId  = graph.AddPropertyType("Multiplicity");
-  const xiiDGMLGraph::PropertyId remainingRunsId = graph.AddPropertyType("RemainingRuns");
-  const xiiDGMLGraph::PropertyId priorityId      = graph.AddPropertyType("GroupPriority");
+  const xiiDGMLGraph::PropertyId startedByUserId = ref_graph.AddPropertyType("StartByUser");
+  const xiiDGMLGraph::PropertyId activeDepsId    = ref_graph.AddPropertyType("ActiveDependencies");
+  const xiiDGMLGraph::PropertyId scheduledId     = ref_graph.AddPropertyType("Scheduled");
+  const xiiDGMLGraph::PropertyId finishedId      = ref_graph.AddPropertyType("Finished");
+  const xiiDGMLGraph::PropertyId multiplicityId  = ref_graph.AddPropertyType("Multiplicity");
+  const xiiDGMLGraph::PropertyId remainingRunsId = ref_graph.AddPropertyType("RemainingRuns");
+  const xiiDGMLGraph::PropertyId priorityId      = ref_graph.AddPropertyType("GroupPriority");
 
   const char* szTaskPriorityNames[xiiTaskPriority::ENUM_COUNT]  = {};
   szTaskPriorityNames[xiiTaskPriority::EarlyThisFrame]          = "EarlyThisFrame";
@@ -82,28 +82,28 @@ void xiiTaskSystem::WriteStateSnapshotToDGML(xiiDGMLGraph& graph)
 
     title.Format("Group {}", g);
 
-    const xiiDGMLGraph::NodeId taskGroupId = graph.AddGroup(title, xiiDGMLGraph::GroupType::Expanded, &taskGroupND);
+    const xiiDGMLGraph::NodeId taskGroupId = ref_graph.AddGroup(title, xiiDGMLGraph::GroupType::Expanded, &taskGroupND);
     groupNodeIds[&tg]                      = taskGroupId;
 
-    graph.AddNodeProperty(taskGroupId, startedByUserId, tg.m_bStartedByUser ? "true" : "false");
-    graph.AddNodeProperty(taskGroupId, priorityId, szTaskPriorityNames[tg.m_Priority]);
-    graph.AddNodeProperty(taskGroupId, activeDepsId, xiiFmt("{}", tg.m_iNumActiveDependencies));
+    ref_graph.AddNodeProperty(taskGroupId, startedByUserId, tg.m_bStartedByUser ? "true" : "false");
+    ref_graph.AddNodeProperty(taskGroupId, priorityId, szTaskPriorityNames[tg.m_Priority]);
+    ref_graph.AddNodeProperty(taskGroupId, activeDepsId, xiiFmt("{}", tg.m_iNumActiveDependencies));
 
     for (xiiUInt32 t = 0; t < tg.m_Tasks.GetCount(); ++t)
     {
       const xiiTask&             task       = *tg.m_Tasks[t];
-      const xiiDGMLGraph::NodeId taskNodeId = graph.AddNode(task.m_sTaskName, &taskNodeND);
+      const xiiDGMLGraph::NodeId taskNodeId = ref_graph.AddNode(task.m_sTaskName, &taskNodeND);
 
-      graph.AddNodeToGroup(taskNodeId, taskGroupId);
+      ref_graph.AddNodeToGroup(taskNodeId, taskGroupId);
 
-      graph.AddNodeProperty(taskNodeId, scheduledId, task.m_bTaskIsScheduled ? "true" : "false");
-      graph.AddNodeProperty(taskNodeId, finishedId, task.IsTaskFinished() ? "true" : "false");
+      ref_graph.AddNodeProperty(taskNodeId, scheduledId, task.m_bTaskIsScheduled ? "true" : "false");
+      ref_graph.AddNodeProperty(taskNodeId, finishedId, task.IsTaskFinished() ? "true" : "false");
 
       tmp.Format("{}", task.GetMultiplicity());
-      graph.AddNodeProperty(taskNodeId, multiplicityId, tmp);
+      ref_graph.AddNodeProperty(taskNodeId, multiplicityId, tmp);
 
       tmp.Format("{}", task.m_iRemainingRuns);
-      graph.AddNodeProperty(taskNodeId, remainingRunsId, tmp);
+      ref_graph.AddNodeProperty(taskNodeId, remainingRunsId, tmp);
     }
   }
 
@@ -130,7 +130,7 @@ void xiiTaskSystem::WriteStateSnapshotToDGML(xiiDGMLGraph& graph)
 
       XII_ASSERT_DEBUG(otherNodeId != ownNodeId, "");
 
-      graph.AddConnection(otherNodeId, ownNodeId);
+      ref_graph.AddConnection(otherNodeId, ownNodeId);
     }
   }
 }

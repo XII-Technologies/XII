@@ -112,11 +112,11 @@ GPUTimingScope* xiiProfilingScopeAndMarker::Start(xiiGALCommandEncoder* pCommand
   return &timingScope;
 }
 
-void xiiProfilingScopeAndMarker::Stop(xiiGALCommandEncoder* pCommandEncoder, GPUTimingScope*& pTimingScope)
+void xiiProfilingScopeAndMarker::Stop(xiiGALCommandEncoder* pCommandEncoder, GPUTimingScope*& ref_pTimingScope)
 {
   pCommandEncoder->PopMarker();
-  pTimingScope->m_EndTimestamp = pCommandEncoder->InsertTimestamp();
-  pTimingScope                 = nullptr;
+  ref_pTimingScope->m_EndTimestamp = pCommandEncoder->InsertTimestamp();
+  ref_pTimingScope                 = nullptr;
 }
 
 xiiProfilingScopeAndMarker::xiiProfilingScopeAndMarker(xiiGALCommandEncoder* pCommandEncoder, const char* szName) :

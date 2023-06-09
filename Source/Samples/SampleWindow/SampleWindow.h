@@ -9,7 +9,7 @@ class xiiSampleWindow;
 class xiiSampleWindowApp : public xiiApplication
 {
 public:
-  typedef xiiApplication SUPER;
+  using SUPER = xiiApplication;
 
   xiiSampleWindowApp();
 

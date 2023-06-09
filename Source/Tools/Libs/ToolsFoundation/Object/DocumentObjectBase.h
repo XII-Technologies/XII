@@ -10,11 +10,8 @@ class xiiDocumentObjectManager;
 class XII_TOOLSFOUNDATION_DLL xiiDocumentObject
 {
 public:
-  xiiDocumentObject() :
-    m_pDocumentObjectManager(nullptr), m_pParent(nullptr)
-  {
-  }
-  virtual ~xiiDocumentObject() {}
+  xiiDocumentObject()          = default;
+  virtual ~xiiDocumentObject() = default;
 
   // Accessors
   const xiiUuid& GetGuid() const { return m_Guid; }
@@ -33,7 +30,7 @@ public:
   virtual void RemoveSubObject(xiiDocumentObject* pObject);
 
   // Helper
-  void                                         ComputeObjectHash(xiiUInt64& uiHash) const;
+  void                                         ComputeObjectHash(xiiUInt64& ref_uiHash) const;
   const xiiHybridArray<xiiDocumentObject*, 8>& GetChildren() const { return m_Children; }
   xiiDocumentObject*                           GetChild(const xiiUuid& guid);
   const xiiDocumentObject*                     GetChild(const xiiUuid& guid) const;
@@ -49,9 +46,9 @@ private:
 
 protected:
   xiiUuid                   m_Guid;
-  xiiDocumentObjectManager* m_pDocumentObjectManager;
+  xiiDocumentObjectManager* m_pDocumentObjectManager = nullptr;
 
-  xiiDocumentObject*                    m_pParent;
+  xiiDocumentObject*                    m_pParent = nullptr;
   xiiHybridArray<xiiDocumentObject*, 8> m_Children;
 
   // Sub object data
@@ -66,7 +63,7 @@ public:
   {
   }
 
-  virtual ~xiiDocumentStorageObject() {}
+  virtual ~xiiDocumentStorageObject() = default;
 
   virtual const xiiIReflectedTypeAccessor& GetTypeAccessor() const override { return m_ObjectPropertiesAccessor; }
 

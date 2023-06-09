@@ -3,9 +3,9 @@
 #include <Foundation/CodeUtils/Preprocessor.h>
 #include <ToolsFoundation/Utilities/PathPatternFilter.h>
 
-void xiiPathPattern::Configure(const xiiStringView text0)
+void xiiPathPattern::Configure(const xiiStringView sText0)
 {
-  xiiStringView text = text0;
+  xiiStringView text = sText0;
 
   text.Trim(" \t\r\n");
 
@@ -25,18 +25,18 @@ void xiiPathPattern::Configure(const xiiStringView text0)
     m_MatchType = MatchType::Exact;
 }
 
-bool xiiPathPattern::Matches(const xiiStringView text) const
+bool xiiPathPattern::Matches(const xiiStringView sText) const
 {
   switch (m_MatchType)
   {
     case MatchType::Exact:
-      return text.IsEqual_NoCase(m_sString.GetView());
+      return sText.IsEqual_NoCase(m_sString.GetView());
     case MatchType::StartsWith:
-      return text.StartsWith_NoCase(m_sString);
+      return sText.StartsWith_NoCase(m_sString);
     case MatchType::EndsWith:
-      return text.EndsWith_NoCase(m_sString);
+      return sText.EndsWith_NoCase(m_sString);
     case MatchType::Contains:
-      return text.FindSubString_NoCase(m_sString) != nullptr;
+      return sText.FindSubString_NoCase(m_sString) != nullptr;
   }
 
   XII_ASSERT_NOT_IMPLEMENTED;
@@ -45,19 +45,19 @@ bool xiiPathPattern::Matches(const xiiStringView text) const
 
 //////////////////////////////////////////////////////////////////////////
 
-bool xiiPathPatternFilter::PassesFilters(xiiStringView text) const
+bool xiiPathPatternFilter::PassesFilters(xiiStringView sText) const
 {
   for (const auto& filter : m_IncludePatterns)
   {
     // if any include pattern matches, that overrides the exclude patterns
-    if (filter.Matches(text))
+    if (filter.Matches(sText))
       return true;
   }
 
   for (const auto& filter : m_ExcludePatterns)
   {
     // no include pattern matched, but any exclude pattern matches -> filter out
-    if (filter.Matches(text))
+    if (filter.Matches(sText))
       return false;
   }
 

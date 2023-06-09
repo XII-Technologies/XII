@@ -3,8 +3,8 @@
 #include <Foundation/Serialization/ApplyNativePropertyChangesContext.h>
 
 
-xiiApplyNativePropertyChangesContext::xiiApplyNativePropertyChangesContext(xiiRttiConverterContext& source, const xiiAbstractObjectGraph& originalGraph) :
-  m_NativeContext(source), m_OriginalGraph(originalGraph)
+xiiApplyNativePropertyChangesContext::xiiApplyNativePropertyChangesContext(xiiRttiConverterContext& ref_source, const xiiAbstractObjectGraph& originalGraph) :
+  m_NativeContext(ref_source), m_OriginalGraph(originalGraph)
 {
 }
 

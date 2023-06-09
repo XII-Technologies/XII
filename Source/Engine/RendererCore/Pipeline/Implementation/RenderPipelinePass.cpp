@@ -26,7 +26,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiRenderPipelinePass::xiiRenderPipelinePass(const char* szName, bool bIsStereoAware) :
-  m_bActive(true), m_bIsStereoAware(bIsStereoAware), m_pPipeline(nullptr)
+  m_bIsStereoAware(bIsStereoAware)
 {
   m_sName.Assign(szName);
 }

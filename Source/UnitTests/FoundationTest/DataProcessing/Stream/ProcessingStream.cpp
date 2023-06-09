@@ -16,12 +16,9 @@ class AddOneStreamProcessor : public xiiProcessingStreamProcessor
   XII_ADD_DYNAMIC_REFLECTION(AddOneStreamProcessor, xiiProcessingStreamProcessor);
 
 public:
-  AddOneStreamProcessor() :
-    m_pStream(nullptr)
-  {
-  }
+  AddOneStreamProcessor() = default;
 
-  void SetStreamName(xiiHashedString StreamName) { m_sStreamName = StreamName; }
+  void SetStreamName(xiiHashedString sStreamName) { m_sStreamName = sStreamName; }
 
 protected:
   virtual xiiResult UpdateStreamBindings() override
@@ -71,7 +68,7 @@ protected:
   }
 
   xiiHashedString      m_sStreamName;
-  xiiProcessingStream* m_pStream;
+  xiiProcessingStream* m_pStream = nullptr;
 };
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(AddOneStreamProcessor, 1, xiiRTTIDefaultAllocator<AddOneStreamProcessor>)

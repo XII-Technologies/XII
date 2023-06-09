@@ -63,11 +63,11 @@ public:
   void ScheduleRestoreWindowLayout();
 
   bool IsVisibleInContainer() const { return m_bIsVisibleInContainer; }
-  void SetTargetFramerate(xiiInt16 uiTargetFPS);
+  void SetTargetFramerate(xiiInt16 iTargetFPS);
 
   void TriggerRedraw();
 
-  virtual void RequestWindowTabContextMenu(const QPoint& GlobalPos);
+  virtual void RequestWindowTabContextMenu(const QPoint& globalPos);
 
   static const xiiDynamicArray<xiiQtDocumentWindow*>& GetAllDocumentWindows() { return s_AllDocumentWindows; }
 
@@ -75,10 +75,10 @@ public:
   xiiQtContainerWindow*       GetContainerWindow() const;
 
   /// \brief Shows the given message for the given duration in the statusbar, then shows the permanent message again.
-  void ShowTemporaryStatusBarMsg(const xiiFormatString& sText, xiiTime duration = xiiTime::Seconds(5));
+  void ShowTemporaryStatusBarMsg(const xiiFormatString& text, xiiTime duration = xiiTime::Seconds(5));
 
   /// \brief Sets which text to show permanently in the statusbar. Set an empty string to clear the message.
-  void SetPermanentStatusBarMsg(const xiiFormatString& sText);
+  void SetPermanentStatusBarMsg(const xiiFormatString& text);
 
   /// \brief For unit tests to take a screenshot of the window (may include multiple views) to do image comparisons.
   virtual void CreateImageCapture(const char* szOutputPath);

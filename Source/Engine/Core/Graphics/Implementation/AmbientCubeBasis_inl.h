@@ -52,13 +52,13 @@ T xiiAmbientCube<T>::Evaluate(const xiiVec3& vNormal) const
 }
 
 template <typename T>
-xiiResult xiiAmbientCube<T>::Serialize(xiiStreamWriter& stream) const
+xiiResult xiiAmbientCube<T>::Serialize(xiiStreamWriter& ref_stream) const
 {
-  return stream.WriteArray(m_Values);
+  return ref_stream.WriteArray(m_Values);
 }
 
 template <typename T>
-xiiResult xiiAmbientCube<T>::Deserialize(xiiStreamReader& stream)
+xiiResult xiiAmbientCube<T>::Deserialize(xiiStreamReader& ref_stream)
 {
-  return stream.ReadArray(m_Values);
+  return ref_stream.ReadArray(m_Values);
 }

@@ -20,19 +20,19 @@
 
 namespace
 {
-  XII_ALWAYS_INLINE void SkipWhitespace(xiiToken& token, xiiUInt32& i, const xiiDeque<xiiToken>& tokens)
+  XII_ALWAYS_INLINE void SkipWhitespace(xiiToken& ref_token, xiiUInt32& i, const xiiDeque<xiiToken>& tokens)
   {
-    while (token.m_iType == xiiTokenType::Whitespace)
+    while (ref_token.m_iType == xiiTokenType::Whitespace)
     {
-      token = tokens[++i];
+      ref_token = tokens[++i];
     }
   }
 
-  XII_ALWAYS_INLINE void SkipLine(xiiToken& token, xiiUInt32& i, const xiiDeque<xiiToken>& tokens)
+  XII_ALWAYS_INLINE void SkipLine(xiiToken& ref_token, xiiUInt32& i, const xiiDeque<xiiToken>& tokens)
   {
-    while (token.m_iType != xiiTokenType::Newline && token.m_iType != xiiTokenType::EndOfFile)
+    while (ref_token.m_iType != xiiTokenType::Newline && ref_token.m_iType != xiiTokenType::EndOfFile)
     {
-      token = tokens[++i];
+      ref_token = tokens[++i];
     }
   }
 } // namespace
@@ -57,7 +57,7 @@ private:
   IgnoreInfo m_IgnoreSource;
 
 public:
-  typedef xiiApplication SUPER;
+  using SUPER = xiiApplication;
 
   xiiHeaderCheckApp() :
     xiiApplication("HeaderCheck")
@@ -89,7 +89,7 @@ public:
     }
   }
 
-  xiiResult ParseArray(const xiiVariant& value, xiiHashSet<xiiString>& dst)
+  xiiResult ParseArray(const xiiVariant& value, xiiHashSet<xiiString>& ref_dst)
   {
     if (!value.CanConvertTo<xiiVariantArray>())
     {
@@ -108,21 +108,20 @@ public:
       }
       xiiStringBuilder file = el.Get<xiiString>();
       file.ToLower();
-      dst.Insert(file);
+      ref_dst.Insert(file);
     }
     return XII_SUCCESS;
   }
 
-  xiiResult ParseIgnoreFile(const xiiStringView ignoreFilePath)
+  xiiResult ParseIgnoreFile(const xiiStringView sIgnoreFilePath)
   {
     xiiJSONReader jsonReader;
     jsonReader.SetLogInterface(xiiLog::GetThreadLocalLogSystem());
 
     xiiFileReader reader;
-    xiiString     sIgnoreFilePath = ignoreFilePath;
     if (reader.Open(sIgnoreFilePath).Failed())
     {
-      xiiLog::Error("Failed to open ignore file {0}", ignoreFilePath);
+      xiiLog::Error("Failed to open ignore file {0}", sIgnoreFilePath);
       return XII_FAILURE;
     }
 
@@ -280,9 +279,9 @@ public:
     xiiGlobalLog::RemoveLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
   }
 
-  xiiResult ReadEntireFile(const char* szFile, xiiStringBuilder& sOut)
+  xiiResult ReadEntireFile(const char* szFile, xiiStringBuilder& ref_sOut)
   {
-    sOut.Clear();
+    ref_sOut.Clear();
 
     xiiFileReader File;
     if (File.Open(szFile) == XII_FAILURE)
@@ -313,7 +312,7 @@ public:
       return XII_FAILURE;
     }
 
-    sOut = (const char*)&FileContent[0];
+    ref_sOut = (const char*)&FileContent[0];
 
     return XII_SUCCESS;
   }
@@ -357,15 +356,15 @@ public:
       xiiLog::Error("Could not search the directory '{0}'", m_sSearchDir);
   }
 
-  void CheckInclude(const xiiStringBuilder& currentFile, const xiiStringBuilder& includePath, xiiUInt32 line)
+  void CheckInclude(const xiiStringBuilder& sCurrentFile, const xiiStringBuilder& sIncludePath, xiiUInt32 uiLine)
   {
     xiiStringBuilder absIncludePath(m_pStackAllocator.Borrow());
     bool             includeOutside = true;
-    if (includePath.IsAbsolutePath())
+    if (sIncludePath.IsAbsolutePath())
     {
       for (auto& includeDir : m_IncludeDirectories)
       {
-        if (includePath.StartsWith(includeDir))
+        if (sIncludePath.StartsWith(includeDir))
         {
           includeOutside = false;
           break;
@@ -375,7 +374,7 @@ public:
     else
     {
       bool includeFound = false;
-      if (includePath.StartsWith("ThirdParty"))
+      if (sIncludePath.StartsWith("ThirdParty"))
       {
         includeOutside = true;
       }
@@ -384,7 +383,7 @@ public:
         for (auto& includeDir : m_IncludeDirectories)
         {
           absIncludePath = includeDir;
-          absIncludePath.AppendPath(includePath);
+          absIncludePath.AppendPath(sIncludePath);
           if (xiiOSFile::ExistsFile(absIncludePath))
           {
             includeOutside = false;
@@ -396,9 +395,9 @@ public:
 
     if (includeOutside)
     {
-      xiiStringBuilder includeFileLower = includePath.GetFileNameAndExtension();
+      xiiStringBuilder includeFileLower = sIncludePath.GetFileNameAndExtension();
       includeFileLower.ToLower();
-      xiiStringBuilder currentFileLower = currentFile.GetFileNameAndExtension();
+      xiiStringBuilder currentFileLower = sCurrentFile.GetFileNameAndExtension();
       currentFileLower.ToLower();
 
       bool ignore = m_IgnoreTarget.m_byName.Contains(includeFileLower) || m_IgnoreSource.m_byName.Contains(currentFileLower);
@@ -408,17 +407,17 @@ public:
         xiiLog::Error("Including '{0}' in {1}:{2} leaks underlying implementation details. Including system or thirdparty headers in public XII header "
                       "files is not allowed. Please use an interface, factory or pimpl pattern to hide the implementation and avoid the include. See "
                       "the Documentation Chapter 'General->Header Files' for details.",
-                      includePath.GetView(), currentFile.GetView(), line);
+                      sIncludePath.GetView(), sCurrentFile.GetView(), uiLine);
       }
     }
   }
 
-  void CheckHeaderFile(const xiiStringBuilder& currentFile)
+  void CheckHeaderFile(const xiiStringBuilder& sCurrentFile)
   {
     xiiStringBuilder fileContents(m_pStackAllocator.Borrow());
-    ReadEntireFile(currentFile.GetData(), fileContents).IgnoreResult();
+    ReadEntireFile(sCurrentFile.GetData(), fileContents).IgnoreResult();
 
-    auto fileDir = currentFile.GetFileDirectory();
+    auto fileDir = sCurrentFile.GetFileDirectory();
 
     xiiStringBuilder internalMacroToken(m_pStackAllocator.Borrow());
     internalMacroToken.Append("XII_", m_sProjectName, "_INTERNAL_HEADER");
@@ -477,7 +476,7 @@ public:
             }
             else if (!isInternalHeader)
             {
-              CheckInclude(currentFile, absIncludePath, includeToken.m_uiLine);
+              CheckInclude(sCurrentFile, absIncludePath, includeToken.m_uiLine);
             }
           }
           else if (curToken.m_iType == xiiTokenType::NonIdentifier && curToken.m_DataView == openAngleBracket)
@@ -490,7 +489,7 @@ public:
               curToken = tokens[++i];
               if (curToken.m_iType == xiiTokenType::Newline)
               {
-                xiiLog::Error("Non-terminated '<' in #include {0} line {1}", currentFile.GetView(), includeToken.m_uiLine);
+                xiiLog::Error("Non-terminated '<' in #include {0} line {1}", sCurrentFile.GetView(), includeToken.m_uiLine);
                 error = true;
                 break;
               }
@@ -509,13 +508,13 @@ public:
               xiiStringBuilder includePath(m_pStackAllocator.Borrow());
               includePath = xiiStringView(startToken.m_DataView.GetEndPointer(), curToken.m_DataView.GetStartPointer());
               includePath.MakeCleanPath();
-              CheckInclude(currentFile, includePath, startToken.m_uiLine);
+              CheckInclude(sCurrentFile, includePath, startToken.m_uiLine);
             }
           }
           else
           {
             // error
-            xiiLog::Error("Can not parse #include statement in {0} line {1}", currentFile.GetView(), includeToken.m_uiLine);
+            xiiLog::Error("Can not parse #include statement in {0} line {1}", sCurrentFile.GetView(), includeToken.m_uiLine);
           }
         }
         else

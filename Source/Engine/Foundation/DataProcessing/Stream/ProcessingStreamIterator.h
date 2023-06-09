@@ -22,15 +22,15 @@ public:
   void Advance();
 
   /// \brief Advances the current pointer by the given number of elements.
-  void Advance(xiiUInt32 numElements);
+  void Advance(xiiUInt32 uiNumElements);
 
   // TODO: Add iterator interface? Only makes really sense for element spawners and processors which work on a single stream
 
 protected:
-  void* m_pCurrentPtr;
-  void* m_pEndPtr;
+  void* m_pCurrentPtr = nullptr;
+  void* m_pEndPtr     = nullptr;
 
-  xiiUInt64 m_uiElementStride;
+  xiiUInt64 m_uiElementStride = 0;
 };
 
 #include <Foundation/DataProcessing/Stream/Implementation/ProcessingStreamIterator_inl.h>

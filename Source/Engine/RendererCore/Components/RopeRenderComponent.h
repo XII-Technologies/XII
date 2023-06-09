@@ -21,8 +21,8 @@ class XII_RENDERERCORE_DLL xiiRopeRenderComponent : public xiiRenderComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;
@@ -62,8 +62,8 @@ public:
   void  SetUScale(float fUScale);               // [ property ]
   float GetUScale() const { return m_fUScale; } // [ property ]
 
-  void OnMsgSetColor(xiiMsgSetColor& msg);               // [ msg handler ]
-  void OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& msg); // [ msg handler ]
+  void OnMsgSetColor(xiiMsgSetColor& ref_msg);               // [ msg handler ]
+  void OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& ref_msg); // [ msg handler ]
 
 private:
   void OnRopePoseUpdated(xiiMsgRopePoseUpdated& msg); // [ msg handler ]

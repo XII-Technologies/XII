@@ -3,9 +3,7 @@
 #include <Foundation/Math/Mat4.h>
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiBoundingBoxTemplate<Type>::xiiBoundingBoxTemplate()
-{
-}
+XII_ALWAYS_INLINE xiiBoundingBoxTemplate<Type>::xiiBoundingBoxTemplate() = default;
 
 template <typename Type>
 XII_FORCE_INLINE xiiBoundingBoxTemplate<Type>::xiiBoundingBoxTemplate(const xiiVec3Template<Type>& vMin, const xiiVec3Template<Type>& vMax)
@@ -19,15 +17,12 @@ XII_FORCE_INLINE void xiiBoundingBoxTemplate<Type>::SetElements(const xiiVec3Tem
   m_vMin = vMin;
   m_vMax = vMax;
 
-  XII_ASSERT_DEBUG(IsValid(), "The given values did not create a valid bounding box ({0} | {1} | {2} - {3} | {4} | {5})", xiiArgF(vMin.x, 2),
-                   xiiArgF(vMin.y, 2), xiiArgF(vMin.z, 2), xiiArgF(vMax.x, 2), xiiArgF(vMax.y, 2), xiiArgF(vMax.z, 2));
+  XII_ASSERT_DEBUG(IsValid(), "The given values did not create a valid bounding box ({0} | {1} | {2} - {3} | {4} | {5})",
+                   xiiArgF(vMin.x, 2), xiiArgF(vMin.y, 2), xiiArgF(vMin.z, 2), xiiArgF(vMax.x, 2), xiiArgF(vMax.y, 2), xiiArgF(vMax.z, 2));
 }
 
 template <typename Type>
-void xiiBoundingBoxTemplate<Type>::SetFromPoints(
-  const xiiVec3Template<Type>* pPoints,
-  xiiUInt32                    uiNumPoints,
-  xiiUInt32                    uiStride /* = sizeof(xiiVec3Template<Type>) */)
+void xiiBoundingBoxTemplate<Type>::SetFromPoints(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /* = sizeof(xiiVec3Template<Type>) */)
 {
   SetInvalid();
   ExpandToInclude(pPoints, uiNumPoints, uiStride);
@@ -164,10 +159,7 @@ XII_FORCE_INLINE bool xiiBoundingBoxTemplate<Type>::Contains(const xiiBoundingBo
 }
 
 template <typename Type>
-bool xiiBoundingBoxTemplate<Type>::Contains(
-  const xiiVec3Template<Type>* pPoints,
-  xiiUInt32                    uiNumPoints,
-  xiiUInt32                    uiStride /* = sizeof(xiiVec3Template<Type>) */) const
+bool xiiBoundingBoxTemplate<Type>::Contains(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /* = sizeof(xiiVec3Template<Type>) */) const
 {
   XII_ASSERT_DEBUG(pPoints != nullptr, "Array must not be NuLL.");
   XII_ASSERT_DEBUG(uiStride >= sizeof(xiiVec3Template<Type>), "Data must not overlap.");
@@ -209,10 +201,7 @@ bool xiiBoundingBoxTemplate<Type>::Overlaps(const xiiBoundingBoxTemplate<Type>& 
 }
 
 template <typename Type>
-bool xiiBoundingBoxTemplate<Type>::Overlaps(
-  const xiiVec3Template<Type>* pPoints,
-  xiiUInt32                    uiNumPoints,
-  xiiUInt32                    uiStride /* = sizeof(xiiVec3Template<Type>) */) const
+bool xiiBoundingBoxTemplate<Type>::Overlaps(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /* = sizeof(xiiVec3Template<Type>) */) const
 {
   XII_ASSERT_DEBUG(pPoints != nullptr, "Array must not be NuLL.");
   XII_ASSERT_DEBUG(uiStride >= sizeof(xiiVec3Template<Type>), "Data must not overlap.");
@@ -384,11 +373,7 @@ Type xiiBoundingBoxTemplate<Type>::GetDistanceTo(const xiiBoundingBoxTemplate<Ty
 }
 
 template <typename Type>
-bool xiiBoundingBoxTemplate<Type>::GetRayIntersection(
-  const xiiVec3Template<Type>& vStartPos,
-  const xiiVec3Template<Type>& vRayDir,
-  Type*                        out_fIntersection,
-  xiiVec3Template<Type>*       out_vIntersection) const
+bool xiiBoundingBoxTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type>& vStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_pIntersectionDistance, xiiVec3Template<Type>* out_pIntersection) const
 {
   // This code was taken from: http://people.csail.mit.edu/amy/papers/box-jgt.pdf
   // "An Efficient and Robust Ray-Box Intersection Algorithm"
@@ -471,34 +456,29 @@ bool xiiBoundingBoxTemplate<Type>::GetRayIntersection(
   if (tMax <= 0.0f)
     return false;
 
-  if (out_fIntersection)
-    *out_fIntersection = tMin;
+  if (out_pIntersectionDistance)
+    *out_pIntersectionDistance = tMin;
 
-  if (out_vIntersection)
-    *out_vIntersection = vStartPos + tMin * vRayDir;
+  if (out_pIntersection)
+    *out_pIntersection = vStartPos + tMin * vRayDir;
 
   return true;
 }
 
 template <typename Type>
-bool xiiBoundingBoxTemplate<Type>::GetLineSegmentIntersection(
-  const xiiVec3Template<Type>& vStartPos,
-  const xiiVec3Template<Type>& vEndPos,
-  Type*                        out_fLineFraction,
-  xiiVec3Template<Type>*       out_vIntersection) const
+bool xiiBoundingBoxTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Template<Type>& vStartPos, const xiiVec3Template<Type>& vEndPos, Type* out_pLineFraction, xiiVec3Template<Type>* out_pIntersection) const
 {
   const xiiVec3Template<Type> vRayDir = vEndPos - vStartPos;
 
   Type fIntersection = 0.0f;
-  if (!GetRayIntersection(vStartPos, vRayDir, &fIntersection, out_vIntersection))
+  if (!GetRayIntersection(vStartPos, vRayDir, &fIntersection, out_pIntersection))
     return false;
 
-  if (out_fLineFraction)
-    *out_fLineFraction = fIntersection;
+  if (out_pLineFraction)
+    *out_pLineFraction = fIntersection;
 
   return fIntersection <= 1.0f;
 }
-
 
 
 #include <Foundation/Math/Implementation/AllClasses_inl.h>

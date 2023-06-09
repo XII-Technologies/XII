@@ -16,7 +16,7 @@ class XII_FOUNDATION_DLL xiiDefaultTimeStepSmoothing : public xiiTimeStepSmoothi
 public:
   xiiDefaultTimeStepSmoothing();
 
-  virtual xiiTime GetSmoothedTimeStep(xiiTime RawTimeStep, const xiiClock* pClock) override;
+  virtual xiiTime GetSmoothedTimeStep(xiiTime rawTimeStep, const xiiClock* pClock) override;
 
   virtual void Reset(const xiiClock* pClock) override;
 

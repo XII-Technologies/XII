@@ -26,13 +26,13 @@ public:
   static xiiTagRegistry& GetGlobalRegistry();
 
   /// \brief Ensures the tag with the given name exists and returns a pointer to it.
-  const xiiTag& RegisterTag(xiiStringView szTagString); // [tested]
+  const xiiTag& RegisterTag(xiiStringView sTagString); // [tested]
 
   /// \brief Ensures the tag with the given name exists and returns a pointer to it.
-  const xiiTag& RegisterTag(const xiiHashedString& TagString); // [tested]
+  const xiiTag& RegisterTag(const xiiHashedString& sTagString); // [tested]
 
   /// \brief Searches for a tag with the given name and returns a pointer to it
-  const xiiTag* GetTagByName(const xiiTempHashedString& TagString) const; // [tested]
+  const xiiTag* GetTagByName(const xiiTempHashedString& sTagString) const; // [tested]
 
   /// \brief Searches for a tag with the given murmur hash. This function is only for backwards compatibility.
   const xiiTag* GetTagByMurmurHash(xiiUInt32 uiMurmurHash) const;
@@ -45,7 +45,7 @@ public:
 
   /// \brief Loads the saved state and integrates it into this registry. Does not discard previously registered tag information. This function is only
   /// for backwards compatibility.
-  xiiResult Load(xiiStreamReader& stream);
+  xiiResult Load(xiiStreamReader& ref_stream);
 
 protected:
   mutable xiiMutex m_TagRegistryMutex;

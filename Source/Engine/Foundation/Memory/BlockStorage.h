@@ -75,9 +75,9 @@ private:
   xiiLargeBlockAllocator<BlockSizeInByte>* m_pBlockAllocator;
 
   xiiDynamicArray<xiiDataBlock<T, BlockSizeInByte>> m_Blocks;
-  xiiUInt32                                         m_uiCount;
+  xiiUInt32                                         m_uiCount = 0;
 
-  xiiUInt32 m_uiFreelistStart;
+  xiiUInt32 m_uiFreelistStart = xiiInvalidIndex;
 
   xiiDynamicBitfield m_UsedEntries;
 };

@@ -15,8 +15,8 @@ public:
   void SetShader(xiiGALShaderHandle hShader);
 
   void SetConstantBuffer(xiiUInt32 uiSlot, xiiGALBufferHandle hBuffer);
-  void SetSamplerState(xiiGALShaderStage::Enum Stage, xiiUInt32 uiSlot, xiiGALSamplerStateHandle hSamplerState);
-  void SetResourceView(xiiGALShaderStage::Enum Stage, xiiUInt32 uiSlot, xiiGALResourceViewHandle hResourceView);
+  void SetSamplerState(xiiGALShaderStage::Enum stage, xiiUInt32 uiSlot, xiiGALSamplerStateHandle hSamplerState);
+  void SetResourceView(xiiGALShaderStage::Enum stage, xiiUInt32 uiSlot, xiiGALResourceViewHandle hResourceView);
   void SetUnorderedAccessView(xiiUInt32 uiSlot, xiiGALUnorderedAccessViewHandle hUnorderedAccessView);
 
   // Returns whether a resource view has been unset for the given resource
@@ -30,7 +30,7 @@ public:
   void EndQuery(xiiGALQueryHandle hQuery);
 
   /// \return Success if retrieving the query succeeded.
-  xiiResult GetQueryResult(xiiGALQueryHandle hQuery, xiiUInt64& uiQueryResult);
+  xiiResult GetQueryResult(xiiGALQueryHandle hQuery, xiiUInt64& ref_uiQueryResult);
 
   // Timestamp functions
 
@@ -39,24 +39,24 @@ public:
   // Resource functions
 
   /// Clears an unordered access view with a float value.
-  void ClearUnorderedAccessView(xiiGALUnorderedAccessViewHandle hUnorderedAccessView, xiiVec4 clearValues);
+  void ClearUnorderedAccessView(xiiGALUnorderedAccessViewHandle hUnorderedAccessView, xiiVec4 vClearValues);
 
   /// Clears an unordered access view with an int value.
-  void ClearUnorderedAccessView(xiiGALUnorderedAccessViewHandle hUnorderedAccessView, xiiVec4U32 clearValues);
+  void ClearUnorderedAccessView(xiiGALUnorderedAccessViewHandle hUnorderedAccessView, xiiVec4U32 vClearValues);
 
   void CopyBuffer(xiiGALBufferHandle hDest, xiiGALBufferHandle hSource);
   void CopyBufferRegion(xiiGALBufferHandle hDest, xiiUInt32 uiDestOffset, xiiGALBufferHandle hSource, xiiUInt32 uiSourceOffset, xiiUInt32 uiByteCount);
-  void UpdateBuffer(xiiGALBufferHandle hDest, xiiUInt32 uiDestOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiGALUpdateMode::Enum updateMode = xiiGALUpdateMode::Discard);
+  void UpdateBuffer(xiiGALBufferHandle hDest, xiiUInt32 uiDestOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiGALUpdateMode::Enum updateMode = xiiGALUpdateMode::Discard);
 
   void CopyTexture(xiiGALTextureHandle hDest, xiiGALTextureHandle hSource);
-  void CopyTextureRegion(xiiGALTextureHandle hDest, const xiiGALTextureSubresource& DestinationSubResource, const xiiVec3U32& DestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureSubresource& SourceSubResource, const xiiBoundingBoxu32& Box);
+  void CopyTextureRegion(xiiGALTextureHandle hDest, const xiiGALTextureSubresource& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureSubresource& sourceSubResource, const xiiBoundingBoxu32& box);
 
-  void UpdateTexture(xiiGALTextureHandle hDest, const xiiGALTextureSubresource& DestinationSubResource, const xiiBoundingBoxu32& DestinationBox, const xiiGALSystemMemoryDescription& pSourceData);
+  void UpdateTexture(xiiGALTextureHandle hDest, const xiiGALTextureSubresource& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALSystemMemoryDescription& sourceData);
 
-  void ResolveTexture(xiiGALTextureHandle hDest, const xiiGALTextureSubresource& DestinationSubResource, xiiGALTextureHandle hSource, const xiiGALTextureSubresource& SourceSubResource);
+  void ResolveTexture(xiiGALTextureHandle hDest, const xiiGALTextureSubresource& destinationSubResource, xiiGALTextureHandle hSource, const xiiGALTextureSubresource& sourceSubResource);
 
   void ReadbackTexture(xiiGALTextureHandle hTexture);
-  void CopyTextureReadbackResult(xiiGALTextureHandle hTexture, xiiArrayPtr<xiiGALTextureSubresource> SourceSubResource, xiiArrayPtr<xiiGALSystemMemoryDescription> TargetData);
+  void CopyTextureReadbackResult(xiiGALTextureHandle hTexture, xiiArrayPtr<xiiGALTextureSubresource> sourceSubResource, xiiArrayPtr<xiiGALSystemMemoryDescription> targetData);
 
   void GenerateMipMaps(xiiGALResourceViewHandle hResourceView);
 
@@ -66,9 +66,9 @@ public:
 
   // Debug helper functions
 
-  void PushMarker(const char* Marker);
+  void PushMarker(const char* szMarker);
   void PopMarker();
-  void InsertEventMarker(const char* Marker);
+  void InsertEventMarker(const char* szMarker);
 
   virtual void ClearStatisticsCounters();
 

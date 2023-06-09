@@ -54,34 +54,34 @@ public:
   ~xiiConfigFileResource();
 
   /// \brief Returns the 'int' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
-  xiiInt32 GetInt(xiiTempHashedString szName) const;
+  xiiInt32 GetInt(xiiTempHashedString sName) const;
 
   /// \brief Returns the 'float' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
-  float GetFloat(xiiTempHashedString szName) const;
+  float GetFloat(xiiTempHashedString sName) const;
 
   /// \brief Returns the 'double' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
-  double GetDouble(xiiTempHashedString szName) const;
+  double GetDouble(xiiTempHashedString sName) const;
 
   /// \brief Returns the 'bool' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
-  bool GetBool(xiiTempHashedString szName) const;
+  bool GetBool(xiiTempHashedString sName) const;
 
   /// \brief Returns the 'string' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
-  const char* GetString(xiiTempHashedString szName) const;
+  const char* GetString(xiiTempHashedString sName) const;
 
   /// \brief Returns the 'int' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
-  xiiInt32 GetInt(xiiTempHashedString szName, xiiInt32 fallback) const;
+  xiiInt32 GetInt(xiiTempHashedString sName, xiiInt32 iFallback) const;
 
   /// \brief Returns the 'float' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
-  float GetFloat(xiiTempHashedString szName, float fallback) const;
+  float GetFloat(xiiTempHashedString sName, float fFallback) const;
 
   /// \brief Returns the 'double' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
-  double GetDouble(xiiTempHashedString szName, double fallback) const;
+  double GetDouble(xiiTempHashedString sName, double fFallback) const;
 
   /// \brief Returns the 'bool' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
-  bool GetBool(xiiTempHashedString szName, bool fallback) const;
+  bool GetBool(xiiTempHashedString sName, bool bFallback) const;
 
   /// \brief Returns the 'string' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
-  const char* GetString(xiiTempHashedString szName, const char* fallback) const;
+  const char* GetString(xiiTempHashedString sName, const char* szFallback) const;
 
 protected:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
@@ -115,10 +115,10 @@ public:
     xiiMemoryStreamReader         m_Reader;
     xiiDependencyFile             m_RequiredFiles;
 
-    xiiResult PrePropFileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType IncType, xiiStringBuilder& out_sAbsoluteFilePath);
+    xiiResult PrePropFileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath);
   };
 
   virtual xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;
-  virtual void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& LoaderData) override;
+  virtual void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData) override;
   virtual bool                IsResourceOutdated(const xiiResource* pResource) const override;
 };

@@ -10,7 +10,7 @@ class xiiPhysicsWorldModuleInterface;
 
 //////////////////////////////////////////////////////////////////////////
 
-typedef xiiComponentManagerSimple<class xiiRcMarkPoiVisibleComponent, xiiComponentUpdateType::WhenSimulating> xiiRcMarkPoiVisibleComponentManager;
+using xiiRcMarkPoiVisibleComponentManager = xiiComponentManagerSimple<class xiiRcMarkPoiVisibleComponent, xiiComponentUpdateType::WhenSimulating>;
 
 class XII_RECASTPLUGIN_DLL xiiRcMarkPoiVisibleComponent : public xiiRcComponent
 {
@@ -20,8 +20,8 @@ class XII_RECASTPLUGIN_DLL xiiRcMarkPoiVisibleComponent : public xiiRcComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnSimulationStarted() override;

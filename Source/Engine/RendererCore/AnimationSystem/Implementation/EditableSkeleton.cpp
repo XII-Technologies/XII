@@ -101,18 +101,18 @@ XII_DEFINE_CUSTOM_VARIANT_TYPE(xiiExposedBone);
 // clang-format on
 
 
-void operator<<(xiiStreamWriter& stream, const xiiExposedBone& bone)
+void operator<<(xiiStreamWriter& ref_stream, const xiiExposedBone& bone)
 {
-  stream << bone.m_sName;
-  stream << bone.m_sParent;
-  stream << bone.m_Transform;
+  ref_stream << bone.m_sName;
+  ref_stream << bone.m_sParent;
+  ref_stream << bone.m_Transform;
 }
 
-void operator>>(xiiStreamReader& stream, xiiExposedBone& bone)
+void operator>>(xiiStreamReader& ref_stream, xiiExposedBone& ref_bone)
 {
-  stream >> bone.m_sName;
-  stream >> bone.m_sParent;
-  stream >> bone.m_Transform;
+  ref_stream >> ref_bone.m_sName;
+  ref_stream >> ref_bone.m_sParent;
+  ref_stream >> ref_bone.m_Transform;
 }
 
 bool operator==(const xiiExposedBone& lhs, const xiiExposedBone& rhs)
@@ -142,11 +142,11 @@ void xiiEditableSkeleton::ClearJoints()
   m_Children.Clear();
 }
 
-void xiiEditableSkeleton::CreateJointsRecursive(xiiSkeletonBuilder& sb, xiiSkeletonResourceDescriptor& desc, const xiiEditableSkeletonJoint* pParentJoint, const xiiEditableSkeletonJoint* pThisJoint, xiiUInt16 uiThisJointIdx, const xiiQuat& qParentAccuRot, const xiiMat4& rootTransform) const
+void xiiEditableSkeleton::CreateJointsRecursive(xiiSkeletonBuilder& ref_sb, xiiSkeletonResourceDescriptor& ref_desc, const xiiEditableSkeletonJoint* pParentJoint, const xiiEditableSkeletonJoint* pThisJoint, xiiUInt16 uiThisJointIdx, const xiiQuat& qParentAccuRot, const xiiMat4& mRootTransform) const
 {
   for (auto& shape : pThisJoint->m_BoneShapes)
   {
-    auto& geo = desc.m_Geometry.ExpandAndGetRef();
+    auto& geo = ref_desc.m_Geometry.ExpandAndGetRef();
 
     geo.m_Type              = shape.m_Geometry;
     geo.m_uiAttachedToJoint = static_cast<xiiUInt16>(uiThisJointIdx);
@@ -177,68 +177,68 @@ void xiiEditableSkeleton::CreateJointsRecursive(xiiSkeletonBuilder& sb, xiiSkele
     // unfortunately this can't be done once for the first node, but has to be done on the result instead
 
     xiiMat4 full;
-    xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(rootTransform, qParentAccuRot.GetAsMat4(), full, qParentGlobalRot);
+    xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(mRootTransform, qParentAccuRot.GetAsMat4(), full, qParentGlobalRot);
   }
 
-  sb.SetJointLimit(uiThisJointIdx, pThisJoint->m_qLocalJointRotation, pThisJoint->m_bLimitSwing, pThisJoint->m_SwingLimitY, pThisJoint->m_SwingLimitZ, pThisJoint->m_bLimitTwist, pThisJoint->m_TwistLimitHalfAngle, pThisJoint->m_TwistLimitCenterAngle);
+  ref_sb.SetJointLimit(uiThisJointIdx, pThisJoint->m_qLocalJointRotation, pThisJoint->m_bLimitSwing, pThisJoint->m_SwingLimitY, pThisJoint->m_SwingLimitZ, pThisJoint->m_bLimitTwist, pThisJoint->m_TwistLimitHalfAngle, pThisJoint->m_TwistLimitCenterAngle);
 
   for (const auto* pChildJoint : pThisJoint->m_Children)
   {
-    const xiiUInt16 uiChildJointIdx = sb.AddJoint(pChildJoint->GetName(), pChildJoint->m_LocalTransform, uiThisJointIdx);
+    const xiiUInt16 uiChildJointIdx = ref_sb.AddJoint(pChildJoint->GetName(), pChildJoint->m_LocalTransform, uiThisJointIdx);
 
-    CreateJointsRecursive(sb, desc, pThisJoint, pChildJoint, uiChildJointIdx, qThisAccuRot, rootTransform);
+    CreateJointsRecursive(ref_sb, ref_desc, pThisJoint, pChildJoint, uiChildJointIdx, qThisAccuRot, mRootTransform);
   }
 }
 
-void xiiEditableSkeleton::FillResourceDescriptor(xiiSkeletonResourceDescriptor& desc) const
+void xiiEditableSkeleton::FillResourceDescriptor(xiiSkeletonResourceDescriptor& ref_desc) const
 {
-  desc.m_Geometry.Clear();
+  ref_desc.m_Geometry.Clear();
 
   xiiSkeletonBuilder sb;
   for (const auto* pJoint : m_Children)
   {
     const xiiUInt16 idx = sb.AddJoint(pJoint->GetName(), pJoint->m_LocalTransform);
 
-    CreateJointsRecursive(sb, desc, nullptr, pJoint, idx, xiiQuat::IdentityQuaternion(), desc.m_RootTransform.GetAsMat4());
+    CreateJointsRecursive(sb, ref_desc, nullptr, pJoint, idx, xiiQuat::IdentityQuaternion(), ref_desc.m_RootTransform.GetAsMat4());
   }
 
-  sb.BuildSkeleton(desc.m_Skeleton);
-  desc.m_Skeleton.m_BoneDirection = m_BoneDirection;
+  sb.BuildSkeleton(ref_desc.m_Skeleton);
+  ref_desc.m_Skeleton.m_BoneDirection = m_BoneDirection;
 }
 
-static void BuildOzzRawSkeleton(const xiiEditableSkeletonJoint& srcJoint, ozz::animation::offline::RawSkeleton::Joint& dstJoint)
+static void BuildOzzRawSkeleton(const xiiEditableSkeletonJoint& srcJoint, ozz::animation::offline::RawSkeleton::Joint& ref_dstJoint)
 {
-  dstJoint.name                    = srcJoint.m_sName.GetString();
-  dstJoint.transform.translation.x = srcJoint.m_LocalTransform.m_vPosition.x;
-  dstJoint.transform.translation.y = srcJoint.m_LocalTransform.m_vPosition.y;
-  dstJoint.transform.translation.z = srcJoint.m_LocalTransform.m_vPosition.z;
-  dstJoint.transform.rotation.x    = srcJoint.m_LocalTransform.m_qRotation.v.x;
-  dstJoint.transform.rotation.y    = srcJoint.m_LocalTransform.m_qRotation.v.y;
-  dstJoint.transform.rotation.z    = srcJoint.m_LocalTransform.m_qRotation.v.z;
-  dstJoint.transform.rotation.w    = srcJoint.m_LocalTransform.m_qRotation.w;
-  dstJoint.transform.scale.x       = srcJoint.m_LocalTransform.m_vScale.x;
-  dstJoint.transform.scale.y       = srcJoint.m_LocalTransform.m_vScale.y;
-  dstJoint.transform.scale.z       = srcJoint.m_LocalTransform.m_vScale.z;
+  ref_dstJoint.name                    = srcJoint.m_sName.GetString();
+  ref_dstJoint.transform.translation.x = srcJoint.m_LocalTransform.m_vPosition.x;
+  ref_dstJoint.transform.translation.y = srcJoint.m_LocalTransform.m_vPosition.y;
+  ref_dstJoint.transform.translation.z = srcJoint.m_LocalTransform.m_vPosition.z;
+  ref_dstJoint.transform.rotation.x    = srcJoint.m_LocalTransform.m_qRotation.v.x;
+  ref_dstJoint.transform.rotation.y    = srcJoint.m_LocalTransform.m_qRotation.v.y;
+  ref_dstJoint.transform.rotation.z    = srcJoint.m_LocalTransform.m_qRotation.v.z;
+  ref_dstJoint.transform.rotation.w    = srcJoint.m_LocalTransform.m_qRotation.w;
+  ref_dstJoint.transform.scale.x       = srcJoint.m_LocalTransform.m_vScale.x;
+  ref_dstJoint.transform.scale.y       = srcJoint.m_LocalTransform.m_vScale.y;
+  ref_dstJoint.transform.scale.z       = srcJoint.m_LocalTransform.m_vScale.z;
 
-  dstJoint.children.resize((size_t)srcJoint.m_Children.GetCount());
+  ref_dstJoint.children.resize((size_t)srcJoint.m_Children.GetCount());
 
   for (xiiUInt32 b = 0; b < srcJoint.m_Children.GetCount(); ++b)
   {
-    BuildOzzRawSkeleton(*srcJoint.m_Children[b], dstJoint.children[b]);
+    BuildOzzRawSkeleton(*srcJoint.m_Children[b], ref_dstJoint.children[b]);
   }
 }
 
-void xiiEditableSkeleton::GenerateRawOzzSkeleton(ozz::animation::offline::RawSkeleton& out_Skeleton) const
+void xiiEditableSkeleton::GenerateRawOzzSkeleton(ozz::animation::offline::RawSkeleton& out_skeleton) const
 {
-  out_Skeleton.roots.resize((size_t)m_Children.GetCount());
+  out_skeleton.roots.resize((size_t)m_Children.GetCount());
 
   for (xiiUInt32 b = 0; b < m_Children.GetCount(); ++b)
   {
-    BuildOzzRawSkeleton(*m_Children[b], out_Skeleton.roots[b]);
+    BuildOzzRawSkeleton(*m_Children[b], out_skeleton.roots[b]);
   }
 }
 
-void xiiEditableSkeleton::GenerateOzzSkeleton(ozz::animation::Skeleton& out_Skeleton) const
+void xiiEditableSkeleton::GenerateOzzSkeleton(ozz::animation::Skeleton& out_skeleton) const
 {
   ozz::animation::offline::RawSkeleton rawSkeleton;
   GenerateRawOzzSkeleton(rawSkeleton);
@@ -246,7 +246,7 @@ void xiiEditableSkeleton::GenerateOzzSkeleton(ozz::animation::Skeleton& out_Skel
   ozz::animation::offline::SkeletonBuilder skeletonBuilder;
   auto                                     pNewOzzSkeleton = skeletonBuilder(rawSkeleton);
 
-  xiiOzzUtils::CopySkeleton(&out_Skeleton, pNewOzzSkeleton.get());
+  xiiOzzUtils::CopySkeleton(&out_skeleton, pNewOzzSkeleton.get());
 }
 
 xiiEditableSkeletonJoint::xiiEditableSkeletonJoint() = default;
@@ -261,9 +261,9 @@ const char* xiiEditableSkeletonJoint::GetName() const
   return m_sName.GetData();
 }
 
-void xiiEditableSkeletonJoint::SetName(const char* sz)
+void xiiEditableSkeletonJoint::SetName(const char* szSz)
 {
-  m_sName.Assign(sz);
+  m_sName.Assign(szSz);
 }
 
 void xiiEditableSkeletonJoint::ClearJoints()

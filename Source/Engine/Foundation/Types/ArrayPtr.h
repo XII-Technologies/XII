@@ -63,9 +63,9 @@ public:
   }
 
   /// \brief Initializes the xiiArrayPtr with the given pointer and number of elements. No memory is allocated or copied.
-  inline xiiArrayPtr(T* ptr, xiiUInt32 uiCount) // [tested]
+  inline xiiArrayPtr(T* pPtr, xiiUInt32 uiCount) // [tested]
     :
-    m_pPtr(ptr), m_uiCount(uiCount)
+    m_pPtr(pPtr), m_uiCount(uiCount)
   {
     // If any of the arguments is invalid, we invalidate ourself.
     if (m_pPtr == nullptr || m_uiCount == 0)
@@ -300,9 +300,9 @@ using xiiConstByteArrayPtr = xiiArrayPtr<const xiiUInt8>;
 
 /// \brief Helper function to create xiiArrayPtr from a pointer of some type and a count.
 template <typename T>
-XII_ALWAYS_INLINE xiiArrayPtr<T> xiiMakeArrayPtr(T* ptr, xiiUInt32 uiCount)
+XII_ALWAYS_INLINE xiiArrayPtr<T> xiiMakeArrayPtr(T* pPtr, xiiUInt32 uiCount)
 {
-  return xiiArrayPtr<T>(ptr, uiCount);
+  return xiiArrayPtr<T>(pPtr, uiCount);
 }
 
 /// \brief Helper function to create xiiArrayPtr from a static array the a size known at compile-time.
@@ -314,36 +314,36 @@ XII_ALWAYS_INLINE xiiArrayPtr<T> xiiMakeArrayPtr(T (&staticArray)[N])
 
 /// \brief Helper function to create xiiConstByteArrayPtr from a pointer of some type and a count.
 template <typename T>
-XII_ALWAYS_INLINE xiiConstByteArrayPtr xiiMakeByteArrayPtr(const T* ptr, xiiUInt32 uiCount)
+XII_ALWAYS_INLINE xiiConstByteArrayPtr xiiMakeByteArrayPtr(const T* pPtr, xiiUInt32 uiCount)
 {
-  return xiiConstByteArrayPtr(static_cast<const xiiUInt8*>(ptr), uiCount * sizeof(T));
+  return xiiConstByteArrayPtr(static_cast<const xiiUInt8*>(pPtr), uiCount * sizeof(T));
 }
 
 /// \brief Helper function to create xiiByteArrayPtr from a pointer of some type and a count.
 template <typename T>
-XII_ALWAYS_INLINE xiiByteArrayPtr xiiMakeByteArrayPtr(T* ptr, xiiUInt32 uiCount)
+XII_ALWAYS_INLINE xiiByteArrayPtr xiiMakeByteArrayPtr(T* pPtr, xiiUInt32 uiCount)
 {
-  return xiiByteArrayPtr(reinterpret_cast<xiiUInt8*>(ptr), uiCount * sizeof(T));
+  return xiiByteArrayPtr(reinterpret_cast<xiiUInt8*>(pPtr), uiCount * sizeof(T));
 }
 
 /// \brief Helper function to create xiiByteArrayPtr from a void pointer and a count.
-XII_ALWAYS_INLINE xiiByteArrayPtr xiiMakeByteArrayPtr(void* ptr, xiiUInt32 uiBytes)
+XII_ALWAYS_INLINE xiiByteArrayPtr xiiMakeByteArrayPtr(void* pPtr, xiiUInt32 uiBytes)
 {
-  return xiiByteArrayPtr(reinterpret_cast<xiiUInt8*>(ptr), uiBytes);
+  return xiiByteArrayPtr(reinterpret_cast<xiiUInt8*>(pPtr), uiBytes);
 }
 
 /// \brief Helper function to create xiiConstByteArrayPtr from a const void pointer and a count.
-XII_ALWAYS_INLINE xiiConstByteArrayPtr xiiMakeByteArrayPtr(const void* ptr, xiiUInt32 uiBytes)
+XII_ALWAYS_INLINE xiiConstByteArrayPtr xiiMakeByteArrayPtr(const void* pPtr, xiiUInt32 uiBytes)
 {
-  return xiiConstByteArrayPtr(static_cast<const xiiUInt8*>(ptr), uiBytes);
+  return xiiConstByteArrayPtr(static_cast<const xiiUInt8*>(pPtr), uiBytes);
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-typename xiiArrayPtr<T>::iterator begin(xiiArrayPtr<T>& container)
+typename xiiArrayPtr<T>::iterator begin(xiiArrayPtr<T>& ref_container)
 {
-  return container.GetPtr();
+  return ref_container.GetPtr();
 }
 
 template <typename T>
@@ -359,9 +359,9 @@ typename xiiArrayPtr<T>::const_iterator cbegin(const xiiArrayPtr<T>& container)
 }
 
 template <typename T>
-typename xiiArrayPtr<T>::reverse_iterator rbegin(xiiArrayPtr<T>& container)
+typename xiiArrayPtr<T>::reverse_iterator rbegin(xiiArrayPtr<T>& ref_container)
 {
-  return typename xiiArrayPtr<T>::reverse_iterator(container.GetPtr() + container.GetCount() - 1);
+  return typename xiiArrayPtr<T>::reverse_iterator(ref_container.GetPtr() + ref_container.GetCount() - 1);
 }
 
 template <typename T>
@@ -377,9 +377,9 @@ typename xiiArrayPtr<T>::const_reverse_iterator crbegin(const xiiArrayPtr<T>& co
 }
 
 template <typename T>
-typename xiiArrayPtr<T>::iterator end(xiiArrayPtr<T>& container)
+typename xiiArrayPtr<T>::iterator end(xiiArrayPtr<T>& ref_container)
 {
-  return container.GetPtr() + container.GetCount();
+  return ref_container.GetPtr() + ref_container.GetCount();
 }
 
 template <typename T>
@@ -395,9 +395,9 @@ typename xiiArrayPtr<T>::const_iterator cend(const xiiArrayPtr<T>& container)
 }
 
 template <typename T>
-typename xiiArrayPtr<T>::reverse_iterator rend(xiiArrayPtr<T>& container)
+typename xiiArrayPtr<T>::reverse_iterator rend(xiiArrayPtr<T>& ref_container)
 {
-  return typename xiiArrayPtr<T>::reverse_iterator(container.GetPtr() - 1);
+  return typename xiiArrayPtr<T>::reverse_iterator(ref_container.GetPtr() - 1);
 }
 
 template <typename T>

@@ -9,7 +9,7 @@ xiiGALRenderTargetView::xiiGALRenderTargetView(xiiGALTexture* pTexture, const xi
   XII_ASSERT_DEV(m_pTexture != nullptr, "Texture must not be null");
 }
 
-xiiGALRenderTargetView::~xiiGALRenderTargetView() {}
+xiiGALRenderTargetView::~xiiGALRenderTargetView() = default;
 
 
 

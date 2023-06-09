@@ -1,5 +1,5 @@
 
-inline xiiColorLinear16f::xiiColorLinear16f() {}
+inline xiiColorLinear16f::xiiColorLinear16f() = default;
 
 inline xiiColorLinear16f::xiiColorLinear16f(xiiFloat16 r, xiiFloat16 g, xiiFloat16 b, xiiFloat16 a) :
   r(r), g(g), b(b), a(a)

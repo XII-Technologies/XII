@@ -36,7 +36,7 @@ public:
   };
 
   /// \brief This function generates a 64bit sorting key for the given render data. Data with lower sorting key is rendered first.
-  typedef xiiDelegate<xiiUInt64(const xiiRenderData*, xiiUInt32, const xiiCamera&)> SortingKeyFunc;
+  using SortingKeyFunc = xiiDelegate<xiiUInt64(const xiiRenderData*, xiiUInt32, const xiiCamera&)>;
 
   static Category RegisterCategory(const char* szCategoryName, SortingKeyFunc sortingKeyFunc);
   static Category FindCategory(const char* szCategoryName);

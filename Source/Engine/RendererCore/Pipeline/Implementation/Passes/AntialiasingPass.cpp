@@ -30,7 +30,7 @@ xiiAntialiasingPass::xiiAntialiasingPass() :
   }
 }
 
-xiiAntialiasingPass::~xiiAntialiasingPass() {}
+xiiAntialiasingPass::~xiiAntialiasingPass() = default;
 
 bool xiiAntialiasingPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {

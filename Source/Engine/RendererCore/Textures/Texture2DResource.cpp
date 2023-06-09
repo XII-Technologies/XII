@@ -68,36 +68,36 @@ xiiResourceLoadDesc xiiTexture2DResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& td, const xiiImage* pImage, bool bSRGB, xiiUInt32 uiNumMipLevels, xiiUInt32& out_MemoryUsed, xiiHybridArray<xiiGALSystemMemoryDescription, 32>& initData)
+void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref_td, const xiiImage* pImage, bool bSRGB, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALSystemMemoryDescription, 32>& ref_initData)
 {
   const xiiUInt32 uiHighestMipLevel = pImage->GetNumMipLevels() - uiNumMipLevels;
 
   const xiiGALResourceFormat::Enum format = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
 
-  td.m_DescGAL.m_Format          = format;
-  td.m_DescGAL.m_uiWidth         = pImage->GetWidth(uiHighestMipLevel);
-  td.m_DescGAL.m_uiHeight        = pImage->GetHeight(uiHighestMipLevel);
-  td.m_DescGAL.m_uiDepth         = pImage->GetDepth(uiHighestMipLevel);
-  td.m_DescGAL.m_uiMipLevelCount = uiNumMipLevels;
-  td.m_DescGAL.m_uiArraySize     = pImage->GetNumArrayIndices();
+  ref_td.m_DescGAL.m_Format          = format;
+  ref_td.m_DescGAL.m_uiWidth         = pImage->GetWidth(uiHighestMipLevel);
+  ref_td.m_DescGAL.m_uiHeight        = pImage->GetHeight(uiHighestMipLevel);
+  ref_td.m_DescGAL.m_uiDepth         = pImage->GetDepth(uiHighestMipLevel);
+  ref_td.m_DescGAL.m_uiMipLevelCount = uiNumMipLevels;
+  ref_td.m_DescGAL.m_uiArraySize     = pImage->GetNumArrayIndices();
 
   if (xiiImageFormat::GetType(pImage->GetImageFormat()) == xiiImageFormatType::BLOCK_COMPRESSED)
   {
-    td.m_DescGAL.m_uiWidth  = xiiMath::RoundUp(td.m_DescGAL.m_uiWidth, 4);
-    td.m_DescGAL.m_uiHeight = xiiMath::RoundUp(td.m_DescGAL.m_uiHeight, 4);
+    ref_td.m_DescGAL.m_uiWidth  = xiiMath::RoundUp(ref_td.m_DescGAL.m_uiWidth, 4);
+    ref_td.m_DescGAL.m_uiHeight = xiiMath::RoundUp(ref_td.m_DescGAL.m_uiHeight, 4);
   }
 
-  if (td.m_DescGAL.m_uiDepth > 1)
-    td.m_DescGAL.m_Type = xiiGALTextureType::Texture3D;
+  if (ref_td.m_DescGAL.m_uiDepth > 1)
+    ref_td.m_DescGAL.m_Type = xiiGALTextureType::Texture3D;
 
   if (pImage->GetNumFaces() == 6)
-    td.m_DescGAL.m_Type = xiiGALTextureType::TextureCube;
+    ref_td.m_DescGAL.m_Type = xiiGALTextureType::TextureCube;
 
   XII_ASSERT_DEV(pImage->GetNumFaces() == 1 || pImage->GetNumFaces() == 6, "Invalid number of image faces");
 
-  out_MemoryUsed = 0;
+  out_uiMemoryUsed = 0;
 
-  initData.Clear();
+  ref_initData.Clear();
 
   for (xiiUInt32 array_index = 0; array_index < pImage->GetNumArrayIndices(); ++array_index)
   {
@@ -105,7 +105,7 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& td,
     {
       for (xiiUInt32 mip = uiHighestMipLevel; mip < pImage->GetNumMipLevels(); ++mip)
       {
-        xiiGALSystemMemoryDescription& id = initData.ExpandAndGetRef();
+        xiiGALSystemMemoryDescription& id = ref_initData.ExpandAndGetRef();
 
         id.m_pData = const_cast<xiiUInt8*>(pImage->GetPixelPointer<xiiUInt8>(mip, face, array_index));
 
@@ -123,14 +123,14 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& td,
         XII_ASSERT_DEV(pImage->GetDepthPitch(mip) < xiiMath::MaxValue<xiiUInt32>(), "Depth pitch exceeds xiiGAL limits.");
         id.m_uiSlicePitch = static_cast<xiiUInt32>(pImage->GetDepthPitch(mip));
 
-        out_MemoryUsed += id.m_uiSlicePitch;
+        out_uiMemoryUsed += id.m_uiSlicePitch;
       }
     }
   }
 
-  const xiiArrayPtr<xiiGALSystemMemoryDescription> InitDataPtr(initData);
+  const xiiArrayPtr<xiiGALSystemMemoryDescription> InitDataPtr(ref_initData);
 
-  td.m_InitialContent = InitDataPtr;
+  ref_td.m_InitialContent = InitDataPtr;
 }
 
 
@@ -175,13 +175,14 @@ xiiResourceLoadDesc xiiTexture2DResource::UpdateContent(xiiStreamReader* Stream)
     {
       if (m_uiLoadedTextures == 0)
       {
-        // Upload fallback textures if we do not yet have any texture data.
+        // only upload fallback textures, if we don't have any texture data at all, yet
         bCouldLoadMore       = true;
         uiUploadNumMipLevels = uiNumMipmapsLowRes;
       }
       else if (m_uiLoadedTextures == 1)
       {
-        // Ignore this texture if we already have a low resolution data, assume we could load a higher resolution version.
+        // ignore this texture entirely, if we already have low res data
+        // but assume we could load a higher resolution version
         bCouldLoadMore = true;
         xiiLog::Debug("Ignoring fallback texture data, low-res resource data is already loaded.");
       }
@@ -203,7 +204,7 @@ xiiResourceLoadDesc xiiTexture2DResource::UpdateContent(xiiStreamReader* Stream)
       }
       else
       {
-        // Ignore the texture if we have fully loaded the data.
+        // ignore the texture, if we already have fully loaded data
         xiiLog::Debug("Ignoring texture data, resource is already fully loaded.");
       }
     }
@@ -217,7 +218,7 @@ xiiResourceLoadDesc xiiTexture2DResource::UpdateContent(xiiStreamReader* Stream)
 
       xiiTextureUtils::ConfigureSampler(static_cast<xiiTextureFilterSetting::Enum>(texFormat.m_TextureFilter.GetValue()), td.m_SamplerDesc);
 
-      // Ignore its return value here, we build our own.
+      // ignore its return value here, we build our own
       CreateResource(std::move(td));
     }
 
@@ -292,8 +293,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(RendererCore, Texture2D)
   ON_CORESYSTEMS_STARTUP 
   {
     xiiResourceManager::RegisterResourceOverrideType(xiiGetStaticRTTI<xiiRenderToTexture2DResource>(), [](const xiiStringBuilder& sResourceID) -> bool  {
-      return sResourceID.HasExtension(".xiiRenderTarget");
-    });
+        return sResourceID.HasExtension(".xiiRenderTarget");
+      });
   }
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -388,11 +389,11 @@ const xiiDynamicArray<xiiViewHandle>& xiiRenderToTexture2DResource::GetAllRender
   return m_RenderViews;
 }
 
-static xiiUInt16 GetNextBestResolution(float res)
+static xiiUInt16 GetNextBestResolution(float fRes)
 {
-  res = xiiMath::Clamp(res, 8.0f, 4096.0f);
+  fRes = xiiMath::Clamp(fRes, 8.0f, 4096.0f);
 
-  xiiInt32 mulEight = (xiiInt32)xiiMath::Floor((res + 7.9f) / 8.0f);
+  int mulEight = (int)xiiMath::Floor((fRes + 7.9f) / 8.0f);
 
   return static_cast<xiiUInt16>(mulEight * 8);
 }
@@ -414,7 +415,7 @@ xiiResourceLoadDesc xiiRenderToTexture2DResource::UpdateContent(xiiStreamReader*
   bool                                   bIsFallback = false;
   xiiTexFormat                           texFormat;
 
-  // Load Image Data
+  // load image data
   {
     Stream->ReadBytes(&pImage, sizeof(xiiImage*));
     *Stream >> bIsFallback;
@@ -446,7 +447,8 @@ xiiResourceLoadDesc xiiRenderToTexture2DResource::UpdateContent(xiiStreamReader*
       }
       else
       {
-        XII_REPORT_FAILURE("Invalid render target configuration: {0} x {1}", texFormat.m_iRenderTargetResolutionX, texFormat.m_iRenderTargetResolutionY);
+        XII_REPORT_FAILURE(
+          "Invalid render target configuration: {0} x {1}", texFormat.m_iRenderTargetResolutionX, texFormat.m_iRenderTargetResolutionY);
       }
     }
 

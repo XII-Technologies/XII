@@ -358,12 +358,12 @@ AssetCache
 Source/Engine/xiiBuildInfo.h
 build*/
 
-# Compile commands for use with YCM on Linux.
+# CMake generated compile commands
 compile-commands.json
 
-# Tags file for code navigation.
+# Tags file for code navigation
 **/tags
 
-# Diligent Generated Files
+# Diligent-Core generated files
 Source/ThirdParty/DiligentCore/Graphics/HLSL2GLSLConverterLib/include/GLSLDefinitions_inc.h
 Source/ThirdParty/DiligentCore/Graphics/ShaderTools/include/HLSLDefinitions_inc.fxh

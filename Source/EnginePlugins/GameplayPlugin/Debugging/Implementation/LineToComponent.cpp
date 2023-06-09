@@ -49,23 +49,23 @@ void xiiLineToComponent::Update()
   xiiDebugRenderer::DrawLines(GetWorld(), lines, m_LineColor);
 }
 
-void xiiLineToComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiLineToComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
-  stream.WriteGameObjectHandle(m_hTargetObject);
+  ref_stream.WriteGameObjectHandle(m_hTargetObject);
   s << m_LineColor;
 }
 
-void xiiLineToComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiLineToComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
-  m_hTargetObject = stream.ReadGameObjectHandle();
+  m_hTargetObject = ref_stream.ReadGameObjectHandle();
   s >> m_LineColor;
 }
 

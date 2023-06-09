@@ -46,7 +46,7 @@ public:
   xiiResult WriteArchive(xiiStringView sFile) const;
 
   /// \brief Writes the previously gathered files to the file stream
-  xiiResult WriteArchive(xiiStreamWriter& stream) const;
+  xiiResult WriteArchive(xiiStreamWriter& ref_stream) const;
 
 protected:
   /// Override this to get a callback when the next file is being written to the output. Return 'true' to continue, 'false' to cancel the entire archive generation.

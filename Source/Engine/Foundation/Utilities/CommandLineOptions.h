@@ -44,7 +44,7 @@ public:
   /// \brief Checks whether all required options are passed to the command line.
   ///
   /// The options are passed as a semicolon-separated list (spare spaces are stripped away), for instance "-opt1; -opt2"
-  static xiiResult RequireOptions(const char* requiredOptions, xiiString* pMissingOption = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
+  static xiiResult RequireOptions(const char* szRequiredOptions, xiiString* pMissingOption = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
 
   /// \brief Prints all available options to the xiiLog.
   ///
@@ -54,7 +54,7 @@ public:
   static bool LogAvailableOptions(LogAvailableModes mode, const char* szGroupFilter = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
 
   /// \brief Same as LogAvailableOptions() but captures the output from xiiLog and returns it in an xiiStringBuilder.
-  static bool LogAvailableOptionsToBuffer(xiiStringBuilder& out_Buffer, LogAvailableModes mode, const char* szGroupFilter = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
+  static bool LogAvailableOptionsToBuffer(xiiStringBuilder& out_sBuffer, LogAvailableModes mode, const char* szGroupFilter = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
 
 public:
   /// \param szSortingGroup
@@ -63,25 +63,25 @@ public:
   xiiCommandLineOption(const char* szSortingGroup) { m_szSortingGroup = szSortingGroup; }
 
   /// \brief Writes the sorting group name to 'out'.
-  virtual void GetSortingGroup(xiiStringBuilder& out) const;
+  virtual void GetSortingGroup(xiiStringBuilder& ref_sOut) const;
 
   /// \brief Writes all the supported options (e.g. '-arg') to 'out'.
   /// If more than one option is allowed, they should be separated with semicolons or pipes.
-  virtual void GetOptions(xiiStringBuilder& out) const = 0;
+  virtual void GetOptions(xiiStringBuilder& ref_sOut) const = 0;
 
   /// \brief Returns the supported option names (e.g. '-arg') as split strings.
-  void GetSplitOptions(xiiStringBuilder& outAll, xiiDynamicArray<xiiStringView>& splitOptions) const;
+  void GetSplitOptions(xiiStringBuilder& out_sAll, xiiDynamicArray<xiiStringView>& ref_splitOptions) const;
 
   /// \brief Returns a very short description of the option (type). For example "<int>" or "<enum>".
-  virtual void GetParamShortDesc(xiiStringBuilder& out) const = 0;
+  virtual void GetParamShortDesc(xiiStringBuilder& ref_sOut) const = 0;
 
   /// \brief Returns a very short string for the options default value. For example "0" or "auto".
-  virtual void GetParamDefaultValueDesc(xiiStringBuilder& out) const = 0;
+  virtual void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const = 0;
 
   /// \brief Returns a proper description of the option.
   ///
   /// The long description is allowed to contain newlines (\n) and the output will be formatted accordingly.
-  virtual void GetLongDesc(xiiStringBuilder& out) const = 0;
+  virtual void GetLongDesc(xiiStringBuilder& ref_sOut) const = 0;
 
   /// \brief Returns a string indicating the exact implementation type.
   virtual const char* GetType() = 0;
@@ -104,19 +104,19 @@ class XII_FOUNDATION_DLL xiiCommandLineOptionDoc : public xiiCommandLineOption
 public:
   xiiCommandLineOptionDoc(const char* szSortingGroup, const char* szArgument, const char* szParamShortDesc, const char* szLongDesc, const char* szDefaultValue, bool bCaseSensitive = false);
 
-  virtual void GetOptions(xiiStringBuilder& out) const override; // [tested]
+  virtual void GetOptions(xiiStringBuilder& ref_sOut) const override; // [tested]
 
-  virtual void GetParamShortDesc(xiiStringBuilder& out) const override; // [tested]
+  virtual void GetParamShortDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
-  virtual void GetParamDefaultValueDesc(xiiStringBuilder& out) const override; // [tested]
+  virtual void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
-  virtual void GetLongDesc(xiiStringBuilder& out) const override; // [tested]
+  virtual void GetLongDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
   /// \brief Returns "Doc"
   virtual const char* GetType() override { return "Doc"; }
 
   /// \brief Checks whether any of the option variants is set on the command line, and returns which one. For example '-h' or '-help'.
-  bool IsOptionSpecified(xiiStringBuilder* out_which = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
+  bool IsOptionSpecified(xiiStringBuilder* out_pWhich = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
 
 protected:
   bool ShouldLog(LogMode mode, bool bWasSpecified) const;
@@ -172,9 +172,9 @@ class XII_FOUNDATION_DLL xiiCommandLineOptionInt : public xiiCommandLineOptionDo
 public:
   xiiCommandLineOptionInt(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, int iDefaultValue, int iMinValue = xiiMath::MinValue<int>(), int iMaxValue = xiiMath::MaxValue<int>(), bool bCaseSensitive = false);
 
-  virtual void GetParamDefaultValueDesc(xiiStringBuilder& out) const override; // [tested]
+  virtual void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
-  virtual void GetParamShortDesc(xiiStringBuilder& out) const override; // [tested]
+  virtual void GetParamShortDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
   /// \brief Returns the value of this option. Either what was specified on the command line, or the default value.
   int GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
@@ -216,9 +216,9 @@ class XII_FOUNDATION_DLL xiiCommandLineOptionFloat : public xiiCommandLineOption
 public:
   xiiCommandLineOptionFloat(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, float fDefaultValue, float fMinValue = xiiMath::MinValue<float>(), float fMaxValue = xiiMath::MaxValue<float>(), bool bCaseSensitive = false);
 
-  virtual void GetParamDefaultValueDesc(xiiStringBuilder& out) const override; // [tested]
+  virtual void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
-  virtual void GetParamShortDesc(xiiStringBuilder& out) const override; // [tested]
+  virtual void GetParamShortDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
   /// \brief Returns the value of this option. Either what was specified on the command line, or the default value.
   float GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
@@ -326,9 +326,9 @@ public:
   /// \brief Returns the value of this option. Either what was specified on the command line, or the default value.
   xiiInt32 GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
 
-  virtual void GetParamShortDesc(xiiStringBuilder& out) const override; // [tested]
+  virtual void GetParamShortDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
-  virtual void GetParamDefaultValueDesc(xiiStringBuilder& out) const override; // [tested]
+  virtual void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
   struct EnumKeyValue
   {
@@ -337,7 +337,7 @@ public:
   };
 
   /// \brief Returns the enum keys (names) and values (integers) extracted from the string that was passed to the constructor.
-  void GetEnumKeysAndValues(xiiDynamicArray<EnumKeyValue>& out_KeysAndValues) const;
+  void GetEnumKeysAndValues(xiiDynamicArray<EnumKeyValue>& out_keysAndValues) const;
 
   /// \brief Modifies the default value
   void SetDefaultValue(xiiInt32 value)

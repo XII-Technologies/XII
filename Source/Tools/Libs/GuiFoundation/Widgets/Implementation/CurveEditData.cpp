@@ -74,9 +74,9 @@ xiiCurveExtentsAttribute::xiiCurveExtentsAttribute(double fLowerExtent, bool bLo
   m_bUpperExtentFixed = bUpperExtentFixed;
 }
 
-void xiiCurveControlPointData::SetTickFromTime(xiiTime time, xiiInt64 fps)
+void xiiCurveControlPointData::SetTickFromTime(xiiTime time, xiiInt64 iFps)
 {
-  const xiiUInt32 uiTicksPerStep = 4800 / fps;
+  const xiiUInt32 uiTicksPerStep = 4800 / iFps;
   m_iTick                        = (xiiInt64)xiiMath::RoundToMultiple(time.GetSeconds() * 4800.0, (double)uiTicksPerStep);
 }
 
@@ -123,9 +123,9 @@ xiiInt64 xiiCurveGroupData::TickFromTime(xiiTime time) const
   return (xiiInt64)xiiMath::RoundToMultiple(time.GetSeconds() * 4800.0, (double)uiTicksPerStep);
 }
 
-static void ConvertControlPoint(const xiiCurveControlPointData& cp, xiiCurve1D& out_Result)
+static void ConvertControlPoint(const xiiCurveControlPointData& cp, xiiCurve1D& out_result)
 {
-  auto& ccp              = out_Result.AddControlPoint(cp.GetTickAsTime().GetSeconds());
+  auto& ccp              = out_result.AddControlPoint(cp.GetTickAsTime().GetSeconds());
   ccp.m_Position.y       = cp.m_fValue;
   ccp.m_LeftTangent      = cp.m_LeftTangent;
   ccp.m_RightTangent     = cp.m_RightTangent;
@@ -133,13 +133,13 @@ static void ConvertControlPoint(const xiiCurveControlPointData& cp, xiiCurve1D& 
   ccp.m_TangentModeRight = cp.m_RightTangentMode;
 }
 
-void xiiSingleCurveData::ConvertToRuntimeData(xiiCurve1D& out_Result) const
+void xiiSingleCurveData::ConvertToRuntimeData(xiiCurve1D& out_result) const
 {
-  out_Result.Clear();
+  out_result.Clear();
 
   for (const auto& cp : m_ControlPoints)
   {
-    ConvertControlPoint(cp, out_Result);
+    ConvertControlPoint(cp, out_result);
   }
 }
 
@@ -166,9 +166,9 @@ double xiiSingleCurveData::Evaluate(xiiInt64 iTick) const
   return temp.Evaluate(iTick / 4800.0);
 }
 
-void xiiCurveGroupData::ConvertToRuntimeData(xiiUInt32 uiCurveIdx, xiiCurve1D& out_Result) const
+void xiiCurveGroupData::ConvertToRuntimeData(xiiUInt32 uiCurveIdx, xiiCurve1D& out_result) const
 {
-  m_Curves[uiCurveIdx]->ConvertToRuntimeData(out_Result);
+  m_Curves[uiCurveIdx]->ConvertToRuntimeData(out_result);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -186,7 +186,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     auto* pPoint = pNode->FindProperty("Point");
     if (pPoint && pPoint->m_Value.IsA<xiiVec2>())
@@ -212,7 +212,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     auto* pPoint = pNode->FindProperty("Time");
     if (pPoint && pPoint->m_Value.IsA<double>())
@@ -235,9 +235,9 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
-    context.RenameClass("xiiCurveControlPointData");
+    ref_context.RenameClass("xiiCurveControlPointData");
   }
 };
 
@@ -253,9 +253,9 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
-    context.RenameClass("xiiSingleCurveData");
+    ref_context.RenameClass("xiiSingleCurveData");
   }
 };
 
@@ -271,9 +271,9 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
-    context.RenameClass("xiiCurveGroupData");
+    ref_context.RenameClass("xiiCurveGroupData");
   }
 };
 

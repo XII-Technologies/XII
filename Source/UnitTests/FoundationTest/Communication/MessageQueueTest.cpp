@@ -26,7 +26,7 @@ namespace
     int receiver;
   };
 
-  typedef xiiMessageQueue<MetaData> TestMessageQueue;
+  using TestMessageQueue = xiiMessageQueue<MetaData>;
 
   XII_IMPLEMENT_MESSAGE_TYPE(TestMessage);
   XII_BEGIN_DYNAMIC_REFLECTED_TYPE(TestMessage, 1, xiiRTTIDefaultAllocator<TestMessage>)

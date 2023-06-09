@@ -155,10 +155,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // xiiAddObjectCommand
 ////////////////////////////////////////////////////////////////////////
 
-xiiAddObjectCommand::xiiAddObjectCommand() :
-  m_pType(nullptr), m_pObject(nullptr)
-{
-}
+xiiAddObjectCommand::xiiAddObjectCommand() = default;
 
 const char* xiiAddObjectCommand::GetType() const
 {
@@ -227,7 +224,7 @@ void xiiAddObjectCommand::CleanupInternal(CommandState state)
 // xiiPasteObjectsCommand
 ////////////////////////////////////////////////////////////////////////
 
-xiiPasteObjectsCommand::xiiPasteObjectsCommand() {}
+xiiPasteObjectsCommand::xiiPasteObjectsCommand() = default;
 
 xiiStatus xiiPasteObjectsCommand::DoInternal(bool bRedo)
 {
@@ -565,10 +562,7 @@ xiiStatus xiiUnlinkPrefabCommand::UndoInternal(bool bFireEvents)
 // xiiRemoveObjectCommand
 ////////////////////////////////////////////////////////////////////////
 
-xiiRemoveObjectCommand::xiiRemoveObjectCommand() :
-  m_pParent(nullptr), m_pObject(nullptr)
-{
-}
+xiiRemoveObjectCommand::xiiRemoveObjectCommand() = default;
 
 xiiStatus xiiRemoveObjectCommand::DoInternal(bool bRedo)
 {

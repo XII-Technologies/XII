@@ -33,8 +33,8 @@ public:
   /// \brief Searches for a group without a name and returns the index or -1 if none found.
   xiiInt32 FindUnnamedGroup() const;
 
-  void Save(xiiStreamWriter& stream) const;
-  void Load(xiiStreamReader& stream);
+  void Save(xiiStreamWriter& ref_stream) const;
+  void Load(xiiStreamReader& ref_stream);
 
   static constexpr const xiiStringView s_sConfigFile = ":project/RuntimeConfigs/CollisionLayers.cfg"_xiisv;
 

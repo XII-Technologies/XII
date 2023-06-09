@@ -46,8 +46,8 @@ class XII_RENDERERCORE_DLL xiiCameraComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;
@@ -76,16 +76,16 @@ public:
   void                   SetCameraMode(xiiEnum<xiiCameraMode> val); // [ property ]
 
   float GetNearPlane() const { return m_fNearPlane; } // [ property ]
-  void  SetNearPlane(float val);                      // [ property ]
+  void  SetNearPlane(float fVal);                     // [ property ]
 
   float GetFarPlane() const { return m_fFarPlane; } // [ property ]
-  void  SetFarPlane(float val);                     // [ property ]
+  void  SetFarPlane(float fVal);                    // [ property ]
 
   float GetFieldOfView() const { return m_fPerspectiveFieldOfView; } // [ property ]
-  void  SetFieldOfView(float val);                                   // [ property ]
+  void  SetFieldOfView(float fVal);                                  // [ property ]
 
   float GetOrthoDimension() const { return m_fOrthoDimension; } // [ property ]
-  void  SetOrthoDimension(float val);                           // [ property ]
+  void  SetOrthoDimension(float fVal);                          // [ property ]
 
   xiiRenderPipelineResourceHandle GetRenderPipeline() const; // [ property ]
 
@@ -96,7 +96,7 @@ public:
   void  SetAperture(float fAperture);               // [ property ]
 
   xiiTime GetShutterTime() const { return m_ShutterTime; } // [ property ]
-  void    SetShutterTime(xiiTime ShutterTime);             // [ property ]
+  void    SetShutterTime(xiiTime shutterTime);             // [ property ]
 
   float GetISO() const { return m_fISO; } // [ property ]
   void  SetISO(float fISO);               // [ property ]

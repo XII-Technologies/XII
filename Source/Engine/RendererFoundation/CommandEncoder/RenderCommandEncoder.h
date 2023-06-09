@@ -7,7 +7,7 @@
 class XII_RENDERERFOUNDATION_DLL xiiGALRenderCommandEncoder : public xiiGALCommandEncoder
 {
 public:
-  xiiGALRenderCommandEncoder(xiiGALDevice& device, xiiGALCommandEncoderRenderState& renderState, xiiGALCommandEncoderCommonPlatformInterface& commonImpl, xiiGALCommandEncoderRenderPlatformInterface& renderImpl);
+  xiiGALRenderCommandEncoder(xiiGALDevice& ref_device, xiiGALCommandEncoderRenderState& ref_renderState, xiiGALCommandEncoderCommonPlatformInterface& ref_commonImpl, xiiGALCommandEncoderRenderPlatformInterface& ref_renderImpl);
   virtual ~xiiGALRenderCommandEncoder();
 
   // Draw functions
@@ -16,7 +16,7 @@ public:
   ///
   /// \param uiRenderTargetClearMask
   ///   Each bit represents a bound color target. If all bits are set, all bound color targets will be cleared.
-  void Clear(const xiiColor& ClearColor, xiiUInt32 uiRenderTargetClearMask = 0xFFFFFFFFu, bool bClearDepth = true, bool bClearStencil = true, float fDepthClear = 1.0f, xiiUInt8 uiStencilClear = 0x0u);
+  void Clear(const xiiColor& clearColor, xiiUInt32 uiRenderTargetClearMask = 0xFFFFFFFFu, bool bClearDepth = true, bool bClearStencil = true, float fDepthClear = 1.0f, xiiUInt8 uiStencilClear = 0x0u);
 
   void Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex);
   void DrawIndexed(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex);
@@ -36,9 +36,9 @@ public:
   void SetVertexDeclaration(xiiGALVertexDeclarationHandle hVertexDeclaration);
 
   xiiGALPrimitiveTopology::Enum GetPrimitiveTopology() const { return m_RenderState.m_Topology; }
-  void                          SetPrimitiveTopology(xiiGALPrimitiveTopology::Enum Topology);
+  void                          SetPrimitiveTopology(xiiGALPrimitiveTopology::Enum topology);
 
-  void SetBlendState(xiiGALBlendStateHandle hBlendState, const xiiColor& BlendFactor = xiiColor::White, xiiUInt32 uiSampleMask = 0xFFFFFFFFu);
+  void SetBlendState(xiiGALBlendStateHandle hBlendState, const xiiColor& blendFactor = xiiColor::White, xiiUInt32 uiSampleMask = 0xFFFFFFFFu);
   void SetDepthStencilState(xiiGALDepthStencilStateHandle hDepthStencilState, xiiUInt8 uiStencilRefValue = 0xFFu);
   void SetRasterizerState(xiiGALRasterizerStateHandle hRasterizerState);
 

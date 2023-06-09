@@ -73,7 +73,7 @@ private:
   virtual xiiUInt32 Run() = 0;
 
 
-  volatile xiiThreadStatus m_ThreadStatus;
+  volatile xiiThreadStatus m_ThreadStatus = Created;
 
   xiiString m_sName;
 

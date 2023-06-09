@@ -19,9 +19,9 @@ XII_END_COMPONENT_TYPE;
 xiiAlwaysVisibleComponent::xiiAlwaysVisibleComponent()  = default;
 xiiAlwaysVisibleComponent::~xiiAlwaysVisibleComponent() = default;
 
-xiiResult xiiAlwaysVisibleComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiAlwaysVisibleComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
-  bAlwaysVisible = true;
+  ref_bAlwaysVisible = true;
   return XII_SUCCESS;
 }
 

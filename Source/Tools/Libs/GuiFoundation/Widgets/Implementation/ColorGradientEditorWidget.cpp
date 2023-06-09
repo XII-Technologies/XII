@@ -21,26 +21,26 @@ xiiQtColorGradientEditorWidget::xiiQtColorGradientEditorWidget(QWidget* pParent)
 
   connect(
     GradientWidget, &xiiQtColorGradientWidget::addColorCp, this, [this](double x, const xiiColorGammaUB& color) { Q_EMIT ColorCpAdded(x, color); });
-  connect(GradientWidget, &xiiQtColorGradientWidget::moveColorCpToPos, this, [this](xiiInt32 idx, double x) { Q_EMIT ColorCpMoved(idx, x); });
-  connect(GradientWidget, &xiiQtColorGradientWidget::deleteColorCp, this, [this](xiiInt32 idx) { Q_EMIT ColorCpDeleted(idx); });
+  connect(GradientWidget, &xiiQtColorGradientWidget::moveColorCpToPos, this, [this](xiiInt32 iIdx, double x) { Q_EMIT ColorCpMoved(iIdx, x); });
+  connect(GradientWidget, &xiiQtColorGradientWidget::deleteColorCp, this, [this](xiiInt32 iIdx) { Q_EMIT ColorCpDeleted(iIdx); });
 
-  connect(GradientWidget, &xiiQtColorGradientWidget::addAlphaCp, this, [this](double x, xiiUInt8 alpha) { Q_EMIT AlphaCpAdded(x, alpha); });
-  connect(GradientWidget, &xiiQtColorGradientWidget::moveAlphaCpToPos, this, [this](xiiInt32 idx, double x) { Q_EMIT AlphaCpMoved(idx, x); });
-  connect(GradientWidget, &xiiQtColorGradientWidget::deleteAlphaCp, this, [this](xiiInt32 idx) { Q_EMIT AlphaCpDeleted(idx); });
+  connect(GradientWidget, &xiiQtColorGradientWidget::addAlphaCp, this, [this](double x, xiiUInt8 uiAlpha) { Q_EMIT AlphaCpAdded(x, uiAlpha); });
+  connect(GradientWidget, &xiiQtColorGradientWidget::moveAlphaCpToPos, this, [this](xiiInt32 iIdx, double x) { Q_EMIT AlphaCpMoved(iIdx, x); });
+  connect(GradientWidget, &xiiQtColorGradientWidget::deleteAlphaCp, this, [this](xiiInt32 iIdx) { Q_EMIT AlphaCpDeleted(iIdx); });
 
   connect(
-    GradientWidget, &xiiQtColorGradientWidget::addIntensityCp, this, [this](double x, float intensity) { Q_EMIT IntensityCpAdded(x, intensity); });
-  connect(GradientWidget, &xiiQtColorGradientWidget::moveIntensityCpToPos, this, [this](xiiInt32 idx, double x) { Q_EMIT IntensityCpMoved(idx, x); });
-  connect(GradientWidget, &xiiQtColorGradientWidget::deleteIntensityCp, this, [this](xiiInt32 idx) { Q_EMIT IntensityCpDeleted(idx); });
+    GradientWidget, &xiiQtColorGradientWidget::addIntensityCp, this, [this](double x, float fIntensity) { Q_EMIT IntensityCpAdded(x, fIntensity); });
+  connect(GradientWidget, &xiiQtColorGradientWidget::moveIntensityCpToPos, this, [this](xiiInt32 iIdx, double x) { Q_EMIT IntensityCpMoved(iIdx, x); });
+  connect(GradientWidget, &xiiQtColorGradientWidget::deleteIntensityCp, this, [this](xiiInt32 iIdx) { Q_EMIT IntensityCpDeleted(iIdx); });
 
   connect(GradientWidget, &xiiQtColorGradientWidget::beginOperation, this, [this]() { Q_EMIT BeginOperation(); });
-  connect(GradientWidget, &xiiQtColorGradientWidget::endOperation, this, [this](bool commit) { Q_EMIT EndOperation(commit); });
+  connect(GradientWidget, &xiiQtColorGradientWidget::endOperation, this, [this](bool bCommit) { Q_EMIT EndOperation(bCommit); });
 
   connect(GradientWidget, &xiiQtColorGradientWidget::triggerPickColor, this, [this]() { on_ButtonColor_clicked(); });
 }
 
 
-xiiQtColorGradientEditorWidget::~xiiQtColorGradientEditorWidget() {}
+xiiQtColorGradientEditorWidget::~xiiQtColorGradientEditorWidget() = default;
 
 
 void xiiQtColorGradientEditorWidget::SetColorGradient(const xiiColorGradient& gradient)

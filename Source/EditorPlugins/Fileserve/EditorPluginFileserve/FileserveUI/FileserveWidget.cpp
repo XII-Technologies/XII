@@ -5,7 +5,7 @@
 #include <EditorPluginFileserve/FileserveUI/FileserveWidget.moc.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 
-xiiQtFileserveWidget::xiiQtFileserveWidget(QWidget* parent /*= nullptr*/)
+xiiQtFileserveWidget::xiiQtFileserveWidget(QWidget* pParent /*= nullptr*/)
 {
   setupUi(this);
   Progress->reset();
@@ -84,10 +84,10 @@ xiiQtFileserveWidget::xiiQtFileserveWidget(QWidget* parent /*= nullptr*/)
   }
 }
 
-void xiiQtFileserveWidget::FindOwnIP(xiiStringBuilder& out_Display, xiiHybridArray<xiiStringBuilder, 4>* out_AllIPs)
+void xiiQtFileserveWidget::FindOwnIP(xiiStringBuilder& out_sDisplay, xiiHybridArray<xiiStringBuilder, 4>* out_pAllIPs)
 {
   xiiStringBuilder hardwarename;
-  out_Display.Clear();
+  out_sDisplay.Clear();
 
   for (const QNetworkInterface& neti : QNetworkInterface::allInterfaces())
   {
@@ -117,14 +117,14 @@ void xiiQtFileserveWidget::FindOwnIP(xiiStringBuilder& out_Display, xiiHybridArr
         continue;
 
       // if we DO find multiple adapters, display them all
-      if (!out_Display.IsEmpty())
-        out_Display.Append("\n");
+      if (!out_sDisplay.IsEmpty())
+        out_sDisplay.Append("\n");
 
-      out_Display.AppendFormat("Adapter: '{0}' = {1}", hardwarename, entry.ip().toString().toUtf8().data());
+      out_sDisplay.AppendFormat("Adapter: '{0}' = {1}", hardwarename, entry.ip().toString().toUtf8().data());
 
-      if (out_AllIPs != nullptr)
+      if (out_pAllIPs != nullptr)
       {
-        out_AllIPs->PushBack(entry.ip().toString().toUtf8().data());
+        out_pAllIPs->PushBack(entry.ip().toString().toUtf8().data());
       }
     }
   }

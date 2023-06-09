@@ -1,6 +1,6 @@
 #pragma once
 
-XII_ALWAYS_INLINE xiiSimdBBox::xiiSimdBBox() {}
+XII_ALWAYS_INLINE xiiSimdBBox::xiiSimdBBox() = default;
 
 XII_ALWAYS_INLINE xiiSimdBBox::xiiSimdBBox(const xiiSimdVec4f& vMin, const xiiSimdVec4f& vMax)
 {
@@ -132,16 +132,16 @@ XII_ALWAYS_INLINE void xiiSimdBBox::Transform(const xiiSimdTransform& t)
   Transform(t.GetAsMat4());
 }
 
-XII_ALWAYS_INLINE void xiiSimdBBox::Transform(const xiiSimdMat4f& mat)
+XII_ALWAYS_INLINE void xiiSimdBBox::Transform(const xiiSimdMat4f& mMat)
 {
   const xiiSimdVec4f center      = GetCenter();
   const xiiSimdVec4f halfExtents = center - m_Min;
 
-  const xiiSimdVec4f newCenter = mat.TransformPosition(center);
+  const xiiSimdVec4f newCenter = mMat.TransformPosition(center);
 
-  xiiSimdVec4f newHalfExtents = mat.m_col0.Abs() * halfExtents.x();
-  newHalfExtents += mat.m_col1.Abs() * halfExtents.y();
-  newHalfExtents += mat.m_col2.Abs() * halfExtents.z();
+  xiiSimdVec4f newHalfExtents = mMat.m_col0.Abs() * halfExtents.x();
+  newHalfExtents += mMat.m_col1.Abs() * halfExtents.y();
+  newHalfExtents += mMat.m_col2.Abs() * halfExtents.z();
 
   SetCenterAndHalfExtents(newCenter, newHalfExtents);
 }

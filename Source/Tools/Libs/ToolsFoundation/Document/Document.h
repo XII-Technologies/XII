@@ -103,11 +103,11 @@ public:
 
   /// \brief Saves the document, if it is modified.
   /// If bForce is true, the document will be written, even if it is not considered modified.
-  xiiStatus                                                  SaveDocument(bool bForce = false);
-  typedef xiiDelegate<void(xiiDocument* doc, xiiStatus res)> AfterSaveCallback;
-  xiiTaskGroupID                                             SaveDocumentAsync(AfterSaveCallback callback, bool bForce = false);
+  xiiStatus SaveDocument(bool bForce = false);
+  using AfterSaveCallback = xiiDelegate<void(xiiDocument*, xiiStatus)>;
+  xiiTaskGroupID SaveDocumentAsync(AfterSaveCallback callback, bool bForce = false);
 
-  static xiiStatus ReadDocument(const char* sDocumentPath, xiiUniquePtr<xiiAbstractObjectGraph>& header, xiiUniquePtr<xiiAbstractObjectGraph>& objects, xiiUniquePtr<xiiAbstractObjectGraph>& types);
+  static xiiStatus ReadDocument(const char* szDocumentPath, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pHeader, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pObjects, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pTypes);
   static xiiStatus ReadAndRegisterTypes(const xiiAbstractObjectGraph& types);
 
   xiiStatus LoadDocument() { return InternalLoadDocument(); }
@@ -147,9 +147,9 @@ public:
   };
 
   /// \brief Whether this document supports pasting the given mime format into it
-  virtual void GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_MimeTypes) const {}
+  virtual void GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_mimeTypes) const {}
   /// \brief Creates the abstract graph of data to be copied and returns the mime type for the clipboard to identify the data
-  virtual bool CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph, xiiStringBuilder& out_MimeType) const { return false; };
+  virtual bool CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph, xiiStringBuilder& out_sMimeType) const { return false; };
   virtual bool Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bAllowPickedPosition, const char* szMimeType)
   {
     return false;
@@ -195,7 +195,7 @@ public:
   void ShowDocumentStatus(const xiiFormatString& msg) const;
 
   /// \brief Tries to compute the position and rotation for an object in the document. Returns XII_SUCCESS if it was possible.
-  virtual xiiResult ComputeObjectTransformation(const xiiDocumentObject* pObject, xiiTransform& out_Result) const;
+  virtual xiiResult ComputeObjectTransformation(const xiiDocumentObject* pObject, xiiTransform& out_result) const;
 
   /// \brief Needed by xiiManipulatorManager to know where to look for the manipulator attributes.
   ///
@@ -214,19 +214,19 @@ public:
   virtual void UpdatePrefabs();
 
   /// \brief Resets the given objects to their template prefab state, if they have local modifications.
-  void RevertPrefabs(const xiiDeque<const xiiDocumentObject*>& Selection);
+  void RevertPrefabs(const xiiDeque<const xiiDocumentObject*>& selection);
 
   /// \brief Removes the link between a prefab instance and its template, turning the instance into a regular object.
-  virtual void UnlinkPrefabs(const xiiDeque<const xiiDocumentObject*>& Selection);
+  virtual void UnlinkPrefabs(const xiiDeque<const xiiDocumentObject*>& selection);
 
-  virtual xiiStatus CreatePrefabDocumentFromSelection(const char* szFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> AdjustGraphNodeCB = xiiDelegate<void(xiiAbstractObjectNode*)>(), xiiDelegate<void(xiiDocumentObject*)> AdjustNewNodesCB = xiiDelegate<void(xiiDocumentObject*)>());
-  virtual xiiStatus CreatePrefabDocument(const char* szFile, xiiArrayPtr<const xiiDocumentObject*> rootObjects, const xiiUuid& invPrefabSeed, xiiUuid& out_NewDocumentGuid, xiiDelegate<void(xiiAbstractObjectNode*)> AdjustGraphNodeCB = {}, bool bKeepOpen = false);
+  virtual xiiStatus CreatePrefabDocumentFromSelection(const char* szFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = xiiDelegate<void(xiiAbstractObjectNode*)>(), xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB = xiiDelegate<void(xiiDocumentObject*)>());
+  virtual xiiStatus CreatePrefabDocument(const char* szFile, xiiArrayPtr<const xiiDocumentObject*> rootObjects, const xiiUuid& invPrefabSeed, xiiUuid& out_newDocumentGuid, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, bool bKeepOpen = false);
   // Returns new guid of replaced object.
   virtual xiiUuid ReplaceByPrefab(
     const xiiDocumentObject* pRootObject,
     const char*              szPrefabFile,
-    const xiiUuid&           PrefabAsset,
-    const xiiUuid&           PrefabSeed,
+    const xiiUuid&           prefabAsset,
+    const xiiUuid&           prefabSeed,
     bool                     bEnginePrefab);
   // Returns new guid of reverted object.
   virtual xiiUuid RevertPrefab(const xiiDocumentObject* pObject);

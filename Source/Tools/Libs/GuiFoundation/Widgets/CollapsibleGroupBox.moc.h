@@ -26,5 +26,5 @@ protected:
   virtual void paintEvent(QPaintEvent* event) override;
 
 protected:
-  bool m_bCollapsed;
+  bool m_bCollapsed = false;
 };

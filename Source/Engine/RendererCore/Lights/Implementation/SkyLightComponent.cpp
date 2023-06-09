@@ -221,11 +221,11 @@ void xiiSkyLightComponent::OnTransformChanged(xiiMsgTransformChanged& msg)
   m_bStatesDirty = true;
 }
 
-void xiiSkyLightComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSkyLightComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   m_Desc.m_IncludeTags.Save(s);
   m_Desc.m_ExcludeTags.Save(s);
@@ -238,11 +238,11 @@ void xiiSkyLightComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_Desc.m_fFarPlane;
 }
 
-void xiiSkyLightComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSkyLightComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32  uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32  uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  xiiStreamReader& s         = ref_stream.GetStream();
 
   m_Desc.m_IncludeTags.Load(s, xiiTagRegistry::GetGlobalRegistry());
   m_Desc.m_ExcludeTags.Load(s, xiiTagRegistry::GetGlobalRegistry());
@@ -275,7 +275,7 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
     // Inline ReflectionData sub-object into the sky light itself.
     if (const xiiAbstractObjectNode::Property* pProp0 = pNode->FindProperty("ReflectionData"))

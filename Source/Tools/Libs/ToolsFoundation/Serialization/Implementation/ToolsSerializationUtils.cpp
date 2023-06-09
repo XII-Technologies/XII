@@ -5,10 +5,10 @@
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
 #include <ToolsFoundation/Serialization/ToolsSerializationUtils.h>
 
-void xiiToolsSerializationUtils::SerializeTypes(const xiiSet<const xiiRTTI*>& types, xiiAbstractObjectGraph& typesGraph)
+void xiiToolsSerializationUtils::SerializeTypes(const xiiSet<const xiiRTTI*>& types, xiiAbstractObjectGraph& ref_typesGraph)
 {
   xiiRttiConverterContext context;
-  xiiRttiConverterWriter  rttiConverter(&typesGraph, &context, true, true);
+  xiiRttiConverterWriter  rttiConverter(&ref_typesGraph, &context, true, true);
   for (const xiiRTTI* pType : types)
   {
     xiiReflectedTypeDescriptor desc;
@@ -26,7 +26,7 @@ void xiiToolsSerializationUtils::SerializeTypes(const xiiSet<const xiiRTTI*>& ty
   }
 }
 
-void xiiToolsSerializationUtils::CopyProperties(const xiiDocumentObject* pSource, const xiiDocumentObjectManager* pSourceManager, void* pTarget, const xiiRTTI* pTargetType, FilterFunction PropertFilter)
+void xiiToolsSerializationUtils::CopyProperties(const xiiDocumentObject* pSource, const xiiDocumentObjectManager* pSourceManager, void* pTarget, const xiiRTTI* pTargetType, FilterFunction propertFilter)
 {
   xiiAbstractObjectGraph           graph;
   xiiDocumentObjectConverterWriter writer(&graph, pSourceManager, [](const xiiDocumentObject*, const xiiAbstractProperty* p) { return p->GetAttributeByType<xiiHiddenAttribute>() == nullptr; });

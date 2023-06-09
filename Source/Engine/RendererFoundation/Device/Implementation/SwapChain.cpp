@@ -27,7 +27,7 @@ xiiGALSwapChain::xiiGALSwapChain(const xiiRTTI* pSwapChainType) :
 {
 }
 
-xiiGALSwapChain::~xiiGALSwapChain() {}
+xiiGALSwapChain::~xiiGALSwapChain() = default;
 
 //////////////////////////////////////////////////////////////////////////
 

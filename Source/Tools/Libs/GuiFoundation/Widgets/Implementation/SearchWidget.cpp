@@ -36,9 +36,9 @@ xiiQtSearchWidget::xiiQtSearchWidget(QWidget* pParent)
   connect(m_pClearButton, &QPushButton::clicked, this, &xiiQtSearchWidget::onClearButtonClicked);
 }
 
-void xiiQtSearchWidget::setText(const QString& text)
+void xiiQtSearchWidget::setText(const QString& sText)
 {
-  m_pLineEdit->setText(text);
+  m_pLineEdit->setText(sText);
 }
 
 QString xiiQtSearchWidget::text() const
@@ -46,9 +46,9 @@ QString xiiQtSearchWidget::text() const
   return m_pLineEdit->text();
 }
 
-void xiiQtSearchWidget::setPlaceholderText(const QString& text)
+void xiiQtSearchWidget::setPlaceholderText(const QString& sText)
 {
-  m_pLineEdit->setPlaceholderText(text);
+  m_pLineEdit->setPlaceholderText(sText);
 }
 
 void xiiQtSearchWidget::onLineEditTextChanged(const QString& text)

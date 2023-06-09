@@ -28,8 +28,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_MathExpression, 1, xiiRTTID
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_MathExpression::xiiVisualScriptNode_MathExpression() {}
-xiiVisualScriptNode_MathExpression::~xiiVisualScriptNode_MathExpression() {}
+xiiVisualScriptNode_MathExpression::xiiVisualScriptNode_MathExpression()  = default;
+xiiVisualScriptNode_MathExpression::~xiiVisualScriptNode_MathExpression() = default;
 
 static xiiHashedString s_sA = xiiMakeHashedString("a");
 static xiiHashedString s_sB = xiiMakeHashedString("b");

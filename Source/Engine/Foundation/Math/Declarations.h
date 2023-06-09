@@ -13,13 +13,13 @@
 /// \brief Simple helper union to store ints and floats to modify their bit patterns.
 union xiiIntFloatUnion
 {
-  constexpr xiiIntFloatUnion(float init) :
-    f(init)
+  constexpr xiiIntFloatUnion(float fInit) :
+    f(fInit)
   {
   }
 
-  constexpr xiiIntFloatUnion(xiiUInt32 init) :
-    i(init)
+  constexpr xiiIntFloatUnion(xiiUInt32 uiInit) :
+    i(uiInit)
   {
   }
 
@@ -31,12 +31,12 @@ union xiiIntFloatUnion
 union xiiInt64DoubleUnion
 {
 
-  constexpr xiiInt64DoubleUnion(double init) :
-    f(init)
+  constexpr xiiInt64DoubleUnion(double fInit) :
+    f(fInit)
   {
   }
-  constexpr xiiInt64DoubleUnion(xiiUInt64 init) :
-    i(init)
+  constexpr xiiInt64DoubleUnion(xiiUInt64 uiInit) :
+    i(uiInit)
   {
   }
 
@@ -289,7 +289,7 @@ struct XII_FOUNDATION_DLL xiiBasisAxis
   /// \brief Returns the axis that is orthogonal to axis1 and axis2. If 'flip' is set, it returns the negated axis.
   ///
   /// If axis1 and axis2 are not orthogonal to each other, the value of axis1 is returned as the result.
-  static xiiBasisAxis::Enum GetOrthogonalAxis(xiiBasisAxis::Enum axis1, xiiBasisAxis::Enum axis2, bool flip);
+  static xiiBasisAxis::Enum GetOrthogonalAxis(xiiBasisAxis::Enum axis1, xiiBasisAxis::Enum axis2, bool bFlip);
 };
 
 /// \brief An enum that represents the operator of a comparison

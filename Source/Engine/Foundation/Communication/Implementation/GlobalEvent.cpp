@@ -14,12 +14,12 @@ xiiGlobalEvent::EventData::EventData()
   m_uiNumEventHandlersRegular = 0;
 }
 
-xiiGlobalEvent::xiiGlobalEvent(const char* szEventName, XII_GLOBAL_EVENT_HANDLER Handler, bool bOnlyOnce)
+xiiGlobalEvent::xiiGlobalEvent(const char* szEventName, XII_GLOBAL_EVENT_HANDLER handler, bool bOnlyOnce)
 {
   m_szEventName   = szEventName;
   m_bOnlyOnce     = bOnlyOnce;
   m_bHasBeenFired = false;
-  m_EventHandler  = Handler;
+  m_EventHandler  = handler;
 }
 
 void xiiGlobalEvent::Broadcast(const char* szEventName, xiiVariant p1, xiiVariant p2, xiiVariant p3, xiiVariant p4)

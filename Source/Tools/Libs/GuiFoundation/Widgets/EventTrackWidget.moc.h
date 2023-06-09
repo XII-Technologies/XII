@@ -25,7 +25,7 @@ public:
     xiiUInt32 m_uiSortedIdx;
   };
 
-  xiiQtEventTrackWidget(QWidget* parent);
+  xiiQtEventTrackWidget(QWidget* pParent);
 
   void SetData(const xiiEventTrackData* pData, double fMinCurveLength);
   void SetGridBarWidget(xiiQGridBarWidget* pGridBar) { m_pGridBar = pGridBar; }
@@ -38,15 +38,15 @@ public:
   QPointF MapToScene(const QPoint& pos) const;
 
   void ClearSelection();
-  void GetSelection(xiiHybridArray<xiiUInt32, 32>& out_Selection) const;
+  void GetSelection(xiiHybridArray<xiiUInt32, 32>& out_selection) const;
 
 Q_SIGNALS:
-  void DoubleClickEvent(double scenePosX, double epsilon);
+  void DoubleClickEvent(double fScenePosX, double fEpsilon);
   void DeleteControlPointsEvent();
-  void MoveControlPointsEvent(double moveX);
-  void BeginOperationEvent(QString name);
+  void MoveControlPointsEvent(double fMoveX);
+  void BeginOperationEvent(QString sName);
   void EndOperationEvent(bool bCommit);
-  void ScaleControlPointsEvent(const QPointF& centerPos, double scaleX);
+  void ScaleControlPointsEvent(const QPointF& centerPos, double fScaleX);
   void ContextMenuEvent(QPoint pos, QPointF scenePos);
   void SelectionChangedEvent();
 

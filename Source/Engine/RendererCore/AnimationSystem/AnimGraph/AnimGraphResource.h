@@ -20,7 +20,7 @@ public:
   xiiAnimGraphResource();
   ~xiiAnimGraphResource();
 
-  void DeserializeAnimGraphState(xiiAnimGraph& out);
+  void DeserializeAnimGraphState(xiiAnimGraph& ref_out);
 
 private:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;

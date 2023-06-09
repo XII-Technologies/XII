@@ -82,13 +82,13 @@ struct xiiArgP
 ///       end up being displayed as 1000.00K for base 1000 due to rounding.
 struct xiiArgHumanReadable
 {
-  inline xiiArgHumanReadable(const double value, const xiiUInt64 base, const char* const* const suffixes, xiiUInt32 suffixCount) :
-    m_Value(value), m_Base(base), m_Suffixes(suffixes), m_SuffixCount(suffixCount)
+  inline xiiArgHumanReadable(const double value, const xiiUInt64 uiBase, const char* const* const pSuffixes, xiiUInt32 uiSuffixCount) :
+    m_Value(value), m_Base(uiBase), m_Suffixes(pSuffixes), m_SuffixCount(uiSuffixCount)
   {
   }
 
-  inline xiiArgHumanReadable(const xiiInt64 value, const xiiUInt64 base, const char* const* const suffixes, xiiUInt32 suffixCount) :
-    xiiArgHumanReadable(static_cast<double>(value), base, suffixes, suffixCount)
+  inline xiiArgHumanReadable(const xiiInt64 value, const xiiUInt64 uiBase, const char* const* const pSuffixes, xiiUInt32 uiSuffixCount) :
+    xiiArgHumanReadable(static_cast<double>(value), uiBase, pSuffixes, uiSuffixCount)
   {
   }
 
@@ -122,14 +122,14 @@ struct xiiArgFileSize : public xiiArgHumanReadable
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 struct xiiArgErrorCode
 {
-  inline explicit xiiArgErrorCode(xiiUInt32 errorCode) :
-    m_ErrorCode(errorCode)
+  inline explicit xiiArgErrorCode(xiiUInt32 uiErrorCode) :
+    m_ErrorCode(uiErrorCode)
   {
   }
 
   xiiUInt32 m_ErrorCode;
 };
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgErrorCode& arg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode& arg);
 
 #endif
 
@@ -155,46 +155,46 @@ struct xiiArgSensitive
   XII_FOUNDATION_DLL static BuildStringCallback s_BuildStringCB;
 
   /// \brief Set s_BuildStringCB to this function to enable scrambling of sensitive data.
-  XII_FOUNDATION_DLL static xiiStringView BuildString_SensitiveUserData_Hash(char* tmp, xiiUInt32 uiLength, const xiiArgSensitive& arg);
+  XII_FOUNDATION_DLL static xiiStringView BuildString_SensitiveUserData_Hash(char* szTmp, xiiUInt32 uiLength, const xiiArgSensitive& arg);
 };
 
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgI& arg);
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, xiiInt64 arg);
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, xiiInt32 arg);
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgU& arg);
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, xiiUInt64 arg);
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, xiiUInt32 arg);
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgF& arg);
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, double arg);
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, bool arg);
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const char* arg);
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const wchar_t* arg);
-XII_FOUNDATION_DLL xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, const xiiStringBuilder& arg);
-XII_FOUNDATION_DLL const xiiStringView& BuildString(char* tmp, xiiUInt32 uiLength, const xiiStringView& arg);
-XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgC& arg);
-XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgP& arg);
-XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, xiiResult arg);
-XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiVariant& arg);
-XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiAngleTemplate<float>& arg);
-XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiAngleTemplate<double>& arg);
-XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiRational& arg);
-XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgHumanReadable& arg);
-XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiTime& arg);
-XII_FOUNDATION_DLL xiiStringView        BuildString(char* tmp, xiiUInt32 uiLength, const xiiArgSensitive& arg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgI& arg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiInt64 iArg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiInt32 iArg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgU& arg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiUInt64 uiArg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiUInt32 uiArg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgF& arg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, double fArg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, bool bArg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const char* szArg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const wchar_t* pArg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiStringBuilder& sArg);
+XII_FOUNDATION_DLL const xiiStringView& BuildString(char* szTmp, xiiUInt32 uiLength, const xiiStringView& sArg);
+XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgC& arg);
+XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgP& arg);
+XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, xiiResult arg);
+XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiVariant& arg);
+XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiAngleTemplate<float>& arg);
+XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiAngleTemplate<double>& arg);
+XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiRational& arg);
+XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgHumanReadable& arg);
+XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiTime& arg);
+XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgSensitive& arg);
 
 
 #if XII_ENABLED(XII_COMPILER_GCC) || XII_ENABLED(XII_COMPILER_CLANG)
 
 // on these platforms "long int" is a different type from "long long int"
 
-XII_ALWAYS_INLINE xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, long int arg)
+XII_ALWAYS_INLINE xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, long int iArg)
 {
-  return BuildString(tmp, uiLength, static_cast<xiiInt64>(arg));
+  return BuildString(szTmp, uiLength, static_cast<xiiInt64>(iArg));
 }
 
-XII_ALWAYS_INLINE xiiStringView BuildString(char* tmp, xiiUInt32 uiLength, unsigned long int arg)
+XII_ALWAYS_INLINE xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, unsigned long int uiArg)
 {
-  return BuildString(tmp, uiLength, static_cast<xiiUInt64>(arg));
+  return BuildString(szTmp, uiLength, static_cast<xiiUInt64>(uiArg));
 }
 
 #endif

@@ -2,7 +2,7 @@
 
 #include <GameEngine/GameEngineDLL.h>
 
-typedef xiiGenericId<32, 16> xiiXRSpatialAnchorID;
+using xiiXRSpatialAnchorID = xiiGenericId<32, 16>;
 
 /// \brief XR spatial anchors interface.
 ///

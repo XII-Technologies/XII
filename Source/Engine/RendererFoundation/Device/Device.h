@@ -35,33 +35,33 @@ public:
 
   // State creation functions
 
-  xiiGALBlendStateHandle CreateBlendState(const xiiGALBlendStateCreationDescription& Description);
+  xiiGALBlendStateHandle CreateBlendState(const xiiGALBlendStateCreationDescription& description);
   void                   DestroyBlendState(xiiGALBlendStateHandle hBlendState);
 
-  xiiGALDepthStencilStateHandle CreateDepthStencilState(const xiiGALDepthStencilStateCreationDescription& Description);
+  xiiGALDepthStencilStateHandle CreateDepthStencilState(const xiiGALDepthStencilStateCreationDescription& description);
   void                          DestroyDepthStencilState(xiiGALDepthStencilStateHandle hDepthStencilState);
 
-  xiiGALRasterizerStateHandle CreateRasterizerState(const xiiGALRasterizerStateCreationDescription& Description);
+  xiiGALRasterizerStateHandle CreateRasterizerState(const xiiGALRasterizerStateCreationDescription& description);
   void                        DestroyRasterizerState(xiiGALRasterizerStateHandle hRasterizerState);
 
-  xiiGALSamplerStateHandle CreateSamplerState(const xiiGALSamplerStateCreationDescription& Description);
+  xiiGALSamplerStateHandle CreateSamplerState(const xiiGALSamplerStateCreationDescription& description);
   void                     DestroySamplerState(xiiGALSamplerStateHandle hSamplerState);
 
   // Resource creation functions
 
-  xiiGALShaderHandle CreateShader(const xiiGALShaderCreationDescription& Description);
+  xiiGALShaderHandle CreateShader(const xiiGALShaderCreationDescription& description);
   void               DestroyShader(xiiGALShaderHandle hShader);
 
-  xiiGALBufferHandle CreateBuffer(const xiiGALBufferCreationDescription& Description, xiiArrayPtr<const xiiUInt8> pInitialData = xiiArrayPtr<const xiiUInt8>());
+  xiiGALBufferHandle CreateBuffer(const xiiGALBufferCreationDescription& description, xiiArrayPtr<const xiiUInt8> initialData = xiiArrayPtr<const xiiUInt8>());
   void               DestroyBuffer(xiiGALBufferHandle hBuffer);
 
   // Helper functions for buffers (for common, simple use cases)
 
-  xiiGALBufferHandle CreateVertexBuffer(xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, const char* szName, xiiArrayPtr<const xiiUInt8> pInitialData = xiiArrayPtr<const xiiUInt8>(), bool bDataIsMutable = false);
-  xiiGALBufferHandle CreateIndexBuffer(xiiGALIndexType::Enum IndexType, xiiUInt32 uiIndexCount, const char* szName, xiiArrayPtr<const xiiUInt8> pInitialData = xiiArrayPtr<const xiiUInt8>(), bool bDataIsMutable = false);
+  xiiGALBufferHandle CreateVertexBuffer(xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, const char* szName, xiiArrayPtr<const xiiUInt8> initialData = xiiArrayPtr<const xiiUInt8>(), bool bDataIsMutable = false);
+  xiiGALBufferHandle CreateIndexBuffer(xiiGALIndexType::Enum indexType, xiiUInt32 uiIndexCount, const char* szName, xiiArrayPtr<const xiiUInt8> initialData = xiiArrayPtr<const xiiUInt8>(), bool bDataIsMutable = false);
   xiiGALBufferHandle CreateConstantBuffer(xiiUInt32 uiBufferSize, const char* szName);
 
-  xiiGALTextureHandle CreateTexture(const xiiGALTextureCreationDescription& Description, xiiArrayPtr<xiiGALSystemMemoryDescription> pInitialData = xiiArrayPtr<xiiGALSystemMemoryDescription>());
+  xiiGALTextureHandle CreateTexture(const xiiGALTextureCreationDescription& description, xiiArrayPtr<xiiGALSystemMemoryDescription> initialData = xiiArrayPtr<xiiGALSystemMemoryDescription>());
   void                DestroyTexture(xiiGALTextureHandle hTexture);
 
   xiiGALTextureHandle CreateProxyTexture(xiiGALTextureHandle hParentTexture, xiiUInt32 uiSlice, const char* szName);
@@ -71,17 +71,17 @@ public:
   xiiGALResourceViewHandle GetDefaultResourceView(xiiGALTextureHandle hTexture);
   xiiGALResourceViewHandle GetDefaultResourceView(xiiGALBufferHandle hBuffer);
 
-  xiiGALResourceViewHandle CreateResourceView(const xiiGALResourceViewCreationDescription& Description);
+  xiiGALResourceViewHandle CreateResourceView(const xiiGALResourceViewCreationDescription& description);
   void                     DestroyResourceView(xiiGALResourceViewHandle hResourceView);
 
   // Render target views
   xiiGALRenderTargetViewHandle GetDefaultRenderTargetView(xiiGALTextureHandle hTexture);
 
-  xiiGALRenderTargetViewHandle CreateRenderTargetView(const xiiGALRenderTargetViewCreationDescription& Description);
+  xiiGALRenderTargetViewHandle CreateRenderTargetView(const xiiGALRenderTargetViewCreationDescription& description);
   void                         DestroyRenderTargetView(xiiGALRenderTargetViewHandle hRenderTargetView);
 
   // Unordered access views
-  xiiGALUnorderedAccessViewHandle CreateUnorderedAccessView(const xiiGALUnorderedAccessViewCreationDescription& Description);
+  xiiGALUnorderedAccessViewHandle CreateUnorderedAccessView(const xiiGALUnorderedAccessViewCreationDescription& description);
   void                            DestroyUnorderedAccessView(xiiGALUnorderedAccessViewHandle hUnorderedAccessView);
 
 
@@ -92,15 +92,15 @@ public:
   xiiResult             UpdateSwapChain(xiiGALSwapChainHandle hSwapChain, xiiEnum<xiiGALPresentMode> newPresentMode);
   void                  DestroySwapChain(xiiGALSwapChainHandle hSwapChain);
 
-  xiiGALQueryHandle CreateQuery(const xiiGALQueryCreationDescription& Description);
+  xiiGALQueryHandle CreateQuery(const xiiGALQueryCreationDescription& description);
   void              DestroyQuery(xiiGALQueryHandle hQuery);
 
-  xiiGALVertexDeclarationHandle CreateVertexDeclaration(const xiiGALVertexDeclarationCreationDescription& Description);
+  xiiGALVertexDeclarationHandle CreateVertexDeclaration(const xiiGALVertexDeclarationCreationDescription& description);
   void                          DestroyVertexDeclaration(xiiGALVertexDeclarationHandle hVertexDeclaration);
 
   // Timestamp functions
 
-  xiiResult GetTimestampResult(xiiGALTimestampHandle hTimestamp, xiiTime& result);
+  xiiResult GetTimestampResult(xiiGALTimestampHandle hTimestamp, xiiTime& ref_result);
 
   /// \todo Map functions to save on memcpys
 
@@ -140,8 +140,8 @@ public:
 
   const xiiGALDeviceCapabilities& GetCapabilities() const;
 
-  virtual xiiUInt64 GetMemoryConsumptionForTexture(const xiiGALTextureCreationDescription& Description) const;
-  virtual xiiUInt64 GetMemoryConsumptionForBuffer(const xiiGALBufferCreationDescription& Description) const;
+  virtual xiiUInt64 GetMemoryConsumptionForTexture(const xiiGALTextureCreationDescription& description) const;
+  virtual xiiUInt64 GetMemoryConsumptionForBuffer(const xiiGALBufferCreationDescription& description) const;
 
   static void          SetDefaultDevice(xiiGALDevice* pDefaultDevice);
   static xiiGALDevice* GetDefaultDevice();

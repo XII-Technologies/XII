@@ -32,9 +32,9 @@ xiiPlaneTemplate<Type>::xiiPlaneTemplate(const xiiVec3Template<Type>* const pVer
 }
 
 template <typename Type>
-xiiPlaneTemplate<Type>::xiiPlaneTemplate(const xiiVec3Template<Type>* const pVertices, xiiUInt32 iMaxVertices)
+xiiPlaneTemplate<Type>::xiiPlaneTemplate(const xiiVec3Template<Type>* const pVertices, xiiUInt32 uiMaxVertices)
 {
-  SetFromPoints(pVertices, iMaxVertices).IgnoreResult();
+  SetFromPoints(pVertices, uiMaxVertices).IgnoreResult();
 }
 
 template <typename Type>
@@ -241,11 +241,11 @@ bool xiiPlaneTemplate<Type>::IsFinite() const
   form a plane, and deduce the normal from them. This algorithm is much slower, than all the other methods, so only
   use it, when you know, that your data can contain such configurations. */
 template <typename Type>
-xiiResult xiiPlaneTemplate<Type>::SetFromPoints(const xiiVec3Template<Type>* const pVertices, xiiUInt32 iMaxVertices)
+xiiResult xiiPlaneTemplate<Type>::SetFromPoints(const xiiVec3Template<Type>* const pVertices, xiiUInt32 uiMaxVertices)
 {
   xiiInt32 iPoints[3];
 
-  if (FindSupportPoints(pVertices, iMaxVertices, iPoints[0], iPoints[1], iPoints[2]) == XII_FAILURE)
+  if (FindSupportPoints(pVertices, uiMaxVertices, iPoints[0], iPoints[1], iPoints[2]) == XII_FAILURE)
   {
     SetFromPoints(pVertices).IgnoreResult();
     return XII_FAILURE;
@@ -256,7 +256,7 @@ xiiResult xiiPlaneTemplate<Type>::SetFromPoints(const xiiVec3Template<Type>* con
 }
 
 template <typename Type>
-xiiResult xiiPlaneTemplate<Type>::FindSupportPoints(const xiiVec3Template<Type>* const pVertices, int iMaxVertices, int& out_v1, int& out_v2, int& out_v3)
+xiiResult xiiPlaneTemplate<Type>::FindSupportPoints(const xiiVec3Template<Type>* const pVertices, int iMaxVertices, int& out_i1, int& out_i2, int& out_i3)
 {
   const xiiVec3Template<Type> v1 = pVertices[0];
 
@@ -281,8 +281,8 @@ xiiResult xiiPlaneTemplate<Type>::FindSupportPoints(const xiiVec3Template<Type>*
 
   const xiiVec3Template<Type> vDir1 = (v1 - v2).GetNormalized();
 
-  out_v1 = 0;
-  out_v2 = i;
+  out_i1 = 0;
+  out_i2 = i;
 
   ++i;
 
@@ -291,7 +291,7 @@ xiiResult xiiPlaneTemplate<Type>::FindSupportPoints(const xiiVec3Template<Type>*
     // check for inequality, then for non-collinearity
     if ((pVertices[i].IsEqual(v2, 0.001f) == false) && (xiiMath::Abs((pVertices[i] - v2).GetNormalized().Dot(vDir1)) < (Type)0.999))
     {
-      out_v3 = i;
+      out_i3 = i;
       return XII_SUCCESS;
     }
 
@@ -302,14 +302,14 @@ xiiResult xiiPlaneTemplate<Type>::FindSupportPoints(const xiiVec3Template<Type>*
 }
 
 template <typename Type>
-xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiVec3Template<Type>* const vPoints, xiiUInt32 iVertices) const
+xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiVec3Template<Type>* const pPoints, xiiUInt32 uiVertices) const
 {
   bool bFront = false;
   bool bBack  = false;
 
-  for (xiiUInt32 i = 0; i < iVertices; ++i)
+  for (xiiUInt32 i = 0; i < uiVertices; ++i)
   {
-    switch (GetPointPosition(vPoints[i]))
+    switch (GetPointPosition(pPoints[i]))
     {
       case xiiPositionOnPlane::Front:
         if (bBack)
@@ -331,14 +331,14 @@ xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiVec3
 }
 
 template <typename Type>
-xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiVec3Template<Type>* const vPoints, xiiUInt32 iVertices, Type fPlaneHalfWidth) const
+xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiVec3Template<Type>* const pPoints, xiiUInt32 uiVertices, Type fPlaneHalfWidth) const
 {
   bool bFront = false;
   bool bBack  = false;
 
-  for (xiiUInt32 i = 0; i < iVertices; ++i)
+  for (xiiUInt32 i = 0; i < uiVertices; ++i)
   {
-    switch (GetPointPosition(vPoints[i], fPlaneHalfWidth))
+    switch (GetPointPosition(pPoints[i], fPlaneHalfWidth))
     {
       case xiiPositionOnPlane::Front:
         if (bBack)
@@ -365,7 +365,7 @@ xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiVec3
 }
 
 template <typename Type>
-bool xiiPlaneTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_fIntersection, xiiVec3Template<Type>* out_vIntersection) const
+bool xiiPlaneTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_pIntersectionDistance, xiiVec3Template<Type>* out_pIntersection) const
 {
   XII_ASSERT_DEBUG(vRayStartPos.IsValid(), "Ray start position must be valid.");
   XII_ASSERT_DEBUG(vRayDir.IsValid(), "Ray direction must be valid.");
@@ -381,17 +381,17 @@ bool xiiPlaneTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type>& vRa
 
   const Type fTime = -fPlaneSide / fCosAlpha;
 
-  if (out_fIntersection)
-    *out_fIntersection = fTime;
+  if (out_pIntersectionDistance)
+    *out_pIntersectionDistance = fTime;
 
-  if (out_vIntersection)
-    *out_vIntersection = vRayStartPos + fTime * vRayDir;
+  if (out_pIntersection)
+    *out_pIntersection = vRayStartPos + fTime * vRayDir;
 
   return true;
 }
 
 template <typename Type>
-bool xiiPlaneTemplate<Type>::GetRayIntersectionBiDirectional(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_fIntersection, xiiVec3Template<Type>* out_vIntersection) const
+bool xiiPlaneTemplate<Type>::GetRayIntersectionBiDirectional(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_pIntersectionDistance, xiiVec3Template<Type>* out_pIntersection) const
 {
   XII_ASSERT_DEBUG(vRayStartPos.IsValid(), "Ray start position must be valid.");
   XII_ASSERT_DEBUG(vRayDir.IsValid(), "Ray direction must be valid.");
@@ -404,25 +404,25 @@ bool xiiPlaneTemplate<Type>::GetRayIntersectionBiDirectional(const xiiVec3Templa
 
   const Type fTime = -fPlaneSide / fCosAlpha;
 
-  if (out_fIntersection)
-    *out_fIntersection = fTime;
+  if (out_pIntersectionDistance)
+    *out_pIntersectionDistance = fTime;
 
-  if (out_vIntersection)
-    *out_vIntersection = vRayStartPos + fTime * vRayDir;
+  if (out_pIntersection)
+    *out_pIntersection = vRayStartPos + fTime * vRayDir;
 
   return true;
 }
 
 template <typename Type>
-bool xiiPlaneTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos, Type* out_fHitFraction, xiiVec3Template<Type>* out_vIntersection) const
+bool xiiPlaneTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos, Type* out_pHitFraction, xiiVec3Template<Type>* out_pIntersection) const
 {
   Type fTime = 0;
 
-  if (!GetRayIntersection(vLineStartPos, vLineEndPos - vLineStartPos, &fTime, out_vIntersection))
+  if (!GetRayIntersection(vLineStartPos, vLineEndPos - vLineStartPos, &fTime, out_pIntersection))
     return false;
 
-  if (out_fHitFraction)
-    *out_fHitFraction = fTime;
+  if (out_pHitFraction)
+    *out_pHitFraction = fTime;
 
   return (fTime <= 1);
 }
@@ -475,7 +475,7 @@ void xiiPlaneTemplate<Type>::GetMinMaxDistanceTo(Type& out_fMin, Type& out_fMax,
 }
 
 template <typename Type>
-xiiResult xiiPlaneTemplate<Type>::GetPlanesIntersectionPoint(const xiiPlaneTemplate& p0, const xiiPlaneTemplate& p1, const xiiPlaneTemplate& p2, xiiVec3Template<Type>& out_Result)
+xiiResult xiiPlaneTemplate<Type>::GetPlanesIntersectionPoint(const xiiPlaneTemplate& p0, const xiiPlaneTemplate& p1, const xiiPlaneTemplate& p2, xiiVec3Template<Type>& out_vResult)
 {
   const xiiVec3Template<Type> n1(p0.m_vNormal);
   const xiiVec3Template<Type> n2(p1.m_vNormal);
@@ -486,7 +486,7 @@ xiiResult xiiPlaneTemplate<Type>::GetPlanesIntersectionPoint(const xiiPlaneTempl
   if (xiiMath::IsZero<Type>(det, xiiMath::LargeEpsilon<Type>()))
     return XII_FAILURE;
 
-  out_Result = (-p0.m_fNegDistance * n2.CrossRH(n3) + -p1.m_fNegDistance * n3.CrossRH(n1) + -p2.m_fNegDistance * n1.CrossRH(n2)) / det;
+  out_vResult = (-p0.m_fNegDistance * n2.CrossRH(n3) + -p1.m_fNegDistance * n3.CrossRH(n1) + -p2.m_fNegDistance * n1.CrossRH(n2)) / det;
 
   return XII_SUCCESS;
 }

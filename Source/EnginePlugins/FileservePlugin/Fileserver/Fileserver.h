@@ -89,7 +89,7 @@ public:
   static xiiResult SendConnectionInfo(
     const char*                          szClientAddress,
     xiiUInt16                            uiMyPort,
-    const xiiArrayPtr<xiiStringBuilder>& MyIPs,
+    const xiiArrayPtr<xiiStringBuilder>& myIPs,
     xiiTime                              timeout = xiiTime::Seconds(10));
 
 private:

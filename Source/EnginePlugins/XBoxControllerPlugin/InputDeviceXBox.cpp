@@ -14,7 +14,7 @@ xiiInputDeviceXBox360::xiiInputDeviceXBox360()
     m_bControllerConnected[i] = false;
 }
 
-xiiInputDeviceXBox360::~xiiInputDeviceXBox360() {}
+xiiInputDeviceXBox360::~xiiInputDeviceXBox360() = default;
 
 void xiiInputDeviceXBox360::RegisterControllerButton(const char* szButton, const char* szName, xiiBitflags<xiiInputSlotFlags> SlotFlags)
 {

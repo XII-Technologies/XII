@@ -20,7 +20,7 @@ using xiiKrautGeneratorResourceHandle = xiiTypedResourceHandle<class xiiKrautGen
 class XII_KRAUTPLUGIN_DLL xiiKrautTreeComponentManager : public xiiComponentManager<class xiiKrautTreeComponent, xiiBlockStorageType::Compact>
 {
 public:
-  typedef xiiComponentManager<xiiKrautTreeComponent, xiiBlockStorageType::Compact> SUPER;
+  using SUPER = xiiComponentManager<xiiKrautTreeComponent, xiiBlockStorageType::Compact>;
 
   xiiKrautTreeComponentManager(xiiWorld* pWorld) :
     SUPER(pWorld)
@@ -49,8 +49,8 @@ class XII_KRAUTPLUGIN_DLL xiiKrautTreeComponent : public xiiRenderComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void OnActivated() override;
@@ -72,8 +72,8 @@ public:
   // see xiiKrautTreeComponent::GetLocalBounds for details
   static const int s_iLocalBoundsScale = 3;
 
-  void OnMsgExtractGeometry(xiiMsgExtractGeometry& msg) const;
-  void OnBuildStaticMesh(xiiMsgBuildStaticMesh& msg) const;
+  void OnMsgExtractGeometry(xiiMsgExtractGeometry& ref_msg) const;
+  void OnBuildStaticMesh(xiiMsgBuildStaticMesh& ref_msg) const;
 
   void        SetKrautFile(const char* szFile); // [ property ]
   const char* GetKrautFile() const;             // [ property ]

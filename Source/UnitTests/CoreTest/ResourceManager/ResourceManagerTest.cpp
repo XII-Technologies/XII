@@ -115,9 +115,9 @@ namespace
       return ld;
     }
 
-    virtual void CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& LoaderData) override
+    virtual void CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData) override
     {
-      LoadedData* pData = static_cast<LoadedData*>(LoaderData.m_pCustomLoaderData);
+      LoadedData* pData = static_cast<LoadedData*>(loaderData.m_pCustomLoaderData);
       XII_DEFAULT_DELETE(pData);
     }
   };

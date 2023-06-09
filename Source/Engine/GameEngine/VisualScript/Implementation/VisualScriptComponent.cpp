@@ -103,10 +103,10 @@ xiiVisualScriptComponent::~xiiVisualScriptComponent()                           
 
 xiiVisualScriptComponent& xiiVisualScriptComponent::operator=(xiiVisualScriptComponent&& other) = default;
 
-void xiiVisualScriptComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiVisualScriptComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_hResource;
   /// \todo Store the current script state
@@ -120,11 +120,11 @@ void xiiVisualScriptComponent::SerializeComponent(xiiWorldWriter& stream) const
   }
 }
 
-void xiiVisualScriptComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiVisualScriptComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_hResource;
 
@@ -320,8 +320,8 @@ void xiiVisualScriptComponent::Initialize()
 const xiiRangeView<const char*, xiiUInt32> xiiVisualScriptComponent::GetParameters() const
 {
   return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; },
-                                              [this]() -> xiiUInt32 { return m_Params.GetCount(); }, [](xiiUInt32& it) { ++it; },
-                                              [this](const xiiUInt32& it) -> const char* { return m_Params[it].m_sName.GetData(); });
+                                              [this]() -> xiiUInt32 { return m_Params.GetCount(); }, [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                              [this](const xiiUInt32& uiIt) -> const char* { return m_Params[uiIt].m_sName.GetData(); });
 }
 
 void xiiVisualScriptComponent::SetParameter(const char* szKey, const xiiVariant& value)

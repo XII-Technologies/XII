@@ -25,15 +25,15 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiKrautRenderer::xiiKrautRenderer()  = default;
 xiiKrautRenderer::~xiiKrautRenderer() = default;
 
-void xiiKrautRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& types) const
+void xiiKrautRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {
-  types.PushBack(xiiGetStaticRTTI<xiiKrautRenderData>());
+  ref_types.PushBack(xiiGetStaticRTTI<xiiKrautRenderData>());
 }
 
-void xiiKrautRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& categories) const
+void xiiKrautRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
-  categories.PushBack(xiiDefaultRenderDataCategories::LitOpaque);
-  categories.PushBack(xiiDefaultRenderDataCategories::Selection);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitOpaque);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
 }
 
 void xiiKrautRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const

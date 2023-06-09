@@ -18,9 +18,9 @@ public:
   /// \brief returns the name of the extractor.
   const char* GetName() const;
 
-  virtual void Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& extractedRenderData);
+  virtual void Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData);
 
-  virtual void PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& extractedRenderData);
+  virtual void PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData);
 
 protected:
   /// \brief returns true if the given object should be filtered by view tags.
@@ -54,7 +54,7 @@ public:
   xiiVisibleObjectsExtractor(const char* szName = "VisibleObjectsExtractor");
   ~xiiVisibleObjectsExtractor();
 
-  virtual void Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& extractedRenderData) override;
+  virtual void Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;
 };
 
 class XII_RENDERERCORE_DLL xiiSelectedObjectsExtractorBase : public xiiExtractor
@@ -65,7 +65,7 @@ public:
   xiiSelectedObjectsExtractorBase(const char* szName = "SelectedObjectsExtractor");
   ~xiiSelectedObjectsExtractorBase();
 
-  virtual void Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& extractedRenderData) override;
+  virtual void Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;
 
   virtual const xiiDeque<xiiGameObjectHandle>* GetSelection() = 0;
 

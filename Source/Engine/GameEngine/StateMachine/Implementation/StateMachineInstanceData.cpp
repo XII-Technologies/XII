@@ -34,12 +34,12 @@ namespace xiiStateMachineInternal
     return blob;
   }
 
-  void InstanceDataAllocator::DestructAndDeallocate(xiiBlob& blob) const
+  void InstanceDataAllocator::DestructAndDeallocate(xiiBlob& ref_blob) const
   {
-    XII_ASSERT_DEV(blob.GetByteBlobPtr().GetCount() == m_uiTotalDataSize, "Passed blob has not the expected size");
-    Destruct(blob.GetByteBlobPtr());
+    XII_ASSERT_DEV(ref_blob.GetByteBlobPtr().GetCount() == m_uiTotalDataSize, "Passed blob has not the expected size");
+    Destruct(ref_blob.GetByteBlobPtr());
 
-    blob.Clear();
+    ref_blob.Clear();
   }
 
   void InstanceDataAllocator::Construct(const xiiByteBlobPtr& blobPtr) const

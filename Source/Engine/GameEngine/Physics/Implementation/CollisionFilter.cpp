@@ -117,27 +117,27 @@ xiiResult xiiCollisionFilterConfig::Load(xiiStringView sFile)
   return XII_SUCCESS;
 }
 
-void xiiCollisionFilterConfig::Save(xiiStreamWriter& stream) const
+void xiiCollisionFilterConfig::Save(xiiStreamWriter& ref_stream) const
 {
   const xiiUInt8 uiVersion = 1;
 
-  stream << uiVersion;
+  ref_stream << uiVersion;
 
-  stream.WriteBytes(m_GroupMasks, sizeof(xiiUInt32) * 32).IgnoreResult();
-  stream.WriteBytes(m_GroupNames, sizeof(char) * 32 * 32).IgnoreResult();
+  ref_stream.WriteBytes(m_GroupMasks, sizeof(xiiUInt32) * 32).IgnoreResult();
+  ref_stream.WriteBytes(m_GroupNames, sizeof(char) * 32 * 32).IgnoreResult();
 }
 
 
-void xiiCollisionFilterConfig::Load(xiiStreamReader& stream)
+void xiiCollisionFilterConfig::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt8 uiVersion = 0;
 
-  stream >> uiVersion;
+  ref_stream >> uiVersion;
 
   XII_ASSERT_DEV(uiVersion == 1, "Invalid version {0} for xiiCollisionFilterConfig file", uiVersion);
 
-  stream.ReadBytes(m_GroupMasks, sizeof(xiiUInt32) * 32);
-  stream.ReadBytes(m_GroupNames, sizeof(char) * 32 * 32);
+  ref_stream.ReadBytes(m_GroupMasks, sizeof(xiiUInt32) * 32);
+  ref_stream.ReadBytes(m_GroupNames, sizeof(char) * 32 * 32);
 }
 
 

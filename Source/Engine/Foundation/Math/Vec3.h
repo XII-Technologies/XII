@@ -23,10 +23,10 @@ public:
   xiiVec3Template(); // [tested]
 
   /// \brief Initializes the vector with x,y,z
-  xiiVec3Template(Type X, Type Y, Type Z); // [tested]
+  xiiVec3Template(Type inX, Type inY, Type inZ); // [tested]
 
   /// \brief Initializes all 3 components with xyz
-  explicit xiiVec3Template(Type xyz); // [tested]
+  explicit xiiVec3Template(Type inV); // [tested]
   // no copy-constructor and operator= since the default-generated ones will be faster
 
   /// \brief Returns a vector with all components set to zero.
@@ -55,7 +55,7 @@ public:
   const xiiVec2Template<Type> GetAsVec2() const; // [tested]
 
   /// \brief Returns an xiiVec4Template with x,y,z from this vector and w set to the parameter.
-  const xiiVec4Template<Type> GetAsVec4(Type w) const; // [tested]
+  const xiiVec4Template<Type> GetAsVec4(Type inW) const; // [tested]
 
   /// \brief Returns an xiiVec4Template with x,y,z from this vector and w set 1.
   const xiiVec4Template<Type> GetAsPositionVec4() const; // [tested]
@@ -75,7 +75,7 @@ public:
   void Set(Type xyz); // [tested]
 
   /// \brief Sets the vector to these values.
-  void Set(Type x, Type y, Type z); // [tested]
+  void Set(Type inX, Type inY, Type inZ); // [tested]
 
   /// \brief Sets the vector to all zero.
   void SetZero(); // [tested]
@@ -129,11 +129,11 @@ public:
   bool IsValid() const; // [tested]
 
   /// \brief Returns the distance between two 3D Vectors.
-  Type Distance(const xiiVec3Template<Type>& point) const; // [tested]
+  Type Distance(const xiiVec3Template<Type>& vPoint) const; // [tested]
 
   /// \brief Returns the squared distance between two 3D Vectors. Faster, since no square-root is taken. Useful, if one only wants to compare the distance of two
   /// vectors regardless of the magnitude.
-  Type DistanceSquared(const xiiVec3Template<Type>& point) const; // [tested]
+  Type DistanceSquared(const xiiVec3Template<Type>& vPoint) const; // [tested]
 
 
   // *** Operators ***
@@ -185,7 +185,7 @@ public:
   const xiiVec3Template<Type> CompMax(const xiiVec3Template<Type>& rhs) const; // [tested]
 
   /// \brief Returns the component-wise clamped value of *this between low and high.
-  const xiiVec3Template<Type> CompClamp(const xiiVec3Template<Type>& low, const xiiVec3Template<Type>& high) const; // [tested]
+  const xiiVec3Template<Type> CompClamp(const xiiVec3Template<Type>& vLow, const xiiVec3Template<Type>& vHigh) const; // [tested]
 
   /// \brief Returns the component-wise multiplication of *this and rhs
   const xiiVec3Template<Type> CompMul(const xiiVec3Template<Type>& rhs) const; // [tested]
@@ -218,27 +218,27 @@ public:
   const xiiVec3Template<Type> GetRefractedVector(const xiiVec3Template<Type>& vNormal, Type fRefIndex1, Type fRefIndex2) const;
 
   /// \brief Sets the vector to a random point inside a unit sphere (radius 1).
-  static xiiVec3Template<Type> CreateRandomPointInSphere(xiiRandom& rng); // [tested]
+  static xiiVec3Template<Type> CreateRandomPointInSphere(xiiRandom& ref_rng); // [tested]
 
   /// \brief Creates a random direction vector. The vector is normalized.
-  static xiiVec3Template<Type> CreateRandomDirection(xiiRandom& rng); // [tested]
+  static xiiVec3Template<Type> CreateRandomDirection(xiiRandom& ref_rng); // [tested]
 
   /// \brief Creates a random vector around the x axis with a maximum deviation angle of \a maxDeviation. The vector is normalized.
   /// The deviation angle must be larger than zero.
-  static xiiVec3Template<Type> CreateRandomDeviationX(xiiRandom& rng, const xiiAngle& maxDeviation); // [tested]
+  static xiiVec3Template<Type> CreateRandomDeviationX(xiiRandom& ref_rng, const xiiAngle& maxDeviation); // [tested]
 
   /// \brief Creates a random vector around the y axis with a maximum deviation angle of \a maxDeviation. The vector is normalized.
   /// The deviation angle must be larger than zero.
-  static xiiVec3Template<Type> CreateRandomDeviationY(xiiRandom& rng, const xiiAngle& maxDeviation); // [tested]
+  static xiiVec3Template<Type> CreateRandomDeviationY(xiiRandom& ref_rng, const xiiAngle& maxDeviation); // [tested]
 
   /// \brief Creates a random vector around the z axis with a maximum deviation angle of \a maxDeviation. The vector is normalized.
   /// The deviation angle must be larger than zero.
-  static xiiVec3Template<Type> CreateRandomDeviationZ(xiiRandom& rng, const xiiAngle& maxDeviation); // [tested]
+  static xiiVec3Template<Type> CreateRandomDeviationZ(xiiRandom& ref_rng, const xiiAngle& maxDeviation); // [tested]
 
   /// \brief Creates a random vector around the given normal with a maximum deviation.
   /// \note If you are going to do this many times with the same axis, rather than calling this function, instead manually
   /// do what this function does (see inline code) and only compute the quaternion once.
-  static xiiVec3Template<Type> CreateRandomDeviation(xiiRandom& rng, const xiiAngle& maxDeviation, const xiiVec3Template<Type>& vNormal); // [tested]
+  static xiiVec3Template<Type> CreateRandomDeviation(xiiRandom& ref_rng, const xiiAngle& maxDeviation, const xiiVec3Template<Type>& vNormal); // [tested]
 };
 
 // *** Operators ***

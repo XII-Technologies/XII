@@ -5,40 +5,40 @@
 #include <Foundation/Math/Vec3.h>
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomPointInSphere(xiiRandom& rng)
+xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomPointInSphere(xiiRandom& ref_rng)
 {
   double px, py, pz;
   double len = 0.0;
 
   do
   {
-    px = rng.DoubleMinMax(-1, 1);
-    py = rng.DoubleMinMax(-1, 1);
-    pz = rng.DoubleMinMax(-1, 1);
+    px = ref_rng.DoubleMinMax(-1, 1);
+    py = ref_rng.DoubleMinMax(-1, 1);
+    pz = ref_rng.DoubleMinMax(-1, 1);
 
     len = (px * px) + (py * py) + (pz * pz);
-  } while (len > 1.0 || len <= 0.000001); // prevent the exact center
+  } while (len > 1.0 || len <= 0.000001); // Prevent from being the exact center
 
   return xiiVec3Template<Type>((Type)px, (Type)py, (Type)pz);
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDirection(xiiRandom& rng)
+xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDirection(xiiRandom& ref_rng)
 {
-  xiiVec3Template<Type> vec = CreateRandomPointInSphere(rng);
+  xiiVec3Template<Type> vec = CreateRandomPointInSphere(ref_rng);
   vec.Normalize();
   return vec;
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationX(xiiRandom& rng, const xiiAngle& maxDeviation)
+xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationX(xiiRandom& ref_rng, const xiiAngle& maxDeviation)
 {
   const double twoPi = 2.0 * xiiMath::Pi<double>();
 
   const double cosAngle = xiiMath::Cos(maxDeviation);
 
-  const double   x       = rng.DoubleZeroToOneInclusive() * (1 - cosAngle) + cosAngle;
-  const xiiAngle phi     = xiiAngle::Radian((float)(rng.DoubleZeroToOneInclusive() * twoPi));
+  const double   x       = ref_rng.DoubleZeroToOneInclusive() * (1 - cosAngle) + cosAngle;
+  const xiiAngle phi     = xiiAngle::Radian((float)(ref_rng.DoubleZeroToOneInclusive() * twoPi));
   const double   invSqrt = xiiMath::Sqrt(1 - (x * x));
   const double   y       = invSqrt * xiiMath::Cos(phi);
   const double   z       = invSqrt * xiiMath::Sin(phi);
@@ -47,23 +47,23 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationX(xiiRandom& r
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationY(xiiRandom& rng, const xiiAngle& maxDeviation)
+xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationY(xiiRandom& ref_rng, const xiiAngle& maxDeviation)
 {
-  xiiVec3Template<Type> vec = CreateRandomDeviationX(rng, maxDeviation);
+  xiiVec3Template<Type> vec = CreateRandomDeviationX(ref_rng, maxDeviation);
   xiiMath::Swap(vec.x, vec.y);
   return vec;
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationZ(xiiRandom& rng, const xiiAngle& maxDeviation)
+xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationZ(xiiRandom& ref_rng, const xiiAngle& maxDeviation)
 {
-  xiiVec3Template<Type> vec = CreateRandomDeviationX(rng, maxDeviation);
+  xiiVec3Template<Type> vec = CreateRandomDeviationX(ref_rng, maxDeviation);
   xiiMath::Swap(vec.x, vec.z);
   return vec;
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviation(xiiRandom& rng, const xiiAngle& maxDeviation, const xiiVec3Template<Type>& vNormal)
+xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviation(xiiRandom& ref_rng, const xiiAngle& maxDeviation, const xiiVec3Template<Type>& vNormal)
 {
   // If you need to do this very often:
   // *** Pre-compute this once: ***
@@ -75,7 +75,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviation(xiiRandom& rn
   // *** Then call this with the precomputed value as often as needed: ***
 
   // create a random vector along X
-  xiiVec3Template<Type> vec = CreateRandomDeviationX(rng, maxDeviation);
+  xiiVec3Template<Type> vec = CreateRandomDeviationX(ref_rng, maxDeviation);
   // rotate from X to our basis
   return qRotXtoDir * vec;
 }

@@ -22,10 +22,7 @@ public:
     xiiVariant  m_Value;
   };
 
-  xiiAbstractObjectNode() :
-    m_pOwner(nullptr), m_uiTypeVersion(0), m_szType(nullptr), m_szNodeName(nullptr)
-  {
-  }
+  xiiAbstractObjectNode() = default;
 
   const xiiHybridArray<Property, 16>& GetProperties() const { return m_Properties; }
 
@@ -58,12 +55,12 @@ public:
 private:
   friend class xiiAbstractObjectGraph;
 
-  xiiAbstractObjectGraph* m_pOwner;
+  xiiAbstractObjectGraph* m_pOwner = nullptr;
 
   xiiUuid     m_Guid;
-  xiiUInt32   m_uiTypeVersion;
-  const char* m_szType;
-  const char* m_szNodeName;
+  xiiUInt32   m_uiTypeVersion = 0;
+  const char* m_szType        = nullptr;
+  const char* m_szNodeName    = nullptr;
 
   xiiHybridArray<Property, 16> m_Properties;
 };
@@ -117,13 +114,13 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiDiffOperation);
 class XII_FOUNDATION_DLL xiiAbstractObjectGraph
 {
 public:
-  xiiAbstractObjectGraph() {}
+  xiiAbstractObjectGraph() = default;
   ~xiiAbstractObjectGraph();
 
   void Clear();
 
   using FilterFunction = xiiDelegate<bool(const xiiAbstractObjectNode*, const xiiAbstractObjectNode::Property*)>;
-  xiiAbstractObjectNode* Clone(xiiAbstractObjectGraph& cloneTarget, const xiiAbstractObjectNode* pRootNode = nullptr, FilterFunction filter = FilterFunction()) const;
+  xiiAbstractObjectNode* Clone(xiiAbstractObjectGraph& ref_cloneTarget, const xiiAbstractObjectNode* pRootNode = nullptr, FilterFunction filter = FilterFunction()) const;
 
   const char* RegisterString(const char* szString);
 
@@ -150,7 +147,7 @@ public:
   ///  on both sides which will cause all moves inside the arrays to be lost as there is no way of recovering this information without an
   ///  equality criteria. This function is mostly used to remap a graph from a native object to a graph from xiiDocumentObjects to allow
   ///  applying native side changes to the original xiiDocumentObject hierarchy using diffs.
-  void ReMapNodeGuidsToMatchGraph(xiiAbstractObjectNode* root, const xiiAbstractObjectGraph& rhsGraph, const xiiAbstractObjectNode* rhsRoot);
+  void ReMapNodeGuidsToMatchGraph(xiiAbstractObjectNode* pRoot, const xiiAbstractObjectGraph& rhsGraph, const xiiAbstractObjectNode* pRhsRoot);
 
   /// \brief Finds everything accessible by the given root node.
   void FindTransitiveHull(const xiiUuid& rootGuid, xiiSet<xiiUuid>& out_reachableNodes) const;
@@ -164,13 +161,13 @@ public:
   /// \brief Allows to copy a node from another graph into this graph.
   xiiAbstractObjectNode* CopyNodeIntoGraph(const xiiAbstractObjectNode* pNode);
 
-  xiiAbstractObjectNode* CopyNodeIntoGraph(const xiiAbstractObjectNode* pNode, FilterFunction& filter);
+  xiiAbstractObjectNode* CopyNodeIntoGraph(const xiiAbstractObjectNode* pNode, FilterFunction& ref_filter);
 
-  void CreateDiffWithBaseGraph(const xiiAbstractObjectGraph& base, xiiDeque<xiiAbstractGraphDiffOperation>& out_DiffResult) const;
+  void CreateDiffWithBaseGraph(const xiiAbstractObjectGraph& base, xiiDeque<xiiAbstractGraphDiffOperation>& out_diffResult) const;
 
-  void ApplyDiff(xiiDeque<xiiAbstractGraphDiffOperation>& Diff);
+  void ApplyDiff(xiiDeque<xiiAbstractGraphDiffOperation>& ref_diff);
 
-  void MergeDiffs(const xiiDeque<xiiAbstractGraphDiffOperation>& lhs, const xiiDeque<xiiAbstractGraphDiffOperation>& rhs, xiiDeque<xiiAbstractGraphDiffOperation>& out) const;
+  void MergeDiffs(const xiiDeque<xiiAbstractGraphDiffOperation>& lhs, const xiiDeque<xiiAbstractGraphDiffOperation>& rhs, xiiDeque<xiiAbstractGraphDiffOperation>& ref_out) const;
 
 private:
   XII_DISALLOW_COPY_AND_ASSIGN(xiiAbstractObjectGraph);

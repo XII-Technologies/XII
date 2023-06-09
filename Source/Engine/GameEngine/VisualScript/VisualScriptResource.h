@@ -12,8 +12,8 @@ using xiiVisualScriptResourceHandle = xiiTypedResourceHandle<class xiiVisualScri
 /// \brief Describes a visual script graph (node types and connections)
 struct XII_GAMEENGINE_DLL xiiVisualScriptResourceDescriptor
 {
-  void Load(xiiStreamReader& stream);
-  void Save(xiiStreamWriter& stream) const;
+  void Load(xiiStreamReader& ref_stream);
+  void Save(xiiStreamWriter& ref_stream) const;
   void PrecomputeMessageHandlers();
 
   struct Node
@@ -84,7 +84,7 @@ struct XII_GAMEENGINE_DLL xiiVisualScriptResourceDescriptor
     xiiString m_sValue;
   };
 
-  void AssignNodeProperties(xiiVisualScriptNode& vsNode, const Node& properties) const;
+  void AssignNodeProperties(xiiVisualScriptNode& ref_vsNode, const Node& properties) const;
 
   xiiDynamicArray<Node>                 m_Nodes;
   xiiDynamicArray<ExecutionConnection>  m_ExecutionPaths;

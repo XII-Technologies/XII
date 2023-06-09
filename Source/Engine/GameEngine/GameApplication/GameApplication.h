@@ -39,7 +39,7 @@ public:
   static xiiCVarBool cvar_AppShowFPS;
 
 public:
-  typedef xiiGameApplicationBase SUPER;
+  using SUPER = xiiGameApplicationBase;
 
   /// szProjectPath may be nullptr, if FindProjectDirectory() is overridden.
   xiiGameApplication(const char* szAppName, const char* szProjectPath);

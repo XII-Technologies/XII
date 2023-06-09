@@ -5,19 +5,19 @@
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Strings/String.h>
 
-static xiiString GetString(const char* sz)
+static xiiString GetString(const char* szSz)
 {
   xiiString s;
-  s = sz;
+  s = szSz;
   return s;
 }
 
-static xiiStringBuilder GetStringBuilder(const char* sz)
+static xiiStringBuilder GetStringBuilder(const char* szSz)
 {
   xiiStringBuilder s;
 
   for (xiiUInt32 i = 0; i < 10; ++i)
-    s.Append(sz);
+    s.Append(szSz);
 
   return s;
 }

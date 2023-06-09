@@ -37,7 +37,7 @@ public:
   xiiUInt32 GetCount() const { return m_Objects.GetCount(); }
 
   /// \brief Returns the n-th object in the selection.
-  xiiGameObjectHandle GetObject(xiiUInt32 index) const { return m_Objects[index]; }
+  xiiGameObjectHandle GetObject(xiiUInt32 uiIndex) const { return m_Objects[uiIndex]; }
 
 private:
   xiiWorld*                     m_pWorld;

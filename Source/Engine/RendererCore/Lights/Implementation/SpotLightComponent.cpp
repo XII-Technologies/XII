@@ -50,11 +50,11 @@ xiiSpotLightComponent::xiiSpotLightComponent()
 
 xiiSpotLightComponent::~xiiSpotLightComponent() = default;
 
-xiiResult xiiSpotLightComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& bAlwaysVisible, xiiMsgUpdateLocalBounds& msg)
+xiiResult xiiSpotLightComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   m_fEffectiveRange = CalculateEffectiveRange(m_fRange, m_fIntensity);
 
-  bounds = CalculateBoundingSphere(xiiTransform::IdentityTransform(), m_fEffectiveRange);
+  ref_bounds = CalculateBoundingSphere(xiiTransform::IdentityTransform(), m_fEffectiveRange);
   return XII_SUCCESS;
 }
 
@@ -172,11 +172,11 @@ void xiiSpotLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
   msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Light, caching);
 }
 
-void xiiSpotLightComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiSpotLightComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_fRange;
   s << m_InnerSpotAngle;
@@ -184,11 +184,11 @@ void xiiSpotLightComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << GetProjectedTextureFile();
 }
 
-void xiiSpotLightComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiSpotLightComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s = stream.GetStream();
+  xiiStreamReader& s = ref_stream.GetStream();
 
   s >> m_fRange;
   s >> m_InnerSpotAngle;
@@ -253,9 +253,9 @@ public:
   {
   }
 
-  virtual void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
-    context.PatchBaseClass("xiiLightComponent", 2, true);
+    ref_context.PatchBaseClass("xiiLightComponent", 2, true);
 
     pNode->RenameProperty("Inner Spot Angle", "InnerSpotAngle");
     pNode->RenameProperty("Outer Spot Angle", "OuterSpotAngle");

@@ -18,7 +18,7 @@ xiiGALProxyTexture::xiiGALProxyTexture(const xiiGALTexture& parentTexture, const
 {
 }
 
-xiiGALProxyTexture::~xiiGALProxyTexture() {}
+xiiGALProxyTexture::~xiiGALProxyTexture() = default;
 
 
 const xiiGALResourceBase* xiiGALProxyTexture::GetParentResource() const

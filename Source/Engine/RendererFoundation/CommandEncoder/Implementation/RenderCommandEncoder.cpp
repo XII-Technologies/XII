@@ -9,18 +9,18 @@
 #include <RendererFoundation/Resources/Texture.h>
 #include <RendererFoundation/Resources/UnorderedAccesView.h>
 
-xiiGALRenderCommandEncoder::xiiGALRenderCommandEncoder(xiiGALDevice& device, xiiGALCommandEncoderRenderState& renderState, xiiGALCommandEncoderCommonPlatformInterface& commonImpl, xiiGALCommandEncoderRenderPlatformInterface& renderImpl) :
-  xiiGALCommandEncoder(device, renderState, commonImpl), m_RenderState(renderState), m_RenderImpl(renderImpl)
+xiiGALRenderCommandEncoder::xiiGALRenderCommandEncoder(xiiGALDevice& ref_device, xiiGALCommandEncoderRenderState& ref_renderState, xiiGALCommandEncoderCommonPlatformInterface& ref_commonImpl, xiiGALCommandEncoderRenderPlatformInterface& ref_renderImpl) :
+  xiiGALCommandEncoder(ref_device, ref_renderState, ref_commonImpl), m_RenderState(ref_renderState), m_RenderImpl(ref_renderImpl)
 {
 }
 
 xiiGALRenderCommandEncoder::~xiiGALRenderCommandEncoder() = default;
 
-void xiiGALRenderCommandEncoder::Clear(const xiiColor& ClearColor, xiiUInt32 uiRenderTargetClearMask /*= 0xFFFFFFFFu*/, bool bClearDepth /*= true*/, bool bClearStencil /*= true*/, float fDepthClear /*= 1.0f*/, xiiUInt8 uiStencilClear /*= 0x0u*/)
+void xiiGALRenderCommandEncoder::Clear(const xiiColor& clearColor, xiiUInt32 uiRenderTargetClearMask /*= 0xFFFFFFFFu*/, bool bClearDepth /*= true*/, bool bClearStencil /*= true*/, float fDepthClear /*= 1.0f*/, xiiUInt8 uiStencilClear /*= 0x0u*/)
 {
   AssertRenderingThread();
 
-  m_RenderImpl.ClearPlatform(ClearColor, uiRenderTargetClearMask, bClearDepth, bClearStencil, fDepthClear, uiStencilClear);
+  m_RenderImpl.ClearPlatform(clearColor, uiRenderTargetClearMask, bClearDepth, bClearStencil, fDepthClear, uiStencilClear);
 }
 
 void xiiGALRenderCommandEncoder::Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -160,19 +160,19 @@ void xiiGALRenderCommandEncoder::SetVertexBuffer(xiiUInt32 uiSlot, xiiGALBufferH
   CountStateChange();
 }
 
-void xiiGALRenderCommandEncoder::SetPrimitiveTopology(xiiGALPrimitiveTopology::Enum Topology)
+void xiiGALRenderCommandEncoder::SetPrimitiveTopology(xiiGALPrimitiveTopology::Enum topology)
 {
   AssertRenderingThread();
 
-  if (m_RenderState.m_Topology == Topology)
+  if (m_RenderState.m_Topology == topology)
   {
     CountRedundantStateChange();
     return;
   }
 
-  m_RenderImpl.SetPrimitiveTopologyPlatform(Topology);
+  m_RenderImpl.SetPrimitiveTopologyPlatform(topology);
 
-  m_RenderState.m_Topology = Topology;
+  m_RenderState.m_Topology = topology;
 
   CountStateChange();
 }
@@ -197,11 +197,11 @@ void xiiGALRenderCommandEncoder::SetVertexDeclaration(xiiGALVertexDeclarationHan
   CountStateChange();
 }
 
-void xiiGALRenderCommandEncoder::SetBlendState(xiiGALBlendStateHandle hBlendState, const xiiColor& BlendFactor, xiiUInt32 uiSampleMask)
+void xiiGALRenderCommandEncoder::SetBlendState(xiiGALBlendStateHandle hBlendState, const xiiColor& blendFactor, xiiUInt32 uiSampleMask)
 {
   AssertRenderingThread();
 
-  if (m_RenderState.m_hBlendState == hBlendState && m_RenderState.m_BlendFactor.IsEqualRGBA(BlendFactor, 0.001f) && m_RenderState.m_uiSampleMask == uiSampleMask)
+  if (m_RenderState.m_hBlendState == hBlendState && m_RenderState.m_BlendFactor.IsEqualRGBA(blendFactor, 0.001f) && m_RenderState.m_uiSampleMask == uiSampleMask)
   {
     CountRedundantStateChange();
     return;
@@ -209,10 +209,10 @@ void xiiGALRenderCommandEncoder::SetBlendState(xiiGALBlendStateHandle hBlendStat
 
   const xiiGALBlendState* pBlendState = GetDevice().GetBlendState(hBlendState);
 
-  m_RenderImpl.SetBlendStatePlatform(pBlendState, BlendFactor, uiSampleMask);
+  m_RenderImpl.SetBlendStatePlatform(pBlendState, blendFactor, uiSampleMask);
 
   m_RenderState.m_hBlendState  = hBlendState;
-  m_RenderState.m_BlendFactor  = BlendFactor;
+  m_RenderState.m_BlendFactor  = blendFactor;
   m_RenderState.m_uiSampleMask = uiSampleMask;
 
   CountStateChange();

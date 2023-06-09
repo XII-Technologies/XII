@@ -9,7 +9,7 @@ XII_FORCE_INLINE void* xiiAlignedHeapAllocation::Allocate(size_t uiSize, size_t 
   return ptr;
 }
 
-XII_ALWAYS_INLINE void xiiAlignedHeapAllocation::Deallocate(void* ptr)
+XII_ALWAYS_INLINE void xiiAlignedHeapAllocation::Deallocate(void* pPtr)
 {
-  _aligned_free(ptr);
+  _aligned_free(pPtr);
 }

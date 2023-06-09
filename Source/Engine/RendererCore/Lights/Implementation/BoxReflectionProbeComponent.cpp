@@ -68,9 +68,9 @@ xiiBoxReflectionProbeComponentManager::xiiBoxReflectionProbeComponentManager(xii
 xiiBoxReflectionProbeComponent::xiiBoxReflectionProbeComponent()  = default;
 xiiBoxReflectionProbeComponent::~xiiBoxReflectionProbeComponent() = default;
 
-void xiiBoxReflectionProbeComponent::SetExtents(const xiiVec3& extents)
+void xiiBoxReflectionProbeComponent::SetExtents(const xiiVec3& vExtents)
 {
-  m_vExtents = extents;
+  m_vExtents = vExtents;
 }
 
 const xiiVec3& xiiBoxReflectionProbeComponent::GetInfluenceScale() const
@@ -177,11 +177,11 @@ void xiiBoxReflectionProbeComponent::OnTransformChanged(xiiMsgTransformChanged& 
   m_bStatesDirty = true;
 }
 
-void xiiBoxReflectionProbeComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiBoxReflectionProbeComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
+  SUPER::SerializeComponent(ref_stream);
 
-  xiiStreamWriter& s = stream.GetStream();
+  xiiStreamWriter& s = ref_stream.GetStream();
 
   s << m_vExtents;
   s << m_vInfluenceScale;
@@ -191,11 +191,11 @@ void xiiBoxReflectionProbeComponent::SerializeComponent(xiiWorldWriter& stream) 
   s << m_bBoxProjection;
 }
 
-void xiiBoxReflectionProbeComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiBoxReflectionProbeComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
-  const xiiUInt32  uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  xiiStreamReader& s         = stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32  uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  xiiStreamReader& s         = ref_stream.GetStream();
 
   s >> m_vExtents;
   s >> m_vInfluenceScale;

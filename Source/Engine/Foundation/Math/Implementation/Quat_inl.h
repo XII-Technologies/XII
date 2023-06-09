@@ -14,8 +14,8 @@ XII_ALWAYS_INLINE xiiQuatTemplate<Type>::xiiQuatTemplate()
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiQuatTemplate<Type>::xiiQuatTemplate(Type X, Type Y, Type Z, Type W) :
-  v(X, Y, Z), w(W)
+XII_ALWAYS_INLINE xiiQuatTemplate<Type>::xiiQuatTemplate(Type inX, Type inY, Type inZ, Type inW) :
+  v(inX, inY, inZ), w(inW)
 {
 }
 
@@ -26,10 +26,10 @@ XII_ALWAYS_INLINE const xiiQuatTemplate<Type> xiiQuatTemplate<Type>::IdentityQua
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE void xiiQuatTemplate<Type>::SetElements(Type X, Type Y, Type Z, Type W)
+XII_ALWAYS_INLINE void xiiQuatTemplate<Type>::SetElements(Type inX, Type inY, Type inZ, Type inW)
 {
-  v.Set(X, Y, Z);
-  w = W;
+  v.Set(inX, inY, inZ);
+  w = inW;
 }
 
 template <typename Type>
@@ -62,7 +62,7 @@ void xiiQuatTemplate<Type>::Normalize()
 }
 
 template <typename Type>
-xiiResult xiiQuatTemplate<Type>::GetRotationAxisAndAngle(xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type>& angle, Type fEpsilon) const
+xiiResult xiiQuatTemplate<Type>::GetRotationAxisAndAngle(xiiVec3Template<Type>& ref_vAxis, xiiAngleTemplate<Type>& ref_angle, Type fEpsilon) const
 {
   XII_NAN_ASSERT(this);
 
@@ -71,14 +71,14 @@ xiiResult xiiQuatTemplate<Type>::GetRotationAxisAndAngle(xiiVec3Template<Type>& 
 
   if (d < fEpsilon)
   {
-    vAxis.Set(1, 0, 0);
+    ref_vAxis.Set(1, 0, 0);
   }
   else
   {
-    vAxis = (v / static_cast<Type>(d));
+    ref_vAxis = (v / static_cast<Type>(d));
   }
 
-  angle = acos * 2.0f;
+  ref_angle = acos * 2.0f;
 
   return XII_SUCCESS;
 }
@@ -292,10 +292,10 @@ void xiiQuatTemplate<Type>::SetFromMat3(const xiiMat3Template<Type>& m)
 }
 
 template <typename Type>
-void xiiQuatTemplate<Type>::ReconstructFromMat3(const xiiMat3Template<Type>& mat)
+void xiiQuatTemplate<Type>::ReconstructFromMat3(const xiiMat3Template<Type>& mMat)
 {
-  const xiiVec3 x = (mat * xiiVec3(1, 0, 0)).GetNormalized();
-  const xiiVec3 y = (mat * xiiVec3(0, 1, 0)).GetNormalized();
+  const xiiVec3 x = (mMat * xiiVec3(1, 0, 0)).GetNormalized();
+  const xiiVec3 y = (mMat * xiiVec3(0, 1, 0)).GetNormalized();
   const xiiVec3 z = x.CrossRH(y);
 
   xiiMat3 m;
@@ -307,10 +307,10 @@ void xiiQuatTemplate<Type>::ReconstructFromMat3(const xiiMat3Template<Type>& mat
 }
 
 template <typename Type>
-void xiiQuatTemplate<Type>::ReconstructFromMat4(const xiiMat4Template<Type>& mat)
+void xiiQuatTemplate<Type>::ReconstructFromMat4(const xiiMat4Template<Type>& mMat)
 {
-  const xiiVec3 x = mat.TransformDirection(xiiVec3(1, 0, 0)).GetNormalized();
-  const xiiVec3 y = mat.TransformDirection(xiiVec3(0, 1, 0)).GetNormalized();
+  const xiiVec3 x = mMat.TransformDirection(xiiVec3(1, 0, 0)).GetNormalized();
+  const xiiVec3 y = mMat.TransformDirection(xiiVec3(0, 1, 0)).GetNormalized();
   const xiiVec3 z = x.CrossRH(y);
 
   xiiMat3 m;

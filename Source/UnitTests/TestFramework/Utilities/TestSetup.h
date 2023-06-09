@@ -9,7 +9,7 @@ class XII_TEST_DLL xiiTestSetup
 {
 public:
   /// \brief Creates and returns a test framework with the given name.
-  static xiiTestFramework* InitTestFramework(const char* szTestName, const char* szNiceTestName, int argc, const char** argv);
+  static xiiTestFramework* InitTestFramework(const char* szTestName, const char* szNiceTestName, int iArgc, const char** pArgv);
 
   /// \brief Runs tests and returns number of errors.
   static xiiTestAppRun RunTests();

@@ -441,7 +441,7 @@ void xiiTestMaps::Remove2(const char* szKey)
 
 const xiiRangeView<const char*, xiiUInt32> xiiTestMaps::GetKeys3() const
 {
-  return xiiRangeView<const char*, xiiUInt32>([this]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Accessor3.GetCount(); }, [this](xiiUInt32& it) { ++it; }, [this](const xiiUInt32& it) -> const char* { return m_Accessor3[it].m_Key; });
+  return xiiRangeView<const char*, xiiUInt32>([this]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Accessor3.GetCount(); }, [this](xiiUInt32& ref_uiIt) { ++ref_uiIt; }, [this](const xiiUInt32& uiIt) -> const char* { return m_Accessor3[uiIt].m_Key; });
 }
 
 void xiiTestMaps::Insert3(const char* szKey, const xiiVariant& value)

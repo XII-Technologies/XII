@@ -56,7 +56,7 @@ namespace
   XII_END_COMPONENT_TYPE;
   // clang-format on
 
-  void AddObjectsToWorld(xiiWorld& world, bool bDynamic, xiiUInt32 uiNumObjects, xiiUInt32 uiTreeLevelNumNodeDiv, xiiUInt32 uiTreeDepth, xiiInt32 iAttachCompsDepth, xiiGameObjectHandle hParent = xiiGameObjectHandle())
+  void AddObjectsToWorld(xiiWorld& ref_world, bool bDynamic, xiiUInt32 uiNumObjects, xiiUInt32 uiTreeLevelNumNodeDiv, xiiUInt32 uiTreeDepth, xiiInt32 iAttachCompsDepth, xiiGameObjectHandle hParent = xiiGameObjectHandle())
   {
     if (uiTreeDepth == 0)
       return;
@@ -68,7 +68,7 @@ namespace
     float posX = 0.0f;
     float posY = uiTreeDepth * 5.0f;
 
-    xiiTestComponentManager* pMan = world.GetOrCreateComponentManager<xiiTestComponentManager>();
+    xiiTestComponentManager* pMan = ref_world.GetOrCreateComponentManager<xiiTestComponentManager>();
 
     for (xiiUInt32 i = 0; i < uiNumObjects; ++i)
     {
@@ -76,7 +76,7 @@ namespace
       posX += 5.0f;
 
       xiiGameObject* pObj;
-      auto           hObj = world.CreateObject(gd, pObj);
+      auto           hObj = ref_world.CreateObject(gd, pObj);
 
       if (iAttachCompsDepth > 0)
       {
@@ -85,7 +85,7 @@ namespace
       }
 
       AddObjectsToWorld(
-        world, bDynamic, xiiMath::Max(uiNumObjects / uiTreeLevelNumNodeDiv, 1U), uiTreeLevelNumNodeDiv, uiTreeDepth - 1, iAttachCompsDepth - 1, hObj);
+        ref_world, bDynamic, xiiMath::Max(uiNumObjects / uiTreeLevelNumNodeDiv, 1U), uiTreeLevelNumNodeDiv, uiTreeDepth - 1, iAttachCompsDepth - 1, hObj);
     }
   }
 

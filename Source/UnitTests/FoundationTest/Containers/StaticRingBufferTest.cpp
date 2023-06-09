@@ -2,7 +2,7 @@
 
 #include <Foundation/Containers/StaticRingBuffer.h>
 
-typedef xiiConstructionCounter cc;
+using cc = xiiConstructionCounter;
 
 XII_CREATE_SIMPLE_TEST(Containers, StaticRingBuffer)
 {

@@ -21,7 +21,7 @@ public:
   ~xiiRasterizerView();
 
   /// \brief Changes the resolution of the view. Has to be called at least once before starting to render anything.
-  void SetResolution(xiiUInt32 width, xiiUInt32 height, float fAspectRatio);
+  void SetResolution(xiiUInt32 uiWidth, xiiUInt32 uiHeight, float fAspectRatio);
 
   xiiUInt32 GetResolutionX() const { return m_uiResolutionX; }
   xiiUInt32 GetResolutionY() const { return m_uiResolutionY; }
@@ -88,7 +88,7 @@ private:
 class xiiRasterizerViewPool
 {
 public:
-  xiiRasterizerView* GetRasterizerView(xiiUInt32 width, xiiUInt32 height, float fAspectRatio);
+  xiiRasterizerView* GetRasterizerView(xiiUInt32 uiWidth, xiiUInt32 uiHeight, float fAspectRatio);
   void               ReturnRasterizerView(xiiRasterizerView* pView);
 
 private:

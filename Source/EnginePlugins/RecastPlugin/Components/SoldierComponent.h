@@ -7,7 +7,7 @@ class xiiRecastWorldModule;
 class xiiPhysicsWorldModuleInterface;
 struct xiiAgentSteeringEvent;
 
-typedef xiiComponentManagerSimple<class xiiSoldierComponent, xiiComponentUpdateType::WhenSimulating> xiiSoldierComponentManager;
+using xiiSoldierComponentManager = xiiComponentManagerSimple<class xiiSoldierComponent, xiiComponentUpdateType::WhenSimulating>;
 
 class XII_RECASTPLUGIN_DLL xiiSoldierComponent : public xiiNpcComponent
 {
@@ -17,8 +17,8 @@ class XII_RECASTPLUGIN_DLL xiiSoldierComponent : public xiiNpcComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& stream) override;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream) override;
 
 protected:
   virtual void Deinitialize() override;

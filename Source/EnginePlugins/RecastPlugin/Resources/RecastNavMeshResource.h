@@ -25,8 +25,8 @@ struct XII_RECASTPLUGIN_DLL xiiRecastNavMeshResourceDescriptor
 
   void Clear();
 
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 };
 
 class XII_RECASTPLUGIN_DLL xiiRecastNavMeshResource : public xiiResource

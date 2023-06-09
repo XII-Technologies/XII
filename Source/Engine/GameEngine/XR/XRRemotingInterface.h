@@ -62,7 +62,7 @@ struct xiiXRRemotingConnectionEventData
   xiiEnum<xiiXRRemotingDisconnectReason> m_disconnectReason;
 };
 
-typedef xiiEvent<const xiiXRRemotingConnectionEventData&> xiiXRRemotingConnectionEvent;
+using xiiXRRemotingConnectionEvent = xiiEvent<const xiiXRRemotingConnectionEventData&>;
 
 /// \brief XR Remoting singleton interface. Allows for streaming the XR application to a remote device.
 ///
@@ -86,7 +86,7 @@ public:
   ///@{
 
   /// \brief Tries to connect to the remote device.
-  virtual xiiResult Connect(const char* remoteHostName, uint16_t remotePort = 8265, bool enableAudio = true, int maxBitrateKbps = 20000) = 0;
+  virtual xiiResult Connect(const char* szRemoteHostName, uint16_t remotePort = 8265, bool bEnableAudio = true, int iMaxBitrateKbps = 20000) = 0;
   /// \brief Disconnects from the remote device.
   virtual xiiResult Disconnect() = 0;
   /// \brief Get the current connection state to the remote device.

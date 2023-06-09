@@ -32,8 +32,8 @@ private:
   void CreateBuffer(xiiUInt32 uiSize);
   void Reset();
 
-  xiiUInt32                                                       m_uiBufferSize;
-  xiiUInt32                                                       m_uiBufferOffset;
+  xiiUInt32                                                       m_uiBufferSize   = 0;
+  xiiUInt32                                                       m_uiBufferOffset = 0;
   xiiDynamicArray<xiiPerInstanceData, xiiAlignedAllocatorWrapper> m_PerInstanceData;
 };
 

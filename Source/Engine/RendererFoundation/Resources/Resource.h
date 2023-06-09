@@ -40,8 +40,8 @@ template <typename CreationDescription>
 class xiiGALResource : public xiiGALResourceBase
 {
 public:
-  XII_ALWAYS_INLINE xiiGALResource(const CreationDescription& Description) :
-    m_Description(Description)
+  XII_ALWAYS_INLINE xiiGALResource(const CreationDescription& description) :
+    m_Description(description)
   {
   }
 

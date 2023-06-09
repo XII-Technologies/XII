@@ -11,32 +11,32 @@
 namespace xiiCompressionUtils
 {
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-  static xiiResult CompressZStd(xiiArrayPtr<const xiiUInt8> pUncompressedData, xiiDynamicArray<xiiUInt8>& out_Data)
+  static xiiResult CompressZStd(xiiArrayPtr<const xiiUInt8> uncompressedData, xiiDynamicArray<xiiUInt8>& out_data)
   {
-    size_t uiSizeBound = ZSTD_compressBound(pUncompressedData.GetCount());
+    size_t uiSizeBound = ZSTD_compressBound(uncompressedData.GetCount());
     if (uiSizeBound > xiiMath::MaxValue<xiiUInt32>())
     {
       xiiLog::Error("Can't compress since the output container can't hold enough elements ({0})", static_cast<xiiUInt64>(uiSizeBound));
       return XII_FAILURE;
     }
 
-    out_Data.SetCountUninitialized(static_cast<xiiUInt32>(uiSizeBound));
+    out_data.SetCountUninitialized(static_cast<xiiUInt32>(uiSizeBound));
 
-    size_t const cSize = ZSTD_compress(out_Data.GetData(), uiSizeBound, pUncompressedData.GetPtr(), pUncompressedData.GetCount(), 1);
+    size_t const cSize = ZSTD_compress(out_data.GetData(), uiSizeBound, uncompressedData.GetPtr(), uncompressedData.GetCount(), 1);
     if (ZSTD_isError(cSize))
     {
       xiiLog::Error("Compression failed with error: '{0}'.", ZSTD_getErrorName(cSize));
       return XII_FAILURE;
     }
 
-    out_Data.SetCount(static_cast<xiiUInt32>(cSize));
+    out_data.SetCount(static_cast<xiiUInt32>(cSize));
 
     return XII_SUCCESS;
   }
 
-  static xiiResult DecompressZStd(xiiArrayPtr<const xiiUInt8> pCompressedData, xiiDynamicArray<xiiUInt8>& out_Data)
+  static xiiResult DecompressZStd(xiiArrayPtr<const xiiUInt8> compressedData, xiiDynamicArray<xiiUInt8>& out_data)
   {
-    xiiUInt64 uiSize = ZSTD_findDecompressedSize(pCompressedData.GetPtr(), pCompressedData.GetCount());
+    xiiUInt64 uiSize = ZSTD_findDecompressedSize(compressedData.GetPtr(), compressedData.GetCount());
 
     if (uiSize == ZSTD_CONTENTSIZE_ERROR)
     {
@@ -55,9 +55,9 @@ namespace xiiCompressionUtils
       return XII_FAILURE;
     }
 
-    out_Data.SetCountUninitialized(static_cast<xiiUInt32>(uiSize));
+    out_data.SetCountUninitialized(static_cast<xiiUInt32>(uiSize));
 
-    size_t const uiActualSize = ZSTD_decompress(out_Data.GetData(), xiiMath::SafeConvertToSizeT(uiSize), pCompressedData.GetPtr(), pCompressedData.GetCount());
+    size_t const uiActualSize = ZSTD_decompress(out_data.GetData(), xiiMath::SafeConvertToSizeT(uiSize), compressedData.GetPtr(), compressedData.GetCount());
 
     if (uiActualSize != uiSize)
     {
@@ -69,50 +69,50 @@ namespace xiiCompressionUtils
   }
 #endif
 
-  xiiResult Compress(xiiArrayPtr<const xiiUInt8> pUncompressedData, xiiCompressionMethod eMethod, xiiDynamicArray<xiiUInt8>& out_Data)
+  xiiResult Compress(xiiArrayPtr<const xiiUInt8> uncompressedData, xiiCompressionMethod method, xiiDynamicArray<xiiUInt8>& out_data)
   {
-    out_Data.Clear();
+    out_data.Clear();
 
-    if (pUncompressedData.IsEmpty())
+    if (uncompressedData.IsEmpty())
     {
       return XII_SUCCESS;
     }
 
-    switch (eMethod)
+    switch (method)
     {
       case xiiCompressionMethod::ZStd:
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-        return CompressZStd(pUncompressedData, out_Data);
+        return CompressZStd(uncompressedData, out_data);
 #else
         xiiLog::Error("ZStd compression disabled in build settings!");
         return XII_FAILURE;
 #endif
       default:
-        xiiLog::Error("Unsupported compression method {0}!", static_cast<xiiUInt32>(eMethod));
+        xiiLog::Error("Unsupported compression method {0}!", static_cast<xiiUInt32>(method));
         return XII_FAILURE;
     }
   }
 
-  xiiResult Decompress(xiiArrayPtr<const xiiUInt8> pCompressedData, xiiCompressionMethod eMethod, xiiDynamicArray<xiiUInt8>& out_Data)
+  xiiResult Decompress(xiiArrayPtr<const xiiUInt8> compressedData, xiiCompressionMethod method, xiiDynamicArray<xiiUInt8>& out_data)
   {
-    out_Data.Clear();
+    out_data.Clear();
 
-    if (pCompressedData.IsEmpty())
+    if (compressedData.IsEmpty())
     {
       return XII_SUCCESS;
     }
 
-    switch (eMethod)
+    switch (method)
     {
       case xiiCompressionMethod::ZStd:
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-        return DecompressZStd(pCompressedData, out_Data);
+        return DecompressZStd(compressedData, out_data);
 #else
         xiiLog::Error("ZStd compression disabled in build settings!");
         return XII_FAILURE;
 #endif
       default:
-        xiiLog::Error("Unsupported compression method {0}!", static_cast<xiiUInt32>(eMethod));
+        xiiLog::Error("Unsupported compression method {0}!", static_cast<xiiUInt32>(method));
         return XII_FAILURE;
     }
   }

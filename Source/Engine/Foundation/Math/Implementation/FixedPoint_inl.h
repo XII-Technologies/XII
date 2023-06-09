@@ -3,23 +3,23 @@
 #include <Foundation/Math/Math.h>
 
 template <xiiUInt8 DecimalBits>
-const xiiFixedPoint<DecimalBits>& xiiFixedPoint<DecimalBits>::operator=(xiiInt32 IntVal)
+const xiiFixedPoint<DecimalBits>& xiiFixedPoint<DecimalBits>::operator=(xiiInt32 iVal)
 {
-  m_iValue = IntVal << DecimalBits;
+  m_iValue = iVal << DecimalBits;
   return *this;
 }
 
 template <xiiUInt8 DecimalBits>
-const xiiFixedPoint<DecimalBits>& xiiFixedPoint<DecimalBits>::operator=(float FloatVal)
+const xiiFixedPoint<DecimalBits>& xiiFixedPoint<DecimalBits>::operator=(float fVal)
 {
-  m_iValue = (xiiInt32)xiiMath::Round(FloatVal * (1 << DecimalBits));
+  m_iValue = (xiiInt32)xiiMath::Round(fVal * (1 << DecimalBits));
   return *this;
 }
 
 template <xiiUInt8 DecimalBits>
-const xiiFixedPoint<DecimalBits>& xiiFixedPoint<DecimalBits>::operator=(double FloatVal)
+const xiiFixedPoint<DecimalBits>& xiiFixedPoint<DecimalBits>::operator=(double fVal)
 {
-  m_iValue = (xiiInt32)xiiMath::Round(FloatVal * (1 << DecimalBits));
+  m_iValue = (xiiInt32)xiiMath::Round(fVal * (1 << DecimalBits));
   return *this;
 }
 

@@ -17,7 +17,7 @@ public:
     bool m_bTreatUnknownVariablesAsInputs = false;
   };
 
-  xiiResult Parse(xiiStringView code, xiiArrayPtr<xiiExpression::StreamDesc> inputs, xiiArrayPtr<xiiExpression::StreamDesc> outputs, const Options& options, xiiExpressionAST& out_ast);
+  xiiResult Parse(xiiStringView sCode, xiiArrayPtr<xiiExpression::StreamDesc> inputs, xiiArrayPtr<xiiExpression::StreamDesc> outputs, const Options& options, xiiExpressionAST& out_ast);
 
 private:
   static constexpr int s_iLowestPrecedence = 20;

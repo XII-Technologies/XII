@@ -35,16 +35,16 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiDebugTextComponent::xiiDebugTextComponent() :
-  m_sText("Value0: {0}, Value1: {1}, Value2: {2}, Value3: {3}"), m_fValue0(0.0f), m_fValue1(0.0f), m_fValue2(0.0f), m_fValue3(0.0f), m_Color(xiiColor::White)
+  m_sText("Value0: {0}, Value1: {1}, Value2: {2}, Value3: {3}"), m_Color(xiiColor::White)
 {
 }
 
 xiiDebugTextComponent::~xiiDebugTextComponent() = default;
 
-void xiiDebugTextComponent::SerializeComponent(xiiWorldWriter& stream) const
+void xiiDebugTextComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(stream);
-  auto& s = stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   s << m_sText;
   s << m_fValue0;
@@ -54,12 +54,12 @@ void xiiDebugTextComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_Color;
 }
 
-void xiiDebugTextComponent::DeserializeComponent(xiiWorldReader& stream)
+void xiiDebugTextComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(stream);
+  SUPER::DeserializeComponent(ref_stream);
   // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
 
-  auto& s = stream.GetStream();
+  auto& s = ref_stream.GetStream();
 
   s >> m_sText;
   s >> m_fValue0;

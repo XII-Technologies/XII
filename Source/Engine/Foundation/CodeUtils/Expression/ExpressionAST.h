@@ -277,7 +277,7 @@ public:
   static xiiArrayPtr<Node*>       GetChildren(Node* pNode);
   static xiiArrayPtr<const Node*> GetChildren(const Node* pNode);
 
-  void PrintGraph(xiiDGMLGraph& graph) const;
+  void PrintGraph(xiiDGMLGraph& ref_graph) const;
 
   xiiHybridArray<Output*, 8> m_OutputNodes;
 

@@ -8,8 +8,8 @@ class XII_GAMEENGINE_DLL xiiRenderPipelineProfileConfig : public xiiProfileConfi
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineProfileConfig, xiiProfileConfigData);
 
 public:
-  virtual void SaveRuntimeData(xiiChunkStreamWriter& stream) const override;
-  virtual void LoadRuntimeData(xiiChunkStreamReader& stream) override;
+  virtual void SaveRuntimeData(xiiChunkStreamWriter& ref_stream) const override;
+  virtual void LoadRuntimeData(xiiChunkStreamReader& ref_stream) override;
 
   xiiString m_sMainRenderPipeline;
   // xiiString m_sEditorRenderPipeline;

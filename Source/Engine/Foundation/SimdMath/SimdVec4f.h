@@ -11,15 +11,15 @@ public:
 
   xiiSimdVec4f(); // [tested]
 
-  explicit xiiSimdVec4f(float xyzw); // [tested]
+  explicit xiiSimdVec4f(float fXyzw); // [tested]
 
-  explicit xiiSimdVec4f(const xiiSimdFloat& xyzw); // [tested]
+  explicit xiiSimdVec4f(const xiiSimdFloat& fXyzw); // [tested]
 
   xiiSimdVec4f(float x, float y, float z, float w = 1.0f); // [tested]
 
   xiiSimdVec4f(xiiInternal::QuadFloat v); // [tested]
 
-  void Set(float xyzw); // [tested]
+  void Set(float fXyzw); // [tested]
 
   void Set(float x, float y, float z, float w); // [tested]
 
@@ -123,9 +123,9 @@ public:
   xiiSimdVec4f Trunc() const;    // [tested]
   xiiSimdVec4f Fraction() const; // [tested]
 
-  xiiSimdVec4f FlipSign(const xiiSimdVec4b& cmp) const; // [tested]
+  xiiSimdVec4f FlipSign(const xiiSimdVec4b& vCmp) const; // [tested]
 
-  static xiiSimdVec4f Select(const xiiSimdVec4b& cmp, const xiiSimdVec4f& ifTrue, const xiiSimdVec4f& ifFalse); // [tested]
+  static xiiSimdVec4f Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4f& vIfTrue, const xiiSimdVec4f& vIfFalse); // [tested]
 
   static xiiSimdVec4f Lerp(const xiiSimdVec4f& a, const xiiSimdVec4f& b, const xiiSimdVec4f& t);
 
@@ -170,7 +170,7 @@ public:
   static xiiSimdVec4f MulSub(const xiiSimdVec4f& a, const xiiSimdVec4f& b, const xiiSimdVec4f& c); // [tested]
   static xiiSimdVec4f MulSub(const xiiSimdVec4f& a, const xiiSimdFloat& b, const xiiSimdVec4f& c); // [tested]
 
-  static xiiSimdVec4f CopySign(const xiiSimdVec4f& magnitude, const xiiSimdVec4f& sign); // [tested]
+  static xiiSimdVec4f CopySign(const xiiSimdVec4f& vMagnitude, const xiiSimdVec4f& vSign); // [tested]
 
 public:
   xiiInternal::QuadFloat m_v;
