@@ -23,7 +23,7 @@ public:
 
   static Diligent::COLOR_MASK ToDiligentColorWriteMask(xiiGALColorWriteMask::Enum mask);
 
-  static bool IsDepthFormat(Diligent::TEXTURE_FORMAT format);
+  static bool                         IsDepthFormat(Diligent::TEXTURE_FORMAT format);
   static Diligent::RESOURCE_DIMENSION GetResourceDimension(xiiGALTextureType::Enum type);
 
   static Diligent::RESOURCE_STATE GetDefaultResourceState(Diligent::IBuffer* pBuffer);

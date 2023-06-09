@@ -25,11 +25,11 @@ private:
 
   enum ImageCaptureFrames
   {
-    DefaultCapture                     = 5,
-    StructuredBuffer_InitialData       = 5,
-    StructuredBuffer_Discard           = 6,
-    StructuredBuffer_NoOverwrite       = 8,
-    Timestamps_MaxWaitTime             = xiiMath::MaxValue<xiiUInt32>(),
+    DefaultCapture               = 5,
+    StructuredBuffer_InitialData = 5,
+    StructuredBuffer_Discard     = 6,
+    StructuredBuffer_NoOverwrite = 8,
+    Timestamps_MaxWaitTime       = xiiMath::MaxValue<xiiUInt32>(),
   };
 
   virtual void SetupSubTests() override
