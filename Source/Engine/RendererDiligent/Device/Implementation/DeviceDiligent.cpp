@@ -620,7 +620,8 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 
   ReportLiveGpuObjects();
 
-  g_pMemoryAllocator.reset();
+  // Do not free the memory allocator due to Diligent not updating the memory allocator to nullptr.
+  // g_pMemoryAllocator.reset();
 
   return XII_SUCCESS;
 }
