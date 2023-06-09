@@ -47,6 +47,7 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
     Diligent::TextureViewDesc UAVDesc;
     UAVDesc.ViewType = Diligent::TEXTURE_VIEW_UNORDERED_ACCESS;
+    UAVDesc.Format   = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eResourceViewType;
 
     switch (texDesc.m_Type)
     {
