@@ -12,7 +12,6 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALPrimitiveTopology, 1)
 XII_ENUM_CONSTANTS(
-  xiiGALPrimitiveTopology::Undefined,
   xiiGALPrimitiveTopology::Points,
   xiiGALPrimitiveTopology::Lines,
   xiiGALPrimitiveTopology::Triangles)
