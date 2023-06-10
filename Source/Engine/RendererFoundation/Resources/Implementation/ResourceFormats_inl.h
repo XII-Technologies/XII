@@ -26,8 +26,7 @@ XII_FORCE_INLINE bool xiiGALResourceFormat::IsStencilFormat(Enum format)
 // static
 XII_FORCE_INLINE bool xiiGALResourceFormat::IsSrgb(xiiGALResourceFormat::Enum format)
 {
-  return format == BGRAUByteNormalizedsRGB || format == RGBAUByteNormalizedsRGB || format == BC1sRGB || format == BC2sRGB || format == BC3sRGB ||
-    format == BC7UNormalizedsRGB;
+  return format == BGRAUByteNormalizedsRGB || format == RGBAUByteNormalizedsRGB || format == BC1sRGB || format == BC2sRGB || format == BC3sRGB || format == BC7UNormalizedsRGB;
 }
 
 

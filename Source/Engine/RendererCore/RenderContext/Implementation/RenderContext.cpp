@@ -440,8 +440,7 @@ void xiiRenderContext::BindShader(const xiiShaderResourceHandle& hShader, xiiBit
 void xiiRenderContext::BindMeshBuffer(const xiiMeshBufferResourceHandle& hMeshBuffer)
 {
   xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(hMeshBuffer, xiiResourceAcquireMode::AllowLoadingFallback);
-  BindMeshBuffer(pMeshBuffer->GetVertexBuffer(), pMeshBuffer->GetIndexBuffer(), &(pMeshBuffer->GetVertexDeclaration()), pMeshBuffer->GetTopology(),
-                 pMeshBuffer->GetPrimitiveCount());
+  BindMeshBuffer(pMeshBuffer->GetVertexBuffer(), pMeshBuffer->GetIndexBuffer(), &(pMeshBuffer->GetVertexDeclaration()), pMeshBuffer->GetTopology(), pMeshBuffer->GetPrimitiveCount());
 }
 
 void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBufferHandle hIndexBuffer, const xiiVertexDeclarationInfo* pVertexDeclarationInfo, xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiPrimitiveCount, xiiGALBufferHandle hVertexBuffer2, xiiGALBufferHandle hVertexBuffer3, xiiGALBufferHandle hVertexBuffer4)
@@ -472,8 +471,7 @@ void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBu
   {
     m_Topology = topology;
 
-    xiiTempHashedString sTopologies[xiiGALPrimitiveTopology::ENUM_COUNT] = {
-      xiiTempHashedString("TOPOLOGY_POINTS"), xiiTempHashedString("TOPOLOGY_LINES"), xiiTempHashedString("TOPOLOGY_TRIANGLES")};
+    xiiTempHashedString sTopologies[xiiGALPrimitiveTopology::ENUM_COUNT] = {xiiTempHashedString("TOPOLOGY_POINTS"), xiiTempHashedString("TOPOLOGY_LINES"), xiiTempHashedString("TOPOLOGY_TRIANGLES")};
 
     SetShaderPermutationVariable("TOPOLOGY", sTopologies[m_Topology]);
   }

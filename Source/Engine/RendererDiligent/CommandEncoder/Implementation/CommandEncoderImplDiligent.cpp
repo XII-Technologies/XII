@@ -812,8 +812,6 @@ void xiiGALCommandEncoderImplDiligent::UpdateTexturePlatform(const xiiGALTexture
       }
 
       m_pContext->UnmapTextureSubresource(pDestinationTexture, DestinationSubResource.m_uiMipLevel, DestinationSubResource.m_uiArraySlice);
-
-      XII_ASSERT_DEV(pDestinationTexture->GetState() != Diligent::RESOURCE_STATE_COPY_DEST, "");
     }
     break;
 

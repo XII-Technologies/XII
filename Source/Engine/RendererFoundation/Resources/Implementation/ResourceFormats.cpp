@@ -250,4 +250,3 @@ const xiiUInt8 xiiGALResourceFormat::s_ChannelCount[xiiGALResourceFormat::ENUM_C
 
 
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Resources_Implementation_ResourceFormats);
-
