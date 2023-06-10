@@ -358,5 +358,4 @@ void xiiMeshComponentBase::Materials_Remove(xiiUInt32 uiIndex)
 }
 
 
-
 XII_STATICLINK_FILE(RendererCore, RendererCore_Meshes_Implementation_MeshComponentBase);

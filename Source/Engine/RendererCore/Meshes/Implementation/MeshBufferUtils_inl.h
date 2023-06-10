@@ -28,20 +28,13 @@ XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeNormal(const xiiVec3& vNor
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTangent(
-  const xiiVec3&               vTangent,
-  float                        fBiTangentSign,
-  xiiArrayPtr<xiiUInt8>        dest,
-  xiiMeshNormalPrecision::Enum tangentPrecision)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTangent(const xiiVec3& vTangent, float fBiTangentSign, xiiArrayPtr<xiiUInt8> dest, xiiMeshNormalPrecision::Enum tangentPrecision)
 {
   return EncodeTangent(vTangent, fBiTangentSign, dest, xiiMeshNormalPrecision::ToResourceFormatTangent(tangentPrecision));
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTexCoord(
-  const xiiVec2&                 vTexCoord,
-  xiiArrayPtr<xiiUInt8>          dest,
-  xiiMeshTexCoordPrecision::Enum texCoordPrecision)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTexCoord(const xiiVec2& vTexCoord, xiiArrayPtr<xiiUInt8> dest, xiiMeshTexCoordPrecision::Enum texCoordPrecision)
 {
   return EncodeTexCoord(vTexCoord, dest, xiiMeshTexCoordPrecision::ToResourceFormat(texCoordPrecision));
 }
@@ -54,11 +47,7 @@ XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeNormal(const xiiVec3& vNor
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTangent(
-  const xiiVec3&             vTangent,
-  float                      fBiTangentSign,
-  xiiArrayPtr<xiiUInt8>      dest,
-  xiiGALResourceFormat::Enum destFormat)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTangent(const xiiVec3& vTangent, float fBiTangentSign, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat)
 {
   // make sure biTangentSign is either -1 or 1
   fBiTangentSign = (fBiTangentSign < 0.0f) ? -1.0f : 1.0f;
@@ -74,38 +63,25 @@ XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTexCoord(const xiiVec2& vT
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeNormal(
-  xiiArrayPtr<const xiiUInt8>  source,
-  xiiVec3&                     ref_vDestNormal,
-  xiiMeshNormalPrecision::Enum normalPrecision)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeNormal(xiiArrayPtr<const xiiUInt8> source, xiiVec3& ref_vDestNormal, xiiMeshNormalPrecision::Enum normalPrecision)
 {
   return DecodeNormal(source, xiiMeshNormalPrecision::ToResourceFormatNormal(normalPrecision), ref_vDestNormal);
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTangent(
-  xiiArrayPtr<const xiiUInt8>  source,
-  xiiVec3&                     ref_vDestTangent,
-  float&                       ref_fDestBiTangentSign,
-  xiiMeshNormalPrecision::Enum tangentPrecision)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTangent(xiiArrayPtr<const xiiUInt8> source, xiiVec3& ref_vDestTangent, float& ref_fDestBiTangentSign, xiiMeshNormalPrecision::Enum tangentPrecision)
 {
   return DecodeTangent(source, xiiMeshNormalPrecision::ToResourceFormatTangent(tangentPrecision), ref_vDestTangent, ref_fDestBiTangentSign);
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTexCoord(
-  xiiArrayPtr<const xiiUInt8>    source,
-  xiiVec2&                       ref_vDestTexCoord,
-  xiiMeshTexCoordPrecision::Enum texCoordPrecision)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTexCoord(xiiArrayPtr<const xiiUInt8> source, xiiVec2& ref_vDestTexCoord, xiiMeshTexCoordPrecision::Enum texCoordPrecision)
 {
   return DecodeTexCoord(source, xiiMeshTexCoordPrecision::ToResourceFormat(texCoordPrecision), ref_vDestTexCoord);
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeNormal(
-  xiiArrayPtr<const xiiUInt8> source,
-  xiiGALResourceFormat::Enum  sourceFormat,
-  xiiVec3&                    ref_vDestNormal)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeNormal(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec3& ref_vDestNormal)
 {
   xiiVec3 tempNormal;
   XII_SUCCEED_OR_RETURN(DecodeToVec3(source, sourceFormat, tempNormal));
@@ -114,11 +90,7 @@ XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeNormal(
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTangent(
-  xiiArrayPtr<const xiiUInt8> source,
-  xiiGALResourceFormat::Enum  sourceFormat,
-  xiiVec3&                    ref_vDestTangent,
-  float&                      ref_fDestBiTangentSign)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTangent(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec3& ref_vDestTangent, float& ref_fDestBiTangentSign)
 {
   xiiVec4 tempTangent;
   XII_SUCCEED_OR_RETURN(DecodeToVec4(source, sourceFormat, tempTangent));
@@ -128,10 +100,7 @@ XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTangent(
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTexCoord(
-  xiiArrayPtr<const xiiUInt8> source,
-  xiiGALResourceFormat::Enum  sourceFormat,
-  xiiVec2&                    ref_vDestTexCoord)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTexCoord(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec2& ref_vDestTexCoord)
 {
   return DecodeToVec2(source, sourceFormat, ref_vDestTexCoord);
 }

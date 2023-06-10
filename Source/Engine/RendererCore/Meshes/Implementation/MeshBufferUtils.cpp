@@ -128,6 +128,7 @@ xiiResult xiiMeshBufferUtils::EncodeFromVec3(const xiiVec3& vSource, xiiArrayPtr
       dest.GetPtr()[2] = xiiMath::ColorFloatToSignedByte(vSource.z);
       dest.GetPtr()[3] = 0;
       return XII_SUCCESS;
+
     default:
       return XII_FAILURE;
   }
