@@ -656,8 +656,6 @@ void xiiGALCommandEncoderImplDiligent::UpdateBufferPlatform(const xiiGALBuffer* 
       {
         xiiLog::Error("Failed to map buffer to update content.");
       }
-
-      XII_ASSERT_DEV(pDestinationBuffer->GetState() != Diligent::RESOURCE_STATE_COPY_DEST, "");
     }
     break;
 

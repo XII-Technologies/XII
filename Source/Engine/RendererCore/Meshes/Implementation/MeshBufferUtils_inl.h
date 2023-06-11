@@ -2,13 +2,13 @@
 // static
 XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiMeshNormalPrecision::ToResourceFormatNormal(Enum value)
 {
-  return value == _10Bit ? xiiGALResourceFormat::RGB10A2UIntNormalized : (value == _16Bit ? xiiGALResourceFormat::RGBAUShortNormalized : xiiGALResourceFormat::XYZFloat);
+  return value == _8Bit ? xiiGALResourceFormat::RGBAUByteNormalized : (value == _16Bit ? xiiGALResourceFormat::RGBAUShortNormalized : xiiGALResourceFormat::XYZFloat);
 }
 
 // static
 XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiMeshNormalPrecision::ToResourceFormatTangent(Enum value)
 {
-  return value == _10Bit ? xiiGALResourceFormat::RGB10A2UIntNormalized : (value == _16Bit ? xiiGALResourceFormat::RGBAUShortNormalized : xiiGALResourceFormat::XYZWFloat);
+  return value == _8Bit ? xiiGALResourceFormat::RGBAUByteNormalized : (value == _16Bit ? xiiGALResourceFormat::RGBAUShortNormalized : xiiGALResourceFormat::XYZWFloat);
 }
 
 //////////////////////////////////////////////////////////////////////////
