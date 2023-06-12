@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ public:
         {
             // Save render state cache data to the file
             RefCntAutoPtr<IDataBlob> pCacheData;
-            if (m_pCache->WriteToBlob(&pCacheData))
+            if (m_pCache->WriteToBlob(m_CacheContentVersion, &pCacheData))
             {
                 if (pCacheData)
                 {
@@ -143,7 +143,7 @@ public:
 
     IRenderStateCache* GetCache() const noexcept
     {
-        return m_pCache.RawPtr<IRenderStateCache>();
+        return m_pCache;
     }
 
     operator IRenderStateCache*() const noexcept
@@ -166,7 +166,7 @@ public:
         VERIFY_EXPR(m_pCache);
     }
 
-    void LoadCacheFromFile(const char* FilePath, bool UpdateOnExit)
+    void LoadCacheFromFile(const char* FilePath, bool UpdateOnExit, Uint32 CacheContentVersion = ~0u)
     {
         if (!m_pCache)
         {
@@ -200,8 +200,15 @@ public:
             return;
         }
 
-        if (!m_pCache->Load(pCacheData))
+        if (!m_pCache->Load(pCacheData, CacheContentVersion))
+        {
             LOG_ERROR_MESSAGE("Failed to load render state cache data from file ", FilePath);
+            return;
+        }
+
+        m_CacheContentVersion = m_pCache->GetContentVersion();
+        if (m_CacheContentVersion == ~0u)
+            m_CacheContentVersion = 0;
     }
 
 private:
@@ -221,6 +228,7 @@ private:
 private:
     RefCntAutoPtr<IRenderStateCache> m_pCache;
     std::string                      m_CacheFilePath;
+    Uint32                           m_CacheContentVersion = 0;
 };
 
 /// Special string to indicate that the render state cache file should be stored in the application data folder.
