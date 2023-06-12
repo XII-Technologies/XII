@@ -46,14 +46,14 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::IPipelineResourceSignature* m_pPipelineResourceSignature                   = nullptr;
-  xiiUInt32                             m_uiPipelineResourceSignatureCount             = 0u;
-  Diligent::IShader*                    m_pShaderStages[xiiGALShaderStage::ENUM_COUNT] = {};
-
-  xiiDynamicArray<xiiString> m_StringStorage;
+  Diligent::RefCntAutoPtr<Diligent::IPipelineResourceSignature> m_pPipelineResourceSignature;
+  xiiUInt32                                                     m_uiPipelineResourceSignatureCount             = 0u;
+  Diligent::RefCntAutoPtr<Diligent::IShader>                    m_pShaderStages[xiiGALShaderStage::ENUM_COUNT] = {};
 
   xiiHybridArray<xiiShaderVertexInputAttribute, 8> m_VertexInputAttributes;
   xiiDynamicArray<xiiShaderDescriptorSetLayout>    m_DescriptorSets[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiDynamicArray<xiiString> m_StringStorage;
 };
 
 #include <RendererDiligent/Shader/Implementation/ShaderDiligent_inl.h>

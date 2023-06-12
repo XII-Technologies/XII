@@ -600,7 +600,7 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
     {
       m_pDeviceContexts[q]->Flush();
 
-      XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pDeviceContexts[q]);
+      XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDeviceContexts[q]);
     }
 
     m_pDeviceContexts.Clear();
@@ -614,9 +614,9 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 
   m_pDevice->ReleaseStaleResources(true);
 
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pDevice);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDevice);
 
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pEngineFactory);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pEngineFactory);
 
   ReportLiveGpuObjects();
 

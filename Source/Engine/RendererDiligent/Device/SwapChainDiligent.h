@@ -55,7 +55,7 @@ protected:
   xiiResult CreateBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent, bool bInitPlatform);
   void      DestroyBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent);
 
-  Diligent::ISwapChain* m_pSwapChain = nullptr;
+  Diligent::RefCntAutoPtr<Diligent::ISwapChain> m_pSwapChain;
 
   xiiHashTable<RenderTargetInfo, xiiGALTextureHandle> m_BackbufferTextures;
 

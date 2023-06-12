@@ -12,12 +12,12 @@ protected:
   friend class xiiMemoryUtils;
 
   xiiGALQueryDiligent(const xiiGALQueryCreationDescription& Description);
-  ~xiiGALQueryDiligent();
+  virtual ~xiiGALQueryDiligent();
 
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::IQuery* m_pQuery = nullptr;
+  Diligent::RefCntAutoPtr<Diligent::IQuery> m_pQuery;
 };
 
 #include <RendererDiligent/Resources/Implementation/QueryDiligent_inl.h>

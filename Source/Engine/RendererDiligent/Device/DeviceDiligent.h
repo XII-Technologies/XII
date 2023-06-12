@@ -130,13 +130,13 @@ protected:
 
   void FreeTempResources(xiiUInt64 uiFrame);
 
-  Diligent::RENDER_DEVICE_TYPE                  m_DeviceType     = Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
-  Diligent::IEngineFactory*                     m_pEngineFactory = nullptr;
-  Diligent::IRenderDevice*                      m_pDevice        = nullptr;
-  xiiDynamicArray<Diligent::IDeviceContext*>    m_pDeviceContexts;
-  xiiUInt32                                     m_uiNumImmediateContexts = 0;
-  Diligent::GraphicsAdapterInfo                 m_AdapterAttribs;
-  xiiDynamicArray<Diligent::DisplayModeAttribs> m_DisplayModes;
+  Diligent::RENDER_DEVICE_TYPE                                       m_DeviceType = Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
+  Diligent::RefCntAutoPtr<Diligent::IEngineFactory>                  m_pEngineFactory;
+  Diligent::RefCntAutoPtr<Diligent::IRenderDevice>                   m_pDevice;
+  xiiDynamicArray<Diligent::RefCntAutoPtr<Diligent::IDeviceContext>> m_pDeviceContexts;
+  xiiUInt32                                                          m_uiNumImmediateContexts = 0;
+  Diligent::GraphicsAdapterInfo                                      m_AdapterAttribs;
+  xiiDynamicArray<Diligent::DisplayModeAttribs>                      m_DisplayModes;
 
   xiiInt32               m_iValidationLevel = -1;
   xiiUInt32              m_uiAdapterId      = Diligent::DEFAULT_ADAPTER_ID;

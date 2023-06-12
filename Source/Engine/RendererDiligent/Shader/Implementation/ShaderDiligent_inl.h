@@ -41,7 +41,7 @@ XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderDiligent::GetMeshShader()
 
 XII_ALWAYS_INLINE Diligent::IPipelineResourceSignature** xiiGALShaderDiligent::GetPipelineResourceSignatures()
 {
-  return &m_pPipelineResourceSignature;
+  return m_pPipelineResourceSignature.RawDblPtr();
 }
 
 XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderDiligent::GetPipelineResourceSignatureCount()

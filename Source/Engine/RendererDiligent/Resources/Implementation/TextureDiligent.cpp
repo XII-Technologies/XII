@@ -207,10 +207,8 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
 xiiResult xiiGALTextureDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  if (m_pExisitingNativeObject == nullptr)
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pTexture);
-
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pStagingTexture);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pTexture);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pStagingTexture);
 
   return XII_SUCCESS;
 }

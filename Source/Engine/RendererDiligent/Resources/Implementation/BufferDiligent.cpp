@@ -109,7 +109,7 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
 
 xiiResult xiiGALBufferDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pBuffer);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pBuffer);
 
   return XII_SUCCESS;
 }

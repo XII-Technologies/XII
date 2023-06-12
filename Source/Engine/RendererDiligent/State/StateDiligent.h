@@ -15,7 +15,7 @@ protected:
 
   xiiGALBlendStateDiligent(const xiiGALBlendStateCreationDescription& Description);
 
-  ~xiiGALBlendStateDiligent();
+  virtual ~xiiGALBlendStateDiligent();
 
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
 
@@ -35,7 +35,7 @@ protected:
 
   xiiGALDepthStencilStateDiligent(const xiiGALDepthStencilStateCreationDescription& Description);
 
-  ~xiiGALDepthStencilStateDiligent();
+  virtual ~xiiGALDepthStencilStateDiligent();
 
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
 
@@ -55,7 +55,7 @@ protected:
 
   xiiGALRasterizerStateDiligent(const xiiGALRasterizerStateCreationDescription& Description);
 
-  ~xiiGALRasterizerStateDiligent();
+  virtual ~xiiGALRasterizerStateDiligent();
 
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
 
@@ -75,13 +75,13 @@ protected:
 
   xiiGALSamplerStateDiligent(const xiiGALSamplerStateCreationDescription& Description);
 
-  ~xiiGALSamplerStateDiligent();
+  virtual ~xiiGALSamplerStateDiligent();
 
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::ISampler* m_pSamplerState = nullptr;
+  Diligent::RefCntAutoPtr<Diligent::ISampler> m_pSamplerState;
 };
 
 #include <RendererDiligent/State/Implementation/StateDiligent_inl.h>

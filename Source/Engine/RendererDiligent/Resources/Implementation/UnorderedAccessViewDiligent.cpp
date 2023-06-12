@@ -173,8 +173,8 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALUnorderedAccessViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pUnorderedAccessTextureView);
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pUnorderedAccessBufferView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pUnorderedAccessTextureView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pUnorderedAccessBufferView);
 
   return XII_SUCCESS;
 }

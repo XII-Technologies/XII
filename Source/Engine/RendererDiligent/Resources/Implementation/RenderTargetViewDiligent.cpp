@@ -149,9 +149,9 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALRenderTargetViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pRenderTargetView);
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pDepthStencilView);
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pUnorderedAccessView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pRenderTargetView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDepthStencilView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pUnorderedAccessView);
 
   return XII_SUCCESS;
 }

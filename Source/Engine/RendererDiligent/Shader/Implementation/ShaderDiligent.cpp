@@ -154,10 +154,10 @@ xiiResult xiiGALShaderDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
   for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
   {
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pShaderStages[i]);
+    XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderStages[i]);
   }
 
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pPipelineResourceSignature);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pPipelineResourceSignature);
   m_uiPipelineResourceSignatureCount = 0u;
 
   m_StringStorage.Clear();

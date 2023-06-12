@@ -202,8 +202,8 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALResourceViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pBufferView);
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pTextureView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pBufferView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pTextureView);
 
   return XII_SUCCESS;
 }

@@ -12,15 +12,15 @@
 #  include <Foundation/Basics/Platform/Linux/IncludeX11.h>
 #endif
 
-#if D3D11_SUPPORTED
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
 #  include <Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
 #endif
 
-#if D3D12_SUPPORTED
+#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 #  include <Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
 #endif
 
-#if VULKAN_SUPPORTED
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
 #  include <Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
 #endif
 
@@ -206,7 +206,7 @@ xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent
   if (pRTV == nullptr)
   {
     xiiLog::Error("Couldn't access backbuffer texture of swapchain");
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pSwapChain);
+    XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pSwapChain);
 
     return XII_FAILURE;
   }
@@ -272,7 +272,7 @@ xiiResult xiiGALSwapChainDiligent::DeInitPlatform(xiiGALDevice* pDevice)
     // See: https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Destroying
     m_pSwapChain->SetWindowedMode();
 
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pSwapChain);
+    XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pSwapChain);
 
     m_WindowDesc.m_pWindow->RemoveReference();
   }
