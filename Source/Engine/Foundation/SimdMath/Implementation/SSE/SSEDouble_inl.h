@@ -182,46 +182,49 @@ XII_ALWAYS_INLINE bool xiiSimdDouble::operator<=(double f) const
   return (*this) <= xiiSimdDouble(f);
 }
 
+#if XII_SSE_LEVEL >= XII_SSE_AVX512
+
+template <>
+XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetReciprocal<xiiMathDoubleBits::BITS_14>() const
+{
+  return _mm256_rcp14_pd(m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetReciprocal<xiiMathDoubleBits::BITS_27>() const
+{
+  __m256d x0 = _mm256_rcp14_pd(m_v);
+
+  // One Newton-Raphson iteration.
+  return _mm256_mul_pd(x0, _mm256_sub_pd(_mm256_set1_pd(2.0), _mm256_mul_pd(m_v, x0)));
+}
+
+#endif
+
 template <>
 XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetReciprocal<xiiMathDoubleBits::FULL>() const
 {
   return _mm256_div_pd(_mm256_set1_pd(1.0), m_v);
 }
 
-template <>
-XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetReciprocal<xiiMathDoubleBits::BITS_27>() const
-{
 #if XII_SSE_LEVEL >= XII_SSE_AVX512
-  __m256d x0 = _mm256_rcp14_pd(m_v);
+
+template <>
+XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetInvSqrt<xiiMathDoubleBits::BITS_14>() const
+{
+  return _mm256_mask_rsqrt14_pd(m_v, 0xF, m_v);
+}
+
+template <>
+XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetInvSqrt<xiiMathDoubleBits::BITS_27>() const
+{
+  const __m256d x0 = _mm256_mask_rsqrt14_pd(m_v, 0xF, m_v);
 
   // One iteration of Newton-Raphson.
-  __m256d x1 = _mm256_mul_pd(x0, _mm256_sub_pd(_mm256_set1_pd(2.0), _mm256_mul_pd(m_v, x0)));
-
-  return x1;
-#elif XII_SSE_LEVEL >= XII_SSE_AVX
-  // No SIMD approximation available.
-  return _mm256_div_pd(_mm256_set1_pd(1.0), m_v);
-#else
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return xiiSimdDouble(xiiMath::NaN<double>());
-#endif
+  return _mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(0.5), x0), _mm256_sub_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(_mm256_mul_pd(m_v, x0), x0)));
 }
 
-template <>
-XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetReciprocal<xiiMathDoubleBits::BITS_14>() const
-{
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
-  return _mm256_rcp14_pd(m_v);
-#elif XII_SSE_LEVEL >= XII_SSE_AVX
-  // No SIMD approximation available.
-  return _mm256_div_pd(_mm256_set1_pd(1.0), m_v);
-#else
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return xiiSimdDouble(xiiMath::NaN<double>());
 #endif
-}
 
 template <>
 XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetInvSqrt<xiiMathDoubleBits::FULL>() const
@@ -229,43 +232,12 @@ XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetInvSqrt<xiiMathDoubleBits::FUL
   return _mm256_div_pd(_mm256_set1_pd(1.0), _mm256_sqrt_pd(m_v));
 }
 
-template <>
-XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetInvSqrt<xiiMathDoubleBits::BITS_27>() const
-{
 #if XII_SSE_LEVEL >= XII_SSE_AVX512
-  const __m256d x0 = _mm256_mask_rsqrt14_pd(m_v, 0xF, m_v);
-
-  // One iteration of Newton-Raphson.
-  return _mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(0.5), x0), _mm256_sub_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(_mm256_mul_pd(m_v, x0), x0)));
-#elif XII_SSE_LEVEL >= XII_SSE_AVX
-  // No SIMD approximation available.
-  return _mm256_div_pd(_mm256_set1_pd(1.0), _mm256_sqrt_pd(m_v));
-#else
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return xiiSimdDouble(xiiMath::NaN<double>());
-#endif
-}
 
 template <>
-XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetInvSqrt<xiiMathDoubleBits::BITS_14>() const
+XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetSqrt<xiiMathDoubleBits::BITS_14>() const
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
-  return _mm256_mask_rsqrt14_pd(m_v, 0xF, m_v);
-#elif XII_SSE_LEVEL >= XII_SSE_AVX
-  // No SIMD approximation available.
-  return _mm256_div_pd(_mm256_set1_pd(1.0), _mm256_sqrt_pd(m_v));
-#else
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return xiiSimdDouble(xiiMath::NaN<double>());
-#endif
-}
-
-template <>
-XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetSqrt<xiiMathDoubleBits::FULL>() const
-{
-  return _mm256_sqrt_pd(m_v);
+  return (*this) * GetInvSqrt<xiiMathDoubleBits::BITS_14>();
 }
 
 template <>
@@ -274,10 +246,12 @@ XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetSqrt<xiiMathDoubleBits::BITS_2
   return (*this) * GetInvSqrt<xiiMathDoubleBits::BITS_27>();
 }
 
+#endif
+
 template <>
-XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetSqrt<xiiMathDoubleBits::BITS_14>() const
+XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetSqrt<xiiMathDoubleBits::FULL>() const
 {
-  return (*this) * GetInvSqrt<xiiMathDoubleBits::BITS_14>();
+  return _mm256_sqrt_pd(m_v);
 }
 
 XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::Max(const xiiSimdDouble& f) const

@@ -53,7 +53,7 @@ XII_ALWAYS_INLINE bool xiiSimdVec4f::IsNormalized(const xiiSimdFloat& fEpsilon) 
   return sqLength.IsEqual(1.0f, fEpsilon);
 }
 
-inline xiiSimdFloat xiiSimdVec4f::GetComponent(int i) const
+inline xiiSimdFloat xiiSimdVec4f::GetComponent(xiiInt32 i) const
 {
   switch (i)
   {
