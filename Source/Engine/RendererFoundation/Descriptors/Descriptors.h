@@ -278,7 +278,6 @@ struct xiiGALBufferCreationDescription : public xiiHashableStruct<xiiGALBufferCr
   xiiEnum<xiiGALBufferType> m_BufferType = xiiGALBufferType::Generic;
 
   bool m_bUseForIndirectArguments = false;
-  bool m_bUseAsFormattedBuffer    = false;
   bool m_bUseAsStructuredBuffer   = false;
   bool m_bAllowRawViews           = false;
   bool m_bStreamOutputTarget      = false;
