@@ -138,7 +138,7 @@ xiiUInt32 xiiGALCommandEncoderImplDiligent::ResourceCacheHash::Hash(const Dilige
 
   for (xiiUInt32 i = 0; i < desc.ResourceSignaturesCount; ++i)
   {
-    writer << *desc.ppResourceSignatures;
+    writer << *(desc.ppResourceSignatures + i);
   }
 
   writer << desc.pPSOCache;
@@ -996,6 +996,12 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
 
   m_bClearSubmitted = !(renderingSetup.m_bClearDepth || renderingSetup.m_bClearStencil || renderingSetup.m_uiRenderTargetClearMask);
 
+  for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
+  {
+    m_pBoundRenderTargets[i] = nullptr;
+  }
+  m_pBoundDepthStencilTarget = nullptr;
+
   if (bHasDepthAttachment)
   {
     const xiiGALRenderTargetViewDiligent* pRenderTargetViewDiligent = static_cast<const xiiGALRenderTargetViewDiligent*>(m_GALDeviceDiligent.GetRenderTargetView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
@@ -1011,6 +1017,8 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
     depthClear.SetDepthStencil(formatInfo.m_eDepthStencilType, 1.0f, 0);
 
     m_pPipelineBarrier->EnsureResourceState(m_pContext, const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture(), Diligent::RESOURCE_STATE_DEPTH_WRITE, Diligent::RESOURCE_STATE_DEPTH_WRITE, true, true);
+
+    m_pBoundDepthStencilTarget = const_cast<xiiGALRenderTargetViewDiligent*>(pRenderTargetViewDiligent)->GetDepthStencilView();
   }
 
   for (xiiUInt8 i = 0; i < uiColorAttachmentCount; ++i)
@@ -1028,6 +1036,8 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
     colorClear.SetColor(formatInfo.m_eRenderTarget, m_RenderingSetup.m_ClearColor.GetData());
 
     m_pPipelineBarrier->EnsureResourceState(m_pContext, const_cast<xiiGALTextureDiligent*>(pTextureDiligent)->GetTexture(), Diligent::RESOURCE_STATE_RENDER_TARGET, Diligent::RESOURCE_STATE_RENDER_TARGET, true, true);
+
+    m_pBoundRenderTargets[i] = const_cast<xiiGALRenderTargetViewDiligent*>(pRenderTargetViewDiligent)->GetRenderTargetView();
   }
 
   m_pPipelineBarrier->FlushBarriers();
@@ -1489,6 +1499,24 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
           graphicsPipelineDesc.DepthStencilDesc = *m_pDepthStencilState->GetDepthStencilStateDesc();
         if (m_pRasterizerState)
           graphicsPipelineDesc.RasterizerDesc = *m_pRasterizerState->GetRasterizerStateDesc();
+
+        // Add the RTV and DSV Formats in the hash to prevent PSO format RTV/DSV mismatch.
+        for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
+        {
+          if (m_pBoundRenderTargets[i])
+          {
+            graphicsPipelineDesc.RTVFormats[i] = m_pBoundRenderTargets[i]->GetDesc().Format;
+          }
+        }
+
+        if (m_pBoundDepthStencilTarget)
+        {
+          graphicsPipelineDesc.DSVFormat = m_pBoundDepthStencilTarget->GetDesc().Format;
+        }
+
+        // Clear RTV and DSV formats since we use render passes.
+        xiiMemoryUtils::DefaultConstruct(graphicsPipelineDesc.RTVFormats, XII_GAL_MAX_RENDERTARGET_COUNT);
+        graphicsPipelineDesc.DSVFormat = Diligent::TEX_FORMAT_UNKNOWN;
 
         if (!m_CachedGraphicsPipelineStates.TryGetValue(graphicsPipelineStateDesc, pipelineInfo))
         {
