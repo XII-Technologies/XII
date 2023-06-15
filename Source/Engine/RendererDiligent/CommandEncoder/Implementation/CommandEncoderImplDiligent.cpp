@@ -1118,10 +1118,10 @@ void xiiGALCommandEncoderImplDiligent::DrawPlatform(xiiUInt32 uiVertexCount, xii
 
   Diligent::DrawAttribs drawAttribs;
   drawAttribs.NumVertices           = uiVertexCount;
-  drawAttribs.Flags                 = Diligent::DRAW_FLAG_VERIFY_ALL;
-  drawAttribs.NumInstances          = 1;
-  drawAttribs.FirstInstanceLocation = 0;
   drawAttribs.StartVertexLocation   = uiStartVertex;
+  drawAttribs.NumInstances          = 1u;
+  drawAttribs.FirstInstanceLocation = 0u;
+  drawAttribs.Flags                 = Diligent::DRAW_FLAG_VERIFY_ALL;
 
   m_pContext->Draw(drawAttribs);
 }
@@ -1132,12 +1132,12 @@ void xiiGALCommandEncoderImplDiligent::DrawIndexedPlatform(xiiUInt32 uiIndexCoun
 
   Diligent::DrawIndexedAttribs drawAttribs;
   drawAttribs.NumIndices            = uiIndexCount;
-  drawAttribs.IndexType             = m_pIndexBuffer != nullptr ? m_pIndexBuffer->GetIndexFormat() : Diligent::VT_UNDEFINED;
-  drawAttribs.Flags                 = Diligent::DRAW_FLAG_VERIFY_ALL;
-  drawAttribs.NumInstances          = 1;
   drawAttribs.FirstIndexLocation    = uiStartIndex;
-  drawAttribs.BaseVertex            = 0;
-  drawAttribs.FirstInstanceLocation = 0;
+  drawAttribs.IndexType             = m_pIndexBuffer != nullptr ? m_pIndexBuffer->GetIndexFormat() : Diligent::VT_UNDEFINED;
+  drawAttribs.BaseVertex            = 0u;
+  drawAttribs.NumInstances          = 1u;
+  drawAttribs.FirstInstanceLocation = 0u;
+  drawAttribs.Flags                 = Diligent::DRAW_FLAG_VERIFY_ALL;
 
   m_pContext->DrawIndexed(drawAttribs);
 }
@@ -1147,13 +1147,13 @@ void xiiGALCommandEncoderImplDiligent::DrawIndexedInstancedPlatform(xiiUInt32 ui
   FlushDeferredStateChanges();
 
   Diligent::DrawIndexedAttribs drawAttribs;
-  drawAttribs.IndexType             = m_pIndexBuffer != nullptr ? m_pIndexBuffer->GetIndexFormat() : Diligent::VT_UNDEFINED;
   drawAttribs.NumIndices            = uiIndexCountPerInstance;
-  drawAttribs.Flags                 = Diligent::DRAW_FLAG_VERIFY_ALL;
   drawAttribs.NumInstances          = uiInstanceCount;
+  drawAttribs.IndexType             = m_pIndexBuffer != nullptr ? m_pIndexBuffer->GetIndexFormat() : Diligent::VT_UNDEFINED;
   drawAttribs.FirstIndexLocation    = uiStartIndex;
-  drawAttribs.BaseVertex            = 0;
-  drawAttribs.FirstInstanceLocation = 0;
+  drawAttribs.BaseVertex            = 0u;
+  drawAttribs.FirstInstanceLocation = 0u;
+  drawAttribs.Flags                 = Diligent::DRAW_FLAG_VERIFY_ALL;
 
   m_pContext->DrawIndexed(drawAttribs);
 }
@@ -1537,24 +1537,11 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     m_bDescriptorsModified = true;
   }
 
-  m_pContext->SetPipelineState(m_pCurrentPipelineState);
-
   TransitionResources();
 
   END_RENDERPASS_IF_MODIFIED;
 
   m_pPipelineBarrier->FlushBarriers();
-
-  if (m_bDescriptorsModified)
-  {
-    // Always create a new shader resource binding as it we are unable to determine if (and which) resources were modified since the last draw call.
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pCurrentShaderResourceBinding);
-    (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&m_pCurrentShaderResourceBinding, true);
-
-    FillShaderDescriptorBindings(m_pCurrentShaderResourceBinding);
-
-    m_bDescriptorsModified = false;
-  }
 
   if (!m_bIsComputeRequested && m_BoundVertexBuffersRange.IsValid())
   {
@@ -1586,13 +1573,31 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     m_BoundVertexBuffersRange.Reset();
   }
 
-  if (!m_bIsComputeRequested && m_bIndexBufferModified && m_pIndexBuffer != nullptr)
+  if (!m_bIsComputeRequested && m_bIndexBufferModified)
   {
-    m_pContext->SetIndexBuffer(m_pIndexBuffer->GetBuffer(), 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
-
+    if (m_pIndexBuffer)
+    {
+      m_pContext->SetIndexBuffer(m_pIndexBuffer->GetBuffer(), 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+    }
+    else
+    {
+      m_pContext->SetIndexBuffer(nullptr, 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE);
+    }
     m_bIndexBufferModified = false;
   }
 
+  if (m_bDescriptorsModified)
+  {
+    // Always create a new shader resource binding as it we are unable to determine if (and which) resources were modified since the last draw call.
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pCurrentShaderResourceBinding);
+    (*m_pCurrentShader->GetPipelineResourceSignatures())->CreateShaderResourceBinding(&m_pCurrentShaderResourceBinding, true);
+
+    FillShaderDescriptorBindings(m_pCurrentShaderResourceBinding);
+
+    m_bDescriptorsModified = false;
+  }
+
+  m_pContext->SetPipelineState(m_pCurrentPipelineState);
   m_pContext->CommitShaderResources(m_pCurrentShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 
   if (!m_bIsComputeRequested)
