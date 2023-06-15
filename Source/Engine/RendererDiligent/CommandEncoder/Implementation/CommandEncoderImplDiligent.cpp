@@ -56,6 +56,7 @@
 #endif
 
 XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt32) == sizeof(xiiGALRenderTargetViewHandle));
+
 namespace
 {
   XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& Stream, const xiiGALRenderTargetViewHandle& Value)
@@ -1284,9 +1285,7 @@ void xiiGALCommandEncoderImplDiligent::SetPrimitiveTopologyPlatform(xiiGALPrimit
 
 void xiiGALCommandEncoderImplDiligent::SetBlendStatePlatform(const xiiGALBlendState* pBlendState, const xiiColor& BlendFactor, xiiUInt32 uiSampleMask)
 {
-  const float BlendFactors[4] = {BlendFactor.r, BlendFactor.g, BlendFactor.b, BlendFactor.a};
-
-  m_pContext->SetBlendFactors(BlendFactors);
+  m_pContext->SetBlendFactors(BlendFactor.GetData());
 
   if (m_pBlendStateState != pBlendState)
   {
@@ -1297,7 +1296,7 @@ void xiiGALCommandEncoderImplDiligent::SetBlendStatePlatform(const xiiGALBlendSt
 
 void xiiGALCommandEncoderImplDiligent::SetDepthStencilStatePlatform(const xiiGALDepthStencilState* pDepthStencilState, xiiUInt8 uiStencilRefValue)
 {
-  /// \todo RendererDiligent: Implement uiStenciValue
+  m_pContext->SetStencilRef(uiStencilRefValue);
 
   if (m_pDepthStencilState != pDepthStencilState)
   {
