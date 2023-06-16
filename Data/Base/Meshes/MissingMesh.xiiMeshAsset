@@ -11,7 +11,7 @@ o
 		s %AssetType{"Mesh"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{7139397627682754203,4783035615231258983}}
-		u4 %Hash{12594850172950620943}
+		u4 %Hash{17036088628916900123}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps
@@ -58,7 +58,7 @@ o
 			Uuid{u4{11979916783035308976,4034028157992843131}}
 		}
 		s %MeshFile{""}
-		s %NormalPrecision{"xiiMeshNormalPrecision::_16Bit"}
+		s %NormalPrecision{"xiiMeshNormalPrecision::_8Bit"}
 		s %PrimitiveType{"xiiMeshPrimitive::Box"}
 		f %Radius{0}
 		f %Radius2{0}
