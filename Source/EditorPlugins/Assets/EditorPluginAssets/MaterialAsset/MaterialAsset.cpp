@@ -17,7 +17,9 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMaterialAssetPreview, 1)
+#if 0
   XII_ENUM_CONSTANT(xiiMaterialAssetPreview::Ball),
+#endif
   XII_ENUM_CONSTANT(xiiMaterialAssetPreview::Sphere),
   XII_ENUM_CONSTANT(xiiMaterialAssetPreview::Box),
   XII_ENUM_CONSTANT(xiiMaterialAssetPreview::Plane),

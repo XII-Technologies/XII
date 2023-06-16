@@ -51,9 +51,11 @@ void xiiMaterialContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
       {
         switch (m_PreviewModel)
         {
+#if 0
           case PreviewModel::Ball:
             pMesh->SetMesh(m_hBallMesh);
             break;
+#endif
           case PreviewModel::Sphere:
             pMesh->SetMesh(m_hSphereMesh);
             break;

@@ -29,15 +29,20 @@ protected:
 
 private:
   xiiMaterialResourceHandle m_hMaterial;
+#if 0
   xiiMeshResourceHandle     m_hBallMesh;
-  xiiMeshResourceHandle     m_hSphereMesh;
-  xiiMeshResourceHandle     m_hBoxMesh;
-  xiiMeshResourceHandle     m_hPlaneMesh;
-  xiiComponentHandle        m_hMeshComponent;
+#endif
+  xiiMeshResourceHandle m_hSphereMesh;
+  xiiMeshResourceHandle m_hBoxMesh;
+  xiiMeshResourceHandle m_hPlaneMesh;
+  xiiComponentHandle    m_hMeshComponent;
 
   enum class PreviewModel : xiiUInt8
   {
+#if 0
     Ball,
+#endif
+
     Sphere,
     Box,
     Plane,

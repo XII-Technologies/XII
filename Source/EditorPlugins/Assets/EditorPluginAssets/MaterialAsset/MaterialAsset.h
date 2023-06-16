@@ -42,7 +42,10 @@ struct xiiMaterialAssetPreview
 
   enum Enum
   {
+#if 0
     Ball,
+#endif
+
     Sphere,
     Box,
     Plane,
