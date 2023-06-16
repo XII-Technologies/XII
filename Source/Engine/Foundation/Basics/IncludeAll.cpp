@@ -131,10 +131,13 @@
 #include <Foundation/SimdMath/SimdBSphere.h>
 #include <Foundation/SimdMath/SimdConversion.h>
 #include <Foundation/SimdMath/SimdFloat.h>
+#include <Foundation/SimdMath/SimdMat4d.h>
 #include <Foundation/SimdMath/SimdMat4f.h>
 #include <Foundation/SimdMath/SimdMath.h>
 #include <Foundation/SimdMath/SimdQuat.h>
+#include <Foundation/SimdMath/SimdQuatd.h>
 #include <Foundation/SimdMath/SimdTransform.h>
+#include <Foundation/SimdMath/SimdTransformd.h>
 #include <Foundation/SimdMath/SimdVec4b.h>
 #include <Foundation/SimdMath/SimdVec4d.h>
 #include <Foundation/SimdMath/SimdVec4f.h>

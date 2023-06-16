@@ -287,7 +287,10 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::Get() const
 template <xiiSwizzle::Enum s>
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::GetCombined(const xiiSimdVec4d& other) const
 {
-  return _mm256_permute4x64_pd(m_v, other.m_v, XII_TO_SHUFFLE(s));
+  // \todo Foundation: Evaluate a possible AVX-512 intrinsic.
+  __m256d permuteThis  = _mm256_permute4x64_pd(m_v, XII_TO_SHUFFLE(s));
+  __m256d permuteOther = _mm256_permute4x64_pd(other.m_v, XII_TO_SHUFFLE(s));
+  return _mm256_permute2f128_pd(permuteOther, permuteThis, 0x012);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::operator-() const
