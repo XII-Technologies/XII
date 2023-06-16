@@ -23,7 +23,7 @@ void xiiSimdQuatd::SetShortestRotation(const xiiSimdVec4d& vDirFrom, const xiiSi
     return;
   }
 
-  const xiiSimdVec4d c = v0.CrossRH(v1);
+  const xiiSimdVec4d  c = v0.CrossRH(v1);
   const xiiSimdDouble s = ((fDot + xiiSimdDouble(1.0)) * xiiSimdDouble(2.0)).GetSqrt();
 
   m_v = c / s;
@@ -83,7 +83,7 @@ void xiiSimdQuatd::SetSlerp(const xiiSimdQuatd& qFrom, const xiiSimdQuatd& qTo, 
 
 bool xiiSimdQuatd::IsEqualRotation(const xiiSimdQuatd& qOther, const xiiSimdDouble& fEpsilon) const
 {
-  xiiSimdVec4d vA1, vA2;
+  xiiSimdVec4d  vA1, vA2;
   xiiSimdDouble fA1, fA2;
 
   if (GetRotationAxisAndAngle(vA1, fA1) == XII_FAILURE)
