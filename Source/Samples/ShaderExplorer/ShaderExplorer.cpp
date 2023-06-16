@@ -237,7 +237,7 @@ void xiiShaderExplorerApp::AfterCoreSystemsStartup()
   xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  constexpr const char* szDefaultRenderer = "D3D11";
+  constexpr const char* szDefaultRenderer = "DX11";
 #elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
   constexpr const char* szDefaultRenderer = "Vulkan";
 #else
@@ -245,6 +245,7 @@ void xiiShaderExplorerApp::AfterCoreSystemsStartup()
 #endif
 
   constexpr const char* szDefaultLibraryName = "xiiRendererDiligent";
+  xiiGALDeviceFactory::RegisterLibraryName("DX11", "xiiRendererDX11");
   xiiGALDeviceFactory::RegisterLibraryName("D3D11", szDefaultLibraryName);
   xiiGALDeviceFactory::RegisterLibraryName("D3D12", szDefaultLibraryName);
   xiiGALDeviceFactory::RegisterLibraryName("Vulkan", szDefaultLibraryName);
@@ -397,6 +398,7 @@ void xiiShaderExplorerApp::BeforeHighLevelSystemsShutdown()
   m_pCamera.Clear();
   m_pDirectoryWatcher.Clear();
 
+  xiiGALDeviceFactory::UnregisterLibraryName("DX11");
   xiiGALDeviceFactory::UnregisterLibraryName("D3D11");
   xiiGALDeviceFactory::UnregisterLibraryName("D3D12");
   xiiGALDeviceFactory::UnregisterLibraryName("Vulkan");

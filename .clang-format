@@ -133,7 +133,7 @@ BinPackArguments: true
 
 # If false, a function declaration's or function definition's parameters will
 # either all be on the same line or will have one line each.
-BinPackParameters: true
+BinPackParameters: false
 # false:
 # void f(int aaaaaaaaaaaaaaaaaaaa,
 #        int aaaaaaaaaaaaaaaaaaaa,
