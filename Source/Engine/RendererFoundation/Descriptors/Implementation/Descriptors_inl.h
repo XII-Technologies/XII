@@ -1,3 +1,4 @@
+
 XII_FORCE_INLINE bool xiiShaderResourceType::IsArray(xiiShaderResourceType::Enum format)
 {
   switch (format)
@@ -36,11 +37,7 @@ XII_FORCE_INLINE bool xiiGALShaderCreationDescription::HasByteCodeForStage(xiiGA
   return m_ByteCodes[stage] != nullptr && m_ByteCodes[stage]->IsValid();
 }
 
-XII_FORCE_INLINE void xiiGALTextureCreationDescription::SetAsRenderTarget(
-  xiiUInt32                   uiWidth,
-  xiiUInt32                   uiHeight,
-  xiiGALResourceFormat::Enum  format,
-  xiiGALMSAASampleCount::Enum sampleCount /*= xiiGALMSAASampleCount::None*/)
+XII_FORCE_INLINE void xiiGALTextureCreationDescription::SetAsRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiGALResourceFormat::Enum format, xiiGALMSAASampleCount::Enum sampleCount /*= xiiGALMSAASampleCount::None*/)
 {
   m_uiWidth                     = uiWidth;
   m_uiHeight                    = uiHeight;
@@ -59,12 +56,32 @@ XII_FORCE_INLINE void xiiGALTextureCreationDescription::SetAsRenderTarget(
   m_pExisitingNativeObject      = nullptr;
 }
 
-XII_FORCE_INLINE xiiGALVertexAttribute::xiiGALVertexAttribute(
-  xiiGALVertexAttributeSemantic::Enum semantic,
-  xiiGALResourceFormat::Enum          format,
-  xiiUInt16                           uiOffset,
-  xiiUInt8                            uiVertexBufferSlot,
-  bool                                bInstanceData) :
+XII_FORCE_INLINE bool xiiGALTextureCreationDescription::IsArray() const
+{
+  return m_Type == xiiGALTextureType::Texture1DArray || m_Type == xiiGALTextureType::Texture2DArray || m_Type == xiiGALTextureType::TextureCube || m_Type == xiiGALTextureType::TextureCubeArray;
+}
+
+XII_FORCE_INLINE bool xiiGALTextureCreationDescription::Is1D() const
+{
+  return m_Type == xiiGALTextureType::Texture1D || m_Type == xiiGALTextureType::Texture1DArray;
+}
+
+XII_FORCE_INLINE bool xiiGALTextureCreationDescription::Is2D() const
+{
+  return m_Type == xiiGALTextureType::Texture2D || m_Type == xiiGALTextureType::Texture2DArray || m_Type == xiiGALTextureType::TextureCube || m_Type == xiiGALTextureType::TextureCubeArray;
+}
+
+XII_FORCE_INLINE bool xiiGALTextureCreationDescription::Is3D() const
+{
+  return m_Type == xiiGALTextureType::Texture3D;
+}
+
+XII_FORCE_INLINE bool xiiGALTextureCreationDescription::IsCube() const
+{
+  return m_Type == xiiGALTextureType::TextureCube || m_Type == xiiGALTextureType::TextureCubeArray;
+};
+
+XII_FORCE_INLINE xiiGALVertexAttribute::xiiGALVertexAttribute(xiiGALVertexAttributeSemantic::Enum semantic, xiiGALResourceFormat::Enum format, xiiUInt16 uiOffset, xiiUInt8 uiVertexBufferSlot, bool bInstanceData) :
   m_eSemantic(semantic), m_eFormat(format), m_uiOffset(uiOffset), m_uiVertexBufferSlot(uiVertexBufferSlot), m_bInstanceData(bInstanceData)
 {
 }

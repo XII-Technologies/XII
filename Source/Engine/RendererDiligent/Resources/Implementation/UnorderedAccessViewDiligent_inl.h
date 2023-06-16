@@ -1,5 +1,5 @@
 
-Diligent::IDeviceObject* xiiGALUnorderedAccessViewDiligent::GetResourceView()
+XII_ALWAYS_INLINE Diligent::IDeviceObject* xiiGALUnorderedAccessViewDiligent::GetResourceView()
 {
   if (m_pUnorderedAccessTextureView)
     return m_pUnorderedAccessTextureView;
@@ -10,12 +10,12 @@ Diligent::IDeviceObject* xiiGALUnorderedAccessViewDiligent::GetResourceView()
   return nullptr;
 }
 
-Diligent::ITextureView* xiiGALUnorderedAccessViewDiligent::GetTextureView()
+XII_ALWAYS_INLINE Diligent::ITextureView* xiiGALUnorderedAccessViewDiligent::GetTextureView()
 {
   return m_pUnorderedAccessTextureView;
 }
 
-Diligent::IBufferView* xiiGALUnorderedAccessViewDiligent::GetBufferView()
+XII_ALWAYS_INLINE Diligent::IBufferView* xiiGALUnorderedAccessViewDiligent::GetBufferView()
 {
   return m_pUnorderedAccessBufferView;
 }

@@ -177,6 +177,7 @@ void xiiComputeShaderHistogramApp::AfterCoreSystemsStartup()
   // Create textures and texture view for screen content (can't use back-buffer as shader resource view)
   {
     xiiGALTextureCreationDescription texDesc;
+    texDesc.m_szName                   = "ScreenTexture";
     texDesc.m_uiWidth                  = m_pWindow->GetClientAreaSize().width;
     texDesc.m_uiHeight                 = m_pWindow->GetClientAreaSize().height;
     texDesc.m_Format                   = xiiGALResourceFormat::RGBAUByteNormalized; // xiiGALResourceFormat::RGBAUByteNormalizedsRGB;
@@ -191,6 +192,7 @@ void xiiComputeShaderHistogramApp::AfterCoreSystemsStartup()
   // Create texture for histogram data.
   {
     xiiGALTextureCreationDescription texDesc;
+    texDesc.m_szName                      = "HistogramTexture";
     texDesc.m_uiWidth                     = 256;
     texDesc.m_uiHeight                    = 3; // R, G, B
     texDesc.m_uiMipLevelCount             = 1;

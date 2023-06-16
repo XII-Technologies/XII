@@ -62,7 +62,7 @@ xiiResult xiiGALDeviceDX11::InitPlatform(DWORD dwFlags, IDXGIAdapter* pUsedAdapt
 {
   XII_LOG_BLOCK("xiiGALDeviceDX11::InitPlatform");
 
-retry:
+Retry:
 
   if (m_Description.m_bDebugDevice)
     dwFlags |= D3D11_CREATE_DEVICE_DEBUG;
@@ -101,7 +101,7 @@ retry:
       xiiLog::Warning("Couldn't initialize D3D11 debug device!");
 
       m_Description.m_bDebugDevice = false;
-      goto retry;
+      goto Retry;
     }
 
     xiiLog::Error("Couldn't initialize D3D11 device!");
@@ -160,8 +160,7 @@ retry:
 
   if (FAILED(m_pDevice->QueryInterface(__uuidof(IDXGIDevice1), (void**)&m_pDXGIDevice)))
   {
-    xiiLog::Error("Couldn't get the DXGIDevice1 interface of the D3D11 device - this may happen when running on Windows Vista without SP2 "
-                  "installed!");
+    xiiLog::Error("Couldn't get the DXGIDevice1 interface of the D3D11 device - this may happen when running on Windows Vista without SP2 installed!");
     return XII_FAILURE;
   }
 
@@ -208,12 +207,13 @@ retry:
     QueryDesc.Query     = D3D11_QUERY_EVENT;
     QueryDesc.MiscFlags = 0;
     if (SUCCEEDED(GetDXDevice()->CreateQuery(&QueryDesc, &perFrameData.m_pFence)))
-
+    {
       if (FAILED(m_pDevice->CreateQuery(&disjointQueryDesc, &perFrameData.m_pDisjointTimerQuery)))
       {
         xiiLog::Error("Creation of native DirectX query for disjoint query has failed!");
         return XII_FAILURE;
       }
+    }
   }
 
   //#TODO_DX11 Replace ring buffer with proper pool like in Vulkan to prevent buffer overrun.
@@ -723,7 +723,6 @@ void xiiGALDeviceDX11::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
     auto& perFrameData = m_PerFrameData[m_uiCurrentPerFrameData];
     if (perFrameData.m_uiFrame != ((xiiUInt64)-1))
     {
-
       bool bFenceReached = IsFenceReachedPlatform(GetDXImmediateContext(), perFrameData.m_pFence);
       if (!bFenceReached && m_uiNextPerFrameData == m_uiCurrentPerFrameData)
       {
@@ -812,6 +811,7 @@ void xiiGALDeviceDX11::FillCapabilitiesPlatform()
     DXGI_ADAPTER_DESC1 adapterDesc;
     m_pDXGIAdapter->GetDesc1(&adapterDesc);
 
+    m_Capabilities.m_DeviceType           = xiiGraphicsDeviceType::D3D11;
     m_Capabilities.m_sAdapterName         = xiiStringUtf8(adapterDesc.Description).GetData();
     m_Capabilities.m_uiDedicatedVRAM      = static_cast<xiiUInt64>(adapterDesc.DedicatedVideoMemory);
     m_Capabilities.m_uiDedicatedSystemRAM = static_cast<xiiUInt64>(adapterDesc.DedicatedSystemMemory);
@@ -826,7 +826,7 @@ void xiiGALDeviceDX11::FillCapabilitiesPlatform()
     case D3D_FEATURE_LEVEL_11_1:
       m_Capabilities.m_bB5G6R5Textures          = true;
       m_Capabilities.m_bNoOverwriteBufferUpdate = true;
-
+      [[fallthrough]];
     case D3D_FEATURE_LEVEL_11_0:
       m_Capabilities.m_bShaderStageSupported[xiiGALShaderStage::VertexShader]   = true;
       m_Capabilities.m_bShaderStageSupported[xiiGALShaderStage::HullShader]     = true;
@@ -897,9 +897,7 @@ void xiiGALDeviceDX11::FillCapabilitiesPlatform()
       m_Capabilities.m_bAlphaToCoverage                                         = false;
       break;
 
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
-      break;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   if (m_pDevice3)
@@ -1063,8 +1061,8 @@ void xiiGALDeviceDX11::FreeTempResources(xiiUInt64 uiFrame)
 
 void xiiGALDeviceDX11::FillFormatLookupTable()
 {
-  ///       The list below is in the same order as the xiiGALResourceFormat enum. No format should be missing except the ones that are just
-  ///       different names for the same enum value.
+  /// The list below is in the same order as the xiiGALResourceFormat enum. No format should be missing except the ones that are just
+  /// different names for the same enum value.
 
   m_FormatLookupTable.SetFormatInfo(xiiGALResourceFormat::RGBAFloat, xiiGALFormatLookupEntryDX11(DXGI_FORMAT_R32G32B32A32_TYPELESS).RT(DXGI_FORMAT_R32G32B32A32_FLOAT).VA(DXGI_FORMAT_R32G32B32A32_FLOAT).RV(DXGI_FORMAT_R32G32B32A32_FLOAT));
 

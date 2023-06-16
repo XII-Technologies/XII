@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -936,7 +936,7 @@ void DeviceContextD3D12Impl::ClearRenderTarget(ITextureView* pView, const float*
 
 void DeviceContextD3D12Impl::RequestCommandContext()
 {
-    m_CurrCmdCtx = m_pDevice->AllocateCommandContext(GetCommandQueueId());
+    m_CurrCmdCtx = m_pDevice->AllocateCommandContext(GetCommandQueueId(), "Command list");
     m_CurrCmdCtx->SetDynamicGPUDescriptorAllocators(m_DynamicGPUDescriptorAllocator);
 }
 
@@ -960,7 +960,7 @@ void DeviceContextD3D12Impl::Flush(bool                 RequestNewCmdCtx,
         VERIFY(!IsDeferred(), "Deferred contexts cannot execute command lists directly");
         if (m_State.NumCommands != 0)
             Contexts.emplace_back(std::move(m_CurrCmdCtx));
-        else
+        else if (!RequestNewCmdCtx) // Reuse existing context instead of disposing and creating new one.
             m_pDevice->DisposeCommandContext(std::move(m_CurrCmdCtx));
     }
 
@@ -979,24 +979,31 @@ void DeviceContextD3D12Impl::Flush(bool                 RequestNewCmdCtx,
     if (!Contexts.empty())
     {
         m_pDevice->CloseAndExecuteCommandContexts(GetCommandQueueId(), static_cast<Uint32>(Contexts.size()), Contexts.data(), true, &m_SignalFences, &m_WaitFences);
-        m_SignalFences.clear();
 
 #ifdef DILIGENT_DEBUG
-        for (Uint32 i = 0; i < NumCommandLists; ++i)
-            VERIFY(!Contexts[i], "All contexts must be disposed by CloseAndExecuteCommandContexts");
+        for (const auto& Ctx : Contexts)
+            VERIFY(!Ctx, "All contexts must be disposed by CloseAndExecuteCommandContexts");
 #endif
     }
-
-    m_WaitFences.clear();
-
-    // If there is no command list to submit, but there are pending fences, we need to signal them now
-    if (!m_SignalFences.empty())
+    else
     {
-        m_pDevice->SignalFences(GetCommandQueueId(), m_SignalFences);
-        m_SignalFences.clear();
+        // If there is no command list to submit, but there are pending fences, we need to process them now
+
+        if (!m_WaitFences.empty())
+        {
+            m_pDevice->WaitFences(GetCommandQueueId(), m_WaitFences);
+        }
+
+        if (!m_SignalFences.empty())
+        {
+            m_pDevice->SignalFences(GetCommandQueueId(), m_SignalFences);
+        }
     }
 
-    if (RequestNewCmdCtx)
+    m_SignalFences.clear();
+    m_WaitFences.clear();
+
+    if (!m_CurrCmdCtx && RequestNewCmdCtx)
         RequestCommandContext();
 
     m_State             = State{};
@@ -2243,29 +2250,51 @@ void DeviceContextD3D12Impl::GenerateMips(ITextureView* pTexView)
 {
     TDeviceContextBase::GenerateMips(pTexView);
 
-    PipelineStateD3D12Impl* pCurrPSO = nullptr;
-    if (m_pPipelineState)
-    {
-        const auto& PSODesc = m_pPipelineState->GetDesc();
-        if (PSODesc.IsComputePipeline() || PSODesc.IsRayTracingPipeline())
-        {
-            // Mips generator will set its own compute pipeline, root signature and root resources.
-            // We need to invalidate current PSO and reset it afterwards.
-            pCurrPSO = m_pPipelineState;
-            m_pPipelineState.Release();
-            m_ComputeResources.pd3d12RootSig = nullptr;
-        }
-    }
-
     auto& Ctx = GetCmdContext();
 
     const auto& MipsGenerator = m_pDevice->GetMipsGenerator();
     MipsGenerator.GenerateMips(m_pDevice->GetD3D12Device(), ClassPtrCast<TextureViewD3D12Impl>(pTexView), Ctx);
     ++m_State.NumCommands;
 
-    if (pCurrPSO != nullptr)
+    // Invalidate compute resources as they were set by the mips generator
+    m_ComputeResources.MakeAllStale();
+
+    if (m_pPipelineState)
     {
-        SetPipelineState(pCurrPSO);
+        // Restore previous PSO and root signature
+        const auto& PSODesc = m_pPipelineState->GetDesc();
+        static_assert(PIPELINE_TYPE_LAST == 4, "Please update the switch below to handle the new pipeline type");
+        switch (PSODesc.PipelineType)
+        {
+            case PIPELINE_TYPE_GRAPHICS:
+            {
+                Ctx.SetPipelineState(m_pPipelineState->GetD3D12PipelineState());
+                // No need to restore graphics signature as it is not changed
+            }
+            break;
+
+            case PIPELINE_TYPE_COMPUTE:
+            {
+                auto& CompCtx = Ctx.AsComputeContext();
+                CompCtx.SetPipelineState(m_pPipelineState->GetD3D12PipelineState());
+                CompCtx.SetComputeRootSignature(m_ComputeResources.pd3d12RootSig);
+            }
+            break;
+
+            case PIPELINE_TYPE_RAY_TRACING:
+            {
+                auto& RTCtx = Ctx.AsGraphicsContext4();
+                RTCtx.SetRayTracingPipelineState(m_pPipelineState->GetD3D12StateObject());
+                RTCtx.SetComputeRootSignature(m_ComputeResources.pd3d12RootSig);
+            }
+            break;
+
+            case PIPELINE_TYPE_TILE:
+                UNEXPECTED("Unsupported pipeline type");
+                break;
+            default:
+                UNEXPECTED("Unknown pipeline type");
+        }
     }
 }
 
@@ -2363,7 +2392,7 @@ static void AliasingBarrier(CommandContext& CmdCtx, IDeviceObject* pResourceBefo
     {
         if (RefCntAutoPtr<ITextureD3D12> pTexture{pResource, IID_TextureD3D12})
         {
-            const auto* pTexD3D12 = pTexture.RawPtr<const TextureD3D12Impl>();
+            const auto* pTexD3D12 = pTexture.ConstPtr<TextureD3D12Impl>();
             if (pTexD3D12->IsUsingNVApi())
                 UseNVApi = true;
             return pTexD3D12->GetD3D12Texture();

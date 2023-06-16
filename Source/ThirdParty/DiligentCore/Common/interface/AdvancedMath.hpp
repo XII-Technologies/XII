@@ -28,6 +28,8 @@
 #pragma once
 
 #include <float.h>
+#include <vector>
+#include <type_traits>
 
 #include "../../Platforms/interface/PlatformDefinitions.h"
 #include "../../Primitives/interface/FlagEnum.h"
@@ -37,11 +39,26 @@
 namespace Diligent
 {
 
-// Structure describing a plane
+/// A plane in 3D space described by the plane equation:
+///     dot(Normal, Point) + Distance = 0
 struct Plane3D
 {
+    /// Plane normal.
+    ///
+    /// \note  The normal does not have to be normalized as long
+    ///        as it is measured in the same units as Distance.
     float3 Normal;
-    float  Distance = 0; //Distance from the coordinate system origin to the plane along the normal direction
+
+    /// Distance from the plane to the coordinate system origin along the normal direction:
+    ///     dot(Normal, Point) = -Distance
+    ///
+    ///
+    ///   O         |   N
+    ///   *<--------|==>
+    ///             |
+    ///
+    /// \note   The distance is measured in the same units as the normal vector.
+    float Distance = 0;
 
     operator float4&()
     {
@@ -224,6 +241,13 @@ struct BoundBox
     }
 };
 
+struct OrientedBoundingBox
+{
+    float3 Center;         // Center of the box
+    float3 Axes[3];        // Normalized axes
+    float  HalfExtents[3]; // Half extents along each axis
+};
+
 enum class BoxVisibility
 {
     //  Bounding box is guaranteed to be outside the view frustum
@@ -283,32 +307,100 @@ inline float3 GetBoxFarthestCorner(const float3& Direction, const BoundBox& Box)
         };
 }
 
+/// Tests if the bounding box is fully visible, intersecting or invisible with
+/// respect to the plane.
+///
+/// \remarks Plane normal doesn't have to be normalized.
+///          The box is visible when it is in the positive halfspace of the plane.
+///
+///   Invisible    |        Visible
+///                |   N
+///                |===>
+///                |
+///                |
 inline BoxVisibility GetBoxVisibilityAgainstPlane(const Plane3D& Plane, const BoundBox& Box)
 {
-    const float3& Normal = Plane.Normal;
+    // Calculate the distance from the box center to the plane:
+    //   Center = (Box.Max + Box.Min) * 0.5
+    //   Distance = dot(Center, Plane.Normal) + Plane.Distance
+    //            = dot(Box.Max + Box.Min, Plane.Normal) * 0.5 + Plane.Distance
+    const auto DistanceToCenter = dot(Box.Max + Box.Min, Plane.Normal) * 0.5f + Plane.Distance;
 
-    float3 MaxPoint //
-        {
-            (Normal.x > 0) ? Box.Max.x : Box.Min.x,
-            (Normal.y > 0) ? Box.Max.y : Box.Min.y,
-            (Normal.z > 0) ? Box.Max.z : Box.Min.z //
-        };
-    float DMax = dot(MaxPoint, Normal) + Plane.Distance;
-    if (DMax < 0)
+    // Calculate the projected half extents of the box onto the plane normal:
+    const auto ProjHalfLen = dot(Box.Max - Box.Min, abs(Plane.Normal)) * 0.5f;
+
+    // Check if the box is completely outside the plane
+    if (DistanceToCenter < -ProjHalfLen)
+    {
+        ///       .        |
+        ///     .' '.      |   N
+        ///    '.   .'     |===>
+        ///      '.'       |
+        ///       |        |
+        ///       |<-------|
+        ///        Distance
         return BoxVisibility::Invisible;
+    }
 
-    float3 MinPoint //
-        {
-            (Normal.x > 0) ? Box.Min.x : Box.Max.x,
-            (Normal.y > 0) ? Box.Min.y : Box.Max.y,
-            (Normal.z > 0) ? Box.Min.z : Box.Max.z //
-        };
-    float DMin = dot(MinPoint, Normal) + Plane.Distance;
-    if (DMin > 0)
+    // Check if the box is fully inside the plane
+    if (DistanceToCenter > ProjHalfLen)
+    {
+        ///     |            .
+        ///     |   N      .' '.
+        ///     |===>     '.   .'
+        ///     |           '.'
+        ///     |            |
+        ///     |----------->|
+        ///        Distance
         return BoxVisibility::FullyVisible;
+    }
 
     return BoxVisibility::Intersecting;
 }
+
+/// Tests if the oriented bounding box is fully visible, intersecting or invisible with
+/// respect to the plane.
+inline BoxVisibility GetBoxVisibilityAgainstPlane(const Plane3D& Plane, const OrientedBoundingBox& Box)
+{
+    // Calculate the distance from the box center to the plane
+    float Distance = dot(Box.Center, Plane.Normal) + Plane.Distance;
+
+    // Calculate the projected half extents of the box onto the plane normal
+    float ProjHalfExtents =
+        std::abs(dot(Box.Axes[0], Plane.Normal)) * Box.HalfExtents[0] +
+        std::abs(dot(Box.Axes[1], Plane.Normal)) * Box.HalfExtents[1] +
+        std::abs(dot(Box.Axes[2], Plane.Normal)) * Box.HalfExtents[2];
+
+    // Check if the box is completely outside the plane
+    if (Distance < -ProjHalfExtents)
+    {
+        ///       .        |
+        ///     .' '.      |   N
+        ///    '.   .'     |===>
+        ///      '.'       |
+        ///       |        |
+        ///       |<-------|
+        ///        Distance
+        return BoxVisibility::Invisible;
+    }
+
+    // Check if the box is fully inside the plane
+    if (Distance > ProjHalfExtents)
+    {
+        ///     |            .
+        ///     |   N      .' '.
+        ///     |===>     '.   .'
+        ///     |           '.'
+        ///     |            |
+        ///     |----------->|
+        ///        Distance
+        return BoxVisibility::FullyVisible;
+    }
+
+    // Box intersects the plane
+    return BoxVisibility::Intersecting;
+}
+
 
 // Flags must be listed in the same order as planes in the ViewFrustum struct:
 // LeftPlane, RightPlane, BottomPlane, TopPlane, NearPlane, FarPlane
@@ -338,8 +430,9 @@ enum FRUSTUM_PLANE_FLAGS : Uint32
 DEFINE_FLAG_ENUM_OPERATORS(FRUSTUM_PLANE_FLAGS);
 
 // Tests if bounding box is visible by the camera
+template <typename BoundBoxType>
 inline BoxVisibility GetBoxVisibility(const ViewFrustum&  ViewFrustum,
-                                      const BoundBox&     Box,
+                                      const BoundBoxType& Box,
                                       FRUSTUM_PLANE_FLAGS PlaneFlags = FRUSTUM_PLANE_FLAG_FULL_FRUSTUM)
 {
     int NumPlanesInside = 0;
@@ -425,18 +518,100 @@ inline BoxVisibility GetBoxVisibility(const ViewFrustumExt& ViewFrustumExt,
     return BoxVisibility::Intersecting;
 }
 
-inline float GetPointToBoxDistance(const BoundBox& BndBox, const float3& Pos)
+inline BoxVisibility GetBoxVisibility(const ViewFrustumExt&      ViewFrustumExt,
+                                      const OrientedBoundingBox& Box,
+                                      FRUSTUM_PLANE_FLAGS        PlaneFlags = FRUSTUM_PLANE_FLAG_FULL_FRUSTUM)
 {
-    VERIFY_EXPR(BndBox.Max.x >= BndBox.Min.x &&
-                BndBox.Max.y >= BndBox.Min.y &&
-                BndBox.Max.z >= BndBox.Min.z);
-    float fdX = (Pos.x > BndBox.Max.x) ? (Pos.x - BndBox.Max.x) : ((Pos.x < BndBox.Min.x) ? (BndBox.Min.x - Pos.x) : 0.f);
-    float fdY = (Pos.y > BndBox.Max.y) ? (Pos.y - BndBox.Max.y) : ((Pos.y < BndBox.Min.y) ? (BndBox.Min.y - Pos.y) : 0.f);
-    float fdZ = (Pos.z > BndBox.Max.z) ? (Pos.z - BndBox.Max.z) : ((Pos.z < BndBox.Min.z) ? (BndBox.Min.z - Pos.z) : 0.f);
-    VERIFY_EXPR(fdX >= 0 && fdY >= 0 && fdZ >= 0);
+    auto Visibility = GetBoxVisibility(static_cast<const ViewFrustum&>(ViewFrustumExt), Box, PlaneFlags);
+    if (Visibility == BoxVisibility::FullyVisible || Visibility == BoxVisibility::Invisible)
+        return Visibility;
 
-    float3 RangeVec(fdX, fdY, fdZ);
-    return length(RangeVec);
+    if ((PlaneFlags & FRUSTUM_PLANE_FLAG_FULL_FRUSTUM) == FRUSTUM_PLANE_FLAG_FULL_FRUSTUM)
+    {
+        // Test if the whole frustum is outside one of the bounding box planes.
+
+        const float3 Corners[] =
+            {
+                ViewFrustumExt.FrustumCorners[0] - Box.Center,
+                ViewFrustumExt.FrustumCorners[1] - Box.Center,
+                ViewFrustumExt.FrustumCorners[2] - Box.Center,
+                ViewFrustumExt.FrustumCorners[3] - Box.Center,
+                ViewFrustumExt.FrustumCorners[4] - Box.Center,
+                ViewFrustumExt.FrustumCorners[5] - Box.Center,
+                ViewFrustumExt.FrustumCorners[6] - Box.Center,
+                ViewFrustumExt.FrustumCorners[7] - Box.Center,
+            };
+
+        // Test all frustum corners against every box plane
+        for (int iBoundBoxPlane = 0; iBoundBoxPlane < 6; ++iBoundBoxPlane)
+        {
+            const auto AxisIdx = iBoundBoxPlane / 2;
+            const auto Normal  = Box.Axes[AxisIdx] * (iBoundBoxPlane & 0x01 ? -1.f : +1.f);
+
+            bool bAllCornersOutside = true;
+            for (int iCorner = 0; iCorner < 8; iCorner++)
+            {
+                float Dist = dot(Corners[iCorner], Normal) - Box.HalfExtents[AxisIdx];
+                //
+                //     _______
+                //    |       |  N      .'
+                //    |   |   |===>   .'
+                //    |___|___|       '.
+                //        |           | '.
+                //        |---------->|
+                //            Dist
+                if (Dist < 0)
+                {
+                    bAllCornersOutside = false;
+                    break;
+                }
+            }
+            if (bAllCornersOutside)
+                return BoxVisibility::Invisible;
+        }
+    }
+
+    return BoxVisibility::Intersecting;
+}
+
+inline float GetPointToBoxDistanceSqr(const BoundBox& BB, const float3& Pos)
+{
+    VERIFY_EXPR(BB.Max.x >= BB.Min.x &&
+                BB.Max.y >= BB.Min.y &&
+                BB.Max.z >= BB.Min.z);
+    const float3 OffsetVec{
+        (max)(Pos.x - BB.Max.x, BB.Min.x - Pos.x, 0.f),
+        (max)(Pos.y - BB.Max.y, BB.Min.y - Pos.y, 0.f),
+        (max)(Pos.z - BB.Max.z, BB.Min.z - Pos.z, 0.f),
+    };
+    return dot(OffsetVec, OffsetVec);
+}
+
+inline float GetPointToBoxDistance(const BoundBox& BB, const float3& Pos)
+{
+    return sqrt(GetPointToBoxDistanceSqr(BB, Pos));
+}
+
+inline float GetPointToBoxDistanceSqr(const OrientedBoundingBox& OBB, const float3& Pos)
+{
+    const auto  RelPos = Pos - OBB.Center;
+    const float Projs[3] =
+        {
+            dot(RelPos, OBB.Axes[0]),
+            dot(RelPos, OBB.Axes[1]),
+            dot(RelPos, OBB.Axes[2]),
+        };
+    const float3 OffsetVec{
+        (max)(Projs[0] - OBB.HalfExtents[0], -OBB.HalfExtents[0] - Projs[0], 0.f),
+        (max)(Projs[1] - OBB.HalfExtents[1], -OBB.HalfExtents[1] - Projs[1], 0.f),
+        (max)(Projs[2] - OBB.HalfExtents[2], -OBB.HalfExtents[2] - Projs[2], 0.f),
+    };
+    return dot(OffsetVec, OffsetVec);
+}
+
+inline float GetPointToBoxDistance(const OrientedBoundingBox& OBB, const float3& Pos)
+{
+    return sqrt(GetPointToBoxDistanceSqr(OBB, Pos));
 }
 
 inline bool operator==(const Plane3D& p1, const Plane3D& p2) noexcept
@@ -1003,6 +1178,303 @@ bool CheckLineSectionOverlap(T Min0, T Max0, T Min1, T Max1)
     {
         return !(Min0 >= Max1 || Min1 >= Max0);
     }
+}
+
+
+/// Triangulates a simple polygon using the ear-clipping algorithm.
+
+/// \tparam [in] IndexType     - Index type (e.g. Uint32 or Uint16).
+/// \tparam [in] ComponentType - Vertex component type (e.g. float, double or int).
+///
+/// \param [in]  Polygon   - A list of polygon vertices. The last vertex is
+///                          assumed to be connected to the first one.
+///
+/// \param [in]  VerifyEarAndConvexVerts - If true, the function will verify that convex
+///                                        and ear vertices lie outside of the polygon.
+///                                        This is a debug-only check, which is disabled
+///                                        in release builds. It may be triggered if
+///                                        the polygon contains collinear vertices due to
+///                                        floating point imprecision. In this case you may
+///                                        disable the check by setting this parameter to false.
+///
+/// \return     The triangle list.
+///
+/// \remarks    The winding order of each triangle is the same as the winding
+///             order of the polygon.
+///
+///             The function does not check if the polygon is simple, e.g.
+///             that it does not self-intersect.
+template <typename IndexType, typename ComponentType>
+std::vector<IndexType> TriangulatePolygon(const std::vector<Vector2<ComponentType>>& Polygon, bool VerifyEarAndConvexVerts = true)
+{
+    const auto VertCount = static_cast<int>(Polygon.size());
+    if (VertCount <= 2)
+    {
+        DEV_ERROR("At least three vertices are required.");
+        return {};
+    }
+
+    const auto TriangleCount = VertCount - 2;
+    if (TriangleCount == 1)
+        return {0, 1, 2};
+
+    // Find the leftmost vertex to determine the winding order
+    int LeftmostVertIdx = 0;
+    for (int i = 1; i < VertCount; ++i)
+    {
+        if (Polygon[i].x < Polygon[LeftmostVertIdx].x)
+            LeftmostVertIdx = i;
+    }
+
+    auto WrapIndex = [](int idx, int Count) {
+        return ((idx % Count) + Count) % Count;
+    };
+
+    // Returns the winding order of the triangle formed by the given vertices.
+    //
+    //    V0    V2
+    //      \  /
+    //       \/
+    //       V1
+    auto GetWinding = [](const auto& V0, const auto& V1, const auto& V2) {
+        return (V1.x - V0.x) * (V2.y - V1.y) - (V2.x - V1.x) * (V1.y - V0.y);
+    };
+
+    // Find the winding order of the polygon
+    ComponentType PolygonWinding = 0;
+    // Handle the case when the leftmost vertex is collinear with its neighbors:
+    // *.
+    // | '.
+    // |   '.
+    // *    .*
+    // |  .'
+    // |.'
+    // *
+    for (int i = 0; i < VertCount && PolygonWinding == 0; ++i)
+    {
+        const auto& V0 = Polygon[WrapIndex(LeftmostVertIdx + i - 1, VertCount)];
+        const auto& V1 = Polygon[WrapIndex(LeftmostVertIdx + i + 0, VertCount)];
+        const auto& V2 = Polygon[WrapIndex(LeftmostVertIdx + i + 1, VertCount)];
+        PolygonWinding = GetWinding(V0, V1, V2);
+    }
+    if (PolygonWinding == 0)
+    {
+        DEV_ERROR("All vertices are collinear.");
+        return {};
+    }
+
+    std::vector<int> RemainingVertIds(VertCount);
+    for (int i = 0; i < VertCount; ++i)
+        RemainingVertIds[i] = i;
+
+    //        Reflex
+    //   Ear.   |   .Ear
+    //      \'. V .'/
+    //       \ '.' /
+    //        \   /
+    //         \ /
+    //          V
+    //       Convex
+    //
+    enum class VertexType : Uint8
+    {
+        Convexx, // X11 #defines 'Convex'
+        Reflex,
+        Ear
+    };
+    std::vector<VertexType> VertTypes(VertCount);
+
+    auto CheckConvex = [&](int vert_id) {
+        const auto RemainingVertCount = static_cast<int>(RemainingVertIds.size());
+
+        const auto Idx0 = RemainingVertIds[WrapIndex(vert_id - 1, RemainingVertCount)];
+        const auto Idx1 = RemainingVertIds[WrapIndex(vert_id + 0, RemainingVertCount)];
+        const auto Idx2 = RemainingVertIds[WrapIndex(vert_id + 1, RemainingVertCount)];
+
+        const auto& V0 = Polygon[Idx0];
+        const auto& V1 = Polygon[Idx1];
+        const auto& V2 = Polygon[Idx2];
+
+        return GetWinding(V0, V1, V2) * PolygonWinding < 0 ?
+            VertexType::Reflex :
+            VertexType::Convexx;
+    };
+
+    auto CheckEar = [&](int vert_id) {
+        const auto RemainingVertCount = static_cast<int>(RemainingVertIds.size());
+
+        const auto Idx0 = RemainingVertIds[WrapIndex(vert_id - 1, RemainingVertCount)];
+        const auto Idx1 = RemainingVertIds[WrapIndex(vert_id + 0, RemainingVertCount)];
+        const auto Idx2 = RemainingVertIds[WrapIndex(vert_id + 1, RemainingVertCount)];
+
+        VERIFY_EXPR(VertTypes[Idx1] == VertexType::Convexx);
+
+        const auto& V0 = Polygon[Idx0];
+        const auto& V1 = Polygon[Idx1];
+        const auto& V2 = Polygon[Idx2];
+
+        for (const auto Idx : RemainingVertIds)
+        {
+            if (Idx == Idx0 || Idx == Idx1 || Idx == Idx2)
+                continue;
+
+            if (VertTypes[Idx] == VertexType::Convexx || VertTypes[Idx] == VertexType::Ear)
+            {
+                if (VerifyEarAndConvexVerts)
+                {
+                    // This check may fail due to floating point imprecision if there are collinear vertices.
+                    // Fix your polygon or disable the check.
+                    VERIFY(!IsPointInsideTriangle(V0, V1, V2, Polygon[Idx], /*AllowEdges = */ false), "Convex and ear vertices must always be outside the triangle");
+                }
+                continue;
+            }
+
+            // Do not treat vertices exactly on the edge as inside the triangle,
+            // so that we can clip out degenerate triangles.
+            if (IsPointInsideTriangle(V0, V1, V2, Polygon[Idx], /*AllowEdges = */ false))
+            {
+                // The vertex is inside the triangle
+                return VertexType::Convexx;
+            }
+        }
+
+        return VertexType::Ear;
+    };
+
+    // First label vertices as reflex or convex
+    for (int vert_id = 0; vert_id < VertCount; ++vert_id)
+    {
+        VertTypes[vert_id] = CheckConvex(vert_id);
+    }
+
+    // Next, check convex vertices for ears
+    for (int vert_id = 0; vert_id < VertCount; ++vert_id)
+    {
+        auto& VertType = VertTypes[vert_id];
+        if (VertType == VertexType::Convexx)
+            VertType = CheckEar(vert_id);
+    }
+
+    std::vector<IndexType> Triangles;
+    Triangles.reserve(TriangleCount * 3);
+
+    // Clip ears one by one until only three vertices are left
+    while (RemainingVertIds.size() > 3)
+    {
+        auto RemainingVertCount = static_cast<int>(RemainingVertIds.size());
+
+        // Find the first ear
+        int ear_vert_id = 0;
+        for (; ear_vert_id < RemainingVertCount; ++ear_vert_id)
+        {
+            const auto Idx = RemainingVertIds[ear_vert_id];
+            if (VertTypes[Idx] == VertexType::Ear)
+                break;
+        };
+
+        if (ear_vert_id == RemainingVertCount)
+        {
+            UNEXPECTED("Failed to find an ear.");
+            return {};
+        }
+
+        const auto Idx0 = RemainingVertIds[WrapIndex(ear_vert_id - 1, RemainingVertCount)];
+        const auto Idx1 = RemainingVertIds[ear_vert_id];
+        const auto Idx2 = RemainingVertIds[WrapIndex(ear_vert_id + 1, RemainingVertCount)];
+
+        Triangles.emplace_back(Idx0);
+        Triangles.emplace_back(Idx1);
+        Triangles.emplace_back(Idx2);
+        RemainingVertIds.erase(RemainingVertIds.begin() + ear_vert_id);
+
+        --RemainingVertCount;
+        // Update adjacent vertices
+        if (RemainingVertCount > 3)
+        {
+            const auto IdxL = RemainingVertIds[WrapIndex(ear_vert_id - 1, RemainingVertCount)];
+            const auto IdxR = RemainingVertIds[WrapIndex(ear_vert_id, RemainingVertCount)];
+            // First check for convex vs reflex
+            VertTypes[IdxL] = CheckConvex(ear_vert_id - 1);
+            VertTypes[IdxR] = CheckConvex(ear_vert_id);
+
+            // Next, check for ears
+            if (VertTypes[IdxL] == VertexType::Convexx)
+                VertTypes[IdxL] = CheckEar(ear_vert_id - 1);
+            if (VertTypes[IdxR] == VertexType::Convexx)
+                VertTypes[IdxR] = CheckEar(ear_vert_id);
+        }
+    }
+
+    Triangles.emplace_back(RemainingVertIds[0]);
+    Triangles.emplace_back(RemainingVertIds[1]);
+    Triangles.emplace_back(RemainingVertIds[2]);
+
+    return Triangles;
+}
+
+
+/// Triangulates a simple polygon in 3D.
+
+/// \remarks This function first projects the polygon onto the plane and then
+///          triangulates the resulting 2D polygon.
+///
+///          If vertices are not coplanar, the result is undefined.
+template <typename IndexType, typename ComponentType>
+typename std::enable_if<std::is_floating_point<ComponentType>::value, std::vector<IndexType>>::type
+TriangulatePolygon3D(const std::vector<Vector3<ComponentType>>& Polygon, bool VerifyEarAndConvexVerts = true)
+{
+    // Find the normal
+    Vector3<ComponentType> Normal;
+
+    // Use the normal with the largest length.
+    // Note that it does not matter if the vertex is convex or reflex as
+    // the TriangulatePolygon() function handles any orinetation.
+    ComponentType NormalLength = 0;
+    for (size_t i = 0; i < Polygon.size(); ++i)
+    {
+        const auto& V0 = Polygon[i];
+        const auto& V1 = Polygon[(i + 1) % Polygon.size()];
+        const auto& V2 = Polygon[(i + 2) % Polygon.size()];
+
+        const auto EdgeCross       = cross(V1 - V0, V2 - V1);
+        const auto EdgeCrossLength = length(EdgeCross);
+        if (EdgeCrossLength > NormalLength)
+        {
+            Normal       = EdgeCross;
+            NormalLength = EdgeCrossLength;
+        }
+    }
+
+    if (NormalLength == 0)
+    {
+        UNEXPECTED("Failed to find a plane for the polygon, which means that all vertices are collinear.");
+        return {};
+    }
+    const auto AbsNormal = abs(Normal);
+
+    Vector3<ComponentType> Tangent;
+    if (AbsNormal.z > std::max(AbsNormal.x, AbsNormal.y))
+        Tangent = cross(Vector3<ComponentType>{ComponentType{0}, ComponentType{1}, ComponentType{0}}, Normal);
+    else if (AbsNormal.y > std::max(AbsNormal.x, AbsNormal.z))
+        Tangent = cross(Vector3<ComponentType>{ComponentType{1}, ComponentType{0}, ComponentType{0}}, Normal);
+    else
+        Tangent = cross(Vector3<ComponentType>{ComponentType{0}, ComponentType{0}, ComponentType{1}}, Normal);
+    VERIFY_EXPR(length(Tangent) > 0);
+    Tangent = normalize(Tangent);
+
+    auto Bitangent = cross(Normal, Tangent);
+    VERIFY_EXPR(length(Bitangent) > 0);
+    Bitangent = normalize(Bitangent);
+
+    // Project the polygon
+    std::vector<Vector2<ComponentType>> PolygonProj;
+    PolygonProj.reserve(Polygon.size());
+    for (const auto& Vert : Polygon)
+    {
+        PolygonProj.emplace_back(dot(Tangent, Vert), dot(Bitangent, Vert));
+    }
+
+    return TriangulatePolygon<IndexType>(PolygonProj, VerifyEarAndConvexVerts);
 }
 
 } // namespace Diligent

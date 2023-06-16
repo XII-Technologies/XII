@@ -860,7 +860,6 @@ void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, c
     vertices[i].m_color = color;
   }
 
-
   XII_LOCK(s_Mutex);
 
   auto& data = GetDataForExtraction(context);
@@ -895,7 +894,6 @@ void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, c
   {
     vertices[i].m_color = color;
   }
-
 
   XII_LOCK(s_Mutex);
 

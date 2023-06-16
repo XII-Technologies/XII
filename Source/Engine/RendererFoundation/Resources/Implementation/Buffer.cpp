@@ -13,5 +13,4 @@ xiiGALBuffer::xiiGALBuffer(const xiiGALBufferCreationDescription& Description) :
 xiiGALBuffer::~xiiGALBuffer() = default;
 
 
-
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Resources_Implementation_Buffer);

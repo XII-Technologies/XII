@@ -19,7 +19,6 @@
 #include <RendererDiligent/Shader/ShaderDiligent.h>
 #include <RendererDiligent/Shader/VertexDeclarationDiligent.h>
 #include <RendererDiligent/State/StateDiligent.h>
-#include <RendererDiligent/Utilities/DiligentConversions.h>
 
 #include <Graphics/GraphicsTools/interface/DurationQueryHelper.hpp>
 #include <Graphics/GraphicsTools/interface/ScopedQueryHelper.hpp>
@@ -64,11 +63,7 @@ public:
   xiiProxyAllocator m_Allocator;
 };
 
-void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity,
-                    const Diligent::Char*                 Message,
-                    const Diligent::Char*                 Function,
-                    const Diligent::Char*                 File,
-                    int                                   Line)
+void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity, const Diligent::Char* Message, const Diligent::Char* Function, const Diligent::Char* File, xiiInt32 Line)
 {
   // Format Diligent string as it is in printf format
   switch (Severity)
@@ -125,7 +120,7 @@ ON_CORESYSTEMS_SHUTDOWN
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-std::unique_ptr<xiiDiligentMemoryAllocator> g_pMemoryAllocator = std::make_unique<xiiDiligentMemoryAllocator>("Diligent Engine Memory Allocator");
+std::unique_ptr<xiiDiligentMemoryAllocator> g_pMemoryAllocator;
 
 xiiGALDeviceDiligent::xiiGALDeviceDiligent(const xiiGALDeviceCreationDescription& Description, Diligent::RENDER_DEVICE_TYPE DeviceType) :
   xiiGALDevice(Description), m_pDevice(nullptr), m_pEngineFactory(nullptr), m_DeviceType(DeviceType)
@@ -138,15 +133,28 @@ xiiGALDeviceDiligent::~xiiGALDeviceDiligent() = default;
 
 xiiResult xiiGALDeviceDiligent::InitPlatform()
 {
+  using namespace Diligent;
+
   XII_LOG_BLOCK("xiiGALDeviceDiligent::InitPlatform");
 
+  // Initialize memory allocator outside the global scope.
+  if (g_pMemoryAllocator == nullptr)
+  {
+    g_pMemoryAllocator = std::make_unique<xiiDiligentMemoryAllocator>("Diligent Engine Memory Allocator");
+  }
+
+  if (m_Description.m_bDebugDevice)
+  {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  m_iValidationLevel = Diligent::VALIDATION_LEVEL_2;
-#elif XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  m_iValidationLevel = Diligent::VALIDATION_LEVEL_1;
+    m_iValidationLevel = Diligent::VALIDATION_LEVEL_2;
 #else
-  m_iValidationLevel = Diligent::VALIDATION_LEVEL_DISABLED;
+    m_iValidationLevel = Diligent::VALIDATION_LEVEL_1;
 #endif
+  }
+  else
+  {
+    m_iValidationLevel = Diligent::VALIDATION_LEVEL_DISABLED;
+  }
 
   xiiUInt32 NumImmediateContexts = 0;
 
@@ -487,7 +495,7 @@ CreateRenderDevice:
           "UNASSIGNED-CoreValidation-Shader-OutputNotConsumed" //
         };
       EngineCI.ppIgnoreDebugMessageNames = ppIgnoreDebugMessages;
-      EngineCI.IgnoreDebugMessageCount   = _countof(ppIgnoreDebugMessages);
+      EngineCI.IgnoreDebugMessageCount   = XII_ARRAY_SIZE(ppIgnoreDebugMessages);
 
       EngineCI.AdapterId = FindAdapter(pFactoryVk, EngineCI.GraphicsAPIVersion, m_AdapterAttribs);
 
@@ -508,6 +516,8 @@ CreateRenderDevice:
   m_pDeviceContexts.SetCount(ppContexts.GetCount());
   for (xiiUInt32 i = 0; i < ppContexts.GetCount(); ++i)
     m_pDeviceContexts[i] = ppContexts[i];
+
+  m_pPipelineBarrier = XII_NEW(&m_Allocator, xiiPipelineBarrierDiligent);
 
   // Create default pass
   m_pDefaultPass = XII_NEW(&m_Allocator, xiiGALPassDiligent, *this);
@@ -533,13 +543,64 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 {
   xiiGALWindowSwapChain::SetFactoryMethod({});
 
+  for (xiiUInt32 type = 0; type < TempResourceType::ENUM_COUNT; ++type)
+  {
+    for (auto it = m_FreeTempResources[type].GetIterator(); it.IsValid(); ++it)
+    {
+      xiiDynamicArray<Diligent::IDeviceObject*>& resources = it.Value();
+      for (auto pResource : resources)
+      {
+        switch ((TempResourceType::Enum)type)
+        {
+          case TempResourceType::Texture:
+          {
+            Diligent::ITexture* pTexture = static_cast<Diligent::ITexture*>(pResource);
+            XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTexture);
+          }
+          break;
+          case TempResourceType::Buffer:
+          {
+            Diligent::IBuffer* pBuffer = static_cast<Diligent::IBuffer*>(pResource);
+            XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pBuffer);
+          }
+          break;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+    }
+    m_FreeTempResources[type].Clear();
+
+    for (auto& tempResource : m_UsedTempResources[type])
+    {
+      switch ((TempResourceType::Enum)type)
+      {
+        case TempResourceType::Texture:
+        {
+          Diligent::ITexture* pTexture = static_cast<Diligent::ITexture*>(tempResource.m_pResource);
+          XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTexture);
+        }
+        break;
+        case TempResourceType::Buffer:
+        {
+          Diligent::IBuffer* pBuffer = static_cast<Diligent::IBuffer*>(tempResource.m_pResource);
+          XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pBuffer);
+        }
+        break;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+    }
+    m_UsedTempResources[type].Clear();
+  }
+
   if (!m_pDeviceContexts.IsEmpty())
   {
     for (xiiUInt32 q = 0; q < m_uiNumImmediateContexts; ++q)
     {
       m_pDeviceContexts[q]->Flush();
 
-      XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pDeviceContexts[q]);
+      XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDeviceContexts[q]);
     }
 
     m_pDeviceContexts.Clear();
@@ -549,13 +610,18 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 
   m_pDefaultPass = nullptr;
 
+  m_pPipelineBarrier = nullptr;
+
   m_pDevice->ReleaseStaleResources(true);
 
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pDevice);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDevice);
 
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pEngineFactory);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pEngineFactory);
 
   ReportLiveGpuObjects();
+
+  // Do not free the memory allocator due to Diligent not updating the memory allocator to nullptr.
+  // g_pMemoryAllocator.reset();
 
   return XII_SUCCESS;
 }
@@ -563,11 +629,6 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 void xiiGALDeviceDiligent::ReportLiveGpuObjects()
 {
   // \todo RendererDiligent: Implement detailed live GPU Object information
-}
-
-void xiiGALDeviceDiligent::FlushDeadObjects()
-{
-  DestroyDeadObjects();
 }
 
 // Pipeline & Pass functions
@@ -582,7 +643,9 @@ void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapC
   }
 
 #if XII_ENABLED(XII_USE_PROFILING)
-  m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), szName);
+  xiiStringBuilder sb;
+  sb.Format("{} - Frame {}", szName != nullptr ? szName : "Unavailable", GetImmediateContext()->GetFrameNumber());
+  m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), sb);
 #endif
 }
 
@@ -831,8 +894,6 @@ void xiiGALDeviceDiligent::DestroyUnorderedAccessViewPlatform(xiiGALUnorderedAcc
   XII_DELETE(&m_Allocator, pUnorderedAccessViewDiligent);
 }
 
-
-
 // Other rendering creation functions
 
 xiiGALQuery* xiiGALDeviceDiligent::CreateQueryPlatform(const xiiGALQueryCreationDescription& Description)
@@ -897,25 +958,26 @@ xiiResult xiiGALDeviceDiligent::GetTimestampResultPlatform(xiiGALTimestampHandle
 void xiiGALDeviceDiligent::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 {
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
-
-#if 0
-#  if XII_ENABLED(XII_USE_PROFILING)
-  xiiStringBuilder sb;
-  sb.Format("Frame {}", uiRenderFrame);
-  m_pFrameTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), sb);
-#  endif
-#endif
 }
 
 void xiiGALDeviceDiligent::EndFramePlatform()
 {
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
 
+  FreeTempResources(GetImmediateContext()->GetFrameNumber());
+
 #if 0
-#  if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), m_pFrameTimingScope);
-#  endif
+  m_pDefaultPass->ReleaseRenderPassResources();
+  m_pDefaultPass->m_pCommandEncoderImpl->FlushPipelineStateCache();
 #endif
+
+  for (auto pContext : m_pDeviceContexts)
+  {
+    pContext->Flush();
+    pContext->FinishFrame();
+  }
+
+  m_pDevice->ReleaseStaleResources();
 }
 
 void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
@@ -927,6 +989,31 @@ void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
     m_Capabilities.m_uiDedicatedSystemRAM = adapterInfo.Memory.HostVisibleMemory;
     m_Capabilities.m_uiSharedSystemRAM    = adapterInfo.Memory.UnifiedMemory;
     m_Capabilities.m_bHardwareAccelerated = adapterInfo.Type == Diligent::ADAPTER_TYPE_DISCRETE;
+
+    switch (m_DeviceType)
+    {
+      case Diligent::RENDER_DEVICE_TYPE_UNDEFINED:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::Undefined;
+        break;
+      case Diligent::RENDER_DEVICE_TYPE_D3D11:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::D3D11;
+        break;
+      case Diligent::RENDER_DEVICE_TYPE_D3D12:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::D3D12;
+        break;
+      case Diligent::RENDER_DEVICE_TYPE_GL:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::OpenGL;
+        break;
+      case Diligent::RENDER_DEVICE_TYPE_GLES:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::OpenGLES;
+        break;
+      case Diligent::RENDER_DEVICE_TYPE_VULKAN:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::Vulkan;
+        break;
+      case Diligent::RENDER_DEVICE_TYPE_METAL:
+        m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::Metal;
+        break;
+    }
   }
 
   const Diligent::RenderDeviceInfo& deviceInfo = GetDevice()->GetDeviceInfo();
@@ -963,11 +1050,21 @@ void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
 
 void xiiGALDeviceDiligent::WaitIdlePlatform()
 {
+  m_pPipelineBarrier->FlushBarriers(true);
+
   DestroyDeadObjects();
 
-  m_pDevice->IdleGPU();
+  m_pDefaultPass->ReleaseRenderPassResources();
 
-  m_pDevice->ReleaseStaleResources(false);
+  m_pDevice->ReleaseStaleResources();
+  // We must idle the GPU
+  m_pDevice->IdleGPU();
+  // And call FinishFrame() to release references to Swapchain resources
+  for (auto pContext : m_pDeviceContexts)
+  {
+    pContext->FinishFrame();
+  }
+  m_pDevice->ReleaseStaleResources();
 }
 
 void xiiGALDeviceDiligent::FillFormatLookupTable()
@@ -1197,6 +1294,144 @@ void xiiGALDeviceDiligent::WaitForFencePlatform(Diligent::IDeviceContext* pConte
       }
     }
     break;
+  }
+}
+
+Diligent::IBuffer* xiiGALDeviceDiligent::FindTempBuffer(xiiUInt32 uiSize)
+{
+  const xiiUInt32 uiExpGrowthLimit = 16 * 1024 * 1024;
+
+  uiSize = xiiMath::Max(uiSize, 256U);
+  if (uiSize < uiExpGrowthLimit)
+  {
+    uiSize = xiiMath::PowerOfTwo_Ceil(uiSize);
+  }
+  else
+  {
+    uiSize = xiiMemoryUtils::AlignSize(uiSize, uiExpGrowthLimit);
+  }
+
+  Diligent::IBuffer* pBuffer = nullptr;
+  auto               it      = m_FreeTempResources[TempResourceType::Buffer].Find(uiSize);
+  if (it.IsValid())
+  {
+    xiiDynamicArray<Diligent::IDeviceObject*>& resources = it.Value();
+    if (!resources.IsEmpty())
+    {
+      pBuffer = static_cast<Diligent::IBuffer*>(resources[0]);
+      resources.RemoveAtAndSwap(0);
+    }
+  }
+
+  if (pBuffer == nullptr)
+  {
+    Diligent::BufferDesc bufferDesc;
+    bufferDesc.Size              = uiSize;
+    bufferDesc.Usage             = Diligent::USAGE_STAGING;
+    bufferDesc.BindFlags         = Diligent::BIND_NONE;
+    bufferDesc.CPUAccessFlags    = Diligent::CPU_ACCESS_WRITE;
+    bufferDesc.MiscFlags         = Diligent::MISC_BUFFER_FLAG_NONE;
+    bufferDesc.ElementByteStride = 0;
+
+    Diligent::IBuffer* pBufferNew = nullptr;
+    GetDevice()->CreateBuffer(bufferDesc, nullptr, &pBufferNew);
+
+    if (pBufferNew == nullptr)
+    {
+      return nullptr;
+    }
+
+    pBuffer = pBufferNew;
+  }
+
+  auto& tempResource       = m_UsedTempResources[TempResourceType::Buffer].ExpandAndGetRef();
+  tempResource.m_pResource = pBuffer;
+  tempResource.m_uiFrame   = GetImmediateContext()->GetFrameNumber();
+  tempResource.m_uiHash    = uiSize;
+
+  return pBuffer;
+}
+
+Diligent::ITexture* xiiGALDeviceDiligent::FindTempTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiGALResourceFormat::Enum format)
+{
+  xiiUInt32 data[] = {uiWidth, uiHeight, uiDepth, (xiiUInt32)format};
+  xiiUInt32 uiHash = xiiHashingUtils::xxHash32(data, sizeof(data));
+
+  Diligent::ITexture* pTexture = nullptr;
+  auto                it       = m_FreeTempResources[TempResourceType::Texture].Find(uiHash);
+  if (it.IsValid())
+  {
+    xiiDynamicArray<Diligent::IDeviceObject*>& resources = it.Value();
+    if (!resources.IsEmpty())
+    {
+      pTexture = static_cast<Diligent::ITexture*>(resources[0]);
+      resources.RemoveAtAndSwap(0);
+    }
+  }
+
+  if (pTexture == nullptr)
+  {
+    if (uiDepth == 1)
+    {
+      Diligent::TextureDesc textureDesc;
+      textureDesc.Width          = uiWidth;
+      textureDesc.Height         = uiHeight;
+      textureDesc.MipLevels      = 1;
+      textureDesc.ArraySize      = 1;
+      textureDesc.Format         = GetFormatLookupTable().GetFormatInfo(format).m_eStorage;
+      textureDesc.SampleCount    = 1;
+      textureDesc.Usage          = Diligent::USAGE_STAGING;
+      textureDesc.BindFlags      = Diligent::BIND_NONE;
+      textureDesc.CPUAccessFlags = Diligent::CPU_ACCESS_NONE;
+      textureDesc.MiscFlags      = Diligent::MISC_TEXTURE_FLAG_NONE;
+
+      Diligent::ITexture* pTextureNew = nullptr;
+      m_pDevice->CreateTexture(textureDesc, nullptr, &pTextureNew);
+      if (pTextureNew == nullptr)
+      {
+        return nullptr;
+      }
+
+      pTexture = pTextureNew;
+    }
+    else
+    {
+      XII_ASSERT_NOT_IMPLEMENTED;
+      return nullptr;
+    }
+  }
+
+  auto& tempResource       = m_UsedTempResources[TempResourceType::Texture].ExpandAndGetRef();
+  tempResource.m_pResource = pTexture;
+  tempResource.m_uiFrame   = GetImmediateContext()->GetFrameNumber();
+  tempResource.m_uiHash    = uiHash;
+
+  return pTexture;
+}
+
+void xiiGALDeviceDiligent::FreeTempResources(xiiUInt64 uiFrame)
+{
+  for (xiiUInt32 type = 0; type < TempResourceType::ENUM_COUNT; ++type)
+  {
+    while (!m_UsedTempResources[type].IsEmpty())
+    {
+      auto& usedTempResource = m_UsedTempResources[type].PeekFront();
+      if (usedTempResource.m_uiFrame == uiFrame)
+      {
+        auto it = m_FreeTempResources[type].Find(usedTempResource.m_uiHash);
+        if (!it.IsValid())
+        {
+          it = m_FreeTempResources[type].Insert(usedTempResource.m_uiHash, xiiDynamicArray<Diligent::IDeviceObject*>(&m_Allocator));
+        }
+
+        it.Value().PushBack(usedTempResource.m_pResource);
+        m_UsedTempResources[type].PopFront();
+      }
+      else
+      {
+        break;
+      }
+    }
   }
 }
 

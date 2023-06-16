@@ -21,8 +21,6 @@ namespace
   }
 } // namespace
 
-
-
 xiiResult xiiRendererTestAdvancedFeatures::InitializeSubTest(xiiInt32 iIdentifier)
 {
   m_iFrame        = -1;
@@ -43,6 +41,7 @@ xiiResult xiiRendererTestAdvancedFeatures::InitializeSubTest(xiiInt32 iIdentifie
     xiiGALResourceViewCreationDescription viewDesc;
     viewDesc.m_hTexture         = m_hTexture2D;
     viewDesc.m_uiMipLevelsToUse = 1;
+
     for (xiiUInt32 i = 0; i < 4; i++)
     {
       viewDesc.m_uiMostDetailedMipLevel = 0;
@@ -60,9 +59,11 @@ xiiResult xiiRendererTestAdvancedFeatures::InitializeSubTest(xiiInt32 iIdentifie
       xiiTestFramework::GetInstance()->Output(xiiTestOutput::Warning, "VertexShaderRenderTargetArrayIndex capability not supported, skipping test.");
       return XII_SUCCESS;
     }
-    // Texture2DArray
+
+    // Texture2D Array
     xiiGALTextureCreationDescription desc;
     desc.SetAsRenderTarget(320 / 2, 240, xiiGALResourceFormat::BGRAUByteNormalizedsRGB, xiiGALMSAASampleCount::None);
+    desc.m_Type        = xiiGALTextureType::Texture2DArray;
     desc.m_uiArraySize = 2;
     m_hTexture2DArray  = m_pDevice->CreateTexture(desc);
 
@@ -92,9 +93,8 @@ xiiResult xiiRendererTestAdvancedFeatures::InitializeSubTest(xiiInt32 iIdentifie
     case SubTests::ST_VertexShaderRenderTargetArrayIndex:
       m_ImgCompFrames.PushBack(ImageCaptureFrames::DefaultCapture);
       break;
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
-      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   return XII_SUCCESS;
@@ -122,6 +122,7 @@ xiiResult xiiRendererTestAdvancedFeatures::DeInitializeSubTest(xiiInt32 iIdentif
   DestroyWindow();
   ShutdownRenderer();
   XII_SUCCEED_OR_RETURN(xiiGraphicsTest::DeInitializeSubTest(iIdentifier));
+
   return XII_SUCCESS;
 }
 
@@ -137,14 +138,14 @@ xiiTestAppRun xiiRendererTestAdvancedFeatures::RunSubTest(xiiInt32 iIdentifier, 
     case SubTests::ST_ReadRenderTarget:
       ReadRenderTarget();
       break;
+
     case SubTests::ST_VertexShaderRenderTargetArrayIndex:
       if (!m_pDevice->GetCapabilities().m_bVertexShaderRenderTargetArrayIndex)
         return xiiTestAppRun::Quit;
       VertexShaderRenderTargetArrayIndex();
       break;
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
-      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   xiiRenderContext::GetDefaultInstance()->ResetContextState();
@@ -169,6 +170,7 @@ void xiiRendererTestAdvancedFeatures::RenderToScreen(xiiUInt32 uiRenderTargetCle
   renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, m_pDevice->GetDefaultRenderTargetView(pPrimarySwapChain->GetBackBufferTexture()));
   renderingSetup.m_ClearColor              = xiiColor::RebeccaPurple;
   renderingSetup.m_uiRenderTargetClearMask = uiRenderTargetClearMask;
+
   if (!m_hDepthStencilTexture.IsInvalidated())
   {
     renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(m_pDevice->GetDefaultRenderTargetView(m_hDepthStencilTexture));
@@ -262,7 +264,7 @@ void xiiRendererTestAdvancedFeatures::VertexShaderRenderTargetArrayIndex()
     ObjectCB* ocb = xiiRenderContext::GetConstantBufferData<ObjectCB>(m_hObjectTransformCB);
     ocb->m_MVP    = mMVP;
     ocb->m_Color  = xiiColor(1, 1, 1, 1);
-    xiiRenderContext::GetDefaultInstance()->BindConstantBuffer("PerObject", m_hObjectTransformCB);
+    xiiRenderContext::GetDefaultInstance()->BindConstantBuffer(XII_STRINGIZE(PerObject), m_hObjectTransformCB);
     xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(m_hCubeUV);
     xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer(0xFFFFFFFF, 0, 2).IgnoreResult();
 

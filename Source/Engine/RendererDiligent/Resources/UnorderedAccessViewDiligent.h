@@ -18,15 +18,15 @@ protected:
 
   xiiGALUnorderedAccessViewDiligent(xiiGALResourceBase* pResource, const xiiGALUnorderedAccessViewCreationDescription& Description);
 
-  ~xiiGALUnorderedAccessViewDiligent();
+  virtual ~xiiGALUnorderedAccessViewDiligent();
 
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::ITextureView* m_pUnorderedAccessTextureView = nullptr;
+  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pUnorderedAccessTextureView;
 
-  Diligent::IBufferView* m_pUnorderedAccessBufferView = nullptr;
+  Diligent::RefCntAutoPtr<Diligent::IBufferView> m_pUnorderedAccessBufferView;
 };
 
 #include <RendererDiligent/Resources/Implementation/UnorderedAccessViewDiligent_inl.h>

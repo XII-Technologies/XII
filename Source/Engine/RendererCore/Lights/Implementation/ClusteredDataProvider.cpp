@@ -137,7 +137,7 @@ void xiiClusteredDataGPU::BindResources(xiiRenderContext* pRenderContext)
   pRenderContext->BindTextureCube("ReflectionSpecularTexture", hReflectionSpecularTextureView);
   pRenderContext->BindTexture2D("SkyIrradianceTexture", hSkyIrradianceTextureView);
 
-  pRenderContext->BindConstantBuffer("xiiClusteredDataConstants", m_hConstantBuffer);
+  pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiClusteredDataConstants), m_hConstantBuffer);
 }
 
 //////////////////////////////////////////////////////////////////////////

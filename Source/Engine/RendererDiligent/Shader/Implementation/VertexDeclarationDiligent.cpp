@@ -44,7 +44,7 @@ xiiResult xiiGALVertexDeclarationDiligent::InitPlatform(xiiGALDevice* pDevice)
     {
       if (vertexInputAttributes[i].m_eSemantic == sematic)
       {
-        XII_ASSERT_DEBUG(vertexInputAttributes[i].m_eFormat == format, "Found matching sematic {} but format differs: {} : {}", sematic, format, vertexInputAttributes[i].m_eFormat);
+        // XII_ASSERT_DEV(vertexInputAttributes[i].m_eFormat == format, "Found matching sematic {} but format differs: {} : {}", sematic, format, vertexInputAttributes[i].m_eFormat);
         xiiUInt32 uiLocation = vertexInputAttributes[i].m_uiSemanticIndex;
         vertexInputAttributes.RemoveAtAndSwap(i);
         return uiLocation;

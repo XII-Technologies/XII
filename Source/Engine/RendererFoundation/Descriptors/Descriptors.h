@@ -143,7 +143,7 @@ struct xiiGALDepthStencilStateCreationDescription : public xiiHashableStruct<xii
 
   xiiEnum<xiiGALCompareFunc> m_DepthTestFunc = xiiGALCompareFunc::Less;
 
-  bool m_bSeparateFrontAndBack = false; ///< If false, DX11 will use front face values for both front & back face values, GL will not call
+  bool m_bSeparateFrontAndBack = false; ///< If false, D3D11 will use front face values for both front & back face values, GL will not call
                                         ///< gl*Separate() funcs
   bool     m_bDepthTest         = true;
   bool     m_bDepthWrite        = true;
@@ -278,7 +278,6 @@ struct xiiGALBufferCreationDescription : public xiiHashableStruct<xiiGALBufferCr
   xiiEnum<xiiGALBufferType> m_BufferType = xiiGALBufferType::Generic;
 
   bool m_bUseForIndirectArguments = false;
-  bool m_bUseAsFormattedBuffer    = false;
   bool m_bUseAsStructuredBuffer   = false;
   bool m_bAllowRawViews           = false;
   bool m_bStreamOutputTarget      = false;
@@ -320,6 +319,12 @@ struct xiiGALTextureCreationDescription : public xiiHashableStruct<xiiGALTexture
   xiiGALResourceAccess m_ResourceAccess;
 
   void* m_pExisitingNativeObject = nullptr; ///< Can be used to encapsulate existing native textures in objects usable by the GAL
+
+  bool IsArray() const;
+  bool Is1D() const;
+  bool Is2D() const;
+  bool Is3D() const;
+  bool IsCube() const;
 };
 
 struct xiiGALResourceViewCreationDescription : public xiiHashableStruct<xiiGALResourceViewCreationDescription>

@@ -230,7 +230,7 @@ void xiiProcVertexColorComponentManager::OnRenderEvent(const xiiRenderWorldRende
     xiiGALComputeCommandEncoder* pGALCommandEncoder = pGALPass->BeginCompute();
 
     xiiUInt32 uiByteOffset = dataCopy.m_uiStart * sizeof(xiiUInt32);
-    pGALCommandEncoder->UpdateBuffer(m_hVertexColorBuffer, uiByteOffset, dataCopy.m_Data.ToByteArray(), xiiGALUpdateMode::CopyToTempStorage);
+    pGALCommandEncoder->UpdateBuffer(m_hVertexColorBuffer, uiByteOffset, dataCopy.m_Data.ToByteArray(), xiiGALUpdateMode::Discard);
 
     dataCopy = DataCopy();
 

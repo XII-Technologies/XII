@@ -27,10 +27,7 @@ xiiCopyTexturePass::xiiCopyTexturePass() :
 
 xiiCopyTexturePass::~xiiCopyTexturePass() = default;
 
-bool xiiCopyTexturePass::GetRenderTargetDescriptions(
-  const xiiView&                                             view,
-  const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs,
-  xiiArrayPtr<xiiGALTextureCreationDescription>              outputs)
+bool xiiCopyTexturePass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -79,7 +76,6 @@ void xiiCopyTexturePass::Execute(const xiiRenderViewContext& renderViewContext, 
     pCommandEncoder->CopyTexture(pOutput->m_TextureHandle, pInput->m_TextureHandle);
   }
 }
-
 
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_Passes_CopyTexturePass);

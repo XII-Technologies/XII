@@ -89,7 +89,9 @@ xiiResult xiiGALResourceViewDX11::InitPlatform(xiiGALDevice* pDevice)
     switch (texDesc.m_Type)
     {
       case xiiGALTextureType::Texture2D:
+      case xiiGALTextureType::Texture2DArray:
       case xiiGALTextureType::Texture2DProxy:
+      case xiiGALTextureType::Texture2DProxyArray:
 
         if (!bIsArrayView)
         {
@@ -125,6 +127,7 @@ xiiResult xiiGALResourceViewDX11::InitPlatform(xiiGALDevice* pDevice)
         break;
 
       case xiiGALTextureType::TextureCube:
+      case xiiGALTextureType::TextureCubeArray:
 
         if (!bIsArrayView)
         {

@@ -23,7 +23,7 @@ xiiResult xiiGALBlendStateDiligent::InitPlatform(xiiGALDevice* pDevice)
   m_BlendStateDesc.AlphaToCoverageEnable  = m_Description.m_bAlphaToCoverage;
   m_BlendStateDesc.IndependentBlendEnable = m_Description.m_bIndependentBlend;
 
-  for (xiiInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
+  for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
   {
     m_BlendStateDesc.RenderTargets[i].BlendEnable           = m_Description.m_RenderTargetBlendDescriptions[i].m_bBlendingEnabled;
     m_BlendStateDesc.RenderTargets[i].BlendOp               = xiiDiligentUtils::ToDiligentBlendOperation(m_Description.m_RenderTargetBlendDescriptions[i].m_BlendOp);
@@ -152,7 +152,7 @@ xiiResult xiiGALSamplerStateDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALSamplerStateDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pSamplerState);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pSamplerState);
 
   return XII_SUCCESS;
 }

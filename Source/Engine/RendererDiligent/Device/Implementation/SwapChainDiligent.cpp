@@ -12,33 +12,17 @@
 #  include <Foundation/Basics/Platform/Linux/IncludeX11.h>
 #endif
 
-#if D3D11_SUPPORTED
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
 #  include <Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
 #endif
 
-#if D3D12_SUPPORTED
+#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 #  include <Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
 #endif
 
-#if VULKAN_SUPPORTED
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
 #  include <Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
 #endif
-
-template <>
-struct xiiHashHelper<RenderTargetInfo>
-{
-  XII_ALWAYS_INLINE static xiiUInt32 Hash(const RenderTargetInfo& value)
-  {
-    const xiiUInt32 hashA = xiiHashHelper<const void*>::Hash(value.m_pTexture);
-    const xiiUInt32 hashB = xiiHashHelper<const void*>::Hash(value.m_pTextureView);
-    return xiiHashingUtils::CombineHashValues32(hashA, hashB);
-  }
-
-  XII_ALWAYS_INLINE static bool Equal(const RenderTargetInfo& a, const RenderTargetInfo& b)
-  {
-    return a.m_pTexture == b.m_pTexture && a.m_pTextureView == b.m_pTextureView;
-  }
-};
 
 xiiGALResourceFormat::Enum ToGALRenderTargetFormat(Diligent::TEXTURE_FORMAT format)
 {
@@ -86,7 +70,21 @@ void xiiGALSwapChainDiligent::PresentRenderTarget(xiiGALDevice* pDevice)
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");
 
-  // xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+
+  XII_ASSERT_DEV(m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture() == static_cast<xiiGALTextureDiligent*>(const_cast<xiiGALTexture*>(pDeviceDiligent->GetTexture(m_RenderTargets.m_hRTs[0])))->GetTexture(), "Invalid Swapchain texture. Did you forget to call xiiGALSwapChain::AcquireNextRenderTarget?");
+
+  // Ensure that the current Swapchain image is in the PRESENT state.
+  {
+    Diligent::StateTransitionDesc transitionDesc;
+    transitionDesc.pResource      = m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture();
+    transitionDesc.OldState       = m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture()->GetState();
+    transitionDesc.NewState       = Diligent::RESOURCE_STATE_PRESENT;
+    transitionDesc.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+    transitionDesc.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+
+    pDeviceDiligent->GetImmediateContext()->TransitionResourceStates(1u, &transitionDesc);
+  }
 
   m_pSwapChain->Present(m_CurrentPresentMode == xiiGALPresentMode::VSync ? 1u : 0u);
 }
@@ -102,7 +100,7 @@ xiiResult xiiGALSwapChainDiligent::UpdateSwapChain(xiiGALDevice* pDevice, xiiEnu
   DestroyBackBufferInternal(pDeviceDiligent);
 
   // Need to flush dead objects or ResizeBuffers will fail as the backbuffer is still referenced.
-  pDeviceDiligent->FlushDeadObjects();
+  pDevice->WaitIdle();
 
   m_pSwapChain->Resize(m_WindowDesc.m_pWindow->GetClientAreaSize().width, m_WindowDesc.m_pWindow->GetClientAreaSize().height);
 
@@ -208,7 +206,7 @@ xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent
   if (pRTV == nullptr)
   {
     xiiLog::Error("Couldn't access backbuffer texture of swapchain");
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pSwapChain);
+    XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pSwapChain);
 
     return XII_FAILURE;
   }
@@ -227,7 +225,7 @@ xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent
   TexDesc.m_bAllowShaderResourceView    = false;
   TexDesc.m_bCreateRenderTarget         = true;
   TexDesc.m_ResourceAccess.m_bImmutable = true;
-  TexDesc.m_ResourceAccess.m_bReadBack  = false;
+  TexDesc.m_ResourceAccess.m_bReadBack  = true;
   TexDesc.m_Format                      = ToGALRenderTargetFormat(rtvDesc.Format);
 
   xiiGALTextureHandle hBackbufferTexture = pDeviceDiligent->CreateTexture(TexDesc);
@@ -242,12 +240,14 @@ xiiResult xiiGALSwapChainDiligent::CreateBackBufferInternal(xiiGALDeviceDiligent
     m_RenderTargets.m_hRTs[0] = hBackbufferTexture;
   }
 
+  m_CurrentSize = xiiSizeU32(TexDesc.m_uiWidth, TexDesc.m_uiHeight);
+
   return XII_SUCCESS;
 }
 
 void xiiGALSwapChainDiligent::DestroyBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent)
 {
-  for (auto iter : m_BackbufferTextures)
+  for (auto& iter : m_BackbufferTextures)
   {
     pDeviceDiligent->DestroyTexture(iter.Value());
 
@@ -272,7 +272,7 @@ xiiResult xiiGALSwapChainDiligent::DeInitPlatform(xiiGALDevice* pDevice)
     // See: https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Destroying
     m_pSwapChain->SetWindowedMode();
 
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pSwapChain);
+    XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pSwapChain);
 
     m_WindowDesc.m_pWindow->RemoveReference();
   }

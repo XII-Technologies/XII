@@ -132,7 +132,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       desc.m_uiWidth                  = uiHzbWidth / 2;
       desc.m_uiHeight                 = uiHzbHeight / 2;
       desc.m_uiMipLevelCount          = 3;
-      desc.m_Type                     = xiiGALTextureType::Texture2D;
+      desc.m_Type                     = xiiGALTextureType::Texture2DArray;
       desc.m_Format                   = xiiGALResourceFormat::RHalf;
       desc.m_bCreateRenderTarget      = true;
       desc.m_bAllowShaderResourceView = true;
@@ -168,7 +168,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       }
     }
 
-    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::RGHalf, xiiGALMSAASampleCount::None, pOutput->m_Desc.m_uiArraySize);
+    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::RGHalf, xiiGALMSAASampleCount::None, pOutput->m_Desc.m_uiArraySize, true);
   }
 
   // Mip map passes
@@ -202,7 +202,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       constants->PixelSize                  = pixelSize;
       constants->LinearizeDepth             = (i == 0);
 
-      renderViewContext.m_pRenderContext->BindConstantBuffer("xiiDownscaleDepthConstants", m_hDownscaleConstantBuffer);
+      renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiDownscaleDepthConstants), m_hDownscaleConstantBuffer);
       renderViewContext.m_pRenderContext->BindShader(m_hDownscaleShader);
 
       renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", hInputView);
@@ -239,7 +239,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(tempSSAOTexture));
     auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALPass, renderViewContext, renderingSetup, "SSAO", renderViewContext.m_pCamera->IsStereoscopic());
 
-    renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
+    renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiSSAOConstants), m_hSSAOConstantBuffer);
     renderViewContext.m_pRenderContext->BindShader(m_hSSAOShader);
 
     renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", pDevice->GetDefaultResourceView(pDepthInput->m_TextureHandle));
@@ -259,7 +259,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(pOutput->m_TextureHandle));
     auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALPass, renderViewContext, renderingSetup, "Blur", renderViewContext.m_pCamera->IsStereoscopic());
 
-    renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
+    renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiSSAOConstants), m_hSSAOConstantBuffer);
     renderViewContext.m_pRenderContext->BindShader(m_hBlurShader);
 
     renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", pDevice->GetDefaultResourceView(tempSSAOTexture));
@@ -333,13 +333,20 @@ void xiiAOPass::CreateSamplerState()
   if (m_hSSAOSamplerState.IsInvalidated())
   {
     xiiGALSamplerStateCreationDescription desc;
-    desc.m_MinFilter   = xiiGALTextureFilterMode::Point;
-    desc.m_MagFilter   = xiiGALTextureFilterMode::Point;
-    desc.m_MipFilter   = xiiGALTextureFilterMode::Point;
-    desc.m_AddressU    = xiiImageAddressMode::ClampBorder;
-    desc.m_AddressV    = xiiImageAddressMode::ClampBorder;
-    desc.m_AddressW    = xiiImageAddressMode::ClampBorder;
-    desc.m_BorderColor = xiiColor::White * m_fFadeOutEnd;
+    desc.m_MinFilter = xiiGALTextureFilterMode::Point;
+    desc.m_MagFilter = xiiGALTextureFilterMode::Point;
+    desc.m_MipFilter = xiiGALTextureFilterMode::Point;
+    desc.m_AddressU  = xiiImageAddressMode::ClampBorder;
+    desc.m_AddressV  = xiiImageAddressMode::ClampBorder;
+    desc.m_AddressW  = xiiImageAddressMode::ClampBorder;
+    if (xiiGALDevice::GetDefaultDevice()->GetCapabilities().m_DeviceType == xiiGraphicsDeviceType::Vulkan)
+    {
+      desc.m_BorderColor = xiiColor::White;
+    }
+    else
+    {
+      desc.m_BorderColor = xiiColor::White * m_fFadeOutEnd;
+    }
 
     m_hSSAOSamplerState = xiiGALDevice::GetDefaultDevice()->CreateSamplerState(desc);
   }

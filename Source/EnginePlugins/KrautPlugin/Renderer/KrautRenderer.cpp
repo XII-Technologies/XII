@@ -140,7 +140,7 @@ xiiKrautRenderer::TempTreeCB::TempTreeCB(xiiRenderContext* pRenderContext)
   // TODO This pattern looks like it is inefficient. Should it use the GPU pool instead somehow?
   m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage(m_pConstants, XII_STRINGIZE(xiiKrautTreeConstants));
 
-  pRenderContext->BindConstantBuffer("xiiKrautTreeConstants", m_hConstantBuffer);
+  pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiKrautTreeConstants), m_hConstantBuffer);
 }
 
 xiiKrautRenderer::TempTreeCB::~TempTreeCB()

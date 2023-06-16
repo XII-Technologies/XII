@@ -58,7 +58,7 @@ o
 			Uuid{u4{5486107438184343714,4767629773727834831}}
 		}
 		s %MeshFile{""}
-		s %NormalPrecision{"xiiMeshNormalPrecision::_10Bit"}
+		s %NormalPrecision{"xiiMeshNormalPrecision::_8Bit"}
 		s %PrimitiveType{"xiiMeshPrimitive::GeodesicSphere"}
 		f %Radius{0x0000003F}
 		f %Radius2{0x0000003F}

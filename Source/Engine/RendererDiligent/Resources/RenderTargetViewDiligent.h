@@ -23,11 +23,11 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::ITextureView* m_pRenderTargetView = nullptr;
+  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pRenderTargetView;
 
-  Diligent::ITextureView* m_pDepthStencilView = nullptr;
+  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pDepthStencilView;
 
-  Diligent::ITextureView* m_pUnorderedAccessView = nullptr;
+  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pUnorderedAccessView;
 };
 
 #include <RendererDiligent/Resources/Implementation/RenderTargetViewDiligent_inl.h>

@@ -152,7 +152,7 @@ xiiResult xiiGALDevice::Shutdown()
 
   DestroyDeadObjects();
 
-  // make sure we are not listed as the default device anymore
+  // Ensure we are not listed as the default device anymore
   if (xiiGALDevice::HasDefaultDevice() && xiiGALDevice::GetDefaultDevice() == this)
   {
     xiiGALDevice::SetDefaultDevice(nullptr);
@@ -447,8 +447,6 @@ void xiiGALDevice::DestroySamplerState(xiiGALSamplerStateHandle hSamplerState)
   }
 }
 
-
-
 xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescription& desc)
 {
   XII_GALDEVICE_LOCK_AND_CHECK();
@@ -607,7 +605,6 @@ xiiGALBufferHandle xiiGALDevice::CreateConstantBuffer(xiiUInt32 uiBufferSize, co
 
   return CreateBuffer(desc);
 }
-
 
 xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& desc, xiiArrayPtr<xiiGALSystemMemoryDescription> initialData)
 {
@@ -996,15 +993,7 @@ xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const SwapChainFactoryFuncti
 {
   XII_GALDEVICE_LOCK_AND_CHECK();
 
-  ///// \todo Platform independent validation
-  //if (desc.m_pWindow == nullptr)
-  //{
-  //  xiiLog::Error("The desc for the swap chain creation contained an invalid (nullptr) window handle!");
-  //  return xiiGALSwapChainHandle();
-  //}
-
   xiiGALSwapChain* pSwapChain = func(&m_Allocator);
-  //xiiGALSwapChainDX11* pSwapChain = XII_NEW(&m_Allocator, xiiGALSwapChainDX11, Description);
 
   if (!pSwapChain->InitPlatform(this).Succeeded())
   {
@@ -1155,8 +1144,6 @@ xiiGALTextureHandle xiiGALDevice::GetBackBufferTextureFromSwapChain(xiiGALSwapCh
   }
 }
 
-
-
 // Misc functions
 
 void xiiGALDevice::BeginFrame(const xiiUInt64 uiRenderFrame)
@@ -1240,12 +1227,10 @@ xiiUInt64 xiiGALDevice::GetMemoryConsumptionForTexture(const xiiGALTextureCreati
   return uiMemory;
 }
 
-
 xiiUInt64 xiiGALDevice::GetMemoryConsumptionForBuffer(const xiiGALBufferCreationDescription& desc) const
 {
   return desc.m_uiTotalSize;
 }
-
 
 void xiiGALDevice::WaitIdle()
 {
@@ -1310,9 +1295,8 @@ void xiiGALDevice::DestroyDeadObjects()
         XII_VERIFY(m_BlendStateTable.Remove(pBlendState->GetDescription().CalculateHash()), "BlendState not found in de-duplication table");
 
         DestroyBlendStatePlatform(pBlendState);
-
-        break;
       }
+      break;
       case GALObjectType::DepthStencilState:
       {
         xiiGALDepthStencilStateHandle hDepthStencilState(xiiGAL::xii16_16Id(deadObject.m_uiHandle));
@@ -1323,9 +1307,8 @@ void xiiGALDevice::DestroyDeadObjects()
                    "DepthStencilState not found in de-duplication table");
 
         DestroyDepthStencilStatePlatform(pDepthStencilState);
-
-        break;
       }
+      break;
       case GALObjectType::RasterizerState:
       {
         xiiGALRasterizerStateHandle hRasterizerState(xiiGAL::xii16_16Id(deadObject.m_uiHandle));
@@ -1336,9 +1319,8 @@ void xiiGALDevice::DestroyDeadObjects()
           m_RasterizerStateTable.Remove(pRasterizerState->GetDescription().CalculateHash()), "RasterizerState not found in de-duplication table");
 
         DestroyRasterizerStatePlatform(pRasterizerState);
-
-        break;
       }
+      break;
       case GALObjectType::SamplerState:
       {
         xiiGALSamplerStateHandle hSamplerState(xiiGAL::xii16_16Id(deadObject.m_uiHandle));
@@ -1348,9 +1330,8 @@ void xiiGALDevice::DestroyDeadObjects()
         XII_VERIFY(m_SamplerStateTable.Remove(pSamplerState->GetDescription().CalculateHash()), "SamplerState not found in de-duplication table");
 
         DestroySamplerStatePlatform(pSamplerState);
-
-        break;
       }
+      break;
       case GALObjectType::Shader:
       {
         xiiGALShaderHandle hShader(xiiGAL::xii18_14Id(deadObject.m_uiHandle));
@@ -1359,9 +1340,8 @@ void xiiGALDevice::DestroyDeadObjects()
         m_Shaders.Remove(hShader, &pShader);
 
         DestroyShaderPlatform(pShader);
-
-        break;
       }
+      break;
       case GALObjectType::Buffer:
       {
         xiiGALBufferHandle hBuffer(xiiGAL::xii18_14Id(deadObject.m_uiHandle));
@@ -1371,9 +1351,8 @@ void xiiGALDevice::DestroyDeadObjects()
 
         DestroyViews(pBuffer);
         DestroyBufferPlatform(pBuffer);
-
-        break;
       }
+      break;
       case GALObjectType::Texture:
       {
         xiiGALTextureHandle hTexture(xiiGAL::xii18_14Id(deadObject.m_uiHandle));
@@ -1383,9 +1362,8 @@ void xiiGALDevice::DestroyDeadObjects()
 
         DestroyViews(pTexture);
         DestroyTexturePlatform(pTexture);
-
-        break;
       }
+      break;
       case GALObjectType::ResourceView:
       {
         xiiGALResourceViewHandle hResourceView(xiiGAL::xii18_14Id(deadObject.m_uiHandle));
@@ -1400,9 +1378,8 @@ void xiiGALDevice::DestroyDeadObjects()
         pResourceView->m_pResource = nullptr;
 
         DestroyResourceViewPlatform(pResourceView);
-
-        break;
       }
+      break;
       case GALObjectType::RenderTargetView:
       {
         xiiGALRenderTargetViewHandle hRenderTargetView(xiiGAL::xii18_14Id(deadObject.m_uiHandle));
@@ -1416,9 +1393,8 @@ void xiiGALDevice::DestroyDeadObjects()
         pRenderTargetView->m_pTexture = nullptr;
 
         DestroyRenderTargetViewPlatform(pRenderTargetView);
-
-        break;
       }
+      break;
       case GALObjectType::UnorderedAccessView:
       {
         xiiGALUnorderedAccessViewHandle hUnorderedAccessViewHandle(xiiGAL::xii18_14Id(deadObject.m_uiHandle));
@@ -1433,9 +1409,8 @@ void xiiGALDevice::DestroyDeadObjects()
         pUnorderedAccesssView->m_pResource = nullptr;
 
         DestroyUnorderedAccessViewPlatform(pUnorderedAccesssView);
-
-        break;
       }
+      break;
       case GALObjectType::SwapChain:
       {
         xiiGALSwapChainHandle hSwapChain(xiiGAL::xii16_16Id(deadObject.m_uiHandle));
@@ -1448,9 +1423,8 @@ void xiiGALDevice::DestroyDeadObjects()
           pSwapChain->DeInitPlatform(this).IgnoreResult();
           XII_DELETE(&m_Allocator, pSwapChain);
         }
-
-        break;
       }
+      break;
       case GALObjectType::Query:
       {
         xiiGALQueryHandle hQuery(xiiGAL::xii20_12Id(deadObject.m_uiHandle));
@@ -1459,9 +1433,8 @@ void xiiGALDevice::DestroyDeadObjects()
         m_Queries.Remove(hQuery, &pQuery);
 
         DestroyQueryPlatform(pQuery);
-
-        break;
       }
+      break;
       case GALObjectType::VertexDeclaration:
       {
         xiiGALVertexDeclarationHandle hVertexDeclaration(xiiGAL::xii18_14Id(deadObject.m_uiHandle));
@@ -1471,11 +1444,10 @@ void xiiGALDevice::DestroyDeadObjects()
         m_VertexDeclarationTable.Remove(pVertexDeclaration->GetDescription().CalculateHash());
 
         DestroyVertexDeclarationPlatform(pVertexDeclaration);
-
-        break;
       }
-      default:
-        XII_ASSERT_NOT_IMPLEMENTED;
+      break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 

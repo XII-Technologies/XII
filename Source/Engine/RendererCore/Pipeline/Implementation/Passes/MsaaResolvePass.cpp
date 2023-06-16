@@ -50,6 +50,7 @@ bool xiiMsaaResolvePass::GetRenderTargetDescriptions(const xiiView& view, const 
 
     xiiGALTextureCreationDescription desc = *pInput;
     desc.m_SampleCount                    = xiiGALMSAASampleCount::None;
+    desc.m_Type                           = xiiGALTextureType::Texture2DArray;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }
@@ -108,7 +109,6 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
     }
   }
 }
-
 
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_Passes_MsaaResolvePass);

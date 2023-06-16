@@ -35,7 +35,7 @@ namespace
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshNormalPrecision, 1)
-  XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_10Bit),
+  XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_8Bit),
   XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_16Bit),
   XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_32Bit),
 XII_END_STATIC_REFLECTED_ENUM;
@@ -128,6 +128,7 @@ xiiResult xiiMeshBufferUtils::EncodeFromVec3(const xiiVec3& vSource, xiiArrayPtr
       dest.GetPtr()[2] = xiiMath::ColorFloatToSignedByte(vSource.z);
       dest.GetPtr()[3] = 0;
       return XII_SUCCESS;
+
     default:
       return XII_FAILURE;
   }
@@ -264,6 +265,7 @@ xiiResult xiiMeshBufferUtils::DecodeToVec3(xiiArrayPtr<const xiiUInt8> source, x
       ref_vDest.y = xiiMath::ColorSignedByteToFloat(source.GetPtr()[1]);
       ref_vDest.z = xiiMath::ColorSignedByteToFloat(source.GetPtr()[2]);
       return XII_SUCCESS;
+
     default:
       return XII_FAILURE;
   }

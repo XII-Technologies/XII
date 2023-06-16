@@ -69,15 +69,6 @@ GPUTestingEnvironment* CreateTestingEnvironmentMtl(const GPUTestingEnvironment::
     return new TestingEnvironmentMtl{CI, SCDesc};
 }
 
-void CreateSparseTextureMtl(IRenderDevice*     pDevice,
-                            const TextureDesc& TexDesc,
-                            IDeviceMemory*     pMemory,
-                            ITexture**         ppTexture)
-{
-    RefCntAutoPtr<IRenderDeviceMtl> pDeviceMtl{pDevice, IID_RenderDeviceMtl};
-    pDeviceMtl->CreateSparseTexture(TexDesc, pMemory, ppTexture);
-}
-
 } // namespace Testing
 
 } // namespace Diligent

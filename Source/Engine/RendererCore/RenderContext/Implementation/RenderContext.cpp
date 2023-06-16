@@ -440,8 +440,7 @@ void xiiRenderContext::BindShader(const xiiShaderResourceHandle& hShader, xiiBit
 void xiiRenderContext::BindMeshBuffer(const xiiMeshBufferResourceHandle& hMeshBuffer)
 {
   xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(hMeshBuffer, xiiResourceAcquireMode::AllowLoadingFallback);
-  BindMeshBuffer(pMeshBuffer->GetVertexBuffer(), pMeshBuffer->GetIndexBuffer(), &(pMeshBuffer->GetVertexDeclaration()), pMeshBuffer->GetTopology(),
-                 pMeshBuffer->GetPrimitiveCount());
+  BindMeshBuffer(pMeshBuffer->GetVertexBuffer(), pMeshBuffer->GetIndexBuffer(), &(pMeshBuffer->GetVertexDeclaration()), pMeshBuffer->GetTopology(), pMeshBuffer->GetPrimitiveCount());
 }
 
 void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBufferHandle hIndexBuffer, const xiiVertexDeclarationInfo* pVertexDeclarationInfo, xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiPrimitiveCount, xiiGALBufferHandle hVertexBuffer2, xiiGALBufferHandle hVertexBuffer3, xiiGALBufferHandle hVertexBuffer4)
@@ -472,8 +471,7 @@ void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBu
   {
     m_Topology = topology;
 
-    xiiTempHashedString sTopologies[xiiGALPrimitiveTopology::ENUM_COUNT] = {
-      xiiTempHashedString("TOPOLOGY_POINTS"), xiiTempHashedString("TOPOLOGY_LINES"), xiiTempHashedString("TOPOLOGY_TRIANGLES")};
+    xiiTempHashedString sTopologies[xiiGALPrimitiveTopology::ENUM_COUNT] = {xiiTempHashedString("TOPOLOGY_POINTS"), xiiTempHashedString("TOPOLOGY_LINES"), xiiTempHashedString("TOPOLOGY_TRIANGLES")};
 
     SetShaderPermutationVariable("TOPOLOGY", sTopologies[m_Topology]);
   }
@@ -657,7 +655,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     if (pMaterial != nullptr)
     {
       pMaterial->UpdateConstantBuffer(pShaderPermutation);
-      BindConstantBuffer("xiiMaterialConstants", pMaterial->m_hConstantBufferStorage);
+      BindConstantBuffer(XII_STRINGIZE(xiiMaterialConstants), pMaterial->m_hConstantBufferStorage);
     }
 
     UploadConstants();
@@ -1020,7 +1018,7 @@ xiiResult xiiRenderContext::BuildVertexDeclaration(xiiGALShaderHandle hShader, c
 
 void xiiRenderContext::UploadConstants()
 {
-  BindConstantBuffer("xiiGlobalConstants", m_hGlobalConstantBufferStorage);
+  BindConstantBuffer(XII_STRINGIZE(xiiGlobalConstants), m_hGlobalConstantBufferStorage);
 
   for (auto it = m_BoundConstantBuffers.GetIterator(); it.IsValid(); ++it)
   {
@@ -1122,7 +1120,7 @@ xiiMaterialResource* xiiRenderContext::ApplyMaterialState()
 
     if (!pMaterial->m_hConstantBufferStorage.IsInvalidated())
     {
-      BindConstantBuffer("xiiMaterialConstants", pMaterial->m_hConstantBufferStorage);
+      BindConstantBuffer(XII_STRINGIZE(xiiMaterialConstants), pMaterial->m_hConstantBufferStorage);
     }
 
     for (auto it = pCachedValues->m_PermutationVars.GetIterator(); it.IsValid(); ++it)
@@ -1255,7 +1253,7 @@ void xiiRenderContext::ApplySamplerBindings(xiiGALShaderStage::Enum stage, const
     xiiGALSamplerStateHandle hSamplerState;
     if (!m_BoundSamplers.TryGetValue(uiResourceHash, hSamplerState))
     {
-      hSamplerState = GetDefaultSamplerState(xiiDefaultSamplerFlags::LinearFiltering); // Bind a default state to avoid DX11 errors.
+      hSamplerState = GetDefaultSamplerState(xiiDefaultSamplerFlags::LinearFiltering); // Bind a default state to avoid D3D11 errors.
     }
 
     m_pGALCommandEncoder->SetSamplerState(stage, binding.m_iSlot, hSamplerState);
@@ -1280,8 +1278,8 @@ void xiiRenderContext::ApplyBufferBindings(xiiGALShaderStage::Enum stage, const 
 
 void xiiRenderContext::SetDefaultTextureFilter(xiiTextureFilterSetting::Enum filter)
 {
-  XII_ASSERT_DEBUG(
-    filter >= xiiTextureFilterSetting::FixedBilinear && filter <= xiiTextureFilterSetting::FixedAnisotropic16x, "Invalid default texture filter");
+  XII_ASSERT_DEBUG(filter >= xiiTextureFilterSetting::FixedBilinear && filter <= xiiTextureFilterSetting::FixedAnisotropic16x, "Invalid default texture filter");
+
   filter = xiiMath::Clamp(filter, xiiTextureFilterSetting::FixedBilinear, xiiTextureFilterSetting::FixedAnisotropic16x);
 
   if (m_DefaultTextureFilter == filter)

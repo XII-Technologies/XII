@@ -281,11 +281,7 @@ void xiiReflectionProbeUpdater::ScheduleUpdateSteps()
   }
 }
 
-void xiiReflectionProbeUpdater::CreateViews(
-  xiiDynamicArray<ReflectionView>& views,
-  xiiUInt32                        uiMaxRenderViews,
-  const char*                      szNameSuffix,
-  const char*                      szRenderPipelineResource)
+void xiiReflectionProbeUpdater::CreateViews(xiiDynamicArray<ReflectionView>& views, xiiUInt32 uiMaxRenderViews, const char* szNameSuffix, const char* szRenderPipelineResource)
 {
   uiMaxRenderViews = xiiMath::Max<xiiUInt32>(uiMaxRenderViews, 1);
 

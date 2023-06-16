@@ -51,9 +51,11 @@ void xiiMaterialContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
       {
         switch (m_PreviewModel)
         {
+#if 0
           case PreviewModel::Ball:
             pMesh->SetMesh(m_hBallMesh);
             break;
+#endif
           case PreviewModel::Sphere:
             pMesh->SetMesh(m_hSphereMesh);
             break;
@@ -208,9 +210,11 @@ void xiiMaterialContext::OnInitialize()
     }
   }
 
+#if 0
   {
     m_hBallMesh = xiiResourceManager::LoadResource<xiiMeshResource>("Editor/Meshes/MaterialBall.xiiMesh");
   }
+#endif
 
   auto pWorld = m_pWorld;
   XII_LOCK(pWorld->GetWriteMarker());
@@ -225,7 +229,7 @@ void xiiMaterialContext::OnInitialize()
 
     xiiMeshComponent* pMesh;
     m_hMeshComponent = xiiMeshComponent::CreateComponent(pObj, pMesh);
-    pMesh->SetMesh(m_hBallMesh);
+    pMesh->SetMesh(m_hSphereMesh);
     xiiStringBuilder sMaterialGuid;
     xiiConversionUtils::ToString(GetDocumentGuid(), sMaterialGuid);
     m_hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(sMaterialGuid);

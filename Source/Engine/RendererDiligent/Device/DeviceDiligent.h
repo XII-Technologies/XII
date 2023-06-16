@@ -12,6 +12,8 @@ struct xiiDiligentMemoryAllocator;
 using xiiGALFormatLookupEntryDiligent = xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, Diligent::TEX_FORMAT_UNKNOWN>;
 using xiiGALFormatLookupTableDiligent = xiiGALFormatLookupTable<xiiGALFormatLookupEntryDiligent>;
 
+class xiiPipelineBarrierDiligent;
+
 /// \brief The Diligent device implementation of the graphics abstraction layer.
 class XII_RENDERERDILIGENT_DLL xiiGALDeviceDiligent : public xiiGALDevice
 {
@@ -35,8 +37,6 @@ public:
   const xiiInt32                         GetValidationLevel() const;
 
   void ReportLiveGpuObjects();
-
-  void FlushDeadObjects();
 
   // These functions need to be implemented by a render API abstraction
 protected:
@@ -124,13 +124,19 @@ protected:
 
   void WaitForFencePlatform(Diligent::IDeviceContext* pContext, Diligent::IQuery* pFence);
 
-  Diligent::RENDER_DEVICE_TYPE                  m_DeviceType     = Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
-  Diligent::IEngineFactory*                     m_pEngineFactory = nullptr;
-  Diligent::IRenderDevice*                      m_pDevice        = nullptr;
-  xiiDynamicArray<Diligent::IDeviceContext*>    m_pDeviceContexts;
-  xiiUInt32                                     m_uiNumImmediateContexts = 0;
-  Diligent::GraphicsAdapterInfo                 m_AdapterAttribs;
-  xiiDynamicArray<Diligent::DisplayModeAttribs> m_DisplayModes;
+  Diligent::IBuffer* FindTempBuffer(xiiUInt32 uiSize);
+
+  Diligent::ITexture* FindTempTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiGALResourceFormat::Enum format);
+
+  void FreeTempResources(xiiUInt64 uiFrame);
+
+  Diligent::RENDER_DEVICE_TYPE                                       m_DeviceType = Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
+  Diligent::RefCntAutoPtr<Diligent::IEngineFactory>                  m_pEngineFactory;
+  Diligent::RefCntAutoPtr<Diligent::IRenderDevice>                   m_pDevice;
+  xiiDynamicArray<Diligent::RefCntAutoPtr<Diligent::IDeviceContext>> m_pDeviceContexts;
+  xiiUInt32                                                          m_uiNumImmediateContexts = 0;
+  Diligent::GraphicsAdapterInfo                                      m_AdapterAttribs;
+  xiiDynamicArray<Diligent::DisplayModeAttribs>                      m_DisplayModes;
 
   xiiInt32               m_iValidationLevel = -1;
   xiiUInt32              m_uiAdapterId      = Diligent::DEFAULT_ADAPTER_ID;
@@ -139,7 +145,31 @@ protected:
 
   xiiGALFormatLookupTableDiligent m_FormatLookupTable;
 
-  xiiUniquePtr<xiiGALPassDiligent> m_pDefaultPass;
+  xiiUniquePtr<xiiGALPassDiligent>         m_pDefaultPass;
+  xiiUniquePtr<xiiPipelineBarrierDiligent> m_pPipelineBarrier;
+
+  struct UsedTempResource
+  {
+    XII_DECLARE_POD_TYPE();
+
+    Diligent::IDeviceObject* m_pResource;
+    xiiUInt64                m_uiFrame;
+    xiiUInt32                m_uiHash;
+  };
+
+  struct TempResourceType
+  {
+    enum Enum
+    {
+      Buffer,
+      Texture,
+
+      ENUM_COUNT
+    };
+  };
+
+  xiiMap<xiiUInt32, xiiDynamicArray<Diligent::IDeviceObject*>, xiiCompareHelper<xiiUInt32>, xiiLocalAllocatorWrapper> m_FreeTempResources[TempResourceType::ENUM_COUNT];
+  xiiDeque<UsedTempResource, xiiLocalAllocatorWrapper>                                                                m_UsedTempResources[TempResourceType::ENUM_COUNT];
 
 #if XII_ENABLED(XII_USE_PROFILING)
   struct GPUTimingScope* m_pFrameTimingScope    = nullptr;

@@ -114,8 +114,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiKrautTreeResource, xiiKrautTreeResourceDesc
     buffer.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALResourceFormat::XYZFloat);                                                 // 0
     buffer.AddStream(xiiGALVertexAttributeSemantic::TexCoord0, xiiGALResourceFormat::XYFloat);                                                 // 1
     buffer.AddStream(xiiGALVertexAttributeSemantic::TexCoord1, xiiGALResourceFormat::XYFloat);                                                 // 2
-    buffer.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_10Bit));   // 3
-    buffer.AddStream(xiiGALVertexAttributeSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::_10Bit)); // 4
+    buffer.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_8Bit));    // 3
+    buffer.AddStream(xiiGALVertexAttributeSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::_8Bit));  // 4
     buffer.AddStream(xiiGALVertexAttributeSemantic::Color0, xiiGALResourceFormat::XYZWFloat);                                                  // 5 TODO: better packing
     buffer.AddStream(xiiGALVertexAttributeSemantic::Color1, xiiGALResourceFormat::XYZWFloat);                                                  // 6 TODO: better packing
     buffer.AllocateStreams(uiNumVertices, xiiGALPrimitiveTopology::Triangles, uiNumTriangles);
@@ -127,8 +127,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiKrautTreeResource, xiiKrautTreeResourceDesc
       buffer.SetVertexData<xiiVec3>(0, v, vtx.m_vPosition);
       buffer.SetVertexData<xiiVec2>(1, v, xiiVec2(vtx.m_vTexCoord.x, vtx.m_vTexCoord.y));
       buffer.SetVertexData<xiiVec2>(2, v, xiiVec2(vtx.m_vTexCoord.z, vtx.m_fAmbientOcclusion));
-      xiiMeshBufferUtils::EncodeNormal(vtx.m_vNormal, buffer.GetVertexData(3, v), xiiMeshNormalPrecision::_10Bit).IgnoreResult();
-      xiiMeshBufferUtils::EncodeTangent(vtx.m_vTangent, 1.0f, buffer.GetVertexData(4, v), xiiMeshNormalPrecision::_10Bit).IgnoreResult();
+      xiiMeshBufferUtils::EncodeNormal(vtx.m_vNormal, buffer.GetVertexData(3, v), xiiMeshNormalPrecision::_8Bit).IgnoreResult();
+      xiiMeshBufferUtils::EncodeTangent(vtx.m_vTangent, 1.0f, buffer.GetVertexData(4, v), xiiMeshNormalPrecision::_8Bit).IgnoreResult();
 
       xiiColor color;
       color.r = vtx.m_fBendAndFlutterStrength;

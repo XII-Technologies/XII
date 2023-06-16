@@ -103,5 +103,4 @@ bool xiiTargetPass::VerifyInput(const xiiView& view, const xiiArrayPtr<xiiGALTex
 }
 
 
-
 XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_Passes_TargetPass);

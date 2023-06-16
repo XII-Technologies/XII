@@ -38,10 +38,12 @@ xiiResult xiiGALTextureDX11::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<xii
   switch (m_Description.m_Type)
   {
     case xiiGALTextureType::Texture2D:
+    case xiiGALTextureType::Texture2DArray:
     case xiiGALTextureType::TextureCube:
+    case xiiGALTextureType::TextureCubeArray:
     {
       D3D11_TEXTURE2D_DESC Tex2DDesc;
-      Tex2DDesc.ArraySize = (m_Description.m_Type == xiiGALTextureType::Texture2D ? m_Description.m_uiArraySize : (m_Description.m_uiArraySize * 6));
+      Tex2DDesc.ArraySize = (m_Description.m_Type == xiiGALTextureType::Texture2D || m_Description.m_Type == xiiGALTextureType::Texture2DArray ? m_Description.m_uiArraySize : (m_Description.m_uiArraySize * 6));
       Tex2DDesc.BindFlags = 0;
 
       if (m_Description.m_bAllowShaderResourceView || m_Description.m_bAllowDynamicMipGeneration)
@@ -223,7 +225,9 @@ xiiResult xiiGALTextureDX11::CreateStagingTexture(xiiGALDeviceDX11* pDevice)
   switch (m_Description.m_Type)
   {
     case xiiGALTextureType::Texture2D:
+    case xiiGALTextureType::Texture2DArray:
     case xiiGALTextureType::TextureCube:
+    case xiiGALTextureType::TextureCubeArray:
     {
       D3D11_TEXTURE2D_DESC Desc;
       static_cast<ID3D11Texture2D*>(m_pDXTexture)->GetDesc(&Desc);

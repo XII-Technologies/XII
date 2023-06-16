@@ -86,18 +86,13 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
   return hNewTexture;
 }
 
-xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(
-  xiiUInt32                   uiWidth,
-  xiiUInt32                   uiHeight,
-  xiiGALResourceFormat::Enum  format,
-  xiiGALMSAASampleCount::Enum sampleCount,
-  xiiUInt32                   uiSliceColunt)
+xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiGALResourceFormat::Enum format, xiiGALMSAASampleCount::Enum sampleCount, xiiUInt32 uiSliceColunt, bool bIsArrayTarget /*= false*/)
 {
   xiiGALTextureCreationDescription TextureDesc;
   TextureDesc.m_bCreateRenderTarget      = true;
   TextureDesc.m_bAllowShaderResourceView = true;
   TextureDesc.m_Format                   = format;
-  TextureDesc.m_Type                     = xiiGALTextureType::Texture2D;
+  TextureDesc.m_Type                     = (sampleCount != xiiGALMSAASampleCount::None || bIsArrayTarget) ? xiiGALTextureType::Texture2DArray : xiiGALTextureType::Texture2D;
   TextureDesc.m_uiWidth                  = uiWidth;
   TextureDesc.m_uiHeight                 = uiHeight;
   TextureDesc.m_SampleCount              = sampleCount;

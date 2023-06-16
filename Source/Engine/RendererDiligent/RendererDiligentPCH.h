@@ -21,7 +21,6 @@
 #include <Graphics/GraphicsEngine/interface/Framebuffer.h>
 #include <Graphics/GraphicsEngine/interface/GraphicsTypesX.hpp>
 #include <Graphics/GraphicsEngine/interface/InputLayout.h>
-#include <Graphics/GraphicsEngine/interface/LoadEngineDll.h>
 #include <Graphics/GraphicsEngine/interface/PipelineResourceSignature.h>
 #include <Graphics/GraphicsEngine/interface/PipelineState.h>
 #include <Graphics/GraphicsEngine/interface/PipelineStateCache.h>
@@ -46,4 +45,5 @@
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #endif
 
-#include <RendererDiligent/Utilities/DiligentConversions.h>
+#include <RendererDiligent/Utilities/ConversionUtilsDiligent.h>
+#include <RendererDiligent/Utilities/PipelineBarrierDiligent.h>

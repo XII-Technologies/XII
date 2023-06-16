@@ -305,7 +305,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
     desc.m_uiMipLevelCount             = GetMipLevels();
     desc.m_uiArraySize                 = 1;
     desc.m_Format                      = xiiGALResourceFormat::RGBAHalf;
-    desc.m_Type                        = xiiGALTextureType::Texture2D;
+    desc.m_Type                        = xiiGALTextureType::Texture2DArray;
     desc.m_bCreateRenderTarget         = true;
     desc.m_bAllowUAV                   = true;
     desc.m_ResourceAccess.m_bReadBack  = true;
@@ -350,8 +350,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
   {
     const xiiUInt32 uiMipLevelCount = GetMipLevels();
 
-    xiiMaterialResourceHandle hDebugMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(
-      "{ 6f8067d0-ece8-44e1-af46-79b49266de41 }"); // ReflectionProbeVisualization.xiiMaterialAsset
+    xiiMaterialResourceHandle            hDebugMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("{ 6f8067d0-ece8-44e1-af46-79b49266de41 }"); // ReflectionProbeVisualization.xiiMaterialAsset
     xiiResourceLock<xiiMaterialResource> pMaterial(hDebugMaterial, xiiResourceAcquireMode::BlockTillLoaded);
     if (pMaterial->GetLoadingState() != xiiResourceState::Loaded)
       return;

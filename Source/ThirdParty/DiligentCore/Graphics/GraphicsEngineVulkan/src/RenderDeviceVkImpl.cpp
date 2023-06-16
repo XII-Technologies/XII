@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -157,6 +157,10 @@ RenderDeviceVkImpl::RenderDeviceVkImpl(IReferenceCounters*                      
                                                        m_PhysicalDevice->GetProperties(),
                                                        m_LogicalVkDevice->GetEnabledExtFeatures(),
                                                        m_PhysicalDevice->GetExtProperties());
+
+    m_DeviceInfo.MaxShaderVersion.HLSL   = {5, 1};
+    m_DeviceInfo.MaxShaderVersion.GLSL   = {4, 6};
+    m_DeviceInfo.MaxShaderVersion.GLESSL = {3, 2};
 
     // Note that Vulkan itself does not invert Y coordinate when transforming
     // normalized device Y to window space. However, we use negative viewport
@@ -403,7 +407,7 @@ void RenderDeviceVkImpl::SubmitCommandBuffer(SoftwareQueueIndex                 
 
         for (auto& val_fence : *pSignalFences)
         {
-            auto* pFenceVkImpl = val_fence.second.RawPtr<FenceVkImpl>();
+            FenceVkImpl* pFenceVkImpl = val_fence.second;
             if (!pFenceVkImpl->IsTimelineSemaphore())
                 pFenceVkImpl->AddPendingSyncPoint(CommandQueueId, val_fence.first, pSyncPoint);
         }

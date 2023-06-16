@@ -98,14 +98,15 @@ void xiiGALCommandEncoderImplDX11::SetConstantBufferPlatform(xiiUInt32 uiSlot, c
 
   // The GAL doesn't care about stages for constant buffer, but we need to handle this internaly.
   for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  {
     m_BoundConstantBuffersRange[stage].SetToIncludeValue(uiSlot);
+  }
 }
 
 void xiiGALCommandEncoderImplDX11::SetSamplerStatePlatform(xiiGALShaderStage::Enum Stage, xiiUInt32 uiSlot, const xiiGALSamplerState* pSamplerState)
 {
   /// \todo Check if the device supports the stage / the slot index
-  m_pBoundSamplerStates[Stage][uiSlot] =
-    pSamplerState != nullptr ? static_cast<const xiiGALSamplerStateDX11*>(pSamplerState)->GetDXSamplerState() : nullptr;
+  m_pBoundSamplerStates[Stage][uiSlot] = pSamplerState != nullptr ? static_cast<const xiiGALSamplerStateDX11*>(pSamplerState)->GetDXSamplerState() : nullptr;
   m_BoundSamplerStatesRange[Stage].SetToIncludeValue(uiSlot);
 }
 
@@ -113,16 +114,14 @@ void xiiGALCommandEncoderImplDX11::SetResourceViewPlatform(xiiGALShaderStage::En
 {
   auto& boundShaderResourceViews = m_pBoundShaderResourceViews[Stage];
   boundShaderResourceViews.EnsureCount(uiSlot + 1);
-  boundShaderResourceViews[uiSlot] =
-    pResourceView != nullptr ? static_cast<const xiiGALResourceViewDX11*>(pResourceView)->GetDXResourceView() : nullptr;
+  boundShaderResourceViews[uiSlot] = pResourceView != nullptr ? static_cast<const xiiGALResourceViewDX11*>(pResourceView)->GetDXResourceView() : nullptr;
   m_BoundShaderResourceViewsRange[Stage].SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderImplDX11::SetUnorderedAccessViewPlatform(xiiUInt32 uiSlot, const xiiGALUnorderedAccessView* pUnorderedAccessView)
 {
   m_BoundUnoderedAccessViews.EnsureCount(uiSlot + 1);
-  m_BoundUnoderedAccessViews[uiSlot] =
-    pUnorderedAccessView != nullptr ? static_cast<const xiiGALUnorderedAccessViewDX11*>(pUnorderedAccessView)->GetDXResourceView() : nullptr;
+  m_BoundUnoderedAccessViews[uiSlot] = pUnorderedAccessView != nullptr ? static_cast<const xiiGALUnorderedAccessViewDX11*>(pUnorderedAccessView)->GetDXResourceView() : nullptr;
   m_BoundUnoderedAccessViewsRange.SetToIncludeValue(uiSlot);
 }
 
@@ -140,10 +139,7 @@ void xiiGALCommandEncoderImplDX11::EndQueryPlatform(const xiiGALQuery* pQuery)
 
 xiiResult xiiGALCommandEncoderImplDX11::GetQueryResultPlatform(const xiiGALQuery* pQuery, xiiUInt64& uiQueryResult)
 {
-  return m_pDXContext->GetData(
-           static_cast<const xiiGALQueryDX11*>(pQuery)->GetDXQuery(), &uiQueryResult, sizeof(xiiUInt64), D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE ?
-    XII_FAILURE :
-    XII_SUCCESS;
+  return m_pDXContext->GetData(static_cast<const xiiGALQueryDX11*>(pQuery)->GetDXQuery(), &uiQueryResult, sizeof(xiiUInt64), D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE ? XII_FAILURE : XII_SUCCESS;
 }
 
 // Timestamp functions
@@ -207,6 +203,7 @@ void xiiGALCommandEncoderImplDX11::UpdateBufferPlatform(const xiiGALBuffer* pDes
   }
   else
   {
+#if 0
     if (updateMode == xiiGALUpdateMode::CopyToTempStorage)
     {
       if (ID3D11Resource* pDXTempBuffer = m_GALDeviceDX11.FindTempBuffer(pSourceData.GetCount()))
@@ -228,8 +225,9 @@ void xiiGALCommandEncoderImplDX11::UpdateBufferPlatform(const xiiGALBuffer* pDes
       }
     }
     else
+#endif
     {
-      D3D11_MAP mapType = (updateMode == xiiGALUpdateMode::Discard) ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE;
+      D3D11_MAP mapType = (updateMode & xiiGALUpdateMode::Discard) ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE;
 
       D3D11_MAPPED_SUBRESOURCE MapResult;
       if (SUCCEEDED(m_pDXContext->Map(pDXDestination, 0, mapType, 0, &MapResult)))
@@ -287,8 +285,7 @@ void xiiGALCommandEncoderImplDX11::UpdateTexturePlatform(const xiiGALTexture* pD
     xiiUInt32 uiRowPitch   = uiWidth * xiiGALResourceFormat::GetBitsPerElement(format) / 8;
     xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
     XII_ASSERT_DEV(pSourceData.m_uiRowPitch == uiRowPitch, "Invalid row pitch. Expected {0} got {1}", uiRowPitch, pSourceData.m_uiRowPitch);
-    XII_ASSERT_DEV(pSourceData.m_uiSlicePitch == 0 || pSourceData.m_uiSlicePitch == uiSlicePitch, "Invalid slice pitch. Expected {0} got {1}",
-                   uiSlicePitch, pSourceData.m_uiSlicePitch);
+    XII_ASSERT_DEV(pSourceData.m_uiSlicePitch == 0 || pSourceData.m_uiSlicePitch == uiSlicePitch, "Invalid slice pitch. Expected {0} got {1}", uiSlicePitch, pSourceData.m_uiSlicePitch);
 
     if (MapResult.RowPitch == uiRowPitch && MapResult.DepthPitch == uiSlicePitch)
     {
@@ -391,6 +388,7 @@ void xiiGALCommandEncoderImplDX11::CopyTextureReadbackResultPlatform(const xiiGA
         const xiiUInt32 uiMemorySize = xiiGALResourceFormat::GetBitsPerElement(pDXTexture->GetDescription().m_Format) *
           GetMipSize(pDXTexture->GetDescription().m_uiWidth, subRes.m_uiMipLevel) *
           GetMipSize(pDXTexture->GetDescription().m_uiHeight, subRes.m_uiMipLevel) / 8;
+
         memcpy(memDesc.m_pData, Mapped.pData, uiMemorySize);
       }
       else
@@ -402,8 +400,7 @@ void xiiGALCommandEncoderImplDX11::CopyTextureReadbackResultPlatform(const xiiGA
           const void* pSource = xiiMemoryUtils::AddByteOffset(Mapped.pData, y * Mapped.RowPitch);
           void*       pDest   = xiiMemoryUtils::AddByteOffset(memDesc.m_pData, y * memDesc.m_uiRowPitch);
 
-          memcpy(
-            pDest, pSource, xiiGALResourceFormat::GetBitsPerElement(pDXTexture->GetDescription().m_Format) * GetMipSize(pDXTexture->GetDescription().m_uiWidth, subRes.m_uiMipLevel) / 8);
+          memcpy(pDest, pSource, xiiGALResourceFormat::GetBitsPerElement(pDXTexture->GetDescription().m_Format) * GetMipSize(pDXTexture->GetDescription().m_uiWidth, subRes.m_uiMipLevel) / 8);
         }
       }
 
@@ -674,8 +671,7 @@ void xiiGALCommandEncoderImplDX11::SetVertexBufferPlatform(xiiUInt32 uiSlot, con
 
 void xiiGALCommandEncoderImplDX11::SetVertexDeclarationPlatform(const xiiGALVertexDeclaration* pVertexDeclaration)
 {
-  m_pDXContext->IASetInputLayout(
-    pVertexDeclaration != nullptr ? static_cast<const xiiGALVertexDeclarationDX11*>(pVertexDeclaration)->GetDXInputLayout() : nullptr);
+  m_pDXContext->IASetInputLayout(pVertexDeclaration != nullptr ? static_cast<const xiiGALVertexDeclarationDX11*>(pVertexDeclaration)->GetDXInputLayout() : nullptr);
 }
 
 static const D3D11_PRIMITIVE_TOPOLOGY GALTopologyToDX11[xiiGALPrimitiveTopology::ENUM_COUNT] = {
@@ -691,17 +687,12 @@ void xiiGALCommandEncoderImplDX11::SetPrimitiveTopologyPlatform(xiiGALPrimitiveT
 
 void xiiGALCommandEncoderImplDX11::SetBlendStatePlatform(const xiiGALBlendState* pBlendState, const xiiColor& BlendFactor, xiiUInt32 uiSampleMask)
 {
-  FLOAT BlendFactors[4] = {BlendFactor.r, BlendFactor.g, BlendFactor.b, BlendFactor.a};
-
-  m_pDXContext->OMSetBlendState(
-    pBlendState != nullptr ? static_cast<const xiiGALBlendStateDX11*>(pBlendState)->GetDXBlendState() : nullptr, BlendFactors, uiSampleMask);
+  m_pDXContext->OMSetBlendState(pBlendState != nullptr ? static_cast<const xiiGALBlendStateDX11*>(pBlendState)->GetDXBlendState() : nullptr, BlendFactor.GetData(), uiSampleMask);
 }
 
 void xiiGALCommandEncoderImplDX11::SetDepthStencilStatePlatform(const xiiGALDepthStencilState* pDepthStencilState, xiiUInt8 uiStencilRefValue)
 {
-  m_pDXContext->OMSetDepthStencilState(
-    pDepthStencilState != nullptr ? static_cast<const xiiGALDepthStencilStateDX11*>(pDepthStencilState)->GetDXDepthStencilState() : nullptr,
-    uiStencilRefValue);
+  m_pDXContext->OMSetDepthStencilState(pDepthStencilState != nullptr ? static_cast<const xiiGALDepthStencilStateDX11*>(pDepthStencilState)->GetDXDepthStencilState() : nullptr, uiStencilRefValue);
 }
 
 void xiiGALCommandEncoderImplDX11::SetRasterizerStatePlatform(const xiiGALRasterizerState* pRasterizerState)
@@ -778,17 +769,12 @@ static void SetShaderResources(xiiGALShaderStage::Enum stage, ID3D11DeviceContex
     case xiiGALShaderStage::ComputeShader:
       pContext->CSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
       break;
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 
-static void SetConstantBuffers(
-  xiiGALShaderStage::Enum stage,
-  ID3D11DeviceContext*    pContext,
-  xiiUInt32               uiStartSlot,
-  xiiUInt32               uiNumSlots,
-  ID3D11Buffer**          pConstantBuffers)
+static void SetConstantBuffers(xiiGALShaderStage::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11Buffer** pConstantBuffers)
 {
   switch (stage)
   {
@@ -810,17 +796,12 @@ static void SetConstantBuffers(
     case xiiGALShaderStage::ComputeShader:
       pContext->CSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
       break;
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 
-static void SetSamplers(
-  xiiGALShaderStage::Enum stage,
-  ID3D11DeviceContext*    pContext,
-  xiiUInt32               uiStartSlot,
-  xiiUInt32               uiNumSlots,
-  ID3D11SamplerState**    pSamplerStates)
+static void SetSamplers(xiiGALShaderStage::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11SamplerState** pSamplerStates)
 {
   switch (stage)
   {
@@ -842,8 +823,8 @@ static void SetSamplers(
     case xiiGALShaderStage::ComputeShader:
       pContext->CSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
       break;
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 

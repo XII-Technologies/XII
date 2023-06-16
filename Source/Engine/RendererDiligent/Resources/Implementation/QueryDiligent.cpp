@@ -40,18 +40,12 @@ xiiResult xiiGALQueryDiligent::InitPlatform(xiiGALDevice* pDevice)
 
   pDeviceDiligent->GetDevice()->CreateQuery(queryDesc, &m_pQuery);
 
-  if (m_pQuery == nullptr)
-  {
-    xiiLog::Error("Failed to create query of type {}!", m_Description.m_Type);
-    return XII_FAILURE;
-  }
-
-  return XII_SUCCESS;
+  return (m_pQuery != nullptr) ? XII_SUCCESS : XII_FAILURE;
 }
 
 xiiResult xiiGALQueryDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pQuery);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pQuery);
 
   return XII_SUCCESS;
 }

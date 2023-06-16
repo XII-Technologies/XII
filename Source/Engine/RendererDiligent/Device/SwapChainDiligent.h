@@ -16,7 +16,20 @@ struct RenderTargetInfo
 };
 
 template <>
-struct xiiHashHelper<RenderTargetInfo>;
+struct xiiHashHelper<RenderTargetInfo>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(const RenderTargetInfo& value)
+  {
+    const xiiUInt32 hashA = xiiHashHelper<const void*>::Hash(value.m_pTexture);
+    const xiiUInt32 hashB = xiiHashHelper<const void*>::Hash(value.m_pTextureView);
+    return xiiHashingUtils::CombineHashValues32(hashA, hashB);
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(const RenderTargetInfo& a, const RenderTargetInfo& b)
+  {
+    return a.m_pTexture == b.m_pTexture && a.m_pTextureView == b.m_pTextureView;
+  }
+};
 
 class XII_RENDERERDILIGENT_DLL xiiGALSwapChainDiligent : public xiiGALWindowSwapChain
 {
@@ -42,7 +55,7 @@ protected:
   xiiResult CreateBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent, bool bInitPlatform);
   void      DestroyBackBufferInternal(xiiGALDeviceDiligent* pDeviceDiligent);
 
-  Diligent::ISwapChain* m_pSwapChain = nullptr;
+  Diligent::RefCntAutoPtr<Diligent::ISwapChain> m_pSwapChain;
 
   xiiHashTable<RenderTargetInfo, xiiGALTextureHandle> m_BackbufferTextures;
 

@@ -17,16 +17,16 @@ protected:
 
   xiiGALTextureDiligent(const xiiGALTextureCreationDescription& Description);
 
-  ~xiiGALTextureDiligent();
+  virtual ~xiiGALTextureDiligent();
 
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<xiiGALSystemMemoryDescription> pInitialData) override;
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
   xiiResult CreateStagingTexture(xiiGALDeviceDiligent* pDevice);
 
-  Diligent::ITexture* m_pTexture = nullptr;
+  Diligent::RefCntAutoPtr<Diligent::ITexture> m_pTexture;
 
-  Diligent::ITexture* m_pStagingTexture = nullptr;
+  Diligent::RefCntAutoPtr<Diligent::ITexture> m_pStagingTexture;
 
   void* m_pExisitingNativeObject = nullptr;
 };

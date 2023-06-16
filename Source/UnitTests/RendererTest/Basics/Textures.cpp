@@ -1,10 +1,10 @@
 #include <RendererTest/RendererTestPCH.h>
 
-#include "Basics.h"
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <RendererCore/Shader/ShaderResource.h>
 #include <RendererCore/Textures/TextureCubeResource.h>
+#include <RendererTest/Basics/Basics.h>
 
 xiiTestAppRun xiiRendererTestBasics::SubtestTextures2D()
 {

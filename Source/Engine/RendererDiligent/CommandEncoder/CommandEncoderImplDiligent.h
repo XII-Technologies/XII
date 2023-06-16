@@ -9,6 +9,8 @@
 #include <RendererFoundation/CommandEncoder/CommandEncoderPlatformInterface.h>
 #include <RendererFoundation/Resources/RenderTargetSetup.h>
 
+class xiiPipelineBarrierDiligent;
+
 class XII_RENDERERDILIGENT_DLL xiiGALCommandEncoderImplDiligent : public xiiGALCommandEncoderCommonPlatformInterface, public xiiGALCommandEncoderRenderPlatformInterface, public xiiGALCommandEncoderComputePlatformInterface
 {
 public:
@@ -128,19 +130,20 @@ public:
 
   struct PipelineStateInfo
   {
-    Diligent::IPipelineState*         m_pPipelineState         = nullptr;
-    Diligent::IShaderResourceBinding* m_pShaderResourceBinding = nullptr;
+    Diligent::IPipelineState* m_pPipelineState = nullptr;
   };
 
+  void FlushPipelineStateCache();
+
 protected:
-  void FlushDeferredStateChangesCompute();
-  void FlushDeferredStateChangesGraphics();
-  void FillPipelineDescriptorBindings(Diligent::IPipelineState* pPipelineState);
+  void FlushDeferredStateChanges();
+
+  void TransitionResources();
+
   void FillShaderDescriptorBindings(Diligent::IShaderResourceBinding* pResourceBinding);
 
 private:
   friend class xiiGALPassDiligent;
-  friend class xiiGALSwapchainDiligent;
 
   xiiGALDeviceDiligent& m_GALDeviceDiligent;
   xiiGALCommandEncoder* m_pOwner = nullptr;
@@ -148,15 +151,16 @@ private:
   Diligent::IDeviceContext* m_pContext = nullptr;
 
   // Pipeline State
+  xiiPipelineBarrierDiligent*                                                                   m_pPipelineBarrier;
   xiiHashTable<Diligent::GraphicsPipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash> m_CachedGraphicsPipelineStates;
   xiiHashTable<Diligent::ComputePipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash>  m_CachedComputePipelineStates;
 
-  Diligent::TEXTURE_FORMAT m_RTVFormats[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
-  Diligent::TEXTURE_FORMAT m_DSVFormat                                  = Diligent::TEX_FORMAT_UNKNOWN;
+  Diligent::IPipelineState*         m_pCurrentPipelineState         = nullptr;
+  Diligent::IShaderResourceBinding* m_pCurrentShaderResourceBinding = nullptr;
 
-  Diligent::Viewport m_Viewport;
-  Diligent::Rect     m_ScissorRect;
-  bool               m_bScissorEnabled = false;
+  Diligent::IRenderPass*                                                            m_pRenderPass  = nullptr;
+  Diligent::IFramebuffer*                                                           m_pFramebuffer = nullptr;
+  xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_ClearValues;
 
   Diligent::PRIMITIVE_TOPOLOGY           m_PrimitiveTopology  = {};
   const xiiGALVertexDeclarationDiligent* m_pVertexDeclaration = nullptr;
@@ -165,7 +169,17 @@ private:
   const xiiGALRasterizerStateDiligent*   m_pRasterizerState   = nullptr;
 
   // Cache flags
-  bool m_bViewportModified = true;
+  bool m_bPipelineStateModified = true;
+  bool m_bViewportModified      = true;
+  bool m_bIndexBufferModified   = false;
+  bool m_bDescriptorsModified   = false;
+  bool m_bRenderpassActive      = false;
+  bool m_bIsComputeRequested    = false;
+  bool m_bClearSubmitted        = false;
+
+  Diligent::Viewport m_Viewport;
+  Diligent::Rect     m_ScissorRect;
+  bool               m_bScissorEnabled = false;
 
   // Bound objects for deferred state flushes
   xiiGALBufferDiligent* m_pIndexBuffer = nullptr;
@@ -180,9 +194,8 @@ private:
 
   xiiGALShaderDiligent* m_pCurrentShader = nullptr;
 
-  xiiGALRenderTargetSetup m_RenderTargetSetup;
+  xiiGALRenderingSetup    m_RenderingSetup                                      = {};
   Diligent::ITextureView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {nullptr};
-  xiiUInt8                m_uiBoundRenderTargetCount                            = 0;
   Diligent::ITextureView* m_pBoundDepthStencilTarget                            = nullptr;
 
   Diligent::IBuffer*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {nullptr};

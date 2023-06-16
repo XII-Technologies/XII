@@ -31,22 +31,19 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
   xiiGALResourceFormat::Enum              viewFormat = texDesc.m_Format;
   Diligent::TEXTURE_FORMAT                ViewFormat = Diligent::TEX_FORMAT_UNKNOWN;
 
-  xiiGALResourceBase* pRes             = const_cast<xiiGALResourceBase*>(pTexture->GetParentResource());
-  Diligent::ITexture* pTextureDiligent = static_cast<xiiGALTextureDiligent*>(pRes)->GetTexture();
+  xiiGALTextureDiligent* pGALTextureDiligent = nullptr;
+  Diligent::ITexture*    pTextureDiligent    = nullptr;
+  {
+    xiiGALResourceBase* pGALTexture = const_cast<xiiGALResourceBase*>(pTexture->GetParentResource());
+    pGALTextureDiligent             = static_cast<xiiGALTextureDiligent*>(pGALTexture);
+    pTextureDiligent                = pGALTextureDiligent->GetTexture();
+  }
 
   if (m_Description.m_OverrideViewFormat != xiiGALResourceFormat::Invalid)
     viewFormat = m_Description.m_OverrideViewFormat;
 
   const bool bIsDepthFormat = xiiGALResourceFormat::IsDepthFormat(viewFormat);
-
-  if (bIsDepthFormat)
-  {
-    ViewFormat = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eDepthStencilType;
-  }
-  else
-  {
-    ViewFormat = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eRenderTarget;
-  }
+  ViewFormat                = bIsDepthFormat ? pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eDepthStencilType : pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eRenderTarget;
 
   if (ViewFormat == Diligent::TEX_FORMAT_UNKNOWN)
   {
@@ -54,61 +51,107 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     return XII_FAILURE;
   }
 
-  if (bIsDepthFormat)
+  Diligent::TextureViewDesc viewDesc;
+  viewDesc.ViewType = bIsDepthFormat ? Diligent::TEXTURE_VIEW_DEPTH_STENCIL : Diligent::TEXTURE_VIEW_RENDER_TARGET;
+  viewDesc.Format   = ViewFormat;
+
+  switch (texDesc.m_Type)
   {
-    Diligent::TextureViewDesc DSViewDesc;
-    DSViewDesc.ViewType = Diligent::TEXTURE_VIEW_DEPTH_STENCIL;
-    DSViewDesc.Format   = ViewFormat;
-
-    DSViewDesc.TextureDim      = pTextureDiligent->GetDesc().Type;
-    DSViewDesc.MostDetailedMip = m_Description.m_uiMipLevel;
-    DSViewDesc.FirstArraySlice = m_Description.m_uiFirstSlice;
-    DSViewDesc.NumArraySlices  = m_Description.m_uiSliceCount;
-
-    DSViewDesc.Flags = Diligent::TEXTURE_VIEW_FLAG_NONE;
-
-    xiiGALTexture* pTex = const_cast<xiiGALTexture*>(pDevice->GetTexture(m_Description.m_hTexture));
-    static_cast<xiiGALTextureDiligent*>(pTex)->GetTexture()->CreateView(DSViewDesc, &m_pDepthStencilView);
-
-    if (m_pDepthStencilView == nullptr)
+    case xiiGALTextureType::Texture1D:
     {
-      xiiLog::Error("Failed to create depth stencil view!");
+      viewDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_1D;
+      viewDesc.MostDetailedMip = m_Description.m_uiMipLevel;
+    }
+    break;
+    case xiiGALTextureType::Texture1DArray:
+    {
+      viewDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_1D_ARRAY;
+      viewDesc.NumArraySlices  = m_Description.m_uiSliceCount;
+      viewDesc.FirstArraySlice = m_Description.m_uiFirstSlice;
+      viewDesc.MostDetailedMip = m_Description.m_uiMipLevel;
+    }
+    break;
+    case xiiGALTextureType::Texture2D:
+    case xiiGALTextureType::Texture2DProxy:
+    {
+      if (texDesc.m_SampleCount == xiiGALMSAASampleCount::None)
+      {
+        viewDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D;
+        viewDesc.MostDetailedMip = m_Description.m_uiMipLevel;
+      }
+      else
+      {
+        viewDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_2D;
+      }
+    }
+    break;
+    case xiiGALTextureType::Texture2DArray:
+    case xiiGALTextureType::Texture2DProxyArray:
+    {
+      if (texDesc.m_SampleCount == xiiGALMSAASampleCount::None)
+      {
+        viewDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+        viewDesc.NumArraySlices  = m_Description.m_uiSliceCount;
+        viewDesc.FirstArraySlice = m_Description.m_uiFirstSlice;
+        viewDesc.MostDetailedMip = m_Description.m_uiMipLevel;
+      }
+      else
+      {
+        viewDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+        viewDesc.NumArraySlices  = m_Description.m_uiSliceCount;
+        viewDesc.FirstArraySlice = m_Description.m_uiFirstSlice;
+      }
+    }
+    break;
+    case xiiGALTextureType::Texture3D:
+    {
+      if (!bIsDepthFormat)
+      {
+        viewDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_3D;
+        viewDesc.NumDepthSlices  = m_Description.m_uiSliceCount;
+        viewDesc.FirstDepthSlice = m_Description.m_uiFirstSlice;
+        viewDesc.MostDetailedMip = m_Description.m_uiMipLevel;
+      }
+      else
+      {
+        xiiLog::Error("Depth stencil views are not supported for 3D textures.");
+        return XII_FAILURE;
+      }
+    }
+    break;
+    case xiiGALTextureType::TextureCube:
+    case xiiGALTextureType::TextureCubeArray:
+    {
+      xiiLog::Error("Unexpected render target view type '{}' for texture '{}'.", texDesc.m_Type, texDesc.m_szName);
       return XII_FAILURE;
     }
-    else
-    {
-      return XII_SUCCESS;
-    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  viewDesc.Flags       = Diligent::TEXTURE_VIEW_FLAG_NONE;
+  viewDesc.AccessFlags = Diligent::UAV_ACCESS_UNSPECIFIED;
+
+  if (bIsDepthFormat)
+  {
+    pTextureDiligent->CreateView(viewDesc, &m_pDepthStencilView);
+
+    return (m_pDepthStencilView != nullptr) ? XII_SUCCESS : XII_FAILURE;
   }
   else
   {
-    Diligent::TextureViewDesc RTViewDesc;
-    RTViewDesc.ViewType = Diligent::TEXTURE_VIEW_RENDER_TARGET;
-    RTViewDesc.Format   = ViewFormat;
+    pTextureDiligent->CreateView(viewDesc, &m_pRenderTargetView);
 
-    RTViewDesc.TextureDim      = pTextureDiligent->GetDesc().Type;
-    RTViewDesc.MostDetailedMip = m_Description.m_uiMipLevel;
-    RTViewDesc.FirstArraySlice = m_Description.m_uiFirstSlice;
-    RTViewDesc.NumArraySlices  = m_Description.m_uiSliceCount;
-
-    xiiGALTexture* pTex = const_cast<xiiGALTexture*>(pDevice->GetTexture(m_Description.m_hTexture));
-    static_cast<xiiGALTextureDiligent*>(pTex)->GetTexture()->CreateView(RTViewDesc, &m_pRenderTargetView);
-
-    if (m_pRenderTargetView == nullptr)
-    {
-      xiiLog::Error("Failed to create rendertarget view!");
-      return XII_FAILURE;
-    }
-
-    return XII_SUCCESS;
+    return (m_pRenderTargetView != nullptr) ? XII_SUCCESS : XII_FAILURE;
   }
 }
 
 xiiResult xiiGALRenderTargetViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pRenderTargetView);
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pDepthStencilView);
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pUnorderedAccessView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pRenderTargetView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDepthStencilView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pUnorderedAccessView);
 
   return XII_SUCCESS;
 }

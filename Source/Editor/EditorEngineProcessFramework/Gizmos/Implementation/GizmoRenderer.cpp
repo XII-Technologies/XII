@@ -67,7 +67,7 @@ void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext
   xiiConstantBufferStorageHandle               hGizmoConstantBuffer = xiiRenderContext::CreateConstantBufferStorage(pGizmoConstantBuffer, XII_STRINGIZE(xiiGizmoConstants));
   XII_SCOPE_EXIT(xiiRenderContext::DeleteConstantBufferStorage(hGizmoConstantBuffer));
 
-  renderViewContext.m_pRenderContext->BindConstantBuffer("xiiGizmoConstants", hGizmoConstantBuffer);
+  renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiGizmoConstants), hGizmoConstantBuffer);
 
   // since typically the fov is tied to the height, we orient the gizmo size on that
   const float fGizmoScale = s_fGizmoScale * (128.0f / (float)renderViewContext.m_pViewData->m_ViewPortRect.height);

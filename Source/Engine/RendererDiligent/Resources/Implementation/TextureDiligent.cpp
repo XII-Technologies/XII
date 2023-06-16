@@ -49,35 +49,7 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
     {
       Diligent::TextureDesc Tex2DDesc = {};
       Tex2DDesc.Name                  = m_Description.m_szName;
-
-      switch (m_Description.m_Type)
-      {
-        case xiiGALTextureType::Texture1D:
-          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_1D;
-          break;
-
-        case xiiGALTextureType::Texture2D:
-          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_2D;
-          break;
-
-        case xiiGALTextureType::TextureCube:
-          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_CUBE;
-          break;
-
-        case xiiGALTextureType::Texture1DArray:
-          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_1D_ARRAY;
-          break;
-
-        case xiiGALTextureType::Texture2DArray:
-          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
-          break;
-
-        case xiiGALTextureType::TextureCubeArray:
-          Tex2DDesc.Type = Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
-          break;
-
-          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-      }
+      Tex2DDesc.Type                  = xiiDiligentUtils::GetResourceDimension(m_Description.m_Type);
 
       if (m_Description.m_Type == xiiGALTextureType::TextureCube || m_Description.m_Type == xiiGALTextureType::TextureCubeArray)
         Tex2DDesc.ArraySize = m_Description.m_uiArraySize * 6u;
@@ -111,8 +83,6 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
       Tex2DDesc.Height      = m_Description.m_uiHeight;
       Tex2DDesc.MipLevels   = m_Description.m_uiMipLevelCount;
       Tex2DDesc.SampleCount = xiiDiligentUtils::ToDiligentMSAACount(m_Description.m_SampleCount);
-
-      Tex2DDesc.MiscFlags = Diligent::MISC_TEXTURE_FLAG_NONE;
 
       if (m_Description.m_bAllowDynamicMipGeneration)
         Tex2DDesc.MiscFlags |= Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS;
@@ -162,6 +132,7 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
       if (m_Description.m_bAllowShaderResourceView)
         Tex3DDesc.BindFlags |= Diligent::BIND_SHADER_RESOURCE;
+
       if (m_Description.m_bAllowUAV)
         Tex3DDesc.BindFlags |= Diligent::BIND_UNORDERED_ACCESS;
 
@@ -236,10 +207,8 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
 xiiResult xiiGALTextureDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  if (m_pExisitingNativeObject == nullptr)
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pTexture);
-
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pStagingTexture);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pTexture);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pStagingTexture);
 
   return XII_SUCCESS;
 }

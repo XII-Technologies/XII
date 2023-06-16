@@ -57,6 +57,7 @@ bool xiiAntialiasingPass::GetRenderTargetDescriptions(const xiiView& view, const
 
     xiiGALTextureCreationDescription desc = *pInput;
     desc.m_SampleCount                    = xiiGALMSAASampleCount::None;
+    desc.m_Type                           = xiiGALTextureType::Texture2DArray;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }
@@ -96,7 +97,6 @@ void xiiAntialiasingPass::Execute(const xiiRenderViewContext& renderViewContext,
 
   renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 }
-
 
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_Pipeline_Implementation_Passes_AntialiasingPass);

@@ -5,14 +5,7 @@
 #include <RendererDiligent/Resources/TextureDiligent.h>
 #include <RendererDiligent/Resources/UnorderedAccessViewDiligent.h>
 
-bool IsArrayView(const xiiGALTextureCreationDescription& texDesc, const xiiGALUnorderedAccessViewCreationDescription& viewDesc)
-{
-  return texDesc.m_uiArraySize > 1 || viewDesc.m_uiFirstArraySlice > 0;
-}
-
-xiiGALUnorderedAccessViewDiligent::xiiGALUnorderedAccessViewDiligent(
-  xiiGALResourceBase*                                 pResource,
-  const xiiGALUnorderedAccessViewCreationDescription& Description) :
+xiiGALUnorderedAccessViewDiligent::xiiGALUnorderedAccessViewDiligent(xiiGALResourceBase* pResource, const xiiGALUnorderedAccessViewCreationDescription& Description) :
   xiiGALUnorderedAccessView(pResource, Description), m_pUnorderedAccessTextureView(nullptr), m_pUnorderedAccessBufferView(nullptr)
 {
 }
@@ -42,75 +35,77 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     xiiGALTextureDiligent* pGALTextureDiligent = nullptr;
     Diligent::ITexture*    pTextureDiligent    = nullptr;
     {
-
       xiiGALTexture* pGALTexture = const_cast<xiiGALTexture*>(pTexture);
       pGALTextureDiligent        = static_cast<xiiGALTextureDiligent*>(pGALTexture);
       pTextureDiligent           = pGALTextureDiligent->GetTexture();
     }
 
     const xiiGALTextureCreationDescription& texDesc        = pTexture->GetDescription();
-    const bool                              bIsArrayView   = IsArrayView(texDesc, m_Description);
     const bool                              bIsDepthFormat = xiiGALResourceFormat::IsDepthFormat(pTexture->GetDescription().m_Format);
     xiiGALResourceFormat::Enum              viewFormat     = m_Description.m_OverrideViewFormat == xiiGALResourceFormat::Invalid ? texDesc.m_Format : m_Description.m_OverrideViewFormat;
+    const Diligent::TextureDesc&            textureDesc    = pTextureDiligent->GetDesc();
 
     Diligent::TextureViewDesc UAVDesc;
-    UAVDesc.ViewType        = Diligent::TEXTURE_VIEW_UNORDERED_ACCESS;
-    UAVDesc.Format          = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eResourceViewType;
-    UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
+    UAVDesc.ViewType = Diligent::TEXTURE_VIEW_UNORDERED_ACCESS;
+    UAVDesc.Format   = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eResourceViewType;
 
     switch (texDesc.m_Type)
     {
       case xiiGALTextureType::Texture1D:
-        UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_1D;
-        break;
-
-      case xiiGALTextureType::Texture2D:
-      case xiiGALTextureType::Texture2DProxy:
-        UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_2D;
-        break;
-
-      case xiiGALTextureType::TextureCube:
-        UAVDesc.TextureDim = Diligent::RESOURCE_DIM_TEX_CUBE;
-        break;
-
+      {
+        UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_1D;
+        UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
+      }
+      break;
       case xiiGALTextureType::Texture1DArray:
+      {
         UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_1D_ARRAY;
         UAVDesc.NumArraySlices  = m_Description.m_uiArraySize;
         UAVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
-        break;
-
+        UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
+      }
+      break;
+      case xiiGALTextureType::Texture2D:
+      case xiiGALTextureType::Texture2DProxy:
+      {
+        UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D;
+        UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
+      }
+      break;
       case xiiGALTextureType::Texture2DArray:
       case xiiGALTextureType::Texture2DProxyArray:
+      {
         UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
         UAVDesc.NumArraySlices  = m_Description.m_uiArraySize;
         UAVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
-        break;
-
-      case xiiGALTextureType::TextureCubeArray:
-        UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
-        UAVDesc.NumArraySlices  = m_Description.m_uiArraySize;
-        UAVDesc.FirstArraySlice = m_Description.m_uiFirstArraySlice;
-        break;
-
+        UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
+      }
+      break;
       case xiiGALTextureType::Texture3D:
       {
         UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_3D;
-        UAVDesc.FirstDepthSlice = m_Description.m_uiFirstArraySlice;
         UAVDesc.NumDepthSlices  = m_Description.m_uiArraySize;
+        UAVDesc.FirstDepthSlice = m_Description.m_uiFirstArraySlice;
+        UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
+      }
+      break;
+      case xiiGALTextureType::TextureCube:
+      case xiiGALTextureType::TextureCubeArray:
+      {
+        xiiLog::Error("Unexpected unordered access view type '{}' for texture '{}'.", texDesc.m_Type, texDesc.m_szName);
+        return XII_FAILURE;
       }
       break;
 
-      default:
-        XII_ASSERT_NOT_IMPLEMENTED;
-        return XII_FAILURE;
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
+
+    UAVDesc.Flags       = Diligent::TEXTURE_VIEW_FLAG_NONE;
+    UAVDesc.AccessFlags = Diligent::UAV_ACCESS_UNSPECIFIED;
 
     pTextureDiligent->CreateView(UAVDesc, &m_pUnorderedAccessTextureView);
 
-    if (m_pUnorderedAccessTextureView == nullptr)
-    {
-      return XII_FAILURE;
-    }
+    return (m_pUnorderedAccessTextureView != nullptr) ? XII_SUCCESS : XII_FAILURE;
   }
   else if (pBuffer)
   {
@@ -170,10 +165,7 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
     pBufferDiligent->CreateView(UAVDesc, &m_pUnorderedAccessBufferView);
 
-    if (m_pUnorderedAccessBufferView == nullptr)
-    {
-      return XII_FAILURE;
-    }
+    return (m_pUnorderedAccessBufferView != nullptr) ? XII_SUCCESS : XII_FAILURE;
   }
 
   return XII_SUCCESS;
@@ -181,8 +173,8 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALUnorderedAccessViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pUnorderedAccessTextureView);
-  XII_GAL_DILIGENT_UNWRAPPED_RELEASE(m_pUnorderedAccessBufferView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pUnorderedAccessTextureView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pUnorderedAccessBufferView);
 
   return XII_SUCCESS;
 }

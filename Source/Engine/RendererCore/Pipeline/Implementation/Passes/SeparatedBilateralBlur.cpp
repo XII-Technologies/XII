@@ -80,7 +80,6 @@ bool xiiSeparatedBilateralBlurPass::GetRenderTargetDescriptions(const xiiView& v
     return false;
   }
 
-
   // Output format maches input format.
   outputs[m_PinOutput.m_uiOutputIndex] = *inputs[m_PinBlurSourceInput.m_uiInputIndex];
 
@@ -116,7 +115,7 @@ void xiiSeparatedBilateralBlurPass::Execute(const xiiRenderViewContext& renderVi
     renderViewContext.m_pRenderContext->BindShader(m_hShader);
     renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, 1);
     renderViewContext.m_pRenderContext->BindTexture2D("DepthBuffer", hDepthInputView);
-    renderViewContext.m_pRenderContext->BindConstantBuffer("xiiBilateralBlurConstants", m_hBilateralBlurCB);
+    renderViewContext.m_pRenderContext->BindConstantBuffer(XII_STRINGIZE(xiiBilateralBlurConstants), m_hBilateralBlurCB);
 
     // Horizontal
     {

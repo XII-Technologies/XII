@@ -45,6 +45,8 @@ using namespace Diligent::Testing;
 namespace
 {
 
+static constexpr Uint32 ContentVersion = 987;
+
 PipelineResourceLayoutDesc GetGraphicsPSOLayout()
 {
     PipelineResourceLayoutDesc Layout;
@@ -245,7 +247,7 @@ RefCntAutoPtr<IRenderStateCache> CreateCache(IRenderDevice*                   pD
     CreateRenderStateCache(CacheCI, &pCache);
 
     if (pCacheData != nullptr)
-        pCache->Load(pCacheData);
+        pCache->Load(pCacheData, ContentVersion);
 
     return pCache;
 }
@@ -367,7 +369,7 @@ TEST(RenderStateCacheTest, CreateShader)
             }
 
             pData.Release();
-            pCache->WriteToBlob(&pData);
+            pCache->WriteToBlob(ContentVersion, &pData);
 
             if (HotReload)
                 EXPECT_EQ(pCache->Reload(), 0u);
@@ -563,7 +565,7 @@ void TestGraphicsPSO(bool UseRenderPass)
             }
 
             pData.Release();
-            pCache->WriteToBlob(&pData);
+            pCache->WriteToBlob(ContentVersion, &pData);
 
             if (HotReload)
                 EXPECT_EQ(pCache->Reload(), 0u);
@@ -703,7 +705,7 @@ void TestComputePSO(bool UseSignature)
             }
 
             pData.Release();
-            pCache->WriteToBlob(&pData);
+            pCache->WriteToBlob(ContentVersion, &pData);
 
             if (HotReload)
                 EXPECT_EQ(pCache->Reload(), 0u);
@@ -853,7 +855,7 @@ TEST(RenderStateCacheTest, CreateRayTracingPSO)
             }
 
             pData.Release();
-            pCache->WriteToBlob(&pData);
+            pCache->WriteToBlob(ContentVersion, &pData);
 
             if (HotReload)
                 EXPECT_EQ(pCache->Reload(), 0u);
@@ -938,7 +940,7 @@ TEST(RenderStateCacheTest, AppendData)
             CreateComputePSO(pCache, /*PresentInCache = */ false, pCS, UseSignature, &pPSO);
             ASSERT_NE(pPSO, nullptr);
 
-            pCache->WriteToBlob(&pData);
+            pCache->WriteToBlob(ContentVersion, &pData);
             ASSERT_NE(pData, nullptr);
         }
 
@@ -958,7 +960,7 @@ TEST(RenderStateCacheTest, AppendData)
             VerifyGraphicsPSO(pPSO, nullptr, pWhiteTexture, UseRenderPass);
 
             pData.Release();
-            pCache->WriteToBlob(&pData);
+            pCache->WriteToBlob(ContentVersion, &pData);
             ASSERT_NE(pData, nullptr);
 
             if (HotReload)
@@ -1004,6 +1006,18 @@ TEST(RenderStateCacheTest, RenderDeviceWithCache)
     }
 }
 
+// clang-format off
+constexpr float4 TriangleVerts[] =
+{
+    float4{-1.0, -0.5, 0.0, 1.0},
+    float4{-0.5, +0.5, 0.0, 1.0},
+    float4{+0.0, -0.5, 0.0, 1.0},
+
+    float4{+0.0, -0.5, 0.0, 1.0},
+    float4{+0.5, +0.5, 0.0, 1.0},
+    float4{+1.0, -0.5, 0.0, 1.0},
+};
+// clang-format on
 
 void TestPipelineReload(bool UseRenderPass, bool CreateSrbBeforeReload = false, bool UseSignatures = false)
 {
@@ -1042,17 +1056,6 @@ void TestPipelineReload(bool UseRenderPass, bool CreateSrbBeforeReload = false, 
     RefCntAutoPtr<IBuffer> pVertBuff;
     RefCntAutoPtr<IBuffer> pConstBuff;
     {
-        constexpr float4 Pos[] =
-            {
-                float4{-1.0, -0.5, 0.0, 1.0},
-                float4{-0.5, +0.5, 0.0, 1.0},
-                float4{+0.0, -0.5, 0.0, 1.0},
-
-                float4{+0.0, -0.5, 0.0, 1.0},
-                float4{+0.5, +0.5, 0.0, 1.0},
-                float4{+1.0, -0.5, 0.0, 1.0},
-            };
-
         const float4 Color[] =
             {
                 float4{1.0, 0.0, 0.0, 1.0},
@@ -1065,7 +1068,7 @@ void TestPipelineReload(bool UseRenderPass, bool CreateSrbBeforeReload = false, 
             };
 
         RenderDeviceX<> Device{pDevice};
-        pVertBuff = Device.CreateBuffer("Pos buffer", sizeof(Pos), USAGE_DEFAULT, BIND_VERTEX_BUFFER, CPU_ACCESS_NONE, Pos);
+        pVertBuff = Device.CreateBuffer("Pos buffer", sizeof(TriangleVerts), USAGE_DEFAULT, BIND_VERTEX_BUFFER, CPU_ACCESS_NONE, TriangleVerts);
         ASSERT_NE(pVertBuff, nullptr);
 
         pConstBuff = Device.CreateBuffer("Color buffer", sizeof(Color), USAGE_DEFAULT, BIND_UNIFORM_BUFFER, CPU_ACCESS_NONE, Color);
@@ -1262,7 +1265,7 @@ void TestPipelineReload(bool UseRenderPass, bool CreateSrbBeforeReload = false, 
                  });
 
         pData.Release();
-        pCache->WriteToBlob(&pData);
+        pCache->WriteToBlob(ContentVersion, &pData);
     }
 }
 
@@ -1289,6 +1292,141 @@ TEST(RenderStateCacheTest, Reload_Signatures)
 TEST(RenderStateCacheTest, Reload_Signatures_SrbBeforeReload)
 {
     TestPipelineReload(/*UseRenderPass = */ false, /*CreateSrbBeforeReload = */ true, /*UseSignatures = */ true);
+}
+
+TEST(RenderStateCacheTest, Reload_Signatures2)
+{
+    // Create PSO with signature -> store to archive -> load from archive -> reload
+
+    auto* pEnv       = GPUTestingEnvironment::GetInstance();
+    auto* pDevice    = pEnv->GetDevice();
+    auto* pCtx       = pEnv->GetDeviceContext();
+    auto* pSwapChain = pEnv->GetSwapChain();
+
+    GPUTestingEnvironment::ScopedReset AutoReset;
+
+    std::vector<Uint32> Data(128 * 128, 0xFF00FF00);
+    auto                pTex = pEnv->CreateTexture("RenderStateCacheTest.Reload_Signatures2", TEX_FORMAT_RGBA8_UNORM, BIND_SHADER_RESOURCE, 128, 128, Data.data());
+    ASSERT_TRUE(pTex);
+
+    RenderDeviceX<> Device{pDevice};
+
+    auto pVertBuff = RenderDeviceX<>{pDevice}.CreateBuffer("Pos buffer", sizeof(TriangleVerts), USAGE_DEFAULT, BIND_VERTEX_BUFFER, CPU_ACCESS_NONE, TriangleVerts);
+    ASSERT_NE(pVertBuff, nullptr);
+
+    constexpr float4 Colors[] =
+        {
+            float4{1.0, 0.0, 0.0, 1.0},
+            float4{0.0, 1.0, 0.0, 1.0},
+            float4{0.0, 0.0, 1.0, 1.0},
+        };
+
+    auto pConstBuff = Device.CreateBuffer("Color buffer", sizeof(Colors), USAGE_DEFAULT, BIND_UNIFORM_BUFFER, CPU_ACCESS_NONE, Colors);
+    ASSERT_NE(pConstBuff, nullptr);
+
+    StateTransitionDesc Barriers[] = {
+        {pTex, RESOURCE_STATE_UNKNOWN, RESOURCE_STATE_SHADER_RESOURCE, STATE_TRANSITION_FLAG_UPDATE_STATE},
+        {pVertBuff, RESOURCE_STATE_UNKNOWN, RESOURCE_STATE_VERTEX_BUFFER, STATE_TRANSITION_FLAG_UPDATE_STATE},
+        {pConstBuff, RESOURCE_STATE_UNKNOWN, RESOURCE_STATE_CONSTANT_BUFFER, STATE_TRANSITION_FLAG_UPDATE_STATE},
+    };
+    pCtx->TransitionResourceStates(_countof(Barriers), Barriers);
+
+    RefCntAutoPtr<IShaderSourceInputStreamFactory> pShaderSourceFactory;
+    pDevice->GetEngineFactory()->CreateDefaultShaderSourceStreamFactory("shaders/RenderStateCache", &pShaderSourceFactory);
+    ASSERT_TRUE(pShaderSourceFactory);
+
+    RefCntAutoPtr<IShaderSourceInputStreamFactory> pShaderReloadFactory;
+    pDevice->GetEngineFactory()->CreateDefaultShaderSourceStreamFactory("shaders/RenderStateCache/Reload2;shaders/RenderStateCache", &pShaderReloadFactory);
+    ASSERT_TRUE(pShaderSourceFactory);
+
+    constexpr auto HotReload = true;
+
+    for (Uint32 use_different_signatures = 0; use_different_signatures < 2; ++use_different_signatures)
+    {
+        RefCntAutoPtr<IDataBlob> pData;
+        for (Uint32 pass = 0; pass < 3; ++pass)
+        {
+            // 0: store cache
+            // 1: load cache, reload shaders, store
+            // 2: load cache, reload shaders
+
+            auto pCache = CreateCache(pDevice, HotReload, pData, pShaderReloadFactory);
+            ASSERT_TRUE(pCache);
+
+            RefCntAutoPtr<IShader> pVS, pPS;
+            CreateGraphicsShaders(pCache, pShaderSourceFactory, pVS, pPS, pData != nullptr, "VertexShader3.vsh", "PixelShader.psh");
+            ASSERT_NE(pVS, nullptr);
+            ASSERT_NE(pPS, nullptr);
+
+            auto VarType = SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE;
+            if (use_different_signatures)
+            {
+                switch (pass)
+                {
+                    case 0: VarType = SHADER_RESOURCE_VARIABLE_TYPE_STATIC; break;
+                    case 1: VarType = SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE; break;
+                    case 2: VarType = SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC; break;
+                }
+            }
+            PipelineResourceSignatureDescX SignDesc{
+                {
+                    {SHADER_TYPE_PIXEL, "g_Tex2D", 1, SHADER_RESOURCE_TYPE_TEXTURE_SRV, VarType},
+                    {SHADER_TYPE_VERTEX, "Colors", 1, SHADER_RESOURCE_TYPE_CONSTANT_BUFFER, VarType},
+                },
+                {{SHADER_TYPE_PIXEL, "g_Tex2D", SamplerDesc{}}},
+            };
+
+            SignDesc.Name                       = "RenderStateCacheTest.Reload_Signatures2";
+            SignDesc.UseCombinedTextureSamplers = true;
+            RefCntAutoPtr<IPipelineResourceSignature> pSign;
+            pDevice->CreatePipelineResourceSignature(SignDesc, &pSign);
+            ASSERT_TRUE(pSign);
+
+            GraphicsPipelineStateCreateInfo PsoCI;
+            PsoCI.PSODesc.Name = "RenderStateCacheTest.Reload_Signatures2";
+
+            auto& GraphicsPipeline{PsoCI.GraphicsPipeline};
+            GraphicsPipeline.PrimitiveTopology            = PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            GraphicsPipeline.RasterizerDesc.CullMode      = CULL_MODE_NONE;
+            GraphicsPipeline.DepthStencilDesc.DepthEnable = False;
+
+            InputLayoutDescX InputLayout{
+                LayoutElement{0, 0, 4, VT_FLOAT32},
+            };
+            GraphicsPipeline.InputLayout = InputLayout;
+
+            IPipelineResourceSignature* ppSignatures[] = {pSign};
+            PsoCI.ppResourceSignatures                 = ppSignatures;
+            PsoCI.ResourceSignaturesCount              = _countof(ppSignatures);
+            PsoCI.GraphicsPipeline.NumRenderTargets    = 1;
+            PsoCI.GraphicsPipeline.RTVFormats[0]       = pSwapChain->GetDesc().ColorBufferFormat;
+            PsoCI.pVS                                  = pVS;
+            PsoCI.pPS                                  = pPS;
+
+            RefCntAutoPtr<IPipelineState> pPSO;
+            EXPECT_EQ(pCache->CreateGraphicsPipelineState(PsoCI, &pPSO), pData != nullptr && !use_different_signatures);
+            ASSERT_NE(pPSO, nullptr);
+
+            if (pass > 0)
+            {
+                RefCntAutoPtr<IShaderResourceBinding> pSRB;
+                pSign->CreateShaderResourceBinding(&pSRB, true);
+                pSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Tex2D")->Set(pTex->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE));
+                pSRB->GetVariableByName(SHADER_TYPE_VERTEX, "Colors")->Set(pConstBuff);
+
+                EXPECT_EQ(pCache->Reload(), pass == 1 ? 2u : (use_different_signatures ? 1 : 0));
+
+                TestDraw(nullptr, nullptr, pPSO, pSRB, nullptr, false,
+                         [&]() {
+                             IBuffer* pVBs[] = {pVertBuff};
+                             pCtx->SetVertexBuffers(0, _countof(pVBs), pVBs, nullptr, RESOURCE_STATE_TRANSITION_MODE_NONE);
+                         });
+            }
+
+            pData.Release();
+            pCache->WriteToBlob(ContentVersion, &pData);
+        }
+    }
 }
 
 } // namespace

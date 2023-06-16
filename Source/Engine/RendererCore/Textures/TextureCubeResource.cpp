@@ -111,6 +111,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
   texDesc.m_uiDepth         = pImage->GetDepth(uiHighestMipLevel);
   texDesc.m_uiMipLevelCount = uiNumMipLevels;
   texDesc.m_uiArraySize     = pImage->GetNumArrayIndices();
+  texDesc.m_Type            = (texDesc.m_uiArraySize > 1) ? xiiGALTextureType::Texture2DArray : xiiGALTextureType::Texture2D;
 
   if (texDesc.m_uiDepth > 1)
     texDesc.m_Type = xiiGALTextureType::Texture3D;
@@ -165,7 +166,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
 
   xiiTextureUtils::ConfigureSampler(static_cast<xiiTextureFilterSetting::Enum>(texFormat.m_TextureFilter.GetValue()), td.m_SamplerDesc);
 
-  // ignore its return value here, we build our own
+  // Ignore its return value here, we build our own.
   CreateResource(std::move(td));
 
   {

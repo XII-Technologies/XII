@@ -1,5 +1,6 @@
 #include <RendererFoundation/RendererFoundationPCH.h>
 
+#include <Foundation/Logging/Log.h>
 #include <RendererFoundation/Device/DeviceFactory.h>
 
 #include <Foundation/Logging/Log.h>

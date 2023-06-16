@@ -53,6 +53,8 @@ struct xiiGALSamplerStateCreationDescription;
 struct xiiGALResourceViewCreationDescription;
 struct xiiGALRenderTargetViewCreationDescription;
 struct xiiGALUnorderedAccessViewCreationDescription;
+struct xiiGALCommandEncoderState;
+struct xiiGALCommandEncoderRenderState;
 
 class xiiGALSwapChain;
 class xiiGALShader;
@@ -104,16 +106,15 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERFOUNDATION_DLL, xiiGraphicsDeviceType);
 /// \brief Defines the primitive type.
 struct XII_RENDERERFOUNDATION_DLL xiiGALPrimitiveTopology
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
-  enum Enum : xiiInt8
+  enum Enum : xiiUInt8
   {
     /// Note: Preserve this order, it is used to allocate the desired number of indices in xiiMeshBufferResourceDescriptor::AllocateStreams
 
-    Undefined = -1, ///< Undefined topology. No primitive indices.
-    Points,         ///< Interpret the vertex data as a list of points. 1 index per primitive.
-    Lines,          ///< Interpret the vertex data as a list of lines. 2 indices per primitive.
-    Triangles,      ///< Interpret the vertex data as a list of triangles. 3 indices per primitive.
+    Points,    ///< Interpret the vertex data as a list of points. 1 index per primitive.
+    Lines,     ///< Interpret the vertex data as a list of lines. 2 indices per primitive.
+    Triangles, ///< Interpret the vertex data as a list of triangles. 3 indices per primitive.
 
     ENUM_COUNT,
 
@@ -413,15 +414,14 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALUpdateMode
 
   enum Enum : xiiUInt8
   {
-    Undefined         = 0x0,        ///< Undefined update mode.
-    DoNotWait         = XII_BIT(0), ///< Do not wait another previous command using the resource completes. Map returns null pointer if the resource is still in use.
-    Discard           = XII_BIT(1), ///< Discard the previous contents of the resource. Thus, making its contents undefined.
-    NoOverWrite       = XII_BIT(2), ///< The system will not synchronize pending operations before mapping the buffer.
-    CopyToTempStorage = XII_BIT(3), ///< Use a temporary staging resource to upload data to the GPU.
+    Undefined   = 0x0,        ///< Undefined update mode.
+    DoNotWait   = XII_BIT(0), ///< Do not wait another previous command using the resource completes. Map returns null pointer if the resource is still in use.
+    Discard     = XII_BIT(1), ///< Discard the previous contents of the resource. Thus, making its contents undefined.
+    NoOverWrite = XII_BIT(2), ///< The system will not synchronize pending operations before mapping the buffer.
 
-    ENUM_COUNT = 5,
+    ENUM_COUNT = 4,
 
-    Default = Undefined
+    Default = Discard
   };
 };
 

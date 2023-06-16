@@ -267,12 +267,7 @@ void xiiGALCommandEncoder::CopyBuffer(xiiGALBufferHandle hDest, xiiGALBufferHand
   }
 }
 
-void xiiGALCommandEncoder::CopyBufferRegion(
-  xiiGALBufferHandle hDest,
-  xiiUInt32          uiDestOffset,
-  xiiGALBufferHandle hSource,
-  xiiUInt32          uiSourceOffset,
-  xiiUInt32          uiByteCount)
+void xiiGALCommandEncoder::CopyBufferRegion(xiiGALBufferHandle hDest, xiiUInt32 uiDestOffset, xiiGALBufferHandle hSource, xiiUInt32 uiSourceOffset, xiiUInt32 uiByteCount)
 {
   AssertRenderingThread();
 
@@ -295,11 +290,7 @@ void xiiGALCommandEncoder::CopyBufferRegion(
   }
 }
 
-void xiiGALCommandEncoder::UpdateBuffer(
-  xiiGALBufferHandle          hDest,
-  xiiUInt32                   uiDestOffset,
-  xiiArrayPtr<const xiiUInt8> sourceData,
-  xiiGALUpdateMode::Enum      updateMode)
+void xiiGALCommandEncoder::UpdateBuffer(xiiGALBufferHandle hDest, xiiUInt32 uiDestOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiGALUpdateMode::Enum updateMode)
 {
   AssertRenderingThread();
 
@@ -309,11 +300,6 @@ void xiiGALCommandEncoder::UpdateBuffer(
 
   if (pDest != nullptr)
   {
-    if (updateMode == xiiGALUpdateMode::NoOverWrite && !(GetDevice().GetCapabilities().m_bNoOverwriteBufferUpdate))
-    {
-      updateMode = xiiGALUpdateMode::CopyToTempStorage;
-    }
-
     XII_ASSERT_DEV(pDest->GetSize() >= (uiDestOffset + sourceData.GetCount()), "Buffer {} is too small (or offset {} too big) for {} bytes", pDest->GetSize(), uiDestOffset, sourceData.GetCount());
     m_CommonImpl.UpdateBufferPlatform(pDest, uiDestOffset, sourceData, updateMode);
   }

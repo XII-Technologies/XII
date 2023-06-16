@@ -20,7 +20,7 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<const xiiUInt8> pInitialData) override;
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::IBuffer* m_pBuffer = nullptr;
+  Diligent::RefCntAutoPtr<Diligent::IBuffer> m_pBuffer;
 
   // Only applicable to Index Buffers
   Diligent::VALUE_TYPE m_IndexFormat;

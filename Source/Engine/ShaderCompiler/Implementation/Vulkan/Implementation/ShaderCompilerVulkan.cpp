@@ -170,12 +170,12 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
     {
       SpvReflectInterfaceVariable* pInputVariable = inputVariables[i];
 
-      xiiShaderVertexInputAttribute& attribute = vertexInputAttributes.ExpandAndGetRef();
-      attribute.m_uiSemanticIndex              = static_cast<xiiUInt8>(pInputVariable->location);
-
       xiiStringBuilder sSemanticName = pInputVariable->semantic;
       if (!sSemanticName.StartsWith_NoCase("SV_"))
       {
+        xiiShaderVertexInputAttribute& attribute = vertexInputAttributes.ExpandAndGetRef();
+        attribute.m_uiSemanticIndex              = static_cast<xiiUInt8>(pInputVariable->location);
+
         xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(sSemanticName);
         XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {0} in file {1}", sSemanticName, inout_Data.m_szSourceFile);
 
@@ -183,10 +183,10 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
           attribute.m_eSemantic = *pVAS;
         else
           xiiLog::Dev("Unknown vertex input semantic found: {}", pInputVariable->semantic);
-      }
 
-      attribute.m_eFormat = GetXIIFormat(pInputVariable->format);
-      XII_ASSERT_DEV(attribute.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", pInputVariable->format);
+        attribute.m_eFormat = GetXIIFormat(pInputVariable->format);
+        XII_ASSERT_DEV(attribute.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", pInputVariable->format);
+      }
     }
   }
 
@@ -226,7 +226,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
       if (FillResourceBinding(inout_Data.m_StageBinary[Stage], shaderResourceBinding, descriptorBinding).Failed())
         continue;
 
-      // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the DX11-based high level render interface.
+      // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the D3D11-based high level render interface.
       if (descriptorBinding.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV)
       {
         shaderResourceBinding.m_iSlot = uiVirtualResourceView;
@@ -272,52 +272,40 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
         binding.m_uiVirtualBinding                   = xiiBindings[descriptorToXIIBinding[i]].m_iSlot;
         binding.m_xiiType                            = xiiBindings[descriptorToXIIBinding[i]].m_Type;
 
-        if (spirvInfo.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+        switch (spirvInfo.descriptor_type)
         {
-          binding.m_Type = xiiShaderDescriptorSetLayoutBinding::AccelerationStructure;
-        }
-        else if (spirvInfo.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
-        {
-          binding.m_Type = xiiShaderDescriptorSetLayoutBinding::InputAttachment;
-        }
-        else
-        {
-          switch (spirvInfo.resource_type)
-          {
-            case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER:
-              binding.m_Type = xiiShaderDescriptorSetLayoutBinding::Sampler;
-              break;
-
-            case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_CBV:
-              binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ConstantBuffer;
-              break;
-
-            case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV:
-            {
-              if (spirvInfo.image.dim == SpvDim::SpvDimBuffer)
-              {
-                binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer;
-              }
-              else
-              {
-                binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceViewTexture;
-              }
-            }
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER:
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::Sampler;
             break;
 
-            case SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_UAV:
-            {
-              if (spirvInfo.image.dim == SpvDim::SpvDimBuffer)
-              {
-                binding.m_Type = xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer;
-              }
-              else
-              {
-                binding.m_Type = xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewTexture;
-              }
-            }
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ConstantBuffer;
             break;
-          }
+
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+            binding.m_Type = (spirvInfo.image.dim == SpvDim::SpvDimBuffer) ? xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer : xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewTexture;
+            break;
+
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer;
+            break;
+
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+            binding.m_Type = (spirvInfo.image.dim == SpvDim::SpvDimBuffer) ? xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer : xiiShaderDescriptorSetLayoutBinding::ResourceViewTexture;
+            break;
+
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::InputAttachment;
+            break;
+
+          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::AccelerationStructure;
+            break;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
         }
 
         binding.m_uiDescriptorType  = static_cast<xiiUInt32>(spirvInfo.descriptor_type);

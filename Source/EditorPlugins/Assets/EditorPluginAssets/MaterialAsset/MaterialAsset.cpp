@@ -17,7 +17,9 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMaterialAssetPreview, 1)
+#if 0
   XII_ENUM_CONSTANT(xiiMaterialAssetPreview::Ball),
+#endif
   XII_ENUM_CONSTANT(xiiMaterialAssetPreview::Sphere),
   XII_ENUM_CONSTANT(xiiMaterialAssetPreview::Box),
   XII_ENUM_CONSTANT(xiiMaterialAssetPreview::Plane),
@@ -655,7 +657,7 @@ xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(const char* 
           arguments << QString::fromUtf8(sAutoGenShader.GetData());
 
           arguments << "-platform";
-          arguments << "DX11_SM50"; /// \todo Rendering platform is currently hardcoded
+          arguments << "D3D11_SM50"; /// \todo Rendering platform is currently hardcoded
 
           // determine the permutation variables that should get fixed values
           {

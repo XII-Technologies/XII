@@ -126,7 +126,7 @@ namespace xiiModelImporter2
     xiiMeshBufferResourceDescriptor& mb = m_Options.m_pMeshOutput->MeshBufferDesc();
 
     const xiiUInt32 uiPosStream = mb.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALResourceFormat::XYZFloat);
-    const xiiUInt32 uiNrmStream = mb.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_10Bit));
+    const xiiUInt32 uiNrmStream = mb.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_8Bit));
     const xiiUInt32 uiColStream = mb.AddStream(xiiGALVertexAttributeSemantic::Color0, xiiGALResourceFormat::RGBAUByteNormalized);
 
     mb.AllocateStreams(positions.GetCount(), xiiGALPrimitiveTopology::Triangles, indices.GetCount() / 3);
@@ -142,7 +142,7 @@ namespace xiiModelImporter2
     {
       mb.SetVertexData(uiPosStream, i, positions[i]);
 
-      xiiMeshBufferUtils::EncodeNormal(normals[i], mb.GetVertexData(uiNrmStream, i), xiiMeshNormalPrecision::_10Bit).IgnoreResult();
+      xiiMeshBufferUtils::EncodeNormal(normals[i], mb.GetVertexData(uiNrmStream, i), xiiMeshNormalPrecision::_8Bit).IgnoreResult();
 
       mb.SetVertexData(uiColStream, i, colors[i]);
     }

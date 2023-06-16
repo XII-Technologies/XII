@@ -8,7 +8,7 @@ public:
   static Diligent::RENDER_DEVICE_TYPE GetDiligentRenderDeviceType(const xiiGraphicsDeviceType::Enum type);
 
   static xiiEnum<xiiGALMSAASampleCount> ToGALMSAASampleCount(xiiUInt32 uiSampleCount);
-  static xiiUInt32                      ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount);
+  static xiiUInt8                       ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount);
 
   static Diligent::BLEND_FACTOR    ToDiligentBlendFactor(xiiGALBlendFactor::Enum e);
   static Diligent::BLEND_OPERATION ToDiligentBlendOperation(xiiGALBlendOperation::Enum e);
@@ -19,11 +19,15 @@ public:
   static Diligent::SHADER_TYPE GALToDiligentShaderStage(xiiGALShaderStage::Enum e);
   static Diligent::VALUE_TYPE  GALNumBitsToDiligentValueType(xiiUInt32 value);
   static bool                  GALIsFormatNormalized(Diligent::TEXTURE_FORMAT format);
-  static xiiInt32              GALToDiligentNumComponent(Diligent::TEXTURE_FORMAT format);
+  static xiiUInt8              GALToDiligentNumComponent(Diligent::TEXTURE_FORMAT format);
 
   static Diligent::COLOR_MASK ToDiligentColorWriteMask(xiiGALColorWriteMask::Enum mask);
 
-  static bool IsDepthFormat(Diligent::TEXTURE_FORMAT format);
+  static bool                         IsDepthFormat(Diligent::TEXTURE_FORMAT format);
+  static Diligent::RESOURCE_DIMENSION GetResourceDimension(xiiGALTextureType::Enum type);
+
+  static Diligent::RESOURCE_STATE GetDefaultResourceState(Diligent::IBuffer* pBuffer);
+  static Diligent::RESOURCE_STATE GetDefaultResourceState(Diligent::ITexture* pTexture);
 };
 
-#include <RendererDiligent/Utilities/Implementation/DiligentConversions_inl.h>
+#include <RendererDiligent/Utilities/Implementation/ConversionUtilsDiligent_inl.h>

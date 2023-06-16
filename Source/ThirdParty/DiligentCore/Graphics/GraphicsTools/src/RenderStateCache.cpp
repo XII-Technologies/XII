@@ -25,6 +25,7 @@
  */
 
 #include "RenderStateCache.h"
+#include "RenderStateCache.hpp"
 
 #include <array>
 #include <unordered_map>
@@ -46,7 +47,7 @@
 #include "SerializedShader.h"
 #include "XXH128Hasher.hpp"
 #include "CallbackWrapper.hpp"
-#include "GraphicsUtilities.h"
+#include "GraphicsAccessories.hpp"
 
 namespace Diligent
 {
@@ -289,9 +290,10 @@ public:
     IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_RenderStateCache, TBase);
 
     virtual bool DILIGENT_CALL_TYPE Load(const IDataBlob* pArchive,
+                                         Uint32           ContentVersion,
                                          bool             MakeCopy) override final
     {
-        return m_pDearchiver->LoadArchive(pArchive, MakeCopy);
+        return m_pDearchiver->LoadArchive(pArchive, ContentVersion, MakeCopy);
     }
 
     virtual bool DILIGENT_CALL_TYPE CreateShader(const ShaderCreateInfo& ShaderCI,
@@ -325,19 +327,19 @@ public:
         return CreatePipelineState(PSOCreateInfo, ppPipelineState);
     }
 
-    virtual Bool DILIGENT_CALL_TYPE WriteToBlob(IDataBlob** ppBlob) override final
+    virtual Bool DILIGENT_CALL_TYPE WriteToBlob(Uint32 ContentVersion, IDataBlob** ppBlob) override final
     {
         // Load new render states from archiver to dearchiver
 
         RefCntAutoPtr<IDataBlob> pNewData;
-        m_pArchiver->SerializeToBlob(&pNewData);
+        m_pArchiver->SerializeToBlob(ContentVersion, &pNewData);
         if (!pNewData)
         {
             LOG_ERROR_MESSAGE("Failed to serialize render state data");
             return false;
         }
 
-        if (!m_pDearchiver->LoadArchive(pNewData))
+        if (!m_pDearchiver->LoadArchive(pNewData, ContentVersion))
         {
             LOG_ERROR_MESSAGE("Failed to add new render state data to existing archive");
             return false;
@@ -348,14 +350,14 @@ public:
         return m_pDearchiver->Store(ppBlob);
     }
 
-    virtual Bool DILIGENT_CALL_TYPE WriteToStream(IFileStream* pStream) override final
+    virtual Bool DILIGENT_CALL_TYPE WriteToStream(Uint32 ContentVersion, IFileStream* pStream) override final
     {
         DEV_CHECK_ERR(pStream != nullptr, "pStream must not be null");
         if (pStream == nullptr)
             return false;
 
         RefCntAutoPtr<IDataBlob> pDataBlob;
-        if (!WriteToBlob(&pDataBlob))
+        if (!WriteToBlob(ContentVersion, &pDataBlob))
             return false;
 
         return pStream->Write(pDataBlob->GetConstDataPtr(), pDataBlob->GetSize());
@@ -372,6 +374,11 @@ public:
     }
 
     virtual Uint32 DILIGENT_CALL_TYPE Reload(ReloadGraphicsPipelineCallbackType ReloadGraphicsPipeline, void* pUserData) override final;
+
+    virtual Uint32 DILIGENT_CALL_TYPE GetContentVersion() const override final
+    {
+        return m_pDearchiver ? m_pDearchiver->GetContentVersion() : ~0u;
+    }
 
     bool CreateShaderInternal(const ShaderCreateInfo& ShaderCI,
                               IShader**               ppShader);
@@ -486,7 +493,7 @@ RenderStateCacheImpl::RenderStateCacheImpl(IReferenceCounters*               pRe
             break;
 
         case RENDER_DEVICE_TYPE_D3D12:
-            GetRenderDeviceD3D12MaxShaderVersion(m_pDevice, SerializationDeviceCI.D3D12.ShaderVersion);
+            SerializationDeviceCI.D3D12.ShaderVersion = SerializationDeviceCI.DeviceInfo.MaxShaderVersion.HLSL;
             break;
 
         case RENDER_DEVICE_TYPE_GL:
@@ -800,7 +807,15 @@ struct RenderStateCacheImpl::SerializedPsoCIWrapperBase
             auto& pSign = ppSignatures[i];
             if (pSign == nullptr)
                 continue;
-            const auto&                  SignDesc = pSign->GetDesc();
+
+            auto SignDesc = pSign->GetDesc();
+            // Add hash to the signature name
+            XXH128State Hasher;
+            Hasher.Update(SignDesc, DeviceType);
+            const auto Hash    = Hasher.Digest();
+            const auto HashStr = MakeHashStr(SignDesc.Name, Hash);
+            SignDesc.Name      = HashStr.c_str();
+
             ResourceSignatureArchiveInfo ArchiveInfo;
             ArchiveInfo.DeviceFlags = static_cast<ARCHIVE_DEVICE_DATA_FLAGS>(1 << DeviceType);
             RefCntAutoPtr<IPipelineResourceSignature> pSerializedSign;
@@ -853,16 +868,15 @@ protected:
             Uint64 Size = 0;
             pShader->GetBytecode(&ShaderCI.ByteCode, Size);
             ShaderCI.ByteCodeSize = static_cast<size_t>(Size);
-            if (DeviceType == RENDER_DEVICE_TYPE_GL || DeviceType == RENDER_DEVICE_TYPE_METAL)
+            if (DeviceType == RENDER_DEVICE_TYPE_GL)
             {
-                ShaderCI.Source   = static_cast<const char*>(ShaderCI.ByteCode);
-                ShaderCI.ByteCode = nullptr;
-                if (DeviceType == RENDER_DEVICE_TYPE_GL)
-                    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM;
-                else if (DeviceType == RENDER_DEVICE_TYPE_METAL)
-                    ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_MSL_VERBATIM;
-                else
-                    UNEXPECTED("Unexpected device type");
+                ShaderCI.Source         = static_cast<const char*>(ShaderCI.ByteCode);
+                ShaderCI.ByteCode       = nullptr;
+                ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM;
+            }
+            else if (DeviceType == RENDER_DEVICE_TYPE_METAL)
+            {
+                ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_MSL_VERBATIM;
             }
             ShaderArchiveInfo ArchiveInfo;
             ArchiveInfo.DeviceFlags = static_cast<ARCHIVE_DEVICE_DATA_FLAGS>(1 << DeviceType);
@@ -893,7 +907,13 @@ struct RenderStateCacheImpl::SerializedPsoCIWrapper<GraphicsPipelineStateCreateI
         // Replace render pass with serialized render pass
         if (CI.GraphicsPipeline.pRenderPass != nullptr)
         {
-            const auto& RPDesc = CI.GraphicsPipeline.pRenderPass->GetDesc();
+            auto RPDesc = CI.GraphicsPipeline.pRenderPass->GetDesc();
+            // Add hash to the render pass name
+            XXH128State Hasher;
+            Hasher.Update(RPDesc, DeviceType);
+            const auto Hash    = Hasher.Digest();
+            const auto HashStr = MakeHashStr(RPDesc.Name, Hash);
+            RPDesc.Name        = HashStr.c_str();
 
             RefCntAutoPtr<IRenderPass> pSerializedRP;
             pSerializationDevice->CreateRenderPass(RPDesc, &pSerializedRP);
@@ -1476,6 +1496,49 @@ bool ReloadablePipelineState::Reload(ReloadGraphicsPipelineCallbackType ReloadGr
             UNEXPECTED("Unexpected pipeline type");
             return false;
     }
+}
+
+static constexpr char RenderStateCacheFileExtension[] = ".diligentcache";
+
+std::string GetRenderStateCacheFilePath(const char* CacheLocation, const char* AppName, RENDER_DEVICE_TYPE DeviceType)
+{
+    if (CacheLocation == nullptr)
+    {
+        UNEXPECTED("Cache location is null");
+        return "";
+    }
+
+    std::string StateCachePath = CacheLocation;
+    if (StateCachePath == RenderStateCacheLocationAppData)
+    {
+        // Use the app data directory.
+        StateCachePath = FileSystem::GetLocalAppDataDirectory(AppName);
+    }
+    else if (!StateCachePath.empty() && !FileSystem::PathExists(StateCachePath.c_str()))
+    {
+        // Use the user-provided directory
+        FileSystem::CreateDirectory(StateCachePath.c_str());
+    }
+
+    if (!StateCachePath.empty() && !FileSystem::IsSlash(StateCachePath.back()))
+        StateCachePath.push_back(FileSystem::SlashSymbol);
+
+    if (AppName != nullptr)
+    {
+        StateCachePath += AppName;
+        StateCachePath += '_';
+    }
+    StateCachePath += GetRenderDeviceTypeShortString(DeviceType);
+    // Use different cache files for debug and release modes.
+    // This is not required, but is convenient.
+#ifdef DILIGENT_DEBUG
+    StateCachePath += "_d";
+#else
+    StateCachePath += "_r";
+#endif
+    StateCachePath += RenderStateCacheFileExtension;
+
+    return StateCachePath;
 }
 
 } // namespace Diligent

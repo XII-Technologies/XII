@@ -103,14 +103,14 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramCompiler::x
         return XII_FAILURE;
       }
 
-      xiiShaderVertexInputAttribute& attribute = vertexInputAttributes.ExpandAndGetRef();
-      attribute.m_uiSemanticIndex              = parameterDesc.SemanticIndex;
-
       xiiStringBuilder sSemanticName = parameterDesc.SemanticName;
       sSemanticName.AppendFormat("{}", parameterDesc.SemanticIndex);
 
       if (!sSemanticName.StartsWith_NoCase("SV_"))
       {
+        xiiShaderVertexInputAttribute& attribute = vertexInputAttributes.ExpandAndGetRef();
+        attribute.m_uiSemanticIndex              = parameterDesc.SemanticIndex;
+
         xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(sSemanticName);
         XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {0} in file {1}", sSemanticName, inout_Data.m_szSourceFile);
 
@@ -118,10 +118,10 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramCompiler::x
           attribute.m_eSemantic = *pVAS;
         else
           xiiLog::Dev("Unknown vertex input semantic found: {}", parameterDesc.SemanticName);
-      }
 
-      attribute.m_eFormat = GetXIIFormatD3D11(parameterDesc.ComponentType, parameterDesc.Mask);
-      XII_ASSERT_DEV(attribute.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", parameterDesc.ComponentType);
+        attribute.m_eFormat = GetXIIFormatD3D11(parameterDesc.ComponentType, parameterDesc.Mask);
+        XII_ASSERT_DEV(attribute.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", parameterDesc.ComponentType);
+      }
     }
   }
 
@@ -134,10 +134,11 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramCompiler::x
     xiiUInt32                    uiVirtualSampler      = 0;
 
     xiiDynamicArray<D3D11_SHADER_INPUT_BIND_DESC> boundResources;
+    boundResources.SetCount(uiNumBoundResources);
 
     for (xiiUInt32 i = 0; i < uiNumBoundResources; ++i)
     {
-      D3D11_SHADER_INPUT_BIND_DESC& inputDesc = boundResources.ExpandAndGetRef();
+      D3D11_SHADER_INPUT_BIND_DESC& inputDesc = boundResources[i];
       if (FAILED(pReflector->GetResourceBindingDesc(i, &inputDesc)))
       {
         xiiLog::Error("Failed to retrieve shader input descriptor");
@@ -154,7 +155,7 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramCompiler::x
       if (FillResourceBinding(inout_Data.m_StageBinary[Stage], shaderResourceBinding, pReflector, inputDesc).Failed())
         continue;
 
-      // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the DX11-based high level render interface.
+      // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the D3D11-based high level render interface.
 
       // clang-format off
       if (inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED

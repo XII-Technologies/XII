@@ -24,9 +24,9 @@ XII_ALWAYS_INLINE Diligent::RENDER_DEVICE_TYPE xiiDiligentUtils::GetDiligentRend
   return Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
 }
 
-XII_ALWAYS_INLINE xiiUInt32 xiiDiligentUtils::ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount)
+XII_ALWAYS_INLINE xiiUInt8 xiiDiligentUtils::ToDiligentMSAACount(xiiEnum<xiiGALMSAASampleCount> sampleCount)
 {
-  return static_cast<xiiUInt32>(sampleCount.GetValue());
+  return static_cast<xiiUInt8>(sampleCount.GetValue());
 }
 
 XII_ALWAYS_INLINE xiiEnum<xiiGALMSAASampleCount> xiiDiligentUtils::ToGALMSAASampleCount(xiiUInt32 uiSampleCount)
@@ -424,7 +424,7 @@ XII_ALWAYS_INLINE bool xiiDiligentUtils::GALIsFormatNormalized(Diligent::TEXTURE
   return false;
 }
 
-XII_ALWAYS_INLINE xiiInt32 xiiDiligentUtils::GALToDiligentNumComponent(Diligent::TEXTURE_FORMAT format)
+XII_ALWAYS_INLINE xiiUInt8 xiiDiligentUtils::GALToDiligentNumComponent(Diligent::TEXTURE_FORMAT format)
 {
   switch (format)
   {
@@ -604,4 +604,101 @@ XII_ALWAYS_INLINE bool xiiDiligentUtils::IsDepthFormat(Diligent::TEXTURE_FORMAT 
       return true;
   }
   return false;
+}
+
+XII_ALWAYS_INLINE Diligent::RESOURCE_DIMENSION xiiDiligentUtils::GetResourceDimension(xiiGALTextureType::Enum type)
+{
+  switch (type)
+  {
+    case xiiGALTextureType::Texture1D:
+      return Diligent::RESOURCE_DIM_TEX_1D;
+    case xiiGALTextureType::Texture1DArray:
+      return Diligent::RESOURCE_DIM_TEX_1D_ARRAY;
+    case xiiGALTextureType::Texture2D:
+      return Diligent::RESOURCE_DIM_TEX_2D;
+    case xiiGALTextureType::Texture2DArray:
+      return Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+    case xiiGALTextureType::TextureCube:
+      return Diligent::RESOURCE_DIM_TEX_CUBE;
+    case xiiGALTextureType::TextureCubeArray:
+      return Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
+    case xiiGALTextureType::Texture3D:
+      return Diligent::RESOURCE_DIM_TEX_3D;
+    case xiiGALTextureType::Texture2DProxy:
+      return Diligent::RESOURCE_DIM_TEX_2D;
+    case xiiGALTextureType::Texture2DProxyArray:
+      return Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+  }
+  return Diligent::RESOURCE_DIM_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentUtils::GetDefaultResourceState(Diligent::IBuffer* pBuffer)
+{
+  Diligent::RESOURCE_STATE defaultSourceResourceState = {};
+
+  const Diligent::BIND_FLAGS& bindFlags = pBuffer->GetDesc().BindFlags;
+
+  if (bindFlags & Diligent::BIND_UNIFORM_BUFFER)
+  {
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_CONSTANT_BUFFER;
+    return defaultSourceResourceState;
+  }
+
+  if (bindFlags & Diligent::BIND_VERTEX_BUFFER)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_VERTEX_BUFFER;
+
+  if (bindFlags & Diligent::BIND_INDEX_BUFFER)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_INDEX_BUFFER;
+
+  if (bindFlags & Diligent::BIND_SHADER_RESOURCE)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+
+  if (bindFlags & Diligent::BIND_STREAM_OUTPUT)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_STREAM_OUT;
+
+  if (bindFlags & Diligent::BIND_UNORDERED_ACCESS)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_UNORDERED_ACCESS;
+
+  if (bindFlags & Diligent::BIND_INDIRECT_DRAW_ARGS)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_INDIRECT_ARGUMENT;
+
+  if (bindFlags & Diligent::BIND_RAY_TRACING)
+    defaultSourceResourceState |= Diligent::RESOURCE_STATE_RAY_TRACING;
+
+  return defaultSourceResourceState;
+}
+
+XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentUtils::GetDefaultResourceState(Diligent::ITexture* pTexture)
+{
+  Diligent::RESOURCE_STATE defaultResourceState = {};
+
+  const Diligent::BIND_FLAGS& bindFlags = pTexture->GetDesc().BindFlags;
+
+// These are exclusive
+#if 0
+  if (bindFlags & Diligent::BIND_RENDER_TARGET)
+    defaultResourceState |= Diligent::RESOURCE_STATE_RENDER_TARGET;
+
+  if (bindFlags & Diligent::BIND_DEPTH_STENCIL)
+  {
+    if (pTexture->GetDesc().Usage == Diligent::USAGE_IMMUTABLE)
+      defaultResourceState |= Diligent::RESOURCE_STATE_DEPTH_READ;
+    else
+      defaultResourceState |= Diligent::RESOURCE_STATE_DEPTH_WRITE;
+  }
+#endif
+
+  if (bindFlags & Diligent::BIND_SHADER_RESOURCE)
+    defaultResourceState |= Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+
+  if (bindFlags & Diligent::BIND_UNORDERED_ACCESS)
+    defaultResourceState |= Diligent::RESOURCE_STATE_UNORDERED_ACCESS;
+
+  if (bindFlags & Diligent::BIND_INPUT_ATTACHMENT)
+    defaultResourceState |= Diligent::RESOURCE_STATE_INPUT_ATTACHMENT;
+
+  if (bindFlags & Diligent::BIND_SHADING_RATE)
+    defaultResourceState |= Diligent::RESOURCE_STATE_SHADING_RATE;
+
+  return defaultResourceState;
 }
