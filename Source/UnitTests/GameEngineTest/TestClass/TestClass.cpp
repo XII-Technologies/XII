@@ -29,14 +29,14 @@ xiiResult xiiGameEngineTest::InitializeTest()
 
   XII_SUCCEED_OR_RETURN(xiiRun_Startup(m_pApplication));
 
-  if (xiiStringUtils::IsEqual_NoCase(xiiGameApplication::GetActiveRenderer(), "D3D11"))
+  if (xiiStringUtils::IsEqual_NoCase(xiiGameApplication::GetActiveRenderer(), "D3D11") || xiiStringUtils::IsEqual_NoCase(xiiGameApplication::GetActiveRenderer(), "DX11"))
   {
     if (xiiGALDevice::HasDefaultDevice() && (xiiGALDevice::GetDefaultDevice()->GetCapabilities().m_sAdapterName == "Microsoft Basic Render Driver" || xiiGALDevice::GetDefaultDevice()->GetCapabilities().m_sAdapterName.StartsWith_NoCase("Intel(R) UHD Graphics")))
     {
       // Use different images for comparison when running the D3D11 Reference Device
       xiiTestFramework::GetInstance()->SetImageReferenceOverrideFolderName("Images_Reference_D3D11Ref");
     }
-    else if (xiiStringUtils::IsEqual_NoCase(xiiGameApplication::GetActiveRenderer(), "D3D11") && xiiGALDevice::HasDefaultDevice() && xiiGALDevice::GetDefaultDevice()->GetCapabilities().m_sAdapterName.FindSubString_NoCase("AMD") || xiiGALDevice::GetDefaultDevice()->GetCapabilities().m_sAdapterName.FindSubString_NoCase("Radeon"))
+    else if ((xiiStringUtils::IsEqual_NoCase(xiiGameApplication::GetActiveRenderer(), "D3D11") || xiiStringUtils::IsEqual_NoCase(xiiGameApplication::GetActiveRenderer(), "DX11")) && xiiGALDevice::HasDefaultDevice() && xiiGALDevice::GetDefaultDevice()->GetCapabilities().m_sAdapterName.FindSubString_NoCase("AMD") || xiiGALDevice::GetDefaultDevice()->GetCapabilities().m_sAdapterName.FindSubString_NoCase("Radeon"))
     {
       // Line rendering on D3D11 is different on AMD and requires separate images for tests rendering lines.
       xiiTestFramework::GetInstance()->SetImageReferenceOverrideFolderName("Images_Reference_AMD");
