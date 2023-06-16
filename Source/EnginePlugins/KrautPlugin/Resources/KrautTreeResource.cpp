@@ -114,8 +114,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiKrautTreeResource, xiiKrautTreeResourceDesc
     buffer.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALResourceFormat::XYZFloat);                                                 // 0
     buffer.AddStream(xiiGALVertexAttributeSemantic::TexCoord0, xiiGALResourceFormat::XYFloat);                                                 // 1
     buffer.AddStream(xiiGALVertexAttributeSemantic::TexCoord1, xiiGALResourceFormat::XYFloat);                                                 // 2
-    buffer.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_8Bit));   // 3
-    buffer.AddStream(xiiGALVertexAttributeSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::_8Bit)); // 4
+    buffer.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_8Bit));    // 3
+    buffer.AddStream(xiiGALVertexAttributeSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::_8Bit));  // 4
     buffer.AddStream(xiiGALVertexAttributeSemantic::Color0, xiiGALResourceFormat::XYZWFloat);                                                  // 5 TODO: better packing
     buffer.AddStream(xiiGALVertexAttributeSemantic::Color1, xiiGALResourceFormat::XYZWFloat);                                                  // 6 TODO: better packing
     buffer.AllocateStreams(uiNumVertices, xiiGALPrimitiveTopology::Triangles, uiNumTriangles);
