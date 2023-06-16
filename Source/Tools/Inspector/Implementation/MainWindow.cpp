@@ -129,7 +129,7 @@ xiiQtMainWindow::xiiQtMainWindow() :
   if (bRestoreDockingState)
   {
     auto dockState = Settings.value("DockManagerState");
-    if (dockState.isValid() && dockState.typeId() == QVariant::ByteArray)
+    if (dockState.isValid() && dockState.type() == QVariant::ByteArray)
     {
       m_DockManager->restoreState(dockState.toByteArray(), 1);
     }
