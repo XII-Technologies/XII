@@ -73,7 +73,6 @@ xiiApplication::Execution xiiComputeShaderHistogramApp::Run()
     {
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, m_hScreenRTV);
-      renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
       renderContext.BeginRendering(pGALPass, renderingSetup, viewport, "Background");
 
       renderContext.BindShader(m_hScreenShader);
@@ -99,6 +98,7 @@ xiiApplication::Execution xiiComputeShaderHistogramApp::Run()
     {
       renderContext.BeginCompute(pGALPass, "ComputeHistogram");
 
+      // Reset first.
       renderContext.GetCommandEncoder()->ClearUnorderedAccessView(m_hHistogramUAV, xiiVec4U32(0, 0, 0, 0));
 
       renderContext.BindShader(m_hHistogramComputeShader);
