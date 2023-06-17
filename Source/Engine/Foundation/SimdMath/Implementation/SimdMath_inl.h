@@ -125,8 +125,8 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Sin(const xiiSimdVec4d& f)
 #if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
   return _mm256_sin_pd(f.m_v);
 #else
-  return xiiSimdVec4d(xiiMath::Sin(xiiAngle::Radian(f.x())), xiiMath::Sin(xiiAngle::Radian(f.y())), xiiMath::Sin(xiiAngle::Radian(f.z())),
-                      xiiMath::Sin(xiiAngle::Radian(f.w())));
+  return xiiSimdVec4d(xiiMath::Sin(xiiAngled::Radian(f.x())), xiiMath::Sin(xiiAngled::Radian(f.y())), xiiMath::Sin(xiiAngled::Radian(f.z())),
+                      xiiMath::Sin(xiiAngled::Radian(f.w())));
 #endif
 }
 
@@ -147,8 +147,8 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Cos(const xiiSimdVec4d& f)
 #if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
   return _mm256_cos_pd(f.m_v);
 #else
-  return xiiSimdVec4d(xiiMath::Cos(xiiAngle::Radian(f.x())), xiiMath::Cos(xiiAngle::Radian(f.y())), xiiMath::Cos(xiiAngle::Radian(f.z())),
-                      xiiMath::Cos(xiiAngle::Radian(f.w())));
+  return xiiSimdVec4d(xiiMath::Cos(xiiAngled::Radian(f.x())), xiiMath::Cos(xiiAngled::Radian(f.y())), xiiMath::Cos(xiiAngled::Radian(f.z())),
+                      xiiMath::Cos(xiiAngled::Radian(f.w())));
 #endif
 }
 
@@ -169,8 +169,8 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Tan(const xiiSimdVec4d& f)
 #if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
   return _mm256_tan_pd(f.m_v);
 #else
-  return xiiSimdVec4d(xiiMath::Tan(xiiAngle::Radian(f.x())), xiiMath::Tan(xiiAngle::Radian(f.y())), xiiMath::Tan(xiiAngle::Radian(f.z())),
-                      xiiMath::Tan(xiiAngle::Radian(f.w())));
+  return xiiSimdVec4d(xiiMath::Tan(xiiAngled::Radian(f.x())), xiiMath::Tan(xiiAngled::Radian(f.y())), xiiMath::Tan(xiiAngled::Radian(f.z())),
+                      xiiMath::Tan(xiiAngled::Radian(f.w())));
 #endif
 }
 
