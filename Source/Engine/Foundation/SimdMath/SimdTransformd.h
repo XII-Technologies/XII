@@ -11,7 +11,8 @@ public:
   xiiSimdTransformd(); // [tested]
 
   /// \brief Sets position, rotation and scale.
-  explicit xiiSimdTransformd(const xiiSimdVec4d& vPosition, const xiiSimdQuatd& qRotation = xiiSimdQuatd::IdentityQuaternion(), const xiiSimdVec4d& vScale = xiiSimdVec4d(1.0f)); // [tested]
+  explicit xiiSimdTransformd(const xiiSimdVec4d& vPosition, const xiiSimdQuatd& qRotation = xiiSimdQuatd::IdentityQuaternion(),
+                             const xiiSimdVec4d& vScale = xiiSimdVec4d(1.0f)); // [tested]
 
   /// \brief Sets rotation.
   explicit xiiSimdTransformd(const xiiSimdQuatd& qRotation); // [tested]
