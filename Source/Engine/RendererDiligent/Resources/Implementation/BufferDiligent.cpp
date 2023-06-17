@@ -57,9 +57,11 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
 
   if (m_Description.m_bAllowRawViews)
     BufferDesc.Mode = Diligent::BUFFER_MODE_RAW;
-  else if (m_Description.m_bUseAsStructuredBuffer)
+
+  if (m_Description.m_bUseAsStructuredBuffer)
     BufferDesc.Mode = Diligent::BUFFER_MODE_STRUCTURED;
-  else
+
+  if (m_Description.m_bUseAsFormattedBuffer)
     BufferDesc.Mode = Diligent::BUFFER_MODE_FORMATTED;
 
   BufferDesc.ElementByteStride = m_Description.m_uiStructSize;
