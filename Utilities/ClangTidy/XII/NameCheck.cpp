@@ -118,7 +118,7 @@ namespace clang
             *prefixAdded = true;
           return newName.insert(0, "q");
         }
-        else if (typeName == "xiiSimdFloat")
+        else if (typeName == "xiiSimdFloat" || typeName == "xiiSimdDouble")
         {
           if (prefixAdded)
             *prefixAdded = true;
@@ -175,8 +175,7 @@ namespace clang
 
         if (type->isPointerType())
         {
-          const BuiltinType* pointeeType =
-            dyn_cast<BuiltinType>(type->getPointeeType());
+          const BuiltinType* pointeeType = dyn_cast<BuiltinType>(type->getPointeeType());
           if (pointeeType && pointeeType->isCharType())
           {
             if (oldPrefix == "p")
@@ -223,8 +222,7 @@ namespace clang
             if (builtinType)
             {
               auto builtinKind = builtinType->getKind();
-              if (builtinKind == BuiltinType::Float ||
-                  builtinKind == BuiltinType::Double)
+              if (builtinKind == BuiltinType::Float || builtinKind == BuiltinType::Double)
               {
                 return newName.insert(0, "f");
               }
@@ -261,13 +259,10 @@ namespace clang
               }
               else
               {
-                const TemplateSpecializationType* templateSpecialization =
-                  dyn_cast<TemplateSpecializationType>(type);
+                const TemplateSpecializationType* templateSpecialization = dyn_cast<TemplateSpecializationType>(type);
                 if (templateSpecialization)
                 {
-                  auto templateName = templateSpecialization->getTemplateName()
-                                        .getAsTemplateDecl()
-                                        ->getName();
+                  auto templateName     = templateSpecialization->getTemplateName().getAsTemplateDecl()->getName();
                   bool localPrefixAdded = false;
                   newName               = AddPrefixForType(templateName, std::move(newName), &localPrefixAdded);
                   if (localPrefixAdded)
@@ -299,8 +294,7 @@ namespace clang
       }
 
       llvm::Optional<RenamerClangTidyCheck::FailureInfo>
-      NameCheck::getDeclFailureInfo(const NamedDecl*     Decl,
-                                    const SourceManager& SM) const
+      NameCheck::getDeclFailureInfo(const NamedDecl* Decl, const SourceManager& SM) const
       {
         const FieldDecl*   field = dyn_cast<FieldDecl>(Decl);
         const VarDecl*     var   = dyn_cast<VarDecl>(Decl);
@@ -559,15 +553,13 @@ namespace clang
       }
 
       llvm::Optional<clang::tidy::RenamerClangTidyCheck::FailureInfo>
-      NameCheck::getMacroFailureInfo(const Token&         MacroNameTok,
-                                     const SourceManager& SM) const
+      NameCheck::getMacroFailureInfo(const Token& MacroNameTok, const SourceManager& SM) const
       {
         return llvm::None;
       }
 
       RenamerClangTidyCheck::DiagInfo
-      NameCheck::getDiagInfo(const NamingCheckId&      ID,
-                             const NamingCheckFailure& Failure) const
+      NameCheck::getDiagInfo(const NamingCheckId& ID, const NamingCheckFailure& Failure) const
       {
         if (Failure.Info.KindName == "field")
         {
