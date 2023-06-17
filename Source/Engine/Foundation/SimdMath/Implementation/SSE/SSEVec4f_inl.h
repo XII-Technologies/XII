@@ -246,7 +246,7 @@ XII_ALWAYS_INLINE bool xiiSimdVec4f::IsValid() const
   return (_mm_movemask_ps(exponentNot1) & mask) == mask;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::GetComponent() const
 {
   return _mm_shuffle_ps(m_v, m_v, XII_SHUFFLE(N, N, N, N));
