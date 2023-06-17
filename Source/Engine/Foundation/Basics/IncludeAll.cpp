@@ -128,7 +128,10 @@
 
 #include <Foundation/SimdMath/SimdBBox.h>
 #include <Foundation/SimdMath/SimdBBoxSphere.h>
+#include <Foundation/SimdMath/SimdBBoxSphered.h>
+#include <Foundation/SimdMath/SimdBBoxd.h>
 #include <Foundation/SimdMath/SimdBSphere.h>
+#include <Foundation/SimdMath/SimdBSphered.h>
 #include <Foundation/SimdMath/SimdConversion.h>
 #include <Foundation/SimdMath/SimdFloat.h>
 #include <Foundation/SimdMath/SimdMat4d.h>
