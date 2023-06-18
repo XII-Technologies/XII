@@ -87,7 +87,7 @@ XII_ALWAYS_INLINE void xiiSimdVec4d::Load<3>(const double* pValues)
 template <>
 XII_ALWAYS_INLINE void xiiSimdVec4d::Load<4>(const double* pValues)
 {
-  m_v = _mm256_load_pd(pValues);
+  m_v = _mm256_loadu_pd(pValues);
 }
 
 template <>
@@ -111,7 +111,7 @@ XII_ALWAYS_INLINE void xiiSimdVec4d::Store<3>(double* pValues) const
 template <>
 XII_ALWAYS_INLINE void xiiSimdVec4d::Store<4>(double* pValues) const
 {
-  _mm256_store_pd(pValues, m_v);
+  _mm256_storeu_pd(pValues, m_v);
 }
 
 #if XII_SSE_LEVEL >= XII_SSE_AVX512
