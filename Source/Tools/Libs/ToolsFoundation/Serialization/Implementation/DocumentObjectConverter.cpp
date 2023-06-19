@@ -137,13 +137,10 @@ void xiiDocumentObjectConverterWriter::AddProperties(xiiAbstractObjectNode* pNod
 
 xiiAbstractObjectNode* xiiDocumentObjectConverterWriter::AddSubObjectToGraph(const xiiDocumentObject* pObject, const char* szNodeName)
 {
-  xiiAbstractObjectNode* pNode =
-    m_pGraph->AddNode(pObject->GetGuid(), pObject->GetType()->GetTypeName(), pObject->GetType()->GetTypeVersion(), szNodeName);
+  xiiAbstractObjectNode* pNode = m_pGraph->AddNode(pObject->GetGuid(), pObject->GetType()->GetTypeName(), pObject->GetType()->GetTypeVersion(), szNodeName);
   AddProperties(pNode, pObject);
   return pNode;
 }
-
-
 
 xiiDocumentObjectConverterReader::xiiDocumentObjectConverterReader(const xiiAbstractObjectGraph* pGraph, xiiDocumentObjectManager* pManager, Mode mode)
 {

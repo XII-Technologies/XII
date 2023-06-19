@@ -31,10 +31,7 @@ xiiEditorShapeIconsExtractor::xiiEditorShapeIconsExtractor(const char* szName) :
 
 xiiEditorShapeIconsExtractor::~xiiEditorShapeIconsExtractor() {}
 
-void xiiEditorShapeIconsExtractor::Extract(
-  const xiiView&                               view,
-  const xiiDynamicArray<const xiiGameObject*>& visibleObjects,
-  xiiExtractedRenderData&                      extractedRenderData)
+void xiiEditorShapeIconsExtractor::Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& extractedRenderData)
 {
   XII_LOCK(view.GetWorld()->GetReadMarker());
 
@@ -66,17 +63,15 @@ void xiiEditorShapeIconsExtractor::Extract(
   }
 }
 
-void xiiEditorShapeIconsExtractor::ExtractShapeIcon(
-  const xiiGameObject*    pObject,
-  const xiiView&          view,
-  xiiExtractedRenderData& extractedRenderData,
-  xiiRenderData::Category category)
+void xiiEditorShapeIconsExtractor::ExtractShapeIcon(const xiiGameObject* pObject, const xiiView& view, xiiExtractedRenderData& extractedRenderData, xiiRenderData::Category category)
 {
   static const xiiTag& tagHidden = xiiTagRegistry::GetGlobalRegistry().RegisterTag("EditorHidden");
   static const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
-  static const xiiTag& tagPrefab = xiiTagRegistry::GetGlobalRegistry().RegisterTag("EditorPrefabInstance");
 
-  if (pObject->GetTags().IsSet(tagEditor) || pObject->GetTags().IsSet(tagHidden) || pObject->GetTags().IsSet(tagPrefab))
+  if (pObject->GetTags().IsSet(tagEditor) || pObject->GetTags().IsSet(tagHidden))
+    return;
+
+  if (pObject->WasCreatedByPrefab())
     return;
 
   if (pObject->GetComponents().IsEmpty())

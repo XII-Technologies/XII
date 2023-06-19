@@ -122,7 +122,15 @@ public:
   const xiiDocumentTypeDescriptor* GetDocumentTypeDescriptor() const { return m_pTypeDescriptor; }
 
   /// \brief Returns the document's type name. Same as GetDocumentTypeDescriptor()->m_sDocumentTypeName.
-  const char* GetDocumentTypeName() const { return m_pTypeDescriptor->m_sDocumentTypeName; }
+  const char* GetDocumentTypeName() const
+  {
+    if (m_pTypeDescriptor == nullptr)
+    {
+      // If this is a document type descriptor, use the RTTI type name as a fallback.
+      return GetDynamicRTTI()->GetTypeName();
+    }
+    return m_pTypeDescriptor->m_sDocumentTypeName;
+  }
 
   const xiiDocumentInfo* GetDocumentInfo() const { return m_pDocumentInfo; }
 
@@ -219,15 +227,11 @@ public:
   /// \brief Removes the link between a prefab instance and its template, turning the instance into a regular object.
   virtual void UnlinkPrefabs(const xiiDeque<const xiiDocumentObject*>& selection);
 
-  virtual xiiStatus CreatePrefabDocumentFromSelection(const char* szFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = xiiDelegate<void(xiiAbstractObjectNode*)>(), xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB = xiiDelegate<void(xiiDocumentObject*)>());
-  virtual xiiStatus CreatePrefabDocument(const char* szFile, xiiArrayPtr<const xiiDocumentObject*> rootObjects, const xiiUuid& invPrefabSeed, xiiUuid& out_newDocumentGuid, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, bool bKeepOpen = false);
-  // Returns new guid of replaced object.
-  virtual xiiUuid ReplaceByPrefab(
-    const xiiDocumentObject* pRootObject,
-    const char*              szPrefabFile,
-    const xiiUuid&           prefabAsset,
-    const xiiUuid&           prefabSeed,
-    bool                     bEnginePrefab);
+  virtual xiiStatus CreatePrefabDocumentFromSelection(const char* szFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB = {}, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});
+  virtual xiiStatus CreatePrefabDocument(const char* szFile, xiiArrayPtr<const xiiDocumentObject*> rootObjects, const xiiUuid& invPrefabSeed, xiiUuid& out_newDocumentGuid, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, bool bKeepOpen = false, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});
+
+  // Returns new guid of reverted object.
+  virtual xiiUuid ReplaceByPrefab(const xiiDocumentObject* pRootObject, const char* szPrefabFile, const xiiUuid& prefabAsset, const xiiUuid& prefabSeed, bool bEnginePrefab);
   // Returns new guid of reverted object.
   virtual xiiUuid RevertPrefab(const xiiDocumentObject* pObject);
 

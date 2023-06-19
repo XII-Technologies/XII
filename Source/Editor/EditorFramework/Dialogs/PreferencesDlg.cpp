@@ -22,6 +22,8 @@ public:
 
 class xiiPreferencesDocument : public xiiDocument
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiPreferencesDocument, xiiDocument);
+
 public:
   xiiPreferencesDocument(const char* szDocumentPath) :
     xiiDocument(szDocumentPath, XII_DEFAULT_NEW(xiiPreferencesObjectManager))
@@ -32,7 +34,8 @@ public:
   virtual xiiDocumentInfo* CreateDocumentInfo() override { return XII_DEFAULT_NEW(xiiDocumentInfo); }
 };
 
-
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPreferencesDocument, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiQtPreferencesDlg::xiiQtPreferencesDlg(QWidget* parent) :
   QDialog(parent)

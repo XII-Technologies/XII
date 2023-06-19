@@ -14,6 +14,7 @@
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
+#include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <QClipboard>
 #include <RendererCore/Components/CameraComponent.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
@@ -22,6 +23,38 @@
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneDocument, 7, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+void xiiSceneDocument_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e)
+{
+  static const xiiRTTI* pRtti = xiiRTTI::FindTypeByName("xiiGameObject");
+
+  if (e.m_pObject->GetDocumentObjectManager()->GetDocument()->GetDocumentTypeName() != "Prefabs")
+    return;
+
+  if (e.m_pObject->GetTypeAccessor().GetType() != pRtti)
+    return;
+
+  auto pParent = e.m_pObject->GetParent();
+  if (pParent != nullptr)
+  {
+    if (pParent->GetTypeAccessor().GetType() == pRtti)
+      return;
+  }
+
+  const xiiString name = e.m_pObject->GetTypeAccessor().GetValue("Name").ConvertTo<xiiString>();
+  if (name != "<Prefab-Root>")
+    return;
+
+  auto& props                               = *e.m_pPropertyStates;
+  props["Name"].m_sNewLabelText             = "Prefab.NameLabel";
+  props["Active"].m_Visibility              = xiiPropertyUiState::Invisible;
+  props["LocalPosition"].m_Visibility       = xiiPropertyUiState::Invisible;
+  props["LocalRotation"].m_Visibility       = xiiPropertyUiState::Invisible;
+  props["LocalScaling"].m_Visibility        = xiiPropertyUiState::Invisible;
+  props["LocalUniformScaling"].m_Visibility = xiiPropertyUiState::Invisible;
+  props["GlobalKey"].m_Visibility           = xiiPropertyUiState::Invisible;
+  props["Tags"].m_Visibility                = xiiPropertyUiState::Invisible;
+}
 
 xiiSceneDocument::xiiSceneDocument(const char* szDocumentPath, DocumentType DocumentType) :
   xiiGameObjectDocument(szDocumentPath, XII_DEFAULT_NEW(xiiSceneObjectManager))
@@ -47,9 +80,14 @@ xiiSceneDocument::xiiSceneDocument(const char* szDocumentPath, DocumentType Docu
 void xiiSceneDocument::InitializeAfterLoading(bool bFirstTimeCreation)
 {
   // (Local mirror only mirrors settings)
-  m_ObjectMirror.SetFilterFunction([pManager = GetObjectManager()](const xiiDocumentObject* pObject, const char* szProperty) -> bool { return pManager->IsUnderRootProperty("Settings", pObject, szProperty); });
+  m_ObjectMirror.SetFilterFunction([pManager = GetObjectManager()](const xiiDocumentObject* pObject, const char* szProperty) -> bool {
+    return pManager->IsUnderRootProperty("Settings", pObject, szProperty);
+  });
+
   // (Remote IPC mirror only sends scene)
-  m_Mirror.SetFilterFunction([pManager = GetObjectManager()](const xiiDocumentObject* pObject, const char* szProperty) -> bool { return pManager->IsUnderRootProperty("Children", pObject, szProperty); });
+  m_Mirror.SetFilterFunction([pManager = GetObjectManager()](const xiiDocumentObject* pObject, const char* szProperty) -> bool {
+    return pManager->IsUnderRootProperty("Children", pObject, szProperty);
+  });
 
   SUPER::InitializeAfterLoading(bFirstTimeCreation);
   EnsureSettingsObjectExist();
@@ -532,11 +570,8 @@ void xiiSceneDocument::SetGameMode(GameMode::Enum mode)
   ScheduleSendObjectSelection();
 }
 
-xiiStatus xiiSceneDocument::CreatePrefabDocumentFromSelection(const char* szFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> AdjustGraphNodeCB /* = xiiDelegate<void(xiiAbstractObjectNode * )>() */, xiiDelegate<void(xiiDocumentObject*)> AdjustNewNodesCB /*= xiiDelegate<void(xiiDocumentObject*)>()*/)
+xiiStatus xiiSceneDocument::CreatePrefabDocumentFromSelection(const char* szFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB /* = {} */, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB /* = {} */, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB /* = {} */)
 {
-  XII_ASSERT_DEV(!AdjustGraphNodeCB.IsValid(), "Not allowed");
-  XII_ASSERT_DEV(!AdjustNewNodesCB.IsValid(), "Not allowed");
-
   auto Selection = GetSelectionManager()->GetTopLevelSelection(pRootType);
 
   if (Selection.IsEmpty())
@@ -544,7 +579,9 @@ xiiStatus xiiSceneDocument::CreatePrefabDocumentFromSelection(const char* szFile
 
   const xiiTransform tReference = QueryLocalTransform(Selection.PeekBack());
 
-  auto centerNodes = [tReference](xiiAbstractObjectNode* pGraphNode) {
+  xiiVariantArray varChildren;
+
+  auto centerNodes = [tReference, &varChildren](xiiAbstractObjectNode* pGraphNode) {
     if (auto pPosition = pGraphNode->FindProperty("LocalPosition"))
     {
       xiiVec3 pos = pPosition->m_Value.ConvertTo<xiiVec3>();
@@ -560,6 +597,8 @@ xiiStatus xiiSceneDocument::CreatePrefabDocumentFromSelection(const char* szFile
 
       pGraphNode->ChangeProperty("LocalRotation", rot);
     }
+
+    varChildren.PushBack(pGraphNode->GetGuid());
   };
 
   auto adjustResult = [tReference, this](xiiDocumentObject* pObject) {
@@ -577,7 +616,32 @@ xiiStatus xiiSceneDocument::CreatePrefabDocumentFromSelection(const char* szFile
     GetCommandHistory()->AddCommand(cmd);
   };
 
-  return SUPER::CreatePrefabDocumentFromSelection(szFile, pRootType, centerNodes, adjustResult);
+  auto finalizeGraph = [this, &varChildren](xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes) {
+    if (graphRootNodes.GetCount() == 1)
+    {
+      graphRootNodes[0]->ChangeProperty("Name", "<Prefab-Root>");
+    }
+    else
+    {
+      const xiiRTTI* pRtti = xiiGetStaticRTTI<xiiGameObject>();
+
+      xiiAbstractObjectNode* pRoot = graph.AddNode(xiiUuid::CreateUuid(), pRtti->GetTypeName(), pRtti->GetTypeVersion());
+      pRoot->AddProperty("Name", "<Prefab-Root>");
+      pRoot->AddProperty("Children", varChildren);
+
+      graphRootNodes.Clear();
+      graphRootNodes.PushBack(pRoot);
+    }
+  };
+
+  if (!adjustGraphNodeCB.IsValid())
+    adjustGraphNodeCB = centerNodes;
+  if (!adjustNewNodesCB.IsValid())
+    adjustNewNodesCB = adjustResult;
+  if (!finalizeGraphCB.IsValid())
+    finalizeGraphCB = finalizeGraph;
+
+  return SUPER::CreatePrefabDocumentFromSelection(szFile, pRootType, adjustGraphNodeCB, adjustNewNodesCB, finalizeGraphCB);
 }
 
 bool xiiSceneDocument::CanEngineProcessBeRestarted() const

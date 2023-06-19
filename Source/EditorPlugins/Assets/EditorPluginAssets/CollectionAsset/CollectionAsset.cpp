@@ -35,7 +35,7 @@ xiiCollectionAssetDocument::xiiCollectionAssetDocument(const char* szDocumentPat
 {
 }
 
-static void InsertEntry(xiiStringView sID, xiiStringView sLookupName, xiiMap<xiiString, xiiCollectionEntry>& inout_Found)
+static bool InsertEntry(xiiStringView sID, xiiStringView sLookupName, xiiMap<xiiString, xiiCollectionEntry>& inout_Found)
 {
   auto it = inout_Found.Find(sID);
 
@@ -46,7 +46,7 @@ static void InsertEntry(xiiStringView sID, xiiStringView sLookupName, xiiMap<xii
       it.Value().m_sOptionalNiceLookupName = sLookupName;
     }
 
-    return;
+    return true;
   }
 
   xiiStringBuilder                   tmp;
@@ -54,8 +54,9 @@ static void InsertEntry(xiiStringView sID, xiiStringView sLookupName, xiiMap<xii
 
   if (pInfo == nullptr)
   {
-    xiiLog::Warning("Asset in Collection is unknown: '{0}'", sID);
-    return;
+    // This occurs for non-asset types (e.g. 'xyz.color' and other non-asset file types)
+    // These are benign and can be skipped.
+    return false;
   }
 
   // Insert item itself
@@ -72,9 +73,12 @@ static void InsertEntry(xiiStringView sID, xiiStringView sLookupName, xiiMap<xii
 
     for (const xiiString& doc : pDocInfo->m_PackageDependencies)
     {
+      // Ignore return value, we are only interested in top-level information.
       InsertEntry(doc, {}, inout_Found);
     }
   }
+
+  return true;
 }
 
 xiiTransformStatus xiiCollectionAssetDocument::InternalTransformAsset(xiiStreamWriter& stream, const char* szOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
@@ -88,7 +92,11 @@ xiiTransformStatus xiiCollectionAssetDocument::InternalTransformAsset(xiiStreamW
     if (e.m_sRedirectionAsset.IsEmpty())
       continue;
 
-    InsertEntry(e.m_sRedirectionAsset, e.m_sLookupName, entries);
+    if (!InsertEntry(e.m_sRedirectionAsset, e.m_sLookupName, entries))
+    {
+      // This should be treated as an error for top-level references, since they are manually added (in contrast to the transitive dependencies).
+      return xiiStatus(xiiFmt("Asset in Collection is unknown: '{0}'", e.m_sRedirectionAsset));
+    }
   }
 
   xiiCollectionResourceDescriptor desc;

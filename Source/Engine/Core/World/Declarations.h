@@ -178,16 +178,17 @@ struct xiiObjectFlags
   enum Enum
   {
     None         = 0,
-    Dynamic      = XII_BIT(0),            ///< Usually detected automatically. A dynamic object will not cache render data across frames.
-    ForceDynamic = XII_BIT(1),            ///< Set by the user to enforce the 'Dynamic' mode. Necessary when user code (or scripts) should change
-                                          ///< objects, and the automatic detection cannot know that.
-    ActiveFlag              = XII_BIT(2), ///< The object/component has the 'active flag' set
-    ActiveState             = XII_BIT(3), ///< The object/component and all its parents have the active flag
-    Initialized             = XII_BIT(4), ///< The object/component has been initialized
-    Initializing            = XII_BIT(5), ///< The object/component is currently initializing. Used to prevent recursions during initialization.
-    SimulationStarted       = XII_BIT(6), ///< OnSimulationStarted() has been called on the component
-    SimulationStarting      = XII_BIT(7), ///< Used to prevent recursion during OnSimulationStarted()
-    UnhandledMessageHandler = XII_BIT(8), ///< For components, when a message is not handled, a virtual function is called
+    Dynamic      = XII_BIT(0),             ///< Usually detected automatically. A dynamic object will not cache render data across frames.
+    ForceDynamic = XII_BIT(1),             ///< Set by the user to enforce the 'Dynamic' mode. Necessary when user code (or scripts) should change
+                                           ///< objects, and the automatic detection cannot know that.
+    ActiveFlag              = XII_BIT(2),  ///< The object/component has the 'active flag' set
+    ActiveState             = XII_BIT(3),  ///< The object/component and all its parents have the active flag
+    Initialized             = XII_BIT(4),  ///< The object/component has been initialized
+    Initializing            = XII_BIT(5),  ///< The object/component is currently initializing. Used to prevent recursions during initialization.
+    SimulationStarted       = XII_BIT(6),  ///< OnSimulationStarted() has been called on the component
+    SimulationStarting      = XII_BIT(7),  ///< Used to prevent recursion during OnSimulationStarted()
+    UnhandledMessageHandler = XII_BIT(8),  ///< For components, when a message is not handled, a virtual function is called
+    CreatedByPrefab         = XII_BIT(13), ///< Such flagged objects and components are ignored during scene export (see xiiWorldWriter) and will be removed when a prefab needs to be re-instantiated.
 
     ChildChangesNotifications           = XII_BIT(9),  ///< The object should send a notification message when children are added or removed.
     ComponentChangesNotifications       = XII_BIT(10), ///< The object should send a notification message when components are added or removed.
@@ -222,7 +223,9 @@ struct xiiObjectFlags
     StorageType StaticTransformChangesNotifications : 1; //< 11
     StorageType ParentChangesNotifications : 1;          //< 12
 
-    StorageType Padding : 11; // 13 - 23
+    StorageType CreatedByPrefab : 1; //< 13
+
+    StorageType Padding : 10; // 14 - 23
 
     StorageType UserFlag0 : 1; //< 24
     StorageType UserFlag1 : 1; //< 25

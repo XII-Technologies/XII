@@ -450,7 +450,7 @@ void xiiEditorSceneDocumentTest::PrefabOperations()
     xiiStringBuilder sPrefabName;
     sPrefabName = m_sProjectPath;
     sPrefabName.AppendPath("Spheres.xiiPrefab");
-    XII_TEST_BOOL(m_pDoc->CreatePrefabDocumentFromSelection(sPrefabName, xiiGetStaticRTTI<xiiGameObject>()).Succeeded());
+    XII_TEST_BOOL(m_pDoc->CreatePrefabDocumentFromSelection(sPrefabName, xiiGetStaticRTTI<xiiGameObject>(), {}, {}, [](xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>&) { /* Do nothing */ }).Succeeded());
     m_pDoc->ScheduleSendObjectSelection();
     pPrefab3 = m_pDoc->GetSelectionManager()->GetCurrentObject();
     XII_TEST_BOOL(!m_pDoc->IsObjectEditorPrefab(pPrefab3->GetGuid()));

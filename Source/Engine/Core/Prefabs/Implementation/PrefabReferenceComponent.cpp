@@ -244,11 +244,8 @@ void xiiPrefabReferenceComponent::SetPrefab(const xiiPrefabResourceHandle& hPref
   }
 }
 
-
 void xiiPrefabReferenceComponent::InstantiatePrefab()
 {
-  ClearPreviousInstances();
-
   // now instantiate the prefab
   if (m_hPrefab.IsValid())
   {
@@ -258,28 +255,54 @@ void xiiPrefabReferenceComponent::InstantiatePrefab()
     id.SetIdentity();
 
     xiiPrefabInstantiationOptions options;
-    options.m_hParent         = GetOwner()->GetHandle();
-    options.m_pOverrideTeamID = &GetOwner()->GetTeamID();
+    options.m_hParent                    = GetOwner()->GetHandle();
+    options.m_ReplaceNamedRootWithParent = "<Prefab-Root>";
+    options.m_pOverrideTeamID            = &GetOwner()->GetTeamID();
 
     // if this ID is valid, this prefab is instantiated at editor runtime
     // replicate the same ID across all instantiated sub components to get correct picking behavior
     if (GetUniqueID() != xiiInvalidIndex)
     {
-      xiiHybridArray<xiiGameObject*, 8> createdRootObjects;
+      xiiHybridArray<xiiGameObject*, 8>  createdRootObjects;
+      xiiHybridArray<xiiGameObject*, 16> createdChildObjects;
 
-      options.m_pCreatedRootObjectsOut = &createdRootObjects;
+      options.m_pCreatedRootObjectsOut  = &createdRootObjects;
+      options.m_pCreatedChildObjectsOut = &createdChildObjects;
+
+      xiiUInt32 uiPrevComponentCount = GetOwner()->GetComponents().GetCount();
 
       pResource->InstantiatePrefab(*GetWorld(), id, options, &m_Parameters);
 
-      // while exporting a scene all game objects with this tag are ignored and not exported
-      // set this tag on all game objects that were created by instantiating this prefab
-      // instead it should be instantiated at runtime again
-      // only do this at editor time though, at regular runtime we do want to fully serialize the entire sub tree
-      const xiiTag& tag = xiiTagRegistry::GetGlobalRegistry().RegisterTag("EditorPrefabInstance");
+      auto FixComponent = [](xiiGameObject* pChild, xiiUInt32 uiUniqueID) {
+        // while exporting a scene all game objects with this flag are ignored and not exported
+        // set this flag on all game objects that were created by instantiating this prefab
+        // instead it should be instantiated at runtime again
+        // only do this at editor time though, at regular runtime we do want to fully serialize the entire sub tree
+        pChild->SetCreatedByPrefab();
+
+        for (auto pComponent : pChild->GetComponents())
+        {
+          pComponent->SetUniqueID(uiUniqueID);
+          pComponent->SetCreatedByPrefab();
+        }
+      };
+
+      const xiiUInt32 uiUniqueID = GetUniqueID();
 
       for (xiiGameObject* pChild : createdRootObjects)
       {
-        SetUniqueIDRecursive(pChild, GetUniqueID(), tag);
+        FixComponent(pChild, uiUniqueID);
+      }
+
+      for (xiiGameObject* pChild : createdChildObjects)
+      {
+        FixComponent(pChild, uiUniqueID);
+      }
+
+      for (; uiPrevComponentCount < GetOwner()->GetComponents().GetCount(); ++uiPrevComponentCount)
+      {
+        GetOwner()->GetComponents()[uiPrevComponentCount]->SetUniqueID(GetUniqueID());
+        GetOwner()->GetComponents()[uiPrevComponentCount]->SetCreatedByPrefab();
       }
     }
     else
@@ -315,11 +338,21 @@ void xiiPrefabReferenceComponent::ClearPreviousInstances()
     // if this is in the editor, and the 'activate' flag is toggled,
     // get rid of all our created child objects
 
-    const xiiTag& tag = xiiTagRegistry::GetGlobalRegistry().RegisterTag("EditorPrefabInstance");
+    xiiArrayPtr<xiiComponent* const> components = GetOwner()->GetComponents();
+
+    for (xiiUInt32 ip1 = components.GetCount(); ip1 > 0; --ip1)
+    {
+      const xiiUInt32 i = ip1 - 1;
+
+      if (components[i] != this && components[i]->WasCreatedByPrefab())
+      {
+        components[i]->GetOwningManager()->DeleteComponent(components[i]);
+      }
+    }
 
     for (auto it = GetOwner()->GetChildren(); it.IsValid(); ++it)
     {
-      if (it->GetTags().IsSet(tag))
+      if (it->WasCreatedByPrefab())
       {
         GetWorld()->DeleteObjectNow(it->GetHandle());
       }
@@ -357,7 +390,10 @@ void xiiPrefabReferenceComponent::OnSimulationStarted()
 
 const xiiRangeView<const char*, xiiUInt32> xiiPrefabReferenceComponent::GetParameters() const
 {
-  return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Parameters.GetCount(); }, [](xiiUInt32& ref_uiIt) { ++ref_uiIt; }, [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
+  return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; },
+                                              [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
+                                              [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                              [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
 }
 
 void xiiPrefabReferenceComponent::SetParameter(const char* szKey, const xiiVariant& value)
@@ -452,6 +488,7 @@ void xiiPrefabReferenceComponentManager::Update(const xiiWorldModule::UpdateCont
     if (!pComponent->IsActive())
       continue;
 
+    pComponent->ClearPreviousInstances();
     pComponent->InstantiatePrefab();
   }
 
@@ -466,7 +503,6 @@ void xiiPrefabReferenceComponentManager::AddToUpdateList(xiiPrefabReferenceCompo
     pComponent->m_bInUpdateList = true;
   }
 }
-
 
 
 XII_STATICLINK_FILE(Core, Core_Prefabs_Implementation_PrefabReferenceComponent);

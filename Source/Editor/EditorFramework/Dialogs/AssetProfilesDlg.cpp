@@ -14,6 +14,8 @@ public:
 
 class xiiAssetProfilesDocument : public xiiDocument
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiAssetProfilesDocument, xiiDocument);
+
 public:
   xiiAssetProfilesDocument(const char* szDocumentPath) :
     xiiDocument(szDocumentPath, XII_DEFAULT_NEW(xiiAssetProfilesObjectManager))
@@ -23,6 +25,9 @@ public:
 public:
   virtual xiiDocumentInfo* CreateDocumentInfo() override { return XII_DEFAULT_NEW(xiiDocumentInfo); }
 };
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAssetProfilesDocument, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
 
 class xiiQtAssetConfigAdapter : public xiiQtNameableAdapter
 {

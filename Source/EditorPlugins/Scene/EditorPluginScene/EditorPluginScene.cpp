@@ -87,8 +87,12 @@ void AssetCuratorEventHandler(const xiiAssetCuratorEvent& e)
 void xiiCameraComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 void xiiSkyLightComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 
+void xiiSceneDocument_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
+
 void OnLoadPlugin()
 {
+  xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiSceneDocument_PropertyMetaStateEventHandler);
+
   xiiDocumentManager::s_Events.AddEventHandler(xiiMakeDelegate(OnDocumentManagerEvent));
 
   xiiQtEditorApp::GetSingleton()->m_Events.AddEventHandler(ToolsProjectEventHandler);
@@ -182,6 +186,8 @@ void OnLoadPlugin()
 
 void OnUnloadPlugin()
 {
+  xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiSceneDocument_PropertyMetaStateEventHandler);
+
   xiiDocumentManager::s_Events.RemoveEventHandler(xiiMakeDelegate(OnDocumentManagerEvent));
   xiiQtEditorApp::GetSingleton()->m_Events.RemoveEventHandler(ToolsProjectEventHandler);
   xiiAssetCurator::GetSingleton()->m_Events.RemoveEventHandler(AssetCuratorEventHandler);

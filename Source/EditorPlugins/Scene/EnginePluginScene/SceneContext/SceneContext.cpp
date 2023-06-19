@@ -842,11 +842,9 @@ xiiStatus xiiSceneContext::ExportDocument(const xiiExportDocumentMsgToEngine* pM
 
     const xiiTag& tagEditor               = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
     const xiiTag& tagNoExport             = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Exclude From Export");
-    const xiiTag& tagEditorPrefabInstance = xiiTagRegistry::GetGlobalRegistry().RegisterTag("EditorPrefabInstance");
 
     xiiTagSet tags;
     tags.Set(tagEditor);
-    tags.Set(tagEditorPrefabInstance);
     tags.Set(tagNoExport);
 
     xiiWorldWriter ww;

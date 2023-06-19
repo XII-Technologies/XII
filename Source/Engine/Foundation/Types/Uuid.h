@@ -40,6 +40,9 @@ public:
   /// \brief Creates a new Uuid and stores is it in this object.
   void CreateNewUuid();
 
+  /// \brief Returns a new Uuid.
+  XII_ALWAYS_INLINE static xiiUuid CreateUuid();
+
   /// \brief Returns the internal 128 Bit of data
   void GetValues(xiiUInt64& ref_uiLow, xiiUInt64& ref_uiHigh) const
   {
