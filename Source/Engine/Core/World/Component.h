@@ -129,7 +129,7 @@ public:
   /// \brief Retrieves a custom flag. Index must be between 0 and 7.
   bool GetUserFlag(xiiUInt8 uiFlagIndex) const;
 
-   /// \brief Adds xiiObjectFlags::CreatedByPrefab to the component. See the flag for details.
+  /// \brief Adds xiiObjectFlags::CreatedByPrefab to the component. See the flag for details.
   void SetCreatedByPrefab() { m_ComponentFlags.Add(xiiObjectFlags::CreatedByPrefab); }
 
   /// \brief Checks whether the xiiObjectFlags::CreatedByPrefab flag is set on this component.
