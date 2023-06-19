@@ -263,17 +263,17 @@ void xiiPrefabReferenceComponent::InstantiatePrefab()
     // replicate the same ID across all instantiated sub components to get correct picking behavior
     if (GetUniqueID() != xiiInvalidIndex)
     {
-      xiiHybridArray<xiiGameObject*, 24> allCreatedObjects;
+      xiiHybridArray<xiiGameObject*, 8>  createdRootObjects;
+      xiiHybridArray<xiiGameObject*, 16> createdChildObjects;
 
-      options.m_pCreatedRootObjectsOut  = &allCreatedObjects;
-      options.m_pCreatedChildObjectsOut = &allCreatedObjects;
+      options.m_pCreatedRootObjectsOut  = &createdRootObjects;
+      options.m_pCreatedChildObjectsOut = &createdChildObjects;
 
       xiiUInt32 uiPrevComponentCount = GetOwner()->GetComponents().GetCount();
 
       pResource->InstantiatePrefab(*GetWorld(), id, options, &m_Parameters);
 
-      for (xiiGameObject* pChild : allCreatedObjects)
-      {
+      auto FixComponent = [](xiiGameObject* pChild, xiiUInt32 uiUniqueID) {
         // while exporting a scene all game objects with this flag are ignored and not exported
         // set this flag on all game objects that were created by instantiating this prefab
         // instead it should be instantiated at runtime again
@@ -282,9 +282,21 @@ void xiiPrefabReferenceComponent::InstantiatePrefab()
 
         for (auto pComponent : pChild->GetComponents())
         {
-          pComponent->SetUniqueID(GetUniqueID());
+          pComponent->SetUniqueID(uiUniqueID);
           pComponent->SetCreatedByPrefab();
         }
+      };
+
+      const xiiUInt32 uiUniqueID = GetUniqueID();
+
+      for (xiiGameObject* pChild : createdRootObjects)
+      {
+        FixComponent(pChild, uiUniqueID);
+      }
+
+      for (xiiGameObject* pChild : createdChildObjects)
+      {
+        FixComponent(pChild, uiUniqueID);
       }
 
       for (; uiPrevComponentCount < GetOwner()->GetComponents().GetCount(); ++uiPrevComponentCount)
@@ -476,6 +488,7 @@ void xiiPrefabReferenceComponentManager::Update(const xiiWorldModule::UpdateCont
     if (!pComponent->IsActive())
       continue;
 
+    pComponent->ClearPreviousInstances();
     pComponent->InstantiatePrefab();
   }
 

@@ -39,6 +39,7 @@ void xiiPrefabResource::InstantiatePrefab(xiiWorld& ref_world, const xiiTransfor
 
     m_WorldReader.InstantiatePrefab(ref_world, rootTransform, options);
 
+    XII_ASSERT_DEBUG(options.m_pCreatedRootObjectsOut != options.m_pCreatedChildObjectsOut, "These pointers must point to different arrays, otherwise applying exposed properties doesn't work correctly.");
     ApplyExposedParameterValues(pExposedParamValues, *options.m_pCreatedChildObjectsOut, *options.m_pCreatedRootObjectsOut);
   }
   else

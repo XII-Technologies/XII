@@ -572,10 +572,6 @@ void xiiSceneDocument::SetGameMode(GameMode::Enum mode)
 
 xiiStatus xiiSceneDocument::CreatePrefabDocumentFromSelection(const char* szFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB /* = {} */, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB /* = {} */, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB /* = {} */)
 {
-  XII_ASSERT_DEV(!adjustGraphNodeCB.IsValid(), "Not allowed");
-  XII_ASSERT_DEV(!adjustNewNodesCB.IsValid(), "Not allowed");
-  XII_ASSERT_DEV(!finalizeGraphCB.IsValid(), "Not allowed");
-
   auto Selection = GetSelectionManager()->GetTopLevelSelection(pRootType);
 
   if (Selection.IsEmpty())
@@ -638,7 +634,14 @@ xiiStatus xiiSceneDocument::CreatePrefabDocumentFromSelection(const char* szFile
     }
   };
 
-  return SUPER::CreatePrefabDocumentFromSelection(szFile, pRootType, centerNodes, adjustResult, finalizeGraph);
+  if (!adjustGraphNodeCB.IsValid())
+    adjustGraphNodeCB = centerNodes;
+  if (!adjustNewNodesCB.IsValid())
+    adjustNewNodesCB = adjustResult;
+  if (!finalizeGraphCB.IsValid())
+    finalizeGraphCB = finalizeGraph;
+
+  return SUPER::CreatePrefabDocumentFromSelection(szFile, pRootType, adjustGraphNodeCB, adjustNewNodesCB, finalizeGraphCB);
 }
 
 bool xiiSceneDocument::CanEngineProcessBeRestarted() const
