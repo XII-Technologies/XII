@@ -26,10 +26,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 void xiiSceneDocument_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e)
 {
-  static const xiiRTTI* pRtti     = xiiRTTI::FindTypeByName("xiiGameObject");
-  const char*           szDocType = e.m_pObject->GetDocumentObjectManager()->GetDocument()->GetDocumentTypeName();
+  static const xiiRTTI* pRtti = xiiRTTI::FindTypeByName("xiiGameObject");
 
-  if (!xiiStringUtils::IsEqual(szDocType, "Prefab"))
+  if (e.m_pObject->GetDocumentObjectManager()->GetDocument()->GetDocumentTypeName() != "Prefabs")
     return;
 
   if (e.m_pObject->GetTypeAccessor().GetType() != pRtti)
@@ -81,9 +80,14 @@ xiiSceneDocument::xiiSceneDocument(const char* szDocumentPath, DocumentType Docu
 void xiiSceneDocument::InitializeAfterLoading(bool bFirstTimeCreation)
 {
   // (Local mirror only mirrors settings)
-  m_ObjectMirror.SetFilterFunction([pManager = GetObjectManager()](const xiiDocumentObject* pObject, const char* szProperty) -> bool { return pManager->IsUnderRootProperty("Settings", pObject, szProperty); });
+  m_ObjectMirror.SetFilterFunction([pManager = GetObjectManager()](const xiiDocumentObject* pObject, const char* szProperty) -> bool {
+    return pManager->IsUnderRootProperty("Settings", pObject, szProperty);
+  });
+
   // (Remote IPC mirror only sends scene)
-  m_Mirror.SetFilterFunction([pManager = GetObjectManager()](const xiiDocumentObject* pObject, const char* szProperty) -> bool { return pManager->IsUnderRootProperty("Children", pObject, szProperty); });
+  m_Mirror.SetFilterFunction([pManager = GetObjectManager()](const xiiDocumentObject* pObject, const char* szProperty) -> bool {
+    return pManager->IsUnderRootProperty("Children", pObject, szProperty);
+  });
 
   SUPER::InitializeAfterLoading(bFirstTimeCreation);
   EnsureSettingsObjectExist();

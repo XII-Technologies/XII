@@ -122,7 +122,15 @@ public:
   const xiiDocumentTypeDescriptor* GetDocumentTypeDescriptor() const { return m_pTypeDescriptor; }
 
   /// \brief Returns the document's type name. Same as GetDocumentTypeDescriptor()->m_sDocumentTypeName.
-  const char* GetDocumentTypeName() const { return m_pTypeDescriptor->m_sDocumentTypeName; }
+  const char* GetDocumentTypeName() const
+  {
+    if (m_pTypeDescriptor == nullptr)
+    {
+      // If this is a document type descriptor, use the RTTI type name as a fallback.
+      return GetDynamicRTTI()->GetTypeName();
+    }
+    return m_pTypeDescriptor->m_sDocumentTypeName;
+  }
 
   const xiiDocumentInfo* GetDocumentInfo() const { return m_pDocumentInfo; }
 
