@@ -244,11 +244,8 @@ void xiiPrefabReferenceComponent::SetPrefab(const xiiPrefabResourceHandle& hPref
   }
 }
 
-
 void xiiPrefabReferenceComponent::InstantiatePrefab()
 {
-  ClearPreviousInstances();
-
   // now instantiate the prefab
   if (m_hPrefab.IsValid())
   {
@@ -335,7 +332,7 @@ void xiiPrefabReferenceComponent::ClearPreviousInstances()
     {
       const xiiUInt32 i = ip1 - 1;
 
-      if (components[i]->WasCreatedByPrefab())
+      if (components[i] != this && components[i]->WasCreatedByPrefab())
       {
         components[i]->GetOwningManager()->DeleteComponent(components[i]);
       }
@@ -384,9 +381,7 @@ const xiiRangeView<const char*, xiiUInt32> xiiPrefabReferenceComponent::GetParam
   return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; },
                                               [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
                                               [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                              [this](const xiiUInt32& uiIt) -> const char* {
-                                                return m_Parameters.GetKey(uiIt).GetString().GetData();
-                                              });
+                                              [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
 }
 
 void xiiPrefabReferenceComponent::SetParameter(const char* szKey, const xiiVariant& value)
