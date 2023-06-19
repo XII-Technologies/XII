@@ -85,27 +85,18 @@ public:
 
   virtual void GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_MimeTypes) const override;
   virtual bool CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph, xiiStringBuilder& out_MimeType) const override;
-  virtual bool Paste(
-    const xiiArrayPtr<PasteInfo>& info,
-    const xiiAbstractObjectGraph& objectGraph,
-    bool                          bAllowPickedPosition,
-    const char*                   szMimeType) override;
-  bool DuplicateSelectedObjects(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bSetSelected);
-  bool CopySelectedObjects(xiiAbstractObjectGraph& graph, xiiMap<xiiUuid, xiiUuid>* out_pParents) const;
-  bool PasteAt(const xiiArrayPtr<PasteInfo>& info, const xiiVec3& vPos);
-  bool PasteAtOrignalPosition(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph);
+  virtual bool Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bAllowPickedPosition, const char* szMimeType) override;
+  bool         DuplicateSelectedObjects(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bSetSelected);
+  bool         CopySelectedObjects(xiiAbstractObjectGraph& graph, xiiMap<xiiUuid, xiiUuid>* out_pParents) const;
+  bool         PasteAt(const xiiArrayPtr<PasteInfo>& info, const xiiVec3& vPos);
+  bool         PasteAtOrignalPosition(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph);
 
   virtual void UpdatePrefabs() override;
 
   /// \brief Removes the link to the prefab template, making the editor prefab a simple object
   virtual void UnlinkPrefabs(const xiiDeque<const xiiDocumentObject*>& Selection) override;
 
-  virtual xiiUuid ReplaceByPrefab(
-    const xiiDocumentObject* pRootObject,
-    const char*              szPrefabFile,
-    const xiiUuid&           PrefabAsset,
-    const xiiUuid&           PrefabSeed,
-    bool                     bEnginePrefab) override;
+  virtual xiiUuid ReplaceByPrefab(const xiiDocumentObject* pRootObject, const char* szPrefabFile, const xiiUuid& PrefabAsset, const xiiUuid& PrefabSeed, bool bEnginePrefab) override;
 
   /// \brief Reverts all selected editor prefabs to their original template state
   virtual xiiUuid RevertPrefab(const xiiDocumentObject* pObject) override;
@@ -115,7 +106,7 @@ public:
   /// \brief Converts all objects in the selection that are editor prefabs to their respective engine prefab representation
   virtual void ConvertToEnginePrefab(const xiiDeque<const xiiDocumentObject*>& Selection);
 
-  virtual xiiStatus CreatePrefabDocumentFromSelection(const char* szFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> AdjustGraphNodeCB = xiiDelegate<void(xiiAbstractObjectNode*)>(), xiiDelegate<void(xiiDocumentObject*)> AdjustNewNodesCB = xiiDelegate<void(xiiDocumentObject*)>()) override;
+  virtual xiiStatus CreatePrefabDocumentFromSelection(const char* szFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB = {}, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {}) override;
 
   GameMode::Enum GetGameMode() const { return m_GameMode; }
 
@@ -128,11 +119,7 @@ public:
   bool StopGameMode();
 
   xiiTransformStatus ExportScene(bool bCreateThumbnail);
-  void               ExportSceneGeometry(
-                  const char*    szFile,
-                  bool           bOnlySelection,
-                  int            iExtractionMode /* xiiWorldGeoExtractionUtil::ExtractionMode */,
-                  const xiiMat3& mTransform);
+  void               ExportSceneGeometry(const char* szFile, bool bOnlySelection, int iExtractionMode /* xiiWorldGeoExtractionUtil::ExtractionMode */, const xiiMat3& mTransform);
 
   virtual void HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
   void         HandleGameModeMsg(const xiiGameModeMsgToEditor* pMsg);
@@ -153,11 +140,7 @@ public:
     return xiiDynamicCast<const T*>(GetSettingsBase());
   }
 
-  xiiStatus CreateExposedProperty(
-    const xiiDocumentObject*   pObject,
-    const xiiAbstractProperty* pProperty,
-    xiiVariant                 index,
-    xiiExposedSceneProperty&   out_key) const;
+  xiiStatus CreateExposedProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProperty, xiiVariant index, xiiExposedSceneProperty& out_key) const;
   xiiStatus AddExposedParameter(const char* szName, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProperty, xiiVariant index);
   xiiInt32  FindExposedParameter(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProperty, xiiVariant index);
   xiiStatus RemoveExposedParameter(xiiInt32 index);

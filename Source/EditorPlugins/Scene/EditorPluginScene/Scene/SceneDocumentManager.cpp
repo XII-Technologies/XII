@@ -61,12 +61,7 @@ xiiSceneDocumentManager::xiiSceneDocumentManager()
   }
 }
 
-void xiiSceneDocumentManager::InternalCreateDocument(
-  const char*              szDocumentTypeName,
-  const char*              szPath,
-  bool                     bCreateNewDocument,
-  xiiDocument*&            out_pDocument,
-  const xiiDocumentObject* pOpenContext)
+void xiiSceneDocumentManager::InternalCreateDocument(const char* szDocumentTypeName, const char* szPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   if (xiiStringUtils::IsEqual(szDocumentTypeName, "Scene"))
   {
@@ -108,7 +103,6 @@ void xiiSceneDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<
 void xiiSceneDocumentManager::InternalCloneDocument(const char* szPath, const char* szClonePath, const xiiUuid& documentId, const xiiUuid& seedGuid, const xiiUuid& cloneGuid, xiiAbstractObjectGraph* pHeader, xiiAbstractObjectGraph* pObjects, xiiAbstractObjectGraph* pTypes)
 {
   xiiAssetDocumentManager::InternalCloneDocument(szPath, szClonePath, documentId, seedGuid, cloneGuid, pHeader, pObjects, pTypes);
-
 
   auto    pRoot        = pObjects->GetNodeByName("ObjectTree");
   xiiUuid settingsGuid = pRoot->FindProperty("Settings")->m_Value.Get<xiiUuid>();

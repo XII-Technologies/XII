@@ -133,6 +133,12 @@ public:
   /// \sa xiiGameObject::SetActiveFlag(), xiiComponent::IsActive()
   bool IsActive() const;
 
+  /// \brief Adds xiiObjectFlags::CreatedByPrefab to the object. See the flag for details.
+  void SetCreatedByPrefab() { m_Flags.Add(xiiObjectFlags::CreatedByPrefab); }
+
+  /// \brief Checks whether the xiiObjectFlags::CreatedByPrefab flag is set on this object.
+  bool WasCreatedByPrefab() const { return m_Flags.IsSet(xiiObjectFlags::CreatedByPrefab); }
+
   /// \brief Sets the name to identify this object. Does not have to be a unique name.
   void          SetName(xiiStringView sName);
   void          SetName(const xiiHashedString& sName);

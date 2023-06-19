@@ -250,6 +250,8 @@ xiiVisitorExecution::Enum xiiWorldWriter::ObjectTraverser(xiiGameObject* pObject
 {
   if (m_pExclude && pObject->GetTags().IsAnySet(*m_pExclude))
     return xiiVisitorExecution::Skip;
+  if (pObject->WasCreatedByPrefab())
+    return xiiVisitorExecution::Skip;
 
   if (pObject->GetParent())
     m_AllChildObjects.PushBack(pObject);
@@ -260,6 +262,9 @@ xiiVisitorExecution::Enum xiiWorldWriter::ObjectTraverser(xiiGameObject* pObject
 
   for (const xiiComponent* pComp : components)
   {
+    if (pComp->WasCreatedByPrefab())
+      continue;
+
     m_AllComponents[pComp->GetDynamicRTTI()].m_Components.PushBack(pComp);
   }
 
