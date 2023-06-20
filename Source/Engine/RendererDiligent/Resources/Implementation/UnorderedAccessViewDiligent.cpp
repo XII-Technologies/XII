@@ -30,6 +30,30 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
   xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
+  xiiGALResourceFormat::Enum viewFormat = m_Description.m_OverrideViewFormat;
+
+  if (pTexture)
+  {
+    if (viewFormat == xiiGALResourceFormat::Invalid)
+      viewFormat = pTexture->GetDescription().m_Format;
+  }
+
+  Diligent::TEXTURE_FORMAT viewFormatDiligent = Diligent::TEX_FORMAT_UNKNOWN;
+  if (xiiGALResourceFormat::IsDepthFormat(viewFormat))
+  {
+    viewFormatDiligent = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eDepthOnlyType;
+  }
+  else
+  {
+    viewFormatDiligent = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eResourceViewType;
+  }
+
+  if (viewFormatDiligent == Diligent::TEX_FORMAT_UNKNOWN)
+  {
+    xiiLog::Error("Couldn't get valid format for resource view! ({0})", viewFormat);
+    return XII_FAILURE;
+  }
+
   if (pTexture)
   {
     xiiGALTextureDiligent* pGALTextureDiligent = nullptr;
@@ -40,14 +64,11 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
       pTextureDiligent           = pGALTextureDiligent->GetTexture();
     }
 
-    const xiiGALTextureCreationDescription& texDesc        = pTexture->GetDescription();
-    const bool                              bIsDepthFormat = xiiGALResourceFormat::IsDepthFormat(pTexture->GetDescription().m_Format);
-    xiiGALResourceFormat::Enum              viewFormat     = m_Description.m_OverrideViewFormat == xiiGALResourceFormat::Invalid ? texDesc.m_Format : m_Description.m_OverrideViewFormat;
-    const Diligent::TextureDesc&            textureDesc    = pTextureDiligent->GetDesc();
+    const xiiGALTextureCreationDescription& texDesc = pTexture->GetDescription();
 
     Diligent::TextureViewDesc UAVDesc;
     UAVDesc.ViewType = Diligent::TEXTURE_VIEW_UNORDERED_ACCESS;
-    UAVDesc.Format   = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eResourceViewType;
+    UAVDesc.Format   = viewFormatDiligent;
 
     switch (texDesc.m_Type)
     {
@@ -128,39 +149,16 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
     if (pBuffer->GetDescription().m_bUseAsStructuredBuffer)
     {
-      UAVDesc.Format.ValueType     = Diligent::VT_UNDEFINED;
-      UAVDesc.Format.IsNormalized  = false;
-      UAVDesc.Format.NumComponents = 0u;
-      UAVDesc.ByteOffset           = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiFirstElement;
-      UAVDesc.ByteWidth            = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiNumElements;
-    }
-    else if (m_Description.m_bRawView)
-    {
-      xiiGALResourceFormat::Enum viewFormat = m_Description.m_OverrideViewFormat;
-      if (viewFormat == xiiGALResourceFormat::Invalid)
-        viewFormat = xiiGALResourceFormat::RUInt;
-
-      Diligent::TEXTURE_FORMAT ViewFormatDiligent = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eResourceViewType;
-
-      UAVDesc.Format.ValueType     = xiiDiligentUtils::GALToDiligentFormat(ViewFormatDiligent);
-      UAVDesc.Format.IsNormalized  = xiiDiligentUtils::GALIsFormatNormalized(ViewFormatDiligent);
-      UAVDesc.Format.NumComponents = xiiGALResourceFormat::GetChannelCount(viewFormat);
-      UAVDesc.ByteOffset           = sizeof(xiiUInt32) * m_Description.m_uiFirstElement;
-      UAVDesc.ByteWidth            = sizeof(xiiUInt32) * m_Description.m_uiNumElements;
+      UAVDesc.ByteOffset = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiFirstElement;
+      UAVDesc.ByteWidth  = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiNumElements;
     }
     else
     {
-      xiiGALResourceFormat::Enum viewFormat = m_Description.m_OverrideViewFormat;
-      if (viewFormat == xiiGALResourceFormat::Invalid)
-        viewFormat = xiiGALResourceFormat::RUInt;
-
-      Diligent::TEXTURE_FORMAT ViewFormatDiligent = pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eResourceViewType;
-
-      UAVDesc.Format.ValueType     = xiiDiligentUtils::GALToDiligentFormat(ViewFormatDiligent);
-      UAVDesc.Format.IsNormalized  = xiiDiligentUtils::GALIsFormatNormalized(ViewFormatDiligent);
+      UAVDesc.ByteWidth            = m_Description.m_uiNumElements;
+      UAVDesc.ByteOffset           = m_Description.m_uiFirstElement;
+      UAVDesc.Format.ValueType     = xiiDiligentUtils::GALToDiligentFormat(viewFormatDiligent);
+      UAVDesc.Format.IsNormalized  = xiiDiligentUtils::GALIsFormatNormalized(viewFormatDiligent);
       UAVDesc.Format.NumComponents = xiiGALResourceFormat::GetChannelCount(viewFormat);
-      UAVDesc.ByteOffset           = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiFirstElement;
-      UAVDesc.ByteWidth            = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiNumElements;
     }
 
     pBufferDiligent->CreateView(UAVDesc, &m_pUnorderedAccessBufferView);

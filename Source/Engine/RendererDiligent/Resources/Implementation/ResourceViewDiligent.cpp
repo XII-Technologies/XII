@@ -171,12 +171,6 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
   }
   else if (pBuffer)
   {
-    if (!pBuffer->GetDescription().m_bAllowRawViews && m_Description.m_bRawView)
-    {
-      xiiLog::Error("Trying to create a raw view for a buffer with no raw view flag is invalid!");
-      return XII_FAILURE;
-    }
-
     Diligent::IBuffer*    pBufferDiligent    = nullptr;
     xiiGALBufferDiligent* pGALBufferDiligent = nullptr;
     {
