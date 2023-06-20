@@ -1164,8 +1164,6 @@ void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor,
 
     m_pContext->ClearDepthStencil(pRenderTargetViewDiligent->GetDepthStencilView(), flags, fDepthClear, uiStencilClear, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
   }
-
-#undef END_RENDERPASS_IF_MODIFIED
 }
 
 void xiiGALCommandEncoderImplDiligent::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)

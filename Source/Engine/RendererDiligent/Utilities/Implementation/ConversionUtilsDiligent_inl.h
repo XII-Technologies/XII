@@ -5,19 +5,14 @@ XII_ALWAYS_INLINE Diligent::RENDER_DEVICE_TYPE xiiDiligentUtils::GetDiligentRend
   {
     case xiiGraphicsDeviceType::OpenGLES:
       return Diligent::RENDER_DEVICE_TYPE_GLES;
-
     case xiiGraphicsDeviceType::OpenGL:
       return Diligent::RENDER_DEVICE_TYPE_GL;
-
     case xiiGraphicsDeviceType::D3D11:
       return Diligent::RENDER_DEVICE_TYPE_D3D11;
-
     case xiiGraphicsDeviceType::D3D12:
       return Diligent::RENDER_DEVICE_TYPE_D3D12;
-
     case xiiGraphicsDeviceType ::Vulkan:
       return Diligent::RENDER_DEVICE_TYPE_VULKAN;
-
     case xiiGraphicsDeviceType::Metal:
       return Diligent::RENDER_DEVICE_TYPE_METAL;
   }
@@ -58,22 +53,16 @@ XII_ALWAYS_INLINE Diligent::FILTER_TYPE xiiDiligentUtils ::ToDiligentFilter(xiiG
   {
     case xiiGALTextureFilterMode::Undefined:
       return Diligent::FILTER_TYPE_UNKNOWN;
-
     case xiiGALTextureFilterMode::Point:
       return Diligent::FILTER_TYPE_POINT;
-
     case xiiGALTextureFilterMode::Linear:
       return Diligent::FILTER_TYPE_LINEAR;
-
     case xiiGALTextureFilterMode::Anisotropic:
       return Diligent::FILTER_TYPE_ANISOTROPIC;
-
     case xiiGALTextureFilterMode::ComparisonPoint:
       return Diligent::FILTER_TYPE_COMPARISON_POINT;
-
     case xiiGALTextureFilterMode::ComparisonLinear:
       return Diligent::FILTER_TYPE_COMPARISON_LINEAR;
-
     case xiiGALTextureFilterMode::ComparisonAnisotropic:
       return Diligent::FILTER_TYPE_COMPARISON_ANISOTROPIC;
 
@@ -194,14 +183,14 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_D32_FLOAT:
     case Diligent::TEX_FORMAT_R32_FLOAT:
     case Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT:
-      return Diligent::VALUE_TYPE::VT_FLOAT32;
+      return Diligent::VT_FLOAT32;
 
     // case Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP:
     case Diligent::TEX_FORMAT_RGBA16_FLOAT:
     case Diligent::TEX_FORMAT_R11G11B10_FLOAT:
     case Diligent::TEX_FORMAT_RG16_FLOAT:
     case Diligent::TEX_FORMAT_R16_FLOAT:
-      return Diligent::VALUE_TYPE::VT_FLOAT16;
+      return Diligent::VT_FLOAT16;
 
     case Diligent::TEX_FORMAT_RGBA32_UINT:
     case Diligent::TEX_FORMAT_RGB32_UINT:
@@ -211,7 +200,7 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_R32_UINT:
     case Diligent::TEX_FORMAT_D24_UNORM_S8_UINT:
       // case Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
-      return Diligent::VALUE_TYPE::VT_UINT32;
+      return Diligent::VT_UINT32;
 
     case Diligent::TEX_FORMAT_RGBA16_UNORM:
     case Diligent::TEX_FORMAT_RGBA16_UINT:
@@ -232,7 +221,7 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_BC7_UNORM_SRGB:
     case Diligent::TEX_FORMAT_B5G6R5_UNORM:
     case Diligent::TEX_FORMAT_B5G5R5A1_UNORM:
-      return Diligent::VALUE_TYPE::VT_UINT16;
+      return Diligent::VT_UINT16;
 
     case Diligent::TEX_FORMAT_RGBA8_UNORM:
     case Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB:
@@ -249,13 +238,13 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_BC4_SNORM:
     case Diligent::TEX_FORMAT_RG8_B8G8_UNORM:
     case Diligent::TEX_FORMAT_G8R8_G8B8_UNORM:
-      return Diligent::VALUE_TYPE::VT_UINT8;
+      return Diligent::VT_UINT8;
 
     case Diligent::TEX_FORMAT_RGBA32_SINT:
     case Diligent::TEX_FORMAT_RGB32_SINT:
     case Diligent::TEX_FORMAT_RG32_SINT:
     case Diligent::TEX_FORMAT_R32_SINT:
-      return Diligent::VALUE_TYPE::VT_INT32;
+      return Diligent::VT_INT32;
 
     case Diligent::TEX_FORMAT_RGBA16_SNORM:
     case Diligent::TEX_FORMAT_RGBA16_SINT:
@@ -263,7 +252,7 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_RG16_SINT:
     case Diligent::TEX_FORMAT_R16_SNORM:
     case Diligent::TEX_FORMAT_R16_SINT:
-      return Diligent::VALUE_TYPE::VT_INT16;
+      return Diligent::VT_INT16;
 
     case Diligent::TEX_FORMAT_RGBA8_SNORM:
     case Diligent::TEX_FORMAT_RGBA8_SINT:
@@ -275,7 +264,7 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_BGRX8_UNORM:
     case Diligent::TEX_FORMAT_BGRA8_UNORM_SRGB:
     case Diligent::TEX_FORMAT_BGRX8_UNORM_SRGB:
-      return Diligent::VALUE_TYPE::VT_INT8;
+      return Diligent::VT_INT8;
 
     case Diligent::TEX_FORMAT_UNKNOWN:
     case Diligent::TEX_FORMAT_RGBA32_TYPELESS:
@@ -646,22 +635,16 @@ XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentUtils::GetDefaultResourceS
 
   if (bindFlags & Diligent::BIND_VERTEX_BUFFER)
     defaultSourceResourceState |= Diligent::RESOURCE_STATE_VERTEX_BUFFER;
-
   if (bindFlags & Diligent::BIND_INDEX_BUFFER)
     defaultSourceResourceState |= Diligent::RESOURCE_STATE_INDEX_BUFFER;
-
   if (bindFlags & Diligent::BIND_SHADER_RESOURCE)
     defaultSourceResourceState |= Diligent::RESOURCE_STATE_SHADER_RESOURCE;
-
   if (bindFlags & Diligent::BIND_STREAM_OUTPUT)
     defaultSourceResourceState |= Diligent::RESOURCE_STATE_STREAM_OUT;
-
   if (bindFlags & Diligent::BIND_UNORDERED_ACCESS)
     defaultSourceResourceState |= Diligent::RESOURCE_STATE_UNORDERED_ACCESS;
-
   if (bindFlags & Diligent::BIND_INDIRECT_DRAW_ARGS)
     defaultSourceResourceState |= Diligent::RESOURCE_STATE_INDIRECT_ARGUMENT;
-
   if (bindFlags & Diligent::BIND_RAY_TRACING)
     defaultSourceResourceState |= Diligent::RESOURCE_STATE_RAY_TRACING;
 
@@ -674,11 +657,9 @@ XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentUtils::GetDefaultResourceS
 
   const Diligent::BIND_FLAGS& bindFlags = pTexture->GetDesc().BindFlags;
 
-// These are exclusive
-#if 0
+// Some of these are exclusive, use with caution.
   if (bindFlags & Diligent::BIND_RENDER_TARGET)
     defaultResourceState |= Diligent::RESOURCE_STATE_RENDER_TARGET;
-
   if (bindFlags & Diligent::BIND_DEPTH_STENCIL)
   {
     if (pTexture->GetDesc().Usage == Diligent::USAGE_IMMUTABLE)
@@ -686,17 +667,12 @@ XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentUtils::GetDefaultResourceS
     else
       defaultResourceState |= Diligent::RESOURCE_STATE_DEPTH_WRITE;
   }
-#endif
-
   if (bindFlags & Diligent::BIND_SHADER_RESOURCE)
     defaultResourceState |= Diligent::RESOURCE_STATE_SHADER_RESOURCE;
-
   if (bindFlags & Diligent::BIND_UNORDERED_ACCESS)
     defaultResourceState |= Diligent::RESOURCE_STATE_UNORDERED_ACCESS;
-
   if (bindFlags & Diligent::BIND_INPUT_ATTACHMENT)
     defaultResourceState |= Diligent::RESOURCE_STATE_INPUT_ATTACHMENT;
-
   if (bindFlags & Diligent::BIND_SHADING_RATE)
     defaultResourceState |= Diligent::RESOURCE_STATE_SHADING_RATE;
 
