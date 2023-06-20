@@ -186,12 +186,17 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     }
 
     Diligent::BufferViewDesc SRVDesc;
-    SRVDesc.ViewType   = Diligent::BUFFER_VIEW_SHADER_RESOURCE;
-    SRVDesc.ByteWidth  = m_Description.m_uiNumElements;
-    SRVDesc.ByteOffset = m_Description.m_uiFirstElement;
+    SRVDesc.ViewType = Diligent::BUFFER_VIEW_SHADER_RESOURCE;
 
-    if (!pBuffer->GetDescription().m_bUseAsStructuredBuffer)
+    if (pBuffer->GetDescription().m_bUseAsStructuredBuffer)
     {
+      SRVDesc.ByteOffset = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiFirstElement;
+      SRVDesc.ByteWidth  = pGALBufferDiligent->GetDescription().m_uiStructSize * m_Description.m_uiNumElements;
+    }
+    else
+    {
+      SRVDesc.ByteWidth            = m_Description.m_uiNumElements;
+      SRVDesc.ByteOffset           = m_Description.m_uiFirstElement;
       SRVDesc.Format.ValueType     = xiiDiligentUtils::GALToDiligentFormat(viewFormatDiligent);
       SRVDesc.Format.IsNormalized  = xiiDiligentUtils::GALIsFormatNormalized(viewFormatDiligent);
       SRVDesc.Format.NumComponents = xiiGALResourceFormat::GetChannelCount(viewFormat);
