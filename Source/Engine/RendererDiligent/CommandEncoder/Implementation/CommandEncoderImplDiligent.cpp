@@ -848,15 +848,44 @@ void xiiGALCommandEncoderImplDiligent::ResolveTexturePlatform(const xiiGALTextur
 
 void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTexture* pTexture)
 {
+  xiiGALTexture*         pTex             = const_cast<xiiGALTexture*>(pTexture);
+  xiiGALTextureDiligent* pTextureDiligent = static_cast<xiiGALTextureDiligent*>(pTex);
+
+  if (!m_bClearSubmitted)
+  {
+    // If we want to readback one of the render targets, we need to first flush the clear.
+    // \RendererDiligent: Check whether pTexture is one of the render targets or change the top-level api to prevent this.
+
+    // Check if the render texture is one of the render targets.
+    for (auto pRenderTarget : m_pBoundRenderTargets)
+    {
+      if (pRenderTarget->GetTexture() == pTextureDiligent->GetTexture())
+      {
+        m_pPipelineBarrier->FlushBarriers();
+
+        Diligent::BeginRenderPassAttribs renderPassBeginInfo;
+        renderPassBeginInfo.pRenderPass         = m_pRenderPass;
+        renderPassBeginInfo.pFramebuffer        = m_pFramebuffer;
+        renderPassBeginInfo.pClearValues        = m_ClearValues.GetData();
+        renderPassBeginInfo.ClearValueCount     = m_ClearValues.GetCount();
+        renderPassBeginInfo.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+
+        m_pContext->BeginRenderPass(renderPassBeginInfo);
+
+        m_bRenderpassActive = true;
+        m_bClearSubmitted   = true;
+
+        break;
+      }
+    }
+  }
+
   if (m_bRenderpassActive)
   {
     m_pContext->EndRenderPass();
 
     m_bRenderpassActive = false;
   }
-
-  xiiGALTexture*         pTex             = const_cast<xiiGALTexture*>(pTexture);
-  xiiGALTextureDiligent* pTextureDiligent = static_cast<xiiGALTextureDiligent*>(pTex);
 
   // MSAA textures (e.g. backbuffers) need to be converted to non MSAA versions
   const bool bMSAASourceTexture = pTextureDiligent->GetDescription().m_SampleCount != xiiGALMSAASampleCount::None;
@@ -987,8 +1016,7 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
   m_pRenderPass  = m_GALDeviceDiligent.m_pDefaultPass->RequestRenderPass(renderingSetup);
   m_pFramebuffer = m_GALDeviceDiligent.m_pDefaultPass->RequestFrameBuffer(m_pRenderPass, renderingSetup.m_RenderTargetSetup);
 
-  // Unsure whether this needs to be set here.
-  // SetScissorRectPlatform(xiiRectU32(m_pFramebuffer->GetDesc().Width, m_pFramebuffer->GetDesc().Height));
+  SetScissorRectPlatform(xiiRectU32(m_pFramebuffer->GetDesc().Width, m_pFramebuffer->GetDesc().Height));
 
   m_ClearValues.Clear();
 
@@ -1042,10 +1070,31 @@ void xiiGALCommandEncoderImplDiligent::BeginRendering(const xiiGALRenderingSetup
   }
 
   m_pPipelineBarrier->FlushBarriers();
+
+  m_bPipelineStateModified = true;
+  m_bViewportModified      = true;
 }
 
 void xiiGALCommandEncoderImplDiligent::EndRendering()
 {
+  if (!m_bClearSubmitted)
+  {
+    m_pPipelineBarrier->FlushBarriers();
+
+    // If we end rendering without having flused the clear, just begin and immediately end rendering.
+    Diligent::BeginRenderPassAttribs renderPassBeginInfo;
+    renderPassBeginInfo.pRenderPass         = m_pRenderPass;
+    renderPassBeginInfo.pFramebuffer        = m_pFramebuffer;
+    renderPassBeginInfo.pClearValues        = m_ClearValues.GetData();
+    renderPassBeginInfo.ClearValueCount     = m_ClearValues.GetCount();
+    renderPassBeginInfo.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+
+    m_pContext->BeginRenderPass(renderPassBeginInfo);
+
+    m_bRenderpassActive = true;
+    m_bClearSubmitted   = true;
+  }
+
   if (m_bRenderpassActive)
   {
     m_pContext->EndRenderPass();
@@ -1062,15 +1111,26 @@ void xiiGALCommandEncoderImplDiligent::EndRendering()
 
 void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor, xiiUInt32 uiRenderTargetClearMask, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
-  // Render target clears not are while the Renderpass is active are not supported in D3D12
+#define END_RENDERPASS_IF_MODIFIED                                      \
+  do                                                                    \
+  {                                                                     \
+    if (m_bRenderpassActive && m_pPipelineBarrier->IsBarrierModified()) \
+    {                                                                   \
+      m_pContext->EndRenderPass();                                      \
+      m_bRenderpassActive = false;                                      \
+    }                                                                   \
+  } while (false)
+
   if (!m_bIsComputeRequested && !m_bRenderpassActive && m_GALDeviceDiligent.GetCapabilities().m_DeviceType != xiiGraphicsDeviceType::D3D12)
   {
+    END_RENDERPASS_IF_MODIFIED;
+
     Diligent::BeginRenderPassAttribs renderPassBeginInfo;
     renderPassBeginInfo.pRenderPass         = m_pRenderPass;
     renderPassBeginInfo.pFramebuffer        = m_pFramebuffer;
     renderPassBeginInfo.pClearValues        = m_ClearValues.GetData();
     renderPassBeginInfo.ClearValueCount     = m_ClearValues.GetCount();
-    renderPassBeginInfo.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+    renderPassBeginInfo.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
 
     m_pContext->BeginRenderPass(renderPassBeginInfo);
 
@@ -1110,6 +1170,8 @@ void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor,
 
     m_pContext->ClearDepthStencil(pRenderTargetViewDiligent->GetDepthStencilView(), flags, fDepthClear, uiStencilClear, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
   }
+
+#undef END_RENDERPASS_IF_MODIFIED
 }
 
 void xiiGALCommandEncoderImplDiligent::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
