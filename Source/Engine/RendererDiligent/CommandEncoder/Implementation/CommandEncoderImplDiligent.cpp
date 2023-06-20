@@ -1572,6 +1572,10 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
 
     m_BoundVertexBuffersRange.Reset();
   }
+  else
+  {
+    m_pContext->SetVertexBuffers(0, 0, nullptr, nullptr, Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE, Diligent::SET_VERTEX_BUFFERS_FLAG_NONE);
+  }
 
   if (!m_bIsComputeRequested && m_bIndexBufferModified)
   {
