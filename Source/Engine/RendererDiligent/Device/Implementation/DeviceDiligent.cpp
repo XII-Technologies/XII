@@ -1044,7 +1044,7 @@ void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
 
     m_Capabilities.m_uiUAVCount                          = 8;
     m_Capabilities.m_uiMaxAnisotropy                     = 16;
-    m_Capabilities.m_bVertexShaderRenderTargetArrayIndex = false; // TODO How to check?
+    m_Capabilities.m_bVertexShaderRenderTargetArrayIndex = true; // TODO How to check?
   }
 }
 
