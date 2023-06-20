@@ -10,6 +10,8 @@ class XII_RENDERERDILIGENT_DLL xiiGALVertexDeclarationDiligent : public xiiGALVe
 public:
   XII_ALWAYS_INLINE const Diligent::InputLayoutDesc* GetInputLayoutDesc() const;
 
+  xiiHybridArray<Diligent::LayoutElement, 8U>& GetInputLayoutElements();
+
 protected:
   friend class xiiGALDeviceDiligent;
   friend class xiiMemoryUtils;

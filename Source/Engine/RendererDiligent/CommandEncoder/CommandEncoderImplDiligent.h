@@ -163,7 +163,7 @@ private:
   xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_ClearValues;
 
   Diligent::PRIMITIVE_TOPOLOGY           m_PrimitiveTopology  = {};
-  const xiiGALVertexDeclarationDiligent* m_pVertexDeclaration = nullptr;
+  xiiGALVertexDeclarationDiligent*       m_pVertexDeclaration = nullptr;
   const xiiGALBlendStateDiligent*        m_pBlendStateState   = nullptr;
   const xiiGALDepthStencilStateDiligent* m_pDepthStencilState = nullptr;
   const xiiGALRasterizerStateDiligent*   m_pRasterizerState   = nullptr;
@@ -201,6 +201,6 @@ private:
   Diligent::IBuffer*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {nullptr};
   xiiGAL::ModifiedRange m_BoundVertexBuffersRange;
 
-  Diligent::Uint64 m_VertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiUInt32        m_VertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
   Diligent::Uint64 m_VertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 };
