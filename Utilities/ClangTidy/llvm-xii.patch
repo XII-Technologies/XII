@@ -28,12 +28,12 @@ index d455473673b0..a0a070cb9828 100644
                                 Sources.isInMainFile(Location) ||
 -                               getHeaderFilter()->match(FileName);
 +                               std::regex_match(FileName.str(), *getHeaderFilter());
-
+ 
    unsigned LineNumber = Sources.getExpansionLineNumber(Location);
    LastErrorPassesLineFilter =
        LastErrorPassesLineFilter || passesLineFilter(FileName, LineNumber);
  }
-
+ 
 -llvm::Regex *ClangTidyDiagnosticConsumer::getHeaderFilter() {
 +std::regex *ClangTidyDiagnosticConsumer::getHeaderFilter() {
    if (!HeaderFilter)
@@ -42,7 +42,7 @@ index d455473673b0..a0a070cb9828 100644
 +        std::make_unique<std::regex>(*Context.getOptions().HeaderFilterRegex);
    return HeaderFilter.get();
  }
-
+ 
 diff --git a/clang-tools-extra/clang-tidy/ClangTidyDiagnosticConsumer.h b/clang-tools-extra/clang-tidy/ClangTidyDiagnosticConsumer.h
 index 261e4f7ac862..18842ac614c2 100644
 --- a/clang-tools-extra/clang-tidy/ClangTidyDiagnosticConsumer.h
@@ -50,19 +50,19 @@ index 261e4f7ac862..18842ac614c2 100644
 @@ -18,6 +18,8 @@
  #include "llvm/ADT/StringSet.h"
  #include "llvm/Support/Regex.h"
-
+ 
 +#include <regex>
 +
  namespace clang {
-
+ 
  class ASTContext;
 @@ -276,7 +278,7 @@ private:
-
+ 
    /// Returns the \c HeaderFilter constructed for the options set in the
    /// context.
 -  llvm::Regex *getHeaderFilter();
 +  std::regex *getHeaderFilter();
-
+ 
    /// Updates \c LastErrorRelatesToUserCode and LastErrorPassesLineFilter
    /// according to the diagnostic \p Location.
 @@ -291,7 +293,7 @@ private:
@@ -81,7 +81,7 @@ index 2691d90fa521..874e1eee4a82 100644
 @@ -95,6 +95,11 @@ extern volatile int MiscModuleAnchorSource;
  static int LLVM_ATTRIBUTE_UNUSED MiscModuleAnchorDestination =
      MiscModuleAnchorSource;
-
+ 
 +// This anchor is used to force the linker to link the MiscModule.
 +extern volatile int XIIModuleAnchorSource;
 +static int LLVM_ATTRIBUTE_UNUSED XIIModuleAnchorDestination =
@@ -96,10 +96,10 @@ index d00afecd495d..de5435bffc31 100644
 +++ b/clang-tools-extra/clang-tidy/utils/RenamerClangTidyCheck.h
 @@ -50,7 +50,7 @@ public:
      ShouldFix,
-
+ 
      /// The fixup will conflict with a language keyword,
 -    /// so we can't fix it automatically.
 +    /// so we can't fix it automatically.
      ConflictsWithKeyword,
-
+ 
      /// The fixup will conflict with a macro
