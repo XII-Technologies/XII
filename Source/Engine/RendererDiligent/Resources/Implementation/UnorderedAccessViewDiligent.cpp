@@ -171,9 +171,16 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALUnorderedAccessViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pUnorderedAccessTextureView);
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pUnorderedAccessBufferView);
+  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
+  if (m_pUnorderedAccessBufferView != nullptr)
+  {
+    pDeviceDiligent->DeleteLater({xiiResourceObjectType::UAVBufferView, m_pUnorderedAccessBufferView});
+  }
+  if (m_pUnorderedAccessTextureView != nullptr)
+  {
+    pDeviceDiligent->DeleteLater({xiiResourceObjectType::UAVTextureView, m_pUnorderedAccessTextureView});
+  }
   return XII_SUCCESS;
 }
 

@@ -644,7 +644,7 @@ void xiiGALDeviceDiligent::BeginPipelinePlatform(const char* szName, xiiGALSwapC
 
 #if XII_ENABLED(XII_USE_PROFILING)
   xiiStringBuilder sb;
-  sb.Format("{} - Frame {}", szName != nullptr ? szName : "Unavailable", GetImmediateContext()->GetFrameNumber());
+  sb.Format("{} - Frame {}", szName != nullptr ? szName : "Unavailable", m_uiFrameCounter);
   m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pRenderCommandEncoder.Borrow(), sb);
 #endif
 }
@@ -940,7 +940,7 @@ void xiiGALDeviceDiligent::DestroyVertexDeclarationPlatform(xiiGALVertexDeclarat
 
 xiiGALTimestampHandle xiiGALDeviceDiligent::GetTimestampPlatform()
 {
-  return {(xiiUInt64)-1, GetImmediateContext()->GetFrameNumber()};
+  return {(xiiUInt64)-1, m_uiFrameCounter};
 }
 
 xiiResult xiiGALDeviceDiligent::GetTimestampResultPlatform(xiiGALTimestampHandle hTimestamp, xiiTime& result)
@@ -964,20 +964,26 @@ void xiiGALDeviceDiligent::EndFramePlatform()
 {
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
 
-  FreeTempResources(GetImmediateContext()->GetFrameNumber());
-
-#if 0
-  m_pDefaultPass->ReleaseRenderPassResources();
-  m_pDefaultPass->m_pCommandEncoderImpl->FlushPipelineStateCache();
-#endif
-
-  for (auto pContext : m_pDeviceContexts)
+  // Free temporary resources.
   {
-    pContext->Flush();
-    pContext->FinishFrame();
+    FreeTempResources(m_uiFrameCounter);
   }
 
-  m_pDevice->ReleaseStaleResources();
+  // Resolve pending deletions.
+  {
+    // Resources can be added to deletion outside of the render frame. These will not be covered by fences.
+    // To handle this, we swap the resources arrays so for any newly added resources, we know they are not part of
+    // the batch that is deleted with the the frame.
+    auto& currentFrameData = m_PerFrameData[m_uiCurrentPerFrameData];
+    {
+      XII_LOCK(currentFrameData.m_PendingDeletionMutex);
+      currentFrameData.m_PreviousPendingDeletions.Swap(currentFrameData.m_PendingDeletions);
+    }
+  }
+
+  m_uiCurrentPerFrameData = (m_uiCurrentPerFrameData + 1) % XII_ARRAY_SIZE(m_PerFrameData);
+  m_uiNextPerFrameData    = (m_uiCurrentPerFrameData + 1) % XII_ARRAY_SIZE(m_PerFrameData);
+  ++m_uiFrameCounter;
 }
 
 void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
@@ -1054,17 +1060,67 @@ void xiiGALDeviceDiligent::WaitIdlePlatform()
 
   DestroyDeadObjects();
 
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_PerFrameData); ++i)
+  {
+    // First, we wait for all fences for all submit calls. This is necessary to make sure no resources of the frame are still in use by the GPU.
+    auto& perFrameData = m_PerFrameData[i];
+    for (Diligent::IFence* pFence : perFrameData.m_SubmittedFences)
+    {
+      if (m_DeviceType != Diligent::RENDER_DEVICE_TYPE_D3D11)
+      {
+        GetImmediateContext()->DeviceWaitForFence(pFence, 1000000000u);
+      }
+    }
+    perFrameData.m_SubmittedFences.Clear();
+  }
+
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_PerFrameData); ++i)
+  {
+    auto& perFrameData = m_PerFrameData[i];
+    {
+      XII_LOCK(m_PerFrameData[i].m_PendingDeletionMutex);
+      DeletePendingResources(m_PerFrameData[i].m_PreviousPendingDeletions);
+      DeletePendingResources(m_PerFrameData[i].m_PendingDeletions);
+    }
+  }
+
   m_pDefaultPass->ReleaseRenderPassResources();
 
-  m_pDevice->ReleaseStaleResources();
-  // We must idle the GPU
   m_pDevice->IdleGPU();
-  // And call FinishFrame() to release references to Swapchain resources
+  // Call FinishFrame() to release references to Swapchain resources
   for (auto pContext : m_pDeviceContexts)
   {
     pContext->FinishFrame();
   }
-  m_pDevice->ReleaseStaleResources();
+  m_pDevice->ReleaseStaleResources(true);
+}
+
+void xiiGALDeviceDiligent::DeleteLater(const PendingDeletion& deletion)
+{
+  XII_LOCK(m_PerFrameData[m_uiCurrentPerFrameData].m_PendingDeletionMutex);
+  m_PerFrameData[m_uiCurrentPerFrameData].m_PendingDeletions.PushBack(deletion);
+}
+
+void xiiGALDeviceDiligent::DeletePendingResources(xiiDeque<PendingDeletion>& pendingDeletions)
+{
+  for (PendingDeletion& deletion : pendingDeletions)
+  {
+    if (deletion.m_pObject == nullptr)
+      continue;
+#if 0
+    switch (deletion.m_ObjectType)
+    {
+      default:
+        break;
+    }
+#endif
+    while (xiiInt32 uiReferenceCounters = (deletion.m_pObject->GetReferenceCounters()->GetNumStrongRefs() - 1))
+    {
+      deletion.m_pObject->GetReferenceCounters()->ReleaseStrongRef();
+    }
+    XII_GAL_DILIGENT_WRAPPED_RELEASE(deletion.m_pObject);
+  }
+  pendingDeletions.Clear();
 }
 
 void xiiGALDeviceDiligent::FillFormatLookupTable()
@@ -1211,32 +1267,27 @@ bool xiiGALDeviceDiligent::IsFenceReachedPlatform(Diligent::IDeviceContext* pCon
       Diligent::QueryDataOcclusion queryData;
       return pFence->GetData(&queryData, sizeof(queryData), false);
     }
-
     case Diligent::QUERY_TYPE_BINARY_OCCLUSION:
     {
       Diligent::QueryDataBinaryOcclusion queryData;
       return pFence->GetData(&queryData, sizeof(queryData), false);
     }
-
     case Diligent::QUERY_TYPE_TIMESTAMP:
     {
       Diligent::QueryDataTimestamp queryData;
       return pFence->GetData(&queryData, sizeof(queryData), false);
     }
-
     case Diligent::QUERY_TYPE_PIPELINE_STATISTICS:
     {
       Diligent::QueryDataPipelineStatistics queryData;
       return pFence->GetData(&queryData, sizeof(queryData), false);
     }
-
     case Diligent::QUERY_TYPE_DURATION:
     {
       Diligent::QueryDataDuration queryData;
       return pFence->GetData(&queryData, sizeof(queryData), false);
     }
   }
-
   return false;
 }
 
@@ -1254,7 +1305,6 @@ void xiiGALDeviceDiligent::WaitForFencePlatform(Diligent::IDeviceContext* pConte
       }
     }
     break;
-
     case Diligent::QUERY_TYPE_BINARY_OCCLUSION:
     {
       Diligent::QueryDataBinaryOcclusion queryData;
@@ -1264,7 +1314,6 @@ void xiiGALDeviceDiligent::WaitForFencePlatform(Diligent::IDeviceContext* pConte
       }
     }
     break;
-
     case Diligent::QUERY_TYPE_TIMESTAMP:
     {
       Diligent::QueryDataTimestamp queryData;
@@ -1274,7 +1323,6 @@ void xiiGALDeviceDiligent::WaitForFencePlatform(Diligent::IDeviceContext* pConte
       }
     }
     break;
-
     case Diligent::QUERY_TYPE_PIPELINE_STATISTICS:
     {
       Diligent::QueryDataPipelineStatistics queryData;
@@ -1284,7 +1332,6 @@ void xiiGALDeviceDiligent::WaitForFencePlatform(Diligent::IDeviceContext* pConte
       }
     }
     break;
-
     case Diligent::QUERY_TYPE_DURATION:
     {
       Diligent::QueryDataDuration queryData;
@@ -1346,7 +1393,7 @@ Diligent::IBuffer* xiiGALDeviceDiligent::FindTempBuffer(xiiUInt32 uiSize)
 
   auto& tempResource       = m_UsedTempResources[TempResourceType::Buffer].ExpandAndGetRef();
   tempResource.m_pResource = pBuffer;
-  tempResource.m_uiFrame   = GetImmediateContext()->GetFrameNumber();
+  tempResource.m_uiFrame   = m_uiFrameCounter;
   tempResource.m_uiHash    = uiSize;
 
   return pBuffer;
@@ -1403,7 +1450,7 @@ Diligent::ITexture* xiiGALDeviceDiligent::FindTempTexture(xiiUInt32 uiWidth, xii
 
   auto& tempResource       = m_UsedTempResources[TempResourceType::Texture].ExpandAndGetRef();
   tempResource.m_pResource = pTexture;
-  tempResource.m_uiFrame   = GetImmediateContext()->GetFrameNumber();
+  tempResource.m_uiFrame   = m_uiFrameCounter;
   tempResource.m_uiHash    = uiHash;
 
   return pTexture;

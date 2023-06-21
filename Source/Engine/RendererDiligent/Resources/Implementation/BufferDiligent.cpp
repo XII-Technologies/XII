@@ -109,8 +109,12 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
 
 xiiResult xiiGALBufferDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pBuffer);
+  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
+  if (m_pBuffer != nullptr)
+  {
+    pDeviceDiligent->DeleteLater({xiiResourceObjectType::Buffer, m_pBuffer});
+  }
   return XII_SUCCESS;
 }
 

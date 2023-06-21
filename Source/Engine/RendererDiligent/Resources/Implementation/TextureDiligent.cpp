@@ -207,9 +207,16 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
 xiiResult xiiGALTextureDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pTexture);
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pStagingTexture);
+  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
+  if (m_pTexture != nullptr)
+  {
+    pDeviceDiligent->DeleteLater({xiiResourceObjectType::Texture, m_pTexture});
+  }
+  if (m_pStagingTexture != nullptr)
+  {
+    pDeviceDiligent->DeleteLater({xiiResourceObjectType::Texture, m_pStagingTexture});
+  }
   return XII_SUCCESS;
 }
 

@@ -7,7 +7,7 @@
 XII_CHECK_AT_COMPILETIME(XII_GAL_MAX_RENDERTARGET_COUNT == Diligent::MAX_RENDER_TARGETS);
 
 xiiGALRenderTargetViewDiligent::xiiGALRenderTargetViewDiligent(xiiGALTexture* pTexture, const xiiGALRenderTargetViewCreationDescription& Description) :
-  xiiGALRenderTargetView(pTexture, Description), m_pRenderTargetView(nullptr), m_pDepthStencilView(nullptr), m_pUnorderedAccessView(nullptr)
+  xiiGALRenderTargetView(pTexture, Description), m_pRenderTargetView(nullptr), m_pDepthStencilView(nullptr)
 {
 }
 
@@ -149,10 +149,16 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALRenderTargetViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pRenderTargetView);
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDepthStencilView);
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pUnorderedAccessView);
+  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
+  if (m_pRenderTargetView != nullptr)
+  {
+    pDeviceDiligent->DeleteLater({xiiResourceObjectType::ImageView, m_pRenderTargetView});
+  }
+  if (m_pDepthStencilView != nullptr)
+  {
+    pDeviceDiligent->DeleteLater({xiiResourceObjectType::ImageView, m_pDepthStencilView});
+  }
   return XII_SUCCESS;
 }
 
