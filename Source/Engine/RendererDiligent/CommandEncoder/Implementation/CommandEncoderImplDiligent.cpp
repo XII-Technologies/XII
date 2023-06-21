@@ -859,7 +859,7 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
     // Check if the render texture is one of the render targets.
     for (auto pRenderTarget : m_pBoundRenderTargets)
     {
-      if (pRenderTarget->GetTexture() == pTextureDiligent->GetTexture())
+      if (pRenderTarget && (pRenderTarget->GetTexture() == pTextureDiligent->GetTexture()))
       {
         m_pPipelineBarrier->FlushBarriers();
 
