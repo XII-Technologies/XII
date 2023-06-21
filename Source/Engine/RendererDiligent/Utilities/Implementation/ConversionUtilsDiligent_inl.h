@@ -183,11 +183,11 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentUtils::GALToDiligentFormat(Dil
     case Diligent::TEX_FORMAT_D32_FLOAT:
     case Diligent::TEX_FORMAT_R32_FLOAT:
     case Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT:
+    case Diligent::TEX_FORMAT_R11G11B10_FLOAT:
       return Diligent::VT_FLOAT32;
 
     // case Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP:
     case Diligent::TEX_FORMAT_RGBA16_FLOAT:
-    case Diligent::TEX_FORMAT_R11G11B10_FLOAT:
     case Diligent::TEX_FORMAT_RG16_FLOAT:
     case Diligent::TEX_FORMAT_R16_FLOAT:
       return Diligent::VT_FLOAT16;
