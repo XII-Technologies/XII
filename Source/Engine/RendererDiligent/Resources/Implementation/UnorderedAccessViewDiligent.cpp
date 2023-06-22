@@ -6,7 +6,7 @@
 #include <RendererDiligent/Resources/UnorderedAccessViewDiligent.h>
 
 xiiGALUnorderedAccessViewDiligent::xiiGALUnorderedAccessViewDiligent(xiiGALResourceBase* pResource, const xiiGALUnorderedAccessViewCreationDescription& Description) :
-  xiiGALUnorderedAccessView(pResource, Description), m_pUnorderedAccessTextureView(nullptr), m_pUnorderedAccessBufferView(nullptr)
+  xiiGALUnorderedAccessView(pResource, Description), m_pTextureView(nullptr), m_pBufferView(nullptr)
 {
 }
 
@@ -124,9 +124,9 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     UAVDesc.Flags       = Diligent::TEXTURE_VIEW_FLAG_NONE;
     UAVDesc.AccessFlags = Diligent::UAV_ACCESS_UNSPECIFIED;
 
-    pTextureDiligent->CreateView(UAVDesc, &m_pUnorderedAccessTextureView);
+    pTextureDiligent->CreateView(UAVDesc, &m_pTextureView);
 
-    return (m_pUnorderedAccessTextureView != nullptr) ? XII_SUCCESS : XII_FAILURE;
+    return (m_pTextureView != nullptr) ? XII_SUCCESS : XII_FAILURE;
   }
   else if (pBuffer)
   {
@@ -161,9 +161,9 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
       UAVDesc.Format.NumComponents = xiiGALResourceFormat::GetChannelCount(viewFormat);
     }
 
-    pBufferDiligent->CreateView(UAVDesc, &m_pUnorderedAccessBufferView);
+    pBufferDiligent->CreateView(UAVDesc, &m_pBufferView);
 
-    return (m_pUnorderedAccessBufferView != nullptr) ? XII_SUCCESS : XII_FAILURE;
+    return (m_pBufferView != nullptr) ? XII_SUCCESS : XII_FAILURE;
   }
 
   return XII_SUCCESS;
@@ -173,14 +173,9 @@ xiiResult xiiGALUnorderedAccessViewDiligent::DeInitPlatform(xiiGALDevice* pDevic
 {
   xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
-  if (m_pUnorderedAccessBufferView != nullptr)
-  {
-    pDeviceDiligent->DeleteLater({xiiResourceObjectType::UAVBufferView, m_pUnorderedAccessBufferView});
-  }
-  if (m_pUnorderedAccessTextureView != nullptr)
-  {
-    pDeviceDiligent->DeleteLater({xiiResourceObjectType::UAVTextureView, m_pUnorderedAccessTextureView});
-  }
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pBufferView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pTextureView);
+
   return XII_SUCCESS;
 }
 

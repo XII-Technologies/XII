@@ -28,7 +28,8 @@ enum class xiiResourceObjectType
   PipelineState,
   Shader,
   Query,
-  Swapchain
+  Swapchain,
+  Sampler
 };
 
 /// \brief The Diligent device implementation of the graphics abstraction layer.
@@ -150,7 +151,7 @@ protected:
     xiiUInt64 m_uiFrame            = -1;
     double    m_fInvTicksPerSecond = -1.0;
 
-    xiiMutex                  m_PendingDeletionMutex;
+    xiiMutex                  m_PendingDeletionsMutex;
     xiiDeque<PendingDeletion> m_PendingDeletions;
     xiiDeque<PendingDeletion> m_PreviousPendingDeletions;
   };

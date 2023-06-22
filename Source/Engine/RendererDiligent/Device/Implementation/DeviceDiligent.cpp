@@ -958,6 +958,33 @@ xiiResult xiiGALDeviceDiligent::GetTimestampResultPlatform(xiiGALTimestampHandle
 void xiiGALDeviceDiligent::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 {
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
+
+  // check if fence is reached
+  if (m_PerFrameData[m_uiCurrentPerFrameData].m_uiFrame != ((xiiUInt64)-1))
+  {
+    auto& perFrameData = m_PerFrameData[m_uiCurrentPerFrameData];
+    for (Diligent::IFence* pFence : perFrameData.m_SubmittedFences)
+    {
+      if (m_DeviceType != Diligent::RENDER_DEVICE_TYPE_D3D11)
+      {
+        GetImmediateContext()->DeviceWaitForFence(pFence, 1000000000u);
+      }
+    }
+    perFrameData.m_SubmittedFences.Clear();
+
+    {
+      XII_LOCK(m_PerFrameData[m_uiCurrentPerFrameData].m_PendingDeletionsMutex);
+      DeletePendingResources(m_PerFrameData[m_uiCurrentPerFrameData].m_PreviousPendingDeletions);
+    }
+
+    m_uiSafeFrame = m_PerFrameData[m_uiCurrentPerFrameData].m_uiFrame;
+  }
+  {
+    auto& perFrameData                = m_PerFrameData[m_uiNextPerFrameData];
+    perFrameData.m_fInvTicksPerSecond = -1.0f;
+  }
+
+  m_PerFrameData[m_uiCurrentPerFrameData].m_uiFrame = m_uiFrameCounter;
 }
 
 void xiiGALDeviceDiligent::EndFramePlatform()
@@ -976,7 +1003,7 @@ void xiiGALDeviceDiligent::EndFramePlatform()
     // the batch that is deleted with the the frame.
     auto& currentFrameData = m_PerFrameData[m_uiCurrentPerFrameData];
     {
-      XII_LOCK(currentFrameData.m_PendingDeletionMutex);
+      XII_LOCK(currentFrameData.m_PendingDeletionsMutex);
       currentFrameData.m_PreviousPendingDeletions.Swap(currentFrameData.m_PendingDeletions);
     }
   }
@@ -1078,7 +1105,7 @@ void xiiGALDeviceDiligent::WaitIdlePlatform()
   {
     auto& perFrameData = m_PerFrameData[i];
     {
-      XII_LOCK(m_PerFrameData[i].m_PendingDeletionMutex);
+      XII_LOCK(m_PerFrameData[i].m_PendingDeletionsMutex);
       DeletePendingResources(m_PerFrameData[i].m_PreviousPendingDeletions);
       DeletePendingResources(m_PerFrameData[i].m_PendingDeletions);
     }
@@ -1097,7 +1124,7 @@ void xiiGALDeviceDiligent::WaitIdlePlatform()
 
 void xiiGALDeviceDiligent::DeleteLater(const PendingDeletion& deletion)
 {
-  XII_LOCK(m_PerFrameData[m_uiCurrentPerFrameData].m_PendingDeletionMutex);
+  XII_LOCK(m_PerFrameData[m_uiCurrentPerFrameData].m_PendingDeletionsMutex);
   m_PerFrameData[m_uiCurrentPerFrameData].m_PendingDeletions.PushBack(deletion);
 }
 

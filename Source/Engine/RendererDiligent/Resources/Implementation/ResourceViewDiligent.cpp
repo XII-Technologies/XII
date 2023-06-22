@@ -208,14 +208,9 @@ xiiResult xiiGALResourceViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
   xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
-  if (m_pBufferView != nullptr)
-  {
-    pDeviceDiligent->DeleteLater({xiiResourceObjectType::SRVBufferView, m_pBufferView});
-  }
-  if (m_pTextureView != nullptr)
-  {
-    pDeviceDiligent->DeleteLater({xiiResourceObjectType::SRVTextureView, m_pTextureView});
-  }
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pBufferView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pTextureView);
+
   return XII_SUCCESS;
 }
 

@@ -152,12 +152,13 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALShaderDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
+  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
   for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
   {
-    XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderStages[i]);
+    pDeviceDiligent->DeleteLater({xiiResourceObjectType::Shader, m_pShaderStages[i]});
   }
 
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pPipelineResourceSignature);
+  pDeviceDiligent->DeleteLater({xiiResourceObjectType::Shader, m_pPipelineResourceSignature});
   m_uiPipelineResourceSignatureCount = 0u;
 
   m_StringStorage.Clear();
