@@ -149,7 +149,7 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALRenderTargetViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+  // xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDepthStencilView);
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pRenderTargetView);

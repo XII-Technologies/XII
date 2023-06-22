@@ -152,9 +152,9 @@ xiiResult xiiGALSamplerStateDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALSamplerStateDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+  // xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
-  pDeviceDiligent->DeleteLater({xiiResourceObjectType::Sampler, m_pSamplerState});
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pSamplerState);
 
   return XII_SUCCESS;
 }

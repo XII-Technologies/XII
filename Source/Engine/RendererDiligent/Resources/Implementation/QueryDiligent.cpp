@@ -45,12 +45,10 @@ xiiResult xiiGALQueryDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALQueryDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+  // xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
-  if (m_pQuery != nullptr)
-  {
-    pDeviceDiligent->DeleteLater({xiiResourceObjectType::Query, m_pQuery});
-  }
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pQuery);
+
   return XII_SUCCESS;
 }
 

@@ -25,7 +25,7 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
   if (m_pExisitingNativeObject != nullptr)
   {
-    m_pTexture.Attach(static_cast<Diligent::ITexture*>(m_pExisitingNativeObject));
+    m_pTexture = static_cast<Diligent::ITexture*>(m_pExisitingNativeObject);
     if (!m_Description.m_ResourceAccess.IsImmutable() || m_Description.m_ResourceAccess.m_bReadBack)
     {
       xiiResult result = CreateStagingTexture(pDeviceDiligent);
@@ -207,16 +207,11 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
 xiiResult xiiGALTextureDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+  // xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
-  if (m_pTexture != nullptr && !IsNativeWrapperObject())
-  {
-    pDeviceDiligent->DeleteLater({xiiResourceObjectType::Texture, m_pTexture});
-  }
-  if (m_pStagingTexture != nullptr)
-  {
-    pDeviceDiligent->DeleteLater({xiiResourceObjectType::Texture, m_pStagingTexture});
-  }
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pTexture);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pStagingTexture);
+
   return XII_SUCCESS;
 }
 

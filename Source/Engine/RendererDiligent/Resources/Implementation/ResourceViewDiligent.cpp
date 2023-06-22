@@ -206,7 +206,7 @@ xiiResult xiiGALResourceViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALResourceViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+  // xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
 
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pBufferView);
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pTextureView);
