@@ -150,6 +150,12 @@ private:
 
   Diligent::IDeviceContext* m_pContext = nullptr;
 
+  // Synchronization Fences
+  Diligent::RefCntAutoPtr<Diligent::IFence> m_pDeviceCpuWaitFence;
+  Diligent::RefCntAutoPtr<Diligent::IFence> m_pDeviceGpuWaitFence;
+  xiiUInt64                                 m_uiCpuWaitCompletedFenceValue = 0u;
+  xiiUInt64                                 m_uiGpuWaitCompletedFenceValue = 0u;
+
   // Pipeline State
   xiiPipelineBarrierDiligent*                                                                   m_pPipelineBarrier;
   xiiHashTable<Diligent::GraphicsPipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash> m_CachedGraphicsPipelineStates;
@@ -158,10 +164,12 @@ private:
   Diligent::IPipelineState*         m_pCurrentPipelineState         = nullptr;
   Diligent::IShaderResourceBinding* m_pCurrentShaderResourceBinding = nullptr;
 
+  // Render Pass and Frame Buffer
   Diligent::IRenderPass*                                                            m_pRenderPass  = nullptr;
   Diligent::IFramebuffer*                                                           m_pFramebuffer = nullptr;
   xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_ClearValues;
 
+  // Pipeline State Description
   Diligent::PRIMITIVE_TOPOLOGY           m_PrimitiveTopology  = {};
   xiiGALVertexDeclarationDiligent*       m_pVertexDeclaration = nullptr;
   const xiiGALBlendStateDiligent*        m_pBlendStateState   = nullptr;

@@ -264,6 +264,22 @@ xiiGALCommandEncoderImplDiligent::xiiGALCommandEncoderImplDiligent(xiiGALDeviceD
   m_GALDeviceDiligent(deviceDiligent), m_pContext(m_GALDeviceDiligent.GetImmediateContext())
 {
   m_pPipelineBarrier = m_GALDeviceDiligent.m_pPipelineBarrier.Borrow();
+
+  // Create synchronization fences.
+  {
+    Diligent::FenceDesc fenceDesc;
+    fenceDesc.Name = "Command Encoder Device CPU Fence";
+    fenceDesc.Type = Diligent::FENCE_TYPE_CPU_WAIT_ONLY;
+    m_GALDeviceDiligent.GetDevice()->CreateFence(fenceDesc, &m_pDeviceCpuWaitFence);
+  }
+
+  if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
+  {
+    Diligent::FenceDesc fenceDesc;
+    fenceDesc.Name = "Command Encoder Device GPU Fence";
+    fenceDesc.Type = Diligent::FENCE_TYPE_GENERAL;
+    m_GALDeviceDiligent.GetDevice()->CreateFence(fenceDesc, &m_pDeviceGpuWaitFence);
+  }
 }
 
 xiiGALCommandEncoderImplDiligent::~xiiGALCommandEncoderImplDiligent()
@@ -309,6 +325,9 @@ xiiGALCommandEncoderImplDiligent::~xiiGALCommandEncoderImplDiligent()
   }
   m_CachedComputePipelineStates.Clear();
   m_CachedComputePipelineStates.Compact();
+
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDeviceCpuWaitFence);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDeviceGpuWaitFence);
 }
 
 // State setting functions
@@ -917,6 +936,12 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
 
     m_pContext->CopyTexture(CopyTexAttribs);
   }
+
+  // Insert fence for D3D12 and Vulkan devices for GPU synchronization.
+  if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
+  {
+    m_pContext->EnqueueSignal(m_pDeviceGpuWaitFence, ++m_uiGpuWaitCompletedFenceValue);
+  }
 }
 
 xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel)
@@ -1111,7 +1136,7 @@ void xiiGALCommandEncoderImplDiligent::EndRendering()
 void xiiGALCommandEncoderImplDiligent::ClearPlatform(const xiiColor& ClearColor, xiiUInt32 uiRenderTargetClearMask, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
   // In D3D12, render target clears cannot be performed while the render pass is active.
-  if (!m_bIsComputeRequested && !m_bRenderpassActive && m_GALDeviceDiligent.GetCapabilities().m_DeviceType != xiiGraphicsDeviceType::D3D12)
+  if (!m_bIsComputeRequested && !m_bRenderpassActive && m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D12)
   {
     Diligent::BeginRenderPassAttribs renderPassBeginInfo;
     renderPassBeginInfo.pRenderPass         = m_pRenderPass;
@@ -1785,7 +1810,7 @@ void xiiGALCommandEncoderImplDiligent::TransitionResources()
                 const bool                   bIsDepthFormat   = xiiGALResourceFormat::IsDepthFormat(pTextureDiligent->GetDescription().m_Format);
 
                 Diligent::RESOURCE_STATE stateFlags = {};
-                if (m_GALDeviceDiligent.GetCapabilities().m_DeviceType != xiiGraphicsDeviceType::Vulkan)
+                if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_VULKAN)
                 {
                   stateFlags |= bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ | Diligent::RESOURCE_STATE_SHADER_RESOURCE : Diligent::RESOURCE_STATE_SHADER_RESOURCE;
                 }

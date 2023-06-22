@@ -1008,6 +1008,14 @@ void xiiGALDeviceDiligent::EndFramePlatform()
     }
   }
 
+  // Call FinishFrame() to release references to Swapchain resources
+  for (auto& pContext : m_pDeviceContexts)
+  {
+    pContext->Flush();
+    pContext->FinishFrame();
+  }
+  m_pDevice->ReleaseStaleResources();
+
   m_uiCurrentPerFrameData = (m_uiCurrentPerFrameData + 1) % XII_ARRAY_SIZE(m_PerFrameData);
   m_uiNextPerFrameData    = (m_uiCurrentPerFrameData + 1) % XII_ARRAY_SIZE(m_PerFrameData);
   ++m_uiFrameCounter;
@@ -1115,8 +1123,9 @@ void xiiGALDeviceDiligent::WaitIdlePlatform()
 
   m_pDevice->IdleGPU();
   // Call FinishFrame() to release references to Swapchain resources
-  for (auto pContext : m_pDeviceContexts)
+  for (auto& pContext : m_pDeviceContexts)
   {
+    pContext->Flush();
     pContext->FinishFrame();
   }
   m_pDevice->ReleaseStaleResources(true);
