@@ -268,17 +268,9 @@ xiiGALCommandEncoderImplDiligent::xiiGALCommandEncoderImplDiligent(xiiGALDeviceD
   // Create synchronization fences.
   {
     Diligent::FenceDesc fenceDesc;
-    fenceDesc.Name = "Command Encoder Device CPU Fence";
+    fenceDesc.Name = "Command Encoder Device Read Back Fence";
     fenceDesc.Type = Diligent::FENCE_TYPE_CPU_WAIT_ONLY;
-    m_GALDeviceDiligent.GetDevice()->CreateFence(fenceDesc, &m_pDeviceCpuWaitFence);
-  }
-
-  if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
-  {
-    Diligent::FenceDesc fenceDesc;
-    fenceDesc.Name = "Command Encoder Device GPU Fence";
-    fenceDesc.Type = Diligent::FENCE_TYPE_GENERAL;
-    m_GALDeviceDiligent.GetDevice()->CreateFence(fenceDesc, &m_pDeviceGpuWaitFence);
+    m_GALDeviceDiligent.GetDevice()->CreateFence(fenceDesc, &m_pReadBackFence);
   }
 }
 
@@ -326,8 +318,8 @@ xiiGALCommandEncoderImplDiligent::~xiiGALCommandEncoderImplDiligent()
   m_CachedComputePipelineStates.Clear();
   m_CachedComputePipelineStates.Compact();
 
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDeviceCpuWaitFence);
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDeviceGpuWaitFence);
+  m_uiReadBackFenceCompletedValue = 0;
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pReadBackFence);
 }
 
 // State setting functions
@@ -937,11 +929,7 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
     m_pContext->CopyTexture(CopyTexAttribs);
   }
 
-  // Insert fence for D3D12 and Vulkan devices for GPU synchronization.
-  if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
-  {
-    m_pContext->EnqueueSignal(m_pDeviceGpuWaitFence, ++m_uiGpuWaitCompletedFenceValue);
-  }
+  // Todo Insert fence
 }
 
 xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel)
@@ -967,8 +955,14 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureReadbackResultPlatform(const x
     const xiiGALTextureSubresource&      subRes  = SourceSubResource[i];
     const xiiGALSystemMemoryDescription& memDesc = TargetData[i];
 
+    // Wait for GPU to Synchronize resources.
+    m_pReadBackFence->Wait(m_uiReadBackFenceCompletedValue);
+    ++m_uiReadBackFenceCompletedValue;
+
     Diligent::MappedTextureSubresource MappedSubRes;
     m_pContext->MapTextureSubresource(pTextureDiligent->GetStagingTexture(), subRes.m_uiMipLevel, subRes.m_uiArraySlice, Diligent::MAP_READ, Diligent::MAP_FLAG_NONE, nullptr, MappedSubRes);
+
+    if (MappedSubRes.pData)
     {
       // TODO: Depth pitch
       if (MappedSubRes.Stride == memDesc.m_uiRowPitch)
@@ -993,6 +987,8 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureReadbackResultPlatform(const x
       m_pContext->UnmapTextureSubresource(pTextureDiligent->GetStagingTexture(), subRes.m_uiMipLevel, subRes.m_uiArraySlice);
     }
   }
+
+  // \todo Insert fence
 }
 
 void xiiGALCommandEncoderImplDiligent::GenerateMipMapsPlatform(const xiiGALResourceView* pResourceView)

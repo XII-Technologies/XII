@@ -151,10 +151,8 @@ private:
   Diligent::IDeviceContext* m_pContext = nullptr;
 
   // Synchronization Fences
-  Diligent::RefCntAutoPtr<Diligent::IFence> m_pDeviceCpuWaitFence;
-  Diligent::RefCntAutoPtr<Diligent::IFence> m_pDeviceGpuWaitFence;
-  xiiUInt64                                 m_uiCpuWaitCompletedFenceValue = 0u;
-  xiiUInt64                                 m_uiGpuWaitCompletedFenceValue = 0u;
+  Diligent::RefCntAutoPtr<Diligent::IFence> m_pReadBackFence;
+  xiiUInt64                                 m_uiReadBackFenceCompletedValue = 1u;
 
   // Pipeline State
   xiiPipelineBarrierDiligent*                                                                   m_pPipelineBarrier;

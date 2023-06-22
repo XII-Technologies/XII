@@ -296,7 +296,7 @@ CreateRenderDevice:
       EngineCI.Features.ShaderResourceRuntimeArray        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.WaveOp                            = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.InstanceDataStepRate              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_ENABLED;
       EngineCI.Features.TileShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.TransferQueueTimestampQueries     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.VariableRateShading               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
@@ -379,7 +379,7 @@ CreateRenderDevice:
       EngineCI.Features.ShaderResourceRuntimeArray        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.WaveOp                            = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.InstanceDataStepRate              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_ENABLED;
       EngineCI.Features.TileShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.TransferQueueTimestampQueries     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.VariableRateShading               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
@@ -477,7 +477,7 @@ CreateRenderDevice:
       EngineCI.Features.ShaderResourceRuntimeArray        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.WaveOp                            = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.InstanceDataStepRate              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
+      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_ENABLED;
       EngineCI.Features.TileShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.TransferQueueTimestampQueries     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.VariableRateShading               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
@@ -599,6 +599,8 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
     for (xiiUInt32 q = 0; q < m_uiNumImmediateContexts; ++q)
     {
       m_pDeviceContexts[q]->Flush();
+      m_pDeviceContexts[q]->FinishFrame();
+      m_pDeviceContexts[q]->InvalidateState();
 
       XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDeviceContexts[q]);
     }
@@ -612,6 +614,7 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 
   m_pPipelineBarrier = nullptr;
 
+  m_pDevice->IdleGPU();
   m_pDevice->ReleaseStaleResources(true);
 
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDevice);
@@ -1127,6 +1130,7 @@ void xiiGALDeviceDiligent::WaitIdlePlatform()
   {
     pContext->Flush();
     pContext->FinishFrame();
+    pContext->WaitForIdle();
   }
   m_pDevice->ReleaseStaleResources(true);
 }
