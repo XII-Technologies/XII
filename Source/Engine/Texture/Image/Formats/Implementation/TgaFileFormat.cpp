@@ -293,9 +293,9 @@ static xiiResult ReadBytesChecked(xiiStreamReader& inout_stream, void* pDest, xi
 }
 
 template <typename TYPE>
-static xiiResult ReadBytesChecked(xiiStreamReader& inout_stream, TYPE& dest)
+static xiiResult ReadBytesChecked(xiiStreamReader& inout_stream, TYPE& ref_dest)
 {
-  return ReadBytesChecked(inout_stream, &dest, sizeof(TYPE));
+  return ReadBytesChecked(inout_stream, &ref_dest, sizeof(TYPE));
 }
 
 static xiiResult ReadImageHeaderImpl(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension, TgaHeader& ref_tgaHeader)
