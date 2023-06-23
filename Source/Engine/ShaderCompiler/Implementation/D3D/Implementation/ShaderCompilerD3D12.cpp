@@ -226,6 +226,7 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::x
       // clang-format off
       if (inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED
         || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TEXTURE
+        || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TBUFFER
         || inputDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_BYTEADDRESS)
       // clang-format on
       {
@@ -289,6 +290,7 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::x
             binding.m_Type = (resourceInfo.Dimension == D3D_SRV_DIMENSION_BUFFER) ? xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer : xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewTexture;
             break;
 
+          case D3D_SIT_TBUFFER:
           case D3D_SIT_STRUCTURED:
           case D3D_SIT_BYTEADDRESS:
             binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer;
@@ -477,6 +479,7 @@ xiiResult xiiShaderCompilerD3D12::FillResourceBinding(xiiShaderStageBinary& shad
   // clang-format off
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED
     || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TEXTURE
+    || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TBUFFER
     || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_BYTEADDRESS)
   // clang-format on
   {
@@ -526,7 +529,7 @@ xiiResult xiiShaderCompilerD3D12::FillResourceBinding(xiiShaderStageBinary& shad
 
 xiiResult xiiShaderCompilerD3D12::FillSRVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const D3D12_SHADER_INPUT_BIND_DESC& info)
 {
-  if (info.Type == D3D_SIT_STRUCTURED || info.Type == D3D_SIT_BYTEADDRESS)
+  if (info.Type == D3D_SIT_STRUCTURED || info.Type == D3D_SIT_BYTEADDRESS || info.Type == D3D_SVT_BUFFER)
   {
     binding.m_Type = xiiShaderResourceType::GenericBuffer;
     return XII_SUCCESS;
