@@ -113,8 +113,10 @@ xiiResult xiiGALUnorderedAccessViewDiligent::InitPlatform(xiiGALDevice* pDevice)
       case xiiGALTextureType::TextureCube:
       case xiiGALTextureType::TextureCubeArray:
       {
-        xiiLog::Error("Unexpected unordered access view type '{}' for texture '{}'.", texDesc.m_Type, texDesc.m_szName);
-        return XII_FAILURE;
+        UAVDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+        UAVDesc.NumDepthSlices  = m_Description.m_uiArraySize;
+        UAVDesc.FirstDepthSlice = m_Description.m_uiFirstArraySlice;
+        UAVDesc.MostDetailedMip = m_Description.m_uiMipLevelToUse;
       }
       break;
 
