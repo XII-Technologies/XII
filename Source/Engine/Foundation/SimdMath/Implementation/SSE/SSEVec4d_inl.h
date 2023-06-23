@@ -10,18 +10,18 @@ XII_ALWAYS_INLINE xiiSimdVec4d::xiiSimdVec4d()
 #endif
 }
 
-XII_ALWAYS_INLINE xiiSimdVec4d::xiiSimdVec4d(double xyzw)
+XII_ALWAYS_INLINE xiiSimdVec4d::xiiSimdVec4d(double fXyzw)
 {
   XII_CHECK_SIMD_DOUBLE_ALIGNMENT(this);
 
-  m_v = _mm256_set1_pd(xyzw);
+  m_v = _mm256_set1_pd(fXyzw);
 }
 
-XII_ALWAYS_INLINE xiiSimdVec4d::xiiSimdVec4d(const xiiSimdDouble& xyzw)
+XII_ALWAYS_INLINE xiiSimdVec4d::xiiSimdVec4d(const xiiSimdDouble& fXyzw)
 {
   XII_CHECK_SIMD_DOUBLE_ALIGNMENT(this);
 
-  m_v = xyzw.m_v;
+  m_v = fXyzw.m_v;
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4d::xiiSimdVec4d(double x, double y, double z, double w)
@@ -31,9 +31,9 @@ XII_ALWAYS_INLINE xiiSimdVec4d::xiiSimdVec4d(double x, double y, double z, doubl
   m_v = _mm256_setr_pd(x, y, z, w);
 }
 
-XII_ALWAYS_INLINE void xiiSimdVec4d::Set(double xyzw)
+XII_ALWAYS_INLINE void xiiSimdVec4d::Set(double fXyzw)
 {
-  m_v = _mm256_set1_pd(xyzw);
+  m_v = _mm256_set1_pd(fXyzw);
 }
 
 XII_ALWAYS_INLINE void xiiSimdVec4d::Set(double x, double y, double z, double w)
@@ -401,17 +401,17 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::Trunc() const
 #endif
 }
 
-XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::FlipSign(const xiiSimdVec4b& cmp) const
+XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::FlipSign(const xiiSimdVec4b& vCmp) const
 {
-  __m256d mask = _mm256_setr_pd(cmp.x() ? -0.0 : 0.0, cmp.y() ? -0.0 : 0.0, cmp.z() ? -0.0 : 0.0, cmp.w() ? -0.0 : 0.0);
+  __m256d mask = _mm256_setr_pd(vCmp.x() ? -0.0 : 0.0, vCmp.y() ? -0.0 : 0.0, vCmp.z() ? -0.0 : 0.0, vCmp.w() ? -0.0 : 0.0);
   return _mm256_xor_pd(m_v, _mm256_and_pd(mask, _mm256_set1_pd(-0.0)));
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::Select(const xiiSimdVec4b& cmp, const xiiSimdVec4d& ifTrue, const xiiSimdVec4d& ifFalse)
+XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4d& vIfTrue, const xiiSimdVec4d& vIfFalse)
 {
-  __m256d mask = _mm256_setr_pd(cmp.x() ? -0.0 : 0.0, cmp.y() ? -0.0 : 0.0, cmp.z() ? -0.0 : 0.0, cmp.w() ? -0.0 : 0.0);
-  return _mm256_blendv_pd(ifFalse.m_v, ifTrue.m_v, mask);
+  __m256d mask = _mm256_setr_pd(vCmp.x() ? -0.0 : 0.0, vCmp.y() ? -0.0 : 0.0, vCmp.z() ? -0.0 : 0.0, vCmp.w() ? -0.0 : 0.0);
+  return _mm256_blendv_pd(vIfFalse.m_v, vIfTrue.m_v, mask);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4d& xiiSimdVec4d::operator+=(const xiiSimdVec4d& v)
@@ -630,8 +630,8 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MulSub(const xiiSimdVec4d& a, const
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::CopySign(const xiiSimdVec4d& magnitude, const xiiSimdVec4d& sign)
+XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::CopySign(const xiiSimdVec4d& vMagnitude, const xiiSimdVec4d& vSign)
 {
   __m256d minusZero = _mm256_set1_pd(-0.0);
-  return _mm256_or_pd(_mm256_andnot_pd(minusZero, magnitude.m_v), _mm256_and_pd(minusZero, sign.m_v));
+  return _mm256_or_pd(_mm256_andnot_pd(minusZero, vMagnitude.m_v), _mm256_and_pd(minusZero, vSign.m_v));
 }

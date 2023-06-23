@@ -25,7 +25,7 @@ public:
   void SetShortestRotation(const xiiSimdVec4d& vDirFrom, const xiiSimdVec4d& vDirTo); // [tested]
 
   /// \brief Sets this quaternion to be the spherical linear interpolation of the other two.
-  void SetSlerp(const xiiSimdQuatd& qFrom, const xiiSimdQuatd& qTo, const xiiSimdDouble& t); // [tested]
+  void SetSlerp(const xiiSimdQuatd& from, const xiiSimdQuatd& to, const xiiSimdDouble& t); // [tested]
 
 public:
   /// \brief Normalizes the quaternion to unit length. ALL rotation-quaternions should be normalized at all times (automatically).
@@ -48,7 +48,7 @@ public:
   /// Currently it fails when one of the given quaternions is identity (so no rotation, at all), as it tries to
   /// compare rotation axis' and angles, which is undefined for the identity quaternion (also there are infinite
   /// representations for 'identity', so it's difficult to check for it).
-  bool IsEqualRotation(const xiiSimdQuatd& qOther, const xiiSimdDouble& fEpsilon) const; // [tested]
+  bool IsEqualRotation(const xiiSimdQuatd& other, const xiiSimdDouble& fEpsilon) const; // [tested]
 
 public:
   /// \brief Returns a Quaternion that represents the negative / inverted rotation.

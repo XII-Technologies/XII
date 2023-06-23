@@ -115,10 +115,10 @@ XII_ALWAYS_INLINE xiiSimdDouble& xiiSimdDouble::operator/=(const xiiSimdDouble& 
   return *this;
 }
 
-XII_ALWAYS_INLINE bool xiiSimdDouble::IsEqual(const xiiSimdDouble& rhs, const xiiSimdDouble& epsilon) const
+XII_ALWAYS_INLINE bool xiiSimdDouble::IsEqual(const xiiSimdDouble& rhs, const xiiSimdDouble& fEpsilon) const
 {
-  xiiSimdDouble minusEps = rhs - epsilon;
-  xiiSimdDouble plusEps  = rhs + epsilon;
+  xiiSimdDouble minusEps = rhs - fEpsilon;
+  xiiSimdDouble plusEps  = rhs + fEpsilon;
   return ((*this >= minusEps) && (*this <= plusEps));
 }
 
