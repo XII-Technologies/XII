@@ -1,5 +1,7 @@
 #include <RendererDiligent/RendererDiligentPCH.h>
 
+#include <RendererFoundation/CommandEncoder/CommandEncoder.h>
+
 #include <RendererDiligent/CommandEncoder/CommandEncoderImplDiligent.h>
 #include <RendererDiligent/Device/DeviceDiligent.h>
 #include <RendererDiligent/Device/PassDiligent.h>
@@ -12,7 +14,6 @@
 #include <RendererDiligent/Shader/ShaderDiligent.h>
 #include <RendererDiligent/Shader/VertexDeclarationDiligent.h>
 #include <RendererDiligent/State/StateDiligent.h>
-#include <RendererFoundation/CommandEncoder/CommandEncoder.h>
 
 #undef NULL
 #define NULL 0

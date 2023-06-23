@@ -2,9 +2,11 @@
 
 #include <Core/System/Window.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <RendererFoundation/CommandEncoder/RenderCommandEncoder.h>
+
 #include <RendererDiligent/Device/DeviceDiligent.h>
 #include <RendererDiligent/Device/SwapChainDiligent.h>
-#include <RendererFoundation/CommandEncoder/RenderCommandEncoder.h>
+#include <RendererDiligent/Resources/TextureDiligent.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>

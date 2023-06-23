@@ -23,10 +23,6 @@
 #include <Graphics/GraphicsTools/interface/DurationQueryHelper.hpp>
 #include <Graphics/GraphicsTools/interface/ScopedQueryHelper.hpp>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
-#endif
-
 #if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
 #  include <Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h>
 #endif
@@ -37,6 +33,10 @@
 
 #if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
 #  include <Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
+#endif
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #endif
 
 /// Custom Diligent Engine Memory Allocator

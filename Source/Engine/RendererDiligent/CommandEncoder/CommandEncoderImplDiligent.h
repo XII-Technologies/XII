@@ -6,6 +6,7 @@
 #include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Types/Bitflags.h>
+
 #include <RendererFoundation/CommandEncoder/CommandEncoderPlatformInterface.h>
 #include <RendererFoundation/Resources/RenderTargetSetup.h>
 
