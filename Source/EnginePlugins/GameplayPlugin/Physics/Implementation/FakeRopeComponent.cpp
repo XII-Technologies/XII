@@ -55,7 +55,7 @@ void xiiFakeRopeComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
   SUPER::DeserializeComponent(ref_stream);
   const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&          s         = ref_stream.GetStream();
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_uiPieces;
   s >> m_fSlack;
@@ -184,7 +184,7 @@ xiiResult xiiFakeRopeComponent::ConfigureRopeSimulator()
   }
   else if (m_uiPieces > m_RopeSim.m_Nodes.GetCount())
   {
-    m_uiSleepCounter        = 0;
+    m_uiSleepCounter         = 0;
     const xiiUInt32 uiOldNum = m_RopeSim.m_Nodes.GetCount();
 
     m_RopeSim.m_Nodes.SetCount(m_uiPieces);
@@ -238,7 +238,7 @@ void xiiFakeRopeComponent::SendPreviewPose()
   xiiUInt32 uiHash = 0;
 
   xiiVec3 pos = GetOwner()->GetGlobalPosition();
-  uiHash     = xiiHashingUtils::xxHash32(&pos, sizeof(xiiVec3), uiHash);
+  uiHash      = xiiHashingUtils::xxHash32(&pos, sizeof(xiiVec3), uiHash);
 
   pos    = pAnchor1->GetGlobalPosition();
   uiHash = xiiHashingUtils::xxHash32(&pos, sizeof(xiiVec3), uiHash);
