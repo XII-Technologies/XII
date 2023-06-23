@@ -606,6 +606,14 @@ namespace xiiGAL
       m_uiMax = xiiMath::Max(m_uiMax, uiMax);
     }
 
+    XII_FORCE_INLINE bool HasIncludeValue(xiiUInt32 uiValue)
+    {
+      if (!IsValid())
+        return false;
+
+      return uiValue >= m_uiMin && uiValue <= m_uiMax;
+    }
+
     XII_ALWAYS_INLINE bool IsValid() const { return m_uiMin <= m_uiMax; }
 
     XII_ALWAYS_INLINE xiiUInt32 GetCount() const { return m_uiMax - m_uiMin + 1; }
