@@ -657,7 +657,7 @@ XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentUtils::GetDefaultResourceS
 
   const Diligent::BIND_FLAGS& bindFlags = pTexture->GetDesc().BindFlags;
 
-// Some of these are exclusive, use with caution.
+  // Some of these are exclusive, use with caution.
   if (bindFlags & Diligent::BIND_RENDER_TARGET)
     defaultResourceState |= Diligent::RESOURCE_STATE_RENDER_TARGET;
   if (bindFlags & Diligent::BIND_DEPTH_STENCIL)
