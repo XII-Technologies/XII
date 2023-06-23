@@ -8,8 +8,3 @@ XII_ALWAYS_INLINE Diligent::ITextureView* xiiGALRenderTargetViewDiligent::GetDep
 {
   return m_pDepthStencilView;
 }
-
-XII_ALWAYS_INLINE Diligent::ITextureView* xiiGALRenderTargetViewDiligent::GetUnorderedAccessView()
-{
-  return m_pUnorderedAccessView;
-}

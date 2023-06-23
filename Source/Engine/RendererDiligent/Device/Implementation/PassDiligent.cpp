@@ -1,11 +1,14 @@
 #include <RendererDiligent/RendererDiligentPCH.h>
 
-#include <RendererDiligent/CommandEncoder/CommandEncoderImplDiligent.h>
-#include <RendererDiligent/Device/DeviceDiligent.h>
-#include <RendererDiligent/Device/PassDiligent.h>
 #include <RendererFoundation/CommandEncoder/CommandEncoderState.h>
 #include <RendererFoundation/CommandEncoder/ComputeCommandEncoder.h>
 #include <RendererFoundation/CommandEncoder/RenderCommandEncoder.h>
+
+#include <RendererDiligent/CommandEncoder/CommandEncoderImplDiligent.h>
+#include <RendererDiligent/Device/DeviceDiligent.h>
+#include <RendererDiligent/Device/PassDiligent.h>
+#include <RendererDiligent/Resources/RenderTargetViewDiligent.h>
+#include <RendererDiligent/Resources/TextureDiligent.h>
 
 XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt32) == sizeof(xiiGALRenderTargetViewHandle));
 namespace

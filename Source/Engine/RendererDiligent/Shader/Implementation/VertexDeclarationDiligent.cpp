@@ -1,9 +1,10 @@
 #include <RendererDiligent/RendererDiligentPCH.h>
 
+#include <RendererFoundation/Shader/Shader.h>
+
 #include <RendererDiligent/Device/DeviceDiligent.h>
 #include <RendererDiligent/Shader/ShaderDiligent.h>
 #include <RendererDiligent/Shader/VertexDeclarationDiligent.h>
-#include <RendererFoundation/Shader/Shader.h>
 
 #if BUILDSYSTEM_ENABLE_D3D11_SUPPORT || BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 

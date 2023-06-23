@@ -152,6 +152,8 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALShaderDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
+  // xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+
   for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
   {
     XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pShaderStages[i]);

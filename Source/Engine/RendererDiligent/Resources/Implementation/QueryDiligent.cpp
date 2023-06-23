@@ -45,6 +45,8 @@ xiiResult xiiGALQueryDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALQueryDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
+  // xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pQuery);
 
   return XII_SUCCESS;

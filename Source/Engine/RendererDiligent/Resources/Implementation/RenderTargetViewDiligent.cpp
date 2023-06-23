@@ -6,8 +6,13 @@
 
 XII_CHECK_AT_COMPILETIME(XII_GAL_MAX_RENDERTARGET_COUNT == Diligent::MAX_RENDER_TARGETS);
 
+bool IsArrayView(const xiiGALTextureCreationDescription& texDesc, const xiiGALRenderTargetViewCreationDescription& viewDesc)
+{
+  return texDesc.m_uiArraySize > 1 || viewDesc.m_uiFirstSlice > 0;
+}
+
 xiiGALRenderTargetViewDiligent::xiiGALRenderTargetViewDiligent(xiiGALTexture* pTexture, const xiiGALRenderTargetViewCreationDescription& Description) :
-  xiiGALRenderTargetView(pTexture, Description), m_pRenderTargetView(nullptr), m_pDepthStencilView(nullptr), m_pUnorderedAccessView(nullptr)
+  xiiGALRenderTargetView(pTexture, Description), m_pRenderTargetView(nullptr), m_pDepthStencilView(nullptr)
 {
 }
 
@@ -42,6 +47,7 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
   if (m_Description.m_OverrideViewFormat != xiiGALResourceFormat::Invalid)
     viewFormat = m_Description.m_OverrideViewFormat;
 
+  const bool bIsArrayView   = IsArrayView(texDesc, m_Description);
   const bool bIsDepthFormat = xiiGALResourceFormat::IsDepthFormat(viewFormat);
   ViewFormat                = bIsDepthFormat ? pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eDepthStencilType : pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eRenderTarget;
 
@@ -122,8 +128,19 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
     case xiiGALTextureType::TextureCube:
     case xiiGALTextureType::TextureCubeArray:
     {
-      xiiLog::Error("Unexpected render target view type '{}' for texture '{}'.", texDesc.m_Type, texDesc.m_szName);
-      return XII_FAILURE;
+      if (texDesc.m_SampleCount == xiiGALMSAASampleCount::None)
+      {
+        viewDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+        viewDesc.NumArraySlices  = m_Description.m_uiSliceCount;
+        viewDesc.FirstArraySlice = m_Description.m_uiFirstSlice;
+        viewDesc.MostDetailedMip = m_Description.m_uiMipLevel;
+      }
+      else
+      {
+        viewDesc.TextureDim      = Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+        viewDesc.NumArraySlices  = m_Description.m_uiSliceCount;
+        viewDesc.FirstArraySlice = m_Description.m_uiFirstSlice;
+      }
     }
     break;
 
@@ -149,9 +166,10 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALRenderTargetViewDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pRenderTargetView);
+  // xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDepthStencilView);
-  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pUnorderedAccessView);
+  XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pRenderTargetView);
 
   return XII_SUCCESS;
 }

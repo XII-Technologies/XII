@@ -207,6 +207,8 @@ xiiResult xiiGALTextureDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr
 
 xiiResult xiiGALTextureDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
+  // xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pTexture);
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pStagingTexture);
 

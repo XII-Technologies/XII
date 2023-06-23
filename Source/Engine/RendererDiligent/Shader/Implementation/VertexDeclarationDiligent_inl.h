@@ -3,3 +3,8 @@ XII_ALWAYS_INLINE const Diligent::InputLayoutDesc* xiiGALVertexDeclarationDilige
 {
   return &m_InputLayoutDesc;
 }
+
+XII_ALWAYS_INLINE xiiHybridArray<Diligent::LayoutElement, 8U>& xiiGALVertexDeclarationDiligent::GetInputLayoutElements()
+{
+  return m_InputElements;
+}

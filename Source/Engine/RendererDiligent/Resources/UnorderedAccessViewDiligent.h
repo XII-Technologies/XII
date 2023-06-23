@@ -24,9 +24,9 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
-  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pUnorderedAccessTextureView;
+  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pTextureView;
 
-  Diligent::RefCntAutoPtr<Diligent::IBufferView> m_pUnorderedAccessBufferView;
+  Diligent::RefCntAutoPtr<Diligent::IBufferView> m_pBufferView;
 };
 
 #include <RendererDiligent/Resources/Implementation/UnorderedAccessViewDiligent_inl.h>

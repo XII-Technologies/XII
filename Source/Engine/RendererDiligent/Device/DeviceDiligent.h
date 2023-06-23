@@ -14,6 +14,24 @@ using xiiGALFormatLookupTableDiligent = xiiGALFormatLookupTable<xiiGALFormatLook
 
 class xiiPipelineBarrierDiligent;
 
+enum class xiiResourceObjectType
+{
+  Buffer,
+  SRVBufferView,
+  UAVBufferView,
+  Texture,
+  SRVTextureView,
+  UAVTextureView,
+  ImageView,
+  Framebuffer,
+  Renderpass,
+  PipelineState,
+  Shader,
+  Query,
+  Swapchain,
+  Sampler
+};
+
 /// \brief The Diligent device implementation of the graphics abstraction layer.
 class XII_RENDERERDILIGENT_DLL xiiGALDeviceDiligent : public xiiGALDevice
 {
@@ -28,6 +46,14 @@ public:
   virtual ~xiiGALDeviceDiligent();
 
 public:
+  struct PendingDeletion
+  {
+    XII_DECLARE_POD_TYPE();
+
+    xiiResourceObjectType                            m_ObjectType;
+    Diligent::RefCntAutoPtr<Diligent::IDeviceObject> m_pObject;
+  };
+
   Diligent::IRenderDevice*  GetDevice();
   Diligent::IDeviceContext* GetImmediateContext();
   Diligent::IEngineFactory* GetFactory();
@@ -38,14 +64,16 @@ public:
 
   void ReportLiveGpuObjects();
 
+  void DeleteLater(const PendingDeletion& deletion);
+
   // These functions need to be implemented by a render API abstraction
 protected:
-  // Init & shutdown functions
+  // Init and shutdown functions
 
   virtual xiiResult InitPlatform() override;
   virtual xiiResult ShutdownPlatform() override;
 
-  // Pipeline & Pass functions
+  // Pipeline and Pass functions
 
   virtual void BeginPipelinePlatform(const char* szName, xiiGALSwapChain* pSwapChain) override;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override;
@@ -102,8 +130,6 @@ protected:
   virtual xiiGALTimestampHandle GetTimestampPlatform() override;
   virtual xiiResult             GetTimestampResultPlatform(xiiGALTimestampHandle hTimestamp, xiiTime& result) override;
 
-  // Swap chain functions
-
   // Misc functions
 
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame) override;
@@ -118,17 +144,28 @@ protected:
 protected:
   friend class xiiGALCommandEncoderImplDiligent;
 
+  struct PerFrameData
+  {
+    xiiHybridArray<Diligent::RefCntAutoPtr<Diligent::IFence>, 2u> m_SubmittedFences;
+
+    xiiUInt64 m_uiFrame            = -1;
+    double    m_fInvTicksPerSecond = -1.0;
+
+    xiiMutex                  m_PendingDeletionsMutex;
+    xiiDeque<PendingDeletion> m_PendingDeletions;
+    xiiDeque<PendingDeletion> m_PreviousPendingDeletions;
+  };
+
+  void DeletePendingResources(xiiDeque<PendingDeletion>& pendingDeletions);
+
   void FillFormatLookupTable();
 
   bool IsFenceReachedPlatform(Diligent::IDeviceContext* pContext, Diligent::IQuery* pFence);
-
   void WaitForFencePlatform(Diligent::IDeviceContext* pContext, Diligent::IQuery* pFence);
 
-  Diligent::IBuffer* FindTempBuffer(xiiUInt32 uiSize);
-
+  Diligent::IBuffer*  FindTempBuffer(xiiUInt32 uiSize);
   Diligent::ITexture* FindTempTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiGALResourceFormat::Enum format);
-
-  void FreeTempResources(xiiUInt64 uiFrame);
+  void                FreeTempResources(xiiUInt64 uiFrame);
 
   Diligent::RENDER_DEVICE_TYPE                                       m_DeviceType = Diligent::RENDER_DEVICE_TYPE_UNDEFINED;
   Diligent::RefCntAutoPtr<Diligent::IEngineFactory>                  m_pEngineFactory;
@@ -147,6 +184,13 @@ protected:
 
   xiiUniquePtr<xiiGALPassDiligent>         m_pDefaultPass;
   xiiUniquePtr<xiiPipelineBarrierDiligent> m_pPipelineBarrier;
+
+  xiiUInt64 m_uiFrameCounter        = 1u; ///< We start at 1 so m_uiFrameCounter and m_uiSafeFrame are not equal at the start.
+  xiiUInt64 m_uiSafeFrame           = 0u;
+  xiiUInt8  m_uiCurrentPerFrameData = 0u;
+  xiiUInt8  m_uiNextPerFrameData    = 0u;
+
+  PerFrameData m_PerFrameData[4];
 
   struct UsedTempResource
   {

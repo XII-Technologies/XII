@@ -109,6 +109,8 @@ xiiResult xiiGALBufferDiligent::InitPlatform(xiiGALDevice* pDevice, xiiArrayPtr<
 
 xiiResult xiiGALBufferDiligent::DeInitPlatform(xiiGALDevice* pDevice)
 {
+  // xiiGALDeviceDiligent* pDeviceDiligent = static_cast<xiiGALDeviceDiligent*>(pDevice);
+
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pBuffer);
 
   return XII_SUCCESS;

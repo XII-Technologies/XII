@@ -6,6 +6,7 @@
 #include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Types/Bitflags.h>
+
 #include <RendererFoundation/CommandEncoder/CommandEncoderPlatformInterface.h>
 #include <RendererFoundation/Resources/RenderTargetSetup.h>
 
@@ -137,10 +138,9 @@ public:
 
 protected:
   void FlushDeferredStateChanges();
-
   void TransitionResources();
-
   void FillShaderDescriptorBindings(Diligent::IShaderResourceBinding* pResourceBinding);
+  void ClearActiveDebugGroups();
 
 private:
   friend class xiiGALPassDiligent;
@@ -150,6 +150,10 @@ private:
 
   Diligent::IDeviceContext* m_pContext = nullptr;
 
+  // Synchronization Fences
+  Diligent::RefCntAutoPtr<Diligent::IFence> m_pReadBackFence;
+  xiiUInt64                                 m_uiReadBackFenceCompletedValue = 0u;
+
   // Pipeline State
   xiiPipelineBarrierDiligent*                                                                   m_pPipelineBarrier;
   xiiHashTable<Diligent::GraphicsPipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash> m_CachedGraphicsPipelineStates;
@@ -158,12 +162,14 @@ private:
   Diligent::IPipelineState*         m_pCurrentPipelineState         = nullptr;
   Diligent::IShaderResourceBinding* m_pCurrentShaderResourceBinding = nullptr;
 
+  // Render Pass and Frame Buffer
   Diligent::IRenderPass*                                                            m_pRenderPass  = nullptr;
   Diligent::IFramebuffer*                                                           m_pFramebuffer = nullptr;
   xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_ClearValues;
 
+  // Pipeline State Description
   Diligent::PRIMITIVE_TOPOLOGY           m_PrimitiveTopology  = {};
-  const xiiGALVertexDeclarationDiligent* m_pVertexDeclaration = nullptr;
+  xiiGALVertexDeclarationDiligent*       m_pVertexDeclaration = nullptr;
   const xiiGALBlendStateDiligent*        m_pBlendStateState   = nullptr;
   const xiiGALDepthStencilStateDiligent* m_pDepthStencilState = nullptr;
   const xiiGALRasterizerStateDiligent*   m_pRasterizerState   = nullptr;
@@ -201,6 +207,8 @@ private:
   Diligent::IBuffer*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {nullptr};
   xiiGAL::ModifiedRange m_BoundVertexBuffersRange;
 
-  Diligent::Uint64 m_VertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiUInt32        m_VertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
   Diligent::Uint64 m_VertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+
+  xiiUInt32 m_uiActiveDebugGroups = 0u;
 };
