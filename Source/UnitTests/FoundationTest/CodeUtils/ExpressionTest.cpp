@@ -103,10 +103,10 @@ namespace
   };
 
   template <>
-  struct StreamDataTypeDeduction<int>
+  struct StreamDataTypeDeduction<xiiInt32>
   {
     static constexpr xiiProcessingStream::DataType Type = xiiProcessingStream::DataType::Int;
-    static int                                     Default() { return xiiMath::MinValue<int>(); }
+    static xiiInt32                                Default() { return xiiMath::MinValue<xiiInt32>(); }
   };
 
   template <>
@@ -120,7 +120,7 @@ namespace
   struct StreamDataTypeDeduction<xiiVec3I32>
   {
     static constexpr xiiProcessingStream::DataType Type = xiiProcessingStream::DataType::Int3;
-    static xiiVec3I32                              Default() { return xiiVec3I32(xiiMath::MinValue<int>()); }
+    static xiiVec3I32                              Default() { return xiiVec3I32(xiiMath::MinValue<xiiInt32>()); }
   };
 
   template <typename T>
@@ -196,7 +196,7 @@ namespace
   void TestBinaryInstruction(xiiStringView sOp, T a, T b, T expectedResult, bool bDumpASTs = false)
   {
     constexpr bool boolInputs = std::is_same<T, bool>::value;
-    using U                   = typename std::conditional<boolInputs, int, T>::type;
+    using U                   = typename std::conditional<boolInputs, xiiInt32, T>::type;
 
     U aAsU;
     U bAsU;
@@ -219,7 +219,7 @@ namespace
       {
         XII_TEST_FLOAT_MSG(res, expectedRes, xiiMath::DefaultEpsilon<float>(), "%s (a=%s, b=%s)", szCode, szAValue, szBValue);
       }
-      else if constexpr (std::is_same<T, int>::value)
+      else if constexpr (std::is_same<T, xiiInt32>::value)
       {
         XII_TEST_INT_MSG(res, expectedRes, "%s (a=%s, b=%s)", szCode, szAValue, szBValue);
       }
@@ -263,8 +263,8 @@ namespace
       bValue.Format("{}", b);
     }
 
-    int oneConstantInstructions = 3; // LoadX, OpX_RC, StoreX
-    int oneConstantRegisters    = 1;
+    xiiInt32 oneConstantInstructions = 3; // LoadX, OpX_RC, StoreX
+    xiiInt32 oneConstantRegisters    = 1;
     if constexpr (std::is_same<R, bool>::value)
     {
       oneConstantInstructions += 3; // + MovX_C, MovX_C, SelI_RRR
@@ -275,13 +275,13 @@ namespace
       oneConstantInstructions += 1; // + NotEqI_RC
     }
 
-    int  numOutputElements          = 1;
-    bool hasDifferentOutputElements = false;
+    xiiInt32 numOutputElements          = 1;
+    bool     hasDifferentOutputElements = false;
     if constexpr (std::is_same<T, xiiVec3>::value || std::is_same<T, xiiVec3I32>::value)
     {
       numOutputElements = 3;
 
-      for (int i = 1; i < 3; ++i)
+      for (xiiInt32 i = 1; i < 3; ++i)
       {
         if (expectedResult.GetData()[i] != expectedResult.GetData()[i - 1])
         {
@@ -302,8 +302,8 @@ namespace
     Compile<U>(code, byteCode, bDumpASTs ? "BinaryLeftConstant" : "");
     if constexpr ((flags & NoInstructionsCountCheck) == 0)
     {
-      int leftConstantInstructions = oneConstantInstructions;
-      int leftConstantRegisters    = oneConstantRegisters;
+      xiiInt32 leftConstantInstructions = oneConstantInstructions;
+      xiiInt32 leftConstantRegisters    = oneConstantRegisters;
       if constexpr ((flags & LeftConstantOptimization) == 0)
       {
         leftConstantInstructions += 1;
@@ -336,8 +336,8 @@ namespace
     Compile<U>(code, byteCode, bDumpASTs ? "BinaryConstant" : "");
     if (hasDifferentOutputElements == false)
     {
-      int bothConstantsInstructions = 1 + numOutputElements; // MovX_C + StoreX * numOutputElements
-      int bothConstantsRegisters    = 1;
+      xiiInt32 bothConstantsInstructions = 1 + numOutputElements; // MovX_C + StoreX * numOutputElements
+      xiiInt32 bothConstantsRegisters    = 1;
       if (byteCode.GetNumInstructions() != bothConstantsInstructions || byteCode.GetNumTempRegisters() != bothConstantsRegisters)
       {
         DumpDisassembly(byteCode, "BinaryConstant", 0);
@@ -483,13 +483,13 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     // Negate
     XII_TEST_INT(TestInstruction("output = -a", 2), -2);
     XII_TEST_FLOAT(TestInstruction("output = -a", 2.5f), -2.5f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_INT(TestConstant<int>("output = -2"), -2);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = -2"), -2);
     XII_TEST_FLOAT(TestConstant<float>("output = -2.5"), -2.5f, xiiMath::DefaultEpsilon<float>());
 
     // Absolute
     XII_TEST_INT(TestInstruction("output = abs(a)", -2), 2);
     XII_TEST_FLOAT(TestInstruction("output = abs(a)", -2.5f), 2.5f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_INT(TestConstant<int>("output = abs(-2)"), 2);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = abs(-2)"), 2);
     XII_TEST_FLOAT(TestConstant<float>("output = abs(-2.5)"), 2.5f, xiiMath::DefaultEpsilon<float>());
 
     // Saturate
@@ -498,8 +498,8 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     XII_TEST_FLOAT(TestInstruction("output = saturate(a)", -1.5f), 0.0f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestInstruction("output = saturate(a)", 2.5f), 1.0f, xiiMath::DefaultEpsilon<float>());
 
-    XII_TEST_INT(TestConstant<int>("output = saturate(-1)"), 0);
-    XII_TEST_INT(TestConstant<int>("output = saturate(2)"), 1);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = saturate(-1)"), 0);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = saturate(2)"), 1);
     XII_TEST_FLOAT(TestConstant<float>("output = saturate(-1.5)"), 0.0f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = saturate(2.5)"), 1.0f, xiiMath::DefaultEpsilon<float>());
 
@@ -527,8 +527,8 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     XII_TEST_FLOAT(TestInstruction("output = log2(a)", 1.0f), 0.0f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestInstruction("output = log2(a)", 4.0f), 2.0f, xiiMath::DefaultEpsilon<float>());
 
-    XII_TEST_INT(TestConstant<int>("output = log2(1)"), 0);
-    XII_TEST_INT(TestConstant<int>("output = log2(16)"), 4);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = log2(1)"), 0);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = log2(16)"), 4);
     XII_TEST_FLOAT(TestConstant<float>("output = log2(1.0)"), 0.0f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = log2(32.0)"), 5.0f, xiiMath::DefaultEpsilon<float>());
 
@@ -544,8 +544,8 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     XII_TEST_FLOAT(TestInstruction("output = pow2(a)", 4.0f), 16.0f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestInstruction("output = pow2(a)", 6.0f), 64.0f, xiiMath::DefaultEpsilon<float>());
 
-    XII_TEST_INT(TestConstant<int>("output = pow2(0)"), 1);
-    XII_TEST_INT(TestConstant<int>("output = pow2(3)"), 8);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = pow2(0)"), 1);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = pow2(3)"), 8);
     XII_TEST_FLOAT(TestConstant<float>("output = pow2(3.0)"), 8.0f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = pow2(5.0)"), 32.0f, xiiMath::DefaultEpsilon<float>());
 
@@ -662,14 +662,14 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     // BitwiseNot
     XII_TEST_INT(TestInstruction("output = ~a", 1), ~1);
     XII_TEST_INT(TestInstruction("output = ~a", 8), ~8);
-    XII_TEST_INT(TestConstant<int>("output = ~1"), ~1);
-    XII_TEST_INT(TestConstant<int>("output = ~17"), ~17);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = ~1"), ~1);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = ~17"), ~17);
 
     // LogicalNot
     XII_TEST_INT(TestInstruction("output = !(a == 1)", 1), 0);
     XII_TEST_INT(TestInstruction("output = !(a == 1)", 8), 1);
-    XII_TEST_INT(TestConstant<int>("output = !(1 == 1)"), 0);
-    XII_TEST_INT(TestConstant<int>("output = !(8 == 1)"), 1);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = !(1 == 1)"), 0);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = !(8 == 1)"), 1);
 
     // All
     XII_TEST_VEC3(TestInstruction("var t = (a == b); output = all(t)", xiiVec3(1, 2, 3), xiiVec3(1, 2, 3)), xiiVec3(1), xiiMath::DefaultEpsilon<float>());
@@ -683,28 +683,28 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Binary instructions")
   {
     // Add
-    TestBinaryInstruction<int, int, LeftConstantOptimization>("+", 3, 5, 8);
+    TestBinaryInstruction<xiiInt32, xiiInt32, LeftConstantOptimization>("+", 3, 5, 8);
     TestBinaryInstruction<float, float, LeftConstantOptimization>("+", 3.5f, 5.3f, 8.8f);
 
     // Subtract
-    TestBinaryInstruction<int, int, 0>("-", 9, 5, 4);
+    TestBinaryInstruction<xiiInt32, xiiInt32, 0>("-", 9, 5, 4);
     TestBinaryInstruction<float, float, 0>("-", 9.5f, 5.3f, 4.2f);
 
     // Multiply
-    TestBinaryInstruction<int, int, LeftConstantOptimization>("*", 3, 5, 15);
+    TestBinaryInstruction<xiiInt32, xiiInt32, LeftConstantOptimization>("*", 3, 5, 15);
     TestBinaryInstruction<float, float, LeftConstantOptimization>("*", 3.5f, 5.3f, 18.55f);
 
     // Divide
-    TestBinaryInstruction<int, int, 0>("/", 11, 5, 2);
-    TestBinaryInstruction<int, int, NoInstructionsCountCheck>("/", -11, 4, -2); // divide by power of 2 optimization
-    TestBinaryInstruction<int, int, 0>("/", 11, -4, -2);                        // divide by power of 2 optimization only works for positive divisors
+    TestBinaryInstruction<xiiInt32, xiiInt32, 0>("/", 11, 5, 2);
+    TestBinaryInstruction<xiiInt32, xiiInt32, NoInstructionsCountCheck>("/", -11, 4, -2); // divide by power of 2 optimization
+    TestBinaryInstruction<xiiInt32, xiiInt32, 0>("/", 11, -4, -2);                        // divide by power of 2 optimization only works for positive divisors
     TestBinaryInstruction<float, float, 0>("/", 12.6f, 3.0f, 4.2f);
 
     // Modulo
-    TestBinaryInstruction<int, int, NoInstructionsCountCheck>("%", 13, 5, 3);
-    TestBinaryInstruction<int, int, NoInstructionsCountCheck>("%", -13, 5, -3);
-    TestBinaryInstruction<int, int, NoInstructionsCountCheck>("%", 13, 4, 1);
-    TestBinaryInstruction<int, int, NoInstructionsCountCheck>("%", -13, 4, -1);
+    TestBinaryInstruction<xiiInt32, xiiInt32, NoInstructionsCountCheck>("%", 13, 5, 3);
+    TestBinaryInstruction<xiiInt32, xiiInt32, NoInstructionsCountCheck>("%", -13, 5, -3);
+    TestBinaryInstruction<xiiInt32, xiiInt32, NoInstructionsCountCheck>("%", 13, 4, 1);
+    TestBinaryInstruction<xiiInt32, xiiInt32, NoInstructionsCountCheck>("%", -13, 4, -1);
     TestBinaryInstruction<float, float, NoInstructionsCountCheck>("%", 13.5, 5.0, 3.5);
     TestBinaryInstruction<float, float, NoInstructionsCountCheck>("mod(", -13.5, 5.0, -3.5);
 
@@ -713,18 +713,18 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     TestBinaryInstruction<float, float, NoInstructionsCountCheck>("log(", 7.1f, 81.62f, xiiMath::Log(7.1f, 81.62f));
 
     // Pow
-    TestBinaryInstruction<int, int, NoInstructionsCountCheck>("pow(", 2, 5, 32);
-    TestBinaryInstruction<int, int, NoInstructionsCountCheck>("pow(", 3, 3, 27);
+    TestBinaryInstruction<xiiInt32, xiiInt32, NoInstructionsCountCheck>("pow(", 2, 5, 32);
+    TestBinaryInstruction<xiiInt32, xiiInt32, NoInstructionsCountCheck>("pow(", 3, 3, 27);
 
     // Pow is replaced by multiplication for constant exponents up until 16.
     // Test all of them to ensure the multiplication tables are correct.
-    for (int i = 0; i <= 16; ++i)
+    for (xiiInt32 i = 0; i <= 16; ++i)
     {
       xiiStringBuilder testCode;
       testCode.Format("output = pow(a, {})", i);
 
       xiiExpressionByteCode testByteCode;
-      Compile<int>(testCode, testByteCode);
+      Compile<xiiInt32>(testCode, testByteCode);
       XII_TEST_INT(Execute(testByteCode, 3), xiiMath::Pow(3, i));
     }
 
@@ -733,7 +733,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
       xiiStringView referenceCode = "var a2 = a * a; var a3 = a2 * a; var a6 = a3 * a3; output = a6 * a";
 
       xiiExpressionByteCode testByteCode;
-      XII_TEST_BOOL(CompareCode<int>(testCode, referenceCode, testByteCode));
+      XII_TEST_BOOL(CompareCode<xiiInt32>(testCode, referenceCode, testByteCode));
       XII_TEST_INT(Execute(testByteCode, 3), 2187);
     }
 
@@ -750,11 +750,11 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     }
 
     // Min
-    TestBinaryInstruction<int, int, LeftConstantOptimization>("min(", 11, 5, 5);
+    TestBinaryInstruction<xiiInt32, xiiInt32, LeftConstantOptimization>("min(", 11, 5, 5);
     TestBinaryInstruction<float, float, LeftConstantOptimization>("min(", 12.6f, 3.0f, 3.0f);
 
     // Max
-    TestBinaryInstruction<int, int, LeftConstantOptimization>("max(", 11, 5, 11);
+    TestBinaryInstruction<xiiInt32, xiiInt32, LeftConstantOptimization>("max(", 11, 5, 11);
     TestBinaryInstruction<float, float, LeftConstantOptimization>("max(", 12.6f, 3.0f, 12.6f);
 
     // Dot
@@ -770,51 +770,51 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     TestBinaryInstruction<xiiVec3, xiiVec3, NoInstructionsCountCheck>("reflect(", xiiVec3(1, 2, -1), xiiVec3(0, 0, 1), xiiVec3(1, 2, 1));
 
     // BitshiftLeft
-    TestBinaryInstruction<int, int, 0>("<<", 11, 5, 11 << 5);
+    TestBinaryInstruction<xiiInt32, xiiInt32, 0>("<<", 11, 5, 11 << 5);
 
     // BitshiftRight
-    TestBinaryInstruction<int, int, 0>(">>", 0xABCD, 8, 0xAB);
+    TestBinaryInstruction<xiiInt32, xiiInt32, 0>(">>", 0xABCD, 8, 0xAB);
 
     // BitwiseAnd
-    TestBinaryInstruction<int, int, LeftConstantOptimization>("&", 0xFFCD, 0xABFF, 0xABCD);
+    TestBinaryInstruction<xiiInt32, xiiInt32, LeftConstantOptimization>("&", 0xFFCD, 0xABFF, 0xABCD);
 
     // BitwiseXor
-    TestBinaryInstruction<int, int, LeftConstantOptimization>("^", 0xFFCD, 0xABFF, 0xFFCD ^ 0xABFF);
+    TestBinaryInstruction<xiiInt32, xiiInt32, LeftConstantOptimization>("^", 0xFFCD, 0xABFF, 0xFFCD ^ 0xABFF);
 
     // BitwiseOr
-    TestBinaryInstruction<int, int, LeftConstantOptimization>("|", 0x00CD, 0xAB00, 0xABCD);
+    TestBinaryInstruction<xiiInt32, xiiInt32, LeftConstantOptimization>("|", 0x00CD, 0xAB00, 0xABCD);
 
     // Equal
-    TestBinaryInstruction<bool, int, LeftConstantOptimization>("==", 11, 5, 0);
+    TestBinaryInstruction<bool, xiiInt32, LeftConstantOptimization>("==", 11, 5, 0);
     TestBinaryInstruction<bool, float, LeftConstantOptimization>("==", 12.6f, 3.0f, 0.0f);
     TestBinaryInstruction<bool, bool, LeftConstantOptimization>("==", true, false, false);
 
     // NotEqual
-    TestBinaryInstruction<bool, int, LeftConstantOptimization>("!=", 11, 5, 1);
+    TestBinaryInstruction<bool, xiiInt32, LeftConstantOptimization>("!=", 11, 5, 1);
     TestBinaryInstruction<bool, float, LeftConstantOptimization>("!=", 12.6f, 3.0f, 1.0f);
     TestBinaryInstruction<bool, bool, LeftConstantOptimization>("!=", true, false, true);
 
     // Less
-    TestBinaryInstruction<bool, int, LeftConstantOptimization>("<", 11, 5, 0);
-    TestBinaryInstruction<bool, int, LeftConstantOptimization>("<", 11, 11, 0);
+    TestBinaryInstruction<bool, xiiInt32, LeftConstantOptimization>("<", 11, 5, 0);
+    TestBinaryInstruction<bool, xiiInt32, LeftConstantOptimization>("<", 11, 11, 0);
     TestBinaryInstruction<bool, float, LeftConstantOptimization>("<", 12.6f, 3.0f, 0.0f);
     TestBinaryInstruction<bool, float, LeftConstantOptimization>("<", 12.6f, 12.6f, 0.0f);
 
     // LessEqual
-    TestBinaryInstruction<bool, int, LeftConstantOptimization>("<=", 11, 5, 0);
-    TestBinaryInstruction<bool, int, LeftConstantOptimization>("<=", 11, 11, 1);
+    TestBinaryInstruction<bool, xiiInt32, LeftConstantOptimization>("<=", 11, 5, 0);
+    TestBinaryInstruction<bool, xiiInt32, LeftConstantOptimization>("<=", 11, 11, 1);
     TestBinaryInstruction<bool, float, LeftConstantOptimization>("<=", 12.6f, 3.0f, 0.0f);
     TestBinaryInstruction<bool, float, LeftConstantOptimization>("<=", 12.6f, 12.6f, 1.0f);
 
     // Greater
-    TestBinaryInstruction<bool, int, LeftConstantOptimization>(">", 11, 5, 1);
-    TestBinaryInstruction<bool, int, LeftConstantOptimization>(">", 11, 11, 0);
+    TestBinaryInstruction<bool, xiiInt32, LeftConstantOptimization>(">", 11, 5, 1);
+    TestBinaryInstruction<bool, xiiInt32, LeftConstantOptimization>(">", 11, 11, 0);
     TestBinaryInstruction<bool, float, LeftConstantOptimization>(">", 12.6f, 3.0f, 1.0f);
     TestBinaryInstruction<bool, float, LeftConstantOptimization>(">", 12.6f, 12.6f, 0.0f);
 
     // GreaterEqual
-    TestBinaryInstruction<bool, int, LeftConstantOptimization>(">=", 11, 5, 1);
-    TestBinaryInstruction<bool, int, LeftConstantOptimization>(">=", 11, 11, 1);
+    TestBinaryInstruction<bool, xiiInt32, LeftConstantOptimization>(">=", 11, 5, 1);
+    TestBinaryInstruction<bool, xiiInt32, LeftConstantOptimization>(">=", 11, 11, 1);
     TestBinaryInstruction<bool, float, LeftConstantOptimization>(">=", 12.6f, 3.0f, 1.0f);
     TestBinaryInstruction<bool, float, LeftConstantOptimization>(">=", 12.6f, 12.6f, 1.0f);
 
@@ -835,8 +835,8 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     XII_TEST_FLOAT(TestInstruction("output = clamp(a, b, c)", -1.5f, 0.0f, 1.0f), 0.0f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestInstruction("output = clamp(a, b, c)", 2.5f, 0.0f, 1.0f), 1.0f, xiiMath::DefaultEpsilon<float>());
 
-    XII_TEST_INT(TestConstant<int>("output = clamp(-1, 0, 10)"), 0);
-    XII_TEST_INT(TestConstant<int>("output = clamp(2, 0, 10)"), 2);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = clamp(-1, 0, 10)"), 0);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = clamp(2, 0, 10)"), 2);
     XII_TEST_FLOAT(TestConstant<float>("output = clamp(-1.5, 0, 2)"), 0.0f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = clamp(2.5, 0, 2)"), 2.0f, xiiMath::DefaultEpsilon<float>());
 
@@ -848,12 +848,12 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     XII_TEST_INT(TestInstruction("output = (a == 1) ? (b > 2) : (c > 2)", 1, 2, 3), 0);
     XII_TEST_INT(TestInstruction("output = a != 1 ? b > 2 : c > 2", 1, 2, 3), 1);
 
-    XII_TEST_INT(TestConstant<int>("output = (1 == 1) ? 2 : 3"), 2);
-    XII_TEST_INT(TestConstant<int>("output = 1 != 1 ? 2 : 3"), 3);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = (1 == 1) ? 2 : 3"), 2);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = 1 != 1 ? 2 : 3"), 3);
     XII_TEST_FLOAT(TestConstant<float>("output = (1.0 == 1.0) ? 2.4 : 3.5"), 2.4f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = 1.0 != 1.0 ? 2.4 : 3.5"), 3.5f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_INT(TestConstant<int>("output = (1 == 1) ? false : true"), 0);
-    XII_TEST_INT(TestConstant<int>("output = 1 != 1 ? false : true"), 1);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = (1 == 1) ? false : true"), 0);
+    XII_TEST_INT(TestConstant<xiiInt32>("output = 1 != 1 ? false : true"), 1);
 
     // Lerp
     XII_TEST_FLOAT(TestInstruction("output = lerp(a, b, c)", 1.0f, 5.0f, 0.75f), 4.0f, xiiMath::DefaultEpsilon<float>());
@@ -909,10 +909,10 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     xiiExpressionByteCode testByteCode;
 
     xiiStringView code = "output = ((a & 0xFF) << 8) | (b & 0xFFFF >> 8)";
-    Compile<int>(code, testByteCode);
+    Compile<xiiInt32>(code, testByteCode);
 
-    const int a = 0xABABABAB;
-    const int b = 0xCDCDCDCD;
+    const xiiInt32 a = 0xABABABAB;
+    const xiiInt32 b = 0xCDCDCDCD;
     XII_TEST_INT(Execute(testByteCode, a, b), 0xABCD);
   }
 
@@ -935,9 +935,9 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
 
     {
       xiiExpressionByteCode testByteCode;
-      XII_TEST_BOOL(CompareCode<int>(testCode, referenceCode, testByteCode));
+      XII_TEST_BOOL(CompareCode<xiiInt32>(testCode, referenceCode, testByteCode));
 
-      XII_TEST_INT(Execute<int>(testByteCode), 42);
+      XII_TEST_INT(Execute<xiiInt32>(testByteCode), 42);
     }
 
     testCode = "";
@@ -965,7 +965,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
       xiiStringView referenceCode = "output = (a + 2) + (b + -1) + (c * 2) + (d / 5) + min(c, 1) + max(d, 2)";
 
       xiiExpressionByteCode testByteCode;
-      XII_TEST_BOOL(CompareCode<int>(testCode, referenceCode, testByteCode));
+      XII_TEST_BOOL(CompareCode<xiiInt32>(testCode, referenceCode, testByteCode));
       XII_TEST_INT(testByteCode.GetNumInstructions(), 16);
       XII_TEST_INT(testByteCode.GetNumTempRegisters(), 4);
       XII_TEST_INT(Execute(testByteCode, 1, 2, 3, 40), 59);
@@ -976,13 +976,13 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
   {
     xiiStringView testCode = "var x = 7; var y = 0.6\n"
                              "var e = a * x * b * y\n"
-                             "int i = c * 2; i *= i; e += i\n"
+                             "xiiInt32 i = c * 2; i *= i; e += i\n"
                              "output = e";
 
-    xiiStringView referenceCode = "int i = (int(c) * 2); output = int((float(a * 7 * b) * 0.6) + float(i * i))";
+    xiiStringView referenceCode = "xiiInt32 i = (xiiInt32(c) * 2); output = xiiInt32((float(a * 7 * b) * 0.6) + float(i * i))";
 
     xiiExpressionByteCode testByteCode;
-    XII_TEST_BOOL(CompareCode<int>(testCode, referenceCode, testByteCode));
+    XII_TEST_BOOL(CompareCode<xiiInt32>(testCode, referenceCode, testByteCode));
     XII_TEST_INT(Execute(testByteCode, 1, 2, 3), 44);
   }
 
@@ -996,7 +996,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
       xiiStringView referenceCode = "bool r = true == (a != 0); output = r ? 1 : 0";
 
       xiiExpressionByteCode testByteCode;
-      XII_TEST_BOOL(CompareCode<int>(testCode, referenceCode, testByteCode));
+      XII_TEST_BOOL(CompareCode<xiiInt32>(testCode, referenceCode, testByteCode));
       XII_TEST_INT(Execute(testByteCode, 14), 1);
     }
 
@@ -1014,7 +1014,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     TestInputOutput<float>();
     TestInputOutput<xiiFloat16>();
 
-    TestInputOutput<int>();
+    TestInputOutput<xiiInt32>();
     TestInputOutput<xiiInt16>();
     TestInputOutput<xiiInt8>();
   }
@@ -1028,43 +1028,43 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     s_pVM->RegisterFunction(s_TestFunc2);
 
     {
-      // take TestFunc1 overload for all ints
+      // take TestFunc1 overload for all xiiInt32s
       xiiStringView         testCode = "output = TestFunc(1, 2, 3)";
       xiiExpressionByteCode testByteCode;
-      Compile<int>(testCode, testByteCode);
-      XII_TEST_INT(Execute<int>(testByteCode), 2);
+      Compile<xiiInt32>(testCode, testByteCode);
+      XII_TEST_INT(Execute<xiiInt32>(testByteCode), 2);
     }
 
     {
-      // take TestFunc1 overload for float, int
+      // take TestFunc1 overload for float, xiiInt32
       xiiStringView         testCode = "output = TestFunc(1.0, 2, 3)";
       xiiExpressionByteCode testByteCode;
-      Compile<int>(testCode, testByteCode);
-      XII_TEST_INT(Execute<int>(testByteCode), 2);
+      Compile<xiiInt32>(testCode, testByteCode);
+      XII_TEST_INT(Execute<xiiInt32>(testByteCode), 2);
     }
 
     {
-      // take TestFunc2 overload for int, float
+      // take TestFunc2 overload for xiiInt32, float
       xiiStringView         testCode = "output = TestFunc(1, 2.0, 3)";
       xiiExpressionByteCode testByteCode;
-      Compile<int>(testCode, testByteCode);
-      XII_TEST_INT(Execute<int>(testByteCode), 7);
+      Compile<xiiInt32>(testCode, testByteCode);
+      XII_TEST_INT(Execute<xiiInt32>(testByteCode), 7);
     }
 
     {
       // take TestFunc2 overload for all float
       xiiStringView         testCode = "output = TestFunc(1.0, 2.0, 3)";
       xiiExpressionByteCode testByteCode;
-      Compile<int>(testCode, testByteCode);
-      XII_TEST_INT(Execute<int>(testByteCode), 7);
+      Compile<xiiInt32>(testCode, testByteCode);
+      XII_TEST_INT(Execute<xiiInt32>(testByteCode), 7);
     }
 
     {
       // take TestFunc1 overload when only two params are given
       xiiStringView         testCode = "output = TestFunc(1.0, 2.0)";
       xiiExpressionByteCode testByteCode;
-      Compile<int>(testCode, testByteCode);
-      XII_TEST_INT(Execute<int>(testByteCode), 2);
+      Compile<xiiInt32>(testCode, testByteCode);
+      XII_TEST_INT(Execute<xiiInt32>(testByteCode), 2);
     }
 
     s_pParser->UnregisterFunction(s_TestFunc1.m_Desc);
@@ -1085,7 +1085,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     xiiStringView referenceCode = "var x = a * max(b, c); var y = a * 8; output = x + x + y + y";
 
     xiiExpressionByteCode testByteCode;
-    XII_TEST_BOOL(CompareCode<int>(testCode, referenceCode, testByteCode));
+    XII_TEST_BOOL(CompareCode<xiiInt32>(testCode, referenceCode, testByteCode));
     XII_TEST_INT(Execute(testByteCode, 2, 4, 8), 64);
   }
 

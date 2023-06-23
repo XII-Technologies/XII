@@ -284,30 +284,45 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
   return XII_SUCCESS;
 }
 
+static xiiResult ReadBytesChecked(xiiStreamReader& inout_stream, void* pDest, xiiUInt32 uiNumBytes)
+{
+  if (inout_stream.ReadBytes(pDest, uiNumBytes) == uiNumBytes)
+    return XII_SUCCESS;
+
+  return XII_FAILURE;
+}
+
+template <typename TYPE>
+static xiiResult ReadBytesChecked(xiiStreamReader& inout_stream, TYPE& ref_dest)
+{
+  return ReadBytesChecked(inout_stream, &ref_dest, sizeof(TYPE));
+}
+
 static xiiResult ReadImageHeaderImpl(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension, TgaHeader& ref_tgaHeader)
 {
-  ref_stream >> ref_tgaHeader.m_iImageIDLength;
-  ref_stream >> ref_tgaHeader.m_Ignored1;
-  ref_stream >> ref_tgaHeader.m_ImageType;
-  ref_stream.ReadBytes(&ref_tgaHeader.m_Ignored2, 9);
-  ref_stream >> ref_tgaHeader.m_iImageWidth;
-  ref_stream >> ref_tgaHeader.m_iImageHeight;
-  ref_stream >> ref_tgaHeader.m_iBitsPerPixel;
-  ref_stream >> reinterpret_cast<xiiUInt8&>(ref_tgaHeader.m_ImageDescriptor);
+  XII_SUCCEED_OR_RETURN(ReadBytesChecked(ref_stream, ref_tgaHeader.m_iImageIDLength));
+  XII_SUCCEED_OR_RETURN(ReadBytesChecked(ref_stream, ref_tgaHeader.m_Ignored1));
+  XII_SUCCEED_OR_RETURN(ReadBytesChecked(ref_stream, ref_tgaHeader.m_ImageType));
+  XII_SUCCEED_OR_RETURN(ReadBytesChecked(ref_stream, &ref_tgaHeader.m_Ignored2, 9));
+  XII_SUCCEED_OR_RETURN(ReadBytesChecked(ref_stream, ref_tgaHeader.m_iImageWidth));
+  XII_SUCCEED_OR_RETURN(ReadBytesChecked(ref_stream, ref_tgaHeader.m_iImageHeight));
+  XII_SUCCEED_OR_RETURN(ReadBytesChecked(ref_stream, ref_tgaHeader.m_iBitsPerPixel));
+  XII_SUCCEED_OR_RETURN(ReadBytesChecked(ref_stream, ref_tgaHeader.m_ImageDescriptor));
 
-  // ignore optional data
-  ref_stream.SkipBytes(ref_tgaHeader.m_iImageIDLength);
+  // Ignore optional data
+  if (ref_stream.SkipBytes(ref_tgaHeader.m_iImageIDLength) != ref_tgaHeader.m_iImageIDLength)
+    return XII_FAILURE;
 
   const xiiUInt32 uiBytesPerPixel = ref_tgaHeader.m_iBitsPerPixel / 8;
 
-  // check whether width, height an BitsPerPixel are valid
+  // Check if the width, height and BitsPerPixel are valid
   if ((ref_tgaHeader.m_iImageWidth <= 0) || (ref_tgaHeader.m_iImageHeight <= 0) || ((uiBytesPerPixel != 1) && (uiBytesPerPixel != 3) && (uiBytesPerPixel != 4)) || (ref_tgaHeader.m_ImageType != 2 && ref_tgaHeader.m_ImageType != 3 && ref_tgaHeader.m_ImageType != 10 && ref_tgaHeader.m_ImageType != 11))
   {
     xiiLog::Error("TGA has an invalid header: Width = {0}, Height = {1}, BPP = {2}, ImageType = {3}", ref_tgaHeader.m_iImageWidth, ref_tgaHeader.m_iImageHeight, ref_tgaHeader.m_iBitsPerPixel, ref_tgaHeader.m_ImageType);
     return XII_FAILURE;
   }
 
-  // Set image data
+  // Set the image data
 
   if (uiBytesPerPixel == 1)
     ref_header.SetImageFormat(xiiImageFormat::R8_UNORM);
@@ -414,7 +429,7 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
     {
       xiiUInt8 uiChunkHeader = 0;
 
-      ref_stream >> uiChunkHeader;
+      XII_SUCCEED_OR_RETURN(ReadBytesChecked(ref_stream, uiChunkHeader));
 
       const xiiInt32 numToRead = (uiChunkHeader & 127) + 1;
 
