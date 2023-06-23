@@ -62,25 +62,25 @@ void xiiQuatTemplate<Type>::Normalize()
 }
 
 template <typename Type>
-xiiResult xiiQuatTemplate<Type>::GetRotationAxisAndAngle(xiiVec3Template<Type>& ref_vAxis, xiiAngleTemplate<Type>& ref_angle, Type fEpsilon) const
+void xiiQuatTemplate<Type>::GetRotationAxisAndAngle(xiiVec3Template<Type>& ref_vAxis, xiiAngleTemplate<Type>& ref_angle, Type fEpsilon) const
 {
   XII_NAN_ASSERT(this);
 
-  const xiiAngleTemplate<Type> acos = xiiMath::ACos(static_cast<Type>(w));
-  const Type                   d    = xiiMath::Sin(acos);
+  ref_angle = 2.0f * xiiMath::ACos(static_cast<float>(w));
 
-  if (d < fEpsilon)
+  const float s  = xiiMath::Sqrt(1 - w * w);
+  const float ds = 1.0f / s;
+
+  if (s < fEpsilon)
   {
     ref_vAxis.Set(1, 0, 0);
   }
   else
   {
-    ref_vAxis = (v / static_cast<Type>(d));
+    ref_vAxis.x = v.x * ds;
+    ref_vAxis.y = v.y * ds;
+    ref_vAxis.z = v.z * ds;
   }
-
-  ref_angle = acos * 2.0f;
-
-  return XII_SUCCESS;
 }
 
 template <typename Type>
@@ -156,10 +156,8 @@ bool xiiQuatTemplate<Type>::IsEqualRotation(const xiiQuatTemplate<Type>& qOther,
   xiiVec3Template<Type> vA1, vA2;
   xiiAngle              A1, A2;
 
-  if (GetRotationAxisAndAngle(vA1, A1) == XII_FAILURE)
-    return false;
-  if (qOther.GetRotationAxisAndAngle(vA2, A2) == XII_FAILURE)
-    return false;
+  GetRotationAxisAndAngle(vA1, A1);
+  qOther.GetRotationAxisAndAngle(vA2, A2);
 
   if ((A1.IsEqualSimple(A2, xiiAngle::Degree(static_cast<float>(fEpsilon)))) && (vA1.IsEqual(vA2, fEpsilon)))
     return true;

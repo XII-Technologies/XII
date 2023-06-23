@@ -110,3 +110,29 @@ static void ToolsProjectEventHandler(const xiiToolsProjectEvent& e)
     UpdateCollisionLayerDynamicEnumValues();
   }
 }
+
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+#include <Foundation/Serialization/AbstractObjectGraph.h>
+#include <Foundation/Serialization/GraphPatch.h>
+
+class xiiJoltRopeComponentPatch_1_2 : public xiiGraphPatch
+{
+public:
+  xiiJoltRopeComponentPatch_1_2() :
+    xiiGraphPatch("xiiJoltRopeComponent", 3)
+  {
+  }
+
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  {
+    pNode->RenameProperty("Anchor", "Anchor2");
+    pNode->RenameProperty("AttachToOrigin", "AttachToAnchor1");
+    pNode->RenameProperty("AttachToAnchor", "AttachToAnchor2");
+  }
+};
+
+xiiJoltRopeComponentPatch_1_2 g_xiiJoltRopeComponentPatch_1_2;
