@@ -152,7 +152,7 @@ private:
 
   // Synchronization Fences
   Diligent::RefCntAutoPtr<Diligent::IFence> m_pReadBackFence;
-  xiiUInt64                                 m_uiReadBackFenceCompletedValue = 1u;
+  xiiUInt64                                 m_uiReadBackFenceCompletedValue = 0u;
 
   // Pipeline State
   xiiPipelineBarrierDiligent*                                                                   m_pPipelineBarrier;

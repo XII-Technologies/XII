@@ -933,11 +933,9 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
   // Wait for GPU to Synchronize resources.
   if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
   {
-    m_pReadBackFence->Signal(m_uiReadBackFenceCompletedValue + 1);
-    while (m_pReadBackFence->GetCompletedValue() <= m_uiReadBackFenceCompletedValue)
-    {
-    }
-    ++m_uiReadBackFenceCompletedValue;
+    m_pContext->EnqueueSignal(m_pReadBackFence, ++m_uiReadBackFenceCompletedValue);
+    m_pContext->Flush();
+    m_pReadBackFence->Wait(m_uiReadBackFenceCompletedValue);
   }
 }
 
@@ -974,11 +972,9 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureReadbackResultPlatform(const x
     // Wait for GPU to Synchronize resources.
     if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
     {
-      m_pReadBackFence->Signal(m_uiReadBackFenceCompletedValue + 1);
-      while (m_pReadBackFence->GetCompletedValue() <= m_uiReadBackFenceCompletedValue)
-      {
-      }
-      ++m_uiReadBackFenceCompletedValue;
+      m_pContext->EnqueueSignal(m_pReadBackFence, ++m_uiReadBackFenceCompletedValue);
+      m_pContext->Flush();
+      m_pReadBackFence->Wait(m_uiReadBackFenceCompletedValue);
     }
 
     if (MappedSubRes.pData)
