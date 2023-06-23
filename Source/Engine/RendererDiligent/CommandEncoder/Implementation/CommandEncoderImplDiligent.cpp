@@ -266,10 +266,11 @@ xiiGALCommandEncoderImplDiligent::xiiGALCommandEncoderImplDiligent(xiiGALDeviceD
   m_pPipelineBarrier = m_GALDeviceDiligent.m_pPipelineBarrier.Borrow();
 
   // Create synchronization fences.
+  if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
   {
     Diligent::FenceDesc fenceDesc;
     fenceDesc.Name = "Command Encoder Device Read Back Fence";
-    fenceDesc.Type = Diligent::FENCE_TYPE_CPU_WAIT_ONLY;
+    fenceDesc.Type = Diligent::FENCE_TYPE_GENERAL;
     m_GALDeviceDiligent.GetDevice()->CreateFence(fenceDesc, &m_pReadBackFence);
   }
 }
@@ -929,7 +930,15 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
     m_pContext->CopyTexture(CopyTexAttribs);
   }
 
-  // Todo Insert fence
+  // Wait for GPU to Synchronize resources.
+  if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
+  {
+    m_pReadBackFence->Signal(m_uiReadBackFenceCompletedValue + 1);
+    while (m_pReadBackFence->GetCompletedValue() <= m_uiReadBackFenceCompletedValue)
+    {
+    }
+    ++m_uiReadBackFenceCompletedValue;
+  }
 }
 
 xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel)
@@ -955,12 +964,22 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureReadbackResultPlatform(const x
     const xiiGALTextureSubresource&      subRes  = SourceSubResource[i];
     const xiiGALSystemMemoryDescription& memDesc = TargetData[i];
 
-    // Wait for GPU to Synchronize resources.
-    m_pReadBackFence->Wait(m_uiReadBackFenceCompletedValue);
-    ++m_uiReadBackFenceCompletedValue;
+    Diligent::MAP_FLAGS mapFlags = Diligent::MAP_FLAG_NONE;
+    if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
+      mapFlags |= Diligent::MAP_FLAG_DO_NOT_WAIT;
 
     Diligent::MappedTextureSubresource MappedSubRes;
-    m_pContext->MapTextureSubresource(pTextureDiligent->GetStagingTexture(), subRes.m_uiMipLevel, subRes.m_uiArraySlice, Diligent::MAP_READ, Diligent::MAP_FLAG_NONE, nullptr, MappedSubRes);
+    m_pContext->MapTextureSubresource(pTextureDiligent->GetStagingTexture(), subRes.m_uiMipLevel, subRes.m_uiArraySlice, Diligent::MAP_READ, mapFlags, nullptr, MappedSubRes);
+
+    // Wait for GPU to Synchronize resources.
+    if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
+    {
+      m_pReadBackFence->Signal(m_uiReadBackFenceCompletedValue + 1);
+      while (m_pReadBackFence->GetCompletedValue() <= m_uiReadBackFenceCompletedValue)
+      {
+      }
+      ++m_uiReadBackFenceCompletedValue;
+    }
 
     if (MappedSubRes.pData)
     {
@@ -986,9 +1005,11 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureReadbackResultPlatform(const x
 
       m_pContext->UnmapTextureSubresource(pTextureDiligent->GetStagingTexture(), subRes.m_uiMipLevel, subRes.m_uiArraySlice);
     }
+    else
+    {
+      xiiLog::SeriousWarning("Failed to retrieve mapped texture data for reading.");
+    }
   }
-
-  // \todo Insert fence
 }
 
 void xiiGALCommandEncoderImplDiligent::GenerateMipMapsPlatform(const xiiGALResourceView* pResourceView)

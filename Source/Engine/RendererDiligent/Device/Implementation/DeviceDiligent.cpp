@@ -296,7 +296,7 @@ CreateRenderDevice:
       EngineCI.Features.ShaderResourceRuntimeArray        = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.WaveOp                            = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.InstanceDataStepRate              = Diligent::DEVICE_FEATURE_STATE_ENABLED;
-      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_ENABLED;
+      EngineCI.Features.NativeFence                       = Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
       EngineCI.Features.TileShaders                       = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.TransferQueueTimestampQueries     = Diligent::DEVICE_FEATURE_STATE_DISABLED;
       EngineCI.Features.VariableRateShading               = Diligent::DEVICE_FEATURE_STATE_DISABLED;
