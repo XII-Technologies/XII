@@ -934,6 +934,7 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
   if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
   {
     m_pContext->EnqueueSignal(m_pReadBackFence, ++m_uiReadBackFenceCompletedValue);
+    ClearActiveDebugGroups();
     m_pContext->Flush();
     m_pReadBackFence->Wait(m_uiReadBackFenceCompletedValue);
   }
@@ -973,6 +974,7 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureReadbackResultPlatform(const x
     if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
     {
       m_pContext->EnqueueSignal(m_pReadBackFence, ++m_uiReadBackFenceCompletedValue);
+      ClearActiveDebugGroups();
       m_pContext->Flush();
       m_pReadBackFence->Wait(m_uiReadBackFenceCompletedValue);
     }
@@ -1025,6 +1027,9 @@ void xiiGALCommandEncoderImplDiligent::GenerateMipMapsPlatform(const xiiGALResou
 
 void xiiGALCommandEncoderImplDiligent::FlushPlatform()
 {
+  ClearActiveDebugGroups();
+  m_pContext->Flush();
+
   FlushDeferredStateChanges();
 }
 
@@ -1033,11 +1038,17 @@ void xiiGALCommandEncoderImplDiligent::FlushPlatform()
 void xiiGALCommandEncoderImplDiligent::PushMarkerPlatform(const char* szMarker)
 {
   m_pContext->BeginDebugGroup(szMarker);
+
+  ++m_uiActiveDebugGroups;
 }
 
 void xiiGALCommandEncoderImplDiligent::PopMarkerPlatform()
 {
-  m_pContext->EndDebugGroup();
+  if (m_uiActiveDebugGroups != 0)
+  {
+    m_pContext->EndDebugGroup();
+    --m_uiActiveDebugGroups;
+  }
 }
 
 void xiiGALCommandEncoderImplDiligent::InsertEventMarkerPlatform(const char* szMarker)
@@ -1973,6 +1984,15 @@ void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IS
         }
       }
     }
+  }
+}
+
+void xiiGALCommandEncoderImplDiligent::ClearActiveDebugGroups()
+{
+  while (m_uiActiveDebugGroups)
+  {
+    m_pContext->EndDebugGroup();
+    --m_uiActiveDebugGroups;
   }
 }
 

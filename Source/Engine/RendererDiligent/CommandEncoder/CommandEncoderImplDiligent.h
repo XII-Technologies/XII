@@ -137,10 +137,9 @@ public:
 
 protected:
   void FlushDeferredStateChanges();
-
   void TransitionResources();
-
   void FillShaderDescriptorBindings(Diligent::IShaderResourceBinding* pResourceBinding);
+  void ClearActiveDebugGroups();
 
 private:
   friend class xiiGALPassDiligent;
@@ -209,4 +208,6 @@ private:
 
   xiiUInt32        m_VertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
   Diligent::Uint64 m_VertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+
+  xiiUInt32 m_uiActiveDebugGroups = 0u;
 };
