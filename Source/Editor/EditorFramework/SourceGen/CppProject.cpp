@@ -1,7 +1,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
-#include <EditorFramework/SourceGen/CppProject.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/SourceGen/CppProject.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/System/Process.h>
