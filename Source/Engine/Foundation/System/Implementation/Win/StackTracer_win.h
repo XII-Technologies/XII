@@ -20,6 +20,14 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 #include <memory>
 
+#ifdef StackWalk
+#  undef StackWalk
+#endif
+
+#ifdef SearchPath
+#  undef SearchPath
+#endif
+
 // Deactivate Doxygen document generation for the following block.
 /// \cond
 
@@ -34,6 +42,7 @@ namespace
   using StackWalk                 = BOOL(__stdcall*)(DWORD MachineType, HANDLE hProcess, HANDLE hThread, LPSTACKFRAME64 StackFrame, PVOID ContextRecord, PREAD_PROCESS_MEMORY_ROUTINE64 ReadMemoryRoutine, PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine, PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine, PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress);
   using SymbolFromAddressFunc     = BOOL(__stdcall*)(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFOW Symbol);
   using LineFromAddressFunc       = BOOL(__stdcall*)(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PIMAGEHLP_LINEW64 Line);
+  using SymSetSearchPathFunc      = BOOL(__stdcall*)(HANDLE hProcess, PCWSTR SearchPath);
 
   struct StackTracerImplementation
   {
@@ -49,6 +58,7 @@ namespace
     StackWalk                 stackWalk;
     SymbolFromAddressFunc     symbolFromAddress;
     LineFromAddressFunc       lineFromAdress;
+    SymSetSearchPathFunc      symSetSearchPath;
     bool                      m_bInitDbgHelp = false;
 
     StackTracerImplementation()
@@ -66,13 +76,14 @@ namespace
       XII_ASSERT_DEV(dbgHelpDll != nullptr, "StackTracer could not load dbghelp.dll");
       if (dbgHelpDll != nullptr)
       {
+        symSetSearchPath       = (SymSetSearchPathFunc)GetProcAddress(dbgHelpDll, "SymSetSearchPathW");
         symbolInitialize       = (SymbolInitializeFunc)GetProcAddress(dbgHelpDll, "SymInitializeW");
         symbolLoadModule       = (SymbolLoadModuleFunc)GetProcAddress(dbgHelpDll, "SymLoadModuleExW");
         getModuleInfo          = (SymbolGetModuleInfoFunc)GetProcAddress(dbgHelpDll, "SymGetModuleInfoW64");
         getFunctionTableAccess = (SymbolFunctionTableAccess)GetProcAddress(dbgHelpDll, "SymFunctionTableAccess64");
         getModuleBase          = (SymbolGetModuleBaseFunc)GetProcAddress(dbgHelpDll, "SymGetModuleBase64");
         stackWalk              = (StackWalk)GetProcAddress(dbgHelpDll, "StackWalk64");
-        if (symbolInitialize == nullptr || symbolLoadModule == nullptr || getModuleInfo == nullptr || getFunctionTableAccess == nullptr || getModuleBase == nullptr || stackWalk == nullptr)
+        if (symbolInitialize == nullptr || symbolLoadModule == nullptr || getModuleInfo == nullptr || getFunctionTableAccess == nullptr || getModuleBase == nullptr || stackWalk == nullptr || symSetSearchPath == nullptr)
           return;
 
         symbolFromAddress = (SymbolFromAddressFunc)GetProcAddress(dbgHelpDll, "SymFromAddrW");
@@ -102,6 +113,14 @@ namespace
       if (!(*s_pImplementation->symbolInitialize)(GetCurrentProcess(), nullptr, TRUE))
       {
         xiiLog::Error("StackTracer could not initialize symbols. Error-Code {0}", xiiArgErrorCode(::GetLastError()));
+        return;
+      }
+
+      // We want to seach for the PDBs in the same directory where the EXE is located, no matter what the current working directory is
+      if (!(*s_pImplementation->symSetSearchPath)(GetCurrentProcess(), xiiStringWChar(xiiOSFile::GetApplicationDirectory())))
+      {
+        xiiLog::Error("StackTracer could not set symbol search path. Error-Code {0}", xiiArgErrorCode(::GetLastError()));
+        return;
       }
     }
   }
