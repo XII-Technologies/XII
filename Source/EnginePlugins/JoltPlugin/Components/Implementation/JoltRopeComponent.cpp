@@ -970,12 +970,12 @@ void xiiJoltRopeComponent::SetAnchor2ConstraintMode(xiiEnum<xiiJoltRopeAnchorCon
   }
 }
 
-void xiiJoltRopeComponent::OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectConstraints& msg)
+void xiiJoltRopeComponent::OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectConstraints& ref_msg)
 {
-  xiiGameObjectHandle hBody  = msg.m_pActor->GetOwner()->GetHandle();
+  xiiGameObjectHandle hBody  = ref_msg.m_pActor->GetOwner()->GetHandle();
   xiiWorld*           pWorld = GetWorld();
 
-  if (m_pConstraintAnchor1 && msg.m_uiJoltBodyID == m_uiAnchor1BodyID)
+  if (m_pConstraintAnchor1 && ref_msg.m_uiJoltBodyID == m_uiAnchor1BodyID)
   {
     xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
     pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor1);
@@ -984,7 +984,7 @@ void xiiJoltRopeComponent::OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectCo
     m_uiAnchor1BodyID    = xiiInvalidIndex;
   }
 
-  if (m_pConstraintAnchor2 && msg.m_uiJoltBodyID == m_uiAnchor2BodyID)
+  if (m_pConstraintAnchor2 && ref_msg.m_uiJoltBodyID == m_uiAnchor2BodyID)
   {
     xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
 

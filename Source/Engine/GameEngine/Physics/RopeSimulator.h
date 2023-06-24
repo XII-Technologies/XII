@@ -51,7 +51,7 @@ public:
   void         SimulateTillEquilibrium(xiiSimdFloat fAllowedMovement = 0.005f, xiiUInt32 uiMaxIterations = 1000);
   bool         HasEquilibrium(xiiSimdFloat fAllowedMovement) const;
   float        GetTotalLength() const;
-  xiiSimdVec4f GetPositionAtLength(float length) const;
+  xiiSimdVec4f GetPositionAtLength(float fLength) const;
 
 private:
   xiiSimdFloat EnforceDistanceConstraint();

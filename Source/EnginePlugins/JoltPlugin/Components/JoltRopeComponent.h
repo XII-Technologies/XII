@@ -97,7 +97,7 @@ public:
   xiiEnum<xiiJoltRopeAnchorConstraintMode> GetAnchor2ConstraintMode() const { return m_Anchor2ConstraintMode; } // [ property ]
 
   /// \brief Makes sure that the rope's connection to a removed body also gets removed.
-  void OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectConstraints& msg); // [ msg handler ]
+  void OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectConstraints& ref_msg); // [ msg handler ]
 
 private:
   void                   CreateRope();

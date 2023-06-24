@@ -95,7 +95,7 @@ float xiiRopeSimulator::GetTotalLength() const
   return len;
 }
 
-xiiSimdVec4f xiiRopeSimulator::GetPositionAtLength(float length) const
+xiiSimdVec4f xiiRopeSimulator::GetPositionAtLength(float fLength) const
 {
   if (m_Nodes.IsEmpty())
     return xiiSimdVec4f::ZeroVector();
@@ -108,13 +108,13 @@ xiiSimdVec4f xiiRopeSimulator::GetPositionAtLength(float length) const
     const xiiSimdVec4f dir  = cur - prev;
     const float        dist = dir.GetLength<3>();
 
-    if (length <= dist)
+    if (fLength <= dist)
     {
-      const float interpolate = length / dist;
+      const float interpolate = fLength / dist;
       return prev + dir * interpolate;
     }
 
-    length -= dist;
+    fLength -= dist;
     prev = cur;
   }
 

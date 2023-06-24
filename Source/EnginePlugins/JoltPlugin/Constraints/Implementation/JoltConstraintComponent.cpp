@@ -311,7 +311,7 @@ void xiiJoltConstraintComponent::ApplySettings()
   }
 }
 
-void xiiJoltConstraintComponent::OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectConstraints& msg)
+void xiiJoltConstraintComponent::OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectConstraints& ref_msg)
 {
   BreakConstraint();
 }
