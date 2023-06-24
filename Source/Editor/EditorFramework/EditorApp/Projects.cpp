@@ -5,6 +5,7 @@
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/SourceGen/CppProject.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/Time/Timestamp.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
@@ -135,8 +136,6 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, const char* szFile)
       // once we start loading any plugins, we can't reuse the same instance again for another project
       m_bAnyProjectOpened = true;
 
-      LoadPluginBundleDlls(sProjectFile);
-
       xiiStringBuilder sTemp = xiiOSFile::GetTempDataFolder("xiiEditor");
       sTemp.AppendPath("xiiEditorCrashIndicator");
       xiiOSFile f;
@@ -145,6 +144,24 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, const char* szFile)
         f.Write(sTemp.GetData(), sTemp.GetElementCount()).IgnoreResult();
         f.Close();
         m_bWroteCrashIndicatorFile = true;
+      }
+
+      {
+        xiiStringBuilder sProjectDir = sProjectFile;
+        sProjectDir.PathParentDirectory();
+
+        xiiStringBuilder sSettingsFile = sProjectDir;
+        sSettingsFile.AppendPath("Editor/CppProject.ddl");
+
+        // first attempt to load project specific plugin bundles
+        xiiCppSettings cppSettings;
+        if (cppSettings.Load(sSettingsFile).Succeeded())
+        {
+          xiiQtEditorApp::GetSingleton()->DetectAvailablePluginBundles(xiiCppProject::GetPluginSourceDir(cppSettings, sProjectDir));
+        }
+
+        // now load the plugin DLLs
+        LoadPluginBundleDlls(sProjectFile);
       }
 
       res = xiiToolsProject::OpenProject(sProjectFile);

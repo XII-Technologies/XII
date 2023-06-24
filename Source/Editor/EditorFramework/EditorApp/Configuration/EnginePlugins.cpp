@@ -1,6 +1,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/SourceGen/CppProject.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Profiling/Profiling.h>
 
@@ -36,7 +37,14 @@ bool xiiQtEditorApp::CheckForEnginePluginModifications()
 
     if (plugin.m_bMissing)
     {
-      DetectAvailablePluginBundles();
+      DetectAvailablePluginBundles(xiiOSFile::GetApplicationDirectory());
+
+      xiiCppSettings cppSettings;
+      if (cppSettings.Load().Succeeded())
+      {
+        xiiQtEditorApp::GetSingleton()->DetectAvailablePluginBundles(xiiCppProject::GetPluginSourceDir(cppSettings));
+      }
+
       break;
     }
   }

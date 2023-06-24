@@ -8,6 +8,7 @@
 #include <Foundation/IO/OpenDdlUtils.h>
 #include <Foundation/IO/OpenDdlWriter.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <EditorFramework/SourceGen/CppProject.h>
 
 void xiiPluginBundle::WriteStateToDDL(xiiOpenDdlWriter& ddl, const char* szOwnName) const
 {
@@ -154,12 +155,12 @@ xiiResult xiiPluginBundle::ReadBundleFromDDL(xiiOpenDdlReader& ddl)
   return XII_SUCCESS;
 }
 
-void xiiQtEditorApp::DetectAvailablePluginBundles()
+void xiiQtEditorApp::DetectAvailablePluginBundles(xiiStringView sSearchDirectory)
 {
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS)
   // find all xiiPluginBundle files
   {
-    xiiStringBuilder sSearch = xiiOSFile::GetApplicationDirectory();
+    xiiStringBuilder sSearch = sSearchDirectory;
 
     sSearch.AppendPath("*.xiiPluginBundle");
 
@@ -241,7 +242,7 @@ void xiiQtEditorApp::DetectAvailablePluginBundles()
 void xiiQtEditorApp::LoadEditorPlugins()
 {
   XII_PROFILE_SCOPE("LoadEditorPlugins");
-  DetectAvailablePluginBundles();
+  DetectAvailablePluginBundles(xiiOSFile::GetApplicationDirectory());
 
   xiiPlugin::InitializeStaticallyLinkedPlugins();
 }

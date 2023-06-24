@@ -1,6 +1,7 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/Application/Config/PluginConfig.h>
+#include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/OpenDdlReader.h>
@@ -51,7 +52,6 @@ bool xiiApplicationPluginConfig::AddPlugin(const PluginConfig& cfg0)
   return true;
 }
 
-
 bool xiiApplicationPluginConfig::RemovePlugin(const PluginConfig& cfg0)
 {
   PluginConfig cfg = cfg0;
@@ -74,9 +74,8 @@ xiiResult xiiApplicationPluginConfig::Save(xiiStringView sConfigPath) const
 {
   m_Plugins.Sort();
 
-  xiiFileWriter file;
-  if (file.Open(sConfigPath).Failed())
-    return XII_FAILURE;
+  xiiDeferredFileWriter file;
+  file.SetOutput(sConfigPath, true);
 
   xiiOpenDdlWriter writer;
   writer.SetOutputStream(&file);
@@ -93,7 +92,7 @@ xiiResult xiiApplicationPluginConfig::Save(xiiStringView sConfigPath) const
     writer.EndObject();
   }
 
-  return XII_SUCCESS;
+  return file.Close();
 }
 
 void xiiApplicationPluginConfig::Load(xiiStringView sConfigPath)
@@ -129,7 +128,9 @@ void xiiApplicationPluginConfig::Load(xiiStringView sConfigPath)
     const xiiOpenDdlReaderElement* pCopy = pPlugin->FindChildOfType(xiiOpenDdlPrimitiveType::Bool, "LoadCopy");
 
     if (pPath)
+    {
       cfg.m_sAppDirRelativePath = pPath->GetPrimitivesString()[0];
+    }
 
     if (pCopy)
     {

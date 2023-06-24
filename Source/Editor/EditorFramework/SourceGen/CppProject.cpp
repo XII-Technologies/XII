@@ -1,7 +1,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
-#include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/SourceGen/CppProject.h>
+#include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/System/Process.h>
@@ -14,9 +14,15 @@
 
 xiiEvent<const xiiCppSettings&> xiiCppProject::s_ChangeEvents;
 
-xiiString xiiCppProject::GetTargetSourceDir()
+xiiString xiiCppProject::GetTargetSourceDir(xiiStringView sProjectDirectory /*= {}*/)
 {
-  xiiStringBuilder sTargetDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
+  xiiStringBuilder sTargetDir = sProjectDirectory;
+
+  if (sTargetDir.IsEmpty())
+  {
+    sTargetDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
+  }
+
   sTargetDir.AppendPath("Source");
   return sTargetDir;
 }
@@ -59,10 +65,18 @@ xiiString xiiCppProject::GetCMakeGeneratorName(const xiiCppSettings& cfg)
   return {};
 }
 
+xiiString xiiCppProject::GetPluginSourceDir(const xiiCppSettings& cfg, xiiStringView sProjectDirectory /*= {}*/)
+{
+  xiiStringBuilder sDir = GetTargetSourceDir(sProjectDirectory);
+  sDir.AppendPath(cfg.m_sPluginName);
+  sDir.Append("Plugin");
+  return sDir;
+}
+
 xiiString xiiCppProject::GetBuildDir(const xiiCppSettings& cfg)
 {
   xiiStringBuilder sBuildDir;
-  sBuildDir.Format("{}/Build/{}", xiiToolsProject::GetSingleton()->GetProjectDirectory(), GetGeneratorFolderName(cfg));
+  sBuildDir.Format("{}/Build/{}", GetTargetSourceDir(), GetGeneratorFolderName(cfg));
   return sBuildDir;
 }
 
@@ -73,6 +87,40 @@ xiiString xiiCppProject::GetSolutionPath(const xiiCppSettings& cfg)
   sSolutionFile.AppendPath(cfg.m_sPluginName);
   sSolutionFile.Append(".sln");
   return sSolutionFile;
+}
+
+xiiResult xiiCppProject::CheckCMakeCache(const xiiCppSettings& cfg)
+{
+  xiiStringBuilder sCacheFile;
+  sCacheFile = GetBuildDir(cfg);
+  sCacheFile.AppendPath("CMakeCache.txt");
+
+  xiiFileReader file;
+  XII_SUCCEED_OR_RETURN(file.Open(sCacheFile));
+
+  xiiStringBuilder content;
+  content.ReadAll(file);
+
+  const xiiStringView sSearchFor = "CMAKE_CONFIGURATION_TYPES:STRING="_xiisv;
+
+  const char* pConfig = content.FindSubString(sSearchFor);
+  if (pConfig == nullptr)
+    return XII_FAILURE;
+
+  pConfig += sSearchFor.GetElementCount();
+
+  const char* pEndConfig = content.FindSubString("\n", pConfig);
+  if (pEndConfig == nullptr)
+    return XII_FAILURE;
+
+  xiiStringBuilder sUsedCfg;
+  sUsedCfg.SetSubString_FromTo(pConfig, pEndConfig);
+  sUsedCfg.Trim("\t\n\r ");
+
+  if (sUsedCfg != BUILDSYSTEM_BUILDTYPE)
+    return XII_FAILURE;
+
+  return XII_SUCCESS;
 }
 
 bool xiiCppProject::ExistsSolution(const xiiCppSettings& cfg)
@@ -268,7 +316,7 @@ xiiResult xiiCppProject::RunCMakeIfNecessary(const xiiCppSettings& cfg)
   if (!xiiCppProject::ExistsProjectCMakeListsTxt())
     return XII_SUCCESS;
 
-  if (xiiCppProject::ExistsSolution(cfg))
+  if (xiiCppProject::ExistsSolution(cfg) && xiiCppProject::CheckCMakeCache(cfg))
     return XII_SUCCESS;
 
   return xiiCppProject::RunCMake(cfg);
@@ -285,6 +333,11 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
   {
     xiiLog::Error("MSBuild path is not available.");
     return XII_FAILURE;
+  }
+
+  if (xiiSystemInformation::IsDebuggerAttached())
+  {
+    xiiQtUiServices::GetSingleton()->MessageBoxWarning("When a debugger is attached, MSBuild usually fails to compile the project.\n\nDetach the debugger now, then press OK to continue.");
   }
 
   xiiHybridArray<xiiString, 32> errors;
@@ -338,7 +391,7 @@ xiiResult xiiCppProject::BuildCodeIfNecessary(const xiiCppSettings& cfg)
   if (!xiiCppProject::ExistsProjectCMakeListsTxt())
     return XII_SUCCESS;
 
-  if (!xiiCppProject::ExistsSolution(cfg))
+  if (!xiiCppProject::ExistsSolution(cfg) || !xiiCppProject::CheckCMakeCache(cfg))
   {
     XII_SUCCEED_OR_RETURN(xiiCppProject::RunCMake(cfg));
   }

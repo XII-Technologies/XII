@@ -21,8 +21,13 @@ xiiResult xiiDeferredFileWriter::WriteBytes(const void* pWriteBuffer, xiiUInt64 
   return m_Writer.WriteBytes(pWriteBuffer, uiBytesToWrite);
 }
 
-xiiResult xiiDeferredFileWriter::Close()
+xiiResult xiiDeferredFileWriter::Close(bool* out_bWasWrittenTo /*= nullptr*/)
 {
+  if (out_bWasWrittenTo)
+  {
+    *out_bWasWrittenTo = false;
+  }
+
   if (m_bAlreadyClosed)
     return XII_SUCCESS;
 
@@ -66,6 +71,11 @@ xiiResult xiiDeferredFileWriter::Close()
 write_data:
   xiiFileWriter file;
   XII_SUCCEED_OR_RETURN(file.Open(m_sOutputFile, 0)); // use the minimum cache size, we want to pass data directly through to disk
+
+  if (out_bWasWrittenTo)
+  {
+    *out_bWasWrittenTo = false;
+  }
 
   m_sOutputFile.Clear();
   return m_Storage.CopyToStream(file);
