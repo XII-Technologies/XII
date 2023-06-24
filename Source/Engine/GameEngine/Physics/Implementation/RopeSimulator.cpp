@@ -75,15 +75,60 @@ bool xiiRopeSimulator::HasEquilibrium(xiiSimdFloat fAllowedMovement) const
   return true;
 }
 
+float xiiRopeSimulator::GetTotalLength() const
+{
+  if (m_Nodes.GetCount() <= 1)
+    return 0.0f;
+
+  float len = 0;
+
+  xiiSimdVec4f prev = m_Nodes[0].m_vPosition;
+  for (xiiUInt32 i = 1; i < m_Nodes.GetCount(); ++i)
+  {
+    const xiiSimdVec4f cur = m_Nodes[i].m_vPosition;
+
+    len += (cur - prev).GetLength<3>();
+
+    prev = cur;
+  }
+
+  return len;
+}
+
+xiiSimdVec4f xiiRopeSimulator::GetPositionAtLength(float fLength) const
+{
+  if (m_Nodes.IsEmpty())
+    return xiiSimdVec4f::ZeroVector();
+
+  xiiSimdVec4f prev = m_Nodes[0].m_vPosition;
+  for (xiiUInt32 i = 1; i < m_Nodes.GetCount(); ++i)
+  {
+    const xiiSimdVec4f cur = m_Nodes[i].m_vPosition;
+
+    const xiiSimdVec4f dir  = cur - prev;
+    const float        dist = dir.GetLength<3>();
+
+    if (fLength <= dist)
+    {
+      const float interpolate = fLength / dist;
+      return prev + dir * interpolate;
+    }
+
+    fLength -= dist;
+    prev = cur;
+  }
+
+  return m_Nodes.PeekBack().m_vPosition;
+}
+
 xiiSimdVec4f xiiRopeSimulator::MoveTowards(const xiiSimdVec4f posThis, const xiiSimdVec4f posNext, xiiSimdFloat factor, const xiiSimdVec4f fallbackDir, xiiSimdFloat& inout_fError)
 {
   xiiSimdVec4f vDir = (posNext - posThis);
   xiiSimdFloat fLen = vDir.GetLength<3>();
 
-  if (fLen.IsEqual(xiiSimdFloat::Zero(), xiiSimdFloat(0.001f)))
+  if (fLen < m_fSegmentLength)
   {
-    vDir = fallbackDir;
-    fLen = 1;
+    return xiiSimdVec4f::ZeroVector();
   }
 
   vDir /= fLen;

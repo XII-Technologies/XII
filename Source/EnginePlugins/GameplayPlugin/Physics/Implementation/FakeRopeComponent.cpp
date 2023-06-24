@@ -8,13 +8,14 @@
 #include <RendererCore/AnimationSystem/Declarations.h>
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiFakeRopeComponent, 2, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiFakeRopeComponent, 3, xiiComponentMode::Static)
   {
     XII_BEGIN_PROPERTIES
     {
-      XII_ACCESSOR_PROPERTY("Anchor", DummyGetter, SetAnchorReference)->AddAttributes(new xiiGameObjectReferenceAttribute()),
-      XII_ACCESSOR_PROPERTY("AttachToOrigin", GetAttachToOrigin, SetAttachToOrigin)->AddAttributes(new xiiDefaultValueAttribute(true)),
-      XII_ACCESSOR_PROPERTY("AttachToAnchor", GetAttachToAnchor, SetAttachToAnchor)->AddAttributes(new xiiDefaultValueAttribute(true)),
+      XII_ACCESSOR_PROPERTY("Anchor1", DummyGetter, SetAnchor1Reference)->AddAttributes(new xiiGameObjectReferenceAttribute()),
+      XII_ACCESSOR_PROPERTY("Anchor2", DummyGetter, SetAnchor2Reference)->AddAttributes(new xiiGameObjectReferenceAttribute()),
+      XII_ACCESSOR_PROPERTY("AttachToAnchor1", GetAttachToAnchor1, SetAttachToAnchor1)->AddAttributes(new xiiDefaultValueAttribute(true)),
+      XII_ACCESSOR_PROPERTY("AttachToAnchor2", GetAttachToAnchor2, SetAttachToAnchor2)->AddAttributes(new xiiDefaultValueAttribute(true)),
       XII_MEMBER_PROPERTY("Pieces", m_uiPieces)->AddAttributes(new xiiDefaultValueAttribute(32), new xiiClampValueAttribute(2, 200)),
       XII_ACCESSOR_PROPERTY("Slack", GetSlack, SetSlack)->AddAttributes(new xiiDefaultValueAttribute(0.2f)),
       XII_MEMBER_PROPERTY("Damping", m_fDamping)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, 1.0f)),
@@ -44,7 +45,8 @@ void xiiFakeRopeComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
   s << m_RopeSim.m_bFirstNodeIsFixed;
   s << m_RopeSim.m_bLastNodeIsFixed;
 
-  ref_stream.WriteGameObjectHandle(m_hAnchor);
+  ref_stream.WriteGameObjectHandle(m_hAnchor1);
+  ref_stream.WriteGameObjectHandle(m_hAnchor2);
 
   s << m_fWindInfluence;
 }
@@ -61,7 +63,12 @@ void xiiFakeRopeComponent::DeserializeComponent(xiiWorldReader& ref_stream)
   s >> m_RopeSim.m_bFirstNodeIsFixed;
   s >> m_RopeSim.m_bLastNodeIsFixed;
 
-  m_hAnchor = ref_stream.ReadGameObjectHandle();
+  if (uiVersion >= 3)
+  {
+    m_hAnchor1 = ref_stream.ReadGameObjectHandle();
+  }
+
+  m_hAnchor2 = ref_stream.ReadGameObjectHandle();
 
   if (uiVersion >= 2)
   {
@@ -97,10 +104,42 @@ xiiResult xiiFakeRopeComponent::ConfigureRopeSimulator()
   if (!IsActiveAndInitialized())
     return XII_FAILURE;
 
-  xiiSimdVec4f anchorB;
+  xiiGameObjectHandle hAnchor1 = m_hAnchor1;
+  xiiGameObjectHandle hAnchor2 = m_hAnchor2;
 
-  xiiGameObject* pAnchor = nullptr;
-  if (!GetWorld()->TryGetObject(m_hAnchor, pAnchor))
+  if (hAnchor1.IsInvalidated())
+    hAnchor1 = GetOwner()->GetHandle();
+  if (hAnchor2.IsInvalidated())
+    hAnchor2 = GetOwner()->GetHandle();
+
+  if (hAnchor1 == hAnchor2)
+    return XII_FAILURE;
+
+  xiiSimdVec4f anchor1;
+  xiiSimdVec4f anchor2;
+
+  xiiGameObject* pAnchor1 = nullptr;
+  xiiGameObject* pAnchor2 = nullptr;
+
+  if (!GetWorld()->TryGetObject(hAnchor1, pAnchor1))
+  {
+    // never set up so far
+    if (m_RopeSim.m_Nodes.IsEmpty())
+      return XII_FAILURE;
+
+    if (m_RopeSim.m_bFirstNodeIsFixed)
+    {
+      anchor1                       = m_RopeSim.m_Nodes[0].m_vPosition;
+      m_RopeSim.m_bFirstNodeIsFixed = false;
+      m_uiSleepCounter              = 0;
+    }
+  }
+  else
+  {
+    anchor1 = xiiSimdConversion::ToVec3(pAnchor1->GetGlobalPosition());
+  }
+
+  if (!GetWorld()->TryGetObject(hAnchor2, pAnchor2))
   {
     // never set up so far
     if (m_RopeSim.m_Nodes.IsEmpty())
@@ -108,26 +147,24 @@ xiiResult xiiFakeRopeComponent::ConfigureRopeSimulator()
 
     if (m_RopeSim.m_bLastNodeIsFixed)
     {
-      anchorB                      = m_RopeSim.m_Nodes.PeekBack().m_vPosition;
+      anchor2                      = m_RopeSim.m_Nodes.PeekBack().m_vPosition;
       m_RopeSim.m_bLastNodeIsFixed = false;
       m_uiSleepCounter             = 0;
     }
   }
   else
   {
-    anchorB = xiiSimdConversion::ToVec3(pAnchor->GetGlobalPosition());
+    anchor2 = xiiSimdConversion::ToVec3(pAnchor2->GetGlobalPosition());
   }
 
   // only early out, if we are not in edit mode
-  m_bIsDynamic = !IsActiveAndSimulating() || GetOwner()->IsDynamic() || (pAnchor != nullptr && pAnchor->IsDynamic());
-
-  const xiiSimdVec4f anchorA = xiiSimdConversion::ToVec3(GetOwner()->GetGlobalPosition());
+  m_bIsDynamic = !IsActiveAndSimulating() || (pAnchor1 != nullptr && pAnchor1->IsDynamic()) || (pAnchor2 != nullptr && pAnchor2->IsDynamic());
 
   m_RopeSim.m_fDampingFactor = xiiMath::Lerp(1.0f, 0.97f, m_fDamping);
 
   if (m_RopeSim.m_fSegmentLength < 0)
   {
-    const float len            = (anchorA - anchorB).GetLength<3>();
+    const float len            = (anchor1 - anchor2).GetLength<3>();
     m_RopeSim.m_fSegmentLength = (len + len * m_fSlack) / m_uiPieces;
   }
 
@@ -154,7 +191,7 @@ xiiResult xiiFakeRopeComponent::ConfigureRopeSimulator()
 
     for (xiiUInt32 i = uiOldNum; i < m_uiPieces; ++i)
     {
-      m_RopeSim.m_Nodes[i].m_vPosition         = anchorA + ((anchorB - anchorA) * (float)i / (m_uiPieces - 1));
+      m_RopeSim.m_Nodes[i].m_vPosition         = anchor1 + ((anchor2 - anchor1) * (float)i / (m_uiPieces - 1));
       m_RopeSim.m_Nodes[i].m_vPreviousPosition = m_RopeSim.m_Nodes[i].m_vPosition;
     }
   }
@@ -163,19 +200,19 @@ xiiResult xiiFakeRopeComponent::ConfigureRopeSimulator()
   {
     if (m_RopeSim.m_bFirstNodeIsFixed)
     {
-      if ((m_RopeSim.m_Nodes[0].m_vPosition != anchorA).AnySet<3>())
+      if ((m_RopeSim.m_Nodes[0].m_vPosition != anchor1).AnySet<3>())
       {
         m_uiSleepCounter                 = 0;
-        m_RopeSim.m_Nodes[0].m_vPosition = anchorA;
+        m_RopeSim.m_Nodes[0].m_vPosition = anchor1;
       }
     }
 
     if (m_RopeSim.m_bLastNodeIsFixed)
     {
-      if ((m_RopeSim.m_Nodes.PeekBack().m_vPosition != anchorB).AnySet<3>())
+      if ((m_RopeSim.m_Nodes.PeekBack().m_vPosition != anchor2).AnySet<3>())
       {
         m_uiSleepCounter                         = 0;
-        m_RopeSim.m_Nodes.PeekBack().m_vPosition = anchorB;
+        m_RopeSim.m_Nodes.PeekBack().m_vPosition = anchor2;
       }
     }
   }
@@ -188,16 +225,25 @@ void xiiFakeRopeComponent::SendPreviewPose()
   if (!IsActiveAndInitialized() || IsActiveAndSimulating())
     return;
 
-  xiiUInt32 uiHash = 0;
+  xiiGameObject* pAnchor1 = nullptr;
+  xiiGameObject* pAnchor2 = nullptr;
+  if (!GetWorld()->TryGetObject(m_hAnchor1, pAnchor1))
+    pAnchor1 = GetOwner();
+  if (!GetWorld()->TryGetObject(m_hAnchor2, pAnchor2))
+    pAnchor2 = GetOwner();
 
-  xiiGameObject* pAnchor;
-  if (!GetWorld()->TryGetObject(m_hAnchor, pAnchor))
+  if (pAnchor1 == pAnchor2)
     return;
+
+  xiiUInt32 uiHash = 0;
 
   xiiVec3 pos = GetOwner()->GetGlobalPosition();
   uiHash      = xiiHashingUtils::xxHash32(&pos, sizeof(xiiVec3), uiHash);
 
-  pos    = pAnchor->GetGlobalPosition();
+  pos    = pAnchor1->GetGlobalPosition();
+  uiHash = xiiHashingUtils::xxHash32(&pos, sizeof(xiiVec3), uiHash);
+
+  pos    = pAnchor2->GetGlobalPosition();
   uiHash = xiiHashingUtils::xxHash32(&pos, sizeof(xiiVec3), uiHash);
 
   uiHash = xiiHashingUtils::xxHash32(&m_fSlack, sizeof(float), uiHash);
@@ -321,26 +367,42 @@ void xiiFakeRopeComponent::SendCurrentPose()
       pieces.PeekBack().SetLocalTransform(tRoot, tGlobal);
     }
 
-
     poseMsg.m_LinkTransforms = pieces;
   }
 
   GetOwner()->PostMessage(poseMsg, xiiTime::Zero(), xiiObjectMsgQueueType::AfterInitialized);
 }
 
-void xiiFakeRopeComponent::SetAnchorReference(const char* szReference)
+void xiiFakeRopeComponent::SetAnchor1Reference(const char* szReference)
 {
   auto resolver = GetWorld()->GetGameObjectReferenceResolver();
 
   if (!resolver.IsValid())
     return;
 
-  SetAnchor(resolver(szReference, GetHandle(), "Anchor"));
+  SetAnchor1(resolver(szReference, GetHandle(), "Anchor1"));
 }
 
-void xiiFakeRopeComponent::SetAnchor(xiiGameObjectHandle hActor)
+void xiiFakeRopeComponent::SetAnchor2Reference(const char* szReference)
 {
-  m_hAnchor        = hActor;
+  auto resolver = GetWorld()->GetGameObjectReferenceResolver();
+
+  if (!resolver.IsValid())
+    return;
+
+  SetAnchor2(resolver(szReference, GetHandle(), "Anchor2"));
+}
+
+void xiiFakeRopeComponent::SetAnchor1(xiiGameObjectHandle hActor)
+{
+  m_hAnchor1       = hActor;
+  m_bIsDynamic     = true;
+  m_uiSleepCounter = 0;
+}
+
+void xiiFakeRopeComponent::SetAnchor2(xiiGameObjectHandle hActor)
+{
+  m_hAnchor2       = hActor;
   m_bIsDynamic     = true;
   m_uiSleepCounter = 0;
 }
@@ -353,26 +415,26 @@ void xiiFakeRopeComponent::SetSlack(float fVal)
   m_uiSleepCounter           = 0;
 }
 
-void xiiFakeRopeComponent::SetAttachToOrigin(bool bVal)
+void xiiFakeRopeComponent::SetAttachToAnchor1(bool bVal)
 {
   m_RopeSim.m_bFirstNodeIsFixed = bVal;
   m_bIsDynamic                  = true;
   m_uiSleepCounter              = 0;
 }
 
-bool xiiFakeRopeComponent::GetAttachToOrigin() const
-{
-  return m_RopeSim.m_bFirstNodeIsFixed;
-}
-
-void xiiFakeRopeComponent::SetAttachToAnchor(bool bVal)
+void xiiFakeRopeComponent::SetAttachToAnchor2(bool bVal)
 {
   m_RopeSim.m_bLastNodeIsFixed = bVal;
   m_bIsDynamic                 = true;
   m_uiSleepCounter             = 0;
 }
 
-bool xiiFakeRopeComponent::GetAttachToAnchor() const
+bool xiiFakeRopeComponent::GetAttachToAnchor1() const
+{
+  return m_RopeSim.m_bFirstNodeIsFixed;
+}
+
+bool xiiFakeRopeComponent::GetAttachToAnchor2() const
 {
   return m_RopeSim.m_bLastNodeIsFixed;
 }

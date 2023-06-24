@@ -376,9 +376,6 @@ void xiiJoltRagdollComponent::RetrievePhysicsPose()
 
   xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
 
-  if (IsSleeping())
-    return;
-
   xiiResourceLock<xiiSkeletonResource> pSkeleton(m_hSkeleton, xiiResourceAcquireMode::BlockTillLoaded);
 
   const xiiTransform rootTransform    = pSkeleton->GetDescriptor().m_RootTransform;
@@ -473,18 +470,6 @@ void xiiJoltRagdollComponent::WakeUp()
   m_pRagdoll->Activate();
 }
 
-bool xiiJoltRagdollComponent::IsSleeping() const
-{
-  const xiiJoltWorldModule* pModule = GetWorld()->GetModule<xiiJoltWorldModule>();
-
-  JPH::BodyLockRead lock(pModule->GetJoltSystem()->GetBodyLockInterface(), m_pRagdoll->GetBodyID(0));
-
-  if (!lock.Succeeded())
-    return true;
-
-  return !lock.GetBody().IsActive();
-}
-
 void xiiJoltRagdollComponent::SetupLimbsFromBindPose()
 {
   if (m_bLimbsSetup)
@@ -530,30 +515,32 @@ void xiiJoltRagdollComponent::SetupLimbsFromBindPose()
 
 void xiiJoltRagdollComponent::CreateConstraints()
 {
-  // if (m_Constraints.IsEmpty())
-  //   return;
+#if 0
+  if (m_Constraints.IsEmpty())
+    return;
 
-  // xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
+  xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
 
-  // const xiiTransform ownTransform = GetOwner()->GetGlobalTransform();
+  const xiiTransform ownTransform = GetOwner()->GetGlobalTransform();
 
-  // for (auto& constraint : m_Constraints)
-  //{
-  //   for (const auto& limb : m_Limbs)
-  //   {
-  //     if (limb.m_sName != constraint.m_sBone)
-  //       continue;
+  for (auto& constraint : m_Constraints)
+  {
+    for (const auto& limb : m_Limbs)
+    {
+      if (limb.m_sName != constraint.m_sBone)
+        continue;
 
-  //    const xiiTransform pos(ownTransform.TransformPosition(constraint.m_vRelativePosition));
+      const xiiTransform pos(ownTransform.TransformPosition(constraint.m_vRelativePosition));
 
-  //    auto pJoint = PxSphericalJointCreate(*(xiiJolt::GetSingleton()->GetJoltAPI()), nullptr, xiiJoltConversionUtils::ToTransform(pos), limb.m_pPxBody, xiiJoltConversionUtils::ToTransform(xiiTransform::IdentityTransform()));
+      auto pJoint = PxSphericalJointCreate(*(xiiJolt::GetSingleton()->GetJoltAPI()), nullptr, xiiJoltConversionUtils::ToTransform(pos), limb.m_pPxBody, xiiJoltConversionUtils::ToTransform(xiiTransform::IdentityTransform()));
 
-  //    pJoint->setConstraintFlag(physx::PxConstraintFlag::ePROJECTION, true);
-  //    pJoint->setProjectionLinearTolerance(0.05f);
+      pJoint->setConstraintFlag(physx::PxConstraintFlag::ePROJECTION, true);
+      pJoint->setProjectionLinearTolerance(0.05f);
 
-  //    break;
-  //  }
-  //}
+      break;
+    }
+  }
+#endif
 }
 
 void xiiJoltRagdollComponent::SetupJoltBasics(/*physx::PxPhysics* pPxApi,*/ xiiJoltWorldModule* pModule)
@@ -779,20 +766,22 @@ void xiiJoltRagdollComponent::AddLimbGeometry(xiiBasisAxis::Enum srcBoneDir, Lim
 
   JPH::RagdollSettings::Part* pBodyDesc = reinterpret_cast<JPH::RagdollSettings::Part*>(limb.m_pBodyDesc);
 
-  // physx::PxMaterial* pxMaterial = nullptr;
-  // if (geo.m_hSurface.IsValid())
-  //{
-  //   xiiResourceLock<xiiSurfaceResource> pSurface(geo.m_hSurface, xiiResourceAcquireMode::BlockTillLoaded);
+#if 0
+  physx::PxMaterial* pxMaterial = nullptr;
+  if (geo.m_hSurface.IsValid())
+  {
+    xiiResourceLock<xiiSurfaceResource> pSurface(geo.m_hSurface, xiiResourceAcquireMode::BlockTillLoaded);
 
-  //  if (pSurface->m_pPhysicsMaterial != nullptr)
-  //  {
-  //    pxMaterial = static_cast<physx::PxMaterial*>(pSurface->m_pPhysicsMaterial);
-  //  }
-  //}
-  // else
-  //  pxMaterial = xiiJolt::GetSingleton()->GetDefaultMaterial();
+    if (pSurface->m_pPhysicsMaterial != nullptr)
+    {
+      pxMaterial = static_cast<physx::PxMaterial*>(pSurface->m_pPhysicsMaterial);
+    }
+  }
+  else
+    pxMaterial = xiiJolt::GetSingleton()->GetDefaultMaterial();
 
-  // JoltShape* pShape = nullptr;
+  JoltShape* pShape = nullptr;
+#endif
 
   const xiiQuat qBoneDirAdjustment = xiiBasisAxis::GetBasisRotation(xiiBasisAxis::PositiveX, srcBoneDir);
 
@@ -893,6 +882,41 @@ void xiiJoltRagdollComponent::CreateLimbJoint(const xiiSkeletonJoint& thisJoint,
     pJoint->mPlaneAxis2          = xiiJoltConversionUtils::ToVec3(tThis.m_qRotation * qTwist * xiiVec3::UnitZAxis());
     pJoint->mTwistAxis1          = xiiJoltConversionUtils::ToVec3(tParent.m_qRotation * offsetRot * xiiVec3::UnitYAxis());
     pJoint->mTwistAxis2          = xiiJoltConversionUtils::ToVec3(tThis.m_qRotation * xiiVec3::UnitYAxis());
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+xiiJoltRagdollComponentManager::xiiJoltRagdollComponentManager(xiiWorld* pWorld) :
+  xiiComponentManager<xiiJoltRagdollComponent, xiiBlockStorageType::FreeList>(pWorld)
+{
+}
+
+xiiJoltRagdollComponentManager::~xiiJoltRagdollComponentManager() = default;
+
+void xiiJoltRagdollComponentManager::Initialize()
+{
+  SUPER::Initialize();
+
+  {
+    auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiJoltRagdollComponentManager::Update, this);
+    desc.m_Phase                     = xiiWorldModule::UpdateFunctionDesc::Phase::PostAsync;
+    desc.m_bOnlyUpdateWhenSimulating = false;
+
+    this->RegisterUpdateFunction(desc);
+  }
+}
+
+void xiiJoltRagdollComponentManager::Update(const xiiWorldModule::UpdateContext& context)
+{
+  XII_PROFILE_SCOPE("UpdateRagdolls");
+
+  xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
+  auto*               pSystem = pModule->GetJoltSystem();
+
+  for (auto itActor : pModule->GetActiveRagdolls())
+  {
+    itActor.Key()->Update();
   }
 }
 

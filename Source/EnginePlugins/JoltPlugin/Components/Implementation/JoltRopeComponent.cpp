@@ -4,6 +4,7 @@
 #include <Core/Physics/SurfaceResource.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
+#include <GameEngine/Animation/PathComponent.h>
 #include <GameEngine/Physics/RopeSimulator.h>
 #include <Jolt/Physics/Body/BodyLockMulti.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
@@ -24,20 +25,25 @@
 #include <RendererCore/AnimationSystem/Declarations.h>
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiJoltRopeComponent, 1, xiiComponentMode::Dynamic)
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiJoltRopeAnchorConstraintMode, 1)
+  XII_ENUM_CONSTANTS(xiiJoltRopeAnchorConstraintMode::None, xiiJoltRopeAnchorConstraintMode::Point, xiiJoltRopeAnchorConstraintMode::Fixed, xiiJoltRopeAnchorConstraintMode::Cone)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_COMPONENT_TYPE(xiiJoltRopeComponent, 2, xiiComponentMode::Dynamic)
   {
     XII_BEGIN_PROPERTIES
     {
-      XII_ACCESSOR_PROPERTY("Anchor", DummyGetter, SetAnchorReference)->AddAttributes(new xiiGameObjectReferenceAttribute()),
-      XII_MEMBER_PROPERTY("AttachToOrigin", m_bAttachToOrigin)->AddAttributes(new xiiDefaultValueAttribute(true)),
-      XII_MEMBER_PROPERTY("AttachToAnchor", m_bAttachToAnchor)->AddAttributes(new xiiDefaultValueAttribute(true)),
+      XII_ACCESSOR_PROPERTY("Anchor1", DummyGetter, SetAnchor1Reference)->AddAttributes(new xiiGameObjectReferenceAttribute()),
+      XII_ACCESSOR_PROPERTY("Anchor2", DummyGetter, SetAnchor2Reference)->AddAttributes(new xiiGameObjectReferenceAttribute()),
+      XII_ENUM_ACCESSOR_PROPERTY("Anchor1Constraint", xiiJoltRopeAnchorConstraintMode, GetAnchor1ConstraintMode, SetAnchor1ConstraintMode),
+      XII_ENUM_ACCESSOR_PROPERTY("Anchor2Constraint", xiiJoltRopeAnchorConstraintMode, GetAnchor2ConstraintMode, SetAnchor2ConstraintMode),
       XII_MEMBER_PROPERTY("Pieces", m_uiPieces)->AddAttributes(new xiiDefaultValueAttribute(16), new xiiClampValueAttribute(2, 64)),
       XII_MEMBER_PROPERTY("Slack", m_fSlack)->AddAttributes(new xiiDefaultValueAttribute(0.3f)),
       XII_MEMBER_PROPERTY("Mass", m_fTotalMass)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 1000.0f)),
       XII_MEMBER_PROPERTY("Thickness", m_fThickness)->AddAttributes(new xiiDefaultValueAttribute(0.05f), new xiiClampValueAttribute(0.01f, 0.5f)),
       XII_MEMBER_PROPERTY("BendStiffness", m_fBendStiffness)->AddAttributes(new xiiClampValueAttribute(0.0f,   xiiVariant())),
       XII_MEMBER_PROPERTY("MaxBend", m_MaxBend)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::Degree(30)), new xiiClampValueAttribute(xiiAngle::Degree(5), xiiAngle::Degree(90))),
-      XII_MEMBER_PROPERTY("MaxTwist", m_MaxTwist)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::Degree(15)), new xiiClampValueAttribute(xiiAngle::Degree(0.01f), xiiAngle::Degree(90))),
+      XII_MEMBER_PROPERTY("MaxTwist", m_MaxTwist)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::Degree(30)), new xiiClampValueAttribute(xiiAngle::Degree(0.01f), xiiAngle::Degree(90))),
       XII_MEMBER_PROPERTY("CollisionLayer", m_uiCollisionLayer)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),
       XII_ACCESSOR_PROPERTY("Surface", GetSurfaceFile, SetSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
       XII_ACCESSOR_PROPERTY("GravityFactor", GetGravityFactor, SetGravityFactor)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
@@ -49,6 +55,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltRopeComponent, 1, xiiComponentMode::Dynamic)
     {
       XII_MESSAGE_HANDLER(xiiMsgPhysicsAddForce, AddForceAtPos),
       XII_MESSAGE_HANDLER(xiiMsgPhysicsAddImpulse, AddImpulseAtPos),
+      XII_MESSAGE_HANDLER(xiiJoltMsgDisconnectConstraints, OnJoltMsgDisconnectConstraints),
     }
     XII_END_MESSAGEHANDLERS;
     XII_BEGIN_ATTRIBUTES
@@ -90,8 +97,8 @@ void xiiJoltRopeComponent::SerializeComponent(xiiWorldWriter& inout_stream) cons
   s << m_uiCollisionLayer;
   s << m_uiPieces;
   s << m_fThickness;
-  s << m_bAttachToOrigin;
-  s << m_bAttachToAnchor;
+  s << m_Anchor1ConstraintMode;
+  s << m_Anchor2ConstraintMode;
   s << m_bSelfCollision;
   s << m_fGravityFactor;
   s << m_hSurface;
@@ -102,7 +109,8 @@ void xiiJoltRopeComponent::SerializeComponent(xiiWorldWriter& inout_stream) cons
   s << m_fSlack;
   s << m_bCCD;
 
-  inout_stream.WriteGameObjectHandle(m_hAnchor);
+  inout_stream.WriteGameObjectHandle(m_hAnchor1);
+  inout_stream.WriteGameObjectHandle(m_hAnchor2);
 }
 
 void xiiJoltRopeComponent::DeserializeComponent(xiiWorldReader& inout_stream)
@@ -115,8 +123,22 @@ void xiiJoltRopeComponent::DeserializeComponent(xiiWorldReader& inout_stream)
   s >> m_uiCollisionLayer;
   s >> m_uiPieces;
   s >> m_fThickness;
-  s >> m_bAttachToOrigin;
-  s >> m_bAttachToAnchor;
+
+  if (uiVersion >= 2)
+  {
+    s >> m_Anchor1ConstraintMode;
+    s >> m_Anchor2ConstraintMode;
+  }
+  else
+  {
+    bool m_bAttachToAnchor1, m_bAttachToAnchor2;
+    s >> m_bAttachToAnchor1;
+    s >> m_bAttachToAnchor2;
+
+    m_Anchor1ConstraintMode = m_bAttachToAnchor1 ? xiiJoltRopeAnchorConstraintMode::Point : xiiJoltRopeAnchorConstraintMode::None;
+    m_Anchor2ConstraintMode = m_bAttachToAnchor2 ? xiiJoltRopeAnchorConstraintMode::Point : xiiJoltRopeAnchorConstraintMode::None;
+  }
+
   s >> m_bSelfCollision;
   s >> m_fGravityFactor;
   s >> m_hSurface;
@@ -127,7 +149,12 @@ void xiiJoltRopeComponent::DeserializeComponent(xiiWorldReader& inout_stream)
   s >> m_fSlack;
   s >> m_bCCD;
 
-  m_hAnchor = inout_stream.ReadGameObjectHandle();
+  if (uiVersion >= 2)
+  {
+    m_hAnchor1 = inout_stream.ReadGameObjectHandle();
+  }
+
+  m_hAnchor2 = inout_stream.ReadGameObjectHandle();
 }
 
 void xiiJoltRopeComponent::OnSimulationStarted()
@@ -170,14 +197,25 @@ const xiiJoltMaterial* xiiJoltRopeComponent::GetJoltMaterial()
 
 void xiiJoltRopeComponent::CreateRope()
 {
-  const xiiTransform tRoot = GetOwner()->GetGlobalTransform();
+  xiiGameObjectHandle hAnchor1 = m_hAnchor1;
+  xiiGameObjectHandle hAnchor2 = m_hAnchor2;
 
-  xiiHybridArray<xiiTransform, 65> pieces;
-  float                            fPieceLength;
-  if (CreateSegmentTransforms(pieces, fPieceLength).Failed())
+  if (hAnchor1.IsInvalidated())
+    hAnchor1 = GetOwner()->GetHandle();
+  if (hAnchor2.IsInvalidated())
+    hAnchor2 = GetOwner()->GetHandle();
+
+  if (hAnchor1 == hAnchor2)
     return;
 
-  pieces.PopBack(); // don't need the last transform
+  const xiiTransform tRoot = GetOwner()->GetGlobalTransform();
+
+  xiiHybridArray<xiiTransform, 65> nodes;
+  float                            fPieceLength;
+  if (CreateSegmentTransforms(nodes, fPieceLength, hAnchor1, hAnchor2).Failed())
+    return;
+
+  const xiiUInt32 numPieces = nodes.GetCount() - 1;
 
   xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
   m_uiObjectFilterID          = pModule->CreateObjectFilterID();
@@ -190,10 +228,10 @@ void xiiJoltRopeComponent::CreateRope()
 
   JPH::Ref<JPH::RagdollSettings> opt = new JPH::RagdollSettings();
   opt->mSkeleton                     = new JPH::Skeleton();
-  opt->mSkeleton->GetJoints().resize(pieces.GetCount());
-  opt->mParts.resize(pieces.GetCount());
+  opt->mSkeleton->GetJoints().resize(numPieces);
+  opt->mParts.resize(numPieces);
 
-  const float fMass = m_fTotalMass / pieces.GetCount();
+  const float fPieceMass = m_fTotalMass / numPieces;
 
   xiiStringBuilder name;
 
@@ -209,9 +247,7 @@ void xiiJoltRopeComponent::CreateRope()
   capsOffset.mRotation      = JPH::Quat::sRotation(JPH::Vec3::sAxisZ(), xiiAngle::Degree(-90).GetRadian());
   capsOffset.mUserData      = reinterpret_cast<xiiUInt64>(pUserData);
 
-  xiiVec3 vNextJointPos;
-
-  for (xiiUInt32 idx = 0; idx < pieces.GetCount(); ++idx)
+  for (xiiUInt32 idx = 0; idx < numPieces; ++idx)
   {
     // skeleton
     {
@@ -230,11 +266,11 @@ void xiiJoltRopeComponent::CreateRope()
     part.mGravityFactor = m_fGravityFactor;
     part.mMotionQuality = m_bCCD ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete;
     part.mMotionType    = JPH::EMotionType::Dynamic;
-    part.mPosition      = xiiJoltConversionUtils::ToVec3(pieces[idx].m_vPosition);
-    part.mRotation      = xiiJoltConversionUtils::ToQuat(pieces[idx].m_qRotation);
+    part.mPosition      = xiiJoltConversionUtils::ToVec3(nodes[idx].m_vPosition);
+    part.mRotation      = xiiJoltConversionUtils::ToQuat(nodes[idx].m_qRotation);
     part.mUserData      = reinterpret_cast<xiiUInt64>(pUserData);
     part.SetShape(capsOffset.Create().Get()); // shape is cached, only 1 is created
-    part.mMassPropertiesOverride.mMass = fMass;
+    part.mMassPropertiesOverride.mMass = fPieceMass;
     part.mOverrideMassProperties       = JPH::EOverrideMassProperties::CalculateInertia;
     part.mRestitution                  = pMaterial->m_fRestitution;
     part.mFriction                     = pMaterial->m_fFriction;
@@ -247,23 +283,22 @@ void xiiJoltRopeComponent::CreateRope()
     {
       JPH::SwingTwistConstraintSettings* pConstraint = new JPH::SwingTwistConstraintSettings();
       pConstraint->mDrawConstraintSize               = 0.1f;
-      pConstraint->mPosition1                        = xiiJoltConversionUtils::ToVec3(vNextJointPos);
-      pConstraint->mPosition2                        = xiiJoltConversionUtils::ToVec3(vNextJointPos);
+      pConstraint->mPosition1                        = xiiJoltConversionUtils::ToVec3(nodes[idx].m_vPosition);
+      pConstraint->mPosition2                        = pConstraint->mPosition1;
       pConstraint->mNormalHalfConeAngle              = m_MaxBend.GetRadian();
       pConstraint->mPlaneHalfConeAngle               = m_MaxBend.GetRadian();
-      pConstraint->mTwistAxis1                       = xiiJoltConversionUtils::ToVec3(pieces[idx - 1].m_qRotation * xiiVec3(1, 0, 0)).Normalized();
-      pConstraint->mTwistAxis2                       = xiiJoltConversionUtils::ToVec3(pieces[idx].m_qRotation * xiiVec3(1, 0, 0)).Normalized();
-      pConstraint->mPlaneAxis1                       = xiiJoltConversionUtils::ToVec3(pieces[idx - 1].m_qRotation * xiiVec3(0, 1, 0)).Normalized();
-      pConstraint->mPlaneAxis2                       = xiiJoltConversionUtils::ToVec3(pieces[idx].m_qRotation * xiiVec3(0, 1, 0)).Normalized();
+      pConstraint->mTwistAxis1                       = xiiJoltConversionUtils::ToVec3(nodes[idx - 1].m_qRotation * xiiVec3(1, 0, 0)).Normalized();
+      pConstraint->mTwistAxis2                       = xiiJoltConversionUtils::ToVec3(nodes[idx].m_qRotation * xiiVec3(1, 0, 0)).Normalized();
+      pConstraint->mPlaneAxis1                       = xiiJoltConversionUtils::ToVec3(nodes[idx - 1].m_qRotation * xiiVec3(0, 1, 0)).Normalized();
+      pConstraint->mPlaneAxis2                       = xiiJoltConversionUtils::ToVec3(nodes[idx].m_qRotation * xiiVec3(0, 1, 0)).Normalized();
       pConstraint->mTwistMinAngle                    = -m_MaxTwist.GetRadian();
       pConstraint->mTwistMaxAngle                    = m_MaxTwist.GetRadian();
       pConstraint->mMaxFrictionTorque                = m_fBendStiffness;
       part.mToParent                                 = pConstraint;
     }
 
-    vNextJointPos = pieces[idx].m_vPosition + pieces[idx].m_qRotation * xiiVec3(fPieceLength, 0, 0);
-
-    if ((m_bAttachToOrigin && idx == 0) || (m_bAttachToAnchor && idx + 1 == pieces.GetCount()))
+    if ((m_Anchor1ConstraintMode != xiiJoltRopeAnchorConstraintMode::None && idx == 0) ||
+        (m_Anchor2ConstraintMode != xiiJoltRopeAnchorConstraintMode::None && idx + 1 == numPieces))
     {
       // disable all collisions for the first and last rope segment
       // this prevents colliding with walls that the rope is attached to
@@ -271,66 +306,56 @@ void xiiJoltRopeComponent::CreateRope()
     }
   }
 
-  opt->Stabilize();
-
   if (m_bSelfCollision)
   {
     // overrides the group filter above to one that allows collision with itself, except for directly joined bodies
     opt->DisableParentChildCollisions();
   }
 
+  opt->Stabilize();
+
   m_pRagdoll = opt->CreateRagdoll(m_uiObjectFilterID, reinterpret_cast<xiiUInt64>(pUserData), pModule->GetJoltSystem());
   m_pRagdoll->AddRef();
   m_pRagdoll->AddToPhysicsSystem(JPH::EActivation::Activate);
 
-  if (m_bAttachToOrigin)
+  if (m_Anchor1ConstraintMode != xiiJoltRopeAnchorConstraintMode::None)
   {
-    m_pConstraintOrigin = CreateConstraint(GetOwner()->GetHandle(), pieces[0], m_pRagdoll->GetBodyID(0).GetIndexAndSequenceNumber());
+    m_pConstraintAnchor1 = CreateConstraint(hAnchor1, nodes[0], m_pRagdoll->GetBodyID(0).GetIndexAndSequenceNumber(), m_Anchor1ConstraintMode, m_uiAnchor1BodyID);
   }
 
-  if (m_bAttachToAnchor)
+  if (m_Anchor2ConstraintMode != xiiJoltRopeAnchorConstraintMode::None)
   {
-    xiiTransform localTransform;
-    localTransform.SetIdentity();
-    localTransform.m_vPosition.x = fPieceLength;
-
-    xiiTransform lastPiece;
-    lastPiece.SetGlobalTransform(pieces.PeekBack(), localTransform);
-
-    lastPiece.m_qRotation = -lastPiece.m_qRotation;
-
-    m_pConstraintAnchor = CreateConstraint(m_hAnchor, lastPiece, m_pRagdoll->GetBodyIDs().back().GetIndexAndSequenceNumber());
+    xiiTransform end     = nodes.PeekBack();
+    end.m_qRotation      = -end.m_qRotation;
+    m_pConstraintAnchor2 = CreateConstraint(hAnchor2, end, m_pRagdoll->GetBodyIDs().back().GetIndexAndSequenceNumber(), m_Anchor2ConstraintMode, m_uiAnchor2BodyID);
   }
 }
 
-JPH::Constraint* xiiJoltRopeComponent::CreateConstraint(const xiiGameObjectHandle& hTarget, const xiiTransform& dstLoc, xiiUInt32 uiBodyID)
+JPH::Constraint* xiiJoltRopeComponent::CreateConstraint(const xiiGameObjectHandle& hTarget, const xiiTransform& pieceLoc, xiiUInt32 uiBodyID, xiiJoltRopeAnchorConstraintMode::Enum mode, xiiUInt32& out_uiConnectedToBodyID)
 {
   xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
 
 
   JPH::BodyID bodyIDs[2] = {JPH::BodyID(JPH::BodyID::cInvalidBodyID), JPH::BodyID(uiBodyID)};
 
-  xiiGameObject* pObject = nullptr;
-  if (!GetWorld()->TryGetObject(hTarget, pObject))
+  xiiGameObject* pTarget = nullptr;
+  if (!GetWorld()->TryGetObject(hTarget, pTarget))
     return nullptr;
 
-  const auto location = pObject->GetGlobalTransform();
+  // const auto targetLoc = pTarget->GetGlobalTransform();
 
   xiiJoltDynamicActorComponent* pActor = nullptr;
-  if (!pObject->TryGetComponentOfBaseType(pActor))
+  while (pTarget && !pTarget->TryGetComponentOfBaseType(pActor))
   {
-    pObject = pObject->GetParent();
-
-    if (pObject)
-    {
-      pObject->TryGetComponentOfBaseType(pActor);
-    }
+    // search for a parent with a physics actor
+    pTarget = pTarget->GetParent();
   }
 
   if (pActor)
   {
     pActor->EnsureSimulationStarted();
-    bodyIDs[0] = JPH::BodyID(pActor->GetJoltBodyID());
+    out_uiConnectedToBodyID = pActor->GetJoltBodyID();
+    bodyIDs[0]              = JPH::BodyID(out_uiConnectedToBodyID);
   }
 
 
@@ -343,37 +368,72 @@ JPH::Constraint* xiiJoltRopeComponent::CreateConstraint(const xiiGameObjectHandl
 
     JPH::Body* pAnchor = bodies.GetBody(0) != nullptr ? bodies.GetBody(0) : &JPH::Body::sFixedToWorld;
 
-    const xiiVec3 vTwistAxis1 = location.m_qRotation * xiiVec3(1, 0, 0);
-    const xiiVec3 vTwistAxis2 = dstLoc.m_qRotation * xiiVec3(1, 0, 0);
+    const xiiVec3 vTwistAxis1 = pieceLoc.m_qRotation * xiiVec3(1, 0, 0);
+    const xiiVec3 vTwistAxis2 = pieceLoc.m_qRotation * xiiVec3(1, 0, 0);
 
-    xiiQuat qAxis1to2;
-    qAxis1to2.SetShortestRotation(vTwistAxis1, vTwistAxis2);
+    const xiiVec3 vOrthoAxis1 = pieceLoc.m_qRotation * xiiVec3(0, 1, 0);
+    const xiiVec3 vOrthoAxis2 = pieceLoc.m_qRotation * xiiVec3(0, 1, 0);
 
-    const xiiVec3 vOrthoAxis1 = location.m_qRotation * xiiVec3(0, 1, 0);
-    const xiiVec3 vOrthoAxis2 = qAxis1to2 * vOrthoAxis1;
+    JPH::Constraint* pConstraint = nullptr;
 
+    if (mode == xiiJoltRopeAnchorConstraintMode::Cone)
+    {
+      JPH::SwingTwistConstraintSettings constraint;
+      constraint.mSpace               = JPH::EConstraintSpace::WorldSpace;
+      constraint.mDrawConstraintSize  = 0.1f;
+      constraint.mPosition1           = xiiJoltConversionUtils::ToVec3(pieceLoc.m_vPosition);
+      constraint.mPosition2           = xiiJoltConversionUtils::ToVec3(pieceLoc.m_vPosition);
+      constraint.mNormalHalfConeAngle = m_MaxBend.GetRadian();
+      constraint.mPlaneHalfConeAngle  = m_MaxBend.GetRadian();
 
-    JPH::SwingTwistConstraintSettings constraint;
-    constraint.mSpace               = JPH::EConstraintSpace::WorldSpace;
-    constraint.mDrawConstraintSize  = 0.1f;
-    constraint.mPosition1           = xiiJoltConversionUtils::ToVec3(location.m_vPosition);
-    constraint.mPosition2           = xiiJoltConversionUtils::ToVec3(dstLoc.m_vPosition);
-    constraint.mNormalHalfConeAngle = m_MaxBend.GetRadian();
-    constraint.mPlaneHalfConeAngle  = m_MaxBend.GetRadian();
+      constraint.mTwistAxis1 = xiiJoltConversionUtils::ToVec3(vTwistAxis1).Normalized();
+      constraint.mTwistAxis2 = xiiJoltConversionUtils::ToVec3(vTwistAxis2).Normalized();
 
-    constraint.mTwistAxis1 = xiiJoltConversionUtils::ToVec3(vTwistAxis1).Normalized();
-    constraint.mTwistAxis2 = xiiJoltConversionUtils::ToVec3(vTwistAxis2).Normalized();
+      constraint.mPlaneAxis1 = xiiJoltConversionUtils::ToVec3(vOrthoAxis1).Normalized();
+      constraint.mPlaneAxis2 = xiiJoltConversionUtils::ToVec3(vOrthoAxis2).Normalized();
 
-    constraint.mPlaneAxis1 = xiiJoltConversionUtils::ToVec3(vOrthoAxis1).Normalized();
-    constraint.mPlaneAxis2 = xiiJoltConversionUtils::ToVec3(vOrthoAxis2).Normalized();
+      constraint.mTwistMinAngle     = -m_MaxTwist.GetRadian();
+      constraint.mTwistMaxAngle     = m_MaxTwist.GetRadian();
+      constraint.mMaxFrictionTorque = m_fBendStiffness;
 
-    constraint.mTwistMinAngle     = -m_MaxTwist.GetRadian();
-    constraint.mTwistMaxAngle     = m_MaxTwist.GetRadian();
-    constraint.mMaxFrictionTorque = m_fBendStiffness;
+      pConstraint = constraint.Create(*pAnchor, *bodies.GetBody(1));
+    }
+    else if (mode == xiiJoltRopeAnchorConstraintMode::Point)
+    {
+      JPH::PointConstraintSettings constraint;
+      constraint.mSpace              = JPH::EConstraintSpace::WorldSpace;
+      constraint.mDrawConstraintSize = 0.1f;
+      constraint.mPoint1             = xiiJoltConversionUtils::ToVec3(pieceLoc.m_vPosition);
+      constraint.mPoint2             = xiiJoltConversionUtils::ToVec3(pieceLoc.m_vPosition);
 
-    auto* pConstraint = constraint.Create(*pAnchor, *bodies.GetBody(1));
+      pConstraint = constraint.Create(*pAnchor, *bodies.GetBody(1));
+    }
+    else if (mode == xiiJoltRopeAnchorConstraintMode::Fixed)
+    {
+      JPH::FixedConstraintSettings constraint;
+      constraint.mSpace              = JPH::EConstraintSpace::WorldSpace;
+      constraint.mDrawConstraintSize = 0.1f;
+      constraint.mPoint1             = xiiJoltConversionUtils::ToVec3(pieceLoc.m_vPosition);
+      constraint.mPoint2             = xiiJoltConversionUtils::ToVec3(pieceLoc.m_vPosition);
+      constraint.mAxisX1             = xiiJoltConversionUtils::ToVec3(vTwistAxis2).Normalized();
+      constraint.mAxisY1             = xiiJoltConversionUtils::ToVec3(vOrthoAxis2).Normalized();
+      constraint.mAxisX2             = xiiJoltConversionUtils::ToVec3(vTwistAxis2).Normalized();
+      constraint.mAxisY2             = xiiJoltConversionUtils::ToVec3(vOrthoAxis2).Normalized();
+
+      pConstraint = constraint.Create(*pAnchor, *bodies.GetBody(1));
+    }
+    else
+    {
+      XII_ASSERT_NOT_IMPLEMENTED;
+    }
+
     pConstraint->AddRef();
     pModule->GetJoltSystem()->AddConstraint(pConstraint);
+
+    if (pActor)
+    {
+      pActor->AddConstraint(GetHandle());
+    }
 
     return pConstraint;
   }
@@ -381,96 +441,228 @@ JPH::Constraint* xiiJoltRopeComponent::CreateConstraint(const xiiGameObjectHandl
 
 void xiiJoltRopeComponent::UpdatePreview()
 {
-  xiiVec3 vNewPreviewRefPos = GetOwner()->GetGlobalPosition();
+  xiiGameObject* pAnchor1 = nullptr;
+  xiiGameObject* pAnchor2 = nullptr;
+  if (!GetWorld()->TryGetObject(m_hAnchor1, pAnchor1))
+    pAnchor1 = GetOwner();
+  if (!GetWorld()->TryGetObject(m_hAnchor2, pAnchor2))
+    pAnchor2 = GetOwner();
 
-  xiiGameObject* pObj;
-  if (GetWorld()->TryGetObject(m_hAnchor, pObj))
-    vNewPreviewRefPos += pObj->GetGlobalPosition();
+  if (pAnchor1 == pAnchor2)
+    return;
 
-  // TODO: use a hash value instead
-  vNewPreviewRefPos.x += m_fSlack;
-  vNewPreviewRefPos.y += (float)m_uiPieces;
+  xiiUInt32 uiHash = 0;
+  xiiQuat   rot;
 
-  if (vNewPreviewRefPos != m_vPreviewRefPos)
+  xiiVec3 pos = GetOwner()->GetGlobalPosition();
+  uiHash      = xiiHashingUtils::xxHash32(&pos, sizeof(xiiVec3), uiHash);
+
+  pos    = pAnchor1->GetGlobalPosition();
+  uiHash = xiiHashingUtils::xxHash32(&pos, sizeof(xiiVec3), uiHash);
+  rot    = pAnchor1->GetGlobalRotation();
+  uiHash = xiiHashingUtils::xxHash32(&rot, sizeof(xiiQuat), uiHash);
+
+  pos    = pAnchor2->GetGlobalPosition();
+  uiHash = xiiHashingUtils::xxHash32(&pos, sizeof(xiiVec3), uiHash);
+  rot    = pAnchor2->GetGlobalRotation();
+  uiHash = xiiHashingUtils::xxHash32(&rot, sizeof(xiiQuat), uiHash);
+
+  uiHash = xiiHashingUtils::xxHash32(&m_fSlack, sizeof(float), uiHash);
+  uiHash = xiiHashingUtils::xxHash32(&m_uiPieces, sizeof(xiiUInt16), uiHash);
+  uiHash = xiiHashingUtils::xxHash32(&m_Anchor1ConstraintMode, sizeof(xiiJoltRopeAnchorConstraintMode::StorageType), uiHash);
+  uiHash = xiiHashingUtils::xxHash32(&m_Anchor2ConstraintMode, sizeof(xiiJoltRopeAnchorConstraintMode::StorageType), uiHash);
+
+  if (uiHash != m_uiPreviewHash)
   {
-    m_vPreviewRefPos = vNewPreviewRefPos;
+    m_uiPreviewHash = uiHash;
     SendPreviewPose();
   }
 }
 
-xiiResult xiiJoltRopeComponent::CreateSegmentTransforms(xiiDynamicArray<xiiTransform>& transforms, float& out_fPieceLength) const
+xiiResult xiiJoltRopeComponent::CreateSegmentTransforms(xiiDynamicArray<xiiTransform>& transforms, float& out_fPieceLength, xiiGameObjectHandle hAnchor1, xiiGameObjectHandle hAnchor2)
 {
   out_fPieceLength = 0.0f;
 
   if (m_uiPieces == 0)
     return XII_FAILURE;
 
-  const xiiSimdVec4f vAnchorA = xiiSimdConversion::ToVec3(GetOwner()->GetGlobalPosition());
-
-  const xiiGameObject* pAnchor = nullptr;
-  if (!GetWorld()->TryGetObject(m_hAnchor, pAnchor))
-    return XII_FAILURE;
-
-  const xiiSimdVec4f vAnchorB = xiiSimdConversion::ToVec3(pAnchor->GetGlobalPosition());
-
-  const float fLength = (vAnchorB - vAnchorA).GetLength<3>();
-  if (xiiMath::IsZero(fLength, 0.001f))
-    return XII_FAILURE;
-
-  // the rope simulation always introduces some sag,
-  // (m_fSlack - 0.1f) puts the rope under additional tension to counteract the imprecise simulation
-  // we could also drastically ramp up the simulation steps, but that costs way too much performance
-  const float fIntendedRopeLength = fLength + fLength * (xiiMath::Abs(m_fSlack) - 0.1f);
-
-  xiiRopeSimulator rope;
-  rope.m_bFirstNodeIsFixed = true;
-  rope.m_bLastNodeIsFixed  = true;
-  rope.m_fDampingFactor    = 0.97f;
-  rope.m_fSegmentLength    = fIntendedRopeLength / m_uiPieces;
-  rope.m_Nodes.SetCount(m_uiPieces + 1);
-  rope.m_vAcceleration.Set(0, 0, xiiMath::Sign(m_fSlack) * -1);
-
-  for (xiiUInt16 i = 0; i < m_uiPieces + 1; ++i)
+#if 0
+  xiiPathComponent* pPath;
+  if (GetOwner()->TryGetComponentOfBaseType(pPath))
   {
-    rope.m_Nodes[i].m_vPosition         = vAnchorA + (vAnchorB - vAnchorA) * ((float)i / (float)m_uiPieces);
-    rope.m_Nodes[i].m_vPreviousPosition = rope.m_Nodes[i].m_vPosition;
+    // generally working, but the usability is still WIP
+
+    pPath->EnsureLinearizedRepresentationIsUpToDate();
+
+    const float fLength = pPath->GetLinearizedRepresentationLength();
+
+    if (xiiMath::IsZero(fLength, 0.001f))
+      return XII_FAILURE;
+
+    const xiiTransform ownTrans = GetOwner()->GetGlobalTransform();
+
+    out_fPieceLength = fLength / m_uiPieces;
+
+    transforms.SetCountUninitialized(m_uiPieces + 1);
+
+    xiiPathComponent::LinearSampler sampler;
+    auto                            t0 = pPath->SampleLinearizedRepresentation(sampler);
+
+    for (xiiUInt16 p = 0; p < m_uiPieces; ++p)
+    {
+      float fAddDistance = out_fPieceLength;
+      pPath->AdvanceLinearSamplerBy(sampler, fAddDistance);
+      const auto t1 = pPath->SampleLinearizedRepresentation(sampler);
+
+      transforms[p].m_vPosition = ownTrans * t0.m_vPosition;
+      transforms[p].m_vScale.Set(1);
+      transforms[p].m_qRotation.SetShortestRotation(xiiVec3::UnitXAxis(), ownTrans.m_qRotation * (t1.m_vPosition - t0.m_vPosition).GetNormalized());
+
+      t0 = t1;
+    }
+
+    transforms.PeekBack().m_vPosition = ownTrans * t0.m_vPosition;
+    transforms.PeekBack().m_vScale.Set(1);
+    transforms.PeekBack().m_qRotation = transforms[m_uiPieces - 1].m_qRotation;
+
+    return XII_SUCCESS;
   }
-
-  rope.SimulateTillEquilibrium(0.001f, 200);
-
-  transforms.SetCountUninitialized(m_uiPieces + 1);
-
-  out_fPieceLength = 0.0f;
-
-  for (xiiUInt16 idx = 0; idx < m_uiPieces; ++idx)
+  else
+#endif
   {
-    const xiiSimdVec4f p0  = rope.m_Nodes[idx].m_vPosition;
-    const xiiSimdVec4f p1  = rope.m_Nodes[idx + 1].m_vPosition;
-    xiiSimdVec4f       dir = p1 - p0;
+    const xiiGameObject* pAnchor1 = nullptr;
+    const xiiGameObject* pAnchor2 = nullptr;
 
-    const xiiSimdFloat len = dir.GetLength<3>();
-    out_fPieceLength += len;
+    if (!GetWorld()->TryGetObject(hAnchor1, pAnchor1))
+      return XII_FAILURE;
+    if (!GetWorld()->TryGetObject(hAnchor2, pAnchor2))
+      return XII_FAILURE;
 
-    if (len <= 0.001f)
-      dir = xiiSimdVec4f(1, 0, 0, 0);
-    else
-      dir /= len;
+    const xiiVec3 vOrgAnchor1 = pAnchor1->GetGlobalPosition();
+    const xiiVec3 vOrgAnchor2 = pAnchor2->GetGlobalPosition();
 
-    transforms[idx].m_vScale.Set(1);
-    transforms[idx].m_vPosition = xiiSimdConversion::ToVec3(p0);
-    transforms[idx].m_qRotation.SetShortestRotation(xiiVec3::UnitXAxis(), xiiSimdConversion::ToVec3(dir));
+    xiiSimdVec4f vAnchor1 = xiiSimdConversion::ToVec3(vOrgAnchor1);
+    xiiSimdVec4f vAnchor2 = xiiSimdConversion::ToVec3(vOrgAnchor2);
+
+    const float fLength = (vAnchor2 - vAnchor1).GetLength<3>();
+    if (xiiMath::IsZero(fLength, 0.001f))
+      return XII_FAILURE;
+
+    // the rope simulation always introduces some sag,
+    // (m_fSlack - 0.1f) puts the rope under additional tension to counteract the imprecise simulation
+    // we could also drastically ramp up the simulation steps, but that costs way too much performance
+    const float fIntendedRopeLength = fLength + fLength * (xiiMath::Abs(m_fSlack) - 0.1f);
+
+    const float fPieceLength = fIntendedRopeLength / m_uiPieces;
+
+    xiiUInt16 uiSimulatedPieces = m_uiPieces;
+
+    bool bAnchor1Fixed = false;
+    bool bAnchor2Fixed = false;
+
+    if (m_Anchor1ConstraintMode == xiiJoltRopeAnchorConstraintMode::Cone ||
+        m_Anchor1ConstraintMode == xiiJoltRopeAnchorConstraintMode::Fixed)
+    {
+      bAnchor1Fixed = true;
+      vAnchor1 += xiiSimdConversion::ToVec3(pAnchor1->GetGlobalDirForwards()) * fPieceLength;
+      --uiSimulatedPieces;
+    }
+
+    if (m_Anchor2ConstraintMode == xiiJoltRopeAnchorConstraintMode::Cone ||
+        m_Anchor2ConstraintMode == xiiJoltRopeAnchorConstraintMode::Fixed)
+    {
+      bAnchor2Fixed = true;
+      vAnchor2 += xiiSimdConversion::ToVec3(pAnchor2->GetGlobalDirForwards()) * fPieceLength;
+      --uiSimulatedPieces;
+    }
+
+    xiiRopeSimulator rope;
+    rope.m_bFirstNodeIsFixed = true;
+    rope.m_bLastNodeIsFixed  = true;
+    rope.m_fDampingFactor    = 0.97f;
+    rope.m_fSegmentLength    = fPieceLength;
+    rope.m_Nodes.SetCount(uiSimulatedPieces + 1);
+    rope.m_vAcceleration.Set(0, 0, xiiMath::Sign(m_fSlack) * -1);
+
+    for (xiiUInt16 i = 0; i < uiSimulatedPieces + 1; ++i)
+    {
+      rope.m_Nodes[i].m_vPosition         = vAnchor1 + (vAnchor2 - vAnchor1) * ((float)i / (float)uiSimulatedPieces);
+      rope.m_Nodes[i].m_vPreviousPosition = rope.m_Nodes[i].m_vPosition;
+    }
+
+    rope.SimulateTillEquilibrium(0.001f, 200);
+
+    transforms.SetCountUninitialized(m_uiPieces + 1);
+
+    xiiUInt16 idx2 = 0;
+
+    out_fPieceLength = 0.0f;
+
+    if (bAnchor1Fixed)
+    {
+      out_fPieceLength += fPieceLength;
+
+      transforms[idx2].m_vScale.Set(1);
+      transforms[idx2].m_vPosition = vOrgAnchor1;
+      transforms[idx2].m_qRotation = pAnchor1->GetGlobalRotation();
+
+      ++idx2;
+    }
+
+    const float fRopeLen      = rope.GetTotalLength();
+    const float fRopePieceLen = fRopeLen / uiSimulatedPieces;
+
+    xiiSimdVec4f p0 = rope.m_Nodes[0].m_vPosition;
+
+    for (xiiUInt16 idx = 0; idx < uiSimulatedPieces; ++idx)
+    {
+      const xiiSimdVec4f p1  = rope.GetPositionAtLength((idx + 1) * fRopePieceLen);
+      xiiSimdVec4f       dir = p1 - p0;
+
+      const xiiSimdFloat len = dir.GetLength<3>();
+      out_fPieceLength += len;
+
+      if (len <= 0.001f)
+        dir = xiiSimdVec4f(1, 0, 0, 0);
+      else
+        dir /= len;
+
+      transforms[idx2].m_vScale.Set(1);
+      transforms[idx2].m_vPosition = xiiSimdConversion::ToVec3(p0);
+      transforms[idx2].m_qRotation.SetShortestRotation(xiiVec3::UnitXAxis(), xiiSimdConversion::ToVec3(dir));
+
+      ++idx2;
+      p0 = p1;
+    }
+
+    {
+      transforms[idx2].m_vScale.Set(1);
+      transforms[idx2].m_vPosition = xiiSimdConversion::ToVec3(rope.m_Nodes.PeekBack().m_vPosition);
+      transforms[idx2].m_qRotation = transforms[idx2 - 1].m_qRotation;
+
+      ++idx2;
+    }
+
+    if (bAnchor2Fixed)
+    {
+      out_fPieceLength += fPieceLength;
+
+      transforms[idx2].m_vScale.Set(1);
+      transforms[idx2].m_vPosition = vOrgAnchor2;
+      transforms[idx2].m_qRotation = pAnchor2->GetGlobalRotation();
+
+      xiiVec3 dir = transforms[idx2].m_qRotation * xiiVec3(1, 0, 0);
+      transforms[idx2].m_qRotation.SetShortestRotation(xiiVec3(1, 0, 0), -dir);
+
+      // transforms[idx2].m_qRotation.Flip();
+      transforms[idx2].m_qRotation.Normalize();
+      transforms[idx2 - 1].m_qRotation = transforms[idx2].m_qRotation;
+    }
+
+    out_fPieceLength /= m_uiPieces;
+
+    return XII_SUCCESS;
   }
-
-  out_fPieceLength /= m_uiPieces;
-
-  {
-    xiiUInt32 idx = m_uiPieces;
-    transforms[idx].m_vScale.Set(1);
-    transforms[idx].m_vPosition = xiiSimdConversion::ToVec3(rope.m_Nodes[idx].m_vPosition);
-    transforms[idx].m_qRotation = transforms[idx - 1].m_qRotation;
-  }
-
-  return XII_SUCCESS;
 }
 
 void xiiJoltRopeComponent::DestroyPhysicsShapes()
@@ -483,18 +675,20 @@ void xiiJoltRopeComponent::DestroyPhysicsShapes()
     m_pRagdoll->Release();
     m_pRagdoll = nullptr;
 
-    if (m_pConstraintOrigin)
+    if (m_pConstraintAnchor1)
     {
-      pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintOrigin);
-      m_pConstraintOrigin->Release();
-      m_pConstraintOrigin = nullptr;
+      pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor1);
+      m_pConstraintAnchor1->Release();
+      m_pConstraintAnchor1 = nullptr;
+      m_uiAnchor1BodyID    = xiiInvalidIndex;
     }
 
-    if (m_pConstraintAnchor)
+    if (m_pConstraintAnchor2)
     {
-      pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor);
-      m_pConstraintAnchor->Release();
-      m_pConstraintAnchor = nullptr;
+      pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor2);
+      m_pConstraintAnchor2->Release();
+      m_pConstraintAnchor2 = nullptr;
+      m_uiAnchor2BodyID    = xiiInvalidIndex;
     }
 
     pModule->DeallocateUserData(m_uiUserDataIndex);
@@ -521,44 +715,44 @@ void xiiJoltRopeComponent::Update()
 
   // at runtime, allow to disengage the connection
   {
-    if (!m_bAttachToOrigin && m_pConstraintOrigin)
+    if (m_Anchor1ConstraintMode == xiiJoltRopeAnchorConstraintMode::None && m_pConstraintAnchor1)
     {
-      pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintOrigin);
-      m_pConstraintOrigin->Release();
-      m_pConstraintOrigin = nullptr;
+      pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor1);
+      m_pConstraintAnchor1->Release();
+      m_pConstraintAnchor1 = nullptr;
+      m_uiAnchor1BodyID    = xiiInvalidIndex;
       m_pRagdoll->Activate();
     }
 
-    if (!m_bAttachToAnchor && m_pConstraintAnchor)
+    if (m_Anchor2ConstraintMode == xiiJoltRopeAnchorConstraintMode::None && m_pConstraintAnchor2)
     {
-      pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor);
-      m_pConstraintAnchor->Release();
-      m_pConstraintAnchor = nullptr;
+      pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor2);
+      m_pConstraintAnchor2->Release();
+      m_pConstraintAnchor2 = nullptr;
+      m_uiAnchor2BodyID    = xiiInvalidIndex;
       m_pRagdoll->Activate();
     }
   }
 
-  // if (m_fWindInfluence > 0.0f)
-  //{
-  //   if (const xiiWindWorldModuleInterface* pWind = GetWorld()->GetModuleReadOnly<xiiWindWorldModuleInterface>())
-  //   {
-  //     xiiVec3 ropeDir = m_RopeSim.m_Nodes.PeekBack().m_vPosition - m_RopeSim.m_Nodes[0].m_vPosition;
+#if 0
+  if (m_fWindInfluence > 0.0f)
+  {
+    if (const xiiWindWorldModuleInterface* pWind = GetWorld()->GetModuleReadOnly<xiiWindWorldModuleInterface>())
+    {
+      xiiVec3 ropeDir = m_RopeSim.m_Nodes.PeekBack().m_vPosition - m_RopeSim.m_Nodes[0].m_vPosition;
 
-  //    const xiiVec3 vWind = pWind->GetWindAt(m_RopeSim.m_Nodes.PeekBack().m_vPosition) * m_fWindInfluence;
+      const xiiVec3 vWind = pWind->GetWindAt(m_RopeSim.m_Nodes.PeekBack().m_vPosition) * m_fWindInfluence;
 
-  //    xiiVec3 windForce = vWind;
-  //    windForce += pWind->ComputeWindFlutter(vWind, ropeDir, 10.0f, GetOwner()->GetStableRandomSeed());
+      xiiVec3 windForce = vWind;
+      windForce += pWind->ComputeWindFlutter(vWind, ropeDir, 10.0f, GetOwner()->GetStableRandomSeed());
 
-  //    if (!windForce.IsZero())
-  //    {
-  //      // apply force to all articulation links
-  //    }
-  //  }
-  //}
-
-  // if one is inactive, all the linked bodies are inactive
-  if (!pModule->GetJoltSystem()->GetBodyInterface().IsActive(m_pRagdoll->GetBodyID(0)))
-    return;
+      if (!windForce.IsZero())
+      {
+        // apply force to all articulation links
+      }
+    }
+  }
+#endif
 
   xiiHybridArray<xiiTransform, 32> poses(xiiFrameAllocator::GetCurrentAllocator());
   poses.SetCountUninitialized(static_cast<xiiUInt32>(m_pRagdoll->GetBodyCount()) + 1);
@@ -612,11 +806,22 @@ void xiiJoltRopeComponent::SendPreviewPose()
   if (!IsActiveAndInitialized() || IsActiveAndSimulating())
     return;
 
+  xiiGameObjectHandle hAnchor1 = m_hAnchor1;
+  xiiGameObjectHandle hAnchor2 = m_hAnchor2;
+
+  if (hAnchor1.IsInvalidated())
+    hAnchor1 = GetOwner()->GetHandle();
+  if (hAnchor2.IsInvalidated())
+    hAnchor2 = GetOwner()->GetHandle();
+
+  if (hAnchor1 == hAnchor2)
+    return;
+
   xiiDynamicArray<xiiTransform> pieces(xiiFrameAllocator::GetCurrentAllocator());
 
   xiiMsgRopePoseUpdated poseMsg;
   float                 fPieceLength;
-  if (CreateSegmentTransforms(pieces, fPieceLength).Succeeded())
+  if (CreateSegmentTransforms(pieces, fPieceLength, hAnchor1, hAnchor2).Succeeded())
   {
     poseMsg.m_LinkTransforms = pieces;
 
@@ -651,19 +856,34 @@ void xiiJoltRopeComponent::SetGravityFactor(float fGravity)
   m_pRagdoll->Activate();
 }
 
-void xiiJoltRopeComponent::SetAnchorReference(const char* szReference)
+void xiiJoltRopeComponent::SetAnchor1Reference(const char* szReference)
 {
   auto resolver = GetWorld()->GetGameObjectReferenceResolver();
 
   if (!resolver.IsValid())
     return;
 
-  SetAnchor(resolver(szReference, GetHandle(), "Anchor"));
+  SetAnchor1(resolver(szReference, GetHandle(), "Anchor1"));
 }
 
-void xiiJoltRopeComponent::SetAnchor(xiiGameObjectHandle hActor)
+void xiiJoltRopeComponent::SetAnchor2Reference(const char* szReference)
 {
-  m_hAnchor = hActor;
+  auto resolver = GetWorld()->GetGameObjectReferenceResolver();
+
+  if (!resolver.IsValid())
+    return;
+
+  SetAnchor2(resolver(szReference, GetHandle(), "Anchor2"));
+}
+
+void xiiJoltRopeComponent::SetAnchor1(xiiGameObjectHandle hActor)
+{
+  m_hAnchor1 = hActor;
+}
+
+void xiiJoltRopeComponent::SetAnchor2(xiiGameObjectHandle hActor)
+{
+  m_hAnchor2 = hActor;
 }
 
 void xiiJoltRopeComponent::AddForceAtPos(xiiMsgPhysicsAddForce& ref_msg)
@@ -724,6 +944,57 @@ void xiiJoltRopeComponent::AddImpulseAtPos(xiiMsgPhysicsAddImpulse& ref_msg)
   pModule->GetJoltSystem()->GetBodyInterface().AddImpulse(bodyId, xiiJoltConversionUtils::ToVec3(vImp), xiiJoltConversionUtils::ToVec3(ref_msg.m_vGlobalPosition));
 }
 
+void xiiJoltRopeComponent::SetAnchor1ConstraintMode(xiiEnum<xiiJoltRopeAnchorConstraintMode> mode)
+{
+  if (m_Anchor1ConstraintMode == mode)
+    return;
+
+  m_Anchor1ConstraintMode = mode;
+
+  if (mode == xiiJoltRopeAnchorConstraintMode::None && m_pConstraintAnchor1)
+  {
+    m_pRagdoll->Activate();
+  }
+}
+
+void xiiJoltRopeComponent::SetAnchor2ConstraintMode(xiiEnum<xiiJoltRopeAnchorConstraintMode> mode)
+{
+  if (m_Anchor2ConstraintMode == mode)
+    return;
+
+  m_Anchor2ConstraintMode = mode;
+
+  if (mode == xiiJoltRopeAnchorConstraintMode::None && m_pConstraintAnchor2)
+  {
+    m_pRagdoll->Activate();
+  }
+}
+
+void xiiJoltRopeComponent::OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectConstraints& ref_msg)
+{
+  xiiGameObjectHandle hBody  = ref_msg.m_pActor->GetOwner()->GetHandle();
+  xiiWorld*           pWorld = GetWorld();
+
+  if (m_pConstraintAnchor1 && ref_msg.m_uiJoltBodyID == m_uiAnchor1BodyID)
+  {
+    xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
+    pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor1);
+    m_pConstraintAnchor1->Release();
+    m_pConstraintAnchor1 = nullptr;
+    m_uiAnchor1BodyID    = xiiInvalidIndex;
+  }
+
+  if (m_pConstraintAnchor2 && ref_msg.m_uiJoltBodyID == m_uiAnchor2BodyID)
+  {
+    xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
+
+    pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor2);
+    m_pConstraintAnchor2->Release();
+    m_pConstraintAnchor2 = nullptr;
+    m_uiAnchor2BodyID    = xiiInvalidIndex;
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
@@ -750,6 +1021,8 @@ void xiiJoltRopeComponentManager::Initialize()
 
 void xiiJoltRopeComponentManager::Update(const xiiWorldModule::UpdateContext& context)
 {
+  XII_PROFILE_SCOPE("UpdateRopes");
+
   if (!GetWorld()->GetWorldSimulationEnabled())
   {
     for (auto it = this->m_ComponentStorage.GetIterator(context.m_uiFirstComponentIndex, context.m_uiComponentCount); it.IsValid(); ++it)
@@ -763,16 +1036,12 @@ void xiiJoltRopeComponentManager::Update(const xiiWorldModule::UpdateContext& co
     return;
   }
 
-  xiiJoltWorldModule* pModule = GetWorld()->GetModule<xiiJoltWorldModule>();
-  if (pModule == nullptr)
-    return;
+  xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
+  auto*               pSystem = pModule->GetJoltSystem();
 
-  for (auto it = this->m_ComponentStorage.GetIterator(context.m_uiFirstComponentIndex, context.m_uiComponentCount); it.IsValid(); ++it)
+  for (auto itActor : pModule->GetActiveRopes())
   {
-    if (it->IsActiveAndSimulating())
-    {
-      it->Update();
-    }
+    itActor.Key()->Update();
   }
 }
 

@@ -137,24 +137,24 @@ XII_CREATE_SIMPLE_TEST(Math, Quaternion)
     xiiVec3T axis;
     xiiAngle angle;
 
-    XII_TEST_BOOL(q1.GetRotationAxisAndAngle(axis, angle) == XII_SUCCESS);
+    q1.GetRotationAxisAndAngle(axis, angle);
     XII_TEST_VEC3(axis, xiiVec3T(0, 0, -1), 0.001f);
     XII_TEST_FLOAT(angle.GetDegree(), 90, xiiMath::LargeEpsilon<xiiMat3T::ComponentType>());
 
-    XII_TEST_BOOL(q2.GetRotationAxisAndAngle(axis, angle) == XII_SUCCESS);
+    q2.GetRotationAxisAndAngle(axis, angle);
     XII_TEST_VEC3(axis, xiiVec3T(0, 0, -1), 0.001f);
     XII_TEST_FLOAT(angle.GetDegree(), 90, xiiMath::LargeEpsilon<xiiMat3T::ComponentType>());
 
-    XII_TEST_BOOL(q3.GetRotationAxisAndAngle(axis, angle) == XII_SUCCESS);
+    q3.GetRotationAxisAndAngle(axis, angle);
     XII_TEST_VEC3(axis, xiiVec3T(0, 0, -1), 0.001f);
     XII_TEST_FLOAT(angle.GetDegree(), 90, xiiMath::LargeEpsilon<xiiMat3T::ComponentType>());
 
-    XII_TEST_BOOL(xiiQuatT::IdentityQuaternion().GetRotationAxisAndAngle(axis, angle) == XII_SUCCESS);
+    xiiQuatT::IdentityQuaternion().GetRotationAxisAndAngle(axis, angle);
     XII_TEST_VEC3(axis, xiiVec3T(1, 0, 0), 0.001f);
     XII_TEST_FLOAT(angle.GetDegree(), 0, xiiMath::LargeEpsilon<xiiMat3T::ComponentType>());
 
     xiiQuatT otherIdentity(0, 0, 0, -1);
-    XII_TEST_BOOL(otherIdentity.GetRotationAxisAndAngle(axis, angle) == XII_SUCCESS);
+    otherIdentity.GetRotationAxisAndAngle(axis, angle);
     XII_TEST_VEC3(axis, xiiVec3T(1, 0, 0), 0.001f);
     XII_TEST_FLOAT(angle.GetDegree(), 360, xiiMath::LargeEpsilon<xiiMat3T::ComponentType>());
   }
@@ -194,7 +194,7 @@ XII_CREATE_SIMPLE_TEST(Math, Quaternion)
     XII_TEST_BOOL(q.IsValid(0.001f));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator-")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator- / Invert")
   {
     xiiQuatT q, q1;
     q.SetFromAxisAndAngle(xiiVec3T(0, 0, 1), xiiAngle::Degree(90));
@@ -202,6 +202,10 @@ XII_CREATE_SIMPLE_TEST(Math, Quaternion)
 
     xiiQuatT q2 = -q;
     XII_TEST_BOOL(q1.IsEqualRotation(q2, 0.0001f));
+
+    xiiQuatT q3 = q;
+    q3.Invert();
+    XII_TEST_BOOL(q1.IsEqualRotation(q3, 0.0001f));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Dot")

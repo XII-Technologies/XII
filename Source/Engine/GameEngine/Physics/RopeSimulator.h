@@ -46,10 +46,12 @@ public:
   bool m_bFirstNodeIsFixed = true;
   bool m_bLastNodeIsFixed  = true;
 
-  void SimulateRope(const xiiTime& diff);
-  void SimulateStep(const xiiSimdFloat fDiffSqr, xiiUInt32 uiMaxIterations, xiiSimdFloat fAllowedError);
-  void SimulateTillEquilibrium(xiiSimdFloat fAllowedMovement = 0.005f, xiiUInt32 uiMaxIterations = 1000);
-  bool HasEquilibrium(xiiSimdFloat fAllowedMovement) const;
+  void         SimulateRope(const xiiTime& diff);
+  void         SimulateStep(const xiiSimdFloat fDiffSqr, xiiUInt32 uiMaxIterations, xiiSimdFloat fAllowedError);
+  void         SimulateTillEquilibrium(xiiSimdFloat fAllowedMovement = 0.005f, xiiUInt32 uiMaxIterations = 1000);
+  bool         HasEquilibrium(xiiSimdFloat fAllowedMovement) const;
+  float        GetTotalLength() const;
+  xiiSimdVec4f GetPositionAtLength(float fLength) const;
 
 private:
   xiiSimdFloat EnforceDistanceConstraint();

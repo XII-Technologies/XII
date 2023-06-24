@@ -16,7 +16,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdQuatd)
     // Placement new of the default constructor should not have any effect on the previous data.
     alignas(32) double testBlock[4] = {1, 2, 3, 4};
     xiiSimdQuatd*      pDefCtor     = ::new ((void*)&testBlock[0]) xiiSimdQuatd;
-    XII_TEST_BOOL(pDefCtor->m_v.x() == 1.0 && pDeCtor->m_v.y() == 2.0 && pDeCtor->m_v.z() == 3.0 && pDeCtor->m_v.w() == 4.0);
+    XII_TEST_BOOL(pDefCtor->m_v.x() == 1.0 && pDefCtor->m_v.y() == 2.0 && pDefCtor->m_v.z() == 3.0 && pDefCtor->m_v.w() == 4.0);
 #  endif
 
 #endif

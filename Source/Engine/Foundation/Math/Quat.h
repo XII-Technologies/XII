@@ -88,7 +88,7 @@ public:
   void Normalize(); // [tested]
 
   /// \brief Returns the rotation-axis and angle, that this quaternion rotates around.
-  xiiResult GetRotationAxisAndAngle(xiiVec3Template<Type>& ref_vAxis, xiiAngleTemplate<Type>& ref_angle, Type fEpsilon = xiiMath::DefaultEpsilon<Type>()) const; // [tested]
+  void GetRotationAxisAndAngle(xiiVec3Template<Type>& ref_vAxis, xiiAngleTemplate<Type>& ref_angle, Type fEpsilon = xiiMath::DefaultEpsilon<Type>()) const; // [tested]
 
   /// \brief Returns the Quaternion as a matrix.
   const xiiMat3Template<Type> GetAsMat3() const; // [tested]
@@ -109,7 +109,7 @@ public:
   /// representations for 'identity', so it's difficult to check for it).
   bool IsEqualRotation(const xiiQuatTemplate& qOther, Type fEpsilon) const; // [tested]
 
-  /// \brief Inverts the rotation, so instead of rotating N degrees around its axis, the quaternion will rotate -N degrees around that axis.
+  /// \brief Inverts the rotation, so instead of rotating N degrees around an axis, the quaternion will rotate -N degrees around its axis.
   ///
   /// This modifies the quaternion in place. If you want to get the inverse as a copy, use the negation operator (-).
   void Invert();

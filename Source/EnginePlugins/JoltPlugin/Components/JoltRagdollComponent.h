@@ -27,7 +27,20 @@ namespace JPH
 using xiiSkeletonResourceHandle = xiiTypedResourceHandle<class xiiSkeletonResource>;
 using xiiSurfaceResourceHandle  = xiiTypedResourceHandle<class xiiSurfaceResource>;
 
-using xiiJoltRagdollComponentManager = xiiComponentManagerSimple<class xiiJoltRagdollComponent, xiiComponentUpdateType::WhenSimulating, xiiBlockStorageType::Compact>;
+class XII_JOLTPLUGIN_DLL xiiJoltRagdollComponentManager : public xiiComponentManager<class xiiJoltRagdollComponent, xiiBlockStorageType::FreeList>
+{
+public:
+  xiiJoltRagdollComponentManager(xiiWorld* pWorld);
+  ~xiiJoltRagdollComponentManager();
+
+  virtual void Initialize() override;
+
+private:
+  friend class xiiJoltWorldModule;
+  friend class xiiJoltRagdollComponent;
+
+  void Update(const xiiWorldModule::UpdateContext& context);
+};
 
 struct xiiJoltRagdollStart
 {
@@ -155,5 +168,4 @@ protected:
   void         ComputeLimbGlobalTransform(xiiTransform& transform, const xiiMsgAnimationPoseUpdated& pose, xiiUInt32 uiIndex);
   void         RetrievePhysicsPose();
   virtual void WakeUp();
-  virtual bool IsSleeping() const;
 };

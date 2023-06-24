@@ -43,16 +43,18 @@ public:
 
   xiiUInt16 m_uiPieces = 16; // [ property ]
 
-  void SetAnchorReference(const char* szReference); // [ property ]
-  void SetAnchor(xiiGameObjectHandle hActor);
+  void SetAnchor1Reference(const char* szReference); // [ property ]
+  void SetAnchor2Reference(const char* szReference); // [ property ]
+  void SetAnchor1(xiiGameObjectHandle hActor);
+  void SetAnchor2(xiiGameObjectHandle hActor);
 
   void  SetSlack(float fVal);
   float GetSlack() const { return m_fSlack; }
 
-  void SetAttachToOrigin(bool bVal);
-  bool GetAttachToOrigin() const;
-  void SetAttachToAnchor(bool bVal);
-  bool GetAttachToAnchor() const;
+  void SetAttachToAnchor1(bool bVal);
+  void SetAttachToAnchor2(bool bVal);
+  bool GetAttachToAnchor1() const;
+  bool GetAttachToAnchor2() const;
 
   float m_fSlack   = 0.0f;
   float m_fDamping = 0.5f;
@@ -63,7 +65,8 @@ private:
   void      SendPreviewPose();
   void      RuntimeUpdate();
 
-  xiiGameObjectHandle m_hAnchor;
+  xiiGameObjectHandle m_hAnchor1;
+  xiiGameObjectHandle m_hAnchor2;
 
   xiiUInt32 m_uiPreviewHash = 0;
 
