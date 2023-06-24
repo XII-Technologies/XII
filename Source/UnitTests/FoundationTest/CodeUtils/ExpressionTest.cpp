@@ -976,10 +976,10 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
   {
     xiiStringView testCode = "var x = 7; var y = 0.6\n"
                              "var e = a * x * b * y\n"
-                             "xiiInt32 i = c * 2; i *= i; e += i\n"
+                             "int i = c * 2; i *= i; e += i\n"
                              "output = e";
 
-    xiiStringView referenceCode = "xiiInt32 i = (xiiInt32(c) * 2); output = xiiInt32((float(a * 7 * b) * 0.6) + float(i * i))";
+    xiiStringView referenceCode = "int i = (int(c) * 2); output = int((float(a * 7 * b) * 0.6) + float(i * i))";
 
     xiiExpressionByteCode testByteCode;
     XII_TEST_BOOL(CompareCode<xiiInt32>(testCode, referenceCode, testByteCode));
