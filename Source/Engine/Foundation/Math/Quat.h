@@ -127,10 +127,10 @@ public:
   // *** Euler Angle Conversions ***
 public:
   /// \brief Converts the quaternion to Euler angles
-  void GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiAngleTemplate<Type>& out_y, xiiAngleTemplate<Type>& out_z) const;
+  void GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiAngleTemplate<Type>& out_y, xiiAngleTemplate<Type>& out_z) const;  // [tested]
 
   /// \brief Sets the quaternion from Euler angles
-  void SetFromEulerAngles(const xiiAngleTemplate<Type>& x, const xiiAngleTemplate<Type>& y, const xiiAngleTemplate<Type>& z);
+  void SetFromEulerAngles(const xiiAngleTemplate<Type>& x, const xiiAngleTemplate<Type>& y, const xiiAngleTemplate<Type>& z); // [tested]
 };
 
 /// \brief Rotates v by q

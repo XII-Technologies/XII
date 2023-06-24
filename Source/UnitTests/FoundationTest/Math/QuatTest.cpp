@@ -288,4 +288,84 @@ XII_CREATE_SIMPLE_TEST(Math, Quaternion)
 
     XII_TEST_BOOL(temp1.IsEqual(temp2, 0.01f));
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetAsEulerAngles / SetFromEulerAngles")
+  {
+    for (xiiUInt32 x = 0; x < 360; x += 15)
+    {
+      xiiQuat q;
+      q.SetFromEulerAngles(xiiAngle::Degree(x), {}, {});
+
+      xiiMat3 m;
+      m.SetRotationMatrixX(xiiAngle::Degree(x));
+      xiiQuat qm;
+      qm.SetFromMat3(m);
+      XII_TEST_BOOL(q.IsEqualRotation(qm, 0.01f));
+
+      xiiVec3  axis;
+      xiiAngle angle;
+      q.GetRotationAxisAndAngle(axis, angle, 0.01f);
+
+      XII_TEST_VEC3(axis, xiiVec3::UnitXAxis(), 0.001f);
+      XII_TEST_FLOAT(angle.GetDegree(), (float)x, 0.1f);
+    }
+
+    for (xiiUInt32 y = 15; y < 360; y += 15)
+    {
+      xiiQuat q;
+      q.SetFromEulerAngles({}, xiiAngle::Degree(y), {});
+
+      xiiMat3 m;
+      m.SetRotationMatrixY(xiiAngle::Degree(y));
+      xiiQuat qm;
+      qm.SetFromMat3(m);
+      XII_TEST_BOOL(q.IsEqualRotation(qm, 0.01f));
+
+      xiiVec3  axis;
+      xiiAngle angle;
+      q.GetRotationAxisAndAngle(axis, angle, 0.01f);
+
+      XII_TEST_VEC3(axis, xiiVec3::UnitYAxis(), 0.001f);
+      XII_TEST_FLOAT(angle.GetDegree(), (float)y, 0.1f);
+    }
+
+    for (xiiUInt32 z = 15; z < 360; z += 15)
+    {
+      xiiQuat q;
+      q.SetFromEulerAngles({}, {}, xiiAngle::Degree(z));
+
+      xiiMat3 m;
+      m.SetRotationMatrixZ(xiiAngle::Degree(z));
+      xiiQuat qm;
+      qm.SetFromMat3(m);
+      XII_TEST_BOOL(q.IsEqualRotation(qm, 0.01f));
+
+      xiiVec3  axis;
+      xiiAngle angle;
+      q.GetRotationAxisAndAngle(axis, angle, 0.01f);
+
+      XII_TEST_VEC3(axis, xiiVec3::UnitZAxis(), 0.001f);
+      XII_TEST_FLOAT(angle.GetDegree(), (float)z, 0.1f);
+    }
+
+    for (xiiUInt32 x = 0; x < 360; x += 20)
+    {
+      for (xiiUInt32 y = 0; y < 360; y += 20)
+      {
+        for (xiiUInt32 z = 0; z < 360; z += 30)
+        {
+          xiiQuat q1;
+          q1.SetFromEulerAngles(xiiAngle::Degree(x), xiiAngle::Degree(y), xiiAngle::Degree(z));
+
+          xiiAngle ax, ay, az;
+          q1.GetAsEulerAngles(ax, ay, az);
+
+          xiiQuat q2;
+          q2.SetFromEulerAngles(ax, ay, az);
+
+          XII_TEST_BOOL(q1.IsEqualRotation(q2, 0.01f));
+        }
+      }
+    }
+  }
 }
