@@ -87,7 +87,14 @@ void xiiQtCppProjectDlg::on_OpenSolution_clicked()
 
 void xiiQtCppProjectDlg::on_PluginName_textEdited(const QString& text)
 {
-  m_CppSettings.m_sPluginName = PluginName->text().toUtf8().data();
+  xiiStringBuilder name = PluginName->text().toUtf8().data();
+
+  if (name.EndsWith_NoCase("Plugin"))
+  {
+    name.Shrink(0, 6);
+  }
+
+  m_CppSettings.m_sPluginName = name;
 
   UpdateUI();
 }

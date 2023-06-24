@@ -288,8 +288,8 @@ Only concrete and clocks.\n\
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetApplicationDirectory")
   {
-    const char* szAppDir = xiiOSFile::GetApplicationDirectory();
-    XII_IGNORE_UNUSED(szAppDir);
+    xiiStringView sAppDir = xiiOSFile::GetApplicationDirectory();
+    XII_TEST_BOOL(!sAppDir.IsEmpty());
   }
 
 #if (XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS) && XII_ENABLED(XII_SUPPORTS_FILE_STATS))

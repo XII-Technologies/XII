@@ -40,6 +40,10 @@ struct XII_EDITORFRAMEWORK_DLL xiiCppProject
 
   static void UpdatePluginConfig(const xiiCppSettings& cfg);
 
+  static xiiResult EnsureCppPluginReady();
+
+  static bool IsBuildRequired();
+
   /// \brief Fired when a notable change has been made.
   static xiiEvent<const xiiCppSettings&> s_ChangeEvents;
 };
