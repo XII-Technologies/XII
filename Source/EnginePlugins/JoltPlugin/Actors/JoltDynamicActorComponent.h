@@ -74,9 +74,20 @@ public:
   void AddAngularForce(const xiiVec3& vForce);     // [ scriptable ]
   void AddAngularImpulse(const xiiVec3& vImpulse); // [ scriptable ]
 
+  /// \brief Should be called by components that add Jolt constraints to this body.
+  ///
+  /// All registered components receive xiiJoltMsgDisconnectConstraints in case the body is deleted.
+  /// It is necessary to react to that by removing the Jolt constraint, otherwise Jolt will crash during the next update.
+  void AddConstraint(xiiComponentHandle hComponent);
+
+  /// \brief Should be called when a constraint is removed (though not strictly required) to prevent unnecessary message sending.
+  void RemoveConstraint(xiiComponentHandle hComponent);
+
 protected:
   const xiiJoltMaterial* GetJoltMaterial() const;
 
   bool  m_bKinematic     = false;
   float m_fGravityFactor = 1.0f; // [ property ]
+
+  xiiDynamicArray<xiiComponentHandle> m_Constraints;
 };

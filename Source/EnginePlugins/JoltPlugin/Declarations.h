@@ -1,11 +1,14 @@
 #pragma once
 
+#include <Foundation/Communication/Message.h>
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Enum.h>
 #include <JoltPlugin/JoltPluginDLL.h>
 
-struct XII_JOLTPLUGIN_DLL xiiJoltSteppingMode
+class xiiJoltActorComponent;
+
+struct xiiJoltSteppingMode
 {
   using StorageType = xiiUInt32;
 
@@ -30,7 +33,7 @@ struct xiiOnJoltContact
   enum Enum
   {
     None = 0,
-    //SendReportMsg = XII_BIT(0),
+    // SendReportMsg = XII_BIT(0),
     ImpactReactions = XII_BIT(1),
     SlideReactions  = XII_BIT(2),
     RollXReactions  = XII_BIT(3),
@@ -70,4 +73,17 @@ struct xiiJoltSettings
   xiiUInt32                    m_uiMaxSubSteps   = 4;
 
   xiiUInt32 m_uiMaxBodies = 1000 * 10;
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+struct XII_JOLTPLUGIN_DLL xiiJoltMsgDisconnectConstraints : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiJoltMsgDisconnectConstraints, xiiMessage);
+
+  /// The actor that is being deleted. All constraints that are linked to it must be removed for Jolt not to crash.
+  xiiJoltActorComponent* m_pActor = nullptr;
+
+  /// The ID of the Jolt body that is being removed. If an actor were to have multiple bodies, this message may be sent multiple times.
+  xiiUInt32 m_uiJoltBodyID = 0;
 };

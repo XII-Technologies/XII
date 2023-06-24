@@ -92,6 +92,9 @@ public:
   void AddForceAtPos(xiiMsgPhysicsAddForce& ref_msg);
   void AddImpulseAtPos(xiiMsgPhysicsAddImpulse& ref_msg);
 
+  /// \brief Makes sure that the rope's connection to a removed body also gets removed.
+  void OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectConstraints& msg); // [ msg handler ]
+
 private:
   void                   CreateRope();
   xiiResult              CreateSegmentTransforms(xiiDynamicArray<xiiTransform>& transforms, float& out_fPieceLength, xiiGameObjectHandle hAnchor1, xiiGameObjectHandle hAnchor2);
@@ -99,7 +102,7 @@ private:
   void                   Update();
   void                   SendPreviewPose();
   const xiiJoltMaterial* GetJoltMaterial();
-  JPH::Constraint*       CreateConstraint(const xiiGameObjectHandle& hTarget, const xiiTransform& dstLoc, xiiUInt32 uiBodyID, xiiJoltRopeAnchorConstraintMode::Enum mode);
+  JPH::Constraint*       CreateConstraint(const xiiGameObjectHandle& hTarget, const xiiTransform& dstLoc, xiiUInt32 uiBodyID, xiiJoltRopeAnchorConstraintMode::Enum mode, xiiUInt32& out_uiConnectedToBodyID);
   void                   UpdatePreview();
 
   xiiSurfaceResourceHandle m_hSurface;
@@ -119,6 +122,8 @@ private:
   JPH::Ragdoll*    m_pRagdoll           = nullptr;
   JPH::Constraint* m_pConstraintAnchor1 = nullptr;
   JPH::Constraint* m_pConstraintAnchor2 = nullptr;
+  xiiUInt32        m_uiAnchor1BodyID    = xiiInvalidIndex;
+  xiiUInt32        m_uiAnchor2BodyID    = xiiInvalidIndex;
 
 
 private:

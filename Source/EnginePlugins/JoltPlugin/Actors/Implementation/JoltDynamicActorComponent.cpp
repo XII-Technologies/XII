@@ -326,6 +326,20 @@ void xiiJoltDynamicActorComponent::OnDeactivated()
     GetWorld()->GetOrCreateComponentManager<xiiJoltDynamicActorComponentManager>()->m_KinematicActorComponents.RemoveAndSwap(this);
   }
 
+  xiiDynamicArray<xiiComponentHandle> allConstraints;
+  allConstraints.Swap(m_Constraints);
+
+  xiiJoltMsgDisconnectConstraints msg;
+  msg.m_pActor       = this;
+  msg.m_uiJoltBodyID = GetJoltBodyID();
+
+  xiiWorld* pWorld = GetWorld();
+
+  for (xiiComponentHandle hConstraint : allConstraints)
+  {
+    pWorld->SendMessage(hConstraint, msg);
+  }
+
   SUPER::OnDeactivated();
 }
 
@@ -363,6 +377,16 @@ void xiiJoltDynamicActorComponent::AddAngularImpulse(const xiiVec3& vImpulse)
 
   auto pBodies = &GetWorld()->GetModule<xiiJoltWorldModule>()->GetJoltSystem()->GetBodyInterface();
   pBodies->AddAngularImpulse(JPH::BodyID(m_uiJoltBodyID), xiiJoltConversionUtils::ToVec3(vImpulse));
+}
+
+void xiiJoltDynamicActorComponent::AddConstraint(xiiComponentHandle hComponent)
+{
+  m_Constraints.PushBack(hComponent);
+}
+
+void xiiJoltDynamicActorComponent::RemoveConstraint(xiiComponentHandle hComponent)
+{
+  m_Constraints.RemoveAndSwap(hComponent);
 }
 
 void xiiJoltDynamicActorComponent::AddForceAtPos(xiiMsgPhysicsAddForce& ref_msg)

@@ -28,6 +28,7 @@ class XII_GUIFOUNDATION_DLL xiiActionDescriptorHandle
 {
 public:
   using StorageType = xiiUInt32;
+
   XII_DECLARE_HANDLE_TYPE(xiiActionDescriptorHandle, xiiActionId);
   friend class xiiActionManager;
 

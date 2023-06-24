@@ -14,6 +14,12 @@
 #include <JoltPlugin/Utilities/JoltConversionUtils.h>
 
 // clang-format off
+XII_IMPLEMENT_MESSAGE_TYPE(xiiJoltMsgDisconnectConstraints);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiJoltMsgDisconnectConstraints, 1, xiiRTTIDefaultAllocator<xiiJoltMsgDisconnectConstraints>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+// clang-format off
 XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiJoltActorComponent, 2)
 {
   XII_BEGIN_PROPERTIES

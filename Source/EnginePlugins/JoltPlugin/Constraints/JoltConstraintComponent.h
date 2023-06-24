@@ -3,6 +3,8 @@
 #include <Core/World/ComponentManager.h>
 #include <JoltPlugin/Declarations.h>
 
+class xiiJoltDynamicActorComponent;
+
 namespace JPH
 {
   class Body;
@@ -70,6 +72,9 @@ public:
   xiiJoltConstraintComponent();
   ~xiiJoltConstraintComponent();
 
+  /// \brief Removes the connection between the joined bodies. This cannot be reversed.
+  void BreakConstraint();
+
   void  SetBreakForce(float value);                     // [ property ]
   float GetBreakForce() const { return m_fBreakForce; } // [ property ]
 
@@ -93,9 +98,12 @@ public:
 
   virtual bool ExceededBreakingPoint() = 0;
 
+  /// \brief Forwards to BreakConstraint().
+  void OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectConstraints& msg); // [ msg handler ]
+
 protected:
-  xiiResult FindParentBody(xiiUInt32& out_uiJoltBodyID);
-  xiiResult FindChildBody(xiiUInt32& out_uiJoltBodyID);
+  xiiResult FindParentBody(xiiUInt32& out_uiJoltBodyID, xiiJoltDynamicActorComponent*& pRbComp);
+  xiiResult FindChildBody(xiiUInt32& out_uiJoltBodyID, xiiJoltDynamicActorComponent*& pRbComp);
 
   virtual void CreateContstraintType(JPH::Body* pBody0, JPH::Body* pBody1) = 0;
 

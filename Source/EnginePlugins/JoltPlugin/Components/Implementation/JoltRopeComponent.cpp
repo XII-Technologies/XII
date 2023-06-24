@@ -55,6 +55,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltRopeComponent, 2, xiiComponentMode::Dynamic)
     {
       XII_MESSAGE_HANDLER(xiiMsgPhysicsAddForce, AddForceAtPos),
       XII_MESSAGE_HANDLER(xiiMsgPhysicsAddImpulse, AddImpulseAtPos),
+      XII_MESSAGE_HANDLER(xiiJoltMsgDisconnectConstraints, OnJoltMsgDisconnectConstraints),
     }
     XII_END_MESSAGEHANDLERS;
     XII_BEGIN_ATTRIBUTES
@@ -319,18 +320,18 @@ void xiiJoltRopeComponent::CreateRope()
 
   if (m_Anchor1ConstraintMode != xiiJoltRopeAnchorConstraintMode::None)
   {
-    m_pConstraintAnchor1 = CreateConstraint(hAnchor1, nodes[0], m_pRagdoll->GetBodyID(0).GetIndexAndSequenceNumber(), m_Anchor1ConstraintMode);
+    m_pConstraintAnchor1 = CreateConstraint(hAnchor1, nodes[0], m_pRagdoll->GetBodyID(0).GetIndexAndSequenceNumber(), m_Anchor1ConstraintMode, m_uiAnchor1BodyID);
   }
 
   if (m_Anchor2ConstraintMode != xiiJoltRopeAnchorConstraintMode::None)
   {
     xiiTransform end     = nodes.PeekBack();
     end.m_qRotation      = -end.m_qRotation;
-    m_pConstraintAnchor2 = CreateConstraint(hAnchor2, end, m_pRagdoll->GetBodyIDs().back().GetIndexAndSequenceNumber(), m_Anchor2ConstraintMode);
+    m_pConstraintAnchor2 = CreateConstraint(hAnchor2, end, m_pRagdoll->GetBodyIDs().back().GetIndexAndSequenceNumber(), m_Anchor2ConstraintMode, m_uiAnchor2BodyID);
   }
 }
 
-JPH::Constraint* xiiJoltRopeComponent::CreateConstraint(const xiiGameObjectHandle& hTarget, const xiiTransform& pieceLoc, xiiUInt32 uiBodyID, xiiJoltRopeAnchorConstraintMode::Enum mode)
+JPH::Constraint* xiiJoltRopeComponent::CreateConstraint(const xiiGameObjectHandle& hTarget, const xiiTransform& pieceLoc, xiiUInt32 uiBodyID, xiiJoltRopeAnchorConstraintMode::Enum mode, xiiUInt32& out_uiConnectedToBodyID)
 {
   xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
 
@@ -353,7 +354,8 @@ JPH::Constraint* xiiJoltRopeComponent::CreateConstraint(const xiiGameObjectHandl
   if (pActor)
   {
     pActor->EnsureSimulationStarted();
-    bodyIDs[0] = JPH::BodyID(pActor->GetJoltBodyID());
+    out_uiConnectedToBodyID = pActor->GetJoltBodyID();
+    bodyIDs[0]              = JPH::BodyID(out_uiConnectedToBodyID);
   }
 
 
@@ -428,6 +430,11 @@ JPH::Constraint* xiiJoltRopeComponent::CreateConstraint(const xiiGameObjectHandl
     pConstraint->AddRef();
     pModule->GetJoltSystem()->AddConstraint(pConstraint);
 
+    if (pActor)
+    {
+      pActor->AddConstraint(GetHandle());
+    }
+
     return pConstraint;
   }
 }
@@ -479,47 +486,49 @@ xiiResult xiiJoltRopeComponent::CreateSegmentTransforms(xiiDynamicArray<xiiTrans
   if (m_uiPieces == 0)
     return XII_FAILURE;
 
-  // xiiPathComponent* pPath;
-  // if (GetOwner()->TryGetComponentOfBaseType(pPath))
-  //{
-  //   // generally working, but the usability is still WIP
+#if 0
+  xiiPathComponent* pPath;
+  if (GetOwner()->TryGetComponentOfBaseType(pPath))
+  {
+    // generally working, but the usability is still WIP
 
-  //  pPath->EnsureLinearizedRepresentationIsUpToDate();
+    pPath->EnsureLinearizedRepresentationIsUpToDate();
 
-  //  const float fLength = pPath->GetLinearizedRepresentationLength();
+    const float fLength = pPath->GetLinearizedRepresentationLength();
 
-  //  if (xiiMath::IsZero(fLength, 0.001f))
-  //    return XII_FAILURE;
+    if (xiiMath::IsZero(fLength, 0.001f))
+      return XII_FAILURE;
 
-  //  const xiiTransform ownTrans = GetOwner()->GetGlobalTransform();
+    const xiiTransform ownTrans = GetOwner()->GetGlobalTransform();
 
-  //  out_fPieceLength = fLength / m_uiPieces;
+    out_fPieceLength = fLength / m_uiPieces;
 
-  //  transforms.SetCountUninitialized(m_uiPieces + 1);
+    transforms.SetCountUninitialized(m_uiPieces + 1);
 
-  //  xiiPathComponent::LinearSampler sampler;
-  //  auto t0 = pPath->SampleLinearizedRepresentation(sampler);
+    xiiPathComponent::LinearSampler sampler;
+    auto                            t0 = pPath->SampleLinearizedRepresentation(sampler);
 
-  //  for (xiiUInt16 p = 0; p < m_uiPieces; ++p)
-  //  {
-  //    float fAddDistance = out_fPieceLength;
-  //    pPath->AdvanceLinearSamplerBy(sampler, fAddDistance);
-  //    const auto t1 = pPath->SampleLinearizedRepresentation(sampler);
+    for (xiiUInt16 p = 0; p < m_uiPieces; ++p)
+    {
+      float fAddDistance = out_fPieceLength;
+      pPath->AdvanceLinearSamplerBy(sampler, fAddDistance);
+      const auto t1 = pPath->SampleLinearizedRepresentation(sampler);
 
-  //    transforms[p].m_vPosition = ownTrans * t0.m_vPosition;
-  //    transforms[p].m_vScale.Set(1);
-  //    transforms[p].m_qRotation.SetShortestRotation(xiiVec3::UnitXAxis(), ownTrans.m_qRotation * (t1.m_vPosition - t0.m_vPosition).GetNormalized());
+      transforms[p].m_vPosition = ownTrans * t0.m_vPosition;
+      transforms[p].m_vScale.Set(1);
+      transforms[p].m_qRotation.SetShortestRotation(xiiVec3::UnitXAxis(), ownTrans.m_qRotation * (t1.m_vPosition - t0.m_vPosition).GetNormalized());
 
-  //    t0 = t1;
-  //  }
+      t0 = t1;
+    }
 
-  //  transforms.PeekBack().m_vPosition = ownTrans * t0.m_vPosition;
-  //  transforms.PeekBack().m_vScale.Set(1);
-  //  transforms.PeekBack().m_qRotation = transforms[m_uiPieces - 1].m_qRotation;
+    transforms.PeekBack().m_vPosition = ownTrans * t0.m_vPosition;
+    transforms.PeekBack().m_vScale.Set(1);
+    transforms.PeekBack().m_qRotation = transforms[m_uiPieces - 1].m_qRotation;
 
-  //  return XII_SUCCESS;
-  //}
-  // else
+    return XII_SUCCESS;
+  }
+  else
+#endif
   {
     const xiiGameObject* pAnchor1 = nullptr;
     const xiiGameObject* pAnchor2 = nullptr;
@@ -671,6 +680,7 @@ void xiiJoltRopeComponent::DestroyPhysicsShapes()
       pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor1);
       m_pConstraintAnchor1->Release();
       m_pConstraintAnchor1 = nullptr;
+      m_uiAnchor1BodyID    = xiiInvalidIndex;
     }
 
     if (m_pConstraintAnchor2)
@@ -678,6 +688,7 @@ void xiiJoltRopeComponent::DestroyPhysicsShapes()
       pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor2);
       m_pConstraintAnchor2->Release();
       m_pConstraintAnchor2 = nullptr;
+      m_uiAnchor2BodyID    = xiiInvalidIndex;
     }
 
     pModule->DeallocateUserData(m_uiUserDataIndex);
@@ -710,6 +721,7 @@ void xiiJoltRopeComponent::Update()
       m_pConstraintAnchor1->Release();
       m_pConstraintAnchor1 = nullptr;
       m_pRagdoll->Activate();
+      m_uiAnchor1BodyID = xiiInvalidIndex;
     }
 
     if (m_Anchor2ConstraintMode == xiiJoltRopeAnchorConstraintMode::None && m_pConstraintAnchor2)
@@ -718,26 +730,29 @@ void xiiJoltRopeComponent::Update()
       m_pConstraintAnchor2->Release();
       m_pConstraintAnchor2 = nullptr;
       m_pRagdoll->Activate();
+      m_uiAnchor2BodyID = xiiInvalidIndex;
     }
   }
 
-  // if (m_fWindInfluence > 0.0f)
-  //{
-  //   if (const xiiWindWorldModuleInterface* pWind = GetWorld()->GetModuleReadOnly<xiiWindWorldModuleInterface>())
-  //   {
-  //     xiiVec3 ropeDir = m_RopeSim.m_Nodes.PeekBack().m_vPosition - m_RopeSim.m_Nodes[0].m_vPosition;
+#if 0
+  if (m_fWindInfluence > 0.0f)
+  {
+    if (const xiiWindWorldModuleInterface* pWind = GetWorld()->GetModuleReadOnly<xiiWindWorldModuleInterface>())
+    {
+      xiiVec3 ropeDir = m_RopeSim.m_Nodes.PeekBack().m_vPosition - m_RopeSim.m_Nodes[0].m_vPosition;
 
-  //    const xiiVec3 vWind = pWind->GetWindAt(m_RopeSim.m_Nodes.PeekBack().m_vPosition) * m_fWindInfluence;
+      const xiiVec3 vWind = pWind->GetWindAt(m_RopeSim.m_Nodes.PeekBack().m_vPosition) * m_fWindInfluence;
 
-  //    xiiVec3 windForce = vWind;
-  //    windForce += pWind->ComputeWindFlutter(vWind, ropeDir, 10.0f, GetOwner()->GetStableRandomSeed());
+      xiiVec3 windForce = vWind;
+      windForce += pWind->ComputeWindFlutter(vWind, ropeDir, 10.0f, GetOwner()->GetStableRandomSeed());
 
-  //    if (!windForce.IsZero())
-  //    {
-  //      // apply force to all articulation links
-  //    }
-  //  }
-  //}
+      if (!windForce.IsZero())
+      {
+        // apply force to all articulation links
+      }
+    }
+  }
+#endif
 
   // if one is inactive, all the linked bodies are inactive
   if (!pModule->GetJoltSystem()->GetBodyInterface().IsActive(m_pRagdoll->GetBodyID(0)))
@@ -931,6 +946,31 @@ void xiiJoltRopeComponent::AddImpulseAtPos(xiiMsgPhysicsAddImpulse& ref_msg)
 
   xiiJoltWorldModule* pModule = GetWorld()->GetModule<xiiJoltWorldModule>();
   pModule->GetJoltSystem()->GetBodyInterface().AddImpulse(bodyId, xiiJoltConversionUtils::ToVec3(vImp), xiiJoltConversionUtils::ToVec3(ref_msg.m_vGlobalPosition));
+}
+
+void xiiJoltRopeComponent::OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectConstraints& msg)
+{
+  xiiGameObjectHandle hBody  = msg.m_pActor->GetOwner()->GetHandle();
+  xiiWorld*           pWorld = GetWorld();
+
+  if (m_pConstraintAnchor1 && msg.m_uiJoltBodyID == m_uiAnchor1BodyID)
+  {
+    xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
+    pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor1);
+    m_pConstraintAnchor1->Release();
+    m_pConstraintAnchor1 = nullptr;
+    m_uiAnchor1BodyID    = xiiInvalidIndex;
+  }
+
+  if (m_pConstraintAnchor2 && msg.m_uiJoltBodyID == m_uiAnchor2BodyID)
+  {
+    xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
+
+    pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor2);
+    m_pConstraintAnchor2->Release();
+    m_pConstraintAnchor2 = nullptr;
+    m_uiAnchor2BodyID    = xiiInvalidIndex;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
