@@ -6,15 +6,19 @@
 
 struct XII_EDITORFRAMEWORK_DLL xiiCppProject
 {
-  static xiiString GetTargetSourceDir();
+  static xiiString GetTargetSourceDir(xiiStringView sProjectDirectory = {});
 
   static xiiString GetGeneratorFolderName(const xiiCppSettings& cfg);
 
   static xiiString GetCMakeGeneratorName(const xiiCppSettings& cfg);
 
+  static xiiString GetPluginSourceDir(const xiiCppSettings& cfg, xiiStringView sProjectDirectory = {});
+
   static xiiString GetBuildDir(const xiiCppSettings& cfg);
 
   static xiiString GetSolutionPath(const xiiCppSettings& cfg);
+
+  static xiiResult CheckCMakeCache(const xiiCppSettings& cfg);
 
   static bool ExistsSolution(const xiiCppSettings& cfg);
 

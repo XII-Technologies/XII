@@ -548,7 +548,13 @@ void xiiProjectAction::Execute(const xiiVariant& value)
 
     case xiiProjectAction::ButtonType::PluginSelection:
     {
-      xiiQtEditorApp::GetSingleton()->DetectAvailablePluginBundles();
+      xiiQtEditorApp::GetSingleton()->DetectAvailablePluginBundles(xiiOSFile::GetApplicationDirectory());
+
+      xiiCppSettings cppSettings;
+      if (cppSettings.Load().Succeeded())
+      {
+        xiiQtEditorApp::GetSingleton()->DetectAvailablePluginBundles(xiiCppProject::GetPluginSourceDir(cppSettings));
+      }
 
       xiiQtPluginSelectionDlg dlg(&xiiQtEditorApp::GetSingleton()->GetPluginBundles());
       dlg.exec();
