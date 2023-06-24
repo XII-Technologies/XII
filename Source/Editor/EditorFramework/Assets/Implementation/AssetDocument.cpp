@@ -122,17 +122,23 @@ void xiiAssetDocument::InternalAfterSaveDocument()
     // creating the document and TransformAsset will most likely fail.
     if (m_EngineConnectionType == xiiAssetDocEngineConnection::None || m_pEngineConnection)
     {
-      /// \todo Should only be done for platform agnostic assets
-      xiiTransformStatus ret = xiiAssetCurator::GetSingleton()->TransformAsset(GetGuid(), xiiTransformFlags::TriggeredManually);
+      xiiSharedPtr<xiiDelegateTask<void>> pTask = XII_DEFAULT_NEW(xiiDelegateTask<void>, "TransformAfterSaveDocument", [this]() {
+        /// \todo Should only be done for platform agnostic assets
+        xiiTransformStatus ret = xiiAssetCurator::GetSingleton()->TransformAsset(GetGuid(), xiiTransformFlags::TriggeredManually);
 
-      if (ret.Failed())
-      {
-        xiiLog::Error("Transform failed: '{0}' ({1})", ret.m_sMessage, GetDocumentPath());
-      }
-      else
-      {
-        xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
-      }
+        if (ret.Failed())
+        {
+          xiiLog::Error("Transform failed: '{0}' ({1})", ret.m_sMessage, GetDocumentPath());
+        }
+        else
+        {
+          xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
+        }
+        //
+      });
+
+      pTask->ConfigureTask("TransformAfterSaveDocument", xiiTaskNesting::Maybe);
+      xiiTaskSystem::StartSingleTask(pTask, xiiTaskPriority::ThisFrameMainThread);
     }
   }
 }
