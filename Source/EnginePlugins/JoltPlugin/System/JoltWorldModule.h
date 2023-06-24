@@ -11,6 +11,8 @@
 
 class xiiJoltCharacterControllerComponent;
 class xiiJoltContactListener;
+class xiiJoltRagdollComponent;
+class xiiJoltRopeComponent;
 
 namespace JPH
 {
@@ -72,7 +74,9 @@ public:
 
   xiiDeque<xiiComponentHandle> m_RequireUpdate;
 
-  const xiiMap<xiiJoltActorComponent*, xiiUInt32>& GetActiveActors() const { return m_ActiveActors; }
+  const xiiMap<xiiJoltActorComponent*, xiiUInt32>&   GetActiveActors() const { return m_ActiveActors; }
+  const xiiMap<xiiJoltRagdollComponent*, xiiUInt32>& GetActiveRagdolls() const { return m_ActiveRagdolls; }
+  const xiiMap<xiiJoltRopeComponent*, xiiUInt32>&    GetActiveRopes() const { return m_ActiveRopes; }
 
   void QueueBodyToAdd(JPH::Body* pBody, bool bAwake);
 
@@ -134,9 +138,11 @@ private:
   xiiJoltObjectVsBroadPhaseLayerFilter m_ObjectVsBroadphaseFilter;
   xiiJoltObjectLayerPairFilter         m_ObjectLayerPairFilter;
 
-  void*                                     m_pContactListener    = nullptr;
-  void*                                     m_pActivationListener = nullptr;
-  xiiMap<xiiJoltActorComponent*, xiiUInt32> m_ActiveActors;
+  void*                                       m_pContactListener    = nullptr;
+  void*                                       m_pActivationListener = nullptr;
+  xiiMap<xiiJoltActorComponent*, xiiUInt32>   m_ActiveActors;
+  xiiMap<xiiJoltRagdollComponent*, xiiUInt32> m_ActiveRagdolls;
+  xiiMap<xiiJoltRopeComponent*, xiiUInt32>    m_ActiveRopes;
 
   JPH::GroupFilter* m_pGroupFilter           = nullptr;
   JPH::GroupFilter* m_pGroupFilterIgnoreSame = nullptr;

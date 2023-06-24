@@ -120,16 +120,40 @@ public:
     return nullptr;
   }
 
-  //XII_FORCE_INLINE static xiiJoltShapeComponent* GetShapeComponent(const void* pUserData)
-  //{
-  //  const xiiJoltUserData* pJoltUserData = static_cast<const xiiJoltUserData*>(pUserData);
-  //  if (pJoltUserData != nullptr && pJoltUserData->m_Type == Type::ShapeComponent)
-  //  {
-  //    return static_cast<xiiJoltShapeComponent*>(pJoltUserData->m_pObject);
-  //  }
+  XII_FORCE_INLINE static xiiJoltRagdollComponent* GetRagdollComponent(const void* pUserData)
+  {
+    const xiiJoltUserData* pJoltUserData = static_cast<const xiiJoltUserData*>(pUserData);
+    if (pJoltUserData != nullptr && pJoltUserData->m_Type == Type::RagdollComponent)
+    {
+      return static_cast<xiiJoltRagdollComponent*>(pJoltUserData->m_pObject);
+    }
 
-  //  return nullptr;
-  //}
+    return nullptr;
+  }
+
+  XII_FORCE_INLINE static xiiJoltRopeComponent* GetRopeComponent(const void* pUserData)
+  {
+    const xiiJoltUserData* pJoltUserData = static_cast<const xiiJoltUserData*>(pUserData);
+    if (pJoltUserData != nullptr && pJoltUserData->m_Type == Type::RopeComponent)
+    {
+      return static_cast<xiiJoltRopeComponent*>(pJoltUserData->m_pObject);
+    }
+
+    return nullptr;
+  }
+
+#if 0
+  XII_FORCE_INLINE static xiiJoltShapeComponent* GetShapeComponent(const void* pUserData)
+  {
+    const xiiJoltUserData* pJoltUserData = static_cast<const xiiJoltUserData*>(pUserData);
+    if (pJoltUserData != nullptr && pJoltUserData->m_Type == Type::ShapeComponent)
+    {
+      return static_cast<xiiJoltShapeComponent*>(pJoltUserData->m_pObject);
+    }
+
+    return nullptr;
+  }
+#endif
 
   XII_FORCE_INLINE static xiiJoltTriggerComponent* GetTriggerComponent(const void* pUserData)
   {

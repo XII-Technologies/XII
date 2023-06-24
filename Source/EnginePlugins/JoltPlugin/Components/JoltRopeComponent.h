@@ -73,15 +73,13 @@ public:
   void        SetSurfaceFile(const char* szFile); // [ property ]
   const char* GetSurfaceFile() const;             // [ property ]
 
-  xiiUInt8                                 m_uiCollisionLayer = 0;            // [ property ]
-  xiiUInt16                                m_uiPieces         = 16;           // [ property ]
-  float                                    m_fThickness       = 0.05f;        // [ property ]
-  float                                    m_fSlack           = 0.3f;         // [ property ]
-  xiiEnum<xiiJoltRopeAnchorConstraintMode> m_Anchor1ConstraintMode;           // [ property ]
-  xiiEnum<xiiJoltRopeAnchorConstraintMode> m_Anchor2ConstraintMode;           // [ property ]
-  bool                                     m_bCCD     = false;                // [ property ]
-  xiiAngle                                 m_MaxBend  = xiiAngle::Degree(30); // [ property ]
-  xiiAngle                                 m_MaxTwist = xiiAngle::Degree(15); // [ property ]
+  xiiUInt8  m_uiCollisionLayer = 0;                    // [ property ]
+  xiiUInt16 m_uiPieces         = 16;                   // [ property ]
+  float     m_fThickness       = 0.05f;                // [ property ]
+  float     m_fSlack           = 0.3f;                 // [ property ]
+  bool      m_bCCD             = false;                // [ property ]
+  xiiAngle  m_MaxBend          = xiiAngle::Degree(30); // [ property ]
+  xiiAngle  m_MaxTwist         = xiiAngle::Degree(15); // [ property ]
 
   void SetAnchor1Reference(const char* szReference); // [ property ]
   void SetAnchor2Reference(const char* szReference); // [ property ]
@@ -91,6 +89,12 @@ public:
 
   void AddForceAtPos(xiiMsgPhysicsAddForce& ref_msg);
   void AddImpulseAtPos(xiiMsgPhysicsAddImpulse& ref_msg);
+
+  void SetAnchor1ConstraintMode(xiiEnum<xiiJoltRopeAnchorConstraintMode> mode); // [ property ]
+  void SetAnchor2ConstraintMode(xiiEnum<xiiJoltRopeAnchorConstraintMode> mode); // [ property ]
+
+  xiiEnum<xiiJoltRopeAnchorConstraintMode> GetAnchor1ConstraintMode() const { return m_Anchor1ConstraintMode; } // [ property ]
+  xiiEnum<xiiJoltRopeAnchorConstraintMode> GetAnchor2ConstraintMode() const { return m_Anchor2ConstraintMode; } // [ property ]
 
   /// \brief Makes sure that the rope's connection to a removed body also gets removed.
   void OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectConstraints& msg); // [ msg handler ]
@@ -109,6 +113,9 @@ private:
 
   xiiGameObjectHandle m_hAnchor1;
   xiiGameObjectHandle m_hAnchor2;
+
+  xiiEnum<xiiJoltRopeAnchorConstraintMode> m_Anchor1ConstraintMode; // [ property ]
+  xiiEnum<xiiJoltRopeAnchorConstraintMode> m_Anchor2ConstraintMode; // [ property ]
 
   float     m_fTotalMass        = 1.0f;
   float     m_fMaxForcePerFrame = 0.0f;

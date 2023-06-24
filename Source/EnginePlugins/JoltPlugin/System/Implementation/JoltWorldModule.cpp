@@ -51,6 +51,16 @@ public:
     {
       m_pActiveActors->Insert(pActor, bodyID.GetIndexAndSequenceNumber());
     }
+
+    if (xiiJoltRagdollComponent* pActor = xiiJoltUserData::GetRagdollComponent(pUserData))
+    {
+      m_pActiveRagdolls->Insert(pActor, bodyID.GetIndexAndSequenceNumber());
+    }
+
+    if (xiiJoltRopeComponent* pActor = xiiJoltUserData::GetRopeComponent(pUserData))
+    {
+      m_pActiveRopes->Insert(pActor, bodyID.GetIndexAndSequenceNumber());
+    }
   }
 
   virtual void OnBodyDeactivated(const JPH::BodyID& bodyID, JPH::uint64 inBodyUserData) override
@@ -60,9 +70,21 @@ public:
     {
       m_pActiveActors->Remove(pActor);
     }
+
+    if (xiiJoltRagdollComponent* pActor = xiiJoltUserData::GetRagdollComponent(pUserData))
+    {
+      m_pActiveRagdolls->Remove(pActor);
+    }
+
+    if (xiiJoltRopeComponent* pActor = xiiJoltUserData::GetRopeComponent(pUserData))
+    {
+      m_pActiveRopes->Remove(pActor);
+    }
   }
 
-  xiiMap<xiiJoltActorComponent*, xiiUInt32>* m_pActiveActors = nullptr;
+  xiiMap<xiiJoltActorComponent*, xiiUInt32>*   m_pActiveActors   = nullptr;
+  xiiMap<xiiJoltRagdollComponent*, xiiUInt32>* m_pActiveRagdolls = nullptr;
+  xiiMap<xiiJoltRopeComponent*, xiiUInt32>*    m_pActiveRopes    = nullptr;
 };
 
 class xiiJoltGroupFilter : public JPH::GroupFilter
@@ -101,7 +123,10 @@ void xiiJoltWorldModule::Deinitialize()
   m_pContactListener = nullptr;
 
   m_pGroupFilter->Release();
+  m_pGroupFilter = nullptr;
+
   m_pGroupFilterIgnoreSame->Release();
+  m_pGroupFilterIgnoreSame = nullptr;
 }
 
 class xiiJoltTempAlloc : public JPH::TempAllocator
@@ -224,6 +249,8 @@ void xiiJoltWorldModule::Initialize()
     xiiJoltBodyActivationListener* pListener = XII_DEFAULT_NEW(xiiJoltBodyActivationListener);
     m_pActivationListener                    = pListener;
     pListener->m_pActiveActors               = &m_ActiveActors;
+    pListener->m_pActiveRagdolls             = &m_ActiveRagdolls;
+    pListener->m_pActiveRopes                = &m_ActiveRopes;
     m_pSystem->SetBodyActivationListener(pListener);
   }
 

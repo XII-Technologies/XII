@@ -48,7 +48,11 @@ private:
 
 xiiResult xiiJoltCooking::CookTriangleMesh(const xiiJoltCookingMesh& mesh, xiiStreamWriter& ref_outputStream)
 {
-  JPH::RegisterDefaultAllocator();
+  if (JPH::Allocate == nullptr)
+  {
+    // Ensure an allocator exists
+    JPH::RegisterDefaultAllocator();
+  }
 
   JPH::VertexList          vertexList;
   JPH::IndexedTriangleList triangleList;
@@ -183,7 +187,11 @@ XII_DEFINE_AS_POD_TYPE(JPH::Vec3);
 
 xiiResult xiiJoltCooking::CookSingleConvexJoltMesh(const xiiJoltCookingMesh& mesh, xiiStreamWriter& OutputStream)
 {
-  JPH::RegisterDefaultAllocator();
+  if (JPH::Allocate == nullptr)
+  {
+    // Ensure an allocator exists
+    JPH::RegisterDefaultAllocator();
+  }
 
   xiiHybridArray<JPH::Vec3, 256> verts;
   verts.SetCountUninitialized(mesh.m_Vertices.GetCount());

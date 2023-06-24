@@ -35,8 +35,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltRopeComponent, 2, xiiComponentMode::Dynamic)
     {
       XII_ACCESSOR_PROPERTY("Anchor1", DummyGetter, SetAnchor1Reference)->AddAttributes(new xiiGameObjectReferenceAttribute()),
       XII_ACCESSOR_PROPERTY("Anchor2", DummyGetter, SetAnchor2Reference)->AddAttributes(new xiiGameObjectReferenceAttribute()),
-      XII_ENUM_MEMBER_PROPERTY("Anchor1Constraint", xiiJoltRopeAnchorConstraintMode, m_Anchor1ConstraintMode),
-      XII_ENUM_MEMBER_PROPERTY("Anchor2Constraint", xiiJoltRopeAnchorConstraintMode, m_Anchor2ConstraintMode),
+      XII_ENUM_ACCESSOR_PROPERTY("Anchor1Constraint", xiiJoltRopeAnchorConstraintMode, GetAnchor1ConstraintMode, SetAnchor1ConstraintMode),
+      XII_ENUM_ACCESSOR_PROPERTY("Anchor2Constraint", xiiJoltRopeAnchorConstraintMode, GetAnchor2ConstraintMode, SetAnchor2ConstraintMode),
       XII_MEMBER_PROPERTY("Pieces", m_uiPieces)->AddAttributes(new xiiDefaultValueAttribute(16), new xiiClampValueAttribute(2, 64)),
       XII_MEMBER_PROPERTY("Slack", m_fSlack)->AddAttributes(new xiiDefaultValueAttribute(0.3f)),
       XII_MEMBER_PROPERTY("Mass", m_fTotalMass)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 1000.0f)),
@@ -720,8 +720,8 @@ void xiiJoltRopeComponent::Update()
       pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor1);
       m_pConstraintAnchor1->Release();
       m_pConstraintAnchor1 = nullptr;
+      m_uiAnchor1BodyID    = xiiInvalidIndex;
       m_pRagdoll->Activate();
-      m_uiAnchor1BodyID = xiiInvalidIndex;
     }
 
     if (m_Anchor2ConstraintMode == xiiJoltRopeAnchorConstraintMode::None && m_pConstraintAnchor2)
@@ -729,8 +729,8 @@ void xiiJoltRopeComponent::Update()
       pModule->GetJoltSystem()->RemoveConstraint(m_pConstraintAnchor2);
       m_pConstraintAnchor2->Release();
       m_pConstraintAnchor2 = nullptr;
+      m_uiAnchor2BodyID    = xiiInvalidIndex;
       m_pRagdoll->Activate();
-      m_uiAnchor2BodyID = xiiInvalidIndex;
     }
   }
 
@@ -753,10 +753,6 @@ void xiiJoltRopeComponent::Update()
     }
   }
 #endif
-
-  // if one is inactive, all the linked bodies are inactive
-  if (!pModule->GetJoltSystem()->GetBodyInterface().IsActive(m_pRagdoll->GetBodyID(0)))
-    return;
 
   xiiHybridArray<xiiTransform, 32> poses(xiiFrameAllocator::GetCurrentAllocator());
   poses.SetCountUninitialized(static_cast<xiiUInt32>(m_pRagdoll->GetBodyCount()) + 1);
@@ -948,6 +944,32 @@ void xiiJoltRopeComponent::AddImpulseAtPos(xiiMsgPhysicsAddImpulse& ref_msg)
   pModule->GetJoltSystem()->GetBodyInterface().AddImpulse(bodyId, xiiJoltConversionUtils::ToVec3(vImp), xiiJoltConversionUtils::ToVec3(ref_msg.m_vGlobalPosition));
 }
 
+void xiiJoltRopeComponent::SetAnchor1ConstraintMode(xiiEnum<xiiJoltRopeAnchorConstraintMode> mode)
+{
+  if (m_Anchor1ConstraintMode == mode)
+    return;
+
+  m_Anchor1ConstraintMode = mode;
+
+  if (mode == xiiJoltRopeAnchorConstraintMode::None && m_pConstraintAnchor1)
+  {
+    m_pRagdoll->Activate();
+  }
+}
+
+void xiiJoltRopeComponent::SetAnchor2ConstraintMode(xiiEnum<xiiJoltRopeAnchorConstraintMode> mode)
+{
+  if (m_Anchor2ConstraintMode == mode)
+    return;
+
+  m_Anchor2ConstraintMode = mode;
+
+  if (mode == xiiJoltRopeAnchorConstraintMode::None && m_pConstraintAnchor2)
+  {
+    m_pRagdoll->Activate();
+  }
+}
+
 void xiiJoltRopeComponent::OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectConstraints& msg)
 {
   xiiGameObjectHandle hBody  = msg.m_pActor->GetOwner()->GetHandle();
@@ -999,6 +1021,8 @@ void xiiJoltRopeComponentManager::Initialize()
 
 void xiiJoltRopeComponentManager::Update(const xiiWorldModule::UpdateContext& context)
 {
+  XII_PROFILE_SCOPE("UpdateRopes");
+
   if (!GetWorld()->GetWorldSimulationEnabled())
   {
     for (auto it = this->m_ComponentStorage.GetIterator(context.m_uiFirstComponentIndex, context.m_uiComponentCount); it.IsValid(); ++it)
@@ -1012,16 +1036,12 @@ void xiiJoltRopeComponentManager::Update(const xiiWorldModule::UpdateContext& co
     return;
   }
 
-  xiiJoltWorldModule* pModule = GetWorld()->GetModule<xiiJoltWorldModule>();
-  if (pModule == nullptr)
-    return;
+  xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
+  auto*               pSystem = pModule->GetJoltSystem();
 
-  for (auto it = this->m_ComponentStorage.GetIterator(context.m_uiFirstComponentIndex, context.m_uiComponentCount); it.IsValid(); ++it)
+  for (auto itActor : pModule->GetActiveRopes())
   {
-    if (it->IsActiveAndSimulating())
-    {
-      it->Update();
-    }
+    itActor.Key()->Update();
   }
 }
 
