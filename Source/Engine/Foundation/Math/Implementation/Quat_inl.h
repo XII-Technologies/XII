@@ -437,10 +437,8 @@ void xiiQuatTemplate<Type>::GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiA
 {
   XII_NAN_ASSERT(this);
 
-  ///\test This is new.
-
-  /// This is adapted from https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/
-  /// It is also used in the OZZ Animation Library's "ToEuler" conversion.
+  // This is adapted from https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/
+  // It is also used in the OZZ Animation Library's "Quaternion::ToEuler" conversion.
 
   struct Q
   {
@@ -487,22 +485,27 @@ void xiiQuatTemplate<Type>::GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiA
 template <typename Type>
 void xiiQuatTemplate<Type>::SetFromEulerAngles(const xiiAngleTemplate<Type>& x, const xiiAngleTemplate<Type>& y, const xiiAngleTemplate<Type>& z)
 {
-  /// \test This is new
+  // This is adapted from https://www.euclideanspace.com/maths/geometry/rotations/conversions/eulerToQuaternion/index.htm
+  // It is also used in the OZZ Animation Library's "Quaternion::FromEuler" conversion.
 
-  /// Taken from here (roll->pitch->yaw, x->y->z order):
-  /// https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-  const auto&  yaw   = z;
-  const auto&  pitch = y;
-  const auto&  roll  = x;
-  const double cy    = xiiMath::Cos(yaw * (Type)0.5);
-  const double sy    = xiiMath::Sin(yaw * (Type)0.5);
-  const double cr    = xiiMath::Cos(roll * (Type)0.5);
-  const double sr    = xiiMath::Sin(roll * (Type)0.5);
-  const double cp    = xiiMath::Cos(pitch * (Type)0.5);
-  const double sp    = xiiMath::Sin(pitch * (Type)0.5);
+  const Type _yaw   = y.GetRadian();
+  const Type _pitch = z.GetRadian();
+  const Type _roll  = x.GetRadian();
 
-  w   = (Type)(cy * cr * cp + sy * sr * sp);
-  v.x = (Type)(cy * sr * cp - sy * cr * sp);
-  v.y = (Type)(cy * cr * sp + sy * sr * cp);
-  v.z = (Type)(sy * cr * cp - cy * sr * sp);
+  const Type half_yaw   = _yaw * 0.5f;
+  const Type c1         = std::cos(half_yaw);
+  const Type s1         = std::sin(half_yaw);
+  const Type half_pitch = _pitch * 0.5f;
+  const Type c2         = std::cos(half_pitch);
+  const Type s2         = std::sin(half_pitch);
+  const Type half_roll  = _roll * 0.5f;
+  const Type c3         = std::cos(half_roll);
+  const Type s3         = std::sin(half_roll);
+  const Type c1c2       = c1 * c2;
+  const Type s1s2       = s1 * s2;
+
+  v.x = c1c2 * s3 + s1s2 * c3;
+  v.y = s1 * c2 * c3 + c1 * s2 * s3;
+  v.z = c1 * s2 * c3 - s1 * c2 * s3;
+  w   = c1c2 * c3 - s1s2 * s3;
 }
