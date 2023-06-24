@@ -30,8 +30,7 @@ void xiiStringBuilder::SetSubString_FromTo(const char* pStart, const char* pEnd)
 
 void xiiStringBuilder::SetSubString_ElementCount(const char* pStart, xiiUInt32 uiElementCount)
 {
-  XII_ASSERT_DEBUG(
-    xiiUnicodeUtils::IsValidUtf8(pStart, pStart + uiElementCount), "Invalid substring, the start does not point to a valid Utf-8 character");
+  XII_ASSERT_DEBUG(xiiUnicodeUtils::IsValidUtf8(pStart, pStart + uiElementCount), "Invalid substring, the start does not point to a valid Utf-8 character");
 
   xiiStringView view(pStart, pStart + uiElementCount);
   *this = view;
@@ -796,6 +795,7 @@ void xiiStringBuilder::AppendWithSeparator(xiiStringView sOptional, xiiStringVie
   const xiiStringView pStrings[uiMaxParams] = {sOptional, sText1, sText2, sText3, sText4, sText5, sText6};
   xiiUInt32           uiStrLen[uiMaxParams] = {0};
   xiiUInt32           uiMoreBytes           = 0;
+  xiiUInt32           uiMoreChars           = 0;
 
   // first figure out how much the string has to grow
   for (xiiUInt32 i = 0; i < uiMaxParams; ++i)
@@ -809,9 +809,15 @@ void xiiStringBuilder::AppendWithSeparator(xiiStringView sOptional, xiiStringVie
     xiiUInt32 uiCharacters = 0;
     xiiStringUtils::GetCharacterAndElementCount(pStrings[i].GetStartPointer(), uiCharacters, uiStrLen[i], pStrings[i].GetEndPointer());
     uiMoreBytes += uiStrLen[i];
-    m_uiCharacterCount += uiCharacters;
+    uiMoreChars += uiCharacters;
 
     XII_ASSERT_DEV(xiiUnicodeUtils::IsValidUtf8(pStrings[i].GetStartPointer(), pStrings[i].GetEndPointer()), "Parameter {0} is not a valid Utf8 sequence.", i + 1);
+  }
+
+  if (uiMoreBytes == uiStrLen[0])
+  {
+    // if all other strings (than the separator) are empty, don't append anything
+    return;
   }
 
   xiiUInt32 uiPrevCount = m_Data.GetCount(); // already contains a 0 terminator
@@ -819,6 +825,7 @@ void xiiStringBuilder::AppendWithSeparator(xiiStringView sOptional, xiiStringVie
 
   // now resize
   m_Data.SetCountUninitialized(uiPrevCount + uiMoreBytes);
+  m_uiCharacterCount += uiMoreChars;
 
   // and then append all the strings
   for (xiiUInt32 i = 0; i < uiMaxParams; ++i)
