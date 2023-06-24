@@ -345,9 +345,9 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
   xiiProcessOptions po;
   po.m_sProcess           = cfg.m_sMsBuildPath;
   po.m_bHideConsoleWindow = true;
-  po.m_onStdOut           = [&](xiiStringView res) {
-    if (res.FindSubString_NoCase("error") != nullptr)
-      errors.PushBack(res);
+  po.m_onStdOut           = [&](xiiStringView sText) {
+    if (sText.FindSubString_NoCase("error") != nullptr)
+      errors.PushBack(sText);
   };
 
   po.AddArgument(xiiCppProject::GetSolutionPath(cfg));
@@ -425,8 +425,8 @@ xiiResult xiiCppProject::FindMsBuild(const xiiCppSettings& cfg)
   xiiProcessOptions po;
   po.m_sProcess           = sVsWhere;
   po.m_bHideConsoleWindow = true;
-  po.m_onStdOut           = [&](xiiStringView res) {
-    sStdOut.Append(res);
+  po.m_onStdOut           = [&](xiiStringView sText) {
+    sStdOut.Append(sText);
   };
 
   // TODO: search for VS2022 or VS2019 depending on cfg
@@ -469,4 +469,57 @@ void xiiCppProject::UpdatePluginConfig(const xiiCppSettings& cfg)
   plugin.m_RuntimePlugins.PushBack(sPluginName);
 
   xiiQtEditorApp::GetSingleton()->WritePluginSelectionStateDDL();
+}
+
+xiiResult xiiCppProject::EnsureCppPluginReady()
+{
+  if (!ExistsProjectCMakeListsTxt())
+    return XII_SUCCESS;
+
+  xiiCppSettings cppSettings;
+  if (cppSettings.Load().Failed())
+  {
+    xiiQtUiServices::GetSingleton()->MessageBoxWarning(xiiFmt("Failed to load the C++ plugin settings."));
+    return XII_FAILURE;
+  }
+
+  if (xiiCppProject::BuildCodeIfNecessary(cppSettings).Failed())
+  {
+    xiiQtUiServices::GetSingleton()->MessageBoxWarning(xiiFmt("Failed to build the C++ code. See log for details."));
+    return XII_FAILURE;
+  }
+
+  xiiQtEditorApp::GetSingleton()->RestartEngineProcessIfPluginsChanged(true);
+  return XII_SUCCESS;
+}
+
+bool xiiCppProject::IsBuildRequired()
+{
+  if (!ExistsProjectCMakeListsTxt())
+    return false;
+
+  xiiCppSettings cfg;
+  if (cfg.Load().Failed())
+    return false;
+
+  if (!xiiCppProject::ExistsSolution(cfg))
+    return true;
+
+  if (!xiiCppProject::CheckCMakeCache(cfg))
+    return true;
+
+  xiiStringBuilder sPath = xiiOSFile::GetApplicationDirectory();
+  sPath.AppendPath(cfg.m_sPluginName);
+  sPath.Append("Plugin");
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  sPath.Append(".dll");
+#else
+  sPath.Append(".so");
+#endif
+
+  if (!xiiOSFile::ExistsFile(sPath))
+    return true;
+
+  return false;
 }

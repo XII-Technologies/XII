@@ -365,7 +365,7 @@ xiiResult xiiOSFile::InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileSt
 
 #if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
 
-const char* xiiOSFile::GetApplicationDirectory()
+xiiStringView xiiOSFile::GetApplicationDirectory()
 {
   static xiiString256 s_Path;
 
@@ -414,7 +414,7 @@ const char* xiiOSFile::GetApplicationDirectory()
 #  endif
   }
 
-  return s_Path.GetData();
+  return s_Path;
 }
 
 xiiString xiiOSFile::GetUserDataFolder(xiiStringView sSubFolder)

@@ -125,7 +125,7 @@ void xiiStackTracer::OnPluginEvent(const xiiPluginEvent& e)
   if (false) // e.m_EventType == xiiPluginEvent::AfterLoading)
   {
     char buffer[1024];
-    strcpy_s(buffer, xiiOSFile::GetApplicationDirectory());
+    strcpy_s(buffer, xiiOSFile::GetApplicationDirectory().GetStartPointer());
     strcat_s(buffer, e.m_szPluginBinary);
     strcat_s(buffer, ".dll");
 

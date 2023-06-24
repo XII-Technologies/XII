@@ -280,13 +280,8 @@ void xiiSceneAction::Execute(const xiiVariant& value)
       range.BeginNextStep("Build C++");
       if (dlg.s_bCompileCpp)
       {
-        if (xiiCppProject::BuildCodeIfNecessary(dlg.m_CppSettings).Failed())
-        {
-          xiiQtUiServices::GetSingleton()->MessageBoxWarning(xiiFmt("Failed to build the C++ code. See log for details."));
+        if (xiiCppProject::EnsureCppPluginReady().Failed())
           return;
-        }
-
-        xiiQtEditorApp::GetSingleton()->RestartEngineProcessIfPluginsChanged(true);
       }
 
       range.BeginNextStep("Transform Assets");

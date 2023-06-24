@@ -519,7 +519,7 @@ xiiInt32 xiiFileSystemIterator::InternalNext()
 
 #endif
 
-const char* xiiOSFile::GetApplicationDirectory()
+xiiStringView xiiOSFile::GetApplicationDirectory()
 {
   if (s_sApplicationPath.IsEmpty())
   {
@@ -554,7 +554,7 @@ const char* xiiOSFile::GetApplicationDirectory()
     s_sApplicationPath = xiiPathUtils::GetFileDirectory(xiiStringUtf8(tmp.GetData()));
   }
 
-  return s_sApplicationPath.GetData();
+  return s_sApplicationPath;
 }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)

@@ -283,11 +283,24 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
 
       if (m_StartupFlags.AreNoneSet(xiiQtEditorApp::StartupFlags::Headless | xiiQtEditorApp::StartupFlags::SafeMode | xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::Background))
       {
+        if (xiiCppProject::IsBuildRequired())
+        {
+          const auto clicked = xiiQtUiServices::MessageBoxQuestion("<html>Compile this project's C++ plugin?<br><br>\
+Explanation: This project has <a href='https://ezengine.net/pages/docs/custom-code/cpp/cpp-project-generation.html'>a dedicated C++ plugin</a> with custom code. The plugin is currently not compiled and therefore the project won't fully work and certain assets will fail to transform.<br><br>\
+It is advised to compile the plugin now, but you can also do so later.</html>",
+                                                                   QMessageBox::StandardButton::Apply | QMessageBox::StandardButton::Ignore, QMessageBox::StandardButton::Apply);
+
+          if (clicked == QMessageBox::StandardButton::Ignore)
+            break;
+
+          QTimer::singleShot(1000, this, [this]() { xiiCppProject::EnsureCppPluginReady().IgnoreResult(); });
+        }
+
         xiiTimestamp lastTransform = xiiAssetCurator::GetSingleton()->GetLastFullTransformDate().GetTimestamp();
 
         if (pPreferences->m_bBackgroundAssetProcessing)
         {
-          QTimer::singleShot(1000, this, [this]() { xiiAssetProcessor::GetSingleton()->StartProcessTask(); });
+          QTimer::singleShot(2000, this, [this]() { xiiAssetProcessor::GetSingleton()->StartProcessTask(); });
         }
         else if (!lastTransform.IsValid() || (xiiTimestamp::CurrentTimestamp() - lastTransform).GetHours() > 5 * 24)
         {
@@ -302,7 +315,7 @@ Explanation: For assets to work properly, they must be <a href='https://xiiengin
           }
 
           // check whether the project needs to be transformed
-          QTimer::singleShot(1000, this, [this]() { xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::Default); });
+          QTimer::singleShot(2000, this, [this]() { xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::Default); });
         }
       }
 

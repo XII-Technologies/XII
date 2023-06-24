@@ -6,6 +6,7 @@
 #include <EditorFramework/Preferences/Preferences.h>
 #include <EditorFramework/Preferences/ProjectPreferences.h>
 #include <EditorFramework/Project/ProjectExport.h>
+#include <EditorFramework/SourceGen/CppProject.h>
 #include <Foundation/CodeUtils/Preprocessor.h>
 #include <Foundation/Containers/Set.h>
 #include <Foundation/IO/OSFile.h>
@@ -32,6 +33,17 @@ void xiiQtExportProjectDlg::showEvent(QShowEvent* e)
   QDialog::showEvent(e);
 
   TransformAll->setChecked(s_bTransformAll);
+
+  if (!xiiCppProject::ExistsProjectCMakeListsTxt())
+  {
+    CompileCpp->setEnabled(false);
+    CompileCpp->setToolTip("This project doesn't have a C++ plugin.");
+    CompileCpp->setChecked(false);
+  }
+  else
+  {
+    CompileCpp->setChecked(true);
+  }
 }
 
 void xiiQtExportProjectDlg::on_BrowseDestination_clicked()
@@ -52,6 +64,12 @@ void xiiQtExportProjectDlg::on_ExportProjectButton_clicked()
   // filter out unused runtime/game plugins
   // select asset profile for export
   // copy inputs into resource: RML files
+
+  if (CompileCpp->isChecked())
+  {
+    if (xiiCppProject::EnsureCppPluginReady().Failed())
+      return;
+  }
 
   if (TransformAll->isChecked())
   {
