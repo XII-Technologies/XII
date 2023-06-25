@@ -214,7 +214,7 @@ public:
   /// \brief Attempts to copy the given typeless handle to this handle.
   ///
   /// It is an error to assign a typeless handle that references a resource with a mismatching type.
-  void AssignFromTypelessHandle(const xiiTypelessResourceHandle& handle)
+  void AssignFromTypelessHandle(const xiiTypelessResourceHandle& hHandle)
   {
     if (!handle.IsValid())
       return;
