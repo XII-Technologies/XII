@@ -138,7 +138,7 @@ class XII_RENDERERCORE_DLL xiiMeshBufferResource : public xiiResource
 
 public:
   xiiMeshBufferResource() :
-    xiiResource(DoUpdate::OnAnyThread), m_uiPrimitiveCount(0), m_Topology(xiiGALPrimitiveTopology::Default)
+    xiiResource(DoUpdate::OnAnyThread, 1), m_uiPrimitiveCount(0), m_Topology(xiiGALPrimitiveTopology::Default)
   {
   }
 
