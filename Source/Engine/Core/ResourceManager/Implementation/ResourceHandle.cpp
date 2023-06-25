@@ -32,6 +32,11 @@ const xiiString& xiiTypelessResourceHandle::GetResourceID() const
   return m_pResource->GetResourceID();
 }
 
+const xiiRTTI* xiiTypelessResourceHandle::GetResourceType() const
+{
+  return IsValid() ? m_pResource->GetDynamicRTTI() : nullptr;
+}
+
 void xiiTypelessResourceHandle::operator=(const xiiTypelessResourceHandle& rhs)
 {
   XII_ASSERT_DEBUG(this != &rhs, "Cannot assign a resource handle to itself! This would invalidate the handle.");
