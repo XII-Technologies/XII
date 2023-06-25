@@ -84,6 +84,9 @@ public:
   /// \brief Returns the resource descriptor for this resource.
   const xiiCollectionResourceDescriptor& GetDescriptor() const;
 
+  /// \brief Returns the current list of resources that have already been added to the preload list. See PreloadResources().
+  xiiArrayPtr<const xiiTypelessResourceHandle> GetPreloadedResources() const { return m_PreloadedResources; }
+
 private:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
   virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* Stream) override;
