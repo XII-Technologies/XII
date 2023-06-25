@@ -3,11 +3,9 @@
 #include <Foundation/Math/Transform.h>
 
 template <typename Type>
-inline xiiTransformTemplate<Type>::xiiTransformTemplate(const xiiVec3Template<Type>& vPosition, const xiiQuatTemplate<Type>& qRotation, const xiiVec3Template<Type>& vScale)
+inline xiiTransformTemplate<Type>::xiiTransformTemplate(const xiiVec3Template<Type>& vPosition, const xiiQuatTemplate<Type>& qRotation, const xiiVec3Template<Type>& vScale) :
+  m_vPosition(vPosition), m_qRotation(qRotation), m_vScale(vScale)
 {
-  m_vPosition = vPosition;
-  m_qRotation = qRotation;
-  m_vScale    = vScale;
 }
 
 template <typename Type>

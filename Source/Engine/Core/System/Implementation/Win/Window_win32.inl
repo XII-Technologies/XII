@@ -217,8 +217,10 @@ xiiResult xiiWindow::Destroy()
   if (!m_bInitialized)
     return XII_SUCCESS;
 
-  if (GetInputDevice() && GetInputDevice()->GetClipMouseCursor())
+  if (GetInputDevice() && GetInputDevice()->GetClipMouseCursor() != xiiMouseCursorClipMode::NoClip)
+  {
     GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::NoClip);
+  }
 
   XII_LOG_BLOCK("xiiWindow::Destroy");
 
@@ -245,11 +247,13 @@ xiiResult xiiWindow::Destroy()
   // Actually nobody cares about this, all Window Classes are cleared when the application closes
   // in the mean time, having multiple windows will just result in errors when one is closed,
   // as the Window Class must not be in use anymore when one calls UnregisterClassW
-  // if (!UnregisterClassW(L"xiiWin32Window", GetModuleHandleW(nullptr)))
-  // {
-  //   xiiLog::SeriousWarning("UnregisterClassW failed.");
-  //   Res = XII_FAILURE;
-  // }
+#if 0
+  if (!UnregisterClassW(L"xiiWin32Window", GetModuleHandleW(nullptr)))
+  {
+    xiiLog::SeriousWarning("UnregisterClassW failed.");
+    Res = XII_FAILURE;
+  }
+#endif
 
   m_bInitialized  = false;
   m_hWindowHandle = INVALID_WINDOW_HANDLE_VALUE;
@@ -266,7 +270,7 @@ xiiResult xiiWindow::Resize(const xiiSizeU32& newWindowSize)
 {
   auto windowHandle = xiiMinWindows::ToNative(m_hWindowHandle);
   BOOL res          = ::SetWindowPos(windowHandle, HWND_NOTOPMOST, 0, 0, newWindowSize.width, newWindowSize.height, SWP_NOSENDCHANGING | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER);
-  return res == TRUE ? XII_SUCCESS : XII_FAILURE;
+  return res != FALSE ? XII_SUCCESS : XII_FAILURE;
 }
 
 void xiiWindow::ProcessWindowMessages()

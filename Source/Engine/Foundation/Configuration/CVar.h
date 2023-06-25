@@ -191,7 +191,7 @@ private:
   static void PluginEventHandler(const xiiPluginEvent& EventData);
 
 
-  bool                      m_bHasNeverBeenLoaded;
+  bool                      m_bHasNeverBeenLoaded = true; // The next time 'LoadCVars' is called, its state will be changed.
   xiiStringView             m_sName;
   xiiStringView             m_sDescription;
   xiiStringView             m_sPluginName;

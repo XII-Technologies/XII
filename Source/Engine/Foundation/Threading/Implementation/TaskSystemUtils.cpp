@@ -59,7 +59,7 @@ void xiiTaskSystem::WriteStateSnapshotToDGML(xiiDGMLGraph& ref_graph)
   szTaskPriorityNames[xiiTaskPriority::NextFrame]               = "NextFrame";
   szTaskPriorityNames[xiiTaskPriority::LateNextFrame]           = "LateNextFrame";
   szTaskPriorityNames[xiiTaskPriority::In2Frames]               = "In 2 Frames";
-  szTaskPriorityNames[xiiTaskPriority::In2Frames]               = "In 3 Frames";
+  szTaskPriorityNames[xiiTaskPriority::In3Frames]               = "In 3 Frames";
   szTaskPriorityNames[xiiTaskPriority::In4Frames]               = "In 4 Frames";
   szTaskPriorityNames[xiiTaskPriority::In5Frames]               = "In 5 Frames";
   szTaskPriorityNames[xiiTaskPriority::In6Frames]               = "In 6 Frames";

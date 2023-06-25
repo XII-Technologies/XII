@@ -1,40 +1,37 @@
 
 template <typename T>
-xiiDynamicArrayBase<T>::xiiDynamicArrayBase(xiiAllocatorBase* pAllocator)
+xiiDynamicArrayBase<T>::xiiDynamicArrayBase(xiiAllocatorBase* pAllocator) :
+  m_pAllocator(pAllocator)
 {
-  m_pAllocator = pAllocator;
 }
 
 template <typename T>
-xiiDynamicArrayBase<T>::xiiDynamicArrayBase(T* pInplaceStorage, xiiUInt32 uiCapacity, xiiAllocatorBase* pAllocator)
+xiiDynamicArrayBase<T>::xiiDynamicArrayBase(T* pInplaceStorage, xiiUInt32 uiCapacity, xiiAllocatorBase* pAllocator) :
+  m_pAllocator(pAllocator)
 {
-  m_pAllocator = pAllocator;
   m_pAllocator.SetFlags(Storage::External);
   this->m_uiCapacity = uiCapacity;
   this->m_pElements  = reinterpret_cast<T*>(reinterpret_cast<intptr_t>(pInplaceStorage) - reinterpret_cast<intptr_t>(this)); // store as an offset
 }
 
 template <typename T>
-xiiDynamicArrayBase<T>::xiiDynamicArrayBase(const xiiDynamicArrayBase<T>& other, xiiAllocatorBase* pAllocator)
+xiiDynamicArrayBase<T>::xiiDynamicArrayBase(const xiiDynamicArrayBase<T>& other, xiiAllocatorBase* pAllocator) :
+  m_pAllocator(pAllocator)
 {
-  m_pAllocator = pAllocator;
-
   xiiArrayBase<T, xiiDynamicArrayBase<T>>::operator=((xiiArrayPtr<const T>)other); // redirect this to the xiiArrayPtr version
 }
 
 template <typename T>
-xiiDynamicArrayBase<T>::xiiDynamicArrayBase(xiiDynamicArrayBase<T>&& other, xiiAllocatorBase* pAllocator)
+xiiDynamicArrayBase<T>::xiiDynamicArrayBase(xiiDynamicArrayBase<T>&& other, xiiAllocatorBase* pAllocator) :
+  m_pAllocator(pAllocator)
 {
-  m_pAllocator = pAllocator;
-
   *this = std::move(other);
 }
 
 template <typename T>
-xiiDynamicArrayBase<T>::xiiDynamicArrayBase(const xiiArrayPtr<const T>& other, xiiAllocatorBase* pAllocator)
+xiiDynamicArrayBase<T>::xiiDynamicArrayBase(const xiiArrayPtr<const T>& other, xiiAllocatorBase* pAllocator) :
+  m_pAllocator(pAllocator)
 {
-  m_pAllocator = pAllocator;
-
   xiiArrayBase<T, xiiDynamicArrayBase<T>>::operator=(other);
 }
 

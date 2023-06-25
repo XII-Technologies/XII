@@ -10,9 +10,8 @@
 #  include <Foundation/Logging/Log.h>
 
 xiiIpcChannelEnet::xiiIpcChannelEnet(const char* szAddress, Mode::Enum mode) :
-  xiiIpcChannel(szAddress, mode)
+  xiiIpcChannel(szAddress, mode), m_sAddress(szAddress)
 {
-  m_sAddress = szAddress;
   m_pNetwork = xiiRemoteInterfaceEnet::Make();
   m_pNetwork->SetMessageHandler(0, xiiMakeDelegate(&xiiIpcChannelEnet::NetworkMessageHandler, this));
   m_pNetwork->m_RemoteEvents.AddEventHandler(xiiMakeDelegate(&xiiIpcChannelEnet::EnetEventHandler, this));

@@ -55,12 +55,12 @@
 
 /// \brief Disallow the copy constructor and the assignment operator for this type.
 #define XII_DISALLOW_COPY_AND_ASSIGN(type) \
-  type(const type&) = delete;              \
+  type(const type&)           = delete;    \
   void operator=(const type&) = delete
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 /// \brief Macro helper to check alignment
-#  define XII_CHECK_ALIGNMENT(ptr, alignment) XII_ASSERT_DEV(((size_t)ptr & (alignment - 1)) == 0, "Wrong alignment.")
+#  define XII_CHECK_ALIGNMENT(ptr, alignment) XII_ASSERT_DEV(((size_t)ptr & ((alignment)-1)) == 0, "Wrong alignment.")
 #else
 /// \brief Macro helper to check alignment
 #  define XII_CHECK_ALIGNMENT(ptr, alignment)

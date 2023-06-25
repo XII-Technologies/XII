@@ -38,7 +38,10 @@ class XII_FOUNDATION_DLL xiiCategoryAttribute : public xiiPropertyAttribute
 
 public:
   xiiCategoryAttribute() = default;
-  xiiCategoryAttribute(const char* szCategory) { m_sCategory = szCategory; }
+  xiiCategoryAttribute(const char* szCategory) :
+    m_sCategory(szCategory)
+  {
+  }
 
   const char* GetCategory() const { return m_sCategory; }
 
@@ -59,7 +62,10 @@ public:
   };
 
   xiiInDevelopmentAttribute() = default;
-  xiiInDevelopmentAttribute(xiiInt32 iPhase) { m_Phase = iPhase; }
+  xiiInDevelopmentAttribute(xiiInt32 iPhase) :
+    m_Phase(iPhase)
+  {
+  }
 
   const char* GetString() const;
 
@@ -75,7 +81,10 @@ class XII_FOUNDATION_DLL xiiTitleAttribute : public xiiPropertyAttribute
 
 public:
   xiiTitleAttribute() = default;
-  xiiTitleAttribute(const char* szTitle) { m_sTitle = szTitle; }
+  xiiTitleAttribute(const char* szTitle) :
+    m_sTitle(szTitle)
+  {
+  }
 
   const char* GetTitle() const { return m_sTitle; }
 
@@ -90,7 +99,10 @@ class XII_FOUNDATION_DLL xiiColorAttribute : public xiiPropertyAttribute
 
 public:
   xiiColorAttribute() = default;
-  xiiColorAttribute(const xiiColor& color) { m_Color = color; }
+  xiiColorAttribute(const xiiColor& color) :
+    m_Color(color)
+  {
+  }
 
   const xiiColor& GetColor() const { return m_Color; }
 
@@ -111,7 +123,10 @@ class XII_FOUNDATION_DLL xiiSuffixAttribute : public xiiPropertyAttribute
 
 public:
   xiiSuffixAttribute() = default;
-  xiiSuffixAttribute(const char* szSuffix) { m_sSuffix = szSuffix; }
+  xiiSuffixAttribute(const char* szSuffix) :
+    m_sSuffix(szSuffix)
+  {
+  }
 
   const char* GetSuffix() const { return m_sSuffix; }
 
@@ -126,7 +141,10 @@ class XII_FOUNDATION_DLL xiiMinValueTextAttribute : public xiiPropertyAttribute
 
 public:
   xiiMinValueTextAttribute() = default;
-  xiiMinValueTextAttribute(const char* szText) { m_sText = szText; }
+  xiiMinValueTextAttribute(const char* szText) :
+    m_sText(szText)
+  {
+  }
 
   const char* GetText() const { return m_sText; }
 
@@ -141,7 +159,10 @@ class XII_FOUNDATION_DLL xiiDefaultValueAttribute : public xiiPropertyAttribute
 
 public:
   xiiDefaultValueAttribute() = default;
-  xiiDefaultValueAttribute(const xiiVariant& value) { m_Value = value; }
+  xiiDefaultValueAttribute(const xiiVariant& value) :
+    m_Value(value)
+  {
+  }
 
   const xiiVariant& GetValue() const { return m_Value; }
 
@@ -157,10 +178,9 @@ class XII_FOUNDATION_DLL xiiClampValueAttribute : public xiiPropertyAttribute
 
 public:
   xiiClampValueAttribute() = default;
-  xiiClampValueAttribute(const xiiVariant& min, const xiiVariant& max)
+  xiiClampValueAttribute(const xiiVariant& min, const xiiVariant& max) :
+    m_MinValue(min), m_MaxValue(max)
   {
-    m_MinValue = min;
-    m_MaxValue = max;
   }
 
   const xiiVariant& GetMinValue() const { return m_MinValue; }
@@ -223,7 +243,10 @@ class XII_FOUNDATION_DLL xiiTagSetWidgetAttribute : public xiiContainerWidgetAtt
 
 public:
   xiiTagSetWidgetAttribute() = default;
-  xiiTagSetWidgetAttribute(const char* szTagFilter) { m_sTagFilter = szTagFilter; }
+  xiiTagSetWidgetAttribute(const char* szTagFilter) :
+    m_sTagFilter(szTagFilter)
+  {
+  }
 
   const char* GetTagFilter() const { return m_sTagFilter; }
 
@@ -244,7 +267,10 @@ class XII_FOUNDATION_DLL xiiExposedParametersAttribute : public xiiContainerWidg
 
 public:
   xiiExposedParametersAttribute() = default;
-  xiiExposedParametersAttribute(const char* szParametersSource) { m_sParametersSource = szParametersSource; }
+  xiiExposedParametersAttribute(const char* szParametersSource) :
+    m_sParametersSource(szParametersSource)
+  {
+  }
 
   const char* GetParametersSource() const { return m_sParametersSource; }
 
@@ -270,11 +296,9 @@ class XII_FOUNDATION_DLL xiiDynamicDefaultValueAttribute : public xiiTypeWidgetA
 
 public:
   xiiDynamicDefaultValueAttribute() = default;
-  xiiDynamicDefaultValueAttribute(const char* szClassSource, const char* szClassType, const char* szClassProperty = nullptr)
+  xiiDynamicDefaultValueAttribute(const char* szClassSource, const char* szClassType, const char* szClassProperty = nullptr) :
+    m_sClassSource(szClassSource), m_sClassType(szClassType), m_sClassProperty(szClassProperty)
   {
-    m_sClassSource   = szClassSource;
-    m_sClassType     = szClassType;
-    m_sClassProperty = szClassProperty;
   }
 
   const char* GetClassSource() const { return m_sClassSource; }
@@ -295,11 +319,9 @@ class XII_FOUNDATION_DLL xiiContainerAttribute : public xiiPropertyAttribute
 
 public:
   xiiContainerAttribute() = default;
-  xiiContainerAttribute(bool bCanAdd, bool bCanDelete, bool bCanMove)
+  xiiContainerAttribute(bool bCanAdd, bool bCanDelete, bool bCanMove) :
+    m_bCanAdd(bCanAdd), m_bCanDelete(bCanDelete), m_bCanMove(bCanMove)
   {
-    m_bCanAdd    = bCanAdd;
-    m_bCanDelete = bCanDelete;
-    m_bCanMove   = bCanMove;
   }
 
   bool CanAdd() const { return m_bCanAdd; }
@@ -321,10 +343,9 @@ class XII_FOUNDATION_DLL xiiConstrainPointerAttribute : public xiiPropertyAttrib
 
 public:
   xiiConstrainPointerAttribute() = default;
-  xiiConstrainPointerAttribute(const char* szConstantName, const char* szConstantValueProperty)
+  xiiConstrainPointerAttribute(const char* szConstantName, const char* szConstantValueProperty) :
+    m_sConstantName(szConstantName), m_sConstantValueProperty(szConstantValueProperty)
   {
-    m_sConstantName          = szConstantName;
-    m_sConstantValueProperty = szConstantValueProperty;
   }
 
   const xiiUntrackedString& GetConstantName() const { return m_sConstantName; }
@@ -399,12 +420,9 @@ public:
   static constexpr const char* CubemapsLdrAndHdr = "*.dds;*.hdr";
 
   xiiFileBrowserAttribute() = default;
-  xiiFileBrowserAttribute(const char* szDialogTitle, const char* szTypeFilter, const char* szCustomAction = nullptr, xiiBitflags<xiiDependencyFlags> dependencyFlags = xiiDependencyFlags::Transform | xiiDependencyFlags::Thumbnail)
+  xiiFileBrowserAttribute(const char* szDialogTitle, const char* szTypeFilter, const char* szCustomAction = nullptr, xiiBitflags<xiiDependencyFlags> dependencyFlags = xiiDependencyFlags::Transform | xiiDependencyFlags::Thumbnail) :
+    m_sDialogTitle(szDialogTitle), m_sTypeFilter(szTypeFilter), m_sCustomAction(szCustomAction), m_DependencyFlags(dependencyFlags)
   {
-    m_sDialogTitle    = szDialogTitle;
-    m_sTypeFilter     = szTypeFilter;
-    m_sCustomAction   = szCustomAction;
-    m_DependencyFlags = dependencyFlags;
   }
 
   const char*                     GetDialogTitle() const { return m_sDialogTitle; }
@@ -429,9 +447,9 @@ class XII_FOUNDATION_DLL xiiAssetBrowserAttribute : public xiiTypeWidgetAttribut
 
 public:
   xiiAssetBrowserAttribute() = default;
-  xiiAssetBrowserAttribute(const char* szTypeFilter, xiiBitflags<xiiDependencyFlags> dependencyFlags = xiiDependencyFlags::Thumbnail | xiiDependencyFlags::Package)
+  xiiAssetBrowserAttribute(const char* szTypeFilter, xiiBitflags<xiiDependencyFlags> dependencyFlags = xiiDependencyFlags::Thumbnail | xiiDependencyFlags::Package) :
+    m_DependencyFlags(dependencyFlags)
   {
-    m_DependencyFlags = dependencyFlags;
     SetTypeFilter(szTypeFilter);
   }
 
@@ -457,7 +475,10 @@ class XII_FOUNDATION_DLL xiiDynamicEnumAttribute : public xiiTypeWidgetAttribute
 
 public:
   xiiDynamicEnumAttribute() = default;
-  xiiDynamicEnumAttribute(const char* szDynamicEnumName) { m_sDynamicEnumName = szDynamicEnumName; }
+  xiiDynamicEnumAttribute(const char* szDynamicEnumName) :
+    m_sDynamicEnumName(szDynamicEnumName)
+  {
+  }
 
   const char* GetDynamicEnumName() const { return m_sDynamicEnumName; }
 
@@ -474,7 +495,10 @@ class XII_FOUNDATION_DLL xiiDynamicStringEnumAttribute : public xiiTypeWidgetAtt
 
 public:
   xiiDynamicStringEnumAttribute() = default;
-  xiiDynamicStringEnumAttribute(const char* szDynamicEnumName) { m_sDynamicEnumName = szDynamicEnumName; }
+  xiiDynamicStringEnumAttribute(const char* szDynamicEnumName) :
+    m_sDynamicEnumName(szDynamicEnumName)
+  {
+  }
 
   const char* GetDynamicEnumName() const { return m_sDynamicEnumName; }
 
@@ -867,7 +891,10 @@ class XII_FOUNDATION_DLL xiiMaxArraySizeAttribute : public xiiPropertyAttribute
 
 public:
   xiiMaxArraySizeAttribute() = default;
-  xiiMaxArraySizeAttribute(xiiUInt32 uiMaxSize) { m_uiMaxSize = uiMaxSize; }
+  xiiMaxArraySizeAttribute(xiiUInt32 uiMaxSize) :
+    m_uiMaxSize(uiMaxSize)
+  {
+  }
 
   const xiiUInt32& GetMaxSize() const { return m_uiMaxSize; }
 
@@ -965,7 +992,10 @@ class XII_FOUNDATION_DLL xiiLongOpAttribute : public xiiPropertyAttribute
 
 public:
   xiiLongOpAttribute() = default;
-  xiiLongOpAttribute(const char* szOpTypeName) { m_sOpTypeName = szOpTypeName; }
+  xiiLongOpAttribute(const char* szOpTypeName) :
+    m_sOpTypeName(szOpTypeName)
+  {
+  }
 
   xiiUntrackedString m_sOpTypeName;
 };

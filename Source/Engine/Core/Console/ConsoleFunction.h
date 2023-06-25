@@ -39,10 +39,9 @@ class XII_CORE_DLL xiiConsoleFunctionBase : public xiiEnumerable<xiiConsoleFunct
 
 public:
   /// \brief The constructor takes the function name and description as it should appear in the console.
-  xiiConsoleFunctionBase(xiiStringView sFunctionName, xiiStringView sDescription)
+  xiiConsoleFunctionBase(xiiStringView sFunctionName, xiiStringView sDescription) :
+    m_sFunctionName(sFunctionName), m_sDescription(sDescription)
   {
-    m_sFunctionName = sFunctionName;
-    m_sDescription  = sDescription;
   }
 
   /// \brief Returns the name of the function as it should be exposed in the console.

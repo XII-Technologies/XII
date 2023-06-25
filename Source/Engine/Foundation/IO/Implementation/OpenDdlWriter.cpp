@@ -201,11 +201,6 @@ xiiOpenDdlWriter::xiiOpenDdlWriter()
   XII_CHECK_AT_COMPILETIME((int)xiiOpenDdlWriter::State::PrimitivesDouble == (int)xiiOpenDdlPrimitiveType::Double);
   XII_CHECK_AT_COMPILETIME((int)xiiOpenDdlWriter::State::PrimitivesString == (int)xiiOpenDdlPrimitiveType::String);
 
-  m_bCompactMode       = false;
-  m_TypeStringMode     = TypeStringMode::ShortenedUnsignedInt;
-  m_FloatPrecisionMode = FloatPrecisionMode::Exact;
-  m_iIndentation       = 0;
-
   m_StateStack.ExpandAndGetRef().m_State = State::Invalid;
   m_StateStack.ExpandAndGetRef().m_State = State::Empty;
 }

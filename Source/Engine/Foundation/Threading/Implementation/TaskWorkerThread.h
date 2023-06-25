@@ -81,8 +81,8 @@ private:
 struct xiiTaskWorkerInfo
 {
   xiiWorkerThreadType::Enum m_WorkerType        = xiiWorkerThreadType::Unknown;
-  xiiInt32                  m_iWorkerIndex      = -1;
   bool                      m_bAllowNestedTasks = true;
+  xiiInt32                  m_iWorkerIndex      = -1;
   const char*               m_szTaskName        = nullptr;
   xiiAtomicInteger32*       m_pWorkerState      = nullptr;
 };

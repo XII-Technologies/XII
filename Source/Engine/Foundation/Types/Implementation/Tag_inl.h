@@ -1,6 +1,9 @@
 #pragma once
 
-xiiTag::xiiTag() = default;
+xiiTag::xiiTag() :
+  m_uiBitIndex(0xFFFFFFFEu), m_uiBlockIndex(0xFFFFFFFEu)
+{
+}
 
 bool xiiTag::operator==(const xiiTag& rhs) const
 {
