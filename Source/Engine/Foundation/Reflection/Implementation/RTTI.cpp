@@ -49,22 +49,20 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, Reflection)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiRTTI::xiiRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)())
+xiiRTTI::xiiRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)()) :
+  m_bGatheredDynamicMessageHandlers(false),
+  m_szPluginName(nullptr),
+  m_szTypeName(szName),
+  m_pAllocator(pAllocator),
+  m_Properties(properties),
+  m_Functions(xiiMakeArrayPtr<xiiAbstractFunctionProperty*>(reinterpret_cast<xiiAbstractFunctionProperty**>(functions.GetPtr()), functions.GetCount())),
+  m_Attributes(attributes),
+  m_MessageHandlers(messageHandlers),
+  m_uiMsgIdOffset(0),
+  m_MessageSenders(messageSenders),
+  m_VerifyParent(fnVerifyParent)
 {
   UpdateType(pParentType, uiTypeSize, uiTypeVersion, uiVariantType, flags);
-
-  m_bGatheredDynamicMessageHandlers = false;
-  m_szPluginName                    = nullptr;
-  m_szTypeName                      = szName;
-  m_pAllocator                      = pAllocator;
-  m_Properties                      = properties;
-  m_Functions                       = xiiMakeArrayPtr<xiiAbstractFunctionProperty*>(reinterpret_cast<xiiAbstractFunctionProperty**>(functions.GetPtr()), functions.GetCount());
-  m_Attributes                      = attributes;
-  m_MessageHandlers                 = messageHandlers;
-  m_uiMsgIdOffset                   = 0;
-  m_MessageSenders                  = messageSenders;
-
-  m_VerifyParent = fnVerifyParent;
 
   // This part is not guaranteed to always work here!
   // pParentType is (apparently) always the correct pointer to the base class BUT it is not guaranteed to have been constructed at this
@@ -379,8 +377,9 @@ const xiiDynamicArray<const xiiRTTI*>& xiiRTTI::GetAllTypesDerivedFrom(
 
   if (bSortByName)
   {
-    out_derivedTypes.Sort(
-      [](const xiiRTTI* p1, const xiiRTTI* p2) -> bool { return xiiStringUtils::Compare(p1->GetTypeName(), p2->GetTypeName()) < 0; });
+    out_derivedTypes.Sort([](const xiiRTTI* p1, const xiiRTTI* p2) -> bool {
+      return xiiStringUtils::Compare(p1->GetTypeName(), p2->GetTypeName()) < 0;
+    });
   }
 
   return out_derivedTypes;

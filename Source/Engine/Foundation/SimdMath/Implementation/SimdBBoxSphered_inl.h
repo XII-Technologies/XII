@@ -2,31 +2,27 @@
 
 XII_ALWAYS_INLINE xiiSimdBBoxSphered::xiiSimdBBoxSphered() = default;
 
-XII_ALWAYS_INLINE xiiSimdBBoxSphered::xiiSimdBBoxSphered(const xiiSimdVec4d& vCenter, const xiiSimdVec4d& vBoxHalfExtents, const xiiSimdDouble& fSphereRadius)
+XII_ALWAYS_INLINE xiiSimdBBoxSphered::xiiSimdBBoxSphered(const xiiSimdVec4d& vCenter, const xiiSimdVec4d& vBoxHalfExtents, const xiiSimdDouble& fSphereRadius) :
+  m_CenterAndRadius(vCenter), m_BoxHalfExtents(vBoxHalfExtents)
 {
-  m_CenterAndRadius = vCenter;
   m_CenterAndRadius.SetW(fSphereRadius);
-  m_BoxHalfExtents = vBoxHalfExtents;
 }
 
-inline xiiSimdBBoxSphered::xiiSimdBBoxSphered(const xiiSimdBBoxd& box, const xiiSimdBSphered& sphere)
+inline xiiSimdBBoxSphered::xiiSimdBBoxSphered(const xiiSimdBBoxd& box, const xiiSimdBSphered& sphere) :
+  m_CenterAndRadius(box.GetCenter()), m_BoxHalfExtents(m_CenterAndRadius - box.m_Min)
 {
-  m_CenterAndRadius = box.GetCenter();
-  m_BoxHalfExtents  = m_CenterAndRadius - box.m_Min;
   m_CenterAndRadius.SetW(m_BoxHalfExtents.GetLength<3>().Min((sphere.GetCenter() - m_CenterAndRadius).GetLength<3>() + sphere.GetRadius()));
 }
 
-inline xiiSimdBBoxSphered::xiiSimdBBoxSphered(const xiiSimdBBoxd& box)
+inline xiiSimdBBoxSphered::xiiSimdBBoxSphered(const xiiSimdBBoxd& box) :
+  m_CenterAndRadius(box.GetCenter()), m_BoxHalfExtents(m_CenterAndRadius - box.m_Min)
 {
-  m_CenterAndRadius = box.GetCenter();
-  m_BoxHalfExtents  = m_CenterAndRadius - box.m_Min;
   m_CenterAndRadius.SetW(m_BoxHalfExtents.GetLength<3>());
 }
 
-XII_ALWAYS_INLINE xiiSimdBBoxSphered::xiiSimdBBoxSphered(const xiiSimdBSphered& sphere)
+XII_ALWAYS_INLINE xiiSimdBBoxSphered::xiiSimdBBoxSphered(const xiiSimdBSphered& sphere) :
+  m_CenterAndRadius(sphere.m_CenterAndRadius), m_BoxHalfExtents(xiiSimdVec4d(sphere.GetRadius()))
 {
-  m_CenterAndRadius = sphere.m_CenterAndRadius;
-  m_BoxHalfExtents  = xiiSimdVec4d(sphere.GetRadius());
 }
 
 XII_ALWAYS_INLINE void xiiSimdBBoxSphered::SetInvalid()

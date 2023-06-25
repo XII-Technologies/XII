@@ -629,7 +629,7 @@ public:
   const xiiUntrackedString& GetAngleProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetRadiusProperty() const { return m_sProperty2; }
 
-  float m_fScale;
+  float m_fScale = 1.0f;
 };
 
 //////////////////////////////////////////////////////////////////////////

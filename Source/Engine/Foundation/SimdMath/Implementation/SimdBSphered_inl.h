@@ -2,15 +2,15 @@
 
 XII_ALWAYS_INLINE xiiSimdBSphered::xiiSimdBSphered() = default;
 
-XII_ALWAYS_INLINE xiiSimdBSphered::xiiSimdBSphered(const xiiSimdVec4d& vCenter, const xiiSimdDouble& fRadius)
+XII_ALWAYS_INLINE xiiSimdBSphered::xiiSimdBSphered(const xiiSimdVec4d& vCenter, const xiiSimdDouble& fRadius) :
+  m_CenterAndRadius(vCenter)
 {
-  m_CenterAndRadius = vCenter;
   m_CenterAndRadius.SetW(fRadius);
 }
 
 XII_ALWAYS_INLINE void xiiSimdBSphered::SetInvalid()
 {
-  m_CenterAndRadius.Set(0.0f, 0.0f, 0.0f, -xiiMath::SmallEpsilon<float>());
+  m_CenterAndRadius.Set(0.0, 0.0, 0.0, -xiiMath::SmallEpsilon<float>());
 }
 
 XII_ALWAYS_INLINE bool xiiSimdBSphered::IsValid() const

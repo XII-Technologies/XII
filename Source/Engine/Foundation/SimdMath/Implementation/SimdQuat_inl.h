@@ -2,9 +2,9 @@
 
 XII_ALWAYS_INLINE xiiSimdQuat::xiiSimdQuat() = default;
 
-XII_ALWAYS_INLINE xiiSimdQuat::xiiSimdQuat(const xiiSimdVec4f& v)
+XII_ALWAYS_INLINE xiiSimdQuat::xiiSimdQuat(const xiiSimdVec4f& v) :
+  m_v(v)
 {
-  m_v = v;
 }
 
 // static

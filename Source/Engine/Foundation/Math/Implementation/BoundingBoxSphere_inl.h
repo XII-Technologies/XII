@@ -12,37 +12,30 @@ XII_FORCE_INLINE xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplat
 }
 
 template <typename Type>
-xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(
-  const xiiVec3Template<Type>& vCenter,
-  const xiiVec3Template<Type>& vBoxHalfExtents,
-  Type                         fSphereRadius)
+xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiVec3Template<Type>& vCenter, const xiiVec3Template<Type>& vBoxHalfExtents, Type fSphereRadius) :
+  m_vCenter(vCenter), m_fSphereRadius(fSphereRadius), m_vBoxHalfExtends(vBoxHalfExtents)
 {
-  m_vCenter         = vCenter;
-  m_fSphereRadius   = fSphereRadius;
-  m_vBoxHalfExtends = vBoxHalfExtents;
 }
 
 template <typename Type>
-xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiBoundingBoxTemplate<Type>& box, const xiiBoundingSphereTemplate<Type>& sphere)
+xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiBoundingBoxTemplate<Type>& box, const xiiBoundingSphereTemplate<Type>& sphere) :
+  m_vCenter(box.GetCenter()), m_vBoxHalfExtends(box.GetHalfExtents())
 {
-  m_vCenter         = box.GetCenter();
-  m_vBoxHalfExtends = box.GetHalfExtents();
-  m_fSphereRadius   = xiiMath::Min(m_vBoxHalfExtends.GetLength(), (sphere.m_vCenter - m_vCenter).GetLength() + sphere.m_fRadius);
+  m_fSphereRadius = xiiMath::Min(m_vBoxHalfExtends.GetLength(), (sphere.m_vCenter - m_vCenter).GetLength() + sphere.m_fRadius);
 }
 
 template <typename Type>
-xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiBoundingBoxTemplate<Type>& box)
+xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiBoundingBoxTemplate<Type>& box) :
+  m_vCenter(box.GetCenter())
 {
-  m_vCenter         = box.GetCenter();
   m_vBoxHalfExtends = box.GetHalfExtents();
   m_fSphereRadius   = m_vBoxHalfExtends.GetLength();
 }
 
 template <typename Type>
-xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiBoundingSphereTemplate<Type>& sphere)
+xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiBoundingSphereTemplate<Type>& sphere) :
+  m_vCenter(sphere.m_vCenter), m_fSphereRadius(sphere.m_fRadius)
 {
-  m_vCenter       = sphere.m_vCenter;
-  m_fSphereRadius = sphere.m_fRadius;
   m_vBoxHalfExtends.Set(m_fSphereRadius);
 }
 

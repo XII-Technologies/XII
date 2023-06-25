@@ -7,12 +7,12 @@ XII_ALWAYS_INLINE xiiSimdMat4f::xiiSimdMat4f(const float* const pData, xiiMatrix
   SetFromArray(pData, layout);
 }
 
-XII_ALWAYS_INLINE xiiSimdMat4f::xiiSimdMat4f(const xiiSimdVec4f& vCol0, const xiiSimdVec4f& vCol1, const xiiSimdVec4f& vCol2, const xiiSimdVec4f& vCol3)
+XII_ALWAYS_INLINE xiiSimdMat4f::xiiSimdMat4f(const xiiSimdVec4f& vCol0, const xiiSimdVec4f& vCol1, const xiiSimdVec4f& vCol2, const xiiSimdVec4f& vCol3) :
+  m_col0(vCol0),
+  m_col1(vCol1),
+  m_col2(vCol2),
+  m_col3(vCol3)
 {
-  m_col0 = vCol0;
-  m_col1 = vCol1;
-  m_col2 = vCol2;
-  m_col3 = vCol3;
 }
 
 XII_ALWAYS_INLINE xiiSimdMat4f::xiiSimdMat4f(float f1r1, float f2r1, float f3r1, float f4r1, float f1r2, float f2r2, float f3r2, float f4r2, float f1r3, float f2r3, float f3r3, float f4r3, float f1r4, float f2r4, float f3r4, float f4r4)

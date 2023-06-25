@@ -2,9 +2,9 @@
 
 XII_ALWAYS_INLINE xiiSimdQuatd::xiiSimdQuatd() = default;
 
-XII_ALWAYS_INLINE xiiSimdQuatd::xiiSimdQuatd(const xiiSimdVec4d& v)
+XII_ALWAYS_INLINE xiiSimdQuatd::xiiSimdQuatd(const xiiSimdVec4d& v) :
+  m_v(v)
 {
-  m_v = v;
 }
 
 // static

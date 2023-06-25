@@ -746,11 +746,11 @@ void xiiAbstractObjectGraph::MergeDiffs(const xiiDeque<xiiAbstractGraphDiffOpera
   struct Prop
   {
     Prop() = default;
-    Prop(xiiUuid node, xiiStringView sProperty)
+    Prop(xiiUuid node, xiiStringView sProperty) :
+      m_Node(node), m_sProperty(sProperty)
     {
-      m_Node      = node;
-      m_sProperty = sProperty;
     }
+
     xiiUuid       m_Node;
     xiiStringView m_sProperty;
 
