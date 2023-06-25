@@ -8,9 +8,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode::xiiVisualScriptNode()  = default;
-xiiVisualScriptNode::~xiiVisualScriptNode() = default;
+xiiVisualScriptNode::xiiVisualScriptNode() = default;
 
+xiiVisualScriptNode::~xiiVisualScriptNode() = default;
 
 xiiInt32 xiiVisualScriptNode::HandlesMessagesWithID() const
 {

@@ -35,7 +35,7 @@
 #  include <immintrin.h>
 #endif
 
-#if XII_DISABLED(XII_COMPILER_GCC) && XII_DISABLED(XII_COMPILER_CLANG)
+#if XII_ENABLED(XII_COMPILER_MSVC)
 #  if XII_SSE_LEVEL >= XII_SSE_AVX2
 #    include <zmmintrin.h>
 #  endif
@@ -64,4 +64,4 @@ namespace xiiInternal
 
 #define XII_SHUFFLE(a0, a1, b2, b3) ((a0) | ((a1) << 2) | ((b2) << 4) | ((b3) << 6))
 
-#define XII_TO_SHUFFLE(s) (((s >> 12) & 0x03) | ((s >> 6) & 0x0c) | (s & 0x30) | ((s << 6) & 0xc0))
+#define XII_TO_SHUFFLE(s) ((((s) >> 12) & 0x03) | (((s) >> 6) & 0x0c) | ((s)&0x30) | (((s) << 6) & 0xc0))

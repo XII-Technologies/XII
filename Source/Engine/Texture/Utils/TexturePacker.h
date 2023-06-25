@@ -16,8 +16,8 @@ public:
     xiiInt32   m_Priority = 0;
   };
 
-  xiiTexturePacker();
-  ~xiiTexturePacker();
+  xiiTexturePacker()  = default;
+  ~xiiTexturePacker() = default;
 
   void SetTextureSize(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiReserveTextures = 0);
 

@@ -163,12 +163,10 @@ xiiRttiConverterWriter::xiiRttiConverterWriter(xiiAbstractObjectGraph* pGraph, x
   };
 }
 
-xiiRttiConverterWriter::xiiRttiConverterWriter(xiiAbstractObjectGraph* pGraph, xiiRttiConverterContext* pContext, FilterFunction filter)
+xiiRttiConverterWriter::xiiRttiConverterWriter(xiiAbstractObjectGraph* pGraph, xiiRttiConverterContext* pContext, FilterFunction filter) :
+  m_pContext(pContext), m_pGraph(pGraph), m_Filter(filter)
 {
   XII_ASSERT_DEBUG(filter.IsValid(), "Either filter function must be valid or a different ctor must be chosen.");
-  m_pGraph   = pGraph;
-  m_pContext = pContext;
-  m_Filter   = filter;
 }
 
 xiiAbstractObjectNode* xiiRttiConverterWriter::AddObjectToGraph(const xiiRTTI* pRtti, const void* pObject, const char* szNodeName)

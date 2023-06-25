@@ -188,10 +188,6 @@ void xiiFollowPathComponent::SetDistanceAlongPath(float fDistance)
 
     pPathComponent->SetLinearSamplerTo(m_PathSampler, m_fStartDistance);
 
-    xiiVec3 m_vLastPosition;
-    xiiVec3 m_vLastTargetPosition;
-    xiiVec3 m_vLastUpDir;
-
     Update(true);
   }
 }

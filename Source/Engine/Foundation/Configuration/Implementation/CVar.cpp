@@ -102,14 +102,9 @@ void xiiCVar::PluginEventHandler(const xiiPluginEvent& EventData)
   }
 }
 
-xiiCVar::xiiCVar(xiiStringView sName, xiiBitflags<xiiCVarFlags> Flags, xiiStringView sDescription)
+xiiCVar::xiiCVar(xiiStringView sName, xiiBitflags<xiiCVarFlags> Flags, xiiStringView sDescription) :
+  m_sName(sName), m_Flags(Flags), m_sDescription(sDescription)
 {
-  m_bHasNeverBeenLoaded = true; // Next time 'LoadCVars' is called, its state will be changed.
-
-  m_sName        = sName;
-  m_Flags        = Flags;
-  m_sDescription = sDescription;
-
   // 'RequiresRestart' only works together with 'Save'.
   if (m_Flags.IsAnySet(xiiCVarFlags::RequiresRestart))
     m_Flags.Add(xiiCVarFlags::Save);

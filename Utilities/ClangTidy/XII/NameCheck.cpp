@@ -112,7 +112,7 @@ namespace clang
             *prefixAdded = true;
           return newName.insert(0, "m");
         }
-        else if (typeName.startswith("xiiQuat") || typeName == "xiiSimdQuat")
+        else if (typeName.startswith("xiiQuat") || typeName == "xiiSimdQuat" || typeName == "xiiSimdQuatd")
         {
           if (prefixAdded)
             *prefixAdded = true;

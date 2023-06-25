@@ -19,11 +19,9 @@ namespace xiiShaderHelper
   private:
     struct xiiTextSection
     {
-      xiiTextSection(const char* szName)
+      xiiTextSection(const char* szName) :
+        m_sName(szName), m_szSectionStart(nullptr), m_uiFirstLine(0)
       {
-        m_sName          = szName;
-        m_szSectionStart = nullptr;
-        m_uiFirstLine    = 0;
       }
 
       void Reset()

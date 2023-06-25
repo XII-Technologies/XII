@@ -182,7 +182,7 @@ void xiiGraphPatchContext::UpdateBaseClasses()
       break;
 
     xiiVersionKey key;
-    key.m_sType         = sParentType;
+    key.m_sType         = std::move(sParentType);
     key.m_uiTypeVersion = 0;
     m_BaseClasses.PushBack(key);
   }

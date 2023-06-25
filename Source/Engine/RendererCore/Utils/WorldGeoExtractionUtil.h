@@ -60,7 +60,7 @@ struct XII_RENDERERCORE_DLL xiiMsgExtractGeometry : public xiiMessage
   xiiWorldGeoExtractionUtil::ExtractionMode m_Mode = xiiWorldGeoExtractionUtil::ExtractionMode::RenderMesh;
 
   /// \brief Append mesh objects to this to describe the requested world geometry
-  xiiWorldGeoExtractionUtil::MeshObjectList* m_pMeshObjects;
+  xiiWorldGeoExtractionUtil::MeshObjectList* m_pMeshObjects = nullptr;
 
   void AddMeshObject(const xiiTransform& transform, xiiCpuMeshResourceHandle hMeshResource);
   void AddBox(const xiiTransform& transform, xiiVec3 vExtents);

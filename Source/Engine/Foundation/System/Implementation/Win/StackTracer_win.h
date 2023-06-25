@@ -278,8 +278,8 @@ void xiiStackTracer::ResolveStackTrace(const xiiArrayPtr<void*>& trace, PrintFun
 
   if (s_pImplementation->symbolFromAddress != nullptr && s_pImplementation->lineFromAdress != nullptr)
   {
-    char   buffer[1024];
-    HANDLE currentProcess = GetCurrentProcess();
+    alignas(_SYMBOL_INFOW) char buffer[1024];
+    HANDLE                      currentProcess = GetCurrentProcess();
 
     const xiiUInt32 uiNumTraceEntries = trace.GetCount();
     for (xiiUInt32 i = 0; i < uiNumTraceEntries; i++)

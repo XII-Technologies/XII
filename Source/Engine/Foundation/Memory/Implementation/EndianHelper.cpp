@@ -5,7 +5,7 @@
 void xiiEndianHelper::SwitchStruct(void* pDataPointer, const char* szFormat)
 {
   XII_ASSERT_DEBUG(pDataPointer != nullptr, "Data necessary!");
-  XII_ASSERT_DEBUG(szFormat != nullptr && strlen(szFormat) > 0, "Struct format description necessary!");
+  XII_ASSERT_DEBUG((szFormat != nullptr) && (szFormat[0] != '\0'), "Struct format description necessary!");
 
   xiiUInt8* pWorkPointer    = static_cast<xiiUInt8*>(pDataPointer);
   char      cCurrentElement = *szFormat;
@@ -53,7 +53,7 @@ void xiiEndianHelper::SwitchStruct(void* pDataPointer, const char* szFormat)
 void xiiEndianHelper::SwitchStructs(void* pDataPointer, const char* szFormat, xiiUInt32 uiStride, xiiUInt32 uiCount)
 {
   XII_ASSERT_DEBUG(pDataPointer != nullptr, "Data necessary!");
-  XII_ASSERT_DEBUG(szFormat != nullptr && strlen(szFormat) > 0, "Struct format description necessary!");
+  XII_ASSERT_DEBUG((szFormat != nullptr) && (szFormat[0] != '\0'), "Struct format description necessary!");
   XII_ASSERT_DEBUG(uiStride > 0, "Struct size necessary!");
 
   for (xiiUInt32 i = 0; i < uiCount; i++)

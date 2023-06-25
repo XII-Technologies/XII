@@ -57,9 +57,9 @@ protected:
       };
     };
 
-    UpdateFunctionDesc(const UpdateFunction& function, xiiStringView sFunctionName)
+    UpdateFunctionDesc(const UpdateFunction& function, xiiStringView sFunctionName) :
+      m_Function(function)
     {
-      m_Function = function;
       m_sFunctionName.Assign(sFunctionName);
     }
 

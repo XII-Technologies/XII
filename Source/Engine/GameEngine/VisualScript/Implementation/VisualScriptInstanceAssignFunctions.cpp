@@ -41,7 +41,7 @@ bool xiiVisualScriptAssignNumberVariant(const void* pSrc, void* pDst)
 {
   xiiVariant newValue                  = *reinterpret_cast<const double*>(pSrc);
   const bool res                       = *reinterpret_cast<xiiVariant*>(pDst) != newValue;
-  *reinterpret_cast<xiiVariant*>(pDst) = newValue;
+  *reinterpret_cast<xiiVariant*>(pDst) = std::move(newValue);
   return res;
 }
 
@@ -76,7 +76,7 @@ bool xiiVisualScriptAssignBoolVariant(const void* pSrc, void* pDst)
 {
   xiiVariant newValue                  = *reinterpret_cast<const bool*>(pSrc);
   const bool res                       = *reinterpret_cast<xiiVariant*>(pDst) != newValue;
-  *reinterpret_cast<xiiVariant*>(pDst) = newValue;
+  *reinterpret_cast<xiiVariant*>(pDst) = std::move(newValue);
   return res;
 }
 
@@ -92,7 +92,7 @@ bool xiiVisualScriptAssignVec3Variant(const void* pSrc, void* pDst)
 {
   xiiVariant newValue                  = *reinterpret_cast<const xiiVec3*>(pSrc);
   const bool res                       = *reinterpret_cast<xiiVariant*>(pDst) != newValue;
-  *reinterpret_cast<xiiVariant*>(pDst) = newValue;
+  *reinterpret_cast<xiiVariant*>(pDst) = std::move(newValue);
   return res;
 }
 
@@ -108,7 +108,7 @@ bool xiiVisualScriptAssignStringVariant(const void* pSrc, void* pDst)
 {
   xiiVariant newValue                  = *reinterpret_cast<const xiiString*>(pSrc);
   const bool res                       = *reinterpret_cast<xiiVariant*>(pDst) != newValue;
-  *reinterpret_cast<xiiVariant*>(pDst) = newValue;
+  *reinterpret_cast<xiiVariant*>(pDst) = std::move(newValue);
   return res;
 }
 

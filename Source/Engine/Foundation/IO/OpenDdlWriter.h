@@ -126,14 +126,8 @@ protected:
 
   struct DdlState
   {
-    DdlState()
-
-    {
-      m_bPrimitivesWritten = false;
-    }
-
-    State m_State = Empty;
-    bool  m_bPrimitivesWritten;
+    State m_State              = State::Empty;
+    bool  m_bPrimitivesWritten = false;
   };
 
   XII_ALWAYS_INLINE void OutputString(const char* sz) { m_pOutput->WriteBytes(sz, xiiStringUtils::GetStringElementCount(sz)).IgnoreResult(); }
@@ -148,11 +142,11 @@ protected:
   void                   WriteBinaryAsHex(const void* pData, xiiUInt32 uiBytes);
   void                   OutputObjectBeginning();
 
-  xiiInt32           m_iIndentation;
-  bool               m_bCompactMode;
-  TypeStringMode     m_TypeStringMode;
-  FloatPrecisionMode m_FloatPrecisionMode;
-  xiiStreamWriter*   m_pOutput;
+  xiiInt32           m_iIndentation       = 0;
+  bool               m_bCompactMode       = false;
+  TypeStringMode     m_TypeStringMode     = TypeStringMode::ShortenedUnsignedInt;
+  FloatPrecisionMode m_FloatPrecisionMode = FloatPrecisionMode::Exact;
+  xiiStreamWriter*   m_pOutput            = nullptr;
   xiiStringBuilder   m_sTemp;
 
   xiiHybridArray<DdlState, 16> m_StateStack;

@@ -2,10 +2,9 @@
 
 XII_ALWAYS_INLINE xiiSimdBBoxd::xiiSimdBBoxd() = default;
 
-XII_ALWAYS_INLINE xiiSimdBBoxd::xiiSimdBBoxd(const xiiSimdVec4d& vMin, const xiiSimdVec4d& vMax)
+XII_ALWAYS_INLINE xiiSimdBBoxd::xiiSimdBBoxd(const xiiSimdVec4d& vMin, const xiiSimdVec4d& vMax) :
+  m_Min(vMin), m_Max(vMax)
 {
-  m_Min = vMin;
-  m_Max = vMax;
 }
 
 XII_ALWAYS_INLINE void xiiSimdBBoxd::SetInvalid()

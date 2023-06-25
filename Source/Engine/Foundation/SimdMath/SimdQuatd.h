@@ -25,7 +25,7 @@ public:
   void SetShortestRotation(const xiiSimdVec4d& vDirFrom, const xiiSimdVec4d& vDirTo); // [tested]
 
   /// \brief Sets this quaternion to be the spherical linear interpolation of the other two.
-  void SetSlerp(const xiiSimdQuatd& from, const xiiSimdQuatd& to, const xiiSimdDouble& t); // [tested]
+  void SetSlerp(const xiiSimdQuatd& qFrom, const xiiSimdQuatd& qTo, const xiiSimdDouble& t); // [tested]
 
 public:
   /// \brief Normalizes the quaternion to unit length. ALL rotation-quaternions should be normalized at all times (automatically).

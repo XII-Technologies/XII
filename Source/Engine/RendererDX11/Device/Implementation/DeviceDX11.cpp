@@ -1209,7 +1209,7 @@ bool xiiGALDeviceDX11::IsFenceReachedPlatform(ID3D11DeviceContext* pContext, ID3
   BOOL data = FALSE;
   if (pContext->GetData(pFence, &data, sizeof(data), 0) == S_OK)
   {
-    XII_ASSERT_DEV(data == TRUE, "Implementation error");
+    XII_ASSERT_DEV(data != FALSE, "Implementation error");
     return true;
   }
 
@@ -1224,7 +1224,7 @@ void xiiGALDeviceDX11::WaitForFencePlatform(ID3D11DeviceContext* pContext, ID3D1
     xiiThreadUtils::YieldTimeSlice();
   }
 
-  XII_ASSERT_DEV(data == TRUE, "Implementation error");
+  XII_ASSERT_DEV(data != FALSE, "Implementation error");
 }
 
 XII_STATICLINK_FILE(RendererDX11, RendererDX11_Device_Implementation_DeviceDX11);

@@ -60,7 +60,7 @@
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 /// \brief Macro helper to check alignment
-#  define XII_CHECK_ALIGNMENT(ptr, alignment) XII_ASSERT_DEV(((size_t)ptr & (alignment - 1)) == 0, "Wrong alignment.")
+#  define XII_CHECK_ALIGNMENT(ptr, alignment) XII_ASSERT_DEV(((size_t)ptr & ((alignment)-1)) == 0, "Wrong alignment.")
 #else
 /// \brief Macro helper to check alignment
 #  define XII_CHECK_ALIGNMENT(ptr, alignment)

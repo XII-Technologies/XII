@@ -144,7 +144,7 @@ void xiiResourceManager::ReverseBubbleSortStep(xiiDeque<LoadingInfo>& data)
     const xiiUInt32 idx2 = i - 1;
     const xiiUInt32 idx1 = i - 2;
 
-    if (data[idx1].m_fPriority > data[idx1].m_fPriority)
+    if (data[idx1].m_fPriority > data[idx2].m_fPriority)
     {
       xiiMath::Swap(data[idx1], data[idx2]);
     }

@@ -123,11 +123,6 @@ float xiiInputComponent::GetCurrentInputState(const char* szInputAction, bool bO
   if (bOnlyKeyPressed && state != xiiKeyState::Pressed)
     return 0;
 
-  if (state != xiiKeyState::Up)
-  {
-    return fValue;
-  }
-
   return fValue;
 }
 

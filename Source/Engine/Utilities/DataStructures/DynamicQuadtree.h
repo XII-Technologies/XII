@@ -129,10 +129,10 @@ private:
   xiiBoundingBox m_BBox;
 
   /// \brief The actual bounding box (to discard objects that are outside the world)
-  float m_fRealMinX, m_fRealMaxX, m_fRealMinZ, m_fRealMaxZ;
+  float m_fRealMinX = 0, m_fRealMaxX = 0, m_fRealMinZ = 0, m_fRealMaxZ = 0;
 
   /// \brief Used to turn the map into a multi-map.
-  xiiUInt32 m_uiMultiMapCounter;
+  xiiUInt32 m_uiMultiMapCounter = 0;
 
   /// \brief Every node has a unique index, the map allows to store many objects at each node, using that index
   xiiMap<xiiDynamicTree::xiiMultiMapKey, xiiDynamicTree::xiiObjectData> m_NodeMap;

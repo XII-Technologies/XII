@@ -2,9 +2,9 @@
 
 XII_ALWAYS_INLINE xiiSimdBSphere::xiiSimdBSphere() = default;
 
-XII_ALWAYS_INLINE xiiSimdBSphere::xiiSimdBSphere(const xiiSimdVec4f& vCenter, const xiiSimdFloat& fRadius)
+XII_ALWAYS_INLINE xiiSimdBSphere::xiiSimdBSphere(const xiiSimdVec4f& vCenter, const xiiSimdFloat& fRadius) :
+  m_CenterAndRadius(vCenter)
 {
-  m_CenterAndRadius = vCenter;
   m_CenterAndRadius.SetW(fRadius);
 }
 
