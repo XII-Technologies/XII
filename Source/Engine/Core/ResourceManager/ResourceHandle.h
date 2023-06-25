@@ -216,12 +216,12 @@ public:
   /// It is an error to assign a typeless handle that references a resource with a mismatching type.
   void AssignFromTypelessHandle(const xiiTypelessResourceHandle& hHandle)
   {
-    if (!handle.IsValid())
+    if (!hHandle.IsValid())
       return;
 
-    XII_ASSERT_DEV(handle.GetResourceType()->IsDerivedFrom<RESOURCE_TYPE>(), "Type '{}' does not match resource type '{}' in typeless handle.", xiiGetStaticRTTI<RESOURCE_TYPE>()->GetTypeName(), handle.GetResourceType()->GetTypeName());
+    XII_ASSERT_DEV(hHandle.GetResourceType()->IsDerivedFrom<RESOURCE_TYPE>(), "Type '{}' does not match resource type '{}' in typeless handle.", xiiGetStaticRTTI<RESOURCE_TYPE>()->GetTypeName(), hHandle.GetResourceType()->GetTypeName());
 
-    m_hTypeless = handle;
+    m_hTypeless = hHandle;
   }
 
 private:
