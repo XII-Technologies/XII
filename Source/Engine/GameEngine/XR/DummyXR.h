@@ -40,7 +40,7 @@ class XII_GAMEENGINE_DLL xiiDummyXR : public xiiXRInterface
 
 public:
   xiiDummyXR();
-  ~xiiDummyXR();
+  ~xiiDummyXR() = default;
 
   bool                   IsHmdPresent() const override;
   xiiResult              Initialize() override;

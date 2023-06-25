@@ -116,15 +116,14 @@ class XII_GAMEENGINE_DLL xiiVisScriptDataPinInAttribute : public xiiPropertyAttr
   XII_ADD_DYNAMIC_REFLECTION(xiiVisScriptDataPinInAttribute, xiiPropertyAttribute);
 
 public:
-  xiiVisScriptDataPinInAttribute()
+  xiiVisScriptDataPinInAttribute() :
+    xiiVisScriptDataPinInAttribute(0xFF, xiiVisualScriptDataPinType::None)
   {
-    m_uiPinSlot = 0xff;
-    m_DataType  = xiiVisualScriptDataPinType::None;
   }
-  xiiVisScriptDataPinInAttribute(xiiUInt8 uiSlot, xiiVisualScriptDataPinType::Enum dataType)
+
+  xiiVisScriptDataPinInAttribute(xiiUInt8 uiSlot, xiiVisualScriptDataPinType::Enum dataType) :
+    m_uiPinSlot(uiSlot), m_DataType(dataType)
   {
-    m_uiPinSlot = uiSlot;
-    m_DataType  = dataType;
   }
 
   xiiUInt8                            m_uiPinSlot;
@@ -136,15 +135,14 @@ class XII_GAMEENGINE_DLL xiiVisScriptDataPinOutAttribute : public xiiPropertyAtt
   XII_ADD_DYNAMIC_REFLECTION(xiiVisScriptDataPinOutAttribute, xiiPropertyAttribute);
 
 public:
-  xiiVisScriptDataPinOutAttribute()
+  xiiVisScriptDataPinOutAttribute() :
+    xiiVisScriptDataPinOutAttribute(0xFF, xiiVisualScriptDataPinType::None)
   {
-    m_uiPinSlot = 0xff;
-    m_DataType  = xiiVisualScriptDataPinType::None;
   }
-  xiiVisScriptDataPinOutAttribute(xiiUInt8 uiSlot, xiiVisualScriptDataPinType::Enum dataType)
+
+  xiiVisScriptDataPinOutAttribute(xiiUInt8 uiSlot, xiiVisualScriptDataPinType::Enum dataType) :
+    m_uiPinSlot(uiSlot), m_DataType(dataType)
   {
-    m_uiPinSlot = uiSlot;
-    m_DataType  = dataType;
   }
 
   xiiUInt8                            m_uiPinSlot;

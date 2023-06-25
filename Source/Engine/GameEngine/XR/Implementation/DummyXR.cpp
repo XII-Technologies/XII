@@ -19,8 +19,6 @@ xiiDummyXR::xiiDummyXR() :
 {
 }
 
-xiiDummyXR::~xiiDummyXR() = default;
-
 bool xiiDummyXR::IsHmdPresent() const
 {
   return true;

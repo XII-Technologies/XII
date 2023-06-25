@@ -145,7 +145,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_PhysicsTriggerEvent, 1, xii
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_PhysicsTriggerEvent::xiiVisualScriptNode_PhysicsTriggerEvent()  = default;
+xiiVisualScriptNode_PhysicsTriggerEvent::xiiVisualScriptNode_PhysicsTriggerEvent() :
+  m_State(xiiTriggerState::Default)
+{
+}
+
 xiiVisualScriptNode_PhysicsTriggerEvent::~xiiVisualScriptNode_PhysicsTriggerEvent() = default;
 
 void xiiVisualScriptNode_PhysicsTriggerEvent::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
@@ -260,7 +264,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptNode_InputEvent, 1, xiiRTTIDefau
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptNode_InputEvent::xiiVisualScriptNode_InputEvent()  = default;
+xiiVisualScriptNode_InputEvent::xiiVisualScriptNode_InputEvent() :
+  m_State(xiiTriggerState::Default)
+{
+}
+
 xiiVisualScriptNode_InputEvent::~xiiVisualScriptNode_InputEvent() = default;
 
 void xiiVisualScriptNode_InputEvent::Execute(xiiVisualScriptInstance* pInstance, xiiUInt8 uiExecPin)
