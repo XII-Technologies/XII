@@ -34,7 +34,7 @@ private:
 
   xiiHashedString m_sTagString;
 
-  xiiUInt32 m_uiBitIndex = 0xFFFFFFFEu;
+  xiiUInt32 m_uiBitIndex   = 0xFFFFFFFEu;
   xiiUInt32 m_uiBlockIndex = 0xFFFFFFFEu;
 };
 

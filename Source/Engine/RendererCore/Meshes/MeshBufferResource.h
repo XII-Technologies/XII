@@ -138,7 +138,7 @@ class XII_RENDERERCORE_DLL xiiMeshBufferResource : public xiiResource
 
 public:
   xiiMeshBufferResource() :
-    xiiResource(DoUpdate::OnAnyThread, 1) 
+    xiiResource(DoUpdate::OnAnyThread, 1)
   {
   }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-xiiTag::xiiTag()  
+xiiTag::xiiTag()
 {
 }
 

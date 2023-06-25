@@ -50,14 +50,14 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 xiiRTTI::xiiRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)()) :
-  
+
   m_szTypeName(szName),
   m_pAllocator(pAllocator),
   m_Properties(properties),
   m_Functions(xiiMakeArrayPtr<xiiAbstractFunctionProperty*>(reinterpret_cast<xiiAbstractFunctionProperty**>(functions.GetPtr()), functions.GetCount())),
   m_Attributes(attributes),
   m_MessageHandlers(messageHandlers),
-  
+
   m_MessageSenders(messageSenders),
   m_VerifyParent(fnVerifyParent)
 {
