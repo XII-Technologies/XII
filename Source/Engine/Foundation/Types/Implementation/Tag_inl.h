@@ -1,8 +1,6 @@
 #pragma once
 
-xiiTag::xiiTag()
-{
-}
+xiiTag::xiiTag() = default;
 
 bool xiiTag::operator==(const xiiTag& rhs) const
 {
