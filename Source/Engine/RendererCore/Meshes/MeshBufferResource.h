@@ -137,7 +137,11 @@ class XII_RENDERERCORE_DLL xiiMeshBufferResource : public xiiResource
   XII_RESOURCE_DECLARE_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDescriptor);
 
 public:
-  xiiMeshBufferResource();
+  xiiMeshBufferResource() :
+    xiiResource(DoUpdate::OnAnyThread), m_uiPrimitiveCount(0), m_Topology(xiiGALPrimitiveTopology::Default)
+  {
+  }
+
   ~xiiMeshBufferResource();
 
   XII_ALWAYS_INLINE xiiUInt32 GetPrimitiveCount() const { return m_uiPrimitiveCount; }

@@ -57,7 +57,7 @@ void xiiAnimGraphTriggerOutputPin::SetTriggered(xiiAnimGraph& ref_graph, bool bT
   const auto& map = ref_graph.m_OutputPinToInputPinMapping[xiiAnimGraphPin::Trigger][m_iPinIndex];
 
 
-  const xiiInt8 offset = bTriggered ? +1 : -1;
+  const xiiInt8 offset = +1; // bTriggered ? +1 : -1;
 
   // trigger or reset all input pins that are connected to this output pin
   for (xiiUInt16 idx : map)

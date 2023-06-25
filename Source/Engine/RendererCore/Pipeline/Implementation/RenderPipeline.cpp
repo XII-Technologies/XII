@@ -663,7 +663,7 @@ void xiiRenderPipeline::SortExtractors()
   xiiUInt32 uiIndex = 0;
   while (!m_Extractors.IsEmpty())
   {
-    auto& extractor = m_Extractors[uiIndex];
+    xiiUniquePtr<xiiExtractor>& extractor = m_Extractors[uiIndex];
 
     bool allDependenciesFound = true;
     for (auto& sDependency : extractor->m_DependsOn)

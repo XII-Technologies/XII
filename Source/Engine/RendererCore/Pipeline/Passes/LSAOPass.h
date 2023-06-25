@@ -88,7 +88,7 @@ protected:
   xiiGALResourceViewHandle m_hLineSweepInfoSRV;
 
   /// Total number of lines to be traced.
-  xiiUInt32 m_uiNumSweepLines;
+  xiiUInt32 m_uiNumSweepLines = 0;
 
   xiiInt32                             m_iLineToLinePixelOffset       = 2;
   xiiInt32                             m_iLineSamplePixelOffsetFactor = 1;

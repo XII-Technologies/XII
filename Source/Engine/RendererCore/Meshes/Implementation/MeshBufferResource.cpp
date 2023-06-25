@@ -503,11 +503,6 @@ xiiResult xiiMeshBufferResourceDescriptor::RecomputeNormals()
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiMeshBufferResource::xiiMeshBufferResource() :
-  xiiResource(DoUpdate::OnAnyThread, 1)
-{
-}
-
 xiiMeshBufferResource::~xiiMeshBufferResource()
 {
   XII_ASSERT_DEBUG(m_hVertexBuffer.IsInvalidated(), "Implementation error");

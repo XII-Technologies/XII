@@ -28,9 +28,9 @@ protected:
   xiiRenderPipelineNodeOutputPin m_PinAvgLuminance;
   xiiRenderPipelineNodeOutputPin m_PinIrradianceData;
 
-  float     m_fIntensity  = 1.0f;
-  float     m_fSaturation = 1.0f;
-  xiiUInt32 m_uiSpecularOutputIndex;
+  float     m_fIntensity              = 1.0f;
+  float     m_fSaturation             = 1.0f;
+  xiiUInt32 m_uiSpecularOutputIndex   = 0;
   xiiUInt32 m_uiIrradianceOutputIndex = 0;
 
   xiiGALTextureHandle m_hInputCubemap;
