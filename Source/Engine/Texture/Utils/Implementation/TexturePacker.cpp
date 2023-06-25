@@ -2,10 +2,6 @@
 
 #include <Texture/Utils/TexturePacker.h>
 
-xiiTexturePacker::xiiTexturePacker() = default;
-
-xiiTexturePacker::~xiiTexturePacker() = default;
-
 void xiiTexturePacker::SetTextureSize(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiReserveTextures /*= 0*/)
 {
   m_uiWidth  = uiWidth;
