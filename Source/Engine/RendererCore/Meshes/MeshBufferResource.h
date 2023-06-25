@@ -138,7 +138,7 @@ class XII_RENDERERCORE_DLL xiiMeshBufferResource : public xiiResource
 
 public:
   xiiMeshBufferResource() :
-    xiiResource(DoUpdate::OnAnyThread, 1), m_uiPrimitiveCount(0), m_Topology(xiiGALPrimitiveTopology::Default)
+    xiiResource(DoUpdate::OnAnyThread, 1) 
   {
   }
 
@@ -165,8 +165,8 @@ private:
 
   xiiBoundingBoxSphere          m_Bounds;
   xiiVertexDeclarationInfo      m_VertexDeclaration;
-  xiiUInt32                     m_uiPrimitiveCount;
+  xiiUInt32                     m_uiPrimitiveCount = 0;
   xiiGALBufferHandle            m_hVertexBuffer;
   xiiGALBufferHandle            m_hIndexBuffer;
-  xiiGALPrimitiveTopology::Enum m_Topology;
+  xiiGALPrimitiveTopology::Enum m_Topology = xiiGALPrimitiveTopology::Default;
 };

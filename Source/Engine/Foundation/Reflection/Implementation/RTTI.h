@@ -152,7 +152,7 @@ public:
     bool                             bSortByName);
 
 protected:
-  const char*                               m_szPluginName;
+  const char*                               m_szPluginName = nullptr;
   const char*                               m_szTypeName;
   xiiArrayPtr<xiiAbstractProperty*>         m_Properties;
   xiiArrayPtr<xiiAbstractFunctionProperty*> m_Functions;
@@ -172,9 +172,9 @@ protected:
   xiiUInt32                 m_uiTypeVersion  = 0;
   xiiUInt64                 m_uiTypeNameHash = 0;
   xiiBitflags<xiiTypeFlags> m_TypeFlags;
-  xiiUInt32                 m_uiMsgIdOffset;
+  xiiUInt32                 m_uiMsgIdOffset = 0;
 
-  bool m_bGatheredDynamicMessageHandlers;
+  bool m_bGatheredDynamicMessageHandlers = false;
   const xiiRTTI* (*m_VerifyParent)();
 
   xiiArrayPtr<xiiAbstractMessageHandler*> m_MessageHandlers;

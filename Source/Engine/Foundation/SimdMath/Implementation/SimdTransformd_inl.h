@@ -2,15 +2,15 @@
 
 XII_ALWAYS_INLINE xiiSimdTransformd::xiiSimdTransformd() = default;
 
-XII_ALWAYS_INLINE xiiSimdTransformd::xiiSimdTransformd(const xiiSimdVec4d& vPosition, const xiiSimdQuatd& rotation, const xiiSimdVec4d& vScale) :
+XII_ALWAYS_INLINE xiiSimdTransformd::xiiSimdTransformd(const xiiSimdVec4d& vPosition, const xiiSimdQuatd& qRotation, const xiiSimdVec4d& vScale) :
   m_Position(vPosition),
-  m_Rotation(rotation),
+  m_Rotation(qRotation),
   m_Scale(vScale)
 {
 }
 
-XII_ALWAYS_INLINE xiiSimdTransformd::xiiSimdTransformd(const xiiSimdQuatd& rotation) :
-  m_Rotation(rotation)
+XII_ALWAYS_INLINE xiiSimdTransformd::xiiSimdTransformd(const xiiSimdQuatd& qRotation) :
+  m_Rotation(qRotation)
 {
   m_Position.SetZero();
   m_Scale.Set(1.0);

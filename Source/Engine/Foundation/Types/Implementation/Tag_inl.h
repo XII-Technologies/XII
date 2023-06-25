@@ -1,7 +1,6 @@
 #pragma once
 
-xiiTag::xiiTag() :
-  m_uiBitIndex(0xFFFFFFFEu), m_uiBlockIndex(0xFFFFFFFEu)
+xiiTag::xiiTag()  
 {
 }
 

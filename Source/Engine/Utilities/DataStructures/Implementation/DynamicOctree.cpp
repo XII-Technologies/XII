@@ -4,10 +4,7 @@
 
 const float xiiDynamicOctree::s_fLooseOctreeFactor = 1.1f;
 
-xiiDynamicOctree::xiiDynamicOctree() :
-  m_fRealMinX(0), m_fRealMaxX(0), m_fRealMinY(0), m_fRealMaxY(0), m_fRealMinZ(0), m_fRealMaxZ(0), m_uiMultiMapCounter(0)
-{
-}
+xiiDynamicOctree::xiiDynamicOctree() = default;
 
 void xiiDynamicOctree::CreateTree(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, float fMinNodeSize)
 {

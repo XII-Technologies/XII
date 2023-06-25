@@ -43,7 +43,7 @@ protected:
 private:
   friend class xiiVisualScriptInstance;
 
-  xiiUInt16 m_uiNodeID;
+  xiiUInt16 m_uiNodeID = 0;
 };
 
 

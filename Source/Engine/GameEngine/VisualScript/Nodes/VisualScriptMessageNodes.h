@@ -79,7 +79,7 @@ public:
 private:
   xiiHashedString       m_sTriggerMessage;
   xiiGameObjectHandle   m_hObject;
-  xiiTriggerState::Enum m_State;
+  xiiTriggerState::Enum m_State = xiiTriggerState::Default;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -122,7 +122,7 @@ private:
   xiiHashedString       m_sInputAction;
   xiiGameObjectHandle   m_hSenderObject;
   xiiComponentHandle    m_hSenderComponent;
-  xiiTriggerState::Enum m_State;
+  xiiTriggerState::Enum m_State = xiiTriggerState::Default;
 };
 
 //////////////////////////////////////////////////////////////////////////
