@@ -382,10 +382,12 @@ xiiWorldReader::InstantiationContext::StepResult xiiWorldReader::InstantiationCo
         m_uiCurrentIndex = 1;
         m_WorldReader.m_IndexToGameObjectHandle.PushBack(m_Options.m_hParent);
 
-        if (m_WorldReader.m_RootObjectsToCreate[0].m_Desc.m_bDynamic)
+        xiiGameObject* pParent = nullptr;
+        if (m_WorldReader.m_pWorld->TryGetObject(m_Options.m_hParent, pParent))
         {
-          xiiGameObject* pParent = nullptr;
-          if (m_WorldReader.m_pWorld->TryGetObject(m_Options.m_hParent, pParent))
+          m_Options.m_pCreatedRootObjectsOut->PushBack(pParent);
+
+          if (m_WorldReader.m_RootObjectsToCreate[0].m_Desc.m_bDynamic)
           {
             pParent->MakeDynamic();
           }
