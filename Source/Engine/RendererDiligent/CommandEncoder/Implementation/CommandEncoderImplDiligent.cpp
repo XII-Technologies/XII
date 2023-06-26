@@ -936,6 +936,14 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
   {
     m_pContext->EnqueueSignal(m_pReadBackFence, ++m_uiReadBackFenceCompletedValue);
     ClearActiveDebugGroups();
+
+    if (m_bRenderpassActive)
+    {
+      m_pContext->EndRenderPass();
+
+      m_bRenderpassActive = false;
+    }
+
     m_pContext->Flush();
     m_pReadBackFence->Wait(m_uiReadBackFenceCompletedValue);
   }
@@ -976,6 +984,14 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureReadbackResultPlatform(const x
     {
       m_pContext->EnqueueSignal(m_pReadBackFence, ++m_uiReadBackFenceCompletedValue);
       ClearActiveDebugGroups();
+
+      if (m_bRenderpassActive)
+      {
+        m_pContext->EndRenderPass();
+
+        m_bRenderpassActive = false;
+      }
+
       m_pContext->Flush();
       m_pReadBackFence->Wait(m_uiReadBackFenceCompletedValue);
     }
@@ -1029,6 +1045,14 @@ void xiiGALCommandEncoderImplDiligent::GenerateMipMapsPlatform(const xiiGALResou
 void xiiGALCommandEncoderImplDiligent::FlushPlatform()
 {
   ClearActiveDebugGroups();
+
+  if (m_bRenderpassActive)
+  {
+    m_pContext->EndRenderPass();
+
+    m_bRenderpassActive = false;
+  }
+
   m_pContext->Flush();
 
   FlushDeferredStateChanges();
@@ -1045,11 +1069,11 @@ void xiiGALCommandEncoderImplDiligent::PushMarkerPlatform(const char* szMarker)
 
 void xiiGALCommandEncoderImplDiligent::PopMarkerPlatform()
 {
-  if (m_uiActiveDebugGroups != 0)
-  {
-    m_pContext->EndDebugGroup();
-    --m_uiActiveDebugGroups;
-  }
+  if (m_uiActiveDebugGroups == 0)
+    return;
+
+  m_pContext->EndDebugGroup();
+  --m_uiActiveDebugGroups;
 }
 
 void xiiGALCommandEncoderImplDiligent::InsertEventMarkerPlatform(const char* szMarker)
@@ -1751,17 +1775,6 @@ void xiiGALCommandEncoderImplDiligent::FlushDeferredStateChanges()
     {
       m_pContext->SetScissorRects(1u, &m_ScissorRect, m_ScissorRect.right - m_ScissorRect.left, m_ScissorRect.bottom - m_ScissorRect.top);
     }
-    else
-    {
-      Diligent::Rect ViewRectNoScissor;
-      ViewRectNoScissor.left   = (xiiUInt32)m_Viewport.TopLeftX;
-      ViewRectNoScissor.top    = (xiiUInt32)m_Viewport.TopLeftY;
-      ViewRectNoScissor.right  = (xiiUInt32)m_Viewport.Width;
-      ViewRectNoScissor.bottom = (xiiUInt32)m_Viewport.Height;
-
-      m_pContext->SetScissorRects(1u, &ViewRectNoScissor, ViewRectNoScissor.right - ViewRectNoScissor.left, ViewRectNoScissor.bottom - ViewRectNoScissor.top);
-    }
-
     m_bViewportModified = false;
   }
 
@@ -1815,43 +1828,57 @@ void xiiGALCommandEncoderImplDiligent::TransitionResources()
             break;
             case xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer:
             {
-              if (!m_pBoundShaderResourceViews[stage].IsEmpty() && m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
+              if (!m_pBoundShaderResourceViews[stage].IsEmpty() && m_pBoundShaderResourceViews[stage].GetCount() > currentBinding.m_uiVirtualBinding && m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
               {
-                auto& description  = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
-                auto  pSRVDiligent = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetBufferView();
+                auto& description = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
 
-                m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetBuffer(), Diligent::RESOURCE_STATE_SHADER_RESOURCE, Diligent::RESOURCE_STATE_SHADER_RESOURCE, m_bRenderpassActive);
+                if (auto pSRVDiligent = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetBufferView())
+                {
+                  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetBuffer(), Diligent::RESOURCE_STATE_SHADER_RESOURCE, Diligent::RESOURCE_STATE_SHADER_RESOURCE, m_bRenderpassActive);
+                }
+                if (auto pSRVDiligent = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView())
+                {
+                  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetTexture(), Diligent::RESOURCE_STATE_SHADER_RESOURCE, Diligent::RESOURCE_STATE_SHADER_RESOURCE, m_bRenderpassActive);
+                }
               }
             }
             break;
             case xiiShaderDescriptorSetLayoutBinding::ResourceViewTexture:
             {
-              if (!m_pBoundShaderResourceViews[stage].IsEmpty() && m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
+              if (!m_pBoundShaderResourceViews[stage].IsEmpty() && m_pBoundShaderResourceViews[stage].GetCount() > currentBinding.m_uiVirtualBinding && m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding])
               {
-                auto& description  = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
-                auto  pSRVDiligent = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView();
+                auto& description = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetDescription();
 
-                const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetResource()->GetParentResource());
-                const bool                   bIsDepthFormat   = xiiGALResourceFormat::IsDepthFormat(pTextureDiligent->GetDescription().m_Format);
-
-                Diligent::RESOURCE_STATE stateFlags = {};
-                if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_VULKAN)
+                if (auto pSRVDiligent = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetBufferView())
                 {
-                  stateFlags |= bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ | Diligent::RESOURCE_STATE_SHADER_RESOURCE : Diligent::RESOURCE_STATE_SHADER_RESOURCE;
-                }
-                else
-                {
-                  // Only a single bit must be set
-                  stateFlags |= bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ : Diligent::RESOURCE_STATE_SHADER_RESOURCE;
-                }
+                  const xiiGALBufferDiligent* pBufferDiligent = static_cast<const xiiGALBufferDiligent*>(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetResource()->GetParentResource());
 
-                m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetTexture(), stateFlags, stateFlags, m_bRenderpassActive);
+                  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetBuffer(), Diligent::RESOURCE_STATE_SHADER_RESOURCE, Diligent::RESOURCE_STATE_SHADER_RESOURCE, m_bRenderpassActive);
+                }
+                if (auto pSRVDiligent = m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetTextureView())
+                {
+                  const xiiGALTextureDiligent* pTextureDiligent = static_cast<const xiiGALTextureDiligent*>(m_pBoundShaderResourceViews[stage][currentBinding.m_uiVirtualBinding]->GetResource()->GetParentResource());
+                  const bool                   bIsDepthFormat   = xiiGALResourceFormat::IsDepthFormat(pTextureDiligent->GetDescription().m_Format);
+
+                  Diligent::RESOURCE_STATE stateFlags = {};
+                  if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_VULKAN)
+                  {
+                    stateFlags |= bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ | Diligent::RESOURCE_STATE_SHADER_RESOURCE : Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+                  }
+                  else
+                  {
+                    // Only a single bit must be set
+                    stateFlags |= bIsDepthFormat ? Diligent::RESOURCE_STATE_DEPTH_READ : Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+                  }
+
+                  m_pPipelineBarrier->EnsureResourceState(m_pContext, pSRVDiligent->GetTexture(), stateFlags, stateFlags, m_bRenderpassActive);
+                }
               }
             }
             break;
             case xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer:
             {
-              if (!m_pBoundUnoderedAccessViews.IsEmpty() && m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding])
+              if (!m_pBoundUnoderedAccessViews.IsEmpty() && m_pBoundUnoderedAccessViews.GetCount() > currentBinding.m_uiVirtualBinding && m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding])
               {
                 auto& description  = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetDescription();
                 auto  pUAVDiligent = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetBufferView();
@@ -1862,7 +1889,7 @@ void xiiGALCommandEncoderImplDiligent::TransitionResources()
             break;
             case xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewTexture:
             {
-              if (!m_pBoundUnoderedAccessViews.IsEmpty() && m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding])
+              if (!m_pBoundUnoderedAccessViews.IsEmpty() && m_pBoundUnoderedAccessViews.GetCount() > currentBinding.m_uiVirtualBinding && m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding])
               {
                 auto& description  = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetDescription();
                 auto  pUAVDiligent = m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetTextureView();
@@ -1948,7 +1975,7 @@ void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IS
               xiiLog::Error("Unordered access view pointer for '{}' returned null.", sData);
               continue;
             }
-            if (!m_pBoundUnoderedAccessViews.IsEmpty() && m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding])
+            if (!m_pBoundUnoderedAccessViews.IsEmpty() && m_pBoundUnoderedAccessViews.GetCount() > currentBinding.m_uiVirtualBinding && m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding])
               pUnorderedResourceView->Set(m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetTextureView(), Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             else
               pUnorderedResourceView->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
@@ -1962,7 +1989,7 @@ void xiiGALCommandEncoderImplDiligent::FillShaderDescriptorBindings(Diligent::IS
               xiiLog::Error("Unordered access view pointer for '{}' returned null.", sData);
               continue;
             }
-            if (!m_pBoundUnoderedAccessViews.IsEmpty() && m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding])
+            if (!m_pBoundUnoderedAccessViews.IsEmpty() && m_pBoundUnoderedAccessViews.GetCount() > currentBinding.m_uiVirtualBinding && m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding])
               pUnorderedResourceView->Set(m_pBoundUnoderedAccessViews[currentBinding.m_uiVirtualBinding]->GetBufferView(), Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             else
               pUnorderedResourceView->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
