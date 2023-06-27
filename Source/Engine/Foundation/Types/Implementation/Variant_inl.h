@@ -200,6 +200,11 @@ XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiAngle& value)
   InitInplace(value);
 }
 
+XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiAngled& value)
+{
+  InitInplace(value);
+}
+
 XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiColorGammaUB& value)
 {
   InitInplace(value);

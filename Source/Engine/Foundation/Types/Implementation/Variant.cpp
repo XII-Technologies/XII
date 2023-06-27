@@ -199,9 +199,9 @@ XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec4d>(const xiiVaria
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiString>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
-  xiiString* pString = (xiiString*)pData;
+  auto pString = static_cast<const xiiString*>(pData);
 
-  return xiiHashingUtils::xxHash64(pString->GetData(), pString->GetElementCount(), uiSeed);
+  return xiiHashingUtils::xxHash64String(*pString, uiSeed);
 }
 
 
@@ -252,7 +252,7 @@ XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiTransformd>(const xii
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiDataBuffer>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
-  xiiDataBuffer* pDataBuffer = (xiiDataBuffer*)pData;
+  auto pDataBuffer = static_cast<const xiiDataBuffer*>(pData);
 
   return xiiHashingUtils::xxHash64(pDataBuffer->GetData(), pDataBuffer->GetCount(), uiSeed);
 }
@@ -261,19 +261,34 @@ XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiDataBuffer>(const xii
 template <>
 XII_FORCE_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVariantArray>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
-  XII_IGNORE_UNUSED(pData);
+  auto pVariantArray = static_cast<const xiiVariantArray*>(pData);
 
-  XII_ASSERT_NOT_IMPLEMENTED;
-  return 0;
+  xiiUInt64 uiHash = uiSeed;
+  for (const xiiVariant& var : *pVariantArray)
+  {
+    uiHash = var.ComputeHash(uiHash);
+  }
+
+  return uiHash;
 }
 
 template <>
-XII_FORCE_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVariantDictionary>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
+xiiUInt64 ComputeHashFunc::operator()<xiiVariantDictionary>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
-  XII_IGNORE_UNUSED(pData);
+  auto pVariantDictionary = static_cast<const xiiVariantDictionary*>(pData);
 
-  XII_ASSERT_NOT_IMPLEMENTED;
-  return 0;
+  xiiHybridArray<xiiUInt64, 128> hashes;
+  hashes.Reserve(pVariantDictionary->GetCount() * 2);
+
+  for (auto& it : *pVariantDictionary)
+  {
+    hashes.PushBack(xiiHashingUtils::xxHash64String(it.Key(), uiSeed));
+    hashes.PushBack(it.Value().ComputeHash(uiSeed));
+  }
+
+  hashes.Sort();
+
+  return xiiHashingUtils::xxHash64(hashes.GetData(), hashes.GetCount() * sizeof(xiiUInt64), uiSeed);
 }
 
 
@@ -527,7 +542,15 @@ bool xiiVariant::CanConvertTo(Type::Enum type) const
   if (m_uiType == type)
     return true;
 
-  if (!IsValid() || type == Type::Invalid)
+  if (type == Type::Invalid)
+    return false;
+
+  if (type == Type::String && (m_uiType < Type::LastStandardType && m_uiType != Type::DataBuffer))
+    return true;
+  if (type == Type::String && (m_uiType == Type::VariantArray || m_uiType == Type::VariantDictionary))
+    return true;
+
+  if (!IsValid())
     return false;
 
   if (IsNumberStatic(type) && (IsNumber() || m_uiType == Type::String))
@@ -554,18 +577,9 @@ bool xiiVariant::CanConvertTo(Type::Enum type) const
   if (IsTransformStatic(type) && (IsTransformStatic(m_uiType)))
     return true;
 
-  if (type == Type::String && m_uiType < Type::LastStandardType && m_uiType != Type::DataBuffer)
-    return true;
-  if (type == Type::String && m_uiType == Type::VariantArray)
-    return true;
   if (type == Type::Color && m_uiType == Type::ColorGamma)
     return true;
   if (type == Type::ColorGamma && m_uiType == Type::Color)
-    return true;
-
-  if (type == Type::TypedPointer && m_uiType == Type::TypedPointer)
-    return true;
-  if (type == Type::TypedObject && m_uiType == Type::TypedObject)
     return true;
 
   return false;

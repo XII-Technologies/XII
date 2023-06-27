@@ -254,6 +254,12 @@ private:
   xiiUntrackedString m_sTagFilter;
 };
 
+/// \brief This attribute indicates that a widget should not use temporary transactions when changing the value.
+class XII_FOUNDATION_DLL xiiNoTemporaryTransactionsAttribute : public xiiPropertyAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiNoTemporaryTransactionsAttribute, xiiPropertyAttribute);
+};
+
 /// \brief Add this attribute to a variant map property to make it map to the exposed parameters
 /// of an asset. For this, the member property name of the asset reference needs to be passed in.
 /// The exposed parameters of the currently set asset on that property will be used as the source.
@@ -332,28 +338,6 @@ private:
   bool m_bCanAdd    = false;
   bool m_bCanDelete = false;
   bool m_bCanMove   = false;
-};
-
-/// \brief Limits setting of pointer properties to derived types that have the given constant property and value
-///
-/// The szConstantValueProperty is a sibling property of the property this attribute is assigned to,
-class XII_FOUNDATION_DLL xiiConstrainPointerAttribute : public xiiPropertyAttribute
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiConstrainPointerAttribute, xiiPropertyAttribute);
-
-public:
-  xiiConstrainPointerAttribute() = default;
-  xiiConstrainPointerAttribute(const char* szConstantName, const char* szConstantValueProperty) :
-    m_sConstantName(szConstantName), m_sConstantValueProperty(szConstantValueProperty)
-  {
-  }
-
-  const xiiUntrackedString& GetConstantName() const { return m_sConstantName; }
-  const xiiUntrackedString& GetConstantValueProperty() const { return m_sConstantValueProperty; }
-
-private:
-  xiiUntrackedString m_sConstantName;
-  xiiUntrackedString m_sConstantValueProperty;
 };
 
 /// \brief Defines how a reference set by xiiFileBrowserAttribute and xiiAssetBrowserAttribute is treated.
@@ -945,23 +929,13 @@ class XII_FOUNDATION_DLL xiiScriptableFunctionAttribute : public xiiPropertyAttr
 
   xiiScriptableFunctionAttribute(ArgType argType1 = In, const char* szArg1 = nullptr, ArgType argType2 = In, const char* szArg2 = nullptr, ArgType argType3 = In, const char* szArg3 = nullptr, ArgType argType4 = In, const char* szArg4 = nullptr, ArgType argType5 = In, const char* szArg5 = nullptr, ArgType argType6 = In, const char* szArg6 = nullptr);
 
-  const char* GetArgumentName(xiiUInt32 uiIndex) const;
+  const char* GetArgumentName(xiiUInt32 uiIndex) const { return m_ArgNames[uiIndex]; }
 
-  ArgType GetArgumentType(xiiUInt32 uiIndex) const;
+  ArgType GetArgumentType(xiiUInt32 uiIndex) const { return static_cast<ArgType>(m_ArgTypes[uiIndex]); };
 
-  xiiUntrackedString m_sArg1;
-  xiiUntrackedString m_sArg2;
-  xiiUntrackedString m_sArg3;
-  xiiUntrackedString m_sArg4;
-  xiiUntrackedString m_sArg5;
-  xiiUntrackedString m_sArg6;
-
-  xiiUInt8 m_ArgType1;
-  xiiUInt8 m_ArgType2;
-  xiiUInt8 m_ArgType3;
-  xiiUInt8 m_ArgType4;
-  xiiUInt8 m_ArgType5;
-  xiiUInt8 m_ArgType6;
+private:
+  xiiHybridArray<xiiUntrackedString, 6> m_ArgNames;
+  xiiHybridArray<xiiUInt8, 6>           m_ArgTypes;
 };
 
 /// \brief Used to annotate properties to which pin or function parameter they belong (if necessary)
@@ -976,6 +950,21 @@ class XII_FOUNDATION_DLL xiiVisScriptMappingAttribute : public xiiPropertyAttrib
   }
 
   xiiInt32 m_iMapping = 0;
+};
+
+/// \brief Used to mark an array or (unsigned)int property as source for dynamic pin generation on nodes
+class XII_FOUNDATION_DLL xiiDynamicPinAttribute : public xiiPropertyAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiDynamicPinAttribute, xiiPropertyAttribute);
+
+public:
+  xiiDynamicPinAttribute() = default;
+  xiiDynamicPinAttribute(const char* szProperty);
+
+  const xiiUntrackedString& GetProperty() const { return m_sProperty; }
+
+private:
+  xiiUntrackedString m_sProperty;
 };
 
 //////////////////////////////////////////////////////////////////////////

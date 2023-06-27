@@ -93,29 +93,26 @@ struct xiiPropertyFlags
   static xiiBitflags<xiiPropertyFlags> GetParameterFlags()
   {
     using CleanType = typename xiiTypeTraits<Type>::NonConstReferencePointerType;
-    xiiBitflags<xiiPropertyFlags> flags;
-    xiiVariantType::Enum          type = static_cast<xiiVariantType::Enum>(xiiVariantTypeDeduction<CleanType>::value);
-    if (std::is_same<CleanType, xiiVariant>::value)
+    xiiBitflags<xiiPropertyFlags>  flags;
+    constexpr xiiVariantType::Enum type = static_cast<xiiVariantType::Enum>(xiiVariantTypeDeduction<CleanType>::value);
+    if constexpr (std::is_same<CleanType, xiiVariant>::value ||
+                  std::is_same<Type, const char*>::value || // We treat const char* as a basic type and not a pointer.
+                  (type >= xiiVariantType::FirstStandardType && type <= xiiVariantType::LastStandardType))
       flags.Add(xiiPropertyFlags::StandardType);
-    else if (std::is_same<Type, const char*>::value)
-      // We treat const char* as a basic type and not a pointer.
-      flags.Add(xiiPropertyFlags::StandardType);
-    else if ((type >= xiiVariantType::FirstStandardType && type <= xiiVariantType::LastStandardType) || XII_IS_SAME_TYPE(xiiVariant, Type))
-      flags.Add(xiiPropertyFlags::StandardType);
-    else if (xiiIsEnum<CleanType>::value)
+    else if constexpr (xiiIsEnum<CleanType>::value)
       flags.Add(xiiPropertyFlags::IsEnum);
-    else if (xiiIsBitflags<CleanType>::value)
+    else if constexpr (xiiIsBitflags<CleanType>::value)
       flags.Add(xiiPropertyFlags::Bitflags);
     else
       flags.Add(xiiPropertyFlags::Class);
 
-    if (std::is_const<typename xiiTypeTraits<Type>::NonReferencePointerType>::value)
+    if constexpr (std::is_const<typename xiiTypeTraits<Type>::NonReferencePointerType>::value)
       flags.Add(xiiPropertyFlags::Const);
 
-    if (std::is_pointer<Type>::value && !std::is_same<Type, const char*>::value)
+    if constexpr (std::is_pointer<Type>::value && !std::is_same<Type, const char*>::value)
       flags.Add(xiiPropertyFlags::Pointer);
 
-    if (std::is_reference<Type>::value)
+    if constexpr (std::is_reference<Type>::value)
       flags.Add(xiiPropertyFlags::Reference);
 
     return flags;
@@ -565,7 +562,20 @@ public:
   /// returnValue must be a ptr to a valid class instance of the returned type.
   /// An invalid variant is equal to a nullptr, except for if the argument is of type xiiVariant, in which case
   /// it is impossible to pass along a nullptr.
-  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& ref_returnValue) const = 0;
+  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const = 0;
 
   virtual const xiiRTTI* GetSpecificType() const override { return GetReturnType(); }
+
+  /// \brief Adds flags to the property. Returns itself to allow to be called during initialization.
+  xiiAbstractFunctionProperty* AddFlags(xiiBitflags<xiiPropertyFlags> flags)
+  {
+    return static_cast<xiiAbstractFunctionProperty*>(xiiAbstractProperty::AddFlags(flags));
+  }
+
+  /// \brief Adds attributes to the property. Returns itself to allow to be called during initialization. Allocate an attribute using
+  /// standard 'new'.
+  xiiAbstractFunctionProperty* AddAttributes(xiiPropertyAttribute* pAttrib1, xiiPropertyAttribute* pAttrib2 = nullptr, xiiPropertyAttribute* pAttrib3 = nullptr, xiiPropertyAttribute* pAttrib4 = nullptr, xiiPropertyAttribute* pAttrib5 = nullptr, xiiPropertyAttribute* pAttrib6 = nullptr)
+  {
+    return static_cast<xiiAbstractFunctionProperty*>(xiiAbstractProperty::AddAttributes(pAttrib1, pAttrib2, pAttrib3, pAttrib4, pAttrib5, pAttrib6));
+  }
 };

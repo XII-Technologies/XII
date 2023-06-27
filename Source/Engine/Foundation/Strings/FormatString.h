@@ -72,14 +72,13 @@ public:
 
   bool IsEmpty() const { return xiiStringUtils::IsNullOrEmpty(m_szString); }
 
-protected:
-  // out of line function so that we don't need to include xiiStringBuilder here, to break include dependency cycle
-  static void        SBAppendView(xiiStringBuilder& sb, const xiiStringView& sub);
-  static void        SBClear(xiiStringBuilder& sb);
-  static void        SBAppendChar(xiiStringBuilder& sb, xiiUInt32 uiChar);
-  static const char* SBReturn(xiiStringBuilder& sb);
+  /// \brief Helper function to build the formatted text with the given arguments.
+  ///
+  /// \note We can't use xiiArrayPtr here because of include order.
+  const char* BuildFormattedText(xiiStringBuilder& ref_sStorage, xiiStringView* pArgs, xiiUInt32 uiNumArgs) const;
 
-  const char* m_szString;
+protected:
+  const char* m_szString = nullptr;
 };
 
 #include <Foundation/Strings/Implementation/FormatStringImpl.h>

@@ -309,5 +309,7 @@ struct XII_FOUNDATION_DLL xiiComparisonOperator
     Default = Equal
   };
 
-  static bool Compare(xiiComparisonOperator::Enum cmp, double f1, double f2);
+  /// \brief Compares a to b with the given operator. This function only needs the == and < operator for T.
+  template <typename T>
+  static bool Compare(xiiComparisonOperator::Enum cmp, const T& a, const T& b); // [tested]
 };

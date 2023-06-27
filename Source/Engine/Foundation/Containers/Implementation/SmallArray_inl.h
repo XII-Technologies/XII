@@ -704,7 +704,7 @@ XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::PushBack(const 
 template <typename T, xiiUInt16 Size, typename AllocatorWrapper /*= xiiDefaultAllocatorWrapper*/>
 XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::PushBack(T&& value)
 {
-  SUPER::PushBack(value, AllocatorWrapper::GetAllocator());
+  SUPER::PushBack(std::move(value), AllocatorWrapper::GetAllocator());
 }
 
 template <typename T, xiiUInt16 Size, typename AllocatorWrapper /*= xiiDefaultAllocatorWrapper*/>

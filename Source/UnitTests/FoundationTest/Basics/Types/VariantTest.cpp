@@ -1524,38 +1524,76 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiTypedObject inline")
   {
-    // xiiAngle::Degree(90.0f) was replaced with radian as release builds generate a different float then debug.
-    xiiVarianceTypeAngle value  = {0.1f, xiiAngle::Radian(1.57079637f)};
-    xiiVarianceTypeAngle value2 = {0.2f, xiiAngle::Radian(1.57079637f)};
+    // xiiVarianceTypeAngle
+    {
+      // xiiAngle::Degree(90.0f) was replaced with radian as release builds generate a different float then debug.
+      xiiVarianceTypeAngle value  = {0.1f, xiiAngle::Radian(1.57079637f)};
+      xiiVarianceTypeAngle value2 = {0.2f, xiiAngle::Radian(1.57079637f)};
 
-    xiiVariant v(value);
-    TestVariant<xiiVarianceTypeAngle>(v, xiiVariantType::TypedObject);
+      xiiVariant v(value);
+      TestVariant<xiiVarianceTypeAngle>(v, xiiVariantType::TypedObject);
 
-    XII_TEST_BOOL(v.IsA<xiiTypedObject>());
-    XII_TEST_BOOL(!v.IsA<void*>());
-    XII_TEST_BOOL(!v.IsA<const void*>());
-    XII_TEST_BOOL(!v.IsA<xiiVec3*>());
-    XII_TEST_BOOL(xiiDynamicCast<xiiVec3*>(v) == nullptr);
+      XII_TEST_BOOL(v.IsA<xiiTypedObject>());
+      XII_TEST_BOOL(!v.IsA<void*>());
+      XII_TEST_BOOL(!v.IsA<const void*>());
+      XII_TEST_BOOL(!v.IsA<xiiVec3*>());
+      XII_TEST_BOOL(xiiDynamicCast<xiiVec3*>(v) == nullptr);
 
-    const xiiVarianceTypeAngle& valueGet = v.Get<xiiVarianceTypeAngle>();
-    XII_TEST_BOOL(value == valueGet);
+      const xiiVarianceTypeAngle& valueGet = v.Get<xiiVarianceTypeAngle>();
+      XII_TEST_BOOL(value == valueGet);
 
-    xiiVariant va = value;
-    XII_TEST_BOOL(v == va);
+      xiiVariant va = value;
+      XII_TEST_BOOL(v == va);
 
-    xiiVariant v2 = value2;
-    XII_TEST_BOOL(v != v2);
+      xiiVariant v2 = value2;
+      XII_TEST_BOOL(v != v2);
 
-    xiiUInt64 uiHash = v.ComputeHash(0);
-    XII_TEST_INT(uiHash, 13667342936068485827ul);
+      xiiUInt64 uiHash = v.ComputeHash(0);
+      XII_TEST_INT(uiHash, 13667342936068485827ul);
 
-    xiiVarianceTypeAngle* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngle, {0.1f, xiiAngle::Radian(1.57079637f)});
-    xiiVariant            copy;
-    copy.CopyTypedObject(pTypedAngle, xiiGetStaticRTTI<xiiVarianceTypeAngle>());
-    xiiVariant move;
-    move.MoveTypedObject(pTypedAngle, xiiGetStaticRTTI<xiiVarianceTypeAngle>());
-    XII_TEST_BOOL(v == copy);
-    XII_TEST_BOOL(v == move);
+      xiiVarianceTypeAngle* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngle, {0.1f, xiiAngle::Radian(1.57079637f)});
+      xiiVariant            copy;
+      copy.CopyTypedObject(pTypedAngle, xiiGetStaticRTTI<xiiVarianceTypeAngle>());
+      xiiVariant move;
+      move.MoveTypedObject(pTypedAngle, xiiGetStaticRTTI<xiiVarianceTypeAngle>());
+      XII_TEST_BOOL(v == copy);
+      XII_TEST_BOOL(v == move);
+    }
+
+    // xiiVarianceTypeAngled
+    {
+      xiiVarianceTypeAngled value  = {0.1, xiiAngled::Radian(1.57079637)};
+      xiiVarianceTypeAngled value2 = {0.2, xiiAngled::Radian(1.57079637)};
+
+      xiiVariant v(value);
+      TestVariant<xiiVarianceTypeAngled>(v, xiiVariantType::TypedObject);
+
+      XII_TEST_BOOL(v.IsA<xiiTypedObject>());
+      XII_TEST_BOOL(!v.IsA<void*>());
+      XII_TEST_BOOL(!v.IsA<const void*>());
+      XII_TEST_BOOL(!v.IsA<xiiVec3d*>());
+      XII_TEST_BOOL(xiiDynamicCast<xiiVec3d*>(v) == nullptr);
+
+      const xiiVarianceTypeAngled& valueGet = v.Get<xiiVarianceTypeAngled>();
+      XII_TEST_BOOL(value == valueGet);
+
+      xiiVariant va = value;
+      XII_TEST_BOOL(v == va);
+
+      xiiVariant v2 = value2;
+      XII_TEST_BOOL(v != v2);
+
+      xiiUInt64 uiHash = v.ComputeHash(0);
+      XII_TEST_INT(uiHash, 13667342936068485827ul);
+
+      xiiVarianceTypeAngled* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngled, {0.1, xiiAngled::Radian(1.57079637f)});
+      xiiVariant             copy;
+      copy.CopyTypedObject(pTypedAngle, xiiGetStaticRTTI<xiiVarianceTypeAngled>());
+      xiiVariant move;
+      move.MoveTypedObject(pTypedAngle, xiiGetStaticRTTI<xiiVarianceTypeAngled>());
+      XII_TEST_BOOL(v == copy);
+      XII_TEST_BOOL(v == move);
+    }
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiTypedObject shared")

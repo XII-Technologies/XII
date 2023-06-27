@@ -404,7 +404,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_VEC3(v2, xiiVec3T(1, -1, 0), 0.0001f);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomPointInSphere")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomPointInSphere (float)")
   {
     xiiVec3T v;
 
@@ -432,7 +432,35 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsZero(0.1f));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDirection")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomPointInSphere (double)")
+  {
+    xiiVec3d v;
+
+    xiiRandom rng;
+    rng.Initialize(0xEEFF0011AABBCCDDULL);
+
+    xiiVec3d avg;
+    avg.SetZero();
+
+    const xiiUInt32 uiNumSamples = 100'000;
+    for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
+    {
+      v = xiiVec3d::CreateRandomPointInSphere(rng);
+
+      XII_TEST_BOOL(v.GetLength() <= 1.0 + xiiMath::SmallEpsilon<double>());
+      XII_TEST_BOOL(!v.IsZero());
+
+      avg += v;
+    }
+
+    avg /= (double)uiNumSamples;
+
+    // the average point cloud center should be within at least 10% of the sphere's center
+    // otherwise the points aren't equally distributed
+    XII_TEST_BOOL(avg.IsZero(0.1));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDirection (float)")
   {
     xiiVec3T v;
 
@@ -459,7 +487,34 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsZero(0.1f));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationX")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDirection (double)")
+  {
+    xiiVec3d v;
+
+    xiiRandom rng;
+    rng.InitializeFromCurrentTime();
+
+    xiiVec3d avg;
+    avg.SetZero();
+
+    const xiiUInt32 uiNumSamples = 100'000;
+    for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
+    {
+      v = xiiVec3d::CreateRandomDirection(rng);
+
+      XII_TEST_BOOL(v.IsNormalized());
+
+      avg += v;
+    }
+
+    avg /= (double)uiNumSamples;
+
+    // the average point cloud center should be within at least 10% of the sphere's center
+    // otherwise the points aren't equally distributed
+    XII_TEST_BOOL(avg.IsZero(0.1));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationX (float)")
   {
     xiiVec3T v;
     xiiVec3T avg;
@@ -488,7 +543,36 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsEqual(vAxis, 0.1f));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationY")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationX (double)")
+  {
+    xiiVec3d v;
+    xiiVec3d avg;
+    avg.SetZero();
+
+    xiiRandom rng;
+    rng.InitializeFromCurrentTime();
+
+    const xiiAngled dev          = xiiAngled::Degree(65);
+    const xiiUInt32 uiNumSamples = 100'000;
+    const xiiVec3d  vAxis(1, 0, 0);
+
+    for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
+    {
+      v = xiiVec3d::CreateRandomDeviationX(rng, dev);
+
+      XII_TEST_BOOL(v.IsNormalized());
+
+      XII_TEST_BOOL(vAxis.GetAngleBetween(v).GetRadian() <= dev.GetRadian() + xiiMath::DefaultEpsilon<double>());
+
+      avg += v;
+    }
+
+    // average direction should be close to the main axis
+    avg.Normalize();
+    XII_TEST_BOOL(avg.IsEqual(vAxis, 0.1));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationY (float)")
   {
     xiiVec3T v;
     xiiVec3T avg;
@@ -517,7 +601,36 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsEqual(vAxis, 0.1f));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationZ")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationY (double)")
+  {
+    xiiVec3d v;
+    xiiVec3d avg;
+    avg.SetZero();
+
+    xiiRandom rng;
+    rng.InitializeFromCurrentTime();
+
+    const xiiAngled dev          = xiiAngled::Degree(65);
+    const xiiUInt32 uiNumSamples = 100'000;
+    const xiiVec3d  vAxis(0, 1, 0);
+
+    for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
+    {
+      v = xiiVec3d::CreateRandomDeviationY(rng, dev);
+
+      XII_TEST_BOOL(v.IsNormalized());
+
+      XII_TEST_BOOL(vAxis.GetAngleBetween(v).GetRadian() <= dev.GetRadian() + xiiMath::DefaultEpsilon<double>());
+
+      avg += v;
+    }
+
+    // average direction should be close to the main axis
+    avg.Normalize();
+    XII_TEST_BOOL(avg.IsEqual(vAxis, 0.1));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationZ (float)")
   {
     xiiVec3T v;
     xiiVec3T avg;
@@ -546,7 +659,36 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsEqual(vAxis, 0.1f));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviation")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationZ (double)")
+  {
+    xiiVec3d v;
+    xiiVec3d avg;
+    avg.SetZero();
+
+    xiiRandom rng;
+    rng.InitializeFromCurrentTime();
+
+    const xiiAngled dev          = xiiAngled::Degree(65);
+    const xiiUInt32 uiNumSamples = 100'000;
+    const xiiVec3d  vAxis(0, 0, 1);
+
+    for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
+    {
+      v = xiiVec3d::CreateRandomDeviationZ(rng, dev);
+
+      XII_TEST_BOOL(v.IsNormalized());
+
+      XII_TEST_BOOL(vAxis.GetAngleBetween(v).GetRadian() <= dev.GetRadian() + xiiMath::DefaultEpsilon<double>());
+
+      avg += v;
+    }
+
+    // average direction should be close to the main axis
+    avg.Normalize();
+    XII_TEST_BOOL(avg.IsEqual(vAxis, 0.1));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviation (float)")
   {
     xiiVec3T v;
 
@@ -566,6 +708,29 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
       XII_TEST_BOOL(v.IsNormalized());
 
       XII_TEST_BOOL(vAxis.GetAngleBetween(v).GetDegree() <= dev.GetDegree() + 1.0f);
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviation (double)")
+  {
+    xiiVec3d v;
+
+    xiiRandom rng;
+    rng.InitializeFromCurrentTime();
+
+    const xiiAngled dev          = xiiAngled::Degree(65);
+    const xiiUInt32 uiNumSamples = 100'000;
+    xiiVec3d        vAxis;
+
+    for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
+    {
+      vAxis = xiiVec3d::CreateRandomDirection(rng);
+
+      v = xiiVec3d::CreateRandomDeviation(rng, dev, vAxis);
+
+      XII_TEST_BOOL(v.IsNormalized());
+
+      XII_TEST_BOOL(vAxis.GetAngleBetween(v).GetDegree() <= dev.GetDegree() + 1.0);
     }
   }
 

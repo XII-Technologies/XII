@@ -937,6 +937,8 @@ static xiiVariant CreateVariant(xiiVariant::Type::Enum t, const void* pData)
       return xiiVariant(*((xiiUuid*)pData));
     case xiiVariant::Type::Angle:
       return xiiVariant(*((xiiAngle*)pData));
+    case xiiVariant::Type::Angled:
+      return xiiVariant(*((xiiAngled*)pData));
     case xiiVariant::Type::ColorGamma:
       return xiiVariant(*((xiiColorGammaUB*)pData));
 

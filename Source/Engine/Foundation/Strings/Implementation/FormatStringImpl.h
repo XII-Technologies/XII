@@ -28,7 +28,7 @@ public:
   ///
   /// Requires an xiiStringBuilder as storage, ie. writes the formatted text into it. Additionally it returns a const char* to that
   /// string builder data for convenience.
-  virtual const char* GetText(xiiStringBuilder& ref_sSb) const override
+  virtual const char* GetText(xiiStringBuilder& ref_sStorage) const override
   {
     if (xiiStringUtils::IsNullOrEmpty(m_szString))
     {
@@ -40,54 +40,7 @@ public:
     char tmp[MaxNumParameters][TempStringLength];
     ReplaceString<0>(tmp, param);
 
-    const char* szString = m_szString;
-
-    int iLastParam = -1;
-
-    SBClear(ref_sSb);
-    while (*szString != '\0')
-    {
-      if (*szString == '%')
-      {
-        if (*(szString + 1) == '%')
-        {
-          SBAppendView(ref_sSb, "%");
-        }
-        else
-        {
-          XII_ASSERT_DEBUG(false, "Single percentage signs are not allowed in xiiFormatString. Did you forgot to migrate a printf-style "
-                                  "string? Use double percentage signs for the actual character.");
-        }
-
-        szString += 2;
-      }
-      else if (*szString == '{' && *(szString + 1) >= '0' && *(szString + 1) <= '9' && *(szString + 2) == '}')
-      {
-        iLastParam = *(szString + 1) - '0';
-        SBAppendView(ref_sSb, param[iLastParam]);
-
-        szString += 3;
-      }
-      else if (*szString == '{' && *(szString + 1) == '}')
-      {
-        ++iLastParam;
-        XII_ASSERT_DEV(iLastParam < MaxNumParameters, "Too many placeholders in format string");
-
-        if (iLastParam < MaxNumParameters)
-        {
-          SBAppendView(ref_sSb, param[iLastParam]);
-        }
-
-        szString += 2;
-      }
-      else
-      {
-        const xiiUInt32 character = xiiUnicodeUtils::DecodeUtf8ToUtf32(szString);
-        SBAppendChar(ref_sSb, character);
-      }
-    }
-
-    return SBReturn(ref_sSb);
+    return BuildFormattedText(ref_sStorage, param, MaxNumParameters);
   }
 
 private:
@@ -108,7 +61,6 @@ private:
   typename std::enable_if<sizeof...(ARGS) == N>::type ReplaceString(char tmp[MaxNumParameters][TempStringLength], xiiStringView* pViews) const
   {
   }
-
 
   // stores the arguments
   std::tuple<ARGS...> m_Arguments;

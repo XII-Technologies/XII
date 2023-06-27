@@ -53,54 +53,90 @@ class xiiFunctionProperty
 {
 };
 
-#define xiiFunctionPropertyCode(CONSTNESS)                                                                                                                   \
-  template <class CLASS, class R, class... Args>                                                                                                             \
-  class xiiFunctionProperty<R (CLASS::*)(Args...) CONSTNESS> : public xiiTypedFunctionProperty<R, Args...>                                                   \
-  {                                                                                                                                                          \
-  public:                                                                                                                                                    \
-    using TargetFunction = R (CLASS::*)(Args...) CONSTNESS;                                                                                                  \
-                                                                                                                                                             \
-    xiiFunctionProperty(const char* szPropertyName, TargetFunction func) : xiiTypedFunctionProperty<R, Args...>(szPropertyName)                              \
-    {                                                                                                                                                        \
-      m_Function = func;                                                                                                                                     \
-    }                                                                                                                                                        \
-                                                                                                                                                             \
-    virtual xiiFunctionType::Enum GetFunctionType() const override                                                                                           \
-    {                                                                                                                                                        \
-      return xiiFunctionType::Member;                                                                                                                        \
-    }                                                                                                                                                        \
-                                                                                                                                                             \
-    template <std::size_t... I>                                                                                                                              \
-    void ExecuteImpl(xiiTraitInt<1>, CONSTNESS void* pInstance, xiiVariant& returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const \
-    {                                                                                                                                                        \
-      CONSTNESS CLASS* pTargetInstance = (CONSTNESS CLASS*)pInstance;                                                                                        \
-      (pTargetInstance->*m_Function)(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);                                            \
-      returnValue = xiiVariant();                                                                                                                            \
-    }                                                                                                                                                        \
-                                                                                                                                                             \
-    template <std::size_t... I>                                                                                                                              \
-    void ExecuteImpl(xiiTraitInt<0>, CONSTNESS void* pInstance, xiiVariant& returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const \
-    {                                                                                                                                                        \
-      CONSTNESS CLASS*               pTargetInstance = (CONSTNESS CLASS*)pInstance;                                                                          \
-      xiiVariantAssignmentAdapter<R> returnWrapper(returnValue);                                                                                             \
-      returnWrapper = (pTargetInstance->*m_Function)(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);                            \
-    }                                                                                                                                                        \
-                                                                                                                                                             \
-    virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& returnValue) const override                                         \
-    {                                                                                                                                                        \
-      ExecuteImpl(xiiTraitInt<std::is_same<R, void>::value>(), pInstance, returnValue, arguments, std::make_index_sequence<sizeof...(Args)>{});              \
-    }                                                                                                                                                        \
-                                                                                                                                                             \
-  private:                                                                                                                                                   \
-    TargetFunction m_Function;                                                                                                                               \
+template <class CLASS, class R, class... Args>
+class xiiFunctionProperty<R (CLASS::*)(Args...)> : public xiiTypedFunctionProperty<R, Args...>
+{
+public:
+  using TargetFunction = R (CLASS::*)(Args...);
+
+  xiiFunctionProperty(const char* szPropertyName, TargetFunction func) :
+    xiiTypedFunctionProperty<R, Args...>(szPropertyName)
+  {
+    m_Function = func;
   }
 
-// Provides an empty token to call xiiFunctionPropertyCode.
-#define NON_CONST
-xiiFunctionPropertyCode(NON_CONST);
-#undef NON_CONST
+  virtual xiiFunctionType::Enum GetFunctionType() const override
+  {
+    return xiiFunctionType::Member;
+  }
 
-xiiFunctionPropertyCode(const);
+  template <std::size_t... I>
+  XII_FORCE_INLINE void ExecuteImpl(void* pInstance, xiiVariant& out_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
+  {
+    CLASS* pTargetInstance = static_cast<CLASS*>(pInstance);
+    if constexpr (std::is_same<R, void>::value)
+    {
+      (pTargetInstance->*m_Function)(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);
+      out_returnValue = xiiVariant();
+    }
+    else
+    {
+      xiiVariantAssignmentAdapter<R> returnWrapper(out_returnValue);
+      returnWrapper = (pTargetInstance->*m_Function)(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);
+    }
+  }
+
+  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
+  {
+    ExecuteImpl(pInstance, out_returnValue, arguments, std::make_index_sequence<sizeof...(Args)>{});
+  }
+
+private:
+  TargetFunction m_Function;
+};
+
+template <class CLASS, class R, class... Args>
+class xiiFunctionProperty<R (CLASS::*)(Args...) const> : public xiiTypedFunctionProperty<R, Args...>
+{
+public:
+  using TargetFunction = R (CLASS::*)(Args...) const;
+
+  xiiFunctionProperty(const char* szPropertyName, TargetFunction func) :
+    xiiTypedFunctionProperty<R, Args...>(szPropertyName)
+  {
+    m_Function = func;
+    this->AddFlags(xiiPropertyFlags::Const);
+  }
+
+  virtual xiiFunctionType::Enum GetFunctionType() const override
+  {
+    return xiiFunctionType::Member;
+  }
+
+  template <std::size_t... I>
+  XII_FORCE_INLINE void ExecuteImpl(const void* pInstance, xiiVariant& out_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
+  {
+    const CLASS* pTargetInstance = static_cast<const CLASS*>(pInstance);
+    if constexpr (std::is_same<R, void>::value)
+    {
+      (pTargetInstance->*m_Function)(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);
+      out_returnValue = xiiVariant();
+    }
+    else
+    {
+      xiiVariantAssignmentAdapter<R> returnWrapper(out_returnValue);
+      returnWrapper = (pTargetInstance->*m_Function)(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);
+    }
+  }
+
+  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
+  {
+    ExecuteImpl(pInstance, out_returnValue, arguments, std::make_index_sequence<sizeof...(Args)>{});
+  }
+
+private:
+  TargetFunction m_Function;
+};
 
 template <class R, class... Args>
 class xiiFunctionProperty<R (*)(Args...)> : public xiiTypedFunctionProperty<R, Args...>
@@ -117,22 +153,22 @@ public:
   virtual xiiFunctionType::Enum GetFunctionType() const override { return xiiFunctionType::StaticMember; }
 
   template <std::size_t... I>
-  void ExecuteImpl(xiiTraitInt<1>, xiiVariant& ref_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
+  void ExecuteImpl(xiiTraitInt<1>, xiiVariant& out_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
   {
     (*m_Function)(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);
-    ref_returnValue = xiiVariant();
+    out_returnValue = xiiVariant();
   }
 
   template <std::size_t... I>
-  void ExecuteImpl(xiiTraitInt<0>, xiiVariant& ref_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
+  void ExecuteImpl(xiiTraitInt<0>, xiiVariant& out_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
   {
-    xiiVariantAssignmentAdapter<R> returnWrapper(ref_returnValue);
+    xiiVariantAssignmentAdapter<R> returnWrapper(out_returnValue);
     returnWrapper = (*m_Function)(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);
   }
 
-  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& ref_returnValue) const override
+  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
   {
-    ExecuteImpl(xiiTraitInt<std::is_same<R, void>::value>(), ref_returnValue, arguments, std::make_index_sequence<sizeof...(Args)>{});
+    ExecuteImpl(xiiTraitInt<std::is_same<R, void>::value>(), out_returnValue, arguments, std::make_index_sequence<sizeof...(Args)>{});
   }
 
 private:
@@ -152,24 +188,24 @@ public:
   virtual xiiFunctionType::Enum GetFunctionType() const override { return xiiFunctionType::Constructor; }
 
   template <std::size_t... I>
-  void ExecuteImpl(xiiTraitInt<1>, xiiVariant& ref_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
+  void ExecuteImpl(xiiTraitInt<1>, xiiVariant& out_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
   {
-    ref_returnValue = CLASS(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);
+    out_returnValue = CLASS(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);
     // returnValue = CLASS(static_cast<typename getArgument<I, Args...>::Type>(xiiVariantAdapter<typename getArgument<I,
     // Args...>::Type>(arguments[I]))...);
   }
 
   template <std::size_t... I>
-  void ExecuteImpl(xiiTraitInt<0>, xiiVariant& ref_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
+  void ExecuteImpl(xiiTraitInt<0>, xiiVariant& out_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
   {
     CLASS* pInstance = XII_DEFAULT_NEW(CLASS, xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);
     // CLASS* pInstance = XII_DEFAULT_NEW(CLASS, static_cast<typename getArgument<I, Args...>::Type>(xiiVariantAdapter<typename getArgument<I,
     // Args...>::Type>(arguments[I]))...);
-    ref_returnValue = pInstance;
+    out_returnValue = pInstance;
   }
 
-  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& ref_returnValue) const override
+  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
   {
-    ExecuteImpl(xiiTraitInt<xiiIsStandardType<CLASS>::value>(), ref_returnValue, arguments, std::make_index_sequence<sizeof...(Args)>{});
+    ExecuteImpl(xiiTraitInt<xiiIsStandardType<CLASS>::value>(), out_returnValue, arguments, std::make_index_sequence<sizeof...(Args)>{});
   }
 };

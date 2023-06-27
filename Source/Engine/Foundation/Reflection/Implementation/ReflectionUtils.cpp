@@ -1552,6 +1552,8 @@ xiiVariant xiiReflectionUtils::GetDefaultVariantFromType(xiiVariant::Type::Enum 
       return xiiVariant(xiiUuid());
     case xiiVariant::Type::Angle:
       return xiiVariant(xiiAngle());
+    case xiiVariant::Type::Angled:
+      return xiiVariant(xiiAngled());
     case xiiVariant::Type::VariantArray:
       return xiiVariantArray();
     case xiiVariant::Type::VariantDictionary:

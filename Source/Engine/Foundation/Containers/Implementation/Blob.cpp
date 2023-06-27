@@ -31,10 +31,10 @@ xiiBlob::~xiiBlob()
   Clear();
 }
 
-void xiiBlob::SetFrom(void* pSource, xiiUInt64 uiSize)
+void xiiBlob::SetFrom(const void* pSource, xiiUInt64 uiSize)
 {
   SetCountUninitialized(uiSize);
-  xiiMemoryUtils::Copy(static_cast<xiiUInt8*>(m_pStorage), static_cast<xiiUInt8*>(pSource), static_cast<size_t>(uiSize));
+  xiiMemoryUtils::Copy(static_cast<xiiUInt8*>(m_pStorage), static_cast<const xiiUInt8*>(pSource), static_cast<size_t>(uiSize));
 }
 
 void xiiBlob::Clear()
