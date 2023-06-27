@@ -176,6 +176,8 @@ public:
 
   bool IsUnderRootProperty(const char* szRootProperty, const xiiDocumentObject* pObject) const;
   bool IsUnderRootProperty(const char* szRootProperty, const xiiDocumentObject* pParent, const char* szParentProperty) const;
+  bool IsTemporary(const xiiDocumentObject* pObject) const;
+  bool IsTemporary(const xiiDocumentObject* pParent, const char* szParentProperty) const;
 
   xiiSharedPtr<xiiDocumentObjectManager::Storage> SwapStorage(xiiSharedPtr<xiiDocumentObjectManager::Storage> pNewStorage);
   xiiSharedPtr<xiiDocumentObjectManager::Storage> GetStorage() { return m_pObjectStorage; }

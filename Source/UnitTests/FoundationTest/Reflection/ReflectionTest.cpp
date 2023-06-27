@@ -247,9 +247,11 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
       XII_TEST_STRING(Props[3]->GetPropertyName(), "UInt8");
       XII_TEST_STRING(Props[4]->GetPropertyName(), "Variant");
       XII_TEST_STRING(Props[5]->GetPropertyName(), "Angle");
-      XII_TEST_STRING(Props[6]->GetPropertyName(), "DataBuffer");
-      XII_TEST_STRING(Props[7]->GetPropertyName(), "vVec3I");
-      XII_TEST_STRING(Props[8]->GetPropertyName(), "VarianceAngle");
+      XII_TEST_STRING(Props[6]->GetPropertyName(), "Angled");
+      XII_TEST_STRING(Props[7]->GetPropertyName(), "DataBuffer");
+      XII_TEST_STRING(Props[8]->GetPropertyName(), "vVec3I");
+      XII_TEST_STRING(Props[9]->GetPropertyName(), "VarianceAngle");
+      XII_TEST_STRING(Props[10]->GetPropertyName(), "VarianceAngled");
     }
 
     {

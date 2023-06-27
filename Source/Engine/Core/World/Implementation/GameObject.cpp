@@ -35,6 +35,14 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGameObject, xiiNoBase, 1, xiiRTTINoAllocator)
     XII_SET_ACCESSOR_PROPERTY("Components", Reflection_GetComponents, Reflection_AddComponent, Reflection_RemoveComponent)->AddFlags(xiiPropertyFlags::PointerOwner),
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_SCRIPT_FUNCTION_PROPERTY(IsActive),
+
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_FindChildByName, In, "Name", In, "Recursive")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(FindChildByPath, In, "Path")->AddFlags(xiiPropertyFlags::Const),
+  }
+  XII_END_FUNCTIONS;
   XII_BEGIN_MESSAGEHANDLERS
   {
     XII_MESSAGE_HANDLER(xiiMsgDeleteGameObject, OnMsgDeleteGameObject),
@@ -135,6 +143,11 @@ void xiiGameObject::Reflection_SetMode(xiiObjectMode::Enum mode)
     m_Flags.Remove(xiiObjectFlags::ForceDynamic);
     ConditionalMakeStatic();
   }
+}
+
+xiiGameObject* xiiGameObject::Reflection_FindChildByName(xiiStringView sName, bool bRecursive)
+{
+  return FindChildByName(xiiTempHashedString(sName), bRecursive);
 }
 
 bool xiiGameObject::DetermineDynamicMode(xiiComponent* pComponentToIgnore /*= nullptr*/) const

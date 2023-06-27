@@ -313,7 +313,8 @@ void xiiDocumentObjectMirror::TreePropertyEventHandler(const xiiDocumentObjectPr
     {
       xiiUInt32 uiOldIndex = e.m_OldIndex.ConvertTo<xiiUInt32>();
       xiiUInt32 uiNewIndex = e.m_NewIndex.ConvertTo<xiiUInt32>();
-      XII_ASSERT_DEBUG(e.m_NewValue.IsValid(), "Value must be valid");
+      // NewValue can be invalid if an invalid variant in a variant array is moved
+      // XII_ASSERT_DEBUG(e.m_NewValue.IsValid(), "Value must be valid");
 
       {
         xiiObjectChange change;

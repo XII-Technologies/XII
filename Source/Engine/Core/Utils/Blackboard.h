@@ -147,7 +147,7 @@ public:
   xiiBitflags<xiiBlackboardEntryFlags> GetEntryFlags(const xiiTempHashedString& sName) const;
 
   /// \brief Returns the value of the named entry, or the fallback xiiVariant, if no such entry was registered.
-  xiiVariant GetEntryValue(const xiiTempHashedString& sName, xiiVariant fallback = {}) const;
+  xiiVariant GetEntryValue(const xiiTempHashedString& sName, const xiiVariant& fallback = xiiVariant()) const;
 
   /// \brief Grants read access to the entire map of entries.
   const xiiHashTable<xiiHashedString, Entry>& GetAllEntries() const { return m_Entries; }
@@ -166,15 +166,23 @@ public:
   xiiUInt32 GetBlackboardEntryChangeCounter() const { return m_uiBlackboardEntryChangeCounter; }
 
   /// \brief Stores all entries that have the 'Save' flag in the stream.
-  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Serialize(xiiStreamWriter& inout_stream) const;
 
   /// \brief Restores entries from the stream.
   ///
   /// If the blackboard already contains entries, the deserialized data is ADDED to the blackboard.
   /// If deserialized entries overlap with existing ones, the deserialized entries will overwrite the existing ones (both values and flags).
-  xiiResult Deserialize(xiiStreamReader& ref_stream);
+  xiiResult Deserialize(xiiStreamReader& inout_stream);
 
 private:
+  XII_ALLOW_PRIVATE_PROPERTIES(xiiBlackboard);
+
+  static xiiBlackboard* Reflection_GetOrCreateGlobal(xiiStringView sName);
+  static xiiBlackboard* Reflection_FindGlobal(xiiStringView sName);
+  void                  Reflection_RegisterEntry(xiiStringView sName, const xiiVariant& initialValue, bool bSave, bool bOnChangeEvent);
+  bool                  Reflection_SetEntryValue(xiiStringView sName, const xiiVariant& value);
+  xiiVariant            Reflection_GetEntryValue(xiiStringView sName, const xiiVariant& fallback) const;
+
   xiiHashedString                      m_sName;
   xiiEvent<EntryEvent>                 m_EntryEvents;
   xiiUInt32                            m_uiBlackboardChangeCounter      = 0;
@@ -186,6 +194,8 @@ private:
   static xiiHashTable<xiiHashedString, xiiSharedPtr<xiiBlackboard>> s_GlobalBlackboards;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiBlackboard);
+
 //////////////////////////////////////////////////////////////////////////
 
 struct XII_CORE_DLL xiiBlackboardCondition
@@ -196,8 +206,8 @@ struct XII_CORE_DLL xiiBlackboardCondition
 
   bool IsConditionMet(const xiiBlackboard& blackboard) const;
 
-  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
-  xiiResult Deserialize(xiiStreamReader& ref_stream);
+  xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+  xiiResult Deserialize(xiiStreamReader& inout_stream);
 
   const char* GetEntryName() const { return m_sEntryName; }
   void        SetEntryName(const char* szName) { m_sEntryName.Assign(szName); }

@@ -132,6 +132,7 @@ inline void TestNumberCanConvertTo(const xiiVariant& v)
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::DataBuffer) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Time) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Angle) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Angled) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Uuid) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::VariantArray) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::VariantDictionary) == false);
@@ -189,7 +190,7 @@ inline void TestNumberCanConvertTo(const xiiVariant& v)
   XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "3");
 }
 
-inline void TestCanOnlyConvertToID(const xiiVariant& v, xiiVariant::Type::Enum type, bool bAndString = false)
+inline void TestCanOnlyConvertToID(const xiiVariant& v, xiiVariant::Type::Enum type)
 {
   for (int iType = xiiVariant::Type::FirstStandardType; iType < xiiVariant::Type::LastExtendedType; ++iType)
   {
@@ -197,10 +198,6 @@ inline void TestCanOnlyConvertToID(const xiiVariant& v, xiiVariant::Type::Enum t
       iType = xiiVariant::Type::FirstExtendedType;
 
     if (iType == type)
-    {
-      XII_TEST_BOOL(v.CanConvertTo(type));
-    }
-    else if (bAndString && iType == xiiVariant::Type::String)
     {
       XII_TEST_BOOL(v.CanConvertTo(type));
     }
@@ -1375,6 +1372,30 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.IsFloatingPoint() == false);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiAngled")
+  {
+    xiiVariant v(xiiAngled::Degree(1337));
+    TestVariant<xiiAngled>(v, xiiVariantType::Angled);
+
+    XII_TEST_BOOL(v.Get<xiiAngled>() == xiiAngled::Degree(1337));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiAngled::Degree(1337)));
+    XII_TEST_BOOL(v != xiiVariant(xiiAngled::Degree(1336)));
+
+    XII_TEST_BOOL(v == xiiAngled::Degree(1337));
+    XII_TEST_BOOL(v != xiiAngled::Degree(1338));
+
+    v = xiiAngled::Degree(8472);
+    XII_TEST_BOOL(v == xiiAngled::Degree(8472));
+
+    v = xiiVariant(xiiAngled::Degree(13));
+    XII_TEST_BOOL(v == xiiAngled::Degree(13));
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(!v.IsString());
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiVariantArray")
   {
     xiiVariantArray a, a2;
@@ -1584,9 +1605,9 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
       XII_TEST_BOOL(v != v2);
 
       xiiUInt64 uiHash = v.ComputeHash(0);
-      XII_TEST_INT(uiHash, 13667342936068485827ul);
+      XII_TEST_INT(uiHash, 18210881463222323195ul);
 
-      xiiVarianceTypeAngled* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngled, {0.1, xiiAngled::Radian(1.57079637f)});
+      xiiVarianceTypeAngled* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngled, {0.1, xiiAngled::Radian(1.57079637)});
       xiiVariant             copy;
       copy.CopyTypedObject(pTypedAngle, xiiGetStaticRTTI<xiiVarianceTypeAngled>());
       xiiVariant move;
@@ -1657,6 +1678,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::DataBuffer) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Time) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Angle) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Angled) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::VariantArray) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::VariantDictionary) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::TypedPointer) == false);
@@ -2326,6 +2348,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::DataBuffer) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Time) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Angle) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Angled) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::VariantArray) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::VariantDictionary) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::TypedPointer) == false);
@@ -2566,26 +2589,54 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "123.0°");
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiAngled)")
+  {
+    xiiAngled  t = xiiAngled::Degree(123.0);
+    xiiVariant v(t);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Angled);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiAngled>() == t);
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "123.0°");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Angled).Get<xiiAngled>() == t);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "123.0°");
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (VariantArray)")
   {
     xiiVariantArray va;
-    xiiVariant      v(va);
+    va.PushBack(2.5);
+    va.PushBack("ABC");
+    va.PushBack(xiiVariant());
 
-    TestCanOnlyConvertToID(v, xiiVariant::Type::VariantArray, true);
+    xiiVariant v(va);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::VariantArray);
 
     XII_TEST_BOOL(v.ConvertTo<xiiVariantArray>() == va);
+    XII_TEST_STRING(v.ConvertTo<xiiString>(), "[2.5, ABC, <Invalid>]");
+
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::VariantArray).Get<xiiVariantArray>() == va);
+    XII_TEST_STRING(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>(), "[2.5, ABC, <Invalid>]");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVariantDictionary)")
   {
     xiiVariantDictionary va;
-    xiiVariant           v(va);
+    va.Insert("A", 2.5);
+    va.Insert("B", "ABC");
+    va.Insert("C", xiiVariant());
 
-    TestCanOnlyConvertToID(v, xiiVariant::Type::VariantDictionary);
+    xiiVariant v(va);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::VariantDictionary);
 
     XII_TEST_BOOL(v.ConvertTo<xiiVariantDictionary>() == va);
+    XII_TEST_STRING(v.ConvertTo<xiiString>(), "{A=2.5, C=<Invalid>, B=ABC}");
+
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::VariantDictionary).Get<xiiVariantDictionary>() == va);
+    XII_TEST_STRING(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>(), "{A=2.5, C=<Invalid>, B=ABC}");
   }
 }
 

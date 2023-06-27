@@ -42,6 +42,6 @@ public:
     const xiiAbstractProperty* pParentProp,
     const xiiVariant&          index) override;
 
-private:
+protected:
   xiiCommandHistory* m_pHistory;
 };

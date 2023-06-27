@@ -37,18 +37,11 @@ protected:
   xiiIntervalSchedulerBase(xiiTime minInterval, xiiTime maxInterval);
   ~xiiIntervalSchedulerBase();
 
-  void AddOrUpdateWork(xiiUInt64 workId, xiiTime interval);
-  void RemoveWork(xiiUInt64 workId);
-
-  xiiTime GetInterval(xiiUInt64 workId) const;
-
-  /// \brief Advances the scheduler by deltaTime and triggers runWorkCallback for each work that should be run during this update step.
-  /// Since it is not possible to maintain the exact interval all the time the actual delta time for the work is also passed to runWorkCallback.
-  void Update(xiiTime deltaTime, xiiDelegate<void(xiiUInt64, xiiTime)> runWorkCallback);
-
-private:
   xiiUInt32 GetHistogramIndex(xiiTime value);
   xiiTime   GetHistogramSlotValue(xiiUInt32 uiIndex);
+
+  static float   GetRandomZeroToOne(int pos, xiiUInt32& seed);
+  static xiiTime GetRandomTimeJitter(int pos, xiiUInt32& seed);
 
   xiiTime m_MinInterval;
   xiiTime m_MaxInterval;
@@ -62,21 +55,6 @@ private:
   static constexpr xiiUInt32 HistogramSize                        = 32;
   xiiUInt32                  m_Histogram[HistogramSize]           = {};
   xiiTime                    m_HistogramSlotValues[HistogramSize] = {};
-
-  struct Data
-  {
-    xiiUInt64 m_WorkId = 0;
-    xiiTime   m_Interval;
-    xiiTime   m_DueTime;
-    xiiTime   m_LastScheduledTime;
-  };
-
-  using DataMap = xiiMap<xiiTime, Data>;
-  DataMap                                    m_Data;
-  xiiHashTable<xiiUInt64, DataMap::Iterator> m_WorkIdToData;
-
-  DataMap::Iterator                  InsertData(Data& data);
-  xiiDynamicArray<DataMap::Iterator> m_ScheduledWork;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -91,34 +69,35 @@ public:
   XII_ALWAYS_INLINE xiiIntervalScheduler(xiiTime minInterval = xiiTime::Milliseconds(1), xiiTime maxInterval = xiiTime::Seconds(1)) :
     SUPER(minInterval, maxInterval)
   {
-    static_assert(sizeof(T) <= sizeof(xiiUInt64), "sizeof T must be smaller or equal to 8 bytes");
   }
 
-  XII_ALWAYS_INLINE void AddOrUpdateWork(const T& work, xiiTime interval)
-  {
-    SUPER::AddOrUpdateWork(*reinterpret_cast<const xiiUInt64*>(&work), interval);
-  }
+  void AddOrUpdateWork(const T& work, xiiTime interval);
+  void RemoveWork(const T& work);
 
-  XII_ALWAYS_INLINE void RemoveWork(const T& work)
-  {
-    SUPER::RemoveWork(*reinterpret_cast<const xiiUInt64*>(&work));
-  }
-
-  XII_ALWAYS_INLINE xiiTime GetInterval(const T& work) const
-  {
-    return SUPER::GetInterval(*reinterpret_cast<const xiiUInt64*>(&work));
-  }
+  xiiTime GetInterval(const T& work) const;
 
   // reference to the work that should be run and time passed since this work has been last run.
   using RunWorkCallback = xiiDelegate<void(const T&, xiiTime)>;
 
-  XII_ALWAYS_INLINE void Update(xiiTime deltaTime, RunWorkCallback runWorkCallback)
+  /// \brief Advances the scheduler by deltaTime and triggers runWorkCallback for each work that should be run during this update step.
+  /// Since it is not possible to maintain the exact interval all the time the actual delta time for the work is also passed to runWorkCallback.
+  void Update(xiiTime deltaTime, RunWorkCallback runWorkCallback);
+
+private:
+  struct Data
   {
-    SUPER::Update(deltaTime, [&](xiiUInt64 uiWorkId, xiiTime deltaTime) {
-      if (runWorkCallback.IsValid())
-      {
-        runWorkCallback(*reinterpret_cast<T*>(&uiWorkId), deltaTime);
-      }
-    });
-  }
+    T       m_Work;
+    xiiTime m_Interval;
+    xiiTime m_DueTime;
+    xiiTime m_LastScheduledTime;
+  };
+
+  using DataMap = xiiMap<xiiTime, Data>;
+  DataMap                                     m_Data;
+  xiiHashTable<T, typename DataMap::Iterator> m_WorkIdToData;
+
+  typename DataMap::Iterator                  InsertData(Data& data);
+  xiiDynamicArray<typename DataMap::Iterator> m_ScheduledWork;
 };
+
+#include <Core/Utils/Implementation/IntervalScheduler_inl.h>

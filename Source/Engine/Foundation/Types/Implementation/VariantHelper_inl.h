@@ -417,7 +417,7 @@ class xiiVariantHelper
 
     if (value.IsValid() == false)
     {
-      result = "<invalid>";
+      result = "<Invalid>";
       return;
     }
 

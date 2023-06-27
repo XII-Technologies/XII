@@ -1,10 +1,6 @@
 #include <Foundation/Logging/Log.h>
 
-XII_ALWAYS_INLINE xiiComponent::xiiComponent() :
-  m_ComponentFlags(xiiObjectFlags::ActiveFlag)
-{
-  m_uiUniqueID = xiiInvalidIndex;
-}
+XII_ALWAYS_INLINE xiiComponent::xiiComponent() = default;
 
 XII_ALWAYS_INLINE xiiComponent::~xiiComponent()
 {

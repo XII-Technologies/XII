@@ -60,7 +60,6 @@ struct xiiVariantType
     Uuid,        ///< The variant stores a xiiUuid value.
     Angle,       ///< The variant stores a xiiAngle value.
     ColorGamma,  ///< The variant stores a xiiColorGammaUB value.
-    Angled,      ///< The variant stores a xiiAngled.
     Vector2d,    ///< The variant stores a xiiVec2d.
     Vector3d,    ///< The variant stores a xiiVec3d. A heap allocation is required to store this data type.
     Vector4d,    ///< The variant stores a xiiVec4d. A heap allocation is required to store this data type.
@@ -74,6 +73,7 @@ struct xiiVariantType
     Matrix3d,    ///< The variant stores a xiiMat3d. A heap allocation is required to store this data type.
     Matrix4d,    ///< The variant stores a xiiMat4d. A heap allocation is required to store this data type.
     Transformd,  ///< The variant stores a xiiTransformd. A heap allocation is required to store this data type.
+    Angled,      ///< The variant stores a xiiAngled.
     LastStandardType,
     /// *** Types that are flagged as 'StandardTypes' (see DetermineTypeFlags) ***
 

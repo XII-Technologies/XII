@@ -221,25 +221,44 @@ protected:
   /// Messages will be dispatched to this type. Default is what GetDynamicRTTI() returns, can be redirected if necessary.
   const xiiRTTI* m_pMessageDispatchType = nullptr;
 
-private:
   bool IsInitialized() const;
   bool IsInitializing() const;
   bool IsSimulationStarted() const;
 
+private:
   // Updates the component's active state depending on the owner object's active state.
   void UpdateActiveState(bool bOwnerActive);
+
+  xiiGameObject* Reflection_GetOwner() const;
+  xiiWorld*      Reflection_GetWorld() const;
+  void           Reflection_Update();
 
   bool SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg);
   bool SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg) const;
 
   xiiComponentId              m_InternalId;
-  xiiBitflags<xiiObjectFlags> m_ComponentFlags;
-  xiiUInt32                   m_uiUniqueID;
+  xiiBitflags<xiiObjectFlags> m_ComponentFlags = xiiObjectFlags::ActiveFlag;
+  xiiUInt32                   m_uiUniqueID     = xiiInvalidIndex;
 
   xiiComponentManagerBase* m_pManager = nullptr;
   xiiGameObject*           m_pOwner   = nullptr;
 
   static xiiWorldModuleTypeId s_TypeId;
+};
+
+struct xiiComponent_ScriptBaseClassFunctions
+{
+  enum Enum
+  {
+    Initialize,
+    Deinitialize,
+    OnActivated,
+    OnDeactivated,
+    OnSimulationStarted,
+    Update,
+
+    Count
+  };
 };
 
 #include <Core/World/Implementation/Component_inl.h>
