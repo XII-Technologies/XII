@@ -89,7 +89,7 @@ public:
   const char* GetBlackboardName() const;             // [ property ]
 
   void       SetEntryValue(const char* szName, const xiiVariant& value); // [ scriptable ]
-  xiiVariant GetEntryValue(const char* szName);                          // [ scriptable ]
+  xiiVariant GetEntryValue(const char* szName) const;                          // [ scriptable ]
 
 private:
   xiiUInt32                 Entries_GetCount() const;
@@ -97,6 +97,8 @@ private:
   void                      Entries_SetValue(xiiUInt32 uiIndex, const xiiBlackboardEntry& entry);
   void                      Entries_Insert(xiiUInt32 uiIndex, const xiiBlackboardEntry& entry);
   void                      Entries_Remove(xiiUInt32 uiIndex);
+
+  static xiiBlackboard* Reflection_FindBlackboard(xiiGameObject* pSearchObject, xiiStringView sBlackboardName);
 
   void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) const;
   void OnExtractRenderData(xiiMsgExtractRenderData& msg) const;

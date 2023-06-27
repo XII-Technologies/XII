@@ -93,6 +93,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiBlackboardComponent, 1, xiiComponentMode::Static)
   {
     XII_SCRIPT_FUNCTION_PROPERTY(SetEntryValue, In, "Name", In, "Value"),
     XII_SCRIPT_FUNCTION_PROPERTY(GetEntryValue, In, "Name"),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_FindBlackboard, In, "SearchObject", In, "BlackboardName"),
   }
   XII_END_FUNCTIONS;
 
@@ -264,7 +265,7 @@ void xiiBlackboardComponent::SetEntryValue(const char* szName, const xiiVariant&
   }
 }
 
-xiiVariant xiiBlackboardComponent::GetEntryValue(const char* szName)
+xiiVariant xiiBlackboardComponent::GetEntryValue(const char* szName) const
 {
   return m_pBoard->GetEntryValue(xiiTempHashedString(szName));
 }
@@ -295,6 +296,12 @@ void xiiBlackboardComponent::Entries_Insert(xiiUInt32 uiIndex, const xiiBlackboa
   m_InitialEntries.Insert(entry, uiIndex);
 
   m_pBoard->RegisterEntry(entry.m_sName, entry.m_InitialValue, entry.m_Flags);
+}
+
+// static
+xiiBlackboard* xiiBlackboardComponent::Reflection_FindBlackboard(xiiGameObject* pSearchObject, xiiStringView sBlackboardName)
+{
+  return FindBlackboard(pSearchObject, sBlackboardName).Borrow();
 }
 
 void xiiBlackboardComponent::Entries_Remove(xiiUInt32 uiIndex)
