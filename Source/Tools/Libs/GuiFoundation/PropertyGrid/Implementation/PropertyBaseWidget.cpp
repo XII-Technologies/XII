@@ -1729,8 +1729,8 @@ void xiiQtVariantPropertyWidget::OnInit()
   }
 
   connect(m_pTypeList, &QComboBox::currentIndexChanged,
-          [this](int index) {
-            ChangeVariantType(static_cast<xiiVariantType::Enum>(m_pTypeList->itemData(index).toInt()));
+          [this](int iIndex) {
+            ChangeVariantType(static_cast<xiiVariantType::Enum>(m_pTypeList->itemData(iIndex).toInt()));
           });
 }
 

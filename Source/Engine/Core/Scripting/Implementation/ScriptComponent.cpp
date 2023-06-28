@@ -108,21 +108,21 @@ void xiiScriptComponent::OnSimulationStarted()
   CallScriptFunction(xiiComponent_ScriptBaseClassFunctions::OnSimulationStarted);
 }
 
-void xiiScriptComponent::BroadcastEventMsg(xiiEventMessage& msg)
+void xiiScriptComponent::BroadcastEventMsg(xiiEventMessage& ref_msg)
 {
-  const xiiRTTI* pType = msg.GetDynamicRTTI();
+  const xiiRTTI* pType = ref_msg.GetDynamicRTTI();
   for (auto& sender : m_EventSenders)
   {
     if (sender.m_pMsgType == pType)
     {
-      sender.m_Sender.SendEventMessage(msg, this, GetOwner());
+      sender.m_Sender.SendEventMessage(ref_msg, this, GetOwner());
       return;
     }
   }
 
   auto& sender      = m_EventSenders.ExpandAndGetRef();
   sender.m_pMsgType = pType;
-  sender.m_Sender.SendEventMessage(msg, this, GetOwner());
+  sender.m_Sender.SendEventMessage(ref_msg, this, GetOwner());
 }
 
 void xiiScriptComponent::SetScriptClass(const xiiScriptClassResourceHandle& hScript)
@@ -179,8 +179,8 @@ const xiiRangeView<const char*, xiiUInt32> xiiScriptComponent::GetParameters() c
 {
   return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; },
                                               [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
-                                              [](xiiUInt32& it) { ++it; },
-                                              [this](const xiiUInt32& it) -> const char* { return m_Parameters.GetKey(it).GetString().GetData(); });
+                                              [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                              [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
 }
 
 void xiiScriptComponent::SetParameter(const char* szKey, const xiiVariant& value)

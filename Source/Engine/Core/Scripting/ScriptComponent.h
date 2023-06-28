@@ -39,7 +39,7 @@ public:
   xiiScriptComponent();
   ~xiiScriptComponent();
 
-  void BroadcastEventMsg(xiiEventMessage& msg);
+  void BroadcastEventMsg(xiiEventMessage& ref_msg);
 
   void                                SetScriptClass(const xiiScriptClassResourceHandle& hScript);
   const xiiScriptClassResourceHandle& GetScriptClass() const { return m_hScriptClass; }
