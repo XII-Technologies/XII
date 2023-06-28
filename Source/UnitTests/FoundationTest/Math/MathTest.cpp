@@ -968,6 +968,16 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_DOUBLE(0.3, xiiMath::NormalizeToRange(3.0, 0.0, 10.0), 0.000001);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ReplaceNaN")
+  {
+    XII_TEST_FLOAT(xiiMath::ReplaceNaN(0.0f, 42.0f), 0.0f, 0);
+    XII_TEST_FLOAT(xiiMath::ReplaceNaN(xiiMath::HighValue<float>(), 2.0f), xiiMath::HighValue<float>(), 0);
+    XII_TEST_FLOAT(xiiMath::ReplaceNaN(-xiiMath::HighValue<float>(), 2.0f), -xiiMath::HighValue<float>(), 0);
+
+    XII_TEST_FLOAT(xiiMath::ReplaceNaN(xiiMath::NaN<float>(), 2.0f), 2.0f, 0);
+    XII_TEST_FLOAT(xiiMath::ReplaceNaN(xiiMath::NaN<double>(), 3.0), 3.0, 0);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ComparisonOperator")
   {
     XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Equal, 1.0, 1.0));

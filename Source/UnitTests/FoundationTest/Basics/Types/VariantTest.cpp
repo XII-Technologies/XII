@@ -2524,13 +2524,13 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiStringView)")
   {
-    xiiStringView va("Test String");
-    xiiVariant    v(va);
+    xiiStringView va0("Test String");
+    xiiVariant    v(va0);
 
     TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::StringView);
 
-    XII_TEST_BOOL(v.ConvertTo<xiiStringView>() == va);
-    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::StringView).Get<xiiStringView>() == va);
+    XII_TEST_BOOL(v.ConvertTo<xiiStringView>() == va0);
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::StringView).Get<xiiStringView>() == va0);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiDataBuffer)")
