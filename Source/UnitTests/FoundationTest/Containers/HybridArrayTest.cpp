@@ -95,7 +95,7 @@ static_assert(sizeof(xiiHybridArray<xiiInt32, 1>) == 32);
 static_assert(sizeof(xiiHybridArray<xiiInt32, 1>) == 20);
 #endif
 
-static_assert(xiiGetTypeClass<xiiHybridArray<xiiInt32, 1>>::value == xiiTypeIsMemRelocatable::value);
+static_assert(xiiGetTypeClass<xiiHybridArray<xiiInt32, 1>>::value == xiiTypeIsClass::value);
 static_assert(xiiGetTypeClass<xiiHybridArray<HybridArrayTestDetail::NonMovableClass, 1>>::value == xiiTypeIsClass::value);
 
 XII_CREATE_SIMPLE_TEST(Containers, HybridArray)

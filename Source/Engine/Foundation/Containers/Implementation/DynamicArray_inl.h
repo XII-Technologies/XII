@@ -11,7 +11,7 @@ xiiDynamicArrayBase<T>::xiiDynamicArrayBase(T* pInplaceStorage, xiiUInt32 uiCapa
 {
   m_pAllocator.SetFlags(Storage::External);
   this->m_uiCapacity = uiCapacity;
-  this->m_pElements  = reinterpret_cast<T*>(reinterpret_cast<intptr_t>(pInplaceStorage) - reinterpret_cast<intptr_t>(this)); // store as an offset
+  this->m_pElements  = pInplaceStorage;
 }
 
 template <typename T>
@@ -221,22 +221,12 @@ void xiiDynamicArrayBase<T>::Compact()
 template <typename T>
 XII_ALWAYS_INLINE T* xiiDynamicArrayBase<T>::GetElementsPtr()
 {
-  if (m_pAllocator.GetFlags() == Storage::External)
-  {
-    return reinterpret_cast<T*>(reinterpret_cast<intptr_t>(this) + reinterpret_cast<intptr_t>(this->m_pElements));
-  }
-
   return this->m_pElements;
 }
 
 template <typename T>
 XII_ALWAYS_INLINE const T* xiiDynamicArrayBase<T>::GetElementsPtr() const
 {
-  if (m_pAllocator.GetFlags() == Storage::External)
-  {
-    return reinterpret_cast<const T*>(reinterpret_cast<intptr_t>(this) + reinterpret_cast<intptr_t>(this->m_pElements));
-  }
-
   return this->m_pElements;
 }
 

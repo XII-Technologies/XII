@@ -11,9 +11,6 @@ template <typename T, xiiUInt32 Size, typename AllocatorWrapper = xiiDefaultAllo
 class xiiHybridArray : public xiiDynamicArray<T, AllocatorWrapper>
 {
 public:
-  // Only if the stored type is either POD or relocatable the hybrid array itself is also relocatable.
-  XII_DECLARE_MEM_RELOCATABLE_TYPE_CONDITIONAL(T);
-
   /// \brief Creates an empty array. Does not allocate any data yet.
   xiiHybridArray(); // [tested]
 
