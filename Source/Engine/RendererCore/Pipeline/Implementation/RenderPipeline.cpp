@@ -992,6 +992,8 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
   xiiRasterizerView* pRasterizer = PrepareOcclusionCulling(limitedFrustum, view);
   XII_SCOPE_EXIT(g_pRasterizerViewPool->ReturnRasterizerView(pRasterizer));
 
+  const xiiVisibilityState visType = bIsMainView ? xiiVisibilityState::Direct : xiiVisibilityState::Indirect;
+
   if (pRasterizer != nullptr && pRasterizer->HasRasterizedAnyOccluders())
   {
     XII_PROFILE_SCOPE("Occlusion::FindVisibleObjects");
@@ -1008,12 +1010,12 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
     };
 
     m_VisibleObjects.Clear();
-    view.GetWorld()->GetSpatialSystem()->FindVisibleObjects(frustum, queryParams, m_VisibleObjects, IsOccluded);
+    view.GetWorld()->GetSpatialSystem()->FindVisibleObjects(frustum, queryParams, m_VisibleObjects, IsOccluded, visType);
   }
   else
   {
     m_VisibleObjects.Clear();
-    view.GetWorld()->GetSpatialSystem()->FindVisibleObjects(frustum, queryParams, m_VisibleObjects, {});
+    view.GetWorld()->GetSpatialSystem()->FindVisibleObjects(frustum, queryParams, m_VisibleObjects, {}, visType);
   }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -1348,7 +1350,7 @@ xiiRasterizerView* xiiRenderPipeline::PrepareOcclusionCulling(const xiiFrustum& 
     queryParams.m_ExcludeTags       = view.m_ExcludeTags;
 
     m_VisibleObjects.Clear();
-    view.GetWorld()->GetSpatialSystem()->FindVisibleObjects(frustum, queryParams, m_VisibleObjects, {});
+    view.GetWorld()->GetSpatialSystem()->FindVisibleObjects(frustum, queryParams, m_VisibleObjects, {}, xiiVisibilityState::Indirect);
   }
 
   pRasterizer->BeginScene();

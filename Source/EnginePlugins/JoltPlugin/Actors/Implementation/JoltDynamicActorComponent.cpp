@@ -30,9 +30,11 @@ void xiiJoltDynamicActorComponentManager::UpdateDynamicActors()
   xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
   auto*               pSystem = pModule->GetJoltSystem();
 
-  for (auto itActor : pModule->GetActiveActors())
+  for (auto& itActor : pModule->GetActiveActors())
   {
-    JPH::BodyID bodyId(itActor.Value());
+    xiiJoltDynamicActorComponent* pActor = itActor;
+
+    JPH::BodyID bodyId(pActor->GetJoltBodyID());
 
     JPH::BodyLockRead bodyLock(pSystem->GetBodyLockInterface(), bodyId);
     if (!bodyLock.Succeeded())
@@ -43,12 +45,12 @@ void xiiJoltDynamicActorComponentManager::UpdateDynamicActors()
     if (!body.IsDynamic())
       continue;
 
-    xiiSimdTransform trans = itActor.Key()->GetOwner()->GetGlobalTransformSimd();
+    xiiSimdTransform trans = pActor->GetOwner()->GetGlobalTransformSimd();
 
     trans.m_Position = xiiJoltConversionUtils::ToSimdVec3(body.GetPosition());
     trans.m_Rotation = xiiJoltConversionUtils::ToSimdQuat(body.GetRotation());
 
-    itActor.Key()->GetOwner()->SetGlobalTransform(trans);
+    pActor->GetOwner()->SetGlobalTransform(trans);
   }
 }
 

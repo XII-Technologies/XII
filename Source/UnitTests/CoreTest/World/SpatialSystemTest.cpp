@@ -230,7 +230,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
 
     xiiDynamicArray<const xiiGameObject*> visibleObjects;
     xiiHashSet<const xiiGameObject*>      uniqueObjects;
-    world.GetSpatialSystem()->FindVisibleObjects(testFrustum, queryParams, visibleObjects, {});
+    world.GetSpatialSystem()->FindVisibleObjects(testFrustum, queryParams, visibleObjects, {}, xiiVisibilityState::Direct);
 
     XII_TEST_BOOL(!visibleObjects.IsEmpty());
 
@@ -239,7 +239,9 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
       XII_TEST_BOOL(testFrustum.Overlaps(pObject->GetGlobalBoundsSimd().GetSphere()));
       XII_TEST_BOOL(!uniqueObjects.Insert(pObject));
       XII_TEST_BOOL(pObject->IsDynamic());
-      XII_TEST_BOOL(pObject->GetNumFramesSinceVisible() == 0);
+
+      xiiVisibilityState visType = pObject->GetVisibilityState();
+      XII_TEST_BOOL(visType == xiiVisibilityState::Direct);
     }
 
     // Check for missing objects
@@ -249,7 +251,8 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
 
       if (testFrustum.GetObjectPosition(pObject->GetGlobalBounds().GetSphere()) == xiiVolumePosition::Outside)
       {
-        XII_TEST_BOOL(pObject->GetNumFramesSinceVisible() >= numUpdates);
+        xiiVisibilityState visType = pObject->GetVisibilityState();
+        XII_TEST_BOOL(visType == xiiVisibilityState::Invisible);
       }
     }
 
@@ -275,7 +278,8 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
     // Check that last frame visible doesn't reset entirely after moving
     for (const xiiGameObject* pObject : visibleObjects)
     {
-      XII_TEST_BOOL(pObject->GetNumFramesSinceVisible() == 1);
+      xiiVisibilityState visType = pObject->GetVisibilityState();
+      XII_TEST_BOOL(visType == xiiVisibilityState::Direct);
     }
   }
 

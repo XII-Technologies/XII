@@ -304,12 +304,10 @@ void xiiFakeRopeComponent::RuntimeUpdate()
   if (m_uiSleepCounter > 10)
     return;
 
-  xiiUInt64 uiFramesVisible = GetOwner()->GetNumFramesSinceVisible();
-  if (uiFramesVisible > 60)
-  {
-    return;
-  }
+  xiiVisibilityState visType = GetOwner()->GetVisibilityState();
 
+  if (visType == xiiVisibilityState::Invisible)
+    return;
 
   m_RopeSim.SimulateRope(GetWorld()->GetClock().GetTimeDiff());
 
