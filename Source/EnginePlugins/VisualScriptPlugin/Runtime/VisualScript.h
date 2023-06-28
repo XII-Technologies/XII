@@ -68,21 +68,21 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptNodeDescription
     XII_ALWAYS_INLINE DataOffset()
     {
       m_uiByteOffset = xiiInvalidIndex;
-      m_uiDataType = xiiVisualScriptDataType::Invalid;
+      m_uiDataType   = xiiVisualScriptDataType::Invalid;
       m_uiIsConstant = 0;
     }
 
     XII_ALWAYS_INLINE DataOffset(xiiUInt32 uiOffset, xiiVisualScriptDataType::Enum dataType, bool bIsConstant)
     {
       m_uiByteOffset = uiOffset;
-      m_uiDataType = dataType;
+      m_uiDataType   = dataType;
       m_uiIsConstant = bIsConstant ? 1 : 0;
     }
 
     XII_ALWAYS_INLINE bool IsValid() const
     {
       return m_uiByteOffset != (XII_BIT(24) - 1) &&
-             m_uiDataType != xiiVisualScriptDataType::Invalid;
+        m_uiDataType != xiiVisualScriptDataType::Invalid;
     }
 
     xiiUInt32 m_uiByteOffset : 24;
@@ -90,17 +90,17 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptNodeDescription
     xiiUInt32 m_uiIsConstant : 1;
   };
 
-  xiiEnum<Type> m_Type;
+  xiiEnum<Type>                    m_Type;
   xiiEnum<xiiVisualScriptDataType> m_DeductedDataType;
-  xiiSmallArray<xiiUInt16, 4> m_ExecutionIndices;
-  xiiSmallArray<DataOffset, 4> m_InputDataOffsets;
-  xiiSmallArray<DataOffset, 2> m_OutputDataOffsets;
+  xiiSmallArray<xiiUInt16, 4>      m_ExecutionIndices;
+  xiiSmallArray<DataOffset, 4>     m_InputDataOffsets;
+  xiiSmallArray<DataOffset, 2>     m_OutputDataOffsets;
 
   union
   {
     struct
     {
-      const xiiRTTI* m_pTargetType;
+      const xiiRTTI*             m_pTargetType;
       const xiiAbstractProperty* m_pTargetProperty;
     };
 
@@ -121,21 +121,21 @@ public:
   ~xiiVisualScriptGraphDescription();
 
   static xiiResult Serialize(xiiArrayPtr<const xiiVisualScriptNodeDescription> nodes, xiiStreamWriter& inout_stream);
-  xiiResult Deserialize(xiiStreamReader& inout_stream);
+  xiiResult        Deserialize(xiiStreamReader& inout_stream);
 
   template <typename T, xiiUInt32 Size>
   struct EmbeddedArrayOrPointer
   {
     union
     {
-      T m_Embedded[Size] = {};
+      T  m_Embedded[Size] = {};
       T* m_Ptr;
     };
 
     static void AddAdditionalDataSize(xiiArrayPtr<const T> a, xiiUInt32& inout_additionalDataSize);
     static void AddAdditionalDataSize(xiiUInt32 uiSize, xiiUInt32 uiAlignment, xiiUInt32& inout_additionalDataSize);
 
-    T* Init(xiiUInt8 uiCount, xiiUInt8*& inout_pAdditionalData);
+    T*        Init(xiiUInt8 uiCount, xiiUInt8*& inout_pAdditionalData);
     xiiResult ReadFromStream(xiiUInt8& out_uiCount, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData);
   };
 
@@ -143,7 +143,7 @@ public:
   {
     enum Enum
     {
-      Completed = 0,
+      Completed         = 0,
       ContinueNextFrame = -1,
 
       Error = -100,
@@ -151,12 +151,12 @@ public:
   };
 
   struct Node;
-  using ExecuteFunction = int (*)(xiiVisualScriptInstance& ref_instance, const Node& node);
-  using DataOffset = xiiVisualScriptNodeDescription::DataOffset;
-  using ExecutionIndicesArray = EmbeddedArrayOrPointer<xiiUInt16, 4>;
-  using InputDataOffsetsArray = EmbeddedArrayOrPointer<DataOffset, 4>;
+  using ExecuteFunction        = int (*)(xiiVisualScriptInstance& ref_instance, const Node& node);
+  using DataOffset             = xiiVisualScriptNodeDescription::DataOffset;
+  using ExecutionIndicesArray  = EmbeddedArrayOrPointer<xiiUInt16, 4>;
+  using InputDataOffsetsArray  = EmbeddedArrayOrPointer<DataOffset, 4>;
   using OutputDataOffsetsArray = EmbeddedArrayOrPointer<DataOffset, 2>;
-  using UserDataArray = EmbeddedArrayOrPointer<xiiUInt32, 4>;
+  using UserDataArray          = EmbeddedArrayOrPointer<xiiUInt32, 4>;
 
   struct Node
   {
@@ -165,21 +165,21 @@ public:
     xiiUInt32 m_uiPadding = 0;
 #endif
 
-    ExecutionIndicesArray m_ExecutionIndices;
-    InputDataOffsetsArray m_InputDataOffsets;
+    ExecutionIndicesArray  m_ExecutionIndices;
+    InputDataOffsetsArray  m_InputDataOffsets;
     OutputDataOffsetsArray m_OutputDataOffsets;
-    UserDataArray m_UserData;
+    UserDataArray          m_UserData;
 
     xiiEnum<xiiVisualScriptNodeDescription::Type> m_Type;
-    xiiUInt8 m_NumExecutionIndices;
-    xiiUInt8 m_NumInputDataOffsets;
-    xiiUInt8 m_NumOutputDataOffsets;
+    xiiUInt8                                      m_NumExecutionIndices;
+    xiiUInt8                                      m_NumInputDataOffsets;
+    xiiUInt8                                      m_NumOutputDataOffsets;
 
-    xiiUInt16 m_UserDataByteSize;
+    xiiUInt16                        m_UserDataByteSize;
     xiiEnum<xiiVisualScriptDataType> m_DeductedDataType;
-    xiiUInt8 m_Reserved = 0;
+    xiiUInt8                         m_Reserved = 0;
 
-    xiiUInt32 GetExecutionIndex(xiiUInt32 uiSlot) const;
+    xiiUInt32  GetExecutionIndex(xiiUInt32 uiSlot) const;
     DataOffset GetInputDataOffset(xiiUInt32 uiSlot) const;
     DataOffset GetOutputDataOffset(xiiUInt32 uiSlot) const;
 
@@ -194,7 +194,7 @@ public:
 
 private:
   xiiArrayPtr<const Node> m_Nodes;
-  xiiBlob m_Storage;
+  xiiBlob                 m_Storage;
 };
 
 struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptDataDescription : public xiiRefCounted
@@ -206,11 +206,11 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptDataDescription : public xiiRef
     XII_DECLARE_POD_TYPE();
 
     xiiUInt32 m_uiStartOffset = 0;
-    xiiUInt32 m_uiCount = 0;
+    xiiUInt32 m_uiCount       = 0;
   };
 
   OffsetAndCount m_PerTypeInfo[xiiVisualScriptDataType::Count];
-  xiiUInt32 m_uiStorageSizeNeeded = 0;
+  xiiUInt32      m_uiStorageSizeNeeded = 0;
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);
@@ -251,11 +251,11 @@ public:
   void SetPointerData(DataOffset dataOffset, T ptr, const xiiRTTI* pType, xiiUInt32 uiExecutionCounter);
 
   xiiVariant GetDataAsVariant(DataOffset dataOffset, xiiVariantType::Enum expectedType, xiiUInt32 uiExecutionCounter) const;
-  void SetDataFromVariant(DataOffset dataOffset, const xiiVariant& value, xiiUInt32 uiExecutionCounter);
+  void       SetDataFromVariant(DataOffset dataOffset, const xiiVariant& value, xiiUInt32 uiExecutionCounter);
 
 private:
   xiiSharedPtr<const xiiVisualScriptDataDescription> m_pDesc;
-  xiiBlob m_Storage;
+  xiiBlob                                            m_Storage;
 };
 
 #include <VisualScriptPlugin/Runtime/VisualScript_inl.h>

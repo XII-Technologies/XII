@@ -12,14 +12,14 @@ xiiVisualScriptClassAssetManager::xiiVisualScriptClassAssetManager()
   xiiDocumentManager::s_Events.AddEventHandler(xiiMakeDelegate(&xiiVisualScriptClassAssetManager::OnDocumentManagerEvent, this));
 
   m_DocTypeDesc.m_sDocumentTypeName = "VisualScriptClass";
-  m_DocTypeDesc.m_sFileExtension = "xiiVisualScriptClassAsset";
-  m_DocTypeDesc.m_sIcon = ":/AssetIcons/VisualScript.png";
-  m_DocTypeDesc.m_pDocumentType = xiiGetStaticRTTI<xiiVisualScriptClassAssetDocument>();
-  m_DocTypeDesc.m_pManager = this;
+  m_DocTypeDesc.m_sFileExtension    = "xiiVisualScriptClassAsset";
+  m_DocTypeDesc.m_sIcon             = ":/AssetIcons/VisualScript.png";
+  m_DocTypeDesc.m_pDocumentType     = xiiGetStaticRTTI<xiiVisualScriptClassAssetDocument>();
+  m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_ScriptClass");
 
   m_DocTypeDesc.m_sResourceFileExtension = "xiiVisualScriptClassBin";
-  m_DocTypeDesc.m_AssetDocumentFlags = xiiAssetDocumentFlags::AutoTransformOnSave;
+  m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoTransformOnSave;
 
   xiiQtImageCache::GetSingleton()->RegisterTypeImage("VisualScriptClass", QPixmap(":/AssetIcons/VisualScript.png"));
 }
@@ -48,7 +48,11 @@ void xiiVisualScriptClassAssetManager::OnDocumentManagerEvent(const xiiDocumentM
 }
 
 void xiiVisualScriptClassAssetManager::InternalCreateDocument(
-  const char* szDocumentTypeName, const char* szPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+  const char*              szDocumentTypeName,
+  const char*              szPath,
+  bool                     bCreateNewDocument,
+  xiiDocument*&            out_pDocument,
+  const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiVisualScriptClassAssetDocument(szPath);
 }

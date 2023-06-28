@@ -12,30 +12,30 @@ class xiiVisualScriptNodeRegistry
 public:
   struct PinDesc
   {
-    xiiHashedString m_sName;
-    xiiHashedString m_sDynamicPinProperty;
-    const xiiRTTI* m_pDataType = nullptr;
+    xiiHashedString                  m_sName;
+    xiiHashedString                  m_sDynamicPinProperty;
+    const xiiRTTI*                   m_pDataType = nullptr;
     xiiEnum<xiiVisualScriptDataType> m_ScriptDataType;
-    bool m_bRequired = false;
+    bool                             m_bRequired = false;
 
     XII_ALWAYS_INLINE bool IsExecutionPin() const { return m_ScriptDataType == xiiVisualScriptDataType::Invalid; }
     XII_ALWAYS_INLINE bool IsDataPin() const { return m_ScriptDataType != xiiVisualScriptDataType::Invalid; }
 
     static xiiColor GetColorForScriptDataType(xiiVisualScriptDataType::Enum dataType);
-    xiiColor GetColor() const;
+    xiiColor        GetColor() const;
   };
 
   struct NodeDesc
   {
-    xiiSmallArray<PinDesc, 4> m_InputPins;
-    xiiSmallArray<PinDesc, 4> m_OutputPins;
-    xiiHashedString m_sFilterByBaseClass;
-    const xiiRTTI* m_pTargetType = nullptr;
-    const xiiAbstractProperty* m_pTargetProperty = nullptr;
+    xiiSmallArray<PinDesc, 4>                     m_InputPins;
+    xiiSmallArray<PinDesc, 4>                     m_OutputPins;
+    xiiHashedString                               m_sFilterByBaseClass;
+    const xiiRTTI*                                m_pTargetType     = nullptr;
+    const xiiAbstractProperty*                    m_pTargetProperty = nullptr;
     xiiEnum<xiiVisualScriptNodeDescription::Type> m_Type;
-    bool m_bImplicitExecution = false;
-    bool m_bNeedsDataTypeDeduction = false;
-    bool m_bHasDynamicPins = false;
+    bool                                          m_bImplicitExecution      = false;
+    bool                                          m_bNeedsDataTypeDeduction = false;
+    bool                                          m_bHasDynamicPins         = false;
 
     void AddInputExecutionPin(xiiStringView sName, const xiiHashedString& sDynamicPinProperty = xiiHashedString());
     void AddOutputExecutionPin(xiiStringView sName, const xiiHashedString& sDynamicPinProperty = xiiHashedString());
@@ -47,13 +47,13 @@ public:
   xiiVisualScriptNodeRegistry();
   ~xiiVisualScriptNodeRegistry();
 
-  const xiiRTTI* GetNodeBaseType() const { return m_pBaseType; }
+  const xiiRTTI*  GetNodeBaseType() const { return m_pBaseType; }
   const NodeDesc* GetNodeDescForType(const xiiRTTI* pRtti) const { return m_TypeToNodeDescs.GetValue(pRtti); }
 
   const xiiMap<const xiiRTTI*, NodeDesc>& GetAllNodeTypes() const { return m_TypeToNodeDescs; }
 
-  static constexpr const char* s_szTypeNamePrefix = "VisualScriptNode_";
-  static constexpr xiiUInt32 s_uiTypeNamePrefixLength = xiiStringUtils::GetStringElementCount(s_szTypeNamePrefix);
+  static constexpr const char* s_szTypeNamePrefix       = "VisualScriptNode_";
+  static constexpr xiiUInt32   s_uiTypeNamePrefixLength = xiiStringUtils::GetStringElementCount(s_szTypeNamePrefix);
 
 private:
   void PhantomTypeRegistryEventHandler(const xiiPhantomRttiManagerEvent& e);
@@ -67,7 +67,7 @@ private:
   void FillDesc(xiiReflectedTypeDescriptor& desc, const xiiRTTI* pRtti, xiiStringView sCategoryOverride = xiiStringView(), xiiColorGammaUB* pColorOverride = nullptr);
   void FillDesc(xiiReflectedTypeDescriptor& desc, xiiStringView sTypeName, xiiStringView sCategory, const xiiColorGammaUB& color);
 
-  const xiiRTTI* m_pBaseType = nullptr;
-  bool m_bBuiltinTypesCreated = false;
+  const xiiRTTI*                   m_pBaseType            = nullptr;
+  bool                             m_bBuiltinTypesCreated = false;
   xiiMap<const xiiRTTI*, NodeDesc> m_TypeToNodeDescs;
 };

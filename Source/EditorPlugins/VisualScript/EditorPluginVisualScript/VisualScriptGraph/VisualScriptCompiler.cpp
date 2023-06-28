@@ -28,23 +28,23 @@ namespace
 
   static xiiResult FillUserData_ReflectedPropertyOrFunction(xiiVisualScriptNodeDescription& ref_nodeDesc, const xiiDocumentObject* pObject)
   {
-    auto pNodeDesc = xiiVisualScriptNodeRegistry::GetSingleton()->GetNodeDescForType(pObject->GetType());
-    ref_nodeDesc.m_UserData.m_pTargetType = pNodeDesc->m_pTargetType;
+    auto pNodeDesc                            = xiiVisualScriptNodeRegistry::GetSingleton()->GetNodeDescForType(pObject->GetType());
+    ref_nodeDesc.m_UserData.m_pTargetType     = pNodeDesc->m_pTargetType;
     ref_nodeDesc.m_UserData.m_pTargetProperty = pNodeDesc->m_pTargetProperty;
     return XII_SUCCESS;
   }
 
   static xiiResult FillUserData_Builtin_Compare(xiiVisualScriptNodeDescription& ref_nodeDesc, const xiiDocumentObject* pObject)
   {
-    auto compOp = pObject->GetTypeAccessor().GetValue("Operator");
+    auto compOp                                  = pObject->GetTypeAccessor().GetValue("Operator");
     ref_nodeDesc.m_UserData.m_ComparisonOperator = static_cast<xiiComparisonOperator::Enum>(compOp.Get<xiiInt64>());
     return XII_SUCCESS;
   }
 
   static xiiResult FillUserData_Builtin_TryGetComponentOfBaseType(xiiVisualScriptNodeDescription& ref_nodeDesc, const xiiDocumentObject* pObject)
   {
-    auto typeName = pObject->GetTypeAccessor().GetValue("TypeName");
-    const xiiRTTI* pType = xiiRTTI::FindTypeByName(typeName.Get<xiiString>());
+    auto           typeName = pObject->GetTypeAccessor().GetValue("TypeName");
+    const xiiRTTI* pType    = xiiRTTI::FindTypeByName(typeName.Get<xiiString>());
     if (pType == nullptr)
     {
       xiiLog::Error("Invalid type '{}' for GameObject::TryGetComponentOfBaseType node.", typeName);
@@ -116,8 +116,8 @@ namespace
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiVisualScriptCompiler::CompiledModule::CompiledModule()
-  : m_ConstantDataStorage(xiiSharedPtr<xiiVisualScriptDataDescription>(&m_ConstantDataDesc, nullptr))
+xiiVisualScriptCompiler::CompiledModule::CompiledModule() :
+  m_ConstantDataStorage(xiiSharedPtr<xiiVisualScriptDataDescription>(&m_ConstantDataDesc, nullptr))
 {
   // Prevent the data desc from being deleted by fake shared ptr above
   m_ConstantDataDesc.AddRef();
@@ -188,14 +188,14 @@ xiiUInt32 xiiVisualScriptCompiler::ConnectionHasher::Hash(const Connection& c)
 bool xiiVisualScriptCompiler::ConnectionHasher::Equal(const Connection& a, const Connection& b)
 {
   return a.m_pPrev == b.m_pPrev &&
-         a.m_pCurrent == b.m_pCurrent &&
-         a.m_Type == b.m_Type &&
-         a.m_uiPrevPinIndex == b.m_uiPrevPinIndex;
+    a.m_pCurrent == b.m_pCurrent &&
+    a.m_Type == b.m_Type &&
+    a.m_uiPrevPinIndex == b.m_uiPrevPinIndex;
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiVisualScriptCompiler::xiiVisualScriptCompiler() = default;
+xiiVisualScriptCompiler::xiiVisualScriptCompiler()  = default;
 xiiVisualScriptCompiler::~xiiVisualScriptCompiler() = default;
 
 xiiResult xiiVisualScriptCompiler::AddFunction(xiiStringView sName, xiiVisualScriptNodeDescription::Type::Enum type, const xiiDocumentObject* pEntryObject)
@@ -210,9 +210,9 @@ xiiResult xiiVisualScriptCompiler::AddFunction(xiiStringView sName, xiiVisualScr
   if (pEntryAstNode == nullptr)
     return XII_FAILURE;
 
-  auto& function = m_Module.m_Functions.ExpandAndGetRef();
+  auto& function   = m_Module.m_Functions.ExpandAndGetRef();
   function.m_sName = sName;
-  function.m_Type = type;
+  function.m_Type  = type;
 
   m_EntryAstNodes.PushBack(pEntryAstNode);
   XII_ASSERT_DEBUG(m_Module.m_Functions.GetCount() == m_EntryAstNodes.GetCount(), "");
@@ -224,7 +224,7 @@ xiiResult xiiVisualScriptCompiler::Compile(xiiStringView sDebugAstOutputPath)
 {
   for (xiiUInt32 i = 0; i < m_Module.m_Functions.GetCount(); ++i)
   {
-    auto& function = m_Module.m_Functions[i];
+    auto&    function      = m_Module.m_Functions[i];
     AstNode* pEntryAstNode = m_EntryAstNodes[i];
 
     DumpAST(pEntryAstNode, sDebugAstOutputPath, function.m_sName, "_00");
@@ -290,11 +290,11 @@ xiiVisualScriptCompiler::AstNode* xiiVisualScriptCompiler::BuildAST(const xiiDoc
     auto pNodeDesc = xiiVisualScriptNodeRegistry::GetSingleton()->GetNodeDescForType(pObject->GetType());
     XII_ASSERT_DEV(pNodeDesc != nullptr, "Invalid node type");
 
-    auto& astNode = m_AstNodes.ExpandAndGetRef();
-    astNode.m_Type = pNodeDesc->m_Type;
-    astNode.m_DeductedDataType = GetDeductedType(pObject);
+    auto& astNode                = m_AstNodes.ExpandAndGetRef();
+    astNode.m_Type               = pNodeDesc->m_Type;
+    astNode.m_DeductedDataType   = GetDeductedType(pObject);
     astNode.m_bImplicitExecution = pNodeDesc->m_bImplicitExecution;
-    astNode.m_pObject = pObject;
+    astNode.m_pObject            = pObject;
 
     m_ObjectToAstNode.Insert(pObject, &astNode);
 
@@ -326,13 +326,13 @@ xiiVisualScriptCompiler::AstNode* xiiVisualScriptCompiler::BuildAST(const xiiDoc
         return nullptr;
       }
 
-      auto& dataInput = pAstNode->m_Inputs.ExpandAndGetRef();
-      dataInput.m_uiId = GetPinId(pPin);
+      auto& dataInput              = pAstNode->m_Inputs.ExpandAndGetRef();
+      dataInput.m_uiId             = GetPinId(pPin);
       dataInput.m_uiTargetPinIndex = pPin->GetPinIndex();
 
       if (connections.IsEmpty() == false)
       {
-        auto& sourcePin = static_cast<const xiiVisualScriptPin&>(connections[0]->GetSourcePin());
+        auto&                    sourcePin     = static_cast<const xiiVisualScriptPin&>(connections[0]->GetSourcePin());
         const xiiDocumentObject* pSourceObject = sourcePin.GetParent();
 
         AstNode* pSourceAstNode;
@@ -365,9 +365,9 @@ xiiVisualScriptCompiler::AstNode* xiiVisualScriptCompiler::BuildAST(const xiiDoc
           return nullptr;
         }
 
-        dataInput.m_pSourceNode = pSourceAstNode;
+        dataInput.m_pSourceNode      = pSourceAstNode;
         dataInput.m_uiSourcePinIndex = sourcePin.GetPinIndex();
-        dataInput.m_DataType = pPin->GetScriptDataType();
+        dataInput.m_DataType         = pPin->GetScriptDataType();
         if (dataInput.m_DataType == xiiVisualScriptDataType::Any)
           dataInput.m_DataType = targetDeductedDataType;
       }
@@ -376,10 +376,10 @@ xiiVisualScriptCompiler::AstNode* xiiVisualScriptCompiler::BuildAST(const xiiDoc
     m_pManager->GetOutputDataPins(pObject, pins);
     for (auto pPin : pins)
     {
-      auto& dataOutput = pAstNode->m_Outputs.ExpandAndGetRef();
-      dataOutput.m_uiId = GetPinId(pPin);
+      auto& dataOutput              = pAstNode->m_Outputs.ExpandAndGetRef();
+      dataOutput.m_uiId             = GetPinId(pPin);
       dataOutput.m_uiSourcePinIndex = pPin->GetPinIndex();
-      dataOutput.m_DataType = pPin->GetScriptDataType();
+      dataOutput.m_DataType         = pPin->GetScriptDataType();
       if (dataOutput.m_DataType == xiiVisualScriptDataType::Any)
         dataOutput.m_DataType = GetDeductedType(pObject);
     }
@@ -427,15 +427,15 @@ xiiResult xiiVisualScriptCompiler::InsertMakeArrayForDynamicPin(AstNode* pNode, 
   if (pProp->GetCategory() != xiiPropertyCategory::Array)
     return XII_SUCCESS;
 
-  auto& astNode = m_AstNodes.ExpandAndGetRef();
-  astNode.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_MakeArray;
+  auto& astNode                = m_AstNodes.ExpandAndGetRef();
+  astNode.m_Type               = xiiVisualScriptNodeDescription::Type::Builtin_MakeArray;
   astNode.m_bImplicitExecution = true;
-  astNode.m_pObject = pNode->m_pObject;
+  astNode.m_pObject            = pNode->m_pObject;
 
-  auto& newDataOutput = astNode.m_Outputs.ExpandAndGetRef();
-  newDataOutput.m_uiId = GetPinId(nullptr);
+  auto& newDataOutput              = astNode.m_Outputs.ExpandAndGetRef();
+  newDataOutput.m_uiId             = GetPinId(nullptr);
   newDataOutput.m_uiSourcePinIndex = 0;
-  newDataOutput.m_DataType = xiiVisualScriptDataType::Array;
+  newDataOutput.m_DataType         = xiiVisualScriptDataType::Array;
 
   xiiHybridArray<const xiiVisualScriptPin*, 16> pins;
   if (pinType == xiiPin::Type::Input)
@@ -453,7 +453,7 @@ xiiResult xiiVisualScriptCompiler::InsertMakeArrayForDynamicPin(AstNode* pNode, 
     auto pPin = pins[i];
 
     xiiStringView sPropertyName;
-    xiiUInt32 uiArrayIndex;
+    xiiUInt32     uiArrayIndex;
     if (ExtractPropertyName(pPin->GetName(), sPropertyName, &uiArrayIndex).Failed())
       continue;
 
@@ -463,13 +463,13 @@ xiiResult xiiVisualScriptCompiler::InsertMakeArrayForDynamicPin(AstNode* pNode, 
     auto& oldDataInput = pNode->m_Inputs[i];
 
     astNode.m_Inputs.EnsureCount(uiArrayIndex + 1);
-    auto& newDataInput = astNode.m_Inputs[uiArrayIndex];
-    newDataInput.m_pSourceNode = oldDataInput.m_pSourceNode;
-    newDataInput.m_uiId = GetPinId(nullptr);
+    auto& newDataInput              = astNode.m_Inputs[uiArrayIndex];
+    newDataInput.m_pSourceNode      = oldDataInput.m_pSourceNode;
+    newDataInput.m_uiId             = GetPinId(nullptr);
     newDataInput.m_uiSourcePinIndex = oldDataInput.m_uiSourcePinIndex;
     newDataInput.m_uiTargetPinIndex = oldDataInput.m_pSourceNode != nullptr ? uiArrayIndex : oldDataInput.m_uiTargetPinIndex;
-    newDataInput.m_DataType = oldDataInput.m_DataType;
-    newDataInput.m_uiArrayIndex = uiArrayIndex;
+    newDataInput.m_DataType         = oldDataInput.m_DataType;
+    newDataInput.m_uiArrayIndex     = uiArrayIndex;
 
     pNode->m_Inputs.RemoveAtAndCopy(i);
     uiNewInputIndex = i;
@@ -477,11 +477,11 @@ xiiResult xiiVisualScriptCompiler::InsertMakeArrayForDynamicPin(AstNode* pNode, 
 
   {
     DataInput newDataInput;
-    newDataInput.m_pSourceNode = &astNode;
-    newDataInput.m_uiId = GetPinId(nullptr);
+    newDataInput.m_pSourceNode      = &astNode;
+    newDataInput.m_uiId             = GetPinId(nullptr);
     newDataInput.m_uiSourcePinIndex = 0;
     newDataInput.m_uiTargetPinIndex = uiNewInputIndex;
-    newDataInput.m_DataType = xiiVisualScriptDataType::Array;
+    newDataInput.m_DataType         = xiiVisualScriptDataType::Array;
 
     pNode->m_Inputs.Insert(newDataInput, uiNewInputIndex);
   }
@@ -494,54 +494,54 @@ xiiResult xiiVisualScriptCompiler::InsertTypeConversions(AstNode* pEntryAstNode)
   xiiHashSet<const AstNode*> nodesWithInsertedMakeArrayNode;
 
   return TraverseAst(pEntryAstNode, ConnectionType::All,
-    [&](const Connection& connection) {
-      if (connection.m_Type == ConnectionType::Data)
-      {
-        auto& dataInput = connection.m_pPrev->m_Inputs[connection.m_uiPrevPinIndex];
-        auto& dataOutput = GetDataOutput(dataInput);
+                     [&](const Connection& connection) {
+                       if (connection.m_Type == ConnectionType::Data)
+                       {
+                         auto& dataInput  = connection.m_pPrev->m_Inputs[connection.m_uiPrevPinIndex];
+                         auto& dataOutput = GetDataOutput(dataInput);
 
-        if (dataOutput.m_DataType != dataInput.m_DataType)
-        {
-          auto nodeType = xiiVisualScriptNodeDescription::Type::GetConversionType(dataInput.m_DataType);
+                         if (dataOutput.m_DataType != dataInput.m_DataType)
+                         {
+                           auto nodeType = xiiVisualScriptNodeDescription::Type::GetConversionType(dataInput.m_DataType);
 
-          auto& astNode = m_AstNodes.ExpandAndGetRef();
-          astNode.m_Type = nodeType;
-          astNode.m_DeductedDataType = dataOutput.m_DataType;
-          astNode.m_bImplicitExecution = true;
+                           auto& astNode                = m_AstNodes.ExpandAndGetRef();
+                           astNode.m_Type               = nodeType;
+                           astNode.m_DeductedDataType   = dataOutput.m_DataType;
+                           astNode.m_bImplicitExecution = true;
 
-          auto& newDataInput = astNode.m_Inputs.ExpandAndGetRef();
-          newDataInput.m_pSourceNode = dataInput.m_pSourceNode;
-          newDataInput.m_uiId = GetPinId(nullptr);
-          newDataInput.m_uiSourcePinIndex = dataInput.m_uiSourcePinIndex;
-          newDataInput.m_uiTargetPinIndex = 0;
-          newDataInput.m_DataType = dataOutput.m_DataType;
+                           auto& newDataInput              = astNode.m_Inputs.ExpandAndGetRef();
+                           newDataInput.m_pSourceNode      = dataInput.m_pSourceNode;
+                           newDataInput.m_uiId             = GetPinId(nullptr);
+                           newDataInput.m_uiSourcePinIndex = dataInput.m_uiSourcePinIndex;
+                           newDataInput.m_uiTargetPinIndex = 0;
+                           newDataInput.m_DataType         = dataOutput.m_DataType;
 
-          auto& newDataOutput = astNode.m_Outputs.ExpandAndGetRef();
-          newDataOutput.m_uiId = GetPinId(nullptr);
-          newDataOutput.m_uiSourcePinIndex = 0;
-          newDataOutput.m_DataType = dataInput.m_DataType;
+                           auto& newDataOutput              = astNode.m_Outputs.ExpandAndGetRef();
+                           newDataOutput.m_uiId             = GetPinId(nullptr);
+                           newDataOutput.m_uiSourcePinIndex = 0;
+                           newDataOutput.m_DataType         = dataInput.m_DataType;
 
-          dataInput.m_pSourceNode = &astNode;
-          dataInput.m_uiSourcePinIndex = 0;
-        }
-      }
+                           dataInput.m_pSourceNode      = &astNode;
+                           dataInput.m_uiSourcePinIndex = 0;
+                         }
+                       }
 
-      AstNode* pNode = connection.m_pCurrent;
-      if (pNode->m_pObject != nullptr && pNode->m_Type != xiiVisualScriptNodeDescription::Type::Builtin_MakeArray)
-      {
-        auto pNodeDesc = xiiVisualScriptNodeRegistry::GetSingleton()->GetNodeDescForType(pNode->m_pObject->GetType());
-        if (pNodeDesc != nullptr && pNodeDesc->m_bHasDynamicPins && nodesWithInsertedMakeArrayNode.Insert(pNode) == false)
-        {
-          for (auto& pinDesc : pNodeDesc->m_InputPins)
-          {
-            if (InsertMakeArrayForDynamicPin(pNode, pinDesc, xiiPin::Type::Input).Failed())
-              return VisitorResult::Error;
-          }
-        }
-      }
+                       AstNode* pNode = connection.m_pCurrent;
+                       if (pNode->m_pObject != nullptr && pNode->m_Type != xiiVisualScriptNodeDescription::Type::Builtin_MakeArray)
+                       {
+                         auto pNodeDesc = xiiVisualScriptNodeRegistry::GetSingleton()->GetNodeDescForType(pNode->m_pObject->GetType());
+                         if (pNodeDesc != nullptr && pNodeDesc->m_bHasDynamicPins && nodesWithInsertedMakeArrayNode.Insert(pNode) == false)
+                         {
+                           for (auto& pinDesc : pNodeDesc->m_InputPins)
+                           {
+                             if (InsertMakeArrayForDynamicPin(pNode, pinDesc, xiiPin::Type::Input).Failed())
+                               return VisitorResult::Error;
+                           }
+                         }
+                       }
 
-      return VisitorResult::Continue;
-    });
+                       return VisitorResult::Continue;
+                     });
 }
 
 
@@ -551,17 +551,17 @@ xiiResult xiiVisualScriptCompiler::BuildDataStack(AstNode* pEntryAstNode, xiiDyn
   out_Stack.Clear();
 
   XII_SUCCEED_OR_RETURN(TraverseAst(pEntryAstNode, ConnectionType::Data,
-    [&](const Connection& connection) {
-      if (visitedNodes.Insert(connection.m_pCurrent))
-        return VisitorResult::Stop;
+                                    [&](const Connection& connection) {
+                                      if (visitedNodes.Insert(connection.m_pCurrent))
+                                        return VisitorResult::Stop;
 
-      if (connection.m_pCurrent->m_bImplicitExecution == false)
-        return VisitorResult::Stop;
+                                      if (connection.m_pCurrent->m_bImplicitExecution == false)
+                                        return VisitorResult::Stop;
 
-      out_Stack.PushBack(connection.m_pCurrent);
+                                      out_Stack.PushBack(connection.m_pCurrent);
 
-      return VisitorResult::Continue;
-    }));
+                                      return VisitorResult::Continue;
+                                    }));
 
   // Make unique
   xiiHashTable<AstNode*, AstNode*> oldToNewNodes;
@@ -583,11 +583,11 @@ xiiResult xiiVisualScriptCompiler::BuildDataStack(AstNode* pEntryAstNode, xiiDyn
     }
     else
     {
-      auto& newDataNode = m_AstNodes.ExpandAndGetRef();
-      newDataNode.m_Type = pDataNode->m_Type;
-      newDataNode.m_DeductedDataType = pDataNode->m_DeductedDataType;
+      auto& newDataNode                = m_AstNodes.ExpandAndGetRef();
+      newDataNode.m_Type               = pDataNode->m_Type;
+      newDataNode.m_DeductedDataType   = pDataNode->m_DeductedDataType;
       newDataNode.m_bImplicitExecution = pDataNode->m_bImplicitExecution;
-      newDataNode.m_pObject = pDataNode->m_pObject;
+      newDataNode.m_pObject            = pDataNode->m_pObject;
 
       for (auto& dataInput : pDataNode->m_Inputs)
       {
@@ -596,18 +596,18 @@ xiiResult xiiVisualScriptCompiler::BuildDataStack(AstNode* pEntryAstNode, xiiDyn
         {
           XII_VERIFY(oldToNewNodes.TryGetValue(dataInput.m_pSourceNode, newDataInput.m_pSourceNode), "");
         }
-        newDataInput.m_uiId = GetPinId(nullptr);
+        newDataInput.m_uiId             = GetPinId(nullptr);
         newDataInput.m_uiSourcePinIndex = dataInput.m_uiSourcePinIndex;
         newDataInput.m_uiTargetPinIndex = dataInput.m_uiTargetPinIndex;
-        newDataInput.m_DataType = dataInput.m_DataType;
+        newDataInput.m_DataType         = dataInput.m_DataType;
       }
 
       for (auto& dataOutput : pDataNode->m_Outputs)
       {
-        auto& newDataOutput = newDataNode.m_Outputs.ExpandAndGetRef();
-        newDataOutput.m_uiId = GetPinId(nullptr);
+        auto& newDataOutput              = newDataNode.m_Outputs.ExpandAndGetRef();
+        newDataOutput.m_uiId             = GetPinId(nullptr);
         newDataOutput.m_uiSourcePinIndex = dataOutput.m_uiSourcePinIndex;
-        newDataOutput.m_DataType = dataOutput.m_DataType;
+        newDataOutput.m_DataType         = dataOutput.m_DataType;
       }
 
       oldToNewNodes.Insert(pDataNode, &newDataNode);
@@ -632,54 +632,54 @@ xiiResult xiiVisualScriptCompiler::BuildDataStack(AstNode* pEntryAstNode, xiiDyn
 
 xiiResult xiiVisualScriptCompiler::BuildDataExecutions(AstNode* pEntryAstNode)
 {
-  xiiHybridArray<AstNode*, 64> nodeStack;
+  xiiHybridArray<AstNode*, 64>     nodeStack;
   xiiHashTable<AstNode*, AstNode*> nodeToFirstDataNode;
 
   return TraverseAst(pEntryAstNode, ConnectionType::Execution,
-    [&](const Connection& connection) {
-      AstNode* pFirstDataNode = nullptr;
-      if (nodeToFirstDataNode.TryGetValue(connection.m_pCurrent, pFirstDataNode) == false)
-      {
-        if (BuildDataStack(connection.m_pCurrent, nodeStack).Failed())
-          return VisitorResult::Error;
+                     [&](const Connection& connection) {
+                       AstNode* pFirstDataNode = nullptr;
+                       if (nodeToFirstDataNode.TryGetValue(connection.m_pCurrent, pFirstDataNode) == false)
+                       {
+                         if (BuildDataStack(connection.m_pCurrent, nodeStack).Failed())
+                           return VisitorResult::Error;
 
-        if (nodeStack.IsEmpty() == false)
-        {
-          pFirstDataNode = nodeStack.PeekBack();
+                         if (nodeStack.IsEmpty() == false)
+                         {
+                           pFirstDataNode = nodeStack.PeekBack();
 
-          AstNode* pLastDataNode = nodeStack[0];
-          pLastDataNode->m_Next.PushBack(connection.m_pCurrent);
-        }
-      }
+                           AstNode* pLastDataNode = nodeStack[0];
+                           pLastDataNode->m_Next.PushBack(connection.m_pCurrent);
+                         }
+                       }
 
-      if (pFirstDataNode != nullptr)
-      {
-        connection.m_pPrev->m_Next[connection.m_uiPrevPinIndex] = pFirstDataNode;
-      }
-      nodeToFirstDataNode.Insert(connection.m_pCurrent, pFirstDataNode);
+                       if (pFirstDataNode != nullptr)
+                       {
+                         connection.m_pPrev->m_Next[connection.m_uiPrevPinIndex] = pFirstDataNode;
+                       }
+                       nodeToFirstDataNode.Insert(connection.m_pCurrent, pFirstDataNode);
 
-      return VisitorResult::Continue;
-    });
+                       return VisitorResult::Continue;
+                     });
 }
 
 xiiResult xiiVisualScriptCompiler::FillDataOutputConnections(AstNode* pEntryAstNode)
 {
   return TraverseAst(pEntryAstNode, ConnectionType::All,
-    [&](const Connection& connection) {
-      if (connection.m_Type == ConnectionType::Data)
-      {
-        auto& dataInput = connection.m_pPrev->m_Inputs[connection.m_uiPrevPinIndex];
-        auto& dataOutput = GetDataOutput(dataInput);
+                     [&](const Connection& connection) {
+                       if (connection.m_Type == ConnectionType::Data)
+                       {
+                         auto& dataInput  = connection.m_pPrev->m_Inputs[connection.m_uiPrevPinIndex];
+                         auto& dataOutput = GetDataOutput(dataInput);
 
-        XII_ASSERT_DEBUG(dataInput.m_pSourceNode == connection.m_pCurrent, "");
-        if (dataOutput.m_TargetNodes.Contains(connection.m_pPrev) == false)
-        {
-          dataOutput.m_TargetNodes.PushBack(connection.m_pPrev);
-        }
-      }
+                         XII_ASSERT_DEBUG(dataInput.m_pSourceNode == connection.m_pCurrent, "");
+                         if (dataOutput.m_TargetNodes.Contains(connection.m_pPrev) == false)
+                         {
+                           dataOutput.m_TargetNodes.PushBack(connection.m_pPrev);
+                         }
+                       }
 
-      return VisitorResult::Continue;
-    });
+                       return VisitorResult::Continue;
+                     });
 }
 
 xiiResult xiiVisualScriptCompiler::CollectData(AstNode* pEntryAstNode)
@@ -687,133 +687,133 @@ xiiResult xiiVisualScriptCompiler::CollectData(AstNode* pEntryAstNode)
   xiiDynamicArray<DataOffset> freeDataOffsets;
 
   return TraverseAst(pEntryAstNode, ConnectionType::Execution,
-    [&](const Connection& connection) {
-      // Outputs first so we don't end up using the same data as input and output
-      for (auto& dataOutput : connection.m_pCurrent->m_Outputs)
-      {
-        if (m_PinIdToDataDesc.Contains(dataOutput.m_uiId))
-          continue;
+                     [&](const Connection& connection) {
+                       // Outputs first so we don't end up using the same data as input and output
+                       for (auto& dataOutput : connection.m_pCurrent->m_Outputs)
+                       {
+                         if (m_PinIdToDataDesc.Contains(dataOutput.m_uiId))
+                           continue;
 
-        if (dataOutput.m_TargetNodes.IsEmpty() == false)
-        {
-          DataOffset dataOffset;
-          dataOffset.m_uiDataType = dataOutput.m_DataType;
+                         if (dataOutput.m_TargetNodes.IsEmpty() == false)
+                         {
+                           DataOffset dataOffset;
+                           dataOffset.m_uiDataType = dataOutput.m_DataType;
 
-          for (xiiUInt32 i = 0; i < freeDataOffsets.GetCount(); ++i)
-          {
-            auto freeDataOffset = freeDataOffsets[i];
-            if (freeDataOffset.m_uiDataType == dataOffset.m_uiDataType)
-            {
-              dataOffset = freeDataOffset;
-              freeDataOffsets.RemoveAtAndSwap(i);
-              break;
-            }
-          }
+                           for (xiiUInt32 i = 0; i < freeDataOffsets.GetCount(); ++i)
+                           {
+                             auto freeDataOffset = freeDataOffsets[i];
+                             if (freeDataOffset.m_uiDataType == dataOffset.m_uiDataType)
+                             {
+                               dataOffset = freeDataOffset;
+                               freeDataOffsets.RemoveAtAndSwap(i);
+                               break;
+                             }
+                           }
 
-          if (dataOffset.IsValid() == false)
-          {
-            XII_ASSERT_DEBUG(dataOffset.m_uiDataType < xiiVisualScriptDataType::Count, "Invalid data type");
-            auto& offsetAndCount = m_Module.m_VariableDataDesc.m_PerTypeInfo[dataOffset.m_uiDataType];
-            dataOffset.m_uiByteOffset = offsetAndCount.m_uiCount;
-            ++offsetAndCount.m_uiCount;
-          }
+                           if (dataOffset.IsValid() == false)
+                           {
+                             XII_ASSERT_DEBUG(dataOffset.m_uiDataType < xiiVisualScriptDataType::Count, "Invalid data type");
+                             auto& offsetAndCount      = m_Module.m_VariableDataDesc.m_PerTypeInfo[dataOffset.m_uiDataType];
+                             dataOffset.m_uiByteOffset = offsetAndCount.m_uiCount;
+                             ++offsetAndCount.m_uiCount;
+                           }
 
-          DataDesc dataDesc;
-          dataDesc.m_DataOffset = dataOffset;
-          dataDesc.m_uiUsageCounter = dataOutput.m_TargetNodes.GetCount();
-          m_PinIdToDataDesc.Insert(dataOutput.m_uiId, dataDesc);
-        }
-      }
+                           DataDesc dataDesc;
+                           dataDesc.m_DataOffset     = dataOffset;
+                           dataDesc.m_uiUsageCounter = dataOutput.m_TargetNodes.GetCount();
+                           m_PinIdToDataDesc.Insert(dataOutput.m_uiId, dataDesc);
+                         }
+                       }
 
-      for (auto& dataInput : connection.m_pCurrent->m_Inputs)
-      {
-        if (m_PinIdToDataDesc.Contains(dataInput.m_uiId))
-          continue;
+                       for (auto& dataInput : connection.m_pCurrent->m_Inputs)
+                       {
+                         if (m_PinIdToDataDesc.Contains(dataInput.m_uiId))
+                           continue;
 
-        if (dataInput.m_pSourceNode == nullptr)
-        {
-          const xiiDocumentObject* pObject = connection.m_pCurrent->m_pObject;
-          auto& inputPin = static_cast<const xiiVisualScriptPin&>(*(m_pManager->GetInputPins(pObject)[dataInput.m_uiTargetPinIndex]));
+                         if (dataInput.m_pSourceNode == nullptr)
+                         {
+                           const xiiDocumentObject* pObject  = connection.m_pCurrent->m_pObject;
+                           auto&                    inputPin = static_cast<const xiiVisualScriptPin&>(*(m_pManager->GetInputPins(pObject)[dataInput.m_uiTargetPinIndex]));
 
-          xiiStringView sPropertyName = inputPin.GetName();
-          if (inputPin.HasDynamicPinProperty())
-          {
-            XII_VERIFY(ExtractPropertyName(sPropertyName, sPropertyName).Succeeded(), "");
-          }
+                           xiiStringView sPropertyName = inputPin.GetName();
+                           if (inputPin.HasDynamicPinProperty())
+                           {
+                             XII_VERIFY(ExtractPropertyName(sPropertyName, sPropertyName).Succeeded(), "");
+                           }
 
-          xiiStringBuilder sTmp;
-          const char* szPropertyName = sPropertyName.GetData(sTmp);
+                           xiiStringBuilder sTmp;
+                           const char*      szPropertyName = sPropertyName.GetData(sTmp);
 
-          xiiVariant value = pObject->GetTypeAccessor().GetValue(szPropertyName);
-          if (value.IsValid() && inputPin.HasDynamicPinProperty())
-          {
-            XII_ASSERT_DEBUG(value.IsA<xiiVariantArray>(), "Implementation error");
-            value = value.Get<xiiVariantArray>()[dataInput.m_uiArrayIndex];
-          }
+                           xiiVariant value = pObject->GetTypeAccessor().GetValue(szPropertyName);
+                           if (value.IsValid() && inputPin.HasDynamicPinProperty())
+                           {
+                             XII_ASSERT_DEBUG(value.IsA<xiiVariantArray>(), "Implementation error");
+                             value = value.Get<xiiVariantArray>()[dataInput.m_uiArrayIndex];
+                           }
 
-          auto dataType = xiiVisualScriptDataType::FromVariantType(value.GetType());
-          if (dataType == xiiVisualScriptDataType::Invalid)
-          {
-            auto pProp = pObject->GetType()->FindPropertyByName(szPropertyName);
-            if (pProp != nullptr && pProp->GetSpecificType() == xiiGetStaticRTTI<xiiVariant>())
-            {
-              dataType = xiiVisualScriptDataType::Variant;
-            }
-            else
-            {
-              xiiLog::Error("Constant value for '{}.{}' is invalid", GetNiceTypeName(pObject), inputPin.GetName());
-              return VisitorResult::Error;
-            }
-          }
+                           auto dataType = xiiVisualScriptDataType::FromVariantType(value.GetType());
+                           if (dataType == xiiVisualScriptDataType::Invalid)
+                           {
+                             auto pProp = pObject->GetType()->FindPropertyByName(szPropertyName);
+                             if (pProp != nullptr && pProp->GetSpecificType() == xiiGetStaticRTTI<xiiVariant>())
+                             {
+                               dataType = xiiVisualScriptDataType::Variant;
+                             }
+                             else
+                             {
+                               xiiLog::Error("Constant value for '{}.{}' is invalid", GetNiceTypeName(pObject), inputPin.GetName());
+                               return VisitorResult::Error;
+                             }
+                           }
 
-          xiiVisualScriptDataType::Enum deductedType = connection.m_pCurrent->m_DeductedDataType;
-          if (deductedType != xiiVisualScriptDataType::Invalid)
-          {
-            value = value.ConvertTo(xiiVisualScriptDataType::GetVariantType(deductedType));
-            if (value.IsValid() == false)
-            {
-              xiiLog::Error("Failed to convert '{}.{}' of type '{}' to '{}'.", GetNiceTypeName(pObject), inputPin.GetName(), xiiVisualScriptDataType::GetName(dataType), xiiVisualScriptDataType::GetName(deductedType));
-              return VisitorResult::Error;
-            }
+                           xiiVisualScriptDataType::Enum deductedType = connection.m_pCurrent->m_DeductedDataType;
+                           if (deductedType != xiiVisualScriptDataType::Invalid)
+                           {
+                             value = value.ConvertTo(xiiVisualScriptDataType::GetVariantType(deductedType));
+                             if (value.IsValid() == false)
+                             {
+                               xiiLog::Error("Failed to convert '{}.{}' of type '{}' to '{}'.", GetNiceTypeName(pObject), inputPin.GetName(), xiiVisualScriptDataType::GetName(dataType), xiiVisualScriptDataType::GetName(deductedType));
+                               return VisitorResult::Error;
+                             }
 
-            dataType = deductedType;
-          }
+                             dataType = deductedType;
+                           }
 
-          xiiUInt32 uiIndex = 0;
-          if (m_ConstantDataToIndex.TryGetValue(value, uiIndex) == false)
-          {
-            auto& offsetAndCount = m_Module.m_ConstantDataDesc.m_PerTypeInfo[dataType];
-            uiIndex = offsetAndCount.m_uiCount;
-            ++offsetAndCount.m_uiCount;
+                           xiiUInt32 uiIndex = 0;
+                           if (m_ConstantDataToIndex.TryGetValue(value, uiIndex) == false)
+                           {
+                             auto& offsetAndCount = m_Module.m_ConstantDataDesc.m_PerTypeInfo[dataType];
+                             uiIndex              = offsetAndCount.m_uiCount;
+                             ++offsetAndCount.m_uiCount;
 
-            m_ConstantDataToIndex.Insert(value, uiIndex);
-          }
+                             m_ConstantDataToIndex.Insert(value, uiIndex);
+                           }
 
-          DataDesc dataDesc;
-          dataDesc.m_DataOffset = DataOffset(uiIndex, dataType, true);
-          m_PinIdToDataDesc.Insert(dataInput.m_uiId, dataDesc);
-        }
-        else
-        {
-          DataDesc* pDataDesc = nullptr;
-          XII_VERIFY(m_PinIdToDataDesc.TryGetValue(GetDataOutput(dataInput).m_uiId, pDataDesc), "Implementation error");
-          if (pDataDesc == nullptr)
-            return VisitorResult::Error;
+                           DataDesc dataDesc;
+                           dataDesc.m_DataOffset = DataOffset(uiIndex, dataType, true);
+                           m_PinIdToDataDesc.Insert(dataInput.m_uiId, dataDesc);
+                         }
+                         else
+                         {
+                           DataDesc* pDataDesc = nullptr;
+                           XII_VERIFY(m_PinIdToDataDesc.TryGetValue(GetDataOutput(dataInput).m_uiId, pDataDesc), "Implementation error");
+                           if (pDataDesc == nullptr)
+                             return VisitorResult::Error;
 
-          --pDataDesc->m_uiUsageCounter;
-          if (pDataDesc->m_uiUsageCounter == 0)
-          {
-            freeDataOffsets.PushBack(pDataDesc->m_DataOffset);
-          }
+                           --pDataDesc->m_uiUsageCounter;
+                           if (pDataDesc->m_uiUsageCounter == 0)
+                           {
+                             freeDataOffsets.PushBack(pDataDesc->m_DataOffset);
+                           }
 
-          // Make a copy first because Insert() might re-allocate and the pointer might point to dead memory afterwards.
-          DataDesc dataDesc = *pDataDesc;
-          m_PinIdToDataDesc.Insert(dataInput.m_uiId, dataDesc);
-        }
-      }
+                           // Make a copy first because Insert() might re-allocate and the pointer might point to dead memory afterwards.
+                           DataDesc dataDesc = *pDataDesc;
+                           m_PinIdToDataDesc.Insert(dataInput.m_uiId, dataDesc);
+                         }
+                       }
 
-      return VisitorResult::Continue;
-    });
+                       return VisitorResult::Continue;
+                     });
 }
 
 xiiResult xiiVisualScriptCompiler::BuildNodeDescriptions(AstNode* pEntryAstNode, xiiDynamicArray<xiiVisualScriptNodeDescription>& out_NodeDescriptions)
@@ -824,8 +824,8 @@ xiiResult xiiVisualScriptCompiler::BuildNodeDescriptions(AstNode* pEntryAstNode,
   auto CreateNodeDesc = [&](const AstNode& astNode, xiiUInt32& out_uiNodeDescIndex) -> xiiResult {
     out_uiNodeDescIndex = out_NodeDescriptions.GetCount();
 
-    auto& nodeDesc = out_NodeDescriptions.ExpandAndGetRef();
-    nodeDesc.m_Type = astNode.m_Type;
+    auto& nodeDesc              = out_NodeDescriptions.ExpandAndGetRef();
+    nodeDesc.m_Type             = astNode.m_Type;
     nodeDesc.m_DeductedDataType = astNode.m_DeductedDataType;
 
     XII_SUCCEED_OR_RETURN(FillUserData(nodeDesc, astNode.m_pObject));
@@ -852,39 +852,39 @@ xiiResult xiiVisualScriptCompiler::BuildNodeDescriptions(AstNode* pEntryAstNode,
   XII_SUCCEED_OR_RETURN(CreateNodeDesc(*pEntryAstNode, uiNodeDescIndex));
 
   return TraverseAst(pEntryAstNode, ConnectionType::Execution,
-    [&](const Connection& connection) {
-      xiiUInt32 uiCurrentIndex = 0;
-      XII_VERIFY(astNodeToNodeDescIndices.TryGetValue(connection.m_pCurrent, uiCurrentIndex), "Implementation error");
-      auto pNodeDesc = &out_NodeDescriptions[uiCurrentIndex];
-      if (pNodeDesc->m_ExecutionIndices.GetCount() == connection.m_pCurrent->m_Next.GetCount())
-      {
-        return VisitorResult::Continue;
-      }
+                     [&](const Connection& connection) {
+                       xiiUInt32 uiCurrentIndex = 0;
+                       XII_VERIFY(astNodeToNodeDescIndices.TryGetValue(connection.m_pCurrent, uiCurrentIndex), "Implementation error");
+                       auto pNodeDesc = &out_NodeDescriptions[uiCurrentIndex];
+                       if (pNodeDesc->m_ExecutionIndices.GetCount() == connection.m_pCurrent->m_Next.GetCount())
+                       {
+                         return VisitorResult::Continue;
+                       }
 
-      for (auto pNextAstNode : connection.m_pCurrent->m_Next)
-      {
-        if (pNextAstNode == nullptr)
-        {
-          pNodeDesc->m_ExecutionIndices.PushBack(xiiInvalidIndex);
-        }
-        else
-        {
-          xiiUInt32 uiNextIndex = 0;
-          if (astNodeToNodeDescIndices.TryGetValue(pNextAstNode, uiNextIndex) == false)
-          {
-            if (CreateNodeDesc(*pNextAstNode, uiNextIndex).Failed())
-              return VisitorResult::Error;
+                       for (auto pNextAstNode : connection.m_pCurrent->m_Next)
+                       {
+                         if (pNextAstNode == nullptr)
+                         {
+                           pNodeDesc->m_ExecutionIndices.PushBack(xiiInvalidIndex);
+                         }
+                         else
+                         {
+                           xiiUInt32 uiNextIndex = 0;
+                           if (astNodeToNodeDescIndices.TryGetValue(pNextAstNode, uiNextIndex) == false)
+                           {
+                             if (CreateNodeDesc(*pNextAstNode, uiNextIndex).Failed())
+                               return VisitorResult::Error;
 
-            // array might have been resized, fetch node desc again
-            pNodeDesc = &out_NodeDescriptions[uiCurrentIndex];
-          }
+                             // array might have been resized, fetch node desc again
+                             pNodeDesc = &out_NodeDescriptions[uiCurrentIndex];
+                           }
 
-          pNodeDesc->m_ExecutionIndices.PushBack(uiNextIndex);
-        }
-      }
+                           pNodeDesc->m_ExecutionIndices.PushBack(uiNextIndex);
+                         }
+                       }
 
-      return VisitorResult::Continue;
-    });
+                       return VisitorResult::Continue;
+                     });
 }
 
 xiiResult xiiVisualScriptCompiler::TraverseAst(AstNode* pEntryAstNode, xiiUInt32 uiConnectionTypes, AstNodeVisitorFunc func)
@@ -895,7 +895,7 @@ xiiResult xiiVisualScriptCompiler::TraverseAst(AstNode* pEntryAstNode, xiiUInt32
   if ((uiConnectionTypes & ConnectionType::Execution) != 0)
   {
     Connection connection = {nullptr, pEntryAstNode, ConnectionType::Execution, xiiInvalidIndex};
-    auto res = func(connection);
+    auto       res        = func(connection);
     if (res == VisitorResult::Stop)
       return XII_SUCCESS;
     if (res == VisitorResult::Error)
@@ -983,7 +983,7 @@ xiiResult xiiVisualScriptCompiler::FinalizeDataOffsets()
       {
         XII_ASSERT_DEBUG(dataOffset.m_uiIsConstant == 0, "Cannot write to constant data");
         auto dataType = static_cast<xiiVisualScriptDataType::Enum>(dataOffset.m_uiDataType);
-        dataOffset = m_Module.m_VariableDataDesc.GetOffset(dataType, dataOffset.m_uiByteOffset, false);
+        dataOffset    = m_Module.m_VariableDataDesc.GetOffset(dataType, dataOffset.m_uiByteOffset, false);
       }
     }
   }
@@ -997,8 +997,8 @@ xiiResult xiiVisualScriptCompiler::FinalizeConstantData()
 
   for (auto& it : m_ConstantDataToIndex)
   {
-    const xiiVariant& value = it.Key();
-    xiiUInt32 uiIndex = it.Value();
+    const xiiVariant& value   = it.Key();
+    xiiUInt32         uiIndex = it.Value();
 
     auto scriptDataType = xiiVisualScriptDataType::FromVariantType(value.GetType());
     if (scriptDataType == xiiVisualScriptDataType::Invalid)
@@ -1023,46 +1023,46 @@ void xiiVisualScriptCompiler::DumpAST(AstNode* pEntryAstNode, xiiStringView sOut
   {
     xiiHashTable<const AstNode*, xiiUInt32> nodeCache;
     TraverseAst(pEntryAstNode, ConnectionType::All,
-      [&](const Connection& connection) {
-        xiiUInt32 uiGraphNode = 0;
-        if (nodeCache.TryGetValue(connection.m_pCurrent, uiGraphNode) == false)
-        {
-          const char* szTypeName = xiiVisualScriptNodeDescription::Type::GetName(connection.m_pCurrent->m_Type);
-          float colorX = xiiSimdRandom::FloatZeroToOne(xiiSimdVec4i(xiiHashingUtils::StringHash(szTypeName))).x();
+                [&](const Connection& connection) {
+                  xiiUInt32 uiGraphNode = 0;
+                  if (nodeCache.TryGetValue(connection.m_pCurrent, uiGraphNode) == false)
+                  {
+                    const char* szTypeName = xiiVisualScriptNodeDescription::Type::GetName(connection.m_pCurrent->m_Type);
+                    float       colorX     = xiiSimdRandom::FloatZeroToOne(xiiSimdVec4i(xiiHashingUtils::StringHash(szTypeName))).x();
 
-          xiiDGMLGraph::NodeDesc nd;
-          nd.m_Color = xiiColorScheme::LightUI(colorX);
-          uiGraphNode = dgmlGraph.AddNode(szTypeName, &nd);
-          nodeCache.Insert(connection.m_pCurrent, uiGraphNode);
-        }
+                    xiiDGMLGraph::NodeDesc nd;
+                    nd.m_Color  = xiiColorScheme::LightUI(colorX);
+                    uiGraphNode = dgmlGraph.AddNode(szTypeName, &nd);
+                    nodeCache.Insert(connection.m_pCurrent, uiGraphNode);
+                  }
 
-        if (connection.m_pPrev != nullptr)
-        {
-          xiiUInt32 uiPrevGraphNode = 0;
-          XII_VERIFY(nodeCache.TryGetValue(connection.m_pPrev, uiPrevGraphNode), "");
+                  if (connection.m_pPrev != nullptr)
+                  {
+                    xiiUInt32 uiPrevGraphNode = 0;
+                    XII_VERIFY(nodeCache.TryGetValue(connection.m_pPrev, uiPrevGraphNode), "");
 
-          if (connection.m_Type == ConnectionType::Execution)
-          {
-            dgmlGraph.AddConnection(uiPrevGraphNode, uiGraphNode, "Exec");
-          }
-          else
-          {
-            auto& dataInput = connection.m_pPrev->m_Inputs[connection.m_uiPrevPinIndex];
-            auto& dataOutput = GetDataOutput(dataInput);
+                    if (connection.m_Type == ConnectionType::Execution)
+                    {
+                      dgmlGraph.AddConnection(uiPrevGraphNode, uiGraphNode, "Exec");
+                    }
+                    else
+                    {
+                      auto& dataInput  = connection.m_pPrev->m_Inputs[connection.m_uiPrevPinIndex];
+                      auto& dataOutput = GetDataOutput(dataInput);
 
-            xiiStringBuilder sLabel;
-            sLabel.Format("o{}:{} (id: {})->i{}:{} (id: {})", dataOutput.m_uiSourcePinIndex, xiiVisualScriptDataType::GetName(dataOutput.m_DataType), dataOutput.m_uiId, dataInput.m_uiTargetPinIndex, xiiVisualScriptDataType::GetName(dataInput.m_DataType), dataInput.m_uiId);
+                      xiiStringBuilder sLabel;
+                      sLabel.Format("o{}:{} (id: {})->i{}:{} (id: {})", dataOutput.m_uiSourcePinIndex, xiiVisualScriptDataType::GetName(dataOutput.m_DataType), dataOutput.m_uiId, dataInput.m_uiTargetPinIndex, xiiVisualScriptDataType::GetName(dataInput.m_DataType), dataInput.m_uiId);
 
-            dgmlGraph.AddConnection(uiGraphNode, uiPrevGraphNode, sLabel);
-          }
-        }
+                      dgmlGraph.AddConnection(uiGraphNode, uiPrevGraphNode, sLabel);
+                    }
+                  }
 
-        return VisitorResult::Continue;
-      })
+                  return VisitorResult::Continue;
+                })
       .IgnoreResult();
   }
 
-  xiiStringView sExt = sOutputPath.GetFileExtension();
+  xiiStringView    sExt = sOutputPath.GetFileExtension();
   xiiStringBuilder sFullPath;
   sFullPath.Append(sOutputPath.GetFileDirectory(), sOutputPath.GetFileName(), "_", sFunctionName, sSuffix);
   sFullPath.Append(".", sExt);
@@ -1089,7 +1089,7 @@ void xiiVisualScriptCompiler::DumpGraph(xiiArrayPtr<const xiiVisualScriptNodeDes
     for (auto& nodeDesc : nodeDescriptions)
     {
       xiiStringView sTypeName = xiiVisualScriptNodeDescription::Type::GetName(nodeDesc.m_Type);
-      sTmp = sTypeName;
+      sTmp                    = sTypeName;
 
       nodeDesc.AppendUserDataName(sTmp);
 
@@ -1123,7 +1123,7 @@ void xiiVisualScriptCompiler::DumpGraph(xiiArrayPtr<const xiiVisualScriptNodeDes
     }
   }
 
-  xiiStringView sExt = sOutputPath.GetFileExtension();
+  xiiStringView    sExt = sOutputPath.GetFileExtension();
   xiiStringBuilder sFullPath;
   sFullPath.Append(sOutputPath.GetFileDirectory(), sOutputPath.GetFileName(), "_", sFunctionName, sSuffix);
   sFullPath.Append(".", sExt);

@@ -37,7 +37,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorPluginVisualScript, VisualScriptVariable)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiQtVisualScriptVariableWidget::xiiQtVisualScriptVariableWidget() = default;
+xiiQtVisualScriptVariableWidget::xiiQtVisualScriptVariableWidget()  = default;
 xiiQtVisualScriptVariableWidget::~xiiQtVisualScriptVariableWidget() = default;
 
 xiiResult xiiQtVisualScriptVariableWidget::GetVariantTypeDisplayName(xiiVariantType::Enum type, xiiStringBuilder& out_sName) const

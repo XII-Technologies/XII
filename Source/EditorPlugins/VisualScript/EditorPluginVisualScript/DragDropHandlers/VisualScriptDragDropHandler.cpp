@@ -20,7 +20,7 @@ void xiiVisualScriptComponentDragDropHandler::OnDragBegin(const xiiDragDropInfo*
   xiiComponentDragDropHandler::OnDragBegin(pInfo);
 
   constexpr const char* szComponentType = "xiiScriptComponent";
-  constexpr const char* szPropertyName = "ScriptClass";
+  constexpr const char* szPropertyName  = "ScriptClass";
 
   if (pInfo->m_sTargetContext == "viewport")
   {
@@ -38,7 +38,7 @@ void xiiVisualScriptComponentDragDropHandler::OnDragBegin(const xiiDragDropInfo*
     else
     {
       CreateDropObject(pInfo->m_vDropPosition, szComponentType, szPropertyName, GetAssetGuidString(pInfo), pInfo->m_TargetObject,
-        pInfo->m_iTargetObjectInsertChildIndex);
+                       pInfo->m_iTargetObjectInsertChildIndex);
     }
   }
 

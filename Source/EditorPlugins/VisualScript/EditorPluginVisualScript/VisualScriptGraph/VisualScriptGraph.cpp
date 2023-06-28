@@ -9,13 +9,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptPin, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptPin::xiiVisualScriptPin(Type type, xiiStringView sName, const xiiVisualScriptNodeRegistry::PinDesc& pinDesc, const xiiDocumentObject* pObject, xiiUInt32 uiPinIndex)
-  : xiiPin(type, sName, pinDesc.GetColor(), pObject)
-  , m_pDataType(pinDesc.m_pDataType)
-  , m_uiPinIndex(uiPinIndex)
-  , m_ScriptDataType(pinDesc.m_ScriptDataType)
-  , m_bRequired(pinDesc.m_bRequired)
-  , m_bHasDynamicPinProperty(pinDesc.m_sDynamicPinProperty.IsEmpty() == false)
+xiiVisualScriptPin::xiiVisualScriptPin(Type type, xiiStringView sName, const xiiVisualScriptNodeRegistry::PinDesc& pinDesc, const xiiDocumentObject* pObject, xiiUInt32 uiPinIndex) :
+  xiiPin(type, sName, pinDesc.GetColor(), pObject), m_pDataType(pinDesc.m_pDataType), m_uiPinIndex(uiPinIndex), m_ScriptDataType(pinDesc.m_ScriptDataType), m_bRequired(pinDesc.m_bRequired), m_bHasDynamicPinProperty(pinDesc.m_sDynamicPinProperty.IsEmpty() == false)
 {
   m_Shape = pinDesc.IsExecutionPin() ? Shape::Arrow : Shape::Circle;
 }
@@ -37,20 +32,20 @@ xiiStringView xiiVisualScriptPin::GetDataTypeName(xiiVisualScriptDataType::Enum 
 bool xiiVisualScriptPin::CanConvertTo(const xiiVisualScriptPin& targetPin, xiiVisualScriptDataType::Enum deductedSourceDataType /*= xiiVisualScriptDataType::Invalid*/, xiiVisualScriptDataType::Enum deductedTargetDataType /*= xiiVisualScriptDataType::Invalid*/) const
 {
   xiiVisualScriptDataType::Enum sourceScriptDataType = m_ScriptDataType;
-  const xiiRTTI* pSourceDataType = m_pDataType;
+  const xiiRTTI*                pSourceDataType      = m_pDataType;
   if (sourceScriptDataType == xiiVisualScriptDataType::Any && deductedSourceDataType != xiiVisualScriptDataType::Invalid)
   {
     sourceScriptDataType = deductedSourceDataType;
-    pSourceDataType = xiiVisualScriptDataType::GetRtti(sourceScriptDataType);
+    pSourceDataType      = xiiVisualScriptDataType::GetRtti(sourceScriptDataType);
   }
 
   xiiVisualScriptDataType::Enum targetScriptDataType = targetPin.GetScriptDataType();
-  const xiiRTTI* pTargetDataType = targetPin.GetDataType();
+  const xiiRTTI*                pTargetDataType      = targetPin.GetDataType();
   XII_ASSERT_DEV(targetScriptDataType != xiiVisualScriptDataType::Invalid, "Invalid script data type '{}'", targetPin.GetDataTypeName(deductedTargetDataType));
   if (targetScriptDataType == xiiVisualScriptDataType::Any && deductedTargetDataType != xiiVisualScriptDataType::Invalid)
   {
     targetScriptDataType = deductedTargetDataType;
-    pTargetDataType = xiiVisualScriptDataType::GetRtti(targetScriptDataType);
+    pTargetDataType      = xiiVisualScriptDataType::GetRtti(targetScriptDataType);
   }
 
   if (sourceScriptDataType == xiiVisualScriptDataType::TypedPointer && pSourceDataType != nullptr &&
@@ -352,7 +347,7 @@ void xiiVisualScriptNodeManager::InternalCreatePins(const xiiDocumentObject* pOb
     return;
 
   xiiHybridArray<xiiString, 16> dynamicPinNames;
-  auto CreatePins = [&](const xiiVisualScriptNodeRegistry::PinDesc& pinDesc, xiiPin::Type type, xiiDynamicArray<xiiUniquePtr<xiiPin>>& out_pins) {
+  auto                          CreatePins = [&](const xiiVisualScriptNodeRegistry::PinDesc& pinDesc, xiiPin::Type type, xiiDynamicArray<xiiUniquePtr<xiiPin>>& out_pins) {
     if (pinDesc.m_sDynamicPinProperty.IsEmpty() == false)
     {
       GetDynamicPinNames(pObject, pinDesc.m_sDynamicPinProperty, pinDesc.m_sName, dynamicPinNames);
@@ -404,7 +399,7 @@ void xiiVisualScriptNodeManager::NodeEventsHandler(const xiiDocumentNodeManagerE
     case xiiDocumentNodeManagerEvent::Type::AfterPinsConnected:
     {
       auto& connection = GetConnection(e.m_pObject);
-      auto& targetPin = connection.GetTargetPin();
+      auto& targetPin  = connection.GetTargetPin();
       DeductType(targetPin.GetParent(), &targetPin, true);
     }
     break;
@@ -412,7 +407,7 @@ void xiiVisualScriptNodeManager::NodeEventsHandler(const xiiDocumentNodeManagerE
     case xiiDocumentNodeManagerEvent::Type::BeforePinsDisonnected:
     {
       auto& connection = GetConnection(e.m_pObject);
-      auto& targetPin = connection.GetTargetPin();
+      auto& targetPin  = connection.GetTargetPin();
       DeductType(targetPin.GetParent(), &targetPin, false);
     }
     break;

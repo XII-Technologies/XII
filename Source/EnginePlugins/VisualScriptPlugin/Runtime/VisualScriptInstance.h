@@ -12,7 +12,7 @@ public:
   virtual void ApplyParameters(const xiiArrayMap<xiiHashedString, xiiVariant>& parameters) override;
 
   xiiReflectedClass& GetOwner() { return m_Owner; }
-  xiiWorld* GetWorld() { return m_pWorld; }
+  xiiWorld*          GetWorld() { return m_pWorld; }
 
   using DataOffset = xiiVisualScriptNodeDescription::DataOffset;
 
@@ -31,16 +31,16 @@ public:
   void SetPointerData(DataOffset dataOffset, T ptr, const xiiRTTI* pType = nullptr);
 
   xiiVariant GetDataAsVariant(DataOffset dataOffset, xiiVariantType::Enum expectedType) const;
-  void SetDataFromVariant(DataOffset dataOffset, const xiiVariant& value);
+  void       SetDataFromVariant(DataOffset dataOffset, const xiiVariant& value);
 
   xiiUInt32 GetExecutionCounter() const { return m_uiExecutionCounter; }
 
 private:
   xiiReflectedClass& m_Owner;
-  xiiWorld* m_pWorld = nullptr;
+  xiiWorld*          m_pWorld = nullptr;
 
   xiiSharedPtr<const xiiVisualScriptDataStorage> m_pConstantDataStorage;
-  xiiUniquePtr<xiiVisualScriptDataStorage> m_pVariableDataStorage;
+  xiiUniquePtr<xiiVisualScriptDataStorage>       m_pVariableDataStorage;
 
   friend class xiiVisualScriptExecutionContext;
   xiiUInt32 m_uiExecutionCounter = 0;
@@ -58,8 +58,8 @@ public:
 
 private:
   xiiUniquePtr<xiiVisualScriptGraphDescription> m_pDesc;
-  xiiVisualScriptInstance* m_pInstance = nullptr;
-  xiiUInt32 m_uiCurrentNode = 0;
+  xiiVisualScriptInstance*                      m_pInstance     = nullptr;
+  xiiUInt32                                     m_uiCurrentNode = 0;
 };
 
 class XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptFunctionProperty : public xiiAbstractFunctionProperty
@@ -68,17 +68,17 @@ public:
   xiiVisualScriptFunctionProperty(const char* szPropertyName, xiiUniquePtr<xiiVisualScriptGraphDescription>&& pDesc);
   ~xiiVisualScriptFunctionProperty();
 
-  virtual xiiFunctionType::Enum GetFunctionType() const override { return xiiFunctionType::Member; }
-  virtual const xiiRTTI* GetReturnType() const override { return nullptr; }
+  virtual xiiFunctionType::Enum         GetFunctionType() const override { return xiiFunctionType::Member; }
+  virtual const xiiRTTI*                GetReturnType() const override { return nullptr; }
   virtual xiiBitflags<xiiPropertyFlags> GetReturnFlags() const override { return xiiPropertyFlags::Void; }
-  virtual xiiUInt32 GetArgumentCount() const override { return 0; }
-  virtual const xiiRTTI* GetArgumentType(xiiUInt32 uiParamIndex) const override { return nullptr; }
+  virtual xiiUInt32                     GetArgumentCount() const override { return 0; }
+  virtual const xiiRTTI*                GetArgumentType(xiiUInt32 uiParamIndex) const override { return nullptr; }
   virtual xiiBitflags<xiiPropertyFlags> GetArgumentFlags(xiiUInt32 uiParamIndex) const override { return xiiPropertyFlags::Void; }
 
   virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& returnValue) const override;
 
 private:
-  xiiHashedString m_sPropertyNameStorage;
+  xiiHashedString                         m_sPropertyNameStorage;
   mutable xiiVisualScriptExecutionContext m_ExecutionContext;
 };
 

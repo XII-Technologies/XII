@@ -18,10 +18,10 @@ public:
 private:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
   virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* pStream) override;
-  virtual void UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   virtual xiiUniquePtr<xiiScriptInstance> Instantiate(xiiReflectedClass& owner, xiiWorld* pWorld) const override;
 
-  xiiSharedPtr<const xiiVisualScriptDataStorage> m_pConstantDataStorage;
+  xiiSharedPtr<const xiiVisualScriptDataStorage>     m_pConstantDataStorage;
   xiiSharedPtr<const xiiVisualScriptDataDescription> m_pVariableDataDesc;
 };

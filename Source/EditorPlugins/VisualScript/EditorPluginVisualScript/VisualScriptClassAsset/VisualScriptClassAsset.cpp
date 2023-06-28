@@ -21,8 +21,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptClassAssetDocument, 1, xiiRTTINo
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptClassAssetDocument::xiiVisualScriptClassAssetDocument(const char* szDocumentPath)
-  : xiiSimpleAssetDocument<xiiVisualScriptClassAssetProperties>(XII_DEFAULT_NEW(xiiVisualScriptNodeManager), szDocumentPath, xiiAssetDocEngineConnection::None)
+xiiVisualScriptClassAssetDocument::xiiVisualScriptClassAssetDocument(const char* szDocumentPath) :
+  xiiSimpleAssetDocument<xiiVisualScriptClassAssetProperties>(XII_DEFAULT_NEW(xiiVisualScriptNodeManager), szDocumentPath, xiiAssetDocEngineConnection::None)
 {
   m_pObjectAccessor = XII_DEFAULT_NEW(xiiNodeCommandAccessor, GetCommandHistory());
 }
@@ -31,7 +31,7 @@ xiiTransformStatus xiiVisualScriptClassAssetDocument::InternalTransformAsset(xii
 {
   auto pManager = static_cast<xiiVisualScriptNodeManager*>(GetObjectManager());
 
-  const auto& children = pManager->GetRootObject()->GetChildren();
+  const auto&     children   = pManager->GetRootObject()->GetChildren();
   xiiHashedString sBaseClass = pManager->GetScriptBaseClass();
 
   xiiStringBuilder sBaseClassName = sBaseClass.GetView();
@@ -47,7 +47,7 @@ xiiTransformStatus xiiVisualScriptClassAssetDocument::InternalTransformAsset(xii
   xiiStringView sScriptClassName = xiiPathUtils::GetFileName(GetDocumentPath());
 
   xiiHybridArray<const xiiVisualScriptPin*, 16> pins;
-  xiiVisualScriptCompiler compiler;
+  xiiVisualScriptCompiler                       compiler;
 
   for (const xiiDocumentObject* pObject : children)
   {

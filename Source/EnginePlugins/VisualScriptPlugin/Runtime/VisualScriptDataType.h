@@ -40,10 +40,10 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptDataType
   XII_ALWAYS_INLINE static bool IsNumber(Enum dataType) { return dataType >= Bool && dataType <= Double; }
 
   static xiiVariantType::Enum GetVariantType(Enum dataType);
-  static Enum FromVariantType(xiiVariantType::Enum variantType);
+  static Enum                 FromVariantType(xiiVariantType::Enum variantType);
 
   static const xiiRTTI* GetRtti(Enum dataType);
-  static Enum FromRtti(const xiiRTTI* pRtti);
+  static Enum           FromRtti(const xiiRTTI* pRtti);
 
   static xiiUInt32 GetStorageSize(Enum dataType);
   static xiiUInt32 GetStorageAlignment(Enum dataType);
@@ -57,21 +57,21 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_VISUALSCRIPTPLUGIN_DLL, xiiVisualScriptDataType
 
 struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptGameObjectHandle
 {
-  xiiGameObjectHandle m_Handle;
+  xiiGameObjectHandle    m_Handle;
   mutable xiiGameObject* m_Ptr;
-  mutable xiiUInt32 m_uiExecutionCounter;
+  mutable xiiUInt32      m_uiExecutionCounter;
 
   void AssignHandle(const xiiGameObjectHandle& hObject)
   {
-    m_Handle = hObject;
-    m_Ptr = nullptr;
+    m_Handle             = hObject;
+    m_Ptr                = nullptr;
     m_uiExecutionCounter = 0;
   }
 
   void AssignPtr(xiiGameObject* pObject, xiiUInt32 uiExecutionCounter)
   {
-    m_Handle = pObject != nullptr ? pObject->GetHandle() : xiiGameObjectHandle();
-    m_Ptr = pObject;
+    m_Handle             = pObject != nullptr ? pObject->GetHandle() : xiiGameObjectHandle();
+    m_Ptr                = pObject;
     m_uiExecutionCounter = uiExecutionCounter;
   }
 
@@ -80,21 +80,21 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptGameObjectHandle
 
 struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptComponentHandle
 {
-  xiiComponentHandle m_Handle;
+  xiiComponentHandle    m_Handle;
   mutable xiiComponent* m_Ptr;
-  mutable xiiUInt32 m_uiExecutionCounter;
+  mutable xiiUInt32     m_uiExecutionCounter;
 
   void AssignHandle(const xiiComponentHandle& hComponent)
   {
-    m_Handle = hComponent;
-    m_Ptr = nullptr;
+    m_Handle             = hComponent;
+    m_Ptr                = nullptr;
     m_uiExecutionCounter = 0;
   }
 
   void AssignPtr(xiiComponent* pComponent, xiiUInt32 uiExecutionCounter)
   {
-    m_Handle = pComponent != nullptr ? pComponent->GetHandle() : xiiComponentHandle();
-    m_Ptr = pComponent;
+    m_Handle             = pComponent != nullptr ? pComponent->GetHandle() : xiiComponentHandle();
+    m_Ptr                = pComponent;
     m_uiExecutionCounter = uiExecutionCounter;
   }
 

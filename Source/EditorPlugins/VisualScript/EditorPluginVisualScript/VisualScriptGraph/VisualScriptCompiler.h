@@ -14,8 +14,8 @@ public:
 
   struct CompiledFunction
   {
-    xiiString m_sName;
-    xiiEnum<xiiVisualScriptNodeDescription::Type> m_Type;
+    xiiString                                       m_sName;
+    xiiEnum<xiiVisualScriptNodeDescription::Type>   m_Type;
     xiiDynamicArray<xiiVisualScriptNodeDescription> m_NodeDescriptions;
   };
 
@@ -29,7 +29,7 @@ public:
 
     xiiVisualScriptDataDescription m_VariableDataDesc;
     xiiVisualScriptDataDescription m_ConstantDataDesc;
-    xiiVisualScriptDataStorage m_ConstantDataStorage;
+    xiiVisualScriptDataStorage     m_ConstantDataStorage;
   };
 
   const CompiledModule& GetCompiledModule() const { return m_Module; }
@@ -41,31 +41,31 @@ private:
   {
     XII_DECLARE_POD_TYPE();
 
-    AstNode* m_pSourceNode = nullptr;
-    xiiUInt32 m_uiId = 0;
-    xiiUInt8 m_uiSourcePinIndex = 0;
-    xiiUInt8 m_uiTargetPinIndex = 0;
+    AstNode*                         m_pSourceNode      = nullptr;
+    xiiUInt32                        m_uiId             = 0;
+    xiiUInt8                         m_uiSourcePinIndex = 0;
+    xiiUInt8                         m_uiTargetPinIndex = 0;
     xiiEnum<xiiVisualScriptDataType> m_DataType;
-    xiiUInt8 m_uiArrayIndex = 0;
+    xiiUInt8                         m_uiArrayIndex = 0;
   };
 
   struct DataOutput
   {
-    xiiSmallArray<AstNode*, 3> m_TargetNodes;
-    xiiUInt32 m_uiId = 0;
-    xiiUInt8 m_uiSourcePinIndex = 0;
+    xiiSmallArray<AstNode*, 3>       m_TargetNodes;
+    xiiUInt32                        m_uiId             = 0;
+    xiiUInt8                         m_uiSourcePinIndex = 0;
     xiiEnum<xiiVisualScriptDataType> m_DataType;
   };
 
   struct AstNode
   {
     xiiEnum<xiiVisualScriptNodeDescription::Type> m_Type;
-    xiiEnum<xiiVisualScriptDataType> m_DeductedDataType;
-    bool m_bImplicitExecution = false;
-    const xiiDocumentObject* m_pObject = nullptr;
-    xiiSmallArray<AstNode*, 8> m_Next;
-    xiiSmallArray<DataInput, 4> m_Inputs;
-    xiiSmallArray<DataOutput, 4> m_Outputs;
+    xiiEnum<xiiVisualScriptDataType>              m_DeductedDataType;
+    bool                                          m_bImplicitExecution = false;
+    const xiiDocumentObject*                      m_pObject            = nullptr;
+    xiiSmallArray<AstNode*, 8>                    m_Next;
+    xiiSmallArray<DataInput, 4>                   m_Inputs;
+    xiiSmallArray<DataOutput, 4>                  m_Outputs;
   };
 
   XII_ALWAYS_INLINE static xiiStringView GetNiceTypeName(const xiiDocumentObject* pObject)
@@ -78,10 +78,10 @@ private:
     return m_pManager->GetDeductedType(pObject);
   }
 
-  xiiUInt32 GetPinId(const xiiVisualScriptPin* pPin);
+  xiiUInt32   GetPinId(const xiiVisualScriptPin* pPin);
   DataOutput& GetDataOutput(const DataInput& dataInput);
 
-  AstNode* BuildAST(const xiiDocumentObject* pEntryNode);
+  AstNode*  BuildAST(const xiiDocumentObject* pEntryNode);
   xiiResult InsertMakeArrayForDynamicPin(AstNode* pNode, const xiiVisualScriptNodeRegistry::PinDesc& pinDesc, xiiPin::Type pinType);
   xiiResult InsertTypeConversions(AstNode* pEntryAstNode);
   xiiResult BuildDataStack(AstNode* pEntryAstNode, xiiDynamicArray<AstNode*>& out_Stack);
@@ -95,7 +95,7 @@ private:
     enum Enum
     {
       Execution = XII_BIT(0),
-      Data = XII_BIT(1),
+      Data      = XII_BIT(1),
 
       All = Execution | Data,
     };
@@ -103,16 +103,16 @@ private:
 
   struct Connection
   {
-    AstNode* m_pPrev = nullptr;
-    AstNode* m_pCurrent = nullptr;
-    ConnectionType::Enum m_Type = ConnectionType::Execution;
-    xiiUInt32 m_uiPrevPinIndex = 0;
+    AstNode*             m_pPrev          = nullptr;
+    AstNode*             m_pCurrent       = nullptr;
+    ConnectionType::Enum m_Type           = ConnectionType::Execution;
+    xiiUInt32            m_uiPrevPinIndex = 0;
   };
 
   struct ConnectionHasher
   {
     static xiiUInt32 Hash(const Connection& c);
-    static bool Equal(const Connection& a, const Connection& b);
+    static bool      Equal(const Connection& a, const Connection& b);
   };
 
   enum class VisitorResult
@@ -133,14 +133,14 @@ private:
 
   const xiiVisualScriptNodeManager* m_pManager = nullptr;
 
-  xiiDeque<AstNode> m_AstNodes;
+  xiiDeque<AstNode>                                m_AstNodes;
   xiiHashTable<const xiiDocumentObject*, AstNode*> m_ObjectToAstNode;
-  xiiHybridArray<AstNode*, 8> m_EntryAstNodes;
+  xiiHybridArray<AstNode*, 8>                      m_EntryAstNodes;
 
   xiiHashSet<Connection, ConnectionHasher> m_ReportedConnections;
 
   xiiHashTable<const xiiVisualScriptPin*, xiiUInt32> m_PinToId;
-  xiiUInt32 m_uiNextPinId = 0;
+  xiiUInt32                                          m_uiNextPinId = 0;
 
   using DataOffset = xiiVisualScriptNodeDescription::DataOffset;
 
@@ -149,7 +149,7 @@ private:
     XII_DECLARE_POD_TYPE();
 
     DataOffset m_DataOffset;
-    xiiUInt32 m_uiUsageCounter = 0;
+    xiiUInt32  m_uiUsageCounter = 0;
   };
 
   xiiHashTable<xiiUInt32, DataDesc> m_PinIdToDataDesc;

@@ -1,8 +1,8 @@
 #pragma once
 
-using SerializeFunction = xiiResult (*)(const xiiVisualScriptNodeDescription& nodeDesc, xiiStreamWriter& inout_stream, xiiUInt32& out_Size, xiiUInt32& out_alignment);
+using SerializeFunction   = xiiResult (*)(const xiiVisualScriptNodeDescription& nodeDesc, xiiStreamWriter& inout_stream, xiiUInt32& out_Size, xiiUInt32& out_alignment);
 using DeserializeFunction = xiiResult (*)(xiiVisualScriptGraphDescription::Node& node, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData);
-using ToStringFunction = void (*)(const xiiVisualScriptNodeDescription& nodeDesc, xiiStringBuilder& out_sResult);
+using ToStringFunction    = void (*)(const xiiVisualScriptNodeDescription& nodeDesc, xiiStringBuilder& out_sResult);
 
 namespace
 {
@@ -18,7 +18,7 @@ namespace
     {
       inout_stream << nodeDesc.m_UserData.m_pTargetType->GetTypeName();
 
-      out_Size = sizeof(NodeUserData_Type);
+      out_Size      = sizeof(NodeUserData_Type);
       out_alignment = XII_ALIGNMENT_OF(NodeUserData_Type);
       return XII_SUCCESS;
     }
@@ -73,7 +73,7 @@ namespace
 
       inout_stream << nodeDesc.m_UserData.m_pTargetProperty->GetPropertyName();
 
-      out_Size = sizeof(NodeUserData_TypeAndProperty);
+      out_Size      = sizeof(NodeUserData_TypeAndProperty);
       out_alignment = XII_ALIGNMENT_OF(NodeUserData_TypeAndProperty);
       return XII_SUCCESS;
     }
@@ -97,8 +97,8 @@ namespace
       if (out_pProp == nullptr)
       {
         xiiLog::Error("{} '{}' not found on type '{}'",
-          std::is_same<T, xiiAbstractFunctionProperty>::value ? "Function" : "Property",
-          sPropName, pType->GetTypeName());
+                      std::is_same<T, xiiAbstractFunctionProperty>::value ? "Function" : "Property",
+                      sPropName, pType->GetTypeName());
         return XII_FAILURE;
       }
 
@@ -148,7 +148,7 @@ namespace
       xiiEnum<xiiComparisonOperator> compOp = nodeDesc.m_UserData.m_ComparisonOperator;
       inout_stream << compOp;
 
-      out_Size = sizeof(NodeUserData_Comparison);
+      out_Size      = sizeof(NodeUserData_Comparison);
       out_alignment = XII_ALIGNMENT_OF(NodeUserData_Comparison);
       return XII_SUCCESS;
     }
@@ -175,9 +175,9 @@ namespace
 
   struct UserDataContext
   {
-    SerializeFunction m_SerializeFunc = nullptr;
+    SerializeFunction   m_SerializeFunc   = nullptr;
     DeserializeFunction m_DeserializeFunc = nullptr;
-    ToStringFunction m_ToStringFunc = nullptr;
+    ToStringFunction    m_ToStringFunc    = nullptr;
   };
 
   static UserDataContext s_TypeToUserDataContexts[] = {
@@ -185,9 +185,9 @@ namespace
     {}, // EntryCall,
     {}, // MessageHandler,
     {&NodeUserData_TypeAndProperty::Serialize,
-      &NodeUserData_TypeAndProperty::Deserialize<true>,
-      &NodeUserData_TypeAndProperty::ToString}, // ReflectedFunction,
-    {},                                         // GetOwner,
+     &NodeUserData_TypeAndProperty::Deserialize<true>,
+     &NodeUserData_TypeAndProperty::ToString}, // ReflectedFunction,
+    {},                                        // GetOwner,
 
     {}, // FirstBuiltin,
 
@@ -196,9 +196,9 @@ namespace
     {}, // Builtin_Or,
     {}, // Builtin_Not,
     {&NodeUserData_Comparison::Serialize,
-      &NodeUserData_Comparison::Deserialize,
-      &NodeUserData_Comparison::ToString}, // Builtin_Compare,
-    {},                                    // Builtin_IsValid,
+     &NodeUserData_Comparison::Deserialize,
+     &NodeUserData_Comparison::ToString}, // Builtin_Compare,
+    {},                                   // Builtin_IsValid,
 
     {}, // Builtin_Add,
     {}, // Builtin_Subtract,
@@ -218,8 +218,8 @@ namespace
     {}, // Builtin_MakeArray
 
     {&NodeUserData_Type::Serialize,
-      &NodeUserData_Type::Deserialize,
-      &NodeUserData_Type::ToString}, // Builtin_TryGetComponentOfBaseType
+     &NodeUserData_Type::Deserialize,
+     &NodeUserData_Type::ToString}, // Builtin_TryGetComponentOfBaseType
 
     {}, // LastBuiltin,
   };

@@ -11,7 +11,7 @@
 
 namespace
 {
-  constexpr const char* szPluginName = "EditorPluginVisualScript";
+  constexpr const char* szPluginName           = "EditorPluginVisualScript";
   constexpr const char* szEventHandlerCategory = "Add Event Handler/";
 
   const xiiRTTI* FindTopMostBaseClass(const xiiRTTI* pRtti)
@@ -39,32 +39,32 @@ namespace
 
   void AddInputProperty(xiiReflectedTypeDescriptor& typeDesc, xiiStringView name, xiiVisualScriptDataType::Enum scriptDataType)
   {
-    auto& propDesc = typeDesc.m_Properties.ExpandAndGetRef();
+    auto& propDesc   = typeDesc.m_Properties.ExpandAndGetRef();
     propDesc.m_sName = name;
     propDesc.m_Flags = xiiPropertyFlags::StandardType;
 
     if (scriptDataType == xiiVisualScriptDataType::Variant)
     {
       propDesc.m_Category = xiiPropertyCategory::Member;
-      propDesc.m_sType = xiiGetStaticRTTI<xiiVariant>()->GetTypeName();
+      propDesc.m_sType    = xiiGetStaticRTTI<xiiVariant>()->GetTypeName();
       propDesc.m_Attributes.PushBack(XII_DEFAULT_NEW(xiiVisualScriptVariableAttribute));
     }
     else if (scriptDataType == xiiVisualScriptDataType::Array)
     {
       propDesc.m_Category = xiiPropertyCategory::Array;
-      propDesc.m_sType = xiiGetStaticRTTI<xiiVariant>()->GetTypeName();
+      propDesc.m_sType    = xiiGetStaticRTTI<xiiVariant>()->GetTypeName();
       propDesc.m_Attributes.PushBack(XII_DEFAULT_NEW(xiiVisualScriptVariableAttribute));
     }
     else if (scriptDataType == xiiVisualScriptDataType::Map)
     {
       propDesc.m_Category = xiiPropertyCategory::Map;
-      propDesc.m_sType = xiiGetStaticRTTI<xiiVariant>()->GetTypeName();
+      propDesc.m_sType    = xiiGetStaticRTTI<xiiVariant>()->GetTypeName();
       propDesc.m_Attributes.PushBack(XII_DEFAULT_NEW(xiiVisualScriptVariableAttribute));
     }
     else
     {
       propDesc.m_Category = xiiPropertyCategory::Member;
-      propDesc.m_sType = xiiVisualScriptDataType::GetRtti(scriptDataType)->GetTypeName();
+      propDesc.m_sType    = xiiVisualScriptDataType::GetRtti(scriptDataType)->GetTypeName();
     }
   }
 
@@ -195,8 +195,8 @@ void AddExecutionPin(xiiVisualScriptNodeRegistry::NodeDesc& nodeDesc, xiiStringV
   auto& pin = pins.ExpandAndGetRef();
   pin.m_sName.Assign(sName);
   pin.m_sDynamicPinProperty = sDynamicPinProperty;
-  pin.m_pDataType = nullptr;
-  pin.m_ScriptDataType = xiiVisualScriptDataType::Invalid;
+  pin.m_pDataType           = nullptr;
+  pin.m_ScriptDataType      = xiiVisualScriptDataType::Invalid;
 
   nodeDesc.m_bHasDynamicPins |= (sDynamicPinProperty.IsEmpty() == false);
 }
@@ -216,9 +216,9 @@ void AddDataPin(xiiVisualScriptNodeRegistry::NodeDesc& nodeDesc, xiiStringView s
   auto& pin = pins.ExpandAndGetRef();
   pin.m_sName.Assign(sName);
   pin.m_sDynamicPinProperty = sDynamicPinProperty;
-  pin.m_pDataType = pDataType;
-  pin.m_ScriptDataType = scriptDataType;
-  pin.m_bRequired = bRequired;
+  pin.m_pDataType           = pDataType;
+  pin.m_ScriptDataType      = scriptDataType;
+  pin.m_bRequired           = bRequired;
 
   nodeDesc.m_bHasDynamicPins |= (sDynamicPinProperty.IsEmpty() == false);
 }
@@ -237,8 +237,8 @@ void xiiVisualScriptNodeRegistry::NodeDesc::AddOutputDataPin(xiiStringView sName
 
 XII_IMPLEMENT_SINGLETON(xiiVisualScriptNodeRegistry);
 
-xiiVisualScriptNodeRegistry::xiiVisualScriptNodeRegistry()
-  : m_SingletonRegistrar(this)
+xiiVisualScriptNodeRegistry::xiiVisualScriptNodeRegistry() :
+  m_SingletonRegistrar(this)
 {
   xiiPhantomRttiManager::s_Events.AddEventHandler(xiiMakeDelegate(&xiiVisualScriptNodeRegistry::PhantomTypeRegistryEventHandler, this));
 
@@ -267,10 +267,10 @@ void xiiVisualScriptNodeRegistry::UpdateNodeTypes()
   if (m_pBaseType == nullptr)
   {
     xiiReflectedTypeDescriptor desc;
-    desc.m_sTypeName = "xiiVisualScriptNodeBase";
-    desc.m_sPluginName = szPluginName;
+    desc.m_sTypeName       = "xiiVisualScriptNodeBase";
+    desc.m_sPluginName     = szPluginName;
     desc.m_sParentTypeName = xiiGetStaticRTTI<xiiReflectedClass>()->GetTypeName();
-    desc.m_Flags = xiiTypeFlags::Phantom | xiiTypeFlags::Abstract | xiiTypeFlags::Class;
+    desc.m_Flags           = xiiTypeFlags::Phantom | xiiTypeFlags::Abstract | xiiTypeFlags::Class;
 
     m_pBaseType = xiiPhantomRttiManager::RegisterType(desc);
   }
@@ -281,7 +281,7 @@ void xiiVisualScriptNodeRegistry::UpdateNodeTypes()
     m_bBuiltinTypesCreated = true;
   }
 
-  auto& componentTypesDynEnum = xiiDynamicStringEnum::CreateDynamicEnum("ComponentTypes");
+  auto& componentTypesDynEnum    = xiiDynamicStringEnum::CreateDynamicEnum("ComponentTypes");
   auto& scriptBaseClassesDynEnum = xiiDynamicStringEnum::CreateDynamicEnum("ScriptBaseClasses");
 
   for (const xiiRTTI* pRtti = xiiRTTI::GetFirstInstance(); pRtti != nullptr; pRtti = pRtti->GetNextInstance())
@@ -328,11 +328,11 @@ void xiiVisualScriptNodeRegistry::UpdateNodeType(const xiiRTTI* pRtti)
 
 void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
 {
-  xiiColorGammaUB logicColor = xiiColorScheme::DarkUI(xiiColorScheme::Gray);
-  xiiColorGammaUB mathColor = xiiColorScheme::DarkUI(xiiColorScheme::Teal);
-  xiiColorGammaUB stringColor = xiiColorScheme::DarkUI(xiiColorScheme::Grape);
+  xiiColorGammaUB logicColor      = xiiColorScheme::DarkUI(xiiColorScheme::Gray);
+  xiiColorGammaUB mathColor       = xiiColorScheme::DarkUI(xiiColorScheme::Teal);
+  xiiColorGammaUB stringColor     = xiiColorScheme::DarkUI(xiiColorScheme::Grape);
   xiiColorGammaUB gameObjectColor = xiiColorScheme::DarkUI(xiiColorScheme::Blue);
-  xiiColorGammaUB variantColor = xiiColorScheme::DarkUI(xiiColorScheme::Pink);
+  xiiColorGammaUB variantColor    = xiiColorScheme::DarkUI(xiiColorScheme::Pink);
 
   // Builtin_Branch
   {
@@ -359,7 +359,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     typeDesc.m_Attributes.PushBack(pAttr);
 
     NodeDesc nodeDesc;
-    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_And;
+    nodeDesc.m_Type               = xiiVisualScriptNodeDescription::Type::Builtin_And;
     nodeDesc.m_bImplicitExecution = true;
 
     AddInputDataPin<bool>(typeDesc, nodeDesc, "A");
@@ -378,7 +378,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     typeDesc.m_Attributes.PushBack(pAttr);
 
     NodeDesc nodeDesc;
-    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Or;
+    nodeDesc.m_Type               = xiiVisualScriptNodeDescription::Type::Builtin_Or;
     nodeDesc.m_bImplicitExecution = true;
 
     AddInputDataPin<bool>(typeDesc, nodeDesc, "A");
@@ -397,7 +397,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     typeDesc.m_Attributes.PushBack(pAttr);
 
     NodeDesc nodeDesc;
-    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Not;
+    nodeDesc.m_Type               = xiiVisualScriptNodeDescription::Type::Builtin_Not;
     nodeDesc.m_bImplicitExecution = true;
 
     AddInputDataPin<bool>(typeDesc, nodeDesc, "A");
@@ -412,18 +412,18 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     FillDesc(typeDesc, "Builtin_Compare", "Logic", logicColor);
 
     {
-      auto& propDesc = typeDesc.m_Properties.ExpandAndGetRef();
+      auto& propDesc      = typeDesc.m_Properties.ExpandAndGetRef();
       propDesc.m_Category = xiiPropertyCategory::Member;
-      propDesc.m_sName = "Operator";
-      propDesc.m_sType = xiiGetStaticRTTI<xiiComparisonOperator>()->GetTypeName();
-      propDesc.m_Flags = xiiPropertyFlags::IsEnum;
+      propDesc.m_sName    = "Operator";
+      propDesc.m_sType    = xiiGetStaticRTTI<xiiComparisonOperator>()->GetTypeName();
+      propDesc.m_Flags    = xiiPropertyFlags::IsEnum;
     }
 
     auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "{A} {Operator} {B}");
     typeDesc.m_Attributes.PushBack(pAttr);
 
     NodeDesc nodeDesc;
-    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Compare;
+    nodeDesc.m_Type               = xiiVisualScriptNodeDescription::Type::Builtin_Compare;
     nodeDesc.m_bImplicitExecution = true;
 
     AddInputDataPin_Any(typeDesc, nodeDesc, "A", false, true);
@@ -439,7 +439,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     FillDesc(typeDesc, "Builtin_IsValid", "Logic", logicColor);
 
     NodeDesc nodeDesc;
-    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_IsValid;
+    nodeDesc.m_Type               = xiiVisualScriptNodeDescription::Type::Builtin_IsValid;
     nodeDesc.m_bImplicitExecution = true;
 
     AddInputDataPin_Any(typeDesc, nodeDesc, "", true);
@@ -475,7 +475,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
       typeDesc.m_Attributes.PushBack(pAttr);
 
       NodeDesc nodeDesc;
-      nodeDesc.m_Type = mathNodeTypes[i];
+      nodeDesc.m_Type               = mathNodeTypes[i];
       nodeDesc.m_bImplicitExecution = true;
 
       AddInputDataPin_Any(typeDesc, nodeDesc, "A", false, true);
@@ -491,8 +491,8 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     struct ConversionNodeDesc
     {
       xiiVisualScriptDataType::Enum m_DataType;
-      const char* m_szCategory;
-      xiiColorGammaUB m_Color;
+      const char*                   m_szCategory;
+      xiiColorGammaUB               m_Color;
     };
 
     ConversionNodeDesc conversionNodeDescs[] = {
@@ -514,7 +514,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
       FillDesc(typeDesc, xiiVisualScriptNodeDescription::Type::GetName(nodeType), conversionNodeDesc.m_szCategory, conversionNodeDesc.m_Color);
 
       NodeDesc nodeDesc;
-      nodeDesc.m_Type = nodeType;
+      nodeDesc.m_Type               = nodeType;
       nodeDesc.m_bImplicitExecution = true;
 
       AddInputDataPin_Any(typeDesc, nodeDesc, "", true);
@@ -530,11 +530,11 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     FillDesc(typeDesc, "Builtin_Variant_ConvertTo", "Variant", variantColor);
 
     {
-      auto& propDesc = typeDesc.m_Properties.ExpandAndGetRef();
+      auto& propDesc      = typeDesc.m_Properties.ExpandAndGetRef();
       propDesc.m_Category = xiiPropertyCategory::Member;
-      propDesc.m_sName = "Type";
-      propDesc.m_sType = xiiGetStaticRTTI<xiiVisualScriptDataType>()->GetTypeName();
-      propDesc.m_Flags = xiiPropertyFlags::IsEnum;
+      propDesc.m_sName    = "Type";
+      propDesc.m_sType    = xiiGetStaticRTTI<xiiVisualScriptDataType>()->GetTypeName();
+      propDesc.m_Flags    = xiiPropertyFlags::IsEnum;
 
       auto pAttr = XII_DEFAULT_NEW(xiiDefaultValueAttribute, xiiVisualScriptDataType::Bool);
       propDesc.m_Attributes.PushBack(pAttr);
@@ -544,7 +544,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     typeDesc.m_Attributes.PushBack(pAttr);
 
     NodeDesc nodeDesc;
-    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Variant_ConvertTo;
+    nodeDesc.m_Type                    = xiiVisualScriptNodeDescription::Type::Builtin_Variant_ConvertTo;
     nodeDesc.m_bNeedsDataTypeDeduction = true;
 
     nodeDesc.AddInputExecutionPin("");
@@ -563,11 +563,11 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
 
     xiiHashedString sCount = xiiMakeHashedString("Count");
     {
-      auto& propDesc = typeDesc.m_Properties.ExpandAndGetRef();
+      auto& propDesc      = typeDesc.m_Properties.ExpandAndGetRef();
       propDesc.m_Category = xiiPropertyCategory::Member;
-      propDesc.m_sName = sCount.GetView();
-      propDesc.m_sType = xiiGetStaticRTTI<xiiUInt32>()->GetTypeName();
-      propDesc.m_Flags = xiiPropertyFlags::StandardType;
+      propDesc.m_sName    = sCount.GetView();
+      propDesc.m_sType    = xiiGetStaticRTTI<xiiUInt32>()->GetTypeName();
+      propDesc.m_Flags    = xiiPropertyFlags::StandardType;
 
       auto pNoTempAttr = XII_DEFAULT_NEW(xiiNoTemporaryTransactionsAttribute);
       propDesc.m_Attributes.PushBack(pNoTempAttr);
@@ -577,7 +577,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     }
 
     NodeDesc nodeDesc;
-    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_MakeArray;
+    nodeDesc.m_Type               = xiiVisualScriptNodeDescription::Type::Builtin_MakeArray;
     nodeDesc.m_bImplicitExecution = true;
 
     nodeDesc.AddInputDataPin("", xiiGetStaticRTTI<xiiVariant>(), xiiVisualScriptDataType::Variant, false, sCount);
@@ -592,11 +592,11 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     FillDesc(typeDesc, "Builtin_TryGetComponentOfBaseType", "GameObject", gameObjectColor);
 
     {
-      auto& propDesc = typeDesc.m_Properties.ExpandAndGetRef();
+      auto& propDesc      = typeDesc.m_Properties.ExpandAndGetRef();
       propDesc.m_Category = xiiPropertyCategory::Member;
-      propDesc.m_sName = "TypeName";
-      propDesc.m_sType = xiiGetStaticRTTI<xiiString>()->GetTypeName();
-      propDesc.m_Flags = xiiPropertyFlags::StandardType;
+      propDesc.m_sName    = "TypeName";
+      propDesc.m_sType    = xiiGetStaticRTTI<xiiString>()->GetTypeName();
+      propDesc.m_Flags    = xiiPropertyFlags::StandardType;
 
       auto pAttr = XII_DEFAULT_NEW(xiiDynamicStringEnumAttribute, "ComponentTypes");
       propDesc.m_Attributes.PushBack(pAttr);
@@ -606,7 +606,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     typeDesc.m_Attributes.PushBack(pAttr);
 
     NodeDesc nodeDesc;
-    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_TryGetComponentOfBaseType;
+    nodeDesc.m_Type               = xiiVisualScriptNodeDescription::Type::Builtin_TryGetComponentOfBaseType;
     nodeDesc.m_bImplicitExecution = true;
 
     nodeDesc.AddInputDataPin("GameObject", xiiGetStaticRTTI<xiiGameObject>(), xiiVisualScriptDataType::GameObject, true);
@@ -635,8 +635,8 @@ void xiiVisualScriptNodeRegistry::CreateGetOwnerNodeType(const xiiRTTI* pRtti)
 
   NodeDesc nodeDesc;
   nodeDesc.m_sFilterByBaseClass.Assign(sBaseClass);
-  nodeDesc.m_pTargetType = pRtti;
-  nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::GetScriptOwner;
+  nodeDesc.m_pTargetType        = pRtti;
+  nodeDesc.m_Type               = xiiVisualScriptNodeDescription::Type::GetScriptOwner;
   nodeDesc.m_bImplicitExecution = true;
 
   xiiVisualScriptDataType::Enum scriptDataType;
@@ -679,7 +679,7 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
   sFunctionName.TrimWordStart("Reflection_");
 
   xiiReflectedTypeDescriptor typeDesc;
-  bool bHasTitle = false;
+  bool                       bHasTitle = false;
   {
     if (bIsEntryFunction)
     {
@@ -709,7 +709,7 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
   }
 
   NodeDesc nodeDesc;
-  nodeDesc.m_pTargetType = pRtti;
+  nodeDesc.m_pTargetType     = pRtti;
   nodeDesc.m_pTargetProperty = pFunction;
   if (bIsEntryFunction)
   {
@@ -774,8 +774,8 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
       if (sArgName.IsEmpty())
         sArgName.Format("Arg{}", argIdx);
 
-      auto pArgRtti = pFunction->GetArgumentType(argIdx);
-      auto argType = pScriptableFunctionAttribute->GetArgumentType(argIdx);
+      auto       pArgRtti              = pFunction->GetArgumentType(argIdx);
+      auto       argType               = pScriptableFunctionAttribute->GetArgumentType(argIdx);
       const bool bIsDynamicPinProperty = dynamicPins.Contains(sArgName);
 
       xiiHashedString sDynamicPinProperty;
@@ -793,7 +793,7 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
       xiiVisualScriptDataType::Enum pinScriptDataType = scriptDataType;
       if (bIsDynamicPinProperty && scriptDataType == xiiVisualScriptDataType::Array)
       {
-        pArgRtti = xiiGetStaticRTTI<xiiVariant>();
+        pArgRtti          = xiiGetStaticRTTI<xiiVariant>();
         pinScriptDataType = xiiVisualScriptDataType::Variant;
       }
 
@@ -854,8 +854,8 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
 
 void xiiVisualScriptNodeRegistry::FillDesc(xiiReflectedTypeDescriptor& desc, const xiiRTTI* pRtti, xiiStringView sCategoryOverride /*= xiiStringView()*/, xiiColorGammaUB* pColorOverride /*= nullptr */)
 {
-  xiiStringBuilder sTypeName = GetTypeName(pRtti);
-  const xiiRTTI* pBaseClass = FindTopMostBaseClass(pRtti);
+  xiiStringBuilder sTypeName  = GetTypeName(pRtti);
+  const xiiRTTI*   pBaseClass = FindTopMostBaseClass(pRtti);
 
   xiiStringBuilder sCategory;
   if (sCategoryOverride.IsEmpty())
@@ -909,15 +909,15 @@ void xiiVisualScriptNodeRegistry::FillDesc(xiiReflectedTypeDescriptor& desc, xii
   xiiStringBuilder sTypeNameFull;
   sTypeNameFull.Set(s_szTypeNamePrefix, sTypeName);
 
-  desc.m_sTypeName = sTypeNameFull;
-  desc.m_sPluginName = szPluginName;
+  desc.m_sTypeName       = sTypeNameFull;
+  desc.m_sPluginName     = szPluginName;
   desc.m_sParentTypeName = m_pBaseType->GetTypeName();
-  desc.m_Flags = xiiTypeFlags::Phantom | xiiTypeFlags::Class;
+  desc.m_Flags           = xiiTypeFlags::Phantom | xiiTypeFlags::Class;
 
   // Category
   {
     xiiStringBuilder tmp;
-    auto pAttr = XII_DEFAULT_NEW(xiiCategoryAttribute, sCategory.GetData(tmp));
+    auto             pAttr = XII_DEFAULT_NEW(xiiCategoryAttribute, sCategory.GetData(tmp));
     desc.m_Attributes.PushBack(pAttr);
   }
 

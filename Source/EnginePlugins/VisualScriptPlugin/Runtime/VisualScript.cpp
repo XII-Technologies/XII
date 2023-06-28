@@ -115,8 +115,8 @@ xiiResult xiiVisualScriptGraphDescription::Serialize(xiiArrayPtr<const xiiVisual
   inout_stream.WriteVersion(s_uiVisualScriptGraphDescriptionVersion);
 
   xiiDefaultMemoryStreamStorage streamStorage;
-  xiiMemoryStreamWriter stream(&streamStorage);
-  xiiUInt32 additionalDataSize = 0;
+  xiiMemoryStreamWriter         stream(&streamStorage);
+  xiiUInt32                     additionalDataSize = 0;
   {
     for (auto& nodeDesc : nodes)
     {
@@ -132,7 +132,7 @@ xiiResult xiiVisualScriptGraphDescription::Serialize(xiiArrayPtr<const xiiVisual
 
       if (auto func = GetUserDataContext(nodeDesc.m_Type).m_SerializeFunc)
       {
-        xiiUInt32 uiSize = 0;
+        xiiUInt32 uiSize      = 0;
         xiiUInt32 uiAlignment = 0;
         XII_SUCCEED_OR_RETURN(func(nodeDesc, stream, uiSize, uiAlignment));
 
@@ -235,12 +235,12 @@ void xiiVisualScriptDataDescription::CalculatePerTypeStartOffsets()
   xiiUInt32 uiOffset = 0;
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_PerTypeInfo); ++i)
   {
-    auto dataType = static_cast<xiiVisualScriptDataType::Enum>(i);
+    auto  dataType = static_cast<xiiVisualScriptDataType::Enum>(i);
     auto& typeInfo = m_PerTypeInfo[i];
 
     if (typeInfo.m_uiCount > 0)
     {
-      uiOffset = xiiMemoryUtils::AlignSize(uiOffset, xiiVisualScriptDataType::GetStorageAlignment(dataType));
+      uiOffset                 = xiiMemoryUtils::AlignSize(uiOffset, xiiVisualScriptDataType::GetStorageAlignment(dataType));
       typeInfo.m_uiStartOffset = uiOffset;
 
       uiOffset += xiiVisualScriptDataType::GetStorageSize(dataType) * typeInfo.m_uiCount;
@@ -252,8 +252,8 @@ void xiiVisualScriptDataDescription::CalculatePerTypeStartOffsets()
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiVisualScriptDataStorage::xiiVisualScriptDataStorage(const xiiSharedPtr<const xiiVisualScriptDataDescription>& pDesc)
-  : m_pDesc(pDesc)
+xiiVisualScriptDataStorage::xiiVisualScriptDataStorage(const xiiSharedPtr<const xiiVisualScriptDataDescription>& pDesc) :
+  m_pDesc(pDesc)
 {
 }
 
@@ -348,7 +348,7 @@ xiiResult xiiVisualScriptDataStorage::Serialize(xiiStreamWriter& inout_stream) c
 
     if (scriptDataType == xiiVisualScriptDataType::String)
     {
-      auto pStrings = reinterpret_cast<const xiiString*>(pData + typeInfo.m_uiStartOffset);
+      auto pStrings    = reinterpret_cast<const xiiString*>(pData + typeInfo.m_uiStartOffset);
       auto pStringsEnd = pStrings + typeInfo.m_uiCount;
       while (pStrings < pStringsEnd)
       {
@@ -358,7 +358,7 @@ xiiResult xiiVisualScriptDataStorage::Serialize(xiiStreamWriter& inout_stream) c
     }
     else if (scriptDataType == xiiVisualScriptDataType::Variant)
     {
-      auto pVariants = reinterpret_cast<const xiiVariant*>(pData + typeInfo.m_uiStartOffset);
+      auto pVariants    = reinterpret_cast<const xiiVariant*>(pData + typeInfo.m_uiStartOffset);
       auto pVariantsEnd = pVariants + typeInfo.m_uiCount;
       while (pVariants < pVariantsEnd)
       {
@@ -368,7 +368,7 @@ xiiResult xiiVisualScriptDataStorage::Serialize(xiiStreamWriter& inout_stream) c
     }
     else if (scriptDataType == xiiVisualScriptDataType::Array)
     {
-      auto pVariantArrays = reinterpret_cast<const xiiVariantArray*>(pData + typeInfo.m_uiStartOffset);
+      auto pVariantArrays    = reinterpret_cast<const xiiVariantArray*>(pData + typeInfo.m_uiStartOffset);
       auto pVariantArraysEnd = pVariantArrays + typeInfo.m_uiCount;
       while (pVariantArrays < pVariantArraysEnd)
       {
@@ -378,7 +378,7 @@ xiiResult xiiVisualScriptDataStorage::Serialize(xiiStreamWriter& inout_stream) c
     }
     else if (scriptDataType == xiiVisualScriptDataType::Map)
     {
-      auto pVariantMaps = reinterpret_cast<const xiiVariantDictionary*>(pData + typeInfo.m_uiStartOffset);
+      auto pVariantMaps    = reinterpret_cast<const xiiVariantDictionary*>(pData + typeInfo.m_uiStartOffset);
       auto pVariantMapsEnd = pVariantMaps + typeInfo.m_uiCount;
       while (pVariantMaps < pVariantMapsEnd)
       {
@@ -413,7 +413,7 @@ xiiResult xiiVisualScriptDataStorage::Deserialize(xiiStreamReader& inout_stream)
 
     if (scriptDataType == xiiVisualScriptDataType::String)
     {
-      auto pStrings = reinterpret_cast<xiiString*>(pData + typeInfo.m_uiStartOffset);
+      auto pStrings    = reinterpret_cast<xiiString*>(pData + typeInfo.m_uiStartOffset);
       auto pStringsEnd = pStrings + typeInfo.m_uiCount;
       while (pStrings < pStringsEnd)
       {
@@ -423,7 +423,7 @@ xiiResult xiiVisualScriptDataStorage::Deserialize(xiiStreamReader& inout_stream)
     }
     else if (scriptDataType == xiiVisualScriptDataType::Variant)
     {
-      auto pVariants = reinterpret_cast<xiiVariant*>(pData + typeInfo.m_uiStartOffset);
+      auto pVariants    = reinterpret_cast<xiiVariant*>(pData + typeInfo.m_uiStartOffset);
       auto pVariantsEnd = pVariants + typeInfo.m_uiCount;
       while (pVariants < pVariantsEnd)
       {
@@ -433,7 +433,7 @@ xiiResult xiiVisualScriptDataStorage::Deserialize(xiiStreamReader& inout_stream)
     }
     else if (scriptDataType == xiiVisualScriptDataType::Array)
     {
-      auto pVariantArrays = reinterpret_cast<xiiVariantArray*>(pData + typeInfo.m_uiStartOffset);
+      auto pVariantArrays    = reinterpret_cast<xiiVariantArray*>(pData + typeInfo.m_uiStartOffset);
       auto pVariantArraysEnd = pVariantArrays + typeInfo.m_uiCount;
       while (pVariantArrays < pVariantArraysEnd)
       {
@@ -443,7 +443,7 @@ xiiResult xiiVisualScriptDataStorage::Deserialize(xiiStreamReader& inout_stream)
     }
     else if (scriptDataType == xiiVisualScriptDataType::Map)
     {
-      auto pVariantMaps = reinterpret_cast<xiiVariantDictionary*>(pData + typeInfo.m_uiStartOffset);
+      auto pVariantMaps    = reinterpret_cast<xiiVariantDictionary*>(pData + typeInfo.m_uiStartOffset);
       auto pVariantMapsEnd = pVariantMaps + typeInfo.m_uiCount;
       while (pVariantMaps < pVariantMapsEnd)
       {
@@ -473,8 +473,8 @@ xiiTypedPointer xiiVisualScriptDataStorage::GetPointerData(DataOffset dataOffset
   }
   else if (dataOffset.m_uiDataType == xiiVisualScriptDataType::Component)
   {
-    auto& componentHandle = *reinterpret_cast<const xiiVisualScriptComponentHandle*>(pData);
-    xiiComponent* pComponent = componentHandle.GetPtr(uiExecutionCounter);
+    auto&         componentHandle = *reinterpret_cast<const xiiVisualScriptComponentHandle*>(pData);
+    xiiComponent* pComponent      = componentHandle.GetPtr(uiExecutionCounter);
     return xiiTypedPointer(pComponent, pComponent != nullptr ? pComponent->GetDynamicRTTI() : nullptr);
   }
   else if (dataOffset.m_uiDataType == xiiVisualScriptDataType::TypedPointer)

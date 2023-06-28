@@ -72,14 +72,14 @@ void xiiQtVisualScriptPin::SetPin(const xiiPin& pin)
 
 bool xiiQtVisualScriptPin::UpdatePinColors(const xiiColorGammaUB* pOverwriteColor)
 {
-  xiiColorGammaUB overwriteColor;
+  xiiColorGammaUB           overwriteColor;
   const xiiVisualScriptPin& vsPin = xiiStaticCast<const xiiVisualScriptPin&>(*GetPin());
   if (vsPin.GetScriptDataType() == xiiVisualScriptDataType::Any)
   {
-    auto pManager = static_cast<const xiiVisualScriptNodeManager*>(vsPin.GetParent()->GetDocumentObjectManager());
+    auto pManager     = static_cast<const xiiVisualScriptNodeManager*>(vsPin.GetParent()->GetDocumentObjectManager());
     auto deductedType = pManager->GetDeductedType(vsPin.GetParent());
-    overwriteColor = xiiVisualScriptNodeRegistry::PinDesc::GetColorForScriptDataType(deductedType);
-    pOverwriteColor = &overwriteColor;
+    overwriteColor    = xiiVisualScriptNodeRegistry::PinDesc::GetColorForScriptDataType(deductedType);
+    pOverwriteColor   = &overwriteColor;
   }
 
   bool res = xiiQtPin::UpdatePinColors(pOverwriteColor);
@@ -137,7 +137,7 @@ void xiiQtVisualScriptNode::UpdateState()
       }
     }
 
-    xiiVariant val;
+    xiiVariant       val;
     xiiStringBuilder sVal;
     for (const auto& prop : properties)
     {
@@ -191,9 +191,9 @@ void xiiQtVisualScriptNode::UpdateState()
     auto pNodeDesc = xiiVisualScriptNodeRegistry::GetSingleton()->GetNodeDescForType(pType);
     if (pNodeDesc->m_bNeedsDataTypeDeduction)
     {
-      auto pManager = static_cast<const xiiVisualScriptNodeManager*>(GetObject()->GetDocumentObjectManager());
+      auto                          pManager     = static_cast<const xiiVisualScriptNodeManager*>(GetObject()->GetDocumentObjectManager());
       xiiVisualScriptDataType::Enum deductedType = pManager->GetDeductedType(GetObject());
-      const char* sSubTitle = deductedType != xiiVisualScriptDataType::Invalid ? xiiVisualScriptDataType::GetName(deductedType) : "Unknown";
+      const char*                   sSubTitle    = deductedType != xiiVisualScriptDataType::Invalid ? xiiVisualScriptDataType::GetName(deductedType) : "Unknown";
       m_pSubtitleLabel->setPlainText(sSubTitle);
     }
   }
@@ -201,8 +201,8 @@ void xiiQtVisualScriptNode::UpdateState()
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiQtVisualScriptNodeScene::xiiQtVisualScriptNodeScene(QObject* parent /*= nullptr*/)
-  : xiiQtNodeScene(parent)
+xiiQtVisualScriptNodeScene::xiiQtVisualScriptNodeScene(QObject* parent /*= nullptr*/) :
+  xiiQtNodeScene(parent)
 {
 }
 

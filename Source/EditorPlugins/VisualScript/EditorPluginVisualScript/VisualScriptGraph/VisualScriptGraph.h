@@ -15,19 +15,19 @@ public:
 
   XII_ALWAYS_INLINE const xiiRTTI* GetDataType() const { return m_pDataType; }
   XII_ALWAYS_INLINE xiiVisualScriptDataType::Enum GetScriptDataType() const { return m_ScriptDataType; }
-  xiiStringView GetDataTypeName(xiiVisualScriptDataType::Enum deductedType = xiiVisualScriptDataType::Invalid) const;
-  XII_ALWAYS_INLINE xiiUInt32 GetPinIndex() const { return m_uiPinIndex; }
-  XII_ALWAYS_INLINE bool IsRequired() const { return m_bRequired; }
-  XII_ALWAYS_INLINE bool HasDynamicPinProperty() const { return m_bHasDynamicPinProperty; }
+  xiiStringView                                   GetDataTypeName(xiiVisualScriptDataType::Enum deductedType = xiiVisualScriptDataType::Invalid) const;
+  XII_ALWAYS_INLINE xiiUInt32                     GetPinIndex() const { return m_uiPinIndex; }
+  XII_ALWAYS_INLINE bool                          IsRequired() const { return m_bRequired; }
+  XII_ALWAYS_INLINE bool                          HasDynamicPinProperty() const { return m_bHasDynamicPinProperty; }
 
   bool CanConvertTo(const xiiVisualScriptPin& targetPin, xiiVisualScriptDataType::Enum deductedSourceDataType = xiiVisualScriptDataType::Invalid, xiiVisualScriptDataType::Enum deductedTargetDataType = xiiVisualScriptDataType::Invalid) const;
 
 private:
-  const xiiRTTI* m_pDataType = nullptr;
-  xiiUInt32 m_uiPinIndex = 0;
+  const xiiRTTI*                   m_pDataType  = nullptr;
+  xiiUInt32                        m_uiPinIndex = 0;
   xiiEnum<xiiVisualScriptDataType> m_ScriptDataType;
-  bool m_bRequired = false;
-  bool m_bHasDynamicPinProperty = false;
+  bool                             m_bRequired              = false;
+  bool                             m_bHasDynamicPinProperty = false;
 };
 
 class xiiVisualScriptNodeManager : public xiiDocumentNodeManager
@@ -37,7 +37,7 @@ public:
   ~xiiVisualScriptNodeManager();
 
   xiiHashedString GetScriptBaseClass() const;
-  bool IsFilteredByBaseClass(const xiiRTTI* pNodeType, const xiiVisualScriptNodeRegistry::NodeDesc& nodeDesc, const xiiHashedString& sBaseClass, bool bLogWarning = false) const;
+  bool            IsFilteredByBaseClass(const xiiRTTI* pNodeType, const xiiVisualScriptNodeRegistry::NodeDesc& nodeDesc, const xiiHashedString& sBaseClass, bool bLogWarning = false) const;
 
   void GetInputExecutionPins(const xiiDocumentObject* pObject, xiiDynamicArray<const xiiVisualScriptPin*>& out_pins) const;
   void GetOutputExecutionPins(const xiiDocumentObject* pObject, xiiDynamicArray<const xiiVisualScriptPin*>& out_pins) const;
@@ -47,15 +47,15 @@ public:
 
   static xiiStringView GetNiceTypeName(const xiiDocumentObject* pObject);
 
-  void DeductType(const xiiDocumentObject* pObject, const xiiPin* pChangedPin = nullptr, bool bConnected = true);
+  void                          DeductType(const xiiDocumentObject* pObject, const xiiPin* pChangedPin = nullptr, bool bConnected = true);
   xiiVisualScriptDataType::Enum GetDeductedType(const xiiVisualScriptPin& pin) const;
   xiiVisualScriptDataType::Enum GetDeductedType(const xiiDocumentObject* pObject) const;
 
   xiiEvent<const xiiDocumentObject*> m_DeductedTypeChangedEvent;
 
 private:
-  virtual bool InternalIsNode(const xiiDocumentObject* pObject) const override;
-  virtual bool InternalIsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const override;
+  virtual bool      InternalIsNode(const xiiDocumentObject* pObject) const override;
+  virtual bool      InternalIsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const override;
   virtual xiiStatus InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_Result) const override;
 
   virtual void InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& node) override;

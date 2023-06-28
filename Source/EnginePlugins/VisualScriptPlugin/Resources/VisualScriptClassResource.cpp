@@ -34,7 +34,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(TypeScript, Resource)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiVisualScriptClassResource::xiiVisualScriptClassResource() = default;
+xiiVisualScriptClassResource::xiiVisualScriptClassResource()  = default;
 xiiVisualScriptClassResource::~xiiVisualScriptClassResource() = default;
 
 xiiResourceLoadDesc xiiVisualScriptClassResource::UnloadData(Unload WhatToUnload)
@@ -42,9 +42,9 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UnloadData(Unload WhatToUnload
   DeleteScriptType();
 
   xiiResourceLoadDesc ld;
-  ld.m_State = xiiResourceState::Unloaded;
+  ld.m_State                      = xiiResourceState::Unloaded;
   ld.m_uiQualityLevelsDiscardable = 0;
-  ld.m_uiQualityLevelsLoadable = 0;
+  ld.m_uiQualityLevelsLoadable    = 0;
 
   return ld;
 }
@@ -53,8 +53,8 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UpdateContent(xiiStreamReader*
 {
   xiiResourceLoadDesc ld;
   ld.m_uiQualityLevelsDiscardable = 0;
-  ld.m_uiQualityLevelsLoadable = 0;
-  ld.m_State = xiiResourceState::LoadedResourceMissing;
+  ld.m_uiQualityLevelsLoadable    = 0;
+  ld.m_State                      = xiiResourceState::LoadedResourceMissing;
 
   if (pStream == nullptr)
   {
@@ -71,9 +71,9 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UpdateContent(xiiStreamReader*
   xiiAssetFileHeader AssetHash;
   AssetHash.Read(*pStream).IgnoreResult();
 
-  xiiString sScriptClassName;
-  const xiiRTTI* pBaseClassType = nullptr;
-  xiiScriptRTTI::FunctionList functions;
+  xiiString                         sScriptClassName;
+  const xiiRTTI*                    pBaseClassType = nullptr;
+  xiiScriptRTTI::FunctionList       functions;
   xiiScriptRTTI::MessageHandlerList messageHandlers;
   {
     xiiStringDeduplicationReadContext stringDedup(*pStream);
@@ -105,7 +105,7 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UpdateContent(xiiStreamReader*
 
         for (xiiUInt32 i = 0; i < uiNumFunctions; ++i)
         {
-          xiiString sFunctionName;
+          xiiString                                     sFunctionName;
           xiiEnum<xiiVisualScriptNodeDescription::Type> functionType;
           chunk >> sFunctionName;
           chunk >> functionType;

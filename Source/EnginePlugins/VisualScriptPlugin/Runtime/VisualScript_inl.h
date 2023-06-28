@@ -49,7 +49,7 @@ xiiResult xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::Read
   }
   out_uiCount = static_cast<xiiUInt8>(uiCount);
 
-  T* pTargetPtr = Init(out_uiCount, inout_pAdditionalData);
+  T*              pTargetPtr       = Init(out_uiCount, inout_pAdditionalData);
   const xiiUInt64 uiNumBytesToRead = uiCount * sizeof(T);
   if (inout_stream.ReadBytes(pTargetPtr, uiNumBytesToRead) != uiNumBytesToRead)
     return XII_FAILURE;
@@ -100,7 +100,7 @@ template <typename T>
 void xiiVisualScriptGraphDescription::Node::SetUserData(const T& data, xiiUInt8*& inout_pAdditionalData)
 {
   m_UserDataByteSize = sizeof(T);
-  auto pUserData = m_UserData.Init(m_UserDataByteSize / sizeof(xiiUInt32), inout_pAdditionalData);
+  auto pUserData     = m_UserData.Init(m_UserDataByteSize / sizeof(xiiUInt32), inout_pAdditionalData);
   XII_CHECK_ALIGNMENT(pUserData, XII_ALIGNMENT_OF(T));
   *reinterpret_cast<T*>(pUserData) = data;
 }
@@ -117,9 +117,9 @@ XII_ALWAYS_INLINE const xiiVisualScriptGraphDescription::Node* xiiVisualScriptGr
 XII_FORCE_INLINE void xiiVisualScriptDataDescription::CheckOffset(DataOffset dataOffset, const xiiRTTI* pType) const
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  auto expectedDataType = static_cast<xiiVisualScriptDataType::Enum>(dataOffset.m_uiDataType);
-  auto& offsetAndCount = m_PerTypeInfo[expectedDataType];
-  const xiiUInt32 uiLastOffset = offsetAndCount.m_uiStartOffset + (offsetAndCount.m_uiCount - 1) * xiiVisualScriptDataType::GetStorageSize(expectedDataType);
+  auto            expectedDataType = static_cast<xiiVisualScriptDataType::Enum>(dataOffset.m_uiDataType);
+  auto&           offsetAndCount   = m_PerTypeInfo[expectedDataType];
+  const xiiUInt32 uiLastOffset     = offsetAndCount.m_uiStartOffset + (offsetAndCount.m_uiCount - 1) * xiiVisualScriptDataType::GetStorageSize(expectedDataType);
   XII_ASSERT_DEBUG(dataOffset.m_uiByteOffset >= offsetAndCount.m_uiStartOffset && dataOffset.m_uiByteOffset <= uiLastOffset, "Invalid data offset");
 
   if (pType != nullptr)
@@ -132,8 +132,8 @@ XII_FORCE_INLINE void xiiVisualScriptDataDescription::CheckOffset(DataOffset dat
 
 XII_FORCE_INLINE xiiVisualScriptDataDescription::DataOffset xiiVisualScriptDataDescription::GetOffset(xiiVisualScriptDataType::Enum dataType, xiiUInt32 uiIndex, bool bIsConstant) const
 {
-  auto& offsetAndCount = m_PerTypeInfo[dataType];
-  xiiUInt32 uiByteOffset = xiiInvalidIndex;
+  auto&     offsetAndCount = m_PerTypeInfo[dataType];
+  xiiUInt32 uiByteOffset   = xiiInvalidIndex;
   if (uiIndex < offsetAndCount.m_uiCount)
   {
     uiByteOffset = offsetAndCount.m_uiStartOffset + uiIndex * xiiVisualScriptDataType::GetStorageSize(dataType);
@@ -225,9 +225,9 @@ void xiiVisualScriptDataStorage::SetPointerData(DataOffset dataOffset, T ptr, co
 
       m_pDesc->CheckOffset(dataOffset, pType);
 
-      auto& typedPointer = *reinterpret_cast<xiiTypedPointer*>(pData);
+      auto& typedPointer     = *reinterpret_cast<xiiTypedPointer*>(pData);
       typedPointer.m_pObject = ptr;
-      typedPointer.m_pType = pType;
+      typedPointer.m_pType   = pType;
     }
   }
 }

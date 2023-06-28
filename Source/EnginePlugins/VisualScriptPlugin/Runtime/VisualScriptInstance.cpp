@@ -2,10 +2,8 @@
 
 #include <VisualScriptPlugin/Runtime/VisualScriptInstance.h>
 
-xiiVisualScriptInstance::xiiVisualScriptInstance(xiiReflectedClass& owner, xiiWorld* pWorld, const xiiSharedPtr<const xiiVisualScriptDataStorage>& pConstantDataStorage, const xiiSharedPtr<const xiiVisualScriptDataDescription>& pVariableDataDesc)
-  : m_Owner(owner)
-  , m_pWorld(pWorld)
-  , m_pConstantDataStorage(pConstantDataStorage)
+xiiVisualScriptInstance::xiiVisualScriptInstance(xiiReflectedClass& owner, xiiWorld* pWorld, const xiiSharedPtr<const xiiVisualScriptDataStorage>& pConstantDataStorage, const xiiSharedPtr<const xiiVisualScriptDataDescription>& pVariableDataDesc) :
+  m_Owner(owner), m_pWorld(pWorld), m_pConstantDataStorage(pConstantDataStorage)
 {
   if (pVariableDataDesc != nullptr)
   {
@@ -20,8 +18,8 @@ void xiiVisualScriptInstance::ApplyParameters(const xiiArrayMap<xiiHashedString,
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiVisualScriptExecutionContext::xiiVisualScriptExecutionContext(xiiUniquePtr<xiiVisualScriptGraphDescription>&& pDesc)
-  : m_pDesc(std::move(pDesc))
+xiiVisualScriptExecutionContext::xiiVisualScriptExecutionContext(xiiUniquePtr<xiiVisualScriptGraphDescription>&& pDesc) :
+  m_pDesc(std::move(pDesc))
 {
 }
 
@@ -56,7 +54,7 @@ xiiVisualScriptExecutionContext::ReturnValue::Enum xiiVisualScriptExecutionConte
     }
 
     m_uiCurrentNode = pNode->GetExecutionIndex(result);
-    pNode = m_pDesc->GetNode(m_uiCurrentNode);
+    pNode           = m_pDesc->GetNode(m_uiCurrentNode);
   }
 
   return ReturnValue::Completed;
@@ -64,9 +62,8 @@ xiiVisualScriptExecutionContext::ReturnValue::Enum xiiVisualScriptExecutionConte
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiVisualScriptFunctionProperty::xiiVisualScriptFunctionProperty(const char* szPropertyName, xiiUniquePtr<xiiVisualScriptGraphDescription>&& pDesc)
-  : xiiAbstractFunctionProperty(nullptr)
-  , m_ExecutionContext(std::move(pDesc))
+xiiVisualScriptFunctionProperty::xiiVisualScriptFunctionProperty(const char* szPropertyName, xiiUniquePtr<xiiVisualScriptGraphDescription>&& pDesc) :
+  xiiAbstractFunctionProperty(nullptr), m_ExecutionContext(std::move(pDesc))
 {
   m_sPropertyNameStorage.Assign(szPropertyName);
   m_szPropertyName = m_sPropertyNameStorage.GetData();

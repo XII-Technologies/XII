@@ -23,5 +23,5 @@ private:
   void SelectionEventHandler(const xiiSelectionManagerEvent& e);
 
   xiiQtVisualScriptNodeScene* m_pScene;
-  xiiQtNodeView* m_pView;
+  xiiQtNodeView*              m_pView;
 };

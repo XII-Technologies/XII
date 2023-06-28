@@ -9,27 +9,27 @@
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 
 
-xiiQtVisualScriptWindow::xiiQtVisualScriptWindow(xiiDocument* pDocument)
-  : xiiQtDocumentWindow(pDocument)
+xiiQtVisualScriptWindow::xiiQtVisualScriptWindow(xiiDocument* pDocument) :
+  xiiQtDocumentWindow(pDocument)
 {
 
   // Menu Bar
   {
     xiiQtMenuBarActionMapView* pMenuBar = static_cast<xiiQtMenuBarActionMapView*>(menuBar());
-    xiiActionContext context;
-    context.m_sMapping = "VisualScriptAssetMenuBar";
+    xiiActionContext           context;
+    context.m_sMapping  = "VisualScriptAssetMenuBar";
     context.m_pDocument = pDocument;
-    context.m_pWindow = this;
+    context.m_pWindow   = this;
     pMenuBar->SetActionContext(context);
   }
 
   // Tool Bar
   {
     xiiQtToolBarActionMapView* pToolBar = new xiiQtToolBarActionMapView("Toolbar", this);
-    xiiActionContext context;
-    context.m_sMapping = "VisualScriptAssetToolBar";
+    xiiActionContext           context;
+    context.m_sMapping  = "VisualScriptAssetToolBar";
     context.m_pDocument = pDocument;
-    context.m_pWindow = this;
+    context.m_pWindow   = this;
     pToolBar->SetActionContext(context);
     pToolBar->setObjectName("VisualScriptAssetWindowToolBar");
     addToolBar(pToolBar);
@@ -75,15 +75,15 @@ void xiiQtVisualScriptWindow::SelectionEventHandler(const xiiSelectionManagerEve
   {
     // delayed execution
     QTimer::singleShot(1,
-      [this]() {
-        auto pDocument = GetDocument();
-        auto pSelectionManager = pDocument->GetSelectionManager();
+                       [this]() {
+                         auto pDocument         = GetDocument();
+                         auto pSelectionManager = pDocument->GetSelectionManager();
 
-        // Check again if the selection is empty. This could have changed due to the delayed execution.
-        if (pSelectionManager->IsSelectionEmpty())
-        {
-          pSelectionManager->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
-        }
-      });
+                         // Check again if the selection is empty. This could have changed due to the delayed execution.
+                         if (pSelectionManager->IsSelectionEmpty())
+                         {
+                           pSelectionManager->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
+                         }
+                       });
   }
 }
