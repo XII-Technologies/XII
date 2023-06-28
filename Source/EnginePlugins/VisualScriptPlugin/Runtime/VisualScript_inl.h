@@ -6,8 +6,8 @@ void xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::AddAdditi
 {
   if (a.GetCount() > Size)
   {
-    inout_additionalDataSize = xiiMemoryUtils::AlignSize<xiiUInt32>(inout_additionalDataSize, XII_ALIGNMENT_OF(T));
-    inout_additionalDataSize += a.GetCount() * sizeof(T);
+    inout_uiAdditionalDataSize = xiiMemoryUtils::AlignSize<xiiUInt32>(inout_uiAdditionalDataSize, XII_ALIGNMENT_OF(T));
+    inout_uiAdditionalDataSize += a.GetCount() * sizeof(T);
   }
 }
 
@@ -17,8 +17,8 @@ void xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::AddAdditi
 {
   if (uiSize > Size * sizeof(T))
   {
-    inout_additionalDataSize = xiiMemoryUtils::AlignSize<xiiUInt32>(inout_additionalDataSize, uiAlignment);
-    inout_additionalDataSize += uiSize;
+    inout_uiAdditionalDataSize = xiiMemoryUtils::AlignSize<xiiUInt32>(inout_uiAdditionalDataSize, uiAlignment);
+    inout_uiAdditionalDataSize += uiSize;
   }
 }
 
