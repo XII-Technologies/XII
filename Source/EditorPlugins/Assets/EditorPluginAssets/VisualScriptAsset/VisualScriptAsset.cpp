@@ -74,7 +74,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptAssetDocument, 6, xiiRTTINoAlloc
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiVisualScriptAssetDocument::xiiVisualScriptAssetDocument(const char* szDocumentPath) :
-  xiiSimpleAssetDocument<xiiVisualScriptAssetProperties>(XII_DEFAULT_NEW(xiiVisualScriptNodeManager), szDocumentPath, xiiAssetDocEngineConnection::None)
+  xiiSimpleAssetDocument<xiiVisualScriptAssetProperties>(XII_DEFAULT_NEW(xiiVisualScriptNodeManager_Legacy), szDocumentPath, xiiAssetDocEngineConnection::None)
 {
   xiiVisualScriptTypeRegistry::GetSingleton()->UpdateNodeTypes();
 }
@@ -154,8 +154,8 @@ void xiiVisualScriptAssetDocument::RestoreMetaDataAfterLoading(const xiiAbstract
 
 xiiResult xiiVisualScriptAssetDocument::GenerateVisualScriptDescriptor(xiiVisualScriptResourceDescriptor& desc)
 {
-  xiiVisualScriptNodeManager*  pNodeManager  = static_cast<xiiVisualScriptNodeManager*>(GetObjectManager());
-  xiiVisualScriptTypeRegistry* pTypeRegistry = xiiVisualScriptTypeRegistry::GetSingleton();
+  xiiVisualScriptNodeManager_Legacy* pNodeManager  = static_cast<xiiVisualScriptNodeManager_Legacy*>(GetObjectManager());
+  xiiVisualScriptTypeRegistry*       pTypeRegistry = xiiVisualScriptTypeRegistry::GetSingleton();
 
   xiiDynamicArray<const xiiDocumentObject*> allNodes;
   GetAllVsNodes(allNodes);
@@ -215,8 +215,8 @@ xiiResult xiiVisualScriptAssetDocument::GenerateVisualScriptDescriptor(xiiVisual
 
       for (const xiiConnection* pCon : connections)
       {
-        const xiiVisualScriptPin& vsPinSource = static_cast<const xiiVisualScriptPin&>(pCon->GetSourcePin());
-        const xiiVisualScriptPin& vsPinTarget = static_cast<const xiiVisualScriptPin&>(pCon->GetTargetPin());
+        const xiiVisualScriptPin_Legacy& vsPinSource = static_cast<const xiiVisualScriptPin_Legacy&>(pCon->GetSourcePin());
+        const xiiVisualScriptPin_Legacy& vsPinTarget = static_cast<const xiiVisualScriptPin_Legacy&>(pCon->GetTargetPin());
 
         if (vsPinSource.GetDescriptor()->m_PinType == xiiVisualScriptPinDescriptor::PinType::Execution)
         {

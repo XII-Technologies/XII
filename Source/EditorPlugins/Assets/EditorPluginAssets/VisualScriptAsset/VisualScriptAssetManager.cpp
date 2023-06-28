@@ -47,12 +47,7 @@ void xiiVisualScriptAssetManager::OnDocumentManagerEvent(const xiiDocumentManage
   }
 }
 
-void xiiVisualScriptAssetManager::InternalCreateDocument(
-  const char*              szDocumentTypeName,
-  const char*              szPath,
-  bool                     bCreateNewDocument,
-  xiiDocument*&            out_pDocument,
-  const xiiDocumentObject* pOpenContext)
+void xiiVisualScriptAssetManager::InternalCreateDocument(const char* szDocumentTypeName, const char* szPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiVisualScriptAssetDocument(szPath);
 }

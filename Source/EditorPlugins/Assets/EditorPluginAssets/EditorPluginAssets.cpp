@@ -362,22 +362,22 @@ static void ConfigureVisualScriptAsset()
 
   // Menu Bar
   {
-    xiiActionMapManager::RegisterActionMap("VisualScriptAssetMenuBar").IgnoreResult();
-    xiiStandardMenus::MapActions("VisualScriptAssetMenuBar", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
-    xiiProjectActions::MapActions("VisualScriptAssetMenuBar");
-    xiiDocumentActions::MapActions("VisualScriptAssetMenuBar", "Menu.File", false);
-    xiiAssetActions::MapMenuActions("VisualScriptAssetMenuBar", "Menu.File");
-    xiiCommandHistoryActions::MapActions("VisualScriptAssetMenuBar", "Menu.Edit");
-    xiiEditActions::MapActions("VisualScriptAssetMenuBar", "Menu.Edit", false, false);
+    xiiActionMapManager::RegisterActionMap("VisualScriptAssetMenuBar_Legacy").IgnoreResult();
+    xiiStandardMenus::MapActions("VisualScriptAssetMenuBar_Legacy", xiiStandardMenuTypes::File | xiiStandardMenuTypes::Edit | xiiStandardMenuTypes::Panels | xiiStandardMenuTypes::Help);
+    xiiProjectActions::MapActions("VisualScriptAssetMenuBar_Legacy");
+    xiiDocumentActions::MapActions("VisualScriptAssetMenuBar_Legacy", "Menu.File", false);
+    xiiAssetActions::MapMenuActions("VisualScriptAssetMenuBar_Legacy", "Menu.File");
+    xiiCommandHistoryActions::MapActions("VisualScriptAssetMenuBar_Legacy", "Menu.Edit");
+    xiiEditActions::MapActions("VisualScriptAssetMenuBar_Legacy", "Menu.Edit", false, false);
   }
 
   // Tool Bar
   {
-    xiiActionMapManager::RegisterActionMap("VisualScriptAssetToolBar").IgnoreResult();
-    xiiDocumentActions::MapActions("VisualScriptAssetToolBar", "", true);
-    xiiCommandHistoryActions::MapActions("VisualScriptAssetToolBar", "");
-    xiiAssetActions::MapToolBarActions("VisualScriptAssetToolBar", true);
-    xiiVisualScriptActions::MapActions("VisualScriptAssetToolBar", "");
+    xiiActionMapManager::RegisterActionMap("VisualScriptAssetToolBar_Legacy").IgnoreResult();
+    xiiDocumentActions::MapActions("VisualScriptAssetToolBar_Legacy", "", true);
+    xiiCommandHistoryActions::MapActions("VisualScriptAssetToolBar_Legacy", "");
+    xiiAssetActions::MapToolBarActions("VisualScriptAssetToolBar_Legacy", true);
+    xiiVisualScriptActions::MapActions("VisualScriptAssetToolBar_Legacy", "");
   }
 }
 

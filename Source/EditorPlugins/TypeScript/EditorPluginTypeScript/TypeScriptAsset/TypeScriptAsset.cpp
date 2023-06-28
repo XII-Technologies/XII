@@ -239,6 +239,12 @@ xiiTransformStatus xiiTypeScriptAssetDocument::InternalTransformAsset(xiiStreamW
   XII_SUCCEED_OR_RETURN(ValidateScriptCode());
   XII_SUCCEED_OR_RETURN(AutoGenerateVariablesCode());
 
+  xiiStringBuilder sTypeName = xiiPathUtils::GetFileName(GetDocumentPath());
+  stream << sTypeName;
+
+  const xiiUuid& docGuid = GetGuid();
+  stream << docGuid;
+
   {
     xiiTypeScriptAssetDocumentEvent e;
     e.m_Type      = xiiTypeScriptAssetDocumentEvent::Type::ScriptTransformed;

@@ -41,9 +41,9 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorPluginAssets, VisualScript)
     xiiVisualScriptTypeRegistry::GetSingleton()->UpdateNodeTypes();
     const xiiRTTI* pBaseType = xiiVisualScriptTypeRegistry::GetSingleton()->GetNodeBaseType();
 
-    xiiQtNodeScene::GetPinFactory().RegisterCreator(xiiGetStaticRTTI<xiiVisualScriptPin>(), [](const xiiRTTI* pRtti)->xiiQtPin* { return new xiiQtVisualScriptPin(); });
-    xiiQtNodeScene::GetConnectionFactory().RegisterCreator(xiiGetStaticRTTI<xiiVisualScriptConnection>(), [](const xiiRTTI* pRtti)->xiiQtConnection* { return new xiiQtVisualScriptConnection(); });
-    xiiQtNodeScene::GetNodeFactory().RegisterCreator(pBaseType, [](const xiiRTTI* pRtti)->xiiQtNode* { return new xiiQtVisualScriptNode(); });
+    xiiQtNodeScene::GetPinFactory().RegisterCreator(xiiGetStaticRTTI<xiiVisualScriptPin_Legacy>(), [](const xiiRTTI* pRtti)->xiiQtPin* { return new xiiQtVisualScriptPin_Legacy(); });
+    xiiQtNodeScene::GetConnectionFactory().RegisterCreator(xiiGetStaticRTTI<xiiVisualScriptConnection_Legacy>(), [](const xiiRTTI* pRtti)->xiiQtConnection* { return new xiiQtVisualScriptConnection_Legacy(); });
+    xiiQtNodeScene::GetNodeFactory().RegisterCreator(pBaseType, [](const xiiRTTI* pRtti)->xiiQtNode* { return new xiiQtVisualScriptNode_Legacy(); });
   }
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -51,8 +51,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorPluginAssets, VisualScript)
     const xiiRTTI* pBaseType = xiiVisualScriptTypeRegistry::GetSingleton()->GetNodeBaseType();
     xiiQtNodeScene::GetNodeFactory().UnregisterCreator(pBaseType);
 
-    xiiQtNodeScene::GetPinFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVisualScriptPin>());
-    xiiQtNodeScene::GetConnectionFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVisualScriptConnection>());
+    xiiQtNodeScene::GetPinFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVisualScriptPin_Legacy>());
+    xiiQtNodeScene::GetConnectionFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVisualScriptConnection_Legacy>());
 
     xiiVisualScriptTypeRegistry* pDummy = xiiVisualScriptTypeRegistry::GetSingleton();
     XII_DEFAULT_DELETE(pDummy);
@@ -94,7 +94,8 @@ const xiiVisualScriptNodeDescriptor* xiiVisualScriptTypeRegistry::GetDescriptorF
 
 void xiiVisualScriptTypeRegistry::PhantomTypeRegistryEventHandler(const xiiPhantomRttiManagerEvent& e)
 {
-  if (e.m_Type == xiiPhantomRttiManagerEvent::Type::TypeAdded || e.m_Type == xiiPhantomRttiManagerEvent::Type::TypeChanged)
+  if ((e.m_Type == xiiPhantomRttiManagerEvent::Type::TypeAdded && m_NodeDescriptors.Contains(e.m_pChangedType) == false) ||
+      e.m_Type == xiiPhantomRttiManagerEvent::Type::TypeChanged)
   {
     UpdateNodeType(e.m_pChangedType);
   }
@@ -108,7 +109,7 @@ void xiiVisualScriptTypeRegistry::UpdateNodeTypes()
   if (m_pBaseType == nullptr)
   {
     xiiReflectedTypeDescriptor desc;
-    desc.m_sTypeName       = "xiiVisualScriptNodeBase";
+    desc.m_sTypeName       = "xiiVisualScriptNodeBase_Legacy";
     desc.m_sPluginName     = "VisualScriptTypes";
     desc.m_sParentTypeName = xiiGetStaticRTTI<xiiReflectedClass>()->GetTypeName();
     desc.m_Flags           = xiiTypeFlags::Phantom | xiiTypeFlags::Abstract | xiiTypeFlags::Class;

@@ -47,7 +47,7 @@ xiiVisualScriptAction::xiiVisualScriptAction(const xiiActionContext& context, co
   }
 }
 
-xiiVisualScriptAction::~xiiVisualScriptAction() {}
+xiiVisualScriptAction::~xiiVisualScriptAction() = default;
 
 void xiiVisualScriptAction::Execute(const xiiVariant& value)
 {

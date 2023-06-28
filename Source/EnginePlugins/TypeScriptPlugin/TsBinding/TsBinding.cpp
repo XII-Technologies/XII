@@ -74,6 +74,9 @@ xiiTypeScriptBinding* xiiTypeScriptBinding::RetrieveBinding(duk_context* pDuk)
 
 xiiResult xiiTypeScriptBinding::Initialize(xiiWorld& ref_world)
 {
+  if (m_bInitialized)
+    return XII_SUCCESS;
+
   XII_LOG_BLOCK("Initialize TypeScript Binding");
   XII_PROFILE_SCOPE("Initialize TypeScript Binding");
 

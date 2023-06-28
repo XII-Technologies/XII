@@ -39,7 +39,10 @@ void xiiTypeScriptBinding::SetupRttiFunctionBindings()
         continue;
 
       const xiiUInt32 uiHash = ComputeFunctionBindingHash(pRtti, pFunc);
-      XII_ASSERT_DEV(!s_BoundFunctions.Contains(uiHash), "Hash collision for bound function name!");
+      if (auto pExistingBinding = s_BoundFunctions.GetValue(uiHash))
+      {
+        XII_ASSERT_DEV(xiiStringUtils::IsEqual(pExistingBinding->m_pFunc->GetPropertyName(), pFunc->GetPropertyName()), "Hash collision for bound function name!");
+      }
 
       s_BoundFunctions[uiHash].m_pFunc = pFunc;
     }

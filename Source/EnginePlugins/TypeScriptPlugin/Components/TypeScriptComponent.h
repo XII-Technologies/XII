@@ -111,7 +111,7 @@ private:
 private:
   xiiUuid m_TypeScriptComponentGuid;
   xiiTime m_LastUpdate;
-  xiiTime m_UpdateInterval = xiiTime::Seconds(-1); // deactivated by default
+  xiiTime m_UpdateInterval = xiiTime::Zero();
 
   //////////////////////////////////////////////////////////////////////////
   // Exposed Parameters
