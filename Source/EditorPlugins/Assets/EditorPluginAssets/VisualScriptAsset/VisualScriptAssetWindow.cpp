@@ -41,7 +41,7 @@ xiiQtVisualScriptAssetDocumentWindow::xiiQtVisualScriptAssetDocumentWindow(xiiDo
   {
     xiiQtMenuBarActionMapView* pMenuBar = static_cast<xiiQtMenuBarActionMapView*>(menuBar());
     xiiActionContext           context;
-    context.m_sMapping  = "VisualScriptAssetMenuBar";
+    context.m_sMapping  = "VisualScriptAssetMenuBar_Legacy";
     context.m_pDocument = pDocument;
     context.m_pWindow   = this;
     pMenuBar->SetActionContext(context);
@@ -51,7 +51,7 @@ xiiQtVisualScriptAssetDocumentWindow::xiiQtVisualScriptAssetDocumentWindow(xiiDo
   {
     xiiQtToolBarActionMapView* pToolBar = new xiiQtToolBarActionMapView("Toolbar", this);
     xiiActionContext           context;
-    context.m_sMapping  = "VisualScriptAssetToolBar";
+    context.m_sMapping  = "VisualScriptAssetToolBar_Legacy";
     context.m_pDocument = pDocument;
     context.m_pWindow   = this;
     pToolBar->SetActionContext(context);

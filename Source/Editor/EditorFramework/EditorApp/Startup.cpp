@@ -49,6 +49,7 @@
 #include <Foundation/Logging/VisualStudioWriter.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Reflection/Implementation/PropertyAttributes.h>
+#include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 #include <GuiFoundation/Action/StandardMenus.h>
 #include <GuiFoundation/PropertyGrid/DefaultState.h>
@@ -260,6 +261,14 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
   // prevent restoration of window layouts when in safe mode
   xiiQtDocumentWindow::s_bAllowRestoreWindowLayout = !IsInSafeMode();
+
+  {
+    // Make sure that we have at least 4 worker threads for short running and 4 worker threads for long running tasks.
+    // Otherwise the Editor might deadlock during asset transform.
+    xiiInt32 iLongThreads  = xiiMath::Max(4, (xiiInt32)xiiTaskSystem::GetNumAllocatedWorkerThreads(xiiWorkerThreadType::LongTasks));
+    xiiInt32 iShortThreads = xiiMath::Max(4, (xiiInt32)xiiTaskSystem::GetNumAllocatedWorkerThreads(xiiWorkerThreadType::ShortTasks));
+    xiiTaskSystem::SetWorkerThreadCount(iShortThreads, iLongThreads);
+  }
 
   {
     XII_PROFILE_SCOPE("Filesystem");

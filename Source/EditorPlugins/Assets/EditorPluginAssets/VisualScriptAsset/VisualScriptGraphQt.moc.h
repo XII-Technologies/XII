@@ -15,7 +15,7 @@ class xiiQtVisualScriptAssetScene : public xiiQtNodeScene
   Q_OBJECT
 
 public:
-  xiiQtVisualScriptAssetScene(QObject* parent = nullptr);
+  xiiQtVisualScriptAssetScene(QObject* pParent = nullptr);
   ~xiiQtVisualScriptAssetScene();
 
   void    VisualScriptActivityEventHandler(const xiiVisualScriptActivityEvent& ae);
@@ -33,18 +33,18 @@ private:
   xiiUuid m_DebugObject;
 };
 
-class xiiQtVisualScriptPin : public xiiQtPin
+class xiiQtVisualScriptPin_Legacy : public xiiQtPin
 {
 public:
-  xiiQtVisualScriptPin();
+  xiiQtVisualScriptPin_Legacy();
 
   virtual void SetPin(const xiiPin& pin) override;
 };
 
-class xiiQtVisualScriptConnection : public xiiQtConnection
+class xiiQtVisualScriptConnection_Legacy : public xiiQtConnection
 {
 public:
-  xiiQtVisualScriptConnection(QGraphicsItem* parent = 0);
+  xiiQtVisualScriptConnection_Legacy(QGraphicsItem* parent = 0);
 
   virtual QPen DeterminePen() const override;
 
@@ -52,10 +52,10 @@ public:
   xiiTime m_HighlightUntil;
 };
 
-class xiiQtVisualScriptNode : public xiiQtNode
+class xiiQtVisualScriptNode_Legacy : public xiiQtNode
 {
 public:
-  xiiQtVisualScriptNode();
+  xiiQtVisualScriptNode_Legacy();
 
   virtual void InitNode(const xiiDocumentNodeManager* pManager, const xiiDocumentObject* pObject) override;
 

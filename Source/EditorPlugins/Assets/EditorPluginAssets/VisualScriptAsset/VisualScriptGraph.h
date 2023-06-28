@@ -8,12 +8,12 @@
 
 struct xiiVisualScriptPinDescriptor;
 
-class xiiVisualScriptPin : public xiiPin
+class xiiVisualScriptPin_Legacy : public xiiPin
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiVisualScriptPin, xiiPin);
+  XII_ADD_DYNAMIC_REFLECTION(xiiVisualScriptPin_Legacy, xiiPin);
 
 public:
-  xiiVisualScriptPin(Type type, const xiiVisualScriptPinDescriptor* pDescriptor, const xiiDocumentObject* pObject);
+  xiiVisualScriptPin_Legacy(Type type, const xiiVisualScriptPinDescriptor* pDescriptor, const xiiDocumentObject* pObject);
 
   const xiiString&                    GetTooltip() const;
   const xiiVisualScriptPinDescriptor* GetDescriptor() const { return m_pDescriptor; }
@@ -22,19 +22,19 @@ private:
   const xiiVisualScriptPinDescriptor* m_pDescriptor;
 };
 
-class xiiVisualScriptConnection : public xiiReflectedClass
+class xiiVisualScriptConnection_Legacy : public xiiReflectedClass
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiVisualScriptConnection, xiiReflectedClass);
+  XII_ADD_DYNAMIC_REFLECTION(xiiVisualScriptConnection_Legacy, xiiReflectedClass);
 };
 
-class xiiVisualScriptNodeManager : public xiiDocumentNodeManager
+class xiiVisualScriptNodeManager_Legacy : public xiiDocumentNodeManager
 {
 public:
   virtual bool           InternalIsNode(const xiiDocumentObject* pObject) const override;
-  virtual void           InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& node) override;
-  virtual void           GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& Types) const override;
+  virtual void           InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& ref_node) override;
+  virtual void           GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const override;
   virtual const xiiRTTI* GetConnectionType() const override;
   virtual const char*    GetTypeCategory(const xiiRTTI* pRtti) const override;
 
-  virtual xiiStatus InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_Result) const override;
+  virtual xiiStatus InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const override;
 };

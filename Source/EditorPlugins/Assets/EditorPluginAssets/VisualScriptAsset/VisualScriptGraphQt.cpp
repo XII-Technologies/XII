@@ -6,8 +6,8 @@
 #include <EditorPluginAssets/VisualScriptAsset/VisualScriptTypeRegistry.h>
 #include <GameEngine/VisualScript/VisualScriptInstance.h>
 
-xiiQtVisualScriptAssetScene::xiiQtVisualScriptAssetScene(QObject* parent) :
-  xiiQtNodeScene(parent)
+xiiQtVisualScriptAssetScene::xiiQtVisualScriptAssetScene(QObject* pParent) :
+  xiiQtNodeScene(pParent)
 {
 }
 
@@ -68,7 +68,7 @@ void xiiQtVisualScriptAssetScene::VisualScriptActivityEventHandler(const xiiVisu
 
       for (auto& pSearchPin : outputPins)
       {
-        if (static_cast<const xiiVisualScriptPin&>(*pSearchPin).GetDescriptor()->m_uiPinIndex == uiPin)
+        if (static_cast<const xiiVisualScriptPin_Legacy&>(*pSearchPin).GetDescriptor()->m_uiPinIndex == uiPin)
         {
           pFoundPin = pSearchPin.Borrow();
           break;
@@ -85,7 +85,7 @@ void xiiQtVisualScriptAssetScene::VisualScriptActivityEventHandler(const xiiVisu
 
     for (auto pQtCon : connectionsOut)
     {
-      xiiQtVisualScriptConnection* pVsCon = static_cast<xiiQtVisualScriptConnection*>(pQtCon);
+      xiiQtVisualScriptConnection_Legacy* pVsCon = static_cast<xiiQtVisualScriptConnection_Legacy*>(pQtCon);
 
       pVsCon->m_HighlightUntil = tHighlight;
 
@@ -144,7 +144,7 @@ void xiiQtVisualScriptAssetScene::ResetActiveConnections(xiiDynamicArray<const x
 
       for (auto pQtCon : connectionsOut)
       {
-        xiiQtVisualScriptConnection* pVsCon = static_cast<xiiQtVisualScriptConnection*>(pQtCon);
+        xiiQtVisualScriptConnection_Legacy* pVsCon = static_cast<xiiQtVisualScriptConnection_Legacy*>(pQtCon);
 
         if (pVsCon->m_bExecutionHighlight)
         {
@@ -178,13 +178,13 @@ void xiiQtVisualScriptAssetScene::OnUpdateDisplay()
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiQtVisualScriptPin::xiiQtVisualScriptPin() = default;
+xiiQtVisualScriptPin_Legacy::xiiQtVisualScriptPin_Legacy() = default;
 
-void xiiQtVisualScriptPin::SetPin(const xiiPin& pin)
+void xiiQtVisualScriptPin_Legacy::SetPin(const xiiPin& pin)
 {
   xiiQtPin::SetPin(pin);
 
-  const xiiVisualScriptPin& vsPin = xiiStaticCast<const xiiVisualScriptPin&>(pin);
+  const xiiVisualScriptPin_Legacy& vsPin = xiiStaticCast<const xiiVisualScriptPin_Legacy&>(pin);
 
   xiiStringBuilder sTooltip;
   if (!vsPin.GetTooltip().IsEmpty())
@@ -212,10 +212,10 @@ void xiiQtVisualScriptPin::SetPin(const xiiPin& pin)
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiQtVisualScriptConnection::xiiQtVisualScriptConnection(QGraphicsItem* parent /*= 0*/) {}
+xiiQtVisualScriptConnection_Legacy::xiiQtVisualScriptConnection_Legacy(QGraphicsItem* parent /*= 0*/) {}
 
 
-QPen xiiQtVisualScriptConnection::DeterminePen() const
+QPen xiiQtVisualScriptConnection_Legacy::DeterminePen() const
 {
   if (m_bExecutionHighlight)
   {
@@ -230,9 +230,9 @@ QPen xiiQtVisualScriptConnection::DeterminePen() const
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiQtVisualScriptNode::xiiQtVisualScriptNode() = default;
+xiiQtVisualScriptNode_Legacy::xiiQtVisualScriptNode_Legacy() = default;
 
-void xiiQtVisualScriptNode::InitNode(const xiiDocumentNodeManager* pManager, const xiiDocumentObject* pObject)
+void xiiQtVisualScriptNode_Legacy::InitNode(const xiiDocumentNodeManager* pManager, const xiiDocumentObject* pObject)
 {
   xiiQtNode::InitNode(pManager, pObject);
 
@@ -249,7 +249,7 @@ void xiiQtVisualScriptNode::InitNode(const xiiDocumentNodeManager* pManager, con
   }
 }
 
-void xiiQtVisualScriptNode::UpdateState()
+void xiiQtVisualScriptNode_Legacy::UpdateState()
 {
   xiiStringBuilder sTitle;
 
