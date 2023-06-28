@@ -15,8 +15,8 @@ struct XII_TOOLSFOUNDATION_DLL xiiDocumentNodeManagerEvent
     NodeMoved,
     AfterPinsConnected,
     BeforePinsDisonnected,
-    BeforePinsChanged, // todo
-    AfterPinsChanged,  // todo
+    BeforePinsChanged,
+    AfterPinsChanged,
     BeforeNodeAdded,
     AfterNodeAdded,
     BeforeNodeRemoved,
@@ -68,11 +68,12 @@ public:
     Circle,
     Rect,
     RoundRect,
+    Arrow,
     Default = Circle
   };
 
-  xiiPin(Type type, const char* szName, const xiiColorGammaUB& color, const xiiDocumentObject* pObject) :
-    m_Type(type), m_Color(color), m_sName(szName), m_pParent(pObject)
+  xiiPin(Type type, xiiStringView sName, const xiiColorGammaUB& color, const xiiDocumentObject* pObject) :
+    m_Type(type), m_Color(color), m_sName(sName), m_pParent(pObject)
   {
   }
 
@@ -121,14 +122,16 @@ public:
 
   bool IsNode(const xiiDocumentObject* pObject) const;
   bool IsConnection(const xiiDocumentObject* pObject) const;
+  bool IsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const;
 
   xiiArrayPtr<const xiiConnection* const> GetConnections(const xiiPin& pin) const;
   bool                                    HasConnections(const xiiPin& pin) const;
   bool                                    IsConnected(const xiiPin& source, const xiiPin& target) const;
-  xiiStatus                               CanConnect(const xiiRTTI* pObjectType, const xiiPin& source, const xiiPin& target, CanConnectResult& ref_result) const;
-  xiiStatus                               CanDisconnect(const xiiConnection* pConnection) const;
-  xiiStatus                               CanDisconnect(const xiiDocumentObject* pObject) const;
-  xiiStatus                               CanMoveNode(const xiiDocumentObject* pObject, const xiiVec2& vPos) const;
+
+  xiiStatus CanConnect(const xiiRTTI* pObjectType, const xiiPin& source, const xiiPin& target, CanConnectResult& ref_result) const;
+  xiiStatus CanDisconnect(const xiiConnection* pConnection) const;
+  xiiStatus CanDisconnect(const xiiDocumentObject* pObject) const;
+  xiiStatus CanMoveNode(const xiiDocumentObject* pObject, const xiiVec2& vPos) const;
 
   void Connect(const xiiDocumentObject* pObject, const xiiPin& source, const xiiPin& target);
   void Disconnect(const xiiDocumentObject* pObject);
@@ -148,6 +151,9 @@ protected:
   /// \brief Returns true if adding a connection between the two pins would create a circular graph
   bool WouldConnectionCreateCircle(const xiiPin& source, const xiiPin& target) const;
 
+  void         GetDynamicPinNames(const xiiDocumentObject* pObject, const char* szPropertyName, xiiStringView sPinName, xiiDynamicArray<xiiString>& out_Names) const;
+  virtual bool TryRecreatePins(const xiiDocumentObject* pObject);
+
   struct NodeInternal
   {
     xiiVec2                                 m_vPos = xiiVec2::ZeroVector();
@@ -158,6 +164,7 @@ protected:
 private:
   virtual bool      InternalIsNode(const xiiDocumentObject* pObject) const;
   virtual bool      InternalIsConnection(const xiiDocumentObject* pObject) const;
+  virtual bool      InternalIsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const { return false; }
   virtual xiiStatus InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_Result) const;
   virtual xiiStatus InternalCanDisconnect(const xiiPin& source, const xiiPin& target) const { return xiiStatus(XII_SUCCESS); }
   virtual xiiStatus InternalCanMoveNode(const xiiDocumentObject* pObject, const xiiVec2& vPos) const { return xiiStatus(XII_SUCCESS); }
@@ -165,6 +172,7 @@ private:
 
   void ObjectHandler(const xiiDocumentObjectEvent& e);
   void StructureEventHandler(const xiiDocumentObjectStructureEvent& e);
+  void PropertyEventsHandler(const xiiDocumentObjectPropertyEvent& e);
 
   void RestoreOldMetaDataAfterLoading(const xiiAbstractObjectGraph& graph, const xiiAbstractObjectNode::Property& connectionsProperty, const xiiDocumentObject* pSourceObject);
 

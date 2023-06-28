@@ -44,7 +44,7 @@ public:
   virtual void keyPressEvent(QKeyEvent* pEvent) override {}
 
 protected:
-  virtual bool     AdjustRenderingForHighlight(xiiQtPinHighlightState state);
+  virtual bool     UpdatePinColors(const xiiColorGammaUB* pOverwriteColor = nullptr);
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
   xiiQtPinHighlightState m_HighlightState = xiiQtPinHighlightState::None;

@@ -66,7 +66,11 @@ xiiDocument::xiiDocument(const char* szPath, xiiDocumentObjectManager* pDocument
   m_pObjectManager->SetDocument(this);
   m_pCommandHistory   = XII_DEFAULT_NEW(xiiCommandHistory, this);
   m_pSelectionManager = XII_DEFAULT_NEW(xiiSelectionManager, m_pObjectManager.Borrow());
-  m_pObjectAccessor   = XII_DEFAULT_NEW(xiiObjectCommandAccessor, m_pCommandHistory.Borrow());
+
+  if (m_pObjectAccessor == nullptr)
+  {
+    m_pObjectAccessor = XII_DEFAULT_NEW(xiiObjectCommandAccessor, m_pCommandHistory.Borrow());
+  }
 
   m_bWindowRequested      = false;
   m_bModified             = true;

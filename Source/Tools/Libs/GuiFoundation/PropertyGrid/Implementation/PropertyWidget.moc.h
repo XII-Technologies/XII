@@ -67,10 +67,12 @@ protected:
   virtual void OnInit() override;
   virtual void InternalSetValue(const xiiVariant& value) override;
 
-  bool                m_bTemporaryCommand;
-  xiiInt8             m_iNumComponents;
-  QHBoxLayout*        m_pLayout;
-  xiiQtDoubleSpinBox* m_pWidget[4];
+  bool                    m_bUseTemporaryTransaction = false;
+  bool                    m_bTemporaryCommand        = false;
+  xiiInt8                 m_iNumComponents           = 0;
+  xiiEnum<xiiVariantType> m_OriginalType;
+  QHBoxLayout*            m_pLayout    = nullptr;
+  xiiQtDoubleSpinBox*     m_pWidget[4] = {};
 };
 
 /// *** TIME SPINBOX ***
@@ -136,11 +138,13 @@ protected:
   virtual void OnInit() override;
   virtual void InternalSetValue(const xiiVariant& value) override;
 
-  bool                m_bTemporaryCommand;
-  xiiInt8             m_iNumComponents;
-  QHBoxLayout*        m_pLayout;
-  xiiQtDoubleSpinBox* m_pWidget[4];
-  QSlider*            m_pSlider = nullptr;
+  bool                    m_bUseTemporaryTransaction = false;
+  bool                    m_bTemporaryCommand        = false;
+  xiiInt8                 m_iNumComponents           = 0;
+  xiiEnum<xiiVariantType> m_OriginalType;
+  QHBoxLayout*            m_pLayout    = nullptr;
+  xiiQtDoubleSpinBox*     m_pWidget[4] = {};
+  QSlider*                m_pSlider    = nullptr;
 };
 
 /// *** QUATERNION ***
@@ -206,6 +210,9 @@ Q_SIGNALS:
 protected:
   virtual void showEvent(QShowEvent* event) override;
   virtual void mouseReleaseEvent(QMouseEvent* event) override;
+
+  virtual QSize sizeHint() const override;
+  virtual QSize minimumSizeHint() const override;
 
 private:
   QPalette m_Pal;

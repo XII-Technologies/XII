@@ -63,8 +63,6 @@ void xiiQtAddSubElementButton::OnInit()
     m_bPreventDuplicates = true;
   }
 
-  m_pConstraint = m_pProp->GetAttributeByType<xiiConstrainPointerAttribute>();
-
   QMetaObject::connectSlotsByName(this);
 }
 
@@ -141,32 +139,6 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
     }
     m_SupportedTypes.Insert(pProp->GetSpecificType());
 
-    xiiVariant constraintValue;
-    if (m_pConstraint)
-    {
-      const xiiRTTI* pType = GetCommonBaseType(m_Items);
-      if (const xiiAbstractProperty* pConstraintValueProp = pType->FindPropertyByName(m_pConstraint->GetConstantValueProperty()))
-      {
-        if (pConstraintValueProp->GetCategory() == xiiPropertyCategory::Constant)
-        {
-          constraintValue = static_cast<const xiiAbstractConstantProperty*>(pConstraintValueProp)->GetConstant();
-        }
-        else if (pConstraintValueProp->GetCategory() == xiiPropertyCategory::Member)
-        {
-          constraintValue = GetCommonValue(m_Items, pConstraintValueProp);
-        }
-        else
-        {
-          xiiLog::Error("xiiConstrainPointerAttribute set for '{0}' but the constant value property '{1}' has an unsupported type.",
-                        pType->GetTypeName(), m_pConstraint->GetConstantValueProperty().GetData());
-        }
-      }
-      else
-      {
-        xiiLog::Error("xiiConstrainPointerAttribute set for '{0}' but the constant value property '{1}' does not exist.", pType->GetTypeName(),
-                      m_pConstraint->GetConstantValueProperty().GetData());
-      }
-    }
     // remove all types that are marked as hidden
     for (auto it = m_SupportedTypes.GetIterator(); it.IsValid();)
     {
@@ -179,17 +151,6 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
       if (!s_bShowInDevelopmentFeatures)
       {
         if (auto pInDev = it.Key()->GetAttributeByType<xiiInDevelopmentAttribute>())
-        {
-          it = m_SupportedTypes.Remove(it);
-          continue;
-        }
-      }
-
-      if (m_pConstraint)
-      {
-        const xiiAbstractProperty* pConstraintProp = it.Key()->FindPropertyByName(m_pConstraint->GetConstantName());
-        if (!constraintValue.IsValid() || !pConstraintProp || pConstraintProp->GetCategory() != xiiPropertyCategory::Constant ||
-            static_cast<const xiiAbstractConstantProperty*>(pConstraintProp)->GetConstant() != constraintValue)
         {
           it = m_SupportedTypes.Remove(it);
           continue;

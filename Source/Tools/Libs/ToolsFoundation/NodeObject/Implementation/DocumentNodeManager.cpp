@@ -77,12 +77,16 @@ xiiDocumentNodeManager::xiiDocumentNodeManager()
 {
   m_ObjectEvents.AddEventHandler(xiiMakeDelegate(&xiiDocumentNodeManager::ObjectHandler, this));
   m_StructureEvents.AddEventHandler(xiiMakeDelegate(&xiiDocumentNodeManager::StructureEventHandler, this));
+
+  m_PropertyEvents.AddEventHandler(xiiMakeDelegate(&xiiDocumentNodeManager::PropertyEventsHandler, this));
 }
 
 xiiDocumentNodeManager::~xiiDocumentNodeManager()
 {
   m_ObjectEvents.RemoveEventHandler(xiiMakeDelegate(&xiiDocumentNodeManager::ObjectHandler, this));
   m_StructureEvents.RemoveEventHandler(xiiMakeDelegate(&xiiDocumentNodeManager::StructureEventHandler, this));
+
+  m_PropertyEvents.RemoveEventHandler(xiiMakeDelegate(&xiiDocumentNodeManager::PropertyEventsHandler, this));
 }
 
 const xiiRTTI* xiiDocumentNodeManager::GetConnectionType() const
@@ -168,6 +172,17 @@ bool xiiDocumentNodeManager::IsConnection(const xiiDocumentObject* pObject) cons
     return false;
 
   return InternalIsConnection(pObject);
+}
+
+bool xiiDocumentNodeManager::IsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const
+{
+  if (IsNode(pObject) == false)
+    return false;
+
+  if (pProp == nullptr)
+    return false;
+
+  return InternalIsDynamicPinProperty(pObject, pProp);
 }
 
 xiiArrayPtr<const xiiConnection* const> xiiDocumentNodeManager::GetConnections(const xiiPin& pin) const
@@ -395,30 +410,42 @@ void xiiDocumentNodeManager::RestoreMetaDataAfterLoading(const xiiAbstractObject
       xiiDocumentObject* pSource = GetObject(connectionMetaData.m_Source);
       xiiDocumentObject* pTarget = GetObject(connectionMetaData.m_Target);
       if (pSource == nullptr || pTarget == nullptr)
+      {
+        RemoveObject(pObject);
+        DestroyObject(pObject);
         continue;
+      }
 
       const xiiPin* pSourcePin = GetOutputPinByName(pSource, connectionMetaData.m_SourcePin);
       const xiiPin* pTargetPin = GetInputPinByName(pTarget, connectionMetaData.m_TargetPin);
       if (pSourcePin == nullptr || pTargetPin == nullptr)
+      {
+        RemoveObject(pObject);
+        DestroyObject(pObject);
         continue;
+      }
 
       xiiDocumentNodeManager::CanConnectResult res;
-      if (CanConnect(pObject->GetType(), *pSourcePin, *pTargetPin, res).m_Result.Succeeded())
+      if (CanConnect(pObject->GetType(), *pSourcePin, *pTargetPin, res).m_Result.Failed())
       {
-        if (bUndoable)
-        {
-          xiiConnectNodePinsCommand cmd;
-          cmd.m_ConnectionObject = pObject->GetGuid();
-          cmd.m_ObjectSource     = connectionMetaData.m_Source;
-          cmd.m_ObjectTarget     = connectionMetaData.m_Target;
-          cmd.m_sSourcePin       = connectionMetaData.m_SourcePin;
-          cmd.m_sTargetPin       = connectionMetaData.m_TargetPin;
-          history->AddCommand(cmd);
-        }
-        else
-        {
-          Connect(pObject, *pSourcePin, *pTargetPin);
-        }
+        RemoveObject(pObject);
+        DestroyObject(pObject);
+        continue;
+      }
+
+      if (bUndoable)
+      {
+        xiiConnectNodePinsCommand cmd;
+        cmd.m_ConnectionObject = pObject->GetGuid();
+        cmd.m_ObjectSource     = connectionMetaData.m_Source;
+        cmd.m_ObjectTarget     = connectionMetaData.m_Target;
+        cmd.m_sSourcePin       = connectionMetaData.m_SourcePin;
+        cmd.m_sTargetPin       = connectionMetaData.m_TargetPin;
+        history->AddCommand(cmd);
+      }
+      else
+      {
+        Connect(pObject, *pSourcePin, *pTargetPin);
       }
     }
   }
@@ -589,6 +616,93 @@ bool xiiDocumentNodeManager::WouldConnectionCreateCircle(const xiiPin& source, c
   return CanReachNode(pTargetNode, pSourceNode, Visited);
 }
 
+void xiiDocumentNodeManager::GetDynamicPinNames(const xiiDocumentObject* pObject, const char* szPropertyName, xiiStringView sPinName, xiiDynamicArray<xiiString>& out_Names) const
+{
+  out_Names.Clear();
+
+  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(szPropertyName);
+  if (pProp == nullptr)
+  {
+    xiiLog::Warning("Property '{0}' not found in type '{1}'", szPropertyName, pObject->GetType()->GetTypeName());
+    return;
+  }
+
+  xiiStringBuilder sTemp;
+  xiiVariant       value = pObject->GetTypeAccessor().GetValue(szPropertyName);
+
+  if (pProp->GetCategory() == xiiPropertyCategory::Member)
+  {
+    if (value.CanConvertTo<xiiUInt32>())
+    {
+      xiiUInt32 uiCount = value.ConvertTo<xiiUInt32>();
+      for (xiiUInt32 i = 0; i < uiCount; ++i)
+      {
+        sTemp.Format("{}[{}]", sPinName, i);
+        out_Names.PushBack(sTemp);
+      }
+    }
+  }
+  else if (pProp->GetCategory() == xiiPropertyCategory::Array)
+  {
+    auto pArrayProp = static_cast<const xiiAbstractArrayProperty*>(pProp);
+
+    auto&           a       = value.Get<xiiVariantArray>();
+    const xiiUInt32 uiCount = a.GetCount();
+
+    if (pArrayProp->GetSpecificType() == xiiGetStaticRTTI<xiiString>())
+    {
+      for (xiiUInt32 i = 0; i < uiCount; ++i)
+      {
+        out_Names.PushBack(a[i].Get<xiiString>());
+      }
+    }
+    else
+    {
+      for (xiiUInt32 i = 0; i < uiCount; ++i)
+      {
+        sTemp.Format("{}[{}]", sPinName, i);
+        out_Names.PushBack(sTemp);
+      }
+    }
+  }
+}
+
+bool xiiDocumentNodeManager::TryRecreatePins(const xiiDocumentObject* pObject)
+{
+  if (!IsNode(pObject))
+    return false;
+
+  auto& nodeInternal = m_ObjectToNode[pObject->GetGuid()];
+
+  for (auto& pPin : nodeInternal.m_Inputs)
+  {
+    if (HasConnections(*pPin))
+      return false;
+  }
+
+  for (auto& pPin : nodeInternal.m_Outputs)
+  {
+    if (HasConnections(*pPin))
+      return false;
+  }
+
+  {
+    xiiDocumentNodeManagerEvent e(xiiDocumentNodeManagerEvent::Type::BeforePinsChanged, pObject);
+    m_NodeEvents.Broadcast(e);
+  }
+
+  nodeInternal.m_Inputs.Clear();
+  nodeInternal.m_Outputs.Clear();
+  InternalCreatePins(pObject, nodeInternal);
+
+  {
+    xiiDocumentNodeManagerEvent e(xiiDocumentNodeManagerEvent::Type::AfterPinsChanged, pObject);
+    m_NodeEvents.Broadcast(e);
+  }
+
+  return true;
+}
+
 bool xiiDocumentNodeManager::InternalIsNode(const xiiDocumentObject* pObject) const
 {
   return true;
@@ -616,8 +730,6 @@ void xiiDocumentNodeManager::ObjectHandler(const xiiDocumentObjectEvent& e)
       {
         XII_ASSERT_DEBUG(!m_ObjectToNode.Contains(e.m_pObject->GetGuid()), "Sanity check failed!");
         m_ObjectToNode[e.m_pObject->GetGuid()] = NodeInternal();
-        InternalCreatePins(e.m_pObject, m_ObjectToNode[e.m_pObject->GetGuid()]);
-        // TODO: Sanity check pins (duplicate names etc).
       }
       else if (IsConnection(e.m_pObject))
       {
@@ -651,6 +763,13 @@ void xiiDocumentNodeManager::StructureEventHandler(const xiiDocumentObjectStruct
     {
       if (IsNode(e.m_pObject))
       {
+        auto& nodeInternal = m_ObjectToNode[e.m_pObject->GetGuid()];
+        if (nodeInternal.m_Inputs.IsEmpty() && nodeInternal.m_Outputs.IsEmpty())
+        {
+          InternalCreatePins(e.m_pObject, nodeInternal);
+          // TODO: Sanity check pins (duplicate names etc).
+        }
+
         xiiDocumentNodeManagerEvent e2(xiiDocumentNodeManagerEvent::Type::BeforeNodeAdded, e.m_pObject);
         m_NodeEvents.Broadcast(e2);
       }
@@ -686,6 +805,18 @@ void xiiDocumentNodeManager::StructureEventHandler(const xiiDocumentObjectStruct
 
     default:
       break;
+  }
+}
+
+void xiiDocumentNodeManager::PropertyEventsHandler(const xiiDocumentObjectPropertyEvent& e)
+{
+  const xiiAbstractProperty* pProp = e.m_pObject->GetType()->FindPropertyByName(e.m_sProperty);
+  if (pProp == nullptr)
+    return;
+
+  if (IsDynamicPinProperty(e.m_pObject, pProp))
+  {
+    TryRecreatePins(e.m_pObject);
   }
 }
 

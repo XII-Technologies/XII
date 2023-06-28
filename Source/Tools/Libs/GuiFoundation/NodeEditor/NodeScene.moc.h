@@ -26,7 +26,7 @@ public:
   explicit xiiQtNodeScene(QObject* pParent = nullptr);
   ~xiiQtNodeScene();
 
-  void                          SetDocumentNodeManager(const xiiDocumentNodeManager* pManager);
+  virtual void                          SetDocumentNodeManager(const xiiDocumentNodeManager* pManager);
   const xiiDocumentNodeManager* GetDocumentNodeManager() const;
   const xiiDocument*            GetDocument() const;
 
@@ -84,6 +84,7 @@ private:
   void DeleteQtNode(const xiiDocumentObject* pObject);
   void CreateQtConnection(const xiiDocumentObject* pObject);
   void DeleteQtConnection(const xiiDocumentObject* pObject);
+  void RecreateQtPins(const xiiDocumentObject* pObject);
   void CreateNodeObject(const xiiRTTI* pRtti);
   void NodeEventsHandler(const xiiDocumentNodeManagerEvent& e);
   void PropertyEventsHandler(const xiiDocumentObjectPropertyEvent& e);

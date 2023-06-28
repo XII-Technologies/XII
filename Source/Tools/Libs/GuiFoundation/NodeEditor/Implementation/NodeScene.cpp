@@ -44,9 +44,9 @@ void xiiQtNodeScene::SetDocumentNodeManager(const xiiDocumentNodeManager* pManag
 
   m_pManager = pManager;
 
-  if (pManager != nullptr)
+  if (m_pManager != nullptr)
   {
-    pManager->m_NodeEvents.AddEventHandler(xiiMakeDelegate(&xiiQtNodeScene::NodeEventsHandler, this));
+    m_pManager->m_NodeEvents.AddEventHandler(xiiMakeDelegate(&xiiQtNodeScene::NodeEventsHandler, this));
     m_pManager->GetDocument()->GetSelectionManager()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtNodeScene::SelectionEventsHandler, this));
     m_pManager->m_PropertyEvents.AddEventHandler(xiiMakeDelegate(&xiiQtNodeScene::PropertyEventsHandler, this));
 
@@ -240,8 +240,8 @@ void xiiQtNodeScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (it.Value()->GetFlags().IsSet(xiiNodeFlags::Moved))
     {
       moved.Insert(it.Key());
+      it.Value()->ResetFlags();
     }
-    it.Value()->ResetFlags();
   }
 
   if (!moved.IsEmpty())
@@ -417,6 +417,10 @@ void xiiQtNodeScene::CreateQtConnection(const xiiDocumentObject* pObject)
   pOutput->AddConnection(pQtConnection);
   pInput->AddConnection(pQtConnection);
   m_Connections[pObject] = pQtConnection;
+
+  // Reset flags to update the node's title to reflect connection changes
+  pSource->ResetFlags();
+  pTarget->ResetFlags();
 }
 
 void xiiQtNodeScene::DeleteQtConnection(const xiiDocumentObject* pObject)
@@ -441,6 +445,18 @@ void xiiQtNodeScene::DeleteQtConnection(const xiiDocumentObject* pObject)
 
   removeItem(pQtConnection);
   delete pQtConnection;
+
+  // reset flags to update the node's title to reflect connection changes
+  pSource->ResetFlags();
+  pTarget->ResetFlags();
+}
+
+void xiiQtNodeScene::RecreateQtPins(const xiiDocumentObject* pObject)
+{
+  xiiQtNode* pNode = m_Nodes[pObject];
+  pNode->CreatePins();
+  pNode->UpdateState();
+  pNode->UpdateGeometry();
 }
 
 void xiiQtNodeScene::CreateNodeObject(const xiiRTTI* pRtti)
@@ -492,6 +508,13 @@ void xiiQtNodeScene::NodeEventsHandler(const xiiDocumentNodeManagerEvent& e)
       DeleteQtConnection(e.m_pObject);
       break;
 
+    case xiiDocumentNodeManagerEvent::Type::BeforePinsChanged:
+      break;
+
+    case xiiDocumentNodeManagerEvent::Type::AfterPinsChanged:
+      RecreateQtPins(e.m_pObject);
+      break;
+
     case xiiDocumentNodeManagerEvent::Type::AfterNodeAdded:
       CreateQtNode(e.m_pObject);
       break;
@@ -508,11 +531,11 @@ void xiiQtNodeScene::NodeEventsHandler(const xiiDocumentNodeManagerEvent& e)
 void xiiQtNodeScene::PropertyEventsHandler(const xiiDocumentObjectPropertyEvent& e)
 {
   auto it = m_Nodes.Find(e.m_pObject);
-
-  if (!it.IsValid())
-    return;
-
-  it.Value()->UpdateState();
+  if (it.IsValid())
+  {
+    it.Value()->ResetFlags();
+    it.Value()->update();
+  }
 }
 
 void xiiQtNodeScene::SelectionEventsHandler(const xiiSelectionManagerEvent& e)

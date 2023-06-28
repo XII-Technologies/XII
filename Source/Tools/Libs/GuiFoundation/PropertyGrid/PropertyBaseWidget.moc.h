@@ -14,6 +14,7 @@ class QHBoxLayout;
 class QVBoxLayout;
 class QLabel;
 class QMenu;
+class QComboBox;
 class xiiQtGroupBoxBase;
 class xiiQtAddSubElementButton;
 class xiiQtPropertyGridWidget;
@@ -45,7 +46,7 @@ public:
   virtual bool HasLabel() const { return true; }
 
   /// \brief The return value is used to display a label, if HasLabel() returns true.
-  virtual const char* GetLabel(xiiStringBuilder& ref_sTemp) const;
+  virtual const char* GetLabel(xiiStringBuilder& ref_sTmp) const;
 
   virtual void ExtendContextMenu(QMenu& ref_menu);
 
@@ -54,10 +55,7 @@ public:
 
   /// \brief If the property is of type xiiVariant this function returns whether all items have the same type.
   /// If true is returned, out_Type contains the common type. Note that 'invalid' can be a common type.
-  bool GetCommonVariantSubType(
-    const xiiHybridArray<xiiPropertySelection, 8>& items,
-    const xiiAbstractProperty*                     pProperty,
-    xiiVariantType::Enum&                          out_type);
+  bool GetCommonVariantSubType(const xiiHybridArray<xiiPropertySelection, 8>& items, const xiiAbstractProperty* pProperty, xiiVariantType::Enum& out_type);
 
   xiiVariant GetCommonValue(const xiiHybridArray<xiiPropertySelection, 8>& items, const xiiAbstractProperty* pProperty);
   void       PrepareToDie();
@@ -340,18 +338,18 @@ public:
   xiiQtVariantPropertyWidget();
   virtual ~xiiQtVariantPropertyWidget();
 
-  virtual void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
-  virtual void ExtendContextMenu(QMenu& ref_menu) override;
-
 protected:
-  virtual void OnInit() override{};
+  virtual void OnInit() override;
   virtual void InternalSetValue(const xiiVariant& value) override;
   virtual void DoPrepareToDie() override;
+  void         UpdateTypeListSelection(xiiVariantType::Enum type);
   void         ChangeVariantType(xiiVariantType::Enum type);
 
+  virtual xiiResult GetVariantTypeDisplayName(xiiVariantType::Enum type, xiiStringBuilder& out_sName) const;
+
 protected:
-  QHBoxLayout*         m_pLayout         = nullptr;
-  QWidget*             m_pSelectType     = nullptr;
+  QVBoxLayout*         m_pLayout         = nullptr;
+  QComboBox*           m_pTypeList       = nullptr;
   xiiQtPropertyWidget* m_pWidget         = nullptr;
   const xiiRTTI*       m_pCurrentSubType = nullptr;
 };

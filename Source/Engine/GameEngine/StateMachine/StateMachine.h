@@ -6,6 +6,8 @@
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Types/SharedPtr.h>
 
+class xiiComponent;
+class xiiWorld;
 class xiiBlackboard;
 class xiiStateMachineInstance;
 
@@ -29,8 +31,8 @@ public:
   virtual void OnExit(xiiStateMachineInstance& ref_instance, void* pInstanceData, const xiiStateMachineState* pToState) const;
   virtual void Update(xiiStateMachineInstance& ref_instance, void* pInstanceData, xiiTime deltaTime) const;
 
-  virtual xiiResult Serialize(xiiStreamWriter& ref_stream) const;
-  virtual xiiResult Deserialize(xiiStreamReader& ref_stream);
+  virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+  virtual xiiResult Deserialize(xiiStreamReader& inout_stream);
 
   /// \brief Returns whether this state needs additional instance data and if so fills the out_desc.
   ///
@@ -38,7 +40,24 @@ public:
   virtual bool GetInstanceDataDesc(xiiStateMachineInstanceDataDesc& out_desc);
 
 private:
+  // These are dummy functions for the scripting reflection
+  void Reflection_OnEnter(xiiStateMachineInstance* pStateMachineInstance, const xiiStateMachineState* pFromState);
+  void Reflection_OnExit(xiiStateMachineInstance* pStateMachineInstance, const xiiStateMachineState* pToState);
+  void Reflection_Update(xiiStateMachineInstance* pStateMachineInstance, xiiTime deltaTime);
+
   xiiHashedString m_sName;
+};
+
+struct xiiStateMachineState_ScriptBaseClassFunctions
+{
+  enum Enum
+  {
+    OnEnter,
+    OnExit,
+    Update,
+
+    Count
+  };
 };
 
 /// \brief Base class for a transition in a state machine. The target state of a transition is automatically set
@@ -53,8 +72,8 @@ class XII_GAMEENGINE_DLL xiiStateMachineTransition : public xiiReflectedClass
 
   virtual bool IsConditionMet(xiiStateMachineInstance& ref_instance, void* pInstanceData) const = 0;
 
-  virtual xiiResult Serialize(xiiStreamWriter& ref_stream) const;
-  virtual xiiResult Deserialize(xiiStreamReader& ref_stream);
+  virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+  virtual xiiResult Deserialize(xiiStreamReader& inout_stream);
 
   /// \brief Returns whether this transition needs additional instance data and if so fills the out_desc.
   ///
@@ -79,8 +98,8 @@ public:
   /// \brief Adds the given transition between the two given states. A uiFromStateIndex of xiiInvalidIndex generates a transition that can be done from any other possible state.
   void AddTransition(xiiUInt32 uiFromStateIndex, xiiUInt32 uiToStateIndex, xiiUniquePtr<xiiStateMachineTransition>&& pTransistion);
 
-  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
-  xiiResult Deserialize(xiiStreamReader& ref_stream);
+  xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+  xiiResult Deserialize(xiiStreamReader& inout_stream);
 
 private:
   friend class xiiStateMachineInstance;
@@ -127,6 +146,7 @@ public:
   void Update(xiiTime deltaTime);
 
   xiiReflectedClass& GetOwner() { return m_Owner; }
+  xiiWorld*          GetOwnerWorld();
 
   void                               SetBlackboard(const xiiSharedPtr<xiiBlackboard>& pBlackboard);
   const xiiSharedPtr<xiiBlackboard>& GetBlackboard() const { return m_pBlackboard; }
@@ -135,6 +155,12 @@ public:
   xiiTime GetTimeInCurrentState() const { return m_TimeInCurrentState; }
 
 private:
+  XII_ALLOW_PRIVATE_PROPERTIES(xiiStateMachineInstance);
+
+  bool           Reflection_SetState(xiiStringView sStateName);
+  xiiComponent*  Reflection_GetOwnerComponent() const;
+  xiiBlackboard* Reflection_GetBlackboard() const { return m_pBlackboard.Borrow(); }
+
   void      SetStateInternal(xiiUInt32 uiStateIndex);
   void      EnterCurrentState(const xiiStateMachineState* pFromState);
   void      ExitCurrentState(const xiiStateMachineState* pToState);
@@ -166,3 +192,5 @@ private:
 
   xiiBlob m_InstanceData;
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiStateMachineInstance);
