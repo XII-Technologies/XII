@@ -319,11 +319,18 @@ public:
   void                 InsertCustom(xiiUInt32 uiIndex, xiiVarianceTypeAngle value);
   void                 RemoveCustom(xiiUInt32 uiIndex);
 
-  xiiHybridArray<double, 5>               m_Hybrid;
-  xiiHybridArray<xiiString, 2>            m_HybridChar;
-  xiiDynamicArray<xiiTestStruct3>         m_Dynamic;
-  xiiDeque<xiiTestArrays>                 m_Deque;
-  xiiHybridArray<xiiVarianceTypeAngle, 1> m_CustomVariant;
+  xiiUInt32             GetCountCustom2() const;
+  xiiVarianceTypeAngled GetValueCustom2(xiiUInt32 uiIndex) const;
+  void                  SetValueCustom2(xiiUInt32 uiIndex, xiiVarianceTypeAngled value);
+  void                  InsertCustom2(xiiUInt32 uiIndex, xiiVarianceTypeAngled value);
+  void                  RemoveCustom2(xiiUInt32 uiIndex);
+
+  xiiHybridArray<double, 5>                m_Hybrid;
+  xiiHybridArray<xiiString, 2>             m_HybridChar;
+  xiiDynamicArray<xiiTestStruct3>          m_Dynamic;
+  xiiDeque<xiiTestArrays>                  m_Deque;
+  xiiHybridArray<xiiVarianceTypeAngle, 1>  m_CustomVariant;
+  xiiHybridArray<xiiVarianceTypeAngled, 1> m_CustomVariant2;
 };
 
 
@@ -364,15 +371,20 @@ public:
   void                                    CustomHashInsert(xiiVarianceTypeAngle value);
   void                                    CustomHashRemove(xiiVarianceTypeAngle value);
 
+  const xiiHashSet<xiiVarianceTypeAngled>& GetCustomHashSet2() const;
+  void                                     CustomHashInsert2(xiiVarianceTypeAngled value);
+  void                                     CustomHashRemove2(xiiVarianceTypeAngled value);
+
   xiiSet<xiiInt8> m_SetMember;
   xiiSet<double>  m_SetAccessor;
 
   xiiHashSet<xiiInt32> m_HashSetMember;
   xiiHashSet<xiiInt64> m_HashSetAccessor;
 
-  xiiDeque<int>                    m_Deque;
-  xiiDynamicArray<xiiString>       m_Array;
-  xiiHashSet<xiiVarianceTypeAngle> m_CustomVariant;
+  xiiDeque<int>                     m_Deque;
+  xiiDynamicArray<xiiString>        m_Array;
+  xiiHashSet<xiiVarianceTypeAngle>  m_CustomVariant;
+  xiiHashSet<xiiVarianceTypeAngled> m_CustomVariant2;
 };
 
 
@@ -404,7 +416,8 @@ public:
   xiiHashTable<xiiString, double>    m_HashTableMember;
   xiiHashTable<xiiString, xiiString> m_HashTableAccessor;
 
-  xiiMap<xiiString, xiiVarianceTypeAngle> m_CustomVariant;
+  xiiMap<xiiString, xiiVarianceTypeAngle>  m_CustomVariant;
+  xiiMap<xiiString, xiiVarianceTypeAngled> m_CustomVariant2;
 
   struct Tuple
   {
