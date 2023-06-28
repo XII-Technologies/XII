@@ -23,7 +23,7 @@ namespace
     virtual const xiiRTTI*                GetArgumentType(xiiUInt32 uiParamIndex) const override { return nullptr; }
     virtual xiiBitflags<xiiPropertyFlags> GetArgumentFlags(xiiUInt32 uiParamIndex) const override { return xiiPropertyFlags::Void; }
 
-    virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& returnValue) const override
+    virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& ref_returnValue) const override
     {
       auto                  pTypeScriptInstance = static_cast<xiiTypeScriptInstance*>(pInstance);
       xiiTypeScriptBinding& binding             = pTypeScriptInstance->GetBinding();
@@ -53,8 +53,8 @@ namespace
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiTypeScriptInstance::xiiTypeScriptInstance(xiiComponent& owner, xiiTypeScriptBinding& binding) :
-  m_Binding(binding), m_Component(owner)
+xiiTypeScriptInstance::xiiTypeScriptInstance(xiiComponent& ref_owner, xiiTypeScriptBinding& ref_binding) :
+  m_Binding(ref_binding), m_Component(ref_owner)
 {
 }
 

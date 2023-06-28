@@ -2,7 +2,7 @@
 
 // static
 template <typename T, xiiUInt32 Size>
-void xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::AddAdditionalDataSize(xiiArrayPtr<const T> a, xiiUInt32& inout_additionalDataSize)
+void xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::AddAdditionalDataSize(xiiArrayPtr<const T> a, xiiUInt32& inout_uiAdditionalDataSize)
 {
   if (a.GetCount() > Size)
   {
@@ -13,7 +13,7 @@ void xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::AddAdditi
 
 // static
 template <typename T, xiiUInt32 Size>
-void xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::AddAdditionalDataSize(xiiUInt32 uiSize, xiiUInt32 uiAlignment, xiiUInt32& inout_additionalDataSize)
+void xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::AddAdditionalDataSize(xiiUInt32 uiSize, xiiUInt32 uiAlignment, xiiUInt32& inout_uiAdditionalDataSize)
 {
   if (uiSize > Size * sizeof(T))
   {

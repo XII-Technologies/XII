@@ -7,7 +7,7 @@
 class XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptInstance : public xiiScriptInstance
 {
 public:
-  xiiVisualScriptInstance(xiiReflectedClass& owner, xiiWorld* pWorld, const xiiSharedPtr<const xiiVisualScriptDataStorage>& pConstantDataStorage, const xiiSharedPtr<const xiiVisualScriptDataDescription>& pVariableDataDesc);
+  xiiVisualScriptInstance(xiiReflectedClass& ref_owner, xiiWorld* pWorld, const xiiSharedPtr<const xiiVisualScriptDataStorage>& pConstantDataStorage, const xiiSharedPtr<const xiiVisualScriptDataDescription>& pVariableDataDesc);
 
   virtual void ApplyParameters(const xiiArrayMap<xiiHashedString, xiiVariant>& parameters) override;
 
@@ -51,7 +51,7 @@ class XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptExecutionContext
 public:
   xiiVisualScriptExecutionContext(xiiUniquePtr<xiiVisualScriptGraphDescription>&& pDesc);
 
-  xiiResult Initialize(xiiVisualScriptInstance& instance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& returnValue);
+  xiiResult Initialize(xiiVisualScriptInstance& ref_instance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& ref_returnValue);
 
   using ReturnValue = xiiVisualScriptGraphDescription::ReturnValue;
   ReturnValue::Enum Execute();
@@ -75,7 +75,7 @@ public:
   virtual const xiiRTTI*                GetArgumentType(xiiUInt32 uiParamIndex) const override { return nullptr; }
   virtual xiiBitflags<xiiPropertyFlags> GetArgumentFlags(xiiUInt32 uiParamIndex) const override { return xiiPropertyFlags::Void; }
 
-  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& returnValue) const override;
+  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& ref_returnValue) const override;
 
 private:
   xiiHashedString                         m_sPropertyNameStorage;

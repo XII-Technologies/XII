@@ -14,12 +14,12 @@ namespace
     xiiUInt32 m_uiPadding;
 #endif
 
-    static xiiResult Serialize(const xiiVisualScriptNodeDescription& nodeDesc, xiiStreamWriter& inout_stream, xiiUInt32& out_Size, xiiUInt32& out_alignment)
+    static xiiResult Serialize(const xiiVisualScriptNodeDescription& nodeDesc, xiiStreamWriter& inout_stream, xiiUInt32& out_uiSize, xiiUInt32& out_uiAlignment)
     {
       inout_stream << nodeDesc.m_UserData.m_pTargetType->GetTypeName();
 
-      out_Size      = sizeof(NodeUserData_Type);
-      out_alignment = XII_ALIGNMENT_OF(NodeUserData_Type);
+      out_uiSize      = sizeof(NodeUserData_Type);
+      out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_Type);
       return XII_SUCCESS;
     }
 
@@ -38,11 +38,11 @@ namespace
       return XII_SUCCESS;
     }
 
-    static xiiResult Deserialize(xiiVisualScriptGraphDescription::Node& node, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData)
+    static xiiResult Deserialize(xiiVisualScriptGraphDescription::Node& ref_node, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData)
     {
       NodeUserData_Type userData;
       XII_SUCCEED_OR_RETURN(ReadType(inout_stream, userData.m_pType));
-      node.SetUserData(userData, inout_pAdditionalData);
+      ref_node.SetUserData(userData, inout_pAdditionalData);
       return XII_SUCCESS;
     }
 
@@ -67,14 +67,14 @@ namespace
     xiiUInt32 m_uiPadding;
 #endif
 
-    static xiiResult Serialize(const xiiVisualScriptNodeDescription& nodeDesc, xiiStreamWriter& inout_stream, xiiUInt32& out_Size, xiiUInt32& out_alignment)
+    static xiiResult Serialize(const xiiVisualScriptNodeDescription& nodeDesc, xiiStreamWriter& inout_stream, xiiUInt32& out_uiSize, xiiUInt32& out_uiAlignment)
     {
-      XII_SUCCEED_OR_RETURN(NodeUserData_Type::Serialize(nodeDesc, inout_stream, out_Size, out_alignment));
+      XII_SUCCEED_OR_RETURN(NodeUserData_Type::Serialize(nodeDesc, inout_stream, out_uiSize, out_uiAlignment));
 
       inout_stream << nodeDesc.m_UserData.m_pTargetProperty->GetPropertyName();
 
-      out_Size      = sizeof(NodeUserData_TypeAndProperty);
-      out_alignment = XII_ALIGNMENT_OF(NodeUserData_TypeAndProperty);
+      out_uiSize      = sizeof(NodeUserData_TypeAndProperty);
+      out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_TypeAndProperty);
       return XII_SUCCESS;
     }
 
@@ -106,7 +106,7 @@ namespace
     }
 
     template <bool PropIsFunction>
-    static xiiResult Deserialize(xiiVisualScriptGraphDescription::Node& node, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData)
+    static xiiResult Deserialize(xiiVisualScriptGraphDescription::Node& ref_node, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData)
     {
       NodeUserData_TypeAndProperty userData;
       XII_SUCCEED_OR_RETURN(ReadType(inout_stream, userData.m_pType));
@@ -120,7 +120,7 @@ namespace
         XII_SUCCEED_OR_RETURN(ReadProperty(inout_stream, userData.m_pType, userData.m_pType->GetProperties(), userData.m_pProperty));
       }
 
-      node.SetUserData(userData, inout_pAdditionalData);
+      ref_node.SetUserData(userData, inout_pAdditionalData);
       return XII_SUCCESS;
     }
 
@@ -143,21 +143,21 @@ namespace
   {
     xiiEnum<xiiComparisonOperator> m_ComparisonOperator;
 
-    static xiiResult Serialize(const xiiVisualScriptNodeDescription& nodeDesc, xiiStreamWriter& inout_stream, xiiUInt32& out_Size, xiiUInt32& out_alignment)
+    static xiiResult Serialize(const xiiVisualScriptNodeDescription& nodeDesc, xiiStreamWriter& inout_stream, xiiUInt32& out_uiSize, xiiUInt32& out_uiAlignment)
     {
       xiiEnum<xiiComparisonOperator> compOp = nodeDesc.m_UserData.m_ComparisonOperator;
       inout_stream << compOp;
 
-      out_Size      = sizeof(NodeUserData_Comparison);
-      out_alignment = XII_ALIGNMENT_OF(NodeUserData_Comparison);
+      out_uiSize      = sizeof(NodeUserData_Comparison);
+      out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_Comparison);
       return XII_SUCCESS;
     }
 
-    static xiiResult Deserialize(xiiVisualScriptGraphDescription::Node& node, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData)
+    static xiiResult Deserialize(xiiVisualScriptGraphDescription::Node& ref_node, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData)
     {
       NodeUserData_Comparison userData;
       inout_stream >> userData.m_ComparisonOperator;
-      node.SetUserData(userData, inout_pAdditionalData);
+      ref_node.SetUserData(userData, inout_pAdditionalData);
 
       return XII_SUCCESS;
     }

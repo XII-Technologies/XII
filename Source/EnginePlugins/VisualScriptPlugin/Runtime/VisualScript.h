@@ -132,8 +132,8 @@ public:
       T* m_Ptr;
     };
 
-    static void AddAdditionalDataSize(xiiArrayPtr<const T> a, xiiUInt32& inout_additionalDataSize);
-    static void AddAdditionalDataSize(xiiUInt32 uiSize, xiiUInt32 uiAlignment, xiiUInt32& inout_additionalDataSize);
+    static void AddAdditionalDataSize(xiiArrayPtr<const T> a, xiiUInt32& inout_uiAdditionalDataSize);
+    static void AddAdditionalDataSize(xiiUInt32 uiSize, xiiUInt32 uiAlignment, xiiUInt32& inout_uiAdditionalDataSize);
 
     T*        Init(xiiUInt8 uiCount, xiiUInt8*& inout_pAdditionalData);
     xiiResult ReadFromStream(xiiUInt8& out_uiCount, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData);

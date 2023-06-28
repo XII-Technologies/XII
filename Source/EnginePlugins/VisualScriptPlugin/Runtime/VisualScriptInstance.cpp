@@ -2,8 +2,8 @@
 
 #include <VisualScriptPlugin/Runtime/VisualScriptInstance.h>
 
-xiiVisualScriptInstance::xiiVisualScriptInstance(xiiReflectedClass& owner, xiiWorld* pWorld, const xiiSharedPtr<const xiiVisualScriptDataStorage>& pConstantDataStorage, const xiiSharedPtr<const xiiVisualScriptDataDescription>& pVariableDataDesc) :
-  m_Owner(owner), m_pWorld(pWorld), m_pConstantDataStorage(pConstantDataStorage)
+xiiVisualScriptInstance::xiiVisualScriptInstance(xiiReflectedClass& ref_owner, xiiWorld* pWorld, const xiiSharedPtr<const xiiVisualScriptDataStorage>& pConstantDataStorage, const xiiSharedPtr<const xiiVisualScriptDataDescription>& pVariableDataDesc) :
+  m_Owner(ref_owner), m_pWorld(pWorld), m_pConstantDataStorage(pConstantDataStorage)
 {
   if (pVariableDataDesc != nullptr)
   {
@@ -23,9 +23,9 @@ xiiVisualScriptExecutionContext::xiiVisualScriptExecutionContext(xiiUniquePtr<xi
 {
 }
 
-xiiResult xiiVisualScriptExecutionContext::Initialize(xiiVisualScriptInstance& instance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& returnValue)
+xiiResult xiiVisualScriptExecutionContext::Initialize(xiiVisualScriptInstance& ref_instance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& ref_returnValue)
 {
-  m_pInstance = &instance;
+  m_pInstance = &ref_instance;
 
   auto pNode = m_pDesc->GetNode(0);
   XII_ASSERT_DEV(pNode->m_Type == xiiVisualScriptNodeDescription::Type::EntryCall, "Invalid entry node");
@@ -71,12 +71,12 @@ xiiVisualScriptFunctionProperty::xiiVisualScriptFunctionProperty(const char* szP
 
 xiiVisualScriptFunctionProperty::~xiiVisualScriptFunctionProperty() = default;
 
-void xiiVisualScriptFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& returnValue) const
+void xiiVisualScriptFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& ref_returnValue) const
 {
   XII_ASSERT_DEBUG(pInstance != nullptr, "Invalid instance");
   auto pVisualScriptInstance = static_cast<xiiVisualScriptInstance*>(pInstance);
 
-  if (m_ExecutionContext.Initialize(*pVisualScriptInstance, arguments, returnValue).Failed())
+  if (m_ExecutionContext.Initialize(*pVisualScriptInstance, arguments, ref_returnValue).Failed())
   {
     return;
   }

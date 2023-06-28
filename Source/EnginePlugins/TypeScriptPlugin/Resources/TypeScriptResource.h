@@ -9,7 +9,7 @@ class xiiTypeScriptBinding;
 class XII_TYPESCRIPTPLUGIN_DLL xiiTypeScriptInstance : public xiiScriptInstance
 {
 public:
-  xiiTypeScriptInstance(xiiComponent& owner, xiiTypeScriptBinding& binding);
+  xiiTypeScriptInstance(xiiComponent& ref_owner, xiiTypeScriptBinding& ref_binding);
 
   virtual void ApplyParameters(const xiiArrayMap<xiiHashedString, xiiVariant>& parameters) override;
 
