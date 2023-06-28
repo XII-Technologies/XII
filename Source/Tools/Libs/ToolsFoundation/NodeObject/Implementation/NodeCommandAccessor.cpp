@@ -126,7 +126,7 @@ xiiStatus xiiNodeCommandAccessor::DisconnectAllPins(const xiiDocumentObject* pOb
 
 xiiStatus xiiNodeCommandAccessor::TryReconnectAllPins(const xiiDocumentObject* pObject, const xiiDynamicArray<ConnectionInfo>& oldConnections)
 {
-  auto          pManager        = static_cast<const xiiDocumentNodeManager*>(pObject->GetDocumentObjectManager());
+  auto           pManager        = static_cast<const xiiDocumentNodeManager*>(pObject->GetDocumentObjectManager());
   const xiiRTTI* pConnectionType = pManager->GetConnectionType();
 
   for (auto& connectionInfo : oldConnections)

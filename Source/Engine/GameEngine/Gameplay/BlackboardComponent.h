@@ -89,7 +89,7 @@ public:
   const char* GetBlackboardName() const;             // [ property ]
 
   void       SetEntryValue(const char* szName, const xiiVariant& value); // [ scriptable ]
-  xiiVariant GetEntryValue(const char* szName) const;                          // [ scriptable ]
+  xiiVariant GetEntryValue(const char* szName) const;                    // [ scriptable ]
 
 private:
   xiiUInt32                 Entries_GetCount() const;

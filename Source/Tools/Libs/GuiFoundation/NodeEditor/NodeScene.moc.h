@@ -26,7 +26,7 @@ public:
   explicit xiiQtNodeScene(QObject* pParent = nullptr);
   ~xiiQtNodeScene();
 
-  virtual void                          SetDocumentNodeManager(const xiiDocumentNodeManager* pManager);
+  virtual void                  SetDocumentNodeManager(const xiiDocumentNodeManager* pManager);
   const xiiDocumentNodeManager* GetDocumentNodeManager() const;
   const xiiDocument*            GetDocument() const;
 

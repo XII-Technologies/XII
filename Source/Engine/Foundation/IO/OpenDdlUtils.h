@@ -392,7 +392,7 @@ namespace xiiOpenDdlUtils
   /// \brief Writes an xiiAngled to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreAngle(
     xiiOpenDdlWriter& ref_writer,
-    const xiiAngled&   value,
+    const xiiAngled&  value,
     const char*       szName      = nullptr,
     bool              bGlobalName = false); // [tested]
 
