@@ -41,29 +41,29 @@ namespace xiiJoltCollisionFiltering
 
     switch (broadphase)
     {
-      case Static:
-        return XII_BIT(xiiJoltBroadphaseLayer::Dynamic) | XII_BIT(xiiJoltBroadphaseLayer::Character) | XII_BIT(xiiJoltBroadphaseLayer::Ragdoll) | XII_BIT(xiiJoltBroadphaseLayer::Rope);
+      case xiiJoltBroadphaseLayer::Static:
+        return XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Dynamic) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Character) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Ragdoll) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Rope);
 
-      case Dynamic:
-        return XII_BIT(xiiJoltBroadphaseLayer::Static) | XII_BIT(xiiJoltBroadphaseLayer::Dynamic) | XII_BIT(xiiJoltBroadphaseLayer::Trigger) | XII_BIT(xiiJoltBroadphaseLayer::Character) | XII_BIT(xiiJoltBroadphaseLayer::Ragdoll) | XII_BIT(xiiJoltBroadphaseLayer::Rope);
+      case xiiJoltBroadphaseLayer::Dynamic:
+        return XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Static) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Dynamic) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Trigger) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Character) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Ragdoll) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Rope);
 
-      case Query:
+      case xiiJoltBroadphaseLayer::Query:
         // query shapes never interact with anything in the simulation
         return 0;
 
-      case Trigger:
+      case xiiJoltBroadphaseLayer::Trigger:
         // triggers specifically exclude detail objects such as ropes, ragdolls and queries (also used for hitboxes) for performance reasons
         // if necessary, these shapes can still be found with overlap queries
-        return XII_BIT(xiiJoltBroadphaseLayer::Dynamic) | XII_BIT(xiiJoltBroadphaseLayer::Character);
+        return XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Dynamic) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Character);
 
-      case Character:
-        return XII_BIT(xiiJoltBroadphaseLayer::Static) | XII_BIT(xiiJoltBroadphaseLayer::Dynamic) | XII_BIT(xiiJoltBroadphaseLayer::Trigger) | XII_BIT(xiiJoltBroadphaseLayer::Character);
+      case xiiJoltBroadphaseLayer::Character:
+        return XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Static) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Dynamic) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Trigger) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Character);
 
-      case Ragdoll:
-        return XII_BIT(xiiJoltBroadphaseLayer::Static) | XII_BIT(xiiJoltBroadphaseLayer::Dynamic) | XII_BIT(xiiJoltBroadphaseLayer::Ragdoll) | XII_BIT(xiiJoltBroadphaseLayer::Rope);
+      case xiiJoltBroadphaseLayer::Ragdoll:
+        return XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Static) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Dynamic) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Ragdoll) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Rope);
 
-      case Rope:
-        return XII_BIT(xiiJoltBroadphaseLayer::Static) | XII_BIT(xiiJoltBroadphaseLayer::Dynamic) | XII_BIT(xiiJoltBroadphaseLayer::Ragdoll) | XII_BIT(xiiJoltBroadphaseLayer::Rope);
+      case xiiJoltBroadphaseLayer::Rope:
+        return XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Static) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Dynamic) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Ragdoll) | XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Rope);
 
         XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
@@ -75,7 +75,7 @@ namespace xiiJoltCollisionFiltering
 
 xiiUInt32 xiiJoltObjectToBroadphaseLayer::GetNumBroadPhaseLayers() const
 {
-  return xiiJoltBroadphaseLayer::ENUM_COUNT;
+  return (xiiUInt32)xiiJoltBroadphaseLayer::ENUM_COUNT;
 }
 
 JPH::BroadPhaseLayer xiiJoltObjectToBroadphaseLayer::GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const
@@ -115,14 +115,14 @@ const char* xiiJoltObjectToBroadphaseLayer::GetBroadPhaseLayerName(JPH::BroadPha
 #endif
 
 // if any of these asserts fails, xiiPhysicsShapeType and xiiJoltBroadphaseLayer are out of sync
-static_assert(xiiPhysicsShapeType::Static == XII_BIT(xiiJoltBroadphaseLayer::Static));
-static_assert(xiiPhysicsShapeType::Dynamic == XII_BIT(xiiJoltBroadphaseLayer::Dynamic));
-static_assert(xiiPhysicsShapeType::Query == XII_BIT(xiiJoltBroadphaseLayer::Query));
-static_assert(xiiPhysicsShapeType::Trigger == XII_BIT(xiiJoltBroadphaseLayer::Trigger));
-static_assert(xiiPhysicsShapeType::Character == XII_BIT(xiiJoltBroadphaseLayer::Character));
-static_assert(xiiPhysicsShapeType::Ragdoll == XII_BIT(xiiJoltBroadphaseLayer::Ragdoll));
-static_assert(xiiPhysicsShapeType::Rope == XII_BIT(xiiJoltBroadphaseLayer::Rope));
-static_assert(xiiPhysicsShapeType::Count == xiiJoltBroadphaseLayer::ENUM_COUNT);
+static_assert(xiiPhysicsShapeType::Static == XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Static));
+static_assert(xiiPhysicsShapeType::Dynamic == XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Dynamic));
+static_assert(xiiPhysicsShapeType::Query == XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Query));
+static_assert(xiiPhysicsShapeType::Trigger == XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Trigger));
+static_assert(xiiPhysicsShapeType::Character == XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Character));
+static_assert(xiiPhysicsShapeType::Ragdoll == XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Ragdoll));
+static_assert(xiiPhysicsShapeType::Rope == XII_BIT((xiiUInt32)xiiJoltBroadphaseLayer::Rope));
+static_assert(xiiPhysicsShapeType::Count == (xiiUInt32)xiiJoltBroadphaseLayer::ENUM_COUNT);
 
 bool xiiJoltObjectLayerFilter::ShouldCollide(JPH::ObjectLayer inLayer) const
 {

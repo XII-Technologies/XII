@@ -13,7 +13,7 @@ namespace JPH
   using ObjectLayer = xiiUInt16;
 } // namespace JPH
 
-enum xiiJoltBroadphaseLayer : xiiUInt8
+enum class xiiJoltBroadphaseLayer : xiiUInt8
 {
   Static,
   Dynamic,

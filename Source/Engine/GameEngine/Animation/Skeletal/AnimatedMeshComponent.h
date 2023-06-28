@@ -39,6 +39,8 @@ public:
   xiiAnimatedMeshComponent();
   ~xiiAnimatedMeshComponent();
 
+  void RetrievePose(xiiDynamicArray<xiiMat4>& out_modelTransforms, xiiTransform& out_rootTransform, const xiiSkeleton& skeleton);
+
 protected:
   void OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& msg);     // [ msg handler ]
   void OnQueryAnimationSkeleton(xiiMsgQueryAnimationSkeleton& msg); // [ msg handler ]

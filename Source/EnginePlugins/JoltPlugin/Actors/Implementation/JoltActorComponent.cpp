@@ -153,7 +153,7 @@ xiiResult xiiJoltActorComponent::CreateShape(JPH::BodyCreationSettings* pSetting
   {
     JPH::StaticCompoundShapeSettings opt;
 
-    for (auto shape : shapes)
+    for (const auto& shape : shapes)
     {
       auto pShape = shape.m_pShape;
 

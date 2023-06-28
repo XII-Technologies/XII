@@ -167,6 +167,32 @@ xiiMeshRenderData* xiiAnimatedMeshComponent::CreateRenderData() const
   return pRenderData;
 }
 
+void xiiAnimatedMeshComponent::RetrievePose(xiiDynamicArray<xiiMat4>& out_modelTransforms, xiiTransform& out_rootTransform, const xiiSkeleton& skeleton)
+{
+  out_modelTransforms.Clear();
+
+  if (!m_hMesh.IsValid())
+    return;
+
+  out_rootTransform = m_RootTransform;
+
+  xiiResourceLock<xiiMeshResource> pMesh(m_hMesh, xiiResourceAcquireMode::BlockTillLoaded);
+
+  const xiiHashTable<xiiHashedString, xiiMeshResourceDescriptor::BoneData>& bones = pMesh->m_Bones;
+
+  out_modelTransforms.SetCount(skeleton.GetJointCount(), xiiMat4::IdentityMatrix());
+
+  for (auto itBone : bones)
+  {
+    const xiiUInt16 uiJointIdx = skeleton.FindJointByName(itBone.Key());
+
+    if (uiJointIdx == xiiInvalidJointIndex)
+      continue;
+
+    out_modelTransforms[uiJointIdx] = m_SkinningState.m_Transforms[itBone.Value().m_uiBoneIndex].GetAsMat4() * itBone.Value().m_GlobalInverseBindPoseMatrix.GetInverse();
+  }
+}
+
 void xiiAnimatedMeshComponent::OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& msg)
 {
   if (!m_hMesh.IsValid())

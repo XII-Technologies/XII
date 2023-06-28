@@ -65,9 +65,14 @@ public:
 
   using IsOccludedFunc = xiiDelegate<bool(const xiiSimdBBox&)>;
 
-  virtual void FindVisibleObjects(const xiiFrustum& frustum, const QueryParams& queryParams, xiiDynamicArray<const xiiGameObject*>& out_objects, IsOccludedFunc isOccluded) const = 0;
+  virtual void FindVisibleObjects(const xiiFrustum& frustum, const QueryParams& queryParams, xiiDynamicArray<const xiiGameObject*>& out_objects, IsOccludedFunc isOccluded, xiiVisibilityState visType) const = 0;
 
-  virtual xiiUInt64 GetNumFramesSinceVisible(const xiiSpatialDataHandle& hData) const = 0;
+  /// \brief Retrieves a state describing how visible the object is.
+  ///
+  /// An object may be invisible, fully visible, or indirectly visible (through shadows or reflections).
+  ///
+  /// \param uiNumFramesBeforeInvisible Used to treat an object that was visible and just became invisible as visible for a few more frames.
+  virtual xiiVisibilityState GetVisibilityState(const xiiSpatialDataHandle& hData, xiiUInt32 uiNumFramesBeforeInvisible) const = 0;
 
   ///@}
 

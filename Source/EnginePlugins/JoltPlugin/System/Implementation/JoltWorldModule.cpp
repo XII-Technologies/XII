@@ -47,19 +47,19 @@ public:
   virtual void OnBodyActivated(const JPH::BodyID& bodyID, JPH::uint64 inBodyUserData) override
   {
     const xiiJoltUserData* pUserData = reinterpret_cast<const xiiJoltUserData*>(inBodyUserData);
-    if (xiiJoltActorComponent* pActor = xiiJoltUserData::GetActorComponent(pUserData))
+    if (xiiJoltDynamicActorComponent* pActor = xiiJoltUserData::GetDynamicActorComponent(pUserData))
     {
-      m_pActiveActors->Insert(pActor, bodyID.GetIndexAndSequenceNumber());
+      m_pActiveActors->Insert(pActor);
     }
 
     if (xiiJoltRagdollComponent* pActor = xiiJoltUserData::GetRagdollComponent(pUserData))
     {
-      m_pActiveRagdolls->Insert(pActor, bodyID.GetIndexAndSequenceNumber());
+      (*m_pActiveRagdolls)[pActor]++;
     }
 
     if (xiiJoltRopeComponent* pActor = xiiJoltUserData::GetRopeComponent(pUserData))
     {
-      m_pActiveRopes->Insert(pActor, bodyID.GetIndexAndSequenceNumber());
+      (*m_pActiveRopes)[pActor]++;
     }
   }
 
@@ -73,18 +73,26 @@ public:
 
     if (xiiJoltRagdollComponent* pActor = xiiJoltUserData::GetRagdollComponent(pUserData))
     {
-      m_pActiveRagdolls->Remove(pActor);
+      if (--(*m_pActiveRagdolls)[pActor] == 0)
+      {
+        m_pActiveRagdolls->Remove(pActor);
+        m_pRagdollsPutToSleep->PushBack(pActor);
+      }
     }
 
     if (xiiJoltRopeComponent* pActor = xiiJoltUserData::GetRopeComponent(pUserData))
     {
-      m_pActiveRopes->Remove(pActor);
+      if (--(*m_pActiveRopes)[pActor] == 0)
+      {
+        m_pActiveRopes->Remove(pActor);
+      }
     }
   }
 
-  xiiMap<xiiJoltActorComponent*, xiiUInt32>*   m_pActiveActors   = nullptr;
-  xiiMap<xiiJoltRagdollComponent*, xiiUInt32>* m_pActiveRagdolls = nullptr;
-  xiiMap<xiiJoltRopeComponent*, xiiUInt32>*    m_pActiveRopes    = nullptr;
+  xiiSet<xiiJoltDynamicActorComponent*>*      m_pActiveActors       = nullptr;
+  xiiMap<xiiJoltRagdollComponent*, xiiInt32>* m_pActiveRagdolls     = nullptr; // value is a ref-count
+  xiiMap<xiiJoltRopeComponent*, xiiInt32>*    m_pActiveRopes        = nullptr; // value is a ref-count
+  xiiDynamicArray<xiiJoltRagdollComponent*>*  m_pRagdollsPutToSleep = nullptr;
 };
 
 class xiiJoltGroupFilter : public JPH::GroupFilter
@@ -251,6 +259,7 @@ void xiiJoltWorldModule::Initialize()
     pListener->m_pActiveActors               = &m_ActiveActors;
     pListener->m_pActiveRagdolls             = &m_ActiveRagdolls;
     pListener->m_pActiveRopes                = &m_ActiveRopes;
+    pListener->m_pRagdollsPutToSleep         = &m_RagdollsPutToSleep;
     m_pSystem->SetBodyActivationListener(pListener);
   }
 
@@ -613,33 +622,6 @@ void xiiJoltWorldModule::FetchResults(const xiiWorldModule::UpdateContext& conte
   FreeUserDataAfterSimulationStep();
 }
 
-// void xiiJoltWorldModule::HandleBrokenConstraints()
-//{
-//   XII_PROFILE_SCOPE("HandleBrokenConstraints");
-//
-//   for (auto pConstraint : m_pSimulationEventCallback->m_BrokenConstraints)
-//   {
-//     auto it = m_BreakableJoints.Find(pConstraint);
-//     if (it.IsValid())
-//     {
-//       xiiJoltConstraintComponent* pJoint = nullptr;
-//
-//       if (m_pWorld->TryGetComponent(it.Value(), pJoint))
-//       {
-//         xiiMsgPhysicsJointBroke msg;
-//         msg.m_hJointObject = pJoint->GetOwner()->GetHandle();
-//
-//         pJoint->GetOwner()->PostEventMessage(msg, pJoint, xiiTime::Zero());
-//       }
-//
-//       // it can't break twice
-//       m_BreakableJoints.Remove(it);
-//     }
-//   }
-//
-//   m_pSimulationEventCallback->m_BrokenConstraints.Clear();
-// }
-
 xiiTime xiiJoltWorldModule::CalculateUpdateSteps()
 {
   xiiTime tSimulatedTimeStep = xiiTime::Zero();
@@ -705,6 +687,8 @@ void xiiJoltWorldModule::Simulate()
 
   xiiTime   tDelta  = m_UpdateSteps[0];
   xiiUInt32 uiSteps = 1;
+
+  m_RagdollsPutToSleep.Clear();
 
   for (xiiUInt32 i = 1; i < m_UpdateSteps.GetCount(); ++i)
   {
