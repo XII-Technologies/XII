@@ -90,7 +90,7 @@ void xiiQtGroupBoxBase::DrawHeader(QPainter& p, const QRect& rect)
   }
 
   QStyle* style   = QWidget::style();
-  int     flags   = Qt::AlignLeft | Qt::AlignVCenter | Qt::TextExpandTabs | Qt::TextForceLeftToRight;
+  int     flags   = Qt::AlignLeft | Qt::AlignTop | Qt::TextExpandTabs | Qt::TextForceLeftToRight;
   QFont   fontOld = p.font();
   if (m_bBoldTitle)
   {

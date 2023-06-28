@@ -118,6 +118,7 @@ public:
   xiiVariant(const xiiTime& value);
   xiiVariant(const xiiUuid& value);
   xiiVariant(const xiiAngle& value);
+  xiiVariant(const xiiAngled& value);
   xiiVariant(const xiiColorGammaUB& value);
 
   xiiVariant(const xiiVariantArray& value);

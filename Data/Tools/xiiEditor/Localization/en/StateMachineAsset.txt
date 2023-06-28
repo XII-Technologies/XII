@@ -9,7 +9,7 @@ xiiStateMachineComponent;State Machine;;https://xiiengine.net/pages/docs/ai/stat
 # Properties
 
 xiiComparisonOperator::Equal;==
-xiiComparisonOperator::NotEqual;<>
+xiiComparisonOperator::NotEqual;!=
 xiiComparisonOperator::Less;<
 xiiComparisonOperator::LessEqual;<=
 xiiComparisonOperator::Greater;>
@@ -18,21 +18,15 @@ xiiComparisonOperator::GreaterEqual;>=
 xiiStateMachineLogicOperator::And;AND
 xiiStateMachineLogicOperator::Or;OR
 
+xiiStateMachineNode;New State
 xiiStateMachineNodeAny;New Any State
 
 xiiStateMachineTransition_Timeout;Timeout Transition
-
 xiiStateMachineTransition_Compound;Compound Transition
-
-
-xiiStateMachineNode;New State
-
 xiiStateMachineTransition_BlackboardConditions;Blackboard Conditions
 
 xiiStateMachineState_NestedStateMachine;Nested State Machine
-
 xiiStateMachineState_Compound;Compound State
-
 xiiStateMachineState_SendMsg;Send Message
-
 xiiStateMachineState_SwitchObject;Switch Object
+xiiStateMachineState_Script;Script

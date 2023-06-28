@@ -210,6 +210,13 @@ namespace xiiOpenDdlUtils
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToAngle(const xiiOpenDdlReaderElement* pElement, xiiAngle& out_result); // [tested]
 
+  /// \brief Converts the data that \a pElement points to to an xiiAngled.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 1 float.
+  /// The value is assumed to be in degree.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToAngle(const xiiOpenDdlReaderElement* pElement, xiiAngled& out_result); // [tested]
+
   /// \brief Uses the elements custom type name to infer which type the object holds and reads it into the xiiVariant.
   ///
   /// Depending on the custom type name, one of the other ConvertToXY functions is called and the respective conditions to the data format apply.
@@ -382,6 +389,13 @@ namespace xiiOpenDdlUtils
     const char*       szName      = nullptr,
     bool              bGlobalName = false); // [tested]
 
+  /// \brief Writes an xiiAngled to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreAngle(
+    xiiOpenDdlWriter& ref_writer,
+    const xiiAngled&  value,
+    const char*       szName      = nullptr,
+    bool              bGlobalName = false); // [tested]
+
   /// \brief Writes an xiiVariant to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreVariant(
     xiiOpenDdlWriter& ref_writer,
@@ -428,5 +442,8 @@ namespace xiiOpenDdlUtils
 
   /// \brief Writes a primitives list with a single value and an optional name.
   XII_FOUNDATION_DLL void StoreUInt64(xiiOpenDdlWriter& ref_writer, xiiUInt64 value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+
+  /// \brief Writes a primitives list with a single value and an optional name.
+  XII_FOUNDATION_DLL void StoreInvalid(xiiOpenDdlWriter& ref_writer, const char* szName = nullptr, bool bGlobalName = false);
 
 } // namespace xiiOpenDdlUtils

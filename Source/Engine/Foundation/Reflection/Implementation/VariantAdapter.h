@@ -173,6 +173,32 @@ struct xiiVariantAssignmentAdapter<T, C, 1>
   xiiVariant& m_value;
 };
 
+template <class T>
+struct xiiVariantAssignmentAdapter<T, xiiVariantArray, 0>
+{
+  xiiVariantAssignmentAdapter(xiiVariant& value) :
+    m_value(value)
+  {
+  }
+
+  void operator=(T&& rhs) { m_value = rhs; }
+
+  xiiVariant& m_value;
+};
+
+template <class T>
+struct xiiVariantAssignmentAdapter<T, xiiVariantDictionary, 0>
+{
+  xiiVariantAssignmentAdapter(xiiVariant& value) :
+    m_value(value)
+  {
+  }
+
+  void operator=(T&& rhs) { m_value = rhs; }
+
+  xiiVariant& m_value;
+};
+
 //////////////////////////////////////////////////////////////////////////
 
 /// \brief Used to implicitly retrieve any value from an xiiVariant to be used as a function argument
@@ -364,6 +390,62 @@ struct xiiVariantAdapter<T, xiiVariant, 1, 1>
 
   operator xiiVariant&() { return m_value; }
   operator xiiVariant*() { return &m_value; }
+
+  xiiVariant& m_value;
+};
+
+template <class T>
+struct xiiVariantAdapter<T, xiiVariantArray, 0, 0>
+{
+  xiiVariantAdapter(xiiVariant& value) :
+    m_value(value)
+  {
+  }
+
+  operator const xiiVariantArray&() { return m_value.Get<xiiVariantArray>(); }
+  operator const xiiVariantArray*() { return m_value.IsValid() ? &m_value.Get<xiiVariantArray>() : nullptr; }
+
+  xiiVariant& m_value;
+};
+
+template <class T>
+struct xiiVariantAdapter<T, xiiVariantArray, 0, 1>
+{
+  xiiVariantAdapter(xiiVariant& value) :
+    m_value(value)
+  {
+  }
+
+  operator xiiVariantArray&() { return m_value.GetWritable<xiiVariantArray>(); }
+  operator xiiVariantArray*() { return m_value.IsValid() ? &m_value.GetWritable<xiiVariantArray>() : nullptr; }
+
+  xiiVariant& m_value;
+};
+
+template <class T>
+struct xiiVariantAdapter<T, xiiVariantDictionary, 0, 0>
+{
+  xiiVariantAdapter(xiiVariant& value) :
+    m_value(value)
+  {
+  }
+
+  operator const xiiVariantDictionary&() { return m_value.Get<xiiVariantDictionary>(); }
+  operator const xiiVariantDictionary*() { return m_value.IsValid() ? &m_value.Get<xiiVariantDictionary>() : nullptr; }
+
+  xiiVariant& m_value;
+};
+
+template <class T>
+struct xiiVariantAdapter<T, xiiVariantDictionary, 0, 1>
+{
+  xiiVariantAdapter(xiiVariant& value) :
+    m_value(value)
+  {
+  }
+
+  operator xiiVariantDictionary&() { return m_value.GetWritable<xiiVariantDictionary>(); }
+  operator xiiVariantDictionary*() { return m_value.IsValid() ? &m_value.GetWritable<xiiVariantDictionary>() : nullptr; }
 
   xiiVariant& m_value;
 };

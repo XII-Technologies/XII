@@ -80,29 +80,34 @@ public:
     m_fFloat1 = 1.1f;
     m_iInt2   = 2;
     m_vProperty3.Set(3, 4, 5);
-    m_UInt8                     = 6;
-    m_variant                   = "Test";
-    m_Angle                     = xiiAngle::Degree(0.5);
-    m_DataBuffer                = GetDefaultDataBuffer();
-    m_vVec3I                    = xiiVec3I32(1, 2, 3);
-    m_VarianceAngle.m_fVariance = 0.5f;
-    m_VarianceAngle.m_Value     = xiiAngle::Degree(90.0f);
+    m_UInt8                      = 6;
+    m_variant                    = "Test";
+    m_Angle                      = xiiAngle::Degree(0.5);
+    m_Angled                     = xiiAngled::Degree(0.5);
+    m_DataBuffer                 = GetDefaultDataBuffer();
+    m_vVec3I                     = xiiVec3I32(1, 2, 3);
+    m_VarianceAngle.m_fVariance  = 0.5f;
+    m_VarianceAngle.m_Value      = xiiAngle::Degree(90.0f);
+    m_VarianceAngled.m_fVariance = 0.5f;
+    m_VarianceAngled.m_Value     = xiiAngled::Degree(90.0);
   }
 
 
 
   bool operator==(const xiiTestStruct& rhs) const
   {
-    return m_fFloat1 == rhs.m_fFloat1 && m_UInt8 == rhs.m_UInt8 && m_variant == rhs.m_variant && m_iInt2 == rhs.m_iInt2 && m_vProperty3 == rhs.m_vProperty3 && m_Angle == rhs.m_Angle && m_DataBuffer == rhs.m_DataBuffer && m_vVec3I == rhs.m_vVec3I && m_VarianceAngle == rhs.m_VarianceAngle;
+    return m_fFloat1 == rhs.m_fFloat1 && m_UInt8 == rhs.m_UInt8 && m_variant == rhs.m_variant && m_iInt2 == rhs.m_iInt2 && m_vProperty3 == rhs.m_vProperty3 && m_Angle == rhs.m_Angle && m_Angled == rhs.m_Angled && m_DataBuffer == rhs.m_DataBuffer && m_vVec3I == rhs.m_vVec3I && m_VarianceAngled == rhs.m_VarianceAngled;
   }
 
-  float                m_fFloat1;
-  xiiUInt8             m_UInt8;
-  xiiVariant           m_variant;
-  xiiAngle             m_Angle;
-  xiiDataBuffer        m_DataBuffer;
-  xiiVec3I32           m_vVec3I;
-  xiiVarianceTypeAngle m_VarianceAngle;
+  float                 m_fFloat1;
+  xiiUInt8              m_UInt8;
+  xiiVariant            m_variant;
+  xiiAngle              m_Angle;
+  xiiAngled             m_Angled;
+  xiiDataBuffer         m_DataBuffer;
+  xiiVec3I32            m_vVec3I;
+  xiiVarianceTypeAngle  m_VarianceAngle;
+  xiiVarianceTypeAngled m_VarianceAngled;
 
 private:
   void     SetInt(xiiInt32 i) { m_iInt2 = i; }
@@ -314,11 +319,18 @@ public:
   void                 InsertCustom(xiiUInt32 uiIndex, xiiVarianceTypeAngle value);
   void                 RemoveCustom(xiiUInt32 uiIndex);
 
-  xiiHybridArray<double, 5>               m_Hybrid;
-  xiiHybridArray<xiiString, 2>            m_HybridChar;
-  xiiDynamicArray<xiiTestStruct3>         m_Dynamic;
-  xiiDeque<xiiTestArrays>                 m_Deque;
-  xiiHybridArray<xiiVarianceTypeAngle, 1> m_CustomVariant;
+  xiiUInt32             GetCountCustom2() const;
+  xiiVarianceTypeAngled GetValueCustom2(xiiUInt32 uiIndex) const;
+  void                  SetValueCustom2(xiiUInt32 uiIndex, xiiVarianceTypeAngled value);
+  void                  InsertCustom2(xiiUInt32 uiIndex, xiiVarianceTypeAngled value);
+  void                  RemoveCustom2(xiiUInt32 uiIndex);
+
+  xiiHybridArray<double, 5>                m_Hybrid;
+  xiiHybridArray<xiiString, 2>             m_HybridChar;
+  xiiDynamicArray<xiiTestStruct3>          m_Dynamic;
+  xiiDeque<xiiTestArrays>                  m_Deque;
+  xiiHybridArray<xiiVarianceTypeAngle, 1>  m_CustomVariant;
+  xiiHybridArray<xiiVarianceTypeAngled, 1> m_CustomVariant2;
 };
 
 
@@ -359,15 +371,20 @@ public:
   void                                    CustomHashInsert(xiiVarianceTypeAngle value);
   void                                    CustomHashRemove(xiiVarianceTypeAngle value);
 
+  const xiiHashSet<xiiVarianceTypeAngled>& GetCustomHashSet2() const;
+  void                                     CustomHashInsert2(xiiVarianceTypeAngled value);
+  void                                     CustomHashRemove2(xiiVarianceTypeAngled value);
+
   xiiSet<xiiInt8> m_SetMember;
   xiiSet<double>  m_SetAccessor;
 
   xiiHashSet<xiiInt32> m_HashSetMember;
   xiiHashSet<xiiInt64> m_HashSetAccessor;
 
-  xiiDeque<int>                    m_Deque;
-  xiiDynamicArray<xiiString>       m_Array;
-  xiiHashSet<xiiVarianceTypeAngle> m_CustomVariant;
+  xiiDeque<int>                     m_Deque;
+  xiiDynamicArray<xiiString>        m_Array;
+  xiiHashSet<xiiVarianceTypeAngle>  m_CustomVariant;
+  xiiHashSet<xiiVarianceTypeAngled> m_CustomVariant2;
 };
 
 
@@ -399,7 +416,8 @@ public:
   xiiHashTable<xiiString, double>    m_HashTableMember;
   xiiHashTable<xiiString, xiiString> m_HashTableAccessor;
 
-  xiiMap<xiiString, xiiVarianceTypeAngle> m_CustomVariant;
+  xiiMap<xiiString, xiiVarianceTypeAngle>  m_CustomVariant;
+  xiiMap<xiiString, xiiVarianceTypeAngled> m_CustomVariant2;
 
   struct Tuple
   {

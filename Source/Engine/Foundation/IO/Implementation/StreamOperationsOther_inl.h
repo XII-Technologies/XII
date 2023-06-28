@@ -73,16 +73,24 @@ XII_FOUNDATION_DLL void operator>>(xiiStreamReader& ref_stream, xiiVarianceTypeD
 
 struct xiiVarianceTypeTime;
 
-/// \brief Operator to serialize xiiTimestamp objects.
+/// \brief Operator to serialize xiiVarianceTypeTime objects.
 XII_FOUNDATION_DLL void operator<<(xiiStreamWriter& ref_stream, const xiiVarianceTypeTime& value);
 
-/// \brief Operator to serialize xiiTimestamp objects.
+/// \brief Operator to serialize xiiVarianceTypeTime objects.
 XII_FOUNDATION_DLL void operator>>(xiiStreamReader& ref_stream, xiiVarianceTypeTime& ref_value);
 
 struct xiiVarianceTypeAngle;
 
-/// \brief Operator to serialize xiiTimestamp objects.
+/// \brief Operator to serialize xiiVarianceTypeAngle objects.
 XII_FOUNDATION_DLL void operator<<(xiiStreamWriter& ref_stream, const xiiVarianceTypeAngle& value);
 
-/// \brief Operator to serialize xiiTimestamp objects.
+/// \brief Operator to serialize xiiVarianceTypeAngle objects.
 XII_FOUNDATION_DLL void operator>>(xiiStreamReader& ref_stream, xiiVarianceTypeAngle& ref_value);
+
+struct xiiVarianceTypeAngled;
+
+/// \brief Operator to serialize xiiVarianceTypeAngled objects.
+XII_FOUNDATION_DLL void operator<<(xiiStreamWriter& ref_stream, const xiiVarianceTypeAngled& value);
+
+/// \brief Operator to serialize xiiVarianceTypeAngled objects.
+XII_FOUNDATION_DLL void operator>>(xiiStreamReader& ref_stream, xiiVarianceTypeAngled& ref_value);

@@ -224,11 +224,11 @@ xiiInt32 xiiReflectedTypeStorageAccessor::GetCount(const char* szProperty) const
   if (m_pMapping->m_PathToStorageInfoTable.TryGetValue(szProperty, storageInfo))
   {
     if (storageInfo->m_Type == xiiVariant::Type::Invalid)
-      return false;
+      return -1;
 
     const xiiAbstractProperty* pProp = GetType()->FindPropertyByName(szProperty);
     if (pProp == nullptr)
-      return false;
+      return -1;
 
     switch (pProp->GetCategory())
     {

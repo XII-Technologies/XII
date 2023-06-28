@@ -508,6 +508,8 @@ private:
   xiiObjectMode::Enum Reflection_GetMode() const;
   void                Reflection_SetMode(xiiObjectMode::Enum mode);
 
+  xiiGameObject* Reflection_FindChildByName(xiiStringView sName, bool bRecursive);
+
   bool DetermineDynamicMode(xiiComponent* pComponentToIgnore = nullptr) const;
   void ConditionalMakeStatic(xiiComponent* pComponentToIgnore = nullptr);
   void MakeStaticInternal();

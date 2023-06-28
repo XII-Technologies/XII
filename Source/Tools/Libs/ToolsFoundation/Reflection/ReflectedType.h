@@ -16,7 +16,7 @@ class xiiReflectedTypeStorageManager;
 /// \brief Event message used by the xiiPhantomRttiManager.
 struct XII_TOOLSFOUNDATION_DLL xiiPhantomTypeChange
 {
-  const xiiRTTI* m_pChangedType;
+  const xiiRTTI* m_pChangedType = nullptr;
 };
 
 struct XII_TOOLSFOUNDATION_DLL xiiAttributeHolder

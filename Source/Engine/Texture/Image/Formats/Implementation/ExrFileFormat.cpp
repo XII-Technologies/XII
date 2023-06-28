@@ -137,7 +137,7 @@ xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& 
           break;
 
         case TINYEXR_PIXELTYPE_UINT:
-          xiiImageFormat::R32G32B32A32_UINT;
+          imageFormat = xiiImageFormat::R32G32B32A32_UINT;
           break;
       }
 

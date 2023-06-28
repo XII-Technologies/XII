@@ -1704,36 +1704,34 @@ void xiiQtPropertyTypeContainerWidget::CommandHistoryEventHandler(const xiiComma
 
 xiiQtVariantPropertyWidget::xiiQtVariantPropertyWidget()
 {
-  m_pLayout = new QHBoxLayout(this);
-  m_pLayout->setContentsMargins(0, 0, 0, 0);
+  m_pLayout = new QVBoxLayout(this);
+  m_pLayout->setContentsMargins(0, 0, 0, 4);
+  m_pLayout->setSpacing(1);
   setLayout(m_pLayout);
-}
 
+  m_pTypeList = new QComboBox(this);
+  m_pTypeList->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+  m_pLayout->addWidget(m_pTypeList);
+}
 
 xiiQtVariantPropertyWidget::~xiiQtVariantPropertyWidget() = default;
 
-void xiiQtVariantPropertyWidget::SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items)
+void xiiQtVariantPropertyWidget::OnInit()
 {
-  xiiQtStandardPropertyWidget::SetSelection(items);
-}
-
-void xiiQtVariantPropertyWidget::ExtendContextMenu(QMenu& ref_menu)
-{
-  xiiQtStandardPropertyWidget::ExtendContextMenu(ref_menu);
-
-  QMenu* ctm = ref_menu.addMenu(QStringLiteral("Change Type"));
-  for (int i = xiiVariantType::FirstStandardType + 1; i < xiiVariantType::LastStandardType; ++i)
+  xiiStringBuilder sName;
+  for (int i = xiiVariantType::Invalid; i < xiiVariantType::LastExtendedType; ++i)
   {
-    if (i == xiiVariantType::StringView || i == xiiVariantType::DataBuffer)
-      continue;
-    auto             type         = static_cast<xiiVariantType::Enum>(i);
-    const xiiRTTI*   pVariantEnum = xiiRTTI::FindTypeByName("xiiVariantType");
-    xiiStringBuilder sName;
-    bool             res    = xiiReflectionUtils::EnumerationToString(pVariantEnum, type, sName);
-    QAction*         action = ctm->addAction(sName.GetData(), [this, type]() { ChangeVariantType(type); });
-    if (m_OldValue.GetType() == type)
-      action->setChecked(true);
+    auto type = static_cast<xiiVariantType::Enum>(i);
+    if (GetVariantTypeDisplayName(type, sName).Succeeded())
+    {
+      m_pTypeList->addItem(xiiTranslate(sName), i);
+    }
   }
+
+  connect(m_pTypeList, &QComboBox::currentIndexChanged,
+          [this](int iIndex) {
+            ChangeVariantType(static_cast<xiiVariantType::Enum>(m_pTypeList->itemData(iIndex).toInt()));
+          });
 }
 
 void xiiQtVariantPropertyWidget::InternalSetValue(const xiiVariant& value)
@@ -1758,18 +1756,39 @@ void xiiQtVariantPropertyWidget::InternalSetValue(const xiiVariant& value)
     }
     else if (!sameType)
     {
-      m_pWidget = new xiiQtUnsupportedPropertyWidget("Multi-selection has varying types, RMB to change.");
+      m_pWidget = new xiiQtUnsupportedPropertyWidget("Multi-selection has varying types");
     }
     else
     {
-      m_pWidget = new xiiQtUnsupportedPropertyWidget("Variant set to invalid, RMB to change.");
+      m_pWidget = new xiiQtUnsupportedPropertyWidget("<Invalid>");
     }
     m_pWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     m_pWidget->setParent(this);
     m_pLayout->addWidget(m_pWidget);
     m_pWidget->Init(m_pGrid, m_pObjectAccessor, m_pType, m_pProp);
+
+    UpdateTypeListSelection(commonType);
   }
   m_pWidget->SetSelection(m_Items);
+}
+
+void xiiQtVariantPropertyWidget::DoPrepareToDie()
+{
+  if (m_pWidget)
+    m_pWidget->PrepareToDie();
+}
+
+void xiiQtVariantPropertyWidget::UpdateTypeListSelection(xiiVariantType::Enum type)
+{
+  xiiQtScopedBlockSignals bs(m_pTypeList);
+  for (int i = 0; i < m_pTypeList->count(); ++i)
+  {
+    if (m_pTypeList->itemData(i).toInt() == type)
+    {
+      m_pTypeList->setCurrentIndex(i);
+      break;
+    }
+  }
 }
 
 void xiiQtVariantPropertyWidget::ChangeVariantType(xiiVariantType::Enum type)
@@ -1793,8 +1812,14 @@ void xiiQtVariantPropertyWidget::ChangeVariantType(xiiVariantType::Enum type)
   m_pObjectAccessor->FinishTransaction();
 }
 
-void xiiQtVariantPropertyWidget::DoPrepareToDie()
+xiiResult xiiQtVariantPropertyWidget::GetVariantTypeDisplayName(xiiVariantType::Enum type, xiiStringBuilder& out_sName) const
 {
-  if (m_pWidget)
-    m_pWidget->PrepareToDie();
+  if (type == xiiVariantType::FirstStandardType || type == xiiVariantType::StringView || type == xiiVariantType::DataBuffer || type >= xiiVariantType::LastStandardType)
+    return XII_FAILURE;
+
+  const xiiRTTI* pVariantEnum = xiiGetStaticRTTI<xiiVariantType>();
+  if (xiiReflectionUtils::EnumerationToString(pVariantEnum, type, out_sName) == false)
+    return XII_FAILURE;
+
+  return XII_SUCCESS;
 }

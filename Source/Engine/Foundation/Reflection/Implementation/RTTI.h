@@ -34,7 +34,7 @@ class XII_FOUNDATION_DLL xiiRTTI : public xiiEnumerable<xiiRTTI>
 
 public:
   /// \brief The constructor requires all the information about the type that this object represents.
-  xiiRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)());
+  xiiRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractFunctionProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)());
 
 
   ~xiiRTTI();
@@ -138,7 +138,7 @@ public:
                                                         "you may have forgotten to instantiate an xiiPlugin object inside your plugin DLL.");
 
     const xiiUInt32 uiIndex = id - m_uiMsgIdOffset;
-    return uiIndex < m_DynamicMessageHandlers.GetCount() && m_DynamicMessageHandlers[uiIndex] != nullptr;
+    return uiIndex < m_DynamicMessageHandlers.GetCount() && m_DynamicMessageHandlers.GetData()[uiIndex] != nullptr;
   }
 
   XII_ALWAYS_INLINE const xiiArrayPtr<xiiMessageSenderInfo>& GetMessageSender() const { return m_MessageSenders; }

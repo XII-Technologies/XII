@@ -52,7 +52,7 @@ xiiPropertyAnimAssetDocument::xiiPropertyAnimAssetDocument(const char* szDocumen
     xiiAssetDocEngineConnection::FullObjectMirroring)
 {
   m_GameObjectContextEvents.AddEventHandler(xiiMakeDelegate(&xiiPropertyAnimAssetDocument::GameObjectContextEventHandler, this));
-  m_pAccessor = XII_DEFAULT_NEW(xiiPropertyAnimObjectAccessor, this, GetCommandHistory());
+  m_pObjectAccessor = XII_DEFAULT_NEW(xiiPropertyAnimObjectAccessor, this, GetCommandHistory());
 }
 
 xiiPropertyAnimAssetDocument::~xiiPropertyAnimAssetDocument()
@@ -61,11 +61,6 @@ xiiPropertyAnimAssetDocument::~xiiPropertyAnimAssetDocument()
 
   GetObjectManager()->m_StructureEvents.RemoveEventHandler(xiiMakeDelegate(&xiiPropertyAnimAssetDocument::TreeStructureEventHandler, this));
   GetObjectManager()->m_PropertyEvents.RemoveEventHandler(xiiMakeDelegate(&xiiPropertyAnimAssetDocument::TreePropertyEventHandler, this));
-}
-
-xiiObjectAccessorBase* xiiPropertyAnimAssetDocument::GetObjectAccessor() const
-{
-  return m_pAccessor.Borrow();
 }
 
 void xiiPropertyAnimAssetDocument::SetAnimationDurationTicks(xiiUInt64 uiNumTicks)
@@ -330,7 +325,7 @@ void xiiPropertyAnimAssetDocument::RebuildMapping()
   const xiiAbstractProperty* pTracksProp = xiiGetStaticRTTI<xiiPropertyAnimationTrackGroup>()->FindPropertyByName("Tracks");
   XII_ASSERT_DEBUG(pTracksProp, "Name of property xiiPropertyAnimationTrackGroup::m_Tracks has changed.");
   xiiHybridArray<xiiVariant, 16> values;
-  m_pAccessor->GetValues(GetPropertyObject(), pTracksProp, values);
+  m_pObjectAccessor->GetValues(GetPropertyObject(), pTracksProp, values);
   for (const xiiVariant& value : values)
   {
     AddTrack(value.Get<xiiUuid>());
@@ -367,7 +362,7 @@ void xiiPropertyAnimAssetDocument::AddTrack(const xiiUuid& track)
     if (!m_PropertyTable.Contains(key))
     {
       PropertyValue value;
-      XII_VERIFY(m_pAccessor->GetValue(GetObjectManager()->GetObject(key.m_Object), key.m_pProperty, value.m_InitialValue, key.m_Index).Succeeded(),
+      XII_VERIFY(m_pObjectAccessor->GetValue(GetObjectManager()->GetObject(key.m_Object), key.m_pProperty, value.m_InitialValue, key.m_Index).Succeeded(),
                  "Computed key invalid, does not resolve to a value.");
       m_PropertyTable.Insert(key, value);
     }
@@ -379,13 +374,9 @@ void xiiPropertyAnimAssetDocument::AddTrack(const xiiUuid& track)
 }
 
 
-void xiiPropertyAnimAssetDocument::FindTrackKeys(
-  const char*                              szObjectSearchSequence,
-  const char*                              szComponentType,
-  const char*                              szPropertyPath,
-  xiiHybridArray<xiiPropertyReference, 1>& keys) const
+void xiiPropertyAnimAssetDocument::FindTrackKeys(const char* szObjectSearchSequence, const char* szComponentType, const char* szPropertyPath, xiiHybridArray<xiiPropertyReference, 1>& keys) const
 {
-  xiiObjectPropertyPathContext context = {GetContextObject(), m_pAccessor.Borrow(), "TempObjects"};
+  xiiObjectPropertyPathContext context = {GetContextObject(), m_pObjectAccessor.Borrow(), "TempObjects"};
 
   keys.Clear();
   xiiObjectPropertyPath::ResolvePath(context, keys, szObjectSearchSequence, szComponentType, szPropertyPath);
@@ -394,7 +385,7 @@ void xiiPropertyAnimAssetDocument::FindTrackKeys(
 
 void xiiPropertyAnimAssetDocument::GenerateTrackInfo(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiStringBuilder& sObjectSearchSequence, xiiStringBuilder& sComponentType, xiiStringBuilder& sPropertyPath) const
 {
-  xiiObjectPropertyPathContext context     = {GetContextObject(), m_pAccessor.Borrow(), "TempObjects"};
+  xiiObjectPropertyPathContext context     = {GetContextObject(), m_pObjectAccessor.Borrow(), "TempObjects"};
   xiiPropertyReference         propertyRef = {pObject->GetGuid(), pProp, index};
   xiiObjectPropertyPath::CreatePath(context, propertyRef, sObjectSearchSequence, sComponentType, sPropertyPath);
 }
@@ -480,7 +471,7 @@ void xiiPropertyAnimAssetDocument::ApplyAnimation(const xiiPropertyReference& ke
 
   xiiDocumentObject* pObj = GetObjectManager()->GetObject(key.m_Object);
   xiiVariant         oldValue;
-  XII_VERIFY(m_pAccessor->GetValue(pObj, key.m_pProperty, oldValue, key.m_Index).Succeeded(), "Retrieving old value failed.");
+  XII_VERIFY(m_pObjectAccessor->GetValue(pObj, key.m_pProperty, oldValue, key.m_Index).Succeeded(), "Retrieving old value failed.");
   if (oldValue != animValue)
     GetObjectManager()->SetValue(pObj, key.m_pProperty->GetPropertyName(), animValue, key.m_Index);
 
@@ -566,11 +557,7 @@ xiiPropertyAnimationTrack* xiiPropertyAnimAssetDocument::GetTrack(const xiiUuid&
 }
 
 
-xiiStatus xiiPropertyAnimAssetDocument::CanAnimate(
-  const xiiDocumentObject*    pObject,
-  const xiiAbstractProperty*  pProp,
-  xiiVariant                  index,
-  xiiPropertyAnimTarget::Enum target) const
+xiiStatus xiiPropertyAnimAssetDocument::CanAnimate(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiPropertyAnimTarget::Enum target) const
 {
   if (!pObject)
     return xiiStatus("Object is null.");
@@ -609,7 +596,7 @@ xiiStatus xiiPropertyAnimAssetDocument::CanAnimate(
   {
     pNode = pNode->GetParent();
   }
-  xiiString sName = m_pAccessor->Get<xiiString>(pNode, pName);
+  xiiString sName = m_pObjectAccessor->Get<xiiString>(pNode, pName);
 
   if (sName.IsEmpty() && pNode != GetContextObject())
   {
@@ -624,11 +611,7 @@ xiiStatus xiiPropertyAnimAssetDocument::CanAnimate(
   return xiiStatus(XII_SUCCESS);
 }
 
-xiiUuid xiiPropertyAnimAssetDocument::FindTrack(
-  const xiiDocumentObject*    pObject,
-  const xiiAbstractProperty*  pProp,
-  xiiVariant                  index,
-  xiiPropertyAnimTarget::Enum target) const
+xiiUuid xiiPropertyAnimAssetDocument::FindTrack(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiPropertyAnimTarget::Enum target) const
 {
   xiiPropertyReference key;
   key.m_Object    = pObject->GetGuid();
@@ -672,11 +655,7 @@ static xiiColorGammaUB g_FloatColors[10] = {
   xiiColorGammaUB(238, 130, 238),
 };
 
-xiiUuid xiiPropertyAnimAssetDocument::CreateTrack(
-  const xiiDocumentObject*    pObject,
-  const xiiAbstractProperty*  pProp,
-  xiiVariant                  index,
-  xiiPropertyAnimTarget::Enum target)
+xiiUuid xiiPropertyAnimAssetDocument::CreateTrack(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiPropertyAnimTarget::Enum target)
 {
   xiiStringBuilder sObjectSearchSequence;
   xiiStringBuilder sComponentType;
@@ -759,10 +738,10 @@ xiiUuid xiiPropertyAnimAssetDocument::FindCurveCp(const xiiUuid& trackGuid, xiiI
 
   const xiiAbstractProperty* pCurveProp         = xiiGetStaticRTTI<xiiPropertyAnimationTrack>()->FindPropertyByName("FloatCurve");
   const xiiDocumentObject*   trackObject        = GetObjectManager()->GetObject(trackGuid);
-  xiiUuid                    curveGuid          = m_pAccessor->Get<xiiUuid>(trackObject, pCurveProp);
+  xiiUuid                    curveGuid          = m_pObjectAccessor->Get<xiiUuid>(trackObject, pCurveProp);
   const xiiAbstractProperty* pControlPointsProp = xiiGetStaticRTTI<xiiSingleCurveData>()->FindPropertyByName("ControlPoints");
   const xiiDocumentObject*   curveObject        = GetObjectManager()->GetObject(curveGuid);
-  xiiUuid                    cpGuid             = m_pAccessor->Get<xiiUuid>(curveObject, pControlPointsProp, iIndex);
+  xiiUuid                    cpGuid             = m_pObjectAccessor->Get<xiiUuid>(curveObject, pControlPointsProp, iIndex);
   return cpGuid;
 }
 
@@ -807,10 +786,10 @@ xiiUuid xiiPropertyAnimAssetDocument::FindGradientColorCp(const xiiUuid& trackGu
 
   const xiiAbstractProperty* pCurveProp         = xiiGetStaticRTTI<xiiPropertyAnimationTrack>()->FindPropertyByName("Gradient");
   const xiiDocumentObject*   trackObject        = GetObjectManager()->GetObject(trackGuid);
-  xiiUuid                    curveGuid          = m_pAccessor->Get<xiiUuid>(trackObject, pCurveProp);
+  xiiUuid                    curveGuid          = m_pObjectAccessor->Get<xiiUuid>(trackObject, pCurveProp);
   const xiiAbstractProperty* pControlPointsProp = xiiGetStaticRTTI<xiiColorGradientAssetData>()->FindPropertyByName("ColorCPs");
   const xiiDocumentObject*   curveObject        = GetObjectManager()->GetObject(curveGuid);
-  xiiUuid                    cpGuid             = m_pAccessor->Get<xiiUuid>(curveObject, pControlPointsProp, iIndex);
+  xiiUuid                    cpGuid             = m_pObjectAccessor->Get<xiiUuid>(curveObject, pControlPointsProp, iIndex);
   return cpGuid;
 }
 
@@ -852,10 +831,10 @@ xiiUuid xiiPropertyAnimAssetDocument::FindGradientAlphaCp(const xiiUuid& trackGu
 
   const xiiAbstractProperty* pCurveProp         = xiiGetStaticRTTI<xiiPropertyAnimationTrack>()->FindPropertyByName("Gradient");
   const xiiDocumentObject*   trackObject        = GetObjectManager()->GetObject(trackGuid);
-  xiiUuid                    curveGuid          = m_pAccessor->Get<xiiUuid>(trackObject, pCurveProp);
+  xiiUuid                    curveGuid          = m_pObjectAccessor->Get<xiiUuid>(trackObject, pCurveProp);
   const xiiAbstractProperty* pControlPointsProp = xiiGetStaticRTTI<xiiColorGradientAssetData>()->FindPropertyByName("AlphaCPs");
   const xiiDocumentObject*   curveObject        = GetObjectManager()->GetObject(curveGuid);
-  xiiUuid                    cpGuid             = m_pAccessor->Get<xiiUuid>(curveObject, pControlPointsProp, iIndex);
+  xiiUuid                    cpGuid             = m_pObjectAccessor->Get<xiiUuid>(curveObject, pControlPointsProp, iIndex);
   return cpGuid;
 }
 
@@ -895,10 +874,10 @@ xiiUuid xiiPropertyAnimAssetDocument::FindGradientIntensityCp(const xiiUuid& tra
 
   const xiiAbstractProperty* pCurveProp         = xiiGetStaticRTTI<xiiPropertyAnimationTrack>()->FindPropertyByName("Gradient");
   const xiiDocumentObject*   trackObject        = GetObjectManager()->GetObject(trackGuid);
-  xiiUuid                    curveGuid          = m_pAccessor->Get<xiiUuid>(trackObject, pCurveProp);
+  xiiUuid                    curveGuid          = m_pObjectAccessor->Get<xiiUuid>(trackObject, pCurveProp);
   const xiiAbstractProperty* pControlPointsProp = xiiGetStaticRTTI<xiiColorGradientAssetData>()->FindPropertyByName("IntensityCPs");
   const xiiDocumentObject*   curveObject        = GetObjectManager()->GetObject(curveGuid);
-  xiiUuid                    cpGuid             = m_pAccessor->Get<xiiUuid>(curveObject, pControlPointsProp, iIndex);
+  xiiUuid                    cpGuid             = m_pObjectAccessor->Get<xiiUuid>(curveObject, pControlPointsProp, iIndex);
   return cpGuid;
 }
 

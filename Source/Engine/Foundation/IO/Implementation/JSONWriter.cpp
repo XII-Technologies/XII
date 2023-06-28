@@ -89,6 +89,13 @@ void xiiJSONWriter::AddVariableAngle(const char* szName, xiiAngle value)
   EndVariable();
 }
 
+void xiiJSONWriter::AddVariableAngle(const char* szName, xiiAngled value)
+{
+  BeginVariable(szName);
+  WriteAngle(value);
+  EndVariable();
+}
+
 void xiiJSONWriter::AddVariableColor(const char* szName, const xiiColor& value)
 {
   BeginVariable(szName);
@@ -586,6 +593,9 @@ void xiiJSONWriter::WriteVariant(const xiiVariant& value)
       return;
     case xiiVariant::Type::Angle:
       WriteAngle(value.Get<xiiAngle>());
+      return;
+    case xiiVariant::Type::Angled:
+      WriteAngle(value.Get<xiiAngled>());
       return;
     case xiiVariant::Type::DataBuffer:
       WriteDataBuffer(value.Get<xiiDataBuffer>());

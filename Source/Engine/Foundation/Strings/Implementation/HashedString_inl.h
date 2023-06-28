@@ -19,18 +19,19 @@ XII_FORCE_INLINE xiiHashedString::xiiHashedString(xiiHashedString&& rhs)
   rhs.m_Data = HashedType(); // This leaves the string in an invalid state, all operations will fail except the destructor
 }
 
+#if XII_ENABLED(XII_HASHED_STRING_REF_COUNTING)
 inline xiiHashedString::~xiiHashedString()
 {
-#if XII_ENABLED(XII_HASHED_STRING_REF_COUNTING)
   // Explicit check if data is still valid. It can be invalid if this string has been moved.
   if (m_Data.IsValid())
   {
     // just decrease the refcount of the object that we are set to, it might reach refcount zero, but we don't care about that here
     m_Data.Value().m_iRefCount.Decrement();
   }
-#endif
 }
-
+#else
+XII_FORCE_INLINE xiiHashedString::~xiiHashedString() = default;
+#endif
 inline void xiiHashedString::operator=(const xiiHashedString& rhs)
 {
   // first increase the other refcount, then decrease ours

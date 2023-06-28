@@ -22,8 +22,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorPluginAssets, AnimationController)
 
   ON_CORESYSTEMS_STARTUP
   {
-    //xiiQtNodeScene::GetPinFactory().RegisterCreator(xiiGetStaticRTTI<xiiVisualScriptPin>(), [](const xiiRTTI* pRtti)->xiiQtPin* { return new xiiQtVisualScriptPin(); });
-    //xiiQtNodeScene::GetConnectionFactory().RegisterCreator(xiiGetStaticRTTI<xiiVisualScriptConnection>(), [](const xiiRTTI* pRtti)->xiiQtConnection* { return new xiiQtVisualScriptConnection(); });
     xiiQtNodeScene::GetNodeFactory().RegisterCreator(xiiGetStaticRTTI<xiiAnimGraphNode>(), [](const xiiRTTI* pRtti)->xiiQtNode* { return new xiiQtAnimationControllerNode(); });
   }
 

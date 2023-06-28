@@ -67,8 +67,6 @@ public:
   xiiPropertyAnimAssetDocument(const char* szDocumentPath);
   ~xiiPropertyAnimAssetDocument();
 
-  virtual xiiObjectAccessorBase* GetObjectAccessor() const override;
-
   void      SetAnimationDurationTicks(xiiUInt64 uiNumTicks);
   xiiUInt64 GetAnimationDurationTicks() const;
   xiiTime   GetAnimationDurationTime() const;
@@ -126,6 +124,7 @@ private:
     xiiVariant                 m_InitialValue;
     xiiHybridArray<xiiUuid, 3> m_Tracks;
   };
+
   struct PropertyKeyHash
   {
     XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiPropertyReference& key)
@@ -143,19 +142,13 @@ private:
   void RebuildMapping();
   void RemoveTrack(const xiiUuid& track);
   void AddTrack(const xiiUuid& track);
-  void FindTrackKeys(
-    const char*                              szObjectSearchSequence,
-    const char*                              szComponentType,
-    const char*                              szPropertyPath,
-    xiiHybridArray<xiiPropertyReference, 1>& keys) const;
+  void FindTrackKeys(const char* szObjectSearchSequence, const char* szComponentType, const char* szPropertyPath, xiiHybridArray<xiiPropertyReference, 1>& keys) const;
   void GenerateTrackInfo(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiStringBuilder& sObjectSearchSequence, xiiStringBuilder& sComponentType, xiiStringBuilder& sPropertyPath) const;
   void ApplyAnimation();
   void ApplyAnimation(const xiiPropertyReference& key, const PropertyValue& value);
 
   xiiHashTable<xiiPropertyReference, PropertyValue, PropertyKeyHash> m_PropertyTable;
   xiiHashTable<xiiUuid, xiiHybridArray<xiiPropertyReference, 1>>     m_TrackTable;
-
-  xiiUniquePtr<xiiPropertyAnimObjectAccessor> m_pAccessor;
 
   bool      m_bPlayAnimation   = false;
   bool      m_bRepeatAnimation = false;

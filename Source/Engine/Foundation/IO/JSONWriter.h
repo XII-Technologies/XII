@@ -76,6 +76,9 @@ public:
   /// \brief Shorthand for "BeginVariable(szName); WriteAngle(value); EndVariable(); "
   void AddVariableAngle(const char* szName, xiiAngle value); // [tested]
 
+  /// \brief Shorthand for "BeginVariable(szName); WriteAngle(value); EndVariable(); "
+  void AddVariableAngle(const char* szName, xiiAngled value); // [tested]
+
   /// \brief Shorthand for "BeginVariable(szName); WriteColor(value); EndVariable(); "
   void AddVariableColor(const char* szName, const xiiColor& value); // [tested]
 
@@ -347,6 +350,11 @@ public:
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteAngle(xiiAngle value) = 0; // [tested]
 
+  /// \brief Writes an xiiAngled to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  ///
+  /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
+  virtual void WriteAngle(xiiAngled value) = 0; // [tested]
+
   /// \brief Writes an xiiDataBuffer to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
@@ -547,6 +555,9 @@ public:
 
   /// \brief \copydoc xiiJSONWriter::WriteFloat()
   virtual void WriteAngle(xiiAngle value) override; // [tested]
+
+  /// \brief \copydoc xiiJSONWriter::WriteDouble()
+  virtual void WriteAngle(xiiAngled value) override; // [tested]
 
   /// \brief Outputs the value via WriteBinaryData().
   virtual void WriteDataBuffer(const xiiDataBuffer& value) override; // [tested]

@@ -10,11 +10,6 @@
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/Uuid.h>
 
-// Needed to prevent circular includes
-template <typename T, typename AllocatorWrapper>
-class xiiDynamicArray;
-class xiiVariant;
-
 /// \brief This namespace contains functions to convert between different types.
 ///
 /// Contains helper functions to convert from strings to numerical values.
@@ -307,13 +302,19 @@ namespace xiiConversionUtils
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiAngle& value, xiiStringBuilder& out_sResult); // [tested]
 
   /// \brief Converts an angle to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiAngled& value, xiiStringBuilder& out_sResult); // [tested]
+
+  /// \brief Converts an angle to a string
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiTime& value, xiiStringBuilder& out_sResult);
 
   /// \brief Converts a xiiStringView to a string
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiStringView& value, xiiStringBuilder& out_sResult);
 
   /// \brief Converts a xiiVariantArray to a string
-  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiDynamicArray<xiiVariant, xiiDefaultAllocatorWrapper>& value, xiiStringBuilder& out_sResult);
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiDynamicArray<xiiVariant>& value, xiiStringBuilder& out_sResult);
+
+  /// \brief Converts a xiiVariantDictionary to a string
+  XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiHashTable<xiiString, xiiVariant>& value, xiiStringBuilder& out_sResult);
 
   /// \brief Fallback ToString implementation for all types that don't have one
   template <typename T>

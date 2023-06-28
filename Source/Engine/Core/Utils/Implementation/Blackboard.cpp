@@ -16,6 +16,24 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiBlackboard, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_GetOrCreateGlobal, In, "Name"),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_FindGlobal, In, "Name"),
+
+    XII_SCRIPT_FUNCTION_PROPERTY(GetName),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_RegisterEntry, In, "Name", In, "InitialValue", In, "Save", In, "OnChangeEvent"),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_SetEntryValue, In, "Name", In, "Value"),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_GetEntryValue, In, "Name", In, "Fallback"),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetBlackboardChangeCounter),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetBlackboardEntryChangeCounter)
+  }
+  XII_END_FUNCTIONS;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_SUBSYSTEM_DECLARATION(Core, Blackboard)
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -159,7 +177,7 @@ const xiiBlackboard::Entry* xiiBlackboard::GetEntry(const xiiTempHashedString& s
   return &itEntry.Value();
 }
 
-xiiVariant xiiBlackboard::GetEntryValue(const xiiTempHashedString& sName, xiiVariant fallback) const
+xiiVariant xiiBlackboard::GetEntryValue(const xiiTempHashedString& sName, const xiiVariant& fallback /*= xiiVariant()*/) const
 {
   auto value = m_Entries.GetValue(sName);
   return value != nullptr ? value->m_Value : fallback;
@@ -177,9 +195,9 @@ xiiBitflags<xiiBlackboardEntryFlags> xiiBlackboard::GetEntryFlags(const xiiTempH
   return itEntry.Value().m_Flags;
 }
 
-xiiResult xiiBlackboard::Serialize(xiiStreamWriter& ref_stream) const
+xiiResult xiiBlackboard::Serialize(xiiStreamWriter& inout_stream) const
 {
-  ref_stream.WriteVersion(1);
+  inout_stream.WriteVersion(1);
 
   xiiUInt32 uiEntries = 0;
 
@@ -191,7 +209,7 @@ xiiResult xiiBlackboard::Serialize(xiiStreamWriter& ref_stream) const
     }
   }
 
-  ref_stream << uiEntries;
+  inout_stream << uiEntries;
 
   for (auto it : m_Entries)
   {
@@ -199,37 +217,74 @@ xiiResult xiiBlackboard::Serialize(xiiStreamWriter& ref_stream) const
 
     if (e.m_Flags.IsSet(xiiBlackboardEntryFlags::Save))
     {
-      ref_stream << it.Key();
-      ref_stream << e.m_Flags;
-      ref_stream << e.m_Value;
+      inout_stream << it.Key();
+      inout_stream << e.m_Flags;
+      inout_stream << e.m_Value;
     }
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiBlackboard::Deserialize(xiiStreamReader& ref_stream)
+xiiResult xiiBlackboard::Deserialize(xiiStreamReader& inout_stream)
 {
-  ref_stream.ReadVersion(1);
+  inout_stream.ReadVersion(1);
 
   xiiUInt32 uiEntries = 0;
-  ref_stream >> uiEntries;
+  inout_stream >> uiEntries;
 
   for (xiiUInt32 e = 0; e < uiEntries; ++e)
   {
     xiiHashedString name;
-    ref_stream >> name;
+    inout_stream >> name;
 
     xiiBitflags<xiiBlackboardEntryFlags> flags;
-    ref_stream >> flags;
+    inout_stream >> flags;
 
     xiiVariant value;
-    ref_stream >> value;
+    inout_stream >> value;
 
     RegisterEntry(name, value, flags);
   }
 
   return XII_SUCCESS;
+}
+
+// static
+xiiBlackboard* xiiBlackboard::Reflection_GetOrCreateGlobal(xiiStringView sName)
+{
+  xiiHashedString sNameHashed;
+  sNameHashed.Assign(sName);
+
+  return GetOrCreateGlobal(sNameHashed).Borrow();
+}
+
+// static
+xiiBlackboard* xiiBlackboard::Reflection_FindGlobal(xiiStringView sName)
+{
+  return FindGlobal(xiiTempHashedString(sName));
+}
+
+void xiiBlackboard::Reflection_RegisterEntry(xiiStringView sName, const xiiVariant& initialValue, bool bSave, bool bOnChangeEvent)
+{
+  xiiHashedString sNameHashed;
+  sNameHashed.Assign(sName);
+
+  xiiBitflags<xiiBlackboardEntryFlags> flags;
+  flags.AddOrRemove(xiiBlackboardEntryFlags::Save, bSave);
+  flags.AddOrRemove(xiiBlackboardEntryFlags::OnChangeEvent, bOnChangeEvent);
+
+  RegisterEntry(sNameHashed, initialValue, flags);
+}
+
+bool xiiBlackboard::Reflection_SetEntryValue(xiiStringView sName, const xiiVariant& value)
+{
+  return SetEntryValue(xiiTempHashedString(sName), value).Succeeded();
+}
+
+xiiVariant xiiBlackboard::Reflection_GetEntryValue(xiiStringView sName, const xiiVariant& fallback) const
+{
+  return GetEntryValue(xiiTempHashedString(sName), fallback);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -262,23 +317,23 @@ bool xiiBlackboardCondition::IsConditionMet(const xiiBlackboard& blackboard) con
 
 constexpr xiiTypeVersion s_BlackboardConditionVersion = 1;
 
-xiiResult xiiBlackboardCondition::Serialize(xiiStreamWriter& ref_stream) const
+xiiResult xiiBlackboardCondition::Serialize(xiiStreamWriter& inout_stream) const
 {
-  ref_stream.WriteVersion(s_BlackboardConditionVersion);
+  inout_stream.WriteVersion(s_BlackboardConditionVersion);
 
-  ref_stream << m_sEntryName;
-  ref_stream << m_Operator;
-  ref_stream << m_fComparisonValue;
+  inout_stream << m_sEntryName;
+  inout_stream << m_Operator;
+  inout_stream << m_fComparisonValue;
   return XII_SUCCESS;
 }
 
-xiiResult xiiBlackboardCondition::Deserialize(xiiStreamReader& ref_stream)
+xiiResult xiiBlackboardCondition::Deserialize(xiiStreamReader& inout_stream)
 {
-  const xiiTypeVersion uiVersion = ref_stream.ReadVersion(s_BlackboardConditionVersion);
+  const xiiTypeVersion uiVersion = inout_stream.ReadVersion(s_BlackboardConditionVersion);
 
-  ref_stream >> m_sEntryName;
-  ref_stream >> m_Operator;
-  ref_stream >> m_fComparisonValue;
+  inout_stream >> m_sEntryName;
+  inout_stream >> m_Operator;
+  inout_stream >> m_fComparisonValue;
   return XII_SUCCESS;
 }
 

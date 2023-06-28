@@ -1,352 +1,372 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-	<Type Name="vk::Flags&lt;*&gt;">
-		<DisplayString>[{($T1)m_mask}]</DisplayString>
-	</Type>
+    <Type Name="vk::Flags&lt;*&gt;">
+        <DisplayString>[{($T1)m_mask}]</DisplayString>
+    </Type>
 
-	<!-- Strings-->
-	<Type Name="xiiHybridStringBase&lt;*&gt;">
-		<AlternativeType Name="xiiStringBuilder" />
-		<DisplayString Condition="((intptr_t)m_Data.m_pAllocator.m_pPtr &amp; 0x1) == 0">{m_Data.m_pElements,s8}</DisplayString>
-		<DisplayString Condition="((intptr_t)m_Data.m_pAllocator.m_pPtr &amp; 0x1) != 0">{m_Data.m_StaticData,s8}</DisplayString>
-		<StringView Condition="((intptr_t)m_Data.m_pAllocator.m_pPtr &amp; 0x1) == 0">m_Data.m_pElements,s8</StringView>
-		<StringView Condition="((intptr_t)m_Data.m_pAllocator.m_pPtr &amp; 0x1) != 0">m_Data.m_StaticData,s8</StringView>
-		<Expand>
-			<Item Condition="((intptr_t)m_Data.m_pAllocator.m_pPtr &amp; 0x1) == 0" Name="String">m_Data.m_pElements,s8</Item>
-			<Item Condition="((intptr_t)m_Data.m_pAllocator.m_pPtr &amp; 0x1) != 0" Name="String">m_Data.m_StaticData,s8</Item>
-			<Item Name="CharacterCount">m_uiCharacterCount</Item>
-			<Item Name="ElementCount">m_Data.m_uiCount</Item>
-		</Expand>
-	</Type>
+    <!-- Strings-->
+    <Type Name="xiiHybridStringBase&lt;*&gt;">
+        <AlternativeType Name="xiiStringBuilder" />
+        <DisplayString Condition="((intptr_t)m_Data.m_pAllocator.m_pPtr &amp; 0x1) == 0">{m_Data.m_pElements,s8}</DisplayString>
+        <DisplayString Condition="((intptr_t)m_Data.m_pAllocator.m_pPtr &amp; 0x1) != 0">{m_Data.m_StaticData,s8}</DisplayString>
+        <StringView Condition="((intptr_t)m_Data.m_pAllocator.m_pPtr &amp; 0x1) == 0">m_Data.m_pElements,s8</StringView>
+        <StringView Condition="((intptr_t)m_Data.m_pAllocator.m_pPtr &amp; 0x1) != 0">m_Data.m_StaticData,s8</StringView>
+        <Expand>
+            <Item Condition="((intptr_t)m_Data.m_pAllocator.m_pPtr &amp; 0x1) == 0" Name="String">m_Data.m_pElements,s8</Item>
+            <Item Condition="((intptr_t)m_Data.m_pAllocator.m_pPtr &amp; 0x1) != 0" Name="String">m_Data.m_StaticData,s8</Item>
+            <Item Name="CharacterCount">m_uiCharacterCount</Item>
+            <Item Name="ElementCount">m_Data.m_uiCount</Item>
+        </Expand>
+    </Type>
 
-	<Type Name="xiiStringView">
-		<DisplayString Condition="m_pStart != 0">{m_pStart,[m_pEnd - m_pStart]s8}</DisplayString>
-		<DisplayString Condition="m_pStart == 0">&lt;Invalid String&gt;</DisplayString>
-		<StringView>m_pStart,[m_pEnd - m_pStart]s8</StringView>
-		<Expand>
-			<Item Name="String" Condition="m_pStart != 0">m_pStart,[m_pEnd - m_pStart]s8</Item>
-			<Item Name="ElementCount" Condition="m_pStart != 0">m_pEnd - m_pStart</Item>
-			<Item Name="Valid">m_pStart != 0</Item>
-			<Item Name="ZeroTerminated" Condition="m_pEnd != 0">m_pEnd[0] == 0</Item>
-		</Expand>
-	</Type>	
-	
-	<Type Name="xiiStringIterator">
-		<AlternativeType Name="xiiStringReverseIterator" />
-		<DisplayString Condition="m_pElement == 0">&lt;Invalid Iterator&gt;</DisplayString>
-		<DisplayString Condition="(m_pElement[1] &amp; 0xC0) != 0x80">{m_pElement,[1]s8}</DisplayString>
-		<DisplayString Condition="(m_pElement[1] &amp; 0xC0) == 0x80 &amp;&amp; (m_pElement[2] &amp; 0xC0) != 0x80">{m_pElement,[2]s8}</DisplayString>
-		<DisplayString Condition="(m_pElement[1] &amp; 0xC0) == 0x80 &amp;&amp; (m_pElement[2] &amp; 0xC0) == 0x80 &amp;&amp; (m_pElement[3] &amp; 0xC0) != 0x80">{m_pElement,[3]s8}</DisplayString>
-		<DisplayString Condition="(m_pElement[1] &amp; 0xC0) == 0x80 &amp;&amp; (m_pElement[2] &amp; 0xC0) == 0x80 &amp;&amp; (m_pElement[3] &amp; 0xC0) == 0x80 &amp;&amp; (m_pElement[4] &amp; 0xC0) != 0x80">{m_pElement,[4]s8}</DisplayString>
-	</Type>
-	
-	<Type Name="xiiHashedString">
-		<DisplayString>{m_Data.m_pElement->m_Value.m_sString}</DisplayString>
-		<StringView>m_Data.m_pElement->m_Value.m_sString</StringView>
-		<Expand>
-			<!--<Item Name="ref">m_Data.m_pElement->m_Value.m_iRefCount</Item>-->
-			<Item Name="hash">m_Data.m_pElement->m_Key,x</Item>
-		</Expand>
-	</Type>
-	
-	<!-- Container & Arrays-->
-	<Type Name="xiiDynamicArrayBase&lt;*&gt;">
-		<DisplayString>{{ count={m_uiCount} }}</DisplayString>
-		<Expand>
-			<Item Name="count">m_uiCount</Item>
-			<Item Name="capacity">m_uiCapacity</Item>
-			<ArrayItems>
-				<Size>m_uiCount</Size>
-				<ValuePointer>(((int64_t)m_pAllocator.m_pPtr &amp; 0x1) != 0) ? ($T1*)((intptr_t)this + (intptr_t)m_pElements) : m_pElements</ValuePointer>
-			</ArrayItems>
-		</Expand>
-	</Type>
-	
-	<Type Name="xiiArrayBase&lt;*&gt;">
-		<DisplayString>{{ count={m_uiCount} }}</DisplayString>
-		<Expand>
-			<Item Name="count">m_uiCount</Item>
-			<Item Name="capacity">m_uiCapacity</Item>
-			<ArrayItems>
-				<Size>m_uiCount</Size>
-				<ValuePointer>m_pElements</ValuePointer>
-			</ArrayItems>
-		</Expand>
-	</Type>
-  
-  <Type Name="xiiSmallArrayBase&lt;*&gt;">
-		<DisplayString>{{ count={m_uiCount} }}</DisplayString>
-		<Expand>
-			<Item Name="count">m_uiCount</Item>
-			<Item Name="capacity">m_uiCapacity</Item>
-      <Item Name="userdata">m_uiUserData</Item>
-			<ArrayItems>
-				<Size>m_uiCount</Size>
-				<ValuePointer>(m_uiCapacity &lt;= $T2) ? ($T1*)((intptr_t)(m_StaticData)) : m_pElements</ValuePointer>
-			</ArrayItems>
-		</Expand>
-	</Type>
-	
-	<Type Name="xiiStaticArray&lt;*&gt;">
-		<DisplayString>{{ count={m_uiCount} }}</DisplayString>
-		<Expand>
-			<Item Name="count">m_uiCount</Item>
-			<Item Name="capacity">m_uiCapacity</Item>
-			<ArrayItems>
-				<Size>m_uiCount</Size>
-				<ValuePointer>($T1*)m_Data</ValuePointer>
-			</ArrayItems>
-		</Expand>
-	</Type>
-	
-	<Type Name="xiiHashTableBase&lt;*&gt;">
-		<DisplayString>{{ count={m_uiCount} }}</DisplayString>
-		<Expand>
-			<Item Name="count">m_uiCount</Item>
-			<Item Name="capacity">m_uiCapacity</Item>
-			<ArrayItems>
-				<Size>m_uiCapacity</Size>
-				<ValuePointer>m_pEntries</ValuePointer>
-			</ArrayItems>
-		</Expand>
-	</Type>
-	
-	<Type Name="xiiHashSetBase&lt;*&gt;">
-		<DisplayString>{{ count={m_uiCount} }}</DisplayString>
-		<Expand>
-			<Item Name="count">m_uiCount</Item>
-			<Item Name="capacity">m_uiCapacity</Item>
-			<ArrayItems>
-				<Size>m_uiCapacity</Size>
-				<ValuePointer>m_pEntries</ValuePointer>
-			</ArrayItems>
-		</Expand>
-	</Type>
+    <Type Name="xiiStringView">
+        <DisplayString Condition="m_pStart != 0">{m_pStart,[m_pEnd - m_pStart]s8}</DisplayString>
+        <DisplayString Condition="m_pStart == 0">&lt;Invalid String&gt;</DisplayString>
+        <StringView>m_pStart,[m_pEnd - m_pStart]s8</StringView>
+        <Expand>
+            <Item Name="String" Condition="m_pStart != 0">m_pStart,[m_pEnd - m_pStart]s8</Item>
+            <Item Name="ElementCount" Condition="m_pStart != 0">m_pEnd - m_pStart</Item>
+            <Item Name="Valid">m_pStart != 0</Item>
+            <Item Name="ZeroTerminated" Condition="m_pEnd != 0">m_pEnd[0] == 0</Item>
+        </Expand>
+    </Type>
 
-	<Type Name="xiiListBase&lt;*&gt;">
-		<DisplayString>{{ count={m_uiCount} }}</DisplayString>
-		<Expand>
-			<Item Name="count">m_uiCount</Item>
-			<LinkedListItems>
-				<Size>m_uiCount</Size>
-				<HeadPointer>m_First.m_pNext</HeadPointer>
-				<NextPointer>m_pNext</NextPointer>
-				<ValueNode>m_Data</ValueNode>
-			</LinkedListItems>
-		</Expand>
-	</Type>
+    <Type Name="xiiStringIterator">
+        <AlternativeType Name="xiiStringReverseIterator" />
+        <DisplayString Condition="m_pElement == 0">&lt;Invalid Iterator&gt;</DisplayString>
+        <DisplayString Condition="(m_pElement[1] &amp; 0xC0) != 0x80">{m_pElement,[1]s8}</DisplayString>
+        <DisplayString Condition="(m_pElement[1] &amp; 0xC0) == 0x80 &amp;&amp; (m_pElement[2] &amp; 0xC0) != 0x80">{m_pElement,[2]s8}</DisplayString>
+        <DisplayString Condition="(m_pElement[1] &amp; 0xC0) == 0x80 &amp;&amp; (m_pElement[2] &amp; 0xC0) == 0x80 &amp;&amp; (m_pElement[3] &amp; 0xC0) != 0x80">{m_pElement,[3]s8}</DisplayString>
+        <DisplayString Condition="(m_pElement[1] &amp; 0xC0) == 0x80 &amp;&amp; (m_pElement[2] &amp; 0xC0) == 0x80 &amp;&amp; (m_pElement[3] &amp; 0xC0) == 0x80 &amp;&amp; (m_pElement[4] &amp; 0xC0) != 0x80">{m_pElement,[4]s8}</DisplayString>
+    </Type>
 
-	<Type Name="xiiDequeBase&lt;*&gt;">
-		<DisplayString>{{ count={m_uiCount} }}</DisplayString>
-		<Expand>
-			<Item Name="count">m_uiCount</Item>
-			<IndexListItems>
-				<Size>m_uiCount</Size>
-				<ValueNode>m_pChunks[(m_uiFirstElement + $i) / m_uiChunkSize][(m_uiFirstElement + $i) % m_uiChunkSize]</ValueNode>
-			</IndexListItems>
-		</Expand>
-	</Type>
+    <Type Name="xiiHashedString">
+        <DisplayString>{m_Data.m_pElement->m_Value.m_sString}</DisplayString>
+        <StringView>m_Data.m_pElement->m_Value.m_sString</StringView>
+        <Expand>
+            <!--<Item Name="ref">m_Data.m_pElement->m_Value.m_iRefCount</Item>-->
+            <Item Name="hash">m_Data.m_pElement->m_Key,x</Item>
+        </Expand>
+    </Type>
 
-	<Type Name="xiiMapBase&lt;*&gt;">
-		<AlternativeType Name="xiiSetBase&lt;*&gt;" />
-		<DisplayString>{{ count={m_uiCount} }}</DisplayString>
-		<Expand>
-			<Item Name="count">m_uiCount</Item>
-			<TreeItems>
-				<Size>m_uiCount</Size>
-				<HeadPointer>m_pRoot</HeadPointer>
-				<LeftPointer>m_pLink[0]</LeftPointer>
-				<RightPointer>m_pLink[1]</RightPointer>
-				<ValueNode Condition="m_uiLevel != 0">*this</ValueNode>
-			</TreeItems>
-		</Expand>
-	</Type>
+    <!-- Container & Arrays-->
+    <Type Name="xiiDynamicArrayBase&lt;*&gt;">
+        <DisplayString>{{ count={m_uiCount} }}</DisplayString>
+        <Expand>
+            <Item Name="count">m_uiCount</Item>
+            <Item Name="capacity">m_uiCapacity</Item>
+            <ArrayItems>
+                <Size>m_uiCount</Size>
+                <ValuePointer>(((int64_t)m_pAllocator.m_pPtr &amp; 0x1) != 0) ? ($T1*)((intptr_t)this + (intptr_t)m_pElements) : m_pElements</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
 
-	<Type Name="xiiStaticRingBuffer&lt;*&gt;">
-		<DisplayString>{{ count={m_uiCount} }}</DisplayString>
-		<Expand>
-			<Item Name="count">m_uiCount</Item>
-			<Item Name="start index">m_uiFirstElement</Item>
-			<ArrayItems>
-				<Size>m_uiCount</Size>
-				<ValuePointer>m_pElements</ValuePointer>
-			</ArrayItems>
-		</Expand>
-	</Type>
+    <Type Name="xiiArrayBase&lt;*&gt;">
+        <DisplayString>{{ count={m_uiCount} }}</DisplayString>
+        <Expand>
+            <Item Name="count">m_uiCount</Item>
+            <Item Name="capacity">m_uiCapacity</Item>
+            <ArrayItems>
+                <Size>m_uiCount</Size>
+                <ValuePointer>m_pElements</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
 
-	<Type Name="xiiArrayPtr&lt;*&gt;">
-		<DisplayString>{{ count={m_uiCount} }}</DisplayString>
-		<Expand>
-			<Item Name="count">m_uiCount</Item>
-			<ArrayItems>
-				<Size>m_uiCount</Size>
-				<ValuePointer>m_pPtr</ValuePointer>
-			</ArrayItems>
-		</Expand>
-	</Type>
+    <Type Name="xiiSmallArrayBase&lt;*&gt;">
+        <DisplayString>{{ count={m_uiCount} }}</DisplayString>
+        <Expand>
+            <Item Name="count">m_uiCount</Item>
+            <Item Name="capacity">m_uiCapacity</Item>
+            <Item Name="userdata">m_uiUserData</Item>
+            <ArrayItems>
+                <Size>m_uiCount</Size>
+                <ValuePointer>(m_uiCapacity &lt;= $T2) ? ($T1*)((intptr_t)(m_StaticData)) : m_pElements</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
 
-	<!-- Basic Types -->
-	<Type Name="xiiVariant">
-		<DisplayString Condition="m_uiType == Type::TypedObject &amp;&amp; m_bIsShared">({m_Data.shared->m_pType->m_szTypeName,sb}*) {reinterpret_cast&lt;void*&gt;(m_Data.shared->m_Ptr)}</DisplayString>
-		<DisplayString Condition="m_uiType == Type::TypedObject &amp;&amp; !m_bIsShared">({m_Data.inlined.m_pType->m_szTypeName,sb}*) {reinterpret_cast&lt;void*&gt;(&amp;m_Data)}</DisplayString>
-		<Expand>
-			<Item Name="Type">(Type::Enum) m_uiType</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Bool">*reinterpret_cast&lt;bool*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Int8">*reinterpret_cast&lt;xiiInt8*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::UInt8">*reinterpret_cast&lt;xiiUInt8*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Int16">*reinterpret_cast&lt;xiiInt16*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::UInt16">*reinterpret_cast&lt;xiiUInt16*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Int32">*reinterpret_cast&lt;xiiInt32*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::UInt32">*reinterpret_cast&lt;xiiUInt32*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Int64">*reinterpret_cast&lt;xiiInt64*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::UInt64">*reinterpret_cast&lt;xiiUInt64*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Float">*reinterpret_cast&lt;float*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Double">*reinterpret_cast&lt;double*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Color">*reinterpret_cast&lt;xiiColor*&gt;(&amp;m_Data)</Item>     
-			<Item Name="Value" Condition="m_uiType == Type::Vector2">*reinterpret_cast&lt;xiiVec2Template&lt;float&gt;*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Vector3">*reinterpret_cast&lt;xiiVec3Template&lt;float&gt;*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Vector4">*reinterpret_cast&lt;xiiVec4Template&lt;float&gt;*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Vector2I">*reinterpret_cast&lt;xiiVec2Template&lt;int&gt;*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Vector3I">*reinterpret_cast&lt;xiiVec3Template&lt;int&gt;*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Vector4I">*reinterpret_cast&lt;xiiVec4Template&lt;int&gt;*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Vector2U">*reinterpret_cast&lt;xiiVec2Template&lt;unsigned int&gt;*&gt;(&amp;m_Data)</Item>      
-			<Item Name="Value" Condition="m_uiType == Type::Vector3U">*reinterpret_cast&lt;xiiVec3Template&lt;unsigned int&gt;*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Vector4U">*reinterpret_cast&lt;xiiVec4Template&lt;unsigned int&gt;*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Quaternion">*reinterpret_cast&lt;xiiQuatTemplate&lt;float&gt;*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Matrix3">*reinterpret_cast&lt;xiiMat3Template&lt;float&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Matrix4">*reinterpret_cast&lt;xiiMat4Template&lt;float&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Transform">*reinterpret_cast&lt;xiiTransformTemplate&lt;float&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::String">*reinterpret_cast&lt;xiiHybridStringBase&lt;32&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::StringView">*reinterpret_cast&lt;xiiStringView*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::DataBuffer">*reinterpret_cast&lt;xiiDynamicArray&lt;unsigned char,xiiDefaultAllocatorWrapper&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Time">*reinterpret_cast&lt;xiiTime*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Uuid">*reinterpret_cast&lt;xiiUuid*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::Angle">*reinterpret_cast&lt;xiiAngle*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::ColorGamma">*reinterpret_cast&lt;xiiColorGammaUB*&gt;(&amp;m_Data)</Item>
-			
-			<Item Name="Value" Condition="m_uiType == Type::TypedPointer">*reinterpret_cast&lt;xiiTypedPointer*&gt;(&amp;m_Data)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::TypedObject &amp;&amp; m_bIsShared">reinterpret_cast&lt;void*&gt;(m_Data.shared->m_Ptr)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::TypedObject &amp;&amp; !m_bIsShared">reinterpret_cast&lt;void*&gt;(&amp;m_Data)</Item>
-			<Item Name="ReflectedType" Condition="m_uiType == Type::TypedObject &amp;&amp; !m_bIsShared">m_Data.inlined.m_pType</Item>
-			<Item Name="ReflectedType" Condition="m_uiType == Type::TypedObject &amp;&amp; m_bIsShared">m_Data.shared->m_pType</Item>
+    <Type Name="xiiStaticArray&lt;*&gt;">
+        <DisplayString>{{ count={m_uiCount} }}</DisplayString>
+        <Expand>
+            <Item Name="count">m_uiCount</Item>
+            <Item Name="capacity">m_uiCapacity</Item>
+            <ArrayItems>
+                <Size>m_uiCount</Size>
+                <ValuePointer>($T1*)m_Data</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <Type Name="xiiHashTableBase&lt;*&gt;">
+        <DisplayString>{{ count={m_uiCount} }}</DisplayString>
+        <Expand>
+            <Item Name="count">m_uiCount</Item>
+            <Item Name="capacity">m_uiCapacity</Item>
+            <ArrayItems>
+                <Size>m_uiCapacity</Size>
+                <ValuePointer>m_pEntries</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <Type Name="xiiHashSetBase&lt;*&gt;">
+        <DisplayString>{{ count={m_uiCount} }}</DisplayString>
+        <Expand>
+            <Item Name="count">m_uiCount</Item>
+            <Item Name="capacity">m_uiCapacity</Item>
+            <ArrayItems>
+                <Size>m_uiCapacity</Size>
+                <ValuePointer>m_pEntries</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <Type Name="xiiListBase&lt;*&gt;">
+        <DisplayString>{{ count={m_uiCount} }}</DisplayString>
+        <Expand>
+            <Item Name="count">m_uiCount</Item>
+            <LinkedListItems>
+                <Size>m_uiCount</Size>
+                <HeadPointer>m_First.m_pNext</HeadPointer>
+                <NextPointer>m_pNext</NextPointer>
+                <ValueNode>m_Data</ValueNode>
+            </LinkedListItems>
+        </Expand>
+    </Type>
+
+    <Type Name="xiiDequeBase&lt;*&gt;">
+        <DisplayString>{{ count={m_uiCount} }}</DisplayString>
+        <Expand>
+            <Item Name="count">m_uiCount</Item>
+            <IndexListItems>
+                <Size>m_uiCount</Size>
+                <ValueNode>m_pChunks[(m_uiFirstElement + $i) / m_uiChunkSize][(m_uiFirstElement + $i) % m_uiChunkSize]</ValueNode>
+            </IndexListItems>
+        </Expand>
+    </Type>
+
+    <Type Name="xiiMapBase&lt;*&gt;">
+        <AlternativeType Name="xiiSetBase&lt;*&gt;" />
+        <DisplayString>{{ count={m_uiCount} }}</DisplayString>
+        <Expand>
+            <Item Name="count">m_uiCount</Item>
+            <TreeItems>
+                <Size>m_uiCount</Size>
+                <HeadPointer>m_pRoot</HeadPointer>
+                <LeftPointer>m_pLink[0]</LeftPointer>
+                <RightPointer>m_pLink[1]</RightPointer>
+                <ValueNode Condition="m_uiLevel != 0">*this</ValueNode>
+            </TreeItems>
+        </Expand>
+    </Type>
+
+    <Type Name="xiiStaticRingBuffer&lt;*&gt;">
+        <DisplayString>{{ count={m_uiCount} }}</DisplayString>
+        <Expand>
+            <Item Name="count">m_uiCount</Item>
+            <Item Name="start index">m_uiFirstElement</Item>
+            <ArrayItems>
+                <Size>m_uiCount</Size>
+                <ValuePointer>m_pElements</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <Type Name="xiiArrayPtr&lt;*&gt;">
+        <DisplayString>{{ count={m_uiCount} }}</DisplayString>
+        <Expand>
+            <Item Name="count">m_uiCount</Item>
+            <ArrayItems>
+                <Size>m_uiCount</Size>
+                <ValuePointer>m_pPtr</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <!-- Basic Types -->
+    <Type Name="xiiVariant">
+        <DisplayString Condition="m_uiType == Type::TypedObject &amp;&amp; m_bIsShared">({m_Data.shared->m_pType->m_szTypeName,sb}*) {reinterpret_cast&lt;void*&gt;(m_Data.shared->m_Ptr)}</DisplayString>
+        <DisplayString Condition="m_uiType == Type::TypedObject &amp;&amp; !m_bIsShared">({m_Data.inlined.m_pType->m_szTypeName,sb}*) {reinterpret_cast&lt;void*&gt;(&amp;m_Data)}</DisplayString>
+        <Expand>
+            <Item Name="Type">(Type::Enum) m_uiType</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Bool">*reinterpret_cast&lt;bool*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Int8">*reinterpret_cast&lt;xiiInt8*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::UInt8">*reinterpret_cast&lt;xiiUInt8*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Int16">*reinterpret_cast&lt;xiiInt16*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::UInt16">*reinterpret_cast&lt;xiiUInt16*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Int32">*reinterpret_cast&lt;xiiInt32*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::UInt32">*reinterpret_cast&lt;xiiUInt32*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Int64">*reinterpret_cast&lt;xiiInt64*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::UInt64">*reinterpret_cast&lt;xiiUInt64*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Float">*reinterpret_cast&lt;float*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Double">*reinterpret_cast&lt;double*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Color">*reinterpret_cast&lt;xiiColor*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector2">*reinterpret_cast&lt;xiiVec2Template&lt;float&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector3">*reinterpret_cast&lt;xiiVec3Template&lt;float&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector4">*reinterpret_cast&lt;xiiVec4Template&lt;float&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector2I">*reinterpret_cast&lt;xiiVec2Template&lt;int&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector3I">*reinterpret_cast&lt;xiiVec3Template&lt;int&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector4I">*reinterpret_cast&lt;xiiVec4Template&lt;int&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector2U">*reinterpret_cast&lt;xiiVec2Template&lt;unsigned int&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector3U">*reinterpret_cast&lt;xiiVec3Template&lt;unsigned int&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector4U">*reinterpret_cast&lt;xiiVec4Template&lt;unsigned int&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Quaternion">*reinterpret_cast&lt;xiiQuatTemplate&lt;float&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Matrix3">*reinterpret_cast&lt;xiiMat3Template&lt;float&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Matrix4">*reinterpret_cast&lt;xiiMat4Template&lt;float&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Transform">*reinterpret_cast&lt;xiiTransformTemplate&lt;float&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector2d">*reinterpret_cast&lt;xiiVec2Template&lt;double&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector3d">*reinterpret_cast&lt;xiiVec3Template&lt;double&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector4d">*reinterpret_cast&lt;xiiVec4Template&lt;double&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector2I64">*reinterpret_cast&lt;xiiVec2Template&lt;signed long long&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector3I64">*reinterpret_cast&lt;xiiVec3Template&lt;signed long long&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector4I64">*reinterpret_cast&lt;xiiVec4Template&lt;signed long long&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector2U64">*reinterpret_cast&lt;xiiVec2Template&lt;unsigned long long&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector3U64">*reinterpret_cast&lt;xiiVec3Template&lt;unsigned long long&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Vector4U64">*reinterpret_cast&lt;xiiVec4Template&lt;unsigned long long&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Quaterniond">*reinterpret_cast&lt;xiiQuatTemplate&lt;double&gt;*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Matrix3d">*reinterpret_cast&lt;xiiMat3Template&lt;double&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Matrix4d">*reinterpret_cast&lt;xiiMat4Template&lt;double&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Transformd">*reinterpret_cast&lt;xiiTransformTemplate&lt;double&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::String">*reinterpret_cast&lt;xiiHybridStringBase&lt;32&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::StringView">*reinterpret_cast&lt;xiiStringView*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::DataBuffer">*reinterpret_cast&lt;xiiDynamicArray&lt;unsigned char,xiiDefaultAllocatorWrapper&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Time">*reinterpret_cast&lt;xiiTime*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Uuid">*reinterpret_cast&lt;xiiUuid*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Angle">*reinterpret_cast&lt;xiiAngle*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::Angled">*reinterpret_cast&lt;xiiAngled*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::ColorGamma">*reinterpret_cast&lt;xiiColorGammaUB*&gt;(&amp;m_Data)</Item>
+
+            <Item Name="Value" Condition="m_uiType == Type::TypedPointer">*reinterpret_cast&lt;xiiTypedPointer*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::TypedObject &amp;&amp; m_bIsShared">reinterpret_cast&lt;void*&gt;(m_Data.shared->m_Ptr)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::TypedObject &amp;&amp; !m_bIsShared">reinterpret_cast&lt;void*&gt;(&amp;m_Data)</Item>
+            <Item Name="ReflectedType" Condition="m_uiType == Type::TypedObject &amp;&amp; !m_bIsShared">m_Data.inlined.m_pType</Item>
+            <Item Name="ReflectedType" Condition="m_uiType == Type::TypedObject &amp;&amp; m_bIsShared">m_Data.shared->m_pType</Item>
 
 
-			<Item Name="Value" Condition="m_uiType == Type::VariantArray">*reinterpret_cast&lt;xiiDynamicArray&lt;xiiVariant,xiiDefaultAllocatorWrapper&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
-			<Item Name="Value" Condition="m_uiType == Type::VariantDictionary">*reinterpret_cast&lt;xiiHashTable&lt;xiiHybridString&lt;32,xiiDefaultAllocatorWrapper&gt;,xiiVariant,xiiHashHelper&lt;xiiHybridString&lt;32,xiiDefaultAllocatorWrapper&gt; &gt;,xiiDefaultAllocatorWrapper&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::VariantArray">*reinterpret_cast&lt;xiiDynamicArray&lt;xiiVariant,xiiDefaultAllocatorWrapper&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::VariantDictionary">*reinterpret_cast&lt;xiiHashTable&lt;xiiHybridString&lt;32,xiiDefaultAllocatorWrapper&gt;,xiiVariant,xiiHashHelper&lt;xiiHybridString&lt;32,xiiDefaultAllocatorWrapper&gt; &gt;,xiiDefaultAllocatorWrapper&gt;*&gt;(m_Data.shared->m_Ptr)</Item>
 
-			<Item Name="IsShared">m_bIsShared != 0</Item>
-		</Expand>
-	</Type>
+            <Item Name="IsShared">m_bIsShared != 0</Item>
+        </Expand>
+    </Type>
 
-	<Type Name="xiiEnum&lt;*&gt;">
-		<DisplayString>{($T1::Enum)m_Value}</DisplayString>
-	</Type>
-	
-	<Type Name="xiiBitflags&lt;*&gt;">
-		<DisplayString>{($T1::Enum)m_Value}</DisplayString>
-	</Type>
-		
-	<Type Name="xiiVec2Template&lt;*&gt;">
-		<DisplayString>{{ x={x}, y={y} }}</DisplayString>
-	</Type>
-	
-	<Type Name="xiiVec3Template&lt;*&gt;">
-		<DisplayString>{{ x={x}, y={y}, z={z} }}</DisplayString>
-	</Type>
+    <Type Name="xiiEnum&lt;*&gt;">
+        <DisplayString>{($T1::Enum)m_Value}</DisplayString>
+    </Type>
 
-	<Type Name="xiiVec4Template&lt;*&gt;">
-		<DisplayString>{{ x={x}, y={y}, z={z}, w={w} }}</DisplayString>
-	</Type>
+    <Type Name="xiiBitflags&lt;*&gt;">
+        <DisplayString>{($T1::Enum)m_Value}</DisplayString>
+    </Type>
 
-	<Type Name="xiiQuatTemplate&lt;*&gt;">
-		<DisplayString>{{ x={v.x}, y={v.y}, z={v.z}, w={w} }}</DisplayString>
-	</Type>
-	
-	<Type Name="xiiPlaneTemplate&lt;*&gt;">
-		<DisplayString>{{ nx={m_vNormal.x}, ny={m_vNormal.y}, nz={m_vNormal.z}, negDist={m_fNegDistance} }}</DisplayString>
-	</Type>
-	
-	<Type Name="xiiColor">
-		<DisplayString>{{ r={r}, g={g}, b={b}, a={a} }}</DisplayString>
-	</Type>
-	
-	<Type Name="xiiTime">
-		<DisplayString>{{seconds = {m_fTime} }}</DisplayString>
-		<Expand>
-			<Item Name="seconds">m_fTime</Item>
-			<Item Name="milliseconds">m_fTime * 1000.0</Item>
-			<Item Name="microseconds">m_fTime * 1000000.0</Item>
-			<Item Name="nanoseconds">m_fTime * 1000000000.0</Item>
-		</Expand>
-	</Type>
+    <Type Name="xiiVec2Template&lt;*&gt;">
+        <DisplayString>{{ x={x}, y={y} }}</DisplayString>
+    </Type>
 
-	<Type Name="xiiMat3Template&lt;*&gt;">
-		<Expand>
-			<Item Name="Column0">&amp;m_fElementsCM[0],3</Item>
-			<Item Name="Column1">&amp;m_fElementsCM[3],3</Item>
-			<Item Name="Column2">&amp;m_fElementsCM[6],3</Item>
-		</Expand>
-	</Type>
+    <Type Name="xiiVec3Template&lt;*&gt;">
+        <DisplayString>{{ x={x}, y={y}, z={z} }}</DisplayString>
+    </Type>
 
-	<Type Name="xiiMat4Template&lt;*&gt;">
-		<Expand>
-			<Item Name="Column0">&amp;m_fElementsCM[0],4</Item>
-			<Item Name="Column1">&amp;m_fElementsCM[4],4</Item>
-			<Item Name="Column2">&amp;m_fElementsCM[8],4</Item>
-			<Item Name="Column3">&amp;m_fElementsCM[12],4</Item>
-		</Expand>
-	</Type>
+    <Type Name="xiiVec4Template&lt;*&gt;">
+        <DisplayString>{{ x={x}, y={y}, z={z}, w={w} }}</DisplayString>
+    </Type>
 
-	<Type Name="xiiResource">
-		<DisplayString>{{ID = {m_UniqueID} }}</DisplayString>
-		<Expand>
-			<Item Name="ID">m_UniqueID</Item>
-			<Item Name="Desc">m_sResourceDescription</Item>
-			<Item Name="State">m_LoadingState</Item>
-			<Item Name="RefCount">m_iReferenceCount</Item>
-		</Expand>
-	</Type>
+    <Type Name="xiiQuatTemplate&lt;*&gt;">
+        <DisplayString>{{ x={v.x}, y={v.y}, z={v.z}, w={w} }}</DisplayString>
+    </Type>
 
-	<Type Name="xiiUniquePtr&lt;*&gt;">
-		<DisplayString>xiiUniquePtr {*m_pInstance}</DisplayString>
-		<Expand>
-			<ExpandedItem>m_pInstance</ExpandedItem>
-		</Expand>
-	</Type>
+    <Type Name="xiiPlaneTemplate&lt;*&gt;">
+        <DisplayString>{{ nx={m_vNormal.x}, ny={m_vNormal.y}, nz={m_vNormal.z}, negDist={m_fNegDistance} }}</DisplayString>
+    </Type>
 
-	<Type Name="xiiSharedPtr&lt;*&gt;">
-		<DisplayString>xiiSharedPtr {*m_pInstance}</DisplayString>
-		<Expand>
-			<ExpandedItem>m_pInstance</ExpandedItem>
-		</Expand>
-	</Type>
+    <Type Name="xiiColor">
+        <DisplayString>{{ r={r}, g={g}, b={b}, a={a} }}</DisplayString>
+    </Type>
 
-	<Type Name="xiiScopedRefPointer&lt;*&gt;">
-		<DisplayString>xiiScopedRefPointer {*m_pReferencedObject}</DisplayString>
-		<Expand>
-			<ExpandedItem>m_pReferencedObject</ExpandedItem>
-		</Expand>
-	</Type>
+    <Type Name="xiiTime">
+        <DisplayString>{{seconds = {m_fTime} }}</DisplayString>
+        <Expand>
+            <Item Name="seconds">m_fTime</Item>
+            <Item Name="milliseconds">m_fTime * 1000.0</Item>
+            <Item Name="microseconds">m_fTime * 1000000.0</Item>
+            <Item Name="nanoseconds">m_fTime * 1000000000.0</Item>
+        </Expand>
+    </Type>
 
-	<Type Name="xiiRefCounted">
-		<DisplayString>RefCount = {m_iRefCount}</DisplayString>
-	</Type>
+    <Type Name="xiiMat3Template&lt;*&gt;">
+        <Expand>
+            <Item Name="Column0">&amp;m_fElementsCM[0],3</Item>
+            <Item Name="Column1">&amp;m_fElementsCM[3],3</Item>
+            <Item Name="Column2">&amp;m_fElementsCM[6],3</Item>
+        </Expand>
+    </Type>
 
-	<Type Name="xiiMutex">
-		<DisplayString Condition="m_iLockCount > 0">locked</DisplayString>
-		<DisplayString Condition="m_iLockCount == 0">unlocked</DisplayString>
-		<Expand>
-			<Item Name="[locking_thread_id]" Condition="m_iLockCount > 0">(DWORD)((RTL_CRITICAL_SECTION*)m_Handle.data)->OwningThread</Item>
-			<Item Name="critical_section">*((RTL_CRITICAL_SECTION*)m_Handle.data)</Item> 
-		</Expand>
-	</Type>
+    <Type Name="xiiMat4Template&lt;*&gt;">
+        <Expand>
+            <Item Name="Column0">&amp;m_fElementsCM[0],4</Item>
+            <Item Name="Column1">&amp;m_fElementsCM[4],4</Item>
+            <Item Name="Column2">&amp;m_fElementsCM[8],4</Item>
+            <Item Name="Column3">&amp;m_fElementsCM[12],4</Item>
+        </Expand>
+    </Type>
 
-  <Type Name="xiiAngle">
-    <DisplayString>{{Degree = {m_fRadian*57.295}}}</DisplayString>
-    <Expand>
-      <Item Name="Radians">m_fRadian</Item>
-    </Expand>
-  </Type>
+    <Type Name="xiiResource">
+        <DisplayString>{{ID = {m_UniqueID} }}</DisplayString>
+        <Expand>
+            <Item Name="ID">m_UniqueID</Item>
+            <Item Name="Desc">m_sResourceDescription</Item>
+            <Item Name="State">m_LoadingState</Item>
+            <Item Name="RefCount">m_iReferenceCount</Item>
+        </Expand>
+    </Type>
+
+    <Type Name="xiiUniquePtr&lt;*&gt;">
+        <DisplayString>xiiUniquePtr {*m_pInstance}</DisplayString>
+        <Expand>
+            <ExpandedItem>m_pInstance</ExpandedItem>
+        </Expand>
+    </Type>
+
+    <Type Name="xiiSharedPtr&lt;*&gt;">
+        <DisplayString>xiiSharedPtr {*m_pInstance}</DisplayString>
+        <Expand>
+            <ExpandedItem>m_pInstance</ExpandedItem>
+        </Expand>
+    </Type>
+
+    <Type Name="xiiScopedRefPointer&lt;*&gt;">
+        <DisplayString>xiiScopedRefPointer {*m_pReferencedObject}</DisplayString>
+        <Expand>
+            <ExpandedItem>m_pReferencedObject</ExpandedItem>
+        </Expand>
+    </Type>
+
+    <Type Name="xiiRefCounted">
+        <DisplayString>RefCount = {m_iRefCount}</DisplayString>
+    </Type>
+
+    <Type Name="xiiMutex">
+        <DisplayString Condition="m_iLockCount > 0">locked</DisplayString>
+        <DisplayString Condition="m_iLockCount == 0">unlocked</DisplayString>
+        <Expand>
+            <Item Name="[locking_thread_id]" Condition="m_iLockCount > 0">(DWORD)((RTL_CRITICAL_SECTION*)m_Handle.data)->OwningThread</Item>
+            <Item Name="critical_section">*((RTL_CRITICAL_SECTION*)m_Handle.data)</Item>
+        </Expand>
+    </Type>
+
+    <Type Name="xiiAngle">
+        <DisplayString>{{Degree = {m_fRadian*57.295}}}</DisplayString>
+        <Expand>
+            <Item Name="Radians">m_fRadian</Item>
+        </Expand>
+    </Type>
+    <Type Name="xiiAngled">
+        <DisplayString>{{Degree = {m_fRadian*57.295}}}</DisplayString>
+        <Expand>
+            <Item Name="Radians">m_fRadian</Item>
+        </Expand>
+    </Type>
 </AutoVisualizer>
 
 

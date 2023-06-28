@@ -31,10 +31,12 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTestStruct, xiiNoBase, 7, xiiRTTIDefaultAlloc
     XII_ACCESSOR_PROPERTY("Int", GetInt, SetInt)->AddAttributes(new xiiDefaultValueAttribute(2)),
     XII_MEMBER_PROPERTY("UInt8", m_UInt8)->AddAttributes(new xiiDefaultValueAttribute(6)),
     XII_MEMBER_PROPERTY("Variant", m_variant)->AddAttributes(new xiiDefaultValueAttribute("Test")),
-    XII_MEMBER_PROPERTY("Angle", m_Angle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::Degree(0.5))),
+    XII_MEMBER_PROPERTY("Angle", m_Angle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::Degree(0.5f))),
+    XII_MEMBER_PROPERTY("Angled", m_Angled)->AddAttributes(new xiiDefaultValueAttribute(xiiAngled::Degree(0.5))),
     XII_MEMBER_PROPERTY("DataBuffer", m_DataBuffer)->AddAttributes(new xiiDefaultValueAttribute(xiiTestStruct::GetDefaultDataBuffer())),
     XII_MEMBER_PROPERTY("vVec3I", m_vVec3I)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3I32(1,2,3))),
     XII_MEMBER_PROPERTY("VarianceAngle", m_VarianceAngle)->AddAttributes(new xiiDefaultValueAttribute(xiiVarianceTypeAngle{0.5f, xiiAngle::Degree(90.0f)})),
+    XII_MEMBER_PROPERTY("VarianceAngled", m_VarianceAngled)->AddAttributes(new xiiDefaultValueAttribute(xiiVarianceTypeAngled{0.5, xiiAngled::Degree(90.0)})),
   }
   XII_END_PROPERTIES;
 }
@@ -122,12 +124,14 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTestArrays, 1, xiiRTTIDefaultAllocator<xiiTe
     XII_ARRAY_MEMBER_PROPERTY("Dynamic", m_Dynamic),
     XII_ARRAY_MEMBER_PROPERTY("Deque", m_Deque),
     XII_ARRAY_MEMBER_PROPERTY("Custom", m_CustomVariant),
+    XII_ARRAY_MEMBER_PROPERTY("Custom2", m_CustomVariant2),
 
     XII_ARRAY_MEMBER_PROPERTY_READ_ONLY("HybridRO", m_Hybrid),
     XII_ARRAY_MEMBER_PROPERTY_READ_ONLY("HybridCharRO", m_HybridChar),
     XII_ARRAY_MEMBER_PROPERTY_READ_ONLY("DynamicRO", m_Dynamic),
     XII_ARRAY_MEMBER_PROPERTY_READ_ONLY("DequeRO", m_Deque),
     XII_ARRAY_MEMBER_PROPERTY_READ_ONLY("CustomRO", m_CustomVariant),
+    XII_ARRAY_MEMBER_PROPERTY_READ_ONLY("CustomRO2", m_CustomVariant2),
 
     XII_ARRAY_ACCESSOR_PROPERTY("AcHybrid", GetCount, GetValue, SetValue, Insert, Remove),
     XII_ARRAY_ACCESSOR_PROPERTY_READ_ONLY("AcHybridRO", GetCount, GetValue),
@@ -138,7 +142,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTestArrays, 1, xiiRTTIDefaultAllocator<xiiTe
     XII_ARRAY_ACCESSOR_PROPERTY("AcDeque", GetCountDeq, GetValueDeq, SetValueDeq, InsertDeq, RemoveDeq),
     XII_ARRAY_ACCESSOR_PROPERTY_READ_ONLY("AcDequeRO", GetCountDeq, GetValueDeq),
     XII_ARRAY_ACCESSOR_PROPERTY("AcCustom", GetCountCustom, GetValueCustom, SetValueCustom, InsertCustom, RemoveCustom),
+    XII_ARRAY_ACCESSOR_PROPERTY("AcCustom2", GetCountCustom2, GetValueCustom2, SetValueCustom2, InsertCustom2, RemoveCustom2),
     XII_ARRAY_ACCESSOR_PROPERTY_READ_ONLY("AcCustomRO", GetCountCustom, GetValueCustom),
+    XII_ARRAY_ACCESSOR_PROPERTY_READ_ONLY("AcCustomRO2", GetCountCustom2, GetValueCustom2),
   }
   XII_END_PROPERTIES;
 }
@@ -250,6 +256,27 @@ void xiiTestArrays::RemoveCustom(xiiUInt32 uiIndex)
   m_CustomVariant.RemoveAtAndCopy(uiIndex);
 }
 
+xiiUInt32 xiiTestArrays::GetCountCustom2() const
+{
+  return m_CustomVariant2.GetCount();
+}
+xiiVarianceTypeAngled xiiTestArrays::GetValueCustom2(xiiUInt32 uiIndex) const
+{
+  return m_CustomVariant2[uiIndex];
+}
+void xiiTestArrays::SetValueCustom2(xiiUInt32 uiIndex, xiiVarianceTypeAngled value)
+{
+  m_CustomVariant2[uiIndex] = value;
+}
+void xiiTestArrays::InsertCustom2(xiiUInt32 uiIndex, xiiVarianceTypeAngled value)
+{
+  m_CustomVariant2.Insert(value, uiIndex);
+}
+void xiiTestArrays::RemoveCustom2(xiiUInt32 uiIndex)
+{
+  m_CustomVariant2.RemoveAtAndCopy(uiIndex);
+}
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTestSets, 1, xiiRTTIDefaultAllocator<xiiTestSets>)
 {
@@ -272,6 +299,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTestSets, 1, xiiRTTIDefaultAllocator<xiiTest
     XII_SET_MEMBER_PROPERTY_READ_ONLY("CustomHashSetRO", m_CustomVariant),
     XII_SET_ACCESSOR_PROPERTY("CustomHashAcSet", GetCustomHashSet, CustomHashInsert, CustomHashRemove),
     XII_SET_ACCESSOR_PROPERTY_READ_ONLY("CustomHashAcSetRO", GetCustomHashSet),
+    XII_SET_MEMBER_PROPERTY("CustomHashSet2", m_CustomVariant2),
+    XII_SET_MEMBER_PROPERTY_READ_ONLY("CustomHashSetRO2", m_CustomVariant2),
+    XII_SET_ACCESSOR_PROPERTY("CustomHashAcSet2", GetCustomHashSet2, CustomHashInsert2, CustomHashRemove2),
+    XII_SET_ACCESSOR_PROPERTY_READ_ONLY("CustomHashAcSetRO2", GetCustomHashSet2),
   }
   XII_END_PROPERTIES;
 }
@@ -368,6 +399,21 @@ void xiiTestSets::CustomHashRemove(xiiVarianceTypeAngle value)
   m_CustomVariant.Remove(value);
 }
 
+const xiiHashSet<xiiVarianceTypeAngled>& xiiTestSets::GetCustomHashSet2() const
+{
+  return m_CustomVariant2;
+}
+
+void xiiTestSets::CustomHashInsert2(xiiVarianceTypeAngled value)
+{
+  m_CustomVariant2.Insert(value);
+}
+
+void xiiTestSets::CustomHashRemove2(xiiVarianceTypeAngled value)
+{
+  m_CustomVariant2.Remove(value);
+}
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTestMaps, 1, xiiRTTIDefaultAllocator<xiiTestMaps>)
 {
@@ -383,6 +429,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTestMaps, 1, xiiRTTIDefaultAllocator<xiiTest
     XII_MAP_ACCESSOR_PROPERTY_READ_ONLY("AccessorRO", GetKeys3, GetValue3),
     XII_MAP_MEMBER_PROPERTY("CustomVariant", m_CustomVariant),
     XII_MAP_MEMBER_PROPERTY_READ_ONLY("CustomVariantRO", m_CustomVariant),
+    XII_MAP_MEMBER_PROPERTY("CustomVariant2", m_CustomVariant2),
+    XII_MAP_MEMBER_PROPERTY_READ_ONLY("CustomVariantRO2", m_CustomVariant2),
   }
   XII_END_PROPERTIES;
 }
@@ -405,7 +453,7 @@ bool xiiTestMaps::operator==(const xiiTestMaps& rhs) const
     if (!bRes)
       return false;
   }
-  return m_MapMember == rhs.m_MapMember && m_MapAccessor == rhs.m_MapAccessor && m_HashTableMember == rhs.m_HashTableMember && m_HashTableAccessor == rhs.m_HashTableAccessor && m_CustomVariant == rhs.m_CustomVariant;
+  return m_MapMember == rhs.m_MapMember && m_MapAccessor == rhs.m_MapAccessor && m_HashTableMember == rhs.m_HashTableMember && m_HashTableAccessor == rhs.m_HashTableAccessor && m_CustomVariant == rhs.m_CustomVariant && m_CustomVariant2 == rhs.m_CustomVariant2;
 }
 
 const xiiMap<xiiString, xiiInt64>& xiiTestMaps::GetContainer() const

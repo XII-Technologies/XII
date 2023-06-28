@@ -333,7 +333,7 @@ public:
 
   /// \brief Sets the blob to the content of pSource.
   /// This will allocate the necessary memory if needed and then copy uiSize bytes from pSource.
-  void SetFrom(void* pSource, xiiUInt64 uiSize);
+  void SetFrom(const void* pSource, xiiUInt64 uiSize);
 
   /// \brief Deallocates the memory allocated by this instance.
   void Clear();

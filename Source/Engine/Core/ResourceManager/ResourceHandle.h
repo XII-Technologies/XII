@@ -240,7 +240,7 @@ private:
 template <typename T>
 struct xiiHashHelper<xiiTypedResourceHandle<T>>
 {
-  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiTypedResourceHandle<T>& value) { return value.GetResourceIDHash(); }
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiTypedResourceHandle<T>& value) { return xiiHashingUtils::StringHashTo32(value.GetResourceIDHash()); }
 
   XII_ALWAYS_INLINE static bool Equal(const xiiTypedResourceHandle<T>& a, const xiiTypedResourceHandle<T>& b) { return a == b; }
 };

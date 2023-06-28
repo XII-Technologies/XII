@@ -56,11 +56,13 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTime, xiiNoBase, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_FUNCTIONS
   {
-    XII_FUNCTION_PROPERTY(Nanoseconds),
-    XII_FUNCTION_PROPERTY(Microseconds),
-    XII_FUNCTION_PROPERTY(Milliseconds),
-    XII_FUNCTION_PROPERTY(Seconds),
-    XII_FUNCTION_PROPERTY(Zero),
+    XII_SCRIPT_FUNCTION_PROPERTY(Nanoseconds, In, "Nanoseconds")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(Microseconds, In, "Microseconds")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(Milliseconds, In, "Milliseconds")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(Seconds, In, "Seconds")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(Minutes, In, "Minutes")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(Hours, In, "Hours")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(Zero)->AddFlags(xiiPropertyFlags::Const),
   }
   XII_END_FUNCTIONS;
 }
@@ -549,6 +551,12 @@ XII_END_STATIC_REFLECTED_TYPE;
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVariant, xiiNoBase, 3, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVariantArray, xiiNoBase, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVariantDictionary, xiiNoBase, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiString, xiiNoBase, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
@@ -569,6 +577,28 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAngle, xiiNoBase, 1, xiiRTTINoAllocator)
     XII_FUNCTION_PROPERTY(Radian),
   }
   XII_END_FUNCTIONS;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAngled, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_FUNCTION_PROPERTY(Degree),
+    XII_FUNCTION_PROPERTY(Radian),
+  }
+  XII_END_FUNCTIONS;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiDoubleInterval, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Start", m_StartValue),
+    XII_MEMBER_PROPERTY("End", m_EndValue),
+  }
+  XII_END_PROPERTIES;
 }
 XII_END_STATIC_REFLECTED_TYPE;
 

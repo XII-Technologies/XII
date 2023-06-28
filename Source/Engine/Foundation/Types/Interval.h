@@ -44,7 +44,8 @@ public:
   Type m_EndValue   = Type();
 };
 
-using xiiFloatInterval = xiiInterval<float>;
-using xiiIntInterval   = xiiInterval<xiiInt32>;
+using xiiDoubleInterval = xiiInterval<double>;
+using xiiFloatInterval  = xiiInterval<float>;
+using xiiIntInterval    = xiiInterval<xiiInt32>;
 
 #include <Foundation/Types/Implementation/Interval_inl.h>

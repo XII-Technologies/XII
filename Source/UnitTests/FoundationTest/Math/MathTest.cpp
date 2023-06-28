@@ -967,4 +967,58 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_DOUBLE(1.0, xiiMath::NormalizeToRange(10.0, 0.0, 10.0), 0.000001);
     XII_TEST_DOUBLE(0.3, xiiMath::NormalizeToRange(3.0, 0.0, 10.0), 0.000001);
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ComparisonOperator")
+  {
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Equal, 1.0, 1.0));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Equal, 1.0, 2.0) == false);
+
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::NotEqual, 1.0, 2.0));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::NotEqual, 1.0, 1.0) == false);
+
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Less, 1.0, 1.0) == false);
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Less, 1.0, 2.0));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Less, -2.0, -1.0));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Less, 3.0, 2.0) == false);
+
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::LessEqual, 1.0, 1.0));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::LessEqual, 1.0, 2.0));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::LessEqual, -2.0, -1.0));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::LessEqual, 3.0, 2.0) == false);
+
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Greater, 1.0, 1.0) == false);
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Greater, 3.0, 2.0));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Greater, -1.0, -2.0));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Greater, 2.0, 3.0) == false);
+
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::GreaterEqual, 1.0, 1.0));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::GreaterEqual, 3.0, 2.0));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::GreaterEqual, -1.0, -2.0));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::GreaterEqual, 2.0, 3.0) == false);
+
+    xiiStringView a = "a";
+    xiiStringView b = "b";
+    xiiStringView c = "c";
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Equal, a, a));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Equal, a, b) == false);
+
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::NotEqual, a, c));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::NotEqual, a, a) == false);
+
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Less, a, a) == false);
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Less, a, b));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Less, c, b) == false);
+
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::LessEqual, a, a));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::LessEqual, a, b));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::LessEqual, c, b) == false);
+
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Greater, a, a) == false);
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Greater, c, b));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::Greater, a, b) == false);
+
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::GreaterEqual, a, a));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::GreaterEqual, c, b));
+    XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::GreaterEqual, a, b) == false);
+  }
 }

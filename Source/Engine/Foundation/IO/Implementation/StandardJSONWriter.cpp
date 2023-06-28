@@ -644,6 +644,11 @@ void xiiStandardJSONWriter::WriteAngle(xiiAngle value)
   WriteFloat(value.GetDegree());
 }
 
+void xiiStandardJSONWriter::WriteAngle(xiiAngled value)
+{
+  WriteDouble(value.GetDegree());
+}
+
 void xiiStandardJSONWriter::WriteDataBuffer(const xiiDataBuffer& value)
 {
   WriteBinaryData("data", value.GetData(), value.GetCount());

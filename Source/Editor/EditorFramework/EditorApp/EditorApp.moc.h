@@ -310,7 +310,7 @@ private:
 
   // *** Dynamic Enum Strings ***
   xiiSet<xiiString> m_DynamicEnumStringsToClear;
-  void              OnDemandDynamicStringEnumLoad(const char* szEnum, xiiDynamicStringEnum& e);
+  void              OnDemandDynamicStringEnumLoad(xiiStringView sEnumName, xiiDynamicStringEnum& e);
 
   xiiQtVersionChecker m_VersionChecker;
 };

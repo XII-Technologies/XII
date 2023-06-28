@@ -351,4 +351,18 @@ void operator>>(xiiStreamReader& ref_stream, xiiVarianceTypeAngle& ref_value)
   ref_stream >> ref_value.m_fVariance;
   ref_stream >> ref_value.m_Value;
 }
+
+// xiiVarianceTypeAngled
+
+void operator<<(xiiStreamWriter& ref_stream, const xiiVarianceTypeAngled& value)
+{
+  ref_stream << value.m_fVariance;
+  ref_stream << value.m_Value;
+}
+void operator>>(xiiStreamReader& ref_stream, xiiVarianceTypeAngled& ref_value)
+{
+  ref_stream >> ref_value.m_fVariance;
+  ref_stream >> ref_value.m_Value;
+}
+
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_StreamOperationsOther);

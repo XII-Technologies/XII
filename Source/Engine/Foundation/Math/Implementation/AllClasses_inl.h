@@ -324,3 +324,30 @@ xiiResult xiiMat4Template<Type>::Invert(Type fEpsilon)
   *this = Inverse;
   return XII_SUCCESS;
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+// static
+template <typename T>
+bool xiiComparisonOperator::Compare(xiiComparisonOperator::Enum cmp, const T& a, const T& b)
+{
+  switch (cmp)
+  {
+    case xiiComparisonOperator::Equal:
+      return a == b;
+    case xiiComparisonOperator::NotEqual:
+      return !(a == b);
+    case xiiComparisonOperator::Less:
+      return a < b;
+    case xiiComparisonOperator::LessEqual:
+      return !(b < a);
+    case xiiComparisonOperator::Greater:
+      return b < a;
+    case xiiComparisonOperator::GreaterEqual:
+      return !(a < b);
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return false;
+}

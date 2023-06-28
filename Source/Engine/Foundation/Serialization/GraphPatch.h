@@ -35,7 +35,7 @@ public:
   xiiGraphPatch(const char* szType, xiiUInt32 uiTypeVersion, PatchType type = PatchType::NodePatch);
 
   /// \brief Patch function. If type == PatchType::NodePatch, the implementation needs to patch pNode in pGraph to m_uiTypeVersion.
-  ///  If type == PatchType::GraphPatch, pNode will be nullptr and the implementation has to figure out waht to patch in pGraph on its own.
+  ///  If type == PatchType::GraphPatch, pNode will be nullptr and the implementation has to figure out what to patch in pGraph on its own.
   virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const = 0;
   /// \brief Returns the type to patch.
   const char* GetType() const;

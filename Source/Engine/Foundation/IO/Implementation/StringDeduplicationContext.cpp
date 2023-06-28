@@ -87,12 +87,14 @@ xiiStringDeduplicationReadContext::xiiStringDeduplicationReadContext(xiiStreamRe
   xiiUInt64 uiNumEntries = 0;
   ref_stream >> uiNumEntries;
 
+  m_DeduplicatedStrings.Reserve(static_cast<xiiUInt32>(uiNumEntries));
+
   for (xiiUInt64 i = 0; i < uiNumEntries; ++i)
   {
-    xiiStringBuilder Builder;
-    ref_stream >> Builder;
+    xiiStringBuilder s;
+    ref_stream >> s;
 
-    m_DeduplicatedStrings.ExpandAndGetRef() = std::move(Builder);
+    m_DeduplicatedStrings.PushBackUnchecked(std::move(s));
   }
 
   SetContext(this);

@@ -17,7 +17,7 @@ public:
 class xiiQtStateMachineConnection : public xiiQtConnection
 {
 public:
-  xiiQtStateMachineConnection(QGraphicsItem* parent = nullptr);
+  xiiQtStateMachineConnection();
 };
 
 class xiiQtStateMachineNode : public xiiQtNode

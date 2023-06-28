@@ -12,25 +12,64 @@ xiiFormatString::xiiFormatString(const xiiStringBuilder& s)
   m_szString = s.GetData();
 }
 
-void xiiFormatString::SBAppendView(xiiStringBuilder& sb, const xiiStringView& sub)
+const char* xiiFormatString::BuildFormattedText(xiiStringBuilder& ref_sStorage, xiiStringView* pArgs, xiiUInt32 uiNumArgs) const
 {
-  sb.Append(sub);
+  const char* szString = m_szString;
+
+  xiiUInt32 uiLastParam = -1;
+
+  ref_sStorage.Clear();
+  while (*szString != '\0')
+  {
+    if (*szString == '%')
+    {
+      if (*(szString + 1) == '%')
+      {
+        ref_sStorage.Append("%"_xiisv);
+      }
+      else
+      {
+        XII_ASSERT_DEBUG(false, "Single percentage signs are not allowed in xiiFormatString. Did you forgot to migrate a printf-style "
+                                "string? Use double percentage signs for the actual character.");
+      }
+
+      szString += 2;
+    }
+    else if (*szString == '{' && *(szString + 1) >= '0' && *(szString + 1) <= '9' && *(szString + 2) == '}')
+    {
+      uiLastParam = *(szString + 1) - '0';
+      XII_ASSERT_DEV(uiLastParam < uiNumArgs, "Too many placeholders in format string");
+
+      if (uiLastParam < uiNumArgs)
+      {
+        ref_sStorage.Append(pArgs[uiLastParam]);
+      }
+
+      szString += 3;
+    }
+    else if (*szString == '{' && *(szString + 1) == '}')
+    {
+      ++uiLastParam;
+      XII_ASSERT_DEV(uiLastParam < uiNumArgs, "Too many placeholders in format string");
+
+      if (uiLastParam < uiNumArgs)
+      {
+        ref_sStorage.Append(pArgs[uiLastParam]);
+      }
+
+      szString += 2;
+    }
+    else
+    {
+      const xiiUInt32 character = xiiUnicodeUtils::DecodeUtf8ToUtf32(szString);
+      ref_sStorage.Append(character);
+    }
+  }
+
+  return ref_sStorage.GetData();
 }
 
-void xiiFormatString::SBClear(xiiStringBuilder& sb)
-{
-  sb.Clear();
-}
-
-void xiiFormatString::SBAppendChar(xiiStringBuilder& sb, xiiUInt32 uiChar)
-{
-  sb.Append(uiChar);
-}
-
-const char* xiiFormatString::SBReturn(xiiStringBuilder& sb)
-{
-  return sb.GetData();
-}
+//////////////////////////////////////////////////////////////////////////
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgI& arg)
 {

@@ -1000,6 +1000,36 @@ xiiResult xiiOpenDdlUtils::ConvertToAngle(const xiiOpenDdlReaderElement* pElemen
   return XII_FAILURE;
 }
 
+xiiResult xiiOpenDdlUtils::ConvertToAngle(const xiiOpenDdlReaderElement* pElement, xiiAngled& out_result)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 1)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Double)
+  {
+    const double* pValues = pElement->GetPrimitivesDouble();
+
+    // have to use radians to prevent precision loss
+    out_result = xiiAngled::Radian(pValues[0]);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
 xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElement, xiiVariant& out_result)
 {
   if (pElement == nullptr)
@@ -1379,6 +1409,22 @@ xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElem
         return XII_FAILURE;
 
       out_result = value;
+      return XII_SUCCESS;
+    }
+
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Angled"))
+    {
+      xiiAngled value;
+      if (ConvertToAngle(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
+    if (xiiStringUtils::IsEqual(pElement->GetCustomType(), "Invalid"))
+    {
+      out_result = xiiVariant();
       return XII_SUCCESS;
     }
 
@@ -1884,12 +1930,27 @@ void xiiOpenDdlUtils::StoreAngle(xiiOpenDdlWriter& ref_writer, const xiiAngle& v
   ref_writer.EndObject();
 }
 
+void xiiOpenDdlUtils::StoreAngle(xiiOpenDdlWriter& ref_writer, const xiiAngled& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  ref_writer.BeginObject("Angled", szName, bGlobalName, true);
+  {
+    // have to use radians to prevent precision loss
+    const double f = value.GetRadian();
+
+    ref_writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Double);
+    ref_writer.WriteDouble(&f, 1);
+    ref_writer.EndPrimitiveList();
+  }
+  ref_writer.EndObject();
+}
+
 void xiiOpenDdlUtils::StoreVariant(xiiOpenDdlWriter& ref_writer, const xiiVariant& value, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
 {
   switch (value.GetType())
   {
     case xiiVariant::Type::Invalid:
-      return; // store anything ?
+      StoreInvalid(ref_writer, szName, bGlobalName);
+      return;
 
     case xiiVariant::Type::Bool:
       StoreBool(ref_writer, value.Get<bool>(), szName, bGlobalName);
@@ -1936,17 +1997,11 @@ void xiiOpenDdlUtils::StoreVariant(xiiOpenDdlWriter& ref_writer, const xiiVarian
       return;
 
     case xiiVariant::Type::String:
-    {
-      const xiiString& var = value.Get<xiiString>();
-      xiiOpenDdlUtils::StoreString(ref_writer, var, szName, bGlobalName);
-    }
+      xiiOpenDdlUtils::StoreString(ref_writer, value.Get<xiiString>(), szName, bGlobalName);
       return;
 
     case xiiVariant::Type::StringView:
-    {
-      const xiiStringView& var = value.Get<xiiStringView>();
-      xiiOpenDdlUtils::StoreString(ref_writer, var, szName, bGlobalName);
-    }
+      xiiOpenDdlUtils::StoreString(ref_writer, value.Get<xiiString>(), szName, bGlobalName);
       return;
 
     case xiiVariant::Type::Color:
@@ -2067,6 +2122,10 @@ void xiiOpenDdlUtils::StoreVariant(xiiOpenDdlWriter& ref_writer, const xiiVarian
 
     case xiiVariant::Type::Angle:
       StoreAngle(ref_writer, value.Get<xiiAngle>(), szName, bGlobalName);
+      return;
+
+    case xiiVariant::Type::Angled:
+      StoreAngle(ref_writer, value.Get<xiiAngled>(), szName, bGlobalName);
       return;
 
     case xiiVariant::Type::ColorGamma:
@@ -2246,6 +2305,12 @@ void xiiOpenDdlUtils::StoreUInt64(xiiOpenDdlWriter& ref_writer, xiiUInt64 value,
   ref_writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::UInt64, szName, bGlobalName);
   ref_writer.WriteUInt64(&value);
   ref_writer.EndPrimitiveList();
+}
+
+XII_FOUNDATION_DLL void xiiOpenDdlUtils::StoreInvalid(xiiOpenDdlWriter& ref_writer, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+{
+  ref_writer.BeginObject("Invalid", szName, bGlobalName, true);
+  ref_writer.EndObject();
 }
 
 

@@ -796,6 +796,12 @@ namespace xiiConversionUtils
     return out_sResult;
   }
 
+  const xiiStringBuilder& ToString(const xiiAngled& value, xiiStringBuilder& out_sResult)
+  {
+    out_sResult.Format("{0}", value);
+    return out_sResult;
+  }
+
   const xiiStringBuilder& ToString(const xiiTime& value, xiiStringBuilder& out_sResult)
   {
     out_sResult.Format("{0}", value);
@@ -812,6 +818,19 @@ namespace xiiConversionUtils
     if (!value.IsEmpty())
       out_sResult.Shrink(0, 2);
     out_sResult.Append("]");
+    return out_sResult;
+  }
+
+  const xiiStringBuilder& ToString(const xiiHashTable<xiiString, xiiVariant>& value, xiiStringBuilder& out_sResult)
+  {
+    out_sResult.Append("{");
+    for (auto it : value)
+    {
+      out_sResult.Append(it.Key(), "=", it.Value().ConvertTo<xiiString>(), ", ");
+    }
+    if (!value.IsEmpty())
+      out_sResult.Shrink(0, 2);
+    out_sResult.Append("}");
     return out_sResult;
   }
 

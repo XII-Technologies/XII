@@ -601,29 +601,4 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiComparisonOperator, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
-// static
-bool xiiComparisonOperator::Compare(xiiComparisonOperator::Enum cmp, double f1, double f2)
-{
-  switch (cmp)
-  {
-    case xiiComparisonOperator::Equal:
-      return f1 == f2;
-    case xiiComparisonOperator::NotEqual:
-      return f1 != f2;
-    case xiiComparisonOperator::Less:
-      return f1 < f2;
-    case xiiComparisonOperator::LessEqual:
-      return f1 <= f2;
-    case xiiComparisonOperator::Greater:
-      return f1 > f2;
-    case xiiComparisonOperator::GreaterEqual:
-      return f1 >= f2;
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
-
-  return false;
-}
-
-
 XII_STATICLINK_FILE(Foundation, Foundation_Math_Implementation_Math);

@@ -77,13 +77,7 @@ xiiQtPropertyEditorDoubleSpinboxWidget::xiiQtPropertyEditorDoubleSpinboxWidget(x
 {
   XII_ASSERT_DEBUG(iNumComponents <= 4, "Only up to 4 components are supported");
 
-  m_iNumComponents    = iNumComponents;
-  m_bTemporaryCommand = false;
-
-  m_pWidget[0] = nullptr;
-  m_pWidget[1] = nullptr;
-  m_pWidget[2] = nullptr;
-  m_pWidget[3] = nullptr;
+  m_iNumComponents = iNumComponents;
 
   m_pLayout = new QHBoxLayout(this);
   m_pLayout->setContentsMargins(0, 0, 0, 0);
@@ -112,11 +106,10 @@ xiiQtPropertyEditorDoubleSpinboxWidget::xiiQtPropertyEditorDoubleSpinboxWidget(x
 
 void xiiQtPropertyEditorDoubleSpinboxWidget::OnInit()
 {
-  const xiiClampValueAttribute*   pClamp   = m_pProp->GetAttributeByType<xiiClampValueAttribute>();
-  const xiiDefaultValueAttribute* pDefault = m_pProp->GetAttributeByType<xiiDefaultValueAttribute>();
-  const xiiSuffixAttribute*       pSuffix  = m_pProp->GetAttributeByType<xiiSuffixAttribute>();
+  auto pNoTemporaryTransactions = m_pProp->GetAttributeByType<xiiNoTemporaryTransactionsAttribute>();
+  m_bUseTemporaryTransaction    = (pNoTemporaryTransactions == nullptr);
 
-  if (pClamp)
+  if (const xiiClampValueAttribute* pClamp = m_pProp->GetAttributeByType<xiiClampValueAttribute>())
   {
     switch (m_iNumComponents)
     {
@@ -190,7 +183,7 @@ void xiiQtPropertyEditorDoubleSpinboxWidget::OnInit()
     }
   }
 
-  if (pDefault)
+  if (const xiiDefaultValueAttribute* pDefault = m_pProp->GetAttributeByType<xiiDefaultValueAttribute>())
   {
     switch (m_iNumComponents)
     {
@@ -210,8 +203,9 @@ void xiiQtPropertyEditorDoubleSpinboxWidget::OnInit()
 
         if (pDefault->GetValue().CanConvertTo<xiiVec2>())
         {
-          m_pWidget[0]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec2>().x);
-          m_pWidget[1]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec2>().y);
+          xiiVec2 value = pDefault->GetValue().ConvertTo<xiiVec2>();
+          m_pWidget[0]->setDefaultValue(value.x);
+          m_pWidget[1]->setDefaultValue(value.y);
         }
         break;
       }
@@ -221,9 +215,10 @@ void xiiQtPropertyEditorDoubleSpinboxWidget::OnInit()
 
         if (pDefault->GetValue().CanConvertTo<xiiVec3>())
         {
-          m_pWidget[0]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec3>().x);
-          m_pWidget[1]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec3>().y);
-          m_pWidget[2]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec3>().z);
+          xiiVec3 value = pDefault->GetValue().ConvertTo<xiiVec3>();
+          m_pWidget[0]->setDefaultValue(value.x);
+          m_pWidget[1]->setDefaultValue(value.y);
+          m_pWidget[2]->setDefaultValue(value.z);
         }
         break;
       }
@@ -233,17 +228,18 @@ void xiiQtPropertyEditorDoubleSpinboxWidget::OnInit()
 
         if (pDefault->GetValue().CanConvertTo<xiiVec4>())
         {
-          m_pWidget[0]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec4>().x);
-          m_pWidget[1]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec4>().y);
-          m_pWidget[2]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec4>().z);
-          m_pWidget[3]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec4>().w);
+          xiiVec4 value = pDefault->GetValue().ConvertTo<xiiVec4>();
+          m_pWidget[0]->setDefaultValue(value.x);
+          m_pWidget[1]->setDefaultValue(value.y);
+          m_pWidget[2]->setDefaultValue(value.z);
+          m_pWidget[3]->setDefaultValue(value.w);
         }
         break;
       }
     }
   }
 
-  if (pSuffix)
+  if (const xiiSuffixAttribute* pSuffix = m_pProp->GetAttributeByType<xiiSuffixAttribute>())
   {
     for (int i = 0; i < m_iNumComponents; ++i)
     {
@@ -251,8 +247,7 @@ void xiiQtPropertyEditorDoubleSpinboxWidget::OnInit()
     }
   }
 
-  const xiiMinValueTextAttribute* pMinValueText = m_pProp->GetAttributeByType<xiiMinValueTextAttribute>();
-  if (pMinValueText)
+  if (const xiiMinValueTextAttribute* pMinValueText = m_pProp->GetAttributeByType<xiiMinValueTextAttribute>())
   {
     for (int i = 0; i < m_iNumComponents; ++i)
     {
@@ -264,6 +259,8 @@ void xiiQtPropertyEditorDoubleSpinboxWidget::OnInit()
 void xiiQtPropertyEditorDoubleSpinboxWidget::InternalSetValue(const xiiVariant& value)
 {
   xiiQtScopedBlockSignals bs(m_pWidget[0], m_pWidget[1], m_pWidget[2], m_pWidget[3]);
+
+  m_OriginalType = value.GetType();
 
   if (value.IsValid())
   {
@@ -317,7 +314,7 @@ void xiiQtPropertyEditorDoubleSpinboxWidget::InternalSetValue(const xiiVariant& 
 
 void xiiQtPropertyEditorDoubleSpinboxWidget::on_EditingFinished_triggered()
 {
-  if (m_bTemporaryCommand)
+  if (m_bUseTemporaryTransaction && m_bTemporaryCommand)
     Broadcast(xiiPropertyEvent::Type::EndTemporary);
 
   m_bTemporaryCommand = false;
@@ -325,7 +322,7 @@ void xiiQtPropertyEditorDoubleSpinboxWidget::on_EditingFinished_triggered()
 
 void xiiQtPropertyEditorDoubleSpinboxWidget::SlotValueChanged()
 {
-  if (!m_bTemporaryCommand)
+  if (m_bUseTemporaryTransaction && !m_bTemporaryCommand)
     Broadcast(xiiPropertyEvent::Type::BeginTemporary);
 
   m_bTemporaryCommand = true;
@@ -333,7 +330,7 @@ void xiiQtPropertyEditorDoubleSpinboxWidget::SlotValueChanged()
   switch (m_iNumComponents)
   {
     case 1:
-      BroadcastValueChanged(m_pWidget[0]->value());
+      BroadcastValueChanged(xiiVariant(m_pWidget[0]->value()).ConvertTo(m_OriginalType));
       break;
     case 2:
       BroadcastValueChanged(xiiVec2(m_pWidget[0]->value(), m_pWidget[1]->value()));
@@ -520,13 +517,7 @@ void xiiQtPropertyEditorAngleWidget::SlotValueChanged()
 xiiQtPropertyEditorIntSpinboxWidget::xiiQtPropertyEditorIntSpinboxWidget(xiiInt8 iNumComponents, xiiInt32 iMinValue, xiiInt32 iMaxValue) :
   xiiQtStandardPropertyWidget()
 {
-  m_iNumComponents    = iNumComponents;
-  m_bTemporaryCommand = false;
-
-  m_pWidget[0] = nullptr;
-  m_pWidget[1] = nullptr;
-  m_pWidget[2] = nullptr;
-  m_pWidget[3] = nullptr;
+  m_iNumComponents = iNumComponents;
 
   m_pLayout = new QHBoxLayout(this);
   m_pLayout->setContentsMargins(0, 0, 0, 0);
@@ -558,6 +549,9 @@ xiiQtPropertyEditorIntSpinboxWidget::~xiiQtPropertyEditorIntSpinboxWidget() = de
 
 void xiiQtPropertyEditorIntSpinboxWidget::OnInit()
 {
+  auto pNoTemporaryTransactions = m_pProp->GetAttributeByType<xiiNoTemporaryTransactionsAttribute>();
+  m_bUseTemporaryTransaction    = (pNoTemporaryTransactions == nullptr);
+
   if (const xiiClampValueAttribute* pClamp = m_pProp->GetAttributeByType<xiiClampValueAttribute>())
   {
     switch (m_iNumComponents)
@@ -571,7 +565,7 @@ void xiiQtPropertyEditorIntSpinboxWidget::OnInit()
         m_pWidget[0]->setMinimum(pClamp->GetMinValue());
         m_pWidget[0]->setMaximum(pClamp->GetMaxValue());
 
-        if (pClamp->GetMinValue().IsValid() && pClamp->GetMaxValue().IsValid() && (iMaxValue - iMinValue) < 256)
+        if (pClamp->GetMinValue().IsValid() && pClamp->GetMaxValue().IsValid() && (iMaxValue - iMinValue) < 256 && m_bUseTemporaryTransaction)
         {
           xiiQtScopedBlockSignals bs2(m_pSlider);
 
@@ -678,8 +672,9 @@ void xiiQtPropertyEditorIntSpinboxWidget::OnInit()
 
         if (pDefault->GetValue().CanConvertTo<xiiVec2I32>())
         {
-          m_pWidget[0]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec2I32>().x);
-          m_pWidget[1]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec2I32>().y);
+          xiiVec2I32 value = pDefault->GetValue().ConvertTo<xiiVec2I32>();
+          m_pWidget[0]->setDefaultValue(value.x);
+          m_pWidget[1]->setDefaultValue(value.y);
         }
         break;
       }
@@ -689,9 +684,10 @@ void xiiQtPropertyEditorIntSpinboxWidget::OnInit()
 
         if (pDefault->GetValue().CanConvertTo<xiiVec3I32>())
         {
-          m_pWidget[0]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec3I32>().x);
-          m_pWidget[1]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec3I32>().y);
-          m_pWidget[2]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec3I32>().z);
+          xiiVec3I32 value = pDefault->GetValue().ConvertTo<xiiVec3I32>();
+          m_pWidget[0]->setDefaultValue(value.x);
+          m_pWidget[1]->setDefaultValue(value.y);
+          m_pWidget[2]->setDefaultValue(value.z);
         }
         break;
       }
@@ -701,10 +697,11 @@ void xiiQtPropertyEditorIntSpinboxWidget::OnInit()
 
         if (pDefault->GetValue().CanConvertTo<xiiVec4I32>())
         {
-          m_pWidget[0]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec4I32>().x);
-          m_pWidget[1]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec4I32>().y);
-          m_pWidget[2]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec4I32>().z);
-          m_pWidget[3]->setDefaultValue(pDefault->GetValue().ConvertTo<xiiVec4I32>().w);
+          xiiVec4I32 value = pDefault->GetValue().ConvertTo<xiiVec4I32>();
+          m_pWidget[0]->setDefaultValue(value.x);
+          m_pWidget[1]->setDefaultValue(value.y);
+          m_pWidget[2]->setDefaultValue(value.z);
+          m_pWidget[3]->setDefaultValue(value.w);
         }
         break;
       }
@@ -731,6 +728,8 @@ void xiiQtPropertyEditorIntSpinboxWidget::OnInit()
 void xiiQtPropertyEditorIntSpinboxWidget::InternalSetValue(const xiiVariant& value)
 {
   xiiQtScopedBlockSignals bs(m_pWidget[0], m_pWidget[1], m_pWidget[2], m_pWidget[3], m_pSlider);
+
+  m_OriginalType = value.GetType();
 
   switch (m_iNumComponents)
   {
@@ -763,15 +762,16 @@ void xiiQtPropertyEditorIntSpinboxWidget::InternalSetValue(const xiiVariant& val
 
 void xiiQtPropertyEditorIntSpinboxWidget::SlotValueChanged()
 {
-  if (!m_bTemporaryCommand)
+  if (m_bUseTemporaryTransaction && !m_bTemporaryCommand)
     Broadcast(xiiPropertyEvent::Type::BeginTemporary);
 
   m_bTemporaryCommand = true;
 
+  xiiVariant newValue;
   switch (m_iNumComponents)
   {
     case 1:
-      BroadcastValueChanged((xiiInt32)m_pWidget[0]->value());
+      newValue = m_pWidget[0]->value();
 
       if (m_pSlider)
       {
@@ -781,20 +781,22 @@ void xiiQtPropertyEditorIntSpinboxWidget::SlotValueChanged()
 
       break;
     case 2:
-      BroadcastValueChanged(xiiVec2I32(m_pWidget[0]->value(), m_pWidget[1]->value()));
+      newValue = xiiVec2I32(m_pWidget[0]->value(), m_pWidget[1]->value());
       break;
     case 3:
-      BroadcastValueChanged(xiiVec3I32(m_pWidget[0]->value(), m_pWidget[1]->value(), m_pWidget[2]->value()));
+      newValue = xiiVec3I32(m_pWidget[0]->value(), m_pWidget[1]->value(), m_pWidget[2]->value());
       break;
     case 4:
-      BroadcastValueChanged(xiiVec4I32(m_pWidget[0]->value(), m_pWidget[1]->value(), m_pWidget[2]->value(), m_pWidget[3]->value()));
+      newValue = xiiVec4I32(m_pWidget[0]->value(), m_pWidget[1]->value(), m_pWidget[2]->value(), m_pWidget[3]->value());
       break;
   }
+
+  BroadcastValueChanged(newValue.ConvertTo(m_OriginalType));
 }
 
 void xiiQtPropertyEditorIntSpinboxWidget::SlotSliderValueChanged(int value)
 {
-  if (!m_bTemporaryCommand)
+  if (m_bUseTemporaryTransaction && !m_bTemporaryCommand)
     Broadcast(xiiPropertyEvent::Type::BeginTemporary);
 
   m_bTemporaryCommand = true;
@@ -804,12 +806,12 @@ void xiiQtPropertyEditorIntSpinboxWidget::SlotSliderValueChanged(int value)
     m_pWidget[0]->setValue(value);
   }
 
-  BroadcastValueChanged((xiiInt32)m_pSlider->value());
+  BroadcastValueChanged(xiiVariant(m_pSlider->value()).ConvertTo(m_OriginalType));
 }
 
 void xiiQtPropertyEditorIntSpinboxWidget::on_EditingFinished_triggered()
 {
-  if (m_bTemporaryCommand)
+  if (m_bUseTemporaryTransaction && m_bTemporaryCommand)
     Broadcast(xiiPropertyEvent::Type::EndTemporary);
 
   m_bTemporaryCommand = false;
@@ -1010,6 +1012,20 @@ void xiiQtColorButtonWidget::mouseReleaseEvent(QMouseEvent* event)
   Q_EMIT clicked();
 }
 
+QSize xiiQtColorButtonWidget::sizeHint() const
+{
+  return minimumSizeHint();
+}
+
+QSize xiiQtColorButtonWidget::minimumSizeHint() const
+{
+  QFontMetrics fm(font());
+
+  QStyleOptionFrame opt;
+  initStyleOption(&opt);
+  return style()->sizeFromContents(QStyle::CT_LineEdit, &opt, QSize(20, fm.height()), this);
+}
+
 xiiQtPropertyEditorColorWidget::xiiQtPropertyEditorColorWidget() :
   xiiQtStandardPropertyWidget()
 {
@@ -1109,13 +1125,11 @@ xiiQtPropertyEditorEnumWidget::xiiQtPropertyEditorEnumWidget() :
 
 void xiiQtPropertyEditorEnumWidget::OnInit()
 {
-  const xiiRTTI* enumType = m_pProp->GetSpecificType();
+  const xiiRTTI* pType = m_pProp->GetSpecificType();
 
   xiiQtScopedBlockSignals bs(m_pWidget);
 
-  xiiStringBuilder sTemp;
-  const xiiRTTI*   pType   = enumType;
-  xiiUInt32        uiCount = pType->GetProperties().GetCount();
+  xiiUInt32 uiCount = pType->GetProperties().GetCount();
   // Start at 1 to skip default value.
   for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
@@ -1438,7 +1452,7 @@ void xiiQtPropertyEditorCurve1DWidget::on_Button_triggered()
 
   // TODO: would like to have one transaction open to finish/cancel at the end
   // but also be able to undo individual steps while editing
-  //m_pObjectAccessor->GetObjectManager()->GetDocument()->GetCommandHistory()->StartTransaction("Edit Curve");
+  // m_pObjectAccessor->GetObjectManager()->GetDocument()->GetCommandHistory()->StartTransaction("Edit Curve");
 
   xiiQtCurveEditDlg* pDlg = new xiiQtCurveEditDlg(m_pObjectAccessor, pCurve, this);
   pDlg->restoreGeometry(xiiQtCurveEditDlg::GetLastDialogGeometry());

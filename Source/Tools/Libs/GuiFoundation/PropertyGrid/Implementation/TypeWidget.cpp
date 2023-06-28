@@ -152,7 +152,7 @@ void xiiQtTypeWidget::BuildUI(const xiiRTTI* pType, const xiiMap<xiiString, cons
         xiiStringBuilder       tmp;
         xiiQtManipulatorLabel* pLabel = new xiiQtManipulatorLabel(this);
         pLabel->setText(QString::fromUtf8(pNewWidget->GetLabel(tmp)));
-        pLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        pLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
         pLabel->setContentsMargins(0, 0, 0, 0); // 18 is a hacked value to align label with group boxes.
         pLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
 

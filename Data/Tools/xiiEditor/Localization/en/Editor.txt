@@ -56,7 +56,7 @@ Project.WindowConfig;&Window Configuration...
 Project.AssetProfiles;Asset Profiles...
 Project.ClearAssetCaches;Clear Asset Caches...
 
-# Document 
+# Document
 
 Document.Create;&Create Document...
 Document.Open;&Open Document...
@@ -230,3 +230,52 @@ xiiSceneViewPerspective::Orthogonal_Front;Ortho Front
 xiiSceneViewPerspective::Orthogonal_Right;Ortho Right
 xiiSceneViewPerspective::Orthogonal_Top;Ortho Top
 xiiSceneViewPerspective::Perspective;Perspective
+
+# VariantType
+
+xiiVariantType::Bool;Bool
+xiiVariantType::Int8;Int8
+xiiVariantType::UInt8;UInt8
+xiiVariantType::Int16;Int16
+xiiVariantType::UInt16;UInt16
+xiiVariantType::Int32;Int32
+xiiVariantType::UInt32;UInt32
+xiiVariantType::Int64;Int64
+xiiVariantType::UInt64;UInt64
+xiiVariantType::Float;Float
+xiiVariantType::Double;Double
+xiiVariantType::Color;Color
+xiiVariantType::Vector2;Vector2
+xiiVariantType::Vector3;Vector3
+xiiVariantType::Vector4;Vector4
+xiiVariantType::Vector2I;Vector2I
+xiiVariantType::Vector3I;Vector3I
+xiiVariantType::Vector4I;Vector4I
+xiiVariantType::Vector2U;Vector2U
+xiiVariantType::Vector3U;Vector3U
+xiiVariantType::Vector4U;Vector4U
+xiiVariantType::Quaternion;Quaternion
+xiiVariantType::Matrix3;Matrix3
+xiiVariantType::Matrix4;Matrix4
+xiiVariantType::Transform;Transform
+xiiVariantType::Vector2;Vector2d
+xiiVariantType::Vector3;Vector3d
+xiiVariantType::Vector4;Vector4d
+xiiVariantType::Vector2I;Vector2I64
+xiiVariantType::Vector3I;Vector3I64
+xiiVariantType::Vector4I;Vector4I64
+xiiVariantType::Vector2U;Vector2U64
+xiiVariantType::Vector3U;Vector3U64
+xiiVariantType::Vector4U;Vector4U64
+xiiVariantType::Quaternion;Quaterniond
+xiiVariantType::Matrix3;Matrix3d
+xiiVariantType::Matrix4;Matrix4d
+xiiVariantType::Transform;Transformd
+xiiVariantType::String;String
+xiiVariantType::StringView;StringView
+xiiVariantType::DataBuffer;DataBuffer
+xiiVariantType::Time;Time
+xiiVariantType::Uuid;Uuid
+xiiVariantType::Angle;Angle
+xiiVariantType::Angle;Angled
+xiiVariantType::ColorGamma;ColorGamma

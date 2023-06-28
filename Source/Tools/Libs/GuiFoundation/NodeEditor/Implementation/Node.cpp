@@ -3,10 +3,11 @@
 #include <Foundation/Strings/TranslationLookup.h>
 #include <GuiFoundation/NodeEditor/Node.h>
 #include <GuiFoundation/NodeEditor/Pin.h>
+#include <ToolsFoundation/Document/Document.h>
+
 #include <QApplication>
 #include <QGraphicsDropShadowEffect>
 #include <QPainter>
-#include <ToolsFoundation/Document/Document.h>
 
 xiiQtNode::xiiQtNode()
 {
@@ -20,11 +21,22 @@ xiiQtNode::xiiQtNode()
   QPen pen(palette.light().color(), 3, Qt::SolidLine);
   setPen(pen);
 
-  m_pLabel = new QGraphicsTextItem(this);
-  m_pLabel->setDefaultTextColor(palette.buttonText().color());
-  QFont font = QApplication::font();
-  font.setBold(true);
-  m_pLabel->setFont(font);
+  {
+    QFont font = QApplication::font();
+    font.setBold(true);
+
+    m_pTitleLabel = new QGraphicsTextItem(this);
+    m_pTitleLabel->setFont(font);
+  }
+
+  {
+    QFont font = QApplication::font();
+    font.setPointSizeF(font.pointSizeF() * 0.9f);
+
+    m_pSubtitleLabel = new QGraphicsTextItem(this);
+    m_pSubtitleLabel->setFont(font);
+    m_pSubtitleLabel->setPos(0, m_pTitleLabel->boundingRect().bottom() - 5);
+  }
 
   m_HeaderColor = palette.alternateBase().color();
 }
@@ -75,11 +87,15 @@ void xiiQtNode::UpdateGeometry()
 {
   prepareGeometryChange();
 
-  auto labelRect = m_pLabel->boundingRect();
+  QRectF titleRect = m_pTitleLabel->boundingRect();
+  QRectF subtitleRect;
+  if (m_pSubtitleLabel->toPlainText().isEmpty() == false)
+  {
+    subtitleRect = m_pSubtitleLabel->boundingRect();
+    subtitleRect.moveTo(m_pSubtitleLabel->pos());
+  }
 
-  QFontMetrics fm(scene()->font());
-  const int    headerWidth = labelRect.width();
-  int          h           = labelRect.height() + 5;
+  int h = xiiMath::Max(titleRect.bottom(), subtitleRect.bottom()) + 5;
 
   int y = h;
 
@@ -118,8 +134,9 @@ void xiiQtNode::UpdateGeometry()
     w = xiiMath::Max(maxInputWidth, maxOutputWidth) * 2;
 
   w += 10;
-  w = xiiMath::Max(w, headerWidth);
 
+  const int headerWidth = xiiMath::Max(titleRect.width(), subtitleRect.width());
+  w                     = xiiMath::Max(w, headerWidth);
 
   maxheight = xiiMath::Max(maxheight, y);
 
@@ -130,11 +147,11 @@ void xiiQtNode::UpdateGeometry()
     m_Outputs[i]->setX(w - rectPin.width());
   }
 
-  m_HeaderRect = QRectF(-5, -5, w + 10, labelRect.height() + 10);
+  m_HeaderRect = QRectF(-5, -3, w + 10, xiiMath::Max(titleRect.bottom(), subtitleRect.bottom()) + 5);
 
   {
     QPainterPath p;
-    p.addRoundedRect(-5, -5, w + 10, maxheight + 10, 5, 5);
+    p.addRoundedRect(-5, -3, w + 10, maxheight + 10, 5, 5);
     setPath(p);
   }
 }
@@ -146,11 +163,11 @@ void xiiQtNode::UpdateState()
   xiiVariant name = typeAccessor.GetValue("Name");
   if (name.IsA<xiiString>() && name.Get<xiiString>().IsEmpty() == false)
   {
-    m_pLabel->setPlainText(name.Get<xiiString>().GetData());
+    m_pTitleLabel->setPlainText(name.Get<xiiString>().GetData());
   }
   else
   {
-    m_pLabel->setPlainText(xiiTranslate(typeAccessor.GetType()->GetTypeName()));
+    m_pTitleLabel->setPlainText(xiiTranslate(typeAccessor.GetType()->GetTypeName()));
   }
 }
 
@@ -176,6 +193,18 @@ void xiiQtNode::SetActive(bool bActive)
 
 void xiiQtNode::CreatePins()
 {
+  for (auto pQtPin : m_Inputs)
+  {
+    delete pQtPin;
+  }
+  m_Inputs.Clear();
+
+  for (auto pQtPin : m_Outputs)
+  {
+    delete pQtPin;
+  }
+  m_Outputs.Clear();
+
   auto inputs = m_pManager->GetInputPins(m_pObject);
   for (auto& pPinTarget : inputs)
   {
@@ -256,10 +285,24 @@ void xiiQtNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
   if (!m_bIsActive)
     headerColor.setAlpha(50);
 
+  // Draw separator
+  {
+    QColor separatorColor = pen().color();
+    separatorColor.setAlphaF(headerColor.alphaF() * 0.5f);
+    QPen p = pen();
+    p.setColor(separatorColor);
+    painter->setPen(p);
+    painter->drawLine(m_HeaderRect.bottomLeft() + QPointF(2, 0), m_HeaderRect.bottomRight() - QPointF(2, 0));
+  }
+
   // Draw header
+  QLinearGradient headerGradient(m_HeaderRect.topLeft(), m_HeaderRect.bottomLeft());
+  headerGradient.setColorAt(0.0f, headerColor);
+  headerGradient.setColorAt(1.0f, headerColor.darker(120));
+
   painter->setClipPath(path());
   painter->setPen(QPen(Qt::NoPen));
-  painter->setBrush(headerColor);
+  painter->setBrush(headerGradient);
   painter->drawRect(m_HeaderRect);
   painter->setClipping(false);
 
@@ -293,7 +336,8 @@ void xiiQtNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
     labelColor.setBlue(255 - labelColor.blue());
   }
 
-  m_pLabel->setDefaultTextColor(labelColor);
+  m_pTitleLabel->setDefaultTextColor(labelColor);
+  m_pSubtitleLabel->setDefaultTextColor(labelColor.darker(110));
 
   painter->setBrush(QBrush(Qt::NoBrush));
   painter->drawPath(path());

@@ -595,7 +595,7 @@ void xiiVisualScriptTypeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
   {
     if (pFunction->GetArgumentFlags(argIdx).IsAnySet(xiiPropertyFlags::StandardType) == false)
     {
-      xiiLog::Error("Script function '{}' uses non-standard type for argument {}", nd.m_sTypeName, argIdx + 1);
+      xiiLog::Warning("Script function '{}' uses non-standard type for argument {}", nd.m_sTypeName, argIdx + 1);
       return;
     }
 

@@ -404,4 +404,6 @@ private:
   static xiiStaticArray<xiiWorld*, XII_MAX_WORLDS> s_Worlds;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiWorld);
+
 #include <Core/World/Implementation/World_inl.h>

@@ -34,6 +34,13 @@ static xiiGameObjectHandle DefaultGameObjectReferenceResolver(const void* pData,
   return xiiGameObjectHandle();
 }
 
+//////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiWorld, xiiNoBase, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiWorld::xiiWorld(xiiWorldDesc& ref_desc) :
   m_Data(ref_desc)
 {

@@ -192,6 +192,10 @@ auto xiiVariant::DispatchTo(Functor& ref_functor, Type::Enum type, Args&&... arg
       CALL_FUNCTOR(ref_functor, xiiAngle);
       break;
 
+    case Type::Angled:
+      CALL_FUNCTOR(ref_functor, xiiAngled);
+      break;
+
     case Type::VariantArray:
       CALL_FUNCTOR(ref_functor, xiiVariantArray);
       break;
@@ -411,12 +415,17 @@ class xiiVariantHelper
   {
     bSuccessful = true;
 
+    if (value.IsValid() == false)
+    {
+      result = "<Invalid>";
+      return;
+    }
+
     ToStringFunc toStringFunc;
     toStringFunc.m_pThis   = &value;
     toStringFunc.m_pResult = &result;
 
     xiiVariant::DispatchTo(toStringFunc, value.GetType());
-    bSuccessful = true;
   }
 
   static void To(const xiiVariant& value, xiiTypedPointer& result, bool& bSuccessful)

@@ -703,6 +703,20 @@ struct xiiVariantTypeDeduction<xiiAngle>
 };
 
 template <>
+struct xiiVariantTypeDeduction<xiiAngled>
+{
+  enum
+  {
+    value               = xiiVariantType::Angled,
+    forceSharing        = false,
+    hasReflectedMembers = false,
+    classification      = xiiVariantClass::DirectCast
+  };
+
+  using StorageType = xiiAngled;
+};
+
+template <>
 struct xiiVariantTypeDeduction<xiiVariantArray>
 {
   enum

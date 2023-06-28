@@ -246,7 +246,7 @@ xiiResult xiiCompareNumberAnimNode::DeserializeNode(xiiStreamReader& stream)
 
 void xiiCompareNumberAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const xiiSkeletonResource* pSkeleton, xiiGameObject* pTarget)
 {
-  if (xiiComparisonOperator::Compare(m_Comparison, m_NumberPin.GetNumber(graph), m_fReferenceValue))
+  if (xiiComparisonOperator::Compare<double>(m_Comparison, m_NumberPin.GetNumber(graph), m_fReferenceValue))
   {
     m_ActivePin.SetTriggered(graph, true);
   }

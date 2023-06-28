@@ -252,7 +252,8 @@ xiiStatus xiiDocumentObjectManager::MoveValue(xiiDocumentObject* pObject, const 
     e.m_NewIndex  = newIndex;
     e.m_sProperty = szProperty;
     e.m_NewValue  = accessor.GetValue(szProperty, e.getInsertIndex());
-    XII_ASSERT_DEV(e.m_NewValue.IsValid(), "Value at new pos should be valid now, index missmatch?");
+    // NewValue can be invalid if an invalid variant in a variant array is moved
+    // XII_ASSERT_DEV(e.m_NewValue.IsValid(), "Value at new pos should be valid now, index missmatch?");
     m_pObjectStorage->m_PropertyEvents.Broadcast(e);
   }
 
@@ -529,6 +530,16 @@ bool xiiDocumentObjectManager::IsUnderRootProperty(const char* szRootProperty, c
     return xiiStringUtils::IsEqual(szParentProperty, szRootProperty);
   }
   return IsUnderRootProperty(szRootProperty, pParent);
+}
+
+bool xiiDocumentObjectManager::IsTemporary(const xiiDocumentObject* pObject) const
+{
+  return IsUnderRootProperty("TempObjects", pObject);
+}
+
+bool xiiDocumentObjectManager::IsTemporary(const xiiDocumentObject* pParent, const char* szParentProperty) const
+{
+  return IsUnderRootProperty("TempObjects", pParent, szParentProperty);
 }
 
 xiiSharedPtr<xiiDocumentObjectManager::Storage> xiiDocumentObjectManager::SwapStorage(xiiSharedPtr<xiiDocumentObjectManager::Storage> pNewStorage)
