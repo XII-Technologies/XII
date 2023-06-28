@@ -128,8 +128,6 @@ template <xiiUInt16 Size, typename AllocatorWrapper = xiiDefaultAllocatorWrapper
 struct xiiHybridString : public xiiHybridStringBase<Size>
 {
 public:
-  XII_DECLARE_MEM_RELOCATABLE_TYPE();
-
   xiiHybridString();
   xiiHybridString(xiiAllocatorBase* pAllocator);
 
@@ -169,7 +167,7 @@ using xiiString64        = xiiHybridString<64>;
 using xiiString128       = xiiHybridString<128>;
 using xiiString256       = xiiHybridString<256>;
 
-XII_CHECK_AT_COMPILETIME_MSG(xiiGetTypeClass<xiiString>::value == 2, "string is not memory relocatable");
+static_assert(xiiGetTypeClass<xiiString>::value == xiiTypeIsClass::value);
 
 template <xiiUInt16 Size>
 struct xiiCompareHelper<xiiHybridString<Size>>
