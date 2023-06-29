@@ -213,7 +213,7 @@ public:
   /// This function does not return a cached value, but always computes it. It does update the internal cache for later reads though.
   xiiTransform ComputeGlobalTransform(const xiiDocumentObject* pObject) const;
 
-  /// \brief Traverses the pObject hierarchy up until it hits an xiiGameObject, then computes the global transform of that.
+  /// \brief Traverses the pObject hierarchy up until it hits a xiiGameObject, then computes the global transform of that.
   virtual xiiResult ComputeObjectTransformation(const xiiDocumentObject* pObject, xiiTransform& out_Result) const override;
 
   ///@}

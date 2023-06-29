@@ -57,7 +57,7 @@ public:
   }
 #endif
 
-  /// \brief Returns an xiiVec4 with the plane normal in x,y,z and the negative distance in w.
+  /// \brief Returns a xiiVec4 with the plane normal in x,y,z and the negative distance in w.
   xiiVec4Template<Type> GetAsVec4() const;
 
   /// \brief Creates the plane-equation from a normal and a point on the plane.

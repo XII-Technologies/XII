@@ -11,7 +11,7 @@ struct xiiStringView;
 /// xiiFormatString can be used anywhere where a string should be formatable when passing it into a function.
 /// Good examples are xiiStringBuilder::Format() or xiiLog::Info().
 ///
-/// A function taking an xiiFormatString can internally call xiiFormatString::GetText() to retrieve he formatted result.
+/// A function taking a xiiFormatString can internally call xiiFormatString::GetText() to retrieve he formatted result.
 /// When calling such a function, one must wrap the parameter into 'xiiFmt' to enable formatting options, example:
 ///   void MyFunc(const xiiFormatString& text);
 ///   MyFunc(xiiFmt("Cool Story {}", "Bro"));
@@ -32,7 +32,7 @@ struct xiiStringView;
 /// ie. {0}, {3}, {2}, etc. which allows to change the order or insert duplicates.
 /// If no number is provided, each {} instance represents the next argument.
 ///
-/// To specify special formatting, wrap the argument into an xiiArgXY call:
+/// To specify special formatting, wrap the argument into a xiiArgXY call:
 ///   xiiArgC - for characters
 ///   xiiArgI - for integer formatting
 ///   xiiArgU - for unsigned integer formatting (e.g. HEX)
@@ -46,7 +46,7 @@ struct xiiStringView;
 /// Example:
 ///   xiiStringBuilder::Format("HEX: {}", xiiArgU(1337, 8 /*width*/, true /*pad with zeros*/, 16 /*base16*/, true/*upper case*/));
 ///
-/// Arbitrary other types can support special formatting even without an xiiArgXY call. E.g. xiiTime and xiiAngle do special formatting.
+/// Arbitrary other types can support special formatting even without a xiiArgXY call. E.g. xiiTime and xiiAngle do special formatting.
 /// xiiArgXY calls are only necessary if formatting options are needed for a specific formatting should be enforced (e.g. xiiArgErrorCode
 /// would otherwise just use uint32 formatting).
 ///
@@ -64,7 +64,7 @@ public:
 
   /// \brief Generates the formatted text. Make sure to only call this function once and only when the formatted string is really needed.
   ///
-  /// Requires an xiiStringBuilder as storage, ie. POTENTIALLY writes the formatted text into it.
+  /// Requires a xiiStringBuilder as storage, ie. POTENTIALLY writes the formatted text into it.
   /// However, if no formatting is required, it may not touch the string builder at all and just return a string directly.
   ///
   /// \note Do not assume that the result is stored in \a sb. Always only use the return value. The string builder is only used

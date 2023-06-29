@@ -4,7 +4,7 @@
 
 /// \brief A ring-buffer container that will use a static array of a given capacity to cycle through elements.
 ///
-/// If you need a dynamic ring-buffer, use an xiiDeque.
+/// If you need a dynamic ring-buffer, use a xiiDeque.
 template <typename T, xiiUInt32 Capacity>
 class xiiStaticRingBuffer
 {

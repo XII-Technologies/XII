@@ -16,7 +16,7 @@ struct xiiSIUnitOfTime
 
 /// \brief The timestamp class encapsulates a date in time as microseconds since Unix epoch.
 ///
-/// The value is represented by an xiiInt64 and allows storing time stamps from roughly
+/// The value is represented by a xiiInt64 and allows storing time stamps from roughly
 /// -291030 BC to 293970 AC.
 /// Use this class to efficiently store a timestamp that is valid across platforms.
 class XII_FOUNDATION_DLL xiiTimestamp
@@ -212,7 +212,7 @@ struct xiiArgDateTime
     DefaultTextual = TextualDate | ShowSeconds,
   };
 
-  /// \brief Initialized a formatting object for an xiiDateTime instance.
+  /// \brief Initialized a formatting object for a xiiDateTime instance.
   /// \param dateTime The xiiDateTime instance to format.
   /// \param bUseNames Indicates whether to use names for days of week and months (true)
   ///        or a purely numerical representation (false).

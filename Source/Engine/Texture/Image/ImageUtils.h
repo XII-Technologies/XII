@@ -123,7 +123,7 @@ public:
 
   /// \brief Samples the image at the given UV coordinates with nearest filtering.
   ///
-  /// Prefer this function over the one that takes an xiiImageView when you need to sample the image very often,
+  /// Prefer this function over the one that takes a xiiImageView when you need to sample the image very often,
   /// as it does away with internal validation that would be redundant. Also, the pixel pointer given to this function
   /// should be retrieved only once from the source image, as xiiImage::GetPixelPointer() is rather slow due to validation overhead.
   static xiiColor NearestSample(const xiiColor* pPixelPointer, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiImageAddressMode::Enum addressMode, xiiVec2 vUv);
@@ -136,7 +136,7 @@ public:
 
   /// \brief Samples the image at the given UV coordinates with bilinear filtering.
   ///
-  /// Prefer this function over the one that takes an xiiImageView when you need to sample the image very often,
+  /// Prefer this function over the one that takes a xiiImageView when you need to sample the image very often,
   /// as it does away with internal validation that would be redundant. Also, the pixel pointer given to this function
   /// should be retrieved only once from the source image, as xiiImage::GetPixelPointer() is rather slow due to validation overhead.
   static xiiColor BilinearSample(const xiiColor* pPixelPointer, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiImageAddressMode::Enum addressMode, xiiVec2 vUv);

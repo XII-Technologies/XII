@@ -18,7 +18,7 @@ struct xiiTypeFlags
 
   enum Enum
   {
-    StandardType = XII_BIT(0), ///< Anything that can be stored inside an xiiVariant except for pointers and containers.
+    StandardType = XII_BIT(0), ///< Anything that can be stored inside a xiiVariant except for pointers and containers.
     IsEnum       = XII_BIT(1), ///< enum struct used for xiiEnum.
     Bitflags     = XII_BIT(2), ///< bitflags struct used for xiiBitflags.
     Class        = XII_BIT(3), ///< A class or struct. The above flags are mutually exclusive.
@@ -193,7 +193,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 /// \param Version
 ///   The version of \a Type. Must be increased when the class serialization changes.
 /// \param AllocatorType
-///   The type of an xiiRTTIAllocator that can be used to create and destroy instances
+///   The type of a xiiRTTIAllocator that can be used to create and destroy instances
 ///   of \a Type. Pass xiiRTTINoAllocator for types that should not be created dynamically.
 ///   Pass xiiRTTIDefaultAllocator<Type> for types that should be created on the default heap.
 ///   Pass a custom xiiRTTIAllocator type to handle allocation differently.

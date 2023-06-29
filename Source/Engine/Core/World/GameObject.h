@@ -400,13 +400,13 @@ public:
   /// \brief Queues the message for the given phase. The message is processed after the given delay in the corresponding phase.
   void PostMessageRecursive(const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
 
-  /// \brief Delivers an xiiEventMessage to the closest (parent) object containing an xiiEventMessageHandlerComponent.
+  /// \brief Delivers a xiiEventMessage to the closest (parent) object containing a xiiEventMessageHandlerComponent.
   ///
   /// Regular SendMessage() and PostMessage() send a message directly to the target object (and all attached components).
   /// SendMessageRecursive() and PostMessageRecursive() send a message 'down' the graph to the target object and all children.
   ///
   /// In contrast, SendEventMessage() / PostEventMessage() bubble the message 'up' the graph.
-  /// They do so by inspecting the chain of parent objects for the existence of an xiiEventMessageHandlerComponent
+  /// They do so by inspecting the chain of parent objects for the existence of a xiiEventMessageHandlerComponent
   /// (typically a script component). If such a component is found, the message is delivered to it directly, and no other component.
   /// If it is found, but does not handle this type of message, the message is discarded and NOT tried to be delivered
   /// to anyone else.

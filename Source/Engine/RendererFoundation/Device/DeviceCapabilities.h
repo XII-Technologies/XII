@@ -3,7 +3,7 @@
 #include <RendererFoundation/RendererFoundationDLL.h>
 
 /// \brief This struct holds information about the rendering device capabilities (e.g. what shader stages are supported and more)
-/// To get the device capabilities you need to call the GetCapabilities() function on an xiiGALDevice object.
+/// To get the device capabilities you need to call the GetCapabilities() function on a xiiGALDevice object.
 struct XII_RENDERERFOUNDATION_DLL xiiGALDeviceCapabilities
 {
   xiiGALDeviceCapabilities();

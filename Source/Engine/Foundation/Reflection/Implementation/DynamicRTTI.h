@@ -56,7 +56,7 @@ public:                                                  \
 /// \param BaseType
 ///   The base class type of \a Type. If it has no base class, pass xiiNoBase
 /// \param AllocatorType
-///   The type of an xiiRTTIAllocator that can be used to create and destroy instances
+///   The type of a xiiRTTIAllocator that can be used to create and destroy instances
 ///   of \a Type. Pass xiiRTTINoAllocator for types that should not be created dynamically.
 ///   Pass xiiRTTIDefaultAllocator<Type> for types that should be created on the default heap.
 ///   Pass a custom xiiRTTIAllocator type to handle allocation differently.

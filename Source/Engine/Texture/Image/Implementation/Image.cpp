@@ -38,7 +38,7 @@ void xiiImageView::ResetAndViewExternalStorage(const xiiImageHeader& header, xii
   XII_ASSERT_DEV(imageData.GetCount() == dataSize, "Provided image storage ({} bytes) doesn't match required data size ({} bytes)",
                  imageData.GetCount(), dataSize);
 
-  // Const cast is safe here as we will only perform non-const access if this is an xiiImage which owns mutable access to the storage
+  // Const cast is safe here as we will only perform non-const access if this is a xiiImage which owns mutable access to the storage
   m_DataPtr = xiiBlobPtr<xiiUInt8>(const_cast<xiiUInt8*>(static_cast<const xiiUInt8*>(imageData.GetPtr())), imageData.GetCount());
 }
 
@@ -207,7 +207,7 @@ void xiiImage::ResetAndAlloc(const xiiImageHeader& header)
   const xiiUInt64 requiredSize = header.ComputeDataSize();
 
   // it is debatable whether this function should reuse external storage, at all
-  // however, it is especially dangerous to rely on the external storage being big enough, since many functions just take an xiiImage as a
+  // however, it is especially dangerous to rely on the external storage being big enough, since many functions just take a xiiImage as a
   // destination parameter and expect it to behave correctly when any of the Reset functions is called on it; it is not intuitive, that
   // Reset may fail due to how the image was previously reset
 
@@ -315,7 +315,7 @@ xiiImage xiiImage::GetSubImageView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFac
 {
   xiiImageView constView = xiiImageView::GetSubImageView(uiMipLevel, uiFace, uiArrayIndex);
 
-  // Create an xiiImage attached to the view. Const cast is safe here since we own the storage.
+  // Create a xiiImage attached to the view. Const cast is safe here since we own the storage.
   return xiiImage(
     constView.GetHeader(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
 }
@@ -346,7 +346,7 @@ xiiImage xiiImage::GetPlaneView(xiiUInt32 uiMipLevel /* = 0 */, xiiUInt32 uiFace
 {
   xiiImageView constView = xiiImageView::GetPlaneView(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
 
-  // Create an xiiImage attached to the view. Const cast is safe here since we own the storage.
+  // Create a xiiImage attached to the view. Const cast is safe here since we own the storage.
   return xiiImage(
     constView.GetHeader(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
 }
@@ -355,7 +355,7 @@ xiiImage xiiImage::GetSliceView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /
 {
   xiiImageView constView = xiiImageView::GetSliceView(uiMipLevel, uiFace, uiArrayIndex, z, uiPlaneIndex);
 
-  // Create an xiiImage attached to the view. Const cast is safe here since we own the storage.
+  // Create a xiiImage attached to the view. Const cast is safe here since we own the storage.
   return xiiImage(
     constView.GetHeader(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
 }

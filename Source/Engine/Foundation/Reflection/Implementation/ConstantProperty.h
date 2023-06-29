@@ -8,7 +8,7 @@
 /// \brief The base class for all typed member properties. Ie. once the type of a property is determined, it can be cast to the proper
 /// version of this.
 ///
-/// For example, when you have a pointer to an xiiAbstractMemberProperty and it returns that the property is of type 'int', you can cast the
+/// For example, when you have a pointer to a xiiAbstractMemberProperty and it returns that the property is of type 'int', you can cast the
 /// pointer to an pointer to xiiTypedMemberProperty<int> which then allows you to access its values.
 template <typename Type>
 class xiiTypedConstantProperty : public xiiAbstractConstantProperty
@@ -41,7 +41,7 @@ public:
   xiiConstantProperty(const char* szPropertyName, Type value) :
     xiiTypedConstantProperty<Type>(szPropertyName), m_Value(value)
   {
-    XII_ASSERT_DEBUG(this->m_Flags.IsSet(xiiPropertyFlags::StandardType), "Only constants that can be put in an xiiVariant are currently supported!");
+    XII_ASSERT_DEBUG(this->m_Flags.IsSet(xiiPropertyFlags::StandardType), "Only constants that can be put in a xiiVariant are currently supported!");
   }
 
   /// \brief Returns a pointer to the member property.

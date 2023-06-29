@@ -51,16 +51,16 @@ public:
 
   // *** Conversions ***
 public:
-  /// \brief Returns an xiiVec2Template with x and y from this vector.
+  /// \brief Returns a xiiVec2Template with x and y from this vector.
   const xiiVec2Template<Type> GetAsVec2() const; // [tested]
 
-  /// \brief Returns an xiiVec4Template with x,y,z from this vector and w set to the parameter.
+  /// \brief Returns a xiiVec4Template with x,y,z from this vector and w set to the parameter.
   const xiiVec4Template<Type> GetAsVec4(Type inW) const; // [tested]
 
-  /// \brief Returns an xiiVec4Template with x,y,z from this vector and w set 1.
+  /// \brief Returns a xiiVec4Template with x,y,z from this vector and w set 1.
   const xiiVec4Template<Type> GetAsPositionVec4() const; // [tested]
 
-  /// \brief Returns an xiiVec4Template with x,y,z from this vector and w set 0.
+  /// \brief Returns a xiiVec4Template with x,y,z from this vector and w set 0.
   const xiiVec4Template<Type> GetAsDirectionVec4() const; // [tested]
 
   /// \brief Returns the data as an array.

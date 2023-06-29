@@ -72,7 +72,7 @@ public:
   /// \brief This factory creates a data directory type, if it can handle the given data directory. Otherwise it returns nullptr.
   ///
   /// Every time a data directory is supposed to be added, the file system will query its data dir factories, which one
-  /// can successfully create an xiiDataDirectoryType. In this process the last factory added has the highest priority.
+  /// can successfully create a xiiDataDirectoryType. In this process the last factory added has the highest priority.
   /// Once a factory is found that was able to create a xiiDataDirectoryType, that one is used.
   /// Different factories can be used to mount different types of data directories. But the same directory can also be
   /// mounted in different ways. For example a simple folder could be mounted on the local system, or via a HTTP server

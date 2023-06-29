@@ -13,7 +13,7 @@ xiiSceneLoadUtility::~xiiSceneLoadUtility() = default;
 
 void xiiSceneLoadUtility::StartSceneLoading(xiiStringView sSceneFile, xiiStringView sPreloadCollectionFile)
 {
-  XII_ASSERT_DEV(m_LoadingState == LoadingState::NotStarted, "Can't reuse an xiiSceneLoadUtility.");
+  XII_ASSERT_DEV(m_LoadingState == LoadingState::NotStarted, "Can't reuse a xiiSceneLoadUtility.");
 
   XII_LOG_BLOCK("StartSceneLoading");
 

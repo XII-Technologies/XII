@@ -50,7 +50,7 @@ struct xiiPropertyFlags
 
   enum Enum : xiiUInt16
   {
-    StandardType = XII_BIT(0), ///< Anything that can be stored inside an xiiVariant except for pointers and containers.
+    StandardType = XII_BIT(0), ///< Anything that can be stored inside a xiiVariant except for pointers and containers.
     IsEnum       = XII_BIT(1), ///< enum property, cast to xiiAbstractEnumerationProperty.
     Bitflags     = XII_BIT(2), ///< Bitflags property, cast to xiiAbstractEnumerationProperty.
     Class        = XII_BIT(3), ///< A struct or class. All of the above are mutually exclusive.
@@ -223,7 +223,7 @@ public:
   /// \brief Returns a pointer to the constant data or nullptr. See xiiAbstractMemberProperty::GetPropertyPointer for more information.
   virtual void* GetPropertyPointer() const = 0;
 
-  /// \brief Returns the constant value as an xiiVariant
+  /// \brief Returns the constant value as a xiiVariant
   virtual xiiVariant GetConstant() const = 0;
 };
 

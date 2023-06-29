@@ -22,7 +22,7 @@ struct XII_GAMEENGINE_DLL xiiMsgSensorDetectedObjectsChanged : public xiiEventMe
 /// All sensors do a query with the specified spatial category in the world's spatial system first, therefore it is necessary to have objects
 /// with matching spatial category for the sensors to detect them. This can be achieved with components like e.g. xiiMarkerComponent.
 /// Visibility tests via raycasts are done afterwards by default but can be disabled.
-/// The components store an array of all their currently detected objects and send an xiiMsgSensorDetectedObjectsChanged message if this array changes.
+/// The components store an array of all their currently detected objects and send a xiiMsgSensorDetectedObjectsChanged message if this array changes.
 class XII_GAMEENGINE_DLL xiiSensorComponent : public xiiComponent
 {
   XII_DECLARE_ABSTRACT_COMPONENT_TYPE(xiiSensorComponent, xiiComponent);

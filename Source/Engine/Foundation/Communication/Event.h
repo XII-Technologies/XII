@@ -29,7 +29,7 @@ enum class xiiEventType
 /// set EventType = xiiEventType::CopyOnBroadcast. Each broadcast will then copy the event handler array before signaling them, allowing
 /// modifications during broadcasting.
 ///
-/// \note A class holding an xiiEvent member needs to provide public access to the member for external code to
+/// \note A class holding a xiiEvent member needs to provide public access to the member for external code to
 /// be able to register as an event handler. To make it possible to prevent external code from also raising events,
 /// all functions that are needed for listening are const, and all others are non-const.
 /// Therefore, simply make event members private and provide const reference access through a public getter.

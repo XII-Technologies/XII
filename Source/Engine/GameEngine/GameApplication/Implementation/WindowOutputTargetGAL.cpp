@@ -56,7 +56,7 @@ void xiiWindowOutputTargetGAL::Present(bool bEnableVSync)
   {
     xiiEnum<xiiGALPresentMode> presentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
 
-    // The actual present call is done by setting the swapchain to an xiiView.
+    // The actual present call is done by setting the swapchain to a xiiView.
     // This call is only used to recreate the swapchain at a safe location.
     if (m_Size != m_currentDesc.m_pWindow->GetClientAreaSize() || presentMode != m_currentDesc.m_InitialPresentMode)
     {

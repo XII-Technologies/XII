@@ -392,7 +392,7 @@ void xiiScene2Document::HandleObjectStateFromEngineMsg2(const xiiPushObjectState
           if (idx == xiiInvalidIndex)
             continue;
 
-          XII_ASSERT_DEBUG(boneValues[idx].GetReflectedType() == xiiGetStaticRTTI<xiiExposedBone>(), "Expected an xiiExposedBone in variant");
+          XII_ASSERT_DEBUG(boneValues[idx].GetReflectedType() == xiiGetStaticRTTI<xiiExposedBone>(), "Expected a xiiExposedBone in variant");
 
           // retrieve the default/previous value of the bone
           const xiiExposedBone* pDefVal = reinterpret_cast<const xiiExposedBone*>(boneValues[idx].GetData());

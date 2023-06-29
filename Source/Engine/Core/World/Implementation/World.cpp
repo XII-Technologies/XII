@@ -20,8 +20,8 @@ static xiiGameObjectHandle DefaultGameObjectReferenceResolver(const void* pData,
 
   // this is a convention used by xiiPrefabReferenceComponent:
   // a string starting with this means a 'global game object reference', ie a reference that is valid within the current world
-  // what follows is an integer that is the internal storage of an xiiGameObjectHandle
-  // thus parsing the int and casting it to an xiiGameObjectHandle gives the desired result
+  // what follows is an integer that is the internal storage of a xiiGameObjectHandle
+  // thus parsing the int and casting it to a xiiGameObjectHandle gives the desired result
   if (xiiStringUtils::StartsWith(szRef, "#!GGOR-"))
   {
     xiiInt64 id;

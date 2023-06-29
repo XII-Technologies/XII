@@ -34,11 +34,11 @@ public:
   bool EndsWith_NoCase(xiiStringView sEndsWith) const; // [tested]
 
   /// Returns a pointer to the first occurrence of szStringToFind, or nullptr if none was found.
-  /// To find the next occurrence, use an xiiStringView which points to the next position and call FindSubString again.
+  /// To find the next occurrence, use a xiiStringView which points to the next position and call FindSubString again.
   const char* FindSubString(xiiStringView sStringToFind, const char* szStartSearchAt = nullptr) const; // [tested]
 
   /// Returns a pointer to the first occurrence of szStringToFind, or nullptr if none was found. Case insensitive.
-  /// To find the next occurrence, use an xiiStringView which points to the next position and call FindSubString again.
+  /// To find the next occurrence, use a xiiStringView which points to the next position and call FindSubString again.
   const char* FindSubString_NoCase(xiiStringView sStringToFind, const char* szStartSearchAt = nullptr) const; // [tested]
 
   /// Returns a pointer to the last occurrence of szStringToFind, or nullptr if none was found.

@@ -239,7 +239,7 @@ namespace xiiInternal
     bool m_bSimulateWorld = true;
     bool m_bReportErrorWhenStaticObjectMoves;
 
-    /// \brief Maps some data (given as void*) to an xiiGameObjectHandle. Only available in special situations (e.g. editor use cases).
+    /// \brief Maps some data (given as void*) to a xiiGameObjectHandle. Only available in special situations (e.g. editor use cases).
     xiiDelegate<xiiGameObjectHandle(const void*, xiiComponentHandle, const char*)> m_GameObjectReferenceResolver;
 
   public:

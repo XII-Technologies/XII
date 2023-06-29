@@ -50,9 +50,9 @@ union xiiInt64DoubleUnion
 /// of, e.g. 16 elements, and the first elements represent the first column, then the second column, etc.
 /// So the data is stored column by column and is thus column-major.
 /// Some other libraries, such as OpenGL or DirectX require data represented either in column-major
-/// or row-major format. xiiMatrixLayout allows to retrieve the data from an xiiMatX class in the proper format,
+/// or row-major format. xiiMatrixLayout allows to retrieve the data from a xiiMatX class in the proper format,
 /// and it also allows to pass matrix data as an array back in the xiiMatX class, and have it converted properly.
-/// That means, if you need to pass the content of an xiiMatX to a function that requires the data in row-major
+/// That means, if you need to pass the content of a xiiMatX to a function that requires the data in row-major
 /// format, you specify that you want to convert the matrix to xiiMatrixLayout::RowMajor format and you will get
 /// the data properly transposed. If a function requires data in column-major format, you specify
 /// xiiMatrixLayout::ColumnMajor and you get it in column-major format (which is simply a memcpy).

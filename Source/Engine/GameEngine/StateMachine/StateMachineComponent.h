@@ -103,7 +103,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief A component that holds an xiiStateMachineInstance using the xiiStateMachineDescription from the resource assigned to this component.
+/// \brief A component that holds a xiiStateMachineInstance using the xiiStateMachineDescription from the resource assigned to this component.
 class XII_GAMEENGINE_DLL xiiStateMachineComponent : public xiiComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiStateMachineComponent, xiiComponent, xiiStateMachineComponentManager);

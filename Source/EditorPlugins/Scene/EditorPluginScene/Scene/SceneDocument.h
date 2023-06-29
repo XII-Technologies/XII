@@ -159,10 +159,10 @@ public:
   /// The camera will quickly interpolate to the stored position.
   void RestoreFavoriteCamera(xiiUInt8 uiSlot);
 
-  /// \brief Searches for an xiiCameraComponent with the 'EditorShortcut' property set to \a uiSlot and moves the editor camera to that position.
+  /// \brief Searches for a xiiCameraComponent with the 'EditorShortcut' property set to \a uiSlot and moves the editor camera to that position.
   xiiResult JumpToLevelCamera(xiiUInt8 uiSlot, bool bImmediate);
 
-  /// \brief Creates an object with an xiiCameraComponent at the current editor camera position and sets the 'EditorShortcut' property to \a uiSlot.
+  /// \brief Creates an object with a xiiCameraComponent at the current editor camera position and sets the 'EditorShortcut' property to \a uiSlot.
   xiiResult CreateLevelCamera(xiiUInt8 uiSlot);
 
   virtual xiiManipulatorSearchStrategy GetManipulatorSearchStrategy() const override

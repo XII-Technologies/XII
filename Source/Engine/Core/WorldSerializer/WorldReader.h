@@ -79,7 +79,7 @@ public:
   /// Call this once to populate xiiWorldReader with information how to instantiate the world.
   /// Afterwards \a stream can be deleted.
   /// Call InstantiateWorld() or InstantiatePrefab() afterwards as often as you like
-  /// to actually get an objects into an xiiWorld.
+  /// to actually get an objects into a xiiWorld.
   /// By default, the method will warn if it skips bytes in the stream that are of unknown
   /// types. The warnings can be suppressed by setting warningOnUnkownSkip to false.
   xiiResult ReadWorldDescription(xiiStreamReader& inout_stream, bool bWarningOnUnkownSkip = true);
@@ -139,7 +139,7 @@ public:
 
   using FindComponentTypeCallback = xiiDelegate<const xiiRTTI*(const char* szTypeName)>;
 
-  /// \brief An optional callback to redirect the lookup of a component type name to an xiiRTTI type.
+  /// \brief An optional callback to redirect the lookup of a component type name to a xiiRTTI type.
   ///
   /// If specified, this is used by ALL world readers. The intention is to use this either for logging purposes,
   /// or to implement a whitelist or blacklist for specific component types.

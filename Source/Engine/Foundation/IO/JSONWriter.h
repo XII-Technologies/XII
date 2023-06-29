@@ -200,162 +200,162 @@ public:
   /// \brief Writes a time value to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   virtual void WriteTime(xiiTime value) = 0;
 
-  /// \brief Writes an xiiColor to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiColor to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteColor(const xiiColor& value) = 0;
 
-  /// \brief Writes an xiiColorGammaUB to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiColorGammaUB to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteColorGamma(const xiiColorGammaUB& value) = 0;
 
-  /// \brief Writes an xiiVec2 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec2 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec2(const xiiVec2& value) = 0;
 
-  /// \brief Writes an xiiVec2d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec2d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec2d(const xiiVec2d& value) = 0;
 
-  /// \brief Writes an xiiVec3 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec3 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec3(const xiiVec3& value) = 0;
 
-  /// \brief Writes an xiiVec3d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec3d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec3d(const xiiVec3d& value) = 0;
 
-  /// \brief Writes an xiiVec4 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec4 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec4(const xiiVec4& value) = 0;
 
-  /// \brief Writes an xiiVec4d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec4d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec4d(const xiiVec4d& value) = 0;
 
-  /// \brief Writes an xiiVec2I32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec2I32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec2I32(const xiiVec2I32& value) = 0;
 
-  /// \brief Writes an xiiVec2I64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec2I64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec2I64(const xiiVec2I64& value) = 0;
 
-  /// \brief Writes an xiiVec3I32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec3I32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec3I32(const xiiVec3I32& value) = 0;
 
-  /// \brief Writes an xiiVec3I64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec3I64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec3I64(const xiiVec3I64& value) = 0;
 
-  /// \brief Writes an xiiVec4I32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec4I32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec4I32(const xiiVec4I32& value) = 0;
 
-  /// \brief Writes an xiiVec4I64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec4I64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec4I64(const xiiVec4I64& value) = 0;
 
-  /// \brief Writes an xiiVec2U32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec2U32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec2U32(const xiiVec2U32& value) = 0;
 
-  /// \brief Writes an xiiVec2U64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec2U64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec2U64(const xiiVec2U64& value) = 0;
 
-  /// \brief Writes an xiiVec3U32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec3U32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec3U32(const xiiVec3U32& value) = 0;
 
-  /// \brief Writes an xiiVec3U64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec3U64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec3U64(const xiiVec3U64& value) = 0;
 
-  /// \brief Writes an xiiVec4U32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec4U32 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec4U32(const xiiVec4U32& value) = 0;
 
-  /// \brief Writes an xiiVec4U64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiVec4U64 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteVec4U64(const xiiVec4U64& value) = 0;
 
-  /// \brief Writes an xiiQuat to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiQuat to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteQuat(const xiiQuat& value) = 0;
 
-  /// \brief Writes an xiiQuatd to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiQuatd to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteQuatd(const xiiQuatd& value) = 0;
 
-  /// \brief Writes an xiiMat3 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiMat3 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteMat3(const xiiMat3& value) = 0;
 
-  /// \brief Writes an xiiMat3d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiMat3d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteMat3d(const xiiMat3d& value) = 0;
 
-  /// \brief Writes an xiiMat4 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiMat4 to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteMat4(const xiiMat4& value) = 0;
 
-  /// \brief Writes an xiiMat4d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiMat4d to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteMat4d(const xiiMat4d& value) = 0;
 
-  /// \brief Writes an xiiTransform to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiTransform to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteTransform(const xiiTransform& value) = 0;
 
-  /// \brief Writes an xiiTransformd to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiTransformd to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteTransformd(const xiiTransformd& value) = 0;
 
-  /// \brief Writes an xiiUuid to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiUuid to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteUuid(const xiiUuid& value) = 0;
 
-  /// \brief Writes an xiiAngle to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiAngle to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteAngle(xiiAngle value) = 0; // [tested]
 
-  /// \brief Writes an xiiAngled to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiAngled to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteAngle(xiiAngled value) = 0; // [tested]
 
-  /// \brief Writes an xiiDataBuffer to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
+  /// \brief Writes a xiiDataBuffer to the JSON file. Can only be called between BeginVariable() / EndVariable() or BeginArray() / EndArray().
   ///
   /// \note Standard JSON does not have a suitable type for this. A derived class might turn this into an object or output it via WriteBinaryData().
   virtual void WriteDataBuffer(const xiiDataBuffer& value) = 0; // [tested]

@@ -110,7 +110,7 @@ private:
   xiiColor m_Color;
 };
 
-/// \brief A property attribute that indicates that the alpha channel of an xiiColorGammaUB or xiiColor should be exposed in the UI.
+/// \brief A property attribute that indicates that the alpha channel of a xiiColorGammaUB or xiiColor should be exposed in the UI.
 class XII_FOUNDATION_DLL xiiExposeColorAlphaAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiExposeColorAlphaAttribute, xiiPropertyAttribute);

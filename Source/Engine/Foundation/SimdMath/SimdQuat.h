@@ -18,7 +18,7 @@ public:
   /// \brief Sets the Quaternion to the identity.
   void SetIdentity(); // [tested]
 
-  /// \brief Creates a quaternion from a rotation-axis and an angle (angle is given in Radians or as an xiiAngle)
+  /// \brief Creates a quaternion from a rotation-axis and an angle (angle is given in Radians or as a xiiAngle)
   void SetFromAxisAndAngle(const xiiSimdVec4f& vRotationAxis, const xiiSimdFloat& fAngle); // [tested]
 
   /// \brief Creates a quaternion, that rotates through the shortest arc from "vDirFrom" to "vDirTo".

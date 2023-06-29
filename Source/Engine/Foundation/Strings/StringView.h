@@ -15,9 +15,9 @@ class xiiStringBuilder;
 /// It derives from xiiStringBase and thus provides a large set of functions for search and comparisons.
 ///
 /// Attention: xiiStringView does not store string data itself. It only stores pointers into memory. For example,
-/// when you get an xiiStringView to an xiiStringBuilder, the xiiStringView instance will point to the exact same memory,
+/// when you get a xiiStringView to a xiiStringBuilder, the xiiStringView instance will point to the exact same memory,
 /// enabling you to iterate over it (read-only).
-/// That means that an xiiStringView is only valid as long as its source data is not modified. Once you make any kind
+/// That means that a xiiStringView is only valid as long as its source data is not modified. Once you make any kind
 /// of modification to the source data, you should not continue using the xiiStringView to that data anymore,
 /// as it might now point into invalid memory.
 struct XII_FOUNDATION_DLL xiiStringView : public xiiThisIsAString
@@ -142,11 +142,11 @@ public:
   const char* ComputeCharacterPosition(xiiUInt32 uiCharacterIndex) const;
 
   /// Returns a pointer to the first occurrence of szStringToFind, or nullptr if none was found.
-  /// To find the next occurrence, use an xiiStringView which points to the next position and call FindSubString again.
+  /// To find the next occurrence, use a xiiStringView which points to the next position and call FindSubString again.
   const char* FindSubString(xiiStringView sStringToFind, const char* szStartSearchAt = nullptr) const; // [tested]
 
   /// Returns a pointer to the first occurrence of szStringToFind, or nullptr if none was found. Case insensitive.
-  /// To find the next occurrence, use an xiiStringView which points to the next position and call FindSubString again.
+  /// To find the next occurrence, use a xiiStringView which points to the next position and call FindSubString again.
   const char* FindSubString_NoCase(xiiStringView sStringToFind, const char* szStartSearchAt = nullptr) const; // [tested]
 
   /// Returns a pointer to the last occurrence of szStringToFind, or nullptr if none was found.

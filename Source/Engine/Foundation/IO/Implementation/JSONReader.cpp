@@ -45,9 +45,9 @@ bool xiiJSONReader::OnVariable(xiiStringView sVarName)
 void xiiJSONReader::OnReadValue(xiiStringView sValue)
 {
   if (m_Stack.PeekBack().m_Mode == ElementMode::Array)
-    m_Stack.PeekBack().m_Array.PushBack(std::move(xiiVariant(sValue)));
+    m_Stack.PeekBack().m_Array.PushBack(std::move(xiiString(sValue)));
   else
-    m_Stack.PeekBack().m_Dictionary[m_sLastName] = std::move(xiiVariant(sValue));
+    m_Stack.PeekBack().m_Dictionary[m_sLastName] = std::move(xiiString(sValue));
 
   m_sLastName.Clear();
 }

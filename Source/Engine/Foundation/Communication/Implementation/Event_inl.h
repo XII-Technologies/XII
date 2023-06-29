@@ -67,7 +67,7 @@ void xiiEventBase<EventData, MutexType, EventType>::AddEventHandler(Handler hand
 template <typename EventData, typename MutexType, xiiEventType EventType>
 void xiiEventBase<EventData, MutexType, EventType>::RemoveEventHandler(const Handler& handler) const
 {
-  XII_ASSERT_DEV(handler.IsComparable(), "Lambdas that capture data cannot be removed via function pointer. Use an xiiEventSubscriptionID instead.");
+  XII_ASSERT_DEV(handler.IsComparable(), "Lambdas that capture data cannot be removed via function pointer. Use a xiiEventSubscriptionID instead.");
 
   XII_LOCK(m_Mutex);
 
@@ -155,7 +155,7 @@ void xiiEventBase<EventData, MutexType, EventType>::RemoveEventHandler(xiiEventS
 template <typename EventData, typename MutexType, xiiEventType EventType>
 bool xiiEventBase<EventData, MutexType, EventType>::HasEventHandler(const Handler& handler) const
 {
-  XII_ASSERT_DEV(handler.IsComparable(), "Lambdas that capture data cannot be checked via function pointer. Use an xiiEventSubscriptionID instead.");
+  XII_ASSERT_DEV(handler.IsComparable(), "Lambdas that capture data cannot be checked via function pointer. Use a xiiEventSubscriptionID instead.");
 
   XII_LOCK(m_Mutex);
 

@@ -17,7 +17,7 @@ public:
 
   virtual ~xiiJSONParser() = default;
 
-  /// \brief Allows to specify an xiiLogInterface through which errors and warnings are reported.
+  /// \brief Allows to specify a xiiLogInterface through which errors and warnings are reported.
   void SetLogInterface(xiiLogInterface* pLog) { m_pLogInterface = pLog; }
 
 protected:

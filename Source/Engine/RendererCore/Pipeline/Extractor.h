@@ -77,11 +77,11 @@ public:
 /// Store an instance somewhere in your game code:
 /// xiiSelectedObjectsContext m_SelectedObjects;
 /// Add handles to game object that should be get the highlighting outline (as the editor uses for selected objects).
-/// On an xiiView call:
+/// On a xiiView call:
 /// xiiView::SetExtractorProperty("HighlightObjects", "SelectionContext", &m_SelectedObjects);
-/// The first name must be the name of an xiiSelectedObjectsExtractor that is instantiated by the render pipeline.
+/// The first name must be the name of a xiiSelectedObjectsExtractor that is instantiated by the render pipeline.
 ///
-/// As long as there is also an xiiSelectionHighlightPass in the render pipeline, all objects in this selection will be rendered
+/// As long as there is also a xiiSelectionHighlightPass in the render pipeline, all objects in this selection will be rendered
 /// with an outline.
 class XII_RENDERERCORE_DLL xiiSelectedObjectsContext : public xiiReflectedClass
 {
@@ -111,7 +111,7 @@ public:
 
   virtual const xiiDeque<xiiGameObjectHandle>* GetSelection() override;
 
-  /// \brief The context is typically set through an xiiView, through xiiView::SetExtractorProperty("<name>", "SelectionContext", pointer);
+  /// \brief The context is typically set through a xiiView, through xiiView::SetExtractorProperty("<name>", "SelectionContext", pointer);
   void                       SetSelectionContext(xiiSelectedObjectsContext* pSelectionContext) { m_pSelectionContext = pSelectionContext; } // [ property ]
   xiiSelectedObjectsContext* GetSelectionContext() const { return m_pSelectionContext; }                                                    // [ property ]
 

@@ -89,7 +89,7 @@ struct xiiIsStandardType<T, xiiVariant>
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Used to determine if the given type can be stored by value inside an xiiVariant (either standard type or custom type).
+/// \brief Used to determine if the given type can be stored by value inside a xiiVariant (either standard type or custom type).
 template <class T, class C = typename xiiCleanType<T>::Type>
 struct xiiIsValueType
 {
@@ -109,7 +109,7 @@ struct xiiIsValueType<T, xiiVariant>
 };
 
 //////////////////////////////////////////////////////////////////////////
-/// \brief Used to automatically assign any value to an xiiVariant using the assignment rules
+/// \brief Used to automatically assign any value to a xiiVariant using the assignment rules
 /// outlined in xiiAbstractFunctionProperty::Execute.
 template <class T,                                         ///< Only this parameter needs to be provided, the actual type of the value.
           class C        = typename xiiCleanType<T>::Type, ///< Same as T but without the const&* fluff.
@@ -201,7 +201,7 @@ struct xiiVariantAssignmentAdapter<T, xiiVariantDictionary, 0>
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Used to implicitly retrieve any value from an xiiVariant to be used as a function argument
+/// \brief Used to implicitly retrieve any value from a xiiVariant to be used as a function argument
 /// using the assignment rules outlined in xiiAbstractFunctionProperty::Execute.
 template <class T,                                         ///< Only this parameter needs to be provided, the actual type of the argument. Rest is used to force specializations.
           class C        = typename xiiCleanType<T>::Type, ///< Same as T but without the const&* fluff.

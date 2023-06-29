@@ -6,7 +6,7 @@
 class xiiDocumentObject;
 struct xiiStatus;
 
-/// \brief Provides access to the properties of an xiiRTTI compatible data storage.
+/// \brief Provides access to the properties of a xiiRTTI compatible data storage.
 class XII_TOOLSFOUNDATION_DLL xiiIReflectedTypeAccessor
 {
 public:

@@ -9,7 +9,7 @@ class xiiFormatStringImpl : public xiiFormatString
 {
   // this is the size of the temp buffer that BuildString functions get for writing their result to.
   // The buffer is always available and allocated on the stack, so this prevents the need for memory allocations.
-  // If a BuildString function requires no storage at all, it can return an xiiStringView to unrelated memory
+  // If a BuildString function requires no storage at all, it can return a xiiStringView to unrelated memory
   // (e.g. if the memory already exists).
   // If a BuildString function requires more storage, it may need to do some trickery.
   // For an example look at BuildString for xiiArgErrorCode, which uses an increased thread_local temp buffer.
@@ -26,7 +26,7 @@ public:
 
   /// \brief Generates the formatted text. Make sure to only call this function once and only when the formatted string is really needed.
   ///
-  /// Requires an xiiStringBuilder as storage, ie. writes the formatted text into it. Additionally it returns a xiiStringView to that
+  /// Requires a xiiStringBuilder as storage, ie. writes the formatted text into it. Additionally it returns a xiiStringView to that
   /// string builder data for convenience.
   virtual xiiStringView GetText(xiiStringBuilder& ref_sStorage) const override
   {

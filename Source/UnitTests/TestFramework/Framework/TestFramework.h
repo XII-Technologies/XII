@@ -445,14 +445,14 @@ XII_TEST_DLL bool xiiTestInt(xiiInt64 i1, xiiInt64 i2, const char* szI1, const c
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_TEST_DLL bool xiiTestString(std::string s1, std::string s2, const char* szString1, const char* szString2, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...);
+XII_TEST_DLL bool xiiTestString(xiiStringView s1, xiiStringView s2, const char* szString1, const char* szString2, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...);
 
 /// \brief Tests two strings for equality. On failure both actual and expected values are output.
 #define XII_TEST_STRING(i1, i2) XII_TEST_STRING_MSG(i1, i2, "")
 
 /// \brief Tests two strings for equality. On failure both actual and expected values are output, also a custom message is printed.
 #define XII_TEST_STRING_MSG(s1, s2, msg, ...) \
-  xiiTestString(static_castxiiStringView > (s1), static_castxiiStringView > (s2), XII_STRINGIZE(s1), XII_STRINGIZE(s2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+  xiiTestString(static_cast<xiiStringView>(s1), static_cast<xiiStringView>(s2), XII_STRINGIZE(s1), XII_STRINGIZE(s2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -474,7 +474,7 @@ XII_TEST_DLL bool xiiTestWString(std::wstring s1, std::wstring s2, const char* s
 /// \brief Tests two strings for equality. On failure both actual and expected values are output, also a custom message is printed. Does not
 /// embed the original expression to work around issues with the current code page and unicode literals.
 #define XII_TEST_STRING_UNICODE_MSG(s1, s2, msg, ...) \
-  xiiTestString(static_castxiiStringView > (s1), static_castxiiStringView > (s2), "", "", XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+  xiiTestString(static_cast<xiiStringView>(s1), static_cast<xiiStringView>(s2), "", "", XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 

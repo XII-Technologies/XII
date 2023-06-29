@@ -14,9 +14,9 @@
 
 class xiiRTTI;
 
-/// \brief Defines a reference to an immutable object owned by an xiiVariant.
+/// \brief Defines a reference to an immutable object owned by a xiiVariant.
 ///
-/// Used to store custom types inside an xiiVariant. As lifetime is governed by the xiiVariant, it is generally not safe to store an xiiTypedObject.
+/// Used to store custom types inside a xiiVariant. As lifetime is governed by the xiiVariant, it is generally not safe to store a xiiTypedObject.
 /// This class is needed to be able to differentiate between xiiVariantType::TypedPointer and xiiVariantType::TypedObject e.g. in xiiVariant::DispatchTo.
 /// \sa xiiVariant, XII_DECLARE_CUSTOM_VARIANT_TYPE
 struct xiiTypedObject
@@ -414,7 +414,7 @@ private:
 
 /// \brief An overload of xiiDynamicCast for dynamic casting a variant to a pointer type.
 ///
-/// If the xiiVariant stores an xiiTypedPointer pointer, this pointer will be dynamically cast to T*.
+/// If the xiiVariant stores a xiiTypedPointer pointer, this pointer will be dynamically cast to T*.
 /// If the xiiVariant stores any other type (or nothing), nullptr is returned.
 template <typename T>
 XII_ALWAYS_INLINE T xiiDynamicCast(const xiiVariant& variant)

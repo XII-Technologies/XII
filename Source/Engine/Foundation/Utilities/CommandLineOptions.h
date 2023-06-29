@@ -53,7 +53,7 @@ public:
   ///   If non-empty, only options from sorting groups that appear in this string will be logged.
   static bool LogAvailableOptions(LogAvailableModes mode, const char* szGroupFilter = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
 
-  /// \brief Same as LogAvailableOptions() but captures the output from xiiLog and returns it in an xiiStringBuilder.
+  /// \brief Same as LogAvailableOptions() but captures the output from xiiLog and returns it in a xiiStringBuilder.
   static bool LogAvailableOptionsToBuffer(xiiStringBuilder& out_sBuffer, LogAvailableModes mode, const char* szGroupFilter = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
 
 public:

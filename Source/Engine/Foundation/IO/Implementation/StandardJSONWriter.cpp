@@ -837,7 +837,7 @@ void xiiStandardJSONWriter::WriteBinaryData(xiiStringView sDataType, const void*
 
   OutputString(sDataType);
 
-  if (sValueString != nullptr)
+  if (!sValueString.IsEmpty())
   {
     if (m_WhitespaceMode >= WhitespaceMode::NewlinesOnly)
       OutputString("\",\"$v\":\"");

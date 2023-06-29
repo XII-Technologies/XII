@@ -6,7 +6,7 @@
 
 class xiiAbstractProperty;
 
-///\brief Reflected property step that can be used to init an xiiPropertyPath
+///\brief Reflected property step that can be used to init a xiiPropertyPath
 struct XII_FOUNDATION_DLL xiiPropertyPathStep
 {
   xiiString  m_sProperty;

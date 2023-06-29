@@ -39,7 +39,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiPathPatternFilter
 
   /// \brief Reads all patterns from the given file.
   ///
-  /// The file is parsed with an xiiPreprocessor, so may contain #include statements and such.
+  /// The file is parsed with a xiiPreprocessor, so may contain #include statements and such.
   /// Custom preprocessor definitions can be provided.
   ///
   /// After preprocessing, every line represents a single pattern.

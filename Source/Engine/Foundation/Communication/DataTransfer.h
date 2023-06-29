@@ -7,7 +7,7 @@
 
 class XII_FOUNDATION_DLL xiiDataTransfer;
 
-/// \brief A small wrapper class around an xiiTelemetryMessage for sending a 'data transfer'. See xiiDataTransfer for more details.
+/// \brief A small wrapper class around a xiiTelemetryMessage for sending a 'data transfer'. See xiiDataTransfer for more details.
 class XII_FOUNDATION_DLL xiiDataTransferObject
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiDataTransferObject);
@@ -56,7 +56,7 @@ private:
 /// The data transfer can contain any kind of data, however depending on its type, the connected tools may be able to display the data
 /// directly, or not.
 /// The xiiDataTransfer object represents one logical group of data that will be sent all together. Each piece of data is represented
-/// by an xiiDataTransferObject. E.g. each texture of a G-Buffer (diffuse, normals, depth) should be sent via one instance of xiiDataTransferObject.
+/// by a xiiDataTransferObject. E.g. each texture of a G-Buffer (diffuse, normals, depth) should be sent via one instance of xiiDataTransferObject.
 /// Those instances of xiiDataTransferObject are just created on demand and destroyed directly after, they do not need to be kept around.
 ///
 /// The xiiDataTransfer instance, however, needs to be created once and then kept around as long as the data transfer should be possible.

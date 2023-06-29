@@ -167,7 +167,7 @@ namespace xiiConversionUtils
   template <typename APPEND_CONTAINER_LAMBDA>
   inline void ConvertBinaryToHex(const void* pBinaryData, xiiUInt32 uiBytes, APPEND_CONTAINER_LAMBDA append); // [tested]
 
-  /// \brief Converts a string that was written with xiiConversionUtils::ToString(xiiUuid) back to an xiiUuid object.
+  /// \brief Converts a string that was written with xiiConversionUtils::ToString(xiiUuid) back to a xiiUuid object.
   XII_FOUNDATION_DLL xiiUuid ConvertStringToUuid(xiiStringView sText); // [tested]
 
   /// \brief Returns true when the given string is in the exact format "{ 05af8d07-0b38-44a6-8d50-49731ae2625d }"

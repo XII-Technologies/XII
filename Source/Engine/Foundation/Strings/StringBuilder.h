@@ -22,7 +22,7 @@ class xiiFormatString;
 /// \brief xiiStringBuilder is a class that is meant for creating and modifying strings.
 ///
 /// It is not meant to store strings for a longer duration.
-/// Each xiiStringBuilder uses an xiiHybridArray to allocate a large buffer on the stack, such that string manipulations
+/// Each xiiStringBuilder uses a xiiHybridArray to allocate a large buffer on the stack, such that string manipulations
 /// are possible without memory allocations, unless the string is too large.
 /// No sharing of data happens between xiiStringBuilder instances, as it is expected that they will be modified anyway.
 /// Instead all data is always copied, therefore instances should not be passed by copy.
@@ -30,7 +30,7 @@ class xiiFormatString;
 /// That makes it difficult to modify individual characters. Instead you should prefer high-level functions
 /// such as 'ReplaceSubString'. If individual characters must be modified, it might make more sense to create
 /// a second xiiStringBuilder, and iterate over the first while rebuilding the desired result in the second.
-/// Once a string is built and should only be stored for read access, it should be stored in an xiiString instance.
+/// Once a string is built and should only be stored for read access, it should be stored in a xiiString instance.
 class XII_FOUNDATION_DLL xiiStringBuilder : public xiiStringBase<xiiStringBuilder>
 {
 public:

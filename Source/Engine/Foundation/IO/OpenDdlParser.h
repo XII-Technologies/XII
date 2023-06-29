@@ -41,7 +41,7 @@ public:
   bool HadFatalParsingError() const { return m_bHadFatalParsingError; } // [tested]
 
 protected:
-  /// \brief Sets an xiiLogInterface through which errors and warnings are reported.
+  /// \brief Sets a xiiLogInterface through which errors and warnings are reported.
   void SetLogInterface(xiiLogInterface* pLog) { m_pLogInterface = pLog; }
 
   /// \brief Data is returned in larger chunks, to reduce the number of function calls. The cache size determines the maximum chunk size per primitive

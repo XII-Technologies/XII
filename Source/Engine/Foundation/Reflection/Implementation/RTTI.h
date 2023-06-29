@@ -135,7 +135,7 @@ public:
   {
     XII_ASSERT_DEBUG(m_bGatheredDynamicMessageHandlers, "Message handler table should have been gathered at this point.\n"
                                                         "If this assert is triggered for a type loaded from a dynamic plugin,\n"
-                                                        "you may have forgotten to instantiate an xiiPlugin object inside your plugin DLL.");
+                                                        "you may have forgotten to instantiate a xiiPlugin object inside your plugin DLL.");
 
     const xiiUInt32 uiIndex = id - m_uiMsgIdOffset;
     return uiIndex < m_DynamicMessageHandlers.GetCount() && m_DynamicMessageHandlers.GetData()[uiIndex] != nullptr;

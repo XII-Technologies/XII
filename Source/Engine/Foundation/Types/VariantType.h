@@ -80,8 +80,8 @@ struct xiiVariantType
     FirstExtendedType = 64,
     VariantArray,      ///< The variant stores an array of xiiVariant's. A heap allocation is required to store this data type.
     VariantDictionary, ///< The variant stores a dictionary (hashmap) of xiiVariant's. A heap allocation is required to store this type.
-    TypedPointer,      ///< The variant stores an xiiTypedPointer value. Reflected type and data queries will match the pointed to object.
-    TypedObject,       ///< The variant stores an xiiTypedObject value. Reflected type and data queries will match the object. A heap allocation is required to store this type if it is larger than 16 bytes or not POD.
+    TypedPointer,      ///< The variant stores a xiiTypedPointer value. Reflected type and data queries will match the pointed to object.
+    TypedObject,       ///< The variant stores a xiiTypedObject value. Reflected type and data queries will match the object. A heap allocation is required to store this type if it is larger than 16 bytes or not POD.
     LastExtendedType,  ///< Number of values for xiiVariant::Type.
 
     MAX_ENUM_VALUE = LastExtendedType,
@@ -118,7 +118,7 @@ struct xiiVariantTypeDeduction
   using StorageType = T;
 };
 
-/// \brief Declares a custom variant type, allowing it to be stored by value inside an xiiVariant.
+/// \brief Declares a custom variant type, allowing it to be stored by value inside a xiiVariant.
 ///
 /// Needs to be called from the same header that defines the type.
 /// \sa XII_DEFINE_CUSTOM_VARIANT_TYPE

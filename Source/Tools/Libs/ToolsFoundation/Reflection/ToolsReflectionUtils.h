@@ -19,7 +19,7 @@ public:
   static bool GetFloatFromVariant(const xiiVariant& val, double& out_fValue);
   static bool GetVariantFromFloat(double fValue, xiiVariantType::Enum type, xiiVariant& out_val);
 
-  /// \brief Creates a ReflectedTypeDescriptor from an xiiRTTI instance that can be serialized and registered at the xiiPhantomRttiManager.
+  /// \brief Creates a ReflectedTypeDescriptor from a xiiRTTI instance that can be serialized and registered at the xiiPhantomRttiManager.
   static void GetReflectedTypeDescriptorFromRtti(const xiiRTTI* pRtti, xiiReflectedTypeDescriptor& out_desc); // [tested]
   static void GetMinimalReflectedTypeDescriptorFromRtti(const xiiRTTI* pRtti, xiiReflectedTypeDescriptor& out_desc);
 

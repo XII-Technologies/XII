@@ -6,7 +6,7 @@
 /// \brief Waiting on a thread signal puts the waiting thread to sleep. Other threads can wake it up by raising the signal.
 ///
 /// xiiThreadSignal is similar to xiiConditionVariable but adds some internal state, which makes it more suitable for common use cases.
-/// For instance, in contrast to xiiConditionVariable, one can wait for an xiiThreadSignal and get awoken, even if the signal was raised
+/// For instance, in contrast to xiiConditionVariable, one can wait for a xiiThreadSignal and get awoken, even if the signal was raised
 /// before a thread tried to wait on it.
 /// At any given time the thread signal is either 'raised' or 'cleared'. Waiting for a 'raised' signal will return immediately.
 /// This makes it easier to implement a simple producer/consumer scenario.

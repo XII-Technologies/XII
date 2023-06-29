@@ -11,7 +11,7 @@ class XII_EDITORFRAMEWORK_DLL xiiProjectPreferencesUser : public xiiPreferences
 public:
   xiiProjectPreferencesUser();
 
-  // which apps to launch as external 'Players' (other than xiiPlayer.exe)
+  // which apps to launch as external 'Players' (other tha xiiPlayer.exe)
   xiiDynamicArray<xiiString> m_PlayerApps;
 
   // the directory where the project should be exported to

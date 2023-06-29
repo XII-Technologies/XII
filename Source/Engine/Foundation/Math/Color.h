@@ -264,7 +264,7 @@ public:
   /// \brief Conversion to float*
   float* GetData() { return &r; }
 
-  /// \brief Returns the 4 color values packed in an xiiVec4
+  /// \brief Returns the 4 color values packed in a xiiVec4
   const xiiVec4 GetAsVec4() const;
 
   /// \brief Helper function to convert a float color value from gamma space to linear color space.

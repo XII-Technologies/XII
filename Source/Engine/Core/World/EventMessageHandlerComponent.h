@@ -9,7 +9,7 @@ struct xiiEventMessage;
 ///
 /// Event messages are messages that are 'broadcast' to indicate something happened on a component,
 /// e.g. a trigger that got activated or an animation that finished playing. These messages are 'bubbled up'
-/// the object hierarchy to the closest parent object that holds an xiiEventMessageHandlerComponent.
+/// the object hierarchy to the closest parent object that holds a xiiEventMessageHandlerComponent.
 class XII_CORE_DLL xiiEventMessageHandlerComponent : public xiiComponent
 {
   XII_DECLARE_ABSTRACT_COMPONENT_TYPE(xiiEventMessageHandlerComponent, xiiComponent);

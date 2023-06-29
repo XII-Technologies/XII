@@ -14,7 +14,7 @@ public:
   xiiInputDeviceXBox360();
   ~xiiInputDeviceXBox360();
 
-  /// \brief Returns an xiiInputDeviceXBox360 device.
+  /// \brief Returns a xiiInputDeviceXBox360 device.
   static xiiInputDeviceXBox360* GetDevice();
 
   /// \brief Destroys all devices of this type. Automatically called at engine shutdown.

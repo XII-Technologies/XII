@@ -6,7 +6,7 @@
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Strings/HashedString.h>
 
-/// \brief Describes which kind of token an xiiToken is.
+/// \brief Describes which kind of token a xiiToken is.
 struct XII_FOUNDATION_DLL xiiTokenType
 {
   enum Enum
@@ -50,7 +50,7 @@ struct XII_FOUNDATION_DLL xiiToken
   xiiUInt32 m_uiColumn;
 
   /// The actual string data that represents the token. Note that this is a view to a substring of some larger text data.
-  /// To get only the relevant piece as one zero-terminated string, assign m_DataView to an xiiStringBuilder and read that instead.
+  /// To get only the relevant piece as one zero-terminated string, assign m_DataView to a xiiStringBuilder and read that instead.
   xiiStringView m_DataView;
 
   /// For users to be able to store additional info for a token.

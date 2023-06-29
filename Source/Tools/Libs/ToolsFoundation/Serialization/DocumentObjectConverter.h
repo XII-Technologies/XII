@@ -5,7 +5,7 @@
 
 class xiiObjectAccessorBase;
 
-/// \brief Writes the state of an xiiDocumentObject to an abstract graph.
+/// \brief Writes the state of a xiiDocumentObject to an abstract graph.
 ///
 /// This information can then be applied to another xiiDocument object through xiiDocumentObjectConverterReader,
 /// or to entirely different class using xiiRttiConverterReader.
