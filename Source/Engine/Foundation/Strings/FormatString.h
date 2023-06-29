@@ -56,8 +56,9 @@ class XII_FOUNDATION_DLL xiiFormatString
   XII_DISALLOW_COPY_AND_ASSIGN(xiiFormatString); // pass by reference, never pass by value
 
 public:
-  XII_ALWAYS_INLINE xiiFormatString() { m_szString = nullptr; }
-  XII_ALWAYS_INLINE xiiFormatString(const char* szString) { m_szString = szString; }
+  XII_ALWAYS_INLINE xiiFormatString() = default;
+  XII_ALWAYS_INLINE xiiFormatString(const char* szString) { m_sString = szString; }
+  XII_ALWAYS_INLINE xiiFormatString(xiiStringView sString) { m_sString = sString; }
   xiiFormatString(const xiiStringBuilder& s);
   virtual ~xiiFormatString() = default;
 
@@ -68,17 +69,21 @@ public:
   ///
   /// \note Do not assume that the result is stored in \a sb. Always only use the return value. The string builder is only used
   /// when necessary.
-  [[nodiscard]] virtual const char* GetText(xiiStringBuilder&) const { return m_szString; }
+  [[nodiscard]] virtual xiiStringView GetText(xiiStringBuilder&) const { return m_sString; }
 
-  bool IsEmpty() const { return xiiStringUtils::IsNullOrEmpty(m_szString); }
+  /// \brief Similar to GetText() but guaranteed to copy the string into the given string builder,
+  /// and thus guaranteeing that the generated string is zero terminated.
+  virtual const char* GetTextCStr(xiiStringBuilder& out_sString) const;
+
+  bool IsEmpty() const { return m_sString.IsEmpty(); }
 
   /// \brief Helper function to build the formatted text with the given arguments.
   ///
   /// \note We can't use xiiArrayPtr here because of include order.
-  const char* BuildFormattedText(xiiStringBuilder& ref_sStorage, xiiStringView* pArgs, xiiUInt32 uiNumArgs) const;
+  xiiStringView BuildFormattedText(xiiStringBuilder& ref_sStorage, xiiStringView* pArgs, xiiUInt32 uiNumArgs) const;
 
 protected:
-  const char* m_szString = nullptr;
+  xiiStringView m_sString;
 };
 
 #include <Foundation/Strings/Implementation/FormatStringImpl.h>

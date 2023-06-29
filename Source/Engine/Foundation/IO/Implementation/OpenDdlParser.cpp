@@ -30,10 +30,9 @@ void xiiOpenDdlParser::SetCacheSize(xiiUInt32 uiSizeInKB)
 
 
 // Extension to default OpenDDL: We allow ':' and '.' to appear in identifier names
-bool IsDdlIdentifierCharacter(xiiUInt8 uiByte)
+bool IsDdlIdentifierCharacter(xiiUInt32 uiByte)
 {
-  return (
-    (uiByte >= 'a' && uiByte <= 'z') || (uiByte >= 'A' && uiByte <= 'Z') || (uiByte == '_') || (uiByte >= '0' && uiByte <= '9') || (uiByte == ':') || (uiByte == '.'));
+  return ((uiByte >= 'a' && uiByte <= 'z') || (uiByte >= 'A' && uiByte <= 'Z') || (uiByte == '_') || (uiByte >= '0' && uiByte <= '9') || (uiByte == ':') || (uiByte == '.'));
 }
 
 void xiiOpenDdlParser::SetInputStream(xiiStreamReader& stream, xiiUInt32 uiFirstLineOffset /*= 0*/)
@@ -165,14 +164,14 @@ void xiiOpenDdlParser::StopParsing()
   m_StateStack.Clear();
 }
 
-void xiiOpenDdlParser::ParsingError(const char* szMessage, bool bFatal)
+void xiiOpenDdlParser::ParsingError(xiiStringView sMessage, bool bFatal)
 {
   if (bFatal)
-    xiiLog::Error(m_pLogInterface, "Line {0} ({1}): {2}", m_uiCurLine, m_uiCurColumn, szMessage);
+    xiiLog::Error(m_pLogInterface, "Line {0} ({1}): {2}", m_uiCurLine, m_uiCurColumn, sMessage);
   else
-    xiiLog::Warning(m_pLogInterface, szMessage);
+    xiiLog::Warning(m_pLogInterface, sMessage);
 
-  OnParsingError(szMessage, bFatal, m_uiCurLine, m_uiCurColumn);
+  OnParsingError(sMessage, bFatal, m_uiCurLine, m_uiCurColumn);
 
   if (bFatal)
   {
@@ -1044,7 +1043,6 @@ void xiiOpenDdlParser::ContinueInt()
   }
 }
 
-
 void xiiOpenDdlParser::ContinueFloat()
 {
   if (!ContinuePrimitiveList())
@@ -1143,9 +1141,7 @@ void xiiOpenDdlParser::ContinueFloat()
       break;
     }
 
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
-      break;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 
@@ -1170,7 +1166,6 @@ void xiiOpenDdlParser::ReadDecimalFloat()
   if (xiiStringUtils::IsWhiteSpace(m_uiCurByte))
     SkipWhitespace();
 }
-
 
 void xiiOpenDdlParser::ReadHexString()
 {
@@ -1220,6 +1215,5 @@ xiiUInt64 xiiOpenDdlParser::ReadDecimalLiteral()
 
   return value;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_OpenDdlParser);

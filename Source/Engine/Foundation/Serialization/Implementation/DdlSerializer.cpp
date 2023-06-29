@@ -9,11 +9,11 @@
 
 namespace
 {
-  xiiSerializedBlock* FindBlock(xiiHybridArray<xiiSerializedBlock, 3>& ref_blocks, const char* szName)
+  xiiSerializedBlock* FindBlock(xiiHybridArray<xiiSerializedBlock, 3>& ref_blocks, xiiStringView sName)
   {
     for (auto& block : ref_blocks)
     {
-      if (block.m_Name == szName)
+      if (block.m_Name == sName)
       {
         return &block;
       }
@@ -40,13 +40,13 @@ namespace
     return nullptr;
   }
 
-  xiiSerializedBlock* GetOrCreateBlock(xiiHybridArray<xiiSerializedBlock, 3>& ref_blocks, const char* szName)
+  xiiSerializedBlock* GetOrCreateBlock(xiiHybridArray<xiiSerializedBlock, 3>& ref_blocks, xiiStringView sName)
   {
-    xiiSerializedBlock* pBlock = FindBlock(ref_blocks, szName);
+    xiiSerializedBlock* pBlock = FindBlock(ref_blocks, sName);
     if (!pBlock)
     {
       pBlock         = &ref_blocks.ExpandAndGetRef();
-      pBlock->m_Name = szName;
+      pBlock->m_Name = sName;
     }
     if (!pBlock->m_Graph)
     {
@@ -349,38 +349,38 @@ public:
   bool     m_bHasHeader = false;
   xiiInt32 m_iDepth     = 0;
 
-  virtual void OnBeginObject(const char* szType, const char* szName, bool bGlobalName) override
+  virtual void OnBeginObject(xiiStringView sType, xiiStringView sName, bool bGlobalName) override
   {
     //////////////////////////////////////////////////////////////////////////
     // New document format has header block.
-    if (m_iDepth == 0 && xiiStringUtils::StartsWith(szType, "HeaderV"))
+    if (m_iDepth == 0 && sType.StartsWith("HeaderV"))
     {
       m_bHasHeader = true;
     }
     if (m_bHasHeader)
     {
       ++m_iDepth;
-      xiiOpenDdlReader::OnBeginObject(szType, szName, bGlobalName);
+      xiiOpenDdlReader::OnBeginObject(sType, sName, bGlobalName);
       return;
     }
 
     //////////////////////////////////////////////////////////////////////////
     // Old header is stored in the object block.
     // not yet entered the "Objects" group
-    if (m_iDepth == 0 && xiiStringUtils::IsEqual(szType, "Objects"))
+    if (m_iDepth == 0 && sType == "Objects")
     {
       ++m_iDepth;
 
-      xiiOpenDdlReader::OnBeginObject(szType, szName, bGlobalName);
+      xiiOpenDdlReader::OnBeginObject(sType, sName, bGlobalName);
       return;
     }
 
     // not yet entered the "AssetInfo" group, but inside "Objects"
-    if (m_iDepth == 1 && xiiStringUtils::IsEqual(szType, "AssetInfo"))
+    if (m_iDepth == 1 && sType == "AssetInfo")
     {
       ++m_iDepth;
 
-      xiiOpenDdlReader::OnBeginObject(szType, szName, bGlobalName);
+      xiiOpenDdlReader::OnBeginObject(sType, sName, bGlobalName);
       return;
     }
 
@@ -388,14 +388,13 @@ public:
     if (m_iDepth > 1)
     {
       ++m_iDepth;
-      xiiOpenDdlReader::OnBeginObject(szType, szName, bGlobalName);
+      xiiOpenDdlReader::OnBeginObject(sType, sName, bGlobalName);
       return;
     }
 
     // ignore everything else
     SkipRestOfObject();
   }
-
 
   virtual void OnEndObject() override
   {

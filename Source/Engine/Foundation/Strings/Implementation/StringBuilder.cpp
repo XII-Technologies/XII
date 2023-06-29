@@ -1170,11 +1170,11 @@ bool xiiStringBuilder::TrimWordEnd(const char* szWord1, const char* szWord2 /*= 
 void xiiStringBuilder::Format(const xiiFormatString& string)
 {
   Clear();
-  const char* szText = string.GetText(*this);
+  xiiStringView sText = string.GetText(*this);
 
-  // this is for the case that GetText does not use the xiiStringBuilder as temp storage
-  if (szText != GetData())
-    *this = szText;
+  // This is for the case that GetText does not use the xiiStringBuilder as temp storage
+  if (sText.GetStartPointer() != GetData())
+    *this = sText;
 }
 
 void xiiStringBuilder::AppendFormat(const xiiFormatString& string)

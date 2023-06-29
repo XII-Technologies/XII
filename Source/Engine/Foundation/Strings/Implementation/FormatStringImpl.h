@@ -18,21 +18,21 @@ class xiiFormatStringImpl : public xiiFormatString
   static constexpr xiiUInt32 MaxNumParameters = 12;
 
 public:
-  xiiFormatStringImpl(const char* szFormat, ARGS&&... args) :
+  xiiFormatStringImpl(xiiStringView sFormat, ARGS&&... args) :
     m_Arguments(std::forward<ARGS>(args)...)
   {
-    m_szString = szFormat;
+    m_sString = sFormat;
   }
 
   /// \brief Generates the formatted text. Make sure to only call this function once and only when the formatted string is really needed.
   ///
-  /// Requires an xiiStringBuilder as storage, ie. writes the formatted text into it. Additionally it returns a const char* to that
+  /// Requires an xiiStringBuilder as storage, ie. writes the formatted text into it. Additionally it returns a xiiStringView to that
   /// string builder data for convenience.
-  virtual const char* GetText(xiiStringBuilder& ref_sStorage) const override
+  virtual xiiStringView GetText(xiiStringBuilder& ref_sStorage) const override
   {
-    if (xiiStringUtils::IsNullOrEmpty(m_szString))
+    if (m_sString.IsEmpty())
     {
-      return "";
+      return {};
     }
 
     xiiStringView param[MaxNumParameters];
@@ -41,6 +41,16 @@ public:
     ReplaceString<0>(tmp, param);
 
     return BuildFormattedText(ref_sStorage, param, MaxNumParameters);
+  }
+
+  virtual const char* GetTextCStr(xiiStringBuilder& out_sString) const override
+  {
+    xiiStringView param[MaxNumParameters];
+
+    char tmp[MaxNumParameters][TempStringLength];
+    ReplaceString<0>(tmp, param);
+
+    return BuildFormattedText(out_sString, param, MaxNumParameters).GetStartPointer();
   }
 
 private:

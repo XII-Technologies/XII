@@ -83,25 +83,25 @@ public:
 
   void Add(ParseResult pr) { m_Results.PushBack(pr); }
 
-  virtual bool OnVariable(const char* szVarName) override
+  virtual bool OnVariable(xiiStringView sVarName) override
   {
     XII_TEST_BOOL(!m_Results.IsEmpty());
     XII_TEST_BOOL(m_Results.PeekFront().m_Function == Variable);
-    XII_TEST_STRING(m_Results.PeekFront().m_szValue, szVarName);
+    XII_TEST_STRING(m_Results.PeekFront().m_szValue, sVarName);
 
     m_Results.PopFront();
 
-    m_bSkipObject = xiiStringUtils::IsEqual(szVarName, "skip_obj");
-    m_bSkipArray  = xiiStringUtils::IsEqual(szVarName, "skip_array");
+    m_bSkipObject = sVarName == "skip_obj";
+    m_bSkipArray  = sVarName == "skip_array";
 
-    return !xiiStringUtils::IsEqual(szVarName, "skip_var");
+    return sVarName != "skip_var";
   }
 
-  virtual void OnReadValue(const char* szValue) override
+  virtual void OnReadValue(xiiStringView sValue) override
   {
     XII_TEST_BOOL(!m_Results.IsEmpty());
     XII_TEST_BOOL(m_Results.PeekFront().m_Function == ValueString);
-    XII_TEST_STRING(m_Results.PeekFront().m_szValue, szValue);
+    XII_TEST_STRING(m_Results.PeekFront().m_szValue, sValue);
 
     m_Results.PopFront();
   }
@@ -172,14 +172,15 @@ public:
 
   xiiInt32 m_iExpectedParsingErrors;
 
-  virtual void OnParsingError(const char* szMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn) override
+  virtual void OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn) override
   {
     --m_iExpectedParsingErrors;
 
     if (m_iExpectedParsingErrors >= 0)
       return;
 
-    XII_TEST_FAILURE("JSON Parsing Error", "(%u, %u): %s", uiLine, uiColumn, szMessage);
+    xiiStringBuilder tmp;
+    XII_TEST_FAILURE("JSON Parsing Error", "(%u, %u): %s", uiLine, uiColumn, sMessage.GetData(tmp));
   }
 
   bool m_bSkipObject;

@@ -73,7 +73,7 @@ void xiiDuktapeHelper::VerifyExpectedStackChange(xiiInt32 iExpectedStackChange, 
 void xiiDuktapeHelper::Error(const xiiFormatString& text)
 {
   xiiStringBuilder tmp;
-  duk_error(m_pContext, DUK_ERR_ERROR, text.GetText(tmp));
+  duk_error(m_pContext, DUK_ERR_ERROR, text.GetTextCStr(tmp));
 }
 
 void xiiDuktapeHelper::LogStackTrace(xiiInt32 iErrorObjIdx)

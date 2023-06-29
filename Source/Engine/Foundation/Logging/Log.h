@@ -186,16 +186,16 @@ public:
 
   /// \brief An error that needs to be fixed as soon as possible.
   template <typename... ARGS>
-  static void Error(const char* szFormat, ARGS&&... args)
+  static void Error(xiiStringView sFormat, ARGS&&... args)
   {
-    Error(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    Error(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Overload of Error() to output messages to a specific log.
   template <typename... ARGS>
-  static void Error(xiiLogInterface* pInterface, const char* szFormat, ARGS&&... args)
+  static void Error(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
-    Error(pInterface, xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    Error(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Not an error, but definitely a big problem, that should be looked into very soon.
@@ -203,16 +203,16 @@ public:
 
   /// \brief Not an error, but definitely a big problem, that should be looked into very soon.
   template <typename... ARGS>
-  static void SeriousWarning(const char* szFormat, ARGS&&... args)
+  static void SeriousWarning(xiiStringView sFormat, ARGS&&... args)
   {
-    SeriousWarning(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    SeriousWarning(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Overload of SeriousWarning() to output messages to a specific log.
   template <typename... ARGS>
-  static void SeriousWarning(xiiLogInterface* pInterface, const char* szFormat, ARGS&&... args)
+  static void SeriousWarning(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
-    SeriousWarning(pInterface, xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    SeriousWarning(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief A potential problem or a performance warning. Might be possible to ignore it.
@@ -220,16 +220,16 @@ public:
 
   /// \brief A potential problem or a performance warning. Might be possible to ignore it.
   template <typename... ARGS>
-  static void Warning(const char* szFormat, ARGS&&... args)
+  static void Warning(xiiStringView sFormat, ARGS&&... args)
   {
-    Warning(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    Warning(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Overload of Warning() to output messages to a specific log.
   template <typename... ARGS>
-  static void Warning(xiiLogInterface* pInterface, const char* szFormat, ARGS&&... args)
+  static void Warning(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
-    Warning(pInterface, xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    Warning(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Status information that something was completed successfully.
@@ -237,16 +237,16 @@ public:
 
   /// \brief Status information that something was completed successfully.
   template <typename... ARGS>
-  static void Success(const char* szFormat, ARGS&&... args)
+  static void Success(xiiStringView sFormat, ARGS&&... args)
   {
-    Success(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    Success(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Overload of Success() to output messages to a specific log.
   template <typename... ARGS>
-  static void Success(xiiLogInterface* pInterface, const char* szFormat, ARGS&&... args)
+  static void Success(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
-    Success(pInterface, xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    Success(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Status information that is important.
@@ -254,16 +254,16 @@ public:
 
   /// \brief Status information that is important.
   template <typename... ARGS>
-  static void Info(const char* szFormat, ARGS&&... args)
+  static void Info(xiiStringView sFormat, ARGS&&... args)
   {
-    Info(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    Info(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Overload of Info() to output messages to a specific log.
   template <typename... ARGS>
-  static void Info(xiiLogInterface* pInterface, const char* szFormat, ARGS&&... args)
+  static void Info(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
-    Info(pInterface, xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    Info(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Status information that is nice to have during development.
@@ -275,16 +275,16 @@ public:
   ///
   /// This function is compiled out in non-development builds.
   template <typename... ARGS>
-  static void Dev(const char* szFormat, ARGS&&... args)
+  static void Dev(xiiStringView sFormat, ARGS&&... args)
   {
-    Dev(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    Dev(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Overload of Dev() to output messages to a specific log.
   template <typename... ARGS>
-  static void Dev(xiiLogInterface* pInterface, const char* szFormat, ARGS&&... args)
+  static void Dev(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
-    Dev(pInterface, xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    Dev(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Status information during debugging. Very verbose. Usually only temporarily added to the code.
@@ -296,16 +296,16 @@ public:
   ///
   /// This function is compiled out in non-debug builds.
   template <typename... ARGS>
-  static void Debug(const char* szFormat, ARGS&&... args)
+  static void Debug(xiiStringView sFormat, ARGS&&... args)
   {
-    Debug(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    Debug(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Overload of Debug() to output messages to a specific log.
   template <typename... ARGS>
-  static void Debug(xiiLogInterface* pInterface, const char* szFormat, ARGS&&... args)
+  static void Debug(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
-    Debug(pInterface, xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    Debug(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Instructs log writers to flush their caches, to ensure all log output (even non-critical information) is written.
@@ -328,7 +328,7 @@ public:
 
   /// \brief Usually called internally by the other log functions, but can be called directly, if the message type is already known.
   /// pInterface must be != nullptr.
-  static void BroadcastLoggingEvent(xiiLogInterface* pInterface, xiiLogMsgType::Enum type, const char* szString);
+  static void BroadcastLoggingEvent(xiiLogInterface* pInterface, xiiLogMsgType::Enum type, xiiStringView sString);
 
   /// \brief Calls low-level OS functionality to print a string to the typical outputs, e.g. printf and OutputDebugString.
   ///

@@ -96,7 +96,6 @@ bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const c
 
 #  else
 
-
 #    if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   MessageBoxA(nullptr, szTemp, "Assertion", MB_ICONERROR);
 #    endif
@@ -134,7 +133,7 @@ bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFu
 bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const class xiiFormatString& msg)
 {
   xiiStringBuilder tmp;
-  return xiiFailedCheck(szSourceFile, uiLine, szFunction, szExpression, msg.GetText(tmp));
+  return xiiFailedCheck(szSourceFile, uiLine, szFunction, szExpression, msg.GetTextCStr(tmp));
 }
 
 

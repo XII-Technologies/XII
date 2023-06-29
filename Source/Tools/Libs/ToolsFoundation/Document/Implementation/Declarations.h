@@ -63,7 +63,7 @@ struct xiiDocumentEvent
   Type               m_Type;
   const xiiDocument* m_pDocument;
 
-  const char* m_szStatusMsg;
+  xiiStringView m_sStatusMsg;
 };
 
 class XII_TOOLSFOUNDATION_DLL xiiDocumentInfo : public xiiReflectedClass

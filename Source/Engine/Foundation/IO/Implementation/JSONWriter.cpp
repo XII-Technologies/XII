@@ -5,303 +5,303 @@
 xiiJSONWriter::xiiJSONWriter()  = default;
 xiiJSONWriter::~xiiJSONWriter() = default;
 
-void xiiJSONWriter::AddVariableBool(const char* szName, bool value)
+void xiiJSONWriter::AddVariableBool(xiiStringView sName, bool value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteBool(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableInt32(const char* szName, xiiInt32 value)
+void xiiJSONWriter::AddVariableInt32(xiiStringView sName, xiiInt32 value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteInt32(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableUInt32(const char* szName, xiiUInt32 value)
+void xiiJSONWriter::AddVariableUInt32(xiiStringView sName, xiiUInt32 value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteUInt32(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableInt64(const char* szName, xiiInt64 value)
+void xiiJSONWriter::AddVariableInt64(xiiStringView sName, xiiInt64 value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteInt64(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableUInt64(const char* szName, xiiUInt64 value)
+void xiiJSONWriter::AddVariableUInt64(xiiStringView sName, xiiUInt64 value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteUInt64(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableFloat(const char* szName, float value)
+void xiiJSONWriter::AddVariableFloat(xiiStringView sName, float value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteFloat(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableDouble(const char* szName, double value)
+void xiiJSONWriter::AddVariableDouble(xiiStringView sName, double value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteDouble(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableString(const char* szName, xiiStringView value)
+void xiiJSONWriter::AddVariableString(xiiStringView sName, xiiStringView value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteString(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableNULL(const char* szName)
+void xiiJSONWriter::AddVariableNULL(xiiStringView sName)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteNULL();
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableTime(const char* szName, xiiTime value)
+void xiiJSONWriter::AddVariableTime(xiiStringView sName, xiiTime value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteTime(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableUuid(const char* szName, xiiUuid value)
+void xiiJSONWriter::AddVariableUuid(xiiStringView sName, xiiUuid value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteUuid(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableAngle(const char* szName, xiiAngle value)
+void xiiJSONWriter::AddVariableAngle(xiiStringView sName, xiiAngle value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteAngle(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableAngle(const char* szName, xiiAngled value)
+void xiiJSONWriter::AddVariableAngle(xiiStringView sName, xiiAngled value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteAngle(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableColor(const char* szName, const xiiColor& value)
+void xiiJSONWriter::AddVariableColor(xiiStringView sName, const xiiColor& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteColor(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableColorGamma(const char* szName, const xiiColorGammaUB& value)
+void xiiJSONWriter::AddVariableColorGamma(xiiStringView sName, const xiiColorGammaUB& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteColorGamma(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec2(const char* szName, const xiiVec2& value)
+void xiiJSONWriter::AddVariableVec2(xiiStringView sName, const xiiVec2& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec2(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec2d(const char* szName, const xiiVec2d& value)
+void xiiJSONWriter::AddVariableVec2d(xiiStringView sName, const xiiVec2d& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec2d(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec3(const char* szName, const xiiVec3& value)
+void xiiJSONWriter::AddVariableVec3(xiiStringView sName, const xiiVec3& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec3(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec3d(const char* szName, const xiiVec3d& value)
+void xiiJSONWriter::AddVariableVec3d(xiiStringView sName, const xiiVec3d& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec3d(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec4(const char* szName, const xiiVec4& value)
+void xiiJSONWriter::AddVariableVec4(xiiStringView sName, const xiiVec4& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec4(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec4d(const char* szName, const xiiVec4d& value)
+void xiiJSONWriter::AddVariableVec4d(xiiStringView sName, const xiiVec4d& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec4d(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec2I32(const char* szName, const xiiVec2I32& value)
+void xiiJSONWriter::AddVariableVec2I32(xiiStringView sName, const xiiVec2I32& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec2I32(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec2I64(const char* szName, const xiiVec2I64& value)
+void xiiJSONWriter::AddVariableVec2I64(xiiStringView sName, const xiiVec2I64& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec2I64(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec3I32(const char* szName, const xiiVec3I32& value)
+void xiiJSONWriter::AddVariableVec3I32(xiiStringView sName, const xiiVec3I32& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec3I32(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec3I64(const char* szName, const xiiVec3I64& value)
+void xiiJSONWriter::AddVariableVec3I64(xiiStringView sName, const xiiVec3I64& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec3I64(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec4I32(const char* szName, const xiiVec4I32& value)
+void xiiJSONWriter::AddVariableVec4I32(xiiStringView sName, const xiiVec4I32& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec4I32(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec4I64(const char* szName, const xiiVec4I64& value)
+void xiiJSONWriter::AddVariableVec4I64(xiiStringView sName, const xiiVec4I64& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec4I64(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec2U32(const char* szName, const xiiVec2U32& value)
+void xiiJSONWriter::AddVariableVec2U32(xiiStringView sName, const xiiVec2U32& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec2U32(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec2U64(const char* szName, const xiiVec2U64& value)
+void xiiJSONWriter::AddVariableVec2U64(xiiStringView sName, const xiiVec2U64& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec2U64(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec3U32(const char* szName, const xiiVec3U32& value)
+void xiiJSONWriter::AddVariableVec3U32(xiiStringView sName, const xiiVec3U32& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec3U32(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec3U64(const char* szName, const xiiVec3U64& value)
+void xiiJSONWriter::AddVariableVec3U64(xiiStringView sName, const xiiVec3U64& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec3U64(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec4U32(const char* szName, const xiiVec4U32& value)
+void xiiJSONWriter::AddVariableVec4U32(xiiStringView sName, const xiiVec4U32& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec4U32(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVec4U64(const char* szName, const xiiVec4U64& value)
+void xiiJSONWriter::AddVariableVec4U64(xiiStringView sName, const xiiVec4U64& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVec4U64(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableQuat(const char* szName, const xiiQuat& value)
+void xiiJSONWriter::AddVariableQuat(xiiStringView sName, const xiiQuat& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteQuat(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableQuatd(const char* szName, const xiiQuatd& value)
+void xiiJSONWriter::AddVariableQuatd(xiiStringView sName, const xiiQuatd& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteQuatd(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableMat3(const char* szName, const xiiMat3& value)
+void xiiJSONWriter::AddVariableMat3(xiiStringView sName, const xiiMat3& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteMat3(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableMat3d(const char* szName, const xiiMat3d& value)
+void xiiJSONWriter::AddVariableMat3d(xiiStringView sName, const xiiMat3d& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteMat3d(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableMat4(const char* szName, const xiiMat4& value)
+void xiiJSONWriter::AddVariableMat4(xiiStringView sName, const xiiMat4& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteMat4(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableMat4d(const char* szName, const xiiMat4d& value)
+void xiiJSONWriter::AddVariableMat4d(xiiStringView sName, const xiiMat4d& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteMat4d(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableTransform(const char* szName, const xiiTransform& value)
+void xiiJSONWriter::AddVariableTransform(xiiStringView sName, const xiiTransform& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteTransform(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableTransformd(const char* szName, const xiiTransformd& value)
+void xiiJSONWriter::AddVariableTransformd(xiiStringView sName, const xiiTransformd& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteTransformd(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableDataBuffer(const char* szName, const xiiDataBuffer& value)
+void xiiJSONWriter::AddVariableDataBuffer(xiiStringView sName, const xiiDataBuffer& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteDataBuffer(value);
   EndVariable();
 }
 
-void xiiJSONWriter::AddVariableVariant(const char* szName, const xiiVariant& value)
+void xiiJSONWriter::AddVariableVariant(xiiStringView sName, const xiiVariant& value)
 {
-  BeginVariable(szName);
+  BeginVariable(sName);
   WriteVariant(value);
   EndVariable();
 }

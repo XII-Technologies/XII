@@ -9,35 +9,39 @@
 
 xiiFormatString::xiiFormatString(const xiiStringBuilder& s)
 {
-  m_szString = s.GetData();
+  m_sString = s.GetData();
 }
 
-const char* xiiFormatString::BuildFormattedText(xiiStringBuilder& ref_sStorage, xiiStringView* pArgs, xiiUInt32 uiNumArgs) const
+const char* xiiFormatString::GetTextCStr(xiiStringBuilder& out_sString) const
 {
-  const char* szString = m_szString;
+  out_sString = m_sString;
+  return out_sString.GetData();
+}
+
+xiiStringView xiiFormatString::BuildFormattedText(xiiStringBuilder& ref_sStorage, xiiStringView* pArgs, xiiUInt32 uiNumArgs) const
+{
+  xiiStringView sString = m_sString;
 
   xiiUInt32 uiLastParam = -1;
 
   ref_sStorage.Clear();
-  while (*szString != '\0')
+  while (!sString.IsEmpty())
   {
-    if (*szString == '%')
+    if (sString.StartsWith("%"))
     {
-      if (*(szString + 1) == '%')
+      if (sString.TrimWordStart("%%"))
       {
         ref_sStorage.Append("%"_xiisv);
       }
       else
       {
         XII_ASSERT_DEBUG(false, "Single percentage signs are not allowed in xiiFormatString. Did you forgot to migrate a printf-style "
-                                "string? Use double percentage signs for the actual character.");
+                               "string? Use double percentage signs for the actual character.");
       }
-
-      szString += 2;
     }
-    else if (*szString == '{' && *(szString + 1) >= '0' && *(szString + 1) <= '9' && *(szString + 2) == '}')
+    else if (sString.GetElementCount() >= 3 && *sString.GetStartPointer() == '{' && *(sString.GetStartPointer() + 1) >= '0' && *(sString.GetStartPointer() + 1) <= '9' && *(sString.GetStartPointer() + 2) == '}')
     {
-      uiLastParam = *(szString + 1) - '0';
+      uiLastParam = *(sString.GetStartPointer() + 1) - '0';
       XII_ASSERT_DEV(uiLastParam < uiNumArgs, "Too many placeholders in format string");
 
       if (uiLastParam < uiNumArgs)
@@ -45,9 +49,11 @@ const char* xiiFormatString::BuildFormattedText(xiiStringBuilder& ref_sStorage, 
         ref_sStorage.Append(pArgs[uiLastParam]);
       }
 
-      szString += 3;
+      sString.ChopAwayFirstCharacterAscii();
+      sString.ChopAwayFirstCharacterAscii();
+      sString.ChopAwayFirstCharacterAscii();
     }
-    else if (*szString == '{' && *(szString + 1) == '}')
+    else if (sString.TrimWordStart("{}"))
     {
       ++uiLastParam;
       XII_ASSERT_DEV(uiLastParam < uiNumArgs, "Too many placeholders in format string");
@@ -56,17 +62,16 @@ const char* xiiFormatString::BuildFormattedText(xiiStringBuilder& ref_sStorage, 
       {
         ref_sStorage.Append(pArgs[uiLastParam]);
       }
-
-      szString += 2;
     }
     else
     {
-      const xiiUInt32 character = xiiUnicodeUtils::DecodeUtf8ToUtf32(szString);
+      const xiiUInt32 character = sString.GetCharacter();
       ref_sStorage.Append(character);
+      sString.ChopAwayFirstCharacterUtf8();
     }
   }
 
-  return ref_sStorage.GetData();
+  return ref_sStorage.GetView();
 }
 
 //////////////////////////////////////////////////////////////////////////

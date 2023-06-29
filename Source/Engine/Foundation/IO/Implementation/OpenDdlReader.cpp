@@ -28,8 +28,8 @@ xiiResult xiiOpenDdlReader::ParseDocument(xiiStreamReader& ref_stream, xiiUInt32
   pElement->m_pLastChild            = nullptr;
   pElement->m_PrimitiveType         = xiiOpenDdlPrimitiveType::Custom;
   pElement->m_pSiblingElement       = nullptr;
-  pElement->m_szCustomType          = CopyString("root");
-  pElement->m_szName                = nullptr;
+  pElement->m_sCustomType           = CopyString("root");
+  pElement->m_sName                 = nullptr;
   pElement->m_uiNumChildElements    = 0;
 
   m_ObjectStack.PushBack(pElement);
@@ -45,30 +45,30 @@ const xiiOpenDdlReaderElement* xiiOpenDdlReader::GetRootElement() const
 }
 
 
-const xiiOpenDdlReaderElement* xiiOpenDdlReader::FindElement(const char* szGlobalName) const
+const xiiOpenDdlReaderElement* xiiOpenDdlReader::FindElement(xiiStringView sGlobalName) const
 {
-  return m_GlobalNames.GetValueOrDefault(szGlobalName, nullptr);
+  return m_GlobalNames.GetValueOrDefault(sGlobalName, nullptr);
 }
 
-const char* xiiOpenDdlReader::CopyString(const xiiStringView& string)
+xiiStringView xiiOpenDdlReader::CopyString(const xiiStringView& string)
 {
   if (string.IsEmpty())
-    return nullptr;
+    return {};
 
   // no idea how to make this more efficient without running into lots of other problems
   m_Strings.PushBack(string);
-  return m_Strings.PeekBack().GetData();
+  return m_Strings.PeekBack();
 }
 
-xiiOpenDdlReaderElement* xiiOpenDdlReader::CreateElement(xiiOpenDdlPrimitiveType type, const char* szType, const char* szName, bool bGlobalName)
+xiiOpenDdlReaderElement* xiiOpenDdlReader::CreateElement(xiiOpenDdlPrimitiveType type, xiiStringView sType, xiiStringView sName, bool bGlobalName)
 {
   xiiOpenDdlReaderElement* pElement = &m_Elements.ExpandAndGetRef();
   pElement->m_pFirstChild           = nullptr;
   pElement->m_pLastChild            = nullptr;
   pElement->m_PrimitiveType         = type;
   pElement->m_pSiblingElement       = nullptr;
-  pElement->m_szCustomType          = szType;
-  pElement->m_szName                = CopyString(szName);
+  pElement->m_sCustomType           = sType;
+  pElement->m_sName                 = CopyString(sName);
   pElement->m_uiNumChildElements    = 0;
 
   if (bGlobalName)
@@ -76,9 +76,9 @@ xiiOpenDdlReaderElement* xiiOpenDdlReader::CreateElement(xiiOpenDdlPrimitiveType
     pElement->m_uiNumChildElements = XII_BIT(31);
   }
 
-  if (bGlobalName && !xiiStringUtils::IsNullOrEmpty(szName))
+  if (bGlobalName && !sName.IsEmpty())
   {
-    m_GlobalNames[szName] = pElement;
+    m_GlobalNames[sName] = pElement;
   }
 
   xiiOpenDdlReaderElement* pParent = m_ObjectStack.PeekBack();
@@ -101,9 +101,9 @@ xiiOpenDdlReaderElement* xiiOpenDdlReader::CreateElement(xiiOpenDdlPrimitiveType
 }
 
 
-void xiiOpenDdlReader::OnBeginObject(const char* szType, const char* szName, bool bGlobalName)
+void xiiOpenDdlReader::OnBeginObject(xiiStringView sType, xiiStringView sName, bool bGlobalName)
 {
-  CreateElement(xiiOpenDdlPrimitiveType::Custom, CopyString(szType), szName, bGlobalName);
+  CreateElement(xiiOpenDdlPrimitiveType::Custom, CopyString(sType), sName, bGlobalName);
 }
 
 void xiiOpenDdlReader::OnEndObject()
@@ -111,9 +111,9 @@ void xiiOpenDdlReader::OnEndObject()
   m_ObjectStack.PopBack();
 }
 
-void xiiOpenDdlReader::OnBeginPrimitiveList(xiiOpenDdlPrimitiveType type, const char* szName, bool bGlobalName)
+void xiiOpenDdlReader::OnBeginPrimitiveList(xiiOpenDdlPrimitiveType type, xiiStringView sName, bool bGlobalName)
 {
-  CreateElement(type, nullptr, szName, bGlobalName);
+  CreateElement(type, nullptr, sName, bGlobalName);
 
   m_TempCache.Clear();
 }
@@ -230,15 +230,14 @@ void xiiOpenDdlReader::OnPrimitiveString(xiiUInt32 count, const xiiStringView* p
 
   for (xiiUInt32 i = 0; i < count; ++i)
   {
-    const char* szStart = CopyString(pData[i]);
-    pTarget[i]          = xiiStringView(szStart, szStart + pData[i].GetElementCount());
+    pTarget[i] = CopyString(pData[i]);
   }
 
   m_ObjectStack.PeekBack()->m_uiNumChildElements += count;
 }
 
 
-void xiiOpenDdlReader::OnParsingError(const char* szMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn)
+void xiiOpenDdlReader::OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn)
 {
   if (bFatal)
   {
@@ -319,7 +318,7 @@ bool xiiOpenDdlReaderElement::HasPrimitives(xiiOpenDdlPrimitiveType type, xiiUIn
   return m_uiNumChildElements >= uiMinNumberOfPrimitives;
 }
 
-const xiiOpenDdlReaderElement* xiiOpenDdlReaderElement::FindChild(const char* szName) const
+const xiiOpenDdlReaderElement* xiiOpenDdlReaderElement::FindChild(xiiStringView sName) const
 {
   XII_ASSERT_DEBUG(m_PrimitiveType == xiiOpenDdlPrimitiveType::Custom, "Cannot search for a child object in a primitives list");
 
@@ -327,7 +326,7 @@ const xiiOpenDdlReaderElement* xiiOpenDdlReaderElement::FindChild(const char* sz
 
   while (pChild)
   {
-    if (xiiStringUtils::IsEqual(pChild->GetName(), szName))
+    if (pChild->GetName() == sName)
     {
       return pChild;
     }
@@ -338,7 +337,7 @@ const xiiOpenDdlReaderElement* xiiOpenDdlReaderElement::FindChild(const char* sz
   return nullptr;
 }
 
-const xiiOpenDdlReaderElement* xiiOpenDdlReaderElement::FindChildOfType(xiiOpenDdlPrimitiveType type, const char* szName, xiiUInt32 uiMinNumberOfPrimitives /* = 1*/) const
+const xiiOpenDdlReaderElement* xiiOpenDdlReaderElement::FindChildOfType(xiiOpenDdlPrimitiveType type, xiiStringView sName, xiiUInt32 uiMinNumberOfPrimitives /* = 1*/) const
 {
   /// \test This is new
 
@@ -348,7 +347,7 @@ const xiiOpenDdlReaderElement* xiiOpenDdlReaderElement::FindChildOfType(xiiOpenD
 
   while (pChild)
   {
-    if (pChild->GetPrimitivesType() == type && xiiStringUtils::IsEqual(pChild->GetName(), szName))
+    if (pChild->GetPrimitivesType() == type && pChild->GetName() == sName)
     {
       if (type == xiiOpenDdlPrimitiveType::Custom || pChild->GetNumPrimitives() >= uiMinNumberOfPrimitives)
         return pChild;
@@ -360,13 +359,13 @@ const xiiOpenDdlReaderElement* xiiOpenDdlReaderElement::FindChildOfType(xiiOpenD
   return nullptr;
 }
 
-const xiiOpenDdlReaderElement* xiiOpenDdlReaderElement::FindChildOfType(const char* szType, const char* szName /*= nullptr*/) const
+const xiiOpenDdlReaderElement* xiiOpenDdlReaderElement::FindChildOfType(xiiStringView sType, xiiStringView sName /*= {}*/) const
 {
   const xiiOpenDdlReaderElement* pChild = static_cast<const xiiOpenDdlReaderElement*>(m_pFirstChild);
 
   while (pChild)
   {
-    if (pChild->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Custom && xiiStringUtils::IsEqual(pChild->GetCustomType(), szType) && (szName == nullptr || xiiStringUtils::IsEqual(pChild->GetName(), szName)))
+    if (pChild->GetPrimitivesType() == xiiOpenDdlPrimitiveType::Custom && pChild->GetCustomType() == sType && (sName.IsEmpty() || pChild->GetName() == sName))
     {
       return pChild;
     }
@@ -376,6 +375,5 @@ const xiiOpenDdlReaderElement* xiiOpenDdlReaderElement::FindChildOfType(const ch
 
   return nullptr;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_OpenDdlReader);

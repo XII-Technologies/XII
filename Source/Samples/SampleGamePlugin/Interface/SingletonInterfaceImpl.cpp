@@ -17,7 +17,5 @@ PrintImplementation::PrintImplementation() :
 void PrintImplementation::Print(const xiiFormatString& text)
 {
   xiiStringBuilder tmp;
-  const char*      szFormattedText = text.GetText(tmp);
-
-  xiiLog::Info(szFormattedText);
+  xiiLog::Info(text.GetText(tmp));
 }

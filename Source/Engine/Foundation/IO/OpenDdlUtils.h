@@ -229,221 +229,141 @@ namespace xiiOpenDdlUtils
   //////////////////////////////////////////////////////////////////////////
 
   /// \brief Writes an xiiColor to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreColor(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiColor&   value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreColor(xiiOpenDdlWriter& ref_writer, const xiiColor& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiColorGammaUB to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreColorGamma(
-    xiiOpenDdlWriter&      ref_writer,
-    const xiiColorGammaUB& value,
-    const char*            szName      = nullptr,
-    bool                   bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreColorGamma(xiiOpenDdlWriter& ref_writer, const xiiColorGammaUB& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiTime to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreTime(xiiOpenDdlWriter& ref_writer, const xiiTime& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreTime(xiiOpenDdlWriter& ref_writer, const xiiTime& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec2 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec2(xiiOpenDdlWriter& ref_writer, const xiiVec2& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec2(xiiOpenDdlWriter& ref_writer, const xiiVec2& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec2d to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec2d(xiiOpenDdlWriter& ref_writer, const xiiVec2d& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec2d(xiiOpenDdlWriter& ref_writer, const xiiVec2d& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec3 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec3(xiiOpenDdlWriter& ref_writer, const xiiVec3& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec3(xiiOpenDdlWriter& ref_writer, const xiiVec3& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec3d to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec3d(xiiOpenDdlWriter& ref_writer, const xiiVec3d& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec3d(xiiOpenDdlWriter& ref_writer, const xiiVec3d& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec4 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec4(xiiOpenDdlWriter& ref_writer, const xiiVec4& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec4(xiiOpenDdlWriter& ref_writer, const xiiVec4& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec4d to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec4d(xiiOpenDdlWriter& ref_writer, const xiiVec4d& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec4d(xiiOpenDdlWriter& ref_writer, const xiiVec4d& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec2I32 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec2I(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiVec2I32& value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec2I(xiiOpenDdlWriter& ref_writer, const xiiVec2I32& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec2I64 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec2I64(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiVec2I64& value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec2I64(xiiOpenDdlWriter& ref_writer, const xiiVec2I64& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec3I32 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec3I(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiVec3I32& value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec3I(xiiOpenDdlWriter& ref_writer, const xiiVec3I32& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec3I64 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec3I64(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiVec3I64& value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec3I64(xiiOpenDdlWriter& ref_writer, const xiiVec3I64& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec4I32 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec4I(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiVec4I32& value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec4I(xiiOpenDdlWriter& ref_writer, const xiiVec4I32& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec4I64 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec4I64(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiVec4I64& value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec4I64(xiiOpenDdlWriter& ref_writer, const xiiVec4I64& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec2U32 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec2U(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiVec2U32& value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec2U(xiiOpenDdlWriter& ref_writer, const xiiVec2U32& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec2U64 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec2U64(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiVec2U64& value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec2U64(xiiOpenDdlWriter& ref_writer, const xiiVec2U64& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec3U32 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec3U(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiVec3U32& value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec3U(xiiOpenDdlWriter& ref_writer, const xiiVec3U32& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec3U64 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec3U64(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiVec3U64& value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec3U64(xiiOpenDdlWriter& ref_writer, const xiiVec3U64& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec4U32 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec4U(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiVec4U32& value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec4U(xiiOpenDdlWriter& ref_writer, const xiiVec4U32& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVec4U64 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVec4U64(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiVec4U64& value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVec4U64(xiiOpenDdlWriter& ref_writer, const xiiVec4U64& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiMat3 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreMat3(xiiOpenDdlWriter& ref_writer, const xiiMat3& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreMat3(xiiOpenDdlWriter& ref_writer, const xiiMat3& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiMat3d to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreMat3d(xiiOpenDdlWriter& ref_writer, const xiiMat3d& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreMat3d(xiiOpenDdlWriter& ref_writer, const xiiMat3d& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiMat4 to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreMat4(xiiOpenDdlWriter& ref_writer, const xiiMat4& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreMat4(xiiOpenDdlWriter& ref_writer, const xiiMat4& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiMat4d to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreMat4d(xiiOpenDdlWriter& ref_writer, const xiiMat4d& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreMat4d(xiiOpenDdlWriter& ref_writer, const xiiMat4d& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiTransform to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreTransform(
-    xiiOpenDdlWriter&   ref_writer,
-    const xiiTransform& value,
-    const char*         szName      = nullptr,
-    bool                bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreTransform(xiiOpenDdlWriter& ref_writer, const xiiTransform& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiTransformd to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreTransformd(
-    xiiOpenDdlWriter&    ref_writer,
-    const xiiTransformd& value,
-    const char*          szName      = nullptr,
-    bool                 bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreTransformd(xiiOpenDdlWriter& ref_writer, const xiiTransformd& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiQuat to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreQuat(xiiOpenDdlWriter& ref_writer, const xiiQuat& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreQuat(xiiOpenDdlWriter& ref_writer, const xiiQuat& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiQuatd to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreQuatd(xiiOpenDdlWriter& ref_writer, const xiiQuatd& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreQuatd(xiiOpenDdlWriter& ref_writer, const xiiQuatd& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiUuid to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreUuid(xiiOpenDdlWriter& ref_writer, const xiiUuid& value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreUuid(xiiOpenDdlWriter& ref_writer, const xiiUuid& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiAngle to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreAngle(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiAngle&   value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreAngle(xiiOpenDdlWriter& ref_writer, const xiiAngle& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiAngled to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreAngle(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiAngled&  value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreAngle(xiiOpenDdlWriter& ref_writer, const xiiAngled& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes an xiiVariant to DDL such that the type can be reconstructed.
-  XII_FOUNDATION_DLL void StoreVariant(
-    xiiOpenDdlWriter& ref_writer,
-    const xiiVariant& value,
-    const char*       szName      = nullptr,
-    bool              bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreVariant(xiiOpenDdlWriter& ref_writer, const xiiVariant& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a primitives list with a single string and an optional name.
-  XII_FOUNDATION_DLL void StoreString(
-    xiiOpenDdlWriter&    ref_writer,
-    const xiiStringView& value,
-    const char*          szName      = nullptr,
-    bool                 bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreString(xiiOpenDdlWriter& ref_writer, const xiiStringView& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a primitives list with a single value and an optional name.
-  XII_FOUNDATION_DLL void StoreBool(xiiOpenDdlWriter& ref_writer, bool value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreBool(xiiOpenDdlWriter& ref_writer, bool value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a primitives list with a single value and an optional name.
-  XII_FOUNDATION_DLL void StoreFloat(xiiOpenDdlWriter& ref_writer, float value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreFloat(xiiOpenDdlWriter& ref_writer, float value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a primitives list with a single value and an optional name.
-  XII_FOUNDATION_DLL void StoreDouble(xiiOpenDdlWriter& ref_writer, double value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreDouble(xiiOpenDdlWriter& ref_writer, double value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a primitives list with a single value and an optional name.
-  XII_FOUNDATION_DLL void StoreInt8(xiiOpenDdlWriter& ref_writer, xiiInt8 value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreInt8(xiiOpenDdlWriter& ref_writer, xiiInt8 value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a primitives list with a single value and an optional name.
-  XII_FOUNDATION_DLL void StoreInt16(xiiOpenDdlWriter& ref_writer, xiiInt16 value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreInt16(xiiOpenDdlWriter& ref_writer, xiiInt16 value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a primitives list with a single value and an optional name.
-  XII_FOUNDATION_DLL void StoreInt32(xiiOpenDdlWriter& ref_writer, xiiInt32 value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreInt32(xiiOpenDdlWriter& ref_writer, xiiInt32 value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a primitives list with a single value and an optional name.
-  XII_FOUNDATION_DLL void StoreInt64(xiiOpenDdlWriter& ref_writer, xiiInt64 value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreInt64(xiiOpenDdlWriter& ref_writer, xiiInt64 value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a primitives list with a single value and an optional name.
-  XII_FOUNDATION_DLL void StoreUInt8(xiiOpenDdlWriter& ref_writer, xiiUInt8 value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreUInt8(xiiOpenDdlWriter& ref_writer, xiiUInt8 value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a primitives list with a single value and an optional name.
-  XII_FOUNDATION_DLL void StoreUInt16(xiiOpenDdlWriter& ref_writer, xiiUInt16 value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreUInt16(xiiOpenDdlWriter& ref_writer, xiiUInt16 value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a primitives list with a single value and an optional name.
-  XII_FOUNDATION_DLL void StoreUInt32(xiiOpenDdlWriter& ref_writer, xiiUInt32 value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreUInt32(xiiOpenDdlWriter& ref_writer, xiiUInt32 value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a primitives list with a single value and an optional name.
-  XII_FOUNDATION_DLL void StoreUInt64(xiiOpenDdlWriter& ref_writer, xiiUInt64 value, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  XII_FOUNDATION_DLL void StoreUInt64(xiiOpenDdlWriter& ref_writer, xiiUInt64 value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a primitives list with a single value and an optional name.
-  XII_FOUNDATION_DLL void StoreInvalid(xiiOpenDdlWriter& ref_writer, const char* szName = nullptr, bool bGlobalName = false);
+  XII_FOUNDATION_DLL void StoreInvalid(xiiOpenDdlWriter& ref_writer, xiiStringView sName = {}, bool bGlobalName = false);
 
 } // namespace xiiOpenDdlUtils

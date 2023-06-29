@@ -181,7 +181,7 @@ void xiiLog::WriteBlockHeader(xiiLogInterface* pInterface, xiiLogBlock* pBlock)
   pInterface->HandleLogMessage(le);
 }
 
-void xiiLog::BroadcastLoggingEvent(xiiLogInterface* pInterface, xiiLogMsgType::Enum type, const char* szString)
+void xiiLog::BroadcastLoggingEvent(xiiLogInterface* pInterface, xiiLogMsgType::Enum type, xiiStringView sString)
 {
   xiiLogBlock* pTopBlock     = pInterface->m_pCurrentBlock;
   xiiUInt8     uiIndentation = 0;
@@ -195,9 +195,9 @@ void xiiLog::BroadcastLoggingEvent(xiiLogInterface* pInterface, xiiLogMsgType::E
 
   char szTag[32] = "";
 
-  if (xiiStringUtils::StartsWith(szString, "["))
+  if (sString.StartsWith("["))
   {
-    const char* szAfterTag = szString;
+    const char* szAfterTag = sString.GetStartPointer();
 
     ++szAfterTag;
 
@@ -214,7 +214,7 @@ void xiiLog::BroadcastLoggingEvent(xiiLogInterface* pInterface, xiiLogMsgType::E
     if (*szAfterTag == ']')
     {
       szTag[iPos] = '\0';
-      szString    = szAfterTag + 1;
+      sString.SetStartPosition(szAfterTag + 1);
     }
     else
     {
@@ -224,7 +224,7 @@ void xiiLog::BroadcastLoggingEvent(xiiLogInterface* pInterface, xiiLogMsgType::E
 
   xiiLoggingEventData le;
   le.m_EventType     = type;
-  le.m_sText         = szString;
+  le.m_sText         = sString;
   le.m_uiIndentation = uiIndentation;
   le.m_sTag          = szTag;
 

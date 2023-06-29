@@ -100,14 +100,14 @@ public:
   XII_ALWAYS_INLINE const xiiBitflags<xiiTypeFlags>& GetTypeFlags() const { return m_TypeFlags; } // [tested]
 
   /// \brief Searches all xiiRTTI instances for the one with the given name, or nullptr if no such type exists.
-  static xiiRTTI* FindTypeByName(const char* szName); // [tested]
+  static xiiRTTI* FindTypeByName(xiiStringView sName); // [tested]
 
   /// \brief Searches all xiiRTTI instances for the one with the given hashed name, or nullptr if no such type exists.
   static xiiRTTI* FindTypeByNameHash(xiiUInt64 uiNameHash); // [tested]
   static xiiRTTI* FindTypeByNameHash32(xiiUInt32 uiNameHash);
 
   /// \brief Will iterate over all properties of this type and (optionally) the base types to search for a property with the given name.
-  xiiAbstractProperty* FindPropertyByName(const char* szName, bool bSearchBaseTypes = true) const; // [tested]
+  xiiAbstractProperty* FindPropertyByName(xiiStringView sName, bool bSearchBaseTypes = true) const; // [tested]
 
   /// \brief Returns the name of the plugin which this type is declared in.
   XII_ALWAYS_INLINE const char* GetPluginName() const { return m_szPluginName; } // [tested]

@@ -90,9 +90,9 @@ xiiAbstractObjectNode* xiiAbstractObjectGraph::Clone(xiiAbstractObjectGraph& ref
   }
 }
 
-const char* xiiAbstractObjectGraph::RegisterString(const char* szString)
+const char* xiiAbstractObjectGraph::RegisterString(xiiStringView sString)
 {
-  auto it = m_Strings.Insert(szString);
+  auto it = m_Strings.Insert(sString);
   XII_ASSERT_DEV(it.IsValid(), "");
   return it.Key().GetData();
 }
@@ -161,10 +161,10 @@ void xiiAbstractObjectGraph::RemoveNode(const xiiUuid& guid)
   }
 }
 
-void xiiAbstractObjectNode::AddProperty(const char* szName, const xiiVariant& value)
+void xiiAbstractObjectNode::AddProperty(xiiStringView sName, const xiiVariant& value)
 {
   auto& prop            = m_Properties.ExpandAndGetRef();
-  prop.m_szPropertyName = m_pOwner->RegisterString(szName);
+  prop.m_szPropertyName = m_pOwner->RegisterString(sName);
   prop.m_Value          = value;
 }
 

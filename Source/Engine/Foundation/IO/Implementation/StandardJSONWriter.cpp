@@ -654,7 +654,7 @@ void xiiStandardJSONWriter::WriteDataBuffer(const xiiDataBuffer& value)
   WriteBinaryData("data", value.GetData(), value.GetCount());
 }
 
-void xiiStandardJSONWriter::BeginVariable(const char* szName)
+void xiiStandardJSONWriter::BeginVariable(xiiStringView sName)
 {
   const xiiStandardJSONWriter::State state = m_StateStack.PeekBack().m_State;
   XII_IGNORE_UNUSED(state);
@@ -671,7 +671,7 @@ void xiiStandardJSONWriter::BeginVariable(const char* szName)
     OutputIndentation();
   }
 
-  OutputEscapedString(szName);
+  OutputEscapedString(sName);
 
   if (m_WhitespaceMode >= WhitespaceMode::NewlinesOnly)
     OutputString(":");
@@ -691,20 +691,20 @@ void xiiStandardJSONWriter::EndVariable()
   End();
 }
 
-void xiiStandardJSONWriter::BeginArray(const char* szName)
+void xiiStandardJSONWriter::BeginArray(xiiStringView sName)
 {
   const xiiStandardJSONWriter::State state = m_StateStack.PeekBack().m_State;
   XII_IGNORE_UNUSED(state);
   XII_ASSERT_DEV((state == xiiStandardJSONWriter::Empty) ||
-                   ((state == xiiStandardJSONWriter::Object || state == xiiStandardJSONWriter::NamedObject) && !xiiStringUtils::IsNullOrEmpty(szName)) ||
-                   ((state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray) && szName == nullptr) ||
-                   (state == xiiStandardJSONWriter::Variable && szName == nullptr),
+                   ((state == xiiStandardJSONWriter::Object || state == xiiStandardJSONWriter::NamedObject) && !sName.IsEmpty()) ||
+                   ((state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray) && sName.IsEmpty()) ||
+                   (state == xiiStandardJSONWriter::Variable && sName == nullptr),
                  "Inside objects you can only begin arrays when also giving them a (non-empty) name.\n"
                  "Inside arrays you can only nest anonymous arrays, so names are forbidden.\n"
                  "Inside variables you cannot specify a name again.");
 
-  if (szName != nullptr)
-    BeginVariable(szName);
+  if (sName != nullptr)
+    BeginVariable(sName);
 
   m_StateStack.PeekBack().m_bValueWasWritten = true;
 
@@ -722,7 +722,7 @@ void xiiStandardJSONWriter::BeginArray(const char* szName)
     OutputString("[ ");
 
   JSONState s;
-  s.m_State = (szName == nullptr) ? xiiStandardJSONWriter::Array : xiiStandardJSONWriter::NamedArray;
+  s.m_State = (sName == nullptr) ? xiiStandardJSONWriter::Array : xiiStandardJSONWriter::NamedArray;
   m_StateStack.PushBack(s);
   ++m_iIndentation;
 }
@@ -731,9 +731,7 @@ void xiiStandardJSONWriter::EndArray()
 {
   const xiiStandardJSONWriter::State state = m_StateStack.PeekBack().m_State;
   XII_IGNORE_UNUSED(state);
-  XII_ASSERT_DEV(
-    state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray, "EndArray() must be called in sync with BeginArray().");
-
+  XII_ASSERT_DEV(state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray, "EndArray() must be called in sync with BeginArray().");
 
   const State CurState = m_StateStack.PeekBack().m_State;
 
@@ -743,20 +741,20 @@ void xiiStandardJSONWriter::EndArray()
     EndVariable();
 }
 
-void xiiStandardJSONWriter::BeginObject(const char* szName)
+void xiiStandardJSONWriter::BeginObject(xiiStringView sName)
 {
   const xiiStandardJSONWriter::State state = m_StateStack.PeekBack().m_State;
   XII_IGNORE_UNUSED(state);
   XII_ASSERT_DEV((state == xiiStandardJSONWriter::Empty) ||
-                   ((state == xiiStandardJSONWriter::Object || state == xiiStandardJSONWriter::NamedObject) && !xiiStringUtils::IsNullOrEmpty(szName)) ||
-                   ((state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray) && szName == nullptr) ||
-                   (state == xiiStandardJSONWriter::Variable && szName == nullptr),
+                   ((state == xiiStandardJSONWriter::Object || state == xiiStandardJSONWriter::NamedObject) && !sName.IsEmpty()) ||
+                   ((state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray) && sName.IsEmpty()) ||
+                   (state == xiiStandardJSONWriter::Variable && sName == nullptr),
                  "Inside objects you can only begin objects when also giving them a (non-empty) name.\n"
                  "Inside arrays you can only nest anonymous objects, so names are forbidden.\n"
                  "Inside variables you cannot specify a name again.");
 
-  if (szName != nullptr)
-    BeginVariable(szName);
+  if (sName != nullptr)
+    BeginVariable(sName);
 
   m_StateStack.PeekBack().m_bValueWasWritten = true;
 
@@ -776,7 +774,7 @@ void xiiStandardJSONWriter::BeginObject(const char* szName)
     OutputString("{\n");
 
   JSONState s;
-  s.m_State = (szName == nullptr) ? xiiStandardJSONWriter::Object : xiiStandardJSONWriter::NamedObject;
+  s.m_State = (sName == nullptr) ? xiiStandardJSONWriter::Object : xiiStandardJSONWriter::NamedObject;
   m_StateStack.PushBack(s);
   ++m_iIndentation;
 
@@ -828,7 +826,7 @@ void xiiStandardJSONWriter::End()
   }
 }
 
-void xiiStandardJSONWriter::WriteBinaryData(const char* szDataType, const void* pData, xiiUInt32 uiBytes, const char* szValueString)
+void xiiStandardJSONWriter::WriteBinaryData(xiiStringView sDataType, const void* pData, xiiUInt32 uiBytes, xiiStringView sValueString)
 {
   CommaWriter cw(this);
 
@@ -837,16 +835,16 @@ void xiiStandardJSONWriter::WriteBinaryData(const char* szDataType, const void* 
   else
     OutputString("{ \"$t\" : \"");
 
-  OutputString(szDataType);
+  OutputString(sDataType);
 
-  if (szValueString != nullptr)
+  if (sValueString != nullptr)
   {
     if (m_WhitespaceMode >= WhitespaceMode::NewlinesOnly)
       OutputString("\",\"$v\":\"");
     else
       OutputString("\", \"$v\" : \"");
 
-    OutputString(szValueString);
+    OutputString(sValueString);
   }
 
   if (m_WhitespaceMode >= WhitespaceMode::NewlinesOnly)

@@ -40,7 +40,7 @@ public:
 
   const xiiSet<xiiString>& GetAvailableEvents() const { return m_AvailableEvents; }
 
-  void AddAvailableEvent(const char* szEvent);
+  void AddAvailableEvent(xiiStringView sEvent);
 
   xiiResult WriteToDDL(const char* szFile);
   xiiResult ReadFromDDL(const char* szFile);

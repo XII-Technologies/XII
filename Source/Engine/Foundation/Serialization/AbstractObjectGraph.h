@@ -26,7 +26,7 @@ public:
 
   const xiiHybridArray<Property, 16>& GetProperties() const { return m_Properties; }
 
-  void AddProperty(const char* szName, const xiiVariant& value);
+  void AddProperty(xiiStringView sName, const xiiVariant& value);
 
   void RemoveProperty(const char* szName);
 
@@ -122,7 +122,7 @@ public:
   using FilterFunction = xiiDelegate<bool(const xiiAbstractObjectNode*, const xiiAbstractObjectNode::Property*)>;
   xiiAbstractObjectNode* Clone(xiiAbstractObjectGraph& ref_cloneTarget, const xiiAbstractObjectNode* pRootNode = nullptr, FilterFunction filter = FilterFunction()) const;
 
-  const char* RegisterString(const char* szString);
+  const char* RegisterString(xiiStringView sString);
 
   const xiiAbstractObjectNode* GetNode(const xiiUuid& guid) const;
   xiiAbstractObjectNode*       GetNode(const xiiUuid& guid);

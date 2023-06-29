@@ -358,14 +358,7 @@ struct xiiTestBlock
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_TEST_DLL bool xiiTestBool(
-  bool        bCondition,
-  const char* szErrorText,
-  const char* szFile,
-  xiiInt32    iLine,
-  const char* szFunction,
-  const char* szMsg,
-  ...);
+XII_TEST_DLL bool xiiTestBool(bool bCondition, const char* szErrorText, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...);
 
 /// \brief Tests for a boolean condition, does not output an extra message.
 #define XII_TEST_BOOL(condition) XII_TEST_BOOL_MSG(condition, "")
@@ -376,14 +369,7 @@ XII_TEST_DLL bool xiiTestBool(
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_TEST_DLL bool xiiTestResult(
-  xiiResult   condition,
-  const char* szErrorText,
-  const char* szFile,
-  xiiInt32    iLine,
-  const char* szFunction,
-  const char* szMsg,
-  ...);
+XII_TEST_DLL bool xiiTestResult(xiiResult condition, const char* szErrorText, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...);
 
 /// \brief Tests for a boolean condition, does not output an extra message.
 #define XII_TEST_RESULT(condition) XII_TEST_RESULT_MSG(condition, "")
@@ -394,14 +380,7 @@ XII_TEST_DLL bool xiiTestResult(
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_TEST_DLL bool xiiTestResult(
-  xiiResult   condition,
-  const char* szErrorText,
-  const char* szFile,
-  xiiInt32    iLine,
-  const char* szFunction,
-  const char* szMsg,
-  ...);
+XII_TEST_DLL bool xiiTestResult(xiiResult condition, const char* szErrorText, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...);
 
 /// \brief Tests for a boolean condition, does not output an extra message.
 #define XII_TEST_RESULT(condition) XII_TEST_RESULT_MSG(condition, "")
@@ -439,9 +418,8 @@ XII_TEST_DLL bool xiiTestDouble(double f1, double f2, double fEps, const char* s
 
 /// \brief Tests two floats for equality, within a given epsilon. On failure both actual and expected values are output, also a custom
 /// message is printed.
-#define XII_TEST_FLOAT_MSG(f1, f2, epsilon, msg, ...)                                                                                                    \
-  xiiTestDouble(ToFloat(f1), ToFloat(f2), ToFloat(epsilon), XII_STRINGIZE(f1), XII_STRINGIZE(f2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, \
-                msg, ##__VA_ARGS__)
+#define XII_TEST_FLOAT_MSG(f1, f2, epsilon, msg, ...) \
+  xiiTestDouble(ToFloat(f1), ToFloat(f2), ToFloat(epsilon), XII_STRINGIZE(f1), XII_STRINGIZE(f2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -451,22 +429,12 @@ XII_TEST_DLL bool xiiTestDouble(double f1, double f2, double fEps, const char* s
 
 /// \brief Tests two doubles for equality, within a given epsilon. On failure both actual and expected values are output, also a custom
 /// message is printed.
-#define XII_TEST_DOUBLE_MSG(f1, f2, epsilon, msg, ...)                                                                                                   \
-  xiiTestDouble(ToFloat(f1), ToFloat(f2), ToFloat(epsilon), XII_STRINGIZE(f1), XII_STRINGIZE(f2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, \
-                msg, ##__VA_ARGS__)
+#define XII_TEST_DOUBLE_MSG(f1, f2, epsilon, msg, ...) \
+  xiiTestDouble(ToFloat(f1), ToFloat(f2), ToFloat(epsilon), XII_STRINGIZE(f1), XII_STRINGIZE(f2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_TEST_DLL bool xiiTestInt(
-  xiiInt64    i1,
-  xiiInt64    i2,
-  const char* szI1,
-  const char* szI2,
-  const char* szFile,
-  xiiInt32    iLine,
-  const char* szFunction,
-  const char* szMsg,
-  ...);
+XII_TEST_DLL bool xiiTestInt(xiiInt64 i1, xiiInt64 i2, const char* szI1, const char* szI2, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...);
 
 /// \brief Tests two ints for equality. On failure both actual and expected values are output.
 #define XII_TEST_INT(i1, i2) XII_TEST_INT_MSG(i1, i2, "")
@@ -483,9 +451,8 @@ XII_TEST_DLL bool xiiTestString(std::string s1, std::string s2, const char* szSt
 #define XII_TEST_STRING(i1, i2) XII_TEST_STRING_MSG(i1, i2, "")
 
 /// \brief Tests two strings for equality. On failure both actual and expected values are output, also a custom message is printed.
-#define XII_TEST_STRING_MSG(s1, s2, msg, ...)                                                                                                       \
-  xiiTestString(static_cast<const char*>(s1), static_cast<const char*>(s2), XII_STRINGIZE(s1), XII_STRINGIZE(s2), XII_SOURCE_FILE, XII_SOURCE_LINE, \
-                XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+#define XII_TEST_STRING_MSG(s1, s2, msg, ...) \
+  xiiTestString(static_castxiiStringView > (s1), static_castxiiStringView > (s2), XII_STRINGIZE(s1), XII_STRINGIZE(s2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -495,9 +462,8 @@ XII_TEST_DLL bool xiiTestWString(std::wstring s1, std::wstring s2, const char* s
 #define XII_TEST_WSTRING(i1, i2) XII_TEST_WSTRING_MSG(i1, i2, "")
 
 /// \brief Tests two strings for equality. On failure both actual and expected values are output, also a custom message is printed.
-#define XII_TEST_WSTRING_MSG(s1, s2, msg, ...)                                                                                            \
-  xiiTestWString(static_cast<const wchar_t*>(s1), static_cast<const wchar_t*>(s2), XII_STRINGIZE(s1), XII_STRINGIZE(s2), XII_SOURCE_FILE, \
-                 XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+#define XII_TEST_WSTRING_MSG(s1, s2, msg, ...) \
+  xiiTestWString(static_cast<const wchar_t*>(s1), static_cast<const wchar_t*>(s2), XII_STRINGIZE(s1), XII_STRINGIZE(s2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -508,21 +474,11 @@ XII_TEST_DLL bool xiiTestWString(std::wstring s1, std::wstring s2, const char* s
 /// \brief Tests two strings for equality. On failure both actual and expected values are output, also a custom message is printed. Does not
 /// embed the original expression to work around issues with the current code page and unicode literals.
 #define XII_TEST_STRING_UNICODE_MSG(s1, s2, msg, ...) \
-  xiiTestString(                                      \
-    static_cast<const char*>(s1), static_cast<const char*>(s2), "", "", XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+  xiiTestString(static_castxiiStringView > (s1), static_castxiiStringView > (s2), "", "", XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_TEST_DLL bool xiiTestVector(
-  xiiVec4d    v1,
-  xiiVec4d    v2,
-  double      fEps,
-  const char* szCondition,
-  const char* szFile,
-  xiiInt32    iLine,
-  const char* szFunction,
-  const char* szMsg,
-  ...);
+XII_TEST_DLL bool xiiTestVector(xiiVec4d v1, xiiVec4d v2, double fEps, const char* szCondition, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...);
 
 /// \brief Tests two xiiVec2's for equality, using some epsilon. On failure both actual and expected values are output.
 #define XII_TEST_VEC2(i1, i2, epsilon) XII_TEST_VEC2_MSG(i1, i2, epsilon, "")
@@ -555,41 +511,19 @@ XII_TEST_DLL bool xiiTestVector(
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_TEST_DLL bool xiiTestFiles(
-  const char* szFile1,
-  const char* szFile2,
-  const char* szFile,
-  xiiInt32    iLine,
-  const char* szFunction,
-  const char* szMsg,
-  ...);
+XII_TEST_DLL bool xiiTestFiles(const char* szFile1, const char* szFile2, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...);
 
 #define XII_TEST_FILES(szFile1, szFile2, msg, ...) \
   xiiTestFiles(szFile1, szFile2, XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
-XII_TEST_DLL bool xiiTestTextFiles(
-  const char* szFile1,
-  const char* szFile2,
-  const char* szFile,
-  xiiInt32    iLine,
-  const char* szFunction,
-  const char* szMsg,
-  ...);
+XII_TEST_DLL bool xiiTestTextFiles(const char* szFile1, const char* szFile2, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...);
 
 #define XII_TEST_TEXT_FILES(szFile1, szFile2, msg, ...) \
   xiiTestTextFiles(szFile1, szFile2, XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_TEST_DLL bool xiiTestImage(
-  xiiUInt32   uiImageNumber,
-  xiiUInt32   uiMaxError,
-  bool        bIsDepthImage,
-  const char* szFile,
-  xiiInt32    iLine,
-  const char* szFunction,
-  const char* szMsg,
-  ...);
+XII_TEST_DLL bool xiiTestImage(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, bool bIsDepthImage, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...);
 
 /// \brief Same as XII_TEST_IMAGE_MSG but uses an empty error message.
 #define XII_TEST_IMAGE(ImageNumber, MaxError) XII_TEST_IMAGE_MSG(ImageNumber, MaxError, "")
