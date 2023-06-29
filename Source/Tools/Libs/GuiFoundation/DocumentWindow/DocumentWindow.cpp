@@ -192,7 +192,7 @@ void xiiQtDocumentWindow::DocumentEventHandler(const xiiDocumentEvent& e)
 
     case xiiDocumentEvent::Type::DocumentStatusMsg:
     {
-      ShowTemporaryStatusBarMsg(e.m_szStatusMsg);
+      ShowTemporaryStatusBarMsg(e.m_sStatusMsg);
     }
     break;
 
@@ -433,7 +433,7 @@ xiiStatus xiiQtDocumentWindow::SaveDocument()
 void xiiQtDocumentWindow::ShowTemporaryStatusBarMsg(const xiiFormatString& msg, xiiTime duration)
 {
   xiiStringBuilder tmp;
-  statusBar()->showMessage(QString::fromUtf8(msg.GetText(tmp)), (int)duration.GetMilliseconds());
+  statusBar()->showMessage(QString::fromUtf8(msg.GetTextCStr(tmp)), (int)duration.GetMilliseconds());
 }
 
 
@@ -446,7 +446,7 @@ void xiiQtDocumentWindow::SetPermanentStatusBarMsg(const xiiFormatString& text)
   }
 
   xiiStringBuilder tmp;
-  m_pPermanentDocumentStatusText->setText(QString::fromUtf8(text.GetText(tmp)));
+  m_pPermanentDocumentStatusText->setText(QString::fromUtf8(text.GetTextCStr(tmp)));
 }
 
 void xiiQtDocumentWindow::CreateImageCapture(const char* szOutputPath)

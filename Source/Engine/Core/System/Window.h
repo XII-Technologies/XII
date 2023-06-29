@@ -342,7 +342,7 @@ public:
 
   /// \brief Returns a number that can be used as a window number in xiiWindowCreationDesc
   ///
-  /// This number just increments every time an xiiWindow is created. It starts at zero.
+  /// This number just increments every time a xiiWindow is created. It starts at zero.
   static xiiUInt8 GetNextUnusedWindowNumber();
 
 protected:
@@ -357,7 +357,7 @@ private:
 
   mutable xiiWindowInternalHandle m_hWindowHandle = xiiWindowInternalHandle();
 
-  /// increased every time an xiiWindow is created, to be able to get a free window index easily
+  /// increased every time a xiiWindow is created, to be able to get a free window index easily
   static xiiUInt8    s_uiNextUnusedWindowNumber;
   xiiAtomicInteger32 m_iReferenceCount = 0;
 };

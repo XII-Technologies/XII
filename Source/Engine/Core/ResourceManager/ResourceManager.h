@@ -95,7 +95,7 @@ public:
   template <typename ResourceType>
   static xiiTypedResourceHandle<ResourceType> GetExistingResource(xiiStringView sResourceID);
 
-  /// \brief Same as GetExistingResourceByType() but allows to specify the resource type as an xiiRTTI.
+  /// \brief Same as GetExistingResourceByType() but allows to specify the resource type as a xiiRTTI.
   static xiiTypelessResourceHandle GetExistingResourceByType(const xiiRTTI* pResourceType, xiiStringView sResourceID);
 
   template <typename ResourceType>

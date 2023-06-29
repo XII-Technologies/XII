@@ -41,7 +41,7 @@ struct xiiMsgExtractRenderData;
 
 using xiiBlackboardComponentManager = xiiComponentManager<class xiiBlackboardComponent, xiiBlockStorageType::Compact>;
 
-/// \brief This component holds an xiiBlackboard which can be used to share state between multiple components.
+/// \brief This component holds a xiiBlackboard which can be used to share state between multiple components.
 class XII_GAMEENGINE_DLL xiiBlackboardComponent : public xiiComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiBlackboardComponent, xiiComponent, xiiBlackboardComponentManager);

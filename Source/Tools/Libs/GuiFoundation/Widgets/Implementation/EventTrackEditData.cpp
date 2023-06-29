@@ -53,16 +53,16 @@ void xiiEventTrackData::ConvertToRuntimeData(xiiEventTrack& out_result) const
   }
 }
 
-void xiiEventSet::AddAvailableEvent(const char* szEvent)
+void xiiEventSet::AddAvailableEvent(xiiStringView sEvent)
 {
-  if (xiiStringUtils::IsNullOrEmpty(szEvent))
+  if (sEvent.IsEmpty())
     return;
 
-  if (m_AvailableEvents.Contains(szEvent))
+  if (m_AvailableEvents.Contains(sEvent))
     return;
 
   m_bModified = true;
-  m_AvailableEvents.Insert(szEvent);
+  m_AvailableEvents.Insert(sEvent);
 }
 
 xiiResult xiiEventSet::WriteToDDL(const char* szFile)

@@ -42,8 +42,10 @@ void xiiQtUiServices::MessageBoxInformation(const xiiFormatString& msg)
   if (s_bHeadless)
     xiiLog::Info(msg.GetText(tmp));
   else
+  {
     QMessageBox::information(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(),
-                             QString::fromUtf8(msg.GetText(tmp)), QMessageBox::StandardButton::Ok);
+                             QString::fromUtf8(msg.GetTextCStr(tmp)), QMessageBox::StandardButton::Ok);
+  }
 }
 
 void xiiQtUiServices::MessageBoxWarning(const xiiFormatString& msg)
@@ -53,8 +55,10 @@ void xiiQtUiServices::MessageBoxWarning(const xiiFormatString& msg)
   if (s_bHeadless)
     xiiLog::Warning(msg.GetText(tmp));
   else
+  {
     QMessageBox::warning(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(),
-                         QString::fromUtf8(msg.GetText(tmp)), QMessageBox::StandardButton::Ok);
+                         QString::fromUtf8(msg.GetTextCStr(tmp)), QMessageBox::StandardButton::Ok);
+  }
 }
 
 QMessageBox::StandardButton xiiQtUiServices::MessageBoxQuestion(
@@ -70,6 +74,6 @@ QMessageBox::StandardButton xiiQtUiServices::MessageBoxQuestion(
   {
     xiiStringBuilder tmp;
     return QMessageBox::question(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(),
-                                 QString::fromUtf8(msg.GetText(tmp)), buttons, defaultButton);
+                                 QString::fromUtf8(msg.GetTextCStr(tmp)), buttons, defaultButton);
   }
 }

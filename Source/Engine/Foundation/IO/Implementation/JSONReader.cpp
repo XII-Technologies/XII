@@ -35,19 +35,19 @@ xiiResult xiiJSONReader::Parse(xiiStreamReader& ref_inputStream, xiiUInt32 uiFir
   return XII_SUCCESS;
 }
 
-bool xiiJSONReader::OnVariable(const char* szVarName)
+bool xiiJSONReader::OnVariable(xiiStringView sVarName)
 {
-  m_sLastName = szVarName;
+  m_sLastName = sVarName;
 
   return true;
 }
 
-void xiiJSONReader::OnReadValue(const char* szValue)
+void xiiJSONReader::OnReadValue(xiiStringView sValue)
 {
   if (m_Stack.PeekBack().m_Mode == ElementMode::Array)
-    m_Stack.PeekBack().m_Array.PushBack(xiiVariant(szValue));
+    m_Stack.PeekBack().m_Array.PushBack(std::move(xiiString(sValue)));
   else
-    m_Stack.PeekBack().m_Dictionary[m_sLastName] = xiiVariant(szValue);
+    m_Stack.PeekBack().m_Dictionary[m_sLastName] = std::move(xiiString(sValue));
 
   m_sLastName.Clear();
 }
@@ -105,7 +105,7 @@ void xiiJSONReader::OnEndObject()
     }
     else
     {
-      Parent.m_Dictionary[Child.m_sName] = Child.m_Dictionary;
+      Parent.m_Dictionary[Child.m_sName] = std::move(Child.m_Dictionary);
     }
 
     m_Stack.PopBack();
@@ -136,15 +136,13 @@ void xiiJSONReader::OnEndArray()
   }
   else
   {
-    Parent.m_Dictionary[Child.m_sName] = Child.m_Array;
+    Parent.m_Dictionary[Child.m_sName] = std::move(Child.m_Array);
   }
 
   m_Stack.PopBack();
 }
 
-
-
-void xiiJSONReader::OnParsingError(const char* szMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn)
+void xiiJSONReader::OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn)
 {
   m_bParsingError = true;
 }

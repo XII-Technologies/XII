@@ -10,7 +10,7 @@ struct RENDERDOC_API_1_4_1;
 /// \brief RenderDoc implementation of the xiiFrameCaptureInterface interface
 ///
 /// Adds support for capturing frames through RenderDoc.
-/// When the plugin gets loaded, an xiiRenderDoc instance is created and initialized.
+/// When the plugin gets loaded, a xiiRenderDoc instance is created and initialized.
 /// It tries to find a RenderDoc DLL dynamically, so for initialization to succeed,
 /// the DLL has to be available in some search directory (e.g. binary folder or PATH).
 /// If an outdated RenderDoc DLL is found, initialization will fail and the plugin will be deactivated.

@@ -4,7 +4,7 @@
 #include <Foundation/Basics.h>
 #include <RendererFoundation/RendererFoundationDLL.h>
 
-// \brief This class can be used to define the render targets to be used by an xiiView.
+// \brief This class can be used to define the render targets to be used by a xiiView.
 struct XII_RENDERERFOUNDATION_DLL xiiGALRenderTargets
 {
   bool operator==(const xiiGALRenderTargets& other) const;

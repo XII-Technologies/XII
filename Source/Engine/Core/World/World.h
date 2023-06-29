@@ -227,7 +227,7 @@ public:
   /// \brief Queues the message for the given phase. The message is send to the receiverComponent after the given delay in the corresponding phase.
   void PostMessage(const xiiComponentHandle& hReceiverComponent, const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
 
-  /// \brief Finds the closest (parent) object, starting at pSearchObject, which has an xiiComponent that handles the given message and returns all
+  /// \brief Finds the closest (parent) object, starting at pSearchObject, which has a xiiComponent that handles the given message and returns all
   /// matching components owned by that object. If a xiiEventMessageHandlerComponent is found the search is stopped even if it doesn't handle the given message.
   ///
   /// If no such parent object exists, it searches for all xiiEventMessageHandlerComponent instances that are set to 'handle global events'
@@ -313,7 +313,7 @@ public:
 
   using ReferenceResolver = xiiDelegate<xiiGameObjectHandle(const void*, xiiComponentHandle hThis, const char* szProperty)>;
 
-  /// \brief If set, this delegate can be used to map some data (GUID or string) to an xiiGameObjectHandle.
+  /// \brief If set, this delegate can be used to map some data (GUID or string) to a xiiGameObjectHandle.
   ///
   /// Currently only used in editor settings, to create a runtime handle from a unique editor reference.
   void SetGameObjectReferenceResolver(const ReferenceResolver& resolver);

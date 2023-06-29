@@ -9,9 +9,9 @@
 ///
 /// Console functions are similar to xiiCVar's in that they can be executed from the xiiConsole.
 /// A console function can wrap many different types of functions with differing number and types of parameters.
-/// xiiConsoleFunction uses an xiiDelegate internally to store the function reference, so even member functions would be possible.
+/// xiiConsoleFunction uses a xiiDelegate internally to store the function reference, so even member functions would be possible.
 ///
-/// All console functions are enumerable, as their base class xiiConsoleFunctionBase is an xiiEnumerable class.
+/// All console functions are enumerable, as their base class xiiConsoleFunctionBase is a xiiEnumerable class.
 ///
 /// Console functions can have between zero and six parameters. The LuaInterpreter for xiiConsole only supports parameter types
 /// (unsigned) int, float/double, bool and string and uses the conversion feature of xiiVariant to map the lua input to the final function.
@@ -56,7 +56,7 @@ public:
   /// \brief Returns the type of the n-th parameter.
   virtual xiiVariant::Type::Enum GetParameterType(xiiUInt32 uiParam) const = 0;
 
-  /// \brief Calls the function. Each parameter must be put into an xiiVariant and all of them are passed along as an array.
+  /// \brief Calls the function. Each parameter must be put into a xiiVariant and all of them are passed along as an array.
   ///
   /// Returns XII_FAILURE, if the number of parameters did not match, or any parameter was not convertible to the actual type that
   /// the function expects.

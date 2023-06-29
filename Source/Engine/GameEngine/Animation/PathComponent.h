@@ -46,7 +46,7 @@ protected:
 /// It can be asked to provide a 'linearized' representation, e.g. one that is made up of many short segments whose linear interpolation
 /// is still reasonably close to the curved shape.
 ///
-/// To set up the shape, attach child objects and attach an xiiPathNodeComponent to each. Also give each child object a distinct name.
+/// To set up the shape, attach child objects and attach a xiiPathNodeComponent to each. Also give each child object a distinct name.
 /// Then reference these child objects by name through the "Nodes" property on the path shape.
 ///
 /// During scene export, typically the child objects are automatically deleted (if they have no children and no other components).
@@ -207,7 +207,7 @@ struct xiiPathNodeTangentMode
 XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiPathNodeTangentMode);
 
 
-/// \brief Attach this to child object of an xiiPathComponent to turn them into viable path nodes.
+/// \brief Attach this to child object of a xiiPathComponent to turn them into viable path nodes.
 ///
 /// See xiiPathComponent for details on how to create a path.
 ///

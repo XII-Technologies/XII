@@ -7,7 +7,7 @@
 class xiiProgress;
 class xiiProgressRange;
 
-/// \brief Through these events the state of an xiiProgress instance is communicated.
+/// \brief Through these events the state of a xiiProgress instance is communicated.
 ///
 /// Other code can use this to visualize the progress in different ways.
 /// For instance a GUI application can show a progress bar dialog and a game

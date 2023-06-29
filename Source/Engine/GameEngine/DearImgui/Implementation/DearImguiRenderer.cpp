@@ -92,7 +92,7 @@ void xiiImguiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const
         }
       }
 
-      // pass along an xiiImguiBatch for every necessary drawcall
+      // pass along a xiiImguiBatch for every necessary drawcall
       {
         const ImDrawList* pCommands = pDrawData->CmdLists[draw];
 

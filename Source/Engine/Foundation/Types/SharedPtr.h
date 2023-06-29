@@ -103,7 +103,7 @@ public:
   bool operator>(std::nullptr_t) const;
   bool operator>=(std::nullptr_t) const;
 
-  /// \brief Returns a copy of this, as an xiiSharedPtr<DERIVED>. Downcasts the stored pointer (using static_cast).
+  /// \brief Returns a copy of this, as a xiiSharedPtr<DERIVED>. Downcasts the stored pointer (using static_cast).
   ///
   /// Does not check whether the cast would be valid, that is all your responsibility.
   template <typename DERIVED>

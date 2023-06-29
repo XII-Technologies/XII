@@ -14,7 +14,7 @@ enum class xiiArchiveCompressionMode : xiiUInt8
   Compressed_zip,
 };
 
-/// \brief Data for a single file entry in an xiiArchive file
+/// \brief Data for a single file entry in a xiiArchive file
 class XII_FOUNDATION_DLL xiiArchiveEntry
 {
 public:
@@ -90,7 +90,7 @@ struct xiiHashHelper<xiiArchiveStoredString>
   }
 };
 
-/// \brief Table-of-contents for an xiiArchive file
+/// \brief Table-of-contents for a xiiArchive file
 class XII_FOUNDATION_DLL xiiArchiveTOC
 {
 public:

@@ -3,7 +3,7 @@
 #include <Core/CoreDLL.h>
 #include <Core/ResourceManager/Resource.h>
 
-/// \brief Represents one resource to load / preload through an xiiCollectionResource
+/// \brief Represents one resource to load / preload through a xiiCollectionResource
 struct XII_CORE_DLL xiiCollectionEntry
 {
   xiiString       m_sOptionalNiceLookupName; ///< Optional, can be used to lookup the resource at runtime with a nice name. E.g. "SkyTexture" instead of some GUID.
@@ -28,7 +28,7 @@ using xiiCollectionResourceHandle = xiiTypedResourceHandle<class xiiCollectionRe
 /// Collection resources can be used to improve the user experience by ensuring data is already (more likely) available when it is needed.
 /// For instance when a player walks into a longer corridor, a collection resource can be triggered to preload the data that will be needed
 /// when he reaches the door at the end of the corridor.
-/// In scenes this can be achieved using an xiiCollectionComponent.
+/// In scenes this can be achieved using a xiiCollectionComponent.
 ///
 /// Collection resources can also be used to query how much percent of the references resources are already loaded, which enables building
 /// progress bars or allowing functionality only after all necessary data is available.

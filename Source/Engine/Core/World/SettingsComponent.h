@@ -7,7 +7,7 @@
 /// Settings components are used to store global scene specific settings, e.g. for physics it would be the scene gravity,
 /// for rendering it might be the time of day, fog settings, etc.
 ///
-/// Components of this type should be managed by an xiiSettingsComponentManager, which makes it easy to query for the one instance
+/// Components of this type should be managed by a xiiSettingsComponentManager, which makes it easy to query for the one instance
 /// in the world.
 ///
 ///

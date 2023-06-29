@@ -226,11 +226,31 @@ namespace JSONReaderTestDetail
       }
       break;
 
+      case xiiVariant::Type::Angled:
+      {
+        xiiStringBuilder sTemp;
+        sTemp.Format("angled {0}", xiiArgF(var.Get<xiiAngled>().GetDegree(), 4));
+        // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
+        XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
+        ref_compare.PopFront();
+      }
+      break;
+
       case xiiVariant::Type::String:
+      {
         // xiiLog::Printf("Expect: %s - Is: %s\n", var.Get<xiiString>().GetData(), Compare.PeekFront().GetData());
         XII_TEST_STRING(ref_compare.PeekFront().GetData(), var.Get<xiiString>().GetData());
         ref_compare.PopFront();
-        break;
+      }
+      break;
+
+      case xiiVariant::Type::StringView:
+      {
+        // xiiLog::Printf("Expect: %s - Is: %s\n", var.Get<xiiString>().GetData(), Compare.PeekFront().GetData());
+        XII_TEST_STRING(ref_compare.PeekFront(), var.Get<xiiStringView>());
+        ref_compare.PopFront();
+      }
+      break;
 
       case xiiVariant::Type::Vector2:
       {
@@ -509,7 +529,7 @@ XII_CREATE_SIMPLE_TEST(IO, JSONReader)
     const char*   szTestData = sTD.GetData();
 
     // NOTE: The way this test is implemented, it might break, if the HashMap uses another insertion algorithm.
-    // xiiVariantDictionary is an xiiHashmap and this test currently relies on one exact order in of the result.
+    // xiiVariantDictionary is a xiiHashmap and this test currently relies on one exact order in of the result.
     // If this should ever change (or be arbitrary at runtime), the test needs to be implemented in a more robust way.
 
     JSONReaderTestDetail::StringStream stream(szTestData);

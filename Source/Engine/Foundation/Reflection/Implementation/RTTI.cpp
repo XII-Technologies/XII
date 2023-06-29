@@ -9,8 +9,8 @@
 
 struct xiiTypeHashTable
 {
-  xiiMutex                                                                                   m_Mutex;
-  xiiHashTable<const char*, xiiRTTI*, xiiHashHelper<const char*>, xiiStaticAllocatorWrapper> m_Table;
+  xiiMutex                                                                                       m_Mutex;
+  xiiHashTable<xiiStringView, xiiRTTI*, xiiHashHelper<xiiStringView>, xiiStaticAllocatorWrapper> m_Table;
 };
 
 xiiTypeHashTable* GetTypeHashTable()
@@ -230,13 +230,13 @@ void xiiRTTI::GetAllProperties(xiiHybridArray<xiiAbstractProperty*, 32>& out_pro
   out_properties.PushBackRange(GetProperties());
 }
 
-xiiRTTI* xiiRTTI::FindTypeByName(const char* szName)
+xiiRTTI* xiiRTTI::FindTypeByName(xiiStringView sName)
 {
   xiiRTTI* pInstance = nullptr;
   {
     auto pTable = GetTypeHashTable();
     XII_LOCK(pTable->m_Mutex);
-    if (pTable->m_Table.TryGetValue(szName, pInstance))
+    if (pTable->m_Table.TryGetValue(sName, pInstance))
       return pInstance;
   }
 
@@ -245,9 +245,9 @@ xiiRTTI* xiiRTTI::FindTypeByName(const char* szName)
 
   while (pInstance)
   {
-    if (xiiStringUtils::IsEqual(pInstance->GetTypeName(), szName))
+    if (pInstance->GetTypeName() == sName)
     {
-      XII_REPORT_FAILURE("The hash table lookup should have already found the RTTI type '{}'", szName);
+      XII_REPORT_FAILURE("The hash table lookup should have already found the RTTI type '{}'", sName);
       return pInstance;
     }
 
@@ -292,7 +292,7 @@ xiiRTTI* xiiRTTI::FindTypeByNameHash32(xiiUInt32 uiNameHash)
   return nullptr;
 }
 
-xiiAbstractProperty* xiiRTTI::FindPropertyByName(const char* szName, bool bSearchBaseTypes /* = true */) const
+xiiAbstractProperty* xiiRTTI::FindPropertyByName(xiiStringView sName, bool bSearchBaseTypes /* = true */) const
 {
   const xiiRTTI* pInstance = this;
 
@@ -300,7 +300,7 @@ xiiAbstractProperty* xiiRTTI::FindPropertyByName(const char* szName, bool bSearc
   {
     for (xiiUInt32 p = 0; p < pInstance->m_Properties.GetCount(); ++p)
     {
-      if (xiiStringUtils::IsEqual(pInstance->m_Properties[p]->GetPropertyName(), szName))
+      if (pInstance->m_Properties[p]->GetPropertyName() == sName)
       {
         return pInstance->m_Properties[p];
       }
@@ -319,7 +319,7 @@ bool xiiRTTI::DispatchMessage(void* pInstance, xiiMessage& ref_msg) const
 {
   XII_ASSERT_DEBUG(m_bGatheredDynamicMessageHandlers, "Message handler table should have been gathered at this point.\n"
                                                       "If this assert is triggered for a type loaded from a dynamic plugin,\n"
-                                                      "you may have forgotten to instantiate an xiiPlugin object inside your plugin DLL.");
+                                                      "you may have forgotten to instantiate a xiiPlugin object inside your plugin DLL.");
 
   const xiiUInt32 uiIndex = ref_msg.GetId() - m_uiMsgIdOffset;
 
@@ -341,7 +341,7 @@ bool xiiRTTI::DispatchMessage(const void* pInstance, xiiMessage& ref_msg) const
 {
   XII_ASSERT_DEBUG(m_bGatheredDynamicMessageHandlers, "Message handler table should have been gathered at this point.\n"
                                                       "If this assert is triggered for a type loaded from a dynamic plugin,\n"
-                                                      "you may have forgotten to instantiate an xiiPlugin object inside your plugin DLL.");
+                                                      "you may have forgotten to instantiate a xiiPlugin object inside your plugin DLL.");
 
   const xiiUInt32 uiIndex = ref_msg.GetId() - m_uiMsgIdOffset;
 

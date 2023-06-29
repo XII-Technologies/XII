@@ -90,7 +90,7 @@ void xiiJSONParser::ParseAll()
   }
 }
 
-void xiiJSONParser::ParsingError(const char* szMessage, bool bFatal)
+void xiiJSONParser::ParsingError(xiiStringView sMessage, bool bFatal)
 {
   if (bFatal)
   {
@@ -100,11 +100,11 @@ void xiiJSONParser::ParsingError(const char* szMessage, bool bFatal)
   }
 
   if (bFatal)
-    xiiLog::Error(m_pLogInterface, "Line {0} ({1}): {2}", m_uiCurLine, m_uiCurColumn, szMessage);
+    xiiLog::Error(m_pLogInterface, "Line {0} ({1}): {2}", m_uiCurLine, m_uiCurColumn, sMessage);
   else
-    xiiLog::Warning(m_pLogInterface, szMessage);
+    xiiLog::Warning(m_pLogInterface, sMessage);
 
-  OnParsingError(szMessage, bFatal, m_uiCurLine, m_uiCurColumn);
+  OnParsingError(sMessage, bFatal, m_uiCurLine, m_uiCurColumn);
 }
 
 void xiiJSONParser::SkipObject()
@@ -309,7 +309,7 @@ void xiiJSONParser::ContinueValue()
       m_StateStack.PopBack();
 
       if (!m_bSkippingMode)
-        OnReadValue((const char*)&m_TempString[0]);
+        OnReadValue(xiiStringView((const char*)&m_TempString[0]));
     }
       return;
 

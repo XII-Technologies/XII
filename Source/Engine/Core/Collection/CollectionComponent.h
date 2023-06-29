@@ -7,9 +7,9 @@
 
 using xiiCollectionComponentManager = xiiComponentManager<class xiiCollectionComponent, xiiBlockStorageType::Compact>;
 
-/// \brief An xiiCollectionComponent references an xiiCollectionResource and triggers resource preloading when needed
+/// \brief An xiiCollectionComponent references a xiiCollectionResource and triggers resource preloading when needed
 ///
-/// Placing an xiiCollectionComponent in a scene or a model makes it possible to tell the engine to preload certain resources
+/// Placing a xiiCollectionComponent in a scene or a model makes it possible to tell the engine to preload certain resources
 /// that are likely to be needed soon.
 ///
 /// If a deactivated xiiCollectionComponent is part of the scene, it will not trigger a preload, but will do so once

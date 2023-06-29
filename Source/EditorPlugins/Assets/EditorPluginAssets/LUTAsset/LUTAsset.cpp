@@ -43,7 +43,7 @@ xiiTransformStatus xiiLUTAssetDocument::InternalTransformAsset(const char* szTar
 
   const xiiUInt32 lutSize = cubeReader.GetLUTSize();
 
-  // Build an xiiImage from the data
+  // Build a xiiImage from the data
   xiiImageHeader imgHeader;
   imgHeader.SetImageFormat(xiiImageFormat::R8G8B8A8_UNORM_SRGB);
   imgHeader.SetWidth(lutSize);

@@ -4,7 +4,7 @@
 #include <Foundation/Math/Rect.h>
 #include <Utilities/DataStructures/GameGrid.h>
 
-/// \brief Takes an xiiGameGrid and creates an optimized navmesh structure from it, that is more efficient for path searches.
+/// \brief Takes a xiiGameGrid and creates an optimized navmesh structure from it, that is more efficient for path searches.
 class XII_UTILITIES_DLL xiiGridNavmesh
 {
 public:

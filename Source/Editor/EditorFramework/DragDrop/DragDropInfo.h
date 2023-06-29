@@ -54,7 +54,7 @@ public:
 };
 
 
-/// \brief After an xiiDragDropHandler has been chosen to handle an operation, it is queried once to fill out an instance of this type (or an extended
+/// \brief After a xiiDragDropHandler has been chosen to handle an operation, it is queried once to fill out an instance of this type (or an extended
 /// derived type) to enable configuring how xiiDragDropInfo is computed by the target.
 class XII_EDITORFRAMEWORK_DLL xiiDragDropConfig : public xiiReflectedClass
 {

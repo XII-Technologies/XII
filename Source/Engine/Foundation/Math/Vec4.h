@@ -55,10 +55,10 @@ public:
 
   // *** Conversions ***
 public:
-  /// \brief Returns an xiiVec2Template with x and y from this vector.
+  /// \brief Returns a xiiVec2Template with x and y from this vector.
   const xiiVec2Template<Type> GetAsVec2() const; // [tested]
 
-  /// \brief Returns an xiiVec3Template with x,y and z from this vector.
+  /// \brief Returns a xiiVec3Template with x,y and z from this vector.
   const xiiVec3Template<Type> GetAsVec3() const; // [tested]
 
   /// \brief Returns the data as an array.

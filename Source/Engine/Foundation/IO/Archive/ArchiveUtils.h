@@ -37,7 +37,7 @@ namespace xiiArchiveUtils
   /// \brief Deserializes the TOC from the memory mapped file. Assumes the TOC is the very last data in the file and reads it from the back.
   XII_FOUNDATION_DLL xiiResult ExtractTOC(xiiMemoryMappedFile& ref_memFile, xiiArchiveTOC& ref_toc, xiiUInt8 uiArchiveVersion);
 
-  /// \brief Writes a single file entry to an xiiArchive stream with the given compression level.
+  /// \brief Writes a single file entry to a xiiArchive stream with the given compression level.
   ///
   /// Appends information to the TOC for finding the data in the stream. Reads and updates inout_uiCurrentStreamPosition with the data byte
   /// offset. The progress callback is executed for every couple of KB of data that were written.

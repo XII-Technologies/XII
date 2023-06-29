@@ -167,7 +167,7 @@ public:
   /// If it is a client, the message is only sent to the server.
   void Send(xiiRemoteTransmitMode tm, xiiUInt32 uiSystemID, xiiUInt32 uiMsgID, const void* pData = nullptr, xiiUInt32 uiDataBytes = 0);
 
-  /// \brief Sends an xiiRemoteMessage
+  /// \brief Sends a xiiRemoteMessage
   /// If it is a server, the message is broadcast to all clients.
   /// If it is a client, the message is only sent to the server.
   void Send(xiiRemoteTransmitMode tm, xiiRemoteMessage& ref_msg);

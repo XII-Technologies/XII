@@ -66,7 +66,7 @@
 ///
 /// Here we declare a struct which contains our enum that contains all the flags that we want to have. This enum can contain
 /// flags that are combinations of other flags. Note also the 'Default' flag, which is mandatory.\n
-/// The 'Bits' struct enables debuggers to show exactly which flags are enabled (with nice names) when you inspect an xiiBitflags
+/// The 'Bits' struct enables debuggers to show exactly which flags are enabled (with nice names) when you inspect a xiiBitflags
 /// instance. You could leave this struct empty, but then your debugger can not show helpful information about the flags anymore.
 /// The Bits struct should contain one named entry for each individual bit. E.g. here only the flags 'EnableEffects', 'EnableLighting'
 /// and 'EnableShadows' actually map to single bits, the other flags are combinations of those. Therefore the Bits struct only

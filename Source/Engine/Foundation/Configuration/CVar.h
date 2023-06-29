@@ -8,7 +8,7 @@
 
 class xiiCVar;
 
-/// \brief Describes of which type a CVar is. Use that info to cast an xiiCVar* to the proper derived class.
+/// \brief Describes of which type a CVar is. Use that info to cast a xiiCVar* to the proper derived class.
 struct xiiCVarType
 {
   enum Enum
@@ -22,7 +22,7 @@ struct xiiCVarType
   };
 };
 
-/// \brief The flags that can be used on an xiiCVar.
+/// \brief The flags that can be used on a xiiCVar.
 struct xiiCVarFlags
 {
   using StorageType = xiiUInt8;

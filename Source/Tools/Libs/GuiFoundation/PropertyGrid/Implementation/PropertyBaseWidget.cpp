@@ -241,7 +241,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
       {
         pPaste->setEnabled(false);
         xiiStringBuilder sTemp;
-        sTemp.Format("The member property '{}' has an xiiClampValueAttribute but xiiReflectionUtils::ClampValue failed.", m_pProp->GetPropertyName());
+        sTemp.Format("The member property '{}' has a xiiClampValueAttribute but xiiReflectionUtils::ClampValue failed.", m_pProp->GetPropertyName());
       }
 
       connect(pPaste, &QAction::triggered, this, [this, content]() {

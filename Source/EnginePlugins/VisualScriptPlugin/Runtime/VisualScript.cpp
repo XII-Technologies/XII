@@ -491,7 +491,7 @@ xiiVariant xiiVisualScriptDataStorage::GetDataAsVariant(DataOffset dataOffset, x
   auto scriptDataType = static_cast<xiiVisualScriptDataType::Enum>(dataOffset.m_uiDataType);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  // expectedType == Invalid means that the caller expects an xiiVariant so we decide solely based on the scriptDataType.
+  // expectedType == Invalid means that the caller expects a xiiVariant so we decide solely based on the scriptDataType.
   // We set the expectedType to the equivalent of the scriptDataType here so we don't need to check for expectedType == Invalid in all the asserts below.
   if (expectedType == xiiVariantType::Invalid)
   {

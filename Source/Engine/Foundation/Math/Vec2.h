@@ -49,10 +49,10 @@ public:
 
   // *** Conversions ***
 public:
-  /// \brief Returns an xiiVec3Template with x,y from this vector and z set by the parameter.
+  /// \brief Returns a xiiVec3Template with x,y from this vector and z set by the parameter.
   const xiiVec3Template<Type> GetAsVec3(Type inZ) const; // [tested]
 
-  /// \brief Returns an xiiVec4Template with x,y from this vector and z and w set by the parameters.
+  /// \brief Returns a xiiVec4Template with x,y from this vector and z and w set by the parameters.
   const xiiVec4Template<Type> GetAsVec4(Type inZ, Type inW) const; // [tested]
 
   /// \brief Returns the data as an array.

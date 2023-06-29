@@ -14,7 +14,7 @@ xiiReflectedTypeStorageAccessor::xiiReflectedTypeStorageAccessor(const xiiRTTI* 
   xiiIReflectedTypeAccessor(pRtti, pOwner)
 {
   const xiiRTTI* pType = pRtti;
-  XII_ASSERT_DEV(pType != nullptr, "Trying to construct an xiiReflectedTypeStorageAccessor for an invalid type!");
+  XII_ASSERT_DEV(pType != nullptr, "Trying to construct a xiiReflectedTypeStorageAccessor for an invalid type!");
   m_pMapping = xiiReflectedTypeStorageManager::AddStorageAccessor(this);
   XII_ASSERT_DEV(m_pMapping != nullptr, "The type for this xiiReflectedTypeStorageAccessor is unknown to the xiiReflectedTypeStorageManager!");
 

@@ -24,7 +24,7 @@ public:
   /// \brief Transfers ownership of the xiiActorPlugin to the xiiActor
   void AddPlugin(xiiUniquePtr<xiiActorPlugin>&& pPlugin);
 
-  /// \brief Queries the xiiActor for an xiiActorPlugin of the given type. Returns null if no such plugin was added to the actor.
+  /// \brief Queries the xiiActor for a xiiActorPlugin of the given type. Returns null if no such plugin was added to the actor.
   xiiActorPlugin* GetPlugin(const xiiRTTI* pType) const;
 
   /// \brief Templated overload of GetPlugin() that automatically casts to the desired class type.

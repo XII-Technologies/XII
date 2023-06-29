@@ -9,9 +9,9 @@ xiiObjectProxyAccessor::xiiObjectProxyAccessor(xiiObjectAccessorBase* pSource) :
 
 xiiObjectProxyAccessor::~xiiObjectProxyAccessor() = default;
 
-void xiiObjectProxyAccessor::StartTransaction(const char* szDisplayString)
+void xiiObjectProxyAccessor::StartTransaction(xiiStringView sDisplayString)
 {
-  m_pSource->StartTransaction(szDisplayString);
+  m_pSource->StartTransaction(sDisplayString);
 }
 
 void xiiObjectProxyAccessor::CancelTransaction()
@@ -44,29 +44,17 @@ const xiiDocumentObject* xiiObjectProxyAccessor::GetObject(const xiiUuid& object
   return m_pSource->GetObject(object);
 }
 
-xiiStatus xiiObjectProxyAccessor::GetValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  xiiVariant&                out_value,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiObjectProxyAccessor::GetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant& out_value, xiiVariant index /*= xiiVariant()*/)
 {
   return m_pSource->GetValue(pObject, pProp, out_value, index);
 }
 
-xiiStatus xiiObjectProxyAccessor::SetValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  const xiiVariant&          newValue,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiObjectProxyAccessor::SetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
   return m_pSource->SetValue(pObject, pProp, newValue, index);
 }
 
-xiiStatus xiiObjectProxyAccessor::InsertValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  const xiiVariant&          newValue,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiObjectProxyAccessor::InsertValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
   return m_pSource->InsertValue(pObject, pProp, newValue, index);
 }
@@ -76,11 +64,7 @@ xiiStatus xiiObjectProxyAccessor::RemoveValue(const xiiDocumentObject* pObject, 
   return m_pSource->RemoveValue(pObject, pProp, index);
 }
 
-xiiStatus xiiObjectProxyAccessor::MoveValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  const xiiVariant&          oldIndex,
-  const xiiVariant&          newIndex)
+xiiStatus xiiObjectProxyAccessor::MoveValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& oldIndex, const xiiVariant& newIndex)
 {
   return m_pSource->MoveValue(pObject, pProp, oldIndex, newIndex);
 }
@@ -90,12 +74,7 @@ xiiStatus xiiObjectProxyAccessor::GetCount(const xiiDocumentObject* pObject, con
   return m_pSource->GetCount(pObject, pProp, out_iCount);
 }
 
-xiiStatus xiiObjectProxyAccessor::AddObject(
-  const xiiDocumentObject*   pParent,
-  const xiiAbstractProperty* pParentProp,
-  const xiiVariant&          index,
-  const xiiRTTI*             pType,
-  xiiUuid&                   inout_objectGuid)
+xiiStatus xiiObjectProxyAccessor::AddObject(const xiiDocumentObject* pParent, const xiiAbstractProperty* pParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid)
 {
   return m_pSource->AddObject(pParent, pParentProp, index, pType, inout_objectGuid);
 }
@@ -105,11 +84,7 @@ xiiStatus xiiObjectProxyAccessor::RemoveObject(const xiiDocumentObject* pObject)
   return m_pSource->RemoveObject(pObject);
 }
 
-xiiStatus xiiObjectProxyAccessor::MoveObject(
-  const xiiDocumentObject*   pObject,
-  const xiiDocumentObject*   pNewParent,
-  const xiiAbstractProperty* pParentProp,
-  const xiiVariant&          index)
+xiiStatus xiiObjectProxyAccessor::MoveObject(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, const xiiAbstractProperty* pParentProp, const xiiVariant& index)
 {
   return m_pSource->MoveObject(pObject, pNewParent, pParentProp, index);
 }

@@ -1230,15 +1230,15 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiString")
   {
-    xiiVariant v(xiiString("This is an xiiString"));
+    xiiVariant v(xiiString("This is a xiiString"));
     TestVariant<xiiString>(v, xiiVariantType::String);
 
-    XII_TEST_BOOL(v.Get<xiiString>() == xiiString("This is an xiiString"));
+    XII_TEST_BOOL(v.Get<xiiString>() == xiiString("This is a xiiString"));
 
-    XII_TEST_BOOL(v == xiiVariant(xiiString("This is an xiiString")));
+    XII_TEST_BOOL(v == xiiVariant(xiiString("This is a xiiString")));
     XII_TEST_BOOL(v != xiiVariant(xiiString("This is something else")));
 
-    XII_TEST_BOOL(v == xiiString("This is an xiiString"));
+    XII_TEST_BOOL(v == xiiString("This is a xiiString"));
     XII_TEST_BOOL(v != xiiString("This is another xiiString"));
 
     v = xiiString("blurg!");
@@ -1254,7 +1254,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiStringView")
   {
-    const char*   szTemp = "This is an xiiStringView";
+    const char*   szTemp = "This is a xiiStringView";
     xiiStringView bla(szTemp);
     xiiVariant    v(bla);
     TestVariant<xiiStringView>(v, xiiVariantType::StringView);

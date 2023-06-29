@@ -20,7 +20,7 @@ class xiiWorldReader;
 /// Also add a XII_BEGIN_COMPONENT_TYPE/XII_END_COMPONENT_TYPE block to a cpp file. In that block you can add reflected members or message
 /// handlers. Note that every component type needs a corresponding manager type. Take a look at xiiComponentManagerSimple for a simple
 /// manager implementation that calls an update method on its components every frame. To create a component instance call CreateComponent on
-/// the corresponding manager. Never store a direct pointer to a component but store an xiiComponentHandle instead.
+/// the corresponding manager. Never store a direct pointer to a component but store a xiiComponentHandle instead.
 class XII_CORE_DLL xiiComponent : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiComponent, xiiReflectedClass);

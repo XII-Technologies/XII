@@ -90,7 +90,7 @@ bool xiiExposedParametersDefaultStateProvider::IsDefaultValue(SuperArray superPt
   else
   {
     // We consider an exposed params map to be the default if it is empty.
-    // We deliberately do not use the accessor here and go directly to the object storage as the passed in pAccessor could already be an xiiExposedParameterCommandAccessor in which case we wouldn't truly know if anything was overwritten.
+    // We deliberately do not use the accessor here and go directly to the object storage as the passed in pAccessor could already be a xiiExposedParameterCommandAccessor in which case we wouldn't truly know if anything was overwritten.
     xiiVariant value = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName(), index);
     return value.Get<xiiVariantDictionary>().GetCount() == 0;
   }

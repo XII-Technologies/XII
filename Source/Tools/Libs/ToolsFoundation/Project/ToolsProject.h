@@ -96,7 +96,7 @@ public:
   /// \brief Returns the directory path in which project settings etc. should be stored
   xiiString GetProjectDataFolder() const;
 
-  /// \brief Starts at the  given document and then searches the tree upwards until it finds an xiiProject file.
+  /// \brief Starts at the  given document and then searches the tree upwards until it finds a xiiProject file.
   static xiiString FindProjectDirectoryForDocument(const char* szDocumentPath);
 
   bool IsDocumentInAllowedRoot(const char* szDocumentPath, xiiString* out_pRelativePath = nullptr) const;

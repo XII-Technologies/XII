@@ -15,7 +15,7 @@ static void WriteObjectToDDL(const xiiOpenDdlReaderElement* pElement, xiiOpenDdl
 {
   if (pElement->HasName())
   {
-    XII_TEST_BOOL(!xiiStringUtils::IsNullOrEmpty(pElement->GetName()));
+    XII_TEST_BOOL(!pElement->GetName().IsEmpty());
   }
 
   if (pElement->IsCustomType())

@@ -16,7 +16,7 @@ static xiiTypeVersion s_RmlUiDescVersion = 1;
 
 xiiResult xiiRmlUiResourceDescriptor::Save(xiiStreamWriter& inout_stream)
 {
-  // write this at the beginning so that the file can be read as an xiiDependencyFile
+  // write this at the beginning so that the file can be read as a xiiDependencyFile
   m_DependencyFile.StoreCurrentTimeStamp();
   XII_SUCCEED_OR_RETURN(m_DependencyFile.WriteDependencyFile(inout_stream));
 

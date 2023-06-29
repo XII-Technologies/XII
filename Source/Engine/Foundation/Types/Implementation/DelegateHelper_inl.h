@@ -118,7 +118,7 @@ public:
 
     // Pure function pointers or lambdas that can be cast into pure functions (no captures) can be
     // copied directly into the inplace storage of the delegate.
-    // Lambdas with captures need to be wrapped into an xiiLambdaDelegateStorage object as they can
+    // Lambdas with captures need to be wrapped into a xiiLambdaDelegateStorage object as they can
     // capture non-pod or non-memmoveable data. This wrapper can also be stored inplace if it is small enough,
     // otherwise it will be heap allocated with the specified allocator.
     constexpr size_t functionSize = sizeof(Function);

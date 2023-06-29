@@ -95,8 +95,8 @@ public:
   /// \brief \see operator==
   bool operator!=(const xiiHashedString& rhs) const; // [tested]
 
-  /// \brief Compares this string object to an xiiTempHashedString object. This should be used whenever some object needs to be found
-  /// and the string to compare against is not yet an xiiHashedString object.
+  /// \brief Compares this string object to a xiiTempHashedString object. This should be used whenever some object needs to be found
+  /// and the string to compare against is not yet a xiiHashedString object.
   bool operator==(const xiiTempHashedString& rhs) const; // [tested]
 
   /// \brief \see operator==
@@ -139,7 +139,7 @@ private:
   HashedType m_Data;
 };
 
-/// \brief Helper function to create an xiiHashedString. This can be used to initialize static hashed string variables.
+/// \brief Helper function to create a xiiHashedString. This can be used to initialize static hashed string variables.
 template <size_t N>
 xiiHashedString xiiMakeHashedString(const char (&string)[N]);
 
@@ -156,14 +156,14 @@ class XII_FOUNDATION_DLL xiiTempHashedString
 public:
   xiiTempHashedString(); // [tested]
 
-  /// \brief Creates an xiiTempHashedString object from the given string constant. The hash can be computed at compile time.
+  /// \brief Creates a xiiTempHashedString object from the given string constant. The hash can be computed at compile time.
   template <size_t N>
   xiiTempHashedString(const char (&string)[N]); // [tested]
 
   template <size_t N>
   xiiTempHashedString(char (&string)[N]) = delete;
 
-  /// \brief Creates an xiiTempHashedString object from the given string. Computes the hash of the given string during runtime, which might
+  /// \brief Creates a xiiTempHashedString object from the given string. Computes the hash of the given string during runtime, which might
   /// be slow.
   xiiTempHashedString(xiiStringView sString); // [tested]
 

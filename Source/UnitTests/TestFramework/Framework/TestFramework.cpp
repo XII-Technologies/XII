@@ -1832,14 +1832,17 @@ bool xiiTestWString(std::wstring sWs1, std::wstring sWs2, const char* szWString1
   return XII_SUCCESS;
 }
 
-bool xiiTestString(std::string s1, std::string s2, const char* szString1, const char* szString2, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...)
+bool xiiTestString(xiiStringView s1, xiiStringView s2, const char* szString1, const char* szString2, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...)
 {
   xiiTestFramework::s_iAssertCounter++;
 
   if (s1 != s2)
   {
+    xiiStringBuilder ss1 = s1;
+    xiiStringBuilder ss2 = s2;
+
     char szErrorText[2048];
-    safeprintf(szErrorText, 2048, "Failure: '%s' (%s) does not equal '%s' (%s)", szString1, s1.c_str(), szString2, s2.c_str());
+    safeprintf(szErrorText, 2048, "Failure: '%s' (%s) does not equal '%s' (%s)", szString1, ss1.GetData(), szString2, ss2.GetData());
 
     OUTPUT_TEST_ERROR
   }

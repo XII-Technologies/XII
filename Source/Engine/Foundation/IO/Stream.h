@@ -69,10 +69,10 @@ public:
   template <typename KeyType, typename ValueType, typename Hasher>
   xiiResult ReadHashTable(xiiHashTableBase<KeyType, ValueType, Hasher>& ref_hashTable); // [tested]
 
-  /// \brief Reads a string into an xiiStringBuilder.
+  /// \brief Reads a string into a xiiStringBuilder.
   xiiResult ReadString(xiiStringBuilder& ref_sBuilder); // [tested]
 
-  /// \brief Reads a string into an xiiString.
+  /// \brief Reads a string into a xiiString.
   xiiResult ReadString(xiiString& ref_sString);
 
 

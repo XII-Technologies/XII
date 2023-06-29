@@ -51,13 +51,13 @@ public:
   void SetIndentation(xiiInt8 iIndentation) { m_iIndentation = iIndentation; }
 
   /// \brief Begins outputting an object.
-  void BeginObject(const char* szType, const char* szName = nullptr, bool bGlobalName = false, bool bSingleLine = false); // [tested]
+  void BeginObject(xiiStringView sType, xiiStringView sName = {}, bool bGlobalName = false, bool bSingleLine = false); // [tested]
 
   /// \brief Ends outputting an object.
   void EndObject(); // [tested]
 
   /// \brief Begins outputting a list of primitives of the given type.
-  void BeginPrimitiveList(xiiOpenDdlPrimitiveType type, const char* szName = nullptr, bool bGlobalName = false); // [tested]
+  void BeginPrimitiveList(xiiOpenDdlPrimitiveType type, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Ends outputting the list of primitives.
   void EndPrimitiveList(); // [tested]
@@ -130,15 +130,15 @@ protected:
     bool  m_bPrimitivesWritten = false;
   };
 
-  XII_ALWAYS_INLINE void OutputString(const char* sz) { m_pOutput->WriteBytes(sz, xiiStringUtils::GetStringElementCount(sz)).IgnoreResult(); }
-  XII_ALWAYS_INLINE void OutputString(const char* sz, xiiUInt32 uiElementCount) { m_pOutput->WriteBytes(sz, uiElementCount).IgnoreResult(); }
+  XII_ALWAYS_INLINE void OutputString(xiiStringView s) { m_pOutput->WriteBytes(s.GetStartPointer(), s.GetElementCount()).IgnoreResult(); }
+  XII_ALWAYS_INLINE void OutputString(xiiStringView s, xiiUInt32 uiElementCount) { m_pOutput->WriteBytes(s.GetStartPointer(), uiElementCount).IgnoreResult(); }
   void                   OutputEscapedString(const xiiStringView& string);
   void                   OutputIndentation();
   void                   OutputPrimitiveTypeNameCompliant(xiiOpenDdlPrimitiveType type);
   void                   OutputPrimitiveTypeNameShort(xiiOpenDdlPrimitiveType type);
   void                   OutputPrimitiveTypeNameShortest(xiiOpenDdlPrimitiveType type);
   void                   WritePrimitiveType(xiiOpenDdlWriter::State exp);
-  void                   OutputObjectName(const char* szName, bool bGlobalName);
+  void                   OutputObjectName(xiiStringView sName, bool bGlobalName);
   void                   WriteBinaryAsHex(const void* pData, xiiUInt32 uiBytes);
   void                   OutputObjectBeginning();
 

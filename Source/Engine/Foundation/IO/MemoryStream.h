@@ -74,7 +74,7 @@ private:
 
 /// \brief Templated implementation of xiiMemoryStreamStorageInterface that adapts most standard XII containers to the interface.
 ///
-/// Note that xiiMemoryStreamContainerStorage assumes contiguous storage, so using an xiiDeque for storage will not work.
+/// Note that xiiMemoryStreamContainerStorage assumes contiguous storage, so using a xiiDeque for storage will not work.
 template <typename CONTAINER>
 class xiiMemoryStreamContainerStorage : public xiiMemoryStreamStorageInterface
 {
@@ -137,7 +137,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 
 
-/// xiiContiguousMemoryStreamStorage holds internally an xiiHybridArray<xiiUInt8, 256>, to prevent allocations when only small temporary memory streams
+/// xiiContiguousMemoryStreamStorage holds internally a xiiHybridArray<xiiUInt8, 256>, to prevent allocations when only small temporary memory streams
 /// are needed. That means it will have a memory overhead of that size.
 /// Also it reallocates memory on demand, and the data is guaranteed to be contiguous. This may be desirable,
 /// but can have a high performance overhead when data grows very large.

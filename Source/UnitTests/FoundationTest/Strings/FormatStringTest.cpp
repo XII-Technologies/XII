@@ -13,17 +13,17 @@
 void TestFormat(const xiiFormatString& str, const char* szExpected)
 {
   xiiStringBuilder sb;
-  const char*      szText = str.GetText(sb);
+  xiiStringView    sText = str.GetText(sb);
 
-  XII_TEST_STRING(szText, szExpected);
+  XII_TEST_STRING(sText, szExpected);
 }
 
 void TestFormatWChar(const xiiFormatString& str, const wchar_t* pExpected)
 {
   xiiStringBuilder sb;
-  const char*      szText = str.GetText(sb);
+  xiiStringView    sText = str.GetText(sb);
 
-  XII_TEST_WSTRING(xiiStringWChar(szText), pExpected);
+  XII_TEST_WSTRING(xiiStringWChar(sText), pExpected);
 }
 
 void CompareSnprintf(xiiStringBuilder& ref_sLog, const xiiFormatString& str, const char* szFormat, ...)
@@ -69,7 +69,7 @@ void CompareSnprintf(xiiStringBuilder& ref_sLog, const xiiFormatString& str, con
     sw.StopAndReset();
     for (xiiUInt32 i = 0; i < 10000; ++i)
     {
-      const char* szText = str.GetText(sb);
+      xiiStringView sText = str.GetText(sb);
     }
 
     t3 = sw.Checkpoint();
@@ -133,10 +133,9 @@ XII_CREATE_SIMPLE_TEST(Strings, FormatString)
     // Temp buffer limit is 63 byte (64 including trailing zero). Each character in UTF-8 can potentially use 4 byte.
     // All input characters are 1 byte, so the 60th character is the last with 4 bytes left in the buffer.
     // Thus we end up with truncation after 60 characters.
-    const wchar_t* wszTooLong         = L"123456789.123456789.123456789.123456789.123456789.123456789.WAAAAAAAAAAAAAAH";
-    const wchar_t* wszTooLongExpected = L"123456789.123456789.123456789.123456789.123456789.123456789.";
-    const wchar_t* wszTooLongExpected2 =
-      L"'123456789.123456789.123456789.123456789.123456789.123456789., 123456789.123456789.123456789.123456789.123456789.123456789.'";
+    const wchar_t* wszTooLong          = L"123456789.123456789.123456789.123456789.123456789.123456789.WAAAAAAAAAAAAAAH";
+    const wchar_t* wszTooLongExpected  = L"123456789.123456789.123456789.123456789.123456789.123456789.";
+    const wchar_t* wszTooLongExpected2 = L"'123456789.123456789.123456789.123456789.123456789.123456789., 123456789.123456789.123456789.123456789.123456789.123456789.'";
     TestFormatWChar(xiiFmt("{0}", wszTooLong), wszTooLongExpected);
     TestFormatWChar(xiiFmt("'{0}, {1}'", wszTooLong, wszTooLong), wszTooLongExpected2);
   }
@@ -165,12 +164,14 @@ XII_CREATE_SIMPLE_TEST(Strings, FormatString)
     CompareSnprintf(perfLog, xiiFmt("{}, {}, {}, {}, {}, {}, {}, {}, {}, {}", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9), "%i, %i, %i, %i, %i, %i, %i, %i, %i, %i",
                     0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
 
-    // FILE* file = fopen("D:\\snprintf_perf.txt", "wb");
-    // if (file)
-    //{
-    //  fwrite(perfLog.GetData(), 1, perfLog.GetElementCount(), file);
-    //  fclose(file);
-    //}
+#if 0
+    FILE* file = fopen("D:\\snprintf_perf.txt", "wb");
+    if (file)
+    {
+      fwrite(perfLog.GetData(), 1, perfLog.GetElementCount(), file);
+      fclose(file);
+    }
+#endif
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Auto Increment")

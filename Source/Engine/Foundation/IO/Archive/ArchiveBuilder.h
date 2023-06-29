@@ -5,9 +5,9 @@
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Types/Delegate.h>
 
-/// \brief Utility class to build an xiiArchive file from files/folders on disk
+/// \brief Utility class to build a xiiArchive file from files/folders on disk
 ///
-/// All functionality for writing an xiiArchive file is available through xiiArchiveUtils.
+/// All functionality for writing a xiiArchive file is available through xiiArchiveUtils.
 class XII_FOUNDATION_DLL xiiArchiveBuilder
 {
 public:

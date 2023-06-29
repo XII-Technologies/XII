@@ -408,7 +408,7 @@ void xiiQtFileserveWidget::LogActivity(const xiiFormatString& text, xiiFileserve
   auto& item = m_pActivityModel->AppendItem();
 
   xiiStringBuilder tmp;
-  item.m_Text = text.GetText(tmp);
+  item.m_Text = text.GetTextCStr(tmp);
   item.m_Type = type;
 }
 

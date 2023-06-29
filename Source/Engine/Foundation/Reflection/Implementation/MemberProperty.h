@@ -13,7 +13,7 @@
 /// \brief The base class for all typed member properties. I.e. once the type of a property is determined, it can be cast to the proper
 /// version of this.
 ///
-/// For example, when you have a pointer to an xiiAbstractMemberProperty and it returns that the property is of type 'int', you can cast the
+/// For example, when you have a pointer to a xiiAbstractMemberProperty and it returns that the property is of type 'int', you can cast the
 /// pointer to an pointer to xiiTypedMemberProperty<int> which then allows you to access its values.
 template <typename Type>
 class xiiTypedMemberProperty : public xiiAbstractMemberProperty

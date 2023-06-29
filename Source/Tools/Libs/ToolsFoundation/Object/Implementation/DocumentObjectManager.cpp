@@ -271,7 +271,7 @@ void xiiDocumentObjectManager::AddObject(xiiDocumentObject* pObject, xiiDocument
   if (pParent == &m_pObjectStorage->m_RootObject && xiiStringUtils::IsNullOrEmpty(szParentProperty))
     szParentProperty = "Children";
 
-  XII_ASSERT_DEV(pObject->GetGuid().IsValid(), "Object Guid invalid! Object was not created via an xiiObjectManagerBase!");
+  XII_ASSERT_DEV(pObject->GetGuid().IsValid(), "Object Guid invalid! Object was not created via a xiiObjectManagerBase!");
   XII_ASSERT_DEV(
     CanAdd(pObject->GetTypeAccessor().GetType(), pParent, szParentProperty, index).m_Result.Succeeded(), "Trying to execute invalid add!");
 

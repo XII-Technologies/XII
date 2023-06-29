@@ -205,7 +205,7 @@ xiiResult xiiAssetCurator::EnsureAssetInfoUpdated(const char* szAbsFilePath)
   XII_LOCK(m_CuratorMutex);
   xiiFileStatus& RefFile = m_ReferencedFiles[szAbsFilePath];
   xiiUuid        oldGuid = RefFile.m_AssetGuid;
-  // if it already has a valid GUID, an xiiAssetInfo object must exist
+  // if it already has a valid GUID, a xiiAssetInfo object must exist
   bool bNew = !RefFile.m_AssetGuid.IsValid(); // Under this current location the asset is not known.
   XII_VERIFY(bNew == !m_KnownAssets.Contains(RefFile.m_AssetGuid), "guid set in file-status but no asset is actually known under that guid");
 

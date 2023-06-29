@@ -366,7 +366,7 @@ xiiResult xiiTypeScriptAssetDocumentManager::GenerateScriptCompendium(xiiBitflag
   // now all we need is the GUID of the TypeScript asset to look up this information at runtime
   // thus the xiiTypeScriptComponent does not need to store the asset document reference as a full string (path), but can just
   // store it as the GUID
-  // at runtime this 'path' is not used as an xiiResource path/id, as would be common, but is used to look up the information
+  // at runtime this 'path' is not used as a xiiResource path/id, as would be common, but is used to look up the information
   // directly from the compendium
   {
     for (auto pAssetInfo : allTsAssets)

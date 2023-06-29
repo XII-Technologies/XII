@@ -31,7 +31,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiEngineWindowEvent
 
 /// \brief Base class for all document windows that need a connection to the engine process, and might want to render 3D content.
 ///
-/// This class has an xiiEditorEngineConnection object for sending messages between the editor and the engine process.
+/// This class has a xiiEditorEngineConnection object for sending messages between the editor and the engine process.
 /// It also allows to embed xiiQtEngineViewWidget objects into the UI, which enable 3D rendering by the engine process.
 class XII_EDITORFRAMEWORK_DLL xiiQtEngineDocumentWindow : public xiiQtDocumentWindow
 {

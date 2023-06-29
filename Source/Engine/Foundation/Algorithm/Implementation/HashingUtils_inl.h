@@ -95,6 +95,17 @@ struct xiiHashHelper<const char*>
   XII_ALWAYS_INLINE static bool Equal(const char* a, const char* b) { return xiiStringUtils::IsEqual(a, b); }
 };
 
+template <>
+struct xiiHashHelper<xiiStringView>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(xiiStringView sValue)
+  {
+    return xiiHashingUtils::StringHashTo32(xiiHashingUtils::StringHash(sValue));
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(xiiStringView a, xiiStringView b) { return a == b; }
+};
+
 template <typename T>
 struct xiiHashHelper<T*>
 {

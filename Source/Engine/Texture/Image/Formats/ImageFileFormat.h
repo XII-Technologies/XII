@@ -30,10 +30,10 @@ public:
   /// \brief Should return true, if files with the given extension can be written.
   virtual bool CanWriteFileType(const char* szExtension) const = 0;
 
-  /// \brief Returns an xiiImageFileFormat that can read the given extension. Returns nullptr if there is no appropriate xiiImageFileFormat.
+  /// \brief Returns a xiiImageFileFormat that can read the given extension. Returns nullptr if there is no appropriate xiiImageFileFormat.
   static xiiImageFileFormat* GetReaderFormat(const char* szExtension);
 
-  /// \brief Returns an xiiImageFileFormat that can write the given extension. Returns nullptr if there is no appropriate xiiImageFileFormat.
+  /// \brief Returns a xiiImageFileFormat that can write the given extension. Returns nullptr if there is no appropriate xiiImageFileFormat.
   static xiiImageFileFormat* GetWriterFormat(const char* szExtension);
 
   static xiiResult ReadImageHeader(const char* szFileName, xiiImageHeader& ref_header);

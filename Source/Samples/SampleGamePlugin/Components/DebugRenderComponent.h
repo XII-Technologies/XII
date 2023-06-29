@@ -28,7 +28,7 @@ struct DebugRenderComponentMask
   };
 
   // this allows the debugger to show us names for a bitmask
-  // just try this out by looking at an xiiBitflags variable in a debugger
+  // just try this out by looking at a xiiBitflags variable in a debugger
   struct Bits
   {
     xiiUInt8 Box : 1;

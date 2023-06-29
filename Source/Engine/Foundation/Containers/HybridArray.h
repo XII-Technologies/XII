@@ -6,7 +6,7 @@
 ///
 /// It is often more efficient to use a hybrid array, rather than a dynamic array, when the number of needed elements is typically low or when the array is used only temporarily. In this case costly allocations can often be prevented entirely.
 /// However, if the number of elements is unpredictable or usually very large, prefer a dynamic array, to avoid wasting (stack) memory for a hybrid array that is rarely large enough to be used.
-/// The xiiHybridArray is derived from xiiDynamicArray and can therefore be passed to functions that expect an xiiDynamicArray, even for output.
+/// The xiiHybridArray is derived from xiiDynamicArray and can therefore be passed to functions that expect a xiiDynamicArray, even for output.
 template <typename T, xiiUInt32 Size, typename AllocatorWrapper = xiiDefaultAllocatorWrapper>
 class xiiHybridArray : public xiiDynamicArray<T, AllocatorWrapper>
 {

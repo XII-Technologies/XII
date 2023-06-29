@@ -16,19 +16,19 @@ public:
   XII_ALWAYS_INLINE bool IsCustomType() const { return m_PrimitiveType == xiiOpenDdlPrimitiveType::Custom; } // [tested]
 
   /// \brief Whether this is a custom object type of the requested type.
-  XII_ALWAYS_INLINE bool IsCustomType(const char* szTypeName) const
+  XII_ALWAYS_INLINE bool IsCustomType(xiiStringView sTypeName) const
   {
-    return m_PrimitiveType == xiiOpenDdlPrimitiveType::Custom && xiiStringUtils::IsEqual(m_szCustomType, szTypeName);
+    return m_PrimitiveType == xiiOpenDdlPrimitiveType::Custom && m_sCustomType == sTypeName;
   }
 
   /// \brief Returns the string for the custom type name.
-  XII_ALWAYS_INLINE const char* GetCustomType() const { return m_szCustomType; } // [tested]
+  XII_ALWAYS_INLINE xiiStringView GetCustomType() const { return m_sCustomType; } // [tested]
 
   /// \brief Whether the name of the object is non-empty.
-  XII_ALWAYS_INLINE bool HasName() const { return !xiiStringUtils::IsNullOrEmpty(m_szName); } // [tested]
+  XII_ALWAYS_INLINE bool HasName() const { return !m_sName.IsEmpty(); } // [tested]
 
   /// \brief Returns the name of the object.
-  XII_ALWAYS_INLINE const char* GetName() const { return m_szName; } // [tested]
+  XII_ALWAYS_INLINE xiiStringView GetName() const { return m_sName; } // [tested]
 
   /// \brief Returns whether the element name is a global or a local name.
   XII_ALWAYS_INLINE bool IsNameGlobal() const { return (m_uiNumChildElements & XII_BIT(31)) != 0; } // [tested]
@@ -93,24 +93,24 @@ public:
 
   /// \brief Searches for a child with the given name. It does not matter whether the object's name is 'local' or 'global'.
   /// \a szName is case-sensitive.
-  const xiiOpenDdlReaderElement* FindChild(const char* szName) const; // [tested]
+  const xiiOpenDdlReaderElement* FindChild(xiiStringView sName) const; // [tested]
 
   /// \brief Searches for a child element that has the given type, name and if it is a primitives list, at least the desired number of primitives.
-  const xiiOpenDdlReaderElement* FindChildOfType(xiiOpenDdlPrimitiveType type, const char* szName, xiiUInt32 uiMinNumberOfPrimitives = 1) const;
+  const xiiOpenDdlReaderElement* FindChildOfType(xiiOpenDdlPrimitiveType type, xiiStringView sName, xiiUInt32 uiMinNumberOfPrimitives = 1) const;
 
   /// \brief Searches for a child element with the given type and optionally also a certain name.
-  const xiiOpenDdlReaderElement* FindChildOfType(const char* szType, const char* szName = nullptr) const;
+  const xiiOpenDdlReaderElement* FindChildOfType(xiiStringView sType, xiiStringView sName = {}) const;
 
 private:
   friend class xiiOpenDdlReader;
 
-  xiiOpenDdlPrimitiveType        m_PrimitiveType;
-  xiiUInt32                      m_uiNumChildElements;
-  const void*                    m_pFirstChild;
-  const xiiOpenDdlReaderElement* m_pLastChild;
-  const char*                    m_szCustomType;
-  const char*                    m_szName;
-  const xiiOpenDdlReaderElement* m_pSiblingElement;
+  xiiOpenDdlPrimitiveType        m_PrimitiveType      = xiiOpenDdlPrimitiveType::Custom;
+  xiiUInt32                      m_uiNumChildElements = 0;
+  const void*                    m_pFirstChild        = nullptr;
+  const xiiOpenDdlReaderElement* m_pLastChild         = nullptr;
+  xiiStringView                  m_sCustomType;
+  xiiStringView                  m_sName;
+  const xiiOpenDdlReaderElement* m_pSiblingElement = nullptr;
 };
 
 /// \brief An OpenDDL reader parses an entire DDL document and creates an in-memory representation of the document structure.
@@ -133,13 +133,13 @@ public:
   const xiiOpenDdlReaderElement* GetRootElement() const; // [tested]
 
   /// \brief Searches for an element with a global name. NULL if there is no such element.
-  const xiiOpenDdlReaderElement* FindElement(const char* szGlobalName) const; // [tested]
+  const xiiOpenDdlReaderElement* FindElement(xiiStringView sGlobalName) const; // [tested]
 
 protected:
-  virtual void OnBeginObject(const char* szType, const char* szName, bool bGlobalName) override;
+  virtual void OnBeginObject(xiiStringView sType, xiiStringView sName, bool bGlobalName) override;
   virtual void OnEndObject() override;
 
-  virtual void OnBeginPrimitiveList(xiiOpenDdlPrimitiveType type, const char* szName, bool bGlobalName) override;
+  virtual void OnBeginPrimitiveList(xiiOpenDdlPrimitiveType type, xiiStringView sName, bool bGlobalName) override;
   virtual void OnEndPrimitiveList() override;
 
   virtual void OnPrimitiveBool(xiiUInt32 count, const bool* pData, bool bThisIsAll) override;
@@ -159,11 +159,11 @@ protected:
 
   virtual void OnPrimitiveString(xiiUInt32 count, const xiiStringView* pData, bool bThisIsAll) override;
 
-  virtual void OnParsingError(const char* szMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn) override;
+  virtual void OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn) override;
 
 protected:
-  xiiOpenDdlReaderElement* CreateElement(xiiOpenDdlPrimitiveType type, const char* szType, const char* szName, bool bGlobalName);
-  const char*              CopyString(const xiiStringView& string);
+  xiiOpenDdlReaderElement* CreateElement(xiiOpenDdlPrimitiveType type, xiiStringView sType, xiiStringView sName, bool bGlobalName);
+  xiiStringView            CopyString(const xiiStringView& string);
   void                     StorePrimitiveData(bool bThisIsAll, xiiUInt32 bytecount, const xiiUInt8* pData);
 
   void      ClearDataChunks();

@@ -100,14 +100,14 @@ public:
   XII_ALWAYS_INLINE const xiiBitflags<xiiTypeFlags>& GetTypeFlags() const { return m_TypeFlags; } // [tested]
 
   /// \brief Searches all xiiRTTI instances for the one with the given name, or nullptr if no such type exists.
-  static xiiRTTI* FindTypeByName(const char* szName); // [tested]
+  static xiiRTTI* FindTypeByName(xiiStringView sName); // [tested]
 
   /// \brief Searches all xiiRTTI instances for the one with the given hashed name, or nullptr if no such type exists.
   static xiiRTTI* FindTypeByNameHash(xiiUInt64 uiNameHash); // [tested]
   static xiiRTTI* FindTypeByNameHash32(xiiUInt32 uiNameHash);
 
   /// \brief Will iterate over all properties of this type and (optionally) the base types to search for a property with the given name.
-  xiiAbstractProperty* FindPropertyByName(const char* szName, bool bSearchBaseTypes = true) const; // [tested]
+  xiiAbstractProperty* FindPropertyByName(xiiStringView sName, bool bSearchBaseTypes = true) const; // [tested]
 
   /// \brief Returns the name of the plugin which this type is declared in.
   XII_ALWAYS_INLINE const char* GetPluginName() const { return m_szPluginName; } // [tested]
@@ -135,7 +135,7 @@ public:
   {
     XII_ASSERT_DEBUG(m_bGatheredDynamicMessageHandlers, "Message handler table should have been gathered at this point.\n"
                                                         "If this assert is triggered for a type loaded from a dynamic plugin,\n"
-                                                        "you may have forgotten to instantiate an xiiPlugin object inside your plugin DLL.");
+                                                        "you may have forgotten to instantiate a xiiPlugin object inside your plugin DLL.");
 
     const xiiUInt32 uiIndex = id - m_uiMsgIdOffset;
     return uiIndex < m_DynamicMessageHandlers.GetCount() && m_DynamicMessageHandlers.GetData()[uiIndex] != nullptr;

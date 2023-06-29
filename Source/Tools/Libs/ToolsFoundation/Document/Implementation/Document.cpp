@@ -416,9 +416,9 @@ void xiiDocument::ShowDocumentStatus(const xiiFormatString& msg) const
   xiiStringBuilder tmp;
 
   xiiDocumentEvent e;
-  e.m_pDocument   = this;
-  e.m_szStatusMsg = msg.GetText(tmp);
-  e.m_Type        = xiiDocumentEvent::Type::DocumentStatusMsg;
+  e.m_pDocument  = this;
+  e.m_sStatusMsg = msg.GetText(tmp);
+  e.m_Type       = xiiDocumentEvent::Type::DocumentStatusMsg;
 
   m_EventsOne.Broadcast(e);
 }

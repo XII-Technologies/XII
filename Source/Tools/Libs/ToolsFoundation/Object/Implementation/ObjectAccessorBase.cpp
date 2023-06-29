@@ -2,7 +2,7 @@
 
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
-void xiiObjectAccessorBase::StartTransaction(const char* szDisplayString) {}
+void xiiObjectAccessorBase::StartTransaction(xiiStringView sDisplayString) {}
 
 
 void xiiObjectAccessorBase::CancelTransaction() {}
@@ -29,11 +29,7 @@ xiiStatus xiiObjectAccessorBase::GetValue(const xiiDocumentObject* pObject, cons
 }
 
 
-xiiStatus xiiObjectAccessorBase::SetValue(
-  const xiiDocumentObject* pObject,
-  const char*              szProp,
-  const xiiVariant&        newValue,
-  xiiVariant               index /*= xiiVariant()*/)
+xiiStatus xiiObjectAccessorBase::SetValue(const xiiDocumentObject* pObject, const char* szProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
   const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(szProp);
   if (!pProp)
@@ -42,11 +38,7 @@ xiiStatus xiiObjectAccessorBase::SetValue(
 }
 
 
-xiiStatus xiiObjectAccessorBase::InsertValue(
-  const xiiDocumentObject* pObject,
-  const char*              szProp,
-  const xiiVariant&        newValue,
-  xiiVariant               index /*= xiiVariant()*/)
+xiiStatus xiiObjectAccessorBase::InsertValue(const xiiDocumentObject* pObject, const char* szProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
   const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(szProp);
   if (!pProp)
@@ -82,12 +74,7 @@ xiiStatus xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject, cons
 }
 
 
-xiiStatus xiiObjectAccessorBase::AddObject(
-  const xiiDocumentObject* pParent,
-  const char*              szParentProp,
-  const xiiVariant&        index,
-  const xiiRTTI*           pType,
-  xiiUuid&                 inout_objectGuid)
+xiiStatus xiiObjectAccessorBase::AddObject(const xiiDocumentObject* pParent, const char* szParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid)
 {
   const xiiAbstractProperty* pProp = pParent->GetType()->FindPropertyByName(szParentProp);
   if (!pProp)
@@ -95,11 +82,7 @@ xiiStatus xiiObjectAccessorBase::AddObject(
   return AddObject(pParent, pProp, index, pType, inout_objectGuid);
 }
 
-xiiStatus xiiObjectAccessorBase::MoveObject(
-  const xiiDocumentObject* pObject,
-  const xiiDocumentObject* pNewParent,
-  const char*              szParentProp,
-  const xiiVariant&        index)
+xiiStatus xiiObjectAccessorBase::MoveObject(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, const char* szParentProp, const xiiVariant& index)
 {
   const xiiAbstractProperty* pProp = pNewParent->GetType()->FindPropertyByName(szParentProp);
   if (!pProp)

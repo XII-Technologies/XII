@@ -28,8 +28,8 @@ using xiiImguiConfigStyleCallback = xiiDelegate<void(ImGuiStyle&)>;
 /// To prevent Imgui from using mouse and keyboard input (but still do rendering) use SetPassInputToImgui().
 /// To prevent your app from using mouse and keyboard input when Imgui has focus, query WantsInput().
 ///
-/// \note Don't forget that to see the GUI on screen, your render pipeline must contain an xiiImguiExtractor
-/// and you need to have an xiiImguiRenderer set (typically on an xiiSimpleRenderPass).
+/// \note Don't forget that to see the GUI on screen, your render pipeline must contain a xiiImguiExtractor
+/// and you need to have a xiiImguiRenderer set (typically on a xiiSimpleRenderPass).
 class XII_GAMEENGINE_DLL xiiImgui
 {
   XII_DECLARE_SINGLETON(xiiImgui);

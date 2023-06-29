@@ -41,7 +41,7 @@ public:
   bool HadFatalParsingError() const { return m_bHadFatalParsingError; } // [tested]
 
 protected:
-  /// \brief Sets an xiiLogInterface through which errors and warnings are reported.
+  /// \brief Sets a xiiLogInterface through which errors and warnings are reported.
   void SetLogInterface(xiiLogInterface* pLog) { m_pLogInterface = pLog; }
 
   /// \brief Data is returned in larger chunks, to reduce the number of function calls. The cache size determines the maximum chunk size per primitive
@@ -69,9 +69,9 @@ protected:
   void StopParsing();
 
   /// \brief Outputs that a parsing error was detected (via OnParsingError) and stops further parsing, if bFatal is set to true.
-  void ParsingError(const char* szMessage, bool bFatal);
+  void ParsingError(xiiStringView sMessage, bool bFatal);
 
-  xiiLogInterface* m_pLogInterface;
+  xiiLogInterface* m_pLogInterface = nullptr;
 
 protected:
   /// \brief Called when something unexpected is encountered in the document.
@@ -80,16 +80,16 @@ protected:
   /// If bFatal is true, the error has left the parser in an unrecoverable state and thus it will not continue parsing.
   /// In that case client code will need to clean up it's open state, as no further callbacks will be called.
   /// If bFatal is false, the document is not entirely valid, but the parser is still able to continue.
-  virtual void OnParsingError(const char* szMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn) {}
+  virtual void OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn) {}
 
   /// \brief Called when a new object is encountered.
-  virtual void OnBeginObject(const char* szType, const char* szName, bool bGlobalName) = 0;
+  virtual void OnBeginObject(xiiStringView sType, xiiStringView sName, bool bGlobalName) = 0;
 
   /// \brief Called when the end of an object is encountered.
   virtual void OnEndObject() = 0;
 
   /// \brief Called when a new primitive object is encountered.
-  virtual void OnBeginPrimitiveList(xiiOpenDdlPrimitiveType type, const char* szName, bool bGlobalName) = 0;
+  virtual void OnBeginPrimitiveList(xiiOpenDdlPrimitiveType type, xiiStringView sName, bool bGlobalName) = 0;
 
   /// \brief Called when the end of a primitive object is encountered.
   virtual void OnEndPrimitiveList() = 0;

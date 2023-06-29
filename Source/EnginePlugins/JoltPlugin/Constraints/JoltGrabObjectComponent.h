@@ -86,7 +86,7 @@ public:
   void SetAttachToReference(const char* szReference); // [ property ]
 
   /// Which other game object to attach the grabbed object to.
-  /// It is expected to hold a kinematic xiiJoltDynamicActorComponent that an xiiJoltJointComponent can be attached to.
+  /// It is expected to hold a kinematic xiiJoltDynamicActorComponent that a xiiJoltJointComponent can be attached to.
   xiiGameObjectHandle m_hAttachTo;
 
 protected:

@@ -111,7 +111,7 @@ private:
   friend class xiiResourceHandleStreamOperations;
 };
 
-/// \brief The xiiTypedResourceHandle controls access to an xiiResource.
+/// \brief The xiiTypedResourceHandle controls access to a xiiResource.
 ///
 /// All resources must be referenced using xiiTypedResourceHandle instances (instantiated with the proper resource type as the template
 /// argument). You must not store a direct pointer to a resource anywhere. Instead always store resource handles. To actually access a

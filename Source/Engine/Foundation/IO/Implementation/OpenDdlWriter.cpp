@@ -212,7 +212,7 @@ xiiOpenDdlWriter::xiiOpenDdlWriter()
 // None,             ///< No whitespace, not even newlines, is output. This should be used when DDL is used for data exchange, but probably not read
 // by humans.
 
-void xiiOpenDdlWriter::BeginObject(const char* szType, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/, bool bSingleLine /*= false*/)
+void xiiOpenDdlWriter::BeginObject(xiiStringView sType, xiiStringView sName /*= {}*/, bool bGlobalName /*= false*/, bool bSingleLine /*= false*/)
 {
   {
     const auto state = m_StateStack.PeekBack().m_State;
@@ -231,9 +231,9 @@ void xiiOpenDdlWriter::BeginObject(const char* szType, const char* szName /*= nu
   }
 
   OutputIndentation();
-  OutputString(szType);
+  OutputString(sType);
 
-  OutputObjectName(szName, bGlobalName);
+  OutputObjectName(sName, bGlobalName);
 
   if (bSingleLine)
   {
@@ -281,20 +281,20 @@ void xiiOpenDdlWriter::OutputObjectBeginning()
   m_iIndentation++;
 }
 
-bool IsDdlIdentifierCharacter(xiiUInt8 uiByte);
+bool IsDdlIdentifierCharacter(xiiUInt32 uiByte);
 
-void xiiOpenDdlWriter::OutputObjectName(const char* szName, bool bGlobalName)
+void xiiOpenDdlWriter::OutputObjectName(xiiStringView sName, bool bGlobalName)
 {
-  if (!xiiStringUtils::IsNullOrEmpty(szName))
+  if (!sName.IsEmpty())
   {
     // XII_ASSERT_DEBUG(xiiStringUtils::FindSubString(szName, " ") == nullptr, "Spaces are not allowed in DDL object names: '{0}'", szName);
 
 
     /// \test This code path is untested
     bool bEscape = false;
-    for (const char* szNameCpy = szName; *szNameCpy != '\0'; ++szNameCpy)
+    for (auto nameIt = sName.GetIteratorFront(); nameIt.IsValid(); ++nameIt)
     {
-      if (!IsDdlIdentifierCharacter(*szNameCpy))
+      if (!IsDdlIdentifierCharacter(nameIt.GetCharacter()))
       {
         bEscape = true;
         break;
@@ -321,7 +321,7 @@ void xiiOpenDdlWriter::OutputObjectName(const char* szName, bool bGlobalName)
     if (bEscape)
       OutputString("\'", 1);
 
-    OutputString(szName);
+    OutputString(sName);
 
     if (bEscape)
       OutputString("\'", 1);
@@ -368,7 +368,7 @@ void xiiOpenDdlWriter::EndObject()
   m_StateStack.PopBack();
 }
 
-void xiiOpenDdlWriter::BeginPrimitiveList(xiiOpenDdlPrimitiveType type, const char* szName /*= nullptr*/, bool bGlobalName /*= false*/)
+void xiiOpenDdlWriter::BeginPrimitiveList(xiiOpenDdlPrimitiveType type, xiiStringView sName /*= {}*/, bool bGlobalName /*= false*/)
 {
   OutputObjectBeginning();
 
@@ -388,7 +388,7 @@ void xiiOpenDdlWriter::BeginPrimitiveList(xiiOpenDdlPrimitiveType type, const ch
   else
     OutputPrimitiveTypeNameCompliant(type);
 
-  OutputObjectName(szName, bGlobalName);
+  OutputObjectName(sName, bGlobalName);
 
   // more compact
   // if (m_bCompactMode)

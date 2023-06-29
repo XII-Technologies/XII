@@ -49,12 +49,12 @@ struct xiiResourceManagerEvent
   Type m_Type;
 };
 
-/// \brief The flags of an xiiResource instance.
+/// \brief The flags of a xiiResource instance.
 struct xiiResourceFlags
 {
   using StorageType = xiiUInt16;
 
-  /// \brief The flags of an xiiResource instance.
+  /// \brief The flags of a xiiResource instance.
   enum Enum
   {
     UpdateOnMainThread      = XII_BIT(0),  ///< After loading the resource data on a thread, it must be uploaded on the main thread. Use this for resources which require a context that is only available on the main thread.

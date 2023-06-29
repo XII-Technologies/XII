@@ -31,7 +31,7 @@
 ///
 /// using xiiExampleEnum = xiiEnum<xiiExampleEnumBase>;
 ///
-/// This defines an "xiiExampleEnum" which is stored in an xiiUInt8 and is default initialized with Value1
+/// This defines an "xiiExampleEnum" which is stored in a xiiUInt8 and is default initialized with Value1
 /// For more examples see the enum test.
 template <typename Derived>
 struct xiiEnum : public Derived

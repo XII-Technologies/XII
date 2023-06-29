@@ -10,9 +10,9 @@ xiiObjectCommandAccessor::xiiObjectCommandAccessor(xiiCommandHistory* pHistory) 
 {
 }
 
-void xiiObjectCommandAccessor::StartTransaction(const char* szDisplayString)
+void xiiObjectCommandAccessor::StartTransaction(xiiStringView sDisplayString)
 {
-  m_pHistory->StartTransaction(szDisplayString);
+  m_pHistory->StartTransaction(sDisplayString);
 }
 
 void xiiObjectCommandAccessor::CancelTransaction()
@@ -40,11 +40,7 @@ void xiiObjectCommandAccessor::FinishTemporaryCommands()
   m_pHistory->FinishTemporaryCommands();
 }
 
-xiiStatus xiiObjectCommandAccessor::SetValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  const xiiVariant&          newValue,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiObjectCommandAccessor::SetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
   xiiSetObjectPropertyCommand cmd;
   cmd.m_Object    = pObject->GetGuid();
@@ -54,11 +50,7 @@ xiiStatus xiiObjectCommandAccessor::SetValue(
   return m_pHistory->AddCommand(cmd);
 }
 
-xiiStatus xiiObjectCommandAccessor::InsertValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  const xiiVariant&          newValue,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiObjectCommandAccessor::InsertValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
   xiiInsertObjectPropertyCommand cmd;
   cmd.m_Object    = pObject->GetGuid();
@@ -77,11 +69,7 @@ xiiStatus xiiObjectCommandAccessor::RemoveValue(const xiiDocumentObject* pObject
   return m_pHistory->AddCommand(cmd);
 }
 
-xiiStatus xiiObjectCommandAccessor::MoveValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  const xiiVariant&          oldIndex,
-  const xiiVariant&          newIndex)
+xiiStatus xiiObjectCommandAccessor::MoveValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& oldIndex, const xiiVariant& newIndex)
 {
   xiiMoveObjectPropertyCommand cmd;
   cmd.m_Object    = pObject->GetGuid();
@@ -91,12 +79,7 @@ xiiStatus xiiObjectCommandAccessor::MoveValue(
   return m_pHistory->AddCommand(cmd);
 }
 
-xiiStatus xiiObjectCommandAccessor::AddObject(
-  const xiiDocumentObject*   pParent,
-  const xiiAbstractProperty* pParentProp,
-  const xiiVariant&          index,
-  const xiiRTTI*             pType,
-  xiiUuid&                   inout_objectGuid)
+xiiStatus xiiObjectCommandAccessor::AddObject(const xiiDocumentObject* pParent, const xiiAbstractProperty* pParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid)
 {
   xiiAddObjectCommand cmd;
   cmd.m_Parent          = pParent ? pParent->GetGuid() : xiiUuid();
@@ -117,11 +100,7 @@ xiiStatus xiiObjectCommandAccessor::RemoveObject(const xiiDocumentObject* pObjec
   return m_pHistory->AddCommand(cmd);
 }
 
-xiiStatus xiiObjectCommandAccessor::MoveObject(
-  const xiiDocumentObject*   pObject,
-  const xiiDocumentObject*   pNewParent,
-  const xiiAbstractProperty* pParentProp,
-  const xiiVariant&          index)
+xiiStatus xiiObjectCommandAccessor::MoveObject(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, const xiiAbstractProperty* pParentProp, const xiiVariant& index)
 {
   xiiMoveObjectCommand cmd;
   cmd.m_NewParent       = pNewParent ? pNewParent->GetGuid() : xiiUuid();
