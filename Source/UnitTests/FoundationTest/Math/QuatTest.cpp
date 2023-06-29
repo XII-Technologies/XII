@@ -348,11 +348,11 @@ XII_CREATE_SIMPLE_TEST(Math, Quaternion)
       XII_TEST_FLOAT(angle.GetDegree(), (float)z, 0.1f);
     }
 
-    for (xiiUInt32 x = 0; x < 360; x += 20)
+    for (xiiUInt32 x = 5; x < 360; x += 20)
     {
-      for (xiiUInt32 y = 0; y < 360; y += 20)
+      for (xiiUInt32 y = 5; y < 360; y += 20)
       {
-        for (xiiUInt32 z = 0; z < 360; z += 30)
+        for (xiiUInt32 z = 5; z < 360; z += 30)
         {
           xiiQuat q1;
           q1.SetFromEulerAngles(xiiAngle::Degree(x), xiiAngle::Degree(y), xiiAngle::Degree(z));

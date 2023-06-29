@@ -429,7 +429,7 @@ void xiiTestFramework::UpdateReferenceImages()
   sDir.AppendPath(GetRelTestDataPath());
 
   const xiiStringBuilder sNewFiles(m_sAbsTestOutputDir.c_str(), "/Images_Result");
-  const xiiStringBuilder sRefFiles(sDir, "/Images_Reference");
+  const xiiStringBuilder sRefFiles(sDir, "/", m_sImageReferenceFolderName.c_str());
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS) && XII_ENABLED(XII_SUPPORTS_FILE_STATS)
 
@@ -457,6 +457,48 @@ void xiiTestFramework::UpdateReferenceImages()
 
 #  endif
 
+  // If some target files already exist somewhere (ie. custom folders for the tests),
+  // overwrite the existing files in their location
+  {
+    xiiHybridArray<xiiString, 32> targetFolders;
+    xiiStringBuilder              sFullPath, sTargetPath;
+
+    {
+      xiiFileSystemIterator it;
+      it.StartSearch(sDir, xiiFileSystemIteratorFlags::ReportFoldersRecursive);
+      for (; it.IsValid(); it.Next())
+      {
+        if (it.GetStats().m_sName == m_sImageReferenceFolderName.c_str())
+        {
+          it.GetStats().GetFullPath(sFullPath);
+
+          targetFolders.PushBack(sFullPath);
+        }
+      }
+    }
+
+    xiiFileSystemIterator it;
+    it.StartSearch(sNewFiles, xiiFileSystemIteratorFlags::ReportFiles);
+    for (; it.IsValid(); it.Next())
+    {
+      it.GetStats().GetFullPath(sFullPath);
+
+      for (xiiUInt32 i = 0; i < targetFolders.GetCount(); ++i)
+      {
+        sTargetPath = targetFolders[i];
+        sTargetPath.AppendPath(it.GetStats().m_sName);
+
+        if (xiiOSFile::ExistsFile(sTargetPath))
+        {
+          xiiOSFile::DeleteFile(sTargetPath).IgnoreResult();
+          xiiOSFile::MoveFileOrDirectory(sFullPath, sTargetPath).IgnoreResult();
+          break;
+        }
+      }
+    }
+  }
+
+  // Copy the remaining files to the default directory.
   xiiOSFile::CopyFolder(sNewFiles, sRefFiles).IgnoreResult();
   xiiOSFile::DeleteFolder(sNewFiles).IgnoreResult();
 #endif

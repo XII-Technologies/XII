@@ -215,6 +215,30 @@ size_t xiiMath::SafeConvertToSizeT(xiiUInt64 uiValue)
 }
 #endif
 
+float xiiMath::ReplaceNaN(float value, float fFallback)
+{
+  // ATTENTION: if this is a template, inline or constexpr function, the current MSVC (17.6)
+  // seems to generate incorrect code and the IsNaN check doesn't detect NaNs.
+  // As an out-of-line function it works.
+
+  if (xiiMath::IsNaN(value))
+    return fFallback;
+
+  return value;
+}
+
+double xiiMath::ReplaceNaN(double value, double fFallback)
+{
+  // ATTENTION: if this is a template, inline or constexpr function, the current MSVC (17.6)
+  // seems to generate incorrect code and the IsNaN check doesn't detect NaNs.
+  // As an out-of-line function it works.
+
+  if (xiiMath::IsNaN(value))
+    return fFallback;
+
+  return value;
+}
+
 xiiVec3 xiiBasisAxis::GetBasisVectorFloat(Enum basisAxis)
 {
   switch (basisAxis)

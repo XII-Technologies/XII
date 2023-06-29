@@ -141,9 +141,9 @@ xiiUInt32 xiiCommandLineUtils::GetParameterCount() const
   return m_Commands.GetCount();
 }
 
-const char* xiiCommandLineUtils::GetParameter(xiiUInt32 uiParam) const
+const xiiString& xiiCommandLineUtils::GetParameter(xiiUInt32 uiParam) const
 {
-  return m_Commands[uiParam].GetData();
+  return m_Commands[uiParam];
 }
 
 xiiInt32 xiiCommandLineUtils::GetOptionIndex(const char* szOption, bool bCaseSensitive) const
