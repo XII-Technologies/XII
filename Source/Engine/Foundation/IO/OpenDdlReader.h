@@ -163,7 +163,7 @@ protected:
 
 protected:
   xiiOpenDdlReaderElement* CreateElement(xiiOpenDdlPrimitiveType type, xiiStringView sType, xiiStringView sName, bool bGlobalName);
-  xiiStringView              CopyString(const xiiStringView& string);
+  xiiStringView            CopyString(const xiiStringView& string);
   void                     StorePrimitiveData(bool bThisIsAll, xiiUInt32 bytecount, const xiiUInt8* pData);
 
   void      ClearDataChunks();

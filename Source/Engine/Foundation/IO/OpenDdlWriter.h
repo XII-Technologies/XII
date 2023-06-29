@@ -130,7 +130,7 @@ protected:
     bool  m_bPrimitivesWritten = false;
   };
 
-  XII_ALWAYS_INLINE void OutputString(xiiStringView s) {m_pOutput->WriteBytes(s.GetStartPointer(), s.GetElementCount()).IgnoreResult(); }
+  XII_ALWAYS_INLINE void OutputString(xiiStringView s) { m_pOutput->WriteBytes(s.GetStartPointer(), s.GetElementCount()).IgnoreResult(); }
   XII_ALWAYS_INLINE void OutputString(xiiStringView s, xiiUInt32 uiElementCount) { m_pOutput->WriteBytes(s.GetStartPointer(), uiElementCount).IgnoreResult(); }
   void                   OutputEscapedString(const xiiStringView& string);
   void                   OutputIndentation();
