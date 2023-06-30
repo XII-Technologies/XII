@@ -6,6 +6,7 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <GuiFoundation/UIServices/ImageCache.moc.h>
+#include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
 ////////////////////////////////////////////////////////////////////////
 // xiiAssetCurator Asset Hashing and Status Updates
@@ -93,44 +94,12 @@ bool xiiAssetCurator::AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt6
     xiiLog::Error("Failed to make path absolute '{0}'", sPath);
     return false;
   }
-  xiiFileStats statDep;
-  if (xiiOSFile::GetFileStats(sPath, statDep).Failed())
-  {
-    xiiLog::Error("Failed to retrieve file stats '{0}'", sPath);
-    return false;
-  }
 
   xiiFileStatus fileStatus;
-  xiiTimestamp  previousModificationTime;
+  xiiResult     res = xiiFileSystemModel::GetSingleton()->HashFile(sPath, fileStatus);
+  if (res.Failed())
   {
-    XII_LOCK(m_CuratorMutex);
-    fileStatus               = m_ReferencedFiles[sPath];
-    previousModificationTime = fileStatus.m_Timestamp;
-  }
-
-  // if the file has been modified, make sure to get updated data
-  if (!fileStatus.m_Timestamp.Compare(statDep.m_LastModificationTime, xiiTimestamp::CompareMode::Identical))
-  {
-    CURATOR_PROFILE(sPath);
-    xiiFileReader file;
-    if (file.Open(sPath).Failed())
-    {
-      xiiLog::Error("Failed to open file '{0}'", sPath);
-      return false;
-    }
-    fileStatus.m_Timestamp = statDep.m_LastModificationTime;
-    fileStatus.m_uiHash    = xiiAssetCurator::HashFile(file, nullptr);
-    fileStatus.m_Status    = xiiFileStatus::Status::Valid;
-  }
-
-  {
-    XII_LOCK(m_CuratorMutex);
-    xiiFileStatus& refFile = m_ReferencedFiles[sPath];
-    // Only update the status if the file status has not been changed between the locks or we might write stale data to it.
-    if (refFile.m_Timestamp.Compare(previousModificationTime, xiiTimestamp::CompareMode::Identical))
-    {
-      refFile = fileStatus;
-    }
+    return false;
   }
 
   // Thumbs hash is affected by both transform dependencies and references.
@@ -143,32 +112,20 @@ bool xiiAssetCurator::AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt6
   return true;
 }
 
-xiiResult xiiAssetCurator::EnsureAssetInfoUpdated(const xiiUuid& assetGuid)
-{
-  XII_LOCK(m_CuratorMutex);
-  xiiAssetInfo* pInfo = nullptr;
-  if (!m_KnownAssets.TryGetValue(assetGuid, pInfo))
-    return XII_FAILURE;
-
-  // It is not safe here to pass pInfo->m_sAbsolutePath into EnsureAssetInfoUpdated
-  // as the function is meant to change the very instance we are passing in.
-  xiiStringBuilder sAbsPath = pInfo->m_sAbsolutePath;
-  return EnsureAssetInfoUpdated(sAbsPath);
-}
-
-static xiiResult PatchAssetGuid(const char* szAbsFilePath, xiiUuid oldGuid, xiiUuid newGuid)
+static xiiResult PatchAssetGuid(xiiStringView sAbsFilePath, xiiUuid oldGuid, xiiUuid newGuid)
 {
   const xiiDocumentTypeDescriptor* pTypeDesc = nullptr;
-  if (xiiDocumentManager::FindDocumentTypeFromPath(szAbsFilePath, true, pTypeDesc).Failed())
+  if (xiiDocumentManager::FindDocumentTypeFromPath(sAbsFilePath, true, pTypeDesc).Failed())
     return XII_FAILURE;
 
-  if (xiiDocument* pDocument = pTypeDesc->m_pManager->GetDocumentByPath(szAbsFilePath))
+  if (xiiDocument* pDocument = pTypeDesc->m_pManager->GetDocumentByPath(sAbsFilePath))
   {
     pTypeDesc->m_pManager->CloseDocument(pDocument);
   }
 
-  xiiUInt32 uiTries = 0;
-  while (pTypeDesc->m_pManager->CloneDocument(szAbsFilePath, szAbsFilePath, newGuid).Failed())
+  xiiUInt32        uiTries = 0;
+  xiiStringBuilder sTemp   = sAbsFilePath;
+  while (pTypeDesc->m_pManager->CloneDocument(sTemp, sTemp, newGuid).Failed())
   {
     if (uiTries >= 5)
       return XII_FAILURE;
@@ -180,148 +137,102 @@ static xiiResult PatchAssetGuid(const char* szAbsFilePath, xiiUuid oldGuid, xiiU
   return XII_SUCCESS;
 }
 
-xiiResult xiiAssetCurator::EnsureAssetInfoUpdated(const char* szAbsFilePath)
+xiiResult xiiAssetCurator::EnsureAssetInfoUpdated(xiiStringView sAbsFilePath, const xiiFileStatus& stat, bool bForce)
 {
-  CURATOR_PROFILE(szAbsFilePath);
-  xiiFileStats fs;
-  {
-    CURATOR_PROFILE("GetFileStats");
-    if (xiiOSFile::GetFileStats(szAbsFilePath, fs).Failed())
-      return XII_FAILURE;
-  }
-  {
-    // If the file stat matches our stored timestamp, we are still up to date.
-    XII_LOCK(m_CuratorMutex);
-    if (m_ReferencedFiles[szAbsFilePath].m_Timestamp.Compare(fs.m_LastModificationTime, xiiTimestamp::CompareMode::Identical))
-      return XII_SUCCESS;
-  }
+  CURATOR_PROFILE(sAbsFilePath);
+
+  xiiFileSystemModel* pFiles = xiiFileSystemModel::GetSingleton();
 
   // Read document info outside the lock
-  xiiFileStatus              fileStatus;
   xiiUniquePtr<xiiAssetInfo> pNewAssetInfo;
-  XII_SUCCEED_OR_RETURN(ReadAssetDocumentInfo(szAbsFilePath, fileStatus, pNewAssetInfo));
+  XII_SUCCEED_OR_RETURN(ReadAssetDocumentInfo(sAbsFilePath, stat, pNewAssetInfo));
   XII_ASSERT_DEV(pNewAssetInfo != nullptr && pNewAssetInfo->m_Info != nullptr, "Info should be valid on success.");
 
   XII_LOCK(m_CuratorMutex);
-  xiiFileStatus& RefFile = m_ReferencedFiles[szAbsFilePath];
-  xiiUuid        oldGuid = RefFile.m_AssetGuid;
-  // if it already has a valid GUID, a xiiAssetInfo object must exist
-  bool bNew = !RefFile.m_AssetGuid.IsValid(); // Under this current location the asset is not known.
-  XII_VERIFY(bNew == !m_KnownAssets.Contains(RefFile.m_AssetGuid), "guid set in file-status but no asset is actually known under that guid");
+  const xiiUuid oldGuid = stat.m_DocumentID;
+  // if it already has a valid GUID, an xiiAssetInfo object must exist
+  const bool bNewAssetFile = !stat.m_DocumentID.IsValid(); // Under this current location the asset is not known.
+  xiiUuid    newGuid       = pNewAssetInfo->m_Info->m_DocumentID;
 
-  RefFile                     = fileStatus;
-  xiiAssetInfo* pOldAssetInfo = nullptr;
-  if (bNew)
+  xiiAssetInfo* pCurrentAssetInfo = nullptr;
+  // Was the asset already known? Decide whether it was moved (ok) or duplicated (bad)
+  m_KnownAssets.TryGetValue(pNewAssetInfo->m_Info->m_DocumentID, pCurrentAssetInfo);
+  XII_VERIFY(bNewAssetFile == !pCurrentAssetInfo, "guid set in file-status but no asset is actually known under that guid");
+
+  if (bNewAssetFile && pCurrentAssetInfo != nullptr)
   {
-    // now the GUID must be valid
-    XII_ASSERT_DEV(pNewAssetInfo->m_Info->m_DocumentID.IsValid(), "Asset header read for '{0}', but its GUID is invalid! Corrupted document?", szAbsFilePath);
-    XII_ASSERT_DEV(RefFile.m_AssetGuid == pNewAssetInfo->m_Info->m_DocumentID, "UpdateAssetInfo broke the GUID!");
-
-    // Was the asset already known? Decide whether it was moved (ok) or duplicated (bad)
-    m_KnownAssets.TryGetValue(pNewAssetInfo->m_Info->m_DocumentID, pOldAssetInfo);
-    if (pOldAssetInfo != nullptr)
+    xiiFileStats fsOldLocation;
+    if (!xiiFileSystemModel::IsSameFile(pNewAssetInfo->m_sAbsolutePath, pCurrentAssetInfo->m_sAbsolutePath))
     {
-      if (pNewAssetInfo->m_sAbsolutePath == pOldAssetInfo->m_sAbsolutePath)
+      if (xiiOSFile::GetFileStats(pCurrentAssetInfo->m_sAbsolutePath, fsOldLocation).Succeeded())
       {
-        // As it is a new asset, this should actually never be the case.
-        UntrackDependencies(pOldAssetInfo);
-        pOldAssetInfo->Update(pNewAssetInfo);
-        TrackDependencies(pOldAssetInfo);
-        CheckForCircularDependencies(pOldAssetInfo).IgnoreResult();
-        UpdateAssetTransformState(RefFile.m_AssetGuid, xiiAssetInfo::TransformState::Unknown);
-        SetAssetExistanceState(*pOldAssetInfo, xiiAssetExistanceState::FileModified);
-        UpdateSubAssets(*pOldAssetInfo);
-        RefFile.m_AssetGuid = pOldAssetInfo->m_Info->m_DocumentID;
+        // DUPLICATED
+        // Unfortunately we only know about duplicates in the order in which the filesystem tells us about files
+        // That means we currently always adjust the GUID of the second, third, etc. file that we look at
+        // even if we might know that changing another file makes more sense
+        // This works well for when the editor is running and someone copies a file.
+
+        xiiLog::Error("Two assets have identical GUIDs: '{0}' and '{1}'", pNewAssetInfo->m_sAbsolutePath, pCurrentAssetInfo->m_sAbsolutePath);
+
+        const xiiUuid mod             = xiiUuid::StableUuidForString(sAbsFilePath);
+        xiiUuid       replacementGuid = pNewAssetInfo->m_Info->m_DocumentID;
+        replacementGuid.CombineWithSeed(mod);
+
+        // ReadAssetDocumentInfo already linked the file to the duplicate GUID. We remove the link again so that after patching the document we don't run into the wrong code path here.
+        pFiles->UnlinkDocument(sAbsFilePath).IgnoreResult();
+        if (PatchAssetGuid(sAbsFilePath, pNewAssetInfo->m_Info->m_DocumentID, replacementGuid).Failed())
+        {
+          xiiLog::Error("Failed to adjust GUID of asset: '{0}'", sAbsFilePath);
+          pFiles->NotifyOfChange(sAbsFilePath);
+          return XII_FAILURE;
+        }
+
+        xiiLog::Warning("Adjusted GUID of asset to make it unique: '{0}'", sAbsFilePath);
+
+        // now let's try that again
+        pFiles->NotifyOfChange(sAbsFilePath);
         return XII_SUCCESS;
       }
       else
       {
-        xiiFileStats fsOldLocation;
-        if (xiiOSFile::GetFileStats(pOldAssetInfo->m_sAbsolutePath, fsOldLocation).Failed())
-        {
-          // Asset moved, remove old file and asset info.
-          m_ReferencedFiles.Remove(pOldAssetInfo->m_sAbsolutePath);
-          UntrackDependencies(pOldAssetInfo);
-          pOldAssetInfo->Update(pNewAssetInfo);
-          TrackDependencies(pOldAssetInfo);
-          CheckForCircularDependencies(pOldAssetInfo).IgnoreResult();
-          UpdateAssetTransformState(RefFile.m_AssetGuid, xiiAssetInfo::TransformState::Unknown);
-          SetAssetExistanceState(*pOldAssetInfo,
-                                 xiiAssetExistanceState::FileModified); // asset was only moved, prevent added event (could have been modified though)
-          UpdateSubAssets(*pOldAssetInfo);
-          RefFile.m_AssetGuid = pOldAssetInfo->m_Info->m_DocumentID;
-          return XII_SUCCESS;
-        }
-        else
-        {
-          // Unfortunately we only know about duplicates in the order in which the filesystem tells us about files
-          // That means we currently always adjust the GUID of the second, third, etc. file that we look at
-          // even if we might know that changing another file makes more sense
-          // This works well for when the editor is running and someone copies a file.
-
-          xiiLog::Error("Two assets have identical GUIDs: '{0}' and '{1}'", pNewAssetInfo->m_sAbsolutePath, pOldAssetInfo->m_sAbsolutePath);
-
-          const xiiUuid mod     = xiiUuid::StableUuidForString(szAbsFilePath);
-          xiiUuid       newGuid = pNewAssetInfo->m_Info->m_DocumentID;
-          newGuid.CombineWithSeed(mod);
-
-          if (PatchAssetGuid(szAbsFilePath, pNewAssetInfo->m_Info->m_DocumentID, newGuid).Failed())
-          {
-            xiiLog::Error("Failed to adjust GUID of asset: '{0}'", szAbsFilePath);
-            m_ReferencedFiles.Remove(szAbsFilePath);
-            return XII_FAILURE;
-          }
-
-          xiiLog::Warning("Adjusted GUID of asset to make it unique: '{0}'", szAbsFilePath);
-
-          // now let's try that again
-          m_ReferencedFiles.Remove(szAbsFilePath);
-          return EnsureAssetInfoUpdated(szAbsFilePath);
-        }
+        // MOVED
+        // Notify old location to removed stale entry.
+        pFiles->NotifyOfChange(pCurrentAssetInfo->m_sAbsolutePath);
       }
     }
+  }
 
-    // and we can store the new xiiAssetInfo data under that GUID
-    pOldAssetInfo                      = pNewAssetInfo.Release();
-    m_KnownAssets[RefFile.m_AssetGuid] = pOldAssetInfo;
+  // Guid changed, different asset found, mark old as deleted and add new one.
+  if (!bNewAssetFile && oldGuid != pNewAssetInfo->m_Info->m_DocumentID)
+  {
+    // OVERWRITTEN
+    SetAssetExistanceState(*m_KnownAssets[oldGuid], xiiAssetExistanceState::FileRemoved);
+    RemoveAssetTransformState(oldGuid);
+  }
 
-    TrackDependencies(pOldAssetInfo);
-    CheckForCircularDependencies(pOldAssetInfo).IgnoreResult();
-    UpdateAssetTransformState(pOldAssetInfo->m_Info->m_DocumentID, xiiAssetInfo::TransformState::Unknown);
-    UpdateSubAssets(*pOldAssetInfo);
+  bool bNewAsset = false;
+  if (pCurrentAssetInfo)
+  {
+    UntrackDependencies(pCurrentAssetInfo);
+    pCurrentAssetInfo->Update(pNewAssetInfo);
   }
   else
   {
-    // Guid changed, different asset found, mark old as deleted and add new one.
-    if (oldGuid != RefFile.m_AssetGuid)
-    {
-      SetAssetExistanceState(*m_KnownAssets[oldGuid], xiiAssetExistanceState::FileRemoved);
-      RemoveAssetTransformState(oldGuid);
-
-      if (RefFile.m_AssetGuid.IsValid())
-      {
-        pOldAssetInfo                      = pNewAssetInfo.Release();
-        m_KnownAssets[RefFile.m_AssetGuid] = pOldAssetInfo;
-        TrackDependencies(pOldAssetInfo);
-        CheckForCircularDependencies(pOldAssetInfo).IgnoreResult();
-        // Don't call SetAssetExistanceState on newly created assets as their data structure is initialized in UpdateSubAssets for the first time.
-        UpdateSubAssets(*pOldAssetInfo);
-      }
-    }
-    else
-    {
-      // Update asset info
-      pOldAssetInfo = m_KnownAssets[RefFile.m_AssetGuid];
-      UntrackDependencies(pOldAssetInfo);
-      pOldAssetInfo->Update(pNewAssetInfo);
-      TrackDependencies(pOldAssetInfo);
-      CheckForCircularDependencies(pOldAssetInfo).IgnoreResult();
-      SetAssetExistanceState(*pOldAssetInfo, xiiAssetExistanceState::FileModified);
-      UpdateSubAssets(*pOldAssetInfo);
-    }
+    bNewAsset              = true;
+    pCurrentAssetInfo      = pNewAssetInfo.Release();
+    m_KnownAssets[newGuid] = pCurrentAssetInfo;
   }
 
-  InvalidateAssetTransformState(RefFile.m_AssetGuid);
+  TrackDependencies(pCurrentAssetInfo);
+  CheckForCircularDependencies(pCurrentAssetInfo).IgnoreResult();
+  UpdateAssetTransformState(newGuid, xiiAssetInfo::TransformState::Unknown);
+  // Don't call SetAssetExistanceState on newly created assets as their data structure is initialized in UpdateSubAssets for the first time.
+  if (!bNewAsset)
+    SetAssetExistanceState(*pCurrentAssetInfo, xiiAssetExistanceState::FileModified);
+  UpdateSubAssets(*pCurrentAssetInfo);
+
+  InvalidateAssetTransformState(newGuid);
+
   return XII_SUCCESS;
 }
 
@@ -465,52 +376,24 @@ void xiiAssetCurator::UpdateUnresolvedTrackedFiles(xiiMap<xiiString, xiiHybridAr
   }
 }
 
-xiiResult xiiAssetCurator::ReadAssetDocumentInfo(const char* szAbsFilePath, xiiFileStatus& stat, xiiUniquePtr<xiiAssetInfo>& out_assetInfo)
+xiiResult xiiAssetCurator::ReadAssetDocumentInfo(xiiStringView sAbsFilePath, const xiiFileStatus& stat, xiiUniquePtr<xiiAssetInfo>& out_assetInfo)
 {
   CURATOR_PROFILE(szAbsFilePath);
-
-  xiiFileStats fs;
-  if (xiiOSFile::GetFileStats(szAbsFilePath, fs).Failed())
-    return XII_FAILURE;
-  stat.m_Timestamp = fs.m_LastModificationTime;
-  stat.m_Status    = xiiFileStatus::Status::Valid;
-
-  // try to read the asset file
-  xiiFileReader file;
-  if (file.Open(szAbsFilePath) == XII_FAILURE)
-  {
-    stat.m_Timestamp.Invalidate();
-    stat.m_uiHash = 0;
-    stat.m_Status = xiiFileStatus::Status::FileLocked;
-
-    xiiLog::Error("Failed to open asset file '{0}'", szAbsFilePath);
-    return XII_FAILURE;
-  }
+  xiiFileSystemModel* pFiles = xiiFileSystemModel::GetSingleton();
 
   out_assetInfo = XII_DEFAULT_NEW(xiiAssetInfo);
-  xiiUniquePtr<xiiAssetDocumentInfo> docInfo;
-  auto                               itFile = m_CachedFiles.Find(szAbsFilePath);
-  {
-    XII_LOCK(m_CachedAssetsMutex);
-    auto itAsset = m_CachedAssets.Find(szAbsFilePath);
-    if (itAsset.IsValid())
-    {
-      docInfo = std::move(itAsset.Value());
-      m_CachedAssets.Remove(itAsset);
-    }
-  }
 
   // update the paths
   {
-    xiiStringBuilder sDataDir = GetSingleton()->FindDataDirectoryForAsset(szAbsFilePath);
+    xiiStringBuilder sDataDir = FindDataDirectoryForAsset(sAbsFilePath);
     sDataDir.PathParentDirectory();
 
-    xiiStringBuilder sRelPath = szAbsFilePath;
+    xiiStringBuilder sRelPath = sAbsFilePath;
     sRelPath.MakeRelativeTo(sDataDir).IgnoreResult();
 
     out_assetInfo->m_sDataDirParentRelativePath = sRelPath;
     out_assetInfo->m_sDataDirRelativePath       = xiiStringView(out_assetInfo->m_sDataDirParentRelativePath.FindSubString("/") + 1);
-    out_assetInfo->m_sAbsolutePath              = szAbsFilePath;
+    out_assetInfo->m_sAbsolutePath              = sAbsFilePath;
   }
 
   // figure out which manager should handle this asset type
@@ -518,7 +401,7 @@ xiiResult xiiAssetCurator::ReadAssetDocumentInfo(const char* szAbsFilePath, xiiF
     const xiiDocumentTypeDescriptor* pTypeDesc = nullptr;
     if (out_assetInfo->m_pDocumentTypeDescriptor == nullptr)
     {
-      if (xiiDocumentManager::FindDocumentTypeFromPath(szAbsFilePath, false, pTypeDesc).Failed())
+      if (xiiDocumentManager::FindDocumentTypeFromPath(sAbsFilePath, false, pTypeDesc).Failed())
       {
         XII_REPORT_FAILURE("Invalid asset setup");
       }
@@ -527,45 +410,51 @@ xiiResult xiiAssetCurator::ReadAssetDocumentInfo(const char* szAbsFilePath, xiiF
     }
   }
 
-  xiiDefaultMemoryStreamStorage storage;
-  xiiMemoryStreamReader         MemReader(&storage);
-  MemReader.SetDebugSourceInformation(out_assetInfo->m_sAbsolutePath);
-
-  xiiMemoryStreamWriter MemWriter(&storage);
-
-  if (docInfo && itFile.IsValid() && itFile.Value().m_Timestamp.Compare(stat.m_Timestamp, xiiTimestamp::CompareMode::Identical))
+  // Try cache first
   {
-    stat.m_uiHash = itFile.Value().m_uiHash;
-  }
-  else
-  {
-    // compute the hash for the asset file
-    stat.m_uiHash = xiiAssetCurator::HashFile(file, &MemWriter);
-  }
-  file.Close();
-
-  // and finally actually read the asset file (header only) and store the information in the xiiAssetDocumentInfo member
-  if (docInfo && itFile.IsValid() && itFile.Value().m_Timestamp.Compare(stat.m_Timestamp, xiiTimestamp::CompareMode::Identical))
-  {
-    out_assetInfo->m_Info = std::move(docInfo);
-    stat.m_AssetGuid      = out_assetInfo->m_Info->m_DocumentID;
-  }
-  else
-  {
-    xiiStatus ret = out_assetInfo->GetManager()->ReadAssetDocumentInfo(out_assetInfo->m_Info, MemReader);
-    if (ret.Failed())
+    xiiFileStatus                      cacheStat;
+    xiiUniquePtr<xiiAssetDocumentInfo> docInfo;
     {
-      xiiLog::Error("Failed to read asset document info for asset file '{0}'", szAbsFilePath);
-      return XII_FAILURE;
+      XII_LOCK(m_CachedAssetsMutex);
+      auto itFile  = m_CachedFiles.Find(sAbsFilePath);
+      auto itAsset = m_CachedAssets.Find(sAbsFilePath);
+      if (itAsset.IsValid() && itFile.IsValid())
+      {
+        docInfo   = std::move(itAsset.Value());
+        cacheStat = itFile.Value();
+        m_CachedAssets.Remove(itAsset);
+        m_CachedFiles.Remove(itFile);
+      }
     }
-    XII_ASSERT_DEV(out_assetInfo->m_Info != nullptr, "Info should be valid on suceess.");
 
-    // here we get the GUID out of the document
-    // this links the 'file' to the 'asset'
-    stat.m_AssetGuid = out_assetInfo->m_Info->m_DocumentID;
+    if (docInfo && cacheStat.m_LastModified.Compare(stat.m_LastModified, xiiTimestamp::CompareMode::Identical))
+    {
+      out_assetInfo->m_Info = std::move(docInfo);
+      if (pFiles->LinkDocument(sAbsFilePath, out_assetInfo->m_Info->m_DocumentID).Failed())
+      {
+        // #TODO_ASSET
+        xiiLog::Error("Failed to link asset: {}", sAbsFilePath);
+      }
+      return XII_SUCCESS;
+    }
   }
 
-  return XII_SUCCESS;
+  // try to read the asset file
+  xiiStatus infoStatus;
+  xiiResult res = pFiles->ReadDocument(sAbsFilePath, [&out_assetInfo, &infoStatus](const xiiFileStatus& stat, xiiStreamReader& ref_reader) -> xiiUuid {
+      infoStatus = out_assetInfo->GetManager()->ReadAssetDocumentInfo(out_assetInfo->m_Info, ref_reader);
+      // Here we return the GUID of the document. This links the 'file' to the 'asset'.
+      // This is the same as later calling xiiAssetFiles::LinkAsset
+      return out_assetInfo->m_Info->m_DocumentID; });
+
+  if (infoStatus.Failed())
+  {
+    xiiLog::Error("Failed to read asset document info for asset file '{0}'", sAbsFilePath);
+    return XII_FAILURE;
+  }
+
+  XII_ASSERT_DEV(out_assetInfo->m_Info != nullptr, "Info should be valid on suceess.");
+  return res;
 }
 
 void xiiAssetCurator::UpdateSubAssets(xiiAssetInfo& assetInfo)
@@ -630,29 +519,6 @@ void xiiAssetCurator::UpdateSubAssets(xiiAssetInfo& assetInfo)
       }
     }
   }
-}
-
-xiiUInt64 xiiAssetCurator::HashFile(xiiStreamReader& InputStream, xiiStreamWriter* pPassThroughStream)
-{
-  xiiHashStreamWriter64 hsw;
-
-  CURATOR_PROFILE("HashFile");
-  xiiUInt8 cachedBytes[1024 * 10];
-
-  while (true)
-  {
-    const xiiUInt64 uiRead = InputStream.ReadBytes(cachedBytes, XII_ARRAY_SIZE(cachedBytes));
-
-    if (uiRead == 0)
-      break;
-
-    hsw.WriteBytes(cachedBytes, uiRead).IgnoreResult();
-
-    if (pPassThroughStream != nullptr)
-      pPassThroughStream->WriteBytes(cachedBytes, uiRead).IgnoreResult();
-  }
-
-  return hsw.GetHashValue();
 }
 
 void xiiAssetCurator::RemoveAssetTransformState(const xiiUuid& assetGuid)

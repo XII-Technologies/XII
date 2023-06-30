@@ -7,6 +7,7 @@
 #include <EditorFramework/Preferences/EditorPreferences.h>
 #include <Foundation/Strings/TranslationLookup.h>
 #include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
+#include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
 xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
   QWidget(pParent)
@@ -460,18 +461,18 @@ void xiiQtAssetBrowserWidget::UpdateDirectoryTree()
     pNewParent->setExpanded(true);
   }
 
-  const xiiSet<xiiString>& Folders = xiiAssetCurator::GetSingleton()->GetAllAssetFolders();
+  auto Folders = xiiFileSystemModel::GetSingleton()->GetFolders();
 
-  if (m_uiKnownAssetFolderCount == Folders.GetCount())
+  if (m_uiKnownAssetFolderCount == Folders->GetCount())
     return;
 
-  m_uiKnownAssetFolderCount = Folders.GetCount();
+  m_uiKnownAssetFolderCount = Folders->GetCount();
 
   xiiStringBuilder tmp;
 
-  for (const auto& sDir : Folders)
+  for (const auto& sDir : *Folders)
   {
-    tmp = sDir;
+    tmp = sDir.Key();
 
     if (!xiiQtEditorApp::GetSingleton()->MakePathDataDirectoryParentRelative(tmp))
       continue;
