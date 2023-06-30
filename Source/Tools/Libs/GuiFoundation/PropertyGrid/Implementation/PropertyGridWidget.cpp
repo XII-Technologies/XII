@@ -170,15 +170,14 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, PropertyGrid)
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiAngle>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVariant>(), StandardTypeCreator);
 
-    // TODO: xiiMat3, xiiMat4, xiiTransform, xiiUuid, xiiVariant
+    // \todo: xiiMat3, xiiMat4, xiiTransform, xiiUuid, xiiVariant
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiEnumBase>(), EnumCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiBitflagsBase>(), BitflagsCreator);
 
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiTagSetWidgetAttribute>(), TagSetCreator);
-    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVarianceTypeBase>(), VarianceTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVarianceTypeBaseFloat>(), VarianceTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVarianceTypeBaseDouble>(), VarianceTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiSingleCurveData>(), Curve1DTypeCreator);
-
-
   }
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -214,7 +213,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, PropertyGrid)
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiEnumBase>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiBitflagsBase>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiTagSetWidgetAttribute>());
-    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVarianceTypeBase>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVarianceTypeBaseFloat>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVarianceTypeBaseDouble>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiSingleCurveData>());
   }
 
