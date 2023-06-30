@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Foundation/Strings/StringView.h"
 #include <Foundation/Types/Status.h>
 #include <ToolsFoundation/Document/Document.h>
 #include <ToolsFoundation/ToolsFoundationDLL.h>
@@ -13,7 +14,7 @@ public:
 
   static const xiiHybridArray<xiiDocumentManager*, 16>& GetAllDocumentManagers() { return s_AllDocumentManagers; }
 
-  static xiiResult FindDocumentTypeFromPath(const char* szPath, bool bForCreation, const xiiDocumentTypeDescriptor*& out_pTypeDesc);
+  static xiiResult FindDocumentTypeFromPath(xiiStringView sPath, bool bForCreation, const xiiDocumentTypeDescriptor*& out_pTypeDesc);
 
   xiiStatus CanOpenDocument(const char* szFilePath) const;
 
@@ -24,12 +25,7 @@ public:
   /// \param flags Flags to define various options like whether a window should be created.
   /// \param pOpenContext An generic context object. Allows for custom data to be passed along into the construction. E.g. inform a sub-document which main document it belongs to.
   /// \return Returns the error in case the operations failed.
-  xiiStatus CreateDocument(
-    const char*                   szDocumentTypeName,
-    const char*                   szPath,
-    xiiDocument*&                 out_pDocument,
-    xiiBitflags<xiiDocumentFlags> flags        = xiiDocumentFlags::None,
-    const xiiDocumentObject*      pOpenContext = nullptr);
+  xiiStatus CreateDocument(const char* szDocumentTypeName, const char* szPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags = xiiDocumentFlags::None, const xiiDocumentObject* pOpenContext = nullptr);
 
   /// \brief Opens an existing document.
   /// \param szDocumentTypeName Document type to open. See xiiDocumentTypeDescriptor.
@@ -47,18 +43,18 @@ public:
   /// \brief Returns a list of all currently open documents that are managed by this document manager
   const xiiDynamicArray<xiiDocument*>& GetAllOpenDocuments() const { return m_AllOpenDocuments; }
 
-  xiiDocument* GetDocumentByPath(const char* szPath) const;
+  xiiDocument* GetDocumentByPath(xiiStringView sPath) const;
 
   static xiiDocument* GetDocumentByGuid(const xiiUuid& guid);
 
   /// \brief If the given document is open, it will be closed. User is not asked about it, unsaved changes are discarded. Returns true if the document
   /// was open and needed to be closed.
-  static bool EnsureDocumentIsClosedInAllManagers(const char* szPath);
+  static bool EnsureDocumentIsClosedInAllManagers(xiiStringView sPath);
 
   /// \brief If the given document is open, it will be closed. User is not asked about it, unsaved changes are discarded. Returns true if the document
   /// was open and needed to be closed. This function only operates on documents opened by this manager. Use EnsureDocumentIsClosedInAllManagers() to
   /// close documents of any type.
-  bool EnsureDocumentIsClosed(const char* szPath);
+  bool EnsureDocumentIsClosed(xiiStringView sPath);
 
   void        CloseAllDocumentsOfManager();
   static void CloseAllDocuments();

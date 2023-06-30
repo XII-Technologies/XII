@@ -304,12 +304,7 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, const char* szD
   return status;
 }
 
-xiiStatus xiiDocumentManager::CreateDocument(
-  const char*                   szDocumentTypeName,
-  const char*                   szPath,
-  xiiDocument*&                 out_pDocument,
-  xiiBitflags<xiiDocumentFlags> flags,
-  const xiiDocumentObject*      pOpenContext)
+xiiStatus xiiDocumentManager::CreateDocument(const char* szDocumentTypeName, const char* szPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext)
 {
   return CreateOrOpenDocument(true, szDocumentTypeName, szPath, out_pDocument, flags, pOpenContext);
 }
@@ -318,7 +313,6 @@ xiiStatus xiiDocumentManager::OpenDocument(const char* szDocumentTypeName, const
 {
   return CreateOrOpenDocument(false, szDocumentTypeName, szPath, out_pDocument, flags, pOpenContext);
 }
-
 
 xiiStatus xiiDocumentManager::CloneDocument(const char* szPath, const char* szClonePath, xiiUuid& inout_cloneGuid)
 {
@@ -441,14 +435,14 @@ void xiiDocumentManager::CloseAllDocuments()
   }
 }
 
-xiiDocument* xiiDocumentManager::GetDocumentByPath(const char* szPath) const
+xiiDocument* xiiDocumentManager::GetDocumentByPath(xiiStringView sPath) const
 {
-  xiiStringBuilder sPath = szPath;
-  sPath.MakeCleanPath();
+  xiiStringBuilder sPath2 = sPath;
+  sPath2.MakeCleanPath();
 
   for (xiiDocument* pDoc : m_AllOpenDocuments)
   {
-    if (sPath.IsEqual_NoCase(pDoc->GetDocumentPath()))
+    if (sPath2.IsEqual_NoCase(pDoc->GetDocumentPath()))
       return pDoc;
   }
 
@@ -471,21 +465,21 @@ xiiDocument* xiiDocumentManager::GetDocumentByGuid(const xiiUuid& guid)
 }
 
 
-bool xiiDocumentManager::EnsureDocumentIsClosedInAllManagers(const char* szPath)
+bool xiiDocumentManager::EnsureDocumentIsClosedInAllManagers(xiiStringView sPath)
 {
   bool bClosedAny = false;
   for (auto man : s_AllDocumentManagers)
   {
-    if (man->EnsureDocumentIsClosed(szPath))
+    if (man->EnsureDocumentIsClosed(sPath))
       bClosedAny = true;
   }
 
   return bClosedAny;
 }
 
-bool xiiDocumentManager::EnsureDocumentIsClosed(const char* szPath)
+bool xiiDocumentManager::EnsureDocumentIsClosed(xiiStringView sPath)
 {
-  auto pDoc = GetDocumentByPath(szPath);
+  auto pDoc = GetDocumentByPath(sPath);
 
   if (pDoc == nullptr)
     return false;
@@ -495,9 +489,9 @@ bool xiiDocumentManager::EnsureDocumentIsClosed(const char* szPath)
   return true;
 }
 
-xiiResult xiiDocumentManager::FindDocumentTypeFromPath(const char* szPath, bool bForCreation, const xiiDocumentTypeDescriptor*& out_pTypeDesc)
+xiiResult xiiDocumentManager::FindDocumentTypeFromPath(xiiStringView sPath, bool bForCreation, const xiiDocumentTypeDescriptor*& out_pTypeDesc)
 {
-  const xiiString sFileExt = xiiPathUtils::GetFileExtension(szPath);
+  const xiiString sFileExt = xiiPathUtils::GetFileExtension(sPath);
 
   const auto& allDesc = GetAllDocumentDescriptors();
 

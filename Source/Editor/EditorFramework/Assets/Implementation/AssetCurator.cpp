@@ -4,7 +4,6 @@
 #include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/Assets/AssetTableWriter.h>
-#include <EditorFramework/Assets/AssetWatcher.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Configuration/SubSystem.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
@@ -15,9 +14,10 @@
 #include <Foundation/Utilities/CommandLineOptions.h>
 #include <Foundation/Utilities/DGMLWriter.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
+#include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
 #define XII_CURATOR_CACHE_VERSION      2
-#define XII_CURATOR_CACHE_FILE_VERSION 6
+#define XII_CURATOR_CACHE_FILE_VERSION 7
 
 XII_IMPLEMENT_SINGLETON(xiiAssetCurator);
 
@@ -26,6 +26,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, AssetCurator)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
   "ToolsFoundation",
+  "FileSystemModel",
   "DocumentManager"
   END_SUBSYSTEM_DEPENDENCIES
 
@@ -50,32 +51,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, AssetCurator)
 
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
-
-// clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiFileStatus, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiFileStatus>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("Timestamp", m_Timestamp),
-    XII_MEMBER_PROPERTY("Hash", m_uiHash),
-    XII_MEMBER_PROPERTY("AssetGuid", m_AssetGuid),
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_STATIC_REFLECTED_TYPE;
-// clang-format on
-
-inline xiiStreamWriter& operator<<(xiiStreamWriter& inout_stream, const xiiFileStatus& value)
-{
-  inout_stream.WriteBytes(&value, sizeof(xiiFileStatus)).IgnoreResult();
-  return inout_stream;
-}
-
-inline xiiStreamReader& operator>>(xiiStreamReader& inout_stream, xiiFileStatus& ref_value)
-{
-  inout_stream.ReadBytes(&ref_value, sizeof(xiiFileStatus));
-  return inout_stream;
-}
 
 void xiiAssetInfo::Update(xiiUniquePtr<xiiAssetInfo>& rhs)
 {
@@ -152,12 +127,17 @@ void xiiAssetCurator::StartInitialize(const xiiApplicationFileSystemConfig& cfg)
   m_bRunUpdateTask   = true;
   m_FileSystemConfig = cfg;
 
-  m_pWatcher          = XII_DEFAULT_NEW(xiiAssetWatcher, m_FileSystemConfig);
+  xiiFileSystemModel::GetSingleton()->m_FileChangedEvents.AddEventHandler(xiiMakeDelegate(&xiiAssetCurator::OnAssetFilesEvent, this));
+  xiiMap<xiiString, xiiFileStatus>         referencedFiles;
+  xiiMap<xiiString, xiiFileStatus::Status> referencedFolders;
+  LoadCaches(referencedFiles, referencedFolders);
+  // We postpone the xiiAssetFiles initialize to after we have loaded the cache. No events will be fired before initialize is called.
+  xiiFileSystemModel::GetSingleton()->Initialize(m_FileSystemConfig, std::move(referencedFiles), std::move(referencedFolders));
+
   m_pAssetTableWriter = XII_DEFAULT_NEW(xiiAssetTableWriter, m_FileSystemConfig);
 
   xiiSharedPtr<xiiDelegateTask<void>> pInitTask = XII_DEFAULT_NEW(xiiDelegateTask<void>, "AssetCuratorUpdateCache", [this]() {
     XII_LOCK(m_CuratorMutex);
-    LoadCaches();
 
     m_CuratorMutex.Unlock();
     CheckFileSystem();
@@ -179,7 +159,17 @@ void xiiAssetCurator::StartInitialize(const xiiApplicationFileSystemConfig& cfg)
         it.Value()->m_ExistanceState = xiiAssetExistanceState::FileUnchanged;
       }
     }
-    SaveCaches(); });
+
+    // Re-save caches after we made a full CheckFileSystem pass.
+    xiiMap<xiiString, xiiFileStatus>         referencedFiles;
+    xiiMap<xiiString, xiiFileStatus::Status> referencedFolders;
+    xiiFileSystemModel*                      pFiles = xiiFileSystemModel::GetSingleton();
+    {
+      referencedFiles   = *pFiles->GetFiles();
+      referencedFolders = *pFiles->GetFolders();
+    }
+    SaveCaches(referencedFiles, referencedFolders); //
+  });
   pInitTask->ConfigureTask("Initialize Curator", xiiTaskNesting::Never);
   m_InitializeCuratorTaskID = xiiTaskSystem::StartSingleTask(pInitTask, xiiTaskPriority::FileAccessHighPriority);
 
@@ -215,14 +205,17 @@ void xiiAssetCurator::Deinitialize()
 
   ShutdownUpdateTask();
   xiiAssetProcessor::GetSingleton()->StopProcessTask(true);
-  m_pWatcher          = nullptr;
+  xiiFileSystemModel*                      pFiles = xiiFileSystemModel::GetSingleton();
+  xiiMap<xiiString, xiiFileStatus>         referencedFiles;
+  xiiMap<xiiString, xiiFileStatus::Status> referencedFolders;
+  pFiles->Deinitialize(&referencedFiles, &referencedFolders);
+  SaveCaches(referencedFiles, referencedFolders);
+
+  pFiles->m_FileChangedEvents.RemoveEventHandler(xiiMakeDelegate(&xiiAssetCurator::OnAssetFilesEvent, this));
+  pFiles              = nullptr;
   m_pAssetTableWriter = nullptr;
 
-  SaveCaches();
-
   {
-    m_ReferencedFiles.Clear();
-
     for (auto it = m_KnownAssets.GetIterator(); it.IsValid(); ++it)
     {
       XII_DEFAULT_DELETE(it.Value());
@@ -261,8 +254,7 @@ void xiiAssetCurator::MainThreadTick(bool bTopLevel)
 
   bReentry = true;
 
-  if (m_pWatcher)
-    m_pWatcher->MainThreadTick();
+  xiiFileSystemModel::GetSingleton()->MainThreadTick();
 
   XII_LOCK(m_CuratorMutex);
   xiiHybridArray<xiiAssetInfo*, 32> deletedAssets;
@@ -576,45 +568,14 @@ const xiiAssetCurator::xiiLockedSubAsset xiiAssetCurator::FindSubAsset(const cha
   mainAsset.MakeCleanPath();
 
   // Find mainAsset
-  xiiMap<xiiString, xiiFileStatus, xiiCompareString_NoCase>::ConstIterator it;
-  if (xiiPathUtils::IsAbsolutePath(mainAsset))
-  {
-    it = m_ReferencedFiles.Find(mainAsset);
-  }
-  else
-  {
-    // Data dir parent relative?
-    for (const auto& dd : m_FileSystemConfig.m_DataDirs)
-    {
-      xiiStringBuilder sDataDir;
-      xiiFileSystem::ResolveSpecialDirectory(dd.m_sDataDirSpecialPath, sDataDir).IgnoreResult();
-      sDataDir.PathParentDirectory();
-      sDataDir.AppendPath(mainAsset);
-      it = m_ReferencedFiles.Find(sDataDir);
-      if (it.IsValid())
-        break;
-    }
-
-    if (!it.IsValid())
-    {
-      // Data dir relative?
-      for (const auto& dd : m_FileSystemConfig.m_DataDirs)
-      {
-        xiiStringBuilder sDataDir;
-        xiiFileSystem::ResolveSpecialDirectory(dd.m_sDataDirSpecialPath, sDataDir).IgnoreResult();
-        sDataDir.AppendPath(mainAsset);
-        it = m_ReferencedFiles.Find(sDataDir);
-        if (it.IsValid())
-          break;
-      }
-    }
-  }
+  xiiFileStatus stat;
+  xiiResult     res = xiiFileSystemModel::GetSingleton()->FindFile(mainAsset, stat);
 
   // Did we find an asset?
-  if (it.IsValid() && it.Value().m_AssetGuid.IsValid())
+  if (res == XII_SUCCESS && stat.m_DocumentID.IsValid())
   {
     xiiAssetInfo* pAssetInfo = nullptr;
-    m_KnownAssets.TryGetValue(it.Value().m_AssetGuid, pAssetInfo);
+    m_KnownAssets.TryGetValue(stat.m_DocumentID, pAssetInfo);
     XII_ASSERT_DEV(pAssetInfo != nullptr, "Files reference non-existant assset!");
 
     if (subAsset.IsValid())
@@ -776,6 +737,7 @@ void xiiAssetCurator::InvalidateAssetsWithTransformState(xiiAssetInfo::Transform
 xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid assetGuid, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce)
 {
   CURATOR_PROFILE("UpdateAssetTransformState");
+  xiiStringBuilder sAbsAssetPath;
   {
     XII_LOCK(m_CuratorMutex);
     // If assetGuid is a sub-asset, redirect to main asset.
@@ -786,6 +748,7 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
     }
     xiiAssetInfo* pAssetInfo = it.Value().m_pAssetInfo;
     assetGuid                = pAssetInfo->m_Info->m_DocumentID;
+    sAbsAssetPath            = pAssetInfo->m_sAbsolutePath;
 
     // Circular dependencies can change if any asset in the circle has changed (and potentially broken the circle). Thus, we need to call CheckForCircularDependencies again for every asset.
     if (!pAssetInfo->m_CircularDependencies.IsEmpty() && m_TransformStateStale.Contains(assetGuid))
@@ -810,12 +773,8 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
       return pAssetInfo->m_TransformState;
     }
   }
-  if (EnsureAssetInfoUpdated(assetGuid).Failed())
-  {
-    xiiStringBuilder tmp;
-    xiiLog::Error("Asset with GUID {0} is unknown", xiiConversionUtils::ToString(assetGuid, tmp));
-    return xiiAssetInfo::TransformState::Unknown;
-  }
+
+  xiiFileSystemModel::GetSingleton()->NotifyOfChange(sAbsAssetPath);
 
   // Data to pull from the asset under the lock that is needed for update computation.
   xiiAssetDocumentManager*              pManager        = nullptr;
@@ -832,7 +791,12 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
     CURATOR_PROFILE("CopyAssetData");
     XII_LOCK(m_CuratorMutex);
     xiiAssetInfo* pAssetInfo = GetAssetInfo(assetGuid);
-
+    if (!pAssetInfo)
+    {
+      xiiStringBuilder tmp;
+      xiiLog::Error("Asset with GUID {0} is unknown", xiiConversionUtils::ToString(assetGuid, tmp));
+      return xiiAssetInfo::TransformState::Unknown;
+    }
     pManager          = pAssetInfo->GetManager();
     pTypeDescriptor   = pAssetInfo->m_pDocumentTypeDescriptor;
     sAssetFile        = pAssetInfo->m_sAbsolutePath;
@@ -933,9 +897,9 @@ void xiiAssetCurator::GetAssetTransformStats(xiiUInt32& out_uiNumAssets, xiiHybr
   out_uiNumAssets = m_KnownAssets.GetCount();
 }
 
-xiiString xiiAssetCurator::FindDataDirectoryForAsset(const char* szAbsoluteAssetPath) const
+xiiString xiiAssetCurator::FindDataDirectoryForAsset(xiiStringView sAbsoluteAssetPath) const
 {
-  xiiStringBuilder sAssetPath(szAbsoluteAssetPath);
+  xiiStringBuilder sAssetPath(sAbsoluteAssetPath);
 
   for (const auto& dd : m_FileSystemConfig.m_DataDirs)
   {
@@ -946,7 +910,7 @@ xiiString xiiAssetCurator::FindDataDirectoryForAsset(const char* szAbsoluteAsset
       return sDataDir;
   }
 
-  XII_REPORT_FAILURE("Could not find data directory for asset '{0}", szAbsoluteAssetPath);
+  XII_REPORT_FAILURE("Could not find data directory for asset '{0}", sAbsoluteAssetPath);
   return xiiFileSystem::GetSdkRootDirectory();
 }
 
@@ -988,21 +952,18 @@ xiiResult xiiAssetCurator::FindBestMatchForFile(xiiStringBuilder& ref_sFile, xii
     XII_LOCK(m_CuratorMutex);
 
     auto SearchFile = [this](xiiStringBuilder& ref_sName) -> bool {
-      for (auto it = m_ReferencedFiles.GetIterator(); it.IsValid(); ++it)
-      {
-        if (it.Value().m_Status != xiiFileStatus::Status::Valid)
-          continue;
+      return xiiFileSystemModel::GetSingleton()->FindFile([&ref_sName](const xiiString& sFile, const xiiFileStatus& stat) {
+                                                 if (stat.m_Status != xiiFileStatus::Status::Valid)
+                                                   return false;
 
-        const xiiString& key = it.Key();
-
-        if (key.EndsWith_NoCase(ref_sName))
-        {
-          ref_sName = it.Key();
-          return true;
-        }
-      }
-
-      return false;
+                                                 if (sFile.EndsWith_NoCase(ref_sName))
+                                                 {
+                                                   ref_sName = sFile;
+                                                   return true;
+                                                 }
+                                                 return false; //
+                                               })
+        .Succeeded();
     };
 
     // search for the full name
@@ -1076,8 +1037,7 @@ void xiiAssetCurator::NotifyOfFileChange(const char* szAbsolutePath)
 {
   xiiStringBuilder sPath(szAbsolutePath);
   sPath.MakeCleanPath();
-  HandleSingleFile(sPath);
-  // MainThreadTick();
+  xiiFileSystemModel::GetSingleton()->NotifyOfChange(sPath);
 }
 
 void xiiAssetCurator::NotifyOfAssetChange(const xiiUuid& assetGuid)
@@ -1100,34 +1060,17 @@ void xiiAssetCurator::CheckFileSystem()
   XII_PROFILE_SCOPE("CheckFileSystem");
   xiiStopwatch sw;
 
-  xiiProgressRange* range = nullptr;
-  if (xiiThreadUtils::IsMainThread())
-    range = XII_DEFAULT_NEW(xiiProgressRange, "Check File-System for Assets", m_FileSystemConfig.m_DataDirs.GetCount(), false);
-
   // make sure the hashing task has finished
   ShutdownUpdateTask();
 
-  XII_LOCK(m_CuratorMutex);
-
-  SetAllAssetStatusUnknown();
-
-  // check every data directory
-  for (auto& dd : m_FileSystemConfig.m_DataDirs)
   {
-    xiiStringBuilder sTemp;
-    xiiFileSystem::ResolveSpecialDirectory(dd.m_sDataDirSpecialPath, sTemp).IgnoreResult();
-
-    if (xiiThreadUtils::IsMainThread())
-      range->BeginNextStep(dd.m_sDataDirSpecialPath);
-
-    IterateDataDirectory(sTemp);
+    XII_LOCK(m_CuratorMutex);
+    SetAllAssetStatusUnknown();
   }
-
-  RemoveStaleFileInfos();
+  xiiFileSystemModel::GetSingleton()->CheckFileSystem();
 
   if (xiiThreadUtils::IsMainThread())
   {
-    XII_DEFAULT_DELETE(range);
     // Broadcast reset only if we are on the main thread.
     // Otherwise we are on the init task thread and the reset will be called on the main thread by WaitForInitialize.
     xiiAssetCuratorEvent e;
@@ -1321,14 +1264,14 @@ void xiiAssetCurator::WriteDependencyDGML(const xiiUuid& guid, xiiStringView sOu
         connection[uiOutputNode] = sTemp;
       };
 
-      for (const xiiString& ref : pAssetInfo->m_Info->m_TransformDependencies)
+      for (const xiiString& sRef : pAssetInfo->m_Info->m_TransformDependencies)
       {
-        ExtendConnection(ref, "Transform");
+        ExtendConnection(sRef, "Transform");
       }
 
-      for (const xiiString& ref : pAssetInfo->m_Info->m_ThumbnailDependencies)
+      for (const xiiString& sRef : pAssetInfo->m_Info->m_ThumbnailDependencies)
       {
-        ExtendConnection(ref, "Thumbnail");
+        ExtendConnection(sRef, "Thumbnail");
       }
 
       // This will make the graph very big, not recommended.
@@ -1553,39 +1496,109 @@ xiiSubAsset* xiiAssetCurator::GetSubAssetInternal(const xiiUuid& assetGuid)
   return nullptr;
 }
 
-void xiiAssetCurator::HandleSingleFile(const xiiString& sAbsolutePath)
+void xiiAssetCurator::BuildFileExtensionSet(xiiSet<xiiString>& AllExtensions)
 {
-  CURATOR_PROFILE("HandleSingleFile");
-  XII_LOCK(m_CuratorMutex);
+  xiiStringBuilder sTemp;
+  AllExtensions.Clear();
 
-  xiiFileStats Stats;
-  if (xiiOSFile::GetFileStats(sAbsolutePath, Stats).Failed())
+  const auto& assetTypes = xiiAssetDocumentManager::GetAllDocumentDescriptors();
+
+  // use translated strings
+  xiiMap<xiiString, const xiiDocumentTypeDescriptor*> allDesc;
+  for (auto it : assetTypes)
   {
-    // this is a bit tricky:
-    // when the document is deleted on disk, it would be nicer not to close it (discarding modifications!)
-    // instead we could set it as modified
-    // but then when it was only moved or renamed that means we have another document with the same GUID
-    // so once the user would save the now modified document, we would end up with two documents with the same GUID
-    // so, for now, since this is probably a rare case anyway, we just close the document without asking
-    xiiDocumentManager::EnsureDocumentIsClosedInAllManagers(sAbsolutePath);
+    allDesc[xiiTranslate(it.Key())] = it.Value();
+  }
 
-    if (xiiFileStatus* pFileStatus = m_ReferencedFiles.GetValue(sAbsolutePath))
+  for (auto it : allDesc)
+  {
+    const auto desc = it.Value();
+
+    if (desc->m_pManager->GetDynamicRTTI()->IsDerivedFrom<xiiAssetDocumentManager>())
     {
-      pFileStatus->m_Timestamp.Invalidate();
-      pFileStatus->m_uiHash = 0;
-      pFileStatus->m_Status = xiiFileStatus::Status::Unknown;
+      sTemp = desc->m_sFileExtension;
+      sTemp.ToLower();
 
-      xiiUuid guid0 = pFileStatus->m_AssetGuid;
-      if (guid0.IsValid())
+      AllExtensions.Insert(sTemp);
+    }
+  }
+}
+
+void xiiAssetCurator::OnAssetFilesEvent(const xiiFileChangedEvent& e)
+{
+  switch (e.m_Type)
+  {
+    case xiiFileChangedEvent::Type::DocumentLinked:
+    case xiiFileChangedEvent::Type::DocumentUnlinked:
+      break;
+    case xiiFileChangedEvent::Type::FileAdded:
+    case xiiFileChangedEvent::Type::FileChanged:
+    {
+      // If the asset was just added it is not tracked and thus no need to invalidate anything.
+      if (e.m_Type == xiiFileChangedEvent::Type::FileChanged)
       {
-        xiiAssetInfo* pAssetInfo = m_KnownAssets[guid0];
-        UntrackDependencies(pAssetInfo);
-        RemoveAssetTransformState(guid0);
-        SetAssetExistanceState(*pAssetInfo, xiiAssetExistanceState::FileRemoved);
-        pFileStatus->m_AssetGuid = xiiUuid();
+        xiiUuid guid0 = e.m_Status.m_DocumentID;
+        if (guid0.IsValid())
+          InvalidateAssetTransformState(guid0);
+
+        auto it = m_InverseTransformDeps.Find(e.m_sPath);
+        if (it.IsValid())
+        {
+          for (const xiiUuid& guid : it.Value())
+          {
+            InvalidateAssetTransformState(guid);
+          }
+        }
+
+        auto it2 = m_InverseThumbnailDeps.Find(e.m_sPath);
+        if (it2.IsValid())
+        {
+          for (const xiiUuid& guid : it2.Value())
+          {
+            InvalidateAssetTransformState(guid);
+          }
+        }
       }
 
-      auto it = m_InverseTransformDeps.Find(sAbsolutePath);
+      // Assets should never be in an AssetCache folder.
+      if (e.m_sPath.FindSubString("/AssetCache/") != nullptr)
+      {
+        return;
+      }
+
+      // check that this is an asset type that we know
+      xiiStringBuilder sExt = xiiPathUtils::GetFileExtension(e.m_sPath);
+      sExt.ToLower();
+      if (!m_ValidAssetExtensions.Contains(sExt))
+      {
+        return;
+      }
+
+      EnsureAssetInfoUpdated(e.m_sPath, e.m_Status).IgnoreResult();
+    }
+    break;
+    case xiiFileChangedEvent::Type::FileRemoved:
+    {
+      xiiUuid guid0 = e.m_Status.m_DocumentID;
+      if (guid0.IsValid())
+      {
+        // this is a bit tricky:
+        // when the document is deleted on disk, it would be nicer not to close it (discarding modifications!)
+        // instead we could set it as modified
+        // but then when it was only moved or renamed that means we have another document with the same GUID
+        // so once the user would save the now modified document, we would end up with two documents with the same GUID
+        // so, for now, since this is probably a rare case anyway, we just close the document without asking
+        xiiDocumentManager::EnsureDocumentIsClosedInAllManagers(e.m_sPath);
+
+        if (auto it = m_KnownAssets.Find(guid0); it.IsValid())
+        {
+          xiiAssetInfo* pAssetInfo = it.Value();
+          UntrackDependencies(pAssetInfo);
+          RemoveAssetTransformState(guid0);
+          SetAssetExistanceState(*pAssetInfo, xiiAssetExistanceState::FileRemoved);
+        }
+      }
+      auto it = m_InverseTransformDeps.Find(e.m_sPath);
       if (it.IsValid())
       {
         for (const xiiUuid& guid : it.Value())
@@ -1594,7 +1607,7 @@ void xiiAssetCurator::HandleSingleFile(const xiiString& sAbsolutePath)
         }
       }
 
-      auto it2 = m_InverseThumbnailDeps.Find(sAbsolutePath);
+      auto it2 = m_InverseThumbnailDeps.Find(e.m_sPath);
       if (it2.IsValid())
       {
         for (const xiiUuid& guid : it2.Value())
@@ -1603,89 +1616,12 @@ void xiiAssetCurator::HandleSingleFile(const xiiString& sAbsolutePath)
         }
       }
     }
-
-    return;
+    break;
+    case xiiFileChangedEvent::Type::ModelReset:
+      break;
+    default:
+      XII_ASSERT_NOT_IMPLEMENTED;
   }
-  else
-  {
-    XII_ASSERT_DEV(!Stats.m_bIsDirectory, "Directories are handled by xiiAssetWatcher and should not pass into this function.");
-  }
-
-  HandleSingleFile(sAbsolutePath, Stats);
-}
-
-void xiiAssetCurator::HandleSingleFile(const xiiString& sAbsolutePath, const xiiFileStats& FileStat)
-{
-  XII_ASSERT_DEV(!FileStat.m_bIsDirectory, "Directories are handled by xiiAssetWatcher and should not pass into this function.");
-  CURATOR_PROFILE("HandleSingleFile2");
-  XII_LOCK(m_CuratorMutex);
-
-  xiiStringBuilder sExt = xiiPathUtils::GetFileExtension(sAbsolutePath);
-  sExt.ToLower();
-
-  // store information for every file, even when it is no asset, it might be a dependency for some asset
-  auto& RefFile = m_ReferencedFiles[sAbsolutePath];
-
-  // mark the file as valid (i.e. we saw it on disk, so it hasn't been deleted or such)
-  RefFile.m_Status = xiiFileStatus::Status::Valid;
-
-  bool fileChanged = !RefFile.m_Timestamp.Compare(FileStat.m_LastModificationTime, xiiTimestamp::CompareMode::Identical);
-  if (fileChanged)
-  {
-    RefFile.m_Timestamp.Invalidate();
-    RefFile.m_uiHash = 0;
-    if (RefFile.m_AssetGuid.IsValid())
-      InvalidateAssetTransformState(RefFile.m_AssetGuid);
-
-    auto it = m_InverseTransformDeps.Find(sAbsolutePath);
-    if (it.IsValid())
-    {
-      for (const xiiUuid& guid : it.Value())
-      {
-        InvalidateAssetTransformState(guid);
-      }
-    }
-
-    auto it2 = m_InverseThumbnailDeps.Find(sAbsolutePath);
-    if (it2.IsValid())
-    {
-      for (const xiiUuid& guid : it2.Value())
-      {
-        InvalidateAssetTransformState(guid);
-      }
-    }
-  }
-
-  // Assets should never be in an AssetCache folder.
-  const char* szNeedle = sAbsolutePath.FindSubString("AssetCache/");
-  if (szNeedle != nullptr && sAbsolutePath.GetData() != szNeedle && szNeedle[-1] == '/')
-  {
-    return;
-  }
-
-  // check that this is an asset type that we know
-  if (!m_ValidAssetExtensions.Contains(sExt))
-  {
-    return;
-  }
-
-  // the file is a known asset type
-  // so make sure it gets a valid GUID assigned
-
-  // File hasn't change, early out.
-  if (RefFile.m_AssetGuid.IsValid() && !fileChanged)
-    return;
-
-  // store the folder of the asset
-  {
-    xiiStringBuilder sAssetFolder = sAbsolutePath;
-    sAssetFolder                  = sAssetFolder.GetFileDirectory();
-
-    m_AssetFolders.Insert(sAssetFolder);
-  }
-
-  // This will update the timestamp for assets.
-  EnsureAssetInfoUpdated(sAbsolutePath).IgnoreResult();
 }
 
 void xiiAssetCurator::ProcessAllCoreAssets()
@@ -1827,102 +1763,13 @@ void xiiAssetCurator::RunNextUpdateTask()
 
 void xiiAssetCurator::SetAllAssetStatusUnknown()
 {
-  // tags all known files as unknown, such that we can later remove files
-  // that can not be found anymore
-
-  for (auto it = m_ReferencedFiles.GetIterator(); it.IsValid(); ++it)
-  {
-    it.Value().m_Status = xiiFileStatus::Status::Unknown;
-  }
-
   for (auto it = m_KnownAssets.GetIterator(); it.IsValid(); ++it)
   {
     UpdateAssetTransformState(it.Key(), xiiAssetInfo::TransformState::Unknown);
   }
 }
 
-void xiiAssetCurator::RemoveStaleFileInfos()
-{
-  xiiSet<xiiString> unknownFiles;
-  for (auto it = m_ReferencedFiles.GetIterator(); it.IsValid(); ++it)
-  {
-    // search for files that existed previously but have not been found anymore recently
-    if (it.Value().m_Status == xiiFileStatus::Status::Unknown)
-    {
-      unknownFiles.Insert(it.Key());
-    }
-  }
-
-  for (const xiiString& sFile : unknownFiles)
-  {
-    HandleSingleFile(sFile);
-    m_ReferencedFiles.Remove(sFile);
-  }
-}
-
-void xiiAssetCurator::BuildFileExtensionSet(xiiSet<xiiString>& AllExtensions)
-{
-  xiiStringBuilder sTemp;
-  AllExtensions.Clear();
-
-  const auto& assetTypes = xiiAssetDocumentManager::GetAllDocumentDescriptors();
-
-  // use translated strings
-  xiiMap<xiiString, const xiiDocumentTypeDescriptor*> allDesc;
-  for (auto it : assetTypes)
-  {
-    allDesc[xiiTranslate(it.Key())] = it.Value();
-  }
-
-  for (auto it : allDesc)
-  {
-    const auto desc = it.Value();
-
-    if (desc->m_pManager->GetDynamicRTTI()->IsDerivedFrom<xiiAssetDocumentManager>())
-    {
-      sTemp = desc->m_sFileExtension;
-      sTemp.ToLower();
-
-      AllExtensions.Insert(sTemp);
-    }
-  }
-}
-
-void xiiAssetCurator::IterateDataDirectory(const char* szDataDir, xiiSet<xiiString>* pFoundFiles)
-{
-  xiiStringBuilder sDataDir = szDataDir;
-  sDataDir.MakeCleanPath();
-  XII_ASSERT_DEV(xiiPathUtils::IsAbsolutePath(szDataDir), "Only absolute paths are supported for directory iteration.");
-
-  while (sDataDir.EndsWith("/"))
-    sDataDir.Shrink(0, 1);
-
-  if (sDataDir.IsEmpty())
-    return;
-
-  xiiFileSystemIterator iterator;
-  iterator.StartSearch(sDataDir, xiiFileSystemIteratorFlags::ReportFilesRecursive);
-
-  if (!iterator.IsValid())
-    return;
-
-  xiiStringBuilder sPath;
-
-  for (; iterator.IsValid(); iterator.Next())
-  {
-    sPath = iterator.GetCurrentPath();
-    sPath.AppendPath(iterator.GetStats().m_sName);
-    sPath.MakeCleanPath();
-
-    HandleSingleFile(sPath, iterator.GetStats());
-    if (pFoundFiles)
-    {
-      pFoundFiles->Insert(sPath);
-    }
-  }
-}
-
-void xiiAssetCurator::LoadCaches()
+void xiiAssetCurator::LoadCaches(xiiMap<xiiString, xiiFileStatus>& out_referencedFiles, xiiMap<xiiString, xiiFileStatus::Status>& out_referencedFolders)
 {
   XII_PROFILE_SCOPE("LoadCaches");
   XII_LOCK(m_CuratorMutex);
@@ -2003,7 +1850,23 @@ void xiiAssetCurator::LoadCaches()
           reader >> sPath;
           xiiFileStatus stat;
           reader >> stat;
-          m_ReferencedFiles.Insert(std::move(sPath), stat);
+          // We invalidate all asset guids as the current cache as stored on disk is missing various bits in the curator that requires the code to go through the found new asset init code on load again.
+          stat.m_DocumentID.SetInvalid();
+          out_referencedFiles.Insert(std::move(sPath), stat);
+        }
+      }
+
+      {
+        XII_PROFILE_SCOPE("Folders");
+        xiiUInt32 uiFolderCount = 0;
+        reader >> uiFolderCount;
+        for (xiiUInt32 i = 0; i < uiFolderCount; i++)
+        {
+          xiiString sPath;
+          reader >> sPath;
+          xiiFileStatus::Status stat;
+          reader >> (xiiUInt8&)stat;
+          out_referencedFolders.Insert(std::move(sPath), stat);
         }
       }
     }
@@ -2012,7 +1875,7 @@ void xiiAssetCurator::LoadCaches()
   xiiLog::Debug("Asset Curator LoadCaches: {0} ms", xiiArgF(sw.GetRunningTotal().GetMilliseconds(), 3));
 }
 
-void xiiAssetCurator::SaveCaches()
+void xiiAssetCurator::SaveCaches(const xiiMap<xiiString, xiiFileStatus>& referencedFiles, const xiiMap<xiiString, xiiFileStatus::Status>& referencedFolders)
 {
   XII_PROFILE_SCOPE("SaveCaches");
   m_CachedAssets.Clear();
@@ -2037,6 +1900,7 @@ void xiiAssetCurator::SaveCaches()
     const xiiUInt32 uiFileVersion = XII_CURATOR_CACHE_FILE_VERSION;
     xiiUInt32       uiAssetCount  = 0;
     xiiUInt32       uiFileCount   = 0;
+    xiiUInt32       uiFolderCount = 0;
 
     {
       XII_PROFILE_SCOPE("Count");
@@ -2047,11 +1911,18 @@ void xiiAssetCurator::SaveCaches()
           ++uiAssetCount;
         }
       }
-      for (auto it = m_ReferencedFiles.GetIterator(); it.IsValid(); ++it)
+      for (auto it = referencedFiles.GetIterator(); it.IsValid(); ++it)
       {
-        if (it.Value().m_Status == xiiFileStatus::Status::Valid && !it.Value().m_AssetGuid.IsValid() && it.Key().StartsWith(sDataDir))
+        if (it.Value().m_Status == xiiFileStatus::Status::Valid && it.Key().StartsWith(sDataDir))
         {
           ++uiFileCount;
+        }
+      }
+      for (auto it = referencedFolders.GetIterator(); it.IsValid(); ++it)
+      {
+        if (it.Value() == xiiFileStatus::Status::Valid && it.Key().StartsWith(sDataDir))
+        {
+          ++uiFolderCount;
         }
       }
     }
@@ -2072,7 +1943,7 @@ void xiiAssetCurator::SaveCaches()
         {
           writer << pAsset->m_sAbsolutePath;
           xiiReflectionSerializer::WriteObjectToBinary(writer, xiiGetStaticRTTI<xiiAssetDocumentInfo>(), pAsset->m_Info.Borrow());
-          const xiiFileStatus* pStat = m_ReferencedFiles.GetValue(it.Value()->m_sAbsolutePath);
+          const xiiFileStatus* pStat = referencedFiles.GetValue(it.Value()->m_sAbsolutePath);
           XII_ASSERT_DEBUG(pStat != nullptr, "");
           writer << *pStat;
         }
@@ -2080,13 +1951,26 @@ void xiiAssetCurator::SaveCaches()
     }
     {
       XII_PROFILE_SCOPE("Files");
-      for (auto it = m_ReferencedFiles.GetIterator(); it.IsValid(); ++it)
+      for (auto it = referencedFiles.GetIterator(); it.IsValid(); ++it)
       {
         const xiiFileStatus& stat = it.Value();
-        if (stat.m_Status == xiiFileStatus::Status::Valid && !stat.m_AssetGuid.IsValid() && it.Key().StartsWith(sDataDir))
+        if (stat.m_Status == xiiFileStatus::Status::Valid && it.Key().StartsWith(sDataDir))
         {
           writer << it.Key();
           writer << stat;
+        }
+      }
+    }
+    {
+      XII_PROFILE_SCOPE("Folders");
+      writer << uiFolderCount;
+      for (auto it = referencedFolders.GetIterator(); it.IsValid(); ++it)
+      {
+        const xiiFileStatus::Status stat = it.Value();
+        if (stat == xiiFileStatus::Status::Valid && it.Key().StartsWith(sDataDir))
+        {
+          writer << it.Key();
+          writer << (xiiUInt8)stat;
         }
       }
     }
