@@ -253,7 +253,7 @@ function(xii_set_build_flags_gcc TARGET_NAME)
 	target_compile_options(${TARGET_NAME} PRIVATE -fPIC -gdwarf-3)
 
 	if(XII_CMAKE_ARCHITECTURE_X86)
-		target_compile_options(${TARGET_NAME} PRIVATE -mavx  -mavx2 -mfma -mf16c -mbmi -mlzcnt)
+		target_compile_options(${TARGET_NAME} PRIVATE -mavx2 -mfma -mf16c -mbmi -mlzcnt)
 	endif()
 
 	# Disable warning: multi-character character constant
