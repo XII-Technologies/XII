@@ -528,6 +528,9 @@ CreateRenderDevice:
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
+  // Per frame data
+
+
   m_SyncTimeDiff.SetZero();
 
   xiiGALWindowSwapChain::SetFactoryMethod([this](const xiiGALWindowSwapChainCreationDescription& desc) -> xiiGALSwapChainHandle {
@@ -592,6 +595,13 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
       }
     }
     m_UsedTempResources[type].Clear();
+  }
+
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_PerFrameData); ++i)
+  {
+    auto& perFrameData = m_PerFrameData[i];
+
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(perFrameData.m_pFence);
   }
 
   if (!m_pDeviceContexts.IsEmpty())
@@ -966,14 +976,10 @@ void xiiGALDeviceDiligent::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
   if (m_PerFrameData[m_uiCurrentPerFrameData].m_uiFrame != ((xiiUInt64)-1))
   {
     auto& perFrameData = m_PerFrameData[m_uiCurrentPerFrameData];
-    for (Diligent::IFence* pFence : perFrameData.m_SubmittedFences)
+    if (perFrameData.m_pFence->GetCompletedValue() < perFrameData.m_uiCompletedFenceValue)
     {
-      if (m_DeviceType != Diligent::RENDER_DEVICE_TYPE_D3D11)
-      {
-        GetImmediateContext()->DeviceWaitForFence(pFence, 1000000000u);
-      }
+      perFrameData.m_pFence->Wait(perFrameData.m_uiCompletedFenceValue);
     }
-    perFrameData.m_SubmittedFences.Clear();
 
     {
       XII_LOCK(m_PerFrameData[m_uiCurrentPerFrameData].m_PendingDeletionsMutex);
@@ -982,8 +988,11 @@ void xiiGALDeviceDiligent::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 
     m_uiSafeFrame = m_PerFrameData[m_uiCurrentPerFrameData].m_uiFrame;
   }
+
   {
-    auto& perFrameData                = m_PerFrameData[m_uiNextPerFrameData];
+    auto& perFrameData = m_PerFrameData[m_uiNextPerFrameData];
+    GetImmediateContext()->EnqueueSignal(perFrameData.m_pFence, ++perFrameData.m_uiCompletedFenceValue);
+
     perFrameData.m_fInvTicksPerSecond = -1.0f;
   }
 
@@ -1102,6 +1111,8 @@ void xiiGALDeviceDiligent::WaitIdlePlatform()
   {
     // First, we wait for all fences for all submit calls. This is necessary to make sure no resources of the frame are still in use by the GPU.
     auto& perFrameData = m_PerFrameData[i];
+
+#if 0
     for (Diligent::IFence* pFence : perFrameData.m_SubmittedFences)
     {
       if (m_DeviceType != Diligent::RENDER_DEVICE_TYPE_D3D11)
@@ -1110,6 +1121,7 @@ void xiiGALDeviceDiligent::WaitIdlePlatform()
       }
     }
     perFrameData.m_SubmittedFences.Clear();
+#endif
   }
 
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_PerFrameData); ++i)

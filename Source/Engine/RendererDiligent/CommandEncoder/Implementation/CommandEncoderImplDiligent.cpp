@@ -935,6 +935,7 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
   if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
   {
     m_pContext->EnqueueSignal(m_pReadBackFence, ++m_uiReadBackFenceCompletedValue);
+
     ClearActiveDebugGroups();
 
     if (m_bRenderpassActive)
@@ -945,6 +946,7 @@ void xiiGALCommandEncoderImplDiligent::ReadbackTexturePlatform(const xiiGALTextu
     }
 
     m_pContext->Flush();
+
     m_pReadBackFence->Wait(m_uiReadBackFenceCompletedValue);
   }
 }
@@ -983,6 +985,7 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureReadbackResultPlatform(const x
     if (m_GALDeviceDiligent.GetDeviceType() != Diligent::RENDER_DEVICE_TYPE_D3D11)
     {
       m_pContext->EnqueueSignal(m_pReadBackFence, ++m_uiReadBackFenceCompletedValue);
+
       ClearActiveDebugGroups();
 
       if (m_bRenderpassActive)
@@ -993,6 +996,7 @@ void xiiGALCommandEncoderImplDiligent::CopyTextureReadbackResultPlatform(const x
       }
 
       m_pContext->Flush();
+
       m_pReadBackFence->Wait(m_uiReadBackFenceCompletedValue);
     }
 
@@ -1055,7 +1059,7 @@ void xiiGALCommandEncoderImplDiligent::FlushPlatform()
 
   m_pContext->Flush();
 
-  FlushDeferredStateChanges();
+  // FlushDeferredStateChanges();
 }
 
 // Debug helper functions

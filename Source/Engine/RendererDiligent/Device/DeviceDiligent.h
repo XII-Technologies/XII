@@ -146,7 +146,8 @@ protected:
 
   struct PerFrameData
   {
-    xiiHybridArray<Diligent::RefCntAutoPtr<Diligent::IFence>, 2u> m_SubmittedFences;
+    Diligent::IFence* m_pFence                = nullptr;
+    xiiUInt64         m_uiCompletedFenceValue = 0u;
 
     xiiUInt64 m_uiFrame            = -1;
     double    m_fInvTicksPerSecond = -1.0;
