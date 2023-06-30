@@ -36,17 +36,17 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
   xiiStringBuilder sOutputFolderResolved;
   xiiFileSystem::ResolveSpecialDirectory(sOutputFolder, sOutputFolderResolved).IgnoreResult();
 
-  xiiApplicationFileSystemConfig fsConfig;
+  xiiApplicationFileSystemConfig                 fsConfig;
   xiiApplicationFileSystemConfig::DataDirConfig& dataDir = fsConfig.m_DataDirs.ExpandAndGetRef();
-  dataDir.m_bWritable = true;
-  dataDir.m_sDataDirSpecialPath = sOutputFolder;
-  dataDir.m_sRootName = "output";
+  dataDir.m_bWritable                                    = true;
+  dataDir.m_sDataDirSpecialPath                          = sOutputFolder;
+  dataDir.m_sRootName                                    = "output";
 
   // Files
   xiiHybridArray<xiiFileChangedEvent, 2> fileEvents;
-  xiiHybridArray<xiiTime, 2> fileEventTimestamps;
-  xiiMutex fileEventLock;
-  auto fileEvent = [&](const xiiFileChangedEvent& e) {
+  xiiHybridArray<xiiTime, 2>             fileEventTimestamps;
+  xiiMutex                               fileEventLock;
+  auto                                   fileEvent = [&](const xiiFileChangedEvent& e) {
     XII_LOCK(fileEventLock);
     fileEvents.PushBack(e);
     fileEventTimestamps.PushBack(xiiTime::Now());
@@ -72,9 +72,9 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
 
   // Folders
   xiiHybridArray<xiiFolderChangedEvent, 2> folderEvents;
-  xiiHybridArray<xiiTime, 2> folderEventTimestamps;
-  xiiMutex folderEventLock;
-  auto folderEvent = [&](const xiiFolderChangedEvent& e) {
+  xiiHybridArray<xiiTime, 2>               folderEventTimestamps;
+  xiiMutex                                 folderEventLock;
+  auto                                     folderEvent = [&](const xiiFolderChangedEvent& e) {
     XII_LOCK(folderEventLock);
     folderEvents.PushBack(e);
     folderEventTimestamps.PushBack(xiiTime::Now());
@@ -379,7 +379,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     XII_TEST_INT((xiiInt64)status.m_uiHash, (xiiInt64)10983861097202158394u);
   }
 
-  xiiMap<xiiString, xiiFileStatus> referencedFiles;
+  xiiMap<xiiString, xiiFileStatus>         referencedFiles;
   xiiMap<xiiString, xiiFileStatus::Status> referencedFolders;
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Shutdown")
