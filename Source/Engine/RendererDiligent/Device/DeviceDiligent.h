@@ -146,10 +146,12 @@ protected:
 
   struct PerFrameData
   {
-    xiiHybridArray<Diligent::RefCntAutoPtr<Diligent::IFence>, 2u> m_SubmittedFences;
+    Diligent::RefCntAutoPtr<Diligent::IFence> m_pFence;
+    xiiUInt64                                 m_uiCompletedFenceValue = 0u;
 
-    xiiUInt64 m_uiFrame            = -1;
-    double    m_fInvTicksPerSecond = -1.0;
+    Diligent::RefCntAutoPtr<Diligent::IQuery> m_pDurationQuery;
+    xiiUInt64                                 m_uiFrame            = -1;
+    double                                    m_fInvTicksPerSecond = -1.0;
 
     xiiMutex                  m_PendingDeletionsMutex;
     xiiDeque<PendingDeletion> m_PendingDeletions;
@@ -159,6 +161,8 @@ protected:
   void DeletePendingResources(xiiDeque<PendingDeletion>& pendingDeletions);
 
   void FillFormatLookupTable();
+
+  Diligent::IQuery* GetTimestamp(xiiGALTimestampHandle hTimestamp);
 
   bool IsFenceReachedPlatform(Diligent::IDeviceContext* pContext, Diligent::IQuery* pFence);
   void WaitForFencePlatform(Diligent::IDeviceContext* pContext, Diligent::IQuery* pFence);
@@ -214,6 +218,10 @@ protected:
 
   xiiMap<xiiUInt32, xiiDynamicArray<Diligent::IDeviceObject*>, xiiCompareHelper<xiiUInt32>, xiiLocalAllocatorWrapper> m_FreeTempResources[TempResourceType::ENUM_COUNT];
   xiiDeque<UsedTempResource, xiiLocalAllocatorWrapper>                                                                m_UsedTempResources[TempResourceType::ENUM_COUNT];
+
+  xiiDynamicArray<Diligent::RefCntAutoPtr<Diligent::IQuery>, xiiLocalAllocatorWrapper> m_Timestamps;
+  xiiUInt32                                                                            m_uiCurrentTimestamp = 0;
+  xiiUInt32                                                                            m_uiNextTimestamp    = 0;
 
 #if XII_ENABLED(XII_USE_PROFILING)
   struct GPUTimingScope* m_pFrameTimingScope    = nullptr;

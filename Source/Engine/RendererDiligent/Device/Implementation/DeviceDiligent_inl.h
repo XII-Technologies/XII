@@ -28,3 +28,13 @@ XII_ALWAYS_INLINE const xiiInt32 xiiGALDeviceDiligent::GetValidationLevel() cons
 {
   return m_iValidationLevel;
 }
+
+XII_ALWAYS_INLINE Diligent::IQuery* xiiGALDeviceDiligent::GetTimestamp(xiiGALTimestampHandle hTimestamp)
+{
+  if (hTimestamp.m_uiIndex < m_Timestamps.GetCount())
+  {
+    return m_Timestamps[static_cast<xiiUInt32>(hTimestamp.m_uiIndex)];
+  }
+
+  return nullptr;
+}
