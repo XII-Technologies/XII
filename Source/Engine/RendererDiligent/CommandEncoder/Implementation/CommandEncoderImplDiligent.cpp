@@ -396,6 +396,10 @@ xiiResult xiiGALCommandEncoderImplDiligent::GetQueryResultPlatform(const xiiGALQ
 
 void xiiGALCommandEncoderImplDiligent::InsertTimestampPlatform(xiiGALTimestampHandle hTimestamp)
 {
+  if (Diligent::IQuery* pQueryDiligent = m_GALDeviceDiligent.GetTimestamp(hTimestamp))
+  {
+    m_pContext->EndQuery(pQueryDiligent);
+  }
 }
 
 // Resource update functions
