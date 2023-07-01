@@ -454,7 +454,32 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
     case Diligent::RENDER_DEVICE_TYPE_D3D12:
     {
       // \todo Implement unordered access view clearing in D3D12
-      XII_ASSERT_NOT_IMPLEMENTED;
+
+      Diligent::RefCntAutoPtr<Diligent::IDeviceContextD3D12> pContextD3D12;
+      m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D12, reinterpret_cast<Diligent::IObject**>((Diligent::IDeviceContextD3D12**)&pContextD3D12));
+      XII_ASSERT_DEV(pContextD3D12 != nullptr, "Failed to retrieve the D3D12 context.");
+
+      if (Diligent::IBufferView* pBufferView = pUnorderedAccessViewDiligent->GetBufferView())
+      {
+        Diligent::RefCntAutoPtr<Diligent::IBufferViewD3D12> pBufferViewD3D12;
+        pBufferView->QueryInterface(Diligent::IID_BufferViewD3D12, reinterpret_cast<Diligent::IObject**>((Diligent::IBufferViewD3D12**)&pBufferViewD3D12));
+        XII_ASSERT_DEV(pBufferViewD3D12 != nullptr, "Failed to retrieve the D3D12 buffer view.");
+
+        // Perform clear
+
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pBufferViewD3D12);
+      }
+
+      if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
+      {
+        Diligent::RefCntAutoPtr<Diligent::ITextureViewD3D12> pTextureViewD3D12;
+        pTextureView->QueryInterface(Diligent::IID_TextureViewD3D12, reinterpret_cast<Diligent::IObject**>((Diligent::ITextureViewD3D12**)&pTextureViewD3D12));
+        XII_ASSERT_DEV(pTextureViewD3D12 != nullptr, "Failed to retrieve the D3D12 texture view.");
+
+        // Perform clear
+
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pTextureViewD3D12);
+      }
     }
     break;
 #endif
@@ -551,7 +576,34 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
     case Diligent::RENDER_DEVICE_TYPE_D3D12:
     {
       // \todo Implement unordered access view clearing in D3D12
-      XII_ASSERT_NOT_IMPLEMENTED;
+
+      Diligent::RefCntAutoPtr<Diligent::IDeviceContextD3D12> pContextD3D12;
+      m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D12, reinterpret_cast<Diligent::IObject**>((Diligent::IDeviceContextD3D12**)&pContextD3D12));
+      XII_ASSERT_DEV(pContextD3D12 != nullptr, "Failed to retrieve the D3D12 context.");
+
+      if (Diligent::IBufferView* pBufferView = pUnorderedAccessViewDiligent->GetBufferView())
+      {
+        Diligent::RefCntAutoPtr<Diligent::IBufferViewD3D12> pBufferViewD3D12;
+        pBufferView->QueryInterface(Diligent::IID_BufferViewD3D12, reinterpret_cast<Diligent::IObject**>((Diligent::IBufferViewD3D12**)&pBufferViewD3D12));
+        XII_ASSERT_DEV(pBufferViewD3D12 != nullptr, "Failed to retrieve the D3D12 buffer view.");
+
+        // Perform clear
+
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pBufferViewD3D12);
+      }
+
+      if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
+      {
+        Diligent::RefCntAutoPtr<Diligent::ITextureViewD3D12> pTextureViewD3D12;
+        pTextureView->QueryInterface(Diligent::IID_TextureViewD3D12, reinterpret_cast<Diligent::IObject**>((Diligent::ITextureViewD3D12**)&pTextureViewD3D12));
+        XII_ASSERT_DEV(pTextureViewD3D12 != nullptr, "Failed to retrieve the D3D12 texture view.");
+
+        // Perform clear
+
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pTextureViewD3D12);
+      }
+
+      XII_GAL_DILIGENT_WRAPPED_RELEASE(pContextD3D12);
     }
     break;
 #endif
