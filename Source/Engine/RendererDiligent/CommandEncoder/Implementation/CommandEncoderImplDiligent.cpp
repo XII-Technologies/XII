@@ -396,10 +396,12 @@ xiiResult xiiGALCommandEncoderImplDiligent::GetQueryResultPlatform(const xiiGALQ
 
 void xiiGALCommandEncoderImplDiligent::InsertTimestampPlatform(xiiGALTimestampHandle hTimestamp)
 {
+#if 0
   if (Diligent::IQuery* pQueryDiligent = m_GALDeviceDiligent.GetTimestamp(hTimestamp))
   {
     m_pContext->EndQuery(pQueryDiligent);
   }
+#endif
 }
 
 // Resource update functions
@@ -417,33 +419,33 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 #if D3D11_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D11:
     {
-      Diligent::IDeviceContextD3D11* pContextD3D11 = static_cast<Diligent::IDeviceContextD3D11*>(m_pContext);
-      m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D11, reinterpret_cast<Diligent::IObject**>(&pContextD3D11));
+      Diligent::RefCntAutoPtr<Diligent::IDeviceContextD3D11> pContextD3D11;
+      m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D11, reinterpret_cast<Diligent::IObject**>((Diligent::IDeviceContextD3D11**)&pContextD3D11));
       XII_ASSERT_DEV(pContextD3D11 != nullptr, "Failed to retrieve the D3D11 context.");
 
       if (Diligent::IBufferView* pBufferView = pUnorderedAccessViewDiligent->GetBufferView())
       {
-        Diligent::IBufferViewD3D11* pBufferViewD3D11 = static_cast<Diligent::IBufferViewD3D11*>(pBufferView);
-        pBufferView->QueryInterface(Diligent::IID_BufferViewD3D11, reinterpret_cast<Diligent::IObject**>(&pBufferViewD3D11));
+        Diligent::RefCntAutoPtr<Diligent::IBufferViewD3D11> pBufferViewD3D11;
+        pBufferView->QueryInterface(Diligent::IID_BufferViewD3D11, reinterpret_cast<Diligent::IObject**>((Diligent::IBufferViewD3D11**)&pBufferViewD3D11));
         XII_ASSERT_DEV(pBufferViewD3D11 != nullptr, "Failed to retrieve the D3D11 buffer view.");
 
         pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewFloat(static_cast<ID3D11UnorderedAccessView*>(pBufferViewD3D11->GetD3D11View()), &clearValues.x);
 
-        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pBufferViewD3D11);
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pBufferViewD3D11);
       }
 
       if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
       {
-        Diligent::ITextureViewD3D11* pTextureViewD3D11 = static_cast<Diligent::ITextureViewD3D11*>(pTextureView);
-        pTextureView->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>(&pTextureViewD3D11));
+        Diligent::RefCntAutoPtr<Diligent::ITextureViewD3D11> pTextureViewD3D11;
+        pTextureView->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>((Diligent::ITextureViewD3D11**)&pTextureViewD3D11));
         XII_ASSERT_DEV(pTextureViewD3D11 != nullptr, "Failed to retrieve the D3D11 texture view.");
 
         pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewFloat(static_cast<ID3D11UnorderedAccessView*>(pTextureViewD3D11->GetD3D11View()), &clearValues.x);
 
-        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureViewD3D11);
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pTextureViewD3D11);
       }
 
-      XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pContextD3D11);
+      XII_GAL_DILIGENT_WRAPPED_RELEASE(pContextD3D11);
     }
     break;
 #endif
@@ -460,39 +462,39 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 #if VULKAN_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_VULKAN:
     {
-      Diligent::IDeviceContextVk* pContextVk = static_cast<Diligent::IDeviceContextVk*>(m_pContext);
-      m_pContext->QueryInterface(Diligent::IID_DeviceContextVk, reinterpret_cast<Diligent::IObject**>(&pContextVk));
+      Diligent::RefCntAutoPtr<Diligent::IDeviceContextVk> pContextVk;
+      m_pContext->QueryInterface(Diligent::IID_DeviceContextVk, reinterpret_cast<Diligent::IObject**>((Diligent::IDeviceContextVk**)&pContextVk));
       XII_ASSERT_DEV(pContextVk != nullptr, "Failed to retrieve the Vulkan context.");
 
       if (Diligent::IBufferView* pBufferView = pUnorderedAccessViewDiligent->GetBufferView())
       {
-        Diligent::IBufferVk* pBufferVk = static_cast<Diligent::IBufferVk*>(pBufferView->GetBuffer());
-        pBufferView->GetBuffer()->QueryInterface(Diligent::IID_BufferVk, reinterpret_cast<Diligent::IObject**>(&pBufferVk));
-        XII_ASSERT_DEV(pBufferVk != nullptr, "Failed to retrieve the Vulkan buffer view.");
+        Diligent::RefCntAutoPtr<Diligent::IBufferVk> pBufferVk;
+        pBufferView->GetBuffer()->QueryInterface(Diligent::IID_BufferVk, reinterpret_cast<Diligent::IObject**>((Diligent::IBufferVk**)&pBufferVk));
+        XII_ASSERT_DEV(pBufferVk != nullptr, "Failed to retrieve the Vulkan buffer.");
 
         xiiUInt32* pData = (xiiUInt32*)&clearValues;
         vkCmdFillBuffer(pContextVk->GetVkCommandBuffer(), pBufferVk->GetVkBuffer(), 0, VK_WHOLE_SIZE, *pData);
 
-        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pBufferVk);
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pBufferVk);
       }
 
       if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
       {
         m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureView->GetTexture(), Diligent::RESOURCE_STATE_COPY_DEST, pTextureView->GetTexture()->GetState());
 
-        Diligent::ITextureVk* pTextureVk = static_cast<Diligent::ITextureVk*>(pTextureView->GetTexture());
-        pTextureView->GetTexture()->QueryInterface(Diligent::IID_TextureVk, reinterpret_cast<Diligent::IObject**>(&pTextureVk));
-        XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture view.");
+        Diligent::RefCntAutoPtr<Diligent::ITextureVk> pTextureVk;
+        pTextureView->GetTexture()->QueryInterface(Diligent::IID_TextureVk, reinterpret_cast<Diligent::IObject**>((Diligent::ITextureVk**)&pTextureVk));
+        XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture.");
 
         const VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
         vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, reinterpret_cast<const VkClearColorValue*>(clearValues.GetData()), 1, &subresourceRange);
 
-        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureVk);
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pTextureVk);
 
         m_pPipelineBarrier->FlushBarriers();
       }
 
-      XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pContextVk);
+      XII_GAL_DILIGENT_WRAPPED_RELEASE(pContextVk);
     }
     break;
 #endif
@@ -514,33 +516,33 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 #if D3D11_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_D3D11:
     {
-      Diligent::IDeviceContextD3D11* pContextD3D11 = static_cast<Diligent::IDeviceContextD3D11*>(m_pContext);
-      m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D11, reinterpret_cast<Diligent::IObject**>(&pContextD3D11));
+      Diligent::RefCntAutoPtr<Diligent::IDeviceContextD3D11> pContextD3D11;
+      m_pContext->QueryInterface(Diligent::IID_DeviceContextD3D11, reinterpret_cast<Diligent::IObject**>((Diligent::IDeviceContextD3D11**)&pContextD3D11));
       XII_ASSERT_DEV(pContextD3D11 != nullptr, "Failed to retrieve the D3D11 context.");
 
       if (Diligent::IBufferView* pBufferView = pUnorderedAccessViewDiligent->GetBufferView())
       {
-        Diligent::IBufferViewD3D11* pBufferViewD3D11 = static_cast<Diligent::IBufferViewD3D11*>(pBufferView);
-        pBufferView->QueryInterface(Diligent::IID_BufferViewD3D11, reinterpret_cast<Diligent::IObject**>(&pBufferViewD3D11));
+        Diligent::RefCntAutoPtr<Diligent::IBufferViewD3D11> pBufferViewD3D11;
+        pBufferView->QueryInterface(Diligent::IID_BufferViewD3D11, reinterpret_cast<Diligent::IObject**>((Diligent::IBufferViewD3D11**)&pBufferViewD3D11));
         XII_ASSERT_DEV(pBufferViewD3D11 != nullptr, "Failed to retrieve the D3D11 buffer view.");
 
         pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewUint(static_cast<ID3D11UnorderedAccessView*>(pBufferViewD3D11->GetD3D11View()), &clearValues.x);
 
-        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pBufferViewD3D11);
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pBufferViewD3D11);
       }
 
       if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
       {
-        Diligent::ITextureViewD3D11* pTextureViewD3D11 = static_cast<Diligent::ITextureViewD3D11*>(pTextureView);
-        pTextureView->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>(&pTextureViewD3D11));
+        Diligent::RefCntAutoPtr<Diligent::ITextureViewD3D11> pTextureViewD3D11;
+        pTextureView->QueryInterface(Diligent::IID_TextureViewD3D11, reinterpret_cast<Diligent::IObject**>((Diligent::ITextureViewD3D11**)&pTextureViewD3D11));
         XII_ASSERT_DEV(pTextureViewD3D11 != nullptr, "Failed to retrieve the D3D11 texture view.");
 
         pContextD3D11->GetD3D11DeviceContext()->ClearUnorderedAccessViewUint(static_cast<ID3D11UnorderedAccessView*>(pTextureViewD3D11->GetD3D11View()), &clearValues.x);
 
-        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureViewD3D11);
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pTextureViewD3D11);
       }
 
-      XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pContextD3D11);
+      XII_GAL_DILIGENT_WRAPPED_RELEASE(pContextD3D11);
     }
     break;
 #endif
@@ -557,38 +559,38 @@ void xiiGALCommandEncoderImplDiligent::ClearUnorderedAccessViewPlatform(const xi
 #if VULKAN_SUPPORTED
     case Diligent::RENDER_DEVICE_TYPE_VULKAN:
     {
-      Diligent::IDeviceContextVk* pContextVk = static_cast<Diligent::IDeviceContextVk*>(m_pContext);
-      m_pContext->QueryInterface(Diligent::IID_DeviceContextVk, reinterpret_cast<Diligent::IObject**>(&pContextVk));
+      Diligent::RefCntAutoPtr<Diligent::IDeviceContextVk> pContextVk;
+      m_pContext->QueryInterface(Diligent::IID_DeviceContextVk, reinterpret_cast<Diligent::IObject**>((Diligent::IDeviceContextVk**)&pContextVk));
       XII_ASSERT_DEV(pContextVk != nullptr, "Failed to retrieve the Vulkan context.");
 
       if (Diligent::IBufferView* pBufferView = pUnorderedAccessViewDiligent->GetBufferView())
       {
-        Diligent::IBufferVk* pBufferVk = static_cast<Diligent::IBufferVk*>(pBufferView->GetBuffer());
-        pBufferView->GetBuffer()->QueryInterface(Diligent::IID_BufferVk, reinterpret_cast<Diligent::IObject**>(&pBufferVk));
-        XII_ASSERT_DEV(pBufferVk != nullptr, "Failed to retrieve the Vulkan buffer view.");
+        Diligent::RefCntAutoPtr<Diligent::IBufferVk> pBufferVk;
+        pBufferView->GetBuffer()->QueryInterface(Diligent::IID_BufferVk, reinterpret_cast<Diligent::IObject**>((Diligent::IBufferVk**)&pBufferVk));
+        XII_ASSERT_DEV(pBufferVk != nullptr, "Failed to retrieve the Vulkan buffer.");
 
         vkCmdFillBuffer(pContextVk->GetVkCommandBuffer(), pBufferVk->GetVkBuffer(), 0, VK_WHOLE_SIZE, clearValues.x);
 
-        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pBufferVk);
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pBufferVk);
       }
 
       if (Diligent::ITextureView* pTextureView = pUnorderedAccessViewDiligent->GetTextureView())
       {
         m_pPipelineBarrier->EnsureResourceState(m_pContext, pTextureView->GetTexture(), Diligent::RESOURCE_STATE_COPY_DEST, pTextureView->GetTexture()->GetState());
 
-        Diligent::ITextureVk* pTextureVk = static_cast<Diligent::ITextureVk*>(pTextureView->GetTexture());
-        pTextureView->GetTexture()->QueryInterface(Diligent::IID_TextureVk, reinterpret_cast<Diligent::IObject**>(&pTextureVk));
-        XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture view.");
+        Diligent::RefCntAutoPtr<Diligent::ITextureVk> pTextureVk;
+        pTextureView->GetTexture()->QueryInterface(Diligent::IID_TextureVk, reinterpret_cast<Diligent::IObject**>((Diligent::ITextureVk**)&pTextureVk));
+        XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture.");
 
         const VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
         vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, reinterpret_cast<const VkClearColorValue*>(clearValues.GetData()), 1, &subresourceRange);
 
-        XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pTextureVk);
+        XII_GAL_DILIGENT_WRAPPED_RELEASE(pTextureVk);
 
         m_pPipelineBarrier->FlushBarriers();
       }
 
-      XII_GAL_DILIGENT_UNWRAPPED_RELEASE(pContextVk);
+      XII_GAL_DILIGENT_WRAPPED_RELEASE(pContextVk);
     }
     break;
 #endif
