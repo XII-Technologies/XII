@@ -515,7 +515,7 @@ CreateRenderDevice:
   m_uiNumImmediateContexts = NumImmediateContexts;
   m_pDeviceContexts.SetCount(ppContexts.GetCount());
   for (xiiUInt32 i = 0; i < ppContexts.GetCount(); ++i)
-    m_pDeviceContexts[i] = ppContexts[i];
+    m_pDeviceContexts[i].Attach(ppContexts[i]);
 
   m_pPipelineBarrier = XII_NEW(&m_Allocator, xiiPipelineBarrierDiligent);
 
