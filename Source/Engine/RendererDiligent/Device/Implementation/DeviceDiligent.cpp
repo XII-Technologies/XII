@@ -555,7 +555,7 @@ CreateRenderDevice:
   }
 
   // \todo RendererDilignet: Replace ring buffer with proper pool to prevent buffer overrun.
-  m_Timestamps.SetCountUninitialized(2048);
+  m_Timestamps.SetCount(2048);
   for (xiiUInt32 i = 0; i < m_Timestamps.GetCount(); ++i)
   {
     m_Timestamps[i] = nullptr;
@@ -636,7 +636,7 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
 
   for (auto& timestamp : m_Timestamps)
   {
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(timestamp);
+    XII_GAL_DILIGENT_WRAPPED_RELEASE(timestamp);
   }
   m_Timestamps.Clear();
 
@@ -644,8 +644,8 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
   {
     auto& perFrameData = m_PerFrameData[i];
 
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(perFrameData.m_pFence);
-    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(perFrameData.m_pDurationQuery);
+    XII_GAL_DILIGENT_WRAPPED_RELEASE(perFrameData.m_pFence);
+    XII_GAL_DILIGENT_WRAPPED_RELEASE(perFrameData.m_pDurationQuery);
   }
 
   if (!m_pDeviceContexts.IsEmpty())
