@@ -8,20 +8,20 @@ XII_IMPLEMENT_SINGLETON(xiiVariantTypeRegistry);
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, VariantTypeRegistry)
 
-BEGIN_SUBSYSTEM_DEPENDENCIES
-"Reflection"
-END_SUBSYSTEM_DEPENDENCIES
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+  "Reflection"
+  END_SUBSYSTEM_DEPENDENCIES
 
-ON_CORESYSTEMS_STARTUP
-{
-  XII_DEFAULT_NEW(xiiVariantTypeRegistry);
-}
+  ON_CORESYSTEMS_STARTUP
+  {
+    XII_DEFAULT_NEW(xiiVariantTypeRegistry);
+  }
 
-ON_CORESYSTEMS_SHUTDOWN
-{
-  xiiVariantTypeRegistry * pDummy = xiiVariantTypeRegistry::GetSingleton();
-  XII_DEFAULT_DELETE(pDummy);
-}
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiVariantTypeRegistry * pDummy = xiiVariantTypeRegistry::GetSingleton();
+    XII_DEFAULT_DELETE(pDummy);
+  }
 
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on

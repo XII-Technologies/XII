@@ -159,8 +159,69 @@ class XII_FOUNDATION_DLL xiiDefaultValueAttribute : public xiiPropertyAttribute
 
 public:
   xiiDefaultValueAttribute() = default;
+
   xiiDefaultValueAttribute(const xiiVariant& value) :
     m_Value(value)
+  {
+  }
+
+  xiiDefaultValueAttribute(xiiInt8 value) :
+    m_Value(value)
+  {
+  }
+
+  xiiDefaultValueAttribute(xiiUInt8 value) :
+    m_Value(value)
+  {
+  }
+
+  xiiDefaultValueAttribute(xiiInt16 value) :
+    m_Value(value)
+  {
+  }
+
+  xiiDefaultValueAttribute(xiiUInt16 value) :
+    m_Value(value)
+  {
+  }
+
+  xiiDefaultValueAttribute(xiiInt32 value) :
+    m_Value(value)
+  {
+  }
+
+  xiiDefaultValueAttribute(xiiUInt32 value) :
+    m_Value(value)
+  {
+  }
+
+  xiiDefaultValueAttribute(xiiInt64 value) :
+    m_Value(value)
+  {
+  }
+
+  xiiDefaultValueAttribute(xiiUInt64 value) :
+    m_Value(value)
+  {
+  }
+
+  xiiDefaultValueAttribute(float value) :
+    m_Value(value)
+  {
+  }
+
+  xiiDefaultValueAttribute(double value) :
+    m_Value(value)
+  {
+  }
+
+  xiiDefaultValueAttribute(xiiStringView value) :
+    m_Value(xiiVariant(value, false))
+  {
+  }
+
+  xiiDefaultValueAttribute(const char* value) :
+    m_Value(xiiVariant(xiiStringView(value), false))
   {
   }
 

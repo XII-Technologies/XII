@@ -52,6 +52,14 @@ xiiVariant::xiiVariant(const xiiString& value)
   InitShared(value);
 }
 
+xiiVariant::xiiVariant(const xiiStringView& value, bool bCopyString)
+{
+  if (bCopyString)
+    InitShared(xiiString(value));
+  else
+    InitInplace(value);
+}
+
 xiiVariant::xiiVariant(const xiiUntrackedString& value)
 {
   InitShared(value);
@@ -425,7 +433,15 @@ struct ConvertFunc
   {
     T result;
     xiiVariantHelper::To(*m_pThis, result, m_bSuccessful);
-    m_Result = result;
+
+    if constexpr (std::is_same_v<T, xiiStringView>)
+    {
+      m_Result = xiiVariant(result, false);
+    }
+    else
+    {
+      m_Result = result;
+    }
   }
 
   const xiiVariant* m_pThis;
@@ -545,9 +561,14 @@ bool xiiVariant::CanConvertTo(Type::Enum type) const
   if (type == Type::Invalid)
     return false;
 
-  if (type == Type::String && (m_uiType < Type::LastStandardType && m_uiType != Type::DataBuffer))
+  if (type == Type::String && m_uiType == Type::Invalid)
+    return true;
+
+  if (type == Type::String && (m_uiType > Type::FirstStandardType && m_uiType < Type::LastStandardType && m_uiType != Type::DataBuffer))
     return true;
   if (type == Type::String && (m_uiType == Type::VariantArray || m_uiType == Type::VariantDictionary))
+    return true;
+  if (type == Type::StringView && m_uiType == Type::String)
     return true;
 
   if (!IsValid())

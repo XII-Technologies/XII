@@ -113,7 +113,7 @@ public:
   xiiVariant(const char* value);
   xiiVariant(const xiiString& value);
   xiiVariant(const xiiUntrackedString& value);
-  xiiVariant(const xiiStringView& value);
+  xiiVariant(const xiiStringView& value, bool bCopyString = true);
   xiiVariant(const xiiDataBuffer& value);
   xiiVariant(const xiiTime& value);
   xiiVariant(const xiiUuid& value);

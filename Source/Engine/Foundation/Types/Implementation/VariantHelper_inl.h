@@ -428,6 +428,13 @@ class xiiVariantHelper
     xiiVariant::DispatchTo(toStringFunc, value.GetType());
   }
 
+  static void To(const xiiVariant& value, xiiStringView& result, bool& bSuccessful)
+  {
+    bSuccessful = true;
+
+    result = value.Get<xiiString>().GetView();
+  }
+
   static void To(const xiiVariant& value, xiiTypedPointer& result, bool& bSuccessful)
   {
     bSuccessful = true;
@@ -567,31 +574,31 @@ class xiiVariantHelper
     {
       const V1& v = value.Get<V1>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
-                 static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
+                      static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else if (value.IsA<V2>())
     {
       const V2& v = value.Get<V2>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
-                 static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
+                      static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else if (value.IsA<V3>())
     {
       const V3& v = value.Get<V3>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
-                 static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
+                      static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else if (value.IsA<V4>())
     {
       const V4& v = value.Get<V4>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
-                 static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
+                      static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else if (value.IsA<V5>())
     {
       const V5& v = value.Get<V5>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
-                 static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
+                      static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else
     {
@@ -621,7 +628,7 @@ class xiiVariantHelper
     {
       const V1& v = value.Get<V1>();
       result      = T(static_cast<typename T::ComponentType>(v.v.x), static_cast<typename T::ComponentType>(v.v.y),
-                 static_cast<typename T::ComponentType>(v.v.z), static_cast<typename T::ComponentType>(v.w));
+                      static_cast<typename T::ComponentType>(v.v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else
     {
@@ -643,8 +650,8 @@ class xiiVariantHelper
     {
       const V1& v = value.Get<V1>();
       result      = T(static_cast<typename T::ComponentType>(v.Element(0, 0)), static_cast<typename T::ComponentType>(v.Element(1, 0)), static_cast<typename T::ComponentType>(v.Element(2, 0)),
-                 static_cast<typename T::ComponentType>(v.Element(0, 1)), static_cast<typename T::ComponentType>(v.Element(1, 1)), static_cast<typename T::ComponentType>(v.Element(2, 1)),
-                 static_cast<typename T::ComponentType>(v.Element(0, 2)), static_cast<typename T::ComponentType>(v.Element(1, 2)), static_cast<typename T::ComponentType>(v.Element(2, 2)));
+                      static_cast<typename T::ComponentType>(v.Element(0, 1)), static_cast<typename T::ComponentType>(v.Element(1, 1)), static_cast<typename T::ComponentType>(v.Element(2, 1)),
+                      static_cast<typename T::ComponentType>(v.Element(0, 2)), static_cast<typename T::ComponentType>(v.Element(1, 2)), static_cast<typename T::ComponentType>(v.Element(2, 2)));
     }
     else
     {
@@ -666,9 +673,9 @@ class xiiVariantHelper
     {
       const V1& v = value.Get<V1>();
       result      = T(static_cast<typename T::ComponentType>(v.Element(0, 0)), static_cast<typename T::ComponentType>(v.Element(1, 0)), static_cast<typename T::ComponentType>(v.Element(2, 0)), static_cast<typename T::ComponentType>(v.Element(3, 0)),
-                 static_cast<typename T::ComponentType>(v.Element(0, 1)), static_cast<typename T::ComponentType>(v.Element(1, 1)), static_cast<typename T::ComponentType>(v.Element(2, 1)), static_cast<typename T::ComponentType>(v.Element(3, 1)),
-                 static_cast<typename T::ComponentType>(v.Element(0, 2)), static_cast<typename T::ComponentType>(v.Element(1, 2)), static_cast<typename T::ComponentType>(v.Element(2, 2)), static_cast<typename T::ComponentType>(v.Element(3, 2)),
-                 static_cast<typename T::ComponentType>(v.Element(0, 3)), static_cast<typename T::ComponentType>(v.Element(1, 3)), static_cast<typename T::ComponentType>(v.Element(2, 3)), static_cast<typename T::ComponentType>(v.Element(3, 3)));
+                      static_cast<typename T::ComponentType>(v.Element(0, 1)), static_cast<typename T::ComponentType>(v.Element(1, 1)), static_cast<typename T::ComponentType>(v.Element(2, 1)), static_cast<typename T::ComponentType>(v.Element(3, 1)),
+                      static_cast<typename T::ComponentType>(v.Element(0, 2)), static_cast<typename T::ComponentType>(v.Element(1, 2)), static_cast<typename T::ComponentType>(v.Element(2, 2)), static_cast<typename T::ComponentType>(v.Element(3, 2)),
+                      static_cast<typename T::ComponentType>(v.Element(0, 3)), static_cast<typename T::ComponentType>(v.Element(1, 3)), static_cast<typename T::ComponentType>(v.Element(2, 3)), static_cast<typename T::ComponentType>(v.Element(3, 3)));
     }
     else
     {

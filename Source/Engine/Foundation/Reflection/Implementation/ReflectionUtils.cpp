@@ -1543,7 +1543,7 @@ xiiVariant xiiReflectionUtils::GetDefaultVariantFromType(xiiVariant::Type::Enum 
     case xiiVariant::Type::String:
       return xiiVariant(xiiString());
     case xiiVariant::Type::StringView:
-      return xiiVariant(xiiStringView());
+      return xiiVariant(xiiStringView(), false);
     case xiiVariant::Type::DataBuffer:
       return xiiVariant(xiiDataBuffer());
     case xiiVariant::Type::Time:

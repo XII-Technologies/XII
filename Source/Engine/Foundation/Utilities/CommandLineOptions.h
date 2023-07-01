@@ -44,23 +44,23 @@ public:
   /// \brief Checks whether all required options are passed to the command line.
   ///
   /// The options are passed as a semicolon-separated list (spare spaces are stripped away), for instance "-opt1; -opt2"
-  static xiiResult RequireOptions(const char* szRequiredOptions, xiiString* pMissingOption = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
+  static xiiResult RequireOptions(xiiStringView sRequiredOptions, xiiString* pMissingOption = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
 
   /// \brief Prints all available options to the xiiLog.
   ///
-  /// \param szGroupFilter
+  /// \param sGroupFilter
   ///   If this is empty, all options from all 'sorting groups' are logged.
   ///   If non-empty, only options from sorting groups that appear in this string will be logged.
-  static bool LogAvailableOptions(LogAvailableModes mode, const char* szGroupFilter = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
+  static bool LogAvailableOptions(LogAvailableModes mode, xiiStringView sGroupFilter0 = {}, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
 
   /// \brief Same as LogAvailableOptions() but captures the output from xiiLog and returns it in a xiiStringBuilder.
-  static bool LogAvailableOptionsToBuffer(xiiStringBuilder& out_sBuffer, LogAvailableModes mode, const char* szGroupFilter = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
+  static bool LogAvailableOptionsToBuffer(xiiStringBuilder& out_sBuffer, LogAvailableModes mode, xiiStringView sGroupFilter = {}, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
 
 public:
-  /// \param szSortingGroup
+  /// \param sSortingGroup
   ///   This string is used to sort options. Application options should start with an underscore, such that they appear first
   ///   in the output.
-  xiiCommandLineOption(const char* szSortingGroup) { m_szSortingGroup = szSortingGroup; }
+  xiiCommandLineOption(xiiStringView sSortingGroup) { m_sSortingGroup = sSortingGroup; }
 
   /// \brief Writes the sorting group name to 'out'.
   virtual void GetSortingGroup(xiiStringBuilder& ref_sOut) const;
@@ -84,10 +84,10 @@ public:
   virtual void GetLongDesc(xiiStringBuilder& ref_sOut) const = 0;
 
   /// \brief Returns a string indicating the exact implementation type.
-  virtual const char* GetType() = 0;
+  virtual xiiStringView GetType() = 0;
 
 protected:
-  const char* m_szSortingGroup = nullptr;
+  xiiStringView m_sSortingGroup;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -102,7 +102,7 @@ protected:
 class XII_FOUNDATION_DLL xiiCommandLineOptionDoc : public xiiCommandLineOption
 {
 public:
-  xiiCommandLineOptionDoc(const char* szSortingGroup, const char* szArgument, const char* szParamShortDesc, const char* szLongDesc, const char* szDefaultValue, bool bCaseSensitive = false);
+  xiiCommandLineOptionDoc(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sParamShortDesc, xiiStringView sLongDesc, xiiStringView sDefaultValue, bool bCaseSensitive = false);
 
   virtual void GetOptions(xiiStringBuilder& ref_sOut) const override; // [tested]
 
@@ -113,21 +113,21 @@ public:
   virtual void GetLongDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
   /// \brief Returns "Doc"
-  virtual const char* GetType() override { return "Doc"; }
+  virtual xiiStringView GetType() override { return "Doc"; }
 
   /// \brief Checks whether any of the option variants is set on the command line, and returns which one. For example '-h' or '-help'.
   bool IsOptionSpecified(xiiStringBuilder* out_pWhich = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
 
 protected:
   bool ShouldLog(LogMode mode, bool bWasSpecified) const;
-  void LogOption(const char* szOption, const char* szValue, bool bWasSpecified) const;
+  void LogOption(xiiStringView sOption, xiiStringView sValue, bool bWasSpecified) const;
 
-  const char*  m_szArgument          = nullptr;
-  const char*  m_szParamShortDesc    = nullptr;
-  const char*  m_szParamDefaultValue = nullptr;
-  const char*  m_szLongDesc          = nullptr;
-  bool         m_bCaseSensitive      = false;
-  mutable bool m_bLoggedOnce         = false;
+  xiiStringView m_sArgument;
+  xiiStringView m_sParamShortDesc;
+  xiiStringView m_sParamDefaultValue;
+  xiiStringView m_sLongDesc;
+  bool          m_bCaseSensitive = false;
+  mutable bool  m_bLoggedOnce    = false;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -138,7 +138,7 @@ protected:
 class XII_FOUNDATION_DLL xiiCommandLineOptionBool : public xiiCommandLineOptionDoc
 {
 public:
-  xiiCommandLineOptionBool(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, bool bDefaultValue, bool bCaseSensitive = false);
+  xiiCommandLineOptionBool(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, bool bDefaultValue, bool bCaseSensitive = false);
 
   /// \brief Returns the value of this option. Either what was specified on the command line, or the default value.
   bool GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
@@ -153,7 +153,7 @@ public:
   bool GetDefaultValue() const { return m_bDefaultValue; }
 
   /// \brief Returns "Bool"
-  virtual const char* GetType() override { return "Bool"; }
+  virtual xiiStringView GetType() override { return "Bool"; }
 
 protected:
   bool m_bDefaultValue = false;
@@ -170,7 +170,7 @@ protected:
 class XII_FOUNDATION_DLL xiiCommandLineOptionInt : public xiiCommandLineOptionDoc
 {
 public:
-  xiiCommandLineOptionInt(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, int iDefaultValue, int iMinValue = xiiMath::MinValue<int>(), int iMaxValue = xiiMath::MaxValue<int>(), bool bCaseSensitive = false);
+  xiiCommandLineOptionInt(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, int iDefaultValue, int iMinValue = xiiMath::MinValue<int>(), int iMaxValue = xiiMath::MaxValue<int>(), bool bCaseSensitive = false);
 
   virtual void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
@@ -186,7 +186,7 @@ public:
   }
 
   /// \brief Returns "Int"
-  virtual const char* GetType() override { return "Int"; }
+  virtual xiiStringView GetType() override { return "Int"; }
 
   /// \brief Returns the minimum value.
   xiiInt32 GetMinValue() const { return m_iMinValue; }
@@ -214,7 +214,7 @@ protected:
 class XII_FOUNDATION_DLL xiiCommandLineOptionFloat : public xiiCommandLineOptionDoc
 {
 public:
-  xiiCommandLineOptionFloat(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, float fDefaultValue, float fMinValue = xiiMath::MinValue<float>(), float fMaxValue = xiiMath::MaxValue<float>(), bool bCaseSensitive = false);
+  xiiCommandLineOptionFloat(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, float fDefaultValue, float fMinValue = xiiMath::MinValue<float>(), float fMaxValue = xiiMath::MaxValue<float>(), bool bCaseSensitive = false);
 
   virtual void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
@@ -230,7 +230,7 @@ public:
   }
 
   /// \brief Returns "Float"
-  virtual const char* GetType() override { return "Float"; }
+  virtual xiiStringView GetType() override { return "Float"; }
 
   /// \brief Returns the minimum value.
   float GetMinValue() const { return m_fMinValue; }
@@ -255,25 +255,25 @@ protected:
 class XII_FOUNDATION_DLL xiiCommandLineOptionString : public xiiCommandLineOptionDoc
 {
 public:
-  xiiCommandLineOptionString(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, const char* szDefaultValue, bool bCaseSensitive = false);
+  xiiCommandLineOptionString(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, xiiStringView sDefaultValue, bool bCaseSensitive = false);
 
   /// \brief Returns the value of this option. Either what was specified on the command line, or the default value.
-  const char* GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
+  xiiStringView GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
 
   /// \brief Modifies the default value
-  void SetDefaultValue(const char* value)
+  void SetDefaultValue(xiiStringView value)
   {
-    m_szDefaultValue = value;
+    m_sDefaultValue = value;
   }
 
   /// \brief Returns the default value.
-  const char* GetDefaultValue() const { return m_szDefaultValue; }
+  xiiStringView GetDefaultValue() const { return m_sDefaultValue; }
 
   /// \brief Returns "String"
-  virtual const char* GetType() override { return "String"; }
+  virtual xiiStringView GetType() override { return "String"; }
 
 protected:
-  const char* m_szDefaultValue = "";
+  xiiStringView m_sDefaultValue;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -284,25 +284,25 @@ protected:
 class XII_FOUNDATION_DLL xiiCommandLineOptionPath : public xiiCommandLineOptionDoc
 {
 public:
-  xiiCommandLineOptionPath(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, const char* szDefaultValue, bool bCaseSensitive = false);
+  xiiCommandLineOptionPath(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, xiiStringView sDefaultValue, bool bCaseSensitive = false);
 
   /// \brief Returns the value of this option. Either what was specified on the command line, or the default value.
   xiiString GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
 
   /// \brief Modifies the default value
-  void SetDefaultValue(const char* value)
+  void SetDefaultValue(xiiStringView value)
   {
-    m_szDefaultValue = value;
+    m_sDefaultValue = value;
   }
 
   /// \brief Returns the default value.
-  const char* GetDefaultValue() const { return m_szDefaultValue; }
+  xiiStringView GetDefaultValue() const { return m_sDefaultValue; }
 
   /// \brief Returns "Path"
-  virtual const char* GetType() override { return "Path"; }
+  virtual xiiStringView GetType() override { return "Path"; }
 
 protected:
-  const char* m_szDefaultValue = "";
+  xiiStringView m_sDefaultValue = "";
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -321,7 +321,7 @@ protected:
 class XII_FOUNDATION_DLL xiiCommandLineOptionEnum : public xiiCommandLineOptionDoc
 {
 public:
-  xiiCommandLineOptionEnum(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, const char* szEnumKeysAndValues, xiiInt32 iDefaultValue, bool bCaseSensitive = false);
+  xiiCommandLineOptionEnum(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, xiiStringView sEnumKeysAndValues, xiiInt32 iDefaultValue, bool bCaseSensitive = false);
 
   /// \brief Returns the value of this option. Either what was specified on the command line, or the default value.
   xiiInt32 GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
@@ -349,9 +349,9 @@ public:
   xiiInt32 GetDefaultValue() const { return m_iDefaultValue; }
 
   /// \brief Returns "Enum"
-  virtual const char* GetType() override { return "Enum"; }
+  virtual xiiStringView GetType() override { return "Enum"; }
 
 protected:
-  xiiInt32    m_iDefaultValue       = 0;
-  const char* m_szEnumKeysAndValues = nullptr;
+  xiiInt32      m_iDefaultValue = 0;
+  xiiStringView m_sEnumKeysAndValues;
 };

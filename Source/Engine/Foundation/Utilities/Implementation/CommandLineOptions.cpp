@@ -10,7 +10,7 @@ XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiCommandLineOption);
 
 void xiiCommandLineOption::GetSortingGroup(xiiStringBuilder& ref_sOut) const
 {
-  ref_sOut = m_szSortingGroup;
+  ref_sOut = m_sSortingGroup;
 }
 
 void xiiCommandLineOption::GetSplitOptions(xiiStringBuilder& out_sAll, xiiDynamicArray<xiiStringView>& ref_splitOptions) const
@@ -24,10 +24,10 @@ bool xiiCommandLineOption::IsHelpRequested(const xiiCommandLineUtils* pUtils /*=
   return pUtils->GetBoolOption("-help") || pUtils->GetBoolOption("--help") || pUtils->GetBoolOption("-h") || pUtils->GetBoolOption("-?");
 }
 
-xiiResult xiiCommandLineOption::RequireOptions(const char* szRequiredOptions, xiiString* pMissingOption /*= nullptr*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
+xiiResult xiiCommandLineOption::RequireOptions(xiiStringView sRequiredOptions, xiiString* pMissingOption /*= {}*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
 {
   xiiStringBuilder                  tmp;
-  xiiStringBuilder                  allOpts = szRequiredOptions;
+  xiiStringBuilder                  allOpts = sRequiredOptions;
   xiiHybridArray<xiiStringView, 16> options;
   allOpts.Split(false, options, ";");
 
@@ -54,7 +54,7 @@ xiiResult xiiCommandLineOption::RequireOptions(const char* szRequiredOptions, xi
   return XII_SUCCESS;
 }
 
-bool xiiCommandLineOption::LogAvailableOptions(LogAvailableModes mode, const char* szGroupFilter /*= nullptr*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
+bool xiiCommandLineOption::LogAvailableOptions(LogAvailableModes mode, xiiStringView sGroupFilter0 /*= {}*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
 {
   if (mode == LogAvailableModes::IfHelpRequested)
   {
@@ -65,9 +65,9 @@ bool xiiCommandLineOption::LogAvailableOptions(LogAvailableModes mode, const cha
   xiiMap<xiiString, xiiHybridArray<xiiCommandLineOption*, 16>> sorted;
 
   xiiStringBuilder sGroupFilter;
-  if (!xiiStringUtils::IsNullOrEmpty(szGroupFilter))
+  if (!sGroupFilter0.IsEmpty())
   {
-    sGroupFilter.Set(";", szGroupFilter, ";");
+    sGroupFilter.Set(";", sGroupFilter0, ";");
   }
 
   for (xiiCommandLineOption* pOpt = xiiCommandLineOption::GetFirstInstance(); pOpt != nullptr; pOpt = pOpt->GetNextInstance())
@@ -157,12 +157,12 @@ bool xiiCommandLineOption::LogAvailableOptions(LogAvailableModes mode, const cha
 }
 
 
-bool xiiCommandLineOption::LogAvailableOptionsToBuffer(xiiStringBuilder& out_sBuffer, LogAvailableModes mode, const char* szGroupFilter /*= nullptr*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
+bool xiiCommandLineOption::LogAvailableOptionsToBuffer(xiiStringBuilder& out_sBuffer, LogAvailableModes mode, xiiStringView sGroupFilter /*= {}*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
 {
   xiiLogSystemToBuffer log;
   xiiLogSystemScope    ls(&log);
 
-  const bool res = xiiCommandLineOption::LogAvailableOptions(mode, szGroupFilter, pUtils);
+  const bool res = xiiCommandLineOption::LogAvailableOptions(mode, sGroupFilter, pUtils);
 
   out_sBuffer = log.m_sBuffer;
 
@@ -173,34 +173,34 @@ bool xiiCommandLineOption::LogAvailableOptionsToBuffer(xiiStringBuilder& out_sBu
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiCommandLineOptionDoc::xiiCommandLineOptionDoc(const char* szSortingGroup, const char* szArgument, const char* szParamShortDesc, const char* szLongDesc, const char* szDefaultValue, bool bCaseSensitive /*= false*/) :
-  xiiCommandLineOption(szSortingGroup)
+xiiCommandLineOptionDoc::xiiCommandLineOptionDoc(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sParamShortDesc, xiiStringView sLongDesc, xiiStringView sDefaultValue, bool bCaseSensitive /*= false*/) :
+  xiiCommandLineOption(sSortingGroup)
 {
-  m_szArgument          = szArgument;
-  m_szParamShortDesc    = szParamShortDesc;
-  m_szParamDefaultValue = szDefaultValue;
-  m_szLongDesc          = szLongDesc;
-  m_bCaseSensitive      = bCaseSensitive;
+  m_sArgument          = sArgument;
+  m_sParamShortDesc    = sParamShortDesc;
+  m_sParamDefaultValue = sDefaultValue;
+  m_sLongDesc          = sLongDesc;
+  m_bCaseSensitive     = bCaseSensitive;
 }
 
 void xiiCommandLineOptionDoc::GetOptions(xiiStringBuilder& ref_sOut) const
 {
-  ref_sOut = m_szArgument;
+  ref_sOut = m_sArgument;
 }
 
 void xiiCommandLineOptionDoc::GetParamShortDesc(xiiStringBuilder& ref_sOut) const
 {
-  ref_sOut = m_szParamShortDesc;
+  ref_sOut = m_sParamShortDesc;
 }
 
 void xiiCommandLineOptionDoc::GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const
 {
-  ref_sOut = m_szParamDefaultValue;
+  ref_sOut = m_sParamDefaultValue;
 }
 
 void xiiCommandLineOptionDoc::GetLongDesc(xiiStringBuilder& ref_sOut) const
 {
-  ref_sOut = m_szLongDesc;
+  ref_sOut = m_sLongDesc;
 }
 
 bool xiiCommandLineOptionDoc::IsOptionSpecified(xiiStringBuilder* out_pWhich, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/) const
@@ -224,7 +224,7 @@ bool xiiCommandLineOptionDoc::IsOptionSpecified(xiiStringBuilder* out_pWhich, co
 
   if (out_pWhich)
   {
-    *out_pWhich = m_szArgument;
+    *out_pWhich = m_sArgument;
   }
 
   return false;
@@ -245,17 +245,17 @@ bool xiiCommandLineOptionDoc::ShouldLog(LogMode mode, bool bWasSpecified) const
   return true;
 }
 
-void xiiCommandLineOptionDoc::LogOption(const char* szOption, const char* szValue, bool bWasSpecified) const
+void xiiCommandLineOptionDoc::LogOption(xiiStringView sOption, xiiStringView sValue, bool bWasSpecified) const
 {
   m_bLoggedOnce = true;
 
   if (bWasSpecified)
   {
-    xiiLog::Info("Option '{}' is set to '{}'", szOption, szValue);
+    xiiLog::Info("Option '{}' is set to '{}'", sOption, sValue);
   }
   else
   {
-    xiiLog::Info("Option '{}' is not set, default value is '{}'", szOption, szValue);
+    xiiLog::Info("Option '{}' is not set, default value is '{}'", sOption, sValue);
   }
 }
 
@@ -263,8 +263,8 @@ void xiiCommandLineOptionDoc::LogOption(const char* szOption, const char* szValu
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiCommandLineOptionBool::xiiCommandLineOptionBool(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, bool bDefaultValue, bool bCaseSensitive /*= false*/) :
-  xiiCommandLineOptionDoc(szSortingGroup, szArgument, "<bool>", szLongDesc, bDefaultValue ? "true" : "false", bCaseSensitive)
+xiiCommandLineOptionBool::xiiCommandLineOptionBool(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, bool bDefaultValue, bool bCaseSensitive /*= false*/) :
+  xiiCommandLineOptionDoc(sSortingGroup, sArgument, "<bool>", sLongDesc, bDefaultValue ? "true" : "false", bCaseSensitive)
 {
   m_bDefaultValue = bDefaultValue;
 }
@@ -293,8 +293,8 @@ bool xiiCommandLineOptionBool::GetOptionValue(LogMode logMode, const xiiCommandL
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiCommandLineOptionInt::xiiCommandLineOptionInt(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, int iDefaultValue, int iMinValue /*= xiiMath::MinValue<int>()*/, int iMaxValue /*= xiiMath::MaxValue<int>()*/, bool bCaseSensitive /*= false*/) :
-  xiiCommandLineOptionDoc(szSortingGroup, szArgument, "<int>", szLongDesc, "0", bCaseSensitive)
+xiiCommandLineOptionInt::xiiCommandLineOptionInt(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, int iDefaultValue, int iMinValue /*= xiiMath::MinValue<int>()*/, int iMaxValue /*= xiiMath::MaxValue<int>()*/, bool bCaseSensitive /*= false*/) :
+  xiiCommandLineOptionDoc(sSortingGroup, sArgument, "<int>", sLongDesc, "0", bCaseSensitive)
 {
   m_iDefaultValue = iDefaultValue;
   m_iMinValue     = iMinValue;
@@ -356,8 +356,8 @@ int xiiCommandLineOptionInt::GetOptionValue(LogMode logMode, const xiiCommandLin
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiCommandLineOptionFloat::xiiCommandLineOptionFloat(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, float fDefaultValue, float fMinValue /*= xiiMath::MinValue<float>()*/, float fMaxValue /*= xiiMath::MaxValue<float>()*/, bool bCaseSensitive /*= false*/) :
-  xiiCommandLineOptionDoc(szSortingGroup, szArgument, "<float>", szLongDesc, "0", bCaseSensitive)
+xiiCommandLineOptionFloat::xiiCommandLineOptionFloat(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, float fDefaultValue, float fMinValue /*= xiiMath::MinValue<float>()*/, float fMaxValue /*= xiiMath::MaxValue<float>()*/, bool bCaseSensitive /*= false*/) :
+  xiiCommandLineOptionDoc(sSortingGroup, sArgument, "<float>", sLongDesc, "0", bCaseSensitive)
 {
   m_fDefaultValue = fDefaultValue;
   m_fMinValue     = fMinValue;
@@ -418,22 +418,22 @@ float xiiCommandLineOptionFloat::GetOptionValue(LogMode logMode, const xiiComman
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiCommandLineOptionString::xiiCommandLineOptionString(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, const char* szDefaultValue, bool bCaseSensitive /*= false*/) :
-  xiiCommandLineOptionDoc(szSortingGroup, szArgument, "<string>", szLongDesc, szDefaultValue, bCaseSensitive)
+xiiCommandLineOptionString::xiiCommandLineOptionString(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, xiiStringView sDefaultValue, bool bCaseSensitive /*= false*/) :
+  xiiCommandLineOptionDoc(sSortingGroup, sArgument, "<string>", sLongDesc, sDefaultValue, bCaseSensitive)
 {
-  m_szDefaultValue = szDefaultValue;
+  m_sDefaultValue = sDefaultValue;
 }
 
-const char* xiiCommandLineOptionString::GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/) const
+xiiStringView xiiCommandLineOptionString::GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/) const
 {
-  const char* result = m_szDefaultValue;
+  xiiStringView result = m_sDefaultValue;
 
   xiiStringBuilder sOption;
   const bool       bSpecified = IsOptionSpecified(&sOption, pUtils);
 
   if (bSpecified)
   {
-    result = pUtils->GetStringOption(sOption, 0, m_szDefaultValue, m_bCaseSensitive);
+    result = pUtils->GetStringOption(sOption, 0, m_sDefaultValue, m_bCaseSensitive);
   }
 
   if (ShouldLog(logMode, bSpecified))
@@ -448,22 +448,22 @@ const char* xiiCommandLineOptionString::GetOptionValue(LogMode logMode, const xi
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiCommandLineOptionPath::xiiCommandLineOptionPath(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, const char* szDefaultValue, bool bCaseSensitive /*= false*/) :
-  xiiCommandLineOptionDoc(szSortingGroup, szArgument, "<path>", szLongDesc, szDefaultValue, bCaseSensitive)
+xiiCommandLineOptionPath::xiiCommandLineOptionPath(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, xiiStringView sDefaultValue, bool bCaseSensitive /*= false*/) :
+  xiiCommandLineOptionDoc(sSortingGroup, sArgument, "<path>", sLongDesc, sDefaultValue, bCaseSensitive)
 {
-  m_szDefaultValue = szDefaultValue;
+  m_sDefaultValue = sDefaultValue;
 }
 
 xiiString xiiCommandLineOptionPath::GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/) const
 {
-  xiiString result = m_szDefaultValue;
+  xiiString result = m_sDefaultValue;
 
   xiiStringBuilder sOption;
   const bool       bSpecified = IsOptionSpecified(&sOption, pUtils);
 
   if (bSpecified)
   {
-    result = pUtils->GetAbsolutePathOption(sOption, 0, m_szDefaultValue, m_bCaseSensitive);
+    result = pUtils->GetAbsolutePathOption(sOption, 0, m_sDefaultValue, m_bCaseSensitive);
   }
 
   if (ShouldLog(logMode, bSpecified))
@@ -474,11 +474,11 @@ xiiString xiiCommandLineOptionPath::GetOptionValue(LogMode logMode, const xiiCom
   return result;
 }
 
-xiiCommandLineOptionEnum::xiiCommandLineOptionEnum(const char* szSortingGroup, const char* szArgument, const char* szLongDesc, const char* szEnumKeysAndValues, xiiInt32 iDefaultValue, bool bCaseSensitive /*= false*/) :
-  xiiCommandLineOptionDoc(szSortingGroup, szArgument, "<enum>", szLongDesc, "", bCaseSensitive)
+xiiCommandLineOptionEnum::xiiCommandLineOptionEnum(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, xiiStringView sEnumKeysAndValues, xiiInt32 iDefaultValue, bool bCaseSensitive /*= false*/) :
+  xiiCommandLineOptionDoc(sSortingGroup, sArgument, "<enum>", sLongDesc, "", bCaseSensitive)
 {
-  m_iDefaultValue       = iDefaultValue;
-  m_szEnumKeysAndValues = szEnumKeysAndValues;
+  m_iDefaultValue      = iDefaultValue;
+  m_sEnumKeysAndValues = sEnumKeysAndValues;
 }
 
 xiiInt32 xiiCommandLineOptionEnum::GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/) const
@@ -493,7 +493,7 @@ xiiInt32 xiiCommandLineOptionEnum::GetOptionValue(LogMode logMode, const xiiComm
 
   if (bSpecified)
   {
-    const char* selected = pUtils->GetStringOption(sOption, 0, "", m_bCaseSensitive);
+    xiiStringView selected = pUtils->GetStringOption(sOption, 0, "", m_bCaseSensitive);
 
     for (const auto& e : keysAndValues)
     {
@@ -562,7 +562,7 @@ void xiiCommandLineOptionEnum::GetParamDefaultValueDesc(xiiStringBuilder& ref_sO
 
 void xiiCommandLineOptionEnum::GetEnumKeysAndValues(xiiDynamicArray<EnumKeyValue>& out_keysAndValues) const
 {
-  xiiStringBuilder tmp = m_szEnumKeysAndValues;
+  xiiStringBuilder tmp = m_sEnumKeysAndValues;
 
   xiiHybridArray<xiiStringView, 16> enums;
   tmp.Split(false, enums, ";", "|");
@@ -587,7 +587,7 @@ void xiiCommandLineOptionEnum::GetEnumKeysAndValues(xiiDynamicArray<EnumKeyValue
 
     eName.Trim(" \n\r\t=");
 
-    const char* pStart = m_szEnumKeysAndValues;
+    const char* pStart = m_sEnumKeysAndValues.GetStartPointer();
     pStart += (xiiInt64)eName.GetStartPointer();
     pStart -= (xiiInt64)tmp.GetData();
 
@@ -597,6 +597,5 @@ void xiiCommandLineOptionEnum::GetEnumKeysAndValues(xiiDynamicArray<EnumKeyValue
     eVal++;
   }
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Utilities_Implementation_CommandLineOptions);
