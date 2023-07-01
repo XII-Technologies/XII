@@ -528,8 +528,45 @@ CreateRenderDevice:
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
-  // Per frame data
+  // Per frame data & timer data
+  Diligent::QueryDesc durationQueryDesc;
+  durationQueryDesc.Type = Diligent::QUERY_TYPE_DURATION;
 
+  Diligent::QueryDesc timestampQueryDesc;
+  timestampQueryDesc.Type = Diligent::QUERY_TYPE_TIMESTAMP;
+
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_PerFrameData); ++i)
+  {
+    auto& perFrameData = m_PerFrameData[i];
+
+    Diligent::FenceDesc fenceDesc;
+    fenceDesc.Type = Diligent::FENCE_TYPE_CPU_WAIT_ONLY;
+    m_pDevice->CreateFence(fenceDesc, &perFrameData.m_pFence);
+
+    if (perFrameData.m_pFence != nullptr)
+    {
+      m_pDevice->CreateQuery(durationQueryDesc, &perFrameData.m_pDurationQuery);
+      if (perFrameData.m_pDurationQuery == nullptr)
+      {
+        xiiLog::Error("Failed to create duration query for timestamp!");
+        return XII_FAILURE;
+      }
+    }
+  }
+
+  // \todo RendererDilignet: Replace ring buffer with proper pool to prevent buffer overrun.
+  m_Timestamps.SetCountUninitialized(2048);
+  for (xiiUInt32 i = 0; i < m_Timestamps.GetCount(); ++i)
+  {
+    m_Timestamps[i] = nullptr;
+    m_pDevice->CreateQuery(timestampQueryDesc, &m_Timestamps[i]);
+
+    if (m_Timestamps[i] == nullptr)
+    {
+      xiiLog::Error("Failed to create timestamp query for timestamp query!");
+      return XII_FAILURE;
+    }
+  }
 
   m_SyncTimeDiff.SetZero();
 
@@ -597,11 +634,18 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
     m_UsedTempResources[type].Clear();
   }
 
+  for (auto& timestamp : m_Timestamps)
+  {
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(timestamp);
+  }
+  m_Timestamps.Clear();
+
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_PerFrameData); ++i)
   {
     auto& perFrameData = m_PerFrameData[i];
 
     XII_GAL_DILIGENT_UNWRAPPED_RELEASE(perFrameData.m_pFence);
+    XII_GAL_DILIGENT_UNWRAPPED_RELEASE(perFrameData.m_pDurationQuery);
   }
 
   if (!m_pDeviceContexts.IsEmpty())
@@ -619,16 +663,10 @@ xiiResult xiiGALDeviceDiligent::ShutdownPlatform()
   }
 
   m_uiNumImmediateContexts = 0;
-
-  m_pDefaultPass = nullptr;
-
-  m_pPipelineBarrier = nullptr;
-
-  m_pDevice->IdleGPU();
-  m_pDevice->ReleaseStaleResources(true);
+  m_pDefaultPass           = nullptr;
+  m_pPipelineBarrier       = nullptr;
 
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pDevice);
-
   XII_GAL_DILIGENT_WRAPPED_RELEASE(m_pEngineFactory);
 
   ReportLiveGpuObjects();
@@ -953,12 +991,53 @@ void xiiGALDeviceDiligent::DestroyVertexDeclarationPlatform(xiiGALVertexDeclarat
 
 xiiGALTimestampHandle xiiGALDeviceDiligent::GetTimestampPlatform()
 {
-  return {(xiiUInt64)-1, m_uiFrameCounter};
+  xiiUInt32 uiIndex = m_uiNextTimestamp;
+  m_uiNextTimestamp = (m_uiNextTimestamp + 1) % m_Timestamps.GetCount();
+  return {uiIndex, m_uiFrameCounter};
 }
 
 xiiResult xiiGALDeviceDiligent::GetTimestampResultPlatform(xiiGALTimestampHandle hTimestamp, xiiTime& result)
 {
+#if 0
+  // Check whether frequency and sync timer are already available for the frame of the timestamp
+  xiiUInt64 uiFrameCounter = hTimestamp.m_uiFrameCounter;
+
+  PerFrameData* pPerFrameData = nullptr;
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_PerFrameData); ++i)
+  {
+    if (m_PerFrameData[i].m_uiFrame == uiFrameCounter && m_PerFrameData[i].m_fInvTicksPerSecond >= 0.0)
+    {
+      pPerFrameData = &m_PerFrameData[i];
+      break;
+    }
+  }
+
+  if (pPerFrameData == nullptr)
+  {
+    return XII_FAILURE;
+  }
+
+  Diligent::IQuery* pQuery = GetTimestamp(hTimestamp);
+  GetImmediateContext()->EndQuery(pQuery);
+
+  Diligent::QueryDataTimestamp timestampData;
+  if (!pQuery->GetData(&timestampData, sizeof(timestampData), false))
+  {
+    return XII_FAILURE;
+  }
+
+  if (pPerFrameData->m_fInvTicksPerSecond == 0.0)
+  {
+    result.SetZero();
+  }
+  else
+  {
+    double fTime = static_cast<double>(timestampData.Counter) / static_cast<double>(timestampData.Frequency);
+    result = xiiTime::Seconds(fTime * pPerFrameData->m_fInvTicksPerSecond) + m_SyncTimeDiff;
+  }
+#else
   result.SetZero();
+#endif
 
   return XII_SUCCESS;
 }
@@ -978,6 +1057,7 @@ void xiiGALDeviceDiligent::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
     auto& perFrameData = m_PerFrameData[m_uiCurrentPerFrameData];
     if (perFrameData.m_pFence->GetCompletedValue() < perFrameData.m_uiCompletedFenceValue)
     {
+      pCommandEncoder->FlushPlatform();
       perFrameData.m_pFence->Wait(perFrameData.m_uiCompletedFenceValue);
     }
 
@@ -990,8 +1070,10 @@ void xiiGALDeviceDiligent::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
   }
 
   {
-    auto& perFrameData = m_PerFrameData[m_uiNextPerFrameData];
-    GetImmediateContext()->EnqueueSignal(perFrameData.m_pFence, ++perFrameData.m_uiCompletedFenceValue);
+    auto& perFrameData = m_PerFrameData[m_uiCurrentPerFrameData];
+#if 0
+    GetImmediateContext()->BeginQuery(perFrameData.m_pDurationQuery);
+#endif
 
     perFrameData.m_fInvTicksPerSecond = -1.0f;
   }
@@ -1003,30 +1085,82 @@ void xiiGALDeviceDiligent::EndFramePlatform()
 {
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
 
-  // Free temporary resources.
+  // End timer query
+#if 0
   {
-    FreeTempResources(m_uiFrameCounter);
-  }
+    auto& perFrameData = m_PerFrameData[m_uiCurrentPerFrameData];
 
-  // Resolve pending deletions.
+    GetImmediateContext()->EndQuery(perFrameData.m_pDurationQuery);
+  }
+#endif
+
+  // Check if the fence is reached and update per frame data.
   {
-    // Resources can be added to deletion outside of the render frame. These will not be covered by fences.
-    // To handle this, we swap the resources arrays so for any newly added resources, we know they are not part of
-    // the batch that is deleted with the the frame.
-    auto& currentFrameData = m_PerFrameData[m_uiCurrentPerFrameData];
+    if (m_PerFrameData[m_uiCurrentPerFrameData].m_uiFrame != ((xiiUInt64)-1))
     {
-      XII_LOCK(currentFrameData.m_PendingDeletionsMutex);
-      currentFrameData.m_PreviousPendingDeletions.Swap(currentFrameData.m_PendingDeletions);
+      auto& perFrameData = m_PerFrameData[m_uiCurrentPerFrameData];
+
+      if (perFrameData.m_pFence->GetCompletedValue() >= perFrameData.m_uiCompletedFenceValue)
+      {
+        FreeTempResources(m_uiFrameCounter);
+
+        // Resolve pending deletions.
+        {
+          // Resources can be added to deletion outside of the render frame. These will not be covered by fences.
+          // To handle this, we swap the resources arrays so for any newly added resources, we know they are not part of
+          // the batch that is deleted with the the frame.
+          XII_LOCK(perFrameData.m_PendingDeletionsMutex);
+          perFrameData.m_PreviousPendingDeletions.Swap(perFrameData.m_PendingDeletions);
+        }
+
+#if 0
+        Diligent::QueryDataDuration durationData;
+        if (!perFrameData.m_pDurationQuery->GetData(&durationData, sizeof(durationData), true))
+        {
+          perFrameData.m_fInvTicksPerSecond = 0.0f;
+        }
+        else
+        {
+          perFrameData.m_fInvTicksPerSecond = 1.0 / (double)durationData.Frequency;
+
+          if (m_bSyncTimeNeeded)
+          {
+            xiiGALTimestampHandle hTimestamp = m_pDefaultPass->m_pRenderCommandEncoder->InsertTimestamp();
+            Diligent::IQuery*     pQuery     = GetTimestamp(hTimestamp);
+
+            Diligent::QueryDataTimestamp timestampData;
+            while (!pQuery->GetData(&timestampData, sizeof(timestampData), true))
+            {
+              xiiThreadUtils::YieldTimeSlice();
+            }
+
+            double fTime      = static_cast<double>(timestampData.Counter) / static_cast<double>(timestampData.Frequency);
+            m_SyncTimeDiff    = xiiTime::Now() - xiiTime::Seconds(fTime * perFrameData.m_fInvTicksPerSecond);
+            m_bSyncTimeNeeded = false;
+          }
+        }
+#endif
+      }
     }
   }
 
   // Call FinishFrame() to release references to Swapchain resources
-  for (auto& pContext : m_pDeviceContexts)
   {
-    pContext->Flush();
-    pContext->FinishFrame();
+    for (auto& pContext : m_pDeviceContexts)
+    {
+      pContext->Flush();
+      pContext->FinishFrame();
+    }
+    m_pDevice->ReleaseStaleResources();
   }
-  m_pDevice->ReleaseStaleResources();
+
+  // Insert next fence
+  {
+    auto& perFrameData     = m_PerFrameData[m_uiNextPerFrameData];
+    perFrameData.m_uiFrame = m_uiFrameCounter;
+
+    GetImmediateContext()->EnqueueSignal(perFrameData.m_pFence, ++perFrameData.m_uiCompletedFenceValue);
+  }
 
   m_uiCurrentPerFrameData = (m_uiCurrentPerFrameData + 1) % XII_ARRAY_SIZE(m_PerFrameData);
   m_uiNextPerFrameData    = (m_uiCurrentPerFrameData + 1) % XII_ARRAY_SIZE(m_PerFrameData);
