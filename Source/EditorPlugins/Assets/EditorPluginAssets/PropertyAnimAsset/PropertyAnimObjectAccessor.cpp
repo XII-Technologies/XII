@@ -10,20 +10,12 @@ xiiPropertyAnimObjectAccessor::xiiPropertyAnimObjectAccessor(xiiPropertyAnimAsse
   m_pObjAccessor = XII_DEFAULT_NEW(xiiObjectCommandAccessor, pHistory);
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::GetValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  xiiVariant&                out_value,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiPropertyAnimObjectAccessor::GetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant& out_value, xiiVariant index /*= xiiVariant()*/)
 {
   return xiiObjectCommandAccessor::GetValue(pObject, pProp, out_value, index);
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::SetValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  const xiiVariant&          newValue,
-  xiiVariant                 index)
+xiiStatus xiiPropertyAnimObjectAccessor::SetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index)
 {
   if (IsTemporary(pObject))
   {
@@ -151,11 +143,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetValue(
   }
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::InsertValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  const xiiVariant&          newValue,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiPropertyAnimObjectAccessor::InsertValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
   if (IsTemporary(pObject))
   {
@@ -167,10 +155,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::InsertValue(
   }
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::RemoveValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiPropertyAnimObjectAccessor::RemoveValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index /*= xiiVariant()*/)
 {
   if (IsTemporary(pObject))
   {
@@ -182,11 +167,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::RemoveValue(
   }
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::MoveValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  const xiiVariant&          oldIndex,
-  const xiiVariant&          newIndex)
+xiiStatus xiiPropertyAnimObjectAccessor::MoveValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& oldIndex, const xiiVariant& newIndex)
 {
   if (IsTemporary(pObject))
   {
@@ -198,12 +179,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::MoveValue(
   }
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::AddObject(
-  const xiiDocumentObject*   pParent,
-  const xiiAbstractProperty* pParentProp,
-  const xiiVariant&          index,
-  const xiiRTTI*             pType,
-  xiiUuid&                   inout_objectGuid)
+xiiStatus xiiPropertyAnimObjectAccessor::AddObject(const xiiDocumentObject* pParent, const xiiAbstractProperty* pParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid)
 {
   if (IsTemporary(pParent, pParentProp))
   {
@@ -227,11 +203,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::RemoveObject(const xiiDocumentObject* p
   }
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::MoveObject(
-  const xiiDocumentObject*   pObject,
-  const xiiDocumentObject*   pNewParent,
-  const xiiAbstractProperty* pParentProp,
-  const xiiVariant&          index)
+xiiStatus xiiPropertyAnimObjectAccessor::MoveObject(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, const xiiAbstractProperty* pParentProp, const xiiVariant& index)
 {
   if (IsTemporary(pObject))
   {
@@ -264,12 +236,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetCurveCp(const xiiDocumentObject* pOb
   return SetOrInsertCurveCp(track, fNewValue);
 }
 
-xiiUuid xiiPropertyAnimObjectAccessor::FindOrAddTrack(
-  const xiiDocumentObject*    pObject,
-  const xiiAbstractProperty*  pProp,
-  xiiVariant                  index,
-  xiiPropertyAnimTarget::Enum target,
-  OnAddTrack                  onAddTrack)
+xiiUuid xiiPropertyAnimObjectAccessor::FindOrAddTrack(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiPropertyAnimTarget::Enum target, OnAddTrack onAddTrack)
 {
   xiiUuid track = m_pDocument->FindTrack(pObject, pProp, index, target);
   if (!track.IsValid())
@@ -318,19 +285,16 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertCurveCp(const xiiUuid& track
   return xiiStatus(XII_SUCCESS);
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::SetColorCurveCp(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  xiiVariant                 index,
-  const xiiColorGammaUB&     oldValue,
-  const xiiColorGammaUB&     newValue)
+xiiStatus xiiPropertyAnimObjectAccessor::SetColorCurveCp(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, const xiiColorGammaUB& oldValue, const xiiColorGammaUB& newValue)
 {
   XII_SUCCEED_OR_RETURN(m_pDocument->CanAnimate(pObject, pProp, index, xiiPropertyAnimTarget::Color));
   xiiUuid track = FindOrAddTrack(pObject, pProp, index, xiiPropertyAnimTarget::Color, [this, &oldValue](const xiiUuid& trackGuid) {
     // add a control point at the start of the curve with the original value
     m_pDocument->InsertGradientColorCpAt(trackGuid, 0, oldValue);
   });
-  SetOrInsertColorCurveCp(track, newValue);
+
+  XII_SUCCEED_OR_RETURN(SetOrInsertColorCurveCp(track, newValue));
+
   return xiiStatus(XII_SUCCESS);
 }
 
@@ -362,19 +326,16 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertColorCurveCp(const xiiUuid& 
   return xiiStatus(XII_SUCCESS);
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::SetAlphaCurveCp(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  xiiVariant                 index,
-  xiiUInt8                   oldValue,
-  xiiUInt8                   newValue)
+xiiStatus xiiPropertyAnimObjectAccessor::SetAlphaCurveCp(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiUInt8 oldValue, xiiUInt8 newValue)
 {
   XII_SUCCEED_OR_RETURN(m_pDocument->CanAnimate(pObject, pProp, index, xiiPropertyAnimTarget::Color));
   xiiUuid track = FindOrAddTrack(pObject, pProp, index, xiiPropertyAnimTarget::Color, [this, &oldValue](const xiiUuid& trackGuid) {
     // add a control point at the start of the curve with the original value
     m_pDocument->InsertGradientAlphaCpAt(trackGuid, 0, oldValue);
   });
-  SetOrInsertAlphaCurveCp(track, newValue);
+
+  XII_SUCCEED_OR_RETURN(SetOrInsertAlphaCurveCp(track, newValue));
+
   return xiiStatus(XII_SUCCESS);
 }
 
@@ -404,18 +365,15 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertAlphaCurveCp(const xiiUuid& 
   return xiiStatus(XII_SUCCESS);
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::SetIntensityCurveCp(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  xiiVariant                 index,
-  float                      oldValue,
-  float                      newValue)
+xiiStatus xiiPropertyAnimObjectAccessor::SetIntensityCurveCp(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, float oldValue, float newValue)
 {
   xiiUuid track = FindOrAddTrack(pObject, pProp, index, xiiPropertyAnimTarget::Color, [this, &oldValue](const xiiUuid& trackGuid) {
     // add a control point at the start of the curve with the original value
     m_pDocument->InsertGradientIntensityCpAt(trackGuid, 0, oldValue);
   });
-  SetOrInsertIntensityCurveCp(track, newValue);
+
+  XII_SUCCEED_OR_RETURN(SetOrInsertIntensityCurveCp(track, newValue));
+
   return xiiStatus(XII_SUCCESS);
 }
 

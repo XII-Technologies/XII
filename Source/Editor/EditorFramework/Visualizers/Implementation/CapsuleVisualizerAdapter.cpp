@@ -50,7 +50,7 @@ void xiiCapsuleVisualizerAdapter::Update()
       return;
 
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, pProp, value);
+    pObjectAccessor->GetValue(m_pObject, pProp, value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<float>(), "Invalid property '{0}' bound to xiiCapsuleVisualizerAttribute 'radius'", pAttr->GetRadiusProperty());
     m_fRadius = value.ConvertTo<float>();
@@ -59,7 +59,7 @@ void xiiCapsuleVisualizerAdapter::Update()
   if (!pAttr->GetHeightProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetHeightProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetHeightProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<float>(), "Invalid property bound to xiiCapsuleVisualizerAttribute 'height'");
     m_fHeight = value.ConvertTo<float>();
@@ -68,7 +68,7 @@ void xiiCapsuleVisualizerAdapter::Update()
   if (!pAttr->GetColorProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiColor>(), "Invalid property bound to xiiCapsuleVisualizerAttribute 'color'");
     m_hSphereTop.SetColor(value.ConvertTo<xiiColor>() * pAttr->m_Color);

@@ -148,13 +148,13 @@ void xiiBoneManipulatorAdapter::RetrieveBones()
     XII_ASSERT_DEV(pParameterSourceProp, "The exposed parameter source '{0}' does not exist on type '{1}'", pAttrib->GetParametersSource(), m_pObject->GetType()->GetTypeName());
 
     xiiExposedParameterCommandAccessor proxy(pObjectAccessor, pProperty, pParameterSourceProp);
-    proxy.GetValues(m_pObject, pProperty, values);
-    proxy.GetKeys(m_pObject, pProperty, m_Keys);
+    proxy.GetValues(m_pObject, pProperty, values).AssertSuccess();
+    proxy.GetKeys(m_pObject, pProperty, m_Keys).AssertSuccess();
   }
   else
   {
-    pObjectAccessor->GetKeys(m_pObject, pProperty, m_Keys);
-    pObjectAccessor->GetValues(m_pObject, pProperty, values);
+    pObjectAccessor->GetKeys(m_pObject, pProperty, m_Keys).AssertSuccess();
+    pObjectAccessor->GetValues(m_pObject, pProperty, values).AssertSuccess();
   }
 
   m_RootTransform.SetIdentity();
@@ -275,7 +275,7 @@ void xiiBoneManipulatorAdapter::SetTransform(xiiUInt32 uiBone, const xiiTransfor
   // for some reason the first command in xiiExposedParameterCommandAccessor returns failure 'the property X does not exist' and the insert
   // command than fails with 'the property X already exists' ???
 
-  proxy.SetValue(m_pObject, pProperty, var, m_Keys[uiBone]);
+  proxy.SetValue(m_pObject, pProperty, var, m_Keys[uiBone]).AssertSuccess();
 }
 
 xiiMat4 xiiBoneManipulatorAdapter::ComputeFullTransform(xiiUInt32 uiBone) const

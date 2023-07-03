@@ -194,7 +194,7 @@ public:
 
     // Pass the absolute path to the directory that should be scanned as the first parameter to this application
     if (pCmd->GetParameterCount() > 1)
-      m_sSearchDir = xiiCommandLineUtils::GetGlobalInstance()->GetParameter(1);
+      m_sSearchDir = pCmd->GetParameter(1);
 
     if (m_sSearchDir.IsEmpty())
     {
@@ -313,7 +313,5 @@ public:
     return xiiApplication::Execution::Quit;
   }
 };
-
-
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiLineCountApp);

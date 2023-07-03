@@ -303,7 +303,7 @@ void xiiQtMaterialAssetDocumentWindow::UpdatePreview()
   AssetHeader.SetFileHashAndVersion(uiHash, GetMaterialDocument()->GetAssetTypeVersion());
   AssetHeader.Write(memoryWriter).IgnoreResult();
   // Write Asset Data
-  GetMaterialDocument()->WriteMaterialAsset(memoryWriter, xiiAssetCurator::GetSingleton()->GetActiveAssetProfile(), false);
+  GetMaterialDocument()->WriteMaterialAsset(memoryWriter, xiiAssetCurator::GetSingleton()->GetActiveAssetProfile(), false).AssertSuccess();
   msg.m_Data = xiiArrayPtr<const xiiUInt8>(streamStorage.GetData(), streamStorage.GetStorageSize32());
 
   xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
@@ -413,7 +413,7 @@ void xiiQtMaterialAssetDocumentWindow::OnVseConfigChanged(const char* filename, 
   // not what we want.
   xiiAssetFileHeader AssetHeader;
   AssetHeader.SetFileHashAndVersion(0, GetMaterialDocument()->GetAssetTypeVersion());
-  GetMaterialDocument()->RecreateVisualShaderFile(AssetHeader);
+  GetMaterialDocument()->RecreateVisualShaderFile(AssetHeader).LogFailure();
 }
 
 void xiiQtMaterialAssetDocumentWindow::VisualShaderEventHandler(const xiiMaterialVisualShaderEvent& e)

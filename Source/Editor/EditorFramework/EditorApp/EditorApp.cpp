@@ -154,7 +154,7 @@ void xiiQtEditorApp::SaveAllOpenDocuments()
       // There might be no window for this document.
       else
       {
-        pDoc->SaveDocument();
+        pDoc->SaveDocument().LogFailure();
       }
     }
   }

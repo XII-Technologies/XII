@@ -133,7 +133,7 @@ void xiiQtCurve1DAssetDocumentWindow::onInsertCpAt(xiiUInt32 uiCurveIdx, xiiInt6
     cmdAddCurve.m_pType           = xiiGetStaticRTTI<xiiSingleCurveData>();
     cmdAddCurve.m_Index           = -1;
 
-    history->AddCommand(cmdAddCurve);
+    history->AddCommand(cmdAddCurve).AssertSuccess();
   }
 
   const xiiVariant curveGuid = pDoc->GetPropertyObject()->GetTypeAccessor().GetValue("Curves", uiCurveIdx);
@@ -145,26 +145,26 @@ void xiiQtCurve1DAssetDocumentWindow::onInsertCpAt(xiiUInt32 uiCurveIdx, xiiInt6
   cmdAdd.m_pType           = xiiGetStaticRTTI<xiiCurveControlPointData>();
   cmdAdd.m_Index           = -1;
 
-  history->AddCommand(cmdAdd);
+  history->AddCommand(cmdAdd).AssertSuccess();
 
   xiiSetObjectPropertyCommand cmdSet;
   cmdSet.m_Object = cmdAdd.m_NewObjectGuid;
 
   cmdSet.m_sProperty = "Tick";
   cmdSet.m_NewValue  = tickX;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Value";
   cmdSet.m_NewValue  = clickPosY;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "LeftTangent";
   cmdSet.m_NewValue  = xiiVec2(-0.1f, 0.0f);
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "RightTangent";
   cmdSet.m_NewValue  = xiiVec2(+0.1f, 0.0f);
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 }
 
 void xiiQtCurve1DAssetDocumentWindow::onCurveCpMoved(xiiUInt32 curveIdx, xiiUInt32 cpIdx, xiiInt64 iTickX, double newPosY)
@@ -184,11 +184,11 @@ void xiiQtCurve1DAssetDocumentWindow::onCurveCpMoved(xiiUInt32 curveIdx, xiiUInt
 
   cmdSet.m_sProperty = "Tick";
   cmdSet.m_NewValue  = iTickX;
-  GetDocument()->GetCommandHistory()->AddCommand(cmdSet);
+  GetDocument()->GetCommandHistory()->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Value";
   cmdSet.m_NewValue  = newPosY;
-  GetDocument()->GetCommandHistory()->AddCommand(cmdSet);
+  GetDocument()->GetCommandHistory()->AddCommand(cmdSet).AssertSuccess();
 }
 
 void xiiQtCurve1DAssetDocumentWindow::onCurveCpDeleted(xiiUInt32 curveIdx, xiiUInt32 cpIdx)
@@ -206,7 +206,7 @@ void xiiQtCurve1DAssetDocumentWindow::onCurveCpDeleted(xiiUInt32 curveIdx, xiiUI
 
   xiiRemoveObjectCommand cmdSet;
   cmdSet.m_Object = cpGuid.Get<xiiUuid>();
-  GetDocument()->GetCommandHistory()->AddCommand(cmdSet);
+  GetDocument()->GetCommandHistory()->AddCommand(cmdSet).AssertSuccess();
 }
 
 void xiiQtCurve1DAssetDocumentWindow::onCurveTangentMoved(xiiUInt32 curveIdx, xiiUInt32 cpIdx, float newPosX, float newPosY, bool rightTangent)
@@ -230,7 +230,7 @@ void xiiQtCurve1DAssetDocumentWindow::onCurveTangentMoved(xiiUInt32 curveIdx, xi
 
   cmdSet.m_sProperty = rightTangent ? "RightTangent" : "LeftTangent";
   cmdSet.m_NewValue  = xiiVec2(newPosX, newPosY);
-  GetDocument()->GetCommandHistory()->AddCommand(cmdSet);
+  GetDocument()->GetCommandHistory()->AddCommand(cmdSet).AssertSuccess();
 }
 
 void xiiQtCurve1DAssetDocumentWindow::onLinkCurveTangents(xiiUInt32 curveIdx, xiiUInt32 cpIdx, bool bLink)
@@ -247,7 +247,7 @@ void xiiQtCurve1DAssetDocumentWindow::onLinkCurveTangents(xiiUInt32 curveIdx, xi
   cmdLink.m_Object    = cpGuid.Get<xiiUuid>();
   cmdLink.m_sProperty = "Linked";
   cmdLink.m_NewValue  = bLink;
-  GetDocument()->GetCommandHistory()->AddCommand(cmdLink);
+  GetDocument()->GetCommandHistory()->AddCommand(cmdLink).AssertSuccess();
 
   if (bLink)
   {
@@ -272,7 +272,7 @@ void xiiQtCurve1DAssetDocumentWindow::onCurveTangentModeChanged(xiiUInt32 curveI
   cmd.m_Object    = cpGuid.Get<xiiUuid>();
   cmd.m_sProperty = rightTangent ? "RightTangentMode" : "LeftTangentMode";
   cmd.m_NewValue  = mode;
-  GetDocument()->GetCommandHistory()->AddCommand(cmd);
+  GetDocument()->GetCommandHistory()->AddCommand(cmd).AssertSuccess();
 
   // sync current curve back
   if (false)

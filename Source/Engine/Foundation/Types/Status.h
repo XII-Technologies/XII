@@ -8,7 +8,7 @@
 class xiiLogInterface;
 
 /// \brief An xiiResult with an additional message for the reason of failure
-struct XII_FOUNDATION_DLL xiiStatus
+struct [[nodiscard]] XII_FOUNDATION_DLL xiiStatus
 {
   XII_ALWAYS_INLINE explicit xiiStatus() :
     m_Result(XII_FAILURE)
@@ -41,26 +41,22 @@ struct XII_FOUNDATION_DLL xiiStatus
   [[nodiscard]] XII_ALWAYS_INLINE bool Succeeded() const { return m_Result.Succeeded(); }
   [[nodiscard]] XII_ALWAYS_INLINE bool Failed() const { return m_Result.Failed(); }
 
-  /// \brief Same as 'Succeeded()'.
-  ///
-  /// Allows xiiStatus to be used in if statements:
-  ///  - if (r)
-  ///  - if (!r)
-  ///  - if (r1 && r2)
-  ///  - if (r1 || r2)
-  ///
-  /// Disallows anything else implicitly, e.g. all these won't compile:
-  ///   - if (r == true)
-  ///   - bool b = r;
-  ///   - void* p = r;
-  ///   - return r; // with bool return type
-  explicit operator bool() const { return m_Result.Succeeded(); }
-
-  /// \brief Special case to prevent this from working: "bool b = !r"
-  xiiResult operator!() const { return xiiResult(m_Result.Succeeded() ? XII_FAILURE : XII_SUCCESS); }
+  /// \brief Used to silence compiler warnings, when success or failure doesn't matter.
+  XII_ALWAYS_INLINE void IgnoreResult()
+  {
+    /* To be called when a return value is [[nodiscard]] but the result is not needed. */
+  }
 
   /// \brief If the state is XII_FAILURE, the message is written to the given log (or the currently active thread-local log).
-  void LogFailure(xiiLogInterface* pLog = nullptr);
+  ///
+  /// The return value is the same as 'Failed()' but isn't marked as [[nodiscard]], ie returns true, if a failure happened.
+  bool LogFailure(xiiLogInterface* pLog = nullptr);
+
+  /// \brief Asserts that the function succeeded. In case of failure, the program will terminate.
+  ///
+  /// If \a msg is given, this will be the assert message.
+  /// Additionally m_sMessage will be included as a detailed message.
+  void AssertSuccess(const char* szMsg = nullptr) const;
 
   xiiResult m_Result;
   xiiString m_sMessage;

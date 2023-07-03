@@ -147,7 +147,7 @@ namespace xiiMeshImportUtils
       // TODO: Set... something else?
 
       pAccessor->FinishTransaction();
-      textureDocument->SaveDocument();
+      textureDocument->SaveDocument().LogFailure();
 
       xiiStringBuilder guid;
       xiiConversionUtils::ToString(textureDocument->GetGuid(), guid);

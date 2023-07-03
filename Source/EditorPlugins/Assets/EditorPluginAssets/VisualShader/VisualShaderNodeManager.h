@@ -31,11 +31,7 @@ public:
   virtual const char* GetTypeCategory(const xiiRTTI* pRtti) const override;
 
 private:
-  virtual xiiStatus InternalCanAdd(
-    const xiiRTTI*           pRtti,
-    const xiiDocumentObject* pParent,
-    const char*              szParentProperty,
-    const xiiVariant&        index) const override;
+  virtual xiiStatus InternalCanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, const char* szParentProperty, const xiiVariant& index) const override;
 
   xiiUInt32 CountNodesOfType(xiiVisualShaderNodeType::Enum type) const;
 };

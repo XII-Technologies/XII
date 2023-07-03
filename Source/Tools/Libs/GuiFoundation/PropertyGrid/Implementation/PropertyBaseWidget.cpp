@@ -146,7 +146,8 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
         }
         break;
       }
-      m_pObjectAccessor->FinishTransaction(); });
+      m_pObjectAccessor->FinishTransaction();
+    });
   }
 
   const char* szMimeType = "application/xiiEditor.Property";
@@ -184,7 +185,8 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
 
       mimeData->setData(szMimeType, encodedData);
       mimeData->setText(QString::fromUtf8((const char*)streamStorage.GetData()));
-      clipboard->setMimeData(mimeData); });
+      clipboard->setMimeData(mimeData);
+    });
   }
 
   // Paste
@@ -278,7 +280,8 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
           }
         }
 
-        m_pObjectAccessor->FinishTransaction(); });
+        m_pObjectAccessor->FinishTransaction();
+      });
     }
   }
 
@@ -348,13 +351,13 @@ bool xiiQtPropertyWidget::GetCommonVariantSubType(const xiiHybridArray<xiiProper
     {
       bFirst = false;
       xiiVariant value;
-      m_pObjectAccessor->GetValue(item.m_pObject, pProperty, value, item.m_Index);
+      m_pObjectAccessor->GetValue(item.m_pObject, pProperty, value, item.m_Index).AssertSuccess();
       out_type = value.GetType();
     }
     else
     {
       xiiVariant valueNext;
-      m_pObjectAccessor->GetValue(item.m_pObject, pProperty, valueNext, item.m_Index);
+      m_pObjectAccessor->GetValue(item.m_pObject, pProperty, valueNext, item.m_Index).AssertSuccess();
       if (valueNext.GetType() != out_type)
       {
         out_type = xiiVariantType::Invalid;
@@ -376,12 +379,12 @@ xiiVariant xiiQtPropertyWidget::GetCommonValue(const xiiHybridArray<xiiPropertyS
       const auto& item = items[i];
       if (i == 0)
       {
-        m_pObjectAccessor->GetValues(item.m_pObject, pProperty, values);
+        m_pObjectAccessor->GetValues(item.m_pObject, pProperty, values).AssertSuccess();
       }
       else
       {
         xiiVariantArray valuesNext;
-        m_pObjectAccessor->GetValues(item.m_pObject, pProperty, valuesNext);
+        m_pObjectAccessor->GetValues(item.m_pObject, pProperty, valuesNext).AssertSuccess();
         if (values != valuesNext)
         {
           return xiiVariant();
@@ -398,12 +401,12 @@ xiiVariant xiiQtPropertyWidget::GetCommonValue(const xiiHybridArray<xiiPropertyS
     {
       if (!value.IsValid())
       {
-        m_pObjectAccessor->GetValue(item.m_pObject, pProperty, value, item.m_Index);
+        m_pObjectAccessor->GetValue(item.m_pObject, pProperty, value, item.m_Index).AssertSuccess();
       }
       else
       {
         xiiVariant valueNext;
-        m_pObjectAccessor->GetValue(item.m_pObject, pProperty, valueNext, item.m_Index);
+        m_pObjectAccessor->GetValue(item.m_pObject, pProperty, valueNext, item.m_Index).AssertSuccess();
         if (value != valueNext)
         {
           value = xiiVariant();
@@ -1635,7 +1638,9 @@ void xiiQtPropertyTypeContainerWidget::UpdateElement(xiiUInt32 index)
       if (!url.isEmpty())
       {
         elem.m_pHelpButton->setVisible(true);
-        connect(elem.m_pHelpButton, &QToolButton::clicked, this, [=]() { QDesktopServices::openUrl(QUrl(url)); });
+        connect(elem.m_pHelpButton, &QToolButton::clicked, this, [=]() {
+          QDesktopServices::openUrl(QUrl(url));
+        });
       }
       else
       {
@@ -1728,10 +1733,9 @@ void xiiQtVariantPropertyWidget::OnInit()
     }
   }
 
-  connect(m_pTypeList, &QComboBox::currentIndexChanged,
-          [this](int iIndex) {
-            ChangeVariantType(static_cast<xiiVariantType::Enum>(m_pTypeList->itemData(iIndex).toInt()));
-          });
+  connect(m_pTypeList, &QComboBox::currentIndexChanged, [this](int iIndex) {
+    ChangeVariantType(static_cast<xiiVariantType::Enum>(m_pTypeList->itemData(iIndex).toInt()));
+  });
 }
 
 void xiiQtVariantPropertyWidget::InternalSetValue(const xiiVariant& value)

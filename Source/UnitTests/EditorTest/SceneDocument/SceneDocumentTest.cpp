@@ -580,7 +580,7 @@ void xiiEditorSceneDocumentTest::PrefabOperations()
       const xiiDocumentObject* pChild0 = pAccessor->GetObject(values[0].Get<xiiUuid>());
       const xiiDocumentObject* pChild1 = pAccessor->GetObject(values[1].Get<xiiUuid>());
       pAccessor->StartTransaction("Delete child0");
-      pAccessor->RemoveObject(pChild1);
+      pAccessor->RemoveObject(pChild1).AssertSuccess();
       pAccessor->FinishTransaction();
       XII_TEST_INT(pAccessor->GetCount(pPrefab3, pProp), 1);
     }
@@ -666,7 +666,7 @@ void xiiEditorSceneDocumentTest::PrefabOperations()
         xiiDefaultContainerState defaultState(pAccessor, selection, "Components");
 
         pAccessor->StartTransaction("Revert children");
-        defaultState.RevertContainer();
+        defaultState.RevertContainer().AssertSuccess();
         pAccessor->FinishTransaction();
       }
     }

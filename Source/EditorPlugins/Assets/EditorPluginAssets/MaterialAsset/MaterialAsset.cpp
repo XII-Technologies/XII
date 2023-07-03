@@ -121,20 +121,20 @@ void xiiMaterialAssetProperties::SetShaderMode(xiiEnum<xiiMaterialShaderMode> mo
   {
     case xiiMaterialShaderMode::BaseMaterial:
     {
-      pAccessor->SetValue(m_pDocument->GetPropertyObject(), "BaseMaterial", "");
-      pAccessor->SetValue(m_pDocument->GetPropertyObject(), "Shader", "");
+      pAccessor->SetValue(m_pDocument->GetPropertyObject(), "BaseMaterial", "").AssertSuccess();
+      pAccessor->SetValue(m_pDocument->GetPropertyObject(), "Shader", "").AssertSuccess();
     }
     break;
     case xiiMaterialShaderMode::File:
     {
-      pAccessor->SetValue(m_pDocument->GetPropertyObject(), "BaseMaterial", "");
-      pAccessor->SetValue(m_pDocument->GetPropertyObject(), "Shader", "");
+      pAccessor->SetValue(m_pDocument->GetPropertyObject(), "BaseMaterial", "").AssertSuccess();
+      pAccessor->SetValue(m_pDocument->GetPropertyObject(), "Shader", "").AssertSuccess();
     }
     break;
     case xiiMaterialShaderMode::Custom:
     {
-      pAccessor->SetValue(m_pDocument->GetPropertyObject(), "BaseMaterial", "");
-      pAccessor->SetValue(m_pDocument->GetPropertyObject(), "Shader", xiiConversionUtils::ToString(m_pDocument->GetGuid(), tmp).GetData());
+      pAccessor->SetValue(m_pDocument->GetPropertyObject(), "BaseMaterial", "").AssertSuccess();
+      pAccessor->SetValue(m_pDocument->GetPropertyObject(), "Shader", xiiConversionUtils::ToString(m_pDocument->GetGuid(), tmp).GetData()).AssertSuccess();
     }
     break;
   }
@@ -229,7 +229,7 @@ void xiiMaterialAssetProperties::CreateProperties(const char* szShaderPath)
     // Force generate if custom shader is missing
     xiiAssetFileHeader AssetHeader;
     AssetHeader.SetFileHashAndVersion(0, m_pDocument->GetAssetTypeVersion());
-    m_pDocument->RecreateVisualShaderFile(AssetHeader);
+    m_pDocument->RecreateVisualShaderFile(AssetHeader).LogFailure();
     pType = xiiShaderTypeRegistry::GetSingleton()->GetShaderType(szShaderPath);
   }
 
@@ -293,7 +293,7 @@ void xiiMaterialAssetProperties::LoadOldValues()
             cmd.m_NewValue  = it.Value();
 
             // Do not check for success, if a cached value failed to apply, simply ignore it.
-            pHistory->AddCommand(cmd);
+            pHistory->AddCommand(cmd).AssertSuccess();
           }
         }
       }
@@ -581,7 +581,19 @@ void xiiMaterialAssetDocument::UpdatePrefabObject(xiiDocumentObject* pObject, co
       cmd.m_Object.CombineWithSeed(PrefabSeed);
       cmd.m_NewValue  = op.m_Value;
       cmd.m_sProperty = op.m_sProperty;
-      GetCommandHistory()->AddCommand(cmd);
+
+      auto pObj = GetObjectAccessor()->GetObject(cmd.m_Object);
+      if (!pObj)
+        continue;
+
+      auto pProp = pObj->GetType()->FindPropertyByName(op.m_sProperty);
+      if (!pProp)
+        continue;
+
+      if (pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer))
+        continue;
+
+      GetCommandHistory()->AddCommand(cmd).AssertSuccess();
     }
   }
 
@@ -1161,7 +1173,7 @@ void xiiMaterialAssetDocument::RemoveDisconnectedNodes()
       xiiRemoveNodeCommand rem;
       rem.m_Object = it.Key()->GetGuid();
 
-      pHistory->AddCommand(rem);
+      pHistory->AddCommand(rem).AssertSuccess();
     }
 
     pHistory->FinishTransaction();

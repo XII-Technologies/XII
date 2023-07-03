@@ -26,14 +26,30 @@ xiiStatus::xiiStatus(const xiiFormatString& fmt) :
   m_sMessage = fmt.GetText(sMsg);
 }
 
-void xiiStatus::LogFailure(xiiLogInterface* pLog)
+bool xiiStatus::LogFailure(xiiLogInterface* pLog)
 {
   if (Failed())
   {
     xiiLogInterface* pInterface = pLog ? pLog : xiiLog::GetThreadLocalLogSystem();
     xiiLog::Error(pInterface, "{0}", m_sMessage);
   }
+
+  return Failed();
 }
 
+void xiiStatus::AssertSuccess(const char* szMsg /*= nullptr*/) const
+{
+  if (Succeeded())
+    return;
+
+  if (szMsg)
+  {
+    XII_REPORT_FAILURE(szMsg, m_sMessage.GetData());
+  }
+  else
+  {
+    XII_REPORT_FAILURE("An operation failed unexpectedly.", m_sMessage.GetData());
+  }
+}
 
 XII_STATICLINK_FILE(Foundation, Foundation_Types_Implementation_Status);

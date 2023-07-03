@@ -31,7 +31,7 @@ void xiiConeVisualizerAdapter::Update()
   if (!pAttr->GetAngleProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetAngleProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetAngleProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiAngle>(), "Invalid property bound to xiiConeVisualizerAttribute 'angle'");
     m_fAngleScale = xiiMath::Tan(value.ConvertTo<xiiAngle>() * 0.5f);
@@ -40,7 +40,7 @@ void xiiConeVisualizerAdapter::Update()
   if (!pAttr->GetColorProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiColor>(), "Invalid property bound to xiiConeVisualizerAttribute 'color'");
     m_hGizmo.SetColor(value.ConvertTo<xiiColor>());
@@ -50,7 +50,7 @@ void xiiConeVisualizerAdapter::Update()
   if (!pAttr->GetRadiusProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetRadiusProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetRadiusProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<float>(), "Invalid property bound to xiiConeVisualizerAttribute 'radius'");
     m_fFinalScale *= value.ConvertTo<float>();

@@ -32,7 +32,7 @@ void xiiSphereVisualizerAdapter::Update()
   if (!pAttr->GetRadiusProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetRadiusProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetRadiusProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<float>(), "Invalid property bound to xiiSphereVisualizerAttribute 'radius'");
     m_fScale = value.ConvertTo<float>();
@@ -41,7 +41,7 @@ void xiiSphereVisualizerAdapter::Update()
   if (!pAttr->GetColorProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiColor>(), "Invalid property bound to xiiSphereVisualizerAttribute 'color'");
     m_hGizmo.SetColor(value.ConvertTo<xiiColor>() * pAttr->m_Color);
@@ -52,7 +52,7 @@ void xiiSphereVisualizerAdapter::Update()
   if (!pAttr->GetOffsetProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetOffsetProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetOffsetProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiVec3>(), "Invalid property bound to xiiSphereVisualizerAttribute 'offset'");
 

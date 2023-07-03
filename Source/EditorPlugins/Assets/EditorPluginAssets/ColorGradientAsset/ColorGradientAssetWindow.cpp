@@ -111,26 +111,26 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientColorCpAdded(double posX, 
   cmdAdd.m_pType           = xiiGetStaticRTTI<xiiColorControlPoint>();
   cmdAdd.m_Index           = -1;
 
-  history->AddCommand(cmdAdd);
+  history->AddCommand(cmdAdd).AssertSuccess();
 
   xiiSetObjectPropertyCommand cmdSet;
   cmdSet.m_Object = cmdAdd.m_NewObjectGuid;
 
   cmdSet.m_sProperty = "Tick";
   cmdSet.m_NewValue  = pDoc->GetProperties()->TickFromTime(xiiTime::Seconds(posX));
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Red";
   cmdSet.m_NewValue  = color.r;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Green";
   cmdSet.m_NewValue  = color.g;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Blue";
   cmdSet.m_NewValue  = color.b;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();
 }
@@ -150,18 +150,18 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientAlphaCpAdded(double posX, 
   cmdAdd.m_pType           = xiiGetStaticRTTI<xiiAlphaControlPoint>();
   cmdAdd.m_Index           = -1;
 
-  history->AddCommand(cmdAdd);
+  history->AddCommand(cmdAdd).AssertSuccess();
 
   xiiSetObjectPropertyCommand cmdSet;
   cmdSet.m_Object = cmdAdd.m_NewObjectGuid;
 
   cmdSet.m_sProperty = "Tick";
   cmdSet.m_NewValue  = pDoc->GetProperties()->TickFromTime(xiiTime::Seconds(posX));
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Alpha";
   cmdSet.m_NewValue  = alpha;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();
 }
@@ -181,18 +181,18 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientIntensityCpAdded(double po
   cmdAdd.m_pType           = xiiGetStaticRTTI<xiiIntensityControlPoint>();
   cmdAdd.m_Index           = -1;
 
-  history->AddCommand(cmdAdd);
+  history->AddCommand(cmdAdd).AssertSuccess();
 
   xiiSetObjectPropertyCommand cmdSet;
   cmdSet.m_Object = cmdAdd.m_NewObjectGuid;
 
   cmdSet.m_sProperty = "Tick";
   cmdSet.m_NewValue  = pDoc->GetProperties()->TickFromTime(xiiTime::Seconds(posX));
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Intensity";
   cmdSet.m_NewValue  = intensity;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();
 }
@@ -213,7 +213,7 @@ void xiiQtColorGradientAssetDocumentWindow::MoveCP(xiiInt32 idx, double newPosX,
 
   cmdSet.m_sProperty = "Tick";
   cmdSet.m_NewValue  = pDoc->GetProperties()->TickFromTime(xiiTime::Seconds(newPosX));
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();
 }
@@ -247,7 +247,7 @@ void xiiQtColorGradientAssetDocumentWindow::RemoveCP(xiiInt32 idx, const char* s
 
   xiiRemoveObjectCommand cmdSet;
   cmdSet.m_Object = objGuid.Get<xiiUuid>();
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();
 }
@@ -285,15 +285,15 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientColorCpChanged(xiiInt32 id
 
   cmdSet.m_sProperty = "Red";
   cmdSet.m_NewValue  = color.r;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Green";
   cmdSet.m_NewValue  = color.g;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Blue";
   cmdSet.m_NewValue  = color.b;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();
 }
@@ -314,7 +314,7 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientAlphaCpChanged(xiiInt32 id
 
   cmdSet.m_sProperty = "Alpha";
   cmdSet.m_NewValue  = alpha;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();
 }
@@ -334,7 +334,7 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientIntensityCpChanged(xiiInt3
 
   cmdSet.m_sProperty = "Intensity";
   cmdSet.m_NewValue  = intensity;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();
 }

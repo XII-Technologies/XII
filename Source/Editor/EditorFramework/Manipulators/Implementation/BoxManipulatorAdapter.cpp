@@ -101,7 +101,7 @@ void xiiBoxManipulatorAdapter::GizmoEventHandler(const xiiGizmoEvent& e)
 
       xiiObjectAccessorBase* pObjectAccessor = GetObjectAccessor();
 
-      pObjectAccessor->GetValue(m_pObject, GetProperty(szSizeProperty), oldSize);
+      pObjectAccessor->GetValue(m_pObject, GetProperty(szSizeProperty), oldSize).AssertSuccess();
 
       const xiiVec3 vOldSize = oldSize.ConvertTo<xiiVec3>();
 
@@ -111,7 +111,7 @@ void xiiBoxManipulatorAdapter::GizmoEventHandler(const xiiGizmoEvent& e)
 
       if (!xiiStringUtils::IsNullOrEmpty(szSizeProperty))
       {
-        pObjectAccessor->SetValue(m_pObject, GetProperty(szSizeProperty), newValue);
+        pObjectAccessor->SetValue(m_pObject, GetProperty(szSizeProperty), newValue).AssertSuccess();
       }
 
       if (pAttr->m_bRecenterParent)

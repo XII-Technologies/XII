@@ -47,12 +47,7 @@ void xiiRenderPipelineAssetManager::OnDocumentManagerEvent(const xiiDocumentMana
   }
 }
 
-void xiiRenderPipelineAssetManager::InternalCreateDocument(
-  const char*              szDocumentTypeName,
-  const char*              szPath,
-  bool                     bCreateNewDocument,
-  xiiDocument*&            out_pDocument,
-  const xiiDocumentObject* pOpenContext)
+void xiiRenderPipelineAssetManager::InternalCreateDocument(const char* szDocumentTypeName, const char* szPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiRenderPipelineAssetDocument(szPath);
 }

@@ -482,7 +482,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::onDeleteSelectedItems()
       xiiRemoveObjectCommand cmd;
       cmd.m_Object = trackGuid.Get<xiiUuid>();
 
-      pHistory->AddCommand(cmd);
+      pHistory->AddCommand(cmd).AssertSuccess();
     }
   }
 
@@ -537,7 +537,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::onRebindSelectedItems()
 
     cmdSet.m_sProperty = "ObjectPath";
     cmdSet.m_NewValue  = varRes;
-    pDoc->GetCommandHistory()->AddCommand(cmdSet);
+    pDoc->GetCommandHistory()->AddCommand(cmdSet).AssertSuccess();
   }
 
   pHistory->FinishTransaction();
@@ -666,14 +666,15 @@ void xiiQtPropertyAnimAssetDocumentWindow::StructureEventHandler(const xiiDocume
 void xiiQtPropertyAnimAssetDocumentWindow::SelectionEventHandler(const xiiSelectionManagerEvent& e)
 {
   // this would show the document properties
-  // if (GetDocument()->GetSelectionManager()->IsSelectionEmpty())
-  //{
-  //  // delayed execution
-  //  QTimer::singleShot(1, [this]()
-  //  {
-  //    GetDocument()->GetSelectionManager()->SetSelection(GetPropertyAnimDocument()->GetPropertyObject());
-  //  });
-  //}
+#if 0
+  if (GetDocument()->GetSelectionManager()->IsSelectionEmpty())
+  {
+    // delayed execution
+    QTimer::singleShot(1, [this]() {
+      GetDocument()->GetSelectionManager()->SetSelection(GetPropertyAnimDocument()->GetPropertyObject());
+    });
+  }
+#endif
 }
 
 
@@ -784,11 +785,11 @@ void xiiQtPropertyAnimAssetDocumentWindow::onCurveCpMoved(xiiUInt32 uiCurveIdx, 
 
   cmdSet.m_sProperty = "Tick";
   cmdSet.m_NewValue  = iTickX;
-  pDoc->GetCommandHistory()->AddCommand(cmdSet);
+  pDoc->GetCommandHistory()->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Value";
   cmdSet.m_NewValue  = newPosY;
-  pDoc->GetCommandHistory()->AddCommand(cmdSet);
+  pDoc->GetCommandHistory()->AddCommand(cmdSet).AssertSuccess();
 }
 
 void xiiQtPropertyAnimAssetDocumentWindow::onCurveCpDeleted(xiiUInt32 uiCurveIdx, xiiUInt32 cpIdx)
@@ -813,7 +814,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::onCurveCpDeleted(xiiUInt32 uiCurveIdx
 
   xiiRemoveObjectCommand cmdSet;
   cmdSet.m_Object = cpGuid.Get<xiiUuid>();
-  pDoc->GetCommandHistory()->AddCommand(cmdSet);
+  pDoc->GetCommandHistory()->AddCommand(cmdSet).AssertSuccess();
 }
 
 void xiiQtPropertyAnimAssetDocumentWindow::onCurveTangentMoved(xiiUInt32 uiCurveIdx, xiiUInt32 cpIdx, float newPosX, float newPosY, bool rightTangent)
@@ -844,7 +845,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::onCurveTangentMoved(xiiUInt32 uiCurve
 
   cmdSet.m_sProperty = rightTangent ? "RightTangent" : "LeftTangent";
   cmdSet.m_NewValue  = xiiVec2(newPosX, newPosY);
-  GetDocument()->GetCommandHistory()->AddCommand(cmdSet);
+  GetDocument()->GetCommandHistory()->AddCommand(cmdSet).AssertSuccess();
 }
 
 void xiiQtPropertyAnimAssetDocumentWindow::onLinkCurveTangents(xiiUInt32 uiCurveIdx, xiiUInt32 cpIdx, bool bLink)
@@ -868,7 +869,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::onLinkCurveTangents(xiiUInt32 uiCurve
   cmdLink.m_Object    = cpGuid.Get<xiiUuid>();
   cmdLink.m_sProperty = "Linked";
   cmdLink.m_NewValue  = bLink;
-  GetDocument()->GetCommandHistory()->AddCommand(cmdLink);
+  GetDocument()->GetCommandHistory()->AddCommand(cmdLink).AssertSuccess();
 
   if (bLink)
   {
@@ -900,7 +901,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::onCurveTangentModeChanged(xiiUInt32 u
   cmd.m_Object    = cpGuid.Get<xiiUuid>();
   cmd.m_sProperty = rightTangent ? "RightTangentMode" : "LeftTangentMode";
   cmd.m_NewValue  = mode;
-  GetDocument()->GetCommandHistory()->AddCommand(cmd);
+  GetDocument()->GetCommandHistory()->AddCommand(cmd).AssertSuccess();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -969,7 +970,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::MoveGradientCP(xiiInt32 idx, double n
 
   cmdSet.m_sProperty = "Tick";
   cmdSet.m_NewValue  = pDoc->GetProperties()->m_Tracks[m_iMapGradientToTrack]->m_ColorGradient.TickFromTime(xiiTime::Seconds(newPosX));
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();
 }
@@ -1009,7 +1010,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::RemoveGradientCP(xiiInt32 idx, const 
 
   xiiRemoveObjectCommand cmdSet;
   cmdSet.m_Object = objGuid.Get<xiiUuid>();
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();
 }
@@ -1051,15 +1052,15 @@ void xiiQtPropertyAnimAssetDocumentWindow::onGradientColorCpChanged(xiiInt32 idx
 
   cmdSet.m_sProperty = "Red";
   cmdSet.m_NewValue  = color.r;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Green";
   cmdSet.m_NewValue  = color.g;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Blue";
   cmdSet.m_NewValue  = color.b;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();
 }
@@ -1087,7 +1088,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::onGradientAlphaCpChanged(xiiInt32 idx
 
   cmdSet.m_sProperty = "Alpha";
   cmdSet.m_NewValue  = alpha;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();
 }
@@ -1114,7 +1115,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::onGradientIntensityCpChanged(xiiInt32
 
   cmdSet.m_sProperty = "Intensity";
   cmdSet.m_NewValue  = intensity;
-  history->AddCommand(cmdSet);
+  history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();
 }
@@ -1160,7 +1161,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::onEventTrackCpMoved(xiiUInt32 cpIdx, 
 
   cmdSet.m_sProperty = "Tick";
   cmdSet.m_NewValue  = iTickX;
-  pDoc->GetCommandHistory()->AddCommand(cmdSet);
+  pDoc->GetCommandHistory()->AddCommand(cmdSet).AssertSuccess();
 }
 
 void xiiQtPropertyAnimAssetDocumentWindow::onEventTrackCpDeleted(xiiUInt32 cpIdx)
@@ -1180,7 +1181,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::onEventTrackCpDeleted(xiiUInt32 cpIdx
 
   xiiRemoveObjectCommand cmdSet;
   cmdSet.m_Object = cpGuid.Get<xiiUuid>();
-  pDoc->GetCommandHistory()->AddCommand(cmdSet);
+  pDoc->GetCommandHistory()->AddCommand(cmdSet).AssertSuccess();
 }
 
 void xiiQtPropertyAnimAssetDocumentWindow::onEventTrackBeginOperation(QString name)

@@ -34,7 +34,7 @@ void xiiSceneSelectionContext::SelectPickedObject(const xiiObjectPickingResult& 
           m_PickObjectOverride(pObject);
           return;
         }
-        pSceneDocument->SetActiveLayer(layerGuid);
+        pSceneDocument->SetActiveLayer(layerGuid).LogFailure();
       }
     }
   }

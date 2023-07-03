@@ -46,10 +46,7 @@ xiiPropertyAnimationTrackGroup::~xiiPropertyAnimationTrackGroup()
 }
 
 xiiPropertyAnimAssetDocument::xiiPropertyAnimAssetDocument(const char* szDocumentPath) :
-  xiiSimpleAssetDocument<xiiPropertyAnimationTrackGroup, xiiGameObjectContextDocument>(
-    XII_DEFAULT_NEW(xiiPropertyAnimObjectManager),
-    szDocumentPath,
-    xiiAssetDocEngineConnection::FullObjectMirroring)
+  xiiSimpleAssetDocument<xiiPropertyAnimationTrackGroup, xiiGameObjectContextDocument>(XII_DEFAULT_NEW(xiiPropertyAnimObjectManager), szDocumentPath, xiiAssetDocEngineConnection::FullObjectMirroring)
 {
   m_GameObjectContextEvents.AddEventHandler(xiiMakeDelegate(&xiiPropertyAnimAssetDocument::GameObjectContextEventHandler, this));
   m_pObjectAccessor = XII_DEFAULT_NEW(xiiPropertyAnimObjectAccessor, this, GetCommandHistory());
@@ -78,7 +75,7 @@ void xiiPropertyAnimAssetDocument::SetAnimationDurationTicks(xiiUInt64 uiNumTick
     cmdSet.m_Object    = GetPropertyObject()->GetGuid();
     cmdSet.m_sProperty = "Duration";
     cmdSet.m_NewValue  = uiNumTicks;
-    history->AddCommand(cmdSet);
+    history->AddCommand(cmdSet).AssertSuccess();
 
     history->FinishTransaction();
   }
@@ -236,14 +233,18 @@ void xiiPropertyAnimAssetDocument::InitializeAfterLoading(bool bFirstTimeCreatio
   m_ObjectMirror.SetFilterFunction([this](const xiiDocumentObject* pObject, const char* szProperty) -> bool {
     return !static_cast<xiiPropertyAnimObjectManager*>(GetObjectManager())->IsTemporary(pObject, szProperty);
   });
+
   // (Remote IPC mirror only sends temporaries, i.e. the context)
   m_Mirror.SetFilterFunction([this](const xiiDocumentObject* pObject, const char* szProperty) -> bool {
     return static_cast<xiiPropertyAnimObjectManager*>(GetObjectManager())->IsTemporary(pObject, szProperty);
   });
+
   SUPER::InitializeAfterLoading(bFirstTimeCreation);
+
   // Important to do these after base class init as we want our subscriptions to happen after the mirror of the base class.
   GetObjectManager()->m_StructureEvents.AddEventHandler(xiiMakeDelegate(&xiiPropertyAnimAssetDocument::TreeStructureEventHandler, this));
   GetObjectManager()->m_PropertyEvents.AddEventHandler(xiiMakeDelegate(&xiiPropertyAnimAssetDocument::TreePropertyEventHandler, this));
+
   // Subscribe here as otherwise base init will fire a context changed event when we are not set up yet.
   // RebuildMapping();
 }
@@ -324,8 +325,9 @@ void xiiPropertyAnimAssetDocument::RebuildMapping()
 
   const xiiAbstractProperty* pTracksProp = xiiGetStaticRTTI<xiiPropertyAnimationTrackGroup>()->FindPropertyByName("Tracks");
   XII_ASSERT_DEBUG(pTracksProp, "Name of property xiiPropertyAnimationTrackGroup::m_Tracks has changed.");
+
   xiiHybridArray<xiiVariant, 16> values;
-  m_pObjectAccessor->GetValues(GetPropertyObject(), pTracksProp, values);
+  m_pObjectAccessor->GetValues(GetPropertyObject(), pTracksProp, values).AssertSuccess();
   for (const xiiVariant& value : values)
   {
     AddTrack(value.Get<xiiUuid>());
@@ -379,7 +381,7 @@ void xiiPropertyAnimAssetDocument::FindTrackKeys(const char* szObjectSearchSeque
   xiiObjectPropertyPathContext context = {GetContextObject(), m_pObjectAccessor.Borrow(), "TempObjects"};
 
   keys.Clear();
-  xiiObjectPropertyPath::ResolvePath(context, keys, szObjectSearchSequence, szComponentType, szPropertyPath);
+  xiiObjectPropertyPath::ResolvePath(context, keys, szObjectSearchSequence, szComponentType, szPropertyPath).AssertSuccess();
 }
 
 
@@ -387,7 +389,7 @@ void xiiPropertyAnimAssetDocument::GenerateTrackInfo(const xiiDocumentObject* pO
 {
   xiiObjectPropertyPathContext context     = {GetContextObject(), m_pObjectAccessor.Borrow(), "TempObjects"};
   xiiPropertyReference         propertyRef = {pObject->GetGuid(), pProp, index};
-  xiiObjectPropertyPath::CreatePath(context, propertyRef, sObjectSearchSequence, sComponentType, sPropertyPath);
+  xiiObjectPropertyPath::CreatePath(context, propertyRef, sObjectSearchSequence, sComponentType, sPropertyPath).AssertSuccess();
 }
 
 void xiiPropertyAnimAssetDocument::ApplyAnimation()
@@ -409,7 +411,7 @@ void xiiPropertyAnimAssetDocument::ApplyAnimation(const xiiPropertyReference& ke
     auto           pTrack    = GetTrack(track);
     const xiiRTTI* pPropRtti = key.m_pProperty->GetSpecificType();
 
-    //#TODO apply pTrack to animValue
+    // #TODO apply pTrack to animValue
     switch (pTrack->m_Target)
     {
       case xiiPropertyAnimTarget::Number:
@@ -472,8 +474,9 @@ void xiiPropertyAnimAssetDocument::ApplyAnimation(const xiiPropertyReference& ke
   xiiDocumentObject* pObj = GetObjectManager()->GetObject(key.m_Object);
   xiiVariant         oldValue;
   XII_VERIFY(m_pObjectAccessor->GetValue(pObj, key.m_pProperty, oldValue, key.m_Index).Succeeded(), "Retrieving old value failed.");
+
   if (oldValue != animValue)
-    GetObjectManager()->SetValue(pObj, key.m_pProperty->GetPropertyName(), animValue, key.m_Index);
+    GetObjectManager()->SetValue(pObj, key.m_pProperty->GetPropertyName(), animValue, key.m_Index).AssertSuccess();
 
   // tell the gizmos and manipulators that they should update their transform
   // usually they listen to the command history and selection events, but in this case no commands are executed
@@ -665,10 +668,7 @@ xiiUuid xiiPropertyAnimAssetDocument::CreateTrack(const xiiDocumentObject* pObje
   xiiObjectCommandAccessor accessor(GetCommandHistory());
   const xiiRTTI*           pTrackType = xiiGetStaticRTTI<xiiPropertyAnimationTrack>();
   xiiUuid                  newTrack;
-  XII_VERIFY(
-    accessor.AddObject(GetPropertyObject(), xiiGetStaticRTTI<xiiPropertyAnimationTrackGroup>()->FindPropertyByName("Tracks"), -1, pTrackType, newTrack)
-      .Succeeded(),
-    "Adding track failed.");
+  XII_VERIFY(accessor.AddObject(GetPropertyObject(), xiiGetStaticRTTI<xiiPropertyAnimationTrackGroup>()->FindPropertyByName("Tracks"), -1, pTrackType, newTrack).Succeeded(), "Adding track failed.");
   const xiiDocumentObject* pTrackObj = accessor.GetObject(newTrack);
   xiiVariant               value     = sObjectSearchSequence.GetData();
   XII_VERIFY(accessor.SetValue(pTrackObj, pTrackType->FindPropertyByName("ObjectPath"), value).Succeeded(), "Adding track failed.");
@@ -715,7 +715,7 @@ xiiUuid xiiPropertyAnimAssetDocument::CreateTrack(const xiiDocumentObject* pObje
         break;
     }
 
-    accessor.SetValue(pFloatCurveObject, pColorProp, color);
+    accessor.SetValue(pFloatCurveObject, pColorProp, color).AssertSuccess();
   }
 
   return newTrack;
@@ -755,9 +755,8 @@ xiiUuid xiiPropertyAnimAssetDocument::InsertCurveCpAt(const xiiUuid& track, xiiI
   const xiiVariant         curveGuid   = trackObject->GetTypeAccessor().GetValue("FloatCurve");
 
   xiiUuid newObjectGuid;
-  XII_VERIFY(acc.AddObject(accessor.GetObject(curveGuid.Get<xiiUuid>()), "ControlPoints", -1, xiiGetStaticRTTI<xiiCurveControlPointData>(), newObjectGuid)
-               .Succeeded(),
-             "");
+  XII_VERIFY(acc.AddObject(accessor.GetObject(curveGuid.Get<xiiUuid>()), "ControlPoints", -1, xiiGetStaticRTTI<xiiCurveControlPointData>(), newObjectGuid).Succeeded(), "");
+
   auto curveCPObj = accessor.GetObject(newObjectGuid);
   XII_VERIFY(acc.SetValue(curveCPObj, "Tick", tickX).Succeeded(), "");
   XII_VERIFY(acc.SetValue(curveCPObj, "Value", newPosY).Succeeded(), "");

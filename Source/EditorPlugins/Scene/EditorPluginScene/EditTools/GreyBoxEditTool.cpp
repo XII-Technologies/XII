@@ -179,14 +179,14 @@ void xiiGreyBoxEditTool::GizmoEventHandler(const xiiGizmoEvent& e)
       cmdAdd.m_NewObjectGuid   = objGuid;
       cmdAdd.m_pType           = xiiGetStaticRTTI<xiiGameObject>();
       cmdAdd.m_sParentProperty = "Children";
-      pHistory->AddCommand(cmdAdd);
+      pHistory->AddCommand(cmdAdd).AssertSuccess();
     }
     {
       xiiSetObjectPropertyCommand cmdPos;
       cmdPos.m_NewValue  = vCenter;
       cmdPos.m_Object    = objGuid;
       cmdPos.m_sProperty = "LocalPosition";
-      pHistory->AddCommand(cmdPos);
+      pHistory->AddCommand(cmdPos).AssertSuccess();
     }
     {
       xiiAddObjectCommand cmdComp;
@@ -195,7 +195,7 @@ void xiiGreyBoxEditTool::GizmoEventHandler(const xiiGizmoEvent& e)
       cmdComp.m_sParentProperty = "Components";
       cmdComp.m_Parent          = objGuid;
       cmdComp.m_Index           = -1;
-      pHistory->AddCommand(cmdComp);
+      pHistory->AddCommand(cmdComp).AssertSuccess();
     }
     if (materialGuid.IsValid())
     {
@@ -204,7 +204,7 @@ void xiiGreyBoxEditTool::GizmoEventHandler(const xiiGizmoEvent& e)
       cmdMat.m_NewValue  = xiiConversionUtils::ToString(materialGuid, tmp).GetData();
       cmdMat.m_Object    = compGuid;
       cmdMat.m_sProperty = "Material";
-      pHistory->AddCommand(cmdMat);
+      pHistory->AddCommand(cmdMat).AssertSuccess();
     }
     {
       xiiSetObjectPropertyCommand cmdSize;
@@ -212,27 +212,27 @@ void xiiGreyBoxEditTool::GizmoEventHandler(const xiiGizmoEvent& e)
 
       cmdSize.m_NewValue  = negx;
       cmdSize.m_sProperty = "SizeNegX";
-      pHistory->AddCommand(cmdSize);
+      pHistory->AddCommand(cmdSize).AssertSuccess();
 
       cmdSize.m_NewValue  = posx;
       cmdSize.m_sProperty = "SizePosX";
-      pHistory->AddCommand(cmdSize);
+      pHistory->AddCommand(cmdSize).AssertSuccess();
 
       cmdSize.m_NewValue  = negy;
       cmdSize.m_sProperty = "SizeNegY";
-      pHistory->AddCommand(cmdSize);
+      pHistory->AddCommand(cmdSize).AssertSuccess();
 
       cmdSize.m_NewValue  = posy;
       cmdSize.m_sProperty = "SizePosY";
-      pHistory->AddCommand(cmdSize);
+      pHistory->AddCommand(cmdSize).AssertSuccess();
 
       cmdSize.m_NewValue  = negz;
       cmdSize.m_sProperty = "SizeNegZ";
-      pHistory->AddCommand(cmdSize);
+      pHistory->AddCommand(cmdSize).AssertSuccess();
 
       cmdSize.m_NewValue  = posz;
       cmdSize.m_sProperty = "SizePosZ";
-      pHistory->AddCommand(cmdSize);
+      pHistory->AddCommand(cmdSize).AssertSuccess();
     }
 
     pHistory->FinishTransaction();

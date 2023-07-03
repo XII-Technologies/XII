@@ -387,7 +387,7 @@ void xiiDocumentNodeManager::RestoreMetaDataAfterLoading(const xiiAbstractObject
           xiiMoveNodeCommand move;
           move.m_Object = pObject->GetGuid();
           move.m_NewPos = nodeMetaData.m_Pos;
-          history->AddCommand(move);
+          history->AddCommand(move).LogFailure();
         }
         else
         {
@@ -441,7 +441,7 @@ void xiiDocumentNodeManager::RestoreMetaDataAfterLoading(const xiiAbstractObject
         cmd.m_ObjectTarget     = connectionMetaData.m_Target;
         cmd.m_sSourcePin       = connectionMetaData.m_SourcePin;
         cmd.m_sTargetPin       = connectionMetaData.m_TargetPin;
-        history->AddCommand(cmd);
+        history->AddCommand(cmd).LogFailure();
       }
       else
       {
@@ -568,7 +568,7 @@ bool xiiDocumentNodeManager::PasteObjects(const xiiArrayPtr<xiiDocument::PasteIn
         xiiMoveNodeCommand move;
         move.m_Object = pObject->GetGuid();
         move.m_NewPos = GetNodePos(pObject) + vMoveNode;
-        history->AddCommand(move);
+        history->AddCommand(move).LogFailure();
       }
     }
 

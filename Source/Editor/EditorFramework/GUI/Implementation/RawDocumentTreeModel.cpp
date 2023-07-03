@@ -110,11 +110,7 @@ void xiiQtNamedAdapter::TreePropertyEventHandler(const xiiDocumentObjectProperty
   }
 }
 
-xiiQtNameableAdapter::xiiQtNameableAdapter(
-  const xiiDocumentObjectManager* pTree,
-  const xiiRTTI*                  pType,
-  const char*                     m_sChildProperty,
-  const char*                     szNameProperty) :
+xiiQtNameableAdapter::xiiQtNameableAdapter(const xiiDocumentObjectManager* pTree, const xiiRTTI* pType, const char* m_sChildProperty, const char* szNameProperty) :
   xiiQtNamedAdapter(pTree, pType, m_sChildProperty, szNameProperty)
 {
 }
@@ -134,7 +130,7 @@ bool xiiQtNameableAdapter::setData(const xiiDocumentObject* pObject, int row, in
     cmd.m_Object    = pObject->GetGuid();
     cmd.m_sProperty = m_sNameProperty;
 
-    pHistory->AddCommand(cmd);
+    pHistory->AddCommand(cmd).AssertSuccess();
 
     pHistory->FinishTransaction();
 
@@ -219,11 +215,15 @@ void xiiQtDocumentTreeModel::TreeEventHandler(const xiiDocumentObjectStructureEv
       pParent = e.m_pNewParent;
       break;
   }
+
   XII_ASSERT_DEV(pParent != nullptr, "Each structure event should have a parent set.");
+
   if (!IsUnderRoot(pParent))
     return;
+
   auto pType    = pParent->GetTypeAccessor().GetType();
   auto pAdapter = GetAdapter(pType);
+
   if (!pAdapter)
     return;
 

@@ -81,7 +81,7 @@ xiiStatus xiiExposedParameterCommandAccessor::GetCount(const xiiDocumentObject* 
   if (m_pParameterProp == pProp)
   {
     xiiHybridArray<xiiVariant, 16> keys;
-    GetKeys(pObject, pProp, keys);
+    GetKeys(pObject, pProp, keys).AssertSuccess();
     out_iCount = keys.GetCount();
     return xiiStatus(XII_SUCCESS);
   }
@@ -119,7 +119,7 @@ xiiStatus xiiExposedParameterCommandAccessor::GetValues(const xiiDocumentObject*
   if (m_pParameterProp == pProp)
   {
     xiiHybridArray<xiiVariant, 16> keys;
-    GetKeys(pObject, pProp, keys);
+    GetKeys(pObject, pProp, keys).AssertSuccess();
     for (const auto& key : keys)
     {
       auto& var = out_values.ExpandAndGetRef();
