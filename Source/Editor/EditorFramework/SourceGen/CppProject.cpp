@@ -316,7 +316,7 @@ xiiResult xiiCppProject::RunCMakeIfNecessary(const xiiCppSettings& cfg)
   if (!xiiCppProject::ExistsProjectCMakeListsTxt())
     return XII_SUCCESS;
 
-  if (xiiCppProject::ExistsSolution(cfg) && xiiCppProject::CheckCMakeCache(cfg))
+  if (xiiCppProject::ExistsSolution(cfg) && xiiCppProject::CheckCMakeCache(cfg).Succeeded())
     return XII_SUCCESS;
 
   return xiiCppProject::RunCMake(cfg);
@@ -391,7 +391,7 @@ xiiResult xiiCppProject::BuildCodeIfNecessary(const xiiCppSettings& cfg)
   if (!xiiCppProject::ExistsProjectCMakeListsTxt())
     return XII_SUCCESS;
 
-  if (!xiiCppProject::ExistsSolution(cfg) || !xiiCppProject::CheckCMakeCache(cfg))
+  if (!xiiCppProject::ExistsSolution(cfg) || xiiCppProject::CheckCMakeCache(cfg).Failed())
   {
     XII_SUCCEED_OR_RETURN(xiiCppProject::RunCMake(cfg));
   }
@@ -505,7 +505,7 @@ bool xiiCppProject::IsBuildRequired()
   if (!xiiCppProject::ExistsSolution(cfg))
     return true;
 
-  if (!xiiCppProject::CheckCMakeCache(cfg))
+  if (xiiCppProject::CheckCMakeCache(cfg).Failed())
     return true;
 
   xiiStringBuilder sPath = xiiOSFile::GetApplicationDirectory();

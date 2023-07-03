@@ -148,7 +148,7 @@ void xiiSceneDocument::GroupSelection()
   cmdAdd.m_Index           = -1;
   cmdAdd.m_sParentProperty = "Children";
 
-  pHistory->AddCommand(cmdAdd);
+  pHistory->AddCommand(cmdAdd).AssertSuccess();
 
   // put the new group object under the shared parent
   if (pCommonParent != nullptr)
@@ -159,7 +159,7 @@ void xiiSceneDocument::GroupSelection()
     cmdMove.m_sParentProperty = "Children";
 
     cmdMove.m_Object = cmdAdd.m_NewObjectGuid;
-    pHistory->AddCommand(cmdMove);
+    pHistory->AddCommand(cmdMove).AssertSuccess();
   }
 
   auto pGroupObject = GetObjectManager()->GetObject(cmdAdd.m_NewObjectGuid);
@@ -173,7 +173,7 @@ void xiiSceneDocument::GroupSelection()
   for (const auto& item : sel)
   {
     cmdMove.m_Object = item->GetGuid();
-    pHistory->AddCommand(cmdMove);
+    pHistory->AddCommand(cmdMove).AssertSuccess();
   }
 
   pHistory->FinishTransaction();
@@ -609,11 +609,11 @@ xiiStatus xiiSceneDocument::CreatePrefabDocumentFromSelection(const char* szFile
 
     cmd.m_sProperty = "LocalPosition";
     cmd.m_NewValue  = tOld.m_vPosition + tReference.m_vPosition;
-    GetCommandHistory()->AddCommand(cmd);
+    GetCommandHistory()->AddCommand(cmd).AssertSuccess();
 
     cmd.m_sProperty = "LocalRotation";
     cmd.m_NewValue  = tReference.m_qRotation * tOld.m_qRotation;
-    GetCommandHistory()->AddCommand(cmd);
+    GetCommandHistory()->AddCommand(cmd).AssertSuccess();
   };
 
   auto finalizeGraph = [this, &varChildren](xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes) {
@@ -968,7 +968,7 @@ void xiiSceneDocument::EnsureSettingsObjectExist()
     XII_VERIFY(pSettings, "Document corrupt, root references a non-existing object");
     if (pSettings->GetType() != pSettingsType)
     {
-      accessor.RemoveObject(pSettings);
+      accessor.RemoveObject(pSettings).AssertSuccess();
       GetObjectManager()->DestroyObject(pSettings);
       XII_VERIFY(accessor.xiiObjectAccessorBase::AddObject(pRoot, "Settings", xiiVariant(), pSettingsType, id).Succeeded(), "Adding scene settings object to root failed.");
     }

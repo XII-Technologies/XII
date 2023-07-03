@@ -46,7 +46,7 @@ void xiiCameraVisualizerAdapter::Update()
   if (!pAttr->GetModeProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetModeProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetModeProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiInt32>(), "Invalid property bound to xiiCameraVisualizerAttribute 'mode'");
     iMode = value.ConvertTo<xiiInt32>();
@@ -55,7 +55,7 @@ void xiiCameraVisualizerAdapter::Update()
   if (!pAttr->GetNearPlaneProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetNearPlaneProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetNearPlaneProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<float>(), "Invalid property bound to xiiCameraVisualizerAttribute 'near plane'");
     fNearPlane = value.ConvertTo<float>();
@@ -64,7 +64,7 @@ void xiiCameraVisualizerAdapter::Update()
   if (!pAttr->GetFarPlaneProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetFarPlaneProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetFarPlaneProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<float>(), "Invalid property bound to xiiCameraVisualizerAttribute 'far plane'");
     fFarPlane = value.ConvertTo<float>();
@@ -77,7 +77,7 @@ void xiiCameraVisualizerAdapter::Update()
     if (!pAttr->GetOrthoDimProperty().IsEmpty())
     {
       xiiVariant value;
-      pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetOrthoDimProperty()), value);
+      pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetOrthoDimProperty()), value).AssertSuccess();
 
       XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<float>(), "Invalid property bound to xiiCameraVisualizerAttribute 'ortho dim'");
       fDimensions = value.ConvertTo<float>();
@@ -106,7 +106,7 @@ void xiiCameraVisualizerAdapter::Update()
     if (!pAttr->GetFovProperty().IsEmpty())
     {
       xiiVariant value;
-      pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetFovProperty()), value);
+      pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetFovProperty()), value).AssertSuccess();
 
       XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<float>(), "Invalid property bound to xiiCameraVisualizerAttribute 'fov'");
       fFOV = value.ConvertTo<float>();

@@ -63,7 +63,7 @@ xiiTestAppRun xiiEditorTestProject::RunSubTest(xiiInt32 iIdentifier, xiiUInt32 u
   // TODO: Newly created assets actually do not transform cleanly.
   if (false)
   {
-    xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::TriggeredManually);
+    xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::TriggeredManually).IgnoreResult();
 
     xiiUInt32                                                      uiNumAssets;
     xiiHybridArray<xiiUInt32, xiiAssetInfo::TransformState::COUNT> sections;

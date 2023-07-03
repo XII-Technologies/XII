@@ -308,7 +308,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateOutputPinCode(const xiiDocumentO
   xiiStringBuilder sInlineCode = pDesc->m_OutputPins[uiPinID].m_sShaderCodeInline;
   xiiStringBuilder ignore; // DefineWhenUsingDefaultValue not used for output pins
 
-  ReplaceInputPinsByCode(pOwnerNode, pDesc, sInlineCode, ignore);
+  XII_SUCCEED_OR_RETURN(ReplaceInputPinsByCode(pOwnerNode, pDesc, sInlineCode, ignore));
 
   XII_SUCCEED_OR_RETURN(InsertPropertyValues(pOwnerNode, pDesc, sInlineCode));
 
@@ -320,11 +320,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateOutputPinCode(const xiiDocumentO
 
 
 
-xiiStatus xiiVisualShaderCodeGenerator::ReplaceInputPinsByCode(
-  const xiiDocumentObject*             pOwnerNode,
-  const xiiVisualShaderNodeDescriptor* pNodeDesc,
-  xiiStringBuilder&                    sInlineCode,
-  xiiStringBuilder&                    sCodeForPlacingDefines)
+xiiStatus xiiVisualShaderCodeGenerator::ReplaceInputPinsByCode(const xiiDocumentObject* pOwnerNode, const xiiVisualShaderNodeDescriptor* pNodeDesc, xiiStringBuilder& sInlineCode, xiiStringBuilder& sCodeForPlacingDefines)
 {
   auto inputPins = m_pNodeManager->GetInputPins(pOwnerNode);
 

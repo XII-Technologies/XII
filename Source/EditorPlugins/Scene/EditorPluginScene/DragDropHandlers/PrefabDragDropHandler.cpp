@@ -62,7 +62,7 @@ void xiiPrefabComponentDragDropHandler::CreatePrefab(const xiiVec3& vPosition, c
   if (PasteCmd.m_sBasePrefabGraph.IsEmpty())
     return; // error
 
-  pCmdHistory->AddCommand(PasteCmd);
+  pCmdHistory->AddCommand(PasteCmd).AssertSuccess();
 
   if (PasteCmd.m_CreatedRootObject.IsValid())
   {

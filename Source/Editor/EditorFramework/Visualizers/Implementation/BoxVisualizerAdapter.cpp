@@ -37,7 +37,7 @@ void xiiBoxVisualizerAdapter::Update()
   if (!pAttr->GetColorProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value).AssertSuccess();
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiColor>(), "Invalid property bound to xiiBoxVisualizerAttribute 'color'");
     m_hGizmo.SetColor(value.ConvertTo<xiiColor>() * pAttr->m_Color);
   }
@@ -47,7 +47,7 @@ void xiiBoxVisualizerAdapter::Update()
   if (!pAttr->GetOffsetProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetOffsetProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetOffsetProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiVec3>(), "Invalid property bound to xiiBoxVisualizerAttribute 'offset'");
 

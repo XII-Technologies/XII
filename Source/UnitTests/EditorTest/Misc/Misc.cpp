@@ -99,7 +99,7 @@ xiiTestAppRun xiiEditorTestMisc::RunSubTest(xiiInt32 iIdentifier, xiiUInt32 uiIn
     auto                           pAccessor = pScene->GetObjectAccessor();
     auto                           pRoot     = pScene->GetObjectManager()->GetRootObject();
     xiiHybridArray<xiiVariant, 16> values;
-    pAccessor->GetValues(pRoot, "Children", values);
+    pAccessor->GetValues(pRoot, "Children", values).AssertSuccess();
 
     xiiDeque<const xiiDocumentObject*> assets;
     for (auto& value : values)

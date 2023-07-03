@@ -195,7 +195,7 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
     case xiiDocumentAction::ButtonType::Save:
     {
       xiiQtDocumentWindow* pWnd = xiiQtDocumentWindow::FindWindowByDocument(m_Context.m_pDocument);
-      pWnd->SaveDocument();
+      pWnd->SaveDocument().LogFailure();
     }
     break;
 
@@ -231,7 +231,7 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
             if (xiiDocumentManager::FindDocumentTypeFromPath(sFile, false, pTypeDesc).Succeeded())
             {
               xiiDocument* pDocument = nullptr;
-              m_Context.m_pDocument->GetDocumentManager()->OpenDocument(pTypeDesc->m_sDocumentTypeName, sFile, pDocument);
+              m_Context.m_pDocument->GetDocumentManager()->OpenDocument(pTypeDesc->m_sDocumentTypeName, sFile, pDocument).LogFailure();
             }
           }
         }

@@ -264,7 +264,7 @@ void xiiCommandHistory::StartTransaction(const xiiFormatString& displayString)
   if (m_bTemporaryMode && !m_pHistoryStorage->m_TransactionStack.IsEmpty())
   {
     pTransaction = m_pHistoryStorage->m_TransactionStack.PeekBack();
-    pTransaction->Undo(m_bFireEventsWhenUndoingTempCommands);
+    pTransaction->Undo(m_bFireEventsWhenUndoingTempCommands).IgnoreResult();
     pTransaction->Cleanup(xiiCommand::CommandState::WasUndone);
     m_pHistoryStorage->m_TransactionStack.PushBack(pTransaction);
     m_pHistoryStorage->m_ActiveCommandStack.PushBack(pTransaction);
@@ -280,7 +280,7 @@ void xiiCommandHistory::StartTransaction(const xiiFormatString& displayString)
   if (!m_pHistoryStorage->m_TransactionStack.IsEmpty())
   {
     // Stacked transaction
-    m_pHistoryStorage->m_TransactionStack.PeekBack()->AddCommandTransaction(pTransaction);
+    m_pHistoryStorage->m_TransactionStack.PeekBack()->AddCommandTransaction(pTransaction).AssertSuccess();
     m_pHistoryStorage->m_TransactionStack.PushBack(pTransaction);
     m_pHistoryStorage->m_ActiveCommandStack.PushBack(pTransaction);
   }
@@ -342,7 +342,7 @@ void xiiCommandHistory::EndTransaction(bool bCancel)
   {
     xiiCommandTransaction* pTransaction = m_pHistoryStorage->m_TransactionStack.PeekBack();
 
-    pTransaction->Undo(true);
+    pTransaction->Undo(true).AssertSuccess();
     m_pHistoryStorage->m_TransactionStack.PopBack();
     m_pHistoryStorage->m_ActiveCommandStack.PopBack();
 
@@ -370,11 +370,13 @@ xiiStatus xiiCommandHistory::AddCommand(xiiCommand& ref_command)
 
   auto res = m_pHistoryStorage->m_ActiveCommandStack.PeekBack()->AddSubCommand(ref_command);
 
-  // Error handling should be on the caller side.
-  // if (res.Failed() && !res.m_sMessage.IsEmpty())
-  //{
-  //  xiiLog::Error("Command failed: '{0}'", res.m_sMessage);
-  //}
+// Error handling should be on the caller side.
+#if 0
+  if (res.Failed() && !res.m_sMessage.IsEmpty())
+  {
+    xiiLog::Error("Command failed: '{0}'", res.m_sMessage);
+  }
+#endif
 
   return res;
 }

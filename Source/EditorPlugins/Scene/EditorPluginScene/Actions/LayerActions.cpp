@@ -146,7 +146,7 @@ void xiiLayerAction::ToggleLayerLoaded(xiiScene2Document* pSceneDocument, xiiUui
   }
 
   pSceneDocument->SetLayerLoaded(layerGuid, bLoad).LogFailure();
-  pSceneDocument->SetActiveLayer(layerGuid);
+  pSceneDocument->SetActiveLayer(layerGuid).LogFailure();
 }
 
 void xiiLayerAction::Execute(const xiiVariant& value)

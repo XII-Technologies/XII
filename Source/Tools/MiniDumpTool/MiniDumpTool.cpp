@@ -79,7 +79,7 @@ public:
       return xiiApplication::Execution::Quit;
     }
 
-    xiiMiniDumpUtils::WriteExternalProcessMiniDump(m_sDumpFile, m_uiProcessID);
+    xiiMiniDumpUtils::WriteExternalProcessMiniDump(m_sDumpFile, m_uiProcessID).IgnoreResult();
     return xiiApplication::Execution::Quit;
   }
 };

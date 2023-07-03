@@ -297,7 +297,7 @@ void xiiQtAnimationClipAssetDocumentWindow::onEventTrackCpMoved(xiiUInt32 cpIdx,
 
   cmdSet.m_sProperty = "Tick";
   cmdSet.m_NewValue  = iTickX;
-  pDoc->GetCommandHistory()->AddCommand(cmdSet);
+  pDoc->GetCommandHistory()->AddCommand(cmdSet).AssertSuccess();
 }
 
 void xiiQtAnimationClipAssetDocumentWindow::onEventTrackCpDeleted(xiiUInt32 cpIdx)
@@ -317,7 +317,7 @@ void xiiQtAnimationClipAssetDocumentWindow::onEventTrackCpDeleted(xiiUInt32 cpId
 
   xiiRemoveObjectCommand cmdSet;
   cmdSet.m_Object = cpGuid.Get<xiiUuid>();
-  pDoc->GetCommandHistory()->AddCommand(cmdSet);
+  pDoc->GetCommandHistory()->AddCommand(cmdSet).AssertSuccess();
 }
 
 void xiiQtAnimationClipAssetDocumentWindow::onEventTrackBeginOperation(QString name)

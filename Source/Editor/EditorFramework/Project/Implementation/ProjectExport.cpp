@@ -150,7 +150,7 @@ xiiResult xiiProjectExport::GatherGeneratedAssetManagerFiles(xiiSet<xiiString>& 
   {
     if (auto pAssMan = xiiDynamicCast<xiiAssetDocumentManager*>(pMan))
     {
-      pAssMan->GetAdditionalOutputs(addFiles);
+      pAssMan->GetAdditionalOutputs(addFiles).AssertSuccess();
 
       for (const auto& file : addFiles)
       {

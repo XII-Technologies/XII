@@ -20,8 +20,9 @@ xiiQtSkeletonPanel::xiiQtSkeletonPanel(QWidget* pParent, xiiSkeletonAssetDocumen
   m_pMainWidget->setContentsMargins(0, 0, 0, 0);
   m_pMainWidget->layout()->setContentsMargins(0, 0, 0, 0);
   m_pFilterWidget = new xiiQtSearchWidget(this);
-  connect(m_pFilterWidget, &xiiQtSearchWidget::textChanged, this,
-          [this](const QString& text) { m_pTreeWidget->GetProxyFilterModel()->SetFilterText(text); });
+  connect(m_pFilterWidget, &xiiQtSearchWidget::textChanged, this, [this](const QString& text) {
+    m_pTreeWidget->GetProxyFilterModel()->SetFilterText(text);
+  });
 
   m_pMainWidget->layout()->addWidget(m_pFilterWidget);
 

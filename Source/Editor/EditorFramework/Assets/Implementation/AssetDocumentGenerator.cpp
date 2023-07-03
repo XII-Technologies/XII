@@ -107,7 +107,7 @@ void xiiAssetDocumentGenerator::ExecuteImport(xiiDynamicArray<ImportData>& ref_a
 
     if (pGeneratedDoc)
     {
-      pGeneratedDoc->SaveDocument(true);
+      pGeneratedDoc->SaveDocument(true).LogFailure();
       pGeneratedDoc->GetDocumentManager()->CloseDocument(pGeneratedDoc);
 
       xiiQtEditorApp::GetSingleton()->OpenDocumentQueued(option.m_sOutputFileAbsolute);

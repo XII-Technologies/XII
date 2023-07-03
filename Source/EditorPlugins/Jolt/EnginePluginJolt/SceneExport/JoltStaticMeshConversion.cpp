@@ -105,7 +105,11 @@ void xiiSceneExportModifier_JoltStaticMeshConversion::ModifyWorld(xiiWorld& ref_
   xiiChunkStreamWriter chunk(file);
   chunk.BeginStream(1);
 
-  xiiJoltCooking::WriteResourceToStream(chunk, xMesh, surfaces, xiiJoltCooking::MeshType::Triangle);
+  if (xiiJoltCooking::WriteResourceToStream(chunk, xMesh, surfaces, xiiJoltCooking::MeshType::Triangle).LogFailure())
+  {
+    xiiLog::Error("Could not write to global collision mesh file");
+    return;
+  }
 
   chunk.EndStream();
 

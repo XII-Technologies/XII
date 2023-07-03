@@ -133,7 +133,7 @@ void xiiAssetAction::Execute(const xiiVariant& value)
     case xiiAssetAction::ButtonType::TransformAllAssets:
     {
       xiiAssetCurator::GetSingleton()->CheckFileSystem();
-      xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::None);
+      xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::None).IgnoreResult();
     }
     break;
 

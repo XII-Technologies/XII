@@ -110,19 +110,19 @@ xiiUuid xiiSceneDocument::RevertPrefab(const xiiDocumentObject* pObject)
 
     setCmd.m_sProperty = "LocalPosition";
     setCmd.m_NewValue  = vLocalPos;
-    pHistory->AddCommand(setCmd);
+    pHistory->AddCommand(setCmd).AssertSuccess();
 
     setCmd.m_sProperty = "LocalRotation";
     setCmd.m_NewValue  = vLocalRot;
-    pHistory->AddCommand(setCmd);
+    pHistory->AddCommand(setCmd).AssertSuccess();
 
     setCmd.m_sProperty = "LocalScaling";
     setCmd.m_NewValue  = vLocalScale;
-    pHistory->AddCommand(setCmd);
+    pHistory->AddCommand(setCmd).AssertSuccess();
 
     setCmd.m_sProperty = "LocalUniformScaling";
     setCmd.m_NewValue  = fLocalUniformScale;
-    pHistory->AddCommand(setCmd);
+    pHistory->AddCommand(setCmd).AssertSuccess();
   }
   return newGuid;
 }
@@ -145,19 +145,19 @@ void xiiSceneDocument::UpdatePrefabObject(xiiDocumentObject* pObject, const xiiU
 
     setCmd.m_sProperty = "LocalPosition";
     setCmd.m_NewValue  = vLocalPos;
-    pHistory->AddCommand(setCmd);
+    pHistory->AddCommand(setCmd).AssertSuccess();
 
     setCmd.m_sProperty = "LocalRotation";
     setCmd.m_NewValue  = vLocalRot;
-    pHistory->AddCommand(setCmd);
+    pHistory->AddCommand(setCmd).AssertSuccess();
 
     setCmd.m_sProperty = "LocalScaling";
     setCmd.m_NewValue  = vLocalScale;
-    pHistory->AddCommand(setCmd);
+    pHistory->AddCommand(setCmd).AssertSuccess();
 
     setCmd.m_sProperty = "LocalUniformScaling";
     setCmd.m_NewValue  = fLocalUniformScale;
-    pHistory->AddCommand(setCmd);
+    pHistory->AddCommand(setCmd).AssertSuccess();
   }
 }
 

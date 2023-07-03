@@ -31,7 +31,7 @@ void xiiSpotLightVisualizerAdapter::Update()
   if (!pAttr->GetAngleProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetAngleProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetAngleProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiAngle>(), "Invalid property bound to xiiSpotLightVisualizerAttribute 'angle'");
     m_fAngleScale = xiiMath::Tan(value.ConvertTo<xiiAngle>() * 0.5f);
@@ -40,7 +40,7 @@ void xiiSpotLightVisualizerAdapter::Update()
   if (!pAttr->GetColorProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiColor>(), "Invalid property bound to xiiSpotLightVisualizerAttribute 'color'");
     m_hGizmo.SetColor(value.ConvertTo<xiiColor>());
@@ -50,11 +50,11 @@ void xiiSpotLightVisualizerAdapter::Update()
   if (!pAttr->GetRangeProperty().IsEmpty() && !pAttr->GetIntensityProperty().IsEmpty())
   {
     xiiVariant range;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetRangeProperty()), range);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetRangeProperty()), range).AssertSuccess();
     XII_ASSERT_DEBUG(range.CanConvertTo<float>(), "Invalid property bound to xiiPointLightVisualizerAttribute 'radius'");
 
     xiiVariant intensity;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetIntensityProperty()), intensity);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetIntensityProperty()), intensity).AssertSuccess();
     XII_ASSERT_DEBUG(intensity.CanConvertTo<float>(), "Invalid property bound to xiiPointLightVisualizerAttribute 'intensity'");
 
     m_fScale = xiiLightComponent::CalculateEffectiveRange(range.ConvertTo<float>(), intensity.ConvertTo<float>());

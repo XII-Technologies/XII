@@ -155,7 +155,7 @@ void xiiQtTagsDlg::SaveTags()
     }
   }
 
-  xiiQtEditorApp::GetSingleton()->SaveTagRegistry();
+  xiiQtEditorApp::GetSingleton()->SaveTagRegistry().LogFailure();
 }
 
 void xiiQtTagsDlg::FillList()

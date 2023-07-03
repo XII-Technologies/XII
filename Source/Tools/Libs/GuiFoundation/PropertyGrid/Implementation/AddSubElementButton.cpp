@@ -98,7 +98,6 @@ QMenu* xiiQtAddSubElementButton::CreateCategoryMenu(const char* szCategory, xiiM
   if (xiiStringUtils::IsNullOrEmpty(szCategory))
     return m_pMenu;
 
-
   auto it = existingMenus.Find(szCategory);
   if (it.IsValid())
     return it.Value();
@@ -249,10 +248,12 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
         const xiiRTTI* pRtti = static_cast<const xiiRTTI*>(variant.value<void*>());
 
         OnAction(pRtti);
-        m_pMenu->close(); });
+        m_pMenu->close();
+      });
 
-      connect(m_pSearchableMenu, &xiiQtSearchableMenu::SearchTextChanged, m_pMenu,
-              [this](const QString& sText) { s_sLastMenuSearch = sText.toUtf8().data(); });
+      connect(m_pSearchableMenu, &xiiQtSearchableMenu::SearchTextChanged, m_pMenu, [this](const QString& sText) {
+        s_sLastMenuSearch = sText.toUtf8().data();
+      });
 
       m_pMenu->addAction(m_pSearchableMenu);
 
@@ -268,7 +269,7 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
     for (auto& item : m_Items)
     {
       xiiInt32 iCount = 0;
-      m_pObjectAccessor->GetCount(item.m_pObject, m_pProp, iCount);
+      m_pObjectAccessor->GetCount(item.m_pObject, m_pProp, iCount).AssertSuccess();
 
       if (iCount >= (xiiInt32)m_uiMaxElements)
       {
@@ -308,7 +309,7 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
     for (auto& item : m_Items)
     {
       xiiInt32 iCount = 0;
-      m_pObjectAccessor->GetCount(item.m_pObject, m_pProp, iCount);
+      m_pObjectAccessor->GetCount(item.m_pObject, m_pProp, iCount).AssertSuccess();
 
       for (xiiInt32 i = 0; i < iCount; ++i)
       {
@@ -406,7 +407,7 @@ void xiiQtAddSubElementButton::OnAction(const xiiRTTI* pRtti)
       xiiHybridArray<xiiPropertySelection, 1> selection;
       selection.PushBack({m_pObjectAccessor->GetObject(guid), xiiVariant()});
       xiiDefaultObjectState defaultState(m_pObjectAccessor, selection);
-      defaultState.RevertObject();
+      defaultState.RevertObject().AssertSuccess();
     }
   }
 

@@ -329,10 +329,13 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
     ShowSettingsDocument();
 
-    connect(&m_VersionChecker, &xiiQtVersionChecker::VersionCheckCompleted, this, &xiiQtEditorApp::SlotVersionCheckCompleted, Qt::QueuedConnection);
+    if (!IsInUnitTestMode())
+    {
+      connect(&m_VersionChecker, &xiiQtVersionChecker::VersionCheckCompleted, this, &xiiQtEditorApp::SlotVersionCheckCompleted, Qt::QueuedConnection);
 
-    m_VersionChecker.Initialize();
-    m_VersionChecker.Check(false);
+      m_VersionChecker.Initialize();
+      m_VersionChecker.Check(false);
+    }
   }
 
   LoadEditorPlugins();

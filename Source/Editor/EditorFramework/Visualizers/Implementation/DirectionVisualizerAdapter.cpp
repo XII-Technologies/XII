@@ -32,7 +32,7 @@ void xiiDirectionVisualizerAdapter::Update()
     xiiObjectAccessorBase* pObjectAccessor = GetObjectAccessor();
 
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiColor>(), "Invalid property bound to xiiDirectionVisualizerAttribute 'color'");
     m_hGizmo.SetColor(value.ConvertTo<xiiColor>() * pAttr->m_Color);
@@ -49,7 +49,7 @@ void xiiDirectionVisualizerAdapter::UpdateGizmoTransform()
     xiiObjectAccessorBase* pObjectAccessor = GetObjectAccessor();
 
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetLengthProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetLengthProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<float>(), "Invalid property bound to xiiDirectionVisualizerAttribute 'length'");
     fScale *= value.ConvertTo<float>();
@@ -62,7 +62,7 @@ void xiiDirectionVisualizerAdapter::UpdateGizmoTransform()
     xiiObjectAccessorBase* pObjectAccessor = GetObjectAccessor();
 
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetAxisProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetAxisProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiInt32>(), "Invalid property bound to xiiDirectionVisualizerAttribute 'length'");
 

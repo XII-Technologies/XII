@@ -218,7 +218,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
       xiiInt32 iCurrentCount = pObjectAccessor->GetCount(pObject, pProp);
       for (xiiInt32 i = iCurrentCount - 1; i >= 0; --i)
       {
-        pObjectAccessor->RemoveValue(pObject, pProp, i);
+        pObjectAccessor->RemoveValue(pObject, pProp, i).AssertSuccess();
       }
 
       xiiVariant value1 = xiiReflectionUtils::GetDefaultValue(pProp, 0);
@@ -251,10 +251,10 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
     {
       xiiInt32                       iCurrentCount = pObjectAccessor->GetCount(pObject, pProp);
       xiiHybridArray<xiiVariant, 16> keys;
-      pObjectAccessor->GetKeys(pObject, pProp, keys);
+      pObjectAccessor->GetKeys(pObject, pProp, keys).AssertSuccess();
       for (const xiiVariant& key : keys)
       {
-        pObjectAccessor->RemoveValue(pObject, pProp, key);
+        pObjectAccessor->RemoveValue(pObject, pProp, key).AssertSuccess();
       }
 
       xiiVariant value1 = xiiReflectionUtils::GetDefaultValue(pProp, "Dummy");

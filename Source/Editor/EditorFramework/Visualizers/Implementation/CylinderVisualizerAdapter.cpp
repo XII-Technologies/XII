@@ -41,7 +41,7 @@ void xiiCylinderVisualizerAdapter::Update()
       return;
 
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, pProp, value);
+    pObjectAccessor->GetValue(m_pObject, pProp, value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<float>(), "Invalid property '{0}' bound to xiiCylinderVisualizerAttribute 'radius'",
                      pAttr->GetRadiusProperty());
@@ -51,7 +51,7 @@ void xiiCylinderVisualizerAdapter::Update()
   if (!pAttr->GetHeightProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetHeightProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetHeightProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<float>(), "Invalid property bound to xiiCylinderVisualizerAttribute 'height'");
     m_fHeight = value.ConvertTo<float>();
@@ -60,7 +60,7 @@ void xiiCylinderVisualizerAdapter::Update()
   if (!pAttr->GetColorProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetColorProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiColor>(), "Invalid property bound to xiiCylinderVisualizerAttribute 'color'");
     m_hCylinder.SetColor(value.ConvertTo<xiiColor>() * pAttr->m_Color);
@@ -71,7 +71,7 @@ void xiiCylinderVisualizerAdapter::Update()
   if (!pAttr->GetOffsetProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetOffsetProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetOffsetProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiVec3>(), "Invalid property bound to xiiCylinderVisualizerAttribute 'offset'");
 
@@ -84,7 +84,7 @@ void xiiCylinderVisualizerAdapter::Update()
   if (!pAttr->GetAxisProperty().IsEmpty())
   {
     xiiVariant value;
-    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetAxisProperty()), value);
+    pObjectAccessor->GetValue(m_pObject, GetProperty(pAttr->GetAxisProperty()), value).AssertSuccess();
 
     XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<xiiInt32>(), "Invalid property bound to xiiCylinderVisualizerAttribute 'axis'");
 

@@ -48,12 +48,7 @@ void xiiPropertyAnimAssetDocumentManager::OnDocumentManagerEvent(const xiiDocume
   }
 }
 
-void xiiPropertyAnimAssetDocumentManager::InternalCreateDocument(
-  const char*              szDocumentTypeName,
-  const char*              szPath,
-  bool                     bCreateNewDocument,
-  xiiDocument*&            out_pDocument,
-  const xiiDocumentObject* pOpenContext)
+void xiiPropertyAnimAssetDocumentManager::InternalCreateDocument(const char* szDocumentTypeName, const char* szPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiPropertyAnimAssetDocument(szPath);
 }

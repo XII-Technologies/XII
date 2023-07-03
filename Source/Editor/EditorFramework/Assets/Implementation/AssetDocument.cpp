@@ -172,7 +172,6 @@ void xiiAssetDocument::AddPrefabDependencies(const xiiDocumentObject* pObject, x
     m_DocumentObjectMetaData->EndReadMetaData();
   }
 
-
   const xiiHybridArray<xiiDocumentObject*, 8>& children = pObject->GetChildren();
 
   for (auto pChild : children)
@@ -500,7 +499,7 @@ xiiTransformStatus xiiAssetDocument::TransformAsset(xiiBitflags<xiiTransformFlag
 
   if (transformFlags.IsSet(xiiTransformFlags::TriggeredManually))
   {
-    SaveDocument();
+    SaveDocument().LogFailure();
     xiiAssetCurator::GetSingleton()->NotifyOfAssetChange(GetGuid());
   }
 
@@ -789,7 +788,7 @@ xiiStatus xiiAssetDocument::RemoteCreateThumbnail(const ThumbnailInfo& thumbnail
     image.ResetAndAlloc(imgHeader);
     XII_ASSERT_DEV(data.GetCount() == imgHeader.ComputeDataSize(), "Thumbnail xiiImage has different size than data buffer!");
     xiiMemoryUtils::Copy(image.GetPixelPointer<xiiUInt8>(), data.GetData(), msg.m_uiWidth * msg.m_uiHeight * 4);
-    SaveThumbnail(image, thumbnailInfo);
+    SaveThumbnail(image, thumbnailInfo).LogFailure();
 
     xiiLog::Success("{0} thumbnail for \"{1}\" has been exported.", GetDocumentTypeName(), GetDocumentPath());
 

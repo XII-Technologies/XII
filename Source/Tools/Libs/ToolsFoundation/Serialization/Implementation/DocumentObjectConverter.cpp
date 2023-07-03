@@ -199,10 +199,7 @@ void xiiDocumentObjectConverterReader::ApplyPropertiesToObject(const xiiAbstract
   }
 }
 
-void xiiDocumentObjectConverterReader::ApplyDiffToObject(
-  xiiObjectAccessorBase*                   pObjectAccessor,
-  const xiiDocumentObject*                 pObject,
-  xiiDeque<xiiAbstractGraphDiffOperation>& ref_diff)
+void xiiDocumentObjectConverterReader::ApplyDiffToObject(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pObject, xiiDeque<xiiAbstractGraphDiffOperation>& ref_diff)
 {
   xiiHybridArray<xiiAbstractGraphDiffOperation*, 4> change;
 
@@ -257,7 +254,7 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
     {
       if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags) || bIsValueType)
       {
-        pObjectAccessor->SetValue(pObject, pProp, op.m_Value);
+        pObjectAccessor->SetValue(pObject, pProp, op.m_Value).IgnoreResult();
       }
       else if (pProp->GetFlags().IsSet(xiiPropertyFlags::Class))
       {
@@ -271,7 +268,7 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
             {
               if (NeedsToBeDeleted(oldGuid))
               {
-                pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(oldGuid));
+                pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(oldGuid)).IgnoreResult();
               }
             }
 
@@ -279,7 +276,7 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
             {
               if (xiiAbstractGraphDiffOperation* pCreate = NeedsToBeCreated(newGuid))
               {
-                pObjectAccessor->AddObject(pObject, pProp, xiiVariant(), xiiRTTI::FindTypeByName(pCreate->m_sProperty), pCreate->m_Node);
+                pObjectAccessor->AddObject(pObject, pProp, xiiVariant(), xiiRTTI::FindTypeByName(pCreate->m_sProperty), pCreate->m_Node).IgnoreResult();
               }
 
               const xiiDocumentObject* pChild = pObject->GetChild(newGuid);
@@ -288,7 +285,7 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
           }
           else
           {
-            pObjectAccessor->SetValue(pObject, pProp, op.m_Value);
+            pObjectAccessor->SetValue(pObject, pProp, op.m_Value).IgnoreResult();
           }
         }
         else
@@ -308,13 +305,13 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
         for (xiiUInt32 i = 0; i < values.GetCount(); ++i)
         {
           if (i < (xiiUInt32)iCurrentCount)
-            pObjectAccessor->SetValue(pObject, pProp, values[i], i);
+            pObjectAccessor->SetValue(pObject, pProp, values[i], i).IgnoreResult();
           else
-            pObjectAccessor->InsertValue(pObject, pProp, values[i], i);
+            pObjectAccessor->InsertValue(pObject, pProp, values[i], i).IgnoreResult();
         }
         for (xiiInt32 i = iCurrentCount - 1; i >= (xiiInt32)values.GetCount(); --i)
         {
-          pObjectAccessor->RemoveValue(pObject, pProp, i);
+          pObjectAccessor->RemoveValue(pObject, pProp, i).IgnoreResult();
         }
       }
       else // Class
@@ -327,7 +324,7 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
         {
           if (NeedsToBeDeleted(currentValues[i].Get<xiiUuid>()))
           {
-            pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(currentValues[i].Get<xiiUuid>()));
+            pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(currentValues[i].Get<xiiUuid>())).IgnoreResult();
           }
         }
 
@@ -335,11 +332,11 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
         {
           if (xiiAbstractGraphDiffOperation* pCreate = NeedsToBeCreated(values[i].Get<xiiUuid>()))
           {
-            pObjectAccessor->AddObject(pObject, pProp, i, xiiRTTI::FindTypeByName(pCreate->m_sProperty), pCreate->m_Node);
+            pObjectAccessor->AddObject(pObject, pProp, i, xiiRTTI::FindTypeByName(pCreate->m_sProperty), pCreate->m_Node).IgnoreResult();
           }
           else
           {
-            pObjectAccessor->MoveObject(pObjectAccessor->GetObject(values[i].Get<xiiUuid>()), pObject, pProp, i);
+            pObjectAccessor->MoveObject(pObjectAccessor->GetObject(values[i].Get<xiiUuid>()), pObject, pProp, i).IgnoreResult();
           }
         }
       }
@@ -365,9 +362,9 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
         {
           xiiVariant variantKey(it.Key());
           if (keys.Contains(variantKey))
-            pObjectAccessor->SetValue(pObject, pProp, it.Value(), variantKey);
+            pObjectAccessor->SetValue(pObject, pProp, it.Value(), variantKey).IgnoreResult();
           else
-            pObjectAccessor->InsertValue(pObject, pProp, it.Value(), variantKey);
+            pObjectAccessor->InsertValue(pObject, pProp, it.Value(), variantKey).IgnoreResult();
         }
       }
       else // Class
@@ -378,7 +375,7 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
           XII_VERIFY(pObjectAccessor->GetValue(pObject, pProp, value, key).Succeeded(), "");
           if (NeedsToBeDeleted(value.Get<xiiUuid>()))
           {
-            pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(value.Get<xiiUuid>()));
+            pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(value.Get<xiiUuid>())).IgnoreResult();
           }
         }
         for (auto it = values.GetIterator(); it.IsValid(); ++it)
@@ -387,11 +384,11 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
           xiiVariant        variantKey(it.Key());
           if (xiiAbstractGraphDiffOperation* pCreate = NeedsToBeCreated(value.Get<xiiUuid>()))
           {
-            pObjectAccessor->AddObject(pObject, pProp, variantKey, xiiRTTI::FindTypeByName(pCreate->m_sProperty), pCreate->m_Node);
+            pObjectAccessor->AddObject(pObject, pProp, variantKey, xiiRTTI::FindTypeByName(pCreate->m_sProperty), pCreate->m_Node).IgnoreResult();
           }
           else
           {
-            pObjectAccessor->MoveObject(pObjectAccessor->GetObject(value.Get<xiiUuid>()), pObject, pProp, variantKey);
+            pObjectAccessor->MoveObject(pObjectAccessor->GetObject(value.Get<xiiUuid>()), pObject, pProp, variantKey).IgnoreResult();
           }
         }
       }
@@ -404,10 +401,7 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
   }
 }
 
-void xiiDocumentObjectConverterReader::ApplyProperty(
-  xiiDocumentObject*                     pObject,
-  xiiAbstractProperty*                   pProp,
-  const xiiAbstractObjectNode::Property* pSource)
+void xiiDocumentObjectConverterReader::ApplyProperty(xiiDocumentObject* pObject, xiiAbstractProperty* pProp, const xiiAbstractObjectNode::Property* pSource)
 {
   xiiStringBuilder sTemp;
 

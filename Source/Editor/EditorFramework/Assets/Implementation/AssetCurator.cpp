@@ -506,7 +506,7 @@ xiiTransformStatus xiiAssetCurator::TransformAsset(const xiiUuid& assetGuid, xii
     {
       // some assets modify the document during transformation
       // make sure the state is saved, at least when the user actively executed the action
-      pDoc->SaveDocument();
+      pDoc->SaveDocument().LogFailure();
     }
   }
   xiiLog::Info("Transform asset time: {0}s", xiiArgF(timer.GetRunningTotal().GetSeconds(), 2));

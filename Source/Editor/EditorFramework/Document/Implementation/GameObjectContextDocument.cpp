@@ -120,7 +120,7 @@ void xiiGameObjectContextDocument::ClearContext()
   m_ContextObject                      = xiiUuid();
   xiiDocumentObject*             pRoot = GetObjectManager()->GetRootObject();
   xiiHybridArray<xiiVariant, 16> values;
-  GetObjectAccessor()->GetValues(pRoot, "TempObjects", values);
+  GetObjectAccessor()->GetValues(pRoot, "TempObjects", values).AssertSuccess();
   for (xiiInt32 i = (xiiInt32)values.GetCount() - 1; i >= 0; --i)
   {
     xiiDocumentObject* pChild = GetObjectManager()->GetObject(values[i].Get<xiiUuid>());

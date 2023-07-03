@@ -164,37 +164,37 @@ void xiiManipulatorAdapter::ChangeProperties(const char* szProperty1, xiiVariant
   if (!xiiStringUtils::IsNullOrEmpty(szProperty1))
   {
     ClampProperty(szProperty1, value1);
-    pObjectAccessor->SetValue(m_pObject, GetProperty(szProperty1), value1);
+    pObjectAccessor->SetValue(m_pObject, GetProperty(szProperty1), value1).AssertSuccess();
   }
 
   if (!xiiStringUtils::IsNullOrEmpty(szProperty2))
   {
     ClampProperty(szProperty2, value2);
-    pObjectAccessor->SetValue(m_pObject, GetProperty(szProperty2), value2);
+    pObjectAccessor->SetValue(m_pObject, GetProperty(szProperty2), value2).AssertSuccess();
   }
 
   if (!xiiStringUtils::IsNullOrEmpty(szProperty3))
   {
     ClampProperty(szProperty3, value3);
-    pObjectAccessor->SetValue(m_pObject, GetProperty(szProperty3), value3);
+    pObjectAccessor->SetValue(m_pObject, GetProperty(szProperty3), value3).AssertSuccess();
   }
 
   if (!xiiStringUtils::IsNullOrEmpty(szProperty4))
   {
     ClampProperty(szProperty4, value4);
-    pObjectAccessor->SetValue(m_pObject, GetProperty(szProperty4), value4);
+    pObjectAccessor->SetValue(m_pObject, GetProperty(szProperty4), value4).AssertSuccess();
   }
 
   if (!xiiStringUtils::IsNullOrEmpty(szProperty5))
   {
     ClampProperty(szProperty5, value5);
-    pObjectAccessor->SetValue(m_pObject, GetProperty(szProperty5), value5);
+    pObjectAccessor->SetValue(m_pObject, GetProperty(szProperty5), value5).AssertSuccess();
   }
 
   if (!xiiStringUtils::IsNullOrEmpty(szProperty6))
   {
     ClampProperty(szProperty6, value6);
-    pObjectAccessor->SetValue(m_pObject, GetProperty(szProperty6), value6);
+    pObjectAccessor->SetValue(m_pObject, GetProperty(szProperty6), value6).AssertSuccess();
   }
 
   pObjectAccessor->FinishTransaction();
