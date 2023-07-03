@@ -280,7 +280,7 @@ xiiResult xiiTelemetry::InitializeAsClient(xiiStringView sConnectTo0)
     sConnectTo.Shrink(0, xiiStringUtils::GetStringElementCount(szColon));
 
     xiiStringBuilder sPort = szColon + 1;
-    s_uiPort              = static_cast<xiiUInt16>(atoi(sPort.GetData()));
+    s_uiPort               = static_cast<xiiUInt16>(atoi(sPort.GetData()));
   }
 
   if (sConnectTo.IsEmpty() || sConnectTo.IsEqual_NoCase("localhost"))

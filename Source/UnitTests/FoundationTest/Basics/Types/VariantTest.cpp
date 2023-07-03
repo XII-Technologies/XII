@@ -2531,7 +2531,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     XII_TEST_BOOL(v.ConvertTo<xiiStringView>() == va0);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::StringView).Get<xiiStringView>() == va0);
-    
+
     {
       xiiVariant va, va2;
 

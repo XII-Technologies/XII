@@ -125,7 +125,7 @@ public:
     xiiGALDeviceFactory::RegisterLibraryName("D3D12", szDefaultLibraryName);
     xiiGALDeviceFactory::RegisterLibraryName("Vulkan", szDefaultLibraryName);
 
-    xiiStringView sRendererName   = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
+    xiiStringView sRendererName    = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
     const char* szShaderModel    = "";
     const char* szShaderCompiler = "";
     xiiGALDeviceFactory::GetShaderModelAndCompiler(sRendererName, szShaderModel, szShaderCompiler);
