@@ -8,21 +8,21 @@
 
 XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiSubSystem);
 
-bool                         xiiStartup::s_bPrintAllSubSystems = true;
-xiiStartupStage::Enum        xiiStartup::s_CurrentState        = xiiStartupStage::None;
-xiiDynamicArray<const char*> xiiStartup::s_ApplicationTags;
+bool                           xiiStartup::s_bPrintAllSubSystems = true;
+xiiStartupStage::Enum          xiiStartup::s_CurrentState        = xiiStartupStage::None;
+xiiDynamicArray<xiiStringView> xiiStartup::s_ApplicationTags;
 
 
-void xiiStartup::AddApplicationTag(const char* szTag)
+void xiiStartup::AddApplicationTag(xiiStringView sTag)
 {
-  s_ApplicationTags.PushBack(szTag);
+  s_ApplicationTags.PushBack(sTag);
 }
 
-bool xiiStartup::HasApplicationTag(const char* szTag)
+bool xiiStartup::HasApplicationTag(xiiStringView sTag)
 {
   for (xiiUInt32 i = 0; i < s_ApplicationTags.GetCount(); ++i)
   {
-    if (xiiStringUtils::IsEqual_NoCase(s_ApplicationTags[i], szTag))
+    if (s_ApplicationTags[i].IsEqual_NoCase(sTag))
       return true;
   }
 
@@ -40,11 +40,15 @@ void xiiStartup::PrintAllSubsystems()
     xiiLog::Debug("Subsystem: '{0}::{1}'", pSub->GetGroupName(), pSub->GetSubSystemName());
 
     if (pSub->GetDependency(0) == nullptr)
+    {
       xiiLog::Debug("  <no dependencies>");
+    }
     else
     {
       for (xiiInt32 i = 0; pSub->GetDependency(i) != nullptr; ++i)
+      {
         xiiLog::Debug("  depends on '{0}'", pSub->GetDependency(i));
+      }
     }
 
     xiiLog::Debug("");
@@ -53,7 +57,7 @@ void xiiStartup::PrintAllSubsystems()
   }
 }
 
-void xiiStartup::AssignSubSystemPlugin(const char* szPluginName)
+void xiiStartup::AssignSubSystemPlugin(xiiStringView sPluginName)
 {
   // iterates over all existing subsystems and finds those that have no plugin name yet
   // assigns the given name to them
@@ -62,8 +66,10 @@ void xiiStartup::AssignSubSystemPlugin(const char* szPluginName)
 
   while (pSub)
   {
-    if (pSub->m_szPluginName == nullptr)
-      pSub->m_szPluginName = szPluginName;
+    if (pSub->m_sPluginName == nullptr)
+    {
+      pSub->m_sPluginName = sPluginName;
+    }
 
     pSub = pSub->GetNextInstance();
   }
@@ -102,7 +108,7 @@ void xiiStartup::PluginEventHandler(const xiiPluginEvent& EventData)
   }
 }
 
-static bool IsGroupName(const char* szName)
+static bool IsGroupName(xiiStringView sName)
 {
   xiiSubSystem* pSub = xiiSubSystem::GetFirstInstance();
 
@@ -111,27 +117,27 @@ static bool IsGroupName(const char* szName)
 
   while (pSub)
   {
-    if (xiiStringUtils::IsEqual(pSub->GetGroupName(), szName))
+    if (pSub->GetGroupName() == sName)
       bGroup = true;
 
-    if (xiiStringUtils::IsEqual(pSub->GetSubSystemName(), szName))
+    if (pSub->GetSubSystemName() == sName)
       bSubSystem = true;
 
     pSub = pSub->GetNextInstance();
   }
 
-  XII_ASSERT_ALWAYS(!bGroup || !bSubSystem, "There cannot be a SubSystem AND a Group called '{0}'.", szName);
+  XII_ASSERT_ALWAYS(!bGroup || !bSubSystem, "There cannot be a SubSystem AND a Group called '{0}'.", sName);
 
   return bGroup;
 }
 
-static const char* GetGroupSubSystems(const char* szGroup, xiiInt32 iSubSystem)
+static xiiStringView GetGroupSubSystems(xiiStringView sGroup, xiiInt32 iSubSystem)
 {
   xiiSubSystem* pSub = xiiSubSystem::GetFirstInstance();
 
   while (pSub)
   {
-    if (xiiStringUtils::IsEqual(pSub->GetGroupName(), szGroup))
+    if (pSub->GetGroupName() == sGroup)
     {
       if (iSubSystem == 0)
         return pSub->GetSubSystemName();
@@ -169,18 +175,18 @@ void xiiStartup::ComputeOrder(xiiDeque<xiiSubSystem*>& Order)
         {
           if (IsGroupName(pSub->GetDependency(iDep)))
           {
-            xiiInt32    iSubSystemIndex = 0;
-            const char* szNextSubSystem = GetGroupSubSystems(pSub->GetDependency(iDep), iSubSystemIndex);
-            while (szNextSubSystem)
+            xiiInt32      iSubSystemIndex = 0;
+            xiiStringView sNextSubSystem  = GetGroupSubSystems(pSub->GetDependency(iDep), iSubSystemIndex);
+            while (sNextSubSystem.IsValid())
             {
-              if (!sSystemsInited.Find(szNextSubSystem).IsValid())
+              if (!sSystemsInited.Find(sNextSubSystem).IsValid())
               {
                 bAllDependsFulfilled = false;
                 break;
               }
 
               ++iSubSystemIndex;
-              szNextSubSystem = GetGroupSubSystems(pSub->GetDependency(iDep), iSubSystemIndex);
+              sNextSubSystem = GetGroupSubSystems(pSub->GetDependency(iDep), iSubSystemIndex);
             }
           }
           else
@@ -416,9 +422,9 @@ void xiiStartup::Shutdown(xiiStartupStage::Enum stage)
   }
 }
 
-bool xiiStartup::HasDependencyOnPlugin(xiiSubSystem* pSubSystem, const char* szModule)
+bool xiiStartup::HasDependencyOnPlugin(xiiSubSystem* pSubSystem, xiiStringView sModule)
 {
-  if (xiiStringUtils::IsEqual(pSubSystem->m_szPluginName, szModule))
+  if (pSubSystem->m_sPluginName == sModule)
     return true;
 
   for (xiiUInt32 i = 0; pSubSystem->GetDependency(i) != nullptr; ++i)
@@ -426,9 +432,9 @@ bool xiiStartup::HasDependencyOnPlugin(xiiSubSystem* pSubSystem, const char* szM
     xiiSubSystem* pSub = xiiSubSystem::GetFirstInstance();
     while (pSub)
     {
-      if (xiiStringUtils::IsEqual(pSub->GetSubSystemName(), pSubSystem->GetDependency(i)))
+      if (pSub->GetSubSystemName() == pSubSystem->GetDependency(i))
       {
-        if (HasDependencyOnPlugin(pSub, szModule))
+        if (HasDependencyOnPlugin(pSub, sModule))
           return true;
 
         break;
@@ -441,22 +447,21 @@ bool xiiStartup::HasDependencyOnPlugin(xiiSubSystem* pSubSystem, const char* szM
   return false;
 }
 
-void xiiStartup::UnloadPluginSubSystems(const char* szPluginName)
+void xiiStartup::UnloadPluginSubSystems(xiiStringView sPluginName)
 {
-  XII_LOG_BLOCK("Unloading Plugin SubSystems", szPluginName);
-  xiiLog::Dev("Plugin to unload: '{0}'", szPluginName);
+  XII_LOG_BLOCK("Unloading Plugin SubSystems", sPluginName);
+  xiiLog::Dev("Plugin to unload: '{0}'", sPluginName);
 
-  xiiGlobalEvent::Broadcast(XII_GLOBALEVENT_UNLOAD_PLUGIN_BEGIN, xiiVariant(szPluginName));
+  xiiGlobalEvent::Broadcast(XII_GLOBALEVENT_UNLOAD_PLUGIN_BEGIN, xiiVariant(sPluginName));
 
   xiiDeque<xiiSubSystem*> Order;
   ComputeOrder(Order);
 
   for (xiiInt32 i = (xiiInt32)Order.GetCount() - 1; i >= 0; --i)
   {
-    if (Order[i]->m_bStartupDone[xiiStartupStage::HighLevelSystems] && HasDependencyOnPlugin(Order[i], szPluginName))
+    if (Order[i]->m_bStartupDone[xiiStartupStage::HighLevelSystems] && HasDependencyOnPlugin(Order[i], sPluginName))
     {
-      xiiLog::Info("Engine shutdown of SubSystem '{0}::{1}', because it depends on Plugin '{2}'.", Order[i]->GetGroupName(),
-                   Order[i]->GetSubSystemName(), szPluginName);
+      xiiLog::Info("Engine shutdown of SubSystem '{0}::{1}', because it depends on Plugin '{2}'.", Order[i]->GetGroupName(), Order[i]->GetSubSystemName(), sPluginName);
       Order[i]->OnHighLevelSystemsShutdown();
       Order[i]->m_bStartupDone[xiiStartupStage::HighLevelSystems] = false;
     }
@@ -464,17 +469,15 @@ void xiiStartup::UnloadPluginSubSystems(const char* szPluginName)
 
   for (xiiInt32 i = (xiiInt32)Order.GetCount() - 1; i >= 0; --i)
   {
-    if (Order[i]->m_bStartupDone[xiiStartupStage::CoreSystems] && HasDependencyOnPlugin(Order[i], szPluginName))
+    if (Order[i]->m_bStartupDone[xiiStartupStage::CoreSystems] && HasDependencyOnPlugin(Order[i], sPluginName))
     {
-      xiiLog::Info("Core shutdown of SubSystem '{0}::{1}', because it depends on Plugin '{2}'.", Order[i]->GetGroupName(),
-                   Order[i]->GetSubSystemName(), szPluginName);
+      xiiLog::Info("Core shutdown of SubSystem '{0}::{1}', because it depends on Plugin '{2}'.", Order[i]->GetGroupName(), Order[i]->GetSubSystemName(), sPluginName);
       Order[i]->OnCoreSystemsShutdown();
       Order[i]->m_bStartupDone[xiiStartupStage::CoreSystems] = false;
     }
   }
 
-
-  xiiGlobalEvent::Broadcast(XII_GLOBALEVENT_UNLOAD_PLUGIN_END, xiiVariant(szPluginName));
+  xiiGlobalEvent::Broadcast(XII_GLOBALEVENT_UNLOAD_PLUGIN_END, xiiVariant(sPluginName));
 }
 
 void xiiStartup::ReinitToCurrentState()
@@ -482,7 +485,5 @@ void xiiStartup::ReinitToCurrentState()
   if (s_CurrentState != xiiStartupStage::None)
     Startup(s_CurrentState);
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Configuration_Implementation_Startup);

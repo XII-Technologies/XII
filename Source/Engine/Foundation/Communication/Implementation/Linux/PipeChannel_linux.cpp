@@ -12,15 +12,15 @@
 #  include <sys/socket.h>
 #  include <sys/un.h>
 
-xiiPipeChannel_linux::xiiPipeChannel_linux(const char* szAddress, Mode::Enum Mode) :
-  xiiIpcChannel(szAddress, Mode)
+xiiPipeChannel_linux::xiiPipeChannel_linux(xiiStringView sAddress, Mode::Enum Mode) :
+  xiiIpcChannel(sAddress, Mode)
 {
   xiiStringBuilder pipePath = xiiOSFile::GetTempDataFolder("XII-Pipes");
 
   // Make sure the directory exists that we want to place the pipes in.
   xiiOSFile::CreateDirectoryStructure(pipePath).IgnoreResult();
 
-  pipePath.AppendPath(szAddress);
+  pipePath.AppendPath(sAddress);
   pipePath.Append(".server");
 
   m_serverSocketPath = pipePath;

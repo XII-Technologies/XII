@@ -49,13 +49,13 @@ xiiResult xiiEngineProcessCommunicationChannel::ConnectToHostProcess()
 
   if (!xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode())
   {
-    if (xiiStringUtils::IsNullOrEmpty(xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-IPC")))
+    if (xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-IPC").IsEmpty())
     {
       XII_REPORT_FAILURE("Command Line does not contain -IPC parameter");
       return XII_FAILURE;
     }
 
-    if (xiiStringUtils::IsNullOrEmpty(xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-PID")))
+    if (xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-PID").IsEmpty())
     {
       XII_REPORT_FAILURE("Command Line does not contain -PID parameter");
       return XII_FAILURE;

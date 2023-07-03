@@ -80,10 +80,10 @@ xiiResult xiiGraphicsTest::SetupRenderer()
   xiiGALDeviceFactory::RegisterLibraryName("D3D12", szDefaultLibraryName);
   xiiGALDeviceFactory::RegisterLibraryName("Vulkan", szDefaultLibraryName);
 
-  const char* szRendererName   = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
+  xiiStringView sRendererName   = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
   const char* szShaderModel    = "";
   const char* szShaderCompiler = "";
-  xiiGALDeviceFactory::GetShaderModelAndCompiler(szRendererName, szShaderModel, szShaderCompiler);
+  xiiGALDeviceFactory::GetShaderModelAndCompiler(sRendererName, szShaderModel, szShaderCompiler);
 
   xiiShaderManager::Configure(szShaderModel, true);
   XII_VERIFY(xiiPlugin::LoadPlugin(szShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found", szShaderCompiler);
@@ -92,14 +92,14 @@ xiiResult xiiGraphicsTest::SetupRenderer()
   {
     xiiGALDeviceCreationDescription DeviceInit;
     DeviceInit.m_bDebugDevice = false;
-    m_pDevice                 = xiiGALDeviceFactory::CreateDevice(szRendererName, xiiFoundation::GetDefaultAllocator(), DeviceInit);
+    m_pDevice                 = xiiGALDeviceFactory::CreateDevice(sRendererName, xiiFoundation::GetDefaultAllocator(), DeviceInit);
     if (m_pDevice->Init().Failed())
       return XII_FAILURE;
 
     xiiGALDevice::SetDefaultDevice(m_pDevice);
   }
 
-  if (xiiStringUtils::IsEqual_NoCase(szRendererName, "D3D11") || xiiStringUtils::IsEqual_NoCase(szRendererName, "DX11"))
+  if (sRendererName.IsEqual_NoCase("D3D11") || sRendererName.IsEqual_NoCase("DX11"))
   {
     if (m_pDevice->GetCapabilities().m_sAdapterName == "Microsoft Basic Render Driver" || m_pDevice->GetCapabilities().m_sAdapterName.StartsWith_NoCase("Intel(R) UHD Graphics") || m_pDevice->GetCapabilities().m_sAdapterName.StartsWith("NVIDIA"))
     {
@@ -116,7 +116,7 @@ xiiResult xiiGraphicsTest::SetupRenderer()
       xiiTestFramework::GetInstance()->SetImageReferenceOverrideFolderName("");
     }
   }
-  else if (xiiStringUtils::IsEqual_NoCase(szRendererName, "Vulkan"))
+  else if (sRendererName.IsEqual_NoCase("Vulkan"))
   {
     if (m_pDevice->GetCapabilities().m_sAdapterName.FindSubString_NoCase("llvmpipe"))
     {

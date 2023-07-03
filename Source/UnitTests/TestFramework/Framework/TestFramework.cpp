@@ -323,6 +323,8 @@ void xiiTestFramework::GetTestSettingsFromCommandLine(const xiiCommandLineUtils&
     }
   }
 
+  xiiStringBuilder tmp;
+
   opt_HTML.SetDefaultValue(m_Settings.m_bOpenHtmlOutputOnError);
   m_Settings.m_bOpenHtmlOutputOnError = opt_HTML.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified, &cmd);
 
@@ -341,7 +343,7 @@ void xiiTestFramework::GetTestSettingsFromCommandLine(const xiiCommandLineUtils&
   m_Settings.m_iRevision       = opt_Revision.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified, &cmd);
   m_Settings.m_bEnableAllTests = opt_EnableAllTests.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified, &cmd);
   m_Settings.m_uiFullPasses    = static_cast<xiiUInt8>(opt_Passes.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified, &cmd));
-  m_Settings.m_sTestFilter     = opt_Filter.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified, &cmd);
+  m_Settings.m_sTestFilter     = opt_Filter.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified, &cmd).GetData(tmp);
 
   if (opt_Json.IsOptionSpecified(nullptr, &cmd))
   {

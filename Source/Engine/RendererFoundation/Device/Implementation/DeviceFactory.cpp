@@ -15,27 +15,27 @@ struct CreatorFuncInfo
 static xiiHashTable<xiiString, CreatorFuncInfo> s_CreatorFuncs;
 static xiiHashTable<xiiString, const char*>     s_LibraryNames;
 
-CreatorFuncInfo* GetCreatorFuncInfo(const char* szRendererName)
+CreatorFuncInfo* GetCreatorFuncInfo(xiiStringView sRendererName)
 {
-  auto pFuncInfo = s_CreatorFuncs.GetValue(szRendererName);
+  auto pFuncInfo = s_CreatorFuncs.GetValue(sRendererName);
   if (pFuncInfo == nullptr)
   {
-    xiiStringBuilder sLibraryName = *s_LibraryNames.GetValue(szRendererName);
+    xiiStringBuilder sLibraryName = *s_LibraryNames.GetValue(sRendererName);
     XII_ASSERT_DEV(sLibraryName != nullptr, "Renderer library name is unknown");
     XII_ASSERT_DEV(!sLibraryName.IsEmpty(), "Renderer library name must not be empty");
 
     XII_VERIFY(xiiPlugin::LoadPlugin(sLibraryName).Succeeded(), "Renderer plugin '{}' not found", sLibraryName);
 
-    pFuncInfo = s_CreatorFuncs.GetValue(szRendererName);
-    XII_ASSERT_DEV(pFuncInfo != nullptr, "Renderer '{}' is not registered", szRendererName);
+    pFuncInfo = s_CreatorFuncs.GetValue(sRendererName);
+    XII_ASSERT_DEV(pFuncInfo != nullptr, "Renderer '{}' is not registered", sRendererName);
   }
 
   return pFuncInfo;
 }
 
-xiiInternal::NewInstance<xiiGALDevice> xiiGALDeviceFactory::CreateDevice(const char* szRendererName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& desc)
+xiiInternal::NewInstance<xiiGALDevice> xiiGALDeviceFactory::CreateDevice(xiiStringView sRendererName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& desc)
 {
-  if (auto pFuncInfo = GetCreatorFuncInfo(szRendererName))
+  if (auto pFuncInfo = GetCreatorFuncInfo(sRendererName))
   {
     return pFuncInfo->m_Func(pAllocator, desc);
   }
@@ -43,43 +43,42 @@ xiiInternal::NewInstance<xiiGALDevice> xiiGALDeviceFactory::CreateDevice(const c
   return xiiInternal::NewInstance<xiiGALDevice>(nullptr, pAllocator);
 }
 
-void xiiGALDeviceFactory::GetShaderModelAndCompiler(const char* szRendererName, const char*& ref_szShaderModel, const char*& ref_szShaderCompiler)
+void xiiGALDeviceFactory::GetShaderModelAndCompiler(xiiStringView sRendererName, const char*& ref_szShaderModel, const char*& ref_szShaderCompiler)
 {
-  if (auto pFuncInfo = GetCreatorFuncInfo(szRendererName))
+  if (auto pFuncInfo = GetCreatorFuncInfo(sRendererName))
   {
     ref_szShaderModel    = pFuncInfo->m_sShaderModel;
     ref_szShaderCompiler = pFuncInfo->m_sShaderCompiler;
   }
 }
 
-void xiiGALDeviceFactory::RegisterCreatorFunc(const char* szRendererName, const CreatorFunc& func, const char* szShaderModel, const char* szShaderCompiler)
+void xiiGALDeviceFactory::RegisterCreatorFunc(xiiStringView sRendererName, const CreatorFunc& func, xiiStringView sShaderModel, xiiStringView sShaderCompiler)
 {
   CreatorFuncInfo funcInfo;
   funcInfo.m_Func            = func;
-  funcInfo.m_sShaderModel    = szShaderModel;
-  funcInfo.m_sShaderCompiler = szShaderCompiler;
+  funcInfo.m_sShaderModel    = sShaderModel;
+  funcInfo.m_sShaderCompiler = sShaderCompiler;
 
-  XII_VERIFY(s_CreatorFuncs.Insert(szRendererName, funcInfo) == false, "Creator func already registered.");
+  XII_VERIFY(s_CreatorFuncs.Insert(sRendererName, funcInfo) == false, "Creator func already registered.");
 }
 
-void xiiGALDeviceFactory::UnregisterCreatorFunc(const char* szRendererName)
+void xiiGALDeviceFactory::UnregisterCreatorFunc(xiiStringView sRendererName)
 {
-  XII_VERIFY(s_CreatorFuncs.Remove(szRendererName), "Creator func is not registered.");
+  XII_VERIFY(s_CreatorFuncs.Remove(sRendererName), "Creator func is not registered.");
 }
 
-void xiiGALDeviceFactory::RegisterLibraryName(const char* szRendererName, const char* szLibraryName)
+void xiiGALDeviceFactory::RegisterLibraryName(xiiStringView sRendererName, xiiStringView sLibraryName)
 {
-  XII_VERIFY(s_LibraryNames.Insert(szRendererName, szLibraryName) == false, "Library name already registered.");
+  XII_VERIFY(s_LibraryNames.Insert(sRendererName, sLibraryName) == false, "Library name already registered.");
 
-  xiiLog::Info("Registered Renderer Name '{0}' with library '{1}'.", szRendererName, szLibraryName);
+  xiiLog::Info("Registered Renderer Name '{0}' with library '{1}'.", sRendererName, sLibraryName);
 }
 
-void xiiGALDeviceFactory::UnregisterLibraryName(const char* szRendererName)
+void xiiGALDeviceFactory::UnregisterLibraryName(xiiStringView sRendererName)
 {
-  XII_VERIFY(s_LibraryNames.Remove(szRendererName), "Library name is not registered.");
+  XII_VERIFY(s_LibraryNames.Remove(sRendererName), "Library name is not registered.");
 
-  xiiLog::Info("Unregistered Renderer Name '{}'.", szRendererName);
+  xiiLog::Info("Unregistered Renderer Name '{}'.", sRendererName);
 }
-
 
 XII_STATICLINK_FILE(RendererFoundation, RendererFoundation_Device_Implementation_DeviceFactory);

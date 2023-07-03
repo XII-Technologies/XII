@@ -50,16 +50,12 @@ public:
   /// /brief Same as WaitForMessage but the message must be to a specific document. Therefore,
   ///        pMessageType must be derived from xiiEditorEngineDocumentMsg and the function will only return if the received
   ///        message matches both type, document and is accepted by pCallback.
-  xiiResult WaitForDocumentMessage(
-    const xiiUuid&                                          assetGuid,
-    const xiiRTTI*                                          pMessageType,
-    xiiTime                                                 tTimeout,
-    xiiProcessCommunicationChannel::WaitForMessageCallback* pCallback = nullptr);
+  xiiResult WaitForDocumentMessage(const xiiUuid& assetGuid, const xiiRTTI* pMessageType, xiiTime tTimeout, xiiProcessCommunicationChannel::WaitForMessageCallback* pCallback = nullptr);
 
   void SetWaitForDebugger(bool bWait) { m_bProcessShouldWaitForDebugger = bWait; }
   bool GetWaitForDebugger() const { return m_bProcessShouldWaitForDebugger; }
 
-  void        SetRenderer(const char* szRenderer) { m_sRenderer = szRenderer; }
+  void        SetRenderer(xiiStringView sRenderer) { m_sRenderer = sRenderer; }
   const char* GetRenderer() const { return m_sRenderer; }
 
   bool IsEngineSetup() const { return m_bClientIsConfigured; }

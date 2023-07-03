@@ -23,7 +23,7 @@ xiiVisualScriptExecutionContext::xiiVisualScriptExecutionContext(xiiUniquePtr<xi
 {
 }
 
-xiiResult xiiVisualScriptExecutionContext::Initialize(xiiVisualScriptInstance& ref_instance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& ref_returnValue)
+xiiResult xiiVisualScriptExecutionContext::Initialize(xiiVisualScriptInstance& ref_instance, xiiArrayPtr<xiiVariant> arguments)
 {
   m_pInstance = &ref_instance;
 
@@ -71,12 +71,12 @@ xiiVisualScriptFunctionProperty::xiiVisualScriptFunctionProperty(const char* szP
 
 xiiVisualScriptFunctionProperty::~xiiVisualScriptFunctionProperty() = default;
 
-void xiiVisualScriptFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& ref_returnValue) const
+void xiiVisualScriptFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const
 {
   XII_ASSERT_DEBUG(pInstance != nullptr, "Invalid instance");
   auto pVisualScriptInstance = static_cast<xiiVisualScriptInstance*>(pInstance);
 
-  if (m_ExecutionContext.Initialize(*pVisualScriptInstance, arguments, ref_returnValue).Failed())
+  if (m_ExecutionContext.Initialize(*pVisualScriptInstance, arguments).Failed())
   {
     return;
   }

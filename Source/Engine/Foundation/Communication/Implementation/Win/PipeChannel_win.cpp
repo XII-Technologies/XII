@@ -19,10 +19,10 @@ xiiPipeChannel_win::State::State(xiiPipeChannel_win* pChannel) :
 
 xiiPipeChannel_win::State::~State() = default;
 
-xiiPipeChannel_win::xiiPipeChannel_win(const char* szAddress, Mode::Enum mode) :
-  xiiIpcChannel(szAddress, mode), m_InputState(this), m_OutputState(this)
+xiiPipeChannel_win::xiiPipeChannel_win(xiiStringView sAddress, Mode::Enum mode) :
+  xiiIpcChannel(sAddress, mode), m_InputState(this), m_OutputState(this)
 {
-  CreatePipe(szAddress);
+  CreatePipe(sAddress);
   m_pOwner->AddChannel(this);
 }
 
@@ -40,9 +40,9 @@ xiiPipeChannel_win::~xiiPipeChannel_win()
   m_pOwner->RemoveChannel(this);
 }
 
-bool xiiPipeChannel_win::CreatePipe(const char* szAddress)
+bool xiiPipeChannel_win::CreatePipe(xiiStringView sAddress)
 {
-  xiiStringBuilder sPipename("\\\\.\\pipe\\", szAddress);
+  xiiStringBuilder sPipename("\\\\.\\pipe\\", sAddress);
 
   if (m_Mode == Mode::Server)
   {
@@ -85,8 +85,10 @@ void xiiPipeChannel_win::InternalConnect()
 {
   if (m_hPipeHandle == INVALID_HANDLE_VALUE)
     return;
+
   if (m_bConnected)
     return;
+
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   if (m_ThreadId == 0)
     m_ThreadId = xiiThreadUtils::GetCurrentThreadID();

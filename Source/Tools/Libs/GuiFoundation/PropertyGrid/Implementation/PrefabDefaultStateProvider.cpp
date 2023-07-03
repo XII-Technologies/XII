@@ -168,19 +168,23 @@ xiiStatus xiiPrefabDefaultStateProvider::CreateRevertContainerDiff(SuperArray su
     auto                   pNode = pGraph->GetNode(objectPrefabGuid);
     xiiAbstractObjectGraph prefabSubGraph;
     xiiAbstractObjectNode* pPrefabSubRoot = pGraph->Clone(prefabSubGraph, pNode, [pRootNode = pNode, pRootProp = pProp](const xiiAbstractObjectNode* pNode, const xiiAbstractObjectNode::Property* pProp) {
-      if (pNode == pRootNode && !xiiStringUtils::IsEqual(pProp->m_szPropertyName, pRootProp->GetPropertyName()))
+      if (pNode == pRootNode && pProp->m_sPropertyName != pRootProp->GetPropertyName())
         return false;
+
       return true;
     });
+
     prefabSubGraph.ReMapNodeGuids(m_PrefabSeedGuid);
 
     xiiAbstractObjectGraph           instanceSubGraph;
     xiiDocumentObjectConverterWriter writer(&instanceSubGraph, pObject->GetDocumentObjectManager(), [pRootObject = pObject, pRootProp = pProp](const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) {
       if (pObject == pRootObject && pProp != pRootProp)
         return false;
+
       return true;
     });
-    xiiAbstractObjectNode*           pInstanceSubRoot = writer.AddObjectToGraph(pObject);
+
+    xiiAbstractObjectNode* pInstanceSubRoot = writer.AddObjectToGraph(pObject);
 
     prefabSubGraph.CreateDiffWithBaseGraph(instanceSubGraph, out_diff);
 

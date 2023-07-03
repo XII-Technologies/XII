@@ -136,12 +136,12 @@ xiiResult xiiEditorTest::InitializeTest()
 #endif
   }
 
-  if ((xiiStringUtils::IsEqual_NoCase(xiiGameApplication::GetActiveRenderer(), "D3D11") || xiiStringUtils::IsEqual_NoCase(xiiGameApplication::GetActiveRenderer(), "DX11")) && s_bIsReferenceDriver)
+  if ((xiiGameApplication::GetActiveRenderer().IsEqual_NoCase("D3D11") || xiiGameApplication::GetActiveRenderer().IsEqual_NoCase("DX11")) && s_bIsReferenceDriver)
   {
     // Use different images for comparison when running the D3D11 Reference Device
     xiiTestFramework::GetInstance()->SetImageReferenceOverrideFolderName("Images_Reference_D3D11Ref");
   }
-  else if ((xiiStringUtils::IsEqual_NoCase(xiiGameApplication::GetActiveRenderer(), "D3D11") || xiiStringUtils::IsEqual_NoCase(xiiGameApplication::GetActiveRenderer(), "DX11")) && s_bIsAMDDriver)
+  else if ((xiiGameApplication::GetActiveRenderer().IsEqual_NoCase("D3D11") || xiiGameApplication::GetActiveRenderer().IsEqual_NoCase("DX11")) && s_bIsAMDDriver)
   {
     // Line rendering on D3D11 is different on AMD and requires separate images for tests rendering lines.
     xiiTestFramework::GetInstance()->SetImageReferenceOverrideFolderName("Images_Reference_AMD");

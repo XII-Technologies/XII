@@ -58,7 +58,7 @@ namespace
 
 static void WriteGraph(xiiOpenDdlWriter& ref_writer, const xiiAbstractObjectGraph* pGraph, const char* szName)
 {
-  xiiMap<const char*, const xiiVariant*, CompareConstChar> SortedProperties;
+  xiiMap<xiiStringView, const xiiVariant*> SortedProperties;
 
   ref_writer.BeginObject(szName);
 
@@ -75,13 +75,13 @@ static void WriteGraph(xiiOpenDdlWriter& ref_writer, const xiiAbstractObjectGrap
       xiiOpenDdlUtils::StoreString(ref_writer, node.GetType(), "t");
       xiiOpenDdlUtils::StoreUInt32(ref_writer, node.GetTypeVersion(), "v");
 
-      if (!xiiStringUtils::IsNullOrEmpty(node.GetNodeName()))
+      if (!node.GetNodeName().IsEmpty())
         xiiOpenDdlUtils::StoreString(ref_writer, node.GetNodeName(), "n");
 
       ref_writer.BeginObject("p");
       {
         for (const auto& prop : node.GetProperties())
-          SortedProperties[prop.m_szPropertyName] = &prop.m_Value;
+          SortedProperties[prop.m_sPropertyName] = &prop.m_Value;
 
         for (auto it = SortedProperties.GetIterator(); it.IsValid(); ++it)
         {

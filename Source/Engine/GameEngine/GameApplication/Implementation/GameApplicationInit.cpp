@@ -230,12 +230,12 @@ void xiiGameApplication::Init_SetupDefaultResources()
   }
 }
 
-const char* GetRendererNameFromCommandLine()
+xiiStringView GetRendererNameFromCommandLine()
 {
   return opt_Renderer.GetOptionValue(xiiCommandLineOption::LogMode::FirstTimeIfSpecified);
 }
 
-const char* xiiGameApplication::GetActiveRenderer()
+xiiStringView xiiGameApplication::GetActiveRenderer()
 {
   return GetRendererNameFromCommandLine();
 }
@@ -257,9 +257,9 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
     }
     else
     {
-      const char* szRendererName = GetRendererNameFromCommandLine();
-      pDevice                    = xiiGALDeviceFactory::CreateDevice(szRendererName, xiiFoundation::GetDefaultAllocator(), DeviceInit);
-      XII_ASSERT_DEV(pDevice != nullptr, "Device implemention for '{}' not found", szRendererName);
+      xiiStringView sRendererName = GetRendererNameFromCommandLine();
+      pDevice                     = xiiGALDeviceFactory::CreateDevice(sRendererName, xiiFoundation::GetDefaultAllocator(), DeviceInit);
+      XII_ASSERT_DEV(pDevice != nullptr, "Device implemention for '{}' not found", sRendererName);
     }
 
     XII_VERIFY(pDevice->Init() == XII_SUCCESS, "Graphics device creation failed!");
@@ -275,16 +275,16 @@ void xiiGameApplication::Init_LoadRequiredPlugins()
 {
   xiiPlugin::InitializeStaticallyLinkedPlugins();
 
-  constexpr const char* szDefaultLibraryName = "xiiRendererDiligent";
+  xiiStringView szDefaultLibraryName = "xiiRendererDiligent";
   xiiGALDeviceFactory::RegisterLibraryName("DX11", "xiiRendererDX11");
   xiiGALDeviceFactory::RegisterLibraryName("D3D11", szDefaultLibraryName);
   xiiGALDeviceFactory::RegisterLibraryName("D3D12", szDefaultLibraryName);
   xiiGALDeviceFactory::RegisterLibraryName("Vulkan", szDefaultLibraryName);
 
-  const char* szRendererName   = GetRendererNameFromCommandLine();
-  const char* szShaderModel    = "";
-  const char* szShaderCompiler = "";
-  xiiGALDeviceFactory::GetShaderModelAndCompiler(szRendererName, szShaderModel, szShaderCompiler);
+  xiiStringView sRendererName    = GetRendererNameFromCommandLine();
+  const char*   szShaderModel    = "";
+  const char*   szShaderCompiler = "";
+  xiiGALDeviceFactory::GetShaderModelAndCompiler(sRendererName, szShaderModel, szShaderCompiler);
   xiiShaderManager::Configure(szShaderModel, true);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -320,6 +320,5 @@ void xiiGameApplication::Deinit_ShutdownGraphicsDevice()
   xiiGALDeviceFactory::UnregisterLibraryName("D3D12");
   xiiGALDeviceFactory::UnregisterLibraryName("Vulkan");
 }
-
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_GameApplication_Implementation_GameApplicationInit);

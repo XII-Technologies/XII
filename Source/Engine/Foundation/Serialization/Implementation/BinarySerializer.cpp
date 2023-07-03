@@ -32,7 +32,7 @@ static void WriteGraph(const xiiAbstractObjectGraph* pGraph, xiiStreamWriter& re
     ref_stream << uiProps;
     for (const xiiAbstractObjectNode::Property& prop : properties)
     {
-      ref_stream << prop.m_szPropertyName;
+      ref_stream << prop.m_sPropertyName;
       ref_stream << prop.m_Value;
     }
   }

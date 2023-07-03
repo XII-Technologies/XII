@@ -156,19 +156,19 @@ void xiiFileserveClient::UpdateClient()
   m_pNetwork->ExecuteAllMessageHandlers();
 }
 
-void xiiFileserveClient::AddServerAddressToTry(const char* szAddress)
+void xiiFileserveClient::AddServerAddressToTry(xiiStringView sAddress)
 {
   XII_LOCK(m_Mutex);
-  if (xiiStringUtils::IsNullOrEmpty(szAddress))
+  if (sAddress.IsEmpty())
     return;
 
-  if (m_TryServerAddresses.Contains(szAddress))
+  if (m_TryServerAddresses.Contains(sAddress))
     return;
 
-  m_TryServerAddresses.PushBack(szAddress);
+  m_TryServerAddresses.PushBack(sAddress);
 
   // always set the most recent address as the default one
-  m_sServerConnectionAddress = szAddress;
+  m_sServerConnectionAddress = sAddress;
 }
 
 void xiiFileserveClient::UploadFile(xiiUInt16 uiDataDirID, const char* szFile, const xiiDynamicArray<xiiUInt8>& fileContent)

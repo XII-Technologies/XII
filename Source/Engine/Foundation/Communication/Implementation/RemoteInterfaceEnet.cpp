@@ -14,7 +14,7 @@ class xiiRemoteInterfaceEnetImpl : public xiiRemoteInterfaceEnet
 
 protected:
   virtual void      InternalUpdateRemoteInterface() override;
-  virtual xiiResult InternalCreateConnection(xiiRemoteMode mode, const char* szServerAddress) override;
+  virtual xiiResult InternalCreateConnection(xiiRemoteMode mode, xiiStringView sServerAddress) override;
   virtual void      InternalShutdownConnection() override;
   virtual xiiTime   InternalGetPingToServer() override;
   virtual xiiResult InternalTransmit(xiiRemoteTransmitMode tm, const xiiArrayPtr<const xiiUInt8>& data) override;
@@ -39,7 +39,7 @@ xiiRemoteInterfaceEnet::~xiiRemoteInterfaceEnet() = default;
 
 bool xiiRemoteInterfaceEnetImpl::s_bEnetInitialized = false;
 
-xiiResult xiiRemoteInterfaceEnetImpl::InternalCreateConnection(xiiRemoteMode mode, const char* szServerAddress)
+xiiResult xiiRemoteInterfaceEnetImpl::InternalCreateConnection(xiiRemoteMode mode, xiiStringView sServerAddress)
 {
   if (!s_bEnetInitialized)
   {
@@ -54,12 +54,12 @@ xiiResult xiiRemoteInterfaceEnetImpl::InternalCreateConnection(xiiRemoteMode mod
 
   {
     // Extract port from address
-    const char* szPort = xiiStringUtils::FindLastSubString(szServerAddress, ":");
-    szPort             = (szPort) ? szPort + 1 : szServerAddress;
-    xiiInt32 iPort     = 0;
-    if (xiiConversionUtils::StringToInt(szPort, iPort).Failed())
+    const char*   szPortStart = sServerAddress.FindLastSubString(":");
+    xiiStringView sPort       = (szPortStart != nullptr) ? xiiStringView(szPortStart + 1, sServerAddress.GetEndPointer()) : sServerAddress;
+    xiiInt32      iPort       = 0;
+    if (xiiConversionUtils::StringToInt(sPort, iPort).Failed())
     {
-      xiiLog::Error("Failed to extract port from server address: {0}", szServerAddress);
+      xiiLog::Error("Failed to extract port from server address: {0}", sServerAddress);
       return XII_FAILURE;
     }
     m_uiPort = static_cast<xiiUInt16>(iPort);
@@ -83,9 +83,10 @@ xiiResult xiiRemoteInterfaceEnetImpl::InternalCreateConnection(xiiRemoteMode mod
   }
   else
   {
-    if (DetermineTargetAddress(szServerAddress, m_EnetServerAddress.host, m_EnetServerAddress.port).Failed())
+    if (DetermineTargetAddress(sServerAddress, m_EnetServerAddress.host, m_EnetServerAddress.port).Failed())
     {
-      enet_address_set_host(&m_EnetServerAddress, szServerAddress);
+      xiiStringBuilder tmp;
+      enet_address_set_host(&m_EnetServerAddress, sServerAddress.GetData(tmp));
     }
 
     // use default settings for enet_host_create

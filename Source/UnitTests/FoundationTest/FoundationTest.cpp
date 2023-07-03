@@ -26,16 +26,18 @@ XII_TESTFRAMEWORK_ENTRY_POINT_BEGIN("FoundationTest", "Foundation Tests")
   if (cmd.GetBoolOption("-cmd"))
   {
     // print something to stdout
-    const char* szStdOut = cmd.GetStringOption("-stdout");
-    if (!xiiStringUtils::IsNullOrEmpty(szStdOut))
+    xiiStringView sStdOut = cmd.GetStringOption("-stdout");
+    if (!sStdOut.IsEmpty())
     {
-      std::cout << szStdOut;
+      xiiStringBuilder tmp;
+      std::cout << sStdOut.GetData(tmp);
     }
 
-    const char* szStdErr = cmd.GetStringOption("-stderr");
-    if (!xiiStringUtils::IsNullOrEmpty(szStdErr))
+    xiiStringView sStdErr = cmd.GetStringOption("-stderr");
+    if (!sStdErr.IsEmpty())
     {
-      std::cerr << szStdErr;
+      xiiStringBuilder tmp;
+      std::cerr << sStdErr.GetData(tmp);
     }
 
     // wait a little

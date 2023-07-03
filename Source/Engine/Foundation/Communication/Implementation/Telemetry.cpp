@@ -214,15 +214,15 @@ void xiiTelemetry::UpdateNetwork()
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT
 }
 
-void xiiTelemetry::SetServerName(const char* szName)
+void xiiTelemetry::SetServerName(xiiStringView sName)
 {
   if (s_ConnectionMode == ConnectionMode::Client)
     return;
 
-  if (s_sServerName == szName)
+  if (s_sServerName == sName)
     return;
 
-  s_sServerName = szName;
+  s_sServerName = sName;
 
   SendServerName();
 }
@@ -267,12 +267,12 @@ void xiiTelemetry::InitializeAsServer()
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT
 }
 
-xiiResult xiiTelemetry::InitializeAsClient(const char* szConnectTo)
+xiiResult xiiTelemetry::InitializeAsClient(xiiStringView sConnectTo0)
 {
 #ifdef BUILDSYSTEM_ENABLE_ENET_SUPPORT
   g_pHost = enet_host_create(nullptr, 1, 2, 0, 0);
 
-  xiiStringBuilder sConnectTo = szConnectTo;
+  xiiStringBuilder sConnectTo = sConnectTo0;
 
   const char* szColon = sConnectTo.FindLastSubString(":");
   if (szColon != nullptr)
@@ -280,7 +280,7 @@ xiiResult xiiTelemetry::InitializeAsClient(const char* szConnectTo)
     sConnectTo.Shrink(0, xiiStringUtils::GetStringElementCount(szColon));
 
     xiiStringBuilder sPort = szColon + 1;
-    s_uiPort               = static_cast<xiiUInt16>(atoi(sPort.GetData()));
+    s_uiPort              = static_cast<xiiUInt16>(atoi(sPort.GetData()));
   }
 
   if (sConnectTo.IsEmpty() || sConnectTo.IsEqual_NoCase("localhost"))
@@ -319,7 +319,7 @@ xiiResult xiiTelemetry::InitializeAsClient(const char* szConnectTo)
   return XII_FAILURE;
 }
 
-xiiResult xiiTelemetry::OpenConnection(ConnectionMode Mode, const char* szConnectTo)
+xiiResult xiiTelemetry::OpenConnection(ConnectionMode Mode, xiiStringView sConnectTo)
 {
 #ifdef BUILDSYSTEM_ENABLE_ENET_SUPPORT
   CloseConnection();
@@ -343,7 +343,7 @@ xiiResult xiiTelemetry::OpenConnection(ConnectionMode Mode, const char* szConnec
       InitializeAsServer();
       break;
     case xiiTelemetry::Client:
-      if (InitializeAsClient(szConnectTo) == XII_FAILURE)
+      if (InitializeAsClient(sConnectTo) == XII_FAILURE)
       {
         CloseConnection();
         return XII_FAILURE;
@@ -512,7 +512,6 @@ void xiiTelemetry::CloseConnection()
   }
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT
 }
-
 
 
 XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_Telemetry);

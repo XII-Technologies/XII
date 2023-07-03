@@ -44,13 +44,15 @@ public:
       Client
     };
   };
+
   virtual ~xiiIpcChannel();
+
   /// \brief Creates an IPC communication channel using pipes.
   /// \param szAddress Name of the pipe, must be unique on a system and less than 200 characters.
   /// \param mode Whether to run in client or server mode.
-  static xiiIpcChannel* CreatePipeChannel(const char* szAddress, Mode::Enum mode);
+  static xiiIpcChannel* CreatePipeChannel(xiiStringView sAddress, Mode::Enum mode);
 
-  static xiiIpcChannel* CreateNetworkChannel(const char* szAddress, Mode::Enum mode);
+  static xiiIpcChannel* CreateNetworkChannel(xiiStringView sAddress, Mode::Enum mode);
 
   /// \brief Connects async. On success, m_Events will be broadcasted.
   void Connect();
@@ -73,7 +75,7 @@ public:
   xiiEvent<const xiiProcessMessage*>            m_MessageEvent; ///< Will be sent from thread calling ProcessMessages or WaitForMessages.
 
 protected:
-  xiiIpcChannel(const char* szAddress, Mode::Enum mode);
+  xiiIpcChannel(xiiStringView sAddress, Mode::Enum mode);
 
   /// \brief Called by AddChannel to do platform specific registration.
   virtual void AddToMessageLoop(xiiMessageLoop* pMsgLoop) {}

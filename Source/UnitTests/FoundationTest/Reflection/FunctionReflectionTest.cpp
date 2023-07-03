@@ -555,7 +555,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
     FunctionTest test;
     test.m_values.PushBack(xiiVariant(xiiString("String0")));
     test.m_values.PushBack(xiiVariant(xiiString("String1")));
-    test.m_values.PushBack(xiiStringView("String2"));
+    test.m_values.PushBack(xiiVariant(xiiStringView("String2"), false));
 
     xiiVariant ret;
     funccall.Execute(&test, test.m_values, ret);

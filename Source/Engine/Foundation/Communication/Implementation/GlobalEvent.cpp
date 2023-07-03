@@ -14,21 +14,21 @@ xiiGlobalEvent::EventData::EventData()
   m_uiNumEventHandlersRegular = 0;
 }
 
-xiiGlobalEvent::xiiGlobalEvent(const char* szEventName, XII_GLOBAL_EVENT_HANDLER handler, bool bOnlyOnce)
+xiiGlobalEvent::xiiGlobalEvent(xiiStringView sEventName, XII_GLOBAL_EVENT_HANDLER handler, bool bOnlyOnce)
 {
-  m_szEventName   = szEventName;
+  m_sEventName    = sEventName;
   m_bOnlyOnce     = bOnlyOnce;
   m_bHasBeenFired = false;
   m_EventHandler  = handler;
 }
 
-void xiiGlobalEvent::Broadcast(const char* szEventName, xiiVariant p1, xiiVariant p2, xiiVariant p3, xiiVariant p4)
+void xiiGlobalEvent::Broadcast(xiiStringView sEventName, xiiVariant p1, xiiVariant p2, xiiVariant p3, xiiVariant p4)
 {
   xiiGlobalEvent* pHandler = xiiGlobalEvent::GetFirstInstance();
 
   while (pHandler)
   {
-    if (xiiStringUtils::IsEqual(pHandler->m_szEventName, szEventName))
+    if (pHandler->m_sEventName == sEventName)
     {
       if (!pHandler->m_bOnlyOnce || !pHandler->m_bHasBeenFired)
       {
@@ -41,8 +41,7 @@ void xiiGlobalEvent::Broadcast(const char* szEventName, xiiVariant p1, xiiVarian
     pHandler = pHandler->GetNextInstance();
   }
 
-
-  EventData& ed = s_KnownEvents[szEventName]; // this will make sure to record all fired events, even if there are no handlers for them
+  EventData& ed = s_KnownEvents[sEventName]; // this will make sure to record all fired events, even if there are no handlers for them
   ed.m_uiNumTimesFired++;
 }
 
@@ -58,7 +57,7 @@ void xiiGlobalEvent::UpdateGlobalEventStatistics()
 
   while (pHandler)
   {
-    EventData& ed = s_KnownEvents[pHandler->m_szEventName];
+    EventData& ed = s_KnownEvents[pHandler->m_sEventName];
 
     if (pHandler->m_bOnlyOnce)
       ++ed.m_uiNumEventHandlersOnce;
@@ -85,7 +84,5 @@ void xiiGlobalEvent::PrintGlobalEventStatistics()
     ++it;
   }
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_GlobalEvent);

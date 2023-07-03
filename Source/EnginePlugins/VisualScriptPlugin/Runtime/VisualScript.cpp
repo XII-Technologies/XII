@@ -520,15 +520,17 @@ xiiVariant xiiVisualScriptDataStorage::GetDataAsVariant(DataOffset dataOffset, x
       XII_ASSERT_DEBUG(expectedType == xiiVariantType::Double, "");
       return GetData<double>(dataOffset);
     case xiiVisualScriptDataType::String:
+    {
       if (expectedType == xiiVariantType::Invalid || expectedType == xiiVariantType::String)
       {
         return GetData<xiiString>(dataOffset);
       }
       else if (expectedType == xiiVariantType::StringView)
       {
-        return GetData<xiiString>(dataOffset).GetView();
+        return xiiVariant(GetData<xiiString>(dataOffset).GetView(), false);
       }
       XII_ASSERT_NOT_IMPLEMENTED;
+    }
     case xiiVisualScriptDataType::Variant:
       return GetData<xiiVariant>(dataOffset);
     case xiiVisualScriptDataType::Array:

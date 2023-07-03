@@ -39,11 +39,11 @@ xiiAbstractObjectNode* xiiPrefabUtils::GetFirstRootNode(xiiAbstractObjectGraph& 
   for (auto it = nodes.GetIterator(); it.IsValid(); ++it)
   {
     auto* pNode = it.Value();
-    if (xiiStringUtils::IsEqual(pNode->GetNodeName(), "ObjectTree"))
+    if (pNode->GetNodeName() == "ObjectTree")
     {
       for (const auto& ObjectTreeProp : pNode->GetProperties())
       {
-        if (xiiStringUtils::IsEqual(ObjectTreeProp.m_szPropertyName, "Children") && ObjectTreeProp.m_Value.IsA<xiiVariantArray>())
+        if (ObjectTreeProp.m_sPropertyName == "Children" && ObjectTreeProp.m_Value.IsA<xiiVariantArray>())
         {
           const xiiVariantArray& RootChildren = ObjectTreeProp.m_Value.Get<xiiVariantArray>();
 
@@ -69,11 +69,11 @@ void xiiPrefabUtils::GetRootNodes(xiiAbstractObjectGraph& ref_graph, xiiHybridAr
   for (auto it = nodes.GetIterator(); it.IsValid(); ++it)
   {
     auto* pNode = it.Value();
-    if (xiiStringUtils::IsEqual(pNode->GetNodeName(), "ObjectTree"))
+    if (pNode->GetNodeName() == "ObjectTree")
     {
       for (const auto& ObjectTreeProp : pNode->GetProperties())
       {
-        if (xiiStringUtils::IsEqual(ObjectTreeProp.m_szPropertyName, "Children") && ObjectTreeProp.m_Value.IsA<xiiVariantArray>())
+        if (ObjectTreeProp.m_sPropertyName == "Children" && ObjectTreeProp.m_Value.IsA<xiiVariantArray>())
         {
           const xiiVariantArray& RootChildren = ObjectTreeProp.m_Value.Get<xiiVariantArray>();
 

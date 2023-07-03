@@ -1256,19 +1256,19 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
   {
     const char*   szTemp = "This is a xiiStringView";
     xiiStringView bla(szTemp);
-    xiiVariant    v(bla);
+    xiiVariant    v(bla, false);
     TestVariant<xiiStringView>(v, xiiVariantType::StringView);
 
     const xiiString sCopy = szTemp;
     XII_TEST_BOOL(v.Get<xiiStringView>() == sCopy);
 
-    XII_TEST_BOOL(v == xiiVariant(xiiStringView(sCopy.GetData())));
-    XII_TEST_BOOL(v != xiiVariant(xiiStringView("This is something else")));
+    XII_TEST_BOOL(v == xiiVariant(xiiStringView(sCopy.GetData()), false));
+    XII_TEST_BOOL(v != xiiVariant(xiiStringView("This is something else"), false));
 
     XII_TEST_BOOL(v == xiiStringView(sCopy.GetData()));
     XII_TEST_BOOL(v != xiiStringView("This is something else"));
 
-    v = xiiStringView("blurg!");
+    v = xiiVariant(xiiStringView("blurg!"), false);
     XII_TEST_BOOL(v == xiiStringView("blurg!"));
 
     XII_TEST_BOOL(v.IsNumber() == false);
@@ -2344,7 +2344,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Transform) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Transformd) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::String));
-    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::StringView) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::StringView) == true);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::DataBuffer) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Time) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Angle) == false);
@@ -2525,12 +2525,44 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiStringView)")
   {
     xiiStringView va0("Test String");
-    xiiVariant    v(va0);
+    xiiVariant    v(va0, false);
 
     TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::StringView);
 
     XII_TEST_BOOL(v.ConvertTo<xiiStringView>() == va0);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::StringView).Get<xiiStringView>() == va0);
+    
+    {
+      xiiVariant va, va2;
+
+      va = "Bla";
+      XII_TEST_BOOL(va.IsA<xiiString>());
+      XII_TEST_BOOL(va.CanConvertTo<xiiString>());
+      XII_TEST_BOOL(va.CanConvertTo<xiiStringView>());
+
+      va = xiiVariant("Bla"_xiisv, false);
+      XII_TEST_BOOL(va.IsA<xiiStringView>());
+      XII_TEST_BOOL(va.CanConvertTo<xiiString>());
+      XII_TEST_BOOL(va.CanConvertTo<xiiStringView>());
+
+      va2 = va;
+      XII_TEST_BOOL(va2.IsA<xiiStringView>());
+      XII_TEST_BOOL(va2.CanConvertTo<xiiString>());
+      XII_TEST_BOOL(va2.CanConvertTo<xiiStringView>());
+      XII_TEST_BOOL(va2.ConvertTo<xiiStringView>() == "Bla");
+      XII_TEST_BOOL(va2.ConvertTo<xiiString>() == "Bla");
+
+      xiiVariant va3 = va2.ConvertTo(xiiVariantType::StringView);
+      XII_TEST_BOOL(va3.IsA<xiiStringView>());
+      XII_TEST_BOOL(va3.ConvertTo<xiiString>() == "Bla");
+
+      va = "Blub";
+      XII_TEST_BOOL(va.IsA<xiiString>());
+
+      xiiVariant va4 = va.ConvertTo(xiiVariantType::StringView);
+      XII_TEST_BOOL(va4.IsA<xiiStringView>());
+      XII_TEST_BOOL(va4.ConvertTo<xiiString>() == "Blub");
+    }
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiDataBuffer)")

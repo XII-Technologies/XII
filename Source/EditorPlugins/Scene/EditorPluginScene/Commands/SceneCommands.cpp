@@ -173,7 +173,7 @@ void xiiDuplicateObjectsCommand::CreateOneDuplicate(xiiAbstractObjectGraph& grap
   for (auto it = nodes.GetIterator(); it.IsValid(); ++it)
   {
     auto* pNode = it.Value();
-    if (xiiStringUtils::IsEqual(pNode->GetNodeName(), "root"))
+    if (pNode->GetNodeName() == "root")
     {
       auto* pNewObject = reader.CreateObjectFromNode(pNode);
 

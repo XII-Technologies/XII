@@ -5,16 +5,16 @@
 bool                     xiiDataTransfer::s_bInitialized = false;
 xiiSet<xiiDataTransfer*> xiiDataTransfer::s_AllTransfers;
 
-xiiDataTransferObject::xiiDataTransferObject(xiiDataTransfer& ref_belongsTo, const char* szObjectName, const char* szMimeType, const char* szFileExtension) :
+xiiDataTransferObject::xiiDataTransferObject(xiiDataTransfer& ref_belongsTo, xiiStringView sObjectName, xiiStringView sMimeType, xiiStringView sFileExtension) :
   m_BelongsTo(ref_belongsTo)
 {
   m_bHasBeenTransferred = false;
 
   m_Msg.SetMessageID('TRAN', 'DATA');
   m_Msg.GetWriter() << ref_belongsTo.m_sDataName;
-  m_Msg.GetWriter() << szObjectName;
-  m_Msg.GetWriter() << szMimeType;
-  m_Msg.GetWriter() << szFileExtension;
+  m_Msg.GetWriter() << sObjectName;
+  m_Msg.GetWriter() << sMimeType;
+  m_Msg.GetWriter() << sFileExtension;
 }
 
 xiiDataTransferObject::~xiiDataTransferObject()
@@ -79,9 +79,9 @@ void xiiDataTransfer::DisableDataTransfer()
   m_sDataName.Clear();
 }
 
-void xiiDataTransfer::EnableDataTransfer(const char* szDataName)
+void xiiDataTransfer::EnableDataTransfer(xiiStringView sDataName)
 {
-  if (m_bEnabled && m_sDataName == szDataName)
+  if (m_bEnabled && m_sDataName == sDataName)
     return;
 
   DisableDataTransfer();
@@ -90,7 +90,7 @@ void xiiDataTransfer::EnableDataTransfer(const char* szDataName)
 
   xiiDataTransfer::s_AllTransfers.Insert(this);
 
-  m_sDataName = szDataName;
+  m_sDataName = sDataName;
 
   XII_ASSERT_DEV(!m_sDataName.IsEmpty(), "The name for the data transfer must not be empty.");
 

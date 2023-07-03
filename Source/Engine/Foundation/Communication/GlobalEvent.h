@@ -52,13 +52,12 @@ public:
   using XII_GLOBAL_EVENT_HANDLER = void (*)(const xiiVariant& param0, const xiiVariant& param1, const xiiVariant& param2, const xiiVariant& param3);
 
   /// \brief [internal] Use the macro XII_ON_GLOBAL_EVENT or XII_ON_GLOBAL_EVENT_ONCE to create an event handler.
-  xiiGlobalEvent(const char* szEventName, XII_GLOBAL_EVENT_HANDLER eventHandler, bool bOnlyOnce); // [tested]
+  xiiGlobalEvent(xiiStringView sEventName, XII_GLOBAL_EVENT_HANDLER eventHandler, bool bOnlyOnce); // [tested]
 
   /// \brief This function will broadcast a system wide event to all event handlers that are registered to handle this specific type of event.
   ///
   /// The string specifies the event type, the parameters are optional and can be used to send additional event specific data.
-  static void Broadcast(const char* szEventName, xiiVariant param0 = xiiVariant(), xiiVariant param1 = xiiVariant(), xiiVariant param2 = xiiVariant(),
-                        xiiVariant param3 = xiiVariant()); // [tested]
+  static void Broadcast(xiiStringView sEventName, xiiVariant param0 = xiiVariant(), xiiVariant param1 = xiiVariant(), xiiVariant param2 = xiiVariant(), xiiVariant param3 = xiiVariant()); // [tested]
 
   /// \brief This function will output (via xiiLog) some statistics about which events are used and how often.
   ///
@@ -74,7 +73,7 @@ public:
 private:
   bool                     m_bOnlyOnce;
   bool                     m_bHasBeenFired;
-  const char*              m_szEventName;
+  xiiStringView            m_sEventName;
   XII_GLOBAL_EVENT_HANDLER m_EventHandler;
 
   static EventMap s_KnownEvents;

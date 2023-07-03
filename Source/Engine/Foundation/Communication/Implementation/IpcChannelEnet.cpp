@@ -9,8 +9,8 @@
 #  include <Foundation/Communication/RemoteMessage.h>
 #  include <Foundation/Logging/Log.h>
 
-xiiIpcChannelEnet::xiiIpcChannelEnet(const char* szAddress, Mode::Enum mode) :
-  xiiIpcChannel(szAddress, mode), m_sAddress(szAddress)
+xiiIpcChannelEnet::xiiIpcChannelEnet(xiiStringView sAddress, Mode::Enum mode) :
+  xiiIpcChannel(sAddress, mode), m_sAddress(sAddress)
 {
   m_pNetwork = xiiRemoteInterfaceEnet::Make();
   m_pNetwork->SetMessageHandler(0, xiiMakeDelegate(&xiiIpcChannelEnet::NetworkMessageHandler, this));
@@ -107,7 +107,5 @@ void xiiIpcChannelEnet::EnetEventHandler(const xiiRemoteEvent& e)
 }
 
 #endif
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_IpcChannelEnet);

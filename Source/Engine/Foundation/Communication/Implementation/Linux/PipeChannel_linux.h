@@ -15,7 +15,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 class XII_FOUNDATION_DLL xiiPipeChannel_linux : public xiiIpcChannel
 {
 public:
-  xiiPipeChannel_linux(const char* szAddress, Mode::Enum mode);
+  xiiPipeChannel_linux(xiiStringView sAddress, Mode::Enum mode);
   ~xiiPipeChannel_linux();
 
 private:

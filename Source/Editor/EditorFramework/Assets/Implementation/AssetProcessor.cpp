@@ -239,6 +239,8 @@ void xiiProcessTask::StartProcess()
   m_bProcessShouldBeRunning               = true;
   m_bProcessCrashed                       = false;
 
+  xiiStringBuilder tmp;
+
   QStringList args;
   args << "-appname";
   args << xiiApplication::GetApplicationInstance()->GetApplicationName().GetData();
@@ -247,7 +249,7 @@ void xiiProcessTask::StartProcess()
   args << "-project";
   args << xiiToolsProject::GetSingleton()->GetProjectFile().GetData();
   args << "-renderer";
-  args << xiiGameApplication::GetActiveRenderer();
+  args << xiiGameApplication::GetActiveRenderer().GetData(tmp);
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   const char* EditorProcessorExecutable = "EditorProcessor.exe";

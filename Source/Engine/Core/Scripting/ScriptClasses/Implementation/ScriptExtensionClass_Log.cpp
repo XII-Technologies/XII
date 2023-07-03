@@ -22,7 +22,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiScriptExtensionClass_Log, xiiNoBase, 1, xiiRT
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiStringView BuildFormattedText(const char* szText, const xiiVariantArray& params, xiiStringBuilder& ref_sStorage)
+xiiStringView BuildFormattedText(xiiStringView sText, const xiiVariantArray& params, xiiStringBuilder& ref_sStorage)
 {
   xiiHybridArray<xiiString, 12> stringStorage;
   stringStorage.Reserve(params.GetCount());
@@ -38,27 +38,27 @@ xiiStringView BuildFormattedText(const char* szText, const xiiVariantArray& para
     stringViews.PushBack(s);
   }
 
-  xiiFormatString fs(szText);
+  xiiFormatString fs(sText);
   return fs.BuildFormattedText(ref_sStorage, stringViews.GetData(), stringViews.GetCount());
 }
 
 // static
-void xiiScriptExtensionClass_Log::Info(const char* szText, const xiiVariantArray& params)
+void xiiScriptExtensionClass_Log::Info(xiiStringView sText, const xiiVariantArray& params)
 {
   xiiStringBuilder sStorage;
-  xiiLog::Info(BuildFormattedText(szText, params, sStorage));
+  xiiLog::Info(BuildFormattedText(sText, params, sStorage));
 }
 
 // static
-void xiiScriptExtensionClass_Log::Warning(const char* szText, const xiiVariantArray& params)
+void xiiScriptExtensionClass_Log::Warning(xiiStringView sText, const xiiVariantArray& params)
 {
   xiiStringBuilder sStorage;
-  xiiLog::Warning(BuildFormattedText(szText, params, sStorage));
+  xiiLog::Warning(BuildFormattedText(sText, params, sStorage));
 }
 
 // static
-void xiiScriptExtensionClass_Log::Error(const char* szText, const xiiVariantArray& params)
+void xiiScriptExtensionClass_Log::Error(xiiStringView sText, const xiiVariantArray& params)
 {
   xiiStringBuilder sStorage;
-  xiiLog::Error(BuildFormattedText(szText, params, sStorage));
+  xiiLog::Error(BuildFormattedText(sText, params, sStorage));
 }
