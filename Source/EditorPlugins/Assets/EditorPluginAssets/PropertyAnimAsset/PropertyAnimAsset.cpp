@@ -755,8 +755,8 @@ xiiUuid xiiPropertyAnimAssetDocument::InsertCurveCpAt(const xiiUuid& track, xiiI
   const xiiVariant         curveGuid   = trackObject->GetTypeAccessor().GetValue("FloatCurve");
 
   xiiUuid newObjectGuid;
-  XII_VERIFY(acc.AddObject(accessor.GetObject(curveGuid.Get<xiiUuid>()), "ControlPoints", -1, xiiGetStaticRTTI<xiiCurveControlPointData>(), newObjectGuid).Succeeded(),"");
-  
+  XII_VERIFY(acc.AddObject(accessor.GetObject(curveGuid.Get<xiiUuid>()), "ControlPoints", -1, xiiGetStaticRTTI<xiiCurveControlPointData>(), newObjectGuid).Succeeded(), "");
+
   auto curveCPObj = accessor.GetObject(newObjectGuid);
   XII_VERIFY(acc.SetValue(curveCPObj, "Tick", tickX).Succeeded(), "");
   XII_VERIFY(acc.SetValue(curveCPObj, "Value", newPosY).Succeeded(), "");

@@ -110,7 +110,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetValue(const xiiDocumentObject* pObje
           m_pDocument->CanAnimate(pObject, pProp, index, static_cast<xiiPropertyAnimTarget::Enum>((int)xiiPropertyAnimTarget::RotationX + c)));
         float       oldValue = oldEuler[c].GetDegree();
         xiiUuid     track    = FindOrAddTrack(pObject, pProp, index, static_cast<xiiPropertyAnimTarget::Enum>((int)xiiPropertyAnimTarget::RotationX + c),
-                                              [this, oldValue](const xiiUuid& trackGuid) {
+                                       [this, oldValue](const xiiUuid& trackGuid) {
                                          // add a control point at the start of the curve with the original value
                                          m_pDocument->InsertCurveCpAt(trackGuid, 0, oldValue);
                                        });
