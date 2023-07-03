@@ -186,9 +186,8 @@ xiiUuid xiiAnimationClipAssetDocument::InsertEventTrackCpAt(xiiInt64 tickX, cons
   xiiUuid                    trackGuid  = accessor.Get<xiiUuid>(GetPropertyObject(), pTrackProp);
 
   xiiUuid newObjectGuid;
-  XII_VERIFY(
-    acc.AddObject(accessor.GetObject(trackGuid), "ControlPoints", -1, xiiGetStaticRTTI<xiiEventTrackControlPointData>(), newObjectGuid).Succeeded(),
-    "");
+  XII_VERIFY(acc.AddObject(accessor.GetObject(trackGuid), "ControlPoints", -1, xiiGetStaticRTTI<xiiEventTrackControlPointData>(), newObjectGuid).Succeeded(), "");
+
   const xiiDocumentObject* pCPObj = accessor.GetObject(newObjectGuid);
   XII_VERIFY(acc.SetValue(pCPObj, "Tick", tickX).Succeeded(), "");
   XII_VERIFY(acc.SetValue(pCPObj, "Event", szValue).Succeeded(), "");
@@ -198,155 +197,159 @@ xiiUuid xiiAnimationClipAssetDocument::InsertEventTrackCpAt(xiiInt64 tickX, cons
   return newObjectGuid;
 }
 
-// void xiiAnimationClipAssetDocument::ApplyCustomRootMotion(xiiAnimationClipResourceDescriptor& anim) const
-//{
-//  const xiiAnimationClipAssetProperties* pProp = GetProperties();
-//  const xiiUInt16 uiRootMotionJointIdx = anim.GetRootMotionJoint();
-//  xiiArrayPtr<xiiTransform> pRootTransforms = anim.GetJointKeyframes(uiRootMotionJointIdx);
-//
-//  const xiiVec3 vKeyframeMotion = pProp->m_vCustomRootMotion / (float)anim.GetFramesPerSecond();
-//  const xiiTransform rootTransform(vKeyframeMotion);
-//
-//  for (xiiUInt32 kf = 0; kf < anim.GetNumFrames(); ++kf)
-//  {
-//    pRootTransforms[kf] = rootTransform;
-//  }
-//}
-//
-// void xiiAnimationClipAssetDocument::ExtractRootMotionFromFeet(xiiAnimationClipResourceDescriptor& anim, const xiiSkeleton& skeleton) const
-//{
-//  const xiiAnimationClipAssetProperties* pProp = GetProperties();
-//  const xiiUInt16 uiRootMotionJointIdx = anim.GetRootMotionJoint();
-//  xiiArrayPtr<xiiTransform> pRootTransforms = anim.GetJointKeyframes(uiRootMotionJointIdx);
-//
-//  const xiiUInt16 uiFoot1 = skeleton.FindJointByName(xiiTempHashedString(pProp->m_sJoint1.GetData()));
-//  const xiiUInt16 uiFoot2 = skeleton.FindJointByName(xiiTempHashedString(pProp->m_sJoint2.GetData()));
-//
-//  if (uiFoot1 == xiiInvalidJointIndex || uiFoot2 == xiiInvalidJointIndex)
-//  {
-//    xiiLog::Error("Joints '{0}' and '{1}' could not be found in animation clip", pProp->m_sJoint1, pProp->m_sJoint2);
-//    return;
-//  }
-//
-//  xiiAnimationPose pose;
-//  pose.Configure(skeleton);
-//
-//  xiiVec3 lastFootPos1(0), lastFootPos2(0);
-//
-//  // init last foot position with very last frame data
-//  {
-//    pose.SetToBindPoseInLocalSpace(skeleton);
-//    anim.SetPoseToKeyframe(pose, skeleton, anim.GetNumFrames() - 1);
-//    pose.ConvertFromLocalSpaceToObjectSpace(skeleton);
-//
-//    lastFootPos1 = pose.GetTransform(uiFoot1).GetTranslationVector();
-//    lastFootPos2 = pose.GetTransform(uiFoot2).GetTranslationVector();
-//  }
-//
-//  xiiInt32 lastFootDown = (lastFootPos1.z < lastFootPos2.z) ? 1 : 2;
-//
-//  xiiHybridArray<xiiUInt16, 32> unknownMotion;
-//
-//  for (xiiUInt16 frame = 0; frame < anim.GetNumFrames(); ++frame)
-//  {
-//    pose.SetToBindPoseInLocalSpace(skeleton);
-//    anim.SetPoseToKeyframe(pose, skeleton, frame);
-//    pose.ConvertFromLocalSpaceToObjectSpace(skeleton);
-//
-//    const xiiVec3 footPos1 = pose.GetTransform(uiFoot1).GetTranslationVector();
-//    const xiiVec3 footPos2 = pose.GetTransform(uiFoot2).GetTranslationVector();
-//
-//    const xiiVec3 footDir1 = footPos1 - lastFootPos1;
-//    const xiiVec3 footDir2 = footPos2 - lastFootPos2;
-//
-//    xiiVec3 rootMotion(0);
-//
-//    const xiiInt32 curFootDown = (footPos1.z < footPos2.z) ? 1 : 2;
-//
-//    if (lastFootDown == curFootDown)
-//    {
-//      if (curFootDown == 1)
-//        rootMotion = -footDir1;
-//      else
-//        rootMotion = -footDir2;
-//
-//      rootMotion.z = 0;
-//      pRootTransforms[frame] = xiiTransform(rootMotion);
-//    }
-//    else
-//    {
-//      // set them via average later on
-//      unknownMotion.PushBack(frame);
-//      pRootTransforms[frame].SetIdentity();
-//    }
-//
-//    lastFootDown = curFootDown;
-//    lastFootPos1 = footPos1;
-//    lastFootPos2 = footPos2;
-//  }
-//
-//  // fix unknown motion frames
-//  for (xiiUInt16 crossedFeet : unknownMotion)
-//  {
-//    const xiiUInt16 prevFrame = (crossedFeet > 0) ? (crossedFeet - 1) : anim.GetNumFrames() - 1;
-//    const xiiUInt16 nextFrame = (crossedFeet + 1) % anim.GetNumFrames();
-//
-//    const xiiVec3 avgTranslation = xiiMath::Lerp(pRootTransforms[prevFrame].m_vPosition, pRootTransforms[nextFrame].m_vPosition, 0.5f);
-//
-//    pRootTransforms[crossedFeet] = xiiTransform(avgTranslation);
-//  }
-//
-//  const xiiUInt16 numFrames = anim.GetNumFrames();
-//
-//  xiiHybridArray<xiiVec3, 32> translations;
-//  translations.SetCount(numFrames);
-//
-//  for (xiiUInt16 thisFrame = 0; thisFrame < numFrames; ++thisFrame)
-//  {
-//    translations[thisFrame] = pRootTransforms[thisFrame].m_vPosition;
-//  }
-//
-//  // do some smoothing
-//  for (xiiUInt16 thisFrame = 0; thisFrame < numFrames; ++thisFrame)
-//  {
-//    const xiiUInt16 prevFrame2 = (numFrames + thisFrame - 2) % numFrames;
-//    const xiiUInt16 prevFrame = (numFrames + thisFrame - 1) % numFrames;
-//    const xiiUInt16 nextFrame = (thisFrame + 1) % numFrames;
-//    const xiiUInt16 nextFrame2 = (thisFrame + 2) % numFrames;
-//
-//    const xiiVec3 smoothedTranslation =
-//      (translations[prevFrame2] + translations[prevFrame] + translations[thisFrame] + translations[nextFrame] + translations[nextFrame2]) * 0.2f;
-//
-//    pRootTransforms[thisFrame].m_vPosition = smoothedTranslation;
-//  }
-//
-//  // for (xiiUInt32 i = 0; i < anim.GetNumFrames(); ++i)
-//  //{
-//  //  xiiLog::Info("Motion {0}: {1} | {2}", xiiArgI(i, 3), xiiArgF(pRootTransforms[i].m_vPosition.x, 1),
-//  //              xiiArgF(pRootTransforms[i].m_vPosition.y, 1));
-//  //}
-//}
-//
-// void xiiAnimationClipAssetDocument::MakeRootMotionConstantAverage(xiiAnimationClipResourceDescriptor& anim) const
-//{
-//  const xiiUInt16 uiRootMotionJointIdx = anim.GetRootMotionJoint();
-//  xiiArrayPtr<xiiTransform> pRootTransforms = anim.GetJointKeyframes(uiRootMotionJointIdx);
-//  const xiiUInt16 numFrames = anim.GetNumFrames();
-//
-//  xiiVec3 avgFootTranslation(0);
-//
-//  for (xiiUInt16 thisFrame = 0; thisFrame < numFrames; ++thisFrame)
-//  {
-//    avgFootTranslation += pRootTransforms[thisFrame].m_vPosition;
-//  }
-//
-//  avgFootTranslation /= numFrames;
-//
-//  for (xiiUInt16 thisFrame = 0; thisFrame < numFrames; ++thisFrame)
-//  {
-//    pRootTransforms[thisFrame].m_vPosition = avgFootTranslation;
-//  }
-//}
+#if 0
+void xiiAnimationClipAssetDocument::ApplyCustomRootMotion(xiiAnimationClipResourceDescriptor& anim) const
+{
+  const xiiAnimationClipAssetProperties* pProp = GetProperties();
+  const xiiUInt16 uiRootMotionJointIdx = anim.GetRootMotionJoint();
+  xiiArrayPtr<xiiTransform> pRootTransforms = anim.GetJointKeyframes(uiRootMotionJointIdx);
+
+  const xiiVec3 vKeyframeMotion = pProp->m_vCustomRootMotion / (float)anim.GetFramesPerSecond();
+  const xiiTransform rootTransform(vKeyframeMotion);
+
+  for (xiiUInt32 kf = 0; kf < anim.GetNumFrames(); ++kf)
+  {
+    pRootTransforms[kf] = rootTransform;
+  }
+}
+
+void xiiAnimationClipAssetDocument::ExtractRootMotionFromFeet(xiiAnimationClipResourceDescriptor& anim, const xiiSkeleton& skeleton) const
+{
+  const xiiAnimationClipAssetProperties* pProp = GetProperties();
+  const xiiUInt16 uiRootMotionJointIdx = anim.GetRootMotionJoint();
+  xiiArrayPtr<xiiTransform> pRootTransforms = anim.GetJointKeyframes(uiRootMotionJointIdx);
+
+  const xiiUInt16 uiFoot1 = skeleton.FindJointByName(xiiTempHashedString(pProp->m_sJoint1.GetData()));
+  const xiiUInt16 uiFoot2 = skeleton.FindJointByName(xiiTempHashedString(pProp->m_sJoint2.GetData()));
+
+  if (uiFoot1 == xiiInvalidJointIndex || uiFoot2 == xiiInvalidJointIndex)
+  {
+    xiiLog::Error("Joints '{0}' and '{1}' could not be found in animation clip", pProp->m_sJoint1, pProp->m_sJoint2);
+    return;
+  }
+
+  xiiAnimationPose pose;
+  pose.Configure(skeleton);
+
+  xiiVec3 lastFootPos1(0), lastFootPos2(0);
+
+  // init last foot position with very last frame data
+  {
+    pose.SetToBindPoseInLocalSpace(skeleton);
+    anim.SetPoseToKeyframe(pose, skeleton, anim.GetNumFrames() - 1);
+    pose.ConvertFromLocalSpaceToObjectSpace(skeleton);
+
+    lastFootPos1 = pose.GetTransform(uiFoot1).GetTranslationVector();
+    lastFootPos2 = pose.GetTransform(uiFoot2).GetTranslationVector();
+  }
+
+  xiiInt32 lastFootDown = (lastFootPos1.z < lastFootPos2.z) ? 1 : 2;
+
+  xiiHybridArray<xiiUInt16, 32> unknownMotion;
+
+  for (xiiUInt16 frame = 0; frame < anim.GetNumFrames(); ++frame)
+  {
+    pose.SetToBindPoseInLocalSpace(skeleton);
+    anim.SetPoseToKeyframe(pose, skeleton, frame);
+    pose.ConvertFromLocalSpaceToObjectSpace(skeleton);
+
+    const xiiVec3 footPos1 = pose.GetTransform(uiFoot1).GetTranslationVector();
+    const xiiVec3 footPos2 = pose.GetTransform(uiFoot2).GetTranslationVector();
+
+    const xiiVec3 footDir1 = footPos1 - lastFootPos1;
+    const xiiVec3 footDir2 = footPos2 - lastFootPos2;
+
+    xiiVec3 rootMotion(0);
+
+    const xiiInt32 curFootDown = (footPos1.z < footPos2.z) ? 1 : 2;
+
+    if (lastFootDown == curFootDown)
+    {
+      if (curFootDown == 1)
+        rootMotion = -footDir1;
+      else
+        rootMotion = -footDir2;
+
+      rootMotion.z = 0;
+      pRootTransforms[frame] = xiiTransform(rootMotion);
+    }
+    else
+    {
+      // set them via average later on
+      unknownMotion.PushBack(frame);
+      pRootTransforms[frame].SetIdentity();
+    }
+
+    lastFootDown = curFootDown;
+    lastFootPos1 = footPos1;
+    lastFootPos2 = footPos2;
+  }
+
+  // fix unknown motion frames
+  for (xiiUInt16 crossedFeet : unknownMotion)
+  {
+    const xiiUInt16 prevFrame = (crossedFeet > 0) ? (crossedFeet - 1) : anim.GetNumFrames() - 1;
+    const xiiUInt16 nextFrame = (crossedFeet + 1) % anim.GetNumFrames();
+
+    const xiiVec3 avgTranslation = xiiMath::Lerp(pRootTransforms[prevFrame].m_vPosition, pRootTransforms[nextFrame].m_vPosition, 0.5f);
+
+    pRootTransforms[crossedFeet] = xiiTransform(avgTranslation);
+  }
+
+  const xiiUInt16 numFrames = anim.GetNumFrames();
+
+  xiiHybridArray<xiiVec3, 32> translations;
+  translations.SetCount(numFrames);
+
+  for (xiiUInt16 thisFrame = 0; thisFrame < numFrames; ++thisFrame)
+  {
+    translations[thisFrame] = pRootTransforms[thisFrame].m_vPosition;
+  }
+
+  // do some smoothing
+  for (xiiUInt16 thisFrame = 0; thisFrame < numFrames; ++thisFrame)
+  {
+    const xiiUInt16 prevFrame2 = (numFrames + thisFrame - 2) % numFrames;
+    const xiiUInt16 prevFrame = (numFrames + thisFrame - 1) % numFrames;
+    const xiiUInt16 nextFrame = (thisFrame + 1) % numFrames;
+    const xiiUInt16 nextFrame2 = (thisFrame + 2) % numFrames;
+
+    const xiiVec3 smoothedTranslation =
+      (translations[prevFrame2] + translations[prevFrame] + translations[thisFrame] + translations[nextFrame] + translations[nextFrame2]) * 0.2f;
+
+    pRootTransforms[thisFrame].m_vPosition = smoothedTranslation;
+  }
+
+#  if 0
+   for (xiiUInt32 i = 0; i < anim.GetNumFrames(); ++i)
+  {
+    xiiLog::Info("Motion {0}: {1} | {2}", xiiArgI(i, 3), xiiArgF(pRootTransforms[i].m_vPosition.x, 1),
+                xiiArgF(pRootTransforms[i].m_vPosition.y, 1));
+  }
+#  endif
+}
+
+void xiiAnimationClipAssetDocument::MakeRootMotionConstantAverage(xiiAnimationClipResourceDescriptor& anim) const
+{
+  const xiiUInt16 uiRootMotionJointIdx = anim.GetRootMotionJoint();
+  xiiArrayPtr<xiiTransform> pRootTransforms = anim.GetJointKeyframes(uiRootMotionJointIdx);
+  const xiiUInt16 numFrames = anim.GetNumFrames();
+
+  xiiVec3 avgFootTranslation(0);
+
+  for (xiiUInt16 thisFrame = 0; thisFrame < numFrames; ++thisFrame)
+  {
+    avgFootTranslation += pRootTransforms[thisFrame].m_vPosition;
+  }
+
+  avgFootTranslation /= numFrames;
+
+  for (xiiUInt16 thisFrame = 0; thisFrame < numFrames; ++thisFrame)
+  {
+    pRootTransforms[thisFrame].m_vPosition = avgFootTranslation;
+  }
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 
