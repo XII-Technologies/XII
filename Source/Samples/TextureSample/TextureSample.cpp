@@ -119,16 +119,16 @@ public:
 #  error Renderer not implemented on platform
 #endif
 
-    constexpr const char* szDefaultLibraryName = "xiiRendererDiligent";
+    xiiStringView szDefaultLibraryName = "xiiRendererDiligent";
     xiiGALDeviceFactory::RegisterLibraryName("DX11", "xiiRendererDX11");
     xiiGALDeviceFactory::RegisterLibraryName("D3D11", szDefaultLibraryName);
     xiiGALDeviceFactory::RegisterLibraryName("D3D12", szDefaultLibraryName);
     xiiGALDeviceFactory::RegisterLibraryName("Vulkan", szDefaultLibraryName);
 
-    const char* szRendererName   = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
+    xiiStringView sRendererName    = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultRenderer);
     const char* szShaderModel    = "";
     const char* szShaderCompiler = "";
-    xiiGALDeviceFactory::GetShaderModelAndCompiler(szRendererName, szShaderModel, szShaderCompiler);
+    xiiGALDeviceFactory::GetShaderModelAndCompiler(sRendererName, szShaderModel, szShaderCompiler);
 
     xiiShaderManager::Configure(szShaderModel, true);
     XII_VERIFY(xiiPlugin::LoadPlugin(szShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found", szShaderCompiler);
@@ -184,8 +184,8 @@ public:
       xiiGALDeviceCreationDescription DeviceInit;
       DeviceInit.m_bDebugDevice = true;
 
-      m_pDevice = xiiGALDeviceFactory::CreateDevice(szRendererName, xiiFoundation::GetDefaultAllocator(), DeviceInit);
-      XII_ASSERT_DEV(m_pDevice != nullptr, "Device implemention for '{}' not found", szRendererName);
+      m_pDevice = xiiGALDeviceFactory::CreateDevice(sRendererName, xiiFoundation::GetDefaultAllocator(), DeviceInit);
+      XII_ASSERT_DEV(m_pDevice != nullptr, "Device implemention for '{}' not found", sRendererName);
       XII_VERIFY(m_pDevice->Init() == XII_SUCCESS, "Device init failed!");
 
       xiiGALDevice::SetDefaultDevice(m_pDevice);

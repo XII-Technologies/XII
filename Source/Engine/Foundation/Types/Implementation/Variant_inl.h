@@ -180,11 +180,6 @@ XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiQuatd& value)
   InitInplace(value);
 }
 
-XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiStringView& value)
-{
-  InitInplace(value);
-}
-
 XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiTime& value)
 {
   InitInplace(value);
@@ -589,7 +584,7 @@ const T& xiiVariant::Cast() const
 
 XII_ALWAYS_INLINE bool xiiVariant::IsNumberStatic(xiiUInt32 type)
 {
-  return type > Type::Invalid && type <= Type::Double;
+  return type > Type::FirstStandardType && type <= Type::Double;
 }
 
 XII_ALWAYS_INLINE bool xiiVariant::IsFloatingPointStatic(xiiUInt32 type)

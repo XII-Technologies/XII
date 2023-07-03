@@ -66,20 +66,38 @@ xiiVariant GetVariantFromType(xiiVariant::Type::Enum type)
       return xiiVariant(xiiColorGammaUB(xiiColor(0.5f, 33.0f, 2.0f, 0.3f)));
     case xiiVariant::Type::Vector2:
       return xiiVariant(xiiVec2(2.0f, 4.0f));
+    case xiiVariant::Type::Vector2d:
+      return xiiVariant(xiiVec2d(2.0, 4.0));
     case xiiVariant::Type::Vector3:
       return xiiVariant(xiiVec3(2.0f, 4.0f, -8.0f));
+    case xiiVariant::Type::Vector3d:
+      return xiiVariant(xiiVec3d(2.0, 4.0, -8.0));
     case xiiVariant::Type::Vector4:
       return xiiVariant(xiiVec4(1.0f, 7.0f, 8.0f, -10.0f));
+    case xiiVariant::Type::Vector4d:
+      return xiiVariant(xiiVec4d(1.0, 7.0, 8.0, -10.0));
     case xiiVariant::Type::Vector2I:
       return xiiVariant(xiiVec2I32(1, 2));
+    case xiiVariant::Type::Vector2I64:
+      return xiiVariant(xiiVec2I64(1, 2));
     case xiiVariant::Type::Vector3I:
       return xiiVariant(xiiVec3I32(3, 4, 5));
+    case xiiVariant::Type::Vector3I64:
+      return xiiVariant(xiiVec3I64(3, 4, 5));
     case xiiVariant::Type::Vector4I:
       return xiiVariant(xiiVec4I32(6, 7, 8, 9));
+    case xiiVariant::Type::Vector4I64:
+      return xiiVariant(xiiVec4I64(6, 7, 8, 9));
     case xiiVariant::Type::Quaternion:
     {
       xiiQuat quat;
       quat.SetFromEulerAngles(xiiAngle::Degree(30), xiiAngle::Degree(-15), xiiAngle::Degree(20));
+      return xiiVariant(quat);
+    }
+    case xiiVariant::Type::Quaterniond:
+    {
+      xiiQuatd quat;
+      quat.SetFromEulerAngles(xiiAngled::Degree(30), xiiAngled::Degree(-15), xiiAngled::Degree(20));
       return xiiVariant(quat);
     }
     case xiiVariant::Type::Matrix3:
@@ -87,6 +105,13 @@ xiiVariant GetVariantFromType(xiiVariant::Type::Enum type)
       xiiMat3 mat = xiiMat3::IdentityMatrix();
 
       mat.SetRotationMatrix(xiiVec3(1.0f, 0.0f, 0.0f), xiiAngle::Degree(30));
+      return xiiVariant(mat);
+    }
+    case xiiVariant::Type::Matrix3d:
+    {
+      xiiMat3d mat = xiiMat3d::IdentityMatrix();
+
+      mat.SetRotationMatrix(xiiVec3d(1.0, 0.0, 0.0), xiiAngled::Degree(30));
       return xiiVariant(mat);
     }
     case xiiVariant::Type::Matrix4:
@@ -97,10 +122,18 @@ xiiVariant GetVariantFromType(xiiVariant::Type::Enum type)
       mat.SetTranslationVector(xiiVec3(1.0f, 2.0f, 3.0f));
       return xiiVariant(mat);
     }
+    case xiiVariant::Type::Matrix4d:
+    {
+      xiiMat4d mat = xiiMat4d::IdentityMatrix();
+
+      mat.SetRotationMatrix(xiiVec3d(0.0, 1.0, 0.0), xiiAngled::Degree(30));
+      mat.SetTranslationVector(xiiVec3d(1.0, 2.0, 3.0));
+      return xiiVariant(mat);
+    }
     case xiiVariant::Type::String:
       return xiiVariant("Test");
     case xiiVariant::Type::StringView:
-      return xiiVariant("Test");
+      return xiiVariant(xiiStringView("Test"), false);
     case xiiVariant::Type::Time:
       return xiiVariant(xiiTime::Seconds(123.0f));
     case xiiVariant::Type::Uuid:
@@ -111,6 +144,8 @@ xiiVariant GetVariantFromType(xiiVariant::Type::Enum type)
     }
     case xiiVariant::Type::Angle:
       return xiiVariant(xiiAngle::Degree(30.0f));
+    case xiiVariant::Type::Angled:
+      return xiiVariant(xiiAngled::Degree(30.0));
     case xiiVariant::Type::DataBuffer:
     {
       xiiDataBuffer data;

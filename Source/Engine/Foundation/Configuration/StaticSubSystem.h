@@ -36,15 +36,21 @@
 /// \brief Put this in some cpp file of a subsystem to start its startup / shutdown sequence declaration.
 ///
 /// The first parameter is the name of the group, in which the subsystem resides, the second is the name of the subsystem itself.
-#define XII_BEGIN_SUBSYSTEM_DECLARATION(GroupName, SubsystemName)            \
-  class GroupName##SubsystemName##SubSystem;                                 \
-  class GroupName##SubsystemName##SubSystem : public xiiSubSystem            \
-  {                                                                          \
-  public:                                                                    \
-    virtual const char* GetGroupName() const override { return #GroupName; } \
-                                                                             \
-  public:                                                                    \
-    virtual const char* GetSubSystemName() const override { return #SubsystemName; }
+#define XII_BEGIN_SUBSYSTEM_DECLARATION(GroupName, SubsystemName) \
+  class GroupName##SubsystemName##SubSystem;                      \
+  class GroupName##SubsystemName##SubSystem : public xiiSubSystem \
+  {                                                               \
+  public:                                                         \
+    virtual xiiStringView GetGroupName() const override           \
+    {                                                             \
+      return #GroupName;                                          \
+    }                                                             \
+                                                                  \
+  public:                                                         \
+    virtual xiiStringView GetSubSystemName() const override       \
+    {                                                             \
+      return #SubsystemName;                                      \
+    }
 
 /// \brief Finishes a subsystem's startup / shutdown sequence declaration.
 #define XII_END_SUBSYSTEM_DECLARATION \
@@ -89,11 +95,11 @@ private:                             \
 /// \brief Begins the list of subsystems, on which the currently declared system depends on.
 ///
 /// Must be followed by a series of strings with the names of the dependencies.
-#define BEGIN_SUBSYSTEM_DEPENDENCIES                        \
-public:                                                     \
-  virtual const char* GetDependency(xiiInt32 iDep) override \
-  {                                                         \
-    const char* szDeps[] = {
+#define BEGIN_SUBSYSTEM_DEPENDENCIES                          \
+public:                                                       \
+  virtual xiiStringView GetDependency(xiiInt32 iDep) override \
+  {                                                           \
+    xiiStringView szDeps[] = {
 
 /// \brief Ends the list of subsystems, on which the currently declared system depends on.
 #define END_SUBSYSTEM_DEPENDENCIES \

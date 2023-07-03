@@ -467,7 +467,7 @@ xiiUuid xiiMaterialAssetDocument::GetMaterialNodeGuid(const xiiAbstractObjectGra
 {
   for (auto it = graph.GetAllNodes().GetIterator(); it.IsValid(); ++it)
   {
-    if (xiiStringUtils::IsEqual(it.Value()->GetType(), xiiGetStaticRTTI<xiiMaterialAssetProperties>()->GetTypeName()))
+    if (it.Value()->GetType() == xiiGetStaticRTTI<xiiMaterialAssetProperties>()->GetTypeName())
     {
       return it.Value()->GetGuid();
     }

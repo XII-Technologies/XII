@@ -11,7 +11,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBoneWeightsAnimNode, 1, xiiRTTIDefaultAlloca
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Weight", m_fWeight)->AddAttributes(new xiiDefaultValueAttribute(1.0), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("Weight", m_fWeight)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_ARRAY_ACCESSOR_PROPERTY("RootBones", RootBones_GetCount, RootBones_GetValue, RootBones_SetValue, RootBones_Insert, RootBones_Remove),
 
     XII_MEMBER_PROPERTY("Weights", m_WeightsPin)->AddAttributes(new xiiHiddenAttribute()),

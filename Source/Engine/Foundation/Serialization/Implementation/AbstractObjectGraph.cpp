@@ -24,7 +24,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiDiffOperation, xiiNoBase, 1, xiiRTTIDefaultAl
     XII_MEMBER_PROPERTY("Index", m_Index),
     XII_MEMBER_PROPERTY("Value", m_Value),
   }
-    XII_END_PROPERTIES;
+  XII_END_PROPERTIES;
 }
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
@@ -90,11 +90,11 @@ xiiAbstractObjectNode* xiiAbstractObjectGraph::Clone(xiiAbstractObjectGraph& ref
   }
 }
 
-const char* xiiAbstractObjectGraph::RegisterString(xiiStringView sString)
+xiiStringView xiiAbstractObjectGraph::RegisterString(xiiStringView sString)
 {
   auto it = m_Strings.Insert(sString);
   XII_ASSERT_DEV(it.IsValid(), "");
-  return it.Key().GetData();
+  return it.Key();
 }
 
 xiiAbstractObjectNode* xiiAbstractObjectGraph::GetNode(const xiiUuid& guid)
@@ -107,40 +107,40 @@ const xiiAbstractObjectNode* xiiAbstractObjectGraph::GetNode(const xiiUuid& guid
   return const_cast<xiiAbstractObjectGraph*>(this)->GetNode(guid);
 }
 
-const xiiAbstractObjectNode* xiiAbstractObjectGraph::GetNodeByName(const char* szName) const
+const xiiAbstractObjectNode* xiiAbstractObjectGraph::GetNodeByName(xiiStringView sName) const
 {
-  return const_cast<xiiAbstractObjectGraph*>(this)->GetNodeByName(szName);
+  return const_cast<xiiAbstractObjectGraph*>(this)->GetNodeByName(sName);
 }
 
-xiiAbstractObjectNode* xiiAbstractObjectGraph::GetNodeByName(const char* szName)
+xiiAbstractObjectNode* xiiAbstractObjectGraph::GetNodeByName(xiiStringView sName)
 {
-  return m_NodesByName.GetValueOrDefault(szName, nullptr);
+  return m_NodesByName.GetValueOrDefault(sName, nullptr);
 }
 
-xiiAbstractObjectNode* xiiAbstractObjectGraph::AddNode(const xiiUuid& guid, const char* szType, xiiUInt32 uiTypeVersion, const char* szNodeName)
+xiiAbstractObjectNode* xiiAbstractObjectGraph::AddNode(const xiiUuid& guid, xiiStringView sType, xiiUInt32 uiTypeVersion, xiiStringView sNodeName)
 {
   XII_ASSERT_DEV(!m_Nodes.Contains(guid), "object {0} must not yet exist", guid);
-  if (!xiiStringUtils::IsNullOrEmpty(szNodeName))
+  if (!sNodeName.IsEmpty())
   {
-    szNodeName = RegisterString(szNodeName);
+    sNodeName = RegisterString(sNodeName);
   }
   else
   {
-    szNodeName = nullptr;
+    sNodeName = {};
   }
 
   xiiAbstractObjectNode* pNode = XII_DEFAULT_NEW(xiiAbstractObjectNode);
   pNode->m_Guid                = guid;
   pNode->m_pOwner              = this;
-  pNode->m_szType              = RegisterString(szType);
+  pNode->m_sType               = RegisterString(sType);
   pNode->m_uiTypeVersion       = uiTypeVersion;
-  pNode->m_szNodeName          = szNodeName;
+  pNode->m_sNodeName           = sNodeName;
 
   m_Nodes[guid] = pNode;
 
-  if (!xiiStringUtils::IsNullOrEmpty(szNodeName))
+  if (!sNodeName.IsEmpty())
   {
-    m_NodesByName[szNodeName] = pNode;
+    m_NodesByName[sNodeName] = pNode;
   }
 
   return pNode;
@@ -153,8 +153,8 @@ void xiiAbstractObjectGraph::RemoveNode(const xiiUuid& guid)
   if (it.IsValid())
   {
     xiiAbstractObjectNode* pNode = it.Value();
-    if (pNode->m_szNodeName != nullptr)
-      m_NodesByName.Remove(pNode->m_szNodeName);
+    if (!pNode->m_sNodeName.IsEmpty())
+      m_NodesByName.Remove(pNode->m_sNodeName);
 
     m_Nodes.Remove(guid);
     XII_DEFAULT_DELETE(pNode);
@@ -163,32 +163,32 @@ void xiiAbstractObjectGraph::RemoveNode(const xiiUuid& guid)
 
 void xiiAbstractObjectNode::AddProperty(xiiStringView sName, const xiiVariant& value)
 {
-  auto& prop            = m_Properties.ExpandAndGetRef();
-  prop.m_szPropertyName = m_pOwner->RegisterString(sName);
-  prop.m_Value          = value;
+  auto& prop           = m_Properties.ExpandAndGetRef();
+  prop.m_sPropertyName = m_pOwner->RegisterString(sName);
+  prop.m_Value         = value;
 }
 
-void xiiAbstractObjectNode::ChangeProperty(const char* szName, const xiiVariant& value)
+void xiiAbstractObjectNode::ChangeProperty(xiiStringView sName, const xiiVariant& value)
 {
   for (xiiUInt32 i = 0; i < m_Properties.GetCount(); ++i)
   {
-    if (xiiStringUtils::IsEqual(m_Properties[i].m_szPropertyName, szName))
+    if (m_Properties[i].m_sPropertyName == sName)
     {
       m_Properties[i].m_Value = value;
       return;
     }
   }
 
-  XII_REPORT_FAILURE("Property '{0}' is unknown", szName);
+  XII_REPORT_FAILURE("Property '{0}' is unknown", sName);
 }
 
-void xiiAbstractObjectNode::RenameProperty(const char* szOldName, const char* szNewName)
+void xiiAbstractObjectNode::RenameProperty(xiiStringView sOldName, xiiStringView sNewName)
 {
   for (xiiUInt32 i = 0; i < m_Properties.GetCount(); ++i)
   {
-    if (xiiStringUtils::IsEqual(m_Properties[i].m_szPropertyName, szOldName))
+    if (m_Properties[i].m_sPropertyName == sOldName)
     {
-      m_Properties[i].m_szPropertyName = m_pOwner->RegisterString(szNewName);
+      m_Properties[i].m_sPropertyName = m_pOwner->RegisterString(sNewName);
       return;
     }
   }
@@ -199,12 +199,12 @@ void xiiAbstractObjectNode::ClearProperties()
   m_Properties.Clear();
 }
 
-xiiResult xiiAbstractObjectNode::InlineProperty(const char* szName)
+xiiResult xiiAbstractObjectNode::InlineProperty(xiiStringView sName)
 {
   for (xiiUInt32 i = 0; i < m_Properties.GetCount(); ++i)
   {
     Property& prop = m_Properties[i];
-    if (xiiStringUtils::IsEqual(prop.m_szPropertyName, szName))
+    if (prop.m_sPropertyName == sName)
     {
       if (!prop.m_Value.IsA<xiiUuid>())
         return XII_FAILURE;
@@ -243,11 +243,11 @@ xiiResult xiiAbstractObjectNode::InlineProperty(const char* szName)
   return XII_FAILURE;
 }
 
-void xiiAbstractObjectNode::RemoveProperty(const char* szName)
+void xiiAbstractObjectNode::RemoveProperty(xiiStringView sName)
 {
   for (xiiUInt32 i = 0; i < m_Properties.GetCount(); ++i)
   {
-    if (xiiStringUtils::IsEqual(m_Properties[i].m_szPropertyName, szName))
+    if (m_Properties[i].m_sPropertyName == sName)
     {
       m_Properties.RemoveAtAndSwap(i);
       return;
@@ -255,16 +255,16 @@ void xiiAbstractObjectNode::RemoveProperty(const char* szName)
   }
 }
 
-void xiiAbstractObjectNode::SetType(const char* szType)
+void xiiAbstractObjectNode::SetType(xiiStringView sType)
 {
-  m_szType = m_pOwner->RegisterString(szType);
+  m_sType = m_pOwner->RegisterString(sType);
 }
 
-const xiiAbstractObjectNode::Property* xiiAbstractObjectNode::FindProperty(const char* szName) const
+const xiiAbstractObjectNode::Property* xiiAbstractObjectNode::FindProperty(xiiStringView sName) const
 {
   for (xiiUInt32 i = 0; i < m_Properties.GetCount(); ++i)
   {
-    if (xiiStringUtils::IsEqual(m_Properties[i].m_szPropertyName, szName))
+    if (m_Properties[i].m_sPropertyName == sName)
     {
       return &m_Properties[i];
     }
@@ -273,11 +273,11 @@ const xiiAbstractObjectNode::Property* xiiAbstractObjectNode::FindProperty(const
   return nullptr;
 }
 
-xiiAbstractObjectNode::Property* xiiAbstractObjectNode::FindProperty(const char* szName)
+xiiAbstractObjectNode::Property* xiiAbstractObjectNode::FindProperty(xiiStringView sName)
 {
   for (xiiUInt32 i = 0; i < m_Properties.GetCount(); ++i)
   {
-    if (xiiStringUtils::IsEqual(m_Properties[i].m_szPropertyName, szName))
+    if (m_Properties[i].m_sPropertyName == sName)
     {
       return &m_Properties[i];
     }
@@ -327,7 +327,7 @@ void xiiAbstractObjectGraph::ReMapNodeGuids(const xiiUuid& seedGuid, bool bRemap
 void xiiAbstractObjectGraph::ReMapNodeGuidsToMatchGraph(xiiAbstractObjectNode* pRoot, const xiiAbstractObjectGraph& rhsGraph, const xiiAbstractObjectNode* pRhsRoot)
 {
   xiiHashTable<xiiUuid, xiiUuid> guidMap;
-  XII_ASSERT_DEV(xiiStringUtils::IsEqual(pRoot->GetType(), pRhsRoot->GetType()), "Roots must have the same type to be able re-map guids!");
+  XII_ASSERT_DEV(pRoot->GetType() == pRhsRoot->GetType(), "Roots must have the same type to be able re-map guids!");
 
   ReMapNodeGuidsToMatchGraphRecursive(guidMap, pRoot, rhsGraph, pRhsRoot);
 
@@ -345,7 +345,7 @@ void xiiAbstractObjectGraph::ReMapNodeGuidsToMatchGraph(xiiAbstractObjectNode* p
 
 void xiiAbstractObjectGraph::ReMapNodeGuidsToMatchGraphRecursive(xiiHashTable<xiiUuid, xiiUuid>& guidMap, xiiAbstractObjectNode* lhs, const xiiAbstractObjectGraph& rhsGraph, const xiiAbstractObjectNode* rhs)
 {
-  if (!xiiStringUtils::IsEqual(lhs->GetType(), rhs->GetType()))
+  if (lhs->GetType() != rhs->GetType())
   {
     // Types differ, remapping ends as this is a removal and add of a new object.
     return;
@@ -367,7 +367,7 @@ void xiiAbstractObjectGraph::ReMapNodeGuidsToMatchGraphRecursive(xiiHashTable<xi
       auto it = m_Nodes.Find(prop.m_Value.Get<xiiUuid>());
       if (it.IsValid())
       {
-        if (const xiiAbstractObjectNode::Property* rhsProp = rhs->FindProperty(prop.m_szPropertyName))
+        if (const xiiAbstractObjectNode::Property* rhsProp = rhs->FindProperty(prop.m_sPropertyName))
         {
           if (rhsProp->m_Value.IsA<xiiUuid>() && rhsProp->m_Value.Get<xiiUuid>().IsValid())
           {
@@ -392,7 +392,7 @@ void xiiAbstractObjectGraph::ReMapNodeGuidsToMatchGraphRecursive(xiiHashTable<xi
           auto it = m_Nodes.Find(subValue.Get<xiiUuid>());
           if (it.IsValid())
           {
-            if (const xiiAbstractObjectNode::Property* rhsProp = rhs->FindProperty(prop.m_szPropertyName))
+            if (const xiiAbstractObjectNode::Property* rhsProp = rhs->FindProperty(prop.m_sPropertyName))
             {
               if (rhsProp->m_Value.IsA<xiiVariantArray>())
               {
@@ -427,7 +427,7 @@ void xiiAbstractObjectGraph::ReMapNodeGuidsToMatchGraphRecursive(xiiHashTable<xi
           auto it = m_Nodes.Find(subValue.Get<xiiUuid>());
           if (it.IsValid())
           {
-            if (const xiiAbstractObjectNode::Property* rhsProp = rhs->FindProperty(prop.m_szPropertyName))
+            if (const xiiAbstractObjectNode::Property* rhsProp = rhs->FindProperty(prop.m_sPropertyName))
             {
               if (rhsProp->m_Value.IsA<xiiVariantDictionary>())
               {
@@ -583,7 +583,9 @@ xiiAbstractObjectNode* xiiAbstractObjectGraph::CopyNodeIntoGraph(const xiiAbstra
   auto pNewNode = AddNode(pNode->GetGuid(), pNode->GetType(), pNode->GetTypeVersion(), pNode->GetNodeName());
 
   for (const auto& props : pNode->GetProperties())
-    pNewNode->AddProperty(props.m_szPropertyName, props.m_Value);
+  {
+    pNewNode->AddProperty(props.m_sPropertyName, props.m_Value);
+  }
 
   return pNewNode;
 }
@@ -598,13 +600,16 @@ xiiAbstractObjectNode* xiiAbstractObjectGraph::CopyNodeIntoGraph(const xiiAbstra
     {
       if (!ref_filter(pNode, &props))
         continue;
-      pNewNode->AddProperty(props.m_szPropertyName, props.m_Value);
+
+      pNewNode->AddProperty(props.m_sPropertyName, props.m_Value);
     }
   }
   else
   {
     for (const auto& props : pNode->GetProperties())
-      pNewNode->AddProperty(props.m_szPropertyName, props.m_Value);
+    {
+      pNewNode->AddProperty(props.m_sPropertyName, props.m_Value);
+    }
   }
 
   return pNewNode;
@@ -624,8 +629,8 @@ void xiiAbstractObjectGraph::CreateDiffWithBaseGraph(const xiiAbstractObjectGrap
         xiiAbstractGraphDiffOperation op;
         op.m_Node      = itNodeBase.Key();
         op.m_Operation = xiiAbstractGraphDiffOperation::Op::NodeRemoved;
-        op.m_sProperty = itNodeBase.Value()->m_szType;
-        op.m_Value     = itNodeBase.Value()->m_szNodeName;
+        op.m_sProperty = itNodeBase.Value()->m_sType;
+        op.m_Value     = itNodeBase.Value()->m_sNodeName;
 
         out_diffResult.PushBack(op);
       }
@@ -642,8 +647,8 @@ void xiiAbstractObjectGraph::CreateDiffWithBaseGraph(const xiiAbstractObjectGrap
         xiiAbstractGraphDiffOperation op;
         op.m_Node      = itNodeThis.Key();
         op.m_Operation = xiiAbstractGraphDiffOperation::Op::NodeAdded;
-        op.m_sProperty = itNodeThis.Value()->m_szType;
-        op.m_Value     = itNodeThis.Value()->m_szNodeName;
+        op.m_sProperty = itNodeThis.Value()->m_sType;
+        op.m_Value     = itNodeThis.Value()->m_sNodeName;
 
         out_diffResult.PushBack(op);
 
@@ -651,7 +656,7 @@ void xiiAbstractObjectGraph::CreateDiffWithBaseGraph(const xiiAbstractObjectGrap
         for (const auto& prop : itNodeThis.Value()->GetProperties())
         {
           op.m_Operation = xiiAbstractGraphDiffOperation::Op::PropertyChanged;
-          op.m_sProperty = prop.m_szPropertyName;
+          op.m_sProperty = prop.m_sPropertyName;
           op.m_Value     = prop.m_Value;
 
           out_diffResult.PushBack(op);
@@ -675,7 +680,7 @@ void xiiAbstractObjectGraph::CreateDiffWithBaseGraph(const xiiAbstractObjectGrap
 
         for (const xiiAbstractObjectNode::Property& baseProp : pBaseNode->GetProperties())
         {
-          if (xiiStringUtils::IsEqual(baseProp.m_szPropertyName, prop.m_szPropertyName))
+          if (baseProp.m_sPropertyName == prop.m_sPropertyName)
           {
             if (baseProp.m_Value == prop.m_Value)
             {
@@ -693,7 +698,7 @@ void xiiAbstractObjectGraph::CreateDiffWithBaseGraph(const xiiAbstractObjectGrap
           xiiAbstractGraphDiffOperation op;
           op.m_Node      = itNodeThis.Key();
           op.m_Operation = xiiAbstractGraphDiffOperation::Op::PropertyChanged;
-          op.m_sProperty = prop.m_szPropertyName;
+          op.m_sProperty = prop.m_sPropertyName;
           op.m_Value     = prop.m_Value;
 
           out_diffResult.PushBack(op);
@@ -730,9 +735,13 @@ void xiiAbstractObjectGraph::ApplyDiff(xiiDeque<xiiAbstractGraphDiffOperation>& 
           auto* pProp = pNode->FindProperty(op.m_sProperty);
 
           if (!pProp)
+          {
             pNode->AddProperty(op.m_sProperty, op.m_Value);
+          }
           else
+          {
             pProp->m_Value = op.m_Value;
+          }
         }
       }
       break;
@@ -757,7 +766,9 @@ void xiiAbstractObjectGraph::MergeDiffs(const xiiDeque<xiiAbstractGraphDiffOpera
     bool operator<(const Prop& rhs) const
     {
       if (m_Node == rhs.m_Node)
+      {
         return m_sProperty < rhs.m_sProperty;
+      }
 
       return m_Node < rhs.m_Node;
     }

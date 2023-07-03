@@ -18,6 +18,7 @@ struct RenderPipelineResourceLoaderConnectionInternal
   xiiString m_SourcePin;
   xiiString m_TargetPin;
 };
+
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, RenderPipelineResourceLoaderConnectionInternal);
 
 // clang-format off
@@ -150,7 +151,7 @@ xiiInternal::NewInstance<xiiRenderPipeline> xiiRenderPipelineResourceLoader::Cre
     auto*          pNode = it.Value();
     const xiiUuid& guid  = pNode->GetGuid();
 
-    if (xiiStringUtils::IsEqual(pNode->GetNodeName(), "Connection") == false)
+    if (pNode->GetNodeName() != "Connection")
       continue;
 
     RenderPipelineResourceLoaderConnectionInternal data;

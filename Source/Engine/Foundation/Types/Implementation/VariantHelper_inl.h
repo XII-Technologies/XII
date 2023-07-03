@@ -428,6 +428,13 @@ class xiiVariantHelper
     xiiVariant::DispatchTo(toStringFunc, value.GetType());
   }
 
+  static void To(const xiiVariant& value, xiiStringView& result, bool& bSuccessful)
+  {
+    bSuccessful = true;
+
+    result = value.Get<xiiString>().GetView();
+  }
+
   static void To(const xiiVariant& value, xiiTypedPointer& result, bool& bSuccessful)
   {
     bSuccessful = true;

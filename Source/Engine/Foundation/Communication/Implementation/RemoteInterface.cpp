@@ -10,7 +10,7 @@ xiiRemoteInterface::~xiiRemoteInterface()
   XII_ASSERT_DEV(m_RemoteMode == xiiRemoteMode::None, "xiiRemoteInterface::ShutdownConnection() has to be called before destroying the interface");
 }
 
-xiiResult xiiRemoteInterface::CreateConnection(xiiUInt32 uiConnectionToken, xiiRemoteMode mode, const char* szServerAddress, bool bStartUpdateThread)
+xiiResult xiiRemoteInterface::CreateConnection(xiiUInt32 uiConnectionToken, xiiRemoteMode mode, xiiStringView sServerAddress, bool bStartUpdateThread)
 {
   xiiUInt32 uiPrevID = m_uiApplicationID;
   ShutdownConnection();
@@ -19,7 +19,7 @@ xiiResult xiiRemoteInterface::CreateConnection(xiiUInt32 uiConnectionToken, xiiR
   XII_LOCK(GetMutex());
 
   m_uiConnectionToken = uiConnectionToken;
-  m_sServerAddress    = szServerAddress;
+  m_sServerAddress    = sServerAddress;
 
   if (m_uiApplicationID == 0)
   {
@@ -27,7 +27,7 @@ xiiResult xiiRemoteInterface::CreateConnection(xiiUInt32 uiConnectionToken, xiiR
     m_uiApplicationID = (xiiUInt32)xiiTime::Now().GetSeconds();
   }
 
-  if (InternalCreateConnection(mode, szServerAddress).Failed())
+  if (InternalCreateConnection(mode, sServerAddress).Failed())
   {
     ShutdownConnection();
     return XII_FAILURE;
@@ -45,14 +45,14 @@ xiiResult xiiRemoteInterface::CreateConnection(xiiUInt32 uiConnectionToken, xiiR
   return XII_SUCCESS;
 }
 
-xiiResult xiiRemoteInterface::StartServer(xiiUInt32 uiConnectionToken, const char* szAddress, bool bStartUpdateThread /*= true*/)
+xiiResult xiiRemoteInterface::StartServer(xiiUInt32 uiConnectionToken, xiiStringView sAddress, bool bStartUpdateThread /*= true*/)
 {
-  return CreateConnection(uiConnectionToken, xiiRemoteMode::Server, szAddress, bStartUpdateThread);
+  return CreateConnection(uiConnectionToken, xiiRemoteMode::Server, sAddress, bStartUpdateThread);
 }
 
-xiiResult xiiRemoteInterface::ConnectToServer(xiiUInt32 uiConnectionToken, const char* szAddress, bool bStartUpdateThread /*= true*/)
+xiiResult xiiRemoteInterface::ConnectToServer(xiiUInt32 uiConnectionToken, xiiStringView sAddress, bool bStartUpdateThread /*= true*/)
 {
-  return CreateConnection(uiConnectionToken, xiiRemoteMode::Client, szAddress, bStartUpdateThread);
+  return CreateConnection(uiConnectionToken, xiiRemoteMode::Client, sAddress, bStartUpdateThread);
 }
 
 xiiResult xiiRemoteInterface::WaitForConnectionToServer(xiiTime timeout /*= xiiTime::Seconds(10)*/)
@@ -322,12 +322,12 @@ void xiiRemoteInterface::ReportMessage(xiiUInt32 uiApplicationID, xiiUInt32 uiSy
   msg.GetWriter().WriteBytes(data.GetPtr(), data.GetCount()).IgnoreResult();
 }
 
-xiiResult xiiRemoteInterface::DetermineTargetAddress(const char* szConnectTo, xiiUInt32& out_IP, xiiUInt16& out_Port)
+xiiResult xiiRemoteInterface::DetermineTargetAddress(xiiStringView sConnectTo0, xiiUInt32& out_IP, xiiUInt16& out_Port)
 {
   out_IP   = 0;
   out_Port = 0;
 
-  xiiStringBuilder sConnectTo = szConnectTo;
+  xiiStringBuilder sConnectTo = sConnectTo0;
 
   const char* szColon = sConnectTo.FindLastSubString(":");
   if (szColon != nullptr)

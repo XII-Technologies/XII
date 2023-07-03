@@ -57,7 +57,7 @@ xiiTestAppRun xiiGameEngineTestStateMachine::RunSubTest(xiiInt32 iIdentifier, xi
     return xiiTestAppRun::Quit;
   }
 
-  const bool bVulkan = xiiStringUtils::IsEqual_NoCase(xiiGameApplication::GetActiveRenderer(), "Vulkan");
+  const bool bVulkan = xiiGameApplication::GetActiveRenderer().IsEqual_NoCase("Vulkan");
   ++m_iFrame;
 
   if (m_pOwnApplication->Run() == xiiApplication::Execution::Quit)

@@ -13,7 +13,7 @@
 #  include <Foundation/Communication/Implementation/Linux/PipeChannel_linux.h>
 #endif
 
-xiiIpcChannel::xiiIpcChannel(const char* szAddress, Mode::Enum mode) :
+xiiIpcChannel::xiiIpcChannel(xiiStringView sAddress, Mode::Enum mode) :
   m_Mode(mode), m_pOwner(xiiMessageLoop::GetSingleton())
 {
 }
@@ -27,18 +27,18 @@ xiiIpcChannel::~xiiIpcChannel()
   m_pOwner->RemoveChannel(this);
 }
 
-xiiIpcChannel* xiiIpcChannel::CreatePipeChannel(const char* szAddress, Mode::Enum mode)
+xiiIpcChannel* xiiIpcChannel::CreatePipeChannel(xiiStringView sAddress, Mode::Enum mode)
 {
-  if (xiiStringUtils::IsNullOrEmpty(szAddress) || xiiStringUtils::GetStringElementCount(szAddress) > 200)
+  if (sAddress.IsEmpty() || sAddress.GetElementCount() > 200)
   {
-    xiiLog::Error("Failed co create pipe '{0}', name is not valid", szAddress);
+    xiiLog::Error("Failed co create pipe '{0}', name is not valid", sAddress);
     return nullptr;
   }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-  return XII_DEFAULT_NEW(xiiPipeChannel_win, szAddress, mode);
+  return XII_DEFAULT_NEW(xiiPipeChannel_win, sAddress, mode);
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-  return XII_DEFAULT_NEW(xiiPipeChannel_linux, szAddress, mode);
+  return XII_DEFAULT_NEW(xiiPipeChannel_linux, sAddress, mode);
 #else
   XII_ASSERT_NOT_IMPLEMENTED;
   return nullptr;
@@ -46,10 +46,10 @@ xiiIpcChannel* xiiIpcChannel::CreatePipeChannel(const char* szAddress, Mode::Enu
 }
 
 
-xiiIpcChannel* xiiIpcChannel::CreateNetworkChannel(const char* szAddress, Mode::Enum mode)
+xiiIpcChannel* xiiIpcChannel::CreateNetworkChannel(xiiStringView sAddress, Mode::Enum mode)
 {
 #ifdef BUILDSYSTEM_ENABLE_ENET_SUPPORT
-  return XII_DEFAULT_NEW(xiiIpcChannelEnet, szAddress, mode);
+  return XII_DEFAULT_NEW(xiiIpcChannelEnet, sAddress, mode);
 #else
   XII_ASSERT_NOT_IMPLEMENTED;
   return nullptr;
@@ -233,7 +233,5 @@ void xiiIpcChannel::FlushPendingOperations()
 {
   m_pOwner->WaitForMessages(-1, this);
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_IpcChannel);

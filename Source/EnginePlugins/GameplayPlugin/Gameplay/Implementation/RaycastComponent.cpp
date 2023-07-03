@@ -50,7 +50,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiRaycastComponent, 3, xiiComponentMode::Static)
     XII_MEMBER_PROPERTY("DisableTargetObjectOnNoHit", m_bDisableTargetObjectOnNoHit),
     XII_ACCESSOR_PROPERTY("RaycastEndObject", DummyGetter, SetRaycastEndObject)->AddAttributes(new xiiGameObjectReferenceAttribute()),
     XII_MEMBER_PROPERTY("ForceTargetParentless", m_bForceTargetParentless),
-    XII_BITFLAGS_MEMBER_PROPERTY("ShapeTypesToHit", xiiPhysicsShapeType, m_ShapeTypesToHit)->AddAttributes(new xiiDefaultValueAttribute(xiiPhysicsShapeType::Default & ~(xiiPhysicsShapeType::Trigger))),
+    XII_BITFLAGS_MEMBER_PROPERTY("ShapeTypesToHit", xiiPhysicsShapeType, m_ShapeTypesToHit)->AddAttributes(new xiiDefaultValueAttribute(xiiVariant(xiiPhysicsShapeType::Default & ~(xiiPhysicsShapeType::Trigger)))),
     XII_MEMBER_PROPERTY("CollisionLayerEndPoint", m_uiCollisionLayerEndPoint)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),
     XII_MEMBER_PROPERTY("CollisionLayerTrigger", m_uiCollisionLayerTrigger)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),
     XII_ACCESSOR_PROPERTY("TriggerMessage", GetTriggerMessage, SetTriggerMessage),

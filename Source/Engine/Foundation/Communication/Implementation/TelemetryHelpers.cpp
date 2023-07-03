@@ -66,10 +66,10 @@ void xiiTelemetry::FlushOutgoingQueues()
 }
 
 
-xiiResult xiiTelemetry::ConnectToServer(const char* szConnectTo)
+xiiResult xiiTelemetry::ConnectToServer(xiiStringView sConnectTo)
 {
 #ifdef BUILDSYSTEM_ENABLE_ENET_SUPPORT
-  return OpenConnection(Client, szConnectTo);
+  return OpenConnection(Client, sConnectTo);
 #else
   xiiLog::SeriousWarning("Enet is not compiled into this build, xiiTelemetry::ConnectToServer() will be ignored.");
   return XII_FAILURE;
@@ -184,7 +184,6 @@ void xiiTelemetry::Send(TransmitMode tm, xiiTelemetryMessage& msg)
 {
   Send(tm, msg.GetSystemID(), msg.GetMessageID(), msg.GetReader(), (xiiInt32)msg.m_Storage.GetStorageSize32());
 }
-
 
 
 XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_TelemetryHelpers);

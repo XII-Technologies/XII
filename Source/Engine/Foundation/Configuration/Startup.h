@@ -82,7 +82,7 @@ public:
   // There is actually no 'Base Shutdown', everything that is initialized in 'Base Startup' should not require
   // any explicit shutdown.
 
-  /// \brief Stores the const char* as a tag. Does not copy the string, so this must be a string embedded in the application code.
+  /// \brief Stores the xiiStringView as a tag. Does not copy the string, so this must be a string embedded in the application code.
   ///
   /// Before executing the startup routines an application should set tags that allow plugins to identify the context in which they are running.
   /// This makes it possible for the startup functions to conditionally configure things.
@@ -92,10 +92,10 @@ public:
   /// this set, even though they don't use graphical output. 'editor' : for all applications that run the editor framework, set on the Editor and the
   /// EditorProcessor 'testframework' : for applications that execute the xiiTestFramework 'tool' : for all stand-alone tool applications, set by the
   /// editor, editorprocessor, fileserve, etc.
-  static void AddApplicationTag(const char* szTag);
+  static void AddApplicationTag(xiiStringView sTag);
 
   /// \brief Query whether a tag was added with AddApplicationTag()
-  static bool HasApplicationTag(const char* szTag);
+  static bool HasApplicationTag(xiiStringView sTag);
 
   /// \brief Runs the 'base' startup sequence of all subsystems in the proper order.
   ///
@@ -146,18 +146,18 @@ private:
   /// This can be used to shutdown all systems from certain DLLs before that DLL is unloaded (and possibly reloaded).
   /// Broadcasts the global event XII_GLOBALEVENT_UNLOAD_PLUGIN_BEGIN and XII_GLOBALEVENT_UNLOAD_PLUGIN_END and passes szPluginName in the first event
   /// parameter.
-  static void UnloadPluginSubSystems(const char* szPluginName);
+  static void UnloadPluginSubSystems(xiiStringView PluginName);
 
   static void PluginEventHandler(const xiiPluginEvent& EventData);
-  static void AssignSubSystemPlugin(const char* szPluginName);
+  static void AssignSubSystemPlugin(xiiStringView PluginName);
 
   static void ComputeOrder(xiiDeque<xiiSubSystem*>& Order);
-  static bool HasDependencyOnPlugin(xiiSubSystem* pSubSystem, const char* szModule);
+  static bool HasDependencyOnPlugin(xiiSubSystem* pSubSystem, xiiStringView Module);
 
   static void Startup(xiiStartupStage::Enum stage);
   static void Shutdown(xiiStartupStage::Enum stage);
 
-  static bool                         s_bPrintAllSubSystems;
-  static xiiStartupStage::Enum        s_CurrentState;
-  static xiiDynamicArray<const char*> s_ApplicationTags;
+  static bool                           s_bPrintAllSubSystems;
+  static xiiStartupStage::Enum          s_CurrentState;
+  static xiiDynamicArray<xiiStringView> s_ApplicationTags;
 };

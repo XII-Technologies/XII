@@ -75,7 +75,7 @@ public:
   /// \param uiPort The port over which the connection should run.
   /// \param bStartUpdateThread If true, a thread is started that will regularly call UpdateNetwork() and UpdatePingToServer().
   /// If false, this has to be called manually in regular intervals.
-  xiiResult StartServer(xiiUInt32 uiConnectionToken, const char* szAddress, bool bStartUpdateThread = true);
+  xiiResult StartServer(xiiUInt32 uiConnectionToken, xiiStringView sAddress, bool bStartUpdateThread = true);
 
   /// \brief Starts the network interface as a client. Tries to connect to the given address.
   ///
@@ -86,7 +86,7 @@ public:
   ///
   /// If this function succeeds, it still might not be connected to a server.
   /// Use WaitForConnectionToServer() to enforce a connection.
-  xiiResult ConnectToServer(xiiUInt32 uiConnectionToken, const char* szAddress, bool bStartUpdateThread = true);
+  xiiResult ConnectToServer(xiiUInt32 uiConnectionToken, xiiStringView sAddress, bool bStartUpdateThread = true);
 
   /// \brief Can only be called after ConnectToServer(). Updates the network in a loop until a connection is established, or the time has run out.
   ///
@@ -201,7 +201,7 @@ protected:
   ///@{
 
   /// \brief Derived classes have to implement this to start a network connection
-  virtual xiiResult InternalCreateConnection(xiiRemoteMode mode, const char* szServerAddress) = 0;
+  virtual xiiResult InternalCreateConnection(xiiRemoteMode mode, xiiStringView sServerAddress) = 0;
 
   /// \brief Derived classes have to implement this to shutdown a network connection
   virtual void InternalShutdownConnection() = 0;
@@ -216,7 +216,7 @@ protected:
   virtual xiiResult InternalTransmit(xiiRemoteTransmitMode tm, const xiiArrayPtr<const xiiUInt8>& data) = 0;
 
   /// \brief Derived classes can override this to interpret an address differently
-  virtual xiiResult DetermineTargetAddress(const char* szConnectTo, xiiUInt32& out_IP, xiiUInt16& out_Port);
+  virtual xiiResult DetermineTargetAddress(xiiStringView sConnectTo0, xiiUInt32& out_IP, xiiUInt16& out_Port);
 
   /// Derived classes should update this when the information is available
   // xiiString m_ServerInfoName;
@@ -241,7 +241,7 @@ private:
   void      StartUpdateThread();
   void      StopUpdateThread();
   xiiResult Transmit(xiiRemoteTransmitMode tm, const xiiArrayPtr<const xiiUInt8>& data);
-  xiiResult CreateConnection(xiiUInt32 uiConnectionToken, xiiRemoteMode mode, const char* szServerAddress, bool bStartUpdateThread);
+  xiiResult CreateConnection(xiiUInt32 uiConnectionToken, xiiRemoteMode mode, xiiStringView sServerAddress, bool bStartUpdateThread);
   xiiUInt32 ExecuteMessageHandlersForQueue(xiiRemoteMessageQueue& queue);
 
   mutable xiiMutex                               m_Mutex;

@@ -12,7 +12,7 @@ namespace
   static xiiVariantArray GetDefaultTags()
   {
     xiiVariantArray value(xiiStaticAllocatorWrapper::GetAllocator());
-    value.PushBack(xiiStringView("CastShadow"));
+    value.PushBack("CastShadow");
     return value;
   }
 } // namespace

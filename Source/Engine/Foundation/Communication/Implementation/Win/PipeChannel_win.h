@@ -18,14 +18,14 @@ struct IOContext
 class XII_FOUNDATION_DLL xiiPipeChannel_win : public xiiIpcChannel
 {
 public:
-  xiiPipeChannel_win(const char* szAddress, Mode::Enum mode);
+  xiiPipeChannel_win(xiiStringView sAddress, Mode::Enum mode);
   ~xiiPipeChannel_win();
 
 private:
   friend class xiiMessageLoop;
   friend class xiiMessageLoop_win;
 
-  bool CreatePipe(const char* szAddress);
+  bool CreatePipe(xiiStringView sAddress);
 
   virtual void AddToMessageLoop(xiiMessageLoop* pMsgLoop) override;
 
@@ -48,6 +48,7 @@ private:
   {
     explicit State(xiiPipeChannel_win* pChannel);
     ~State();
+
     IOContext          Context;
     xiiAtomicInteger32 IsPending = false; ///< Whether an async operation is in process.
   };

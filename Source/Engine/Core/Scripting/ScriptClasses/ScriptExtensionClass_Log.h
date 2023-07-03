@@ -6,9 +6,9 @@
 class XII_CORE_DLL xiiScriptExtensionClass_Log
 {
 public:
-  static void Info(const char* szText, const xiiVariantArray& params);
-  static void Warning(const char* szText, const xiiVariantArray& params);
-  static void Error(const char* szText, const xiiVariantArray& params);
+  static void Info(xiiStringView sText, const xiiVariantArray& params);
+  static void Warning(xiiStringView sText, const xiiVariantArray& params);
+  static void Error(xiiStringView sText, const xiiVariantArray& params);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiScriptExtensionClass_Log);

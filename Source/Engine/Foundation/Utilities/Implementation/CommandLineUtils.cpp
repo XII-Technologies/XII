@@ -146,27 +146,27 @@ const xiiString& xiiCommandLineUtils::GetParameter(xiiUInt32 uiParam) const
   return m_Commands[uiParam];
 }
 
-xiiInt32 xiiCommandLineUtils::GetOptionIndex(const char* szOption, bool bCaseSensitive) const
+xiiInt32 xiiCommandLineUtils::GetOptionIndex(xiiStringView sOption, bool bCaseSensitive) const
 {
-  XII_ASSERT_DEV(xiiStringUtils::StartsWith(szOption, "-"), "All command line option names must start with a hyphen (e.g. -file)");
+  XII_ASSERT_DEV(sOption.StartsWith("-"), "All command line option names must start with a hyphen (e.g. -file)");
 
   for (xiiUInt32 i = 0; i < m_Commands.GetCount(); ++i)
   {
-    if ((bCaseSensitive && m_Commands[i].IsEqual(szOption)) || (!bCaseSensitive && m_Commands[i].IsEqual_NoCase(szOption)))
+    if ((bCaseSensitive && m_Commands[i].IsEqual(sOption)) || (!bCaseSensitive && m_Commands[i].IsEqual_NoCase(sOption)))
       return i;
   }
 
   return -1;
 }
 
-bool xiiCommandLineUtils::HasOption(const char* szOption, bool bCaseSensitive /*= false*/) const
+bool xiiCommandLineUtils::HasOption(xiiStringView sOption, bool bCaseSensitive /*= false*/) const
 {
-  return GetOptionIndex(szOption, bCaseSensitive) >= 0;
+  return GetOptionIndex(sOption, bCaseSensitive) >= 0;
 }
 
-xiiUInt32 xiiCommandLineUtils::GetStringOptionArguments(const char* szOption, bool bCaseSensitive) const
+xiiUInt32 xiiCommandLineUtils::GetStringOptionArguments(xiiStringView sOption, bool bCaseSensitive) const
 {
-  const xiiInt32 iIndex = GetOptionIndex(szOption, bCaseSensitive);
+  const xiiInt32 iIndex = GetOptionIndex(sOption, bCaseSensitive);
 
   // not found -> no parameters
   if (iIndex < 0)
@@ -185,20 +185,20 @@ xiiUInt32 xiiCommandLineUtils::GetStringOptionArguments(const char* szOption, bo
   return uiParamCount;
 }
 
-const char* xiiCommandLineUtils::GetStringOption(const char* szOption, xiiUInt32 uiArgument, const char* szDefault, bool bCaseSensitive) const
+xiiStringView xiiCommandLineUtils::GetStringOption(xiiStringView sOption, xiiUInt32 uiArgument, xiiStringView sDefault, bool bCaseSensitive) const
 {
-  const xiiInt32 iIndex = GetOptionIndex(szOption, bCaseSensitive);
+  const xiiInt32 iIndex = GetOptionIndex(sOption, bCaseSensitive);
 
   // not found -> no parameters
   if (iIndex < 0)
-    return szDefault;
+    return sDefault;
 
   xiiUInt32 uiParamCount = 0;
 
   for (xiiUInt32 uiParam = iIndex + 1; uiParam < m_Commands.GetCount(); ++uiParam)
   {
     if (m_Commands[uiParam].StartsWith("-")) // next command is the next option -> not enough parameters
-      return szDefault;
+      return sDefault;
 
     // found the right one, return it
     if (uiParamCount == uiArgument)
@@ -207,22 +207,22 @@ const char* xiiCommandLineUtils::GetStringOption(const char* szOption, xiiUInt32
     ++uiParamCount;
   }
 
-  return szDefault;
+  return sDefault;
 }
 
-const xiiString xiiCommandLineUtils::GetAbsolutePathOption(const char* szOption, xiiUInt32 uiArgument /*= 0*/, const char* szDefault /*= ""*/, bool bCaseSensitive /*= false*/) const
+const xiiString xiiCommandLineUtils::GetAbsolutePathOption(xiiStringView sOption, xiiUInt32 uiArgument /*= 0*/, xiiStringView sDefault /*= ""*/, bool bCaseSensitive /*= false*/) const
 {
-  const char* szPath = GetStringOption(szOption, uiArgument, szDefault, bCaseSensitive);
+  xiiStringView sPath = GetStringOption(sOption, uiArgument, sDefault, bCaseSensitive);
 
-  if (xiiStringUtils::IsNullOrEmpty(szPath))
-    return szPath;
+  if (sPath.IsEmpty())
+    return sPath;
 
-  return xiiOSFile::MakePathAbsoluteWithCWD(szPath);
+  return xiiOSFile::MakePathAbsoluteWithCWD(sPath);
 }
 
-bool xiiCommandLineUtils::GetBoolOption(const char* szOption, bool bDefault, bool bCaseSensitive) const
+bool xiiCommandLineUtils::GetBoolOption(xiiStringView sOption, bool bDefault, bool bCaseSensitive) const
 {
-  const xiiInt32 iIndex = GetOptionIndex(szOption, bCaseSensitive);
+  const xiiInt32 iIndex = GetOptionIndex(sOption, bCaseSensitive);
 
   if (iIndex < 0)
     return bDefault;
@@ -240,9 +240,9 @@ bool xiiCommandLineUtils::GetBoolOption(const char* szOption, bool bDefault, boo
   return bRes;
 }
 
-xiiInt32 xiiCommandLineUtils::GetIntOption(const char* szOption, xiiInt32 iDefault, bool bCaseSensitive) const
+xiiInt32 xiiCommandLineUtils::GetIntOption(xiiStringView sOption, xiiInt32 iDefault, bool bCaseSensitive) const
 {
-  const xiiInt32 iIndex = GetOptionIndex(szOption, bCaseSensitive);
+  const xiiInt32 iIndex = GetOptionIndex(sOption, bCaseSensitive);
 
   if (iIndex < 0)
     return iDefault;
@@ -257,9 +257,9 @@ xiiInt32 xiiCommandLineUtils::GetIntOption(const char* szOption, xiiInt32 iDefau
   return iRes;
 }
 
-xiiUInt32 xiiCommandLineUtils::GetUIntOption(const char* szOption, xiiUInt32 uiDefault, bool bCaseSensitive) const
+xiiUInt32 xiiCommandLineUtils::GetUIntOption(xiiStringView sOption, xiiUInt32 uiDefault, bool bCaseSensitive) const
 {
-  const xiiInt32 iIndex = GetOptionIndex(szOption, bCaseSensitive);
+  const xiiInt32 iIndex = GetOptionIndex(sOption, bCaseSensitive);
 
   if (iIndex < 0)
     return uiDefault;
@@ -274,9 +274,9 @@ xiiUInt32 xiiCommandLineUtils::GetUIntOption(const char* szOption, xiiUInt32 uiD
   return uiRes;
 }
 
-double xiiCommandLineUtils::GetFloatOption(const char* szOption, double fDefault, bool bCaseSensitive) const
+double xiiCommandLineUtils::GetFloatOption(xiiStringView sOption, double fDefault, bool bCaseSensitive) const
 {
-  const xiiInt32 iIndex = GetOptionIndex(szOption, bCaseSensitive);
+  const xiiInt32 iIndex = GetOptionIndex(sOption, bCaseSensitive);
 
   if (iIndex < 0)
     return fDefault;
@@ -291,9 +291,9 @@ double xiiCommandLineUtils::GetFloatOption(const char* szOption, double fDefault
   return fRes;
 }
 
-void xiiCommandLineUtils::InjectCustomArgument(const char* szArgument)
+void xiiCommandLineUtils::InjectCustomArgument(xiiStringView sArgument)
 {
-  m_Commands.PushBack(szArgument);
+  m_Commands.PushBack(sArgument);
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_Utilities_Implementation_CommandLineUtils);

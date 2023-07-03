@@ -64,21 +64,20 @@ public:
   /// \return
   ///  -1 When no option with the given name is found.
   ///  Otherwise the index at which the option can be found. This can be passed to GetParameter() or GetStringOptionArguments().
-  xiiInt32 GetOptionIndex(const char* szOption, bool bCaseSensitive = false) const; // [tested]
+  xiiInt32 GetOptionIndex(xiiStringView sOption, bool bCaseSensitive = false) const; // [tested]
 
   /// \brief Returns whether the requested option is specified, at all.
-  bool HasOption(const char* szOption, bool bCaseSensitive = false) const;
+  bool HasOption(xiiStringView sOption, bool bCaseSensitive = false) const;
 
   /// \brief Returns how many arguments follow behind the option with the name \a szOption.
   ///
   /// Everything that does not start with a hyphen is considered to be an additional parameter for the option.
-  xiiUInt32 GetStringOptionArguments(const char* szOption, bool bCaseSensitive = false) const; // [tested]
+  xiiUInt32 GetStringOptionArguments(xiiStringView sOption, bool bCaseSensitive = false) const; // [tested]
 
   /// \brief Returns the n-th parameter to the command line option with the name \a szOption.
   ///
   /// If the option does not exist or does not have that many parameters, \a szDefault is returned.
-  const char* GetStringOption(const char* szOption, xiiUInt32 uiArgument = 0, const char* szDefault = "",
-                              bool bCaseSensitive = false) const; // [tested]
+  xiiStringView GetStringOption(xiiStringView sOption, xiiUInt32 uiArgument = 0, xiiStringView sDefault = {}, bool bCaseSensitive = false) const; // [tested]
 
   /// \brief Similar to GetStringOption() but assumes that the strings represent paths and concatenates the current working directory if a relative
   /// path is given.
@@ -89,7 +88,7 @@ public:
   ///
   /// If szDefault is empty and the user did not provide this option, then the result will also be the empty string.
   /// If szDefault is a relative path, it will be concatenated with the CWD just as any user provided option would.
-  const xiiString GetAbsolutePathOption(const char* szOption, xiiUInt32 uiArgument = 0, const char* szDefault = "", bool bCaseSensitive = false) const;
+  const xiiString GetAbsolutePathOption(xiiStringView sOption, xiiUInt32 uiArgument = 0, xiiStringView sDefault = {}, bool bCaseSensitive = false) const;
 
   /// \brief Returns a boolean interpretation of the option \a szOption or bDefault if it cannot be found.
   ///
@@ -106,7 +105,7 @@ public:
   ///   If an option with the name \a szOption can be found, which has no parameters, it is interpreted as 'true'.
   ///   If there is one parameter following, it is interpreted using xiiConversionUtils::StringToBool().
   ///   If that conversion fails, bDefault is returned.
-  bool GetBoolOption(const char* szOption, bool bDefault = false, bool bCaseSensitive = false) const; // [tested]
+  bool GetBoolOption(xiiStringView sOption, bool bDefault = false, bool bCaseSensitive = false) const; // [tested]
 
   /// \brief Returns an integer interpretation of the option \a szOption or iDefault if it cannot be found.
   ///
@@ -123,10 +122,10 @@ public:
   ///   If an option with the name \a szOption can be found, and there is one parameter following,
   ///   it is interpreted using xiiConversionUtils::StringToInt().
   ///   If that conversion fails or there is no such option or no parameter follows it, iDefault is returned.
-  xiiInt32 GetIntOption(const char* szOption, xiiInt32 iDefault = 0, bool bCaseSensitive = false) const; // [tested]
+  xiiInt32 GetIntOption(xiiStringView sOption, xiiInt32 iDefault = 0, bool bCaseSensitive = false) const; // [tested]
 
   /// \brief Same as GetIntOption() but assumes the value is a uint32.
-  xiiUInt32 GetUIntOption(const char* szOption, xiiUInt32 uiDefault = 0, bool bCaseSensitive = false) const; // [tested]
+  xiiUInt32 GetUIntOption(xiiStringView sOption, xiiUInt32 uiDefault = 0, bool bCaseSensitive = false) const; // [tested]
 
   /// \brief Returns a float interpretation of the option \a szOption or fDefault if it cannot be found.
   ///
@@ -143,7 +142,7 @@ public:
   ///   If an option with the name \a szOption can be found, and there is one parameter following,
   ///   it is interpreted using xiiConversionUtils::StringToFloat().
   ///   If that conversion fails or there is no such option or no parameter follows it, fDefault is returned.
-  double GetFloatOption(const char* szOption, double fDefault = 0.0, bool bCaseSensitive = false) const; // [tested]
+  double GetFloatOption(xiiStringView sOption, double fDefault = 0.0, bool bCaseSensitive = false) const; // [tested]
 
   /// \brief This allows to append an argument programmatically, that wasn't actually set through the command line.
   ///
@@ -152,7 +151,7 @@ public:
   ///
   /// Be aware that each call to this function is like one command line argument. Therefore to add "-arg test", call it two times,
   /// once with "-arg", once with "test". To add a string with spaces, call it once, but do not wrap the string in artificial quotes.
-  void InjectCustomArgument(const char* szArgument); // [tested]
+  void InjectCustomArgument(xiiStringView sArgument); // [tested]
 
 private:
   xiiDynamicArray<xiiString> m_Commands;

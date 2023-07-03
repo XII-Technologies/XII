@@ -50,14 +50,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 xiiRTTI::xiiRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractFunctionProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)()) :
-  m_szTypeName(szName),
-  m_pAllocator(pAllocator),
-  m_Properties(properties),
-  m_Functions(functions),
-  m_Attributes(attributes),
-  m_MessageHandlers(messageHandlers),
-  m_MessageSenders(messageSenders),
-  m_VerifyParent(fnVerifyParent)
+  m_szTypeName(szName), m_pAllocator(pAllocator), m_Properties(properties), m_Functions(functions), m_Attributes(attributes), m_MessageHandlers(messageHandlers), m_MessageSenders(messageSenders), m_VerifyParent(fnVerifyParent)
 {
   UpdateType(pParentType, uiTypeSize, uiTypeVersion, uiVariantType, flags);
 
@@ -407,19 +400,20 @@ void xiiRTTI::AssignPlugin(const char* szPluginName)
 #define XII_MSVC_WARNING_NUMBER 4505
 #include <Foundation/Basics/Compiler/MSVC/DisableWarning_MSVC.h>
 
-static bool IsValidIdentifierName(const char* szIdentifier)
+static bool IsValidIdentifierName(xiiStringView sIdentifier)
 {
   // empty strings are not valid
-  if (xiiStringUtils::IsNullOrEmpty(szIdentifier))
+  if (sIdentifier.IsEmpty())
     return false;
 
   // digits are not allowed as the first character
-  if (szIdentifier[0] >= '0' && szIdentifier[0] <= '9')
+  xiiUInt32 uiChar = sIdentifier.GetCharacter();
+  if (uiChar >= '0' && uiChar <= '9')
     return false;
 
-  for (const char* s = szIdentifier; *s != '\0'; ++s)
+  for (auto it = sIdentifier.GetIteratorFront(); it.IsValid(); ++it)
   {
-    const char c = *s;
+    const xiiUInt32 c = it.GetCharacter();
 
     if (c >= 'a' && c <= 'z')
       continue;

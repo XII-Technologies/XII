@@ -146,7 +146,7 @@ namespace
     {
       auto* pNode = it.Value();
 
-      if (xiiStringUtils::IsEqual(szOldName, pNode->GetType()))
+      if (szOldName == pNode->GetType())
         pNode->SetType(szNewName);
     }
 
@@ -154,7 +154,7 @@ namespace
     {
       auto* pNode = it.Value();
 
-      if (xiiStringUtils::IsEqual("xiiReflectedTypeDescriptor", pNode->GetType()))
+      if ("xiiReflectedTypeDescriptor" == pNode->GetType())
       {
         if (auto* pProp = pNode->FindProperty("TypeName"))
         {

@@ -11,7 +11,7 @@ class xiiRemoteMessage;
 class XII_FOUNDATION_DLL xiiIpcChannelEnet : public xiiIpcChannel
 {
 public:
-  xiiIpcChannelEnet(const char* szAddress, Mode::Enum mode);
+  xiiIpcChannelEnet(xiiStringView sAddress, Mode::Enum mode);
   ~xiiIpcChannelEnet();
 
 protected:

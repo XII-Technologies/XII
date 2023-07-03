@@ -220,8 +220,10 @@ void xiiQtMainWidget::UpdateStats()
   }
   else
   {
+    xiiStringBuilder tmp;
+
     LabelStatus->setText("<p><span style=\" font-weight:600;\">Status: </span><span style=\" font-weight:600; color:#00aa00;\">Connected</span></p>");
-    LabelServer->setText(QString::fromUtf8("<p>Server: %1:%2</p>").arg(xiiTelemetry::GetServerIP()).arg(xiiTelemetry::s_uiPort));
+    LabelServer->setText(QString::fromUtf8("<p>Server: %1:%2</p>").arg(xiiTelemetry::GetServerIP().GetData(tmp)).arg(xiiTelemetry::s_uiPort));
   }
 }
 

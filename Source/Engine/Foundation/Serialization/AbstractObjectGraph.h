@@ -18,8 +18,8 @@ class XII_FOUNDATION_DLL xiiAbstractObjectNode
 public:
   struct Property
   {
-    const char* m_szPropertyName;
-    xiiVariant  m_Value;
+    xiiStringView m_sPropertyName;
+    xiiVariant    m_Value;
   };
 
   xiiAbstractObjectNode() = default;
@@ -28,39 +28,39 @@ public:
 
   void AddProperty(xiiStringView sName, const xiiVariant& value);
 
-  void RemoveProperty(const char* szName);
+  void RemoveProperty(xiiStringView sName);
 
-  void ChangeProperty(const char* szName, const xiiVariant& value);
+  void ChangeProperty(xiiStringView sName, const xiiVariant& value);
 
-  void RenameProperty(const char* szOldName, const char* szNewName);
+  void RenameProperty(xiiStringView sOldName, xiiStringView sNewName);
 
   void ClearProperties();
 
   // \brief Inlines a custom variant type. Use to patch properties that have been turned into custom variant type.
   // \sa XII_DEFINE_CUSTOM_VARIANT_TYPE, XII_DECLARE_CUSTOM_VARIANT_TYPE
-  xiiResult InlineProperty(const char* szName);
+  xiiResult InlineProperty(xiiStringView sName);
 
   const xiiAbstractObjectGraph* GetOwner() const { return m_pOwner; }
   const xiiUuid&                GetGuid() const { return m_Guid; }
   xiiUInt32                     GetTypeVersion() const { return m_uiTypeVersion; }
   void                          SetTypeVersion(xiiUInt32 uiTypeVersion) { m_uiTypeVersion = uiTypeVersion; }
-  const char*                   GetType() const { return m_szType; }
-  void                          SetType(const char* szType);
+  xiiStringView                 GetType() const { return m_sType; }
+  void                          SetType(xiiStringView sType);
 
-  const Property* FindProperty(const char* szName) const;
-  Property*       FindProperty(const char* szName);
+  const Property* FindProperty(xiiStringView sName) const;
+  Property*       FindProperty(xiiStringView sName);
 
-  const char* GetNodeName() const { return m_szNodeName; }
+  xiiStringView GetNodeName() const { return m_sNodeName; }
 
 private:
   friend class xiiAbstractObjectGraph;
 
   xiiAbstractObjectGraph* m_pOwner = nullptr;
 
-  xiiUuid     m_Guid;
-  xiiUInt32   m_uiTypeVersion = 0;
-  const char* m_szType        = nullptr;
-  const char* m_szNodeName    = nullptr;
+  xiiUuid       m_Guid;
+  xiiUInt32     m_uiTypeVersion = 0;
+  xiiStringView m_sType;
+  xiiStringView m_sNodeName;
 
   xiiHybridArray<Property, 16> m_Properties;
 };
@@ -122,15 +122,15 @@ public:
   using FilterFunction = xiiDelegate<bool(const xiiAbstractObjectNode*, const xiiAbstractObjectNode::Property*)>;
   xiiAbstractObjectNode* Clone(xiiAbstractObjectGraph& ref_cloneTarget, const xiiAbstractObjectNode* pRootNode = nullptr, FilterFunction filter = FilterFunction()) const;
 
-  const char* RegisterString(xiiStringView sString);
+  xiiStringView RegisterString(xiiStringView sString);
 
   const xiiAbstractObjectNode* GetNode(const xiiUuid& guid) const;
   xiiAbstractObjectNode*       GetNode(const xiiUuid& guid);
 
-  const xiiAbstractObjectNode* GetNodeByName(const char* szName) const;
-  xiiAbstractObjectNode*       GetNodeByName(const char* szName);
+  const xiiAbstractObjectNode* GetNodeByName(xiiStringView sName) const;
+  xiiAbstractObjectNode*       GetNodeByName(xiiStringView sName);
 
-  xiiAbstractObjectNode* AddNode(const xiiUuid& guid, const char* szType, xiiUInt32 uiTypeVersion, const char* szNodeName = nullptr);
+  xiiAbstractObjectNode* AddNode(const xiiUuid& guid, xiiStringView sType, xiiUInt32 uiTypeVersion, xiiStringView sNodeName = {});
   void                   RemoveNode(const xiiUuid& guid);
 
   const xiiMap<xiiUuid, xiiAbstractObjectNode*>& GetAllNodes() const { return m_Nodes; }
@@ -176,7 +176,7 @@ private:
   void MergeArrays(const xiiVariantArray& baseArray, const xiiVariantArray& leftArray, const xiiVariantArray& rightArray, xiiVariantArray& out) const;
   void ReMapNodeGuidsToMatchGraphRecursive(xiiHashTable<xiiUuid, xiiUuid>& guidMap, xiiAbstractObjectNode* lhs, const xiiAbstractObjectGraph& rhsGraph, const xiiAbstractObjectNode* rhs);
 
-  xiiSet<xiiString>                                             m_Strings;
-  xiiMap<xiiUuid, xiiAbstractObjectNode*>                       m_Nodes;
-  xiiMap<const char*, xiiAbstractObjectNode*, CompareConstChar> m_NodesByName;
+  xiiSet<xiiString>                             m_Strings;
+  xiiMap<xiiUuid, xiiAbstractObjectNode*>       m_Nodes;
+  xiiMap<xiiStringView, xiiAbstractObjectNode*> m_NodesByName;
 };

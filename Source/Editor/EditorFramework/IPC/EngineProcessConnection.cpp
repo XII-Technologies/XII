@@ -112,6 +112,8 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
   m_bProcessCrashed         = false;
   m_bClientIsConfigured     = false;
 
+  xiiStringBuilder tmp;
+
   QStringList args;
   if (m_bProcessShouldWaitForDebugger)
   {
@@ -138,7 +140,7 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
   // set up the EditorEngineProcess telemetry server on a different port
   {
     args << "-TelemetryPort";
-    args << xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-TelemetryPort", 0, "1050");
+    args << xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-TelemetryPort", 0, "1050").GetData(tmp);
   }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
