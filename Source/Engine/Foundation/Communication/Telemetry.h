@@ -44,7 +44,7 @@ public:
   /// Connections to invalid IP addresses will however always fail.
   ///
   /// This function will set the xiiTelemetry connection mode to 'Client'. This is mutually exclusive with CreateServer().
-  static xiiResult ConnectToServer(xiiStringView ConnectTo = {});
+  static xiiResult ConnectToServer(xiiStringView sConnectTo = {});
 
   /// \brief Opens a connection as a server.
   ///
@@ -100,7 +100,7 @@ public:
   /// Usually this would be used to send the application name, to make it easier to see to which app the tool is connected,
   /// but setting a custom name can be used to add important details, e.g. whether the app is running in single-player or multi-player mode etc.
   /// The server name can be changed at any time.
-  static void SetServerName(xiiStringView Name);
+  static void SetServerName(xiiStringView sName);
 
   /// \brief Returns the IP address of the machine on which the Server is running. Only meaningful if there is an active connection (see
   /// IsConnectedToServer() ).

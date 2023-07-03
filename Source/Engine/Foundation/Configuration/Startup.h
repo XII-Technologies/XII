@@ -92,10 +92,10 @@ public:
   /// this set, even though they don't use graphical output. 'editor' : for all applications that run the editor framework, set on the Editor and the
   /// EditorProcessor 'testframework' : for applications that execute the xiiTestFramework 'tool' : for all stand-alone tool applications, set by the
   /// editor, editorprocessor, fileserve, etc.
-  static void AddApplicationTag(xiiStringView Tag);
+  static void AddApplicationTag(xiiStringView sTag);
 
   /// \brief Query whether a tag was added with AddApplicationTag()
-  static bool HasApplicationTag(xiiStringView Tag);
+  static bool HasApplicationTag(xiiStringView sTag);
 
   /// \brief Runs the 'base' startup sequence of all subsystems in the proper order.
   ///
