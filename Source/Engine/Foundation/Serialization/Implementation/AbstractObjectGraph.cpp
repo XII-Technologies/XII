@@ -345,7 +345,7 @@ void xiiAbstractObjectGraph::ReMapNodeGuidsToMatchGraph(xiiAbstractObjectNode* p
 
 void xiiAbstractObjectGraph::ReMapNodeGuidsToMatchGraphRecursive(xiiHashTable<xiiUuid, xiiUuid>& guidMap, xiiAbstractObjectNode* lhs, const xiiAbstractObjectGraph& rhsGraph, const xiiAbstractObjectNode* rhs)
 {
-  if (lhs->GetType() == rhs->GetType())
+  if (lhs->GetType() != rhs->GetType())
   {
     // Types differ, remapping ends as this is a removal and add of a new object.
     return;
