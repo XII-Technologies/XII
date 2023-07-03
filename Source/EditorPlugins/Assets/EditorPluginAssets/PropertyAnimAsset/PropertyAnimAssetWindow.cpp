@@ -1278,7 +1278,7 @@ void xiiQtPropertyAnimAssetTreeView::onBeforeModelReset()
 
   const QAbstractItemModel* pModel = model();
 
-  for (QModelIndex idx : selectionModel()->selectedRows())
+  for (const QModelIndex& idx : selectionModel()->selectedRows())
   {
     QString path = pModel->data(idx, xiiQtPropertyAnimModel::UserRoles::Path).toString();
     m_SelectedItems.insert(path);
