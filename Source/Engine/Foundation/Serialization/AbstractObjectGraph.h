@@ -59,8 +59,8 @@ private:
 
   xiiUuid       m_Guid;
   xiiUInt32     m_uiTypeVersion = 0;
-  xiiStringView m_sType         ;
-  xiiStringView m_sNodeName     ;
+  xiiStringView m_sType;
+  xiiStringView m_sNodeName;
 
   xiiHybridArray<Property, 16> m_Properties;
 };
@@ -176,7 +176,7 @@ private:
   void MergeArrays(const xiiVariantArray& baseArray, const xiiVariantArray& leftArray, const xiiVariantArray& rightArray, xiiVariantArray& out) const;
   void ReMapNodeGuidsToMatchGraphRecursive(xiiHashTable<xiiUuid, xiiUuid>& guidMap, xiiAbstractObjectNode* lhs, const xiiAbstractObjectGraph& rhsGraph, const xiiAbstractObjectNode* rhs);
 
-  xiiSet<xiiString>                                               m_Strings;
-  xiiMap<xiiUuid, xiiAbstractObjectNode*>                         m_Nodes;
-  xiiMap<xiiStringView, xiiAbstractObjectNode*, CompareConstChar> m_NodesByName;
+  xiiSet<xiiString>                             m_Strings;
+  xiiMap<xiiUuid, xiiAbstractObjectNode*>       m_Nodes;
+  xiiMap<xiiStringView, xiiAbstractObjectNode*> m_NodesByName;
 };
