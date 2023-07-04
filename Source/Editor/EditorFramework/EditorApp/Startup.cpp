@@ -10,6 +10,7 @@
 #include <EditorFramework/Actions/TransformGizmoActions.h>
 #include <EditorFramework/Actions/ViewActions.h>
 #include <EditorFramework/Actions/ViewLightActions.h>
+#include <EditorFramework/EditorApp/CheckVersion.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/GUI/DynamicDefaultStateProvider.h>
 #include <EditorFramework/GUI/ExposedParametersDefaultStateProvider.h>
@@ -331,10 +332,10 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
     if (!IsInUnitTestMode())
     {
-      connect(&m_VersionChecker, &xiiQtVersionChecker::VersionCheckCompleted, this, &xiiQtEditorApp::SlotVersionCheckCompleted, Qt::QueuedConnection);
+      connect(&m_pVersionChecker.Borrow(), &xiiQtVersionChecker::VersionCheckCompleted, this, &xiiQtEditorApp::SlotVersionCheckCompleted, Qt::QueuedConnection);
 
-      m_VersionChecker.Initialize();
-      m_VersionChecker.Check(false);
+      m_pVersionChecker->Initialize();
+      m_pVersionChecker->Check(false);
     }
   }
 

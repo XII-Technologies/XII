@@ -1,7 +1,6 @@
 #pragma once
 
 #include <EditorEngineProcessFramework/LongOps/LongOpControllerManager.h>
-#include <EditorFramework/EditorApp/CheckVersion.moc.h>
 #include <EditorFramework/EditorApp/Configuration/Plugins.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
@@ -30,6 +29,7 @@ using QStringList = QList<QString>;
 class xiiTranslatorFromFiles;
 class xiiDynamicStringEnum;
 class QSplashScreen;
+class xiiQtVersionChecker;
 
 struct XII_EDITORFRAMEWORK_DLL xiiEditorAppEvent
 {
@@ -312,7 +312,7 @@ private:
   xiiSet<xiiString> m_DynamicEnumStringsToClear;
   void              OnDemandDynamicStringEnumLoad(xiiStringView sEnumName, xiiDynamicStringEnum& e);
 
-  xiiQtVersionChecker m_VersionChecker;
+  xiiUniquePtr<xiiQtVersionChecker> m_pVersionChecker;
 };
 
 XII_DECLARE_FLAGS_OPERATORS(xiiQtEditorApp::StartupFlags);
