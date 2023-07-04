@@ -84,7 +84,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeleton, 1, xiiRTTIDefaultAllocator
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("File", m_sSourceFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", xiiFileBrowserAttribute::MeshesWithAnimations)),
+    XII_MEMBER_PROPERTY("File", m_sSourceFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", xiiFileBrowserAttribute::SkeletalMeshes)),
     XII_ENUM_MEMBER_PROPERTY("RightDir", xiiBasisAxis, m_RightDir)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveX)),
     XII_ENUM_MEMBER_PROPERTY("UpDir", xiiBasisAxis, m_UpDir)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveY)),
     XII_MEMBER_PROPERTY("FlipForwardDir", m_bFlipForwardDir),
