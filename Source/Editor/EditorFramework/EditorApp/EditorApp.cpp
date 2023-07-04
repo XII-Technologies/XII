@@ -1,6 +1,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/EditorApp/CheckVersion.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
@@ -18,6 +19,7 @@ xiiQtEditorApp::xiiQtEditorApp() :
   m_SingletonRegistrar(this), m_RecentProjects(20), m_RecentDocuments(100)
 {
   m_bSavePreferencesAfterOpenProject = false;
+  m_pVersionChecker                  = XII_DEFAULT_NEW(xiiQtVersionChecker);
 
   m_pTimer = new QTimer(nullptr);
 }
@@ -80,26 +82,26 @@ void xiiQtEditorApp::SlotVersionCheckCompleted(bool bNewVersionReleased, bool bF
 
   if (bForced || bNewVersionReleased)
   {
-    if (m_VersionChecker.IsLatestNewer())
+    if (m_pVersionChecker->IsLatestNewer())
     {
       xiiQtUiServices::GetSingleton()->MessageBoxInformation(
         xiiFmt("<html>A new version is available: {}<br><br>Your version is: {}<br><br>Please check the <A "
                "href=\"https://github.com/xiiEngine/xiiEngine/releases\">Releases</A> for details.</html>",
-               m_VersionChecker.GetKnownLatestVersion(), m_VersionChecker.GetOwnVersion()));
+               m_pVersionChecker->GetKnownLatestVersion(), m_pVersionChecker->GetOwnVersion()));
     }
     else
     {
       xiiStringBuilder tmp("You have the latest version: \n");
-      tmp.Append(m_VersionChecker.GetOwnVersion());
+      tmp.Append(m_pVersionChecker->GetOwnVersion());
 
       xiiQtUiServices::GetSingleton()->MessageBoxInformation(tmp);
     }
   }
 
-  if (m_VersionChecker.IsLatestNewer())
+  if (m_pVersionChecker->IsLatestNewer())
   {
     xiiQtUiServices::GetSingleton()->ShowGlobalStatusBarMessage(
-      xiiFmt("New version '{}' available, please update.", m_VersionChecker.GetKnownLatestVersion()));
+      xiiFmt("New version '{}' available, please update.", m_pVersionChecker->GetKnownLatestVersion()));
   }
 }
 
@@ -134,7 +136,7 @@ void xiiQtEditorApp::UiServicesEvents(const xiiQtUiServices::Event& e)
 {
   if (e.m_Type == xiiQtUiServices::Event::Type::CheckForUpdates)
   {
-    m_VersionChecker.Check(true);
+    m_pVersionChecker->Check(true);
   }
 }
 

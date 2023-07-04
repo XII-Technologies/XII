@@ -4,29 +4,28 @@
 
 #include <Foundation/Strings/String.h>
 
-#include <QByteArray>
-#include <QNetworkAccessManager>
+#include <Foundation/Types/UniquePtr.h>
 #include <QObject>
-#include <QPointer>
+#include <QProcess>
 
 class PageDownloader : public QObject
 {
   Q_OBJECT
 
 public:
-  explicit PageDownloader(QUrl url);
+  explicit PageDownloader(const QString& sUrl);
 
-  const QByteArray& GetDownloadedData() const { return m_DownloadedData; }
+  xiiStringView GetDownloadedData() const { return m_sDownloadedPage; }
 
 signals:
   void FinishedDownload();
 
 private slots:
-  void DownloadDone(QNetworkReply* pReply);
+  void DownloadDone(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
-  QNetworkAccessManager m_WebCtrl;
-  QByteArray            m_DownloadedData;
+  xiiUniquePtr<QProcess> m_pProcess;
+  xiiStringBuilder       m_sDownloadedPage;
 };
 
 /// \brief Downloads a web page and checks whether the latest version online is newer than the current one
@@ -55,10 +54,10 @@ private slots:
   xiiResult StoreKnownVersion();
 
 private:
-  bool                     m_bRequireOnlineCheck = true;
-  bool                     m_bForceCheck         = false;
-  bool                     m_bCheckInProgresss   = false;
-  xiiString                m_sConfigFile;
-  xiiString                m_sKnownLatestVersion;
-  QPointer<PageDownloader> m_pVersionPage;
+  bool                         m_bRequireOnlineCheck = true;
+  bool                         m_bForceCheck         = false;
+  bool                         m_bCheckInProgresss   = false;
+  xiiString                    m_sConfigFile;
+  xiiString                    m_sKnownLatestVersion;
+  xiiUniquePtr<PageDownloader> m_pVersionPage;
 };

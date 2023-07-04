@@ -15,10 +15,10 @@ public:
 
 public:
   /// \brief Byte Order Mark for Little Endian Utf16 strings.
-  static constexpr xiiUInt16 Utf16BomLE = 0xfffe;
+  static constexpr xiiUInt16 Utf16BomLE = 0xFEFF;
 
   /// \brief Byte Order Mark for Big Endian Utf16 strings.
-  static constexpr xiiUInt16 Utf16BomBE = 0xfeff;
+  static constexpr xiiUInt16 Utf16BomBE = 0xFFFE;
 
   /// \brief Returns whether a character is a pure ASCII character (only the first 7 Bits are used)
   static bool IsASCII(xiiUInt32 uiChar); // [tested]
