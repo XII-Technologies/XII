@@ -16,7 +16,7 @@ struct xiiSkeletonResourceGeometry
   xiiEnum<xiiSkeletonJointGeometryType> m_Type;
 
   // For convex geometry.
-  xiiDynamicArray<xiiVec3> m_VertexPositions;
+  xiiDynamicArray<xiiVec3>  m_VertexPositions;
   xiiDynamicArray<xiiUInt8> m_TriangleIndices;
 };
 
