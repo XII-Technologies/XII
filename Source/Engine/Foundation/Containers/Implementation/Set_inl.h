@@ -14,7 +14,7 @@ void xiiSetBase<KeyType, Comparer>::Iterator::Next()
 
   if (m_pElement == nullptr)
   {
-    XII_ASSERT_DEV(m_pElement != nullptr, "The Iterator is invalid (end).");
+    XII_ASSERT_DEBUG(m_pElement != nullptr, "The Iterator is invalid (end).");
     return;
   }
 
@@ -65,7 +65,7 @@ void xiiSetBase<KeyType, Comparer>::Iterator::Prev()
 
   if (m_pElement == nullptr)
   {
-    XII_ASSERT_DEV(m_pElement != nullptr, "The Iterator is invalid (end).");
+    XII_ASSERT_DEBUG(m_pElement != nullptr, "The Iterator is invalid (end).");
     return;
   }
 
@@ -109,14 +109,6 @@ void xiiSetBase<KeyType, Comparer>::Iterator::Prev()
 }
 
 // ***** xiiSetBase *****
-
-template <typename KeyType, typename Comparer>
-XII_ALWAYS_INLINE xiiSetBase<KeyType, Comparer>::NilNode::NilNode() :
-  m_pParent(nullptr)
-{
-  m_pLink[0] = nullptr;
-  m_pLink[1] = nullptr;
-}
 
 template <typename KeyType, typename Comparer>
 void xiiSetBase<KeyType, Comparer>::Constructor()
@@ -438,7 +430,7 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Acq
 template <typename KeyType, typename Comparer>
 void xiiSetBase<KeyType, Comparer>::ReleaseNode(Node* pNode)
 {
-  XII_ASSERT_DEV(pNode != nullptr, "pNode is invalid.");
+  XII_ASSERT_DEBUG(pNode != nullptr, "pNode is invalid.");
 
   xiiMemoryUtils::Destruct<Node>(pNode, 1);
 
@@ -706,7 +698,7 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Rem
 template <typename KeyType, typename Comparer>
 typename xiiSetBase<KeyType, Comparer>::Iterator xiiSetBase<KeyType, Comparer>::Remove(const Iterator& pos)
 {
-  XII_ASSERT_DEV(pos.m_pElement != nullptr, "The Iterator(pos) is invalid.");
+  XII_ASSERT_DEBUG(pos.m_pElement != nullptr, "The Iterator(pos) is invalid.");
 
   Iterator temp(pos);
   ++temp;

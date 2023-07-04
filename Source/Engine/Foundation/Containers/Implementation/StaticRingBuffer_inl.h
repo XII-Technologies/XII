@@ -129,7 +129,7 @@ XII_FORCE_INLINE T& xiiStaticRingBuffer<T, C>::PeekFront()
 template <typename T, xiiUInt32 C>
 XII_FORCE_INLINE const T& xiiStaticRingBuffer<T, C>::operator[](xiiUInt32 uiIndex) const
 {
-  XII_ASSERT_DEV(uiIndex < m_uiCount, "The ring-buffer only has {0} elements, cannot access element {1}.", m_uiCount, uiIndex);
+  XII_ASSERT_DEBUG(uiIndex < m_uiCount, "The ring-buffer only has {0} elements, cannot access element {1}.", m_uiCount, uiIndex);
 
   return m_pElements[(m_uiFirstElement + uiIndex) % C];
 }
@@ -137,7 +137,7 @@ XII_FORCE_INLINE const T& xiiStaticRingBuffer<T, C>::operator[](xiiUInt32 uiInde
 template <typename T, xiiUInt32 C>
 XII_FORCE_INLINE T& xiiStaticRingBuffer<T, C>::operator[](xiiUInt32 uiIndex)
 {
-  XII_ASSERT_DEV(uiIndex < m_uiCount, "The ring-buffer only has {0} elements, cannot access element {1}.", m_uiCount, uiIndex);
+  XII_ASSERT_DEBUG(uiIndex < m_uiCount, "The ring-buffer only has {0} elements, cannot access element {1}.", m_uiCount, uiIndex);
 
   return m_pElements[(m_uiFirstElement + uiIndex) % C];
 }
