@@ -344,6 +344,12 @@ void xiiJoltWorldModule::QueryShapesInSphere(xiiPhysicsOverlapResultArray& out_r
     const auto&       body = bodyLock.GetBody();
 
     overlapResult.m_uiObjectFilterID = body.GetCollisionGroup().GetGroupID();
+    overlapResult.m_vCenterPosition  = xiiJoltConversionUtils::ToVec3(body.GetCenterOfMassPosition());
+
+    const size_t uiBodyId                 = body.GetID().GetIndexAndSequenceNumber();
+    const size_t uiShapeId                = overlapHit.mSubShapeID2.GetValue();
+    overlapResult.m_pInternalPhysicsActor = reinterpret_cast<void*>(uiBodyId);
+    overlapResult.m_pInternalPhysicsShape = reinterpret_cast<void*>(uiShapeId);
 
     if (xiiComponent* pShapeComponent = xiiJoltUserData::GetComponent(reinterpret_cast<const void*>(body.GetShape()->GetSubShapeUserData(overlapHit.mSubShapeID2))))
     {
@@ -356,6 +362,5 @@ void xiiJoltWorldModule::QueryShapesInSphere(xiiPhysicsOverlapResultArray& out_r
     }
   }
 }
-
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_System_JoltQueries);

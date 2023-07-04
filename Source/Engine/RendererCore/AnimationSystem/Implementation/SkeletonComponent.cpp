@@ -469,6 +469,38 @@ void xiiSkeletonComponent::BuildColliderVisualization(xiiMsgAnimationPoseUpdated
       shape.m_fRadius   = geo.m_Transform.m_vScale.z;
       shape.m_Color     = hlS;
     }
+
+    if (geo.m_Type == xiiSkeletonJointGeometryType::ConvexMesh)
+    {
+      st.SetIdentity();
+      st = *msg.m_pRootTransform;
+
+      for (xiiUInt32 f = 0; f < geo.m_TriangleIndices.GetCount(); f += 3)
+      {
+        const xiiUInt32 i0 = geo.m_TriangleIndices[f + 0];
+        const xiiUInt32 i1 = geo.m_TriangleIndices[f + 1];
+        const xiiUInt32 i2 = geo.m_TriangleIndices[f + 2];
+
+        {
+          auto& l        = m_LinesSkeleton.ExpandAndGetRef();
+          l.m_startColor = l.m_endColor = hlS;
+          l.m_start                     = st * geo.m_VertexPositions[i0];
+          l.m_end                       = st * geo.m_VertexPositions[i1];
+        }
+        {
+          auto& l        = m_LinesSkeleton.ExpandAndGetRef();
+          l.m_startColor = l.m_endColor = hlS;
+          l.m_start                     = st * geo.m_VertexPositions[i1];
+          l.m_end                       = st * geo.m_VertexPositions[i2];
+        }
+        {
+          auto& l        = m_LinesSkeleton.ExpandAndGetRef();
+          l.m_startColor = l.m_endColor = hlS;
+          l.m_start                     = st * geo.m_VertexPositions[i2];
+          l.m_end                       = st * geo.m_VertexPositions[i0];
+        }
+      }
+    }
   }
 }
 

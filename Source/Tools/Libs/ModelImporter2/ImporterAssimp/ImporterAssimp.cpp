@@ -53,7 +53,16 @@ namespace xiiModelImporter2
     xiiUInt32 uiAssimpFlags = 0;
     if (m_Options.m_pMeshOutput != nullptr)
     {
-      uiAssimpFlags |= aiProcess_Triangulate | aiProcess_JoinIdenticalVertices | aiProcess_TransformUVCoords | aiProcess_FlipUVs | aiProcess_ImproveCacheLocality;
+      uiAssimpFlags |= aiProcess_Triangulate | aiProcess_TransformUVCoords | aiProcess_FlipUVs | aiProcess_ImproveCacheLocality;
+
+      if (!m_Options.m_bImportSkinningData)
+      {
+        // joining vertices doesn't take into account that two vertices might have different bone assignments
+        // so in case of a mesh that is cut into multiple pieces (breakable object),
+        // it will re-join vertices that are supposed to stay separate
+        // therefore don't do this for skinned meshes
+        uiAssimpFlags |= aiProcess_JoinIdenticalVertices;
+      }
     }
 
     m_pScene = m_Importer.ReadFile(m_Options.m_sSourceFile, uiAssimpFlags);
@@ -98,6 +107,8 @@ namespace xiiModelImporter2
     XII_SUCCEED_OR_RETURN(PrepareOutputMesh());
 
     XII_SUCCEED_OR_RETURN(ImportAnimations());
+
+    XII_SUCCEED_OR_RETURN(ImportBoneColliders(nullptr));
 
     if (m_Options.m_pMeshOutput)
     {
@@ -193,6 +204,77 @@ namespace xiiModelImporter2
       else
       {
         XII_SUCCEED_OR_RETURN(TraverseAiNode(pNode->mChildren[childIdx], globalTransform, nullptr));
+      }
+    }
+
+    return XII_SUCCESS;
+  }
+
+  xiiResult ImporterAssimp::ImportBoneColliders(xiiEditableSkeletonJoint* pJoint)
+  {
+    if (m_Options.m_pSkeletonOutput == nullptr)
+      return XII_SUCCESS;
+
+    if (pJoint == nullptr)
+    {
+      for (xiiEditableSkeletonJoint* pJoint : m_Options.m_pSkeletonOutput->m_Children)
+      {
+        XII_SUCCEED_OR_RETURN(ImportBoneColliders(pJoint));
+      }
+
+      return XII_SUCCESS;
+    }
+    else
+    {
+      for (xiiEditableSkeletonJoint* pChild : pJoint->m_Children)
+      {
+        XII_SUCCEED_OR_RETURN(ImportBoneColliders(pChild));
+      }
+    }
+
+    xiiStringBuilder sTmp;
+
+    const xiiString& sName = pJoint->m_sName.GetString();
+
+    for (auto meshIt : m_MeshInstances)
+    {
+      for (const MeshInstance& meshInst : meshIt.Value())
+      {
+        auto pMesh = meshInst.m_pMesh;
+
+        if (xiiStringUtils::FindSubString(pMesh->mName.C_Str(), sName) != nullptr)
+        {
+          sTmp = pMesh->mName.C_Str();
+
+          if (sTmp.TrimWordStart("UCX_") && sTmp.TrimWordStart(sName) && (sTmp.IsEmpty() || sTmp.TrimWordStart("_")))
+          {
+            // mesh is named "UCX_BoneName_xyz" or "UCX_BoneName" -> use mesh as convex collider for this bone
+
+            XII_ASSERT_DEV(pMesh->HasPositions(), "TODO: early out");
+            XII_ASSERT_DEV(pMesh->HasFaces(), "TODO: early out");
+
+            xiiEditableSkeletonBoneCollider& col = pJoint->m_BoneColliders.ExpandAndGetRef();
+            col.m_sIdentifier                    = pMesh->mName.C_Str();
+            col.m_TriangleIndices.Reserve(pMesh->mNumFaces * 3);
+            col.m_VertexPositions.Reserve(pMesh->mNumVertices);
+
+            for (xiiUInt32 v = 0; v < pMesh->mNumVertices; ++v)
+            {
+              col.m_VertexPositions.PushBack(meshInst.m_GlobalTransform * ConvertAssimpType(pMesh->mVertices[v]));
+            }
+
+            for (xiiUInt32 f = 0; f < pMesh->mNumFaces; ++f)
+            {
+              col.m_TriangleIndices.PushBack(pMesh->mFaces[f].mIndices[0]);
+              col.m_TriangleIndices.PushBack(pMesh->mFaces[f].mIndices[1]);
+              col.m_TriangleIndices.PushBack(pMesh->mFaces[f].mIndices[2]);
+            }
+          }
+          else
+          {
+            //xiiLog::Error("TODO: error message");
+          }
+        }
       }
     }
 

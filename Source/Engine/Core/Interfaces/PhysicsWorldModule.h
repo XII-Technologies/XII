@@ -49,6 +49,11 @@ struct xiiPhysicsOverlapResult
   xiiGameObjectHandle m_hShapeObject;                       ///< The game object to which the hit physics shape is attached.
   xiiGameObjectHandle m_hActorObject;                       ///< The game object to which the parent actor of the hit physics shape is attached.
   xiiUInt32           m_uiObjectFilterID = xiiInvalidIndex; ///< The shape id of the hit physics shape
+  xiiVec3             m_vCenterPosition;                    ///< The center position of the reported object in world space.
+
+  // Physics-engine specific information, may be available or not.
+  void* m_pInternalPhysicsShape = nullptr;
+  void* m_pInternalPhysicsActor = nullptr;
 };
 
 struct xiiPhysicsOverlapResultArray
@@ -76,9 +81,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiPhysicsShapeType);
 struct xiiPhysicsQueryParameters
 {
   xiiPhysicsQueryParameters() = default;
-  explicit xiiPhysicsQueryParameters(xiiUInt32                        uiCollisionLayer,
-                                     xiiBitflags<xiiPhysicsShapeType> shapeTypes             = xiiPhysicsShapeType::Default,
-                                     xiiUInt32                        uiIgnoreObjectFilterID = xiiInvalidIndex) :
+  explicit xiiPhysicsQueryParameters(xiiUInt32 uiCollisionLayer, xiiBitflags<xiiPhysicsShapeType> shapeTypes = xiiPhysicsShapeType::Default, xiiUInt32 uiIgnoreObjectFilterID = xiiInvalidIndex) :
     m_uiCollisionLayer(uiCollisionLayer), m_ShapeTypes(shapeTypes), m_uiIgnoreObjectFilterID(uiIgnoreObjectFilterID)
   {
   }

@@ -10,7 +10,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkeletonAssetDocument, 9, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkeletonAssetDocument, 10, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -73,27 +73,38 @@ xiiSkeletonAssetDocument::~xiiSkeletonAssetDocument() = default;
 
 void xiiSkeletonAssetDocument::PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e)
 {
+  if (e.m_pObject->GetTypeAccessor().GetType() == xiiGetStaticRTTI<xiiEditableSkeletonJoint>())
+  {
+    auto& props = *e.m_pPropertyStates;
+
+    const bool                       overrideSurface        = e.m_pObject->GetTypeAccessor().GetValue("OverrideSurface").ConvertTo<bool>();
+    const bool                       overrideCollisionLayer = e.m_pObject->GetTypeAccessor().GetValue("OverrideCollisionLayer").ConvertTo<bool>();
+    const xiiSkeletonJointType::Enum jointType              = (xiiSkeletonJointType::Enum)e.m_pObject->GetTypeAccessor().GetValue("JointType").ConvertTo<xiiInt32>();
+
+    props["Surface"].m_Visibility               = overrideSurface ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["CollisionLayer"].m_Visibility        = overrideCollisionLayer ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["LimitSwing"].m_Visibility            = (jointType == xiiSkeletonJointType::SwingTwist) ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["SwingLimitY"].m_Visibility           = (jointType == xiiSkeletonJointType::SwingTwist) ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["SwingLimitZ"].m_Visibility           = (jointType == xiiSkeletonJointType::SwingTwist) ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["LimitTwist"].m_Visibility            = (jointType == xiiSkeletonJointType::SwingTwist) ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["TwistLimitHalfAngle"].m_Visibility   = (jointType == xiiSkeletonJointType::SwingTwist) ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["TwistLimitCenterAngle"].m_Visibility = (jointType == xiiSkeletonJointType::SwingTwist) ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["LocalRotation"].m_Visibility         = (jointType == xiiSkeletonJointType::SwingTwist) ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+
+    return;
+  }
+
   if (e.m_pObject->GetTypeAccessor().GetType() == xiiGetStaticRTTI<xiiEditableSkeletonBoneShape>())
   {
     auto& props = *e.m_pPropertyStates;
 
     const xiiSkeletonJointGeometryType::Enum geomType = (xiiSkeletonJointGeometryType::Enum)e.m_pObject->GetTypeAccessor().GetValue("Geometry").ConvertTo<xiiInt32>();
 
-    const bool overrideName           = e.m_pObject->GetTypeAccessor().GetValue("OverrideName").ConvertTo<bool>();
-    const bool overrideSurface        = e.m_pObject->GetTypeAccessor().GetValue("OverrideSurface").ConvertTo<bool>();
-    const bool overrideCollisionLayer = e.m_pObject->GetTypeAccessor().GetValue("OverrideCollisionLayer").ConvertTo<bool>();
-
-    props["Offset"].m_Visibility                 = xiiPropertyUiState::Invisible;
-    props["Rotation"].m_Visibility               = xiiPropertyUiState::Invisible;
-    props["Length"].m_Visibility                 = xiiPropertyUiState::Invisible;
-    props["Width"].m_Visibility                  = xiiPropertyUiState::Invisible;
-    props["Thickness"].m_Visibility              = xiiPropertyUiState::Invisible;
-    props["Name"].m_Visibility                   = xiiPropertyUiState::Invisible;
-    props["Surface"].m_Visibility                = xiiPropertyUiState::Invisible;
-    props["CollisionLayer"].m_Visibility         = xiiPropertyUiState::Invisible;
-    props["OverrideName"].m_Visibility           = xiiPropertyUiState::Invisible;
-    props["OverrideSurface"].m_Visibility        = xiiPropertyUiState::Invisible;
-    props["OverrideCollisionLayer"].m_Visibility = xiiPropertyUiState::Invisible;
+    props["Offset"].m_Visibility    = xiiPropertyUiState::Invisible;
+    props["Rotation"].m_Visibility  = xiiPropertyUiState::Invisible;
+    props["Length"].m_Visibility    = xiiPropertyUiState::Invisible;
+    props["Width"].m_Visibility     = xiiPropertyUiState::Invisible;
+    props["Thickness"].m_Visibility = xiiPropertyUiState::Invisible;
 
     if (geomType == xiiSkeletonJointGeometryType::None)
       return;
@@ -102,15 +113,8 @@ void xiiSkeletonAssetDocument::PropertyMetaStateEventHandler(xiiPropertyMetaStat
     props["Width"].m_sNewLabelText     = "Width";
     props["Thickness"].m_sNewLabelText = "Thickness";
 
-    props["Offset"].m_Visibility                 = xiiPropertyUiState::Default;
-    props["Rotation"].m_Visibility               = xiiPropertyUiState::Default;
-    props["OverrideName"].m_Visibility           = xiiPropertyUiState::Default;
-    props["OverrideSurface"].m_Visibility        = xiiPropertyUiState::Default;
-    props["OverrideCollisionLayer"].m_Visibility = xiiPropertyUiState::Default;
-
-    props["Name"].m_Visibility           = overrideName ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-    props["Surface"].m_Visibility        = overrideSurface ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-    props["CollisionLayer"].m_Visibility = overrideCollisionLayer ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["Offset"].m_Visibility   = xiiPropertyUiState::Default;
+    props["Rotation"].m_Visibility = xiiPropertyUiState::Default;
 
     if (geomType == xiiSkeletonJointGeometryType::Box)
     {
@@ -130,28 +134,28 @@ void xiiSkeletonAssetDocument::PropertyMetaStateEventHandler(xiiPropertyMetaStat
       props["Thickness"].m_Visibility    = xiiPropertyUiState::Default;
       props["Thickness"].m_sNewLabelText = "Radius";
     }
+
+    return;
   }
 }
 
-xiiStatus xiiSkeletonAssetDocument::WriteResource(xiiStreamWriter& stream) const
+xiiStatus xiiSkeletonAssetDocument::WriteResource(xiiStreamWriter& inout_stream, const xiiEditableSkeleton& skeleton) const
 {
-  auto pProp = GetProperties(); // ApplyNativePropertyChangesToObjectManager destroys pProp
-
   xiiSkeletonResourceDescriptor desc;
-  desc.m_RootTransform = CalculateTransformationMatrix(pProp);
-  pProp->FillResourceDescriptor(desc);
+  desc.m_RootTransform = CalculateTransformationMatrix(&skeleton);
+  skeleton.FillResourceDescriptor(desc);
 
-  XII_SUCCEED_OR_RETURN(desc.Serialize(stream));
+  XII_SUCCEED_OR_RETURN(desc.Serialize(inout_stream));
 
   return xiiStatus(XII_SUCCESS);
 }
 
-void xiiSkeletonAssetDocument::SetRenderBones(bool enable)
+void xiiSkeletonAssetDocument::SetRenderBones(bool bEnable)
 {
-  if (m_bRenderBones == enable)
+  if (m_bRenderBones == bEnable)
     return;
 
-  m_bRenderBones = enable;
+  m_bRenderBones = bEnable;
 
   xiiSkeletonAssetEvent e;
   e.m_pDocument = this;
@@ -159,12 +163,12 @@ void xiiSkeletonAssetDocument::SetRenderBones(bool enable)
   m_Events.Broadcast(e);
 }
 
-void xiiSkeletonAssetDocument::SetRenderColliders(bool enable)
+void xiiSkeletonAssetDocument::SetRenderColliders(bool bEnable)
 {
-  if (m_bRenderColliders == enable)
+  if (m_bRenderColliders == bEnable)
     return;
 
-  m_bRenderColliders = enable;
+  m_bRenderColliders = bEnable;
 
   xiiSkeletonAssetEvent e;
   e.m_pDocument = this;
@@ -172,12 +176,12 @@ void xiiSkeletonAssetDocument::SetRenderColliders(bool enable)
   m_Events.Broadcast(e);
 }
 
-void xiiSkeletonAssetDocument::SetRenderJoints(bool enable)
+void xiiSkeletonAssetDocument::SetRenderJoints(bool bEnable)
 {
-  if (m_bRenderJoints == enable)
+  if (m_bRenderJoints == bEnable)
     return;
 
-  m_bRenderJoints = enable;
+  m_bRenderJoints = bEnable;
 
   xiiSkeletonAssetEvent e;
   e.m_pDocument = this;
@@ -185,12 +189,12 @@ void xiiSkeletonAssetDocument::SetRenderJoints(bool enable)
   m_Events.Broadcast(e);
 }
 
-void xiiSkeletonAssetDocument::SetRenderSwingLimits(bool enable)
+void xiiSkeletonAssetDocument::SetRenderSwingLimits(bool bEnable)
 {
-  if (m_bRenderSwingLimits == enable)
+  if (m_bRenderSwingLimits == bEnable)
     return;
 
-  m_bRenderSwingLimits = enable;
+  m_bRenderSwingLimits = bEnable;
 
   xiiSkeletonAssetEvent e;
   e.m_pDocument = this;
@@ -198,12 +202,12 @@ void xiiSkeletonAssetDocument::SetRenderSwingLimits(bool enable)
   m_Events.Broadcast(e);
 }
 
-void xiiSkeletonAssetDocument::SetRenderTwistLimits(bool enable)
+void xiiSkeletonAssetDocument::SetRenderTwistLimits(bool bEnable)
 {
-  if (m_bRenderTwistLimits == enable)
+  if (m_bRenderTwistLimits == bEnable)
     return;
 
-  m_bRenderTwistLimits = enable;
+  m_bRenderTwistLimits = bEnable;
 
   xiiSkeletonAssetEvent e;
   e.m_pDocument = this;
@@ -234,7 +238,7 @@ void xiiSkeletonAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pIn
     pExposedParams->m_Parameters.PushBack(param);
   }
 
-  auto Traverse = [&](xiiEditableSkeletonJoint* pJoint, const char* szParent, auto Recurse) -> void {
+  auto Traverse = [&](xiiEditableSkeletonJoint* pJoint, const char* szParent, auto recurse) -> void {
     xiiExposedBone bone;
     bone.m_sName     = pJoint->GetName();
     bone.m_sParent   = szParent;
@@ -248,7 +252,7 @@ void xiiSkeletonAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pIn
 
     for (auto pChild : pJoint->m_Children)
     {
-      Recurse(pChild, pJoint->GetName(), Recurse);
+      recurse(pChild, pJoint->GetName(), recurse);
     }
   };
 
@@ -273,7 +277,12 @@ xiiTransformStatus xiiSkeletonAssetDocument::InternalTransformAsset(xiiStreamWri
 
     xiiStringBuilder sAbsFilename = pProp->m_sSourceFile;
 
-    if (!sAbsFilename.IsEmpty())
+    if (sAbsFilename.IsEmpty())
+    {
+      range.BeginNextStep("Writing Result");
+      XII_SUCCEED_OR_RETURN(WriteResource(stream, *GetProperties()));
+    }
+    else
     {
       if (!xiiQtEditorApp::GetSingleton()->MakeDataDirectoryRelativePathAbsolute(sAbsFilename))
       {
@@ -298,15 +307,14 @@ xiiTransformStatus xiiSkeletonAssetDocument::InternalTransformAsset(xiiStreamWri
       range.BeginNextStep("Importing Skeleton Data");
 
       // synchronize the old data (collision geometry etc.) with the new hierarchy
-      MergeWithNewSkeleton(newSkeleton);
+      const xiiEditableSkeleton* pFinalSkeleton = MergeWithNewSkeleton(newSkeleton);
+
+      range.BeginNextStep("Writing Result");
+      XII_SUCCEED_OR_RETURN(WriteResource(stream, *pFinalSkeleton));
 
       // merge the new data with the actual asset document
       ApplyNativePropertyChangesToObjectManager(true);
     }
-
-    range.BeginNextStep("Writing Result");
-
-    XII_SUCCEED_OR_RETURN(WriteResource(stream));
   }
 
   xiiSkeletonAssetEvent e;
@@ -323,7 +331,7 @@ xiiTransformStatus xiiSkeletonAssetDocument::InternalCreateThumbnail(const Thumb
   return status;
 }
 
-void xiiSkeletonAssetDocument::MergeWithNewSkeleton(xiiEditableSkeleton& newSkeleton)
+const xiiEditableSkeleton* xiiSkeletonAssetDocument::MergeWithNewSkeleton(xiiEditableSkeleton& newSkeleton)
 {
   xiiEditableSkeleton*                               pOldSkeleton = GetProperties();
   xiiMap<xiiString, const xiiEditableSkeletonJoint*> prevJoints;
@@ -347,7 +355,7 @@ void xiiSkeletonAssetDocument::MergeWithNewSkeleton(xiiEditableSkeleton& newSkel
 
   // copy old properties to new skeleton
   {
-    auto TraverseJoints = [&prevJoints](const auto& self, xiiEditableSkeletonJoint* pJoint, const xiiTransform& tRoot, xiiTransform origin) -> void {
+    auto TraverseJoints = [&prevJoints](const auto& self, xiiEditableSkeletonJoint* pJoint, const xiiTransform& root, xiiTransform origin) -> void {
       auto it = prevJoints.Find(pJoint->GetName());
       if (it.IsValid())
       {
@@ -357,14 +365,14 @@ void xiiSkeletonAssetDocument::MergeWithNewSkeleton(xiiEditableSkeleton& newSkel
       // use the parent rotation as the gizmo base rotation
       xiiMat4 modelTransform, fullTransform;
       modelTransform = origin.GetAsMat4();
-      xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(tRoot.GetAsMat4(), modelTransform, fullTransform, pJoint->m_qGizmoOffsetRotationRO);
+      xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(root.GetAsMat4(), modelTransform, fullTransform, pJoint->m_qGizmoOffsetRotationRO);
 
       origin.SetGlobalTransform(origin, pJoint->m_LocalTransform);
-      pJoint->m_vGizmoOffsetPositionRO = tRoot.TransformPosition(origin.m_vPosition);
+      pJoint->m_vGizmoOffsetPositionRO = root.TransformPosition(origin.m_vPosition);
 
       for (xiiEditableSkeletonJoint* pChild : pJoint->m_Children)
       {
-        self(self, pChild, tRoot, origin);
+        self(self, pChild, root, origin);
       }
     };
 
@@ -380,6 +388,8 @@ void xiiSkeletonAssetDocument::MergeWithNewSkeleton(xiiEditableSkeleton& newSkel
   // move the new top level joints over to our own skeleton
   pOldSkeleton->m_Children = newSkeleton.m_Children;
   newSkeleton.m_Children.Clear(); // prevent this skeleton from deallocating the joints
+
+  return pOldSkeleton;
 }
 
 
@@ -397,13 +407,13 @@ xiiSkeletonAssetDocumentGenerator::xiiSkeletonAssetDocumentGenerator()
 
 xiiSkeletonAssetDocumentGenerator::~xiiSkeletonAssetDocumentGenerator() = default;
 
-void xiiSkeletonAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_Modes) const
+void xiiSkeletonAssetDocumentGenerator::GetImportModes(xiiStringView sParentDirRelativePath, xiiHybridArray<xiiAssetDocumentGenerator::Info, 4>& out_modes) const
 {
   xiiStringBuilder baseOutputFile = sParentDirRelativePath;
   baseOutputFile.ChangeFileExtension(GetDocumentExtension());
 
   {
-    xiiAssetDocumentGenerator::Info& info = out_Modes.ExpandAndGetRef();
+    xiiAssetDocumentGenerator::Info& info = out_modes.ExpandAndGetRef();
     info.m_Priority                       = xiiAssetDocGeneratorPriority::Undecided;
     info.m_sName                          = "SkeletonImport";
     info.m_sOutputFileParentRelative      = baseOutputFile;

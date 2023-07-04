@@ -255,7 +255,7 @@ void xiiQtSkeletonAssetDocumentWindow::SendLiveResourcePreview()
   AssetHeader.Write(memoryWriter).IgnoreResult();
 
   // Write Asset Data
-  pDoc->WriteResource(memoryWriter).AssertSuccess();
+  pDoc->WriteResource(memoryWriter, *pDoc->GetProperties()).AssertSuccess();
   msg.m_Data = xiiArrayPtr<const xiiUInt8>(streamStorage.GetData(), streamStorage.GetStorageSize32());
 
   xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);

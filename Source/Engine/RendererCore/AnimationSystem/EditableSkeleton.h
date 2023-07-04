@@ -34,14 +34,15 @@ struct XII_RENDERERCORE_DLL xiiEditableSkeletonBoneShape : public xiiReflectedCl
   float m_fLength    = 0; // Box, Capsule; 0 means parent joint to this joint (auto mode)
   float m_fWidth     = 0; // Box
   float m_fThickness = 0; // Sphere radius, Capsule radius
+};
 
-  bool m_bOverrideName           = false;
-  bool m_bOverrideSurface        = false;
-  bool m_bOverrideCollisionLayer = false;
+struct XII_RENDERERCORE_DLL xiiEditableSkeletonBoneCollider : public xiiReflectedClass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiEditableSkeletonBoneCollider, xiiReflectedClass);
 
-  xiiString m_sNameOverride;
-  xiiString m_sSurfaceOverride;
-  xiiUInt8  m_uiCollisionLayerOverride;
+  xiiString                 m_sIdentifier;
+  xiiDynamicArray<xiiVec3>  m_VertexPositions;
+  xiiDynamicArray<xiiUInt8> m_TriangleIndices;
 };
 
 class XII_RENDERERCORE_DLL xiiEditableSkeletonJoint : public xiiReflectedClass
@@ -64,6 +65,8 @@ public:
   xiiHashedString m_sName;
   xiiTransform    m_LocalTransform = xiiTransform::IdentityTransform();
 
+  xiiEnum<xiiSkeletonJointType> m_JointType;
+
   bool m_bLimitTwist = false;
   bool m_bLimitSwing = false;
 
@@ -77,8 +80,14 @@ public:
 
   xiiQuat m_qLocalJointRotation = xiiQuat::IdentityQuaternion();
 
-  xiiHybridArray<xiiEditableSkeletonJoint*, 4>    m_Children;
-  xiiHybridArray<xiiEditableSkeletonBoneShape, 1> m_BoneShapes;
+  xiiHybridArray<xiiEditableSkeletonJoint*, 4>     m_Children;
+  xiiHybridArray<xiiEditableSkeletonBoneShape, 1>  m_BoneShapes;
+  xiiDynamicArray<xiiEditableSkeletonBoneCollider> m_BoneColliders;
+
+  bool      m_bOverrideSurface        = false;
+  bool      m_bOverrideCollisionLayer = false;
+  xiiString m_sSurfaceOverride;
+  xiiUInt8  m_uiCollisionLayerOverride;
 };
 
 class XII_RENDERERCORE_DLL xiiEditableSkeleton : public xiiReflectedClass
@@ -100,6 +109,7 @@ public:
   xiiUInt8  m_uiCollisionLayer = 0;
 
   float m_fUniformScaling = 1.0f;
+  float m_fMaxImpulse     = 100.0f;
 
   xiiEnum<xiiBasisAxis> m_RightDir;
   xiiEnum<xiiBasisAxis> m_UpDir;

@@ -52,6 +52,8 @@ public:
   void  SetNormalizedPlaybackPosition(float fPosition);
   float GetNormalizedPlaybackPosition() const { return m_fNormalizedPlaybackPosition; }
 
+  xiiEnum<xiiAnimationInvisibleUpdateRate> m_InvisibleUpdateRate; // [ property ]
+
 protected:
   void Update();
   bool UpdatePlaybackTime(xiiTime tDiff, const xiiEventTrack& eventTrack, xiiAnimPoseEventTrackSampleMode& out_trackSampling);
@@ -61,6 +63,7 @@ protected:
   xiiTime                        m_Duration;
   xiiAnimationClipResourceHandle m_hAnimationClip;
   xiiSkeletonResourceHandle      m_hSkeleton;
+  xiiTime                        m_ElapsedTimeSinceUpdate = xiiTime::Zero();
 
   ozz::vector<ozz::math::SoaTransform> m_OzzLocalTransforms; // TODO: could be frame allocated
 };

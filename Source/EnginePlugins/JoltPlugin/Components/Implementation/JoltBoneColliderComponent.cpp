@@ -156,6 +156,8 @@ void xiiJoltBoneColliderComponent::CreatePhysicsShapes(const xiiSkeletonResource
     if (geo.m_Type == xiiSkeletonJointGeometryType::None)
       continue;
 
+    const xiiSkeletonJoint& joint = desc.m_Skeleton.GetJointByIndex(geo.m_uiAttachedToJoint);
+
     auto& shape = m_Shapes.ExpandAndGetRef();
 
     xiiGameObject* pGO = nullptr;
@@ -164,7 +166,7 @@ void xiiJoltBoneColliderComponent::CreatePhysicsShapes(const xiiSkeletonResource
       xiiGameObjectDesc god;
       god.m_bDynamic = true;
       god.m_hParent  = GetOwner()->GetHandle();
-      god.m_sName    = geo.m_sName;
+      god.m_sName    = joint.GetName();
       god.m_uiTeamID = GetOwner()->GetTeamID();
 
       shape.m_hActorObject = GetWorld()->CreateObject(god, pGO);
@@ -174,8 +176,8 @@ void xiiJoltBoneColliderComponent::CreatePhysicsShapes(const xiiSkeletonResource
         xiiJoltQueryShapeActorComponent* pDynAct = nullptr;
         xiiJoltQueryShapeActorComponent::CreateComponent(pGO, pDynAct);
 
-        pDynAct->m_uiCollisionLayer = geo.m_uiCollisionLayer;
-        pDynAct->m_hSurface         = geo.m_hSurface;
+        pDynAct->m_uiCollisionLayer = joint.GetCollisionLayer();
+        pDynAct->m_hSurface         = joint.GetSurface();
         pDynAct->SetInitialObjectFilterID(m_uiObjectFilterID);
       }
       else
@@ -184,8 +186,8 @@ void xiiJoltBoneColliderComponent::CreatePhysicsShapes(const xiiSkeletonResource
         xiiJoltDynamicActorComponent::CreateComponent(pGO, pDynAct);
         pDynAct->SetKinematic(true);
 
-        pDynAct->m_uiCollisionLayer = geo.m_uiCollisionLayer;
-        pDynAct->m_hSurface         = geo.m_hSurface;
+        pDynAct->m_uiCollisionLayer = joint.GetCollisionLayer();
+        pDynAct->m_hSurface         = joint.GetSurface();
         pDynAct->SetInitialObjectFilterID(m_uiObjectFilterID);
       }
     }

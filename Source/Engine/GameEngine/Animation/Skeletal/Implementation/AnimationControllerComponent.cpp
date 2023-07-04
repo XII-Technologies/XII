@@ -12,13 +12,14 @@
 #include <RendererCore/AnimationSystem/SkeletonResource.h>
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiAnimationControllerComponent, 1, xiiComponentMode::Static);
+XII_BEGIN_COMPONENT_TYPE(xiiAnimationControllerComponent, 2, xiiComponentMode::Static);
 {
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("AnimController", GetAnimationControllerFile, SetAnimationControllerFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Keyframe_Graph")),
 
     XII_ENUM_MEMBER_PROPERTY("RootMotionMode", xiiRootMotionMode, m_RootMotionMode),
+    XII_ENUM_MEMBER_PROPERTY("InvisibleUpdateRate", xiiAnimationInvisibleUpdateRate, m_InvisibleUpdateRate),
   }
   XII_END_PROPERTIES;
 
@@ -41,6 +42,7 @@ void xiiAnimationControllerComponent::SerializeComponent(xiiWorldWriter& ref_str
 
   s << m_hAnimationController;
   s << m_RootMotionMode;
+  s << m_InvisibleUpdateRate;
 }
 
 void xiiAnimationControllerComponent::DeserializeComponent(xiiWorldReader& ref_stream)
@@ -51,6 +53,11 @@ void xiiAnimationControllerComponent::DeserializeComponent(xiiWorldReader& ref_s
 
   s >> m_hAnimationController;
   s >> m_RootMotionMode;
+
+  if (uiVersion >= 2)
+  {
+    s >> m_InvisibleUpdateRate;
+  }
 }
 
 void xiiAnimationControllerComponent::SetAnimationControllerFile(const char* szFile)
@@ -98,7 +105,24 @@ void xiiAnimationControllerComponent::OnSimulationStarted()
 
 void xiiAnimationControllerComponent::Update()
 {
-  m_AnimationGraph.Update(GetWorld()->GetClock().GetTimeDiff(), GetOwner());
+  xiiTime            tMinStep = xiiTime::Seconds(0);
+  xiiVisibilityState visType  = GetOwner()->GetVisibilityState();
+
+  if (visType != xiiVisibilityState::Direct)
+  {
+    if (m_InvisibleUpdateRate == xiiAnimationInvisibleUpdateRate::Pause && visType == xiiVisibilityState::Invisible)
+      return;
+
+    tMinStep = xiiAnimationInvisibleUpdateRate::GetTimeStep(m_InvisibleUpdateRate);
+  }
+
+  m_ElapsedTimeSinceUpdate += GetWorld()->GetClock().GetTimeDiff();
+
+  if (m_ElapsedTimeSinceUpdate < tMinStep)
+    return;
+
+  m_AnimationGraph.Update(m_ElapsedTimeSinceUpdate, GetOwner());
+  m_ElapsedTimeSinceUpdate.SetZero();
 
   xiiVec3  translation;
   xiiAngle rotationX;

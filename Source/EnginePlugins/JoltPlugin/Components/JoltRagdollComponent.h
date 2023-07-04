@@ -5,24 +5,22 @@
 #include <Foundation/Math/Declarations.h>
 #include <JoltPlugin/JoltPluginDLL.h>
 
+class xiiJoltUserData;
+class xiiSkeletonJoint;
+class xiiJoltWorldModule;
+class xiiJoltMaterial;
+struct xiiMsgRetrieveBoneState;
 struct xiiMsgAnimationPoseUpdated;
 struct xiiMsgPhysicsAddImpulse;
 struct xiiMsgPhysicsAddForce;
 struct xiiSkeletonResourceGeometry;
-class xiiJoltUserData;
-class xiiSkeletonJoint;
-struct xiiMsgAnimationPoseProposal;
-struct xiiMsgRetrieveBoneState;
-class xiiJoltWorldModule;
-namespace JPH
-{
-  class RagdollSettings;
-}
 
 namespace JPH
 {
   class Ragdoll;
-}
+  class RagdollSettings;
+  class Shape;
+} // namespace JPH
 
 using xiiSkeletonResourceHandle = xiiTypedResourceHandle<class xiiSkeletonResource>;
 using xiiSurfaceResourceHandle  = xiiTypedResourceHandle<class xiiSurfaceResource>;
@@ -42,33 +40,20 @@ private:
   void Update(const xiiWorldModule::UpdateContext& context);
 };
 
-struct xiiJoltRagdollStart
+struct xiiJoltRagdollStartMode
 {
   using StorageType = xiiUInt8;
 
   enum Enum
   {
-    BindPose,
-    WaitForPose,
-    Wait,
-    Default = BindPose
+    WithBindPose,
+    WithNextAnimPose,
+    WithCurrentMeshPose,
+    Default = WithBindPose
   };
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_JOLTPLUGIN_DLL, xiiJoltRagdollStart);
-
-//////////////////////////////////////////////////////////////////////////
-
-struct XII_JOLTPLUGIN_DLL xiiJoltRagdollConstraint : public xiiReflectedClass
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiJoltRagdollConstraint, xiiReflectedClass);
-
-  xiiString m_sBone;
-  xiiVec3   m_vRelativePosition;
-
-  xiiResult Serialize(xiiStreamWriter& inout_stream) const;
-  xiiResult Deserialize(xiiStreamReader& inout_stream);
-};
+XII_DECLARE_REFLECTABLE_TYPE(XII_JOLTPLUGIN_DLL, xiiJoltRagdollStartMode);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -96,76 +81,105 @@ public:
 
   xiiUInt32 GetObjectFilterID() const { return m_uiObjectFilterID; } // [ scriptable ]
 
-  void OnAnimationPoseProposal(xiiMsgAnimationPoseProposal& ref_msg); // [ msg handler ]
-  void OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& ref_msg);   // [ msg handler ]
-  void OnRetrieveBoneState(xiiMsgRetrieveBoneState& ref_msg) const;   // [ msg handler ]
+  void OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& ref_msg); // [ msg handler ]
+  void OnRetrieveBoneState(xiiMsgRetrieveBoneState& ref_msg) const; // [ msg handler ]
 
   float GetGravityFactor() const { return m_fGravityFactor; } // [ property ]
   void  SetGravityFactor(float fFactor);                      // [ property ]
 
-  xiiUInt8 m_uiCollisionLayer = 0;     // [ property ]
-  bool     m_bSelfCollision   = false; // [ property ]
+  bool  m_bSelfCollision = false; // [ property ]
+  float m_fStiffness     = 10.0f; // [ property ]
+  float m_fMass          = 50.0f; // [ property ]
 
-  void AddImpulseAtPos(xiiMsgPhysicsAddImpulse& ref_msg); // [ message ]
-  void AddForceAtPos(xiiMsgPhysicsAddForce& ref_msg);     // [ message ]
+  void                             SetStartMode(xiiEnum<xiiJoltRagdollStartMode> mode); // [ property ]
+  xiiEnum<xiiJoltRagdollStartMode> GetStartMode() const { return m_StartMode; }         // [ property ]
+
+  void OnMsgPhysicsAddImpulse(xiiMsgPhysicsAddImpulse& ref_msg); // [ msg handler ]
+
+  /// \brief Applies an impulse to a specific part of the ragdoll.
+  ///
+  /// If this is called before the ragdoll becomes active, it is added to the 'initial impulse' (see SetInitialImpulse()).
+  /// Once the ragdoll is activated, this initial impulse is applied to the closest body part.
+  void OnMsgPhysicsAddForce(xiiMsgPhysicsAddForce& ref_msg); // [ msg handler ]
+
+  /// \brief Call this function BEFORE activating the ragdoll component to specify an impulse that shall be applied to the closest body part when it activates.
+  ///
+  /// Both position and direction are given in world space.
+  ///
+  /// This overrides any previously set or accumulated impulses.
+  /// If AFTER this call additional impulses are recorded through OnMsgPhysicsAddImpulse(), they are 'added' to the initial impulse.
+  ///
+  /// Only a single initial impulse is applied after the ragdoll is created.
+  /// If multiple impulses are added through OnMsgPhysicsAddImpulse(), their average start position is used to determine the closest body part to apply the impulse on.
+  /// Their impulses are accumulated, so the applied impulse can become quite large.
+  void SetInitialImpulse(const xiiVec3& vPosition, const xiiVec3& vDirectionAndStrength); // [ scriptable ]
+
+  /// \brief Adds to the existing initial impulse. See SetInitialImpulse().
+  void AddInitialImpulse(const xiiVec3& vPosition, const xiiVec3& vDirectionAndStrength); // [ scriptable ]
+
+  /// \brief How much of the owner object's velocity to transfer to the new ragdoll bodies.
+  float   m_fOwnerVelocityScale    = 1.0f;                  // [ property ]
+  float   m_fCenterVelocity        = 0.0f;                  // [ property ]
+  float   m_fCenterAngularVelocity = 0.0f;                  // [ property ]
+  xiiVec3 m_vCenterPosition        = xiiVec3::ZeroVector(); // [ property ]
+
 
 protected:
   struct Limb
   {
-    xiiHashedString m_sName;
-    // physx::PxRigidBody* m_pPxBody = nullptr;
-    void*     m_pBodyDesc   = nullptr;
-    xiiUInt16 m_uiPartIndex = 0xFFFFu;
+    xiiUInt16 m_uiPartIndex = xiiInvalidJointIndex;
   };
 
-  struct LimbConfig
+  struct LimbConstructionInfo
   {
     xiiTransform m_GlobalTransform;
-    void*        m_pBodyDesc   = nullptr;
-    xiiUInt16    m_uiPartIndex = 0xFFFFu;
+    xiiUInt16    m_uiJoltPartIndex = xiiInvalidJointIndex;
   };
 
-  struct Impulse
-  {
-    xiiVec3 m_vPos     = xiiVec3::ZeroVector();
-    xiiVec3 m_vImpulse = xiiVec3::ZeroVector();
-    // physx::PxRigidBody* m_pRigidBody = nullptr;
-  };
+  void         Update(bool bForce);
+  xiiResult    EnsureSkeletonIsKnown();
+  void         CreateLimbsFromBindPose();
+  void         CreateLimbsFromCurrentMeshPose();
+  void         DestroyAllLimbs();
+  void         CreateLimbsFromPose(const xiiMsgAnimationPoseUpdated& pose);
+  bool         HasCreatedLimbs() const;
+  xiiTransform GetRagdollRootTransform() const;
+  void         UpdateOwnerPosition();
+  void         RetrieveRagdollPose();
+  void         SendAnimationPoseMsg();
+  void         ConfigureRagdollPart(void* pRagdollSettingsPart, const xiiTransform& globalTransform, xiiUInt8 uiCollisionLayer, xiiJoltWorldModule& worldModule);
+  void         CreateAllLimbs(const xiiSkeletonResource& skeletonResource, const xiiMsgAnimationPoseUpdated& pose, xiiJoltWorldModule& worldModule, float fObjectScale);
+  void         ComputeLimbModelSpaceTransform(xiiTransform& transform, const xiiMsgAnimationPoseUpdated& pose, xiiUInt32 uiPoseJointIndex);
+  void         ComputeLimbGlobalTransform(xiiTransform& transform, const xiiMsgAnimationPoseUpdated& pose, xiiUInt32 uiPoseJointIndex);
+  void         CreateLimb(const xiiSkeletonResource& skeletonResource, xiiMap<xiiUInt16, LimbConstructionInfo>& limbConstructionInfos, xiiArrayPtr<const xiiSkeletonResourceGeometry*> geometries, const xiiMsgAnimationPoseUpdated& pose, xiiJoltWorldModule& worldModule, float fObjectScale);
+  JPH::Shape*  CreateLimbGeoShape(const LimbConstructionInfo& limbConstructionInfo, const xiiSkeletonResourceGeometry& geo, const xiiJoltMaterial* pJoltMaterial, const xiiQuat& qBoneDirAdjustment, const xiiTransform& skeletonRootTransform, xiiTransform& out_shapeTransform, float fObjectScale);
+  void         CreateAllLimbGeoShapes(const LimbConstructionInfo& limbConstructionInfo, xiiArrayPtr<const xiiSkeletonResourceGeometry*> geometries, const xiiSkeletonJoint& thisLimbJoint, const xiiSkeletonResource& skeletonResource, float fObjectScale);
+  virtual void ApplyPartInitialVelocity();
+  void         ApplyBodyMass();
+  void         ApplyInitialImpulse(xiiJoltWorldModule& worldModule, float fMaxImpulse);
 
-  float                                     m_fGravityFactor = 1.0f; // [ property ]
-  xiiDynamicArray<xiiJoltRagdollConstraint> m_Constraints;           // [ property ]
-  xiiEnum<xiiJoltRagdollStart>              m_Start;                 // [ property ]
+  xiiEnum<xiiJoltRagdollStartMode> m_StartMode;             // [ property ]
+  float                            m_fGravityFactor = 1.0f; // [ property ]
 
-  Impulse                   m_NextImpulse;
   xiiSkeletonResourceHandle m_hSkeleton;
+  xiiDynamicArray<xiiMat4>  m_CurrentLimbTransforms;
 
-  bool                     m_bLimbsSetup         = false;
-  float                    m_fStiffness          = 10.0f;
-  xiiUInt32                m_uiObjectFilterID    = xiiInvalidIndex;
-  xiiUInt32                m_uiJoltUserDataIndex = xiiInvalidIndex;
-  xiiJoltUserData*         m_pJoltUserData       = nullptr;
-  xiiDynamicArray<Limb>    m_Limbs;
-  JPH::Ragdoll*            m_pRagdoll         = nullptr;
-  JPH::RagdollSettings*    m_pRagdollSettings = nullptr;
-  xiiTransform             m_RootBodyLocalTransform;
-  xiiDynamicArray<xiiMat4> m_LimbPoses;
+  xiiUInt32        m_uiObjectFilterID    = xiiInvalidIndex;
+  xiiUInt32        m_uiJoltUserDataIndex = xiiInvalidIndex;
+  xiiJoltUserData* m_pJoltUserData       = nullptr;
 
-  void         Update();
-  void         CreateConstraints();
-  void         SetupLimbsFromBindPose();
-  bool         EnsureSkeletonIsKnown();
-  virtual void ClearPhysicsObjects();
-  virtual void SetupJoltBasics(xiiJoltWorldModule* pPxModule);
-  virtual void FinishSetupLimbs();
-  void         SetupLimbs(const xiiMsgAnimationPoseUpdated& pose);
-  void         SetupLimbBodiesAndGeometry(const xiiSkeletonResource* pSkeleton, const xiiMsgAnimationPoseUpdated& pose);
-  void         SetupLimbJoints(const xiiSkeletonResource* pSkeleton);
-  virtual void CreateLimbBody(const LimbConfig& parentLimb, LimbConfig& thisLimb);
-  void         AddLimbGeometry(xiiBasisAxis::Enum srcBoneDir, LimbConfig& limb, const xiiSkeletonResourceGeometry& geo);
-  virtual void CreateLimbJoint(const xiiSkeletonJoint& thisJoint, void* pParentBodyDesc, const xiiTransform& parentFrame, void* pThisBodyDesc, const xiiTransform& thisFrame);
-  void         ApplyImpulse();
-  void         ComputeLimbModelSpaceTransform(xiiTransform& transform, const xiiMsgAnimationPoseUpdated& pose, xiiUInt32 uiIndex);
-  void         ComputeLimbGlobalTransform(xiiTransform& transform, const xiiMsgAnimationPoseUpdated& pose, xiiUInt32 uiIndex);
-  void         RetrievePhysicsPose();
-  virtual void WakeUp();
+  JPH::Ragdoll*         m_pRagdoll         = nullptr;
+  JPH::RagdollSettings* m_pRagdollSettings = nullptr;
+  xiiDynamicArray<Limb> m_Limbs;
+  xiiTransform          m_RootBodyLocalTransform;
+  xiiTime               m_ElapsedTimeSinceUpdate = xiiTime::Zero();
+
+  xiiVec3  m_vInitialImpulsePosition  = xiiVec3::ZeroVector();
+  xiiVec3  m_vInitialImpulseDirection = xiiVec3::ZeroVector();
+  xiiUInt8 m_uiNumInitialImpulses     = 0;
+
+  //////////////////////////////////////////////////////////////////////////
+
+  void SetupLimbJoints(const xiiSkeletonResource* pSkeleton);
+  void CreateLimbJoint(const xiiSkeletonJoint& thisJoint, void* pParentBodyDesc, const xiiTransform& parentFrame, void* pThisBodyDesc, const xiiTransform& thisFrame);
 };

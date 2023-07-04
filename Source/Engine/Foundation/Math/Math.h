@@ -388,10 +388,10 @@ namespace xiiMath
   XII_FOUNDATION_DLL size_t SafeConvertToSizeT(xiiUInt64 uiValue);
 
   /// \brief If 'value' is not-a-number (NaN) 'fallback' is returned, otherwise 'value' is passed through unmodified.
-  XII_FOUNDATION_DLL float ReplaceNaN(float value, float fFallback); // [tested]
+  XII_FOUNDATION_DLL float ReplaceNaN(float fValue, float fFallback); // [tested]
 
   /// \brief If 'value' is not-a-number (NaN) 'fallback' is returned, otherwise 'value' is passed through unmodified.
-  XII_FOUNDATION_DLL double ReplaceNaN(double value, double fFallback); // [tested]
+  XII_FOUNDATION_DLL double ReplaceNaN(double fValue, double fFallback); // [tested]
 
   /// \brief Returns the hypotenuse of a given x and y term.
   float Hypot(float x, float y);
