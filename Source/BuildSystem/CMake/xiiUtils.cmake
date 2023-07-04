@@ -33,10 +33,10 @@ macro(xii_pull_config_vars)
 endmacro()
 
 # #####################################
-# ## xii_set_target_output_dirs(<target> <lib-output-dir> <dll-output-dir>)
+# ## xii_pull_output_vars(LIB_OUTPUT_DIR DLL_OUTPUT_DIR)
 # #####################################
-function(xii_set_target_output_dirs TARGET_NAME LIB_OUTPUT_DIR DLL_OUTPUT_DIR)
-	xii_pull_all_vars()
+macro(xii_pull_output_vars LIB_OUTPUT_DIR DLL_OUTPUT_DIR)
+    xii_pull_all_vars()
 	xii_pull_config_vars()
 
 	set(SUB_DIR "")
@@ -86,6 +86,13 @@ function(xii_set_target_output_dirs TARGET_NAME LIB_OUTPUT_DIR DLL_OUTPUT_DIR)
 
 	set(OUTPUT_DLL_DEV "${DLL_OUTPUT_DIR}/${OUTPUT_DEV}")
 	set(OUTPUT_LIB_DEV "${LIB_OUTPUT_DIR}/${OUTPUT_DEV}")
+endmacro()
+
+# #####################################
+# ## xii_set_target_output_dirs(<target> <lib-output-dir> <dll-output-dir>)
+# #####################################
+function(xii_set_target_output_dirs TARGET_NAME LIB_OUTPUT_DIR DLL_OUTPUT_DIR)
+	xii_pull_output_vars("${LIB_OUTPUT_DIR}" "${DLL_OUTPUT_DIR}")
 
 	# If we can't use generator expressions the non-generator expression version of the
 	# output directory should point to the version matching CMAKE_BUILD_TYPE. This is the case for

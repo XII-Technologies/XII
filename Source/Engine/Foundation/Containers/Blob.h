@@ -21,10 +21,7 @@ public:
   using PointerType = T*;
 
   /// \brief Initializes the xiiBlobPtr to be empty.
-  XII_ALWAYS_INLINE xiiBlobPtr() :
-    m_pPtr(nullptr)
-  {
-  }
+  xiiBlobPtr() = default;
 
   /// \brief Initializes the xiiBlobPtr with the given pointer and number of elements. No memory is allocated or copied.
   template <typename U>
@@ -96,8 +93,7 @@ public:
   /// \brief Creates a sub-array from this array.
   XII_FORCE_INLINE xiiBlobPtr<T> GetSubArray(xiiUInt64 uiStart, xiiUInt64 uiCount) const // [tested]
   {
-    XII_ASSERT_DEV(
-      uiStart + uiCount <= GetCount(), "uiStart+uiCount ({0}) has to be smaller or equal than the count ({1}).", uiStart + uiCount, GetCount());
+    XII_ASSERT_DEV(uiStart + uiCount <= GetCount(), "uiStart+uiCount ({0}) has to be smaller or equal than the count ({1}).", uiStart + uiCount, GetCount());
     return xiiBlobPtr<T>(GetPtr() + uiStart, uiCount);
   }
 
@@ -137,14 +133,14 @@ public:
   /// \brief Index access.
   XII_FORCE_INLINE const ValueType& operator[](xiiUInt64 uiIndex) const // [tested]
   {
-    XII_ASSERT_DEV(uiIndex < GetCount(), "Cannot access element {0}, the array only holds {1} elements.", uiIndex, GetCount());
+    XII_ASSERT_DEBUG(uiIndex < GetCount(), "Cannot access element {0}, the array only holds {1} elements.", uiIndex, GetCount());
     return *static_cast<const ValueType*>(GetPtr() + uiIndex);
   }
 
   /// \brief Index access.
   XII_FORCE_INLINE ValueType& operator[](xiiUInt64 uiIndex) // [tested]
   {
-    XII_ASSERT_DEV(uiIndex < GetCount(), "Cannot access element {0}, the array only holds {1} elements.", uiIndex, GetCount());
+    XII_ASSERT_DEBUG(uiIndex < GetCount(), "Cannot access element {0}, the array only holds {1} elements.", uiIndex, GetCount());
     return *static_cast<ValueType*>(GetPtr() + uiIndex);
   }
 
@@ -186,7 +182,7 @@ public:
   using reverse_iterator       = reverse_pointer_iterator<T>;
 
 private:
-  PointerType m_pPtr;
+  PointerType m_pPtr    = nullptr;
   xiiUInt64   m_uiCount = 0u;
 };
 
