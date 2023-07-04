@@ -108,7 +108,8 @@ void xiiQtExportAndRunDlg::on_AddToolButton_clicked()
 
   xiiStringBuilder path = sFile.toUtf8().data();
   path.MakeCleanPath();
-  path.TrimWordStart(appDir, "/");
+  path.TrimWordStart(appDir);
+  path.Trim("/", "");
 
   xiiStringBuilder tmp;
   ToolCombo->addItem(QString::fromUtf8(path.GetFileName().GetData(tmp)), QString::fromUtf8(path.GetData()));

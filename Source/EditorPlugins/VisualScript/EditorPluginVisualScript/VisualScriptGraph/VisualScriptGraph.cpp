@@ -165,10 +165,15 @@ void xiiVisualScriptNodeManager::GetOutputDataPins(const xiiDocumentObject* pObj
 xiiStringView xiiVisualScriptNodeManager::GetNiceTypeName(const xiiDocumentObject* pObject)
 {
   xiiStringView sTypeName = pObject->GetType()->GetTypeName();
-  sTypeName.TrimWordStart(xiiVisualScriptNodeRegistry::s_szTypeNamePrefix, "Builtin_");
+
+  while (sTypeName.TrimWordStart(xiiVisualScriptNodeRegistry::s_szTypeNamePrefix) || sTypeName.TrimWordStart("Builtin_"))
+  {
+  }
 
   if (const char* szAngleBracket = sTypeName.FindSubString("<"))
+  {
     sTypeName = xiiStringView(sTypeName.GetStartPointer(), szAngleBracket);
+  }
 
   return sTypeName;
 }

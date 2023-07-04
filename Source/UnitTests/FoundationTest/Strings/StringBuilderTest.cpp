@@ -1520,21 +1520,43 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
 
     {
       sb = "<test><tut><test><test><tut>abc<tut><test>";
-      XII_TEST_BOOL(sb.TrimWordStart("<tut>", "<test>"));
+      XII_TEST_BOOL(!sb.TrimWordStart("<tut>"));
+      XII_TEST_BOOL(sb.TrimWordStart("<test>"));
+      XII_TEST_BOOL(sb.TrimWordStart("<tut>"));
+      XII_TEST_BOOL(sb.TrimWordStart("<test>"));
+      XII_TEST_BOOL(sb.TrimWordStart("<test>"));
+      XII_TEST_BOOL(sb.TrimWordStart("<tut>"));
       XII_TEST_STRING(sb, "abc<tut><test>");
-      XII_TEST_BOOL(sb.TrimWordStart("<tut>", "<test>") == false);
+      XII_TEST_BOOL(sb.TrimWordStart("<tut>") == false);
+      XII_TEST_BOOL(sb.TrimWordStart("<test>") == false);
       XII_TEST_STRING(sb, "abc<tut><test>");
     }
 
     {
       sb = "<a><b><c><d><e><a><b><c><d><e>abc";
-      XII_TEST_BOOL(sb.TrimWordStart("<a>", "<b>", "<c>", "<d>", "<e>"));
+
+      while (sb.TrimWordStart("<a>") ||
+             sb.TrimWordStart("<b>") ||
+             sb.TrimWordStart("<c>") ||
+             sb.TrimWordStart("<d>") ||
+             sb.TrimWordStart("<e>"))
+      {
+      }
+
       XII_TEST_STRING(sb, "abc");
     }
 
     {
       sb = "<a><b><c><d><e><a><b><c><d><e>";
-      XII_TEST_BOOL(sb.TrimWordStart("<a>", "<b>", "<c>", "<d>", "<e>"));
+
+      while (sb.TrimWordStart("<a>") ||
+             sb.TrimWordStart("<b>") ||
+             sb.TrimWordStart("<c>") ||
+             sb.TrimWordStart("<d>") ||
+             sb.TrimWordStart("<e>"))
+      {
+      }
+
       XII_TEST_STRING(sb, "");
     }
   }
@@ -1553,21 +1575,42 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
 
     {
       sb = "<tut><test>abc<test><tut><test><test><tut>";
-      XII_TEST_BOOL(sb.TrimWordEnd("<tut>", "<test>"));
+      XII_TEST_BOOL(sb.TrimWordEnd("<tut>"));
+      XII_TEST_BOOL(sb.TrimWordEnd("<test>"));
+      XII_TEST_BOOL(sb.TrimWordEnd("<test>"));
+      XII_TEST_BOOL(sb.TrimWordEnd("<tut>"));
+      XII_TEST_BOOL(sb.TrimWordEnd("<test>"));
       XII_TEST_STRING(sb, "<tut><test>abc");
-      XII_TEST_BOOL(sb.TrimWordEnd("<tut>", "<test>") == false);
+      XII_TEST_BOOL(sb.TrimWordEnd("<tut>") == false);
+      XII_TEST_BOOL(sb.TrimWordEnd("<test>") == false);
       XII_TEST_STRING(sb, "<tut><test>abc");
     }
 
     {
       sb = "abc<a><b><c><d><e><a><b><c><d><e>";
-      XII_TEST_BOOL(sb.TrimWordEnd("<a>", "<b>", "<c>", "<d>", "<e>"));
+
+      while (sb.TrimWordEnd("<a>") ||
+             sb.TrimWordEnd("<b>") ||
+             sb.TrimWordEnd("<c>") ||
+             sb.TrimWordEnd("<d>") ||
+             sb.TrimWordEnd("<e>"))
+      {
+      }
+
       XII_TEST_STRING(sb, "abc");
     }
 
     {
       sb = "<a><b><c><d><e><a><b><c><d><e>";
-      XII_TEST_BOOL(sb.TrimWordEnd("<a>", "<b>", "<c>", "<d>", "<e>"));
+
+      while (sb.TrimWordEnd("<a>") ||
+             sb.TrimWordEnd("<b>") ||
+             sb.TrimWordEnd("<c>") ||
+             sb.TrimWordEnd("<d>") ||
+             sb.TrimWordEnd("<e>"))
+      {
+      }
+
       XII_TEST_STRING(sb, "");
     }
   }

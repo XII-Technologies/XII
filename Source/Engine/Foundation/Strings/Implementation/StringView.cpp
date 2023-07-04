@@ -151,101 +151,46 @@ void xiiStringView::ChopAwayFirstCharacterAscii()
   {
     XII_ASSERT_DEBUG(xiiUnicodeUtils::IsASCII(*m_pStart), "ChopAwayFirstCharacterAscii() was called on a non-ASCII character.");
 
-    ++m_pStart;
+    m_pStart += 1;
   }
 }
 
-bool xiiStringView::TrimWordStart(xiiStringView sWord1, xiiStringView sWord2, xiiStringView sWord3, xiiStringView sWord4, xiiStringView sWord5)
+bool xiiStringView::TrimWordStart(xiiStringView sWord)
 {
-  /// \test TrimWordStart
+  const bool bTrimAll = false;
+
   bool trimmed = false;
 
-  while (true)
+  do
   {
-    if (!sWord1.IsEmpty() && StartsWith_NoCase(sWord1))
+    if (!sWord.IsEmpty() && StartsWith_NoCase(sWord))
     {
-      Shrink(xiiStringUtils::GetCharacterCount(sWord1.GetStartPointer(), sWord1.GetEndPointer()), 0);
+      Shrink(xiiStringUtils::GetCharacterCount(sWord.GetStartPointer(), sWord.GetEndPointer()), 0);
       trimmed = true;
-      continue;
     }
 
-    if (!sWord2.IsEmpty() && StartsWith_NoCase(sWord2))
-    {
-      Shrink(xiiStringUtils::GetCharacterCount(sWord2.GetStartPointer(), sWord2.GetEndPointer()), 0);
-      trimmed = true;
-      continue;
-    }
+  } while (bTrimAll);
 
-    if (!sWord3.IsEmpty() && StartsWith_NoCase(sWord3))
-    {
-      Shrink(xiiStringUtils::GetCharacterCount(sWord3.GetStartPointer(), sWord3.GetEndPointer()), 0);
-      trimmed = true;
-      continue;
-    }
-
-    if (!sWord4.IsEmpty() && StartsWith_NoCase(sWord4))
-    {
-      Shrink(xiiStringUtils::GetCharacterCount(sWord4.GetStartPointer(), sWord4.GetEndPointer()), 0);
-      trimmed = true;
-      continue;
-    }
-
-    if (!sWord5.IsEmpty() && StartsWith_NoCase(sWord5))
-    {
-      Shrink(xiiStringUtils::GetCharacterCount(sWord5.GetStartPointer(), sWord5.GetEndPointer()), 0);
-      trimmed = true;
-      continue;
-    }
-
-    return trimmed;
-  }
+  return trimmed;
 }
 
-bool xiiStringView::TrimWordEnd(xiiStringView sWord1, xiiStringView sWord2, xiiStringView sWord3, xiiStringView sWord4, xiiStringView sWord5)
+bool xiiStringView::TrimWordEnd(xiiStringView sWord)
 {
-  /// \test TrimWordEnd
+  const bool bTrimAll = false;
 
   bool trimmed = false;
 
-  while (true)
+  do
   {
-    if (!sWord1.IsEmpty() && EndsWith_NoCase(sWord1))
+    if (!sWord.IsEmpty() && EndsWith_NoCase(sWord))
     {
-      Shrink(0, xiiStringUtils::GetCharacterCount(sWord1.GetStartPointer(), sWord1.GetEndPointer()));
+      Shrink(0, xiiStringUtils::GetCharacterCount(sWord.GetStartPointer(), sWord.GetEndPointer()));
       trimmed = true;
-      continue;
     }
 
-    if (!sWord2.IsEmpty() && EndsWith_NoCase(sWord2))
-    {
-      Shrink(0, xiiStringUtils::GetCharacterCount(sWord2.GetStartPointer(), sWord2.GetEndPointer()));
-      trimmed = true;
-      continue;
-    }
+  } while (bTrimAll);
 
-    if (!sWord3.IsEmpty() && EndsWith_NoCase(sWord3))
-    {
-      Shrink(0, xiiStringUtils::GetCharacterCount(sWord3.GetStartPointer(), sWord3.GetEndPointer()));
-      trimmed = true;
-      continue;
-    }
-
-    if (!sWord4.IsEmpty() && EndsWith_NoCase(sWord4))
-    {
-      Shrink(0, xiiStringUtils::GetCharacterCount(sWord4.GetStartPointer(), sWord4.GetEndPointer()));
-      trimmed = true;
-      continue;
-    }
-
-    if (!sWord5.IsEmpty() && EndsWith_NoCase(sWord5))
-    {
-      Shrink(0, xiiStringUtils::GetCharacterCount(sWord5.GetStartPointer(), sWord5.GetEndPointer()));
-      trimmed = true;
-      continue;
-    }
-
-    return trimmed;
-  }
+  return trimmed;
 }
 
 xiiStringView::iterator xiiStringView::GetIteratorFront() const

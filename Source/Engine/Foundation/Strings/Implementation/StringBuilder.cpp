@@ -1073,98 +1073,43 @@ void xiiStringBuilder::Trim(const char* szTrimCharsStart, const char* szTrimChar
   Shrink(xiiStringUtils::GetCharacterCount(GetData(), szNewStart), xiiStringUtils::GetCharacterCount(szNewEnd, GetData() + GetElementCount()));
 }
 
-bool xiiStringBuilder::TrimWordStart(const char* szWord1, const char* szWord2 /*= nullptr*/, const char* szWord3 /*= nullptr*/, const char* szWord4 /*= nullptr*/, const char* szWord5 /*= nullptr*/)
+bool xiiStringBuilder::TrimWordStart(xiiStringView sWord)
 {
-  /// \test TrimWordStart
+  const bool bTrimAll = false;
+
   bool trimmed = false;
 
-  while (true)
+  do
   {
-    if (!xiiStringUtils::IsNullOrEmpty(szWord1) && StartsWith_NoCase(szWord1))
+    if (!sWord.IsEmpty() && StartsWith_NoCase(sWord))
     {
-      Shrink(xiiStringUtils::GetCharacterCount(szWord1), 0);
+      Shrink(xiiStringUtils::GetCharacterCount(sWord.GetStartPointer(), sWord.GetEndPointer()), 0);
       trimmed = true;
-      continue;
     }
 
-    if (!xiiStringUtils::IsNullOrEmpty(szWord2) && StartsWith_NoCase(szWord2))
-    {
-      Shrink(xiiStringUtils::GetCharacterCount(szWord2), 0);
-      trimmed = true;
-      continue;
-    }
+  } while (bTrimAll);
 
-    if (!xiiStringUtils::IsNullOrEmpty(szWord3) && StartsWith_NoCase(szWord3))
-    {
-      Shrink(xiiStringUtils::GetCharacterCount(szWord3), 0);
-      trimmed = true;
-      continue;
-    }
-
-    if (!xiiStringUtils::IsNullOrEmpty(szWord4) && StartsWith_NoCase(szWord4))
-    {
-      Shrink(xiiStringUtils::GetCharacterCount(szWord4), 0);
-      trimmed = true;
-      continue;
-    }
-
-    if (!xiiStringUtils::IsNullOrEmpty(szWord5) && StartsWith_NoCase(szWord5))
-    {
-      Shrink(xiiStringUtils::GetCharacterCount(szWord5), 0);
-      trimmed = true;
-      continue;
-    }
-
-    return trimmed;
-  }
+  return trimmed;
 }
 
-bool xiiStringBuilder::TrimWordEnd(const char* szWord1, const char* szWord2 /*= nullptr*/, const char* szWord3 /*= nullptr*/, const char* szWord4 /*= nullptr*/, const char* szWord5 /*= nullptr*/)
+bool xiiStringBuilder::TrimWordEnd(xiiStringView sWord)
 {
-  /// \test TrimWordEnd
+  const bool bTrimAll = false;
 
   bool trimmed = false;
 
-  while (true)
+  do
   {
 
-    if (!xiiStringUtils::IsNullOrEmpty(szWord1) && EndsWith_NoCase(szWord1))
+    if (!sWord.IsEmpty() && EndsWith_NoCase(sWord))
     {
-      Shrink(0, xiiStringUtils::GetCharacterCount(szWord1));
+      Shrink(0, xiiStringUtils::GetCharacterCount(sWord.GetStartPointer(), sWord.GetEndPointer()));
       trimmed = true;
-      continue;
     }
 
-    if (!xiiStringUtils::IsNullOrEmpty(szWord2) && EndsWith_NoCase(szWord2))
-    {
-      Shrink(0, xiiStringUtils::GetCharacterCount(szWord2));
-      trimmed = true;
-      continue;
-    }
+  } while (bTrimAll);
 
-    if (!xiiStringUtils::IsNullOrEmpty(szWord3) && EndsWith_NoCase(szWord3))
-    {
-      Shrink(0, xiiStringUtils::GetCharacterCount(szWord3));
-      trimmed = true;
-      continue;
-    }
-
-    if (!xiiStringUtils::IsNullOrEmpty(szWord4) && EndsWith_NoCase(szWord4))
-    {
-      Shrink(0, xiiStringUtils::GetCharacterCount(szWord4));
-      trimmed = true;
-      continue;
-    }
-
-    if (!xiiStringUtils::IsNullOrEmpty(szWord5) && EndsWith_NoCase(szWord5))
-    {
-      Shrink(0, xiiStringUtils::GetCharacterCount(szWord5));
-      trimmed = true;
-      continue;
-    }
-
-    return trimmed;
-  }
+  return trimmed;
 }
 
 void xiiStringBuilder::Format(const xiiFormatString& string)
@@ -1172,7 +1117,7 @@ void xiiStringBuilder::Format(const xiiFormatString& string)
   Clear();
   xiiStringView sText = string.GetText(*this);
 
-  // This is for the case that GetText does not use the xiiStringBuilder as temp storage
+  // this is for the case that GetText does not use the xiiStringBuilder as temp storage
   if (sText.GetStartPointer() != GetData())
     *this = sText;
 }
@@ -1201,6 +1146,5 @@ void xiiStringBuilder::Printf(const char* szUtf8Format, ...)
 
   va_end(args);
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_StringBuilder);
