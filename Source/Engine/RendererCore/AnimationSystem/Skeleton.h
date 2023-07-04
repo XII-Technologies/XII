@@ -13,6 +13,8 @@ class xiiStreamReader;
 class xiiSkeletonBuilder;
 class xiiSkeleton;
 
+using xiiSurfaceResourceHandle = xiiTypedResourceHandle<class xiiSurfaceResource>;
+
 namespace ozz::animation
 {
   class Skeleton;
@@ -32,14 +34,18 @@ public:
   bool                   IsRootJoint() const { return m_uiParentIndex == xiiInvalidJointIndex; }
   const xiiHashedString& GetName() const { return m_sName; }
 
-  xiiAngle GetHalfSwingLimitY() const { return m_HalfSwingLimitY; }
-  xiiAngle GetHalfSwingLimitZ() const { return m_HalfSwingLimitZ; }
-  xiiAngle GetTwistLimitHalfAngle() const { return m_TwistLimitHalfAngle; }
-  xiiAngle GetTwistLimitCenterAngle() const { return m_TwistLimitCenterAngle; }
-  xiiAngle GetTwistLimitLow() const;
-  xiiAngle GetTwistLimitHigh() const;
+  xiiAngle                      GetHalfSwingLimitY() const { return m_HalfSwingLimitY; }
+  xiiAngle                      GetHalfSwingLimitZ() const { return m_HalfSwingLimitZ; }
+  xiiAngle                      GetTwistLimitHalfAngle() const { return m_TwistLimitHalfAngle; }
+  xiiAngle                      GetTwistLimitCenterAngle() const { return m_TwistLimitCenterAngle; }
+  xiiAngle                      GetTwistLimitLow() const;
+  xiiAngle                      GetTwistLimitHigh() const;
+  xiiEnum<xiiSkeletonJointType> GetJointType() const { return m_JointType; }
 
   xiiQuat GetLocalOrientation() const { return m_qLocalJointOrientation; }
+
+  xiiSurfaceResourceHandle GetSurface() const { return m_hSurface; }
+  xiiUInt8                 GetCollisionLayer() const { return m_uiCollisionLayer; }
 
 protected:
   friend xiiSkeleton;
@@ -49,11 +55,15 @@ protected:
   xiiUInt16       m_uiParentIndex = xiiInvalidJointIndex;
   xiiHashedString m_sName;
 
-  xiiQuat  m_qLocalJointOrientation = xiiQuat::IdentityQuaternion();
-  xiiAngle m_HalfSwingLimitY;
-  xiiAngle m_HalfSwingLimitZ;
-  xiiAngle m_TwistLimitHalfAngle;
-  xiiAngle m_TwistLimitCenterAngle;
+  xiiSurfaceResourceHandle m_hSurface;
+  xiiUInt8                 m_uiCollisionLayer = 0;
+
+  xiiEnum<xiiSkeletonJointType> m_JointType;
+  xiiQuat                       m_qLocalJointOrientation = xiiQuat::IdentityQuaternion();
+  xiiAngle                      m_HalfSwingLimitY;
+  xiiAngle                      m_HalfSwingLimitZ;
+  xiiAngle                      m_TwistLimitHalfAngle;
+  xiiAngle                      m_TwistLimitCenterAngle;
 };
 
 /// \brief The skeleton class encapsulates the information about the joint structure for a model.

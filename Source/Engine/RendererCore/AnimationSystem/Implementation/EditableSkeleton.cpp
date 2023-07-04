@@ -27,12 +27,18 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeletonBoneShape, 1, xiiRTTIDefault
     XII_MEMBER_PROPERTY("Width", m_fWidth)->AddAttributes(new xiiDefaultValueAttribute(0.05f), new xiiClampValueAttribute(0.01f, 10.0f)),
     XII_MEMBER_PROPERTY("Thickness", m_fThickness)->AddAttributes(new xiiDefaultValueAttribute(0.05f), new xiiClampValueAttribute(0.01f, 10.0f)),
 
-    XII_MEMBER_PROPERTY("OverrideName", m_bOverrideName),
-    XII_MEMBER_PROPERTY("Name", m_sNameOverride),
-    XII_MEMBER_PROPERTY("OverrideSurface", m_bOverrideSurface),
-    XII_MEMBER_PROPERTY("Surface", m_sSurfaceOverride)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
-    XII_MEMBER_PROPERTY("OverrideCollisionLayer", m_bOverrideCollisionLayer),
-    XII_MEMBER_PROPERTY("CollisionLayer", m_uiCollisionLayerOverride)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeletonBoneCollider, 1, xiiRTTIDefaultAllocator<xiiEditableSkeletonBoneCollider>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Identifier", m_sIdentifier)->AddAttributes(new xiiHiddenAttribute()),
+    XII_ARRAY_MEMBER_PROPERTY("VertexPositions", m_VertexPositions)->AddAttributes(new xiiHiddenAttribute()),
+    XII_ARRAY_MEMBER_PROPERTY("TriangleIndices", m_TriangleIndices)->AddAttributes(new xiiHiddenAttribute()),
 
   }
   XII_END_PROPERTIES;
@@ -43,19 +49,27 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeletonJoint, 2, xiiRTTIDefaultAllo
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Name", GetName, SetName),
+    XII_ACCESSOR_PROPERTY("Name", GetName, SetName)->AddAttributes(new xiiReadOnlyAttribute()),
     XII_MEMBER_PROPERTY("Transform", m_LocalTransform)->AddFlags(xiiPropertyFlags::Hidden)->AddAttributes(new xiiDefaultValueAttribute(xiiTransform::IdentityTransform())),
     XII_MEMBER_PROPERTY_READ_ONLY("GizmoOffsetTranslationRO", m_vGizmoOffsetPositionRO)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY_READ_ONLY("GizmoOffsetRotationRO", m_qGizmoOffsetRotationRO)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("LocalRotation", m_qLocalJointRotation),
+    XII_ENUM_MEMBER_PROPERTY("JointType", xiiSkeletonJointType, m_JointType),
     XII_MEMBER_PROPERTY("LimitSwing", m_bLimitSwing),
     XII_MEMBER_PROPERTY("SwingLimitY", m_SwingLimitY)->AddAttributes(new xiiClampValueAttribute(xiiAngle(), xiiAngle::Degree(170)), new xiiDefaultValueAttribute(xiiAngle::Degree(30))),
     XII_MEMBER_PROPERTY("SwingLimitZ", m_SwingLimitZ)->AddAttributes(new xiiClampValueAttribute(xiiAngle(), xiiAngle::Degree(170)), new xiiDefaultValueAttribute(xiiAngle::Degree(30))),
     XII_MEMBER_PROPERTY("LimitTwist", m_bLimitTwist),
     XII_MEMBER_PROPERTY("TwistLimitHalfAngle", m_TwistLimitHalfAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::Degree(10), xiiAngle::Degree(170)), new xiiDefaultValueAttribute(xiiAngle::Degree(30))),
     XII_MEMBER_PROPERTY("TwistLimitCenterAngle", m_TwistLimitCenterAngle)->AddAttributes(new xiiClampValueAttribute(-xiiAngle::Degree(170), xiiAngle::Degree(170))),
+
+    XII_MEMBER_PROPERTY("OverrideSurface", m_bOverrideSurface),
+    XII_MEMBER_PROPERTY("Surface", m_sSurfaceOverride)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
+    XII_MEMBER_PROPERTY("OverrideCollisionLayer", m_bOverrideCollisionLayer),
+    XII_MEMBER_PROPERTY("CollisionLayer", m_uiCollisionLayerOverride)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),
+
     XII_ARRAY_MEMBER_PROPERTY("Children", m_Children)->AddFlags(xiiPropertyFlags::PointerOwner | xiiPropertyFlags::Hidden),
     XII_ARRAY_MEMBER_PROPERTY("BoneShapes", m_BoneShapes),
+    XII_ARRAY_MEMBER_PROPERTY("Colliders", m_BoneColliders)->AddAttributes(new xiiContainerAttribute(false, false, false)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -70,7 +84,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeleton, 1, xiiRTTIDefaultAllocator
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("File", m_sSourceFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", xiiFileBrowserAttribute::SkeletalMeshes)),
+    XII_MEMBER_PROPERTY("File", m_sSourceFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", xiiFileBrowserAttribute::MeshesWithAnimations)),
     XII_ENUM_MEMBER_PROPERTY("RightDir", xiiBasisAxis, m_RightDir)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveX)),
     XII_ENUM_MEMBER_PROPERTY("UpDir", xiiBasisAxis, m_UpDir)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveY)),
     XII_MEMBER_PROPERTY("FlipForwardDir", m_bFlipForwardDir),
@@ -78,6 +92,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeleton, 1, xiiRTTIDefaultAllocator
     XII_ENUM_MEMBER_PROPERTY("BoneDirection", xiiBasisAxis, m_BoneDirection)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveY)),
     XII_MEMBER_PROPERTY("CollisionLayer", m_uiCollisionLayer)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),
     XII_MEMBER_PROPERTY("Surface", m_sSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
+    XII_MEMBER_PROPERTY("MaxImpulse", m_fMaxImpulse)->AddAttributes(new xiiDefaultValueAttribute(100.f)),
 
     XII_ARRAY_MEMBER_PROPERTY("Children", m_Children)->AddFlags(xiiPropertyFlags::PointerOwner | xiiPropertyFlags::Hidden),
   }
@@ -101,18 +116,18 @@ XII_DEFINE_CUSTOM_VARIANT_TYPE(xiiExposedBone);
 // clang-format on
 
 
-void operator<<(xiiStreamWriter& ref_stream, const xiiExposedBone& bone)
+void operator<<(xiiStreamWriter& inout_stream, const xiiExposedBone& bone)
 {
-  ref_stream << bone.m_sName;
-  ref_stream << bone.m_sParent;
-  ref_stream << bone.m_Transform;
+  inout_stream << bone.m_sName;
+  inout_stream << bone.m_sParent;
+  inout_stream << bone.m_Transform;
 }
 
-void operator>>(xiiStreamReader& ref_stream, xiiExposedBone& ref_bone)
+void operator>>(xiiStreamReader& inout_stream, xiiExposedBone& ref_bone)
 {
-  ref_stream >> ref_bone.m_sName;
-  ref_stream >> ref_bone.m_sParent;
-  ref_stream >> ref_bone.m_Transform;
+  inout_stream >> ref_bone.m_sName;
+  inout_stream >> ref_bone.m_sParent;
+  inout_stream >> ref_bone.m_Transform;
 }
 
 bool operator==(const xiiExposedBone& lhs, const xiiExposedBone& rhs)
@@ -150,20 +165,20 @@ void xiiEditableSkeleton::CreateJointsRecursive(xiiSkeletonBuilder& ref_sb, xiiS
 
     geo.m_Type              = shape.m_Geometry;
     geo.m_uiAttachedToJoint = static_cast<xiiUInt16>(uiThisJointIdx);
-    geo.m_sName             = pThisJoint->m_sName;
     geo.m_Transform.SetIdentity();
     geo.m_Transform.m_vScale.Set(shape.m_fLength, shape.m_fWidth, shape.m_fThickness);
     geo.m_Transform.m_vPosition = shape.m_vOffset;
     geo.m_Transform.m_qRotation = shape.m_qRotation;
-    geo.m_hSurface              = xiiResourceManager::LoadResource<xiiSurfaceResource>(m_sSurfaceFile);
-    geo.m_uiCollisionLayer      = m_uiCollisionLayer;
+  }
 
-    if (shape.m_bOverrideName)
-      geo.m_sName.Assign(shape.m_sNameOverride);
-    if (shape.m_bOverrideCollisionLayer)
-      geo.m_uiCollisionLayer = shape.m_uiCollisionLayerOverride;
-    if (shape.m_bOverrideSurface)
-      geo.m_hSurface = xiiResourceManager::LoadResource<xiiSurfaceResource>(shape.m_sSurfaceOverride);
+  for (auto& shape : pThisJoint->m_BoneColliders)
+  {
+    auto& geo               = ref_desc.m_Geometry.ExpandAndGetRef();
+    geo.m_Type              = xiiSkeletonJointGeometryType::ConvexMesh;
+    geo.m_uiAttachedToJoint = static_cast<xiiUInt16>(uiThisJointIdx);
+    geo.m_Transform.SetIdentity();
+    geo.m_VertexPositions = shape.m_VertexPositions;
+    geo.m_TriangleIndices = shape.m_TriangleIndices;
   }
 
   XII_ASSERT_DEBUG(pThisJoint->m_LocalTransform.m_vScale.IsEqual(xiiVec3(1), 0.1f), "fuck");
@@ -180,7 +195,10 @@ void xiiEditableSkeleton::CreateJointsRecursive(xiiSkeletonBuilder& ref_sb, xiiS
     xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(mRootTransform, qParentAccuRot.GetAsMat4(), full, qParentGlobalRot);
   }
 
-  ref_sb.SetJointLimit(uiThisJointIdx, pThisJoint->m_qLocalJointRotation, pThisJoint->m_bLimitSwing, pThisJoint->m_SwingLimitY, pThisJoint->m_SwingLimitZ, pThisJoint->m_bLimitTwist, pThisJoint->m_TwistLimitHalfAngle, pThisJoint->m_TwistLimitCenterAngle);
+  ref_sb.SetJointLimit(uiThisJointIdx, pThisJoint->m_qLocalJointRotation, pThisJoint->m_JointType, pThisJoint->m_bLimitSwing, pThisJoint->m_SwingLimitY, pThisJoint->m_SwingLimitZ, pThisJoint->m_bLimitTwist, pThisJoint->m_TwistLimitHalfAngle, pThisJoint->m_TwistLimitCenterAngle);
+
+  ref_sb.SetJointCollisionLayer(uiThisJointIdx, pThisJoint->m_bOverrideCollisionLayer ? pThisJoint->m_uiCollisionLayerOverride : m_uiCollisionLayer);
+  ref_sb.SetJointSurface(uiThisJointIdx, pThisJoint->m_bOverrideSurface ? pThisJoint->m_sSurfaceOverride : m_sSurfaceFile);
 
   for (const auto* pChildJoint : pThisJoint->m_Children)
   {
@@ -192,6 +210,7 @@ void xiiEditableSkeleton::CreateJointsRecursive(xiiSkeletonBuilder& ref_sb, xiiS
 
 void xiiEditableSkeleton::FillResourceDescriptor(xiiSkeletonResourceDescriptor& ref_desc) const
 {
+  ref_desc.m_fMaxImpulse = m_fMaxImpulse;
   ref_desc.m_Geometry.Clear();
 
   xiiSkeletonBuilder sb;
@@ -277,19 +296,49 @@ void xiiEditableSkeletonJoint::ClearJoints()
 
 void xiiEditableSkeletonJoint::CopyPropertiesFrom(const xiiEditableSkeletonJoint* pJoint)
 {
+  // copy existing (user edited) properties from pJoint into this joint
+  // which has just been imported from file
+
   // do not copy:
   //  name
   //  transform
   //  children
+  //  bone collider geometry (vertices, indices)
+
+  // synchronize user config of bone colliders
+  for (xiiUInt32 i = 0; i < m_BoneColliders.GetCount(); ++i)
+  {
+    auto& dst = m_BoneColliders[i];
+
+    for (xiiUInt32 j = 0; j < pJoint->m_BoneColliders.GetCount(); ++j)
+    {
+      const auto& src = pJoint->m_BoneColliders[j];
+
+      if (dst.m_sIdentifier == src.m_sIdentifier)
+      {
+        // dst.m_bOverrideSurface = src.m_bOverrideSurface;
+        // dst.m_bOverrideCollisionLayer = src.m_bOverrideCollisionLayer;
+        // dst.m_sSurfaceOverride = src.m_sSurfaceOverride;
+        // dst.m_uiCollisionLayerOverride = src.m_uiCollisionLayerOverride;
+        break;
+      }
+    }
+  }
 
   m_BoneShapes            = pJoint->m_BoneShapes;
   m_qLocalJointRotation   = pJoint->m_qLocalJointRotation;
+  m_JointType             = pJoint->m_JointType;
   m_SwingLimitY           = pJoint->m_SwingLimitY;
   m_SwingLimitZ           = pJoint->m_SwingLimitZ;
   m_TwistLimitHalfAngle   = pJoint->m_TwistLimitHalfAngle;
   m_TwistLimitCenterAngle = pJoint->m_TwistLimitCenterAngle;
   m_bLimitSwing           = pJoint->m_bLimitSwing;
   m_bLimitTwist           = pJoint->m_bLimitTwist;
+
+  m_bOverrideSurface         = pJoint->m_bOverrideSurface;
+  m_bOverrideCollisionLayer  = pJoint->m_bOverrideCollisionLayer;
+  m_sSurfaceOverride         = pJoint->m_sSurfaceOverride;
+  m_uiCollisionLayerOverride = pJoint->m_uiCollisionLayerOverride;
 }
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_Implementation_EditableSkeleton);

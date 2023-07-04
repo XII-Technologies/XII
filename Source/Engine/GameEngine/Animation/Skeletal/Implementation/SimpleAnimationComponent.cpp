@@ -17,7 +17,7 @@ using namespace ozz::animation;
 using namespace ozz::math;
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiSimpleAnimationComponent, 1, xiiComponentMode::Static);
+XII_BEGIN_COMPONENT_TYPE(xiiSimpleAnimationComponent, 2, xiiComponentMode::Static);
 {
   XII_BEGIN_PROPERTIES
   {
@@ -25,6 +25,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSimpleAnimationComponent, 1, xiiComponentMode::Stati
     XII_ENUM_MEMBER_PROPERTY("AnimationMode", xiiPropertyAnimMode, m_AnimationMode),
     XII_MEMBER_PROPERTY("Speed", m_fSpeed)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
     XII_ENUM_MEMBER_PROPERTY("RootMotionMode", xiiRootMotionMode, m_RootMotionMode),
+    XII_ENUM_MEMBER_PROPERTY("InvisibleUpdateRate", xiiAnimationInvisibleUpdateRate, m_InvisibleUpdateRate),
   }
   XII_END_PROPERTIES;
 
@@ -40,27 +41,33 @@ XII_END_COMPONENT_TYPE
 xiiSimpleAnimationComponent::xiiSimpleAnimationComponent()  = default;
 xiiSimpleAnimationComponent::~xiiSimpleAnimationComponent() = default;
 
-void xiiSimpleAnimationComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
+void xiiSimpleAnimationComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
-  SUPER::SerializeComponent(ref_stream);
-  auto& s = ref_stream.GetStream();
+  SUPER::SerializeComponent(inout_stream);
+  auto& s = inout_stream.GetStream();
 
   s << m_AnimationMode;
   s << m_fSpeed;
   s << m_hAnimationClip;
   s << m_RootMotionMode;
+  s << m_InvisibleUpdateRate;
 }
 
-void xiiSimpleAnimationComponent::DeserializeComponent(xiiWorldReader& ref_stream)
+void xiiSimpleAnimationComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
-  SUPER::DeserializeComponent(ref_stream);
-  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = ref_stream.GetStream();
+  SUPER::DeserializeComponent(inout_stream);
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = inout_stream.GetStream();
 
   s >> m_AnimationMode;
   s >> m_fSpeed;
   s >> m_hAnimationClip;
   s >> m_RootMotionMode;
+
+  if (uiVersion >= 2)
+  {
+    s >> m_InvisibleUpdateRate;
+  }
 }
 
 void xiiSimpleAnimationComponent::OnSimulationStarted()
@@ -119,21 +126,49 @@ void xiiSimpleAnimationComponent::Update()
   if (m_fSpeed == 0.0f && !GetUserFlag(1))
     return;
 
+  xiiTime            tMinStep = xiiTime::Seconds(0);
+  xiiVisibilityState visType  = GetOwner()->GetVisibilityState();
+
+  if (visType != xiiVisibilityState::Direct)
+  {
+    if (m_InvisibleUpdateRate == xiiAnimationInvisibleUpdateRate::Pause && visType == xiiVisibilityState::Invisible)
+      return;
+
+    tMinStep = xiiAnimationInvisibleUpdateRate::GetTimeStep(m_InvisibleUpdateRate);
+  }
+
+  m_ElapsedTimeSinceUpdate += GetWorld()->GetClock().GetTimeDiff();
+
+  if (m_ElapsedTimeSinceUpdate < tMinStep)
+    return;
+
+  const bool bVisible = visType != xiiVisibilityState::Invisible;
+
   xiiResourceLock<xiiAnimationClipResource> pAnimation(m_hAnimationClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (pAnimation.GetAcquireResult() != xiiResourceAcquireResult::Final)
     return;
 
+  const xiiTime tDiff = m_ElapsedTimeSinceUpdate;
+  m_ElapsedTimeSinceUpdate.SetZero();
+
   const xiiAnimationClipResourceDescriptor& animDesc = pAnimation->GetDescriptor();
 
   m_Duration = animDesc.GetDuration();
-
-  const xiiTime tDiff = GetWorld()->GetClock().GetTimeDiff();
 
   const float fPrevPlaybackPos = m_fNormalizedPlaybackPosition;
 
   xiiAnimPoseEventTrackSampleMode mode = xiiAnimPoseEventTrackSampleMode::None;
 
   if (!UpdatePlaybackTime(tDiff, animDesc.m_EventTrack, mode))
+    return;
+
+  if (animDesc.m_EventTrack.IsEmpty())
+  {
+    mode = xiiAnimPoseEventTrackSampleMode::None;
+  }
+
+  // no need to do anything, if we can't get events and are currently invisible
+  if (!bVisible && mode == xiiAnimPoseEventTrackSampleMode::None && m_RootMotionMode == xiiRootMotionMode::Ignore)
     return;
 
   xiiResourceLock<xiiSkeletonResource> pSkeleton(m_hSkeleton, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
@@ -149,29 +184,29 @@ void xiiSimpleAnimationComponent::Update()
   cmdSample.m_fPreviousNormalizedSamplePos = fPrevPlaybackPos;
   cmdSample.m_EventSampling                = mode;
 
-  auto& cmdL2M                 = poseGen.AllocCommandLocalToModelPose();
-  cmdL2M.m_pSendLocalPoseMsgTo = GetOwner();
-
-  if (animDesc.m_bAdditive)
+  if (bVisible)
   {
-    auto& cmdComb = poseGen.AllocCommandCombinePoses();
-    cmdComb.m_Inputs.PushBack(cmdSample.GetCommandID());
-    cmdComb.m_InputWeights.PushBack(1.0f);
+    auto& cmdL2M                 = poseGen.AllocCommandLocalToModelPose();
+    cmdL2M.m_pSendLocalPoseMsgTo = GetOwner();
 
-    cmdL2M.m_Inputs.PushBack(cmdComb.GetCommandID());
-  }
-  else
-  {
-    cmdL2M.m_Inputs.PushBack(cmdSample.GetCommandID());
-  }
+    if (animDesc.m_bAdditive)
+    {
+      auto& cmdComb = poseGen.AllocCommandCombinePoses();
+      cmdComb.m_Inputs.PushBack(cmdSample.GetCommandID());
+      cmdComb.m_InputWeights.PushBack(1.0f);
 
-  auto& cmdOut = poseGen.AllocCommandModelPoseToOutput();
-  cmdOut.m_Inputs.PushBack(cmdL2M.GetCommandID());
+      cmdL2M.m_Inputs.PushBack(cmdComb.GetCommandID());
+    }
+    else
+    {
+      cmdL2M.m_Inputs.PushBack(cmdSample.GetCommandID());
+    }
+
+    auto& cmdOut = poseGen.AllocCommandModelPoseToOutput();
+    cmdOut.m_Inputs.PushBack(cmdL2M.GetCommandID());
+  }
 
   auto pose = poseGen.GeneratePose(GetOwner());
-
-  if (pose.IsEmpty())
-    return;
 
   if (m_RootMotionMode != xiiRootMotionMode::Ignore)
   {
@@ -187,6 +222,9 @@ void xiiSimpleAnimationComponent::Update()
     xiiRootMotionMode::Apply(m_RootMotionMode, GetOwner(), vRootMotion, xiiAngle(), xiiAngle(), xiiAngle());
   }
 
+  if (pose.IsEmpty())
+    return;
+
   // inform child nodes/components that a new pose is available
   {
     xiiMsgAnimationPoseProposal msg1;
@@ -194,7 +232,7 @@ void xiiSimpleAnimationComponent::Update()
     msg1.m_pSkeleton       = &pSkeleton->GetDescriptor().m_Skeleton;
     msg1.m_ModelTransforms = pose;
 
-    GetOwner()->SendMessageRecursive(msg1);
+    GetOwner()->SendMessage(msg1);
 
     if (msg1.m_bContinueAnimating)
     {
@@ -203,6 +241,8 @@ void xiiSimpleAnimationComponent::Update()
       msg2.m_pSkeleton       = &pSkeleton->GetDescriptor().m_Skeleton;
       msg2.m_ModelTransforms = pose;
 
+      // recursive, so that objects below the mesh can also listen in on these changes
+      // for example bone attachments
       GetOwner()->SendMessageRecursive(msg2);
 
       if (msg2.m_bContinueAnimating == false)
@@ -292,6 +332,5 @@ bool xiiSimpleAnimationComponent::UpdatePlaybackTime(xiiTime tDiff, const xiiEve
 
   return tPrefNorm != m_fNormalizedPlaybackPosition;
 }
-
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_Animation_Skeletal_Implementation_SimpleAnimationComponent);

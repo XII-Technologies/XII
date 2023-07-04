@@ -31,6 +31,8 @@ namespace xiiModelImporter2
     xiiResult ImportMaterials();
     xiiResult ImportAnimations();
 
+    xiiResult ImportBoneColliders(xiiEditableSkeletonJoint* pJoint);
+
     Assimp::Importer m_Importer;
     const aiScene*   m_pScene               = nullptr;
     xiiUInt32        m_uiTotalMeshVertices  = 0;

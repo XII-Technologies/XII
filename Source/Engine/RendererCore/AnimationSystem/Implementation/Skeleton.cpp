@@ -8,6 +8,12 @@
 #include <ozz/animation/offline/skeleton_builder.h>
 #include <ozz/animation/runtime/skeleton.h>
 
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiSkeletonJointType, 1)
+  XII_ENUM_CONSTANTS(xiiSkeletonJointType::None, xiiSkeletonJointType::SwingTwist)
+XII_END_STATIC_REFLECTED_ENUM;
+// clang-format on
+
 xiiSkeleton::xiiSkeleton()  = default;
 xiiSkeleton::~xiiSkeleton() = default;
 
@@ -36,30 +42,9 @@ xiiUInt16 xiiSkeleton::FindJointByName(const xiiTempHashedString& sJointName) co
   return xiiInvalidJointIndex;
 }
 
-//bool xiiSkeleton::IsCompatibleWith(const xiiSkeleton& other) const
-//{
-//  if (this == &other)
-//    return true;
-//
-//  if (other.GetJointCount() != GetJointCount())
-//    return false;
-//
-//  // TODO: This only checks the joint hierarchy, maybe it should check names or hierarchy based on names
-//  const xiiUInt16 uiNumJoints = static_cast<xiiUInt16>(m_Joints.GetCount());
-//  for (xiiUInt32 i = 0; i < uiNumJoints; ++i)
-//  {
-//    if (other.m_Joints[i].GetParentIndex() != m_Joints[i].GetParentIndex())
-//    {
-//      return false;
-//    }
-//  }
-//
-//  return true;
-//}
-
 void xiiSkeleton::Save(xiiStreamWriter& ref_stream) const
 {
-  ref_stream.WriteVersion(5);
+  ref_stream.WriteVersion(6);
 
   const xiiUInt32 uiNumJoints = m_Joints.GetCount();
   ref_stream << uiNumJoints;
@@ -75,6 +60,10 @@ void xiiSkeleton::Save(xiiStreamWriter& ref_stream) const
     ref_stream << m_Joints[i].m_HalfSwingLimitY;
     ref_stream << m_Joints[i].m_TwistLimitHalfAngle;
     ref_stream << m_Joints[i].m_TwistLimitCenterAngle;
+
+    ref_stream << m_Joints[i].m_JointType;
+    ref_stream << m_Joints[i].m_hSurface;
+    ref_stream << m_Joints[i].m_uiCollisionLayer;
   }
 
   ref_stream << m_BoneDirection;
@@ -82,7 +71,7 @@ void xiiSkeleton::Save(xiiStreamWriter& ref_stream) const
 
 void xiiSkeleton::Load(xiiStreamReader& ref_stream)
 {
-  const xiiTypeVersion version = ref_stream.ReadVersion(5);
+  const xiiTypeVersion version = ref_stream.ReadVersion(6);
   if (version < 3)
     return;
 
@@ -108,6 +97,13 @@ void xiiSkeleton::Load(xiiStreamReader& ref_stream)
       ref_stream >> m_Joints[i].m_HalfSwingLimitY;
       ref_stream >> m_Joints[i].m_TwistLimitHalfAngle;
       ref_stream >> m_Joints[i].m_TwistLimitCenterAngle;
+    }
+
+    if (version >= 6)
+    {
+      ref_stream >> m_Joints[i].m_JointType;
+      ref_stream >> m_Joints[i].m_hSurface;
+      ref_stream >> m_Joints[i].m_uiCollisionLayer;
     }
   }
 

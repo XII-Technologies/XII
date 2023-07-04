@@ -30,6 +30,7 @@ struct xiiSkeletonJointGeometryType
     Capsule,
     Sphere,
     Box,
+    ConvexMesh,
 
     Default = None
   };
@@ -123,3 +124,45 @@ struct XII_RENDERERCORE_DLL xiiMsgRetrieveBoneState : public xiiMessage
   // maps from bone name to its local transform
   xiiMap<xiiString, xiiTransform> m_BoneTransforms;
 };
+
+struct xiiSkeletonJointType
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum
+  {
+    None,
+    // Hinge,
+    // Cone,
+    SwingTwist,
+
+    Default = None,
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiSkeletonJointType);
+
+//////////////////////////////////////////////////////////////////////////
+
+/// \brief What to do when an animated object is not visible.
+struct XII_RENDERERCORE_DLL xiiAnimationInvisibleUpdateRate
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum
+  {
+    FullUpdate,
+    Max60FPS,
+    Max30FPS,
+    Max15FPS,
+    Max10FPS,
+    Max5FPS,
+    Pause,
+
+    Default = Max5FPS
+  };
+
+  static xiiTime GetTimeStep(xiiAnimationInvisibleUpdateRate::Enum value);
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiAnimationInvisibleUpdateRate);

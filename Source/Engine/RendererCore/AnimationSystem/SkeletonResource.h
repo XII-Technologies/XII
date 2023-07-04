@@ -10,21 +10,23 @@ using xiiSurfaceResourceHandle = xiiTypedResourceHandle<class xiiSurfaceResource
 
 struct xiiSkeletonResourceGeometry
 {
-  // scale is used to resize a unit sphere / box / capsule
+  // The scale is used to resize a unit sphere / box / capsule.
   xiiTransform                          m_Transform;
   xiiUInt16                             m_uiAttachedToJoint = 0;
   xiiEnum<xiiSkeletonJointGeometryType> m_Type;
-  xiiHashedString                       m_sName;
-  xiiSurfaceResourceHandle              m_hSurface;
-  xiiUInt8                              m_uiCollisionLayer = 0;
+
+  // For convex geometry.
+  xiiDynamicArray<xiiVec3> m_VertexPositions;
+  xiiDynamicArray<xiiUInt8> m_TriangleIndices;
 };
 
 struct XII_RENDERERCORE_DLL xiiSkeletonResourceDescriptor
 {
   xiiSkeletonResourceDescriptor();
   ~xiiSkeletonResourceDescriptor();
-  xiiSkeletonResourceDescriptor(const xiiSkeletonResourceDescriptor& rhs) = delete;
   xiiSkeletonResourceDescriptor(xiiSkeletonResourceDescriptor&& rhs);
+  xiiSkeletonResourceDescriptor(const xiiSkeletonResourceDescriptor& rhs) = delete;
+
   void operator=(xiiSkeletonResourceDescriptor&& rhs);
   void operator=(const xiiSkeletonResourceDescriptor& rhs) = delete;
 
@@ -35,6 +37,7 @@ struct XII_RENDERERCORE_DLL xiiSkeletonResourceDescriptor
 
   xiiTransform m_RootTransform = xiiTransform::IdentityTransform();
   xiiSkeleton  m_Skeleton;
+  float        m_fMaxImpulse = xiiMath::HighValue<float>();
 
   xiiDynamicArray<xiiSkeletonResourceGeometry> m_Geometry;
 };

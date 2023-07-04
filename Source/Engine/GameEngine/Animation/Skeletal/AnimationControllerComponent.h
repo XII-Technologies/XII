@@ -36,6 +36,8 @@ public:
   void        SetAnimationControllerFile(const char* szFile); // [ property ]
   const char* GetAnimationControllerFile() const;             // [ property ]
 
+  xiiEnum<xiiAnimationInvisibleUpdateRate> m_InvisibleUpdateRate; // [ property ]
+
 protected:
   void Update();
 
@@ -44,4 +46,6 @@ protected:
   xiiAnimGraphResourceHandle m_hAnimationController;
   xiiAnimGraph               m_AnimationGraph;
   xiiAnimPoseGenerator       m_PoseGenerator;
+
+  xiiTime m_ElapsedTimeSinceUpdate = xiiTime::Zero();
 };

@@ -106,10 +106,11 @@ xiiUInt64 xiiSkeletonResourceDescriptor::GetHeapMemoryUsage() const
 
 xiiResult xiiSkeletonResourceDescriptor::Serialize(xiiStreamWriter& ref_stream) const
 {
-  ref_stream.WriteVersion(6);
+  ref_stream.WriteVersion(7);
 
   m_Skeleton.Save(ref_stream);
   ref_stream << m_RootTransform;
+  ref_stream << m_fMaxImpulse;
 
   const xiiUInt16 uiNumGeom = static_cast<xiiUInt16>(m_Geometry.GetCount());
   ref_stream << uiNumGeom;
@@ -121,9 +122,9 @@ xiiResult xiiSkeletonResourceDescriptor::Serialize(xiiStreamWriter& ref_stream) 
     ref_stream << geo.m_uiAttachedToJoint;
     ref_stream << geo.m_Type;
     ref_stream << geo.m_Transform;
-    ref_stream << geo.m_sName;
-    ref_stream << geo.m_hSurface;
-    ref_stream << geo.m_uiCollisionLayer;
+
+    XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(geo.m_VertexPositions));
+    XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(geo.m_TriangleIndices));
   }
 
   return XII_SUCCESS;
@@ -131,14 +132,19 @@ xiiResult xiiSkeletonResourceDescriptor::Serialize(xiiStreamWriter& ref_stream) 
 
 xiiResult xiiSkeletonResourceDescriptor::Deserialize(xiiStreamReader& ref_stream)
 {
-  const xiiTypeVersion version = ref_stream.ReadVersion(6);
+  const xiiTypeVersion version = ref_stream.ReadVersion(7);
 
-  if (version != 6)
+  if (version < 6)
     return XII_FAILURE;
 
   m_Skeleton.Load(ref_stream);
 
   ref_stream >> m_RootTransform;
+
+  if (version >= 7)
+  {
+    ref_stream >> m_fMaxImpulse;
+  }
 
   m_Geometry.Clear();
 
@@ -153,13 +159,32 @@ xiiResult xiiSkeletonResourceDescriptor::Deserialize(xiiStreamReader& ref_stream
     ref_stream >> geo.m_uiAttachedToJoint;
     ref_stream >> geo.m_Type;
     ref_stream >> geo.m_Transform;
-    ref_stream >> geo.m_sName;
-    ref_stream >> geo.m_hSurface;
-    ref_stream >> geo.m_uiCollisionLayer;
+
+    if (version <= 6)
+    {
+      xiiStringBuilder         sName;
+      xiiSurfaceResourceHandle hSurface;
+      xiiUInt8                 uiCollisionLayer;
+
+      ref_stream >> sName;
+      ref_stream >> hSurface;
+      ref_stream >> uiCollisionLayer;
+    }
+
+    if (version >= 7)
+    {
+      XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(geo.m_VertexPositions));
+      XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(geo.m_TriangleIndices));
+    }
   }
+
+  // Ensure the geometry is sorted by bones,
+  // this allows to make the algorithm for creating the bone geometry more efficient.
+  m_Geometry.Sort([](const xiiSkeletonResourceGeometry& lhs, const xiiSkeletonResourceGeometry& rhs) -> bool {
+    return lhs.m_uiAttachedToJoint < rhs.m_uiAttachedToJoint;
+  });
 
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(RendererCore, RendererCore_AnimationSystem_Implementation_SkeletonResource);

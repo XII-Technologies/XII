@@ -84,6 +84,8 @@ void xiiAnimGraph::Update(xiiTime diff, xiiGameObject* pTarget)
     msg.m_pSkeleton       = &pSkeleton->GetDescriptor().m_Skeleton;
     msg.m_ModelTransforms = newPose;
 
+    // Recursive, so that objects below the mesh can also listen in on these changes
+    // for example bone attachments.
     pTarget->SendMessageRecursive(msg);
   }
 }
