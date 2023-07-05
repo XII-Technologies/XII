@@ -166,13 +166,13 @@ XII_ALWAYS_INLINE bool xiiSimdFloat::operator<=(float f) const
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathAcc::FULL>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathFloatBits::FULL>() const
 {
   return vdivq_f32(vmovq_n_f32(1.0f), m_v);
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathAcc::BITS_23>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathFloatBits::BITS_23>() const
 {
   float32x4_t x0 = vrecpeq_f32(m_v);
 
@@ -184,7 +184,7 @@ XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathAcc::BITS_23>(
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathAcc::BITS_12>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathFloatBits::BITS_12>() const
 {
   float32x4_t x0 = vrecpeq_f32(m_v);
 
@@ -195,13 +195,13 @@ XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathAcc::BITS_12>(
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathAcc::FULL>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathFloatBits::FULL>() const
 {
   return vdivq_f32(vmovq_n_f32(1.0f), vsqrtq_f32(m_v));
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathAcc::BITS_23>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathFloatBits::BITS_23>() const
 {
   const float32x4_t x0 = vrsqrteq_f32(m_v);
 
@@ -211,7 +211,7 @@ XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathAcc::BITS_23>() c
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathAcc::BITS_12>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathFloatBits::BITS_12>() const
 {
   const float32x4_t x0 = vrsqrteq_f32(m_v);
 
@@ -220,21 +220,21 @@ XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathAcc::BITS_12>() c
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetSqrt<xiiMathAcc::FULL>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetSqrt<xiiMathFloatBits::FULL>() const
 {
   return vsqrtq_f32(m_v);
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetSqrt<xiiMathAcc::BITS_23>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetSqrt<xiiMathFloatBits::BITS_23>() const
 {
-  return (*this) * GetInvSqrt<xiiMathAcc::BITS_23>();
+  return (*this) * GetInvSqrt<xiiMathFloatBits::BITS_23>();
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetSqrt<xiiMathAcc::BITS_12>() const
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetSqrt<xiiMathFloatBits::BITS_12>() const
 {
-  return (*this) * GetInvSqrt<xiiMathAcc::BITS_12>();
+  return (*this) * GetInvSqrt<xiiMathFloatBits::BITS_12>();
 }
 
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::Max(const xiiSimdFloat& f) const

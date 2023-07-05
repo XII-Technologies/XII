@@ -118,7 +118,7 @@ XII_ALWAYS_INLINE void xiiSimdVec4f::Store<4>(float* pFloat) const
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathAcc::BITS_12>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathFloatBits::BITS_12>() const
 {
   float32x4_t x0 = vrecpeq_f32(m_v);
 
@@ -129,7 +129,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathAcc::BITS_12>(
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathAcc::BITS_23>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathFloatBits::BITS_23>() const
 {
   float32x4_t x0 = vrecpeq_f32(m_v);
 
@@ -141,19 +141,19 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathAcc::BITS_23>(
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathAcc::FULL>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathFloatBits::FULL>() const
 {
   return vdivq_f32(vmovq_n_f32(1.0f), m_v);
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathAcc::FULL>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathFloatBits::FULL>() const
 {
   return vdivq_f32(vmovq_n_f32(1.0f), vsqrtq_f32(m_v));
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathAcc::BITS_23>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathFloatBits::BITS_23>() const
 {
   const float32x4_t x0 = vrsqrteq_f32(m_v);
 
@@ -163,7 +163,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathAcc::BITS_23>() c
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathAcc::BITS_12>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathFloatBits::BITS_12>() const
 {
   const float32x4_t x0 = vrsqrteq_f32(m_v);
 
@@ -172,24 +172,24 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathAcc::BITS_12>() c
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathAcc::BITS_12>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathFloatBits::BITS_12>() const
 {
-  return CompMul(GetInvSqrt<xiiMathAcc::BITS_12>());
+  return CompMul(GetInvSqrt<xiiMathFloatBits::BITS_12>());
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathAcc::BITS_23>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathFloatBits::BITS_23>() const
 {
-  return CompMul(GetInvSqrt<xiiMathAcc::BITS_23>());
+  return CompMul(GetInvSqrt<xiiMathFloatBits::BITS_23>());
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathAcc::FULL>() const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathFloatBits::FULL>() const
 {
   return vsqrtq_f32(m_v);
 }
 
-template <int N, xiiMathAcc::Enum acc>
+template <int N, xiiMathFloatBits::Enum acc>
 void xiiSimdVec4f::NormalizeIfNotZero(const xiiSimdFloat& fEpsilon)
 {
   xiiSimdFloat sqLength  = GetLengthSquared<N>();
@@ -296,21 +296,21 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompMul(const xiiSimdVec4f& v) cons
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathAcc::FULL>(const xiiSimdVec4f& v) const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathFloatBits::FULL>(const xiiSimdVec4f& v) const
 {
   return vdivq_f32(m_v, v.m_v);
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathAcc::BITS_23>(const xiiSimdVec4f& v) const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathFloatBits::BITS_23>(const xiiSimdVec4f& v) const
 {
-  return CompMul(v.GetReciprocal<xiiMathAcc::BITS_23>());
+  return CompMul(v.GetReciprocal<xiiMathFloatBits::BITS_23>());
 }
 
 template <>
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathAcc::BITS_12>(const xiiSimdVec4f& v) const
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathFloatBits::BITS_12>(const xiiSimdVec4f& v) const
 {
-  return CompMul(v.GetReciprocal<xiiMathAcc::BITS_12>());
+  return CompMul(v.GetReciprocal<xiiMathFloatBits::BITS_12>());
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompMin(const xiiSimdVec4f& v) const
