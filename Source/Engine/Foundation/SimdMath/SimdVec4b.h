@@ -48,8 +48,10 @@ public:
   xiiInternal::QuadBool m_v;
 };
 
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
 #  include <Foundation/SimdMath/Implementation/SSE/SSEVec4b_inl.h>
+#elif XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_NEON
+#  include <Foundation/SimdMath/Implementation/NEON/NEONVec4b_inl.h>
 #elif XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_FPU
 #  include <Foundation/SimdMath/Implementation/FPU/FPUVec4b_inl.h>
 #else

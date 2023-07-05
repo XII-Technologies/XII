@@ -78,9 +78,9 @@ public:
   xiiInternal::QuadDouble m_v;
 };
 
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
-#  include <Foundation/SimdMath/Implementation/SSE/SSEDouble_inl.h>
-#elif XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_FPU
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX
+#  include <Foundation/SimdMath/Implementation/AVX/AVXDouble_inl.h>
+#elif XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_NEON || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_FPU
 #  include <Foundation/SimdMath/Implementation/FPU/FPUDouble_inl.h>
 #else
 #  error "Unknown SIMD implementation."

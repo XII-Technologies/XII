@@ -92,6 +92,10 @@ endmacro()
 # ## xii_set_target_output_dirs(<target> <lib-output-dir> <dll-output-dir>)
 # #####################################
 function(xii_set_target_output_dirs TARGET_NAME LIB_OUTPUT_DIR DLL_OUTPUT_DIR)
+    if(XII_DO_NOT_SET_OUTPUT_DIRS)
+        return()
+    endif()
+
 	xii_pull_output_vars("${LIB_OUTPUT_DIR}" "${DLL_OUTPUT_DIR}")
 
 	# If we can't use generator expressions the non-generator expression version of the
@@ -149,6 +153,10 @@ endfunction()
 # ## xii_write_configuration_txt()
 # #####################################
 function(xii_write_configuration_txt)
+    if(XII_NO_TXT_FILES)
+        return()
+    endif()
+
 	# Clear Targets.txt and Tests.txt
 	file(WRITE ${CMAKE_BINARY_DIR}/Targets.txt "")
 	file(WRITE ${CMAKE_BINARY_DIR}/Tests.txt "")
@@ -176,7 +184,8 @@ endfunction()
 # ## xii_set_common_target_definitions(<target>)
 # #####################################
 function(xii_set_common_target_definitions TARGET_NAME)
-	xii_pull_all_vars()
+    xii_pull_all_vars()
+    xii_pull_config_vars()
 
 	# set the BUILDSYSTEM_COMPILE_ENGINE_AS_DLL definition
 	if(XII_COMPILE_ENGINE_AS_DLL)
@@ -187,9 +196,11 @@ function(xii_set_common_target_definitions TARGET_NAME)
 	target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_SDKVERSION_MINOR="${XII_CMAKE_SDKVERSION_MINOR}")
 	target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_SDKVERSION_PATCH="${XII_CMAKE_SDKVERSION_PATCH}")
 
+    set(ORIGINAL_BUILD_TYPE "$<IF:$<STREQUAL:${XII_CMAKE_GENERATOR_CONFIGURATION},${XII_BUILDTYPENAME_DEBUG}>,DEBUG,$<IF:$<STREQUAL:${XII_CMAKE_GENERATOR_CONFIGURATION},${XII_BUILDTYPENAME_DEV}>,DEV,SHIPPING>>")
+
 	# set the BUILDSYSTEM_BUILDTYPE definition
-	target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_BUILDTYPE="${XII_CMAKE_GENERATOR_CONFIGURATION}")
-	target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_BUILDTYPE_${XII_CMAKE_GENERATOR_CONFIGURATION})
+	target_compile_definitions(${TARGET_NAME} PRIVATE "BUILDSYSTEM_BUILDTYPE=\"${ORIGINAL_BUILD_TYPE}\"")
+	target_compile_definitions(${TARGET_NAME} PUBLIC "BUILDSYSTEM_BUILDTYPE_${ORIGINAL_BUILD_TYPE}")
 
 	# set the BUILDSYSTEM_BUILDING_XYZ_LIB definition
 	string(TOUPPER ${TARGET_NAME} PROJECT_NAME_UPPER)

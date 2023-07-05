@@ -114,7 +114,7 @@ XII_ALWAYS_INLINE void xiiSimdVec4d::Store<4>(double* pValues) const
   _mm256_storeu_pd(pValues, m_v);
 }
 
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if XII_SSE_LEVEL >= XII_AVX_512
 
 template <>
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::GetReciprocal<xiiMathDoubleBits::BITS_14>() const
@@ -139,7 +139,7 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::GetReciprocal<xiiMathDoubleBits::FU
   return _mm256_div_pd(_mm256_set1_pd(1.0), m_v);
 }
 
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if XII_SSE_LEVEL >= XII_AVX_512
 
 template <>
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::GetSqrt<xiiMathDoubleBits::BITS_14>() const
@@ -166,7 +166,7 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::GetSqrt<xiiMathDoubleBits::FULL>() 
   return _mm256_sqrt_pd(m_v);
 }
 
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if XII_SSE_LEVEL >= XII_AVX_512
 
 template <>
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::GetInvSqrt<xiiMathDoubleBits::BITS_14>() const
@@ -323,7 +323,7 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::CompMul(const xiiSimdVec4d& v) cons
   return _mm256_mul_pd(m_v, v.m_v);
 }
 
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if XII_SSE_LEVEL >= XII_AVX_512
 
 template <>
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::CompDiv<xiiMathDoubleBits::BITS_14>(const xiiSimdVec4d& v) const
@@ -367,38 +367,22 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::Abs() const
 
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::Round() const
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX
   return _mm256_round_pd(m_v, _MM_FROUND_NINT);
-#else
-  XII_ASSERT_NOT_IMPLEMENTED;
-#endif
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::Floor() const
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX
   return _mm256_round_pd(m_v, _MM_FROUND_FLOOR);
-#else
-  XII_ASSERT_NOT_IMPLEMENTED;
-#endif
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::Ceil() const
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX
   return _mm256_round_pd(m_v, _MM_FROUND_CEIL);
-#else
-  XII_ASSERT_NOT_IMPLEMENTED;
-#endif
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::Trunc() const
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX
   return _mm256_round_pd(m_v, _MM_FROUND_TRUNC);
-#else
-  XII_ASSERT_NOT_IMPLEMENTED;
-#endif
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::FlipSign(const xiiSimdVec4b& vCmp) const
@@ -471,7 +455,7 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4d::operator>(const xiiSimdVec4d& v) co
 template <>
 XII_ALWAYS_INLINE xiiSimdDouble xiiSimdVec4d::HorizontalSum<2>() const
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX2
+#if XII_SSE_LEVEL >= XII_AVX_2
   __m256d a = _mm256_hadd_pd(m_v, m_v);
   return _mm256_permute4x64_pd(a, XII_TO_SHUFFLE(xiiSwizzle::XXXX));
 #else
@@ -488,7 +472,7 @@ XII_ALWAYS_INLINE xiiSimdDouble xiiSimdVec4d::HorizontalSum<3>() const
 template <>
 XII_ALWAYS_INLINE xiiSimdDouble xiiSimdVec4d::HorizontalSum<4>() const
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX
+#if XII_SSE_LEVEL >= XII_AVX_2
   // Adapted from Peter Cordes answer:
   //  https://stackoverflow.com/questions/49941645/get-sum-of-values-stored-in-m256d-with-sse-avx/49943540#49943540
 
@@ -592,7 +576,7 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::ZeroVector()
 // static
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MulAdd(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& c)
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX2
+#if XII_SSE_LEVEL >= XII_AVX_2
   return _mm256_fmadd_pd(a.m_v, b.m_v, c.m_v);
 #else
   return a.CompMul(b) + c;
@@ -602,7 +586,7 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MulAdd(const xiiSimdVec4d& a, const
 // static
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MulAdd(const xiiSimdVec4d& a, const xiiSimdDouble& b, const xiiSimdVec4d& c)
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX2
+#if XII_SSE_LEVEL >= XII_AVX_2
   return _mm256_fmadd_pd(a.m_v, b.m_v, c.m_v);
 #else
   return a * b + c;
@@ -612,7 +596,7 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MulAdd(const xiiSimdVec4d& a, const
 // static
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MulSub(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& c)
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX2
+#if XII_SSE_LEVEL >= XII_AVX_2
   return _mm256_fmsub_pd(a.m_v, b.m_v, c.m_v);
 #else
   return a.CompMul(b) - c;
@@ -622,7 +606,7 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MulSub(const xiiSimdVec4d& a, const
 // static
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MulSub(const xiiSimdVec4d& a, const xiiSimdDouble& b, const xiiSimdVec4d& c)
 {
-#if XII_SSE_LEVEL >= XII_SSE_AVX2
+#if XII_SSE_LEVEL >= XII_AVX_2
   return _mm256_fmsub_pd(a.m_v, b.m_v, c.m_v);
 #else
   return a * b - c;

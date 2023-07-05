@@ -79,8 +79,10 @@ public:
 
 #include <Foundation/SimdMath/Implementation/SimdMat4f_inl.h>
 
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
 #  include <Foundation/SimdMath/Implementation/SSE/SSEMat4f_inl.h>
+#elif XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_NEON
+#  include <Foundation/SimdMath/Implementation/NEON/NEONMat4f_inl.h>
 #elif XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_FPU
 #  include <Foundation/SimdMath/Implementation/FPU/FPUMat4f_inl.h>
 #else

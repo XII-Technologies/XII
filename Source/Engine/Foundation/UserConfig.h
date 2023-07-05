@@ -14,7 +14,7 @@
 #  define XII_COMPILE_ENGINE_AS_DLL XII_OFF
 #endif
 
-#if defined(BUILDSYSTEM_BUILDTYPE_Shipping)
+#if defined(BUILDSYSTEM_BUILDTYPE_SHIPPING)
 
 // Development checks like assert.
 #  undef XII_COMPILE_FOR_DEVELOPMENT

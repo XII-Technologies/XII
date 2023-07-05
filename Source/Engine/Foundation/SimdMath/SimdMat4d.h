@@ -79,9 +79,9 @@ public:
 
 #include <Foundation/SimdMath/Implementation/SimdMat4d_inl.h>
 
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
-#  include <Foundation/SimdMath/Implementation/SSE/SSEMat4d_inl.h>
-#elif XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_FPU
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX
+#  include <Foundation/SimdMath/Implementation/AVX/AVXMat4d_inl.h>
+#elif XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_NEON || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_FPU
 #  include <Foundation/SimdMath/Implementation/FPU/FPUMat4d_inl.h>
 #else
 #  error "Unknown SIMD implementation."

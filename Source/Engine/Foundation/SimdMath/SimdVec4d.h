@@ -178,9 +178,9 @@ public:
 
 #include <Foundation/SimdMath/Implementation/SimdVec4d_inl.h>
 
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
-#  include <Foundation/SimdMath/Implementation/SSE/SSEVec4d_inl.h>
-#elif XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_FPU
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX
+#  include <Foundation/SimdMath/Implementation/AVX/AVXVec4d_inl.h>
+#elif XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_NEON || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_FPU
 #  include <Foundation/SimdMath/Implementation/FPU/FPUVec4d_inl.h>
 #else
 #  error "Unknown SIMD implementation."

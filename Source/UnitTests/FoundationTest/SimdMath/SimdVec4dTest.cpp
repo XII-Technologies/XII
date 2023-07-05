@@ -154,7 +154,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4d)
 #endif
 
     // Make sure the class didn't accidentally change in size.
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
     XII_CHECK_AT_COMPILETIME(sizeof(xiiSimdVec4d) == 32);
     XII_CHECK_AT_COMPILETIME(XII_ALIGNMENT_OF(xiiSimdVec4d) == 32);
 #endif
@@ -170,7 +170,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4d)
     XII_TEST_BOOL(vInit4F.x() == 1.0 && vInit4F.y() == 2.0 && vInit4F.z() == 3.0 && vInit4F.w() == 4.0);
 
     // Make sure all components have the correct values
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_ENABLED(XII_COMPILER_MSVC)
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && XII_ENABLED(XII_COMPILER_MSVC)
     XII_TEST_BOOL(vInit4F.m_v.m256d_f64[0] == 1.0 && vInit4F.m_v.m256d_f64[1] == 2.0 && vInit4F.m_v.m256d_f64[2] == 3.0 && vInit4F.m_v.m256d_f64[3] == 4.0);
 #endif
 
@@ -232,7 +232,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4d)
       XII_TEST_BOOL(xyzw.GetComponent(4) == 4.0);
 
       // Make sure all components have the correct values
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_ENABLED(XII_COMPILER_MSVC)
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && XII_ENABLED(XII_COMPILER_MSVC)
       XII_TEST_BOOL(xyzw.m_v.m256d_f64[0] == 1.0 && xyzw.m_v.m256d_f64[1] == 2.0 && xyzw.m_v.m256d_f64[2] == 3.0 && xyzw.m_v.m256d_f64[3] == 4.0);
 #endif
     }
@@ -269,7 +269,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4d)
 
       XII_TEST_BOOL(a.GetReciprocal().IsEqual(b, xiiMath::SmallEpsilon<double>()).AllSet());
       XII_TEST_BOOL(a.GetReciprocal<xiiMathDoubleBits::FULL>().IsEqual(b, xiiMath::SmallEpsilon<double>()).AllSet());
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_512)
       XII_TEST_BOOL(a.GetReciprocal<xiiMathDoubleBits::BITS_27>().IsEqual(b, xiiMath::DefaultEpsilon<double>()).AllSet());
       XII_TEST_BOOL(a.GetReciprocal<xiiMathDoubleBits::BITS_14>().IsEqual(b, xiiMath::HugeEpsilon<double>()).AllSet());
 #endif
@@ -281,7 +281,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4d)
 
       XII_TEST_BOOL(a.GetSqrt().IsEqual(b, xiiMath::SmallEpsilon<double>()).AllSet());
       XII_TEST_BOOL(a.GetSqrt<xiiMathDoubleBits::FULL>().IsEqual(b, xiiMath::SmallEpsilon<double>()).AllSet());
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_512)
       XII_TEST_BOOL(a.GetSqrt<xiiMathDoubleBits::BITS_27>().IsEqual(b, xiiMath::DefaultEpsilon<double>()).AllSet());
       XII_TEST_BOOL(a.GetSqrt<xiiMathDoubleBits::BITS_14>().IsEqual(b, xiiMath::HugeEpsilon<double>()).AllSet());
 #endif
@@ -293,7 +293,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4d)
 
       XII_TEST_BOOL(a.GetInvSqrt().IsEqual(b, xiiMath::SmallEpsilon<double>()).AllSet());
       XII_TEST_BOOL(a.GetInvSqrt<xiiMathDoubleBits::FULL>().IsEqual(b, xiiMath::SmallEpsilon<double>()).AllSet());
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_512)
       XII_TEST_BOOL(a.GetInvSqrt<xiiMathDoubleBits::BITS_27>().IsEqual(b, xiiMath::DefaultEpsilon<double>()).AllSet());
       XII_TEST_BOOL(a.GetInvSqrt<xiiMathDoubleBits::BITS_14>().IsEqual(b, xiiMath::HugeEpsilon<double>()).AllSet());
 #endif
@@ -313,7 +313,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4d)
       XII_TEST_DOUBLE(a.GetLength<4>(), r[3], xiiMath::SmallEpsilon<double>());
 
       TestLength<xiiMathDoubleBits::FULL>(a, r, xiiMath::SmallEpsilon<double>());
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_512)
       TestLength<xiiMathDoubleBits::BITS_27>(a, r, xiiMath::DefaultEpsilon<double>());
       TestLength<xiiMathDoubleBits::BITS_14>(a, r, 0.01f);
 #endif
@@ -333,7 +333,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4d)
       XII_TEST_DOUBLE(a.GetInvLength<4>(), r[3], xiiMath::SmallEpsilon<double>());
 
       TestInvLength<xiiMathDoubleBits::FULL>(a, r, xiiMath::SmallEpsilon<double>());
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_512)
       TestInvLength<xiiMathDoubleBits::BITS_27>(a, r, xiiMath::DefaultEpsilon<double>());
       TestInvLength<xiiMathDoubleBits::BITS_14>(a, r, xiiMath::HugeEpsilon<double>());
 #endif
@@ -368,7 +368,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4d)
       n[3] = a / r[3];
 
       TestNormalize<xiiMathDoubleBits::FULL>(a, n, r, xiiMath::SmallEpsilon<double>());
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_512)
       TestNormalize<xiiMathDoubleBits::BITS_27>(a, n, r, xiiMath::DefaultEpsilon<double>());
       TestNormalize<xiiMathDoubleBits::BITS_14>(a, n, r, 0.01f);
 #endif
@@ -383,7 +383,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4d)
       n[3] = a / xiiVec4d(a.x(), a.y(), a.z(), a.w()).GetLength();
 
       TestNormalizeIfNotZero<xiiMathDoubleBits::FULL>(a, n, xiiMath::SmallEpsilon<double>());
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_512)
       TestNormalizeIfNotZero<xiiMathDoubleBits::BITS_27>(a, n, xiiMath::DefaultEpsilon<double>());
       TestNormalizeIfNotZero<xiiMathDoubleBits::BITS_14>(a, n, xiiMath::HugeEpsilon<double>());
 #endif
@@ -490,14 +490,14 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4d)
       xiiSimdVec4d divRes(-0.375, 5.0 / 6.0, -1.75, 4.5);
       xiiSimdVec4d d1 = a.CompDiv(b);
       xiiSimdVec4d d2 = a.CompDiv<xiiMathDoubleBits::FULL>(b);
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_512)
       xiiSimdVec4d d3 = a.CompDiv<xiiMathDoubleBits::BITS_27>(b);
       xiiSimdVec4d d4 = a.CompDiv<xiiMathDoubleBits::BITS_14>(b);
 #endif
 
       XII_TEST_BOOL(d1.IsEqual(divRes, xiiMath::SmallEpsilon<double>()).AllSet());
       XII_TEST_BOOL(d2.IsEqual(divRes, xiiMath::SmallEpsilon<double>()).AllSet());
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_512)
       XII_TEST_BOOL(d3.IsEqual(divRes, xiiMath::DefaultEpsilon<double>()).AllSet());
       XII_TEST_BOOL(d4.IsEqual(divRes, 0.01f).AllSet());
 #endif

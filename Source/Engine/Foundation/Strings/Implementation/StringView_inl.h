@@ -141,17 +141,17 @@ void xiiStringView::Split(bool bReturnEmptyStrings, Container& ref_output, const
 
   while (true)
   {
-    const char* szFoundPos      = xiiUnicodeUtils::GetMaxStringEnd<char>();
-    xiiInt32    iFoundSeparator = 0;
+    const char* szFoundPos       = xiiUnicodeUtils::GetMaxStringEnd<char>();
+    xiiUInt32   uiFoundSeparator = 0;
 
-    for (xiiInt32 i = 0; i < uiParams; ++i)
+    for (xiiUInt32 i = 0; i < uiParams; ++i)
     {
       const char* szFound = xiiStringUtils::FindSubString(szReadPos, seps[i].GetStartPointer(), GetEndPointer(), seps[i].GetEndPointer());
 
       if ((szFound != nullptr) && (szFound < szFoundPos))
       {
-        szFoundPos      = szFound;
-        iFoundSeparator = i;
+        szFoundPos       = szFound;
+        uiFoundSeparator = i;
       }
     }
 
@@ -169,7 +169,7 @@ void xiiStringView::Split(bool bReturnEmptyStrings, Container& ref_output, const
     if (bReturnEmptyStrings || (szFoundPos > szReadPos))
       ref_output.PushBack(xiiStringView(szReadPos, szFoundPos));
 
-    szReadPos = szFoundPos + seps[iFoundSeparator].GetElementCount();
+    szReadPos = szFoundPos + seps[uiFoundSeparator].GetElementCount();
   }
 }
 

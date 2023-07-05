@@ -134,6 +134,21 @@ void xiiCVar::SetStorageFolder(xiiStringView sFolder)
 
 xiiCommandLineOptionBool opt_NoFileCVars("cvar", "-no-file-cvars", "Disables loading CVar values from the user-specific, persisted configuration file.", false);
 
+void xiiCVar::SaveCVarsToFile(xiiStringView sPath, bool bIgnoreSaveFlag)
+{
+  xiiHybridArray<xiiCVar*, 128> allCVars;
+
+  for (xiiCVar* pCVar = xiiCVar::GetFirstInstance(); pCVar != nullptr; pCVar = pCVar->GetNextInstance())
+  {
+    if (bIgnoreSaveFlag || pCVar->GetFlags().IsAnySet(xiiCVarFlags::Save))
+    {
+      allCVars.PushBack(pCVar);
+    }
+  }
+
+  SaveCVarsToFileInternal(sPath, allCVars);
+}
+
 void xiiCVar::SaveCVars()
 {
   if (s_sStorageFolder.IsEmpty())
@@ -173,58 +188,64 @@ void xiiCVar::SaveCVars()
     // Create the plugin specific file.
     sTemp.Format("{0}/CVars_{1}.cfg", s_sStorageFolder, it.Key());
 
-    xiiFileWriter File;
-    if (File.Open(sTemp.GetData()) == XII_SUCCESS)
-    {
-      // Write one line for each cvar, to save its current value.
-      for (xiiUInt32 var = 0; var < it.Value().GetCount(); ++var)
-      {
-        xiiCVar* pCVar = it.Value()[var];
+    SaveCVarsToFileInternal(sTemp, it.Value());
 
-        switch (pCVar->GetType())
-        {
-          case xiiCVarType::Int:
-          {
-            xiiCVarInt* pInt = (xiiCVarInt*)pCVar;
-            sTemp.Format("{0} = {1}\n", pCVar->GetName(), pInt->GetValue(xiiCVarValue::Restart));
-          }
-          break;
-          case xiiCVarType::Bool:
-          {
-            xiiCVarBool* pBool = (xiiCVarBool*)pCVar;
-            sTemp.Format("{0} = {1}\n", pCVar->GetName(), pBool->GetValue(xiiCVarValue::Restart) ? "true" : "false");
-          }
-          break;
-          case xiiCVarType::Float:
-          {
-            xiiCVarFloat* pFloat = (xiiCVarFloat*)pCVar;
-            sTemp.Format("{0} = {1}\n", pCVar->GetName(), pFloat->GetValue(xiiCVarValue::Restart));
-          }
-          break;
-          case xiiCVarType::Double:
-          {
-            xiiCVarDouble* pDouble = (xiiCVarDouble*)pCVar;
-            sTemp.Format("{0} = {1}\n", pCVar->GetName(), pDouble->GetValue(xiiCVarValue::Restart));
-          }
-          break;
-          case xiiCVarType::String:
-          {
-            xiiCVarString* pString = (xiiCVarString*)pCVar;
-            sTemp.Format("{0} = \"{1}\"\n", pCVar->GetName(), pString->GetValue(xiiCVarValue::Restart));
-          }
-          break;
-          default:
-            XII_REPORT_FAILURE("Unknown CVar Type: {0}", pCVar->GetType());
-            break;
-        }
-
-        // Add the one line for that cvar to the config file.
-        File.WriteBytes(sTemp.GetData(), sTemp.GetElementCount()).IgnoreResult();
-      }
-    }
-
-    // Continue with the next plugin.
+    // continue with the next plugin
     ++it;
+  }
+}
+
+void xiiCVar::SaveCVarsToFileInternal(xiiStringView path, const xiiDynamicArray<xiiCVar*>& vars)
+{
+  xiiStringBuilder sTemp;
+  xiiFileWriter    File;
+  if (File.Open(path.GetData(sTemp)) == XII_SUCCESS)
+  {
+    // write one line for each cvar, to save its current value
+    for (xiiUInt32 var = 0; var < vars.GetCount(); ++var)
+    {
+      xiiCVar* pCVar = vars[var];
+
+      switch (pCVar->GetType())
+      {
+        case xiiCVarType::Int:
+        {
+          xiiCVarInt* pInt = (xiiCVarInt*)pCVar;
+          sTemp.Format("{0} = {1}\n", pCVar->GetName(), pInt->GetValue(xiiCVarValue::Restart));
+        }
+        break;
+        case xiiCVarType::Bool:
+        {
+          xiiCVarBool* pBool = (xiiCVarBool*)pCVar;
+          sTemp.Format("{0} = {1}\n", pCVar->GetName(), pBool->GetValue(xiiCVarValue::Restart) ? "true" : "false");
+        }
+        break;
+        case xiiCVarType::Float:
+        {
+          xiiCVarFloat* pFloat = (xiiCVarFloat*)pCVar;
+          sTemp.Format("{0} = {1}\n", pCVar->GetName(), pFloat->GetValue(xiiCVarValue::Restart));
+        }
+        break;
+        case xiiCVarType::Double:
+        {
+          xiiCVarDouble* pDouble = (xiiCVarDouble*)pCVar;
+          sTemp.Format("{0} = {1}\n", pCVar->GetName(), pDouble->GetValue(xiiCVarValue::Restart));
+        }
+        break;
+        case xiiCVarType::String:
+        {
+          xiiCVarString* pString = (xiiCVarString*)pCVar;
+          sTemp.Format("{0} = \"{1}\"\n", pCVar->GetName(), pString->GetValue(xiiCVarValue::Restart));
+        }
+        break;
+        default:
+          XII_REPORT_FAILURE("Unknown CVar Type: {0}", pCVar->GetType());
+          break;
+      }
+
+      // add the one line for that cvar to the config file
+      File.WriteBytes(sTemp.GetData(), sTemp.GetElementCount()).IgnoreResult();
+    }
   }
 }
 
@@ -234,44 +255,7 @@ void xiiCVar::LoadCVars(bool bOnlyNewOnes /*= true*/, bool bSetAsCurrentValue /*
   LoadCVarsFromFile(bOnlyNewOnes, bSetAsCurrentValue);
 }
 
-static xiiResult ReadLine(xiiStreamReader& ref_stream, xiiStringBuilder& ref_sLine)
-{
-  ref_sLine.Clear();
-
-  char c[2];
-  c[0] = '\0';
-  c[1] = '\0';
-
-  // Read the first character
-  if (ref_stream.ReadBytes(c, 1) == 0)
-    return XII_FAILURE;
-
-  // Skip all white-spaces at the beginning, also skip all empty lines
-  while ((c[0] == '\n' || c[0] == '\r' || c[0] == ' ' || c[0] == '\t') && (ref_stream.ReadBytes(c, 1) > 0))
-  {
-  }
-
-  // We found something that is not empty, so now read till the end of the line.
-  while (c[0] != '\0' && c[0] != '\n')
-  {
-    // Skip all tabs and carriage returns.
-    if (c[0] != '\r' && c[0] != '\t')
-    {
-      ref_sLine.Append(c);
-    }
-
-    // Stop if we reached the end of the file.
-    if (ref_stream.ReadBytes(c, 1) == 0)
-      break;
-  }
-
-  if (ref_sLine.IsEmpty())
-    return XII_FAILURE;
-
-  return XII_SUCCESS;
-}
-
-static xiiResult ParseLine(const xiiStringBuilder& sLine, xiiStringBuilder& ref_sVarName, xiiStringBuilder& ref_sVarValue)
+static xiiResult ParseLine(const xiiString& sLine, xiiStringBuilder& out_sVarName, xiiStringBuilder& out_sVarValue)
 {
   const char* szSign = sLine.FindSubString("=");
 
@@ -285,7 +269,7 @@ static xiiResult ParseLine(const xiiStringBuilder& sLine, xiiStringBuilder& ref_
     while (sSubString.EndsWith(" "))
       sSubString.Shrink(0, 1);
 
-    ref_sVarName = sSubString;
+    out_sVarName = sSubString;
   }
 
   {
@@ -299,7 +283,6 @@ static xiiResult ParseLine(const xiiStringBuilder& sLine, xiiStringBuilder& ref_
     while (sSubString.EndsWith(" "))
       sSubString.Shrink(0, 1);
 
-
     // Remove " and start and end.
 
     if (sSubString.StartsWith("\""))
@@ -308,13 +291,13 @@ static xiiResult ParseLine(const xiiStringBuilder& sLine, xiiStringBuilder& ref_
     if (sSubString.EndsWith("\""))
       sSubString.Shrink(0, 1);
 
-    ref_sVarValue = sSubString;
+    out_sVarValue = sSubString;
   }
 
   return XII_SUCCESS;
 }
 
-void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue)
+void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue, xiiDynamicArray<xiiCVar*>* pOutCVars)
 {
   if (s_sStorageFolder.IsEmpty())
     return;
@@ -346,7 +329,6 @@ void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue)
     }
   }
 
-  // Now load all cvars from their plugin specific file.
   {
     xiiMap<xiiString, xiiHybridArray<xiiCVar*, 128>>::Iterator it = PluginCVars.GetIterator();
 
@@ -357,91 +339,134 @@ void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue)
       // Create the plugin specific file.
       sTemp.Format("{0}/CVars_{1}.cfg", s_sStorageFolder, it.Key());
 
-      xiiFileReader File;
-      if (File.Open(sTemp.GetData()) == XII_SUCCESS)
-      {
-        xiiStringBuilder sLine, sVarName, sVarValue;
-        while (ReadLine(File, sLine) == XII_SUCCESS)
-        {
-          if (ParseLine(sLine, sVarName, sVarValue) == XII_FAILURE)
-            continue;
-
-          // Now find a variable with the same name.
-          for (xiiUInt32 var = 0; var < it.Value().GetCount(); ++var)
-          {
-            xiiCVar* pCVar = it.Value()[var];
-
-            if (!sVarName.IsEqual(pCVar->GetName()))
-              continue;
-
-            // Found the cvar, now convert the text into the proper value.
-
-            switch (pCVar->GetType())
-            {
-              case xiiCVarType::Int:
-              {
-                xiiInt32 Value = 0;
-                if (xiiConversionUtils::StringToInt(sVarValue, Value).Succeeded())
-                {
-                  xiiCVarInt* pTyped                     = (xiiCVarInt*)pCVar;
-                  pTyped->m_Values[xiiCVarValue::Stored] = Value;
-                  *pTyped                                = Value;
-                }
-              }
-              break;
-              case xiiCVarType::Bool:
-              {
-                bool Value = sVarValue.IsEqual_NoCase("true");
-
-                xiiCVarBool* pTyped                    = (xiiCVarBool*)pCVar;
-                pTyped->m_Values[xiiCVarValue::Stored] = Value;
-                *pTyped                                = Value;
-              }
-              break;
-              case xiiCVarType::Float:
-              {
-                double Value = 0.0;
-                if (xiiConversionUtils::StringToFloat(sVarValue, Value).Succeeded())
-                {
-                  xiiCVarFloat* pTyped                   = (xiiCVarFloat*)pCVar;
-                  pTyped->m_Values[xiiCVarValue::Stored] = static_cast<float>(Value);
-                  *pTyped                                = static_cast<float>(Value);
-                }
-              }
-              break;
-              case xiiCVarType::Double:
-              {
-                double Value = 0.0;
-                if (xiiConversionUtils::StringToFloat(sVarValue, Value).Succeeded())
-                {
-                  xiiCVarDouble* pTyped                  = (xiiCVarDouble*)pCVar;
-                  pTyped->m_Values[xiiCVarValue::Stored] = Value;
-                  *pTyped                                = Value;
-                }
-              }
-              break;
-              case xiiCVarType::String:
-              {
-                const char* Value = sVarValue.GetData();
-
-                xiiCVarString* pTyped                  = (xiiCVarString*)pCVar;
-                pTyped->m_Values[xiiCVarValue::Stored] = Value;
-                *pTyped                                = Value;
-              }
-              break;
-              default:
-                XII_REPORT_FAILURE("Unknown CVar Type: {0}", pCVar->GetType());
-                break;
-            }
-
-            if (bSetAsCurrentValue)
-              pCVar->SetToRestartValue();
-          }
-        }
-      }
+      LoadCVarsFromFileInternal(sTemp.GetView(), it.Value(), bOnlyNewOnes, bSetAsCurrentValue, pOutCVars);
 
       // continue with the next plugin
       ++it;
+    }
+  }
+}
+
+void xiiCVar::LoadCVarsFromFile(xiiStringView sPath, bool bOnlyNewOnes, bool bSetAsCurrentValue, bool bIgnoreSaveFlag, xiiDynamicArray<xiiCVar*>* pOutCVars)
+{
+  xiiHybridArray<xiiCVar*, 128> allCVars;
+
+  for (xiiCVar* pCVar = xiiCVar::GetFirstInstance(); pCVar != nullptr; pCVar = pCVar->GetNextInstance())
+  {
+    if (bIgnoreSaveFlag || pCVar->GetFlags().IsAnySet(xiiCVarFlags::Save))
+    {
+      if (!bOnlyNewOnes || pCVar->m_bHasNeverBeenLoaded)
+      {
+        allCVars.PushBack(pCVar);
+      }
+    }
+
+    // it doesn't matter whether the CVar could be loaded from file, either it works the first time, or it stays at its current value
+    pCVar->m_bHasNeverBeenLoaded = false;
+  }
+
+  LoadCVarsFromFileInternal(sPath, allCVars, bOnlyNewOnes, bSetAsCurrentValue, pOutCVars);
+}
+
+void xiiCVar::LoadCVarsFromFileInternal(xiiStringView path, const xiiDynamicArray<xiiCVar*>& vars, bool bOnlyNewOnes, bool bSetAsCurrentValue, xiiDynamicArray<xiiCVar*>* pOutCVars)
+{
+  xiiFileReader    File;
+  xiiStringBuilder sTemp;
+
+  if (File.Open(path.GetData(sTemp)) == XII_SUCCESS)
+  {
+    xiiStringBuilder sContent;
+    sContent.ReadAll(File);
+
+    xiiDynamicArray<xiiString> Lines;
+    sContent.ReplaceAll("\r", ""); // remove carriage return
+
+    // splits the string at occurrence of '\n' and adds each line to the 'Lines' container
+    sContent.Split(true, Lines, "\n");
+
+    xiiStringBuilder sVarName;
+    xiiStringBuilder sVarValue;
+
+    for (const xiiString& sLine : Lines)
+    {
+      if (ParseLine(sLine, sVarName, sVarValue) == XII_FAILURE)
+        continue;
+
+      // now find a variable with the same name
+      for (xiiUInt32 var = 0; var < vars.GetCount(); ++var)
+      {
+        xiiCVar* pCVar = vars[var];
+
+        if (!sVarName.IsEqual(pCVar->GetName()))
+          continue;
+
+        // found the cvar, now convert the text into the proper value *sigh*
+        switch (pCVar->GetType())
+        {
+          case xiiCVarType::Int:
+          {
+            xiiInt32 Value = 0;
+            if (xiiConversionUtils::StringToInt(sVarValue, Value).Succeeded())
+            {
+              xiiCVarInt* pTyped                     = (xiiCVarInt*)pCVar;
+              pTyped->m_Values[xiiCVarValue::Stored] = Value;
+              *pTyped                                = Value;
+            }
+          }
+          break;
+          case xiiCVarType::Bool:
+          {
+            bool Value = sVarValue.IsEqual_NoCase("true");
+
+            xiiCVarBool* pTyped                    = (xiiCVarBool*)pCVar;
+            pTyped->m_Values[xiiCVarValue::Stored] = Value;
+            *pTyped                                = Value;
+          }
+          break;
+          case xiiCVarType::Float:
+          {
+            double Value = 0.0;
+            if (xiiConversionUtils::StringToFloat(sVarValue, Value).Succeeded())
+            {
+              xiiCVarFloat* pTyped                   = (xiiCVarFloat*)pCVar;
+              pTyped->m_Values[xiiCVarValue::Stored] = static_cast<float>(Value);
+              *pTyped                                = static_cast<float>(Value);
+            }
+          }
+          break;
+          case xiiCVarType::Double:
+          {
+            double Value = 0.0;
+            if (xiiConversionUtils::StringToFloat(sVarValue, Value).Succeeded())
+            {
+              xiiCVarDouble* pTyped                  = (xiiCVarDouble*)pCVar;
+              pTyped->m_Values[xiiCVarValue::Stored] = Value;
+              *pTyped                                = Value;
+            }
+          }
+          break;
+          case xiiCVarType::String:
+          {
+            const char* Value = sVarValue.GetData();
+
+            xiiCVarString* pTyped                  = (xiiCVarString*)pCVar;
+            pTyped->m_Values[xiiCVarValue::Stored] = Value;
+            *pTyped                                = Value;
+          }
+          break;
+          default:
+            XII_REPORT_FAILURE("Unknown CVar Type: {0}", pCVar->GetType());
+            break;
+        }
+
+        if (pOutCVars)
+        {
+          pOutCVars->PushBack(pCVar);
+        }
+
+        if (bSetAsCurrentValue)
+          pCVar->SetToRestartValue();
+      }
     }
   }
 }
@@ -456,7 +481,7 @@ Examples:\n\
 nullptr);
 // clang-format on
 
-void xiiCVar::LoadCVarsFromCommandLine(bool bOnlyNewOnes /*= true*/, bool bSetAsCurrentValue /*= true*/)
+void xiiCVar::LoadCVarsFromCommandLine(bool bOnlyNewOnes /*= true*/, bool bSetAsCurrentValue /*= true*/, xiiDynamicArray<xiiCVar*>* pOutCVars /*= nullptr*/)
 {
   xiiStringBuilder sTemp;
 
@@ -469,7 +494,12 @@ void xiiCVar::LoadCVarsFromCommandLine(bool bOnlyNewOnes /*= true*/, bool bSetAs
 
     if (xiiCommandLineUtils::GetGlobalInstance()->GetOptionIndex(sTemp) != -1)
     {
-      // Has been specified on the command line -> mark it as 'has been loaded'.
+      if (pOutCVars)
+      {
+        pOutCVars->PushBack(pCVar);
+      }
+
+      // has been specified on the command line -> mark it as 'has been loaded'
       pCVar->m_bHasNeverBeenLoaded = false;
 
       switch (pCVar->GetType())
@@ -545,6 +575,5 @@ void xiiCVar::ListOfCVarsChanged(xiiStringView sSetPluginNameTo)
 
   s_AllCVarEvents.Broadcast(e);
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Configuration_Implementation_CVar);

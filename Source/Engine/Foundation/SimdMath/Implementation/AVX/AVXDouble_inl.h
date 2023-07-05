@@ -182,7 +182,7 @@ XII_ALWAYS_INLINE bool xiiSimdDouble::operator<=(double f) const
   return (*this) <= xiiSimdDouble(f);
 }
 
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if XII_SSE_LEVEL >= XII_AVX_512
 
 template <>
 XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetReciprocal<xiiMathDoubleBits::BITS_14>() const
@@ -207,7 +207,7 @@ XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetReciprocal<xiiMathDoubleBits::
   return _mm256_div_pd(_mm256_set1_pd(1.0), m_v);
 }
 
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if XII_SSE_LEVEL >= XII_AVX_512
 
 template <>
 XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetInvSqrt<xiiMathDoubleBits::BITS_14>() const
@@ -232,7 +232,7 @@ XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetInvSqrt<xiiMathDoubleBits::FUL
   return _mm256_div_pd(_mm256_set1_pd(1.0), _mm256_sqrt_pd(m_v));
 }
 
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if XII_SSE_LEVEL >= XII_AVX_512
 
 template <>
 XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::GetSqrt<xiiMathDoubleBits::BITS_14>() const

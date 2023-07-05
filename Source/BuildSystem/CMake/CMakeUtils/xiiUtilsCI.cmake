@@ -3,6 +3,10 @@
 # #####################################
 
 function(xii_ci_add_to_targets_list TARGET_NAME LANGUAGE)
+    if(XII_NO_TXT_FILES)
+        return()
+    endif()
+
 	file(RELATIVE_PATH REL_PATH_TO_FOLDER ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
 	get_target_property(LINK_LIBS ${TARGET_NAME} LINK_LIBRARIES)
@@ -22,6 +26,10 @@ function(xii_ci_add_test TARGET_NAME)
 	if(ARG_UNPARSED_ARGUMENTS)
 		message(FATAL_ERROR "xii_ci_add_test: Invalid arguments '${ARG_UNPARSED_ARGUMENTS}'")
 	endif()
+
+    if(XII_NO_TXT_FILES)
+        return()
+    endif()
 
 	if(${ARG_NEEDS_HW_ACCESS})
 		set(HWA_VALUE 1)

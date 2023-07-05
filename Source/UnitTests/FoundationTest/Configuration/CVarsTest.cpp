@@ -87,6 +87,144 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
   xiiCVar::SetStorageFolder(":output/CVars");
   xiiCVar::LoadCVars(); // should do nothing (no settings files available)
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SaveCVarsToFile and LoadCVarsFromFile again")
+  {
+    const char* cvarConfigFileDir = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+    XII_TEST_BOOL_MSG(xiiFileSystem::AddDataDirectory(cvarConfigFileDir, "CVarsTest", "CVarConfigTempDir", xiiFileSystem::AllowWrites) == XII_SUCCESS, "Failed to mount data dir '%s'", cvarConfigFileDir);
+    xiiStringView cvarConfigFile = ":CVarConfigTempDir/CVars.cfg";
+
+    xiiCVarInt    testCVarInt("testCVarInt", 0, xiiCVarFlags::Default, "Test");
+    xiiCVarFloat  testCVarFloat("testCVarFloat", 0.0f, xiiCVarFlags::Default, "Test");
+    xiiCVarDouble testCVarDouble("testCVarDouble", 0.0f, xiiCVarFlags::Default, "Test");
+    xiiCVarBool   testCVarBool("testCVarBool", false, xiiCVarFlags::Save, "Test");
+    xiiCVarString testCVarString("testCVarString", "", xiiCVarFlags::Save, "Test");
+
+    // ignore save flag = false
+    {
+      testCVarInt    = 481516;
+      testCVarFloat  = 23.42f;
+      testCVarDouble = 22.12;
+      testCVarBool   = true;
+      testCVarString = "Hello World!";
+
+      bool bIgnoreSaveFlag = false;
+      xiiCVar::SaveCVarsToFile(cvarConfigFile, bIgnoreSaveFlag);
+      XII_TEST_BOOL(xiiFileSystem::ExistsFile(cvarConfigFile) == XII_SUCCESS);
+
+      testCVarInt    = 0;
+      testCVarFloat  = 0.0f;
+      testCVarDouble = 0.0;
+      testCVarBool   = false;
+      testCVarString = "";
+
+      xiiDynamicArray<xiiCVar*> outCVars;
+      constexpr bool            bOnlyNewOnes       = false;
+      constexpr bool            bSetAsCurrentValue = true;
+      xiiCVar::LoadCVarsFromFile(cvarConfigFile, bOnlyNewOnes, bSetAsCurrentValue, bIgnoreSaveFlag, &outCVars);
+
+      XII_TEST_INT(testCVarInt, 0);
+      XII_TEST_FLOAT(testCVarFloat, 0.0f, xiiMath::DefaultEpsilon<float>());
+      XII_TEST_FLOAT(testCVarDouble, 0.0, xiiMath::DefaultEpsilon<double>());
+      XII_TEST_BOOL(testCVarBool == true);
+      XII_TEST_STRING(testCVarString.GetValue(), "Hello World!");
+
+      XII_TEST_BOOL(outCVars.Contains(&testCVarInt) == false);
+      XII_TEST_BOOL(outCVars.Contains(&testCVarFloat) == false);
+      XII_TEST_BOOL(outCVars.Contains(&testCVarDouble) == false);
+      XII_TEST_BOOL(outCVars.Contains(&testCVarBool));
+      XII_TEST_BOOL(outCVars.Contains(&testCVarString));
+
+      testCVarInt    = 0;
+      testCVarFloat  = 0.0f;
+      testCVarDouble = 0.0;
+      testCVarBool   = false;
+      testCVarString = "";
+
+      // Even if we ignore the save flag the result should be same as above since we only stored CVars with the save flag in the file.
+      bIgnoreSaveFlag = true;
+      xiiCVar::LoadCVarsFromFile(cvarConfigFile, bOnlyNewOnes, bSetAsCurrentValue, bIgnoreSaveFlag, &outCVars);
+
+      XII_TEST_INT(testCVarInt, 0);
+      XII_TEST_FLOAT(testCVarFloat, 0.0f, xiiMath::DefaultEpsilon<float>());
+      XII_TEST_FLOAT(testCVarDouble, 0.0, xiiMath::DefaultEpsilon<double>());
+      XII_TEST_BOOL(testCVarBool == true);
+      XII_TEST_STRING(testCVarString.GetValue(), "Hello World!");
+
+      XII_TEST_BOOL(outCVars.Contains(&testCVarInt) == false);
+      XII_TEST_BOOL(outCVars.Contains(&testCVarFloat) == false);
+      XII_TEST_BOOL(outCVars.Contains(&testCVarDouble) == false);
+      XII_TEST_BOOL(outCVars.Contains(&testCVarBool));
+      XII_TEST_BOOL(outCVars.Contains(&testCVarString));
+
+      xiiFileSystem::DeleteFile(cvarConfigFile);
+    }
+
+    // ignore save flag = true
+    {
+      testCVarInt    = 481516;
+      testCVarFloat  = 23.42f;
+      testCVarDouble = 22.12;
+      testCVarBool   = true;
+      testCVarString = "Hello World!";
+
+      bool bIgnoreSaveFlag = true;
+      xiiCVar::SaveCVarsToFile(cvarConfigFile, bIgnoreSaveFlag);
+      XII_TEST_BOOL(xiiFileSystem::ExistsFile(cvarConfigFile) == XII_SUCCESS);
+
+      testCVarInt    = 0;
+      testCVarFloat  = 0.0f;
+      testCVarDouble = 0.0;
+      testCVarBool   = false;
+      testCVarString = "";
+
+      xiiDynamicArray<xiiCVar*> outCVars;
+      constexpr bool            bOnlyNewOnes       = false;
+      constexpr bool            bSetAsCurrentValue = true;
+      // Check whether the save flag is correctly checked during load now that we have saved all CVars to the file.
+      bIgnoreSaveFlag = false;
+      xiiCVar::LoadCVarsFromFile(cvarConfigFile, bOnlyNewOnes, bSetAsCurrentValue, bIgnoreSaveFlag, &outCVars);
+
+      XII_TEST_INT(testCVarInt, 0);
+      XII_TEST_FLOAT(testCVarFloat, 0.0f, xiiMath::DefaultEpsilon<float>());
+      XII_TEST_FLOAT(testCVarDouble, 0.0, xiiMath::DefaultEpsilon<double>());
+      XII_TEST_BOOL(testCVarBool == true);
+      XII_TEST_STRING(testCVarString.GetValue(), "Hello World!");
+
+      XII_TEST_BOOL(outCVars.Contains(&testCVarInt) == false);
+      XII_TEST_BOOL(outCVars.Contains(&testCVarFloat) == false);
+      XII_TEST_BOOL(outCVars.Contains(&testCVarDouble) == false);
+      XII_TEST_BOOL(outCVars.Contains(&testCVarBool));
+      XII_TEST_BOOL(outCVars.Contains(&testCVarString));
+
+      testCVarInt    = 0;
+      testCVarFloat  = 0.0f;
+      testCVarDouble = 0.0;
+      testCVarBool   = false;
+      testCVarString = "";
+
+      // Now load all cvars stored in the file.
+      bIgnoreSaveFlag = true;
+      xiiCVar::LoadCVarsFromFile(cvarConfigFile, bOnlyNewOnes, bSetAsCurrentValue, bIgnoreSaveFlag, &outCVars);
+
+      XII_TEST_INT(testCVarInt, 481516);
+      XII_TEST_FLOAT(testCVarFloat, 23.42f, xiiMath::DefaultEpsilon<float>());
+      XII_TEST_FLOAT(testCVarDouble, 22.12, xiiMath::DefaultEpsilon<double>());
+      XII_TEST_BOOL(testCVarBool == true);
+      XII_TEST_STRING(testCVarString.GetValue(), "Hello World!");
+
+      XII_TEST_BOOL(outCVars.Contains(&testCVarInt));
+      XII_TEST_BOOL(outCVars.Contains(&testCVarFloat));
+      XII_TEST_BOOL(outCVars.Contains(&testCVarDouble));
+      XII_TEST_BOOL(outCVars.Contains(&testCVarBool));
+      XII_TEST_BOOL(outCVars.Contains(&testCVarString));
+
+      xiiFileSystem::DeleteFile(cvarConfigFile);
+    }
+
+
+    XII_TEST_BOOL(xiiFileSystem::RemoveDataDirectory("CVarConfigTempDir"));
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "No Plugin Loaded")
   {
     XII_TEST_BOOL(xiiCVar::FindCVarByName("test1_Int") == nullptr);

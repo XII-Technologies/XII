@@ -308,25 +308,41 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::Trunc() const
   return result;
 }
 
-XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::FlipSign(const xiiSimdVec4b& cmp) const
+XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::FlipSign(const xiiSimdVec4b& vCmp) const
 {
   xiiSimdVec4d result;
-  result.m_v.x = cmp.m_v.x ? -m_v.x : m_v.x;
-  result.m_v.y = cmp.m_v.y ? -m_v.y : m_v.y;
-  result.m_v.z = cmp.m_v.z ? -m_v.z : m_v.z;
-  result.m_v.w = cmp.m_v.w ? -m_v.w : m_v.w;
+
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+  result.m_v.x = vCmp.x() ? -m_v.x : m_v.x;
+  result.m_v.y = vCmp.y() ? -m_v.y : m_v.y;
+  result.m_v.z = vCmp.z() ? -m_v.z : m_v.z;
+  result.m_v.w = vCmp.w() ? -m_v.w : m_v.w;
+#else
+  result.m_v.x = vCmp.m_v.x ? -m_v.x : m_v.x;
+  result.m_v.y = vCmp.m_v.y ? -m_v.y : m_v.y;
+  result.m_v.z = vCmp.m_v.z ? -m_v.z : m_v.z;
+  result.m_v.w = vCmp.m_v.w ? -m_v.w : m_v.w;
+#endif
 
   return result;
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::Select(const xiiSimdVec4b& cmp, const xiiSimdVec4d& ifTrue, const xiiSimdVec4d& ifFalse)
+XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4d& vIfTrue, const xiiSimdVec4d& vIfFalse)
 {
   xiiSimdVec4d result;
-  result.m_v.x = cmp.m_v.x ? ifTrue.m_v.x : ifFalse.m_v.x;
-  result.m_v.y = cmp.m_v.y ? ifTrue.m_v.y : ifFalse.m_v.y;
-  result.m_v.z = cmp.m_v.z ? ifTrue.m_v.z : ifFalse.m_v.z;
-  result.m_v.w = cmp.m_v.w ? ifTrue.m_v.w : ifFalse.m_v.w;
+
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+  result.m_v.x = vCmp.x() ? vIfTrue.m_v.x : vIfFalse.m_v.x;
+  result.m_v.y = vCmp.y() ? vIfTrue.m_v.y : vIfFalse.m_v.y;
+  result.m_v.z = vCmp.z() ? vIfTrue.m_v.z : vIfFalse.m_v.z;
+  result.m_v.w = vCmp.w() ? vIfTrue.m_v.w : vIfFalse.m_v.w;
+#else
+  result.m_v.x = vCmp.m_v.x ? vIfTrue.m_v.x : vIfFalse.m_v.x;
+  result.m_v.y = vCmp.m_v.y ? vIfTrue.m_v.y : vIfFalse.m_v.y;
+  result.m_v.z = vCmp.m_v.z ? vIfTrue.m_v.z : vIfFalse.m_v.z;
+  result.m_v.w = vCmp.m_v.w ? vIfTrue.m_v.w : vIfFalse.m_v.w;
+#endif
 
   return result;
 }

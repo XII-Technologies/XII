@@ -171,7 +171,17 @@ bool xiiEventBase<EventData, MutexType, EventType>::HasEventHandler(const Handle
 template <typename EventData, typename MutexType, xiiEventType EventType>
 void xiiEventBase<EventData, MutexType, EventType>::Clear()
 {
+  XII_LOCK(m_Mutex);
+
   m_EventHandlers.Clear();
+}
+
+template <typename EventData, typename MutexType, xiiEventType EventType>
+bool xiiEventBase<EventData, MutexType, EventType>::IsEmpty() const
+{
+  XII_LOCK(m_Mutex);
+
+  return m_EventHandlers.IsEmpty();
 }
 
 /// The notification is sent to all event handlers in the order that they were registered.
