@@ -194,7 +194,7 @@ void xiiArrayBase<T, Derived>::Insert(const T& value, xiiUInt32 uiIndex)
   static_cast<Derived*>(this)->Reserve(m_uiCount + 1);
 
   xiiMemoryUtils::Prepend(static_cast<Derived*>(this)->GetElementsPtr() + uiIndex, value, m_uiCount - uiIndex);
-  ++m_uiCount;
+  m_uiCount++;
 }
 
 template <typename T, typename Derived>
@@ -205,7 +205,7 @@ void xiiArrayBase<T, Derived>::Insert(T&& value, xiiUInt32 uiIndex)
   static_cast<Derived*>(this)->Reserve(m_uiCount + 1);
 
   xiiMemoryUtils::Prepend(static_cast<Derived*>(this)->GetElementsPtr() + uiIndex, std::move(value), m_uiCount - uiIndex);
-  ++m_uiCount;
+  m_uiCount++;
 }
 
 template <typename T, typename Derived>
@@ -278,7 +278,7 @@ xiiUInt32 xiiArrayBase<T, Derived>::IndexOf(const T& value, xiiUInt32 uiStartInd
 {
   const T* pElements = static_cast<const Derived*>(this)->GetElementsPtr();
 
-  for (xiiUInt32 i = uiStartIndex; i < m_uiCount; ++i)
+  for (xiiUInt32 i = uiStartIndex; i < m_uiCount; i++)
   {
     if (xiiMemoryUtils::IsEqual(pElements + i, &value))
       return i;
@@ -291,7 +291,7 @@ xiiUInt32 xiiArrayBase<T, Derived>::LastIndexOf(const T& value, xiiUInt32 uiStar
 {
   const T* pElements = static_cast<const Derived*>(this)->GetElementsPtr();
 
-  for (xiiUInt32 i = xiiMath::Min(uiStartIndex, m_uiCount); --i > 0;)
+  for (xiiUInt32 i = xiiMath::Min(uiStartIndex, m_uiCount); i-- > 0;)
   {
     if (xiiMemoryUtils::IsEqual(pElements + i, &value))
       return i;
@@ -310,7 +310,7 @@ T& xiiArrayBase<T, Derived>::ExpandAndGetRef()
 
   T& ReturnRef = *(pElements + m_uiCount);
 
-  ++m_uiCount;
+  m_uiCount++;
 
   return ReturnRef;
 }
@@ -328,7 +328,7 @@ void xiiArrayBase<T, Derived>::PushBack(const T& value)
   static_cast<Derived*>(this)->Reserve(m_uiCount + 1);
 
   xiiMemoryUtils::CopyConstruct(static_cast<Derived*>(this)->GetElementsPtr() + m_uiCount, value, 1);
-  ++m_uiCount;
+  m_uiCount++;
 }
 
 template <typename T, typename Derived>
@@ -337,7 +337,7 @@ void xiiArrayBase<T, Derived>::PushBack(T&& value)
   static_cast<Derived*>(this)->Reserve(m_uiCount + 1);
 
   xiiMemoryUtils::MoveConstruct<T>(static_cast<Derived*>(this)->GetElementsPtr() + m_uiCount, std::move(value));
-  ++m_uiCount;
+  m_uiCount++;
 }
 
 template <typename T, typename Derived>
@@ -346,7 +346,7 @@ void xiiArrayBase<T, Derived>::PushBackUnchecked(const T& value)
   XII_ASSERT_DEBUG(m_uiCount < m_uiCapacity, "Appending unchecked to array with insufficient capacity.");
 
   xiiMemoryUtils::CopyConstruct(static_cast<Derived*>(this)->GetElementsPtr() + m_uiCount, value, 1);
-  ++m_uiCount;
+  m_uiCount++;
 }
 
 template <typename T, typename Derived>
@@ -355,7 +355,7 @@ void xiiArrayBase<T, Derived>::PushBackUnchecked(T&& value)
   XII_ASSERT_DEBUG(m_uiCount < m_uiCapacity, "Appending unchecked to array with insufficient capacity.");
 
   xiiMemoryUtils::MoveConstruct<T>(static_cast<Derived*>(this)->GetElementsPtr() + m_uiCount, std::move(value));
-  ++m_uiCount;
+  m_uiCount++;
 }
 
 template <typename T, typename Derived>
