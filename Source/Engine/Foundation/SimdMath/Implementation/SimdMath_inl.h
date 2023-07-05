@@ -5,7 +5,7 @@
 // static
 XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Exp(const xiiSimdVec4f& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)
   return _mm_exp_ps(f.m_v);
 #else
   return xiiSimdVec4f(xiiMath::Exp(f.x()), xiiMath::Exp(f.y()), xiiMath::Exp(f.z()), xiiMath::Exp(f.w()));
@@ -15,7 +15,7 @@ XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Exp(const xiiSimdVec4f& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Exp(const xiiSimdVec4d& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
   return _mm256_exp_pd(f.m_v);
 #else
   return xiiSimdVec4d(xiiMath::Exp(f.x()), xiiMath::Exp(f.y()), xiiMath::Exp(f.z()), xiiMath::Exp(f.w()));
@@ -25,7 +25,7 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Exp(const xiiSimdVec4d& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Ln(const xiiSimdVec4f& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)
   return _mm_log_ps(f.m_v);
 #else
   return xiiSimdVec4f(xiiMath::Ln(f.x()), xiiMath::Ln(f.y()), xiiMath::Ln(f.z()), xiiMath::Ln(f.w()));
@@ -35,7 +35,7 @@ XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Ln(const xiiSimdVec4f& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Ln(const xiiSimdVec4d& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
   return _mm256_log_pd(f.m_v);
 #else
   return xiiSimdVec4d(xiiMath::Ln(f.x()), xiiMath::Ln(f.y()), xiiMath::Ln(f.z()), xiiMath::Ln(f.w()));
@@ -45,7 +45,7 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Ln(const xiiSimdVec4d& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Log2(const xiiSimdVec4f& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)
   return _mm_log2_ps(f.m_v);
 #else
   return xiiSimdVec4f(xiiMath::Log2(f.x()), xiiMath::Log2(f.y()), xiiMath::Log2(f.z()), xiiMath::Log2(f.w()));
@@ -55,7 +55,7 @@ XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Log2(const xiiSimdVec4f& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Log2(const xiiSimdVec4d& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
   return _mm256_log2_pd(f.m_v);
 #else
   return xiiSimdVec4d(xiiMath::Log2(f.x()), xiiMath::Log2(f.y()), xiiMath::Log2(f.z()), xiiMath::Log2(f.w()));
@@ -71,7 +71,7 @@ XII_FORCE_INLINE xiiSimdVec4i xiiSimdMath::Log2i(const xiiSimdVec4i& i)
 // static
 XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Log10(const xiiSimdVec4f& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)
   return _mm_log10_ps(f.m_v);
 #else
   return xiiSimdVec4f(xiiMath::Log10(f.x()), xiiMath::Log10(f.y()), xiiMath::Log10(f.z()), xiiMath::Log10(f.w()));
@@ -81,7 +81,7 @@ XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Log10(const xiiSimdVec4f& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Log10(const xiiSimdVec4d& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
   return _mm256_log10_pd(f.m_v);
 #else
   return xiiSimdVec4d(xiiMath::Log10(f.x()), xiiMath::Log10(f.y()), xiiMath::Log10(f.z()), xiiMath::Log10(f.w()));
@@ -91,7 +91,7 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Log10(const xiiSimdVec4d& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Pow2(const xiiSimdVec4f& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)
   return _mm_exp2_ps(f.m_v);
 #else
   return xiiSimdVec4f(xiiMath::Pow2(f.x()), xiiMath::Pow2(f.y()), xiiMath::Pow2(f.z()), xiiMath::Pow2(f.w()));
@@ -101,7 +101,7 @@ XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Pow2(const xiiSimdVec4f& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Pow2(const xiiSimdVec4d& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
   return _mm256_exp2_pd(f.m_v);
 #else
   return xiiSimdVec4d(xiiMath::Pow2(f.x()), xiiMath::Pow2(f.y()), xiiMath::Pow2(f.z()), xiiMath::Pow2(f.w()));
@@ -111,7 +111,7 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Pow2(const xiiSimdVec4d& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Sin(const xiiSimdVec4f& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)
   return _mm_sin_ps(f.m_v);
 #else
   return xiiSimdVec4f(xiiMath::Sin(xiiAngle::Radian(f.x())), xiiMath::Sin(xiiAngle::Radian(f.y())), xiiMath::Sin(xiiAngle::Radian(f.z())),
@@ -122,7 +122,7 @@ XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Sin(const xiiSimdVec4f& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Sin(const xiiSimdVec4d& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
   return _mm256_sin_pd(f.m_v);
 #else
   return xiiSimdVec4d(xiiMath::Sin(xiiAngled::Radian(f.x())), xiiMath::Sin(xiiAngled::Radian(f.y())), xiiMath::Sin(xiiAngled::Radian(f.z())),
@@ -133,7 +133,7 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Sin(const xiiSimdVec4d& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Cos(const xiiSimdVec4f& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)
   return _mm_cos_ps(f.m_v);
 #else
   return xiiSimdVec4f(xiiMath::Cos(xiiAngle::Radian(f.x())), xiiMath::Cos(xiiAngle::Radian(f.y())), xiiMath::Cos(xiiAngle::Radian(f.z())),
@@ -144,7 +144,7 @@ XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Cos(const xiiSimdVec4f& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Cos(const xiiSimdVec4d& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
   return _mm256_cos_pd(f.m_v);
 #else
   return xiiSimdVec4d(xiiMath::Cos(xiiAngled::Radian(f.x())), xiiMath::Cos(xiiAngled::Radian(f.y())), xiiMath::Cos(xiiAngled::Radian(f.z())),
@@ -155,7 +155,7 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Cos(const xiiSimdVec4d& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Tan(const xiiSimdVec4f& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)
   return _mm_tan_ps(f.m_v);
 #else
   return xiiSimdVec4f(xiiMath::Tan(xiiAngle::Radian(f.x())), xiiMath::Tan(xiiAngle::Radian(f.y())), xiiMath::Tan(xiiAngle::Radian(f.z())),
@@ -166,7 +166,7 @@ XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Tan(const xiiSimdVec4f& f)
 // static
 XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Tan(const xiiSimdVec4d& f)
 {
-#if XII_ENABLED(XII_COMPILER_MSVC) && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
   return _mm256_tan_pd(f.m_v);
 #else
   return xiiSimdVec4d(xiiMath::Tan(xiiAngled::Radian(f.x())), xiiMath::Tan(xiiAngled::Radian(f.y())), xiiMath::Tan(xiiAngled::Radian(f.z())),

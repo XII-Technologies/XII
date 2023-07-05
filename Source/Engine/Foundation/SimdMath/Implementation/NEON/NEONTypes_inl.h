@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Foundation/Math/Vec4.h>
+
 #include <arm_neon.h>
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
@@ -10,10 +12,13 @@
 
 namespace xiiInternal
 {
-  using QuadFloat = float32x4_t;
-  using QuadBool  = uint32x4_t;
-  using QuadInt   = int32x4_t;
-  using QuadUInt  = uint32x4_t;
+  using QuadDouble = xiiVec4d;
+  using QuadUInt64 = xiiVec4U64;
+  using QuadInt64  = xiiVec4I64;
+  using QuadFloat  = float32x4_t;
+  using QuadBool   = uint32x4_t;
+  using QuadInt    = int32x4_t;
+  using QuadUInt   = uint32x4_t;
 
   // Neon equivalent of _mm_movemask_ps
   XII_ALWAYS_INLINE uint32_t NeonMoveMask(uint32x4_t x)
