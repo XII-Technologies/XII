@@ -5,7 +5,7 @@
 function(xii_ci_add_to_targets_list TARGET_NAME LANGUAGE)
     if(XII_NO_TXT_FILES)
         return()
-	endif()
+    endif()
 
 	file(RELATIVE_PATH REL_PATH_TO_FOLDER ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -28,8 +28,8 @@ function(xii_ci_add_test TARGET_NAME)
 	endif()
 
     if(XII_NO_TXT_FILES)
-		return()
-	endif()
+        return()
+    endif()
 
 	if(${ARG_NEEDS_HW_ACCESS})
 		set(HWA_VALUE 1)

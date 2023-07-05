@@ -93,8 +93,8 @@ endmacro()
 # #####################################
 function(xii_set_target_output_dirs TARGET_NAME LIB_OUTPUT_DIR DLL_OUTPUT_DIR)
     if(XII_DO_NOT_SET_OUTPUT_DIRS)
-		return()
-	endif()
+        return()
+    endif()
 
 	xii_pull_output_vars("${LIB_OUTPUT_DIR}" "${DLL_OUTPUT_DIR}")
 
@@ -154,8 +154,8 @@ endfunction()
 # #####################################
 function(xii_write_configuration_txt)
     if(XII_NO_TXT_FILES)
-		return()
-	endif()
+        return()
+    endif()
 
 	# Clear Targets.txt and Tests.txt
 	file(WRITE ${CMAKE_BINARY_DIR}/Targets.txt "")
@@ -184,7 +184,7 @@ endfunction()
 # ## xii_set_common_target_definitions(<target>)
 # #####################################
 function(xii_set_common_target_definitions TARGET_NAME)
-	xii_pull_all_vars()
+    xii_pull_all_vars()
     xii_pull_config_vars()
 
 	# set the BUILDSYSTEM_COMPILE_ENGINE_AS_DLL definition
