@@ -101,7 +101,7 @@ XII_ALWAYS_INLINE xiiSimdFloat& xiiSimdFloat::operator/=(const xiiSimdFloat& f)
 XII_ALWAYS_INLINE bool xiiSimdFloat::IsEqual(const xiiSimdFloat& rhs, const xiiSimdFloat& fEpsilon) const
 {
   xiiSimdFloat minusEps = rhs - fEpsilon;
-  xiiSimdFloat plusEps = rhs + fEpsilon;
+  xiiSimdFloat plusEps  = rhs + fEpsilon;
   return ((*this >= minusEps) && (*this <= plusEps));
 }
 

@@ -1,13 +1,13 @@
 #pragma once
 
-#define XII_SSE_20     0x20
-#define XII_SSE_30     0x30
-#define XII_SSE_31     0x31
-#define XII_SSE_41     0x41
-#define XII_SSE_42     0x42
-#define XII_AVX_1      0x50
-#define XII_AVX_2      0x51
-#define XII_AVX_512    0x52
+#define XII_SSE_20  0x20
+#define XII_SSE_30  0x30
+#define XII_SSE_31  0x31
+#define XII_SSE_41  0x41
+#define XII_SSE_42  0x42
+#define XII_AVX_1   0x50
+#define XII_AVX_2   0x51
+#define XII_AVX_512 0x52
 
 #define XII_SSE_LEVEL XII_AVX_2
 

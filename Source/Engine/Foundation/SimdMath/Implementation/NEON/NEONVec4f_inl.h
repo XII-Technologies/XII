@@ -29,7 +29,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(float x, float y, float z, float w)
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   alignas(16) float values[4] = {x, y, z, w};
-  m_v = vld1q_f32(values);
+  m_v                         = vld1q_f32(values);
 }
 
 XII_ALWAYS_INLINE void xiiSimdVec4f::Set(float xyzw)
@@ -40,7 +40,7 @@ XII_ALWAYS_INLINE void xiiSimdVec4f::Set(float xyzw)
 XII_ALWAYS_INLINE void xiiSimdVec4f::Set(float x, float y, float z, float w)
 {
   alignas(16) float values[4] = {x, y, z, w};
-  m_v = vld1q_f32(values);
+  m_v                         = vld1q_f32(values);
 }
 
 XII_ALWAYS_INLINE void xiiSimdVec4f::SetX(const xiiSimdFloat& f)
@@ -192,10 +192,10 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathAcc::FULL>() const
 template <int N, xiiMathAcc::Enum acc>
 void xiiSimdVec4f::NormalizeIfNotZero(const xiiSimdFloat& fEpsilon)
 {
-  xiiSimdFloat sqLength = GetLengthSquared<N>();
-  uint32x4_t isNotZero = vcgtq_f32(sqLength.m_v, fEpsilon.m_v);
-  m_v = vmulq_f32(m_v, sqLength.GetInvSqrt<acc>().m_v);
-  m_v = vreinterpretq_f32_u32(vandq_u32(isNotZero, vreinterpretq_u32_f32(m_v)));
+  xiiSimdFloat sqLength  = GetLengthSquared<N>();
+  uint32x4_t   isNotZero = vcgtq_f32(sqLength.m_v, fEpsilon.m_v);
+  m_v                    = vmulq_f32(m_v, sqLength.GetInvSqrt<acc>().m_v);
+  m_v                    = vreinterpretq_f32_u32(vandq_u32(isNotZero, vreinterpretq_u32_f32(m_v)));
 }
 
 template <int N>
@@ -208,7 +208,7 @@ XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero() const
 template <int N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero(const xiiSimdFloat& fEpsilon) const
 {
-  const int mask = XII_BIT(N) - 1;
+  const int   mask   = XII_BIT(N) - 1;
   float32x4_t absVal = Abs().m_v;
   return (xiiInternal::NeonMoveMask(vcltq_f32(absVal, fEpsilon.m_v)) & mask) == mask;
 }

@@ -11,9 +11,9 @@
 namespace xiiInternal
 {
   using QuadFloat = float32x4_t;
-  using QuadBool = uint32x4_t;
-  using QuadInt = int32x4_t;
-  using QuadUInt = uint32x4_t;
+  using QuadBool  = uint32x4_t;
+  using QuadInt   = int32x4_t;
+  using QuadUInt  = uint32x4_t;
 
   // Neon equivalent of _mm_movemask_ps
   XII_ALWAYS_INLINE uint32_t NeonMoveMask(uint32x4_t x)

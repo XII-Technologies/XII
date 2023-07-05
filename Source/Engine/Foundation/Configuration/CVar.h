@@ -137,10 +137,10 @@ public:
   /// The CVars are loaded into the global system and thus automatically available everywhere after this call.
   /// Optionally they are returned via pOutCVars, so the caller knows which CVars have actually been
   /// loaded in this very step.
-  /// 
+  ///
   /// This function has no effect, if the storage folder has not been set via 'SetStorageFolder' yet
   /// or it has been set to be empty.
-  /// 
+  ///
   /// If \a bOnlyNewOnes is set, only CVars that have never been loaded from file before are loaded.
   /// All other CVars will stay unchanged.
   /// If \a bSetAsCurrentValue is true, variables that are flagged as 'RequiresRestart', will be set

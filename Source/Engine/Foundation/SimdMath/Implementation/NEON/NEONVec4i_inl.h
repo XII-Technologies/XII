@@ -21,7 +21,7 @@ XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i(xiiInt32 x, xiiInt32 y, xiiInt32 z,
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   alignas(16) xiiInt32 values[4] = {x, y, z, w};
-  m_v = vld1q_s32(values);
+  m_v                            = vld1q_s32(values);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i(xiiInternal::QuadInt v)
@@ -37,7 +37,7 @@ XII_ALWAYS_INLINE void xiiSimdVec4i::Set(xiiInt32 xyzw)
 XII_ALWAYS_INLINE void xiiSimdVec4i::Set(xiiInt32 x, xiiInt32 y, xiiInt32 z, xiiInt32 w)
 {
   alignas(16) xiiInt32 values[4] = {x, y, z, w};
-  m_v = vld1q_s32(values);
+  m_v                            = vld1q_s32(values);
 }
 
 XII_ALWAYS_INLINE void xiiSimdVec4i::SetZero()

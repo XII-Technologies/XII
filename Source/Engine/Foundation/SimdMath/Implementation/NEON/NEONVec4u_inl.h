@@ -21,7 +21,7 @@ XII_ALWAYS_INLINE xiiSimdVec4u::xiiSimdVec4u(xiiUInt32 x, xiiUInt32 y, xiiUInt32
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   alignas(16) xiiUInt32 values[4] = {x, y, z, w};
-  m_v = vld1q_u32(values);
+  m_v                             = vld1q_u32(values);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4u::xiiSimdVec4u(xiiInternal::QuadUInt v)
@@ -37,7 +37,7 @@ XII_ALWAYS_INLINE void xiiSimdVec4u::Set(xiiUInt32 xyzw)
 XII_ALWAYS_INLINE void xiiSimdVec4u::Set(xiiUInt32 x, xiiUInt32 y, xiiUInt32 z, xiiUInt32 w)
 {
   alignas(16) xiiUInt32 values[4] = {x, y, z, w};
-  m_v = vld1q_u32(values);
+  m_v                             = vld1q_u32(values);
 }
 
 XII_ALWAYS_INLINE void xiiSimdVec4u::SetZero()
@@ -46,13 +46,13 @@ XII_ALWAYS_INLINE void xiiSimdVec4u::SetZero()
 }
 
 // needs to be implemented here because of include dependencies
-XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i(const xiiSimdVec4u& u)
-  : m_v(u.m_v)
+XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i(const xiiSimdVec4u& u) :
+  m_v(u.m_v)
 {
 }
 
-XII_ALWAYS_INLINE xiiSimdVec4u::xiiSimdVec4u(const xiiSimdVec4i& i)
-  : m_v(i.m_v)
+XII_ALWAYS_INLINE xiiSimdVec4u::xiiSimdVec4u(const xiiSimdVec4i& i) :
+  m_v(i.m_v)
 {
 }
 

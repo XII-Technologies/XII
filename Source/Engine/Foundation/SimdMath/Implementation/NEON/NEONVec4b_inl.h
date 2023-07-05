@@ -17,7 +17,7 @@ XII_ALWAYS_INLINE xiiSimdVec4b::xiiSimdVec4b(bool x, bool y, bool z, bool w)
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
   alignas(16) xiiUInt32 mask[4] = {x ? 0xFFFFFFFF : 0, y ? 0xFFFFFFFF : 0, z ? 0xFFFFFFFF : 0, w ? 0xFFFFFFFF : 0};
-  m_v = vld1q_u32(mask);
+  m_v                           = vld1q_u32(mask);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4b::xiiSimdVec4b(xiiInternal::QuadBool v)

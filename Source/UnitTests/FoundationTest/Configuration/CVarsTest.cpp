@@ -103,7 +103,7 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
     {
       testCVarInt    = 481516;
       testCVarFloat  = 23.42f;
-      testCVarDouble  = 22.12;
+      testCVarDouble = 22.12;
       testCVarBool   = true;
       testCVarString = "Hello World!";
 
@@ -113,7 +113,7 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
 
       testCVarInt    = 0;
       testCVarFloat  = 0.0f;
-      testCVarDouble  = 0.0;
+      testCVarDouble = 0.0;
       testCVarBool   = false;
       testCVarString = "";
 
@@ -136,7 +136,7 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
 
       testCVarInt    = 0;
       testCVarFloat  = 0.0f;
-      testCVarDouble  = 0.0;
+      testCVarDouble = 0.0;
       testCVarBool   = false;
       testCVarString = "";
 
@@ -163,7 +163,7 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
     {
       testCVarInt    = 481516;
       testCVarFloat  = 23.42f;
-      testCVarDouble  = 22.12;
+      testCVarDouble = 22.12;
       testCVarBool   = true;
       testCVarString = "Hello World!";
 
@@ -173,7 +173,7 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
 
       testCVarInt    = 0;
       testCVarFloat  = 0.0f;
-      testCVarDouble  = 0.0;
+      testCVarDouble = 0.0;
       testCVarBool   = false;
       testCVarString = "";
 
@@ -198,7 +198,7 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
 
       testCVarInt    = 0;
       testCVarFloat  = 0.0f;
-      testCVarDouble  = 0.0;
+      testCVarDouble = 0.0;
       testCVarBool   = false;
       testCVarString = "";
 
