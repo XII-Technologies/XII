@@ -23,7 +23,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4b)
     XII_TEST_BOOL(vInit1B.x() == true && vInit1B.y() == true && vInit1B.z() == true && vInit1B.w() == true);
 
     // Make sure all components have the correct value
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_ENABLED(XII_COMPILER_MSVC)
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE) && XII_ENABLED(XII_COMPILER_MSVC)
     XII_TEST_BOOL(vInit1B.m_v.m128_u32[0] == 0xFFFFFFFF && vInit1B.m_v.m128_u32[1] == 0xFFFFFFFF && vInit1B.m_v.m128_u32[2] == 0xFFFFFFFF &&
                   vInit1B.m_v.m128_u32[3] == 0xFFFFFFFF);
 #endif
@@ -32,7 +32,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4b)
     XII_TEST_BOOL(vInit4B.x() == false && vInit4B.y() == true && vInit4B.z() == false && vInit4B.w() == true);
 
     // Make sure all components have the correct value
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_ENABLED(XII_COMPILER_MSVC)
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE) && XII_ENABLED(XII_COMPILER_MSVC)
     XII_TEST_BOOL(
       vInit4B.m_v.m128_u32[0] == 0 && vInit4B.m_v.m128_u32[1] == 0xFFFFFFFF && vInit4B.m_v.m128_u32[2] == 0 && vInit4B.m_v.m128_u32[3] == 0xFFFFFFFF);
 #endif

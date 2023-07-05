@@ -170,7 +170,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4d)
     XII_TEST_BOOL(vInit4F.x() == 1.0 && vInit4F.y() == 2.0 && vInit4F.z() == 3.0 && vInit4F.w() == 4.0);
 
     // Make sure all components have the correct values
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_ENABLED(XII_COMPILER_MSVC)
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE) && XII_ENABLED(XII_COMPILER_MSVC)
     XII_TEST_BOOL(vInit4F.m_v.m256d_f64[0] == 1.0 && vInit4F.m_v.m256d_f64[1] == 2.0 && vInit4F.m_v.m256d_f64[2] == 3.0 && vInit4F.m_v.m256d_f64[3] == 4.0);
 #endif
 
@@ -232,7 +232,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4d)
       XII_TEST_BOOL(xyzw.GetComponent(4) == 4.0);
 
       // Make sure all components have the correct values
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_ENABLED(XII_COMPILER_MSVC)
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE) && XII_ENABLED(XII_COMPILER_MSVC)
       XII_TEST_BOOL(xyzw.m_v.m256d_f64[0] == 1.0 && xyzw.m_v.m256d_f64[1] == 2.0 && xyzw.m_v.m256d_f64[2] == 3.0 && xyzw.m_v.m256d_f64[3] == 4.0);
 #endif
     }
