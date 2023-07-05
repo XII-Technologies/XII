@@ -137,14 +137,14 @@ XII_ALWAYS_INLINE bool xiiSmallArrayBase<T, Size>::operator!=(const xiiArrayPtr<
 template <typename T, xiiUInt16 Size>
 XII_ALWAYS_INLINE const T& xiiSmallArrayBase<T, Size>::operator[](const xiiUInt32 uiIndex) const
 {
-  XII_ASSERT_DEV(uiIndex < m_uiCount, "Out of bounds access. Array has {0} elements, trying to access element at index {1}.", m_uiCount, uiIndex);
+  XII_ASSERT_DEBUG(uiIndex < m_uiCount, "Out of bounds access. Array has {0} elements, trying to access element at index {1}.", m_uiCount, uiIndex);
   return GetElementsPtr()[uiIndex];
 }
 
 template <typename T, xiiUInt16 Size>
 XII_ALWAYS_INLINE T& xiiSmallArrayBase<T, Size>::operator[](const xiiUInt32 uiIndex)
 {
-  XII_ASSERT_DEV(uiIndex < m_uiCount, "Out of bounds access. Array has {0} elements, trying to access element at index {1}.", m_uiCount, uiIndex);
+  XII_ASSERT_DEBUG(uiIndex < m_uiCount, "Out of bounds access. Array has {0} elements, trying to access element at index {1}.", m_uiCount, uiIndex);
   return GetElementsPtr()[uiIndex];
 }
 
@@ -381,7 +381,7 @@ void xiiSmallArrayBase<T, Size>::PushBack(T&& value, xiiAllocatorBase* pAllocato
 template <typename T, xiiUInt16 Size>
 void xiiSmallArrayBase<T, Size>::PushBackUnchecked(const T& value)
 {
-  XII_ASSERT_DEV(m_uiCount < m_uiCapacity, "Appending unchecked to array with insufficient capacity.");
+  XII_ASSERT_DEBUG(m_uiCount < m_uiCapacity, "Appending unchecked to array with insufficient capacity.");
 
   xiiMemoryUtils::CopyConstruct(GetElementsPtr() + m_uiCount, value, 1);
   m_uiCount++;
@@ -390,7 +390,7 @@ void xiiSmallArrayBase<T, Size>::PushBackUnchecked(const T& value)
 template <typename T, xiiUInt16 Size>
 void xiiSmallArrayBase<T, Size>::PushBackUnchecked(T&& value)
 {
-  XII_ASSERT_DEV(m_uiCount < m_uiCapacity, "Appending unchecked to array with insufficient capacity.");
+  XII_ASSERT_DEBUG(m_uiCount < m_uiCapacity, "Appending unchecked to array with insufficient capacity.");
 
   xiiMemoryUtils::MoveConstruct<T>(GetElementsPtr() + m_uiCount, std::move(value));
   m_uiCount++;
@@ -409,7 +409,7 @@ void xiiSmallArrayBase<T, Size>::PushBackRange(const xiiArrayPtr<const T>& range
 template <typename T, xiiUInt16 Size>
 void xiiSmallArrayBase<T, Size>::PopBack(xiiUInt32 uiCountToRemove /* = 1 */)
 {
-  XII_ASSERT_DEV(m_uiCount >= uiCountToRemove, "Out of bounds access. Array has {0} elements, trying to pop {1} elements.", m_uiCount, uiCountToRemove);
+  XII_ASSERT_DEBUG(m_uiCount >= uiCountToRemove, "Out of bounds access. Array has {0} elements, trying to pop {1} elements.", m_uiCount, uiCountToRemove);
 
   m_uiCount -= uiCountToRemove;
   xiiMemoryUtils::Destruct(GetElementsPtr() + m_uiCount, uiCountToRemove);
@@ -418,14 +418,14 @@ void xiiSmallArrayBase<T, Size>::PopBack(xiiUInt32 uiCountToRemove /* = 1 */)
 template <typename T, xiiUInt16 Size>
 XII_FORCE_INLINE T& xiiSmallArrayBase<T, Size>::PeekBack()
 {
-  XII_ASSERT_DEV(m_uiCount > 0, "Out of bounds access. Trying to peek into an empty array.");
+  XII_ASSERT_DEBUG(m_uiCount > 0, "Out of bounds access. Trying to peek into an empty array.");
   return GetElementsPtr()[m_uiCount - 1];
 }
 
 template <typename T, xiiUInt16 Size>
 XII_FORCE_INLINE const T& xiiSmallArrayBase<T, Size>::PeekBack() const
 {
-  XII_ASSERT_DEV(m_uiCount > 0, "Out of bounds access. Trying to peek into an empty array.");
+  XII_ASSERT_DEBUG(m_uiCount > 0, "Out of bounds access. Trying to peek into an empty array.");
   return GetElementsPtr()[m_uiCount - 1];
 }
 

@@ -623,7 +623,7 @@ xiiUInt64 xiiHashTableBase<K, V, H>::GetHeapMemoryUsage() const
 template <typename K, typename V, typename H>
 void xiiHashTableBase<K, V, H>::SetCapacity(xiiUInt32 uiCapacity)
 {
-  XII_ASSERT_DEV(xiiMath::IsPowerOf2(uiCapacity), "uiCapacity must be a power of two to avoid modulo during lookup.");
+  XII_ASSERT_DEBUG(xiiMath::IsPowerOf2(uiCapacity), "uiCapacity must be a power of two to avoid modulo during lookup.");
   const xiiUInt32 uiOldCapacity = m_uiCapacity;
   m_uiCapacity                  = uiCapacity;
 
@@ -715,7 +715,7 @@ void xiiHashTableBase<K, V, H>::SetFlags(xiiUInt32 uiEntryIndex, xiiUInt32 uiFla
   m_pEntryFlags[uiIndex] &= ~(FLAGS_MASK << uiSubIndex);
   m_pEntryFlags[uiIndex] |= (uiFlags << uiSubIndex);
 #else
-  XII_ASSERT_DEV(uiEntryIndex < GetFlagsCapacity(), "Out of bounds access");
+  XII_ASSERT_DEBUG(uiEntryIndex < GetFlagsCapacity(), "Out of bounds access");
   m_pEntryFlags[uiEntryIndex] = uiFlags;
 #endif
 }

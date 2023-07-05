@@ -176,6 +176,9 @@ XII_CREATE_SIMPLE_TEST(Strings, FormatString)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Auto Increment")
   {
+    TestFormat(xiiFmt("{}{}{}{}", xiiInt8(1), xiiInt16(2), xiiInt32(3), xiiInt64(4)), "1234");
+    TestFormat(xiiFmt("{3}{2}{1}{0}", xiiInt8(1), xiiInt16(2), xiiInt32(3), xiiInt64(4)), "4321");
+
     TestFormat(xiiFmt("{}, {}, {}, {}", xiiInt8(-1), xiiInt16(-2), xiiInt32(-3), xiiInt64(-4)), "-1, -2, -3, -4");
     TestFormat(xiiFmt("{}, {}, {}, {}", xiiUInt8(1), xiiUInt16(2), xiiUInt32(3), xiiUInt64(4)), "1, 2, 3, 4");
 

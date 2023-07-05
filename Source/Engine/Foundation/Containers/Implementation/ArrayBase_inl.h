@@ -18,6 +18,7 @@ void xiiArrayBase<T, Derived>::operator=(const xiiArrayPtr<const T>& rhs)
       return;
 
     XII_ASSERT_DEV(m_uiCount > rhs.GetCount(), "Dangling array pointer. The given array pointer points to invalid memory.");
+
     T* pElements = static_cast<Derived*>(this)->GetElementsPtr();
     xiiMemoryUtils::Destruct(pElements + rhs.GetCount(), m_uiCount - rhs.GetCount());
     m_uiCount = rhs.GetCount();
@@ -80,14 +81,14 @@ XII_ALWAYS_INLINE bool xiiArrayBase<T, Derived>::operator<(const xiiArrayPtr<con
 template <typename T, typename Derived>
 XII_ALWAYS_INLINE const T& xiiArrayBase<T, Derived>::operator[](const xiiUInt32 uiIndex) const
 {
-  XII_ASSERT_DEV(uiIndex < m_uiCount, "Out of bounds access. Array has {0} elements, trying to access element at index {1}.", m_uiCount, uiIndex);
+  XII_ASSERT_DEBUG(uiIndex < m_uiCount, "Out of bounds access. Array has {0} elements, trying to access element at index {1}.", m_uiCount, uiIndex);
   return static_cast<const Derived*>(this)->GetElementsPtr()[uiIndex];
 }
 
 template <typename T, typename Derived>
 XII_ALWAYS_INLINE T& xiiArrayBase<T, Derived>::operator[](const xiiUInt32 uiIndex)
 {
-  XII_ASSERT_DEV(uiIndex < m_uiCount, "Out of bounds access. Array has {0} elements, trying to access element at index {1}.", m_uiCount, uiIndex);
+  XII_ASSERT_DEBUG(uiIndex < m_uiCount, "Out of bounds access. Array has {0} elements, trying to access element at index {1}.", m_uiCount, uiIndex);
   return static_cast<Derived*>(this)->GetElementsPtr()[uiIndex];
 }
 
@@ -244,8 +245,7 @@ bool xiiArrayBase<T, Derived>::RemoveAndSwap(const T& value)
 template <typename T, typename Derived>
 void xiiArrayBase<T, Derived>::RemoveAtAndCopy(xiiUInt32 uiIndex, xiiUInt32 uiNumElements /*= 1*/)
 {
-  XII_ASSERT_DEV(uiIndex + uiNumElements <= m_uiCount, "Out of bounds access. Array has {0} elements, trying to remove element at index {1}.",
-                 m_uiCount, uiIndex + uiNumElements - 1);
+  XII_ASSERT_DEV(uiIndex + uiNumElements <= m_uiCount, "Out of bounds access. Array has {0} elements, trying to remove element at index {1}.", m_uiCount, uiIndex + uiNumElements - 1);
 
   T* pElements = static_cast<Derived*>(this)->GetElementsPtr();
 
@@ -256,8 +256,7 @@ void xiiArrayBase<T, Derived>::RemoveAtAndCopy(xiiUInt32 uiIndex, xiiUInt32 uiNu
 template <typename T, typename Derived>
 void xiiArrayBase<T, Derived>::RemoveAtAndSwap(xiiUInt32 uiIndex, xiiUInt32 uiNumElements /*= 1*/)
 {
-  XII_ASSERT_DEV(uiIndex + uiNumElements <= m_uiCount, "Out of bounds access. Array has {0} elements, trying to remove element at index {1}.",
-                 m_uiCount, uiIndex + uiNumElements - 1);
+  XII_ASSERT_DEV(uiIndex + uiNumElements <= m_uiCount, "Out of bounds access. Array has {0} elements, trying to remove element at index {1}.", m_uiCount, uiIndex + uiNumElements - 1);
 
   T* pElements = static_cast<Derived*>(this)->GetElementsPtr();
 
@@ -344,7 +343,7 @@ void xiiArrayBase<T, Derived>::PushBack(T&& value)
 template <typename T, typename Derived>
 void xiiArrayBase<T, Derived>::PushBackUnchecked(const T& value)
 {
-  XII_ASSERT_DEV(m_uiCount < m_uiCapacity, "Appending unchecked to array with insufficient capacity.");
+  XII_ASSERT_DEBUG(m_uiCount < m_uiCapacity, "Appending unchecked to array with insufficient capacity.");
 
   xiiMemoryUtils::CopyConstruct(static_cast<Derived*>(this)->GetElementsPtr() + m_uiCount, value, 1);
   m_uiCount++;
@@ -353,7 +352,7 @@ void xiiArrayBase<T, Derived>::PushBackUnchecked(const T& value)
 template <typename T, typename Derived>
 void xiiArrayBase<T, Derived>::PushBackUnchecked(T&& value)
 {
-  XII_ASSERT_DEV(m_uiCount < m_uiCapacity, "Appending unchecked to array with insufficient capacity.");
+  XII_ASSERT_DEBUG(m_uiCount < m_uiCapacity, "Appending unchecked to array with insufficient capacity.");
 
   xiiMemoryUtils::MoveConstruct<T>(static_cast<Derived*>(this)->GetElementsPtr() + m_uiCount, std::move(value));
   m_uiCount++;
@@ -372,8 +371,7 @@ void xiiArrayBase<T, Derived>::PushBackRange(const xiiArrayPtr<const T>& range)
 template <typename T, typename Derived>
 void xiiArrayBase<T, Derived>::PopBack(xiiUInt32 uiCountToRemove /* = 1 */)
 {
-  XII_ASSERT_DEV(
-    m_uiCount >= uiCountToRemove, "Out of bounds access. Array has {0} elements, trying to pop {1} elements.", m_uiCount, uiCountToRemove);
+  XII_ASSERT_DEV(m_uiCount >= uiCountToRemove, "Out of bounds access. Array has {0} elements, trying to pop {1} elements.", m_uiCount, uiCountToRemove);
 
   m_uiCount -= uiCountToRemove;
   xiiMemoryUtils::Destruct(static_cast<Derived*>(this)->GetElementsPtr() + m_uiCount, uiCountToRemove);
@@ -382,14 +380,14 @@ void xiiArrayBase<T, Derived>::PopBack(xiiUInt32 uiCountToRemove /* = 1 */)
 template <typename T, typename Derived>
 XII_FORCE_INLINE T& xiiArrayBase<T, Derived>::PeekBack()
 {
-  XII_ASSERT_DEV(m_uiCount > 0, "Out of bounds access. Trying to peek into an empty array.");
+  XII_ASSERT_DEBUG(m_uiCount > 0, "Out of bounds access. Trying to peek into an empty array.");
   return static_cast<Derived*>(this)->GetElementsPtr()[m_uiCount - 1];
 }
 
 template <typename T, typename Derived>
 XII_FORCE_INLINE const T& xiiArrayBase<T, Derived>::PeekBack() const
 {
-  XII_ASSERT_DEV(m_uiCount > 0, "Out of bounds access. Trying to peek into an empty array.");
+  XII_ASSERT_DEBUG(m_uiCount > 0, "Out of bounds access. Trying to peek into an empty array.");
   return static_cast<const Derived*>(this)->GetElementsPtr()[m_uiCount - 1];
 }
 

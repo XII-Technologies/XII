@@ -160,7 +160,7 @@ XII_FORCE_INLINE void xiiListBase<T>::Compact()
 template <typename T>
 XII_FORCE_INLINE T& xiiListBase<T>::PeekFront()
 {
-  XII_ASSERT_DEV(!IsEmpty(), "The container is empty.");
+  XII_ASSERT_DEBUG(!IsEmpty(), "The container is empty.");
 
   return m_First.m_pNext->m_Data;
 }
@@ -168,7 +168,7 @@ XII_FORCE_INLINE T& xiiListBase<T>::PeekFront()
 template <typename T>
 XII_FORCE_INLINE T& xiiListBase<T>::PeekBack()
 {
-  XII_ASSERT_DEV(!IsEmpty(), "The container is empty.");
+  XII_ASSERT_DEBUG(!IsEmpty(), "The container is empty.");
 
   return m_Last.m_pPrev->m_Data;
 }
@@ -176,7 +176,7 @@ XII_FORCE_INLINE T& xiiListBase<T>::PeekBack()
 template <typename T>
 XII_FORCE_INLINE const T& xiiListBase<T>::PeekFront() const
 {
-  XII_ASSERT_DEV(!IsEmpty(), "The container is empty.");
+  XII_ASSERT_DEBUG(!IsEmpty(), "The container is empty.");
 
   return m_First.m_pNext->m_Data;
 }
@@ -184,7 +184,7 @@ XII_FORCE_INLINE const T& xiiListBase<T>::PeekFront() const
 template <typename T>
 XII_FORCE_INLINE const T& xiiListBase<T>::PeekBack() const
 {
-  XII_ASSERT_DEV(!IsEmpty(), "The container is empty.");
+  XII_ASSERT_DEBUG(!IsEmpty(), "The container is empty.");
 
   return m_Last.m_pPrev->m_Data;
 }
@@ -217,7 +217,7 @@ XII_ALWAYS_INLINE void xiiListBase<T>::PushFront(const T& element)
 template <typename T>
 XII_FORCE_INLINE void xiiListBase<T>::PopBack()
 {
-  XII_ASSERT_DEV(!IsEmpty(), "The container is empty.");
+  XII_ASSERT_DEBUG(!IsEmpty(), "The container is empty.");
 
   Remove(Iterator(m_Last.m_pPrev));
 }
@@ -225,7 +225,7 @@ XII_FORCE_INLINE void xiiListBase<T>::PopBack()
 template <typename T>
 void xiiListBase<T>::PopFront()
 {
-  XII_ASSERT_DEV(!IsEmpty(), "The container is empty.");
+  XII_ASSERT_DEBUG(!IsEmpty(), "The container is empty.");
 
   Remove(Iterator(m_First.m_pNext));
 }

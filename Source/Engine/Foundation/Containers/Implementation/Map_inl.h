@@ -14,7 +14,7 @@ void xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator::Next()
 
   if (m_pElement == nullptr)
   {
-    XII_ASSERT_DEV(m_pElement != nullptr, "The Iterator is invalid (end).");
+    XII_ASSERT_DEBUG(m_pElement != nullptr, "The Iterator is invalid (end).");
     return;
   }
 
@@ -65,7 +65,7 @@ void xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator::Prev()
 
   if (m_pElement == nullptr)
   {
-    XII_ASSERT_DEV(m_pElement != nullptr, "The Iterator is invalid (end).");
+    XII_ASSERT_DEBUG(m_pElement != nullptr, "The Iterator is invalid (end).");
     return;
   }
 
@@ -570,8 +570,7 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
 template <typename KeyType, typename ValueType, typename Comparer>
 void xiiMapBase<KeyType, ValueType, Comparer>::ReleaseNode(Node* pNode)
 {
-  XII_ASSERT_DEV(pNode != nullptr, "pNode is invalid.");
-  XII_ASSERT_DEV(pNode != &m_NilNode, "pNode is invalid.");
+  XII_ASSERT_DEBUG(pNode != nullptr && pNode != &m_NilNode, "pNode is invalid.");
 
   xiiMemoryUtils::Destruct<Node>(pNode, 1);
 
@@ -777,7 +776,7 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
 template <typename KeyType, typename ValueType, typename Comparer>
 typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, ValueType, Comparer>::Remove(const Iterator& pos)
 {
-  XII_ASSERT_DEV(pos.m_pElement != nullptr, "The Iterator(pos) is invalid.");
+  XII_ASSERT_DEBUG(pos.m_pElement != nullptr, "The Iterator(pos) is invalid.");
 
   Iterator temp(pos);
   ++temp;
