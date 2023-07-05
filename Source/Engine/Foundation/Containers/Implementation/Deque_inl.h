@@ -16,8 +16,7 @@
   }
 
 #define CHUNK_SIZE(Type) (4096 / sizeof(Type) < 32 ? 32 : 4096 / sizeof(Type))
-//(sizeof(Type) <= 8 ? 256 : (sizeof(Type) <= 16 ? 128 : (sizeof(Type) <= 32 ? 64 : 32))) // although this is Pow(2), this is slower than just having
-//larger chunks
+// (sizeof(Type) <= 8 ? 256 : (sizeof(Type) <= 16 ? 128 : (sizeof(Type) <= 32 ? 64 : 32))) // Although this is Pow(2), this is slower than just having larger chunks
 
 template <typename T, bool Construct>
 void xiiDequeBase<T, Construct>::Constructor(xiiAllocatorBase* pAllocator)
@@ -452,7 +451,7 @@ inline xiiUInt32 xiiDequeBase<T, Construct>::GetContiguousRange(xiiUInt32 uiInde
 template <typename T, bool Construct>
 inline T& xiiDequeBase<T, Construct>::operator[](xiiUInt32 uiIndex)
 {
-  XII_ASSERT_DEV(uiIndex < m_uiCount, "The deque has {0} elements. Cannot access element {1}.", m_uiCount, uiIndex);
+  XII_ASSERT_DEBUG(uiIndex < m_uiCount, "The deque has {0} elements. Cannot access element {1}.", m_uiCount, uiIndex);
 
   const xiiUInt32 uiRealIndex = m_uiFirstElement + uiIndex;
 
@@ -465,7 +464,7 @@ inline T& xiiDequeBase<T, Construct>::operator[](xiiUInt32 uiIndex)
 template <typename T, bool Construct>
 inline const T& xiiDequeBase<T, Construct>::operator[](xiiUInt32 uiIndex) const
 {
-  XII_ASSERT_DEV(uiIndex < m_uiCount, "The deque has {0} elements. Cannot access element {1}.", m_uiCount, uiIndex);
+  XII_ASSERT_DEBUG(uiIndex < m_uiCount, "The deque has {0} elements. Cannot access element {1}.", m_uiCount, uiIndex);
 
   const xiiUInt32 uiRealIndex = m_uiFirstElement + uiIndex;
 
@@ -536,7 +535,7 @@ inline void xiiDequeBase<T, Construct>::PopBack(xiiUInt32 uiElements)
     --m_uiCount;
   }
 
-  // might trigger a memory reduction
+  // This may trigger a memory reduction.
   REDUCE_SIZE(uiElements);
 }
 
@@ -851,7 +850,7 @@ XII_FORCE_INLINE T* xiiDequeBase<T, Construct>::GetUnusedChunk()
 template <typename T, bool Construct>
 T& xiiDequeBase<T, Construct>::ElementAt(xiiUInt32 uiIndex)
 {
-  XII_ASSERT_DEV(uiIndex < m_uiCount, "");
+  XII_ASSERT_DEBUG(uiIndex < m_uiCount, "");
 
   const xiiUInt32 uiRealIndex = m_uiFirstElement + uiIndex;
 
@@ -896,7 +895,9 @@ void xiiDequeBase<T, Construct>::RemoveAtAndCopy(xiiUInt32 uiIndex)
   XII_ASSERT_DEV(uiIndex < m_uiCount, "Out of bounds access. Array has {0} elements, trying to remove element at index {1}.", m_uiCount, uiIndex);
 
   for (xiiUInt32 i = uiIndex + 1; i < m_uiCount; ++i)
+  {
     xiiMemoryUtils::CopyOverlapped(&operator[](i - 1), &operator[](i), 1);
+  }
 
   PopBack();
 }
@@ -940,7 +941,9 @@ void xiiDequeBase<T, Construct>::Insert(const T& value, xiiUInt32 uiIndex)
   PushBack();
 
   for (xiiUInt32 i = m_uiCount - 1; i > uiIndex; --i)
+  {
     xiiMemoryUtils::Copy(&operator[](i), &operator[](i - 1), 1);
+  }
 
   xiiMemoryUtils::Copy(&operator[](uiIndex), &value, 1);
 }

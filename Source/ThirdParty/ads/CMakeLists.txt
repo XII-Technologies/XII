@@ -39,7 +39,7 @@ set (MOC_FILES
 xii_qt_wrap_target_moc_files(${PROJECT_NAME} "${MOC_FILES}")
 
 if(XII_CMAKE_COMPILER_MSVC)
-  target_compile_options(${PROJECT_NAME} PRIVATE /wd4458 /wd4996 /wd4456 /wd4702)
+  target_compile_options(${PROJECT_NAME} PRIVATE /wd4458 /wd4996 /wd4702)
 endif()
 
 if(XII_CMAKE_PLATFORM_LINUX)

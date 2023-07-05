@@ -456,7 +456,7 @@ xiiUInt64 xiiHashSetBase<K, H>::GetHeapMemoryUsage() const
 template <typename K, typename H>
 void xiiHashSetBase<K, H>::SetCapacity(xiiUInt32 uiCapacity)
 {
-  XII_ASSERT_DEV(xiiMath::IsPowerOf2(uiCapacity), "uiCapacity must be a power of two to avoid modulo during lookup.");
+  XII_ASSERT_DEBUG(xiiMath::IsPowerOf2(uiCapacity), "uiCapacity must be a power of two to avoid modulo during lookup.");
   const xiiUInt32 uiOldCapacity = m_uiCapacity;
   m_uiCapacity                  = uiCapacity;
 
@@ -543,11 +543,11 @@ void xiiHashSetBase<K, H>::SetFlags(xiiUInt32 uiEntryIndex, xiiUInt32 uiFlags)
 #if XII_ENABLED(XII_HASHSET_USE_BITFLAGS)
   const xiiUInt32 uiIndex    = uiEntryIndex / 16;
   const xiiUInt32 uiSubIndex = (uiEntryIndex & 15) * 2;
-  XII_ASSERT_DEV(uiIndex < GetFlagsCapacity(), "Out of bounds access");
+  XII_ASSERT_DEBUG(uiIndex < GetFlagsCapacity(), "Out of bounds access");
   m_pEntryFlags[uiIndex] &= ~(FLAGS_MASK << uiSubIndex);
   m_pEntryFlags[uiIndex] |= (uiFlags << uiSubIndex);
 #else
-  XII_ASSERT_DEV(uiEntryIndex < GetFlagsCapacity(), "Out of bounds access");
+  XII_ASSERT_DEBUG(uiEntryIndex < GetFlagsCapacity(), "Out of bounds access");
   m_pEntryFlags[uiEntryIndex] = uiFlags;
 #endif
 }

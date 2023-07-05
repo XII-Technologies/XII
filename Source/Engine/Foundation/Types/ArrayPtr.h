@@ -148,8 +148,7 @@ public:
   XII_FORCE_INLINE xiiArrayPtr<T> GetSubArray(xiiUInt32 uiStart, xiiUInt32 uiCount) const // [tested]
   {
     // the first check is necessary to also detect errors when uiStart+uiCount would overflow
-    XII_ASSERT_DEV(uiStart <= GetCount() && uiStart + uiCount <= GetCount(), "uiStart+uiCount ({0}) has to be smaller or equal than the count ({1}).",
-                   uiStart + uiCount, GetCount());
+    XII_ASSERT_DEV(uiStart <= GetCount() && uiStart + uiCount <= GetCount(), "uiStart+uiCount ({0}) has to be smaller or equal than the count ({1}).", uiStart + uiCount, GetCount());
     return xiiArrayPtr<T>(GetPtr() + uiStart, uiCount);
   }
 
@@ -190,14 +189,14 @@ public:
   /// \brief Index access.
   XII_FORCE_INLINE const ValueType& operator[](xiiUInt32 uiIndex) const // [tested]
   {
-    XII_ASSERT_DEV(uiIndex < GetCount(), "Cannot access element {0}, the array only holds {1} elements.", uiIndex, GetCount());
+    XII_ASSERT_DEBUG(uiIndex < GetCount(), "Cannot access element {0}, the array only holds {1} elements.", uiIndex, GetCount());
     return *static_cast<const ValueType*>(GetPtr() + uiIndex);
   }
 
   /// \brief Index access.
   XII_FORCE_INLINE ValueType& operator[](xiiUInt32 uiIndex) // [tested]
   {
-    XII_ASSERT_DEV(uiIndex < GetCount(), "Cannot access element {0}, the array only holds {1} elements.", uiIndex, GetCount());
+    XII_ASSERT_DEBUG(uiIndex < GetCount(), "Cannot access element {0}, the array only holds {1} elements.", uiIndex, GetCount());
     return *static_cast<ValueType*>(GetPtr() + uiIndex);
   }
 
@@ -240,8 +239,7 @@ public:
   /// \brief Copies the data from \a other into this array. The arrays must have the exact same size.
   inline void CopyFrom(const xiiArrayPtr<const T>& other) // [tested]
   {
-    XII_ASSERT_DEV(
-      GetCount() == other.GetCount(), "Count for copy does not match. Target has {0} elements, source {1} elements", GetCount(), other.GetCount());
+    XII_ASSERT_DEBUG(GetCount() == other.GetCount(), "Count for copy does not match. Target has {0} elements, source {1} elements", GetCount(), other.GetCount());
 
     xiiMemoryUtils::Copy(static_cast<ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), GetCount());
   }

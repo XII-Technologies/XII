@@ -236,8 +236,8 @@ namespace xiiInternal
     xiiInt32                   m_iWriteCounter = 0;
     mutable xiiAtomicInteger32 m_iReadCounter;
 
-    bool m_bSimulateWorld = true;
-    bool m_bReportErrorWhenStaticObjectMoves;
+    bool m_bSimulateWorld                    = true;
+    bool m_bReportErrorWhenStaticObjectMoves = true;
 
     /// \brief Maps some data (given as void*) to a xiiGameObjectHandle. Only available in special situations (e.g. editor use cases).
     xiiDelegate<xiiGameObjectHandle(const void*, xiiComponentHandle, const char*)> m_GameObjectReferenceResolver;
