@@ -6,11 +6,14 @@
 
 android_app* xiiAndroidUtils::s_pAndroidApplication;
 JavaVM*      xiiAndroidUtils::s_pJavaVM;
+JObject*     xiiAndroidUtils::s_pNativeActivity;
 
 void xiiAndroidUtils::SetNativeAndroidApp(android_app* pAndroidApp)
 {
   s_pAndroidApplication = pAndroidApp;
+
   SetAndroidJavaVM(pAndroidApp->activity->vm);
+  SetAndroidNativeActivity(pAndroidApp->activity->clazz);
 }
 
 android_app* xiiAndroidUtils::GetNativeAndroidApp()
@@ -28,7 +31,16 @@ JavaVM* xiiAndroidUtils::GetAndroidJavaVM()
   return s_pJavaVM;
 }
 
-#endif
+void xiiAndroidUtils::SetAndroidNativeActivity(JObject pNativeActivity)
+{
+  s_pNativeActivity = pNativeActivity;
+}
 
+JObject xiiAndroidUtils::GetAndroidNativeActivity()
+{
+  return s_pNativeActivity;
+}
+
+#endif
 
 XII_STATICLINK_FILE(Foundation, Foundation_Basics_Platform_Android_AndroidUtils);

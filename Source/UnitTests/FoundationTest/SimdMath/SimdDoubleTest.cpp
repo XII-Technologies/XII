@@ -22,7 +22,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdDouble)
 #endif
 
     // Make sure the class didn't accidentally change in size.
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX
     XII_CHECK_AT_COMPILETIME(sizeof(xiiSimdDouble) == 32);
     XII_CHECK_AT_COMPILETIME(XII_ALIGNMENT_OF(xiiSimdDouble) == 32);
 #endif
@@ -31,7 +31,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdDouble)
     XII_TEST_BOOL(vInit1D == 2.0);
 
     // Make sure all components are set to the same value.
-#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE) && XII_ENABLED(XII_COMPILER_MSVC)
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && XII_ENABLED(XII_COMPILER_MSVC)
     XII_TEST_BOOL(vInit1D.m_v.m256d_f64[0] == 2.0 && vInit1D.m_v.m256d_f64[1] == 2.0 && vInit1D.m_v.m256d_f64[2] == 2.0 && vInit1D.m_v.m256d_f64[3] == 2.0);
 #endif
 
@@ -39,7 +39,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdDouble)
     XII_TEST_BOOL(vInit1F == 2.0);
 
     // Make sure all components are set to the same value.
-#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE) && XII_ENABLED(XII_COMPILER_MSVC)
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && XII_ENABLED(XII_COMPILER_MSVC)
     XII_TEST_BOOL(vInit1F.m_v.m256d_f64[0] == 2.0 && vInit1F.m_v.m256d_f64[1] == 2.0 && vInit1F.m_v.m256d_f64[2] == 2.0 && vInit1F.m_v.m256d_f64[3] == 2.0);
 #endif
 
@@ -47,7 +47,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdDouble)
     XII_TEST_BOOL(vInit1I == 1.0);
 
     // Make sure all components are set to the same value.
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_ENABLED(XII_COMPILER_MSVC)
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX && XII_ENABLED(XII_COMPILER_MSVC)
     XII_TEST_BOOL(vInit1I.m_v.m256d_f64[0] == 1.0 && vInit1I.m_v.m256d_f64[1] == 1.0 && vInit1I.m_v.m256d_f64[2] == 1.0 && vInit1I.m_v.m256d_f64[3] == 1.0);
 #endif
 
@@ -55,7 +55,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdDouble)
     XII_TEST_BOOL(vInit1U == 4553.0);
 
     // Make sure all components are set to the same value
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_ENABLED(XII_COMPILER_MSVC)
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX && XII_ENABLED(XII_COMPILER_MSVC)
     XII_TEST_BOOL(vInit1U.m_v.m256d_f64[0] == 4553.0 && vInit1U.m_v.m256d_f64[1] == 4553.0 && vInit1U.m_v.m256d_f64[2] == 4553.0 && vInit1U.m_v.m256d_f64[3] == 4553.0);
 #endif
 
@@ -63,7 +63,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdDouble)
     XII_TEST_BOOL(z == 0.0);
 
     // Make sure all components are set to the same value
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_ENABLED(XII_COMPILER_MSVC)
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX && XII_ENABLED(XII_COMPILER_MSVC)
     XII_TEST_BOOL(z.m_v.m256d_f64[0] == 0.0 && z.m_v.m256d_f64[1] == 0.0 && z.m_v.m256d_f64[2] == 0.0 && z.m_v.m256d_f64[3] == 0.0);
 #endif
   }
@@ -122,21 +122,21 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdDouble)
 
     XII_TEST_DOUBLE(a.GetReciprocal(), 0.5, xiiMath::SmallEpsilon<double>());
     XII_TEST_DOUBLE(a.GetReciprocal<xiiMathDoubleBits::FULL>(), 0.5, xiiMath::SmallEpsilon<double>());
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if XII_SSE_LEVEL >= XII_AVX_512
     XII_TEST_DOUBLE(a.GetReciprocal<xiiMathDoubleBits::BITS_27>(), 0.5, xiiMath::DefaultEpsilon<double>());
     XII_TEST_DOUBLE(a.GetReciprocal<xiiMathDoubleBits::BITS_14>(), 0.5, xiiMath::HugeEpsilon<double>());
 #endif
 
     XII_TEST_DOUBLE(a.GetSqrt(), 1.41421356, xiiMath::SmallEpsilon<double>());
     XII_TEST_DOUBLE(a.GetSqrt<xiiMathDoubleBits::FULL>(), 1.41421356, xiiMath::SmallEpsilon<double>());
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if XII_SSE_LEVEL >= XII_AVX_512
     XII_TEST_DOUBLE(a.GetSqrt<xiiMathDoubleBits::BITS_27>(), 1.41421356, xiiMath::DefaultEpsilon<double>());
     XII_TEST_DOUBLE(a.GetSqrt<xiiMathDoubleBits::BITS_14>(), 1.41421356, xiiMath::HugeEpsilon<double>());
 #endif
 
     XII_TEST_DOUBLE(a.GetInvSqrt(), 0.70710678, xiiMath::SmallEpsilon<double>());
     XII_TEST_DOUBLE(a.GetInvSqrt<xiiMathDoubleBits::FULL>(), 0.70710678, xiiMath::SmallEpsilon<double>());
-#if XII_SSE_LEVEL >= XII_SSE_AVX512
+#if XII_SSE_LEVEL >= XII_AVX_512
     XII_TEST_DOUBLE(a.GetInvSqrt<xiiMathDoubleBits::BITS_27>(), 0.70710678, xiiMath::DefaultEpsilon<double>());
     XII_TEST_DOUBLE(a.GetInvSqrt<xiiMathDoubleBits::BITS_14>(), 0.70710678, xiiMath::HugeEpsilon<double>());
 #endif

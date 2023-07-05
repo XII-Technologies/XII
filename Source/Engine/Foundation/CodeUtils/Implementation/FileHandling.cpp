@@ -36,7 +36,14 @@ const xiiTokenizer* xiiTokenizedFileCache::Tokenize(const xiiString& sFileName, 
 {
   XII_LOCK(m_Mutex);
 
-  auto& data = m_Cache[sFileName];
+  bool bExisted = false;
+  auto it       = m_Cache.FindOrAdd(sFileName, &bExisted);
+  if (bExisted)
+  {
+    return &it.Value().m_Tokens;
+  }
+
+  auto& data = it.Value();
 
   data.m_Timestamp         = fileTimeStamp;
   xiiTokenizer* pTokenizer = &data.m_Tokens;

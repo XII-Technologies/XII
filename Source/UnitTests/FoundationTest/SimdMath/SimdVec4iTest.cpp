@@ -18,7 +18,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4i)
 #endif
 
     // Make sure the class didn't accidentally change in size.
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
     XII_CHECK_AT_COMPILETIME(sizeof(xiiSimdVec4i) == 16);
     XII_CHECK_AT_COMPILETIME(XII_ALIGNMENT_OF(xiiSimdVec4i) == 16);
 #endif
@@ -30,7 +30,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4i)
     XII_TEST_BOOL(b.x() == 1 && b.y() == 2 && b.z() == 3 && b.w() == 4);
 
     // Make sure all components have the correct values
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_ENABLED(XII_COMPILER_MSVC)
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_ENABLED(XII_COMPILER_MSVC)
     XII_TEST_BOOL(b.m_v.m128i_i32[0] == 1 && b.m_v.m128i_i32[1] == 2 && b.m_v.m128i_i32[2] == 3 && b.m_v.m128i_i32[3] == 4);
 #endif
 
@@ -81,7 +81,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4i)
       XII_TEST_INT(xyzw.GetComponent<3>(), 4);
 
       // Make sure all components have the correct values
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_ENABLED(XII_COMPILER_MSVC)
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_ENABLED(XII_COMPILER_MSVC)
       XII_TEST_BOOL(xyzw.m_v.m128i_i32[0] == 1 && xyzw.m_v.m128i_i32[1] == 2 && xyzw.m_v.m128i_i32[2] == 3 && xyzw.m_v.m128i_i32[3] == 4);
 #endif
     }

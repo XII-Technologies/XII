@@ -32,10 +32,7 @@ public:
   void Normalize(); // [tested]
 
   /// \brief Returns the rotation-axis and angle (in Radians), that this quaternion rotates around.
-  xiiResult GetRotationAxisAndAngle(
-    xiiSimdVec4f&       ref_vAxis,
-    xiiSimdFloat&       ref_fAngle,
-    const xiiSimdFloat& fEpsilon = xiiMath::DefaultEpsilon<float>()) const; // [tested]
+  xiiResult GetRotationAxisAndAngle(xiiSimdVec4f& ref_vAxis, xiiSimdFloat& ref_fAngle, const xiiSimdFloat& fEpsilon = xiiMath::DefaultEpsilon<float>()) const; // [tested]
 
   /// \brief Returns the Quaternion as a matrix.
   xiiSimdMat4f GetAsMat4() const; // [tested]

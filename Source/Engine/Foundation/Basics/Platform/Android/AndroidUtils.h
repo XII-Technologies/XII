@@ -12,6 +12,9 @@ using JavaVM = _JavaVM;
 struct _JNIEnv;
 using JNIEnv = _JNIEnv;
 
+class _jobject;
+using JObject = _jobject*;
+
 class XII_FOUNDATION_DLL xiiAndroidUtils
 {
 public:
@@ -21,7 +24,11 @@ public:
   static void    SetAndroidJavaVM(JavaVM* pJavaVM);
   static JavaVM* GetAndroidJavaVM();
 
+  static void    SetAndroidNativeActivity(JObject pNativeActivity);
+  static JObject GetAndroidNativeActivity();
+
 private:
   static android_app* s_pAndroidApplication;
   static JavaVM*      s_pJavaVM;
+  static jobject      s_pNativeActivity;
 };

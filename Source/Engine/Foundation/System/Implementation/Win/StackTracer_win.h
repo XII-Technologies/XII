@@ -232,17 +232,25 @@ xiiUInt32 xiiStackTracer::GetStackTrace(xiiArrayPtr<void*>& ref_trace, void* pCo
     frame.AddrPC.Mode    = AddrModeFlat;
     frame.AddrFrame.Mode = AddrModeFlat;
     frame.AddrStack.Mode = AddrModeFlat;
-#ifdef _M_X64
+#if defined(_M_X64)
     frame.AddrPC.Offset    = context.Rip;
     frame.AddrFrame.Offset = context.Rbp;
     frame.AddrStack.Offset = context.Rsp;
     machine_type           = IMAGE_FILE_MACHINE_AMD64;
-#else
+#elif defined(_ARM64_)
+    frame.AddrPC.Offset    = context.Pc;
+    frame.AddrFrame.Offset = context.Fp;
+    frame.AddrStack.Offset = context.Sp;
+    machine_type           = IMAGE_FILE_MACHINE_ARM64;
+#elif defined(_X86_)
     frame.AddrPC.Offset    = context.Eip;
     frame.AddrFrame.Offset = context.Ebp;
     frame.AddrStack.Offset = context.Esp;
     machine_type           = IMAGE_FILE_MACHINE_I386;
+#else
+#  error Unsupported platform
 #endif
+
     for (xiiInt32 i = 0; i < (xiiInt32)ref_trace.GetCount(); i++)
     {
       if (s_pImplementation->stackWalk(machine_type, GetCurrentProcess(), GetCurrentThread(), &frame, &context, NULL,

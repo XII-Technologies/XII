@@ -69,7 +69,7 @@ xiiJniAttachment::~xiiJniAttachment()
 
 xiiJniObject xiiJniAttachment::GetActivity()
 {
-  return xiiJniObject(xiiAndroidUtils::GetNativeAndroidApp()->activity->clazz, xiiJniOwnerShip::BORROW);
+  return xiiJniObject(xiiAndroidUtils::GetAndroidNativeActivity(), xiiJniOwnerShip::BORROW);
 }
 
 JNIEnv* xiiJniAttachment::GetEnv()

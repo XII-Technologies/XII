@@ -159,7 +159,6 @@ xiiUInt32 xiiSorting::Partition(Container& container, xiiUInt32 uiLeft, xiiUInt3
     else if (DoCompare(comparer, container[uiLeft], container[uiPivotIndex]))
     {
       // left < pivot < right
-      uiPivotIndex = uiPivotIndex;
     }
     else
     {
@@ -178,7 +177,6 @@ xiiUInt32 xiiSorting::Partition(Container& container, xiiUInt32 uiLeft, xiiUInt3
     else if (DoCompare(comparer, container[uiRight], container[uiPivotIndex]))
     {
       // right < pivot < left
-      uiPivotIndex = uiPivotIndex;
     }
     else
     {
@@ -259,7 +257,6 @@ xiiUInt32 xiiSorting::Partition(T* ptr, xiiUInt32 uiLeft, xiiUInt32 uiRight, con
     else if (DoCompare(comparer, ptr[uiLeft], ptr[uiPivotIndex]))
     {
       // left < pivot < right
-      uiPivotIndex = uiPivotIndex;
     }
     else
     {
@@ -278,7 +275,6 @@ xiiUInt32 xiiSorting::Partition(T* ptr, xiiUInt32 uiLeft, xiiUInt32 uiRight, con
     else if (DoCompare(comparer, ptr[uiRight], ptr[uiPivotIndex]))
     {
       // right < pivot < left
-      uiPivotIndex = uiPivotIndex;
     }
     else
     {

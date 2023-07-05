@@ -62,7 +62,7 @@ XII_CREATE_SIMPLE_TEST(Containers, Bitfield)
       XII_TEST_BOOL(bf.IsBitSet(i));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetCount / SetBit / ClearBit / SetCountUninitialized")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetCount / SetBit / ClearBit / SetBitValue / SetCountUninitialized")
   {
     xiiHybridBitfield<512> bf; // using a hybrid array
 
@@ -102,6 +102,16 @@ XII_CREATE_SIMPLE_TEST(Containers, Bitfield)
     {
       XII_TEST_BOOL(!bf.IsBitSet(i));
       XII_TEST_BOOL(bf.IsBitSet(i + 1));
+    }
+
+    for (xiiUInt32 i = 0; i < bf.GetCount(); ++i)
+    {
+      bf.SetBitValue(i, (i % 3) == 0);
+    }
+
+    for (xiiUInt32 i = 0; i < bf.GetCount(); ++i)
+    {
+      XII_TEST_BOOL(bf.IsBitSet(i) == ((i % 3) == 0));
     }
   }
 
@@ -193,7 +203,7 @@ XII_CREATE_SIMPLE_TEST(Containers, Bitfield)
 
 XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
 {
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetAllBits / ClearAllBits")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetAllBits / ClearAllBits / SetBitValue")
   {
     xiiStaticBitfield64 bf;
 
@@ -237,6 +247,16 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
     {
       XII_TEST_BOOL(!bf.IsBitSet(i));
       XII_TEST_BOOL(bf.IsBitSet(i + 1));
+    }
+
+    for (xiiUInt32 i = 0; i < bf.GetNumBits(); ++i)
+    {
+      bf.SetBitValue(i, (i % 3) == 0);
+    }
+
+    for (xiiUInt32 i = 0; i < bf.GetNumBits(); ++i)
+    {
+      XII_TEST_BOOL(bf.IsBitSet(i) == ((i % 3) == 0));
     }
   }
 

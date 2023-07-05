@@ -189,6 +189,19 @@ void xiiBitfield<Container>::ClearBit(xiiUInt32 uiBit)
 }
 
 template <class Container>
+XII_ALWAYS_INLINE void xiiBitfield<Container>::SetBitValue(xiiUInt32 uiBit, bool bValue)
+{
+  if (bValue)
+  {
+    SetBit(uiBit);
+  }
+  else
+  {
+    ClearBit(uiBit);
+  }
+}
+
+template <class Container>
 bool xiiBitfield<Container>::IsBitSet(xiiUInt32 uiBit) const
 {
   XII_ASSERT_DEBUG(uiBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, m_uiCount);
@@ -371,6 +384,19 @@ XII_ALWAYS_INLINE void xiiStaticBitfield<T>::ClearBit(xiiUInt32 uiBit)
   XII_ASSERT_DEBUG(uiBit < GetNumBits(), "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, GetNumBits());
 
   m_Storage &= ~(static_cast<T>(1u) << uiBit);
+}
+
+template <typename T>
+XII_ALWAYS_INLINE void xiiStaticBitfield<T>::SetBitValue(xiiUInt32 uiBit, bool bValue)
+{
+  if (bValue)
+  {
+    SetBit(uiBit);
+  }
+  else
+  {
+    ClearBit(uiBit);
+  }
 }
 
 template <typename T>
