@@ -4,6 +4,7 @@
       "ANDROID_NDK_HOME": "PATH_TO_ANDROID_NDK_HOME_HERE",
       "ANDROID_HOME": "PATH_TO_ANDROID_HOME_HERE",
       "JAVA_HOME": "PATH_TO_JAVA_HOME_HERE"
+      "ANDROID_API_VERSION": "33"
     }
   ],
   "configurations": [
@@ -22,7 +23,7 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23",
+          "value": "${env.ANDROID_API_VERSION}",
           "type": "STRING"
         },
         {
@@ -55,7 +56,7 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23",
+          "value": "${env.ANDROID_API_VERSION}",
           "type": "STRING"
         },
         {
@@ -88,7 +89,7 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23",
+          "value": "${env.ANDROID_API_VERSION}",
           "type": "STRING"
         },
         {
@@ -121,7 +122,7 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23",
+          "value": "${env.ANDROID_API_VERSION}",
           "type": "STRING"
         },
         {
@@ -159,7 +160,7 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23",
+          "value": "${env.ANDROID_API_VERSION}",
           "type": "STRING"
         },
         {
@@ -197,7 +198,7 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23",
+          "value": "${env.ANDROID_API_VERSION}",
           "type": "STRING"
         },
         {
@@ -240,7 +241,7 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23",
+          "value": "${env.ANDROID_API_VERSION}",
           "type": "STRING"
         },
         {
@@ -278,7 +279,7 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23",
+          "value": "${env.ANDROID_API_VERSION}",
           "type": "STRING"
         },
         {
@@ -316,7 +317,7 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23",
+          "value": "${env.ANDROID_API_VERSION}",
           "type": "STRING"
         },
         {
@@ -354,7 +355,7 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23",
+          "value": "${env.ANDROID_API_VERSION}",
           "type": "STRING"
         },
         {
@@ -392,7 +393,7 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23",
+          "value": "${env.ANDROID_API_VERSION}",
           "type": "STRING"
         },
         {
@@ -430,7 +431,7 @@
         },
         {
           "name": "ANDROID_PLATFORM",
-          "value": "23",
+          "value": "${env.ANDROID_API_VERSION}",
           "type": "STRING"
         },
         {
