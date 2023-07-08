@@ -39,6 +39,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "vs_4_0_level_9_3";
       case xiiGALShaderStage::PixelShader:
         return "ps_4_0_level_9_3";
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -54,6 +56,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_4_0";
       case xiiGALShaderStage::ComputeShader:
         return "cs_4_0";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -69,6 +73,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_4_1";
       case xiiGALShaderStage::ComputeShader:
         return "cs_4_1";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -88,6 +94,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_5_0";
       case xiiGALShaderStage::ComputeShader:
         return "cs_5_0";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -107,6 +115,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_5_1";
       case xiiGALShaderStage::ComputeShader:
         return "cs_5_1";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -126,6 +136,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_0";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_0";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -145,6 +157,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_1";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_1";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -164,6 +178,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_2";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_2";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -191,6 +207,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
       case xiiGALShaderStage::RayIntersectionShader:
       case xiiGALShaderStage::CallableShader:
         return "lib_6_3";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -218,7 +236,10 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
       case xiiGALShaderStage::RayIntersectionShader:
       case xiiGALShaderStage::CallableShader:
         return "lib_6_4";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
+
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM65"))
@@ -251,6 +272,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
 
       case xiiGALShaderStage::MeshShader:
         return "ms_6_5";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -284,6 +307,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
 
       case xiiGALShaderStage::MeshShader:
         return "ms_6_6";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
