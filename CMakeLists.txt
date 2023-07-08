@@ -36,7 +36,7 @@ if(NOT XII_SUBMODULE_MODE)
 	project(${XII_SOLUTION_NAME}
 		VERSION 1.0
 		DESCRIPTION "Copyright (c) 2022-2023 Theophilus Eriata. All Rights Reserved."
-		HOMEPAGE_URL "https://gitlab.com/xii1/XII-Engine"
+		HOMEPAGE_URL "https://github.com/XII-Technologies/XII"
 		LANGUAGES ${XII_LANGUAGES})
 endif()
 

@@ -312,7 +312,7 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::FlipSign(const xiiSimdVec4b& vCmp) 
 {
   xiiSimdVec4d result;
 
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE) || (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_NEON)
   result.m_v.x = vCmp.x() ? -m_v.x : m_v.x;
   result.m_v.y = vCmp.y() ? -m_v.y : m_v.y;
   result.m_v.z = vCmp.z() ? -m_v.z : m_v.z;
@@ -332,7 +332,7 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::Select(const xiiSimdVec4b& vCmp, co
 {
   xiiSimdVec4d result;
 
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE) || (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_NEON)
   result.m_v.x = vCmp.x() ? vIfTrue.m_v.x : vIfFalse.m_v.x;
   result.m_v.y = vCmp.y() ? vIfTrue.m_v.y : vIfFalse.m_v.y;
   result.m_v.z = vCmp.z() ? vIfTrue.m_v.z : vIfFalse.m_v.z;

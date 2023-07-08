@@ -38,11 +38,7 @@ void xiiTestBaseClass::UpdateConfiguration(xiiTestConfiguration& ref_config) con
   }
 }
 
-void xiiTestBaseClass::MapImageNumberToString(
-  const char*       szTestName,
-  const char*       szSubTestName,
-  xiiUInt32         uiImageNumber,
-  xiiStringBuilder& out_sString) const
+void xiiTestBaseClass::MapImageNumberToString(const char* szTestName, const char* szSubTestName, xiiUInt32 uiImageNumber, xiiStringBuilder& out_sString) const
 {
   out_sString.Format("{0}_{1}_{2}", szTestName, szSubTestName, xiiArgI(uiImageNumber, 3, true));
   out_sString.ReplaceAll(" ", "_");

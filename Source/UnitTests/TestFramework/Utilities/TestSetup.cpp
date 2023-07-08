@@ -50,7 +50,7 @@ xiiTestFramework* xiiTestSetup::InitTestFramework(const char* szTestName, const 
   // Command line args in UWP are handled differently and can't be retrieved from the main function.
   xiiTestFramework* pTestFramework = new xiiUwpTestFramework(szNiceTestName, sTestFolder.c_str(), sTestDataSubFolder.c_str(), 0, nullptr);
 #else
-  xiiTestFramework* pTestFramework = new xiiTestFramework(szNiceTestName, sTestFolder.c_str(), sTestDataSubFolder.c_str(), argc, argv);
+  xiiTestFramework* pTestFramework = new xiiTestFramework(szNiceTestName, sTestFolder.c_str(), sTestDataSubFolder.c_str(), iArgc, pArgv);
 #endif
 
   // Register some output handlers to forward all the messages to the console and to an HTML file
@@ -130,7 +130,7 @@ void xiiTestSetup::DeInitTestFramework(bool bSilent /*= false*/)
 
   xiiStartup::ShutdownCoreSystems();
 
-  // In the UWP case we never initialized this thread for xii, so we can't do log output now.
+  // In the UWP case we never initialized this thread for XII so we can't do log output now.
 #if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
   if (!bSilent)
   {

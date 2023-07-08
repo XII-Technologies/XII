@@ -31,5 +31,4 @@ void xiiScreen::PrintScreenInfo(const xiiHybridArray<xiiScreenInfo, 2>& screens,
   }
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_System_Implementation_Screen);

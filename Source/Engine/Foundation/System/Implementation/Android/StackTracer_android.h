@@ -52,7 +52,7 @@ void xiiStackTracer::ResolveStackTrace(const xiiArrayPtr<void*>& trace, PrintFun
     Dl_info info;
     if (dladdr(trace[i], &info) && info.dli_sname)
     {
-      int iLen = xiiMath::Min(strlen(info.dli_sname), (size_t)XII_ARRAY_SIZE(szBuffer) - 2);
+      xiiInt32 iLen = xiiMath::Min(strlen(info.dli_sname), (size_t)XII_ARRAY_SIZE(szBuffer) - 2);
       memcpy(szBuffer, info.dli_sname, iLen);
       szBuffer[iLen]     = '\n';
       szBuffer[iLen + 1] = '\0';
