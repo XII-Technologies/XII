@@ -56,8 +56,7 @@ xiiResult xiiWindow::Initialize()
   s_uwpWindowData = XII_DEFAULT_NEW(xiiWindowUwpData);
 
   ComPtr<ABI::Windows::ApplicationModel::Core::ICoreImmersiveApplication> application;
-  XII_HRESULT_TO_FAILURE(ABI::Windows::Foundation::GetActivationFactory(
-    HStringReference(RuntimeClass_Windows_ApplicationModel_Core_CoreApplication).Get(), &application));
+  XII_HRESULT_TO_FAILURE(ABI::Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_ApplicationModel_Core_CoreApplication).Get(), &application));
 
   ComPtr<ABI::Windows::ApplicationModel::Core::ICoreApplicationView> mainView;
   XII_HRESULT_TO_FAILURE(application->get_MainView(&mainView));
@@ -72,8 +71,7 @@ xiiResult xiiWindow::Initialize()
   {
     // Get current *logical* screen DPI to do a pixel correct resize.
     ComPtr<ABI::Windows::Graphics::Display::IDisplayInformationStatics> displayInfoStatics;
-    XII_HRESULT_TO_FAILURE(ABI::Windows::Foundation::GetActivationFactory(
-      HStringReference(RuntimeClass_Windows_Graphics_Display_DisplayInformation).Get(), &displayInfoStatics));
+    XII_HRESULT_TO_FAILURE(ABI::Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_Graphics_Display_DisplayInformation).Get(), &displayInfoStatics));
     ComPtr<ABI::Windows::Graphics::Display::IDisplayInformation> displayInfo;
     XII_HRESULT_TO_FAILURE(displayInfoStatics->GetForCurrentView(&displayInfo));
     FLOAT logicalDpi = 1.0f;
@@ -81,8 +79,7 @@ xiiResult xiiWindow::Initialize()
 
     // Need application view for the next steps...
     ComPtr<ABI::Windows::UI::ViewManagement::IApplicationViewStatics2> appViewStatics;
-    XII_HRESULT_TO_FAILURE(ABI::Windows::Foundation::GetActivationFactory(
-      HStringReference(RuntimeClass_Windows_UI_ViewManagement_ApplicationView).Get(), &appViewStatics));
+    XII_HRESULT_TO_FAILURE(ABI::Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_UI_ViewManagement_ApplicationView).Get(), &appViewStatics));
     ComPtr<ABI::Windows::UI::ViewManagement::IApplicationView> appView;
     XII_HRESULT_TO_FAILURE(appViewStatics->GetForCurrentView(&appView));
     ComPtr<ABI::Windows::UI::ViewManagement::IApplicationView2> appView2;

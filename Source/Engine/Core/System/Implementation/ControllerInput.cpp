@@ -27,5 +27,4 @@ void xiiControllerInput::SetDevice(xiiInputDeviceController* pDevice)
 #  include <Core/System/Implementation/SDL/ControllerInput_SDL.inl>
 #endif
 
-
 XII_STATICLINK_FILE(Core, Core_System_Implementation_ControllerInput);

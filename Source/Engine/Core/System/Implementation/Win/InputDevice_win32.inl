@@ -870,8 +870,8 @@ void xiiStandardInputDevice::LocalizeButtonDisplayNames()
 
   SetKeyNameForScanCode(86, false, xiiInputSlot_KeyPipe);
 
-  SetKeyNameForScanCode(87, false, "keyboard_f11");
-  SetKeyNameForScanCode(88, false, "keyboard_f12");
+  SetKeyNameForScanCode(87, false, xiiInputSlot_KeyF11);
+  SetKeyNameForScanCode(88, false, xiiInputSlot_KeyF12);
 
   SetKeyNameForScanCode(91, true, xiiInputSlot_KeyLeftWin);  // Prints '' if it is not 'extended'
   SetKeyNameForScanCode(92, true, xiiInputSlot_KeyRightWin); // Prints '' if it is not 'extended'
