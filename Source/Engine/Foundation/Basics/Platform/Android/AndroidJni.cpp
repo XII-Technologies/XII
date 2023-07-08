@@ -7,7 +7,7 @@
 
 thread_local JNIEnv*          xiiJniAttachment::s_env;
 thread_local bool             xiiJniAttachment::s_ownsEnv;
-thread_local int              xiiJniAttachment::s_attachCount;
+thread_local xiiInt32         xiiJniAttachment::s_attachCount;
 thread_local xiiJniErrorState xiiJniAttachment::s_lastError;
 
 xiiJniAttachment::xiiJniAttachment()
@@ -134,20 +134,20 @@ bool xiiJniAttachment::FailOnPendingErrorOrException()
   return false;
 }
 
-void xiiJniObject::DumpTypes(const xiiJniClass* inputTypes, int N, const xiiJniClass* returnType)
+void xiiJniObject::DumpTypes(const xiiJniClass* inputTypes, xiiInt32 N, const xiiJniClass* returnType)
 {
   if (returnType != nullptr)
   {
     xiiLog::Error("  With requested return type '{}'", returnType->ToString().GetData());
   }
 
-  for (int paramIdx = 0; paramIdx < N; ++paramIdx)
+  for (xiiInt32 paramIdx = 0; paramIdx < N; ++paramIdx)
   {
     xiiLog::Error("  With passed param type #{} '{}'", paramIdx, inputTypes[paramIdx].IsNull() ? "(null)" : inputTypes[paramIdx].ToString().GetData());
   }
 }
 
-int xiiJniObject::CompareMethodSpecificity(const xiiJniObject& method1, const xiiJniObject& method2)
+xiiInt32 xiiJniObject::CompareMethodSpecificity(const xiiJniObject& method1, const xiiJniObject& method2)
 {
   xiiJniClass returnType1 = method1.UnsafeCall<xiiJniClass>("getReturnType", "()Ljava/lang/Class;");
   xiiJniClass returnType2 = method2.UnsafeCall<xiiJniClass>("getReturnType", "()Ljava/lang/Class;");
@@ -157,16 +157,14 @@ int xiiJniObject::CompareMethodSpecificity(const xiiJniObject& method1, const xi
 
   jsize N = xiiJniAttachment::GetEnv()->GetArrayLength(jarray(paramTypes1.m_object));
 
-  int decision = returnType1.IsAssignableFrom(returnType2) - returnType2.IsAssignableFrom(returnType1);
+  xiiInt32 decision = returnType1.IsAssignableFrom(returnType2) - returnType2.IsAssignableFrom(returnType1);
 
   for (jsize paramIdx = 0; paramIdx < N; ++paramIdx)
   {
-    xiiJniClass paramType1(
-      jclass(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(paramTypes1.m_object), paramIdx)), xiiJniOwnerShip::OWN);
-    xiiJniClass paramType2(
-      jclass(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(paramTypes2.m_object), paramIdx)), xiiJniOwnerShip::OWN);
+    xiiJniClass paramType1(jclass(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(paramTypes1.m_object), paramIdx)), xiiJniOwnerShip::OWN);
+    xiiJniClass paramType2(jclass(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(paramTypes2.m_object), paramIdx)), xiiJniOwnerShip::OWN);
 
-    int paramDecision = paramType1.IsAssignableFrom(paramType2) - paramType2.IsAssignableFrom(paramType1);
+    xiiInt32 paramDecision = paramType1.IsAssignableFrom(paramType2) - paramType2.IsAssignableFrom(paramType1);
 
     if (decision == 0)
     {
@@ -183,11 +181,10 @@ int xiiJniObject::CompareMethodSpecificity(const xiiJniObject& method1, const xi
   return decision;
 }
 
-bool xiiJniObject::IsMethodViable(bool bStatic, const xiiJniObject& candidateMethod, const xiiJniClass& returnType, xiiJniClass* inputTypes, int N)
+bool xiiJniObject::IsMethodViable(bool bStatic, const xiiJniObject& candidateMethod, const xiiJniClass& returnType, xiiJniClass* inputTypes, xiiInt32 N)
 {
   // Check if staticness matches
-  if (xiiJniClass("java/lang/reflect/Modifier").UnsafeCallStatic<bool>("isStatic", "(I)Z", candidateMethod.UnsafeCall<int>("getModifiers", "()I")) !=
-      bStatic)
+  if (xiiJniClass("java/lang/reflect/Modifier").UnsafeCallStatic<bool>("isStatic", "(I)Z", candidateMethod.UnsafeCall<xiiInt32>("getModifiers", "()I")) != bStatic)
   {
     return false;
   }
@@ -210,8 +207,7 @@ bool xiiJniObject::IsMethodViable(bool bStatic, const xiiJniObject& candidateMet
   // Check if input parameter types are assignable to the actual parameter types
   for (jsize paramIdx = 0; paramIdx < numCandidateParams; ++paramIdx)
   {
-    xiiJniClass paramType(
-      jclass(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(parameterTypes.m_object), paramIdx)), xiiJniOwnerShip::OWN);
+    xiiJniClass paramType(jclass(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(parameterTypes.m_object), paramIdx)), xiiJniOwnerShip::OWN);
 
     if (inputTypes[paramIdx].IsNull())
     {
@@ -232,13 +228,7 @@ bool xiiJniObject::IsMethodViable(bool bStatic, const xiiJniObject& candidateMet
   return true;
 }
 
-xiiJniObject xiiJniObject::FindMethod(
-  bool               bStatic,
-  const char*        name,
-  const xiiJniClass& searchClass,
-  const xiiJniClass& returnType,
-  xiiJniClass*       inputTypes,
-  int                N)
+xiiJniObject xiiJniObject::FindMethod(bool bStatic, const char* name, const xiiJniClass& searchClass, const xiiJniClass& returnType, xiiJniClass* inputTypes, xiiInt32 N)
 {
   if (searchClass.IsNull())
   {
@@ -252,8 +242,7 @@ xiiJniObject xiiJniObject::FindMethod(
   // In case of no parameters, fetch the method directly.
   if (N == 0)
   {
-    xiiJniObject candidateMethod = searchClass.UnsafeCall<xiiJniObject>(
-      "getMethod", "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", xiiJniString(name), xiiJniObject());
+    xiiJniObject candidateMethod = searchClass.UnsafeCall<xiiJniObject>("getMethod", "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", xiiJniString(name), xiiJniObject());
 
     if (!xiiJniAttachment::GetEnv()->ExceptionCheck() && IsMethodViable(bStatic, candidateMethod, returnType, inputTypes, N))
     {
@@ -273,8 +262,7 @@ xiiJniObject xiiJniObject::FindMethod(
     jsize numMethods = xiiJniAttachment::GetEnv()->GetArrayLength(jarray(methodArray.m_object));
     for (jsize methodIdx = 0; methodIdx < numMethods; ++methodIdx)
     {
-      xiiJniObject candidateMethod(
-        xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(methodArray.m_object), methodIdx), xiiJniOwnerShip::OWN);
+      xiiJniObject candidateMethod(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(methodArray.m_object), methodIdx), xiiJniOwnerShip::OWN);
 
       xiiJniString methodName = candidateMethod.UnsafeCall<xiiJniString>("getName", "()Ljava/lang/String;");
 
@@ -289,9 +277,9 @@ xiiJniObject xiiJniObject::FindMethod(
       }
 
       bool isMoreSpecific = true;
-      for (int candidateIdx = 0; candidateIdx < bestCandidates.GetCount(); ++candidateIdx)
+      for (xiiInt32 candidateIdx = 0; candidateIdx < bestCandidates.GetCount(); ++candidateIdx)
       {
-        int comparison = CompareMethodSpecificity(bestCandidates[candidateIdx], candidateMethod);
+        xiiInt32 comparison = CompareMethodSpecificity(bestCandidates[candidateIdx], candidateMethod);
 
         if (comparison == 1)
         {
@@ -325,43 +313,42 @@ xiiJniObject xiiJniObject::FindMethod(
   }
   else if (bestCandidates.GetCount() == 0)
   {
-    xiiLog::Error("Overload resolution failed: No method '{}' in class '{}' matches the requested return and parameter types.", name,
-                  searchClass.ToString().GetData());
+    xiiLog::Error("Overload resolution failed: No method '{}' in class '{}' matches the requested return and parameter types.", name, searchClass.ToString().GetData());
+
     DumpTypes(inputTypes, N, &returnType);
     xiiJniAttachment::SetLastError(xiiJniErrorState::NO_MATCHING_METHOD);
     return xiiJniObject();
   }
   else
   {
-    xiiLog::Error("Overload resolution failed: Call to '{}' in class '{}' is ambiguous. Cannot decide between the following candidates:", name,
-                  searchClass.ToString().GetData());
-    for (int candidateIdx = 0; candidateIdx < bestCandidates.GetCount(); ++candidateIdx)
+    xiiLog::Error("Overload resolution failed: Call to '{}' in class '{}' is ambiguous. Cannot decide between the following candidates:", name, searchClass.ToString().GetData());
+
+    for (xiiInt32 candidateIdx = 0; candidateIdx < bestCandidates.GetCount(); ++candidateIdx)
     {
       xiiLog::Error("  Candidate #{}: '{}'", candidateIdx, bestCandidates[candidateIdx].ToString().GetData());
     }
+
     DumpTypes(inputTypes, N, &returnType);
     xiiJniAttachment::SetLastError(xiiJniErrorState::AMBIGUOUS_CALL);
     return xiiJniObject();
   }
 }
 
-int xiiJniObject::CompareConstructorSpecificity(const xiiJniObject& method1, const xiiJniObject& method2)
+xiiInt32 xiiJniObject::CompareConstructorSpecificity(const xiiJniObject& method1, const xiiJniObject& method2)
 {
   xiiJniObject paramTypes1 = method1.UnsafeCall<xiiJniObject>("getParameterTypes", "()[Ljava/lang/Class;");
   xiiJniObject paramTypes2 = method2.UnsafeCall<xiiJniObject>("getParameterTypes", "()[Ljava/lang/Class;");
 
   jsize N = xiiJniAttachment::GetEnv()->GetArrayLength(jarray(paramTypes1.m_object));
 
-  int decision = 0;
+  xiiInt32 decision = 0;
 
   for (jsize paramIdx = 0; paramIdx < N; ++paramIdx)
   {
-    xiiJniClass paramType1(
-      jclass(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(paramTypes1.m_object), paramIdx)), xiiJniOwnerShip::OWN);
-    xiiJniClass paramType2(
-      jclass(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(paramTypes2.m_object), paramIdx)), xiiJniOwnerShip::OWN);
+    xiiJniClass paramType1(jclass(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(paramTypes1.m_object), paramIdx)), xiiJniOwnerShip::OWN);
+    xiiJniClass paramType2(jclass(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(paramTypes2.m_object), paramIdx)), xiiJniOwnerShip::OWN);
 
-    int paramDecision = paramType1.IsAssignableFrom(paramType2) - paramType2.IsAssignableFrom(paramType1);
+    xiiInt32 paramDecision = paramType1.IsAssignableFrom(paramType2) - paramType2.IsAssignableFrom(paramType1);
 
     if (decision == 0)
     {
@@ -378,7 +365,7 @@ int xiiJniObject::CompareConstructorSpecificity(const xiiJniObject& method1, con
   return decision;
 }
 
-bool xiiJniObject::IsConstructorViable(const xiiJniObject& candidateMethod, xiiJniClass* inputTypes, int N)
+bool xiiJniObject::IsConstructorViable(const xiiJniObject& candidateMethod, xiiJniClass* inputTypes, xiiInt32 N)
 {
   // Check number of parameters
   xiiJniObject parameterTypes     = candidateMethod.UnsafeCall<xiiJniObject>("getParameterTypes", "()[Ljava/lang/Class;");
@@ -391,8 +378,7 @@ bool xiiJniObject::IsConstructorViable(const xiiJniObject& candidateMethod, xiiJ
   // Check if input parameter types are assignable to the actual parameter types
   for (jsize paramIdx = 0; paramIdx < numCandidateParams; ++paramIdx)
   {
-    xiiJniClass paramType(
-      jclass(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(parameterTypes.m_object), paramIdx)), xiiJniOwnerShip::OWN);
+    xiiJniClass paramType(jclass(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(parameterTypes.m_object), paramIdx)), xiiJniOwnerShip::OWN);
 
     if (inputTypes[paramIdx].IsNull())
     {
@@ -413,7 +399,7 @@ bool xiiJniObject::IsConstructorViable(const xiiJniObject& candidateMethod, xiiJ
   return true;
 }
 
-xiiJniObject xiiJniObject::FindConstructor(const xiiJniClass& type, xiiJniClass* inputTypes, int N)
+xiiJniObject xiiJniObject::FindConstructor(const xiiJniClass& type, xiiJniClass* inputTypes, xiiInt32 N)
 {
   if (type.IsNull())
   {
@@ -457,9 +443,9 @@ xiiJniObject xiiJniObject::FindConstructor(const xiiJniClass& type, xiiJniClass*
       }
 
       bool isMoreSpecific = true;
-      for (int candidateIdx = 0; candidateIdx < bestCandidates.GetCount(); ++candidateIdx)
+      for (xiiInt32 candidateIdx = 0; candidateIdx < bestCandidates.GetCount(); ++candidateIdx)
       {
-        int comparison = CompareConstructorSpecificity(bestCandidates[candidateIdx], candidateMethod);
+        xiiInt32 comparison = CompareConstructorSpecificity(bestCandidates[candidateIdx], candidateMethod);
 
         if (comparison == 1)
         {
@@ -494,18 +480,20 @@ xiiJniObject xiiJniObject::FindConstructor(const xiiJniClass& type, xiiJniClass*
   else if (bestCandidates.GetCount() == 0)
   {
     xiiLog::Error("Overload resolution failed: No constructor in class '{}' matches the requested parameter types.", type.ToString().GetData());
+
     DumpTypes(inputTypes, N, nullptr);
     xiiJniAttachment::SetLastError(xiiJniErrorState::NO_MATCHING_METHOD);
     return xiiJniObject();
   }
   else
   {
-    xiiLog::Error("Overload resolution failed: Call to constructor in class '{}' is ambiguous. Cannot decide between the following candidates:",
-                  type.ToString().GetData());
-    for (int candidateIdx = 0; candidateIdx < bestCandidates.GetCount(); ++candidateIdx)
+    xiiLog::Error("Overload resolution failed: Call to constructor in class '{}' is ambiguous. Cannot decide between the following candidates:", type.ToString().GetData());
+
+    for (xiiInt32 candidateIdx = 0; candidateIdx < bestCandidates.GetCount(); ++candidateIdx)
     {
       xiiLog::Error("  Candidate #{}: '{}'", candidateIdx, bestCandidates[candidateIdx].ToString().GetData());
     }
+
     DumpTypes(inputTypes, N, nullptr);
     xiiJniAttachment::SetLastError(xiiJniErrorState::AMBIGUOUS_CALL);
     return xiiJniObject();
@@ -548,6 +536,7 @@ xiiJniString xiiJniObject::ToString() const
   if (IsNull())
   {
     xiiLog::Error("Attempting to call method 'toString' on null object.");
+
     xiiJniAttachment::SetLastError(xiiJniErrorState::CALL_ON_NULL_OBJECT);
     return xiiJniString();
   }

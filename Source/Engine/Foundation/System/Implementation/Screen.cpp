@@ -9,6 +9,8 @@
 #  include <Foundation/System/Implementation/Win/Screen_win32.inl>
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
 #  include <Foundation/System/Implementation/uwp/Screen_uwp.inl>
+#elif XII_ENABLED(XII_PLATFORM_ANDROID)
+#  include <Foundation/System/Implementation/Android/Screen_android.inl>
 #else
 
 xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Screens)

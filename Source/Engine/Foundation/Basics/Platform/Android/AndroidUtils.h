@@ -30,5 +30,5 @@ public:
 private:
   static android_app* s_pAndroidApplication;
   static JavaVM*      s_pJavaVM;
-  static jobject      s_pNativeActivity;
+  static JObject      s_pNativeActivity;
 };
