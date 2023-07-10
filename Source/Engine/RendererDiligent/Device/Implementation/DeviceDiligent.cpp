@@ -1538,7 +1538,7 @@ void xiiGALDeviceDiligent::WaitForFencePlatform(Diligent::IDeviceContext* pConte
     }
     break;
 
-    XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 

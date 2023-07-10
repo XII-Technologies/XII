@@ -40,7 +40,7 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
       case xiiGALShaderStage::PixelShader:
         return "ps_4_0_level_9_3";
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -239,7 +239,6 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
 
         XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
-
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM65"))
