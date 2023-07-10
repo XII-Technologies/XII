@@ -16,7 +16,7 @@ class XII_RENDERERDILIGENT_DLL xiiGALCommandEncoderImplDiligent : public xiiGALC
 {
 public:
   xiiGALCommandEncoderImplDiligent(xiiGALDeviceDiligent& deviceDiligent);
-  ~xiiGALCommandEncoderImplDiligent();
+  virtual ~xiiGALCommandEncoderImplDiligent();
 
   // xiiGALCommandEncoderCommonPlatformInterface
   // State setting functions

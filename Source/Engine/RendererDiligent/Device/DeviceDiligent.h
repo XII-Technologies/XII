@@ -60,7 +60,7 @@ public:
 
   const xiiGALFormatLookupTableDiligent& GetFormatLookupTable() const;
   const Diligent::RENDER_DEVICE_TYPE&    GetDeviceType() const;
-  const xiiInt32                         GetValidationLevel() const;
+  xiiInt32                         GetValidationLevel() const;
 
   void ReportLiveGpuObjects();
 

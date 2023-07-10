@@ -47,7 +47,6 @@ xiiResult xiiGALRenderTargetViewDiligent::InitPlatform(xiiGALDevice* pDevice)
   if (m_Description.m_OverrideViewFormat != xiiGALResourceFormat::Invalid)
     viewFormat = m_Description.m_OverrideViewFormat;
 
-  const bool bIsArrayView   = IsArrayView(texDesc, m_Description);
   const bool bIsDepthFormat = xiiGALResourceFormat::IsDepthFormat(viewFormat);
   ViewFormat                = bIsDepthFormat ? pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eDepthStencilType : pDeviceDiligent->GetFormatLookupTable().GetFormatInfo(viewFormat).m_eRenderTarget;
 

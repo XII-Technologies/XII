@@ -118,6 +118,11 @@ xiiResult xiiGALShaderDiligent::InitPlatform(xiiGALDevice* pDevice)
             case xiiShaderDescriptorSetLayoutBinding::ResourceType::AccelerationStructure:
               resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_ACCEL_STRUCT;
               break;
+            case xiiShaderDescriptorSetLayoutBinding::InputAttachment:
+              resourceDesc.ResourceType = Diligent::SHADER_RESOURCE_TYPE_INPUT_ATTACHMENT;
+              break;
+
+              XII_DEFAULT_CASE_NOT_IMPLEMENTED;
           }
 
           resourceDesc.VarType = Diligent::SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE; // Variables are always mutable for now.
