@@ -14,7 +14,7 @@
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D12.h>
 #endif
 
-#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
 #  include <ShaderCompiler/Implementation/Vulkan/ShaderCompilerVulkan.h>
 #endif
 
@@ -440,7 +440,7 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         }
         break;
 #endif
-#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
         case xiiGraphicsDeviceType::Vulkan:
         {
           xiiShaderCompilerVulkan shaderCompilerVulkan;

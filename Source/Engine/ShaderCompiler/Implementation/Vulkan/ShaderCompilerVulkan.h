@@ -2,7 +2,7 @@
 
 #include <ShaderCompiler/ShaderCompilerDLL.h>
 
-#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
 
 template <typename T>
 struct xiiComPtr;

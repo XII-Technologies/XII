@@ -1,7 +1,7 @@
 
 #include <ShaderCompiler/ShaderCompilerPCH.h>
 
-#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
 
 #  include <Foundation/IO/MemoryStream.h>
 #  include <Foundation/Memory/MemoryUtils.h>
