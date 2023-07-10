@@ -4,28 +4,14 @@
 
 #  include <Foundation/Application/Application.h>
 #  include <Foundation/Application/Implementation/Android/Application_android.h>
+
 #  include <android/log.h>
 #  include <android_native_app_glue.h>
-
-static void xiiAndroidHandleCmd(struct android_app* pApp, int32_t cmd)
-{
-  xiiAndroidApplication* pAndroidApp = static_cast<xiiAndroidApplication*>(pApp->userData);
-  pAndroidApp->HandleCmd(cmd);
-}
-
-static int32_t xiiAndroidHandleInput(struct android_app* pApp, AInputEvent* pEvent)
-{
-  xiiAndroidApplication* pAndroidApp = static_cast<xiiAndroidApplication*>(pApp->userData);
-  return pAndroidApp->HandleInput(pEvent);
-}
 
 xiiAndroidApplication::xiiAndroidApplication(struct android_app* pApp, xiiApplication* pXIIApp) :
   m_pApp(pApp), m_pXIIApp(pXIIApp)
 {
-  pApp->userData     = this;
-  pApp->onAppCmd     = xiiAndroidHandleCmd;
-  pApp->onInputEvent = xiiAndroidHandleInput;
-  //#TODO: acquire sensors, set app->onAppCmd, set app->onInputEvent
+  // \todo Foundation: Acquire sensors, etc.
 }
 
 xiiAndroidApplication::~xiiAndroidApplication() {}
@@ -36,8 +22,8 @@ void xiiAndroidApplication::AndroidRun()
   while (true)
   {
     struct android_poll_source* pSource = nullptr;
-    int                         iIdent  = 0;
-    int                         iEvents = 0;
+    xiiInt32                    iIdent  = 0;
+    xiiInt32                    iEvents = 0;
     while ((iIdent = ALooper_pollAll(0, nullptr, &iEvents, (void**)&pSource)) >= 0)
     {
       if (pSource != nullptr)
@@ -83,12 +69,12 @@ XII_FOUNDATION_DLL void xiiAndroidRun(struct android_app* pApp, xiiApplication* 
   }
   xiiRun_Shutdown(pXIIApp);
 
-  const int iReturnCode = pXIIApp->GetReturnCode();
+  const xiiInt32 iReturnCode = pXIIApp->GetReturnCode();
   if (iReturnCode != 0)
   {
     const char* szReturnCode = pXIIApp->TranslateReturnCode();
     if (szReturnCode != nullptr && szReturnCode[0] != '\0')
-      __android_log_print(ANDROID_LOG_ERROR, "xiiEngine", "Return Code: '%s'", szReturnCode);
+      __android_log_print(ANDROID_LOG_ERROR, "XII", "Return Code: '%s'", szReturnCode);
   }
 }
 

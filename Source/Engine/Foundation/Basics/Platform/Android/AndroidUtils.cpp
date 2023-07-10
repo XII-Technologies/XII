@@ -6,7 +6,7 @@
 
 android_app* xiiAndroidUtils::s_pAndroidApplication;
 JavaVM*      xiiAndroidUtils::s_pJavaVM;
-JObject*     xiiAndroidUtils::s_pNativeActivity;
+JObject      xiiAndroidUtils::s_pNativeActivity;
 
 void xiiAndroidUtils::SetNativeAndroidApp(android_app* pAndroidApp)
 {

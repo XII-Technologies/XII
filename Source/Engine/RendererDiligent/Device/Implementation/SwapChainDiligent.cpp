@@ -129,6 +129,8 @@ xiiResult xiiGALSwapChainDiligent::InitPlatform(xiiGALDevice* pDevice)
   Diligent::LinuxNativeWindow Window          = {};
   Window.WindowId                             = xiiMinX11::ToNative(xcbWindowHandle.xcbWindow.m_hWindow);
   Window.pXCBConnection                       = xcbWindowHandle.xcbWindow.m_pConnection;
+#elif XII_ENABLED(XII_PLATFORM_ANDROID)
+  Diligent::AndroidNativeWindow Window{m_WindowDesc.m_pWindow->GetNativeWindowHandle()};
 #else
 #  error Not Implemented on platform!
 #endif

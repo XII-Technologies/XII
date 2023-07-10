@@ -19,13 +19,16 @@ class xiiOpenDdlReaderElement;
 #  include <Core/System/Implementation/Win/InputDevice_win32.h>
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
 #  include <Core/System/Implementation/uwp/InputDevice_uwp.h>
+#elif XII_ENABLED(XII_PLATFORM_ANDROID)
+#  include <Core/System/Implementation/Android/InputDevice_android.h>
 #else
 #  include <Core/System/Implementation/null/InputDevice_null.h>
 #endif
 
 // Currently the following scenarios are possible
-// - Windows native implementation, using HWND
-// - SDL on windows, using SDLWindow* internally and HWND to pass windows around
+// - Windows native implementation, using HWND.
+// - Android native implementation, using ANativeWindow.
+// - SDL on windows, using SDLWindow* internally and HWND to pass windows around.
 // - SDL / XCB on linux. Runtime uses SDL_Window*. Editor uses xcb-window. Tagged union is passed around as window handle.
 
 #if XII_ENABLED(XII_SUPPORTS_SDL)
@@ -108,6 +111,17 @@ using xiiWindowInternalHandle = xiiWindowHandle;
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
 
 using xiiWindowHandle         = IUnknown*;
+using xiiWindowInternalHandle = xiiWindowHandle;
+#  define INVALID_WINDOW_HANDLE_VALUE nullptr
+
+#elif XII_ENABLED(XII_PLATFORM_ANDROID)
+
+extern "C"
+{
+  using ANativeWindow = struct ANativeWindow;
+}
+
+using xiiWindowHandle         = ANativeWindow*;
 using xiiWindowInternalHandle = xiiWindowHandle;
 #  define INVALID_WINDOW_HANDLE_VALUE nullptr
 
@@ -342,7 +356,7 @@ public:
 
   /// \brief Returns a number that can be used as a window number in xiiWindowCreationDesc
   ///
-  /// This number just increments every time a xiiWindow is created. It starts at zero.
+  /// This number just increments when a xiiWindow is created. It starts at zero.
   static xiiUInt8 GetNextUnusedWindowNumber();
 
 protected:
@@ -351,13 +365,19 @@ protected:
   xiiWindowCreationDesc m_CreationDescription;
 
 private:
+#if XII_ENABLED(XII_PLATFORM_ANDROID)
+  static void     CommandCallback(android_app* pAndroidApp, xiiInt32 iCommand);
+  static xiiInt32 InputEventCallback(android_app* pAndroidApp, AInputEvent* pInputEvent);
+#endif
+
+private:
   bool m_bInitialized = false;
 
   xiiUniquePtr<xiiStandardInputDevice> m_pInputDevice;
 
   mutable xiiWindowInternalHandle m_hWindowHandle = xiiWindowInternalHandle();
 
-  /// increased every time a xiiWindow is created, to be able to get a free window index easily
+  /// Increased when a xiiWindow is created, to be able to get a free window index easily
   static xiiUInt8    s_uiNextUnusedWindowNumber;
   xiiAtomicInteger32 m_iReferenceCount = 0;
 };

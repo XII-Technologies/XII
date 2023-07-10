@@ -17,6 +17,9 @@
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
 #  include <Core/System/Implementation/uwp/InputDevice_uwp.inl>
 #  include <Core/System/Implementation/uwp/Window_uwp.inl>
+#elif XII_ENABLED(XII_PLATFORM_ANDROID)
+#  include <Core/System/Implementation/Android/InputDevice_android.inl>
+#  include <Core/System/Implementation/Android/Window_android.inl>
 #else
 #  include <Core/System/Implementation/null/InputDevice_null.inl>
 #  include <Core/System/Implementation/null/Window_null.inl>
@@ -224,6 +227,5 @@ xiiUInt8 xiiWindow::GetNextUnusedWindowNumber()
 {
   return s_uiNextUnusedWindowNumber;
 }
-
 
 XII_STATICLINK_FILE(Core, Core_System_Implementation_Window);

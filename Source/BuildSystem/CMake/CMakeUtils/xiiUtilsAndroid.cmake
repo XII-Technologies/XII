@@ -1,4 +1,29 @@
 # #####################################
+# ## xii_android_verify_ndk()
+# #####################################
+macro(xii_android_verify_ndk)
+	if(NOT ANDROID_NDK)
+		message(WARNING "ANDROID_NDK not set")
+
+		if(NOT EXISTS "$ENV{ANDROID_NDK_HOME}")
+			message(FATAL_ERROR "ANDROID_NDK_HOME environment variable not set. Please ensure it points to the android NDK root folder.")
+		else()
+			set(ANDROID_NDK $ENV{ANDROID_NDK_HOME})
+		endif()
+	endif()
+
+	if(NOT EXISTS "$ENV{ANDROID_HOME}")
+		if(NOT EXISTS "$ENV{ANDROID_SDK_ROOT}")
+			message(FATAL_ERROR "Could not find ANDROID_HOME or ANDROID_SDK_ROOT environment variables")
+		else()
+			set(ANDROID_SDK $ENV{ANDROID_SDK_ROOT})
+		endif()
+	else()
+		set(ANDROID_SDK $ENV{ANDROID_HOME})
+	endif()
+endmacro(xii_android_verify_ndk)
+
+# #####################################
 # ## xii_list_subdirs(result curdir)
 # #####################################
 
@@ -45,25 +70,7 @@ function(xii_android_add_default_content TARGET_NAME)
 	configure_file(${CONTENT_DIRECTORY_SRC}/AndroidManifest.xml ${CMAKE_CURRENT_BINARY_DIR}/AndroidManifest.xml)
 	configure_file(${CONTENT_DIRECTORY_SRC}/res/values/strings.xml ${CONTENT_DIRECTORY_DST}/res/values/strings.xml)
 
-	if(NOT ANDROID_NDK)
-		message(WARNING "ANDROID_NDK not set")
-
-		if(NOT EXISTS "$ENV{ANDROID_NDK_HOME}")
-			message(FATAL_ERROR "ANDROID_NDK_HOME environment variable not set. Please ensure it points to the android NDK root folder.")
-		else()
-			set(ANDROID_NDK $ENV{ANDROID_NDK_HOME})
-		endif()
-	endif()
-
-	if(NOT EXISTS "$ENV{ANDROID_HOME}")
-		if(NOT EXISTS "$ENV{ANDROID_SDK_ROOT}")
-			message(FATAL_ERROR "Could not find ANDROID_HOME or ANDROID_SDK_ROOT environment variables")
-		else()
-			set(ANDROID_SDK $ENV{ANDROID_SDK_ROOT})
-		endif()
-	else()
-		set(ANDROID_SDK $ENV{ANDROID_HOME})
-	endif()
+	xii_android_verify_ndk()
 
 	get_filename_component(ANDROID_BUILD_TOOLS_ROOT "${ANDROID_SDK}/build-tools" ABSOLUTE)
 	xii_list_subdirs(AVAILABLE_BUILD_TOOLS ${ANDROID_BUILD_TOOLS_ROOT})

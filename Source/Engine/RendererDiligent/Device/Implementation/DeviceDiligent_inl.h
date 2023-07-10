@@ -24,7 +24,7 @@ XII_ALWAYS_INLINE const Diligent::RENDER_DEVICE_TYPE& xiiGALDeviceDiligent::GetD
   return m_DeviceType;
 }
 
-XII_ALWAYS_INLINE const xiiInt32 xiiGALDeviceDiligent::GetValidationLevel() const
+XII_ALWAYS_INLINE xiiInt32 xiiGALDeviceDiligent::GetValidationLevel() const
 {
   return m_iValidationLevel;
 }

@@ -1330,8 +1330,12 @@ xiiRasterizerView* xiiRenderPipeline::PrepareOcclusionCulling(const xiiFrustum& 
   if (!cvar_SpatialCullingOcclusionEnable)
     return nullptr;
 
+#if XII_ENABLED(XII_PLATFORM_ARCH_X86)
   if (!xiiSystemInformation::Get().GetCpuFeatures().IsAvx1Available())
     return nullptr;
+#else
+  return nullptr;
+#endif
 
   xiiRasterizerView* pRasterizer = nullptr;
 

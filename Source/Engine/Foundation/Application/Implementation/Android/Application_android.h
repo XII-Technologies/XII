@@ -16,6 +16,7 @@ class xiiAndroidApplication
 public:
   xiiAndroidApplication(struct android_app* pApp, xiiApplication* pXIIApp);
   ~xiiAndroidApplication();
+
   void    AndroidRun();
   void    HandleCmd(int32_t cmd);
   int32_t HandleInput(AInputEvent* pEvent);

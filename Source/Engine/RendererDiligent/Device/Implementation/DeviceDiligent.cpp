@@ -48,6 +48,8 @@ public:
   {
   }
 
+  virtual ~xiiDiligentMemoryAllocator() = default;
+
   /// Allocates block of memory
   virtual void* Allocate(size_t Size, const Diligent::Char* dbgDescription, const char* dbgFileName, const Diligent::Int32 dbgLineNumber) override
   {
@@ -123,7 +125,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 std::unique_ptr<xiiDiligentMemoryAllocator> g_pMemoryAllocator;
 
 xiiGALDeviceDiligent::xiiGALDeviceDiligent(const xiiGALDeviceCreationDescription& Description, Diligent::RENDER_DEVICE_TYPE DeviceType) :
-  xiiGALDevice(Description), m_pDevice(nullptr), m_pEngineFactory(nullptr), m_DeviceType(DeviceType)
+  xiiGALDevice(Description), m_DeviceType(DeviceType)
 {
 }
 
@@ -244,7 +246,9 @@ xiiResult xiiGALDeviceDiligent::InitPlatform()
 
   xiiHybridArray<Diligent::IDeviceContext*, 1> ppContexts;
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 CreateRenderDevice:
+#endif
   switch (m_DeviceType)
   {
 #if D3D11_SUPPORTED
@@ -571,7 +575,7 @@ CreateRenderDevice:
   m_SyncTimeDiff.SetZero();
 
   xiiGALWindowSwapChain::SetFactoryMethod([this](const xiiGALWindowSwapChainCreationDescription& desc) -> xiiGALSwapChainHandle {
-    return CreateSwapChain([this, &desc](xiiAllocatorBase* pAllocator) -> xiiGALSwapChain* {
+    return CreateSwapChain([/*this,*/ &desc](xiiAllocatorBase* pAllocator) -> xiiGALSwapChain* {
       return XII_NEW(pAllocator, xiiGALSwapChainDiligent, desc);
     });
   });
@@ -1085,6 +1089,8 @@ void xiiGALDeviceDiligent::EndFramePlatform()
 {
   auto& pCommandEncoder = m_pDefaultPass->m_pCommandEncoderImpl;
 
+  XII_IGNORE_UNUSED(pCommandEncoder);
+
   // End timer query
 #if 0
   {
@@ -1200,6 +1206,8 @@ void xiiGALDeviceDiligent::FillCapabilitiesPlatform()
       case Diligent::RENDER_DEVICE_TYPE_METAL:
         m_Capabilities.m_DeviceType = xiiGraphicsDeviceType::Metal;
         break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -1243,10 +1251,10 @@ void xiiGALDeviceDiligent::WaitIdlePlatform()
 
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_PerFrameData); ++i)
   {
+#if 0
     // First, we wait for all fences for all submit calls. This is necessary to make sure no resources of the frame are still in use by the GPU.
     auto& perFrameData = m_PerFrameData[i];
 
-#if 0
     for (Diligent::IFence* pFence : perFrameData.m_SubmittedFences)
     {
       if (m_DeviceType != Diligent::RENDER_DEVICE_TYPE_D3D11)
@@ -1262,9 +1270,9 @@ void xiiGALDeviceDiligent::WaitIdlePlatform()
   {
     auto& perFrameData = m_PerFrameData[i];
     {
-      XII_LOCK(m_PerFrameData[i].m_PendingDeletionsMutex);
-      DeletePendingResources(m_PerFrameData[i].m_PreviousPendingDeletions);
-      DeletePendingResources(m_PerFrameData[i].m_PendingDeletions);
+      XII_LOCK(perFrameData.m_PendingDeletionsMutex);
+      DeletePendingResources(perFrameData.m_PreviousPendingDeletions);
+      DeletePendingResources(perFrameData.m_PendingDeletions);
     }
   }
 
@@ -1473,6 +1481,8 @@ bool xiiGALDeviceDiligent::IsFenceReachedPlatform(Diligent::IDeviceContext* pCon
       Diligent::QueryDataDuration queryData;
       return pFence->GetData(&queryData, sizeof(queryData), false);
     }
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return false;
 }
@@ -1527,6 +1537,8 @@ void xiiGALDeviceDiligent::WaitForFencePlatform(Diligent::IDeviceContext* pConte
       }
     }
     break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 

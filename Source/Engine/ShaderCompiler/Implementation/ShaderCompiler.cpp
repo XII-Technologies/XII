@@ -14,7 +14,7 @@
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D12.h>
 #endif
 
-#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
 #  include <ShaderCompiler/Implementation/Vulkan/ShaderCompilerVulkan.h>
 #endif
 
@@ -39,6 +39,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "vs_4_0_level_9_3";
       case xiiGALShaderStage::PixelShader:
         return "ps_4_0_level_9_3";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -54,6 +56,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_4_0";
       case xiiGALShaderStage::ComputeShader:
         return "cs_4_0";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -69,6 +73,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_4_1";
       case xiiGALShaderStage::ComputeShader:
         return "cs_4_1";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -88,6 +94,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_5_0";
       case xiiGALShaderStage::ComputeShader:
         return "cs_5_0";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -107,6 +115,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_5_1";
       case xiiGALShaderStage::ComputeShader:
         return "cs_5_1";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -126,6 +136,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_0";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_0";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -145,6 +157,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_1";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_1";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -164,6 +178,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
         return "ps_6_2";
       case xiiGALShaderStage::ComputeShader:
         return "cs_6_2";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -191,6 +207,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
       case xiiGALShaderStage::RayIntersectionShader:
       case xiiGALShaderStage::CallableShader:
         return "lib_6_3";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -218,6 +236,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
       case xiiGALShaderStage::RayIntersectionShader:
       case xiiGALShaderStage::CallableShader:
         return "lib_6_4";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -251,6 +271,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
 
       case xiiGALShaderStage::MeshShader:
         return "ms_6_5";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -284,6 +306,8 @@ const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xii
 
       case xiiGALShaderStage::MeshShader:
         return "ms_6_6";
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
@@ -415,7 +439,7 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         }
         break;
 #endif
-#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
         case xiiGraphicsDeviceType::Vulkan:
         {
           xiiShaderCompilerVulkan shaderCompilerVulkan;

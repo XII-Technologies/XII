@@ -24,6 +24,8 @@ struct XII_RENDERERFOUNDATION_DLL xiiGALCommandEncoderState
 
 struct XII_RENDERERFOUNDATION_DLL xiiGALCommandEncoderRenderState : public xiiGALCommandEncoderState
 {
+  virtual ~xiiGALCommandEncoderRenderState() = default;
+
   virtual void InvalidateState() override;
 
   xiiGALBufferHandle m_hVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT];

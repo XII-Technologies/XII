@@ -4,7 +4,10 @@
 #include <Foundation/SimdMath/SimdVec4f.h>
 #include <RendererCore/Rasterizer/RasterizerObject.h>
 #include <RendererCore/Rasterizer/Thirdparty/Occluder.h>
-#include <RendererCore/Rasterizer/Thirdparty/VectorMath.h>
+
+#if XII_ENABLED(XII_RASTERIZER_SUPPORTED)
+#  include <RendererCore/Rasterizer/Thirdparty/VectorMath.h>
+#endif
 
 xiiMutex                                             xiiRasterizerObject::s_Mutex;
 xiiMap<xiiString, xiiSharedPtr<xiiRasterizerObject>> xiiRasterizerObject::s_Objects;

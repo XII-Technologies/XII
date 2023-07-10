@@ -21,8 +21,7 @@ namespace
 } // namespace
 
 xiiGALPassDiligent::xiiGALPassDiligent(xiiGALDevice& device) :
-  xiiGALPass(device),
-  m_GALDeviceDiligent(static_cast<xiiGALDeviceDiligent&>(device))
+  xiiGALPass(device), m_GALDeviceDiligent(static_cast<xiiGALDeviceDiligent&>(device))
 {
   m_pCommandEncoderState = XII_DEFAULT_NEW(xiiGALCommandEncoderRenderState);
   m_pCommandEncoderImpl  = XII_DEFAULT_NEW(xiiGALCommandEncoderImplDiligent, static_cast<xiiGALDeviceDiligent&>(device));
