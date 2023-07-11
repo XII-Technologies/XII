@@ -96,7 +96,7 @@ xiiInt8 xiiInputDeviceController::GetControllerMapping(xiiUInt8 uiVirtual) const
   return m_iControllerMapping[uiVirtual];
 }
 
-void xiiInputDeviceController::AddVibrationTrack(xiiUInt8    uiVirtual,Motor::Enum motor,float*      pVibrationTrackValue,xiiUInt32   uiSamples,float       fScalingFactor)
+void xiiInputDeviceController::AddVibrationTrack(xiiUInt8 uiVirtual, Motor::Enum motor, float* pVibrationTrackValue, xiiUInt32 uiSamples, float fScalingFactor)
 {
   uiSamples = xiiMath::Min<xiiUInt32>(uiSamples, MaxVibrationSamples);
 

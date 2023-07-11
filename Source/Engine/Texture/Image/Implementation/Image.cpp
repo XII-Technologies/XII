@@ -81,7 +81,7 @@ const xiiImageHeader& xiiImageView::GetHeader() const
   return *this;
 }
 
-xiiImageView xiiImageView::GetRowView(xiiUInt32 uiMipLevel /*= 0*/,xiiUInt32 uiFace /*= 0*/,xiiUInt32 uiArrayIndex /*= 0*/,xiiUInt32 y /*= 0*/,xiiUInt32 z /*= 0*/,xiiUInt32 uiPlaneIndex /*= 0*/) const
+xiiImageView xiiImageView::GetRowView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/, xiiUInt32 y /*= 0*/, xiiUInt32 z /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
 {
   xiiImageHeader header;
   header.SetNumMipLevels(1);
