@@ -201,8 +201,7 @@ void xiiGameState::SetupMainView(xiiGALSwapChainHandle hSwapChain, xiiSizeU32 vi
   }
   if (m_bXREnabled)
   {
-    const xiiXRConfig* pConfig      = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiXRConfig>();
-    xiiXRInterface*    pXRInterface = xiiSingletonRegistry::GetSingletonInstance<xiiXRInterface>();
+    const xiiXRConfig* pConfig = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiXRConfig>();
 
     auto renderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sXRRenderPipeline);
     pView->SetRenderPipelineResource(renderPipeline);

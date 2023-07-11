@@ -22,8 +22,5 @@ public:
   xiiSimplifiedDataExtractor(const char* szName = "SimplifiedDataExtractor");
   ~xiiSimplifiedDataExtractor();
 
-  virtual void PostSortAndBatch(
-    const xiiView&                               view,
-    const xiiDynamicArray<const xiiGameObject*>& visibleObjects,
-    xiiExtractedRenderData&                      ref_extractedRenderData) override;
+  virtual void PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;
 };

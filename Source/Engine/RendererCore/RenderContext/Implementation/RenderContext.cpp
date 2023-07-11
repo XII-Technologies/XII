@@ -593,13 +593,20 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     if ((bForce || m_StateFlags.IsAnySet(xiiRenderContextFlags::TextureBindingChanged | xiiRenderContextFlags::UAVBindingChanged | xiiRenderContextFlags::SamplerBindingChanged | xiiRenderContextFlags::BufferBindingChanged | xiiRenderContextFlags::ConstantBufferBindingChanged)))
     {
       if (pShaderPermutation == nullptr)
+      {
         pShaderPermutation = xiiResourceManager::BeginAcquireResource(m_hActiveShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+      }
     }
 
     xiiLogBlock applyBindingsBlock("Applying Shader Bindings", pShaderPermutation != nullptr ? pShaderPermutation->GetResourceDescription().GetData() : "");
 
     if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::UAVBindingChanged))
     {
+      if (pShaderPermutation == nullptr)
+      {
+        return XII_FAILURE;
+      }
+
       // RWTextures/UAV are usually only supported in compute and pixel shader.
       if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::ComputeShader))
       {
@@ -615,6 +622,11 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
     if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::TextureBindingChanged))
     {
+      if (pShaderPermutation == nullptr)
+      {
+        return XII_FAILURE;
+      }
+
       for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
       {
         if (auto pBin = pShaderPermutation->GetShaderStageBinary((xiiGALShaderStage::Enum)stage))
@@ -628,6 +640,11 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
     if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::SamplerBindingChanged))
     {
+      if (pShaderPermutation == nullptr)
+      {
+        return XII_FAILURE;
+      }
+
       for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
       {
         if (auto pBin = pShaderPermutation->GetShaderStageBinary((xiiGALShaderStage::Enum)stage))
@@ -641,6 +658,11 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
     if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::BufferBindingChanged))
     {
+      if (pShaderPermutation == nullptr)
+      {
+        return XII_FAILURE;
+      }
+
       for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
       {
         if (auto pBin = pShaderPermutation->GetShaderStageBinary((xiiGALShaderStage::Enum)stage))
@@ -662,6 +684,11 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
     if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::ConstantBufferBindingChanged))
     {
+      if (pShaderPermutation == nullptr)
+      {
+        return XII_FAILURE;
+      }
+
       for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
       {
         if (auto pBin = pShaderPermutation->GetShaderStageBinary((xiiGALShaderStage::Enum)stage))

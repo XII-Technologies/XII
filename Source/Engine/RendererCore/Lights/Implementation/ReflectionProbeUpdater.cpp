@@ -13,8 +13,6 @@
 xiiCVarInt cvar_RenderingReflectionPoolMaxRenderViews("Rendering.ReflectionPool.MaxRenderViews", 1, xiiCVarFlags::Default, "The maximum number of render views for reflection probes each frame");
 xiiCVarInt cvar_RenderingReflectionPoolMaxFilterViews("Rendering.ReflectionPool.MaxFilterViews", 1, xiiCVarFlags::Default, "The maximum number of filter views for reflection probes each frame");
 
-
-
 //////////////////////////////////////////////////////////////////////////
 /// ProbeUpdateInfo
 
@@ -368,8 +366,6 @@ void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& ste
     xiiVec3(0.0f, 0.0f, 1.0f),
   };
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
   // Setup view and camera
   {
     ReflectionView* pReflectionView = nullptr;
@@ -396,8 +392,7 @@ void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& ste
     xiiGALRenderTargets renderTargets;
     if (step.m_UpdateStep == UpdateStep::Filter)
     {
-      const xiiUInt32 uiWorldIndex = pWorld->GetIndex();
-      renderTargets.m_hRTs[0]      = updateInfo.m_TargetSlot.m_hSpecularOutputTexture;
+      renderTargets.m_hRTs[0] = updateInfo.m_TargetSlot.m_hSpecularOutputTexture;
 
       if (updateInfo.m_flags.IsSet(xiiReflectionProbeUpdaterFlags::SkyLight))
       {

@@ -157,7 +157,7 @@ public:
 /// To grow, additional chunks of data are allocated. No memory ever needs to be copied to grow the container.
 /// However, that also means that the memory isn't stored in one contiguous array, therefore data has to be accessed piece-wise
 /// through GetContiguousMemoryRange().
-class XII_FOUNDATION_DLL xiiDefaultMemoryStreamStorage : public xiiMemoryStreamStorageInterface
+class XII_FOUNDATION_DLL xiiDefaultMemoryStreamStorage final : public xiiMemoryStreamStorageInterface
 {
 public:
   xiiDefaultMemoryStreamStorage(xiiUInt32 uiInitialCapacity = 0, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());

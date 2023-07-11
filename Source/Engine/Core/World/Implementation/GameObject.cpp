@@ -360,6 +360,8 @@ void xiiGameObject::SetParent(const xiiGameObjectHandle& hParent, xiiGameObject:
 
   xiiGameObject* pParent = nullptr;
   bool           _       = pWorld->TryGetObject(hParent, pParent);
+  XII_IGNORE_UNUSED(_);
+
   pWorld->SetParent(this, pParent, preserve);
 }
 

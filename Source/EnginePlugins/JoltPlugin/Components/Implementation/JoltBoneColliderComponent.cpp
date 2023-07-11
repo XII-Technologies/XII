@@ -56,7 +56,7 @@ void xiiJoltBoneColliderComponent::SerializeComponent(xiiWorldWriter& inout_stre
 void xiiJoltBoneColliderComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
   SUPER::DeserializeComponent(inout_stream);
-  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  // const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
   auto&           s         = inout_stream.GetStream();
 
   s >> m_bQueryShapeOnly;
@@ -197,14 +197,11 @@ void xiiJoltBoneColliderComponent::CreatePhysicsShapes(const xiiSkeletonResource
     shape.m_qOffsetRot       = qFinalBoneRot * geo.m_Transform.m_qRotation;
 
 
-    xiiJoltShapeComponent* pShape = nullptr;
-
     if (geo.m_Type == xiiSkeletonJointGeometryType::Sphere)
     {
       xiiJoltShapeSphereComponent* pShapeComp = nullptr;
       xiiJoltShapeSphereComponent::CreateComponent(pGO, pShapeComp);
       pShapeComp->SetRadius(geo.m_Transform.m_vScale.z);
-      pShape = pShapeComp;
     }
     else if (geo.m_Type == xiiSkeletonJointGeometryType::Box)
     {
@@ -219,7 +216,6 @@ void xiiJoltBoneColliderComponent::CreatePhysicsShapes(const xiiSkeletonResource
       xiiJoltShapeBoxComponent* pShapeComp = nullptr;
       xiiJoltShapeBoxComponent::CreateComponent(pGO, pShapeComp);
       pShapeComp->SetHalfExtents(ext * 0.5f);
-      pShape = pShapeComp;
     }
     else if (geo.m_Type == xiiSkeletonJointGeometryType::Capsule)
     {
@@ -232,7 +228,6 @@ void xiiJoltBoneColliderComponent::CreatePhysicsShapes(const xiiSkeletonResource
       xiiJoltShapeCapsuleComponent::CreateComponent(pGO, pShapeComp);
       pShapeComp->SetRadius(geo.m_Transform.m_vScale.z);
       pShapeComp->SetHeight(geo.m_Transform.m_vScale.x);
-      pShape = pShapeComp;
     }
     else
     {

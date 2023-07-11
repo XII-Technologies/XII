@@ -331,8 +331,6 @@ void xiiPlaySequenceAnimNode::Step(xiiAnimGraph& graph, xiiTime tDiff, const xii
     return;
   }
 
-  xiiAnimGraphPinDataLocalTransforms* pOutputTransform = graph.AddPinDataLocalTransforms();
-
   void* pThis                        = this;
   auto& cmd                          = graph.GetPoseGenerator().AllocCommandSampleTrack(xiiHashingUtils::xxHash32(&pThis, sizeof(pThis)));
   cmd.m_hAnimationClip               = hCurrentClip;

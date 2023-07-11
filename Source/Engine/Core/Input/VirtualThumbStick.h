@@ -11,7 +11,7 @@
 /// allows easier control over a game. The virtual thumb-stick takes input inside a certain screen area. It tracks the users finger
 /// movements inside this area and translates those into input from a controller thumb-stick, which it then feeds back into the input
 /// system. That makes it then possible to be mapped to input actions again. This way a game controller type of input is emulated.
-class XII_CORE_DLL xiiVirtualThumbStick : public xiiInputDevice
+class XII_CORE_DLL xiiVirtualThumbStick final : public xiiInputDevice
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiVirtualThumbStick, xiiInputDevice);
 

@@ -444,6 +444,8 @@ inline bool xiiHashTableBase<K, V, H>::TryGetValue(const CompatibleKeyType& key,
   xiiUInt32 uiIndex = FindEntry(key);
   if (uiIndex != xiiInvalidIndex)
   {
+    XII_ASSERT_DEBUG(m_pEntries != nullptr, "No entries present"); // To fix static analysis.
+
     out_value = m_pEntries[uiIndex].value;
     return true;
   }

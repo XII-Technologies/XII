@@ -173,7 +173,6 @@ xiiUInt32 xiiResourceManager::FreeAllUnusedResources()
 
       for (auto itType = s_pState->m_LoadedResources.GetIterator(); itType.IsValid(); ++itType)
       {
-        const xiiRTTI*   pRtti = itType.Key();
         LoadedResources& lr    = itType.Value();
 
         for (auto it = lr.m_Resources.GetIterator(); it.IsValid(); /* empty */)

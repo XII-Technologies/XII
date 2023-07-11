@@ -113,8 +113,8 @@ void xiiJoltDefaultCharacterComponent::SerializeComponent(xiiWorldWriter& inout_
 void xiiJoltDefaultCharacterComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
   SUPER::DeserializeComponent(inout_stream);
-  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = inout_stream.GetStream();
+  // const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto& s = inout_stream.GetStream();
 
   s >> m_RotateSpeed;
   s >> m_fShapeRadius;
@@ -405,6 +405,7 @@ void xiiJoltDefaultCharacterComponent::DebugVisualizations()
         break;
     }
 
+#if 0
     const xiiTransform newTransform   = GetOwner()->GetGlobalTransform();
     const float        fDistTraveled  = (m_PreviousTransform.m_vPosition - newTransform.m_vPosition).GetLength();
     const float        fSpeedTraveled = fDistTraveled * GetInverseUpdateTimeDelta();
@@ -412,8 +413,9 @@ void xiiJoltDefaultCharacterComponent::DebugVisualizations()
     const float fDistTraveledLateral  = (m_PreviousTransform.m_vPosition.GetAsVec2() - newTransform.m_vPosition.GetAsVec2()).GetLength();
     const float fSpeedTraveledLateral = fDistTraveled * GetInverseUpdateTimeDelta();
 
-    // xiiDebugRenderer::DrawInfoText(GetWorld(), xiiDebugRenderer::ScreenPlacement::TopLeft, "JCC", xiiFmt("Speed 1: {} m/s", fSpeedTraveled), xiiColor::WhiteSmoke);
-    // xiiDebugRenderer::DrawInfoText(GetWorld(), xiiDebugRenderer::ScreenPlacement::TopLeft, "JCC", xiiFmt("Speed 2: {} m/s", fSpeedTraveledLateral), xiiColor::WhiteSmoke);
+    xiiDebugRenderer::DrawInfoText(GetWorld(), xiiDebugRenderer::ScreenPlacement::TopLeft, "JCC", xiiFmt("Speed 2: {} m/s", fSpeedTraveledLateral), xiiColor::WhiteSmoke);
+    xiiDebugRenderer::DrawInfoText(GetWorld(), xiiDebugRenderer::ScreenPlacement::TopLeft, "JCC", xiiFmt("Speed 1: {} m/s", fSpeedTraveled), xiiColor::WhiteSmoke);
+#endif
   }
 
   if (m_DebugFlags.IsSet(xiiJoltCharacterDebugFlags::VisGroundContact))

@@ -13,8 +13,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(FileservePlugin, FileservePluginMain)
   {
     xiiFileSystem::RegisterDataDirectoryFactory(xiiDataDirectory::FileserveType::Factory, 100.0f);
 
-    if (xiiStartup::HasApplicationTag("tool") ||
-        xiiStartup::HasApplicationTag("testframework")) // the testframework configures a fileserve client itself
+    if (xiiStartup::HasApplicationTag("tool") || xiiStartup::HasApplicationTag("testframework")) // the testframework configures a fileserve client itself
       return;
 
     xiiFileserveClient* fs = xiiFileserveClient::GetSingleton();
@@ -22,6 +21,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(FileservePlugin, FileservePluginMain)
     if (fs == nullptr)
     {
       fs = XII_DEFAULT_NEW(xiiFileserveClient);
+      XII_IGNORE_UNUSED(fs);
 
       // on sandboxed platforms we must go through fileserve, so we enforce a fileserve connection
       // on unrestricted platforms, we use fileserve, if a connection can be established,
@@ -37,8 +37,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(FileservePlugin, FileservePluginMain)
 
   ON_CORESYSTEMS_SHUTDOWN
   {
-    if (xiiStartup::HasApplicationTag("tool") ||
-        xiiStartup::HasApplicationTag("testframework"))
+    if (xiiStartup::HasApplicationTag("tool") || xiiStartup::HasApplicationTag("testframework"))
       return;
 
     if (xiiFileserveClient::GetSingleton() != nullptr)

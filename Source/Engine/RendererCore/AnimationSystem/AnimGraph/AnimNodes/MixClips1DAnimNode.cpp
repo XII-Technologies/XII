@@ -95,6 +95,7 @@ xiiResult xiiMixClips1DAnimNode::SerializeNode(xiiStreamWriter& stream) const
 xiiResult xiiMixClips1DAnimNode::DeserializeNode(xiiStreamReader& stream)
 {
   const auto version = stream.ReadVersion(1);
+  XII_IGNORE_UNUSED(version);
 
   XII_SUCCEED_OR_RETURN(SUPER::DeserializeNode(stream));
 

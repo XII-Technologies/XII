@@ -8,7 +8,7 @@
 
 namespace
 {
-  xiiResult ExtractPropertyName(xiiStringView sPinName, xiiStringView& out_sPropertyName, xiiUInt32* out_uiArrayIndex = nullptr)
+  xiiResult ExtractPropertyName(xiiStringView sPinName, xiiStringView& out_sPropertyName, xiiUInt32* out_pArrayIndex = nullptr)
   {
     const char* szBracket = sPinName.FindSubString("[");
     if (szBracket == nullptr)
@@ -16,9 +16,9 @@ namespace
 
     out_sPropertyName = xiiStringView(sPinName.GetStartPointer(), szBracket);
 
-    if (out_uiArrayIndex != nullptr)
+    if (out_pArrayIndex != nullptr)
     {
-      return xiiConversionUtils::StringToUInt(szBracket + 1, *out_uiArrayIndex);
+      return xiiConversionUtils::StringToUInt(szBracket + 1, *out_pArrayIndex);
     }
 
     return XII_SUCCESS;

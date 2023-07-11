@@ -80,7 +80,9 @@ void xiiGameApplication::Init_SetupDefaultResources()
   {
     xiiShaderResourceDescriptor desc;
     xiiShaderResourceHandle     hFallbackShader = xiiResourceManager::CreateResource<xiiShaderResource>("FallbackShaderResource", std::move(desc), "FallbackShaderResource");
-    xiiShaderResourceHandle     hMissingShader  = xiiResourceManager::CreateResource<xiiShaderResource>("MissingShaderResource", std::move(desc), "MissingShaderResource");
+
+    xiiShaderResourceDescriptor desc2;
+    xiiShaderResourceHandle     hMissingShader = xiiResourceManager::CreateResource<xiiShaderResource>("MissingShaderResource", std::move(desc2), "MissingShaderResource");
 
     xiiResourceManager::SetResourceTypeLoadingFallback<xiiShaderResource>(hFallbackShader);
     xiiResourceManager::SetResourceTypeMissingFallback<xiiShaderResource>(hMissingShader);

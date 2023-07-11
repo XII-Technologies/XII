@@ -67,7 +67,7 @@ void xiiJoltTriggerComponent::SerializeComponent(xiiWorldWriter& inout_stream) c
 void xiiJoltTriggerComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
   SUPER::DeserializeComponent(inout_stream);
-  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI()); // NOLINT: Ignore unused variable.
 
   auto& s = inout_stream.GetStream();
 

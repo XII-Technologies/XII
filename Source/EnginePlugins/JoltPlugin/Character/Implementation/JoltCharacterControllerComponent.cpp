@@ -69,7 +69,7 @@ void xiiJoltCharacterControllerComponent::SerializeComponent(xiiWorldWriter& ino
 void xiiJoltCharacterControllerComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
   SUPER::DeserializeComponent(inout_stream);
-  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  // const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
   auto&           s         = inout_stream.GetStream();
 
   s >> m_DebugFlags;
@@ -572,7 +572,6 @@ void xiiJoltCharacterControllerComponent::CreatePresenceBody()
 
   auto* pSystem   = pModule->GetJoltSystem();
   auto* pBodies   = &pSystem->GetBodyInterface();
-  auto* pMaterial = xiiJoltCore::GetDefaultMaterial();
 
   JPH::BodyCreationSettings bodyCfg;
   bodyCfg.SetShape(m_pCharacter->GetShape());

@@ -376,7 +376,6 @@ void xiiHeightfieldComponent::BuildGeometry(xiiGeometry& geom) const
 
   const xiiUInt32 uiNumVerticesX = xiiMath::Clamp(m_vColMeshTesselation.x + 1u, 5u, 512u);
   const xiiUInt32 uiNumVerticesY = xiiMath::Clamp(m_vColMeshTesselation.y + 1u, 5u, 512u);
-  const xiiUInt32 uiNumTriangles = (uiNumVerticesX - 1) * (uiNumVerticesY - 1) * 2;
 
   const xiiVec3 vSize(m_vHalfExtents.x * 2, m_vHalfExtents.y * 2, m_fHeight);
   const xiiVec2 vToNDC = xiiVec2(1.0f / (uiNumVerticesX - 1), 1.0f / (uiNumVerticesY - 1));

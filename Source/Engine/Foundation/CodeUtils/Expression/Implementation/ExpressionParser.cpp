@@ -404,6 +404,7 @@ xiiExpressionAST::Node* xiiExpressionParser::ParseFactor()
       if (pVariable == nullptr)
       {
         ReportError(pIdentifierToken, xiiFmt("Undeclared identifier '{}'", sIdentifier));
+        return nullptr;
       }
       return ParseSwizzle(Unpack(pVariable));
     }
@@ -680,7 +681,7 @@ xiiExpressionAST::Node* xiiExpressionParser::GetVariable(xiiStringView sVarName)
   xiiHashedString sHashedVarName;
   sHashedVarName.Assign(sVarName);
 
-  xiiExpressionAST::Node* pVariableNode;
+  xiiExpressionAST::Node* pVariableNode = nullptr;
   if (m_KnownVariables.TryGetValue(sHashedVarName, pVariableNode) == false && m_Options.m_bTreatUnknownVariablesAsInputs)
   {
     pVariableNode = m_pAST->CreateInput({sHashedVarName, xiiProcessingStream::DataType::Float});

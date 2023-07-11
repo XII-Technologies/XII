@@ -44,8 +44,6 @@ xiiResult xiiDeferredFileWriter::Close(bool* out_pWasWrittenTo /*= nullptr*/)
       xiiUInt8 tmp1[1024 * 4];
       xiiUInt8 tmp2[1024 * 4];
 
-      xiiUInt64 readLeft = m_Storage.GetStorageSize64();
-
       xiiMemoryStreamReader storageReader(&m_Storage);
 
       while (true)

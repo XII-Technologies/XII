@@ -452,7 +452,7 @@ T xiiVariant::ConvertTo(xiiResult* out_pConversionStatus /* = nullptr*/) const
     return Cast<T>();
   }
 
-  T    result;
+  T    result      = {};
   bool bSuccessful = true;
   xiiVariantHelper::To(*this, result, bSuccessful);
 

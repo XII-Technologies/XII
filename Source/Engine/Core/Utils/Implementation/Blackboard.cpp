@@ -330,6 +330,7 @@ xiiResult xiiBlackboardCondition::Serialize(xiiStreamWriter& inout_stream) const
 xiiResult xiiBlackboardCondition::Deserialize(xiiStreamReader& inout_stream)
 {
   const xiiTypeVersion uiVersion = inout_stream.ReadVersion(s_BlackboardConditionVersion);
+  XII_IGNORE_UNUSED(uiVersion);
 
   inout_stream >> m_sEntryName;
   inout_stream >> m_Operator;

@@ -121,6 +121,7 @@ static xiiTexConvUsage::Enum DetectUsageFromImage(const xiiImage& image)
     xiiUInt32 uiExtremeNormals = 0;
 
     xiiUInt32 uiNumPixels = header.GetWidth() * header.GetHeight();
+    XII_ASSERT_DEBUG(uiNumPixels > 0, "Unexpected empty image.");
 
     // Sample no more than 10000 pixels
     xiiUInt32 uiStride = xiiMath::Max(1U, uiNumPixels / 10000);
@@ -141,9 +142,9 @@ static xiiTexConvUsage::Enum DetectUsageFromImage(const xiiImage& image)
     }
 
     // the average color in the image
-    sr /= uiNumPixels;
-    sg /= uiNumPixels;
-    sb /= uiNumPixels;
+    sr /= uiNumPixels; // NOLINT: Not a division by zero.
+    sg /= uiNumPixels; // NOLINT: Not a division by zero.
+    sb /= uiNumPixels; // NOLINT: Not a division by zero.
 
     if (sb < 230 || sr < 128 - 60 || sr > 128 + 60 || sg < 128 - 60 || sg > 128 + 60)
     {

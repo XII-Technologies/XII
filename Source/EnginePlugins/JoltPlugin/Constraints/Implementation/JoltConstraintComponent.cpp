@@ -214,7 +214,7 @@ void xiiJoltConstraintComponent::SerializeComponent(xiiWorldWriter& inout_stream
 void xiiJoltConstraintComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
   SUPER::DeserializeComponent(inout_stream);
-  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  // const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
 
   auto& s = inout_stream.GetStream();
@@ -346,6 +346,12 @@ xiiResult xiiJoltConstraintComponent::FindParentBody(xiiUInt32& out_uiJoltBodyID
         break;
 
       pObject = pObject->GetParent();
+    }
+
+    if (pObject == nullptr)
+    {
+      xiiLog::Error("{0} '{1}' couldn't find xiiJoltDynamicActorComponent in hierarchy. Constraint is ignored.", GetDynamicRTTI()->GetTypeName(), GetOwner()->GetName());
+      return XII_FAILURE;
     }
 
     if (pRbComp == nullptr)

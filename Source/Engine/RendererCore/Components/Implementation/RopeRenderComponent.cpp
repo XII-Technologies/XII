@@ -65,7 +65,7 @@ void xiiRopeRenderComponent::SerializeComponent(xiiWorldWriter& ref_stream) cons
 void xiiRopeRenderComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
   SUPER::DeserializeComponent(ref_stream);
-  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  // const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
   auto&           s         = ref_stream.GetStream();
 
   s >> m_Color;

@@ -424,7 +424,6 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(const char* szFile, const char* s
       {
         sProcessed[stage].Clear();
         spd.m_szShaderSource[stage] = m_StageSourceFile[stage];
-        uiSourceStringLen           = m_StageSourceFile[stage].GetElementCount();
 
         xiiLog::Error(pLog, "Shader preprocessing failed");
         return XII_FAILURE;

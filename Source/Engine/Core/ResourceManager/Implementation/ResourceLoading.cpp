@@ -203,7 +203,7 @@ void xiiResourceManager::PreloadResource(const xiiTypelessResourceHandle& hResou
   XII_ASSERT_DEV(hResource.IsValid(), "Cannot acquire a resource through an invalid handle!");
 
   xiiResource* pResource = hResource.m_pResource;
-  PreloadResource(hResource.m_pResource);
+  PreloadResource(pResource);
 }
 
 xiiResourceState xiiResourceManager::GetLoadingState(const xiiTypelessResourceHandle& hResource)

@@ -31,6 +31,7 @@ xiiResult             xiiBakingSettings::Serialize(xiiStreamWriter& ref_stream) 
 xiiResult xiiBakingSettings::Deserialize(xiiStreamReader& ref_stream)
 {
   const xiiTypeVersion version = ref_stream.ReadVersion(s_BakingSettingsVersion);
+  XII_IGNORE_UNUSED(version);
 
   ref_stream >> m_vProbeSpacing;
   ref_stream >> m_uiNumSamplesPerProbe;
