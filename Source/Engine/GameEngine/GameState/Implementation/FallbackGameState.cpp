@@ -318,8 +318,7 @@ void xiiFallbackGameState::ProcessInput()
 
   if (m_bEnableSceneSelectionMenu)
   {
-    if (xiiStringUtils::IsNullOrEmpty(xiiInputManager::GetExclusiveInputSet()) ||
-        xiiStringUtils::IsEqual(xiiInputManager::GetExclusiveInputSet(), "xiiPlayer"))
+    if (xiiInputManager::GetExclusiveInputSet().IsEmpty() || xiiInputManager::GetExclusiveInputSet() == "xiiPlayer")
     {
       if (DisplayMenu())
       {

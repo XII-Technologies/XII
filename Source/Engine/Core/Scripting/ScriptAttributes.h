@@ -11,9 +11,9 @@ class XII_CORE_DLL xiiScriptExtensionAttribute : public xiiPropertyAttribute
 
 public:
   xiiScriptExtensionAttribute();
-  xiiScriptExtensionAttribute(const char* szTypeName);
+  xiiScriptExtensionAttribute(xiiStringView sTypeName);
 
-  const char* GetTypeName() const { return m_sTypeName; }
+  xiiStringView GetTypeName() const { return m_sTypeName; }
 
 private:
   xiiUntrackedString m_sTypeName;

@@ -83,85 +83,80 @@ void xiiVirtualThumbStick::SetTriggerInputSlot(xiiVirtualThumbStick::Input::Enum
   m_bConfigChanged = true;
 }
 
-void xiiVirtualThumbStick::SetThumbstickOutput(
-  xiiVirtualThumbStick::Output::Enum output,
-  const char*                        szOutputLeft,
-  const char*                        szOutputRight,
-  const char*                        szOutputUp,
-  const char*                        szOutputDown)
+void xiiVirtualThumbStick::SetThumbstickOutput(xiiVirtualThumbStick::Output::Enum output, xiiStringView sOutputLeft, xiiStringView sOutputRight, xiiStringView sOutputUp, xiiStringView sOutputDown)
 {
   switch (output)
   {
     case xiiVirtualThumbStick::Output::Controller0_LeftStick:
     {
-      m_szOutputLeft  = xiiInputSlot_Controller0_LeftStick_NegX;
-      m_szOutputRight = xiiInputSlot_Controller0_LeftStick_PosX;
-      m_szOutputUp    = xiiInputSlot_Controller0_LeftStick_PosY;
-      m_szOutputDown  = xiiInputSlot_Controller0_LeftStick_NegY;
+      m_sOutputLeft  = xiiInputSlot_Controller0_LeftStick_NegX;
+      m_sOutputRight = xiiInputSlot_Controller0_LeftStick_PosX;
+      m_sOutputUp    = xiiInputSlot_Controller0_LeftStick_PosY;
+      m_sOutputDown  = xiiInputSlot_Controller0_LeftStick_NegY;
     }
     break;
     case xiiVirtualThumbStick::Output::Controller0_RightStick:
     {
-      m_szOutputLeft  = xiiInputSlot_Controller0_RightStick_NegX;
-      m_szOutputRight = xiiInputSlot_Controller0_RightStick_PosX;
-      m_szOutputUp    = xiiInputSlot_Controller0_RightStick_PosY;
-      m_szOutputDown  = xiiInputSlot_Controller0_RightStick_NegY;
+      m_sOutputLeft  = xiiInputSlot_Controller0_RightStick_NegX;
+      m_sOutputRight = xiiInputSlot_Controller0_RightStick_PosX;
+      m_sOutputUp    = xiiInputSlot_Controller0_RightStick_PosY;
+      m_sOutputDown  = xiiInputSlot_Controller0_RightStick_NegY;
     }
     break;
     case xiiVirtualThumbStick::Output::Controller1_LeftStick:
     {
-      m_szOutputLeft  = xiiInputSlot_Controller1_LeftStick_NegX;
-      m_szOutputRight = xiiInputSlot_Controller1_LeftStick_PosX;
-      m_szOutputUp    = xiiInputSlot_Controller1_LeftStick_PosY;
-      m_szOutputDown  = xiiInputSlot_Controller1_LeftStick_NegY;
+      m_sOutputLeft  = xiiInputSlot_Controller1_LeftStick_NegX;
+      m_sOutputRight = xiiInputSlot_Controller1_LeftStick_PosX;
+      m_sOutputUp    = xiiInputSlot_Controller1_LeftStick_PosY;
+      m_sOutputDown  = xiiInputSlot_Controller1_LeftStick_NegY;
     }
     break;
     case xiiVirtualThumbStick::Output::Controller1_RightStick:
     {
-      m_szOutputLeft  = xiiInputSlot_Controller1_RightStick_NegX;
-      m_szOutputRight = xiiInputSlot_Controller1_RightStick_PosX;
-      m_szOutputUp    = xiiInputSlot_Controller1_RightStick_PosY;
-      m_szOutputDown  = xiiInputSlot_Controller1_RightStick_NegY;
+      m_sOutputLeft  = xiiInputSlot_Controller1_RightStick_NegX;
+      m_sOutputRight = xiiInputSlot_Controller1_RightStick_PosX;
+      m_sOutputUp    = xiiInputSlot_Controller1_RightStick_PosY;
+      m_sOutputDown  = xiiInputSlot_Controller1_RightStick_NegY;
     }
     break;
     case xiiVirtualThumbStick::Output::Controller2_LeftStick:
     {
-      m_szOutputLeft  = xiiInputSlot_Controller2_LeftStick_NegX;
-      m_szOutputRight = xiiInputSlot_Controller2_LeftStick_PosX;
-      m_szOutputUp    = xiiInputSlot_Controller2_LeftStick_PosY;
-      m_szOutputDown  = xiiInputSlot_Controller2_LeftStick_NegY;
+      m_sOutputLeft  = xiiInputSlot_Controller2_LeftStick_NegX;
+      m_sOutputRight = xiiInputSlot_Controller2_LeftStick_PosX;
+      m_sOutputUp    = xiiInputSlot_Controller2_LeftStick_PosY;
+      m_sOutputDown  = xiiInputSlot_Controller2_LeftStick_NegY;
     }
     break;
     case xiiVirtualThumbStick::Output::Controller2_RightStick:
     {
-      m_szOutputLeft  = xiiInputSlot_Controller2_RightStick_NegX;
-      m_szOutputRight = xiiInputSlot_Controller2_RightStick_PosX;
-      m_szOutputUp    = xiiInputSlot_Controller2_RightStick_PosY;
-      m_szOutputDown  = xiiInputSlot_Controller2_RightStick_NegY;
+      m_sOutputLeft  = xiiInputSlot_Controller2_RightStick_NegX;
+      m_sOutputRight = xiiInputSlot_Controller2_RightStick_PosX;
+      m_sOutputUp    = xiiInputSlot_Controller2_RightStick_PosY;
+      m_sOutputDown  = xiiInputSlot_Controller2_RightStick_NegY;
     }
     break;
     case xiiVirtualThumbStick::Output::Controller3_LeftStick:
     {
-      m_szOutputLeft  = xiiInputSlot_Controller3_LeftStick_NegX;
-      m_szOutputRight = xiiInputSlot_Controller3_LeftStick_PosX;
-      m_szOutputUp    = xiiInputSlot_Controller3_LeftStick_PosY;
-      m_szOutputDown  = xiiInputSlot_Controller3_LeftStick_NegY;
+      m_sOutputLeft  = xiiInputSlot_Controller3_LeftStick_NegX;
+      m_sOutputRight = xiiInputSlot_Controller3_LeftStick_PosX;
+      m_sOutputUp    = xiiInputSlot_Controller3_LeftStick_PosY;
+      m_sOutputDown  = xiiInputSlot_Controller3_LeftStick_NegY;
     }
     break;
     case xiiVirtualThumbStick::Output::Controller3_RightStick:
     {
-      m_szOutputLeft  = xiiInputSlot_Controller3_RightStick_NegX;
-      m_szOutputRight = xiiInputSlot_Controller3_RightStick_PosX;
-      m_szOutputUp    = xiiInputSlot_Controller3_RightStick_PosY;
-      m_szOutputDown  = xiiInputSlot_Controller3_RightStick_NegY;
+      m_sOutputLeft  = xiiInputSlot_Controller3_RightStick_NegX;
+      m_sOutputRight = xiiInputSlot_Controller3_RightStick_PosX;
+      m_sOutputUp    = xiiInputSlot_Controller3_RightStick_PosY;
+      m_sOutputDown  = xiiInputSlot_Controller3_RightStick_NegY;
     }
     break;
     case xiiVirtualThumbStick::Output::Custom:
     {
-      m_szOutputLeft  = szOutputLeft;
-      m_szOutputRight = szOutputRight;
-      m_szOutputUp    = szOutputUp;
-      m_szOutputDown  = szOutputDown;
+      m_sOutputLeft  = sOutputLeft;
+      m_sOutputRight = sOutputRight;
+      m_sOutputUp    = sOutputUp;
+      m_sOutputDown  = sOutputDown;
     }
     break;
   }
@@ -177,12 +172,7 @@ void xiiVirtualThumbStick::SetAreaFocusMode(xiiInputActionConfig::OnEnterArea on
   m_ActionConfig.m_OnLeaveArea = onLeave;
 }
 
-void xiiVirtualThumbStick::SetInputArea(
-  const xiiVec2&   vLowerLeft,
-  const xiiVec2&   vUpperRight,
-  float            fThumbstickRadius,
-  float            fPriority,
-  CenterMode::Enum center)
+void xiiVirtualThumbStick::SetInputArea(const xiiVec2& vLowerLeft, const xiiVec2& vUpperRight, float fThumbstickRadius, float fPriority, CenterMode::Enum center)
 {
   m_bConfigChanged = true;
 
@@ -218,10 +208,10 @@ void xiiVirtualThumbStick::UpdateInputSlotValues()
 {
   m_bIsActive = false;
 
-  m_InputSlotValues[m_szOutputLeft]  = 0.0f;
-  m_InputSlotValues[m_szOutputRight] = 0.0f;
-  m_InputSlotValues[m_szOutputUp]    = 0.0f;
-  m_InputSlotValues[m_szOutputDown]  = 0.0f;
+  m_InputSlotValues[m_sOutputLeft]  = 0.0f;
+  m_InputSlotValues[m_sOutputRight] = 0.0f;
+  m_InputSlotValues[m_sOutputUp]    = 0.0f;
+  m_InputSlotValues[m_sOutputDown]  = 0.0f;
 
   if (!m_bEnabled)
   {
@@ -264,10 +254,10 @@ void xiiVirtualThumbStick::UpdateInputSlotValues()
     const float fLength = xiiMath::Min(vDir.GetLength(), m_fRadius) / m_fRadius;
     vDir.Normalize();
 
-    m_InputSlotValues[m_szOutputLeft]  = xiiMath::Max(0.0f, -vDir.x) * fLength;
-    m_InputSlotValues[m_szOutputRight] = xiiMath::Max(0.0f, vDir.x) * fLength;
-    m_InputSlotValues[m_szOutputUp]    = xiiMath::Max(0.0f, vDir.y) * fLength;
-    m_InputSlotValues[m_szOutputDown]  = xiiMath::Max(0.0f, -vDir.y) * fLength;
+    m_InputSlotValues[m_sOutputLeft]  = xiiMath::Max(0.0f, -vDir.x) * fLength;
+    m_InputSlotValues[m_sOutputRight] = xiiMath::Max(0.0f, vDir.x) * fLength;
+    m_InputSlotValues[m_sOutputUp]    = xiiMath::Max(0.0f, vDir.y) * fLength;
+    m_InputSlotValues[m_sOutputDown]  = xiiMath::Max(0.0f, -vDir.y) * fLength;
   }
 }
 
@@ -283,6 +273,5 @@ void xiiVirtualThumbStick::RegisterInputSlots()
   RegisterInputSlot(xiiInputSlot_Controller0_RightStick_NegY, "Right Stick Down", xiiInputSlotFlags::IsAnalogStick);
   RegisterInputSlot(xiiInputSlot_Controller0_RightStick_PosY, "Right Stick Up", xiiInputSlotFlags::IsAnalogStick);
 }
-
 
 XII_STATICLINK_FILE(Core, Core_Input_Implementation_VirtualThumbStick);

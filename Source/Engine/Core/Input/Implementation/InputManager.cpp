@@ -28,9 +28,9 @@ xiiInputManager::xiiInputSlot::xiiInputSlot()
   m_fDeadZone = 0.0f;
 }
 
-void xiiInputManager::RegisterInputSlot(const char* szInputSlot, const char* szDefaultDisplayName, xiiBitflags<xiiInputSlotFlags> SlotFlags)
+void xiiInputManager::RegisterInputSlot(xiiStringView sInputSlot, xiiStringView sDefaultDisplayName, xiiBitflags<xiiInputSlotFlags> SlotFlags)
 {
-  xiiMap<xiiString, xiiInputSlot>::Iterator it = GetInternals().s_InputSlots.Find(szInputSlot);
+  xiiMap<xiiString, xiiInputSlot>::Iterator it = GetInternals().s_InputSlots.Find(sInputSlot);
 
   if (it.IsValid())
   {
@@ -39,7 +39,7 @@ void xiiInputManager::RegisterInputSlot(const char* szInputSlot, const char* szD
       if ((it.Value().m_SlotFlags != xiiInputSlotFlags::Default) && (SlotFlags != xiiInputSlotFlags::Default))
       {
         xiiStringBuilder tmp;
-        tmp.Printf("Different devices register Input Slot '%s' with different Slot Flags: %16b vs. %16b", szInputSlot,
+        tmp.Printf("Different devices register Input Slot '%s' with different Slot Flags: %16b vs. %16b", sInputSlot,
                    it.Value().m_SlotFlags.GetValue(), SlotFlags.GetValue());
         xiiLog::Warning(tmp);
       }
@@ -52,60 +52,60 @@ void xiiInputManager::RegisterInputSlot(const char* szInputSlot, const char* szD
       return;
   }
 
-  // xiiLog::Debug("Registered Input Slot: '{0}'", szInputSlot);
+  // xiiLog::Debug("Registered Input Slot: '{0}'", sInputSlot);
 
-  xiiInputSlot& sm = GetInternals().s_InputSlots[szInputSlot];
+  xiiInputSlot& sm = GetInternals().s_InputSlots[sInputSlot];
 
-  sm.m_sDisplayName = szDefaultDisplayName;
+  sm.m_sDisplayName = sDefaultDisplayName;
   sm.m_SlotFlags    = SlotFlags;
 
   InputEventData e;
-  e.m_EventType   = InputEventData::InputSlotChanged;
-  e.m_szInputSlot = szInputSlot;
+  e.m_EventType  = InputEventData::InputSlotChanged;
+  e.m_sInputSlot = sInputSlot;
 
   s_InputEvents.Broadcast(e);
 }
 
-xiiBitflags<xiiInputSlotFlags> xiiInputManager::GetInputSlotFlags(const char* szInputSlot)
+xiiBitflags<xiiInputSlotFlags> xiiInputManager::GetInputSlotFlags(xiiStringView sInputSlot)
 {
-  xiiMap<xiiString, xiiInputSlot>::ConstIterator it = GetInternals().s_InputSlots.Find(szInputSlot);
+  xiiMap<xiiString, xiiInputSlot>::ConstIterator it = GetInternals().s_InputSlots.Find(sInputSlot);
 
   if (it.IsValid())
     return it.Value().m_SlotFlags;
 
-  xiiLog::Warning("xiiInputManager::GetInputSlotFlags: Input Slot '{0}' does not exist (yet).", szInputSlot);
+  xiiLog::Warning("xiiInputManager::GetInputSlotFlags: Input Slot '{0}' does not exist (yet).", sInputSlot);
 
   return xiiInputSlotFlags::Default;
 }
 
-void xiiInputManager::SetInputSlotDisplayName(const char* szInputSlot, const char* szDefaultDisplayName)
+void xiiInputManager::SetInputSlotDisplayName(xiiStringView sInputSlot, xiiStringView sDefaultDisplayName)
 {
-  RegisterInputSlot(szInputSlot, szDefaultDisplayName, xiiInputSlotFlags::Default);
-  GetInternals().s_InputSlots[szInputSlot].m_sDisplayName = szDefaultDisplayName;
+  RegisterInputSlot(sInputSlot, sDefaultDisplayName, xiiInputSlotFlags::Default);
+  GetInternals().s_InputSlots[sInputSlot].m_sDisplayName = sDefaultDisplayName;
 
   InputEventData e;
-  e.m_EventType   = InputEventData::InputSlotChanged;
-  e.m_szInputSlot = szInputSlot;
+  e.m_EventType  = InputEventData::InputSlotChanged;
+  e.m_sInputSlot = sInputSlot;
 
   s_InputEvents.Broadcast(e);
 }
 
-const char* xiiInputManager::GetInputSlotDisplayName(const char* szInputSlot)
+xiiStringView xiiInputManager::GetInputSlotDisplayName(xiiStringView sInputSlot)
 {
-  xiiMap<xiiString, xiiInputSlot>::ConstIterator it = GetInternals().s_InputSlots.Find(szInputSlot);
+  xiiMap<xiiString, xiiInputSlot>::ConstIterator it = GetInternals().s_InputSlots.Find(sInputSlot);
 
   if (it.IsValid())
     return it.Value().m_sDisplayName.GetData();
 
-  xiiLog::Warning("xiiInputManager::GetInputSlotDisplayName: Input Slot '{0}' does not exist (yet).", szInputSlot);
-  return szInputSlot;
+  xiiLog::Warning("xiiInputManager::GetInputSlotDisplayName: Input Slot '{0}' does not exist (yet).", sInputSlot);
+  return sInputSlot;
 }
 
-const char* xiiInputManager::GetInputSlotDisplayName(const char* szInputSet, const char* szAction, xiiInt32 iTrigger)
+xiiStringView xiiInputManager::GetInputSlotDisplayName(xiiStringView sInputSet, xiiStringView sAction, xiiInt32 iTrigger)
 {
   /// \test This is new
 
-  const auto cfg = GetInputActionConfig(szInputSet, szAction);
+  const auto cfg = GetInputActionConfig(sInputSet, sAction);
 
   if (iTrigger < 0)
   {
@@ -122,34 +122,34 @@ const char* xiiInputManager::GetInputSlotDisplayName(const char* szInputSet, con
   return GetInputSlotDisplayName(cfg.m_sInputSlotTrigger[iTrigger]);
 }
 
-void xiiInputManager::SetInputSlotDeadZone(const char* szInputSlot, float fDeadZone)
+void xiiInputManager::SetInputSlotDeadZone(xiiStringView sInputSlot, float fDeadZone)
 {
-  RegisterInputSlot(szInputSlot, szInputSlot, xiiInputSlotFlags::Default);
-  GetInternals().s_InputSlots[szInputSlot].m_fDeadZone = xiiMath::Max(fDeadZone, 0.0001f);
+  RegisterInputSlot(sInputSlot, sInputSlot, xiiInputSlotFlags::Default);
+  GetInternals().s_InputSlots[sInputSlot].m_fDeadZone = xiiMath::Max(fDeadZone, 0.0001f);
 
   InputEventData e;
-  e.m_EventType   = InputEventData::InputSlotChanged;
-  e.m_szInputSlot = szInputSlot;
+  e.m_EventType  = InputEventData::InputSlotChanged;
+  e.m_sInputSlot = sInputSlot;
 
   s_InputEvents.Broadcast(e);
 }
 
-float xiiInputManager::GetInputSlotDeadZone(const char* szInputSlot)
+float xiiInputManager::GetInputSlotDeadZone(xiiStringView sInputSlot)
 {
-  xiiMap<xiiString, xiiInputSlot>::ConstIterator it = GetInternals().s_InputSlots.Find(szInputSlot);
+  xiiMap<xiiString, xiiInputSlot>::ConstIterator it = GetInternals().s_InputSlots.Find(sInputSlot);
 
   if (it.IsValid())
     return it.Value().m_fDeadZone;
 
-  xiiLog::Warning("xiiInputManager::GetInputSlotDeadZone: Input Slot '{0}' does not exist (yet).", szInputSlot);
+  xiiLog::Warning("xiiInputManager::GetInputSlotDeadZone: Input Slot '{0}' does not exist (yet).", sInputSlot);
 
   xiiInputSlot s;
   return s.m_fDeadZone; // return the default value
 }
 
-xiiKeyState::Enum xiiInputManager::GetInputSlotState(const char* szInputSlot, float* pValue)
+xiiKeyState::Enum xiiInputManager::GetInputSlotState(xiiStringView sInputSlot, float* pValue)
 {
-  xiiMap<xiiString, xiiInputSlot>::ConstIterator it = GetInternals().s_InputSlots.Find(szInputSlot);
+  xiiMap<xiiString, xiiInputSlot>::ConstIterator it = GetInternals().s_InputSlots.Find(sInputSlot);
 
   if (it.IsValid())
   {
@@ -164,8 +164,8 @@ xiiKeyState::Enum xiiInputManager::GetInputSlotState(const char* szInputSlot, fl
 
   xiiLog::Warning("xiiInputManager::GetInputSlotState: Input Slot '{0}' does not exist (yet). To ensure all devices are initialized, call "
                   "xiiInputManager::Update before querying device states, or at least call xiiInputManager::PollHardware.",
-                  szInputSlot);
-  RegisterInputSlot(szInputSlot, szInputSlot, xiiInputSlotFlags::None);
+                  sInputSlot);
+  RegisterInputSlot(sInputSlot, sInputSlot, xiiInputSlotFlags::None);
 
   return xiiKeyState::Up;
 }
@@ -261,15 +261,15 @@ void xiiInputManager::UpdateInputSlotStates()
       it.Value().m_State = NewState;
 
       InputEventData e;
-      e.m_EventType   = InputEventData::InputSlotChanged;
-      e.m_szInputSlot = it.Key().GetData();
+      e.m_EventType  = InputEventData::InputSlotChanged;
+      e.m_sInputSlot = it.Key().GetData();
 
       s_InputEvents.Broadcast(e);
     }
   }
 }
 
-void xiiInputManager::RetrieveAllKnownInputSlots(xiiDynamicArray<const char*>& out_inputSlots)
+void xiiInputManager::RetrieveAllKnownInputSlots(xiiDynamicArray<xiiStringView>& out_inputSlots)
 {
   out_inputSlots.Clear();
   out_inputSlots.Reserve(GetInternals().s_InputSlots.GetCount());
@@ -291,12 +291,12 @@ xiiUInt32 xiiInputManager::RetrieveLastCharacter(bool bResetCurrent)
   return Temp;
 }
 
-void xiiInputManager::InjectInputSlotValue(const char* szInputSlot, float fValue)
+void xiiInputManager::InjectInputSlotValue(xiiStringView sInputSlot, float fValue)
 {
-  GetInternals().s_InjectedInputSlots[szInputSlot] = xiiMath::Max(GetInternals().s_InjectedInputSlots[szInputSlot], fValue);
+  GetInternals().s_InjectedInputSlots[sInputSlot] = xiiMath::Max(GetInternals().s_InjectedInputSlots[sInputSlot], fValue);
 }
 
-const char* xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::Enum mustHaveFlags, xiiInputSlotFlags::Enum mustNotHaveFlags)
+xiiStringView xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::Enum mustHaveFlags, xiiInputSlotFlags::Enum mustNotHaveFlags)
 {
   for (xiiInputSlotsMap::Iterator it = GetInternals().s_InputSlots.GetIterator(); it.IsValid(); ++it)
   {
@@ -313,7 +313,7 @@ const char* xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::Enum mustHav
   return xiiInputSlot_None;
 }
 
-const char* xiiInputManager::GetInputSlotTouchPoint(unsigned int uiIndex)
+xiiStringView xiiInputManager::GetInputSlotTouchPoint(unsigned int uiIndex)
 {
   switch (uiIndex)
   {
@@ -343,7 +343,7 @@ const char* xiiInputManager::GetInputSlotTouchPoint(unsigned int uiIndex)
   }
 }
 
-const char* xiiInputManager::GetInputSlotTouchPointPositionX(unsigned int uiIndex)
+xiiStringView xiiInputManager::GetInputSlotTouchPointPositionX(unsigned int uiIndex)
 {
   switch (uiIndex)
   {
@@ -373,7 +373,7 @@ const char* xiiInputManager::GetInputSlotTouchPointPositionX(unsigned int uiInde
   }
 }
 
-const char* xiiInputManager::GetInputSlotTouchPointPositionY(unsigned int uiIndex)
+xiiStringView xiiInputManager::GetInputSlotTouchPointPositionY(unsigned int uiIndex)
 {
   switch (uiIndex)
   {

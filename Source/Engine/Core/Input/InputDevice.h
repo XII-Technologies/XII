@@ -47,7 +47,7 @@ public:
   xiiInputDevice();
 
   /// \brief Allows to query current input values for the given slot
-  float GetInputSlotState(const char* szSlot) const;
+  float GetInputSlotState(xiiStringView sSlot) const;
 
   /// \brief Returns true, if the device was 'used' during the last frame, ie. when it generated input due to some user interaction.
   ///
@@ -81,7 +81,7 @@ private:
 
 protected:
   /// \brief Calls RegisterInputSlot() on the xiiInputManager and passes the parameters through.
-  static void RegisterInputSlot(const char* szName, const char* szDefaultDisplayName, xiiBitflags<xiiInputSlotFlags> SlotFlags); // [tested]
+  static void RegisterInputSlot(xiiStringView sName, xiiStringView sDefaultDisplayName, xiiBitflags<xiiInputSlotFlags> SlotFlags); // [tested]
 
   /// \brief Stores all the values for all input slots that this device handles.
   ///

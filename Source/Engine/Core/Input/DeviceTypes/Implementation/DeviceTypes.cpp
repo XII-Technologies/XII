@@ -64,10 +64,8 @@ float xiiInputDeviceController::GetVibrationStrength(xiiUInt8 uiVirtual, Motor::
 
 void xiiInputDeviceController::SetControllerMapping(xiiUInt8 uiVirtualController, xiiInt8 iTakeInputFromPhysical)
 {
-  XII_ASSERT_DEV(
-    uiVirtualController < MaxControllers, "Virtual Controller Index {0} is larger than allowed ({1}).", uiVirtualController, MaxControllers);
-  XII_ASSERT_DEV(
-    iTakeInputFromPhysical < MaxControllers, "Physical Controller Index {0} is larger than allowed ({1}).", iTakeInputFromPhysical, MaxControllers);
+  XII_ASSERT_DEV(uiVirtualController < MaxControllers, "Virtual Controller Index {0} is larger than allowed ({1}).", uiVirtualController, MaxControllers);
+  XII_ASSERT_DEV(iTakeInputFromPhysical < MaxControllers, "Physical Controller Index {0} is larger than allowed ({1}).", iTakeInputFromPhysical, MaxControllers);
 
   if (iTakeInputFromPhysical < 0)
   {
@@ -98,12 +96,7 @@ xiiInt8 xiiInputDeviceController::GetControllerMapping(xiiUInt8 uiVirtual) const
   return m_iControllerMapping[uiVirtual];
 }
 
-void xiiInputDeviceController::AddVibrationTrack(
-  xiiUInt8    uiVirtual,
-  Motor::Enum motor,
-  float*      pVibrationTrackValue,
-  xiiUInt32   uiSamples,
-  float       fScalingFactor)
+void xiiInputDeviceController::AddVibrationTrack(xiiUInt8 uiVirtual, Motor::Enum motor, float* pVibrationTrackValue, xiiUInt32 uiSamples, float fScalingFactor)
 {
   uiSamples = xiiMath::Min<xiiUInt32>(uiSamples, MaxVibrationSamples);
 

@@ -2,7 +2,7 @@
 
 #include <Core/Input/InputManager.h>
 
-const char* xiiInputManager::ConvertScanCodeToEngineName(xiiUInt8 uiScanCode, bool bIsExtendedKey)
+xiiStringView xiiInputManager::ConvertScanCodeToEngineName(xiiUInt8 uiScanCode, bool bIsExtendedKey)
 {
   const xiiUInt8 uiFinalScanCode = bIsExtendedKey ? (uiScanCode + 128) : uiScanCode;
 
@@ -242,7 +242,7 @@ const char* xiiInputManager::ConvertScanCodeToEngineName(xiiUInt8 uiScanCode, bo
 
     default:
 
-      // for extended keys fall back to the non-extended name
+      // For extended keys fall back to the non-extended name
       if (bIsExtendedKey)
         return ConvertScanCodeToEngineName(uiScanCode, false);
 
@@ -251,7 +251,5 @@ const char* xiiInputManager::ConvertScanCodeToEngineName(xiiUInt8 uiScanCode, bo
 
   return "unknown_key";
 }
-
-
 
 XII_STATICLINK_FILE(Core, Core_Input_Implementation_ScancodeTable);

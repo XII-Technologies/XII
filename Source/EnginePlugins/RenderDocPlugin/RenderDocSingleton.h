@@ -25,8 +25,8 @@ public:
   virtual ~xiiRenderDoc();
 
   virtual bool        IsInitialized() const override;
-  virtual void        SetAbsCaptureFilePathTemplate(const char* szFilePathTemplate) override;
-  virtual const char* GetAbsCaptureFilePathTemplate() const override;
+  virtual void          SetAbsCaptureFilePathTemplate(xiiStringView sFilePathTemplate) override;
+  virtual xiiStringView GetAbsCaptureFilePathTemplate() const override;
   virtual void        StartFrameCapture(xiiWindowHandle hWnd) override;
   virtual bool        IsFrameCapturing() const override;
   virtual void        EndFrameCaptureAndWriteOutput(xiiWindowHandle hWnd) override;

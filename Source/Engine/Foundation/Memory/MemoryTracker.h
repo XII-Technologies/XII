@@ -72,7 +72,7 @@ public:
     ~Iterator();
 
     xiiAllocatorId                 Id() const;
-    const char*                    Name() const;
+    xiiStringView                  Name() const;
     xiiAllocatorId                 ParentId() const;
     const xiiAllocatorBase::Stats& Stats() const;
 
@@ -92,23 +92,17 @@ public:
     void* m_pData;
   };
 
-  static xiiAllocatorId RegisterAllocator(const char* szName, xiiBitflags<xiiMemoryTrackingFlags> flags, xiiAllocatorId parentId);
+  static xiiAllocatorId RegisterAllocator(xiiStringView sName, xiiBitflags<xiiMemoryTrackingFlags> flags, xiiAllocatorId parentId);
   static void           DeregisterAllocator(xiiAllocatorId allocatorId);
 
-  static void AddAllocation(
-    xiiAllocatorId                      allocatorId,
-    xiiBitflags<xiiMemoryTrackingFlags> flags,
-    const void*                         pPtr,
-    size_t                              uiSize,
-    size_t                              uiAlign,
-    xiiTime                             allocationTime);
+  static void AddAllocation(xiiAllocatorId allocatorId, xiiBitflags<xiiMemoryTrackingFlags> flags, const void* pPtr, size_t uiSize, size_t uiAlign, xiiTime allocationTime);
   static void RemoveAllocation(xiiAllocatorId allocatorId, const void* pPtr);
   static void RemoveAllAllocations(xiiAllocatorId allocatorId);
   static void SetAllocatorStats(xiiAllocatorId allocatorId, const xiiAllocatorBase::Stats& stats);
 
   static void ResetPerFrameAllocatorStats();
 
-  static const char*                    GetAllocatorName(xiiAllocatorId allocatorId);
+  static xiiStringView                  GetAllocatorName(xiiAllocatorId allocatorId);
   static const xiiAllocatorBase::Stats& GetAllocatorStats(xiiAllocatorId allocatorId);
   static xiiAllocatorId                 GetAllocatorParentId(xiiAllocatorId allocatorId);
   static const AllocationInfo&          GetAllocationInfo(xiiAllocatorId allocatorId, const void* pPtr);

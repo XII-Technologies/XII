@@ -1,9 +1,6 @@
 
 template <typename T, xiiUInt32 BlockSize, xiiBlockStorageType::Enum StorageType>
-XII_FORCE_INLINE xiiBlockStorage<T, BlockSize, StorageType>::ConstIterator::ConstIterator(
-  const xiiBlockStorage<T, BlockSize, StorageType>& storage,
-  xiiUInt32                                         uiStartIndex,
-  xiiUInt32                                         uiCount) :
+XII_FORCE_INLINE xiiBlockStorage<T, BlockSize, StorageType>::ConstIterator::ConstIterator(const xiiBlockStorage<T, BlockSize, StorageType>& storage, xiiUInt32 uiStartIndex, xiiUInt32 uiCount) :
   m_Storage(storage)
 {
   m_uiCurrentIndex = uiStartIndex;
@@ -75,10 +72,7 @@ XII_ALWAYS_INLINE void xiiBlockStorage<T, BlockSize, StorageType>::ConstIterator
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T, xiiUInt32 BlockSize, xiiBlockStorageType::Enum StorageType>
-XII_FORCE_INLINE xiiBlockStorage<T, BlockSize, StorageType>::Iterator::Iterator(
-  const xiiBlockStorage<T, BlockSize, StorageType>& storage,
-  xiiUInt32                                         uiStartIndex,
-  xiiUInt32                                         uiCount) :
+XII_FORCE_INLINE xiiBlockStorage<T, BlockSize, StorageType>::Iterator::Iterator(const xiiBlockStorage<T, BlockSize, StorageType>& storage, xiiUInt32 uiStartIndex, xiiUInt32 uiCount) :
   ConstIterator(storage, uiStartIndex, uiCount)
 {
 }
@@ -104,9 +98,7 @@ XII_ALWAYS_INLINE xiiBlockStorage<T, BlockSize, StorageType>::Iterator::operator
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T, xiiUInt32 BlockSize, xiiBlockStorageType::Enum StorageType>
-XII_FORCE_INLINE xiiBlockStorage<T, BlockSize, StorageType>::xiiBlockStorage(
-  xiiLargeBlockAllocator<BlockSize>* pBlockAllocator,
-  xiiAllocatorBase*                  pAllocator) :
+XII_FORCE_INLINE xiiBlockStorage<T, BlockSize, StorageType>::xiiBlockStorage(xiiLargeBlockAllocator<BlockSize>* pBlockAllocator, xiiAllocatorBase* pAllocator) :
   m_pBlockAllocator(pBlockAllocator), m_Blocks(pAllocator)
 {
 }
@@ -215,17 +207,13 @@ XII_ALWAYS_INLINE xiiUInt32 xiiBlockStorage<T, BlockSize, StorageType>::GetCount
 }
 
 template <typename T, xiiUInt32 BlockSize, xiiBlockStorageType::Enum StorageType>
-XII_ALWAYS_INLINE typename xiiBlockStorage<T, BlockSize, StorageType>::Iterator xiiBlockStorage<T, BlockSize, StorageType>::GetIterator(
-  xiiUInt32 uiStartIndex /*= 0*/,
-  xiiUInt32 uiCount /*= xiiInvalidIndex*/)
+XII_ALWAYS_INLINE typename xiiBlockStorage<T, BlockSize, StorageType>::Iterator xiiBlockStorage<T, BlockSize, StorageType>::GetIterator(xiiUInt32 uiStartIndex /*= 0*/, xiiUInt32 uiCount /*= xiiInvalidIndex*/)
 {
   return Iterator(*this, uiStartIndex, uiCount);
 }
 
 template <typename T, xiiUInt32 BlockSize, xiiBlockStorageType::Enum StorageType>
-XII_ALWAYS_INLINE typename xiiBlockStorage<T, BlockSize, StorageType>::ConstIterator xiiBlockStorage<T, BlockSize, StorageType>::GetIterator(
-  xiiUInt32 uiStartIndex /*= 0*/,
-  xiiUInt32 uiCount /*= xiiInvalidIndex*/) const
+XII_ALWAYS_INLINE typename xiiBlockStorage<T, BlockSize, StorageType>::ConstIterator xiiBlockStorage<T, BlockSize, StorageType>::GetIterator(xiiUInt32 uiStartIndex /*= 0*/, xiiUInt32 uiCount /*= xiiInvalidIndex*/) const
 {
   return ConstIterator(*this, uiStartIndex, uiCount);
 }

@@ -240,7 +240,7 @@ namespace xiiInternal
     bool m_bReportErrorWhenStaticObjectMoves = true;
 
     /// \brief Maps some data (given as void*) to a xiiGameObjectHandle. Only available in special situations (e.g. editor use cases).
-    xiiDelegate<xiiGameObjectHandle(const void*, xiiComponentHandle, const char*)> m_GameObjectReferenceResolver;
+    xiiDelegate<xiiGameObjectHandle(const void*, xiiComponentHandle, xiiStringView)> m_GameObjectReferenceResolver;
 
   public:
     class ReadMarker

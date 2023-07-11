@@ -15,7 +15,7 @@ class XII_CORE_DLL xiiDuktapeContext : public xiiDuktapeHelper
   XII_DISALLOW_COPY_AND_ASSIGN(xiiDuktapeContext);
 
 public:
-  xiiDuktapeContext(const char* szWrapperName);
+  xiiDuktapeContext(xiiStringView sWrapperName);
   ~xiiDuktapeContext();
 
   /// \name Basics
@@ -40,8 +40,7 @@ protected:
 
 private:
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiMemoryTrackingFlags::RegisterAllocator | xiiMemoryTrackingFlags::EnableAllocationTracking>
-    m_Allocator;
+  xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiMemoryTrackingFlags::RegisterAllocator | xiiMemoryTrackingFlags::EnableAllocationTracking> m_Allocator;
 #  else
   xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiMemoryTrackingFlags::None> m_Allocator;
 #  endif

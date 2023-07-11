@@ -5,33 +5,32 @@
 
 namespace InputDetail
 {
-
-  static void SendInputSlotData(const char* szInputSlot)
+  static void SendInputSlotData(xiiStringView sInputSlot)
   {
     float fValue = 0.0f;
 
     xiiTelemetryMessage msg;
     msg.SetMessageID('INPT', 'SLOT');
-    msg.GetWriter() << szInputSlot;
-    msg.GetWriter() << xiiInputManager::GetInputSlotFlags(szInputSlot).GetValue();
-    msg.GetWriter() << (xiiUInt8)xiiInputManager::GetInputSlotState(szInputSlot, &fValue);
+    msg.GetWriter() << sInputSlot;
+    msg.GetWriter() << xiiInputManager::GetInputSlotFlags(sInputSlot).GetValue();
+    msg.GetWriter() << (xiiUInt8)xiiInputManager::GetInputSlotState(sInputSlot, &fValue);
     msg.GetWriter() << fValue;
-    msg.GetWriter() << xiiInputManager::GetInputSlotDeadZone(szInputSlot);
+    msg.GetWriter() << xiiInputManager::GetInputSlotDeadZone(sInputSlot);
 
     xiiTelemetry::Broadcast(xiiTelemetry::Reliable, msg);
   }
 
-  static void SendInputActionData(const char* szInputSet, const char* szInputAction)
+  static void SendInputActionData(xiiStringView sInputSet, xiiStringView sInputAction)
   {
     float fValue = 0.0f;
 
-    const xiiInputActionConfig cfg = xiiInputManager::GetInputActionConfig(szInputSet, szInputAction);
+    const xiiInputActionConfig cfg = xiiInputManager::GetInputActionConfig(sInputSet, sInputAction);
 
     xiiTelemetryMessage msg;
     msg.SetMessageID('INPT', 'ACTN');
-    msg.GetWriter() << szInputSet;
-    msg.GetWriter() << szInputAction;
-    msg.GetWriter() << (xiiUInt8)xiiInputManager::GetInputActionState(szInputSet, szInputAction, &fValue);
+    msg.GetWriter() << sInputSet;
+    msg.GetWriter() << sInputAction;
+    msg.GetWriter() << (xiiUInt8)xiiInputManager::GetInputActionState(sInputSet, sInputAction, &fValue);
     msg.GetWriter() << fValue;
     msg.GetWriter() << cfg.m_bApplyTimeScaling;
 
@@ -46,7 +45,7 @@ namespace InputDetail
 
   static void SendAllInputSlots()
   {
-    xiiDynamicArray<const char*> InputSlots;
+    xiiDynamicArray<xiiStringView> InputSlots;
     xiiInputManager::RetrieveAllKnownInputSlots(InputSlots);
 
     for (xiiUInt32 i = 0; i < InputSlots.GetCount(); ++i)
@@ -65,7 +64,9 @@ namespace InputDetail
       xiiInputManager::GetAllInputActions(InputSetNames[s].GetData(), InputActions);
 
       for (xiiUInt32 a = 0; a < InputActions.GetCount(); ++a)
+      {
         SendInputActionData(InputSetNames[s].GetData(), InputActions[a].GetData());
+      }
     }
   }
 
@@ -94,10 +95,10 @@ namespace InputDetail
     switch (e.m_EventType)
     {
       case xiiInputManager::InputEventData::InputActionChanged:
-        SendInputActionData(e.m_szInputSet, e.m_szInputAction);
+        SendInputActionData(e.m_sInputSet, e.m_sInputAction);
         break;
       case xiiInputManager::InputEventData::InputSlotChanged:
-        SendInputSlotData(e.m_szInputSlot);
+        SendInputSlotData(e.m_sInputSlot);
         break;
 
       default:

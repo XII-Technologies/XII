@@ -184,7 +184,7 @@ void xiiGameEngineTestApplication::BeforeHighLevelSystemsShutdown()
   SUPER::BeforeHighLevelSystemsShutdown();
 }
 
-void xiiGameEngineTestApplication::StoreScreenshot(xiiImage&& image, const char* szContext)
+void xiiGameEngineTestApplication::StoreScreenshot(xiiImage&& image, xiiStringView sContext)
 {
   // store this for image comparison purposes
   m_LastScreenshot.ResetAndMove(std::move(image));

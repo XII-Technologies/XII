@@ -42,30 +42,30 @@ void xiiImageView::ResetAndViewExternalStorage(const xiiImageHeader& header, xii
   m_DataPtr = xiiBlobPtr<xiiUInt8>(const_cast<xiiUInt8*>(static_cast<const xiiUInt8*>(imageData.GetPtr())), imageData.GetCount());
 }
 
-xiiResult xiiImageView::SaveTo(const char* szFileName) const
+xiiResult xiiImageView::SaveTo(xiiStringView sFileName) const
 {
-  XII_LOG_BLOCK("Writing Image", szFileName);
+  XII_LOG_BLOCK("Writing Image", sFileName);
 
   if (m_Format == xiiImageFormat::UNKNOWN)
   {
-    xiiLog::Error("Cannot write image '{0}' - image data is invalid or empty", szFileName);
+    xiiLog::Error("Cannot write image '{0}' - image data is invalid or empty", sFileName);
     return XII_FAILURE;
   }
 
   xiiFileWriter writer;
-  if (writer.Open(szFileName) == XII_FAILURE)
+  if (writer.Open(sFileName) == XII_FAILURE)
   {
-    xiiLog::Error("Failed to open image file '{0}'", szFileName);
+    xiiLog::Error("Failed to open image file '{0}'", sFileName);
     return XII_FAILURE;
   }
 
-  xiiStringView it = xiiPathUtils::GetFileExtension(szFileName);
+  xiiStringView it = xiiPathUtils::GetFileExtension(sFileName);
 
   if (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetWriterFormat(it.GetStartPointer()))
   {
     if (pFormat->WriteImage(writer, *this, it.GetStartPointer()) != XII_SUCCESS)
     {
-      xiiLog::Error("Failed to write image file '{0}'", szFileName);
+      xiiLog::Error("Failed to write image file '{0}'", sFileName);
       return XII_FAILURE;
     }
 
@@ -81,13 +81,7 @@ const xiiImageHeader& xiiImageView::GetHeader() const
   return *this;
 }
 
-xiiImageView xiiImageView::GetRowView(
-  xiiUInt32 uiMipLevel /*= 0*/,
-  xiiUInt32 uiFace /*= 0*/,
-  xiiUInt32 uiArrayIndex /*= 0*/,
-  xiiUInt32 y /*= 0*/,
-  xiiUInt32 z /*= 0*/,
-  xiiUInt32 uiPlaneIndex /*= 0*/) const
+xiiImageView xiiImageView::GetRowView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/, xiiUInt32 y /*= 0*/, xiiUInt32 z /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
 {
   xiiImageHeader header;
   header.SetNumMipLevels(1);
@@ -113,9 +107,7 @@ xiiImageView xiiImageView::GetRowView(
 
 void xiiImageView::ReinterpretAs(xiiImageFormat::Enum format)
 {
-  XII_ASSERT_DEBUG(
-    xiiImageFormat::IsCompressed(format) == xiiImageFormat::IsCompressed(GetImageFormat()), "Cannot reinterpret compressed and non-compressed formats");
-
+  XII_ASSERT_DEBUG(xiiImageFormat::IsCompressed(format) == xiiImageFormat::IsCompressed(GetImageFormat()), "Cannot reinterpret compressed and non-compressed formats");
   XII_ASSERT_DEBUG(xiiImageFormat::GetBitsPerPixel(GetImageFormat()) == xiiImageFormat::GetBitsPerPixel(format),
                    "Cannot reinterpret between formats of different sizes");
 
@@ -256,26 +248,26 @@ void xiiImage::ResetAndCopy(const xiiImageView& other)
   memcpy(GetBlobPtr<xiiUInt8>().GetPtr(), other.GetBlobPtr<xiiUInt8>().GetPtr(), static_cast<size_t>(other.GetBlobPtr<xiiUInt8>().GetCount()));
 }
 
-xiiResult xiiImage::LoadFrom(const char* szFileName)
+xiiResult xiiImage::LoadFrom(xiiStringView sFileName)
 {
-  XII_LOG_BLOCK("Loading Image", szFileName);
+  XII_LOG_BLOCK("Loading Image", sFileName);
 
-  XII_PROFILE_SCOPE(xiiPathUtils::GetFileNameAndExtension(szFileName).GetStartPointer());
+  XII_PROFILE_SCOPE(xiiPathUtils::GetFileNameAndExtension(sFileName).GetStartPointer());
 
   xiiFileReader reader;
-  if (reader.Open(szFileName) == XII_FAILURE)
+  if (reader.Open(sFileName) == XII_FAILURE)
   {
-    xiiLog::Warning("Failed to open image file '{0}'", xiiArgSensitive(szFileName, "File"));
+    xiiLog::Warning("Failed to open image file '{0}'", xiiArgSensitive(sFileName, "File"));
     return XII_FAILURE;
   }
 
-  xiiStringView it = xiiPathUtils::GetFileExtension(szFileName);
+  xiiStringView it = xiiPathUtils::GetFileExtension(sFileName);
 
   if (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetReaderFormat(it.GetStartPointer()))
   {
     if (pFormat->ReadImage(reader, *this, it.GetStartPointer()) != XII_SUCCESS)
     {
-      xiiLog::Warning("Failed to read image file '{0}'", xiiArgSensitive(szFileName, "File"));
+      xiiLog::Warning("Failed to read image file '{0}'", xiiArgSensitive(sFileName, "File"));
       return XII_FAILURE;
     }
 
@@ -316,8 +308,7 @@ xiiImage xiiImage::GetSubImageView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFac
   xiiImageView constView = xiiImageView::GetSubImageView(uiMipLevel, uiFace, uiArrayIndex);
 
   // Create a xiiImage attached to the view. Const cast is safe here since we own the storage.
-  return xiiImage(
-    constView.GetHeader(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
+  return xiiImage(constView.GetHeader(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
 }
 
 xiiImageView xiiImageView::GetPlaneView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
@@ -347,8 +338,7 @@ xiiImage xiiImage::GetPlaneView(xiiUInt32 uiMipLevel /* = 0 */, xiiUInt32 uiFace
   xiiImageView constView = xiiImageView::GetPlaneView(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
 
   // Create a xiiImage attached to the view. Const cast is safe here since we own the storage.
-  return xiiImage(
-    constView.GetHeader(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
+  return xiiImage(constView.GetHeader(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
 }
 
 xiiImage xiiImage::GetSliceView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/, xiiUInt32 z /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/)
@@ -356,8 +346,7 @@ xiiImage xiiImage::GetSliceView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /
   xiiImageView constView = xiiImageView::GetSliceView(uiMipLevel, uiFace, uiArrayIndex, z, uiPlaneIndex);
 
   // Create a xiiImage attached to the view. Const cast is safe here since we own the storage.
-  return xiiImage(
-    constView.GetHeader(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
+  return xiiImage(constView.GetHeader(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
 }
 
 xiiImageView xiiImageView::GetSliceView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/, xiiUInt32 z /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const

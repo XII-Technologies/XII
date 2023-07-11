@@ -8,7 +8,7 @@ class XII_FOUNDATION_DLL xiiDoubleBufferedStackAllocator
 public:
   using StackAllocatorType = xiiStackAllocator<xiiMemoryTrackingFlags::RegisterAllocator>;
 
-  xiiDoubleBufferedStackAllocator(const char* szName, xiiAllocatorBase* pParent);
+  xiiDoubleBufferedStackAllocator(xiiStringView sName, xiiAllocatorBase* pParent);
   ~xiiDoubleBufferedStackAllocator();
 
   XII_ALWAYS_INLINE xiiAllocatorBase* GetCurrentAllocator() const { return m_pCurrentAllocator; }

@@ -99,14 +99,12 @@ void xiiStateMap::RetrieveColor(const xiiTempHashedString& sName, xiiColor& out_
   }
 }
 
-void xiiStateMap::RetrieveString(const xiiTempHashedString& sName, xiiString& out_sValue, const char* szDefaultValue /*= nullptr*/)
+void xiiStateMap::RetrieveString(const xiiTempHashedString& sName, xiiString& out_sValue, xiiStringView sDefaultValue /*= {}*/)
 {
   if (!m_Strings.TryGetValue(sName, out_sValue))
   {
-    out_sValue = szDefaultValue;
+    out_sValue = sDefaultValue;
   }
 }
-
-
 
 XII_STATICLINK_FILE(Core, Core_GameState_Implementation_StateMap);

@@ -25,8 +25,8 @@ namespace xiiMemoryPolicies
 
     XII_FORCE_INLINE ~xiiStackAllocation()
     {
-      XII_ASSERT_DEV(m_uiCurrentBucketIndex == 0 && (m_Buckets.IsEmpty() || m_Buckets[m_uiCurrentBucketIndex].GetPtr() == m_pNextAllocation),
-                     "There is still something allocated!");
+      XII_ASSERT_DEV(m_uiCurrentBucketIndex == 0 && (m_Buckets.IsEmpty() || m_Buckets[m_uiCurrentBucketIndex].GetPtr() == m_pNextAllocation), "There is still something allocated!");
+
       for (auto& bucket : m_Buckets)
       {
         m_pParent->Deallocate(bucket.GetPtr());

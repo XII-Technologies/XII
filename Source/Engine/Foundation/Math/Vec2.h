@@ -97,9 +97,7 @@ public:
 
   /// \brief Tries to normalize this vector. If the vector is too close to zero, XII_FAILURE is returned and the vector is set to the given
   /// fallback value.
-  xiiResult NormalizeIfNotZero(
-    const xiiVec2Template<Type>& vFallback = xiiVec2Template<Type>(1, 0),
-    Type                         fEpsilon  = xiiMath::DefaultEpsilon<Type>()); // [tested]
+  xiiResult NormalizeIfNotZero(const xiiVec2Template<Type>& vFallback = xiiVec2Template<Type>(1, 0), Type fEpsilon = xiiMath::DefaultEpsilon<Type>()); // [tested]
 
   /// \brief Returns, whether this vector is (0, 0).
   bool IsZero() const; // [tested]

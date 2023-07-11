@@ -261,7 +261,7 @@ static xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiImageHeader& ref_
   return XII_SUCCESS;
 }
 
-xiiResult xiiDdsFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension) const
+xiiResult xiiDdsFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImageHeader");
 
@@ -269,7 +269,7 @@ xiiResult xiiDdsFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImag
   return ReadImageData(ref_stream, ref_header, ddsHeader);
 }
 
-xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, const char* szFileExtension) const
+xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImage");
 
@@ -299,7 +299,7 @@ xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
   return XII_SUCCESS;
 }
 
-xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, const char* szFileExtension) const
+xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
   const xiiImageFormat::Enum format = image.GetImageFormat();
   const xiiUInt32            uiBpp  = xiiImageFormat::GetBitsPerPixel(format);
@@ -512,16 +512,14 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
   return XII_SUCCESS;
 }
 
-bool xiiDdsFileFormat::CanReadFileType(const char* szExtension) const
+bool xiiDdsFileFormat::CanReadFileType(xiiStringView sExtension) const
 {
-  return xiiStringUtils::IsEqual_NoCase(szExtension, "dds");
+  return sExtension.IsEqual_NoCase("dds");
 }
 
-bool xiiDdsFileFormat::CanWriteFileType(const char* szExtension) const
+bool xiiDdsFileFormat::CanWriteFileType(xiiStringView sExtension) const
 {
-  return CanReadFileType(szExtension);
+  return CanReadFileType(sExtension);
 }
-
-
 
 XII_STATICLINK_FILE(Texture, Texture_Image_Formats_DdsFileFormat);

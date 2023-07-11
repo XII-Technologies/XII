@@ -13,12 +13,12 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStandardInputDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiStandardInputDevice::xiiStandardInputDevice(ICoreWindow* coreWindow)
-  : m_coreWindow(coreWindow)
+xiiStandardInputDevice::xiiStandardInputDevice(ICoreWindow* coreWindow) :
+  m_coreWindow(coreWindow)
 {
   // TODO
   m_ClipCursorMode = xiiMouseCursorClipMode::NoClip;
-  m_bShowCursor = true;
+  m_bShowCursor    = true;
 }
 
 xiiStandardInputDevice::~xiiStandardInputDevice()
@@ -45,42 +45,32 @@ xiiStandardInputDevice::~xiiStandardInputDevice()
 
 void xiiStandardInputDevice::InitializeDevice()
 {
-  using KeyHandler = __FITypedEventHandler_2_Windows__CUI__CCore__CCoreWindow_Windows__CUI__CCore__CKeyEventArgs;
-  using CharacterReceivedHandler =
-    __FITypedEventHandler_2_Windows__CUI__CCore__CCoreWindow_Windows__CUI__CCore__CCharacterReceivedEventArgs;
-  using PointerHander = __FITypedEventHandler_2_Windows__CUI__CCore__CCoreWindow_Windows__CUI__CCore__CPointerEventArgs;
+  using KeyHandler               = __FITypedEventHandler_2_Windows__CUI__CCore__CCoreWindow_Windows__CUI__CCore__CKeyEventArgs;
+  using CharacterReceivedHandler = __FITypedEventHandler_2_Windows__CUI__CCore__CCoreWindow_Windows__CUI__CCore__CCharacterReceivedEventArgs;
+  using PointerHander            = __FITypedEventHandler_2_Windows__CUI__CCore__CCoreWindow_Windows__CUI__CCore__CPointerEventArgs;
 
   // Keyboard
   m_coreWindow->add_KeyDown(Callback<KeyHandler>(this, &xiiStandardInputDevice::OnKeyEvent).Get(), &m_eventRegistration_keyDown);
   m_coreWindow->add_KeyUp(Callback<KeyHandler>(this, &xiiStandardInputDevice::OnKeyEvent).Get(), &m_eventRegistration_keyUp);
-  m_coreWindow->add_CharacterReceived(Callback<CharacterReceivedHandler>(this, &xiiStandardInputDevice::OnCharacterReceived).Get(),
-    &m_eventRegistration_characterReceived);
+  m_coreWindow->add_CharacterReceived(Callback<CharacterReceivedHandler>(this, &xiiStandardInputDevice::OnCharacterReceived).Get(), &m_eventRegistration_characterReceived);
 
   // Pointer
   // Note that a pointer may be mouse, pen/stylus or touch!
   // We bundle move/press/enter all in a single callback to update all pointer state - all these cases have in common that pen/touch is
   // pressed now.
-  m_coreWindow->add_PointerMoved(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerMovePressEnter).Get(),
-    &m_eventRegistration_pointerMoved);
-  m_coreWindow->add_PointerEntered(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerMovePressEnter).Get(),
-    &m_eventRegistration_pointerEntered);
-  m_coreWindow->add_PointerPressed(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerMovePressEnter).Get(),
-    &m_eventRegistration_pointerPressed);
+  m_coreWindow->add_PointerMoved(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerMovePressEnter).Get(), &m_eventRegistration_pointerMoved);
+  m_coreWindow->add_PointerEntered(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerMovePressEnter).Get(), &m_eventRegistration_pointerEntered);
+  m_coreWindow->add_PointerPressed(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerMovePressEnter).Get(), &m_eventRegistration_pointerPressed);
   // Changes in the pointer wheel:
-  m_coreWindow->add_PointerWheelChanged(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerWheelChange).Get(),
-    &m_eventRegistration_pointerWheelChanged);
+  m_coreWindow->add_PointerWheelChanged(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerWheelChange).Get(), &m_eventRegistration_pointerWheelChanged);
   // Exit for touch or stylus means that we no longer have a press.
   // However, we presserve mouse button presses.
-  m_coreWindow->add_PointerExited(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerReleasedOrExited).Get(),
-    &m_eventRegistration_pointerExited);
-  m_coreWindow->add_PointerReleased(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerReleasedOrExited).Get(),
-    &m_eventRegistration_pointerReleased);
+  m_coreWindow->add_PointerExited(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerReleasedOrExited).Get(), &m_eventRegistration_pointerExited);
+  m_coreWindow->add_PointerReleased(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerReleasedOrExited).Get(), &m_eventRegistration_pointerReleased);
   // Capture loss.
   // From documentation "Occurs when a pointer moves to another app. This event is raised after PointerExited and is the final event
   // received by the app for this pointer." If this happens we want to release all mouse buttons as well.
-  m_coreWindow->add_PointerCaptureLost(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerCaptureLost).Get(),
-    &m_eventRegistration_pointerCaptureLost);
-
+  m_coreWindow->add_PointerCaptureLost(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerCaptureLost).Get(), &m_eventRegistration_pointerCaptureLost);
 
   // Mouse
   // The only thing that we get from the MouseDevice class is mouse moved which gives us unfiltered relative mouse position.
@@ -90,15 +80,13 @@ void xiiStandardInputDevice::InitializeDevice()
   // https://docs.microsoft.com/windows/uwp/gaming/relative-mouse-movement
   {
     ComPtr<ABI::Windows::Devices::Input::IMouseDeviceStatics> mouseDeviceStatics;
-    if (SUCCEEDED(ABI::Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_Devices_Input_MouseDevice).Get(),
-          &mouseDeviceStatics)))
+    if (SUCCEEDED(ABI::Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_Devices_Input_MouseDevice).Get(), &mouseDeviceStatics)))
     {
       if (SUCCEEDED(mouseDeviceStatics->GetForCurrentView(&m_mouseDevice)))
       {
-        using MouseMovedHandler =
-          __FITypedEventHandler_2_Windows__CDevices__CInput__CMouseDevice_Windows__CDevices__CInput__CMouseEventArgs;
-        m_mouseDevice->add_MouseMoved(Callback<MouseMovedHandler>(this, &xiiStandardInputDevice::OnMouseMoved).Get(),
-          &m_eventRegistration_mouseMoved);
+        using MouseMovedHandler = __FITypedEventHandler_2_Windows__CDevices__CInput__CMouseDevice_Windows__CDevices__CInput__CMouseEventArgs;
+
+        m_mouseDevice->add_MouseMoved(Callback<MouseMovedHandler>(this, &xiiStandardInputDevice::OnMouseMoved).Get(), &m_eventRegistration_mouseMoved);
       }
     }
   }
@@ -119,8 +107,8 @@ HRESULT xiiStandardInputDevice::OnKeyEvent(ICoreWindow* coreWindow, IKeyEventArg
     return S_OK;
   }
 
-  const char* szInputSlotName = xiiInputManager::ConvertScanCodeToEngineName(static_cast<xiiUInt8>(keyStatus.ScanCode), keyStatus.IsExtendedKey == TRUE);
-  if (!szInputSlotName)
+  xiiStringView sInputSlotName = xiiInputManager::ConvertScanCodeToEngineName(static_cast<xiiUInt8>(keyStatus.ScanCode), keyStatus.IsExtendedKey == TRUE);
+  if (sInputSlotName.IsEmpty())
     return S_OK;
 
 
@@ -129,22 +117,22 @@ HRESULT xiiStandardInputDevice::OnKeyEvent(ICoreWindow* coreWindow, IKeyEventArg
   // On Windows this only happens with the Pause key, but it will actually send the 'Right Ctrl' key value
   // so we need to fix this manually
   // if (raw->data.keyboard.Flags & RI_KEY_E1)
-  //{
-  //  szInputSlotName = xiiInputSlot_KeyPause;
-  //  bIgnoreNext = true;
-  //}
+  // {
+  //   sInputSlotName = xiiInputSlot_KeyPause;
+  //   bIgnoreNext = true;
+  // }
 
 
   // The Print key is sent as a two key sequence, first an 'extended left shift' and then the Numpad* key is sent
   // we ignore the first stupid shift key entirely and then modify the following Numpad* key
   // Note that the 'stupid shift' is sent along with several other keys as well (e.g. left/right/up/down arrows)
   // in these cases we can ignore them entirely, as the following key will have an unambiguous key code
-  if (xiiStringUtils::IsEqual(szInputSlotName, xiiInputSlot_KeyNumpadStar) && bWasStupidLeftShift)
-    szInputSlotName = xiiInputSlot_KeyPrint;
+  if ((sInputSlotName == xiiInputSlot_KeyNumpadStar) && bWasStupidLeftShift)
+    sInputSlotName = xiiInputSlot_KeyPrint;
 
   bWasStupidLeftShift = false;
 
-  m_InputSlotValues[szInputSlotName] = keyStatus.IsKeyReleased ? 0.0f : 1.0f;
+  m_InputSlotValues[sInputSlotName] = keyStatus.IsKeyReleased ? 0.0f : 1.0f;
 
   return S_OK;
 }
@@ -187,7 +175,7 @@ HRESULT xiiStandardInputDevice::OnPointerMovePressEnter(ICoreWindow* coreWindow,
     // RegisterInputSlot(xiiInputSlot_MouseDblClick1, "Right Double Click", xiiInputSlotFlags::IsDoubleClick);
     // RegisterInputSlot(xiiInputSlot_MouseDblClick2, "Middle Double Click", xiiInputSlotFlags::IsDoubleClick);
 
-    s_iMouseIsOverWindowNumber = 0;
+    s_iMouseIsOverWindowNumber                     = 0;
     m_InputSlotValues[xiiInputSlot_MousePositionX] = relativePosX;
     m_InputSlotValues[xiiInputSlot_MousePositionY] = relativePosY;
 
@@ -202,7 +190,7 @@ HRESULT xiiStandardInputDevice::OnPointerMovePressEnter(ICoreWindow* coreWindow,
       return S_OK;
 
     // All callbacks we subscribed this event to imply that a touch occurs right now.
-    m_InputSlotValues[xiiInputManager::GetInputSlotTouchPoint(pointerId)] = 1.0f; // Touch strength?
+    m_InputSlotValues[xiiInputManager::GetInputSlotTouchPoint(pointerId)]          = 1.0f; // Touch strength?
     m_InputSlotValues[xiiInputManager::GetInputSlotTouchPointPositionX(pointerId)] = relativePosX;
     m_InputSlotValues[xiiInputManager::GetInputSlotTouchPointPositionY(pointerId)] = relativePosY;
   }
@@ -309,8 +297,7 @@ HRESULT xiiStandardInputDevice::OnPointerCaptureLost(ICoreWindow* coreWindow, IP
   return S_OK;
 }
 
-HRESULT xiiStandardInputDevice::OnMouseMoved(ABI::Windows::Devices::Input::IMouseDevice* mouseDevice,
-  ABI::Windows::Devices::Input::IMouseEventArgs* args)
+HRESULT xiiStandardInputDevice::OnMouseMoved(ABI::Windows::Devices::Input::IMouseDevice* mouseDevice, ABI::Windows::Devices::Input::IMouseEventArgs* args)
 {
   ABI::Windows::Devices::Input::MouseDelta mouseDelta;
   XII_SUCCEED_OR_RETURN(args->get_MouseDelta(&mouseDelta));
@@ -539,12 +526,12 @@ void xiiStandardInputDevice::RegisterInputSlots()
 
 void xiiStandardInputDevice::ResetInputSlotValues()
 {
-  m_InputSlotValues[xiiInputSlot_MouseWheelUp] = 0;
+  m_InputSlotValues[xiiInputSlot_MouseWheelUp]   = 0;
   m_InputSlotValues[xiiInputSlot_MouseWheelDown] = 0;
-  m_InputSlotValues[xiiInputSlot_MouseMoveNegX] = 0;
-  m_InputSlotValues[xiiInputSlot_MouseMovePosX] = 0;
-  m_InputSlotValues[xiiInputSlot_MouseMoveNegY] = 0;
-  m_InputSlotValues[xiiInputSlot_MouseMovePosY] = 0;
+  m_InputSlotValues[xiiInputSlot_MouseMoveNegX]  = 0;
+  m_InputSlotValues[xiiInputSlot_MouseMovePosX]  = 0;
+  m_InputSlotValues[xiiInputSlot_MouseMoveNegY]  = 0;
+  m_InputSlotValues[xiiInputSlot_MouseMovePosY]  = 0;
   m_InputSlotValues[xiiInputSlot_MouseDblClick0] = 0;
   m_InputSlotValues[xiiInputSlot_MouseDblClick1] = 0;
   m_InputSlotValues[xiiInputSlot_MouseDblClick2] = 0;

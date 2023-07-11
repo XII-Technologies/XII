@@ -20,8 +20,8 @@
 
 xiiGameApplicationBase* xiiGameApplicationBase::s_pGameApplicationBaseInstance = nullptr;
 
-xiiGameApplicationBase::xiiGameApplicationBase(const char* szAppName) :
-  xiiApplication(szAppName), m_ConFunc_TakeScreenshot("TakeScreenshot", "()", xiiMakeDelegate(&xiiGameApplicationBase::TakeScreenshot, this)), m_ConFunc_CaptureFrame("CaptureFrame", "()", xiiMakeDelegate(&xiiGameApplicationBase::CaptureFrame, this))
+xiiGameApplicationBase::xiiGameApplicationBase(xiiStringView sAppName) :
+  xiiApplication(sAppName), m_ConFunc_TakeScreenshot("TakeScreenshot", "()", xiiMakeDelegate(&xiiGameApplicationBase::TakeScreenshot, this)), m_ConFunc_CaptureFrame("CaptureFrame", "()", xiiMakeDelegate(&xiiGameApplicationBase::CaptureFrame, this))
 {
   s_pGameApplicationBaseInstance = this;
 }
@@ -82,7 +82,7 @@ void xiiGameApplicationBase::TakeScreenshot()
   m_bTakeScreenshot = true;
 }
 
-void xiiGameApplicationBase::StoreScreenshot(xiiImage&& image, const char* szContext /*= nullptr*/)
+void xiiGameApplicationBase::StoreScreenshot(xiiImage&& image, xiiStringView sContext /*= {}*/)
 {
   class WriteFileTask final : public xiiTask
   {
@@ -112,7 +112,7 @@ void xiiGameApplicationBase::StoreScreenshot(xiiImage&& image, const char* szCon
 
   pWriteTask->m_sPath.Format(":appdata/Screenshots/{0}", xiiApplication::GetApplicationInstance()->GetApplicationName());
   AppendCurrentTimestamp(pWriteTask->m_sPath);
-  pWriteTask->m_sPath.Append(szContext);
+  pWriteTask->m_sPath.Append(sContext);
   pWriteTask->m_sPath.Append(".png");
 
   // We move the file writing off to another thread to save some time.
@@ -121,7 +121,7 @@ void xiiGameApplicationBase::StoreScreenshot(xiiImage&& image, const char* szCon
   xiiTaskSystem::StartSingleTask(pWriteTask, xiiTaskPriority::LongRunning);
 }
 
-void xiiGameApplicationBase::ExecuteTakeScreenshot(xiiWindowOutputTargetBase* pOutputTarget, const char* szContext /* = nullptr*/)
+void xiiGameApplicationBase::ExecuteTakeScreenshot(xiiWindowOutputTargetBase* pOutputTarget, xiiStringView sContext /* = {}*/)
 {
   if (m_bTakeScreenshot)
   {
@@ -129,7 +129,7 @@ void xiiGameApplicationBase::ExecuteTakeScreenshot(xiiWindowOutputTargetBase* pO
     xiiImage img;
     if (pOutputTarget->CaptureImage(img).Succeeded())
     {
-      StoreScreenshot(std::move(img), szContext);
+      StoreScreenshot(std::move(img), sContext);
     }
   }
 }
@@ -159,7 +159,7 @@ xiiResult xiiGameApplicationBase::GetAbsFrameCaptureOutputPath(xiiStringBuilder&
   return xiiFileSystem::ResolvePath(sPath, &ref_sOutputPath, nullptr);
 }
 
-void xiiGameApplicationBase::ExecuteFrameCapture(xiiWindowHandle targetWindowHandle, const char* szContext /*= nullptr*/)
+void xiiGameApplicationBase::ExecuteFrameCapture(xiiWindowHandle targetWindowHandle, xiiStringView sContext /*= {}*/)
 {
   xiiFrameCaptureInterface* pCaptureInterface = xiiSingletonRegistry::GetSingletonInstance<xiiFrameCaptureInterface>();
   if (!pCaptureInterface)
@@ -176,7 +176,7 @@ void xiiGameApplicationBase::ExecuteFrameCapture(xiiWindowHandle targetWindowHan
       xiiStringBuilder sOutputPath;
       if (GetAbsFrameCaptureOutputPath(sOutputPath).Succeeded())
       {
-        sOutputPath.Append(szContext);
+        sOutputPath.Append(sContext);
         pCaptureInterface->SetAbsCaptureFilePathTemplate(sOutputPath);
       }
 

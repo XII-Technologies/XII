@@ -686,13 +686,13 @@ void xiiEngineProcessDocumentContext::WorldRttiConverterContextEventHandler(cons
       if (!GetWorld()->TryGetComponent(hRefComp, pRefComp))
         continue;
 
-      if (!xiiStringUtils::IsNullOrEmpty(ref.m_szComponentProperty))
+      if (!ref.m_sComponentProperty.IsEmpty())
       {
         // in this case, a 'regular' component+property reference the new object
         // so we can just re-apply the reference (by setting the property again)
         // and thus trigger that the other object updates/fixes its internal state
 
-        xiiAbstractProperty* pAbsProp = pRefComp->GetDynamicRTTI()->FindPropertyByName(ref.m_szComponentProperty);
+        xiiAbstractProperty* pAbsProp = pRefComp->GetDynamicRTTI()->FindPropertyByName(ref.m_sComponentProperty);
         if (pAbsProp == nullptr)
           continue;
 
@@ -726,18 +726,18 @@ void xiiEngineProcessDocumentContext::WorldRttiConverterContextEventHandler(cons
 }
 
 /// Tries to resolve a 'reference' (given in pData) to a xiiGameObject.
-/// hThis is the 'owner' of the reference and szComponentProperty is the name of the reference property in that component.
+/// hThis is the 'owner' of the reference and sComponentProperty is the name of the reference property in that component.
 ///
 /// There are two different use cases:
 ///
-///  1) hThis is invalid and szComponentProperty is null:
+///  1) hThis is invalid and sComponentProperty is null:
 ///
 ///     This is used by xiiPrefabReferenceComponent::SerializeComponent() to check whether a string represents a game object reference.
 ///     It may be any arbitrary string and thus must not assert.
 ///     In this case a reference is always a stringyfied GUID.
 ///     Since this is only used for scene export, only the lookup shall be done and nothing else.
 ///
-///  2) hThis and szComponentProperty represent a valid component+property combination:
+///  2) hThis and sComponentProperty represent a valid component+property combination:
 ///
 ///     This is called at edit time whenever a reference property is queried, which also happens whenever a reference is modified.
 ///     In this case we need to maintain two maps:
@@ -746,11 +746,11 @@ void xiiEngineProcessDocumentContext::WorldRttiConverterContextEventHandler(cons
 ///     These are needed to fix up references during undo/redo when objects get deleted and recreated.
 ///     Ie. when an object that has references or is referenced gets deleted and then undo restores it, the references should appear as well.
 ///
-xiiGameObjectHandle xiiEngineProcessDocumentContext::ResolveStringToGameObjectHandle(const void* pData, xiiComponentHandle hThis, const char* szComponentProperty) const
+xiiGameObjectHandle xiiEngineProcessDocumentContext::ResolveStringToGameObjectHandle(const void* pData, xiiComponentHandle hThis, xiiStringView sComponentProperty) const
 {
   const char* szTargetGuid = reinterpret_cast<const char*>(pData);
 
-  if (hThis.IsInvalidated() && szComponentProperty == nullptr)
+  if (hThis.IsInvalidated() && sComponentProperty == nullptr)
   {
     // This code path is used by xiiPrefabReferenceComponent::SerializeComponent() to check whether an arbitrary string may
     // represent a game object reference. References will always be stringyfied GUIDs.
@@ -802,7 +802,7 @@ xiiGameObjectHandle xiiEngineProcessDocumentContext::ResolveStringToGameObjectHa
       XII_ASSERT_DEV(srcComponentGuid.IsValid(), "");
 
       // tag this reference as being special
-      szComponentProperty = nullptr;
+      sComponentProperty = {};
     }
     else
     {
@@ -827,14 +827,14 @@ xiiGameObjectHandle xiiEngineProcessDocumentContext::ResolveStringToGameObjectHa
     XII_ASSERT_DEV(xiiStringUtils::IsNullOrEmpty(szTargetGuid), "Expected GUID references");
   }
 
-  if (xiiStringUtils::IsNullOrEmpty(szComponentProperty))
+  if (sComponentProperty.IsEmpty())
   {
     return m_Context.m_GameObjectMap.GetHandle(newTargetGuid);
   }
 
   // Overview for the steps below:
   //
-  // Check if m_GoRef_ReferencesTo[srcComponentGuid] already maps from [szComponentProperty] to something -> update (remove if pData is empty/invalid)
+  // Check if m_GoRef_ReferencesTo[srcComponentGuid] already maps from [sComponentProperty] to something -> update (remove if pData is empty/invalid)
   // otherwise add reference
   //
   // If already mapped to something, remove reference from m_GoRef_ReferencedBy
@@ -850,7 +850,7 @@ xiiGameObjectHandle xiiEngineProcessDocumentContext::ResolveStringToGameObjectHa
     for (xiiUInt32 i = 0; i < referencesTo.GetCount(); ++i)
     {
       // if this is the desired property, update it
-      if (xiiStringUtils::IsEqual(referencesTo[i].m_szComponentProperty, szComponentProperty))
+      if (referencesTo[i].m_sComponentProperty == sComponentProperty)
       {
         // retrieve previous reference, needed to update m_GoRef_ReferencedBy
         oldTargetGuid = referencesTo[i].m_ReferenceToGameObject;
@@ -873,7 +873,7 @@ xiiGameObjectHandle xiiEngineProcessDocumentContext::ResolveStringToGameObjectHa
     if (newTargetGuid.IsValid())
     {
       auto& refTo                   = referencesTo.ExpandAndGetRef();
-      refTo.m_szComponentProperty   = szComponentProperty;
+      refTo.m_sComponentProperty    = sComponentProperty;
       refTo.m_ReferenceToGameObject = newTargetGuid;
     }
   }
@@ -890,7 +890,7 @@ ref_to_is_updated:
 
       for (xiiUInt32 i = 0; i < referencedBy.GetCount(); ++i)
       {
-        if (referencedBy[i].m_ReferencedByComponent == srcComponentGuid && xiiStringUtils::IsEqual(referencedBy[i].m_szComponentProperty, szComponentProperty))
+        if (referencedBy[i].m_ReferencedByComponent == srcComponentGuid && referencedBy[i].m_sComponentProperty == sComponentProperty)
         {
           referencedBy.RemoveAtAndSwap(i);
           break;
@@ -906,7 +906,7 @@ ref_to_is_updated:
       // this loop is currently only to validate that no bugs creeped in
       for (xiiUInt32 i = 0; i < referencedBy.GetCount(); ++i)
       {
-        if (referencedBy[i].m_ReferencedByComponent == srcComponentGuid && xiiStringUtils::IsEqual(referencedBy[i].m_szComponentProperty, szComponentProperty))
+        if (referencedBy[i].m_ReferencedByComponent == srcComponentGuid && referencedBy[i].m_sComponentProperty == sComponentProperty)
         {
           XII_REPORT_FAILURE("Go-reference was not updated correctly");
         }
@@ -915,7 +915,7 @@ ref_to_is_updated:
       // add the back-reference
       auto& newRef                   = referencedBy.ExpandAndGetRef();
       newRef.m_ReferencedByComponent = srcComponentGuid;
-      newRef.m_szComponentProperty   = szComponentProperty;
+      newRef.m_sComponentProperty    = sComponentProperty;
     }
   }
 

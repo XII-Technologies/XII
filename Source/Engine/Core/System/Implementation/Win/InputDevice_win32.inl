@@ -613,22 +613,22 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
           return;
         }
 
-        const char* szInputSlotName = xiiInputManager::ConvertScanCodeToEngineName(uiScanCode, bIsExtended);
+        xiiStringView sInputSlotName = xiiInputManager::ConvertScanCodeToEngineName(uiScanCode, bIsExtended);
 
         // On Windows this only happens with the Pause key, but it will actually send the 'Right Ctrl' key value
         // so we need to fix this manually
         if (raw->data.keyboard.Flags & RI_KEY_E1)
         {
-          szInputSlotName = xiiInputSlot_KeyPause;
-          bIgnoreNext     = true;
+          sInputSlotName = xiiInputSlot_KeyPause;
+          bIgnoreNext    = true;
         }
 
         // The Print key is sent as a two key sequence, first an 'extended left shift' and then the Numpad* key is sent
         // we ignore the first shift key entirely and then modify the following Numpad* key.
         // Note that the 'shift' is sent along with several other keys as well (e.g. left/right/up/down arrows).
         // In these cases we can ignore them entirely, as the following key will have an unambiguous key code.
-        if (xiiStringUtils::IsEqual(szInputSlotName, xiiInputSlot_KeyNumpadStar) && bWasLeftShift)
-          szInputSlotName = xiiInputSlot_KeyPrint;
+        if ((sInputSlotName == xiiInputSlot_KeyNumpadStar) && bWasLeftShift)
+          sInputSlotName = xiiInputSlot_KeyPrint;
 
         bWasLeftShift = false;
 
@@ -639,7 +639,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
 
         const bool bPressed = !(raw->data.keyboard.Flags & 0x01);
 
-        m_InputSlotValues[szInputSlotName] = bPressed ? 1.0f : 0.0f;
+        m_InputSlotValues[sInputSlotName] = bPressed ? 1.0f : 0.0f;
 
         if ((m_InputSlotValues[xiiInputSlot_KeyLeftCtrl] > 0.1f) && (m_InputSlotValues[xiiInputSlot_KeyLeftAlt] > 0.1f) &&
             (m_InputSlotValues[xiiInputSlot_KeyNumpadEnter] > 0.1f))
@@ -723,23 +723,23 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
             static xiiInt32 iTouchPoint     = 0;
             static bool     bTouchPointDown = false;
 
-            const char* szSlot  = xiiInputManager::GetInputSlotTouchPoint(iTouchPoint);
-            const char* szSlotX = xiiInputManager::GetInputSlotTouchPointPositionX(iTouchPoint);
-            const char* szSlotY = xiiInputManager::GetInputSlotTouchPointPositionY(iTouchPoint);
+            xiiStringView sSlot  = xiiInputManager::GetInputSlotTouchPoint(iTouchPoint);
+            xiiStringView sSlotX = xiiInputManager::GetInputSlotTouchPointPositionX(iTouchPoint);
+            xiiStringView sSlotY = xiiInputManager::GetInputSlotTouchPointPositionY(iTouchPoint);
 
-            m_InputSlotValues[szSlotX] = (raw->data.mouse.lLastX / 65535.0f) + m_uiWindowNumber;
-            m_InputSlotValues[szSlotY] = (raw->data.mouse.lLastY / 65535.0f);
+            m_InputSlotValues[sSlotX] = (raw->data.mouse.lLastX / 65535.0f) + m_uiWindowNumber;
+            m_InputSlotValues[sSlotY] = (raw->data.mouse.lLastY / 65535.0f);
 
             if ((uiButtons & (RI_MOUSE_BUTTON_1_DOWN | RI_MOUSE_BUTTON_2_DOWN)) != 0)
             {
-              bTouchPointDown           = true;
-              m_InputSlotValues[szSlot] = 1.0f;
+              bTouchPointDown          = true;
+              m_InputSlotValues[sSlot] = 1.0f;
             }
 
             if ((uiButtons & (RI_MOUSE_BUTTON_1_UP | RI_MOUSE_BUTTON_2_UP)) != 0)
             {
-              bTouchPointDown           = false;
-              m_InputSlotValues[szSlot] = 0.0f;
+              bTouchPointDown          = false;
+              m_InputSlotValues[sSlot] = 0.0f;
             }
           }
         }

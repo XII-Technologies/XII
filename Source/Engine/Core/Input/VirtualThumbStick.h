@@ -88,7 +88,7 @@ public:
   ///
   /// If \a Output is 'Custom' the remaining parameters define which input slots the thumb-stick triggers for which direction.
   /// Otherwise the remaining parameters are ignored.
-  void SetThumbstickOutput(Output::Enum output, const char* szOutputLeft = nullptr, const char* szOutputRight = nullptr, const char* szOutputUp = nullptr, const char* szOutputDown = nullptr);
+  void SetThumbstickOutput(Output::Enum output, xiiStringView sOutputLeft = {}, xiiStringView sOutputRight = {}, xiiStringView sOutputUp = {}, xiiStringView sOutputDown = {});
 
   /// \brief Specifies what happens when the input slots that trigger the thumb-stick are active while entering or leaving the input area.
   void SetAreaFocusMode(xiiInputActionConfig::OnEnterArea onEnter, xiiInputActionConfig::OnLeaveArea onLeave);
@@ -110,10 +110,10 @@ protected:
   float   m_fRadius;
 
   xiiInputActionConfig m_ActionConfig;
-  const char*          m_szOutputLeft;
-  const char*          m_szOutputRight;
-  const char*          m_szOutputUp;
-  const char*          m_szOutputDown;
+  xiiStringView        m_sOutputLeft;
+  xiiStringView        m_sOutputRight;
+  xiiStringView        m_sOutputUp;
+  xiiStringView        m_sOutputDown;
 
   bool             m_bEnabled;
   bool             m_bConfigChanged;

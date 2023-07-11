@@ -1,5 +1,6 @@
 
 #include <Core/System/Implementation/SDL/InputDevice_SDL.h>
+#include <Foundation/Logging/Log.h>
 
 #include <SDL2/include/SDL.h>
 
@@ -447,7 +448,7 @@ void xiiStandardInputDevice::WindowMessage(void* message)
 
 void xiiStandardInputDevice::SetShowMouseCursor(bool bShow)
 {
-  int result = SDL_ShowCursor(bShow ? SDL_TRUE : SDL_FALSE);
+  xiiInt32 result = SDL_ShowCursor(bShow ? SDL_TRUE : SDL_FALSE);
   if (result < 0)
   {
     xiiLog::Error("SDL failed set mouse cursor with error '{}'", SDL_GetError());
@@ -474,7 +475,7 @@ void xiiStandardInputDevice::SetShowMouseCursor(bool bShow)
 
 bool xiiStandardInputDevice::GetShowMouseCursor() const
 {
-  int result = SDL_ShowCursor(SDL_QUERY);
+  xiiInt32 result = SDL_ShowCursor(SDL_QUERY);
   if (result < 0)
   {
     xiiLog::Error("Failed to query mouse cursor state with error '{}'", SDL_GetError());

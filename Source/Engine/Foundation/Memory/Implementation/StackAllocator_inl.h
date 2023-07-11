@@ -1,6 +1,6 @@
 template <xiiUInt32 TrackingFlags>
-xiiStackAllocator<TrackingFlags>::xiiStackAllocator(const char* szName, xiiAllocatorBase* pParent) :
-  xiiAllocator<xiiMemoryPolicies::xiiStackAllocation, TrackingFlags>(szName, pParent), m_DestructData(pParent), m_PtrToDestructDataIndexTable(pParent)
+xiiStackAllocator<TrackingFlags>::xiiStackAllocator(xiiStringView sName, xiiAllocatorBase* pParent) :
+  xiiAllocator<xiiMemoryPolicies::xiiStackAllocation, TrackingFlags>(sName, pParent), m_DestructData(pParent), m_PtrToDestructDataIndexTable(pParent)
 {
 }
 

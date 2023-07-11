@@ -66,7 +66,7 @@ static inline xiiColorLinearUB GetPixelColor(const xiiImageView& image, xiiUInt3
 }
 
 
-xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, const char* szFileExtension) const
+xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
   // Technically almost arbitrary formats are supported, but we only use the common ones.
   xiiImageFormat::Enum compatibleFormats[] = {
@@ -96,7 +96,7 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
       return XII_FAILURE;
     }
 
-    return WriteImage(ref_stream, convertedImage, szFileExtension);
+    return WriteImage(ref_stream, convertedImage, sFileExtension);
   }
 
   const bool bCompress = true;
@@ -298,7 +298,7 @@ static xiiResult ReadBytesChecked(xiiStreamReader& inout_stream, TYPE& ref_dest)
   return ReadBytesChecked(inout_stream, &ref_dest, sizeof(TYPE));
 }
 
-static xiiResult ReadImageHeaderImpl(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension, TgaHeader& ref_tgaHeader)
+static xiiResult ReadImageHeaderImpl(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension, TgaHeader& ref_tgaHeader)
 {
   XII_SUCCEED_OR_RETURN(ReadBytesChecked(ref_stream, ref_tgaHeader.m_iImageIDLength));
   XII_SUCCEED_OR_RETURN(ReadBytesChecked(ref_stream, ref_tgaHeader.m_Ignored1));
@@ -342,21 +342,21 @@ static xiiResult ReadImageHeaderImpl(xiiStreamReader& ref_stream, xiiImageHeader
   return XII_SUCCESS;
 }
 
-xiiResult xiiTgaFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension) const
+xiiResult xiiTgaFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiTgaFileFormat::ReadImageHeader");
 
   TgaHeader tgaHeader;
-  return ReadImageHeaderImpl(ref_stream, ref_header, szFileExtension, tgaHeader);
+  return ReadImageHeaderImpl(ref_stream, ref_header, sFileExtension, tgaHeader);
 }
 
-xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, const char* szFileExtension) const
+xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiTgaFileFormat::ReadImage");
 
   xiiImageHeader imageHeader;
   TgaHeader      tgaHeader;
-  XII_SUCCEED_OR_RETURN(ReadImageHeaderImpl(ref_stream, imageHeader, szFileExtension, tgaHeader));
+  XII_SUCCEED_OR_RETURN(ReadImageHeaderImpl(ref_stream, imageHeader, sFileExtension, tgaHeader));
 
   const xiiUInt32 uiBytesPerPixel = tgaHeader.m_iBitsPerPixel / 8;
 
@@ -499,16 +499,14 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
   return XII_SUCCESS;
 }
 
-bool xiiTgaFileFormat::CanReadFileType(const char* szExtension) const
+bool xiiTgaFileFormat::CanReadFileType(xiiStringView sExtension) const
 {
-  return xiiStringUtils::IsEqual_NoCase(szExtension, "tga");
+  return sExtension.IsEqual_NoCase("tga");
 }
 
-bool xiiTgaFileFormat::CanWriteFileType(const char* szExtension) const
+bool xiiTgaFileFormat::CanWriteFileType(xiiStringView sExtension) const
 {
-  return CanReadFileType(szExtension);
+  return CanReadFileType(sExtension);
 }
-
-
 
 XII_STATICLINK_FILE(Texture, Texture_Image_Formats_TgaFileFormat);

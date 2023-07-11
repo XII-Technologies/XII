@@ -33,8 +33,8 @@ public:
   xiiCollectionComponent();
   ~xiiCollectionComponent();
 
-  void        SetCollectionFile(const char* szFile); // [ property ]
-  const char* GetCollectionFile() const;             // [ property ]
+  void          SetCollectionFile(xiiStringView sFile); // [ property ]
+  xiiStringView GetCollectionFile() const;              // [ property ]
 
   void                    SetCollection(const xiiCollectionResourceHandle& hPrefab);
   XII_ALWAYS_INLINE const xiiCollectionResourceHandle& GetCollection() const { return m_hCollection; }

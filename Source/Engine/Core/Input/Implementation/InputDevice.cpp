@@ -30,9 +30,9 @@ xiiInputDevice::xiiInputDevice()
   m_uiLastCharacter = '\0';
 }
 
-void xiiInputDevice::RegisterInputSlot(const char* szName, const char* szDefaultDisplayName, xiiBitflags<xiiInputSlotFlags> SlotFlags)
+void xiiInputDevice::RegisterInputSlot(xiiStringView sName, xiiStringView sDefaultDisplayName, xiiBitflags<xiiInputSlotFlags> SlotFlags)
 {
-  xiiInputManager::RegisterInputSlot(szName, szDefaultDisplayName, SlotFlags);
+  xiiInputManager::RegisterInputSlot(sName, sDefaultDisplayName, SlotFlags);
 }
 
 void xiiInputDevice::Initialize()
@@ -101,9 +101,9 @@ xiiUInt32 xiiInputDevice::RetrieveLastCharacterFromAllDevices()
   return '\0';
 }
 
-float xiiInputDevice::GetInputSlotState(const char* szSlot) const
+float xiiInputDevice::GetInputSlotState(xiiStringView sSlot) const
 {
-  return m_InputSlotValues.GetValueOrDefault(szSlot, 0.f);
+  return m_InputSlotValues.GetValueOrDefault(sSlot, 0.f);
 }
 
 bool xiiInputDevice::HasDeviceBeenUsedLastFrame() const

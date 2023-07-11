@@ -39,7 +39,7 @@ template <xiiUInt32 BlockSizeInByte>
 class xiiLargeBlockAllocator
 {
 public:
-  xiiLargeBlockAllocator(const char* szName, xiiAllocatorBase* pParent, xiiBitflags<xiiMemoryTrackingFlags> flags = xiiMemoryTrackingFlags::Default);
+  xiiLargeBlockAllocator(xiiStringView sName, xiiAllocatorBase* pParent, xiiBitflags<xiiMemoryTrackingFlags> flags = xiiMemoryTrackingFlags::Default);
   ~xiiLargeBlockAllocator();
 
   template <typename T>

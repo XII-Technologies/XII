@@ -106,7 +106,7 @@ struct xiiBmpBgrxQuad
   xiiUInt8 m_reserved;
 };
 
-xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, const char* szFileExtension) const
+xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
   // Technically almost arbitrary formats are supported, but we only use the common ones.
   xiiImageFormat::Enum compatibleFormats[] = {
@@ -137,7 +137,7 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
       return XII_FAILURE;
     }
 
-    return WriteImage(ref_stream, convertedImage, szFileExtension);
+    return WriteImage(ref_stream, convertedImage, sFileExtension);
   }
 
   xiiUInt64 uiRowPitch = image.GetRowPitch(0);
@@ -497,7 +497,7 @@ namespace
 
 } // namespace
 
-xiiResult xiiBmpFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension) const
+xiiResult xiiBmpFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiBmpFileFormat::ReadImage");
 
@@ -510,7 +510,7 @@ xiiResult xiiBmpFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImag
   return ReadImageInfo(ref_stream, ref_header, fileHeader, fileInfoHeader, bIndexed, bCompressed, uiBpp, uiDataSize);
 }
 
-xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, const char* szFileExtension) const
+xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiBmpFileFormat::ReadImage");
 
@@ -759,17 +759,14 @@ xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
   return XII_SUCCESS;
 }
 
-bool xiiBmpFileFormat::CanReadFileType(const char* szExtension) const
+bool xiiBmpFileFormat::CanReadFileType(xiiStringView sExtension) const
 {
-  return xiiStringUtils::IsEqual_NoCase(szExtension, "bmp") || xiiStringUtils::IsEqual_NoCase(szExtension, "dib") ||
-    xiiStringUtils::IsEqual_NoCase(szExtension, "rle");
+  return sExtension.IsEqual_NoCase("bmp") || sExtension.IsEqual_NoCase("dib") || sExtension.IsEqual_NoCase("rle");
 }
 
-bool xiiBmpFileFormat::CanWriteFileType(const char* szExtension) const
+bool xiiBmpFileFormat::CanWriteFileType(xiiStringView sExtension) const
 {
-  return CanReadFileType(szExtension);
+  return CanReadFileType(sExtension);
 }
-
-
 
 XII_STATICLINK_FILE(Texture, Texture_Image_Formats_BmpFileFormat);

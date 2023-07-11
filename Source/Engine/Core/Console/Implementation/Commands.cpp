@@ -34,34 +34,32 @@ void xiiQuakeConsole::ExecuteCommand(xiiStringView sInput)
   xiiConsole::ExecuteCommand(sInput);
 }
 
-void xiiQuakeConsole::BindKey(const char* szKey, const char* szCommand)
+void xiiQuakeConsole::BindKey(xiiStringView sKey, xiiStringView sCommand)
 {
   xiiStringBuilder s;
-  s.Format("Binding key '{0}' to command '{1}'", szKey, szCommand);
+  s.Format("Binding key '{0}' to command '{1}'", sKey, sCommand);
   AddConsoleString(s, xiiConsoleString::Type::Success);
 
-  m_BoundKeys[szKey] = szCommand;
+  m_BoundKeys[sKey] = sCommand;
 }
 
-void xiiQuakeConsole::UnbindKey(const char* szKey)
+void xiiQuakeConsole::UnbindKey(xiiStringView sKey)
 {
   xiiStringBuilder s;
-  s.Format("Unbinding key '{0}'", szKey);
+  s.Format("Unbinding key '{0}'", sKey);
   AddConsoleString(s, xiiConsoleString::Type::Success);
 
-  m_BoundKeys.Remove(szKey);
+  m_BoundKeys.Remove(sKey);
 }
 
-void xiiQuakeConsole::ExecuteBoundKey(const char* szKey)
+void xiiQuakeConsole::ExecuteBoundKey(xiiStringView sKey)
 {
-  auto it = m_BoundKeys.Find(szKey);
+  auto it = m_BoundKeys.Find(sKey);
 
   if (it.IsValid())
   {
-    ExecuteCommand(it.Value().GetData());
+    ExecuteCommand(it.Value());
   }
 }
-
-
 
 XII_STATICLINK_FILE(Core, Core_Console_Implementation_Commands);

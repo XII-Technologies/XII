@@ -37,7 +37,6 @@ namespace xiiMemoryPolicies
     m_uiPageSize = sysInfo.dwPageSize;
   }
 
-
   void* xiiGuardedAllocation::Allocate(size_t uiSize, size_t uiAlign)
   {
     XII_ASSERT_DEV(xiiMath::IsPowerOf2((xiiUInt32)uiAlign), "Alignment must be power of two");
@@ -46,28 +45,28 @@ namespace xiiMemoryPolicies
     size_t uiAlignedSize = xiiMemoryUtils::AlignSize(uiSize, uiAlign);
     size_t uiTotalSize   = uiAlignedSize + sizeof(AlloctionMetaData);
 
-    // align to full pages and add one page in front and one in back
+    // Align to full pages and add one page in front and one in back.
     size_t uiPageSize     = m_uiPageSize;
     size_t uiFullPageSize = xiiMemoryUtils::AlignSize(uiTotalSize, uiPageSize);
     void*  pMemory        = VirtualAlloc(nullptr, uiFullPageSize + 2 * uiPageSize, MEM_RESERVE, PAGE_NOACCESS);
     XII_ASSERT_DEV(pMemory != nullptr, "Could not reserve memory pages. Error Code '{0}'", xiiArgErrorCode(::GetLastError()));
 
-    // add one page and commit the payload pages
+    // Add one page and commit the payload pages.
     pMemory   = xiiMemoryUtils::AddByteOffset(pMemory, uiPageSize);
     void* ptr = VirtualAlloc(pMemory, uiFullPageSize, MEM_COMMIT, PAGE_READWRITE);
     XII_ASSERT_DEV(ptr != nullptr, "Could not commit memory pages. Error Code '{0}'", xiiArgErrorCode(::GetLastError()));
 
-    // store information in meta data
+    // Store information in meta data.
     AlloctionMetaData* metaData = xiiMemoryUtils::AddByteOffset(static_cast<AlloctionMetaData*>(ptr), uiFullPageSize - uiTotalSize);
     xiiMemoryUtils::Construct(metaData, 1);
     metaData->m_uiSize = uiAlignedSize;
 
-    // finally add offset to the actual payload
+    // Finally add offset to the actual payload.
     ptr = xiiMemoryUtils::AddByteOffset(metaData, sizeof(AlloctionMetaData));
     return ptr;
   }
 
-  // deactivate analysis warning for VirtualFree flags, it is needed for the specific functionality
+  // Deactivate analysis warning for VirtualFree flags, it is needed for the specific functionality.
   XII_MSVC_ANALYSIS_WARNING_PUSH
   XII_MSVC_ANALYSIS_WARNING_DISABLE(6250)
 
@@ -95,10 +94,9 @@ namespace xiiMemoryPolicies
     size_t uiFullPageSize = xiiMemoryUtils::AlignSize(uiTotalSize, uiPageSize);
     pPtr                  = xiiMemoryUtils::AddByteOffset(pPtr, ((ptrdiff_t)uiAlignedSize) - uiFullPageSize);
 
-    XII_VERIFY(
-      ::VirtualFree(pPtr, uiFullPageSize, MEM_DECOMMIT), "Could not decommit memory pages. Error Code '{0}'", xiiArgErrorCode(::GetLastError()));
+    XII_VERIFY(::VirtualFree(pPtr, uiFullPageSize, MEM_DECOMMIT), "Could not decommit memory pages. Error Code '{0}'", xiiArgErrorCode(::GetLastError()));
 
-    // Finally store the allocation so we can release it later
+    // Finally store the allocation so we can release it later.
     void* pMemory = xiiMemoryUtils::AddByteOffset(pPtr, -((ptrdiff_t)uiPageSize));
     m_AllocationsToFreeLater.PushBack(pMemory);
   }
