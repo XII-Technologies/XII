@@ -105,8 +105,13 @@ xiiUInt32 xiiImageUtils::ComputeMeanSquareError(const xiiImageView& differenceIm
 
   XII_ASSERT_DEV(uiBlockSize > 1, "Blocksize must be at least 2");
 
+  xiiUInt32 uiNumComponents = xiiImageFormat::GetNumChannels(differenceImage.GetImageFormat());
+
   xiiUInt32 uiWidth  = xiiMath::Min(differenceImage.GetWidth(), uiOffsetx + uiBlockSize) - uiOffsetx;
   xiiUInt32 uiHeight = xiiMath::Min(differenceImage.GetHeight(), uiOffsety + uiBlockSize) - uiOffsety;
+
+  // Treat image as a single-component format and scale the width instead.
+  uiWidth *= uiNumComponents;
 
   if (uiWidth == 0 || uiHeight == 0)
     return 0;
@@ -134,10 +139,6 @@ xiiUInt32 xiiImageUtils::ComputeMeanSquareError(const xiiImageView& differenceIm
 
   xiiUInt64 uiRowPitch      = differenceImage.GetRowPitch();
   xiiUInt64 uiDepthPitch    = differenceImage.GetDepthPitch();
-  xiiUInt32 uiNumComponents = xiiImageFormat::GetNumChannels(differenceImage.GetImageFormat());
-
-  // Treat image as single-component format and scale the width instead
-  uiWidth *= uiNumComponents;
 
   const xiiUInt32 uiSize2D      = uiWidth * uiHeight;
   const xiiUInt8* pSlicePointer = differenceImage.GetPixelPointer<xiiUInt8>(0, 0, 0, uiOffsetx, uiOffsety);
@@ -664,6 +665,7 @@ inline static void FilterLine(
 static void DownScaleFastLine(xiiUInt32 uiPixelStride, const xiiUInt8* pSrc, xiiUInt8* pDest, xiiUInt32 uiLengthIn, xiiUInt32 uiStrideIn, xiiUInt32 uiLengthOut, xiiUInt32 uiStrideOut)
 {
   const xiiUInt32 downScaleFactor = uiLengthIn / uiLengthOut;
+  XII_ASSERT_DEBUG(downScaleFactor >= 1, "Unable to downscale image.");
 
   const xiiUInt32 downScaleFactorLog2 = xiiMath::Log2i(static_cast<xiiUInt32>(downScaleFactor));
   const xiiUInt32 roundOffset         = downScaleFactor / 2;

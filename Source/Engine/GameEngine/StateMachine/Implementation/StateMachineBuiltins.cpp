@@ -84,7 +84,7 @@ xiiResult xiiStateMachineState_NestedStateMachine::Serialize(xiiStreamWriter& re
 xiiResult xiiStateMachineState_NestedStateMachine::Deserialize(xiiStreamReader& ref_stream)
 {
   XII_SUCCEED_OR_RETURN(SUPER::Deserialize(ref_stream));
-  const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
+  // const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
 
   ref_stream >> m_hResource;
   ref_stream >> m_sInitialState;
@@ -213,7 +213,7 @@ xiiResult xiiStateMachineState_Compound::Serialize(xiiStreamWriter& ref_stream) 
 xiiResult xiiStateMachineState_Compound::Deserialize(xiiStreamReader& ref_stream)
 {
   XII_SUCCEED_OR_RETURN(SUPER::Deserialize(ref_stream));
-  const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
+  // const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
 
   xiiUInt32 uiNumSubStates = 0;
   ref_stream >> uiNumSubStates;
@@ -410,7 +410,7 @@ xiiResult xiiStateMachineTransition_Compound::Serialize(xiiStreamWriter& ref_str
 xiiResult xiiStateMachineTransition_Compound::Deserialize(xiiStreamReader& ref_stream)
 {
   XII_SUCCEED_OR_RETURN(SUPER::Deserialize(ref_stream));
-  const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
+  // const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
 
   ref_stream >> m_Operator;
 

@@ -63,7 +63,7 @@ void xiiCustomMeshComponent::SerializeComponent(xiiWorldWriter& ref_stream) cons
 void xiiCustomMeshComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
   SUPER::DeserializeComponent(ref_stream);
-  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  // const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
 
   xiiStreamReader& s = ref_stream.GetStream();
 

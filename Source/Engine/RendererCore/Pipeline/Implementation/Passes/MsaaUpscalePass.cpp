@@ -35,8 +35,6 @@ xiiMsaaUpscalePass::~xiiMsaaUpscalePass() = default;
 
 bool xiiMsaaUpscalePass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
   auto pInput = inputs[m_PinInput.m_uiInputIndex];
   if (pInput != nullptr)
   {

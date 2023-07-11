@@ -173,6 +173,7 @@ void xiiBlackboardComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
   SUPER::DeserializeComponent(ref_stream);
   const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  XII_IGNORE_UNUSED(uiVersion);
 
   xiiStreamReader& s = ref_stream.GetStream();
 

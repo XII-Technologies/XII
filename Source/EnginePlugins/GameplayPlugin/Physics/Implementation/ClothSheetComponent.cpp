@@ -110,7 +110,7 @@ void xiiClothSheetComponent::SerializeComponent(xiiWorldWriter& ref_stream) cons
 void xiiClothSheetComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
   SUPER::DeserializeComponent(ref_stream);
-  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  // const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
   auto&           s         = ref_stream.GetStream();
 
   s >> m_vSize;
@@ -492,7 +492,6 @@ void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
 
 
   xiiRenderContext*     pRenderContext     = renderViewContext.m_pRenderContext;
-  xiiGALDevice*         pDevice            = xiiGALDevice::GetDefaultDevice();
   xiiGALCommandEncoder* pGALCommandEncoder = pRenderContext->GetCommandEncoder();
 
   xiiInstanceData* pInstanceData = pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);

@@ -1,17 +1,14 @@
 #include <Texture/TexturePCH.h>
 
 #include <Foundation/Math/Color16f.h>
+#include <Foundation/SimdMath/SimdTypes.h>
 #include <Foundation/Strings/StringBuilder.h>
 #include <Texture/Image/Conversions/DXTConversions.h>
 #include <Texture/Image/Conversions/PixelConversions.h>
 #include <Texture/Image/ImageConversion.h>
 
-#if XII_SSE_LEVEL >= XII_SSE_41 && XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && XII_SSE_LEVEL >= XII_SSE_41
 #  define XII_SUPPORTS_BC4_COMPRESSOR
-
-#  include <emmintrin.h>
-#  include <smmintrin.h>
-#  include <tmmintrin.h>
 #endif
 
 void xiiDecompressBlockBC1(const xiiUInt8* pSource, xiiColorBaseUB* pTarget, bool bForceFourColorMode)
@@ -26,10 +23,8 @@ void xiiDecompressBlockBC1(const xiiUInt8* pSource, xiiColorBaseUB* pTarget, boo
 
   if (uiColor0 > uiColor1 || bForceFourColorMode)
   {
-    colors[2] =
-      xiiColorBaseUB((2 * colors[0].r + colors[1].r + 1) / 3, (2 * colors[0].g + colors[1].g + 1) / 3, (2 * colors[0].b + colors[1].b + 1) / 3, 0xFF);
-    colors[3] =
-      xiiColorBaseUB((colors[0].r + 2 * colors[1].r + 1) / 3, (colors[0].g + 2 * colors[1].g + 1) / 3, (colors[0].b + 2 * colors[1].b + 1) / 3, 0xFF);
+    colors[2] = xiiColorBaseUB((2 * colors[0].r + colors[1].r + 1) / 3, (2 * colors[0].g + colors[1].g + 1) / 3, (2 * colors[0].b + colors[1].b + 1) / 3, 0xFF);
+    colors[3] = xiiColorBaseUB((colors[0].r + 2 * colors[1].r + 1) / 3, (colors[0].g + 2 * colors[1].g + 1) / 3, (colors[0].b + 2 * colors[1].b + 1) / 3, 0xFF);
   }
   else
   {
@@ -2153,6 +2148,7 @@ namespace
   {
     if (uiNumBits == 0)
       return 0;
+
     XII_ASSERT_DEV(ref_uiStartBit + uiNumBits <= 128 && uiNumBits <= 8, "");
 
     xiiUInt8  ret;
@@ -2212,12 +2208,9 @@ namespace
         ref_out.r = ref_out.g = ref_out.b = 0;
         return;
     }
-    ref_out.r = xiiUInt8(
-      (xiiUInt32(c0.r) * xiiUInt32(s_bc67WeightMax - weights[uiWc]) + xiiUInt32(c1.r) * xiiUInt32(weights[uiWc]) + s_bc67WeightRound) >> s_bc67WeightShift);
-    ref_out.g = xiiUInt8(
-      (xiiUInt32(c0.g) * xiiUInt32(s_bc67WeightMax - weights[uiWc]) + xiiUInt32(c1.g) * xiiUInt32(weights[uiWc]) + s_bc67WeightRound) >> s_bc67WeightShift);
-    ref_out.b = xiiUInt8(
-      (xiiUInt32(c0.b) * xiiUInt32(s_bc67WeightMax - weights[uiWc]) + xiiUInt32(c1.b) * xiiUInt32(weights[uiWc]) + s_bc67WeightRound) >> s_bc67WeightShift);
+    ref_out.r = xiiUInt8((xiiUInt32(c0.r) * xiiUInt32(s_bc67WeightMax - weights[uiWc]) + xiiUInt32(c1.r) * xiiUInt32(weights[uiWc]) + s_bc67WeightRound) >> s_bc67WeightShift);
+    ref_out.g = xiiUInt8((xiiUInt32(c0.g) * xiiUInt32(s_bc67WeightMax - weights[uiWc]) + xiiUInt32(c1.g) * xiiUInt32(weights[uiWc]) + s_bc67WeightRound) >> s_bc67WeightShift);
+    ref_out.b = xiiUInt8((xiiUInt32(c0.b) * xiiUInt32(s_bc67WeightMax - weights[uiWc]) + xiiUInt32(c1.b) * xiiUInt32(weights[uiWc]) + s_bc67WeightRound) >> s_bc67WeightShift);
   }
 
   static void interpolateA(const xiiColorBaseUB& c0, const xiiColorBaseUB& c1, xiiUInt32 uiWa, xiiUInt32 uiWaprec, xiiColorBaseUB& ref_out)
@@ -2245,18 +2238,10 @@ namespace
         ref_out.a = 0;
         return;
     }
-    ref_out.a = xiiUInt8(
-      (xiiUInt32(c0.a) * xiiUInt32(s_bc67WeightMax - weights[uiWa]) + xiiUInt32(c1.a) * xiiUInt32(weights[uiWa]) + s_bc67WeightRound) >> s_bc67WeightShift);
+    ref_out.a = xiiUInt8((xiiUInt32(c0.a) * xiiUInt32(s_bc67WeightMax - weights[uiWa]) + xiiUInt32(c1.a) * xiiUInt32(weights[uiWa]) + s_bc67WeightRound) >> s_bc67WeightShift);
   }
 
-  static void interpolate(
-    const xiiColorBaseUB& c0,
-    const xiiColorBaseUB& c1,
-    xiiUInt32             uiWc,
-    xiiUInt32             uiWa,
-    xiiUInt32             uiWcprec,
-    xiiUInt32             uiWaprec,
-    xiiColorBaseUB&       ref_out)
+  static void interpolate(const xiiColorBaseUB& c0, const xiiColorBaseUB& c1, xiiUInt32 uiWc, xiiUInt32 uiWa, xiiUInt32 uiWcprec, xiiUInt32 uiWaprec, xiiColorBaseUB& ref_out)
   {
     interpolateRGB(c0, c1, uiWc, uiWcprec, ref_out);
     interpolateA(c0, c1, uiWa, uiWaprec, ref_out);
@@ -2269,7 +2254,7 @@ namespace
   {
   public:
     xiiInt32 r, g, b;
-    xiiInt32 pad;
+    xiiInt32 pad = 0;
 
   public:
     BC6IntColor() = default;

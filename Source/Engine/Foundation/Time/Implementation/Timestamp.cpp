@@ -219,14 +219,14 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgDateTime&
 
     if ((arg.m_uiFormattingFlags & xiiArgDateTime::ShowTimeZone) == xiiArgDateTime::ShowTimeZone)
     {
-      offset += xiiStringUtils::snprintf(szTmp + offset, uiLength - offset, " (UTC)");
+      xiiStringUtils::snprintf(szTmp + offset, uiLength - offset, " (UTC)");
     }
   }
 
   return szTmp;
 }
 
-// Include inline file
+// Include inline file.
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Time/Implementation/Win/Timestamp_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX)

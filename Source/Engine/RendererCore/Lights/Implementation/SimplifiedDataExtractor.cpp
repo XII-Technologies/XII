@@ -25,14 +25,8 @@ xiiSimplifiedDataExtractor::xiiSimplifiedDataExtractor(const char* szName) :
 
 xiiSimplifiedDataExtractor::~xiiSimplifiedDataExtractor() = default;
 
-void xiiSimplifiedDataExtractor::PostSortAndBatch(
-  const xiiView&                               view,
-  const xiiDynamicArray<const xiiGameObject*>& visibleObjects,
-  xiiExtractedRenderData&                      ref_extractedRenderData)
+void xiiSimplifiedDataExtractor::PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
 {
-  const xiiCamera* pCamera      = view.GetCullingCamera();
-  const float      fAspectRatio = view.GetViewport().width / view.GetViewport().height;
-
   xiiSimplifiedDataCPU* pData = XII_NEW(xiiFrameAllocator::GetCurrentAllocator(), xiiSimplifiedDataCPU);
 
   pData->m_uiSkyIrradianceIndex = view.GetWorld()->GetIndex();

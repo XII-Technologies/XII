@@ -966,6 +966,17 @@ namespace xiiConversionUtils
 
     const xiiUInt32 uiLen = sColorName.GetElementCount();
 
+    auto twoCharsToByte = [](const char* szColorChars, xiiUInt8& out_uiByte) -> xiiResult {
+      xiiInt8 firstChar  = HexCharacterToIntValue(szColorChars[0]);
+      xiiInt8 secondChar = HexCharacterToIntValue(szColorChars[1]);
+      if (firstChar < 0 || secondChar < 0)
+      {
+        return XII_FAILURE;
+      }
+      out_uiByte = (static_cast<xiiUInt8>(firstChar) << 4) | static_cast<xiiUInt8>(secondChar);
+      return XII_SUCCESS;
+    };
+
     if (sColorName.StartsWith("#"))
     {
       if (uiLen == 7 || uiLen == 9) // #RRGGBB or #RRGGBBAA
@@ -974,12 +985,18 @@ namespace xiiConversionUtils
 
         const char* szColorName = sColorName.GetStartPointer();
 
-        cv[0] = static_cast<xiiUInt8>((HexCharacterToIntValue(*(szColorName + 1)) << 4) | HexCharacterToIntValue(*(szColorName + 2)));
-        cv[1] = static_cast<xiiUInt8>((HexCharacterToIntValue(*(szColorName + 3)) << 4) | HexCharacterToIntValue(*(szColorName + 4)));
-        cv[2] = static_cast<xiiUInt8>((HexCharacterToIntValue(*(szColorName + 5)) << 4) | HexCharacterToIntValue(*(szColorName + 6)));
+        if (twoCharsToByte(szColorName + 1, cv[0]).Failed())
+          return xiiColor::Black;
+        if (twoCharsToByte(szColorName + 3, cv[1]).Failed())
+          return xiiColor::Black;
+        if (twoCharsToByte(szColorName + 5, cv[2]).Failed())
+          return xiiColor::Black;
 
         if (uiLen == 9)
-          cv[3] = static_cast<xiiUInt8>((HexCharacterToIntValue(*(szColorName + 7)) << 4) | HexCharacterToIntValue(*(szColorName + 8)));
+        {
+          if (twoCharsToByte(szColorName + 7, cv[3]).Failed())
+            return xiiColor::Black;
+        }
 
         if (out_pValidColorName)
           *out_pValidColorName = true;

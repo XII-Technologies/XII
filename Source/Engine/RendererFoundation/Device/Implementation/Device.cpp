@@ -1303,8 +1303,7 @@ void xiiGALDevice::DestroyDeadObjects()
         xiiGALDepthStencilState*      pDepthStencilState = nullptr;
 
         XII_VERIFY(m_DepthStencilStates.Remove(hDepthStencilState, &pDepthStencilState), "DepthStencilState not found in idTable");
-        XII_VERIFY(m_DepthStencilStateTable.Remove(pDepthStencilState->GetDescription().CalculateHash()),
-                   "DepthStencilState not found in de-duplication table");
+        XII_VERIFY(m_DepthStencilStateTable.Remove(pDepthStencilState->GetDescription().CalculateHash()), "DepthStencilState not found in de-duplication table");
 
         DestroyDepthStencilStatePlatform(pDepthStencilState);
       }
@@ -1315,8 +1314,7 @@ void xiiGALDevice::DestroyDeadObjects()
         xiiGALRasterizerState*      pRasterizerState = nullptr;
 
         XII_VERIFY(m_RasterizerStates.Remove(hRasterizerState, &pRasterizerState), "RasterizerState not found in idTable");
-        XII_VERIFY(
-          m_RasterizerStateTable.Remove(pRasterizerState->GetDescription().CalculateHash()), "RasterizerState not found in de-duplication table");
+        XII_VERIFY(m_RasterizerStateTable.Remove(pRasterizerState->GetDescription().CalculateHash()), "RasterizerState not found in de-duplication table");
 
         DestroyRasterizerStatePlatform(pRasterizerState);
       }
@@ -1358,7 +1356,7 @@ void xiiGALDevice::DestroyDeadObjects()
         xiiGALTextureHandle hTexture(xiiGAL::xii18_14Id(deadObject.m_uiHandle));
         xiiGALTexture*      pTexture = nullptr;
 
-        m_Textures.Remove(hTexture, &pTexture);
+        XII_VERIFY(m_Textures.Remove(hTexture, &pTexture), "Unexpected invalid texture handle.");
 
         DestroyViews(pTexture);
         DestroyTexturePlatform(pTexture);
@@ -1440,7 +1438,7 @@ void xiiGALDevice::DestroyDeadObjects()
         xiiGALVertexDeclarationHandle hVertexDeclaration(xiiGAL::xii18_14Id(deadObject.m_uiHandle));
         xiiGALVertexDeclaration*      pVertexDeclaration = nullptr;
 
-        m_VertexDeclarations.Remove(hVertexDeclaration, &pVertexDeclaration);
+        XII_VERIFY(m_VertexDeclarations.Remove(hVertexDeclaration, &pVertexDeclaration), "Unexpected invalid handle.");
         m_VertexDeclarationTable.Remove(pVertexDeclaration->GetDescription().CalculateHash());
 
         DestroyVertexDeclarationPlatform(pVertexDeclaration);

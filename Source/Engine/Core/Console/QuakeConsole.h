@@ -12,7 +12,7 @@ struct xiiLoggingEventData;
 /// easily.
 /// The default implementation uses xiiConsoleInterpreter::Lua as the interpreter for commands typed into it.
 /// The interpreter can be replaced with custom implementations.
-class XII_CORE_DLL xiiQuakeConsole : public xiiConsole
+class XII_CORE_DLL xiiQuakeConsole final : public xiiConsole
 {
 public:
   xiiQuakeConsole();

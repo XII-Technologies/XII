@@ -56,7 +56,7 @@ void xiiJoltActorComponent::SerializeComponent(xiiWorldWriter& inout_stream) con
 void xiiJoltActorComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
   SUPER::DeserializeComponent(inout_stream);
-  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  // const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
 
   auto& s = inout_stream.GetStream();
 

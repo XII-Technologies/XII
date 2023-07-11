@@ -49,7 +49,7 @@ xiiResult xiiStateMachineState::Serialize(xiiStreamWriter& inout_stream) const
 
 xiiResult xiiStateMachineState::Deserialize(xiiStreamReader& inout_stream)
 {
-  const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
+  // const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
 
   inout_stream >> m_sName;
   return XII_SUCCESS;

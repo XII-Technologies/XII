@@ -149,9 +149,6 @@ void xiiBeamComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) cons
   if (!m_hMesh.IsValid() || !m_hMaterial.IsValid())
     return;
 
-  const xiiUInt32 uiFlipWinding  = GetOwner()->GetGlobalTransformSimd().ContainsNegativeScale() ? 1 : 0;
-  const xiiUInt32 uiUniformScale = GetOwner()->GetGlobalTransformSimd().ContainsUniformScale() ? 1 : 0;
-
   xiiMeshRenderData* pRenderData = xiiCreateRenderDataForThisFrame<xiiMeshRenderData>(GetOwner());
   {
     pRenderData->m_GlobalTransform = GetOwner()->GetGlobalTransform();

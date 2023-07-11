@@ -78,7 +78,7 @@ void xiiCameraShakeVolumeComponent::SerializeComponent(xiiWorldWriter& ref_strea
 void xiiCameraShakeVolumeComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
   SUPER::DeserializeComponent(ref_stream);
-  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  // const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
   auto&           s         = ref_stream.GetStream();
 
   s >> m_BurstDuration;
@@ -153,7 +153,7 @@ void xiiCameraShakeVolumeSphereComponent::SerializeComponent(xiiWorldWriter& ref
 void xiiCameraShakeVolumeSphereComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
   SUPER::DeserializeComponent(ref_stream);
-  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  // const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
   auto&           s         = ref_stream.GetStream();
 
   s >> m_fRadius;

@@ -86,7 +86,7 @@ void xiiOccluderComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 void xiiOccluderComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
   SUPER::DeserializeComponent(ref_stream);
-  const xiiUInt32  uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  // const xiiUInt32  uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
   xiiStreamReader& s         = ref_stream.GetStream();
 
   s >> m_vExtents;

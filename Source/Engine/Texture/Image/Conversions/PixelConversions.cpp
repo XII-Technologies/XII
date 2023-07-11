@@ -1,16 +1,9 @@
 #include <Texture/TexturePCH.h>
 
 #include <Foundation/Math/Float16.h>
+#include <Foundation/SimdMath/SimdTypes.h>
 #include <Texture/Image/Conversions/PixelConversions.h>
 #include <Texture/Image/ImageConversion.h>
-
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_SSE_LEVEL >= XII_SSE_20
-#  include <emmintrin.h>
-#endif
-
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_SSE_LEVEL >= XII_SSE_30
-#  include <tmmintrin.h>
-#endif
 
 namespace
 {
@@ -244,7 +237,7 @@ class xiiImageConversionStep_Compress16bpp : xiiImageConversionStepLinear
   }
 };
 
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX
 
 static bool IsAligned(const void* pPointer)
 {
@@ -276,7 +269,7 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
+#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX
     if (IsAligned(sourcePointer) && IsAligned(targetPointer))
     {
 #  if XII_SSE_LEVEL >= XII_SSE_30
@@ -362,7 +355,7 @@ struct xiiImageConversion_BGRX_BGRA : public xiiImageConversionStepLinear
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_SSE_LEVEL >= XII_SSE_20
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && XII_SSE_LEVEL >= XII_SSE_20
     if (IsAligned(sourcePointer) && IsAligned(targetPointer))
     {
       const xiiUInt32 elementsPerBatch = 4;
@@ -429,7 +422,7 @@ public:
     const void* sourcePointer = source.GetPtr();
     void*       targetPointer = target.GetPtr();
 
-#if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE && XII_SSE_LEVEL >= XII_SSE_20
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && XII_SSE_LEVEL >= XII_SSE_20
     {
       const xiiUInt32 elementsPerBatch = 16;
 

@@ -208,8 +208,6 @@ void xiiJoltRopeComponent::CreateRope()
   if (hAnchor1 == hAnchor2)
     return;
 
-  const xiiTransform tRoot = GetOwner()->GetGlobalTransform();
-
   xiiHybridArray<xiiTransform, 65> nodes;
   float                            fPieceLength;
   if (CreateSegmentTransforms(nodes, fPieceLength, hAnchor1, hAnchor2).Failed())
@@ -972,9 +970,6 @@ void xiiJoltRopeComponent::SetAnchor2ConstraintMode(xiiEnum<xiiJoltRopeAnchorCon
 
 void xiiJoltRopeComponent::OnJoltMsgDisconnectConstraints(xiiJoltMsgDisconnectConstraints& ref_msg)
 {
-  xiiGameObjectHandle hBody  = ref_msg.m_pActor->GetOwner()->GetHandle();
-  xiiWorld*           pWorld = GetWorld();
-
   if (m_pConstraintAnchor1 && ref_msg.m_uiJoltBodyID == m_uiAnchor1BodyID)
   {
     xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
@@ -1037,8 +1032,6 @@ void xiiJoltRopeComponentManager::Update(const xiiWorldModule::UpdateContext& co
   }
 
   xiiJoltWorldModule* pModule = GetWorld()->GetOrCreateModule<xiiJoltWorldModule>();
-  auto*               pSystem = pModule->GetJoltSystem();
-
   for (auto itActor : pModule->GetActiveRopes())
   {
     itActor.Key()->Update();

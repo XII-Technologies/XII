@@ -53,9 +53,7 @@ xiiRenderPipeline::~xiiRenderPipeline()
 {
   if (!m_hOcclusionDebugViewTexture.IsInvalidated())
   {
-    xiiGALDevice*        pDevice  = xiiGALDevice::GetDefaultDevice();
-    const xiiGALTexture* pTexture = pDevice->GetTexture(m_hOcclusionDebugViewTexture);
-
+    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
     pDevice->DestroyTexture(m_hOcclusionDebugViewTexture);
     m_hOcclusionDebugViewTexture.Invalidate();
   }
@@ -558,15 +556,23 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
       ConnectionData& data        = m_Connections[pPass];
       for (xiiUInt32 j = 0; j < data.m_Inputs.GetCount(); j++)
       {
-        xiiRenderPipelinePassConnection* pConn = data.m_Inputs[j];
-        if (pConn != nullptr)
+        xiiRenderPipelinePassConnection* pConnection = data.m_Inputs[j];
+        if (pConnection != nullptr)
         {
           const xiiGALTextureHandle* hTexture = pTargetPass->GetTextureHandle(renderTargets, pPass->GetInputPins()[j]);
-          XII_ASSERT_DEV(m_ConnectionToTextureIndex.Contains(pConn), "");
+          XII_ASSERT_DEV(m_ConnectionToTextureIndex.Contains(pConnection), "");
 
-          if (!hTexture || !hTexture->IsInvalidated() || pConn->m_Desc.CalculateHash() == defaultTextureDescHash)
+          xiiUInt32 uiDataIdx = m_ConnectionToTextureIndex[pConnection];
+          if (!hTexture)
           {
-            xiiUInt32 uiDataIdx                             = m_ConnectionToTextureIndex[pConn];
+            m_TextureUsage[uiDataIdx].m_iTargetTextureIndex = -1;
+            for (auto pUsedByConnection : m_TextureUsage[uiDataIdx].m_UsedBy)
+            {
+              pUsedByConnection->m_TextureHandle.Invalidate();
+            }
+          }
+          else if (!hTexture->IsInvalidated() || pConnection->m_Desc.CalculateHash() == defaultTextureDescHash)
+          {
             m_TextureUsage[uiDataIdx].m_iTargetTextureIndex = static_cast<xiiInt32>(hTexture - reinterpret_cast<const xiiGALTextureHandle*>(&renderTargets));
             XII_ASSERT_DEV(reinterpret_cast<const xiiGALTextureHandle*>(&renderTargets)[m_TextureUsage[uiDataIdx].m_iTargetTextureIndex] == *hTexture, "Offset computation broken.");
 
@@ -745,7 +751,6 @@ void xiiRenderPipeline::GetExtractors(xiiHybridArray<xiiExtractor*, 16>& ref_ext
     ref_extractors.PushBack(pExtractor.Borrow());
   }
 }
-
 
 xiiExtractor* xiiRenderPipeline::GetExtractorByName(const xiiStringView& sExtractorName)
 {

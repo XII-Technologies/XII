@@ -30,19 +30,9 @@
 
 
 /// \brief Assert handler callback. Should return true to trigger a break point or false if the assert should be ignored
-using xiiAssertHandler = bool (*)(
-  const char* szSourceFile,
-  xiiUInt32   uiLine,
-  const char* szFunction,
-  const char* szExpression,
-  const char* szAssertMsg);
+using xiiAssertHandler = bool (*)(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg);
 
-XII_FOUNDATION_DLL bool xiiDefaultAssertHandler(
-  const char* szSourceFile,
-  xiiUInt32   uiLine,
-  const char* szFunction,
-  const char* szExpression,
-  const char* szAssertMsg);
+XII_FOUNDATION_DLL bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg);
 
 /// \brief Gets the current assert handler. The default assert handler shows a dialog on windows or prints to the console on other platforms.
 XII_FOUNDATION_DLL xiiAssertHandler xiiGetAssertHandler();
@@ -51,12 +41,7 @@ XII_FOUNDATION_DLL xiiAssertHandler xiiGetAssertHandler();
 XII_FOUNDATION_DLL void xiiSetAssertHandler(xiiAssertHandler handler);
 
 /// \brief Called by the assert macros whenever a check failed. Returns true if the user wants to trigger a break point
-XII_FOUNDATION_DLL bool xiiFailedCheck(
-  const char*                  szSourceFile,
-  xiiUInt32                    uiLine,
-  const char*                  szFunction,
-  const char*                  szExpression,
-  const class xiiFormatString& msg);
+XII_FOUNDATION_DLL bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const class xiiFormatString& msg);
 XII_FOUNDATION_DLL bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szMsg);
 
 /// \brief Dummy version of xiiFmt that only takes a single argument
@@ -71,29 +56,43 @@ inline const char* xiiFmt(const char* szFormat)
 XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
 #endif
 
+#ifdef BUILDSYSTEM_CLANG_TIDY
+[[noreturn]] void ClangTidyDoNotReturn();
+#  define XII_REPORT_FAILURE(szErrorMsg, ...) ClangTidyDoNotReturn()
+#else
 /// \brief Macro to report a failure when that code is reached. This will ALWAYS be executed, even in release builds, therefore might crash the
 /// application (or trigger a debug break).
-#define XII_REPORT_FAILURE(szErrorMsg, ...)                                                                           \
-  do                                                                                                                  \
-  {                                                                                                                   \
-    if (xiiFailedCheck(XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, "", xiiFmt(szErrorMsg, ##__VA_ARGS__))) \
-      XII_DEBUG_BREAK;                                                                                                \
-  } while (false)
+#  define XII_REPORT_FAILURE(szErrorMsg, ...)                                                                           \
+    do                                                                                                                  \
+    {                                                                                                                   \
+      if (xiiFailedCheck(XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, "", xiiFmt(szErrorMsg, ##__VA_ARGS__))) \
+        XII_DEBUG_BREAK;                                                                                                \
+    } while (false)
+#endif
 
+#ifdef BUILDSYSTEM_CLANG_TIDY
+#  define XII_ASSERT_ALWAYS(bCondition, szErrorMsg, ...) \
+    do                                                   \
+    {                                                    \
+      if (!!(bCondition) == false)                       \
+        ClangTidyDoNotReturn();                          \
+    } while (false)
+#else
 /// \brief Macro to raise an error, if a condition is not met. Allows to write a message using printf style. This assert will be triggered, even in
 /// non-development builds and cannot be deactivated.
-#define XII_ASSERT_ALWAYS(bCondition, szErrorMsg, ...)                                                                           \
-  do                                                                                                                             \
-  {                                                                                                                              \
-    XII_MSVC_ANALYSIS_WARNING_PUSH                                                                                               \
-    XII_MSVC_ANALYSIS_WARNING_DISABLE(6326) /* disable static analysis for the comparison */                                     \
-    if (!!(bCondition) == false)                                                                                                 \
-    {                                                                                                                            \
-      if (xiiFailedCheck(XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, #bCondition, xiiFmt(szErrorMsg, ##__VA_ARGS__))) \
-        XII_DEBUG_BREAK;                                                                                                         \
-    }                                                                                                                            \
-    XII_MSVC_ANALYSIS_WARNING_POP                                                                                                \
-  } while (false)
+#  define XII_ASSERT_ALWAYS(bCondition, szErrorMsg, ...)                                                                           \
+    do                                                                                                                             \
+    {                                                                                                                              \
+      XII_MSVC_ANALYSIS_WARNING_PUSH                                                                                               \
+      XII_MSVC_ANALYSIS_WARNING_DISABLE(6326) /* disable static analysis for the comparison */                                     \
+      if (!!(bCondition) == false)                                                                                                 \
+      {                                                                                                                            \
+        if (xiiFailedCheck(XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, #bCondition, xiiFmt(szErrorMsg, ##__VA_ARGS__))) \
+          XII_DEBUG_BREAK;                                                                                                         \
+      }                                                                                                                            \
+      XII_MSVC_ANALYSIS_WARNING_POP                                                                                                \
+    } while (false)
+#endif
 
 /// \brief This type of assert can be used to mark code as 'not (yet) implemented' and makes it easier to find it later on by just searching for these
 /// asserts.

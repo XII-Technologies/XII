@@ -39,7 +39,6 @@ void xiiMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderD
 
 void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
-  xiiGALDevice*     pDevice  = xiiGALDevice::GetDefaultDevice();
   xiiRenderContext* pContext = renderViewContext.m_pRenderContext;
 
   const xiiMeshRenderData* pRenderData = batch.GetFirstData<xiiMeshRenderData>();
