@@ -28,8 +28,8 @@ struct XII_TEXTURE_DLL xiiTextureAtlasCreationDesc
   xiiResult Serialize(xiiStreamWriter& ref_stream) const;
   xiiResult Deserialize(xiiStreamReader& ref_stream);
 
-  xiiResult Save(const char* szFile) const;
-  xiiResult Load(const char* szFile);
+  xiiResult Save(xiiStringView sFile) const;
+  xiiResult Load(xiiStringView sFile);
 };
 
 struct XII_TEXTURE_DLL xiiTextureAtlasRuntimeDesc

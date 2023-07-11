@@ -7,8 +7,8 @@
 #  include <Duktape/duk_module_duktape.h>
 #  include <Duktape/duktape.h>
 
-xiiDuktapeContext::xiiDuktapeContext(const char* szWrapperName) :
-  xiiDuktapeHelper(nullptr), m_Allocator(szWrapperName, xiiFoundation::GetDefaultAllocator())
+xiiDuktapeContext::xiiDuktapeContext(xiiStringView sWrapperName) :
+  xiiDuktapeHelper(nullptr), m_Allocator(sWrapperName, xiiFoundation::GetDefaultAllocator())
 
 {
   InitializeContext();

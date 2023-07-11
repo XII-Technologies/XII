@@ -61,13 +61,13 @@ xiiResult xiiTexConvProcessor::LoadInputImages()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::ConvertAndScaleImage(const char* szImageName, xiiImage& inout_Image, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiEnum<xiiTexConvUsage> usage)
+xiiResult xiiTexConvProcessor::ConvertAndScaleImage(xiiStringView sImageName, xiiImage& inout_Image, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiEnum<xiiTexConvUsage> usage)
 {
   const bool bSingleChannel = xiiImageFormat::GetNumChannels(inout_Image.GetImageFormat()) == 1;
 
   if (inout_Image.Convert(xiiImageFormat::R32G32B32A32_FLOAT).Failed())
   {
-    xiiLog::Error("Could not convert '{}' to RGBA 32-Bit Float format.", szImageName);
+    xiiLog::Error("Could not convert '{}' to RGBA 32-Bit Float format.", sImageName);
     return XII_FAILURE;
   }
 
@@ -75,7 +75,7 @@ xiiResult xiiTexConvProcessor::ConvertAndScaleImage(const char* szImageName, xii
   xiiImage scratch;
   if (xiiImageUtils::Scale(inout_Image, scratch, uiResolutionX, uiResolutionY, nullptr, xiiImageAddressMode::Clamp, xiiImageAddressMode::Clamp).Failed())
   {
-    xiiLog::Error("Could not resize '{}' to {}x{}", szImageName, uiResolutionX, uiResolutionY);
+    xiiLog::Error("Could not resize '{}' to {}x{}", sImageName, uiResolutionX, uiResolutionY);
     return XII_FAILURE;
   }
 
@@ -97,10 +97,10 @@ xiiResult xiiTexConvProcessor::ConvertAndScaleInputImages(xiiUInt32 uiResolution
 
   for (xiiUInt32 idx = 0; idx < m_Descriptor.m_InputImages.GetCount(); ++idx)
   {
-    auto&       img    = m_Descriptor.m_InputImages[idx];
-    const char* szName = m_Descriptor.m_InputFiles[idx];
+    auto&         img   = m_Descriptor.m_InputImages[idx];
+    xiiStringView sName = m_Descriptor.m_InputFiles[idx];
 
-    XII_SUCCEED_OR_RETURN(ConvertAndScaleImage(szName, img, uiResolutionX, uiResolutionY, usage));
+    XII_SUCCEED_OR_RETURN(ConvertAndScaleImage(sName, img, uiResolutionX, uiResolutionY, usage));
   }
 
   return XII_SUCCESS;

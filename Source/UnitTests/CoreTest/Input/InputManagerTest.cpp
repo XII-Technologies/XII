@@ -80,10 +80,10 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
     xiiInputManager::SetInputSlotDisplayName("test_slot_3", "Test Slot 3 Name");
     xiiInputManager::SetInputSlotDisplayName("test_slot_4", "Test Slot 4 Name");
 
-    XII_TEST_BOOL(xiiStringUtils::IsEqual(xiiInputManager::GetInputSlotDisplayName("test_slot_1"), "Test Slot 1 Name"));
-    XII_TEST_BOOL(xiiStringUtils::IsEqual(xiiInputManager::GetInputSlotDisplayName("test_slot_2"), "Test Slot 2 Name"));
-    XII_TEST_BOOL(xiiStringUtils::IsEqual(xiiInputManager::GetInputSlotDisplayName("test_slot_3"), "Test Slot 3 Name"));
-    XII_TEST_BOOL(xiiStringUtils::IsEqual(xiiInputManager::GetInputSlotDisplayName("test_slot_4"), "Test Slot 4 Name"));
+    XII_TEST_STRING(xiiInputManager::GetInputSlotDisplayName("test_slot_1"), "Test Slot 1 Name");
+    XII_TEST_STRING(xiiInputManager::GetInputSlotDisplayName("test_slot_2"), "Test Slot 2 Name");
+    XII_TEST_STRING(xiiInputManager::GetInputSlotDisplayName("test_slot_3"), "Test Slot 3 Name");
+    XII_TEST_STRING(xiiInputManager::GetInputSlotDisplayName("test_slot_4"), "Test Slot 4 Name");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetInputSlotDeadZone / GetInputSlotDisplayName")
@@ -367,18 +367,18 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
   {
     xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
 
-    const char* szSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::None, xiiInputSlotFlags::None);
-    XII_TEST_BOOL(xiiStringUtils::IsNullOrEmpty(szSlot));
+    xiiStringView sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::None, xiiInputSlotFlags::None);
+    XII_TEST_BOOL(sSlot.IsEmpty());
 
     xiiInputManager::InjectInputSlotValue("test_slot", 1.0f);
 
-    szSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::None, xiiInputSlotFlags::None);
-    XII_TEST_BOOL(xiiStringUtils::IsEqual(szSlot, ""));
+    sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::None, xiiInputSlotFlags::None);
+    XII_TEST_STRING(sSlot, "");
 
     xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
 
-    szSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::None, xiiInputSlotFlags::None);
-    XII_TEST_BOOL(xiiStringUtils::IsEqual(szSlot, "test_slot"));
+    sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::None, xiiInputSlotFlags::None);
+    XII_TEST_STRING(sSlot, "test_slot");
 
 
     {
@@ -389,33 +389,33 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
 
       xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
 
-      szSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsButton, xiiInputSlotFlags::None);
-      XII_TEST_BOOL(xiiStringUtils::IsEqual(szSlot, "testdevice_button"));
+      sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsButton, xiiInputSlotFlags::None);
+      XII_TEST_STRING(sSlot, "testdevice_button");
 
-      szSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsAnalogStick, xiiInputSlotFlags::None);
-      XII_TEST_BOOL(xiiStringUtils::IsEqual(szSlot, "testdevice_stick"));
+      sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsAnalogStick, xiiInputSlotFlags::None);
+      XII_TEST_STRING(sSlot, "testdevice_stick");
 
-      szSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsMouseWheel, xiiInputSlotFlags::None);
-      XII_TEST_BOOL(xiiStringUtils::IsEqual(szSlot, "testdevice_wheel"));
+      sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsMouseWheel, xiiInputSlotFlags::None);
+      XII_TEST_STRING(sSlot, "testdevice_wheel");
 
-      szSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsTouchPoint, xiiInputSlotFlags::None);
-      XII_TEST_BOOL(xiiStringUtils::IsEqual(szSlot, "testdevice_touchpoint"));
+      sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsTouchPoint, xiiInputSlotFlags::None);
+      XII_TEST_STRING(sSlot, "testdevice_touchpoint");
 
       xiiInputManager::InjectInputSlotValue("test_slot", 1.0f);
 
       xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
 
-      szSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsButton, xiiInputSlotFlags::None);
-      XII_TEST_BOOL(xiiStringUtils::IsEqual(szSlot, ""));
+      sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsButton, xiiInputSlotFlags::None);
+      XII_TEST_STRING(sSlot, "");
 
-      szSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsAnalogStick, xiiInputSlotFlags::None);
-      XII_TEST_BOOL(xiiStringUtils::IsEqual(szSlot, ""));
+      sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsAnalogStick, xiiInputSlotFlags::None);
+      XII_TEST_STRING(sSlot, "");
 
-      szSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsMouseWheel, xiiInputSlotFlags::None);
-      XII_TEST_BOOL(xiiStringUtils::IsEqual(szSlot, ""));
+      sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsMouseWheel, xiiInputSlotFlags::None);
+      XII_TEST_STRING(sSlot, "");
 
-      szSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsTouchPoint, xiiInputSlotFlags::None);
-      XII_TEST_BOOL(xiiStringUtils::IsEqual(szSlot, ""));
+      sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsTouchPoint, xiiInputSlotFlags::None);
+      XII_TEST_STRING(sSlot, "");
     }
   }
 

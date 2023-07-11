@@ -137,7 +137,7 @@ public:
   /// \brief Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const;
 
-  using FindComponentTypeCallback = xiiDelegate<const xiiRTTI*(const char* szTypeName)>;
+  using FindComponentTypeCallback = xiiDelegate<const xiiRTTI*(xiiStringView sTypeName)>;
 
   /// \brief An optional callback to redirect the lookup of a component type name to a xiiRTTI type.
   ///
@@ -244,7 +244,7 @@ private:
     };
 
     Phase::Enum           m_Phase                           = Phase::Invalid;
-    xiiUInt32             m_uiCurrentIndex                  = 0; // object or component
+    xiiUInt32             m_uiCurrentIndex                  = 0; // Object or Component.
     xiiUInt32             m_uiCurrentComponentTypeIndex     = 0;
     xiiUInt64             m_uiCurrentNumComponentsProcessed = 0;
     xiiMemoryStreamReader m_CurrentReader;

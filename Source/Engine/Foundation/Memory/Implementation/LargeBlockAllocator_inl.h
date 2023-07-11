@@ -43,12 +43,12 @@ XII_FORCE_INLINE T& xiiDataBlock<T, SizeInBytes>::operator[](xiiUInt32 uiIndex) 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <xiiUInt32 BlockSize>
-xiiLargeBlockAllocator<BlockSize>::xiiLargeBlockAllocator(const char* szName, xiiAllocatorBase* pParent, xiiBitflags<xiiMemoryTrackingFlags> flags) :
+xiiLargeBlockAllocator<BlockSize>::xiiLargeBlockAllocator(xiiStringView sName, xiiAllocatorBase* pParent, xiiBitflags<xiiMemoryTrackingFlags> flags) :
   m_TrackingFlags(flags), m_SuperBlocks(pParent), m_FreeBlocks(pParent)
 {
   XII_CHECK_AT_COMPILETIME_MSG(BlockSize >= 4096, "Block size must be 4096 or bigger");
 
-  m_Id       = xiiMemoryTracker::RegisterAllocator(szName, flags, xiiPageAllocator::GetId());
+  m_Id       = xiiMemoryTracker::RegisterAllocator(sName, flags, xiiPageAllocator::GetId());
   m_ThreadID = xiiThreadUtils::GetCurrentThreadID();
 
   const xiiUInt32 uiPageSize = xiiSystemInformation::Get().GetMemoryPageSize();

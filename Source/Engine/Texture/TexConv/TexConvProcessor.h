@@ -45,11 +45,7 @@ private:
   };
 
   xiiResult ChooseOutputFormat(xiiEnum<xiiImageFormat>& out_Format, xiiEnum<xiiTexConvUsage> usage, xiiUInt32 uiNumChannels) const;
-  xiiResult DetermineTargetResolution(
-    const xiiImage&         image,
-    xiiEnum<xiiImageFormat> OutputImageFormat,
-    xiiUInt32&              out_uiTargetResolutionX,
-    xiiUInt32&              out_uiTargetResolutionY) const;
+  xiiResult DetermineTargetResolution(const xiiImage& image, xiiEnum<xiiImageFormat> OutputImageFormat, xiiUInt32& out_uiTargetResolutionX, xiiUInt32& out_uiTargetResolutionY) const;
   xiiResult Assemble2DTexture(const xiiImageHeader& refImg, xiiImage& dst) const;
   xiiResult AssembleCubemap(xiiImage& dst) const;
   xiiResult Assemble3DTexture(xiiImage& dst) const;
@@ -61,8 +57,8 @@ private:
 
   //////////////////////////////////////////////////////////////////////////
   // Purely functional
-  static xiiResult AdjustUsage(const char* szFilename, const xiiImage& srcImg, xiiEnum<xiiTexConvUsage>& inout_Usage);
-  static xiiResult ConvertAndScaleImage(const char* szImageName, xiiImage& inout_Image, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiEnum<xiiTexConvUsage> usage);
+  static xiiResult AdjustUsage(xiiStringView sFilename, const xiiImage& srcImg, xiiEnum<xiiTexConvUsage>& inout_Usage);
+  static xiiResult ConvertAndScaleImage(xiiStringView sImageName, xiiImage& inout_Image, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiEnum<xiiTexConvUsage> usage);
 
   //////////////////////////////////////////////////////////////////////////
   // Output Generation
@@ -83,11 +79,7 @@ private:
   };
 
   xiiResult LoadAtlasInputs(const xiiTextureAtlasCreationDesc& atlasDesc, xiiDynamicArray<TextureAtlasItem>& items) const;
-  xiiResult CreateAtlasLayerTexture(
-    const xiiTextureAtlasCreationDesc& atlasDesc,
-    xiiDynamicArray<TextureAtlasItem>& atlasItems,
-    xiiInt32                           layer,
-    xiiImage&                          dstImg);
+  xiiResult CreateAtlasLayerTexture(const xiiTextureAtlasCreationDesc& atlasDesc, xiiDynamicArray<TextureAtlasItem>& atlasItems, xiiInt32 layer, xiiImage& dstImg);
 
   static xiiResult WriteTextureAtlasInfo(const xiiDynamicArray<TextureAtlasItem>& atlasItems, xiiUInt32 uiNumLayers, xiiStreamWriter& stream);
   static xiiResult TrySortItemsIntoAtlas(xiiDynamicArray<TextureAtlasItem>& items, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiInt32 layer);

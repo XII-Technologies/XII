@@ -77,7 +77,7 @@ public:
   xiiWorld* GetWorld() const { return m_pWorld; }
 
   /// \brief Tries to resolve a 'reference' (given in pData) to a xiiGameObject.
-  virtual xiiGameObjectHandle ResolveStringToGameObjectHandle(const void* pString, xiiComponentHandle hThis, const char* szProperty) const;
+  virtual xiiGameObjectHandle ResolveStringToGameObjectHandle(const void* pString, xiiComponentHandle hThis, xiiStringView sProperty) const;
 
 protected:
   virtual void OnInitialize();
@@ -191,13 +191,13 @@ private:
 private:
   struct GoReferenceTo
   {
-    const char* m_szComponentProperty = nullptr;
+    xiiStringView m_sComponentProperty;
     xiiUuid     m_ReferenceToGameObject;
   };
 
   struct GoReferencedBy
   {
-    const char* m_szComponentProperty = nullptr;
+    xiiStringView m_sComponentProperty;
     xiiUuid     m_ReferencedByComponent;
   };
 

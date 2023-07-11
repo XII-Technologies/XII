@@ -55,13 +55,13 @@ public:
   /// You can, however, also use names for input buttons, such as 'Key_Left', but then you also need to call ExecuteBoundKey() with those
   /// names.
   /// If you use such virtual key names, it makes also sense to listen to the auto-complete event and suggest those key names there.
-  void BindKey(const char* szKey, const char* szCommand);
+  void BindKey(xiiStringView sKey, xiiStringView sCommand);
 
   /// \brief Removes the key binding.
-  void UnbindKey(const char* szKey);
+  void UnbindKey(xiiStringView sKey);
 
   /// \brief Executes the command that was bound to this key.
-  void ExecuteBoundKey(const char* szKey);
+  void ExecuteBoundKey(xiiStringView sKey);
 
   /// @}
 
@@ -78,7 +78,7 @@ public:
   void ClearInputLine();
 
   /// \brief Returns the current content of the input line.
-  const char* GetInputLine() const { return m_sInputLine.GetData(); }
+  xiiStringView GetInputLine() const { return m_sInputLine; }
 
   /// \brief Returns the position (in characters) of the caret.
   xiiInt32 GetCaretPosition() const { return m_iCaretPosition; }

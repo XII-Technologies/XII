@@ -11,7 +11,7 @@ template <xiiUInt32 TrackingFlags = xiiMemoryTrackingFlags::Default>
 class xiiStackAllocator : public xiiAllocator<xiiMemoryPolicies::xiiStackAllocation, TrackingFlags>
 {
 public:
-  xiiStackAllocator(const char* szName, xiiAllocatorBase* pParent);
+  xiiStackAllocator(xiiStringView sName, xiiAllocatorBase* pParent);
   ~xiiStackAllocator();
 
   virtual void* Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc) override;

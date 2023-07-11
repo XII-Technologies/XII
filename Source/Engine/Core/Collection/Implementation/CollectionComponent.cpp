@@ -41,23 +41,23 @@ void xiiCollectionComponent::DeserializeComponent(xiiWorldReader& ref_stream)
   s >> m_hCollection;
 }
 
-void xiiCollectionComponent::SetCollectionFile(const char* szFile)
+void xiiCollectionComponent::SetCollectionFile(xiiStringView sFile)
 {
   xiiCollectionResourceHandle hResource;
 
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
+  if (!sFile.IsEmpty())
   {
-    hResource = xiiResourceManager::LoadResource<xiiCollectionResource>(szFile);
+    hResource = xiiResourceManager::LoadResource<xiiCollectionResource>(sFile);
     xiiResourceManager::PreloadResource(hResource);
   }
 
   SetCollection(hResource);
 }
 
-const char* xiiCollectionComponent::GetCollectionFile() const
+xiiStringView xiiCollectionComponent::GetCollectionFile() const
 {
   if (!m_hCollection.IsValid())
-    return "";
+    return {};
 
   return m_hCollection.GetResourceID();
 }

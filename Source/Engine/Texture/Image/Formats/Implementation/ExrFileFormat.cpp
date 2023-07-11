@@ -163,7 +163,7 @@ xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& 
   return XII_SUCCESS;
 }
 
-xiiResult xiiExrFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension) const
+xiiResult xiiExrFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiExrFileFormat::ReadImageHeader");
 
@@ -199,7 +199,7 @@ static void CopyChannel(xiiUInt8* pDst, const xiiUInt8* pSrc, xiiUInt32 uiNumEle
   }
 }
 
-xiiResult xiiExrFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, const char* szFileExtension) const
+xiiResult xiiExrFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiExrFileFormat::ReadImage");
 
@@ -302,18 +302,18 @@ xiiResult xiiExrFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
   return XII_SUCCESS;
 }
 
-xiiResult xiiExrFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, const char* szFileExtension) const
+xiiResult xiiExrFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
   XII_ASSERT_NOT_IMPLEMENTED;
   return XII_FAILURE;
 }
 
-bool xiiExrFileFormat::CanReadFileType(const char* szExtension) const
+bool xiiExrFileFormat::CanReadFileType(xiiStringView sExtension) const
 {
-  return xiiStringUtils::IsEqual_NoCase(szExtension, "exr");
+  return sExtension.IsEqual_NoCase("exr");
 }
 
-bool xiiExrFileFormat::CanWriteFileType(const char* szExtension) const
+bool xiiExrFileFormat::CanWriteFileType(xiiStringView sExtension) const
 {
   return false;
 }

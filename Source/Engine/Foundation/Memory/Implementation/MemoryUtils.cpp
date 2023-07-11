@@ -102,5 +102,4 @@ void xiiMemoryUtils::ReserveLower4GBAddressSpace()
 #endif
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_Memory_Implementation_MemoryUtils);

@@ -89,7 +89,7 @@ static void SetHeader(xiiImageHeader& ref_header, xiiImageFormat::Enum imageForm
   ref_header.SetNumFaces(metadata.IsCubemap() ? 6 : 1);
 }
 
-xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension) const
+xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiWicFileFormat::ReadImageHeader");
 
@@ -111,7 +111,7 @@ xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImag
 
   if (imageFormat == xiiImageFormat::UNKNOWN)
   {
-    xiiLog::Warning("Unable to use image format from '{}' file - trying conversion.", szFileExtension);
+    xiiLog::Warning("Unable to use image format from '{}' file - trying conversion.", sFileExtension);
     wicFlags |= WIC_FLAGS_FORCE_RGB;
     GetMetadataFromWICMemory(storage.GetData(), storage.GetCount(), wicFlags, metadata);
     imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
@@ -119,7 +119,7 @@ xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImag
 
   if (imageFormat == xiiImageFormat::UNKNOWN)
   {
-    xiiLog::Error("Unable to use image format from '{}' file.", szFileExtension);
+    xiiLog::Error("Unable to use image format from '{}' file.", sFileExtension);
     return XII_FAILURE;
   }
 
@@ -128,7 +128,7 @@ xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImag
   return XII_SUCCESS;
 }
 
-xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, const char* szFileExtension) const
+xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiWicFileFormat::ReadImage");
 
@@ -154,7 +154,7 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
 
   if (imageFormat == xiiImageFormat::UNKNOWN)
   {
-    xiiLog::Warning("Unable to use image format from '{}' file - trying conversion.", szFileExtension);
+    xiiLog::Warning("Unable to use image format from '{}' file - trying conversion.", sFileExtension);
     wicFlags |= WIC_FLAGS_FORCE_RGB;
     LoadFromWICMemory(storage.GetData(), storage.GetCount(), wicFlags, nullptr, scratchImage);
     imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
@@ -162,7 +162,7 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
 
   if (imageFormat == xiiImageFormat::UNKNOWN)
   {
-    xiiLog::Error("Unable to use image format from '{}' file.", szFileExtension);
+    xiiLog::Error("Unable to use image format from '{}' file.", sFileExtension);
     return XII_FAILURE;
   }
 
@@ -212,7 +212,7 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
   return XII_SUCCESS;
 }
 
-xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, const char* szFileExtension) const
+xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
   if (m_bTryCoInit)
   {
@@ -238,7 +238,7 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
 
   if (format == xiiImageFormat::UNKNOWN)
   {
-    xiiLog::Error("No conversion from format '{0}' to a format suitable for '{}' files known.", xiiImageFormat::GetName(image.GetImageFormat()), szFileExtension);
+    xiiLog::Error("No conversion from format '{0}' to a format suitable for '{}' files known.", xiiImageFormat::GetName(image.GetImageFormat()), sFileExtension);
     return XII_FAILURE;
   }
 
@@ -253,7 +253,7 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
       return XII_FAILURE;
     }
 
-    return WriteImage(ref_stream, convertedImage, szFileExtension);
+    return WriteImage(ref_stream, convertedImage, sFileExtension);
   }
 
   // Store xiiImage data in DirectXTex images
@@ -299,18 +299,16 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
   return XII_SUCCESS;
 }
 
-bool xiiWicFileFormat::CanReadFileType(const char* szExtension) const
+bool xiiWicFileFormat::CanReadFileType(xiiStringView sExtension) const
 {
-  return xiiStringUtils::IsEqual_NoCase(szExtension, "png") || xiiStringUtils::IsEqual_NoCase(szExtension, "jpg") ||
-    xiiStringUtils::IsEqual_NoCase(szExtension, "jpeg") ||
-    // xiiStringUtils::IsEqual_NoCase(szExtension, "hdr") ||
-    xiiStringUtils::IsEqual_NoCase(szExtension, "tif") || xiiStringUtils::IsEqual_NoCase(szExtension, "tiff");
+  return sExtension.IsEqual_NoCase("png") || sExtension.IsEqual_NoCase("jpg") || sExtension.IsEqual_NoCase("jpeg") || sExtension.IsEqual_NoCase("tif") || sExtension.IsEqual_NoCase("tiff");
+  // || sExtension.IsEqual_NoCase("hdr")
 }
 
-bool xiiWicFileFormat::CanWriteFileType(const char* szExtension) const
+bool xiiWicFileFormat::CanWriteFileType(xiiStringView sExtension) const
 {
   // png, jpg and jpeg are handled by STB (xiiStbImageFileFormats)
-  return xiiStringUtils::IsEqual_NoCase(szExtension, "tif") || xiiStringUtils::IsEqual_NoCase(szExtension, "tiff");
+  return sExtension.IsEqual_NoCase("tif") || sExtension.IsEqual_NoCase("tiff");
 }
 
 #endif

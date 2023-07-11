@@ -50,9 +50,9 @@ static FileSuffixToUsage suffixToUsageMap[] = {
 };
 
 
-static xiiTexConvUsage::Enum DetectUsageFromFilename(const char* szFile)
+static xiiTexConvUsage::Enum DetectUsageFromFilename(xiiStringView sFile)
 {
-  xiiStringBuilder name = xiiPathUtils::GetFileName(szFile);
+  xiiStringBuilder name = xiiPathUtils::GetFileName(sFile);
   name.ToLower();
 
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(suffixToUsageMap); ++i)
@@ -162,13 +162,13 @@ static xiiTexConvUsage::Enum DetectUsageFromImage(const xiiImage& image)
   }
 }
 
-xiiResult xiiTexConvProcessor::AdjustUsage(const char* szFilename, const xiiImage& srcImg, xiiEnum<xiiTexConvUsage>& inout_Usage)
+xiiResult xiiTexConvProcessor::AdjustUsage(xiiStringView sFilename, const xiiImage& srcImg, xiiEnum<xiiTexConvUsage>& inout_Usage)
 {
   XII_PROFILE_SCOPE("AdjustUsage");
 
   if (inout_Usage == xiiTexConvUsage::Auto)
   {
-    inout_Usage = DetectUsageFromFilename(szFilename);
+    inout_Usage = DetectUsageFromFilename(sFilename);
   }
 
   if (inout_Usage == xiiTexConvUsage::Auto)

@@ -5,17 +5,17 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Strings/StringBuilder.h>
 
-xiiDoubleBufferedStackAllocator::xiiDoubleBufferedStackAllocator(const char* szName, xiiAllocatorBase* pParent)
+xiiDoubleBufferedStackAllocator::xiiDoubleBufferedStackAllocator(xiiStringView sName, xiiAllocatorBase* pParent)
 {
-  xiiStringBuilder sName = szName;
-  sName.Append("0");
+  xiiStringBuilder sNameBuilder = sName;
+  sNameBuilder.Append("0");
 
-  m_pCurrentAllocator = XII_DEFAULT_NEW(StackAllocatorType, sName, pParent);
+  m_pCurrentAllocator = XII_DEFAULT_NEW(StackAllocatorType, sNameBuilder, pParent);
 
-  sName = szName;
-  sName.Append("1");
+  sNameBuilder = sName;
+  sNameBuilder.Append("1");
 
-  m_pOtherAllocator = XII_DEFAULT_NEW(StackAllocatorType, sName, pParent);
+  m_pOtherAllocator = XII_DEFAULT_NEW(StackAllocatorType, sNameBuilder, pParent);
 }
 
 xiiDoubleBufferedStackAllocator::~xiiDoubleBufferedStackAllocator()

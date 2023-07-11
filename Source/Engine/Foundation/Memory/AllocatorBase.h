@@ -59,8 +59,7 @@ private:
 
 /// \brief creates a new instance of type using the given allocator
 #define XII_NEW(allocator, type, ...) \
-  xiiInternal::NewInstance<type>(     \
-    new ((allocator)->Allocate(sizeof(type), XII_ALIGNMENT_OF(type), xiiMemoryUtils::MakeDestructorFunction<type>())) type(__VA_ARGS__), (allocator))
+  xiiInternal::NewInstance<type>(new ((allocator)->Allocate(sizeof(type), XII_ALIGNMENT_OF(type), xiiMemoryUtils::MakeDestructorFunction<type>())) type(__VA_ARGS__), (allocator))
 
 /// \brief deletes the instance stored in ptr using the given allocator and sets ptr to nullptr
 #define XII_DELETE(allocator, ptr)       \

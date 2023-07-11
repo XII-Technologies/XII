@@ -28,7 +28,7 @@ public:
   void ResetAndViewExternalStorage(const xiiImageHeader& header, xiiConstByteBlobPtr imageData);
 
   /// \brief Convenience function to save the image to the given file.
-  xiiResult SaveTo(const char* szFileName) const;
+  xiiResult SaveTo(xiiStringView sFileName) const;
 
   /// \brief Returns the header this image was constructed from.
   const xiiImageHeader& GetHeader() const;
@@ -53,14 +53,7 @@ public:
 
   /// \brief Returns a pointer to a given pixel or block contained in a sub-image.
   template <typename T>
-  const T* GetPixelPointer(
-    xiiUInt32 uiMipLevel   = 0,
-    xiiUInt32 uiFace       = 0,
-    xiiUInt32 uiArrayIndex = 0,
-    xiiUInt32 x            = 0,
-    xiiUInt32 y            = 0,
-    xiiUInt32 z            = 0,
-    xiiUInt32 uiPlaneIndex = 0) const;
+  const T* GetPixelPointer(xiiUInt32 uiMipLevel = 0, xiiUInt32 uiFace = 0, xiiUInt32 uiArrayIndex = 0, xiiUInt32 x = 0, xiiUInt32 y = 0, xiiUInt32 z = 0, xiiUInt32 uiPlaneIndex = 0) const;
 
   /// \brief Reinterprets the image with a given format; the format must have the same size in bits per pixel as the current one.
   void ReinterpretAs(xiiImageFormat::Enum format);
@@ -159,7 +152,7 @@ public:
   void ResetAndCopy(const xiiImageView& other);
 
   /// \brief Convenience function to load the image from the given file.
-  xiiResult LoadFrom(const char* szFileName);
+  xiiResult LoadFrom(xiiStringView sFileName);
 
   /// \brief Convenience function to convert the image to the given format.
   xiiResult Convert(xiiImageFormat::Enum targetFormat);

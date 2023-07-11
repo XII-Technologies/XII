@@ -6,7 +6,7 @@ XII_ALWAYS_INLINE xiiAllocatorBase::~xiiAllocatorBase() = default;
 
 namespace xiiMath
 {
-  // due to #include order issues, we have to forward declare this function here
+  // Due to #include order issues, we have to forward declare this function here
 
   XII_FOUNDATION_DLL xiiUInt64 SafeMultiply64(xiiUInt64 a, xiiUInt64 b, xiiUInt64 c, xiiUInt64 d);
 } // namespace xiiMath

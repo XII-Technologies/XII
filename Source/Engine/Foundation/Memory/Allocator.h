@@ -17,8 +17,8 @@ template <typename AllocationPolicy, xiiUInt32 TrackingFlags = xiiMemoryTracking
 class xiiAllocator : public xiiInternal::xiiAllocatorMixinReallocate<AllocationPolicy, TrackingFlags, xiiHasReallocate<AllocationPolicy, void* (AllocationPolicy::*)(void*, size_t, size_t, size_t)>::value>
 {
 public:
-  xiiAllocator(const char* szName, xiiAllocatorBase* pParent = nullptr) :
-    xiiInternal::xiiAllocatorMixinReallocate<AllocationPolicy, TrackingFlags, xiiHasReallocate<AllocationPolicy, void* (AllocationPolicy::*)(void*, size_t, size_t, size_t)>::value>(szName, pParent)
+  xiiAllocator(xiiStringView sName, xiiAllocatorBase* pParent = nullptr) :
+    xiiInternal::xiiAllocatorMixinReallocate<AllocationPolicy, TrackingFlags, xiiHasReallocate<AllocationPolicy, void* (AllocationPolicy::*)(void*, size_t, size_t, size_t)>::value>(sName, pParent)
   {
   }
 };

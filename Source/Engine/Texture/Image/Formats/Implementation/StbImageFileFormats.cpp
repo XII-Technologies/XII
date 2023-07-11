@@ -44,7 +44,6 @@ xiiStbImageFileFormats g_StbImageFormats;
 
 namespace
 {
-
   void write_func(void* pContext, void* pData, int iSize)
   {
     xiiStreamWriter* writer = static_cast<xiiStreamWriter*>(pContext);
@@ -107,7 +106,7 @@ namespace
 
 } // namespace
 
-xiiResult xiiStbImageFileFormats::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, const char* szFileExtension) const
+xiiResult xiiStbImageFileFormats::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiStbImageFileFormats::ReadImageHeader");
 
@@ -122,7 +121,7 @@ xiiResult xiiStbImageFileFormats::ReadImageHeader(xiiStreamReader& ref_stream, x
   return XII_SUCCESS;
 }
 
-xiiResult xiiStbImageFileFormats::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, const char* szFileExtension) const
+xiiResult xiiStbImageFileFormats::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiStbImageFileFormats::ReadImage");
 
@@ -156,7 +155,7 @@ xiiResult xiiStbImageFileFormats::ReadImage(xiiStreamReader& ref_stream, xiiImag
   return XII_SUCCESS;
 }
 
-xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, const char* szFileExtension) const
+xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
   xiiImageFormat::Enum compatibleFormats[] = {xiiImageFormat::R8_UNORM, xiiImageFormat::R8G8B8_UNORM, xiiImageFormat::R8G8B8A8_UNORM};
 
@@ -180,10 +179,10 @@ xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& ref_stream, const 
       return XII_FAILURE;
     }
 
-    return WriteImage(ref_stream, convertedImage, szFileExtension);
+    return WriteImage(ref_stream, convertedImage, sFileExtension);
   }
 
-  if (xiiStringUtils::IsEqual_NoCase(szFileExtension, "png"))
+  if (sFileExtension.IsEqual_NoCase("png"))
   {
     if (stbi_write_png_to_func(write_func, &ref_stream, image.GetWidth(), image.GetHeight(), xiiImageFormat::GetNumChannels(image.GetImageFormat()), image.GetByteBlobPtr().GetPtr(), 0))
     {
@@ -191,7 +190,7 @@ xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& ref_stream, const 
     }
   }
 
-  if (xiiStringUtils::IsEqual_NoCase(szFileExtension, "jpg") || xiiStringUtils::IsEqual_NoCase(szFileExtension, "jpeg"))
+  if (sFileExtension.IsEqual_NoCase("jpg") || sFileExtension.IsEqual_NoCase("jpeg"))
   {
     if (stbi_write_jpg_to_func(write_func, &ref_stream, image.GetWidth(), image.GetHeight(), xiiImageFormat::GetNumChannels(image.GetImageFormat()), image.GetByteBlobPtr().GetPtr(), 95))
     {
@@ -202,15 +201,15 @@ xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& ref_stream, const 
   return XII_FAILURE;
 }
 
-bool xiiStbImageFileFormats::CanReadFileType(const char* szExtension) const
+bool xiiStbImageFileFormats::CanReadFileType(xiiStringView sExtension) const
 {
-  if (xiiStringUtils::IsEqual_NoCase(szExtension, "hdr"))
+  if (sExtension.IsEqual_NoCase("hdr"))
     return true;
 
 #if XII_DISABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 
   // on Windows Desktop, we prefer to use WIC (xiiWicFileFormat)
-  if (xiiStringUtils::IsEqual_NoCase(szExtension, "png") || xiiStringUtils::IsEqual_NoCase(szExtension, "jpg") || xiiStringUtils::IsEqual_NoCase(szExtension, "jpeg"))
+  if (sExtension.IsEqual_NoCase("png") || sExtension.IsEqual_NoCase("jpg") || sExtension.IsEqual_NoCase("jpeg"))
   {
     return true;
   }
@@ -219,17 +218,15 @@ bool xiiStbImageFileFormats::CanReadFileType(const char* szExtension) const
   return false;
 }
 
-bool xiiStbImageFileFormats::CanWriteFileType(const char* szExtension) const
+bool xiiStbImageFileFormats::CanWriteFileType(xiiStringView sExtension) const
 {
   // even when WIC is available, prefer to write these files through STB, to get consistent output
-  if (xiiStringUtils::IsEqual_NoCase(szExtension, "png") || xiiStringUtils::IsEqual_NoCase(szExtension, "jpg") || xiiStringUtils::IsEqual_NoCase(szExtension, "jpeg"))
+  if (sExtension.IsEqual_NoCase("png") || sExtension.IsEqual_NoCase("jpg") || sExtension.IsEqual_NoCase("jpeg"))
   {
     return true;
   }
 
   return false;
 }
-
-
 
 XII_STATICLINK_FILE(Texture, Texture_Image_Formats_StbImageFileFormats);

@@ -84,11 +84,11 @@ namespace
     s_bIsInitializing = false;
   }
 
-  static void DumpLeak(const xiiMemoryTracker::AllocationInfo& info, const char* szAllocatorName)
+  static void DumpLeak(const xiiMemoryTracker::AllocationInfo& info, xiiStringView sAllocatorName)
   {
     char      szBuffer[512];
     xiiUInt64 uiSize = info.m_uiSize;
-    xiiStringUtils::snprintf(szBuffer, XII_ARRAY_SIZE(szBuffer), "Leaked %llu bytes allocated by '%s'\n", uiSize, szAllocatorName);
+    xiiStringUtils::snprintf(szBuffer, XII_ARRAY_SIZE(szBuffer), "Leaked %llu bytes allocated by '%s'\n", uiSize, sAllocatorName);
 
     xiiLog::Print(szBuffer);
 
@@ -109,7 +109,7 @@ xiiAllocatorId xiiMemoryTracker::Iterator::Id() const
   return CAST_ITER(m_pData)->Id();
 }
 
-const char* xiiMemoryTracker::Iterator::Name() const
+xiiStringView xiiMemoryTracker::Iterator::Name() const
 {
   return CAST_ITER(m_pData)->Value().m_sName.GetData();
 }
@@ -143,14 +143,14 @@ xiiMemoryTracker::Iterator::~Iterator()
 
 
 // static
-xiiAllocatorId xiiMemoryTracker::RegisterAllocator(const char* szName, xiiBitflags<xiiMemoryTrackingFlags> flags, xiiAllocatorId parentId)
+xiiAllocatorId xiiMemoryTracker::RegisterAllocator(xiiStringView sName, xiiBitflags<xiiMemoryTrackingFlags> flags, xiiAllocatorId parentId)
 {
   Initialize();
 
   XII_LOCK(*s_pTrackerData);
 
   AllocatorData data;
-  data.m_sName    = szName;
+  data.m_sName    = sName;
   data.m_Flags    = flags;
   data.m_ParentId = parentId;
 
@@ -285,7 +285,7 @@ void xiiMemoryTracker::ResetPerFrameAllocatorStats()
 }
 
 // static
-const char* xiiMemoryTracker::GetAllocatorName(xiiAllocatorId allocatorId)
+xiiStringView xiiMemoryTracker::GetAllocatorName(xiiAllocatorId allocatorId)
 {
   XII_LOCK(*s_pTrackerData);
 
@@ -341,7 +341,7 @@ struct LeakInfo
 // static
 void xiiMemoryTracker::DumpMemoryLeaks()
 {
-  if (s_pTrackerData == nullptr) // if both tracking and tracing is disabled there is no tracker data
+  if (s_pTrackerData == nullptr) // If both tracking and tracing is disabled there is no tracker data.
     return;
   XII_LOCK(*s_pTrackerData);
 
@@ -363,7 +363,7 @@ void xiiMemoryTracker::DumpMemoryLeaks()
     }
   }
 
-  // find dependencies
+  // Find dependencies.
   for (auto it = leakTable.GetIterator(); it.IsValid(); ++it)
   {
     const void*     ptr  = it.Key();
@@ -386,7 +386,7 @@ void xiiMemoryTracker::DumpMemoryLeaks()
     }
   }
 
-  // dump leaks
+  // Dump leaks.
   xiiUInt64 uiNumLeaks = 0;
 
   for (auto it = leakTable.GetIterator(); it.IsValid(); ++it)
@@ -430,6 +430,5 @@ xiiMemoryTracker::Iterator xiiMemoryTracker::GetIterator()
   auto pInnerIt = XII_NEW(s_pTrackerDataAllocator, TrackerData::AllocatorTable::Iterator, s_pTrackerData->m_AllocatorData.GetIterator());
   return Iterator(pInnerIt);
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Memory_Implementation_MemoryTracker);

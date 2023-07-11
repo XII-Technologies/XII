@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Foundation/Basics.h>
-#include <cstdint> // for uintptr_t
+#include <cstdint> // For uintptr_t
 
 /// \brief This class provides functions to work on raw memory.
 ///

@@ -5,7 +5,6 @@
 /// \brief Collection of helper methods when working with endianess "problems"
 struct XII_FOUNDATION_DLL xiiEndianHelper
 {
-
   /// \brief Returns true if called on a big endian system, false otherwise.
   ///
   /// \note Note that usually the compile time decisions with the defines XII_PLATFORM_LITTLE_ENDIAN, XII_PLATFORM_BIG_ENDIAN is preferred.
@@ -24,21 +23,27 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
   static inline void SwitchWords(xiiUInt16* pWords, xiiUInt32 uiCount) // [tested]
   {
     for (xiiUInt32 i = 0; i < uiCount; i++)
+    {
       pWords[i] = Switch(pWords[i]);
+    }
   }
 
   /// \brief Switches endianess of the given array of double words (32 bit values).
   static inline void SwitchDWords(xiiUInt32* pDWords, xiiUInt32 uiCount) // [tested]
   {
     for (xiiUInt32 i = 0; i < uiCount; i++)
+    {
       pDWords[i] = Switch(pDWords[i]);
+    }
   }
 
   /// \brief Switches endianess of the given array of quad words (64 bit values).
   static inline void SwitchQWords(xiiUInt64* pQWords, xiiUInt32 uiCount) // [tested]
   {
     for (xiiUInt32 i = 0; i < uiCount; i++)
+    {
       pQWords[i] = Switch(pQWords[i]);
+    }
   }
 
   /// \brief Returns a single switched word (16 bit value).
@@ -178,7 +183,6 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
   static XII_ALWAYS_INLINE void NativeToBigEndian(xiiUInt64* /*pWords*/, xiiUInt32 /*uiCount*/) {}
 
 #endif
-
 
   /// \brief Switches a given struct according to the layout described in the szFormat parameter
   ///

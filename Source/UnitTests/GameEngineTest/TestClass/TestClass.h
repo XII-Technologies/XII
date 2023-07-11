@@ -33,7 +33,7 @@ protected:
   virtual xiiResult                      BeforeCoreSystemsStartup() override;
   virtual void                           AfterCoreSystemsStartup() override;
   virtual void                           BeforeHighLevelSystemsShutdown() override;
-  virtual void                           StoreScreenshot(xiiImage&& image, const char* szContext) override;
+  virtual void                           StoreScreenshot(xiiImage&& image, xiiStringView sContext) override;
   virtual void                           Init_FileSystem_ConfigureDataDirs() override;
   virtual xiiUniquePtr<xiiGameStateBase> CreateGameState(xiiWorld* pWorld) override;
 

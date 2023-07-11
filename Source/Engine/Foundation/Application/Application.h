@@ -73,13 +73,13 @@ public:
   };
 
   /// \brief Constructor.
-  xiiApplication(const char* szAppName);
+  xiiApplication(xiiStringView sAppName);
 
   /// \brief Virtual destructor.
   virtual ~xiiApplication();
 
   /// \brief Changes the application name
-  void SetApplicationName(const char* szAppName);
+  void SetApplicationName(xiiStringView sAppName);
 
   /// \brief Returns the application name
   const xiiString& GetApplicationName() const { return m_sAppName; }

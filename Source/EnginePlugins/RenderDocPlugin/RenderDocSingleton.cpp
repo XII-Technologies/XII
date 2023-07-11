@@ -70,21 +70,23 @@ bool xiiRenderDoc::IsInitialized() const
   return m_pRenderDocAPI != nullptr;
 }
 
-void xiiRenderDoc::SetAbsCaptureFilePathTemplate(const char* szFilePathTemplate)
+void xiiRenderDoc::SetAbsCaptureFilePathTemplate(xiiStringView sFilePathTemplate)
 {
   if (m_pRenderDocAPI)
   {
-    m_pRenderDocAPI->SetCaptureFilePathTemplate(szFilePathTemplate);
+    xiiStringBuilder tmp;
+    m_pRenderDocAPI->SetCaptureFilePathTemplate(sFilePathTemplate.GetData(tmp));
   }
 }
 
-const char* xiiRenderDoc::GetAbsCaptureFilePathTemplate() const
+xiiStringView xiiRenderDoc::GetAbsCaptureFilePathTemplate() const
 {
   if (m_pRenderDocAPI)
   {
     return m_pRenderDocAPI->GetCaptureFilePathTemplate();
   }
-  return nullptr;
+
+  return {};
 }
 
 void xiiRenderDoc::StartFrameCapture(xiiWindowHandle hWnd)

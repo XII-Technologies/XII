@@ -11,7 +11,7 @@
 
 xiiStaticArray<xiiWorld*, xiiWorld::GetMaxNumWorlds()> xiiWorld::s_Worlds;
 
-static xiiGameObjectHandle DefaultGameObjectReferenceResolver(const void* pData, xiiComponentHandle hThis, const char* szProperty)
+static xiiGameObjectHandle DefaultGameObjectReferenceResolver(const void* pData, xiiComponentHandle hThis, xiiStringView sProperty)
 {
   const char* szRef = reinterpret_cast<const char*>(pData);
 

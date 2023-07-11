@@ -32,7 +32,7 @@ public:
   void RetrieveVec3(const xiiTempHashedString& sName, xiiVec3& out_vValue, xiiVec3 vDefaultValue = xiiVec3(0));
   void RetrieveVec3d(const xiiTempHashedString& sName, xiiVec3d& out_vValue, xiiVec3d vDefaultValue = xiiVec3d(0));
   void RetrieveColor(const xiiTempHashedString& sName, xiiColor& out_value, xiiColor defaultValue = xiiColor::White);
-  void RetrieveString(const xiiTempHashedString& sName, xiiString& out_sValue, const char* szDefaultValue = nullptr);
+  void RetrieveString(const xiiTempHashedString& sName, xiiString& out_sValue, xiiStringView sDefaultValue = {});
 
 private:
   xiiHashTable<xiiTempHashedString, bool>      m_Bools;

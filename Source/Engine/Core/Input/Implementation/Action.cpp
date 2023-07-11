@@ -32,9 +32,9 @@ xiiInputManager::xiiActionData::xiiActionData()
   m_iTriggeredViaAlternative = -1;
 }
 
-void xiiInputManager::ClearInputMapping(const char* szInputSet, const char* szInputSlot)
+void xiiInputManager::ClearInputMapping(xiiStringView sInputSet, xiiStringView sInputSlot)
 {
-  xiiActionMap& Actions = GetInternals().s_ActionMapping[szInputSet];
+  xiiActionMap& Actions = GetInternals().s_ActionMapping[sInputSet];
 
   // iterate over all existing actions
   for (xiiActionMap::Iterator it = Actions.GetIterator(); it.IsValid(); ++it)
@@ -44,47 +44,47 @@ void xiiInputManager::ClearInputMapping(const char* szInputSet, const char* szIn
     {
       // if that action is triggered by the given input slot, remove that trigger from the action
 
-      if (it.Value().m_Config.m_sInputSlotTrigger[i1] == szInputSlot)
+      if (it.Value().m_Config.m_sInputSlotTrigger[i1] == sInputSlot)
+      {
         it.Value().m_Config.m_sInputSlotTrigger[i1].Clear();
+      }
     }
   }
 }
 
-void xiiInputManager::SetInputActionConfig(
-  const char*                 szInputSet,
-  const char*                 szAction,
-  const xiiInputActionConfig& config,
-  bool                        bClearPreviousInputMappings)
+void xiiInputManager::SetInputActionConfig(xiiStringView sInputSet, xiiStringView sAction, const xiiInputActionConfig& config, bool bClearPreviousInputMappings)
 {
-  XII_ASSERT_DEV(!xiiStringUtils::IsNullOrEmpty(szInputSet), "The InputSet name must not be empty.");
-  XII_ASSERT_DEV(!xiiStringUtils::IsNullOrEmpty(szAction), "No input action to map to was given.");
+  XII_ASSERT_DEV(!sInputSet.IsEmpty(), "The InputSet name must not be empty.");
+  XII_ASSERT_DEV(!sAction.IsEmpty(), "No input action to map to was given.");
 
   if (bClearPreviousInputMappings)
   {
     for (xiiUInt32 i1 = 0; i1 < xiiInputActionConfig::MaxInputSlotAlternatives; ++i1)
-      ClearInputMapping(szInputSet, config.m_sInputSlotTrigger[i1].GetData());
+    {
+      ClearInputMapping(sInputSet, config.m_sInputSlotTrigger[i1].GetData());
+    }
   }
 
   // store the new action mapping
-  xiiInputManager::xiiActionData& ad = GetInternals().s_ActionMapping[szInputSet][szAction];
+  xiiInputManager::xiiActionData& ad = GetInternals().s_ActionMapping[sInputSet][sAction];
   ad.m_Config                        = config;
 
   InputEventData e;
-  e.m_EventType     = InputEventData::InputActionChanged;
-  e.m_szInputSet    = szInputSet;
-  e.m_szInputAction = szAction;
+  e.m_EventType    = InputEventData::InputActionChanged;
+  e.m_sInputSet    = sInputSet;
+  e.m_sInputAction = sAction;
 
   s_InputEvents.Broadcast(e);
 }
 
-xiiInputActionConfig xiiInputManager::GetInputActionConfig(const char* szInputSet, const char* szAction)
+xiiInputActionConfig xiiInputManager::GetInputActionConfig(xiiStringView sInputSet, xiiStringView sAction)
 {
-  const xiiInputSetMap::ConstIterator ItSet = GetInternals().s_ActionMapping.Find(szInputSet);
+  const xiiInputSetMap::ConstIterator ItSet = GetInternals().s_ActionMapping.Find(sInputSet);
 
   if (!ItSet.IsValid())
     return xiiInputActionConfig();
 
-  const xiiActionMap::ConstIterator ItAction = ItSet.Value().Find(szAction);
+  const xiiActionMap::ConstIterator ItAction = ItSet.Value().Find(sAction);
 
   if (!ItAction.IsValid())
     return xiiInputActionConfig();
@@ -92,12 +92,12 @@ xiiInputActionConfig xiiInputManager::GetInputActionConfig(const char* szInputSe
   return ItAction.Value().m_Config;
 }
 
-void xiiInputManager::RemoveInputAction(const char* szInputSet, const char* szAction)
+void xiiInputManager::RemoveInputAction(xiiStringView sInputSet, xiiStringView sAction)
 {
-  GetInternals().s_ActionMapping[szInputSet].Remove(szAction);
+  GetInternals().s_ActionMapping[sInputSet].Remove(sAction);
 }
 
-xiiKeyState::Enum xiiInputManager::GetInputActionState(const char* szInputSet, const char* szAction, float* pValue, xiiInt8* pTriggeredSlot)
+xiiKeyState::Enum xiiInputManager::GetInputActionState(xiiStringView sInputSet, xiiStringView sAction, float* pValue, xiiInt8* pTriggeredSlot)
 {
   if (pValue)
     *pValue = 0.0f;
@@ -105,15 +105,15 @@ xiiKeyState::Enum xiiInputManager::GetInputActionState(const char* szInputSet, c
   if (pTriggeredSlot)
     *pTriggeredSlot = -1;
 
-  if (!s_sExclusiveInputSet.IsEmpty() && s_sExclusiveInputSet != szInputSet)
+  if (!s_sExclusiveInputSet.IsEmpty() && s_sExclusiveInputSet != sInputSet)
     return xiiKeyState::Up;
 
-  const xiiInputSetMap::ConstIterator ItSet = GetInternals().s_ActionMapping.Find(szInputSet);
+  const xiiInputSetMap::ConstIterator ItSet = GetInternals().s_ActionMapping.Find(sInputSet);
 
   if (!ItSet.IsValid())
     return xiiKeyState::Up;
 
-  const xiiActionMap::ConstIterator ItAction = ItSet.Value().Find(szAction);
+  const xiiActionMap::ConstIterator ItAction = ItSet.Value().Find(sAction);
 
   if (!ItAction.IsValid())
     return xiiKeyState::Up;
@@ -163,7 +163,7 @@ xiiInputManager::xiiActionMap::Iterator xiiInputManager::GetBestAction(xiiAction
     if (AltSlot >= 0)
     {
       if (ThisAction.m_Config.m_sInputSlotTrigger[AltSlot] == sSlot)
-        goto hell;
+        goto Check;
     }
     else
     {
@@ -171,14 +171,14 @@ xiiInputManager::xiiActionMap::Iterator xiiInputManager::GetBestAction(xiiAction
       for (AltSlot = 0; AltSlot < xiiInputActionConfig::MaxInputSlotAlternatives; ++AltSlot)
       {
         if (ThisAction.m_Config.m_sInputSlotTrigger[AltSlot] == sSlot)
-          goto hell;
+          goto Check;
       }
     }
 
     // if the action is not triggered by this slot, skip it
     continue;
 
-  hell:
+  Check:
 
     XII_ASSERT_DEV(AltSlot >= 0 && AltSlot < xiiInputActionConfig::MaxInputSlotAlternatives, "Alternate Slot out of bounds.");
 
@@ -237,7 +237,7 @@ void xiiInputManager::UpdateInputActions(xiiTime tTimeDifference)
   }
 }
 
-void xiiInputManager::UpdateInputActions(const char* szInputSet, xiiActionMap& Actions, xiiTime tTimeDifference)
+void xiiInputManager::UpdateInputActions(xiiStringView sInputSet, xiiActionMap& Actions, xiiTime tTimeDifference)
 {
   // reset all action values to zero
   for (xiiActionMap::Iterator ItActions = Actions.GetIterator(); ItActions.IsValid(); ++ItActions)
@@ -307,9 +307,9 @@ void xiiInputManager::UpdateInputActions(const char* szInputSet, xiiActionMap& A
       ItActions.Value().m_State = NewState;
 
       InputEventData e;
-      e.m_EventType     = InputEventData::InputActionChanged;
-      e.m_szInputSet    = szInputSet;
-      e.m_szInputAction = ItActions.Key().GetData();
+      e.m_EventType    = InputEventData::InputActionChanged;
+      e.m_sInputSet    = sInputSet;
+      e.m_sInputAction = ItActions.Key().GetData();
 
       s_InputEvents.Broadcast(e);
     }
@@ -319,14 +319,14 @@ void xiiInputManager::UpdateInputActions(const char* szInputSet, xiiActionMap& A
   }
 }
 
-void xiiInputManager::SetActionDisplayName(const char* szAction, const char* szDisplayName)
+void xiiInputManager::SetActionDisplayName(xiiStringView sAction, xiiStringView sDisplayName)
 {
-  GetInternals().s_ActionDisplayNames[szAction] = szDisplayName;
+  GetInternals().s_ActionDisplayNames[sAction] = sDisplayName;
 }
 
-const xiiString xiiInputManager::GetActionDisplayName(const char* szAction)
+const xiiString xiiInputManager::GetActionDisplayName(xiiStringView sAction)
 {
-  return GetInternals().s_ActionDisplayNames.GetValueOrDefault(szAction, szAction);
+  return GetInternals().s_ActionDisplayNames.GetValueOrDefault(sAction, sAction);
 }
 
 void xiiInputManager::GetAllInputSets(xiiDynamicArray<xiiString>& out_inputSetNames)
@@ -337,9 +337,9 @@ void xiiInputManager::GetAllInputSets(xiiDynamicArray<xiiString>& out_inputSetNa
     out_inputSetNames.PushBack(it.Key());
 }
 
-void xiiInputManager::GetAllInputActions(const char* szInputSetName, xiiDynamicArray<xiiString>& out_inputActions)
+void xiiInputManager::GetAllInputActions(xiiStringView sInputSetName, xiiDynamicArray<xiiString>& out_inputActions)
 {
-  const auto& map = GetInternals().s_ActionMapping[szInputSetName];
+  const auto& map = GetInternals().s_ActionMapping[sInputSetName];
 
   out_inputActions.Clear();
   out_inputActions.Reserve(map.GetCount());
@@ -347,7 +347,5 @@ void xiiInputManager::GetAllInputActions(const char* szInputSetName, xiiDynamicA
   for (xiiActionMap::ConstIterator it = map.GetIterator(); it.IsValid(); ++it)
     out_inputActions.PushBack(it.Key());
 }
-
-
 
 XII_STATICLINK_FILE(Core, Core_Input_Implementation_Action);

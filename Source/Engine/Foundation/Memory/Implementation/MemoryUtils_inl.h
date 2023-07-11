@@ -3,13 +3,13 @@
   XII_CHECK_AT_COMPILETIME_MSG(!std::is_trivial<T>::value, \
                                "POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.")
 
-// public methods: redirect to implementation
+// Public methods: Redirect to implementation.
 template <typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::Construct(T* pDestination, size_t uiCount)
 {
   // Default constructor is always called, so that debug helper initializations (e.g. xiiVec3 initializes to NaN) take place.
   // Note that destructor is ONLY called for class types.
-  // Special case for c++11 to prevent default construction of "real" Pod types, also avoids warnings on msvc
+  // Special case for c++11 to prevent default construction of "real" Pod types, also avoids warnings on MSVC.
   Construct(pDestination, uiCount, xiiTraitInt < xiiIsPodType<T>::value && std::is_trivial<T>::value > ());
 }
 
@@ -122,8 +122,8 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::RawByteCopy(void* pDestination, const voi
 template <typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::Copy(T* pDestination, const T* pSource, size_t uiCount)
 {
-  XII_ASSERT_DEV(
-    pDestination < pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using Copy. Use CopyOverlapped instead.");
+  XII_ASSERT_DEV(pDestination < pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using Copy. Use CopyOverlapped instead.");
+
   Copy(pDestination, pSource, uiCount, xiiIsPodType<T>());
 }
 
@@ -241,7 +241,7 @@ XII_ALWAYS_INLINE bool xiiMemoryUtils::IsSizeAligned(T uiSize, T uiAlignment)
   return (uiSize & (uiAlignment - 1)) == 0;
 }
 
-// private methods
+// Private methods.
 
 template <typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::Construct(T* pDestination, size_t uiCount, xiiTypeIsPod)
@@ -288,8 +288,7 @@ XII_ALWAYS_INLINE xiiMemoryUtils::ConstructorFunction xiiMemoryUtils::MakeConstr
 template <typename Destination, typename Source>
 XII_ALWAYS_INLINE void xiiMemoryUtils::CopyConstruct(Destination* pDestination, const Source& copy, size_t uiCount, xiiTypeIsPod)
 {
-  static_assert(std::is_same<Destination, Source>::value ||
-                  (std::is_base_of<Destination, Source>::value == false && std::is_base_of<Source, Destination>::value == false),
+  static_assert(std::is_same<Destination, Source>::value || (std::is_base_of<Destination, Source>::value == false && std::is_base_of<Source, Destination>::value == false),
                 "Can't copy POD types that are derived from each other. Are you certain any of these types should be POD?");
 
   const Destination& copyConverted = copy;
@@ -654,6 +653,5 @@ XII_ALWAYS_INLINE bool xiiMemoryUtils::IsEqual(const T* a, const T* b, size_t ui
   }
   return true;
 }
-
 
 #undef XII_CHECK_CLASS

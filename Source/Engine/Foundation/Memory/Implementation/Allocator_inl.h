@@ -4,7 +4,7 @@ namespace xiiInternal
   class xiiAllocatorImpl : public xiiAllocatorBase
   {
   public:
-    xiiAllocatorImpl(const char* szName, xiiAllocatorBase* pParent);
+    xiiAllocatorImpl(xiiStringView sName, xiiAllocatorBase* pParent);
     ~xiiAllocatorImpl();
 
     // xiiAllocatorBase implementation
@@ -27,20 +27,20 @@ namespace xiiInternal
   class xiiAllocatorMixinReallocate : public xiiAllocatorImpl<AllocationPolicy, TrackingFlags>
   {
   public:
-    xiiAllocatorMixinReallocate(const char* szName, xiiAllocatorBase* pParent);
+    xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent);
   };
 
   template <typename AllocationPolicy, xiiUInt32 TrackingFlags>
   class xiiAllocatorMixinReallocate<AllocationPolicy, TrackingFlags, true> : public xiiAllocatorImpl<AllocationPolicy, TrackingFlags>
   {
   public:
-    xiiAllocatorMixinReallocate(const char* szName, xiiAllocatorBase* pParent);
+    xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent);
     virtual void* Reallocate(void* pPtr, size_t uiCurrentSize, size_t uiNewSize, size_t uiAlign) override;
   };
 }; // namespace xiiInternal
 
 template <typename A, xiiUInt32 TrackingFlags>
-XII_FORCE_INLINE xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::xiiAllocatorImpl(const char* szName, xiiAllocatorBase* pParent /* = nullptr */) :
+XII_FORCE_INLINE xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::xiiAllocatorImpl(xiiStringView sName, xiiAllocatorBase* pParent /* = nullptr */) :
   m_allocator(pParent), m_ThreadID(xiiThreadUtils::GetCurrentThreadID())
 {
   if ((TrackingFlags & xiiMemoryTrackingFlags::RegisterAllocator) != 0)
@@ -48,7 +48,7 @@ XII_FORCE_INLINE xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::xiiAllocatorIm
     XII_CHECK_AT_COMPILETIME_MSG((TrackingFlags & ~xiiMemoryTrackingFlags::All) == 0, "Invalid tracking flags");
     const xiiUInt32                     uiTrackingFlags = TrackingFlags;
     xiiBitflags<xiiMemoryTrackingFlags> flags           = *reinterpret_cast<const xiiBitflags<xiiMemoryTrackingFlags>*>(&uiTrackingFlags);
-    this->m_Id                                          = xiiMemoryTracker::RegisterAllocator(szName, flags, pParent != nullptr ? pParent->GetId() : xiiAllocatorId());
+    this->m_Id                                          = xiiMemoryTracker::RegisterAllocator(sName, flags, pParent != nullptr ? pParent->GetId() : xiiAllocatorId());
   }
 }
 
@@ -66,7 +66,7 @@ xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::~xiiAllocatorImpl()
 template <typename A, xiiUInt32 TrackingFlags>
 void* xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc)
 {
-  // zero size allocations always return nullptr without tracking (since deallocate nullptr is ignored)
+  // Zero size allocations always return nullptr without tracking (since deallocate nullptr is ignored).
   if (uiSize == 0)
     return nullptr;
 
@@ -134,14 +134,14 @@ XII_ALWAYS_INLINE xiiAllocatorBase* xiiInternal::xiiAllocatorImpl<A, TrackingFla
 }
 
 template <typename A, xiiUInt32 TrackingFlags, bool HasReallocate>
-xiiInternal::xiiAllocatorMixinReallocate<A, TrackingFlags, HasReallocate>::xiiAllocatorMixinReallocate(const char* szName, xiiAllocatorBase* pParent) :
-  xiiAllocatorImpl<A, TrackingFlags>(szName, pParent)
+xiiInternal::xiiAllocatorMixinReallocate<A, TrackingFlags, HasReallocate>::xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent) :
+  xiiAllocatorImpl<A, TrackingFlags>(sName, pParent)
 {
 }
 
 template <typename A, xiiUInt32 TrackingFlags>
-xiiInternal::xiiAllocatorMixinReallocate<A, TrackingFlags, true>::xiiAllocatorMixinReallocate(const char* szName, xiiAllocatorBase* pParent) :
-  xiiAllocatorImpl<A, TrackingFlags>(szName, pParent)
+xiiInternal::xiiAllocatorMixinReallocate<A, TrackingFlags, true>::xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent) :
+  xiiAllocatorImpl<A, TrackingFlags>(sName, pParent)
 {
 }
 

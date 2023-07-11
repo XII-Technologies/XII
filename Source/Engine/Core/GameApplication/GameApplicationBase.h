@@ -52,7 +52,7 @@ class XII_CORE_DLL xiiGameApplicationBase : public xiiApplication
 public:
   using SUPER = xiiApplication;
 
-  xiiGameApplicationBase(const char* szAppName);
+  xiiGameApplicationBase(xiiStringView sAppName);
   ~xiiGameApplicationBase();
 
   /// \name Basics
@@ -80,9 +80,9 @@ public:
 
 protected:
   /// \brief Called with the result from taking a screenshot. The default implementation writes the image to disk at ':appdata/Screenshots'
-  virtual void StoreScreenshot(xiiImage&& image, const char* szContext = nullptr);
+  virtual void StoreScreenshot(xiiImage&& image, xiiStringView sContext = {});
 
-  void ExecuteTakeScreenshot(xiiWindowOutputTargetBase* pOutputTarget, const char* szContext = nullptr);
+  void ExecuteTakeScreenshot(xiiWindowOutputTargetBase* pOutputTarget, xiiStringView sContext = {});
 
   bool m_bTakeScreenshot = false;
 
@@ -113,7 +113,7 @@ public:
   virtual xiiResult GetAbsFrameCaptureOutputPath(xiiStringBuilder& ref_sOutputPath);
 
 protected:
-  void ExecuteFrameCapture(xiiWindowHandle targetWindowHandle, const char* szContext = nullptr);
+  void ExecuteFrameCapture(xiiWindowHandle targetWindowHandle, xiiStringView sContext = {});
 
   bool m_bContinuousFrameCapture = false;
   bool m_bCaptureFrame           = false;

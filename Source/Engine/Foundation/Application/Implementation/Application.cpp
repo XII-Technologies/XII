@@ -8,16 +8,16 @@
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 
-xiiApplication::xiiApplication(const char* szAppName) :
-  m_sAppName(szAppName)
+xiiApplication::xiiApplication(xiiStringView sAppName) :
+  m_sAppName(sAppName)
 {
 }
 
 xiiApplication::~xiiApplication() = default;
 
-void xiiApplication::SetApplicationName(const char* szAppName)
+void xiiApplication::SetApplicationName(xiiStringView sAppName)
 {
-  m_sAppName = szAppName;
+  m_sAppName = sAppName;
 }
 
 xiiCommandLineOptionBool opt_WaitForDebugger("app", "-WaitForDebugger", "If specified, the application will wait at startup until a debugger is attached.", false);
@@ -46,7 +46,6 @@ xiiResult xiiApplication::BeforeCoreSystemsStartup()
   return XII_SUCCESS;
 }
 
-
 void xiiApplication::SetCommandLineArguments(xiiUInt32 uiArgumentCount, const char** pArguments)
 {
   m_uiArgumentCount = uiArgumentCount;
@@ -55,7 +54,6 @@ void xiiApplication::SetCommandLineArguments(xiiUInt32 uiArgumentCount, const ch
   xiiCommandLineUtils::GetGlobalInstance()->SetCommandLine(uiArgumentCount, pArguments, xiiCommandLineUtils::PreferOsArgs);
 }
 
-
 const char* xiiApplication::GetArgument(xiiUInt32 uiArgument) const
 {
   XII_ASSERT_DEV(uiArgument < m_uiArgumentCount, "There are only {0} arguments, cannot access argument {1}.", m_uiArgumentCount, uiArgument);
@@ -63,15 +61,11 @@ const char* xiiApplication::GetArgument(xiiUInt32 uiArgument) const
   return m_pArguments[uiArgument];
 }
 
-
 void xiiApplication::RequestQuit()
 {
   m_bWasQuitRequested = true;
 }
 
-
 xiiApplication* xiiApplication::s_pApplicationInstance = nullptr;
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Application_Implementation_Application);

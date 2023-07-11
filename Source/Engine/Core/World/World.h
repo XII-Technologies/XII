@@ -311,7 +311,7 @@ public:
   /// \brief Returns the associated user data.
   void* GetUserData() const;
 
-  using ReferenceResolver = xiiDelegate<xiiGameObjectHandle(const void*, xiiComponentHandle hThis, const char* szProperty)>;
+  using ReferenceResolver = xiiDelegate<xiiGameObjectHandle(const void*, xiiComponentHandle hThis, xiiStringView sProperty)>;
 
   /// \brief If set, this delegate can be used to map some data (GUID or string) to a xiiGameObjectHandle.
   ///

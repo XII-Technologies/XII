@@ -8,6 +8,4 @@ void* xiiAllocatorBase::Reallocate(void* pPtr, size_t uiCurrentSize, size_t uiNe
   return pNewMem;
 }
 
-
-
 XII_STATICLINK_FILE(Foundation, Foundation_Memory_Implementation_AllocatorBase);

@@ -75,18 +75,18 @@ xiiResult xiiTextureAtlasCreationDesc::Deserialize(xiiStreamReader& ref_stream)
   return XII_SUCCESS;
 }
 
-xiiResult xiiTextureAtlasCreationDesc::Save(const char* szFile) const
+xiiResult xiiTextureAtlasCreationDesc::Save(xiiStringView sFile) const
 {
   xiiFileWriter file;
-  XII_SUCCEED_OR_RETURN(file.Open(szFile));
+  XII_SUCCEED_OR_RETURN(file.Open(sFile));
 
   return Serialize(file);
 }
 
-xiiResult xiiTextureAtlasCreationDesc::Load(const char* szFile)
+xiiResult xiiTextureAtlasCreationDesc::Load(xiiStringView sFile)
 {
   xiiFileReader file;
-  XII_SUCCEED_OR_RETURN(file.Open(szFile));
+  XII_SUCCEED_OR_RETURN(file.Open(sFile));
 
   return Deserialize(file);
 }

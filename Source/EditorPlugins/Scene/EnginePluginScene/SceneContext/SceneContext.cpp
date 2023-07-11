@@ -976,12 +976,12 @@ void xiiSceneContext::UpdateDocumentContext()
   }
 }
 
-xiiGameObjectHandle xiiSceneContext::ResolveStringToGameObjectHandle(const void* pString, xiiComponentHandle hThis, const char* szProperty) const
+xiiGameObjectHandle xiiSceneContext::ResolveStringToGameObjectHandle(const void* pString, xiiComponentHandle hThis, xiiStringView sProperty) const
 {
   // Test if the component is a direct part of this scene or one of its layers.
   if (m_Context.m_ComponentMap.GetGuid(hThis).IsValid())
   {
-    return SUPER::ResolveStringToGameObjectHandle(pString, hThis, szProperty);
+    return SUPER::ResolveStringToGameObjectHandle(pString, hThis, sProperty);
   }
   for (const xiiLayerContext* pLayer : m_Layers)
   {
@@ -989,7 +989,7 @@ xiiGameObjectHandle xiiSceneContext::ResolveStringToGameObjectHandle(const void*
     {
       if (pLayer->m_Context.m_ComponentMap.GetGuid(hThis).IsValid())
       {
-        return pLayer->ResolveStringToGameObjectHandle(pString, hThis, szProperty);
+        return pLayer->ResolveStringToGameObjectHandle(pString, hThis, sProperty);
       }
     }
   }
@@ -1005,7 +1005,7 @@ xiiGameObjectHandle xiiSceneContext::ResolveStringToGameObjectHandle(const void*
   {
     if (m_Context.m_GameObjectMap.GetGuid(pParent->GetHandle()).IsValid())
     {
-      return SUPER::ResolveStringToGameObjectHandle(pString, hThis, szProperty);
+      return SUPER::ResolveStringToGameObjectHandle(pString, hThis, sProperty);
     }
     for (const xiiLayerContext* pLayer : m_Layers)
     {
@@ -1013,7 +1013,7 @@ xiiGameObjectHandle xiiSceneContext::ResolveStringToGameObjectHandle(const void*
       {
         if (pLayer->m_Context.m_GameObjectMap.GetGuid(pParent->GetHandle()).IsValid())
         {
-          return pLayer->ResolveStringToGameObjectHandle(pString, hThis, szProperty);
+          return pLayer->ResolveStringToGameObjectHandle(pString, hThis, sProperty);
         }
       }
     }

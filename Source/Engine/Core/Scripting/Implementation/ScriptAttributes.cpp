@@ -15,8 +15,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiScriptExtensionAttribute::xiiScriptExtensionAttribute() = default;
-xiiScriptExtensionAttribute::xiiScriptExtensionAttribute(const char* szTypeName) :
-  m_sTypeName(szTypeName)
+xiiScriptExtensionAttribute::xiiScriptExtensionAttribute(xiiStringView sTypeName) :
+  m_sTypeName(sTypeName)
 {
 }
 
