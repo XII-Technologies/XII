@@ -38,12 +38,12 @@ class XII_FOUNDATION_DLL xiiCategoryAttribute : public xiiPropertyAttribute
 
 public:
   xiiCategoryAttribute() = default;
-  xiiCategoryAttribute(const char* szCategory) :
-    m_sCategory(szCategory)
+  xiiCategoryAttribute(xiiStringView sCategory) :
+    m_sCategory(sCategory)
   {
   }
 
-  const char* GetCategory() const { return m_sCategory; }
+  xiiStringView GetCategory() const { return m_sCategory.GetView(); }
 
 private:
   xiiUntrackedString m_sCategory;
@@ -67,7 +67,7 @@ public:
   {
   }
 
-  const char* GetString() const;
+  xiiStringView GetString() const;
 
   xiiInt32 m_Phase = Phase::Beta;
 };
@@ -81,12 +81,12 @@ class XII_FOUNDATION_DLL xiiTitleAttribute : public xiiPropertyAttribute
 
 public:
   xiiTitleAttribute() = default;
-  xiiTitleAttribute(const char* szTitle) :
-    m_sTitle(szTitle)
+  xiiTitleAttribute(xiiStringView sTitle) :
+    m_sTitle(sTitle)
   {
   }
 
-  const char* GetTitle() const { return m_sTitle; }
+  xiiStringView GetTitle() const { return m_sTitle.GetView(); }
 
 private:
   xiiUntrackedString m_sTitle;
@@ -123,12 +123,12 @@ class XII_FOUNDATION_DLL xiiSuffixAttribute : public xiiPropertyAttribute
 
 public:
   xiiSuffixAttribute() = default;
-  xiiSuffixAttribute(const char* szSuffix) :
-    m_sSuffix(szSuffix)
+  xiiSuffixAttribute(xiiStringView sSuffix) :
+    m_sSuffix(sSuffix)
   {
   }
 
-  const char* GetSuffix() const { return m_sSuffix; }
+  xiiStringView GetSuffix() const { return m_sSuffix.GetView(); }
 
 private:
   xiiUntrackedString m_sSuffix;
@@ -141,12 +141,12 @@ class XII_FOUNDATION_DLL xiiMinValueTextAttribute : public xiiPropertyAttribute
 
 public:
   xiiMinValueTextAttribute() = default;
-  xiiMinValueTextAttribute(const char* szText) :
-    m_sText(szText)
+  xiiMinValueTextAttribute(xiiStringView sText) :
+    m_sText(sText)
   {
   }
 
-  const char* GetText() const { return m_sText; }
+  xiiStringView GetText() const { return m_sText.GetView(); }
 
 private:
   xiiUntrackedString m_sText;
@@ -259,12 +259,12 @@ class XII_FOUNDATION_DLL xiiGroupAttribute : public xiiPropertyAttribute
 
 public:
   xiiGroupAttribute();
-  xiiGroupAttribute(const char* szGroup, float fOrder = -1.0f);
-  xiiGroupAttribute(const char* szGroup, const char* szIconName, float fOrder = -1.0f);
+  xiiGroupAttribute(xiiStringView sGroup, float fOrder = -1.0f);
+  xiiGroupAttribute(xiiStringView sGroup, xiiStringView sIconName, float fOrder = -1.0f);
 
-  const char* GetGroup() const { return m_sGroup; }
-  const char* GetIconName() const { return m_sIconName; }
-  float       GetOrder() const { return m_fOrder; }
+  xiiStringView GetGroup() const { return m_sGroup.GetView(); }
+  xiiStringView GetIconName() const { return m_sIconName.GetView(); }
+  float         GetOrder() const { return m_fOrder; }
 
 private:
   xiiUntrackedString m_sGroup;
@@ -304,12 +304,12 @@ class XII_FOUNDATION_DLL xiiTagSetWidgetAttribute : public xiiContainerWidgetAtt
 
 public:
   xiiTagSetWidgetAttribute() = default;
-  xiiTagSetWidgetAttribute(const char* szTagFilter) :
-    m_sTagFilter(szTagFilter)
+  xiiTagSetWidgetAttribute(xiiStringView sTagFilter) :
+    m_sTagFilter(sTagFilter)
   {
   }
 
-  const char* GetTagFilter() const { return m_sTagFilter; }
+  xiiStringView GetTagFilter() const { return m_sTagFilter.GetView(); }
 
 private:
   xiiUntrackedString m_sTagFilter;
@@ -334,12 +334,12 @@ class XII_FOUNDATION_DLL xiiExposedParametersAttribute : public xiiContainerWidg
 
 public:
   xiiExposedParametersAttribute() = default;
-  xiiExposedParametersAttribute(const char* szParametersSource) :
-    m_sParametersSource(szParametersSource)
+  xiiExposedParametersAttribute(xiiStringView sParametersSource) :
+    m_sParametersSource(sParametersSource)
   {
   }
 
-  const char* GetParametersSource() const { return m_sParametersSource; }
+  xiiStringView GetParametersSource() const { return m_sParametersSource; }
 
 private:
   xiiUntrackedString m_sParametersSource;
@@ -363,14 +363,14 @@ class XII_FOUNDATION_DLL xiiDynamicDefaultValueAttribute : public xiiTypeWidgetA
 
 public:
   xiiDynamicDefaultValueAttribute() = default;
-  xiiDynamicDefaultValueAttribute(const char* szClassSource, const char* szClassType, const char* szClassProperty = nullptr) :
-    m_sClassSource(szClassSource), m_sClassType(szClassType), m_sClassProperty(szClassProperty)
+  xiiDynamicDefaultValueAttribute(xiiStringView sClassSource, xiiStringView sClassType, xiiStringView sClassProperty) :
+    m_sClassSource(sClassSource), m_sClassType(sClassType), m_sClassProperty(sClassProperty)
   {
   }
 
-  const char* GetClassSource() const { return m_sClassSource; }
-  const char* GetClassType() const { return m_sClassType; }
-  const char* GetClassProperty() const { return m_sClassProperty; }
+  xiiStringView GetClassSource() const { return m_sClassSource.GetView(); }
+  xiiStringView GetClassType() const { return m_sClassType.GetView(); }
+  xiiStringView GetClassProperty() const { return m_sClassProperty.GetView(); }
 
 private:
   xiiUntrackedString m_sClassSource;
@@ -465,14 +465,14 @@ public:
   static constexpr const char* CubemapsLdrAndHdr = "*.dds;*.hdr";
 
   xiiFileBrowserAttribute() = default;
-  xiiFileBrowserAttribute(const char* szDialogTitle, const char* szTypeFilter, const char* szCustomAction = nullptr, xiiBitflags<xiiDependencyFlags> dependencyFlags = xiiDependencyFlags::Transform | xiiDependencyFlags::Thumbnail) :
-    m_sDialogTitle(szDialogTitle), m_sTypeFilter(szTypeFilter), m_sCustomAction(szCustomAction), m_DependencyFlags(dependencyFlags)
+  xiiFileBrowserAttribute(xiiStringView sDialogTitle, xiiStringView sTypeFilter, xiiStringView sCustomAction = {}, xiiBitflags<xiiDependencyFlags> dependencyFlags = xiiDependencyFlags::Transform | xiiDependencyFlags::Thumbnail) :
+    m_sDialogTitle(sDialogTitle), m_sTypeFilter(sTypeFilter), m_sCustomAction(sCustomAction), m_DependencyFlags(dependencyFlags)
   {
   }
 
-  const char*                     GetDialogTitle() const { return m_sDialogTitle; }
-  const char*                     GetTypeFilter() const { return m_sTypeFilter; }
-  const char*                     GetCustomAction() const { return m_sCustomAction; }
+  xiiStringView                   GetDialogTitle() const { return m_sDialogTitle.GetView(); }
+  xiiStringView                   GetTypeFilter() const { return m_sTypeFilter.GetView(); }
+  xiiStringView                   GetCustomAction() const { return m_sCustomAction.GetView(); }
   xiiBitflags<xiiDependencyFlags> GetDependencyFlags() const { return m_DependencyFlags; }
 
 private:
@@ -492,18 +492,19 @@ class XII_FOUNDATION_DLL xiiAssetBrowserAttribute : public xiiTypeWidgetAttribut
 
 public:
   xiiAssetBrowserAttribute() = default;
-  xiiAssetBrowserAttribute(const char* szTypeFilter, xiiBitflags<xiiDependencyFlags> dependencyFlags = xiiDependencyFlags::Thumbnail | xiiDependencyFlags::Package) :
+  xiiAssetBrowserAttribute(xiiStringView sTypeFilter, xiiBitflags<xiiDependencyFlags> dependencyFlags = xiiDependencyFlags::Thumbnail | xiiDependencyFlags::Package) :
     m_DependencyFlags(dependencyFlags)
   {
-    SetTypeFilter(szTypeFilter);
+    SetTypeFilter(sTypeFilter);
   }
 
-  void SetTypeFilter(const char* szTypeFilter)
+  void SetTypeFilter(xiiStringView sTypeFilter)
   {
-    xiiStringBuilder sTemp(";", szTypeFilter, ";");
+    xiiStringBuilder sTemp(";", sTypeFilter, ";");
     m_sTypeFilter = sTemp;
   }
-  const char*                     GetTypeFilter() const { return m_sTypeFilter; }
+
+  xiiStringView                   GetTypeFilter() const { return m_sTypeFilter.GetView(); }
   xiiBitflags<xiiDependencyFlags> GetDependencyFlags() const { return m_DependencyFlags; }
 
 private:
@@ -520,12 +521,12 @@ class XII_FOUNDATION_DLL xiiDynamicEnumAttribute : public xiiTypeWidgetAttribute
 
 public:
   xiiDynamicEnumAttribute() = default;
-  xiiDynamicEnumAttribute(const char* szDynamicEnumName) :
-    m_sDynamicEnumName(szDynamicEnumName)
+  xiiDynamicEnumAttribute(xiiStringView sDynamicEnumName) :
+    m_sDynamicEnumName(sDynamicEnumName)
   {
   }
 
-  const char* GetDynamicEnumName() const { return m_sDynamicEnumName; }
+  xiiStringView GetDynamicEnumName() const { return m_sDynamicEnumName.GetView(); }
 
 private:
   xiiUntrackedString m_sDynamicEnumName;
@@ -540,12 +541,12 @@ class XII_FOUNDATION_DLL xiiDynamicStringEnumAttribute : public xiiTypeWidgetAtt
 
 public:
   xiiDynamicStringEnumAttribute() = default;
-  xiiDynamicStringEnumAttribute(const char* szDynamicEnumName) :
-    m_sDynamicEnumName(szDynamicEnumName)
+  xiiDynamicStringEnumAttribute(xiiStringView sDynamicEnumName) :
+    m_sDynamicEnumName(sDynamicEnumName)
   {
   }
 
-  const char* GetDynamicEnumName() const { return m_sDynamicEnumName; }
+  xiiStringView GetDynamicEnumName() const { return m_sDynamicEnumName.GetView(); }
 
 private:
   xiiUntrackedString m_sDynamicEnumName;
@@ -559,7 +560,7 @@ class XII_FOUNDATION_DLL xiiManipulatorAttribute : public xiiPropertyAttribute
   XII_ADD_DYNAMIC_REFLECTION(xiiManipulatorAttribute, xiiPropertyAttribute);
 
 public:
-  xiiManipulatorAttribute(const char* szProperty1, const char* szProperty2 = nullptr, const char* szProperty3 = nullptr, const char* szProperty4 = nullptr, const char* szProperty5 = nullptr, const char* szProperty6 = nullptr);
+  xiiManipulatorAttribute(xiiStringView sProperty1, xiiStringView sProperty2 = {}, xiiStringView sProperty3 = {}, xiiStringView sProperty4 = {}, xiiStringView sProperty5 = {}, xiiStringView sProperty6 = {});
 
   xiiUntrackedString m_sProperty1;
   xiiUntrackedString m_sProperty2;
@@ -577,7 +578,7 @@ class XII_FOUNDATION_DLL xiiSphereManipulatorAttribute : public xiiManipulatorAt
 
 public:
   xiiSphereManipulatorAttribute();
-  xiiSphereManipulatorAttribute(const char* szOuterRadiusProperty, const char* szInnerRadiusProperty = nullptr);
+  xiiSphereManipulatorAttribute(xiiStringView sOuterRadiusProperty, xiiStringView sInnerRadiusProperty = {});
 
   const xiiUntrackedString& GetOuterRadiusProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetInnerRadiusProperty() const { return m_sProperty2; }
@@ -592,7 +593,7 @@ class XII_FOUNDATION_DLL xiiCapsuleManipulatorAttribute : public xiiManipulatorA
 
 public:
   xiiCapsuleManipulatorAttribute();
-  xiiCapsuleManipulatorAttribute(const char* szHeightProperty, const char* szRadiusProperty);
+  xiiCapsuleManipulatorAttribute(xiiStringView sHeightProperty, xiiStringView sRadiusProperty);
 
   const xiiUntrackedString& GetLengthProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetRadiusProperty() const { return m_sProperty2; }
@@ -607,7 +608,7 @@ class XII_FOUNDATION_DLL xiiBoxManipulatorAttribute : public xiiManipulatorAttri
 
 public:
   xiiBoxManipulatorAttribute();
-  xiiBoxManipulatorAttribute(const char* szSizeProperty, float fSizeScale, bool bRecenterParent, const char* szOffsetProperty = nullptr, const char* szRotationProperty = nullptr);
+  xiiBoxManipulatorAttribute(xiiStringView sSizeProperty, float fSizeScale, bool bRecenterParent, xiiStringView sOffsetProperty, xiiStringView sRotationProperty);
 
   bool  m_bRecenterParent = false;
   float m_fSizeScale      = 1.0f;
@@ -625,14 +626,8 @@ class XII_FOUNDATION_DLL xiiNonUniformBoxManipulatorAttribute : public xiiManipu
 
 public:
   xiiNonUniformBoxManipulatorAttribute();
-  xiiNonUniformBoxManipulatorAttribute(
-    const char* szNegXProp,
-    const char* szPosXProp,
-    const char* szNegYProp,
-    const char* szPosYProp,
-    const char* szNegZProp,
-    const char* szPosZProp);
-  xiiNonUniformBoxManipulatorAttribute(const char* szSizeX, const char* szSizeY, const char* szSizeZ);
+  xiiNonUniformBoxManipulatorAttribute(xiiStringView sNegXProp, xiiStringView sPosXProp, xiiStringView sNegYProp, xiiStringView sPosYProp, xiiStringView sNegZProp, xiiStringView sPosZProp);
+  xiiNonUniformBoxManipulatorAttribute(xiiStringView sSizeX, xiiStringView sSizeY, xiiStringView sSizeZ);
 
   bool HasSixAxis() const { return !m_sProperty4.IsEmpty(); }
 
@@ -656,7 +651,7 @@ class XII_FOUNDATION_DLL xiiConeLengthManipulatorAttribute : public xiiManipulat
 
 public:
   xiiConeLengthManipulatorAttribute();
-  xiiConeLengthManipulatorAttribute(const char* szRadiusProperty);
+  xiiConeLengthManipulatorAttribute(xiiStringView sRadiusProperty);
 
   const xiiUntrackedString& GetRadiusProperty() const { return m_sProperty1; }
 };
@@ -669,7 +664,7 @@ class XII_FOUNDATION_DLL xiiConeAngleManipulatorAttribute : public xiiManipulato
 
 public:
   xiiConeAngleManipulatorAttribute();
-  xiiConeAngleManipulatorAttribute(const char* szAngleProperty, float fScale = 1.0f, const char* szRadiusProperty = nullptr);
+  xiiConeAngleManipulatorAttribute(xiiStringView sAngleProperty, float fScale = 1.0f, xiiStringView sRadiusProperty = {});
 
   const xiiUntrackedString& GetAngleProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetRadiusProperty() const { return m_sProperty2; }
@@ -685,7 +680,7 @@ class XII_FOUNDATION_DLL xiiTransformManipulatorAttribute : public xiiManipulato
 
 public:
   xiiTransformManipulatorAttribute();
-  xiiTransformManipulatorAttribute(const char* szTranslateProperty, const char* szRotateProperty = nullptr, const char* szScaleProperty = nullptr, const char* szOffsetTranslation = nullptr, const char* szOffsetRotation = nullptr);
+  xiiTransformManipulatorAttribute(xiiStringView sTranslateProperty, xiiStringView sRotateProperty, xiiStringView sScaleProperty, xiiStringView sOffsetTranslation, xiiStringView sOffsetRotation);
 
   const xiiUntrackedString& GetTranslateProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetRotateProperty() const { return m_sProperty2; }
@@ -702,7 +697,7 @@ class XII_FOUNDATION_DLL xiiBoneManipulatorAttribute : public xiiManipulatorAttr
 
 public:
   xiiBoneManipulatorAttribute();
-  xiiBoneManipulatorAttribute(const char* szTransformProperty, const char* szBindTo);
+  xiiBoneManipulatorAttribute(xiiStringView sTransformProperty, xiiStringView sBindTo);
 
   const xiiUntrackedString& GetTransformProperty() const { return m_sProperty1; }
 };
@@ -746,7 +741,7 @@ class XII_FOUNDATION_DLL xiiVisualizerAttribute : public xiiPropertyAttribute
   XII_ADD_DYNAMIC_REFLECTION(xiiVisualizerAttribute, xiiPropertyAttribute);
 
 public:
-  xiiVisualizerAttribute(const char* szProperty1, const char* szProperty2 = nullptr, const char* szProperty3 = nullptr, const char* szProperty4 = nullptr, const char* szProperty5 = nullptr);
+  xiiVisualizerAttribute(xiiStringView sProperty1, xiiStringView sProperty2 = {}, xiiStringView sProperty3 = {}, xiiStringView sProperty4 = {}, xiiStringView sProperty5 = {});
 
   xiiUntrackedString               m_sProperty1;
   xiiUntrackedString               m_sProperty2;
@@ -764,7 +759,7 @@ class XII_FOUNDATION_DLL xiiBoxVisualizerAttribute : public xiiVisualizerAttribu
 
 public:
   xiiBoxVisualizerAttribute();
-  xiiBoxVisualizerAttribute(const char* szSizeProperty, float fSizeScale = 1.0f, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), const char* szOffsetProperty = nullptr, const char* szRotationProperty = nullptr);
+  xiiBoxVisualizerAttribute(xiiStringView sSizeProperty, float fSizeScale = 1.0f, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), xiiStringView sOffsetProperty = {}, xiiStringView sRotationProperty = {});
 
   const xiiUntrackedString& GetSizeProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetColorProperty() const { return m_sProperty2; }
@@ -784,7 +779,7 @@ class XII_FOUNDATION_DLL xiiSphereVisualizerAttribute : public xiiVisualizerAttr
 
 public:
   xiiSphereVisualizerAttribute();
-  xiiSphereVisualizerAttribute(const char* szRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), const char* szOffsetProperty = nullptr);
+  xiiSphereVisualizerAttribute(xiiStringView sRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), xiiStringView sOffsetProperty = {});
 
   const xiiUntrackedString& GetRadiusProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetColorProperty() const { return m_sProperty2; }
@@ -803,7 +798,7 @@ class XII_FOUNDATION_DLL xiiCapsuleVisualizerAttribute : public xiiVisualizerAtt
 
 public:
   xiiCapsuleVisualizerAttribute();
-  xiiCapsuleVisualizerAttribute(const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center);
+  xiiCapsuleVisualizerAttribute(xiiStringView sHeightProperty, xiiStringView sRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center);
 
   const xiiUntrackedString& GetHeightProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetRadiusProperty() const { return m_sProperty2; }
@@ -820,8 +815,8 @@ class XII_FOUNDATION_DLL xiiCylinderVisualizerAttribute : public xiiVisualizerAt
 
 public:
   xiiCylinderVisualizerAttribute();
-  xiiCylinderVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), const char* szOffsetProperty = nullptr);
-  xiiCylinderVisualizerAttribute(const char* szAxisProperty, const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), const char* szOffsetProperty = nullptr);
+  xiiCylinderVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, xiiStringView sHeightProperty, xiiStringView sRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), xiiStringView sOffsetProperty = {});
+  xiiCylinderVisualizerAttribute(xiiStringView sAxisProperty, xiiStringView sHeightProperty, xiiStringView sRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), xiiStringView sOffsetProperty = {});
 
   const xiiUntrackedString& GetAxisProperty() const { return m_sProperty5; }
   const xiiUntrackedString& GetHeightProperty() const { return m_sProperty1; }
@@ -842,8 +837,8 @@ class XII_FOUNDATION_DLL xiiDirectionVisualizerAttribute : public xiiVisualizerA
 
 public:
   xiiDirectionVisualizerAttribute();
-  xiiDirectionVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, float fScale, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, const char* szLengthProperty = nullptr);
-  xiiDirectionVisualizerAttribute(const char* szAxisProperty, float fScale, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr, const char* szLengthProperty = nullptr);
+  xiiDirectionVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, float fScale, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiStringView sLengthProperty = {});
+  xiiDirectionVisualizerAttribute(xiiStringView sAxisProperty, float fScale, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiStringView sLengthProperty = {});
 
   const xiiUntrackedString& GetColorProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetLengthProperty() const { return m_sProperty2; }
@@ -869,7 +864,7 @@ public:
   /// fScale will be multiplied with value of szRadiusProperty to determine the size of the cone
   /// szColorProperty may be nullptr. In this case it is ignored and fixedColor is used instead.
   /// fixedColor is ignored if szColorProperty is valid.
-  xiiConeVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, const char* szAngleProperty, float fScale, const char* szRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), const char* szColorProperty = nullptr);
+  xiiConeVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, xiiStringView sAngleProperty, float fScale, xiiStringView sRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {});
 
   const xiiUntrackedString& GetAngleProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetRadiusProperty() const { return m_sProperty2; }
@@ -890,7 +885,7 @@ public:
   xiiCameraVisualizerAttribute();
 
   /// \brief Attribute to add on an RTTI type to add a camera cone visualizer.
-  xiiCameraVisualizerAttribute(const char* szModeProperty, const char* szFovProperty, const char* szOrthoDimProperty, const char* szNearPlaneProperty, const char* szFarPlaneProperty);
+  xiiCameraVisualizerAttribute(xiiStringView sModeProperty, xiiStringView sFovProperty, xiiStringView sOrthoDimProperty, xiiStringView sNearPlaneProperty, xiiStringView sFarPlaneProperty);
 
   const xiiUntrackedString& GetModeProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetFovProperty() const { return m_sProperty2; }
@@ -910,6 +905,7 @@ const Type* xiiRTTI::GetAttributeByType() const
     if (pAttr->GetDynamicRTTI()->IsDerivedFrom<Type>())
       return static_cast<const Type*>(pAttr);
   }
+
   if (GetParentType() != nullptr)
     return GetParentType()->GetAttributeByType<Type>();
   else
@@ -988,9 +984,9 @@ class XII_FOUNDATION_DLL xiiScriptableFunctionAttribute : public xiiPropertyAttr
     Inout
   };
 
-  xiiScriptableFunctionAttribute(ArgType argType1 = In, const char* szArg1 = nullptr, ArgType argType2 = In, const char* szArg2 = nullptr, ArgType argType3 = In, const char* szArg3 = nullptr, ArgType argType4 = In, const char* szArg4 = nullptr, ArgType argType5 = In, const char* szArg5 = nullptr, ArgType argType6 = In, const char* szArg6 = nullptr);
+  xiiScriptableFunctionAttribute(ArgType argType1 = In, xiiStringView sArg1 = {}, ArgType argType2 = In, xiiStringView sArg2 = {}, ArgType argType3 = In, xiiStringView sArg3 = {}, ArgType argType4 = In, xiiStringView sArg4 = {}, ArgType argType5 = In, xiiStringView sArg5 = {}, ArgType argType6 = In, xiiStringView sArg6 = {});
 
-  const char* GetArgumentName(xiiUInt32 uiIndex) const { return m_ArgNames[uiIndex]; }
+  xiiStringView GetArgumentName(xiiUInt32 uiIndex) const { return m_ArgNames[uiIndex].GetView(); }
 
   ArgType GetArgumentType(xiiUInt32 uiIndex) const { return static_cast<ArgType>(m_ArgTypes[uiIndex]); };
 
@@ -1020,7 +1016,7 @@ class XII_FOUNDATION_DLL xiiDynamicPinAttribute : public xiiPropertyAttribute
 
 public:
   xiiDynamicPinAttribute() = default;
-  xiiDynamicPinAttribute(const char* szProperty);
+  xiiDynamicPinAttribute(xiiStringView sProperty);
 
   const xiiUntrackedString& GetProperty() const { return m_sProperty; }
 
@@ -1042,8 +1038,8 @@ class XII_FOUNDATION_DLL xiiLongOpAttribute : public xiiPropertyAttribute
 
 public:
   xiiLongOpAttribute() = default;
-  xiiLongOpAttribute(const char* szOpTypeName) :
-    m_sOpTypeName(szOpTypeName)
+  xiiLongOpAttribute(xiiStringView sOpTypeName) :
+    m_sOpTypeName(sOpTypeName)
   {
   }
 

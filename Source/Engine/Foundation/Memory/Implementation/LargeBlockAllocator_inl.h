@@ -98,7 +98,7 @@ XII_FORCE_INLINE void xiiLargeBlockAllocator<BlockSize>::DeallocateBlock(xiiData
 }
 
 template <xiiUInt32 BlockSize>
-XII_ALWAYS_INLINE const char* xiiLargeBlockAllocator<BlockSize>::GetName() const
+XII_ALWAYS_INLINE xiiStringView xiiLargeBlockAllocator<BlockSize>::GetName() const
 {
   return xiiMemoryTracker::GetAllocatorName(m_Id);
 }

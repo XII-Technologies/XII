@@ -26,11 +26,11 @@ bool xiiPropertyPath::IsValid() const
   return m_bIsValid;
 }
 
-xiiResult xiiPropertyPath::InitializeFromPath(const xiiRTTI& rootObjectRtti, const char* szPath)
+xiiResult xiiPropertyPath::InitializeFromPath(const xiiRTTI& rootObjectRtti, xiiStringView sPath)
 {
   m_bIsValid = false;
 
-  const xiiStringBuilder sPathParts = szPath;
+  const xiiStringBuilder sPathParts = sPath;
   xiiStringBuilder       sIndex;
   xiiStringBuilder       sFieldName;
 

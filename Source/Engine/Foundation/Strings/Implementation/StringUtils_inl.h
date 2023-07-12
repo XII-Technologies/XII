@@ -95,11 +95,7 @@ inline xiiUInt32 xiiStringUtils::GetCharacterCount(const char* szUtf8, const cha
   return uiCharacters;
 }
 
-inline void xiiStringUtils::GetCharacterAndElementCount(
-  const char* szUtf8,
-  xiiUInt32&  ref_uiCharacterCount,
-  xiiUInt32&  ref_uiElementCount,
-  const char* pStringEnd)
+inline void xiiStringUtils::GetCharacterAndElementCount(const char* szUtf8, xiiUInt32& ref_uiCharacterCount, xiiUInt32& ref_uiElementCount, const char* pStringEnd)
 {
   ref_uiCharacterCount = 0;
   ref_uiElementCount   = 0;
@@ -129,12 +125,7 @@ XII_ALWAYS_INLINE bool xiiStringUtils::IsEqual(const char* pString1, const char*
   return xiiStringUtils::Compare(pString1, pString2, pString1End, pString2End) == 0;
 }
 
-XII_ALWAYS_INLINE bool xiiStringUtils::IsEqualN(
-  const char* pString1,
-  const char* pString2,
-  xiiUInt32   uiCharsToCompare,
-  const char* pString1End,
-  const char* pString2End)
+XII_ALWAYS_INLINE bool xiiStringUtils::IsEqualN(const char* pString1, const char* pString2, xiiUInt32 uiCharsToCompare, const char* pString1End, const char* pString2End)
 {
   return xiiStringUtils::CompareN(pString1, pString2, uiCharsToCompare, pString1End, pString2End) == 0;
 }
@@ -144,12 +135,7 @@ XII_ALWAYS_INLINE bool xiiStringUtils::IsEqual_NoCase(const char* pString1, cons
   return xiiStringUtils::Compare_NoCase(pString1, pString2, pString1End, pString2End) == 0;
 }
 
-XII_ALWAYS_INLINE bool xiiStringUtils::IsEqualN_NoCase(
-  const char* pString1,
-  const char* pString2,
-  xiiUInt32   uiCharsToCompare,
-  const char* pString1End,
-  const char* pString2End)
+XII_ALWAYS_INLINE bool xiiStringUtils::IsEqualN_NoCase(const char* pString1, const char* pString2, xiiUInt32 uiCharsToCompare, const char* pString1End, const char* pString2End)
 {
   return xiiStringUtils::CompareN_NoCase(pString1, pString2, uiCharsToCompare, pString1End, pString2End) == 0;
 }

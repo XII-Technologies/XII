@@ -15,8 +15,8 @@
 #  error "Plugins not implemented on this Platform."
 #endif
 
-xiiResult UnloadPluginModule(xiiPluginModule& ref_pModule, const char* szPluginFile);
-xiiResult LoadPluginModule(const char* szFileToLoad, xiiPluginModule& ref_pModule, const char* szPluginFile);
+xiiResult UnloadPluginModule(xiiPluginModule& ref_pModule, xiiStringView sPluginFile);
+xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& ref_pModule, xiiStringView sPluginFile);
 
 struct ModuleData
 {
@@ -122,14 +122,14 @@ void xiiPlugin::EndPluginChanges()
   }
 }
 
-static xiiResult UnloadPluginInternal(const char* szPluginFile)
+static xiiResult UnloadPluginInternal(xiiStringView sPluginFile)
 {
-  auto thisMod = g_LoadedModules.Find(szPluginFile);
+  auto thisMod = g_LoadedModules.Find(sPluginFile);
 
   if (!thisMod.IsValid())
     return XII_SUCCESS;
 
-  xiiLog::Debug("Plugin to unload: \"{0}\"", szPluginFile);
+  xiiLog::Debug("Plugin to unload: \"{0}\"", sPluginFile);
 
   xiiPlugin::BeginPluginChanges();
   XII_SCOPE_EXIT(xiiPlugin::EndPluginChanges());
@@ -137,40 +137,40 @@ static xiiResult UnloadPluginInternal(const char* szPluginFile)
   // Broadcast event: Before unloading plugin
   {
     xiiPluginEvent e;
-    e.m_EventType      = xiiPluginEvent::BeforeUnloading;
-    e.m_szPluginBinary = szPluginFile;
+    e.m_EventType     = xiiPluginEvent::BeforeUnloading;
+    e.m_sPluginBinary = sPluginFile;
     s_PluginEvents.Broadcast(e);
   }
 
   // Broadcast event: Startup Shutdown
   {
     xiiPluginEvent e;
-    e.m_EventType      = xiiPluginEvent::StartupShutdown;
-    e.m_szPluginBinary = szPluginFile;
+    e.m_EventType     = xiiPluginEvent::StartupShutdown;
+    e.m_sPluginBinary = sPluginFile;
     s_PluginEvents.Broadcast(e);
   }
 
   // Broadcast event: After Startup Shutdown
   {
     xiiPluginEvent e;
-    e.m_EventType      = xiiPluginEvent::AfterStartupShutdown;
-    e.m_szPluginBinary = szPluginFile;
+    e.m_EventType     = xiiPluginEvent::AfterStartupShutdown;
+    e.m_sPluginBinary = sPluginFile;
     s_PluginEvents.Broadcast(e);
   }
 
   thisMod.Value().Uninitialize();
 
   // unload the plugin module
-  if (UnloadPluginModule(thisMod.Value().m_hModule, szPluginFile) == XII_FAILURE)
+  if (UnloadPluginModule(thisMod.Value().m_hModule, sPluginFile) == XII_FAILURE)
   {
-    xiiLog::Error("Unloading plugin module '{}' failed.", szPluginFile);
+    xiiLog::Error("Unloading plugin module '{}' failed.", sPluginFile);
     return XII_FAILURE;
   }
 
   // delete the plugin copy that we had loaded
   {
     xiiStringBuilder sOriginalFile, sCopiedFile;
-    xiiPlugin::GetPluginPaths(szPluginFile, sOriginalFile, sCopiedFile, g_LoadedModules[szPluginFile].m_uiFileNumber);
+    xiiPlugin::GetPluginPaths(sPluginFile, sOriginalFile, sCopiedFile, g_LoadedModules[sPluginFile].m_uiFileNumber);
 
     xiiOSFile::DeleteFile(sCopiedFile).IgnoreResult();
   }
@@ -178,27 +178,27 @@ static xiiResult UnloadPluginInternal(const char* szPluginFile)
   // Broadcast event: After unloading plugin
   {
     xiiPluginEvent e;
-    e.m_EventType      = xiiPluginEvent::AfterUnloading;
-    e.m_szPluginBinary = szPluginFile;
+    e.m_EventType     = xiiPluginEvent::AfterUnloading;
+    e.m_sPluginBinary = sPluginFile;
     s_PluginEvents.Broadcast(e);
   }
 
-  xiiLog::Success("Plugin '{0}' is unloaded.", szPluginFile);
+  xiiLog::Success("Plugin '{0}' is unloaded.", sPluginFile);
   g_LoadedModules.Remove(thisMod);
 
   return XII_SUCCESS;
 }
 
-static xiiResult LoadPluginInternal(const char* szPluginFile, xiiBitflags<xiiPluginLoadFlags> flags)
+static xiiResult LoadPluginInternal(xiiStringView sPluginFile, xiiBitflags<xiiPluginLoadFlags> flags)
 {
   xiiUInt8 uiFileNumber = 0;
 
   xiiStringBuilder sOriginalFile, sCopiedFile;
-  xiiPlugin::GetPluginPaths(szPluginFile, sOriginalFile, sCopiedFile, uiFileNumber);
+  xiiPlugin::GetPluginPaths(sPluginFile, sOriginalFile, sCopiedFile, uiFileNumber);
 
   if (!xiiOSFile::ExistsFile(sOriginalFile))
   {
-    xiiLog::Error("The plugin '{0}' does not exist.", szPluginFile);
+    xiiLog::Error("The plugin '{0}' does not exist.", sPluginFile);
     return XII_FAILURE;
   }
 
@@ -208,9 +208,9 @@ static xiiResult LoadPluginInternal(const char* szPluginFile, xiiBitflags<xiiPlu
     const xiiUInt8 uiMaxParallelInstances = static_cast<xiiUInt8>(s_uiMaxParallelInstances);
     for (uiFileNumber = 0; uiFileNumber < uiMaxParallelInstances; ++uiFileNumber)
     {
-      xiiPlugin::GetPluginPaths(szPluginFile, sOriginalFile, sCopiedFile, uiFileNumber);
+      xiiPlugin::GetPluginPaths(sPluginFile, sOriginalFile, sCopiedFile, uiFileNumber);
       if (xiiOSFile::CopyFile(sOriginalFile, sCopiedFile) == XII_SUCCESS)
-        goto success;
+        goto Success;
     }
 
     xiiLog::Error("Could not copy the plugin file '{0}' to '{1}' (and all previous file numbers). Plugin MaxParallelInstances is set to {2}.", sOriginalFile, sCopiedFile, s_uiMaxParallelInstances);
@@ -223,9 +223,9 @@ static xiiResult LoadPluginInternal(const char* szPluginFile, xiiBitflags<xiiPlu
     sCopiedFile = sOriginalFile;
   }
 
-success:
+Success:
 
-  auto& thisMod          = g_LoadedModules[szPluginFile];
+  auto& thisMod          = g_LoadedModules[sPluginFile];
   thisMod.m_uiFileNumber = uiFileNumber;
   thisMod.m_LoadFlags    = flags;
 
@@ -235,14 +235,14 @@ success:
   // Broadcast Event: Before loading plugin
   {
     xiiPluginEvent e;
-    e.m_EventType      = xiiPluginEvent::BeforeLoading;
-    e.m_szPluginBinary = szPluginFile;
+    e.m_EventType     = xiiPluginEvent::BeforeLoading;
+    e.m_sPluginBinary = sPluginFile;
     s_PluginEvents.Broadcast(e);
   }
 
   g_pCurrentlyLoadingModule = &thisMod;
 
-  if (LoadPluginModule(sCopiedFile, g_pCurrentlyLoadingModule->m_hModule, szPluginFile) == XII_FAILURE)
+  if (LoadPluginModule(sCopiedFile, g_pCurrentlyLoadingModule->m_hModule, sPluginFile) == XII_FAILURE)
   {
     // loaded, but failed
     g_pCurrentlyLoadingModule = nullptr;
@@ -257,8 +257,8 @@ success:
     // Broadcast Event: After loading plugin, before init
     {
       xiiPluginEvent e;
-      e.m_EventType      = xiiPluginEvent::AfterLoadingBeforeInit;
-      e.m_szPluginBinary = szPluginFile;
+      e.m_EventType     = xiiPluginEvent::AfterLoadingBeforeInit;
+      e.m_sPluginBinary = sPluginFile;
       s_PluginEvents.Broadcast(e);
     }
 
@@ -267,60 +267,60 @@ success:
     // Broadcast Event: After loading plugin
     {
       xiiPluginEvent e;
-      e.m_EventType      = xiiPluginEvent::AfterLoading;
-      e.m_szPluginBinary = szPluginFile;
+      e.m_EventType     = xiiPluginEvent::AfterLoading;
+      e.m_sPluginBinary = sPluginFile;
       s_PluginEvents.Broadcast(e);
     }
   }
 
-  xiiLog::Success("Plugin '{0}' is loaded.", szPluginFile);
+  xiiLog::Success("Plugin '{0}' is loaded.", sPluginFile);
   return XII_SUCCESS;
 }
 
-bool xiiPlugin::ExistsPluginFile(const char* szPluginFile)
+bool xiiPlugin::ExistsPluginFile(xiiStringView sPluginFile)
 {
   xiiStringBuilder sOriginalFile, sCopiedFile;
-  GetPluginPaths(szPluginFile, sOriginalFile, sCopiedFile, 0);
+  GetPluginPaths(sPluginFile, sOriginalFile, sCopiedFile, 0);
 
   return xiiOSFile::ExistsFile(sOriginalFile);
 }
 
-xiiResult xiiPlugin::LoadPlugin(const char* szPluginFile, xiiBitflags<xiiPluginLoadFlags> flags /*= xiiPluginLoadFlags::Default*/)
+xiiResult xiiPlugin::LoadPlugin(xiiStringView sPluginFile, xiiBitflags<xiiPluginLoadFlags> flags /*= xiiPluginLoadFlags::Default*/)
 {
   if (flags.IsSet(xiiPluginLoadFlags::PluginIsOptional))
   {
     // early out without logging an error
 
-    if (!ExistsPluginFile(szPluginFile))
+    if (!ExistsPluginFile(sPluginFile))
       return XII_FAILURE;
   }
 
-  XII_LOG_BLOCK("Loading Plugin", szPluginFile);
+  XII_LOG_BLOCK("Loading Plugin", sPluginFile);
 
-  if (g_LoadedModules.Find(szPluginFile).IsValid())
+  if (g_LoadedModules.Find(sPluginFile).IsValid())
   {
-    xiiLog::Debug("Plugin '{0}' already loaded.", szPluginFile);
+    xiiLog::Debug("Plugin '{0}' already loaded.", sPluginFile);
     return XII_SUCCESS;
   }
 
   // make sure this is done first
   InitializeStaticallyLinkedPlugins();
 
-  xiiLog::Debug("Plugin to load: \"{0}\"", szPluginFile);
+  xiiLog::Debug("Plugin to load: \"{0}\"", sPluginFile);
 
   // make sure to use a static string pointer from now on, that stays where it is
-  szPluginFile = g_LoadedModules.FindOrAdd(szPluginFile).Key();
+  sPluginFile = g_LoadedModules.FindOrAdd(sPluginFile).Key();
 
-  xiiResult res = LoadPluginInternal(szPluginFile, flags);
+  xiiResult res = LoadPluginInternal(sPluginFile, flags);
 
   if (res.Succeeded())
   {
-    s_PluginLoadOrder.PushBack(szPluginFile);
+    s_PluginLoadOrder.PushBack(sPluginFile);
   }
   else
   {
     // If we failed to load the plugin, it shouldn't be in the loaded modules list
-    g_LoadedModules.Remove(szPluginFile);
+    g_LoadedModules.Remove(sPluginFile);
   }
 
   return res;
@@ -368,11 +368,11 @@ xiiPlugin::Init::Init(xiiPluginInitCallback onLoadOrUnloadCB, bool bOnLoad)
     pMD->m_OnUnloadCB.PushBack(onLoadOrUnloadCB);
 }
 
-xiiPlugin::Init::Init(const char* szAddPluginDependency)
+xiiPlugin::Init::Init(xiiStringView sAddPluginDependency)
 {
   ModuleData* pMD = g_pCurrentlyLoadingModule ? g_pCurrentlyLoadingModule : &g_StaticModule;
 
-  pMD->m_sPluginDependencies.PushBack(szAddPluginDependency);
+  pMD->m_sPluginDependencies.PushBack(sAddPluginDependency);
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_Configuration_Implementation_Plugin);

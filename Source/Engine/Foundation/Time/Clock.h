@@ -19,7 +19,7 @@ public:
 
 public:
   /// \brief Constructor.
-  xiiClock(const char* szName); // [tested]
+  xiiClock(xiiStringView sName); // [tested]
 
   /// \brief Resets all values to their default. E.g. call this after a new level has loaded to start fresh.
   ///
@@ -119,18 +119,17 @@ public:
   void Load(xiiStreamReader& ref_stream);
 
   /// \brief Sets the name of the clock. Useful to identify the clock in tools such as xiiInspector.
-  void SetClockName(const char* szName);
+  void SetClockName(xiiStringView sName);
 
   /// \brief Returns the name of the clock. All clocks get default names 'Clock N', unless the user specifies another name with
   /// SetClockName.
-  const char* GetClockName() const;
-
+  xiiStringView GetClockName() const;
 
 public:
   /// \brief The data that is sent through the event interface.
   struct EventData
   {
-    const char* m_szClockName;
+    xiiStringView m_sClockName;
 
     xiiTime m_RawTimeStep;
     xiiTime m_SmoothedTimeStep;

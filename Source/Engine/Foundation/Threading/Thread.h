@@ -48,7 +48,7 @@ public:
   };
 
   /// \brief Initializes the runnable class
-  xiiThread(const char* szName = "xiiThread", xiiUInt32 uiStackSize = 128 * 1024);
+  xiiThread(xiiStringView sName = "xiiThread", xiiUInt32 uiStackSize = 128 * 1024);
 
   /// \brief Destructor checks if the thread is deleted while still running, which is not allowed as this is a data hazard
   virtual ~xiiThread();
@@ -60,7 +60,7 @@ public:
   inline bool IsRunning() const { return m_ThreadStatus == Running; }
 
   /// \brief Returns the thread name
-  inline const char* GetThreadName() const { return m_sName.GetData(); }
+  inline xiiStringView GetThreadName() const { return m_sName.GetView(); }
 
   /// \brief These events inform about threads starting and finishing.
   ///
@@ -71,7 +71,6 @@ public:
 private:
   /// \brief The run function can be used to implement a long running task in a thread in a platform independent way
   virtual xiiUInt32 Run() = 0;
-
 
   volatile xiiThreadStatus m_ThreadStatus = Created;
 

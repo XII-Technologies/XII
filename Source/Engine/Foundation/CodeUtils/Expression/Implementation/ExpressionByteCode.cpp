@@ -255,10 +255,10 @@ void xiiExpressionByteCode::Disassemble(xiiStringBuilder& out_sDisassembly) cons
   {
     OpCode::Enum opCode = GetOpCode(pByteCode);
     {
-      const char* szOpCode       = OpCode::GetName(opCode);
-      xiiUInt32   uiOpCodeLength = xiiStringUtils::GetStringElementCount(szOpCode);
+      xiiStringView sOpCode        = OpCode::GetName(opCode);
+      xiiUInt32     uiOpCodeLength = sOpCode.GetElementCount();
 
-      out_sDisassembly.Append(szOpCode);
+      out_sDisassembly.Append(sOpCode);
       for (xiiUInt32 i = uiOpCodeLength; i < s_uiMaxOpCodeLength + 1; ++i)
       {
         out_sDisassembly.Append(" ");
@@ -324,22 +324,22 @@ void xiiExpressionByteCode::Disassemble(xiiStringBuilder& out_sDisassembly) cons
     }
     else if (opCode == OpCode::Call)
     {
-      xiiUInt32   uiIndex = GetFunctionIndex(pByteCode);
-      const char* szName  = m_Functions[uiIndex].m_sName;
+      xiiUInt32     uiIndex = GetFunctionIndex(pByteCode);
+      xiiStringView sName   = m_Functions[uiIndex].m_sName;
 
-      xiiStringBuilder sName;
-      if (xiiStringUtils::IsNullOrEmpty(szName))
+      xiiStringBuilder sNameBuilder;
+      if (sName.IsEmpty())
       {
-        sName.Format("Unknown_{0}", uiIndex);
+        sNameBuilder.Format("Unknown_{0}", uiIndex);
       }
       else
       {
-        sName = szName;
+        sNameBuilder = sName;
       }
 
       xiiUInt32 r = GetRegisterIndex(pByteCode);
 
-      out_sDisassembly.AppendFormat("{1} r{2}", sName, r);
+      out_sDisassembly.AppendFormat("{1} r{2}", sNameBuilder, r);
 
       xiiUInt32 uiNumArgs = GetFunctionArgCount(pByteCode);
       for (xiiUInt32 uiArgIndex = 0; uiArgIndex < uiNumArgs; ++uiArgIndex)

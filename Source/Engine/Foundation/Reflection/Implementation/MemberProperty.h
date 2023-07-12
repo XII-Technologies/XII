@@ -20,13 +20,11 @@ class xiiTypedMemberProperty : public xiiAbstractMemberProperty
 {
 public:
   /// \brief Passes the property name through to xiiAbstractMemberProperty.
-  xiiTypedMemberProperty(const char* szPropertyName) :
-    xiiAbstractMemberProperty(szPropertyName)
+  xiiTypedMemberProperty(xiiStringView sPropertyName) :
+    xiiAbstractMemberProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<Type>();
-    XII_CHECK_AT_COMPILETIME_MSG(
-      !std::is_pointer<Type>::value ||
-        xiiVariant::TypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid,
+    XII_CHECK_AT_COMPILETIME_MSG(!std::is_pointer<Type>::value || xiiVariant::TypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid,
       "Pointer to standard types are not supported.");
   }
 
@@ -89,8 +87,8 @@ public:
   using SetterFunc = void (Class::*)(Type value);
 
   /// \brief Constructor.
-  xiiAccessorProperty(const char* szPropertyName, GetterFunc getter, SetterFunc setter) :
-    xiiTypedMemberProperty<RealType>(szPropertyName)
+  xiiAccessorProperty(xiiStringView sPropertyName, GetterFunc getter, SetterFunc setter) :
+    xiiTypedMemberProperty<RealType>(sPropertyName)
   {
     XII_ASSERT_DEBUG(getter != nullptr, "The getter of a property cannot be nullptr.");
 
@@ -157,8 +155,8 @@ public:
   using PointerFunc = void* (*)(const Class* pInstance);
 
   /// \brief Constructor.
-  xiiMemberProperty(const char* szPropertyName, GetterFunc getter, SetterFunc setter, PointerFunc pointer) :
-    xiiTypedMemberProperty<Type>(szPropertyName)
+  xiiMemberProperty(xiiStringView sPropertyName, GetterFunc getter, SetterFunc setter, PointerFunc pointer) :
+    xiiTypedMemberProperty<Type>(sPropertyName)
   {
     XII_ASSERT_DEBUG(getter != nullptr, "The getter of a property cannot be nullptr.");
 

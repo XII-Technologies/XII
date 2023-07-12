@@ -49,7 +49,7 @@ public:
   void DeallocateBlock(xiiDataBlock<T, BlockSizeInByte>& ref_block);
 
 
-  const char* GetName() const;
+  xiiStringView GetName() const;
 
   xiiAllocatorId GetId() const;
 

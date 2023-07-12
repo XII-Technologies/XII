@@ -4,20 +4,20 @@
 
 using namespace xiiTokenParseUtils;
 
-xiiResult xiiPreprocessor::Expect(const TokenStream& Tokens, xiiUInt32& uiCurToken, const char* szToken, xiiUInt32* pAccepted)
+xiiResult xiiPreprocessor::Expect(const TokenStream& Tokens, xiiUInt32& uiCurToken, xiiStringView sToken, xiiUInt32* pAccepted)
 {
   if (Tokens.GetCount() < 1)
   {
-    xiiLog::Error(m_pLog, "Expected token '{0}', got empty token stream", szToken);
+    xiiLog::Error(m_pLog, "Expected token '{0}', got empty token stream", sToken);
     return XII_FAILURE;
   }
 
-  if (Accept(Tokens, uiCurToken, szToken, pAccepted))
+  if (Accept(Tokens, uiCurToken, sToken, pAccepted))
     return XII_SUCCESS;
 
   const xiiUInt32 uiErrorToken = xiiMath::Min(Tokens.GetCount() - 1, uiCurToken);
   xiiString       sErrorToken  = Tokens[uiErrorToken]->m_DataView;
-  PP_LOG(Error, "Expected token '{0}' got '{1}'", Tokens[uiErrorToken], szToken, sErrorToken);
+  PP_LOG(Error, "Expected token '{0}' got '{1}'", Tokens[uiErrorToken], sToken, sErrorToken);
 
   return XII_FAILURE;
 }
@@ -39,21 +39,21 @@ xiiResult xiiPreprocessor::Expect(const TokenStream& Tokens, xiiUInt32& uiCurTok
   return XII_FAILURE;
 }
 
-xiiResult xiiPreprocessor::Expect(const TokenStream& Tokens, xiiUInt32& uiCurToken, const char* szToken1, const char* szToken2, xiiUInt32* pAccepted)
+xiiResult xiiPreprocessor::Expect(const TokenStream& Tokens, xiiUInt32& uiCurToken, xiiStringView sToken1, xiiStringView sToken2, xiiUInt32* pAccepted)
 {
   if (Tokens.GetCount() < 2)
   {
-    xiiLog::Error(m_pLog, "Expected tokens '{0}{1}', got empty token stream", szToken1, szToken2);
+    xiiLog::Error(m_pLog, "Expected tokens '{0}{1}', got empty token stream", sToken1, sToken2);
     return XII_FAILURE;
   }
 
-  if (Accept(Tokens, uiCurToken, szToken1, szToken2, pAccepted))
+  if (Accept(Tokens, uiCurToken, sToken1, sToken2, pAccepted))
     return XII_SUCCESS;
 
   const xiiUInt32 uiErrorToken = xiiMath::Min(Tokens.GetCount() - 2, uiCurToken);
   xiiString       sErrorToken1 = Tokens[uiErrorToken]->m_DataView;
   xiiString       sErrorToken2 = Tokens[uiErrorToken + 1]->m_DataView;
-  PP_LOG(Error, "Expected tokens '{0}{1}', got '{2}{3}'", Tokens[uiErrorToken], szToken1, szToken2, sErrorToken1, sErrorToken2);
+  PP_LOG(Error, "Expected tokens '{0}{1}', got '{2}{3}'", Tokens[uiErrorToken], sToken1, sToken2, sErrorToken1, sErrorToken2);
 
   return XII_FAILURE;
 }

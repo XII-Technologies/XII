@@ -10,14 +10,12 @@ template <typename Type>
 class xiiTypedMapProperty : public xiiAbstractMapProperty
 {
 public:
-  xiiTypedMapProperty(const char* szPropertyName) :
+  xiiTypedMapProperty(xiiStringView sPropertyName) :
     xiiAbstractMapProperty(szPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<Type>();
-    XII_CHECK_AT_COMPILETIME_MSG(
-      !std::is_pointer<Type>::value ||
-        xiiVariant::TypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid,
-      "Pointer to standard types are not supported.");
+    XII_CHECK_AT_COMPILETIME_MSG(!std::is_pointer<Type>::value || xiiVariant::TypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid,
+                                 "Pointer to standard types are not supported.");
   }
 
   virtual const xiiRTTI* GetSpecificType() const override { return xiiGetStaticRTTI<typename xiiTypeTraits<Type>::NonConstReferencePointerType>(); }
@@ -31,13 +29,13 @@ public:
   using ContainerType = typename xiiTypeTraits<Container>::NonConstReferenceType;
   using RealType      = typename xiiTypeTraits<Type>::NonConstReferenceType;
 
-  using InsertFunc      = void (Class::*)(const char* szKey, Type value);
-  using RemoveFunc      = void (Class::*)(const char* szKey);
-  using GetValueFunc    = bool (Class::*)(const char* szKey, RealType& value) const;
+  using InsertFunc      = void (Class::*)(xiiStringView sKey, Type value);
+  using RemoveFunc      = void (Class::*)(xiiStringView sKey);
+  using GetValueFunc    = bool (Class::*)(xiiStringView sKey, RealType& value) const;
   using GetKeyRangeFunc = Container (Class::*)() const;
 
-  xiiAccessorMapProperty(const char* szPropertyName, GetKeyRangeFunc getKeys, GetValueFunc getValue, InsertFunc insert, RemoveFunc remove) :
-    xiiTypedMapProperty<Type>(szPropertyName)
+  xiiAccessorMapProperty(xiiStringView sPropertyName, GetKeyRangeFunc getKeys, GetValueFunc getValue, InsertFunc insert, RemoveFunc remove) :
+    xiiTypedMapProperty<Type>(sPropertyName)
   {
     XII_ASSERT_DEBUG(getKeys != nullptr, "The getKeys function of a map property cannot be nullptr.");
     XII_ASSERT_DEBUG(getValue != nullptr, "The GetValueFunc function of a map property cannot be nullptr.");
@@ -74,27 +72,27 @@ public:
     }
   }
 
-  virtual void Insert(void* pInstance, const char* szKey, const void* pObject) override
+  virtual void Insert(void* pInstance, xiiStringView sKey, const void* pObject) override
   {
     XII_ASSERT_DEBUG(m_Insert != nullptr, "The property '{0}' has no insert function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
-    (static_cast<Class*>(pInstance)->*m_Insert)(szKey, *static_cast<const RealType*>(pObject));
+    (static_cast<Class*>(pInstance)->*m_Insert)(sKey, *static_cast<const RealType*>(pObject));
   }
 
-  virtual void Remove(void* pInstance, const char* szKey) override
+  virtual void Remove(void* pInstance, xiiStringView sKey) override
   {
     XII_ASSERT_DEBUG(m_Remove != nullptr, "The property '{0}' has no remove function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
-    (static_cast<Class*>(pInstance)->*m_Remove)(szKey);
+    (static_cast<Class*>(pInstance)->*m_Remove)(sKey);
   }
 
-  virtual bool Contains(const void* pInstance, const char* szKey) const override
+  virtual bool Contains(const void* pInstance, xiiStringView sKey) const override
   {
     RealType value;
-    return (static_cast<const Class*>(pInstance)->*m_GetValue)(szKey, value);
+    return (static_cast<const Class*>(pInstance)->*m_GetValue)(sKey, value);
   }
 
-  virtual bool GetValue(const void* pInstance, const char* szKey, void* pObject) const override
+  virtual bool GetValue(const void* pInstance, xiiStringView sKey, void* pObject) const override
   {
-    return (static_cast<const Class*>(pInstance)->*m_GetValue)(szKey, *static_cast<RealType*>(pObject));
+    return (static_cast<const Class*>(pInstance)->*m_GetValue)(sKey, *static_cast<RealType*>(pObject));
   }
 
   virtual void GetKeys(const void* pInstance, xiiHybridArray<xiiString, 16>& out_keys) const override
@@ -123,12 +121,12 @@ public:
   using ContainerSubType = typename xiiContainerSubTypeResolver<ContainerType>::Type;
   using RealType         = typename xiiTypeTraits<Type>::NonConstReferenceType;
 
-  using InsertFunc       = void (Class::*)(const char* szKey, Type value);
-  using RemoveFunc       = void (Class::*)(const char* szKey);
+  using InsertFunc       = void (Class::*)(xiiStringView sKey, Type value);
+  using RemoveFunc       = void (Class::*)(xiiStringView sKey);
   using GetContainerFunc = Container (Class::*)() const;
 
-  xiiWriteAccessorMapProperty(const char* szPropertyName, GetContainerFunc getContainer, InsertFunc insert, RemoveFunc remove) :
-    xiiTypedMapProperty<Type>(szPropertyName)
+  xiiWriteAccessorMapProperty(xiiStringView sPropertyName, GetContainerFunc getContainer, InsertFunc insert, RemoveFunc remove) :
+    xiiTypedMapProperty<Type>(sPropertyName)
   {
     XII_ASSERT_DEBUG(getContainer != nullptr, "The get count function of a map property cannot be nullptr.");
 
@@ -152,27 +150,27 @@ public:
     }
   }
 
-  virtual void Insert(void* pInstance, const char* szKey, const void* pObject) override
+  virtual void Insert(void* pInstance, xiiStringView sKey, const void* pObject) override
   {
     XII_ASSERT_DEBUG(m_Insert != nullptr, "The property '{0}' has no insert function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
-    (static_cast<Class*>(pInstance)->*m_Insert)(szKey, *static_cast<const RealType*>(pObject));
+    (static_cast<Class*>(pInstance)->*m_Insert)(sKey, *static_cast<const RealType*>(pObject));
   }
 
-  virtual void Remove(void* pInstance, const char* szKey) override
+  virtual void Remove(void* pInstance, xiiStringView sKey) override
   {
     XII_ASSERT_DEBUG(m_Remove != nullptr, "The property '{0}' has no remove function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
-    (static_cast<Class*>(pInstance)->*m_Remove)(szKey);
+    (static_cast<Class*>(pInstance)->*m_Remove)(sKey);
   }
 
-  virtual bool Contains(const void* pInstance, const char* szKey) const override
+  virtual bool Contains(const void* pInstance, xiiStringView sKey) const override
   {
-    return (static_cast<const Class*>(pInstance)->*m_GetContainer)().Contains(szKey);
+    return (static_cast<const Class*>(pInstance)->*m_GetContainer)().Contains(sKey);
   }
 
-  virtual bool GetValue(const void* pInstance, const char* szKey, void* pObject) const override
+  virtual bool GetValue(const void* pInstance, xiiStringView sKey, void* pObject) const override
   {
     decltype(auto)  c     = (static_cast<const Class*>(pInstance)->*m_GetContainer)();
-    const RealType* value = c.GetValue(szKey);
+    const RealType* value = c.GetValue(sKey);
     if (value)
     {
       *static_cast<RealType*>(pObject) = *value;
@@ -197,7 +195,6 @@ private:
 };
 
 
-
 template <typename Class, typename Container, Container Class::*Member>
 struct xiiMapPropertyAccessor
 {
@@ -218,8 +215,8 @@ public:
   using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
   using GetContainerFunc      = Container& (*)(Class* pInstance);
 
-  xiiMemberMapProperty(const char* szPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
-    xiiTypedMapProperty<RealType>(szPropertyName)
+  xiiMemberMapProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
+    xiiTypedMapProperty<RealType>(sPropertyName)
   {
     XII_ASSERT_DEBUG(constGetter != nullptr, "The const get count function of an array property cannot be nullptr.");
 
@@ -234,33 +231,30 @@ public:
 
   virtual void Clear(void* pInstance) override
   {
-    XII_ASSERT_DEBUG(
-      m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
     m_Getter(static_cast<Class*>(pInstance)).Clear();
   }
 
-  virtual void Insert(void* pInstance, const char* szKey, const void* pObject) override
+  virtual void Insert(void* pInstance, xiiStringView sKey, const void* pObject) override
   {
-    XII_ASSERT_DEBUG(
-      m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
-    m_Getter(static_cast<Class*>(pInstance)).Insert(szKey, *static_cast<const RealType*>(pObject));
+    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+    m_Getter(static_cast<Class*>(pInstance)).Insert(sKey, *static_cast<const RealType*>(pObject));
   }
 
-  virtual void Remove(void* pInstance, const char* szKey) override
+  virtual void Remove(void* pInstance, xiiStringView sKey) override
   {
-    XII_ASSERT_DEBUG(
-      m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
-    m_Getter(static_cast<Class*>(pInstance)).Remove(szKey);
+    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+    m_Getter(static_cast<Class*>(pInstance)).Remove(sKey);
   }
 
-  virtual bool Contains(const void* pInstance, const char* szKey) const override
+  virtual bool Contains(const void* pInstance, xiiStringView sKey) const override
   {
-    return m_ConstGetter(static_cast<const Class*>(pInstance)).Contains(szKey);
+    return m_ConstGetter(static_cast<const Class*>(pInstance)).Contains(sKey);
   }
 
-  virtual bool GetValue(const void* pInstance, const char* szKey, void* pObject) const override
+  virtual bool GetValue(const void* pInstance, xiiStringView sKey, void* pObject) const override
   {
-    const RealType* value = m_ConstGetter(static_cast<const Class*>(pInstance)).GetValue(szKey);
+    const RealType* value = m_ConstGetter(static_cast<const Class*>(pInstance)).GetValue(sKey);
     if (value)
     {
       *static_cast<RealType*>(pObject) = *value;

@@ -37,5 +37,4 @@ xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiStringBuilder& ref_s
   return ref_stream;
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_StreamOperations);

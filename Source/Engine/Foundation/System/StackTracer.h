@@ -16,7 +16,7 @@ public:
   static xiiUInt32 GetStackTrace(xiiArrayPtr<void*>& ref_trace, void* pContext = nullptr);
 
   /// \brief Callback-function to print a text somewhere
-  using PrintFunc = xiiDelegate<void(const char* szText)>;
+  using PrintFunc = xiiDelegate<void(xiiStringView sText)>;
 
   /// \brief Print a stack trace
   static void ResolveStackTrace(const xiiArrayPtr<void*>& trace, PrintFunc printFunc);

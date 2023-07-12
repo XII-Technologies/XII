@@ -551,5 +551,4 @@ xiiResult xiiArchiveUtils::ExtractZipTOC(xiiMemoryMappedFile& ref_memFile, xiiAr
   return XII_SUCCESS;
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Archive_Implementation_ArchiveUtils);

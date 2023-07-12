@@ -21,52 +21,51 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTypeVersionInfo, xiiNoBase, 1, xiiRTTIDefault
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-const char* xiiTypeVersionInfo::GetTypeName() const
+xiiStringView xiiTypeVersionInfo::GetTypeName() const
 {
-  return m_sTypeName.GetData();
+  return m_sTypeName.GetView();
 }
 
-void xiiTypeVersionInfo::SetTypeName(const char* szName)
+void xiiTypeVersionInfo::SetTypeName(xiiStringView sName)
 {
-  m_sTypeName.Assign(szName);
+  m_sTypeName.Assign(sName);
 }
 
-const char* xiiTypeVersionInfo::GetParentTypeName() const
+xiiStringView xiiTypeVersionInfo::GetParentTypeName() const
 {
   return m_sParentTypeName.GetData();
 }
 
-void xiiTypeVersionInfo::SetParentTypeName(const char* szName)
+void xiiTypeVersionInfo::SetParentTypeName(xiiStringView sName)
 {
-  m_sParentTypeName.Assign(szName);
+  m_sParentTypeName.Assign(sName);
 }
 
-void xiiGraphPatchContext::PatchBaseClass(const char* szType, xiiUInt32 uiTypeVersion, bool bForcePatch)
+void xiiGraphPatchContext::PatchBaseClass(xiiStringView sType, xiiUInt32 uiTypeVersion, bool bForcePatch)
 {
-  xiiHashedString sType;
-  sType.Assign(szType);
+  xiiHashedString sTypeHash;
+  sTypeHash.Assign(sType);
   for (xiiUInt32 uiBaseClassIndex = m_uiBaseClassIndex; uiBaseClassIndex < m_BaseClasses.GetCount(); ++uiBaseClassIndex)
   {
-    if (m_BaseClasses[uiBaseClassIndex].m_sType == sType)
+    if (m_BaseClasses[uiBaseClassIndex].m_sType == sTypeHash)
     {
       Patch(uiBaseClassIndex, uiTypeVersion, bForcePatch);
       return;
     }
   }
-  XII_REPORT_FAILURE("Base class of name '{0}' not found in parent types of '{1}'", sType.GetData(), m_pNode->GetType());
+  XII_REPORT_FAILURE("Base class of name '{0}' not found in parent types of '{1}'", sTypeHash.GetView(), m_pNode->GetType());
 }
 
-void xiiGraphPatchContext::RenameClass(const char* szTypeName)
+void xiiGraphPatchContext::RenameClass(xiiStringView sTypeName)
 {
-  m_pNode->SetType(m_pGraph->RegisterString(szTypeName));
-  m_BaseClasses[m_uiBaseClassIndex].m_sType.Assign(szTypeName);
+  m_pNode->SetType(m_pGraph->RegisterString(sTypeName));
+  m_BaseClasses[m_uiBaseClassIndex].m_sType.Assign(sTypeName);
 }
 
-
-void xiiGraphPatchContext::RenameClass(const char* szTypeName, xiiUInt32 uiVersion)
+void xiiGraphPatchContext::RenameClass(xiiStringView sTypeName, xiiUInt32 uiVersion)
 {
-  m_pNode->SetType(m_pGraph->RegisterString(szTypeName));
-  m_BaseClasses[m_uiBaseClassIndex].m_sType.Assign(szTypeName);
+  m_pNode->SetType(m_pGraph->RegisterString(sTypeName));
+  m_BaseClasses[m_uiBaseClassIndex].m_sType.Assign(sTypeName);
   // After a Patch is applied, the version is always increased. So if we want to change the version we need to reduce it by one so that in the next patch loop the requested version is not skipped.
   XII_ASSERT_DEV(uiVersion > 0, "Cannot change the version of a class to 0, target version must be at least 1.");
   m_BaseClasses[m_uiBaseClassIndex].m_uiTypeVersion = uiVersion - 1;
@@ -86,15 +85,19 @@ void xiiGraphPatchContext::ChangeBaseClass(xiiArrayPtr<xiiVersionKey> baseClasse
 xiiGraphPatchContext::xiiGraphPatchContext(xiiGraphVersioning* pParent, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectGraph* pTypesGraph)
 {
   XII_PROFILE_SCOPE("xiiGraphPatchContext");
+
   m_pParent = pParent;
   m_pGraph  = pGraph;
+
   if (pTypesGraph)
   {
     xiiRttiConverterContext context;
     xiiRttiConverterReader  rttiConverter(pTypesGraph, &context);
     xiiString               sDescTypeName = "xiiReflectedTypeDescriptor";
     auto&                   nodes         = pTypesGraph->GetAllNodes();
+
     m_TypeToInfo.Reserve(nodes.GetCount());
+
     for (auto it = nodes.GetIterator(); it.IsValid(); ++it)
     {
       if (it.Value()->GetType() == sDescTypeName)
@@ -112,6 +115,7 @@ void xiiGraphPatchContext::Patch(xiiAbstractObjectNode* pNode)
   m_pNode = pNode;
   // Build version hierarchy.
   m_BaseClasses.Clear();
+
   xiiVersionKey key;
   key.m_sType.Assign(m_pNode->GetType());
   key.m_uiTypeVersion = m_pNode->GetTypeVersion();
@@ -128,7 +132,6 @@ void xiiGraphPatchContext::Patch(xiiAbstractObjectNode* pNode)
   m_pNode->SetTypeVersion(m_BaseClasses[0].m_uiTypeVersion);
 }
 
-
 void xiiGraphPatchContext::Patch(xiiUInt32 uiBaseClassIndex, xiiUInt32 uiTypeVersion, bool bForcePatch)
 {
   if (bForcePatch)
@@ -140,6 +143,7 @@ void xiiGraphPatchContext::Patch(xiiUInt32 uiBaseClassIndex, xiiUInt32 uiTypeVer
     // Don't move this out of the loop, needed to support renaming a class which will change the key.
     xiiVersionKey key = m_BaseClasses[uiBaseClassIndex];
     key.m_uiTypeVersion += 1;
+
     const xiiGraphPatch* pPatch = nullptr;
     if (m_pParent->m_NodePatches.TryGetValue(key, pPatch))
     {

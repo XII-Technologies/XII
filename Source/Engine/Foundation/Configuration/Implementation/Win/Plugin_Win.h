@@ -12,10 +12,8 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 using xiiPluginModule = HMODULE;
 
-void xiiPlugin::GetPluginPaths(const char* szPluginName, xiiStringBuilder& ref_sOriginalFile, xiiStringBuilder& ref_sCopiedFile, xiiUInt8 uiFileCopyNumber)
+void xiiPlugin::GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& ref_sOriginalFile, xiiStringBuilder& ref_sCopiedFile, xiiUInt8 uiFileCopyNumber)
 {
-  auto sPluginName = xiiStringView(szPluginName);
-
   ref_sOriginalFile = xiiOSFile::GetApplicationDirectory();
   ref_sOriginalFile.AppendPath(sPluginName);
   ref_sOriginalFile.Append(".dll");
@@ -39,7 +37,7 @@ void xiiPlugin::GetPluginPaths(const char* szPluginName, xiiStringBuilder& ref_s
   ref_sCopiedFile.Append(".loaded");
 }
 
-xiiResult UnloadPluginModule(xiiPluginModule& ref_pModule, const char* szPluginFile)
+xiiResult UnloadPluginModule(xiiPluginModule& ref_pModule, xiiStringView sPluginFile)
 {
   // reset last error code
   SetLastError(ERROR_SUCCESS);
@@ -54,7 +52,7 @@ xiiResult UnloadPluginModule(xiiPluginModule& ref_pModule, const char* szPluginF
   return XII_SUCCESS;
 }
 
-xiiResult LoadPluginModule(const char* szFileToLoad, xiiPluginModule& ref_pModule, const char* szPluginFile)
+xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& ref_pModule, xiiStringView sPluginFile)
 {
   // reset last error code
   SetLastError(ERROR_SUCCESS);

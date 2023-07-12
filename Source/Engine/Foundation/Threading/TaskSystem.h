@@ -30,13 +30,11 @@ public:
 public:
   /// \brief A helper function to insert a single task into the system and start it right away. Returns ID of the Group into which the task
   /// has been put.
-  static xiiTaskGroupID StartSingleTask(const xiiSharedPtr<xiiTask>& pTask, xiiTaskPriority::Enum priority,
-                                        xiiOnTaskGroupFinishedCallback callback = xiiOnTaskGroupFinishedCallback()); // [tested]
+  static xiiTaskGroupID StartSingleTask(const xiiSharedPtr<xiiTask>& pTask, xiiTaskPriority::Enum priority, xiiOnTaskGroupFinishedCallback callback = xiiOnTaskGroupFinishedCallback()); // [tested]
 
   /// \brief A helper function to insert a single task into the system and start it right away. Returns ID of the Group into which the task
   /// has been put. This overload allows to additionally specify a single dependency.
-  static xiiTaskGroupID StartSingleTask(const xiiSharedPtr<xiiTask>& pTask, xiiTaskPriority::Enum priority, xiiTaskGroupID dependency,
-                                        xiiOnTaskGroupFinishedCallback callback = xiiOnTaskGroupFinishedCallback()); // [tested]
+  static xiiTaskGroupID StartSingleTask(const xiiSharedPtr<xiiTask>& pTask, xiiTaskPriority::Enum priority, xiiTaskGroupID dependency, xiiOnTaskGroupFinishedCallback callback = xiiOnTaskGroupFinishedCallback()); // [tested]
 
   /// \brief Call this function once at the end of a frame. It will ensure that all tasks for 'this frame' get finished properly.
   ///
@@ -112,9 +110,7 @@ public:
   ///
   /// All tasks that are added to this group will be run with the same given \a Priority.
   /// Once all tasks in the group are finished and thus the group is finished, an optional \a Callback can be executed.
-  static xiiTaskGroupID CreateTaskGroup(
-    xiiTaskPriority::Enum          priority,
-    xiiOnTaskGroupFinishedCallback callback = xiiOnTaskGroupFinishedCallback()); // [tested]
+  static xiiTaskGroupID CreateTaskGroup(xiiTaskPriority::Enum priority, xiiOnTaskGroupFinishedCallback callback = xiiOnTaskGroupFinishedCallback()); // [tested]
 
   /// \brief Adds a task to the given task group. The group must not yet have been started.
   static void AddTaskToGroup(xiiTaskGroupID group, const xiiSharedPtr<xiiTask>& pTask); // [tested]
@@ -238,51 +234,37 @@ private:
 
 public:
   /// A helper function to process task items in a parallel fashion by having per-worker index ranges generated.
-  static void ParallelForIndexed(xiiUInt32 uiStartIndex, xiiUInt32 uiNumItems, xiiParallelForIndexedFunction32 taskCallback, const char* szTaskName = nullptr, const xiiParallelForParams& params = xiiParallelForParams());
+  static void ParallelForIndexed(xiiUInt32 uiStartIndex, xiiUInt32 uiNumItems, xiiParallelForIndexedFunction32 taskCallback, xiiStringView sTaskName = {}, const xiiParallelForParams& params = xiiParallelForParams());
 
   /// A helper function to process task items in a parallel fashion by having per-worker index ranges generated.
-  static void ParallelForIndexed(xiiUInt64 uiStartIndex, xiiUInt64 uiNumItems, xiiParallelForIndexedFunction64 taskCallback, const char* szTaskName = nullptr, const xiiParallelForParams& params = xiiParallelForParams());
+  static void ParallelForIndexed(xiiUInt64 uiStartIndex, xiiUInt64 uiNumItems, xiiParallelForIndexedFunction64 taskCallback, xiiStringView sTaskName = {}, const xiiParallelForParams& params = xiiParallelForParams());
 
   /// A helper function to process task items in a parallel fashion by generating per-worker sub-ranges
   /// from an initial item array pointer.
   /// Given an array pointer 'taskItems' with elements of type ElemType, the following invocations are possible:
   ///   - ParallelFor(taskItems, [](xiiArrayPtr<ElemType> taskItemSlice) { });
   template <typename ElemType, typename Callback>
-  static void ParallelFor(
-    xiiArrayPtr<ElemType>       taskItems,
-    Callback                    taskCallback,
-    const char*                 szTaskName = nullptr,
-    const xiiParallelForParams& params     = xiiParallelForParams());
+  static void ParallelFor(xiiArrayPtr<ElemType> taskItems, Callback taskCallback, xiiStringView sTaskName = {}, const xiiParallelForParams& params = xiiParallelForParams());
+
   /// A helper function to process task items in a parallel fashion and one-by-one (without global index).
   /// Given an array pointer 'taskItems' with elements of type ElemType, the following invocations are possible:
   ///   - ParallelFor(taskItems, [](ElemType taskItem) { });
   ///   - ParallelFor(taskItems, [](ElemType& taskItem) { });
   ///   - ParallelFor(taskItems, [](const ElemType& taskItem) { });
   template <typename ElemType, typename Callback>
-  static void ParallelForSingle(
-    xiiArrayPtr<ElemType>       taskItems,
-    Callback                    taskCallback,
-    const char*                 szTaskName = nullptr,
-    const xiiParallelForParams& params     = xiiParallelForParams());
+  static void ParallelForSingle(xiiArrayPtr<ElemType> taskItems, Callback taskCallback, xiiStringView sTaskName = {}, const xiiParallelForParams& params = xiiParallelForParams());
+
   /// A helper function to process task items in a parallel fashion and one-by-one (with global index).
   /// Given an array pointer 'taskItems' with elements of type ElemType, the following invocations are possible:
   ///   - ParallelFor(taskItems, [](xiiUInt32 globalTaskItemIndex, ElemType taskItem) { });
   ///   - ParallelFor(taskItems, [](xiiUInt32 globalTaskItemIndex, ElemType& taskItem) { });
   ///   - ParallelFor(taskItems, [](xiiUInt32 globalTaskItemIndex, const ElemType& taskItem) { });
   template <typename ElemType, typename Callback>
-  static void ParallelForSingleIndex(
-    xiiArrayPtr<ElemType>       taskItems,
-    Callback                    taskCallback,
-    const char*                 szTaskName = nullptr,
-    const xiiParallelForParams& params     = xiiParallelForParams());
+  static void ParallelForSingleIndex(xiiArrayPtr<ElemType> taskItems, Callback taskCallback, xiiStringView sTaskName = {}, const xiiParallelForParams& params = xiiParallelForParams());
 
 private:
   template <typename ElemType>
-  static void ParallelForInternal(
-    xiiArrayPtr<ElemType>            taskItems,
-    xiiParallelForFunction<ElemType> taskCallback,
-    const char*                      taskName,
-    const xiiParallelForParams&      params);
+  static void ParallelForInternal(xiiArrayPtr<ElemType> taskItems, xiiParallelForFunction<ElemType> taskCallback, xiiStringView sTaskName, const xiiParallelForParams& params);
 
   ///@}
 
@@ -295,7 +277,7 @@ public:
 
   /// \brief Convenience function to write the task graph snapshot to a file. If no path is given, the file is written to
   /// ":appdata/TaskGraphs/__date__.dgml"
-  static void WriteStateSnapshotToFile(const char* szPath = nullptr);
+  static void WriteStateSnapshotToFile(xiiStringView sPath = {});
 
 private:
   ///@}

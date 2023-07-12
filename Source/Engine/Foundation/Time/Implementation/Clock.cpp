@@ -21,9 +21,9 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, Clock)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiClock::xiiClock(const char* szName)
+xiiClock::xiiClock(xiiStringView sName)
 {
-  SetClockName(szName);
+  SetClockName(sName);
 
   Reset(true);
 }
@@ -83,7 +83,7 @@ void xiiClock::Update()
   m_AccumulatedTime += m_LastTimeDiff;
 
   EventData ed;
-  ed.m_szClockName      = m_sName.GetData();
+  ed.m_sClockName       = m_sName.GetView();
   ed.m_RawTimeStep      = tDiff;
   ed.m_SmoothedTimeStep = m_LastTimeDiff;
 
@@ -135,7 +135,5 @@ void xiiClock::Load(xiiStreamReader& ref_stream)
   if (m_pTimeStepSmoother)
     m_pTimeStepSmoother->Reset(this);
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Time_Implementation_Clock);

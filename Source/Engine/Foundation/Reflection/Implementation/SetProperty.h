@@ -9,8 +9,8 @@ template <typename Type>
 class xiiTypedSetProperty : public xiiAbstractSetProperty
 {
 public:
-  xiiTypedSetProperty(const char* szPropertyName) :
-    xiiAbstractSetProperty(szPropertyName)
+  xiiTypedSetProperty(xiiStringView sPropertyName) :
+    xiiAbstractSetProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<Type>();
   }
@@ -44,8 +44,8 @@ public:
   using RemoveFunc    = void (Class::*)(Type value);
   using GetValuesFunc = Container (Class::*)() const;
 
-  xiiAccessorSetProperty(const char* szPropertyName, GetValuesFunc getValues, InsertFunc insert, RemoveFunc remove) :
-    xiiTypedSetProperty<Type>(szPropertyName)
+  xiiAccessorSetProperty(xiiStringView sPropertyName, GetValuesFunc getValues, InsertFunc insert, RemoveFunc remove) :
+    xiiTypedSetProperty<Type>(sPropertyName)
   {
     XII_ASSERT_DEBUG(getValues != nullptr, "The get values function of an set property cannot be nullptr.");
 
@@ -136,7 +136,7 @@ public:
   using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
   using GetContainerFunc      = Container& (*)(Class* pInstance);
 
-  xiiMemberSetProperty(const char* szPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
+  xiiMemberSetProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
     xiiTypedSetProperty<RealType>(szPropertyName)
   {
     XII_ASSERT_DEBUG(constGetter != nullptr, "The const get count function of an set property cannot be nullptr.");

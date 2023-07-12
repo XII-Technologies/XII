@@ -8,33 +8,33 @@ class XII_FOUNDATION_DLL xiiEnvironmentVariableUtils
 {
 public:
   /// \brief Returns the current value of the request environment variable. If it isn't set szDefault will be returned.
-  static xiiString GetValueString(const char* szName, const char* szDefault = nullptr);
+  static xiiString GetValueString(xiiStringView sName, xiiStringView sDefault = nullptr);
 
   /// \brief Sets the environment variable for the current execution environment (i.e. this process and child processes created after this call).
-  static xiiResult SetValueString(const char* szName, const char* szValue);
+  static xiiResult SetValueString(xiiStringView sName, xiiStringView sValue);
 
   /// \brief Returns the current value of the request environment variable. If it isn't set iDefault will be returned.
-  static xiiInt32 GetValueInt(const char* szName, xiiInt32 iDefault = -1);
+  static xiiInt32 GetValueInt(xiiStringView sName, xiiInt32 iDefault = -1);
 
   /// \brief Sets the environment variable for the current execution environment.
-  static xiiResult SetValueInt(const char* szName, xiiInt32 iValue);
+  static xiiResult SetValueInt(xiiStringView sName, xiiInt32 iValue);
 
   /// \brief Returns true if the environment variable with the given name is set, false otherwise.
-  static bool IsVariableSet(const char* szName);
+  static bool IsVariableSet(xiiStringView sName);
 
   /// \brief Removes an environment variable from the current execution context (i.e. this process and child processes created after this call).
-  static xiiResult UnsetVariable(const char* szName);
+  static xiiResult UnsetVariable(xiiStringView sName);
 
 private:
   /// \brief [internal]
-  static xiiString GetValueStringImpl(const char* szName, const char* szDefault);
+  static xiiString GetValueStringImpl(xiiStringView sName, xiiStringView sDefault);
 
   /// \brief [internal]
-  static xiiResult SetValueStringImpl(const char* szName, const char* szValue);
+  static xiiResult SetValueStringImpl(xiiStringView sName, xiiStringView sValue);
 
   /// \brief [internal]
-  static bool IsVariableSetImpl(const char* szName);
+  static bool IsVariableSetImpl(xiiStringView sName);
 
   /// \brief [internal]
-  static xiiResult UnsetVariableImpl(const char* szName);
+  static xiiResult UnsetVariableImpl(xiiStringView sName);
 };

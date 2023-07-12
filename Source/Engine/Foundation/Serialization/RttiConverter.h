@@ -65,16 +65,16 @@ public:
   xiiRttiConverterWriter(xiiAbstractObjectGraph* pGraph, xiiRttiConverterContext* pContext, bool bSerializeReadOnly, bool bSerializeOwnerPtrs);
   xiiRttiConverterWriter(xiiAbstractObjectGraph* pGraph, xiiRttiConverterContext* pContext, FilterFunction filter);
 
-  xiiAbstractObjectNode* AddObjectToGraph(xiiReflectedClass* pObject, const char* szNodeName = nullptr)
+  xiiAbstractObjectNode* AddObjectToGraph(xiiReflectedClass* pObject, xiiStringView sNodeName = {})
   {
-    return AddObjectToGraph(pObject->GetDynamicRTTI(), pObject, szNodeName);
+    return AddObjectToGraph(pObject->GetDynamicRTTI(), pObject, sNodeName);
   }
-  xiiAbstractObjectNode* AddObjectToGraph(const xiiRTTI* pRtti, const void* pObject, const char* szNodeName = nullptr);
+  xiiAbstractObjectNode* AddObjectToGraph(const xiiRTTI* pRtti, const void* pObject, xiiStringView sNodeName = {});
 
   void AddProperty(xiiAbstractObjectNode* pNode, const xiiAbstractProperty* pProp, const void* pObject);
   void AddProperties(xiiAbstractObjectNode* pNode, const xiiRTTI* pRtti, const void* pObject);
 
-  xiiAbstractObjectNode* AddSubObjectToGraph(const xiiRTTI* pRtti, const void* pObject, const xiiUuid& guid, const char* szNodeName);
+  xiiAbstractObjectNode* AddSubObjectToGraph(const xiiRTTI* pRtti, const void* pObject, const xiiUuid& guid, xiiStringView sNodeName);
 
 private:
   xiiRttiConverterContext* m_pContext = nullptr;

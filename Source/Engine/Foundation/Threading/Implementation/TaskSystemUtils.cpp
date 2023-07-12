@@ -23,7 +23,7 @@ const char* xiiWorkerThreadType::GetThreadTypeName(xiiWorkerThreadType::Enum thr
 
     default:
       XII_REPORT_FAILURE("Invalid Thread Type");
-      return "unknown";
+      return "Unknown";
   }
 }
 
@@ -135,28 +135,28 @@ void xiiTaskSystem::WriteStateSnapshotToDGML(xiiDGMLGraph& ref_graph)
   }
 }
 
-void xiiTaskSystem::WriteStateSnapshotToFile(const char* szPath /*= nullptr*/)
+void xiiTaskSystem::WriteStateSnapshotToFile(xiiStringView sPath /*= {}*/)
 {
-  xiiStringBuilder sPath = szPath;
+  xiiStringBuilder sPathBuilder = sPath;
 
-  if (sPath.IsEmpty())
+  if (sPathBuilder.IsEmpty())
   {
-    sPath = ":appdata/TaskGraphs/";
+    sPathBuilder = ":appdata/TaskGraphs/";
 
     const xiiDateTime dt = xiiTimestamp::CurrentTimestamp();
 
-    sPath.AppendFormat("{0}-{1}-{2}_{3}-{4}-{5}-{6}", dt.GetYear(), xiiArgU(dt.GetMonth(), 2, true), xiiArgU(dt.GetDay(), 2, true), xiiArgU(dt.GetHour(), 2, true), xiiArgU(dt.GetMinute(), 2, true), xiiArgU(dt.GetSecond(), 2, true), xiiArgU(dt.GetMicroseconds() / 1000, 3, true));
+    sPathBuilder.AppendFormat("{0}-{1}-{2}_{3}-{4}-{5}-{6}", dt.GetYear(), xiiArgU(dt.GetMonth(), 2, true), xiiArgU(dt.GetDay(), 2, true), xiiArgU(dt.GetHour(), 2, true), xiiArgU(dt.GetMinute(), 2, true), xiiArgU(dt.GetSecond(), 2, true), xiiArgU(dt.GetMicroseconds() / 1000, 3, true));
 
-    sPath.ChangeFileExtension("dgml");
+    sPathBuilder.ChangeFileExtension("dgml");
   }
 
   xiiDGMLGraph graph;
   xiiTaskSystem::WriteStateSnapshotToDGML(graph);
 
-  xiiDGMLGraphWriter::WriteGraphToFile(sPath, graph).IgnoreResult();
+  xiiDGMLGraphWriter::WriteGraphToFile(sPathBuilder, graph).IgnoreResult();
 
   xiiStringBuilder absPath;
-  xiiFileSystem::ResolvePath(sPath, &absPath, nullptr).IgnoreResult();
+  xiiFileSystem::ResolvePath(sPathBuilder, &absPath, nullptr).IgnoreResult();
   xiiLog::Info("Task graph snapshot saved to '{}'", absPath);
 }
 

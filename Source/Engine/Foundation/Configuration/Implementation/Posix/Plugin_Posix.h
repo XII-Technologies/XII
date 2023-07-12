@@ -10,14 +10,14 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 using xiiPluginModule = void*;
 
-void xiiPlugin::GetPluginPaths(const char* szPluginName, xiiStringBuilder& sOriginalFile, xiiStringBuilder& sCopiedFile, xiiUInt8 uiFileCopyNumber)
+void xiiPlugin::GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& sOriginalFile, xiiStringBuilder& sCopiedFile, xiiUInt8 uiFileCopyNumber)
 {
   sOriginalFile = xiiOSFile::GetApplicationDirectory();
-  sOriginalFile.AppendPath(szPluginName);
+  sOriginalFile.AppendPath(sPluginName);
   sOriginalFile.Append(".so");
 
   sCopiedFile = xiiOSFile::GetApplicationDirectory();
-  sCopiedFile.AppendPath(szPluginName);
+  sCopiedFile.AppendPath(sPluginName);
 
   if (uiFileCopyNumber > 0)
     sCopiedFile.AppendFormat("{0}", uiFileCopyNumber);
@@ -25,23 +25,23 @@ void xiiPlugin::GetPluginPaths(const char* szPluginName, xiiStringBuilder& sOrig
   sCopiedFile.Append(".loaded");
 }
 
-xiiResult UnloadPluginModule(xiiPluginModule& Module, const char* szPluginFile)
+xiiResult UnloadPluginModule(xiiPluginModule& Module, xiiStringView sPluginFile)
 {
   if (dlclose(Module) != 0)
   {
-    xiiLog::Error("Could not unload plugin '{0}'. Error {1}", szPluginFile, static_cast<const char*>(dlerror()));
+    xiiLog::Error("Could not unload plugin '{0}'. Error {1}", sPluginFile, static_cast<const char*>(dlerror()));
     return XII_FAILURE;
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult LoadPluginModule(const char* szFileToLoad, xiiPluginModule& Module, const char* szPluginFile)
+xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& Module, xiiStringView sPluginFile)
 {
   Module = dlopen(szFileToLoad, RTLD_NOW | RTLD_GLOBAL);
   if (Module == nullptr)
   {
-    xiiLog::Error("Could not load plugin '{0}'. Error {1}.\nSet the environment variable LD_DEBUG=all to get more information.", szPluginFile, static_cast<const char*>(dlerror()));
+    xiiLog::Error("Could not load plugin '{0}'. Error {1}.\nSet the environment variable LD_DEBUG=all to get more information.", sPluginFile, static_cast<const char*>(dlerror()));
     return XII_FAILURE;
   }
   return XII_SUCCESS;

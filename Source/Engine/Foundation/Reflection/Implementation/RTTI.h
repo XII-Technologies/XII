@@ -34,8 +34,7 @@ class XII_FOUNDATION_DLL xiiRTTI : public xiiEnumerable<xiiRTTI>
 
 public:
   /// \brief The constructor requires all the information about the type that this object represents.
-  xiiRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractFunctionProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)());
-
+  xiiRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractFunctionProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)());
 
   ~xiiRTTI();
 
@@ -46,7 +45,7 @@ public:
   static void VerifyCorrectnessForAllTypes();
 
   /// \brief Returns the name of this type.
-  XII_ALWAYS_INLINE const char* GetTypeName() const { return m_szTypeName; } // [tested]
+  XII_ALWAYS_INLINE xiiStringView GetTypeName() const { return m_sTypeName; } // [tested]
 
   /// \brief Returns the hash of the name of this type.
   XII_ALWAYS_INLINE xiiUInt64 GetTypeNameHash() const { return m_uiTypeNameHash; } // [tested]
@@ -110,7 +109,7 @@ public:
   xiiAbstractProperty* FindPropertyByName(xiiStringView sName, bool bSearchBaseTypes = true) const; // [tested]
 
   /// \brief Returns the name of the plugin which this type is declared in.
-  XII_ALWAYS_INLINE const char* GetPluginName() const { return m_szPluginName; } // [tested]
+  XII_ALWAYS_INLINE xiiStringView GetPluginName() const { return m_sPluginName; } // [tested]
 
   /// \brief Returns the array of message handlers that this type has.
   XII_ALWAYS_INLINE const xiiArrayPtr<xiiAbstractMessageHandler*>& GetMessageHandlers() const { return m_MessageHandlers; }
@@ -146,14 +145,11 @@ public:
   /// \brief Writes all types derived from \a pBaseType to the provided array. Optionally sorts the array by type name to yield a stable result.
   ///
   /// Returns the provided array, such that the function can be used in a foreach loop right away.
-  static const xiiDynamicArray<const xiiRTTI*>& GetAllTypesDerivedFrom(
-    const xiiRTTI*                   pBaseType,
-    xiiDynamicArray<const xiiRTTI*>& out_derivedTypes,
-    bool                             bSortByName);
+  static const xiiDynamicArray<const xiiRTTI*>& GetAllTypesDerivedFrom(const xiiRTTI* pBaseType, xiiDynamicArray<const xiiRTTI*>& out_derivedTypes, bool bSortByName);
 
 protected:
-  const char*                               m_szPluginName = nullptr;
-  const char*                               m_szTypeName;
+  xiiStringView                             m_sPluginName;
+  xiiStringView                             m_sTypeName;
   xiiArrayPtr<xiiAbstractProperty*>         m_Properties;
   xiiArrayPtr<xiiAbstractFunctionProperty*> m_Functions;
   xiiArrayPtr<xiiPropertyAttribute*>        m_Attributes;
@@ -177,9 +173,8 @@ protected:
   bool m_bGatheredDynamicMessageHandlers = false;
   const xiiRTTI* (*m_VerifyParent)();
 
-  xiiArrayPtr<xiiAbstractMessageHandler*> m_MessageHandlers;
-  xiiDynamicArray<xiiAbstractMessageHandler*, xiiStaticAllocatorWrapper>
-    m_DynamicMessageHandlers; // do not track this data, it won't be deallocated before shutdown
+  xiiArrayPtr<xiiAbstractMessageHandler*>                                m_MessageHandlers;
+  xiiDynamicArray<xiiAbstractMessageHandler*, xiiStaticAllocatorWrapper> m_DynamicMessageHandlers; // do not track this data, it won't be deallocated before shutdown
 
   xiiArrayPtr<xiiMessageSenderInfo> m_MessageSenders;
   xiiHybridArray<const xiiRTTI*, 8> m_ParentHierarchy;
@@ -188,7 +183,7 @@ private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Foundation, Reflection);
 
   /// \brief Assigns the given plugin name to every xiiRTTI instance that has no plugin assigned yet.
-  static void AssignPlugin(const char* szPluginName);
+  static void AssignPlugin(xiiStringView sPluginName);
 
   static void SanityCheckType(xiiRTTI* pType);
 

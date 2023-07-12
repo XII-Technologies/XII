@@ -11,13 +11,11 @@ template <typename Type>
 class xiiTypedArrayProperty : public xiiAbstractArrayProperty
 {
 public:
-  xiiTypedArrayProperty(const char* szPropertyName) :
+  xiiTypedArrayProperty(xiiStringView sPropertyName) :
     xiiAbstractArrayProperty(szPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<Type>();
-    XII_CHECK_AT_COMPILETIME_MSG(!std::is_pointer<Type>::value ||
-                                   xiiVariantTypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value ==
-                                     xiiVariantType::Invalid,
+    XII_CHECK_AT_COMPILETIME_MSG(!std::is_pointer<Type>::value || xiiVariantTypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid,
                                  "Pointer to standard types are not supported.");
   }
 
@@ -50,15 +48,8 @@ public:
   using InsertFunc   = void (Class::*)(xiiUInt32 uiIndex, Type value);
   using RemoveFunc   = void (Class::*)(xiiUInt32 uiIndex);
 
-
-  xiiAccessorArrayProperty(
-    const char*  szPropertyName,
-    GetCountFunc getCount,
-    GetValueFunc getter,
-    SetValueFunc setter,
-    InsertFunc   insert,
-    RemoveFunc   remove) :
-    xiiTypedArrayProperty<Type>(szPropertyName)
+  xiiAccessorArrayProperty(xiiStringView sPropertyName, GetCountFunc getCount, GetValueFunc getter, SetValueFunc setter, InsertFunc insert, RemoveFunc remove) :
+    xiiTypedArrayProperty<Type>(sPropertyName)
   {
     XII_ASSERT_DEBUG(getCount != nullptr, "The get count function of an array property cannot be nullptr.");
     XII_ASSERT_DEBUG(getter != nullptr, "The get value function of an array property cannot be nullptr.");
@@ -72,7 +63,6 @@ public:
     if (m_Setter == nullptr)
       xiiAbstractArrayProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
   }
-
 
   virtual xiiUInt32 GetCount(const void* pInstance) const override { return (static_cast<const Class*>(pInstance)->*m_GetCount)(); }
 
@@ -150,7 +140,7 @@ public:
   using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
   using GetContainerFunc      = Container& (*)(Class* pInstance);
 
-  xiiMemberArrayProperty(const char* szPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
+  xiiMemberArrayProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
     xiiTypedArrayProperty<RealType>(szPropertyName)
   {
     XII_ASSERT_DEBUG(constGetter != nullptr, "The const get count function of an array property cannot be nullptr.");
@@ -221,7 +211,7 @@ public:
   using RealType              = typename xiiTypeTraits<Type>::NonConstReferenceType;
   using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
 
-  xiiMemberArrayReadOnlyProperty(const char* szPropertyName, GetConstContainerFunc constGetter) :
+  xiiMemberArrayReadOnlyProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter) :
     xiiTypedArrayProperty<RealType>(szPropertyName)
   {
     XII_ASSERT_DEBUG(constGetter != nullptr, "The const get count function of an array property cannot be nullptr.");

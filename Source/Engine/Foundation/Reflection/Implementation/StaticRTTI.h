@@ -154,10 +154,10 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 #define XII_ALLOW_PRIVATE_PROPERTIES(SELF) friend xiiRTTI GetRTTI(SELF*)
 
 /// \cond
-// internal helper macro
+// Internal helper macro.
 #define XII_RTTIINFO_DECL(Type, BaseType, Version) \
                                                    \
-  const char* GetTypeName(Type*)                   \
+  xiiStringView GetTypeName(Type*)                 \
   {                                                \
     return #Type;                                  \
   }                                                \
@@ -366,9 +366,9 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 /// \param GetContainer
 ///   Function signature: const Container<Key, Type>& GetValues() const;
 /// \param Insert
-///   Function signature: void Insert(const char* szKey, Type value);
+///   Function signature: void Insert(xiiStringView sKey, Type value);
 /// \param Remove
-///   Function signature: void Remove(const char* szKey);
+///   Function signature: void Remove(xiiStringView sKey);
 ///
 /// \note Container can be xiiMap or xiiHashTable
 #define XII_MAP_WRITE_ACCESSOR_PROPERTY(PropertyName, GetContainer, Insert, Remove)                                         \
@@ -385,13 +385,13 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 ///   Range has to be an object that a ranged based for-loop can iterate over containing the keys
 ///   implicitly convertible to Type / xiiString.
 /// \param GetValue
-///   Function signature: bool GetValue(const char* szKey, Type& value);
+///   Function signature: bool GetValue(xiiStringView sKey, Type& value);
 ///   Returns whether the the key existed. value must be a non const ref as it is written to.
 /// \param Insert
-///   Function signature: void Insert(const char* szKey, Type value);
+///   Function signature: void Insert(xiiStringView sKey, Type value);
 ///   value can also be const and/or a reference.
 /// \param Remove
-///   Function signature: void Remove(const char* szKey);
+///   Function signature: void Remove(xiiStringView sKey);
 ///
 /// \note Container can be xiiMap or xiiHashTable
 #define XII_MAP_ACCESSOR_PROPERTY(PropertyName, GetKeyRange, GetValue, Insert, Remove)                                 \

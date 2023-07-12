@@ -38,14 +38,14 @@ public:
   static void InsertSetPropertyValue(xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value);
   static void RemoveSetPropertyValue(xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value);
 
-  static xiiVariant GetMapPropertyValue(const xiiAbstractMapProperty* pProp, const void* pObject, const char* szKey);
-  static void       SetMapPropertyValue(xiiAbstractMapProperty* pProp, void* pObject, const char* szKey, const xiiVariant& value);
+  static xiiVariant GetMapPropertyValue(const xiiAbstractMapProperty* pProp, const void* pObject, xiiStringView sKey);
+  static void       SetMapPropertyValue(xiiAbstractMapProperty* pProp, void* pObject, xiiStringView sKey, const xiiVariant& value);
 
   static void InsertArrayPropertyValue(xiiAbstractArrayProperty* pProp, void* pObject, const xiiVariant& value, xiiUInt32 uiIndex);
   static void RemoveArrayPropertyValue(xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex);
 
   static xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, xiiUInt32 uiPropertyIndex);
-  static xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, const char* szPropertyName); // [tested] via ToolsFoundation
+  static xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, xiiStringView sPropertyName); // [tested] via ToolsFoundation
 
   /// \brief Gathers all RTTI types that are derived from pRtti.
   ///
@@ -112,11 +112,11 @@ public:
   /// \brief Converts an enum or bitfield in its string representation to its value.
   ///
   /// The type of pEnumerationRtti will be automatically detected. The syntax of szValue must equal the MSVC debugger output.
-  static bool StringToEnumeration(const xiiRTTI* pEnumerationRtti, const char* szValue, xiiInt64& out_iValue); // [tested]
+  static bool StringToEnumeration(const xiiRTTI* pEnumerationRtti, xiiStringView sValue, xiiInt64& out_iValue); // [tested]
 
   /// \brief Helper template to shorten the call for xiiEnums
   template <typename T>
-  static bool StringToEnumeration(const char* szValue, xiiEnum<T>& out_value)
+  static bool StringToEnumeration(xiiStringView sValue, xiiEnum<T>& out_value)
   {
     xiiInt64   value;
     const auto retval = StringToEnumeration(xiiGetStaticRTTI<T>(), szValue, value);

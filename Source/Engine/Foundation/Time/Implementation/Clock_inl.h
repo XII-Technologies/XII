@@ -2,14 +2,14 @@
 
 #include <Foundation/Time/Clock.h>
 
-inline void xiiClock::SetClockName(const char* szName)
+inline void xiiClock::SetClockName(xiiStringView sName)
 {
-  m_sName = szName;
+  m_sName = sName;
 }
 
-inline const char* xiiClock::GetClockName() const
+inline xiiStringView xiiClock::GetClockName() const
 {
-  return m_sName.GetData();
+  return m_sName.GetView();
 }
 
 inline void xiiClock::SetTimeStepSmoothing(xiiTimeStepSmoothing* pSmoother)

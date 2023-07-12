@@ -23,15 +23,13 @@ void xiiProcessOptions::AddArgument(const xiiFormatString& arg)
   m_Arguments.PushBack(formatted);
 }
 
-void xiiProcessOptions::AddCommandLine(const char* szCmdLine)
+void xiiProcessOptions::AddCommandLine(xiiStringView sCmdLine)
 {
   xiiStringBuilder curArg;
 
-  xiiStringView cmdView(szCmdLine);
-
   bool isInString = false;
 
-  for (auto it = cmdView.GetIteratorFront(); it.IsValid(); ++it)
+  for (auto it = sCmdLine.GetIteratorFront(); it.IsValid(); ++it)
   {
     bool commit      = false;
     bool commitEmpty = false;
@@ -120,10 +118,10 @@ void xiiProcessOptions::BuildCommandLineString(xiiStringBuilder& ref_sCmd) const
   ref_sCmd.Trim(" ");
 }
 
-void xiiProcess::BuildFullCommandLineString(const xiiProcessOptions& opt, const char* szProcess, xiiStringBuilder& cmd) const
+void xiiProcess::BuildFullCommandLineString(const xiiProcessOptions& opt, xiiStringView sProcess, xiiStringBuilder& cmd) const
 {
   // have to set the full path to the process as the very first argument
-  cmd.Set("\"", szProcess, "\"");
+  cmd.Set("\"", sProcess, "\"");
 
   opt.BuildCommandLineString(cmd);
 }

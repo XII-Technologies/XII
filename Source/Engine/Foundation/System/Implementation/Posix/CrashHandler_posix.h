@@ -16,7 +16,7 @@ static void xiiCrashHandlerFunc() noexcept
     xiiCrashHandler::GetCrashHandler()->HandleCrash(nullptr);
   }
 
-  // restore the original signal handler for the abort signal and raise one so the kernel can do a core dump
+  // Restore the original signal handler for the abort signal and raise one so the kernel can do a core dump.
   std::signal(SIGABRT, SIG_DFL);
   std::raise(SIGABRT);
 }
@@ -27,25 +27,25 @@ static void xiiSignalHandler(int signum)
   switch (signum)
   {
     case SIGINT:
-      xiiLog::Printf("Signal SIGINT: interrupt\n");
+      xiiLog::Printf("Signal SIGINT: Interrupt\n");
       break;
     case SIGILL:
-      xiiLog::Printf("Signal SIGILL: illegal instruction - invalid function image\n");
+      xiiLog::Printf("Signal SIGILL: Illegal Instruction - Invalid Function Image\n");
       break;
     case SIGFPE:
-      xiiLog::Printf("Signal SIGFPE: floating point exception\n");
+      xiiLog::Printf("Signal SIGFPE: Floating Point WException\n");
       break;
     case SIGSEGV:
-      xiiLog::Printf("Signal SIGSEGV: segment violation\n");
+      xiiLog::Printf("Signal SIGSEGV: Segment Violation\n");
       break;
     case SIGTERM:
-      xiiLog::Printf("Signal SIGTERM: Software termination signal from kill\n");
+      xiiLog::Printf("Signal SIGTERM: Software Termination Signal From Kill\n");
       break;
     case SIGABRT:
-      xiiLog::Printf("Signal SIGABRT: abnormal termination triggered by abort call\n");
+      xiiLog::Printf("Signal SIGABRT: Abnormal Termination Triggered By Abort Call\n");
       break;
     default:
-      xiiLog::Printf("Signal %i: unknown signal\n", signal);
+      xiiLog::Printf("Signal %i: Unknown Signal\n", signal);
       break;
   }
 
@@ -99,7 +99,7 @@ void xiiCrashHandler_WriteMiniDump::PrintStackTrace(void* pOsSpecificData)
   {
     if (const char* szName = type->name())
     {
-      int status = -1;
+      xiiInt32 status = -1;
       // Try to print nice name
       if (char* szNiceName = abi::__cxa_demangle(szName, 0, 0, &status))
         xiiLog::Printf("Exception: %s\n", szNiceName);

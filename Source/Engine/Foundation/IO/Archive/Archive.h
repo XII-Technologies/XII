@@ -63,13 +63,13 @@ class xiiArchiveLookupString
 public:
   XII_DECLARE_POD_TYPE();
 
-  xiiArchiveLookupString(xiiUInt64 uiLowerCaseHash, const char* szString, const xiiDynamicArray<xiiUInt8>& archiveAllPathStrings) :
-    m_uiLowerCaseHash(xiiHashingUtils::StringHashTo32(uiLowerCaseHash)), m_szString(szString), m_ArchiveAllPathStrings(archiveAllPathStrings)
+  xiiArchiveLookupString(xiiUInt64 uiLowerCaseHash, xiiStringView sString, const xiiDynamicArray<xiiUInt8>& archiveAllPathStrings) :
+    m_uiLowerCaseHash(xiiHashingUtils::StringHashTo32(uiLowerCaseHash)), m_sString(sString), m_ArchiveAllPathStrings(archiveAllPathStrings)
   {
   }
 
   xiiUInt32                        m_uiLowerCaseHash;
-  const char*                      m_szString = nullptr;
+  xiiStringView                    m_sString;
   const xiiDynamicArray<xiiUInt8>& m_ArchiveAllPathStrings;
 };
 
@@ -86,7 +86,7 @@ struct xiiHashHelper<xiiArchiveStoredString>
   {
     // in case that we want to lookup a string using a xiiArchiveLookupString, we validate
     // that the stored string is actually equal to the lookup string, to enable handling of hash collisions
-    return xiiStringUtils::IsEqual_NoCase(reinterpret_cast<const char*>(&b.m_ArchiveAllPathStrings[a.m_uiSrcStringOffset]), b.m_szString);
+    return b.m_sString.IsEqual_NoCase(reinterpret_cast<const char*>(&b.m_ArchiveAllPathStrings[a.m_uiSrcStringOffset]));
   }
 };
 
@@ -102,7 +102,7 @@ public:
   xiiDynamicArray<xiiUInt8> m_AllPathStrings;
 
   /// \brief Returns the entry index for the given file or xiiInvalidIndex, if not found.
-  xiiUInt32 FindEntry(const char* szFile) const;
+  xiiUInt32 FindEntry(xiiStringView sFile) const;
 
   const char* GetEntryPathString(xiiUInt32 uiEntryIdx) const;
 

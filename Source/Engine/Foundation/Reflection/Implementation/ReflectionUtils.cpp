@@ -388,20 +388,20 @@ namespace
   struct GetMapValueFunc
   {
     template <typename T>
-    XII_FORCE_INLINE void operator()(const xiiAbstractMapProperty* pProp, const void* pObject, const char* szKey, xiiVariant& value)
+    XII_FORCE_INLINE void operator()(const xiiAbstractMapProperty* pProp, const void* pObject, xiiStringView sKey, xiiVariant& value)
     {
       xiiVariantFromProperty<T> getter(value, pProp);
-      getter.m_bSuccess = pProp->GetValue(pObject, szKey, getter);
+      getter.m_bSuccess = pProp->GetValue(pObject, sKey, getter);
     }
   };
 
   struct SetMapValueFunc
   {
     template <typename T>
-    XII_FORCE_INLINE void operator()(xiiAbstractMapProperty* pProp, void* pObject, const char* szKey, const xiiVariant& value)
+    XII_FORCE_INLINE void operator()(xiiAbstractMapProperty* pProp, void* pObject, xiiStringView sKey, const xiiVariant& value)
     {
       xiiVariantToProperty<T> setter(value, pProp);
-      pProp->Insert(pObject, szKey, setter);
+      pProp->Insert(pObject, sKey, setter);
     }
   };
 
@@ -781,24 +781,24 @@ void xiiReflectionUtils::RemoveSetPropertyValue(xiiAbstractSetProperty* pProp, v
   DispatchTo(func, pProp, pProp, pObject, value);
 }
 
-xiiVariant xiiReflectionUtils::GetMapPropertyValue(const xiiAbstractMapProperty* pProp, const void* pObject, const char* szKey)
+xiiVariant xiiReflectionUtils::GetMapPropertyValue(const xiiAbstractMapProperty* pProp, const void* pObject, xiiStringView sKey)
 {
   xiiVariant value;
   XII_ASSERT_DEBUG(pProp != nullptr && pObject != nullptr, "GetMapPropertyValue: missing data!");
 
   GetMapValueFunc func;
-  DispatchTo(func, pProp, pProp, pObject, szKey, value);
+  DispatchTo(func, pProp, pProp, pObject, sKey, value);
   return value;
 }
 
-void xiiReflectionUtils::SetMapPropertyValue(xiiAbstractMapProperty* pProp, void* pObject, const char* szKey, const xiiVariant& value)
+void xiiReflectionUtils::SetMapPropertyValue(xiiAbstractMapProperty* pProp, void* pObject, xiiStringView sKey, const xiiVariant& value)
 {
   XII_ASSERT_DEBUG(pProp != nullptr && pObject != nullptr, "SetMapPropertyValue: missing data!");
   if (pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
     return;
 
   SetMapValueFunc func;
-  DispatchTo(func, pProp, pProp, pObject, szKey, value);
+  DispatchTo(func, pProp, pProp, pObject, sKey, value);
 }
 
 void xiiReflectionUtils::InsertArrayPropertyValue(xiiAbstractArrayProperty* pProp, void* pObject, const xiiVariant& value, xiiUInt32 uiIndex)
@@ -851,12 +851,12 @@ xiiAbstractMemberProperty* xiiReflectionUtils::GetMemberProperty(const xiiRTTI* 
   return nullptr;
 }
 
-xiiAbstractMemberProperty* xiiReflectionUtils::GetMemberProperty(const xiiRTTI* pRtti, const char* szPropertyName)
+xiiAbstractMemberProperty* xiiReflectionUtils::GetMemberProperty(const xiiRTTI* pRtti, xiiStringView sPropertyName)
 {
   if (pRtti == nullptr)
     return nullptr;
 
-  if (xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropertyName))
+  if (xiiAbstractProperty* pProp = pRtti->FindPropertyByName(sPropertyName))
   {
     if (pProp->GetCategory() == xiiPropertyCategory::Member)
       return static_cast<xiiAbstractMemberProperty*>(pProp);
@@ -978,7 +978,7 @@ bool xiiReflectionUtils::EnumerationToString(const xiiRTTI* pEnumerationRtti, xi
         xiiVariant value = static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant();
         if (value.ConvertTo<xiiInt64>() == iValue)
         {
-          out_sOutput = conversionMode == EnumConversionMode::FullyQualifiedName ? pProp->GetPropertyName() : xiiStringUtils::FindLastSubString(pProp->GetPropertyName(), "::") + 2;
+          out_sOutput = conversionMode == EnumConversionMode::FullyQualifiedName ? pProp->GetPropertyName() : pProp->GetPropertyName().FindLastSubString("::") + 2;
           return true;
         }
       }
@@ -994,7 +994,7 @@ bool xiiReflectionUtils::EnumerationToString(const xiiRTTI* pEnumerationRtti, xi
         xiiVariant value = static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant();
         if ((value.ConvertTo<xiiInt64>() & iValue) != 0)
         {
-          out_sOutput.Append(conversionMode == EnumConversionMode::FullyQualifiedName ? pProp->GetPropertyName() : xiiStringUtils::FindLastSubString(pProp->GetPropertyName(), "::") + 2, "|");
+          out_sOutput.Append(conversionMode == EnumConversionMode::FullyQualifiedName ? pProp->GetPropertyName() : pProp->GetPropertyName().FindLastSubString("::") + 2, "|");
         }
       }
     }
@@ -1023,14 +1023,14 @@ void xiiReflectionUtils::GetEnumKeysAndValues(const xiiRTTI* pEnumerationRtti, x
         xiiVariant value = static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant();
 
         auto& e    = ref_entries.ExpandAndGetRef();
-        e.m_sKey   = conversionMode == EnumConversionMode::FullyQualifiedName ? pProp->GetPropertyName() : xiiStringUtils::FindLastSubString(pProp->GetPropertyName(), "::") + 2;
+        e.m_sKey   = conversionMode == EnumConversionMode::FullyQualifiedName ? pProp->GetPropertyName() : pProp->GetPropertyName().FindLastSubString("::") + 2;
         e.m_iValue = value.ConvertTo<xiiInt32>();
       }
     }
   }
 }
 
-bool xiiReflectionUtils::StringToEnumeration(const xiiRTTI* pEnumerationRtti, const char* szValue, xiiInt64& out_iValue)
+bool xiiReflectionUtils::StringToEnumeration(const xiiRTTI* pEnumerationRtti, xiiStringView sValue, xiiInt64& out_iValue)
 {
   out_iValue = 0;
   if (pEnumerationRtti->IsDerivedFrom<xiiEnumBase>())
@@ -1040,8 +1040,8 @@ bool xiiReflectionUtils::StringToEnumeration(const xiiRTTI* pEnumerationRtti, co
       if (pProp->GetCategory() == xiiPropertyCategory::Constant)
       {
         // Testing fully qualified and short value name
-        const char* valueNameOnly = xiiStringUtils::FindLastSubString(pProp->GetPropertyName(), "::", nullptr);
-        if (xiiStringUtils::IsEqual(pProp->GetPropertyName(), szValue) || (valueNameOnly != nullptr && xiiStringUtils::IsEqual(valueNameOnly + 2, szValue)))
+        const char* valueNameOnly = pProp->GetPropertyName().FindLastSubString("::", nullptr);
+        if ((pProp->GetPropertyName() == sValue) || (valueNameOnly != nullptr && sValue.IsEqual(valueNameOnly + 2)))
         {
           xiiVariant value = static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant();
           out_iValue       = value.ConvertTo<xiiInt64>();
@@ -1053,7 +1053,7 @@ bool xiiReflectionUtils::StringToEnumeration(const xiiRTTI* pEnumerationRtti, co
   }
   else if (pEnumerationRtti->IsDerivedFrom<xiiBitflagsBase>())
   {
-    xiiStringBuilder                  temp = szValue;
+    xiiStringBuilder                  temp = sValue;
     xiiHybridArray<xiiStringView, 32> values;
     temp.Split(false, values, "|");
     for (auto sValue : values)
@@ -1063,7 +1063,7 @@ bool xiiReflectionUtils::StringToEnumeration(const xiiRTTI* pEnumerationRtti, co
         if (pProp->GetCategory() == xiiPropertyCategory::Constant)
         {
           // Testing fully qualified and short value name
-          const char* valueNameOnly = xiiStringUtils::FindLastSubString(pProp->GetPropertyName(), "::", nullptr);
+          const char* valueNameOnly = pProp->GetPropertyName().FindLastSubString("::", nullptr);
           if (sValue.IsEqual(pProp->GetPropertyName()) || (valueNameOnly != nullptr && sValue.IsEqual(valueNameOnly + 2)))
           {
             xiiVariant value = static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant();
@@ -1086,7 +1086,7 @@ xiiInt64 xiiReflectionUtils::DefaultEnumerationValue(const xiiRTTI* pEnumeration
   if (pEnumerationRtti->IsDerivedFrom<xiiEnumBase>() || pEnumerationRtti->IsDerivedFrom<xiiBitflagsBase>())
   {
     auto pProp = pEnumerationRtti->GetProperties()[0];
-    XII_ASSERT_DEBUG(pProp->GetCategory() == xiiPropertyCategory::Constant && xiiStringUtils::EndsWith(pProp->GetPropertyName(), "::Default"), "First enumeration property must be the default value constant.");
+    XII_ASSERT_DEBUG(pProp->GetCategory() == xiiPropertyCategory::Constant && pProp->GetPropertyName().EndsWith("::Default"), "First enumeration property must be the default value constant.");
     return static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant().ConvertTo<xiiInt64>();
   }
   else

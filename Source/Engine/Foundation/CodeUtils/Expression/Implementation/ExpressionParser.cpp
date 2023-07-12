@@ -265,17 +265,17 @@ xiiResult xiiExpressionParser::ParseVariableDefinition(xiiEnum<xiiExpressionAST:
   xiiExpressionAST::Node* pVariableNode;
   if (m_KnownVariables.TryGetValue(sHashedVarName, pVariableNode))
   {
-    const char* szExisting = "a variable";
+    xiiStringView sExisting = "a variable";
     if (xiiExpressionAST::NodeType::IsInput(pVariableNode->m_Type))
     {
-      szExisting = "an input";
+      sExisting = "an input";
     }
     else if (xiiExpressionAST::NodeType::IsOutput(pVariableNode->m_Type))
     {
-      szExisting = "an output";
+      sExisting = "an output";
     }
 
-    ReportError(pIdentifierToken, xiiFmt("Local variable '{}' cannot be defined because {} of the same name already exists", pIdentifierToken->m_DataView, szExisting));
+    ReportError(pIdentifierToken, xiiFmt("Local variable '{}' cannot be defined because {} of the same name already exists", pIdentifierToken->m_DataView, sExisting));
     return XII_FAILURE;
   }
 

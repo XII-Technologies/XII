@@ -44,7 +44,7 @@ private:
   xiiExpressionAST::Node* EnsureExpectedType(xiiExpressionAST::Node* pNode, xiiExpressionAST::DataType::Enum expectedType);
   xiiExpressionAST::Node* Unpack(xiiExpressionAST::Node* pNode, bool bUnassignedError = true);
 
-  xiiResult Expect(const char* szToken, const xiiToken** pExpectedToken = nullptr);
+  xiiResult Expect(xiiStringView sToken, const xiiToken** pExpectedToken = nullptr);
   xiiResult Expect(xiiTokenType::Enum Type, const xiiToken** pExpectedToken = nullptr);
 
   void ReportError(const xiiToken* pToken, const xiiFormatString& message);

@@ -28,7 +28,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCategoryAttribute, 1, xiiRTTIDefaultAllocato
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -50,7 +50,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInDevelopmentAttribute, 1, xiiRTTIDefaultAll
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 
-const char* xiiInDevelopmentAttribute::GetString() const
+xiiStringView xiiInDevelopmentAttribute::GetString() const
 {
   switch (m_Phase)
   {
@@ -75,7 +75,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTitleAttribute, 1, xiiRTTIDefaultAllocator<x
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -108,7 +108,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSuffixAttribute, 1, xiiRTTIDefaultAllocator<
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -123,7 +123,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMinValueTextAttribute, 1, xiiRTTIDefaultAllo
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -169,23 +169,22 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGroupAttribute, 1, xiiRTTIDefaultAllocator<x
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*, float),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, float),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, float),
   }
   XII_END_FUNCTIONS;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiGroupAttribute::xiiGroupAttribute()
-= default;
+xiiGroupAttribute::xiiGroupAttribute() = default;
 
-xiiGroupAttribute::xiiGroupAttribute(const char* szGroup, float fOrder)
-: m_sGroup(szGroup), m_fOrder(fOrder)
+xiiGroupAttribute::xiiGroupAttribute(xiiStringView sGroup, float fOrder)
+: m_sGroup(sGroup), m_fOrder(fOrder)
 {
 }
 
-xiiGroupAttribute::xiiGroupAttribute(const char* szGroup, const char* szIconName, float fOrder)
-: m_sGroup(szGroup), m_sIconName(szIconName), m_fOrder(fOrder)
+xiiGroupAttribute::xiiGroupAttribute(xiiStringView sGroup, xiiStringView sIconName, float fOrder)
+: m_sGroup(sGroup), m_sIconName(sIconName), m_fOrder(fOrder)
 {
 }
 
@@ -204,7 +203,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTagSetWidgetAttribute, 1, xiiRTTIDefaultAllo
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -222,7 +221,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExposedParametersAttribute, 1, xiiRTTIDefaul
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -238,7 +237,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDynamicDefaultValueAttribute, 1, xiiRTTIDefa
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -273,7 +272,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFileBrowserAttribute, 1, xiiRTTIDefaultAlloc
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -289,7 +288,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAssetBrowserAttribute, 1, xiiRTTIDefaultAllo
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -304,7 +303,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDynamicEnumAttribute, 1, xiiRTTIDefaultAlloc
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-   XII_CONSTRUCTOR_PROPERTY(const char*),
+   XII_CONSTRUCTOR_PROPERTY(xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -319,7 +318,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDynamicStringEnumAttribute, 1, xiiRTTIDefaul
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -345,8 +344,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiManipulatorAttribute, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiManipulatorAttribute::xiiManipulatorAttribute(const char* szProperty1, const char* szProperty2 /*= nullptr*/, const char* szProperty3 /*= nullptr*/, const char* szProperty4 /*= nullptr*/, const char* szProperty5 /*= nullptr*/, const char* szProperty6 /*= nullptr*/) :
-  m_sProperty1(szProperty1), m_sProperty2(szProperty2), m_sProperty3(szProperty3), m_sProperty4(szProperty4), m_sProperty5(szProperty5), m_sProperty6(szProperty6)
+xiiManipulatorAttribute::xiiManipulatorAttribute(xiiStringView sProperty1, xiiStringView sProperty2 /*= nullptr*/, xiiStringView sProperty3 /*= nullptr*/, xiiStringView sProperty4 /*= nullptr*/, xiiStringView sProperty5 /*= nullptr*/, xiiStringView sProperty6 /*= nullptr*/) :
+  m_sProperty1(sProperty1), m_sProperty2(sProperty2), m_sProperty3(sProperty3), m_sProperty4(sProperty4), m_sProperty5(sProperty5), m_sProperty6(sProperty6)
 {
 }
 
@@ -357,8 +356,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSphereManipulatorAttribute, 1, xiiRTTIDefaul
 {
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -366,12 +365,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiSphereManipulatorAttribute::xiiSphereManipulatorAttribute() :
-  xiiManipulatorAttribute(nullptr)
+  xiiManipulatorAttribute({})
 {
 }
 
-xiiSphereManipulatorAttribute::xiiSphereManipulatorAttribute(const char* szOuterRadius, const char* szInnerRadius) :
-  xiiManipulatorAttribute(szOuterRadius, szInnerRadius)
+xiiSphereManipulatorAttribute::xiiSphereManipulatorAttribute(xiiStringView sOuterRadius, xiiStringView sInnerRadius) :
+  xiiManipulatorAttribute(sOuterRadius, sInnerRadius)
 {
 }
 
@@ -382,7 +381,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCapsuleManipulatorAttribute, 1, xiiRTTIDefau
 {
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -390,12 +389,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiCapsuleManipulatorAttribute::xiiCapsuleManipulatorAttribute() :
-  xiiManipulatorAttribute(nullptr)
+  xiiManipulatorAttribute({})
 {
 }
 
-xiiCapsuleManipulatorAttribute::xiiCapsuleManipulatorAttribute(const char* szLength, const char* szRadius) :
-  xiiManipulatorAttribute(szLength, szRadius)
+xiiCapsuleManipulatorAttribute::xiiCapsuleManipulatorAttribute(xiiStringView sLength, xiiStringView sRadius) :
+  xiiManipulatorAttribute(sLength, sRadius)
 {
 }
 
@@ -413,10 +412,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBoxManipulatorAttribute, 1, xiiRTTIDefaultAl
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*, bool, float),
-    XII_CONSTRUCTOR_PROPERTY(const char*, bool, float),
-    XII_CONSTRUCTOR_PROPERTY(const char*, bool, float, const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, bool, float, const char*, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, bool, float),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, bool, float),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, bool, float, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, bool, float, xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -424,12 +423,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiBoxManipulatorAttribute::xiiBoxManipulatorAttribute() :
-  xiiManipulatorAttribute(nullptr)
+  xiiManipulatorAttribute({})
 {
 }
 
-xiiBoxManipulatorAttribute::xiiBoxManipulatorAttribute(const char* szSizeProperty, float fSizeScale, bool bRecenterParent, const char* szOffsetProperty, const char* szRotationProperty) :
-  xiiManipulatorAttribute(szSizeProperty, szOffsetProperty, szRotationProperty), m_bRecenterParent(bRecenterParent), m_fSizeScale(fSizeScale)
+xiiBoxManipulatorAttribute::xiiBoxManipulatorAttribute(xiiStringView sSizeProperty, float fSizeScale, bool bRecenterParent, xiiStringView sOffsetProperty, xiiStringView sRotationProperty) :
+  xiiManipulatorAttribute(sSizeProperty, sOffsetProperty, sRotationProperty), m_bRecenterParent(bRecenterParent), m_fSizeScale(fSizeScale)
 {
 }
 
@@ -440,8 +439,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNonUniformBoxManipulatorAttribute, 1, xiiRTT
 {
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, const char*, const char*, const char*, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiStringView, xiiStringView, xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -449,23 +448,17 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiNonUniformBoxManipulatorAttribute::xiiNonUniformBoxManipulatorAttribute() :
-  xiiManipulatorAttribute(nullptr)
+  xiiManipulatorAttribute({})
 {
 }
 
-xiiNonUniformBoxManipulatorAttribute::xiiNonUniformBoxManipulatorAttribute(
-  const char* szNegXProp,
-  const char* szPosXProp,
-  const char* szNegYProp,
-  const char* szPosYProp,
-  const char* szNegZProp,
-  const char* szPosZProp) :
-  xiiManipulatorAttribute(szNegXProp, szPosXProp, szNegYProp, szPosYProp, szNegZProp, szPosZProp)
+xiiNonUniformBoxManipulatorAttribute::xiiNonUniformBoxManipulatorAttribute(xiiStringView sNegXProp, xiiStringView sPosXProp, xiiStringView sNegYProp, xiiStringView sPosYProp, xiiStringView sNegZProp, xiiStringView sPosZProp) :
+  xiiManipulatorAttribute(sNegXProp, sPosXProp, sNegYProp, sPosYProp, sNegZProp, sPosZProp)
 {
 }
 
-xiiNonUniformBoxManipulatorAttribute::xiiNonUniformBoxManipulatorAttribute(const char* szSizeX, const char* szSizeY, const char* szSizeZ) :
-  xiiManipulatorAttribute(szSizeX, szSizeY, szSizeZ)
+xiiNonUniformBoxManipulatorAttribute::xiiNonUniformBoxManipulatorAttribute(xiiStringView sSizeX, xiiStringView sSizeY, xiiStringView sSizeZ) :
+  xiiManipulatorAttribute(sSizeX, sSizeY, sSizeZ)
 {
 }
 
@@ -476,7 +469,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiConeLengthManipulatorAttribute, 1, xiiRTTIDe
 {
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -484,12 +477,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiConeLengthManipulatorAttribute::xiiConeLengthManipulatorAttribute() :
-  xiiManipulatorAttribute(nullptr)
+  xiiManipulatorAttribute({})
 {
 }
 
-xiiConeLengthManipulatorAttribute::xiiConeLengthManipulatorAttribute(const char* szRadiusProperty) :
-  xiiManipulatorAttribute(szRadiusProperty)
+xiiConeLengthManipulatorAttribute::xiiConeLengthManipulatorAttribute(xiiStringView sRadiusProperty) :
+  xiiManipulatorAttribute(sRadiusProperty)
 {
 }
 
@@ -505,9 +498,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiConeAngleManipulatorAttribute, 1, xiiRTTIDef
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, float),
-    XII_CONSTRUCTOR_PROPERTY(const char*, float, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -515,12 +508,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiConeAngleManipulatorAttribute::xiiConeAngleManipulatorAttribute() :
-  xiiManipulatorAttribute(nullptr)
+  xiiManipulatorAttribute({})
 {
 }
 
-xiiConeAngleManipulatorAttribute::xiiConeAngleManipulatorAttribute(const char* szAngleProperty, float fScale, const char* szRadiusProperty) :
-  xiiManipulatorAttribute(szAngleProperty, szRadiusProperty), m_fScale(fScale)
+xiiConeAngleManipulatorAttribute::xiiConeAngleManipulatorAttribute(xiiStringView sAngleProperty, float fScale, xiiStringView sRadiusProperty) :
+  xiiManipulatorAttribute(sAngleProperty, sRadiusProperty), m_fScale(fScale)
 {
 }
 
@@ -531,7 +524,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransformManipulatorAttribute, 1, xiiRTTIDef
 {
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -539,17 +532,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiTransformManipulatorAttribute::xiiTransformManipulatorAttribute() :
-  xiiManipulatorAttribute(nullptr)
+  xiiManipulatorAttribute({})
 {
 }
 
-xiiTransformManipulatorAttribute::xiiTransformManipulatorAttribute(
-  const char* szTranslateProperty,
-  const char* szRotateProperty,
-  const char* szScaleProperty,
-  const char* szOffsetTranslation,
-  const char* szOffsetRotation) :
-  xiiManipulatorAttribute(szTranslateProperty, szRotateProperty, szScaleProperty, szOffsetTranslation, szOffsetRotation)
+xiiTransformManipulatorAttribute::xiiTransformManipulatorAttribute(xiiStringView sTranslateProperty, xiiStringView sRotateProperty, xiiStringView sScaleProperty, xiiStringView sOffsetTranslation, xiiStringView sOffsetRotation) :
+  xiiManipulatorAttribute(sTranslateProperty, sRotateProperty, sScaleProperty, sOffsetTranslation, sOffsetRotation)
 {
 }
 
@@ -560,7 +548,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBoneManipulatorAttribute, 1, xiiRTTIDefaultA
 {
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -568,12 +556,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiBoneManipulatorAttribute::xiiBoneManipulatorAttribute() :
-  xiiManipulatorAttribute(nullptr)
+  xiiManipulatorAttribute({})
 {
 }
 
-xiiBoneManipulatorAttribute::xiiBoneManipulatorAttribute(const char* szTransformProperty, const char* szBindTo) :
-  xiiManipulatorAttribute(szTransformProperty, szBindTo)
+xiiBoneManipulatorAttribute::xiiBoneManipulatorAttribute(xiiStringView sTransformProperty, xiiStringView sBindTo) :
+  xiiManipulatorAttribute(sTransformProperty, sBindTo)
 {
 }
 
@@ -604,8 +592,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualizerAttribute, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualizerAttribute::xiiVisualizerAttribute(const char* szProperty1, const char* szProperty2 /*= nullptr*/, const char* szProperty3 /*= nullptr*/, const char* szProperty4 /*= nullptr*/, const char* szProperty5 /*= nullptr*/) :
-  m_sProperty1(szProperty1), m_sProperty2(szProperty2), m_sProperty3(szProperty3), m_sProperty4(szProperty4), m_sProperty5(szProperty5)
+xiiVisualizerAttribute::xiiVisualizerAttribute(xiiStringView sProperty1, xiiStringView sProperty2 /*= nullptr*/, xiiStringView sProperty3 /*= nullptr*/, xiiStringView sProperty4 /*= nullptr*/, xiiStringView sProperty5 /*= nullptr*/) :
+  m_sProperty1(sProperty1), m_sProperty2(sProperty2), m_sProperty3(sProperty3), m_sProperty4(sProperty4), m_sProperty5(sProperty5)
 {
 }
 
@@ -623,14 +611,14 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBoxVisualizerAttribute, 1, xiiRTTIDefaultAll
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*, float, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>, xiiVec3, const char*, const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, float, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>, xiiVec3, const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, float, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>, xiiVec3),
-    XII_CONSTRUCTOR_PROPERTY(const char*, float, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>),
-    XII_CONSTRUCTOR_PROPERTY(const char*, float, const xiiColor&, const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, float, const xiiColor&),
-    XII_CONSTRUCTOR_PROPERTY(const char*, float),
-    XII_CONSTRUCTOR_PROPERTY(const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>, xiiVec3, xiiStringView, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>, xiiVec3, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>, xiiVec3),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, const xiiColor&, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, const xiiColor&),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -638,12 +626,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiBoxVisualizerAttribute::xiiBoxVisualizerAttribute() :
-  xiiVisualizerAttribute(nullptr)
+  xiiVisualizerAttribute({})
 {
 }
 
-xiiBoxVisualizerAttribute::xiiBoxVisualizerAttribute(const char* szSizeProperty, float fSizeScale, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::ZeroVector*/, const char* szOffsetProperty /*= nullptr*/, const char* szRotationProperty /*= nullptr*/) :
-  xiiVisualizerAttribute(szSizeProperty, szColorProperty, szOffsetProperty, szRotationProperty), m_Color(fixedColor), m_vOffsetOrScale(vOffsetOrScale), m_fSizeScale(fSizeScale)
+xiiBoxVisualizerAttribute::xiiBoxVisualizerAttribute(xiiStringView sSizeProperty, float fSizeScale, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, xiiStringView sColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::ZeroVector*/, xiiStringView sOffsetProperty /*= nullptr*/, xiiStringView sRotationProperty /*= nullptr*/) :
+  xiiVisualizerAttribute(sSizeProperty, sColorProperty, sOffsetProperty, sRotationProperty), m_Color(fixedColor), m_vOffsetOrScale(vOffsetOrScale), m_fSizeScale(fSizeScale)
 {
   m_Anchor = anchor;
 }
@@ -661,12 +649,12 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSphereVisualizerAttribute, 1, xiiRTTIDefault
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>, xiiVec3, const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>, xiiVec3),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const xiiColor&, const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const xiiColor&),
-    XII_CONSTRUCTOR_PROPERTY(const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>, xiiVec3, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>, xiiVec3),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, const xiiColor&, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, const xiiColor&),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -674,12 +662,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiSphereVisualizerAttribute::xiiSphereVisualizerAttribute() :
-  xiiVisualizerAttribute(nullptr)
+  xiiVisualizerAttribute({})
 {
 }
 
-xiiSphereVisualizerAttribute::xiiSphereVisualizerAttribute(const char* szRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::ZeroVector*/, const char* szOffsetProperty /*= nullptr*/) :
-  xiiVisualizerAttribute(szRadiusProperty, szColorProperty, szOffsetProperty), m_Color(fixedColor), m_vOffsetOrScale(vOffsetOrScale)
+xiiSphereVisualizerAttribute::xiiSphereVisualizerAttribute(xiiStringView sRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, xiiStringView sColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::ZeroVector*/, xiiStringView sOffsetProperty /*= nullptr*/) :
+  xiiVisualizerAttribute(sRadiusProperty, sColorProperty, sOffsetProperty), m_Color(fixedColor), m_vOffsetOrScale(vOffsetOrScale)
 {
   m_Anchor = anchor;
 }
@@ -696,10 +684,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCapsuleVisualizerAttribute, 1, xiiRTTIDefaul
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, const xiiColor&, const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, const xiiColor&),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, const xiiColor&, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, const xiiColor&),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -707,12 +695,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiCapsuleVisualizerAttribute::xiiCapsuleVisualizerAttribute() :
-  xiiVisualizerAttribute(nullptr)
+  xiiVisualizerAttribute({})
 {
 }
 
-xiiCapsuleVisualizerAttribute::xiiCapsuleVisualizerAttribute(const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/) :
-  xiiVisualizerAttribute(szHeightProperty, szRadiusProperty, szColorProperty), m_Color(fixedColor)
+xiiCapsuleVisualizerAttribute::xiiCapsuleVisualizerAttribute(xiiStringView sHeightProperty, xiiStringView sRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, xiiStringView sColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/) :
+  xiiVisualizerAttribute(sHeightProperty, sRadiusProperty, sColorProperty), m_Color(fixedColor)
 {
   m_Anchor = anchor;
 }
@@ -731,18 +719,18 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCylinderVisualizerAttribute, 1, xiiRTTIDefau
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, const char*, const char*, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>, xiiVec3, const char*),
-    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, const char*, const char*, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>, xiiVec3),
-    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, const char*, const char*, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>),
-    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, const char*, const char*, const xiiColor&, const char*),
-    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, const char*, const char*, const xiiColor&),
-    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, const char*, const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, const char*, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>, xiiVec3, const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, const char*, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>, xiiVec3),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, const char*, const xiiColor&, const char*, xiiBitflags<xiiVisualizerAnchor>),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, const char*, const xiiColor&, const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, const char*, const xiiColor&),
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, xiiStringView, xiiStringView, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>, xiiVec3, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, xiiStringView, xiiStringView, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>, xiiVec3),
+    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, xiiStringView, xiiStringView, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>),
+    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, xiiStringView, xiiStringView, const xiiColor&, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, xiiStringView, xiiStringView, const xiiColor&),
+    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, xiiStringView, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiStringView, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>, xiiVec3, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiStringView, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>, xiiVec3),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiStringView, const xiiColor&, xiiStringView, xiiBitflags<xiiVisualizerAnchor>),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiStringView, const xiiColor&, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiStringView, const xiiColor&),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -750,18 +738,18 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiCylinderVisualizerAttribute::xiiCylinderVisualizerAttribute() :
-  xiiVisualizerAttribute(nullptr)
+  xiiVisualizerAttribute({})
 {
 }
 
-xiiCylinderVisualizerAttribute::xiiCylinderVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::ZeroVector*/, const char* szOffsetProperty /*= nullptr*/) :
-  xiiVisualizerAttribute(szHeightProperty, szRadiusProperty, szColorProperty, szOffsetProperty), m_Color(fixedColor), m_vOffsetOrScale(vOffsetOrScale), m_Axis(axis)
+xiiCylinderVisualizerAttribute::xiiCylinderVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, xiiStringView sHeightProperty, xiiStringView sRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, xiiStringView sColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::ZeroVector*/, xiiStringView sOffsetProperty /*= nullptr*/) :
+  xiiVisualizerAttribute(sHeightProperty, sRadiusProperty, sColorProperty, sOffsetProperty), m_Color(fixedColor), m_vOffsetOrScale(vOffsetOrScale), m_Axis(axis)
 {
   m_Anchor = anchor;
 }
 
-xiiCylinderVisualizerAttribute::xiiCylinderVisualizerAttribute(const char* szAxisProperty, const char* szHeightProperty, const char* szRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::ZeroVector()*/, const char* szOffsetProperty /*= nullptr*/) :
-  xiiVisualizerAttribute(szHeightProperty, szRadiusProperty, szColorProperty, szOffsetProperty, szAxisProperty), m_Color(fixedColor), m_vOffsetOrScale(vOffsetOrScale), m_Axis(xiiBasisAxis::Default)
+xiiCylinderVisualizerAttribute::xiiCylinderVisualizerAttribute(xiiStringView sAxisProperty, xiiStringView sHeightProperty, xiiStringView sRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, xiiStringView sColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::ZeroVector()*/, xiiStringView sOffsetProperty /*= nullptr*/) :
+  xiiVisualizerAttribute(sHeightProperty, sRadiusProperty, sColorProperty, sOffsetProperty, sAxisProperty), m_Color(fixedColor), m_vOffsetOrScale(vOffsetOrScale), m_Axis(xiiBasisAxis::Default)
 {
   m_Anchor = anchor;
 }
@@ -780,14 +768,14 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDirectionVisualizerAttribute, 1, xiiRTTIDefa
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, float, const xiiColor&, const char*, const char*),
-    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, float, const xiiColor&, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, float, const xiiColor&, xiiStringView, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, float, const xiiColor&, xiiStringView),
     XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, float, const xiiColor&),
     XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, float),
-    XII_CONSTRUCTOR_PROPERTY(const char*, float, const xiiColor&, const char*, const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, float, const xiiColor&, const char*),
-    XII_CONSTRUCTOR_PROPERTY(const char*, float, const xiiColor&),
-    XII_CONSTRUCTOR_PROPERTY(const char*, float),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, const xiiColor&, xiiStringView, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, const xiiColor&, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, const xiiColor&),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float),
   }
   XII_END_FUNCTIONS;
 }
@@ -795,17 +783,17 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiDirectionVisualizerAttribute::xiiDirectionVisualizerAttribute() :
-  xiiVisualizerAttribute(nullptr), m_Axis(xiiBasisAxis::PositiveX), m_fScale(1.0f), m_Color(xiiColor::White)
+  xiiVisualizerAttribute({}), m_Axis(xiiBasisAxis::PositiveX), m_fScale(1.0f), m_Color(xiiColor::White)
 {
 }
 
-xiiDirectionVisualizerAttribute::xiiDirectionVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, float fScale, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, const char* szLengthProperty /*= nullptr*/) :
-  xiiVisualizerAttribute(szColorProperty, szLengthProperty), m_Axis(axis), m_fScale(fScale), m_Color(fixedColor)
+xiiDirectionVisualizerAttribute::xiiDirectionVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, float fScale, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, xiiStringView sColorProperty /*= nullptr*/, xiiStringView sLengthProperty /*= nullptr*/) :
+  xiiVisualizerAttribute(sColorProperty, sLengthProperty), m_Axis(axis), m_fScale(fScale), m_Color(fixedColor)
 {
 }
 
-xiiDirectionVisualizerAttribute::xiiDirectionVisualizerAttribute(const char* szAxisProperty, float fScale, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty /*= nullptr*/, const char* szLengthProperty /*= nullptr*/) :
-  xiiVisualizerAttribute(szColorProperty, szLengthProperty, szAxisProperty), m_Axis(xiiBasisAxis::PositiveX), m_fScale(fScale), m_Color(fixedColor)
+xiiDirectionVisualizerAttribute::xiiDirectionVisualizerAttribute(xiiStringView sAxisProperty, float fScale, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, xiiStringView sColorProperty /*= nullptr*/, xiiStringView sLengthProperty /*= nullptr*/) :
+  xiiVisualizerAttribute(sColorProperty, sLengthProperty, sAxisProperty), m_Axis(xiiBasisAxis::PositiveX), m_fScale(fScale), m_Color(fixedColor)
 {
 }
 
@@ -823,9 +811,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiConeVisualizerAttribute, 1, xiiRTTIDefaultAl
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, const char*, float, const char*, const xiiColor&, const char*),
-    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, const char*, float, const char*, const xiiColor&),
-    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, const char*, float, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, xiiStringView, float, xiiStringView, const xiiColor&, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, xiiStringView, float, xiiStringView, const xiiColor&),
+    XII_CONSTRUCTOR_PROPERTY(xiiEnum<xiiBasisAxis>, xiiStringView, float, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -833,12 +821,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiConeVisualizerAttribute::xiiConeVisualizerAttribute() :
-  xiiVisualizerAttribute(nullptr), m_Axis(xiiBasisAxis::PositiveX), m_Color(xiiColor::Red), m_fScale(1.0f)
+  xiiVisualizerAttribute({}), m_Axis(xiiBasisAxis::PositiveX), m_Color(xiiColor::Red), m_fScale(1.0f)
 {
 }
 
-xiiConeVisualizerAttribute::xiiConeVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, const char* szAngleProperty, float fScale, const char* szRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, const char* szColorProperty) :
-  xiiVisualizerAttribute(szAngleProperty, szRadiusProperty, szColorProperty), m_Axis(axis), m_Color(fixedColor), m_fScale(fScale)
+xiiConeVisualizerAttribute::xiiConeVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, xiiStringView sAngleProperty, float fScale, xiiStringView sRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, xiiStringView sColorProperty) :
+  xiiVisualizerAttribute(sAngleProperty, sRadiusProperty, sColorProperty), m_Axis(axis), m_Color(fixedColor), m_fScale(fScale)
 {
 }
 
@@ -851,7 +839,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCameraVisualizerAttribute, 1, xiiRTTIDefault
   // XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(const char*, const char*, const char*, const char*, const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiStringView, xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -859,12 +847,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiCameraVisualizerAttribute::xiiCameraVisualizerAttribute() :
-  xiiVisualizerAttribute(nullptr)
+  xiiVisualizerAttribute({})
 {
 }
 
-xiiCameraVisualizerAttribute::xiiCameraVisualizerAttribute(const char* szModeProperty, const char* szFovProperty, const char* szOrthoDimProperty, const char* szNearPlaneProperty, const char* szFarPlaneProperty) :
-  xiiVisualizerAttribute(szModeProperty, szFovProperty, szOrthoDimProperty, szNearPlaneProperty, szFarPlaneProperty)
+xiiCameraVisualizerAttribute::xiiCameraVisualizerAttribute(xiiStringView sModeProperty, xiiStringView sFovProperty, xiiStringView sOrthoDimProperty, xiiStringView sNearPlaneProperty, xiiStringView sFarPlaneProperty) :
+  xiiVisualizerAttribute(sModeProperty, sFovProperty, sOrthoDimProperty, sNearPlaneProperty, sFarPlaneProperty)
 {
 }
 
@@ -924,48 +912,48 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScriptableFunctionAttribute, 1, xiiRTTIDefau
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiScriptableFunctionAttribute::xiiScriptableFunctionAttribute(ArgType argType1 /*= In*/, const char* szArg1 /*= nullptr*/, ArgType argType2 /*= In*/, const char* szArg2 /*= nullptr*/, ArgType argType3 /*= In*/, const char* szArg3 /*= nullptr*/, ArgType argType4 /*= In*/, const char* szArg4 /*= nullptr*/, ArgType argType5 /*= In*/, const char* szArg5 /*= nullptr*/, ArgType argType6 /*= In*/, const char* szArg6 /*= nullptr*/)
+xiiScriptableFunctionAttribute::xiiScriptableFunctionAttribute(ArgType argType1 /*= In*/, xiiStringView sArg1 /*= nullptr*/, ArgType argType2 /*= In*/, xiiStringView sArg2 /*= nullptr*/, ArgType argType3 /*= In*/, xiiStringView sArg3 /*= nullptr*/, ArgType argType4 /*= In*/, xiiStringView sArg4 /*= nullptr*/, ArgType argType5 /*= In*/, xiiStringView sArg5 /*= nullptr*/, ArgType argType6 /*= In*/, xiiStringView sArg6 /*= nullptr*/)
 {
   {
-    if (xiiStringUtils::IsNullOrEmpty(szArg1))
+    if (sArg1.IsEmpty())
       return;
 
-    m_ArgNames.PushBack(szArg1);
+    m_ArgNames.PushBack(sArg1);
     m_ArgTypes.PushBack(argType1);
   }
   {
-    if (xiiStringUtils::IsNullOrEmpty(szArg2))
+    if (sArg2.IsEmpty())
       return;
 
-    m_ArgNames.PushBack(szArg2);
+    m_ArgNames.PushBack(sArg2);
     m_ArgTypes.PushBack(argType2);
   }
   {
-    if (xiiStringUtils::IsNullOrEmpty(szArg3))
+    if (sArg3.IsEmpty())
       return;
 
-    m_ArgNames.PushBack(szArg3);
+    m_ArgNames.PushBack(sArg3);
     m_ArgTypes.PushBack(argType3);
   }
   {
-    if (xiiStringUtils::IsNullOrEmpty(szArg4))
+    if (sArg4.IsEmpty())
       return;
 
-    m_ArgNames.PushBack(szArg4);
+    m_ArgNames.PushBack(sArg4);
     m_ArgTypes.PushBack(argType4);
   }
   {
-    if (xiiStringUtils::IsNullOrEmpty(szArg5))
+    if (sArg5.IsEmpty())
       return;
 
-    m_ArgNames.PushBack(szArg5);
+    m_ArgNames.PushBack(sArg5);
     m_ArgTypes.PushBack(argType5);
   }
   {
-    if (xiiStringUtils::IsNullOrEmpty(szArg6))
+    if (sArg6.IsEmpty())
       return;
 
-    m_ArgNames.PushBack(szArg6);
+    m_ArgNames.PushBack(sArg6);
     m_ArgTypes.PushBack(argType6);
   }
 }
@@ -998,8 +986,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDynamicPinAttribute, 1, xiiRTTIDefaultAlloca
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiDynamicPinAttribute::xiiDynamicPinAttribute(const char* szProperty) :
-  m_sProperty(szProperty)
+xiiDynamicPinAttribute::xiiDynamicPinAttribute(xiiStringView sProperty) :
+  m_sProperty(sProperty)
 {
 }
 
@@ -1016,7 +1004,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLongOpAttribute, 1, xiiRTTIDefaultAllocator<
   XII_BEGIN_FUNCTIONS
   {
     XII_CONSTRUCTOR_PROPERTY(),
-    XII_CONSTRUCTOR_PROPERTY(const char*),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
   }
   XII_END_FUNCTIONS;
 }

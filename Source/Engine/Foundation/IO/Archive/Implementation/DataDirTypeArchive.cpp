@@ -160,7 +160,6 @@ xiiResult xiiDataDirectory::ArchiveType::InternalInitializeDataDirectory(xiiStri
 
   xiiHybridArray<xiiString, 4, xiiStaticAllocatorWrapper> extensions = xiiArchiveUtils::GetAcceptedArchiveFileExtensions();
 
-
   for (const auto& ext : extensions)
   {
     const xiiUInt32 uiLength = ext.GetElementCount();
@@ -169,7 +168,7 @@ xiiResult xiiDataDirectory::ArchiveType::InternalInitializeDataDirectory(xiiStri
       sArchivePath        = sRedirected;
       m_sArchiveSubFolder = "";
       bSupported          = true;
-      goto endloop;
+      goto EndLoop;
     }
     const char* szFound = nullptr;
     do
@@ -180,12 +179,12 @@ xiiResult xiiDataDirectory::ArchiveType::InternalInitializeDataDirectory(xiiStri
         sArchivePath        = xiiStringView(sRedirected.GetData(), szFound + uiLength);
         m_sArchiveSubFolder = szFound + uiLength + 1;
         bSupported          = true;
-        goto endloop;
+        goto EndLoop;
       }
 
     } while (szFound != nullptr);
   }
-endloop:
+EndLoop:
   if (!bSupported)
     return XII_FAILURE;
 
@@ -285,7 +284,5 @@ xiiResult xiiDataDirectory::ArchiveReaderZstd::InternalOpen(xiiFileShareMode::En
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Archive_Implementation_DataDirTypeArchive);

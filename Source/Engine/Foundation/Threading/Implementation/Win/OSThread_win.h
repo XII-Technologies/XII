@@ -112,11 +112,7 @@ void SetThreadName(HANDLE hThread, LPCSTR pThreadName)
 
 // Windows specific implementation of the thread class
 
-xiiOSThread::xiiOSThread(
-  xiiOSThreadEntryPoint threadEntryPoint,
-  void*                 pUserData /*= nullptr*/,
-  const char*           szName /*= "xiiThread"*/,
-  xiiUInt32             uiStackSize /*= 128 * 1024*/)
+xiiOSThread::xiiOSThread(xiiOSThreadEntryPoint threadEntryPoint, void* pUserData /*= nullptr*/, xiiStringView sName /*= "xiiThread"*/, xiiUInt32 uiStackSize /*= 128 * 1024*/)
 {
   s_iThreadCount.Increment();
 
@@ -130,13 +126,14 @@ xiiOSThread::xiiOSThread(
 
   m_EntryPoint  = threadEntryPoint;
   m_pUserData   = pUserData;
-  m_szName      = szName;
+  m_sName       = sName;
   m_uiStackSize = uiStackSize;
 
   // If a name is given, assign it here
-  if (szName != nullptr)
+  if (!sName.IsEmpty())
   {
-    SetThreadName(m_hHandle, szName);
+    xiiStringBuilder tmp;
+    SetThreadName(m_hHandle, sName.GetData(tmp));
   }
 }
 

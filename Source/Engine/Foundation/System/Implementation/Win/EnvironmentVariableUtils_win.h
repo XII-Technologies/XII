@@ -4,9 +4,9 @@ XII_FOUNDATION_INTERNAL_HEADER
 #include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #include <intsafe.h>
 
-xiiString xiiEnvironmentVariableUtils::GetValueStringImpl(const char* szName, const char* szDefault)
+xiiString xiiEnvironmentVariableUtils::GetValueStringImpl(xiiStringView sName, xiiStringView sDefault)
 {
-  xiiStringWChar szwName(szName);
+  xiiStringWChar szwName(sName);
   wchar_t        szStaticValueBuffer[64] = {0};
   size_t         uiRequiredSize          = 0;
 
@@ -15,7 +15,7 @@ xiiString xiiEnvironmentVariableUtils::GetValueStringImpl(const char* szName, co
   // Variable doesn't exist
   if (uiRequiredSize == 0)
   {
-    return szDefault;
+    return sDefault;
   }
 
   // Succeeded
@@ -35,9 +35,9 @@ xiiString xiiEnvironmentVariableUtils::GetValueStringImpl(const char* szName, co
 
     if (res != 0)
     {
-      xiiLog::Error("Error getting environment variable \"{0}\" with dynamic buffer.", szName);
+      xiiLog::Error("Error getting environment variable \"{0}\" with dynamic buffer.", sName);
       XII_DEFAULT_DELETE_RAW_BUFFER(szDynamicBuffer);
-      return szDefault;
+      return sDefault;
     }
     else
     {
@@ -48,15 +48,15 @@ xiiString xiiEnvironmentVariableUtils::GetValueStringImpl(const char* szName, co
   }
   else
   {
-    xiiLog::Warning("Couldn't get environment variable value for \"{0}\", got {1} as a result.", szName, res);
-    return szDefault;
+    xiiLog::Warning("Couldn't get environment variable value for \"{0}\", got {1} as a result.", sName, res);
+    return sDefault;
   }
 }
 
-xiiResult xiiEnvironmentVariableUtils::SetValueStringImpl(const char* szName, const char* szValue)
+xiiResult xiiEnvironmentVariableUtils::SetValueStringImpl(xiiStringView sName, xiiStringView sValue)
 {
-  xiiStringWChar szwName(szName);
-  xiiStringWChar szwValue(szValue);
+  xiiStringWChar szwName(sName);
+  xiiStringWChar szwValue(sValue);
 
   if (_wputenv_s(szwName, szwValue) == 0)
     return XII_SUCCESS;
@@ -64,9 +64,9 @@ xiiResult xiiEnvironmentVariableUtils::SetValueStringImpl(const char* szName, co
     return XII_FAILURE;
 }
 
-bool xiiEnvironmentVariableUtils::IsVariableSetImpl(const char* szName)
+bool xiiEnvironmentVariableUtils::IsVariableSetImpl(xiiStringView sName)
 {
-  xiiStringWChar szwName(szName);
+  xiiStringWChar szwName(sName);
   wchar_t        szStaticValueBuffer[16] = {0};
   size_t         uiRequiredSize          = 0;
 
@@ -79,14 +79,14 @@ bool xiiEnvironmentVariableUtils::IsVariableSetImpl(const char* szName)
   }
   else
   {
-    xiiLog::Error("xiiEnvironmentVariableUtils::IsVariableSet(\"{0}\") got {1} from _wgetenv_s.", szName, res);
+    xiiLog::Error("xiiEnvironmentVariableUtils::IsVariableSet(\"{0}\") got {1} from _wgetenv_s.", sName, res);
     return false;
   }
 }
 
-xiiResult xiiEnvironmentVariableUtils::UnsetVariableImpl(const char* szName)
+xiiResult xiiEnvironmentVariableUtils::UnsetVariableImpl(xiiStringView sName)
 {
-  xiiStringWChar szwName(szName);
+  xiiStringWChar szwName(sName);
 
   if (_wputenv_s(szwName, L"") == 0)
     return XII_SUCCESS;

@@ -10,27 +10,27 @@
 static xiiMutex s_EnvVarMutex;
 
 
-xiiString xiiEnvironmentVariableUtils::GetValueString(const char* szName, const char* szDefault /*= nullptr*/)
+xiiString xiiEnvironmentVariableUtils::GetValueString(xiiStringView sName, xiiStringView sDefault /*= nullptr*/)
 {
-  XII_ASSERT_DEV(!xiiStringUtils::IsNullOrEmpty(szName), "Null or empty name passed to xiiEnvironmentVariableUtils::GetValueString()");
+  XII_ASSERT_DEV(!sName.IsEmpty(), "Null or empty name passed to xiiEnvironmentVariableUtils::GetValueString()");
 
   XII_LOCK(s_EnvVarMutex);
 
-  return GetValueStringImpl(szName, szDefault);
+  return GetValueStringImpl(sName, sDefault);
 }
 
-xiiResult xiiEnvironmentVariableUtils::SetValueString(const char* szName, const char* szValue)
+xiiResult xiiEnvironmentVariableUtils::SetValueString(xiiStringView sName, xiiStringView sValue)
 {
   XII_LOCK(s_EnvVarMutex);
 
-  return SetValueStringImpl(szName, szValue);
+  return SetValueStringImpl(sName, sValue);
 }
 
-xiiInt32 xiiEnvironmentVariableUtils::GetValueInt(const char* szName, xiiInt32 iDefault /*= -1*/)
+xiiInt32 xiiEnvironmentVariableUtils::GetValueInt(xiiStringView sName, xiiInt32 iDefault /*= -1*/)
 {
   XII_LOCK(s_EnvVarMutex);
 
-  xiiString value = GetValueString(szName);
+  xiiString value = GetValueString(sName);
 
   if (value.IsEmpty())
     return iDefault;
@@ -42,26 +42,26 @@ xiiInt32 xiiEnvironmentVariableUtils::GetValueInt(const char* szName, xiiInt32 i
     return iDefault;
 }
 
-xiiResult xiiEnvironmentVariableUtils::SetValueInt(const char* szName, xiiInt32 iValue)
+xiiResult xiiEnvironmentVariableUtils::SetValueInt(xiiStringView sName, xiiInt32 iValue)
 {
   xiiStringBuilder sb;
   sb.Format("{}", iValue);
 
-  return SetValueString(szName, sb);
+  return SetValueString(sName, sb);
 }
 
-bool xiiEnvironmentVariableUtils::IsVariableSet(const char* szName)
+bool xiiEnvironmentVariableUtils::IsVariableSet(xiiStringView sName)
 {
   XII_LOCK(s_EnvVarMutex);
 
-  return IsVariableSetImpl(szName);
+  return IsVariableSetImpl(sName);
 }
 
-xiiResult xiiEnvironmentVariableUtils::UnsetVariable(const char* szName)
+xiiResult xiiEnvironmentVariableUtils::UnsetVariable(xiiStringView sName)
 {
   XII_LOCK(s_EnvVarMutex);
 
-  return UnsetVariableImpl(szName);
+  return UnsetVariableImpl(sName);
 }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
@@ -71,6 +71,5 @@ xiiResult xiiEnvironmentVariableUtils::UnsetVariable(const char* szName)
 #else
 #  include <Foundation/System/Implementation/Posix/EnvironmentVariableUtils_posix.h>
 #endif
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_System_Implementation_EnvironmentVariableUtils);

@@ -49,15 +49,15 @@ struct XII_FOUNDATION_DLL xiiProcessOptions
 
   /// \brief Overload of AddArgument(xiiFormatString) for convenience.
   template <typename... ARGS>
-  void AddArgument(const char* szFormat, ARGS&&... args)
+  void AddArgument(xiiStringView sFormat, ARGS&&... args)
   {
-    AddArgument(xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    AddArgument(xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Takes a full command line and appends it as individual arguments by splitting it along white-space and quotation marks.
   ///
   /// Brief, use this, if arguments are already pre-built as a full command line.
-  void AddCommandLine(const char* szCmdLine);
+  void AddCommandLine(xiiStringView sCmdLine);
 
   /// \brief Builds the command line from the process arguments and appends it to \a out_sCmdLine.
   void BuildCommandLineString(xiiStringBuilder& out_sCmdLine) const;
@@ -152,7 +152,7 @@ public:
   static xiiOsProcessID GetCurrentProcessID();
 
 private:
-  void BuildFullCommandLineString(const xiiProcessOptions& opt, const char* szProcess, xiiStringBuilder& cmd) const;
+  void BuildFullCommandLineString(const xiiProcessOptions& opt, xiiStringView sProcess, xiiStringBuilder& cmd) const;
 
   xiiUniquePtr<struct xiiProcessImpl> m_pImpl;
 

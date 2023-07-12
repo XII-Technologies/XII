@@ -31,9 +31,9 @@ XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiRTTI);
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, Reflection)
 
-  //BEGIN_SUBSYSTEM_DEPENDENCIES
-  //  "FileSystem"
-  //END_SUBSYSTEM_DEPENDENCIES
+  // BEGIN_SUBSYSTEM_DEPENDENCIES
+  //   "FileSystem"
+  // END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
   {
@@ -49,8 +49,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, Reflection)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiRTTI::xiiRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractFunctionProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)()) :
-  m_szTypeName(szName), m_pAllocator(pAllocator), m_Properties(properties), m_Functions(functions), m_Attributes(attributes), m_MessageHandlers(messageHandlers), m_MessageSenders(messageSenders), m_VerifyParent(fnVerifyParent)
+xiiRTTI::xiiRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractFunctionProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)()) :
+  m_sTypeName(sName), m_pAllocator(pAllocator), m_Properties(properties), m_Functions(functions), m_Attributes(attributes), m_MessageHandlers(messageHandlers), m_MessageSenders(messageSenders), m_VerifyParent(fnVerifyParent)
 {
   UpdateType(pParentType, uiTypeSize, uiTypeVersion, uiVariantType, flags);
 
@@ -66,14 +66,18 @@ xiiRTTI::xiiRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTyp
 #endif
   }
 
-  if (m_szTypeName)
+  if (!m_sTypeName.IsEmpty())
+  {
     RegisterType();
+  }
 }
 
 xiiRTTI::~xiiRTTI()
 {
-  if (m_szTypeName)
+  if (!m_sTypeName.IsEmpty())
+  {
     UnregisterType();
+  }
 }
 
 void xiiRTTI::GatherDynamicMessageHandlers()
@@ -143,7 +147,7 @@ void xiiRTTI::VerifyCorrectness() const
   if (m_VerifyParent != nullptr)
   {
     XII_ASSERT_DEV(m_VerifyParent() == m_pParentType, "Type '{0}': The given parent type '{1}' does not match the actual parent type '{2}'",
-                   m_szTypeName, (m_pParentType != nullptr) ? m_pParentType->GetTypeName() : "null",
+                   m_sTypeName, (m_pParentType != nullptr) ? m_pParentType->GetTypeName() : "null",
                    (m_VerifyParent() != nullptr) ? m_VerifyParent()->GetTypeName() : "null");
   }
 
@@ -159,7 +163,7 @@ void xiiRTTI::VerifyCorrectness() const
         const bool bNewProperty = !Known.Find(pInstance->m_Properties[i]->GetPropertyName()).IsValid();
         Known.Insert(pInstance->m_Properties[i]->GetPropertyName());
 
-        XII_ASSERT_DEV(bNewProperty, "{0}: The property with name '{1}' is already defined in type '{2}'.", m_szTypeName,
+        XII_ASSERT_DEV(bNewProperty, "{0}: The property with name '{1}' is already defined in type '{2}'.", m_sTypeName,
                        pInstance->m_Properties[i]->GetPropertyName(), pInstance->GetTypeName());
       }
 
@@ -199,18 +203,18 @@ void xiiRTTI::UpdateType(const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUI
 
 void xiiRTTI::RegisterType()
 {
-  m_uiTypeNameHash = xiiHashingUtils::StringHash(m_szTypeName);
+  m_uiTypeNameHash = xiiHashingUtils::StringHash(m_sTypeName);
 
   auto pTable = GetTypeHashTable();
   XII_LOCK(pTable->m_Mutex);
-  pTable->m_Table.Insert(m_szTypeName, this);
+  pTable->m_Table.Insert(m_sTypeName, this);
 }
 
 void xiiRTTI::UnregisterType()
 {
   auto pTable = GetTypeHashTable();
   XII_LOCK(pTable->m_Mutex);
-  pTable->m_Table.Remove(m_szTypeName);
+  pTable->m_Table.Remove(m_sTypeName);
 }
 
 void xiiRTTI::GetAllProperties(xiiHybridArray<xiiAbstractProperty*, 32>& out_properties) const
@@ -368,14 +372,14 @@ const xiiDynamicArray<const xiiRTTI*>& xiiRTTI::GetAllTypesDerivedFrom(
   if (bSortByName)
   {
     out_derivedTypes.Sort([](const xiiRTTI* p1, const xiiRTTI* p2) -> bool {
-      return xiiStringUtils::Compare(p1->GetTypeName(), p2->GetTypeName()) < 0;
+      return p1->GetTypeName().Compare(p2->GetTypeName()) < 0;
     });
   }
 
   return out_derivedTypes;
 }
 
-void xiiRTTI::AssignPlugin(const char* szPluginName)
+void xiiRTTI::AssignPlugin(xiiStringView sPluginName)
 {
   // assigns the given plugin name to every xiiRTTI instance that has no plugin assigned yet
 
@@ -383,9 +387,9 @@ void xiiRTTI::AssignPlugin(const char* szPluginName)
 
   while (pInstance)
   {
-    if (pInstance->m_szPluginName == nullptr)
+    if (pInstance->m_sPluginName.IsEmpty())
     {
-      pInstance->m_szPluginName = szPluginName;
+      pInstance->m_sPluginName = sPluginName;
       SanityCheckType(pInstance);
 
       pInstance->SetupParentHierarchy();
@@ -520,7 +524,7 @@ void xiiRTTI::PluginEventHandler(const xiiPluginEvent& EventData)
     {
       // after we loaded a new plugin, but before it is initialized,
       // find all new rtti instances and assign them to that new plugin
-      AssignPlugin(EventData.m_szPluginBinary);
+      AssignPlugin(EventData.m_sPluginBinary);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
       xiiRTTI::VerifyCorrectnessForAllTypes();
@@ -532,7 +536,5 @@ void xiiRTTI::PluginEventHandler(const xiiPluginEvent& EventData)
       break;
   }
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Reflection_Implementation_RTTI);

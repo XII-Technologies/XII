@@ -121,35 +121,35 @@ void xiiPreprocessor::SetFileLocatorFunction(FileLocatorCB locateAbsFileCB)
   m_FileLocatorCallback = locateAbsFileCB;
 }
 
-xiiResult xiiPreprocessor::DefaultFileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath)
+xiiResult xiiPreprocessor::DefaultFileLocator(xiiStringView sCurAbsoluteFile, xiiStringView sIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath)
 {
   xiiStringBuilder& s = out_sAbsoluteFilePath;
 
   if (incType == xiiPreprocessor::RelativeInclude)
   {
-    s = szCurAbsoluteFile;
+    s = sCurAbsoluteFile;
     s.PathParentDirectory();
-    s.AppendPath(szIncludeFile);
+    s.AppendPath(sIncludeFile);
     s.MakeCleanPath();
   }
   else
   {
-    s = szIncludeFile;
+    s = sIncludeFile;
     s.MakeCleanPath();
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiPreprocessor::DefaultFileOpen(const char* szAbsoluteFile, xiiDynamicArray<xiiUInt8>& ref_fileContent, xiiTimestamp& out_fileModification)
+xiiResult xiiPreprocessor::DefaultFileOpen(xiiStringView sAbsoluteFile, xiiDynamicArray<xiiUInt8>& ref_fileContent, xiiTimestamp& out_fileModification)
 {
   xiiFileReader r;
-  if (r.Open(szAbsoluteFile).Failed())
+  if (r.Open(sAbsoluteFile).Failed())
     return XII_FAILURE;
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
   xiiFileStats stats;
-  if (xiiFileSystem::GetFileStats(szAbsoluteFile, stats).Succeeded())
+  if (xiiFileSystem::GetFileStats(sAbsoluteFile, stats).Succeeded())
     out_fileModification = stats.m_LastModificationTime;
 #endif
 
@@ -163,14 +163,14 @@ xiiResult xiiPreprocessor::DefaultFileOpen(const char* szAbsoluteFile, xiiDynami
   return XII_SUCCESS;
 }
 
-xiiResult xiiPreprocessor::OpenFile(const char* szFile, const xiiTokenizer** pTokenizer)
+xiiResult xiiPreprocessor::OpenFile(xiiStringView sFile, const xiiTokenizer** pTokenizer)
 {
   XII_ASSERT_DEV(m_FileOpenCallback.IsValid(), "OpenFile callback has not been set");
   XII_ASSERT_DEV(m_FileLocatorCallback.IsValid(), "File locator callback has not been set");
 
   *pTokenizer = nullptr;
 
-  auto it = m_pUsedFileCache->Lookup(szFile);
+  auto it = m_pUsedFileCache->Lookup(sFile);
 
   if (it.IsValid())
   {
@@ -181,9 +181,9 @@ xiiResult xiiPreprocessor::OpenFile(const char* szFile, const xiiTokenizer** pTo
   xiiTimestamp stamp;
 
   xiiDynamicArray<xiiUInt8> Content;
-  if (m_FileOpenCallback(szFile, Content, stamp).Failed())
+  if (m_FileOpenCallback(sFile, Content, stamp).Failed())
   {
-    xiiLog::Error(m_pLog, "Could not open file '{0}'", szFile);
+    xiiLog::Error(m_pLog, "Could not open file '{0}'", sFile);
     return XII_FAILURE;
   }
 
@@ -201,7 +201,7 @@ xiiResult xiiPreprocessor::OpenFile(const char* szFile, const xiiTokenizer** pTo
     }
   }
 
-  *pTokenizer = m_pUsedFileCache->Tokenize(szFile, ContentView, stamp, m_pLog);
+  *pTokenizer = m_pUsedFileCache->Tokenize(sFile, ContentView, stamp, m_pLog);
 
   return XII_SUCCESS;
 }

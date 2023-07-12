@@ -5,14 +5,14 @@ inline bool xiiExpressionParser::AcceptStatementTerminator()
     xiiTokenParseUtils::Accept(m_TokenStream, m_uiCurrentToken, ";");
 }
 
-inline xiiResult xiiExpressionParser::Expect(const char* szToken, const xiiToken** pExpectedToken)
+inline xiiResult xiiExpressionParser::Expect(xiiStringView sToken, const xiiToken** pExpectedToken)
 {
   xiiUInt32 uiAcceptedToken = 0;
-  if (xiiTokenParseUtils::Accept(m_TokenStream, m_uiCurrentToken, szToken, &uiAcceptedToken) == false)
+  if (xiiTokenParseUtils::Accept(m_TokenStream, m_uiCurrentToken, sToken, &uiAcceptedToken) == false)
   {
     const xiiUInt32 uiErrorToken = xiiMath::Min(m_TokenStream.GetCount() - 1, m_uiCurrentToken);
     auto            pToken       = m_TokenStream[uiErrorToken];
-    ReportError(pToken, xiiFmt("Syntax error, expected {} but got {}", szToken, pToken->m_DataView));
+    ReportError(pToken, xiiFmt("Syntax error, expected {} but got {}", sToken, pToken->m_DataView));
     return XII_FAILURE;
   }
 

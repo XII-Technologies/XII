@@ -40,7 +40,7 @@ protected:
 
 struct xiiMessageSenderInfo
 {
-  const char*    m_szName;
+  xiiStringView  m_sName;
   const xiiRTTI* m_pMessageType;
 };
 

@@ -54,7 +54,7 @@ struct xiiProcessImpl
   static void* StreamWatcherThread(void* context)
   {
     xiiProcessImpl* self = reinterpret_cast<xiiProcessImpl*>(context);
-    char            buffer[4096];
+    char            szBuffer[4096];
 
     xiiHybridArray<struct pollfd, 3> pollfds;
 
@@ -85,7 +85,7 @@ struct xiiProcessImpl
             pollfds[i].revents               = 0;
             while (true)
             {
-              ssize_t numBytes = read(stream.fd, buffer, XII_ARRAY_SIZE(buffer));
+              ssize_t numBytes = read(stream.fd, szBuffer, XII_ARRAY_SIZE(szBuffer));
               if (numBytes < 0)
               {
                 if (errno == EWOULDBLOCK)
@@ -100,8 +100,8 @@ struct xiiProcessImpl
                 break;
               }
 
-              const char* szCurrentPos = buffer;
-              const char* szEndPos     = buffer + numBytes;
+              const char* szCurrentPos = szBuffer;
+              const char* szEndPos     = szBuffer + numBytes;
               while (szCurrentPos < szEndPos)
               {
                 const char* szFound = xiiStringUtils::FindSubString(szCurrentPos, "\n", szEndPos);
@@ -109,7 +109,7 @@ struct xiiProcessImpl
                 {
                   if (overflowBuffer.IsEmpty())
                   {
-                    // If there is nothing in the overflow buffer this is a complete line and can be fired as is.
+                    // If there is nothing in the overflow buffer, this is a complete line and can be fired as is.
                     stream.callback(xiiStringView(szCurrentPos, szFound + 1));
                   }
                   else
@@ -123,7 +123,7 @@ struct xiiProcessImpl
                 }
                 else
                 {
-                  // This is either the start or a middle segment of a line, append to overflow buffer.
+                  // This is either the start or a middle segment of a line, append to overflow szBuffer.
                   overflowBuffer.Append(xiiStringView(szCurrentPos, szEndPos));
                   szCurrentPos = szEndPos;
                 }

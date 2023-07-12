@@ -32,13 +32,15 @@ public:
   /// If type is PatchType::NodePatch, the patch is executed for each instance of the given type.
   /// If type is PatchType::GraphPatch, the patch is executed once for the entire graph. In this case
   /// szType and uiTypeVersion are ignored and the patch function has to figure out what to do by itself.
-  xiiGraphPatch(const char* szType, xiiUInt32 uiTypeVersion, PatchType type = PatchType::NodePatch);
+  xiiGraphPatch(xiiStringView sType, xiiUInt32 uiTypeVersion, PatchType type = PatchType::NodePatch);
 
   /// \brief Patch function. If type == PatchType::NodePatch, the implementation needs to patch pNode in pGraph to m_uiTypeVersion.
   ///  If type == PatchType::GraphPatch, pNode will be nullptr and the implementation has to figure out what to patch in pGraph on its own.
   virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const = 0;
+
   /// \brief Returns the type to patch.
-  const char* GetType() const;
+  xiiStringView GetType() const;
+
   /// \brief Returns the type version to patch to.
   xiiUInt32 GetTypeVersion() const;
   PatchType GetPatchType() const;
@@ -46,7 +48,7 @@ public:
   XII_DECLARE_ENUMERABLE_CLASS(xiiGraphPatch);
 
 private:
-  const char* m_szType = nullptr;
+  xiiStringView m_sType;
   xiiUInt32   m_uiTypeVersion;
   PatchType   m_PatchType;
 };
