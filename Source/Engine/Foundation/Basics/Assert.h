@@ -28,9 +28,9 @@
 ///
 
 /// \brief Assert handler callback. Should return true to trigger a break point or false if the assert should be ignored
-using xiiAssertHandler = bool (*)(xiiStringView sSourceFile, xiiUInt32 uiLine, xiiStringView sFunction, xiiStringView sExpression, xiiStringView sAssertMsg);
+using xiiAssertHandler = bool (*)(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg);
 
-XII_FOUNDATION_DLL bool xiiDefaultAssertHandler(xiiStringView sSourceFile, xiiUInt32 uiLine, xiiStringView sFunction, xiiStringView sExpression, xiiStringView sAssertMsg);
+XII_FOUNDATION_DLL bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg);
 
 /// \brief Gets the current assert handler. The default assert handler shows a dialog on windows or prints to the console on other platforms.
 XII_FOUNDATION_DLL xiiAssertHandler xiiGetAssertHandler();
@@ -39,13 +39,13 @@ XII_FOUNDATION_DLL xiiAssertHandler xiiGetAssertHandler();
 XII_FOUNDATION_DLL void xiiSetAssertHandler(xiiAssertHandler handler);
 
 /// \brief Called by the assert macros whenever a check failed. Returns true if the user wants to trigger a break point
-XII_FOUNDATION_DLL bool xiiFailedCheck(xiiStringView sSourceFile, xiiUInt32 uiLine, xiiStringView sFunction, xiiStringView sExpression, const class xiiFormatString& msg);
-XII_FOUNDATION_DLL bool xiiFailedCheck(xiiStringView sSourceFile, xiiUInt32 uiLine, xiiStringView sFunction, xiiStringView sExpression, xiiStringView sMsg);
+XII_FOUNDATION_DLL bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const class xiiFormatString& msg);
+XII_FOUNDATION_DLL bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szMsg);
 
 /// \brief Dummy version of xiiFmt that only takes a single argument
-inline xiiStringView xiiFmt(xiiStringView sFormat)
+inline const char* xiiFmt(const char* szFormat)
 {
-  return sFormat;
+  return szFormat;
 }
 
 #if XII_ENABLED(XII_COMPILER_MSVC)

@@ -32,7 +32,9 @@ void xiiPlugin::GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& ref_
   }
 
   if (uiFileCopyNumber > 0)
+  {
     ref_sCopiedFile.AppendFormat("{0}", uiFileCopyNumber);
+  }
 
   ref_sCopiedFile.Append(".loaded");
 }
@@ -44,7 +46,7 @@ xiiResult UnloadPluginModule(xiiPluginModule& ref_pModule, xiiStringView sPlugin
 
   if (FreeLibrary(ref_pModule) == FALSE)
   {
-    xiiLog::Error("Could not unload plugin '{0}'. Error-Code {1}", szPluginFile, xiiArgErrorCode(GetLastError()));
+    xiiLog::Error("Could not unload plugin '{0}'. Error-Code {1}", sPluginFile, xiiArgErrorCode(GetLastError()));
     return XII_FAILURE;
   }
 
@@ -58,17 +60,17 @@ xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& ref_pModu
   SetLastError(ERROR_SUCCESS);
 
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  xiiStringBuilder relativePath = szFileToLoad;
+  xiiStringBuilder relativePath = sFileToLoad;
   XII_SUCCEED_OR_RETURN(relativePath.MakeRelativeTo(xiiOSFile::GetApplicationDirectory()));
   Module = LoadPackagedLibrary(xiiStringWChar(relativePath).GetData(), 0);
 #  else
-  ref_pModule = LoadLibraryW(xiiStringWChar(szFileToLoad).GetData());
+  ref_pModule = LoadLibraryW(xiiStringWChar(sFileToLoad).GetData());
 #  endif
 
   if (ref_pModule == nullptr)
   {
     const DWORD err = GetLastError();
-    xiiLog::Error("Could not load plugin '{0}'. Error-Code {1}", szPluginFile, xiiArgErrorCode(err));
+    xiiLog::Error("Could not load plugin '{0}'. Error-Code {1}", sPluginFile, xiiArgErrorCode(err));
 
     if (err == 126)
     {

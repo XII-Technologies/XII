@@ -137,7 +137,7 @@ public:
   using GetContainerFunc      = Container& (*)(Class* pInstance);
 
   xiiMemberSetProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
-    xiiTypedSetProperty<RealType>(szPropertyName)
+    xiiTypedSetProperty<RealType>(sPropertyName)
   {
     XII_ASSERT_DEBUG(constGetter != nullptr, "The const get count function of an set property cannot be nullptr.");
 

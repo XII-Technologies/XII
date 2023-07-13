@@ -111,7 +111,7 @@ public:
 
   /// \brief Converts an enum or bitfield in its string representation to its value.
   ///
-  /// The type of pEnumerationRtti will be automatically detected. The syntax of szValue must equal the MSVC debugger output.
+  /// The type of pEnumerationRtti will be automatically detected. The syntax of sValue must equal the MSVC debugger output.
   static bool StringToEnumeration(const xiiRTTI* pEnumerationRtti, xiiStringView sValue, xiiInt64& out_iValue); // [tested]
 
   /// \brief Helper template to shorten the call for xiiEnums
@@ -119,7 +119,7 @@ public:
   static bool StringToEnumeration(xiiStringView sValue, xiiEnum<T>& out_value)
   {
     xiiInt64   value;
-    const auto retval = StringToEnumeration(xiiGetStaticRTTI<T>(), szValue, value);
+    const auto retval = StringToEnumeration(xiiGetStaticRTTI<T>(), sValue, value);
     out_value         = static_cast<typename T::Enum>(value);
     return retval;
   }

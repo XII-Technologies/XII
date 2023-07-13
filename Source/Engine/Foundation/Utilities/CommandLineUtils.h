@@ -27,7 +27,7 @@ public:
   /// Useful for platforms where command line args come in as a single string.
   /// \param addExecutableDir
   ///   Adds executable path as first parameter (just as it would normally be in 'int main(argc, argv)').
-  static void SplitCommandLineString(const char* szCommandString, bool bAddExecutableDir, xiiDynamicArray<xiiString>& out_args, xiiDynamicArray<const char*>& out_argsV);
+  static void SplitCommandLineString(xiiStringView sCommandString, bool bAddExecutableDir, xiiDynamicArray<xiiString>& out_args, xiiDynamicArray<const char*>& out_argsV);
 
   /// \brief Initializes xiiCommandLineUtils from the parameter arguments that were passed to the application.
   void SetCommandLine(xiiUInt32 uiArgc, const char** pArgv, ArgMode mode = UseArgcArgv); // [tested]

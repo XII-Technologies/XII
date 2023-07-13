@@ -102,7 +102,7 @@ namespace
   static xiiMutex                                           s_ThreadInfosMutex;
 
 #  if XII_ENABLED(XII_PLATFORM_64BIT)
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiProfilingSystem::CPUScope) == 64);
+  XII_CHECK_AT_COMPILETIME(sizeof(xiiProfilingSystem::CPUScope) == 72);
   XII_CHECK_AT_COMPILETIME(sizeof(xiiProfilingSystem::GPUScope) == 64);
 #  endif
 

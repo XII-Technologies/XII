@@ -145,14 +145,14 @@ void xiiStackTracer::OnPluginEvent(const xiiPluginEvent& e)
   {
     char buffer[1024];
     strcpy_s(buffer, xiiOSFile::GetApplicationDirectory().GetStartPointer());
-    strcat_s(buffer, e.m_szPluginBinary);
+    strcat_s(buffer, e.m_sPluginBinary.GetStartPointer());
     strcat_s(buffer, ".dll");
 
     wchar_t szPluginPath[1024];
     mbstowcs(szPluginPath, buffer, XII_ARRAY_SIZE(szPluginPath));
 
     wchar_t szPluginName[256];
-    mbstowcs(szPluginName, e.m_szPluginBinary, XII_ARRAY_SIZE(szPluginName));
+    mbstowcs(szPluginName, e.m_sPluginBinary.GetStartPointer(), XII_ARRAY_SIZE(szPluginName));
 
     HANDLE currentProcess = GetCurrentProcess();
 
@@ -162,7 +162,7 @@ void xiiStackTracer::OnPluginEvent(const xiiPluginEvent& e)
       DWORD err = GetLastError();
       if (err != ERROR_SUCCESS)
       {
-        xiiLog::Error("StackTracer could not load symbols for '{0}'. Error-Code {1}", e.m_szPluginBinary, xiiArgErrorCode(err));
+        xiiLog::Error("StackTracer could not load symbols for '{0}'. Error-Code {1}", e.m_sPluginBinary, xiiArgErrorCode(err));
       }
 
       return;
@@ -181,7 +181,7 @@ void xiiStackTracer::OnPluginEvent(const xiiPluginEvent& e)
                     MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), (LPTSTR)&lpMsgBuf, 0, nullptr);
 
       char errStr[1024];
-      sprintf_s(errStr, "StackTracer could not get module info for '%s'. Error-Code %u (\"%s\")\n", e.m_szPluginBinary, err, static_cast<char*>(lpMsgBuf));
+      sprintf_s(errStr, "StackTracer could not get module info for '%s'. Error-Code %u (\"%s\")\n", e.m_sPluginBinary.GetStartPointer(), err, static_cast<char*>(lpMsgBuf));
       xiiLog::Print(errStr);
 
       LocalFree(lpMsgBuf);

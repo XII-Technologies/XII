@@ -9,16 +9,16 @@ xiiDGMLGraph::xiiDGMLGraph(xiiDGMLGraph::Direction graphDirection /*= LeftToRigh
 {
 }
 
-xiiDGMLGraph::NodeId xiiDGMLGraph::AddNode(const char* szTitle, const NodeDesc* pDesc)
+xiiDGMLGraph::NodeId xiiDGMLGraph::AddNode(xiiStringView sTitle, const NodeDesc* pDesc)
 {
-  return AddGroup(szTitle, GroupType::None, pDesc);
+  return AddGroup(sTitle, GroupType::None, pDesc);
 }
 
-xiiDGMLGraph::NodeId xiiDGMLGraph::AddGroup(const char* szTitle, GroupType type, const NodeDesc* pDesc /*= nullptr*/)
+xiiDGMLGraph::NodeId xiiDGMLGraph::AddGroup(xiiStringView sTitle, GroupType type, const NodeDesc* pDesc /*= nullptr*/)
 {
   xiiDGMLGraph::Node& Node = m_Nodes.ExpandAndGetRef();
 
-  Node.m_Title     = szTitle;
+  Node.m_Title     = sTitle;
   Node.m_GroupType = type;
 
   if (pDesc)
@@ -36,21 +36,21 @@ void xiiDGMLGraph::AddNodeToGroup(NodeId node, NodeId group)
   m_Nodes[node].m_ParentGroup = group;
 }
 
-xiiDGMLGraph::ConnectionId xiiDGMLGraph::AddConnection(xiiDGMLGraph::NodeId source, xiiDGMLGraph::NodeId target, const char* szLabel)
+xiiDGMLGraph::ConnectionId xiiDGMLGraph::AddConnection(xiiDGMLGraph::NodeId source, xiiDGMLGraph::NodeId target, xiiStringView sLabel)
 {
   xiiDGMLGraph::Connection& connection = m_Connections.ExpandAndGetRef();
 
   connection.m_Source = source;
   connection.m_Target = target;
-  connection.m_sLabel = szLabel;
+  connection.m_sLabel = sLabel;
 
   return m_Connections.GetCount() - 1;
 }
 
-xiiDGMLGraph::PropertyId xiiDGMLGraph::AddPropertyType(const char* szName)
+xiiDGMLGraph::PropertyId xiiDGMLGraph::AddPropertyType(xiiStringView sName)
 {
   auto& prop  = m_PropertyTypes.ExpandAndGetRef();
-  prop.m_Name = szName;
+  prop.m_Name = sName;
   return m_PropertyTypes.GetCount() - 1;
 }
 

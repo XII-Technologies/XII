@@ -84,7 +84,7 @@ void xiiCVar::PluginEventHandler(const xiiPluginEvent& EventData)
     case xiiPluginEvent::AfterLoadingBeforeInit:
     {
       // After we loaded a new plugin, but before it is initialized, find all new CVars and assign them to that new plugin.
-      AssignSubSystemPlugin(EventData.m_szPluginBinary);
+      AssignSubSystemPlugin(EventData.m_sPluginBinary);
 
       // Aow load the state of all CVars.
       LoadCVars();

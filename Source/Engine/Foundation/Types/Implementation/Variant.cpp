@@ -536,14 +536,14 @@ const xiiVariant xiiVariant::operator[](StringWrapper key) const
   if (m_uiType == Type::VariantDictionary)
   {
     xiiVariant result;
-    Cast<xiiVariantDictionary>().TryGetValue(key.m_str, result);
+    Cast<xiiVariantDictionary>().TryGetValue(key.m_szStr, result);
     return result;
   }
   else if (IsValid())
   {
     KeyFunc func;
     func.m_pThis = this;
-    func.m_szKey = key.m_str;
+    func.m_szKey = key.m_szStr;
 
     DispatchTo(func, GetType());
 
@@ -727,7 +727,7 @@ bool xiiVariant::IsDerivedFrom(const xiiRTTI* pType1, const xiiRTTI* pType2)
   return pType1->IsDerivedFrom(pType2);
 }
 
-const char* xiiVariant::GetTypeName(const xiiRTTI* pType)
+xiiStringView xiiVariant::GetTypeName(const xiiRTTI* pType)
 {
   return pType->GetTypeName();
 }

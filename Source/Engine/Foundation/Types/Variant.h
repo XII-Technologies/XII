@@ -49,14 +49,14 @@ public:
   template <typename T>
   using TypeDeduction = xiiVariantTypeDeduction<T>;
 
-  /// \brief helper struct to wrap a string pointer
+  /// \brief helper struct to wrap a string pointer.
   struct StringWrapper
   {
     XII_ALWAYS_INLINE StringWrapper(const char* szStr) :
-      m_str(szStr)
+      m_szStr(szStr)
     {
     }
-    const char* m_str;
+    const char* m_szStr;
   };
 
   /// \brief Initializes the variant to be 'Invalid'
@@ -406,7 +406,7 @@ private:
 
   // Needed to prevent including xiiRTTI in xiiVariant.h
   static bool        IsDerivedFrom(const xiiRTTI* pType1, const xiiRTTI* pType2);
-  static const char* GetTypeName(const xiiRTTI* pType);
+  static xiiStringView GetTypeName(const xiiRTTI* pType);
 
   template <typename T>
   T ConvertNumber() const;

@@ -23,11 +23,11 @@ void MSVC_OutOfLine_DebugBreak(...)
 }
 #endif
 
-bool xiiDefaultAssertHandler(xiiStringView sSourceFile, xiiUInt32 uiLine, xiiStringView sFunction, xiiStringView sExpression, xiiStringView sAssertMsg)
+bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg)
 {
   char szTemp[1024 * 4] = "";
   xiiStringUtils::snprintf(szTemp, XII_ARRAY_SIZE(szTemp), "\n\n *** Assertion ***\n\n    Expression: \"%s\"\n    Function: \"%s\"\n    File: \"%s\"\n    Line: %u\n    Message: \"%s\"\n\n",
-                           sExpression, sFunction, sSourceFile, uiLine, sAssertMsg);
+                           szExpression, szFunction, szSourceFile, uiLine, szAssertMsg);
   szTemp[1024 * 4 - 1] = '\0';
 
   xiiLog::Print(szTemp);
@@ -77,8 +77,7 @@ bool xiiDefaultAssertHandler(xiiStringView sSourceFile, xiiUInt32 uiLine, xiiStr
 
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
 
-  xiiStringBuilder tmp;
-  xiiInt32         iRes = _CrtDbgReport(_CRT_ASSERT, sSourceFile.GetData(tmp), uiLine, nullptr, "'%s'\nFunction: %s\nMessage: %s", sExpression, sFunction, sAssertMsg);
+  xiiInt32 iRes = _CrtDbgReport(_CRT_ASSERT, szSourceFile, uiLine, nullptr, "'%s'\nFunction: %s\nMessage: %s", szExpression, szFunction, szAssertMsg);
 
   // currently we will ALWAYS trigger the breakpoint / crash (except for when the user presses 'ignore')
   if (iRes == 0)
@@ -97,7 +96,7 @@ bool xiiDefaultAssertHandler(xiiStringView sSourceFile, xiiUInt32 uiLine, xiiStr
 #  else
 
 #    if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-  MessageBoxA(nullptr, sTemp, "Assertion", MB_ICONERROR);
+  MessageBoxA(nullptr, szTemp, "Assertion", MB_ICONERROR);
 #    endif
 
 #  endif
@@ -120,19 +119,19 @@ void xiiSetAssertHandler(xiiAssertHandler handler)
   g_AssertHandler = handler;
 }
 
-bool xiiFailedCheck(xiiStringView sSourceFile, xiiUInt32 uiLine, xiiStringView sFunction, xiiStringView sExpression, xiiStringView sMsg)
+bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szMsg)
 {
   // always do a debug-break if no assert handler is installed
   if (g_AssertHandler == nullptr)
     return true;
 
-  return (*g_AssertHandler)(sSourceFile, uiLine, sFunction, sExpression, sMsg);
+  return (*g_AssertHandler)(szSourceFile, uiLine, szFunction, szExpression, szMsg);
 }
 
-bool xiiFailedCheck(xiiStringView sSourceFile, xiiUInt32 uiLine, xiiStringView sFunction, xiiStringView sExpression, const class xiiFormatString& msg)
+bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const class xiiFormatString& msg)
 {
   xiiStringBuilder tmp;
-  return xiiFailedCheck(sSourceFile, uiLine, sFunction, sExpression, msg.GetTextCStr(tmp));
+  return xiiFailedCheck(szSourceFile, uiLine, szFunction, szExpression, msg.GetTextCStr(tmp));
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_Basics_Assert);

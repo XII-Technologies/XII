@@ -363,7 +363,7 @@ class XII_FOUNDATION_DLL xiiDynamicDefaultValueAttribute : public xiiTypeWidgetA
 
 public:
   xiiDynamicDefaultValueAttribute() = default;
-  xiiDynamicDefaultValueAttribute(xiiStringView sClassSource, xiiStringView sClassType, xiiStringView sClassProperty) :
+  xiiDynamicDefaultValueAttribute(xiiStringView sClassSource, xiiStringView sClassType, xiiStringView sClassProperty = {}) :
     m_sClassSource(sClassSource), m_sClassType(sClassType), m_sClassProperty(sClassProperty)
   {
   }
@@ -608,7 +608,7 @@ class XII_FOUNDATION_DLL xiiBoxManipulatorAttribute : public xiiManipulatorAttri
 
 public:
   xiiBoxManipulatorAttribute();
-  xiiBoxManipulatorAttribute(xiiStringView sSizeProperty, float fSizeScale, bool bRecenterParent, xiiStringView sOffsetProperty, xiiStringView sRotationProperty);
+  xiiBoxManipulatorAttribute(xiiStringView sSizeProperty, float fSizeScale, bool bRecenterParent, xiiStringView sOffsetProperty = {}, xiiStringView sRotationProperty = {});
 
   bool  m_bRecenterParent = false;
   float m_fSizeScale      = 1.0f;
@@ -680,7 +680,7 @@ class XII_FOUNDATION_DLL xiiTransformManipulatorAttribute : public xiiManipulato
 
 public:
   xiiTransformManipulatorAttribute();
-  xiiTransformManipulatorAttribute(xiiStringView sTranslateProperty, xiiStringView sRotateProperty, xiiStringView sScaleProperty, xiiStringView sOffsetTranslation, xiiStringView sOffsetRotation);
+  xiiTransformManipulatorAttribute(xiiStringView sTranslateProperty, xiiStringView sRotateProperty = {}, xiiStringView sScaleProperty = {}, xiiStringView sOffsetTranslation = {}, xiiStringView sOffsetRotation = {});
 
   const xiiUntrackedString& GetTranslateProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetRotateProperty() const { return m_sProperty2; }

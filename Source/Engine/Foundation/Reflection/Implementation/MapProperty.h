@@ -11,7 +11,7 @@ class xiiTypedMapProperty : public xiiAbstractMapProperty
 {
 public:
   xiiTypedMapProperty(xiiStringView sPropertyName) :
-    xiiAbstractMapProperty(szPropertyName)
+    xiiAbstractMapProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<Type>();
     XII_CHECK_AT_COMPILETIME_MSG(!std::is_pointer<Type>::value || xiiVariant::TypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid,

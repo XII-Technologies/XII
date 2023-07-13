@@ -12,7 +12,7 @@ class xiiTypedArrayProperty : public xiiAbstractArrayProperty
 {
 public:
   xiiTypedArrayProperty(xiiStringView sPropertyName) :
-    xiiAbstractArrayProperty(szPropertyName)
+    xiiAbstractArrayProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<Type>();
     XII_CHECK_AT_COMPILETIME_MSG(!std::is_pointer<Type>::value || xiiVariantTypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid,
@@ -141,7 +141,7 @@ public:
   using GetContainerFunc      = Container& (*)(Class* pInstance);
 
   xiiMemberArrayProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
-    xiiTypedArrayProperty<RealType>(szPropertyName)
+    xiiTypedArrayProperty<RealType>(sPropertyName)
   {
     XII_ASSERT_DEBUG(constGetter != nullptr, "The const get count function of an array property cannot be nullptr.");
 
@@ -212,7 +212,7 @@ public:
   using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
 
   xiiMemberArrayReadOnlyProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter) :
-    xiiTypedArrayProperty<RealType>(szPropertyName)
+    xiiTypedArrayProperty<RealType>(sPropertyName)
   {
     XII_ASSERT_DEBUG(constGetter != nullptr, "The const get count function of an array property cannot be nullptr.");
 

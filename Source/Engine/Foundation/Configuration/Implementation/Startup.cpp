@@ -87,13 +87,13 @@ void xiiStartup::PluginEventHandler(const xiiPluginEvent& EventData)
 
     case xiiPluginEvent::AfterLoadingBeforeInit:
     {
-      AssignSubSystemPlugin(EventData.m_szPluginBinary);
+      AssignSubSystemPlugin(EventData.m_sPluginBinary);
     }
     break;
 
     case xiiPluginEvent::StartupShutdown:
     {
-      xiiStartup::UnloadPluginSubSystems(EventData.m_szPluginBinary);
+      xiiStartup::UnloadPluginSubSystems(EventData.m_sPluginBinary);
     }
     break;
 

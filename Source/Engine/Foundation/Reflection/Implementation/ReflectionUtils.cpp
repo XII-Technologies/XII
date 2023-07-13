@@ -1056,7 +1056,7 @@ bool xiiReflectionUtils::StringToEnumeration(const xiiRTTI* pEnumerationRtti, xi
     xiiStringBuilder                  temp = sValue;
     xiiHybridArray<xiiStringView, 32> values;
     temp.Split(false, values, "|");
-    for (auto sValue : values)
+    for (auto sValueSplit : values)
     {
       for (auto pProp : pEnumerationRtti->GetProperties().GetSubArray(1))
       {
@@ -1064,7 +1064,7 @@ bool xiiReflectionUtils::StringToEnumeration(const xiiRTTI* pEnumerationRtti, xi
         {
           // Testing fully qualified and short value name
           const char* valueNameOnly = pProp->GetPropertyName().FindLastSubString("::", nullptr);
-          if (sValue.IsEqual(pProp->GetPropertyName()) || (valueNameOnly != nullptr && sValue.IsEqual(valueNameOnly + 2)))
+          if (sValueSplit.IsEqual(pProp->GetPropertyName()) || (valueNameOnly != nullptr && sValueSplit.IsEqual(valueNameOnly + 2)))
           {
             xiiVariant value = static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant();
             out_iValue |= value.ConvertTo<xiiInt64>();

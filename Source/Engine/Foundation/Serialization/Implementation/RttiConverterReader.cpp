@@ -398,7 +398,7 @@ void xiiRttiConverterReader::CallOnObjectCreated(const xiiAbstractObjectNode* pN
   for (xiiAbstractFunctionProperty* pFunc : functions)
   {
     // TODO: Make this compare faster
-    if (xiiStringUtils::IsEqual(pFunc->GetPropertyName(), "OnObjectCreated"))
+    if (pFunc->GetPropertyName().IsEqual("OnObjectCreated"))
     {
       xiiHybridArray<xiiVariant, 1> params;
       params.PushBack(xiiVariant(pNode));
