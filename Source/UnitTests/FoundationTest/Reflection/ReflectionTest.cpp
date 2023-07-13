@@ -111,11 +111,11 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
 
     while (pRtti)
     {
-      if (xiiStringUtils::IsEqual(pRtti->GetTypeName(), "xiiTestStruct"))
+      if (pRtti->GetTypeName().IsEqual("xiiTestStruct"))
         bFoundStruct = true;
-      if (xiiStringUtils::IsEqual(pRtti->GetTypeName(), "xiiTestClass1"))
+      if (pRtti->GetTypeName().IsEqual("xiiTestClass1"))
         bFoundClass1 = true;
-      if (xiiStringUtils::IsEqual(pRtti->GetTypeName(), "xiiTestClass2"))
+      if (pRtti->GetTypeName().IsEqual("xiiTestClass2"))
         bFoundClass2 = true;
 
       XII_TEST_STRING(pRtti->GetPluginName(), "Static");
@@ -328,7 +328,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
 
     while (pRtti)
     {
-      if (xiiStringUtils::IsEqual(pRtti->GetTypeName(), "xiiTestStruct2"))
+      if (pRtti->GetTypeName().IsEqual("xiiTestStruct2"))
       {
         bFoundStruct2 = true;
 
@@ -653,17 +653,14 @@ XII_CREATE_SIMPLE_TEST(Reflection, Enum)
 
         // Testing the short enum name version
         XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(pEnumPropertyRTTI, pConstantProp->GetValue(), sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
-        XII_TEST_BOOL(sValue.IsEqual(pConstantProp->GetPropertyName()) ||
-                      sValue.IsEqual(xiiStringUtils::FindLastSubString(pConstantProp->GetPropertyName(), "::") + 2));
+        XII_TEST_BOOL(sValue.IsEqual(pConstantProp->GetPropertyName()) || sValue.IsEqual(pConstantProp->GetPropertyName().FindLastSubString("::") + 2));
 
         XII_TEST_BOOL(xiiReflectionUtils::StringToEnumeration(pEnumPropertyRTTI, sValue, iValue));
         XII_TEST_INT(iValue, pConstantProp->GetValue());
 
         // Testing the short enum name version
-        XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(
-          pEnumPropertyRTTI, pConstantProp->GetValue(), sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
-        XII_TEST_BOOL(sValue.IsEqual(pConstantProp->GetPropertyName()) ||
-                      sValue.IsEqual(xiiStringUtils::FindLastSubString(pConstantProp->GetPropertyName(), "::") + 2));
+        XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(pEnumPropertyRTTI, pConstantProp->GetValue(), sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
+        XII_TEST_BOOL(sValue.IsEqual(pConstantProp->GetPropertyName()) || sValue.IsEqual(pConstantProp->GetPropertyName().FindLastSubString("::") + 2));
 
         XII_TEST_BOOL(xiiReflectionUtils::StringToEnumeration(pEnumPropertyRTTI, sValue, iValue));
         XII_TEST_INT(iValue, pConstantProp->GetValue());
@@ -682,7 +679,6 @@ XII_CREATE_SIMPLE_TEST(Reflection, Enum)
     TestSerialization<xiiTestEnumStruct>(data);
   }
 }
-
 
 XII_CREATE_SIMPLE_TEST(Reflection, Bitflags)
 {
