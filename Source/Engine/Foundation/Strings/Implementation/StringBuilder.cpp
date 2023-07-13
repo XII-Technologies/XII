@@ -651,7 +651,7 @@ void xiiStringBuilder::MakeCleanPath()
   const char* const szEndPos      = &m_Data[m_Data.GetCount() - 1];
   const char*       szCurReadPos  = &m_Data[0];
   char* const       szCurWritePos = &m_Data[0];
-  int               writeOffset   = 0;
+  xiiInt32          writeOffset   = 0;
 
   xiiInt32    iLevelsDown = 0;
   PathUpState FoundPathUp = NotStarted;

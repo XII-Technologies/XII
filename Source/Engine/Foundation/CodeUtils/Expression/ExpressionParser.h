@@ -20,7 +20,7 @@ public:
   xiiResult Parse(xiiStringView sCode, xiiArrayPtr<xiiExpression::StreamDesc> inputs, xiiArrayPtr<xiiExpression::StreamDesc> outputs, const Options& options, xiiExpressionAST& out_ast);
 
 private:
-  static constexpr int s_iLowestPrecedence = 20;
+  static constexpr xiiInt32 s_iLowestPrecedence = 20;
 
   void RegisterKnownTypes();
   void RegisterBuiltinFunctions();
@@ -32,14 +32,14 @@ private:
   xiiResult ParseAssignment();
 
   xiiExpressionAST::Node* ParseFactor();
-  xiiExpressionAST::Node* ParseExpression(int iPrecedence = s_iLowestPrecedence);
+  xiiExpressionAST::Node* ParseExpression(xiiInt32 iPrecedence = s_iLowestPrecedence);
   xiiExpressionAST::Node* ParseUnaryExpression();
   xiiExpressionAST::Node* ParseFunctionCall(xiiStringView sFunctionName);
   xiiExpressionAST::Node* ParseSwizzle(xiiExpressionAST::Node* pExpression);
 
   bool                    AcceptStatementTerminator();
   bool                    AcceptOperator(xiiStringView sName);
-  bool                    AcceptBinaryOperator(xiiExpressionAST::NodeType::Enum& out_binaryOp, int& out_iOperatorPrecedence, xiiUInt32& out_uiOperatorLength);
+  bool                    AcceptBinaryOperator(xiiExpressionAST::NodeType::Enum& out_binaryOp, xiiInt32& out_iOperatorPrecedence, xiiUInt32& out_uiOperatorLength);
   xiiExpressionAST::Node* GetVariable(xiiStringView sVarName);
   xiiExpressionAST::Node* EnsureExpectedType(xiiExpressionAST::Node* pNode, xiiExpressionAST::DataType::Enum expectedType);
   xiiExpressionAST::Node* Unpack(xiiExpressionAST::Node* pNode, bool bUnassignedError = true);

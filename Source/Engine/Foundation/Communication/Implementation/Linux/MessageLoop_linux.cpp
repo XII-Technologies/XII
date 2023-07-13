@@ -13,7 +13,7 @@
 
 xiiMessageLoop_linux::xiiMessageLoop_linux()
 {
-  int fds[2];
+  xiiInt32 fds[2];
   if (pipe2(fds, O_NONBLOCK | O_CLOEXEC) < 0)
   {
     xiiLog::Error("[IPC]Failed to create wakeup pipe for xiiMessageLoop_linux");
@@ -49,7 +49,7 @@ bool xiiMessageLoop_linux::WaitForMessages(xiiInt32 iTimeout, xiiIpcChannel* pFi
   }
 
   xiiLock lock{m_pollMutex};
-  int     result = poll(m_pollInfos.GetData(), m_pollInfos.GetCount(), iTimeout);
+  xiiInt32     result = poll(m_pollInfos.GetData(), m_pollInfos.GetCount(), iTimeout);
   if (result > 0)
   {
     // Result at index 0 is special and means there was a WakeUp
@@ -105,10 +105,10 @@ bool xiiMessageLoop_linux::WaitForMessages(xiiInt32 iTimeout, xiiIpcChannel* pFi
   return false;
 }
 
-void xiiMessageLoop_linux::RegisterWait(xiiPipeChannel_linux* pChannel, WaitType type, int fd)
+void xiiMessageLoop_linux::RegisterWait(xiiPipeChannel_linux* pChannel, WaitType type, xiiInt32 fd)
 {
-  xiiLog::Debug("[IPC]xiiMessageLoop_linux::RegisterWait({}}", (int)type);
-  short int waitFlags = 0;
+  xiiLog::Debug("[IPC]xiiMessageLoop_linux::RegisterWait({}}", (xiiInt32)type);
+  short xiiInt32 waitFlags = 0;
   switch (type)
   {
     case WaitType::Accept:
@@ -162,7 +162,7 @@ void xiiMessageLoop_linux::RemovePendingWaits(xiiPipeChannel_linux* pChannel)
 void xiiMessageLoop_linux::WakeUp()
 {
   xiiUInt8 wakeupByte  = 0;
-  int      writeResult = write(m_wakeupPipeWriteEndFd, &wakeupByte, sizeof(wakeupByte));
+  xiiInt32      writeResult = write(m_wakeupPipeWriteEndFd, &wakeupByte, sizeof(wakeupByte));
 }
 
 #endif

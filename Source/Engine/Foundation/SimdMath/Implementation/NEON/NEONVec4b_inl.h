@@ -25,7 +25,7 @@ XII_ALWAYS_INLINE xiiSimdVec4b::xiiSimdVec4b(xiiInternal::QuadBool v)
   m_v = v;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4b::GetComponent() const
 {
   return vgetq_lane_u32(m_v, N) & 1;
@@ -82,24 +82,24 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4b::operator!=(const xiiSimdVec4b& rhs)
   return veorq_u32(m_v, rhs.m_v);
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4b::AllSet() const
 {
-  const int mask = XII_BIT(N) - 1;
+  const xiiInt32 mask = XII_BIT(N) - 1;
   return (xiiInternal::NeonMoveMask(m_v) & mask) == mask;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4b::AnySet() const
 {
-  const int mask = XII_BIT(N) - 1;
+  const xiiInt32 mask = XII_BIT(N) - 1;
   return (xiiInternal::NeonMoveMask(m_v) & mask) != 0;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4b::NoneSet() const
 {
-  const int mask = XII_BIT(N) - 1;
+  const xiiInt32 mask = XII_BIT(N) - 1;
   return (xiiInternal::NeonMoveMask(m_v) & mask) == 0;
 }
 

@@ -494,7 +494,7 @@ xiiUInt32 xiiStringUtils::CopyN(char* szDest, xiiUInt32 uiDstSize, const char* s
       szLastCharacterPos = szDest;
 
       // if we successfully copied enough characters, the only thing left is to terminate the string
-      if (iCharsCopied == (int)uiCharsToCopy)
+      if (iCharsCopied == (xiiInt32)uiCharsToCopy)
         break;
     }
 

@@ -342,7 +342,7 @@ xiiLogInterface* xiiLog::GetThreadLocalLogSystem()
 
 void xiiLog::SetDefaultLogLevel(xiiLogMsgType::Enum logLevel)
 {
-  XII_ASSERT_DEV(logLevel >= xiiLogMsgType::None && logLevel <= xiiLogMsgType::All, "Invalid default log level {}", (int)logLevel);
+  XII_ASSERT_DEV(logLevel >= xiiLogMsgType::None && logLevel <= xiiLogMsgType::All, "Invalid default log level {}", (xiiInt32)logLevel);
 
   s_DefaultLogLevel = logLevel;
 }

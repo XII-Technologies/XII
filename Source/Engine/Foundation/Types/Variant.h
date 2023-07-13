@@ -127,7 +127,7 @@ public:
   xiiVariant(const xiiTypedPointer& value);
   xiiVariant(const xiiTypedObject& value);
 
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, xiiInt32> = 0>
   xiiVariant(const T& value);
 
   template <typename T>
@@ -159,7 +159,7 @@ public:
 
   /// \brief Will compare the value of this variant to that of \a other.
   ///
-  /// If both variants store 'numbers' (float, double, int types) the comparison will work, even if the types are not identical.
+  /// If both variants store 'numbers' (float, double, xiiInt32 types) the comparison will work, even if the types are not identical.
   ///
   /// \note If the two types are not numbers and not equal, an assert will occur. So be careful to only compare variants
   /// that can either both be converted to double (\see CanConvertTo()) or whose types are equal.
@@ -194,16 +194,16 @@ public:
   ///
   /// \note This explicitly also differentiates between the different integer types.
   /// So when the variant stores an Int32, IsA<Int64>() will return false, even though the types could be converted.
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, xiiInt32> = 0>
   bool IsA() const; // [tested]
 
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, xiiInt32> = 0>
   bool IsA() const; // [tested]
 
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::TypedObject, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::TypedObject, xiiInt32> = 0>
   bool IsA() const; // [tested]
 
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, xiiInt32> = 0>
   bool IsA() const; // [tested]
 
   /// \brief Returns the exact xiiVariant::Type value.
@@ -216,29 +216,29 @@ public:
   /// So be careful to use this function only when you know exactly that the stored type matches the expected type.
   ///
   /// Prefer to use ConvertTo() when you can instead.
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, xiiInt32> = 0>
   const T& Get() const; // [tested]
 
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, xiiInt32> = 0>
   T Get() const; // [tested]
 
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::TypedObject, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::TypedObject, xiiInt32> = 0>
   const T Get() const; // [tested]
 
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, xiiInt32> = 0>
   const T& Get() const; // [tested]
 
   /// \brief Returns an writable xiiTypedPointer to the internal data.
   /// If the data is currently shared a clone will be made to ensure we hold the only reference.
   xiiTypedPointer GetWriteAccess(); // [tested]
 
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, xiiInt32> = 0>
   T& GetWritable(); // [tested]
 
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, xiiInt32> = 0>
   T GetWritable(); // [tested]
 
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, xiiInt32> = 0>
   T& GetWritable(); // [tested]
 
 
@@ -262,7 +262,7 @@ public:
 
   /// \brief Returns whether the stored type can generally be converted to the desired type.
   ///
-  /// This function will return true for all number conversions, as float / double / int / etc. can generally be converted into each
+  /// This function will return true for all number conversions, as float / double / xiiInt32 / etc. can generally be converted into each
   /// other. It will also return true for all conversion from string to number types, and from all 'simple' types (not array or dictionary)
   /// to string.
   ///
@@ -351,7 +351,7 @@ private:
 
   struct InlinedStruct
   {
-    constexpr static int DataSize = 4 * sizeof(float) - sizeof(void*);
+    constexpr static xiiInt32 DataSize = 4 * sizeof(float) - sizeof(void*);
     xiiUInt8             m_Data[DataSize];
     const xiiRTTI*       m_pType;
   };
@@ -384,13 +384,13 @@ private:
   void CopyFrom(const xiiVariant& other);
   void MoveFrom(xiiVariant&& other);
 
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, xiiInt32> = 0>
   const T& Cast() const;
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, xiiInt32> = 0>
   T Cast() const;
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::TypedObject, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::TypedObject, xiiInt32> = 0>
   const T Cast() const;
-  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, int> = 0>
+  template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, xiiInt32> = 0>
   const T& Cast() const;
 
   static bool IsNumberStatic(xiiUInt32 type);

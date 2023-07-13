@@ -34,7 +34,7 @@ void xiiOSThread::Start()
   pthread_attr_setdetachstate(&ThreadAttributes, PTHREAD_CREATE_JOINABLE);
   pthread_attr_setstacksize(&ThreadAttributes, m_uiStackSize);
 
-  int iReturnCode = pthread_create(&m_hHandle, &ThreadAttributes, m_EntryPoint, m_pUserData);
+  xiiInt32 iReturnCode = pthread_create(&m_hHandle, &ThreadAttributes, m_EntryPoint, m_pUserData);
   XII_IGNORE_UNUSED(iReturnCode);
   XII_ASSERT_RELEASE(iReturnCode == 0, "Thread creation failed!");
 

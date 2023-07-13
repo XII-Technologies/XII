@@ -80,7 +80,7 @@ struct xiiPipeWin
       m_readThread = std::thread([&]() {
         xiiHybridArray<char, 256> overflowBuffer;
 
-        constexpr int BUFSIZE = 512;
+        constexpr xiiInt32 BUFSIZE = 512;
         char          chBuf[BUFSIZE];
         while (true)
         {

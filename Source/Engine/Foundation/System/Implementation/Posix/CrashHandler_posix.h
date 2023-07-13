@@ -21,7 +21,7 @@ static void xiiCrashHandlerFunc() noexcept
   std::raise(SIGABRT);
 }
 
-static void xiiSignalHandler(int signum)
+static void xiiSignalHandler(xiiInt32 signum)
 {
   xiiLog::Printf("***Unhandled Signal:***\n");
   switch (signum)

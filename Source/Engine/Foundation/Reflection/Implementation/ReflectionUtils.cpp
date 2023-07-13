@@ -1729,7 +1729,7 @@ namespace
     };
   };
 
-  template <typename T, int V = xiiClampCategoryType<T>::value>
+  template <typename T, xiiInt32 V = xiiClampCategoryType<T>::value>
   struct ClampVariantFuncImpl
   {
     static XII_ALWAYS_INLINE xiiResult Func(xiiVariant& value, const xiiClampValueAttribute* pAttrib)

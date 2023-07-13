@@ -20,7 +20,7 @@ const xiiTimestamp xiiDateTime::GetTimestamp() const
   xiiScopedCFRef<CFCalendarRef> calendar(CFCalendarCreateWithIdentifier(kCFAllocatorSystemDefault, kCFGregorianCalendar));
   CFCalendarSetTimeZone(calendar, timxiione);
 
-  int year = m_iYear, month = m_uiMonth, day = m_uiDay, hour = m_uiHour, minute = m_uiMinute, second = m_uiSecond;
+  xiiInt32 year = m_iYear, month = m_uiMonth, day = m_uiDay, hour = m_uiHour, minute = m_uiMinute, second = m_uiSecond;
 
   // Validate the year against the valid range of the calendar
   {
@@ -73,7 +73,7 @@ bool xiiDateTime::SetTimestamp(xiiTimestamp timestamp)
   xiiScopedCFRef<CFCalendarRef> calendar(CFCalendarCreateWithIdentifier(kCFAllocatorSystemDefault, kCFGregorianCalendar));
   CFCalendarSetTimeZone(calendar, timxiione);
 
-  int year, month, day, dayOfWeek, hour, minute, second;
+  xiiInt32 year, month, day, dayOfWeek, hour, minute, second;
 
   if (CFCalendarDecomposeAbsoluteTime(calendar, at, "yMdHmsE", &year, &month, &day, &hour, &minute, &second, &dayOfWeek) == FALSE)
   {

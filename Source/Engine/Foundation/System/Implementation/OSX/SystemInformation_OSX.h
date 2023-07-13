@@ -13,8 +13,8 @@ XII_FOUNDATION_INTERNAL_HEADER
 // running under the debugger or has a debugger attached post facto).
 bool xiiSystemInformation::IsDebuggerAttached()
 {
-  int               junk;
-  int               mib[4];
+  xiiInt32               junk;
+  xiiInt32               mib[4];
   struct kinfo_proc info;
   size_t            size;
 
@@ -52,7 +52,7 @@ void xiiSystemInformation::Initialize()
 
   s_SystemInformation.m_uiMemoryPageSize = uiPageSize;
 
-  int     mib[2];
+  xiiInt32     mib[2];
   int64_t iPhysicalMemory = 0;
   size_t  uiLength        = sizeof(iPhysicalMemory);
 
@@ -91,7 +91,7 @@ xiiUInt64 xiiSystemInformation::GetAvailableMainMemory() const
   struct vmtotal vmt      = {0};
   size_t         vmt_size = sizeof(vmt);
 
-  int rc = sysctlbyname("vm.vmtotal", &vmt, &vmt_size, NULL, 0);
+  xiiInt32 rc = sysctlbyname("vm.vmtotal", &vmt, &vmt_size, NULL, 0);
   if (rc < 0)
   {
     perror("sysctlbyname");

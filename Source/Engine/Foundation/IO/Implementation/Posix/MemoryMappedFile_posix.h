@@ -23,7 +23,7 @@ struct xiiMemoryMappedFileImpl
   xiiMemoryMappedFile::Mode m_Mode           = xiiMemoryMappedFile::Mode::None;
   void*                     m_pMappedFilePtr = nullptr;
   xiiUInt64                 m_uiFileSize     = 0;
-  int                       m_hFile          = -1;
+  xiiInt32                       m_hFile          = -1;
   xiiString                 m_sSharedMemoryName;
 
   ~xiiMemoryMappedFileImpl()
@@ -77,9 +77,9 @@ xiiResult xiiMemoryMappedFile::Open(xiiStringView sAbsolutePath, Mode mode)
 
   m_pImpl->m_Mode = mode;
 
-  int access = O_RDONLY;
-  int prot   = PROT_READ;
-  int flags  = MAP_PRIVATE;
+  xiiInt32 access = O_RDONLY;
+  xiiInt32 prot   = PROT_READ;
+  xiiInt32 flags  = MAP_PRIVATE;
   if (mode == Mode::ReadWrite)
   {
     access = O_RDWR;
@@ -133,9 +133,9 @@ xiiResult xiiMemoryMappedFile::OpenShared(xiiStringView sSharedName, xiiUInt64 u
 
   m_pImpl->m_Mode = mode;
 
-  int prot  = PROT_READ;
-  int oflag = O_RDONLY;
-  int flags = MAP_SHARED;
+  xiiInt32 prot  = PROT_READ;
+  xiiInt32 oflag = O_RDONLY;
+  xiiInt32 flags = MAP_SHARED;
 #  if XII_ENABLED(XII_PLATFORM_LINUX)
 #    if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 22)
   flags |= MAP_POPULATE;

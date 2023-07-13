@@ -69,7 +69,7 @@ public:
   virtual void Reload() override;
 
 protected:
-  xiiMap<xiiUInt64, xiiString> m_Translations[(int)xiiTranslationUsage::ENUM_COUNT];
+  xiiMap<xiiUInt64, xiiString> m_Translations[(xiiInt32)xiiTranslationUsage::ENUM_COUNT];
 };
 
 /// \brief Outputs a 'Missing Translation' warning the first time a string translation is requested.

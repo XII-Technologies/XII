@@ -30,7 +30,7 @@ xiiPipeChannel_linux::xiiPipeChannel_linux(xiiStringView sAddress, Mode::Enum Mo
 
   const char* thisSocketPath = (Mode == Mode::Server) ? m_serverSocketPath.GetData() : m_clientSocketPath.GetData();
 
-  int& targetSocket = (Mode == Mode::Server) ? m_serverSocketFd : m_clientSocketFd;
+  xiiInt32& targetSocket = (Mode == Mode::Server) ? m_serverSocketFd : m_clientSocketFd;
 
   targetSocket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
   if (targetSocket == -1)
@@ -127,7 +127,7 @@ void xiiPipeChannel_linux::InternalConnect()
     serverAddress.sun_family         = AF_UNIX;
     strcpy(serverAddress.sun_path, m_serverSocketPath.GetData());
 
-    int connectResult = connect(m_clientSocketFd, (struct sockaddr*)&serverAddress, SUN_LEN(&serverAddress));
+    xiiInt32 connectResult = connect(m_clientSocketFd, (struct sockaddr*)&serverAddress, SUN_LEN(&serverAddress));
 
     static_cast<xiiMessageLoop_linux*>(m_pOwner)->RegisterWait(this, xiiMessageLoop_linux::WaitType::Connect, m_clientSocketFd);
   }
@@ -179,11 +179,11 @@ void xiiPipeChannel_linux::InternalSend()
     {
       const xiiArrayPtr<const xiiUInt8> range = storage->GetContiguousMemoryRange(uiNextOffset);
 
-      int res = send(m_clientSocketFd, range.GetPtr(), range.GetCount(), 0);
+      xiiInt32 res = send(m_clientSocketFd, range.GetPtr(), range.GetCount(), 0);
 
       if (res < 0)
       {
-        int errorCode = errno;
+        xiiInt32 errorCode = errno;
         // We can't send at the moment. Wait until we can send again.
         if (errorCode == EWOULDBLOCK)
         {
@@ -263,7 +263,7 @@ void xiiPipeChannel_linux::ProcessIncomingPackages()
 
     if (recieveResult < 0)
     {
-      int errorCode = errno;
+      xiiInt32 errorCode = errno;
       if (errorCode == EWOULDBLOCK)
       {
         return;

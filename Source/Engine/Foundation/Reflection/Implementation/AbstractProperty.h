@@ -247,7 +247,7 @@ public:
   /// GetSpecificType() can be used to step deeper into the type (if required).
   ///
   /// You need to pass the pointer to an object on which you are operating. This function is mostly of interest when the property itself is
-  /// a compound type (a struct or class). If it is a simple type (int, float, etc.) it doesn't make much sense to retrieve the pointer.
+  /// a compound type (a struct or class). If it is a simple type (xiiInt32, float, etc.) it doesn't make much sense to retrieve the pointer.
   ///
   /// For example GetSpecificType() might return that a property is of type xiiVec3. In that case one might either stop and just use the code
   /// to handle xiiVec3 types, or one might continue and enumerate all sub-properties (x, y and z) as well.
@@ -375,7 +375,7 @@ public:
 };
 
 /// \brief Use getArgument<N, Args...>::Type to get the type of the Nth argument in Args.
-template <int _Index, class... Args>
+template <xiiInt32 _Index, class... Args>
 struct getArgument;
 
 template <class Head, class... Tail>
@@ -384,19 +384,19 @@ struct getArgument<0, Head, Tail...>
   using Type = Head;
 };
 
-template <int _Index, class Head, class... Tail>
+template <xiiInt32 _Index, class Head, class... Tail>
 struct getArgument<_Index, Head, Tail...>
 {
   using Type = typename getArgument<_Index - 1, Tail...>::Type;
 };
 
 /// \brief Template that allows to probe a function for a parameter and return type.
-template <int I, typename FUNC>
+template <xiiInt32 I, typename FUNC>
 struct xiiFunctionParameterTypeResolver
 {
 };
 
-template <int I, typename R, typename... P>
+template <xiiInt32 I, typename R, typename... P>
 struct xiiFunctionParameterTypeResolver<I, R (*)(P...)>
 {
   enum Constants
@@ -408,7 +408,7 @@ struct xiiFunctionParameterTypeResolver<I, R (*)(P...)>
   using ReturnType    = R;
 };
 
-template <int I, class Class, typename R, typename... P>
+template <xiiInt32 I, class Class, typename R, typename... P>
 struct xiiFunctionParameterTypeResolver<I, R (Class::*)(P...)>
 {
   enum Constants
@@ -420,7 +420,7 @@ struct xiiFunctionParameterTypeResolver<I, R (Class::*)(P...)>
   using ReturnType    = R;
 };
 
-template <int I, class Class, typename R, typename... P>
+template <xiiInt32 I, class Class, typename R, typename... P>
 struct xiiFunctionParameterTypeResolver<I, R (Class::*)(P...) const>
 {
   enum Constants

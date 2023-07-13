@@ -293,7 +293,7 @@ using xiiCVarDouble = xiiTypedCVar<double, xiiCVarType::Double>;
 using xiiCVarBool = xiiTypedCVar<bool, xiiCVarType::Bool>;
 
 /// \brief A CVar that stores an int value.
-using xiiCVarInt = xiiTypedCVar<int, xiiCVarType::Int>;
+using xiiCVarInt = xiiTypedCVar<xiiInt32, xiiCVarType::Int>;
 
 /// \brief A CVar that stores a string.
 using xiiCVarString = xiiTypedCVar<xiiHybridString<32>, xiiCVarType::String>;

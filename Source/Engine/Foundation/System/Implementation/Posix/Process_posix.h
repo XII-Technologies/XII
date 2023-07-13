@@ -16,9 +16,9 @@ XII_DEFINE_AS_POD_TYPE(struct pollfd);
 
 namespace
 {
-  xiiResult AddFdFlags(int fd, int addFlags)
+  xiiResult AddFdFlags(xiiInt32 fd, xiiInt32 addFlags)
   {
-    int flags = fcntl(fd, F_GETFD);
+    xiiInt32 flags = fcntl(fd, F_GETFD);
     flags |= addFlags;
     if (fcntl(fd, F_SETFD, flags) != 0)
     {
@@ -42,14 +42,14 @@ struct xiiProcessImpl
 
   struct StdStreamInfo
   {
-    int                              fd;
+    xiiInt32                              fd;
     xiiDelegate<void(xiiStringView)> callback;
   };
   xiiHybridArray<StdStreamInfo, 2>  m_streams;
   xiiDynamicArray<xiiStringBuilder> m_overflowBuffers;
   xiiUniquePtr<xiiOSThread>         m_streamWatcherThread;
-  int                               m_wakeupPipeReadEnd  = -1;
-  int                               m_wakeupPipeWriteEnd = -1;
+  xiiInt32                               m_wakeupPipeReadEnd  = -1;
+  xiiInt32                               m_wakeupPipeWriteEnd = -1;
 
   static void* StreamWatcherThread(void* context)
   {
@@ -67,7 +67,7 @@ struct xiiProcessImpl
     bool run = true;
     while (run)
     {
-      int result = poll(pollfds.GetData(), pollfds.GetCount(), -1);
+      xiiInt32 result = poll(pollfds.GetData(), pollfds.GetCount(), -1);
       if (result > 0)
       {
         // Result at index 0 is special and means there was a WakeUp
@@ -154,7 +154,7 @@ struct xiiProcessImpl
 
   xiiResult StartStreamWatcher()
   {
-    int wakeupPipe[2] = {-1, -1};
+    xiiInt32 wakeupPipe[2] = {-1, -1};
     if (pipe(wakeupPipe) < 0)
     {
       xiiLog::Error("Failed to setup wakeup pipe {}", errno);
@@ -196,16 +196,16 @@ struct xiiProcessImpl
     m_wakeupPipeWriteEnd = -1;
   }
 
-  void AddStream(int fd, const xiiDelegate<void(xiiStringView)>& callback)
+  void AddStream(xiiInt32 fd, const xiiDelegate<void(xiiStringView)>& callback)
   {
     m_streams.PushBack({fd, callback});
     m_overflowBuffers.SetCount(m_streams.GetCount());
   }
 
-  static xiiResult StartChildProcess(const xiiProcessOptions& opt, pid_t& outPid, bool suspended, int& outStdOutFd, int& outStdErrFd)
+  static xiiResult StartChildProcess(const xiiProcessOptions& opt, pid_t& outPid, bool suspended, xiiInt32& outStdOutFd, xiiInt32& outStdErrFd)
   {
-    int stdoutPipe[2] = {-1, -1};
-    int stderrPipe[2] = {-1, -1};
+    xiiInt32 stdoutPipe[2] = {-1, -1};
+    xiiInt32 stderrPipe[2] = {-1, -1};
 
     if (opt.m_onStdOut.IsValid())
     {
@@ -242,20 +242,20 @@ struct xiiProcessImpl
       if (opt.m_bHideConsoleWindow == true)
       {
         // Redirect STDIN to /dev/null
-        int stdinReplace = open("/dev/null", O_RDONLY);
+        xiiInt32 stdinReplace = open("/dev/null", O_RDONLY);
         dup2(stdinReplace, STDIN_FILENO);
         close(stdinReplace);
 
         if (!opt.m_onStdOut.IsValid())
         {
-          int stdoutReplace = open("/dev/null", O_WRONLY);
+          xiiInt32 stdoutReplace = open("/dev/null", O_WRONLY);
           dup2(stdoutReplace, STDOUT_FILENO);
           close(stdoutReplace);
         }
 
         if (!opt.m_onStdError.IsValid())
         {
-          int stderrReplace = open("/dev/null", O_WRONLY);
+          xiiInt32 stderrReplace = open("/dev/null", O_WRONLY);
           dup2(stderrReplace, STDERR_FILENO);
           close(stderrReplace);
         }
@@ -344,8 +344,8 @@ xiiProcess::~xiiProcess()
 xiiResult xiiProcess::Execute(const xiiProcessOptions& opt, xiiInt32* out_iExitCode /*= nullptr*/)
 {
   pid_t childPid = 0;
-  int   stdoutFd = -1;
-  int   stderrFd = -1;
+  xiiInt32   stdoutFd = -1;
+  xiiInt32   stderrFd = -1;
   if (xiiProcessImpl::StartChildProcess(opt, childPid, false, stdoutFd, stderrFd).Failed())
   {
     return XII_FAILURE;
@@ -370,7 +370,7 @@ xiiResult xiiProcess::Execute(const xiiProcessOptions& opt, xiiInt32* out_iExitC
     }
   }
 
-  int   childStatus = -1;
+  xiiInt32   childStatus = -1;
   pid_t waitedPid   = waitpid(childPid, &childStatus, 0);
   if (waitedPid < 0)
   {
@@ -394,8 +394,8 @@ xiiResult xiiProcess::Launch(const xiiProcessOptions& opt, xiiBitflags<xiiProces
 {
   XII_ASSERT_DEV(m_pImpl->m_childPid == -1, "Can not reuse an instance of xiiProcess");
 
-  int stdoutFd = -1;
-  int stderrFd = -1;
+  xiiInt32 stdoutFd = -1;
+  xiiInt32 stderrFd = -1;
 
   if (xiiProcessImpl::StartChildProcess(opt, m_pImpl->m_childPid, launchFlags.IsSet(xiiProcessLaunchFlags::Suspended), stdoutFd, stderrFd).Failed())
   {
@@ -448,7 +448,7 @@ xiiResult xiiProcess::ResumeSuspended()
 
 xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
 {
-  int childStatus = 0;
+  xiiInt32 childStatus = 0;
   XII_SCOPE_EXIT(m_pImpl->StopStreamWatcher());
 
   if (timeout.IsZero())
@@ -460,7 +460,7 @@ xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
   }
   else
   {
-    int     waitResult = 0;
+    xiiInt32     waitResult = 0;
     xiiTime startWait  = xiiTime::Now();
     while (true)
     {
@@ -529,8 +529,8 @@ xiiProcessState xiiProcess::GetState() const
     return xiiProcessState::Finished;
   }
 
-  int childStatus = -1;
-  int waitResult  = waitpid(m_pImpl->m_childPid, &childStatus, WNOHANG);
+  xiiInt32 childStatus = -1;
+  xiiInt32 waitResult  = waitpid(m_pImpl->m_childPid, &childStatus, WNOHANG);
   if (waitResult > 0)
   {
     m_iExitCode                  = WEXITSTATUS(childStatus);

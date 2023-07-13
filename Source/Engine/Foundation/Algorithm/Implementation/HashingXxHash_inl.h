@@ -40,7 +40,7 @@ namespace xiiInternal
         xiiUInt32 accs[4] = {uiSeed + PRIME32_1 + PRIME32_2, uiSeed + PRIME32_2, uiSeed, uiSeed - PRIME32_1};
         for (; length - index >= 16; index += 16)
         {
-          for (int i = 0; i < 4; i++)
+          for (xiiInt32 i = 0; i < 4; i++)
           {
             xiiUInt32 laneN = (static_cast<xiiUInt32>(str[index + i * 4 + 0]) << 0) | (static_cast<xiiUInt32>(str[index + i * 4 + 1]) << 8) |
               (static_cast<xiiUInt32>(str[index + i * 4 + 2]) << 16) | (static_cast<xiiUInt32>(str[index + i * 4 + 3]) << 24);
@@ -108,7 +108,7 @@ namespace xiiInternal
         // Step 2
         for (; length - index >= 32; index += 32)
         {
-          for (int i = 0; i < 4; i++)
+          for (xiiInt32 i = 0; i < 4; i++)
           {
             xiiUInt64 laneN = (static_cast<xiiUInt64>(str[index + i * 8 + 0]) << 0) | (static_cast<xiiUInt64>(str[index + i * 8 + 1]) << 8) |
               (static_cast<xiiUInt64>(str[index + i * 8 + 2]) << 16) | (static_cast<xiiUInt64>(str[index + i * 8 + 3]) << 24) |
@@ -122,7 +122,7 @@ namespace xiiInternal
 
         // Step 3
         acc = xiiRotLeft(accs[0], 1ULL) + xiiRotLeft(accs[1], 7ULL) + xiiRotLeft(accs[2], 12ULL) + xiiRotLeft(accs[3], 18ULL);
-        for (int i = 0; i < 4; i++)
+        for (xiiInt32 i = 0; i < 4; i++)
         {
           acc = (acc ^ (xiiRotLeft(accs[i] * PRIME64_2, 31ULL) * PRIME64_1)) * PRIME64_1 + PRIME64_4;
         }

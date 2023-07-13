@@ -105,7 +105,7 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::Truncate(const xiiSimdVec4f& f)
   return vcvtq_s32_f32(f.m_v);
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE xiiInt32 xiiSimdVec4i::GetComponent() const
 {
   return vgetq_lane_s32(m_v, N);
@@ -159,8 +159,8 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::CompMul(const xiiSimdVec4i& v) cons
 
 XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::CompDiv(const xiiSimdVec4i& v) const
 {
-  int a[4];
-  int b[4];
+  xiiInt32 a[4];
+  xiiInt32 b[4];
   Store<4>(a);
   v.Store<4>(b);
 

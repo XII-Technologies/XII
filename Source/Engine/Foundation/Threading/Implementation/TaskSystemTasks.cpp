@@ -110,7 +110,7 @@ xiiTaskSystem::TaskData xiiTaskSystem::GetNextTask(xiiTaskPriority::Enum FirstPr
 
   if (pWorkerState)
   {
-    XII_VERIFY(pWorkerState->Set((int)xiiTaskWorkerState::Idle) == (int)xiiTaskWorkerState::Active, "Corrupt Worker State");
+    XII_VERIFY(pWorkerState->Set((xiiInt32)xiiTaskWorkerState::Idle) == (xiiInt32)xiiTaskWorkerState::Active, "Corrupt Worker State");
   }
 
   return TaskData();

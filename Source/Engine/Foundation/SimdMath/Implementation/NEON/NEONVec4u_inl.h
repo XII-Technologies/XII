@@ -67,7 +67,7 @@ XII_ALWAYS_INLINE xiiSimdVec4u xiiSimdVec4u::Truncate(const xiiSimdVec4f& f)
   return vcvtq_u32_f32(f.m_v);
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE xiiUInt32 xiiSimdVec4u::GetComponent() const
 {
   return vgetq_lane_u32(m_v, N);

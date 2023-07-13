@@ -10,7 +10,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
   /// \note Note that usually the compile time decisions with the defines XII_PLATFORM_LITTLE_ENDIAN, XII_PLATFORM_BIG_ENDIAN is preferred.
   static inline bool IsBigEndian()
   {
-    const int i = 1;
+    const xiiInt32 i = 1;
     return (*(char*)&i) == 0;
   }
 

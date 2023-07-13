@@ -28,7 +28,7 @@ namespace
   {
     xiiStringView                    m_sName;
     xiiExpressionAST::NodeType::Enum m_NodeType;
-    int                              m_iPrecedence;
+    xiiInt32                              m_iPrecedence;
   };
 
   // Operator precedence according to https://en.cppreference.com/w/cpp/language/operator_precedence,
@@ -427,7 +427,7 @@ xiiExpressionAST::Node* xiiExpressionParser::ParseFactor()
       xiiConversionUtils::StringToInt64(sVal, iConstant).IgnoreResult();
     }
 
-    return m_pAST->CreateConstant((int)iConstant, xiiExpressionAST::DataType::Int);
+    return m_pAST->CreateConstant((xiiInt32)iConstant, xiiExpressionAST::DataType::Int);
   }
   else if (Accept(m_TokenStream, m_uiCurrentToken, xiiTokenType::Float, &uiValueToken))
   {
@@ -453,14 +453,14 @@ xiiExpressionAST::Node* xiiExpressionParser::ParseFactor()
 
 // Parsing the expression - recursive parser using "precedence climbing".
 // http://www.engr.mun.ca/~theo/Misc/exp_parsing.htm
-xiiExpressionAST::Node* xiiExpressionParser::ParseExpression(int iPrecedence /* = s_iLowestPrecedence*/)
+xiiExpressionAST::Node* xiiExpressionParser::ParseExpression(xiiInt32 iPrecedence /* = s_iLowestPrecedence*/)
 {
   auto pExpression = ParseUnaryExpression();
   if (pExpression == nullptr)
     return nullptr;
 
   xiiExpressionAST::NodeType::Enum binaryOp;
-  int                              iBinaryOpPrecedence = 0;
+  xiiInt32                              iBinaryOpPrecedence = 0;
   xiiUInt32                        uiOperatorLength    = 0;
   while (AcceptBinaryOperator(binaryOp, iBinaryOpPrecedence, uiOperatorLength) && iBinaryOpPrecedence < iPrecedence)
   {
@@ -657,7 +657,7 @@ bool xiiExpressionParser::AcceptOperator(xiiStringView sName)
 }
 
 // Does NOT advance the current token beyond the binary operator!
-bool xiiExpressionParser::AcceptBinaryOperator(xiiExpressionAST::NodeType::Enum& out_binaryOp, int& out_iOperatorPrecedence, xiiUInt32& out_uiOperatorLength)
+bool xiiExpressionParser::AcceptBinaryOperator(xiiExpressionAST::NodeType::Enum& out_binaryOp, xiiInt32& out_iOperatorPrecedence, xiiUInt32& out_uiOperatorLength)
 {
   SkipWhitespace(m_TokenStream, m_uiCurrentToken);
 

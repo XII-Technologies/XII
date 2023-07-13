@@ -79,7 +79,7 @@ void xiiCommandLineUtils::SetCommandLine(xiiArrayPtr<xiiString> commands)
 
 void xiiCommandLineUtils::SetCommandLine()
 {
-  int argc = 0;
+  xiiInt32 argc = 0;
 
   LPWSTR* argvw = CommandLineToArgvW(::GetCommandLineW(), &argc);
 

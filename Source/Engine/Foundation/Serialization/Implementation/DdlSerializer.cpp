@@ -255,7 +255,7 @@ void xiiAbstractGraphDdlSerializer::WriteDocument(xiiStreamWriter& ref_stream, c
     writer.SetIndentation(-1);
 
   xiiStringBuilder sHeaderVersion;
-  sHeaderVersion.Format("HeaderV{0}", (int)XII_DOCUMENT_VERSION);
+  sHeaderVersion.Format("HeaderV{0}", (xiiInt32)XII_DOCUMENT_VERSION);
   WriteGraph(writer, pHeader, sHeaderVersion);
   WriteGraph(writer, pGraph, "Objects");
   WriteGraph(writer, pTypes, "Types");

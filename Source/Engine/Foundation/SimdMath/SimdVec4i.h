@@ -39,7 +39,7 @@ public:
   static xiiSimdVec4i Truncate(const xiiSimdVec4f& f); // [tested]
 
 public:
-  template <int N>
+  template <xiiInt32 N>
   xiiInt32 GetComponent() const; // [tested]
 
   xiiInt32 x() const; // [tested]

@@ -187,7 +187,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathFloatBits::BITS_1
   return _mm_rsqrt_ps(m_v);
 }
 
-template <int N, xiiMathFloatBits::Enum acc>
+template <xiiInt32 N, xiiMathFloatBits::Enum acc>
 void xiiSimdVec4f::NormalizeIfNotZero(const xiiSimdFloat& fEpsilon)
 {
   xiiSimdFloat sqLength  = GetLengthSquared<N>();
@@ -196,22 +196,22 @@ void xiiSimdVec4f::NormalizeIfNotZero(const xiiSimdFloat& fEpsilon)
   m_v                    = _mm_and_ps(isNotZero, m_v);
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero() const
 {
-  const int mask = XII_BIT(N) - 1;
+  const xiiInt32 mask = XII_BIT(N) - 1;
   return (_mm_movemask_ps(_mm_cmpeq_ps(m_v, _mm_setzero_ps())) & mask) == mask;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero(const xiiSimdFloat& fEpsilon) const
 {
-  const int mask   = XII_BIT(N) - 1;
+  const xiiInt32 mask   = XII_BIT(N) - 1;
   __m128    absVal = Abs().m_v;
   return (_mm_movemask_ps(_mm_cmplt_ps(absVal, fEpsilon.m_v)) & mask) == mask;
 }
 
-template <int N>
+template <xiiInt32 N>
 inline bool xiiSimdVec4f::IsNaN() const
 {
   // NAN -> (exponent = all 1, mantissa = non-zero)
@@ -225,11 +225,11 @@ inline bool xiiSimdVec4f::IsNaN() const
   __m128 exponentAll1 = _mm_cmpeq_ps(_mm_and_ps(m_v, exponentMask), exponentMask);
   __m128 mantissaNon0 = _mm_cmpneq_ps(_mm_and_ps(m_v, mantissaMask), _mm_setzero_ps());
 
-  const int mask = XII_BIT(N) - 1;
+  const xiiInt32 mask = XII_BIT(N) - 1;
   return (_mm_movemask_ps(_mm_and_ps(exponentAll1, mantissaNon0)) & mask) != 0;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsValid() const
 {
   // Check the 8 exponent bits.
@@ -242,7 +242,7 @@ XII_ALWAYS_INLINE bool xiiSimdVec4f::IsValid() const
 
   __m128 exponentNot1 = _mm_cmpneq_ps(_mm_and_ps(m_v, exponentMask), exponentMask);
 
-  const int mask = XII_BIT(N) - 1;
+  const xiiInt32 mask = XII_BIT(N) - 1;
   return (_mm_movemask_ps(exponentNot1) & mask) == mask;
 }
 

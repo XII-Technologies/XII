@@ -304,7 +304,7 @@ XII_FORCE_INLINE ValueType& xiiIdTableBase<IdType, ValueType>::operator[](const 
 
   Entry& entry = m_pEntries[id.m_InstanceIndex];
 
-  XII_ASSERT_DEBUG(entry.id.IsIndexAndGenerationEqual(id), "Stale access. Trying to access a value (generation: {0}) that has been removed and replaced by a new value (generation: {1})", static_cast<int>(entry.id.m_Generation), id.m_Generation);
+  XII_ASSERT_DEBUG(entry.id.IsIndexAndGenerationEqual(id), "Stale access. Trying to access a value (generation: {0}) that has been removed and replaced by a new value (generation: {1})", static_cast<xiiInt32>(entry.id.m_Generation), id.m_Generation);
 
   return entry.value;
 }

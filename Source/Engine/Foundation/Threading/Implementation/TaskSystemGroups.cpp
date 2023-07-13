@@ -290,7 +290,7 @@ void xiiTaskSystem::WaitForGroup(xiiTaskGroupID group)
 
         if (tl_TaskWorkerInfo.m_pWorkerState)
         {
-          XII_VERIFY(tl_TaskWorkerInfo.m_pWorkerState->Set((int)xiiTaskWorkerState::Blocked) == (int)xiiTaskWorkerState::Active, "Corrupt worker state");
+          XII_VERIFY(tl_TaskWorkerInfo.m_pWorkerState->Set((xiiInt32)xiiTaskWorkerState::Blocked) == (xiiInt32)xiiTaskWorkerState::Active, "Corrupt worker state");
         }
 
         WakeUpThreads(typeToWakeUp, 1);
@@ -299,7 +299,7 @@ void xiiTaskSystem::WaitForGroup(xiiTaskGroupID group)
 
         if (tl_TaskWorkerInfo.m_pWorkerState)
         {
-          XII_VERIFY(tl_TaskWorkerInfo.m_pWorkerState->Set((int)xiiTaskWorkerState::Active) == (int)xiiTaskWorkerState::Blocked, "Corrupt worker state");
+          XII_VERIFY(tl_TaskWorkerInfo.m_pWorkerState->Set((xiiInt32)xiiTaskWorkerState::Active) == (xiiInt32)xiiTaskWorkerState::Blocked, "Corrupt worker state");
         }
 
         break;
@@ -331,7 +331,7 @@ void xiiTaskSystem::WaitForCondition(xiiDelegate<bool()> condition)
 
         if (tl_TaskWorkerInfo.m_pWorkerState)
         {
-          XII_VERIFY(tl_TaskWorkerInfo.m_pWorkerState->Set((int)xiiTaskWorkerState::Blocked) == (int)xiiTaskWorkerState::Active, "Corrupt worker state");
+          XII_VERIFY(tl_TaskWorkerInfo.m_pWorkerState->Set((xiiInt32)xiiTaskWorkerState::Blocked) == (xiiInt32)xiiTaskWorkerState::Active, "Corrupt worker state");
         }
 
         WakeUpThreads(typeToWakeUp, 1);
@@ -344,7 +344,7 @@ void xiiTaskSystem::WaitForCondition(xiiDelegate<bool()> condition)
 
         if (tl_TaskWorkerInfo.m_pWorkerState)
         {
-          XII_VERIFY(tl_TaskWorkerInfo.m_pWorkerState->Set((int)xiiTaskWorkerState::Active) == (int)xiiTaskWorkerState::Blocked, "Corrupt worker state");
+          XII_VERIFY(tl_TaskWorkerInfo.m_pWorkerState->Set((xiiInt32)xiiTaskWorkerState::Active) == (xiiInt32)xiiTaskWorkerState::Blocked, "Corrupt worker state");
         }
 
         break;

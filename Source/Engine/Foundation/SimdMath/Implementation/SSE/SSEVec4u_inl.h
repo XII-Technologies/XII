@@ -84,7 +84,7 @@ XII_ALWAYS_INLINE xiiSimdVec4u xiiSimdVec4u::Truncate(const xiiSimdVec4f& f)
   return _mm_add_epi32(res1, res2);
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE xiiUInt32 xiiSimdVec4u::GetComponent() const
 {
 #if XII_SSE_LEVEL >= XII_SSE_41

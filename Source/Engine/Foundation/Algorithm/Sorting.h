@@ -71,7 +71,7 @@ private:
 
   // Perform comparison either with "Less(a,b)" (prefered) or with operator ()(a,b)
   template <typename Element, typename Comparer>
-  XII_ALWAYS_INLINE constexpr static auto DoCompare(const Comparer& comparer, const Element& a, const Element& b, int) -> decltype(comparer.Less(a, b))
+  XII_ALWAYS_INLINE constexpr static auto DoCompare(const Comparer& comparer, const Element& a, const Element& b, xiiInt32) -> decltype(comparer.Less(a, b))
   {
     return comparer.Less(a, b);
   }
@@ -83,7 +83,7 @@ private:
   template <typename Element, typename Comparer>
   XII_ALWAYS_INLINE constexpr static bool DoCompare(const Comparer& comparer, const Element& a, const Element& b)
   {
-    // Int/long is used to prefer the int version if both are available.
+    // Int/Long is used to prefer the Int version if both are available.
     // (Kudos to http://stackoverflow.com/a/9154394/5347927 where I've learned this trick)
     return DoCompare(comparer, a, b, 0);
   }
