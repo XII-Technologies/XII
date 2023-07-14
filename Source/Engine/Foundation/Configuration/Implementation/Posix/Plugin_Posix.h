@@ -38,7 +38,7 @@ xiiResult UnloadPluginModule(xiiPluginModule& Module, xiiStringView sPluginFile)
 
 xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& Module, xiiStringView sPluginFile)
 {
-  Module = dlopen(szFileToLoad, RTLD_NOW | RTLD_GLOBAL);
+  Module = dlopen(sFileToLoad.GetStartPointer(), RTLD_NOW | RTLD_GLOBAL);
   if (Module == nullptr)
   {
     xiiLog::Error("Could not load plugin '{0}'. Error {1}.\nSet the environment variable LD_DEBUG=all to get more information.", sPluginFile, static_cast<const char*>(dlerror()));

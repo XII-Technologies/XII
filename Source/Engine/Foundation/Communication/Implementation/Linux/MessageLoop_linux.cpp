@@ -108,7 +108,7 @@ bool xiiMessageLoop_linux::WaitForMessages(xiiInt32 iTimeout, xiiIpcChannel* pFi
 void xiiMessageLoop_linux::RegisterWait(xiiPipeChannel_linux* pChannel, WaitType type, xiiInt32 fd)
 {
   xiiLog::Debug("[IPC]xiiMessageLoop_linux::RegisterWait({}}", (xiiInt32)type);
-  short xiiInt32 waitFlags = 0;
+  short int waitFlags = 0;
   switch (type)
   {
     case WaitType::Accept:

@@ -5,15 +5,13 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 xiiString xiiEnvironmentVariableUtils::GetValueStringImpl(xiiStringView sName, xiiStringView sDefault)
 {
-  xiiStringBuilder tmp;
-  const char* value = getenv(sName.GetData(tmp));
-  return value != nullptr ? value : sDefault;
+  const char* szValue = getenv(sName.GetStartPointer());
+  return szValue != nullptr ? szValue : sDefault;
 }
 
 xiiResult xiiEnvironmentVariableUtils::SetValueStringImpl(xiiStringView sName, xiiStringView sValue)
 {
-  xiiStringBuilder tmp;
-  if (setenv(sName, sValue.GetData(tmp), 1) == 0)
+  if (setenv(sName.GetStartPointer(), sValue.GetStartPointer(), 1) == 0)
     return XII_SUCCESS;
   else
     return XII_FAILURE;
@@ -21,14 +19,12 @@ xiiResult xiiEnvironmentVariableUtils::SetValueStringImpl(xiiStringView sName, x
 
 bool xiiEnvironmentVariableUtils::IsVariableSetImpl(xiiStringView sName)
 {
-  xiiStringBuilder tmp;
-  return getenv(sName.GetData(tmp)) != nullptr;
+  return getenv(sName.GetStartPointer()) != nullptr;
 }
 
 xiiResult xiiEnvironmentVariableUtils::UnsetVariableImpl(xiiStringView sName)
 {
-  xiiStringBuilder tmp;
-  if (unsetenv(sName.GetData(tmp)) == 0)
+  if (unsetenv(sName.GetStartPointer()) == 0)
     return XII_SUCCESS;
   else
     return XII_FAILURE;
