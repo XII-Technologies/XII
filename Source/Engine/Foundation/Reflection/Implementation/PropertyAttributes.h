@@ -43,7 +43,7 @@ public:
   {
   }
 
-  xiiStringView GetCategory() const { return m_sCategory.GetView(); }
+  xiiStringView GetCategory() const { return m_sCategory; }
 
 private:
   xiiUntrackedString m_sCategory;
@@ -86,7 +86,7 @@ public:
   {
   }
 
-  xiiStringView GetTitle() const { return m_sTitle.GetView(); }
+  xiiStringView GetTitle() const { return m_sTitle; }
 
 private:
   xiiUntrackedString m_sTitle;
@@ -128,7 +128,7 @@ public:
   {
   }
 
-  xiiStringView GetSuffix() const { return m_sSuffix.GetView(); }
+  xiiStringView GetSuffix() const { return m_sSuffix; }
 
 private:
   xiiUntrackedString m_sSuffix;
@@ -146,7 +146,7 @@ public:
   {
   }
 
-  xiiStringView GetText() const { return m_sText.GetView(); }
+  xiiStringView GetText() const { return m_sText; }
 
 private:
   xiiUntrackedString m_sText;
@@ -262,8 +262,8 @@ public:
   xiiGroupAttribute(xiiStringView sGroup, float fOrder = -1.0f);
   xiiGroupAttribute(xiiStringView sGroup, xiiStringView sIconName, float fOrder = -1.0f);
 
-  xiiStringView GetGroup() const { return m_sGroup.GetView(); }
-  xiiStringView GetIconName() const { return m_sIconName.GetView(); }
+  xiiStringView GetGroup() const { return m_sGroup; }
+  xiiStringView GetIconName() const { return m_sIconName; }
   float         GetOrder() const { return m_fOrder; }
 
 private:
@@ -309,7 +309,7 @@ public:
   {
   }
 
-  xiiStringView GetTagFilter() const { return m_sTagFilter.GetView(); }
+  xiiStringView GetTagFilter() const { return m_sTagFilter; }
 
 private:
   xiiUntrackedString m_sTagFilter;
@@ -368,9 +368,9 @@ public:
   {
   }
 
-  xiiStringView GetClassSource() const { return m_sClassSource.GetView(); }
-  xiiStringView GetClassType() const { return m_sClassType.GetView(); }
-  xiiStringView GetClassProperty() const { return m_sClassProperty.GetView(); }
+  xiiStringView GetClassSource() const { return m_sClassSource; }
+  xiiStringView GetClassType() const { return m_sClassType; }
+  xiiStringView GetClassProperty() const { return m_sClassProperty; }
 
 private:
   xiiUntrackedString m_sClassSource;
@@ -470,9 +470,9 @@ public:
   {
   }
 
-  xiiStringView                   GetDialogTitle() const { return m_sDialogTitle.GetView(); }
-  xiiStringView                   GetTypeFilter() const { return m_sTypeFilter.GetView(); }
-  xiiStringView                   GetCustomAction() const { return m_sCustomAction.GetView(); }
+  xiiStringView                   GetDialogTitle() const { return m_sDialogTitle; }
+  xiiStringView                   GetTypeFilter() const { return m_sTypeFilter; }
+  xiiStringView                   GetCustomAction() const { return m_sCustomAction; }
   xiiBitflags<xiiDependencyFlags> GetDependencyFlags() const { return m_DependencyFlags; }
 
 private:
@@ -504,7 +504,7 @@ public:
     m_sTypeFilter = sTemp;
   }
 
-  xiiStringView                   GetTypeFilter() const { return m_sTypeFilter.GetView(); }
+  xiiStringView                   GetTypeFilter() const { return m_sTypeFilter; }
   xiiBitflags<xiiDependencyFlags> GetDependencyFlags() const { return m_DependencyFlags; }
 
 private:
@@ -526,7 +526,7 @@ public:
   {
   }
 
-  xiiStringView GetDynamicEnumName() const { return m_sDynamicEnumName.GetView(); }
+  xiiStringView GetDynamicEnumName() const { return m_sDynamicEnumName; }
 
 private:
   xiiUntrackedString m_sDynamicEnumName;
@@ -546,7 +546,7 @@ public:
   {
   }
 
-  xiiStringView GetDynamicEnumName() const { return m_sDynamicEnumName.GetView(); }
+  xiiStringView GetDynamicEnumName() const { return m_sDynamicEnumName; }
 
 private:
   xiiUntrackedString m_sDynamicEnumName;
@@ -986,7 +986,7 @@ class XII_FOUNDATION_DLL xiiScriptableFunctionAttribute : public xiiPropertyAttr
 
   xiiScriptableFunctionAttribute(ArgType argType1 = In, xiiStringView sArg1 = {}, ArgType argType2 = In, xiiStringView sArg2 = {}, ArgType argType3 = In, xiiStringView sArg3 = {}, ArgType argType4 = In, xiiStringView sArg4 = {}, ArgType argType5 = In, xiiStringView sArg5 = {}, ArgType argType6 = In, xiiStringView sArg6 = {});
 
-  xiiStringView GetArgumentName(xiiUInt32 uiIndex) const { return m_ArgNames[uiIndex].GetView(); }
+  xiiStringView GetArgumentName(xiiUInt32 uiIndex) const { return m_ArgNames[uiIndex]; }
 
   ArgType GetArgumentType(xiiUInt32 uiIndex) const { return static_cast<ArgType>(m_ArgTypes[uiIndex]); };
 

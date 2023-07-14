@@ -83,7 +83,7 @@ void xiiClock::Update()
   m_AccumulatedTime += m_LastTimeDiff;
 
   EventData ed;
-  ed.m_sClockName       = m_sName.GetView();
+  ed.m_sClockName       = m_sName;
   ed.m_RawTimeStep      = tDiff;
   ed.m_SmoothedTimeStep = m_LastTimeDiff;
 

@@ -247,7 +247,7 @@ public:
   /// GetSpecificType() can be used to step deeper into the type (if required).
   ///
   /// You need to pass the pointer to an object on which you are operating. This function is mostly of interest when the property itself is
-  /// a compound type (a struct or class). If it is a simple type (xiiInt32, float, etc.) it doesn't make much sense to retrieve the pointer.
+  /// a compound type (a struct or class). If it is a simple type (int, float, etc.) it doesn't make much sense to retrieve the pointer.
   ///
   /// For example GetSpecificType() might return that a property is of type xiiVec3. In that case one might either stop and just use the code
   /// to handle xiiVec3 types, or one might continue and enumerate all sub-properties (x, y and z) as well.

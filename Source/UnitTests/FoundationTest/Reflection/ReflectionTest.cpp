@@ -549,7 +549,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, MemberProperties)
     const xiiRTTI* pRtti = xiiGetStaticRTTI<xiiTestClass2>();
 
     {
-      TestMemberProperty<const char*>("Text", &Instance, pRtti, xiiPropertyFlags::StandardType | xiiPropertyFlags::Const, xiiString("Legen"), xiiString("dary"));
+      TestMemberProperty<xiiStringView>("Text", &Instance, pRtti, xiiPropertyFlags::StandardType | xiiPropertyFlags::Const, xiiString("Legen"), xiiString("dary"));
       xiiAbstractProperty* pProp = pRtti->FindPropertyByName("SubVector", false);
       XII_TEST_BOOL(pProp == nullptr);
     }
@@ -940,16 +940,16 @@ XII_CREATE_SIMPLE_TEST(Reflection, Arrays)
     TestArrayProperty<double>("AcHybrid", &containers, pRtti, fValue);
     TestArrayProperty<double>("AcHybridRO", &containers, pRtti, fValue);
 
-    const char* szValue  = "Bla";
-    const char* szValue2 = "LongString------------------------------------------------------------------------------------";
-    xiiString   sValue   = szValue;
-    xiiString   sValue2  = szValue2;
+    xiiStringView sValue0  = "Bla";
+    xiiStringView sValue02 = "LongString------------------------------------------------------------------------------------";
+    xiiString     sValue   = sValue0;
+    xiiString     sValue2  = sValue02;
 
     TestArrayProperty<xiiString>("HybridChar", &containers, pRtti, sValue);
     TestArrayProperty<xiiString>("HybridCharRO", &containers, pRtti, sValue);
 
-    TestArrayProperty<const char*>("AcHybridChar", &containers, pRtti, szValue);
-    TestArrayProperty<const char*>("AcHybridCharRO", &containers, pRtti, szValue);
+    TestArrayProperty<xiiStringView>("AcHybridChar", &containers, pRtti, sValue0);
+    TestArrayProperty<xiiStringView>("AcHybridCharRO", &containers, pRtti, sValue0);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Struct Array")
@@ -1111,9 +1111,9 @@ XII_CREATE_SIMPLE_TEST(Reflection, Sets)
     TestSetProperty<xiiString>("AcPseudoSet2", &containers, pRtti, sValue1, sValue2);
     TestSetProperty<xiiString>("AcPseudoSet2RO", &containers, pRtti, sValue1, sValue2);
 
-    const char* szValue1 = "TestString1";
-    const char* szValue2 = "Test String Deus";
-    TestSetProperty<const char*>("AcPseudoSet2b", &containers, pRtti, szValue1, szValue2);
+    xiiStringView sValue01 = "TestString1";
+    xiiStringView sValue02 = "Test String Deus";
+    TestSetProperty<xiiStringView>("AcPseudoSet2b", &containers, pRtti, sValue01, sValue02);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Custom Variant HashSet")
@@ -1315,10 +1315,8 @@ XII_CREATE_SIMPLE_TEST(Reflection, Pointer)
       XII_TEST_BOOL(pProp->GetSpecificType() == xiiGetStaticRTTI<const char*>());
     }
 
-    TestPointerMemberProperty<xiiTestArrays>(
-      "ArraysPtr", &containers, pRtti, xiiPropertyFlags::Class | xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner, containers.m_pArrays);
-    TestPointerMemberProperty<xiiTestArrays>("ArraysPtrDirect", &containers, pRtti,
-                                             xiiPropertyFlags::Class | xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner, containers.m_pArraysDirect);
+    TestPointerMemberProperty<xiiTestArrays>("ArraysPtr", &containers, pRtti, xiiPropertyFlags::Class | xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner, containers.m_pArrays);
+    TestPointerMemberProperty<xiiTestArrays>("ArraysPtrDirect", &containers, pRtti, xiiPropertyFlags::Class | xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner, containers.m_pArraysDirect);
   }
 
   xiiTestPtr                    containers;

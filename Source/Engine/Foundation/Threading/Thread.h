@@ -60,7 +60,7 @@ public:
   inline bool IsRunning() const { return m_ThreadStatus == Running; }
 
   /// \brief Returns the thread name
-  inline xiiStringView GetThreadName() const { return m_sName.GetView(); }
+  inline xiiStringView GetThreadName() const { return m_sName; }
 
   /// \brief These events inform about threads starting and finishing.
   ///

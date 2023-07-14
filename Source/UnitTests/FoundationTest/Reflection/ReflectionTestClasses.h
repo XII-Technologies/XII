@@ -284,7 +284,7 @@ public:
 
   bool operator==(const xiiTestArrays& rhs) const
   {
-    return m_Hybrid == rhs.m_Hybrid && m_Dynamic == rhs.m_Dynamic && m_Deque == rhs.m_Deque && m_HybridChar == rhs.m_HybridChar && m_CustomVariant == rhs.m_CustomVariant;
+    return m_Hybrid == rhs.m_Hybrid && m_Dynamic == rhs.m_Dynamic && m_Deque == rhs.m_Deque && m_HybridChar == rhs.m_HybridChar && m_CustomVariant == rhs.m_CustomVariant && m_CustomVariant2 == rhs.m_CustomVariant2;
   }
 
   bool operator!=(const xiiTestArrays& rhs) const { return !(*this == rhs); }
@@ -479,7 +479,7 @@ public:
   }
 
   void          SetString(xiiStringView sPzValue) { m_sString = sPzValue; }
-  xiiStringView GetString() const { return m_sString.GetView(); }
+  xiiStringView GetString() const { return m_sString; }
 
   void           SetArrays(xiiTestArrays* pValue) { m_pArrays = pValue; }
   xiiTestArrays* GetArrays() const { return m_pArrays; }

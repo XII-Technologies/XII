@@ -9,7 +9,7 @@ inline void xiiClock::SetClockName(xiiStringView sName)
 
 inline xiiStringView xiiClock::GetClockName() const
 {
-  return m_sName.GetView();
+  return m_sName;
 }
 
 inline void xiiClock::SetTimeStepSmoothing(xiiTimeStepSmoothing* pSmoother)
