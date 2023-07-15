@@ -549,7 +549,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, MemberProperties)
     const xiiRTTI* pRtti = xiiGetStaticRTTI<xiiTestClass2>();
 
     {
-      TestMemberProperty<xiiStringView>("Text", &Instance, pRtti, xiiPropertyFlags::StandardType | xiiPropertyFlags::Const, xiiString("Legen"), xiiString("dary"));
+      TestMemberProperty<xiiStringView>("Text", &Instance, pRtti, xiiPropertyFlags::StandardType, xiiString("Legen"), xiiString("dary"));
       xiiAbstractProperty* pProp = pRtti->FindPropertyByName("SubVector", false);
       XII_TEST_BOOL(pProp == nullptr);
     }
@@ -776,16 +776,14 @@ XII_CREATE_SIMPLE_TEST(Reflection, Bitflags)
         XII_TEST_INT(iValue, uiBitflagValue);
 
         // Testing the short enum name version
-        XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(
-          pBitflagsPropertyRTTI, uiBitflagValue, sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
+        XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(pBitflagsPropertyRTTI, uiBitflagValue, sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
         XII_TEST_BOOL(sValue.IsEqual(stringValuesShort[i]));
 
         XII_TEST_BOOL(xiiReflectionUtils::StringToEnumeration(pBitflagsPropertyRTTI, sValue, iValue));
         XII_TEST_INT(iValue, uiBitflagValue);
 
         // Testing the short enum name version
-        XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(
-          pBitflagsPropertyRTTI, uiBitflagValue, sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
+        XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(pBitflagsPropertyRTTI, uiBitflagValue, sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
         XII_TEST_BOOL(sValue.IsEqual(stringValuesShort[i]));
 
         XII_TEST_BOOL(xiiReflectionUtils::StringToEnumeration(pBitflagsPropertyRTTI, sValue, iValue));

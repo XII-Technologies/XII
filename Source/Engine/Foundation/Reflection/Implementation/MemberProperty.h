@@ -25,7 +25,7 @@ public:
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<Type>();
     XII_CHECK_AT_COMPILETIME_MSG(!std::is_pointer<Type>::value || xiiVariant::TypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid,
-      "Pointer to standard types are not supported.");
+                                 "Pointer to standard types are not supported.");
   }
 
   /// \brief Returns the actual type of the property. You can then compare that with known types, eg. compare it to xiiGetStaticRTTI<int>()
@@ -89,6 +89,19 @@ public:
   /// \brief Constructor.
   xiiAccessorProperty(xiiStringView sPropertyName, GetterFunc getter, SetterFunc setter) :
     xiiTypedMemberProperty<RealType>(sPropertyName)
+  {
+    XII_ASSERT_DEBUG(getter != nullptr, "The getter of a property cannot be nullptr.");
+
+    m_Getter = getter;
+    m_Setter = setter;
+
+    if (m_Setter == nullptr)
+      xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+  }
+
+  /// \brief Constructor.
+  xiiAccessorProperty(const char* szPropertyName, GetterFunc getter, SetterFunc setter) :
+    xiiTypedMemberProperty<RealType>(szPropertyName)
   {
     XII_ASSERT_DEBUG(getter != nullptr, "The getter of a property cannot be nullptr.");
 

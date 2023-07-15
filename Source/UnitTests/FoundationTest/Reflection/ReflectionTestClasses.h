@@ -221,7 +221,7 @@ public:
 
   bool operator==(const xiiTestClass2& rhs) const { return m_Time == rhs.m_Time && m_enumClass == rhs.m_enumClass && m_bitflagsClass == rhs.m_bitflagsClass && m_array == rhs.m_array && m_Variant == rhs.m_Variant && m_sText == rhs.m_sText; }
 
-  xiiStringView GetText() const { return m_sText.GetView(); }
+  xiiStringView GetText() const { return m_sText; }
   void          SetText(xiiStringView sSz) { m_sText = sSz; }
 
   xiiTime                         m_Time;
@@ -264,7 +264,7 @@ class xiiTestClass2b : xiiReflectedClass
 public:
   xiiTestClass2b() { m_sText = "Tut"; }
 
-  xiiStringView GetText() const { return m_sText.GetView(); }
+  xiiStringView GetText() const { return m_sText; }
   void          SetText(xiiStringView sSz) { m_sText = sSz; }
 
   xiiTestStruct3 m_Struct;
@@ -478,8 +478,8 @@ public:
     return *m_SetPtr.GetIterator().Key() == *rhs.m_SetPtr.GetIterator().Key();
   }
 
-  void          SetString(xiiStringView sPzValue) { m_sString = sPzValue; }
-  xiiStringView GetString() const { return m_sString; }
+  void          SetString(const char* szPzValue) { m_sString = szPzValue; }
+  const char* GetString() const { return m_sString.GetData(); }
 
   void           SetArrays(xiiTestArrays* pValue) { m_pArrays = pValue; }
   xiiTestArrays* GetArrays() const { return m_pArrays; }
