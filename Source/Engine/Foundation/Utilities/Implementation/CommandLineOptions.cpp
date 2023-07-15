@@ -313,11 +313,11 @@ void xiiCommandLineOptionInt::GetParamShortDesc(xiiStringBuilder& ref_sOut) cons
 {
   if (m_iMinValue == xiiMath::MinValue<xiiInt32>() && m_iMaxValue == xiiMath::MaxValue<xiiInt32>())
   {
-    ref_sOut = "<xiiInt32>";
+    ref_sOut = "<int>";
   }
   else
   {
-    ref_sOut.Format("<xiiInt32> [{} .. {}]", m_iMinValue, m_iMaxValue);
+    ref_sOut.Format("<int> [{} .. {}]", m_iMinValue, m_iMaxValue);
   }
 }
 
@@ -500,7 +500,7 @@ xiiInt32 xiiCommandLineOptionEnum::GetOptionValue(LogMode logMode, const xiiComm
       if (e.m_Key.IsEqual_NoCase(selected))
       {
         result = e.m_iValue;
-        goto found;
+        goto Found;
       }
     }
 
@@ -510,7 +510,7 @@ xiiInt32 xiiCommandLineOptionEnum::GetOptionValue(LogMode logMode, const xiiComm
     }
   }
 
-found:
+Found:
 
   if (ShouldLog(logMode, bSpecified))
   {
