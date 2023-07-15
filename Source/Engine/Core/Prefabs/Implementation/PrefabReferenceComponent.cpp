@@ -188,13 +188,13 @@ void xiiPrefabReferenceComponent::DeserializeComponent(xiiWorldReader& ref_strea
   xiiPrefabReferenceComponent::DeserializePrefabParameters(m_Parameters, ref_stream);
 }
 
-void xiiPrefabReferenceComponent::SetPrefabFile(const char* szFile)
+void xiiPrefabReferenceComponent::SetPrefabFile(xiiStringView sFile)
 {
   xiiPrefabResourceHandle hResource;
 
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
+  if (!sFile.IsEmpty())
   {
-    hResource = xiiResourceManager::LoadResource<xiiPrefabResource>(szFile);
+    hResource = xiiResourceManager::LoadResource<xiiPrefabResource>(sFile);
     xiiResourceManager::PreloadResource(hResource);
   }
 
@@ -374,13 +374,13 @@ const xiiRangeView<const char*, xiiUInt32> xiiPrefabReferenceComponent::GetParam
   return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; },
                                               [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
                                               [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                              [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
+                                              [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString(); });
 }
 
-void xiiPrefabReferenceComponent::SetParameter(const char* szKey, const xiiVariant& value)
+void xiiPrefabReferenceComponent::SetParameter(xiiStringView sKey, const xiiVariant& value)
 {
   xiiHashedString hs;
-  hs.Assign(szKey);
+  hs.Assign(sKey);
 
   auto it = m_Parameters.Find(hs);
   if (it != xiiInvalidIndex && m_Parameters.GetValue(it) == value)
@@ -396,9 +396,9 @@ void xiiPrefabReferenceComponent::SetParameter(const char* szKey, const xiiVaria
   }
 }
 
-void xiiPrefabReferenceComponent::RemoveParameter(const char* szKey)
+void xiiPrefabReferenceComponent::RemoveParameter(xiiStringView sKey)
 {
-  if (m_Parameters.RemoveAndCopy(xiiTempHashedString(szKey)))
+  if (m_Parameters.RemoveAndCopy(xiiTempHashedString(sKey)))
   {
     if (IsActiveAndInitialized())
     {
@@ -409,9 +409,9 @@ void xiiPrefabReferenceComponent::RemoveParameter(const char* szKey)
   }
 }
 
-bool xiiPrefabReferenceComponent::GetParameter(const char* szKey, xiiVariant& out_value) const
+bool xiiPrefabReferenceComponent::GetParameter(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Parameters.Find(szKey);
+  xiiUInt32 it = m_Parameters.Find(sKey);
 
   if (it == xiiInvalidIndex)
     return false;

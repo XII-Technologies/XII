@@ -32,8 +32,8 @@ struct XII_CORE_DLL xiiMsgComponentInternalTrigger : public xiiMessage
   xiiInt32 m_iPayload = 0;
 
 private:
-  const char* GetMessage() const { return m_sMessage; }
-  void        SetMessage(const char* szMessage) { m_sMessage.Assign(szMessage); }
+  xiiStringView GetMessage() const { return m_sMessage; }
+  void        SetMessage(xiiStringView sMessage) { m_sMessage.Assign(sMessage); }
 };
 
 /// \brief Sent when something enters or leaves a trigger
@@ -51,6 +51,6 @@ struct XII_CORE_DLL xiiMsgTriggerTriggered : public xiiEventMessage
   xiiGameObjectHandle m_hTriggeringObject;
 
 private:
-  const char* GetMessage() const { return m_sMessage; }
-  void        SetMessage(const char* szMessage) { m_sMessage.Assign(szMessage); }
+  xiiStringView GetMessage() const { return m_sMessage; }
+  void        SetMessage(xiiStringView sMessage) { m_sMessage.Assign(sMessage); }
 };

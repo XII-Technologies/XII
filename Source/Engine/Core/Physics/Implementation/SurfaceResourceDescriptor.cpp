@@ -44,19 +44,19 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceResourceDescriptor, 2, xiiRTTIDefault
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiSurfaceInteraction::SetPrefab(const char* szPrefab)
+void xiiSurfaceInteraction::SetPrefab(xiiStringView sPrefab)
 {
   xiiPrefabResourceHandle hPrefab;
 
-  if (!xiiStringUtils::IsNullOrEmpty(szPrefab))
+  if (!sPrefab.IsEmpty())
   {
-    hPrefab = xiiResourceManager::LoadResource<xiiPrefabResource>(szPrefab);
+    hPrefab = xiiResourceManager::LoadResource<xiiPrefabResource>(sPrefab);
   }
 
   m_hPrefab = hPrefab;
 }
 
-const char* xiiSurfaceInteraction::GetPrefab() const
+xiiStringView xiiSurfaceInteraction::GetPrefab() const
 {
   if (!m_hPrefab.IsValid())
     return "";
@@ -64,18 +64,18 @@ const char* xiiSurfaceInteraction::GetPrefab() const
   return m_hPrefab.GetResourceID();
 }
 
-const xiiRangeView<const char*, xiiUInt32> xiiSurfaceInteraction::GetParameters() const
+const xiiRangeView<xiiStringView, xiiUInt32> xiiSurfaceInteraction::GetParameters() const
 {
-  return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; },
+  return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
                                               [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
                                               [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                              [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
+                                              [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString(); });
 }
 
-void xiiSurfaceInteraction::SetParameter(const char* szKey, const xiiVariant& value)
+void xiiSurfaceInteraction::SetParameter(xiiStringView sKey, const xiiVariant& value)
 {
   xiiHashedString hs;
-  hs.Assign(szKey);
+  hs.Assign(sKey);
 
   auto it = m_Parameters.Find(hs);
   if (it != xiiInvalidIndex && m_Parameters.GetValue(it) == value)
@@ -84,14 +84,14 @@ void xiiSurfaceInteraction::SetParameter(const char* szKey, const xiiVariant& va
   m_Parameters[hs] = value;
 }
 
-void xiiSurfaceInteraction::RemoveParameter(const char* szKey)
+void xiiSurfaceInteraction::RemoveParameter(xiiStringView sKey)
 {
-  m_Parameters.RemoveAndCopy(xiiTempHashedString(szKey));
+  m_Parameters.RemoveAndCopy(xiiTempHashedString(sKey));
 }
 
-bool xiiSurfaceInteraction::GetParameter(const char* szKey, xiiVariant& out_value) const
+bool xiiSurfaceInteraction::GetParameter(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Parameters.Find(szKey);
+  xiiUInt32 it = m_Parameters.Find(sKey);
 
   if (it == xiiInvalidIndex)
     return false;
@@ -216,7 +216,7 @@ void xiiSurfaceResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
   }
 }
 
-void xiiSurfaceResourceDescriptor::SetBaseSurfaceFile(const char* szFile)
+void xiiSurfaceResourceDescriptor::SetBaseSurfaceFile(xiiStringView sFile)
 {
   xiiSurfaceResourceHandle hResource;
 
@@ -228,7 +228,7 @@ void xiiSurfaceResourceDescriptor::SetBaseSurfaceFile(const char* szFile)
   m_hBaseSurface = hResource;
 }
 
-const char* xiiSurfaceResourceDescriptor::GetBaseSurfaceFile() const
+xiiStringView xiiSurfaceResourceDescriptor::GetBaseSurfaceFile() const
 {
   if (!m_hBaseSurface.IsValid())
     return "";
@@ -236,32 +236,32 @@ const char* xiiSurfaceResourceDescriptor::GetBaseSurfaceFile() const
   return m_hBaseSurface.GetResourceID();
 }
 
-void xiiSurfaceResourceDescriptor::SetCollisionInteraction(const char* szName)
+void xiiSurfaceResourceDescriptor::SetCollisionInteraction(xiiStringView sName)
 {
   m_sOnCollideInteraction.Assign(szName);
 }
 
-const char* xiiSurfaceResourceDescriptor::GetCollisionInteraction() const
+xiiStringView xiiSurfaceResourceDescriptor::GetCollisionInteraction() const
 {
   return m_sOnCollideInteraction.GetData();
 }
 
-void xiiSurfaceResourceDescriptor::SetSlideReactionPrefabFile(const char* szFile)
+void xiiSurfaceResourceDescriptor::SetSlideReactionPrefabFile(xiiStringView sFile)
 {
   m_sSlideInteractionPrefab.Assign(szFile);
 }
 
-const char* xiiSurfaceResourceDescriptor::GetSlideReactionPrefabFile() const
+xiiStringView xiiSurfaceResourceDescriptor::GetSlideReactionPrefabFile() const
 {
   return m_sSlideInteractionPrefab.GetData();
 }
 
-void xiiSurfaceResourceDescriptor::SetRollReactionPrefabFile(const char* szFile)
+void xiiSurfaceResourceDescriptor::SetRollReactionPrefabFile(xiiStringView sFile)
 {
   m_sRollInteractionPrefab.Assign(szFile);
 }
 
-const char* xiiSurfaceResourceDescriptor::GetRollReactionPrefabFile() const
+xiiStringView xiiSurfaceResourceDescriptor::GetRollReactionPrefabFile() const
 {
   return m_sRollInteractionPrefab.GetData();
 }
