@@ -29,7 +29,8 @@ xiiResult UnloadPluginModule(xiiPluginModule& Module, xiiStringView sPluginFile)
 {
   if (dlclose(Module) != 0)
   {
-    xiiLog::Error("Could not unload plugin '{0}'. Error {1}", sPluginFile, static_cast<const char*>(dlerror()));
+    xiiStringBuilder tmp;
+    xiiLog::Error("Could not unload plugin '{0}'. Error {1}", sPluginFile.GetData(tmp), static_cast<const char*>(dlerror()));
     return XII_FAILURE;
   }
 
@@ -38,10 +39,11 @@ xiiResult UnloadPluginModule(xiiPluginModule& Module, xiiStringView sPluginFile)
 
 xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& Module, xiiStringView sPluginFile)
 {
+  xiiStringBuilder tmp;
   Module = dlopen(sFileToLoad.GetStartPointer(), RTLD_NOW | RTLD_GLOBAL);
   if (Module == nullptr)
   {
-    xiiLog::Error("Could not load plugin '{0}'. Error {1}.\nSet the environment variable LD_DEBUG=all to get more information.", sPluginFile, static_cast<const char*>(dlerror()));
+    xiiLog::Error("Could not load plugin '{0}'. Error {1}.\nSet the environment variable LD_DEBUG=all to get more information.", sPluginFile.GetData(tmp), static_cast<const char*>(dlerror()));
     return XII_FAILURE;
   }
   return XII_SUCCESS;

@@ -878,10 +878,10 @@ void xiiFileSystem::SetSdkRootDirectory(xiiStringView sSdkDir)
   s_sSdkRootDir = s;
 }
 
-const char* xiiFileSystem::GetSdkRootDirectory()
+xiiStringView xiiFileSystem::GetSdkRootDirectory()
 {
   XII_ASSERT_DEV(!s_sSdkRootDir.IsEmpty(), "The project directory has not been set through 'xiiFileSystem::SetSdkRootDirectory'.");
-  return s_sSdkRootDir.GetData();
+  return s_sSdkRootDir;
 }
 
 void xiiFileSystem::SetSpecialDirectory(xiiStringView sName, xiiStringView sReplacement)

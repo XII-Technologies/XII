@@ -7,7 +7,7 @@
 /// When accessing the pointer, the lower N bits are masked off.
 /// Typically one can safely store 3 bits in the lower bits of a pointer as most data is 8 byte aligned,
 /// especially when it was heap allocated.
-template <typename PtrType, uint8_t NumFlagBits = 2>
+template <typename PtrType, xiiUInt8 NumFlagBits = 2>
 class xiiPointerWithFlags
 {
 private:
@@ -26,15 +26,15 @@ public:
   xiiPointerWithFlags() = default;
 
   /// \brief Initializes the pointer and flags.
-  explicit xiiPointerWithFlags(PtrType* pPtr, uint8_t flags = 0) { SetPtrAndFlags(pPtr, flags); }
+  explicit xiiPointerWithFlags(PtrType* pPtr, xiiUInt8 uiFlags = 0) { SetPtrAndFlags(pPtr, uiFlags); }
 
   /// \brief Changes the pointer and flags.
-  void SetPtrAndFlags(PtrType* pPtr, uint8_t flags)
+  void SetPtrAndFlags(PtrType* pPtr, xiiUInt8 uiFlags)
   {
     const std::uintptr_t isrc = *reinterpret_cast<std::uintptr_t*>(&pPtr);
     std::uintptr_t&      iptr = *reinterpret_cast<std::uintptr_t*>(&m_pPtr);
 
-    iptr = (isrc & PtrMask) | (flags & FlagsMask);
+    iptr = (isrc & PtrMask) | (uiFlags & FlagsMask);
   }
 
   /// \brief Returns the masked off pointer value.
@@ -55,28 +55,27 @@ public:
   void SetPtr(PtrType* pPtr)
   {
     const std::uintptr_t isrc = *reinterpret_cast<std::uintptr_t*>(&pPtr);
-    XII_ASSERT_DEBUG(
-      (isrc & FlagsMask) == 0, "The given pointer does not have an {} byte alignment and thus cannot be stored lossless.", 1u << NumFlagBits);
+    XII_ASSERT_DEBUG((isrc & FlagsMask) == 0, "The given pointer does not have an {} byte alignment and thus cannot be stored lossless.", 1u << NumFlagBits);
 
     std::uintptr_t& iptr = *reinterpret_cast<std::uintptr_t*>(&m_pPtr);
 
     iptr = (isrc & PtrMask) | (iptr & FlagsMask);
   }
   /// \brief Returns the flags value only.
-  uint8_t GetFlags() const
+  xiiUInt8 GetFlags() const
   {
     const std::uintptr_t& iptr = *reinterpret_cast<const std::uintptr_t*>(&m_pPtr);
-    return static_cast<uint8_t>(iptr & FlagsMask);
+    return static_cast<xiiUInt8>(iptr & FlagsMask);
   }
 
   /// \brief Changes only the flags value. The given value must fit into the reserved bits.
-  void SetFlags(uint8_t flags)
+  void SetFlags(xiiUInt8 uiFlags)
   {
-    XII_ASSERT_DEBUG(flags <= FlagsMask, "The flag value {} requires more than {} bits", flags, NumFlagBits);
+    XII_ASSERT_DEBUG(uiFlags <= FlagsMask, "The flag value {} requires more than {} bits", uiFlags, NumFlagBits);
 
     std::uintptr_t& iptr = *reinterpret_cast<std::uintptr_t*>(&m_pPtr);
 
-    iptr = (iptr & PtrMask) | (flags & FlagsMask);
+    iptr = (iptr & PtrMask) | (uiFlags & FlagsMask);
   }
 
   /// \brief Returns the masked off pointer value.

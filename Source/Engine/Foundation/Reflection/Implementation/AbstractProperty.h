@@ -527,7 +527,7 @@ struct xiiFunctionType
 };
 
 /// \brief The base class for a property that represents a function.
-class xiiAbstractFunctionProperty : public xiiAbstractProperty
+class XII_FOUNDATION_DLL xiiAbstractFunctionProperty : public xiiAbstractProperty
 {
 public:
   /// \brief Passes the property name through to xiiAbstractProperty.
