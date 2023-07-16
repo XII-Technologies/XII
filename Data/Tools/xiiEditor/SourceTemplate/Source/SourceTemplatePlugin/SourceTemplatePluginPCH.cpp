@@ -1,1 +1,0 @@
-#include <SourceTemplatePlugin/SourceTemplatePluginPCH.h>
