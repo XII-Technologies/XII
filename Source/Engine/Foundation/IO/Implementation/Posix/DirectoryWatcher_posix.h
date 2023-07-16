@@ -60,7 +60,7 @@ namespace
   struct RenamedDirectory
   {
     xiiString path;
-    xiiInt32       wd;
+    xiiInt32  wd;
   };
 
   using xiiFileSystemMirrorType = xiiFileSystemMirror<bool>;
@@ -72,9 +72,9 @@ struct xiiDirectoryWatcherImpl
 {
   xiiHashTable<xiiInt32, xiiString> m_wdToPath;
   xiiMap<xiiString, xiiInt32>       m_pathToWd;
-  xiiString                    m_topLevelPath;
+  xiiString                         m_topLevelPath;
 
-  xiiInt32                                     m_inotifyFd        = -1;
+  xiiInt32                                m_inotifyFd        = -1;
   uint32_t                                m_inotifyWatchMask = 0;
   xiiBitflags<xiiDirectoryWatcher::Watch> m_whatToWatch;
   xiiDynamicArray<xiiUInt8>               m_buffer;
@@ -317,7 +317,7 @@ void xiiDirectoryWatcher::CloseDirectory()
 
 void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTime waitUpTo)
 {
-  const xiiInt32      inotifyFd  = m_pImpl->m_inotifyFd;
+  const xiiInt32 inotifyFd  = m_pImpl->m_inotifyFd;
   uint8_t* const buffer     = m_pImpl->m_buffer.GetData();
   const size_t   bufferSize = m_pImpl->m_buffer.GetCount();
 
@@ -389,7 +389,7 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
     if (timeout > 0)
     {
       struct pollfd pollFor    = {inotifyFd, POLLIN, 0};
-      xiiInt32           pollResult = poll(&pollFor, 1, timeout);
+      xiiInt32      pollResult = poll(&pollFor, 1, timeout);
       if (pollResult < 0)
       {
         // Error, stop
@@ -486,7 +486,7 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
                 if (deletedDirIt.IsValid())
                 {
                   xiiInt32 deletedWd = deletedDirIt.Value();
-                  deletedDirIt  = m_pImpl->m_pathToWd.Remove(deletedDirIt);
+                  deletedDirIt       = m_pImpl->m_pathToWd.Remove(deletedDirIt);
                   inotify_rm_watch(inotifyFd, deletedWd);
                   m_pImpl->m_wdToPath.Remove(deletedWd);
                   DEBUG_LOG("No longer watching {}", tmpPath);

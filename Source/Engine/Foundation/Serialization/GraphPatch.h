@@ -49,6 +49,6 @@ public:
 
 private:
   xiiStringView m_sType;
-  xiiUInt32   m_uiTypeVersion;
-  PatchType   m_PatchType;
+  xiiUInt32     m_uiTypeVersion;
+  PatchType     m_PatchType;
 };

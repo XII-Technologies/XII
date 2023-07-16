@@ -23,7 +23,7 @@ struct xiiMemoryMappedFileImpl
   xiiMemoryMappedFile::Mode m_Mode           = xiiMemoryMappedFile::Mode::None;
   void*                     m_pMappedFilePtr = nullptr;
   xiiUInt64                 m_uiFileSize     = 0;
-  xiiInt32                       m_hFile          = -1;
+  xiiInt32                  m_hFile          = -1;
   xiiString                 m_sSharedMemoryName;
 
   ~xiiMemoryMappedFileImpl()

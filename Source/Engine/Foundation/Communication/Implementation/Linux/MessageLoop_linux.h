@@ -56,8 +56,8 @@ private:
   xiiHybridArray<struct pollfd, 16> m_pollInfos;
   xiiMutex                          m_pollMutex;
   xiiAtomicInteger32                m_numPendingPollModifications = 0;
-  xiiInt32                               m_wakeupPipeReadEndFd         = -1;
-  xiiInt32                               m_wakeupPipeWriteEndFd        = -1;
+  xiiInt32                          m_wakeupPipeReadEndFd         = -1;
+  xiiInt32                          m_wakeupPipeWriteEndFd        = -1;
 };
 
 #endif

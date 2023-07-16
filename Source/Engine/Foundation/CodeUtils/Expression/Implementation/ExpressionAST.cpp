@@ -943,8 +943,8 @@ void xiiExpressionAST::ResolveOverloads(Node* pNode)
       auto& pChildNode = children[i];
       XII_ASSERT_DEV(pChildNode != nullptr && pChildNode->m_ReturnType != DataType::Unknown, "Invalid child node");
 
-      auto childType = DataType::GetRegisterType(pChildNode->m_ReturnType);
-      xiiInt32  iDistance = expectedTypes[i] - childType;
+      auto     childType = DataType::GetRegisterType(pChildNode->m_ReturnType);
+      xiiInt32 iDistance = expectedTypes[i] - childType;
       if (iDistance < 0)
       {
         // Penalty to prevent 'narrowing' conversions

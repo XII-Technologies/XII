@@ -38,8 +38,8 @@ private:
 private:
   xiiString m_serverSocketPath;
   xiiString m_clientSocketPath;
-  xiiInt32       m_serverSocketFd = -1;
-  xiiInt32       m_clientSocketFd = -1;
+  xiiInt32  m_serverSocketFd = -1;
+  xiiInt32  m_clientSocketFd = -1;
 
   xiiUInt8      m_InputBuffer[4096];
   xiiAtomicBool m_Connecting = false;

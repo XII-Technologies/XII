@@ -37,7 +37,7 @@ public:
   xiiStringView(char* pStart);
 
   /// \brief Creates a string view starting at the given position, ending at the next '\0' terminator.
-  template <typename T>                                                                                            // T is always const char*
+  template <typename T>                                                                                                 // T is always const char*
   constexpr xiiStringView(T pStart, typename std::enable_if<std::is_same<T, const char*>::value, xiiInt32>::type* = 0); // [tested]
 
   /// \brief Creates a string view from any class / struct which is implicitly convertible to const char *

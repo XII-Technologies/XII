@@ -208,8 +208,8 @@ XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero() const
 template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero(const xiiSimdFloat& fEpsilon) const
 {
-  const xiiInt32   mask   = XII_BIT(N) - 1;
-  float32x4_t absVal = Abs().m_v;
+  const xiiInt32 mask   = XII_BIT(N) - 1;
+  float32x4_t    absVal = Abs().m_v;
   return (xiiInternal::NeonMoveMask(vcltq_f32(absVal, fEpsilon.m_v)) & mask) == mask;
 }
 

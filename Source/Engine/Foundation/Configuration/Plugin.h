@@ -22,7 +22,7 @@ struct xiiPluginEvent
     AfterPluginChanges,     ///< Sent (once) after all (group) plugin changes (unload/load) are finished.
   };
 
-  Type        m_EventType;                ///< Which type of event this is.
+  Type          m_EventType;               ///< Which type of event this is.
   xiiStringView m_sPluginBinary = nullptr; ///< The file name of the affected plugin.
 };
 

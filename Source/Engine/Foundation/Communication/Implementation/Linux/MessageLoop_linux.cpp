@@ -48,8 +48,8 @@ bool xiiMessageLoop_linux::WaitForMessages(xiiInt32 iTimeout, xiiIpcChannel* pFi
     xiiThreadUtils::YieldTimeSlice();
   }
 
-  xiiLock lock{m_pollMutex};
-  xiiInt32     result = poll(m_pollInfos.GetData(), m_pollInfos.GetCount(), iTimeout);
+  xiiLock  lock{m_pollMutex};
+  xiiInt32 result = poll(m_pollInfos.GetData(), m_pollInfos.GetCount(), iTimeout);
   if (result > 0)
   {
     // Result at index 0 is special and means there was a WakeUp
@@ -162,7 +162,7 @@ void xiiMessageLoop_linux::RemovePendingWaits(xiiPipeChannel_linux* pChannel)
 void xiiMessageLoop_linux::WakeUp()
 {
   xiiUInt8 wakeupByte  = 0;
-  xiiInt32      writeResult = write(m_wakeupPipeWriteEndFd, &wakeupByte, sizeof(wakeupByte));
+  xiiInt32 writeResult = write(m_wakeupPipeWriteEndFd, &wakeupByte, sizeof(wakeupByte));
 }
 
 #endif

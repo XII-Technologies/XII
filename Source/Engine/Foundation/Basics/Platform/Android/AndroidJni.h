@@ -102,7 +102,7 @@ public:
 private:
   static thread_local JNIEnv*          s_env;
   static thread_local bool             s_ownsEnv;
-  static thread_local xiiInt32              s_attachCount;
+  static thread_local xiiInt32         s_attachCount;
   static thread_local xiiJniErrorState s_lastError;
 
   xiiJniAttachment(const xiiJniAttachment&);
@@ -322,11 +322,11 @@ protected:
 
   static void DumpTypes(const xiiJniClass* inputTypes, xiiInt32 N, const xiiJniClass* returnType);
 
-  static xiiInt32          CompareMethodSpecificity(const xiiJniObject& method1, const xiiJniObject& method2);
+  static xiiInt32     CompareMethodSpecificity(const xiiJniObject& method1, const xiiJniObject& method2);
   static bool         IsMethodViable(bool bStatic, const xiiJniObject& candidateMethod, const xiiJniClass& returnType, xiiJniClass* inputTypes, xiiInt32 N);
   static xiiJniObject FindMethod(bool bStatic, const char* name, const xiiJniClass& type, const xiiJniClass& returnType, xiiJniClass* inputTypes, xiiInt32 N);
 
-  static xiiInt32          CompareConstructorSpecificity(const xiiJniObject& method1, const xiiJniObject& method2);
+  static xiiInt32     CompareConstructorSpecificity(const xiiJniObject& method1, const xiiJniObject& method2);
   static bool         IsConstructorViable(const xiiJniObject& candidateMethod, xiiJniClass* inputTypes, xiiInt32 N);
   static xiiJniObject FindConstructor(const xiiJniClass& type, xiiJniClass* inputTypes, xiiInt32 N);
 

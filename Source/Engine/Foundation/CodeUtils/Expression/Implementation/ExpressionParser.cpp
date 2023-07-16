@@ -28,7 +28,7 @@ namespace
   {
     xiiStringView                    m_sName;
     xiiExpressionAST::NodeType::Enum m_NodeType;
-    xiiInt32                              m_iPrecedence;
+    xiiInt32                         m_iPrecedence;
   };
 
   // Operator precedence according to https://en.cppreference.com/w/cpp/language/operator_precedence,
@@ -460,7 +460,7 @@ xiiExpressionAST::Node* xiiExpressionParser::ParseExpression(xiiInt32 iPrecedenc
     return nullptr;
 
   xiiExpressionAST::NodeType::Enum binaryOp;
-  xiiInt32                              iBinaryOpPrecedence = 0;
+  xiiInt32                         iBinaryOpPrecedence = 0;
   xiiUInt32                        uiOperatorLength    = 0;
   while (AcceptBinaryOperator(binaryOp, iBinaryOpPrecedence, uiOperatorLength) && iBinaryOpPrecedence < iPrecedence)
   {

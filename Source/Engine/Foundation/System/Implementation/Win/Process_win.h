@@ -81,7 +81,7 @@ struct xiiPipeWin
         xiiHybridArray<char, 256> overflowBuffer;
 
         constexpr xiiInt32 BUFSIZE = 512;
-        char          chBuf[BUFSIZE];
+        char               chBuf[BUFSIZE];
         while (true)
         {
           DWORD bytesRead = 0;

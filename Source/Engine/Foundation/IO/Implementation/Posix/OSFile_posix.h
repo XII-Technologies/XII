@@ -75,9 +75,9 @@ xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum Ope
     return XII_FAILURE;
   }
 
-  const xiiInt32     iSharedMode = (FileShareMode == xiiFileShareMode::Exclusive) ? LOCK_EX : LOCK_SH;
-  const xiiTime sleepTime   = xiiTime::Milliseconds(20);
-  xiiInt32      iRetries    = m_bRetryOnSharingViolation ? 20 : 1;
+  const xiiInt32 iSharedMode = (FileShareMode == xiiFileShareMode::Exclusive) ? LOCK_EX : LOCK_SH;
+  const xiiTime  sleepTime   = xiiTime::Milliseconds(20);
+  xiiInt32       iRetries    = m_bRetryOnSharingViolation ? 20 : 1;
 
   while (flock(fd, iSharedMode | LOCK_NB /* do not block */) != 0)
   {
@@ -347,7 +347,7 @@ xiiResult xiiOSFile::InternalMoveFileOrDirectory(xiiStringView sDirectoryFrom, x
 xiiResult xiiOSFile::InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_Stats)
 {
   struct stat tempStat;
-  xiiInt32         iRes = stat(xiiString(sFileOrFolder), &tempStat);
+  xiiInt32    iRes = stat(xiiString(sFileOrFolder), &tempStat);
 
   if (iRes != 0)
     return XII_FAILURE;

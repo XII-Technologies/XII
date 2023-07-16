@@ -352,8 +352,8 @@ private:
   struct InlinedStruct
   {
     constexpr static xiiInt32 DataSize = 4 * sizeof(float) - sizeof(void*);
-    xiiUInt8             m_Data[DataSize];
-    const xiiRTTI*       m_pType;
+    xiiUInt8                  m_Data[DataSize];
+    const xiiRTTI*            m_pType;
   };
 
   union Data
@@ -405,7 +405,7 @@ private:
   static bool IsTransformStatic(xiiUInt32 type);
 
   // Needed to prevent including xiiRTTI in xiiVariant.h
-  static bool        IsDerivedFrom(const xiiRTTI* pType1, const xiiRTTI* pType2);
+  static bool          IsDerivedFrom(const xiiRTTI* pType1, const xiiRTTI* pType2);
   static xiiStringView GetTypeName(const xiiRTTI* pType);
 
   template <typename T>

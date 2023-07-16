@@ -111,8 +111,8 @@ struct xiiIsValueType<T, xiiVariant>
 //////////////////////////////////////////////////////////////////////////
 /// \brief Used to automatically assign any value to a xiiVariant using the assignment rules
 /// outlined in xiiAbstractFunctionProperty::Execute.
-template <class T,                                         ///< Only this parameter needs to be provided, the actual type of the value.
-          class C        = typename xiiCleanType<T>::Type, ///< Same as T but without the const&* fluff.
+template <class T,                                              ///< Only this parameter needs to be provided, the actual type of the value.
+          class C             = typename xiiCleanType<T>::Type, ///< Same as T but without the const&* fluff.
           xiiInt32 VALUE_TYPE = xiiIsValueType<T>::value>       ///< Is 1 if T is a xiiTypeFlags::StandardType or a custom type
 struct xiiVariantAssignmentAdapter
 {
@@ -203,8 +203,8 @@ struct xiiVariantAssignmentAdapter<T, xiiVariantDictionary, 0>
 
 /// \brief Used to implicitly retrieve any value from a xiiVariant to be used as a function argument
 /// using the assignment rules outlined in xiiAbstractFunctionProperty::Execute.
-template <class T,                                         ///< Only this parameter needs to be provided, the actual type of the argument. Rest is used to force specializations.
-          class C        = typename xiiCleanType<T>::Type, ///< Same as T but without the const&* fluff.
+template <class T,                                              ///< Only this parameter needs to be provided, the actual type of the argument. Rest is used to force specializations.
+          class C             = typename xiiCleanType<T>::Type, ///< Same as T but without the const&* fluff.
           xiiInt32 VALUE_TYPE = xiiIsValueType<T>::value,       ///< Is 1 if T is a xiiTypeFlags::StandardType or a custom type
           xiiInt32 OUT_PARAM  = xiiIsOutParam<T>::value>         ///< Is 1 if T a non-const reference or pointer.
 struct xiiVariantAdapter

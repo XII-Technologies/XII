@@ -1,0 +1,374 @@
+#include <Core/CorePCH.h>
+
+#include <Core/World/SpatialSystem_RegularGrid.h>
+#include <Core/World/World.h>
+
+#include <Foundation/Time/DefaultTimeStepSmoothing.h>
+
+namespace xiiInternal
+{
+  class DefaultCoordinateSystemProvider : public xiiCoordinateSystemProvider
+  {
+  public:
+    DefaultCoordinateSystemProvider() :
+      xiiCoordinateSystemProvider(nullptr)
+    {
+    }
+
+    virtual void GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_coordinateSystem) const override
+    {
+      out_coordinateSystem.m_vForwardDir = xiiVec3(1.0f, 0.0f, 0.0f);
+      out_coordinateSystem.m_vRightDir   = xiiVec3(0.0f, 1.0f, 0.0f);
+      out_coordinateSystem.m_vUpDir      = xiiVec3(0.0f, 0.0f, 1.0f);
+    }
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  void WorldData::UpdateTask::Execute()
+  {
+    xiiWorldModule::UpdateContext context;
+    context.m_uiFirstComponentIndex = m_uiStartIndex;
+    context.m_uiComponentCount      = m_uiCount;
+
+    m_Function(context);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  WorldData::WorldData(xiiWorldDesc& desc) :
+    m_sName(desc.m_sName), m_Allocator(desc.m_sName, xiiFoundation::GetDefaultAllocator()), m_AllocatorWrapper(&m_Allocator), m_BlockAllocator(desc.m_sName, &m_Allocator), m_StackAllocator(desc.m_sName, xiiFoundation::GetAlignedAllocator()), m_ObjectStorage(&m_BlockAllocator, &m_Allocator), m_MaxInitializationTimePerFrame(desc.m_MaxComponentInitializationTimePerFrame), m_Clock(desc.m_sName), m_WriteThreadID((xiiThreadID)0), m_bReportErrorWhenStaticObjectMoves(desc.m_bReportErrorWhenStaticObjectMoves), m_ReadMarker(*this), m_WriteMarker(*this)
+  {
+    m_AllocatorWrapper.Reset();
+
+    if (desc.m_uiRandomNumberGeneratorSeed == 0)
+    {
+      m_Random.InitializeFromCurrentTime();
+    }
+    else
+    {
+      m_Random.Initialize(desc.m_uiRandomNumberGeneratorSeed);
+    }
+
+    // insert dummy entry to save some checks
+    m_Objects.Insert(nullptr);
+
+#if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
+    XII_CHECK_AT_COMPILETIME(sizeof(xiiGameObject::TransformationData) == 240);
+#else
+    XII_CHECK_AT_COMPILETIME(sizeof(xiiGameObject::TransformationData) == 192);
+#endif
+
+    XII_CHECK_AT_COMPILETIME(sizeof(xiiGameObject) == 128);
+    XII_CHECK_AT_COMPILETIME(sizeof(QueuedMsgMetaData) == 16);
+    XII_CHECK_AT_COMPILETIME(XII_COMPONENT_TYPE_INDEX_BITS <= sizeof(xiiWorldModuleTypeId) * 8);
+
+    auto pDefaultInitBatch        = XII_NEW(&m_Allocator, InitBatch, &m_Allocator, "Default", true);
+    pDefaultInitBatch->m_bIsReady = true;
+    m_InitBatches.Insert(pDefaultInitBatch);
+    m_pDefaultInitBatch = pDefaultInitBatch;
+    m_pCurrentInitBatch = pDefaultInitBatch;
+
+    m_pSpatialSystem            = std::move(desc.m_pSpatialSystem);
+    m_pCoordinateSystemProvider = desc.m_pCoordinateSystemProvider;
+
+    if (m_pSpatialSystem == nullptr && desc.m_bAutoCreateSpatialSystem)
+    {
+      m_pSpatialSystem = XII_NEW(xiiFoundation::GetAlignedAllocator(), xiiSpatialSystem_RegularGrid);
+    }
+
+    if (m_pCoordinateSystemProvider == nullptr)
+    {
+      m_pCoordinateSystemProvider = XII_NEW(&m_Allocator, DefaultCoordinateSystemProvider);
+    }
+
+    if (m_pTimeStepSmoothing == nullptr)
+    {
+      m_pTimeStepSmoothing = XII_NEW(&m_Allocator, xiiDefaultTimeStepSmoothing);
+    }
+
+    m_Clock.SetTimeStepSmoothing(m_pTimeStepSmoothing.Borrow());
+  }
+
+  WorldData::~WorldData() = default;
+
+  void WorldData::Clear()
+  {
+    // allow reading and writing during destruction
+    m_WriteThreadID = xiiThreadUtils::GetCurrentThreadID();
+    m_iReadCounter.Increment();
+
+    // deactivate all objects and components before destroying them
+    for (auto it = m_ObjectStorage.GetIterator(); it.IsValid(); it.Next())
+    {
+      it->SetActiveFlag(false);
+    }
+
+    // deinitialize all modules before we invalidate the world. Components can still access the world during deinitialization.
+    for (xiiWorldModule* pModule : m_Modules)
+    {
+      if (pModule != nullptr)
+      {
+        pModule->Deinitialize();
+      }
+    }
+
+    // now delete all modules
+    for (xiiWorldModule* pModule : m_Modules)
+    {
+      if (pModule != nullptr)
+      {
+        XII_DELETE(&m_Allocator, pModule);
+      }
+    }
+    m_Modules.Clear();
+
+    // this deletes the xiiGameObject instances
+    m_ObjectStorage.Clear();
+
+    // delete all transformation data
+    for (xiiUInt32 uiHierarchyIndex = 0; uiHierarchyIndex < HierarchyType::COUNT; ++uiHierarchyIndex)
+    {
+      Hierarchy& hierarchy = m_Hierarchies[uiHierarchyIndex];
+
+      for (xiiUInt32 i = hierarchy.m_Data.GetCount(); i-- > 0;)
+      {
+        Hierarchy::DataBlockArray* blocks = hierarchy.m_Data[i];
+        for (xiiUInt32 j = blocks->GetCount(); j-- > 0;)
+        {
+          m_BlockAllocator.DeallocateBlock((*blocks)[j]);
+        }
+        XII_DELETE(&m_Allocator, blocks);
+      }
+
+      hierarchy.m_Data.Clear();
+    }
+
+    // delete task storage
+    m_UpdateTasks.Clear();
+
+    // delete queued messages
+    for (xiiUInt32 i = 0; i < xiiObjectMsgQueueType::COUNT; ++i)
+    {
+      {
+        MessageQueue& queue = m_MessageQueues[i];
+
+        // The messages in this queue are allocated through a frame allocator and thus mustn't (and don't need to be) deallocated
+        queue.Clear();
+      }
+
+      {
+        MessageQueue& queue = m_TimedMessageQueues[i];
+        while (!queue.IsEmpty())
+        {
+          MessageQueue::Entry& entry = queue.Peek();
+          XII_DELETE(&m_Allocator, entry.m_pMessage);
+
+          queue.Dequeue();
+        }
+      }
+    }
+  }
+
+  xiiGameObject::TransformationData* WorldData::CreateTransformationData(bool bDynamic, xiiUInt32 uiHierarchyLevel)
+  {
+    Hierarchy& hierarchy = m_Hierarchies[GetHierarchyType(bDynamic)];
+
+    while (uiHierarchyLevel >= hierarchy.m_Data.GetCount())
+    {
+      hierarchy.m_Data.PushBack(XII_NEW(&m_Allocator, Hierarchy::DataBlockArray, &m_Allocator));
+    }
+
+    Hierarchy::DataBlockArray& blocks = *hierarchy.m_Data[uiHierarchyLevel];
+    Hierarchy::DataBlock*      pBlock = nullptr;
+
+    if (!blocks.IsEmpty())
+    {
+      pBlock = &blocks.PeekBack();
+    }
+
+    if (pBlock == nullptr || pBlock->IsFull())
+    {
+      blocks.PushBack(m_BlockAllocator.AllocateBlock<xiiGameObject::TransformationData>());
+      pBlock = &blocks.PeekBack();
+    }
+
+    return pBlock->ReserveBack();
+  }
+
+  void WorldData::DeleteTransformationData(bool bDynamic, xiiUInt32 uiHierarchyLevel, xiiGameObject::TransformationData* pData)
+  {
+    Hierarchy&                 hierarchy = m_Hierarchies[GetHierarchyType(bDynamic)];
+    Hierarchy::DataBlockArray& blocks    = *hierarchy.m_Data[uiHierarchyLevel];
+
+    Hierarchy::DataBlock&                    lastBlock = blocks.PeekBack();
+    const xiiGameObject::TransformationData* pLast     = lastBlock.PopBack();
+
+    if (pData != pLast)
+    {
+      xiiMemoryUtils::Copy(pData, pLast, 1);
+      pData->m_pObject->m_pTransformationData = pData;
+
+      // fix parent transform data for children as well
+      auto it = pData->m_pObject->GetChildren();
+      while (it.IsValid())
+      {
+        auto pTransformData           = it->m_pTransformationData;
+        pTransformData->m_pParentData = pData;
+        it.Next();
+      }
+    }
+
+    if (lastBlock.IsEmpty())
+    {
+      m_BlockAllocator.DeallocateBlock(lastBlock);
+      blocks.PopBack();
+    }
+  }
+
+  void WorldData::TraverseBreadthFirst(VisitorFunc& func)
+  {
+    struct Helper
+    {
+      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData) { return (*static_cast<VisitorFunc*>(pUserData))(pData->m_pObject); }
+    };
+
+    const xiiUInt32 uiMaxHierarchyLevel = xiiMath::Max(m_Hierarchies[HierarchyType::Static].m_Data.GetCount(), m_Hierarchies[HierarchyType::Dynamic].m_Data.GetCount());
+
+    for (xiiUInt32 uiHierarchyLevel = 0; uiHierarchyLevel < uiMaxHierarchyLevel; ++uiHierarchyLevel)
+    {
+      for (xiiUInt32 uiHierarchyIndex = 0; uiHierarchyIndex < HierarchyType::COUNT; ++uiHierarchyIndex)
+      {
+        Hierarchy& hierarchy = m_Hierarchies[uiHierarchyIndex];
+        if (uiHierarchyLevel < hierarchy.m_Data.GetCount())
+        {
+          xiiVisitorExecution::Enum execution = TraverseHierarchyLevel<Helper>(*hierarchy.m_Data[uiHierarchyLevel], &func);
+          XII_ASSERT_DEV(execution != xiiVisitorExecution::Skip, "Skip is not supported when using breadth first traversal");
+          if (execution == xiiVisitorExecution::Stop)
+            return;
+        }
+      }
+    }
+  }
+
+  void WorldData::TraverseDepthFirst(VisitorFunc& func)
+  {
+    struct Helper
+    {
+      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData) { return WorldData::TraverseObjectDepthFirst(pData->m_pObject, *static_cast<VisitorFunc*>(pUserData)); }
+    };
+
+    for (xiiUInt32 uiHierarchyIndex = 0; uiHierarchyIndex < HierarchyType::COUNT; ++uiHierarchyIndex)
+    {
+      Hierarchy& hierarchy = m_Hierarchies[uiHierarchyIndex];
+      if (!hierarchy.m_Data.IsEmpty())
+      {
+        if (TraverseHierarchyLevel<Helper>(*hierarchy.m_Data[0], &func) == xiiVisitorExecution::Stop)
+          return;
+      }
+    }
+  }
+
+  // static
+  xiiVisitorExecution::Enum WorldData::TraverseObjectDepthFirst(xiiGameObject* pObject, VisitorFunc& func)
+  {
+    xiiVisitorExecution::Enum execution = func(pObject);
+    if (execution == xiiVisitorExecution::Stop)
+      return xiiVisitorExecution::Stop;
+
+    if (execution != xiiVisitorExecution::Skip) // skip all children
+    {
+      for (auto it = pObject->GetChildren(); it.IsValid(); ++it)
+      {
+        if (TraverseObjectDepthFirst(it, func) == xiiVisitorExecution::Stop)
+          return xiiVisitorExecution::Stop;
+      }
+    }
+
+    return xiiVisitorExecution::Continue;
+  }
+
+  void WorldData::UpdateGlobalTransforms()
+  {
+    struct UserData
+    {
+      xiiSpatialSystem* m_pSpatialSystem;
+      xiiUInt32         m_uiUpdateCounter;
+    };
+
+    UserData userData;
+    userData.m_pSpatialSystem  = m_pSpatialSystem.Borrow();
+    userData.m_uiUpdateCounter = m_uiUpdateCounter;
+
+    struct RootLevel
+    {
+      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData0)
+      {
+        auto pUserData = static_cast<const UserData*>(pUserData0);
+        WorldData::UpdateGlobalTransform(pData, pUserData->m_uiUpdateCounter);
+        return xiiVisitorExecution::Continue;
+      }
+    };
+
+    struct WithParent
+    {
+      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData0)
+      {
+        auto pUserData = static_cast<const UserData*>(pUserData0);
+        WorldData::UpdateGlobalTransformWithParent(pData, pUserData->m_uiUpdateCounter);
+        return xiiVisitorExecution::Continue;
+      }
+    };
+
+    struct RootLevelWithSpatialData
+    {
+      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData0)
+      {
+        auto pUserData = static_cast<UserData*>(pUserData0);
+        WorldData::UpdateGlobalTransformAndSpatialData(pData, pUserData->m_uiUpdateCounter, *pUserData->m_pSpatialSystem);
+        return xiiVisitorExecution::Continue;
+      }
+    };
+
+    struct WithParentWithSpatialData
+    {
+      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData0)
+      {
+        auto pUserData = static_cast<UserData*>(pUserData0);
+        WorldData::UpdateGlobalTransformWithParentAndSpatialData(pData, pUserData->m_uiUpdateCounter, *pUserData->m_pSpatialSystem);
+        return xiiVisitorExecution::Continue;
+      }
+    };
+
+    Hierarchy& hierarchy = m_Hierarchies[HierarchyType::Dynamic];
+    if (!hierarchy.m_Data.IsEmpty())
+    {
+      auto dataPtr = hierarchy.m_Data.GetData();
+
+      // If we have no spatial system, we perform multi-threaded update as we do not
+      // have to acquire a write lock in the process.
+      if (m_pSpatialSystem == nullptr)
+      {
+        TraverseHierarchyLevelMultiThreaded<RootLevel>(*dataPtr[0], &userData);
+
+        for (xiiUInt32 i = 1; i < hierarchy.m_Data.GetCount(); ++i)
+        {
+          TraverseHierarchyLevelMultiThreaded<WithParent>(*dataPtr[i], &userData);
+        }
+      }
+      else
+      {
+        TraverseHierarchyLevel<RootLevelWithSpatialData>(*dataPtr[0], &userData);
+
+        for (xiiUInt32 i = 1; i < hierarchy.m_Data.GetCount(); ++i)
+        {
+          TraverseHierarchyLevel<WithParentWithSpatialData>(*dataPtr[i], &userData);
+        }
+      }
+    }
+  }
+
+} // namespace xiiInternal
+
+
+XII_STATICLINK_FILE(Core, Core_World_Implementation_WorldData);

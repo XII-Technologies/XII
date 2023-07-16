@@ -1,0 +1,36 @@
+#pragma once
+
+#include <Foundation/Basics.h>
+#include <Foundation/Containers/Map.h>
+#include <Foundation/Strings/String.h>
+#include <Inspector/ui_PluginsWidget.h>
+#include <ads/DockWidget.h>
+
+class xiiQtPluginsWidget : public ads::CDockWidget, public Ui_PluginsWidget
+{
+public:
+  Q_OBJECT
+
+public:
+  xiiQtPluginsWidget(QWidget* pParent = 0);
+
+  static xiiQtPluginsWidget* s_pWidget;
+
+public:
+  static void ProcessTelemetry(void* pUnuseed);
+
+  void ResetStats();
+  void UpdateStats();
+
+private:
+  void UpdatePlugins();
+
+  struct PluginsData
+  {
+    bool      m_bReloadable;
+    xiiString m_sDependencies;
+  };
+
+  bool                           m_bUpdatePlugins;
+  xiiMap<xiiString, PluginsData> m_Plugins;
+};

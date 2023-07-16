@@ -6,9 +6,9 @@ void* xiiPageAllocator::AllocatePage(size_t uiSize)
 {
   xiiTime fAllocationTime = xiiTime::Now();
 
-  void*     pPtr     = nullptr;
-  size_t    uiAlign = xiiSystemInformation::Get().GetMemoryPageSize();
-  const xiiInt32 iResult     = posix_memalign(&pPtr, uiAlign, uiSize);
+  void*          pPtr    = nullptr;
+  size_t         uiAlign = xiiSystemInformation::Get().GetMemoryPageSize();
+  const xiiInt32 iResult = posix_memalign(&pPtr, uiAlign, uiSize);
   XII_ASSERT_DEBUG(iResult == 0, "Failed to align pointer");
   XII_IGNORE_UNUSED(iResult);
 

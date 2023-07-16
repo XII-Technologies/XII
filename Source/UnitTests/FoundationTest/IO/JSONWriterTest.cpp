@@ -1,0 +1,608 @@
+#include <FoundationTest/FoundationTestPCH.h>
+
+#include <Foundation/IO/JSONWriter.h>
+#include <Foundation/IO/OSFile.h>
+#include <FoundationTest/IO/JSONTestHelpers.h>
+
+
+XII_CREATE_SIMPLE_TEST(IO, StandardJSONWriter)
+{
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Object")
+  {
+    StreamComparer sc("\"TestObject\" : {\n\
+  \n\
+}");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.BeginObject("TestObject");
+    js.EndObject();
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Anonymous Object")
+  {
+    StreamComparer sc("{\n\
+  \n\
+}");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.BeginObject();
+    js.EndObject();
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableBool")
+  {
+    StreamComparer sc("\"var1\" : true,\n\"var2\" : false");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableBool("var1", true);
+    js.AddVariableBool("var2", false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableInt32")
+  {
+    StreamComparer sc("\"var1\" : 23,\n\"var2\" : -42");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableInt32("var1", 23);
+    js.AddVariableInt32("var2", -42);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableUInt32")
+  {
+    StreamComparer sc("\"var1\" : 23,\n\"var2\" : 42");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableUInt32("var1", 23);
+    js.AddVariableUInt32("var2", 42);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableInt64")
+  {
+    StreamComparer sc("\"var1\" : 23,\n\"var2\" : -42");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableInt64("var1", 23);
+    js.AddVariableInt64("var2", -42);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableUInt64")
+  {
+    StreamComparer sc("\"var1\" : 23,\n\"var2\" : 42");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableUInt64("var1", 23);
+    js.AddVariableUInt64("var2", 42);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableFloat")
+  {
+    StreamComparer sc("\"var1\" : -65.5,\n\"var2\" : 2621.25");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableFloat("var1", -65.5f);
+    js.AddVariableFloat("var2", 2621.25f);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableDouble")
+  {
+    StreamComparer sc("\"var1\" : -65.125,\n\"var2\" : 2621.0625");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableDouble("var1", -65.125f);
+    js.AddVariableDouble("var2", 2621.0625f);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableString")
+  {
+    StreamComparer sc("\"var1\" : \"bla\",\n\"var2\" : \"blub\",\n\"special\" : \"I\\\\m\\t\\\"s\\bec/al\\\" \\f\\n//\\\\\\r\"");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableString("var1", "bla");
+    js.AddVariableString("var2", "blub");
+
+    js.AddVariableString("special", "I\\m\t\"s\bec/al\" \f\n//\\\r");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableNULL")
+  {
+    StreamComparer sc("\"var1\" : null");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableNULL("var1");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableTime")
+  {
+    StreamComparer sc("\"var1\" : 0.5,\n\"var2\" : 2.25");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableTime("var1", xiiTime::Seconds(0.5));
+    js.AddVariableTime("var2", xiiTime::Seconds(2.25));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableUuid")
+  {
+    xiiUuid   guid;
+    xiiUInt64 val[2];
+    val[0] = 0x1122334455667788;
+    val[1] = 0x99AABBCCDDEEFF00;
+    xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt64*>(&guid), val, 2);
+
+    StreamComparer sc("\"uuid_var\" : { \"$t\" : \"uuid\", \"$b\" : \"0x887766554433221100FFEEDDCCBBAA99\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableUuid("uuid_var", guid);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableAngle")
+  {
+    StreamComparer sc("\"var1\" : 90,\n\"var2\" : 180");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    // vs2019 is so imprecise, that the degree->radian conversion introduces differences in the final output
+    js.AddVariableAngle("var1", xiiAngle::Radian(1.5707963267f));
+    js.AddVariableAngle("var2", xiiAngle::Radian(1.0f * xiiMath::Pi<float>()));
+  }
+
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableColor")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"color\", \"$v\" : \"(1.0000, 2.0000, 3.0000, 4.0000)\", \"$b\" : "
+                      "\"0x0000803F000000400000404000008040\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableColor("var1", xiiColor(1, 2, 3, 4));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec2")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec2\", \"$v\" : \"(1.0000, 2.0000)\", \"$b\" : \"0x0000803F00000040\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec2("var1", xiiVec2(1, 2));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec2d")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec2d\", \"$v\" : \"(1.00000000, 2.00000000)\", \"$b\" : \"0x000000000000F03F0000000000000040\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec2d("var1", xiiVec2d(1, 2));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec3")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec3\", \"$v\" : \"(1.0000, 2.0000, 3.0000)\", \"$b\" : \"0x0000803F0000004000004040\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec3("var1", xiiVec3(1, 2, 3));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec3d")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec3d\", \"$v\" : \"(1.00000000, 2.00000000, 3.00000000)\", \"$b\" : \"0x000000000000F03F00000000000000400000000000000840\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec3d("var1", xiiVec3d(1, 2, 3));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec4")
+  {
+    StreamComparer sc(
+      "\"var1\" : { \"$t\" : \"vec4\", \"$v\" : \"(1.0000, 2.0000, 3.0000, 4.0000)\", \"$b\" : \"0x0000803F000000400000404000008040\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec4("var1", xiiVec4(1, 2, 3, 4));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec4d")
+  {
+    StreamComparer sc(
+      "\"var1\" : { \"$t\" : \"vec4d\", \"$v\" : \"(1.00000000, 2.00000000, 3.00000000, 4.00000000)\", \"$b\" : \"0x000000000000F03F000000000000004000000000000008400000000000001040\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec4d("var1", xiiVec4d(1, 2, 3, 4));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec2I32")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec2i\", \"$v\" : \"(1, 2)\", \"$b\" : \"0x0100000002000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec2I32("var1", xiiVec2I32(1, 2));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec3I32")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec3i\", \"$v\" : \"(1, 2, 3)\", \"$b\" : \"0x010000000200000003000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec3I32("var1", xiiVec3I32(1, 2, 3));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec4I32")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec4i\", \"$v\" : \"(1, 2, 3, 4)\", \"$b\" : \"0x01000000020000000300000004000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec4I32("var1", xiiVec4I32(1, 2, 3, 4));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec2I64")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec2i64\", \"$v\" : \"(1, 2)\", \"$b\" : \"0x01000000000000000200000000000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec2I64("var1", xiiVec2I64(1, 2));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec3I64")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec3i64\", \"$v\" : \"(1, 2, 3)\", \"$b\" : \"0x010000000000000002000000000000000300000000000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec3I64("var1", xiiVec3I64(1, 2, 3));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec4I64")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec4i64\", \"$v\" : \"(1, 2, 3, 4)\", \"$b\" : \"0x0100000000000000020000000000000003000000000000000400000000000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec4I64("var1", xiiVec4I64(1, 2, 3, 4));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec2U32")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec2u\", \"$v\" : \"(1, 2)\", \"$b\" : \"0x0100000002000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec2U32("var1", xiiVec2U32(1, 2));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec3U32")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec3u\", \"$v\" : \"(1, 2, 3)\", \"$b\" : \"0x010000000200000003000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec3U32("var1", xiiVec3U32(1, 2, 3));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec4U32")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec4u\", \"$v\" : \"(1, 2, 3, 4)\", \"$b\" : \"0x01000000020000000300000004000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec4U32("var1", xiiVec4U32(1, 2, 3, 4));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec2U64")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec2u64\", \"$v\" : \"(1, 2)\", \"$b\" : \"0x01000000000000000200000000000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec2U64("var1", xiiVec2U64(1, 2));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec3U64")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec3u64\", \"$v\" : \"(1, 2, 3)\", \"$b\" : \"0x010000000000000002000000000000000300000000000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec3U64("var1", xiiVec3U64(1, 2, 3));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec4U64")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec4u64\", \"$v\" : \"(1, 2, 3, 4)\", \"$b\" : \"0x0100000000000000020000000000000003000000000000000400000000000000\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVec4U64("var1", xiiVec4U64(1, 2, 3, 4));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableDataBuffer")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"data\", \"$b\" : \"0xFF00DA\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    xiiDataBuffer db;
+    db.PushBack(0xFF);
+    db.PushBack(0x00);
+    db.PushBack(0xDA);
+    js.AddVariableDataBuffer("var1", db);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableQuat")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"quat\", \"$b\" : \"0x0000803F000000400000404000008040\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableQuat("var1", xiiQuat(1, 2, 3, 4));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableQuatd")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"quatd\", \"$b\" : \"0x000000000000F03F000000000000004000000000000008400000000000001040\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableQuatd("var1", xiiQuatd(1, 2, 3, 4));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableMat3")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"mat3\", \"$b\" : \"0x0000803F000080400000E040000000400000A04000000041000040400000C04000001041\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableMat3("var1", xiiMat3(1, 2, 3, 4, 5, 6, 7, 8, 9));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableMat3d")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"mat3d\", \"$b\" : \"0x000000000000F03F00000000000010400000000000001C40000000000000004000000000000014400000000000002040000000000000084000000000000018400000000000002240\" }", false);
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableMat3d("var1", xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableMat4")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"mat4\", \"$b\" : "
+                      "\"0x0000803F0000A0400000104100005041000000400000C0400000204100006041000040400000E04000003041000070410000804000000041"
+                      "0000404100008041\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableMat4("var1", xiiMat4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableMat4d")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"mat4d\", \"$b\" : "
+                      "\"0x000000000000F03F000000000000144000000000000022400000000000002A400000000000000040000000000000184000000000000024400000000000002C4000000000000008400000000000001C4000000000000026400000000000002E400000000000001040000000000000204000000000000028400000000000003040\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableMat4d("var1", xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableTransform")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"transform\", \"$b\" : "
+                      "\"0x0000803F0000004000004040000080400000A0400000C0400000E040000000410000104100002041\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableTransform("var1", xiiTransform(xiiVec3(1, 2, 3), xiiQuat(4, 5, 6, 7), xiiVec3(8, 9, 10)));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableTransformd")
+  {
+    StreamComparer sc("\"var1\" : { \"$t\" : \"transformd\", \"$b\" : "
+                      "\"0x000000000000F03F000000000000004000000000000008400000000000001040000000000000144000000000000018400000000000001C40000000000000204000000000000022400000000000002440\" }");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableTransformd("var1", xiiTransformd(xiiVec3d(1, 2, 3), xiiQuatd(4, 5, 6, 7), xiiVec3d(8, 9, 10)));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVariant")
+  {
+    StreamComparer sc("\
+\"var1\" : 23,\n\
+\"var2\" : 42.5,\n\
+\"var3\" : 21.25,\n\
+\"var4\" : true,\n\
+\"var5\" : \"pups\"");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.AddVariableVariant("var1", xiiVariant(23));
+    js.AddVariableVariant("var2", xiiVariant(42.5f));
+    js.AddVariableVariant("var3", xiiVariant(21.25));
+    js.AddVariableVariant("var4", xiiVariant(true));
+    js.AddVariableVariant("var5", xiiVariant("pups"));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Arrays")
+  {
+    StreamComparer sc("\
+{\n\
+  \"EmptyArray\" : [  ],\n\
+  \"NamedArray\" : [ 13 ],\n\
+  \"NamedArray2\" : [ 1337, -4996 ],\n\
+  \"Nested\" : [ null, [ 1, 2, 3 ], [ 4, 5, 6 ], [  ], \"That was an empty array\" ]\n\
+}");
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.BeginObject();
+    js.BeginArray("EmptyArray");
+    js.EndArray();
+
+    js.BeginArray("NamedArray");
+    js.WriteInt32(13);
+    js.EndArray();
+
+    js.BeginArray("NamedArray2");
+    js.WriteInt32(1337);
+    js.WriteInt32(-4996);
+    js.EndArray();
+
+    js.BeginVariable("Nested");
+    js.BeginArray();
+    js.WriteNULL();
+
+    js.BeginArray();
+    js.WriteInt32(1);
+    js.WriteInt32(2);
+    js.WriteInt32(3);
+    js.EndArray();
+
+    js.BeginArray();
+    js.WriteInt32(4);
+    js.WriteInt32(5);
+    js.WriteInt32(6);
+    js.EndArray();
+
+    js.BeginArray();
+    js.EndArray();
+
+    js.WriteString("That was an empty array");
+    js.EndArray();
+    js.EndVariable();
+
+    js.EndObject();
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Complex Objects")
+  {
+    xiiStringUtf8 sExp(L"\
+{\n\
+  \"String\" : \"testvälue\",\n\
+  \"double\" : 43.56,\n\
+  \"float\" : 64.720001,\n\
+  \"bööl\" : true,\n\
+  \"int\" : 23,\n\
+  \"myarray\" : [ 1, 2.2, 3.3, false, \"ende\" ],\n\
+  \"object\" : {\n\
+    \"variable in object\" : \"bla/*asdf*/ //tuff\",\n\
+    \"Subobject\" : {\n\
+      \"variable in subobject\" : \"bla\\\\\",\n\
+      \"array in sub\" : [ {\n\
+          \"obj var\" : 234\n\
+        },\n\
+        {\n\
+          \"obj var 2\" : -235\n\
+        }, true, 4, false ]\n\
+    }\n\
+  },\n\
+  \"test\" : \"text\"\n\
+}");
+
+    StreamComparer sc(sExp.GetData());
+
+    xiiStandardJSONWriter js;
+    js.SetOutputStream(&sc);
+
+    js.BeginObject();
+
+    js.AddVariableString("String", xiiStringUtf8(L"testvälue").GetData()); // Unicode / Utf-8 test (in string)
+    js.AddVariableDouble("double", 43.56);
+    js.AddVariableFloat("float", 64.72f);
+    js.AddVariableBool(xiiStringUtf8(L"bööl").GetData(), true); // Unicode / Utf-8 test (identifier)
+    js.AddVariableInt32("int", 23);
+
+    js.BeginArray("myarray");
+    js.WriteInt32(1);
+    js.WriteFloat(2.2f);
+    js.WriteDouble(3.3);
+    js.WriteBool(false);
+    js.WriteString("ende");
+    js.EndArray();
+
+    js.BeginObject("object");
+    js.AddVariableString("variable in object", "bla/*asdf*/ //tuff"); // 'comment' in string
+    js.BeginObject("Subobject");
+    js.AddVariableString("variable in subobject", "bla\\"); // character to be escaped
+
+    js.BeginArray("array in sub");
+    js.BeginObject();
+    js.AddVariableUInt64("obj var", 234);
+    js.EndObject();
+    js.BeginObject();
+    js.AddVariableInt64("obj var 2", -235);
+    js.EndObject();
+    js.WriteBool(true);
+    js.WriteInt32(4);
+    js.WriteBool(false);
+    js.EndArray();
+    js.EndObject();
+    js.EndObject();
+
+    js.AddVariableString("test", "text");
+
+    js.EndObject();
+  }
+}

@@ -72,9 +72,9 @@ public:
     static constexpr xiiUInt32 NAME_SIZE = 40;
 
     xiiStringView m_sFunctionName;
-    xiiTime     m_BeginTime;
-    xiiTime     m_EndTime;
-    char        m_szName[NAME_SIZE];
+    xiiTime       m_BeginTime;
+    xiiTime       m_EndTime;
+    char          m_szName[NAME_SIZE];
   };
 
   struct CPUScopesBufferFlat

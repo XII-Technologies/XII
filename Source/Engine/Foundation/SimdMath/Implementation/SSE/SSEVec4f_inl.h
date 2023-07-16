@@ -207,7 +207,7 @@ template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero(const xiiSimdFloat& fEpsilon) const
 {
   const xiiInt32 mask   = XII_BIT(N) - 1;
-  __m128    absVal = Abs().m_v;
+  __m128         absVal = Abs().m_v;
   return (_mm_movemask_ps(_mm_cmplt_ps(absVal, fEpsilon.m_v)) & mask) == mask;
 }
 

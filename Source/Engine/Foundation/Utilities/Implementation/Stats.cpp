@@ -18,7 +18,7 @@ void xiiStats::RemoveStat(xiiStringView sStatName)
   s_Stats.Remove(it);
 
   StatsEventData e;
-  e.m_EventType  = StatsEventData::Remove;
+  e.m_EventType = StatsEventData::Remove;
   e.m_sStatName = sStatName;
 
   s_StatsEvents.Broadcast(e);
@@ -38,7 +38,7 @@ void xiiStats::SetStat(xiiStringView sStatName, const xiiVariant& value)
 
   StatsEventData e;
   e.m_EventType    = bExisted ? StatsEventData::Set : StatsEventData::Add;
-  e.m_sStatName   = sStatName;
+  e.m_sStatName    = sStatName;
   e.m_NewStatValue = value;
 
   s_StatsEvents.Broadcast(e);

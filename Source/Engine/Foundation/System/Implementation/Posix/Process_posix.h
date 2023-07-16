@@ -42,14 +42,14 @@ struct xiiProcessImpl
 
   struct StdStreamInfo
   {
-    xiiInt32                              fd;
+    xiiInt32                         fd;
     xiiDelegate<void(xiiStringView)> callback;
   };
   xiiHybridArray<StdStreamInfo, 2>  m_streams;
   xiiDynamicArray<xiiStringBuilder> m_overflowBuffers;
   xiiUniquePtr<xiiOSThread>         m_streamWatcherThread;
-  xiiInt32                               m_wakeupPipeReadEnd  = -1;
-  xiiInt32                               m_wakeupPipeWriteEnd = -1;
+  xiiInt32                          m_wakeupPipeReadEnd  = -1;
+  xiiInt32                          m_wakeupPipeWriteEnd = -1;
 
   static void* StreamWatcherThread(void* context)
   {
@@ -343,9 +343,9 @@ xiiProcess::~xiiProcess()
 
 xiiResult xiiProcess::Execute(const xiiProcessOptions& opt, xiiInt32* out_iExitCode /*= nullptr*/)
 {
-  pid_t childPid = 0;
-  xiiInt32   stdoutFd = -1;
-  xiiInt32   stderrFd = -1;
+  pid_t    childPid = 0;
+  xiiInt32 stdoutFd = -1;
+  xiiInt32 stderrFd = -1;
   if (xiiProcessImpl::StartChildProcess(opt, childPid, false, stdoutFd, stderrFd).Failed())
   {
     return XII_FAILURE;
@@ -370,8 +370,8 @@ xiiResult xiiProcess::Execute(const xiiProcessOptions& opt, xiiInt32* out_iExitC
     }
   }
 
-  xiiInt32   childStatus = -1;
-  pid_t waitedPid   = waitpid(childPid, &childStatus, 0);
+  xiiInt32 childStatus = -1;
+  pid_t    waitedPid   = waitpid(childPid, &childStatus, 0);
   if (waitedPid < 0)
   {
     return XII_FAILURE;
@@ -460,8 +460,8 @@ xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
   }
   else
   {
-    xiiInt32     waitResult = 0;
-    xiiTime startWait  = xiiTime::Now();
+    xiiInt32 waitResult = 0;
+    xiiTime  startWait  = xiiTime::Now();
     while (true)
     {
       waitResult = waitpid(m_pImpl->m_childPid, &childStatus, WNOHANG);

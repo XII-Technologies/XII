@@ -1,0 +1,29 @@
+#pragma once
+
+#include <Foundation/Reflection/ReflectionUtils.h>
+#include <ToolsFoundation/Reflection/ReflectedType.h>
+
+class xiiIReflectedTypeAccessor;
+class xiiDocumentObject;
+class xiiAbstractObjectGraph;
+
+/// \brief Helper functions for handling reflection related operations.
+///
+/// Also check out xiiToolsSerializationUtils for related functionality.
+class XII_TOOLSFOUNDATION_DLL xiiToolsReflectionUtils
+{
+public:
+  /// \brief Returns the default value for the entire property as it is stored on the editor side.
+  static xiiVariant GetStorageDefault(const xiiAbstractProperty* pProperty);
+
+  static bool GetFloatFromVariant(const xiiVariant& val, double& out_fValue);
+  static bool GetVariantFromFloat(double fValue, xiiVariantType::Enum type, xiiVariant& out_val);
+
+  /// \brief Creates a ReflectedTypeDescriptor from a xiiRTTI instance that can be serialized and registered at the xiiPhantomRttiManager.
+  static void GetReflectedTypeDescriptorFromRtti(const xiiRTTI* pRtti, xiiReflectedTypeDescriptor& out_desc); // [tested]
+  static void GetMinimalReflectedTypeDescriptorFromRtti(const xiiRTTI* pRtti, xiiReflectedTypeDescriptor& out_desc);
+
+  static void GatherObjectTypes(const xiiDocumentObject* pObject, xiiSet<const xiiRTTI*>& inout_types);
+
+  static bool DependencySortTypeDescriptorArray(xiiDynamicArray<xiiReflectedTypeDescriptor*>& ref_descriptors);
+};

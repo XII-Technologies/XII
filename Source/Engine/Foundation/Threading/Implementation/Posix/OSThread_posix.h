@@ -5,13 +5,13 @@ xiiAtomicInteger32 xiiOSThread::s_iThreadCount;
 
 // Posix specific implementation of the thread class
 
-xiiOSThread::xiiOSThread( xiiOSThreadEntryPoint pThreadEntryPoint, void* pUserData /*= nullptr*/, xiiStringView sName /*= "xiiThread"*/, xiiUInt32 uiStackSize /*= 128 * 1024*/)
+xiiOSThread::xiiOSThread(xiiOSThreadEntryPoint pThreadEntryPoint, void* pUserData /*= nullptr*/, xiiStringView sName /*= "xiiThread"*/, xiiUInt32 uiStackSize /*= 128 * 1024*/)
 {
   s_iThreadCount.Increment();
 
   m_EntryPoint  = pThreadEntryPoint;
   m_pUserData   = pUserData;
-  m_sName      = sName;
+  m_sName       = sName;
   m_uiStackSize = uiStackSize;
 
   // Thread creation is deferred since Posix threads can't be created sleeping
