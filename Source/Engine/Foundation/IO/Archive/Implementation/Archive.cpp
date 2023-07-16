@@ -28,10 +28,11 @@ xiiUInt32 xiiArchiveTOC::FindEntry(xiiStringView sFile) const
     return xiiInvalidIndex;
 
   XII_ASSERT_DEBUG(sFile.IsEqual_NoCase(GetEntryPathString(uiIndex)), "Hash table corruption detected.");
+
   return uiIndex;
 }
 
-const char* xiiArchiveTOC::GetEntryPathString(xiiUInt32 uiEntryIdx) const
+xiiStringView xiiArchiveTOC::GetEntryPathString(xiiUInt32 uiEntryIdx) const
 {
   return reinterpret_cast<const char*>(&m_AllPathStrings[m_Entries[uiEntryIdx].m_uiPathStringOffset]);
 }

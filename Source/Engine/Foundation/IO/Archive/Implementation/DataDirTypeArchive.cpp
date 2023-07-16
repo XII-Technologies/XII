@@ -133,14 +133,14 @@ xiiResult xiiDataDirectory::ArchiveType::GetFileStats(xiiStringView sFileOrFolde
 
   const xiiArchiveEntry* pEntry = &toc.m_Entries[uiEntryIndex];
 
-  const char* szPath = toc.GetEntryPathString(uiEntryIndex);
+  xiiStringView sPath = toc.GetEntryPathString(uiEntryIndex);
 
   out_Stats.m_bIsDirectory         = false;
   out_Stats.m_LastModificationTime = m_LastModificationTime;
   out_Stats.m_uiFileSize           = pEntry->m_uiUncompressedDataSize;
-  out_Stats.m_sParentPath          = szPath;
+  out_Stats.m_sParentPath          = sPath;
   out_Stats.m_sParentPath.PathParentDirectory();
-  out_Stats.m_sName = xiiPathUtils::GetFileNameAndExtension(szPath);
+  out_Stats.m_sName = xiiPathUtils::GetFileNameAndExtension(sPath);
 
   return XII_SUCCESS;
 }

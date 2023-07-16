@@ -111,13 +111,13 @@ xiiUniquePtr<xiiStreamReader> xiiArchiveReader::CreateEntryReader(xiiUInt32 uiEn
 
 xiiResult xiiArchiveReader::ExtractFile(xiiUInt32 uiEntryIdx, xiiStringView sTargetFolder) const
 {
-  const char*     szFilePath = m_ArchiveTOC.GetEntryPathString(uiEntryIdx);
+  xiiStringView     sFilePath = m_ArchiveTOC.GetEntryPathString(uiEntryIdx);
   const xiiUInt64 uiMaxSize  = m_ArchiveTOC.m_Entries[uiEntryIdx].m_uiUncompressedDataSize;
 
   xiiUniquePtr<xiiStreamReader> pReader = CreateEntryReader(uiEntryIdx);
 
   xiiStringBuilder sOutputFile = sTargetFolder;
-  sOutputFile.AppendPath(szFilePath);
+  sOutputFile.AppendPath(sFilePath);
 
   xiiFileWriter file;
   XII_SUCCEED_OR_RETURN(file.Open(sOutputFile));
