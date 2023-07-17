@@ -1046,10 +1046,10 @@ void xiiQtCurve1DEditorWidget::onSaveAsPreset()
   FindAllPresets();
 }
 
-void xiiQtCurve1DEditorWidget::SaveCurvePreset(const char* szFile) const
+void xiiQtCurve1DEditorWidget::SaveCurvePreset(xiiStringView sFile) const
 {
   xiiFileWriter file;
-  if (file.Open(szFile).Failed())
+  if (file.Open(sFile).Failed())
     return;
 
   file.WriteVersion(1);
@@ -1104,9 +1104,9 @@ void xiiQtCurve1DEditorWidget::onLoadPreset()
   LoadCurvePreset(sFile.toUtf8().data()).IgnoreResult();
 }
 
-xiiResult xiiQtCurve1DEditorWidget::LoadCurvePreset(const char* szFile)
+xiiResult xiiQtCurve1DEditorWidget::LoadCurvePreset(xiiStringView sFile)
 {
-  xiiStringBuilder sPath = szFile;
+  xiiStringBuilder sPath = sFile;
 
   if (!sPath.IsAbsolutePath())
   {

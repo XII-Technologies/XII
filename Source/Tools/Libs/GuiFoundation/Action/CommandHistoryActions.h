@@ -11,7 +11,7 @@ public:
   static void RegisterActions();
   static void UnregisterActions();
 
-  static void MapActions(const char* szMapping, const char* szPath);
+  static void MapActions(xiiStringView sMapping, xiiStringView sPath);
 
   static xiiActionDescriptorHandle s_hCommandHistoryCategory;
   static xiiActionDescriptorHandle s_hUndo;
@@ -31,7 +31,7 @@ public:
     Redo,
   };
 
-  xiiCommandHistoryAction(const xiiActionContext& context, const char* szName, ButtonType button);
+  xiiCommandHistoryAction(const xiiActionContext& context, xiiStringView sName, ButtonType button);
   ~xiiCommandHistoryAction();
 
   virtual void Execute(const xiiVariant& value) override;

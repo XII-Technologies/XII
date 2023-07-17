@@ -249,9 +249,10 @@ void xiiQtPropertyEditorDoubleSpinboxWidget::OnInit()
 
   if (const xiiMinValueTextAttribute* pMinValueText = m_pProp->GetAttributeByType<xiiMinValueTextAttribute>())
   {
+    xiiStringBuilder tmp;
     for (int i = 0; i < m_iNumComponents; ++i)
     {
-      m_pWidget[i]->setSpecialValueText(pMinValueText->GetText());
+      m_pWidget[i]->setSpecialValueText(pMinValueText->GetText().GetData(tmp));
     }
   }
 }
@@ -483,7 +484,8 @@ void xiiQtPropertyEditorAngleWidget::OnInit()
   const xiiMinValueTextAttribute* pMinValueText = m_pProp->GetAttributeByType<xiiMinValueTextAttribute>();
   if (pMinValueText)
   {
-    m_pWidget->setSpecialValueText(pMinValueText->GetText());
+    xiiStringBuilder tmp;
+    m_pWidget->setSpecialValueText(pMinValueText->GetText().GetData(tmp));
   }
 }
 
@@ -718,9 +720,10 @@ void xiiQtPropertyEditorIntSpinboxWidget::OnInit()
 
   if (const xiiMinValueTextAttribute* pMinValueText = m_pProp->GetAttributeByType<xiiMinValueTextAttribute>())
   {
+    xiiStringBuilder tmp;
     for (int i = 0; i < m_iNumComponents; ++i)
     {
-      m_pWidget[i]->setSpecialValueText(pMinValueText->GetText());
+      m_pWidget[i]->setSpecialValueText(pMinValueText->GetText().GetData(tmp));
     }
   }
 }
@@ -1127,6 +1130,8 @@ void xiiQtPropertyEditorEnumWidget::OnInit()
 {
   const xiiRTTI* pType = m_pProp->GetSpecificType();
 
+  xiiStringBuilder tmp;
+
   xiiQtScopedBlockSignals bs(m_pWidget);
 
   xiiUInt32 uiCount = pType->GetProperties().GetCount();
@@ -1140,7 +1145,7 @@ void xiiQtPropertyEditorEnumWidget::OnInit()
 
     const xiiAbstractConstantProperty* pConstant = static_cast<const xiiAbstractConstantProperty*>(pProp);
 
-    m_pWidget->addItem(QString::fromUtf8(xiiTranslate(pConstant->GetPropertyName())), pConstant->GetConstant().ConvertTo<xiiInt64>());
+    m_pWidget->addItem(QString::fromUtf8(xiiTranslate(pConstant->GetPropertyName().GetData(tmp))), pConstant->GetConstant().ConvertTo<xiiInt64>());
   }
 }
 
@@ -1203,6 +1208,8 @@ void xiiQtPropertyEditorBitflagsWidget::OnInit()
   const xiiRTTI* pType   = enumType;
   xiiUInt32      uiCount = pType->GetProperties().GetCount();
 
+  xiiStringBuilder tmp;
+
   // Start at 1 to skip default value.
   for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
@@ -1214,7 +1221,7 @@ void xiiQtPropertyEditorBitflagsWidget::OnInit()
     const xiiAbstractConstantProperty* pConstant = static_cast<const xiiAbstractConstantProperty*>(pProp);
 
     QWidgetAction* pAction   = new QWidgetAction(m_pMenu);
-    QCheckBox*     pCheckBox = new QCheckBox(QString::fromUtf8(xiiTranslate(pConstant->GetPropertyName())), m_pMenu);
+    QCheckBox*     pCheckBox = new QCheckBox(QString::fromUtf8(xiiTranslate(pConstant->GetPropertyName().GetData(tmp))), m_pMenu);
     pCheckBox->setCheckable(true);
     pCheckBox->setCheckState(Qt::Unchecked);
     pAction->setDefaultWidget(pCheckBox);

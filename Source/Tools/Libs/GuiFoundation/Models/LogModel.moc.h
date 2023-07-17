@@ -15,7 +15,7 @@ public:
   xiiQtLogModel(QObject* pParent);
   void Clear();
   void SetLogLevel(xiiLogMsgType::Enum logLevel);
-  void SetSearchText(const char* szText);
+  void SetSearchText(xiiStringView sText);
   void AddLogMsg(const xiiLogEntry& msg);
 
   xiiUInt32 GetVisibleItemCount() const { return m_VisibleMessages.GetCount(); }
@@ -34,7 +34,7 @@ public: // QAbstractItemModel interface
   virtual int           columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
 Q_SIGNALS:
-  void NewErrorsOrWarnings(const char* szLatest, bool bError);
+  void NewErrorsOrWarnings(xiiStringView sLatest, bool bError);
 
 private Q_SLOTS:
   /// \brief Adds queued messages from a different thread to the model.

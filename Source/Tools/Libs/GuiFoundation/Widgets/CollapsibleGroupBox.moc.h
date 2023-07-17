@@ -11,7 +11,7 @@ class XII_GUIFOUNDATION_DLL xiiQtCollapsibleGroupBox : public xiiQtGroupBoxBase,
 public:
   explicit xiiQtCollapsibleGroupBox(QWidget* pParent);
 
-  virtual void SetTitle(const char* szTitle) override;
+  virtual void SetTitle(xiiStringView sTitle) override;
   virtual void SetIcon(const QIcon& icon) override;
   virtual void SetFillColor(const QColor& color) override;
 

@@ -14,7 +14,7 @@ class XII_GUIFOUNDATION_DLL xiiDynamicEnum
 {
 public:
   /// \brief Returns a xiiDynamicEnum under the given name. Creates a new one, if the name has not been used before.
-  static xiiDynamicEnum& GetDynamicEnum(const char* szEnumName);
+  static xiiDynamicEnum& GetDynamicEnum(xiiStringView sEnumName);
 
   /// \brief Returns all enum values and current names.
   const xiiMap<xiiInt32, xiiString>& GetAllValidValues() const { return m_ValidValues; }
@@ -23,7 +23,7 @@ public:
   void Clear();
 
   /// \brief Sets the name for the given enum value.
-  void SetValueAndName(xiiInt32 iValue, const char* szNewName);
+  void SetValueAndName(xiiInt32 iValue, xiiStringView sNewName);
 
   /// \brief Removes a certain enum value, if it exists.
   void RemoveValue(xiiInt32 iValue);

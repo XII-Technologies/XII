@@ -56,22 +56,22 @@ void xiiPropertyMetaState::GetTypePropertiesState(const xiiHybridArray<xiiProper
   }
 }
 
-void xiiPropertyMetaState::GetContainerElementsState(const xiiDocumentObject* pObject, const char* szProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates)
+void xiiPropertyMetaState::GetContainerElementsState(const xiiDocumentObject* pObject, xiiStringView sProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates)
 {
   xiiContainerElementMetaStateEvent eventData;
   eventData.m_pContainerElementStates = &out_propertyStates;
   eventData.m_pObject                 = pObject;
-  eventData.m_szProperty              = szProperty;
+  eventData.m_sProperty              = sProperty;
 
   m_ContainerEvents.Broadcast(eventData);
 }
 
-void xiiPropertyMetaState::GetContainerElementsState(const xiiHybridArray<xiiPropertySelection, 8>& items, const char* szProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates)
+void xiiPropertyMetaState::GetContainerElementsState(const xiiHybridArray<xiiPropertySelection, 8>& items, xiiStringView sProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates)
 {
   for (const auto& sel : items)
   {
     m_Temp2.Clear();
-    GetContainerElementsState(sel.m_pObject, szProperty, m_Temp2);
+    GetContainerElementsState(sel.m_pObject, sProperty, m_Temp2);
 
     for (auto it = m_Temp2.GetIterator(); it.IsValid(); ++it)
     {

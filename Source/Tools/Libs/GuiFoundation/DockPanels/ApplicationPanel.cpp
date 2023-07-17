@@ -14,13 +14,14 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 xiiDynamicArray<xiiQtApplicationPanel*> xiiQtApplicationPanel::s_AllApplicationPanels;
 
-xiiQtApplicationPanel::xiiQtApplicationPanel(const char* szPanelName) :
-  ads::CDockWidget(szPanelName, xiiQtContainerWindow::GetContainerWindow())
+xiiQtApplicationPanel::xiiQtApplicationPanel(xiiStringView sPanelName) :
+  ads::CDockWidget(sPanelName.GetStartPointer(), xiiQtContainerWindow::GetContainerWindow())
 {
-  xiiStringBuilder sPanel("AppPanel_", szPanelName);
+  xiiStringBuilder tmp;
+  xiiStringBuilder sPanel("AppPanel_", sPanelName);
 
   setObjectName(QString::fromUtf8(sPanel.GetData()));
-  setWindowTitle(QString::fromUtf8(xiiTranslate(szPanelName)));
+  setWindowTitle(QString::fromUtf8(xiiTranslate(sPanelName.GetData(tmp))));
 
   s_AllApplicationPanels.PushBack(this);
 

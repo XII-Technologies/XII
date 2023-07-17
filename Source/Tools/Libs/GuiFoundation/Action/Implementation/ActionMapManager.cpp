@@ -30,19 +30,19 @@ XII_END_SUBSYSTEM_DECLARATION;
 // xiiActionMapManager public functions
 ////////////////////////////////////////////////////////////////////////
 
-xiiResult xiiActionMapManager::RegisterActionMap(const char* szMapping)
+xiiResult xiiActionMapManager::RegisterActionMap(xiiStringView sMapping)
 {
-  auto it = s_Mappings.Find(szMapping);
+  auto it = s_Mappings.Find(sMapping);
   if (it.IsValid())
     return XII_FAILURE;
 
-  s_Mappings.Insert(szMapping, XII_DEFAULT_NEW(xiiActionMap));
+  s_Mappings.Insert(sMapping, XII_DEFAULT_NEW(xiiActionMap));
   return XII_SUCCESS;
 }
 
-xiiResult xiiActionMapManager::UnregisterActionMap(const char* szMapping)
+xiiResult xiiActionMapManager::UnregisterActionMap(xiiStringView sMapping)
 {
-  auto it = s_Mappings.Find(szMapping);
+  auto it = s_Mappings.Find(sMapping);
   if (!it.IsValid())
     return XII_FAILURE;
 
@@ -51,9 +51,9 @@ xiiResult xiiActionMapManager::UnregisterActionMap(const char* szMapping)
   return XII_SUCCESS;
 }
 
-xiiActionMap* xiiActionMapManager::GetActionMap(const char* szMapping)
+xiiActionMap* xiiActionMapManager::GetActionMap(xiiStringView sMapping)
 {
-  auto it = s_Mappings.Find(szMapping);
+  auto it = s_Mappings.Find(sMapping);
   if (!it.IsValid())
     return nullptr;
 

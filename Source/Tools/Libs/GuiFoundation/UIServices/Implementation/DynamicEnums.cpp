@@ -9,9 +9,9 @@ void xiiDynamicEnum::Clear()
   m_ValidValues.Clear();
 }
 
-void xiiDynamicEnum::SetValueAndName(xiiInt32 iValue, const char* szNewName)
+void xiiDynamicEnum::SetValueAndName(xiiInt32 iValue, xiiStringView sNewName)
 {
-  m_ValidValues[iValue] = szNewName;
+  m_ValidValues[iValue] = sNewName;
 }
 
 void xiiDynamicEnum::RemoveValue(xiiInt32 iValue)
@@ -34,7 +34,7 @@ const char* xiiDynamicEnum::GetValueName(xiiInt32 iValue) const
   return it.Value();
 }
 
-xiiDynamicEnum& xiiDynamicEnum::GetDynamicEnum(const char* szEnumName)
+xiiDynamicEnum& xiiDynamicEnum::GetDynamicEnum(xiiStringView sEnumName)
 {
-  return s_DynamicEnums[szEnumName];
+  return s_DynamicEnums[sEnumName];
 }

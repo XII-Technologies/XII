@@ -259,10 +259,11 @@ xiiQtMenuProxy::~xiiQtMenuProxy()
 
 void xiiQtMenuProxy::Update()
 {
+  xiiStringBuilder tmp;
   auto pMenu = static_cast<xiiMenuAction*>(m_pAction);
 
   m_pMenu->setIcon(xiiQtUiServices::GetCachedIconResource(pMenu->GetIconPath()));
-  m_pMenu->setTitle(QString::fromUtf8(xiiTranslate(pMenu->GetName())));
+  m_pMenu->setTitle(QString::fromUtf8(xiiTranslate(pMenu->GetName().GetData(tmp))));
 }
 
 void xiiQtMenuProxy::SetAction(xiiAction* pAction)
@@ -306,14 +307,14 @@ void xiiQtButtonProxy::Update()
 
   auto pButton = static_cast<xiiButtonAction*>(m_pAction);
 
-
+  xiiStringBuilder           tmp;
   const xiiActionDescriptor* pDesc = m_pAction->GetDescriptorHandle().GetDescriptor();
   m_pQtAction->setShortcut(QKeySequence(QString::fromUtf8(pDesc->m_sShortcut.GetData())));
 
   const QString sDisplayShortcut = m_pQtAction->shortcut().toString(QKeySequence::NativeText);
-  QString       sTooltip         = xiiTranslateTooltip(pButton->GetName());
+  QString       sTooltip         = xiiTranslateTooltip(pButton->GetName().GetData(tmp));
 
-  xiiStringBuilder sDisplay = xiiTranslate(pButton->GetName());
+  xiiStringBuilder sDisplay = xiiTranslate(pButton->GetName().GetData(tmp));
 
   if (sTooltip.isEmpty())
   {
@@ -328,7 +329,7 @@ void xiiQtButtonProxy::Update()
     sTooltip.append(")");
   }
 
-  if (!xiiStringUtils::IsNullOrEmpty(pButton->GetAdditionalDisplayString()))
+  if (!pButton->GetAdditionalDisplayString().IsEmpty())
     sDisplay.Append(" '", pButton->GetAdditionalDisplayString(), "'"); // TODO: translate this as well?
 
   m_pQtAction->setIcon(xiiQtUiServices::GetCachedIconResource(pButton->GetIconPath()));
@@ -502,16 +503,17 @@ void xiiQtDynamicActionAndMenuProxy::Update()
 
   auto pButton = static_cast<xiiDynamicActionAndMenuAction*>(m_pAction);
 
+  xiiStringBuilder           tmp;
   const xiiActionDescriptor* pDesc = m_pAction->GetDescriptorHandle().GetDescriptor();
   m_pQtAction->setShortcut(QKeySequence(QString::fromUtf8(pDesc->m_sShortcut.GetData())));
 
-  xiiStringBuilder sDisplay = xiiTranslate(pButton->GetName());
+  xiiStringBuilder sDisplay = xiiTranslate(pButton->GetName().GetData(tmp));
 
-  if (!xiiStringUtils::IsNullOrEmpty(pButton->GetAdditionalDisplayString()))
+  if (!pButton->GetAdditionalDisplayString().IsEmpty())
     sDisplay.Append(" '", pButton->GetAdditionalDisplayString(), "'"); // TODO: translate this as well?
 
   const QString sDisplayShortcut = m_pQtAction->shortcut().toString(QKeySequence::NativeText);
-  QString       sTooltip         = xiiTranslateTooltip(pButton->GetName());
+  QString       sTooltip         = xiiTranslateTooltip(pButton->GetName().GetData(tmp));
 
   if (sTooltip.isEmpty())
   {
@@ -693,13 +695,15 @@ void xiiQtSliderProxy::Update()
   xiiQtSliderWidgetAction* pSliderAction = qobject_cast<xiiQtSliderWidgetAction*>(m_pQtAction);
   xiiQtScopedBlockSignals  bs(pSliderAction);
 
+  xiiStringBuilder tmp;
+
   xiiInt32 minVal, maxVal;
   pAction->GetRange(minVal, maxVal);
   pSliderAction->setMinimum(minVal);
   pSliderAction->setMaximum(maxVal);
   pSliderAction->setValue(pAction->GetValue());
-  pSliderAction->setText(xiiTranslate(pAction->GetName()));
-  pSliderAction->setToolTip(xiiTranslateTooltip(pAction->GetName()));
+  pSliderAction->setText(xiiTranslate(pAction->GetName().GetData(tmp)));
+  pSliderAction->setToolTip(xiiTranslateTooltip(pAction->GetName().GetData(tmp)));
   pSliderAction->setEnabled(pAction->IsEnabled());
   pSliderAction->setVisible(pAction->IsVisible());
 }

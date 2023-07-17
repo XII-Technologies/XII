@@ -72,19 +72,12 @@ public:
 
   /// \brief Shows a non-modal color dialog. The Qt slots are called when the selected color is changed or when the dialog is closed and the result
   /// accepted or rejected.
-  void ShowColorDialog(
-    const xiiColor& color,
-    bool            bAlpha,
-    bool            bHDR,
-    QWidget*        pParent,
-    const char*     szSlotCurColChanged,
-    const char*     szSlotAccept,
-    const char*     szSlotReject);
+  void ShowColorDialog(const xiiColor& color, bool bAlpha, bool bHDR, QWidget* pParent, const char* szSlotCurColChanged, const char* szSlotAccept, const char* szSlotReject);
 
   /// \brief Might show a message box depending on the given status. If the status is 'failure' the szFailureMsg is shown, including the message in
   /// xiiStatus. If the status is success a message box with text szSuccessMsg is shown, but only if the status message is not empty or if
   /// bOnlySuccessMsgIfDetails is false.
-  static void MessageBoxStatus(const xiiStatus& s, const char* szFailureMsg, const char* szSuccessMsg = "", bool bOnlySuccessMsgIfDetails = true);
+  static void MessageBoxStatus(const xiiStatus& s, xiiStringView sFailureMsg, xiiStringView sSuccessMsg = {}, bool bOnlySuccessMsgIfDetails = true);
 
   /// \brief Shows an information message box
   static void MessageBoxInformation(const xiiFormatString& msg);
@@ -93,10 +86,7 @@ public:
   static void MessageBoxWarning(const xiiFormatString& msg);
 
   /// \brief Shows a question message box and returns which button the user pressed
-  static QMessageBox::StandardButton MessageBoxQuestion(
-    const xiiFormatString&       msg,
-    QMessageBox::StandardButtons buttons,
-    QMessageBox::StandardButton  defaultButton);
+  static QMessageBox::StandardButton MessageBoxQuestion(const xiiFormatString& msg, QMessageBox::StandardButtons buttons, QMessageBox::StandardButton defaultButton);
 
   /// \brief Use this if you need to display a status bar message in any/all documents. Go directly through the document, if you only want to show a
   /// message in a single document window.
@@ -108,10 +98,10 @@ public:
   static void ShowGlobalStatusBarMessage(const xiiFormatString& msg);
 
   /// \brief Opens the given file in the program that is registered in the OS to handle that file type.
-  static bool OpenFileInDefaultProgram(const char* szPath);
+  static bool OpenFileInDefaultProgram(xiiStringView sPath);
 
   /// \brief Opens the given file or folder in the Explorer
-  static void OpenInExplorer(const char* szPath, bool bIsFile);
+  static void OpenInExplorer(xiiStringView sPath, bool bIsFile);
 
   /// \brief Attempts to launch Visual Studio Code with the given command line
   static xiiStatus OpenInVsCode(const QStringList& arguments);
@@ -124,21 +114,21 @@ public:
 
   /// \brief Returns a cached QIcon that was created from an internal Qt resource (e.g. 'QIcon(":QtNamespace/MyIcon.png")' ). Prevents creating the
   /// object over and over.
-  static const QIcon& GetCachedIconResource(const char* szIdentifier);
+  static const QIcon& GetCachedIconResource(xiiStringView sIdentifier);
 
   /// \brief Returns a cached QImage that was created from an internal Qt resource (e.g. 'QImage(":QtNamespace/MyIcon.png")' ). Prevents creating the
   /// object over and over.
-  static const QImage& GetCachedImageResource(const char* szIdentifier);
+  static const QImage& GetCachedImageResource(xiiStringView sIdentifier);
 
   /// \brief Returns a cached QPixmap that was created from an internal Qt resource (e.g. 'QPixmap(":QtNamespace/MyIcon.png")' ). Prevents creating
   /// the object over and over.
-  static const QPixmap& GetCachedPixmapResource(const char* szIdentifier);
+  static const QPixmap& GetCachedPixmapResource(xiiStringView sIdentifier);
 
   /// \brief Adds the pattern to the gitignore file.
   ///
   /// If the gitignore file does not exist, it is created.
   /// If the pattern is already present in the file, it is not added again.
-  static xiiResult AddToGitIgnore(const char* szGitIgnoreFile, const char* szPattern);
+  static xiiResult AddToGitIgnore(xiiStringView sGitIgnoreFile, xiiStringView sPattern);
 
   /// \brief Raises the 'CheckForUpdates' event
   static void CheckForUpdates();

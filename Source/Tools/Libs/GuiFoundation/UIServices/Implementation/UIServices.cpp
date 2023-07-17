@@ -73,17 +73,16 @@ void xiiQtUiServices::SaveState()
 }
 
 
-const QIcon& xiiQtUiServices::GetCachedIconResource(const char* szIdentifier)
+const QIcon& xiiQtUiServices::GetCachedIconResource(xiiStringView sIdentifier)
 {
-  const xiiString sIdentifier = szIdentifier;
-  auto&           map         = s_IconsCache;
-
-  auto it = map.Find(sIdentifier);
+  auto& map = s_IconsCache;
+  auto  it  = map.Find(sIdentifier);
 
   if (it.IsValid())
     return it.Value();
 
-  QIcon icon(QString::fromUtf8(szIdentifier));
+  xiiStringBuilder tmp;
+  QIcon            icon(QString::fromUtf8(sIdentifier.GetData(tmp)));
 
   // Workaround for QIcon being stupid and treating failed to load icons as not-null.
   if (!icon.pixmap(QSize(16, 16)).isNull())
@@ -95,43 +94,41 @@ const QIcon& xiiQtUiServices::GetCachedIconResource(const char* szIdentifier)
 }
 
 
-const QImage& xiiQtUiServices::GetCachedImageResource(const char* szIdentifier)
+const QImage& xiiQtUiServices::GetCachedImageResource(xiiStringView sIdentifier)
 {
-  const xiiString sIdentifier = szIdentifier;
-  auto&           map         = s_ImagesCache;
-
-  auto it = map.Find(sIdentifier);
+  auto& map = s_ImagesCache;
+  auto  it  = map.Find(sIdentifier);
 
   if (it.IsValid())
     return it.Value();
 
-  map[sIdentifier] = QImage(QString::fromUtf8(szIdentifier));
+  xiiStringBuilder tmp;
+  map[sIdentifier] = QImage(QString::fromUtf8(sIdentifier.GetData(tmp)));
 
   return map[sIdentifier];
 }
 
-const QPixmap& xiiQtUiServices::GetCachedPixmapResource(const char* szIdentifier)
+const QPixmap& xiiQtUiServices::GetCachedPixmapResource(xiiStringView sIdentifier)
 {
-  const xiiString sIdentifier = szIdentifier;
-  auto&           map         = s_PixmapsCache;
-
-  auto it = map.Find(sIdentifier);
+  auto& map = s_PixmapsCache;
+  auto  it  = map.Find(sIdentifier);
 
   if (it.IsValid())
     return it.Value();
 
-  map[sIdentifier] = QPixmap(QString::fromUtf8(szIdentifier));
+  xiiStringBuilder tmp;
+  map[sIdentifier] = QPixmap(QString::fromUtf8(sIdentifier.GetData(tmp)));
 
   return map[sIdentifier];
 }
 
-xiiResult xiiQtUiServices::AddToGitIgnore(const char* szGitIgnoreFile, const char* szPattern)
+xiiResult xiiQtUiServices::AddToGitIgnore(xiiStringView sGitIgnoreFile, xiiStringView sPattern)
 {
   xiiStringBuilder ignoreFile;
 
   {
     xiiFileReader file;
-    if (file.Open(szGitIgnoreFile).Succeeded())
+    if (file.Open(sGitIgnoreFile).Succeeded())
     {
       ignoreFile.ReadAll(file);
     }
@@ -139,10 +136,10 @@ xiiResult xiiQtUiServices::AddToGitIgnore(const char* szGitIgnoreFile, const cha
 
   ignoreFile.Trim("\n\r");
 
-  const xiiUInt32 len = xiiStringUtils::GetStringElementCount(szPattern);
+  const xiiUInt32 len = sPattern.GetElementCount();
 
   // pattern already present ?
-  if (const char* szFound = ignoreFile.FindSubString(szPattern))
+  if (const char* szFound = ignoreFile.FindSubString(sPattern))
   {
     if (szFound == ignoreFile.GetData() || // right at the start
         *(szFound - 1) == '\n')            // after a new line
@@ -156,12 +153,12 @@ xiiResult xiiQtUiServices::AddToGitIgnore(const char* szGitIgnoreFile, const cha
     }
   }
 
-  ignoreFile.AppendWithSeparator("\n", szPattern);
+  ignoreFile.AppendWithSeparator("\n", sPattern);
   ignoreFile.Append("\n\n");
 
   {
     xiiFileWriter file;
-    XII_SUCCEED_OR_RETURN(file.Open(szGitIgnoreFile));
+    XII_SUCCEED_OR_RETURN(file.Open(sGitIgnoreFile));
 
     XII_SUCCEED_OR_RETURN(file.WriteBytes(ignoreFile.GetData(), ignoreFile.GetElementCount()));
   }
@@ -261,20 +258,22 @@ void xiiQtUiServices::ShowGlobalStatusBarMessage(const xiiFormatString& msg)
 }
 
 
-bool xiiQtUiServices::OpenFileInDefaultProgram(const char* szPath)
+bool xiiQtUiServices::OpenFileInDefaultProgram(xiiStringView sPath)
 {
-  return QDesktopServices::openUrl(QUrl::fromLocalFile(szPath));
+  xiiStringBuilder tmp;
+  return QDesktopServices::openUrl(QUrl::fromLocalFile(sPath.GetData(tmp)));
 }
 
-void xiiQtUiServices::OpenInExplorer(const char* szPath, bool bIsFile)
+void xiiQtUiServices::OpenInExplorer(xiiStringView sPath, bool bIsFile)
 {
-  QStringList args;
+  xiiStringBuilder tmp;
+  QStringList      args;
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   if (bIsFile)
     args << "/select,";
 
-  args << QDir::toNativeSeparators(szPath);
+  args << QDir::toNativeSeparators(sPath.GetData(tmp));
 
   QProcess::startDetached("explorer", args);
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
@@ -282,11 +281,11 @@ void xiiQtUiServices::OpenInExplorer(const char* szPath, bool bIsFile)
 
   if (bIsFile)
   {
-    parentDir = szPath;
+    parentDir = sPath;
     parentDir = parentDir.GetFileDirectory();
-    szPath    = parentDir.GetData();
+    sPath     = parentDir.GetData();
   }
-  args << QDir::toNativeSeparators(szPath);
+  args << QDir::toNativeSeparators(sPath);
 
   QProcess::startDetached("xdg-open", args);
 #else
@@ -296,8 +295,7 @@ void xiiQtUiServices::OpenInExplorer(const char* szPath, bool bIsFile)
 
 xiiStatus xiiQtUiServices::OpenInVsCode(const QStringList& arguments)
 {
-  QString sVsCodeExe =
-    QStandardPaths::locate(QStandardPaths::GenericDataLocation, "Programs/Microsoft VS Code/Code.exe", QStandardPaths::LocateOption::LocateFile);
+  QString sVsCodeExe = QStandardPaths::locate(QStandardPaths::GenericDataLocation, "Programs/Microsoft VS Code/Code.exe", QStandardPaths::LocateOption::LocateFile);
 
   if (!QFile().exists(sVsCodeExe))
   {

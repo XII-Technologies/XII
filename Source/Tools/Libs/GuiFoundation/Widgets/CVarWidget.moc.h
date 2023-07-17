@@ -74,7 +74,7 @@ public:
     xiiVariant m_Value;
   };
 
-  Entry* CreateEntry(const char* szName);
+  Entry* CreateEntry(xiiStringView sName);
 
   xiiQtCVarWidget*        m_pOwner = nullptr;
   xiiDynamicArray<Entry*> m_RootEntries;
@@ -121,11 +121,11 @@ public:
   xiiConsole& GetConsole() { return m_Console; }
 
 Q_SIGNALS:
-  void onBoolChanged(const char* szCVar, bool bNewValue);
-  void onFloatChanged(const char* szCVar, float fNewValue);
-  void onDoubleChanged(const char* szCVar, double fNewValue);
-  void onIntChanged(const char* szCVar, int iNewValue);
-  void onStringChanged(const char* szCVar, const char* szNewValue);
+  void onBoolChanged(xiiStringView sCVar, bool bNewValue);
+  void onFloatChanged(xiiStringView sCVar, float fNewValue);
+  void onDoubleChanged(xiiStringView sCVar, double fNewValue);
+  void onIntChanged(xiiStringView sCVar, int iNewValue);
+  void onStringChanged(xiiStringView sCVar, xiiStringView sNewValue);
 
 private Q_SLOTS:
   void SearchTextChanged(const QString& text);

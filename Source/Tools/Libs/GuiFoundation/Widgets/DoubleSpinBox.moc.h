@@ -12,7 +12,7 @@ public:
 
   void SetIntMode(bool bEnable);
 
-  void setDisplaySuffix(const char* szSuffix);
+  void setDisplaySuffix(xiiStringView sSuffix);
   void setDefaultValue(double value);
   void setDefaultValue(const xiiVariant& val);
   using QDoubleSpinBox::setMaximum;

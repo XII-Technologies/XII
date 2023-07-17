@@ -309,10 +309,10 @@ void xiiQtPropertyGridWidget::ClearSelection()
   m_Selection.Clear();
 }
 
-void xiiQtPropertyGridWidget::SetSelectionIncludeExcludeProperties(const char* szIncludeProperties /*= nullptr*/, const char* szExcludeProperties /*= nullptr*/)
+void xiiQtPropertyGridWidget::SetSelectionIncludeExcludeProperties(xiiStringView sIncludeProperties /*= {}*/, xiiStringView sExcludeProperties /*= {}*/)
 {
-  m_sSelectionIncludeProperties = szIncludeProperties;
-  m_sSelectionExcludeProperties = szExcludeProperties;
+  m_sSelectionIncludeProperties = sIncludeProperties;
+  m_sSelectionExcludeProperties = sExcludeProperties;
 }
 
 void xiiQtPropertyGridWidget::SetSelection(const xiiDeque<const xiiDocumentObject*>& selection)

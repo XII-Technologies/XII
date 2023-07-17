@@ -5,19 +5,19 @@
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
-void xiiQtUiServices::MessageBoxStatus(const xiiStatus& s, const char* szFailureMsg, const char* szSuccessMsg, bool bOnlySuccessMsgIfDetails)
+void xiiQtUiServices::MessageBoxStatus(const xiiStatus& s, xiiStringView sFailureMsg, xiiStringView sSuccessMsg, bool bOnlySuccessMsgIfDetails)
 {
   xiiStringBuilder sResult;
 
   if (s.m_Result.Succeeded())
   {
-    if (xiiStringUtils::IsNullOrEmpty(szSuccessMsg))
+    if (sSuccessMsg.IsEmpty())
       return;
 
     if (bOnlySuccessMsgIfDetails && s.m_sMessage.IsEmpty())
       return;
 
-    sResult = szSuccessMsg;
+    sResult = sSuccessMsg;
 
     if (!s.m_sMessage.IsEmpty())
       sResult.AppendFormat("\n\nDetails:\n{0}", s.m_sMessage);
@@ -26,7 +26,7 @@ void xiiQtUiServices::MessageBoxStatus(const xiiStatus& s, const char* szFailure
   }
   else
   {
-    sResult = szFailureMsg;
+    sResult = sFailureMsg;
 
     if (!s.m_sMessage.IsEmpty())
       sResult.AppendFormat("\n\nDetails:\n{0}", s.m_sMessage);

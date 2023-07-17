@@ -49,7 +49,8 @@ void xiiQtPin::SetPin(const xiiPin& pin)
 {
   m_pPin = &pin;
 
-  m_pLabel->setPlainText(pin.GetName());
+  xiiStringBuilder tmp;
+  m_pLabel->setPlainText(pin.GetName().GetData(tmp));
   auto rectLabel = m_pLabel->boundingRect();
 
   const int iRadus = rectLabel.height();

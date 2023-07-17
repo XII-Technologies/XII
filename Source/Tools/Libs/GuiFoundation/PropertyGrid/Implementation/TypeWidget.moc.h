@@ -18,7 +18,7 @@ class XII_GUIFOUNDATION_DLL xiiQtTypeWidget : public QWidget
 {
   Q_OBJECT
 public:
-  xiiQtTypeWidget(QWidget* pParent, xiiQtPropertyGridWidget* pGrid, xiiObjectAccessorBase* pObjectAccessor, const xiiRTTI* pType, const char* szIncludeProperties, const char* szExcludeProperties);
+  xiiQtTypeWidget(QWidget* pParent, xiiQtPropertyGridWidget* pGrid, xiiObjectAccessorBase* pObjectAccessor, const xiiRTTI* pType, xiiStringView sIncludeProperties, xiiStringView sExcludeProperties);
   ~xiiQtTypeWidget();
   void                                           SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items);
   const xiiHybridArray<xiiPropertySelection, 8>& GetSelection() const { return m_Items; }
@@ -70,8 +70,8 @@ private:
     xiiHybridArray<const xiiAbstractProperty*, 8> m_Properties;
   };
 
-  void BuildUI(const xiiRTTI* pType, const char* szIncludeProperties, const char* szExcludeProperties);
-  void BuildUI(const xiiRTTI* pType, const xiiMap<xiiString, const xiiManipulatorAttribute*>& manipulatorMap, const xiiDynamicArray<xiiUniquePtr<PropertyGroup>>& groups, const char* szIncludeProperties, const char* szExcludeProperties);
+  void BuildUI(const xiiRTTI* pType, xiiStringView sIncludeProperties, xiiStringView sExcludeProperties);
+  void BuildUI(const xiiRTTI* pType, const xiiMap<xiiString, const xiiManipulatorAttribute*>& manipulatorMap, const xiiDynamicArray<xiiUniquePtr<PropertyGroup>>& groups, xiiStringView sIncludeProperties, xiiStringView sExcludeProperties);
 
   void PropertyEventHandler(const xiiDocumentObjectPropertyEvent& e);
   void CommandHistoryEventHandler(const xiiCommandHistoryEvent& e);

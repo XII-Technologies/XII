@@ -369,7 +369,8 @@ void xiiQtContainerWindow::AddDocumentWindow(xiiQtDocumentWindow* pDocWindow)
   ads::CDockWidget* dock        = new ads::CDockWidget(QString::fromUtf8(displayName.GetData(), displayName.GetElementCount()));
   dock->installEventFilter(pDocWindow);
 
-  dock->setObjectName(pDocWindow->GetUniqueName());
+  xiiStringBuilder tmp;
+  dock->setObjectName(pDocWindow->GetUniqueName().GetData(tmp));
   XII_ASSERT_DEV(!dock->objectName().isEmpty(), "Dock name must not be empty.");
   XII_ASSERT_DEV(!m_DockNames.contains(dock->objectName()), "Dock name must be unique.");
   m_DockNames.insert(dock->objectName());

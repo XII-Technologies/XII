@@ -6,22 +6,14 @@
 
 QByteArray xiiQtColorDialog::s_LastDialogGeometry;
 
-void xiiQtUiServices::ShowColorDialog(
-  const xiiColor& color,
-  bool            bAlpha,
-  bool            bHDR,
-  QWidget*        pParent,
-  const char*     szSlotCurColChanged,
-  const char*     szSlotAccept,
-  const char*     szSlotReject)
+void xiiQtUiServices::ShowColorDialog(const xiiColor& color, bool bAlpha, bool bHDR, QWidget* pParent, const char* szSlotCurColChanged, const char* szSlotAccept, const char* szSlotReject)
 {
   m_pColorDlg = new xiiQtColorDialog(color, pParent);
   m_pColorDlg->restoreGeometry(m_ColorDlgGeometry);
   m_pColorDlg->ShowAlpha(bAlpha);
   m_pColorDlg->ShowHDR(bHDR);
 
-  XII_VERIFY(QWidget::connect(m_pColorDlg, SIGNAL(CurrentColorChanged(const xiiColor&)), pParent, szSlotCurColChanged) != nullptr,
-             "signal/slot connection failed");
+  XII_VERIFY(QWidget::connect(m_pColorDlg, SIGNAL(CurrentColorChanged(const xiiColor&)), pParent, szSlotCurColChanged) != nullptr, "signal/slot connection failed");
   XII_VERIFY(QWidget::connect(m_pColorDlg, SIGNAL(accepted()), pParent, szSlotAccept) != nullptr, "signal/slot connection failed");
   XII_VERIFY(QWidget::connect(m_pColorDlg, SIGNAL(rejected()), pParent, szSlotReject) != nullptr, "signal/slot connection failed");
 

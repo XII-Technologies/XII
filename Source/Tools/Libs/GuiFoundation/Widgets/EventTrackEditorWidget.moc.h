@@ -48,7 +48,7 @@ private:
   void InsertCpAt(double posX, double epsilon);
   void UpdateSpinBoxes();
   void DetermineAvailableEvents();
-  void FillEventComboBox(const char* szCurrent = nullptr);
+  void FillEventComboBox(xiiStringView sCurrent = {});
 
   const xiiEventTrackData* m_pData = nullptr;
   xiiEventTrackData        m_DataCopy;

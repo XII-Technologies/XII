@@ -39,32 +39,34 @@ xiiQtImageCache::xiiQtImageCache() :
   m_uiCurImageID          = 1;
 }
 
-void xiiQtImageCache::SetFallbackImages(const char* szLoading, const char* szUnavailable)
+void xiiQtImageCache::SetFallbackImages(xiiStringView sLoading, xiiStringView sUnavailable)
 {
+  xiiStringBuilder tmp;
+
   delete m_pImageLoading;
-  if (xiiStringUtils::EndsWith(szLoading, ".svg"))
+  if (sLoading.EndsWith(".svg"))
   {
-    m_pImageLoading = new QPixmap(xiiSvgThumbnailToPixmap(szLoading));
+    m_pImageLoading = new QPixmap(xiiSvgThumbnailToPixmap(sLoading));
   }
   else
   {
-    m_pImageLoading = new QPixmap(szLoading);
+    m_pImageLoading = new QPixmap(sLoading.GetData(tmp));
   }
 
   delete m_pImageUnavailable;
-  if (xiiStringUtils::EndsWith(szUnavailable, ".svg"))
+  if (sUnavailable.EndsWith(".svg"))
   {
-    m_pImageUnavailable = new QPixmap(xiiSvgThumbnailToPixmap(szUnavailable));
+    m_pImageUnavailable = new QPixmap(xiiSvgThumbnailToPixmap(sUnavailable));
   }
   else
   {
-    m_pImageUnavailable = new QPixmap(szUnavailable);
+    m_pImageUnavailable = new QPixmap(sUnavailable.GetData(tmp));
   }
 }
 
-void xiiQtImageCache::InvalidateCache(const char* szAbsolutePath)
+void xiiQtImageCache::InvalidateCache(xiiStringView sAbsolutePath)
 {
-  xiiStringBuilder sCleanPath = szAbsolutePath;
+  xiiStringBuilder sCleanPath = sAbsolutePath;
   sCleanPath.MakeCleanPath();
 
   const QString sPath = QString::fromUtf8(sCleanPath.GetData());
@@ -83,7 +85,7 @@ void xiiQtImageCache::InvalidateCache(const char* szAbsolutePath)
 }
 
 const QPixmap* xiiQtImageCache::QueryPixmap(
-  const char* szAbsolutePath,
+  xiiStringView sAbsolutePath,
   QModelIndex index,
   QVariant    userData1,
   QVariant    userData2,
@@ -95,7 +97,7 @@ const QPixmap* xiiQtImageCache::QueryPixmap(
   if (m_pImageLoading == nullptr)
     SetFallbackImages(":/GuiFoundation/ThumbnailLoading.svg", ":/GuiFoundation/ThumbnailUnavailable.svg");
 
-  xiiStringBuilder sCleanPath = szAbsolutePath;
+  xiiStringBuilder sCleanPath = sAbsolutePath;
   sCleanPath.MakeCleanPath();
 
   const QString sPath = QString::fromUtf8(sCleanPath.GetData());
@@ -137,14 +139,14 @@ const QPixmap* xiiQtImageCache::QueryPixmap(
 }
 
 
-const QPixmap* xiiQtImageCache::QueryPixmapForType(const char* szType, const char* szAbsolutePath, QModelIndex index /*= QModelIndex()*/, QVariant userData1 /*= QVariant()*/, QVariant userData2 /*= QVariant()*/, xiiUInt32* out_pImageID /*= nullptr*/)
+const QPixmap* xiiQtImageCache::QueryPixmapForType(xiiStringView sType, xiiStringView sAbsolutePath, QModelIndex index /*= QModelIndex()*/, QVariant userData1 /*= QVariant()*/, QVariant userData2 /*= QVariant()*/, xiiUInt32* out_pImageID /*= nullptr*/)
 {
-  const QPixmap* pTypeImage = QueryTypeImage(szType);
+  const QPixmap* pTypeImage = QueryTypeImage(sType);
 
   if (pTypeImage != nullptr)
     return pTypeImage;
 
-  return QueryPixmap(szAbsolutePath, index, userData1, userData2, out_pImageID);
+  return QueryPixmap(sAbsolutePath, index, userData1, userData2, out_pImageID);
 }
 
 void xiiQtImageCache::RunLoadingTask()
@@ -223,17 +225,19 @@ void xiiQtImageCache::EnableRequestProcessing()
 }
 
 
-void xiiQtImageCache::RegisterTypeImage(const char* szType, QPixmap pixmap)
+void xiiQtImageCache::RegisterTypeImage(xiiStringView sType, QPixmap pixmap)
 {
+  xiiStringBuilder tmp;
   int width  = pixmap.width();
   int height = pixmap.height();
 
-  m_TypeImages[QString::fromUtf8(szType)] = pixmap;
+  m_TypeImages[QString::fromUtf8(sType.GetData(tmp))] = pixmap;
 }
 
-const QPixmap* xiiQtImageCache::QueryTypeImage(const char* szType) const
+const QPixmap* xiiQtImageCache::QueryTypeImage(xiiStringView sType) const
 {
-  auto it = m_TypeImages.Find(QString::fromUtf8(szType));
+  xiiStringBuilder tmp;
+  auto it = m_TypeImages.Find(QString::fromUtf8(sType.GetData(tmp)));
 
   if (it.IsValid())
     return &it.Value();

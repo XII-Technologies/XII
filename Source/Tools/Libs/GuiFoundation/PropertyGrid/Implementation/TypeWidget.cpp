@@ -22,7 +22,7 @@
 #include <QLabel>
 
 
-xiiQtTypeWidget::xiiQtTypeWidget(QWidget* pParent, xiiQtPropertyGridWidget* pGrid, xiiObjectAccessorBase* pObjectAccessor, const xiiRTTI* pType, const char* szIncludeProperties, const char* szExcludeProperties) :
+xiiQtTypeWidget::xiiQtTypeWidget(QWidget* pParent, xiiQtPropertyGridWidget* pGrid, xiiObjectAccessorBase* pObjectAccessor, const xiiRTTI* pType, xiiStringView sIncludeProperties, xiiStringView sExcludeProperties) :
   QWidget(pParent), m_pGrid(pGrid), m_pObjectAccessor(pObjectAccessor), m_pType(pType)
 {
   XII_ASSERT_DEBUG(m_pGrid && m_pObjectAccessor && m_pType, "");
@@ -42,7 +42,7 @@ xiiQtTypeWidget::xiiQtTypeWidget(QWidget* pParent, xiiQtPropertyGridWidget* pGri
   m_pGrid->GetCommandHistory()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtTypeWidget::CommandHistoryEventHandler, this));
   xiiManipulatorManager::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtTypeWidget::ManipulatorManagerEventHandler, this));
 
-  BuildUI(pType, szIncludeProperties, szExcludeProperties);
+  BuildUI(pType, sIncludeProperties, sExcludeProperties);
 }
 
 xiiQtTypeWidget::~xiiQtTypeWidget()
@@ -96,7 +96,7 @@ void xiiQtTypeWidget::PrepareToDie()
   }
 }
 
-void xiiQtTypeWidget::BuildUI(const xiiRTTI* pType, const xiiMap<xiiString, const xiiManipulatorAttribute*>& manipulatorMap, const xiiDynamicArray<xiiUniquePtr<PropertyGroup>>& groups, const char* szIncludeProperties, const char* szExcludeProperties)
+void xiiQtTypeWidget::BuildUI(const xiiRTTI* pType, const xiiMap<xiiString, const xiiManipulatorAttribute*>& manipulatorMap, const xiiDynamicArray<xiiUniquePtr<PropertyGroup>>& groups, xiiStringView sIncludeProperties, xiiStringView sExcludeProperties)
 {
   xiiQtScopedUpdatesDisabled _(this);
 
@@ -184,7 +184,7 @@ void xiiQtTypeWidget::BuildUI(const xiiRTTI* pType, const xiiMap<xiiString, cons
   }
 }
 
-void xiiQtTypeWidget::BuildUI(const xiiRTTI* pType, const char* szIncludeProperties, const char* szExcludeProperties)
+void xiiQtTypeWidget::BuildUI(const xiiRTTI* pType, xiiStringView sIncludeProperties, xiiStringView sExcludeProperties)
 {
   xiiMap<xiiString, const xiiManipulatorAttribute*> manipulatorMap;
   xiiHybridArray<xiiUniquePtr<PropertyGroup>, 6>    groups;
@@ -195,8 +195,8 @@ void xiiQtTypeWidget::BuildUI(const xiiRTTI* pType, const char* szIncludePropert
     const xiiGroupAttribute* pGroup = pProp->GetAttributeByType<xiiGroupAttribute>();
     if (pGroup != nullptr)
     {
-      xiiUniquePtr<PropertyGroup>* pFound =
-        std::find_if(begin(groups), end(groups), [&](const xiiUniquePtr<PropertyGroup>& g) { return g->m_sGroup == pGroup->GetGroup(); });
+      xiiUniquePtr<PropertyGroup>* pFound = std::find_if(begin(groups), end(groups), [&](const xiiUniquePtr<PropertyGroup>& g) { return g->m_sGroup == pGroup->GetGroup(); });
+
       if (pFound != end(groups))
       {
         pCurrentGroup = pFound->Borrow();
@@ -282,12 +282,10 @@ void xiiQtTypeWidget::BuildUI(const xiiRTTI* pType, const char* szIncludePropert
       if (pProp->GetCategory() == xiiPropertyCategory::Constant)
         continue;
 
-      if (!xiiStringUtils::IsNullOrEmpty(szIncludeProperties) &&
-          xiiStringUtils::FindSubString(szIncludeProperties, pProp->GetPropertyName()) == nullptr)
+      if (!sIncludeProperties.IsEmpty() && sIncludeProperties.FindSubString(pProp->GetPropertyName()) == nullptr)
         continue;
 
-      if (!xiiStringUtils::IsNullOrEmpty(szExcludeProperties) &&
-          xiiStringUtils::FindSubString(szExcludeProperties, pProp->GetPropertyName()) != nullptr)
+      if (!sExcludeProperties.IsEmpty() && sExcludeProperties.FindSubString(pProp->GetPropertyName()) != nullptr)
         continue;
 
       AddProperty(pProp);
@@ -299,7 +297,7 @@ void xiiQtTypeWidget::BuildUI(const xiiRTTI* pType, const char* szIncludePropert
 
   groups.Sort([](const xiiUniquePtr<PropertyGroup>& lhs, const xiiUniquePtr<PropertyGroup>& rhs) -> bool { return lhs->m_fOrder < rhs->m_fOrder; });
 
-  BuildUI(pType, manipulatorMap, groups, szIncludeProperties, szExcludeProperties);
+  BuildUI(pType, manipulatorMap, groups, sIncludeProperties, sExcludeProperties);
 }
 
 void xiiQtTypeWidget::PropertyEventHandler(const xiiDocumentObjectPropertyEvent& e)

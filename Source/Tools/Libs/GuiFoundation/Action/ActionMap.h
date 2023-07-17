@@ -89,9 +89,9 @@ public:
   xiiActionMap();
   ~xiiActionMap();
 
-  void      MapAction(xiiActionDescriptorHandle hAction, const char* szPath, float fM_fOrder);
+  void      MapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath, float fM_fOrder);
   xiiUuid   MapAction(const xiiActionMapDescriptor& desc);
-  xiiResult UnmapAction(xiiActionDescriptorHandle hAction, const char* szPath);
+  xiiResult UnmapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath);
   xiiResult UnmapAction(const xiiActionMapDescriptor& desc);
   xiiResult UnmapAction(const xiiUuid& guid);
 

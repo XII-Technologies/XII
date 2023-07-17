@@ -73,8 +73,8 @@ private:
   void      UpdateSpinBoxes();
   void      SetTangentMode(xiiCurveTangentMode::Enum mode, bool bLeft, bool bRight);
   void      ClampPoint(double& x, double& y) const;
-  void      SaveCurvePreset(const char* szFile) const;
-  xiiResult LoadCurvePreset(const char* szFile);
+  void      SaveCurvePreset(xiiStringView sFile) const;
+  xiiResult LoadCurvePreset(xiiStringView sFile);
   void      FindAllPresets();
 
   double            m_fCurveDuration;

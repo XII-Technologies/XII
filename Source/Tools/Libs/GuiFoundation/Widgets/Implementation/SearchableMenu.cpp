@@ -60,16 +60,16 @@ xiiQtSearchableMenu::xiiQtSearchableMenu(QObject* pParent) :
   setDefaultWidget(m_pGroup);
 }
 
-QStandardItem* xiiQtSearchableMenu::CreateCategoryMenu(const char* szCategory)
+QStandardItem* xiiQtSearchableMenu::CreateCategoryMenu(xiiStringView sCategory)
 {
-  if (xiiStringUtils::IsNullOrEmpty(szCategory))
+  if (sCategory.IsEmpty())
     return m_pItemModel->invisibleRootItem();
 
-  auto it = m_Hierarchy.Find(szCategory);
+  auto it = m_Hierarchy.Find(sCategory);
   if (it.IsValid())
     return it.Value();
 
-  xiiStringBuilder sPath = szCategory;
+  xiiStringBuilder sPath = sCategory;
   sPath.PathParentDirectory();
   sPath.Trim("/");
 
@@ -80,7 +80,7 @@ QStandardItem* xiiQtSearchableMenu::CreateCategoryMenu(const char* szCategory)
     pParentMenu = CreateCategoryMenu(sPath);
   }
 
-  sPath = szCategory;
+  sPath = sCategory;
   sPath = sPath.GetFileName();
 
   QStandardItem* pThisItem = new QStandardItem(sPath.GetData());
@@ -88,7 +88,7 @@ QStandardItem* xiiQtSearchableMenu::CreateCategoryMenu(const char* szCategory)
 
   pParentMenu->appendRow(pThisItem);
 
-  m_Hierarchy[szCategory] = pThisItem;
+  m_Hierarchy[sCategory] = pThisItem;
 
   return pThisItem;
 }
@@ -141,22 +141,23 @@ bool xiiQtSearchableMenu::eventFilter(QObject* pObject, QEvent* event)
   return false;
 }
 
-void xiiQtSearchableMenu::AddItem(const char* szName, const QVariant& variant, QIcon icon)
+void xiiQtSearchableMenu::AddItem(xiiStringView sName, const QVariant& variant, QIcon icon)
 {
+  xiiStringBuilder tmp;
   QStandardItem* pParent = m_pItemModel->invisibleRootItem();
 
-  const char* szLastCat = xiiStringUtils::FindLastSubString(szName, "/");
+  const char* szLastCat = sName.FindLastSubString("/");
   if (szLastCat != nullptr)
   {
     xiiStringBuilder sCategory;
-    sCategory.SetSubString_FromTo(szName, szLastCat);
+    sCategory.SetSubString_FromTo(sName.GetData(tmp), szLastCat);
 
     pParent = CreateCategoryMenu(sCategory);
 
-    szName = szLastCat + 1;
+    sName = szLastCat + 1;
   }
 
-  QStandardItem* pThisItem = new QStandardItem(szName);
+  QStandardItem* pThisItem = new QStandardItem(sName.GetData(tmp));
   pThisItem->setFlags(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable);
   pThisItem->setData(variant, Qt::UserRole + 1);
   pThisItem->setIcon(icon);

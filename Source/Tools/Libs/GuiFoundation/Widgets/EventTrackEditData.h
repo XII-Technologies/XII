@@ -14,8 +14,8 @@ class XII_GUIFOUNDATION_DLL xiiEventTrackControlPointData : public xiiReflectedC
 public:
   xiiTime     GetTickAsTime() const { return xiiTime::Seconds(m_iTick / 4800.0); }
   void        SetTickFromTime(xiiTime time, xiiInt64 iFps);
-  const char* GetEventName() const { return m_sEvent.GetData(); }
-  void        SetEventName(const char* szSz) { m_sEvent.Assign(szSz); }
+  xiiStringView GetEventName() const { return m_sEvent.GetData(); }
+  void        SetEventName(xiiStringView sSz) { m_sEvent.Assign(sSz); }
 
   xiiInt64        m_iTick; // 4800 ticks per second
   xiiHashedString m_sEvent;
@@ -42,8 +42,8 @@ public:
 
   void AddAvailableEvent(xiiStringView sEvent);
 
-  xiiResult WriteToDDL(const char* szFile);
-  xiiResult ReadFromDDL(const char* szFile);
+  xiiResult WriteToDDL(xiiStringView sFile);
+  xiiResult ReadFromDDL(xiiStringView sFile);
 
 private:
   bool              m_bModified = false;

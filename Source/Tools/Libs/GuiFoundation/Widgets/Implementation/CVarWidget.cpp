@@ -435,9 +435,9 @@ int xiiQtCVarModel::columnCount(const QModelIndex& index /*= QModelIndex()*/) co
   return 3;
 }
 
-xiiQtCVarModel::Entry* xiiQtCVarModel::CreateEntry(const char* szName)
+xiiQtCVarModel::Entry* xiiQtCVarModel::CreateEntry(xiiStringView sName)
 {
-  xiiStringBuilder tmp = szName;
+  xiiStringBuilder tmp = sName;
   xiiStringBuilder tmp2;
 
   xiiHybridArray<xiiStringView, 8> pieces;
@@ -455,13 +455,13 @@ xiiQtCVarModel::Entry* xiiQtCVarModel::CreateEntry(const char* szName)
       {
         parentEntry = (*vals)[v];
         vals        = &((*vals)[v]->m_ChildEntries);
-        goto found;
+        goto Found;
       }
     }
 
     {
       auto& newItem            = m_AllEntries.ExpandAndGetRef();
-      newItem.m_sFullName      = szName;
+      newItem.m_sFullName      = sName;
       newItem.m_sDisplayString = piece;
       newItem.m_pParentEntry   = parentEntry;
 
@@ -470,7 +470,7 @@ xiiQtCVarModel::Entry* xiiQtCVarModel::CreateEntry(const char* szName)
       parentEntry = &newItem;
       vals        = &newItem.m_ChildEntries;
     }
-  found:;
+  Found:;
   }
 
   return parentEntry;
