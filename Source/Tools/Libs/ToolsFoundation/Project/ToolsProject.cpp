@@ -17,12 +17,12 @@ xiiToolsProjectRequest::xiiToolsProjectRequest()
   m_iContainerWindowUniqueIdentifier = 0;
 }
 
-xiiToolsProject::xiiToolsProject(const char* szProjectPath) :
+xiiToolsProject::xiiToolsProject(xiiStringView sProjectPath) :
   m_SingletonRegistrar(this)
 {
   m_bIsClosing = false;
 
-  m_sProjectPath = szProjectPath;
+  m_sProjectPath = sProjectPath;
   XII_ASSERT_DEV(!m_sProjectPath.IsEmpty(), "Path cannot be empty.");
 }
 
@@ -71,13 +71,13 @@ xiiStatus xiiToolsProject::Open()
   return xiiStatus(XII_SUCCESS);
 }
 
-void xiiToolsProject::CreateSubFolder(const char* szFolder) const
+void xiiToolsProject::CreateSubFolder(xiiStringView sFolder) const
 {
   xiiStringBuilder sPath;
 
   sPath = m_sProjectPath;
   sPath.PathParentDirectory();
-  sPath.AppendPath(szFolder);
+  sPath.AppendPath(sFolder);
 
   xiiOSFile::CreateDirectoryStructure(sPath).IgnoreResult();
 }
@@ -165,11 +165,11 @@ xiiStringBuilder xiiToolsProject::GetPathForDocumentGuid(const xiiUuid& guid)
   return e.m_sAbsDocumentPath;
 }
 
-xiiStatus xiiToolsProject::CreateOrOpenProject(const char* szProjectPath, bool bCreate)
+xiiStatus xiiToolsProject::CreateOrOpenProject(xiiStringView sProjectPath, bool bCreate)
 {
   CloseProject();
 
-  new xiiToolsProject(szProjectPath);
+  new xiiToolsProject(sProjectPath);
 
   xiiStatus ret;
 
@@ -190,16 +190,16 @@ xiiStatus xiiToolsProject::CreateOrOpenProject(const char* szProjectPath, bool b
   return xiiStatus(XII_SUCCESS);
 }
 
-xiiStatus xiiToolsProject::OpenProject(const char* szProjectPath)
+xiiStatus xiiToolsProject::OpenProject(xiiStringView sProjectPath)
 {
-  xiiStatus status = CreateOrOpenProject(szProjectPath, false);
+  xiiStatus status = CreateOrOpenProject(sProjectPath, false);
 
   return status;
 }
 
-xiiStatus xiiToolsProject::CreateProject(const char* szProjectPath)
+xiiStatus xiiToolsProject::CreateProject(xiiStringView sProjectPath)
 {
-  return CreateOrOpenProject(szProjectPath, true);
+  return CreateOrOpenProject(sProjectPath, true);
 }
 
 void xiiToolsProject::BroadcastSaveAll()
@@ -220,9 +220,9 @@ void xiiToolsProject::BroadcastConfigChanged()
   s_Events.Broadcast(e);
 }
 
-void xiiToolsProject::AddAllowedDocumentRoot(const char* szPath)
+void xiiToolsProject::AddAllowedDocumentRoot(xiiStringView sPath)
 {
-  xiiStringBuilder s = szPath;
+  xiiStringBuilder s = sPath;
   s.MakeCleanPath();
   s.Trim("", "/");
 
@@ -230,19 +230,19 @@ void xiiToolsProject::AddAllowedDocumentRoot(const char* szPath)
 }
 
 
-bool xiiToolsProject::IsDocumentInAllowedRoot(const char* szDocumentPath, xiiString* out_pRelativePath) const
+bool xiiToolsProject::IsDocumentInAllowedRoot(xiiStringView sDocumentPath, xiiString* out_pRelativePath) const
 {
   for (xiiUInt32 i = m_AllowedDocumentRoots.GetCount(); i > 0; --i)
   {
     const auto& root = m_AllowedDocumentRoots[i - 1];
 
-    xiiStringBuilder s = szDocumentPath;
+    xiiStringBuilder s = sDocumentPath;
     if (!s.IsPathBelowFolder(root))
       continue;
 
     if (out_pRelativePath)
     {
-      xiiStringBuilder sText = szDocumentPath;
+      xiiStringBuilder sText = sDocumentPath;
       sText.MakeRelativeTo(root).IgnoreResult();
 
       *out_pRelativePath = sText;
@@ -326,9 +326,9 @@ xiiString xiiToolsProject::GetProjectDataFolder() const
   return s;
 }
 
-xiiString xiiToolsProject::FindProjectDirectoryForDocument(const char* szDocumentPath)
+xiiString xiiToolsProject::FindProjectDirectoryForDocument(xiiStringView sDocumentPath)
 {
-  xiiStringBuilder sPath = szDocumentPath;
+  xiiStringBuilder sPath = sDocumentPath;
   sPath.PathParentDirectory();
 
   xiiStringBuilder sTemp;

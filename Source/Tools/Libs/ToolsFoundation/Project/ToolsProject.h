@@ -72,8 +72,8 @@ public:
   static xiiInt32 SuggestContainerWindow(xiiDocument* pDoc);
   /// \brief Resolve document GUID into an absolute path.
   xiiStringBuilder GetPathForDocumentGuid(const xiiUuid& guid);
-  static xiiStatus OpenProject(const char* szProjectPath);
-  static xiiStatus CreateProject(const char* szProjectPath);
+  static xiiStatus OpenProject(xiiStringView sProjectPath);
+  static xiiStatus CreateProject(xiiStringView sProjectPath);
 
   /// \brief Broadcasts the SaveAll event, though otherwise has no direct effect.
   static void BroadcastSaveAll();
@@ -97,20 +97,20 @@ public:
   xiiString GetProjectDataFolder() const;
 
   /// \brief Starts at the  given document and then searches the tree upwards until it finds a xiiProject file.
-  static xiiString FindProjectDirectoryForDocument(const char* szDocumentPath);
+  static xiiString FindProjectDirectoryForDocument(xiiStringView sDocumentPath);
 
-  bool IsDocumentInAllowedRoot(const char* szDocumentPath, xiiString* out_pRelativePath = nullptr) const;
+  bool IsDocumentInAllowedRoot(xiiStringView sDocumentPath, xiiString* out_pRelativePath = nullptr) const;
 
-  void AddAllowedDocumentRoot(const char* szPath);
+  void AddAllowedDocumentRoot(xiiStringView sPath);
 
   /// \brief Makes sure the given sub-folder exists inside the project directory
-  void CreateSubFolder(const char* szFolder) const;
+  void CreateSubFolder(xiiStringView sFolder) const;
 
 private:
-  static xiiStatus CreateOrOpenProject(const char* szProjectPath, bool bCreate);
+  static xiiStatus CreateOrOpenProject(xiiStringView sProjectPath, bool bCreate);
 
 private:
-  xiiToolsProject(const char* szProjectPath);
+  xiiToolsProject(xiiStringView sProjectPath);
   ~xiiToolsProject();
 
   xiiStatus Create();

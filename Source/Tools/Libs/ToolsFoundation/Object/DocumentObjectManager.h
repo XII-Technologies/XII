@@ -36,7 +36,7 @@ public:
   }
 
 public:
-  virtual void InsertSubObject(xiiDocumentObject* pObject, const char* szProperty, const xiiVariant& index) override;
+  virtual void InsertSubObject(xiiDocumentObject* pObject, xiiStringView sProperty, const xiiVariant& index) override;
   virtual void RemoveSubObject(xiiDocumentObject* pObject) override;
 };
 
@@ -147,7 +147,7 @@ public:
 
   /// \brief Allows to annotate types with a category (group), such that things like creator menus can use this to present the types in a more user
   /// friendly way
-  virtual const char* GetTypeCategory(const xiiRTTI* pRtti) const { return nullptr; }
+  virtual xiiStringView GetTypeCategory(const xiiRTTI* pRtti) const { return {}; }
   void                PatchEmbeddedClassObjects(const xiiDocumentObject* pObject) const;
 
   const xiiDocumentObject* GetRootObject() const { return &m_pObjectStorage->m_RootObject; }
@@ -158,26 +158,26 @@ public:
   xiiDocument*             GetDocument() { return m_pObjectStorage->m_pDocument; }
 
   // Property Change
-  xiiStatus SetValue(xiiDocumentObject* pObject, const char* szProperty, const xiiVariant& newValue, xiiVariant index = xiiVariant());
-  xiiStatus InsertValue(xiiDocumentObject* pObject, const char* szProperty, const xiiVariant& newValue, xiiVariant index = xiiVariant());
-  xiiStatus RemoveValue(xiiDocumentObject* pObject, const char* szProperty, xiiVariant index = xiiVariant());
-  xiiStatus MoveValue(xiiDocumentObject* pObject, const char* szProperty, const xiiVariant& oldIndex, const xiiVariant& newIndex);
+  xiiStatus SetValue(xiiDocumentObject* pObject, xiiStringView sProperty, const xiiVariant& newValue, xiiVariant index = xiiVariant());
+  xiiStatus InsertValue(xiiDocumentObject* pObject, xiiStringView sProperty, const xiiVariant& newValue, xiiVariant index = xiiVariant());
+  xiiStatus RemoveValue(xiiDocumentObject* pObject, xiiStringView sProperty, xiiVariant index = xiiVariant());
+  xiiStatus MoveValue(xiiDocumentObject* pObject, xiiStringView sProperty, const xiiVariant& oldIndex, const xiiVariant& newIndex);
 
   // Structure Change
-  void AddObject(xiiDocumentObject* pObject, xiiDocumentObject* pParent, const char* szParentProperty, xiiVariant index);
+  void AddObject(xiiDocumentObject* pObject, xiiDocumentObject* pParent, xiiStringView sParentProperty, xiiVariant index);
   void RemoveObject(xiiDocumentObject* pObject);
-  void MoveObject(xiiDocumentObject* pObject, xiiDocumentObject* pNewParent, const char* szParentProperty, xiiVariant index);
+  void MoveObject(xiiDocumentObject* pObject, xiiDocumentObject* pNewParent, xiiStringView sParentProperty, xiiVariant index);
 
   // Structure Change Test
-  xiiStatus CanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, const char* szParentProperty, const xiiVariant& index) const;
+  xiiStatus CanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, xiiStringView sParentProperty, const xiiVariant& index) const;
   xiiStatus CanRemove(const xiiDocumentObject* pObject) const;
-  xiiStatus CanMove(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, const char* szParentProperty, const xiiVariant& index) const;
+  xiiStatus CanMove(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProperty, const xiiVariant& index) const;
   xiiStatus CanSelect(const xiiDocumentObject* pObject) const;
 
-  bool IsUnderRootProperty(const char* szRootProperty, const xiiDocumentObject* pObject) const;
-  bool IsUnderRootProperty(const char* szRootProperty, const xiiDocumentObject* pParent, const char* szParentProperty) const;
+  bool IsUnderRootProperty(xiiStringView sRootProperty, const xiiDocumentObject* pObject) const;
+  bool IsUnderRootProperty(xiiStringView sRootProperty, const xiiDocumentObject* pParent, xiiStringView sParentProperty) const;
   bool IsTemporary(const xiiDocumentObject* pObject) const;
-  bool IsTemporary(const xiiDocumentObject* pParent, const char* szParentProperty) const;
+  bool IsTemporary(const xiiDocumentObject* pParent, xiiStringView sParentProperty) const;
 
   xiiSharedPtr<xiiDocumentObjectManager::Storage> SwapStorage(xiiSharedPtr<xiiDocumentObjectManager::Storage> pNewStorage);
   xiiSharedPtr<xiiDocumentObjectManager::Storage> GetStorage() { return m_pObjectStorage; }
@@ -186,11 +186,11 @@ private:
   virtual xiiDocumentObject* InternalCreateObject(const xiiRTTI* pRtti) { return XII_DEFAULT_NEW(xiiDocumentStorageObject, pRtti); }
   virtual void               InternalDestroyObject(xiiDocumentObject* pObject) { XII_DEFAULT_DELETE(pObject); }
 
-  void InternalAddObject(xiiDocumentObject* pObject, xiiDocumentObject* pParent, const char* szParentProperty, xiiVariant index);
+  void InternalAddObject(xiiDocumentObject* pObject, xiiDocumentObject* pParent, xiiStringView sParentProperty, xiiVariant index);
   void InternalRemoveObject(xiiDocumentObject* pObject);
-  void InternalMoveObject(xiiDocumentObject* pNewParent, xiiDocumentObject* pObject, const char* szParentProperty, xiiVariant index);
+  void InternalMoveObject(xiiDocumentObject* pNewParent, xiiDocumentObject* pObject, xiiStringView sParentProperty, xiiVariant index);
 
-  virtual xiiStatus InternalCanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, const char* szParentProperty, const xiiVariant& index) const
+  virtual xiiStatus InternalCanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, xiiStringView sParentProperty, const xiiVariant& index) const
   {
     return xiiStatus(XII_SUCCESS);
   };
@@ -198,7 +198,7 @@ private:
   virtual xiiStatus InternalCanMove(
     const xiiDocumentObject* pObject,
     const xiiDocumentObject* pNewParent,
-    const char*              szParentProperty,
+    xiiStringView              szParentProperty,
     const xiiVariant&        index) const
   {
     return xiiStatus(XII_SUCCESS);

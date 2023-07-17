@@ -279,14 +279,14 @@ public:
     xiiGlobalLog::RemoveLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
   }
 
-  xiiResult ReadEntireFile(const char* szFile, xiiStringBuilder& ref_sOut)
+  xiiResult ReadEntireFile(xiiStringView sFile, xiiStringBuilder& ref_sOut)
   {
     ref_sOut.Clear();
 
     xiiFileReader File;
-    if (File.Open(szFile) == XII_FAILURE)
+    if (File.Open(sFile) == XII_FAILURE)
     {
-      xiiLog::Error("Could not open for reading: '{0}'", szFile);
+      xiiLog::Error("Could not open for reading: '{0}'", sFile);
       return XII_FAILURE;
     }
 
@@ -308,7 +308,7 @@ public:
     {
       xiiLog::Error("The file \"{0}\" contains characters that are not valid Utf8. This often happens when you type special characters in "
                     "an editor that does not save the file in Utf8 encoding.",
-                    szFile);
+                    sFile);
       return XII_FAILURE;
     }
 

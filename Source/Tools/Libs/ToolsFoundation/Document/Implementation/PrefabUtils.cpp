@@ -27,9 +27,9 @@ xiiString ToBinary(const xiiUuid& guid)
   return sResult;
 }
 
-void xiiPrefabUtils::LoadGraph(xiiAbstractObjectGraph& out_graph, const char* szGraph)
+void xiiPrefabUtils::LoadGraph(xiiAbstractObjectGraph& out_graph, xiiStringView sGraph)
 {
-  xiiPrefabCache::GetSingleton()->LoadGraph(out_graph, xiiStringView(szGraph));
+  xiiPrefabCache::GetSingleton()->LoadGraph(out_graph, xiiStringView(sGraph));
 }
 
 
@@ -117,7 +117,7 @@ xiiUuid xiiPrefabUtils::GetPrefabRoot(const xiiDocumentObject* pObject, const xi
 }
 
 
-xiiVariant xiiPrefabUtils::GetDefaultValue(const xiiAbstractObjectGraph& graph, const xiiUuid& objectGuid, const char* szProperty, xiiVariant index, bool* pValueFound)
+xiiVariant xiiPrefabUtils::GetDefaultValue(const xiiAbstractObjectGraph& graph, const xiiUuid& objectGuid, xiiStringView sProperty, xiiVariant index, bool* pValueFound)
 {
   if (pValueFound)
     *pValueFound = false;
@@ -126,7 +126,7 @@ xiiVariant xiiPrefabUtils::GetDefaultValue(const xiiAbstractObjectGraph& graph, 
   if (!pNode)
     return xiiVariant();
 
-  const xiiAbstractObjectNode::Property* pProp = pNode->FindProperty(szProperty);
+  const xiiAbstractObjectNode::Property* pProp = pNode->FindProperty(sProperty);
   if (pProp)
   {
     const xiiVariant& value = pProp->m_Value;
@@ -244,11 +244,11 @@ void xiiPrefabUtils::Merge(const xiiAbstractObjectGraph& baseGraph, const xiiAbs
   }
 }
 
-void xiiPrefabUtils::Merge(const char* szBase, const char* szLeft, xiiDocumentObject* pRight, bool bRightIsNotPartOfPrefab, const xiiUuid& prefabSeed, xiiStringBuilder& out_sNewGraph)
+void xiiPrefabUtils::Merge(xiiStringView sBase, xiiStringView sLeft, xiiDocumentObject* pRight, bool bRightIsNotPartOfPrefab, const xiiUuid& prefabSeed, xiiStringBuilder& out_sNewGraph)
 {
   // prepare the original prefab as a graph
   xiiAbstractObjectGraph baseGraph;
-  xiiPrefabUtils::LoadGraph(baseGraph, szBase);
+  xiiPrefabUtils::LoadGraph(baseGraph, sBase);
   if (auto pHeader = baseGraph.GetNodeByName("Header"))
   {
     baseGraph.RemoveNode(pHeader->GetGuid());
@@ -257,7 +257,7 @@ void xiiPrefabUtils::Merge(const char* szBase, const char* szLeft, xiiDocumentOb
   {
     // read the new template as a graph
     xiiAbstractObjectGraph leftGraph;
-    xiiPrefabUtils::LoadGraph(leftGraph, szLeft);
+    xiiPrefabUtils::LoadGraph(leftGraph, sLeft);
     if (auto pHeader = leftGraph.GetNodeByName("Header"))
     {
       leftGraph.RemoveNode(pHeader->GetGuid());
@@ -318,12 +318,12 @@ void xiiPrefabUtils::Merge(const char* szBase, const char* szLeft, xiiDocumentOb
   }
 }
 
-xiiString xiiPrefabUtils::ReadDocumentAsString(const char* szFile)
+xiiString xiiPrefabUtils::ReadDocumentAsString(xiiStringView sFile)
 {
   xiiFileReader file;
-  if (file.Open(szFile) == XII_FAILURE)
+  if (file.Open(sFile) == XII_FAILURE)
   {
-    xiiLog::Error("Failed to open document file '{0}'", szFile);
+    xiiLog::Error("Failed to open document file '{0}'", sFile);
     return xiiString();
   }
 

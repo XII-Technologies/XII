@@ -20,13 +20,13 @@ public:
     m_Filter   = filter;
   }
 
-  xiiAbstractObjectNode* AddObjectToGraph(const xiiDocumentObject* pObject, const char* szNodeName = nullptr);
+  xiiAbstractObjectNode* AddObjectToGraph(const xiiDocumentObject* pObject, xiiStringView sNodeName = {});
 
 private:
   void AddProperty(xiiAbstractObjectNode* pNode, const xiiAbstractProperty* pProp, const xiiDocumentObject* pObject);
   void AddProperties(xiiAbstractObjectNode* pNode, const xiiDocumentObject* pObject);
 
-  xiiAbstractObjectNode* AddSubObjectToGraph(const xiiDocumentObject* pObject, const char* szNodeName);
+  xiiAbstractObjectNode* AddSubObjectToGraph(const xiiDocumentObject* pObject, xiiStringView sNodeName);
 
   const xiiDocumentObjectManager*  m_pManager;
   xiiAbstractObjectGraph*          m_pGraph;
@@ -54,7 +54,7 @@ public:
   static void ApplyDiffToObject(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pObject, xiiDeque<xiiAbstractGraphDiffOperation>& ref_diff);
 
 private:
-  void        AddObject(xiiDocumentObject* pObject, xiiDocumentObject* pParent, const char* szParentProperty, xiiVariant index);
+  void        AddObject(xiiDocumentObject* pObject, xiiDocumentObject* pParent, xiiStringView sParentProperty, xiiVariant index);
   void        ApplyProperty(xiiDocumentObject* pObject, xiiAbstractProperty* pProp, const xiiAbstractObjectNode::Property* pSource);
   static void ApplyDiff(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pObject, xiiAbstractProperty* pProp, xiiAbstractGraphDiffOperation& op, xiiDeque<xiiAbstractGraphDiffOperation>& diff);
 

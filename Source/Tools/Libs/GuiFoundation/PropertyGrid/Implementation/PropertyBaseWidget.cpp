@@ -288,9 +288,10 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
   // copy internal name
   {
     auto lambda = [this]() {
+    xiiStringBuilder tmp;
       QClipboard* clipboard = QApplication::clipboard();
       QMimeData*  mimeData  = new QMimeData();
-      mimeData->setText(m_pProp->GetPropertyName());
+      mimeData->setText(m_pProp->GetPropertyName().GetData(tmp));
       clipboard->setMimeData(mimeData);
 
       xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(
@@ -300,7 +301,8 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
     QAction* pAction = m.addAction("Copy Internal Property Name:");
     connect(pAction, &QAction::triggered, this, lambda);
 
-    QAction* pAction2 = m.addAction(m_pProp->GetPropertyName());
+    xiiStringBuilder tmp;
+    QAction* pAction2 = m.addAction(m_pProp->GetPropertyName().GetData(tmp));
     connect(pAction2, &QAction::triggered, this, lambda);
   }
 }

@@ -8,8 +8,8 @@
 struct XII_TOOLSFOUNDATION_DLL xiiToolsTag
 {
   xiiToolsTag() = default;
-  xiiToolsTag(const char* szCategory, const char* szName, bool bBuiltIn = false) :
-    m_sCategory(szCategory), m_sName(szName), m_bBuiltInTag(bBuiltIn)
+  xiiToolsTag(xiiStringView sCategory, xiiStringView sName, bool bBuiltIn = false) :
+    m_sCategory(sCategory), m_sName(sName), m_bBuiltInTag(bBuiltIn)
   {
   }
 
@@ -28,7 +28,7 @@ public:
   static xiiStatus ReadFromDDL(xiiStreamReader& ref_stream);
 
   static bool AddTag(const xiiToolsTag& tag);
-  static bool RemoveTag(const char* szName);
+  static bool RemoveTag(xiiStringView sName);
 
   static void GetAllTags(xiiHybridArray<const xiiToolsTag*, 16>& out_tags);
   static void GetTagsByCategory(const xiiArrayPtr<xiiStringView>& categories, xiiHybridArray<const xiiToolsTag*, 16>& out_tags);

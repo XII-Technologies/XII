@@ -16,7 +16,7 @@ public:
 
   static xiiResult FindDocumentTypeFromPath(xiiStringView sPath, bool bForCreation, const xiiDocumentTypeDescriptor*& out_pTypeDesc);
 
-  xiiStatus CanOpenDocument(const char* szFilePath) const;
+  xiiStatus CanOpenDocument(xiiStringView sFilePath) const;
 
   /// \brief Creates a new document.
   /// \param szDocumentTypeName Document type to create. See xiiDocumentTypeDescriptor.
@@ -25,7 +25,7 @@ public:
   /// \param flags Flags to define various options like whether a window should be created.
   /// \param pOpenContext An generic context object. Allows for custom data to be passed along into the construction. E.g. inform a sub-document which main document it belongs to.
   /// \return Returns the error in case the operations failed.
-  xiiStatus CreateDocument(const char* szDocumentTypeName, const char* szPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags = xiiDocumentFlags::None, const xiiDocumentObject* pOpenContext = nullptr);
+  xiiStatus CreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags = xiiDocumentFlags::None, const xiiDocumentObject* pOpenContext = nullptr);
 
   /// \brief Opens an existing document.
   /// \param szDocumentTypeName Document type to open. See xiiDocumentTypeDescriptor.
@@ -35,8 +35,8 @@ public:
   /// \param pOpenContext  An generic context object. Allows for custom data to be passed along into the construction. E.g. inform a sub-document which main document it belongs to.
   /// \return Returns the error in case the operations failed.
   /// \return Returns the error in case the operations failed.
-  xiiStatus         OpenDocument(const char* szDocumentTypeName, const char* szPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags = xiiDocumentFlags::AddToRecentFilesList | xiiDocumentFlags::RequestWindow, const xiiDocumentObject* pOpenContext = nullptr);
-  virtual xiiStatus CloneDocument(const char* szPath, const char* szClonePath, xiiUuid& inout_cloneGuid);
+  xiiStatus         OpenDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags = xiiDocumentFlags::AddToRecentFilesList | xiiDocumentFlags::RequestWindow, const xiiDocumentObject* pOpenContext = nullptr);
+  virtual xiiStatus CloneDocument(xiiStringView sPath, xiiStringView sClonePath, xiiUuid& inout_cloneGuid);
   void              CloseDocument(xiiDocument* pDocument);
   void              EnsureWindowRequested(xiiDocument* pDocument, const xiiDocumentObject* pOpenContext = nullptr);
 
@@ -97,7 +97,7 @@ public:
   static xiiCopyOnBroadcastEvent<const Event&> s_Events;
   static xiiEvent<Request&>                    s_Requests;
 
-  static const xiiDocumentTypeDescriptor*                           GetDescriptorForDocumentType(const char* szDocumentType);
+  static const xiiDocumentTypeDescriptor*                           GetDescriptorForDocumentType(xiiStringView sDocumentType);
   static const xiiMap<xiiString, const xiiDocumentTypeDescriptor*>& GetAllDocumentDescriptors();
 
   void GetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_documentTypes) const;
@@ -106,14 +106,14 @@ public:
   static xiiMap<xiiString, CustomAction> s_CustomActions;
 
 protected:
-  virtual void InternalCloneDocument(const char* szPath, const char* szClonePath, const xiiUuid& documentId, const xiiUuid& seedGuid, const xiiUuid& cloneGuid, xiiAbstractObjectGraph* pHeader, xiiAbstractObjectGraph* pObjects, xiiAbstractObjectGraph* pTypes);
+  virtual void InternalCloneDocument(xiiStringView sPath, xiiStringView sClonePath, const xiiUuid& documentId, const xiiUuid& seedGuid, const xiiUuid& cloneGuid, xiiAbstractObjectGraph* pHeader, xiiAbstractObjectGraph* pObjects, xiiAbstractObjectGraph* pTypes);
 
 private:
-  virtual void InternalCreateDocument(const char* szDocumentTypeName, const char* szPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext) = 0;
+  virtual void InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext) = 0;
   virtual void InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const                                                         = 0;
 
 private:
-  xiiStatus CreateOrOpenDocument(bool bCreate, const char* szDocumentTypeName, const char* szPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext = nullptr);
+  xiiStatus CreateOrOpenDocument(bool bCreate, xiiStringView sDocumentTypeName, xiiStringView sPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext = nullptr);
 
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(ToolsFoundation, DocumentManager);

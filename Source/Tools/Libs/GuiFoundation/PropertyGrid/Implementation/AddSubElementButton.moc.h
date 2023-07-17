@@ -29,7 +29,7 @@ private:
   virtual void OnInit() override;
   void         OnAction(const xiiRTTI* pRtti);
 
-  QMenu* CreateCategoryMenu(const char* szCategory, xiiMap<xiiString, QMenu*>& existingMenus);
+  QMenu* CreateCategoryMenu(xiiStringView sCategory, xiiMap<xiiString, QMenu*>& existingMenus);
 
   QHBoxLayout* m_pLayout;
   QPushButton* m_pButton;

@@ -39,7 +39,7 @@ private:
   void SaveFavorites();
   void LoadFavorites();
 
-  QTreeWidgetItem* CreateStat(const char* szPath, bool bParent);
+  QTreeWidgetItem* CreateStat(xiiStringView sPath, bool bParent);
   void             SetFavorite(const xiiString& sStat, bool bFavorite);
 
   xiiUInt32 m_uiMaxStatSamples;

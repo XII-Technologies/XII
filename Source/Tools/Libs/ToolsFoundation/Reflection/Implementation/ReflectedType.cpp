@@ -142,26 +142,19 @@ public:
 xiiReflectedPropertyDescriptorPatch_1_2 g_xiiReflectedPropertyDescriptorPatch_1_2;
 
 
-xiiReflectedPropertyDescriptor::xiiReflectedPropertyDescriptor(
-  xiiPropertyCategory::Enum     category,
-  const char*                   szName,
-  const char*                   szType,
-  xiiBitflags<xiiPropertyFlags> flags) :
-  m_Category(category), m_sName(szName), m_sType(szType), m_Flags(flags)
+xiiReflectedPropertyDescriptor::xiiReflectedPropertyDescriptor(xiiPropertyCategory::Enum category, xiiStringView sName, xiiStringView sType, xiiBitflags<xiiPropertyFlags> flags) :
+  m_Category(category), m_sName(sName), m_sType(sType), m_Flags(flags)
 {
 }
 
-xiiReflectedPropertyDescriptor::xiiReflectedPropertyDescriptor(xiiPropertyCategory::Enum category, const char* szName, const char* szType, xiiBitflags<xiiPropertyFlags> flags, const xiiArrayPtr<xiiPropertyAttribute* const> attributes) :
-  m_Category(category), m_sName(szName), m_sType(szType), m_Flags(flags)
+xiiReflectedPropertyDescriptor::xiiReflectedPropertyDescriptor(xiiPropertyCategory::Enum category, xiiStringView sName, xiiStringView sType, xiiBitflags<xiiPropertyFlags> flags, const xiiArrayPtr<xiiPropertyAttribute* const> attributes) :
+  m_Category(category), m_sName(sName), m_sType(sType), m_Flags(flags)
 {
   m_ReferenceAttributes = attributes;
 }
 
-xiiReflectedPropertyDescriptor::xiiReflectedPropertyDescriptor(
-  const char*                                    szName,
-  const xiiVariant&                              constantValue,
-  const xiiArrayPtr<xiiPropertyAttribute* const> attributes) :
-  m_Category(xiiPropertyCategory::Constant), m_sName(szName), m_sType(), m_Flags(xiiPropertyFlags::StandardType | xiiPropertyFlags::ReadOnly), m_ConstantValue(constantValue)
+xiiReflectedPropertyDescriptor::xiiReflectedPropertyDescriptor(xiiStringView sName, const xiiVariant& constantValue, const xiiArrayPtr<xiiPropertyAttribute* const> attributes) :
+  m_Category(xiiPropertyCategory::Constant), m_sName(sName), m_sType(), m_Flags(xiiPropertyFlags::StandardType | xiiPropertyFlags::ReadOnly), m_ConstantValue(constantValue)
 {
   m_ReferenceAttributes = attributes;
   const xiiRTTI* pType  = xiiReflectionUtils::GetTypeFromVariant(constantValue);
@@ -209,8 +202,8 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 xiiFunctionArgumentDescriptor::xiiFunctionArgumentDescriptor() = default;
 
-xiiFunctionArgumentDescriptor::xiiFunctionArgumentDescriptor(const char* szType, xiiBitflags<xiiPropertyFlags> flags) :
-  m_sType(szType), m_Flags(flags)
+xiiFunctionArgumentDescriptor::xiiFunctionArgumentDescriptor(xiiStringView sType, xiiBitflags<xiiPropertyFlags> flags) :
+  m_sType(sType), m_Flags(flags)
 {
 }
 
@@ -237,12 +230,8 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 xiiReflectedFunctionDescriptor::xiiReflectedFunctionDescriptor() = default;
 
-xiiReflectedFunctionDescriptor::xiiReflectedFunctionDescriptor(
-  const char*                                    szName,
-  xiiBitflags<xiiPropertyFlags>                  flags,
-  xiiEnum<xiiFunctionType>                       type,
-  const xiiArrayPtr<xiiPropertyAttribute* const> attributes) :
-  m_sName(szName), m_Flags(flags), m_Type(type)
+xiiReflectedFunctionDescriptor::xiiReflectedFunctionDescriptor(xiiStringView sName, xiiBitflags<xiiPropertyFlags> flags, xiiEnum<xiiFunctionType> type, const xiiArrayPtr<xiiPropertyAttribute* const> attributes) :
+  m_sName(sName), m_Flags(flags), m_Type(type)
 {
   m_ReferenceAttributes = attributes;
 }
@@ -256,10 +245,10 @@ xiiReflectedFunctionDescriptor::~xiiReflectedFunctionDescriptor() = default;
 
 void xiiReflectedFunctionDescriptor::operator=(const xiiReflectedFunctionDescriptor& rhs)
 {
-  m_sName                     = rhs.m_sName;
-  m_Flags                     = rhs.m_Flags;
-  m_ReturnValue               = rhs.m_ReturnValue;
-  m_Arguments                 = rhs.m_Arguments;
+  m_sName       = rhs.m_sName;
+  m_Flags       = rhs.m_Flags;
+  m_ReturnValue = rhs.m_ReturnValue;
+  m_Arguments   = rhs.m_Arguments;
   xiiAttributeHolder::operator=(rhs);
 }
 

@@ -157,7 +157,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiAddObjectCommand::xiiAddObjectCommand() = default;
 
-const char* xiiAddObjectCommand::GetType() const
+xiiStringView xiiAddObjectCommand::GetType() const
 {
   if (m_pType == nullptr)
     return "";
@@ -165,9 +165,9 @@ const char* xiiAddObjectCommand::GetType() const
   return m_pType->GetTypeName();
 }
 
-void xiiAddObjectCommand::SetType(const char* szType)
+void xiiAddObjectCommand::SetType(xiiStringView sType)
 {
-  m_pType = xiiRTTI::FindTypeByName(szType);
+  m_pType = xiiRTTI::FindTypeByName(sType);
 }
 
 xiiStatus xiiAddObjectCommand::DoInternal(bool bRedo)

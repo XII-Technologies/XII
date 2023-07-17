@@ -83,7 +83,7 @@ void xiiPathPatternFilter::AddFilter(xiiStringView sText, bool bIncludeFilter)
     m_ExcludePatterns.ExpandAndGetRef().Configure(text);
 }
 
-xiiResult xiiPathPatternFilter::ReadConfigFile(const char* szFile, const xiiDynamicArray<xiiString>& preprocessorDefines)
+xiiResult xiiPathPatternFilter::ReadConfigFile(xiiStringView sFile, const xiiDynamicArray<xiiString>& preprocessorDefines)
 {
   xiiStringBuilder content;
 
@@ -98,7 +98,7 @@ xiiResult xiiPathPatternFilter::ReadConfigFile(const char* szFile, const xiiDyna
 
   // keep comments, because * and / can form a multi-line comment, and then we could lose vital information
   // instead only allow single-line comments and filter those out in AddFilter().
-  if (pp.Process(szFile, content, true, true).Failed())
+  if (pp.Process(sFile, content, true, true).Failed())
     return XII_FAILURE;
 
   xiiDynamicArray<xiiStringView> lines;

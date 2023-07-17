@@ -10,7 +10,7 @@
 
 xiiCopyOnBroadcastEvent<const xiiPhantomRttiManagerEvent&> xiiPhantomRttiManager::s_Events;
 
-xiiHashTable<const char*, xiiPhantomRTTI*> xiiPhantomRttiManager::s_NameToPhantom;
+xiiHashTable<xiiStringView, xiiPhantomRTTI*> xiiPhantomRttiManager::s_NameToPhantom;
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(ToolsFoundation, ReflectedTypeManager)

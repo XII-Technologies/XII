@@ -14,46 +14,45 @@ xiiUInt32 xiiDocumentObject::GetChildIndex(const xiiDocumentObject* pChild) cons
   return m_Children.IndexOf(const_cast<xiiDocumentObject*>(pChild));
 }
 
-void xiiDocumentObject::InsertSubObject(xiiDocumentObject* pObject, const char* szProperty, const xiiVariant& index)
+void xiiDocumentObject::InsertSubObject(xiiDocumentObject* pObject, xiiStringView sProperty, const xiiVariant& index)
 {
   XII_ASSERT_DEV(pObject != nullptr, "");
-  XII_ASSERT_DEV(!xiiStringUtils::IsNullOrEmpty(szProperty), "Child objects must have a parent property to insert into");
+  XII_ASSERT_DEV(!sProperty.IsEmpty(), "Child objects must have a parent property to insert into");
   xiiIReflectedTypeAccessor& accessor = GetTypeAccessor();
 
   const xiiRTTI* pType = accessor.GetType();
-  auto*          pProp = pType->FindPropertyByName(szProperty);
-  XII_ASSERT_DEV(pProp && pProp->GetFlags().IsSet(xiiPropertyFlags::Class) &&
-                   (!pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer) || pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner)),
+  auto*          pProp = pType->FindPropertyByName(sProperty);
+  XII_ASSERT_DEV(pProp && pProp->GetFlags().IsSet(xiiPropertyFlags::Class) && (!pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer) || pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner)),
                  "Only class type or pointer to class type that own the object can be inserted, everything else is handled by value.");
 
   if (pProp->GetCategory() == xiiPropertyCategory::Array || pProp->GetCategory() == xiiPropertyCategory::Set)
   {
     if (!index.IsValid() || (index.CanConvertTo<xiiInt32>() && index.ConvertTo<xiiInt32>() == -1))
     {
-      xiiVariant newIndex = accessor.GetCount(szProperty);
-      bool       bRes     = accessor.InsertValue(szProperty, newIndex, pObject->GetGuid());
+      xiiVariant newIndex = accessor.GetCount(sProperty);
+      bool       bRes     = accessor.InsertValue(sProperty, newIndex, pObject->GetGuid());
       XII_ASSERT_DEV(bRes, "");
     }
     else
     {
-      bool bRes = accessor.InsertValue(szProperty, index, pObject->GetGuid());
+      bool bRes = accessor.InsertValue(sProperty, index, pObject->GetGuid());
       XII_ASSERT_DEV(bRes, "");
     }
   }
   else if (pProp->GetCategory() == xiiPropertyCategory::Map)
   {
     XII_ASSERT_DEV(index.IsA<xiiString>(), "Map key must be a string.");
-    bool bRes = accessor.InsertValue(szProperty, index, pObject->GetGuid());
+    bool bRes = accessor.InsertValue(sProperty, index, pObject->GetGuid());
     XII_ASSERT_DEV(bRes, "");
   }
   else if (pProp->GetCategory() == xiiPropertyCategory::Member)
   {
-    bool bRes = accessor.SetValue(szProperty, pObject->GetGuid());
+    bool bRes = accessor.SetValue(sProperty, pObject->GetGuid());
     XII_ASSERT_DEV(bRes, "");
   }
 
   // Object patching
-  pObject->m_sParentProperty = szProperty;
+  pObject->m_sParentProperty = sProperty;
   pObject->m_pParent         = this;
   m_Children.PushBack(pObject);
 }

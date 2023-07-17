@@ -53,12 +53,12 @@ public:
   /// \brief Returns the name of the top-most xiiDefaultStateProvider of the first element of the selection.
   xiiString GetStateProviderName() const;
 
-  bool       IsDefaultValue(const char* szProperty) const;
+  bool       IsDefaultValue(xiiStringView sProperty) const;
   bool       IsDefaultValue(const xiiAbstractProperty* pProp) const;
-  xiiStatus  RevertProperty(const char* szProperty);
+  xiiStatus  RevertProperty(xiiStringView sProperty);
   xiiStatus  RevertProperty(const xiiAbstractProperty* pProp);
   xiiStatus  RevertObject();
-  xiiVariant GetDefaultValue(const char* szProperty, xiiUInt32 uiSelectionIndex = 0) const;
+  xiiVariant GetDefaultValue(xiiStringView sProperty, xiiUInt32 uiSelectionIndex = 0) const;
   xiiVariant GetDefaultValue(const xiiAbstractProperty* pProp, xiiUInt32 uiSelectionIndex = 0) const;
 
 
@@ -80,7 +80,7 @@ public:
   /// \param pAccessor Used to revert properties and query their current value.
   /// \param selection For which objects the default state should be queried. If xiiPropertySelection::m_Index is set, IsDefaultElement and RevertElement will query the value under that index if the passed in index is invalid.
   /// \param szProperty The name of the container for which default states should be queried.
-  xiiDefaultContainerState(xiiObjectAccessorBase* pAccessor, const xiiArrayPtr<xiiPropertySelection> selection, const char* szProperty);
+  xiiDefaultContainerState(xiiObjectAccessorBase* pAccessor, const xiiArrayPtr<xiiPropertySelection> selection, xiiStringView sProperty);
 
   /// \brief Returns the color of the top-most xiiDefaultStateProvider of the first element of the selection.
   /// \sa xiiDefaultStateProvider::GetBackgroundColor

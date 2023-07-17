@@ -127,9 +127,9 @@ bool xiiToolsTagRegistry::AddTag(const xiiToolsTag& tag)
   }
 }
 
-bool xiiToolsTagRegistry::RemoveTag(const char* szName)
+bool xiiToolsTagRegistry::RemoveTag(xiiStringView sName)
 {
-  auto it = s_NameToTags.Find(szName);
+  auto it = s_NameToTags.Find(sName);
   if (it.IsValid())
   {
     s_NameToTags.Remove(it);

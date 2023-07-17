@@ -225,12 +225,12 @@ public:
 
       for (xiiUInt32 a = 1; a < GetArgumentCount(); ++a)
       {
-        const char* szArg = GetArgument(a);
+        xiiStringView sArg = GetArgument(a);
 
-        if (xiiStringUtils::IsEqual_NoCase(szArg, "-out"))
+        if (sArg.IsEqual_NoCase("-out"))
           break;
 
-        m_sInputs.PushBack(xiiOSFile::MakePathAbsoluteWithCWD(szArg));
+        m_sInputs.PushBack(xiiOSFile::MakePathAbsoluteWithCWD(sArg));
 
         if (!xiiOSFile::ExistsDirectory(m_sInputs.PeekBack()))
           bInputsFolders = false;
@@ -285,9 +285,9 @@ public:
     SUPER::BeforeCoreSystemsShutdown();
   }
 
-  static xiiArchiveBuilder::InclusionMode PackFileCallback(const char* szFile)
+  static xiiArchiveBuilder::InclusionMode PackFileCallback(xiiStringView sFile)
   {
-    const xiiStringView ext = xiiPathUtils::GetFileExtension(szFile);
+    const xiiStringView ext = xiiPathUtils::GetFileExtension(sFile);
 
     if (ext.IsEqual_NoCase("jpg") || ext.IsEqual_NoCase("jpeg") || ext.IsEqual_NoCase("png"))
       return xiiArchiveBuilder::InclusionMode::Uncompressed;

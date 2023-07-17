@@ -11,7 +11,7 @@ void xiiObjectAccessorBase::CancelTransaction() {}
 void xiiObjectAccessorBase::FinishTransaction() {}
 
 
-void xiiObjectAccessorBase::BeginTemporaryCommands(const char* szDisplayString, bool bFireEventsWhenUndoingTempCommands /*= false*/) {}
+void xiiObjectAccessorBase::BeginTemporaryCommands(xiiStringView sDisplayString, bool bFireEventsWhenUndoingTempCommands /*= false*/) {}
 
 
 void xiiObjectAccessorBase::CancelTemporaryCommands() {}
@@ -20,109 +20,109 @@ void xiiObjectAccessorBase::CancelTemporaryCommands() {}
 void xiiObjectAccessorBase::FinishTemporaryCommands() {}
 
 
-xiiStatus xiiObjectAccessorBase::GetValue(const xiiDocumentObject* pObject, const char* szProp, xiiVariant& out_value, xiiVariant index /*= xiiVariant()*/)
+xiiStatus xiiObjectAccessorBase::GetValue(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant& out_value, xiiVariant index /*= xiiVariant()*/)
 {
-  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(szProp);
+  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
-    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", szProp, pObject->GetType()->GetTypeName()));
+    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", sProp, pObject->GetType()->GetTypeName()));
   return GetValue(pObject, pProp, out_value, index);
 }
 
 
-xiiStatus xiiObjectAccessorBase::SetValue(const xiiDocumentObject* pObject, const char* szProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
+xiiStatus xiiObjectAccessorBase::SetValue(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
-  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(szProp);
+  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
-    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", szProp, pObject->GetType()->GetTypeName()));
+    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", sProp, pObject->GetType()->GetTypeName()));
   return SetValue(pObject, pProp, newValue, index);
 }
 
 
-xiiStatus xiiObjectAccessorBase::InsertValue(const xiiDocumentObject* pObject, const char* szProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
+xiiStatus xiiObjectAccessorBase::InsertValue(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
-  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(szProp);
+  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
-    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", szProp, pObject->GetType()->GetTypeName()));
+    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", sProp, pObject->GetType()->GetTypeName()));
   return InsertValue(pObject, pProp, newValue, index);
 }
 
 
-xiiStatus xiiObjectAccessorBase::RemoveValue(const xiiDocumentObject* pObject, const char* szProp, xiiVariant index /*= xiiVariant()*/)
+xiiStatus xiiObjectAccessorBase::RemoveValue(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index /*= xiiVariant()*/)
 {
-  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(szProp);
+  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
-    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", szProp, pObject->GetType()->GetTypeName()));
+    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", sProp, pObject->GetType()->GetTypeName()));
   return RemoveValue(pObject, pProp, index);
 }
 
 
-xiiStatus xiiObjectAccessorBase::MoveValue(const xiiDocumentObject* pObject, const char* szProp, const xiiVariant& oldIndex, const xiiVariant& newIndex)
+xiiStatus xiiObjectAccessorBase::MoveValue(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& oldIndex, const xiiVariant& newIndex)
 {
-  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(szProp);
+  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
-    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", szProp, pObject->GetType()->GetTypeName()));
+    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", sProp, pObject->GetType()->GetTypeName()));
   return MoveValue(pObject, pProp, oldIndex, newIndex);
 }
 
 
-xiiStatus xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject, const char* szProp, xiiInt32& out_iCount)
+xiiStatus xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject, xiiStringView sProp, xiiInt32& out_iCount)
 {
-  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(szProp);
+  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
-    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", szProp, pObject->GetType()->GetTypeName()));
+    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", sProp, pObject->GetType()->GetTypeName()));
   return GetCount(pObject, pProp, out_iCount);
 }
 
 
-xiiStatus xiiObjectAccessorBase::AddObject(const xiiDocumentObject* pParent, const char* szParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid)
+xiiStatus xiiObjectAccessorBase::AddObject(const xiiDocumentObject* pParent, xiiStringView sParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid)
 {
-  const xiiAbstractProperty* pProp = pParent->GetType()->FindPropertyByName(szParentProp);
+  const xiiAbstractProperty* pProp = pParent->GetType()->FindPropertyByName(sParentProp);
   if (!pProp)
-    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", szParentProp, pParent->GetType()->GetTypeName()));
+    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", sParentProp, pParent->GetType()->GetTypeName()));
   return AddObject(pParent, pProp, index, pType, inout_objectGuid);
 }
 
-xiiStatus xiiObjectAccessorBase::MoveObject(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, const char* szParentProp, const xiiVariant& index)
+xiiStatus xiiObjectAccessorBase::MoveObject(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProp, const xiiVariant& index)
 {
-  const xiiAbstractProperty* pProp = pNewParent->GetType()->FindPropertyByName(szParentProp);
+  const xiiAbstractProperty* pProp = pNewParent->GetType()->FindPropertyByName(sParentProp);
   if (!pProp)
-    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", szParentProp, pNewParent->GetType()->GetTypeName()));
+    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", sParentProp, pNewParent->GetType()->GetTypeName()));
   return MoveObject(pObject, pNewParent, pProp, index);
 }
 
 
-xiiStatus xiiObjectAccessorBase::GetKeys(const xiiDocumentObject* pObject, const char* szProp, xiiDynamicArray<xiiVariant>& out_keys)
+xiiStatus xiiObjectAccessorBase::GetKeys(const xiiDocumentObject* pObject, xiiStringView sProp, xiiDynamicArray<xiiVariant>& out_keys)
 {
-  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(szProp);
+  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
-    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", szProp, pObject->GetType()->GetTypeName()));
+    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", sProp, pObject->GetType()->GetTypeName()));
   return GetKeys(pObject, pProp, out_keys);
 }
 
 
-xiiStatus xiiObjectAccessorBase::GetValues(const xiiDocumentObject* pObject, const char* szProp, xiiDynamicArray<xiiVariant>& out_values)
+xiiStatus xiiObjectAccessorBase::GetValues(const xiiDocumentObject* pObject, xiiStringView sProp, xiiDynamicArray<xiiVariant>& out_values)
 {
-  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(szProp);
+  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
-    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", szProp, pObject->GetType()->GetTypeName()));
+    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", sProp, pObject->GetType()->GetTypeName()));
   return GetValues(pObject, pProp, out_values);
 }
 
-const xiiDocumentObject* xiiObjectAccessorBase::GetChildObject(const xiiDocumentObject* pObject, const char* szProp, xiiVariant index)
+const xiiDocumentObject* xiiObjectAccessorBase::GetChildObject(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index)
 {
   xiiVariant value;
-  if (GetValue(pObject, szProp, value, index).Succeeded() && value.IsA<xiiUuid>())
+  if (GetValue(pObject, sProp, value, index).Succeeded() && value.IsA<xiiUuid>())
   {
     return GetObject(value.Get<xiiUuid>());
   }
   return nullptr;
 }
 
-xiiStatus xiiObjectAccessorBase::Clear(const xiiDocumentObject* pObject, const char* szProp)
+xiiStatus xiiObjectAccessorBase::Clear(const xiiDocumentObject* pObject, xiiStringView sProp)
 {
-  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(szProp);
+  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
-    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", szProp, pObject->GetType()->GetTypeName()));
+    return xiiStatus(xiiFmt("The property '{0}' does not exist in type '{1}'.", sProp, pObject->GetType()->GetTypeName()));
 
   xiiHybridArray<xiiVariant, 8> keys;
   xiiStatus                     res = GetKeys(pObject, pProp, keys);

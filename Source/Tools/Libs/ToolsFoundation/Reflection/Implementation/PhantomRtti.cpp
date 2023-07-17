@@ -4,14 +4,14 @@
 #include <ToolsFoundation/Reflection/PhantomProperty.h>
 #include <ToolsFoundation/Reflection/PhantomRtti.h>
 
-xiiPhantomRTTI::xiiPhantomRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, const char* szPluginName) :
+xiiPhantomRTTI::xiiPhantomRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiStringView sPluginName) :
   xiiRTTI(nullptr, pParentType, uiTypeSize, uiTypeVersion, uiVariantType, flags | xiiTypeFlags::Phantom, nullptr, xiiArrayPtr<xiiAbstractProperty*>(), xiiArrayPtr<xiiAbstractFunctionProperty*>(), xiiArrayPtr<xiiPropertyAttribute*>(), xiiArrayPtr<xiiAbstractMessageHandler*>(), xiiArrayPtr<xiiMessageSenderInfo>(), nullptr)
 {
-  m_sTypeNameStorage   = szName;
-  m_sPluginNameStorage = szPluginName;
+  m_sTypeNameStorage   = sName;
+  m_sPluginNameStorage = sPluginName;
 
-  m_szTypeName   = m_sTypeNameStorage.GetData();
-  m_szPluginName = m_sPluginNameStorage.GetData();
+  m_sTypeName   = m_sTypeNameStorage;
+  m_sPluginName = m_sPluginNameStorage;
 
   RegisterType();
 }
@@ -19,7 +19,7 @@ xiiPhantomRTTI::xiiPhantomRTTI(const char* szName, const xiiRTTI* pParentType, x
 xiiPhantomRTTI::~xiiPhantomRTTI()
 {
   UnregisterType();
-  m_szTypeName = nullptr;
+  m_sTypeName = {};
 
   for (auto pProp : m_PropertiesStorage)
   {
@@ -120,7 +120,7 @@ void xiiPhantomRTTI::UpdateType(xiiReflectedTypeDescriptor& desc)
   xiiRTTI::UpdateType(xiiRTTI::FindTypeByName(desc.m_sParentTypeName), 0, desc.m_uiTypeVersion, xiiVariantType::Invalid, desc.m_Flags);
 
   m_sPluginNameStorage = desc.m_sPluginName;
-  m_szPluginName       = m_sPluginNameStorage.GetData();
+  m_sPluginName       = m_sPluginNameStorage.GetData();
 
   SetProperties(desc.m_Properties);
   SetFunctions(desc.m_Functions);

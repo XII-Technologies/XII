@@ -111,11 +111,11 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
 
     while (pRtti)
     {
-      if (pRtti->GetTypeName().IsEqual("xiiTestStruct"))
+      if (pRtti->GetTypeName() == "xiiTestStruct")
         bFoundStruct = true;
-      if (pRtti->GetTypeName().IsEqual("xiiTestClass1"))
+      if (pRtti->GetTypeName() == "xiiTestClass1")
         bFoundClass1 = true;
-      if (pRtti->GetTypeName().IsEqual("xiiTestClass2"))
+      if (pRtti->GetTypeName() == "xiiTestClass2")
         bFoundClass2 = true;
 
       XII_TEST_STRING(pRtti->GetPluginName(), "Static");
@@ -328,7 +328,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
 
     while (pRtti)
     {
-      if (pRtti->GetTypeName().IsEqual("xiiTestStruct2"))
+      if (pRtti->GetTypeName() == "xiiTestStruct2")
       {
         bFoundStruct2 = true;
 

@@ -6,15 +6,15 @@
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
 
-xiiAbstractObjectNode* xiiDocumentObjectConverterWriter::AddObjectToGraph(const xiiDocumentObject* pObject, const char* szNodeName)
+xiiAbstractObjectNode* xiiDocumentObjectConverterWriter::AddObjectToGraph(const xiiDocumentObject* pObject, xiiStringView sNodeName)
 {
-  xiiAbstractObjectNode* pNode = AddSubObjectToGraph(pObject, szNodeName);
+  xiiAbstractObjectNode* pNode = AddSubObjectToGraph(pObject, sNodeName);
 
   while (!m_QueuedObjects.IsEmpty())
   {
     auto itCur = m_QueuedObjects.GetIterator();
 
-    AddSubObjectToGraph(itCur.Key(), nullptr);
+    AddSubObjectToGraph(itCur.Key(), {});
 
     m_QueuedObjects.Remove(itCur);
   }
@@ -135,9 +135,9 @@ void xiiDocumentObjectConverterWriter::AddProperties(xiiAbstractObjectNode* pNod
   }
 }
 
-xiiAbstractObjectNode* xiiDocumentObjectConverterWriter::AddSubObjectToGraph(const xiiDocumentObject* pObject, const char* szNodeName)
+xiiAbstractObjectNode* xiiDocumentObjectConverterWriter::AddSubObjectToGraph(const xiiDocumentObject* pObject, xiiStringView sNodeName)
 {
-  xiiAbstractObjectNode* pNode = m_pGraph->AddNode(pObject->GetGuid(), pObject->GetType()->GetTypeName(), pObject->GetType()->GetTypeVersion(), szNodeName);
+  xiiAbstractObjectNode* pNode = m_pGraph->AddNode(pObject->GetGuid(), pObject->GetType()->GetTypeName(), pObject->GetType()->GetTypeVersion(), sNodeName);
   AddProperties(pNode, pObject);
   return pNode;
 }
@@ -170,16 +170,16 @@ xiiDocumentObject* xiiDocumentObjectConverterReader::CreateObjectFromNode(const 
   return pObject;
 }
 
-void xiiDocumentObjectConverterReader::AddObject(xiiDocumentObject* pObject, xiiDocumentObject* pParent, const char* szParentProperty, xiiVariant index)
+void xiiDocumentObjectConverterReader::AddObject(xiiDocumentObject* pObject, xiiDocumentObject* pParent, xiiStringView sParentProperty, xiiVariant index)
 {
   XII_ASSERT_DEV(pObject && pParent, "Need to have valid objects to add them to the document");
   if (m_Mode == xiiDocumentObjectConverterReader::Mode::CreateAndAddToDocument && pParent->GetDocumentObjectManager()->GetObject(pParent->GetGuid()))
   {
-    m_pManager->AddObject(pObject, pParent, szParentProperty, index);
+    m_pManager->AddObject(pObject, pParent, sParentProperty, index);
   }
   else
   {
-    pParent->InsertSubObject(pObject, szParentProperty, index);
+    pParent->InsertSubObject(pObject, sParentProperty, index);
   }
 }
 

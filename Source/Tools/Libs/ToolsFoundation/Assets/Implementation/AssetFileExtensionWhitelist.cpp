@@ -4,24 +4,24 @@
 
 xiiMap<xiiString, xiiSet<xiiString>> xiiAssetFileExtensionWhitelist::s_ExtensionWhitelist;
 
-void xiiAssetFileExtensionWhitelist::AddAssetFileExtension(const char* szAssetType, const char* szAllowedFileExtension)
+void xiiAssetFileExtensionWhitelist::AddAssetFileExtension(xiiStringView sAssetType, xiiStringView sAllowedFileExtension)
 {
-  xiiStringBuilder sLowerType = szAssetType;
+  xiiStringBuilder sLowerType = sAssetType;
   sLowerType.ToLower();
 
-  xiiStringBuilder sLowerExt = szAllowedFileExtension;
+  xiiStringBuilder sLowerExt = sAllowedFileExtension;
   sLowerExt.ToLower();
 
   s_ExtensionWhitelist[sLowerType].Insert(sLowerExt);
 }
 
 
-bool xiiAssetFileExtensionWhitelist::IsFileOnAssetWhitelist(const char* szAssetType, const char* szFile)
+bool xiiAssetFileExtensionWhitelist::IsFileOnAssetWhitelist(xiiStringView sAssetType, xiiStringView sFile)
 {
-  xiiStringBuilder sLowerExt = xiiPathUtils::GetFileExtension(szFile);
+  xiiStringBuilder sLowerExt = sFile.GetFileExtension();
   sLowerExt.ToLower();
 
-  xiiStringBuilder sLowerType = szAssetType;
+  xiiStringBuilder sLowerType = sAssetType;
   sLowerType.ToLower();
 
   xiiHybridArray<xiiString, 16> Types;
@@ -36,7 +36,7 @@ bool xiiAssetFileExtensionWhitelist::IsFileOnAssetWhitelist(const char* szAssetT
   return false;
 }
 
-const xiiSet<xiiString>& xiiAssetFileExtensionWhitelist::GetAssetFileExtensions(const char* szAssetType)
+const xiiSet<xiiString>& xiiAssetFileExtensionWhitelist::GetAssetFileExtensions(xiiStringView sAssetType)
 {
-  return s_ExtensionWhitelist[szAssetType];
+  return s_ExtensionWhitelist[sAssetType];
 }

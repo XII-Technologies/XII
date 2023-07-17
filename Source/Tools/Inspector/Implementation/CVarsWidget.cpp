@@ -161,7 +161,7 @@ void xiiQtCVarsWidget::SyncAllCVarsToServer()
     SendCVarUpdateToServer(it.Key().GetData(), it.Value());
 }
 
-void xiiQtCVarsWidget::SendCVarUpdateToServer(const char* szName, const xiiCVarWidgetData& cvd)
+void xiiQtCVarsWidget::SendCVarUpdateToServer(xiiStringView sName, const xiiCVarWidgetData& cvd)
 {
   xiiTelemetryMessage Msg;
   Msg.SetMessageID('SVAR', ' SET');
@@ -194,37 +194,37 @@ void xiiQtCVarsWidget::SendCVarUpdateToServer(const char* szName, const xiiCVarW
   xiiTelemetry::SendToServer(Msg);
 }
 
-void xiiQtCVarsWidget::BoolChanged(const char* szCVar, bool newValue)
+void xiiQtCVarsWidget::BoolChanged(xiiStringView sCVar, bool newValue)
 {
-  auto& cvarData    = m_CVars[szCVar];
+  auto& cvarData    = m_CVars[sCVar];
   cvarData.m_bValue = newValue;
-  SendCVarUpdateToServer(szCVar, cvarData);
+  SendCVarUpdateToServer(sCVar, cvarData);
 }
 
-void xiiQtCVarsWidget::FloatChanged(const char* szCVar, float newValue)
+void xiiQtCVarsWidget::FloatChanged(xiiStringView sCVar, float newValue)
 {
-  auto& cvarData    = m_CVars[szCVar];
+  auto& cvarData    = m_CVars[sCVar];
   cvarData.m_fValue = newValue;
-  SendCVarUpdateToServer(szCVar, cvarData);
+  SendCVarUpdateToServer(sCVar, cvarData);
 }
 
-void xiiQtCVarsWidget::DoubleChanged(const char* szCVar, double newValue)
+void xiiQtCVarsWidget::DoubleChanged(xiiStringView sCVar, double newValue)
 {
-  auto& cvarData    = m_CVars[szCVar];
+  auto& cvarData    = m_CVars[sCVar];
   cvarData.m_dValue = newValue;
-  SendCVarUpdateToServer(szCVar, cvarData);
+  SendCVarUpdateToServer(sCVar, cvarData);
 }
 
-void xiiQtCVarsWidget::IntChanged(const char* szCVar, int newValue)
+void xiiQtCVarsWidget::IntChanged(xiiStringView sCVar, int newValue)
 {
-  auto& cvarData    = m_CVars[szCVar];
+  auto& cvarData    = m_CVars[sCVar];
   cvarData.m_iValue = newValue;
-  SendCVarUpdateToServer(szCVar, cvarData);
+  SendCVarUpdateToServer(sCVar, cvarData);
 }
 
-void xiiQtCVarsWidget::StringChanged(const char* szCVar, const char* newValue)
+void xiiQtCVarsWidget::StringChanged(xiiStringView sCVar, xiiStringView sNewValue)
 {
-  auto& cvarData    = m_CVars[szCVar];
-  cvarData.m_sValue = newValue;
-  SendCVarUpdateToServer(szCVar, cvarData);
+  auto& cvarData    = m_CVars[sCVar];
+  cvarData.m_sValue = sNewValue;
+  SendCVarUpdateToServer(sCVar, cvarData);
 }

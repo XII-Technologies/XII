@@ -44,7 +44,7 @@ private:
     xiiMap<xiiString, TransferDataObject> m_Items;
   };
 
-  bool SaveToFile(TransferDataObject& item, const char* szFile);
+  bool SaveToFile(TransferDataObject& item, xiiStringView sFile);
 
   TransferDataObject* GetCurrentItem();
   TransferData*       GetCurrentTransfer();

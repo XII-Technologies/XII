@@ -167,7 +167,8 @@ void xiiQtNode::UpdateState()
   }
   else
   {
-    m_pTitleLabel->setPlainText(xiiTranslate(typeAccessor.GetType()->GetTypeName()));
+    xiiStringBuilder tmp;
+    m_pTitleLabel->setPlainText(xiiTranslate(typeAccessor.GetType()->GetTypeName().GetData(tmp)));
   }
 }
 

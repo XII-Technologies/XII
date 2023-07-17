@@ -69,7 +69,7 @@ void xiiDocumentManager::UpdateBeforeUnloadingPlugins(const xiiPluginEvent& e)
   {
     const xiiRTTI* pRtti = s_AllDocumentManagers[i]->GetDynamicRTTI();
 
-    if (xiiStringUtils::IsEqual(pRtti->GetPluginName(), e.m_szPluginBinary))
+    if (pRtti->GetPluginName() == e.m_sPluginBinary)
     {
       s_KnownManagers.Remove(pRtti);
 
@@ -146,12 +146,12 @@ void xiiDocumentManager::GetSupportedDocumentTypes(xiiDynamicArray<const xiiDocu
   }
 }
 
-xiiStatus xiiDocumentManager::CanOpenDocument(const char* szFilePath) const
+xiiStatus xiiDocumentManager::CanOpenDocument(xiiStringView sFilePath) const
 {
   xiiHybridArray<const xiiDocumentTypeDescriptor*, 4> DocumentTypes;
   GetSupportedDocumentTypes(DocumentTypes);
 
-  xiiStringBuilder sPath = szFilePath;
+  xiiStringBuilder sPath = sFilePath;
   xiiStringBuilder sExt  = sPath.GetFileExtension();
 
   // check whether the file extension is in the list of possible extensions
@@ -187,12 +187,12 @@ void xiiDocumentManager::EnsureWindowRequested(xiiDocument* pDocument, const xii
   s_Events.Broadcast(e);
 }
 
-xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, const char* szDocumentTypeName, const char* szPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext /*= nullptr*/)
+xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView sDocumentTypeName, xiiStringView sPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext /*= nullptr*/)
 {
   xiiFileStats     fs;
-  xiiStringBuilder sPath = szPath;
-  sPath.MakeCleanPath();
-  if (!bCreate && xiiOSFile::GetFileStats(sPath, fs).Failed())
+  xiiStringBuilder sPath0 = sPath;
+  sPath0.MakeCleanPath();
+  if (!bCreate && xiiOSFile::GetFileStats(sPath0, fs).Failed())
   {
     return xiiStatus("The file does not exist.");
   }
@@ -200,8 +200,8 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, const char* szD
   Request r;
   r.m_Type                   = Request::Type::DocumentAllowedToOpen;
   r.m_RequestStatus.m_Result = XII_SUCCESS;
-  r.m_sDocumentType          = szDocumentTypeName;
-  r.m_sDocumentPath          = sPath;
+  r.m_sDocumentType          = sDocumentTypeName;
+  r.m_sDocumentPath          = sPath0;
   s_Requests.Broadcast(r);
 
   // if for example no project is open, or not the correct one, then a document cannot be opened
@@ -217,21 +217,21 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, const char* szD
 
   for (xiiUInt32 i = 0; i < DocumentTypes.GetCount(); ++i)
   {
-    if (DocumentTypes[i]->m_sDocumentTypeName == szDocumentTypeName)
+    if (DocumentTypes[i]->m_sDocumentTypeName == sDocumentTypeName)
     {
       // See if there is a default asset document registered for the type, if so clone
       // it and use that as the new document instead of creating one from scratch.
       if (bCreate && !flags.IsSet(xiiDocumentFlags::EmptyDocument))
       {
         xiiStringBuilder sTemplateDoc = "Editor/DocumentTemplates/Default";
-        sTemplateDoc.ChangeFileExtension(sPath.GetFileExtension());
+        sTemplateDoc.ChangeFileExtension(sPath0.GetFileExtension());
 
         if (xiiFileSystem::ExistsFile(sTemplateDoc))
         {
           xiiUuid CloneUuid;
-          if (CloneDocument(sTemplateDoc, sPath, CloneUuid).Succeeded())
+          if (CloneDocument(sTemplateDoc, sPath0, CloneUuid).Succeeded())
           {
-            if (OpenDocument(szDocumentTypeName, sPath, out_pDocument, flags, pOpenContext).Succeeded())
+            if (OpenDocument(sDocumentTypeName, sPath0, out_pDocument, flags, pOpenContext).Succeeded())
             {
               return xiiStatus(XII_SUCCESS);
             }
@@ -241,12 +241,12 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, const char* szD
         }
       }
 
-      XII_ASSERT_DEV(DocumentTypes[i]->m_bCanCreate, "This document manager cannot create the document type '{0}'", szDocumentTypeName);
+      XII_ASSERT_DEV(DocumentTypes[i]->m_bCanCreate, "This document manager cannot create the document type '{0}'", sDocumentTypeName);
 
       {
-        XII_PROFILE_SCOPE(szDocumentTypeName);
+        XII_PROFILE_SCOPE(sDocumentTypeName);
         status = xiiStatus(XII_SUCCESS);
-        InternalCreateDocument(szDocumentTypeName, sPath, bCreate, out_pDocument, pOpenContext);
+        InternalCreateDocument(sDocumentTypeName, sPath0, bCreate, out_pDocument, pOpenContext);
       }
       out_pDocument->SetAddToResetFilesList(flags.IsSet(xiiDocumentFlags::AddToRecentFilesList));
 
@@ -300,24 +300,24 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, const char* szD
     }
   }
 
-  XII_REPORT_FAILURE("This document manager does not support the document type '{0}'", szDocumentTypeName);
+  XII_REPORT_FAILURE("This document manager does not support the document type '{0}'", sDocumentTypeName);
   return status;
 }
 
-xiiStatus xiiDocumentManager::CreateDocument(const char* szDocumentTypeName, const char* szPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiDocumentManager::CreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext)
 {
-  return CreateOrOpenDocument(true, szDocumentTypeName, szPath, out_pDocument, flags, pOpenContext);
+  return CreateOrOpenDocument(true, sDocumentTypeName, sPath, out_pDocument, flags, pOpenContext);
 }
 
-xiiStatus xiiDocumentManager::OpenDocument(const char* szDocumentTypeName, const char* szPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiDocumentManager::OpenDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext)
 {
-  return CreateOrOpenDocument(false, szDocumentTypeName, szPath, out_pDocument, flags, pOpenContext);
+  return CreateOrOpenDocument(false, sDocumentTypeName, sPath, out_pDocument, flags, pOpenContext);
 }
 
-xiiStatus xiiDocumentManager::CloneDocument(const char* szPath, const char* szClonePath, xiiUuid& inout_cloneGuid)
+xiiStatus xiiDocumentManager::CloneDocument(xiiStringView sPath, xiiStringView sClonePath, xiiUuid& inout_cloneGuid)
 {
   const xiiDocumentTypeDescriptor* pTypeDesc = nullptr;
-  xiiStatus                        res       = xiiDocumentUtils::IsValidSaveLocationForDocument(szClonePath, &pTypeDesc);
+  xiiStatus                        res       = xiiDocumentUtils::IsValidSaveLocationForDocument(sClonePath, &pTypeDesc);
   if (res.Failed())
     return res;
 
@@ -325,7 +325,7 @@ xiiStatus xiiDocumentManager::CloneDocument(const char* szPath, const char* szCl
   xiiUniquePtr<xiiAbstractObjectGraph> objects;
   xiiUniquePtr<xiiAbstractObjectGraph> types;
 
-  res = xiiDocument::ReadDocument(szPath, header, objects, types);
+  res = xiiDocument::ReadDocument(sPath, header, objects, types);
   if (res.Failed())
     return res;
 
@@ -333,9 +333,9 @@ xiiStatus xiiDocumentManager::CloneDocument(const char* szPath, const char* szCl
   xiiAbstractObjectNode::Property* documentIdProp = nullptr;
   {
     auto* pHeaderNode = header->GetNodeByName("Header");
-    XII_ASSERT_DEV(pHeaderNode, "No header found, document '{0}' is corrupted.", szPath);
+    XII_ASSERT_DEV(pHeaderNode, "No header found, document '{0}' is corrupted.", sPath);
     documentIdProp = pHeaderNode->FindProperty("DocumentID");
-    XII_ASSERT_DEV(documentIdProp, "No document ID property found in header, document document '{0}' is corrupted.", szPath);
+    XII_ASSERT_DEV(documentIdProp, "No document ID property found in header, document document '{0}' is corrupted.", sPath);
     documentId = documentIdProp->m_Value.Get<xiiUuid>();
   }
 
@@ -356,21 +356,21 @@ xiiStatus xiiDocumentManager::CloneDocument(const char* szPath, const char* szCl
     inout_cloneGuid.CombineWithSeed(seedGuid);
   }
 
-  InternalCloneDocument(szPath, szClonePath, documentId, seedGuid, inout_cloneGuid, header.Borrow(), objects.Borrow(), types.Borrow());
+  InternalCloneDocument(sPath, sClonePath, documentId, seedGuid, inout_cloneGuid, header.Borrow(), objects.Borrow(), types.Borrow());
 
   {
     xiiDeferredFileWriter file;
-    file.SetOutput(szClonePath);
+    file.SetOutput(sClonePath);
     xiiAbstractGraphDdlSerializer::WriteDocument(file, header.Borrow(), objects.Borrow(), types.Borrow(), false);
     if (file.Close() == XII_FAILURE)
     {
-      return xiiStatus(xiiFmt("Unable to open file '{0}' for writing!", szClonePath));
+      return xiiStatus(xiiFmt("Unable to open file '{0}' for writing!", sClonePath));
     }
   }
   return xiiStatus(XII_SUCCESS);
 }
 
-void xiiDocumentManager::InternalCloneDocument(const char* szPath, const char* szClonePath, const xiiUuid& documentId, const xiiUuid& seedGuid, const xiiUuid& cloneGuid, xiiAbstractObjectGraph* header, xiiAbstractObjectGraph* objects, xiiAbstractObjectGraph* types)
+void xiiDocumentManager::InternalCloneDocument(xiiStringView sPath, xiiStringView sClonePath, const xiiUuid& documentId, const xiiUuid& seedGuid, const xiiUuid& cloneGuid, xiiAbstractObjectGraph* header, xiiAbstractObjectGraph* objects, xiiAbstractObjectGraph* types)
 {
   // Remap
   header->ReMapNodeGuids(seedGuid);
@@ -531,9 +531,9 @@ const xiiMap<xiiString, const xiiDocumentTypeDescriptor*>& xiiDocumentManager::G
   return s_AllDocumentDescriptors;
 }
 
-const xiiDocumentTypeDescriptor* xiiDocumentManager::GetDescriptorForDocumentType(const char* szDocumentType)
+const xiiDocumentTypeDescriptor* xiiDocumentManager::GetDescriptorForDocumentType(xiiStringView sDocumentType)
 {
-  return GetAllDocumentDescriptors().GetValueOrDefault(szDocumentType, nullptr);
+  return GetAllDocumentDescriptors().GetValueOrDefault(sDocumentType, nullptr);
 }
 
 /// \todo on close doc: remove from m_AllDocuments

@@ -57,5 +57,5 @@ public:
 
 private:
   static xiiSet<const xiiRTTI*>                     s_RegisteredConcreteTypes;
-  static xiiHashTable<const char*, xiiPhantomRTTI*> s_NameToPhantom;
+  static xiiHashTable<xiiStringView, xiiPhantomRTTI*> s_NameToPhantom;
 };

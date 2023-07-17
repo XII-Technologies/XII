@@ -82,27 +82,27 @@ struct TypeComparer
     }
     else if (pCatA != nullptr && pCatB != nullptr)
     {
-      xiiInt32 iRes = xiiStringUtils::Compare(pCatA->GetCategory(), pCatB->GetCategory());
+      xiiInt32 iRes = pCatA->GetCategory().Compare(pCatB->GetCategory());
       if (iRes != 0)
       {
         return iRes < 0;
       }
     }
 
-    return xiiStringUtils::Compare(a->GetTypeName(), b->GetTypeName()) < 0;
+    return a->GetTypeName().Compare(b->GetTypeName()) < 0;
   }
 };
 
-QMenu* xiiQtAddSubElementButton::CreateCategoryMenu(const char* szCategory, xiiMap<xiiString, QMenu*>& existingMenus)
+QMenu* xiiQtAddSubElementButton::CreateCategoryMenu(xiiStringView sCategory, xiiMap<xiiString, QMenu*>& existingMenus)
 {
-  if (xiiStringUtils::IsNullOrEmpty(szCategory))
+  if (sCategory.IsEmpty())
     return m_pMenu;
 
-  auto it = existingMenus.Find(szCategory);
+  auto it = existingMenus.Find(sCategory);
   if (it.IsValid())
     return it.Value();
 
-  xiiStringBuilder sPath = szCategory;
+  xiiStringBuilder sPath = sCategory;
   sPath.PathParentDirectory();
   sPath.Trim("/");
 
@@ -113,11 +113,11 @@ QMenu* xiiQtAddSubElementButton::CreateCategoryMenu(const char* szCategory, xiiM
     pParentMenu = CreateCategoryMenu(sPath, existingMenus);
   }
 
-  sPath = szCategory;
+  sPath = sCategory;
   sPath = sPath.GetFileName();
 
-  QMenu* pNewMenu           = pParentMenu->addMenu(xiiTranslate(sPath.GetData()));
-  existingMenus[szCategory] = pNewMenu;
+  QMenu* pNewMenu           = pParentMenu->addMenu(xiiTranslate(sPath));
+  existingMenus[sCategory] = pNewMenu;
 
   return pNewMenu;
 }
@@ -197,6 +197,8 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
       }
     }
 
+    xiiStringBuilder tmp;
+
     // second round: create the actions
     for (const xiiRTTI* pRtti : supportedTypes)
     {
@@ -211,7 +213,7 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
       {
         xiiStringBuilder fullName;
         fullName = pCatA ? pCatA->GetCategory() : "";
-        fullName.AppendPath(xiiTranslate(pRtti->GetTypeName()));
+        fullName.AppendPath(xiiTranslate(pRtti->GetTypeName().GetData(tmp)));
 
         if (pInDev)
         {
@@ -224,7 +226,7 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
       {
         QMenu* pCat = CreateCategoryMenu(pCatA ? pCatA->GetCategory() : nullptr, existingMenus);
 
-        xiiStringBuilder fullName = xiiTranslate(pRtti->GetTypeName());
+        xiiStringBuilder fullName = xiiTranslate(pRtti->GetTypeName().GetData(tmp));
 
         if (pInDev)
         {

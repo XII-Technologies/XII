@@ -91,7 +91,7 @@ public:
   /// \brief Call this to start a series of transactions that typically change the same value over and over (e.g. dragging an object to a position).
   /// Every time a new transaction is started, the previous one is undone first. At the end of a series of temporary transactions, only the last
   /// transaction will be stored as a single undo step. Call this first and then start a transaction inside it.
-  void BeginTemporaryCommands(const char* szDisplayString, bool bFireEventsWhenUndoingTempCommands = false);
+  void BeginTemporaryCommands(xiiStringView sDisplayString, bool bFireEventsWhenUndoingTempCommands = false);
   void CancelTemporaryCommands();
   void FinishTemporaryCommands();
 

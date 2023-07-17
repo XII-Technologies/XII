@@ -51,7 +51,7 @@ void xiiFileSystemWatcher::Initialize()
     xiiHybridArray<WatcherResult, 16> watcherResults;
     for (xiiDirectoryWatcher* pWatcher : m_Watchers)
     {
-      pWatcher->EnumerateChanges([pWatcher, &watcherResults](const char* szFilename, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) { watcherResults.PushBack({szFilename, action, type}); });
+      pWatcher->EnumerateChanges([pWatcher, &watcherResults](xiiStringView sFilename, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) { watcherResults.PushBack({sFilename, action, type}); });
     }
     for (const WatcherResult& res : watcherResults)
     {

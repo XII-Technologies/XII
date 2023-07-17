@@ -364,28 +364,28 @@ bool xiiDocumentObjectMirror::IsRootObject(const xiiDocumentObject* pParent)
   return (pParent == nullptr || pParent == m_pManager->GetRootObject());
 }
 
-bool xiiDocumentObjectMirror::IsHeapAllocated(const xiiDocumentObject* pParent, const char* szParentProperty)
+bool xiiDocumentObjectMirror::IsHeapAllocated(const xiiDocumentObject* pParent, xiiStringView sParentProperty)
 {
   if (pParent == nullptr || pParent == m_pManager->GetRootObject())
     return true;
 
   const xiiRTTI* pRtti = pParent->GetTypeAccessor().GetType();
 
-  auto* pProp = pRtti->FindPropertyByName(szParentProperty);
+  auto* pProp = pRtti->FindPropertyByName(sParentProperty);
   return pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner);
 }
 
 
-bool xiiDocumentObjectMirror::IsDiscardedByFilter(const xiiDocumentObject* pObject, const char* szProperty) const
+bool xiiDocumentObjectMirror::IsDiscardedByFilter(const xiiDocumentObject* pObject, xiiStringView sProperty) const
 {
   if (m_Filter.IsValid())
   {
-    return !m_Filter(pObject, szProperty);
+    return !m_Filter(pObject, sProperty);
   }
   return false;
 }
 
-void xiiDocumentObjectMirror::CreatePath(xiiObjectChange& out_change, const xiiDocumentObject* pRoot, const char* szProperty)
+void xiiDocumentObjectMirror::CreatePath(xiiObjectChange& out_change, const xiiDocumentObject* pRoot, xiiStringView sProperty)
 {
   if (pRoot && pRoot->GetDocumentObjectManager()->GetRootObject() != pRoot)
   {
@@ -394,7 +394,7 @@ void xiiDocumentObjectMirror::CreatePath(xiiObjectChange& out_change, const xiiD
     FlattenSteps(path, out_change.m_Steps);
   }
 
-  out_change.m_Change.m_sProperty = szProperty;
+  out_change.m_Change.m_sProperty = sProperty;
 }
 
 xiiUuid xiiDocumentObjectMirror::FindRootOpObject(const xiiDocumentObject* pParent, xiiHybridArray<const xiiDocumentObject*, 8>& path)

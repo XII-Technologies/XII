@@ -56,12 +56,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiEvent<const xiiDocumentEvent&> xiiDocument::s_EventsAny;
 
-xiiDocument::xiiDocument(const char* szPath, xiiDocumentObjectManager* pDocumentObjectManagerImpl)
+xiiDocument::xiiDocument(xiiStringView sPath, xiiDocumentObjectManager* pDocumentObjectManagerImpl)
 {
   using ObjectMetaData     = xiiObjectMetaData<xiiUuid, xiiDocumentObjectMetaData>;
   m_DocumentObjectMetaData = XII_DEFAULT_NEW(ObjectMetaData);
   m_pDocumentInfo          = nullptr;
-  m_sDocumentPath          = szPath;
+  m_sDocumentPath          = sPath;
   m_pObjectManager         = xiiUniquePtr<xiiDocumentObjectManager>(pDocumentObjectManagerImpl, xiiFoundation::GetDefaultAllocator());
   m_pObjectManager->SetDocument(this);
   m_pCommandHistory   = XII_DEFAULT_NEW(xiiCommandHistory, this);
@@ -227,7 +227,7 @@ xiiTaskGroupID xiiDocument::InternalSaveDocument(AfterSaveCallback callback)
   return afterSaveID;
 }
 
-xiiStatus xiiDocument::ReadDocument(const char* szDocumentPath, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pHeader, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pObjects, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pTypes)
+xiiStatus xiiDocument::ReadDocument(xiiStringView sDocumentPath, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pHeader, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pObjects, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pTypes)
 {
   xiiDefaultMemoryStreamStorage storage;
   xiiMemoryStreamReader         memreader(&storage);
@@ -235,7 +235,7 @@ xiiStatus xiiDocument::ReadDocument(const char* szDocumentPath, xiiUniquePtr<xii
   {
     XII_PROFILE_SCOPE("Read File");
     xiiFileReader file;
-    if (file.Open(szDocumentPath) == XII_FAILURE)
+    if (file.Open(sDocumentPath) == XII_FAILURE)
     {
       return xiiStatus("Unable to open file for reading!");
     }

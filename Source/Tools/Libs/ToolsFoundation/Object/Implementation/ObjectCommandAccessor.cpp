@@ -25,9 +25,9 @@ void xiiObjectCommandAccessor::FinishTransaction()
   m_pHistory->FinishTransaction();
 }
 
-void xiiObjectCommandAccessor::BeginTemporaryCommands(const char* szDisplayString, bool bFireEventsWhenUndoingTempCommands /*= false*/)
+void xiiObjectCommandAccessor::BeginTemporaryCommands(xiiStringView sDisplayString, bool bFireEventsWhenUndoingTempCommands /*= false*/)
 {
-  m_pHistory->BeginTemporaryCommands(szDisplayString, bFireEventsWhenUndoingTempCommands);
+  m_pHistory->BeginTemporaryCommands(sDisplayString, bFireEventsWhenUndoingTempCommands);
 }
 
 void xiiObjectCommandAccessor::CancelTemporaryCommands()

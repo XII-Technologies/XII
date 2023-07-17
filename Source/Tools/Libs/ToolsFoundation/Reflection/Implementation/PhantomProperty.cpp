@@ -7,7 +7,7 @@ xiiPhantomConstantProperty::xiiPhantomConstantProperty(const xiiReflectedPropert
   xiiAbstractConstantProperty(nullptr)
 {
   m_sPropertyNameStorage = pDesc->m_sName;
-  m_szPropertyName       = m_sPropertyNameStorage.GetData();
+  m_sPropertyName        = m_sPropertyNameStorage;
   m_Value                = pDesc->m_ConstantValue;
   m_pPropertyType        = xiiRTTI::FindTypeByName(pDesc->m_sType);
 
@@ -39,7 +39,7 @@ xiiPhantomMemberProperty::xiiPhantomMemberProperty(const xiiReflectedPropertyDes
   xiiAbstractMemberProperty(nullptr)
 {
   m_sPropertyNameStorage = pDesc->m_sName;
-  m_szPropertyName       = m_sPropertyNameStorage.GetData();
+  m_sPropertyName        = m_sPropertyNameStorage;
   m_pPropertyType        = xiiRTTI::FindTypeByName(pDesc->m_sType);
 
   m_Flags = pDesc->m_Flags;
@@ -65,7 +65,7 @@ xiiPhantomFunctionProperty::xiiPhantomFunctionProperty(xiiReflectedFunctionDescr
   xiiAbstractFunctionProperty(nullptr)
 {
   m_sPropertyNameStorage = pDesc->m_sName;
-  m_szPropertyName       = m_sPropertyNameStorage.GetData();
+  m_sPropertyName        = m_sPropertyNameStorage;
   m_FunctionType         = pDesc->m_Type;
   m_Flags                = pDesc->m_Flags;
   m_Flags.Add(xiiPropertyFlags::Phantom);
@@ -123,7 +123,7 @@ xiiPhantomArrayProperty::xiiPhantomArrayProperty(const xiiReflectedPropertyDescr
   xiiAbstractArrayProperty(nullptr)
 {
   m_sPropertyNameStorage = pDesc->m_sName;
-  m_szPropertyName       = m_sPropertyNameStorage.GetData();
+  m_sPropertyName        = m_sPropertyNameStorage;
   m_pPropertyType        = xiiRTTI::FindTypeByName(pDesc->m_sType);
 
   m_Flags = pDesc->m_Flags;
@@ -147,7 +147,7 @@ xiiPhantomSetProperty::xiiPhantomSetProperty(const xiiReflectedPropertyDescripto
   xiiAbstractSetProperty(nullptr)
 {
   m_sPropertyNameStorage = pDesc->m_sName;
-  m_szPropertyName       = m_sPropertyNameStorage.GetData();
+  m_sPropertyName        = m_sPropertyNameStorage;
   m_pPropertyType        = xiiRTTI::FindTypeByName(pDesc->m_sType);
 
   m_Flags = pDesc->m_Flags;
@@ -171,7 +171,7 @@ xiiPhantomMapProperty::xiiPhantomMapProperty(const xiiReflectedPropertyDescripto
   xiiAbstractMapProperty(nullptr)
 {
   m_sPropertyNameStorage = pDesc->m_sName;
-  m_szPropertyName       = m_sPropertyNameStorage.GetData();
+  m_sPropertyName        = m_sPropertyNameStorage;
   m_pPropertyType        = xiiRTTI::FindTypeByName(pDesc->m_sType);
 
   m_Flags = pDesc->m_Flags;
