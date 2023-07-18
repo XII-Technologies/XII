@@ -1,5 +1,6 @@
 #include <Foundation/FoundationPCH.h>
 
+#include <Foundation/Math/Easing.h>
 #include <Foundation/Math/Mat3.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Math/Quat.h>
@@ -622,6 +623,51 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiComparisonOperator, 1)
   XII_ENUM_CONSTANTS(xiiComparisonOperator::Equal, xiiComparisonOperator::NotEqual)
   XII_ENUM_CONSTANTS(xiiComparisonOperator::Less, xiiComparisonOperator::LessEqual)
   XII_ENUM_CONSTANTS(xiiComparisonOperator::Greater, xiiComparisonOperator::GreaterEqual)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiEasingFunction, 1)
+ XII_ENUM_CONSTANT(xiiEasingFunction::ConstantZero),
+ XII_ENUM_CONSTANT(xiiEasingFunction::ConstantQuarter),
+ XII_ENUM_CONSTANT(xiiEasingFunction::ConstantHalf),
+ XII_ENUM_CONSTANT(xiiEasingFunction::ConstantThreeFourths),
+ XII_ENUM_CONSTANT(xiiEasingFunction::ConstantOne),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InLinear),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutLinear),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutLinear),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InSine),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutSine),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutSine),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InQuad),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutQuad),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutQuad),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InCubic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutCubic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutCubic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InQuartic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutQuartic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutQuartic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InQuintic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutQuintic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutQuintic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InExpo),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutExpo),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutExpo),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InCirc),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutCirc),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutCirc),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InBack),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutBack),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutBack), 
+ XII_ENUM_CONSTANT(xiiEasingFunction::InElastic), 
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutElastic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutElastic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InBounce),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutBounce),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutBounce),
+ XII_ENUM_CONSTANT(xiiEasingFunction::Conical),
+ XII_ENUM_CONSTANT(xiiEasingFunction::FadeInHoldFadeOut),
+ XII_ENUM_CONSTANT(xiiEasingFunction::FadeInFadeOut),
+ XII_ENUM_CONSTANT(xiiEasingFunction::Bell),
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 

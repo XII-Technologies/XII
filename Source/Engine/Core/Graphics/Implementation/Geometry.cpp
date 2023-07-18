@@ -1366,7 +1366,7 @@ void xiiGeometry::AddTorus(float fInnerRadius, float fOuterRadius, xiiUInt16 uiS
   {
     float fU = ((float)seg / (float)uiSegments) * 2.0f;
 
-    const xiiAngle fAngle = seg * fAngleStepSegment;
+    const xiiAngle fAngle = (float)seg * fAngleStepSegment;
 
     const float fSinAngle = xiiMath::Sin(fAngle);
     const float fCosAngle = xiiMath::Cos(fAngle);
@@ -1378,7 +1378,7 @@ void xiiGeometry::AddTorus(float fInnerRadius, float fOuterRadius, xiiUInt16 uiS
     {
       float fV = (float)p / (float)uiSegmentDetail;
 
-      const xiiAngle fCylinderAngle = p * fAngleStepCylinder;
+      const xiiAngle fCylinderAngle = (float)p * fAngleStepCylinder;
 
       const xiiVec3 vDir(xiiMath::Cos(fCylinderAngle) * fSinAngle, xiiMath::Cos(fCylinderAngle) * fCosAngle, xiiMath::Sin(fCylinderAngle));
 
