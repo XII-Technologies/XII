@@ -76,4 +76,18 @@ XII_CREATE_SIMPLE_TEST(Basics, PointerWithFlags)
     // the two Ptrs still compare equal (pointer part is equal, even if flags are different)
     XII_TEST_BOOL(ptr == ptr2);
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Const ptr")
+  {
+    xiiPointerWithFlags<const Dummy, 2> ptr;
+
+    Dummy d1, d2;
+    ptr = &d1;
+
+    const Dummy* pD1 = &d1;
+    const Dummy* pD2 = &d2;
+
+    XII_TEST_BOOL(ptr.GetPtr() == pD1);
+    XII_TEST_BOOL(ptr.GetPtr() != pD2);
+  }
 }
