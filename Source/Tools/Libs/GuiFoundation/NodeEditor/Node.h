@@ -14,8 +14,8 @@ class xiiQtPin;
 class xiiDocumentNodeManager;
 class QLabel;
 class xiiDocumentObject;
-class QGraphicsGridLayout;
 class QGraphicsTextItem;
+class QGraphicsPixmapItem;
 class QGraphicsDropShadowEffect;
 
 struct xiiNodeFlags
@@ -75,6 +75,7 @@ protected:
   QRectF             m_HeaderRect;
   QGraphicsTextItem* m_pTitleLabel    = nullptr;
   QGraphicsTextItem* m_pSubtitleLabel = nullptr;
+  QGraphicsPixmapItem* m_pIcon          = nullptr;
 
 private:
   const xiiDocumentNodeManager* m_pManager = nullptr;

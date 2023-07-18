@@ -6,6 +6,7 @@
 #include <ToolsFoundation/Document/Document.h>
 
 #include <QApplication>
+#include <QGraphicsPixmapItem>
 #include <QGraphicsDropShadowEffect>
 #include <QPainter>
 
@@ -36,6 +37,10 @@ xiiQtNode::xiiQtNode()
     m_pSubtitleLabel = new QGraphicsTextItem(this);
     m_pSubtitleLabel->setFont(font);
     m_pSubtitleLabel->setPos(0, m_pTitleLabel->boundingRect().bottom() - 5);
+  }
+
+  {
+    m_pIcon = new QGraphicsPixmapItem(this);
   }
 
   m_HeaderColor = palette.alternateBase().color();
@@ -87,10 +92,29 @@ void xiiQtNode::UpdateGeometry()
 {
   prepareGeometryChange();
 
-  QRectF titleRect = m_pTitleLabel->boundingRect();
+  QRectF iconRect = m_pIcon->boundingRect();
+  iconRect.moveTo(m_pIcon->pos());
+  iconRect.setSize(iconRect.size() * m_pIcon->scale());
+
+  QRectF titleRect;
+  {
+    QPointF titlePos = m_pTitleLabel->pos();
+    titlePos.setX(iconRect.right());
+    m_pTitleLabel->setPos(titlePos);
+
+    titleRect = m_pTitleLabel->boundingRect();
+    titleRect.moveTo(titlePos);
+  }
+
+  m_pIcon->setPos(0, (titleRect.bottom() - iconRect.height()) / 2);
+
   QRectF subtitleRect;
   if (m_pSubtitleLabel->toPlainText().isEmpty() == false)
   {
+    QPointF subtitlePos = m_pSubtitleLabel->pos();
+    subtitlePos.setX(iconRect.right());
+    m_pSubtitleLabel->setPos(subtitlePos);
+
     subtitleRect = m_pSubtitleLabel->boundingRect();
     subtitleRect.moveTo(m_pSubtitleLabel->pos());
   }
@@ -135,7 +159,7 @@ void xiiQtNode::UpdateGeometry()
 
   w += 10;
 
-  const int headerWidth = xiiMath::Max(titleRect.width(), subtitleRect.width());
+  const int headerWidth = xiiMath::Max(titleRect.width(), subtitleRect.width()) + iconRect.width();
   w                     = xiiMath::Max(w, headerWidth);
 
   maxheight = xiiMath::Max(maxheight, y);
