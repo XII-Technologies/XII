@@ -210,6 +210,7 @@ auto xiiVariant::DispatchTo(Functor& ref_functor, Type::Enum type, Args&&... arg
     default:
       XII_REPORT_FAILURE("Could not dispatch type '{0}'", type);
       // Intended fall through to disable warning.
+      [[fallthrough]];
     case Type::TypedPointer:
       CALL_FUNCTOR(ref_functor, xiiTypedPointer);
       break;
@@ -572,32 +573,27 @@ class xiiVariantHelper
     if (value.IsA<V1>())
     {
       const V1& v = value.Get<V1>();
-      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
-                 static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else if (value.IsA<V2>())
     {
       const V2& v = value.Get<V2>();
-      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
-                 static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else if (value.IsA<V3>())
     {
       const V3& v = value.Get<V3>();
-      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
-                 static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else if (value.IsA<V4>())
     {
       const V4& v = value.Get<V4>();
-      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
-                 static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else if (value.IsA<V5>())
     {
       const V5& v = value.Get<V5>();
-      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y),
-                 static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else
     {
@@ -626,8 +622,7 @@ class xiiVariantHelper
     if (value.IsA<V1>())
     {
       const V1& v = value.Get<V1>();
-      result      = T(static_cast<typename T::ComponentType>(v.v.x), static_cast<typename T::ComponentType>(v.v.y),
-                 static_cast<typename T::ComponentType>(v.v.z), static_cast<typename T::ComponentType>(v.w));
+      result      = T(static_cast<typename T::ComponentType>(v.v.x), static_cast<typename T::ComponentType>(v.v.y), static_cast<typename T::ComponentType>(v.v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else
     {

@@ -1720,7 +1720,7 @@ namespace
   {
     enum
     {
-      value = (((xiiVariant::TypeDeduction<C>::value >= xiiVariantType::Int8 && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::Double) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Time) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Angle))) + ((xiiVariant::TypeDeduction<C>::value >= xiiVariantType::Vector2 && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::Vector4U) * 2)
+      value = (((xiiVariant::TypeDeduction<C>::value >= xiiVariantType::Int8 && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::Double) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Time) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Angle) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Angled))) + ((xiiVariant::TypeDeduction<C>::value >= xiiVariantType::Vector2 && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::Vector4U64) * 2)
     };
   };
 

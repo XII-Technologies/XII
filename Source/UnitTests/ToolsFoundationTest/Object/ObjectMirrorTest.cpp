@@ -88,6 +88,18 @@ xiiVariant GetVariantFromType(xiiVariant::Type::Enum type)
       return xiiVariant(xiiVec4I32(6, 7, 8, 9));
     case xiiVariant::Type::Vector4I64:
       return xiiVariant(xiiVec4I64(6, 7, 8, 9));
+    case xiiVariant::Type::Vector2U:
+      return xiiVariant(xiiVec2U32(1, 2));
+    case xiiVariant::Type::Vector2U64:
+      return xiiVariant(xiiVec2U64(1, 2));
+    case xiiVariant::Type::Vector3U:
+      return xiiVariant(xiiVec3U32(3, 4, 5));
+    case xiiVariant::Type::Vector3U64:
+      return xiiVariant(xiiVec3U64(3, 4, 5));
+    case xiiVariant::Type::Vector4U:
+      return xiiVariant(xiiVec4U32(6, 7, 8, 9));
+    case xiiVariant::Type::Vector4U64:
+      return xiiVariant(xiiVec4U64(6, 7, 8, 9));
     case xiiVariant::Type::Quaternion:
     {
       xiiQuat quat;
