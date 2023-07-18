@@ -75,7 +75,7 @@ const xiiAbstractFunctionProperty* xiiScriptCoroutine::GetUpdateFunctionProperty
     auto           functions = pType->GetFunctions();
     for (auto pFunc : functions)
     {
-      if (xiiStringUtils::IsEqual(pFunc->GetPropertyName(), "UpdateAndSchedule"))
+      if (pFunc->GetPropertyName() == "UpdateAndSchedule")
       {
         return pFunc;
       }
@@ -137,7 +137,7 @@ void xiiScriptCoroutineFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xi
   auto pModule = pWorld->GetOrCreateModule<xiiScriptWorldModule>();
 
   xiiScriptCoroutine* pCoroutine = nullptr;
-  auto                hCoroutine = pModule->CreateCoroutine(m_pType.Borrow(), m_szPropertyName, *pScriptInstance, m_CreationMode, pCoroutine);
+  auto                hCoroutine = pModule->CreateCoroutine(m_pType.Borrow(), m_sPropertyName, *pScriptInstance, m_CreationMode, pCoroutine);
 
   if (pCoroutine != nullptr)
   {

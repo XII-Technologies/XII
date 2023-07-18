@@ -47,13 +47,13 @@ public:
   static xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, xiiUInt32 uiPropertyIndex);
   static xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, xiiStringView sPropertyName); // [tested] via ToolsFoundation
 
-  /// \brief Gathers all RTTI types that are derived from pRtti.
+  /// \brief Gathers all RTTI types that are derived from pBaseRtti.
   ///
-  /// This includes all classes that have pRtti as a base class, either direct or indirect.
+  /// This includes all classes that have pBaseRtti as a base class, either direct or indirect.
   /// If bIncludeDependencies is set to true, the resulting set will also contain all dependent types.
   ///
   /// \sa GatherDependentTypes
-  static void GatherTypesDerivedFromClass(const xiiRTTI* pRtti, xiiSet<const xiiRTTI*>& out_types, bool bIncludeDependencies);
+  static void GatherTypesDerivedFromClass(const xiiRTTI* pBaseRtti, xiiSet<const xiiRTTI*>& out_types, bool bIncludeDependencies);
 
   /// \brief Gathers all RTTI types that pRtti depends on and adds them to inout_types.
   ///

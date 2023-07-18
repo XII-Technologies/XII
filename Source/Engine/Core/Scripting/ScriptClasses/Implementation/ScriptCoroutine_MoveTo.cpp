@@ -20,7 +20,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiScriptCoroutine_MoveTo, xiiScriptCoroutine, 1
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiScriptCoroutine_MoveTo::Start(xiiGameObjectHandle hObject, const xiiVec3& vTargetPos, xiiTime duration, xiiEnum<xiiCurveFunction> easing)
+void xiiScriptCoroutine_MoveTo::Start(xiiGameObjectHandle hObject, const xiiVec3& vTargetPos, xiiTime duration, xiiEnum<xiiEasingFunction> easing)
 {
   xiiGameObject* pObject = nullptr;
   if (xiiWorld::GetWorld(hObject)->TryGetObject(hObject, pObject) == false)
@@ -29,10 +29,10 @@ void xiiScriptCoroutine_MoveTo::Start(xiiGameObjectHandle hObject, const xiiVec3
     return;
   }
 
-  m_hObject    = hObject;
-  m_vSourcePos = pObject->GetLocalPosition();
-  m_vTargetPos = vTargetPos;
-  m_Easing     = easing;
+  m_hObject        = hObject;
+  m_vSourcePos     = pObject->GetLocalPosition();
+  m_vTargetPos     = vTargetPos;
+  m_EasingFunction = easing;
 
   m_Duration   = duration;
   m_TimePassed = xiiTime::Zero();
@@ -52,7 +52,7 @@ xiiScriptCoroutine::Result xiiScriptCoroutine_MoveTo::Update(xiiTime deltaTimeSi
 
     const double fDuration = m_Duration.GetSeconds();
     double       fCurrentX = xiiMath::Min(fDuration > 0 ? m_TimePassed.GetSeconds() / fDuration : 1.0, 1.0);
-    fCurrentX              = xiiCurveFunction::GetValue(m_Easing, fCurrentX);
+    fCurrentX              = xiiEasingFunction::GetValue(m_EasingFunction, fCurrentX);
 
     xiiVec3 vCurrentPos = xiiMath::Lerp(m_vSourcePos, m_vTargetPos, static_cast<float>(fCurrentX));
     pObject->SetLocalPosition(vCurrentPos);

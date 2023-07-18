@@ -865,21 +865,16 @@ xiiAbstractMemberProperty* xiiReflectionUtils::GetMemberProperty(const xiiRTTI* 
   return nullptr;
 }
 
-void xiiReflectionUtils::GatherTypesDerivedFromClass(const xiiRTTI* pRtti, xiiSet<const xiiRTTI*>& out_types, bool bIncludeDependencies)
+void xiiReflectionUtils::GatherTypesDerivedFromClass(const xiiRTTI* pBaseRtti, xiiSet<const xiiRTTI*>& out_types, bool bIncludeDependencies)
 {
-  xiiRTTI* pFirst = xiiRTTI::GetFirstInstance();
-  while (pFirst != nullptr)
-  {
-    if (pFirst->IsDerivedFrom(pRtti))
-    {
-      out_types.Insert(pFirst);
-      if (bIncludeDependencies)
-      {
-        GatherDependentTypes(pFirst, out_types);
-      }
-    }
-    pFirst = pFirst->GetNextInstance();
-  }
+  xiiRTTI::ForEachDerivedType(pBaseRtti,
+                              [&](const xiiRTTI* pRtti) {
+                                out_types.Insert(pRtti);
+                                if (bIncludeDependencies)
+                                {
+                                  GatherDependentTypes(pRtti, out_types);
+                                }
+                              });
 }
 
 void xiiReflectionUtils::GatherDependentTypes(const xiiRTTI* pRtti, xiiSet<const xiiRTTI*>& inout_types)
@@ -1140,7 +1135,7 @@ xiiInt64 xiiReflectionUtils::MakeEnumerationValid(const xiiRTTI* pEnumerationRtt
 
 bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiAbstractProperty* pProp)
 {
-  //#VAR TEST
+  // #VAR TEST
   const xiiRTTI* pPropType = pProp->GetSpecificType();
 
   xiiVariant vTemp;

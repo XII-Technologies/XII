@@ -11,9 +11,9 @@
 XII_CREATE_SIMPLE_TEST_GROUP(Reflection);
 
 
-void VariantToPropertyTest(void* pIntStruct, const xiiRTTI* pRttiInt, const char* szPropName, xiiVariant::Type::Enum type)
+void VariantToPropertyTest(void* pIntStruct, const xiiRTTI* pRttiInt, xiiStringView sPropName, xiiVariant::Type::Enum type)
 {
-  xiiAbstractMemberProperty* pProp = xiiReflectionUtils::GetMemberProperty(pRttiInt, szPropName);
+  xiiAbstractMemberProperty* pProp = xiiReflectionUtils::GetMemberProperty(pRttiInt, sPropName);
   XII_TEST_BOOL(pProp != nullptr);
   if (pProp)
   {
@@ -65,7 +65,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectionUtils)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Float Properties")
   {
     xiiFloatStruct floatStruct;
-    xiiRTTI*       pRttiFloat = xiiRTTI::FindTypeByName("xiiFloatStruct");
+    const xiiRTTI*       pRttiFloat = xiiRTTI::FindTypeByName("xiiFloatStruct");
     XII_TEST_BOOL(pRttiFloat != nullptr);
 
     VariantToPropertyTest(&floatStruct, pRttiFloat, "Float", xiiVariant::Type::Float);
@@ -81,7 +81,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectionUtils)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Misc Properties")
   {
     xiiPODClass podClass;
-    xiiRTTI*    pRttiPOD = xiiRTTI::FindTypeByName("xiiPODClass");
+    const xiiRTTI*    pRttiPOD = xiiRTTI::FindTypeByName("xiiPODClass");
     XII_TEST_BOOL(pRttiPOD != nullptr);
 
     VariantToPropertyTest(&podClass, pRttiPOD, "Bool", xiiVariant::Type::Bool);
@@ -99,7 +99,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectionUtils)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Math Properties")
   {
     xiiMathClass mathClass;
-    xiiRTTI*     pRttiMath = xiiRTTI::FindTypeByName("xiiMathClass");
+    const xiiRTTI*     pRttiMath = xiiRTTI::FindTypeByName("xiiMathClass");
     XII_TEST_BOOL(pRttiMath != nullptr);
 
     VariantToPropertyTest(&mathClass, pRttiMath, "Vec2", xiiVariant::Type::Vector2);
@@ -125,7 +125,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectionUtils)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Enumeration Properties")
   {
     xiiEnumerationsClass enumClass;
-    xiiRTTI*             pRttiEnum = xiiRTTI::FindTypeByName("xiiEnumerationsClass");
+    const xiiRTTI*             pRttiEnum = xiiRTTI::FindTypeByName("xiiEnumerationsClass");
     XII_TEST_BOOL(pRttiEnum != nullptr);
 
     VariantToPropertyTest(&enumClass, pRttiEnum, "Enum", xiiVariant::Type::Int64);
@@ -135,19 +135,19 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectionUtils)
   }
 }
 
-void AccessorPropertyTest(xiiIReflectedTypeAccessor& ref_accessor, const char* szProperty, xiiVariant::Type::Enum type)
+void AccessorPropertyTest(xiiIReflectedTypeAccessor& ref_accessor, xiiStringView sProperty, xiiVariant::Type::Enum type)
 {
-  xiiVariant oldValue = ref_accessor.GetValue(szProperty);
+  xiiVariant oldValue = ref_accessor.GetValue(sProperty);
   XII_TEST_BOOL(oldValue.IsValid());
   XII_TEST_BOOL(oldValue.GetType() == type);
 
-  xiiAbstractProperty* pProp        = ref_accessor.GetType()->FindPropertyByName(szProperty);
+  xiiAbstractProperty* pProp        = ref_accessor.GetType()->FindPropertyByName(sProperty);
   xiiVariant           defaultValue = xiiReflectionUtils::GetDefaultValue(pProp);
   XII_TEST_BOOL(defaultValue.GetType() == type);
-  bool bSetSuccess = ref_accessor.SetValue(szProperty, defaultValue);
+  bool bSetSuccess = ref_accessor.SetValue(sProperty, defaultValue);
   XII_TEST_BOOL(bSetSuccess);
 
-  xiiVariant newValue = ref_accessor.GetValue(szProperty);
+  xiiVariant newValue = ref_accessor.GetValue(sProperty);
   XII_TEST_BOOL(newValue.IsValid());
   XII_TEST_BOOL(newValue.GetType() == type);
   XII_TEST_BOOL(newValue == defaultValue);
@@ -224,18 +224,12 @@ xiiUInt32 AccessorPropertiesTest(xiiIReflectedTypeAccessor& ref_accessor)
 static xiiUInt32 GetTypeCount()
 {
   xiiUInt32 uiCount = 0;
-  xiiRTTI*  pType   = xiiRTTI::GetFirstInstance();
-  while (pType != nullptr)
-  {
-    uiCount++;
-    pType = pType->GetNextInstance();
-  }
-  return uiCount;
+  xiiRTTI::ForEachType([&](const xiiRTTI* pRtti) { uiCount++; });
 }
 
-static const xiiRTTI* RegisterType(const char* szTypeName)
+static const xiiRTTI* RegisterType(xiiStringView sTypeName)
 {
-  const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(szTypeName);
+  const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(sTypeName);
   XII_TEST_BOOL(pRtti != nullptr);
 
   xiiReflectedTypeDescriptor desc;

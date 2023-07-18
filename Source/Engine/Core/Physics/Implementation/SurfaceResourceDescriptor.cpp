@@ -220,9 +220,9 @@ void xiiSurfaceResourceDescriptor::SetBaseSurfaceFile(xiiStringView sFile)
 {
   xiiSurfaceResourceHandle hResource;
 
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
+  if (!sFile.IsEmpty())
   {
-    hResource = xiiResourceManager::LoadResource<xiiSurfaceResource>(szFile);
+    hResource = xiiResourceManager::LoadResource<xiiSurfaceResource>(sFile);
   }
 
   m_hBaseSurface = hResource;
@@ -238,7 +238,7 @@ xiiStringView xiiSurfaceResourceDescriptor::GetBaseSurfaceFile() const
 
 void xiiSurfaceResourceDescriptor::SetCollisionInteraction(xiiStringView sName)
 {
-  m_sOnCollideInteraction.Assign(szName);
+  m_sOnCollideInteraction.Assign(sName);
 }
 
 xiiStringView xiiSurfaceResourceDescriptor::GetCollisionInteraction() const
@@ -248,7 +248,7 @@ xiiStringView xiiSurfaceResourceDescriptor::GetCollisionInteraction() const
 
 void xiiSurfaceResourceDescriptor::SetSlideReactionPrefabFile(xiiStringView sFile)
 {
-  m_sSlideInteractionPrefab.Assign(szFile);
+  m_sSlideInteractionPrefab.Assign(sFile);
 }
 
 xiiStringView xiiSurfaceResourceDescriptor::GetSlideReactionPrefabFile() const
@@ -258,7 +258,7 @@ xiiStringView xiiSurfaceResourceDescriptor::GetSlideReactionPrefabFile() const
 
 void xiiSurfaceResourceDescriptor::SetRollReactionPrefabFile(xiiStringView sFile)
 {
-  m_sRollInteractionPrefab.Assign(szFile);
+  m_sRollInteractionPrefab.Assign(sFile);
 }
 
 xiiStringView xiiSurfaceResourceDescriptor::GetRollReactionPrefabFile() const

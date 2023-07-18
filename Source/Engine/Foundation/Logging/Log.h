@@ -25,7 +25,7 @@ struct XII_FOUNDATION_DLL xiiLogMsgType
 {
   using StorageType = xiiInt8;
 
-  enum Enum : xiiInt8
+  enum Enum : StorageType
   {
     GlobalDefault     = -4, ///< Takes the log level from the xiiLog default value. See xiiLog::SetDefaultLogLevel().
     Flush             = -3, ///< The user explicitly called xiiLog::Flush() to instruct log writers to flush any cached output.

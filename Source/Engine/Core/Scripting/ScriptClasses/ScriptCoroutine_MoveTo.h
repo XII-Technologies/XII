@@ -2,19 +2,19 @@
 
 #include <Core/Scripting/ScriptCoroutine.h>
 #include <Core/World/Declarations.h>
-#include <Foundation/Math/CurveFunctions.h>
+#include <Foundation/Math/Easing.h>
 
-class XII_CORE_DLL xiiScriptCoroutine_MoveTo : public xiiTypedScriptCoroutine<xiiScriptCoroutine_MoveTo, xiiGameObjectHandle, xiiVec3, xiiTime, xiiEnum<xiiCurveFunction>>
+class XII_CORE_DLL xiiScriptCoroutine_MoveTo : public xiiTypedScriptCoroutine<xiiScriptCoroutine_MoveTo, xiiGameObjectHandle, xiiVec3, xiiTime, xiiEnum<xiiEasingFunction>>
 {
 public:
-  void           Start(xiiGameObjectHandle hObject, const xiiVec3& vTargetPos, xiiTime duration, xiiEnum<xiiCurveFunction> easing);
+  void           Start(xiiGameObjectHandle hObject, const xiiVec3& vTargetPos, xiiTime duration, xiiEnum<xiiEasingFunction> easing);
   virtual Result Update(xiiTime deltaTimeSinceLastUpdate) override;
 
 private:
-  xiiGameObjectHandle       m_hObject;
-  xiiVec3                   m_vSourcePos;
-  xiiVec3                   m_vTargetPos;
-  xiiEnum<xiiCurveFunction> m_Easing;
+  xiiGameObjectHandle        m_hObject;
+  xiiVec3                    m_vSourcePos;
+  xiiVec3                    m_vTargetPos;
+  xiiEnum<xiiEasingFunction> m_EasingFunction;
 
   xiiTime m_Duration;
   xiiTime m_TimePassed;

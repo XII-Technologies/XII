@@ -16,7 +16,7 @@ public:
 private:
   xiiVariant m_Value;
   xiiString  m_sPropertyNameStorage;
-  xiiRTTI*   m_pPropertyType;
+  const xiiRTTI*   m_pPropertyType;
 };
 
 class xiiPhantomMemberProperty : public xiiAbstractMemberProperty
@@ -32,7 +32,7 @@ public:
 
 private:
   xiiString m_sPropertyNameStorage;
-  xiiRTTI*  m_pPropertyType;
+  const xiiRTTI*  m_pPropertyType;
 };
 
 class xiiPhantomFunctionProperty : public xiiAbstractFunctionProperty
@@ -72,10 +72,9 @@ public:
   virtual void           Clear(void* pInstance) override {}
   virtual void           SetCount(void* pInstance, xiiUInt32 uiCount) override {}
 
-
 private:
   xiiString m_sPropertyNameStorage;
-  xiiRTTI*  m_pPropertyType;
+  const xiiRTTI*  m_pPropertyType;
 };
 
 
@@ -95,7 +94,7 @@ public:
 
 private:
   xiiString m_sPropertyNameStorage;
-  xiiRTTI*  m_pPropertyType;
+  const xiiRTTI*  m_pPropertyType;
 };
 
 
@@ -116,5 +115,5 @@ public:
 
 private:
   xiiString m_sPropertyNameStorage;
-  xiiRTTI*  m_pPropertyType;
+  const xiiRTTI*  m_pPropertyType;
 };

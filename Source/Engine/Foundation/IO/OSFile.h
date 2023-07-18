@@ -64,7 +64,7 @@ struct xiiFileSystemIteratorFlags
 {
   using StorageType = xiiUInt8;
 
-  enum Enum : xiiUInt8
+  enum Enum : StorageType
   {
     Recursive     = XII_BIT(0),
     ReportFiles   = XII_BIT(1),

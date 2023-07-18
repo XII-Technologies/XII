@@ -48,7 +48,7 @@ struct xiiPropertyFlags
 {
   using StorageType = xiiUInt16;
 
-  enum Enum : xiiUInt16
+  enum Enum : StorageType
   {
     StandardType = XII_BIT(0), ///< Anything that can be stored inside a xiiVariant except for pointers and containers.
     IsEnum       = XII_BIT(1), ///< enum property, cast to xiiAbstractEnumerationProperty.

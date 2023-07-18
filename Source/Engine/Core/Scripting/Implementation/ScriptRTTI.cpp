@@ -54,7 +54,7 @@ xiiScriptFunctionProperty::xiiScriptFunctionProperty(xiiStringView sName) :
   xiiAbstractFunctionProperty(nullptr)
 {
   m_sPropertyNameStorage.Assign(sName);
-  m_szPropertyName = m_sPropertyNameStorage.GetData();
+  m_sPropertyName = m_sPropertyNameStorage.GetData();
 }
 
 xiiScriptFunctionProperty::~xiiScriptFunctionProperty() = default;

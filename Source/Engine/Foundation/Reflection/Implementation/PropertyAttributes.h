@@ -426,7 +426,7 @@ struct xiiDependencyFlags
 {
   using StorageType = xiiUInt8;
 
-  enum Enum : xiiUInt8
+  enum Enum : StorageType
   {
     None      = 0,          ///< The reference is not needed for anything in production. An example of this is editor references that are only used at edit time, e.g. a default animation clip for a skeleton.
     Thumbnail = XII_BIT(0), ///< This reference is a dependency to generating a thumbnail. The material references of a mesh for example.

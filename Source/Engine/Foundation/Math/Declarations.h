@@ -241,7 +241,7 @@ struct XII_FOUNDATION_DLL xiiBasisAxis
   using StorageType = xiiInt8;
 
   /// \brief An enum that allows to select on of the six main axis (positive / negative)
-  enum Enum : xiiInt8
+  enum Enum : StorageType
   {
     PositiveX,
     PositiveY,

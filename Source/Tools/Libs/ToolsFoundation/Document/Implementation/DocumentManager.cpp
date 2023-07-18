@@ -94,13 +94,8 @@ void xiiDocumentManager::UpdatedAfterLoadingPlugins()
 {
   bool bChanges = false;
 
-  xiiRTTI* pRtti = xiiRTTI::GetFirstInstance();
-
-  while (pRtti)
-  {
-    // find all types derived from xiiDocumentManager
-    if (pRtti->IsDerivedFrom<xiiDocumentManager>())
-    {
+  xiiRTTI::ForEachDerivedType<xiiDocumentManager>(
+    [&](const xiiRTTI* pRtti) {
       // add the ones that we don't know yet
       if (!s_KnownManagers.Find(pRtti).IsValid())
       {
@@ -116,15 +111,11 @@ void xiiDocumentManager::UpdatedAfterLoadingPlugins()
           bChanges = true;
         }
       }
-    }
-
-    pRtti = pRtti->GetNextInstance();
-  }
+    });
 
   // triggers a reevaluation next time
   s_AllDocumentDescriptors.Clear();
   GetAllDocumentDescriptors();
-
 
   if (bChanges)
   {
