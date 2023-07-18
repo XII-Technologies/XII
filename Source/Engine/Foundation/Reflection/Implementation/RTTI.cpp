@@ -537,4 +537,6 @@ void xiiRTTI::PluginEventHandler(const xiiPluginEvent& EventData)
   }
 }
 
+xiiRTTIAllocator::~xiiRTTIAllocator() = default;
+
 XII_STATICLINK_FILE(Foundation, Foundation_Reflection_Implementation_RTTI);

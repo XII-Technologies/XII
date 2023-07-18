@@ -1,5 +1,4 @@
 
-
 // for some reason MSVC does not accept the template keyword here
 #if XII_ENABLED(XII_COMPILER_MSVC_PURE)
 #  define CALL_FUNCTOR(functor, type) return functor.operator()<type>(std::forward<Args>(args)...)
@@ -268,28 +267,28 @@ class xiiVariantHelper
 
   static void To(const xiiVariant& value, xiiInt8& result, bool& bSuccessful)
   {
-    xiiInt32 tempResult;
+    xiiInt32 tempResult = 0;
     To(value, tempResult, bSuccessful);
     result = (xiiInt8)tempResult;
   }
 
   static void To(const xiiVariant& value, xiiUInt8& result, bool& bSuccessful)
   {
-    xiiUInt32 tempResult;
+    xiiUInt32 tempResult = 0;
     To(value, tempResult, bSuccessful);
     result = (xiiUInt8)tempResult;
   }
 
   static void To(const xiiVariant& value, xiiInt16& result, bool& bSuccessful)
   {
-    xiiInt32 tempResult;
+    xiiInt32 tempResult = 0;
     To(value, tempResult, bSuccessful);
     result = (xiiInt16)tempResult;
   }
 
   static void To(const xiiVariant& value, xiiUInt16& result, bool& bSuccessful)
   {
-    xiiUInt32 tempResult;
+    xiiUInt32 tempResult = 0;
     To(value, tempResult, bSuccessful);
     result = (xiiUInt16)tempResult;
   }

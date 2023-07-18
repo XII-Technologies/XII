@@ -567,6 +567,9 @@ V& xiiHashTableBase<K, V, H>::FindOrAdd(const K& key, bool* out_pExisted)
     MarkEntryAsValid(uiIndex);
     ++m_uiCount;
   }
+
+  XII_ASSERT_DEBUG(m_pEntries != nullptr, "Entries should be present");
+
   return m_pEntries[uiIndex].value;
 }
 

@@ -431,7 +431,7 @@ struct ConvertFunc
   template <typename T>
   XII_ALWAYS_INLINE void operator()()
   {
-    T result;
+    T result = {};
     xiiVariantHelper::To(*m_pThis, result, m_bSuccessful);
 
     if constexpr (std::is_same_v<T, xiiStringView>)

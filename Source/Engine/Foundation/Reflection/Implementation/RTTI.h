@@ -199,6 +199,8 @@ private:
 /// \brief The interface for an allocator that creates instances of reflected types.
 struct XII_FOUNDATION_DLL xiiRTTIAllocator
 {
+  virtual ~xiiRTTIAllocator();
+
   /// \brief Returns whether the type that is represented by this allocator, can be dynamically allocated at runtime.
   virtual bool CanAllocate() const { return true; } // [tested]
 
