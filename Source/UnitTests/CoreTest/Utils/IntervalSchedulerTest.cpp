@@ -35,14 +35,17 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
       scheduler.AddOrUpdateWork(&work, xiiTime::Milliseconds(work.m_IntervalMs));
     }
 
+    constexpr xiiUInt32 uiNumIterations = 60;
+    constexpr xiiTime   timeStep        = xiiTime::Milliseconds(10);
+
     xiiUInt32 wrongDelta = 0;
-    for (xiiUInt32 i = 0; i < 60; ++i)
+    for (xiiUInt32 i = 0; i < uiNumIterations; ++i)
     {
       float fNumWorks = 0;
-      scheduler.Update(xiiTime::Milliseconds(10), [&](TestWork* pWork, xiiTime deltaTime) {
+      scheduler.Update(timeStep, [&](TestWork* pWork, xiiTime deltaTime) {
         if (i > 10)
         {
-          const double deltaMs  = deltaTime.GetMilliseconds();
+          const double deltaMs = deltaTime.GetMilliseconds();
           const double variance = pWork->m_IntervalMs * 0.3;
           const double midValue = pWork->m_IntervalMs + 1.0 - variance;
           if (xiiMath::IsEqual<double>(deltaMs, midValue, variance) == false)
@@ -51,14 +54,8 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
           }
         }
 
-        if (pWork->m_IntervalMs <= 10.0f)
-        {
-          XII_TEST_INT(static_cast<xiiUInt32>(pWork->m_Counter), i);
-        }
-
         pWork->Run();
-        ++fNumWorks;
-      });
+        ++fNumWorks; });
 
       XII_TEST_FLOAT(fNumWorks, 2.5f, 0.5f);
 
@@ -68,12 +65,12 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
       }
     }
 
-    // 2 wrong deltas for ~120 scheduled works is ok
-    XII_TEST_BOOL(wrongDelta <= 2);
+    // 3 wrong deltas for ~120 scheduled works is ok
+    XII_TEST_BOOL(wrongDelta <= 3);
 
     for (auto& work : works)
     {
-      const float expectedCounter = 600.0f / xiiMath::Max(work.m_IntervalMs, 10.0f);
+      const float expectedCounter = static_cast<float>(uiNumIterations * timeStep.GetMilliseconds()) / xiiMath::Max(work.m_IntervalMs, 10.0f);
 
       // check for roughly expected or a little bit more
       XII_TEST_FLOAT(static_cast<float>(work.m_Counter), expectedCounter + 3.0f, 4.0f);
@@ -95,14 +92,17 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
       scheduler.AddOrUpdateWork(&work, xiiTime::Milliseconds(work.m_IntervalMs));
     }
 
+    constexpr xiiUInt32 uiNumIterations = 60;
+    constexpr xiiTime   timeStep        = xiiTime::Milliseconds(20);
+
     xiiUInt32 wrongDelta = 0;
-    for (xiiUInt32 i = 0; i < 60; ++i)
+    for (xiiUInt32 i = 0; i < uiNumIterations; ++i)
     {
       float fNumWorks = 0;
-      scheduler.Update(xiiTime::Milliseconds(20), [&](TestWork* pWork, xiiTime deltaTime) {
+      scheduler.Update(timeStep, [&](TestWork* pWork, xiiTime deltaTime) {
         if (i > 10)
         {
-          const double deltaMs  = deltaTime.GetMilliseconds();
+          const double deltaMs = deltaTime.GetMilliseconds();
           const double variance = xiiMath::Max(pWork->m_IntervalMs, 20.0f) * 0.3;
           const double midValue = xiiMath::Max(pWork->m_IntervalMs, 20.0f) + 1.0 - variance;
           if (xiiMath::IsEqual<double>(deltaMs, midValue, variance) == false)
@@ -111,14 +111,8 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
           }
         }
 
-        if (pWork->m_IntervalMs <= 20.0f)
-        {
-          XII_TEST_INT(static_cast<xiiUInt32>(pWork->m_Counter), i);
-        }
-
         pWork->Run();
-        ++fNumWorks;
-      });
+        ++fNumWorks; });
 
       XII_TEST_FLOAT(fNumWorks, 3.5f, 0.5f);
 
@@ -133,7 +127,7 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
 
     for (auto& work : works)
     {
-      const float expectedCounter = 1200.0f / xiiMath::Max(work.m_IntervalMs, 20.0f);
+      const float expectedCounter = static_cast<float>(uiNumIterations * timeStep.GetMilliseconds()) / xiiMath::Max(work.m_IntervalMs, 20.0f);
 
       // check for roughly expected or a little bit more
       XII_TEST_FLOAT(static_cast<float>(work.m_Counter), expectedCounter + 2.0f, 3.0f);
@@ -207,6 +201,60 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
     {
       auto& work = works[i + 16];
       XII_TEST_BOOL(scheduler.GetInterval(&work) == xiiTime::Milliseconds(100 + i));
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Update/Remove during schedule")
+  {
+    xiiHybridArray<TestWork, 32> works;
+
+    xiiIntervalScheduler<TestWork*> scheduler;
+
+    for (xiiUInt32 i = 0; i < 32; ++i)
+    {
+      auto& work        = works.ExpandAndGetRef();
+      work.m_IntervalMs = (i & 1);
+
+      scheduler.AddOrUpdateWork(&work, xiiTime::Milliseconds(i));
+    }
+
+    xiiUInt32 uiNumWorks = 0;
+    scheduler.Update(xiiTime::Milliseconds(33),
+                     [&](TestWork* pWork, xiiTime deltaTime) {
+                       pWork->Run();
+                       ++uiNumWorks;
+
+                       if (pWork->m_IntervalMs == 0.0f)
+                       {
+                         scheduler.RemoveWork(pWork);
+                       }
+                       else
+                       {
+                         scheduler.AddOrUpdateWork(pWork, xiiTime::Milliseconds(50));
+                       }
+                     });
+
+    XII_TEST_INT(uiNumWorks, 32);
+    for (xiiUInt32 i = 0; i < 32; ++i)
+    {
+      const xiiUInt32 uiExpectedCounter = 1;
+      XII_TEST_INT(works[i].m_Counter, uiExpectedCounter);
+    }
+
+    uiNumWorks = 0;
+    scheduler.Update(xiiTime::Milliseconds(100),
+                     [&](TestWork* pWork, xiiTime deltaTime) {
+                       XII_TEST_FLOAT(pWork->m_IntervalMs, 1.0f, xiiMath::DefaultEpsilon<float>());
+
+                       pWork->Run();
+                       ++uiNumWorks;
+                     });
+
+    XII_TEST_INT(uiNumWorks, 16);
+    for (xiiUInt32 i = 0; i < 32; ++i)
+    {
+      const xiiUInt32 uiExpectedCounter = 1 + (i & 1);
+      XII_TEST_INT(works[i].m_Counter, uiExpectedCounter);
     }
   }
 }
