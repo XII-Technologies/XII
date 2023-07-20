@@ -214,7 +214,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
     else
     {
       QByteArray               ba = mimedata->data(szMimeType);
-      xiiRawMemoryStreamReader memoryReader(ba.data(), ba.count());
+      xiiRawMemoryStreamReader memoryReader(ba.data(), ba.size());
 
       xiiPropertyClipboard content;
       xiiReflectionSerializer::ReadObjectPropertiesFromDDL(memoryReader, *xiiGetStaticRTTI<xiiPropertyClipboard>(), &content);

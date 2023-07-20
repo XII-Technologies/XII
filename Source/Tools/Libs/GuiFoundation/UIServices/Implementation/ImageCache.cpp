@@ -84,12 +84,7 @@ void xiiQtImageCache::InvalidateCache(xiiStringView sAbsolutePath)
   Q_EMIT g_pImageCacheSingleton->ImageInvalidated(sPath, id);
 }
 
-const QPixmap* xiiQtImageCache::QueryPixmap(
-  xiiStringView sAbsolutePath,
-  QModelIndex   index,
-  QVariant      userData1,
-  QVariant      userData2,
-  xiiUInt32*    out_pImageID)
+const QPixmap* xiiQtImageCache::QueryPixmap( xiiStringView sAbsolutePath, QModelIndex   index, QVariant      userData1, QVariant      userData2, xiiUInt32*    out_pImageID)
 {
   if (out_pImageID)
     *out_pImageID = 0;
@@ -137,7 +132,6 @@ const QPixmap* xiiQtImageCache::QueryPixmap(
 
   return m_pImageLoading;
 }
-
 
 const QPixmap* xiiQtImageCache::QueryPixmapForType(xiiStringView sType, xiiStringView sAbsolutePath, QModelIndex index /*= QModelIndex()*/, QVariant userData1 /*= QVariant()*/, QVariant userData2 /*= QVariant()*/, xiiUInt32* out_pImageID /*= nullptr*/)
 {
@@ -228,9 +222,6 @@ void xiiQtImageCache::EnableRequestProcessing()
 void xiiQtImageCache::RegisterTypeImage(xiiStringView sType, QPixmap pixmap)
 {
   xiiStringBuilder tmp;
-  int              width  = pixmap.width();
-  int              height = pixmap.height();
-
   m_TypeImages[QString::fromUtf8(sType.GetData(tmp))] = pixmap;
 }
 

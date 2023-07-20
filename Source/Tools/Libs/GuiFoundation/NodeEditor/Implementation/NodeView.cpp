@@ -41,11 +41,8 @@ void xiiQtNodeView::mousePressEvent(QMouseEvent* event)
   if (event->button() == Qt::RightButton)
   {
     setContextMenuPolicy(Qt::NoContextMenu);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-    m_StartDragView = event->localPos();
-#else
-    m_vStartDragView   = event->pos();
-#endif
+
+    m_StartDragView = event->position();
 
     m_StartDragScene = m_ViewPos;
     viewport()->setCursor(Qt::ClosedHandCursor);

@@ -114,10 +114,9 @@ void xiiQtToolBarActionMapView::CreateView(const xiiActionMap::TreeNode* pObject
 
       case xiiActionType::ActionAndMenu:
       {
-        xiiNamedAction* pNamed = static_cast<xiiNamedAction*>(pProxy->GetAction());
-
         QMenu*   pQtMenu   = static_cast<xiiQtDynamicActionAndMenuProxy*>(pProxy.data())->GetQMenu();
         QAction* pQtAction = static_cast<xiiQtDynamicActionAndMenuProxy*>(pProxy.data())->GetQAction();
+
         // TODO pButton leaks!
         QToolButton* pButton = new QToolButton(this);
         pButton->setDefaultAction(pQtAction);

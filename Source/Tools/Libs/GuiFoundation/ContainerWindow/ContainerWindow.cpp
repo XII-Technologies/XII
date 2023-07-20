@@ -173,8 +173,6 @@ void xiiQtContainerWindow::SaveWindowLayout()
   xiiStringBuilder sProjectFile;
   GetProjectLayoutPath(sProjectFile, true);
 
-  const bool bMaximized = isMaximized();
-
   QSettings Settings(xiiToolsProject::IsProjectOpen() ? sProjectFile.GetData() : sFile.GetData(), QSettings::IniFormat);
   Settings.beginGroup(QString::fromUtf8("ContainerWnd_xiiEditor"));
   {
@@ -224,7 +222,7 @@ void xiiQtContainerWindow::RestoreWindowLayout()
       restoreGeometry(Settings.value("WindowGeometry", saveGeometry()).toByteArray());
       restoreState(Settings.value("WindowState", saveState()).toByteArray());
       auto dockState = Settings.value("DockManagerState");
-      if (dockState.isValid() && dockState.type() == QVariant::ByteArray)
+      if (dockState.isValid() && dockState.typeId() == QMetaType::QByteArray)
       {
         m_pDockManager->restoreState(dockState.toByteArray(), 1);
         // As document windows can't be in a closed state (as pressing x destroys them),

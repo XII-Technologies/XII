@@ -46,7 +46,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 xiiQtUiServices::xiiQtUiServices() :
   m_SingletonRegistrar(this)
 {
-  int id      = qRegisterMetaType<xiiUuid>();
+  qRegisterMetaType<xiiUuid>();
   m_pColorDlg = nullptr;
 }
 

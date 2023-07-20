@@ -217,7 +217,7 @@ void xiiQtDoubleSpinBox::mousePressEvent(QMouseEvent* event)
       m_bDragging       = true;
       m_iDragDelta      = 0;
       m_bModified       = false;
-      m_LastDragPos     = event->globalPos();
+      m_LastDragPos     = event->globalPosition().toPoint();
       grabMouse();
       event->accept();
       return;
@@ -272,10 +272,10 @@ void xiiQtDoubleSpinBox::mouseMoveEvent(QMouseEvent* event)
   {
     if (m_bDragging)
     {
-      int iDelta = m_LastDragPos.y() - event->globalPos().y();
+      int iDelta = m_LastDragPos.y() - event->globalPosition().toPoint().y();
       m_iDragDelta += iDelta;
       {
-        m_LastDragPos     = event->globalPos();
+        m_LastDragPos     = event->globalPosition().toPoint();
         const QRect dsize = xiiWidgetUtils::GetClosestScreen(event->globalPos()).availableGeometry();
         if (m_LastDragPos.y() < (dsize.top() + 10))
         {

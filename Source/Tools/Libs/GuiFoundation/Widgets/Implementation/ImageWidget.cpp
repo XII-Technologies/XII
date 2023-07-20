@@ -54,7 +54,6 @@ void xiiQtImageWidget::ScaleImage(float fFactor)
   float fPrevScale = m_fCurrentScale;
   m_fCurrentScale  = xiiMath::Clamp(m_fCurrentScale * fFactor, 0.2f, 5.0f);
 
-  fFactor = m_fCurrentScale / fPrevScale;
   ImageApplyScale();
 }
 

@@ -56,10 +56,8 @@ private:
 
   struct StatsData
   {
-    StatsData() { m_pListItem = nullptr; }
-
-    QListWidgetItem* m_pListItem;
-    xiiUInt8         m_uiColor;
+    QListWidgetItem* m_pListItem = nullptr;
+    xiiUInt8          m_uiColor  = 0;
   };
 
   xiiMap<xiiString, StatsData> m_Stats;

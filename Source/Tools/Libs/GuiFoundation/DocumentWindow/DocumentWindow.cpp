@@ -47,7 +47,7 @@ void xiiQtDocumentWindow::Constructor()
   xiiQtMenuBarActionMapView* pMenuBar = new xiiQtMenuBarActionMapView(this);
   setMenuBar(pMenuBar);
 
-  xiiInt32              iContainerWindowIndex = xiiToolsProject::SuggestContainerWindow(m_pDocument);
+  xiiToolsProject::SuggestContainerWindow(m_pDocument);
   xiiQtContainerWindow* pContainer            = xiiQtContainerWindow::GetContainerWindow();
   pContainer->AddDocumentWindow(this);
 

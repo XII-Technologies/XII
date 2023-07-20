@@ -1118,6 +1118,7 @@ xiiResult xiiQtCurve1DEditorWidget::LoadCurvePreset(xiiStringView sFile)
     return XII_FAILURE;
 
   const xiiTypeVersion version = file.ReadVersion(1);
+  XII_IGNORE_UNUSED(version);
 
   Q_EMIT BeginCpChangesEvent("Load Preset");
 
