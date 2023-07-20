@@ -34,7 +34,7 @@ public:
   const xiiHybridArray<xiiDocumentObject*, 8>& GetChildren() const { return m_Children; }
   xiiDocumentObject*                           GetChild(const xiiUuid& guid);
   const xiiDocumentObject*                     GetChild(const xiiUuid& guid) const;
-  xiiStringView                                  GetParentProperty() const { return m_sParentProperty; }
+  xiiStringView                                GetParentProperty() const { return m_sParentProperty; }
   xiiAbstractProperty*                         GetParentPropertyType() const;
   xiiVariant                                   GetPropertyIndex() const;
   bool                                         IsOnHeap() const;

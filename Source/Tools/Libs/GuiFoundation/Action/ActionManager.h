@@ -94,7 +94,7 @@ private:
 
   struct CategoryData
   {
-    xiiSet<xiiActionDescriptorHandle>                    m_Actions;
+    xiiSet<xiiActionDescriptorHandle>                      m_Actions;
     xiiHashTable<xiiStringView, xiiActionDescriptorHandle> m_ActionNameToHandle;
   };
 

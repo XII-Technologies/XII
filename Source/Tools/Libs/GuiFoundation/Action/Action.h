@@ -79,7 +79,7 @@ struct XII_GUIFOUNDATION_DLL xiiActionContext
 struct XII_GUIFOUNDATION_DLL xiiActionDescriptor
 {
   xiiActionDescriptor() = default;
-    xiiActionDescriptor(xiiActionType::Enum type, xiiActionScope::Enum scope, xiiStringView sName, xiiStringView sCategoryPath, xiiStringView sShortcut, CreateActionFunc createAction, DeleteActionFunc deleteAction = nullptr);
+  xiiActionDescriptor(xiiActionType::Enum type, xiiActionScope::Enum scope, xiiStringView sName, xiiStringView sCategoryPath, xiiStringView sShortcut, CreateActionFunc createAction, DeleteActionFunc deleteAction = nullptr);
 
   xiiActionDescriptorHandle m_Handle;
   xiiEnum<xiiActionType>    m_Type;

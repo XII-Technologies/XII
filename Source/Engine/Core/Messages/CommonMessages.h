@@ -53,7 +53,7 @@ struct XII_CORE_DLL xiiMsgGenericEvent : public xiiEventMessage
 
 private:
   xiiStringView GetMessage() const { return m_sMessage; }
-  void        SetMessage(xiiStringView sMessage) { m_sMessage.Assign(sMessage); }
+  void          SetMessage(xiiStringView sMessage) { m_sMessage.Assign(sMessage); }
 };
 
 /// \brief Sent when an animation reached its end (either forwards or backwards playing)

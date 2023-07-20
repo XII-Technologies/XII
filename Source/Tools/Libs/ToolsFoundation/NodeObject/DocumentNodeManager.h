@@ -80,7 +80,7 @@ public:
   Shape m_Shape = Shape::Default;
 
   Type                     GetType() const { return m_Type; }
-  xiiStringView              GetName() const { return m_sName; }
+  xiiStringView            GetName() const { return m_sName; }
   const xiiColorGammaUB&   GetColor() const { return m_Color; }
   const xiiDocumentObject* GetParent() const { return m_pParent; }
 

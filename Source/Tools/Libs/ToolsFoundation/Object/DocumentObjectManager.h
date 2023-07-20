@@ -148,7 +148,7 @@ public:
   /// \brief Allows to annotate types with a category (group), such that things like creator menus can use this to present the types in a more user
   /// friendly way
   virtual xiiStringView GetTypeCategory(const xiiRTTI* pRtti) const { return {}; }
-  void                PatchEmbeddedClassObjects(const xiiDocumentObject* pObject) const;
+  void                  PatchEmbeddedClassObjects(const xiiDocumentObject* pObject) const;
 
   const xiiDocumentObject* GetRootObject() const { return &m_pObjectStorage->m_RootObject; }
   xiiDocumentObject*       GetRootObject() { return &m_pObjectStorage->m_RootObject; }
@@ -198,7 +198,7 @@ private:
   virtual xiiStatus InternalCanMove(
     const xiiDocumentObject* pObject,
     const xiiDocumentObject* pNewParent,
-    xiiStringView              szParentProperty,
+    xiiStringView            szParentProperty,
     const xiiVariant&        index) const
   {
     return xiiStatus(XII_SUCCESS);

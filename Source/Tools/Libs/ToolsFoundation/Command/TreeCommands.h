@@ -16,7 +16,7 @@ public:
   xiiAddObjectCommand();
 
 public: // Properties
-  void        SetType(xiiStringView sType);
+  void          SetType(xiiStringView sType);
   xiiStringView GetType() const;
 
   const xiiRTTI* m_pType = nullptr;

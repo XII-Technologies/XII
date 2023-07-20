@@ -33,7 +33,7 @@ struct XII_CORE_DLL xiiMsgComponentInternalTrigger : public xiiMessage
 
 private:
   xiiStringView GetMessage() const { return m_sMessage; }
-  void        SetMessage(xiiStringView sMessage) { m_sMessage.Assign(sMessage); }
+  void          SetMessage(xiiStringView sMessage) { m_sMessage.Assign(sMessage); }
 };
 
 /// \brief Sent when something enters or leaves a trigger
@@ -52,5 +52,5 @@ struct XII_CORE_DLL xiiMsgTriggerTriggered : public xiiEventMessage
 
 private:
   xiiStringView GetMessage() const { return m_sMessage; }
-  void        SetMessage(xiiStringView sMessage) { m_sMessage.Assign(sMessage); }
+  void          SetMessage(xiiStringView sMessage) { m_sMessage.Assign(sMessage); }
 };

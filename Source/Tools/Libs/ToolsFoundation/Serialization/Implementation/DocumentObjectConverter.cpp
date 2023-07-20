@@ -153,7 +153,7 @@ xiiDocumentObjectConverterReader::xiiDocumentObjectConverterReader(const xiiAbst
 xiiDocumentObject* xiiDocumentObjectConverterReader::CreateObjectFromNode(const xiiAbstractObjectNode* pNode)
 {
   xiiDocumentObject* pObject = nullptr;
-  const xiiRTTI*           pType   = xiiRTTI::FindTypeByName(pNode->GetType());
+  const xiiRTTI*     pType   = xiiRTTI::FindTypeByName(pNode->GetType());
   if (pType)
   {
     pObject = m_pManager->CreateObject(pType, pNode->GetGuid());

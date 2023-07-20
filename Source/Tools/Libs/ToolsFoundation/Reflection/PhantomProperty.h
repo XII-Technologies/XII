@@ -14,9 +14,9 @@ public:
   virtual xiiVariant     GetConstant() const override { return m_Value; }
 
 private:
-  xiiVariant m_Value;
-  xiiString  m_sPropertyNameStorage;
-  const xiiRTTI*   m_pPropertyType;
+  xiiVariant     m_Value;
+  xiiString      m_sPropertyNameStorage;
+  const xiiRTTI* m_pPropertyType;
 };
 
 class xiiPhantomMemberProperty : public xiiAbstractMemberProperty
@@ -31,8 +31,8 @@ public:
   virtual void           SetValuePtr(void* pInstance, const void* pObject) override {}
 
 private:
-  xiiString m_sPropertyNameStorage;
-  const xiiRTTI*  m_pPropertyType;
+  xiiString      m_sPropertyNameStorage;
+  const xiiRTTI* m_pPropertyType;
 };
 
 class xiiPhantomFunctionProperty : public xiiAbstractFunctionProperty
@@ -73,8 +73,8 @@ public:
   virtual void           SetCount(void* pInstance, xiiUInt32 uiCount) override {}
 
 private:
-  xiiString m_sPropertyNameStorage;
-  const xiiRTTI*  m_pPropertyType;
+  xiiString      m_sPropertyNameStorage;
+  const xiiRTTI* m_pPropertyType;
 };
 
 
@@ -93,8 +93,8 @@ public:
   virtual void           GetValues(const void* pInstance, xiiDynamicArray<xiiVariant>& out_keys) const override {}
 
 private:
-  xiiString m_sPropertyNameStorage;
-  const xiiRTTI*  m_pPropertyType;
+  xiiString      m_sPropertyNameStorage;
+  const xiiRTTI* m_pPropertyType;
 };
 
 
@@ -114,6 +114,6 @@ public:
   virtual void           GetKeys(const void* pInstance, xiiHybridArray<xiiString, 16>& out_keys) const override {}
 
 private:
-  xiiString m_sPropertyNameStorage;
-  const xiiRTTI*  m_pPropertyType;
+  xiiString      m_sPropertyNameStorage;
+  const xiiRTTI* m_pPropertyType;
 };

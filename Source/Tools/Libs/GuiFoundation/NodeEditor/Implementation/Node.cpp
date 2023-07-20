@@ -6,8 +6,8 @@
 #include <ToolsFoundation/Document/Document.h>
 
 #include <QApplication>
-#include <QGraphicsPixmapItem>
 #include <QGraphicsDropShadowEffect>
+#include <QGraphicsPixmapItem>
 #include <QPainter>
 
 xiiQtNode::xiiQtNode()

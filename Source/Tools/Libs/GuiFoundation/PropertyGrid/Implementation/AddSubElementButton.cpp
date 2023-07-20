@@ -116,7 +116,7 @@ QMenu* xiiQtAddSubElementButton::CreateCategoryMenu(xiiStringView sCategory, xii
   sPath = sCategory;
   sPath = sPath.GetFileName();
 
-  QMenu* pNewMenu           = pParentMenu->addMenu(xiiTranslate(sPath));
+  QMenu* pNewMenu          = pParentMenu->addMenu(xiiTranslate(sPath));
   existingMenus[sCategory] = pNewMenu;
 
   return pNewMenu;

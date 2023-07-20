@@ -318,116 +318,116 @@ namespace xiiMath
   }
 } // namespace xiiMath
 
-  // static
-  inline double xiiEasingFunction::GetValue(Enum function, double input)
+// static
+inline double xiiEasingFunction::GetValue(Enum function, double input)
+{
+  switch (function)
   {
-    switch (function)
-    {
-      case ConstantZero:
-        return xiiMath::EaseConstantZero(input);
-      case ConstantQuarter:
-        return xiiMath::EaseConstantQuarter(input);
-      case ConstantHalf:
-        return xiiMath::EaseConstantHalf(input);
-      case ConstantThreeFourths:
-        return xiiMath::EaseConstantThreeFourths(input);
-      case ConstantOne:
-        return xiiMath::EaseConstantOne(input);
+    case ConstantZero:
+      return xiiMath::EaseConstantZero(input);
+    case ConstantQuarter:
+      return xiiMath::EaseConstantQuarter(input);
+    case ConstantHalf:
+      return xiiMath::EaseConstantHalf(input);
+    case ConstantThreeFourths:
+      return xiiMath::EaseConstantThreeFourths(input);
+    case ConstantOne:
+      return xiiMath::EaseConstantOne(input);
 
-      case InLinear:
-        return xiiMath::EaseInLinear(input);
-      case OutLinear:
-        return xiiMath::EaseOutLinear(input);
-      case InOutLinear:
-        return xiiMath::EaseInOutLinear(input);
+    case InLinear:
+      return xiiMath::EaseInLinear(input);
+    case OutLinear:
+      return xiiMath::EaseOutLinear(input);
+    case InOutLinear:
+      return xiiMath::EaseInOutLinear(input);
 
-      case InSine:
-        return xiiMath::EaseInSine(input);
-      case OutSine:
-        return xiiMath::EaseOutSine(input);
-      case InOutSine:
-        return xiiMath::EaseInOutSine(input);
+    case InSine:
+      return xiiMath::EaseInSine(input);
+    case OutSine:
+      return xiiMath::EaseOutSine(input);
+    case InOutSine:
+      return xiiMath::EaseInOutSine(input);
 
-      case InQuad:
-        return xiiMath::EaseInQuad(input);
-      case OutQuad:
-        return xiiMath::EaseOutQuad(input);
-      case InOutQuad:
-        return xiiMath::EaseInOutQuad(input);
+    case InQuad:
+      return xiiMath::EaseInQuad(input);
+    case OutQuad:
+      return xiiMath::EaseOutQuad(input);
+    case InOutQuad:
+      return xiiMath::EaseInOutQuad(input);
 
-      case InCubic:
-        return xiiMath::EaseInCubic(input);
-      case OutCubic:
-        return xiiMath::EaseOutCubic(input);
-      case InOutCubic:
-        return xiiMath::EaseInOutCubic(input);
+    case InCubic:
+      return xiiMath::EaseInCubic(input);
+    case OutCubic:
+      return xiiMath::EaseOutCubic(input);
+    case InOutCubic:
+      return xiiMath::EaseInOutCubic(input);
 
-      case InQuartic:
-        return xiiMath::EaseInQuartic(input);
-      case OutQuartic:
-        return xiiMath::EaseOutQuartic(input);
-      case InOutQuartic:
-        return xiiMath::EaseInOutQuartic(input);
+    case InQuartic:
+      return xiiMath::EaseInQuartic(input);
+    case OutQuartic:
+      return xiiMath::EaseOutQuartic(input);
+    case InOutQuartic:
+      return xiiMath::EaseInOutQuartic(input);
 
-      case InQuintic:
-        return xiiMath::EaseInQuintic(input);
-      case OutQuintic:
-        return xiiMath::EaseOutQuintic(input);
-      case InOutQuintic:
-        return xiiMath::EaseInOutQuintic(input);
+    case InQuintic:
+      return xiiMath::EaseInQuintic(input);
+    case OutQuintic:
+      return xiiMath::EaseOutQuintic(input);
+    case InOutQuintic:
+      return xiiMath::EaseInOutQuintic(input);
 
-      case InExpo:
-        return xiiMath::EaseInExpo(input);
-      case OutExpo:
-        return xiiMath::EaseOutExpo(input);
-      case InOutExpo:
-        return xiiMath::EaseInOutExpo(input);
+    case InExpo:
+      return xiiMath::EaseInExpo(input);
+    case OutExpo:
+      return xiiMath::EaseOutExpo(input);
+    case InOutExpo:
+      return xiiMath::EaseInOutExpo(input);
 
-      case InCirc:
-        return xiiMath::EaseInCirc(input);
-      case OutCirc:
-        return xiiMath::EaseOutCirc(input);
-      case InOutCirc:
-        return xiiMath::EaseInOutCirc(input);
+    case InCirc:
+      return xiiMath::EaseInCirc(input);
+    case OutCirc:
+      return xiiMath::EaseOutCirc(input);
+    case InOutCirc:
+      return xiiMath::EaseInOutCirc(input);
 
-      case InBack:
-        return xiiMath::EaseInBack(input);
-      case OutBack:
-        return xiiMath::EaseOutBack(input);
-      case InOutBack:
-        return xiiMath::EaseInOutBack(input);
+    case InBack:
+      return xiiMath::EaseInBack(input);
+    case OutBack:
+      return xiiMath::EaseOutBack(input);
+    case InOutBack:
+      return xiiMath::EaseInOutBack(input);
 
-      case InElastic:
-        return xiiMath::EaseInElastic(input);
-      case OutElastic:
-        return xiiMath::EaseOutElastic(input);
-      case InOutElastic:
-        return xiiMath::EaseInOutElastic(input);
+    case InElastic:
+      return xiiMath::EaseInElastic(input);
+    case OutElastic:
+      return xiiMath::EaseOutElastic(input);
+    case InOutElastic:
+      return xiiMath::EaseInOutElastic(input);
 
-      case InBounce:
-        return xiiMath::EaseInBounce(input);
-      case OutBounce:
-        return xiiMath::EaseOutBounce(input);
-      case InOutBounce:
-        return xiiMath::EaseInOutBounce(input);
+    case InBounce:
+      return xiiMath::EaseInBounce(input);
+    case OutBounce:
+      return xiiMath::EaseOutBounce(input);
+    case InOutBounce:
+      return xiiMath::EaseInOutBounce(input);
 
-      case Conical:
-        return xiiMath::EaseConical(input);
-      case FadeInHoldFadeOut:
-        return xiiMath::EaseFadeInHoldFadeOut(input);
-      case FadeInFadeOut:
-        return xiiMath::EaseFadeInFadeOut(input);
-      case Bell:
-        return xiiMath::EaseBell(input);
+    case Conical:
+      return xiiMath::EaseConical(input);
+    case FadeInHoldFadeOut:
+      return xiiMath::EaseFadeInHoldFadeOut(input);
+    case FadeInFadeOut:
+      return xiiMath::EaseFadeInFadeOut(input);
+    case Bell:
+      return xiiMath::EaseBell(input);
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
-    return 0.0;
   }
+  return 0.0;
+}
 
-  inline double xiiEasingFunction::GetValue(Enum function, double input, bool bInverse)
-  {
-    double value = GetValue(function, input);
+inline double xiiEasingFunction::GetValue(Enum function, double input, bool bInverse)
+{
+  double value = GetValue(function, input);
 
-    return bInverse ? (1.0 - value) : value;
-  }
+  return bInverse ? (1.0 - value) : value;
+}

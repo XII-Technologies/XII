@@ -21,7 +21,7 @@ void xiiDocumentObjectVisitor::Visit(const xiiDocumentObject* pObject, bool bVis
   xiiStringView sProperty = m_sChildrenProperty;
   if (pObject == nullptr || pObject == m_pManager->GetRootObject())
   {
-    pObject    = m_pManager->GetRootObject();
+    pObject   = m_pManager->GetRootObject();
     sProperty = m_sRootProperty;
   }
 

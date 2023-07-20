@@ -260,7 +260,7 @@ xiiQtMenuProxy::~xiiQtMenuProxy()
 void xiiQtMenuProxy::Update()
 {
   xiiStringBuilder tmp;
-  auto pMenu = static_cast<xiiMenuAction*>(m_pAction);
+  auto             pMenu = static_cast<xiiMenuAction*>(m_pAction);
 
   m_pMenu->setIcon(xiiQtUiServices::GetCachedIconResource(pMenu->GetIconPath()));
   m_pMenu->setTitle(QString::fromUtf8(xiiTranslate(pMenu->GetName().GetData(tmp))));

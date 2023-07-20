@@ -203,7 +203,7 @@ protected:
   xiiArrayPtr<xiiAbstractMessageHandler*>                                 m_MessageHandlers;
   xiiSmallArray<xiiAbstractMessageHandler*, 1, xiiStaticAllocatorWrapper> m_DynamicMessageHandlers; // Do not track this data, it won't be deallocated before shutdown.
 
-  xiiArrayPtr<xiiMessageSenderInfo> m_MessageSenders;
+  xiiArrayPtr<xiiMessageSenderInfo>                           m_MessageSenders;
   xiiSmallArray<const xiiRTTI*, 7, xiiStaticAllocatorWrapper> m_ParentHierarchy;
 
 private:

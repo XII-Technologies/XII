@@ -90,7 +90,7 @@ private:
       if (rhs.m_Index < m_Index)
         return false;
 
-     // not supported in Qt 5.15 anymore, but doesn't look like it's vital
+        // not supported in Qt 5.15 anymore, but doesn't look like it's vital
 #if 0
       if (m_UserData1 < rhs.m_UserData1)
         return true;

@@ -120,7 +120,7 @@ void xiiPhantomRTTI::UpdateType(xiiReflectedTypeDescriptor& desc)
   xiiRTTI::UpdateType(xiiRTTI::FindTypeByName(desc.m_sParentTypeName), 0, desc.m_uiTypeVersion, xiiVariantType::Invalid, desc.m_Flags);
 
   m_sPluginNameStorage = desc.m_sPluginName;
-  m_sPluginName       = m_sPluginNameStorage.GetData();
+  m_sPluginName        = m_sPluginNameStorage.GetData();
 
   SetProperties(desc.m_Properties);
   SetFunctions(desc.m_Functions);

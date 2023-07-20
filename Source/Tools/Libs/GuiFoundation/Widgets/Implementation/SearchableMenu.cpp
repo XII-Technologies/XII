@@ -144,7 +144,7 @@ bool xiiQtSearchableMenu::eventFilter(QObject* pObject, QEvent* event)
 void xiiQtSearchableMenu::AddItem(xiiStringView sName, const QVariant& variant, QIcon icon)
 {
   xiiStringBuilder tmp;
-  QStandardItem* pParent = m_pItemModel->invisibleRootItem();
+  QStandardItem*   pParent = m_pItemModel->invisibleRootItem();
 
   const char* szLastCat = sName.FindLastSubString("/");
   if (szLastCat != nullptr)

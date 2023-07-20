@@ -39,7 +39,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 const xiiRTTI* xiiPhantomRttiManager::RegisterType(xiiReflectedTypeDescriptor& ref_desc)
 {
   XII_PROFILE_SCOPE("RegisterType");
-  const xiiRTTI*        pType    = xiiRTTI::FindTypeByName(ref_desc.m_sTypeName);
+  const xiiRTTI*  pType    = xiiRTTI::FindTypeByName(ref_desc.m_sTypeName);
   xiiPhantomRTTI* pPhantom = nullptr;
   s_NameToPhantom.TryGetValue(ref_desc.m_sTypeName, pPhantom);
 

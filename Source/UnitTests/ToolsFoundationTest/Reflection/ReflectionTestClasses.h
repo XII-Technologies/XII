@@ -96,12 +96,12 @@ public:
   xiiIntegerStruct m_IntegerStruct;
   xiiFloatStruct   m_FloatStruct;
 
-  void          SetBool(bool b) { m_bBool = b; }
-  bool          GetBool() const { return m_bBool; }
-  void          SetColor(xiiColor c) { m_Color = c; }
-  xiiColor      GetColor() const { return m_Color; }
-  const char*   GetString() const { return m_sString; }
-  void          SetString(const char* szSz) { m_sString = szSz; }
+  void        SetBool(bool b) { m_bBool = b; }
+  bool        GetBool() const { return m_bBool; }
+  void        SetColor(xiiColor c) { m_Color = c; }
+  xiiColor    GetColor() const { return m_Color; }
+  const char* GetString() const { return m_sString; }
+  void        SetString(const char* szSz) { m_sString = szSz; }
 
   const xiiDataBuffer& GetBuffer() const { return m_Buffer; }
   void                 SetBuffer(const xiiDataBuffer& data) { m_Buffer = data; }

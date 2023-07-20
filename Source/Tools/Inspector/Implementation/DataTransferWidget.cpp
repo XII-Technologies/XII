@@ -246,7 +246,7 @@ bool xiiQtDataWidget::SaveToFile(TransferDataObject& item, xiiStringView sFile)
   xiiMemoryStreamReader Reader(&Stream);
 
   xiiStringBuilder tmp;
-  QFile FileOut(sFile.GetData(tmp));
+  QFile            FileOut(sFile.GetData(tmp));
   if (!FileOut.open(QIODevice::WriteOnly))
   {
     QMessageBox::warning(this, QLatin1String("Error writing to file"), QLatin1String("Could not open the specified file for writing."), QMessageBox::Ok, QMessageBox::Ok);

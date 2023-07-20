@@ -61,7 +61,7 @@ void xiiPropertyMetaState::GetContainerElementsState(const xiiDocumentObject* pO
   xiiContainerElementMetaStateEvent eventData;
   eventData.m_pContainerElementStates = &out_propertyStates;
   eventData.m_pObject                 = pObject;
-  eventData.m_sProperty              = sProperty;
+  eventData.m_sProperty               = sProperty;
 
   m_ContainerEvents.Broadcast(eventData);
 }

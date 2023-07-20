@@ -34,7 +34,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiSurfaceInteractionAlignment);
 
 struct XII_CORE_DLL xiiSurfaceInteraction
 {
-  void        SetPrefab(xiiStringView sPrefab);
+  void          SetPrefab(xiiStringView sPrefab);
   xiiStringView GetPrefab() const;
 
   xiiString m_sInteractionType;
@@ -45,10 +45,10 @@ struct XII_CORE_DLL xiiSurfaceInteraction
   float                                   m_fImpulseThreshold = 0.0f;
   float                                   m_fImpulseScale     = 1.0f;
 
-  const xiiRangeView<xiiStringView, xiiUInt32> GetParameters() const;                                        // [ property ] (exposed parameter)
-  void                                       SetParameter(xiiStringView sKey, const xiiVariant& value);     // [ property ] (exposed parameter)
-  void                                       RemoveParameter(xiiStringView sKey);                           // [ property ] (exposed parameter)
-  bool                                       GetParameter(xiiStringView sKey, xiiVariant& out_value) const; // [ property ] (exposed parameter)
+  const xiiRangeView<xiiStringView, xiiUInt32> GetParameters() const;                                         // [ property ] (exposed parameter)
+  void                                         SetParameter(xiiStringView sKey, const xiiVariant& value);     // [ property ] (exposed parameter)
+  void                                         RemoveParameter(xiiStringView sKey);                           // [ property ] (exposed parameter)
+  bool                                         GetParameter(xiiStringView sKey, xiiVariant& out_value) const; // [ property ] (exposed parameter)
 
   xiiArrayMap<xiiHashedString, xiiVariant> m_Parameters;
 };
@@ -63,16 +63,16 @@ public:
   void Load(xiiStreamReader& ref_stream);
   void Save(xiiStreamWriter& ref_stream) const;
 
-  void        SetBaseSurfaceFile(xiiStringView sFile);
+  void          SetBaseSurfaceFile(xiiStringView sFile);
   xiiStringView GetBaseSurfaceFile() const;
 
-  void        SetCollisionInteraction(xiiStringView sName);
+  void          SetCollisionInteraction(xiiStringView sName);
   xiiStringView GetCollisionInteraction() const;
 
-  void        SetSlideReactionPrefabFile(xiiStringView sFile);
+  void          SetSlideReactionPrefabFile(xiiStringView sFile);
   xiiStringView GetSlideReactionPrefabFile() const;
 
-  void        SetRollReactionPrefabFile(xiiStringView sFile);
+  void          SetRollReactionPrefabFile(xiiStringView sFile);
   xiiStringView GetRollReactionPrefabFile() const;
 
 

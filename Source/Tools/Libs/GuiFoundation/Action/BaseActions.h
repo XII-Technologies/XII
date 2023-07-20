@@ -18,7 +18,7 @@ public:
   xiiStringView GetName() const { return m_sName; }
 
   xiiStringView GetAdditionalDisplayString() { return m_sAdditionalDisplayString; }
-  void        SetAdditionalDisplayString(xiiStringView sString, bool bTriggerUpdate = true)
+  void          SetAdditionalDisplayString(xiiStringView sString, bool bTriggerUpdate = true)
   {
     m_sAdditionalDisplayString = sString;
     if (bTriggerUpdate)
@@ -26,7 +26,7 @@ public:
   }
 
   xiiStringView GetIconPath() const { return m_sIconPath; }
-  void        SetIconPath(xiiStringView sIconPath) { m_sIconPath = sIconPath; }
+  void          SetIconPath(xiiStringView sIconPath) { m_sIconPath = sIconPath; }
 
 protected:
   xiiString m_sName;

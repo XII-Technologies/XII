@@ -406,7 +406,7 @@ xiiStatus xiiDocumentObjectManager::CanRemove(const xiiDocumentObject* pObject) 
   return InternalCanRemove(pObject);
 }
 
-xiiStatus xiiDocumentObjectManager::CanMove(const xiiDocumentObject* pObject,const xiiDocumentObject* pNewParent,xiiStringView              sParentProperty,const xiiVariant&        index) const
+xiiStatus xiiDocumentObjectManager::CanMove(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProperty, const xiiVariant& index) const
 {
   XII_SUCCEED_OR_RETURN(CanAdd(pObject->GetTypeAccessor().GetType(), pNewParent, sParentProperty, index));
 
@@ -600,7 +600,7 @@ void xiiDocumentObjectManager::InternalRemoveObject(xiiDocumentObject* pObject)
   m_pObjectStorage->m_StructureEvents.Broadcast(e);
 }
 
-void xiiDocumentObjectManager::InternalMoveObject(xiiDocumentObject* pNewParent,xiiDocumentObject* pObject,xiiStringView        sParentProperty,xiiVariant         index)
+void xiiDocumentObjectManager::InternalMoveObject(xiiDocumentObject* pNewParent, xiiDocumentObject* pObject, xiiStringView sParentProperty, xiiVariant index)
 {
   if (pNewParent == nullptr)
     pNewParent = &m_pObjectStorage->m_RootObject;

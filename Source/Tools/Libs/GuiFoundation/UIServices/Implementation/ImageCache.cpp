@@ -86,10 +86,10 @@ void xiiQtImageCache::InvalidateCache(xiiStringView sAbsolutePath)
 
 const QPixmap* xiiQtImageCache::QueryPixmap(
   xiiStringView sAbsolutePath,
-  QModelIndex index,
-  QVariant    userData1,
-  QVariant    userData2,
-  xiiUInt32*  out_pImageID)
+  QModelIndex   index,
+  QVariant      userData1,
+  QVariant      userData2,
+  xiiUInt32*    out_pImageID)
 {
   if (out_pImageID)
     *out_pImageID = 0;
@@ -228,8 +228,8 @@ void xiiQtImageCache::EnableRequestProcessing()
 void xiiQtImageCache::RegisterTypeImage(xiiStringView sType, QPixmap pixmap)
 {
   xiiStringBuilder tmp;
-  int width  = pixmap.width();
-  int height = pixmap.height();
+  int              width  = pixmap.width();
+  int              height = pixmap.height();
 
   m_TypeImages[QString::fromUtf8(sType.GetData(tmp))] = pixmap;
 }
@@ -237,7 +237,7 @@ void xiiQtImageCache::RegisterTypeImage(xiiStringView sType, QPixmap pixmap)
 const QPixmap* xiiQtImageCache::QueryTypeImage(xiiStringView sType) const
 {
   xiiStringBuilder tmp;
-  auto it = m_TypeImages.Find(QString::fromUtf8(sType.GetData(tmp)));
+  auto             it = m_TypeImages.Find(QString::fromUtf8(sType.GetData(tmp)));
 
   if (it.IsValid())
     return &it.Value();

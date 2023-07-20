@@ -263,7 +263,7 @@ void xiiQtEventTrackEditorWidget::DetermineAvailableEvents()
 void xiiQtEventTrackEditorWidget::FillEventComboBox(xiiStringView sCurrent)
 {
   xiiStringBuilder tmp;
-  QString prev = sCurrent.GetData(tmp);
+  QString          prev = sCurrent.GetData(tmp);
 
   if (prev.isEmpty())
     prev = ComboType->currentText();

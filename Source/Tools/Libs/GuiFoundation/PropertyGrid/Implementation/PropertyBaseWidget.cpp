@@ -288,9 +288,9 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
   // copy internal name
   {
     auto lambda = [this]() {
-    xiiStringBuilder tmp;
-      QClipboard* clipboard = QApplication::clipboard();
-      QMimeData*  mimeData  = new QMimeData();
+      xiiStringBuilder tmp;
+      QClipboard*      clipboard = QApplication::clipboard();
+      QMimeData*       mimeData  = new QMimeData();
       mimeData->setText(m_pProp->GetPropertyName().GetData(tmp));
       clipboard->setMimeData(mimeData);
 
@@ -302,7 +302,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
     connect(pAction, &QAction::triggered, this, lambda);
 
     xiiStringBuilder tmp;
-    QAction* pAction2 = m.addAction(m_pProp->GetPropertyName().GetData(tmp));
+    QAction*         pAction2 = m.addAction(m_pProp->GetPropertyName().GetData(tmp));
     connect(pAction2, &QAction::triggered, this, lambda);
   }
 }
@@ -893,7 +893,7 @@ void xiiQtPropertyTypeWidget::OnInit()
 {
   if (m_pGroup)
   {
-  xiiStringBuilder tmp;
+    xiiStringBuilder tmp;
     m_pGroup->SetTitle(xiiTranslate(m_pProp->GetPropertyName().GetData(tmp)));
     m_pGrid->SetCollapseState(m_pGroup);
     connect(m_pGroup, &xiiQtGroupBoxBase::CollapseStateChanged, m_pGrid, &xiiQtPropertyGridWidget::OnCollapseStateChanged);
@@ -1163,7 +1163,7 @@ void xiiQtPropertyContainerWidget::OnElementButtonClicked()
 
 void xiiQtPropertyContainerWidget::OnDragStarted(QMimeData& ref_mimeData)
 {
-  xiiQtGroupBoxBase* pGroup = qobject_cast<xiiQtGroupBoxBase*>(sender());
+  xiiQtGroupBoxBase* pGroup       = qobject_cast<xiiQtGroupBoxBase*>(sender());
   Element*           pDragElement = std::find_if(begin(m_Elements), end(m_Elements), [pGroup](const Element& elem) -> bool { return elem.m_pSubGroup == pGroup; });
 
   if (pDragElement)
