@@ -19,6 +19,29 @@ static void SetDiff(const xiiImageView& imageA, const xiiImageView& imageB, xiiI
     pR[i] = pB[i] > pA[i] ? (pB[i] - pA[i]) : (pA[i] - pB[i]);
 }
 
+template <typename TYPE, typename ACCU, xiiInt32 COMP>
+static void SetCompMinDiff(const xiiImageView& newDifference, xiiImage& out_minDifference, xiiUInt32 w, xiiUInt32 h, xiiUInt32 d, xiiUInt32 uiComp)
+{
+  const TYPE* pNew = newDifference.GetPixelPointer<TYPE>(0, 0, 0, w, h, d);
+  TYPE*       pR   = out_minDifference.GetPixelPointer<TYPE>(0, 0, 0, w, h, d);
+
+  for (xiiUInt32 i = 0; i < uiComp; i += COMP)
+  {
+    ACCU minDiff = 0;
+    ACCU newDiff = 0;
+    for (xiiUInt32 c = 0; c < COMP; c++)
+    {
+      minDiff += pR[i + c];
+      newDiff += pNew[i + c];
+    }
+    if (minDiff > newDiff)
+    {
+      for (xiiUInt32 c = 0; c < COMP; c++)
+        pR[i + c] = pNew[i + c];
+    }
+  }
+}
+
 template <typename TYPE>
 static xiiUInt32 GetError(const xiiImageView& difference, xiiUInt32 w, xiiUInt32 h, xiiUInt32 d, xiiUInt32 uiComp, xiiUInt32 uiPixel)
 {
@@ -94,6 +117,61 @@ void xiiImageUtils::ComputeImageDifferenceABS(const xiiImageView& imageA, const 
             XII_REPORT_FAILURE("The xiiImageFormat {0} is not implemented", (xiiUInt32)imageA.GetImageFormat());
             return;
         }
+      }
+    }
+  }
+}
+
+void xiiImageUtils::ComputeImageDifferenceABSRelaxed(const xiiImageView& imageA, const xiiImageView& imageB, xiiImage& out_difference)
+{
+  XII_ASSERT_ALWAYS(imageA.GetDepth() == 1 && imageA.GetNumMipLevels() == 1, "Depth slices and mipmaps are not supported");
+
+  XII_PROFILE_SCOPE("xiiImageUtils::ComputeImageDifferenceABSRelaxed");
+
+  ComputeImageDifferenceABS(imageA, imageB, out_difference);
+
+  xiiImage tempB;
+  tempB.ResetAndCopy(imageB);
+  xiiImage tempDiff;
+  tempDiff.ResetAndCopy(out_difference);
+
+  for (xiiInt32 yOffset = -1; yOffset <= 1; ++yOffset)
+  {
+    for (xiiInt32 xOffset = -1; xOffset <= 1; ++xOffset)
+    {
+      if (yOffset == 0 && xOffset == 0)
+        continue;
+
+      xiiImageUtils::Copy(imageB, xiiRectU32(xiiMath::Max(xOffset, 0), xiiMath::Max(yOffset, 0), imageB.GetWidth() - xiiMath::Abs(xOffset), imageB.GetHeight() - xiiMath::Abs(yOffset)), tempB, xiiVec3U32(-xiiMath::Min(xOffset, 0), -xiiMath::Min(yOffset, 0), 0)).AssertSuccess("");
+
+      ComputeImageDifferenceABS(imageA, tempB, tempDiff);
+
+      const xiiUInt32 uiSize2D = imageA.GetHeight() * imageA.GetWidth();
+      switch (imageA.GetImageFormat())
+      {
+        case xiiImageFormat::R8G8B8A8_UNORM:
+        case xiiImageFormat::R8G8B8A8_UNORM_SRGB:
+        case xiiImageFormat::R8G8B8A8_UINT:
+        case xiiImageFormat::R8G8B8A8_SNORM:
+        case xiiImageFormat::R8G8B8A8_SINT:
+        case xiiImageFormat::B8G8R8A8_UNORM:
+        case xiiImageFormat::B8G8R8X8_UNORM:
+        case xiiImageFormat::B8G8R8A8_UNORM_SRGB:
+        case xiiImageFormat::B8G8R8X8_UNORM_SRGB:
+        {
+          SetCompMinDiff<xiiUInt8, xiiUInt32, 4>(tempDiff, out_difference, 0, 0, 0, 4 * uiSize2D);
+        }
+        break;
+
+        case xiiImageFormat::B8G8R8_UNORM:
+        {
+          SetCompMinDiff<xiiUInt8, xiiUInt32, 3>(tempDiff, out_difference, 0, 0, 0, 3 * uiSize2D);
+        }
+        break;
+
+        default:
+          XII_REPORT_FAILURE("The xiiImageFormat {0} is not implemented", (xiiUInt32)imageA.GetImageFormat());
+          return;
       }
     }
   }

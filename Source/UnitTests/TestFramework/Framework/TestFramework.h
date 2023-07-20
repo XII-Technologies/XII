@@ -106,8 +106,8 @@ public:
   /// \brief Writes an Html file that contains test information and an image diff view for failed image comparisons.
   void WriteImageDiffHtml(const char* szFileName, xiiImage& ref_referenceImgRgb, xiiImage& ref_referenceImgAlpha, xiiImage& ref_capturedImgRgb, xiiImage& ref_capturedImgAlpha, xiiImage& ref_diffImgRgb, xiiImage& ref_diffImgAlpha, xiiUInt32 uiError, xiiUInt32 uiThreshold, xiiUInt8 uiMinDiffRgb, xiiUInt8 uiMaxDiffRgb, xiiUInt8 uiMinDiffAlpha, xiiUInt8 uiMaxDiffAlpha);
 
-  bool PerformImageComparison(xiiStringBuilder sImgName, const xiiImage& img, xiiUInt32 uiMaxError, char* szErrorMsg);
-  bool CompareImages(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, char* szErrorMsg, bool bIsDepthImage = false);
+  bool PerformImageComparison(xiiStringBuilder sImgName, const xiiImage& img, xiiUInt32 uiMaxError, bool bIsLineImage, char* szErrorMsg);
+  bool CompareImages(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, char* szErrorMsg, bool bIsDepthImage = false, bool bIsLineImage = false);
 
   /// \brief A function to be called to add extra info to image diff output, that is not available from here.
   /// E.g. device specific info like driver version.
@@ -523,13 +523,16 @@ XII_TEST_DLL bool xiiTestTextFiles(const char* szFile1, const char* szFile2, con
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_TEST_DLL bool xiiTestImage(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, bool bIsDepthImage, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...);
+XII_TEST_DLL bool xiiTestImage(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, bool bIsDepthImage, bool bIsLineImage, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...);
 
 /// \brief Same as XII_TEST_IMAGE_MSG but uses an empty error message.
 #define XII_TEST_IMAGE(ImageNumber, MaxError) XII_TEST_IMAGE_MSG(ImageNumber, MaxError, "")
 
 /// \brief Same as XII_TEST_DEPTH_IMAGE_MSG but uses an empty error message.
 #define XII_TEST_DEPTH_IMAGE(ImageNumber, MaxError) XII_TEST_DEPTH_IMAGE_MSG(ImageNumber, MaxError, "")
+
+/// \brief Same as XII_TEST_LINE_IMAGE_MSG but uses an empty error message.
+#define XII_TEST_LINE_IMAGE(ImageNumber, MaxError) XII_TEST_LINE_IMAGE_MSG(ImageNumber, MaxError, "")
 
 /// \brief Executes an image comparison right now.
 ///
@@ -549,10 +552,14 @@ XII_TEST_DLL bool xiiTestImage(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, bo
 /// \note Some tests need to know at the start, whether an image comparison will be done at the end, so they
 /// can capture the image first. For such use cases, use XII_SCHEDULE_IMAGE_TEST at the start of a sub-test instead.
 #define XII_TEST_IMAGE_MSG(ImageNumber, MaxError, msg, ...) \
-  xiiTestImage(ImageNumber, MaxError, false, XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+  xiiTestImage(ImageNumber, MaxError, false, false, XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 #define XII_TEST_DEPTH_IMAGE_MSG(ImageNumber, MaxError, msg, ...) \
-  xiiTestImage(ImageNumber, MaxError, true, XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+  xiiTestImage(ImageNumber, MaxError, true, false, XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+
+/// \brief Same as XII_TEST_IMAGE_MSG, but allows for pixels to shift in a 1-pixel radius to account for different line rasterization of GPU vendors.
+#define XII_TEST_LINE_IMAGE_MSG(ImageNumber, MaxError, msg, ...) \
+  xiiTestImage(ImageNumber, MaxError, false, true, XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 /// \brief Schedules an XII_TEST_IMAGE to be executed after the current sub-test execution finishes.
 ///
