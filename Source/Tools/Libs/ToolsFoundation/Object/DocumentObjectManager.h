@@ -102,9 +102,10 @@ struct xiiDocumentObjectEvent
   {
     BeforeObjectDestroyed,
     AfterObjectCreated,
+    Invalid
   };
 
-  Type                     m_EventType;
+  Type                     m_EventType = Type::Invalid;
   const xiiDocumentObject* m_pObject;
 };
 

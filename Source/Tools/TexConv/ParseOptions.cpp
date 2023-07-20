@@ -265,8 +265,6 @@ xiiResult xiiTexConv::ParseInputFiles()
 
 xiiResult xiiTexConv::ParseOutputFiles()
 {
-  const auto pCmd = xiiCommandLineUtils::GetGlobalInstance();
-
   m_sOutputFile = opt_Out.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
   m_sOutputThumbnailFile = opt_ThumbnailOut.GetOptionValue(xiiCommandLineOption::LogMode::Always);
@@ -425,10 +423,6 @@ xiiResult xiiTexConv::ParseAssetHeader()
 
   if (!ext.StartsWith_NoCase("xii"))
     return XII_SUCCESS;
-
-  const auto pCmd = xiiCommandLineUtils::GetGlobalInstance();
-
-  xiiUInt32 tmp = m_Processor.m_Descriptor.m_uiAssetVersion;
 
   m_Processor.m_Descriptor.m_uiAssetVersion = (xiiUInt16)opt_AssetVersion.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 

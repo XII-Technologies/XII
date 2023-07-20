@@ -128,7 +128,6 @@ xiiStatus xiiDocument::CreatePrefabDocument(xiiStringView sFile, xiiArrayPtr<con
     auto pSaveAsPrefab = rootObjects[i];
 
     XII_ASSERT_DEV(pSaveAsPrefab != nullptr, "CreatePrefabDocument: pSaveAsPrefab must be a valid object!");
-    const xiiRTTI* pRootType = pSaveAsPrefab->GetTypeAccessor().GetType();
 
     auto pPrefabGraphMainNode = writer.AddObjectToGraph(pSaveAsPrefab);
     graphRootNodes.PushBack(pPrefabGraphMainNode);
