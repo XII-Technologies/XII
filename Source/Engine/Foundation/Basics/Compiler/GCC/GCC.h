@@ -21,7 +21,7 @@
 #  define XII_SOURCE_LINE     __LINE__
 #  define XII_SOURCE_FILE     __FILE__
 
-#  ifdef BUILDSYSTEM_BUILDTYPE_DEBUG
+#  ifdef BUILDSYSTEM_BUILDTYPE_Debug
 #    undef XII_COMPILE_FOR_DEBUG
 #    define XII_COMPILE_FOR_DEBUG XII_ON
 #  endif
