@@ -324,6 +324,10 @@ const char* xiiTranslatorMakeMoreReadable::Translate(const char* szString, xiiUI
   }
 
   result.Trim(" ");
+  while (result.ReplaceAll("  ", " ") > 0)
+  {
+    // Remove double whitespaces.
+  }
 
   if (GetHighlightUntranslated())
   {
