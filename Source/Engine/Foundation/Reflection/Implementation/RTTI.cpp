@@ -12,6 +12,8 @@ struct xiiTypeData
   xiiMutex                                                                               m_Mutex;
   xiiHashTable<xiiUInt64, xiiRTTI*, xiiHashHelper<xiiUInt64>, xiiStaticAllocatorWrapper> m_TypeNameHashToType;
   xiiDynamicArray<xiiRTTI*>                                                              m_AllTypes;
+
+  bool m_bIsIterating = false;
 };
 
 xiiTypeData* GetTypeData()
@@ -212,6 +214,8 @@ void xiiRTTI::UnregisterType()
   XII_LOCK(pData->m_Mutex);
   pData->m_TypeNameHashToType.Remove(m_uiTypeNameHash);
 
+  XII_ASSERT_DEV(pData->m_bIsIterating == false, "Unregistering types while iterating over types might cause unexpected behavior");
+
   pData->m_AllTypes.RemoveAtAndSwap(m_uiTypeIndex);
   if (m_uiTypeIndex != pData->m_AllTypes.GetCount())
   {
@@ -344,8 +348,12 @@ void xiiRTTI::ForEachType(VisitorFunc func, xiiBitflags<ForEachOptions> options 
   auto pData = GetTypeData();
   XII_LOCK(pData->m_Mutex);
 
-  for (const xiiRTTI* pRtti : pData->m_AllTypes)
+  pData->m_bIsIterating = true;
+  // Cannot use ranged based for loop here since we might add new types while iterating and the m_AllTypes array might re-allocate.
+  for (xiiUInt32 i = 0; i < pData->m_AllTypes.GetCount(); ++i)
   {
+    auto pRtti = pData->m_AllTypes.GetData()[i];
+
     if (options.IsSet(ForEachOptions::ExcludeNonAllocatable) && (pRtti->GetAllocator() == nullptr || pRtti->GetAllocator()->CanAllocate() == false))
       continue;
 
@@ -354,6 +362,7 @@ void xiiRTTI::ForEachType(VisitorFunc func, xiiBitflags<ForEachOptions> options 
 
     func(pRtti);
   }
+  pData->m_bIsIterating = false;
 }
 
 void xiiRTTI::ForEachDerivedType(const xiiRTTI* pBaseType, VisitorFunc func, xiiBitflags<ForEachOptions> options /*= ForEachOptions::Default*/)
@@ -361,8 +370,12 @@ void xiiRTTI::ForEachDerivedType(const xiiRTTI* pBaseType, VisitorFunc func, xii
   auto pData = GetTypeData();
   XII_LOCK(pData->m_Mutex);
 
-  for (const xiiRTTI* pRtti : pData->m_AllTypes)
+  pData->m_bIsIterating = true;
+  // Can't use ranged based for loop here since we might add new types while iterating and the m_AllTypes array might re-allocate.
+  for (xiiUInt32 i = 0; i < pData->m_AllTypes.GetCount(); ++i)
   {
+    auto pRtti = pData->m_AllTypes.GetData()[i];
+
     if (!pRtti->IsDerivedFrom(pBaseType))
       continue;
 
@@ -374,6 +387,7 @@ void xiiRTTI::ForEachDerivedType(const xiiRTTI* pBaseType, VisitorFunc func, xii
 
     func(pRtti);
   }
+  pData->m_bIsIterating = false;
 }
 
 void xiiRTTI::AssignPlugin(xiiStringView sPluginName)
@@ -437,9 +451,7 @@ static bool IsValidIdentifierName(xiiStringView sIdentifier)
 
 void xiiRTTI::SanityCheckType(xiiRTTI* pType)
 {
-  XII_ASSERT_DEV(pType->GetTypeFlags().IsSet(xiiTypeFlags::StandardType) + pType->GetTypeFlags().IsSet(xiiTypeFlags::IsEnum) +
-                     pType->GetTypeFlags().IsSet(xiiTypeFlags::Bitflags) + pType->GetTypeFlags().IsSet(xiiTypeFlags::Class) ==
-                   1,
+  XII_ASSERT_DEV(pType->GetTypeFlags().IsSet(xiiTypeFlags::StandardType) + pType->GetTypeFlags().IsSet(xiiTypeFlags::IsEnum) + pType->GetTypeFlags().IsSet(xiiTypeFlags::Bitflags) + pType->GetTypeFlags().IsSet(xiiTypeFlags::Class) == 1,
                  "Types are mutually exclusive!");
 
   for (auto pProp : pType->m_Properties)
@@ -460,9 +472,7 @@ void xiiRTTI::SanityCheckType(xiiRTTI* pType)
 
     if (pProp->GetCategory() != xiiPropertyCategory::Function)
     {
-      XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) + pProp->GetFlags().IsSet(xiiPropertyFlags::IsEnum) +
-                         pProp->GetFlags().IsSet(xiiPropertyFlags::Bitflags) + pProp->GetFlags().IsSet(xiiPropertyFlags::Class) <=
-                       1,
+      XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) + pProp->GetFlags().IsSet(xiiPropertyFlags::IsEnum) + pProp->GetFlags().IsSet(xiiPropertyFlags::Bitflags) + pProp->GetFlags().IsSet(xiiPropertyFlags::Class) <= 1,
                      "Types are mutually exclusive!");
     }
 
