@@ -28,7 +28,7 @@ public:
   /// \brief Creates an instance of xiiAngleTemplate that was initialized from radian. (No need for any conversion)
   constexpr static xiiAngleTemplate<Type> Radian(Type fRadian); // [tested]
 
-
+public:
 
   XII_DECLARE_POD_TYPE();
 

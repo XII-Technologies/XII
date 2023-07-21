@@ -435,77 +435,63 @@ XII_ALWAYS_INLINE bool operator!=(const xiiQuatTemplate<Type>& q1, const xiiQuat
 template <typename Type>
 void xiiQuatTemplate<Type>::GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiAngleTemplate<Type>& out_y, xiiAngleTemplate<Type>& out_z) const
 {
-  XII_NAN_ASSERT(this);
+  // Taken from https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+  // and http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/
+  // adapted to our convention (yaw->pitch->roll, ZYX order or 3-2-1 order)
 
-  // This is adapted from https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/
-  // It is also used in the OZZ Animation Library's "Quaternion::ToEuler" conversion.
+  auto& yaw   = out_z;
+  auto& pitch = out_y;
+  auto& roll  = out_x;
 
-  struct Q
+  const double fSingularityTest      = w * v.y - v.z * v.x;
+  const double fSingularityThreshold = 0.4999995;
+
+  if (fSingularityTest > fSingularityThreshold) // singularity at north pole
   {
-    Type x, y, z, w;
-  };
-
-  const Q _q{v.x, v.y, v.z, w};
-
-  const Type kPi_2 = (Type)1.5707963267948966192313216916398;
-
-  const Type sqw = _q.w * _q.w;
-  const Type sqx = _q.x * _q.x;
-  const Type sqy = _q.y * _q.y;
-  const Type sqz = _q.z * _q.z;
-  // If normalized is one, otherwise is correction factor.
-  const Type            unit = sqx + sqy + sqz + sqw;
-  const Type            test = _q.x * _q.y + _q.z * _q.w;
-  xiiVec3Template<Type> euler;
-
-  if (test > 0.499f * unit) // Singularity at the North Pole.
-  {
-    euler.x = 2.0f * std::atan2(_q.x, _q.w);
-    euler.y = kPi_2;
-    euler.z = 0;
+    yaw   = -(Type)2.0f * xiiMath::ATan2(v.x, w);
+    pitch = xiiAngleTemplate<Type>::Degree(90.0f);
+    roll  = xiiAngleTemplate<Type>::Degree(0.0f);
   }
-  else if (test < -0.499f * unit) // Singularity at the South Pole.
+  else if (fSingularityTest < -fSingularityThreshold) // singularity at south pole
   {
-    euler.x = -2 * std::atan2(_q.x, _q.w);
-    euler.y = -kPi_2;
-    euler.z = 0;
+    yaw   = (Type)2.0f * xiiMath::ATan2(v.x, w);
+    pitch = xiiAngleTemplate<Type>::Degree(-90.0f);
+    roll  = xiiAngleTemplate<Type>::Degree(0.0f);
   }
   else
   {
-    euler.x = std::atan2(2.0f * _q.y * _q.w - 2.0f * _q.x * _q.z, sqx - sqy - sqz + sqw);
-    euler.y = std::asin(2.0f * test / unit);
-    euler.z = std::atan2(2.0f * _q.x * _q.w - 2.0f * _q.y * _q.z, -sqx + sqy - sqz + sqw);
-  }
+    // yaw (z-axis rotation)
+    const double siny = 2.0 * (w * v.z + v.x * v.y);
+    const double cosy = 1.0 - 2.0 * (v.y * v.y + v.z * v.z);
+    yaw               = xiiMath::ATan2((Type)siny, (Type)cosy);
 
-  out_x.SetRadian(euler.z);
-  out_y.SetRadian(euler.x);
-  out_z.SetRadian(euler.y);
+    // pitch (y-axis rotation)
+    pitch = xiiMath::ASin((Type)2.0f * (Type)fSingularityTest);
+
+    // roll (x-axis rotation)
+    const double sinr = 2.0 * (w * v.x + v.y * v.z);
+    const double cosr = 1.0 - 2.0 * (v.x * v.x + v.y * v.y);
+    roll              = xiiMath::ATan2((Type)sinr, (Type)cosr);
+  }
 }
 
 template <typename Type>
 void xiiQuatTemplate<Type>::SetFromEulerAngles(const xiiAngleTemplate<Type>& x, const xiiAngleTemplate<Type>& y, const xiiAngleTemplate<Type>& z)
 {
-  // This is adapted from https://www.euclideanspace.com/maths/geometry/rotations/conversions/eulerToQuaternion/index.htm
-  // It is also used in the OZZ Animation Library's "Quaternion::FromEuler" conversion.
+  /// Taken from here (yaw->pitch->roll, ZYX order or 3-2-1 order):
+  /// https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+  const auto&  yaw   = z;
+  const auto&  pitch = y;
+  const auto&  roll  = x;
+  const double cy    = xiiMath::Cos(yaw * (Type)0.5f);
+  const double sy    = xiiMath::Sin(yaw * (Type)0.5f);
+  const double cp    = xiiMath::Cos(pitch * (Type)0.5f);
+  const double sp    = xiiMath::Sin(pitch * (Type)0.5f);
+  const double cr    = xiiMath::Cos(roll * (Type)0.5f);
+  const double sr    = xiiMath::Sin(roll * (Type)0.5f);
 
-  const Type _yaw   = y.GetRadian();
-  const Type _pitch = z.GetRadian();
-  const Type _roll  = x.GetRadian();
-
-  const Type half_yaw   = _yaw * 0.5f;
-  const Type c1         = std::cos(half_yaw);
-  const Type s1         = std::sin(half_yaw);
-  const Type half_pitch = _pitch * 0.5f;
-  const Type c2         = std::cos(half_pitch);
-  const Type s2         = std::sin(half_pitch);
-  const Type half_roll  = _roll * 0.5f;
-  const Type c3         = std::cos(half_roll);
-  const Type s3         = std::sin(half_roll);
-  const Type c1c2       = c1 * c2;
-  const Type s1s2       = s1 * s2;
-
-  v.x = c1c2 * s3 + s1s2 * c3;
-  v.y = s1 * c2 * c3 + c1 * s2 * s3;
-  v.z = c1 * s2 * c3 - s1 * c2 * s3;
-  w   = c1c2 * c3 - s1s2 * s3;
+  w   = (Type)(cy * cp * cr + sy * sp * sr);
+  v.x = (Type)(cy * cp * sr - sy * sp * cr);
+  v.y = (Type)(cy * sp * cr + sy * cp * sr);
+  v.z = (Type)(sy * cp * cr - cy * sp * sr);
 }

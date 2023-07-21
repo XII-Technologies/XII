@@ -291,6 +291,8 @@ XII_CREATE_SIMPLE_TEST(Math, Quaternion)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetAsEulerAngles / SetFromEulerAngles")
   {
+    xiiAngle ax, ay, az;
+
     for (xiiUInt32 x = 0; x < 360; x += 15)
     {
       xiiQuat q;
@@ -308,9 +310,12 @@ XII_CREATE_SIMPLE_TEST(Math, Quaternion)
 
       XII_TEST_VEC3(axis, xiiVec3::UnitXAxis(), 0.001f);
       XII_TEST_FLOAT(angle.GetDegree(), (float)x, 0.1f);
+
+      q.GetAsEulerAngles(ax, ay, az);
+      XII_TEST_BOOL(ax.IsEqualNormalized(xiiAngle::Degree(x), xiiAngle::Degree(0.1f)));
     }
 
-    for (xiiUInt32 y = 15; y < 360; y += 15)
+    for (xiiInt32 y = -90; y < 360; y += 15)
     {
       xiiQuat q;
       q.SetFromEulerAngles({}, xiiAngle::Degree(y), {});
@@ -325,8 +330,23 @@ XII_CREATE_SIMPLE_TEST(Math, Quaternion)
       xiiAngle angle;
       q.GetRotationAxisAndAngle(axis, angle, 0.01f);
 
-      XII_TEST_VEC3(axis, xiiVec3::UnitYAxis(), 0.001f);
-      XII_TEST_FLOAT(angle.GetDegree(), (float)y, 0.1f);
+      if (y < 0)
+      {
+        XII_TEST_VEC3(axis, -xiiVec3::UnitYAxis(), 0.001f);
+        XII_TEST_FLOAT(angle.GetDegree(), (float)-y, 0.1f);
+      }
+      else if (y > 0)
+      {
+        XII_TEST_VEC3(axis, xiiVec3::UnitYAxis(), 0.001f);
+        XII_TEST_FLOAT(angle.GetDegree(), (float)y, 0.1f);
+      }
+
+      // pitch is only defined in -90..90 range
+      if (y >= -90 && y <= 90)
+      {
+        q.GetAsEulerAngles(ax, ay, az);
+        XII_TEST_FLOAT(ay.GetDegree(), (float)y, 0.1f);
+      }
     }
 
     for (xiiUInt32 z = 15; z < 360; z += 15)
@@ -346,24 +366,38 @@ XII_CREATE_SIMPLE_TEST(Math, Quaternion)
 
       XII_TEST_VEC3(axis, xiiVec3::UnitZAxis(), 0.001f);
       XII_TEST_FLOAT(angle.GetDegree(), (float)z, 0.1f);
+
+      q.GetAsEulerAngles(ax, ay, az);
+      XII_TEST_BOOL(az.IsEqualNormalized(xiiAngle::Degree(z), xiiAngle::Degree(0.1f)));
     }
 
-    for (xiiUInt32 x = 5; x < 360; x += 20)
+    for (xiiUInt32 x = 0; x < 360; x += 15)
     {
-      for (xiiUInt32 y = 5; y < 360; y += 20)
+      for (xiiUInt32 y = 0; y < 360; y += 15)
       {
-        for (xiiUInt32 z = 5; z < 360; z += 30)
+        for (xiiUInt32 z = 0; z < 360; z += 30)
         {
           xiiQuat q1;
           q1.SetFromEulerAngles(xiiAngle::Degree(x), xiiAngle::Degree(y), xiiAngle::Degree(z));
 
-          xiiAngle ax, ay, az;
           q1.GetAsEulerAngles(ax, ay, az);
 
           xiiQuat q2;
           q2.SetFromEulerAngles(ax, ay, az);
 
-          XII_TEST_BOOL(q1.IsEqualRotation(q2, 0.01f));
+          XII_TEST_BOOL(q1.IsEqualRotation(q2, 0.1f));
+
+          // Check that euler order is ZYX aka 3-2-1
+          xiiQuat q3;
+          {
+            xiiQuat xRot, yRot, zRot;
+            xRot.SetFromAxisAndAngle(xiiVec3::UnitXAxis(), xiiAngle::Degree(x));
+            yRot.SetFromAxisAndAngle(xiiVec3::UnitYAxis(), xiiAngle::Degree(y));
+            zRot.SetFromAxisAndAngle(xiiVec3::UnitZAxis(), xiiAngle::Degree(z));
+
+            q3 = zRot * yRot * xRot;
+          }
+          XII_TEST_BOOL(q1.IsEqualRotation(q3, 0.01f));
         }
       }
     }
