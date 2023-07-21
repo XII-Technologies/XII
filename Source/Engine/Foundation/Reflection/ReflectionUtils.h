@@ -83,8 +83,7 @@ public:
   /// \brief Converts an enum or bitfield value into its string representation.
   ///
   /// The type of pEnumerationRtti will be automatically detected. The syntax of out_sOutput equals MSVC debugger output.
-  static bool EnumerationToString(const xiiRTTI* pEnumerationRtti, xiiInt64 iValue, xiiStringBuilder& out_sOutput,
-                                  xiiEnum<EnumConversionMode> conversionMode = EnumConversionMode::Default); // [tested]
+  static bool EnumerationToString(const xiiRTTI* pEnumerationRtti, xiiInt64 iValue, xiiStringBuilder& out_sOutput, xiiEnum<EnumConversionMode> conversionMode = EnumConversionMode::Default); // [tested]
 
   /// \brief Helper template to shorten the call for xiiEnums
   template <typename T>

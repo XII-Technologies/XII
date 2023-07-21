@@ -55,8 +55,8 @@ template <>
 class xiiTypedMemberProperty<const char*> : public xiiAbstractMemberProperty
 {
 public:
-  xiiTypedMemberProperty(const char* szPropertyName) :
-    xiiAbstractMemberProperty(szPropertyName)
+  xiiTypedMemberProperty(xiiStringView sPropertyName) :
+    xiiAbstractMemberProperty(sPropertyName)
   {
     // We treat const char* as a basic type and not a pointer.
     m_Flags = xiiPropertyFlags::GetParameterFlags<const char*>();
@@ -89,19 +89,6 @@ public:
   /// \brief Constructor.
   xiiAccessorProperty(xiiStringView sPropertyName, GetterFunc getter, SetterFunc setter) :
     xiiTypedMemberProperty<RealType>(sPropertyName)
-  {
-    XII_ASSERT_DEBUG(getter != nullptr, "The getter of a property cannot be nullptr.");
-
-    m_Getter = getter;
-    m_Setter = setter;
-
-    if (m_Setter == nullptr)
-      xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
-  }
-
-  /// \brief Constructor.
-  xiiAccessorProperty(const char* szPropertyName, GetterFunc getter, SetterFunc setter) :
-    xiiTypedMemberProperty<RealType>(szPropertyName)
   {
     XII_ASSERT_DEBUG(getter != nullptr, "The getter of a property cannot be nullptr.");
 

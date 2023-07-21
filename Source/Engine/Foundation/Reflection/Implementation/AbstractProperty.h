@@ -524,6 +524,7 @@ struct xiiFunctionType
     Member,       ///< A normal member function, a valid instance pointer must be provided to call.
     StaticMember, ///< A static member function, instance pointer will be ignored.
     Constructor,  ///< A constructor. Return value is a void* pointing to the new instance allocated with the default allocator.
+
     Default = Member
   };
 };
@@ -539,16 +540,22 @@ public:
   }
 
   virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Function; }
+
   /// \brief Returns the type of function, see xiiFunctionPropertyType::Enum.
   virtual xiiFunctionType::Enum GetFunctionType() const = 0;
+
   /// \brief Returns the type of the return value.
   virtual const xiiRTTI* GetReturnType() const = 0;
+
   /// \brief Returns property flags of the return value.
   virtual xiiBitflags<xiiPropertyFlags> GetReturnFlags() const = 0;
+
   /// \brief Returns the number of arguments.
   virtual xiiUInt32 GetArgumentCount() const = 0;
+
   /// \brief Returns the type of the given argument.
   virtual const xiiRTTI* GetArgumentType(xiiUInt32 uiParamIndex) const = 0;
+
   /// \brief Returns the property flags of the given argument.
   virtual xiiBitflags<xiiPropertyFlags> GetArgumentFlags(xiiUInt32 uiParamIndex) const = 0;
 

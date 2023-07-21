@@ -72,3 +72,5 @@ void xiiInstanceDataAllocator::Destruct(xiiByteBlobPtr blobPtr) const
     uiOffset += desc.m_uiTypeSize;
   }
 }
+
+XII_STATICLINK_FILE(Foundation, Foundation_Memory_Implementation_InstanceDataAllocator);
