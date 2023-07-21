@@ -18,7 +18,7 @@ XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Read(volatile const xiiInt64& iSrc)
   do
   {
     old = src;
-  } while (_InterlockedCompareExchange64(const_cast<volatile xiiInt64*>(&src), old, old) != old);
+  } while (_InterlockedCompareExchange64(const_cast<volatile xiiInt64*>(&iSrc), old, old) != old);
   return old;
 #else
   return _InterlockedOr64(const_cast<volatile xiiInt64*>(&iSrc), 0);
@@ -36,8 +36,8 @@ XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Increment(volatile xiiInt64& ref_iDes
   xiiInt64 old;
   do
   {
-    old = dest;
-  } while (_InterlockedCompareExchange64(&dest, old + 1, old) != old);
+    old = ref_iDest;
+  } while (_InterlockedCompareExchange64(&ref_iDest, old + 1, old) != old);
   return old + 1;
 #else
   return _InterlockedIncrement64(&ref_iDest);
@@ -55,8 +55,8 @@ XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Decrement(volatile xiiInt64& ref_iDes
   xiiInt64 old;
   do
   {
-    old = dest;
-  } while (_InterlockedCompareExchange64(&dest, old - 1, old) != old);
+    old = ref_iDest;
+  } while (_InterlockedCompareExchange64(&ref_iDest, old - 1, old) != old);
   return old - 1;
 #else
   return _InterlockedDecrement64(&ref_iDest);
@@ -74,8 +74,8 @@ XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::PostIncrement(volatile xiiInt64& ref_
   xiiInt64 old;
   do
   {
-    old = dest;
-  } while (_InterlockedCompareExchange64(&dest, old + 1, old) != old);
+    old = ref_iDest;
+  } while (_InterlockedCompareExchange64(&ref_iDest, old + 1, old) != old);
   return old;
 #else
   return _InterlockedExchangeAdd64(&ref_iDest, 1);
@@ -93,8 +93,8 @@ XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::PostDecrement(volatile xiiInt64& ref_
   xiiInt64 old;
   do
   {
-    old = dest;
-  } while (_InterlockedCompareExchange64(&dest, old - 1, old) != old);
+    old = ref_iDest;
+  } while (_InterlockedCompareExchange64(&ref_iDest, old - 1, old) != old);
   return old;
 #else
   return _InterlockedExchangeAdd64(&ref_iDest, -1);
@@ -112,8 +112,8 @@ XII_ALWAYS_INLINE void xiiAtomicUtils::Add(volatile xiiInt64& ref_iDest, xiiInt6
   xiiInt64 old;
   do
   {
-    old = dest;
-  } while (_InterlockedCompareExchange64(&dest, old + value, old) != old);
+    old = ref_iDest;
+  } while (_InterlockedCompareExchange64(&ref_iDest, old + value, old) != old);
 #else
   _InterlockedExchangeAdd64(&ref_iDest, value);
 #endif
@@ -131,8 +131,8 @@ XII_ALWAYS_INLINE void xiiAtomicUtils::And(volatile xiiInt64& ref_iDest, xiiInt6
   xiiInt64 old;
   do
   {
-    old = dest;
-  } while (_InterlockedCompareExchange64(&dest, old & value, old) != old);
+    old = ref_iDest;
+  } while (_InterlockedCompareExchange64(&ref_iDest, old & value, old) != old);
 #else
   _InterlockedAnd64(&ref_iDest, value);
 #endif
@@ -150,8 +150,8 @@ XII_ALWAYS_INLINE void xiiAtomicUtils::Or(volatile xiiInt64& ref_iDest, xiiInt64
   xiiInt64 old;
   do
   {
-    old = dest;
-  } while (_InterlockedCompareExchange64(&dest, old | value, old) != old);
+    old = ref_iDest;
+  } while (_InterlockedCompareExchange64(&ref_iDest, old | value, old) != old);
 #else
   _InterlockedOr64(&ref_iDest, value);
 #endif
@@ -169,8 +169,8 @@ XII_ALWAYS_INLINE void xiiAtomicUtils::Xor(volatile xiiInt64& ref_iDest, xiiInt6
   xiiInt64 old;
   do
   {
-    old = dest;
-  } while (_InterlockedCompareExchange64(&dest, old ^ value, old) != old);
+    old = ref_iDest;
+  } while (_InterlockedCompareExchange64(&ref_iDest, old ^ value, old) != old);
 #else
   _InterlockedXor64(&ref_iDest, value);
 #endif
@@ -241,8 +241,8 @@ XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Set(volatile xiiInt64& ref_iDest, xii
   xiiInt64 old;
   do
   {
-    old = dest;
-  } while (_InterlockedCompareExchange64(&dest, value, old) != old);
+    old = ref_iDest;
+  } while (_InterlockedCompareExchange64(&ref_iDest, value, old) != old);
   return old;
 #else
   return _InterlockedExchange64(&ref_iDest, value);
