@@ -198,6 +198,13 @@ public:
     m_Getter(static_cast<Class*>(pInstance)).SetCount(uiCount);
   }
 
+  virtual void* GetValuePointer(void* pInstance, xiiUInt32 uiIndex) override
+  {
+    XII_ASSERT_DEBUG(uiIndex < GetCount(pInstance), "GetValue: uiIndex ('{0}') is out of range ('{1}')", uiIndex, GetCount(pInstance));
+
+    return &(m_Getter(static_cast<Class*>(pInstance))[uiIndex]);
+  }
+
 private:
   GetConstContainerFunc m_ConstGetter;
   GetContainerFunc      m_Getter;

@@ -299,6 +299,8 @@ public:
 
   /// \brief Resizes the array to uiCount.
   virtual void SetCount(void* pInstance, xiiUInt32 uiCount) = 0;
+
+  virtual void* GetValuePointer(void* pInstance, xiiUInt32 uiIndex) { return nullptr; }
 };
 
 
