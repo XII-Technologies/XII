@@ -48,7 +48,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiScriptCoroutine_TweenProperty, xiiScriptCorou
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiScriptCoroutine_TweenProperty::Start(xiiComponentHandle hComponent, xiiStringView sPropertyName, xiiVariant targetValue, xiiTime duration, xiiEnum<xiiCurveFunction> easing)
+void xiiScriptCoroutine_TweenProperty::Start(xiiComponentHandle hComponent, xiiStringView sPropertyName, xiiVariant targetValue, xiiTime duration, xiiEnum<xiiEasingFunction> easingFunction)
 {
   xiiComponent* pComponent = nullptr;
   if (xiiWorld::GetWorld(hComponent)->TryGetComponent(hComponent, pComponent) == false)
@@ -80,10 +80,10 @@ void xiiScriptCoroutine_TweenProperty::Start(xiiComponentHandle hComponent, xiiS
     return;
   }
 
-  m_pProperty   = static_cast<xiiAbstractMemberProperty*>(pProp);
-  m_hComponent  = hComponent;
-  m_SourceValue = xiiReflectionUtils::GetMemberPropertyValue(m_pProperty, pComponent);
-  m_Easing      = easing;
+  m_pProperty      = static_cast<xiiAbstractMemberProperty*>(pProp);
+  m_hComponent     = hComponent;
+  m_SourceValue    = xiiReflectionUtils::GetMemberPropertyValue(m_pProperty, pComponent);
+  m_EasingFunction = easingFunction;
 
   m_Duration   = duration;
   m_TimePassed = xiiTime::Zero();
@@ -108,7 +108,7 @@ xiiScriptCoroutine::Result xiiScriptCoroutine_TweenProperty::Update(xiiTime delt
 
     const double fDuration = m_Duration.GetSeconds();
     double       fCurrentX = xiiMath::Min(fDuration > 0 ? m_TimePassed.GetSeconds() / fDuration : 1.0, 1.0);
-    fCurrentX              = xiiCurveFunction::GetValue(m_Easing, fCurrentX);
+    fCurrentX              = xiiEasingFunction::GetValue(m_EasingFunction, fCurrentX);
 
     LerpFunc   func;
     xiiVariant currentValue;
