@@ -293,7 +293,7 @@ const char* xiiTranslatorMakeMoreReadable::Translate(const char* szString, xiiUI
       continue;
     }
 
-    if (IsNumber(uiPrev) != IsNumber(uiCur))
+    if (uiPrev != '[' && uiCur != ']' && IsNumber(uiPrev) != IsNumber(uiCur))
     {
       result.Append(" ");
       result.Append(uiCur);
