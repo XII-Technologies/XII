@@ -26,6 +26,8 @@ xiiQtNodeScene::xiiQtNodeScene(QObject* pParent) :
 
 xiiQtNodeScene::~xiiQtNodeScene()
 {
+  disconnect(this, &QGraphicsScene::selectionChanged, this, &xiiQtNodeScene::OnSelectionChanged);
+
   SetDocumentNodeManager(nullptr);
 }
 
@@ -58,7 +60,11 @@ void xiiQtNodeScene::SetDocumentNodeManager(const xiiDocumentNodeManager* pManag
       {
         CreateQtNode(pObject);
       }
-      else if (pManager->IsConnection(pObject))
+    }
+
+    for (const auto& pObject : rootObjects)
+    {
+      if (pManager->IsConnection(pObject))
       {
         CreateQtConnection(pObject);
       }
