@@ -112,9 +112,12 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView
 
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
     case xiiArchiveCompressionMode::Compressed_zstd:
-      zstdWriter.SetOutputStream(&ref_stream, (xiiCompressedStreamWriterZstd::Compression)iCompressionLevel);
+    {
+      constexpr xiiUInt32 uiMaxNumWorkerThreads = 12u;
+      zstdWriter.SetOutputStream(&ref_stream, uiMaxNumWorkerThreads, (xiiCompressedStreamWriterZstd::Compression)iCompressionLevel);
       pWriter = &zstdWriter;
-      break;
+    }
+    break;
 #endif
 
     default:

@@ -48,7 +48,7 @@ XII_CREATE_SIMPLE_TEST(IO, CompressedStreamZstd)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Compress Data")
   {
-    CompressedWriter.SetOutputStream(&MemoryWriter);
+    CompressedWriter.SetOutputStream(&MemoryWriter, 0);
 
     bool bFlush = true;
 
