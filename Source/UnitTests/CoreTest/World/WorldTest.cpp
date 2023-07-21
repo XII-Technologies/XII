@@ -163,11 +163,11 @@ namespace
       {
         xiiUInt32 i = it->GetHandle().GetInternalID().m_InstanceIndex;
 
-        xiiVec3 newPos = xiiVec3(i * 10, 0, 0);
+        xiiVec3 newPos = xiiVec3(i * 10.0f, 0, 0);
         it->SetLocalPosition(newPos);
 
         xiiQuat newRot;
-        newRot.SetFromAxisAndAngle(xiiVec3::UnitZAxis(), xiiAngle::Degree(i * 30));
+        newRot.SetFromAxisAndAngle(xiiVec3::UnitZAxis(), xiiAngle::Degree(i * 30.0f));
         it->SetLocalRotation(newRot);
 
         if (i > 5)

@@ -44,7 +44,7 @@ XII_END_STATIC_REFLECTED_TYPE;
 xiiWorld::xiiWorld(xiiWorldDesc& ref_desc) :
   m_Data(ref_desc)
 {
-  m_pUpdateTask                                     = XII_DEFAULT_NEW(xiiDelegateTask<void>, "", xiiMakeDelegate(&xiiWorld::UpdateFromThread, this));
+  m_pUpdateTask                                     = XII_DEFAULT_NEW(xiiDelegateTask<void>, "WorldUpdate",xiiTaskNesting::Never, xiiMakeDelegate(&xiiWorld::UpdateFromThread, this));
   m_Data.m_pCoordinateSystemProvider->m_pOwnerWorld = this;
 
   xiiStringBuilder sb = ref_desc.m_sName.GetString();

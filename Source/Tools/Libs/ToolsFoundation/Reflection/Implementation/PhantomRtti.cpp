@@ -4,7 +4,7 @@
 #include <ToolsFoundation/Reflection/PhantomProperty.h>
 #include <ToolsFoundation/Reflection/PhantomRtti.h>
 
-xiiPhantomRTTI::xiiPhantomRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiStringView sPluginName) :
+xiiPhantomRTTI::xiiPhantomRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiStringView sPluginName) :
   xiiRTTI(nullptr, pParentType, uiTypeSize, uiTypeVersion, uiVariantType, flags | xiiTypeFlags::Phantom, nullptr, xiiArrayPtr<xiiAbstractProperty*>(), xiiArrayPtr<xiiAbstractFunctionProperty*>(), xiiArrayPtr<xiiPropertyAttribute*>(), xiiArrayPtr<xiiAbstractMessageHandler*>(), xiiArrayPtr<xiiMessageSenderInfo>(), nullptr)
 {
   m_sTypeNameStorage   = sName;

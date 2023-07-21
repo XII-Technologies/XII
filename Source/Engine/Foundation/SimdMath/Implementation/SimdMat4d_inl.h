@@ -59,11 +59,27 @@ XII_ALWAYS_INLINE void xiiSimdMat4d::SetIdentity()
   m_col3.Set(0, 0, 0, 1);
 }
 
+XII_ALWAYS_INLINE void xiiSimdMat4d::SetZero()
+{
+  m_col0.SetZero();
+  m_col1.SetZero();
+  m_col2.SetZero();
+  m_col3.SetZero();
+}
+
 // static
 XII_ALWAYS_INLINE xiiSimdMat4d xiiSimdMat4d::IdentityMatrix()
 {
   xiiSimdMat4d result;
   result.SetIdentity();
+  return result;
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdMat4d xiiSimdMat4d::ZeroMatrix()
+{
+  xiiSimdMat4d result;
+  result.SetZero();
   return result;
 }
 

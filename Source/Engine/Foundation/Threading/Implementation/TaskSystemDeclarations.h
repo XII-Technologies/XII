@@ -164,7 +164,7 @@ struct xiiTaskGroupDependency
 /// If the nesting specification is violated, the task system will assert.
 enum class xiiTaskNesting
 {
-  Maybe,
+  Maybe = 0,
   Never,
 };
 

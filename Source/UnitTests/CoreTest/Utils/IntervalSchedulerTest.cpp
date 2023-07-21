@@ -213,7 +213,7 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
     for (xiiUInt32 i = 0; i < 32; ++i)
     {
       auto& work        = works.ExpandAndGetRef();
-      work.m_IntervalMs = (i & 1);
+      work.m_IntervalMs = static_cast<float>((i & 1u));
 
       scheduler.AddOrUpdateWork(&work, xiiTime::Milliseconds(i));
     }
