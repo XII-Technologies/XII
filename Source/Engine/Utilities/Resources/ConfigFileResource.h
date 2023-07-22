@@ -115,7 +115,7 @@ public:
     xiiMemoryStreamReader         m_Reader;
     xiiDependencyFile             m_RequiredFiles;
 
-    xiiResult PrePropFileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath);
+    xiiResult PrePropFileLocator(xiiStringView sCurAbsoluteFile, xiiStringView sIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath);
   };
 
   virtual xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;

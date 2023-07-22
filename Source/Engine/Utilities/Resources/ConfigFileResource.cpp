@@ -188,9 +188,9 @@ void xiiConfigFileResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiResult xiiConfigFileResourceLoader::LoadedData::PrePropFileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath)
+xiiResult xiiConfigFileResourceLoader::LoadedData::PrePropFileLocator(xiiStringView sCurAbsoluteFile, xiiStringView sIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath)
 {
-  xiiResult res = xiiPreprocessor::DefaultFileLocator(szCurAbsoluteFile, szIncludeFile, incType, out_sAbsoluteFilePath);
+  xiiResult res = xiiPreprocessor::DefaultFileLocator(sCurAbsoluteFile, sIncludeFile, incType, out_sAbsoluteFilePath);
 
   m_RequiredFiles.AddFileDependency(out_sAbsoluteFilePath);
 

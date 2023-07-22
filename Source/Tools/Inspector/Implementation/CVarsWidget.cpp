@@ -165,7 +165,7 @@ void xiiQtCVarsWidget::SendCVarUpdateToServer(xiiStringView sName, const xiiCVar
 {
   xiiTelemetryMessage Msg;
   Msg.SetMessageID('SVAR', ' SET');
-  Msg.GetWriter() << szName;
+  Msg.GetWriter() << sName;
   Msg.GetWriter() << cvd.m_uiType;
 
   switch (cvd.m_uiType)

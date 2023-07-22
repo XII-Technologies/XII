@@ -91,7 +91,7 @@ void xiiSurfaceInteraction::RemoveParameter(xiiStringView sKey)
 
 bool xiiSurfaceInteraction::GetParameter(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Parameters.Find(sKey);
+  xiiUInt32 it = m_Parameters.Find(xiiTempHashedString(sKey));
 
   if (it == xiiInvalidIndex)
     return false;

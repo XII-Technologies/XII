@@ -17,7 +17,7 @@ class xiiMemberSetProperty<Class, xiiTagSet, xiiStringView> : public xiiTypedSet
 {
 public:
   using Container             = xiiTagSet;
-  using Type                  = xiiConstCharPtr;
+  using Type                  = xiiStringView;
   using RealType              = typename xiiTypeTraits<Type>::NonConstReferenceType;
   using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
   using GetContainerFunc      = Container& (*)(Class* pInstance);
@@ -79,7 +79,7 @@ class xiiAccessorSetProperty<Class, xiiStringView, const xiiTagSet&> : public xi
 {
 public:
   using Container = const xiiTagSet&;
-  using Type      = xiiConstCharPtr;
+  using Type      = xiiStringView;
 
   using ContainerType = typename xiiTypeTraits<Container>::NonConstReferenceType;
   using RealType      = typename xiiTypeTraits<Type>::NonConstReferenceType;
