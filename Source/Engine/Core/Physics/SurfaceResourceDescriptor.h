@@ -16,7 +16,7 @@ struct xiiSurfaceInteractionAlignment
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     SurfaceNormal,
     IncidentDirection,

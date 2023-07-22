@@ -22,9 +22,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGameObject, xiiNoBase, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Name", GetNameInternal, SetNameInternal),
+    XII_ACCESSOR_PROPERTY("Name", GetName, SetName),
     XII_ACCESSOR_PROPERTY("Active", GetActiveFlag, SetActiveFlag)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_ACCESSOR_PROPERTY("GlobalKey", GetGlobalKeyInternal, SetGlobalKeyInternal),
+    XII_ACCESSOR_PROPERTY("GlobalKey", GetGlobalKey, SetGlobalKey),
     XII_ENUM_ACCESSOR_PROPERTY("Mode", xiiObjectMode, Reflection_GetMode, Reflection_SetMode),
     XII_ACCESSOR_PROPERTY("LocalPosition", GetLocalPosition, SetLocalPosition)->AddAttributes(new xiiSuffixAttribute(" m")),
     XII_ACCESSOR_PROPERTY("LocalRotation", GetLocalRotation, SetLocalRotation),
@@ -352,11 +352,6 @@ void xiiGameObject::SetGlobalKey(const xiiHashedString& sName)
 xiiStringView xiiGameObject::GetGlobalKey() const
 {
   return GetWorld()->GetObjectGlobalKey(this);
-}
-
-const char* xiiGameObject::GetGlobalKeyInternal() const
-{
-  return GetWorld()->GetObjectGlobalKey(this).GetStartPointer(); // we know that it's zero terminated
 }
 
 void xiiGameObject::SetParent(const xiiGameObjectHandle& hParent, xiiGameObject::TransformPreservation preserve)

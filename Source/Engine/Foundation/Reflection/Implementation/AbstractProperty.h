@@ -139,6 +139,7 @@ struct xiiPropertyCategory
     Array,    ///< The property is actually an array of values. The array dimensions might be changeable. Cast to xiiAbstractArrayProperty.
     Set,      ///< The property is actually a set of values. Cast to xiiAbstractArrayProperty.
     Map,      ///< The property is actually a map from string to values. Cast to xiiAbstractArrayProperty.
+
     Default = Member
   };
 };

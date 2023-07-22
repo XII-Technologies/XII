@@ -104,22 +104,7 @@ XII_ALWAYS_INLINE void xiiGameObject::SetGlobalKey(xiiStringView sKey)
 
 XII_ALWAYS_INLINE xiiStringView xiiGameObject::GetName() const
 {
-  return m_sName.GetView();
-}
-
-XII_ALWAYS_INLINE void xiiGameObject::SetNameInternal(const char* szName)
-{
-  m_sName.Assign(szName);
-}
-
-XII_ALWAYS_INLINE const char* xiiGameObject::GetNameInternal() const
-{
   return m_sName;
-}
-
-XII_ALWAYS_INLINE void xiiGameObject::SetGlobalKeyInternal(const char* szName)
-{
-  SetGlobalKey(szName);
 }
 
 XII_ALWAYS_INLINE bool xiiGameObject::HasName(const xiiTempHashedString& sName) const

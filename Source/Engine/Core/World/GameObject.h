@@ -494,12 +494,6 @@ private:
   friend class xiiComponentManagerBase;
   friend class xiiGameObjectTest;
 
-  // only needed until reflection can deal with xiiStringView
-  void        SetNameInternal(const char* szName);
-  const char* GetNameInternal() const;
-  void        SetGlobalKeyInternal(const char* szKey);
-  const char* GetGlobalKeyInternal() const;
-
   bool SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg);
   bool SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg) const;
   bool SendMessageRecursiveInternal(xiiMessage& msg, bool bWasPostedMsg);

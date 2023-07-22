@@ -27,8 +27,8 @@ template <>
 class xiiTypedArrayProperty<const char*> : public xiiAbstractArrayProperty
 {
 public:
-  xiiTypedArrayProperty(const char* szPropertyName) :
-    xiiAbstractArrayProperty(szPropertyName)
+  xiiTypedArrayProperty(xiiStringView sPropertyName) :
+    xiiAbstractArrayProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<const char*>();
   }

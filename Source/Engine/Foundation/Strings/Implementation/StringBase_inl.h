@@ -91,8 +91,7 @@ inline const char* xiiStringBase<Derived>::FindLastSubString_NoCase(xiiStringVie
   if (szStartSearchAt == nullptr)
     szStartSearchAt = InternalGetDataEnd();
 
-  XII_ASSERT_DEV((szStartSearchAt >= InternalGetData()) && (szStartSearchAt <= InternalGetDataEnd()),
-                 "The given pointer to start searching at is not inside this strings valid range.");
+  XII_ASSERT_DEV((szStartSearchAt >= InternalGetData()) && (szStartSearchAt <= InternalGetDataEnd()), "The given pointer to start searching at is not inside this strings valid range.");
 
   return xiiStringUtils::FindLastSubString_NoCase(InternalGetData(), sStringToFind.GetStartPointer(), szStartSearchAt, InternalGetDataEnd(), sStringToFind.GetEndPointer());
 }

@@ -59,7 +59,7 @@ void xiiSurfaceInteraction::SetPrefab(xiiStringView sPrefab)
 xiiStringView xiiSurfaceInteraction::GetPrefab() const
 {
   if (!m_hPrefab.IsValid())
-    return "";
+    return {};
 
   return m_hPrefab.GetResourceID();
 }

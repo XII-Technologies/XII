@@ -143,19 +143,19 @@ void xiiScriptComponent::SetScriptClass(const xiiScriptClassResourceHandle& hScr
   }
 }
 
-void xiiScriptComponent::SetScriptClassFile(const char* szFile)
+void xiiScriptComponent::SetScriptClassFile(xiiStringView sFile)
 {
   xiiScriptClassResourceHandle hScript;
 
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
+  if (!sFile.IsEmpty())
   {
-    hScript = xiiResourceManager::LoadResource<xiiScriptClassResource>(szFile);
+    hScript = xiiResourceManager::LoadResource<xiiScriptClassResource>(sFile);
   }
 
   SetScriptClass(hScript);
 }
 
-const char* xiiScriptComponent::GetScriptClassFile() const
+xiiStringView xiiScriptComponent::GetScriptClassFile() const
 {
   return m_hScriptClass.IsValid() ? m_hScriptClass.GetResourceID().GetData() : "";
 }
@@ -175,18 +175,18 @@ xiiTime xiiScriptComponent::GetUpdateInterval() const
   return m_UpdateInterval;
 }
 
-const xiiRangeView<const char*, xiiUInt32> xiiScriptComponent::GetParameters() const
+const xiiRangeView<xiiStringView, xiiUInt32> xiiScriptComponent::GetParameters() const
 {
-  return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; },
+  return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
                                               [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
                                               [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                              [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
+                                              [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt); });
 }
 
-void xiiScriptComponent::SetParameter(const char* szKey, const xiiVariant& value)
+void xiiScriptComponent::SetParameter(xiiStringView sKey, const xiiVariant& value)
 {
   xiiHashedString hs;
-  hs.Assign(szKey);
+  hs.Assign(sKey);
 
   auto it = m_Parameters.Find(hs);
   if (it != xiiInvalidIndex && m_Parameters.GetValue(it) == value)
@@ -195,16 +195,16 @@ void xiiScriptComponent::SetParameter(const char* szKey, const xiiVariant& value
   m_Parameters[hs] = value;
 }
 
-void xiiScriptComponent::RemoveParameter(const char* szKey)
+void xiiScriptComponent::RemoveParameter(xiiStringView sKey)
 {
-  if (m_Parameters.RemoveAndCopy(xiiTempHashedString(szKey)))
+  if (m_Parameters.RemoveAndCopy(xiiTempHashedString(sKey)))
   {
   }
 }
 
-bool xiiScriptComponent::GetParameter(const char* szKey, xiiVariant& out_value) const
+bool xiiScriptComponent::GetParameter(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Parameters.Find(szKey);
+  xiiUInt32 it = m_Parameters.Find(sKey);
 
   if (it == xiiInvalidIndex)
     return false;

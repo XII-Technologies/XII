@@ -23,8 +23,8 @@ template <>
 class xiiTypedSetProperty<const char*> : public xiiAbstractSetProperty
 {
 public:
-  xiiTypedSetProperty(const char* szPropertyName) :
-    xiiAbstractSetProperty(szPropertyName)
+  xiiTypedSetProperty(xiiStringView sPropertyName) :
+    xiiAbstractSetProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<const char*>();
   }
