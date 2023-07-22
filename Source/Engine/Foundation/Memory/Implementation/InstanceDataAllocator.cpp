@@ -7,7 +7,7 @@ xiiUInt32 xiiInstanceDataAllocator::AddDesc(const xiiInstanceDataDesc& desc)
   m_Descs.PushBack(desc);
 
   const xiiUInt32 uiOffset = xiiMemoryUtils::AlignSize(m_uiTotalDataSize, desc.m_uiTypeAlignment);
-  m_uiTotalDataSize       = uiOffset + desc.m_uiTypeSize;
+  m_uiTotalDataSize        = uiOffset + desc.m_uiTypeSize;
 
   return uiOffset;
 }

@@ -63,5 +63,5 @@ public:
 
 private:
   xiiDynamicArray<xiiInstanceDataDesc> m_Descs;
-  xiiUInt32                           m_uiTotalDataSize = 0;
+  xiiUInt32                            m_uiTotalDataSize = 0;
 };

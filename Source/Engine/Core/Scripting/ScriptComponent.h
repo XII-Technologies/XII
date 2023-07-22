@@ -44,8 +44,8 @@ public:
   void                                SetScriptClass(const xiiScriptClassResourceHandle& hScript);
   const xiiScriptClassResourceHandle& GetScriptClass() const { return m_hScriptClass; }
 
-  void        SetScriptClassFile(xiiStringView sFile); // [ property ]
-  xiiStringView GetScriptClassFile() const;             // [ property ]
+  void          SetScriptClassFile(xiiStringView sFile); // [ property ]
+  xiiStringView GetScriptClassFile() const;              // [ property ]
 
   void    SetUpdateInterval(xiiTime interval); // [ property ]
   xiiTime GetUpdateInterval() const;           // [ property ]
@@ -53,9 +53,9 @@ public:
   //////////////////////////////////////////////////////////////////////////
   // Exposed Parameters
   const xiiRangeView<xiiStringView, xiiUInt32> GetParameters() const;
-  void                                       SetParameter(xiiStringView sKey, const xiiVariant& value);
-  void                                       RemoveParameter(xiiStringView sKey);
-  bool                                       GetParameter(xiiStringView sKey, xiiVariant& out_value) const;
+  void                                         SetParameter(xiiStringView sKey, const xiiVariant& value);
+  void                                         RemoveParameter(xiiStringView sKey);
+  bool                                         GetParameter(xiiStringView sKey, xiiVariant& out_value) const;
 
 private:
   void InstantiateScript(bool bActivate);

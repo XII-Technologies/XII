@@ -151,7 +151,7 @@ void xiiArrayBase<T, Derived>::SetCountUninitialized(xiiUInt32 uiCount)
   if (uiNewCount > uiOldCount)
   {
     static_cast<Derived*>(this)->Reserve(uiNewCount);
-    
+
     // We already assert above that T is a POD type. Do not construct anything and leave the memory untouched.
   }
 

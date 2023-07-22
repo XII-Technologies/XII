@@ -673,7 +673,7 @@ void xiiQtColorGradientWidget::mouseMoveEvent(QMouseEvent* event)
         if (m_fDisplayExtentMinX < m_fDisplayExtentMaxX)
         {
           const QPointF mouseMove = event->globalPosition() - m_LastMousePosition;
-          m_LastMousePosition    = event->globalPosition();
+          m_LastMousePosition     = event->globalPosition();
 
           const double range = m_fDisplayExtentMaxX - m_fDisplayExtentMinX;
 

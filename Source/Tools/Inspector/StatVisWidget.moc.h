@@ -57,7 +57,7 @@ private:
   struct StatsData
   {
     QListWidgetItem* m_pListItem = nullptr;
-    xiiUInt8          m_uiColor  = 0;
+    xiiUInt8         m_uiColor   = 0;
   };
 
   xiiMap<xiiString, StatsData> m_Stats;

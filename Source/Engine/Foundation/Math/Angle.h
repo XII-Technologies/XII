@@ -29,7 +29,6 @@ public:
   constexpr static xiiAngleTemplate<Type> Radian(Type fRadian); // [tested]
 
 public:
-
   XII_DECLARE_POD_TYPE();
 
   /// \brief Standard constructor, initializing with 0.

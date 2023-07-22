@@ -280,7 +280,7 @@ xiiMat3 xiiBasisAxis::CalculateTransformationMatrix(Enum forwardDir, Enum rightD
 
 xiiMat3d xiiBasisAxis::CalculateTransformationMatrix(Enum forwardDir, Enum rightDir, Enum upDir, double fUniformScale /*= 1.0f*/, double fScaleX /*= 1.0*/, double fScaleY /*= 1.0*/, double fScaleZ /*= 1.0*/)
 {
-  xiiVec3 mTemp;
+  xiiVec3  mTemp;
   xiiMat3d mResult;
 
   mTemp = xiiBasisAxis::GetBasisVector(forwardDir);

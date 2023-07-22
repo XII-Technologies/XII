@@ -15,7 +15,7 @@ private:
   xiiComponentHandle         m_hComponent;
   xiiVariant                 m_SourceValue;
   xiiVariant                 m_TargetValue;
-  xiiEnum<xiiEasingFunction>  m_EasingFunction;
+  xiiEnum<xiiEasingFunction> m_EasingFunction;
 
   xiiTime m_Duration;
   xiiTime m_TimePassed;
