@@ -16,7 +16,7 @@ static duk_ret_t ModuleSearchFunction(duk_context* pCtx);
 static int CFuncPrint(duk_context* pContext)
 {
   xiiDuktapeFunction wrapper(pContext);
-  xiiStringView sText = wrapper.GetStringValue(0, nullptr);
+  xiiStringView      sText = wrapper.GetStringValue(0, nullptr);
 
   xiiLog::Info("Print: '{}'", sText);
   return wrapper.ReturnVoid();

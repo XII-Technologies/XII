@@ -60,10 +60,10 @@ public:
   /// \brief Moves the given xiiHashedString.
   xiiHashedString(xiiHashedString&& rhs); // [tested]
 
-  #if XII_ENABLED(XII_HASHED_STRING_REF_COUNTING)
+#if XII_ENABLED(XII_HASHED_STRING_REF_COUNTING)
   /// \brief Releases the reference to the internal data. Does NOT deallocate any data, even if this held the last reference to some string.
   ~xiiHashedString();
-  #endif
+#endif
 
   /// \brief Copies the given xiiHashedString.
   void operator=(const xiiHashedString& rhs); // [tested]

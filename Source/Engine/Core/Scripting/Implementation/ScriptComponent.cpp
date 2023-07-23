@@ -178,9 +178,9 @@ xiiTime xiiScriptComponent::GetUpdateInterval() const
 const xiiRangeView<xiiStringView, xiiUInt32> xiiScriptComponent::GetParameters() const
 {
   return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
-                                              [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
-                                              [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                              [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt); });
+                                                [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
+                                                [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt); });
 }
 
 void xiiScriptComponent::SetParameter(xiiStringView sKey, const xiiVariant& value)
